@@ -1,0 +1,15 @@
+[
+{"lib":"pypfopt","area":"pypfopt.plotting","name":"plot_covariance","status":"partial","how":"verdict","omai":"render charts#correlationChart","note":"a covariance heatmap (with optional clustering order)"},
+{"lib":"pypfopt","area":"pypfopt.plotting","name":"plot_dendrogram","status":"absent","how":"verdict","omai":"cluster#linkageMatrix","note":"a dendrogram of the correlation distance"},
+{"lib":"pypfopt","area":"pypfopt.plotting","name":"plot_efficient_frontier","status":"skip","how":"verdict","note":"portfolio plots"},
+{"lib":"pypfopt","area":"pypfopt.plotting","name":"plot_weights","status":"skip","how":"verdict","note":"portfolio plots"},
+{"lib":"pypfopt","area":"pypfopt.risk_models","name":"CovarianceShrinkage","status":"full","how":"verdict","omai":"covariance#covarianceEstimator, stats#ledoitWolf, #oas","note":"constant-variance, single-factor and constant-correlation targets are the Ledoit-Wolf family PyPortfolioOpt adds: only the scaled-identity target exists (see the shrinkage rows)"},
+{"lib":"pypfopt","area":"pypfopt.risk_models","name":"corr_to_cov","status":"full","how":"verdict","omai":"stats#cov, stats#corrcoef"},
+{"lib":"pypfopt","area":"pypfopt.risk_models","name":"cov_to_corr","status":"full","how":"verdict","omai":"stats#cov, stats#corrcoef"},
+{"lib":"pypfopt","area":"pypfopt.risk_models","name":"exp_cov","status":"absent","how":"verdict","omai":"stats#ewmVar","note":"exponentially weighted covariance by span","home":"covariance/streaming.ts","size":"S","priority":"high","group":"streaming and exponentially weighted covariance"},
+{"lib":"pypfopt","area":"pypfopt.risk_models","name":"fix_nonpositive_semidefinite","status":"absent","how":"verdict","omai":"optim#projectPsd","note":"clip or replace negative eigenvalues: the two-line repair","home":"covariance/nearest.ts","size":"S","priority":"medium","group":"nearest correlation and covariance repair"},
+{"lib":"pypfopt","area":"pypfopt.risk_models","name":"min_cov_determinant","status":"full","how":"verdict","omai":"covariance#minCovDet"},
+{"lib":"pypfopt","area":"pypfopt.risk_models","name":"risk_matrix","status":"full","how":"verdict","omai":"stats#cov, stats#corrcoef"},
+{"lib":"pypfopt","area":"pypfopt.risk_models","name":"sample_cov","status":"full","how":"verdict","omai":"stats#cov"},
+{"lib":"pypfopt","area":"pypfopt.risk_models","name":"semicovariance","status":"absent","how":"verdict","note":"downside semicovariance below a benchmark","home":"covariance/semi.ts","size":"S","priority":"low","group":"finance covariance inputs"}
+]

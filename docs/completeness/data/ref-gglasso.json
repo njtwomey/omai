@@ -1,0 +1,253 @@
+{
+"library": "gglasso",
+"version": "0.3.1",
+"source": "introspection",
+"entries": [
+{
+"area": "gglasso.helper.data_generation",
+"name": "ensure_sparsity",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.helper.data_generation",
+"name": "generate_precision_matrix",
+"kind": "function",
+"doc": "Generates a sparse precision matrix with associated covariance matrix from a random network."
+},
+{
+"area": "gglasso.helper.data_generation",
+"name": "group_power_network",
+"kind": "function",
+"doc": "generates a power law network. In each single network one block disappears (randomly)"
+},
+{
+"area": "gglasso.helper.data_generation",
+"name": "sample_covariance_matrix",
+"kind": "function",
+"doc": "samples data for a given covariance matrix Sigma (with K layers)"
+},
+{
+"area": "gglasso.helper.data_generation",
+"name": "time_varying_power_network",
+"kind": "function",
+"doc": "generates a power law network. The first block disappears at half-time, while the second block appears"
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "K_single_grid",
+"kind": "function",
+"doc": "method for doing model selection for K single Graphical Lasso problems, using grid search and AIC/eBIC"
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "aic",
+"kind": "function",
+"doc": "AIC information criterion after Danaher et al."
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "aic_array",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "aic_dict",
+"kind": "function",
+"doc": "S, Theta are dictionaries"
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "aic_single",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "ebic",
+"kind": "function",
+"doc": "extended BIC after Drton et al."
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "ebic_array",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "ebic_dict",
+"kind": "function",
+"doc": "S, Theta are dictionaries"
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "ebic_single",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "grid_search",
+"kind": "function",
+"doc": "method for doing model selection for MGL problems using grid search and AIC/eBIC"
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "lambda_grid",
+"kind": "function",
+"doc": "l1, l2, w2: values for the grid"
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "lambda_parametrizer",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "map_l_to_w",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "robust_logdet",
+"kind": "function",
+"doc": "slogdet returns always a finite number if the lowest EV is not EXACTLY 0"
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "single_grid_search",
+"kind": "function",
+"doc": "method for model selection for SGL problem, doing grid search and selection via eBIC or AIC"
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "thresholding",
+"kind": "function",
+"doc": "thresholding array A by tau"
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "tune_multiple_threshold",
+"kind": "function",
+"doc": "Pick the best threshold for 3d-array or dict according to eBIC or AIC."
+},
+{
+"area": "gglasso.helper.model_selection",
+"name": "tune_threshold",
+"kind": "function",
+"doc": "Pick the best threshold for 2d-array according to eBIC or AIC."
+},
+{
+"area": "gglasso.problem",
+"name": "GGLassoEstimator",
+"kind": "class",
+"doc": "Estimator object for the solution to the Graphical Lasso problems. "
+},
+{
+"area": "gglasso.problem",
+"name": "glasso_problem",
+"kind": "class",
+"doc": "Class for Graphical Lasso problems. After solving, you can access the estimators with ``self.solution``. See d"
+},
+{
+"area": "gglasso.solver.admm_solver",
+"name": "ADMM_MGL",
+"kind": "function",
+"doc": "This is an ADMM solver for the (Latent variable) Multiple Graphical Lasso problem (MGL). It jointly estimates "
+},
+{
+"area": "gglasso.solver.admm_solver",
+"name": "ADMM_stopping_criterion",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.solver.admm_solver",
+"name": "kkt_stopping_criterion",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.solver.ppdna_solver",
+"name": "PPA_subproblem",
+"kind": "function",
+"doc": "This is the dual based semismooth Newton method solver for the PPA subproblems"
+},
+{
+"area": "gglasso.solver.ppdna_solver",
+"name": "PPDNA",
+"kind": "function",
+"doc": "Proximal Point algorithm for the Multiple Graphical Lasso problem (MGL)."
+},
+{
+"area": "gglasso.solver.ppdna_solver",
+"name": "PPDNA_stopping_criterion",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.solver.ppdna_solver",
+"name": "check_ppa_sub_params",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.solver.ppdna_solver",
+"name": "get_ppa_sub_params_default",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.solver.ppdna_solver",
+"name": "get_ppdna_params",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.solver.ppdna_solver",
+"name": "warmPPDNA",
+"kind": "function",
+"doc": "function for solving a MGL problem with PPDNA but using ADMM as a warm start (i.e. solve to low accuracy with "
+},
+{
+"area": "gglasso.solver.single_admm_solver",
+"name": "ADMM_SGL",
+"kind": "function",
+"doc": "This is an ADMM solver for the (Latent variable) Single Graphical Lasso problem (SGL)."
+},
+{
+"area": "gglasso.solver.single_admm_solver",
+"name": "ADMM_stopping_criterion",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.solver.single_admm_solver",
+"name": "block_SGL",
+"kind": "function",
+"doc": "This is a wrapper for solving SGL problems on connected components of the solution and solving each block sepa"
+},
+{
+"area": "gglasso.solver.single_admm_solver",
+"name": "get_connected_components",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gglasso.solver.single_admm_solver",
+"name": "invert_permutation",
+"kind": "function",
+"doc": "The argument p is assumed to be some permutation of 0, 1, ..., len(p)-1."
+},
+{
+"area": "gglasso.solver.single_admm_solver",
+"name": "kkt_stopping_criterion",
+"kind": "function",
+"doc": ""
+}
+]
+}

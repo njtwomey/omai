@@ -1,0 +1,259 @@
+{
+"library": "geomstats",
+"version": "2.8.0",
+"source": "introspection",
+"entries": [
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "CorrelationMatricesBundle",
+"kind": "class",
+"doc": "Fiber bundle to construct the quotient metric on correlation matrices."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "EuclideanCholeskyDiffeo",
+"kind": "class",
+"doc": "Euclidean-Cholesky diffeomorphism from Cor+ to LT^1."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "EuclideanCholeskyMetric",
+"kind": "class",
+"doc": "Pullback metric via a diffeomorphism."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "FullRankCorrelationAffineQuotientMetric",
+"kind": "class",
+"doc": "Class for the quotient of the affine-invariant metric."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "FullRankCorrelationMatrices",
+"kind": "class",
+"doc": "Class for the manifold of full-rank correlation matrices."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "LogEuclideanCholeskyDiffeo",
+"kind": "class",
+"doc": "log-Euclidean-Cholesky diffeomorphism from Cor+ to LT^0."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "LogEuclideanCholeskyMetric",
+"kind": "class",
+"doc": "Pullback metric via a diffeomorphism."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "LogScaledMetric",
+"kind": "class",
+"doc": "Pullback metric via a diffeomorphism."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "LogScalingDiffeo",
+"kind": "class",
+"doc": "Off-log diffeomorphism from Cor+ to Row_1^+."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "OffLogDiffeo",
+"kind": "class",
+"doc": "Off-log diffeomorphism from Cor+ to Hol."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "OffLogMetric",
+"kind": "class",
+"doc": "Pullback metric via a diffeomorphism."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "PolyHyperbolicCholeskyMetric",
+"kind": "class",
+"doc": "Pullback metric via a diffeomorphism."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "SPDScalingFinder",
+"kind": "class",
+"doc": "Find unique positive diagonal matrix corresponding to an SPD matrix."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "UniqueDiagonalMatrixAlgorithm",
+"kind": "class",
+"doc": "Find unique diagonal matrix corresponding to a full-rank correlation matrix."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "corr_map",
+"kind": "function",
+"doc": "Compute the correlation matrix associated to an SPD matrix."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "off_map",
+"kind": "function",
+"doc": "Subtract diagonal to a matrix."
+},
+{
+"area": "geomstats.geometry.full_rank_correlation_matrices",
+"name": "tangent_corr_map",
+"kind": "function",
+"doc": "Compute the differential of the differential of the corr map."
+},
+{
+"area": "geomstats.geometry.positive_lower_triangular_matrices",
+"name": "CholeskyMetric",
+"kind": "class",
+"doc": "Class for Cholesky metric on Cholesky space."
+},
+{
+"area": "geomstats.geometry.positive_lower_triangular_matrices",
+"name": "InvariantPositiveLowerTriangularMatricesMetric",
+"kind": "class",
+"doc": "Invariant metric on the positive lower triangular matrices."
+},
+{
+"area": "geomstats.geometry.positive_lower_triangular_matrices",
+"name": "LowerMatrixLog",
+"kind": "class",
+"doc": "Matrix logarithm diffeomorphism."
+},
+{
+"area": "geomstats.geometry.positive_lower_triangular_matrices",
+"name": "PLTUnitDiagMatrices",
+"kind": "class",
+"doc": "Lower triangular matrices with unit diagonal."
+},
+{
+"area": "geomstats.geometry.positive_lower_triangular_matrices",
+"name": "PositiveLowerTriangularMatrices",
+"kind": "class",
+"doc": "Manifold of lower triangular matrices with >0 diagonal."
+},
+{
+"area": "geomstats.geometry.positive_lower_triangular_matrices",
+"name": "UnitNormedRowsPLTDiffeo",
+"kind": "class",
+"doc": "A diffeomorphism from UnitNormedRowsPLTDMatrices to OpenHemispheresProduct."
+},
+{
+"area": "geomstats.geometry.positive_lower_triangular_matrices",
+"name": "UnitNormedRowsPLTMatrices",
+"kind": "class",
+"doc": "Space of positive lower triangular matrices with unit-normed rows."
+},
+{
+"area": "geomstats.geometry.positive_lower_triangular_matrices",
+"name": "UnitNormedRowsPLTMatricesPullbackMetric",
+"kind": "class",
+"doc": "Pullback diffeo metric on `UnitNormedRowsPLTMatrices`."
+},
+{
+"area": "geomstats.geometry.spd_matrices",
+"name": "CholeskyMap",
+"kind": "class",
+"doc": "Cholesky map."
+},
+{
+"area": "geomstats.geometry.spd_matrices",
+"name": "LieCholeskyMetric",
+"kind": "class",
+"doc": "Pullback metric via a diffeomorphism."
+},
+{
+"area": "geomstats.geometry.spd_matrices",
+"name": "MatrixPower",
+"kind": "class",
+"doc": "Matrix power diffeomorphism."
+},
+{
+"area": "geomstats.geometry.spd_matrices",
+"name": "SPDAffineMetric",
+"kind": "class",
+"doc": "Class for the affine-invariant metric on the SPD manifold."
+},
+{
+"area": "geomstats.geometry.spd_matrices",
+"name": "SPDBuresWassersteinMetric",
+"kind": "class",
+"doc": "Class for the Bures-Wasserstein metric on the SPD manifold."
+},
+{
+"area": "geomstats.geometry.spd_matrices",
+"name": "SPDEuclideanMetric",
+"kind": "class",
+"doc": "Class for the Euclidean metric on the SPD manifold."
+},
+{
+"area": "geomstats.geometry.spd_matrices",
+"name": "SPDLogEuclideanMetric",
+"kind": "class",
+"doc": "Class for the Log-Euclidean metric on the SPD manifold."
+},
+{
+"area": "geomstats.geometry.spd_matrices",
+"name": "SPDMatrices",
+"kind": "class",
+"doc": "Class for the manifold of symmetric positive definite (SPD) matrices."
+},
+{
+"area": "geomstats.geometry.spd_matrices",
+"name": "SPDPowerMetric",
+"kind": "class",
+"doc": "Pullback metric induced by the power diffeomorphism."
+},
+{
+"area": "geomstats.geometry.spd_matrices",
+"name": "SymMatrixLog",
+"kind": "class",
+"doc": "Matrix logarithm diffeomorphism."
+},
+{
+"area": "geomstats.geometry.spd_matrices",
+"name": "logmh",
+"kind": "function",
+"doc": "Compute the matrix log for a Hermitian matrix."
+},
+{
+"area": "geomstats.geometry.symmetric_matrices",
+"name": "ConstantValueRowSumsDiffeo",
+"kind": "class",
+"doc": "A diffeomorphism from the constant-value-row-sum matrices to symmetric matrices."
+},
+{
+"area": "geomstats.geometry.symmetric_matrices",
+"name": "HollowMatricesPermutationInvariantMetric",
+"kind": "class",
+"doc": "A permutation-invariant metric on the space of hollow matrices."
+},
+{
+"area": "geomstats.geometry.symmetric_matrices",
+"name": "NullRowSumsPermutationInvariantMetric",
+"kind": "class",
+"doc": "A permutation-invariant metric on the space of null-row-sums symmetric matrices."
+},
+{
+"area": "geomstats.geometry.symmetric_matrices",
+"name": "NullRowSumsSymmetricMatrices",
+"kind": "class",
+"doc": "Space of null-row-sums symmetric matrices."
+},
+{
+"area": "geomstats.geometry.symmetric_matrices",
+"name": "SymmetricHollowMatrices",
+"kind": "class",
+"doc": "Space of symmetric hollow matrices."
+},
+{
+"area": "geomstats.geometry.symmetric_matrices",
+"name": "SymmetricMatrices",
+"kind": "class",
+"doc": "Class for the vector space of symmetric matrices of size n."
+}
+]
+}

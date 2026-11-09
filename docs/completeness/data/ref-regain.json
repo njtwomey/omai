@@ -1,0 +1,541 @@
+{
+"library": "regain",
+"version": "0.4.1",
+"source": "introspection",
+"entries": [
+{
+"area": "regain.bayesian.gwishart_inference",
+"name": "BayesianGraphicalLasso",
+"kind": "class",
+"doc": "Sparse inverse covariance estimation with an l1-penalized estimator."
+},
+{
+"area": "regain.bayesian.gwishart_inference",
+"name": "GWishartFit",
+"kind": "function",
+"doc": "Fit G-Wishart distribution."
+},
+{
+"area": "regain.bayesian.gwishart_inference",
+"name": "GWishartScore",
+"kind": "function",
+"doc": "Compute score of G-Wishart distribution."
+},
+{
+"area": "regain.bayesian.gwishart_inference",
+"name": "bayesian_graphical_lasso",
+"kind": "function",
+"doc": "Bayesian graphical lasso."
+},
+{
+"area": "regain.bayesian.gwishart_inference",
+"name": "compute_score",
+"kind": "function",
+"doc": "Compute score function of P."
+},
+{
+"area": "regain.bayesian.gwishart_inference",
+"name": "covsel",
+"kind": "function",
+"doc": "Objective and gradient for MLE of precision given empirical covariance."
+},
+{
+"area": "regain.bayesian.gwishart_inference",
+"name": "markov_blankets",
+"kind": "function",
+"doc": "For each variable, list each of its markov blankets in graphs."
+},
+{
+"area": "regain.bayesian.gwishart_inference",
+"name": "mk_all_ugs",
+"kind": "function",
+"doc": "Utility for generating all possible graphs."
+},
+{
+"area": "regain.bayesian.gwishart_inference",
+"name": "precision_selection",
+"kind": "function",
+"doc": "MLE of precision matrix given non-zero entries in G."
+},
+{
+"area": "regain.bayesian.gwishart_inference",
+"name": "score_blankets",
+"kind": "function",
+"doc": "Score the markov blankets for node i."
+},
+{
+"area": "regain.bayesian.wishart_distribution_",
+"name": "InverseWishartDistribution",
+"kind": "class",
+"doc": "Inverse Wishart (IW) distribution."
+},
+{
+"area": "regain.bayesian.wishart_distribution_",
+"name": "NormalInverseWishartDistribution",
+"kind": "class",
+"doc": "Normal-inverse-wishart (NIW) distribution."
+},
+{
+"area": "regain.bayesian.wishart_distribution_",
+"name": "WishartDistribution",
+"kind": "class",
+"doc": "Wishart distribution."
+},
+{
+"area": "regain.bayesian.wishart_distribution_",
+"name": "main",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.bayesian.wishart_process_",
+"name": "WishartProcess",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "regain.bayesian.wishart_process_",
+"name": "fit",
+"kind": "function",
+"doc": "Sample the parameters of kernel and lower Cholesky."
+},
+{
+"area": "regain.bayesian.wishart_process_",
+"name": "predict",
+"kind": "function",
+"doc": "Predict covariance matrix for t_test."
+},
+{
+"area": "regain.covariance.graphical_lasso_",
+"name": "GraphicalLasso",
+"kind": "class",
+"doc": "Sparse inverse covariance estimation with an l1-penalized estimator."
+},
+{
+"area": "regain.covariance.graphical_lasso_",
+"name": "graphical_lasso",
+"kind": "function",
+"doc": "Graphical lasso solver via ADMM."
+},
+{
+"area": "regain.covariance.graphical_lasso_",
+"name": "init_precision",
+"kind": "function",
+"doc": "Initialize the precision matrix given the empirical covariance."
+},
+{
+"area": "regain.covariance.graphical_lasso_",
+"name": "logl",
+"kind": "function",
+"doc": "Gaussian log-likelihood without constant term."
+},
+{
+"area": "regain.covariance.graphical_lasso_",
+"name": "objective",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.covariance.infimal_convolution_",
+"name": "infimal_convolution",
+"kind": "function",
+"doc": "Latent variable graphical lasso solver."
+},
+{
+"area": "regain.covariance.infimal_convolution_",
+"name": "objective",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.covariance.kernel_latent_time_graphical_lasso_",
+"name": "KernelLatentTimeGraphicalLasso",
+"kind": "class",
+"doc": "Sparse inverse covariance estimation with an l1-penalized estimator."
+},
+{
+"area": "regain.covariance.kernel_latent_time_graphical_lasso_",
+"name": "SimilarityLatentTimeGraphicalLasso",
+"kind": "class",
+"doc": "Sparse inverse covariance estimation with an l1-penalized estimator."
+},
+{
+"area": "regain.covariance.kernel_latent_time_graphical_lasso_",
+"name": "kernel_latent_time_graphical_lasso",
+"kind": "function",
+"doc": "Time-varying latent variable graphical lasso solver."
+},
+{
+"area": "regain.covariance.kernel_latent_time_graphical_lasso_",
+"name": "objective",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.covariance.kernel_time_graphical_lasso_",
+"name": "KernelTimeGraphicalLasso",
+"kind": "class",
+"doc": "Structure inference in time driven by a temporal kernel."
+},
+{
+"area": "regain.covariance.kernel_time_graphical_lasso_",
+"name": "SimilarityTimeGraphicalLasso",
+"kind": "class",
+"doc": "Learn how to relate different precision matrices across times."
+},
+{
+"area": "regain.covariance.kernel_time_graphical_lasso_",
+"name": "kernel_time_graphical_lasso",
+"kind": "function",
+"doc": "Time-varying graphical lasso solver."
+},
+{
+"area": "regain.covariance.kernel_time_graphical_lasso_",
+"name": "objective",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.covariance.kernel_time_graphical_lasso_",
+"name": "objective_kernel",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.covariance.kernel_time_graphical_lasso_",
+"name": "objective_similarity",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.covariance.kernel_time_graphical_lasso_",
+"name": "precision_similarity",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.covariance.latent_graphical_lasso_",
+"name": "LatentGraphicalLasso",
+"kind": "class",
+"doc": "Sparse inverse covariance + low-rank matrix estimation."
+},
+{
+"area": "regain.covariance.latent_graphical_lasso_",
+"name": "latent_graphical_lasso",
+"kind": "function",
+"doc": "Latent variable graphical lasso solver via ADMM."
+},
+{
+"area": "regain.covariance.latent_graphical_lasso_",
+"name": "objective",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.covariance.latent_time_graphical_lasso_",
+"name": "LatentTimeGraphicalLasso",
+"kind": "class",
+"doc": "Sparse inverse covariance estimation with an l1-penalized estimator."
+},
+{
+"area": "regain.covariance.latent_time_graphical_lasso_",
+"name": "latent_time_graphical_lasso",
+"kind": "function",
+"doc": "Latent variable time-varying graphical lasso solver."
+},
+{
+"area": "regain.covariance.latent_time_graphical_lasso_",
+"name": "objective",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.covariance.missing_graphical_lasso_",
+"name": "MissingGraphicalLasso",
+"kind": "class",
+"doc": "Graphical Lasso with missing data."
+},
+{
+"area": "regain.covariance.missing_graphical_lasso_",
+"name": "compute_cs",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.covariance.missing_graphical_lasso_",
+"name": "compute_empirical_covariance",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.covariance.missing_graphical_lasso_",
+"name": "compute_mean",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.covariance.missing_graphical_lasso_",
+"name": "missing_graphical_lasso",
+"kind": "function",
+"doc": "Missing Graphical lasso solver via EM algorithm."
+},
+{
+"area": "regain.covariance.time_graphical_lasso_",
+"name": "TimeGraphicalLasso",
+"kind": "class",
+"doc": "Sparse inverse covariance estimation with an l1-penalized estimator."
+},
+{
+"area": "regain.covariance.time_graphical_lasso_",
+"name": "batch_log_likelihood",
+"kind": "function",
+"doc": "Gaussian log-likelihood without constant term."
+},
+{
+"area": "regain.covariance.time_graphical_lasso_",
+"name": "loss",
+"kind": "function",
+"doc": "Loss function for time-varying graphical lasso."
+},
+{
+"area": "regain.covariance.time_graphical_lasso_",
+"name": "objective",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.covariance.time_graphical_lasso_",
+"name": "time_graphical_lasso",
+"kind": "function",
+"doc": "Time-varying graphical lasso solver."
+},
+{
+"area": "regain.datasets.gaussian",
+"name": "data_Meinshausen_Yuan",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.datasets.gaussian",
+"name": "data_Meinshausen_Yuan_sparse_latent",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.datasets.gaussian",
+"name": "make_covariance",
+"kind": "function",
+"doc": "Generate a list of T covariances and sparse precisions."
+},
+{
+"area": "regain.datasets.gaussian",
+"name": "make_ell",
+"kind": "function",
+"doc": "Make ell matrix."
+},
+{
+"area": "regain.datasets.gaussian",
+"name": "make_fede",
+"kind": "function",
+"doc": "Generate dataset (new version)."
+},
+{
+"area": "regain.datasets.gaussian",
+"name": "make_fixed_sparsity",
+"kind": "function",
+"doc": "Generate precisions with a fixed L matrix and sparsity."
+},
+{
+"area": "regain.datasets.gaussian",
+"name": "make_ma_xue_zou",
+"kind": "function",
+"doc": "Generate the dataset as in Ma, Xue, Zou (2012)."
+},
+{
+"area": "regain.datasets.gaussian",
+"name": "make_ma_xue_zou_rand_k",
+"kind": "function",
+"doc": "Generate the dataset as in Ma, Xue, Zou (2012)."
+},
+{
+"area": "regain.datasets.gaussian",
+"name": "make_sin",
+"kind": "function",
+"doc": "Generate list of sparse precision matrices that change periodically."
+},
+{
+"area": "regain.datasets.gaussian",
+"name": "make_sin_cos",
+"kind": "function",
+"doc": "Variables follow sin and cos evolution. L is fixed."
+},
+{
+"area": "regain.datasets.gaussian",
+"name": "make_sparse_low_rank",
+"kind": "function",
+"doc": "Generate dataset (new new version)."
+},
+{
+"area": "regain.datasets.gaussian",
+"name": "make_starting",
+"kind": "function",
+"doc": "Generate starting theta, theta_observed, L, K_HO."
+},
+{
+"area": "regain.discriminant_analysis",
+"name": "DiscriminantAnalysis",
+"kind": "class",
+"doc": "Quadratic Discriminant Analysis using LTGL"
+},
+{
+"area": "regain.discriminant_analysis",
+"name": "PrecomputedDiscriminantAnalysis",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "regain.generalized_linear_model.glm_gaussian",
+"name": "Gaussian_GLM_GM",
+"kind": "class",
+"doc": "Graphical model inference with Gaussian distribution."
+},
+{
+"area": "regain.generalized_linear_model.glm_gaussian",
+"name": "fit_each_variable",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.generalized_linear_model.glm_gaussian",
+"name": "objective",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.generalized_linear_model.glm_ising",
+"name": "IsingGraphicalModel",
+"kind": "class",
+"doc": "Graphical model inference with Bernoulli distribution."
+},
+{
+"area": "regain.generalized_linear_model.glm_ising",
+"name": "loss",
+"kind": "function",
+"doc": "Loss function for time-varying graphical lasso."
+},
+{
+"area": "regain.generalized_linear_model.glm_ising",
+"name": "objective",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.generalized_linear_model.glm_poisson",
+"name": "PoissonGraphicalModel",
+"kind": "class",
+"doc": "Graphical model inference with local Poisson distribution."
+},
+{
+"area": "regain.generalized_linear_model.glm_poisson",
+"name": "fit_each_variable",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.generalized_linear_model.glm_poisson",
+"name": "loss",
+"kind": "function",
+"doc": "Loss function for time-varying graphical lasso."
+},
+{
+"area": "regain.generalized_linear_model.glm_poisson",
+"name": "loss_single_variable",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.generalized_linear_model.glm_poisson",
+"name": "objective",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.generalized_linear_model.glm_poisson",
+"name": "objective_single_variable",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.model_selection.stability_optimization",
+"name": "GraphicalModelStabilitySelection",
+"kind": "class",
+"doc": "Stability based search over specified parameter values for an estimator."
+},
+{
+"area": "regain.model_selection.stability_optimization",
+"name": "global_instability",
+"kind": "function",
+"doc": "Computes instability of the graphs inferred from estimators."
+},
+{
+"area": "regain.model_selection.stability_optimization",
+"name": "graphlet_instability",
+"kind": "function",
+"doc": "Computes graphlet instability of the graphs inferred from estimators."
+},
+{
+"area": "regain.model_selection.stability_optimization",
+"name": "upper_bound",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "regain.scores",
+"name": "BIC",
+"kind": "function",
+"doc": "Bayesian Information Criterion for Gaussian models"
+},
+{
+"area": "regain.scores",
+"name": "BIC_t",
+"kind": "function",
+"doc": "Bayesian Information Criterion for Gaussian models in time."
+},
+{
+"area": "regain.scores",
+"name": "EBIC",
+"kind": "function",
+"doc": "E - Bayesian Information Criterion for Gaussian models."
+},
+{
+"area": "regain.scores",
+"name": "EBIC_m",
+"kind": "function",
+"doc": "E - Bayesian Information Criterion for Gaussian models."
+},
+{
+"area": "regain.scores",
+"name": "EBIC_m_t",
+"kind": "function",
+"doc": "E - Bayesian Information Criterion for Gaussian models in time."
+},
+{
+"area": "regain.scores",
+"name": "EBIC_t",
+"kind": "function",
+"doc": "E - Bayesian Information Criterion for Gaussian models in time."
+},
+{
+"area": "regain.scores",
+"name": "log_likelihood",
+"kind": "function",
+"doc": "Gaussian log-likelihood without constant term."
+},
+{
+"area": "regain.scores",
+"name": "log_likelihood_t",
+"kind": "function",
+"doc": "Gaussian log-likelihood without constant term for batch of matrices."
+}
+]
+}

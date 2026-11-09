@@ -5,7 +5,7 @@
  *
  * Output: `docs/completeness/<family>.md` (first pass: sklearn, scipy-statsmodels, probabilistic, graphical-models, rl, torch,
  * graph-neural-networks, other; second pass: metric-learning, self-supervised, training-and-paradigms,
- * bayesian-optimisation-and-gp, tabular-and-interpretable, torch-ecosystem, structured-prediction, adjacent) and
+ * bayesian-optimisation-and-gp, tabular-and-interpretable, torch-ecosystem, structured-prediction, adjacent; third pass: covariance) and
  * `docs/completeness/data/counts.json`. `README.md` and `repertoire.md` are written
  * by hand. Run `match.ts` first. The prose of each family (what it covers, where omai is strong) is in this file.
  */
@@ -15,6 +15,7 @@ import { join, resolve } from 'node:path'
 const ROOT = resolve(import.meta.dirname, '..', '..')
 const DIR = join(ROOT, 'docs', 'completeness')
 const DATA = join(DIR, 'data')
+const HERE = import.meta.dirname
 
 interface Row {
   lib: string
@@ -42,6 +43,11 @@ interface Family {
   areaLevel?: string[]
   /** Extra prose after the strengths (what the comparison cannot see, how the family was checked). */
   after?: string[]
+  /** Libraries whose names repeat entries counted in an earlier family: listed in the tables, left out of the totals. */
+  relisted?: string[]
+  /** Hand-written Markdown fragments (files under `scripts/completeness-survey/prose/`): `before` after the intro, `closing` at the end. */
+  before?: string[]
+  closing?: string[]
 }
 
 const FAMILIES: Family[] = [
@@ -59,7 +65,7 @@ const FAMILIES: Family[] = [
       'Linear and generalised linear models, path algorithms (LARS, coordinate descent), robust and quantile regression, with the solver as a slot.',
       'Trees, forests, boosting, stacking, voting; kernels (including approximations); SVMs; Gaussian processes with exact marginal likelihood.',
       'Model selection: nearly every splitter of scikit-learn plus nested CV, learning and validation curves, permutation tests; calibration and conformal prediction well beyond scikit-learn.',
-      'Clustering (k-means variants, DBSCAN, OPTICS, HDBSCAN, spectral, affinity propagation, BIRCH), manifold learning (t-SNE, UMAP, PaCMAP, TriMap), covariance estimation.',
+      'Clustering (k-means variants, DBSCAN, OPTICS, HDBSCAN, spectral, affinity propagation, BIRCH), manifold learning (t-SNE, UMAP, PaCMAP, TriMap), covariance estimation (the estimators; the area around them is surveyed in `covariance.md`).',
       'Every iterative routine is stepped and traced; scikit-learn offers `partial_fit` at best.',
     ],
   },
@@ -189,6 +195,84 @@ const FAMILIES: Family[] = [
     ],
   },
 
+  {
+    file: 'covariance',
+    title: 'Covariance, precision and correlation estimation',
+    libs: [
+      'sklearn_covariance',
+      'statsmodels_cov',
+      'scipy_cov',
+      'pyriemann',
+      'skfolio',
+      'pypfopt',
+      'riskfolio',
+      'skggm',
+      'gglasso',
+      'regain',
+      'robpy',
+      'rmt_denoise',
+      'geomstats',
+      'pymanopt',
+      'arch_cov',
+      'nilearn_connectome',
+      'mne_cov',
+      'r_covtools',
+      'r_rrcov',
+      'r_robustbase',
+      'r_cellwise',
+      'r_corpcor',
+      'r_huge',
+      'r_nlshrink',
+      'r_poet',
+      'r_rags2ridges',
+      'r_bdgraph',
+      'r_other_graphical',
+      'pandas_cov',
+      'river_cov',
+      'js_peers',
+      'pymc_priors',
+      'timevarying_and_high_frequency',
+      'sparse_and_structured',
+      'graph_structure_methods',
+      'covariance_testing',
+      'random_matrix_theory',
+      'missing_streaming_weighted',
+      'spd_geometry_concepts',
+    ],
+    relisted: ['sklearn_covariance', 'statsmodels_cov', 'scipy_cov'],
+    before: ['covariance-inventory.md'],
+    closing: ['covariance-peers.md', 'covariance-add.md'],
+    intro:
+      'A survey of covariance, precision and correlation estimation and what sits next to it, added in a third pass because the first two ' +
+      'saw no gap: `sklearn.covariance` is fully covered (all 16 names), and that is the only lens the first pass had on the subject. ' +
+      'This file widens it to the libraries where the subject lives: scikit-learn and statsmodels again (a slice, re-listed), pyRiemann, ' +
+      'geomstats and PyManopt (SPD matrices), skfolio, PyPortfolioOpt and Riskfolio-Lib (risk models), skggm, gglasso and regain ' +
+      '(graphical models), robpy (robust scatter), rmt_denoise, arch (long-run covariance), nilearn and MNE (connectomes and noise ' +
+      'covariance), the R packages that have no Python peer (the CRAN reference-manual indexes of CovTools, rrcov, robustbase, cellWise, ' +
+      'corpcor, huge, nlshrink, POET, rags2ridges and BDgraph) and concept lists for the parts of the literature no package covers whole ' +
+      '(sparse and structured estimators, graph-structure methods, covariance tests, random matrix theory, missing data and streaming, ' +
+      'time-varying and high-frequency covariance, SPD geometry). Readings: sklearn, statsmodels and scipy were introspected from the ' +
+      'installed packages; pyriemann, skfolio, PyPortfolioOpt, Riskfolio-Lib, skggm, gglasso, regain, robpy, rmt_denoise, geomstats, ' +
+      'pymanopt, arch, nilearn and MNE were not installed and not imported: each was downloaded as a wheel (an sdist for skggm) into a ' +
+      'scratch directory and read with `ast` by `enumerate.py` (the `OMAI_SURVEY_SRC` route), so the names are the release ones ' +
+      '(`ref-*.json` records the version). The CRAN lists are the index pages of the reference manuals; the pandas, river, JavaScript, ' +
+      'PyMC and the concept lists are from memory and are checklists, not inventories. `skggm` has no wheel and its sdist was read; ' +
+      '`arch` has no multivariate GARCH, so only its kernel long-run covariance module is listed.',
+    strong: [
+      'The sklearn.covariance estimators: empirical, shrunk, Ledoit-Wolf, OAS, FastMCD (with the concentration steps traced) and the elliptic envelope, and the graphical lasso by coordinate descent with the primal-dual gap, the objective and the edge count on the tape and the path of partial correlations as an exposition.',
+      'The pieces around them that a covariance estimator is built from: weighted `cov` and `corrcoef`, partial correlation, distance correlation and its test, a Kendall tau matrix, factor analysis, probabilistic PCA and sparse PCA (the low-rank-plus-diagonal covariance), the Wishart, inverse Wishart, LKJ and matrix-normal distributions with the inverse-Wishart conjugate update, Box M, Hotelling, MANOVA, Mardia and Little tests, `sqrtm`, `logm`, `expm`, `cholesky` with rank-one updates, Toeplitz and circulant matrices, shrinkage discriminant analysis and the Gaussian mixture covariance types.',
+      "Mahalanobis in every place it is used (distances registry, k-NN, matching, elliptic envelope), covariance ellipses as data, a correlation chart in the renderer and a streaming regularised covariance inside the sampler's mass-matrix adaptation.",
+      'Every iterative estimator already runs as a stepped algorithm; the survey finds nothing that is a one-shot function where a library would have an iteration.',
+    ],
+    after: [
+      'Reading the counts: the re-listed slice (sklearn.covariance, a slice of statsmodels and of scipy) repeats names the first pass already counted and is left out of the ' +
+        'family totals in the README. The remaining libraries add the names below. Concept lists (the last seven tables) are lists of methods, not of API names, ' +
+        'so their absent counts say how much of the literature is not in omai, not how many functions are missing. ' +
+        'Two first-pass verdicts were corrected here and in their own files: `GraphicalLassoCV` is partial (omai has no estimator that chooses the penalty by cross-validation, ' +
+        'EBIC or stability, only the path as an exposition), and `statsmodels.stats.api.test_cov*` were counted partial by a group rule and are absent (the one-sample tests of a covariance matrix) ' +
+        'except `test_cov_oneway`, which is Box M.',
+    ],
+  },
   {
     file: 'metric-learning',
     title: 'Metric and similarity learning',
@@ -498,14 +582,18 @@ function main(): void {
     const out: string[] = []
     const famRows = rows.filter((r) => fam.libs.includes(r.lib))
     const tot = { full: 0, partial: 0, absent: 0, skip: 0, notLow: 0 }
-    for (const r of famRows.filter((x) => !(fam.areaLevel ?? []).includes(x.lib))) {
+    const excluded = [...(fam.areaLevel ?? []), ...(fam.relisted ?? [])]
+    const rel = { full: 0, partial: 0, absent: 0, skip: 0 }
+    for (const r of famRows.filter((x) => (fam.relisted ?? []).includes(x.lib))) rel[r.status]++
+    for (const r of famRows.filter((x) => !excluded.includes(x.lib))) {
       tot[r.status]++
       if ((r.status === 'absent' || r.status === 'partial') && (r.priority === 'high' || r.priority === 'medium'))
         tot.notLow++
     }
-    counts[fam.file] = { ...tot, libs: {} as Record<string, unknown> }
+    counts[fam.file] = { ...tot, ...(fam.relisted ? { relisted: rel } : {}), libs: {} as Record<string, unknown> }
     out.push(`# ${fam.title}`, '')
     out.push(`Part of the [completeness survey](README.md). ${fam.intro}`, '')
+    for (const f of fam.before ?? []) out.push(readFileSync(join(HERE, 'prose', f), 'utf8').trimEnd(), '')
     out.push(
       'Counts are of names: "covered" means an omai export or a documented configuration does what the reference name does, ' +
         '"partial" means a different shape or fewer options, "absent" means nothing found by name or by concept, and ' +
@@ -542,6 +630,13 @@ function main(): void {
     for (const s of fam.strong) out.push(`- ${s}`)
     out.push('')
     for (const a of fam.after ?? []) out.push(a, '')
+    if (fam.relisted?.length) {
+      out.push(
+        `${fam.relisted.map((l) => `\`${l}\``).join(', ')} repeat${fam.relisted.length > 1 ? '' : 's'} names the first pass already counted (in sklearn.md, scipy-statsmodels.md); ` +
+          'their rows are in the tables but not in the totals of `counts.json` (they are under `relisted`) and the README.',
+        '',
+      )
+    }
     if (fam.areaLevel?.length) {
       out.push(
         `${fam.areaLevel.map((l) => `\`${l}\``).join(' and ')} ${fam.areaLevel.length > 1 ? 'were' : 'was'} judged by area, not by name; ` +
@@ -618,6 +713,7 @@ function main(): void {
       }
       out.push('')
     }
+    for (const f of fam.closing ?? []) out.push(readFileSync(join(HERE, 'prose', f), 'utf8').trimEnd(), '')
     writeFileSync(join(DIR, `${fam.file}.md`), `${out.join('\n')}\n`)
   }
   writeFileSync(join(DATA, 'counts.json'), `${JSON.stringify(counts, null, 1)}\n`)

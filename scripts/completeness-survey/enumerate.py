@@ -8,6 +8,12 @@ Run from the repository root with the oracle environment (read only; nothing is 
 With library names it enumerates only those (the second pass added the libraries from `opacus` on). Without
 arguments it redoes everything.
 
+The covariance family (third pass) also reads libraries that are NOT installed, from their source: download each with
+`pip download --no-deps <name>` (a wheel, or an sdist for skggm) into a scratch directory, unpack every archive into its
+own folder (`<dir>/pyriemann/pyriemann`, `<dir>/skggm/skggm-0.2.8/inverse_covariance`, ...) and point `OMAI_SURVEY_SRC`
+at `<dir>`. Nothing is imported or installed: `src_api` reads `__all__` and the top-level definitions with `ast`.
+Without `OMAI_SURVEY_SRC` those jobs are skipped.
+
 Output: docs/completeness/data/ref-<library>.json, `{library, version, source, entries: [{area, name, kind, doc}]}`.
 Libraries that are not installed are skipped here and come from `memory.json` (written by hand from knowledge of
 their public API) in `match.ts`. Modules are probed through `importlib` and `getattr`, so the libraries need no
@@ -22,6 +28,7 @@ import importlib
 import importlib.util
 import inspect
 import json
+import os
 import pkgutil
 import sys
 import warnings
@@ -89,11 +96,12 @@ def sort_key(r: Rec) -> tuple[str, str]:
     return (r["area"], r["name"])
 
 
-def dump(lib: str, recs: list[Rec], dist: str | None = None) -> None:
-    try:
-        ver = version(dist or lib)
-    except PackageNotFoundError:
-        ver = "?"
+def dump(lib: str, recs: list[Rec], dist: str | None = None, ver: str | None = None) -> None:
+    if ver is None:
+        try:
+            ver = version(dist or lib)
+        except PackageNotFoundError:
+            ver = "?"
     seen: set[tuple[str, str]] = set()
     uniq: list[Rec] = []
     for r in recs:
@@ -112,6 +120,74 @@ def modules(prefix: str, names: Sequence[str]) -> list[Rec]:
     for n in names:
         recs += from_all(f"{prefix}.{n}", f"{prefix}.{n}")
     return recs
+
+
+def src_root() -> Path | None:
+    value = os.environ.get("OMAI_SURVEY_SRC")
+    return Path(value) if value else None
+
+
+def src_version(folder: Path) -> str:
+    """The version of an unpacked wheel (`*.dist-info/METADATA`) or sdist (`PKG-INFO`)."""
+    for meta in [*folder.glob("*.dist-info/METADATA"), *folder.glob("*/PKG-INFO"), *folder.glob("PKG-INFO")]:
+        for line in meta.read_text(encoding="utf8", errors="replace").splitlines():
+            if line.startswith("Version:"):
+                return line.split(":", 1)[1].strip()
+    return "?"
+
+
+def src_api(folder: str, package_dir: str, targets: Sequence[str]) -> tuple[list[Rec], str]:
+    """Public names of a library that is not installed, read from its unpacked source with `ast`.
+
+    `folder` is the unpacked archive under `OMAI_SURVEY_SRC`, `package_dir` the package inside it (relative), `targets`
+    dotted sub-packages or modules to list (`skfolio.moments`). A target's area is its dotted name. Names come from the
+    `__all__` of a package's `__init__.py`, or from the public top-level classes and functions of a module; the kind
+    and first docstring line come from the definition wherever in the package it is.
+    """
+    root = src_root()
+    if root is None:
+        return [], "?"
+    base = root / folder / package_dir
+    defs: dict[str, tuple[str, str]] = {}
+    trees: dict[Path, ast.Module] = {}
+    for path in sorted(base.rglob("*.py")):
+        if any(part in ("tests", "test") for part in path.relative_to(base).parts):
+            continue
+        try:
+            tree = ast.parse(path.read_text(encoding="utf8"))
+        except SyntaxError:
+            continue
+        trees[path] = tree
+        for node in tree.body:
+            if isinstance(node, (ast.ClassDef, ast.FunctionDef)):
+                doc = (ast.get_docstring(node) or "").strip().splitlines()
+                kind = "class" if isinstance(node, ast.ClassDef) else "function"
+                defs.setdefault(node.name, (kind, (doc[0] if doc else "")[:110]))
+    recs: list[Rec] = []
+    for target in targets:
+        rel = Path(*target.split(".")[1:]) if "." in target else Path()
+        init = base / rel / "__init__.py"
+        module = base / rel.with_suffix(".py") if rel.parts else None
+        names: list[str] = []
+        if init.exists() and init in trees:
+            for node in trees[init].body:
+                is_all = isinstance(node, ast.Assign) and any(
+                    isinstance(t, ast.Name) and t.id == "__all__" for t in node.targets
+                )
+                if is_all and isinstance(node, ast.Assign) and isinstance(node.value, (ast.List, ast.Tuple)):
+                    names = [
+                        e.value for e in node.value.elts if isinstance(e, ast.Constant) and isinstance(e.value, str)
+                    ]
+        elif module is not None and module in trees:
+            names = [
+                n.name
+                for n in trees[module].body
+                if isinstance(n, (ast.ClassDef, ast.FunctionDef)) and not n.name.startswith("_")
+            ]
+        for name in names:
+            kind, doc = defs.get(name, ("function", ""))
+            recs.append({"area": target, "name": name, "kind": kind, "doc": doc})
+    return recs, src_version(root / folder)
 
 
 def sklearn() -> list[Rec]:
@@ -720,6 +796,143 @@ def numpy() -> list[Rec]:
     return recs
 
 
+# ---- the covariance family (third pass)
+
+
+def sklearn_covariance() -> list[Rec]:
+    return modules("sklearn", ["covariance"])
+
+
+def statsmodels_cov() -> list[Rec]:
+    names = (
+        "stats.correlation_tools stats.covariance stats.sandwich_covariance stats.regularized_covariance "
+        "stats.moment_helpers stats.multivariate stats.multivariate_tools stats.dist_dependence_measures "
+        "multivariate.pca multivariate.factor"
+    ).split()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return modules("statsmodels", names)
+
+
+def scipy_cov() -> list[Rec]:
+    """The matrix-variate and covariance-adjacent names of scipy (already counted in the scipy list)."""
+    st = mod("scipy.stats")
+    sl = mod("scipy.linalg")
+    names = (
+        "multivariate_normal multivariate_t wishart invwishart matrix_normal matrix_t random_correlation ortho_group "
+        "special_ortho_group unitary_group dirichlet_multinomial"
+    ).split()
+    recs = [rec("scipy.stats", n, getattr(st, n), "distribution") for n in names if hasattr(st, n)]
+    recs += [rec("scipy.linalg", n, getattr(sl, n)) for n in "sqrtm logm expm fractional_matrix_power cholesky".split()]
+    recs += from_all(
+        "scipy.stats", "scipy.stats", {"cov", "pearsonr", "spearmanr", "kendalltau", "chatterjeexi", "somersd"}
+    )
+    recs += [rec("scipy.spatial.distance", "mahalanobis", mod("scipy.spatial.distance").mahalanobis)]
+    recs += [rec("scipy.cluster.vq", "whiten", mod("scipy.cluster.vq").whiten)]
+    return recs
+
+
+def pyriemann() -> tuple[list[Rec], str]:
+    parts = (
+        "estimation geometry.covariance geometry.base geometry.mean geometry.median geometry.distance "
+        "geometry.geodesic "
+        "geometry.tangentspace geometry.kernel geometry.ajd geometry.test preprocessing tangentspace "
+        "spatialfilters "
+        "artifact_detection datasets.sampling datasets.simulated utils.viz"
+    ).split()
+    recs, ver = src_api("pyriemann", "pyriemann", [f"pyriemann.{p}" for p in parts])
+    return recs, ver
+
+
+def skfolio() -> tuple[list[Rec], str]:
+    parts = (
+        "moments.covariance moments.variance moments.expected_returns prior distance uncertainty_set pre_selection "
+        "model_selection utils.stats"
+    ).split()
+    return src_api("skfolio", "skfolio", [f"skfolio.{p}" for p in parts])
+
+
+def pypfopt() -> tuple[list[Rec], str]:
+    return src_api("pyportfolioopt", "pypfopt", ["pypfopt.risk_models", "pypfopt.plotting"])
+
+
+def riskfolio() -> tuple[list[Rec], str]:
+    return src_api(
+        "riskfolio_lib",
+        "riskfolio",
+        ["riskfolio.AuxFunctions", "riskfolio.GerberStatistic", "riskfolio.ParamsEstimation", "riskfolio.DBHT"],
+    )
+
+
+def skggm() -> tuple[list[Rec], str]:
+    parts = (
+        "adaptive_graph_lasso inverse_covariance metrics model_average quic_graph_lasso rank_correlation "
+        "profiling.monte_carlo_profile profiling.metrics profiling.graphs"
+    ).split()
+    return src_api("skggm", "skggm-0.2.8/inverse_covariance", [f"inverse_covariance.{p}" for p in parts])
+
+
+def gglasso() -> tuple[list[Rec], str]:
+    parts = (
+        "problem solver.admm_solver solver.single_admm_solver solver.ppdna_solver helper.model_selection "
+        "helper.data_generation"
+    ).split()
+    return src_api("gglasso", "gglasso", [f"gglasso.{p}" for p in parts])
+
+
+def regain() -> tuple[list[Rec], str]:
+    parts = (
+        "covariance.graphical_lasso_ covariance.time_graphical_lasso_ covariance.kernel_time_graphical_lasso_ "
+        "covariance.latent_graphical_lasso_ covariance.latent_time_graphical_lasso_ "
+        "covariance.kernel_latent_time_graphical_lasso_ covariance.missing_graphical_lasso_ "
+        "covariance.infimal_convolution_ "
+        "bayesian.gwishart_inference bayesian.wishart_distribution_ bayesian.wishart_process_ "
+        "generalized_linear_model.glm_gaussian generalized_linear_model.glm_ising generalized_linear_model.glm_poisson "
+        "model_selection.stability_optimization scores discriminant_analysis datasets.gaussian"
+    ).split()
+    return src_api("regain", "regain", [f"regain.{p}" for p in parts])
+
+
+def robpy() -> tuple[list[Rec], str]:
+    parts = (
+        "covariance.mcd covariance.cellmcd covariance.ogk covariance.kendall covariance.wrapping "
+        "covariance.initial_ddcw "
+        "outliers.ddc pca.robpca pca.spca utils.outlyingness utils.median regression.lts regression.mm regression.s "
+        "univariate.onestep_m univariate.mcd univariate.qn univariate.tau"
+    ).split()
+    return src_api("robpy", "robpy", [f"robpy.{p}" for p in parts])
+
+
+def rmt_denoise() -> tuple[list[Rec], str]:
+    return src_api(
+        "rmt_denoise", "rmt_denoise", ["rmt_denoise.mp_law", "rmt_denoise.generalized_cov", "rmt_denoise.core"]
+    )
+
+
+def geomstats() -> tuple[list[Rec], str]:
+    parts = "spd_matrices full_rank_correlation_matrices positive_lower_triangular_matrices symmetric_matrices".split()
+    return src_api("geomstats", "geomstats", [f"geomstats.geometry.{p}" for p in parts])
+
+
+def pymanopt() -> tuple[list[Rec], str]:
+    parts = "positive_definite psd positive fixed_rank".split()
+    return src_api("pymanopt", "pymanopt", [f"pymanopt.manifolds.{p}" for p in parts])
+
+
+def arch_cov() -> tuple[list[Rec], str]:
+    return src_api("arch", "arch", ["arch.covariance.kernel"])
+
+
+def nilearn_connectome() -> tuple[list[Rec], str]:
+    return src_api(
+        "nilearn", "nilearn", ["nilearn.connectome.connectivity_matrices", "nilearn.connectome.group_sparse_cov"]
+    )
+
+
+def mne_cov() -> tuple[list[Rec], str]:
+    return src_api("mne", "mne", ["mne.cov"])
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     jobs: list[tuple[str, Callable[[], list[Rec]], str | None]] = [
@@ -775,8 +988,36 @@ def main() -> None:
         ("numpy", numpy, None),
         ("torchvision_models", torchvision_models, "torchvision"),
         ("crf_libraries", crf_libraries, "sklearn-crfsuite"),
+        ("sklearn_covariance", sklearn_covariance, "scikit-learn"),
+        ("statsmodels_cov", statsmodels_cov, "statsmodels"),
+        ("scipy_cov", scipy_cov, "scipy"),
+    ]
+    sources: list[tuple[str, Callable[[], tuple[list[Rec], str]]]] = [
+        ("pyriemann", pyriemann),
+        ("skfolio", skfolio),
+        ("pypfopt", pypfopt),
+        ("riskfolio", riskfolio),
+        ("skggm", skggm),
+        ("gglasso", gglasso),
+        ("regain", regain),
+        ("robpy", robpy),
+        ("rmt_denoise", rmt_denoise),
+        ("geomstats", geomstats),
+        ("pymanopt", pymanopt),
+        ("arch_cov", arch_cov),
+        ("nilearn_connectome", nilearn_connectome),
+        ("mne_cov", mne_cov),
     ]
     only = set(sys.argv[1:])
+    if src_root() is not None:
+        for lib, src_fn in sources:
+            if only and lib not in only:
+                continue
+            try:
+                found, ver = src_fn()
+                dump(lib, found, ver=ver)
+            except Exception as exc:  # noqa: BLE001
+                print(f"FAILED {lib}: {exc!r}", file=sys.stderr)
     for lib, fn, dist in jobs:
         if only and lib not in only:
             continue

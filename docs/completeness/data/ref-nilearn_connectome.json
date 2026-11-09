@@ -1,0 +1,85 @@
+{
+"library": "nilearn_connectome",
+"version": "0.14.1",
+"source": "introspection",
+"entries": [
+{
+"area": "nilearn.connectome.connectivity_matrices",
+"name": "ConnectivityMeasure",
+"kind": "class",
+"doc": "A class that computes different kinds of        :term:`functional connectivity` matrices."
+},
+{
+"area": "nilearn.connectome.connectivity_matrices",
+"name": "cov_to_corr",
+"kind": "function",
+"doc": "Return correlation matrix for a given covariance matrix."
+},
+{
+"area": "nilearn.connectome.connectivity_matrices",
+"name": "prec_to_partial",
+"kind": "function",
+"doc": "Return partial correlation matrix for a given precision matrix."
+},
+{
+"area": "nilearn.connectome.connectivity_matrices",
+"name": "sym_matrix_to_vec",
+"kind": "function",
+"doc": "Return the flattened lower triangular part of an array."
+},
+{
+"area": "nilearn.connectome.connectivity_matrices",
+"name": "vec_to_sym_matrix",
+"kind": "function",
+"doc": "Return the symmetric matrix given its flattened lower triangular part."
+},
+{
+"area": "nilearn.connectome.group_sparse_cov",
+"name": "EarlyStopProbe",
+"kind": "class",
+"doc": "Callable probe for early stopping in GroupSparseCovarianceCV."
+},
+{
+"area": "nilearn.connectome.group_sparse_cov",
+"name": "GroupSparseCovariance",
+"kind": "class",
+"doc": "Covariance and precision matrix estimator."
+},
+{
+"area": "nilearn.connectome.group_sparse_cov",
+"name": "GroupSparseCovarianceCV",
+"kind": "class",
+"doc": "Sparse inverse covariance w/ cross-validated choice of the parameter."
+},
+{
+"area": "nilearn.connectome.group_sparse_cov",
+"name": "compute_alpha_max",
+"kind": "function",
+"doc": "Compute the critical value of the regularization parameter."
+},
+{
+"area": "nilearn.connectome.group_sparse_cov",
+"name": "empirical_covariances",
+"kind": "function",
+"doc": "Compute empirical covariances for several signals."
+},
+{
+"area": "nilearn.connectome.group_sparse_cov",
+"name": "group_sparse_covariance",
+"kind": "function",
+"doc": "Compute sparse precision matrices and covariance matrices."
+},
+{
+"area": "nilearn.connectome.group_sparse_cov",
+"name": "group_sparse_covariance_path",
+"kind": "function",
+"doc": "Get estimated precision matrices for different values of alpha."
+},
+{
+"area": "nilearn.connectome.group_sparse_cov",
+"name": "group_sparse_scores",
+"kind": "function",
+"doc": "Compute scores used by group_sparse_covariance."
+}
+]
+}

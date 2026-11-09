@@ -1,0 +1,145 @@
+{
+"library": "scipy_cov",
+"version": "1.18.1",
+"source": "introspection",
+"entries": [
+{
+"area": "scipy.cluster.vq",
+"name": "whiten",
+"kind": "function",
+"doc": "Normalize a group of observations on a per feature basis."
+},
+{
+"area": "scipy.linalg",
+"name": "cholesky",
+"kind": "function",
+"doc": "Compute the Cholesky decomposition of a matrix."
+},
+{
+"area": "scipy.linalg",
+"name": "expm",
+"kind": "function",
+"doc": "Compute the matrix exponential of an array."
+},
+{
+"area": "scipy.linalg",
+"name": "fractional_matrix_power",
+"kind": "function",
+"doc": "Compute the fractional power of a matrix."
+},
+{
+"area": "scipy.linalg",
+"name": "logm",
+"kind": "function",
+"doc": "Compute matrix logarithm."
+},
+{
+"area": "scipy.linalg",
+"name": "sqrtm",
+"kind": "function",
+"doc": "Compute, if exists, the matrix square root."
+},
+{
+"area": "scipy.spatial.distance",
+"name": "mahalanobis",
+"kind": "function",
+"doc": "Compute the Mahalanobis distance between two 1-D arrays."
+},
+{
+"area": "scipy.stats",
+"name": "chatterjeexi",
+"kind": "function",
+"doc": "Compute the xi correlation and perform a test of independence."
+},
+{
+"area": "scipy.stats",
+"name": "dirichlet_multinomial",
+"kind": "distribution",
+"doc": "A Dirichlet multinomial random variable."
+},
+{
+"area": "scipy.stats",
+"name": "invwishart",
+"kind": "distribution",
+"doc": "An inverse Wishart random variable."
+},
+{
+"area": "scipy.stats",
+"name": "kendalltau",
+"kind": "function",
+"doc": "Calculate Kendall's tau, a correlation measure for ordinal data."
+},
+{
+"area": "scipy.stats",
+"name": "matrix_normal",
+"kind": "distribution",
+"doc": "A matrix normal random variable."
+},
+{
+"area": "scipy.stats",
+"name": "matrix_t",
+"kind": "distribution",
+"doc": "A matrix t-random variable."
+},
+{
+"area": "scipy.stats",
+"name": "multivariate_normal",
+"kind": "distribution",
+"doc": "A multivariate normal random variable."
+},
+{
+"area": "scipy.stats",
+"name": "multivariate_t",
+"kind": "distribution",
+"doc": "A multivariate t-distributed random variable."
+},
+{
+"area": "scipy.stats",
+"name": "ortho_group",
+"kind": "distribution",
+"doc": "An Orthogonal matrix (O(N)) random variable."
+},
+{
+"area": "scipy.stats",
+"name": "pearsonr",
+"kind": "function",
+"doc": "Pearson correlation coefficient and p-value for testing non-correlation."
+},
+{
+"area": "scipy.stats",
+"name": "random_correlation",
+"kind": "distribution",
+"doc": "A random correlation matrix."
+},
+{
+"area": "scipy.stats",
+"name": "somersd",
+"kind": "function",
+"doc": "Calculates Somers' D, an asymmetric measure of ordinal association."
+},
+{
+"area": "scipy.stats",
+"name": "spearmanr",
+"kind": "function",
+"doc": "Calculate a Spearman correlation coefficient with associated p-value."
+},
+{
+"area": "scipy.stats",
+"name": "special_ortho_group",
+"kind": "distribution",
+"doc": "A Special Orthogonal matrix (SO(N)) random variable."
+},
+{
+"area": "scipy.stats",
+"name": "unitary_group",
+"kind": "distribution",
+"doc": "A matrix-valued U(N) random variable."
+},
+{
+"area": "scipy.stats",
+"name": "wishart",
+"kind": "distribution",
+"doc": "A Wishart random variable."
+}
+]
+}

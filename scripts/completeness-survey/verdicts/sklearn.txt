@@ -20,7 +20,8 @@ A | SpectralBiclustering|SpectralCoclustering | datasets#makeBiclusters | only t
 # ---- compose, pipeline
 F | make_column_transformer|make_column_selector|make_union | learn#columnTransformer, learn#featureUnion | | | | |
 # ---- covariance
-F | GraphicalLassoCV|fast_mcd|ledoit_wolf_shrinkage | covariance#graphicalLasso, covariance#fastMcdAlgorithm, stats#ledoitWolf | | | | |
+P | GraphicalLassoCV | covariance#graphicalLassoEstimator | the penalty chosen by cross-validated held-out likelihood on a refined grid: omai draws the regularisation path (pathPenalties) but has no estimator that picks alpha by cross-validation, EBIC or stability; see covariance.md | covariance/graph-selection.ts | S | high | graphical lasso model selection
+F | fast_mcd|ledoit_wolf_shrinkage | covariance#fastMcdAlgorithm, stats#ledoitWolf | | | | |
 # ---- decomposition
 P | TruncatedSVD | numerics/linalg#svd, text#lsa | the SVD and LSA exist; no estimator that is PCA without centring on sparse input | decomposition/truncated-svd.ts | S | medium | decomposition wrappers
 A | DictionaryLearning|MiniBatchDictionaryLearning|SparseCoder|dict_learning|dict_learning_online | decomposition#convolutionalDictionaryMethod | only the convolutional version exists; plain sparse coding and dictionary learning (K-SVD, online) are absent | decomposition/dictionary-learning.ts | M | medium | dictionary learning and sparse coding

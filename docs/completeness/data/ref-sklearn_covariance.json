@@ -1,0 +1,103 @@
+{
+"library": "sklearn_covariance",
+"version": "1.9.1",
+"source": "introspection",
+"entries": [
+{
+"area": "sklearn.covariance",
+"name": "EllipticEnvelope",
+"kind": "class",
+"doc": "An object for detecting outliers in a Gaussian distributed dataset."
+},
+{
+"area": "sklearn.covariance",
+"name": "EmpiricalCovariance",
+"kind": "class",
+"doc": "Maximum likelihood covariance estimator."
+},
+{
+"area": "sklearn.covariance",
+"name": "GraphicalLasso",
+"kind": "class",
+"doc": "Sparse inverse covariance estimation with an l1-penalized estimator."
+},
+{
+"area": "sklearn.covariance",
+"name": "GraphicalLassoCV",
+"kind": "class",
+"doc": "Sparse inverse covariance w/ cross-validated choice of the l1 penalty."
+},
+{
+"area": "sklearn.covariance",
+"name": "LedoitWolf",
+"kind": "class",
+"doc": "LedoitWolf Estimator."
+},
+{
+"area": "sklearn.covariance",
+"name": "MinCovDet",
+"kind": "class",
+"doc": "Minimum Covariance Determinant (MCD): robust estimator of covariance."
+},
+{
+"area": "sklearn.covariance",
+"name": "OAS",
+"kind": "class",
+"doc": "Oracle Approximating Shrinkage Estimator."
+},
+{
+"area": "sklearn.covariance",
+"name": "ShrunkCovariance",
+"kind": "class",
+"doc": "Covariance estimator with shrinkage."
+},
+{
+"area": "sklearn.covariance",
+"name": "empirical_covariance",
+"kind": "function",
+"doc": "Compute the Maximum likelihood covariance estimator."
+},
+{
+"area": "sklearn.covariance",
+"name": "fast_mcd",
+"kind": "function",
+"doc": "Estimate the Minimum Covariance Determinant matrix."
+},
+{
+"area": "sklearn.covariance",
+"name": "graphical_lasso",
+"kind": "function",
+"doc": "L1-penalized covariance estimator."
+},
+{
+"area": "sklearn.covariance",
+"name": "ledoit_wolf",
+"kind": "function",
+"doc": "Estimate the shrunk Ledoit-Wolf covariance matrix."
+},
+{
+"area": "sklearn.covariance",
+"name": "ledoit_wolf_shrinkage",
+"kind": "function",
+"doc": "Estimate the shrunk Ledoit-Wolf covariance matrix."
+},
+{
+"area": "sklearn.covariance",
+"name": "log_likelihood",
+"kind": "function",
+"doc": "Compute the sample mean of the log_likelihood under a covariance model."
+},
+{
+"area": "sklearn.covariance",
+"name": "oas",
+"kind": "function",
+"doc": "Estimate covariance with the Oracle Approximating Shrinkage."
+},
+{
+"area": "sklearn.covariance",
+"name": "shrunk_covariance",
+"kind": "function",
+"doc": "Calculate covariance matrices shrunk on the diagonal."
+}
+]
+}

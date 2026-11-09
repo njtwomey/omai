@@ -1,0 +1,12 @@
+[
+{"lib":"pymc_priors","area":"priors","name":"LKJCorr","status":"full","how":"verdict","omai":"dists#lkj, #lkjCholesky"},
+{"lib":"pymc_priors","area":"priors","name":"LKJCholeskyCov","status":"full","how":"verdict","omai":"dists#lkj, #lkjCholesky"},
+{"lib":"pymc_priors","area":"priors","name":"Wishart","status":"full","how":"verdict","omai":"dists#wishart, #inverseWishart, #multivariateNormal, #matrixNormal"},
+{"lib":"pymc_priors","area":"priors","name":"WishartBartlett","status":"absent","how":"verdict","note":"the Bartlett factorisation of a Wishart draw: a Cholesky sampler for the Wishart and a way to parametrise it without a matrix variate","home":"dists/multivariate/matrix.ts","size":"S","priority":"low","group":"Bayesian covariance models"},
+{"lib":"pymc_priors","area":"priors","name":"InverseWishart","status":"full","how":"verdict","omai":"dists#wishart, #inverseWishart, #multivariateNormal, #matrixNormal"},
+{"lib":"pymc_priors","area":"priors","name":"MvNormal","status":"full","how":"verdict","omai":"dists#wishart, #inverseWishart, #multivariateNormal, #matrixNormal"},
+{"lib":"pymc_priors","area":"priors","name":"MvStudentT","status":"absent","how":"verdict","note":"see scipy multivariate_t","home":"dists/multivariate/student-t.ts","size":"S","priority":"high","group":"multivariate Student t and its EM fit"},
+{"lib":"pymc_priors","area":"priors","name":"MatrixNormal","status":"full","how":"verdict","omai":"dists#wishart, #inverseWishart, #multivariateNormal, #matrixNormal"},
+{"lib":"pymc_priors","area":"priors","name":"KroneckerNormal","status":"absent","how":"verdict","omai":"dists#matrixNormal, numerics/linalg#kroneckerSolve","note":"the normal with a Kronecker-structured covariance: the matrix-normal as a vectorised distribution, with fast solves","home":"dists/multivariate/normal.ts","size":"S","priority":"low","group":"sparse and structured covariance"},
+{"lib":"pymc_priors","area":"priors","name":"MvGaussianRandomWalk","status":"full","how":"verdict","omai":"dists#wishart, #inverseWishart, #multivariateNormal, #matrixNormal"}
+]

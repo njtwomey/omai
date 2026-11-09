@@ -1,0 +1,85 @@
+{
+"library": "rmt_denoise",
+"version": "2.3.0",
+"source": "introspection",
+"entries": [
+{
+"area": "rmt_denoise.core",
+"name": "compute_G_minus",
+"kind": "function",
+"doc": "Lower noise edge:"
+},
+{
+"area": "rmt_denoise.core",
+"name": "compute_G_plus",
+"kind": "function",
+"doc": "Upper noise edge: G_+(a, beta, y) = min_{-1/a < t < 0} g(t)"
+},
+{
+"area": "rmt_denoise.core",
+"name": "compute_P4_coefficients",
+"kind": "function",
+"doc": "Coefficients of P_4(t) = c4*t^4 + c3*t^3 + c2*t^2 + c1*t + c0"
+},
+{
+"area": "rmt_denoise.core",
+"name": "compute_discriminant",
+"kind": "function",
+"doc": "Compute the discriminant Delta from Yu (2025) eq. (6)/(13)."
+},
+{
+"area": "rmt_denoise.core",
+"name": "compute_explicit_support",
+"kind": "function",
+"doc": "Compute the explicit support intervals using the discriminant."
+},
+{
+"area": "rmt_denoise.core",
+"name": "compute_support_bounds",
+"kind": "function",
+"doc": "Compute the support of the noise eigenvalue distribution."
+},
+{
+"area": "rmt_denoise.core",
+"name": "g_derivative",
+"kind": "function",
+"doc": "Derivative g'(t) = 1/t^2 - y*beta*a^2/(1+at)^2 - y*(1-beta)/(1+t)^2"
+},
+{
+"area": "rmt_denoise.core",
+"name": "g_function",
+"kind": "function",
+"doc": "The critical-point function g(t) from Yu (2025):"
+},
+{
+"area": "rmt_denoise.core",
+"name": "images_to_matrix",
+"kind": "function",
+"doc": "Convert a stack of grayscale images to a data matrix."
+},
+{
+"area": "rmt_denoise.core",
+"name": "matrix_to_images",
+"kind": "function",
+"doc": "Convert a data matrix back to a stack of grayscale images."
+},
+{
+"area": "rmt_denoise.core",
+"name": "svd_denoise",
+"kind": "function",
+"doc": "Shared SVD reconstruction: zero out noise components and rebuild X."
+},
+{
+"area": "rmt_denoise.generalized_cov",
+"name": "GeneralizedCovDenoiser",
+"kind": "class",
+"doc": "Generalized Covariance Matrix denoiser \u2014 best (a, \u03b2) by oracle search."
+},
+{
+"area": "rmt_denoise.mp_law",
+"name": "MPLawDenoiser",
+"kind": "class",
+"doc": "Marcenko-Pastur law image denoiser."
+}
+]
+}

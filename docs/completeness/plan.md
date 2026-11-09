@@ -67,6 +67,13 @@ estimator wrappers for things that exist only as algorithms (`kmeans`, `gaussian
 describable; item 29), the missing anomaly detectors (item 13) and the regression diagnostics statsmodels users expect (item 15). None
 is deep. Together they remove the "it is not quite what I expected" moments.
 
+**Covariance, precision and correlation estimation** (a third pass, [covariance.md](covariance.md)). The first two passes called this area complete because `sklearn.covariance`
+is fully covered; against pyRiemann, skfolio, skggm, robpy, geomstats and the R packages it is the same shape as the CRFs: a strong core (shrinkage, FastMCD, a traced graphical lasso)
+and no ring. The ring is the random-matrix toolbox (Marchenko-Pastur, denoising, nonlinear shrinkage), the choice of the graphical-lasso penalty, shrinkage targets, nearest-correlation repair, HAC
+covariance, running and exponentially weighted covariance, SPD geometry, robust scatter beyond MCD and the covariance tests. Several of these are the best fit for omai's identity
+(a Marchenko-Pastur eigenvalue plot with denoising, the graphical-lasso path with the stepped solver, the geodesic of two covariance ellipses, shrinkage intensity as a slider). Two batches,
+spectra and shrinkage, and graphs and selection, are worth taking early.
+
 **Second tier.** Competing risks and survival extras, recurrent and action-masked policies for PPO, classic board games and one more
 control task, causal attribution and policy learning, and the missing named distributions (items 17, 18, 22, 23, 24). Worth doing,
 each for a smaller audience.
@@ -87,7 +94,7 @@ omai, and what a good library of this kind should have. They agree on a few poin
 ## A sensible order
 
 1. **Quick, visible wins** (weeks, not months): the posterior diagnostic charts, the estimator wrappers and named networks, the Bayesian
-   network benchmarks, `Readout` and the small numerics for the notes. These need little new design and each shows up immediately.
+   network benchmarks, the covariance batches that are mostly small (penalty selection for the graphical lasso, shrinkage targets, nearest correlation, HAC), `Readout` and the small numerics for the notes. These need little new design and each shows up immediately.
 2. **The time-series framework**: the largest single hole against statsmodels and sktime, and the one most users reach.
 3. **Graph learning pipeline**: batching, splits, datasets and the missing layers, one worked example end to end.
 4. **The paradigm family** (metric learning with miners, meta-learning, continual and federated, self-supervised): each can ship alone,
