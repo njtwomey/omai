@@ -1,0 +1,91 @@
+{
+"library": "arch_cov",
+"version": "8.0.0",
+"source": "introspection",
+"entries": [
+{
+"area": "arch.covariance.kernel",
+"name": "Andrews",
+"kind": "class",
+"doc": "Alternative name of the QuadraticSpectral covariance estimator."
+},
+{
+"area": "arch.covariance.kernel",
+"name": "Bartlett",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "arch.covariance.kernel",
+"name": "CovarianceEstimate",
+"kind": "class",
+"doc": "Covariance estimate using a long-run covariance estimator"
+},
+{
+"area": "arch.covariance.kernel",
+"name": "CovarianceEstimator",
+"kind": "class",
+"doc": "%(kernel_name)s kernel covariance estimation."
+},
+{
+"area": "arch.covariance.kernel",
+"name": "Gallant",
+"kind": "class",
+"doc": "Alternative name for Parzen covariance estimator."
+},
+{
+"area": "arch.covariance.kernel",
+"name": "NeweyWest",
+"kind": "class",
+"doc": "Alternative name for Bartlett covariance estimator."
+},
+{
+"area": "arch.covariance.kernel",
+"name": "Parzen",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "arch.covariance.kernel",
+"name": "ParzenCauchy",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "arch.covariance.kernel",
+"name": "ParzenGeometric",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "arch.covariance.kernel",
+"name": "ParzenRiesz",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "arch.covariance.kernel",
+"name": "QuadraticSpectral",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "arch.covariance.kernel",
+"name": "TukeyHamming",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "arch.covariance.kernel",
+"name": "TukeyHanning",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "arch.covariance.kernel",
+"name": "TukeyParzen",
+"kind": "class",
+"doc": ""
+}
+]
+}

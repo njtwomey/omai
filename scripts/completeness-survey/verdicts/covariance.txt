@@ -1,0 +1,467 @@
+# Covariance, precision and correlation estimation (third pass). status | name | nearest omai | note | home | size | priority | group
+# omai's side: covariance/ (shrinkage.ts, robust.ts, graphical-lasso.ts), stats/covariance.ts, stats/correlation.ts, decomposition/probabilistic.ts,
+# dists/multivariate/matrix.ts (wishart, inverseWishart, lkj, matrixNormal), numerics/linalg (cholesky, sqrtm, logm, toeplitz),
+# optim/proximal.ts (projectPsd), stats/tests/multivariate.ts (boxM, hotellingT2, mardia, manova), sampling/hamiltonian/adaptation.ts
+# (a streaming regularised covariance for the mass matrix). Verdicts were made against the export list (16,757 names) and the source.
+# Libraries read from unpacked source (pyriemann, skfolio, pypfopt, riskfolio, skggm, gglasso, regain, robpy, rmt_denoise, geomstats,
+# pymanopt, arch, nilearn, mne) were not imported; installed ones (sklearn, statsmodels, scipy) were introspected. The r_* lists are the
+# CRAN reference-manual indexes; the other lists are written from memory (concepts, not release-accurate names).
+
+# ===================================================================== sklearn.covariance (re-listed from the first pass)
+@lib sklearn_covariance
+F | EmpiricalCovariance|empirical_covariance | covariance#covarianceEstimator, stats#empiricalCovariance | | | | |
+F | ShrunkCovariance|shrunk_covariance | covariance#covarianceEstimator (method shrunk), stats#shrunkCovariance | | | | |
+F | LedoitWolf|ledoit_wolf|ledoit_wolf_shrinkage | covariance#covarianceEstimator (method ledoit-wolf), stats#ledoitWolf | | | | |
+F | OAS|oas | covariance#covarianceEstimator (method oas), stats#oas | | | | |
+F | MinCovDet|fast_mcd | covariance#minCovDet, #fastMcdAlgorithm (concentration steps traced) | | | | |
+F | EllipticEnvelope | covariance#ellipticEnvelope | | | | |
+F | GraphicalLasso|graphical_lasso | covariance#graphicalLassoEstimator, #graphicalLassoAlgorithm | | | | |
+P | GraphicalLassoCV | covariance#graphicalLassoEstimator (pathPenalties for the exposition only) | the penalty is chosen by cross-validated held-out likelihood on a refined grid; omai draws the path of partial correlations over a grid but has no estimator that picks alpha by CV, EBIC or stability | covariance/graph-selection.ts | S | high | graphical lasso model selection
+F | log_likelihood | covariance#CovarianceVerbs (score) | the mean Gaussian log likelihood is the `score` verb of every fitted covariance; `probprog#logLikelihood`, the name match of the first pass, is a different thing | | | |
+
+# ===================================================================== statsmodels (introspected slice, re-listed)
+@lib statsmodels_cov
+F | PCA|pca|Factor|FactorResults | decomposition#pca, #factorAnalysis, #latentCovariance | | | | |
+P | rotate_factors|promax | decomposition#rotateLoadings | varimax and quartimax only; promax and the oblique rotations (oblimin, geomin) are not there | decomposition/rotation.ts | S | low | factor-model and low-rank covariance
+F | cov_hc0|cov_hc1|cov_hc2|cov_hc3|cov_white_simple | linear#olsSummary (covType HC0 to HC3) | | | | |
+A | cov_hac|cov_nw_panel|weights_bartlett|weights_uniform | linear#CovarianceType (HC0 to HC3 only) | Newey-West and Andrews HAC standard errors for any regression, with the Bartlett and uniform lag weights: the next thing a statsmodels user asks of `olsSummary` | linear/robust-cov.ts | S | high | time-varying and long-run covariance
+A | cov_cluster|cov_cluster_2groups | causal#differenceInDifferences (cluster-robust inside DiD only) | cluster-robust and two-way cluster-robust sandwich covariance for any linear model | linear/robust-cov.ts | S | medium | time-varying and long-run covariance
+A | corr_nearest|cov_nearest|corr_clipped|clip_evals|CovNearestResult | optim#projectPsd (the PSD projection of one Higham step) | nearest PSD correlation and covariance matrix by alternating projections (Higham 2002), eigenvalue clipping: what to do when a pairwise or shrunk estimate is not positive semi-definite | covariance/nearest.ts | S | high | nearest correlation and covariance repair
+A | corr_thresholded|kernel_covariance|MultivariateKernel|GaussianMultivariateKernel | | thresholded correlation (a sparse estimator) and covariance as a kernel-smoothed function of a covariate | covariance/structured.ts | S | low | sparse and structured covariance
+A | corr_nearest_factor|cov_nearest_factor_homog|FactoredPSDMatrix | decomposition#factorAnalysis | nearest correlation or covariance with factor structure (low rank plus a constant diagonal), by projection | covariance/nearest.ts | M | medium | nearest correlation and covariance repair
+P | corr_rank|corr_normal_scores|corr_quadrant|transform_corr_normal|TransformCorrNormalResult | stats#spearman, #kendallTau, dists#kendallTauMatrix | rank, normal-score and quadrant correlation matrices, and the transform that makes a rank correlation a Gaussian one (the nonparanormal input); only pairwise tests and the Kendall matrix exist | covariance/rank.ts | S | medium | rank-based and robust correlation matrices
+F | distance_covariance|distance_correlation|distance_variance|distance_statistics|distance_covariance_test|DistDependStat | stats#distanceCorrelation, stats/tests#distanceCovarianceTest | | | | |
+F | test_mvmean|test_mvmean_2indep|HotellingResult | stats/tests#hotellingT2 | | | | |
+P | confint_mvmean|confint_mvmean_fromstats | stats/tests#hotellingT2 | simultaneous confidence intervals for a mean vector (Hotelling and Bonferroni) | stats/tests/multivariate.ts | S | low | covariance and correlation tests
+F | test_cov_oneway|CovOnewayResult | stats/tests#boxM | | | | |
+A | test_cov|test_cov_diagonal|test_cov_blockdiagonal|test_cov_spherical|CovTestResult | stats/tests#boxM (equality across groups only) | one-sample tests that a covariance equals a given matrix, is diagonal, block diagonal or spherical (Ledoit-Wolf and John-type statistics): the tests that tell a user whether a shrinkage or a graph is warranted | stats/tests/covariance.ts | M | high | covariance and correlation tests
+F | cov2corr|corr2cov|Cov2CorrResult | stats#corrcoef (numpy-style), covariance/ precision verbs | the conversion is two lines; no named export | | | |
+P | se_cov | | standard errors of a covariance matrix's entries (the square root of the diagonal): trivial | | | |
+A | mc2mnc|mnc2mc|cum2mc|mnc2cum|mc2cum|mvsk2mc|mvsk2mnc|mc2mvsk|mnc2mvsk | stats#moment | conversions between raw moments, central moments, cumulants and mean-variance-skew-kurtosis: moment helpers, not covariance | stats/moments.ts | S | low | moment conversions
+P | CCRankTestResult|cc_ranktest|CCStatsResult|cc_stats|PartialProjectResult|partial_project|cancorr | decomposition#cca | canonical correlation exists; rank tests of canonical correlations (Cragg-Donald style) and partial projections do not | decomposition/cca-tests.ts | S | low | covariance and correlation tests
+A | RegularizedInvCovariance | covariance#graphicalLassoEstimator | statsmodels' nodewise (neighbourhood) regularised inverse covariance: one penalised regression per variable, the Meinshausen-Buhlmann idea with a debiased estimate | covariance/neighbourhood.ts | M | medium | neighbourhood and nonparanormal graph estimators
+
+# ===================================================================== scipy slice (re-listed)
+@lib scipy_cov
+F | multivariate_normal | dists#multivariateNormal | | | | |
+F | wishart|invwishart | dists#wishart, #inverseWishart | | | | |
+F | matrix_normal | dists#matrixNormal | | | | |
+F | random_correlation | dists#lkj, #lkjCholesky | LKJ sampling gives random correlation matrices; scipy's fixed-eigenvalue construction (Davies-Higham) is not there | | | |
+A | multivariate_t | dists#studentT, #studentTCopula | the multivariate Student t (mean, scale matrix, df): the heavy-tailed alternative a robust-covariance user reaches for; only the univariate t and the t copula exist | dists/multivariate/student-t.ts | S | high | multivariate Student t and its EM fit
+A | matrix_t | dists#matrixNormal | matrix-variate t | dists/multivariate/matrix.ts | S | low | multivariate Student t and its EM fit
+A | ortho_group|special_ortho_group|unitary_group | foundations#rotations | Haar-distributed orthogonal, rotation and unitary matrices: the building block of random covariance matrices with a prescribed spectrum and of spiked models | random/matrices.ts | S | medium | data generators with known covariance
+F | sqrtm|logm|expm|fractional_matrix_power|cholesky | numerics/linalg#sqrtm, #logm, #expm, #matrixPower, #cholesky | | | | |
+F | mahalanobis | distances#mahalanobisDistance | | | | |
+F | whiten | decomposition#pca (whiten), numerics/spatial#whiten | | | | |
+F | pearsonr|spearmanr|kendalltau|somersd|chatterjeexi | stats#pearson, #spearman, #kendallTau | | | | |
+P | dirichlet_multinomial | dists | not a covariance object | | | |
+
+# ===================================================================== pyriemann 0.12 (read from source)
+@lib pyriemann
+@area pyriemann.estimation
+P | Covariances | covariance#covarianceEstimator | the estimator that turns each trial of a set of multichannel signals into one SPD matrix (scm, lwf, oas, mcd, corr and others); omai estimates one covariance per data matrix, not one per trial of a batch | covariance/trials.ts | S | medium | SPD geometry
+P | Shrinkage | covariance#covarianceEstimator | covariance with a shrinkage intensity applied per trial | covariance/trials.ts | S | low | SPD geometry
+A | ERPCovariances|XdawnCovariances | | event-related-potential prototypes appended to the signal before the covariance: EEG-specific | | | low | EEG covariance pipelines
+A | CrossSpectra|CoSpectra|Coherences | signal#welch, signal#csd, signal#coherence | frequency-resolved covariance (cross-spectral density) matrices per band; the spectral pieces exist, the Hermitian matrix per frequency does not | covariance/spectral.ts | M | low | EEG covariance pipelines
+A | BlockCovariances|TimeDelayCovariances|Kernels | decomposition#kernelPca | block-diagonal, Hankel (time-delay) and kernel Gram covariances of a trial | covariance/trials.ts | S | low | EEG covariance pipelines
+@area pyriemann.geometry.covariance
+P | covariances|covariance_scm|covariance_sch|covariances_X|eegtocov | covariance#covarianceEstimator, stats#cov | the sample covariance and Schaefer-Strimmer shrinkage (scm, sch): present as options of the estimator, in the one-matrix form | | | |
+A | covariance_mest | | Tyler, Huber and Student-t M-estimators of scatter by fixed-point iteration (the `mest` of pyRiemann): a traced fixed point | covariance/robust-scatter.ts | M | high | robust scatter estimators
+A | covariances_EP|block_covariances|cross_spectrum|cospectrum|coherence|get_nondiag_weight | | EEG helpers: event-related-potential covariances, block and spectral covariances | | | low | EEG covariance pipelines
+P | normalize | stats#corrcoef | normalise a covariance into a correlation, trace or determinant: one-liners | | | |
+@area pyriemann.geometry.base
+F | sqrtm|invsqrtm|logm|expm|powm|ctranspose | numerics/linalg#sqrtm, #logm, #expm, #matrixPower | the matrix functions of an SPD matrix by eigendecomposition: omai has sqrtm, logm and expm for general matrices; `invsqrtm` is `inv(sqrtm)` | | | |
+P | ddexpm|ddlogm | numerics/linalg#expmFrechet | directional derivatives of the matrix exponential and logarithm (used by the tangent-space maps); expmFrechet exists, logm's derivative does not | numerics/linalg/matrix-functions.ts | S | low | SPD geometry
+P | nearest_sym_pos_def | optim#projectPsd | the symmetric positive-definite repair by eigenvalue clipping | covariance/nearest.ts | S | medium | nearest correlation and covariance repair
+@area pyriemann.geometry.distance
+A | distance|pairwise_distance|distance_riemann|distance_logeuclid|distance_euclid|distance_logdet|distance_kullback|distance_kullback_right|distance_kullback_sym|distance_chol|distance_logchol|distance_poweuclid|distance_thompson|distance_harmonic | distances#mahalanobisDistance, dists#wasserstein2Gaussian | the metrics of the space of SPD matrices: affine-invariant (Riemann), log-Euclidean, log-determinant (S-divergence), Kullback, Cholesky and log-Cholesky, power-Euclidean, Thompson, harmonic. `wasserstein2Gaussian` is the Bures distance between two Gaussians (one of them) | covariance/spd/metrics.ts | M | high | SPD geometry
+A | distance_wasserstein | dists#wasserstein2Gaussian | the Bures-Wasserstein distance of two covariance matrices exists as the 2-Wasserstein distance between centred Gaussians | | | |
+A | distance_mahalanobis | distances#mahalanobisDistance | Mahalanobis distance of a point to a Gaussian in the SPD sense: exists for vectors | | | |
+@area pyriemann.geometry.geodesic
+A | geodesic|geodesic_riemann|geodesic_logeuclid|geodesic_euclid|geodesic_chol|geodesic_logchol|geodesic_thompson|geodesic_wasserstein | foundations#geodesic (curves on surfaces), manifold#geodesicDistances (graph) | interpolation along the geodesic between two SPD matrices under each metric: the picture of "why the Euclidean average of covariances is wrong" (the determinant swelling effect) | covariance/spd/geodesic.ts | M | high | SPD geometry
+@area pyriemann.geometry.mean
+A | mean_riemann|mean_logeuclid|mean_euclid|mean_logdet|mean_harmonic|mean_kullback_sym|mean_wasserstein|mean_ale|mean_alm|mean_chol|mean_logchol|mean_poweuclid|mean_power|mean_thompson|mean_bmp|mean_cheap|gmean|mean_covariance|maskedmean_riemann|nanmean_riemann | | means of a set of SPD matrices under each metric: the Karcher (Frechet) mean by a fixed-point (gradient) iteration is the one that can be watched converging | covariance/spd/means.ts | M | high | SPD geometry
+@area pyriemann.geometry.median
+A | median_euclid|median_riemann | | geometric median of SPD matrices (Weiszfeld on the manifold) | covariance/spd/means.ts | S | low | SPD geometry
+@area pyriemann.geometry.tangentspace
+A | tangent_space|untangent_space|log_map|exp_map|log_map_riemann|log_map_logeuclid|log_map_logchol|log_map_euclid|log_map_wasserstein|exp_map_riemann|exp_map_logeuclid|exp_map_logchol|exp_map_euclid|exp_map_wasserstein|upper|unupper|innerproduct|innerproduct_riemann|innerproduct_logeuclid|innerproduct_logchol|innerproduct_euclid|norm | | the logarithmic and exponential maps, the vectorisation `upper` and tangent-space embedding at a reference point: the step that lets any Euclidean classifier take covariance matrices as input | covariance/spd/tangent.ts | M | high | SPD geometry
+A | transport|transport_riemann|transport_logeuclid|transport_logchol|transport_euclid | | parallel transport of tangent vectors between points (domain adaptation of covariance sets) | covariance/spd/tangent.ts | S | low | SPD geometry
+@area pyriemann.geometry.kernel
+A | kernel|kernel_riemann|kernel_logeuclid|kernel_euclid | kernels | positive-definite kernels on SPD matrices (log-Euclidean, Riemannian) | covariance/spd/kernels.ts | S | low | SPD geometry
+@area pyriemann.geometry.ajd
+A | ajd|ajd_pham|rjd|uwedge | decomposition#fastIca | approximate joint diagonalisation of a set of matrices (Pham's algorithm, JADE's rotation, UWEDGE): the engine under ICA by second-order statistics and under AJDC | decomposition/joint-diagonalisation.ts | M | low | SPD geometry
+@area pyriemann.geometry.test
+F | is_pos_def|is_pos_semi_def|is_sym_pos_def|is_sym_pos_semi_def|is_herm_pos_def|is_herm_pos_semi_def | numerics/linalg#isPositiveDefinite | positive-definite test exists; the semi-definite and Hermitian variants are tolerance variants of it | | | |
+S | is_square|is_sym|is_skew_sym|is_hankel|is_real|is_real_type|is_hermitian | | one-line predicates | | | |
+@area pyriemann.tangentspace
+A | TangentSpace|FGDA | | tangent-space transformer (and its Fisher-geodesic discriminant analysis) as a learn-style transformer | covariance/spd/tangent.ts | S | medium | SPD geometry
+@area pyriemann.spatialfilters
+P | CSP|SPoC|Xdawn|BilinearFilter|AJDC | learn#linearDiscriminant, decomposition#cca | common spatial patterns (generalised eigendecomposition of two class covariances) and relatives: EEG spatial filters | decomposition/spatial-filters.ts | S | low | EEG covariance pipelines
+@area pyriemann.preprocessing
+P | Whitening | decomposition#pca (whiten) | whitening by the covariance, with dimension reduction | | | |
+@area pyriemann.artifact_detection
+A | Potato|PotatoField | covariance#ellipticEnvelope | Riemannian outlier detection of covariance matrices (a z-score of the distance to the mean): an EEG artefact detector | covariance/spd/outliers.ts | S | low | SPD geometry
+@area pyriemann.datasets
+A | sample_gaussian_spd|sample_gaussian | dists#wishart | sampling from the Riemannian Gaussian on SPD matrices | covariance/spd/distributions.ts | M | low | SPD geometry
+A | make_matrices|make_masks|make_gaussian_blobs|make_outliers|make_classification_transfer | datasets#makeSpdMatrix | simulated SPD data sets with a known geometry (blobs of matrices, outliers, transfer): the data generators a Riemannian demonstration needs | datasets/spd.ts | S | medium | data generators with known covariance
+S | RandomOverSampler | | a resampler | | | |
+@area pyriemann.utils
+P | plot_cov_ellipse | numerics/geometry#covarianceEllipse | the ellipse as data; the chart is a render matter | | | |
+S | plot_bihist|plot_biscatter|plot_cospectra|plot_embedding|plot_waveforms | | EEG plotting helpers | | | |
+
+# ===================================================================== skfolio 1.12.8 (moments, prior, distance, uncertainty sets)
+@lib skfolio
+@area skfolio.moments.covariance
+F | EmpiricalCovariance|LedoitWolf|OAS|ShrunkCovariance | covariance#covarianceEstimator | | | | |
+P | GraphicalLassoCV | covariance#graphicalLassoEstimator | see sklearn: no CV for alpha | covariance/graph-selection.ts | S | high | graphical lasso model selection
+A | DenoiseCovariance | | Marchenko-Pastur denoising of the correlation matrix: the eigenvalues inside the noise band replaced by their mean (constant residual) or the band edge, with the shrinkage option; the standard cleaning of a financial correlation matrix | covariance/spectral.ts | M | high | spectral cleaning and random matrix theory
+A | DetoneCovariance | | detoning: remove the first (market) eigenvector or the first n components of the correlation matrix | covariance/spectral.ts | S | high | spectral cleaning and random matrix theory
+A | EWCovariance|RegimeAdjustedEWCovariance|RegimeAdjustmentMethod|RegimeAdjustmentTarget | stats#ewmVar (univariate) | exponentially weighted covariance by half-life, and the regime-adjusted variant that rescales by the recent standardised residuals | covariance/streaming.ts | S | high | streaming and exponentially weighted covariance
+A | GerberStatistic|GerberCovariance | | the Gerber statistic: a co-movement measure that counts joint exceedances of a threshold, robust to outliers (Gerber 2022, variants 1 and 2) | covariance/gerber.ts | S | medium | finance covariance inputs
+A | GeodesicShrinkageCovariance|GeodesicShrinkageTarget | | shrinkage along the geodesic of the SPD manifold towards a target (a geodesic version of Ledoit-Wolf); the link between shrinkage and Riemannian geometry | covariance/spd/shrinkage.ts | M | medium | SPD geometry
+A | ImpliedCovariance | | covariance from the implied volatilities and a correlation matrix: financial | | | low | finance covariance inputs
+S | BaseCovariance | | base class | | | |
+@area skfolio.moments.variance
+A | EWVariance|RegimeAdjustedEWVariance | stats#ewmVar | exponentially weighted variance exists for a vector; the half-life form with regime adjustment does not | covariance/streaming.ts | S | low | streaming and exponentially weighted covariance
+P | EmpiricalVariance | stats#variance | | | | |
+S | BaseVariance|RegimeAdjustmentMethod | | | | | |
+@area skfolio.moments.expected_returns
+P | EmpiricalMu|ShrunkMu|EWMu|ShrunkMuMethods | stats#mean, stats#jamesStein, stats#ewmMean | James-Stein and Bayes-Stein shrinkage of the mean vector exist in stats; the portfolio-labelled wrappers do not | | | |
+A | EquilibriumMu | | implied equilibrium returns (Black-Litterman prior): portfolio theory | | | |
+S | BaseMu | | | | | |
+@area skfolio.prior
+P | EmpiricalPrior|FactorModel|TimeSeriesFactorModel|CharacteristicsFactorModel|LoadingMatrixRegression|BaseLoadingMatrix | decomposition#factorAnalysis, linear#linearModel | factor-model covariance (loadings by regression on observed factors plus a residual diagonal) assembled from a regression and a covariance estimator: the pieces exist, the assembled estimator (`B F B' + D`) does not | covariance/factor.ts | M | medium | factor-model and low-rank covariance
+S | BlackLitterman|EntropyPooling|OpinionPooling|SyntheticData|ReturnDistribution|BasePrior|CovarianceSqrt|CorrelationMethod | | portfolio views and scenario priors: portfolio theory, not covariance estimation | | | |
+@area skfolio.distance
+F | PearsonDistance|SpearmanDistance|KendallDistance|CovarianceDistance|NBinsMethod | distances#correlationDistance, stats#spearman, stats#kendallTau | the distance `sqrt((1 - rho) / 2)` of a correlation matrix: the input of hierarchical clustering | | | |
+P | DistanceCorrelation|MutualInformation | stats#distanceCorrelation, information#mutualInformation | pairwise versions exist, the matrix over all columns in one call does not | covariance/rank.ts | S | low | rank-based and robust correlation matrices
+S | BaseDistance | | | | | |
+@area skfolio.uncertainty_set
+A | BootstrapCovarianceUncertaintySet|EmpiricalCovarianceUncertaintySet|CompactCovarianceUncertaintySet|OrthogonalCovarianceUncertaintySet|UncertaintySet|BaseCovarianceUncertaintySet | stats#bootstrap | the confidence region of a covariance estimate (bootstrap on the matrix, then an ellipsoid or box on the entries): robust optimisation inputs. The bootstrap exists; its covariance-of-covariance does not | covariance/uncertainty.ts | M | low | finance covariance inputs
+S | BootstrapMuUncertaintySet|EmpiricalMuUncertaintySet|OrthogonalMuUncertaintySet|BaseMuUncertaintySet | | uncertainty sets for the mean | | | |
+@area skfolio.pre_selection
+P | DropCorrelated | data#correlatedFeaturesModifier, learn#featureSelection | drop columns correlated above a threshold: a feature-selection filter | learn/feature-selection.ts | S | low | finance covariance inputs
+S | DropZeroVariance|SelectComplete|SelectKExtremes|SelectNonDominated|SelectNonExpiring | | portfolio asset filters | | | |
+@area skfolio.model_selection
+A | CovarianceForecastEvaluation|CovarianceForecastComparison|covariance_forecast_evaluation|online_covariance_forecast_evaluation | | evaluating covariance forecasts out of sample: Mahalanobis calibration of the standardised returns (a well-calibrated covariance gives chi-squared distances) and the comparison of two estimators; a clean teaching figure for "which shrinkage is better" | covariance/evaluation.ts | M | medium | covariance evaluation
+S | BaseCombinatorialCV|CombinatorialPurgedCV|MultipleRandomizedCV|OnlineGridSearch|OnlineRandomizedSearch|WalkForward|cross_val_predict|online_predict|online_score|optimal_folds_number | | portfolio cross-validation (omai has purged and walk-forward splitters in model-selection) | | | |
+@area skfolio.utils.stats
+F | cov_to_corr|corr_to_cov|is_positive_definite|is_positive_semidefinite|is_cholesky_dec|safe_cholesky|symmetrize|assert_is_.* | numerics/linalg#isPositiveDefinite, #choleskyJitter | | | | |
+A | cov_nearest | | see statsmodels | covariance/nearest.ts | S | high | nearest correlation and covariance repair
+F | squared_mahalanobis_dist|squared_standardized_euclidean_dist | covariance#squaredMahalanobis | | | | |
+S | .* | | portfolio and numeric helpers (weights, bins, equations, bisection) | | | |
+
+# ===================================================================== PyPortfolioOpt 1.6.0 (risk_models)
+@lib pypfopt
+F | sample_cov | stats#cov | | | | |
+A | exp_cov | stats#ewmVar | exponentially weighted covariance by span | covariance/streaming.ts | S | high | streaming and exponentially weighted covariance
+A | semicovariance | | downside semicovariance below a benchmark | covariance/semi.ts | S | low | finance covariance inputs
+F | min_cov_determinant | covariance#minCovDet | | | | |
+F | CovarianceShrinkage | covariance#covarianceEstimator, stats#ledoitWolf, #oas | constant-variance, single-factor and constant-correlation targets are the Ledoit-Wolf family PyPortfolioOpt adds: only the scaled-identity target exists (see the shrinkage rows) | | | |
+A | fix_nonpositive_semidefinite | optim#projectPsd | clip or replace negative eigenvalues: the two-line repair | covariance/nearest.ts | S | medium | nearest correlation and covariance repair
+F | risk_matrix|cov_to_corr|corr_to_cov | stats#cov, stats#corrcoef | | | | |
+P | plot_covariance | render charts#correlationChart | a covariance heatmap (with optional clustering order) | | | |
+A | plot_dendrogram | cluster#linkageMatrix | a dendrogram of the correlation distance | | | |
+S | plot_efficient_frontier|plot_weights | | portfolio plots | | | |
+
+# ===================================================================== Riskfolio-Lib 3.3.0 (estimation parts)
+@lib riskfolio
+A | denoisedCorr|denoiseCov|mpPDF|errPDFs|findMaxEval|fitKDE|getPCA|numBins | | the Marchenko-Pastur density, the fit of its variance by kernel density, the largest noise eigenvalue and the denoised correlation of Lopez de Prado | covariance/spectral.ts | M | high | spectral cleaning and random matrix theory
+A | shrinkCorr | | shrinkage of the signal part of the correlation (Ledoit-Wolf, Lopez de Prado): a targeted shrinkage of the eigenvectors above the noise band | covariance/spectral.ts | S | medium | spectral cleaning and random matrix theory
+F | cov2corr|corr2cov|is_pos_def | stats#corrcoef, numerics/linalg#isPositiveDefinite | | | | |
+A | cov_fix | optim#projectPsd | nearest-PSD repair | covariance/nearest.ts | S | medium | nearest correlation and covariance repair
+A | gerber_cov_stat0|gerber_cov_stat1|gerber_cov_stat2 | | Gerber statistics | covariance/gerber.ts | S | medium | finance covariance inputs
+F | dcorr|dcorr_matrix | stats#distanceCorrelation | distance correlation for a pair; the matrix over all columns is a loop | | | |
+P | mutual_info_matrix|var_info_matrix|ltdi_matrix | information#mutualInformation | pairwise mutual information and variation of information (the variation of information is in the second pass's list of gaps); the lower tail dependence index matrix is absent | covariance/dependence-matrices.ts | S | low | rank-based and robust correlation matrices
+A | two_diff_gap_stat | cluster#gapStatistic | optimal number of clusters on a correlation distance (two-difference gap): clustering detail | | | |
+P | covar_matrix|mean_vector | covariance#covarianceEstimator | the front end that picks the estimator (hist, ewma1, ewma2, ledoit, oas, shrunk, gl, jlogo, fixed, spectral, shrink, gerber1, gerber2): the pieces named here are all in this table | | | |
+A | loadings_matrix|risk_factors|PCR|forward_regression|backward_regression | decomposition#pcr, learn#sequentialFeatureSelector | the factor-model covariance from stepwise regression and PCR loadings | covariance/factor.ts | M | medium | factor-model and low-rank covariance
+A | DBHTs|BubbleCluster8s|BubbleHierarchy|BubbleMember|BuildHierarchy|CliqHierarchyTree2s|DirectHb|FindDisjoint|HierarchyConstruct4s|LinkageFunction|DendroConstruct|AdjCliq|breadth|clique3|distance_wei|PMFG_T2s | graph, cluster#linkageMatrix | the planar maximally filtered graph (PMFG) and Directed Bubble Hierarchical Tree clustering of a correlation matrix: a filtered-network estimator of structure | covariance/filtered-graphs.ts | L | low | finance covariance inputs
+A | j_LoGo | covariance#graphicalLassoEstimator | LoGo: a sparse inverse covariance whose zero pattern is a chordal (triangulated) filtered graph, estimated from local cliques: fast alternative to the graphical lasso | covariance/filtered-graphs.ts | M | low | finance covariance inputs
+P | black_litterman|augmented_black_litterman|black_litterman_bayesian|bootstrapping | stats#bootstrap | views-based prior and bootstrapped covariance; the first three are portfolio theory | | | |
+S | assets_constraints|factors_constraints|assets_views|factors_views|assets_clusters|hrp_constraints|round_values|weights_discretizetion|color_list|commutation_matrix | | portfolio constraints and helpers | | | |
+A | cov_returns | stats#cov | the covariance of a return series with the options to demean or not: an option of `cov`, not an estimator | | | |
+S | HCPortfolio|Portfolio|Reports|plot_.*|owa_.*|jupyter_report|excel_report|Sharpe.*|MAD|SemiDeviation|VaR_Hist|CVaR_Hist|WR|LPM|Entropic_RM|EVaR_Hist|MDD_.*|ADD_.*|DaR_.*|CDaR_.*|EDaR_.*|UCI_.*|GMD|TG|RG|CVRG|TGRG|Risk_Contribution|Sharpe | | portfolio optimisation and its risk measures: out of scope for a covariance survey | | | |
+
+# ===================================================================== skggm 0.2.8 (QUIC, adaptive, model averaging)
+@lib skggm
+F | InverseCovarianceEstimator|QuicGraphicalLasso|QuicGraphLasso|quic | covariance#graphicalLassoEstimator | the QUIC solver is a second-order method for the same objective; omai takes the solver as a slot of a smooth problem, but the graphical lasso is solved by coordinate descent only (a QUIC-style Newton mode would be an extra mode) | | | |
+P | QuicGraphicalLassoCV|QuicGraphLassoCV | covariance#graphicalLassoEstimator | no CV or path selection | covariance/graph-selection.ts | S | high | graphical lasso model selection
+A | QuicGraphicalLassoEBIC|QuicGraphLassoEBIC|ebic | | extended BIC for the penalty: the model-selection rule for graphs with many nodes | covariance/graph-selection.ts | S | high | graphical lasso model selection
+A | AdaptiveGraphicalLasso|AdaptiveGraphLasso | covariance#graphicalLassoEstimator | re-weighted (adaptive) graphical lasso: a second fit with penalties inversely proportional to the first precision matrix: a non-convex-penalty approximation | covariance/graphical-lasso.ts | S | medium | graphical lasso variants
+A | ModelAverage | | bootstrap-aggregated support: refit on resamples, average the edge indicators (stability) | covariance/graph-selection.ts | S | medium | graphical lasso model selection
+A | spearman_correlation|kendalltau_correlation|winsorized_rank_correlation | stats#spearman, stats#kendallTau, dists#kendallTauMatrix | rank-based inputs to the graphical lasso (the nonparanormal-style fits): the matrices | covariance/rank.ts | S | medium | rank-based and robust correlation matrices
+F | log_likelihood | covariance#CovarianceVerbs (score) | | | | |
+A | kl_loss|quadratic_loss | | losses of a precision estimate (Kullback-Leibler, quadratic): evaluation of an estimator against a known truth | covariance/evaluation.ts | S | medium | covariance evaluation
+A | support_false_positive_count|support_false_negative_count|support_difference_count|has_exact_support|has_approx_support|error_fro | metrics | recovery of the edge set of a graph (false positives and negatives, exact support, Frobenius error): the metrics a graph-estimation demonstration reports | covariance/evaluation.ts | S | medium | covariance evaluation
+A | Graph|lattice|blocks|ErdosRenyiGraph|MonteCarloProfile | datasets#makeSparseSpdMatrix | generators of sparse precision matrices with a known graph (Erdos-Renyi, lattice, blocks) and a Monte Carlo loop of fit-and-score: omai has one sparse SPD generator | datasets/precision-graphs.ts | S | medium | data generators with known covariance
+S | r_input|trace_plot | | plotting helpers | | | |
+
+# ===================================================================== gglasso 0.3.1 (group and joint graphical lasso)
+@lib gglasso
+A | glasso_problem|GGLassoEstimator|ADMM_SGL|ADMM_MGL|block_SGL|get_connected_components|invert_permutation | covariance#graphicalLassoEstimator | single, multiple (joint, group and fused) graphical lasso by ADMM, with the block decomposition of the single problem by connected components; omai has the single problem by coordinate descent | covariance/joint-graphical-lasso.ts | M | medium | joint, time-varying and latent graphical lasso
+A | PPDNA|PPA_subproblem|PPDNA_stopping_criterion|check_ppa_sub_params|get_ppa_sub_params_default|get_ppdna_params|warmPPDNA|ADMM_stopping_criterion|kkt_stopping_criterion | | second-order proximal point solver and the stopping rules of the joint problem: solver variants | | | |
+A | aic|aic_array|aic_dict|aic_single|ebic|ebic_array|ebic_dict|ebic_single|grid_search|lambda_grid|lambda_parametrizer|map_l_to_w|single_grid_search|K_single_grid|robust_logdet|thresholding|tune_threshold|tune_multiple_threshold | | information criteria and grid search over (lambda1, lambda2) for the joint problem | covariance/graph-selection.ts | S | medium | graphical lasso model selection
+A | generate_precision_matrix|group_power_network|time_varying_power_network|sample_covariance_matrix|ensure_sparsity | datasets#makeSparseSpdMatrix | power-law network precision matrices, grouped and time-varying | datasets/precision-graphs.ts | S | low | data generators with known covariance
+
+# ===================================================================== regain 0.4.1 (time-varying and latent graphical models)
+@lib regain
+F | GraphicalLasso|graphical_lasso|logl|objective|init_precision | covariance#graphicalLassoEstimator | | | | |
+A | TimeGraphicalLasso|time_graphical_lasso|KernelTimeGraphicalLasso|SimilarityTimeGraphicalLasso|kernel_time_graphical_lasso|objective_kernel|objective_similarity|precision_similarity|batch_log_likelihood|loss | | graphical lasso over a sequence of time points with a penalty on the change of the precision matrix between neighbours (Hallac 2017; Tomasi 2018): the picture is a graph that evolves | covariance/joint-graphical-lasso.ts | M | medium | joint, time-varying and latent graphical lasso
+A | LatentGraphicalLasso|latent_graphical_lasso|LatentTimeGraphicalLasso|latent_time_graphical_lasso|KernelLatentTimeGraphicalLasso|SimilarityLatentTimeGraphicalLasso|kernel_latent_time_graphical_lasso|infimal_convolution|objective | | sparse plus low-rank precision (Chandrasekaran, Parrilo, Willsky): a graph with hidden variables | covariance/latent-graphical-lasso.ts | M | medium | joint, time-varying and latent graphical lasso
+A | MissingGraphicalLasso|missing_graphical_lasso|compute_cs|compute_empirical_covariance|compute_mean | | graphical lasso by EM with missing values | covariance/missing.ts | M | low | missing-data and streaming covariance
+A | BayesianGraphicalLasso|bayesian_graphical_lasso|GWishartFit|GWishartScore|compute_score|covsel|markov_blankets|mk_all_ugs|precision_selection|score_blankets | dists#wishart | Bayesian graphical lasso (Gibbs) and exact G-Wishart model scoring over decomposable graphs | covariance/bayesian-graphical.ts | L | low | Bayesian covariance models
+P | WishartDistribution|InverseWishartDistribution|NormalInverseWishartDistribution|main | dists#wishart, #inverseWishart, dists/conjugacy | normal-inverse-Wishart: the conjugate posterior exists in `conjugatePosterior`; a named distribution does not | | | |
+A | WishartProcess|fit|predict | | a Wishart process: a covariance matrix that is a function of time or space, by Gaussian-process factors | covariance/wishart-process.ts | L | low | Bayesian covariance models
+A | Gaussian_GLM_GM|IsingGraphicalModel|PoissonGraphicalModel|fit_each_variable|loss_single_variable|objective_single_variable | learn#logisticRegression | neighbourhood-regression estimators of Gaussian, Ising and Poisson graphical models (one penalised GLM per node): omai's GLMs plus a loop; `pgm` has the Ising model for sampling and inference | covariance/neighbourhood.ts | M | medium | neighbourhood and nonparanormal graph estimators
+A | GraphicalModelStabilitySelection|global_instability|graphlet_instability|upper_bound | learn#lassoStabilitySelection | stability selection of the penalty (StARS-like instability): omai has stability selection for the lasso | covariance/graph-selection.ts | S | medium | graphical lasso model selection
+A | BIC|BIC_t|EBIC|EBIC_m|EBIC_m_t|EBIC_t|log_likelihood_t | | information criteria for the graphical lasso, static and over time | covariance/graph-selection.ts | S | high | graphical lasso model selection
+F | log_likelihood | covariance#CovarianceVerbs (score) | | | | |
+P | DiscriminantAnalysis|PrecomputedDiscriminantAnalysis | learn#discriminantAnalysis | discriminant analysis with a sparse precision matrix: shrinkage LDA exists, the graphical-lasso precision as input is the composition | | | |
+P | make_covariance|make_fixed_sparsity|make_sparse_low_rank|make_ell|make_starting|make_sin|make_sin_cos|make_fede|make_ma_xue_zou|make_ma_xue_zou_rand_k|data_Meinshausen_Yuan|data_Meinshausen_Yuan_sparse_latent | datasets#makeSparseSpdMatrix | simulated sparse, low-rank and time-varying precision matrices with their samples (Ma-Xue-Zou, Meinshausen-Yuan families): omai has one sparse SPD generator | datasets/precision-graphs.ts | S | medium | data generators with known covariance
+
+# ===================================================================== robpy 0.0.6 (KU Leuven robust statistics in Python)
+@lib robpy
+F | FastMCD|HSubset | covariance#minCovDet, #fastMcdAlgorithm | | | | |
+A | DetMCD | covariance#fastMcdAlgorithm | deterministic MCD: six fixed robust starting estimates replace the random subsets (Hubert, Rousseeuw, Verdonck 2012) | covariance/robust.ts | S | medium | robust scatter estimators
+A | OGK | | orthogonalised Gnanadesikan-Kettenring: pairwise robust covariances through robust scale estimates, then an eigen-orthogonalisation | covariance/robust-scatter.ts | S | medium | robust scatter estimators
+A | KendallTau|WrappingCovariance|InitialDDCW|truncated_covariance | dists#kendallTauMatrix | Kendall-tau covariance, covariance by wrapping (a bounded transformation of the data), and the DDC-wrapped start for cellMCD | covariance/rank.ts | S | medium | rank-based and robust correlation matrices
+A | CellMCD|DDC|get_custom_cmap | | cellwise robustness: the detection of deviating cells (not whole rows) by the deviating data detection (DDC) and a minimum covariance determinant over cells (cellMCD); the picture is a cell map | covariance/cellwise.ts | L | medium | cellwise robustness and robust PCA
+A | ROBPCA|PCALocantore | decomposition#pca | robust PCA by projection pursuit plus MCD (Hubert), and spherical (spatial-sign) PCA (Locantore) | decomposition/robust-pca.ts | M | medium | cellwise robustness and robust PCA
+A | stahel_donoho|l1median|weighted_median | | Stahel-Donoho outlyingness (projection-based), the spatial median | covariance/robust-scatter.ts | M | medium | robust scatter estimators
+P | FastLTSRegression|get_correction_factor|get_correction_factor_reweighting|MMRegression|SRegression | linear#huber, stats#ransac | robust regression: Huber and RANSAC exist, least trimmed squares, S and MM do not (another family's gap) | linear/robust.ts | M | low | robust scatter estimators
+P | UnivariateMCD|HuberOneStepM|OneStepM|CellwiseOneStepM|OneStepWrapping|Qn|Tau | stats#huber, #mEstimateLocation, #tukeyBiweight | univariate robust location and scale: the M-estimators exist, Qn, Sn, the tau scale and the one-step wrapped estimators do not | stats/robust.ts | S | low | robust scatter estimators
+
+# ===================================================================== rmt_denoise 2.3.0
+@lib rmt_denoise
+A | MPLawDenoiser|GeneralizedCovDenoiser|compute_support_bounds|compute_explicit_support|compute_G_plus|compute_G_minus|compute_P4_coefficients|compute_discriminant|g_function|g_derivative | | Marchenko-Pastur and generalised-covariance (spiked, general population spectrum) edges and the optimal-shrinkage singular value denoiser: a research-level package whose pieces are the spectrum edges and the shrinkers | covariance/spectral.ts | M | medium | spectral cleaning and random matrix theory
+A | svd_denoise | numerics/linalg#lowRankApproximation | optimal singular value shrinkage of a noisy matrix (Gavish-Donoho): the rank-k truncation exists, the optimal shrinker does not | covariance/spectral.ts | S | medium | spectral cleaning and random matrix theory
+S | images_to_matrix|matrix_to_images | | image helpers | | | |
+
+# ===================================================================== geomstats 2.8.0 (SPD slice)
+@lib geomstats
+A | SPDMatrices|SPDAffineMetric|SPDBuresWassersteinMetric|SPDEuclideanMetric|SPDLogEuclideanMetric|SPDPowerMetric|LieCholeskyMetric|CholeskyMap|SymMatrixLog|MatrixPower|logmh | numerics/linalg#sqrtm, #logm, #cholesky | the manifold of SPD matrices with the affine-invariant, log-Euclidean, Bures-Wasserstein, Euclidean, power and Cholesky metrics: exp, log, distance, geodesic, Frechet mean, parallel transport and curvature through one interface | covariance/spd/metrics.ts | M | high | SPD geometry
+A | FullRankCorrelationMatrices|CorrelationMatricesBundle|FullRankCorrelationAffineQuotientMetric|PolyHyperbolicCholeskyMetric|EuclideanCholeskyMetric|EuclideanCholeskyDiffeo|LogEuclideanCholeskyMetric|LogEuclideanCholeskyDiffeo|OffLogMetric|OffLogDiffeo|LogScaledMetric|LogScalingDiffeo|SPDScalingFinder|UniqueDiagonalMatrixAlgorithm|corr_map|off_map|tangent_corr_map | | the manifold of full-rank correlation matrices (the elliptope's interior) and its quotient, Cholesky and off-log metrics: the geometry of correlation matrices as such | covariance/spd/correlation.ts | L | low | SPD geometry
+A | PositiveLowerTriangularMatrices|CholeskyMetric|InvariantPositiveLowerTriangularMatricesMetric|PLTUnitDiagMatrices|UnitNormedRowsPLTMatrices|UnitNormedRowsPLTDiffeo|UnitNormedRowsPLTMatricesPullbackMetric|LowerMatrixLog | numerics/linalg#cholesky | Cholesky factors as a manifold: the building block of log-Cholesky | covariance/spd/metrics.ts | S | low | SPD geometry
+A | SymmetricMatrices|SymmetricHollowMatrices|HollowMatricesPermutationInvariantMetric|NullRowSumsSymmetricMatrices|NullRowSumsPermutationInvariantMetric|ConstantValueRowSumsDiffeo|NullRowSumsPermutationInvariantMetric | | spaces of symmetric matrices with constraints (hollow, null row sums: graph Laplacians) | | | |
+
+# ===================================================================== pymanopt 2.2.1
+@lib pymanopt
+A | SymmetricPositiveDefinite|HermitianPositiveDefinite|SpecialHermitianPositiveDefinite | optim, sampling#riemannianHmcKernel | the SPD manifold as a space for Riemannian optimisation (retraction, Riemannian gradient and Hessian): an optimisation toolkit over the same geometry. omai has Riemannian HMC on a position-dependent metric but no manifold optimisation | covariance/spd/metrics.ts | M | low | SPD geometry
+A | Elliptope|PSDFixedRank|PSDFixedRankComplex|FixedRankEmbedded|Positive | | correlation matrices as a quotient manifold (the Burer-Monteiro factorisation), low-rank PSD and fixed-rank matrices: Riemannian optimisation spaces | | | |
+
+# ===================================================================== arch 8.0.0 (long-run covariance kernels)
+@lib arch_cov
+A | Bartlett|Parzen|ParzenRiesz|ParzenGeometric|ParzenCauchy|TukeyHamming|TukeyHanning|TukeyParzen|QuadraticSpectral|Gallant|Andrews|NeweyWest|CovarianceEstimator|CovarianceEstimate | signal#bartlett (the window), timeseries#autocovariance | kernel long-run variance and covariance (Newey-West, Andrews and Parzen families) with automatic bandwidth: the engine under HAC standard errors, unit-root tests and the long-run variance of an MCMC chain | timeseries/long-run-covariance.ts | M | high | time-varying and long-run covariance
+
+# ===================================================================== nilearn 0.14.1 (connectomes)
+@lib nilearn_connectome
+P | ConnectivityMeasure | covariance#covarianceEstimator, stats#partialCorrelation | covariance, correlation, partial correlation, precision and tangent-space connectivity of a set of subjects (one matrix per subject, with a vectorising option); partial correlation and precision exist per data set, the tangent kind needs the SPD geometry | covariance/trials.ts | S | medium | SPD geometry
+F | cov_to_corr|prec_to_partial | stats#corrcoef, stats#partialCorrelation | | | | |
+A | sym_matrix_to_vec|vec_to_sym_matrix | | the half-vectorisation of a symmetric matrix and its inverse: `upper` and `unupper` of pyRiemann | covariance/spd/tangent.ts | S | low | SPD geometry
+A | GroupSparseCovariance|GroupSparseCovarianceCV|group_sparse_covariance|group_sparse_covariance_path|compute_alpha_max|group_sparse_scores|empirical_covariances|EarlyStopProbe | covariance#graphicalLassoEstimator | group-sparse covariance: several subjects, one shared sparsity pattern (the group graphical lasso of Varoquaux 2010) with cross-validation | covariance/joint-graphical-lasso.ts | M | medium | joint, time-varying and latent graphical lasso
+
+# ===================================================================== MNE-Python 1.13.2 (covariance for M/EEG)
+@lib mne_cov
+P | compute_covariance|compute_raw_covariance|Covariance | covariance#covarianceEstimator | covariance of epochs or raw data per channel type, with the method chosen automatically among empirical, diagonal-fixed, Ledoit-Wolf, OAS, shrunk (cross-validated intensity) and factor analysis by held-out log-likelihood: the selection among estimators is the piece omai lacks | covariance/model-selection.ts | S | high | shrinkage beyond the scaled identity
+A | regularize|make_ad_hoc_cov | | Tikhonov-style regularisation of a noise covariance by channel type and an ad-hoc diagonal covariance | | | |
+F | compute_whitener|whiten_evoked|prepare_noise_cov | decomposition#pca (whiten) | whitening with a (regularised) covariance | | | |
+S | read_cov|write_cov | | file formats | | | |
+
+# ===================================================================== CRAN: CovTools (index read)
+@lib r_covtools
+F | CovEst.2003LW | stats#ledoitWolf | | | | |
+F | CovEst.2010OAS | stats#oas | | | | |
+A | CovEst.2010RBLW | stats#ledoitWolf | the Rao-Blackwell Ledoit-Wolf estimator (Chen, Wiesel, Eldar, Hero 2010): an intermediate between Ledoit-Wolf and OAS | covariance/shrinkage-targets.ts | S | low | shrinkage beyond the scaled identity
+A | CovEst.adaptive|CovEst.hard|CovEst.soft|CovEst.hardPD | | adaptive, hard and soft thresholding of the sample covariance (Cai and Liu 2011; Bickel and Levina 2008), with a positive-definite repair | covariance/structured.ts | S | medium | sparse and structured covariance
+A | CovEst.nearPD | optim#projectPsd | nearest positive definite matrix (Higham) | covariance/nearest.ts | S | high | nearest correlation and covariance repair
+P | PreEst.glasso | covariance#graphicalLasso | | | | |
+A | PreEst.2014An|PreEst.2014Banerjee|PreEst.2017Lee | | sparse precision estimators of An (2014, a Bayesian approach), Banerjee (2014, Bayesian), Lee (2017, a Bayesian spike-and-slab) | | | low | Bayesian covariance models
+A | CovTest1.2013Cai|CovTest1.2014Srivastava|CovTest2.2013Cai|DiagTest1.2011Cai|DiagTest1.2015Lan|BCovTest1.mxPBF|BDiagTest1.mxPBF | stats/tests#boxM | high-dimensional tests of one covariance equal to a given one, two covariances equal, and of diagonality (frequentist and Bayesian): the tests that stay valid when p exceeds n | stats/tests/covariance.ts | M | medium | covariance and correlation tests
+A | CovDist|CovMean | | distance and mean of covariance matrices under several metrics (the SPD geometry) | covariance/spd/means.ts | S | medium | SPD geometry
+S | samplecovs | | a sampler of data sets | | | |
+
+# ===================================================================== CRAN: rrcov (index read)
+@lib r_rrcov
+F | CovClassic | stats#cov | | | | |
+F | CovMcd|CovRobust | covariance#minCovDet | CovRobust chooses among estimators by size; the MCD itself is there | | | |
+A | CovMrcd | covariance#minCovDet | regularised MCD (Boudt et al.): MCD with a target shrinkage so that it works when p is larger than h | covariance/robust.ts | M | low | robust scatter estimators
+A | CovMve | | minimum volume ellipsoid (Rousseeuw 1985) by resampling: the older robust-ellipsoid estimator | covariance/robust-scatter.ts | S | low | robust scatter estimators
+A | CovMest|covMest | | M-estimator of multivariate location and scatter (Maronna; Huber and Student weights) by iteration | covariance/robust-scatter.ts | M | high | robust scatter estimators
+A | CovMMest|CovSest|CovSde | | MM and S estimators of scatter (high breakdown with high efficiency), Stahel-Donoho projection estimator | covariance/robust-scatter.ts | L | low | robust scatter estimators
+A | CovOgk | | orthogonalised Gnanadesikan-Kettenring | covariance/robust-scatter.ts | S | medium | robust scatter estimators
+A | PcaCov|PcaGrid|PcaHubert|PcaLocantore|PcaProj | decomposition#pca | robust PCA by robust covariance, grid projection pursuit, ROBPCA, spatial sign | decomposition/robust-pca.ts | M | medium | cellwise robustness and robust PCA
+F | PcaClassic|LdaClassic|QdaClassic | decomposition#pca, learn#discriminantAnalysis | | | | |
+A | LdaPP|Linda|QdaCov | learn#discriminantAnalysis | discriminant analysis with robust covariances and with projection pursuit | learn/discriminant.ts | S | low | robust scatter estimators
+A | T2.test|Wilks.test | stats/tests#hotellingT2 | one-sample Hotelling and Wilks tests with a robust covariance (the robust location test) | stats/tests/multivariate.ts | S | low | robust scatter estimators
+P | getEllipse|pca.distances|pca.scoreplot | numerics/geometry#covarianceEllipse | the tolerance ellipse and the distance-distance and score-distance plots of robust PCA | | | |
+
+# ===================================================================== CRAN: robustbase scatter slice (index first 100k characters only)
+@lib r_robustbase
+F | covMcd | covariance#minCovDet | | | | |
+A | covOGK|covComed | | OGK and the co-median estimator | covariance/robust-scatter.ts | S | medium | robust scatter estimators
+A | adjOutlyingness | | skewness-adjusted outlyingness (Brys, Hubert, Rousseeuw): projection outlyingness for skewed data | covariance/robust-scatter.ts | S | low | robust scatter estimators
+P | huberM|Qn|Sn|scaleTau2 | stats#huber, #mEstimateLocation | Huber location exists; the Qn, Sn and tau scales do not | stats/robust.ts | S | low | robust scatter estimators
+P | tolEllipsePlot | numerics/geometry#covarianceEllipse | the tolerance ellipse chart | | | |
+
+# ===================================================================== CRAN: cellWise
+@lib r_cellwise
+A | cellMCD|DDC|DDCpredict|MacroPCA|MacroPCApredict|ICPCA|cellHandler|cellMap|checkDataSet|cwLocScat|estLocScale|generateCorMat|generateData|outlierMap|truncPC|unpack|weightedEM|wrap|transfo|transfo_newdata|transfo_transformback|DI | | cellwise outlier detection and cellwise-robust covariance and PCA (DDC, cellMCD, MacroPCA): a row can be clean except one cell; the R package is the only complete implementation | covariance/cellwise.ts | L | medium | cellwise robustness and robust PCA
+
+# ===================================================================== CRAN: corpcor
+@lib r_corpcor
+P | cov.shrink|cor.shrink|shrink.intensity | covariance#covarianceEstimator, stats#ledoitWolf | Schafer-Strimmer: shrink the correlation and the variances separately, each with its own analytic intensity (target D: unit diagonal, zero off-diagonal): omai shrinks the covariance towards a scaled identity only | covariance/shrinkage-targets.ts | S | high | shrinkage beyond the scaled identity
+P | invcov.shrink|pcor.shrink|cor2pcor | stats#partialCorrelation, covariance#covarianceEstimator | shrunk inverse covariance and partial correlations (Schafer-Strimmer's GeneNet input): the precision of a shrunk covariance is a verb; the partial-correlation matrix from it is a conversion | covariance/shrinkage-targets.ts | S | medium | shrinkage beyond the scaled identity
+F | rank.condition|pseudoinverse|fast.svd|mpower|rebuild.cov|wt.scale|powcor.shrink | numerics/linalg#pinv, #svd, #matrixPower | condition number and the pseudoinverse exist; the rank-condition helper is a one-liner | | | |
+
+# ===================================================================== CRAN: huge
+@lib r_huge
+P | huge|huge.glasso | covariance#graphicalLassoEstimator | the unified front end over several estimators with a path of penalties and a selection rule | covariance/graph-selection.ts | S | high | graphical lasso model selection
+A | huge.mb | learn#lassoPath | Meinshausen-Buhlmann neighbourhood selection: one lasso per node, edges by an AND or OR rule | covariance/neighbourhood.ts | S | high | neighbourhood and nonparanormal graph estimators
+A | huge.ct | | correlation thresholding: edge by a threshold on the correlations | covariance/neighbourhood.ts | S | low | neighbourhood and nonparanormal graph estimators
+A | huge.tiger | | TIGER: tuning-insensitive graph estimation by scaled lasso on the correlation matrix, with a penalty that needs no tuning | covariance/neighbourhood.ts | M | low | neighbourhood and nonparanormal graph estimators
+A | huge.npn | | the nonparanormal transformation (Gaussian copula marginals by truncated ranks): a graphical model for non-Gaussian data | covariance/rank.ts | S | high | neighbourhood and nonparanormal graph estimators
+A | huge.select | | selection of the path point by RIC, StARS or an extended BIC | covariance/graph-selection.ts | S | high | graphical lasso model selection
+A | huge.generator | datasets#makeSparseSpdMatrix | simulated data from graph structures (random, hub, cluster, band, scale-free) with the true graph | datasets/precision-graphs.ts | S | medium | data generators with known covariance
+A | huge.inference | | confidence intervals and tests on the edges of a precision matrix (the debiased lasso) | covariance/graph-selection.ts | M | low | graphical lasso model selection
+A | huge.roc|huge.plot | | ROC of edge recovery along the path and the graph plots | covariance/evaluation.ts | S | low | covariance evaluation
+
+# ===================================================================== CRAN: nlshrink, POET, rags2ridges, BDgraph
+@lib r_nlshrink
+A | nlshrink_cov|tau_estimate|lambda_estimate|ESD | | nonlinear shrinkage of the eigenvalues (Ledoit and Wolf 2012, by QuEST): the shrinkage that is optimal in the high-dimensional limit, with the sample-spectral-distribution tools | covariance/nonlinear-shrinkage.ts | M | high | spectral cleaning and random matrix theory
+P | linshrink_cov|linshrink | stats#ledoitWolf | linear shrinkage of the eigenvalues (the Ledoit-Wolf estimator in its eigenvalue form) | | | |
+@lib r_poet
+A | POET|POETCmin|POETKhat | decomposition#pca | principal orthogonal complement thresholding for approximate factor models (Fan, Liao, Mincheva 2013): PCA for the factors, thresholding of the residual covariance, and the number of factors by an information criterion | covariance/factor.ts | M | medium | factor-model and low-rank covariance
+@lib r_rags2ridges
+A | ridgeP|ridgeS|ridgePathS|default.target|covML|pcor|sparsify|pruneMatrix | covariance#graphicalLassoEstimator | ridge (L2) precision estimation with a target matrix (van Wieringen and Peeters): a closed form, and a path of penalties; the L2 counterpart of the graphical lasso | covariance/ridge-precision.ts | S | medium | graphical lasso variants
+A | optPenalty.kCV|optPenalty.LOOCV|optPenalty.LOOCVauto|optPenalty.aLOOCV|optPenalty.kCVauto|conditionNumberPlot | | choice of the ridge penalty by cross-validation, leave-one-out and its analytic approximation, and a condition-number plot | covariance/graph-selection.ts | S | medium | graphical lasso model selection
+A | ridgeP.fused|optPenalty.fused.grid|fused.test | | fused ridge precision across classes | covariance/joint-graphical-lasso.ts | M | low | joint, time-varying and latent graphical lasso
+A | GGMnetworkStats|GGMpathStats|GGMblockTest|KLdiv|loss|NLL | graph | network statistics of an estimated graph, path statistics, a block-independence test, KL divergence and negative log-likelihood of a precision estimate | covariance/evaluation.ts | S | low | covariance evaluation
+@lib r_bdgraph
+A | bdgraph|bdgraph.mpl|bdgraph.dw|bdgraph.npn|bdgraph.sim|plinks|select|compare|covariance|precision | pgm | Bayesian structure learning of Gaussian, copula and discrete graphical models by birth-death MCMC on the G-Wishart: posterior edge inclusion probabilities | covariance/bayesian-graphical.ts | L | low | Bayesian covariance models
+F | rwish|rgwish | dists#wishart | the Wishart sampler; the G-Wishart sampler (a Wishart conditioned on a graph) does not exist | | | |
+
+# ===================================================================== the glasso family and other R packages (names from memory)
+@lib r_other_graphical
+P | glasso|glassoFast|CVglasso|EBICglasso|BIC_glasso | covariance#graphicalLassoEstimator | the graphical lasso itself is covered; the CV and EBIC selections (CVglasso, qgraph's EBICglasso) are not | covariance/graph-selection.ts | S | high | graphical lasso model selection
+A | JGL|FGL|GGL | | the joint graphical lasso: fused (FGL) and group (GGL) penalties across classes (Danaher, Wang, Witten) | covariance/joint-graphical-lasso.ts | M | medium | joint, time-varying and latent graphical lasso
+A | bigQuic|QUIC|PGL | covariance#graphicalLassoEstimator | QUIC and BigQUIC (a second-order solver, for very large p), and the node-based joint graphical lasso: solvers and variants | | | |
+A | spcov|covglasso | | sparse covariance estimation (a lasso on the covariance, not the precision: Bien and Tibshirani 2011) and covariance graphical lasso | covariance/sparse-covariance.ts | M | low | sparse and structured covariance
+A | GGMselect | | graph selection by a penalised criterion with a non-asymptotic oracle inequality | covariance/graph-selection.ts | M | low | graphical lasso model selection
+A | huge_mb|TIGER|CLIME|SPACE|SCIO|flare|sugm|nodewise_lasso | | the column-by-column precision estimators: CLIME (linear programme), SCIO, SPACE, TIGER, nodewise lasso | covariance/neighbourhood.ts | M | medium | neighbourhood and nonparanormal graph estimators
+
+# ===================================================================== peers outside the R and Python lenses
+@lib pandas_cov
+P | DataFrame.cov|DataFrame.corr|Series.cov|Series.corr|DataFrame.corrwith | stats#cov, stats#corrcoef | pairwise-complete observations, a `min_periods` and three correlation methods in one call: omai's `cov` and `corrcoef` have weights but no missing-value handling | covariance/missing.ts | S | medium | missing-data and streaming covariance
+A | ewm.cov|ewm.corr|rolling.cov|rolling.corr|expanding.cov|expanding.corr | stats#ewmVar, #ewmMean | the window and exponentially weighted covariance and correlation of two series or all pairs: what practitioners use before any model | covariance/streaming.ts | S | high | streaming and exponentially weighted covariance
+@lib river_cov
+A | river.covariance.EmpiricalCovariance|river.covariance.EmpiricalPrecision|river.stats.Cov|river.stats.PearsonCorr|river.stats.SpearmanCorr|river.stats.RollingCov|river.stats.RollingPearsonCorr | stats#momentState (univariate), sampling#massMatrixUpdate | online covariance and Sherman-Morrison precision updates one observation at a time; omai's running moments are univariate and its multivariate Welford update lives inside the sampler's mass-matrix adaptation | covariance/streaming.ts | S | high | streaming and exponentially weighted covariance
+P | river.stats.EWVar | stats#ewmVar | | | | |
+@lib js_peers
+P | simple-statistics.sampleCovariance|simple-statistics.sampleCorrelation|jstat.covariance|jstat.corrcoeff|ml-matrix.covariance|ml-matrix.correlation | stats#cov, #corrcoef | the JavaScript peers stop at the sample covariance and correlation of two arrays (or a matrix, for ml-matrix); none has shrinkage, robust or sparse estimators. The only JavaScript PCA is ml-pca | | | |
+P | ml-pca.PCA | decomposition#pca | | | | |
+P | mathjs.covariance_via_mean_and_variance | stats#cov | | | | |
+@lib pymc_priors
+F | LKJCorr|LKJCholeskyCov | dists#lkj, #lkjCholesky | | | | |
+F | Wishart|InverseWishart|MvNormal|MatrixNormal|MvGaussianRandomWalk | dists#wishart, #inverseWishart, #multivariateNormal, #matrixNormal | | | | |
+A | WishartBartlett | | the Bartlett factorisation of a Wishart draw: a Cholesky sampler for the Wishart and a way to parametrise it without a matrix variate | dists/multivariate/matrix.ts | S | low | Bayesian covariance models
+A | MvStudentT | | see scipy multivariate_t | dists/multivariate/student-t.ts | S | high | multivariate Student t and its EM fit
+A | KroneckerNormal | dists#matrixNormal, numerics/linalg#kroneckerSolve | the normal with a Kronecker-structured covariance: the matrix-normal as a vectorised distribution, with fast solves | dists/multivariate/normal.ts | S | low | sparse and structured covariance
+
+# ===================================================================== time-varying and high-frequency (concepts, from memory)
+@lib timevarying_and_high_frequency
+P | EWMA_RiskMetrics|rolling_window_covariance | stats#ewmVar | exponentially weighted and rolling covariance matrices (RiskMetrics' lambda 0.94): variance exists for a vector | covariance/streaming.ts | S | high | streaming and exponentially weighted covariance
+A | CCC_GARCH|DCC_GARCH|aDCC_GARCH|BEKK_GARCH|GO_GARCH|copula_GARCH|multivariate_stochastic_volatility | timeseries#garchFilterAlgorithm (univariate GARCH family) | multivariate volatility models: constant and dynamic conditional correlation (Engle 2002), BEKK and orthogonal GARCH; the correlation that moves is the picture | timeseries/multivariate-garch.ts | L | medium | time-varying and long-run covariance
+A | realised_covariance|realised_bipower_covariance|realised_kernel_covariance|two_scale_realised_covariance|pre_averaging_covariance|threshold_realised_covariance|realised_semicovariance|realised_beta|Cholesky_realised_covariance | | covariance from intraday returns: the realised covariance and its microstructure-noise-robust and jump-robust variants | timeseries/realised.ts | M | low | time-varying and long-run covariance
+A | Hayashi_Yoshida | | the Hayashi-Yoshida estimator of covariance between asynchronously observed series (no resampling to a common grid) | timeseries/realised.ts | S | low | time-varying and long-run covariance
+A | Newey_West_HAC_kernel|Andrews_bandwidth|Parzen_kernel|quadratic_spectral_kernel|prewhitened_HAC|fixed_b_inference | | see arch and statsmodels | timeseries/long-run-covariance.ts | M | high | time-varying and long-run covariance
+
+# ===================================================================== sparse and structured, shrinkage, robust (concept lists from memory)
+@lib sparse_and_structured
+A | banding_Bickel_Levina|tapering_Cai_Zhang_Zhou | | banded and tapered covariance estimators for ordered variables (time series, spectra, genomic position) with a bandwidth by cross-validation | covariance/structured.ts | S | medium | sparse and structured covariance
+A | hard_thresholding_Bickel_Levina|soft_thresholding|generalised_thresholding|adaptive_thresholding_Cai_Liu|SCAD_thresholding|positive_definite_thresholding_Fan | | entrywise thresholding of the sample covariance with a data-driven level (a sparse covariance, not a sparse precision) | covariance/structured.ts | S | medium | sparse and structured covariance
+A | modified_Cholesky_Pourahmadi|nested_lasso_Levina|banded_Cholesky_regularisation|Cholesky_lasso | optim#modifiedCholesky (an unrelated Gill-Murray factorisation for Newton steps) | the regression interpretation of the Cholesky factor (each variable on its predecessors): banding and lasso penalties give a positive-definite sparse estimate by construction | covariance/cholesky.ts | M | low | sparse and structured covariance
+P | Toeplitz_covariance_estimation|circulant_covariance|AR1_covariance_fit|compound_symmetry_fit | numerics/linalg#toeplitz, #circulant, linear#ar1Covariance | the structured matrices and the AR(1) covariance exist; the maximum-likelihood or projection fit of a Toeplitz, circulant, AR(1) or compound-symmetry structure to a sample covariance does not | covariance/structured.ts | S | medium | sparse and structured covariance
+A | Kronecker_covariance_flip_flop|matrix_normal_MLE|separable_covariance_Kronecker_PCA|tensor_normal_MLE | dists#matrixNormal | the maximum-likelihood fit of a matrix-normal (rows by columns) covariance by the flip-flop algorithm, a traced iteration; the distribution exists | covariance/kronecker.ts | S | medium | sparse and structured covariance
+A | spatial_covariance_variogram | fields | covariance as a function of distance (the empirical variogram and its parametric fit): geostatistics | covariance/variogram.ts | M | low | sparse and structured covariance
+A | approximate_factor_model_POET|principal_orthogonal_complement | decomposition#pca | see POET | covariance/factor.ts | M | medium | factor-model and low-rank covariance
+P | factor_analysis_covariance|probabilistic_PCA_covariance | decomposition#factorAnalysis, #probabilisticPca, #latentCovariance | the low-rank plus diagonal covariance `W W' + psi` is the output of factor analysis and PPCA | | | |
+A | low_rank_plus_sparse_PCP|robust_PCA_inexact_ALM|nuclear_norm_covariance | optim#proxNuclear, #proxL1 | principal component pursuit (Candes et al.): a matrix split into low rank plus sparse by ADMM, a stepped solver whose two parts can be watched separating (video background and foreground); also the covariance-decomposition form | decomposition/robust-pca.ts | M | high | cellwise robustness and robust PCA
+A | latent_variable_graphical_lasso_Chandrasekaran | | see regain | covariance/latent-graphical-lasso.ts | M | medium | joint, time-varying and latent graphical lasso
+A | sparse_PCA_spcov | decomposition#sparsePca | | | | |
+P | linear_shrinkage_Ledoit_Wolf_2004|Rao_Blackwell_Ledoit_Wolf | stats#ledoitWolf | the 2004 estimator towards a scaled identity exists; its Rao-Blackwellised variant does not | | | |
+A | nonlinear_shrinkage_Ledoit_Wolf_2012|analytical_nonlinear_shrinkage_2020|QuEST_shrinkage|Ledoit_Peche_shrinkage_function | | eigenvalue-wise optimal shrinkage in the high-dimensional limit, by numerical inversion (QuEST) or by a closed-form kernel estimate of the spectral density (analytical 2020): the state of the art in shrinkage | covariance/nonlinear-shrinkage.ts | M | high | spectral cleaning and random matrix theory
+A | Stein_isotonised_eigenvalues | | Stein's isotonised eigenvalue estimator: the classical spectral shrinkage | covariance/nonlinear-shrinkage.ts | S | low | spectral cleaning and random matrix theory
+A | Schafer_Strimmer_target_D|Schafer_Strimmer_target_B|constant_correlation_target|single_factor_target|shrinkage_towards_diagonal|Warton_regularised_correlation | stats#shrunkCovariance | shrinkage towards other targets (the unit-diagonal, constant-variance, constant-correlation, single-factor and diagonal targets of Schafer-Strimmer, Ledoit-Wolf 2003/2004 and Warton 2008) with their analytic intensities: only the scaled identity is a target | covariance/shrinkage-targets.ts | S | high | shrinkage beyond the scaled identity
+A | optimal_shrinkage_Donoho_Gavish_Johnstone | | optimal singular-value and eigenvalue shrinkers for spiked models under several losses (Frobenius, operator, nuclear) | covariance/spectral.ts | M | medium | spectral cleaning and random matrix theory
+P | Bayesian_shrinkage_inverse_Wishart | dists/conjugacy (inverse-Wishart posterior), mixture#bayesianGaussianMixture | the inverse-Wishart posterior mean as a shrinkage covariance is available through `conjugatePosterior`; there is no named estimator and no empirical-Bayes choice of its scale | covariance/bayesian.ts | S | low | Bayesian covariance models
+A | Tyler_M_estimator|regularised_Tyler|Kent_Tyler_multivariate_t_MLE|Huber_M_scatter|Maronna_M_scatter | | the scatter M-estimators by fixed-point iteration: Tyler's (distribution-free for elliptical data, shape only), its regularised form for p close to n, the multivariate t maximum likelihood by EM (Kent and Tyler) and Huber and Maronna M-estimators | covariance/robust-scatter.ts | M | high | robust scatter estimators
+A | spatial_sign_covariance|spatial_Kendall_tau_covariance|Gnanadesikan_Kettenring | | spatial-sign and spatial-Kendall covariances and the Gnanadesikan-Kettenring pairwise construction | covariance/robust-scatter.ts | S | low | robust scatter estimators
+A | ranks_based_correlation_matrix|Spearman_correlation_matrix|Kendall_correlation_matrix|Gaussian_rank_correlation|winsorised_correlation|percentage_bend_correlation|biweight_midcorrelation|shepherd_pi_correlation|skipped_correlation | stats#spearman, #kendallTau, dists#kendallTauMatrix | rank-based and robust correlations as matrices (and the winsorised, percentage-bend, biweight and skipped correlations of Wilcox): only the pairwise tests and one Kendall matrix exist | covariance/rank.ts | S | medium | rank-based and robust correlation matrices
+
+# ===================================================================== graphical structure methods (concepts, from memory)
+@lib graph_structure_methods
+A | Meinshausen_Buhlmann_neighbourhood_selection|node_wise_lasso_debiased|scaled_lasso_precision | learn#lassoPath | see huge.mb | covariance/neighbourhood.ts | S | high | neighbourhood and nonparanormal graph estimators
+A | SPACE_Peng_Wang_Zhou_Zhu|TIGER_Liu_Wang|CLIME_Cai_Liu_Luo|SCIO_Liu_Luo | | column-wise estimators: SPACE (joint sparse regression with symmetry), TIGER, CLIME (a linear programme per column) and SCIO | covariance/neighbourhood.ts | M | medium | neighbourhood and nonparanormal graph estimators
+A | QUIC_Hsieh|BigQUIC | covariance#graphicalLassoEstimator | see skggm | | | |
+A | adaptive_graphical_lasso|SCAD_graphical_lasso|MCP_graphical_lasso|graphical_elastic_net | covariance#graphicalLassoEstimator | non-convex and elastic-net penalties on the precision matrix (local linear approximation reduces to a weighted graphical lasso) | covariance/graphical-lasso.ts | S | medium | graphical lasso variants
+A | graphical_ridge | | see rags2ridges | covariance/ridge-precision.ts | S | medium | graphical lasso variants
+P | graphical_lasso_path_warm_start | covariance#graphicalLassoEstimator | the exposition draws the path by refitting at each penalty; a warm-started path function with the edges entering is the teaching figure and also faster | covariance/graphical-lasso.ts | S | high | graphical lasso variants
+P | glasso_block_coordinate_P_GLASSO | covariance#graphicalLassoAlgorithm | the primal graphical lasso (P-glasso, Mazumder and Hastie): the same objective by the primal block coordinate descent | | | |
+A | joint_graphical_lasso_Danaher|fused_graphical_lasso|group_graphical_lasso|node_based_joint_graphical_lasso | | see gglasso | covariance/joint-graphical-lasso.ts | M | medium | joint, time-varying and latent graphical lasso
+A | time_varying_graphical_lasso_Hallac|kernel_time_graphical_lasso|latent_variable_graphical_lasso | | see regain | covariance/joint-graphical-lasso.ts | M | medium | joint, time-varying and latent graphical lasso
+A | mixed_graphical_models|conditional_Gaussian_graphical_model | | graphs over continuous and discrete variables (Lee and Hastie; Yang et al.) | covariance/neighbourhood.ts | L | low | neighbourhood and nonparanormal graph estimators
+A | nonparanormal_Liu_Lafferty_Wasserman|Gaussian_copula_graphical_model_Hoff|Gaussian_copula_extended_rank_likelihood | dists#gaussianCopula, #fitCopula, pgm | a Gaussian graphical model on normal scores of the ranks (nonparanormal), or by a Bayesian rank likelihood for mixed marginals: the copula exists, the graph estimator on it does not | covariance/rank.ts | M | high | neighbourhood and nonparanormal graph estimators
+A | Ising_graphical_lasso|Poisson_graphical_model|exponential_family_graphical_model|Student_t_graphical_lasso | pgm | non-Gaussian graphical estimators: Ising by node-wise logistic lasso, Poisson, and the t graphical lasso (by EM) | covariance/neighbourhood.ts | M | low | neighbourhood and nonparanormal graph estimators
+A | EBIC_Foygel_Drton|cross_validated_lambda|StARS_stability_approach|stability_selection_graphical_lasso | | the three ways of choosing the penalty: extended BIC, cross-validation of the held-out likelihood and StARS (the subsampled instability of the graph); each is a figure along the penalty path | covariance/graph-selection.ts | S | high | graphical lasso model selection
+A | debiased_graphical_lasso_Jankova_van_de_Geer|inference_on_precision_entries|false_discovery_rate_edges|knockoffs_graphical_models | | confidence intervals and tests for single entries of a precision matrix, edge selection with false-discovery control | covariance/graph-selection.ts | M | low | graphical lasso model selection
+P | partial_correlation_significance_test | stats#partialCorrelation, pgm/learning#partialCorrelationTest | the test is in the PC algorithm; as a standalone matrix of p-values it is a loop | | | |
+A | G_Wishart_prior|bayesian_graphical_lasso|Bayesian_structure_learning_MCMC_birth_death|spike_and_slab_graphical_model|horseshoe_graphical_model | dists#wishart | Bayesian graph estimation with edge posterior probabilities | covariance/bayesian-graphical.ts | L | low | Bayesian covariance models
+A | minimum_spanning_tree_correlation|planar_maximally_filtered_graph|TMFG|DBHT|LoGo_sparse_inverse | graph#minimumSpanningTree | the correlation network filtered to a tree or a planar graph: the spanning tree of the correlation distance exists as a composition | covariance/filtered-graphs.ts | M | low | finance covariance inputs
+P | hierarchical_clustering_correlation | cluster#agglomerativeClustering, distances#correlationDistance | | | | |
+
+# ===================================================================== testing (concepts, from memory)
+@lib covariance_testing
+F | Box_M|Bartlett_multivariate | stats/tests#boxM | | | | |
+A | Jennrich_correlation_matrices | | Jennrich's test that two correlation matrices are equal | stats/tests/covariance.ts | S | low | covariance and correlation tests
+A | Jennrich_test|Mauchly_sphericity|John_sphericity|Ledoit_Wolf_sphericity|Nagao_identity_test|Schott_test|likelihood_ratio_test_of_covariance | stats/tests#boxM | the classical tests of sphericity (Mauchly, John, Ledoit-Wolf) and of identity or a given covariance (likelihood ratio, Nagao), and Jennrich's test of equal correlation matrices; Mauchly's test and its Greenhouse-Geisser corrections are what repeated-measures ANOVA needs | stats/tests/covariance.ts | M | high | covariance and correlation tests
+A | Srivastava_test|Cai_Ma_two_sample|Anderson_Darling_covariance | | tests of covariance equality in high dimensions | stats/tests/covariance.ts | M | low | covariance and correlation tests
+A | Fisher_z_compare_correlations|Steiger_dependent_correlations|Olkin_Finn_test|equal_correlation_test|Bartlett_test_of_correlation_matrix|correlation_matrix_bootstrap_ci|Bonett_confidence_interval | stats#pearson (the Fisher interval of one correlation) | the comparison of two independent or dependent correlations, of many correlations and the test that a correlation matrix is an identity (Bartlett): the tests a psychologist reaches for after a correlation matrix | stats/tests/correlation.ts | S | medium | covariance and correlation tests
+A | Kaiser_Meyer_Olkin | decomposition#factorAnalysis | the sampling adequacy of a correlation matrix for factor analysis | stats/tests/correlation.ts | S | medium | covariance and correlation tests
+A | parallel_analysis_Horn|Velicer_MAP|Bai_Ng_factor_count|Hallin_Liska_factor_count|Onatski_edge_distribution|Kritchman_Nadler_rank_estimate|Johnstone_Tracy_Widom_test | decomposition#pca (explained variance) | how many factors or components: Horn's parallel analysis against random-data eigenvalues, Velicer's MAP, and the information-criterion and edge-distribution counts: the random-matrix tests of the number of spikes | decomposition/n-components.ts | M | high | spectral cleaning and random matrix theory
+
+# ===================================================================== random matrix theory (concepts, from memory)
+@lib random_matrix_theory
+A | MarchenkoPastur_density|MarchenkoPastur_cdf|MarchenkoPastur_edges | | the limiting spectral law of a sample covariance matrix (ratio q = p/n): the density, cdf and the two edges. Plotted over the eigenvalue histogram of pure noise it is the first picture of high-dimensional statistics | dists/random-matrix.ts | S | high | spectral cleaning and random matrix theory
+A | Wigner_semicircle|Girko_law|Kesten_McKay | | the semicircle law of Wigner matrices and its cousins | dists/random-matrix.ts | S | medium | spectral cleaning and random matrix theory
+A | TracyWidom_GOE|TracyWidom_GUE|TracyWidom_GSE | | the distribution of the largest eigenvalue (Painleve II or Fredholm determinant): the test of whether a principal component is signal | dists/random-matrix.ts | M | medium | spectral cleaning and random matrix theory
+A | Stieltjes_transform|R_transform|free_deconvolution | | the transforms behind the spectrum of sums and products of random matrices | dists/random-matrix.ts | M | low | spectral cleaning and random matrix theory
+A | spiked_covariance_BBP_threshold|Baik_Silverstein_limits|Bai_Silverstein_CLT | | the phase transition (BBP): a spike below 1 + sqrt(q) is invisible in the sample covariance; sample eigenvalue and eigenvector overlaps above it | dists/random-matrix.ts | M | high | spectral cleaning and random matrix theory
+A | eigenvalue_clipping_RMT|eigenvalue_replacement_denoising|detoning_market_mode|MP_fit_by_KDE|Ledoit_Peche_shrinkage_function | | cleaning of a sample correlation matrix by the spectrum: clipping, replacement, detoning, with the noise variance fitted | covariance/spectral.ts | M | high | spectral cleaning and random matrix theory
+A | optimal_hard_threshold_singular_values|Gavish_Donoho|spectrum_estimation_QuEST | numerics/linalg#lowRankApproximation | the optimal hard threshold of singular values (4 / sqrt(3) sigma sqrt(n) and its generalisation) and the QuEST estimate of the population spectrum | covariance/spectral.ts | S | medium | spectral cleaning and random matrix theory
+P | Haar_orthogonal_sampler|Haar_unitary_sampler | foundations#rotations | no sampler of Haar-distributed matrices (the QR of a Gaussian matrix with a sign correction) | random/matrices.ts | S | medium | data generators with known covariance
+P | random_correlation_matrix_vine|random_correlation_matrix_onion | dists#lkj, #lkjCholesky | the LKJ distribution samples correlation matrices by the vine and onion methods; a named sampler of those methods is the same thing | | | |
+F | Wishart_sampler_Bartlett | dists#wishart | | | | |
+
+# ===================================================================== missing data, streaming, weighted (concepts, from memory)
+@lib missing_streaming_weighted
+A | EM_covariance_incomplete_data|FIML_covariance|ECM_covariance_multivariate_t|Bayesian_data_augmentation_covariance|covariance_imputation_conditional_Gaussian | learn/preprocessing#iterativeImputer, stats/tests#littleMcarTest | maximum-likelihood mean and covariance from incomplete rows by EM (the conditional-expectation step of a Gaussian with missing entries); omai's Little's MCAR test uses such an estimate internally but there is no exported estimator, and the iterative imputer does not return the covariance | covariance/missing.ts | M | high | missing-data and streaming covariance
+A | pairwise_deletion_covariance|listwise_deletion_covariance|nearest_PSD_after_pairwise | stats#cov | pairwise- and listwise-complete covariance, and the repair of the non-PSD matrix they produce | covariance/missing.ts | S | high | missing-data and streaming covariance
+F | Little_MCAR_test | stats#littleMcarTest | | | | |
+P | Welford_online_covariance|Chan_parallel_merge_covariance | stats#momentState, #merge, sampling#massMatrixUpdate | the running update and the parallel merge exist for one variable (`momentState`, `push`, `merge`); the multivariate form exists inside the mass-matrix adaptation of the sampler and is not exported for general use | covariance/streaming.ts | S | high | streaming and exponentially weighted covariance
+P | exponentially_weighted_covariance|sliding_window_covariance | stats#ewmVar, signal/sliding | univariate | covariance/streaming.ts | S | high | streaming and exponentially weighted covariance
+P | Sherman_Morrison_precision_update|online_Cholesky_update | numerics/linalg#choleskyUpdate, #choleskyDowndate | rank-one Cholesky updates exist; the precision matrix updated as data arrive is a use of them | covariance/streaming.ts | S | medium | streaming and exponentially weighted covariance
+P | incremental_PCA|Oja_rule | decomposition#incrementalPca | incremental PCA exists; Oja's rule and the other stochastic subspace trackers do not | | | |
+A | streaming_covariance_sketch|frequent_directions|online_robust_covariance | sketches | the covariance sketch with a spectral-norm guarantee (frequent directions): a deterministic streaming low-rank sketch | sketches/frequent-directions.ts | S | low | missing-data and streaming covariance
+P | weighted_covariance_reliability_weights | stats#cov | frequency and reliability weights exist (numpy's formula) | | | |
+A | semicovariance_downside|exceedance_correlation|Gerber_statistic|Gerber_statistic_1_2|co_skewness_co_kurtosis_matrices | | downside and exceedance covariance and the higher co-moment matrices | covariance/gerber.ts | S | low | finance covariance inputs
+P | distance_covariance_matrix | stats#distanceCorrelation | | covariance/dependence-matrices.ts | S | low | rank-based and robust correlation matrices
+P | partial_correlation_from_precision | stats#partialCorrelation | the matrix of partial correlations from a precision matrix: `-P_ij / sqrt(P_ii P_jj)`, the output of a graphical lasso; the graphical lasso estimator exposes it as a path | | | |
+
+# ===================================================================== SPD geometry as concepts (not already counted above)
+@lib spd_geometry_concepts
+A | affine_invariant_metric|log_Euclidean_metric|log_Cholesky_metric|Bures_Wasserstein_metric|Fisher_Rao_Gaussian | dists#wasserstein2Gaussian | see pyriemann and geomstats | covariance/spd/metrics.ts | M | high | SPD geometry
+A | Stein_divergence|Jeffreys_divergence | dists#klDivergence | the symmetric Stein (S-) and Jeffreys divergences between SPD matrices: closed forms in log-determinants (the KL between Gaussians exists in `dists`) | covariance/spd/metrics.ts | S | medium | SPD geometry
+A | Karcher_mean|Frechet_mean_SPD|geometric_median_SPD|geodesic_SPD|exp_log_maps_SPD|parallel_transport_SPD|tangent_space_embedding|Riemannian_Gaussian_SPD | | see pyriemann | covariance/spd/means.ts | M | high | SPD geometry
+A | SPD_k_means|SPD_MDM_classifier|SPD_kernels|SPD_batch_normalisation|SPDNet_BiMap_ReEig|geoopt_SPD_manifold|optimisation_on_SPD_manifold | cluster#lloydAlgorithm, learn#nearestCentroid | the learners that take SPD matrices as points: nearest-mean classifier (MDM), k-means, kernels, and the SPD-network layers; each is the Euclidean one with a different distance and mean | covariance/spd/learners.ts | M | medium | SPD geometry
+A | nearest_correlation_matrix_Higham|nearest_covariance_alternating_projections|Newton_nearest_correlation_Qi_Sun | optim#projectPsd | the nearest correlation matrix by Dykstra alternating projections (Higham 2002) and by a quadratically convergent Newton method (Qi and Sun): the first is a traced iteration whose error is a curve | covariance/nearest.ts | S | high | nearest correlation and covariance repair

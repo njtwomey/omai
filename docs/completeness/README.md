@@ -8,39 +8,42 @@ out on purpose.
 
 This is a quick survey, accurate at the level of names. Nothing here compares behaviour or numerical agreement.
 
-The survey ran in two passes. The first pass measured omai against the libraries of the domains the owner listed (scikit-learn, scipy,
+The survey ran in three passes. The first pass measured omai against the libraries of the domains the owner listed (scikit-learn, scipy,
 statsmodels, torch, probabilistic programming, graphical models, RL, graph learning and the like). The owner's reaction was that
 families such as metric learning were pretty much absent from it, and that was right: a survey only measures the libraries it lists.
 The second pass added the families the first one left out (metric learning, self-supervised learning, training loops and paradigms,
 Bayesian optimisation and Gaussian-process stacks, tabular and interpretable libraries, the torch ecosystem, structured prediction
 and CRFs, and a group of adjacent libraries) and then asked which omai domains had no reference lens at all
-([blind-spots.md](blind-spots.md)).
+([blind-spots.md](blind-spots.md)). The third pass took one area on its own: covariance, precision and correlation estimation
+([covariance.md](covariance.md)), which the first two had seen only through `sklearn.covariance` (16 names, all covered) and so reported as complete. Measured
+against the libraries where the subject lives, it is not: that is where the largest absences of omai's strongest estimator family are.
 
 Start with [plan.md](plan.md): the short, directional version (the big gaps, an order, and what needs a decision).
 
 Files:
 
-| file                                                               | covers                                                                                                                                                                        |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [sklearn.md](sklearn.md)                                           | scikit-learn, imbalanced-learn                                                                                                                                                |
-| [scipy-statsmodels.md](scipy-statsmodels.md)                       | scipy, statsmodels, and the time-series libraries sktime, tslearn, prophet                                                                                                    |
-| [probabilistic.md](probabilistic.md)                               | NumPyro, PyMC, TensorFlow Probability, ArviZ                                                                                                                                  |
-| [graphical-models.md](graphical-models.md)                         | pgmpy, hmmlearn (Bayesian networks, MRFs, factor graphs, HMMs, CRFs)                                                                                                          |
-| [rl.md](rl.md)                                                     | gymnasium, Stable-Baselines3, CleanRL, PettingZoo                                                                                                                             |
-| [torch.md](torch.md)                                               | torch.nn, optim, init, functional, distributions, autograd/func, data; torchvision; torchmetrics                                                                              |
-| [graph-neural-networks.md](graph-neural-networks.md)               | PyTorch Geometric (and DGL), NetworkX                                                                                                                                         |
-| [other.md](other.md)                                               | causal (DoWhy, EconML), fairness, explainability (SHAP, Captum), survival, anomaly (PyOD), vision, text, tuning (Optuna)                                                      |
-| [metric-learning.md](metric-learning.md)                           | pytorch-metric-learning, metric-learn, FAISS concepts (every name listed, with omai's equivalent or its absence)                                                              |
-| [self-supervised.md](self-supervised.md)                           | lightly, solo-learn, sentence-transformers, autoencoders, contrastive predictive coding, disentanglement metrics                                                              |
-| [training-and-paradigms.md](training-and-paradigms.md)             | skorch, Lightning, Ignite, learn2learn, higher, Avalanche, river, Opacus, Flower, modAL, small-text, Snorkel, cleanlab                                                        |
-| [bayesian-optimisation-and-gp.md](bayesian-optimisation-and-gp.md) | BoTorch, GPyTorch, GPflow, scikit-optimize, Pyro, BlackJAX                                                                                                                    |
-| [tabular-and-interpretable.md](tabular-and-interpretable.md)       | interpret, imodels, category_encoders, feature-engine, mlxtend, scikit-multilearn, UMAP family, yellowbrick, scikit-plot, LIME, gradient-boosting features                    |
-| [torch-ecosystem.md](torch-ecosystem.md)                           | torchvision.models, timm, torchaudio, librosa, torchtext, kornia, albumentations, torchinfo and graph export                                                                  |
-| [structured-prediction.md](structured-prediction.md)               | CRFsuite, CRF++, pytorch-crf, AllenNLP, flair, pystruct, seqeval and the structured-prediction literature                                                                     |
-| [adjacent.md](adjacent.md)                                         | offline RL, control and filtering, change points, optimisation, OT, geometry, SymPy, causal discovery, MAPIE, forecasting zoos, recommenders, data checks, game theory, numpy |
-| [blind-spots.md](blind-spots.md)                                   | which omai domains had a reference lens and which had none; quick passes for the ones with none; what name comparison cannot see                                              |
-| [repertoire.md](repertoire.md)                                     | things omai should or could have that no single library offers: textbook methods, datasets, diagnostics, chart types                                                          |
-| `data/`                                                            | the enumerations (`ref-*.json`), the matches (`match-*.json`), counts                                                                                                         |
+| file                                                               | covers                                                                                                                                                                                                              |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [sklearn.md](sklearn.md)                                           | scikit-learn, imbalanced-learn                                                                                                                                                                                      |
+| [scipy-statsmodels.md](scipy-statsmodels.md)                       | scipy, statsmodels, and the time-series libraries sktime, tslearn, prophet                                                                                                                                          |
+| [probabilistic.md](probabilistic.md)                               | NumPyro, PyMC, TensorFlow Probability, ArviZ                                                                                                                                                                        |
+| [graphical-models.md](graphical-models.md)                         | pgmpy, hmmlearn (Bayesian networks, MRFs, factor graphs, HMMs, CRFs)                                                                                                                                                |
+| [rl.md](rl.md)                                                     | gymnasium, Stable-Baselines3, CleanRL, PettingZoo                                                                                                                                                                   |
+| [torch.md](torch.md)                                               | torch.nn, optim, init, functional, distributions, autograd/func, data; torchvision; torchmetrics                                                                                                                    |
+| [graph-neural-networks.md](graph-neural-networks.md)               | PyTorch Geometric (and DGL), NetworkX                                                                                                                                                                               |
+| [other.md](other.md)                                               | causal (DoWhy, EconML), fairness, explainability (SHAP, Captum), survival, anomaly (PyOD), vision, text, tuning (Optuna)                                                                                            |
+| [metric-learning.md](metric-learning.md)                           | pytorch-metric-learning, metric-learn, FAISS concepts (every name listed, with omai's equivalent or its absence)                                                                                                    |
+| [self-supervised.md](self-supervised.md)                           | lightly, solo-learn, sentence-transformers, autoencoders, contrastive predictive coding, disentanglement metrics                                                                                                    |
+| [training-and-paradigms.md](training-and-paradigms.md)             | skorch, Lightning, Ignite, learn2learn, higher, Avalanche, river, Opacus, Flower, modAL, small-text, Snorkel, cleanlab                                                                                              |
+| [bayesian-optimisation-and-gp.md](bayesian-optimisation-and-gp.md) | BoTorch, GPyTorch, GPflow, scikit-optimize, Pyro, BlackJAX                                                                                                                                                          |
+| [tabular-and-interpretable.md](tabular-and-interpretable.md)       | interpret, imodels, category_encoders, feature-engine, mlxtend, scikit-multilearn, UMAP family, yellowbrick, scikit-plot, LIME, gradient-boosting features                                                          |
+| [torch-ecosystem.md](torch-ecosystem.md)                           | torchvision.models, timm, torchaudio, librosa, torchtext, kornia, albumentations, torchinfo and graph export                                                                                                        |
+| [structured-prediction.md](structured-prediction.md)               | CRFsuite, CRF++, pytorch-crf, AllenNLP, flair, pystruct, seqeval and the structured-prediction literature                                                                                                           |
+| [adjacent.md](adjacent.md)                                         | offline RL, control and filtering, change points, optimisation, OT, geometry, SymPy, causal discovery, MAPIE, forecasting zoos, recommenders, data checks, game theory, numpy                                       |
+| [covariance.md](covariance.md)                                     | covariance, precision and correlation estimation: shrinkage, robust scatter, graphical models, SPD geometry, random matrix theory, tests, streaming; pyRiemann, skfolio, skggm, robpy, geomstats and the R packages |
+| [blind-spots.md](blind-spots.md)                                   | which omai domains had a reference lens and which had none; quick passes for the ones with none; what name comparison cannot see                                                                                    |
+| [repertoire.md](repertoire.md)                                     | things omai should or could have that no single library offers: textbook methods, datasets, diagnostics, chart types                                                                                                |
+| `data/`                                                            | the enumerations (`ref-*.json`), the matches (`match-*.json`), counts                                                                                                                                               |
 
 ## What was surveyed and why
 
@@ -65,6 +68,8 @@ The libraries were chosen from the domains in `packages/engine/src/lib` (67 fold
 | nn, signal, text, vision, data                                                                                           | torchvision.models, librosa 1.0.0; timm, torchaudio, torchtext, kornia, albumentations, torchinfo/fx/ONNX concepts                                                                                                                                                                                                                                                                                                                                | introspection; memory                                                         |
 | pgm (CRFs), text, metrics                                                                                                | sklearn-crfsuite 0.5.0, python-crfsuite, pytorch-crf; CRF++, AllenNLP, flair, pystruct, seqeval, structured-prediction literature                                                                                                                                                                                                                                                                                                                 | introspection; memory                                                         |
 | agents, dynamics, systems, timeseries, optim, causal, games, information, symbolic, tensor, recommenders, data checks    | control 0.10.2, filterpy 1.4.5, ruptures, stumpy, pysindy, cma, pymoo 0.6.2, optax 0.2.8, cvxpy 1.9.3, POT, shapely, SymPy 1.14.0, causal-learn, MAPIE 1.6.0, nashpy, OpenSpiel 2.0.2, datasketch, pysubgroup, pingouin, pyitlib, NPEET, sdeint, numpy 2.5.4; d3rlpy, imitation, pykalman, nevergrad, trimesh, ProbLog, gCastle, uncertainty-toolbox, neuralforecast, Darts, GluonTS, surprise, implicit, LightFM, RecBole, deepchecks, evidently | introspection; memory                                                         |
+
+_Third pass (covariance):_ the libraries are listed in `covariance.md`: scikit-learn 1.9.1, statsmodels 0.15.0 and scipy 1.18.1 (re-listed slices); pyRiemann 0.12, skfolio 1.12.8, PyPortfolioOpt 1.6.0, Riskfolio-Lib 3.3.0, skggm 0.2.8, gglasso 0.3.1, regain 0.4.1, robpy 0.0.6, rmt_denoise 2.3.0, geomstats 2.8.0, PyManopt 2.2.1, arch 8.0.0, nilearn 0.14.1 and MNE 1.13.2 (read from source); ten CRAN packages (CovTools, rrcov, robustbase, cellWise, corpcor, huge, nlshrink, POET, rags2ridges, BDgraph; index pages) and lists from memory (pandas, river, JavaScript peers, PyMC priors, and concept lists for sparse and structured estimators, graph-structure methods, covariance tests, random matrix theory, missing data and streaming, time-varying and high-frequency covariance and SPD geometry).
 
 Skipped, with the reason: DGL, pyAgrum, libpgm (same scope as PyG and pgmpy; the nearest installed library is used);
 Kornia, spaCy, Hugging Face (pretrained models and a deep-learning vision stack, which omai does not do); Stan (a
@@ -93,8 +98,8 @@ that no learner would miss.
 
 | family                          | covered | partial | absent | out of scope | absent or partial, medium or high |
 | ------------------------------- | ------: | ------: | -----: | -----------: | --------------------------------: |
-| scikit-learn, imbalanced-learn  |     446 |      11 |     42 |           53 |                                30 |
-| scipy, statsmodels, time series |     962 |     159 |    600 |          181 |                               200 |
+| scikit-learn, imbalanced-learn  |     445 |      12 |     42 |           53 |                                31 |
+| scipy, statsmodels, time series |     963 |     154 |    604 |          181 |                               208 |
 | probabilistic                   |     354 |      27 |    118 |           59 |                                83 |
 | graphical models                |      65 |      15 |     39 |           23 |                                35 |
 | reinforcement learning          |     118 |      30 |     72 |           39 |                                27 |
@@ -142,6 +147,23 @@ the counts. Concretely:
 - Adjacent: control, filtering, stumpy, optax, game theory and conformal prediction are close to complete; data-audit reports, conformal risk control, forecasting as a pipeline,
   neighbourhood and graph collaborative filtering, the classic board-game shelf and multi-objective evolutionary algorithms are the gaps.
 
+Third pass: covariance, precision and correlation estimation ([covariance.md](covariance.md)), 1,047 new reference entries in 36 lists (14 libraries read from
+unpacked source, 10 CRAN index pages, 12 lists from memory). The file also re-lists 112 names of sklearn.covariance, a slice of statsmodels and of scipy that the first pass
+counted (55 covered, 19 partial, 38 absent); they are left out of the totals here. The first-pass rows above were corrected for two verdicts the new look overturned
+(`GraphicalLassoCV` is partial, `statsmodels.stats.test_cov*` are absent).
+
+| family (third pass)                              | covered | partial | absent | out of scope | absent or partial, medium or high |
+| ------------------------------------------------ | ------: | ------: | -----: | -----------: | --------------------------------: |
+| covariance, precision and correlation estimation |      90 |     146 |    737 |           74 |                               551 |
+
+What the third pass says. The count is high because 157 of the 737 absences are names of the SPD-geometry libraries (pyRiemann, geomstats, PyManopt) and 213 are entries of the concept
+lists of methods; read the ranked list in `covariance.md`, not the count. In short: omai has the sklearn.covariance estimators and a traced graphical lasso, and nothing around them. Missing are
+the random-matrix toolbox (Marchenko-Pastur, denoising and detoning, nonlinear shrinkage), the choice of the graphical-lasso penalty (cross-validation, EBIC, StARS), shrinkage targets
+other than a scaled identity, nearest-correlation repair, HAC and cluster-robust covariance for regression, multivariate running and exponentially weighted covariance, the geometry of SPD
+matrices, robust scatter beyond MCD (Tyler, M-estimators, OGK), the one-sample covariance and sphericity tests, and nonparanormal and neighbourhood graph estimators. The multivariate
+Student t distribution is absent from `dists`. Ten of the R packages practitioners expect have no maintained Python peer (corpcor, CovTools, nlshrink, POET, rags2ridges, BDgraph,
+spcov, covglasso, rmgarch, highfrequency); robpy, skggm, gglasso and regain are small and partly unmaintained, and no JavaScript library goes past `cov` and `corrcoef` of two arrays.
+
 How the counts were made, and how far to trust them:
 - Introspected names were matched against the 16,750 exports of omai-engine as `scripts/aifn-usage/scan-omai.ts` reads them
   (the repository's own docs extractor). Exact name after dropping case and underscores counts as covered
@@ -170,6 +192,10 @@ How the counts were made, and how far to trust them:
   the OpenSpiel game list) were judged by group; the verdict file says which groups.
 - An omai export that has the right name but is a different thing is a false friend (`nn#marginLoss` is the Carlini-Wagner margin, not
   pytorch-metric-learning's MarginLoss); several were found and the verdict says so.
+- Third pass (covariance): `enumerate.py` gained a source route: libraries that are not installed are downloaded as wheels (an sdist for skggm) into a scratch directory with
+  `pip download --no-deps`, unpacked, and read with `ast` through `OMAI_SURVEY_SRC` (nothing is imported or installed, and the project's dependency groups are untouched); the
+  names are the release's. The CRAN lists are the index pages of the reference manuals; the other lists and the concept lists are from memory (`memory.json`). Every name has a hand-written
+  verdict in `verdicts/covariance.txt` (none was left to the name match). Hand-written prose of that family is in `scripts/completeness-survey/prose/` and is included by `report.ts`.
 
 To rerun:
 
@@ -177,6 +203,7 @@ To rerun:
 # 1. enumerate the installed libraries (read only; uses the oracle environment). With library names it runs only those
 #    (the second pass libraries start at `opacus`); the second pass was run with the existing virtualenv's interpreter:
 #    .venv/bin/python scripts/completeness-survey/enumerate.py opacus modal gpytorch skorch ... numpy
+#    the covariance family also reads unpacked sources: OMAI_SURVEY_SRC=<dir> (see the docstring of enumerate.py)
 mise exec -- uv run --group oracle-core --group oracle-torch --group oracle-prob --group oracle-rl \
   python scripts/completeness-survey/enumerate.py
 # 2. match against omai's exports and write data/match-<lib>.json and data/summary.json
@@ -189,7 +216,7 @@ mise exec -- node scripts/completeness-survey/report.ts
 mise exec -- pnpm exec biome check --write scripts/completeness-survey docs/completeness
 ```
 
-`README.md`, `repertoire.md` and `blind-spots.md` are written by hand; the family files are generated, so edit the verdict files or the prose
+`README.md`, `repertoire.md` and `blind-spots.md` are written by hand; the family files are generated (the prose of `covariance.md` that is not a table is in `scripts/completeness-survey/prose/`), so edit the verdict files or the prose
 in `report.ts` and rerun. The enumeration here was run with the interpreter of the repository's existing oracle virtualenv. `enumerate.py` needs the libraries to be installed in a Python environment (the repository's
 oracle groups, or any environment that has them).
 
@@ -251,6 +278,12 @@ document when it is built.
 |  29 | Named small networks as builders with depth and width as knobs: LeNet and VGG-style plain stacks, ResNet-18/34 and a bottleneck ResNet, a vision transformer, a small U-Net; each describable with `describe`                                                                                                                                                       | torchvision.models, timm                         | `nn/architectures/{classic,resnet,vit,unet}.ts`                                                                                                                | `nn/blocks#BasicBlock`, `#Bottleneck`, `#ConvNeXtBlock`, `#MBConv`, `#TransformerStack`, `nn#patchEmbedding`, `nn#describe`                                     |  M   | The blocks are all there and no network is assembled from them. A plain stack against a residual one as depth grows is the classic demonstration, and nothing in the library builds the plain one.                                                         |
 |  30 | A data-audit report: drift per column with the test chosen by type, duplicates, conflicting labels, constant and correlated columns, train-test leakage, label issues, outlier and out-of-distribution scores, weak-segment search                                                                                                                                  | deepchecks, Evidently, cleanlab Datalab          | `learn/data-audit.ts`, `anomaly/ood.ts`, `learn/feature-selection.ts`                                                                                          | `learn#populationStabilityIndex`, `#findLabelIssues`, `text#nearDuplicates`, `stats/tests`, `patterns#discoverSubgroups`, `data` (leak and duplicate modifiers) |  M   | Every ingredient exists in a different domain, and the modifiers that inject leakage and duplicates are already the test set for a detector. One report that runs them all is what a practitioner opens first.                                             |
 
+Also worth doing, from the third pass (`covariance.md` has the ten largest gaps and seven batches; the first two, spectra and shrinkage and graphical-model selection, are the ones to take first):
+the random-matrix toolbox (Marchenko-Pastur law, denoising and detoning of a correlation matrix, spiked-model threshold, nonlinear shrinkage), the choice of the graphical-lasso penalty
+by cross-validation, EBIC and StARS with a warm-started path, shrinkage towards targets other than a scaled identity, nearest-correlation repair, HAC and cluster-robust covariance
+(this is item 15 widened), multivariate running and exponentially weighted covariance, the geometry of SPD matrices (metrics, geodesics, Karcher mean, tangent space), robust scatter
+beyond MCD and the multivariate Student t, the sphericity and one-sample covariance tests, and the nonparanormal and neighbourhood graph estimators.
+
 Also worth doing, after these, from the second pass: conformal risk control and Learn-then-Test, exchangeability tests, Venn-Abers
 calibration and size-stratified coverage (MAPIE); multi-objective Bayesian optimisation (hypervolume-improvement acquisition),
 NSGA-III and MOEA/D with the ZDT and DTLZ problems and the IGD indicator; batch and entropy-search acquisition functions,
@@ -267,7 +300,7 @@ and Newton-Krylov in `numerics/roots`; syntactic parsing (the steppable chart-pa
 parsers) in `text`; edge and node connectivity, Stoer-Wagner, k-core in `graph`; the normality tests of D'Agostino, QQ plot
 data and a few scale tests in `stats/tests`; plain dictionary learning and sparse coding; Radon transform and filtered back
 projection with the Shepp-Logan phantom; Cox time-varying data helpers; the rest of the multi-agent particle scenarios;
-nearest-PSD correlation matrices. The family files list all of them with sizes.
+nearest-PSD correlation matrices (now item 5 of the covariance list). The family files list all of them with sizes.
 
 ## Deliberately not worth adding
 

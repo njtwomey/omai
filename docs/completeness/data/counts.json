@@ -1,17 +1,17 @@
 {
  "sklearn": {
-  "full": 446,
-  "partial": 11,
+  "full": 445,
+  "partial": 12,
   "absent": 42,
   "skip": 53,
-  "notLow": 30,
+  "notLow": 31,
   "libs": {
    "sklearn": {
-    "full": 430,
-    "partial": 11,
+    "full": 429,
+    "partial": 12,
     "absent": 24,
     "skip": 53,
-    "notLow": 16,
+    "notLow": 17,
     "version": "1.9.1",
     "source": "introspection"
    },
@@ -27,11 +27,11 @@
   }
  },
  "scipy-statsmodels": {
-  "full": 962,
-  "partial": 159,
-  "absent": 600,
+  "full": 963,
+  "partial": 154,
+  "absent": 604,
   "skip": 181,
-  "notLow": 200,
+  "notLow": 208,
   "libs": {
    "scipy": {
     "full": 649,
@@ -43,11 +43,11 @@
     "source": "introspection"
    },
    "statsmodels": {
-    "full": 285,
-    "partial": 70,
-    "absent": 125,
+    "full": 286,
+    "partial": 65,
+    "absent": 129,
     "skip": 106,
-    "notLow": 48,
+    "notLow": 56,
     "version": "0.15.0",
     "source": "introspection"
    },
@@ -374,6 +374,372 @@
     "notLow": 0,
     "version": "5.0.0",
     "source": "introspection"
+   }
+  }
+ },
+ "covariance": {
+  "full": 90,
+  "partial": 146,
+  "absent": 737,
+  "skip": 74,
+  "notLow": 551,
+  "relisted": {
+   "full": 55,
+   "partial": 19,
+   "absent": 38,
+   "skip": 0
+  },
+  "libs": {
+   "sklearn_covariance": {
+    "full": 15,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 1,
+    "version": "1.9.1",
+    "source": "introspection"
+   },
+   "statsmodels_cov": {
+    "full": 23,
+    "partial": 17,
+    "absent": 33,
+    "skip": 0,
+    "notLow": 25,
+    "version": "0.15.0",
+    "source": "introspection"
+   },
+   "scipy_cov": {
+    "full": 17,
+    "partial": 1,
+    "absent": 5,
+    "skip": 0,
+    "notLow": 4,
+    "version": "1.18.1",
+    "source": "introspection"
+   },
+   "pyriemann": {
+    "full": 12,
+    "partial": 18,
+    "absent": 107,
+    "skip": 13,
+    "notLow": 74,
+    "version": "0.12",
+    "source": "introspection"
+   },
+   "skfolio": {
+    "full": 20,
+    "partial": 15,
+    "absent": 24,
+    "skip": 50,
+    "notLow": 21,
+    "version": "1.12.8",
+    "source": "introspection"
+   },
+   "pypfopt": {
+    "full": 6,
+    "partial": 1,
+    "absent": 4,
+    "skip": 2,
+    "notLow": 2,
+    "version": "1.6.0",
+    "source": "introspection"
+   },
+   "riskfolio": {
+    "full": 5,
+    "partial": 9,
+    "absent": 37,
+    "skip": 4,
+    "notLow": 18,
+    "version": "3.3.0",
+    "source": "introspection"
+   },
+   "skggm": {
+    "full": 5,
+    "partial": 2,
+    "absent": 21,
+    "skip": 0,
+    "notLow": 23,
+    "version": "0.2.8",
+    "source": "introspection"
+   },
+   "gglasso": {
+    "full": 0,
+    "partial": 0,
+    "absent": 39,
+    "skip": 0,
+    "notLow": 25,
+    "version": "0.3.1",
+    "source": "introspection"
+   },
+   "regain": {
+    "full": 6,
+    "partial": 18,
+    "absent": 53,
+    "skip": 0,
+    "notLow": 47,
+    "version": "0.4.1",
+    "source": "introspection"
+   },
+   "robpy": {
+    "full": 2,
+    "partial": 12,
+    "absent": 13,
+    "skip": 0,
+    "notLow": 13,
+    "version": "0.0.6",
+    "source": "introspection"
+   },
+   "rmt_denoise": {
+    "full": 0,
+    "partial": 0,
+    "absent": 11,
+    "skip": 2,
+    "notLow": 11,
+    "version": "2.3.0",
+    "source": "introspection"
+   },
+   "geomstats": {
+    "full": 0,
+    "partial": 0,
+    "absent": 42,
+    "skip": 0,
+    "notLow": 11,
+    "version": "2.8.0",
+    "source": "introspection"
+   },
+   "pymanopt": {
+    "full": 0,
+    "partial": 0,
+    "absent": 8,
+    "skip": 0,
+    "notLow": 0,
+    "version": "2.2.1",
+    "source": "introspection"
+   },
+   "arch_cov": {
+    "full": 0,
+    "partial": 0,
+    "absent": 14,
+    "skip": 0,
+    "notLow": 14,
+    "version": "8.0.0",
+    "source": "introspection"
+   },
+   "nilearn_connectome": {
+    "full": 2,
+    "partial": 1,
+    "absent": 10,
+    "skip": 0,
+    "notLow": 9,
+    "version": "0.14.1",
+    "source": "introspection"
+   },
+   "mne_cov": {
+    "full": 3,
+    "partial": 3,
+    "absent": 2,
+    "skip": 2,
+    "notLow": 3,
+    "version": "1.13.2",
+    "source": "introspection"
+   },
+   "r_covtools": {
+    "full": 2,
+    "partial": 1,
+    "absent": 18,
+    "skip": 1,
+    "notLow": 14,
+    "version": "",
+    "source": "memory"
+   },
+   "r_rrcov": {
+    "full": 6,
+    "partial": 3,
+    "absent": 18,
+    "skip": 0,
+    "notLow": 8,
+    "version": "",
+    "source": "memory"
+   },
+   "r_robustbase": {
+    "full": 1,
+    "partial": 5,
+    "absent": 3,
+    "skip": 0,
+    "notLow": 2,
+    "version": "",
+    "source": "memory"
+   },
+   "r_cellwise": {
+    "full": 0,
+    "partial": 0,
+    "absent": 20,
+    "skip": 0,
+    "notLow": 20,
+    "version": "",
+    "source": "memory"
+   },
+   "r_corpcor": {
+    "full": 7,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 5,
+    "version": "",
+    "source": "memory"
+   },
+   "r_huge": {
+    "full": 0,
+    "partial": 2,
+    "absent": 9,
+    "skip": 0,
+    "notLow": 6,
+    "version": "",
+    "source": "memory"
+   },
+   "r_nlshrink": {
+    "full": 0,
+    "partial": 2,
+    "absent": 4,
+    "skip": 0,
+    "notLow": 4,
+    "version": "",
+    "source": "memory"
+   },
+   "r_poet": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0,
+    "notLow": 3,
+    "version": "",
+    "source": "memory"
+   },
+   "r_rags2ridges": {
+    "full": 0,
+    "partial": 0,
+    "absent": 21,
+    "skip": 0,
+    "notLow": 12,
+    "version": "",
+    "source": "memory"
+   },
+   "r_bdgraph": {
+    "full": 2,
+    "partial": 0,
+    "absent": 10,
+    "skip": 0,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "r_other_graphical": {
+    "full": 0,
+    "partial": 5,
+    "absent": 17,
+    "skip": 0,
+    "notLow": 16,
+    "version": "",
+    "source": "memory"
+   },
+   "pandas_cov": {
+    "full": 0,
+    "partial": 5,
+    "absent": 6,
+    "skip": 0,
+    "notLow": 11,
+    "version": "",
+    "source": "memory"
+   },
+   "river_cov": {
+    "full": 0,
+    "partial": 1,
+    "absent": 7,
+    "skip": 0,
+    "notLow": 7,
+    "version": "",
+    "source": "memory"
+   },
+   "js_peers": {
+    "full": 0,
+    "partial": 8,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "pymc_priors": {
+    "full": 7,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0,
+    "notLow": 1,
+    "version": "",
+    "source": "memory"
+   },
+   "timevarying_and_high_frequency": {
+    "full": 0,
+    "partial": 2,
+    "absent": 23,
+    "skip": 0,
+    "notLow": 15,
+    "version": "",
+    "source": "memory"
+   },
+   "sparse_and_structured": {
+    "full": 0,
+    "partial": 9,
+    "absent": 52,
+    "skip": 0,
+    "notLow": 46,
+    "version": "",
+    "source": "memory"
+   },
+   "graph_structure_methods": {
+    "full": 0,
+    "partial": 4,
+    "absent": 48,
+    "skip": 0,
+    "notLow": 27,
+    "version": "",
+    "source": "memory"
+   },
+   "covariance_testing": {
+    "full": 2,
+    "partial": 0,
+    "absent": 26,
+    "skip": 0,
+    "notLow": 22,
+    "version": "",
+    "source": "memory"
+   },
+   "random_matrix_theory": {
+    "full": 1,
+    "partial": 4,
+    "absent": 23,
+    "skip": 0,
+    "notLow": 22,
+    "version": "",
+    "source": "memory"
+   },
+   "missing_streaming_weighted": {
+    "full": 1,
+    "partial": 11,
+    "absent": 16,
+    "skip": 0,
+    "notLow": 14,
+    "version": "",
+    "source": "memory"
+   },
+   "spd_geometry_concepts": {
+    "full": 0,
+    "partial": 0,
+    "absent": 25,
+    "skip": 0,
+    "notLow": 25,
+    "version": "",
+    "source": "memory"
    }
   }
  },

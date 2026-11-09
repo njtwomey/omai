@@ -1,0 +1,451 @@
+{
+"library": "statsmodels_cov",
+"version": "0.15.0",
+"source": "introspection",
+"entries": [
+{
+"area": "statsmodels.multivariate.factor",
+"name": "Factor",
+"kind": "class",
+"doc": "Factor analysis"
+},
+{
+"area": "statsmodels.multivariate.factor",
+"name": "FactorResults",
+"kind": "class",
+"doc": "Factor results class"
+},
+{
+"area": "statsmodels.multivariate.factor",
+"name": "promax",
+"kind": "function",
+"doc": "Performs promax rotation of the matrix :math:`A`."
+},
+{
+"area": "statsmodels.multivariate.factor",
+"name": "rotate_factors",
+"kind": "function",
+"doc": "Subroutine for orthogonal and oblique rotation of the matrix :math:`A`"
+},
+{
+"area": "statsmodels.multivariate.pca",
+"name": "PCA",
+"kind": "class",
+"doc": "Principal Component Analysis"
+},
+{
+"area": "statsmodels.multivariate.pca",
+"name": "pca",
+"kind": "function",
+"doc": "Perform Principal Component Analysis (PCA)."
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "CovNearestResult",
+"kind": "class",
+"doc": "Result of :func:`cov_nearest` when the intermediate results are"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "FactoredPSDMatrix",
+"kind": "class",
+"doc": "Representation of a positive semidefinite matrix in factored form"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "GaussianMultivariateKernel",
+"kind": "class",
+"doc": "The Gaussian (squared exponential) multivariate kernel"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "MultivariateKernel",
+"kind": "class",
+"doc": "Base class for multivariate kernels"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "clip_evals",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "corr_clipped",
+"kind": "function",
+"doc": "Find a near correlation matrix that is positive semi-definite"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "corr_nearest",
+"kind": "function",
+"doc": "Find the nearest correlation matrix that is positive semi-definite"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "corr_nearest_factor",
+"kind": "function",
+"doc": "Find the nearest correlation matrix with factor structure to a"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "corr_thresholded",
+"kind": "function",
+"doc": "Construct a sparse matrix containing the thresholded row-wise"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "cov_nearest",
+"kind": "function",
+"doc": "Find the nearest covariance matrix that is positive (semi-) definite"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "cov_nearest_factor_homog",
+"kind": "function",
+"doc": "Approximate an arbitrary square matrix with a factor-structured"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "kernel_covariance",
+"kind": "function",
+"doc": "Use kernel averaging to estimate a multivariate covariance function"
+},
+{
+"area": "statsmodels.stats.covariance",
+"name": "TransformCorrNormalResult",
+"kind": "class",
+"doc": "Result of :func:`transform_corr_normal` when a NamedTuple is returned."
+},
+{
+"area": "statsmodels.stats.covariance",
+"name": "corr_normal_scores",
+"kind": "function",
+"doc": "Gaussian rank (normal scores) correlation"
+},
+{
+"area": "statsmodels.stats.covariance",
+"name": "corr_quadrant",
+"kind": "function",
+"doc": "Quadrant correlation"
+},
+{
+"area": "statsmodels.stats.covariance",
+"name": "corr_rank",
+"kind": "function",
+"doc": "Spearman rank correlation"
+},
+{
+"area": "statsmodels.stats.covariance",
+"name": "transform_corr_normal",
+"kind": "function",
+"doc": "Transform correlation matrix to be consistent at normal distribution"
+},
+{
+"area": "statsmodels.stats.dist_dependence_measures",
+"name": "DistDependStat",
+"kind": "class",
+"doc": "Result of :func:`distance_statistics`."
+},
+{
+"area": "statsmodels.stats.dist_dependence_measures",
+"name": "distance_correlation",
+"kind": "function",
+"doc": "Distance correlation"
+},
+{
+"area": "statsmodels.stats.dist_dependence_measures",
+"name": "distance_covariance",
+"kind": "function",
+"doc": "Distance covariance"
+},
+{
+"area": "statsmodels.stats.dist_dependence_measures",
+"name": "distance_covariance_test",
+"kind": "function",
+"doc": "The Distance Covariance (dCov) test"
+},
+{
+"area": "statsmodels.stats.dist_dependence_measures",
+"name": "distance_statistics",
+"kind": "function",
+"doc": "Calculate various distance dependence statistics"
+},
+{
+"area": "statsmodels.stats.dist_dependence_measures",
+"name": "distance_variance",
+"kind": "function",
+"doc": "Distance variance"
+},
+{
+"area": "statsmodels.stats.moment_helpers",
+"name": "Cov2CorrResult",
+"kind": "class",
+"doc": "Result of :func:`cov2corr` when the standard deviations are returned."
+},
+{
+"area": "statsmodels.stats.moment_helpers",
+"name": "corr2cov",
+"kind": "function",
+"doc": "Convert correlation matrix to covariance matrix given standard deviation"
+},
+{
+"area": "statsmodels.stats.moment_helpers",
+"name": "cov2corr",
+"kind": "function",
+"doc": "Convert covariance matrix to correlation matrix"
+},
+{
+"area": "statsmodels.stats.moment_helpers",
+"name": "cum2mc",
+"kind": "function",
+"doc": "Convert cumulants to central moments"
+},
+{
+"area": "statsmodels.stats.moment_helpers",
+"name": "mc2cum",
+"kind": "function",
+"doc": "Convert central moments to cumulants"
+},
+{
+"area": "statsmodels.stats.moment_helpers",
+"name": "mc2mnc",
+"kind": "function",
+"doc": "Convert central to non-central moments, uses recursive formula"
+},
+{
+"area": "statsmodels.stats.moment_helpers",
+"name": "mc2mvsk",
+"kind": "function",
+"doc": "Convert central moments to mean, variance, skew, kurtosis"
+},
+{
+"area": "statsmodels.stats.moment_helpers",
+"name": "mnc2cum",
+"kind": "function",
+"doc": "Convert non-central moments to cumulants"
+},
+{
+"area": "statsmodels.stats.moment_helpers",
+"name": "mnc2mc",
+"kind": "function",
+"doc": "Convert non-central to central moments, uses recursive formula"
+},
+{
+"area": "statsmodels.stats.moment_helpers",
+"name": "mnc2mvsk",
+"kind": "function",
+"doc": "Convert non-central moments to mean, variance, skew, kurtosis"
+},
+{
+"area": "statsmodels.stats.moment_helpers",
+"name": "mvsk2mc",
+"kind": "function",
+"doc": "Convert mean, variance, skew, kurtosis to central moments"
+},
+{
+"area": "statsmodels.stats.moment_helpers",
+"name": "mvsk2mnc",
+"kind": "function",
+"doc": "Convert mean, variance, skew, kurtosis to non-central moments"
+},
+{
+"area": "statsmodels.stats.moment_helpers",
+"name": "se_cov",
+"kind": "function",
+"doc": "Get standard deviation from covariance matrix"
+},
+{
+"area": "statsmodels.stats.multivariate",
+"name": "CovOnewayResult",
+"kind": "class",
+"doc": "Result of :func:`test_cov_oneway`."
+},
+{
+"area": "statsmodels.stats.multivariate",
+"name": "CovTestResult",
+"kind": "class",
+"doc": "Result of :func:`test_cov`, :func:`test_cov_spherical`,"
+},
+{
+"area": "statsmodels.stats.multivariate",
+"name": "HotellingResult",
+"kind": "class",
+"doc": "Result of :func:`test_mvmean` and :func:`test_mvmean_2indep`."
+},
+{
+"area": "statsmodels.stats.multivariate",
+"name": "confint_mvmean",
+"kind": "function",
+"doc": "Confidence interval for linear transformation of a multivariate mean"
+},
+{
+"area": "statsmodels.stats.multivariate",
+"name": "confint_mvmean_fromstats",
+"kind": "function",
+"doc": "Confidence interval for linear transformation of a multivariate mean"
+},
+{
+"area": "statsmodels.stats.multivariate",
+"name": "test_cov",
+"kind": "function",
+"doc": "One sample hypothesis test for covariance equal to null covariance"
+},
+{
+"area": "statsmodels.stats.multivariate",
+"name": "test_cov_blockdiagonal",
+"kind": "function",
+"doc": "One sample hypothesis test that covariance is block diagonal"
+},
+{
+"area": "statsmodels.stats.multivariate",
+"name": "test_cov_diagonal",
+"kind": "function",
+"doc": "One sample hypothesis test that covariance matrix is diagonal matrix"
+},
+{
+"area": "statsmodels.stats.multivariate",
+"name": "test_cov_oneway",
+"kind": "function",
+"doc": "Multiple sample hypothesis test that covariance matrices are equal"
+},
+{
+"area": "statsmodels.stats.multivariate",
+"name": "test_cov_spherical",
+"kind": "function",
+"doc": "One sample hypothesis test that covariance matrix is spherical"
+},
+{
+"area": "statsmodels.stats.multivariate",
+"name": "test_mvmean",
+"kind": "function",
+"doc": "Hotelling's test for multivariate mean in one sample"
+},
+{
+"area": "statsmodels.stats.multivariate",
+"name": "test_mvmean_2indep",
+"kind": "function",
+"doc": "Hotelling's test for multivariate mean in two independent samples"
+},
+{
+"area": "statsmodels.stats.multivariate_tools",
+"name": "CCRankTestResult",
+"kind": "class",
+"doc": "Result of :func:`cc_ranktest`."
+},
+{
+"area": "statsmodels.stats.multivariate_tools",
+"name": "CCStatsResult",
+"kind": "class",
+"doc": "Result of :func:`cc_stats`."
+},
+{
+"area": "statsmodels.stats.multivariate_tools",
+"name": "PartialProjectResult",
+"kind": "class",
+"doc": "Result of :func:`partial_project`."
+},
+{
+"area": "statsmodels.stats.multivariate_tools",
+"name": "cancorr",
+"kind": "function",
+"doc": "Canonical correlation coefficient between 2 arrays"
+},
+{
+"area": "statsmodels.stats.multivariate_tools",
+"name": "cc_ranktest",
+"kind": "function",
+"doc": "Rank tests based on smallest canonical correlation coefficients"
+},
+{
+"area": "statsmodels.stats.multivariate_tools",
+"name": "cc_stats",
+"kind": "function",
+"doc": "MANOVA statistics based on canonical correlation coefficient"
+},
+{
+"area": "statsmodels.stats.multivariate_tools",
+"name": "partial_project",
+"kind": "function",
+"doc": "Helper function to get linear projection or partialling out of variables"
+},
+{
+"area": "statsmodels.stats.regularized_covariance",
+"name": "RegularizedInvCovariance",
+"kind": "class",
+"doc": "Class for estimating regularized inverse covariance with nodewise regression"
+},
+{
+"area": "statsmodels.stats.sandwich_covariance",
+"name": "cov_cluster",
+"kind": "function",
+"doc": "Cluster robust covariance matrix"
+},
+{
+"area": "statsmodels.stats.sandwich_covariance",
+"name": "cov_cluster_2groups",
+"kind": "function",
+"doc": "Cluster robust covariance matrix for two groups/clusters"
+},
+{
+"area": "statsmodels.stats.sandwich_covariance",
+"name": "cov_hac",
+"kind": "function",
+"doc": "heteroscedasticity and autocorrelation robust covariance matrix (Newey-West)"
+},
+{
+"area": "statsmodels.stats.sandwich_covariance",
+"name": "cov_hc0",
+"kind": "function",
+"doc": "Heteroscedasticity robust covariance matrix, White's (1980) HC0"
+},
+{
+"area": "statsmodels.stats.sandwich_covariance",
+"name": "cov_hc1",
+"kind": "function",
+"doc": "Heteroscedasticity robust covariance matrix, MacKinnon-White's HC1"
+},
+{
+"area": "statsmodels.stats.sandwich_covariance",
+"name": "cov_hc2",
+"kind": "function",
+"doc": "Heteroscedasticity robust covariance matrix, MacKinnon-White's HC2"
+},
+{
+"area": "statsmodels.stats.sandwich_covariance",
+"name": "cov_hc3",
+"kind": "function",
+"doc": "Heteroscedasticity robust covariance matrix, MacKinnon-White's HC3"
+},
+{
+"area": "statsmodels.stats.sandwich_covariance",
+"name": "cov_nw_panel",
+"kind": "function",
+"doc": "Panel HAC robust covariance matrix"
+},
+{
+"area": "statsmodels.stats.sandwich_covariance",
+"name": "cov_white_simple",
+"kind": "function",
+"doc": "heteroscedasticity robust covariance matrix (White)"
+},
+{
+"area": "statsmodels.stats.sandwich_covariance",
+"name": "se_cov",
+"kind": "function",
+"doc": "Get standard deviation from covariance matrix"
+},
+{
+"area": "statsmodels.stats.sandwich_covariance",
+"name": "weights_bartlett",
+"kind": "function",
+"doc": "Bartlett weights for HAC"
+},
+{
+"area": "statsmodels.stats.sandwich_covariance",
+"name": "weights_uniform",
+"kind": "function",
+"doc": "Uniform weights for HAC"
+}
+]
+}

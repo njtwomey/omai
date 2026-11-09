@@ -1,6 +1,7 @@
 {
- "omaiExports": 16750,
+ "omaiExports": 16757,
  "sources": {
+  "arch_cov": "introspection",
   "arviz": "introspection",
   "blackjax": "introspection",
   "captum": "introspection",
@@ -13,6 +14,8 @@
   "fairlearn": "introspection",
   "filterpy": "introspection",
   "gensim": "introspection",
+  "geomstats": "introspection",
+  "gglasso": "introspection",
   "gpytorch": "introspection",
   "gymnasium": "introspection",
   "hmmlearn": "introspection",
@@ -20,9 +23,11 @@
   "librosa": "introspection",
   "lime": "introspection",
   "mapie": "introspection",
+  "mne_cov": "introspection",
   "modal": "introspection",
   "nashpy": "introspection",
   "networkx": "introspection",
+  "nilearn_connectome": "introspection",
   "nltk": "introspection",
   "npeet": "introspection",
   "numpy": "introspection",
@@ -35,18 +40,30 @@
   "pingouin": "introspection",
   "pot": "introspection",
   "pyitlib": "introspection",
+  "pymanopt": "introspection",
   "pymoo": "introspection",
+  "pypfopt": "introspection",
+  "pyriemann": "introspection",
   "pysindy": "introspection",
   "pysubgroup": "introspection",
+  "regain": "introspection",
+  "riskfolio": "introspection",
+  "rmt_denoise": "introspection",
+  "robpy": "introspection",
   "ruptures": "introspection",
   "scipy": "introspection",
+  "scipy_cov": "introspection",
   "sdeint": "introspection",
   "shap": "introspection",
   "shapely": "introspection",
+  "skfolio": "introspection",
+  "skggm": "introspection",
   "skimage": "introspection",
   "sklearn": "introspection",
+  "sklearn_covariance": "introspection",
   "skorch": "introspection",
   "statsmodels": "introspection",
+  "statsmodels_cov": "introspection",
   "stumpy": "introspection",
   "sympy": "introspection",
   "torch": "introspection",
@@ -125,9 +142,39 @@
   "deepchecks": "memory",
   "evidently": "memory",
   "crf_tools": "memory",
-  "representation_learning": "memory"
+  "representation_learning": "memory",
+  "r_covtools": "memory",
+  "r_rrcov": "memory",
+  "r_robustbase": "memory",
+  "r_cellwise": "memory",
+  "r_corpcor": "memory",
+  "r_huge": "memory",
+  "r_nlshrink": "memory",
+  "r_poet": "memory",
+  "r_rags2ridges": "memory",
+  "r_bdgraph": "memory",
+  "r_other_graphical": "memory",
+  "pandas_cov": "memory",
+  "river_cov": "memory",
+  "js_peers": "memory",
+  "pymc_priors": "memory",
+  "timevarying_and_high_frequency": "memory",
+  "sparse_and_structured": "memory",
+  "graph_structure_methods": "memory",
+  "covariance_testing": "memory",
+  "random_matrix_theory": "memory",
+  "missing_streaming_weighted": "memory",
+  "spd_geometry_concepts": "memory"
  },
  "summary": {
+  "arch_cov": {
+   "arch.covariance.kernel": {
+    "full": 0,
+    "partial": 0,
+    "absent": 14,
+    "skip": 0
+   }
+  },
   "arviz": {
    "arviz": {
     "full": 0,
@@ -489,6 +536,70 @@
    },
    "gensim.similarities": {
     "full": 4,
+    "partial": 0,
+    "absent": 6,
+    "skip": 0
+   }
+  },
+  "geomstats": {
+   "geomstats.geometry.full_rank_correlation_matrices": {
+    "full": 0,
+    "partial": 0,
+    "absent": 17,
+    "skip": 0
+   },
+   "geomstats.geometry.positive_lower_triangular_matrices": {
+    "full": 0,
+    "partial": 0,
+    "absent": 8,
+    "skip": 0
+   },
+   "geomstats.geometry.spd_matrices": {
+    "full": 0,
+    "partial": 0,
+    "absent": 11,
+    "skip": 0
+   },
+   "geomstats.geometry.symmetric_matrices": {
+    "full": 0,
+    "partial": 0,
+    "absent": 6,
+    "skip": 0
+   }
+  },
+  "gglasso": {
+   "gglasso.helper.data_generation": {
+    "full": 0,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   },
+   "gglasso.helper.model_selection": {
+    "full": 0,
+    "partial": 0,
+    "absent": 18,
+    "skip": 0
+   },
+   "gglasso.problem": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "gglasso.solver.admm_solver": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "gglasso.solver.ppdna_solver": {
+    "full": 0,
+    "partial": 0,
+    "absent": 7,
+    "skip": 0
+   },
+   "gglasso.solver.single_admm_solver": {
+    "full": 0,
     "partial": 0,
     "absent": 6,
     "skip": 0
@@ -868,6 +979,14 @@
     "skip": 0
    }
   },
+  "mne_cov": {
+   "mne.cov": {
+    "full": 3,
+    "partial": 3,
+    "absent": 2,
+    "skip": 2
+   }
+  },
   "modal": {
    "modAL.acquisition": {
     "full": 9,
@@ -1129,6 +1248,20 @@
     "full": 3,
     "partial": 0,
     "absent": 0,
+    "skip": 0
+   }
+  },
+  "nilearn_connectome": {
+   "nilearn.connectome.connectivity_matrices": {
+    "full": 2,
+    "partial": 1,
+    "absent": 2,
+    "skip": 0
+   },
+   "nilearn.connectome.group_sparse_cov": {
+    "full": 0,
+    "partial": 0,
+    "absent": 8,
     "skip": 0
    }
   },
@@ -1708,6 +1841,32 @@
     "skip": 0
    }
   },
+  "pymanopt": {
+   "pymanopt.manifolds.fixed_rank": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "pymanopt.manifolds.positive": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "pymanopt.manifolds.positive_definite": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "pymanopt.manifolds.psd": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   }
+  },
   "pymoo": {
    "pymoo.algorithms.moo": {
     "full": 3,
@@ -1806,6 +1965,130 @@
     "skip": 0
    }
   },
+  "pypfopt": {
+   "pypfopt.plotting": {
+    "full": 0,
+    "partial": 1,
+    "absent": 1,
+    "skip": 2
+   },
+   "pypfopt.risk_models": {
+    "full": 6,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   }
+  },
+  "pyriemann": {
+   "pyriemann.artifact_detection": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "pyriemann.datasets.sampling": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 1
+   },
+   "pyriemann.datasets.simulated": {
+    "full": 0,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   },
+   "pyriemann.estimation": {
+    "full": 0,
+    "partial": 2,
+    "absent": 8,
+    "skip": 0
+   },
+   "pyriemann.geometry.ajd": {
+    "full": 0,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "pyriemann.geometry.base": {
+    "full": 6,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   },
+   "pyriemann.geometry.covariance": {
+    "full": 0,
+    "partial": 6,
+    "absent": 7,
+    "skip": 0
+   },
+   "pyriemann.geometry.distance": {
+    "full": 0,
+    "partial": 0,
+    "absent": 16,
+    "skip": 0
+   },
+   "pyriemann.geometry.geodesic": {
+    "full": 0,
+    "partial": 0,
+    "absent": 8,
+    "skip": 0
+   },
+   "pyriemann.geometry.kernel": {
+    "full": 0,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "pyriemann.geometry.mean": {
+    "full": 0,
+    "partial": 0,
+    "absent": 20,
+    "skip": 0
+   },
+   "pyriemann.geometry.median": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "pyriemann.geometry.tangentspace": {
+    "full": 0,
+    "partial": 0,
+    "absent": 27,
+    "skip": 0
+   },
+   "pyriemann.geometry.test": {
+    "full": 6,
+    "partial": 0,
+    "absent": 0,
+    "skip": 7
+   },
+   "pyriemann.preprocessing": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "pyriemann.spatialfilters": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "pyriemann.tangentspace": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "pyriemann.utils.viz": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 5
+   }
+  },
   "pysindy": {
    "pysindy": {
     "full": 1,
@@ -1837,6 +2120,272 @@
     "full": 112,
     "partial": 0,
     "absent": 0,
+    "skip": 0
+   }
+  },
+  "regain": {
+   "regain.bayesian.gwishart_inference": {
+    "full": 0,
+    "partial": 0,
+    "absent": 10,
+    "skip": 0
+   },
+   "regain.bayesian.wishart_distribution_": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "regain.bayesian.wishart_process_": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "regain.covariance.graphical_lasso_": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "regain.covariance.infimal_convolution_": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "regain.covariance.kernel_latent_time_graphical_lasso_": {
+    "full": 1,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "regain.covariance.kernel_time_graphical_lasso_": {
+    "full": 0,
+    "partial": 0,
+    "absent": 6,
+    "skip": 0
+   },
+   "regain.covariance.latent_graphical_lasso_": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "regain.covariance.latent_time_graphical_lasso_": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "regain.covariance.missing_graphical_lasso_": {
+    "full": 0,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   },
+   "regain.covariance.time_graphical_lasso_": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "regain.datasets.gaussian": {
+    "full": 0,
+    "partial": 12,
+    "absent": 0,
+    "skip": 0
+   },
+   "regain.discriminant_analysis": {
+    "full": 0,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "regain.generalized_linear_model.glm_gaussian": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "regain.generalized_linear_model.glm_ising": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "regain.generalized_linear_model.glm_poisson": {
+    "full": 0,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "regain.model_selection.stability_optimization": {
+    "full": 0,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "regain.scores": {
+    "full": 1,
+    "partial": 0,
+    "absent": 7,
+    "skip": 0
+   }
+  },
+  "riskfolio": {
+   "riskfolio.AuxFunctions": {
+    "full": 5,
+    "partial": 3,
+    "absent": 12,
+    "skip": 4
+   },
+   "riskfolio.DBHT": {
+    "full": 0,
+    "partial": 0,
+    "absent": 17,
+    "skip": 0
+   },
+   "riskfolio.GerberStatistic": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "riskfolio.ParamsEstimation": {
+    "full": 0,
+    "partial": 6,
+    "absent": 5,
+    "skip": 0
+   }
+  },
+  "rmt_denoise": {
+   "rmt_denoise.core": {
+    "full": 0,
+    "partial": 0,
+    "absent": 9,
+    "skip": 2
+   },
+   "rmt_denoise.generalized_cov": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "rmt_denoise.mp_law": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   }
+  },
+  "robpy": {
+   "robpy.covariance.cellmcd": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "robpy.covariance.initial_ddcw": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "robpy.covariance.kendall": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "robpy.covariance.mcd": {
+    "full": 2,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "robpy.covariance.ogk": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "robpy.covariance.wrapping": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "robpy.outliers.ddc": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "robpy.pca.robpca": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "robpy.pca.spca": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "robpy.regression.lts": {
+    "full": 0,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   },
+   "robpy.regression.mm": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "robpy.regression.s": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "robpy.univariate.mcd": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "robpy.univariate.onestep_m": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "robpy.univariate.qn": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "robpy.univariate.tau": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "robpy.utils.median": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "robpy.utils.outlyingness": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
     "skip": 0
    }
   },
@@ -2018,6 +2567,32 @@
     "skip": 0
    }
   },
+  "scipy_cov": {
+   "scipy.cluster.vq": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "scipy.linalg": {
+    "full": 5,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "scipy.spatial.distance": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "scipy.stats": {
+    "full": 10,
+    "partial": 1,
+    "absent": 5,
+    "skip": 0
+   }
+  },
   "sdeint": {
    "sdeint": {
     "full": 5,
@@ -2100,6 +2675,118 @@
     "partial": 0,
     "absent": 0,
     "skip": 4
+   }
+  },
+  "skfolio": {
+   "skfolio.distance": {
+    "full": 4,
+    "partial": 2,
+    "absent": 0,
+    "skip": 1
+   },
+   "skfolio.model_selection": {
+    "full": 0,
+    "partial": 0,
+    "absent": 4,
+    "skip": 10
+   },
+   "skfolio.moments.covariance": {
+    "full": 4,
+    "partial": 1,
+    "absent": 10,
+    "skip": 1
+   },
+   "skfolio.moments.expected_returns": {
+    "full": 0,
+    "partial": 4,
+    "absent": 1,
+    "skip": 1
+   },
+   "skfolio.moments.variance": {
+    "full": 0,
+    "partial": 1,
+    "absent": 2,
+    "skip": 1
+   },
+   "skfolio.pre_selection": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 5
+   },
+   "skfolio.prior": {
+    "full": 0,
+    "partial": 6,
+    "absent": 0,
+    "skip": 7
+   },
+   "skfolio.uncertainty_set": {
+    "full": 0,
+    "partial": 0,
+    "absent": 6,
+    "skip": 4
+   },
+   "skfolio.utils.stats": {
+    "full": 12,
+    "partial": 0,
+    "absent": 1,
+    "skip": 20
+   }
+  },
+  "skggm": {
+   "inverse_covariance.adaptive_graph_lasso": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "inverse_covariance.inverse_covariance": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "inverse_covariance.metrics": {
+    "full": 1,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "inverse_covariance.model_average": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "inverse_covariance.profiling.graphs": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "inverse_covariance.profiling.metrics": {
+    "full": 0,
+    "partial": 0,
+    "absent": 6,
+    "skip": 0
+   },
+   "inverse_covariance.profiling.monte_carlo_profile": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "inverse_covariance.quic_graph_lasso": {
+    "full": 3,
+    "partial": 2,
+    "absent": 2,
+    "skip": 0
+   },
+   "inverse_covariance.rank_correlation": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
    }
   },
   "skimage": {
@@ -2220,8 +2907,8 @@
     "skip": 0
    },
    "sklearn.covariance": {
-    "full": 16,
-    "partial": 0,
+    "full": 15,
+    "partial": 1,
     "absent": 0,
     "skip": 0
    },
@@ -2438,6 +3125,14 @@
    "sklearn.utils": {
     "full": 6,
     "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "sklearn_covariance": {
+   "sklearn.covariance": {
+    "full": 15,
+    "partial": 1,
     "absent": 0,
     "skip": 0
    }
@@ -2740,9 +3435,9 @@
     "skip": 1
    },
    "statsmodels.stats.api": {
-    "full": 5,
-    "partial": 65,
-    "absent": 4,
+    "full": 6,
+    "partial": 60,
+    "absent": 8,
     "skip": 0
    },
    "statsmodels.stats.contingency_tables": {
@@ -2942,6 +3637,68 @@
     "partial": 0,
     "absent": 0,
     "skip": 3
+   }
+  },
+  "statsmodels_cov": {
+   "statsmodels.multivariate.factor": {
+    "full": 2,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "statsmodels.multivariate.pca": {
+    "full": 2,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "statsmodels.stats.correlation_tools": {
+    "full": 0,
+    "partial": 0,
+    "absent": 12,
+    "skip": 0
+   },
+   "statsmodels.stats.covariance": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "statsmodels.stats.dist_dependence_measures": {
+    "full": 6,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "statsmodels.stats.moment_helpers": {
+    "full": 3,
+    "partial": 0,
+    "absent": 9,
+    "skip": 0
+   },
+   "statsmodels.stats.multivariate": {
+    "full": 5,
+    "partial": 2,
+    "absent": 5,
+    "skip": 0
+   },
+   "statsmodels.stats.multivariate_tools": {
+    "full": 0,
+    "partial": 7,
+    "absent": 0,
+    "skip": 0
+   },
+   "statsmodels.stats.regularized_covariance": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "statsmodels.stats.sandwich_covariance": {
+    "full": 5,
+    "partial": 1,
+    "absent": 6,
+    "skip": 0
    }
   },
   "stumpy": {
@@ -5908,6 +6665,332 @@
     "partial": 0,
     "absent": 0,
     "skip": 3
+   }
+  },
+  "r_covtools": {
+   "estimators": {
+    "full": 2,
+    "partial": 0,
+    "absent": 6,
+    "skip": 0
+   },
+   "precision": {
+    "full": 0,
+    "partial": 1,
+    "absent": 3,
+    "skip": 0
+   },
+   "tests": {
+    "full": 0,
+    "partial": 0,
+    "absent": 7,
+    "skip": 0
+   },
+   "geometry": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 1
+   }
+  },
+  "r_rrcov": {
+   "scatter": {
+    "full": 3,
+    "partial": 0,
+    "absent": 8,
+    "skip": 0
+   },
+   "pca": {
+    "full": 1,
+    "partial": 2,
+    "absent": 5,
+    "skip": 0
+   },
+   "discriminant": {
+    "full": 2,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "tests_and_plots": {
+    "full": 0,
+    "partial": 1,
+    "absent": 2,
+    "skip": 0
+   }
+  },
+  "r_robustbase": {
+   "scatter_and_scale": {
+    "full": 1,
+    "partial": 5,
+    "absent": 3,
+    "skip": 0
+   }
+  },
+  "r_cellwise": {
+   "cellwise": {
+    "full": 0,
+    "partial": 0,
+    "absent": 20,
+    "skip": 0
+   }
+  },
+  "r_corpcor": {
+   "shrinkage": {
+    "full": 7,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "r_huge": {
+   "graph_estimation": {
+    "full": 0,
+    "partial": 2,
+    "absent": 9,
+    "skip": 0
+   }
+  },
+  "r_nlshrink": {
+   "shrinkage": {
+    "full": 0,
+    "partial": 2,
+    "absent": 4,
+    "skip": 0
+   }
+  },
+  "r_poet": {
+   "factor_threshold": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   }
+  },
+  "r_rags2ridges": {
+   "ridge_precision": {
+    "full": 0,
+    "partial": 0,
+    "absent": 21,
+    "skip": 0
+   }
+  },
+  "r_bdgraph": {
+   "bayesian_ggm": {
+    "full": 2,
+    "partial": 0,
+    "absent": 10,
+    "skip": 0
+   }
+  },
+  "r_other_graphical": {
+   "glasso_family": {
+    "full": 0,
+    "partial": 5,
+    "absent": 17,
+    "skip": 0
+   }
+  },
+  "pandas_cov": {
+   "frame": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "windows": {
+    "full": 0,
+    "partial": 0,
+    "absent": 6,
+    "skip": 0
+   }
+  },
+  "river_cov": {
+   "covariance": {
+    "full": 0,
+    "partial": 1,
+    "absent": 7,
+    "skip": 0
+   }
+  },
+  "js_peers": {
+   "libraries": {
+    "full": 0,
+    "partial": 8,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "pymc_priors": {
+   "priors": {
+    "full": 7,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   }
+  },
+  "timevarying_and_high_frequency": {
+   "multivariate_garch": {
+    "full": 0,
+    "partial": 2,
+    "absent": 7,
+    "skip": 0
+   },
+   "realised": {
+    "full": 0,
+    "partial": 0,
+    "absent": 10,
+    "skip": 0
+   },
+   "long_run": {
+    "full": 0,
+    "partial": 0,
+    "absent": 6,
+    "skip": 0
+   }
+  },
+  "sparse_and_structured": {
+   "thresholding_banding": {
+    "full": 0,
+    "partial": 0,
+    "absent": 8,
+    "skip": 0
+   },
+   "cholesky": {
+    "full": 0,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "structure": {
+    "full": 0,
+    "partial": 4,
+    "absent": 5,
+    "skip": 0
+   },
+   "factor_and_low_rank": {
+    "full": 0,
+    "partial": 2,
+    "absent": 7,
+    "skip": 0
+   },
+   "shrinkage": {
+    "full": 0,
+    "partial": 3,
+    "absent": 11,
+    "skip": 0
+   },
+   "robust_scatter_not_in_a_library": {
+    "full": 0,
+    "partial": 0,
+    "absent": 17,
+    "skip": 0
+   }
+  },
+  "graph_structure_methods": {
+   "neighbourhood_and_columnwise": {
+    "full": 0,
+    "partial": 0,
+    "absent": 7,
+    "skip": 0
+   },
+   "likelihood_and_penalty": {
+    "full": 0,
+    "partial": 2,
+    "absent": 7,
+    "skip": 0
+   },
+   "joint_and_dynamic": {
+    "full": 0,
+    "partial": 0,
+    "absent": 9,
+    "skip": 0
+   },
+   "non_gaussian": {
+    "full": 0,
+    "partial": 0,
+    "absent": 7,
+    "skip": 0
+   },
+   "selection_and_inference": {
+    "full": 0,
+    "partial": 1,
+    "absent": 8,
+    "skip": 0
+   },
+   "bayesian": {
+    "full": 0,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   },
+   "financial_graphs": {
+    "full": 0,
+    "partial": 1,
+    "absent": 5,
+    "skip": 0
+   }
+  },
+  "covariance_testing": {
+   "equality_and_structure": {
+    "full": 2,
+    "partial": 0,
+    "absent": 10,
+    "skip": 0
+   },
+   "correlation_matrices": {
+    "full": 0,
+    "partial": 0,
+    "absent": 9,
+    "skip": 0
+   },
+   "dimensionality": {
+    "full": 0,
+    "partial": 0,
+    "absent": 7,
+    "skip": 0
+   }
+  },
+  "random_matrix_theory": {
+   "limit_laws": {
+    "full": 0,
+    "partial": 0,
+    "absent": 14,
+    "skip": 0
+   },
+   "tools": {
+    "full": 1,
+    "partial": 4,
+    "absent": 9,
+    "skip": 0
+   }
+  },
+  "missing_streaming_weighted": {
+   "missing_data": {
+    "full": 1,
+    "partial": 0,
+    "absent": 8,
+    "skip": 0
+   },
+   "streaming": {
+    "full": 0,
+    "partial": 8,
+    "absent": 3,
+    "skip": 0
+   },
+   "weighted_and_semi": {
+    "full": 0,
+    "partial": 3,
+    "absent": 5,
+    "skip": 0
+   }
+  },
+  "spd_geometry_concepts": {
+   "metrics_and_means": {
+    "full": 0,
+    "partial": 0,
+    "absent": 25,
+    "skip": 0
    }
   }
  }

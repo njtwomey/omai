@@ -1,0 +1,67 @@
+{
+"library": "mne_cov",
+"version": "1.13.2",
+"source": "introspection",
+"entries": [
+{
+"area": "mne.cov",
+"name": "Covariance",
+"kind": "class",
+"doc": "Noise covariance matrix."
+},
+{
+"area": "mne.cov",
+"name": "compute_covariance",
+"kind": "function",
+"doc": "Estimate a covariance matrix from epochs or an evoked response."
+},
+{
+"area": "mne.cov",
+"name": "compute_raw_covariance",
+"kind": "function",
+"doc": "Estimate noise covariance matrix from a continuous segment of raw data."
+},
+{
+"area": "mne.cov",
+"name": "compute_whitener",
+"kind": "function",
+"doc": "Compute whitening matrix."
+},
+{
+"area": "mne.cov",
+"name": "make_ad_hoc_cov",
+"kind": "function",
+"doc": "Create an ad hoc noise covariance."
+},
+{
+"area": "mne.cov",
+"name": "prepare_noise_cov",
+"kind": "function",
+"doc": "Prepare noise covariance matrix."
+},
+{
+"area": "mne.cov",
+"name": "read_cov",
+"kind": "function",
+"doc": "Read a noise covariance from a FIF file."
+},
+{
+"area": "mne.cov",
+"name": "regularize",
+"kind": "function",
+"doc": "Regularize noise covariance matrix."
+},
+{
+"area": "mne.cov",
+"name": "whiten_evoked",
+"kind": "function",
+"doc": "Whiten evoked data using given noise covariance."
+},
+{
+"area": "mne.cov",
+"name": "write_cov",
+"kind": "function",
+"doc": "Write a noise covariance matrix."
+}
+]
+}

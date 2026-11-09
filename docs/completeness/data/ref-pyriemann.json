@@ -1,0 +1,907 @@
+{
+"library": "pyriemann",
+"version": "0.12",
+"source": "introspection",
+"entries": [
+{
+"area": "pyriemann.artifact_detection",
+"name": "Potato",
+"kind": "class",
+"doc": "Artifact detection with the Riemannian Potato."
+},
+{
+"area": "pyriemann.artifact_detection",
+"name": "PotatoField",
+"kind": "class",
+"doc": "Artifact detection with the Riemannian Potato Field."
+},
+{
+"area": "pyriemann.datasets.sampling",
+"name": "RandomOverSampler",
+"kind": "class",
+"doc": "Random over-sampling for SPD/HPD matrices."
+},
+{
+"area": "pyriemann.datasets.sampling",
+"name": "sample_gaussian",
+"kind": "function",
+"doc": "Sample a Riemannian Gaussian distribution."
+},
+{
+"area": "pyriemann.datasets.sampling",
+"name": "sample_gaussian_spd",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pyriemann.datasets.simulated",
+"name": "make_classification_transfer",
+"kind": "function",
+"doc": "Generate 2x2 SPD matrices for two classes in source and target domains."
+},
+{
+"area": "pyriemann.datasets.simulated",
+"name": "make_gaussian_blobs",
+"kind": "function",
+"doc": "Generate SPD matrices for two classes."
+},
+{
+"area": "pyriemann.datasets.simulated",
+"name": "make_masks",
+"kind": "function",
+"doc": "Generate masks defined as semi-orthogonal matrices."
+},
+{
+"area": "pyriemann.datasets.simulated",
+"name": "make_matrices",
+"kind": "function",
+"doc": "Generate matrices with specific properties."
+},
+{
+"area": "pyriemann.datasets.simulated",
+"name": "make_outliers",
+"kind": "function",
+"doc": "Generate outlier matrices."
+},
+{
+"area": "pyriemann.estimation",
+"name": "BlockCovariances",
+"kind": "class",
+"doc": "Estimation of block covariance matrices."
+},
+{
+"area": "pyriemann.estimation",
+"name": "CoSpectra",
+"kind": "class",
+"doc": "Estimation of co-spectral matrices."
+},
+{
+"area": "pyriemann.estimation",
+"name": "Coherences",
+"kind": "class",
+"doc": "Estimation of squared coherence matrices."
+},
+{
+"area": "pyriemann.estimation",
+"name": "Covariances",
+"kind": "class",
+"doc": "Estimation of covariance matrices."
+},
+{
+"area": "pyriemann.estimation",
+"name": "CrossSpectra",
+"kind": "class",
+"doc": "Estimation of cross-spectral matrices."
+},
+{
+"area": "pyriemann.estimation",
+"name": "ERPCovariances",
+"kind": "class",
+"doc": "Estimate special form covariance matrices for ERP."
+},
+{
+"area": "pyriemann.estimation",
+"name": "Kernels",
+"kind": "class",
+"doc": "Estimation of kernel matrices between channels of time series."
+},
+{
+"area": "pyriemann.estimation",
+"name": "Shrinkage",
+"kind": "class",
+"doc": "Regularization of SPD/HPD matrices by shrinkage."
+},
+{
+"area": "pyriemann.estimation",
+"name": "TimeDelayCovariances",
+"kind": "class",
+"doc": "Estimation of covariance matrices with time delay matrices."
+},
+{
+"area": "pyriemann.estimation",
+"name": "XdawnCovariances",
+"kind": "class",
+"doc": "Estimate special form covariance matrices for ERP combined with Xdawn."
+},
+{
+"area": "pyriemann.geometry.ajd",
+"name": "ajd",
+"kind": "function",
+"doc": "Aproximate joint diagonalization (AJD) according to a method."
+},
+{
+"area": "pyriemann.geometry.ajd",
+"name": "ajd_pham",
+"kind": "function",
+"doc": "Approximate joint diagonalization based on Pham's algorithm."
+},
+{
+"area": "pyriemann.geometry.ajd",
+"name": "rjd",
+"kind": "function",
+"doc": "Approximate joint diagonalization based on JADE."
+},
+{
+"area": "pyriemann.geometry.ajd",
+"name": "uwedge",
+"kind": "function",
+"doc": "Approximate joint diagonalization based on UWEDGE."
+},
+{
+"area": "pyriemann.geometry.base",
+"name": "ctranspose",
+"kind": "function",
+"doc": "Conjugate transpose operator."
+},
+{
+"area": "pyriemann.geometry.base",
+"name": "ddexpm",
+"kind": "function",
+"doc": "Directional derivative of the matrix exponential."
+},
+{
+"area": "pyriemann.geometry.base",
+"name": "ddlogm",
+"kind": "function",
+"doc": "Directional derivative of the matrix logarithm."
+},
+{
+"area": "pyriemann.geometry.base",
+"name": "expm",
+"kind": "function",
+"doc": "Exponential of SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.base",
+"name": "invsqrtm",
+"kind": "function",
+"doc": "Inverse square root of SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.base",
+"name": "logm",
+"kind": "function",
+"doc": "Logarithm of SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.base",
+"name": "nearest_sym_pos_def",
+"kind": "function",
+"doc": "Find the nearest SPD matrices."
+},
+{
+"area": "pyriemann.geometry.base",
+"name": "powm",
+"kind": "function",
+"doc": "Power of SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.base",
+"name": "sqrtm",
+"kind": "function",
+"doc": "Square root of SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.covariance",
+"name": "block_covariances",
+"kind": "function",
+"doc": "Compute block diagonal covariance."
+},
+{
+"area": "pyriemann.geometry.covariance",
+"name": "coherence",
+"kind": "function",
+"doc": "Compute squared coherence."
+},
+{
+"area": "pyriemann.geometry.covariance",
+"name": "cospectrum",
+"kind": "function",
+"doc": "Compute co-spectral matrices, the real part of cross-spectra."
+},
+{
+"area": "pyriemann.geometry.covariance",
+"name": "covariance_mest",
+"kind": "function",
+"doc": "Robust M-estimators."
+},
+{
+"area": "pyriemann.geometry.covariance",
+"name": "covariance_sch",
+"kind": "function",
+"doc": "Schaefer-Strimmer shrunk covariance estimator."
+},
+{
+"area": "pyriemann.geometry.covariance",
+"name": "covariance_scm",
+"kind": "function",
+"doc": "Sample covariance estimator."
+},
+{
+"area": "pyriemann.geometry.covariance",
+"name": "covariances",
+"kind": "function",
+"doc": "Estimation of covariance matrices."
+},
+{
+"area": "pyriemann.geometry.covariance",
+"name": "covariances_EP",
+"kind": "function",
+"doc": "Special form covariance matrix, concatenating a prototype P."
+},
+{
+"area": "pyriemann.geometry.covariance",
+"name": "covariances_X",
+"kind": "function",
+"doc": "Special form covariance matrix, embedding input X."
+},
+{
+"area": "pyriemann.geometry.covariance",
+"name": "cross_spectrum",
+"kind": "function",
+"doc": "Compute the complex cross-spectral matrices of a real signal."
+},
+{
+"area": "pyriemann.geometry.covariance",
+"name": "eegtocov",
+"kind": "function",
+"doc": "Convert EEG signal to covariance using sliding window."
+},
+{
+"area": "pyriemann.geometry.covariance",
+"name": "get_nondiag_weight",
+"kind": "function",
+"doc": "Compute non-diagonality weights of a set of square matrices."
+},
+{
+"area": "pyriemann.geometry.covariance",
+"name": "normalize",
+"kind": "function",
+"doc": "Normalize a set of square matrices, using corr, trace or determinant."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance",
+"kind": "function",
+"doc": "Distance between matrices according to a metric."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_chol",
+"kind": "function",
+"doc": "Cholesky distance between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_euclid",
+"kind": "function",
+"doc": "Euclidean distance between matrices."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_harmonic",
+"kind": "function",
+"doc": "Harmonic distance between invertible matrices."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_kullback",
+"kind": "function",
+"doc": "Kullback-Leibler divergence between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_kullback_right",
+"kind": "function",
+"doc": "Wrapper for right Kullback-Leibler divergence."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_kullback_sym",
+"kind": "function",
+"doc": "Symmetrized Kullback-Leibler divergence between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_logchol",
+"kind": "function",
+"doc": "Log-Cholesky distance between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_logdet",
+"kind": "function",
+"doc": "Log-det distance between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_logeuclid",
+"kind": "function",
+"doc": "Log-Euclidean distance between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_mahalanobis",
+"kind": "function",
+"doc": "Mahalanobis distance between vectors and a Gaussian distribution."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_poweuclid",
+"kind": "function",
+"doc": "Power Euclidean distance between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_riemann",
+"kind": "function",
+"doc": "Affine-invariant Riemannian distance between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_thompson",
+"kind": "function",
+"doc": "Thompson distance between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "distance_wasserstein",
+"kind": "function",
+"doc": "Wasserstein distance between SPSD/HPSD matrices."
+},
+{
+"area": "pyriemann.geometry.distance",
+"name": "pairwise_distance",
+"kind": "function",
+"doc": "Pairwise distance matrix."
+},
+{
+"area": "pyriemann.geometry.geodesic",
+"name": "geodesic",
+"kind": "function",
+"doc": "Geodesic between matrices according to a metric."
+},
+{
+"area": "pyriemann.geometry.geodesic",
+"name": "geodesic_chol",
+"kind": "function",
+"doc": "Cholesky geodesic between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.geodesic",
+"name": "geodesic_euclid",
+"kind": "function",
+"doc": "Euclidean geodesic between matrices."
+},
+{
+"area": "pyriemann.geometry.geodesic",
+"name": "geodesic_logchol",
+"kind": "function",
+"doc": "Log-Cholesky geodesic between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.geodesic",
+"name": "geodesic_logeuclid",
+"kind": "function",
+"doc": "Log-Euclidean geodesic between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.geodesic",
+"name": "geodesic_riemann",
+"kind": "function",
+"doc": "Affine-invariant Riemannian geodesic between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.geodesic",
+"name": "geodesic_thompson",
+"kind": "function",
+"doc": "Thompson geodesic between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.geodesic",
+"name": "geodesic_wasserstein",
+"kind": "function",
+"doc": "Wasserstein geodesic between SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.kernel",
+"name": "kernel",
+"kind": "function",
+"doc": "Kernel matrix between matrices according to a specified metric."
+},
+{
+"area": "pyriemann.geometry.kernel",
+"name": "kernel_euclid",
+"kind": "function",
+"doc": "Euclidean kernel between two sets of matrices."
+},
+{
+"area": "pyriemann.geometry.kernel",
+"name": "kernel_logeuclid",
+"kind": "function",
+"doc": "Log-Euclidean kernel between two sets of SPD matrices."
+},
+{
+"area": "pyriemann.geometry.kernel",
+"name": "kernel_riemann",
+"kind": "function",
+"doc": "Affine-invariant Riemannian kernel between two sets of SPD matrices."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "gmean",
+"kind": "function",
+"doc": "Mean of matrices according to a metric."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "maskedmean_riemann",
+"kind": "function",
+"doc": "Masked Riemannian mean of SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_ale",
+"kind": "function",
+"doc": "AJD-based log-Euclidean (ALE) mean of SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_alm",
+"kind": "function",
+"doc": "Ando-Li-Mathias (ALM) mean of SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_bmp",
+"kind": "function",
+"doc": "Bini-Meini-Poloni (BMP) mean of SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_cheap",
+"kind": "function",
+"doc": "Cheap mean of SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_chol",
+"kind": "function",
+"doc": "Mean of SPD/HPD matrices according to the Cholesky metric."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_covariance",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_euclid",
+"kind": "function",
+"doc": "Mean of matrices according to the Euclidean metric."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_harmonic",
+"kind": "function",
+"doc": "Harmonic mean of invertible matrices."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_kullback_sym",
+"kind": "function",
+"doc": "Mean of SPD/HPD matrices according to Kullback-Leibler divergence."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_logchol",
+"kind": "function",
+"doc": "Mean of SPD/HPD matrices according to the log-Cholesky metric."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_logdet",
+"kind": "function",
+"doc": "Mean of SPD/HPD matrices according to the log-det metric."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_logeuclid",
+"kind": "function",
+"doc": "Mean of SPD/HPD matrices according to the log-Euclidean metric."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_power",
+"kind": "function",
+"doc": "Power mean of SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_poweuclid",
+"kind": "function",
+"doc": "Mean of SPD/HPD matrices according to the power Euclidean metric."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_riemann",
+"kind": "function",
+"doc": "Mean of SPD/HPD matrices according to the Riemannian metric."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_thompson",
+"kind": "function",
+"doc": "Mean of SPD/HPD matrices according to the Thompson metric."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "mean_wasserstein",
+"kind": "function",
+"doc": "Mean of SPD/HPD matrices according to the Wasserstein metric."
+},
+{
+"area": "pyriemann.geometry.mean",
+"name": "nanmean_riemann",
+"kind": "function",
+"doc": "Riemannian NaN-mean of SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.median",
+"name": "median_euclid",
+"kind": "function",
+"doc": "Euclidean geometric median of matrices."
+},
+{
+"area": "pyriemann.geometry.median",
+"name": "median_riemann",
+"kind": "function",
+"doc": "Affine-invariant Riemannian geometric median of SPD/HPD matrices."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "exp_map",
+"kind": "function",
+"doc": "Project matrices back to manifold by exponential map."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "exp_map_euclid",
+"kind": "function",
+"doc": "Project matrices back to manifold by Euclidean exponential map."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "exp_map_logchol",
+"kind": "function",
+"doc": "Project matrices back to manifold by log-Cholesky exponential map."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "exp_map_logeuclid",
+"kind": "function",
+"doc": "Project matrices back to manifold by log-Euclidean exponential map."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "exp_map_riemann",
+"kind": "function",
+"doc": "Project matrices back to manifold by Riemannian exponential map."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "exp_map_wasserstein",
+"kind": "function",
+"doc": "Project matrices back to manifold by Wasserstein exponential map."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "innerproduct",
+"kind": "function",
+"doc": "Inner product according to a specified metric."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "innerproduct_euclid",
+"kind": "function",
+"doc": "Euclidean inner product."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "innerproduct_logchol",
+"kind": "function",
+"doc": "Log-Cholesky inner product."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "innerproduct_logeuclid",
+"kind": "function",
+"doc": "Log-Euclidean inner product."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "innerproduct_riemann",
+"kind": "function",
+"doc": "Affine-invariant Riemannian inner product."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "log_map",
+"kind": "function",
+"doc": "Project matrices in tangent space by logarithmic map."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "log_map_euclid",
+"kind": "function",
+"doc": "Project matrices in tangent space by Euclidean logarithmic map."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "log_map_logchol",
+"kind": "function",
+"doc": "Project matrices in tangent space by log-Cholesky logarithmic map."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "log_map_logeuclid",
+"kind": "function",
+"doc": "Project matrices in tangent space by log-Euclidean logarithmic map."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "log_map_riemann",
+"kind": "function",
+"doc": "Project matrices in tangent space by Riemannian logarithmic map."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "log_map_wasserstein",
+"kind": "function",
+"doc": "Project matrices in tangent space by Wasserstein logarithmic map."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "norm",
+"kind": "function",
+"doc": "Norm according to a specified metric."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "tangent_space",
+"kind": "function",
+"doc": "Transform matrices into tangent vectors."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "transport",
+"kind": "function",
+"doc": "Parallel transport according to a specified metric."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "transport_euclid",
+"kind": "function",
+"doc": "Parallel transport for Euclidean metric."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "transport_logchol",
+"kind": "function",
+"doc": "Parallel transport for log-Cholesky metric."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "transport_logeuclid",
+"kind": "function",
+"doc": "Parallel transport for log-Euclidean metric."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "transport_riemann",
+"kind": "function",
+"doc": "Parallel transport for affine-invariant Riemannian metric."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "untangent_space",
+"kind": "function",
+"doc": "Transform tangent vectors back to matrices."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "unupper",
+"kind": "function",
+"doc": "Inverse upper function."
+},
+{
+"area": "pyriemann.geometry.tangentspace",
+"name": "upper",
+"kind": "function",
+"doc": "Return the weighted upper triangular part of matrices."
+},
+{
+"area": "pyriemann.geometry.test",
+"name": "is_hankel",
+"kind": "function",
+"doc": "Check if matrix is an Hankel matrix."
+},
+{
+"area": "pyriemann.geometry.test",
+"name": "is_herm_pos_def",
+"kind": "function",
+"doc": "Check if all matrices are Hermitian positive-definite (HPD)."
+},
+{
+"area": "pyriemann.geometry.test",
+"name": "is_herm_pos_semi_def",
+"kind": "function",
+"doc": "Check if all matrices are Hermitian positive semi-definite (HPSD)."
+},
+{
+"area": "pyriemann.geometry.test",
+"name": "is_hermitian",
+"kind": "function",
+"doc": "Check if all matrices are Hermitian."
+},
+{
+"area": "pyriemann.geometry.test",
+"name": "is_pos_def",
+"kind": "function",
+"doc": "Check if all matrices are positive definite (PD)."
+},
+{
+"area": "pyriemann.geometry.test",
+"name": "is_pos_semi_def",
+"kind": "function",
+"doc": "Check if all matrices are positive semi-definite (PSD)."
+},
+{
+"area": "pyriemann.geometry.test",
+"name": "is_real",
+"kind": "function",
+"doc": "Check if all matrices are strictly real."
+},
+{
+"area": "pyriemann.geometry.test",
+"name": "is_real_type",
+"kind": "function",
+"doc": "Check if matrices are real type."
+},
+{
+"area": "pyriemann.geometry.test",
+"name": "is_skew_sym",
+"kind": "function",
+"doc": "Check if all matrices are skew-symmetric."
+},
+{
+"area": "pyriemann.geometry.test",
+"name": "is_square",
+"kind": "function",
+"doc": "Check if matrices are square."
+},
+{
+"area": "pyriemann.geometry.test",
+"name": "is_sym",
+"kind": "function",
+"doc": "Check if all matrices are symmetric."
+},
+{
+"area": "pyriemann.geometry.test",
+"name": "is_sym_pos_def",
+"kind": "function",
+"doc": "Check if all matrices are symmetric positive-definite (SPD)."
+},
+{
+"area": "pyriemann.geometry.test",
+"name": "is_sym_pos_semi_def",
+"kind": "function",
+"doc": "Check if all matrices are symmetric positive semi-definite (SPSD)."
+},
+{
+"area": "pyriemann.preprocessing",
+"name": "Whitening",
+"kind": "class",
+"doc": "Whitening, and optional unsupervised dimension reduction."
+},
+{
+"area": "pyriemann.spatialfilters",
+"name": "AJDC",
+"kind": "class",
+"doc": "AJDC algorithm."
+},
+{
+"area": "pyriemann.spatialfilters",
+"name": "BilinearFilter",
+"kind": "class",
+"doc": "Bilinear spatial filter."
+},
+{
+"area": "pyriemann.spatialfilters",
+"name": "CSP",
+"kind": "class",
+"doc": "CSP spatial filtering with covariance matrices as inputs."
+},
+{
+"area": "pyriemann.spatialfilters",
+"name": "SPoC",
+"kind": "class",
+"doc": "SPoC spatial filtering with covariance matrices as inputs."
+},
+{
+"area": "pyriemann.spatialfilters",
+"name": "Xdawn",
+"kind": "class",
+"doc": "Xdawn algorithm."
+},
+{
+"area": "pyriemann.tangentspace",
+"name": "FGDA",
+"kind": "class",
+"doc": "Fisher geodesic discriminant analysis."
+},
+{
+"area": "pyriemann.tangentspace",
+"name": "TangentSpace",
+"kind": "class",
+"doc": "Tangent space projection."
+},
+{
+"area": "pyriemann.utils.viz",
+"name": "plot_bihist",
+"kind": "function",
+"doc": "Plot histogram of bi-class predictions."
+},
+{
+"area": "pyriemann.utils.viz",
+"name": "plot_biscatter",
+"kind": "function",
+"doc": "Plot scatter of bi-class predictions."
+},
+{
+"area": "pyriemann.utils.viz",
+"name": "plot_cospectra",
+"kind": "function",
+"doc": "Plot cospectral matrices."
+},
+{
+"area": "pyriemann.utils.viz",
+"name": "plot_cov_ellipse",
+"kind": "function",
+"doc": "Plot 2x2 covariance matrix as an ellipse."
+},
+{
+"area": "pyriemann.utils.viz",
+"name": "plot_embedding",
+"kind": "function",
+"doc": "Plot embedding of SPD matrices."
+},
+{
+"area": "pyriemann.utils.viz",
+"name": "plot_waveforms",
+"kind": "function",
+"doc": "Plot repetitions of a multichannel waveform."
+}
+]
+}

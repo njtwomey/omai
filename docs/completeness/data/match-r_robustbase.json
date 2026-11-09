@@ -1,0 +1,11 @@
+[
+{"lib":"r_robustbase","area":"scatter_and_scale","name":"covMcd","status":"full","how":"verdict","omai":"covariance#minCovDet"},
+{"lib":"r_robustbase","area":"scatter_and_scale","name":"covOGK","status":"absent","how":"verdict","note":"OGK and the co-median estimator","home":"covariance/robust-scatter.ts","size":"S","priority":"medium","group":"robust scatter estimators"},
+{"lib":"r_robustbase","area":"scatter_and_scale","name":"covComed","status":"absent","how":"verdict","note":"OGK and the co-median estimator","home":"covariance/robust-scatter.ts","size":"S","priority":"medium","group":"robust scatter estimators"},
+{"lib":"r_robustbase","area":"scatter_and_scale","name":"adjOutlyingness","status":"absent","how":"verdict","note":"skewness-adjusted outlyingness (Brys, Hubert, Rousseeuw): projection outlyingness for skewed data","home":"covariance/robust-scatter.ts","size":"S","priority":"low","group":"robust scatter estimators"},
+{"lib":"r_robustbase","area":"scatter_and_scale","name":"huberM","status":"partial","how":"verdict","omai":"stats#huber, #mEstimateLocation","note":"Huber location exists; the Qn, Sn and tau scales do not","home":"stats/robust.ts","size":"S","priority":"low","group":"robust scatter estimators"},
+{"lib":"r_robustbase","area":"scatter_and_scale","name":"Qn","status":"partial","how":"verdict","omai":"stats#huber, #mEstimateLocation","note":"Huber location exists; the Qn, Sn and tau scales do not","home":"stats/robust.ts","size":"S","priority":"low","group":"robust scatter estimators"},
+{"lib":"r_robustbase","area":"scatter_and_scale","name":"Sn","status":"partial","how":"verdict","omai":"stats#huber, #mEstimateLocation","note":"Huber location exists; the Qn, Sn and tau scales do not","home":"stats/robust.ts","size":"S","priority":"low","group":"robust scatter estimators"},
+{"lib":"r_robustbase","area":"scatter_and_scale","name":"scaleTau2","status":"partial","how":"verdict","omai":"stats#huber, #mEstimateLocation","note":"Huber location exists; the Qn, Sn and tau scales do not","home":"stats/robust.ts","size":"S","priority":"low","group":"robust scatter estimators"},
+{"lib":"r_robustbase","area":"scatter_and_scale","name":"tolEllipsePlot","status":"partial","how":"verdict","omai":"numerics/geometry#covarianceEllipse","note":"the tolerance ellipse chart"}
+]

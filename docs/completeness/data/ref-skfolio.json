@@ -1,0 +1,679 @@
+{
+"library": "skfolio",
+"version": "1.12.8",
+"source": "introspection",
+"entries": [
+{
+"area": "skfolio.distance",
+"name": "BaseDistance",
+"kind": "class",
+"doc": "Base class for all distance estimators in skfolio."
+},
+{
+"area": "skfolio.distance",
+"name": "CovarianceDistance",
+"kind": "class",
+"doc": "Covariance Distance estimator."
+},
+{
+"area": "skfolio.distance",
+"name": "DistanceCorrelation",
+"kind": "class",
+"doc": "Distance Correlation estimator."
+},
+{
+"area": "skfolio.distance",
+"name": "KendallDistance",
+"kind": "class",
+"doc": "Kendall Distance estimator."
+},
+{
+"area": "skfolio.distance",
+"name": "MutualInformation",
+"kind": "class",
+"doc": "Mutual Information estimator."
+},
+{
+"area": "skfolio.distance",
+"name": "NBinsMethod",
+"kind": "class",
+"doc": "Enumeration of the Number of Bins Methods."
+},
+{
+"area": "skfolio.distance",
+"name": "PearsonDistance",
+"kind": "class",
+"doc": "Pearson Distance estimator."
+},
+{
+"area": "skfolio.distance",
+"name": "SpearmanDistance",
+"kind": "class",
+"doc": "Spearman Distance estimator."
+},
+{
+"area": "skfolio.model_selection",
+"name": "BaseCombinatorialCV",
+"kind": "class",
+"doc": "Base class for all combinatorial cross-validators."
+},
+{
+"area": "skfolio.model_selection",
+"name": "CombinatorialPurgedCV",
+"kind": "class",
+"doc": "Combinatorial Purged Cross-Validation."
+},
+{
+"area": "skfolio.model_selection",
+"name": "CovarianceForecastComparison",
+"kind": "class",
+"doc": "Side-by-side comparison of covariance forecast evaluations."
+},
+{
+"area": "skfolio.model_selection",
+"name": "CovarianceForecastEvaluation",
+"kind": "class",
+"doc": "Out-of-sample covariance forecast evaluation."
+},
+{
+"area": "skfolio.model_selection",
+"name": "MultipleRandomizedCV",
+"kind": "class",
+"doc": "Multiple Randomized Cross-Validation."
+},
+{
+"area": "skfolio.model_selection",
+"name": "OnlineGridSearch",
+"kind": "class",
+"doc": "Online exhaustive hyperparameter search over a parameter grid."
+},
+{
+"area": "skfolio.model_selection",
+"name": "OnlineRandomizedSearch",
+"kind": "class",
+"doc": "Online randomized search on hyperparameters."
+},
+{
+"area": "skfolio.model_selection",
+"name": "WalkForward",
+"kind": "class",
+"doc": "Walk Forward Cross-Validator."
+},
+{
+"area": "skfolio.model_selection",
+"name": "covariance_forecast_evaluation",
+"kind": "function",
+"doc": "Evaluate out-of-sample covariance forecast quality using walk-forward"
+},
+{
+"area": "skfolio.model_selection",
+"name": "cross_val_predict",
+"kind": "function",
+"doc": "Generate cross-validated portfolios."
+},
+{
+"area": "skfolio.model_selection",
+"name": "online_covariance_forecast_evaluation",
+"kind": "function",
+"doc": "Evaluate out-of-sample covariance forecast quality."
+},
+{
+"area": "skfolio.model_selection",
+"name": "online_predict",
+"kind": "function",
+"doc": "Generate out-of-sample portfolios using online learning."
+},
+{
+"area": "skfolio.model_selection",
+"name": "online_score",
+"kind": "function",
+"doc": "Score an online estimator using walk-forward evaluation."
+},
+{
+"area": "skfolio.model_selection",
+"name": "optimal_folds_number",
+"kind": "function",
+"doc": "Find the optimal number of folds (total folds and test folds) for a target"
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "BaseCovariance",
+"kind": "class",
+"doc": "Base class for all covariance estimators in `skfolio`."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "DenoiseCovariance",
+"kind": "class",
+"doc": "Covariance Denoising estimator."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "DetoneCovariance",
+"kind": "class",
+"doc": "Covariance Detoning estimator."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "EWCovariance",
+"kind": "class",
+"doc": "Exponentially Weighted Covariance estimator with NaN-aware pairwise updates."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "EmpiricalCovariance",
+"kind": "class",
+"doc": "Empirical Covariance estimator."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "GeodesicShrinkageCovariance",
+"kind": "class",
+"doc": "Covariance estimator with geodesic shrinkage."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "GeodesicShrinkageTarget",
+"kind": "class",
+"doc": "Target for geodesic covariance shrinkage."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "GerberCovariance",
+"kind": "class",
+"doc": "Gerber Covariance estimator."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "GraphicalLassoCV",
+"kind": "class",
+"doc": "Sparse inverse covariance with cross-validated choice of the l1 penalty."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "ImpliedCovariance",
+"kind": "class",
+"doc": "Implied Covariance estimator."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "LedoitWolf",
+"kind": "class",
+"doc": "LedoitWolf Covariance Estimator."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "OAS",
+"kind": "class",
+"doc": "Oracle Approximating Shrinkage Estimator as proposed in [1]_."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "RegimeAdjustedEWCovariance",
+"kind": "class",
+"doc": "Exponentially weighted covariance estimator with regime adjustment via the"
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "RegimeAdjustmentMethod",
+"kind": "class",
+"doc": "Transformation used to map the STVU statistic to the volatility multiplier."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "RegimeAdjustmentTarget",
+"kind": "class",
+"doc": "Target dimension used to calibrate the short-term volatility update (STVU)."
+},
+{
+"area": "skfolio.moments.covariance",
+"name": "ShrunkCovariance",
+"kind": "class",
+"doc": "Covariance estimator with shrinkage."
+},
+{
+"area": "skfolio.moments.expected_returns",
+"name": "BaseMu",
+"kind": "class",
+"doc": "Base class for all expected returns estimators in skfolio."
+},
+{
+"area": "skfolio.moments.expected_returns",
+"name": "EWMu",
+"kind": "class",
+"doc": "Exponentially Weighted Expected Returns (Mu) estimator."
+},
+{
+"area": "skfolio.moments.expected_returns",
+"name": "EmpiricalMu",
+"kind": "class",
+"doc": "Empirical Expected Returns (Mu) estimator."
+},
+{
+"area": "skfolio.moments.expected_returns",
+"name": "EquilibriumMu",
+"kind": "class",
+"doc": "Equilibrium Expected Returns (Mu) estimator."
+},
+{
+"area": "skfolio.moments.expected_returns",
+"name": "ShrunkMu",
+"kind": "class",
+"doc": "Shrinkage Expected Returns (Mu) estimator."
+},
+{
+"area": "skfolio.moments.expected_returns",
+"name": "ShrunkMuMethods",
+"kind": "class",
+"doc": "Shrinkage methods for the ShrunkMu estimator."
+},
+{
+"area": "skfolio.moments.variance",
+"name": "BaseVariance",
+"kind": "class",
+"doc": "Base class for all variance estimators in `skfolio`."
+},
+{
+"area": "skfolio.moments.variance",
+"name": "EWVariance",
+"kind": "class",
+"doc": "Exponentially Weighted Variance estimator."
+},
+{
+"area": "skfolio.moments.variance",
+"name": "EmpiricalVariance",
+"kind": "class",
+"doc": "Empirical Variance estimator."
+},
+{
+"area": "skfolio.moments.variance",
+"name": "RegimeAdjustedEWVariance",
+"kind": "class",
+"doc": "Exponentially weighted variance estimator with regime adjustment via the"
+},
+{
+"area": "skfolio.moments.variance",
+"name": "RegimeAdjustmentMethod",
+"kind": "class",
+"doc": "Transformation used to map the STVU statistic to the volatility multiplier."
+},
+{
+"area": "skfolio.pre_selection",
+"name": "DropCorrelated",
+"kind": "class",
+"doc": "Transformer for dropping highly correlated assets."
+},
+{
+"area": "skfolio.pre_selection",
+"name": "DropZeroVariance",
+"kind": "class",
+"doc": "Transformer for dropping assets with near-zero variance."
+},
+{
+"area": "skfolio.pre_selection",
+"name": "SelectComplete",
+"kind": "class",
+"doc": "Transformer to select assets with complete data across the entire observation"
+},
+{
+"area": "skfolio.pre_selection",
+"name": "SelectKExtremes",
+"kind": "class",
+"doc": "Transformer for selecting the `k` best or worst assets."
+},
+{
+"area": "skfolio.pre_selection",
+"name": "SelectNonDominated",
+"kind": "class",
+"doc": "Transformer for selecting non dominated assets."
+},
+{
+"area": "skfolio.pre_selection",
+"name": "SelectNonExpiring",
+"kind": "class",
+"doc": "Transformer to select assets that do not expire within a specified lookahead period"
+},
+{
+"area": "skfolio.prior",
+"name": "BaseLoadingMatrix",
+"kind": "class",
+"doc": "Base class for all Loading Matrix estimators."
+},
+{
+"area": "skfolio.prior",
+"name": "BasePrior",
+"kind": "class",
+"doc": "Base class for all prior estimators in skfolio."
+},
+{
+"area": "skfolio.prior",
+"name": "BlackLitterman",
+"kind": "class",
+"doc": "Black & Litterman estimator."
+},
+{
+"area": "skfolio.prior",
+"name": "CharacteristicsFactorModel",
+"kind": "class",
+"doc": "Characteristics-based cross-sectional factor model."
+},
+{
+"area": "skfolio.prior",
+"name": "CorrelationMethod",
+"kind": "class",
+"doc": "Correlation method."
+},
+{
+"area": "skfolio.prior",
+"name": "CovarianceSqrt",
+"kind": "class",
+"doc": "Matrix square root decomposition of a covariance matrix."
+},
+{
+"area": "skfolio.prior",
+"name": "EmpiricalPrior",
+"kind": "class",
+"doc": "Empirical Prior estimator."
+},
+{
+"area": "skfolio.prior",
+"name": "EntropyPooling",
+"kind": "class",
+"doc": "Entropy Pooling estimator."
+},
+{
+"area": "skfolio.prior",
+"name": "FactorModel",
+"kind": "class",
+"doc": "Factor model decomposition of asset returns."
+},
+{
+"area": "skfolio.prior",
+"name": "LoadingMatrixRegression",
+"kind": "class",
+"doc": "Loading Matrix Regression estimator."
+},
+{
+"area": "skfolio.prior",
+"name": "OpinionPooling",
+"kind": "class",
+"doc": "Opinion Pooling estimator."
+},
+{
+"area": "skfolio.prior",
+"name": "ReturnDistribution",
+"kind": "class",
+"doc": "Return distribution estimated by a prior estimator."
+},
+{
+"area": "skfolio.prior",
+"name": "SyntheticData",
+"kind": "class",
+"doc": "Synthetic Data Estimator."
+},
+{
+"area": "skfolio.prior",
+"name": "TimeSeriesFactorModel",
+"kind": "class",
+"doc": "Time-series factor model estimator."
+},
+{
+"area": "skfolio.uncertainty_set",
+"name": "BaseCovarianceUncertaintySet",
+"kind": "class",
+"doc": "Base class for all Covariance Uncertainty Set estimators in `skfolio`."
+},
+{
+"area": "skfolio.uncertainty_set",
+"name": "BaseMuUncertaintySet",
+"kind": "class",
+"doc": "Base class for all Mu Uncertainty Set estimators in `skfolio`."
+},
+{
+"area": "skfolio.uncertainty_set",
+"name": "BootstrapCovarianceUncertaintySet",
+"kind": "class",
+"doc": "Bootstrap Covariance Uncertainty set."
+},
+{
+"area": "skfolio.uncertainty_set",
+"name": "BootstrapMuUncertaintySet",
+"kind": "class",
+"doc": "Bootstrap Mu Uncertainty set."
+},
+{
+"area": "skfolio.uncertainty_set",
+"name": "CompactCovarianceUncertaintySet",
+"kind": "class",
+"doc": "Compact representation of a quadratic covariance uncertainty penalty."
+},
+{
+"area": "skfolio.uncertainty_set",
+"name": "EmpiricalCovarianceUncertaintySet",
+"kind": "class",
+"doc": "Empirical Covariance Uncertainty set."
+},
+{
+"area": "skfolio.uncertainty_set",
+"name": "EmpiricalMuUncertaintySet",
+"kind": "class",
+"doc": "Empirical Mu Uncertainty Set."
+},
+{
+"area": "skfolio.uncertainty_set",
+"name": "OrthogonalCovarianceUncertaintySet",
+"kind": "class",
+"doc": "Covariance uncertainty set estimator for directions outside the factor span."
+},
+{
+"area": "skfolio.uncertainty_set",
+"name": "OrthogonalMuUncertaintySet",
+"kind": "class",
+"doc": "Expected return uncertainty set estimator for directions outside the factor span."
+},
+{
+"area": "skfolio.uncertainty_set",
+"name": "UncertaintySet",
+"kind": "class",
+"doc": "Norm-ball uncertainty set."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "CSWeighting",
+"kind": "class",
+"doc": "Cross-sectional weighting."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "CorrelationMethod",
+"kind": "class",
+"doc": "Correlation method."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "NBinsMethod",
+"kind": "class",
+"doc": "Enumeration of the Number of Bins Methods."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "assert_is_distance",
+"kind": "function",
+"doc": "Raises an error if the matrix is not a distance matrix."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "assert_is_square",
+"kind": "function",
+"doc": "Raises an error if the matrix is not square."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "assert_is_symmetric",
+"kind": "function",
+"doc": "Raises an error if the matrix is not symmetric."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "combination_by_index",
+"kind": "function",
+"doc": "Retrieve the k-combination at a given lexicographic position without enumerating"
+},
+{
+"area": "skfolio.utils.stats",
+"name": "commutation_matrix",
+"kind": "function",
+"doc": "Compute the commutation matrix."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "compute_optimal_n_clusters",
+"kind": "function",
+"doc": "Compute the optimal number of clusters based on Two-Order Difference to Gap"
+},
+{
+"area": "skfolio.utils.stats",
+"name": "corr_to_cov",
+"kind": "function",
+"doc": "Convert a correlation matrix to a covariance matrix given its"
+},
+{
+"area": "skfolio.utils.stats",
+"name": "cov_nearest",
+"kind": "function",
+"doc": "Compute the nearest covariance matrix that is positive definite and admits a"
+},
+{
+"area": "skfolio.utils.stats",
+"name": "cov_to_corr",
+"kind": "function",
+"doc": "Convert a covariance matrix to a correlation matrix."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "cs_pearson_correlation",
+"kind": "function",
+"doc": "Weighted cross-sectional Pearson correlation."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "cs_rank",
+"kind": "function",
+"doc": "Cross-sectional rank along an axis."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "cs_spearman_correlation",
+"kind": "function",
+"doc": "Cross-sectional Spearman rank correlation."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "inverse_multiply",
+"kind": "function",
+"doc": "Multiply the inverse of matrix a by matrix b."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "inverse_volatility_weights",
+"kind": "function",
+"doc": "Inverse-volatility portfolio weights from a covariance matrix."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "is_cholesky_dec",
+"kind": "function",
+"doc": "Returns True if Cholesky decomposition can be computed."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "is_positive_definite",
+"kind": "function",
+"doc": "Returns True if the matrix is positive definite."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "is_positive_semidefinite",
+"kind": "function",
+"doc": "Return True if the matrix is positive semidefinite within a tolerance."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "minimize_relative_weight_deviation",
+"kind": "function",
+"doc": "Apply weight constraints to an initial array of weights by minimizing the relative"
+},
+{
+"area": "skfolio.utils.stats",
+"name": "multiply_by_inverse",
+"kind": "function",
+"doc": "Multiply matrix a by the inverse of matrix b."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "n_bins_freedman",
+"kind": "function",
+"doc": "Compute the optimal histogram bin size using the Freedman-Diaconis rule [1]_."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "n_bins_knuth",
+"kind": "function",
+"doc": "Compute the optimal histogram bin size using Knuth's rule [1]_."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "rand_weights",
+"kind": "function",
+"doc": "Produces n random weights that sum to one from a uniform distribution"
+},
+{
+"area": "skfolio.utils.stats",
+"name": "rand_weights_dirichlet",
+"kind": "function",
+"doc": "Produces n random weights that sum to one from a Dirichlet distribution"
+},
+{
+"area": "skfolio.utils.stats",
+"name": "safe_cholesky",
+"kind": "function",
+"doc": "Compute a Cholesky factor :math:`L` from covariance :math:`\\Sigma`."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "safe_divide",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "skfolio.utils.stats",
+"name": "sample_unique_subsets",
+"kind": "function",
+"doc": "Generate unique k-element subsets from a universe of size n using combinatorial"
+},
+{
+"area": "skfolio.utils.stats",
+"name": "squared_mahalanobis_dist",
+"kind": "function",
+"doc": "Squared Mahalanobis distance via Cholesky decomposition."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "squared_standardized_euclidean_dist",
+"kind": "function",
+"doc": "Squared standardized Euclidean distance."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "symmetric_step_up_matrix",
+"kind": "function",
+"doc": "Compute the Symmetric step-up matrix M such that `M @ np.ones(n2) = np.ones(n1)`."
+},
+{
+"area": "skfolio.utils.stats",
+"name": "symmetrize",
+"kind": "function",
+"doc": "In-place symmetrization: :math:`M \\leftarrow (M + M^T) / 2`."
+}
+]
+}

@@ -1,0 +1,55 @@
+{
+"library": "pymanopt",
+"version": "2.2.1",
+"source": "introspection",
+"entries": [
+{
+"area": "pymanopt.manifolds.fixed_rank",
+"name": "FixedRankEmbedded",
+"kind": "class",
+"doc": "Manifold of fixed rank matrices."
+},
+{
+"area": "pymanopt.manifolds.positive",
+"name": "Positive",
+"kind": "class",
+"doc": "The (product) manifold of positive matrices."
+},
+{
+"area": "pymanopt.manifolds.positive_definite",
+"name": "HermitianPositiveDefinite",
+"kind": "class",
+"doc": "Manifold of Hermitian positive definite matrices."
+},
+{
+"area": "pymanopt.manifolds.positive_definite",
+"name": "SpecialHermitianPositiveDefinite",
+"kind": "class",
+"doc": "Manifold of hermitian positive definite matrices with unit determinant."
+},
+{
+"area": "pymanopt.manifolds.positive_definite",
+"name": "SymmetricPositiveDefinite",
+"kind": "class",
+"doc": "Manifold of symmetric positive definite matrices."
+},
+{
+"area": "pymanopt.manifolds.psd",
+"name": "Elliptope",
+"kind": "class",
+"doc": "Manifold of fixed-rank PSD matrices with unit diagonal elements."
+},
+{
+"area": "pymanopt.manifolds.psd",
+"name": "PSDFixedRank",
+"kind": "class",
+"doc": "Manifold of fixed-rank positive semidefinite (PSD) matrices."
+},
+{
+"area": "pymanopt.manifolds.psd",
+"name": "PSDFixedRankComplex",
+"kind": "class",
+"doc": "Manifold of fixed-rank Hermitian positive semidefinite (PSD) matrices."
+}
+]
+}

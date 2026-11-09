@@ -1,0 +1,337 @@
+{
+"library": "riskfolio",
+"version": "3.3.0",
+"source": "introspection",
+"entries": [
+{
+"area": "riskfolio.AuxFunctions",
+"name": "color_list",
+"kind": "function",
+"doc": "This function creates a list of colors."
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "commutation_matrix",
+"kind": "function",
+"doc": "Generate the commutation matrix of the covariance matrix cov."
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "corr2cov",
+"kind": "function",
+"doc": "Generate a covariance matrix from a correlation matrix corr and a standard"
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "cov2corr",
+"kind": "function",
+"doc": "Generate a correlation matrix from a covariance matrix cov."
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "cov_fix",
+"kind": "function",
+"doc": "Fix a covariance matrix to a positive definite matrix."
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "cov_returns",
+"kind": "function",
+"doc": "Generate a matrix of returns that have a covariance matrix cov."
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "dcorr",
+"kind": "function",
+"doc": "Calculate the distance correlation between two variables :cite:`d-Szekely`."
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "dcorr_matrix",
+"kind": "function",
+"doc": "Calculate the distance correlation matrix of n variables."
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "denoiseCov",
+"kind": "function",
+"doc": "Remove noise from cov by fixing random eigenvalues of their correlation"
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "denoisedCorr",
+"kind": "function",
+"doc": "Remove noise from correlation matrix using fixing random eigenvalues and"
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "errPDFs",
+"kind": "function",
+"doc": "Fit error of Empirical PDF (uses Marchenko-Pastur PDF). For more information"
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "findMaxEval",
+"kind": "function",
+"doc": "Find max random eVal by fitting Marchenko\u2019s dist (i.e) everything else"
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "fitKDE",
+"kind": "function",
+"doc": "Fit kernel to a series of obs, and derive the prob of obs x is the array of"
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "getPCA",
+"kind": "function",
+"doc": "Gets the Eigenvalues and Eigenvector values from a Hermitian Matrix."
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "is_pos_def",
+"kind": "function",
+"doc": "Indicate if a matrix is positive (semi)definite."
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "ltdi_matrix",
+"kind": "function",
+"doc": "Calculate the lower tail dependence index matrix using the empirical"
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "mpPDF",
+"kind": "function",
+"doc": "Creates a Marchenko-Pastur Probability Density Function (PDF). For more"
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "mutual_info_matrix",
+"kind": "function",
+"doc": "Calculate the mutual information matrix of n variables."
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "numBins",
+"kind": "function",
+"doc": "Calculate the optimal number of bins for discretization of mutual"
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "round_values",
+"kind": "function",
+"doc": "This function help us to round values to values close or away from zero."
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "shrinkCorr",
+"kind": "function",
+"doc": "Remove noise from correlation using target shrinkage. For more information"
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "two_diff_gap_stat",
+"kind": "function",
+"doc": "Calculate the optimal number of clusters based on the two difference gap"
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "var_info_matrix",
+"kind": "function",
+"doc": "Calculate the variation of information matrix of n variables."
+},
+{
+"area": "riskfolio.AuxFunctions",
+"name": "weights_discretizetion",
+"kind": "function",
+"doc": "This function help us to find the number of shares that must be bought or"
+},
+{
+"area": "riskfolio.DBHT",
+"name": "AdjCliq",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "riskfolio.DBHT",
+"name": "BubbleCluster8s",
+"kind": "function",
+"doc": "Obtains non-discrete and discrete clusterings from the bubble topology of"
+},
+{
+"area": "riskfolio.DBHT",
+"name": "BubbleHierarchy",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "riskfolio.DBHT",
+"name": "BubbleMember",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "riskfolio.DBHT",
+"name": "BuildHierarchy",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "riskfolio.DBHT",
+"name": "CliqHierarchyTree2s",
+"kind": "function",
+"doc": "ClqHierarchyTree2 looks for 3-cliques of a maximal planar graph, then"
+},
+{
+"area": "riskfolio.DBHT",
+"name": "DBHTs",
+"kind": "function",
+"doc": "Perform Direct Bubble Hierarchical Tree (DBHT) clustering, a deterministic"
+},
+{
+"area": "riskfolio.DBHT",
+"name": "DendroConstruct",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "riskfolio.DBHT",
+"name": "DirectHb",
+"kind": "function",
+"doc": "Computes directions on each separating 3-clique of a maximal planar"
+},
+{
+"area": "riskfolio.DBHT",
+"name": "FindDisjoint",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "riskfolio.DBHT",
+"name": "HierarchyConstruct4s",
+"kind": "function",
+"doc": "Constructs intra- and inter-cluster hierarchy by utilizing Bubble"
+},
+{
+"area": "riskfolio.DBHT",
+"name": "LinkageFunction",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "riskfolio.DBHT",
+"name": "PMFG_T2s",
+"kind": "function",
+"doc": "Computes a Triangulated Maximally Filtered Graph (TMFG) :cite:`d-Massara`"
+},
+{
+"area": "riskfolio.DBHT",
+"name": "breadth",
+"kind": "function",
+"doc": "Implementation of breadth-first search."
+},
+{
+"area": "riskfolio.DBHT",
+"name": "clique3",
+"kind": "function",
+"doc": "Computes the list of 3-cliques."
+},
+{
+"area": "riskfolio.DBHT",
+"name": "distance_wei",
+"kind": "function",
+"doc": "The distance matrix contains lengths of shortest paths between all"
+},
+{
+"area": "riskfolio.DBHT",
+"name": "j_LoGo",
+"kind": "function",
+"doc": "computes sparse inverse covariance, J, from a clique tree made of cliques"
+},
+{
+"area": "riskfolio.GerberStatistic",
+"name": "gerber_cov_stat0",
+"kind": "function",
+"doc": "Compute Gerber covariance Statistics 0 or original Gerber statistics"
+},
+{
+"area": "riskfolio.GerberStatistic",
+"name": "gerber_cov_stat1",
+"kind": "function",
+"doc": "Compute Gerber covariance Statistics 1 :cite: `d-Gerber2021`."
+},
+{
+"area": "riskfolio.GerberStatistic",
+"name": "gerber_cov_stat2",
+"kind": "function",
+"doc": "Compute Gerber covariance Statistics 2 :cite: `d-Gerber2021`."
+},
+{
+"area": "riskfolio.ParamsEstimation",
+"name": "PCR",
+"kind": "function",
+"doc": "Estimate the coefficients using Principal Components Regression (PCR)."
+},
+{
+"area": "riskfolio.ParamsEstimation",
+"name": "augmented_black_litterman",
+"kind": "function",
+"doc": "Estimate the expected returns vector and covariance matrix based"
+},
+{
+"area": "riskfolio.ParamsEstimation",
+"name": "backward_regression",
+"kind": "function",
+"doc": "Select the variables that estimate the best model using stepwise"
+},
+{
+"area": "riskfolio.ParamsEstimation",
+"name": "black_litterman",
+"kind": "function",
+"doc": "Estimate the expected returns vector and covariance matrix based"
+},
+{
+"area": "riskfolio.ParamsEstimation",
+"name": "black_litterman_bayesian",
+"kind": "function",
+"doc": "Estimate the expected returns vector and covariance matrix based"
+},
+{
+"area": "riskfolio.ParamsEstimation",
+"name": "bootstrapping",
+"kind": "function",
+"doc": "Estimates the uncertainty sets of mean and covariance matrix through the selected"
+},
+{
+"area": "riskfolio.ParamsEstimation",
+"name": "covar_matrix",
+"kind": "function",
+"doc": "Calculate the covariance matrix using the selected method."
+},
+{
+"area": "riskfolio.ParamsEstimation",
+"name": "forward_regression",
+"kind": "function",
+"doc": "Select the variables that estimate the best model using stepwise"
+},
+{
+"area": "riskfolio.ParamsEstimation",
+"name": "loadings_matrix",
+"kind": "function",
+"doc": "Estimate the loadings matrix using stepwise regression."
+},
+{
+"area": "riskfolio.ParamsEstimation",
+"name": "mean_vector",
+"kind": "function",
+"doc": "Calculate the expected returns vector using the selected method."
+},
+{
+"area": "riskfolio.ParamsEstimation",
+"name": "risk_factors",
+"kind": "function",
+"doc": "Estimate the expected returns vector and covariance matrix based on risk"
+}
+]
+}

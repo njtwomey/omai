@@ -1,0 +1,18 @@
+[
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"EllipticEnvelope","status":"full","how":"verdict","omai":"covariance#ellipticEnvelope"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"EmpiricalCovariance","status":"full","how":"verdict","omai":"covariance#covarianceEstimator, stats#empiricalCovariance"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"GraphicalLasso","status":"full","how":"verdict","omai":"covariance#graphicalLassoEstimator, #graphicalLassoAlgorithm"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"GraphicalLassoCV","status":"partial","how":"verdict","omai":"covariance#graphicalLassoEstimator (pathPenalties for the exposition only)","note":"the penalty is chosen by cross-validated held-out likelihood on a refined grid; omai draws the path of partial correlations over a grid but has no estimator that picks alpha by CV, EBIC or stability","home":"covariance/graph-selection.ts","size":"S","priority":"high","group":"graphical lasso model selection"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"LedoitWolf","status":"full","how":"verdict","omai":"covariance#covarianceEstimator (method ledoit-wolf), stats#ledoitWolf"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"MinCovDet","status":"full","how":"verdict","omai":"covariance#minCovDet, #fastMcdAlgorithm (concentration steps traced)"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"OAS","status":"full","how":"verdict","omai":"covariance#covarianceEstimator (method oas), stats#oas"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"ShrunkCovariance","status":"full","how":"verdict","omai":"covariance#covarianceEstimator (method shrunk), stats#shrunkCovariance"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"empirical_covariance","status":"full","how":"verdict","omai":"covariance#covarianceEstimator, stats#empiricalCovariance"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"fast_mcd","status":"full","how":"verdict","omai":"covariance#minCovDet, #fastMcdAlgorithm (concentration steps traced)"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"graphical_lasso","status":"full","how":"verdict","omai":"covariance#graphicalLassoEstimator, #graphicalLassoAlgorithm"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"ledoit_wolf","status":"full","how":"verdict","omai":"covariance#covarianceEstimator (method ledoit-wolf), stats#ledoitWolf"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"ledoit_wolf_shrinkage","status":"full","how":"verdict","omai":"covariance#covarianceEstimator (method ledoit-wolf), stats#ledoitWolf"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"log_likelihood","status":"full","how":"verdict","omai":"covariance#CovarianceVerbs (score)","note":"the mean Gaussian log likelihood is the `score` verb of every fitted covariance; `probprog#logLikelihood`, the name match of the first pass, is a different thing"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"oas","status":"full","how":"verdict","omai":"covariance#covarianceEstimator (method oas), stats#oas"},
+{"lib":"sklearn_covariance","area":"sklearn.covariance","name":"shrunk_covariance","status":"full","how":"verdict","omai":"covariance#covarianceEstimator (method shrunk), stats#shrunkCovariance"}
+]

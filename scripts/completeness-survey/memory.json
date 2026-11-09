@@ -1,5 +1,5 @@
 {
-  "note": "Public API names of libraries that are not installed in the oracle environment, written from memory of their documentation. Names only; accurate to the level a reader of the docs would recognise, not checked against a release.",
+  "note": "Public API names of libraries that are not installed in the oracle environment, written from memory of their documentation. Names only; accurate to the level a reader of the docs would recognise, not checked against a release. Third pass (covariance): the r_covtools, r_rrcov, r_robustbase, r_cellwise, r_corpcor, r_huge, r_nlshrink, r_poet, r_rags2ridges and r_bdgraph lists are the CRAN reference-manual index pages (robustbase only the first 100,000 characters); the rest of the covariance lists (r_other_graphical, pandas_cov, river_cov, js_peers, pymc_priors and the concept lists) are written from memory.",
   "libraries": {
     "torch_geometric": {
       "conv": "GCNConv GATConv GATv2Conv SAGEConv GINConv GINEConv ChebConv GraphConv GatedGraphConv ResGatedGraphConv TransformerConv TAGConv ARMAConv SGConv SSGConv APPNP MFConv AGNNConv EdgeConv DynamicEdgeConv PNAConv RGCNConv RGATConv HGTConv HANConv NNConv CGConv PointNetConv GeneralConv FiLMConv SuperGATConv LEConv ClusterGCNConv GENConv PDNConv FAConv EGConv GMMConv SplineConv XConv FeaStConv GravNetConv WLConv MessagePassing SimpleConv HypergraphConv LGConv TWIRLSConv DNAConv GCN2Conv MixHopConv GPSConv HeteroConv",
@@ -569,6 +569,97 @@
       "disentanglement_metrics": "BetaVAEScore FactorVAEScore MIG SAP DCI Modularity Explicitness IRS UDR",
       "representation_diagnostics": "LinearProbe KnnProbe CKA SVCCA ProjectionWeightedCCA EffectiveRank AlignmentUniformity Wasserstein-dependency RankMe LiDAR",
       "tokenisation_of_images": "VQGAN dVAE Gumbel-softmax-VAE"
+    },
+    "r_covtools": {
+      "estimators": "CovEst.2003LW CovEst.2010OAS CovEst.2010RBLW CovEst.adaptive CovEst.hard CovEst.hardPD CovEst.nearPD CovEst.soft",
+      "precision": "PreEst.2014An PreEst.2014Banerjee PreEst.2017Lee PreEst.glasso",
+      "tests": "BCovTest1.mxPBF BDiagTest1.mxPBF CovTest1.2013Cai CovTest1.2014Srivastava CovTest2.2013Cai DiagTest1.2011Cai DiagTest1.2015Lan",
+      "geometry": "CovDist CovMean samplecovs"
+    },
+    "r_rrcov": {
+      "scatter": "CovClassic CovMcd CovMrcd CovMve CovMest CovMMest CovOgk CovSest CovSde CovRobust covMest",
+      "pca": "PcaClassic PcaCov PcaGrid PcaHubert PcaLocantore PcaProj pca.distances pca.scoreplot",
+      "discriminant": "LdaClassic LdaPP Linda QdaClassic QdaCov",
+      "tests_and_plots": "T2.test Wilks.test getEllipse"
+    },
+    "r_robustbase": {
+      "scatter_and_scale": "covMcd covOGK covComed adjOutlyingness huberM Qn Sn scaleTau2 tolEllipsePlot"
+    },
+    "r_cellwise": {
+      "cellwise": "DDC DDCpredict DI ICPCA MacroPCA MacroPCApredict cellHandler cellMCD cellMap checkDataSet cwLocScat estLocScale generateCorMat generateData outlierMap transfo truncPC unpack weightedEM wrap"
+    },
+    "r_corpcor": {
+      "shrinkage": "cov.shrink invcov.shrink pcor.shrink cor2pcor shrink.intensity rank.condition rebuild.cov wt.scale powcor.shrink mpower pseudoinverse fast.svd"
+    },
+    "r_huge": {
+      "graph_estimation": "huge huge.generator huge.select huge.inference huge.roc huge.plot huge.npn huge.ct huge.mb huge.glasso huge.tiger"
+    },
+    "r_nlshrink": {
+      "shrinkage": "nlshrink_cov linshrink_cov linshrink ESD lambda_estimate tau_estimate"
+    },
+    "r_poet": {
+      "factor_threshold": "POET POETCmin POETKhat"
+    },
+    "r_rags2ridges": {
+      "ridge_precision": "ridgeP ridgeS ridgePathS optPenalty.kCV optPenalty.LOOCV optPenalty.aLOOCV default.target sparsify pruneMatrix GGMnetworkStats GGMpathStats GGMblockTest ridgeP.fused optPenalty.fused.grid fused.test conditionNumberPlot covML pcor KLdiv loss NLL"
+    },
+    "r_bdgraph": {
+      "bayesian_ggm": "bdgraph bdgraph.mpl bdgraph.dw bdgraph.npn bdgraph.sim rgwish rwish covariance precision plinks select compare"
+    },
+    "r_other_graphical": {
+      "glasso_family": "glasso glassoFast CVglasso JGL bigQuic QUIC spcov covglasso EBICglasso GGMselect BIC_glasso FGL GGL huge_mb TIGER CLIME SPACE SCIO flare sugm nodewise_lasso PGL"
+    },
+    "pandas_cov": {
+      "frame": "DataFrame.cov DataFrame.corr DataFrame.corrwith Series.cov Series.corr",
+      "windows": "ewm.cov ewm.corr rolling.cov rolling.corr expanding.cov expanding.corr"
+    },
+    "river_cov": {
+      "covariance": "river.covariance.EmpiricalCovariance river.covariance.EmpiricalPrecision river.stats.Cov river.stats.PearsonCorr river.stats.SpearmanCorr river.stats.RollingCov river.stats.RollingPearsonCorr river.stats.EWVar"
+    },
+    "js_peers": {
+      "libraries": "simple-statistics.sampleCovariance simple-statistics.sampleCorrelation ml-matrix.covariance ml-matrix.correlation ml-pca.PCA jstat.covariance jstat.corrcoeff mathjs.covariance_via_mean_and_variance"
+    },
+    "pymc_priors": {
+      "priors": "LKJCorr LKJCholeskyCov Wishart WishartBartlett InverseWishart MvNormal MvStudentT MatrixNormal KroneckerNormal MvGaussianRandomWalk"
+    },
+    "timevarying_and_high_frequency": {
+      "multivariate_garch": "EWMA_RiskMetrics CCC_GARCH DCC_GARCH aDCC_GARCH BEKK_GARCH GO_GARCH copula_GARCH multivariate_stochastic_volatility rolling_window_covariance",
+      "realised": "realised_covariance realised_bipower_covariance realised_kernel_covariance two_scale_realised_covariance pre_averaging_covariance threshold_realised_covariance Hayashi_Yoshida realised_semicovariance realised_beta Cholesky_realised_covariance",
+      "long_run": "Newey_West_HAC_kernel Andrews_bandwidth Parzen_kernel quadratic_spectral_kernel prewhitened_HAC fixed_b_inference"
+    },
+    "sparse_and_structured": {
+      "thresholding_banding": "banding_Bickel_Levina tapering_Cai_Zhang_Zhou hard_thresholding_Bickel_Levina soft_thresholding generalised_thresholding adaptive_thresholding_Cai_Liu SCAD_thresholding positive_definite_thresholding_Fan",
+      "cholesky": "modified_Cholesky_Pourahmadi nested_lasso_Levina banded_Cholesky_regularisation Cholesky_lasso",
+      "structure": "Toeplitz_covariance_estimation circulant_covariance AR1_covariance_fit compound_symmetry_fit Kronecker_covariance_flip_flop matrix_normal_MLE separable_covariance_Kronecker_PCA tensor_normal_MLE spatial_covariance_variogram",
+      "factor_and_low_rank": "approximate_factor_model_POET principal_orthogonal_complement factor_analysis_covariance probabilistic_PCA_covariance low_rank_plus_sparse_PCP robust_PCA_inexact_ALM latent_variable_graphical_lasso_Chandrasekaran sparse_PCA_spcov nuclear_norm_covariance",
+      "shrinkage": "linear_shrinkage_Ledoit_Wolf_2004 nonlinear_shrinkage_Ledoit_Wolf_2012 analytical_nonlinear_shrinkage_2020 QuEST_shrinkage Stein_isotonised_eigenvalues Rao_Blackwell_Ledoit_Wolf Schafer_Strimmer_target_D Schafer_Strimmer_target_B constant_correlation_target single_factor_target shrinkage_towards_diagonal Warton_regularised_correlation optimal_shrinkage_Donoho_Gavish_Johnstone Bayesian_shrinkage_inverse_Wishart",
+      "robust_scatter_not_in_a_library": "Tyler_M_estimator Huber_M_scatter Maronna_M_scatter Kent_Tyler_multivariate_t_MLE regularised_Tyler spatial_sign_covariance spatial_Kendall_tau_covariance Gnanadesikan_Kettenring ranks_based_correlation_matrix Spearman_correlation_matrix Kendall_correlation_matrix Gaussian_rank_correlation winsorised_correlation percentage_bend_correlation biweight_midcorrelation shepherd_pi_correlation skipped_correlation"
+    },
+    "graph_structure_methods": {
+      "neighbourhood_and_columnwise": "Meinshausen_Buhlmann_neighbourhood_selection SPACE_Peng_Wang_Zhou_Zhu TIGER_Liu_Wang CLIME_Cai_Liu_Luo SCIO_Liu_Luo scaled_lasso_precision node_wise_lasso_debiased",
+      "likelihood_and_penalty": "QUIC_Hsieh BigQUIC adaptive_graphical_lasso SCAD_graphical_lasso MCP_graphical_lasso graphical_ridge graphical_elastic_net graphical_lasso_path_warm_start glasso_block_coordinate_P_GLASSO",
+      "joint_and_dynamic": "joint_graphical_lasso_Danaher fused_graphical_lasso group_graphical_lasso node_based_joint_graphical_lasso time_varying_graphical_lasso_Hallac kernel_time_graphical_lasso latent_variable_graphical_lasso mixed_graphical_models conditional_Gaussian_graphical_model",
+      "non_gaussian": "nonparanormal_Liu_Lafferty_Wasserman Gaussian_copula_graphical_model_Hoff Gaussian_copula_extended_rank_likelihood Ising_graphical_lasso Poisson_graphical_model exponential_family_graphical_model Student_t_graphical_lasso",
+      "selection_and_inference": "EBIC_Foygel_Drton StARS_stability_approach stability_selection_graphical_lasso cross_validated_lambda debiased_graphical_lasso_Jankova_van_de_Geer inference_on_precision_entries partial_correlation_significance_test false_discovery_rate_edges knockoffs_graphical_models",
+      "bayesian": "G_Wishart_prior bayesian_graphical_lasso Bayesian_structure_learning_MCMC_birth_death spike_and_slab_graphical_model horseshoe_graphical_model",
+      "financial_graphs": "minimum_spanning_tree_correlation planar_maximally_filtered_graph TMFG DBHT LoGo_sparse_inverse hierarchical_clustering_correlation"
+    },
+    "covariance_testing": {
+      "equality_and_structure": "Box_M Bartlett_multivariate Jennrich_test Mauchly_sphericity John_sphericity Ledoit_Wolf_sphericity Nagao_identity_test Srivastava_test Cai_Ma_two_sample Schott_test likelihood_ratio_test_of_covariance Anderson_Darling_covariance",
+      "correlation_matrices": "Fisher_z_compare_correlations Steiger_dependent_correlations Olkin_Finn_test equal_correlation_test Bartlett_test_of_correlation_matrix Kaiser_Meyer_Olkin Jennrich_correlation_matrices Bonett_confidence_interval correlation_matrix_bootstrap_ci",
+      "dimensionality": "parallel_analysis_Horn Velicer_MAP Bai_Ng_factor_count Hallin_Liska_factor_count Onatski_edge_distribution Kritchman_Nadler_rank_estimate Johnstone_Tracy_Widom_test"
+    },
+    "random_matrix_theory": {
+      "limit_laws": "MarchenkoPastur_density MarchenkoPastur_cdf MarchenkoPastur_edges Wigner_semicircle TracyWidom_GOE TracyWidom_GUE TracyWidom_GSE Stieltjes_transform R_transform spiked_covariance_BBP_threshold Baik_Silverstein_limits Bai_Silverstein_CLT Girko_law Kesten_McKay",
+      "tools": "eigenvalue_clipping_RMT eigenvalue_replacement_denoising detoning_market_mode MP_fit_by_KDE optimal_hard_threshold_singular_values Gavish_Donoho spectrum_estimation_QuEST Ledoit_Peche_shrinkage_function free_deconvolution Haar_orthogonal_sampler Haar_unitary_sampler random_correlation_matrix_vine random_correlation_matrix_onion Wishart_sampler_Bartlett"
+    },
+    "missing_streaming_weighted": {
+      "missing_data": "EM_covariance_incomplete_data pairwise_deletion_covariance listwise_deletion_covariance FIML_covariance ECM_covariance_multivariate_t Bayesian_data_augmentation_covariance nearest_PSD_after_pairwise Little_MCAR_test covariance_imputation_conditional_Gaussian",
+      "streaming": "Welford_online_covariance Chan_parallel_merge_covariance exponentially_weighted_covariance sliding_window_covariance Sherman_Morrison_precision_update online_Cholesky_update incremental_PCA Oja_rule streaming_covariance_sketch frequent_directions online_robust_covariance",
+      "weighted_and_semi": "weighted_covariance_reliability_weights semicovariance_downside exceedance_correlation Gerber_statistic Gerber_statistic_1_2 co_skewness_co_kurtosis_matrices distance_covariance_matrix partial_correlation_from_precision"
+    },
+    "spd_geometry_concepts": {
+      "metrics_and_means": "affine_invariant_metric log_Euclidean_metric log_Cholesky_metric Bures_Wasserstein_metric Fisher_Rao_Gaussian Stein_divergence Jeffreys_divergence Karcher_mean Frechet_mean_SPD geometric_median_SPD geodesic_SPD exp_log_maps_SPD parallel_transport_SPD tangent_space_embedding SPD_k_means SPD_MDM_classifier SPD_kernels SPD_batch_normalisation SPDNet_BiMap_ReEig geoopt_SPD_manifold optimisation_on_SPD_manifold Riemannian_Gaussian_SPD nearest_correlation_matrix_Higham nearest_covariance_alternating_projections Newton_nearest_correlation_Qi_Sun"
     }
   }
 }

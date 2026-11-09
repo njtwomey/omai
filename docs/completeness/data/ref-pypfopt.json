@@ -1,0 +1,85 @@
+{
+"library": "pypfopt",
+"version": "1.6.0",
+"source": "introspection",
+"entries": [
+{
+"area": "pypfopt.plotting",
+"name": "plot_covariance",
+"kind": "function",
+"doc": "Generate a basic plot of the covariance (or correlation) matrix, given a"
+},
+{
+"area": "pypfopt.plotting",
+"name": "plot_dendrogram",
+"kind": "function",
+"doc": "Plot the clusters in the form of a dendrogram."
+},
+{
+"area": "pypfopt.plotting",
+"name": "plot_efficient_frontier",
+"kind": "function",
+"doc": "Plot the efficient frontier based on either a CLA or EfficientFrontier object."
+},
+{
+"area": "pypfopt.plotting",
+"name": "plot_weights",
+"kind": "function",
+"doc": "Plot the portfolio weights as a horizontal bar chart"
+},
+{
+"area": "pypfopt.risk_models",
+"name": "CovarianceShrinkage",
+"kind": "class",
+"doc": "Provide methods for computing shrinkage estimates of the covariance matrix, using the"
+},
+{
+"area": "pypfopt.risk_models",
+"name": "corr_to_cov",
+"kind": "function",
+"doc": "Convert a correlation matrix to a covariance matrix"
+},
+{
+"area": "pypfopt.risk_models",
+"name": "cov_to_corr",
+"kind": "function",
+"doc": "Convert a covariance matrix to a correlation matrix."
+},
+{
+"area": "pypfopt.risk_models",
+"name": "exp_cov",
+"kind": "function",
+"doc": "Estimate the exponentially-weighted covariance matrix, which gives"
+},
+{
+"area": "pypfopt.risk_models",
+"name": "fix_nonpositive_semidefinite",
+"kind": "function",
+"doc": "Check if a covariance matrix is positive semidefinite, and if not, fix it"
+},
+{
+"area": "pypfopt.risk_models",
+"name": "min_cov_determinant",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pypfopt.risk_models",
+"name": "risk_matrix",
+"kind": "function",
+"doc": "Compute a covariance matrix, using the risk model supplied in the ``method``"
+},
+{
+"area": "pypfopt.risk_models",
+"name": "sample_cov",
+"kind": "function",
+"doc": "Calculate the annualised sample covariance matrix of (daily) asset returns."
+},
+{
+"area": "pypfopt.risk_models",
+"name": "semicovariance",
+"kind": "function",
+"doc": "Estimate the semicovariance matrix, i.e the covariance given that"
+}
+]
+}

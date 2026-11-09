@@ -1,0 +1,169 @@
+{
+"library": "robpy",
+"version": "0.0.6",
+"source": "introspection",
+"entries": [
+{
+"area": "robpy.covariance.cellmcd",
+"name": "CellMCD",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.covariance.initial_ddcw",
+"name": "InitialDDCW",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.covariance.kendall",
+"name": "KendallTau",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.covariance.mcd",
+"name": "DetMCD",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.covariance.mcd",
+"name": "FastMCD",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.covariance.mcd",
+"name": "HSubset",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.covariance.ogk",
+"name": "OGK",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.covariance.wrapping",
+"name": "WrappingCovariance",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.outliers.ddc",
+"name": "DDC",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.outliers.ddc",
+"name": "get_custom_cmap",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "robpy.pca.robpca",
+"name": "ROBPCA",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.pca.spca",
+"name": "PCALocantore",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.regression.lts",
+"name": "FastLTSRegression",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.regression.lts",
+"name": "get_correction_factor",
+"kind": "function",
+"doc": "Calculate the small sample correction factor for the scale resulting from LTS regression when"
+},
+{
+"area": "robpy.regression.lts",
+"name": "get_correction_factor_reweighting",
+"kind": "function",
+"doc": "Calculate the small sample correction factor for the scale resulting from LTS regression when"
+},
+{
+"area": "robpy.regression.mm",
+"name": "MMRegression",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.regression.s",
+"name": "SRegression",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.univariate.mcd",
+"name": "UnivariateMCD",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.univariate.onestep_m",
+"name": "CellwiseOneStepM",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.univariate.onestep_m",
+"name": "HuberOneStepM",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.univariate.onestep_m",
+"name": "OneStepM",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.univariate.onestep_m",
+"name": "OneStepWrapping",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.univariate.qn",
+"name": "Qn",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.univariate.tau",
+"name": "Tau",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "robpy.utils.median",
+"name": "l1median",
+"kind": "function",
+"doc": "Implementation of the L1-median."
+},
+{
+"area": "robpy.utils.median",
+"name": "weighted_median",
+"kind": "function",
+"doc": "Computes a weighted median."
+},
+{
+"area": "robpy.utils.outlyingness",
+"name": "stahel_donoho",
+"kind": "function",
+"doc": "Calculate a degree of outlyingness for multivariate points."
+}
+]
+}

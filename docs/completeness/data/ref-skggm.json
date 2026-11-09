@@ -1,0 +1,175 @@
+{
+"library": "skggm",
+"version": "0.2.8",
+"source": "introspection",
+"entries": [
+{
+"area": "inverse_covariance.adaptive_graph_lasso",
+"name": "AdaptiveGraphLasso",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "inverse_covariance.adaptive_graph_lasso",
+"name": "AdaptiveGraphicalLasso",
+"kind": "class",
+"doc": "Two-stage adaptive estimator."
+},
+{
+"area": "inverse_covariance.inverse_covariance",
+"name": "InverseCovarianceEstimator",
+"kind": "class",
+"doc": "Base class for inverse covariance estimators."
+},
+{
+"area": "inverse_covariance.metrics",
+"name": "ebic",
+"kind": "function",
+"doc": "Extended Bayesian Information Criteria for model selection."
+},
+{
+"area": "inverse_covariance.metrics",
+"name": "kl_loss",
+"kind": "function",
+"doc": "Computes the KL divergence between precision estimate and"
+},
+{
+"area": "inverse_covariance.metrics",
+"name": "log_likelihood",
+"kind": "function",
+"doc": "Computes the log-likelihood between the covariance and precision"
+},
+{
+"area": "inverse_covariance.metrics",
+"name": "quadratic_loss",
+"kind": "function",
+"doc": "Computes ..."
+},
+{
+"area": "inverse_covariance.model_average",
+"name": "ModelAverage",
+"kind": "class",
+"doc": "Randomized model averaging meta-estimator."
+},
+{
+"area": "inverse_covariance.profiling.graphs",
+"name": "Graph",
+"kind": "class",
+"doc": "Base class that returns the adjacency matrix for a network via"
+},
+{
+"area": "inverse_covariance.profiling.graphs",
+"name": "blocks",
+"kind": "function",
+"doc": "Replicates `block` matrix n_blocks times diagonally to create a"
+},
+{
+"area": "inverse_covariance.profiling.graphs",
+"name": "lattice",
+"kind": "function",
+"doc": "Returns the adjacency matrix for a lattice network."
+},
+{
+"area": "inverse_covariance.profiling.metrics",
+"name": "error_fro",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "inverse_covariance.profiling.metrics",
+"name": "has_approx_support",
+"kind": "function",
+"doc": "Returns 1 if model selection error is less than or equal to prob rate,"
+},
+{
+"area": "inverse_covariance.profiling.metrics",
+"name": "has_exact_support",
+"kind": "function",
+"doc": "Returns 1 if support_difference_count is zero, 0 else."
+},
+{
+"area": "inverse_covariance.profiling.metrics",
+"name": "support_difference_count",
+"kind": "function",
+"doc": "Count the number of different elements in the support in one triangle,"
+},
+{
+"area": "inverse_covariance.profiling.metrics",
+"name": "support_false_negative_count",
+"kind": "function",
+"doc": "Count the number of false negative support elements in"
+},
+{
+"area": "inverse_covariance.profiling.metrics",
+"name": "support_false_positive_count",
+"kind": "function",
+"doc": "Count the number of false positive support elements in"
+},
+{
+"area": "inverse_covariance.profiling.monte_carlo_profile",
+"name": "MonteCarloProfile",
+"kind": "class",
+"doc": "Compute performance metrics over multiple random trials (multivariate"
+},
+{
+"area": "inverse_covariance.quic_graph_lasso",
+"name": "QuicGraphLasso",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "inverse_covariance.quic_graph_lasso",
+"name": "QuicGraphLassoCV",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "inverse_covariance.quic_graph_lasso",
+"name": "QuicGraphLassoEBIC",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "inverse_covariance.quic_graph_lasso",
+"name": "QuicGraphicalLasso",
+"kind": "class",
+"doc": "Computes a sparse inverse covariance matrix estimation using quadratic"
+},
+{
+"area": "inverse_covariance.quic_graph_lasso",
+"name": "QuicGraphicalLassoCV",
+"kind": "class",
+"doc": "Sparse inverse covariance w/ cross-validated choice of the l1 penalty"
+},
+{
+"area": "inverse_covariance.quic_graph_lasso",
+"name": "QuicGraphicalLassoEBIC",
+"kind": "class",
+"doc": "Computes a sparse inverse covariance matrix estimation using quadratic"
+},
+{
+"area": "inverse_covariance.quic_graph_lasso",
+"name": "quic",
+"kind": "function",
+"doc": "Fits the inverse covariance model according to the given training"
+},
+{
+"area": "inverse_covariance.rank_correlation",
+"name": "kendalltau_correlation",
+"kind": "function",
+"doc": "Computes kendall's tau correlation estimate."
+},
+{
+"area": "inverse_covariance.rank_correlation",
+"name": "spearman_correlation",
+"kind": "function",
+"doc": "Computes the spearman correlation estimate."
+},
+{
+"area": "inverse_covariance.rank_correlation",
+"name": "winsorized_rank_correlation",
+"kind": "function",
+"doc": "Computes rank correlations using a winsorized ranks."
+}
+]
+}
