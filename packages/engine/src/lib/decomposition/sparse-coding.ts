@@ -99,14 +99,18 @@ export function sparseCode(x: TensorLike, dictionary: TensorLike, options: Spars
     }
     return fromStorage(out, [signals.n, k], 'float64')
   }
-  return sparseEncode(fromStorage(signals.data, [signals.n, f], 'float64'), fromStorage(atoms.data, [k, f], 'float64'), {
-    algorithm: algorithm === 'lassoCd' ? 'lassoCd' : algorithm,
-    nNonzeroCoefs: nnz,
-    alpha,
-    positive,
-    tol: options.tol ?? 1e-8,
-    maxIterations: options.maxIter ?? 1000,
-  })
+  return sparseEncode(
+    fromStorage(signals.data, [signals.n, f], 'float64'),
+    fromStorage(atoms.data, [k, f], 'float64'),
+    {
+      algorithm: algorithm === 'lassoCd' ? 'lassoCd' : algorithm,
+      nNonzeroCoefs: nnz,
+      alpha,
+      positive,
+      tol: options.tol ?? 1e-8,
+      maxIterations: options.maxIter ?? 1000,
+    },
+  )
 }
 
 /**

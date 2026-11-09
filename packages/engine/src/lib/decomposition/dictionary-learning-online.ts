@@ -26,8 +26,8 @@ import {
   meanNonzeros,
   objectiveOf,
   penaltyWeight,
-  randomDictionary,
   type Rows,
+  randomDictionary,
   sampleDictionary,
   svdDictionary,
   updateAtoms,
@@ -90,7 +90,10 @@ export interface MiniBatchOptions {
 
 const SCHEMA = channels({
   metrics: {
-    objective: { description: 'cost per signal: half the squared residual plus the penalty on the codes', direction: 'lower' },
+    objective: {
+      description: 'cost per signal: half the squared residual plus the penalty on the codes',
+      direction: 'lower',
+    },
     batchCost: { description: 'cost per signal of the minibatch, before the atoms are updated', direction: 'lower' },
     sparsity: { description: 'mean number of nonzero codes per signal of the batch' },
     coherence: { description: 'largest absolute cosine between two atoms' },
@@ -201,7 +204,8 @@ export function miniBatchDictionaryLearningAlgorithm(
         for (const [q, v] of row.entries()) change += (v - (s.dictionary[p]?.[q] ?? 0)) ** 2
       change = Math.sqrt(change) / Math.max(k, 1)
       if (i + 1 > Math.min(100, n / m)) {
-        ewaCost = ewaCost === null ? batchCost : ewaCost * (1 - Math.min(m / (n + 1), 1)) + batchCost * Math.min(m / (n + 1), 1)
+        ewaCost =
+          ewaCost === null ? batchCost : ewaCost * (1 - Math.min(m / (n + 1), 1)) + batchCost * Math.min(m / (n + 1), 1)
         if (tol > 0 && change <= tol) stopped = true
         else {
           if (ewaMin === null || ewaCost < ewaMin) {
@@ -310,12 +314,7 @@ export const miniBatchDictionaryLearning: IterativeEstimator<
   MiniBatchState,
   MiniBatchDictionaryLearningParams,
   DictionaryVerbs
-> = iterative<
-  MiniBatchDictionaryLearningHyper,
-  MiniBatchState,
-  MiniBatchDictionaryLearningParams,
-  DictionaryVerbs
->({
+> = iterative<MiniBatchDictionaryLearningHyper, MiniBatchState, MiniBatchDictionaryLearningParams, DictionaryVerbs>({
   name: 'decomposition/mini-batch-dictionary-learning',
   kind: 'transformer',
   defaults: {

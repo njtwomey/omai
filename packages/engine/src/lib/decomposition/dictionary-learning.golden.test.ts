@@ -1,8 +1,7 @@
 import { goldenSuite } from '../../testing/suite.ts'
 import { type Tensor, tensor, toArray } from '../tensor/index.ts'
 import { dictLearning } from './dictionary-learning.ts'
-import { dictLearningOnline } from './dictionary-learning-online.ts'
-import { miniBatchDictionaryLearning } from './dictionary-learning-online.ts'
+import { dictLearningOnline, miniBatchDictionaryLearning } from './dictionary-learning-online.ts'
 import { type SparseCodeAlgorithm, type SparseCodeOptions, sparseCode, splitSign } from './sparse-coding.ts'
 
 const rows = (t: Tensor | undefined): number[][] => toArray(t as Tensor) as number[][]
@@ -85,7 +84,10 @@ goldenSuite('sparse coding against SparseCoder of scikit-learn', 'decomposition/
       })
       .fit({ x })
     const code = rows(fit.transform(x))
-    return 0.5 * squaredError(x, code, fit.params.components) + (p['alpha'] as number) * code.flat().reduce((a, v) => a + Math.abs(v), 0)
+    return (
+      0.5 * squaredError(x, code, fit.params.components) +
+      (p['alpha'] as number) * code.flat().reduce((a, v) => a + Math.abs(v), 0)
+    )
   },
 })
 

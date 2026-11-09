@@ -30,8 +30,8 @@ import {
   meanNonzeros,
   objectiveOf,
   penaltyWeight,
-  randomDictionary,
   type Rows,
+  randomDictionary,
   sampleDictionary,
   svdDictionary,
   updateAtoms,
@@ -309,7 +309,11 @@ export type DictionaryLearningParams = {
 }
 
 /** The starting atoms of a fit. */
-function startingAtoms(x: Rows, h: Pick<DictionaryLearningHyper, 'nComponents' | 'init' | 'dictInit'>, key: Key): number[][] {
+function startingAtoms(
+  x: Rows,
+  h: Pick<DictionaryLearningHyper, 'nComponents' | 'init' | 'dictInit'>,
+  key: Key,
+): number[][] {
   const k = h.nComponents ?? x[0]?.length ?? 0
   const d = x[0]?.length ?? 0
   if (h.init === 'custom') {

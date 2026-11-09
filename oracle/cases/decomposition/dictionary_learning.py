@@ -5,8 +5,10 @@ reconstruction error of a shuffled run from sklearn's own start, which only a lo
 
 import warnings
 from importlib.metadata import version
+from typing import NamedTuple
 
 import numpy as np
+import numpy.typing as npt
 from omai_oracle.fixture import Case, case
 from omai_oracle.helpers import rng
 from sklearn.decomposition import (
@@ -15,18 +17,27 @@ from sklearn.decomposition import (
     dict_learning,
 )
 
+
+class Tol(NamedTuple):
+    """A pair of tolerances."""
+
+    rtol: float
+    atol: float
+
+
 REFERENCE: dict[str, str] = {"scikit-learn": version("scikit-learn"), "numpy": np.__version__}
 
-EXACT = {"rtol": 1e-8, "atol": 1e-9}
+EXACT = Tol(1e-8, 1e-9)
 # Coordinate descent stops at a duality gap of 1e-8 |x|^2 in scikit-learn, so its codes carry that much error.
-ITERATIVE = {"rtol": 1e-6, "atol": 1e-7}
-COORDINATE = {"rtol": 1e-4, "atol": 1e-5}
+ITERATIVE = Tol(1e-6, 1e-7)
+COORDINATE = Tol(1e-4, 1e-5)
 # Over a dozen alternations the two coordinate descents' stopping errors (each about 1e-6) compound.
-CHAINED = {"rtol": 1e-3, "atol": 1e-4}
+CHAINED = Tol(1e-3, 1e-4)
 
 
-def unit_rows(a: np.ndarray) -> np.ndarray:  # pyright: ignore[reportMissingTypeArgument, reportUnknownParameterType]
-    return a / np.linalg.norm(a, axis=1, keepdims=True)  # pyright: ignore[reportUnknownVariableType]
+def unit_rows(a: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    """Scale each row to unit norm."""
+    return a / np.linalg.norm(a, axis=1, keepdims=True)
 
 
 def coder_cases() -> list[Case]:
@@ -34,7 +45,7 @@ def coder_cases() -> list[Case]:
     dictionary = unit_rows(g.normal(size=(10, 8)))
     x = g.normal(size=(6, 8))
     out: list[Case] = []
-    options: list[tuple[str, str, dict[str, object], dict[str, object], dict[str, float]]] = [
+    options: list[tuple[str, str, dict[str, object], dict[str, object], Tol]] = [
         ("omp", "omp", {"transform_n_nonzero_coefs": 2}, {"nNonzeroCoefs": 2}, EXACT),
         ("lars", "lars", {"transform_n_nonzero_coefs": 3}, {"nNonzeroCoefs": 3}, EXACT),
         ("lasso_lars", "lassoLars", {"transform_alpha": 0.4}, {"alpha": 0.4}, EXACT),
@@ -45,22 +56,51 @@ def coder_cases() -> list[Case]:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             code = SparseCoder(dictionary, transform_algorithm=algorithm, **sk).transform(x)  # pyright: ignore[reportArgumentType]
-        out.append(case(f"coder/{algorithm}", "sparseCode", [x, dictionary], code, **tol, algorithm=ours, **ts))  # pyright: ignore[reportArgumentType]
+        out.append(
+            case(
+                f"coder/{algorithm}",
+                "sparseCode",
+                [x, dictionary],
+                code,
+                rtol=tol.rtol,
+                atol=tol.atol,
+                algorithm=ours,
+                **ts,
+            )
+        )  # pyright: ignore[reportArgumentType]
     for algorithm, ours in [("lasso_cd", "lassoCd"), ("threshold", "threshold")]:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            code = SparseCoder(dictionary, transform_algorithm=algorithm, transform_alpha=0.3, positive_code=True).transform(x)
+            code = SparseCoder(
+                dictionary, transform_algorithm=algorithm, transform_alpha=0.3, positive_code=True
+            ).transform(x)
         tol = COORDINATE if algorithm == "lasso_cd" else EXACT
         out.append(
-            case(f"coder/{algorithm}-positive", "sparseCode", [x, dictionary], code, **tol, algorithm=ours, alpha=0.3, positive=True)
+            case(
+                f"coder/{algorithm}-positive",
+                "sparseCode",
+                [x, dictionary],
+                code,
+                rtol=tol.rtol,
+                atol=tol.atol,
+                algorithm=ours,
+                alpha=0.3,
+                positive=True,
+            )
         )
     code = SparseCoder(dictionary, transform_algorithm="omp", transform_n_nonzero_coefs=2, split_sign=True).transform(x)
-    out.append(case("coder/split-sign", "splitCoder", [x, dictionary], code, **EXACT, nNonzeroCoefs=2))
+    out.append(
+        case("coder/split-sign", "splitCoder", [x, dictionary], code, rtol=EXACT.rtol, atol=EXACT.atol, nNonzeroCoefs=2)
+    )
     # More atoms than a plain default: sklearn's default number of atoms, max(n_features / 10, 1), truncated.
     wide = unit_rows(g.normal(size=(30, 25)))
     xw = g.normal(size=(4, 25))
     code = SparseCoder(wide, transform_algorithm="omp").transform(xw)
-    out.append(case("coder/omp-default-atoms", "sparseCode", [xw, wide], code, **EXACT, algorithm="omp"))
+    out.append(
+        case(
+            "coder/omp-default-atoms", "sparseCode", [xw, wide], code, rtol=EXACT.rtol, atol=EXACT.atol, algorithm="omp"
+        )
+    )
     return out
 
 
@@ -76,14 +116,32 @@ def batch_cases() -> list[Case]:
         for iters in [1, 4, 12]:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                code, dictionary, errors = dict_learning(
-                    x, 5, alpha=0.6, max_iter=iters, tol=0.0, method=method, random_state=0  # pyright: ignore[reportArgumentType]
+                code, dictionary, errors = dict_learning(  # pyright: ignore[reportAssignmentType]
+                    x,
+                    5,
+                    alpha=0.6,
+                    max_iter=iters,
+                    tol=0.0,
+                    method=method,
+                    random_state=0,  # pyright: ignore[reportArgumentType]
                 )
             params = {"alpha": 0.6, "maxIter": iters, "fitAlgorithm": ours}
             name = f"{method}/{iters}"
-            out.append(case(f"{name}/dictionary", "batchDictionary", [x], dictionary, **tol, **params))
-            out.append(case(f"{name}/code", "batchCode", [x], code, **tol, **params))
-            out.append(case(f"{name}/objective", "batchObjective", [x], np.asarray(errors), **tol, **params))
+            out.append(
+                case(f"{name}/dictionary", "batchDictionary", [x], dictionary, rtol=tol.rtol, atol=tol.atol, **params)
+            )
+            out.append(case(f"{name}/code", "batchCode", [x], code, rtol=tol.rtol, atol=tol.atol, **params))
+            out.append(
+                case(
+                    f"{name}/objective",
+                    "batchObjective",
+                    [x],
+                    np.asarray(errors),
+                    rtol=tol.rtol,
+                    atol=tol.atol,
+                    **params,
+                )
+            )
     return out
 
 
@@ -101,7 +159,7 @@ def online_cases() -> list[Case]:
             warnings.simplefilter("ignore")
             est = MiniBatchDictionaryLearning(
                 n_components=6,
-                alpha=0.5,
+                alpha=0.5,  # pyright: ignore[reportArgumentType]
                 max_iter=epochs,
                 fit_algorithm="lars",
                 batch_size=7,
@@ -110,14 +168,44 @@ def online_cases() -> list[Case]:
                 transform_algorithm="lasso_lars",
                 transform_alpha=0.5,
                 tol=0.0,
-                max_no_improvement=None,
+                max_no_improvement=None,  # pyright: ignore[reportArgumentType]
                 random_state=0,
             ).fit(x)
             code = est.transform(x)
         params = {"alpha": 0.5, "maxIter": epochs, "batchSize": 7, "fitAlgorithm": "lassoLars"}
-        out.append(case(f"online/{epochs}/dictionary", "onlineDictionary", [x, start], est.components_, **ITERATIVE, **params))
-        out.append(case(f"online/{epochs}/code", "onlineCode", [x, start], code, **ITERATIVE, **params))
-        out.append(case(f"online/{epochs}/steps", "onlineSteps", [x, start], np.float64(est.n_steps_), **EXACT, **params))
+        out.append(
+            case(
+                f"online/{epochs}/dictionary",
+                "onlineDictionary",
+                [x, start],
+                est.components_,
+                rtol=ITERATIVE.rtol,
+                atol=ITERATIVE.atol,
+                **params,
+            )
+        )
+        out.append(
+            case(
+                f"online/{epochs}/code",
+                "onlineCode",
+                [x, start],
+                code,
+                rtol=ITERATIVE.rtol,
+                atol=ITERATIVE.atol,
+                **params,
+            )
+        )
+        out.append(
+            case(
+                f"online/{epochs}/steps",
+                "onlineSteps",
+                [x, start],
+                np.float64(est.n_steps_),
+                rtol=EXACT.rtol,
+                atol=EXACT.atol,
+                **params,
+            )
+        )
     # A shuffled run from sklearn's own randomised-SVD start: only the quality of the fit is comparable.
     big = rng(41)
     zb = np.zeros((400, 8))
@@ -128,15 +216,26 @@ def online_cases() -> list[Case]:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         est = MiniBatchDictionaryLearning(
-            n_components=8, alpha=0.3, max_iter=15, fit_algorithm="lars", batch_size=20, shuffle=True,
-            transform_algorithm="lasso_lars", transform_alpha=0.3, tol=0.0, max_no_improvement=None, random_state=0,
-        ).fit(xb)  # fmt: skip
+            n_components=8,
+            alpha=0.3,  # pyright: ignore[reportArgumentType]
+            max_iter=15,
+            fit_algorithm="lars",
+            batch_size=20,
+            shuffle=True,
+            transform_algorithm="lasso_lars",
+            transform_alpha=0.3,
+            tol=0.0,
+            max_no_improvement=None,  # pyright: ignore[reportArgumentType]
+            random_state=0,
+        ).fit(xb)
         code = est.transform(xb)
     error = float(np.sum((xb - code @ est.components_) ** 2))
     objective = 0.5 * error + 0.3 * float(np.abs(code).sum())
     params = {"alpha": 0.3, "maxIter": 15, "batchSize": 20, "components": 8}
     out.append(case("online/shuffled/error", "onlineBand", [xb], np.float64(error), rtol=0.5, atol=0.5, **params))
-    out.append(case("online/shuffled/objective", "onlineObjective", [xb], np.float64(objective), rtol=0.5, atol=0.5, **params))
+    out.append(
+        case("online/shuffled/objective", "onlineObjective", [xb], np.float64(objective), rtol=0.5, atol=0.5, **params)
+    )
     return out
 
 

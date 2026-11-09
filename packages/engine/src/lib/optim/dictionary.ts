@@ -76,7 +76,8 @@ export function sparseEncode(x: TensorLike, dictionary: TensorLike, options: Spa
     if (algorithm === 'threshold') {
       code = Float64Array.from({ length: k }, (_, j) => {
         const c = ddot(row(D, j), xi)
-        const v = Math.sign(c) * Math.max(Math.abs(c) - alpha, 0)
+        // `+ 0` turns a negative zero into zero.
+        const v = Math.sign(c) * Math.max(Math.abs(c) - alpha, 0) + 0
         return positive ? Math.max(v, 0) : v
       })
     } else if (algorithm === 'omp') {
