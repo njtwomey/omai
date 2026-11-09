@@ -27,7 +27,7 @@ from imblearn.under_sampling import (
     RepeatedEditedNearestNeighbours,
     TomekLinks,
 )
-from omai_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case, encode_params
 from omai_oracle.helpers import FloatArray, rng
 from sklearn.model_selection import StratifiedKFold
 from sklearn.naive_bayes import GaussianNB
@@ -51,7 +51,7 @@ class ScriptedState(np.random.RandomState):
 
     def randint(  # pyright: ignore[reportIncompatibleMethodOverride, reportImplicitOverride]
         self, low: int, high: int | None = None, size: int | None = None, dtype: type = int
-    ) -> FloatArray:
+    ) -> npt.NDArray[np.int64]:
         return np.array([self.picks.pop(0) for _ in range(size or 1)], dtype=np.int64)
 
 
@@ -62,12 +62,16 @@ class UnshuffledFolds(StratifiedKFold):
         super().__init__(n_splits=n_splits, shuffle=False)
 
 
-def indices_case(name: str, fn: str, x: FloatArray, y: npt.NDArray[np.generic], sampler: object, **params: float | str) -> Case:
+def indices_case(
+    name: str, fn: str, x: FloatArray, y: npt.NDArray[np.generic], sampler: object, **params: object
+) -> Case:
     """The kept indices of a cleaning sampler (in its own order), with the resampled rows."""
     resampled = sampler.fit_resample(x, y)  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownVariableType]
     kept = np.asarray(sampler.sample_indices_, dtype=np.int32)  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
     assert np.array_equal(np.asarray(resampled[0]), x[kept])  # pyright: ignore[reportUnknownArgumentType]
-    return case(name, fn, [x, y], {"indices": kept}, **params)
+    made = case(name, fn, [x, y], {"indices": kept})
+    made.params.update(encode_params(params))
+    return made
 
 
 def cleaning_cases(x: FloatArray, y: FloatArray) -> list[Case]:
@@ -78,12 +82,14 @@ def cleaning_cases(x: FloatArray, y: FloatArray) -> list[Case]:
     out: list[Case] = []
     for kind in ["all", "mode"]:
         out.append(
-            indices_case(
-                f"enn/{kind}", "enn", xs, ys, EditedNearestNeighbours(n_neighbors=3, kind_sel=kind), kind=kind
-            )
+            indices_case(f"enn/{kind}", "enn", xs, ys, EditedNearestNeighbours(n_neighbors=3, kind_sel=kind), kind=kind)
         )
     out.append(indices_case("renn/sorted", "renn", x, y, RepeatedEditedNearestNeighbours(n_neighbors=3)))
-    out.append(indices_case("renn/mode", "renn", x, y, RepeatedEditedNearestNeighbours(n_neighbors=3, kind_sel="mode"), kind="mode"))
+    out.append(
+        indices_case(
+            "renn/mode", "renn", x, y, RepeatedEditedNearestNeighbours(n_neighbors=3, kind_sel="mode"), kind="mode"
+        )
+    )
     for allow in [False, True]:
         out.append(
             indices_case(
@@ -94,7 +100,12 @@ def cleaning_cases(x: FloatArray, y: FloatArray) -> list[Case]:
     out.append(indices_case("ncr", "ncr", xs, ys, NeighbourhoodCleaningRule(n_neighbors=3)))
     out.append(
         indices_case(
-            "ncr/threshold", "ncr", x, y, NeighbourhoodCleaningRule(n_neighbors=3, threshold_cleaning=0.1), threshold=0.1
+            "ncr/threshold",
+            "ncr",
+            x,
+            y,
+            NeighbourhoodCleaningRule(n_neighbors=3, threshold_cleaning=0.1),
+            threshold=0.1,
         )
     )
     out.append(
@@ -133,7 +144,13 @@ def cleaning_cases(x: FloatArray, y: FloatArray) -> list[Case]:
     hardness_module.StratifiedKFold = UnshuffledFolds
     try:
         out.append(
-            indices_case("iht", "iht", x, y.astype(np.int64), InstanceHardnessThreshold(estimator=GaussianNB(), cv=3, random_state=0))
+            indices_case(
+                "iht",
+                "iht",
+                x,
+                y.astype(np.int64),
+                InstanceHardnessThreshold(estimator=GaussianNB(), cv=3, random_state=0),
+            )
         )
     finally:
         hardness_module.StratifiedKFold = original
@@ -149,8 +166,10 @@ def categorical_cases() -> list[Case]:
     xc[25:37, 1] = np.where(g.random(12) < 0.7, 2.0, xc[25:37, 1])
     xc[37:, 2] = np.where(g.random(8) < 0.7, 3.0, xc[37:, 2])
     out: list[Case] = []
-    vdm = ValueDifferenceMetric(n_categories=[4, 4, 4]).fit(xc.astype(np.int32), yc.astype(np.int32))
-    out.append(case("vdm", "vdm", [xc, yc, xc[:12]], {"distance": vdm.pairwise(xc[:12].astype(np.int32), xc.astype(np.int32))}))
+    vdm = ValueDifferenceMetric(n_categories="auto").fit(xc.astype(np.int32), yc.astype(np.int32))
+    out.append(
+        case("vdm", "vdm", [xc, yc, xc[:12]], {"distance": vdm.pairwise(xc[:12].astype(np.int32), xc.astype(np.int32))})
+    )
     out.append(
         case(
             "counts/smoten",
@@ -214,7 +233,9 @@ def cases() -> list[Case]:
         resampled = sampler.fit_resample(x, y)
         out.append(case(f"counts/{name}", "counts", [x, y], {"counts": counts(np.asarray(resampled[1]))}, sampler=name))
     centroids = ClusterCentroids(random_state=0).fit_resample(x, y)
-    out.append(case("counts/centroids", "counts", [x, y], {"counts": counts(np.asarray(centroids[1]))}, sampler="centroids"))
+    out.append(
+        case("counts/centroids", "counts", [x, y], {"counts": counts(np.asarray(centroids[1]))}, sampler="centroids")
+    )
     svm = SVMSMOTE(k_neighbors=3, m_neighbors=8, random_state=0).fit_resample(x, y)
     out.append(case("counts/svmsmote", "counts", [x, y], {"counts": counts(np.asarray(svm[1]))}, sampler="svmsmote"))
     return [*out, *cleaning_cases(x, y), *categorical_cases()]

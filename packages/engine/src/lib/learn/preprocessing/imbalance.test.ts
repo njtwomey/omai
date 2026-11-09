@@ -160,7 +160,7 @@ describe('in a pipeline', () => {
       ['clean', smoteEnn({ smote: smote({ kNeighbors: 3 }) })],
       ['clf', naiveBayes()],
     ]).fit({ x, y }, { key: key(0) })
-    expect(toFlat(model.predict([[0.1], [1.4]]))).toEqual([0, 1])
+    expect(toFlat(model.predict?.([[0.1], [1.4]]) as never)).toEqual([0, 1])
     expect(toFlat(randomUnderSampler().fitResample({ x, y }, { key: key(0) }).y).length).toBe(20)
   })
 })

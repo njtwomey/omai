@@ -82,7 +82,7 @@ describe('balanced ensembles', () => {
     expect(balanced.params.oobScore).not.toBeNull()
     const proba = toFlat(balanced.predictProba?.(test.x) as never)
     expect(proba).toHaveLength(240 * 2)
-    expect(proba[0] + proba[1]).toBeCloseTo(1, 12)
+    expect((proba[0] ?? 0) + (proba[1] ?? 0)).toBeCloseTo(1, 12)
   })
 
   it('balanced bagging with a sampling strategy and replacement draws what it asks for', () => {

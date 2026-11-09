@@ -31,7 +31,7 @@ const mixed = fc
     const x = Float64Array.from({ length: 120 }, (_, t) => {
       const i = Math.floor(t / 3)
       return t % 3 === 1
-        ? v[i] / 100 + 0.001 * i + (i >= 30 ? 2 : 0)
+        ? (v[i] ?? 0) / 100 + 0.001 * i + (i >= 30 ? 2 : 0)
         : (codes[i * 2 + (t % 3 === 0 ? 0 : 1)] ?? 0) * 10 + 5
     })
     return { x: fromStorage(x, [40, 3], 'float64'), y: Array.from({ length: 40 }, (_, i) => (i >= 30 ? 1 : 0)), seed }
