@@ -10,7 +10,7 @@ React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneVi
 - function `Controls`: React component: a wrapping row of controls: `<Controls><NumberField .../><Toggle .../></Controls>` `src/react/FigureParts.tsx:103` `omai-render/react`
 - function `Derivation`: React component: aligned derivation steps with notes: `<Derivation steps={steps} />` `src/react/MathView.tsx:118` `omai-render/react`
 - function `Equation`: React component: an equation that re-typesets as values change: `<Equation>{eq}</Equation>` `src/react/MathView.tsx:90` `omai-render/react`
-- function `FigureFrame`: React component: wrap a chart with expand and export: `<FigureFrame title="Loss"><Chart option={o} /></FigureFrame>` `src/react/FigureFrame.tsx:342` `omai-render/react`
+- function `FigureFrame`: React component: wrap a chart with expand and export: `<FigureFrame title="Loss"><Chart option={o} /></FigureFrame>` `src/react/FigureFrame.tsx:355` `omai-render/react`
 - function `FigureGrid`: React component: charts and text on a grid: `<FigureGrid grid={g} panels={p} />` `src/react/FigureGrid.tsx:76` `omai-render/react`
 - function `Player`: React component: play, step and scrub a playback controller: `<Player controller={c} />` `src/react/Player.tsx:89` `omai-render/react`
 - function `Readouts`: React component: label and value pairs as a dl: `<Readouts items={...} />` `src/react/FigureParts.tsx:38` `omai-render/react`

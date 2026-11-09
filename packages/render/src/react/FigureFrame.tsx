@@ -119,14 +119,27 @@ export type ExportFormat = 'png' | 'svg' | 'gif' | 'mp4' | 'webm' | 'json'
 export interface FigureFrameProps {
   /** The figure giving the in-page size (default 640 by 400). */
   readonly figure?: Figure
-  readonly width?: number
-  readonly height?: number
+  /**
+   * The content's width in pixels (default the figure's, else 640), or `'fill'` for a fluid frame: the width of the
+   * container, with the content at its natural height and nothing clipped (see `height`).
+   */
+  readonly width?: number | 'fill'
+  /**
+   * The content's height in pixels (default the figure's, else 400), or `'auto'` for a fluid frame: the height the
+   * content makes, with no fixed box and no clipping, so a figure of several panels (stacked `ResponsiveChart`s, a
+   * control row) fits. Either `width="fill"` or `height="auto"` makes the frame fluid. A fluid frame keeps the title,
+   * its permalink, purpose, controls, readouts, caption and the export menu, but cannot expand to the modal, and it
+   * gives no {@link useFrameSize} (a `ResponsiveChart` inside measures its own container; a function child gets the
+   * figure's pixel size, which the content is not held to).
+   */
+  readonly height?: number | 'auto'
   readonly title?: ReactNode
   /** A short line under the title saying what the figure is for. */
   readonly purpose?: ReactNode
   /**
    * The controls that drive the figure (`NumberField`, `Toggle`, `Select`, `Choice`), drawn in a wrapping {@link Controls}
-   * row between the title and the figure.
+   * row between the title and the figure. Pass the controls themselves (or a fragment of them), not a `Controls` row: the
+   * frame already wraps them in one.
    */
   readonly controls?: ReactNode
   /** Label and value pairs the figure reports, drawn as {@link Readouts} under the figure. */
@@ -342,8 +355,9 @@ export function figureSvg(
 export function FigureFrame(props: FigureFrameProps): ReactElement {
   const mode = useColourMode()
   const t = useTokens()
-  const width = props.width ?? props.figure?.width ?? 640
-  const height = props.height ?? props.figure?.height ?? 400
+  const fluid = props.width === 'fill' || props.height === 'auto'
+  const width = typeof props.width === 'number' ? props.width : (props.figure?.width ?? 640)
+  const height = typeof props.height === 'number' ? props.height : (props.figure?.height ?? 400)
   const aspect = width / height
   const titleId = useId()
   const purposeId = useId()
@@ -381,7 +395,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
         'svg',
         ...(playback === undefined ? [] : ['gif', ...(canEncodeVideo() ? ['webm'] : [])]),
       ] as ExportFormat[]))
-  const expandable = chrome && (props.expandable ?? true)
+  const expandable = chrome && !fluid && (props.expandable ?? true)
   const [busy, setBusy] = useState<string | null>(null)
   // Why the last export gave nothing, shown beside the busy readout until the next export starts.
   const [note, setNote] = useState<string | null>(null)
@@ -516,11 +530,18 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
     expanded: true,
   }
   const pageSize: FrameSize = { width, height, expanded: false }
-  const content = (size: FrameSize): ReactNode => (
-    <FrameContext.Provider value={size}>
-      {typeof props.children === 'function' ? props.children(size) : props.children}
-    </FrameContext.Provider>
-  )
+  const content = (size: FrameSize): ReactNode =>
+    fluid ? (
+      typeof props.children === 'function' ? (
+        props.children(size)
+      ) : (
+        props.children
+      )
+    ) : (
+      <FrameContext.Provider value={size}>
+        {typeof props.children === 'function' ? props.children(size) : props.children}
+      </FrameContext.Provider>
+    )
   const button: CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
@@ -598,7 +619,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
       className={props.className}
       style={{
         margin: 0,
-        width,
+        width: fluid ? '100%' : width,
         maxWidth: '100%',
         ...(permalink
           ? {
@@ -688,7 +709,11 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
       {props.controls !== undefined && <Controls style={{ marginBottom: 8 }}>{props.controls}</Controls>}
       <div
         ref={frameRef}
-        style={{ position: 'relative', width, height, maxWidth: '100%', overflow: 'hidden' }}
+        style={
+          fluid
+            ? { position: 'relative', width: '100%' }
+            : { position: 'relative', width, height, maxWidth: '100%', overflow: 'hidden' }
+        }
         data-omai-frame=""
       >
         {!expanded && content(pageSize)}

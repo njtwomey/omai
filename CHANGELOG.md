@@ -3,6 +3,17 @@
 Versions are released in lockstep for omai-engine, omai-render and omai-meta. Up to 0.1.3 the packages were published as
 mdml-engine, mdml-render and mdml-meta.
 
+## 0.1.11
+
+From the notes site's port off its local kit.
+- `FigureFrame` can be fluid: `width="fill"` or `height="auto"` makes the content the width of its container and the height its
+  content makes, with no fixed box and no clipping, so a figure of several stacked `ResponsiveChart`s, controls and readouts
+  fits. It keeps the title and its permalink, purpose, controls, readouts, caption and the export menu; it cannot expand to the
+  modal, and it gives no `useFrameSize` (a `ResponsiveChart` inside measures its own container). Numbers behave as before.
+- `DraggableLine` with no `span` now runs the plotting box when the projection knows it (`projection.rect`), so the line stops at
+  the axes instead of crossing the tick labels; with no known box it still runs the whole overlay.
+- `FigureFrame`'s `controls` takes the controls themselves, not a `Controls` row (the frame wraps them): documented.
+
 ## 0.1.10
 
 What a notes page needs to use omai directly, with no local kit (the circular statistics page and decksmith).

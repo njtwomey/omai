@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { inAct, invoke, type Mounted, mountElement, resetGlobals } from './_harness.tsx'
-import { FigureChromeProvider, FigureFrame, type FrameSize } from './FigureFrame.tsx'
+import { FigureChromeProvider, FigureFrame, type FrameSize, useFrameSize } from './FigureFrame.tsx'
 import { Controls, Readouts } from './FigureParts.tsx'
 
 afterEach(() => {
@@ -16,6 +16,13 @@ async function press(m: Mounted<void>, label: string): Promise<void> {
   )
 }
 const labels = (m: Mounted<void>): string[] => m.elements().flatMap((e) => (e.props['aria-label'] as string) ?? [])
+
+let seen: FrameSize | undefined | 'unset' = 'unset'
+/** A child that records the frame size it is given. */
+function Probe(): ReactElement {
+  seen = useFrameSize()
+  return <span>panel</span>
+}
 
 describe('FigureFrame', () => {
   it('shows its title and caption, offers export and expand, and while expanded draws a larger modal that Escape closes', async () => {
@@ -368,6 +375,44 @@ describe('FigureFrame permalink', () => {
     expect(title?.text).toBe('Loss over time!')
     await m.window.fire('keydown', { key: 'Escape' })
     expect(m.elements().some((e) => e.props['role'] === 'dialog')).toBe(false)
+    await m.unmount()
+  })
+
+  it('is fluid with width="fill" and height="auto": the container width, the content at its height, nothing clipped, no expand, no frame size', async () => {
+    seen = 'unset'
+    const m = await mountElement(
+      <FigureFrame title="Shifts" width="fill" height="auto" controls={<span>c</span>} caption="two panels">
+        <Probe />
+        <Probe />
+      </FigureFrame>,
+      { browser: true },
+    )
+    const box = m.elements().find((e) => e.props['data-omai-frame'] !== undefined)
+    const style = box?.props['style'] as Record<string, unknown>
+    expect(style['width']).toBe('100%')
+    expect(style['height']).toBeUndefined()
+    expect(style['overflow']).toBeUndefined()
+    expect(labels(m)).not.toContain('Expand')
+    expect(seen).toBeUndefined()
+    expect(m.text()).toContain('Shifts')
+    expect(m.text()).toContain('two panels')
+    await m.unmount()
+  })
+
+  it('stays fixed and expandable with numbers, as before', async () => {
+    const m = await mountElement(
+      <FigureFrame width={200} height={100}>
+        <span>x</span>
+      </FigureFrame>,
+      { browser: true },
+    )
+    const style = m.elements().find((e) => e.props['data-omai-frame'] !== undefined)?.props['style'] as Record<
+      string,
+      unknown
+    >
+    expect(style['width']).toBe(200)
+    expect(style['height']).toBe(100)
+    expect(labels(m)).toContain('Expand')
     await m.unmount()
   })
 })

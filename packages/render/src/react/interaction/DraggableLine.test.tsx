@@ -35,3 +35,37 @@ describe('DraggableLine handle', () => {
     expect(html({ handle: { shape: 'diamond', size: 20 }, handleShape: 'circle', handleSize: 4 })).toContain('r="2"')
   })
 })
+
+describe('DraggableLine span', () => {
+  const boxed = linearProjection({
+    x: [0, 10],
+    y: [0, 1],
+    width: 200,
+    height: 100,
+    margins: { top: 10, right: 20, bottom: 30, left: 40 },
+  })
+  const lineOf = (projection: typeof boxed, props: Partial<DraggableLineProps>): string =>
+    renderToString(
+      <InteractionOverlay projection={projection} width={200} height={100}>
+        <DraggableLine axis="x" value={5} onChange={() => undefined} {...props} />
+      </InteractionOverlay>,
+    )
+
+  it('runs the whole overlay when the projection does not know its plotting box', () => {
+    const { rect: _rect, ...bare } = boxed
+    const out = lineOf(bare as typeof boxed, {})
+    expect(out).toMatch(/y1="0"[^>]*y2="100"|y2="100"[^>]*y1="0"/)
+  })
+
+  it('stops at the plotting box when the projection knows it, so the line does not cross the axis labels', () => {
+    const out = lineOf(boxed, {})
+    // The box is y from 10 to 70 (the margins are 10 above and 30 below).
+    expect(out).toMatch(/y1="10"[^>]*y2="70"|y2="70"[^>]*y1="10"/)
+    expect(out).not.toMatch(/y2="100"/)
+  })
+
+  it('keeps an explicit span as given', () => {
+    const out = lineOf(boxed, { span: [0, 1] })
+    expect(out).toMatch(/y1="70"[^>]*y2="10"|y2="10"[^>]*y1="70"/)
+  })
+})

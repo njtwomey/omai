@@ -16,7 +16,7 @@ export interface DraggableLineProps {
   readonly value: number
   /** Called with the new value while dragging (bind it to the same state as the line's control). */
   readonly onChange: (value: number) => void
-  /** The range of the other axis the line spans, in data units (default the whole overlay). */
+  /** The range of the other axis the line spans, in data units (default the plotting box when the projection knows it, else the whole overlay). */
   readonly span?: readonly [number, number]
   readonly min?: number
   readonly max?: number
@@ -75,9 +75,12 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
   let a: readonly [number, number]
   let b: readonly [number, number]
   if (span === undefined) {
+    // The plotting box when the projection knows it (so the line stops at the axes, not through the labels), else the whole overlay.
+    const box = projection.rect
+    const [x0, y0, x1, y1] = box ? [box.x, box.y, box.x + box.width, box.y + box.height] : [0, 0, width, height]
     const p = at(0)
-    a = vertical ? [p[0], 0] : [0, p[1]]
-    b = vertical ? [p[0], height] : [width, p[1]]
+    a = vertical ? [p[0], y0] : [x0, p[1]]
+    b = vertical ? [p[0], y1] : [x1, p[1]]
   } else {
     a = at(span[0])
     b = at(span[1])
