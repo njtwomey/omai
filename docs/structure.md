@@ -7243,6 +7243,12 @@ Design rules:
   combine), `cartesian(layers, options)` (axes from limit policies and the data aspect, legend, tooltip, zoom),
   `panelParts` and `chartFrame` (shared with `compose.ts`); a legend too long for one line pushes the plot area down. A colour bar is calculable (draggable handles, clickable
   bands) only when its layer answers a selection (`ColourBar.select`); otherwise it is a plain legend.
+- `_mode.ts` (internal): layers built without a `mode` are drawn in the mode of the chart. A layer builder opens with
+  `if (isModeless(options)) return deferMode((mode) => builder(..., { ...options, mode }))`: it returns the light layer
+  and remembers (outside the layer, so a copied layer is plain data) how to build it in another mode; `panelParts` calls
+  `atMode(layer, mode)`, which builds it again with the chart's mode, so the result is exactly the layer built with that
+  mode. A layer built with a `mode` or a `figure` keeps it. Every public layer builder carries the line
+  (`late-mode.test.ts` lists them).
 - `selection.ts`: colour bar range selections for layers ECharts cannot recolour (heatmap images, matrix cells):
   `ColourSelect`, `selectionFilter` (a `datarangeselected` event as soft value weights), `dimColour` (values outside
   faded towards the background) and `colourSelection` (the option update the React `Chart` merges, once per frame).

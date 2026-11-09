@@ -28,7 +28,7 @@ export interface ReadoutsProps {
  *
  * @param props - The pairs.
  * @returns The list, or `null` when there are no items.
- * @index function React component: label and value pairs as a dl with tabular numerals: `<Readouts items={[{ label: 'loss', value: '0.31' }]} />`
+ * @index function React component: label and value pairs as a dl: `<Readouts items={[{ label: 'loss', value: '0.31' }]} />`
  * @example
  * ```tsx
  * import { Readouts } from 'omai-render/react'
@@ -88,7 +88,7 @@ export interface ControlsProps {
  *
  * @param props - The controls and an optional group name.
  * @returns The row.
- * @index function React component: a wrapping row of controls with a consistent gap: `<Controls><NumberField .../><Toggle .../></Controls>`
+ * @index function React component: a wrapping row of controls: `<Controls><NumberField .../><Toggle .../></Controls>`
  * @example
  * ```tsx
  * import { Controls, NumberField, Toggle } from 'omai-render/react'
