@@ -28,7 +28,12 @@ export interface SeedInputProps {
 export function SeedInput(props: SeedInputProps): ReactNode {
   const { value, onChange, label = 'seed', disabled = false, className } = props
   return (
-    <div className={cx('flex w-full min-w-36 max-w-xs items-end gap-1.5', className)}>
+    <div
+      className={cx(
+        'flex w-full min-w-[calc(9rem*var(--omai-control-scale,1))] max-w-[calc(20rem*var(--omai-control-scale,1))] items-end gap-1.5',
+        className,
+      )}
+    >
       <NumberField
         label={label}
         value={value}

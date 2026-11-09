@@ -10,6 +10,7 @@ import {
   controlSizes,
   controlWidth,
   cx,
+  fieldWidthClass,
   iconButtonClassFor,
   inputBoxClassFor,
   labelClassFor,
@@ -86,7 +87,7 @@ export interface NumberFieldProps extends NumberSpec {
  */
 export function NumberField(props: NumberFieldProps): ReactNode {
   const { label, value, onChange, unit, disabled = false, className, size = 'md', truncate = false } = props
-  const frame = controlWidth(useControlWidth(props.width), 'w-full min-w-36 max-w-xs')
+  const frame = controlWidth(useControlWidth(props.width), fieldWidthClass)
   const sized = controlSizes[size]
   const spec: NumberSpec = {
     ...(props.min === undefined ? {} : { min: props.min }),

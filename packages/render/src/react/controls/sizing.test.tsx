@@ -3,6 +3,7 @@ import { mountElement, resetGlobals } from '../_harness.tsx'
 import { Controls } from '../FigureParts.tsx'
 import { Choice } from './Choice.tsx'
 import { controlWidth, iconButtonClass, iconButtonClassFor, inputBoxClass, inputBoxClassFor } from './classes.ts'
+import { DEFAULT_CONTROL_WIDTH } from './defaultWidth.ts'
 import { NumberField } from './NumberField.tsx'
 import { Select } from './Select.tsx'
 import { Toggle } from './Toggle.tsx'
@@ -55,10 +56,13 @@ describe('size and width on the controls', () => {
   )
 
   it('keeps the default widths when no width is given', async () => {
-    expect((await root(field())).className).toContain('w-full min-w-36 max-w-xs')
-    expect((await root(select())).className).toContain('w-full min-w-36 max-w-xs')
-    expect((await root(choice())).className).toContain('w-full min-w-36 max-w-sm')
-    expect((await root(toggle())).className).toContain('min-w-36 max-w-xs')
+    const min = 'min-w-[calc(9rem*var(--omai-control-scale,1))]'
+    const max = (rem: number): string => `max-w-[calc(${rem}rem*var(--omai-control-scale,1))]`
+    expect((await root(field())).className).toContain(`w-full ${min} ${max(20)}`)
+    expect((await root(select())).className).toContain(`w-full ${min} ${max(20)}`)
+    expect((await root(choice())).className).toContain(`w-full ${min} ${max(24)}`)
+    expect((await root(toggle())).className).toContain(`${min} ${max(20)}`)
+    expect((await root(field({ width: 'auto' }))).className).toContain(`w-fit ${min}`)
   })
 
   it('takes a pixel width as an inline style with no max-width fighting it, and fill and auto as classes', async () => {
@@ -153,14 +157,27 @@ describe('the width a row of controls gives', () => {
     return out
   }
 
-  it('is 176 pixels for fields, selects and choices in a Controls row', async () => {
-    expect((await inRow()).styles).toContainEqual({ width: 176 })
+  it('is 176 pixels times the control scale for fields, selects and choices in a Controls row', async () => {
+    expect((await inRow()).styles).toContainEqual({ width: 'calc(176px*var(--omai-control-scale,1))' })
+    expect(DEFAULT_CONTROL_WIDTH).toBe('calc(176px*var(--omai-control-scale,1))')
+  })
+
+  it('keeps a number the host passes literal, to a control or to the row', async () => {
+    expect((await inRow(120)).styles).toContainEqual({ width: 120 })
+    const m = await mountElement(
+      <Controls controlWidth={200}>
+        <NumberField label="k" value={3} onChange={noop} min={1} max={9} />
+      </Controls>,
+      { browser: true },
+    )
+    expect(m.elements().map((e) => e.props['style'])).toContainEqual({ width: 200 })
+    await m.unmount()
   })
 
   it('lets a control choose its own width in the row', async () => {
     const fill = await inRow('fill')
-    expect(fill.styles).not.toContainEqual({ width: 176 })
-    expect(fill.classes.some((c) => c.includes('w-full') && !c.includes('min-w-36'))).toBe(true)
+    expect(fill.styles).not.toContainEqual({ width: DEFAULT_CONTROL_WIDTH })
+    expect(fill.classes.some((c) => c.includes('w-full') && !c.includes('min-w-'))).toBe(true)
     expect((await inRow(120)).styles).toContainEqual({ width: 120 })
   })
 })

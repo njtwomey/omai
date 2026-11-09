@@ -11,6 +11,7 @@ import {
   cx,
   labelClassFor,
   textXsClass,
+  toggleWidthClass,
 } from './classes.ts'
 
 /** Props of {@link Toggle}. */
@@ -41,7 +42,7 @@ export interface ToggleProps {
  */
 export function Toggle(props: ToggleProps): ReactNode {
   const { label, value, onChange, description, disabled = false, className, size = 'md', truncate = false } = props
-  const frame = controlWidth(props.width, 'min-w-36 max-w-xs')
+  const frame = controlWidth(props.width, toggleWidthClass)
   const sized = controlSizes[size]
   const id = useId()
   return (

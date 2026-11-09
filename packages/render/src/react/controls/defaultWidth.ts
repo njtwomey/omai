@@ -6,6 +6,12 @@
 import { type Context, createContext, useContext } from 'react'
 import type { ControlWidth } from './classes.ts'
 
+/**
+ * The width a `Controls` row gives its fields when it is not given one: 176 pixels times `--omai-control-scale`, as a
+ * CSS length (a number would be the host's explicit pixels and would not scale). Unset scale gives exactly 176px.
+ */
+export const DEFAULT_CONTROL_WIDTH: string = 'calc(176px*var(--omai-control-scale,1))'
+
 /** The width a row of controls gives the controls below it, or `undefined` outside a row. */
 export const ControlWidthContext: Context<ControlWidth | undefined> = createContext<ControlWidth | undefined>(undefined)
 
