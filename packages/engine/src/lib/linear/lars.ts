@@ -4,13 +4,13 @@
  * leaves it when its coefficient would cross zero) and the coefficients move along the equiangular direction until
  * the next knot. `larsAlgorithm` is that as a traced `Algorithm` whose state carries the path so far; `larsPath` runs it
  * to the end; `lars` is the estimator on the iterative base, whose session shows the path growing knot by knot and
- * whose `fittedAt(t)` is the model at knot `t`.
+ * whose `fittedAt(t)` is the model at knot `t`; `lassoLarsIC` picks the knot by the AIC or BIC.
  */
 
 import { OmaiError } from '../base/index.ts'
 import { type IterativeEstimator, iterative, type LearnData, targetVector } from '../learn/index.ts'
-import { ddot, dgemm, dgemv, solve } from '../numerics/linalg/index.ts'
-import { dict, real } from '../space/index.ts'
+import { ddot, dgemm, dgemv, lstsq, solve } from '../numerics/linalg/index.ts'
+import { choice, dict, real } from '../space/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, Log, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { centre, type Design, designOf, interceptFor, linearPredictor, vectorTensor } from './design.ts'
@@ -399,6 +399,33 @@ export interface LarsVerbs {
   readonly score: (data: LearnData) => number
 }
 
+/** The verbs of a fitted LARS model (shared by {@link lars} and {@link lassoLarsIC}). */
+function larsVerbs(p: LarsParams, h: Pick<LarsHyper, 'fitIntercept'>): LarsVerbs {
+  const centreOf = (a: number): { readonly coef: number[]; readonly intercept: number } => {
+    const coef = coefficientsAt(p.path, a)
+    return { coef, intercept: h.fitIntercept ? p.yMean - ddot(p.xMean, coef) : 0 }
+  }
+  const predict = (x: TensorLike): Tensor => vectorTensor(linearPredictor(x, p.coef, p.intercept, 'lars'))
+  return {
+    nFeaturesIn: p.coef.length,
+    predict,
+    featureImportances: p.coef.map(Math.abs),
+    modelAt: centreOf,
+    score: (data) => {
+      const pred = toFlat(predict(data.x))
+      const truth = targetVector(data.y ?? [], 'lars', pred.length)
+      const mean = truth.reduce((a, b) => a + b, 0) / truth.length
+      let res = 0
+      let tot = 0
+      for (let i = 0; i < pred.length; i++) {
+        res += ((truth[i] ?? 0) - (pred[i] ?? 0)) ** 2
+        tot += ((truth[i] ?? 0) - mean) ** 2
+      }
+      return tot === 0 ? (res === 0 ? 1 : 0) : 1 - res / tot
+    },
+  }
+}
+
 const LARS_DEFAULTS: LarsHyper = { method: 'lasso', alpha: 0, fitIntercept: true, positive: false }
 
 /**
@@ -457,33 +484,113 @@ export function lars(
           yMean: c.yMean,
         }
       },
-      verbs: (p, h) => {
-        const centreOf = (a: number): { readonly coef: number[]; readonly intercept: number } => {
-          const coef = coefficientsAt(p.path, a)
-          return { coef, intercept: h.fitIntercept ? p.yMean - ddot(p.xMean, coef) : 0 }
-        }
-        const predict = (x: TensorLike): Tensor => vectorTensor(linearPredictor(x, p.coef, p.intercept, 'lars'))
-        return {
-          nFeaturesIn: p.coef.length,
-          predict,
-          featureImportances: p.coef.map(Math.abs),
-          modelAt: centreOf,
-          score: (data) => {
-            const pred = toFlat(predict(data.x))
-            const truth = targetVector(data.y ?? [], 'lars', pred.length)
-            const mean = truth.reduce((a, b) => a + b, 0) / truth.length
-            let res = 0
-            let tot = 0
-            for (let i = 0; i < pred.length; i++) {
-              res += ((truth[i] ?? 0) - (pred[i] ?? 0)) ** 2
-              tot += ((truth[i] ?? 0) - mean) ** 2
-            }
-            return tot === 0 ? (res === 0 ? 1 : 0) : 1 - res / tot
-          },
-        }
-      },
+      verbs: (p, h) => larsVerbs(p, h),
       logs: { 'solver/alpha': Log(), 'solver/active': Log(), 'solver/coefficients': Log({ detail: 'full' }) },
     },
     { ...LARS_DEFAULTS, ...hyper },
+  )
+}
+
+/** Hyperparameters of {@link lassoLarsIC}. */
+export interface LassoLarsIcHyper {
+  /** `aic` (default) or `bic`. */
+  readonly criterion: 'aic' | 'bic'
+  readonly fitIntercept: boolean
+  /** The noise variance of the criterion; by default estimated from the ordinary least squares fit (which needs more rows than features). */
+  readonly noiseVariance?: number
+}
+
+/** The fitted parameters of {@link lassoLarsIC}: the model at the best knot, the path and the criterion at every knot. */
+export type LassoLarsIcParams = LarsParams & {
+  /** The criterion at every knot of the path (scikit-learn's `criterion_`). */
+  readonly criterion: number[]
+  /** The non-zero coefficients at every knot. */
+  readonly degreesOfFreedom: number[]
+  /** The noise variance used (scikit-learn's `noise_variance_`). */
+  readonly noiseVariance: number
+  /** The index of the knot with the lowest criterion. */
+  readonly bestKnot: number
+}
+
+/**
+ * The lasso with its penalty chosen by an information criterion (`sklearn.linear_model.LassoLarsIC`): the whole lasso
+ * path by LARS, the criterion `n log(2 pi sigma^2) + RSS / sigma^2 + c df` at every knot (`c` is 2 for the AIC and
+ * `log n` for the BIC, `df` the number of non-zero coefficients, `sigma^2` the noise variance, by default the residual
+ * variance of the ordinary least squares fit), and the knot where it is lowest. The path and the criterion are in
+ * `params`; a session adds one knot per step and `fittedAt(t)` is the best knot among the first `t`.
+ *
+ * @param hyper - `criterion`, `fitIntercept` and an optional `noiseVariance`.
+ * @returns The estimator.
+ * @throws OmaiError with code `value` when the noise variance is to be estimated and there are not more rows than features.
+ * @index estimator The lasso with its penalty chosen by AIC or BIC along the LARS path.
+ * @example
+ * ```ts
+ * import { lassoLarsIC } from 'omai-engine/linear'
+ * const x = Array.from({ length: 40 }, (_, i) => [Math.sin(i), Math.cos(2 * i), Math.sin(3 * i + 1), (i % 7) - 3])
+ * const y = x.map((r, i) => 3 * r[0] - 2 * r[3] + 0.05 * Math.sin(11 * i))
+ * const f = lassoLarsIC({ criterion: 'bic' }).fit({ x, y })
+ * f.params.coef.map((c) => c !== 0) // => [true, false, false, true]
+ * ```
+ */
+export function lassoLarsIC(
+  hyper: Partial<LassoLarsIcHyper> = {},
+): IterativeEstimator<LassoLarsIcHyper, LarsState, LassoLarsIcParams, LarsVerbs, never> {
+  const defaults: LassoLarsIcHyper = { criterion: 'aic', fitIntercept: true }
+  return iterative<LassoLarsIcHyper, LarsState, LassoLarsIcParams, LarsVerbs, never>(
+    {
+      name: 'lasso-lars-ic',
+      kind: 'regressor',
+      defaults,
+      hyperSpace: (h) => dict({ criterion: choice(['aic', 'bic'] as const, { default: h.criterion }) }),
+      algorithm: (data, h) =>
+        larsAlgorithm(designOf(data, 'lassoLarsIC'), { method: 'lasso', alphaMin: 0, fitIntercept: h.fitIntercept }),
+      maxSteps: (_h, data) => 8 * Math.max(1, designOf(data, 'lassoLarsIC').x.d) + 8,
+      params: (s, data, h) => {
+        const design = designOf(data, 'lassoLarsIC')
+        const { n, d } = design.x
+        const path = pathOf(s, design, h.fitIntercept)
+        const c = centre(design, h.fitIntercept)
+        let noiseVariance = h.noiseVariance
+        if (noiseVariance === undefined) {
+          if (n <= d + (h.fitIntercept ? 1 : 0))
+            throw new OmaiError(
+              'value',
+              'lassoLarsIC: the noise variance cannot be estimated with no more rows than features; pass noiseVariance',
+            )
+          const ols = toFlat(lstsq(fromStorage(c.x, [n, d], 'float64'), fromStorage(c.y, [n], 'float64')))
+          const fit = dgemv(c.x, n, d, ols)
+          let rss = 0
+          for (let i = 0; i < n; i++) rss += ((c.y[i] ?? 0) - (fit[i] ?? 0)) ** 2
+          noiseVariance = rss / (n - d - (h.fitIntercept ? 1 : 0))
+        }
+        const factor = h.criterion === 'aic' ? 2 : Math.log(n)
+        const degreesOfFreedom = path.coefs.map((coef) => coef.filter((v) => Math.abs(v) > Number.EPSILON).length)
+        const criterion = path.coefs.map((coef, k) => {
+          const fit = dgemv(c.x, n, d, coef)
+          let rss = 0
+          for (let i = 0; i < n; i++) rss += ((c.y[i] ?? 0) - (fit[i] ?? 0)) ** 2
+          return n * Math.log(2 * Math.PI * noiseVariance) + rss / noiseVariance + factor * (degreesOfFreedom[k] ?? 0)
+        })
+        let bestKnot = 0
+        for (const [k, v] of criterion.entries())
+          if (v < (criterion[bestKnot] ?? Number.POSITIVE_INFINITY)) bestKnot = k
+        const coef = [...(path.coefs[bestKnot] ?? [])]
+        return {
+          coef,
+          intercept: path.intercepts[bestKnot] ?? 0,
+          alpha: path.alphas[bestKnot] ?? 0,
+          path: { alphas: path.alphas, coefs: path.coefs, order: path.order, events: path.events },
+          xMean: Array.from(c.xMean),
+          yMean: c.yMean,
+          criterion,
+          degreesOfFreedom,
+          noiseVariance,
+          bestKnot,
+        }
+      },
+      verbs: (p, h) => larsVerbs(p, h),
+      logs: { 'solver/alpha': Log(), 'solver/active': Log(), 'solver/coefficients': Log({ detail: 'full' }) },
+    },
+    { ...defaults, ...hyper },
   )
 }

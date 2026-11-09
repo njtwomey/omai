@@ -222,6 +222,14 @@
       "cases": 21
     },
     {
+      "fixture": "decomposition/minibatch_nmf.json",
+      "source": "oracle/cases/decomposition/minibatch_nmf.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 11
+    },
+    {
       "fixture": "decomposition/nmf_hals.json",
       "source": "oracle/cases/decomposition/nmf_hals.py",
       "reference": {
@@ -237,6 +245,14 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 18
+    },
+    {
+      "fixture": "decomposition/truncated_svd.json",
+      "source": "oracle/cases/decomposition/truncated_svd.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
     },
     {
       "fixture": "distances/evaluate.json",
@@ -1480,6 +1496,14 @@
       "cases": 16
     },
     {
+      "fixture": "learn/dummy.json",
+      "source": "oracle/cases/learn/dummy.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 13
+    },
+    {
       "fixture": "learn/feature_selection.json",
       "source": "oracle/cases/learn/feature_selection.py",
       "reference": {
@@ -1527,6 +1551,14 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 28
+    },
+    {
+      "fixture": "learn/model_selection/threshold.json",
+      "source": "oracle/cases/learn/model_selection/threshold.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 8
     },
     {
       "fixture": "learn/multiclass.json",
@@ -1582,7 +1614,7 @@
       "reference": {
         "scikit-learn": "1.9.1"
       },
-      "cases": 35
+      "cases": 36
     },
     {
       "fixture": "learn/preprocessing/imputation.json",
@@ -1632,6 +1664,14 @@
         "numpy": "2.5.4"
       },
       "cases": 7
+    },
+    {
+      "fixture": "linear/ard.json",
+      "source": "oracle/cases/linear/ard.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
     },
     {
       "fixture": "linear/bayesian.json",
@@ -1689,6 +1729,14 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 14
+    },
+    {
+      "fixture": "linear/lasso_lars_ic.json",
+      "source": "oracle/cases/linear/lasso_lars_ic.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
     },
     {
       "fixture": "linear/mixed.json",
@@ -2480,6 +2528,14 @@
       "cases": 19
     },
     {
+      "fixture": "metrics/class_likelihood_ratios.json",
+      "source": "oracle/cases/metrics/class_likelihood_ratios.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 18
+    },
+    {
       "fixture": "metrics/classification.json",
       "source": "oracle/cases/metrics/classification.py",
       "reference": {
@@ -2673,6 +2729,14 @@
         "torchmetrics": "1.9.0"
       },
       "cases": 84
+    },
+    {
+      "fixture": "mixture/gaussian_estimator.json",
+      "source": "oracle/cases/mixture/gaussian_estimator.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
     },
     {
       "fixture": "mixture/variational.json",
@@ -5197,6 +5261,14 @@
       "cases": 38
     },
     {
+      "fixture": "text/feature_dicts.json",
+      "source": "oracle/cases/text/feature_dicts.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 15
+    },
+    {
       "fixture": "text/features.json",
       "source": "oracle/cases/text/features.py",
       "reference": {
@@ -5719,6 +5791,14 @@
         "opencv-python-headless": "5.0.0.93"
       },
       "cases": 23
+    },
+    {
+      "fixture": "vision/patches.json",
+      "source": "oracle/cases/vision/patches.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 13
     },
     {
       "fixture": "vision/pyramids.json",

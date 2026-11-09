@@ -2242,6 +2242,10 @@ jellyfish, Biopython, pyphen
 - `shingles.ts`: character k-shingles, word n-gram shingles, w-shingling, skip-grams, the hashed character n-grams of
   fastText (bucketed with FNV hashing), weighted shingles; one extractor shared by matching, fingerprinting and fastText.
 - `features.ts`: count, TF-IDF and hashing vectorisers, word and character n-grams, BM25 and BM25+ weighting.
+- `feature-dicts.ts`: vectorisers over records instead of text: `dictVectorize`, `dictTransform` and `dictInverse`
+  (scikit-learn's `DictVectorizer`: numbers and booleans as columns, strings and lists of strings one-hot as `name=value`,
+  sorted or first-seen columns, unseen features ignored) and `featureHash` (`FeatureHasher` over records, pair lists or
+  bare strings, the hashing of `hashingVectorize` without normalisation). oracle: `text/feature_dicts`.
 - `templates.ts`: feature-template languages for sequence labellers. CRF++ templates (Kudo 2005): `U` (unigram, conjoined
   with the label) and `B` (bigram, conjoined with the label pair) lines, `%x[row,col]` macros over a token-by-attribute
   table, boundary padding (`_B-1`, `_B+1`), comments, and syntax errors with line and column. Wapiti patterns (`u`,
@@ -3029,7 +3033,8 @@ none of those weights. Each file builds its specs with `specOf(category, inputs,
   precision, selection rate and accuracy at each, total cost and the cheapest when costs are given, ROC and PR points
   with their areas (golden against scikit-learn). Built.
 - `classification-summary.ts`: `matthewsCorrcoef`, `cohenKappaScore` (unweighted, linear, quadratic),
-  `quadraticWeightedKappa` (ordinal), likelihood ratios (`positiveLikelihoodRatio`, `negativeLikelihoodRatio`),
+  `quadraticWeightedKappa` (ordinal), likelihood ratios (`positiveLikelihoodRatio`, `negativeLikelihoodRatio`, and `classLikelihoodRatios`, the pair with
+  scikit-learn's `replace_undefined_by`; oracle `metrics/class_likelihood_ratios`),
   `diagnosticOddsRatio`, `hammingLoss`, `zeroOneLoss`, `topKAccuracyScore`, multi-label ranking
   (`labelRankingAveragePrecisionScore`, `coverageError`, `labelRankingLoss`) and `classificationReport` (data and
   sklearn's text).
@@ -3466,7 +3471,8 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `preprocessing/scalers.ts`: standard, min-max, max-abs and robust scalers, normaliser, quantile and power
   transformers.
 - `preprocessing/encoders.ts`: one-hot, ordinal, label, target (cross-fitted), label and multi-label binarisers.
-- `preprocessing/features.ts`: polynomial features, spline features, binning, binariser, function transformers,
+- `preprocessing/features.ts`: polynomial features, spline features, binning, binariser, `addDummyFeature` (the constant
+  column), function transformers,
   interaction features.
 - `preprocessing/imputation.ts`: simple, k-NN and iterative imputers, missing indicators.
 - `preprocessing/aggregates.ts`: per-row group statistics (`groupAggregates`, pandas `groupby.transform`, with a
@@ -3546,6 +3552,10 @@ modAL for active learning, diffprivlib and opacus for privacy
   stage also moves the grid to the data (pykan's `update_grid_from_samples`); paths `kan/curves`, `kan/grids`, `kan/sparsity`,
   `kan/stage` and the events `kan/prune`, `kan/refine`, `kan/grid-update`; `progressivePlan` gives the phases of a
   hyperparameter set and `with({ plan })` replaces them. `kanVerbs` (in `kan.ts`) are the KAN verbs of any network and state.
+- `dummy.ts`: the baselines that ignore the features: `dummyClassifier` (`prior`, `most_frequent`, `stratified` and
+  `uniform` from a key kept in the fitted parameters, `constant`; weighted frequencies) and `dummyRegressor` (`mean`,
+  `median`, `quantile`, `constant`; weighted) with `weightedQuantile`. oracle: `learn/dummy` (sklearn.dummy, the
+  deterministic strategies).
 - `compose.ts`: `pipeline`, `featureUnion`, `columnTransformer`, `transformedTargetRegressor`, step inspection
   (intermediate outputs recorded by policy), caching of fitted steps.
 - `model-selection/splitters.ts`: the splitter contract; holdout and train/validation/test splits; k-fold,
@@ -3558,6 +3568,12 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `model-selection/search.ts`: parameter grids and samplers, `gridSearchCV` and `randomizedSearchCV` (traced, one
   child run per candidate), nested cross-validation. The general studies (samplers, pruners, multi-fidelity) are
   `lib/tune`; these are the sklearn-shaped searches it can generalise.
+- `model-selection/threshold.ts`: decision-threshold tuning of a binary classifier: `fixedThresholdClassifier` (a cut at a
+  number, or 0.5 for probabilities and 0 for decision scores) and `tunedThresholdClassifierCV` (the cut that maximises a
+  metric of the labels, scikit-learn's procedure: per-fold threshold grids over each fold's response range, the fold
+  curves interpolated onto a common grid and averaged, a refit on all rows; `params.curve` is the averaged curve), with
+  the `thresholdMetrics` table (accuracy, balanced accuracy, F1, precision, recall, Jaccard, Matthews) or a function.
+  oracle: `learn/model_selection/threshold` over GaussianNB.
 - `model-selection/criteria.ts`: AIC, AICc, BIC, Mallows' Cp, GCV, leave-one-out shortcuts for linear smoothers, the
   one-standard-error rule, the .632 and .632+ bootstrap.
 - `model-selection/compare.ts`: comparing learning algorithms from resampled scores: the plain and the corrected
@@ -4388,7 +4404,9 @@ the history; every state serialises (`stateToJson`). Estimators are `iterative(.
 `.method(data)`, `.session(data)` and `fittedAt(t)` exist and the standard `model/assignments` probe works at any step;
 the distance-based ones take a `metric` from `distances` (or `'precomputed'`, through `distanceMatrix`).
 - `kmeans.ts`: Lloyd's algorithm and mini-batch k-means, the initial centres (k-means++, random rows or given) and the
-  nearest-centre assignment. `kmeans-variants.ts`: Elkan's bounds (`elkanAlgorithm`, counting the distances computed and
+  nearest-centre assignment, `kmeansPlusPlus` (scikit-learn's greedy seeding as a function: centres and the rows they
+  came from) and the estimators `kMeans` and `miniBatchKMeans` (`KMeans`, `MiniBatchKMeans` and `k_means`: `nInit`
+  restarts keeping the lowest inertia, predict, transform to centre distances, score as minus the inertia). `kmeans-variants.ts`: Elkan's bounds (`elkanAlgorithm`, counting the distances computed and
   skipped), bisecting k-means (one split per step) and kernel k-means (`kernelKMeansAlgorithm` over a Gram matrix, with
   the spectral relaxation as an initial labelling), each with an estimator (`elkanKMeans`, `bisectingKMeans`,
   `kernelKMeans`).
@@ -4426,7 +4444,7 @@ the distance-based ones take a `metric` from `distances` (or `'precomputed'`, th
   `stabilityIndex` (adjusted Rand agreement of clusterings of subsamples). `_support.ts` is private to the folder.
 
 oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans` fixture, kept at its old path, also
-checked against Elkan's), DBSCAN, OPTICS and HDBSCAN (`methods/cluster/density`), affinity propagation
+checked against Elkan's and the `kMeans` estimator), DBSCAN, OPTICS and HDBSCAN (`methods/cluster/density`), affinity propagation
 (`methods/cluster/exemplar`), scipy linkage and cophenet (`methods/cluster/hierarchical`), BIRCH subcluster centres in
 leaf-chain order and labels (`cluster/birch`), mean shift centres, labels and bandwidth (`cluster/mean_shift`),
 the three normalisations, the consensus score and the partitions of co-clustering and biclustering on planted data where
@@ -4448,6 +4466,17 @@ thin SVD with scikit-learn's sign convention, projection and reconstruction.
 - `nmf.ts`: `nmfAlgorithm` (multiplicative updates for the Frobenius or Kullback-Leibler loss, HALS sweeps for Frobenius;
   the stopping rule lives in the state, so a replay stops where the run did), `nndsvda`, `nmfDivergence`, the estimator
   `nmf` (transform solves W for new rows with H fixed).
+- `truncated-svd.ts`: `truncatedSvdAlgorithm` (the leading singular triplets of the uncentred data, exact or randomised with
+  scikit-learn's power iterations and oversampling; the explained variance is that of the scores) and the estimator
+  `truncatedSvd` (`TruncatedSVD`: transform `X V^T`, inverse transform, components, singular values). oracle:
+  `decomposition/truncated_svd` (ARPACK on tall, wide and low-rank data, the randomised solver on an exactly low-rank matrix;
+  signs fixed).
+- `minibatch-nmf.ts`: `miniBatchNmfAlgorithm` (scikit-learn's online NMF, one batch per step: W of the batch by the
+  multiplicative rule or solved afresh, H from the discounted running numerator and denominator, any beta divergence,
+  l1 and l2 penalties, the two stopping rules; the state serialises), `betaDivergence`, `solveWeights` (the transform) and
+  the estimator `miniBatchNmf`; `nmf.ts` exports `initialNmfFactors`, the starts they share. oracle:
+  `decomposition/minibatch_nmf` against `MiniBatchNMF` from fixed factors (every beta, penalties, fresh restarts, both
+  stopping rules, the transform).
 - `cross-decomposition.ts`: `plsAlgorithm` (NIPALS for PLS regression, PLS canonical and CCA, one component per step, the
   score correlation on the tape), estimators `plsRegression`, `plsCanonical`, `cca`, and `plsSvd` (closed form).
 - `rank-regression.ts`: `pcr` (principal-component regression, closed form, the same fit as a scikit-learn PCA plus
@@ -4572,7 +4601,16 @@ and kernel variants.
 variable leaves when its coefficient crosses zero; logs `alpha`, `active`, the `coefficients` tensor and the message
 `event`), `larsPath` (the whole path: penalties, coefficients, entry order), `coefficientsAt` (interpolation at a
 penalty) and the `lars` estimator (the model at a penalty or active count, the path in `params.path`; `fittedAt(t)` is
-knot `t`). oracle: `linear/lars` against `sklearn.linear_model.lars_path` and `LassoLars`.
+knot `t`), and `lassoLarsIC` (the knot of the lasso path with the lowest AIC or BIC, scikit-learn's criterion with the noise
+variance from the OLS fit or given; `params.criterion` is the criterion at every knot). oracle: `linear/lars` against
+`sklearn.linear_model.lars_path` and `LassoLars`, `linear/lasso_lars_ic` against `LassoLarsIC`.
+
+`ard.ts` is automatic relevance determination regression: `ardAlgorithm` (scikit-learn's evidence-maximisation loop, one
+iteration per step: the posterior of the kept weights, the precision updates with Gamma hyperpriors and the pruning at
+`thresholdLambda`; direct and Woodbury inversion as scikit-learn chooses; the state serialises), `ardCoefficients` (the
+model after the final posterior update, as scikit-learn ends a fit) and the `ardRegression` estimator (`predictStd` is the
+posterior predictive spread). oracle: `linear/ard` against `ARDRegression` for tall and wide designs, with and without an
+intercept (weights, precisions, posterior covariance, iteration count, objective, predictions and spread).
 
 `diagnostics.ts` is regression diagnostics from one SVD of the (weighted, intercept-last) design: `olsInfluence` (leverage,
 internal and external studentised residuals, Cook's distance, DFFITS and its internal form, DFBETA(S), COVRATIO,
@@ -4687,11 +4725,16 @@ and the responsibilities and per-row log density under a mixture. A state keeps 
 tensors `responsibilities`, `means`, `weights` (expected) and `covariances`, declared in the schema; the start is
 `initialResponsibilities` of `gaussian.ts` (k-means or random). The estimator factories, component selection and the
 density helpers stay parked; the method is `methods/mixture/bgmm`. The EM golden keeps its fixture under
-`methods/mixture/gaussian`.
+`methods/mixture/gaussian`. `estimators.ts` has the two estimators on the iterative base, `gaussianMixture`
+(`GaussianMixture`: every covariance type, a k-means, random or given start, `nInit` restarts by likelihood; the fitted
+value has predict, `predictProba`, `scoreSamples`, `score`, `bic` and `aic`) and `bayesianGaussianMixture`
+(`BayesianGaussianMixture`: either weight prior, the priors of scikit-learn, the same verbs without the criteria).
 
 oracle: `variational` starts scikit-learn's `BayesianGaussianMixture` from given responsibilities (its private
 `_initialize`) and compares a fixed number of iterations, for both weight priors and all four covariance types
-(`mixture/variational` fixture)
+(`mixture/variational` fixture); `gaussian_estimator` fits scikit-learn's `GaussianMixture` from given weights, means and
+precisions for every covariance type and compares the parameters, responsibilities, `score_samples`, `score`, BIC and
+AIC (`mixture/gaussian_estimator` fixture)
 (params), declared in the schema. The estimator factories, the Bayesian mixture, component selection and the density
 helpers stay parked. The golden keeps its fixture under `methods/mixture/gaussian`.
 - `experts.ts`: the mixture of linear experts (Jacobs and Jordan) by EM: `mixtureOfExpertsAlgorithm(x, y, { nExperts,
@@ -4764,6 +4807,11 @@ built from: `signal/image`, `numerics/linalg` (blas `dgemm`, lapack), `numerics/
   `houghPeaksAlgorithm` (`edges.ts`, a peak per step), `floodFillAlgorithm` (`components.ts`, a span per step),
   `minEnclosingCircleAlgorithm` (`fitting.ts`, a point per step) and `approxPolyDPAlgorithm` (`contours.ts`, a segment per step); each
   old function runs its algorithm.
+- `patches.ts`: scikit-learn's `feature_extraction.image`: `extractPatches2d` (every window in raster order, or `maxPatches`
+  random ones from a key), `reconstructFromPatches2d` (the mean of the windows that cover each pixel; exact for any patch
+  size, where scikit-learn's divisor miscounts when a patch is more than half the image), the transformer `patchExtractor`
+  and `imgToGraph` (the pixel-grid graph weighted by absolute differences, with the node values and an optional mask).
+  oracle: `vision/patches`.
 - `segmentation.ts`: SLIC superpixels, seeded region growing (`regionGrowingAlgorithm`, a pixel per step), mean-shift segmentation, k-means colour quantisation
   (over `cluster`). `snakes.ts`: active contours. `grabcut.ts`: GrabCut with mixture colour models and min cuts.
   `seams.ts`: seam energy, minimum seams, removal, content-aware resizing (`seamCarveAlgorithm`, a seam per step, `seam/` paths, protect

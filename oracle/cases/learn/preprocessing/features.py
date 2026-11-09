@@ -13,6 +13,7 @@ from sklearn.preprocessing import (
     KBinsDiscretizer,
     PolynomialFeatures,
     SplineTransformer,
+    add_dummy_feature,
 )
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
@@ -119,6 +120,14 @@ def cases() -> list[Case]:
     out.append(
         case(
             "binarizer", "binarizer", [x, z], {"transform": Binarizer(threshold=0.3).fit(x).transform(z)}, threshold=0.3
+        )
+    )
+    out.append(
+        case(
+            "addDummyFeature",
+            "dummyFeature",
+            [x],
+            {"default": add_dummy_feature(x), "valued": add_dummy_feature(x, 2.5)},
         )
     )
     ft = FunctionTransformer(np.log1p, np.expm1).fit(np.abs(x))

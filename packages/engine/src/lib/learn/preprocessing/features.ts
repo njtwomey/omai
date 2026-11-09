@@ -541,6 +541,31 @@ export function binarizer(
   )
 }
 
+/**
+ * Prepend a constant column to a feature matrix (sklearn.preprocessing.add_dummy_feature): the intercept column of a
+ * design matrix, one for every row by default.
+ *
+ * @param x - Features `[n, d]`.
+ * @param value - The constant (default 1).
+ * @returns The matrix `[n, d + 1]` with the constant first.
+ * @example
+ * ```ts
+ * import { addDummyFeature } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
+ * toArray(addDummyFeature([[1, 2], [3, 4]])) // => [[1, 1, 2], [1, 3, 4]]
+ * toArray(addDummyFeature([[1, 2], [3, 4]], 5)) // => [[5, 1, 2], [5, 3, 4]]
+ * ```
+ */
+export function addDummyFeature(x: TensorLike, value = 1): Tensor {
+  const m = matrixView(x, 'addDummyFeature', { allowNaN: true, allowInfinite: true })
+  const out = new Float64Array(m.n * (m.d + 1))
+  for (let i = 0; i < m.n; i++) {
+    out[i * (m.d + 1)] = value
+    for (let j = 0; j < m.d; j++) out[i * (m.d + 1) + j + 1] = m.data[i * m.d + j] ?? 0
+  }
+  return fromStorage(out, [m.n, m.d + 1], 'float64')
+}
+
 /** Hyperparameters of {@link functionTransformer}. */
 export interface FunctionTransformerHyper {
   /** The forward map of a feature matrix (default the identity). */

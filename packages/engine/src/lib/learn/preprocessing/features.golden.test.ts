@@ -1,6 +1,7 @@
 import { learnGolden, num, str } from '../../../testing/learn.ts'
 import { expm1, log1p, type Tensor } from '../../tensor/index.ts'
 import {
+  addDummyFeature,
   binarizer,
   functionTransformer,
   kBinsDiscretizer,
@@ -10,6 +11,7 @@ import {
 } from './features.ts'
 
 learnGolden('feature construction against sklearn.preprocessing', 'learn/preprocessing/features', {
+  dummyFeature: ([x]) => ({ default: addDummyFeature(x as Tensor), valued: addDummyFeature(x as Tensor, 2.5) }),
   polynomial: ([x, z], p) => {
     const degree = num(p, 'degree')
     const f = polynomialFeatures({

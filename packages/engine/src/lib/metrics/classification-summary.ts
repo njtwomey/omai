@@ -211,6 +211,70 @@ export const negativeLikelihoodRatio: Metric<LikelihoodRatioOptions, MetricInput
   { spec: spec('negativeLikelihoodRatio', 'lower', [0, Infinity]) },
 )
 
+/** Options of {@link classLikelihoodRatios}. */
+export interface ClassLikelihoodRatioOptions extends LikelihoodRatioOptions {
+  /**
+   * What an ill-defined ratio becomes (scikit-learn's `replace_undefined_by`): `NaN` (default), `1` for both, or one
+   * value for each: the positive ratio's from 1 up (or `NaN`), the negative ratio's in `[0, 1]` (or `NaN`).
+   */
+  readonly replaceUndefinedBy?: number | { readonly positive: number; readonly negative: number }
+}
+
+/**
+ * The positive and negative likelihood ratios of a binary classifier together (sklearn.metrics.class_likelihood_ratios),
+ * from the weighted confusion counts: LR+ = tp (tn + fp) / (fp (tp + fn)) and LR- = fn (tn + fp) / (tn (tp + fn)). The
+ * positive ratio is undefined when there are no false positives, the negative one when there are no true negatives, and
+ * both are `NaN` when `yTrue` has no positives; `replaceUndefinedBy` says what an undefined ratio becomes where its
+ * own count is zero.
+ *
+ * @param yTrue - True binary labels.
+ * @param yPred - Predicted binary labels.
+ * @param options - posLabel, sample weights and replaceUndefinedBy.
+ * @returns The positive and the negative ratio as metric results.
+ * @throws OmaiError with code `value` for more than two labels, or a `replaceUndefinedBy` outside its allowed values.
+ * @index function Positive and negative likelihood ratios of a binary classifier together.
+ * @example
+ * ```ts
+ * import { classLikelihoodRatios } from 'omai-engine/metrics'
+ * const { positive, negative } = classLikelihoodRatios([1, 1, 1, 0, 0, 0, 0, 0], [1, 1, 0, 1, 0, 0, 0, 0])
+ * [positive.estimate.value.toFixed(3), negative.estimate.value.toFixed(3)] // => ['3.333', '0.417']
+ * ```
+ */
+export function classLikelihoodRatios(
+  yTrue: MetricInput,
+  yPred: MetricInput,
+  options: ClassLikelihoodRatioOptions = {},
+): { readonly positive: MetricResult; readonly negative: MetricResult } {
+  const name = 'classLikelihoodRatios'
+  const r = options.replaceUndefinedBy ?? Number.NaN
+  let desired: { readonly positive: number; readonly negative: number }
+  if (typeof r === 'number') {
+    if (!(Number.isNaN(r) || r === 1))
+      throw new OmaiError('value', `${name}: replaceUndefinedBy must be NaN, 1 or a pair, got ${r}`)
+    desired = { positive: r, negative: r }
+  } else {
+    if (
+      !(Number.isNaN(r.positive) || r.positive >= 1) ||
+      !(Number.isNaN(r.negative) || (r.negative >= 0 && r.negative <= 1))
+    )
+      throw new OmaiError(
+        'value',
+        `${name}: replaceUndefinedBy needs a positive ratio from 1 up and a negative one in [0, 1]`,
+      )
+    desired = r
+  }
+  const c = binaryCounts(name, yTrue, yPred, options)
+  const supportPositive = c.tp + c.fn
+  const supportNegative = c.tn + c.fp
+  const positive = c.fp === 0 ? desired.positive : (c.tp * supportNegative) / (c.fp * supportPositive)
+  const negative = c.tn === 0 ? desired.negative : (c.fn * supportNegative) / (c.tn * supportPositive)
+  const n = rowCount(yTrue)
+  return {
+    positive: metricResult('positiveLikelihoodRatio', positive, n),
+    negative: metricResult('negativeLikelihoodRatio', negative, n),
+  }
+}
+
 /**
  * Diagnostic odds ratio LR+ / LR- = (tp tn) / (fp fn): the odds of a positive prediction among positives over the
  * same odds among negatives. Infinite when fp or fn is zero.
