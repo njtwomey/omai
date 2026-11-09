@@ -14,6 +14,7 @@ import { type Limits, legibleRange, padRange, resolveLimits, unionRange } from '
 import { axisStyle, baseOption } from '../theme/echarts.ts'
 import { formatNumber, formatPercent, formatPower } from '../theme/format.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
+import { atMode } from './_mode.ts'
 import { type ColourSelect, SELECT_KEY } from './selection.ts'
 
 /** The data extent of a layer, used by the axes' limit policies. `tight` asks for no padding (images, fields). */
@@ -246,7 +247,7 @@ function niceUp(v: number): number {
  * and the data aspect), its series with axis indices, and its colour bars. Used by {@link cartesian} and by
  * `subplots` in compose.ts.
  *
- * @param layers - The layers.
+ * @param layersIn - The layers; one built without a `mode` is drawn in this call's mode.
  * @param options - Axes, aspect and colour mode.
  * @param area - The plotting area in pixels (the plotting box is this, or shrunk inside it under `adjustable: 'box'`).
  * @param index - The grid's index (and its x axis's).
@@ -261,7 +262,7 @@ function niceUp(v: number): number {
  * ```
  */
 export function panelParts(
-  layers: readonly Layer[],
+  layersIn: readonly Layer[],
   options: Omit<PlotOptions, 'figure' | 'title' | 'legend' | 'tooltip' | 'zoom'> & {
     /** The figure's type size in pixels (default 11). */
     readonly fontSize?: number
@@ -272,6 +273,8 @@ export function panelParts(
   seriesIndex: number,
 ): PanelParts {
   const mode = options.mode ?? 'light'
+  // Layers built without a mode are drawn in this one (a layer built with a mode keeps it).
+  const layers = layersIn.map((l) => atMode(l, mode))
   const t = tokens(mode)
   const fontSize = options.fontSize ?? 11
   const style = axisStyle(mode, fontSize)

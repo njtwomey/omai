@@ -10,6 +10,7 @@ import { asTensor, type TensorLike, toFlat } from 'omai-engine/tensor'
 import { extentOf, unionRange } from '../figure/limits.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { colourFor, dashType, modeOf, numbers } from './_data.ts'
+import { deferMode, isModeless } from './_mode.ts'
 import { cartesian, type Layer, layer, type PlotOptions } from './plot.ts'
 
 /** A curve: y values against x values (default 0, 1, 2, ...), and how to draw it. */
@@ -60,6 +61,7 @@ function pairs(c: Curve): [number, number][] {
  * ```
  */
 export function lines(curves: readonly Curve[], options: LineOptions = {}): Layer {
+  if (isModeless(options)) return deferMode((mode) => lines(curves, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const offset = options.colourOffset ?? 0
   const xs: [number, number][] = []
@@ -124,6 +126,7 @@ interface PolygonApi {
  * ```
  */
 export function band(bands: readonly Band[], options: LineOptions = {}): Layer {
+  if (isModeless(options)) return deferMode((mode) => band(bands, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const offset = options.colourOffset ?? 0
   const all: Point2[] = []
@@ -207,6 +210,7 @@ export interface Polygon {
  * ```
  */
 export function polygons(shapes: readonly Polygon[], options: LineOptions = {}): Layer {
+  if (isModeless(options)) return deferMode((mode) => polygons(shapes, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const offset = options.colourOffset ?? 0
   const all: Point2[] = []

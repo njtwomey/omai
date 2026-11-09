@@ -8,6 +8,7 @@ import { maxOf } from 'omai-engine/base'
 import { extentOf } from '../figure/limits.ts'
 import { colourScale, sequentialRamp } from '../theme/palettes.ts'
 import type { ColourMode } from '../theme/tokens.ts'
+import { deferMode, isModeless } from './_mode.ts'
 import { type Layer, layer } from './plot.ts'
 
 /**
@@ -29,6 +30,7 @@ export function hexbin(
   y: readonly number[],
   options: { readonly radius?: number; readonly log?: boolean; readonly mode?: ColourMode } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => hexbin(x, y, { ...options, mode }))
   const xr = extentOf(x) ?? [0, 1]
   const yr = extentOf(y) ?? [0, 1]
   const r = options.radius ?? ((xr[1] - xr[0]) / 30 || 1)

@@ -12,6 +12,7 @@ import type { Range } from '../figure/aspect.ts'
 import { extentOf } from '../figure/limits.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { colourFor } from './_data.ts'
+import { deferMode, isModeless } from './_mode.ts'
 import { type Curve, lines } from './lines.ts'
 import { type Layer, layer } from './plot.ts'
 
@@ -68,6 +69,7 @@ export interface FunctionOptions extends FunctionStyle {
  * ```
  */
 export function fn(f: (x: number) => number, range: Range, options: FunctionOptions = {}): Layer {
+  if (isModeless(options)) return deferMode((mode) => fn(f, range, { ...options, mode }))
   const n = Math.max(2, options.n ?? 400)
   const [a, b] = range
   const x = Array.from({ length: n }, (_, i) => a + ((b - a) * i) / (n - 1))
@@ -112,6 +114,7 @@ export function parametric(
   range: Range,
   options: FunctionStyle & { readonly n?: number } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => parametric(fx, fy, range, { ...options, mode }))
   const n = Math.max(2, options.n ?? 400)
   const t = Array.from({ length: n }, (_, i) => range[0] + ((range[1] - range[0]) * i) / (n - 1))
   return line([styled({ x: t.map(fx), y: t.map(fy) }, options)], options)
@@ -135,6 +138,7 @@ export function polar(
   range: Range = [0, 2 * Math.PI],
   options: FunctionStyle & { readonly n?: number } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => polar(r, range, { ...options, mode }))
   return parametric(
     (t) => r(t) * Math.cos(t),
     (t) => r(t) * Math.sin(t),
@@ -164,6 +168,7 @@ export function implicit(
   y: Range,
   options: FunctionStyle & { readonly n?: number; readonly level?: number } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => implicit(f, x, y, { ...options, mode }))
   const n = Math.max(3, options.n ?? 120)
   const xs = Array.from({ length: n }, (_, j) => x[0] + ((x[1] - x[0]) * j) / (n - 1))
   const ys = Array.from({ length: n }, (_, i) => y[0] + ((y[1] - y[0]) * i) / (n - 1))
@@ -206,6 +211,7 @@ export function tangentLine(
   x0: number,
   options: FunctionStyle & { readonly derivative?: number; readonly span?: number } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => tangentLine(f, x0, { ...options, mode }))
   const m = options.derivative ?? slope(f, x0)
   const y0 = f(x0)
   const h = (options.span ?? 2) / 2
@@ -236,6 +242,7 @@ export function secantLine(
   b: number,
   options: FunctionStyle & { readonly extend?: number } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => secantLine(f, a, b, { ...options, mode }))
   if (a === b) throw new OmaiError('value', 'secantLine: the two points must differ')
   const fa = f(a)
   const fb = f(b)
@@ -289,6 +296,7 @@ export function riemann(
   n: number,
   options: FunctionStyle & { readonly rule?: RiemannRule; readonly opacity?: number } = {},
 ): Layer & { readonly sum: number } {
+  if (isModeless(options)) return deferMode((mode) => riemann(f, range, n, { ...options, mode }))
   if (!(Number.isInteger(n) && n >= 1)) throw new OmaiError('value', 'riemann: n must be a positive integer')
   const rule = options.rule ?? 'midpoint'
   const [a, b] = range
@@ -357,6 +365,7 @@ export function taylor(
   range: Range,
   options: FunctionStyle & { readonly n?: number } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => taylor(derivatives, x0, range, { ...options, mode }))
   const poly = (x: number): number => {
     let s = 0
     let term = 1
@@ -400,6 +409,7 @@ export function referenceLines(
     readonly fontSize?: number
   } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => referenceLines(lines, { ...options, mode }))
   const colour = colourFor(options.colour ?? 'muted', options.mode ?? 'light')
   const item = (axis: 'xAxis' | 'yAxis', v: number | { readonly value: number; readonly label?: string }) => {
     const value = typeof v === 'number' ? v : v.value

@@ -20,6 +20,7 @@ import { gridSpec } from '../figure/grid.ts'
 import { extentOf } from '../figure/limits.ts'
 import { formatNumber, formatPercent } from '../theme/format.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
+import { deferModes, isModeless } from './_mode.ts'
 import { bars } from './bars.ts'
 import { type Panel, subplots } from './compose.ts'
 import { contours } from './fields.ts'
@@ -61,6 +62,7 @@ const objectiveLabel = (study: Study, options: StudyChartOptions): string =>
  * ```
  */
 export function historyLayers(study: Study, options: Pick<StudyChartOptions, 'objective' | 'mode'> = {}): Layer[] {
+  if (isModeless(options)) return deferModes((mode) => historyLayers(study, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const h = optimisationHistory(study, options.objective)
   const done = h.number.flatMap((n, i) => (Number.isNaN(h.value[i] ?? Number.NaN) ? [] : [[n, h.value[i] as number]]))

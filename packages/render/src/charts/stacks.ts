@@ -4,6 +4,7 @@
  */
 
 import type { ColourMode } from '../theme/tokens.ts'
+import { deferMode, isModeless } from './_mode.ts'
 import { band } from './lines.ts'
 import type { Layer } from './plot.ts'
 
@@ -30,6 +31,7 @@ export function stackedAreas(
   series: readonly { readonly name: string; readonly y: readonly number[] }[],
   options: { readonly offset?: StackOffset; readonly mode?: ColourMode; readonly opacity?: number } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => stackedAreas(x, series, { ...options, mode }))
   const n = x.length
   const offset = options.offset ?? 'zero'
   const total = x.map((_, j) => series.reduce((s, ser) => s + Math.max(0, ser.y[j] ?? 0), 0))

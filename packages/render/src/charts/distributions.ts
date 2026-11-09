@@ -13,6 +13,7 @@ import type { Range } from '../figure/aspect.ts'
 import { extentOf, padRange } from '../figure/limits.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { colourFor, modeOf, numbers } from './_data.ts'
+import { deferMode, isModeless } from './_mode.ts'
 import { band, lines } from './lines.ts'
 import { cartesian, type Layer, layer, type PlotOptions } from './plot.ts'
 import { points } from './points.ts'
@@ -82,6 +83,7 @@ export function density(
   dist: Distribution,
   options: DistributionLayerOptions & { readonly range?: Range; readonly n?: number } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => density(dist, { ...options, mode }))
   const [a, b] = options.range ?? distributionRange(dist)
   const n = Math.max(2, options.n ?? 200)
   const x = Array.from({ length: n }, (_, i) => a + ((b - a) * i) / (n - 1))
@@ -129,6 +131,7 @@ export function kde(
     readonly n?: number
   } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => kde(samples, { ...options, mode }))
   const data = numbers(samples).filter(Number.isFinite)
   const est = gaussianKde(data, options.bandwidth === undefined ? {} : { bandwidth: options.bandwidth })
   const sd = Math.sqrt(toFlat(est.covariance)[0] ?? 1)
@@ -153,6 +156,7 @@ export function kde(
  * ```
  */
 export function ecdfCurve(samples: TensorLike | readonly number[], options: DistributionLayerOptions = {}): Layer {
+  if (isModeless(options)) return deferMode((mode) => ecdfCurve(samples, { ...options, mode }))
   const F = ecdf(numbers(samples).filter(Number.isFinite))
   const q = toFlat(F.quantiles)
   const p = toFlat(F.probabilities)
@@ -187,6 +191,7 @@ export function ecdfCurve(samples: TensorLike | readonly number[], options: Dist
  * ```
  */
 export function pmf(dist: Distribution, options: DistributionLayerOptions & { readonly range?: Range } = {}): Layer {
+  if (isModeless(options)) return deferMode((mode) => pmf(dist, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const s = dist.support
   const [lo, hi] =
@@ -303,6 +308,7 @@ export function boxPlot(
   groups: readonly SampleGroup[],
   options: { readonly mode?: ColourMode; readonly colour?: string } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => boxPlot(groups, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const stats = groups.map((g) => boxStats(g.values))
   const colour = colourFor(options.colour, mode, 0)
@@ -357,6 +363,7 @@ export function violinPlot(
     readonly width?: number
   } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => violinPlot(groups, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const width = options.width ?? 0.8
   const shapes = groups.map((g) => {
@@ -430,6 +437,7 @@ export function qqPlot(
   samples: TensorLike | readonly number[],
   options: { readonly reference?: Distribution; readonly mode?: ColourMode; readonly colour?: string } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => qqPlot(samples, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const ref = options.reference ?? normal(0, 1)
   const v = numbers(samples)
@@ -485,6 +493,7 @@ export function priorPosterior(
     readonly names?: readonly [string, string]
   } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => priorPosterior(prior, posterior, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const a = distributionRange(prior)
   const b = distributionRange(posterior)
@@ -574,6 +583,7 @@ export function meanBand(
     readonly opacity?: number
   } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => meanBand(x, mean, lower, upper, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const colour = options.colour ?? 'tab0'
   const b = band(
@@ -606,6 +616,7 @@ export function ridgeline(
   groups: readonly { readonly name: string; readonly values: readonly number[] }[],
   options: { readonly range?: Range; readonly n?: number; readonly overlap?: number; readonly mode?: ColourMode } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => ridgeline(groups, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const all = groups.flatMap((g) => [...g.values])
   const range = options.range ?? padRange([minOf(all), maxOf(all)], 0.08)
