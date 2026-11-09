@@ -8,7 +8,7 @@ export const recipe: Recipe = {
   title: 'Right-angle edges',
   question: 'How do I draw a flowchart whose edges run along horizontal and vertical lines?',
   explain:
-    '`route: "orthogonal"` leaves a node on the side facing its target, runs along horizontal and vertical segments and enters the target square on, with the arrow head along the last segment. The layered layout routes through the channels between its ranks, a long edge down the column of each rank it skips; edges that leave or enter at one port merge when they look the same (colour, width, dash, kind) and get ports side by side when they do not, parallel runs get tracks of their own, and a label sits on the middle of a long segment, off the nodes. An edge may name its `fromSide` and `toSide` (and `fromAt`, `toAt` along them); a node with `obstacle: false`, or an invisible one, is crossed rather than avoided; `cornerRadius` rounds the corners; `labelPlate` sets the plate behind labels (`page`, `none`, or a paint such as the card `surface`); and `origin` pins a position of a manual layout to the same place whichever nodes are shown. Straight stays the default, and the right choice for trees, networks and the fan-in of a neural network.',
+    '`route: "orthogonal"` leaves a node on the side facing its target, runs along horizontal and vertical segments and enters the target square on, with the arrow head along the last segment. The layered layout routes through the channels between its ranks, a long edge down the column of each rank it skips; edges that leave or enter at one port merge when they look the same (colour, width, dash, kind) and get ports side by side when they do not, parallel runs get tracks of their own (`separate`, on by default, also gives a long edge a port and a track of its own beside a bundle of short ones, so nothing reads as the continuation of another edge; `trackGap` sets the gap between tracks), `clearance` is how far a route keeps from the nodes it goes around, and a label sits on the middle of a long segment, off the nodes. An edge may name its `fromSide` and `toSide` (and `fromAt`, `toAt` along them); a node with `obstacle: false`, or an invisible one, is crossed rather than avoided; `cornerRadius` rounds the corners; `labelPlate` sets the plate behind labels (`page`, `none`, or a paint such as the card `surface`); and `origin` pins a position of a manual layout to the same place whichever nodes are shown. Straight stays the default, and the right choice for trees, networks and the fan-in of a neural network.',
 }
 
 /** A request handler with a decision, a retry loop, a long edge past three ranks and two edges that merge. */
@@ -191,6 +191,8 @@ export default function OrthogonalEdges(): ReactNode {
   const [corners, setCorners] = useState<'sharp' | 'rounded'>('sharp')
   const [plate, setPlate] = useState<'page' | 'surface' | 'none'>('page')
   const [card, setCard] = useState<'page' | 'card'>('page')
+  const [separate, setSeparate] = useState<'on' | 'off'>('on')
+  const [clearance, setClearance] = useState('18')
   return (
     <div className="flex w-fit max-w-full flex-col gap-3">
       <ControlPanel>
@@ -199,6 +201,8 @@ export default function OrthogonalEdges(): ReactNode {
         <Choice label="direction" value={direction} options={['down', 'right']} onChange={setDirection} />
         <Choice label="corners" value={corners} options={['sharp', 'rounded']} onChange={setCorners} />
         <Choice label="label plate" value={plate} options={['page', 'surface', 'none']} onChange={setPlate} />
+        <Choice label="separate edges" value={separate} options={['on', 'off']} onChange={setSeparate} />
+        <Choice label="clearance" value={clearance} options={['6', '18', '30']} onChange={setClearance} />
         <Choice label="drawn on" value={card} options={['page', 'card']} onChange={setCard} />
       </ControlPanel>
       <div className={card === 'card' ? 'rounded-lg bg-surface p-3' : 'p-3'}>
@@ -206,6 +210,8 @@ export default function OrthogonalEdges(): ReactNode {
           structure={(EXAMPLES[example] ?? flowchart)()}
           route={route}
           direction={direction}
+          separate={separate === 'on'}
+          clearance={Number(clearance)}
           cornerRadius={corners === 'rounded' ? 8 : 0}
           labelPlate={plate}
           frame={card === 'card' ? false : { filename: example.replaceAll(' ', '-') }}
