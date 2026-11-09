@@ -6,7 +6,7 @@ Graph layout: positions only, with no rendering and no layout library. `layered`
 
 - function `dendrogram`: Lay out merges at their heights: `dendrogram(graph, heights)`. `src/layout/trees.ts:176` `omai-render/layout`
 - function `forceLayout`: A seeded force-directed layout: `forceLayout(graph, { seed: 1 })`. `src/layout/force.ts:59` `omai-render/layout`
-- function `layered`: Lay out a directed graph in layers: `layered({ nodes, edges })`. `src/layout/layered.ts:131` `omai-render/layout`
+- function `layered`: Lay out a directed graph in layers: `layered({ nodes, edges })`. `src/layout/layered.ts:137` `omai-render/layout`
 - function `tidyTree`: Lay out a tree with parents over their children: `tidyTree(graph)`. `src/layout/trees.ts:92` `omai-render/layout`
 
 - structure `GraphLayout`: What every layout returns: node boxes, edge routes and group boxes. `src/layout/graph.ts:98` `omai-render/layout`

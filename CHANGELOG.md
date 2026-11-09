@@ -13,6 +13,13 @@ From the notes site's port off its local kit.
 - `DraggableLine` with no `span` now runs the plotting box when the projection knows it (`projection.rect`), so the line stops at
   the axes instead of crossing the tick labels; with no known box it still runs the whole overlay.
 - `FigureFrame`'s `controls` takes the controls themselves, not a `Controls` row (the frame wraps them): documented.
+- Right-angle diagrams, fewer overlaps: `DiagramOptions.separate` (default true) gives a long edge (one that skips a rank) its own
+  port and track instead of merging it into a bundle of short edges that share its end and look, and puts runs of different
+  edges that end end to end (one reads as the continuation of the other) on separate tracks; `clearance` (pixels, default 18,
+  was 6) is the distance a detour or channel track keeps from the nodes, and `trackGap` (default 10, was 8) the spacing of
+  parallel tracks. A back edge over a row of nodes now sits clear of their tops, and the scene grows to contain it. Edges
+  that share an end and a look and span one rank still merge into one trunk. `separate: false` with `clearance: 6` and
+  `trackGap: 8` gives the previous routes exactly; straight routes ignore all three. The gallery entry has controls for them.
 - `Controls` (and so the `controls` of a `FigureFrame`) gives the number fields, selects and choices in it a default width of
   176 pixels (`controlWidth` on `Controls` to change it, a control's own `width` to override), so a row of fields and toggles
   lines up without a `width` on each; a toggle keeps its natural width. Outside a `Controls` row nothing changes.

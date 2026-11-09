@@ -110,13 +110,13 @@ omai-render/animation	24	6fe8aea56c92
 omai-render/charts	158	b4fa0167df7f
 omai-render/figure	39	d5f3cf56a2ab
 omai-render/gym	6	32b6352a0038
-omai-render/layout	37	ba15fc8032f9
+omai-render/layout	37	9aaaf0fb6fd0
 omai-render/maths	21	b0c277e6cca7
 omai-render/producer	46	94e5f0e89b8f
 omai-render/react	509	f81e2d7ed9ca
-omai-render/structures	22	3104193ac227
+omai-render/structures	22	89a360e861ee
 omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	266	aa65704aaa1a
-total	18078	09ae975bda70
+total	18078	86b68f90bfed
