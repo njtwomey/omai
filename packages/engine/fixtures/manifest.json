@@ -4875,6 +4875,15 @@
       "cases": 16
     },
     {
+      "fixture": "svm/linear.json",
+      "source": "oracle/cases/svm/linear.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 48
+    },
+    {
       "fixture": "svm/one_class.json",
       "source": "oracle/cases/svm/one_class.py",
       "reference": {

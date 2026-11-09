@@ -1991,6 +1991,11 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   duality gap on the tape. It sits here beside SMO because `svm` imports `learn`; an SVM estimator takes it as a mode of its
   solver table. oracle: `optim/dual_cd` against `sklearn.svm.LinearSVC(dual=True)` (cases where liblinear hits its
   iteration cap are refused); also cross-checked in a test against `svcDual` on a symmetrised dataset (primal objective).
+  `weights` multiplies `C` per row (class and sample weights).
+- `dual-cd-svr.ts`: its regression companion (`linearSvrDualCdAlgorithm`, `linearSvrDualCd`; Ho and Lin 2012,
+  liblinear's SVR solver) for the epsilon-insensitive and squared epsilon-insensitive losses, one random sweep per step
+  (no shrinking), the primal, dual and gap on the tape, per-row weights. Checked through `svm/linear` against
+  `sklearn.svm.LinearSVR`.
 - `online-experts.ts`: prediction with expert advice as rules run by `expertsAlgorithm` with the regret on the tape (and
   against the best k-switching sequence by `bestSwitchingLoss`): weighted majority (deterministic and randomised, with the
   mistake bounds), follow the leader, follow the perturbed leader, Hedge, fixed share, variable share; `exp4Algorithm`
@@ -4971,6 +4976,20 @@ resolved kernel), so `revive` rebuilds the verbs and `fittedAt(t)` gives the mod
   per pair the coefficients and intercept.
 - `regressor.ts`: `svr` (epsilon-SVR; `form: 'nu'` is NuSVR, also `nuSvr`), the tube width given or found
   (`params.tube`), the probe's margins being the residuals.
+- `linear.ts` (with the private `_linear.ts`): `linearSvc` and `linearSvr` (liblinear's models as estimators on the
+  iterative base): a penalty plus a hinge-type loss over the rows on the weights and the intercept as a constant feature
+  (`interceptScaling`, penalised with the weights as liblinear does), in the primal space (`d + 1` dimensions, not the
+  kernel expansion). Losses: the squared hinge (default) or the hinge, the L2 or L1 penalty (L1 with the squared hinge
+  only); epsilon-insensitive or its square for the regressor (`epsilon`); class weights (`balanced` or by label) and
+  sample weights (a zero weight drops the row). The solver is a slot (`linearSvcSolvers`, `linearSvrSolvers`): `dcd`
+  (default; `optim/dual-cd.ts` and `dual-cd-svr.ts`: one sweep per step, primal and dual and gap on the tape, either
+  loss under the L2 penalty), `owlqn` (the L1 penalty; the default `dcd` becomes it under `penalty: 'l1'`) and every
+  solver of `smoothSolvers` on the squared-hinge or squared epsilon-insensitive primal (analytic gradient and
+  generalised Hessian), which the hinge and the L1 norm do not admit. More than two classes are one-versus-rest in one
+  algorithm, one problem after another (`solver/problem`, `solver/weights` of every problem), the binary model
+  positive for the second class. Not offered: Crammer-Singer, `dual: 'auto'` (the solver slot is the choice), Pegasos.
+  oracle: `svm/linear` against `LinearSVC` and `LinearSVR` run to a tolerance of 1e-10 (weights, intercepts and decision
+  values to 1e-6 for the strictly convex L2 problems, 1e-4 for the L1 one).
 - `one-class.ts`: `oneClassSvm` (nu) and `svdd` (C, at least 1/n), the signed score positive inside the learnt region;
   with a kernel of constant diagonal they are one machine (C = 1 / (nu n)).
 - `probability.ts`: `pairwiseCoupling` (libsvm's second method of Wu, Lin and Weng).
@@ -6053,7 +6072,7 @@ built from: `optim/smo.ts`, `optim/quadratic.ts`, `kernels`, `learn/calibration.
 - `classifier.ts`: SVC and nu-SVC (one-versus-one multiclass, Platt probabilities), decision functions, support
   vectors, margins.
 - `regressor.ts`: SVR and nu-SVR.
-- `linear.ts`: linear SVM by dual coordinate descent, Pegasos, Crammer-Singer multiclass.
+- `linear.ts`: linear SVM and SVR by dual coordinate descent or any smooth solver, L1 penalty by OWL-QN (Pegasos, Crammer-Singer: not yet).
 - `one-class.ts`: one-class SVM, support vector data description.
 
 `kernel-methods/`
