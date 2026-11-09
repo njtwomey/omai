@@ -92,7 +92,7 @@ function usable(width: number | undefined): number | undefined {
  * @param props - The builder, the shape (`aspect`, `narrowAspect`, `narrowBelow`, `square`), the type size, the
  *   overlay, and what a `Chart` takes (renderer, events, label, group).
  * @returns The box holding the chart.
- * @index function React component: a chart that fills its container, built for its width: `<ResponsiveChart build={(fig) => option} />`
+ * @index function React component: chart built for its container's width: `<ResponsiveChart build={(fig) => option} />`
  * @example
  * ```tsx
  * import { lineChart } from 'omai-render/charts'
