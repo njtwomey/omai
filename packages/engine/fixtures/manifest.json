@@ -195,6 +195,15 @@
       "cases": 6
     },
     {
+      "fixture": "decomposition/lda.json",
+      "source": "oracle/cases/decomposition/lda.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 21
+    },
+    {
       "fixture": "decomposition/nmf_hals.json",
       "source": "oracle/cases/decomposition/nmf_hals.py",
       "reference": {

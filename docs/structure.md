@@ -4423,6 +4423,13 @@ thin SVD with scikit-learn's sign convention, projection and reconstruction.
   maximum-likelihood iteration, one per step), `factorAnalysis` with varimax and quartimax (`rotateLoadings`),
   `latentVerbs` and `latentCovariance`. `random-projection.ts`: `randomProjection` (Gaussian and sparse, the
   Johnson-Lindenstrauss dimension, a distortion report).
+- `lda.ts`: latent Dirichlet allocation by variational Bayes (Hoffman et al. 2010) with scikit-learn's E-step, M-step,
+  online weight, bound and perplexity: `ldaAlgorithm` (one EM update per step: the whole corpus in batch mode, one
+  mini-batch in online mode; the tape holds the bound, the perplexity, the topic-word parameters and the document
+  proportions, and the stopping rule on the perplexity lives in the state), `ldaBound`, and the estimator
+  `latentDirichletAllocation` (`componentsInit` and `docInit: 'constant'` make a run deterministic; `transform`,
+  `perplexity`, `score`; the `lda/topics` path and the final record are a `ComponentsRecord` with `space:
+  'vocabulary'`). The test bed is `datasets#topicCorpus` and `text#topicCoherence`.
 - `convolutional-method.ts`: `convolutionalDictionaryMethod` (a session over a `pulseTrain` signal and
   `convolutionalDictionaryLearningAlgorithm` of `optim`, with `cdl/planted` and `cdl/recovery` probes beside the
   learner's contract) and `convolutionalDictionaryProblem`. It is here and not in `optim` because `datasets` reaches
@@ -4433,7 +4440,8 @@ thin SVD with scikit-learn's sign convention, projection and reconstruction.
 oracle: scikit-learn PCA, IncrementalPCA, FastICA (parallel, with fixed initial unmixing), NMF (`mu` from fixed factors),
 PLSRegression, PLSCanonical, CCA, PLSSVD and FactorAnalysis (`methods/decomposition/*` fixtures, kept at their old
 paths; PCA is also checked through power iteration), plus deflationary FastICA (`decomposition/ica_deflation`) and NMF
-by coordinate descent against HALS (`decomposition/nmf_hals`)
+by coordinate descent against HALS (`decomposition/nmf_hals`), and LDA batch and online from fixed initial topics
+(`decomposition/lda`; scikit-learn's own digamma is a fast approximation, so parity is 1e-6)
 
 ### 4.40b `manifold/`: embeddings and manifold learning (scikit-learn manifold, umap-learn)
 
