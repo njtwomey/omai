@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { prefersReducedMotion } from './_motion.ts'
 import { advanceFrame, framesDue } from './playhead.ts'
 import { RingBuffer } from './ring.ts'
+import { DISPOSED, type SettledResult, settledStateOf, useRunSettled } from './settled.ts'
 import { type PlayStatus, progressOf, type StartPolicy, statusOf } from './start.ts'
 
 /**
@@ -266,6 +267,14 @@ export interface LiveRun<S> {
    * always completes. A run that ends early therefore jumps to 1 on the step that ends it.
    */
   readonly progress: number
+  /**
+   * Resolves `{ ok: true }` when the whole run exists (the algorithm has ended, or hit `maxSteps`), whether or not it
+   * plays, and `{ ok: false, error: 'disposed' }` when the run is let go of before that (`dispose()`, a new algorithm
+   * or seed, a reset, unmounting). It never rejects, and is already resolved when the run is whole at the first render.
+   * There is one promise per run: a remake gives a fresh one. A run that is not primed and is not played does not
+   * compute, so its promise stays pending. The same as `data-omai-state` of a session figure (see `OmaiState`).
+   */
+  readonly settled: Promise<SettledResult>
   /** The algorithm's step number of the oldest state still kept (0 until the history buffer starts dropping). */
   readonly oldest: number
   /**
@@ -381,6 +390,7 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
   const r = run.current as ReturnType<typeof make>
   const last = r.states.last as NonNullable<typeof r.states.last>
   const finished = last.status !== undefined
+  const settled = useRunSettled(r, settledStateOf({ done: finished, disposed: released }), DISPOSED)
   // A fresh run (new algorithm or seed) starts from its first state (`at` was reset with it; a seek made since the
   // render is kept).
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset exactly when the run is remade
@@ -578,6 +588,7 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
     oldest: r.states.at(0)?.t ?? 0,
     disposed: released,
     madeWith: r.madeWith,
+    settled,
     dispose: release,
   }
 }

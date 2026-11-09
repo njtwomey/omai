@@ -79,7 +79,7 @@ describe('Chart', () => {
     // An event reaches the handler with its parameters and the instance; the colour-bar listener is bound too.
     first.handlers.get('click')?.({ x: 1 })
     expect(onClick).toHaveBeenCalledWith({ x: 1 }, expect.objectContaining({ isDisposed: expect.any(Function) }))
-    expect([...first.handlers.keys()].sort()).toEqual(['click', 'datarangeselected'])
+    expect([...first.handlers.keys()].sort()).toEqual(['click', 'datarangeselected', 'finished'])
 
     // A new option replaces; with `merge` it merges. The instance is kept.
     await change({ option: { series: [{ type: 'bar', data: [2] }] } })
@@ -124,6 +124,34 @@ describe('Chart text alternative', () => {
     const m = await mountElement(<Host />)
     const drawn = setOptions(made.at(-1) as FakeChart).at(-1)?.[0] as { aria: unknown }
     expect(drawn.aria).toEqual({ enabled: true, label: { description: 'Loss over steps' } })
+    await m.unmount()
+  })
+})
+
+describe('Chart settled signal', () => {
+  const stateOf = (m: Awaited<ReturnType<typeof mountElement>>): unknown =>
+    m.elements().find((e) => e.props['data-omai-chart'] !== undefined)?.props['data-omai-state']
+
+  it('is preparing until the first frame is drawn (the first finished event), then ready, and stays ready for later options', async () => {
+    const states: string[] = []
+    host.props = { option: { series: [] }, onState: (s) => states.push(s) }
+    const m = await mountElement(<Host />)
+    const first = made[0] as FakeChart
+    expect(stateOf(m)).toBe('preparing')
+    await inAct(() => void first.handlers.get('finished')?.({}))
+    expect(stateOf(m)).toBe('ready')
+    // The listener is spent: later frames are no news, and another option does not make the chart wait again.
+    expect(first.handlers.has('finished')).toBe(false)
+    host.props = { ...host.props, option: { series: [{ type: 'line', data: [1] }] } }
+    await inAct(host.redraw)
+    expect(stateOf(m)).toBe('ready')
+    // A remade instance (another theme) waits for its own first frame.
+    host.props = { ...host.props, mode: 'light' }
+    await inAct(host.redraw)
+    expect(stateOf(m)).toBe('preparing')
+    await inAct(() => void (made[1] as FakeChart).handlers.get('finished')?.({}))
+    expect(stateOf(m)).toBe('ready')
+    expect(states).toEqual(['preparing', 'ready', 'preparing', 'ready'])
     await m.unmount()
   })
 })

@@ -237,3 +237,18 @@ describe('ResponsiveChart in a FigureFrame', () => {
     expect(sizeOf()).toEqual([600, 300])
   })
 })
+
+describe('ResponsiveChart settled signal', () => {
+  it('is preparing until the chart in it reports its first frame, then ready', async () => {
+    setup()
+    const m = await mountElement(host.element)
+    const state = (): unknown =>
+      m.elements().find((e) => e.props['data-omai-responsive'] !== undefined)?.props['data-omai-state']
+    expect(state()).toBe('preparing')
+    // Measured: the chart exists but has not drawn its first frame.
+    await measure(400)
+    expect(state()).toBe('preparing')
+    await act(async () => last().onState?.('ready'))
+    expect(state()).toBe('ready')
+  })
+})

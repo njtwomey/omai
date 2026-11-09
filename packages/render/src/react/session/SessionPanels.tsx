@@ -22,6 +22,7 @@ import { type MatrixMark, matrixMarksView } from '../../views/matrix-marks.ts'
 import { saveBlob } from '../_download.ts'
 import { Chart, type ChartProps } from '../Chart.tsx'
 import { FigureFrame } from '../FigureFrame.tsx'
+import { STATE_ATTRIBUTE, settledStateOf } from '../settled.ts'
 import { useColourMode } from '../theme.tsx'
 import { ExpositionView } from '../views/ExpositionView.tsx'
 import { leaf, overlayCurves, sweepTrials } from './compare.ts'
@@ -82,7 +83,9 @@ const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-')
  * The panels of a layout over a session or a comparison, in a responsive two-column grid; nothing else is drawn. The
  * viewed step is one cursor: panels of the tape scrub it on click, panels of a step follow it, and a custom panel
  * inside reads it with `useStepCursor`. Over a comparison, curves and sweeps overlay the variants and every other
- * panel takes a full row with one figure per variant.
+ * panel takes a full row with one figure per variant. The grid carries `data-omai-state`: `preparing` until the whole
+ * tape exists, `ready` once it does, `failed` when the run failed or was disposed (see `OmaiState`; the panels' own
+ * charts carry their own, for `waitForSettled`).
  *
  * @param props - The session or comparison, the scrubbed step and its setter, the training data if any, and the
  *   layout.
@@ -112,7 +115,11 @@ export function SessionPanels(
   const cursor = useMemo(() => ({ viewed, head, scrub: ctx.onScrub ?? (() => undefined) }), [viewed, head, ctx.onScrub])
   const grid = (
     <StepCursorProvider value={cursor}>
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2" data-testid="panels">
+      <div
+        className="grid grid-cols-1 gap-4 xl:grid-cols-2"
+        data-testid="panels"
+        {...{ [STATE_ATTRIBUTE]: settledStateOf(live) }}
+      >
         {layout.map((panel) => {
           const key = JSON.stringify(panel)
           if (panel.kind === 'multiples')

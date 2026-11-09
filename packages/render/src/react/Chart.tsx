@@ -15,6 +15,7 @@ import { themeName } from '../theme/echarts.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { loadEcharts } from './echarts.ts'
 import { useFrameSize } from './FigureFrame.tsx'
+import { type OmaiState, STATE_ATTRIBUTE } from './settled.ts'
 import { useColourMode } from './theme.tsx'
 
 /** An ECharts event handler: the event's parameters and the chart instance. */
@@ -93,6 +94,11 @@ export interface ChartProps {
   readonly label?: string
   /** Charts with the same group are connected: hover, tooltips and zoom are shared (`echarts.connect`). */
   readonly group?: string
+  /**
+   * Called with the chart's `data-omai-state` each time it changes: `preparing` when its instance is made (and again
+   * if the instance is remade for another theme or renderer), `ready` after the first frame is drawn.
+   */
+  readonly onState?: (state: OmaiState) => void
   /** Merge new options into the old one instead of replacing it (default false: replace). */
   readonly merge?: boolean
   readonly className?: string
@@ -106,6 +112,11 @@ export interface ChartProps {
  *
  * Inside a {@link FigureFrame} it takes the frame's size by default, and the modal's size when the frame is expanded.
  *
+ * Its container carries `data-omai-state` for an exporter: `preparing` until ECharts has drawn the first frame (its
+ * first `finished` event, after any entrance animation), then `ready`; it goes back to `preparing` only when the
+ * instance is remade for another theme or renderer, and a later option does not change it. It is never `failed` (an
+ * option ECharts cannot draw throws in the render). `waitForSettled` waits for it.
+ *
  * @param props - The option, size, mode, renderer, events and group.
  * @returns The chart's container.
  * @index function React component: draw an ECharts option, themed and resized: `<Chart option={option} />`
@@ -118,6 +129,12 @@ export function Chart(props: ChartProps): ReactElement {
   const ratio = frame?.scale
   const ref = useRef<HTMLDivElement | null>(null)
   const [chart, setChart] = useState<EChartsInstance | null>(null)
+  const [state, setState] = useState<OmaiState>('preparing')
+  const onStateRef = useRef(props.onState)
+  onStateRef.current = props.onState
+  useEffect(() => {
+    onStateRef.current?.(state)
+  }, [state])
   const optionRef = useRef(option)
   optionRef.current = option
   const labelRef = useRef(label)
@@ -135,12 +152,20 @@ export function Chart(props: ChartProps): ReactElement {
       renderer,
       ...(ratio === undefined ? {} : { devicePixelRatio: (globalThis.devicePixelRatio || 1) * ratio }),
     })
+    // The first frame drawn is the first `finished` (a later one is no news): the figure is ready for an exporter.
+    setState('preparing')
+    const finished = (): void => {
+      instance.off('finished', finished)
+      setState('ready')
+    }
+    instance.on('finished', finished)
     instance.setOption(forRenderer(labelled(optionRef.current, labelRef.current), renderer), { notMerge: true })
     onInitRef.current?.(instance)
     setChart(instance)
     const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(() => instance.resize())
     observer?.observe(el)
     return () => {
+      instance.off('finished', finished)
       observer?.disconnect()
       setChart(null)
       instance.dispose()
@@ -203,6 +228,7 @@ export function Chart(props: ChartProps): ReactElement {
       className={props.className}
       style={{ width, height, maxWidth: '100%', ...props.style }}
       data-omai-chart=""
+      {...{ [STATE_ATTRIBUTE]: state }}
     />
   )
 }

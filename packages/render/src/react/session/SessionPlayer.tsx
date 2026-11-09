@@ -16,6 +16,7 @@
 import type { Config } from 'omai-engine/trace'
 import { type MutableRefObject, type ReactElement, useEffect, useMemo, useRef, useState } from 'react'
 import { Player } from '../Player.tsx'
+import { STATE_ATTRIBUTE, settledStateOf } from '../settled.ts'
 import type { StartPolicy } from '../start.ts'
 import { type PlaybackController, useTicker } from '../usePlayback.ts'
 import { prerollDecision } from './_preroll.ts'
@@ -30,7 +31,9 @@ const RATES = [1, 2, 5, 10, 30, 60, 120, 300, 1000]
 const PREROLL_MAX_MS = 250
 
 /**
- * The player and status line of a session, or of a comparison of several.
+ * The player and status line of a session, or of a comparison of several. Its root element carries
+ * `data-omai-state`: `preparing` until the whole tape exists (also while it plays), `ready` once it does, `failed` when
+ * the run failed or was disposed (see `OmaiState`; `waitForSettled` waits for it).
  *
  * @param props - The session or comparison, the scrubbed step (`null` follows the head) and its setter, and the reset
  *   of the page's controls when it has any.
@@ -360,7 +363,7 @@ export function SessionPlayer<S, C extends Config>(props: {
               : ''
   const showsRow = statistics || live.producer?.fallback !== undefined || props.pageExport !== undefined
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3" {...{ [STATE_ATTRIBUTE]: settledStateOf(live) }}>
       <Player controller={controller} stamp={(f) => `step ${f} of ${head}${status}${where}`} fpsChoices={RATES} />
       {showsRow ? (
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted">

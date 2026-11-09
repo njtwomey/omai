@@ -9,6 +9,7 @@ import { arrowHeadPoints, roundedPathData, smoothPathData, straightPathData } fr
 import { pngDataUrl } from '../svg/png.ts'
 import { type ColourMode, type Tokens, resolvePaint as themePaint, tokens as themeTokens } from '../theme/tokens.ts'
 import { Tex } from './MathView.tsx'
+import { STATE_ATTRIBUTE, useCommitted } from './settled.ts'
 import { useColourMode } from './theme.tsx'
 
 /** Props of {@link SceneView}. */
@@ -260,6 +261,10 @@ function findNode(nodes: readonly SceneNode[], id: string): SceneNode | null {
  * with theme tokens resolved for the colour mode, 3-D layers projected, TeX labels typeset, and hover and click
  * reported by node id. The scene keeps its own coordinates (a `viewBox`), so it scales to any drawn size.
  *
+ * Its `svg` carries `data-omai-state` for an exporter: `preparing` in the first render, `ready` once it is committed
+ * (the drawing is synchronous; an image node may still be decoding). It is never `failed`. `waitForSettled` waits
+ * for it.
+ *
  * @param props - The scene, its drawn size, the colour mode, event handlers, highlighted ids and overlay children.
  * @returns The SVG.
  * @index function React component: draw a Scene as SVG with click and hover: `<SceneView scene={scene} />`
@@ -268,6 +273,7 @@ export function SceneView(props: SceneViewProps): ReactElement {
   const { scene, onNodeClick, onNodeHover, highlight = [], children, className, style } = props
   const pageMode = useColourMode()
   const mode = props.mode ?? pageMode
+  const state = useCommitted()
   const toneKey = props.tones === undefined ? '' : JSON.stringify(props.tones)
   // biome-ignore lint/correctness/useExhaustiveDependencies: tones are compared by content (`toneKey`), not by identity
   const flat = useMemo(
@@ -291,6 +297,7 @@ export function SceneView(props: SceneViewProps): ReactElement {
       role="img"
       aria-label={scene.title ?? 'scene'}
       data-omai-scene=""
+      {...{ [STATE_ATTRIBUTE]: state }}
       onPointerMove={
         onNodeHover === undefined
           ? undefined

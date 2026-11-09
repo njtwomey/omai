@@ -9,6 +9,7 @@ import { type DiagramOptions, diagram } from '../structures/diagram.ts'
 import { cx, iconButtonClass } from './controls/classes.ts'
 import { FigureFrame, type FigureFrameProps, useFigureChrome } from './FigureFrame.tsx'
 import { SceneView } from './SceneView.tsx'
+import { STATE_ATTRIBUTE, useCommitted } from './settled.ts'
 
 /** Props of {@link StructureView}. */
 export interface StructureViewProps extends Omit<DiagramOptions, 'overlay' | 'frames'> {
@@ -46,6 +47,9 @@ type View = readonly [x: number, y: number, width: number, height: number]
  * under it, or the wheel with Ctrl or Cmd held), the hovered node's role, detail and badges shown beneath, and an
  * optional overlay of active nodes, edges and badges.
  *
+ * Its root element carries `data-omai-state` for an exporter: `preparing` in the first render, `ready` once the diagram
+ * is committed; never `failed`. `waitForSettled` waits for it.
+ *
  * @param props - The structure, overlay, layout options, width and handlers.
  * @returns The view.
  * @index function React component: draw an engine Structure as a diagram: `<StructureView structure={s} />`
@@ -65,6 +69,7 @@ export function StructureView(props: StructureViewProps): ReactElement {
     ...layout
   } = props
   const chrome = useFigureChrome(ownChrome)
+  const state = useCommitted()
   const details = chrome && wantDetails
   const zooming = chrome && zoomControls
   const options: DiagramOptions = { ...layout, ...(overlay === undefined ? {} : { overlay }) }
@@ -176,7 +181,7 @@ export function StructureView(props: StructureViewProps): ReactElement {
       </FigureFrame>
     )
   return (
-    <div className={cx('flex w-fit max-w-full flex-col gap-2', className)}>
+    <div className={cx('flex w-fit max-w-full flex-col gap-2', className)} {...{ [STATE_ATTRIBUTE]: state }}>
       {framed}
       {/* The hovered node's details and the zoom buttons share a row under the diagram, so neither covers it. */}
       {(details || zooming) && (

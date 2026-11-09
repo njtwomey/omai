@@ -23,9 +23,10 @@ import { inlineProducer } from '../../producer/inline.ts'
 import type { Variant } from '../../producer/make.ts'
 import type { Producer, ProducerFactory } from '../../producer/producer.ts'
 import { sharedHead } from '../../producer/step.ts'
+import { DISPOSED, type SettledResult, settledStateOf, useRunSettled } from '../settled.ts'
 import { DEFAULT_STEPS, type PlayStatus, progressOf, type StartPolicy, startOf, statusOf } from '../start.ts'
 
-export type { PlayStatus, StartPolicy, Variant }
+export type { PlayStatus, SettledResult, StartPolicy, Variant }
 
 /** What a live session and a comparison of several share: the producer's state and controls, as the player drives them. */
 export interface LiveHandle {
@@ -80,6 +81,24 @@ export interface LiveHandle {
    * step that ends it, and a hairline driven by it always completes.
    */
   readonly progress: number
+  /**
+   * Resolves when the whole tape exists (every run has ended and its end is reachable), whether or not it plays, and
+   * never rejects: `{ ok: true }` then, `{ ok: false, error }` when the run failed (`error` is `live.error`) or was
+   * let go of first (`error` is `'disposed'`: `dispose()` while it was incomplete, a remake by new options or
+   * `apply()`, or unmounting). It is already resolved when the tape is whole at the first render. There is one promise
+   * per run: a restart (`apply()`, a change of method or options that is applied) gives a fresh one, and the old one
+   * settles as `'disposed'` if its run had not ended; so does using a disposed session again (`play`, `compute`). A
+   * session that is not `active` or never played under the `'play'` policy does not compute, so its promise stays
+   * pending: `compute()` or `play()` it first. The same as the `data-omai-state` of the figures (`'ready'`, `'failed'`).
+   *
+   * @example
+   * ```tsx
+   * const live = useSession(method, { steps: 200 }, [], { start: 'first' })
+   * // An exporter: wait for the whole tape, then capture.
+   * const result = await live.settled // { ok: true } once the run has ended
+   * ```
+   */
+  readonly settled: Promise<SettledResult>
   /** Whether play has been pressed (by the player or by `play()`) and not stopped. */
   readonly playing: boolean
   /** Ask for play: compute (if the tape is not whole) and let the player move the cursor. A no-op without a player. */
@@ -119,11 +138,12 @@ export interface LiveHandle {
  */
 export const STILL_HANDLE: Pick<
   LiveHandle,
-  'start' | 'status' | 'progress' | 'playing' | 'play' | 'pause' | 'dispose' | 'disposed' | 'active'
+  'start' | 'status' | 'progress' | 'playing' | 'play' | 'pause' | 'dispose' | 'disposed' | 'active' | 'settled'
 > = {
   start: 'end',
   status: 'ready',
   progress: 1,
+  settled: Promise.resolve({ ok: true }),
   playing: false,
   disposed: false,
   active: true,
@@ -293,6 +313,8 @@ export function useSessions<S, C extends Config>(
   const [version, setVersion] = useState(0)
   const [wanted, setComputing] = useState(false)
   const [disposed, setDisposed] = useState(false)
+  // What went wrong while computing on the main thread (a step that threw); a worker's failure is the producer's own.
+  const [failure, setFailure] = useState<{ readonly producer: object; readonly message: string } | undefined>(undefined)
   const active = hook.active ?? true
   // Computing is what is wanted and allowed: an inactive session keeps wanting, and carries on when it is active again.
   const computing = wanted && active
@@ -377,7 +399,16 @@ export function useSessions<S, C extends Config>(
           if (pacing.current.resting) ms = 0
         }
       }
-      if (ms > 0) current.current.advance({ ms, clock: () => performance.now() }) // allow: as above
+      if (ms > 0) {
+        try {
+          current.current.advance({ ms, clock: () => performance.now() }) // allow: as above
+        } catch (e) {
+          // A step that threw ends the run as failed: the handle's `error` says so (and `settled` resolves with it).
+          setFailure({ producer: current.current, message: e instanceof Error ? e.message : String(e) })
+          setComputing(false)
+          return
+        }
+      }
       cost = performance.now() - t0 // allow: as above
       const ended = sessions.every((s) => s.status !== undefined)
       // The views move when the head did (a frame that computed nothing, resting at the lookahead, has nothing new), and
@@ -480,6 +511,8 @@ export function useSessions<S, C extends Config>(
   const done = sessions.every((s) => s.status !== undefined)
   const progress = progressOf(head, done, options.steps ?? DEFAULT_STEPS)
   const status = statusOf(playing, done)
+  const error = producer.error ?? (failure?.producer === producer ? failure.message : undefined)
+  const settled = useRunSettled(producer, settledStateOf({ done, error, disposed }), error ?? DISPOSED)
   const handle = {
     version,
     computing,
@@ -491,7 +524,8 @@ export function useSessions<S, C extends Config>(
     held,
     follow,
     producer: { kind: producer.kind, ...(producer.fallback === undefined ? {} : { fallback: producer.fallback }) },
-    error: producer.error,
+    error,
+    settled,
     probed: producer.probed,
     start,
     status,
