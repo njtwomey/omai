@@ -61,6 +61,7 @@ import { antiderivativeOperator, burgersOperator, heatOperator } from './operato
 import { blobsWithOutliers, linearOutliers, moonsWithOutliers } from './outliers.ts'
 import { analogyCorpus, linkageTables, plantedRelations } from './planted-embeddings.ts'
 import { irtResponses, pottsSamples } from './planted-pgm.ts'
+import { gaussianGraph } from './precision-graphs.ts'
 import { miscalibratedPredictions, survivalData } from './predictions.ts'
 import { pulseTrain } from './pulse-trains.ts'
 import { clickLogs, implicitFeedback, lowRankRatings, movielensSmall, zipfianCatalogue } from './ranking.ts'
@@ -193,6 +194,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   geometricScenes,
   glmCurve,
   graphFamilies,
+  gaussianGraph,
   growthCurves,
   hastie10_2,
   hawkesProcess,
@@ -355,6 +357,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['friedman3', 'Friedman 3'],
     ['gaussianQuantiles', 'Gaussian quantiles'],
     ['glmCurve', 'GLM curve (counts and positive responses)'],
+    ['gaussianGraph', 'Gaussian graphical model (a known sparse precision)'],
     ['growthCurves', 'Growth curves (CDC charts)'],
     ['hastie10_2', 'Hastie 10.2'],
     ['irtResponses', 'Test responses (item response theory)'],
