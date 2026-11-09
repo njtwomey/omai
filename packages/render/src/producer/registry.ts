@@ -2,7 +2,8 @@
  * The method registry both sides of a producer resolve names against: a page hands a worker the name of a method (and
  * a JSON configuration), the worker looks the method up here, and a tape file names its method the same way when it is
  * loaded back. Methods are plain modules, so the registry is plain data an app builds from the ones it offers; there is
- * no import-time registration.
+ * no import-time registration. Listing the same method object twice is harmless; two different methods of one name are
+ * an error.
  */
 
 import { OmaiError } from 'omai-engine/base'
@@ -27,13 +28,15 @@ export interface MethodRegistry {
  *
  * @param methods - The methods on offer.
  * @returns The registry.
- * @throws OmaiError with code `value` when two methods share a name.
+ * @throws OmaiError with code `value` when two different methods share a name (the same method listed twice is kept once).
  * @index function Methods by name for a worker and tape files: `methodRegistry([methodA, methodB])`.
  */
 export function methodRegistry(methods: readonly AnyMethod[]): MethodRegistry {
   const byName = new Map<string, AnyMethod>()
   for (const m of methods) {
-    if (byName.has(m.name)) throw new OmaiError('value', `methodRegistry: two methods are called '${m.name}'`)
+    const known = byName.get(m.name)
+    if (known !== undefined && known !== m)
+      throw new OmaiError('value', `methodRegistry: two methods are called '${m.name}'`)
     byName.set(m.name, m)
   }
   const get = (name: string): AnyMethod | undefined => byName.get(name)

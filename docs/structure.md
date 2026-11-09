@@ -642,7 +642,8 @@ the import graph between them has no cycles (section 2). Each domain's own summa
   best-first search).
 - `registry.ts`: the shape the dataset and environment registries share: `Registry<E>` (named entries in order, a
   plain value), `registry`, `register` (a new registry with more entries, replacing by name; nothing registers itself
-  on import), `lookup`, `find`, `matchesText` (the search-box test of the registries' queries).
+  on import; the same entry object listed twice is kept once, two different entries of a name throw), `lookup`, `find`,
+  `matchesText` (the search-box test of the registries' queries).
 - `options.ts`: shared option shapes (`Reduction`, `Alternative`, `ConfidenceLevel`) and their defaults
   (`defaultReduction`, `defaultAlternative`, `defaultConfidenceLevel`, `resolveConfidenceLevel`).
 - `vectors.ts`: the canonical fixed-size tuples `Vec2`, `Vec3`, `Vec4` (labelled, readonly). A point, colour, complex number,
@@ -987,7 +988,10 @@ oracle: none; checked by properties (samples, neighbours and decoded values stay
 - `context.ts`: `Context` (seed, key derivation, tracer, trace policy),
   `createContext`, `ctx.key(...names)`, `derive(ctx, name)` (child contexts with a namespaced key path).
 - `default.ts`: `defaultContext`, `setDefaultContext` (the one documented piece of module state; read only by
-  convenience layers).
+  convenience layers; held on `globalThis` under `Symbol.for('omai-engine/defaultContext')`, so a second loaded copy
+  of the engine shares it; `second-copy.test.ts` loads the engine twice). Nothing else in the engine registers
+  itself at import (`definePrimitive` and the like return frozen values; registries are values), so a second copy
+  is harmless; the other module state (the autodiff level, caches) is per copy on purpose.
 - `resolve.ts`: `resolveKey(options, name)`, `resolveTracer(options)`, `resolvePolicy(options)`: the uniform rules every
   high-level function uses.
 ### 4.10 `numerics/`: numerical methods (scipy, numpy.linalg)
@@ -7415,7 +7419,8 @@ Design rules:
   (a `TapeDelta` per variant: events kept, appended, the step and status, event firings), `idle` (paused, lookahead, advanced,
   ended, failed), `probed`, `error`. `wireOptions` says what crosses (JSON; hooks by name, `On('name', options)`, resolved
   against `Method.hooks`; a hook function, a key or a start state cannot).
-- `registry.ts`: `methodRegistry`, methods by name, resolved on the worker's side and when a tape file is loaded.
+- `registry.ts`: `methodRegistry`, methods by name, resolved on the worker's side and when a tape file is loaded (the
+  same method listed twice is kept once, two different methods of a name throw).
 - `serve.ts`: `serveProducer(scope, registry)` / `serveWorker(registry)` (a worker entry is one line): makes sessions in live mode,
   computes in short slices (a pause, a cursor or a probe is heard between slices), stays within the lookahead of the cursor,
   streams deltas of the tape by identity of events (windows that forget are followed), answers probes with a duty cycle so they
@@ -7786,6 +7791,10 @@ library for the same computation. They do not set a higher bar than that library
 - `scripts/agent-index.ts` (`make agent-index`): the agent index of the engine and render, and the repository-level
   `llms.txt`, written from the `@index` tags (section 2); `--check` (`make agent-index-check`) fails with the stale
   files (per package) or the invalid tags.
+- `scripts/import-safe.test.ts`: every entry of omai-engine and omai-render (derived from `exports`, wildcards
+  expanded over the folders) is imported in Node with the browser's globals (`window`, `document`, `navigator`,
+  `Worker`, `localStorage`, `requestAnimationFrame`...) removed and trapped: a read by the packages' own source at import
+  fails the test (a dependency's own guard does not). No exceptions: `omai-render/react` imports without a DOM too.
 - `scripts/layers.ts`, with its rules and tables in `scripts/layers-rules.ts` and their test beside it: no import cycles
   between core domains (a cycle is reported as its path, one import per step), the tiers of section 2 (foundation,
   machinery, listed exceptions), no new file-level cycle inside a domain, and the package rules (section 1).

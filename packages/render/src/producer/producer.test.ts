@@ -119,7 +119,9 @@ describe('the wire', () => {
   it('finds methods by name', () => {
     expect(registry.get('counter')).toBe(counter)
     expect(() => registry.need('nope')).toThrow(/known: counter/)
-    expect(() => methodRegistry([counter, counter])).toThrow(/two methods/)
+    // The same method listed twice is kept once; two different methods under one name are an error.
+    expect(methodRegistry([counter, counter]).names()).toEqual(['counter'])
+    expect(() => methodRegistry([counter, { ...counter }])).toThrow(/two methods/)
   })
 })
 
