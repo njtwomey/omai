@@ -613,7 +613,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `svm`            | support vector classification and regression (C and nu forms, one-versus-one, Platt probabilities) and novelty detection (one-class, SVDD) as stepped estimators over the SMO duals                                                                                                                                           |
 | `gp`             | Gaussian-process regression and classification (Laplace, EP), sparse approximations, the relevance vector machine, as stepped estimators                                                                                                                                                                                      |
 | `trees`          | decision trees: the tree structure, split criteria, the stepped grower, pruning, ID3, C4.5 and CHAID, the Hoeffding tree, CART estimators                                                                                                                                                                                     |
-| `ensembles`      | bagging, random forests and extra trees, AdaBoost, gradient and histogram boosting, the cyclic booster of explainable boosting, voting and stacking                                                                                                                                                                           |
+| `ensembles`      | bagging, random forests and extra trees, AdaBoost, gradient and histogram boosting, the cyclic booster of explainable boosting, voting and stacking, the balanced ensembles                                                                                                                                                                          |
 | `kernel-methods` | kernel ridge regression with exact leave-one-out, online kernel recursive least squares (ALD, coherence, sliding window) and NORMA                                                                                                                                                                                            |
 | `gam`            | generalised additive models: smooth, tensor-product and parametric terms on the penalised bases of `stats/smoothing`, penalised IRLS with REML, GCV and UBRE smoothing selection, backfitting, effective degrees of freedom                                                                                                   |
 | `covariance`     | covariance and precision estimation: shrunk, Ledoit-Wolf and OAS estimators with Mahalanobis distances and likelihoods, FastMCD and the elliptic envelope, the graphical lasso                                                                                                                                                |
@@ -3467,8 +3467,25 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `preprocessing/aggregates.ts`: per-row group statistics (`groupAggregates`, pandas `groupby.transform`, with a
   leave-one-out option), rolling-window statistics (`rollingFeatures`, pandas `rolling` with `min_periods` and
   `center`) and lagged copies (`lagFeatures`); NaN where there is no history.
-- `preprocessing/resampling.ts`: random over- and under-sampling, SMOTE, borderline SMOTE, ADASYN, Tomek links,
-  NearMiss (resamplers apply only in fit, also inside pipelines).
+- `preprocessing/resampling.ts`: random over- and under-sampling (with or without replacement), SMOTE, borderline SMOTE,
+  ADASYN, Tomek links, NearMiss (resamplers apply only in fit, also inside pipelines), and `balancedBag`, the balanced
+  draw of a bag of rows that the balanced ensembles use for each member. `preprocessing/_sampling.ts` (private) holds
+  what the resamplers share: the classes of the data, assembly of a resampled set, nearest neighbours, SMOTE's
+  interpolation and the Tomek and neighbour-vote tests.
+- `preprocessing/undersampling.ts`: the edited nearest neighbours family (`editedNearestNeighbours`,
+  `repeatedEditedNearestNeighbours`, `allKnn`), the condensing rules (`condensedNearestNeighbour`, `oneSidedSelection`,
+  `neighbourhoodCleaningRule`), `instanceHardnessThreshold` (out-of-fold probabilities by any classifier of the
+  library, default Gaussian naive Bayes) and `clusterCentroids` (soft or hard voting, k-means by `numerics/spatial`).
+  They return subsets of the input (centroids aside) in imbalanced-learn's order, with `indices` naming the rows.
+- `preprocessing/oversampling.ts`: SMOTEN (`smoten`, neighbours by `valueDifferenceMetric`), SMOTE-NC (`smotenc`),
+  SVM-SMOTE (`svmSmote`, the SVM is a parameter because `svm` imports `learn`) and k-means SMOTE (`kMeansSmote`).
+  Categorical features are columns of category codes.
+- `preprocessing/combined.ts`: `chainResamplers` (composes the indices back to the original rows), `smoteEnn` and
+  `smoteTomek`.
+  oracle: imbalanced-learn: the kept indices of the edited nearest neighbours family, the neighbourhood cleaning rule,
+  the condensing rules (started from chosen samples by a scripted random state) and instance hardness (unshuffled
+  folds), the value difference metric, and class counts for the over-samplers; the random draws are properties.
+  TODO: SMOTEN/SMOTENC/SVM-SMOTE/k-means SMOTE draws and the sampling of ClusterCentroids' k-means cannot be reproduced.
 - `feature-selection.ts`: variance threshold, univariate scores (F tests, chi-square, mutual information) and
   selection (k best, percentile, FPR/FDR/FWE), selection from model importances.
 - `feature-selection-wrappers.ts`: `rfeAlgorithm` (one elimination round per step; `rfe/*` paths; the state serialises) and
@@ -5041,6 +5058,11 @@ algorithm with one cycle over the features per step, `explainableBoosting` runs 
 `explainableBoostingRegressor` and `explainableBoostingClassifier` have the probe `model/shapeFunctions`; a cycle also logs
 `boost/feature` and `boost/shapeChange` (which shape moved most). `cyclic-binning.ts` has `quantileEdges`, `uniformEdges`,
 `binIndex` and the slots `boostingBinnings` (quantile, uniform) and `boostingLosses` (squared, logistic).
+`balanced.ts` has the balanced ensembles of imbalanced-learn on the same sessions: `balancedBaggingClassifier`,
+`balancedRandomForestClassifier`, `easyEnsembleClassifier` (bagging of AdaBoost members) and `rusBoostClassifier`; each
+member (or round) sees a class-balanced random sample, through the `balance` hyperparameter of bagging, forests and
+AdaBoost (`balancedBag` of `learn/preprocessing`); a row a member's sample leaves out is out of bag for it, so the
+stages show the balanced bags.
 `stacking.ts` has voting (hard, soft, weighted) and stacking (the final estimator on out-of-fold predictions), one base
 estimator per step, logging `ensemble/baseScores`, `ensemble/weights`, `ensemble/diversity`. The fit of each records the
 stages (`ensemble/stages`, an `EnsembleStages` projection of the tape).

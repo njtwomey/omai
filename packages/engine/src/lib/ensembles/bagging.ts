@@ -20,6 +20,7 @@ import {
   withDefaultScore,
 } from '../learn/estimator.ts'
 import { classNamesOf, decisionSurfaceOf, featureNamesOf } from '../learn/explained.ts'
+import { type BalancedBagOptions, balancedBag } from '../learn/preprocessing/resampling.ts'
 import { encodeLabels, fromView, matrixView, takeColumns, takeData, targetVector } from '../learn/validation.ts'
 import { foldIn, type Key, subsample } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'
@@ -46,6 +47,8 @@ export interface BaggingHyper {
   readonly maxFeatures: number
   /** Sample with replacement (otherwise every member sees all rows, or a sample without replacement when `maxSamples` < 1). */
   readonly bootstrap: boolean
+  /** Balance each member's sample by random under-sampling (as imbalanced-learn's balanced bagging), see {@link balancedBag}. */
+  readonly balance?: BalancedBagOptions
 }
 
 /** One member of a bagged ensemble: the features it saw and its parameters. */
@@ -122,7 +125,29 @@ function spread(outs: readonly Float64Array[]): { readonly mean: Float64Array; r
   return { mean, sd: sd.map(Math.sqrt) }
 }
 
-function baggingEstimator(name: string, classifier: boolean, defaults: BaggingHyper): BaggingEstimator {
+/**
+ * The bagging estimator under a name: the engine of {@link baggingClassifier}, {@link baggingRegressor} and the
+ * balanced ensembles built on it.
+ *
+ * @param name - The estimator's name.
+ * @param classifier - Classification (probabilities averaged) or regression.
+ * @param defaults - The hyperparameters in full.
+ * @returns The estimator.
+ * @example
+ * ```ts
+ * import { baggingEstimator } from 'omai-engine/ensembles'
+ * import { decisionTreeClassifier } from 'omai-engine/trees'
+ * const estimator = baggingEstimator('my-bagging', true, {
+ *   estimator: decisionTreeClassifier({ record: 0 }),
+ *   nEstimators: 3,
+ *   maxSamples: 1,
+ *   maxFeatures: 1,
+ *   bootstrap: true,
+ * })
+ * estimator.name // => 'my-bagging'
+ * ```
+ */
+export function baggingEstimator(name: string, classifier: boolean, defaults: BaggingHyper): BaggingEstimator {
   const classesOf = (data: LearnData): readonly number[] => (classifier ? encodeLabels(data.y ?? [], name).classes : [])
   const memberOf = (data: LearnData, h: BaggingHyper): AveragingMember<BaggedMember> => {
     const d = matrixView(data.x, name, { allowNaN: true }).d
@@ -162,6 +187,7 @@ function baggingEstimator(name: string, classifier: boolean, defaults: BaggingHy
         }),
       algorithm: (data, h) => {
         const y = classifier ? encodeLabels(data.y ?? [], name).codes : targetVector(data.y ?? [], name)
+        const labels = Array.from(y, (code) => classesOf(data)[code] ?? code)
         return averagingAlgorithm(
           name,
           { y, k: classesOf(data).length },
@@ -169,6 +195,11 @@ function baggingEstimator(name: string, classifier: boolean, defaults: BaggingHy
             nEstimators: h.nEstimators,
             bootstrap: h.bootstrap,
             maxSamples: h.maxSamples <= 1 ? h.maxSamples * y.length : h.maxSamples,
+            ...(h.balance === undefined
+              ? {}
+              : {
+                  balance: (counts, key) => balancedBag(labels, counts, h.balance as BalancedBagOptions, key),
+                }),
           },
           memberOf(data, h),
         )
@@ -284,6 +315,7 @@ function baggingDefaults(hyper: Partial<BaggingHyper>, estimator: Estimator): Ba
     maxSamples: hyper.maxSamples ?? 1,
     maxFeatures: hyper.maxFeatures ?? 1,
     bootstrap: hyper.bootstrap ?? true,
+    ...(hyper.balance === undefined ? {} : { balance: hyper.balance }),
   }
 }
 
