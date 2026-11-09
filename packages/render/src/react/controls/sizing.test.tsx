@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { mountElement, resetGlobals } from '../_harness.tsx'
+import { Controls } from '../FigureParts.tsx'
 import { Choice } from './Choice.tsx'
 import { controlWidth, iconButtonClass, iconButtonClassFor, inputBoxClass, inputBoxClassFor } from './classes.ts'
 import { NumberField } from './NumberField.tsx'
@@ -125,5 +126,41 @@ describe('size and width on the controls', () => {
       expect(await labelOf(make({}), tag)).toContain('break-words')
       expect(await labelOf(make({ truncate: true }), tag)).toContain('truncate')
     }
+  })
+})
+
+describe('the width a row of controls gives', () => {
+  const inRow = async (own?: number | 'fill'): Promise<{ styles: unknown[]; classes: string[] }> => {
+    const m = await mountElement(
+      <Controls>
+        <NumberField
+          label="k"
+          value={3}
+          onChange={noop}
+          min={1}
+          max={9}
+          {...(own === undefined ? {} : { width: own })}
+        />
+      </Controls>,
+      { browser: true },
+    )
+    const els = m.elements()
+    const out = {
+      styles: els.map((e) => e.props['style']),
+      classes: els.map((e) => String(e.props['className'] ?? '')),
+    }
+    await m.unmount()
+    return out
+  }
+
+  it('is 176 pixels for fields, selects and choices in a Controls row', async () => {
+    expect((await inRow()).styles).toContainEqual({ width: 176 })
+  })
+
+  it('lets a control choose its own width in the row', async () => {
+    const fill = await inRow('fill')
+    expect(fill.styles).not.toContainEqual({ width: 176 })
+    expect(fill.classes.some((c) => c.includes('w-full') && !c.includes('min-w-36'))).toBe(true)
+    expect((await inRow(120)).styles).toContainEqual({ width: 120 })
   })
 })

@@ -17,6 +17,7 @@ import {
   text12Class,
   textXsClass,
 } from './classes.ts'
+import { useControlWidth } from './defaultWidth.ts'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from './icons.tsx'
 import {
   formatFieldValue,
@@ -85,7 +86,7 @@ export interface NumberFieldProps extends NumberSpec {
  */
 export function NumberField(props: NumberFieldProps): ReactNode {
   const { label, value, onChange, unit, disabled = false, className, size = 'md', truncate = false } = props
-  const frame = controlWidth(props.width, 'w-full min-w-36 max-w-xs')
+  const frame = controlWidth(useControlWidth(props.width), 'w-full min-w-36 max-w-xs')
   const sized = controlSizes[size]
   const spec: NumberSpec = {
     ...(props.min === undefined ? {} : { min: props.min }),

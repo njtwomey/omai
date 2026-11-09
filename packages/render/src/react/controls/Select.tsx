@@ -14,6 +14,7 @@ import {
   labelClassFor,
   menuItemClass,
 } from './classes.ts'
+import { useControlWidth } from './defaultWidth.ts'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from './icons.tsx'
 import { cycleOption, normaliseOptions, type OptionInput, type OptionValue } from './options.ts'
 import { Popover } from './Popover.tsx'
@@ -60,7 +61,7 @@ export interface SelectProps<T extends OptionValue> {
  */
 export function Select<T extends OptionValue>(props: SelectProps<T>): ReactNode {
   const { label, value, onChange, cycle = true, disabled = false, className, size = 'md', truncate = false } = props
-  const frame = controlWidth(props.width, 'w-full min-w-36 max-w-xs')
+  const frame = controlWidth(useControlWidth(props.width), 'w-full min-w-36 max-w-xs')
   const sized = controlSizes[size]
   const options = normaliseOptions(props.options)
   const id = useId()

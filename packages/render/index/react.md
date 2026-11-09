@@ -7,13 +7,13 @@ React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneVi
 - function `ActiveProvider`: React component: switch computing and playback of everything below on or off: `<ActiveProvider active={shown}>` `src/react/active.tsx:28` `omai-render/react`
 - function `Chart`: React component: draw an ECharts option, themed and resized: `<Chart option={option} />` `src/react/Chart.tsx:135` `omai-render/react`
 - function `ContingencyTable`: React component: confusion matrix with margins and rates: `<ContingencyTable table={cm} positive={1} />` `src/react/ContingencyTable.tsx:86` `omai-render/react`
-- function `Controls`: React component: a wrapping row of controls: `<Controls><NumberField .../><Toggle .../></Controls>` `src/react/FigureParts.tsx:103` `omai-render/react`
+- function `Controls`: React component: a wrapping row of controls: `<Controls><NumberField .../><Toggle .../></Controls>` `src/react/FigureParts.tsx:111` `omai-render/react`
 - function `Derivation`: React component: aligned derivation steps with notes: `<Derivation steps={steps} />` `src/react/MathView.tsx:118` `omai-render/react`
 - function `Equation`: React component: an equation that re-typesets as values change: `<Equation>{eq}</Equation>` `src/react/MathView.tsx:90` `omai-render/react`
 - function `FigureFrame`: React component: wrap a chart with expand and export: `<FigureFrame title="Loss"><Chart option={o} /></FigureFrame>` `src/react/FigureFrame.tsx:355` `omai-render/react`
 - function `FigureGrid`: React component: charts and text on a grid: `<FigureGrid grid={g} panels={p} />` `src/react/FigureGrid.tsx:76` `omai-render/react`
 - function `Player`: React component: play, step and scrub a playback controller: `<Player controller={c} />` `src/react/Player.tsx:89` `omai-render/react`
-- function `Readouts`: React component: label and value pairs as a dl: `<Readouts items={...} />` `src/react/FigureParts.tsx:38` `omai-render/react`
+- function `Readouts`: React component: label and value pairs as a dl: `<Readouts items={...} />` `src/react/FigureParts.tsx:40` `omai-render/react`
 - function `ResponsiveChart`: React component: chart built for its container's width: `<ResponsiveChart build={(fig) => option} />` `src/react/ResponsiveChart.tsx:109` `omai-render/react`
 - function `Scene3DView`: React component: a 3-D scene you orbit by dragging: `<Scene3DView scene={scene3d} />` `src/react/Scene3DView.tsx:35` `omai-render/react`
 - function `SceneFrame`: React component: a Scene in a frame with expand and export: `<SceneFrame scene={scene} />` `src/react/SceneFrame.tsx:55` `omai-render/react`
@@ -41,7 +41,7 @@ React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneVi
 
 Form controls for figures and demos, in plain React and Tailwind over the `--wb-*` tokens. Inputs: `NumberField`, `Select`, `Choice`, `Toggle`, `SeedInput`, `ColumnOrder`. Generated from an engine `Space`: `SpaceControls` (options a rule rules out drawn disabled), `SpaceSettings` and `SettingsButton` (a modal applied on confirm), `ModelSelector` (a union's options with a settings popover each) and `SlotVariants` (the options of a slot compared at once). Choosing data: `DatasetPicker` and `DatasetSelector` with `useDataset`, `EnvironmentSelector`. Layout: `ControlPanel` and `ControlLayout` put controls beside a figure. Validity rules read from the option tables' properties, and the rest of the rules behind the controls, are pure modules.
 
-- function `Choice`: React component: a segmented choice among few options: `<Choice label="mode" value={m} options={modes} onChange={setM} />` `src/react/controls/Choice.tsx:47` `omai-render/react`
+- function `Choice`: React component: a segmented choice among few options: `<Choice label="mode" value={m} options={modes} onChange={setM} />` `src/react/controls/Choice.tsx:48` `omai-render/react`
 - function `ControlLayout`: React component: put controls beside or above a figure: `<ControlLayout controls={panel} placement="left">` `src/react/controls/ControlPanel.tsx:139` `omai-render/react`
 - function `ControlPanel`: React component: lay controls out in columns or bento areas: `<ControlPanel columns={2}>...</ControlPanel>` `src/react/controls/ControlPanel.tsx:44` `omai-render/react`
 - function `ControlScaleProvider`: React component: scale every control and player below by a factor: `<ControlScaleProvider scale={1.3}>` `src/react/controls/scale.tsx:43` `omai-render/react`
@@ -49,15 +49,15 @@ Form controls for figures and demos, in plain React and Tailwind over the `--wb-
 - function `DatasetSelector`: React component: search the dataset registry: `<DatasetSelector real={false} value={sel} onChange={setSel} />` `src/react/controls/DatasetSelector.tsx:80` `omai-render/react`
 - function `EnvironmentSelector`: React component: pick an environment from the registry: `<EnvironmentSelector value={sel} onChange={setSel} />` `src/react/controls/EnvironmentSelector.tsx:82` `omai-render/react`
 - function `ModelSelector`: React component: choose a union option and its knobs: `<ModelSelector space={union} value={v} onChange={setV} />` `src/react/controls/ModelSelector.tsx:41` `omai-render/react`
-- function `NumberField`: React component: a typed, stepped, slidable number: `<NumberField label="k" value={k} onChange={setK} min={1} />` `src/react/controls/NumberField.tsx:86` `omai-render/react`
+- function `NumberField`: React component: a typed, stepped, slidable number: `<NumberField label="k" value={k} onChange={setK} min={1} />` `src/react/controls/NumberField.tsx:87` `omai-render/react`
 - function `PopoverContainer`: React component: draw popups of the controls inside a given element: `<PopoverContainer container={el}>` `src/react/controls/Popover.tsx:34` `omai-render/react`
-- function `Select`: React component: a dropdown with cycling arrows: `<Select label="loss" value={v} options={names} onChange={setV} />` `src/react/controls/Select.tsx:61` `omai-render/react`
+- function `Select`: React component: a dropdown with cycling arrows: `<Select label="loss" value={v} options={names} onChange={setV} />` `src/react/controls/Select.tsx:62` `omai-render/react`
 - function `SettingsButton`: React component: a gear opening a modal applied only on confirm: `<SettingsButton value={v} onApply={setV}>...</SettingsButton>` `src/react/controls/SettingsButton.tsx:58` `omai-render/react`
 - function `SlotVariants`: React component: choose slot options to compare: `<SlotVariants space={union} knobs={k} onChange={setK} />` `src/react/controls/SlotVariants.tsx:58` `omai-render/react`
 - function `SpaceControls`: React component: controls generated from an engine Space: `<SpaceControls space={space} value={v} onChange={setV} />` `src/react/controls/SpaceControls.tsx:51` `omai-render/react`
 - function `SpaceSettings`: React component: gear button editing a Space in a modal: `<SpaceSettings space={s} value={v} onApply={setV} />` `src/react/controls/SettingsButton.tsx:212` `omai-render/react`
 - function `useDataset`: React hook: generate the dataset a picker selected: `useDataset('classification2d', selection)` `src/react/controls/DatasetPicker.tsx:123` `omai-render/react`
-- function `useParams`: React hook: a figure's knobs as one record with set, reset, isDefault: `useParams({ noise: 0.1 })` `src/react/controls/useParams.ts:77` `omai-render/react`
+- function `useParams`: React hook: a figure's knobs as one record with set, reset, isDefault: `useParams({ noise: 0.1 })` `src/react/controls/useParams.ts:86` `omai-render/react`
 
 ## react/interaction
 

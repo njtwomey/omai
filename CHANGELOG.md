@@ -13,6 +13,12 @@ From the notes site's port off its local kit.
 - `DraggableLine` with no `span` now runs the plotting box when the projection knows it (`projection.rect`), so the line stops at
   the axes instead of crossing the tick labels; with no known box it still runs the whole overlay.
 - `FigureFrame`'s `controls` takes the controls themselves, not a `Controls` row (the frame wraps them): documented.
+- `Controls` (and so the `controls` of a `FigureFrame`) gives the number fields, selects and choices in it a default width of
+  176 pixels (`controlWidth` on `Controls` to change it, a control's own `width` to override), so a row of fields and toggles
+  lines up without a `width` on each; a toggle keeps its natural width. Outside a `Controls` row nothing changes.
+- `useParams`: values may be nested read-only arrays (a list of points), `set` takes a read-only tuple where the initial value
+  was inferred as a mutable array, nested arrays are compared by value, and `reset` can be passed as an event handler
+  (`onClick={reset}` resets all).
 
 ## 0.1.10
 

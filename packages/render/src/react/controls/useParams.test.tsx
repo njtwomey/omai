@@ -69,4 +69,46 @@ describe('useParams', () => {
     expect(m.current.initial).toEqual({ a: 1 })
     expect(m.current.values).toEqual({ a: 1 })
   })
+
+  it('holds a list of points, takes a read-only tuple where the initial value was a mutable array, and compares nested arrays by value', async () => {
+    const waypoints: readonly (readonly [number, number])[] = [
+      [0, 0],
+      [1, 2],
+    ]
+    const m = await mountHook(() => useParams({ waypoints, microphone: [0.5, 0.5] }))
+    const first = m.current
+    const tuple = [0.5, 0.5] as const
+    await inAct(() => first.set({ microphone: tuple }))
+    expect(m.current).toBe(first)
+    await inAct(() =>
+      first.set({
+        waypoints: [
+          [0, 0],
+          [1, 2],
+        ],
+      }),
+    )
+    expect(m.current).toBe(first)
+    await inAct(() =>
+      first.set({
+        waypoints: [
+          [0, 0],
+          [1, 3],
+        ],
+        microphone: [0.1, 0.9] as const,
+      }),
+    )
+    expect(m.current.values.waypoints[1]).toEqual([1, 3])
+    expect(m.current.isDefault).toBe(false)
+  })
+
+  it('resets all when reset is called as an event handler, and the named ones when given a list', async () => {
+    const m = await mountHook(() => useParams({ a: 1, b: 2 }))
+    await inAct(() => m.current.set({ a: 5, b: 6 }))
+    await inAct(() => m.current.reset({ type: 'click' }))
+    expect(m.current.values).toEqual({ a: 1, b: 2 })
+    await inAct(() => m.current.set({ a: 5, b: 6 }))
+    await inAct(() => m.current.reset(['a']))
+    expect(m.current.values).toEqual({ a: 1, b: 6 })
+  })
 })

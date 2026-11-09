@@ -5,6 +5,8 @@
  */
 
 import type { CSSProperties, ReactElement, ReactNode } from 'react'
+import type { ControlWidth } from './controls/classes.ts'
+import { ControlWidthContext } from './controls/defaultWidth.ts'
 import { useTokens } from './theme.tsx'
 
 /** One readout: a label and the value it shows. */
@@ -77,14 +79,20 @@ export interface ControlsProps {
   readonly children?: ReactNode
   /** Names the group for assistive technology (`role="group"`); without it the row is a plain container. */
   readonly label?: string
+  /**
+   * The width the number fields, selects and choices below take unless they have their own `width`: pixels, a CSS
+   * length, `'fill'` or `'auto'` (default 176 pixels, so a row of fields and toggles looks even). A toggle keeps its
+   * natural width.
+   */
+  readonly controlWidth?: ControlWidth
   readonly className?: string
   readonly style?: CSSProperties
 }
 
 /**
  * A row for a figure's controls: a wrapping flex row with a consistent gap (12px across, 12px between rows), the
- * controls aligned along their bottom so a field and a toggle share a baseline-ish line. Give a control a `width` to
- * size it inside the row (`<NumberField width={176} />`).
+ * controls aligned along their bottom so a field and a toggle share a baseline-ish line. The number fields, selects and choices in
+ * it are 176 pixels wide unless `controlWidth` or their own `width` says otherwise.
  *
  * @param props - The controls and an optional group name.
  * @returns The row.
@@ -107,7 +115,9 @@ export function Controls(props: ControlsProps): ReactElement {
       className={props.className}
       style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 12, ...props.style }}
     >
-      {props.children}
+      <ControlWidthContext.Provider value={props.controlWidth === undefined ? 176 : props.controlWidth}>
+        {props.children}
+      </ControlWidthContext.Provider>
     </div>
   )
 }
