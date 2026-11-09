@@ -44,6 +44,14 @@ export interface OrthogonalOptions {
    * (default true). With `false` every edge gets a port of its own wherever several meet at a side.
    */
   readonly merge?: boolean
+  /**
+   * Whether to keep unrelated runs apart (default true). On, edges that share a port merge only when they also look
+   * alike and cross the same number of ranks (`RouteEnds.span`: a long edge gets a port and a track of its own beside
+   * a bundle of short ones), and runs of different edges on one line that end within `spacing` of each other are put
+   * on tracks of their own, so a run never reads as the continuation of another edge's. Off, the routes are those of
+   * the earlier router.
+   */
+  readonly separate?: boolean
 }
 
 type Pt = [x: number, y: number]
@@ -73,6 +81,10 @@ const BEND = 20
 const WRONG_SIDE = 24
 /** How close to a corner an edge may leave a side. */
 const CORNER = 8
+/** The least a track in a crowded channel keeps from the boxes beside it, in pixels. */
+const TRACK_CLEARANCE = 6
+/** The least clearance a route settles for, when none that keeps the clearance asked for exists. */
+const MIN_CLEARANCE = 6
 /** The extra cost of a detour that leaves or enters by a side another kind of edge uses. */
 const OCCUPIED = 40
 
@@ -615,7 +627,7 @@ function routeLeg(
     readonly entryCost?: ((side: PortSide) => number) | undefined
   },
 ): Pt[] | undefined {
-  const { flow, clearance: c, incoming, fromSide, toSide, prefer, fromAt, toAt } = options
+  const { flow, clearance: wanted, incoming, fromSide, toSide, prefer, fromAt, toAt } = options
   let all = candidates(a, b, flow, incoming, prefer).filter(
     (k) => (fromSide === undefined || k.exit === fromSide) && (toSide === undefined || k.entry === toSide),
   )
@@ -625,9 +637,15 @@ function routeLeg(
       const both = moved === undefined || toAt === undefined ? moved : pinned(moved, 'entry', toAt, a, b)
       return both === undefined ? [] : [both]
     })
-  const fits = all.filter((k) => clear(k.points, obstacles, c))
-  const first = fits.find((k) => options.overdraws?.(k.points) !== true) ?? fits[0]
-  if (first !== undefined) return first.points
+  // The clearance asked for first; where no L or Z keeps it, one that keeps the least a route needs is better than a
+  // detour, and a detour keeps the clearance asked for where it can.
+  const least = Math.min(wanted, MIN_CLEARANCE)
+  const steps = wanted > least ? [wanted, least] : [wanted]
+  for (const c of steps) {
+    const fits = all.filter((k) => clear(k.points, obstacles, c))
+    const first = fits.find((k) => options.overdraws?.(k.points) !== true) ?? fits[0]
+    if (first !== undefined) return first.points
+  }
   if (!options.detour) return undefined
   const extra = {
     ...(options.exitCost === undefined ? {} : { exitCost: options.exitCost }),
@@ -635,15 +653,25 @@ function routeLeg(
     fromAt,
     toAt,
   }
-  const found = (window: readonly Item[]): Pt[] | undefined =>
-    detour(a, b, window, c, fromSide === undefined ? SIDES : [fromSide], toSide === undefined ? SIDES : [toSide], extra)
-  // Look among the boxes near the two ends first (the grid is small), then among them all.
-  const [x0, x1] = [Math.min(a.x - a.hw, b.x - b.hw) - 80, Math.max(a.x + a.hw, b.x + b.hw) + 80]
-  const [y0, y1] = [Math.min(a.y - a.hh, b.y - b.hh) - 80, Math.max(a.y + a.hh, b.y + b.hh) + 80]
-  const near = obstacles.filter((o) => o.x + o.hw > x0 && o.x - o.hw < x1 && o.y + o.hh > y0 && o.y - o.hh < y1)
-  let routed = near.length < obstacles.length ? found(near) : undefined
-  if (routed === undefined || !clear(routed, obstacles, c)) routed = found(obstacles.slice(0, 400)) ?? routed
-  if (routed !== undefined) return routed
+  for (const c of steps) {
+    const found = (window: readonly Item[]): Pt[] | undefined =>
+      detour(
+        a,
+        b,
+        window,
+        c,
+        fromSide === undefined ? SIDES : [fromSide],
+        toSide === undefined ? SIDES : [toSide],
+        extra,
+      )
+    // Look among the boxes near the two ends first (the grid is small), then among them all.
+    const [x0, x1] = [Math.min(a.x - a.hw, b.x - b.hw) - 80, Math.max(a.x + a.hw, b.x + b.hw) + 80]
+    const [y0, y1] = [Math.min(a.y - a.hh, b.y - b.hh) - 80, Math.max(a.y + a.hh, b.y + b.hh) + 80]
+    const near = obstacles.filter((o) => o.x + o.hw > x0 && o.x - o.hw < x1 && o.y + o.hh > y0 && o.y - o.hh < y1)
+    let routed = near.length < obstacles.length ? found(near) : undefined
+    if (routed === undefined || !clear(routed, obstacles, c)) routed = found(obstacles.slice(0, 400)) ?? routed
+    if (routed !== undefined && (clear(routed, obstacles, c) || c === steps[steps.length - 1])) return routed
+  }
   return (all[0] ?? candidates(a, b, flow, undefined, undefined)[0])?.points ?? overlapping(a, b)
 }
 
@@ -697,7 +725,15 @@ export function orthogonalRoutes(
   edges: readonly OrthogonalEdge[],
   options: OrthogonalOptions = {},
 ): EdgeRoute[] {
-  const { flow = 'down', clearance = 6, spacing = 8, reach = {}, passable = [], merge = true } = options
+  const {
+    flow = 'down',
+    clearance = 6,
+    spacing = 8,
+    reach = {},
+    passable = [],
+    merge = true,
+    separate = true,
+  } = options
   const items = new Map(Object.entries(nodes).map(([id, box]) => [id, itemOf(box, reach[id])]))
   const free = new Set(passable)
   const blocking = [...items.entries()].filter(([id]) => !free.has(id)).map(([, o]) => o)
@@ -798,6 +834,7 @@ export function orthogonalRoutes(
     nodes,
     reach,
     passable,
+    separate,
     ends: live.map((e, i) => ({
       key: keys[i] as string,
       pinFrom: e.fromAt !== undefined,
@@ -913,9 +950,10 @@ function spreadPorts(
     readonly ends: readonly RouteEnds[]
     readonly spacing: number
     readonly clearance: number
+    readonly separate: boolean
   },
 ): void {
-  const { items, keyOf, ends, spacing, clearance } = ctx
+  const { items, keyOf, ends, spacing, clearance, separate } = ctx
   const groups = new Map<string, PortEnd[]>()
   routes.forEach((r, route) => {
     const p = pts[route] as Pt[]
@@ -946,24 +984,24 @@ function spreadPorts(
       else list.push(end)
     }
   })
-  const moveEnd = (e: PortEnd, to: number): void => {
+  const moveEnd = (e: PortEnd, to: number, apply = true): boolean => {
     const p = pts[e.route] as Pt[]
     const n = p.length
     const k = e.side === 'top' || e.side === 'bottom' ? 0 : 1
     const [i0, i1] = e.first ? [0, 1] : [n - 1, n - 2]
-    if (Math.abs((p[i0] as Pt)[k] - to) < EPS) return
+    if (Math.abs((p[i0] as Pt)[k] - to) < EPS) return true
     const route = routes[e.route] as EdgeRoute
     if (n === 2) {
       // A straight edge: the other end lies on the same line, so it must be able to hold it.
       const other = items.get(e.first ? route.to : route.from)
-      if (other === undefined) return
+      if (other === undefined) return false
       const reach = k === 0 ? other.rx : other.ry
-      if (Math.abs(to - (k === 0 ? other.x : other.y)) > reach + EPS) return
+      if (Math.abs(to - (k === 0 ? other.x : other.y)) > reach + EPS) return false
     } else {
       // The next stretch, across this one, keeps its direction and a stub's length.
       const next = p[e.first ? 2 : n - 3] as Pt
       const [was, now] = [(p[i1] as Pt)[k] - next[k], to - next[k]]
-      if (Math.abs(was) >= EPS && (was * now <= 0 || Math.abs(now) < MIN_STUB)) return
+      if (Math.abs(was) >= EPS && (was * now <= 0 || Math.abs(now) < MIN_STUB)) return false
     }
     // What moves: the port and the corner after it (a straight edge's two ends), checked against the other boxes.
     const probe = (n === 2 ? [p[0], p[1]] : [p[i0], p[i1], p[e.first ? 2 : n - 3]]).map(
@@ -973,9 +1011,11 @@ function spreadPorts(
     ;(probe[1] as Pt)[k] = to
     const own = new Set([route.from, route.to])
     const others = ctx.boxes.filter((o) => !own.has(o.id)).map((o) => o.item)
-    if (!clear(probe, others, clearance)) return
+    if (!clear(probe, others, Math.min(clearance, TRACK_CLEARANCE))) return false
+    if (!apply) return true
     ;(p[i0] as Pt)[k] = to
     ;(p[i1] as Pt)[k] = to
+    return true
   }
   for (const [id, list] of groups) {
     const item = items.get(id.slice(0, id.lastIndexOf('|')))
@@ -986,6 +1026,7 @@ function spreadPorts(
     list.sort((u, v) => u.at - v.at || u.route - v.route)
     let cluster: PortEnd[] = []
     const flush = (): void => {
+      const group = cluster
       const classes = new Map<string, PortEnd[]>()
       for (const e of cluster) {
         const key = keyOf(e.route)
@@ -1003,16 +1044,36 @@ function spreadPorts(
         return (a.run >= 0 ? -1 : 1) * (a.depth - b.depth) || a.route - b.route
       })
       const step = Math.min(spacing * 1.5, (2 * half) / (m - 1))
-      const anchored = order.findIndex((c) => c.some((e) => e.pinned))
+      if (!separate) {
+        const anchored = order.findIndex((c) => c.some((e) => e.pinned))
+        order.forEach((c, j) => {
+          if (c.some((e) => e.pinned)) return
+          const offset = (j - (anchored >= 0 ? anchored : (m - 1) / 2)) * step
+          for (const e of c) moveEnd(e, Math.min(centre + half, Math.max(centre - half, e.at + offset)))
+        })
+        return
+      }
+      // Ports of the classes lie `step` apart around one place: the port of an end that cannot move (pinned, or a
+      // straight edge that cannot leave its line) if there is one, else the middle of the ends. Ends of one class go to
+      // the port of the class.
+      const immovable = (e: PortEnd): boolean =>
+        e.pinned || (!moveEnd(e, e.at + step, false) && !moveEnd(e, e.at - step, false))
+      const held = order.map((c) => c.find(immovable))
+      const anchored = held.findIndex((e) => e !== undefined)
+      const mean = group.reduce((sum, e) => sum + e.at, 0) / group.length
+      const base = anchored >= 0 ? (held[anchored] as PortEnd).at : mean
       order.forEach((c, j) => {
-        if (c.some((e) => e.pinned)) return
-        const offset = (j - (anchored >= 0 ? anchored : (m - 1) / 2)) * step
-        for (const e of c) moveEnd(e, Math.min(centre + half, Math.max(centre - half, e.at + offset)))
+        if (held[j] !== undefined && j === anchored) {
+          for (const e of c) if (e !== held[j]) moveEnd(e, base)
+          return
+        }
+        const to = base + (j - (anchored >= 0 ? anchored : (m - 1) / 2)) * step
+        for (const e of c) moveEnd(e, Math.min(centre + half, Math.max(centre - half, to)))
       })
     }
     for (const e of list) {
       const last = cluster[cluster.length - 1]
-      if (last !== undefined && e.at - last.at > 0.5) flush()
+      if (last !== undefined && e.at - last.at > (separate ? spacing : 0.5)) flush()
       cluster.push(e)
     }
     flush()
@@ -1027,6 +1088,11 @@ export interface RouteEnds {
   readonly pinFrom?: boolean
   /** The edge enters at a position of its own choosing (`toAt`): its last port does not move. */
   readonly pinTo?: boolean
+  /**
+   * How many ranks the edge crosses, when the layout has ranks (default unknown). With `separate` on, edges that cross
+   * more than one rank do not merge with edges that cross one, even when they leave or enter at one port.
+   */
+  readonly span?: number
 }
 
 /**
@@ -1062,17 +1128,20 @@ export function separateRoutes(
     readonly reach?: Readonly<Record<string, number>>
     readonly passable?: readonly string[]
     readonly ends?: readonly RouteEnds[]
+    readonly separate?: boolean
   } = {},
 ): EdgeRoute[] {
-  const { spacing = 8, clearance = 6, nodes = {}, reach = {}, passable = [], ends = [] } = options
+  const { spacing = 8, clearance = 6, nodes = {}, reach = {}, passable = [], ends = [], separate = true } = options
   const pts: Pt[][] = routes.map((r) => tidy(r.points))
   const free = new Set(passable)
   const items = new Map(Object.entries(nodes).map(([id, b]) => [id, itemOf(b, reach[id])]))
   const boxes = Object.entries(nodes)
     .filter(([id]) => !free.has(id))
     .map(([id, b]) => ({ id, item: itemOf(b, reach[id]) }))
-  const keyOf = (route: number): string => ends[route]?.key ?? ''
-  spreadPorts(routes, pts, { items, boxes, keyOf, ends, spacing, clearance })
+  // Edges merge only when they look alike and, with `separate`, when they cross alike many ranks.
+  const keyOf = (route: number): string =>
+    `${ends[route]?.key ?? ''}${separate && (ends[route]?.span ?? 1) > 1 ? '|long' : ''}`
+  spreadPorts(routes, pts, { items, boxes, keyOf, ends, spacing, clearance, separate })
   splitPorts(routes, pts, spacing / 2)
   const segments: Segment[] = []
   pts.forEach((p, route) => {
@@ -1100,10 +1169,12 @@ export function separateRoutes(
       (same(p[0] as Pt, q[0] as Pt) || same(p[p.length - 1] as Pt, q[q.length - 1] as Pt))
     )
   }
+  // With `separate`, runs that end within a gap of each other conflict too: end to end they read as one edge.
+  const near = separate ? -spacing : 0.5
   const conflict = (s: Segment, t: Segment): boolean =>
-    Math.min(s.hi, t.hi) - Math.max(s.lo, t.lo) > 0.5 && !merged(s, t)
+    Math.min(s.hi, t.hi) - Math.max(s.lo, t.lo) > near && !merged(s, t)
 
-  const moveTo = (s: Segment, to: number): boolean => {
+  const moveTo = (s: Segment, to: number, keep: number): boolean => {
     const p = pts[s.route] as Pt[]
     const k = s.horizontal ? 1 : 0
     const [a, b] = [p[s.index] as Pt, p[s.index + 1] as Pt]
@@ -1120,7 +1191,7 @@ export function separateRoutes(
     const moved: Pt[] = [before, s.horizontal ? [a[0], to] : [to, a[1]], s.horizontal ? [b[0], to] : [to, b[1]], after]
     const own = new Set([routes[s.route]?.from, routes[s.route]?.to])
     const others = boxes.filter((o) => !own.has(o.id)).map((o) => o.item)
-    if (!clear(moved, others, clearance)) return false
+    if (!clear(moved, others, keep)) return false
     a[k] = to
     b[k] = to
     return true
@@ -1155,10 +1226,10 @@ export function separateRoutes(
             const target = (hasFixed ? (cluster.find((s) => s.fixed) as Segment).at : base) + offset
             for (const s of track) {
               if (s.fixed) continue
-              for (const f of [1, 0.6, 0.3]) {
-                const to = s.at + (target - s.at) * f
-                if (moveTo(s, to)) break
-              }
+              // A track keeps `clearance` from the boxes it passes; in a channel too narrow for that, it keeps less.
+              const keeps = clearance > TRACK_CLEARANCE ? [clearance, TRACK_CLEARANCE] : [clearance]
+              search: for (const f of [1, 0.6, 0.3])
+                for (const keep of keeps) if (moveTo(s, s.at + (target - s.at) * f, keep)) break search
             }
           })
         }

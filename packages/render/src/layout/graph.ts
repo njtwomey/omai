@@ -289,6 +289,12 @@ export interface ManualLayoutOptions {
   readonly origin?: readonly [x: number, y: number]
   /** Whether edges that look the same share a port (default true; see `OrthogonalOptions.merge`). */
   readonly merge?: boolean
+  /** How far a route keeps from the boxes it passes or goes around, in pixels (default 6; `OrthogonalOptions.clearance`). */
+  readonly clearance?: number
+  /** The gap between parallel tracks and between ports side by side (default 8; `OrthogonalOptions.spacing`). */
+  readonly trackGap?: number
+  /** Whether to keep unrelated runs apart (default true; see `OrthogonalOptions.separate`). */
+  readonly separate?: boolean
 }
 
 /**
@@ -330,6 +336,9 @@ export function manualLayout(
           passable: passableNodes(graph),
           ...(options.flow === undefined ? {} : { flow: options.flow }),
           ...(options.merge === undefined ? {} : { merge: options.merge }),
+          ...(options.clearance === undefined ? {} : { clearance: options.clearance }),
+          ...(options.trackGap === undefined ? {} : { spacing: options.trackGap }),
+          ...(options.separate === undefined ? {} : { separate: options.separate }),
         })
       : straightRoutes(placed, graph.edges)
   return normaliseLayout(placed, routes, {}, options.margin ?? 16, options.origin)

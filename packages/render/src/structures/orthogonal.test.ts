@@ -687,3 +687,193 @@ describe('diagram: routing, kinds of edge, label plates, origin and corners', ()
     expect(find(diagram(t, { cornerRadius: 8 }))).not.toHaveProperty('cornerRadius')
   })
 })
+
+/** The collinear overlap of the edges of a drawn structure, split by how the edges relate, and the crossings. */
+function measure(
+  st: Structure,
+  s: Scene,
+  direction: 'down' | 'right' = 'down',
+): { unrelated: number; sameLook: number; otherLook: number; longVsShort: number; crossings: number } {
+  const paths = st.edges.map((_, i) => edgePoints(s, `edge:${i}`))
+  const centre = (id: string): number => {
+    const b = boxOf(s, id)
+    return direction === 'down' ? (b.y0 + b.y1) / 2 : (b.x0 + b.x1) / 2
+  }
+  const levels = [...new Set(st.nodes.map((n) => Math.round(centre(n.id))))].sort((a, b) => a - b)
+  const span = (i: number): number =>
+    Math.abs(
+      levels.indexOf(Math.round(centre((st.edges[i] as { from: string }).from))) -
+        levels.indexOf(Math.round(centre((st.edges[i] as { to: string }).to))),
+    )
+  const look = (i: number): string => JSON.stringify([st.edges[i]?.look ?? null, st.edges[i]?.kind ?? null])
+  const m = { unrelated: 0, sameLook: 0, otherLook: 0, longVsShort: 0, crossings: 0 }
+  paths.forEach((p, i) => {
+    paths.forEach((q, j) => {
+      if (j <= i) return
+      const [ei, ej] = [st.edges[i], st.edges[j]] as [(typeof st.edges)[number], (typeof st.edges)[number]]
+      const related = ei.from === ej.from || ei.to === ej.to
+      for (let u = 0; u + 1 < p.length; u++)
+        for (let v = 0; v + 1 < q.length; v++) {
+          const [a, b, c, d] = [p[u], p[u + 1], q[v], q[v + 1]] as [Pt, Pt, Pt, Pt]
+          const [ah, ch] = [Math.abs(a[1] - b[1]) < 1e-6, Math.abs(c[1] - d[1]) < 1e-6]
+          if (ah === ch) {
+            const [across, along]: [0 | 1, 0 | 1] = ah ? [1, 0] : [0, 1]
+            if (Math.abs(a[across] - c[across]) > 0.5) continue
+            const len =
+              Math.min(Math.max(a[along], b[along]), Math.max(c[along], d[along])) -
+              Math.max(Math.min(a[along], b[along]), Math.min(c[along], d[along]))
+            if (len <= 0.5) continue
+            if (!related) m.unrelated += len
+            else if (look(i) !== look(j)) m.otherLook += len
+            else if (span(i) > 1 !== span(j) > 1) m.longVsShort += len
+            else m.sameLook += len
+          } else {
+            const [h0, h1, v0, v1] = ah ? [a, b, c, d] : [c, d, a, b]
+            const inH = v0[0] > Math.min(h0[0], h1[0]) + 0.5 && v0[0] < Math.max(h0[0], h1[0]) - 0.5
+            const inV = h0[1] > Math.min(v0[1], v1[1]) + 0.5 && h0[1] < Math.max(v0[1], v1[1]) - 0.5
+            if (inH && inV) m.crossings++
+          }
+        }
+    })
+  })
+  return m
+}
+
+describe('diagram: edges kept apart, and the clearance of detours', () => {
+  const stage = (id: string, label: string): ReturnType<typeof node> => node(id, { label })
+  const pipeline = structure(
+    'pipeline',
+    [
+      ['src', 'source'],
+      ['lint', 'lint'],
+      ['types', 'typecheck'],
+      ['unit', 'unit tests'],
+      ['build', 'build'],
+      ['linux', 'package linux'],
+      ['mac', 'package macOS'],
+      ['win', 'package windows'],
+      ['sign', 'sign'],
+      ['docs', 'docs'],
+      ['publish', 'publish'],
+      ['notify', 'notify'],
+    ].map(([id, label]) => stage(id as string, label as string)),
+    [
+      ['src', 'lint'],
+      ['src', 'types'],
+      ['src', 'unit'],
+      ['src', 'build'],
+      ['lint', 'build'],
+      ['types', 'build'],
+      ['build', 'linux'],
+      ['build', 'mac'],
+      ['build', 'win'],
+      ['unit', 'sign'],
+      ['linux', 'sign'],
+      ['mac', 'sign'],
+      ['win', 'sign'],
+      ['src', 'docs'],
+      ['docs', 'publish'],
+      ['sign', 'publish'],
+      ['sign', 'notify'],
+      ['publish', 'notify'],
+      ['win', 'build'],
+    ].map(([from, to]) => ({
+      from: from as string,
+      to: to as string,
+      ...(from === 'win' && to === 'build' ? { look: { stroke: 'tab3' as const, dash: [5, 4] } } : {}),
+    })),
+  )
+
+  for (const direction of ['down', 'right'] as const)
+    it(`keeps unrelated runs apart in a dense pipeline, direction ${direction}: a long edge never shares a run with a bundle of short ones`, () => {
+      const m = measure(pipeline, diagram(pipeline, { route: 'orthogonal', direction }), direction)
+      expect(m.unrelated).toBe(0)
+      expect(m.otherLook).toBe(0)
+      expect(m.longVsShort).toBe(0)
+      // Before the edges were kept apart: unrelated 0, long edges merged into bundles for 286 px, 4 crossings.
+      expect(m.crossings).toBeLessThanOrEqual(direction === 'down' ? 4 : 7)
+    })
+
+  it('merges the long edge into the bundle again with separate: false (the earlier routes)', () => {
+    const old = { separate: false, clearance: 6, trackGap: 8 }
+    const m = measure(pipeline, diagram(pipeline, { route: 'orthogonal', ...old }))
+    expect(m.longVsShort).toBeGreaterThan(100)
+    const on = measure(pipeline, diagram(pipeline, { route: 'orthogonal' }))
+    expect(on.longVsShort).toBeLessThan(m.longVsShort)
+  })
+
+  it('leaves a source and a target their own ports for a long edge, side by side with the bundle', () => {
+    const s = diagram(pipeline, { route: 'orthogonal' })
+    const [long, near] = [edgePoints(s, 'edge:3'), edgePoints(s, 'edge:4')]
+    // src to build skips a rank; lint to build does not: they enter build at different ports.
+    expect(Math.abs((long.at(-1) as Pt)[0] - (near.at(-1) as Pt)[0])).toBeGreaterThan(4)
+    const [a, b] = [edgePoints(s, 'edge:16'), edgePoints(s, 'edge:17')]
+    // sign to notify (skips publish's rank) and publish to notify enter notify at different ports.
+    expect(Math.abs((a.at(-1) as Pt)[0] - (b.at(-1) as Pt)[0])).toBeGreaterThan(4)
+  })
+
+  const row = structure(
+    'pipeline',
+    ['a', 'b', 'c', 'd'].map((id, i) => node(id, { position: [i * 120, 0] })),
+    [
+      { from: 'a', to: 'b' },
+      { from: 'b', to: 'c' },
+      { from: 'c', to: 'd' },
+      { from: 'a', to: 'd', look: { stroke: 'tab3' as const, dash: [5, 4] } },
+    ],
+  )
+  const gapAbove = (s: Scene): number => {
+    const detour = edgePoints(s, 'edge:3')
+    const run = Math.min(...detour.map((p) => p[1]))
+    return boxOf(s, 'b').y0 - run
+  }
+
+  it('runs a detour over a row of nodes `clearance` above them, 18 px by default', () => {
+    // The route keeps at least the clearance (the stub off the port adds a pixel).
+    for (const [options, gap] of [
+      [{}, 18],
+      [{ clearance: 30 }, 30],
+      [{ clearance: 6 }, 6],
+    ] as const) {
+      const got = gapAbove(diagram(row, { route: 'orthogonal', ...options }))
+      expect(got).toBeGreaterThanOrEqual(gap - 1e-6)
+      expect(got).toBeLessThan(gap + 1.5)
+    }
+  })
+
+  it('grows the scene to hold the detour, and keeps every edge inside it', () => {
+    for (const clearance of [6, 18, 40]) {
+      const s = diagram(row, { route: 'orthogonal', clearance })
+      for (let i = 0; i < 4; i++)
+        for (const [x, y] of edgePoints(s, `edge:${i}`)) {
+          expect(x).toBeGreaterThanOrEqual(0)
+          expect(y).toBeGreaterThanOrEqual(0)
+          expect(x).toBeLessThanOrEqual(s.width)
+          expect(y).toBeLessThanOrEqual(s.height)
+        }
+    }
+    expect(diagram(row, { route: 'orthogonal', clearance: 40 }).height).toBeGreaterThan(
+      diagram(row, { route: 'orthogonal' }).height,
+    )
+  })
+
+  it('leaves straight diagrams as they were, whatever the options of the orthogonal router', () => {
+    const plain = diagram(pipeline, {})
+    expect(diagram(pipeline, { clearance: 40, trackGap: 20, separate: false })).toEqual(plain)
+    expect(diagram(pipeline, { route: 'straight', clearance: 40 })).toEqual(plain)
+  })
+
+  it('puts parallel tracks a track gap apart', () => {
+    // The fan-out of build and the back edge into it share a channel: their runs lie a gap apart.
+    const runs = (trackGap: number): number[] => {
+      const s = diagram(pipeline, { route: 'orthogonal', trackGap })
+      const ys = [6, 7, 8, 18].flatMap((i) => edgePoints(s, `edge:${i}`).map((p) => p[1]))
+      const bus = ys.filter((y) => y > boxOf(s, 'build').y1 && y < boxOf(s, 'linux').y0)
+      return [...new Set(bus.map((y) => Math.round(y * 10) / 10))].sort((a, b) => a - b)
+    }
+    const [tight, wide] = [runs(8), runs(20)]
+    const gapOf = (ys: number[]): number => Math.min(...ys.slice(1).map((y, i) => y - (ys[i] as number)))
+    expect(tight.length).toBeGreaterThan(1)
+    expect(gapOf(wide)).toBeGreaterThan(gapOf(tight))
+  })
+})

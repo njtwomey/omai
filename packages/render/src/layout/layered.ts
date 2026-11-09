@@ -42,6 +42,12 @@ export interface LayeredOptions {
   readonly route?: EdgeRouting
   /** Whether edges with the same `mergeKey` share a port (default true); `false` gives every edge a port of its own. */
   readonly merge?: boolean
+  /** Orthogonal routes: the gap between parallel tracks and between ports side by side, in pixels (default 8). */
+  readonly trackGap?: number
+  /** Orthogonal routes: how far a track keeps from the boxes it passes, in pixels (default 6). */
+  readonly clearance?: number
+  /** Orthogonal routes: keep unrelated runs apart (default true; see `OrthogonalOptions.separate`). */
+  readonly separate?: boolean
 }
 
 interface Item {
@@ -423,7 +429,13 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
       nodes,
       reach: portReach(graph),
       passable: passableNodes(graph),
-      ends: real.map((e, i) => ({ key: options.merge === false ? `#${i}` : (e.mergeKey ?? '') })),
+      ...(options.trackGap === undefined ? {} : { spacing: options.trackGap }),
+      ...(options.clearance === undefined ? {} : { clearance: options.clearance }),
+      ...(options.separate === undefined ? {} : { separate: options.separate }),
+      ends: real.map((e, i) => ({
+        key: options.merge === false ? `#${i}` : (e.mergeKey ?? ''),
+        span: (chains[i]?.length ?? 2) - 1,
+      })),
     })
     return normaliseLayout(nodes, spread, groupBoxes(graph, nodes), margin)
   }

@@ -437,6 +437,59 @@ describe('separateRoutes', () => {
   })
 })
 
+describe('separateRoutes: edges kept apart', () => {
+  const nodes = { s: box(50, 0), a: box(20, 100), b: box(80, 100), t: box(50, 200) }
+  const into = (from: string, x: number, bendY: number): EdgeRoute => ({
+    from,
+    to: 't',
+    points: [
+      [x, 10],
+      [x, bendY],
+      [50, bendY],
+      [50, 190],
+    ],
+  })
+
+  it('does not merge an edge that crosses several ranks with edges that cross one, unless told not to separate', () => {
+    const routes = [
+      into('a', 20, 150),
+      {
+        ...into('s', 50, 150),
+        points: [
+          [50, 10],
+          [50, 150],
+          [50, 190],
+        ] as [number, number][],
+      },
+    ]
+    const ends = [{ span: 1 }, { span: 3 }]
+    const [short, long] = separateRoutes(routes, { nodes, ends })
+    expect(overlapLength(route(short), route(long))).toBe(0)
+    const merged = separateRoutes(routes, { nodes, ends, separate: false })
+    expect(overlapLength(route(merged[0]), route(merged[1]))).toBeGreaterThan(0)
+  })
+
+  it('puts runs that end end to end, within a gap, on tracks of their own', () => {
+    const [p, q] = separateRoutes([z('a', 0, 40), z('b', 44, 90)], { ends: [{ key: 'a' }, { key: 'b' }] })
+    expect((route(p)[1] as [number, number])[1]).not.toBe((route(q)[1] as [number, number])[1])
+    const [p2, q2] = separateRoutes([z('a', 0, 40), z('b', 44, 90)], { separate: false })
+    expect((route(p2)[1] as [number, number])[1]).toBe((route(q2)[1] as [number, number])[1])
+  })
+
+  function z(from: string, x0: number, x1: number): EdgeRoute {
+    return {
+      from,
+      to: `${from}'`,
+      points: [
+        [x0, 0],
+        [x0, 20],
+        [x1, 20],
+        [x1, 40],
+      ],
+    }
+  }
+})
+
 describe('layered with orthogonal routes', () => {
   const ids = ['start', 'read', 'check', 'fix', 'ok', 'log', 'end']
   const graph: LayoutGraph = {

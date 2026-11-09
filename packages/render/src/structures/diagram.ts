@@ -91,6 +91,23 @@ export interface DiagramOptions {
    * line). `false` gives every edge a port of its own along the side. Orthogonal routes only.
    */
   readonly merge?: boolean
+  /**
+   * Orthogonal routes: keep the runs of different edges apart (default true). On, a run never lies along another
+   * edge's: edges that leave or enter at one port merge only when they look alike and cross as many ranks (a long edge
+   * beside a bundle of short ones gets a port and a track of its own, so the bundle is not mistaken for its origin),
+   * and runs of different edges that lie on one line, or end within a track gap of each other, are put on tracks of
+   * their own. `false` gives the routes of the earlier router: runs of edges that share a port are merged wherever
+   * they overlap (pass `clearance: 6` and `trackGap: 8` too for exactly those routes).
+   */
+  readonly separate?: boolean
+  /**
+   * Orthogonal routes: how far an edge keeps from the nodes it passes or goes around, in pixels (default 18): the
+   * distance of a detour over a row of nodes (a back edge, an edge that skips nodes) from their sides, and of a track
+   * in a rank channel from the nodes beside it. The scene grows to hold what the routes need.
+   */
+  readonly clearance?: number
+  /** Orthogonal routes: the gap between parallel tracks, and between ports side by side on one side (default 10). */
+  readonly trackGap?: number
   /** The radius of the rounded corners of orthogonal edges, in pixels (default 0: sharp corners). */
   readonly cornerRadius?: number
   /**
@@ -110,6 +127,9 @@ export interface DiagramOptions {
 }
 
 const CHAR = 0.6
+/** How far an orthogonal edge keeps from the nodes it passes, and the gap between its parallel tracks. */
+const DEFAULT_CLEARANCE = 18
+const DEFAULT_TRACK_GAP = 10
 
 /** One line of a node's text: the label's lines are `main` (the label's size and colour), the rest small and muted. */
 interface Line {
@@ -701,6 +721,18 @@ function depthOf(s: Structure, id: string): number {
  * const s = structure('bayes-net', [{ id: 'z', label: 'z', role: 'latent' }, { id: 'x', label: 'x', role: 'observed' }], [{ from: 'z', to: 'x' }])
  * diagram(s).kind // => 'scene'
  * ```
+ *
+ * Orthogonal routes keep their distance from the nodes they go around (`clearance`, 18 px by default; the scene grows
+ * to hold the detour) and keep unrelated edges apart (`separate`, on by default, with `trackGap` between tracks):
+ *
+ * ```ts
+ * import { structure } from 'omai-engine/scene'
+ * import { diagram } from 'omai-render/structures'
+ * const row = structure('flow', ['a', 'b', 'c'].map((id, i) => ({ id, label: id, role: 'block', position: [i * 100, 0] })), [
+ *   { from: 'a', to: 'b' }, { from: 'b', to: 'c' }, { from: 'a', to: 'c' },
+ * ])
+ * diagram(row, { route: 'orthogonal', clearance: 40 }).height > diagram(row, { route: 'orthogonal' }).height // => true
+ * ```
  */
 export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
   const style = options.style ?? styleFor(s.type)
@@ -792,6 +824,13 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     })),
     groups: s.groups.map((g) => ({ id: g.id, ...(g.parent === undefined ? {} : { parent: g.parent }) })),
   }
+  // The router's own knobs, given only for orthogonal routes (straight diagrams are left exactly as they were).
+  const router = {
+    clearance: options.clearance ?? DEFAULT_CLEARANCE,
+    trackGap: options.trackGap ?? DEFAULT_TRACK_GAP,
+    separate: options.separate ?? true,
+  }
+  const routerOptions = orthogonal ? router : {}
   const widest = Math.max(10, maxOf(graph.nodes.map((v) => Math.max(v.width, v.height))))
   const routing: EdgeRouting = orthogonal ? 'orthogonal' : 'straight'
   const placed: GraphLayout =
@@ -804,6 +843,7 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
             flow: direction,
             ...(options.origin === undefined ? {} : { origin: options.origin }),
             ...(options.merge === undefined ? {} : { merge: options.merge }),
+            ...routerOptions,
           },
         )
       : which === 'tree'
@@ -833,6 +873,7 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
                   direction,
                   route: routing,
                   ...(options.merge === undefined ? {} : { merge: options.merge }),
+                  ...routerOptions,
                   ...(options.rankSep === undefined ? {} : { rankSep: options.rankSep }),
                   ...(options.nodeSep === undefined ? {} : { nodeSep: options.nodeSep }),
                 })
@@ -842,6 +883,9 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       ? withOrthogonalRoutes(placed, graph, {
           flow: direction,
           ...(options.merge === undefined ? {} : { merge: options.merge }),
+          clearance: router.clearance,
+          spacing: router.trackGap,
+          separate: router.separate,
         })
       : placed
 
