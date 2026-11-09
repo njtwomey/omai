@@ -32,7 +32,7 @@ export interface HandleProps {
  *
  * @param props - The shape, size, direction of the line it sits on, fill and stroke.
  * @returns The handle's SVG element.
- * @index function React component: the grip of an overlay tool (bar, square, circle, diamond): `<Handle shape="square" size={8} vertical={false} fill="var(--wb-bg)" stroke="var(--wb-fg)" />`
+ * @index function React component: the grip of an overlay tool: `<Handle shape="square" size={8} />`
  * @example
  * ```tsx
  * <g transform="translate(120, 40)">

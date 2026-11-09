@@ -69,7 +69,7 @@ Interaction overlays laid over any figure through a projection between data and 
 - function `DraggableLine`: React component: a threshold line dragged across a figure: `<DraggableLine axis="x" value={t} onChange={setT} />` `src/react/interaction/DraggableLine.tsx:62` `omai-render/react`
 - function `DraggablePoints`: React component: points the reader drags, adds or removes: `<DraggablePoints points={pts} onChange={setPts} add />` `src/react/interaction/DraggablePoints.tsx:47` `omai-render/react`
 - function `DraggableRect`: React component: a rectangle dragged and resized across a figure: `<DraggableRect x={x} y={y} onChange={set} />` `src/react/interaction/DraggableRect.tsx:155` `omai-render/react`
-- function `Handle`: React component: the grip of an overlay tool (bar, square, circle, diamond): `<Handle shape="square" size={8} vertical={false} fill="var(--wb-bg)" stroke="var(--wb-fg)" />` `src/react/interaction/Handle.tsx:43` `omai-render/react`
+- function `Handle`: React component: the grip of an overlay tool: `<Handle shape="square" size={8} />` `src/react/interaction/Handle.tsx:43` `omai-render/react`
 - function `InteractionOverlay`: React component: SVG layer over a figure for tools: `<InteractionOverlay projection={p} width={w} height={h}>...` `src/react/interaction/InteractionOverlay.tsx:46` `omai-render/react`
 - function `Overlaid`: React component: stack a figure and its overlay: `<Overlaid width={w} height={h} overlay={tools}>{chart}</Overlaid>` `src/react/interaction/InteractionOverlay.tsx:92` `omai-render/react`
 - function `Probe`: React component: a crosshair reporting the data point under the pointer: `<Probe onProbe={setPoint} />` `src/react/interaction/Probe.tsx:19` `omai-render/react`
