@@ -5,11 +5,12 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
-import { beta, choice as drawChoice, foldIn, type Key, randint, uniform } from '../../random/index.ts'
-import { fromStorage, type Tensor, toFlat } from '../../tensor/index.ts'
+import { beta, choice as drawChoice, foldIn, type Key, randint } from '../../random/index.ts'
+import { type Tensor, toFlat } from '../../tensor/index.ts'
 import { keyFor } from '../_shared.ts'
 import type { FitOptions, LearnData } from '../estimator.ts'
-import { encodeLabels, type MatrixView, matrixView, takeRows } from '../validation.ts'
+import { type MatrixView, takeRows } from '../validation.ts'
+import { assemble, classesOf, distancesFrom, fromRows, interpolate, nearest, tomekKeep } from './_sampling.ts'
 
 /** The result of resampling: new rows and labels, and for each row the original row it copies (-1 if synthetic). */
 export interface Resampled {
@@ -56,23 +57,6 @@ export type SamplingStrategy =
  */
 export function isResampler(x: unknown): x is Resampler {
   return typeof x === 'object' && x !== null && (x as Partial<Resampler>).kind === 'resampler'
-}
-
-interface Classes {
-  readonly m: MatrixView
-  readonly labels: Float64Array
-  readonly classes: readonly number[]
-  readonly members: number[][]
-}
-
-function classesOf(data: LearnData, who: string): Classes {
-  const m = matrixView(data.x, who)
-  const { classes, codes } = encodeLabels(data.y ?? [], who, m.n)
-  const members = classes.map(() => [] as number[])
-  codes.forEach((c, i) => {
-    members[c]?.push(i)
-  })
-  return { m, labels: Float64Array.from(codes, (c) => classes[c] ?? 0), classes, members }
 }
 
 /**
@@ -131,35 +115,22 @@ export function samplingTargets(
   })
 }
 
-function assemble(
-  c: Classes,
-  rows: readonly number[],
-  synthetic: readonly number[][],
-  syntheticLabels: readonly number[],
-): Resampled {
-  const base = takeRows(c.m, rows)
-  const n = rows.length + synthetic.length
-  const out = new Float64Array(n * c.m.d)
-  out.set(base.data)
-  synthetic.forEach((r, s) => {
-    out.set(r, (rows.length + s) * c.m.d)
-  })
-  return {
-    x: fromStorage(out, [n, c.m.d], 'float64'),
-    y: fromStorage(Float64Array.from([...rows.map((i) => c.labels[i] ?? 0), ...syntheticLabels]), [n], 'float64'),
-    indices: Int32Array.from([...rows, ...synthetic.map(() => -1)]),
-  }
-}
-
 /** Options of the random samplers. */
 export interface RandomSamplerOptions {
   readonly samplingStrategy?: SamplingStrategy
 }
 
+/** Options of {@link randomUnderSampler}. */
+export interface RandomUnderSamplerOptions extends RandomSamplerOptions {
+  /** Draw with replacement (default false: each kept row once). */
+  readonly replacement?: boolean
+}
+
 /**
- * Random under-sampling (imblearn RandomUnderSampler): each resampled class keeps a random subset of its rows.
+ * Random under-sampling (imblearn RandomUnderSampler): each resampled class keeps a random subset of its rows, drawn
+ * without replacement (or with, so that a row may repeat).
  *
- * @param options - The sampling strategy (default `'auto'`).
+ * @param options - The sampling strategy (default `'auto'`) and `replacement`.
  * @returns The resampler.
  * @example
  * ```ts
@@ -169,7 +140,7 @@ export interface RandomSamplerOptions {
  * toFlat(r.y) // => [0, 0, 1, 1]
  * ```
  */
-export function randomUnderSampler(options: RandomSamplerOptions = {}): Resampler {
+export function randomUnderSampler(options: RandomUnderSamplerOptions = {}): Resampler {
   return {
     name: 'random-under-sampler',
     kind: 'resampler',
@@ -185,13 +156,69 @@ export function randomUnderSampler(options: RandomSamplerOptions = {}): Resample
       const rows = c.members.flatMap((members, k) => {
         const t = targets[k]
         if (t === undefined) return members
-        return toFlat(drawChoice(foldIn(key, k), members.length, t, { replace: false }))
+        return toFlat(drawChoice(foldIn(key, k), members.length, t, { replace: options.replacement ?? false }))
           .map((r) => members[r] ?? 0)
           .sort((a, b) => a - b)
       })
       return assemble(c, rows, [], [])
     },
   }
+}
+
+/** Options of {@link balancedBag}. */
+export interface BalancedBagOptions {
+  /** Which classes to cut down and to how many rows (default `'auto'`: every class but the smallest). */
+  readonly samplingStrategy?: SamplingStrategy
+  /** Draw with replacement (default false). */
+  readonly replacement?: boolean
+}
+
+/**
+ * Balance a bag of rows: given how many times each row is in a sample (a bootstrap, or all ones), draw from each class's
+ * share of the bag, as imblearn's random under-sampler does for each member of a balanced ensemble, and return the new
+ * multiplicity of every row. A row of a class left alone keeps its count; a class missing from the bag is ignored.
+ *
+ * @param labels - The class label of each row.
+ * @param counts - How often each row is in the bag.
+ * @param options - The sampling strategy and replacement.
+ * @param key - The key of the draw.
+ * @returns The balanced multiplicities, one per row.
+ * @example
+ * ```ts
+ * import { balancedBag } from 'omai-engine/learn/preprocessing'
+ * import { key } from 'omai-engine/random'
+ * const counts = balancedBag([0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1], {}, key(0))
+ * counts.reduce((a, b) => a + b, 0) // => 4
+ * ```
+ */
+export function balancedBag(
+  labels: ArrayLike<number>,
+  counts: ArrayLike<number>,
+  options: BalancedBagOptions,
+  key: Key,
+): Float64Array {
+  const classes = Array.from(new Set(Array.from(labels))).sort((a, b) => a - b)
+  const bags = classes.map(() => [] as number[])
+  for (let i = 0; i < labels.length; i++) {
+    for (let r = 0; r < (counts[i] ?? 0); r++) bags[classes.indexOf(labels[i] ?? 0)]?.push(i)
+  }
+  const present = classes.map((_, k) => k).filter((k) => (bags[k]?.length ?? 0) > 0)
+  const targets = samplingTargets(
+    present.map((k) => bags[k]?.length ?? 0),
+    present.map((k) => classes[k] ?? 0),
+    options.samplingStrategy ?? 'auto',
+    'under',
+  )
+  const out = Float64Array.from(counts)
+  present.forEach((k, p) => {
+    const t = targets[p]
+    const bag = bags[k] ?? []
+    if (t === undefined) return
+    for (const i of bag) out[i] = 0
+    for (const r of toFlat(drawChoice(foldIn(key, k), bag.length, t, { replace: options.replacement ?? false })))
+      out[bag[r] ?? 0] = (out[bag[r] ?? 0] ?? 0) + 1
+  })
+  return out
 }
 
 /**
@@ -229,52 +256,6 @@ export function randomOverSampler(options: RandomSamplerOptions = {}): Resampler
       return assemble(c, [...Array.from({ length: c.m.n }, (_, i) => i), ...extra], [], [])
     },
   }
-}
-
-/** Squared Euclidean distances from row `i` of `a` to every row of `b`. */
-function distancesFrom(a: MatrixView, i: number, b: MatrixView): Float64Array {
-  const out = new Float64Array(b.n)
-  for (let r = 0; r < b.n; r++) {
-    let s = 0
-    for (let j = 0; j < a.d; j++) s += ((a.data[i * a.d + j] ?? 0) - (b.data[r * b.d + j] ?? 0)) ** 2
-    out[r] = s
-  }
-  return out
-}
-
-/** The indices of the k nearest rows of `b` to row i of `a` (ties by index), optionally skipping one index. */
-function nearest(a: MatrixView, i: number, b: MatrixView, k: number, skip = -1): number[] {
-  const d = distancesFrom(a, i, b)
-  return Array.from(d.keys())
-    .filter((r) => r !== skip)
-    .sort((p, q) => (d[p] ?? 0) - (d[q] ?? 0) || p - q)
-    .slice(0, k)
-}
-
-/** Interpolate `count` points between rows and their neighbours (imblearn's `_make_samples`). */
-function interpolate(
-  key: Key,
-  base: MatrixView,
-  rows: readonly number[],
-  neighbours: readonly (readonly number[])[],
-  donors: MatrixView,
-  count: number,
-  stepScale: number,
-): number[][] {
-  const k = neighbours[0]?.length ?? 0
-  if (count <= 0 || rows.length === 0 || k === 0) return []
-  const picks = toFlat(randint(foldIn(key, 0), [count], 0, rows.length * k))
-  const steps = toFlat(uniform(foldIn(key, 1), [count]))
-  return picks.map((p, s) => {
-    const r = Math.floor(p / k)
-    const i = rows[r] ?? 0
-    const nb = neighbours[r]?.[p % k] ?? 0
-    const step = stepScale * (steps[s] ?? 0)
-    return Array.from({ length: base.d }, (_, j) => {
-      const x = base.data[i * base.d + j] ?? 0
-      return x + step * ((donors.data[nb * donors.d + j] ?? 0) - x)
-    })
-  })
 }
 
 /** Options of {@link smote} and its variants. */
@@ -448,10 +429,6 @@ export function borderlineSmote(options: BorderlineSmoteOptions = {}): Resampler
   }
 }
 
-function fromRows(m: MatrixView): Tensor {
-  return fromStorage(m.data, [m.n, m.d], 'float64')
-}
-
 /**
  * The number of synthetic samples ADASYN generates from each sample of a class (He et al. 2008): proportional to the
  * share of other classes among its k nearest neighbours (over all data), normalised and rounded (numpy's `rint`).
@@ -570,13 +547,12 @@ export function tomekLinks(options: RandomSamplerOptions = {}): Resampler {
         options.samplingStrategy ?? 'auto',
         'under',
       )
-      const nn = Array.from({ length: c.m.n }, (_, i) => nearest(c.m, i, c.m, 1, i)[0] ?? i)
-      const keep = Array.from({ length: c.m.n }, (_, i) => i).filter((i) => {
-        const cls = c.classes.indexOf(c.labels[i] ?? 0)
-        if (targets[cls] === undefined) return true
-        const j = nn[i] ?? i
-        return !(c.labels[j] !== c.labels[i] && nn[j] === i)
-      })
+      const keep = tomekKeep(
+        c.m,
+        Array.from({ length: c.m.n }, (_, i) => i),
+        c.labels,
+        (label) => targets[c.classes.indexOf(label)] !== undefined,
+      )
       return assemble(c, keep, [], [])
     },
   }

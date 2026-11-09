@@ -1571,7 +1571,7 @@
       "reference": {
         "imbalanced-learn": "0.14.2"
       },
-      "cases": 11
+      "cases": 30
     },
     {
       "fixture": "learn/preprocessing/scalers.json",
