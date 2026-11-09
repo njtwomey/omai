@@ -187,3 +187,26 @@ export function plotArea(fig: Figure): Rect {
     height: Math.max(0, fig.height - p.top - p.bottom),
   }
 }
+
+/**
+ * A copy of a figure whose plotting area (not the figure) is square: the height becomes the plotting width plus the
+ * vertical padding, so equal data units (`aspect: 'equal'` of a chart) fill the area, as for a map, a contour or a
+ * decision surface. A figure with no room for a plotting area is returned as it is.
+ *
+ * @param fig - The figure; its width and padding are kept.
+ * @returns The figure, taller or shorter, with the matching aspect.
+ * @index function Make a figure's plotting area square: `squarePlot(fig)`.
+ * @example
+ * ```ts
+ * import { figure, plotArea, squarePlot } from 'omai-render/figure'
+ * const fig = squarePlot(figure({ width: 400 }))
+ * fig.height // => 396
+ * plotArea(fig).width === plotArea(fig).height // => true
+ * ```
+ */
+export function squarePlot(fig: Figure): Figure {
+  const { width } = plotArea(fig)
+  if (!(width > 0)) return fig
+  const height = Math.round(width + fig.padding.top + fig.padding.bottom)
+  return { ...fig, height, aspect: fig.width / height }
+}

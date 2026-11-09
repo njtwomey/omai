@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { boxForAspect, fitDataAspect } from './aspect.ts'
-import { figure, MEDIA, parseAspect, plotArea, scaleFigure } from './figure.ts'
+import { figure, MEDIA, parseAspect, plotArea, scaleFigure, squarePlot } from './figure.ts'
 import { bento, gridSpec, layoutGrid, linkedGroups, sharedGroups, withMarginals } from './grid.ts'
 import { extentOf, niceRange, padRange, resolveLimits, unionRange } from './limits.ts'
 import { brushSelection, linkStore, toggleSelection } from './linking.ts'
@@ -105,6 +105,20 @@ describe('limits', () => {
     expect(niceRange([-0.3, 0.3])[0]).toBeLessThanOrEqual(-0.3)
     expect(extentOf([Number.POSITIVE_INFINITY])).toBeUndefined()
     expect(unionRange([])).toBeUndefined()
+  })
+})
+
+describe('squarePlot', () => {
+  it('makes the plotting area square at the same width, keeping the padding', () => {
+    const fig = squarePlot(figure({ width: 400 }))
+    const area = plotArea(fig)
+    expect(area.width).toBe(area.height)
+    expect(fig.width).toBe(400)
+    expect(fig.padding).toEqual(figure({ width: 400 }).padding)
+    expect(fig.aspect).toBeCloseTo(fig.width / fig.height, 12)
+    // Too narrow to hold a plotting area: unchanged.
+    const tiny = figure({ width: 60 })
+    expect(squarePlot(tiny)).toBe(tiny)
   })
 })
 
