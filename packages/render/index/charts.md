@@ -6,27 +6,27 @@ ECharts option builders. Start from a finished chart (`lineChart`, `scatterChart
 
 - function `plot.ts` (file): Open first: the cartesian plot and `Layer` every chart builder shares. `src/charts/plot.ts:1` `omai-render/charts`
 
-- function `annotations`: Arrows, labels, spans and shaded regions: `annotations({ regions })`. `src/charts/annotations.ts:53` `omai-render/charts`
-- function `band`: A filled band between two curves: `band([{ x, lower, upper }])`. `src/charts/lines.ts:126` `omai-render/charts`
-- function `barChart`: A bar chart over categories: `barChart(['a', 'b'], [3, 5])`. `src/charts/bars.ts:409` `omai-render/charts`
-- function `boxPlot`: Box plots of groups: `boxPlot([{ name: 'a', values }])`. `src/charts/distributions.ts:302` `omai-render/charts`
-- function `cartesian`: Draw layers on one pair of axes: `cartesian([lines(curves), points(sets)])`. `src/charts/plot.ts:643` `omai-render/charts`
-- function `confusionMatrixChart`: A labelled confusion matrix: `confusionMatrixChart(counts, ['cat', 'dog'])`. `src/charts/matrices.ts:633` `omai-render/charts`
-- function `contours`: Contour lines of a 2-D array: `contours(z, { levels: 7 })`. `src/charts/fields.ts:59` `omai-render/charts`
-- function `decisionRegions`: A classifier's decision regions from class probability grids: `decisionRegions(probs, { x, y })`. `src/charts/fields.ts:198` `omai-render/charts`
-- function `densityChart`: Densities of distributions on one chart: `densityChart([{ name, dist }])`. `src/charts/distributions.ts:530` `omai-render/charts`
-- function `heatmapChart`: A heatmap of a 2-D array: `heatmapChart(z)`. `src/charts/matrices.ts:701` `omai-render/charts`
-- function `histogram`: A histogram layer of values: `histogram(values, { bins: 20 })`. `src/charts/bars.ts:262` `omai-render/charts`
-- function `historyChart`: Objective per trial of a hyperparameter study: `historyChart(study)`. `src/charts/tuning.ts:96` `omai-render/charts`
-- function `kde`: A kernel density estimate layer of samples: `kde(samples)`. `src/charts/distributions.ts:124` `omai-render/charts`
+- function `annotations`: Arrows, labels, spans and shaded regions: `annotations({ regions })`. `src/charts/annotations.ts:54` `omai-render/charts`
+- function `band`: A filled band between two curves: `band([{ x, lower, upper }])`. `src/charts/lines.ts:128` `omai-render/charts`
+- function `barChart`: A bar chart over categories: `barChart(['a', 'b'], [3, 5])`. `src/charts/bars.ts:413` `omai-render/charts`
+- function `boxPlot`: Box plots of groups: `boxPlot([{ name: 'a', values }])`. `src/charts/distributions.ts:307` `omai-render/charts`
+- function `cartesian`: Draw layers on one pair of axes: `cartesian([lines(curves), points(sets)])`. `src/charts/plot.ts:646` `omai-render/charts`
+- function `confusionMatrixChart`: A labelled confusion matrix: `confusionMatrixChart(counts, ['cat', 'dog'])`. `src/charts/matrices.ts:637` `omai-render/charts`
+- function `contours`: Contour lines of a 2-D array: `contours(z, { levels: 7 })`. `src/charts/fields.ts:60` `omai-render/charts`
+- function `decisionRegions`: A classifier's decision regions from class probability grids: `decisionRegions(probs, { x, y })`. `src/charts/fields.ts:200` `omai-render/charts`
+- function `densityChart`: Densities of distributions on one chart: `densityChart([{ name, dist }])`. `src/charts/distributions.ts:539` `omai-render/charts`
+- function `heatmapChart`: A heatmap of a 2-D array: `heatmapChart(z)`. `src/charts/matrices.ts:705` `omai-render/charts`
+- function `histogram`: A histogram layer of values: `histogram(values, { bins: 20 })`. `src/charts/bars.ts:264` `omai-render/charts`
+- function `historyChart`: Objective per trial of a hyperparameter study: `historyChart(study)`. `src/charts/tuning.ts:98` `omai-render/charts`
+- function `kde`: A kernel density estimate layer of samples: `kde(samples)`. `src/charts/distributions.ts:126` `omai-render/charts`
 - function `learningCurveChart`: Train and validation scores against training size: `learningCurveChart(sizes, train, test)`. `src/charts/evaluation.ts:207` `omai-render/charts`
-- function `lineChart`: A line chart of curves: `lineChart([{ y: [3, 1, 2], name: 'loss' }])`. `src/charts/lines.ts:308` `omai-render/charts`
-- function `lines`: A layer of lines, steps or areas to combine: `lines([{ y: [1, 3, 2] }])`. `src/charts/lines.ts:62` `omai-render/charts`
-- function `maskMatrix`: A boolean matrix, an attention or causal mask: `maskMatrix(mask, { rowLabels })`. `src/charts/matrices.ts:567` `omai-render/charts`
+- function `lineChart`: A line chart of curves: `lineChart([{ y: [3, 1, 2], name: 'loss' }])`. `src/charts/lines.ts:312` `omai-render/charts`
+- function `lines`: A layer of lines, steps or areas to combine: `lines([{ y: [1, 3, 2] }])`. `src/charts/lines.ts:63` `omai-render/charts`
+- function `maskMatrix`: A boolean matrix, an attention or causal mask: `maskMatrix(mask, { rowLabels })`. `src/charts/matrices.ts:570` `omai-render/charts`
 - function `parallelCoordinates`: Parallel coordinates of a table: `parallelCoordinates({ columns, rows })`. `src/charts/multivariate.ts:221` `omai-render/charts`
-- function `plotRectOf`: The pixel rectangle and ranges of a cartesian plot: `plotRectOf(layers, options)`. `src/charts/plot.ts:619` `omai-render/charts`
+- function `plotRectOf`: The pixel rectangle and ranges of a cartesian plot: `plotRectOf(layers, options)`. `src/charts/plot.ts:622` `omai-render/charts`
 - function `rocChart`: A ROC curve chart: `rocChart(curve)`. `src/charts/evaluation.ts:49` `omai-render/charts`
 - function `sankeyChart`: A Sankey diagram of flows: `sankeyChart([{ source, target, value }])`. `src/charts/flows.ts:33` `omai-render/charts`
-- function `scatterChart`: A scatter plot coloured by group: `scatterChart([{ x, y, groups }])`. `src/charts/points.ts:249` `omai-render/charts`
+- function `scatterChart`: A scatter plot coloured by group: `scatterChart([{ x, y, groups }])`. `src/charts/points.ts:252` `omai-render/charts`
 - function `subplots`: Draw panels of layers on a grid spec: `subplots(grid, panels)`. `src/charts/compose.ts:98` `omai-render/charts`
-- function `vectorField`: Arrows of a vector field: `vectorField(fieldArrows(f, { x, y }))`. `src/charts/fields.ts:331` `omai-render/charts`
+- function `vectorField`: Arrows of a vector field: `vectorField(fieldArrows(f, { x, y }))`. `src/charts/fields.ts:334` `omai-render/charts`

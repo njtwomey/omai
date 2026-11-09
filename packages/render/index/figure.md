@@ -12,6 +12,7 @@ The headless figure model: `figure` gives a fixed size, box aspect, padding and 
 - function `linkStore`: Share hover, selection and brush between figures: `linkStore()`. `src/figure/linking.ts:48` `omai-render/figure`
 - function `resolveLimits`: Turn an axis limit policy into a range: `resolveLimits(policy, extent)`. `src/figure/limits.ts:150` `omai-render/figure`
 - function `scaleFigure`: Rescale a figure to another width: `scaleFigure(fig, 1280)`. `src/figure/figure.ts:150` `omai-render/figure`
+- function `squarePlot`: Make a figure's plotting area square: `squarePlot(fig)`. `src/figure/figure.ts:207` `omai-render/figure`
 - function `withMarginals`: A scatter grid with marginal axes on top and right: `withMarginals()`. `src/figure/grid.ts:200` `omai-render/figure`
 
 - structure `Figure`: A figure's size, aspect, padding and type size, as `figure()` returns it. `src/figure/figure.ts:27` `omai-render/figure`

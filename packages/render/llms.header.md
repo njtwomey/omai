@@ -121,6 +121,14 @@ below are the folders of `src`; `react` is large and its index is nested by its 
   exact through checkpoints; `session.state` is the live object. An algorithm that mutates its state in place gives
   an optional `snapshot(state)`, and `useLiveRun` keeps each frame of its history through it, so every frame shows its
   own step. States need not be immutable.
+- Fluid figures and a page without a kit (React). `ResponsiveChart` measures its container and calls `build(fig)` for that width
+  (`narrowAspect` under `narrowBelow`, `square` for equal units, `overlay` for draggable handles with `{ projection, size }`);
+  a layer built with no `mode` takes the mode of the chart that draws it; `chartProjection` needs no ECharts call for a chart
+  with numeric grid and axis limits, so dragging logs no warnings. `useParams(initial)` holds a figure's own knobs. `useJob({ stages,
+  inputs, active })` is the recipe for a heavy one-shot with a progress bar and no autostart (the stage is readable while it runs;
+  a generator stage yields a fraction; a single blocking stage needs a worker). `FigureFrame` has `purpose`, `controls`,
+  `readouts` and `caption` slots, a permalink on its title, and `Readouts` and `Controls`; `size` and `width` on `NumberField`,
+  `Toggle`, `Select` and `Choice`.
 - Controls and interaction (React). Form controls, controls generated from a `Space` and a dataset picker are in
   `react/controls`; draggable points, brushes and hover overlays are in `react/interaction`; `Chart`, `SceneView`,
   `StructureView` and `FigureGrid` are the base components in `react`.

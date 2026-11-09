@@ -6,19 +6,23 @@ React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneVi
 
 - function `Chart`: React component: draw an ECharts option, themed and resized: `<Chart option={option} />` `src/react/Chart.tsx:113` `omai-render/react`
 - function `ContingencyTable`: React component: confusion matrix with margins and rates: `<ContingencyTable table={cm} positive={1} />` `src/react/ContingencyTable.tsx:86` `omai-render/react`
+- function `Controls`: React component: a wrapping row of controls: `<Controls><NumberField .../><Toggle .../></Controls>` `src/react/FigureParts.tsx:103` `omai-render/react`
 - function `Derivation`: React component: aligned derivation steps with notes: `<Derivation steps={steps} />` `src/react/MathView.tsx:118` `omai-render/react`
 - function `Equation`: React component: an equation that re-typesets as values change: `<Equation>{eq}</Equation>` `src/react/MathView.tsx:90` `omai-render/react`
-- function `FigureFrame`: React component: wrap a chart with expand and export: `<FigureFrame title="Loss"><Chart option={o} /></FigureFrame>` `src/react/FigureFrame.tsx:286` `omai-render/react`
+- function `FigureFrame`: React component: wrap a chart with expand and export: `<FigureFrame title="Loss"><Chart option={o} /></FigureFrame>` `src/react/FigureFrame.tsx:342` `omai-render/react`
 - function `FigureGrid`: React component: charts and text on a grid: `<FigureGrid grid={g} panels={p} />` `src/react/FigureGrid.tsx:76` `omai-render/react`
 - function `Player`: React component: play, step and scrub a playback controller: `<Player controller={c} />` `src/react/Player.tsx:74` `omai-render/react`
+- function `Readouts`: React component: label and value pairs as a dl: `<Readouts items={[{ label: 'loss', value: '0.31' }]} />` `src/react/FigureParts.tsx:38` `omai-render/react`
+- function `ResponsiveChart`: React component: chart built for its container's width: `<ResponsiveChart build={(fig) => option} />` `src/react/ResponsiveChart.tsx:105` `omai-render/react`
 - function `Scene3DView`: React component: a 3-D scene you orbit by dragging: `<Scene3DView scene={scene3d} />` `src/react/Scene3DView.tsx:35` `omai-render/react`
 - function `SceneFrame`: React component: a Scene in a frame with expand and export: `<SceneFrame scene={scene} />` `src/react/SceneFrame.tsx:55` `omai-render/react`
 - function `SceneView`: React component: draw a Scene as SVG with click and hover: `<SceneView scene={scene} />` `src/react/SceneView.tsx:267` `omai-render/react`
 - function `StructureView`: React component: draw an engine Structure as a diagram: `<StructureView structure={s} />` `src/react/StructureView.tsx:53` `omai-render/react`
 - function `Tex`: React component: typeset TeX with the shared macros: `<Tex display>{source}</Tex>` `src/react/MathView.tsx:53` `omai-render/react`
-- function `ThemeProvider`: React component: force a colour mode for the figures inside: `<ThemeProvider mode="light">...</ThemeProvider>` `src/react/theme.tsx:64` `omai-render/react`
+- function `ThemeProvider`: React component: force a colour mode for the figures inside: `<ThemeProvider mode="light">...</ThemeProvider>` `src/react/theme.tsx:99` `omai-render/react`
 - function `ThresholdExplorer`: React component: drag a threshold across ROC, cost and table: `<ThresholdExplorer yTrue={y} scores={s} />` `src/react/ThresholdExplorer.tsx:98` `omai-render/react`
-- function `useColourMode`: React hook: the colour mode figures draw in, light or dark: `useColourMode()` `src/react/theme.tsx:76` `omai-render/react`
+- function `useColourMode`: React hook: the colour mode figures draw in, light or dark: `useColourMode()` `src/react/theme.tsx:111` `omai-render/react`
+- function `useJob`: React hook: a staged heavy computation with progress, started when active: `useJob({ stages, inputs, active })` `src/react/useJob.ts:219` `omai-render/react`
 - function `useLiveRun`: React hook: step an Algorithm live while it plays: `useLiveRun(algorithm, { maxSteps: 200 })` `src/react/usePlayback.ts:324` `omai-render/react`
 - function `usePlayback`: React hook: drive n precomputed frames with play, step and seek: `usePlayback(n)` `src/react/usePlayback.ts:108` `omai-render/react`
 - function `useTimelinePlayback`: React hook: play a Timeline, giving the frame to draw: `useTimelinePlayback(timeline)` `src/react/usePlayback.ts:173` `omai-render/react`
@@ -32,21 +36,22 @@ React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneVi
 
 Form controls for figures and demos, in plain React and Tailwind over the `--wb-*` tokens. Inputs: `NumberField`, `Select`, `Choice`, `Toggle`, `SeedInput`, `ColumnOrder`. Generated from an engine `Space`: `SpaceControls` (options a rule rules out drawn disabled), `SpaceSettings` and `SettingsButton` (a modal applied on confirm), `ModelSelector` (a union's options with a settings popover each) and `SlotVariants` (the options of a slot compared at once). Choosing data: `DatasetPicker` and `DatasetSelector` with `useDataset`, `EnvironmentSelector`. Layout: `ControlPanel` and `ControlLayout` put controls beside a figure. Validity rules read from the option tables' properties, and the rest of the rules behind the controls, are pure modules.
 
-- function `Choice`: React component: a segmented choice among few options: `<Choice label="mode" value={m} options={modes} onChange={setM} />` `src/react/controls/Choice.tsx:30` `omai-render/react`
+- function `Choice`: React component: a segmented choice among few options: `<Choice label="mode" value={m} options={modes} onChange={setM} />` `src/react/controls/Choice.tsx:47` `omai-render/react`
 - function `ControlLayout`: React component: put controls beside or above a figure: `<ControlLayout controls={panel} placement="left">` `src/react/controls/ControlPanel.tsx:139` `omai-render/react`
 - function `ControlPanel`: React component: lay controls out in columns or bento areas: `<ControlPanel columns={2}>...</ControlPanel>` `src/react/controls/ControlPanel.tsx:44` `omai-render/react`
 - function `DatasetPicker`: React component: pick a dataset and its knobs: `<DatasetPicker collection="classification2d" value={sel} onChange={setSel} />` `src/react/controls/DatasetPicker.tsx:89` `omai-render/react`
 - function `DatasetSelector`: React component: search the dataset registry: `<DatasetSelector real={false} value={sel} onChange={setSel} />` `src/react/controls/DatasetSelector.tsx:80` `omai-render/react`
 - function `EnvironmentSelector`: React component: pick an environment from the registry: `<EnvironmentSelector value={sel} onChange={setSel} />` `src/react/controls/EnvironmentSelector.tsx:82` `omai-render/react`
 - function `ModelSelector`: React component: choose a union option and its knobs: `<ModelSelector space={union} value={v} onChange={setV} />` `src/react/controls/ModelSelector.tsx:41` `omai-render/react`
-- function `NumberField`: React component: a typed, stepped, slidable number: `<NumberField label="k" value={k} onChange={setK} min={1} />` `src/react/controls/NumberField.tsx:55` `omai-render/react`
+- function `NumberField`: React component: a typed, stepped, slidable number: `<NumberField label="k" value={k} onChange={setK} min={1} />` `src/react/controls/NumberField.tsx:74` `omai-render/react`
 - function `PopoverContainer`: React component: draw popups of the controls inside a given element: `<PopoverContainer container={el}>` `src/react/controls/Popover.tsx:33` `omai-render/react`
-- function `Select`: React component: a dropdown with cycling arrows: `<Select label="loss" value={v} options={names} onChange={setV} />` `src/react/controls/Select.tsx:43` `omai-render/react`
+- function `Select`: React component: a dropdown with cycling arrows: `<Select label="loss" value={v} options={names} onChange={setV} />` `src/react/controls/Select.tsx:61` `omai-render/react`
 - function `SettingsButton`: React component: a gear opening a modal applied only on confirm: `<SettingsButton value={v} onApply={setV}>...</SettingsButton>` `src/react/controls/SettingsButton.tsx:57` `omai-render/react`
 - function `SlotVariants`: React component: choose slot options to compare: `<SlotVariants space={union} knobs={k} onChange={setK} />` `src/react/controls/SlotVariants.tsx:58` `omai-render/react`
 - function `SpaceControls`: React component: controls generated from an engine Space: `<SpaceControls space={space} value={v} onChange={setV} />` `src/react/controls/SpaceControls.tsx:51` `omai-render/react`
 - function `SpaceSettings`: React component: gear button editing a Space in a modal: `<SpaceSettings space={s} value={v} onApply={setV} />` `src/react/controls/SettingsButton.tsx:208` `omai-render/react`
 - function `useDataset`: React hook: generate the dataset a picker selected: `useDataset('classification2d', selection)` `src/react/controls/DatasetPicker.tsx:123` `omai-render/react`
+- function `useParams`: React hook: a figure's knobs as one record with set, reset, isDefault: `useParams({ noise: 0.1 })` `src/react/controls/useParams.ts:77` `omai-render/react`
 
 ## react/interaction
 
@@ -58,7 +63,7 @@ Interaction overlays laid over any figure through a projection between data and 
 - function `InteractionOverlay`: React component: SVG layer over a figure for tools: `<InteractionOverlay projection={p} width={w} height={h}>...` `src/react/interaction/InteractionOverlay.tsx:46` `omai-render/react`
 - function `Overlaid`: React component: stack a figure and its overlay: `<Overlaid width={w} height={h} overlay={tools}>{chart}</Overlaid>` `src/react/interaction/InteractionOverlay.tsx:92` `omai-render/react`
 - function `Probe`: React component: a crosshair reporting the data point under the pointer: `<Probe onProbe={setPoint} />` `src/react/interaction/Probe.tsx:19` `omai-render/react`
-- function `useChartProjection`: React hook: projection of a live Chart for overlays: `useChartProjection()` `src/react/interaction/useChartProjection.ts:19` `omai-render/react`
+- function `useChartProjection`: React hook: projection of a live Chart for overlays: `useChartProjection()` `src/react/interaction/useChartProjection.ts:22` `omai-render/react`
 - function `useLinkState`: React hook: read hover, selection and brush shared by linked figures: `useLinkState(store)` `src/react/interaction/useLinkState.ts:17` `omai-render/react`
 
 - structure `Constraint`: Where a dragged point may go; build with `inBox`, `onGraph`, `onCircle`, `onGrid`, `chain` `src/react/interaction/constraints.ts:13` `omai-render/react`

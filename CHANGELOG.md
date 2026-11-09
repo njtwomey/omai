@@ -3,6 +3,36 @@
 Versions are released in lockstep for omai-engine, omai-render and omai-meta. Up to 0.1.3 the packages were published as
 mdml-engine, mdml-render and mdml-meta.
 
+## 0.1.10
+
+What a notes page needs to use omai directly, with no local kit (the circular statistics page and decksmith).
+- `ResponsiveChart` (`omai-render/react`): a chart that fills its container. `build(fig)` makes the option for the measured
+  width (rebuilt only when the width changes by a pixel), `narrowAspect` below `narrowBelow` (default 520 px), `square` for a
+  square plotting area (`squarePlot` in `omai-render/figure`), and an `overlay` slot that gets `{ projection, size }` so draggable
+  handles sit on a fluid chart. An empty (0 by 0, hidden) measurement is ignored and the last size kept. Wrap `build` in
+  `useCallback`.
+- Colour modes: a layer built with no `mode` is now right in the mode of the chart that draws it. Before, `lines([{ colour: 'fg' }])`
+  drawn in a dark `cartesian` had the light foreground (`#0a0a0a`, invisible); every layer builder in `omai-render/charts` (40
+  of them) is now redrawn in the chart's mode by `cartesian`, `subplots` and `plotRectOf`. An explicit `mode` on a layer still
+  wins, and light output is unchanged. A layer copied or edited as plain data (`{ ...layer, secondary: true }`) keeps the colours
+  it had.
+- Projection for overlays: `chartProjection` and `useChartProjection` make no ECharts call for a chart whose grid box and value
+  axis limits are numbers (the usual omai chart): the map comes from the option. Dragging a handle used to log about 14 ECharts
+  warnings ("No coordinate system that supports convertToPixel"); now it logs none. Log, category, time and auto-range axes, a
+  `containLabel` grid and any `dataZoom` still use ECharts' converters. `Projection` gained `project(x, y)` and `unproject(px, py)`
+  (required members: a hand-built `Projection` needs them), and `useChartProjection` re-renders its host when a redraw moves the box.
+- `useJob`: a heavy one-shot computation in named stages with progress (`phase`, `stage`, `stageName`, `progress`, `result`,
+  `restart`). Nothing runs until `active`, a change of `inputs` starts a new job and drops the old one's late result, a stage may be
+  a generator that yields a fraction and is run in slices of 8 ms so the bar paints. The stage is readable while it runs. A single
+  stage that blocks for seconds still blocks the page: only a worker helps.
+- `useParams(initial)` (`omai-render/react`): a figure's own knobs as one record (`values`, `set(patch)`, `reset`, `isDefault`).
+- Controls: `NumberField`, `Toggle`, `Select` and `Choice` take `size` (`sm`, `md`, `lg`) and `width` (pixels, a CSS length, `fill`
+  or `auto`), and their labels wrap instead of truncating (`truncate` brings the old behaviour back). Defaults look as before.
+- `FigureFrame`: slots `purpose`, `controls`, `readouts` and `caption`, with small `Readouts` (a label and value list) and `Controls`
+  (a wrapping row) components; the title is a permalink (`#id`, copies the address, scrolls to the figure when the page is
+  opened at it; `id` and `permalink={false}` to set or turn off). The host-token mapping onto the `--wb-*` variables is documented
+  in `react/theme.tsx`.
+
 ## 0.1.9
 
 Follow-ups from decksmith and from the circular statistics page.
