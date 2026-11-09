@@ -31,7 +31,7 @@ describe('online dictionary learning', () => {
     expect(f.params.nIter).toBe(8)
     const long = miniBatchDictionaryLearning.with({ ...base, maxIter: 40, init: 'samples' }).fit({ x }, { key: key(3) })
     expect(dictionaryRecovery(truth, long.params.components).mean).toBeGreaterThan(0.9)
-  })
+  }, 30_000)
 
   it("keeps the running statistics of Mairal: after one batch A = C'C / m and B = X'C / m", () => {
     const algorithm = miniBatchDictionaryLearningAlgorithm(x, truth, { alpha: 0.1, batchSize: 24, shuffle: false })

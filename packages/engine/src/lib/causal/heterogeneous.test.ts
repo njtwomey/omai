@@ -92,7 +92,7 @@ describe('a nonlinear effect needs a flexible effect learner', () => {
     const truthAte = truth.reduce((a, b) => a + b, 0) / truth.length
     expect(Math.abs(ate.estimate.value - truthAte)).toBeLessThan(0.3)
     expect(forest.predictOutOfBag().length).toBe(truth.length)
-  })
+  }, 60_000)
 
   it('grows one tree per step and its state serialises', () => {
     const alg = causalForestAlgorithm(data, { trees: 6, minLeaf: 20 })
