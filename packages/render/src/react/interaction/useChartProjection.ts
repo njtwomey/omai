@@ -3,13 +3,16 @@
  * chart exists and again whenever it is recreated (as on a change of colour mode).
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useReducer, useState } from 'react'
 import { chartProjection, type PixelConverter, type Projection } from './projection.ts'
 
 /**
  * The projection of a live chart's axes, for an {@link InteractionOverlay} laid over a `Chart`: pass `onInit` to the
  * chart, and the projection is set once the chart exists (and again if it is recreated, as on a change of colour mode).
- * Give the chart fixed axis limits so the projection does not move under the reader's hand.
+ * Give the chart fixed axis limits so the projection does not move under the reader's hand; with numeric `min` and
+ * `max` on its value axes (as omai's charts write them) the projection is computed from the chart's option and ECharts
+ * is not asked at all (see {@link chartProjection}). The host renders again when a redraw moves the plotting box or the
+ * ranges, so handles follow a chart that is resized.
  *
  * @param gridIndex - Which grid (set of axes) of the chart (default 0).
  * @returns The projection (`null` until the chart exists; its `rect` is the plotting box in pixels, so a caller can
@@ -21,6 +24,11 @@ export function useChartProjection(gridIndex = 0): {
   readonly onInit: (chart: PixelConverter) => void
 } {
   const [projection, setProjection] = useState<Projection | null>(null)
-  const onInit = useCallback((chart: PixelConverter) => setProjection(chartProjection(chart, gridIndex)), [gridIndex])
+  // A redraw that moves the box or the ranges (a fluid chart resized) renders the host again, so handles follow it.
+  const [, redraw] = useReducer((n: number) => n + 1, 0)
+  const onInit = useCallback(
+    (chart: PixelConverter) => setProjection(chartProjection(chart, gridIndex, redraw)),
+    [gridIndex],
+  )
   return { projection, onInit }
 }
