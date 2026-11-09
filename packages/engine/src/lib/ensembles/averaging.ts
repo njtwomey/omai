@@ -65,6 +65,12 @@ export interface AveragingOptions {
   readonly bootstrap: boolean
   /** Rows per sample, as a count (default all). */
   readonly maxSamples?: number
+  /**
+   * Rework each member's sample after it is drawn (balanced ensembles cut each class to the same size): from how often
+   * each row is in the sample to the multiplicities the member is fitted on, under a key of its own. Rows left with
+   * none count as out of bag.
+   */
+  readonly balance?: (counts: Float64Array, key: Key) => Float64Array
 }
 
 /** The state of {@link averagingAlgorithm}. */
@@ -137,11 +143,12 @@ export function averagingAlgorithm<P extends Json, K extends string = never>(
       oobScores: [],
     }),
     step: (s, ctx) => {
-      const counts = new Float64Array(n)
+      const drawn = new Float64Array(n)
       if (options.bootstrap)
-        for (const i of toFlat(randint(foldIn(ctx.key, 0), [size], 0, n))) counts[i] = (counts[i] ?? 0) + 1
-      else if (size < n) for (const i of toFlat(subsample(foldIn(ctx.key, 0), n, size))) counts[i] = 1
-      else counts.fill(1)
+        for (const i of toFlat(randint(foldIn(ctx.key, 0), [size], 0, n))) drawn[i] = (drawn[i] ?? 0) + 1
+      else if (size < n) for (const i of toFlat(subsample(foldIn(ctx.key, 0), n, size))) drawn[i] = 1
+      else drawn.fill(1)
+      const counts = options.balance === undefined ? drawn : options.balance(drawn, foldIn(ctx.key, 2))
       const fitted = member.fit(counts, foldIn(ctx.key, 1))
       const out = member.outputs(fitted)
       const sum = Float64Array.from(s.sum)
@@ -158,7 +165,10 @@ export function averagingAlgorithm<P extends Json, K extends string = never>(
       const members = s.members.length + 1
       const covered = Array.from({ length: n }, (_, i) => i).filter((i) => (oobCount[i] ?? 0) > 0)
       const trainScore = scoreOfSum(sum, members, target.y, k)
-      const oobScore = options.bootstrap || size < n ? scoreOfSum(oobSum, oobCount, target.y, k, covered) : Number.NaN
+      const oobScore =
+        options.bootstrap || size < n || options.balance !== undefined
+          ? scoreOfSum(oobSum, oobCount, target.y, k, covered)
+          : Number.NaN
       if (ctx.wants('ensemble/member')) ctx.log('ensemble/member', members)
       if (ctx.wants('ensemble/weight')) ctx.log('ensemble/weight', 1)
       if (ctx.wants('ensemble/trainScore')) ctx.log('ensemble/trainScore', trainScore)

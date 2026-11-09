@@ -12,6 +12,7 @@ import { categorical, type Distribution, normal } from '../dists/index.ts'
 import type { Exposition } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
 import { type FittedFacts, type LearnData, type Verbs, withDefaultScore } from '../learn/estimator.ts'
+import { type BalancedBagOptions, balancedBag } from '../learn/preprocessing/resampling.ts'
 import { matrixView, sampleWeightsOf, takeRows } from '../learn/validation.ts'
 import { foldIn, uniform } from '../random/index.ts'
 import { choice, dict, int } from '../space/index.ts'
@@ -56,6 +57,8 @@ export interface ForestHyper {
   readonly splitter: 'best' | 'random'
   /** Indices of the categorical features. */
   readonly categorical: readonly number[]
+  /** Balance each tree's sample by random under-sampling (as imbalanced-learn's balanced forest), see {@link balancedBag}. */
+  readonly balance?: BalancedBagOptions
 }
 
 /** Parameters of a fitted forest. */
@@ -181,7 +184,31 @@ function proximityOf(trees: readonly FittedTree[], x: TensorLike): number[][] {
   )
 }
 
-function forestEstimator(name: string, classifier: boolean, defaults: ForestHyper): ForestEstimator {
+/**
+ * The forest estimator under a name: the engine of the random forests, the extra trees and the balanced forest.
+ *
+ * @param name - The estimator's name.
+ * @param classifier - Classification or regression.
+ * @param defaults - The hyperparameters in full.
+ * @returns The estimator.
+ * @example
+ * ```ts
+ * import { forestEstimator } from 'omai-engine/ensembles'
+ * const estimator = forestEstimator('my-forest', true, {
+ *   nEstimators: 3,
+ *   criterion: 'gini',
+ *   minSamplesSplit: 2,
+ *   minSamplesLeaf: 1,
+ *   maxFeatures: 'sqrt',
+ *   minImpurityDecrease: 0,
+ *   bootstrap: true,
+ *   splitter: 'best',
+ *   categorical: [],
+ * })
+ * estimator.name // => 'my-forest'
+ * ```
+ */
+export function forestEstimator(name: string, classifier: boolean, defaults: ForestHyper): ForestEstimator {
   const prepare = (learn: LearnData): TreeData => treeData(learn, classifier, name)
   const growOf = (h: ForestHyper): GrowOptions => ({
     criterion: h.criterion,
@@ -256,6 +283,17 @@ function forestEstimator(name: string, classifier: boolean, defaults: ForestHype
             nEstimators: h.nEstimators,
             bootstrap: h.bootstrap,
             ...(h.maxSamples === undefined ? {} : { maxSamples: h.maxSamples <= 1 ? h.maxSamples * n : h.maxSamples }),
+            ...(h.balance === undefined
+              ? {}
+              : {
+                  balance: (counts, key) =>
+                    balancedBag(
+                      Array.from(data.y, (code) => data.classes[code] ?? code),
+                      counts,
+                      h.balance as BalancedBagOptions,
+                      key,
+                    ),
+                }),
           },
           member,
         )

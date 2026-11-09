@@ -1,7 +1,8 @@
 /**
  * Ensembles of learners: bagging with out-of-bag bookkeeping, random forests and extra trees, the random trees
  * embedding, AdaBoost (SAMME, SAMME.R and R2) over any base estimator, gradient boosting with its losses, histogram
- * boosting with leaf-wise growth, the cyclic booster behind explainable boosting, and voting and stacking. Each is a
+ * boosting with leaf-wise growth, the cyclic booster behind explainable boosting, voting and stacking, and the balanced
+ * ensembles (bagging, forest, EasyEnsemble, RUSBoost) whose members each see a class-balanced sample. Each is a
  * stepped algorithm, one member or stage per step, built on the iterative base, so the members' sum builds up on the
  * tape and every stage can be read back.
  */
@@ -9,6 +10,7 @@
 export * from './adaboost.ts'
 export * from './averaging.ts'
 export * from './bagging.ts'
+export * from './balanced.ts'
 export * from './cyclic-binning.ts'
 export * from './cyclic.ts'
 export * from './forest.ts'

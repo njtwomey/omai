@@ -14,8 +14,9 @@ import { categorical, type Distribution } from '../dists/index.ts'
 import type { Exposition } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
 import { type Estimator, type FittedFacts, type LearnData, type Verbs, withDefaultScore } from '../learn/estimator.ts'
+import { type BalancedBagOptions, balancedBag } from '../learn/preprocessing/resampling.ts'
 import { encodeLabels, matrixView, rowsOf, sampleWeightsOf, takeData, targetVector } from '../learn/validation.ts'
-import { choice as drawRows, foldIn } from '../random/index.ts'
+import { choice as drawRows, foldIn, type Key } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import {
@@ -132,6 +133,11 @@ export interface AdaBoostHyper {
   readonly algorithm: AdaBoostAlgorithm
   /** Regression: the loss of AdaBoost.R2. */
   readonly loss: 'linear' | 'square' | 'exponential'
+  /**
+   * Classification: fit each member on a class-balanced random sample of the rows (RUSBoost, see {@link balancedBag}),
+   * with the row weights of the sample; the errors and the reweighting still use all the rows.
+   */
+  readonly balance?: BalancedBagOptions
 }
 
 /** The state of the AdaBoost algorithms. */
@@ -267,7 +273,28 @@ function weightedMedianPredict(preds: readonly Float64Array[], weights: readonly
   })
 }
 
-function adaBoostEstimator(name: string, classifier: boolean, defaults: AdaBoostHyper): AdaBoostEstimator {
+/**
+ * The AdaBoost estimator under a name: the engine of {@link adaBoostClassifier}, {@link adaBoostRegressor} and RUSBoost.
+ *
+ * @param name - The estimator's name.
+ * @param classifier - Classification (SAMME, SAMME.R) or regression (R2).
+ * @param defaults - The hyperparameters in full.
+ * @returns The estimator.
+ * @example
+ * ```ts
+ * import { adaBoostEstimator } from 'omai-engine/ensembles'
+ * import { decisionTreeClassifier } from 'omai-engine/trees'
+ * const estimator = adaBoostEstimator('my-boost', true, {
+ *   estimator: decisionTreeClassifier({ maxDepth: 1, record: 0 }),
+ *   nEstimators: 5,
+ *   learningRate: 1,
+ *   algorithm: 'SAMME',
+ *   loss: 'linear',
+ * })
+ * estimator.name // => 'my-boost'
+ * ```
+ */
+export function adaBoostEstimator(name: string, classifier: boolean, defaults: AdaBoostHyper): AdaBoostEstimator {
   const classesOf = (data: LearnData): readonly number[] => (classifier ? encodeLabels(data.y ?? [], name).classes : [])
   const algorithmOf = (data: LearnData, h: AdaBoostHyper): Algorithm<AdaBoostState, AdaBoostPath> => {
     const n = rowsOf(data.x)
@@ -277,6 +304,17 @@ function adaBoostEstimator(name: string, classifier: boolean, defaults: AdaBoost
     const w0 = sampleWeightsOf(data.weights, n, name)
     const total0 = w0.reduce((a, b) => a + b, 0)
     if (classifier && k < 2) throw new OmaiError('value', `${name}: needs two classes`)
+    /** The rows of a class-balanced sample, with the row weights they carry (RUSBoost). */
+    const balancedData = (sw: Float64Array, key: Key): LearnData => {
+      const counts = balancedBag(
+        Array.from(y, (code) => classes[code] ?? code),
+        new Float64Array(n).fill(1),
+        h.balance as BalancedBagOptions,
+        key,
+      )
+      const rows = Array.from(counts.keys()).flatMap((i) => new Array<number>(counts[i] ?? 0).fill(i))
+      return takeData({ ...data, weights: sw }, rows)
+    }
     /** The member's outputs on the training rows: labels as one-hot (SAMME), probabilities (SAMME.R), values. */
     const outputsOf = (params: Json): Float64Array => {
       const f = h.estimator.revive(params)
@@ -322,7 +360,8 @@ function adaBoostEstimator(name: string, classifier: boolean, defaults: AdaBoost
         let contribution: Float64Array
         let stopNow = false
         if (classifier) {
-          fitted = h.estimator.fit({ ...data, weights: sw }, { key: foldIn(ctx.key, 0), explain: false }).params
+          const fitData = h.balance === undefined ? { ...data, weights: sw } : balancedData(sw, foldIn(ctx.key, 1))
+          fitted = h.estimator.fit(fitData, { key: foldIn(ctx.key, 0), explain: false }).params
           const out = outputsOf(fitted)
           const samme = h.algorithm === 'SAMME'
           // The member's labels, for its weighted error.
@@ -601,6 +640,7 @@ function adaDefaults(hyper: Partial<AdaBoostHyper>, estimator: Estimator): AdaBo
     learningRate: hyper.learningRate ?? 1,
     algorithm: hyper.algorithm ?? 'SAMME',
     loss: hyper.loss ?? 'linear',
+    ...(hyper.balance === undefined ? {} : { balance: hyper.balance }),
   }
 }
 
