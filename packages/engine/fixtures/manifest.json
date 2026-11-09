@@ -1623,6 +1623,14 @@
       "cases": 7
     },
     {
+      "fixture": "linear/ard.json",
+      "source": "oracle/cases/linear/ard.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "linear/bayesian.json",
       "source": "oracle/cases/linear/bayesian.py",
       "reference": {
@@ -1678,6 +1686,14 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 8
+    },
+    {
+      "fixture": "linear/lasso_lars_ic.json",
+      "source": "oracle/cases/linear/lasso_lars_ic.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 5
     },
     {
       "fixture": "linear/mixed.json",

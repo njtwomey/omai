@@ -4522,7 +4522,16 @@ and kernel variants.
 variable leaves when its coefficient crosses zero; logs `alpha`, `active`, the `coefficients` tensor and the message
 `event`), `larsPath` (the whole path: penalties, coefficients, entry order), `coefficientsAt` (interpolation at a
 penalty) and the `lars` estimator (the model at a penalty or active count, the path in `params.path`; `fittedAt(t)` is
-knot `t`). oracle: `linear/lars` against `sklearn.linear_model.lars_path` and `LassoLars`.
+knot `t`), and `lassoLarsIC` (the knot of the lasso path with the lowest AIC or BIC, scikit-learn's criterion with the noise
+variance from the OLS fit or given; `params.criterion` is the criterion at every knot). oracle: `linear/lars` against
+`sklearn.linear_model.lars_path` and `LassoLars`, `linear/lasso_lars_ic` against `LassoLarsIC`.
+
+`ard.ts` is automatic relevance determination regression: `ardAlgorithm` (scikit-learn's evidence-maximisation loop, one
+iteration per step: the posterior of the kept weights, the precision updates with Gamma hyperpriors and the pruning at
+`thresholdLambda`; direct and Woodbury inversion as scikit-learn chooses; the state serialises), `ardCoefficients` (the
+model after the final posterior update, as scikit-learn ends a fit) and the `ardRegression` estimator (`predictStd` is the
+posterior predictive spread). oracle: `linear/ard` against `ARDRegression` for tall and wide designs, with and without an
+intercept (weights, precisions, posterior covariance, iteration count, objective, predictions and spread).
 
 `diagnostics.ts` is regression diagnostics from one SVD of the (weighted, intercept-last) design: `olsInfluence` (leverage,
 internal and external studentised residuals, Cook's distance, DFFITS and its internal form, DFBETA(S), COVRATIO,
