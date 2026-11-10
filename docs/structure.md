@@ -3793,7 +3793,7 @@ banana and a two-mode target; the radon regression; a three-player TrueSkill; an
 `additional.ts`, `additionalBenchmarkModels`: stochastic volatility, a Gaussian hidden Markov model, Gaussian process
 regression centred and non-centred, a small LDA, a small Bayesian neural network, 2PL item response scoring, a truncated
 stick-breaking mixture and Minka's clutter problem), `whereBenchmarks`, `benchmarkModel`; model files `conjugate.ts`,
-`glm.ts`, `schools.ts`, `mixture.ts`, `geometry.ts` (also `bananaDraws`, exact draws from the banana for drawing the target),
+`glm.ts`, `probit-classification.ts` (the probit classifier for a design of any width with a chosen prior scale, `polynomialFeatureMap`, the standardised polynomial design of two inputs with an intercept and the weight scale that keeps the linear predictor of order one at the starting weights, `probitPredictive` and `probitPredictiveGrid` for the posterior predictive of a probit posterior, `heldOutScores`), `schools.ts`, `mixture.ts`, `geometry.ts` (also `bananaDraws`, exact draws from the banana for drawing the target),
 `hierarchical.ts`, `ranking.ts` (also `trueskillTournament`, the games of a small tournament from known skills in a fixed order so
 a page can add games one at a time, and `trueskillModel`, the tournament as a model with a node per player and an observation
 per game), `state-space.ts` (the AR(1) state as a spec with a `scan` node, with `ar1MarkovProgram`, the same model by hand as a
@@ -8567,7 +8567,7 @@ shell, added only on request; see its README). Pocs that belong together are lis
 section per group (a group's own page is `/group/<slug>`; a search lists matches flat with the group on each card; a poc with
 no group is under "More"; `groupPocs` makes the sections). The groups are `probabilistic-programming` (eleven pocs: `bayes-linear`,
 `bocpd` and the showcase set of the probabilistic-programming plan below), `structured-prediction`, `models` and
-`graphics-and-fields`. The nine showcase pocs, each a composition of library methods and records with the exact answer beside
+`graphics-and-fields`. The probit regression lab (`probit-lab`, added by request) is a tenth in the group: one probit regression on one two-dimensional dataset, run by the methods ticked, each in its own Web Worker (`serveStage` of `omai-render/producer`, a pool of at most `min(methods, cores - 1, 4)`, each through `runAnytimeAsync` for the budget); the page only counts the clock, and afterwards one playhead drives the pair plots, decision boundaries, marginals and diagnostics from the frames the workers recorded. The nine showcase pocs, each a composition of library methods and records with the exact answer beside
 them, are `probit-two-engines` (one probit regression written in the model builder and run by NUTS, EP and Laplace within a time
 budget against the grid, with the plate diagram carrying EP's messages), `ep-alpha-clutter` (Minka's clutter problem, alpha-divergence
 EP at a ladder of alphas against the exact posterior), `eight-schools-funnel` (NUTS on the centred, non-centred and collapsed forms,

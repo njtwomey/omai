@@ -157,6 +157,10 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `defineBenchmark`: Make a benchmark model: a spec or program with generator, truth, tags, references and method plans. `src/lib/probprog/models/benchmark.ts:175` `omai-engine/probprog/models`
 - function `evidenceCampaigns`: Periodic validation of the evidence estimators, nested sampling, particle filters and particle MCMC. `src/lib/probprog/models/evidence-campaigns.ts:521` `omai-engine/probprog/models`
 - function `kernelCampaigns`: The periodic validation of the kernel methods: Geweke, calibration, agreement and the two-mode target. `src/lib/probprog/models/kernel-campaigns.ts:547` `omai-engine/probprog/models`
+- function `polynomialFeatureMap`: The standardised polynomial design of two inputs with an intercept: `polynomialFeatureMap(points, 3).transform(rows)`. `src/lib/probprog/models/probit-classification.ts:58` `omai-engine/probprog/models`
+- function `probitClassifier`: The probit classifier of any design width with a chosen prior scale; bind it with `probitData`. `src/lib/probprog/models/probit-classification.ts:102` `omai-engine/probprog/models`
+- function `probitPredictive`: Predictive probability of a probit model at design rows, from weight draws. `src/lib/probprog/models/probit-classification.ts:145` `omai-engine/probprog/models`
+- function `probitPredictiveGrid`: Posterior predictive probability of a probit model over a 2-D grid, for a decision boundary. `src/lib/probprog/models/probit-classification.ts:226` `omai-engine/probprog/models`
 - function `structureCampaigns`: The structure of every benchmark model, and collapsed against full NUTS, as periodic campaigns. `src/lib/probprog/models/structure-campaigns.ts:364` `omai-engine/probprog/models`
 - function `sviCampaigns`: Periodic validation campaigns of the variational methods against the benchmark truths. `src/lib/probprog/models/svi-plans.ts:206` `omai-engine/probprog/models`
 

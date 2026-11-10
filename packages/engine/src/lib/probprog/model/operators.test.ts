@@ -48,6 +48,14 @@ describe('the registry', () => {
     expect(num(run('probit', [val([], x)]))).toBe(toArray(ndtr(x)))
   })
 
+  it('keeps the probit inside (0, 1), so a Bernoulli on it has a finite logit in the tails', () => {
+    const tails = num(run('probit', [val([], [-60, 0, 60])])) as number[]
+    expect(tails[0]).toBeGreaterThan(0)
+    expect(tails[1]).toBe(0.5)
+    expect(tails[2]).toBeLessThan(1)
+    expect(Math.log(tails[2] as number) - Math.log1p(-(tails[2] as number))).toBeLessThan(40)
+  })
+
   it('evaluates arithmetic, comparisons, where and clip', () => {
     expect(num(run('add', [val([], 2), val([], 3)]))).toBe(5)
     expect(num(run('sub', [val([], 2), val([], 3)]))).toBe(-1)

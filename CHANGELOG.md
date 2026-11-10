@@ -10,6 +10,15 @@ whole probabilistic-programming increment recorded here, under whichever version
 is on `main` so far; the plan is `docs/probprog/PLAN.md` (with its status section), the validation tables are in
 `docs/probprog/results/`.
 
+Probit classification (omai-engine, `omai-engine/probprog/models`): `probitClassifier(priorScale)` (the probit regression for a design of
+any width), `polynomialFeatureMap` (the inputs standardised, every monomial up to a degree, each column standardised, an intercept
+first, divided by a `weightScale` so the linear predictor is of order one at the starting weights), `probitPredictive` and
+`probitPredictiveGrid` (the posterior predictive from draws of the weights), `heldOutScores`. The `probit` operator of the model
+layer now keeps its value in (0, 1) (`1e-300` to `1 - eps/2`): a Bernoulli on it had an infinite logit where the normal CDF rounds
+to one, and a gradient method (a variational guide, a leapfrog step) that wandered there ended in a not-a-number gradient. The
+proof of concept `probit-lab` (Probit regression lab) runs the methods ticked in Web Workers within a time budget and replays
+their frames on one playhead.
+
 Probabilistic programming (omai-engine). The design: a model is written once as a value (a spec), every method is its own
 thing with its own knobs and tape, the user chooses (no universal `infer`, no automatic decomposition; the planner `plan`,
 `explainPlan` and `infer` is unchanged), and every long-running method gives anytime results.
