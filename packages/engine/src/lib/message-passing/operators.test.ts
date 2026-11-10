@@ -252,15 +252,15 @@ describe('vector Gaussian operators', () => {
       .message as M.Eta
     const effective = 1 / (0.5 + 1 / tau)
     near(toWy.slice(2), [
-      effective * a[0]! * a[0]!,
-      effective * a[0]! * a[1]!,
-      effective * a[1]! * a[0]!,
-      effective * a[1]! * a[1]!,
+      effective * (a[0] as number) * (a[0] as number),
+      effective * (a[0] as number) * (a[1] as number),
+      effective * (a[1] as number) * (a[0] as number),
+      effective * (a[1] as number) * (a[1] as number),
     ])
     // To y: N(a . m, a' S a + 1 / tau).
     const toY = M.linearRegressionRow.ep?.(ctx(0, [M.valueArg(gaussian, 0), msg(w2, cavityW)], { a, precision: tau }))
       .message as M.Eta
-    const mean0 = a[0]! * mw[0]! + a[1]! * mw[1]!
+    const mean0 = (a[0] as number) * (mw[0] as number) + (a[1] as number) * (mw[1] as number)
     expect(gaussian.summary(toY)['mean']).toBeCloseTo(mean0, 10)
     expect(
       M.linearRegressionRow.logEvidence?.(
@@ -531,7 +531,7 @@ describe('discrete operators', () => {
     )
     near(
       M.discreteProbs(toX0),
-      want0.map((v) => v / (want0[0]! + want0[1]!)),
+      want0.map((v) => v / ((want0[0] as number) + (want0[1] as number))),
       1e-12,
     )
     const toX1 = M.table.bp?.(ctx(1, args, params, 'bp')).message as M.Eta
@@ -557,7 +557,7 @@ describe('discrete operators', () => {
     )
     near(M.discreteProbs(vq), M.discreteProbs(wantV), 1e-12)
     expect(M.table.expectedLog?.(ctx(0, args, params, 'vmp'))).toBeCloseTo(
-      [0, 1].reduce((s, a) => s + (q0[a] as number) * wantV[a]!, 0),
+      [0, 1].reduce((s, a) => s + (q0[a] as number) * (wantV[a] as number), 0),
       12,
     )
   })
@@ -613,7 +613,7 @@ describe('discrete operators', () => {
           )
           near(
             M.discreteProbs(M.select.ep?.(ctx(1, args, params)).message as M.Eta),
-            over.map((v) => v / (over[0]! + over[1]!)),
+            over.map((v) => v / ((over[0] as number) + (over[1] as number))),
             1e-6,
           )
           // To c_0: tilted(c) = cav_c(c) (p q_y(c) + (1 - p) O_1).

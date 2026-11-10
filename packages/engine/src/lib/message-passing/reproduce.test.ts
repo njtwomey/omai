@@ -171,7 +171,7 @@ describe('discrete tables reproduce the belief propagation, EP and VMP of pgm', 
     expect(r.status).toBe('converged')
     for (const name of vars) {
       const want = factorValues(ref.marginals[name] as never)
-      probs(r.state, name).forEach((p, i) => close(p, want[i] as number, 1e-9))
+      for (const [i, p] of probs(r.state, name).entries()) close(p, want[i] as number, 1e-9)
     }
     close(M.evidenceOf(g, s, r.state), ref.logPartition, 1e-8)
   })
@@ -199,7 +199,8 @@ describe('discrete tables reproduce the belief propagation, EP and VMP of pgm', 
     const ref = beliefPropagation(chain, { schedule: 'tree' })
     for (const name of vars) {
       const want = factorValues(ref.marginals[name] as never)
-      ;(M.marginalsOf(cg, r.state)[name]?.['probs'] as number[]).forEach((p, i) => close(p, want[i] as number, 1e-10))
+      for (const [i, p] of ((M.marginalsOf(cg, r.state)[name]?.['probs'] ?? []) as number[]).entries())
+        close(p, want[i] as number, 1e-10)
     }
   })
   it('EP on discrete tables has the fixed points of BP and of pgm EP', () => {
@@ -207,7 +208,7 @@ describe('discrete tables reproduce the belief propagation, EP and VMP of pgm', 
     const r = runAlgorithm(M.epAlgorithm(g, { schedule: 'flooding', tol: 1e-13 }), { maxSteps: 500 })
     for (const name of vars) {
       const want = factorValues(ref.marginals[name] as never)
-      probs(r.state, name).forEach((p, i) => close(p, want[i] as number, 1e-7))
+      for (const [i, p] of probs(r.state, name).entries()) close(p, want[i] as number, 1e-7)
     }
   })
   it('VMP on discrete tables reaches the mean-field fixed point of pgm', () => {
@@ -216,7 +217,7 @@ describe('discrete tables reproduce the belief propagation, EP and VMP of pgm', 
     expect(r.status).toBe('converged')
     for (const name of vars) {
       const want = factorValues(ref.marginals[name] as never)
-      probs(r.state, name).forEach((p, i) => close(p, want[i] as number, 1e-7))
+      for (const [i, p] of probs(r.state, name).entries()) close(p, want[i] as number, 1e-7)
     }
   })
 })

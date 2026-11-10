@@ -98,7 +98,7 @@ export interface MpSnapshot {
 
 const NO_IMPROPER: ImproperCounts = { events: 0, skipped: 0, damped: 0, reset: 0 }
 
-const isFlat = (eta: Eta | undefined): boolean => eta !== undefined && eta.every((v) => v === 0)
+const isFlat = (eta: Eta | undefined): boolean => eta?.every((v) => v === 0) === true
 
 /** The belief of a variable: the product of the messages of its edges (flat for none). */
 export function beliefOf(g: CompiledGraph, messages: readonly (readonly number[])[], variable: number): Eta {

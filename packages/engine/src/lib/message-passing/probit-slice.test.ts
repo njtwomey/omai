@@ -39,15 +39,15 @@ function gridPosterior(
   const n = x.length
   const logPosterior = (points: number[][]): Float64Array => {
     const zs = new Float64Array(points.length * n)
-    points.forEach((w, p) =>
-      x.forEach((row, i) => {
+    for (const [p, w] of points.entries()) {
+      for (const [i, row] of x.entries()) {
         const t =
           (row[0] as number) * (w[0] as number) +
           (row[1] as number) * (w[1] as number) +
           (row[2] as number) * (w[2] as number)
         zs[p * n + i] = y[i] === 1 ? t : -t
-      }),
-    )
+      }
+    }
     const logs = toFlat(logNdtr(fromStorage(zs, [zs.length], 'float64')))
     return Float64Array.from(points, (w, p) => {
       let s = -0.5 * (w.reduce((a, v) => a + v * v, 0) / priorSd ** 2) - 1.5 * Math.log(2 * Math.PI * priorSd ** 2)

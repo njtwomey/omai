@@ -102,7 +102,7 @@ export function bruteTilted(
   to: number,
   options: { readonly panels?: number; readonly order?: number } = {},
 ): { readonly logZ: number; readonly moments: number[] } {
-  const free = ports.map((p, i) => i).filter((i) => ports[i]?.derive === undefined && ports[i]?.value === undefined)
+  const free = ports.map((_, i) => i).filter((i) => ports[i]?.derive === undefined && ports[i]?.value === undefined)
   const intervals = free.map((i) => {
     const p = ports[i] as BrutePort
     if (p.kind === 'bernoulli') return [0, 1] as const

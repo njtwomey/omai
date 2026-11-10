@@ -14,7 +14,7 @@ import type { CompiledGraph } from './graph.ts'
 export interface AnytimeOptions {
   /** The browser budget in milliseconds: the run stops, resumable, when it has used this much of the clock. */
   readonly budgetMs: number
-  /** The clock, in milliseconds (injected: `() => performance.now()`). */
+  /** The clock, in milliseconds (injected by the app: the browser's high-resolution timer). */
   readonly clock: () => number
   /** The step cap of the algorithm's own budget (default 1,000,000). */
   readonly maxSteps?: number
