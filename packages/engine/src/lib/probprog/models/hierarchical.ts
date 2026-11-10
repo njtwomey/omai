@@ -296,7 +296,10 @@ export const radon: BenchmarkModel = defineBenchmark({
     const sigma = b.latent('sigma', d.halfNormal(PRIOR.sigma), { doc: 'the sd of a house within its county' })
     // The scales are clipped to [1e-6, 1e6] where they enter a distribution: a wild leapfrog step of the step-size search must
     // give a valid scale (the distribution constructors refuse an infinite one); the clip never binds where the posterior has mass.
-    const alpha = b.latent('alpha', d.normal(mu, ops.clip(tau, 1e-6, 1e6)), { dims: [county], doc: 'the intercept of each county' })
+    const alpha = b.latent('alpha', d.normal(mu, ops.clip(tau, 1e-6, 1e6)), {
+      dims: [county],
+      doc: 'the intercept of each county',
+    })
     b.observe('y', d.normal(alpha.add(beta.mul(floor)), ops.clip(sigma, 1e-6, 1e6)), y)
   }),
   generate: generateRadon,

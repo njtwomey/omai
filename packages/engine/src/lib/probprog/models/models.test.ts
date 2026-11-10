@@ -2,8 +2,8 @@
 // is finite, draws as plate notation, survives a JSON round trip, and is reproducible from its key; the suite is listed,
 // filtered and handed to a worker's registry by name; and each model's truth is a set of well-formed oracles.
 import { describe, expect, it } from 'vitest'
-import { item } from '../../tensor/index.ts'
 import { key } from '../../random/index.ts'
+import { item } from '../../tensor/index.ts'
 import { logJoint } from '../density.ts'
 import { boundFromJSON, boundToJSON, fromJSON, toProgram, toStructure } from '../model/index.ts'
 import { benchmarkEntries, benchmarkMethods, benchmarkRegistry, methodVerdicts } from './benchmark.ts'
@@ -56,7 +56,8 @@ describe.each(models)('$name', (model) => {
     if (model.target === 'posterior' && !model.name.startsWith('eight-schools'))
       expect(JSON.stringify(model.generate(key(4)))).not.toBe(JSON.stringify(a))
     // The canonical data are the generator at seed 0, except where a dataset is embedded (eight schools).
-    if (!model.name.startsWith('eight-schools')) expect(JSON.stringify(model.data)).toBe(JSON.stringify(model.generate(key(0))))
+    if (!model.name.startsWith('eight-schools'))
+      expect(JSON.stringify(model.data)).toBe(JSON.stringify(model.generate(key(0))))
     // The data are JSON: numbers and nested arrays only.
     expect(JSON.parse(JSON.stringify(a.data))).toEqual(a.data)
   })

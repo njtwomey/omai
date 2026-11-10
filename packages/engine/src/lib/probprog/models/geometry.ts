@@ -59,7 +59,9 @@ export const funnelCentred: BenchmarkModel = defineBenchmark({
     const v = m.latent('v', d.normal(0, FUNNEL_SCALE), { doc: 'the log variance of the coordinates' })
     // The scale e^(v/2) is clipped to [1e-12, 1e12] (v beyond about +-55): a wild leapfrog step of the step-size search must
     // give a valid scale; the clip never binds where the density has mass worth sampling.
-    m.latent('x', d.normal(0, ops.clip(ops.exp(v.mul(0.5)), 1e-12, 1e12)), { dims: [m.range('coord', { size: FUNNEL_COORDS })] })
+    m.latent('x', d.normal(0, ops.clip(ops.exp(v.mul(0.5)), 1e-12, 1e12)), {
+      dims: [m.range('coord', { size: FUNNEL_COORDS })],
+    })
   }),
   generate: () => noData({ scale: FUNNEL_SCALE, coordinates: FUNNEL_COORDS }),
   truth: () => funnelTruth(),

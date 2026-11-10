@@ -44,7 +44,11 @@ describe('the conjugate truths equal the closed forms and a brute-force integral
     const truth = betaBernoulli.truth()
     expect(truth.marginals['p']?.mean).toBeCloseTo((2 + k) / (4 + y.length), 12)
     const logBeta22 = Math.log(6)
-    const brute = logIntegral((p) => k * Math.log(p) + (y.length - k) * Math.log(1 - p) + Math.log(p) + Math.log(1 - p) + logBeta22, 1e-9, 1 - 1e-9)
+    const brute = logIntegral(
+      (p) => k * Math.log(p) + (y.length - k) * Math.log(1 - p) + Math.log(p) + Math.log(1 - p) + logBeta22,
+      1e-9,
+      1 - 1e-9,
+    )
     expect(truth.logEvidence).toBeCloseTo(brute, 5)
   })
 
@@ -64,7 +68,10 @@ describe('the conjugate truths equal the closed forms and a brute-force integral
     expect(truth.marginals['rate']?.mean).toBeCloseTo((2 + sum(k)) / (0.5 + k.length), 12)
     const logPrior = (r: number): number => 2 * Math.log(0.5) - item(lgamma(2)) + Math.log(r) - 0.5 * r
     const logLik = (r: number): number => sum(k.map((c) => c * Math.log(r) - r - item(lgamma(c + 1))))
-    expect(truth.logEvidence).toBeCloseTo(logIntegral((r) => logPrior(r) + logLik(r), 1e-9, 40), 6)
+    expect(truth.logEvidence).toBeCloseTo(
+      logIntegral((r) => logPrior(r) + logLik(r), 1e-9, 40),
+      6,
+    )
   })
 })
 
@@ -76,12 +83,16 @@ describe('the quadrature truths equal a plain-JavaScript quadrature of the same 
     const na = 301
     const lo = [-1, 0.3]
     const hi = [2, 1.2]
-    const ha = (hi[0] as number - (lo[0] as number)) / (na - 1)
-    const hb = (hi[1] as number - (lo[1] as number)) / (na - 1)
+    const ha = ((hi[0] as number) - (lo[0] as number)) / (na - 1)
+    const hb = ((hi[1] as number) - (lo[1] as number)) / (na - 1)
     const logPost = (a: number, b: number): number =>
-      logNormalPdf(a, 0, 2) + logNormalPdf(b, 0, 2) + sum(x.map((xi, i) => (k[i] ?? 0) * (a + b * xi) - Math.exp(a + b * xi))) - logK
+      logNormalPdf(a, 0, 2) +
+      logNormalPdf(b, 0, 2) +
+      sum(x.map((xi, i) => (k[i] ?? 0) * (a + b * xi) - Math.exp(a + b * xi))) -
+      logK
     const cells: { a: number; b: number; lp: number }[] = []
-    for (let i = 0; i < na; i++) for (let j = 0; j < na; j++) cells.push({ a: (lo[0] as number) + i * ha, b: (lo[1] as number) + j * hb, lp: 0 })
+    for (let i = 0; i < na; i++)
+      for (let j = 0; j < na; j++) cells.push({ a: (lo[0] as number) + i * ha, b: (lo[1] as number) + j * hb, lp: 0 })
     for (const c of cells) c.lp = logPost(c.a, c.b)
     const max = Math.max(...cells.map((c) => c.lp))
     const w = cells.map((c) => Math.exp(c.lp - max))
@@ -137,14 +148,21 @@ describe('the quadrature truths equal a plain-JavaScript quadrature of the same 
     expect(truth.marginals['theta[0]']?.mean).toBeCloseTo(mTheta0 / z, 1)
     expect(truth.logEvidence).toBeCloseTo(max + Math.log(z * hm * ht), 1)
     // The marginal spec is what the truth integrates: the same two latents as the full model's hyperparameters.
-    expect(eightSchoolsMarginal.spec.nodes.filter((nd) => nd.kind === 'latent').map((nd) => nd.name)).toEqual(['mu', 'tau'])
+    expect(eightSchoolsMarginal.spec.nodes.filter((nd) => nd.kind === 'latent').map((nd) => nd.name)).toEqual([
+      'mu',
+      'tau',
+    ])
   })
 })
 
 describe('the geometry specs are the library densities', () => {
   it('the banana spec has the log density of bananaDensity', () => {
     const program = toProgram(banana.bound())
-    for (const [x0, x1] of [[0.3, -1.5], [-2.2, 3.1], [3.5, 14.0]] as const) {
+    for (const [x0, x1] of [
+      [0.3, -1.5],
+      [-2.2, 3.1],
+      [3.5, 14.0],
+    ] as const) {
       const lj = item(logJoint(program, undefined, { x0, x1 }).logJoint)
       expect(lj).toBeCloseTo(item(bananaDensity().logProb(tensor([[x0, x1]]))), 10)
     }
@@ -164,7 +182,8 @@ describe('the geometry specs are the library densities', () => {
     const x = [0.5, -0.2]
     // The joint at each label is log(1/2) + the two normal densities; summing the label out gives the mixture density.
     const joint = (z: number): number => item(logJoint(program, undefined, { x, z }).logJoint)
-    const mode = (m: number): number => Math.log(0.5) + logNormalPdf(x[0] as number, m, 1) + logNormalPdf(x[1] as number, m, 1)
+    const mode = (m: number): number =>
+      Math.log(0.5) + logNormalPdf(x[0] as number, m, 1) + logNormalPdf(x[1] as number, m, 1)
     expect(joint(0)).toBeCloseTo(mode(-3), 10)
     expect(joint(1)).toBeCloseTo(mode(3), 10)
     const o = bimodal.truth().marginals['x[0]']
@@ -196,7 +215,10 @@ describe('the AR(1) smoothing truth equals the Kalman smoother', () => {
 
 describe('the models bind the library generators', () => {
   it('glmCurve data bind to the Poisson regression, whose posterior favours the generating coefficients', () => {
-    const { data, truth } = generate(glmCurve, { key: key(5), knobs: { n: 60, family: 'poisson', intercept: 0.3, slope: 0.8 } })
+    const { data, truth } = generate(glmCurve, {
+      key: key(5),
+      knobs: { n: 60, family: 'poisson', intercept: 0.3, slope: 0.8 },
+    })
     const bound = poissonRegression.definition?.bind({ x: toFlat(data.x).filter((_, i) => i < 60), k: toFlat(data.y) })
     expect(bound?.sizes).toEqual({ row: 60 })
     const program = toProgram(bound as NonNullable<typeof bound>)
@@ -207,10 +229,17 @@ describe('the models bind the library generators', () => {
   })
 
   it('blobs data (two centres, one feature) bind to the Gaussian mixture', () => {
-    const { data } = generate(blobs, { key: key(6), knobs: { n: 40, nFeatures: 1, centers: 2, clusterStd: 1, boxSize: 4 } })
+    const { data } = generate(blobs, {
+      key: key(6),
+      knobs: { n: 40, nFeatures: 1, centers: 2, clusterStd: 1, boxSize: 4 },
+    })
     const bound = gaussianMixture.definition?.bind({ y: toFlat(data.x) }, { sizes: { component: 2 } })
     expect(bound?.sizes).toEqual({ row: 40, component: 2 })
-    expect(Number.isFinite(item(logJoint(toProgram(bound as NonNullable<typeof bound>), undefined, {}, { key: key(1) }).logJoint))).toBe(true)
+    expect(
+      Number.isFinite(
+        item(logJoint(toProgram(bound as NonNullable<typeof bound>), undefined, {}, { key: key(1) }).logJoint),
+      ),
+    ).toBe(true)
     void anisotropicBlobs
   })
 
@@ -223,7 +252,11 @@ describe('the models bind the library generators', () => {
     const win = Array.from({ length: 30 }, (_, g) => ((ranks[2 * g] as number) < (ranks[2 * g + 1] as number) ? 1 : 0))
     const bound = trueskillThreePlayers.definition?.bind({ a, b, win }, { sizes: { player: 3 } })
     expect(bound?.sizes).toEqual({ player: 3, game: 30 })
-    expect(Number.isFinite(item(logJoint(toProgram(bound as NonNullable<typeof bound>), undefined, {}, { key: key(1) }).logJoint))).toBe(true)
+    expect(
+      Number.isFinite(
+        item(logJoint(toProgram(bound as NonNullable<typeof bound>), undefined, {}, { key: key(1) }).logJoint),
+      ),
+    ).toBe(true)
   })
 })
 
@@ -261,7 +294,9 @@ describe('defineBenchmark checks its parts', () => {
     plans: () => [exactPlan('conjugate')],
   }
   it('refuses a name that is not lower case with dashes', () => {
-    expect(() => defineBenchmark({ ...parts, name: 'Bad Name', program: () => () => undefined })).toThrow(/lower case with dashes/)
+    expect(() => defineBenchmark({ ...parts, name: 'Bad Name', program: () => () => undefined })).toThrow(
+      /lower case with dashes/,
+    )
   })
   it('wants a spec or a program, not both and not neither', () => {
     expect(() => defineBenchmark({ ...parts, name: 'neither' })).toThrow(/not both or neither/)

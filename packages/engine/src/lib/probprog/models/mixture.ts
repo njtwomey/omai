@@ -200,7 +200,12 @@ export const gaussianMixture: BenchmarkModel = defineBenchmark({
       ])
     return {
       ...truth,
-      marginals: { 'mu[0]': half('mu[0]'), 'mu[1]': half('mu[1]'), 'mu(1)': renamed(low, 'mu(1)'), 'mu(2)': renamed(high, 'mu(2)') },
+      marginals: {
+        'mu[0]': half('mu[0]'),
+        'mu[1]': half('mu[1]'),
+        'mu(1)': renamed(low, 'mu(1)'),
+        'mu(2)': renamed(high, 'mu(2)'),
+      },
     }
   },
   plans: (scale) => [

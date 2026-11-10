@@ -183,7 +183,13 @@ export function benchmarkAgreement(model: BenchmarkModel, options: BenchmarkAgre
     const table = agree([approximation], { oracle, quantities: Object.keys(oracle), quantilePoints: 400 })
     rows.push(...table.rows)
     if (plan.expect === 'agree') failures.push(...agreementWithin(table, plan.tolerances ?? {}))
-    if (plan.expect === 'differ' && agreementWithin(table, plan.tolerances ?? {}).length === 0)
+    // A method that failed, or that gave nothing to compare, has differed from the truth in the most complete way.
+    if (
+      plan.expect === 'differ' &&
+      run.status !== 'failed' &&
+      table.rows.length > 0 &&
+      agreementWithin(table, plan.tolerances ?? {}).length === 0
+    )
       surprises.push(`${plan.kind} was expected to differ from the truth (${plan.note}) and agrees with it`)
   })
   return {

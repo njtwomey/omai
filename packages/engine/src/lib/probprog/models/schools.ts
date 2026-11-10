@@ -159,7 +159,10 @@ export const eightSchoolsCentred: BenchmarkModel = defineBenchmark({
     const tau = m.latent('tau', d.halfCauchy(5), { doc: 'the spread of the effects' })
     // The scale is clipped to [1e-6, 1e6] where it enters the distribution: a wild leapfrog step of the step-size search must give a
     // valid scale; the clip never binds where the posterior has mass.
-    const theta = m.latent('theta', d.normal(mu, ops.clip(tau, 1e-6, 1e6)), { dims: [school], doc: 'the effect of each school' })
+    const theta = m.latent('theta', d.normal(mu, ops.clip(tau, 1e-6, 1e6)), {
+      dims: [school],
+      doc: 'the effect of each school',
+    })
     m.observe('y', d.normal(theta, sigma), y)
   }),
   canonical: CLASSIC,

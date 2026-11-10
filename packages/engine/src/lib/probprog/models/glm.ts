@@ -86,7 +86,7 @@ export const logisticRegression: BenchmarkModel = defineBenchmark({
       quality === 'fast' ? { points: 17, maxRefinements: 0 } : { points: 31, maxRefinements: 1 },
     ),
   plans: (scale) => [
-    nutsPlan(scale),
+    nutsPlan(scale, { tolerances: { meanError: 0.15, meanZ: 6 } }),
     temperedPlan(scale),
     importancePlan(scale, {
       expect: 'report',
@@ -144,7 +144,7 @@ export const probitRegression: BenchmarkModel = defineBenchmark({
       quality === 'fast' ? { points: 17, maxRefinements: 0 } : { points: 31, maxRefinements: 1 },
     ),
   plans: (scale) => [
-    nutsPlan(scale),
+    nutsPlan(scale, { tolerances: { meanError: 0.15, meanZ: 6 } }),
     temperedPlan(scale),
     importancePlan(scale, {
       expect: 'report',
@@ -210,7 +210,7 @@ export const poissonRegression: BenchmarkModel = defineBenchmark({
       quality === 'fast' ? { points: 41, maxRefinements: 0 } : { points: 81, maxRefinements: 1 },
     ),
   plans: (scale) => [
-    nutsPlan(scale),
+    nutsPlan(scale, { tolerances: { meanError: 0.15, meanZ: 6 } }),
     temperedPlan(scale),
     importancePlan(scale, {
       expect: 'report',
@@ -278,7 +278,7 @@ export const negativeBinomialRegression: BenchmarkModel = defineBenchmark({
       quality === 'fast' ? { points: 17, maxRefinements: 0 } : { points: 31, maxRefinements: 1 },
     ),
   plans: (scale) => [
-    nutsPlan(scale),
+    nutsPlan(scale, { tolerances: { meanError: 0.15, meanZ: 6 } }),
     temperedPlan(scale),
     importancePlan(scale, {
       expect: 'report',

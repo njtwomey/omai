@@ -89,7 +89,10 @@ describe('the expectations of a plan', () => {
         generate: normalNormal.generate,
         truth: (data) => {
           const t = normalNormal.truth(data)
-          return { ...t, marginals: { ...t.marginals, ghost: t.marginals['mu'] as NonNullable<(typeof t.marginals)['mu']> } }
+          return {
+            ...t,
+            marginals: { ...t.marginals, ghost: t.marginals['mu'] as NonNullable<(typeof t.marginals)['mu']> },
+          }
         },
         plans: () => [exactPlan('conjugate')],
       }),
