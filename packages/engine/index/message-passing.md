@@ -70,6 +70,8 @@ Message passing on factor graphs of exponential families, the Infer.NET way: a m
 
 - table `projections`: The projection slot's options: moment, klqp, sum-product. `src/lib/message-passing/projections.ts:79` `omai-engine/message-passing`
 
+- dataset `clutterProblem`: Minka's clutter problem: a mean with outliers, whose posterior is lumpy; seeded, with its truth. `src/lib/message-passing/clutter.ts:67` `omai-engine/message-passing`
+
 ## message-passing/operators
 
 The factor operators: the registry of closed-form message rules (a prior, Gaussian and linear-Gaussian factors, truncation and the probit link, conjugate probability factors, discrete tables and gates, a logistic link, and a numeric operator for any other density), each a value collected by `defaultOperators()`. Part of `omai-engine/message-passing`.

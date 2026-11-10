@@ -264,3 +264,100 @@ export function runAnytime<S, C extends Config, K extends string = string>(
   const reason: AnytimeResult['reason'] = cancelled ? 'cancelled' : s.status !== undefined ? 'ended' : 'budget'
   return { steps: s.t - t0, t: s.t, elapsedMs: elapsed(), snapshots, status: s.status, reason }
 }
+
+/** Options of {@link runAnytimeAsync}: those of {@link runAnytime}, and how the run shares the page. */
+export interface AnytimeAsyncOptions<S> extends AnytimeOptions<S> {
+  /** The most milliseconds computed before the page is given the thread back (default 40); needs the `clock`. */
+  readonly sliceMs?: number
+  /**
+   * Resolves when the page may run again (a `setTimeout(0)` or a frame): the library has no timers, so the caller
+   * says how a slice hands over, and what it awaits is where the page paints, handles a click and answers `shouldStop`.
+   */
+  readonly yieldToPage: () => Promise<void>
+}
+
+/**
+ * Drive a session within a budget as {@link runAnytime} does, in slices that hand the thread back to the page between
+ * them, so a page keeps painting and answering clicks while it runs: the snapshot callback fires about once a second
+ * (the default), the page draws what it was given, and `shouldStop` is asked after every slice rather than once a
+ * second. A slice is at most `sliceMs` (a method's own step is the finest grain); the run computes exactly what
+ * `runAnytime` and an uninterrupted session do, only the places where it pauses differ.
+ *
+ * @param s - The session of an inference method.
+ * @param options - Budget, snapshot interval, clock, callback, cancellation, the slice length and the hand-over.
+ * @returns How far the run got and why it returned.
+ * @throws OmaiError with code `value` for a time budget, time-based snapshot or slice without a clock.
+ * @concept inference-engines
+ * @index function runAnytime in slices that hand the page the thread: budget, snapshots, cancellable.
+ * @example
+ * ```ts
+ * import { defineInferenceMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
+ * import { scalar, session } from 'omai-engine/trace'
+ * import { dict } from 'omai-engine/space'
+ * const m = defineInferenceMethod({
+ *   name: 'count', family: 'exact', description: 'counts', config: dict({}),
+ *   make: () => ({ name: 'count', config: {}, init: () => 0, step: (s: number, ctx) => { ctx.log('n', s); return s + 1 } }),
+ *   contract: { n: scalar() },
+ * })
+ * const seen: number[] = []
+ * const r = await runAnytimeAsync(session(m, { steps: 100 }), {
+ *   budget: { steps: 10 }, snapshot: { everySteps: 4 }, yieldToPage: () => Promise.resolve(), onSnapshot: (x) => seen.push(x.t),
+ * })
+ * [r.reason, r.t, seen] // => ['budget', 10, [4, 8, 10]]
+ * ```
+ */
+export async function runAnytimeAsync<S, C extends Config, K extends string = string>(
+  s: Session<S, C, K>,
+  options: AnytimeAsyncOptions<S>,
+): Promise<AnytimeResult> {
+  const config: Config = s.config
+  const limitSteps = options.budget?.steps ?? knob(config, 'budgetSteps')
+  const limitMs = options.budget?.ms ?? knob(config, 'budgetMs')
+  const everyMs =
+    options.snapshot?.everyMs ?? (config['snapshotEveryMs'] === undefined ? 1000 : knob(config, 'snapshotEveryMs'))
+  const everySteps = options.snapshot?.everySteps ?? knob(config, 'snapshotEverySteps')
+  const clock = options.clock
+  const sliceMs = options.sliceMs ?? 40
+  if (limitMs > 0 && clock === undefined)
+    throw new OmaiError('value', 'runAnytimeAsync: a time budget needs a clock (the library reads none)')
+  if (clock === undefined && options.sliceMs !== undefined)
+    throw new OmaiError('value', 'runAnytimeAsync: a slice length needs a clock (the library reads none)')
+  const byTime = everyMs > 0 && clock !== undefined
+  const t0 = s.t
+  const started = clock?.() ?? 0
+  const elapsed = (): number => (clock === undefined ? 0 : clock() - started)
+  const spent = (): boolean =>
+    (limitSteps > 0 && s.t - t0 >= limitSteps) || (limitMs > 0 && clock !== undefined && elapsed() >= limitMs)
+  let snapshots = 0
+  let lastMs = 0
+  let lastT = s.t
+  const emit = (final: boolean): void => {
+    snapshots += 1
+    lastMs = elapsed()
+    lastT = s.t
+    options.onSnapshot?.({ t: s.t, elapsedMs: lastMs, state: s.state, status: s.status, final })
+  }
+  let cancelled = false
+  while (s.status === undefined && !spent()) {
+    if (options.shouldStop?.() === true) {
+      cancelled = true
+      break
+    }
+    let steps = Number.POSITIVE_INFINITY
+    if (limitSteps > 0) steps = Math.min(steps, limitSteps - (s.t - t0))
+    if (everySteps > 0) steps = Math.min(steps, everySteps - (s.t - lastT))
+    let ms = Number.POSITIVE_INFINITY
+    if (clock !== undefined) ms = sliceMs
+    if (limitMs > 0) ms = Math.min(ms, limitMs - elapsed())
+    s.advance({
+      ...(Number.isFinite(steps) ? { steps: Math.max(1, steps) } : {}),
+      ...(Number.isFinite(ms) && clock !== undefined ? { ms: Math.max(1e-6, ms), clock } : {}),
+    })
+    const due = (byTime && elapsed() - lastMs >= everyMs) || (everySteps > 0 && s.t - lastT >= everySteps)
+    if (s.status === undefined && !spent() && due) emit(false)
+    if (s.status === undefined && !spent()) await options.yieldToPage()
+  }
+  emit(true)
+  const reason: AnytimeResult['reason'] = cancelled ? 'cancelled' : s.status !== undefined ? 'ended' : 'budget'
+  return { steps: s.t - t0, t: s.t, elapsedMs: elapsed(), snapshots, status: s.status, reason }
+}

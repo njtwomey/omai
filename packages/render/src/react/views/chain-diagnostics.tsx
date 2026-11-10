@@ -23,7 +23,8 @@ import { Select } from '../controls/Select.tsx'
 import { RecordFigure, type RecordViewProps, useViewFigure } from './_frame.tsx'
 import { MarkedTableView } from './marked-tables.tsx'
 
-type Which =
+/** The charts of {@link ChainDiagnosticsView}, by the name its choice shows. */
+export type ChainView =
   | 'trace'
   | 'rank'
   | 'ecdf'
@@ -34,7 +35,7 @@ type Which =
   | 'pairs'
   | 'table'
 
-const CHART_OF: Readonly<Partial<Record<Which, ChainChart>>> = {
+const CHART_OF: Readonly<Partial<Record<ChainView, ChainChart>>> = {
   ecdf: 'ecdf',
   autocorrelation: 'autocorrelation',
   'ess by quantile': 'essQuantile',
@@ -43,7 +44,7 @@ const CHART_OF: Readonly<Partial<Record<Which, ChainChart>>> = {
   pairs: 'pairs',
 }
 
-const ORDER: readonly Which[] = [
+const ORDER: readonly ChainView[] = [
   'trace',
   'rank',
   'ecdf',
@@ -83,14 +84,19 @@ export function chainChartsOf(record: ChainDiagnostics): string[] {
  * of mean, sd, R-hat and effective sample size with the worrying cells marked. The choice lists the charts the record has
  * the data for.
  *
- * @param props - The record and the frame settings.
+ * @param props - The record, the frame settings and the chart open at first.
  * @returns The figure with its choice.
  * @index function React component: trace, rank, ECDF, ACF, ESS, energy, pair plots and R-hat table of MCMC chains.
  */
-export function ChainDiagnosticsView(props: RecordViewProps<ChainDiagnostics>): ReactElement {
+export function ChainDiagnosticsView(
+  props: RecordViewProps<ChainDiagnostics> & {
+    /** The chart open at first (default the trace plots); one the record has no data for falls back to the first. */
+    readonly initial?: ChainView
+  },
+): ReactElement {
   const { record } = props
-  const [chosen, setWhich] = useState<Which>('trace')
-  const available = useMemo(() => chainChartsOf(record) as Which[], [record])
+  const [chosen, setChart] = useState<ChainView>(props.initial ?? 'trace')
+  const available = useMemo(() => chainChartsOf(record) as ChainView[], [record])
   // A record that changes (a run in progress) may no longer have the chart that was open: fall back to the first.
   const which = available.includes(chosen) ? chosen : 'trace'
   const defaults = useMemo(
@@ -136,9 +142,9 @@ export function ChainDiagnosticsView(props: RecordViewProps<ChainDiagnostics>): 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: '100%' }}>
       {available.length <= 5 ? (
-        <Choice label="chart" value={which} options={available as Which[]} onChange={setWhich} />
+        <Choice label="chart" value={which} options={available as ChainView[]} onChange={setChart} />
       ) : (
-        <Select label="chart" value={which} options={available as Which[]} onChange={setWhich} />
+        <Select label="chart" value={which} options={available as ChainView[]} onChange={setChart} />
       )}
       {which === 'table' ? (
         <MarkedTableView record={table} {...(props.title === undefined ? {} : { title: props.title })} />

@@ -9,6 +9,7 @@
 export * from './alpha.ts'
 export * from './amp.ts'
 export * from './anytime.ts'
+export * from './clutter.ts'
 export * from './consistent.ts'
 export * from './engine.ts'
 export * from './families-vector.ts'

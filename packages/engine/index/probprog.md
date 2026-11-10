@@ -16,6 +16,7 @@ Probabilistic programming, NumPyro style: programs written with `sample` and `ob
 - function `collapse`: Integrate conjugate latent sites out of a program (delayed sampling) with recover. `src/lib/probprog/collapse.ts:199` `omai-engine/probprog`
 - function `laplaceInitialParams`: Initial parameters of an automatic guide from a Laplace fit of the model. `src/lib/probprog/guides-init.ts:84` `omai-engine/probprog`
 - function `lift`: Turn param sites into sample sites with priors (Pyro's lift). `src/lib/probprog/lift.ts:40` `omai-engine/probprog`
+- function `posteriorChains`: MCMC posterior draws by chain and coordinate, with divergences and energy. `src/lib/probprog/posterior-chains.ts:50` `omai-engine/probprog`
 - function `regenerate`: Redraw selected sites from the program given the rest, with the MH weight (Gen's regenerate). `src/lib/probprog/trace-ops.ts:259` `omai-engine/probprog`
 
 - estimator `dregElbo`: Importance-weighted ELBO with the doubly reparameterised (DReG) gradient. `src/lib/probprog/elbo-extra.ts:126` `omai-engine/probprog`
@@ -45,6 +46,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - function `defineKernel`: Define your own sampler on the handler layer in a few lines. `src/lib/probprog/inference/kernel.ts:188` `omai-engine/probprog/inference`
 - function `inferenceMethods`: The methods an app offers on its registered models, named kind/model, for a worker. `src/lib/probprog/inference/models.ts:176` `omai-engine/probprog/inference`
 - function `modelRegistry`: Models by name for a worker: `modelRegistry({ radon: { definition, data } })`. `src/lib/probprog/inference/models.ts:83` `omai-engine/probprog/inference`
+- function `runAnytimeAsync`: runAnytime in slices that hand the page the thread: budget, snapshots, cancellable. `src/lib/probprog/inference/method.ts:309` `omai-engine/probprog/inference`
 
 - estimator `abcRejectionMethod`: Rejection ABC with summary statistics, as a one-step method. `src/lib/probprog/inference/abc-methods.ts:237` `omai-engine/probprog/inference`
 - estimator `abcSmcMethod`: ABC-SMC, one generation per step, with the tolerance shrinking on the tape. `src/lib/probprog/inference/abc-methods.ts:109` `omai-engine/probprog/inference`
