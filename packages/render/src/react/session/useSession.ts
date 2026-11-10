@@ -38,6 +38,14 @@ export interface LiveHandle {
   readonly done: boolean
   /** Whether the producer is computing ahead in the background. */
   readonly computing: boolean
+  /**
+   * Whether the run is incomplete and nothing is computing towards its end now: a live (`'play'`) session that was never
+   * played, a session that is not `active` or whose computing was halted. It is what makes `data-omai-state` read `idle`
+   * and not `preparing` (see `OmaiState`). It is false while a primed or eager session is about to prime or priming, while
+   * a worker or the main-thread producer computes, and once the tape is whole (then the state is `ready`). Absent on a
+   * handle made by hand, which counts as not idle.
+   */
+  readonly idle?: boolean
   /** Start computing ahead in the spare time of each animation frame, until the run ends. */
   compute(): void
   /** Stop computing ahead (the tape stays). */
@@ -90,7 +98,8 @@ export interface LiveHandle {
    * per run: a restart (`apply()`, a change of method or options that is applied) gives a fresh one, and the old one
    * settles as `'disposed'` if its run had not ended; so does using a disposed session again (`play`, `compute`). A
    * session that is not `active` or never played under the `'play'` policy does not compute, so its promise stays
-   * pending: `compute()` or `play()` it first. The same as the `data-omai-state` of the figures (`'ready'`, `'failed'`).
+   * pending: `compute()` or `play()` it first (until then the figures read `idle`, see `OmaiState`: `live.settled` is the promise of the
+   * end, `waitForSettled` is what settles on a run at rest).
    *
    * @example
    * ```tsx
@@ -314,6 +323,10 @@ export function useSessions<S, C extends Config>(
   const [version, setVersion] = useState(0)
   const [wanted, setComputing] = useState(false)
   const [disposed, setDisposed] = useState(false)
+  // Whether computing was stopped by hand (`halt()`); a primed session otherwise counts as about to prime between the
+  // render that makes it and the effect that starts it, so that `data-omai-state` never reads `idle` for a session that
+  // is about to fill.
+  const [halted, setHalted] = useState(false)
   // What went wrong while computing on the main thread (a step that threw); a worker's failure is the producer's own.
   const [failure, setFailure] = useState<{ readonly producer: object; readonly message: string } | undefined>(undefined)
   const active = useActive(hook.active)
@@ -339,6 +352,7 @@ export function useSessions<S, C extends Config>(
     current.current = next
     setProducer(next)
     setComputing(false)
+    setHalted(false)
     playingNow.current = false
     setPlaying(false)
     disposedNow.current = false
@@ -481,9 +495,13 @@ export function useSessions<S, C extends Config>(
   const compute = (): void => {
     disposedNow.current = false
     setDisposed(false)
+    setHalted(false)
     if (current.current.sessions.some((s) => s.status === undefined)) setComputing(true)
   }
-  const halt = (): void => setComputing(false)
+  const halt = (): void => {
+    setHalted(true)
+    setComputing(false)
+  }
   const follow = (step: number, fps?: number): void => {
     pacing.current.cursor = step
     if (fps !== undefined) pacing.current.fps = fps
@@ -513,7 +531,9 @@ export function useSessions<S, C extends Config>(
   const progress = progressOf(head, done, options.steps ?? DEFAULT_STEPS)
   const status = statusOf(playing, done)
   const error = producer.error ?? (failure?.producer === producer ? failure.message : undefined)
-  const settled = useRunSettled(producer, settledStateOf({ done, error, disposed }), error ?? DISPOSED)
+  // The tape is incomplete and nothing is computing towards the end: not wanted (or not active), and not a primed session about to prime.
+  const idle = !done && !computing && !(prime && active && !halted && !disposed)
+  const settled = useRunSettled(producer, settledStateOf({ done, error, disposed, idle }), error ?? DISPOSED)
   const handle = {
     version,
     computing,
@@ -526,6 +546,7 @@ export function useSessions<S, C extends Config>(
     follow,
     producer: { kind: producer.kind, ...(producer.fallback === undefined ? {} : { fallback: producer.fallback }) },
     error,
+    idle,
     settled,
     probed: producer.probed,
     start,

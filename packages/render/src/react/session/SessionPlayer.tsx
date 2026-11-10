@@ -34,8 +34,11 @@ const PREROLL_MAX_MS = 250
 
 /**
  * The player and status line of a session, or of a comparison of several. Its root element carries
- * `data-omai-state`: `preparing` until the whole tape exists (also while it plays), `ready` once it does, `failed` when
- * the run failed or was disposed (see `OmaiState`; `waitForSettled` waits for it).
+ * `data-omai-state`: `preparing` while the run is being computed or played towards its end (a primed or eager session
+ * priming, a live one computing after Play), `idle` while the tape is incomplete and nothing computes (a live session
+ * before Play, one that is not `active`, one whose computing was halted: `live.idle`), `ready` once the whole tape
+ * exists, `failed` when the run failed or was disposed (see `OmaiState`; `waitForSettled` settles on `idle`, `ready` and
+ * `failed`).
  *
  * @param props - The session or comparison, the scrubbed step (`null` follows the head) and its setter, and the reset
  *   of the page's controls when it has any.

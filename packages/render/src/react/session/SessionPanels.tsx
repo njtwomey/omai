@@ -83,9 +83,10 @@ const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-')
  * The panels of a layout over a session or a comparison, in a responsive two-column grid; nothing else is drawn. The
  * viewed step is one cursor: panels of the tape scrub it on click, panels of a step follow it, and a custom panel
  * inside reads it with `useStepCursor`. Over a comparison, curves and sweeps overlay the variants and every other
- * panel takes a full row with one figure per variant. The grid carries `data-omai-state`: `preparing` until the whole
- * tape exists, `ready` once it does, `failed` when the run failed or was disposed (see `OmaiState`; the panels' own
- * charts carry their own, for `waitForSettled`).
+ * panel takes a full row with one figure per variant. The grid carries `data-omai-state`: `preparing` while the run is
+ * being computed or played towards its end, `idle` while the tape is incomplete and nothing computes (a live session
+ * before Play, an inactive one), `ready` once the whole tape exists, `failed` when the run failed or was disposed (see
+ * `OmaiState`; the panels' own charts carry their own, for `waitForSettled`).
  *
  * @param props - The session or comparison, the scrubbed step and its setter, the training data if any, and the
  *   layout.

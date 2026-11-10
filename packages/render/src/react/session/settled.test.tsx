@@ -3,6 +3,7 @@ import { type Config, defineMethod, Log, type Method, scalar, stateFromJson, sta
 import type { ReactElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { type FakeFrames, fakeFrames, inAct, mountElement, mountHook, resetGlobals } from '../_harness.tsx'
+import { waitForSettled } from '../settled.ts'
 import { SessionPlayer } from './SessionPlayer.tsx'
 import { type LiveSession, type SessionHookOptions, STILL_HANDLE, useSession } from './useSession.ts'
 
@@ -152,15 +153,53 @@ describe('live.settled', () => {
   })
 })
 
-function Page(props: { readonly start: 'first' | 'end' | 'play'; readonly failAt?: number }): ReactElement {
+function Page(props: {
+  readonly start: 'first' | 'end' | 'play'
+  readonly failAt?: number
+  readonly active?: boolean
+}): ReactElement {
   const config = props.failAt === undefined ? {} : { failAt: props.failAt }
   const live: LiveSession<S, Config> = useSession(count, { steps: 200, config }, [props.failAt], {
     start: props.start,
+    ...(props.active === undefined ? {} : { active: props.active }),
   })
   page.live = live
   return <SessionPlayer live={live} at={null} onScrub={() => undefined} />
 }
 const page: { live?: LiveSession<S, Config> } = {}
+
+describe('idle sessions', () => {
+  it('a live session is idle before Play, preparing while it computes, ready when whole', async () => {
+    const m = await hookOf({ start: 'play' })
+    expect(m.current.idle).toBe(true)
+    await frames.frames(3)
+    expect(m.current.idle).toBe(true)
+    expect(await peek(m.current.settled)).toBeUndefined()
+    await inAct(() => m.current.play())
+    expect(m.current.idle).toBe(false)
+    // Pausing the player does not stop the producer: the tape keeps filling, so it is still working towards the end.
+    await inAct(() => m.current.pause())
+    expect(m.current.idle).toBe(false)
+    await until(() => m.current.done)
+    expect(await m.current.settled).toEqual({ ok: true })
+  })
+
+  it('a session that is not active, or whose computing was halted, is idle; a primed one is not, from its first render', async () => {
+    const primed = await hookOf({ start: 'first' })
+    expect(primed.current.idle).toBe(false)
+    await inAct(() => primed.current.halt())
+    expect(primed.current.idle).toBe(true)
+    await inAct(() => primed.current.compute())
+    expect(primed.current.idle).toBe(false)
+
+    const off = await hookOf({ start: 'first', active: false })
+    expect(off.current.idle).toBe(true)
+    await inAct(() => off.current.play())
+    expect(off.current.idle).toBe(true)
+    await frames.frames(3)
+    expect(off.current.head).toBe(0)
+  })
+})
 
 describe('data-omai-state of the session figures', () => {
   const state = (m: Awaited<ReturnType<typeof mountElement>>): unknown =>
@@ -185,5 +224,32 @@ describe('data-omai-state of the session figures', () => {
     await until(() => page.live?.error !== undefined)
     expect(state(failing)).toBe('failed')
     await failing.unmount()
+  })
+
+  it('is idle for a live session before Play and for an inactive one, preparing once played', async () => {
+    const m = await mountElement(<Page start="play" />)
+    expect(state(m)).toBe('idle')
+    await frames.frames(3)
+    expect(state(m)).toBe('idle')
+    await inAct(() => page.live?.play())
+    expect(state(m)).toBe('preparing')
+    await m.unmount()
+
+    const off = await mountElement(<Page start="first" active={false} />)
+    expect(state(off)).toBe('idle')
+    await frames.frames(3)
+    expect(state(off)).toBe('idle')
+    await off.unmount()
+  })
+
+  it('lets waitForSettled resolve on an idle session figure and report it', async () => {
+    const m = await mountElement(<Page start="play" />)
+    const figures = m
+      .elements()
+      .filter((e) => e.props['data-omai-state'] !== undefined)
+      .map((e) => ({ getAttribute: (n: string) => (n === 'data-omai-state' ? String(e.props[n]) : null) }))
+    const result = await waitForSettled({ querySelectorAll: () => figures } as never)
+    expect(result).toEqual({ ok: true, ready: 1, idle: figures })
+    await m.unmount()
   })
 })

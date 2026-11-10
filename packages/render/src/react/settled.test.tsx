@@ -30,6 +30,15 @@ describe('settledStateOf', () => {
     expect(settledStateOf({ ...base, disposed: true })).toBe('failed')
     expect(settledStateOf({ ...base, disposed: true, done: true })).toBe('ready')
   })
+
+  it('is idle for an incomplete tape with nothing computing, and idle never outranks ready, failed or disposed', () => {
+    const base = { done: false, error: undefined, disposed: false }
+    expect(settledStateOf({ ...base, idle: true })).toBe('idle')
+    expect(settledStateOf({ ...base, idle: false })).toBe('preparing')
+    expect(settledStateOf({ ...base, idle: true, done: true })).toBe('ready')
+    expect(settledStateOf({ ...base, idle: true, error: 'x' })).toBe('failed')
+    expect(settledStateOf({ ...base, idle: true, disposed: true })).toBe('failed')
+  })
 })
 
 // The figures with a state, as the stand-in DOM and the observer see them: elements that answer `getAttribute`, and an
@@ -124,6 +133,36 @@ describe('waitForSettled', () => {
     expect(await late).toEqual({ ok: false, reason: 'timeout', failed: [], pending: [stuck] })
   })
 
+  it('settles on idle figures like on ready ones, and says which were idle', async () => {
+    install()
+    const idle = new Figure('idle')
+    expect(await waitForSettled(new Root([new Figure('ready'), idle]) as never)).toEqual({
+      ok: true,
+      ready: 2,
+      idle: [idle],
+    })
+    // A figure still preparing keeps it waiting, and the idle one is reported with the failure or the timeout.
+    const failed = new Figure('failed')
+    expect(await waitForSettled(new Root([idle, failed]) as never)).toEqual({
+      ok: false,
+      reason: 'failed',
+      failed: [failed],
+      pending: [],
+      idle: [idle],
+    })
+    vi.useFakeTimers()
+    const slow = new Figure('preparing')
+    const late = waitForSettled(new Root([idle, slow]) as never, { timeoutMs: 200 })
+    vi.advanceTimersByTime(200)
+    expect(await late).toEqual({ ok: false, reason: 'timeout', failed: [], pending: [slow], idle: [idle] })
+    // It resolves when the last preparing figure goes idle.
+    const root = new Root([new Figure('preparing')])
+    const outcome = waitForSettled(root as never)
+    ;(root.figures[0] as Figure).state = 'idle'
+    fire()
+    expect(await outcome).toEqual({ ok: true, ready: 1, idle: root.figures })
+  })
+
   it('counts the root itself when it is a figure, and stops at the deadline without a MutationObserver', async () => {
     const self = { querySelectorAll: () => [], getAttribute: () => 'preparing' }
     vi.useFakeTimers()
@@ -162,6 +201,35 @@ describe('SceneView and StructureView settled signal', () => {
 
 describe('useLiveRun settled', () => {
   const counter: Algorithm<number> = { name: 'counter', config: {}, init: () => 0, step: (s) => s + 1 }
+
+  it('is idle while unstarted, preparing while played, idle when paused, ready once whole; inactive is idle', async () => {
+    const live = { active: true }
+    const m = await mountHook(() => useLiveRun(counter, { maxSteps: 30, active: live.active }))
+    // Never started: nothing computes, the state is idle (the promise still waits for the end).
+    expect(m.current.controller.state).toBe('idle')
+    expect(await Promise.race([m.current.settled, Promise.resolve('pending')])).toBe('pending')
+    await inAct(() => m.current.controller.play())
+    expect(m.current.controller.state).toBe('preparing')
+    await inAct(() => m.current.controller.pause())
+    expect(m.current.controller.state).toBe('idle')
+    await inAct(() => m.current.controller.play())
+    // Playing but not active: the ticker is off, so nothing computes.
+    live.active = false
+    await m.rerender()
+    expect(m.current.controller.state).toBe('idle')
+    live.active = true
+    await m.rerender()
+    for (let i = 0; i < 200 && m.current.phase !== 'ready'; i++) await (frames as FakeFrames).frame()
+    expect(m.current.controller.state).toBe('ready')
+    expect(await m.current.settled).toEqual({ ok: true })
+  })
+
+  it('is preparing while a primed run fills, from the first render, and idle when it is primed but inactive', async () => {
+    const m = await mountHook(() => useLiveRun(counter, { maxSteps: 30, start: 'first' }))
+    expect(m.current.controller.state).toBe('preparing')
+    const off = await mountHook(() => useLiveRun(counter, { maxSteps: 30, start: 'first', active: false }))
+    expect(off.current.controller.state).toBe('idle')
+  })
 
   it('resolves ok once the whole run exists, a fresh promise for a new seed, disposed for a run let go of', async () => {
     const seed = { n: 0 }

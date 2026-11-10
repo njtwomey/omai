@@ -82,9 +82,11 @@ const ICON_PX: Readonly<Record<ControlSize, number>> = { sm: 12, md: 14, lg: 16 
  * scrubber, not on a button or menu inside it: those keep their own keys). The arrow keys also step while the player is
  * playing and for ten seconds after, wherever the focus is except in a field, slider, tab list, radio group or menu.
  *
- * Its root carries `data-omai-state` from the controller's `state` (`preparing` while a live run is still computing,
- * `ready` once it has ended or reached `maxSteps`, `failed` when it was let go of), so `waitForSettled` on a page
- * waits for the run and not only for the chart beside it; a controller without a `state` gives no attribute.
+ * Its root carries `data-omai-state` from the controller's `state` (`preparing` while a live run is being computed or
+ * played towards its end, `idle` while it is incomplete and nothing computes (it has not been started: it waits for
+ * Play), `ready` once it has ended or reached `maxSteps`, `failed` when it was let go of), so `waitForSettled` on a
+ * page waits for the run and not only for the chart beside it, and settles on an idle one; a controller without a
+ * `state` gives no attribute.
  *
  * @param props - The controller (from `usePlayback`, `useTimelinePlayback`, `useLiveRun` or a session player) and the
  *   stamp.

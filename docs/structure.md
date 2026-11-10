@@ -7658,11 +7658,15 @@ Design rules:
   by a pixel, switches to `narrowAspect` below `narrowBelow`, keeps the plotting area square with `square`, and draws an
   `overlay` (tools in an `InteractionOverlay`, given the projection and the size) over the fluid chart.
 - `settled.ts`: the settled signal for exporters. Every live figure (`SessionPlayer`, `SessionPanels`, `Chart`,
-  `ResponsiveChart`, `SceneView`, `StructureView`) carries `data-omai-state` (`preparing`, `ready`, `failed`; a chart is
-  ready after its first `finished` event, a scene after its first commit, a session figure once the whole tape exists);
+  `ResponsiveChart`, `SceneView`, `StructureView`) carries `data-omai-state` (`preparing`: work is under way towards the
+  end; `idle`: a run is incomplete and nothing computes, a live run before Play or a session that is not `active`;
+  `ready`; `failed`. A chart is ready after its first `finished` event, a scene after its first commit, a session
+  figure once the whole tape exists);
   a session handle carries `live.settled`, a promise that resolves `{ ok: true }` or `{ ok: false, error }` (error
   `'disposed'` for a run let go of) and never rejects; `waitForSettled(root, { timeoutMs })` waits for every figure
-  under an element with a `MutationObserver`. No browser global is read at import.
+  under an element with a `MutationObserver`, settling on `ready`, `idle` and `failed` and reporting the idle
+  figures in `idle` (`live.settled` stays the end-state promise: it resolves only when the whole tape exists). No
+  browser global is read at import.
 - `useJob.ts`: a heavy one-shot computation in named stages with progress, started when `active`, restarted by its
   `inputs`, painting between stages (and between slices of a generator stage); one result, never a state per step.
 - `SceneView.tsx`: a `Scene` as SVG elements, with hover and click hit-testing.
