@@ -18,6 +18,7 @@ import { attributionFrames, beeswarmView, importanceView } from './attributions.
 import { audioScene } from './audio.ts'
 import { boardFrames, populationFrames } from './boards.ts'
 import { confusionFrames, valueGridFrames } from './cells.ts'
+import { traceView } from './chain-diagnostics.ts'
 import { complexPlaneView } from './complex-plane.ts'
 import { componentsView } from './components.ts'
 import { curveSetView } from './curves.ts'
@@ -37,6 +38,7 @@ import { landscapeSliceView } from './landscape-slice.ts'
 import { marginFrames } from './margins.ts'
 import { markedTableScene } from './marked-tables.ts'
 import { attributionImageView, attributionSeriesView, tokenStripView } from './modalities.ts'
+import { modelRunScene } from './model-run.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
 import { pointsStepsScene, pointsStepsView } from './points-steps.ts'
 import { reachabilityPlot } from './reachability.ts'
@@ -431,6 +433,22 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r) => markedTableScene(r),
+  },
+  modelRun: {
+    kind: 'modelRun',
+    component: 'ModelRunPlayer',
+    title: 'Inference on the model',
+    plays: true,
+    accepts: [],
+    still: (r) => modelRunScene(r),
+  },
+  chainDiagnostics: {
+    kind: 'chainDiagnostics',
+    component: 'ChainDiagnosticsView',
+    title: 'Chain diagnostics',
+    plays: false,
+    accepts: [],
+    still: (r, o) => traceView(r, o),
   },
   structureSteps: {
     kind: 'structureSteps',

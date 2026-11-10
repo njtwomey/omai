@@ -76,7 +76,7 @@ export function StructureView(props: StructureViewProps): ReactElement {
   // biome-ignore lint/correctness/useExhaustiveDependencies: options are compared by content, frames by reference
   const drawing = useMemo(
     () => diagram(structure, frames === undefined ? options : { ...options, frames }),
-    [structure, frames, JSON.stringify(options)],
+    [structure, frames, JSON.stringify(options), layout.decorate],
   )
   const full: View = [0, 0, drawing.width, drawing.height]
   const [view, setView] = useState<View | null>(null)

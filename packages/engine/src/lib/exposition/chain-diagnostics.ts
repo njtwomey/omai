@@ -9,6 +9,7 @@
 
 import { OmaiError } from '../base/index.ts'
 import { seal } from './_check.ts'
+import { type CellMark, type MarkedTable, markedTable } from './tables.ts'
 
 /** One quantity: its draws by chain, what the method reports of them, and the rank histogram of each chain. */
 export interface ChainQuantity {
@@ -227,4 +228,41 @@ export function chainsFromTape(
     }
   }
   return { draws, divergent: flags }
+}
+
+/**
+ * The summary of chains as a table: one row per quantity with its mean, sd, R-hat and ESS, the R-hat above 1.01 marked as
+ * a warning and above 1.05 as bad, the ESS under 400 as a warning, and the divergences in the caption. The table is the
+ * library's `markedTable`, so its view is the existing one.
+ *
+ * @param record - The diagnostics.
+ * @returns The table.
+ * @example
+ * ```ts
+ * import { chainDiagnostics, chainTable } from 'omai-engine/exposition'
+ * const r = chainDiagnostics({ mu: [[1, 2, 3], [2, 3, 4]] }, { summary: [{ site: 'mu', name: 'mu', rhat: 1.08, ess: 90 }] })
+ * chainTable(r).marks?.map((m) => [m.col, m.status]) // => [[3, 'bad'], [4, 'warn']]
+ * ```
+ */
+export function chainTable(record: ChainDiagnostics): MarkedTable {
+  const marks: CellMark[] = []
+  const cells = record.quantities.map((q, row) => {
+    if (q.rhat !== undefined && q.rhat > 1.01)
+      marks.push({
+        row,
+        col: 3,
+        status: q.rhat > 1.05 ? 'bad' : 'warn',
+        note: 'R-hat above 1.01: the chains have not mixed',
+      })
+    if (q.ess !== undefined && q.ess < 400)
+      marks.push({ row, col: 4, status: 'warn', note: 'effective sample size under 400' })
+    return [q.name, q.mean, q.sd, q.rhat ?? null, q.ess ?? null]
+  })
+  const n = record.divergences.length
+  return markedTable({
+    columns: ['quantity', 'mean', 'sd', 'R-hat', 'ESS'],
+    cells,
+    marks,
+    caption: n === 0 ? 'no divergent transitions' : `${n} divergent transition${n === 1 ? '' : 's'}`,
+  })
 }

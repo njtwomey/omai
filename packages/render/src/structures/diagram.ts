@@ -62,6 +62,12 @@ export interface DiagramOptions {
    * so the layout stays put while badges come and go (default: sized for the overlay alone).
    */
   readonly frames?: readonly StructureOverlay[]
+  /**
+   * Extra drawing inside each node's group, given the node and its box (centre and size, in the scene's units): a glyph,
+   * a small plot, a mark. It draws over what is there and takes no part in the layout, so keep it inside or just beside
+   * the box.
+   */
+  readonly decorate?: (node: StructureNode, box: LayoutBox) => readonly SceneNode[] | undefined
   /** The seed of a force layout (default 0). */
   readonly seed?: number
   /**
@@ -857,7 +863,24 @@ function crossColumns(
  * ```
  */
 export function diagram(given: Structure, options: DiagramOptions = {}): Scene {
-  const s = modelGraph(given)
+  const prepared = modelGraph(given)
+  // An edge that is active in the overlay with a label of its own for this frame (a message) is drawn with it.
+  const said = new Map(
+    (options.overlay?.edges ?? []).flatMap((e) =>
+      e.label === undefined ? [] : [[`${e.from}\u0000${e.to}`, e.label] as const],
+    ),
+  )
+  const s =
+    said.size === 0
+      ? prepared
+      : {
+          ...prepared,
+          edges: prepared.edges.map((e) =>
+            e.label === undefined && said.has(`${e.from}\u0000${e.to}`)
+              ? { ...e, label: said.get(`${e.from}\u0000${e.to}`) as string }
+              : e,
+          ),
+        }
   if (!s.nodes.some((n) => n.groups !== undefined)) return drawDiagram(s, options, 'chain').scene
   // Groups that cross (plates over [student] and [exam] around a node over both): laid out without groups and framed
   // around their members; when a frame would take in a node that is not a member, the nested chain of `group` instead.
@@ -1419,7 +1442,13 @@ function drawDiagram(s: Structure, options: DiagramOptions, mode: 'chain' | 'cro
     }
     return [
       groupNode(
-        [...shapeNodes(look, b, active.has(n.id)), ...plates, ...labelNodes(look, rows, b, nsize, spot), ...noteNodes],
+        [
+          ...shapeNodes(look, b, active.has(n.id)),
+          ...plates,
+          ...labelNodes(look, rows, b, nsize, spot),
+          ...noteNodes,
+          ...(options.decorate?.(n, b) ?? []),
+        ],
         {
           id: n.id,
           title: [n.label.replaceAll('\n', ' '), n.detail?.replaceAll('\n', ' ')]
