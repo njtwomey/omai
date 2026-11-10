@@ -10,6 +10,20 @@
  * factor to the message for one argument; which function (the moment-matching one of EP, the expected-log one of VMP,
  * the sum-product one of BP) is what the `projection` slot of the engine picks. A factor with only a density can be
  * given as an operator whose messages come from a numeric `tilted` function; the engine then projects the moments.
+ *
+ * ## Ids: one convention for the graph, the tape and the diagram
+ *
+ * Everything a run reports is addressed by the ids the structure of the same model uses (`pgm/structure.ts`,
+ * `toStructure`; a diagram of the model can then be coloured by a run without any lookup):
+ * - a **variable** is its own `name` (a model variable's name; observed variables included);
+ * - a **factor** is `f<i>`, `i` its index in `FactorGraphSpec.factors` (the id `toStructure` gives the factors of a
+ *   `pgm` factor graph); `FactorSpec.name` is a label, never an id;
+ * - an **edge** is the pair of ids (factor, variable); a **message** is directed along it: kind `factorToVariable`
+ *   (from `f<i>` to the variable) or `variableToFactor`, with `from` and `to` set to the ids, as the message events of
+ *   `pgm/inference/belief-propagation.ts`;
+ * - the marginals of a run are keyed by variable id, in `Snapshot.marginals` and in the `frame` of each observation
+ *   (`{ marginals, sent }`, `sent` the messages of the last step by `{ kind, from, to }`).
+ * `factorId`, `variableId` and `graphStructure` (in `graph.ts`) are the one place these are made.
  */
 
 import type { Json } from '../base/index.ts'
@@ -77,6 +91,8 @@ export interface Family {
   moments(eta: Eta): Eta
   /** The member whose expected sufficient statistics are these (the KL(p || q) projection of anything with those moments). */
   fromMoments(moments: Eta): Eta
+  /** The pairing eta . T(x) when the sufficient statistics have these expectations: what the log density is linear in. */
+  pair(eta: Eta, moments: Eta): number
   /** A(eta) = log of the integral of exp(eta . T(x)): the log of the mass of the unnormalised message. */
   logPartition(eta: Eta): number
   /** The entropy of a proper message. */
@@ -124,6 +140,8 @@ export interface Port {
   readonly accepts: readonly FamilyKind[]
   /** Whether the operator handles an observed value here (`Arg.value`). */
   readonly constant?: boolean
+  /** True when the port must be observed or a constant (the operator never sends to it and cannot take a message there). */
+  readonly observed?: boolean
 }
 
 /** The parameters of a factor: JSON constants (a coefficient vector, a threshold, a table). */
@@ -175,6 +193,12 @@ export interface FactorOperator {
   readonly ports: readonly Port[] | ((params: Params) => readonly Port[])
   /** What each rule is; a rule that is absent is unsupported. */
   readonly support: Readonly<Partial<Record<Mode, Support>>>
+  /**
+   * True when the message to a port depends on that port's own incoming message (a moment-matching operator: the
+   * tilted distribution is the factor times the cavity). The engine then sends nothing to a port whose incoming message
+   * has no density, since there is nothing to match.
+   */
+  readonly readsTarget?: boolean | ((to: number) => boolean)
   /** True when the operator reads `OperatorContext.power` (fractional EP); the engine refuses a power on the others. */
   readonly power?: boolean
   /** A reason the factor cannot be built from these parameters and families, or `undefined` when it can. */

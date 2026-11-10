@@ -71,3 +71,78 @@ export const around = (mean: number, variance: number, widths = 12): [number, nu
 export function integratePositive(f: (x: number) => number, hi: number, panels = 24, order = 16): number {
   return integrate((u) => f(Math.exp(u)) * Math.exp(u), -40, Math.log(hi), panels, order)
 }
+
+/** One port of a factor for the brute-force tilted moments. */
+export interface BrutePort {
+  readonly kind: 'gaussian' | 'bernoulli'
+  /** The incoming message (natural parameters of the family); absent for an observed port. */
+  readonly eta?: readonly number[]
+  /** The observed value. */
+  readonly value?: number
+  /** A deterministic port: its value is this function of the other (free) ports' values. */
+  readonly derive?: (x: readonly number[]) => number
+  /** The interval of a Gaussian port (default its message's mean +- 10 sd). */
+  readonly range?: readonly [number, number]
+}
+
+/** log of the unnormalised message exp(eta . T(x)) of a scalar Gaussian or Bernoulli port. */
+export function logMessage(kind: BrutePort['kind'], eta: readonly number[], x: number): number {
+  return kind === 'gaussian' ? (eta[0] ?? 0) * x - 0.5 * (eta[1] ?? 0) * x * x : (eta[0] ?? 0) * x
+}
+
+/**
+ * The log mass of a factor under the incoming messages of its ports, and the expected sufficient statistics at port
+ * `to` of the tilted distribution (the factor times every port's message), by integrating over the Gaussian ports and
+ * summing over the Bernoulli ones. A port with `derive` is determined by the others (a deterministic factor); an
+ * observed port is a constant. For a Gaussian target the moments are (E x, E x^2), for a Bernoulli target P(true).
+ */
+export function bruteTilted(
+  ports: readonly BrutePort[],
+  logf: (x: readonly number[]) => number,
+  to: number,
+  options: { readonly panels?: number; readonly order?: number } = {},
+): { readonly logZ: number; readonly moments: number[] } {
+  const free = ports.map((p, i) => i).filter((i) => ports[i]?.derive === undefined && ports[i]?.value === undefined)
+  const intervals = free.map((i) => {
+    const p = ports[i] as BrutePort
+    if (p.kind === 'bernoulli') return [0, 1] as const
+    if (p.range !== undefined) return p.range
+    const j = p.eta?.[1] ?? 1
+    const m = (p.eta?.[0] ?? 0) / j
+    return around(m, 1 / j, 10)
+  })
+  const grids = free.map((i, d) => {
+    const p = ports[i] as BrutePort
+    if (p.kind === 'bernoulli') return { x: [0, 1], w: [1, 1] }
+    const [a, b] = intervals[d] as readonly [number, number]
+    return nodesOn(a, b, options.panels ?? 10, options.order ?? 12)
+  })
+  const x = new Array<number>(ports.length).fill(0)
+  for (const [i, p] of ports.entries()) if (p.value !== undefined) x[i] = p.value
+  let m0 = 0
+  let m1 = 0
+  let m2 = 0
+  const target = ports[to] as BrutePort
+  const visit = (d: number, logw: number, w: number): void => {
+    if (d === free.length) {
+      for (const [i, p] of ports.entries()) if (p.derive !== undefined) x[i] = p.derive(x)
+      let lw = logw + logf(x)
+      for (const [i, p] of ports.entries())
+        if (p.eta !== undefined && (p.derive !== undefined || true)) lw += logMessage(p.kind, p.eta, x[i] ?? 0)
+      const v = w * Math.exp(lw)
+      const t = x[to] ?? 0
+      m0 += v
+      m1 += v * t
+      m2 += v * t * t
+      return
+    }
+    const g = grids[d] as { x: number[]; w: number[] }
+    const i = free[d] as number
+    for (let k = 0; k < g.x.length; k++) {
+      x[i] = g.x[k] ?? 0
+      visit(d + 1, logw, w * (g.w[k] ?? 0))
+    }
+  }
+  visit(0, 0, 1)
+  return { logZ: Math.log(m0), moments: target.kind === 'gaussian' ? [m1 / m0, m2 / m0] : [m1 / m0] }
+}

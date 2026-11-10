@@ -72,6 +72,7 @@ export function defineFamily(def: FamilyDefinition): Family {
     power: (a, p) => (p === 0 ? flat : normalise(a.map((v) => v * p))),
     moments: def.moments,
     fromMoments: def.fromMoments,
+    pair,
     logPartition: def.logPartition,
     entropy: (eta) => def.logPartition(eta) - pair(eta, def.moments(eta)),
     kl: (p, q) => {
