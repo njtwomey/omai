@@ -10,6 +10,7 @@
 export * from './args.ts'
 export * from './conjugate.ts'
 export * from './discrete.ts'
+export * from './extremum.ts'
 export * from './gaussian.ts'
 export * from './linear.ts'
 export * from './links.ts'

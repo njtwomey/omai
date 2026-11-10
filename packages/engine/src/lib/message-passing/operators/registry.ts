@@ -7,6 +7,7 @@
 import type { FactorOperator } from '../types.ts'
 import { bernoulliBeta, binomial, discreteDirichlet, poisson } from './conjugate.ts'
 import { gaussianMixture, select, table } from './discrete.ts'
+import { maximum, minimum } from './extremum.ts'
 import { equal, gaussianGammaPrecision, gaussianNormalGamma, gaussianOperator, prior, product } from './gaussian.ts'
 import {
   difference,
@@ -26,7 +27,7 @@ import { greaterThan, isBetween, probit } from './truncation.ts'
 
 /**
  * The library's factor operators by name: `prior`, `gaussian`, `gaussian-gamma-precision`, `gaussian-normal-gamma`,
- * `product`, `equal`, `linear`, `plus`, `difference`, `times-constant`, `sum`, `dot-constant`, `matmul-constant`,
+ * `product`, `max`, `min`, `equal`, `linear`, `plus`, `difference`, `times-constant`, `sum`, `dot-constant`, `matmul-constant`,
  * `linear-regression-row`, `gaussian-joint`, `probit`, `greater-than`, `is-between`, `logistic`, `bernoulli`,
  * `discrete`, `poisson`, `binomial`, `table`, `select`, `gaussian-mixture`, the regression rows `probit-row` and `logistic-row`, the
  * spin site `spin` and its row `spin-row`. A new object each call, so a caller may
@@ -48,6 +49,8 @@ export function defaultOperators(): Record<string, FactorOperator> {
     gaussianGammaPrecision,
     gaussianNormalGamma,
     product,
+    maximum,
+    minimum,
     equal,
     linear,
     plus,
