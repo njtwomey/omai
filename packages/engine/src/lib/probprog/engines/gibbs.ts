@@ -5,7 +5,7 @@
  */
 
 import { type Json, logSumExpOf, OmaiError } from '../../base/index.ts'
-import { bijectors, CONJUGATES, type ConjugatePair, dirichlet } from '../../dists/index.ts'
+import { bijectors, CONJUGATES, type ConjugatePair, type Distribution, dirichlet, inSupport } from '../../dists/index.ts'
 import { categorical as drawCategorical, foldIn, type Key } from '../../random/index.ts'
 import { numericTarget, sliceSampler } from '../../sampling/index.ts'
 import {
@@ -30,7 +30,7 @@ import { enumeratedMarginals, traceFactors } from '../_contract.ts'
 import { unravel } from '../_discrete.ts'
 import { unexpanded } from '../_expand.ts'
 import { analyse, type ConjugateStructure, type ProgramAnalysis, pairParameter } from '../analysis.ts'
-import { logJoint } from '../density.ts'
+import { initToUniform, logJoint } from '../density.ts'
 import { condition, enumerate, type ProgramTrace, type SampleSite, seed, traceOf } from '../handlers.ts'
 import { type Posterior, samplePosterior } from '../posterior.ts'
 import type { Model } from '../primitives.ts'
@@ -246,6 +246,15 @@ function groupedConjugacy(proto: ProgramTrace, name: string, a: ProgramAnalysis)
   return pair === undefined ? undefined : { kind: 'grouped', site: name, pair, children }
 }
 
+/**
+ * Whether a closed-form conditional stays inside the support of the site it is drawn for: the posterior has the support
+ * kind of the family the prior was built as, so a constraint beyond it (`ordered`, a lower bound on a normal) makes the
+ * draw leave the site's support.
+ */
+function honours(prior: Distribution, posterior: Distribution): boolean {
+  return prior.support.kind === posterior.support.kind
+}
+
 /** Counts `[groups][K]` of a collapsed site's children, and each child element's group and state. */
 function collapsedCounts(
   c: Collapsed,
@@ -311,6 +320,26 @@ export function gibbsAlgorithm<D = void>(model: Model<D>, data: D, options: Gibb
   const width = options.sliceWidth ?? 1
   const runAt = (values: Readonly<Record<string, Value>>, key?: Key): ProgramTrace =>
     traceOf(key === undefined ? condition(model, values) : seed(condition(model, values), key), data)
+  /** A slice step on the unconstrained scale of the site's own support: the update that honours any constraint. */
+  const sliceUpdate = (site: string, values: Readonly<Record<string, Value>>, key: Key): Value => {
+    const t = runAt(values)
+    const s = siteOf(t, site)
+    if (s === undefined) return values[site] as Value
+    const bij = bijectors.bijectorForSupport(s.fn.support)
+    const u0 = primalOf(bij.inverse(values[site] as Value))
+    const shape = u0.shape
+    const dim = Math.max(1, product(shape))
+    const others = { ...values }
+    const target = numericTarget((u) => {
+      const uu = fromStorage(Float64Array.from(u), shape, 'float64')
+      const x = bij.forward(uu)
+      const lj = item(primalOf(logJoint(model, data, { ...others, [site]: x }).logJoint))
+      return lj + item(primalOf(sum(bij.forwardLogDetJacobian(uu))))
+    }, dim)
+    const kernel = sliceSampler(target, { width })
+    const st = kernel.step(key, kernel.init(toFlat(u0)))
+    return primalOf(bij.forward(fromStorage(Float64Array.from(st.state.position), shape, 'float64')))
+  }
   return {
     name: 'gibbs',
     config: { collapse: collapseOn, sliceWidth: width } as Json,
@@ -321,10 +350,14 @@ export function gibbsAlgorithm<D = void>(model: Model<D>, data: D, options: Gibb
         throw new OmaiError('value', `gibbs: unbounded discrete sites (${a.discrete.unbounded.join(', ')})`)
       blocks = plan(model, data, a, collapseOn)
       const values: Record<string, Value> = {}
-      for (const n of a.latent) {
+      a.latent.forEach((n, i) => {
         const s = siteOf(a.prototype, n)
-        if (s !== undefined) values[n] = s.value
-      }
+        if (s === undefined) return
+        // The prototype draws from the family, which ignores a constraint beyond its support (an ordered site starts in
+        // either order): a start outside the support is replaced by a point inside it.
+        const inside = toFlat(primalOf(inSupport(s.fn.support, s.value))).every((v) => v === 1)
+        values[n] = inside ? s.value : primalOf(initToUniform()(s, foldIn(key, 1 + i)) ?? s.value)
+      })
       for (const [k, v] of Object.entries(options.init ?? {})) values[k] = primalOf(asTensor(v))
       return { values, logJoint: item(primalOf(logJoint(model, data, values).logJoint)) }
     },
@@ -343,13 +376,19 @@ export function gibbsAlgorithm<D = void>(model: Model<D>, data: D, options: Gibb
           if (prior === undefined) return
           const { data: x, fixed } = conjugateData(t, b.structure)
           const post = b.structure.pair.posterior(prior.fn, x, fixed)
-          values = { ...values, [b.site]: primalOf(post.sample(key, [])) }
+          // A draw from the closed-form conditional ignores a constraint narrower than the family's support (an ordered or
+          // bounded site): such a site is updated by a slice step on its own unconstrained scale instead.
+          values = {
+            ...values,
+            [b.site]: honours(prior.fn, post) ? primalOf(post.sample(key, [])) : sliceUpdate(b.site, values, key),
+          }
         } else if (b.kind === 'grouped') {
           const t = runAt(values)
           const prior = siteOf(t, b.site)
           if (prior === undefined) return
           const k = prior.value.shape[0] ?? 0
           const parts: Value[] = []
+          let narrowed = false
           for (let j = 0; j < k; j++) {
             const rows: Value[] = []
             let fixed: Record<string, Value> = {}
@@ -369,35 +408,22 @@ export function gibbsAlgorithm<D = void>(model: Model<D>, data: D, options: Gibb
               fixed = f
             }
             const post = b.pair.posterior(prior.fn, concat(rows), fixed)
+            if (!honours(prior.fn, post)) {
+              narrowed = true
+              break
+            }
             // Component j's posterior uses its own data; parameters shared by the components broadcast.
             const drawn = primalOf(broadcastTo(post.sample(foldIn(key, j), []), prior.value.shape))
             parts.push(reshape(take(drawn, [j], 0), prior.value.shape.slice(1)))
           }
           values = {
             ...values,
-            [b.site]: primalOf(reshape(concat(parts.map((p) => reshape(p, [1, ...p.shape]))), prior.value.shape)),
+            [b.site]: narrowed
+              ? sliceUpdate(b.site, values, key)
+              : primalOf(reshape(concat(parts.map((p) => reshape(p, [1, ...p.shape]))), prior.value.shape)),
           }
         } else if (b.kind === 'slice') {
-          const t = runAt(values)
-          const s = siteOf(t, b.site)
-          if (s === undefined) return
-          const bij = bijectors.bijectorForSupport(s.fn.support)
-          const u0 = primalOf(bij.inverse(values[b.site] as Value))
-          const shape = u0.shape
-          const dim = Math.max(1, product(shape))
-          const others = { ...values }
-          const target = numericTarget((u) => {
-            const uu = fromStorage(Float64Array.from(u), shape, 'float64')
-            const x = bij.forward(uu)
-            const lj = item(primalOf(logJoint(model, data, { ...others, [b.site]: x }).logJoint))
-            return lj + item(primalOf(sum(bij.forwardLogDetJacobian(uu))))
-          }, dim)
-          const kernel = sliceSampler(target, { width })
-          const st = kernel.step(key, kernel.init(toFlat(u0)))
-          values = {
-            ...values,
-            [b.site]: primalOf(bij.forward(fromStorage(Float64Array.from(st.state.position), shape, 'float64'))),
-          }
+          values = { ...values, [b.site]: sliceUpdate(b.site, values, key) }
         } else {
           // A collapsed site: draw it from its Dirichlet (or beta) conditional given the children.
           const c = b.collapsed

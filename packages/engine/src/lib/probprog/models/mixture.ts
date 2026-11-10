@@ -152,9 +152,8 @@ export const gaussianMixtureOrdered: BenchmarkModel = defineBenchmark({
       note: 'the labels are summed out and the ordering removes the second mode: agrees with the truth',
     }),
     gibbsPlan(scale, {
-      expect: 'differ',
       draws: 1500,
-      note: 'its draws do not respect the ordered constraint (mu[0] ends above mu[1]): the Gibbs method samples the means from their conditionals on the real line',
+      note: 'the means have no closed-form conditional under the ordering, so they are updated by slice steps on the ordered scale (the labels are exact): agrees with the truth',
     }),
     laplacePlan(scale, { note: 'a normal at the mode of the ordered density: close, the labels summed out' }),
     sviPlan(scale, {
