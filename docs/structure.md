@@ -2257,7 +2257,8 @@ jellyfish, Biopython, pyphen
   table, boundary padding (`_B-1`, `_B+1`), comments, and syntax errors with line and column. Wapiti patterns (`u`,
   `b`, `*` lines; `%x`, `%t`, `%m` commands with regular expressions, case-insensitive and absolute variants, `_x-1`
   boundaries). Expansion over a sequence, a `FeatureIndex` (string to id with counts and a minimum frequency, as
-  CRF++'s `-f`), CRF++ weight offsets, feature firing for inspection.
+  CRF++'s `-f`), CRF++ weight offsets, feature firing for inspection, `featureRecord` (feature strings counted into an
+  attribute record). `feature-dicts.ts` exposes `hashedColumn`, the bucket and sign of the hashing trick.
 - `attribute-templates.ts`: CRFsuite-style attribute templates (windows of `(attribute, offset)` tuples joined into
   attribute strings, `w[-1]|w[0]`, skipped or padded boundaries, bias, `__BOS__`/`__EOS__`; parsing from text) and
   MALLET's offset conjunctions.
@@ -2863,8 +2864,8 @@ causal-learn (GES, FCI, DirectLiNGAM), numpy and scipy (Gaussian models), brute-
 A model is plain data. Every model type describes itself as a `Structure` (roles: latent, observed, factor,
 deterministic, decision, utility; plates and slices), and inference algorithms emit `message` events, so the drawing of
 a model can animate its inference. The `probprog` engines reuse these algorithms. Every discrete model (Bayes network,
-Markov network, factor graph) is accepted by every discrete inference routine. `models` and `inference` are inlined
-into `omai-engine/pgm`; `learning` and `causal` are namespaces.
+Markov network, factor graph) is accepted by every discrete inference routine. `models`, `inference` and `structured` are
+inlined into `omai-engine/pgm`; `learning` and `causal` are namespaces.
 - `factor.ts`: discrete factors in log space (`factor`, `logFactor`, `unitFactor`, `DiscreteVariable`): product
   (`factorProduct`, `factorProductAll`), sum and max marginalisation (`marginalise`, `maxMarginalise`,
   `factorMarginal`), reduction by evidence (`reduceFactor`), normalisation, division (`factorDivide`, 0/0 = 0), powers,
@@ -2902,18 +2903,69 @@ into `omai-engine/pgm`; `learning` and `causal` are namespaces.
 - `models/state-space.ts`: HMMs (categorical and full-covariance Gaussian emissions: chain potentials, sampling, the DBN
   form) and linear dynamical systems (sampling, the unrolled linear-Gaussian network with correlated noise as
   within-slice arcs, smoothing with the log-likelihood) as DBNs.
-- `models/crf.ts`: conditional random fields: linear-chain CRFs with state, label-pair transition and
-  observation-dependent bigram features (potentials as chains, scores, conditional log-likelihoods, marginals, Viterbi
-  decoding, the penalised objective with its gradient, first-order training as a traced run), CRF++-form models and
-  inputs from parsed CRF++ templates (`crfppCrf`, `crfppObservation`); general CRFs over arbitrary cliques with
-  per-assignment feature tables (conditional factor graphs, objective with exact or loopy-BP marginals, training). The
-  template languages and feature indexes live in `text/templates.ts` and `text/attribute-templates.ts`, the
-  estimators' training algorithms in `methods/models/crf.ts`. `crfFeatureCounts` and `crfExpectedFeatureCounts` are the
-  counts whose difference is the objective's gradient.
-- `models/crf-training.ts`: CRF training through the solver slot: `crfSmoothProblem` (the penalised objective with
-  unbiased batch estimates), `crfSolvers` (L-BFGS by default beside every generic smooth solver, whose `gradient` mode is
-  stochastic gradient descent, and the online structured-prediction modes `perceptron`, `averaged`, `passive-aggressive`),
-  `crfTrainAlgorithm` (objective, gradient and sequence error per step), `trainCrf`.
+- `structured/`: structured prediction, CRFs and their neighbours in one folder. Every model offers the same contract,
+  `StructuredOracle<X, Y>` (`oracle.ts`: `features` phi(x, y), `expectations` E[phi] and log Z, an optional `clamped`
+  for partial or latent labels, `decode` with optional cost augmentation `against`, and `loss`), with
+  `StructuredProblem` and `StructuredPenalty`; one table of solvers trains all of them, so a new model is an oracle and
+  nothing else.
+- `structured/crf.ts`: linear-chain CRFs with state, label-pair transition and observation-dependent bigram features
+  (potentials as chains, scores, conditional log-likelihoods, marginals, Viterbi decoding, the penalised objective with
+  its gradient, first-order training as a traced run); general CRFs over arbitrary cliques with per-assignment feature
+  tables (conditional factor graphs, objective with exact or loopy-BP marginals, training). `crfFeatureCounts` and
+  `crfExpectedFeatureCounts` (optionally conditioned on allowed labels, with `maskChain`) are the counts whose difference
+  is the objective's gradient. The attribute lookup tables are cached per vocabulary.
+- `structured/features.ts`: feature extractors for linear-chain CRFs. A `FeatureExtractor<I>` maps the input of one
+  sequence to a `CrfInput` and explains where each feature came from (`explain`: the template behind each feature, with
+  its kind and value); `labelTransitions` is true for CRFsuite attribute templates and false for CRF++ and Wapiti, whose
+  bare `B`/`b` line is the transition. Built-in extractors: `crfppExtractor`, `wapitiExtractor` (+ `wapitiObservation`),
+  `attributeExtractor` (CRFsuite templates with bias, `__BOS__`/`__EOS__`, boundary `skip`/`pad`, over token tables or
+  records), `functionExtractor` (per-item and per-edge functions of your own, the shape extractors for graph nodes and
+  edges follow), `combineExtractors`, `prefixedExtractor` and `hashedExtractor` (the hashing trick, `text.hashedColumn`).
+  `crfModelFor` builds the `LinearChainCrf` with its vocabulary and minimum-frequency cut-off (CRF++'s `-f`) for any
+  extractor (`crfppCrf` is its CRF++ case; `crfModelFromInputs`, `crfVocabulary`, `labelledSequences`). Reading a fitted
+  model back: `crfTopFeatures` (top item features per label and strongest transitions as `CoefficientTable` records) and
+  `crfTemplateWeights` (the weight each template carries).
+- `structured/compiled.ts`, `structured/chain-oracle.ts`: a chain-CRF dataset compiled once for fast training
+  (`chainLayout`, `chainVocabulary`, `compileChainInput`, `compileChainData`: attribute strings resolved to ids in
+  compressed-sparse-row typed arrays; `compiledChain`, `addCompiledFeatureCounts`, `addCompiledExpectedCounts`,
+  `compiledScore`), and `chainOracle(crf)`, the linear-chain CRF as a `StructuredOracle` (plain or compiled input, Hamming
+  loss, cost-augmented Viterbi, `gradientInto`).
+- `structured/objective.ts`, `structured/solvers.ts`: `structuredObjective` (the penalised negative conditional
+  log-likelihood and gradient of any oracle, with batches, `clamped` where the model has it), `structuredSmoothProblem`,
+  `addStructuredPenalty` (the one c2/c1 penalty shared by the CRF and pseudo-likelihood objectives); `structuredSolvers`
+  and `structuredSolversWith(extra)` (L-BFGS and every generic solver, `owlqn` for the L1 penalty with c2 kept in the smooth
+  part, the default whenever c1 > 0, and the online modes `perceptron`, `averaged`, `passive-aggressive`, `arow`),
+  `structuredTrainAlgorithm` and `trainStructured` (objective, gradient, task loss, error, nonzeros and the weights on the
+  tape). `optim/solvers.ts` has `owlqnMode`, the reusable OWL-QN mode for a family's table.
+- `structured/crf-training.ts`: the chain CRF's own entry points over the same code: `crfStructuredProblem`,
+  `crfSmoothProblem`, `crfSolvers`, `crfTrainAlgorithm`, `trainCrf`, honouring `c1`.
+- `structured/structured-svm.ts`: max-margin structured learning (margin rescaling) over any oracle through its
+  loss-augmented `decode`: `subgradient` (Pegasos step, averaging), `bcfw` (block-coordinate Frank-Wolfe, with duality gap),
+  and the `one-slack` and `n-slack` cutting planes (the dual QP by `optim`'s QP solvers), as `structuredSvmModes` and the
+  table `structuredSvmSolvers` (kept apart from `structuredSolvers`: its tape reports the hinge objective), with
+  `structuredHingeObjective`, `structuredSvmPenalty(C)` (pystruct's C), `structuredSvmAlgorithm`, `trainStructuredSvm`.
+- `structured/graph-crf.ts`, `graph-oracle.ts`, `graph-structures.ts`, `graph-pseudo-likelihood.ts`,
+  `general-crf-oracle.ts`: CRFs on any graph. A `GraphCrf` labels the nodes of an input graph of any shape (node attribute
+  records, typed edges with optional attribute records, optional cliques) with weights tied across instances: per
+  (attribute, label), (edge type, label pair), (edge attribute, label pair) and (clique type, label tuple). `graphOracle`
+  computes expectations by exact inference (tree sum-product on forests, a junction tree on low-treewidth graphs) or
+  approximately (loopy BP, tree-reweighted BP), and decodes by junction-tree or max-product MAP, MPLP or a user function
+  (`graphCutMap` plugs in), reporting `exact` and the method used. Builders for trees and forests, grids (4 or 8
+  neighbourhood, undirected or directional), skip chains, order-k chains (tied label n-gram cliques, exact) and fully
+  connected graphs; Besag's pseudo-likelihood for graphs whose partition function is out of reach;
+  `generalCrfOracle` and `graphAsGeneralCrf` relate the older per-assignment-table `GeneralCrf` to it.
+- `structured/semi-markov-crf.ts`: semi-Markov CRF (Sarawagi and Cohen 2004): a segmentation (label, start, end, length at
+  most L) scored by summed content weights (prefix sums, O(1) per segment), optional first and last item weights, length
+  weights and label-pair transitions; forward, backward, Viterbi, segment marginals and expected counts in O(nLK + nK^2);
+  `semiMarkovOracle` with exact cost-augmented decoding for token and segment loss; BIO conversion. With L = 1 it is the
+  linear-chain CRF.
+- `structured/memm.ts`: the maximum-entropy Markov model, locally normalised, a `SmoothProblem` not an oracle (no global
+  partition function), with the label-bias example of Lafferty et al. in its test as the reason the CRF exists.
+- `structured/latent-crf.ts`: CRFs with latent or missing labels through the `clamped` oracle: `partialLabelOracle`
+  (per-position label sets or unknowns) and `hiddenStateCrf` / `hiddenStateOracle` (hidden-state and latent-dynamic CRFs,
+  `completion` for latent perceptrons, marginal or Viterbi decoding).
+- `structured/decoding.ts`: `allowedTransitions(labels, scheme)` (BIO, IOB2, IOB1, BIOES, BILOU, BMES as AllenNLP),
+  `crfDecodeConstrained`, `crfNBest`, `crfPosteriorDecode` (maximum expected accuracy under constraints) and `crfSample`.
 - `models/plates.ts`: plate notation and template models, grounding against plate elements and relations, grounded
   evidence, pooled (parameter-sharing) maximum likelihood.
 - `models/influence.ts`: influence diagrams (decision and utility nodes, no-forgetting information sets), policy
@@ -2929,7 +2981,9 @@ into `omai-engine/pgm`; `learning` and `causal` are namespaces.
   schedules, damping, loopy convergence), Bethe free energy.
 - `inference/gaussian-bp.ts`: Gaussian belief propagation in information form, walk-summability.
 - `inference/chain.ts`: forward-backward (scaled and log space, pairwise posteriors), Viterbi, posterior decoding,
-  forward filtering and backward sampling.
+  forward filtering and backward sampling; `viterbiKBest` (exact list Viterbi), `ChainConstraints` (allowed moves, starts,
+  ends and states per position), `constrainChain`, `constrainedViterbi` and `constrainedPosteriorDecode` (maximum expected
+  accuracy among feasible paths).
 - `inference/sampling.ts`: forward (`forwardSample`, `ancestralSample` in models/bayes-net.ts), rejection and
   likelihood-weighted sampling with effective sample sizes (`rejectionSampleAlgorithm`, `likelihoodWeightingAlgorithm`,
   one sample per step, `importanceContract`, the slot `importanceSamplers`), Gibbs sampling on factor graphs, weighted marginals, approximate queries.
@@ -2945,6 +2999,12 @@ into `omai-engine/pgm`; `learning` and `causal` are namespaces.
   against exact enumeration of small lattices and the decorrelation advantage over Metropolis at the critical coupling.
 - `inference/map.ts`: MAP and MPE by max-product (elimination and junction trees elsewhere; loopy BP decoding here), by
   LP relaxation (MPLP on its dual, with the integrality gap), and by local search (ICM with restarts).
+- `inference/graph-cut-map.ts`, `inference/lp-relaxation-map.ts`: `graphCutMap` (exact MAP of a binary pairwise model with
+  submodular terms by one minimum cut; `nonSubmodular: 'qpbo'` gives roof-duality persistent labels, completion and a lower
+  bound), `alphaExpansion` and `alphaBetaSwap` (move-making as traced algorithms, energy per cycle, 2-approximation for
+  Potts) with `pairwiseMoveConditions`; `lpRelaxationMap` (the local-polytope LP through `optim.linprog`) and `ad3Map`
+  (AD3, alternating-directions dual decomposition with exact per-factor QPs; bound, integrality gap and residuals on the tape).
+  The variational `treeReweighted` also returns the edge pseudo-marginals `edgeBeliefs`.
 - `learning/baum-welch.ts`: Baum-Welch for hidden Markov models (`baumWelchAlgorithm` as a traced algorithm with no past,
   `baumWelch` to fit, `initialHmmParameters`, `hmmDecode`, `hmmFromParameters`): categorical or Gaussian emissions
   (diagonal or full covariances with hmmlearn's prior) over `inference/chain.ts`; parameters are plain JSON
@@ -3080,7 +3140,8 @@ none of those weights. Each file builds its specs with `specOf(category, inputs,
   `intraListDiversity`, `novelty`, `serendipity`, `exposureGini`).
 - `sequence-labelling.ts`: entity-level scores as seqeval reports them (conlleval's chunk rules): `entitySpans` (BIO,
   IOB1, BIOES, BILOU), `bioViolations` (an inside tag that continues nothing), `entityScores` (micro, macro and weighted
-  precision, recall and F1 with the per-type scores), `entityF1`. Checked on the worked example of seqeval's README.
+  precision, recall and F1 with the per-type scores), `entityF1`, `sequenceAccuracyScore` (the share of sequences labelled
+  entirely right). Checked on the worked example of seqeval's README.
 - `interleaving.ts`: team-draft interleaving of two rankers (`teamDraftInterleave`, one coin flip per round), the
   clicks credited to each (`interleavingCredit`) and the preference over many impressions (`interleavingPreference`).
 - `clustering.ts`: Rand, adjusted Rand and Fowlkes-Mallows (`randScore`, `adjustedRandScore`,
@@ -7201,6 +7262,11 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   (`dishonestCasino`: faces 0 to 5, a fair and a loaded die swapped in secret) and a series switching between a calm
   and an active Gaussian regime (`regimeSwitching`), each with its generating model in the truth; the `sequences`
   collection.
+- `hyphenation.ts`: English hyphenation as sequence labelling: `hyphenationWords`, a deterministic sample (3984 words, every
+  32nd eligible entry) of the public-domain Moby Hyphenator list (Project Gutenberg 3204), one tag per letter (`B` a hyphen
+  follows), vendored by `oracle/datasets/hyphenation_words.py`; `hyphenationTables` (letter and vowel/consonant token
+  tables for the CRF template languages) and `hyphenationPatternsEnUs` (TeX's American English patterns, `hyph-en-us.tex`,
+  as the Liang baseline). The demonstrator trains a chain CRF on letter-window templates against the patterns.
 - `sequence-tasks.ts`: copy, reverse, sort, Dyck languages, addition, associative recall, parity, modular arithmetic
   (`copyTask`, `reverseTask`, `sortTask`, `dyckTask`, `additionTask`, `associativeRecall`, `parityTask`,
   `modularArithmetic`), each with an exact solver in its truth, and in-context linear regression written as quantised
@@ -7480,7 +7546,10 @@ Design rules:
 - `distributions.ts`: densities from a `Distribution` or KDE, ECDFs, box and violin plots, QQ plots, PMFs, prior and
   posterior overlays.
 - `matrices.ts`: heatmaps, confusion matrices, correlation matrices, images from tensors; gridded fields smooth by
-  default (bilinear or bicubic upsampling to one image, or filled contours), blocky cells on request.
+  default (bilinear or bicubic upsampling to one image, or filled contours), blocky cells on request. `cellText(value, row, col, x, y)` gives per-cell hover text (a transparent hit area per cell, so suited to grids of a few
+  thousand cells); `image` takes `Pixels` (RGBA bytes) as well as image data.
+- `symbols.ts`: the named marker symbols `points` accepts (`SYMBOLS`: `plane`, nose up, and `cross`; `symbolOf`); `points` also takes
+  `symbolRotate` (one angle or one per point) and `labelOffset` (pixels).
 - `fields.ts`: contours, decision regions, vector fields, streamlines.
 - `functions.ts`: function plots for the foundations (asymptotes, implicit curves, parametric and polar curves,
   tangent and secant lines, Riemann rectangles, Taylor polynomials).
@@ -7669,6 +7738,10 @@ Design rules:
   browser global is read at import.
 - `useJob.ts`: a heavy one-shot computation in named stages with progress, started when `active`, restarted by its
   `inputs`, painting between stages (and between slices of a generator stage); one result, never a state per step.
+  `JobContext.onCancel(undo)` runs cleanups when a job is replaced, deactivated or unmounted, and a stage still pending then
+  is dropped instead of awaited. `producer/stage.ts`: `workerStage({ name, createWorker, input?, weight? })` is a stage
+  computed in a Web Worker (a `run` request, then `progress`, `result` or `error`), terminated when the run ends or the job is
+  cancelled; `serveStage(self, run)` is the worker entry; headless, so a worker bundles only this.
 - `SceneView.tsx`: a `Scene` as SVG elements, with hover and click hit-testing.
 - `Scene3DView.tsx`: a 3-D scene with drag-to-orbit camera, re-projected on interaction.
 - `StructureView.tsx`: a `Structure` in a frame (by default) with pan, zoom, hover details and overlay state (`frames`
@@ -7717,6 +7790,11 @@ Design rules:
   graph, segment, polyline or circle, along an axis, on a grid, in a box, chained), `Brush`, `Probe`, `NearestHover`,
   `selection.ts`, `useLinkState` (a figure `LinkStore` in React) and `keys.ts` (`useHeldKeys`: keys captured while a
   figure has focus, per press and per frame, for playing worlds).
+  An `InteractionOverlay` keeps one transparent catching rectangle under all its tools (drawn only while a tool has registered a
+  `Backdrop`) and passes each pointer event to every registered `Backdrop`, so `Probe`, `Brush`, `NearestHover` and
+  `DraggablePoints` stack; handles are above it and win presses on them. `DraggablePoints place` puts the single point where
+  the reader presses and lets it follow the pointer until release. `useChartProjection` returns a new `Projection` after each
+  redraw that moved the plotting box, so overlays held as stable elements follow a resized chart.
   `DraggableLine` (a vertical or horizontal line the reader drags, bound two-way to a control's value: thresholds,
   cut-offs, levels; snaps to a step, keyboard-nudgeable; a bar, square, circle or diamond handle of a given size),
   `DraggableRect` (a rectangle in data coordinates dragged and resized by eight grips, `handles` `corners`, `edges` or
@@ -7746,7 +7824,7 @@ Design rules:
   edits a draft, Apply hands the whole draft to `onApply`, Cancel, Escape and the close button drop it, a press on the
   backdrop closes it only while the draft is untouched, Reset returns the draft to given defaults, focus is kept inside and
   restored; the logic is `settings.ts`: `settingsReducer`, `sameSettings`) and `SpaceSettings` (the same over a `Space`, drawn by
-  `SpaceControls`), which `FigureFrame` takes as `settings` and draws in its toolbar beside export and expand; and `ControlPanel`: collapsible, laid out in a given number of rows and columns, stacked in a
+  `SpaceControls`), which `FigureFrame` takes as `settings` and draws in its toolbar beside export and expand; and `ControlPanel`: collapsible, laid out in a given number of rows and columns (`columns` is a maximum: `minColumnWidth`, default the controls' 9rem minimum, drops columns on a phone), stacked in a
   left sidebar beside the figure or in a bar above it, or placed in named bento-grid areas (`ControlLayout` places it).
   Plain React and Tailwind over the `--wb-*` tokens; the rules are pure modules (`number.ts`, `options.ts`, `seed.ts`,
   `space-controls.ts`, `datasets.ts` (sources: a collection id, a collection or a registry), `environments.ts`
