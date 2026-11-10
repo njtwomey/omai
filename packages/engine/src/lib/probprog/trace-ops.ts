@@ -241,6 +241,7 @@ export interface Changed extends WeightedTrace {
  * @param key - The key for the redraw.
  * @returns The new trace, the weight and the discarded old values.
  * @concept trace-operations
+ * @index function Redraw selected sites from the program given the rest, with the MH weight (Gen's regenerate).
  * @example
  * ```ts
  * import { observe, regenerate, sample, seed, siteLogProbs, traceOf } from 'omai-engine/probprog'

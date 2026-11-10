@@ -177,6 +177,7 @@ function structureOf<D>(
  * @throws OmaiError with code `value` when a requested site cannot be collapsed (the message says why), or when no
  *   site can; `not-implemented` for subsampled or masked sites.
  * @concept collapsed-inference
+ * @index function Integrate conjugate latent sites out of a program (delayed sampling) with recover.
  * @example
  * ```ts
  * import { collapse, logJoint, observe, plate, sample } from 'omai-engine/probprog'

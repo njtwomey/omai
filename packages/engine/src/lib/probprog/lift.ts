@@ -24,6 +24,7 @@ export type LiftPriors = Distribution | Readonly<Record<string, Distribution>>
  * @param priors - A distribution, or distributions by site name.
  * @returns The lifted program.
  * @concept effect-handlers
+ * @index function Turn param sites into sample sites with priors (Pyro's lift).
  * @example
  * ```ts
  * import { logJoint, lift, observe, param } from 'omai-engine/probprog'

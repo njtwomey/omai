@@ -3990,6 +3990,40 @@
       "cases": 16
     },
     {
+      "fixture": "probprog/lift.json",
+      "source": "oracle/cases/probprog/lift.py",
+      "reference": {
+        "numpyro": "0.22.0",
+        "pyro-ppl": "1.9.2"
+      },
+      "cases": 6
+    },
+    {
+      "fixture": "probprog/reparam.json",
+      "source": "oracle/cases/probprog/reparam.py",
+      "reference": {
+        "numpyro": "0.22.0",
+        "pyro-ppl": "1.9.2"
+      },
+      "cases": 17
+    },
+    {
+      "fixture": "probprog/validation/exact.json",
+      "source": "oracle/cases/probprog/validation/exact.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 7
+    },
+    {
+      "fixture": "probprog/validation/grid.json",
+      "source": "oracle/cases/probprog/validation/grid.py",
+      "reference": {
+        "scipy": "1.18.1"
+      },
+      "cases": 1
+    },
+    {
       "fixture": "random/continuous.json",
       "source": "oracle/cases/random/continuous.py",
       "reference": {

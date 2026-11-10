@@ -22,6 +22,8 @@ import * as probprog from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   'omai-engine/probprog': probprog,
+  'omai-engine/probprog/inference': probprog.inference,
+  'omai-engine/probprog/validation': probprog.validation,
   'omai-engine/sampling': sampling,
   'omai-engine/pgm': pgm,
   'omai-engine/optim': optim,

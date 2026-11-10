@@ -104,6 +104,10 @@ manifest: ## Rebuild fixtures/manifest.json from the fixture files (for merge co
 examples: ## Run every @example of the engine core and check its `// =>` lines (ARGS="--only stats" etc.)
 	$(NODE) scripts/examples.ts $(ARGS)
 
+.PHONY: probprog-validate
+probprog-validate: ## Periodic heavy validation of probabilistic programming (SBC, agreement, Geweke); writes docs/probprog/results (ARGS="--only sbc --scale 2" or "--check"); not part of verify or check
+	nice -n 15 $(NODE) --conditions=source --experimental-transform-types --no-warnings scripts/probprog-validate.ts $(ARGS)
+
 .PHONY: build
 build: barrels ## Build all packages
 	@for p in $(PACKAGES); do $(PNPM) --dir packages/$$p run build || exit 1; done

@@ -5,7 +5,7 @@
  * hierarchical models), `transform` (sample the base of a transformed distribution) and `circular` (an angle sampled on
  * the real line with its von Mises density as a factor).
  *
- * @index function reparam: replace a site by an auxiliary site plus a transform, to change the geometry samplers see.
+ * @index function Reparameterise a site into an auxiliary draw plus a transform.
  */
 
 import { OmaiError } from '../base/index.ts'

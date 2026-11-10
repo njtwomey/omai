@@ -158,6 +158,7 @@ export function metropolis(
  * @param spec - The name, the settings and the transition.
  * @returns The kernel, ready to bind to a program with `.on(model, data)`.
  * @concept trace-operations
+ * @index function Define your own sampler on the handler layer in a few lines.
  * @example
  * ```ts
  * import { observe, sample } from 'omai-engine/probprog'

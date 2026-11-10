@@ -27,6 +27,8 @@ import {
   sample,
   scale,
 } from '../lib/probprog/index.ts'
+import type { AgreementTable, AgreementTolerances, GewekeResult, SbcResult } from '../lib/probprog/validation/index.ts'
+import { agreementWithin } from '../lib/probprog/validation/index.ts'
 import { ess } from '../lib/sampling/index.ts'
 import { add, matmul, mul, square, take, tensor, type Value, zeros } from '../lib/tensor/index.ts'
 
@@ -194,4 +196,40 @@ export function expectPosteriorMoments(
       (z * truth.sd) / Math.sqrt(2 * neff),
     )
   }
+}
+
+/** Assert that a simulation-based calibration run found every quantity uniform (the rank histograms are in the message). */
+export function expectCalibrated(result: SbcResult): void {
+  const bad = result.quantities.filter((q) => !q.passes)
+  expect(
+    bad.map(
+      (q) =>
+        `${q.name}: ${q.diagnosis}, chi-square p ${q.chiSquare.pValue.toPrecision(2)}, ECDF p ${q.ecdf.pValue.toPrecision(2)}, ranks ${q.histogram.join(' ')}`,
+    ),
+    'quantities that are not calibrated',
+  ).toEqual([])
+}
+
+/** Assert that a simulation-based calibration run rejects the method (a deliberately wrong one must), and how. */
+export function expectMiscalibrated(result: SbcResult, diagnosis?: RegExp): void {
+  expect(result.passes, 'the method should fail calibration').toBe(false)
+  if (diagnosis !== undefined) expect(result.quantities.find((q) => !q.passes)?.diagnosis).toMatch(diagnosis)
+}
+
+/** Assert that every row of an agreement table is within the tolerances (the failing rows and measures are in the message). */
+export function expectAgreement(table: AgreementTable, tolerances: AgreementTolerances = {}): void {
+  expect(
+    agreementWithin(table, tolerances).map((b) => `${b.row.method} on ${b.row.quantity}: ${b.failed.join(', ')}`),
+    'rows outside the tolerances',
+  ).toEqual([])
+}
+
+/** Assert that Geweke's joint distribution test found no statistic that differs between the two simulators. */
+export function expectGeweke(result: GewekeResult): void {
+  expect(
+    result.statistics
+      .filter((s) => s.pValue < result.alpha / result.statistics.length)
+      .map((s) => `${s.name}: z = ${s.z.toFixed(2)}`),
+    'statistics that differ between the marginal-conditional and successive-conditional simulators',
+  ).toEqual([])
 }
