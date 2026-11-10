@@ -72,9 +72,9 @@ describe('the CRF layer', () => {
     const wrongTags = tags.map((r, b) => r.map((k, t) => ((mask[b]?.[t] ?? false) ? k : 2)))
     expect(toFlat(neuralCrfLogLikelihood(changed, wrongTags, params, { ...opts, reduction: 'none' }))).toEqual(base)
     // The same batch time-major.
-    const tm = (g: unknown[][]): unknown[][] => (g[0] ?? []).map((_, t) => g.map((r) => r[t]))
+    const tm = <V>(g: V[][]): V[][] => (g[0] ?? []).map((_, t) => g.map((r) => r[t] as V))
     const timeMajor = toFlat(
-      neuralCrfLogLikelihood(tm(toArray(emissions) as unknown[][]) as never, tm(tags), params, {
+      neuralCrfLogLikelihood(tm(toArray(emissions) as number[][][]), tm(tags), params, {
         mask: tm(mask),
         reduction: 'none',
       }),

@@ -41,6 +41,11 @@ def path_score(e: Floats, trans: Floats, start: Floats, end: Floats, tags: list[
     return total
 
 
+def layout(x: npt.NDArray[np.generic], batch_first: bool) -> npt.NDArray[np.generic]:
+    """A batch-first array as the layer is given it: unchanged, or time-major."""
+    return x if batch_first else np.swapaxes(x, 0, 1)
+
+
 def cases() -> list[Case]:
     out: list[Case] = []
     g = rng(71)
@@ -59,26 +64,21 @@ def cases() -> list[Case]:
             model.start_transitions.copy_(torch.tensor(start))
             model.end_transitions.copy_(torch.tensor(end))
 
-        def layout(x: npt.NDArray[np.generic]) -> npt.NDArray[np.generic]:
-            return x if batch_first else np.swapaxes(x, 0, 1)
-
-        e_in = torch.tensor(layout(emissions), requires_grad=True)
-        y_in = torch.tensor(layout(tags))
-        m_in = torch.tensor(layout(mask), dtype=torch.bool)
+        e_in = torch.tensor(layout(emissions, batch_first), requires_grad=True)
+        y_in = torch.tensor(layout(tags, batch_first))
+        m_in = cast(torch.ByteTensor, torch.tensor(layout(mask, batch_first), dtype=torch.uint8))
         reductions = {r: model(e_in, y_in, mask=m_in, reduction=r) for r in ["none", "sum", "mean", "token_mean"]}
-        llh = cast(torch.Tensor, reductions["none"])
-        total = cast(torch.Tensor, reductions["sum"])
+        llh = reductions["none"]
+        total = reductions["sum"]
         params_t = [e_in, model.transitions, model.start_transitions, model.end_transitions]
         # A length-1 batch never uses the transitions: their gradient is zero.
-        grads = [
-            torch.zeros_like(p) if gr is None else gr
-            for p, gr in zip(params_t, torch.autograd.grad(total, params_t, allow_unused=True), strict=True)
-        ]
-        grad_e = np.asarray(cast(torch.Tensor, grads[0]).detach().numpy())
+        raw = cast(tuple[torch.Tensor | None, ...], torch.autograd.grad(total, params_t, allow_unused=True))
+        grads = [torch.zeros_like(p) if gr is None else gr for p, gr in zip(params_t, raw, strict=True)]
+        grad_e = np.asarray(grads[0].detach().numpy())
         grad_e_batch_first = grad_e if batch_first else np.swapaxes(grad_e, 0, 1)
         onehot = np.eye(k)[tags] * mask[:, :, None]
         marginals = onehot - grad_e_batch_first
-        paths = cast(list[list[int]], model.decode(e_in.detach(), mask=m_in))
+        paths = model.decode(e_in.detach(), mask=m_in)
         llh_np = np.asarray(llh.detach().numpy())
         gold = np.array(
             [path_score(emissions[i], trans, start, end, [int(v) for v in tags[i, : lengths[i]]]) for i in range(b)]
@@ -87,20 +87,27 @@ def cases() -> list[Case]:
         path_scores = np.array([path_score(emissions[i], trans, start, end, paths[i]) for i in range(b)])
         pieces = [
             llh_np,
-            np.array([float(cast(torch.Tensor, reductions[r]).item()) for r in ["sum", "mean", "token_mean"]]),
+            np.array([float(reductions[r].item()) for r in ["sum", "mean", "token_mean"]]),
             log_z,
             path_scores,
             grad_e.ravel(),
-            np.asarray(cast(torch.Tensor, grads[1]).detach().numpy()).ravel(),
-            np.asarray(cast(torch.Tensor, grads[2]).detach().numpy()).ravel(),
-            np.asarray(cast(torch.Tensor, grads[3]).detach().numpy()).ravel(),
-            layout(marginals).ravel(),
+            np.asarray(grads[1].detach().numpy()).ravel(),
+            np.asarray(grads[2].detach().numpy()).ravel(),
+            np.asarray(grads[3].detach().numpy()).ravel(),
+            layout(marginals, batch_first).ravel(),
         ]
         out.append(
             case(
                 f"layer/{n}",
                 "layer",
-                [layout(emissions), trans, start, end, layout(tags), layout(mask)],
+                [
+                    layout(emissions, batch_first),
+                    trans,
+                    start,
+                    end,
+                    layout(tags, batch_first),
+                    layout(mask, batch_first),
+                ],
                 np.concatenate(pieces),
                 rtol=1e-10,
                 atol=1e-12,
