@@ -45,6 +45,8 @@ Structured prediction: conditional random fields and their neighbours, in one pl
 - function `graphPseudoLikelihood`: Besag pseudo-likelihood objective and gradient for graph CRFs, no partition function. `src/lib/pgm/structured/graph-pseudo-likelihood.ts:127` `omai-engine/pgm`
 - function `hashedExtractor`: Hash an extractor's features into a fixed number of buckets (the hashing trick). `src/lib/pgm/structured/features.ts:450` `omai-engine/pgm`
 - function `memmObjective`: MEMM negative log-likelihood and gradient, a sum of local softmax regressions. `src/lib/pgm/structured/memm.ts:183` `omai-engine/pgm`
+- function `structuredHingeObjective`: Structured hinge loss (margin rescaling) of an oracle with its subgradient. `src/lib/pgm/structured/structured-svm.ts:140` `omai-engine/pgm`
+- function `trainStructuredSvm`: Train a structured SVM by subgradient, Frank-Wolfe or cutting planes, with duality gap. `src/lib/pgm/structured/structured-svm.ts:811` `omai-engine/pgm`
 - function `wapitiExtractor`: Wapiti patterns (with regular-expression tests) as a feature extractor. `src/lib/pgm/structured/features.ts:171` `omai-engine/pgm`
 
 - estimator `generalCrfOracle`: The structured-model oracle of a general CRF with per-assignment feature tables. `src/lib/pgm/structured/general-crf-oracle.ts:55` `omai-engine/pgm`
@@ -64,3 +66,4 @@ Structured prediction: conditional random fields and their neighbours, in one pl
 
 - table `crfSolvers`: CRF training solvers: L-BFGS, OWL-QN for L1, SGD, perceptron, passive-aggressive, AROW. `src/lib/pgm/structured/crf-training.ts:104` `omai-engine/pgm`
 - table `structuredSolvers`: Structured-model solvers: L-BFGS, OWL-QN for L1, SGD, perceptron, passive-aggressive, AROW. `src/lib/pgm/structured/solvers.ts:311` `omai-engine/pgm`
+- table `structuredSvmSolvers`: Structured-SVM solvers: subgradient, block-coordinate Frank-Wolfe, one-slack and n-slack cutting planes. `src/lib/pgm/structured/structured-svm.ts:673` `omai-engine/pgm`
