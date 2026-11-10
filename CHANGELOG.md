@@ -3,6 +3,29 @@
 Versions are released in lockstep for omai-engine, omai-render and omai-meta. Up to 0.1.3 the packages were published as
 mdml-engine, mdml-render and mdml-meta.
 
+## 0.1.13
+
+Not yet released on GitHub: the incremental versions are tagged locally until the probabilistic-programming work is complete.
+
+Probabilistic programming (omai-engine):
+- Model layer (`omai-engine/probprog/model`): `defineModel` builder with named dimensions, a closed operator registry (26 operators),
+  22 distribution families as data (`model/dists`), constraints, data binding (`bind`, `withData`, `bindDataset`, missing values
+  and batches), `toProgram` (compiles to the existing programs, so every engine and handler runs a bound model), JSON round trip,
+  `analyseSpec` (dependencies, plates, conjugacy hints, opaque nodes), `toStructure` (plate-notation and factor-graph views with
+  ids that match inference tapes), `include`, `conditionSpec` and `doSpec`.
+- `omai-engine/probprog/inference`: the shared convention of inference methods (`defineInferenceMethod`, user-selected budgets
+  and periodic snapshots with `runAnytime`); there is no universal `infer` over methods.
+- `omai-engine/message-passing`: a factor-graph message-passing engine over exponential-family messages with 26 factor operators
+  and EP, VMP and BP as named settings of one steppable, resumable algorithm (`epMethod`, `vmpMethod`, `bpMethod`);
+  improper-message repair with counts; anytime runs with periodic marginal snapshots; reproduces the existing `pgm` BP, EP and
+  VMP, the `gp` probit EP, TrueSkill and the Bayesian Gaussian mixture, and is exact on Gaussian trees.
+
+Fixes (omai-render), from the notes site's 0.1.12 report:
+- A `Chart` no longer makes ECharts warn "has been disposed" when it unmounts (its event handlers were unbound after the
+  instance had been disposed).
+- `points` `symbolRotate` is a clockwise heading as documented (ECharts turns markers counterclockwise, so the angle is negated).
+- A real `Worker` is accepted as a `StageWorker` and a `WorkerLike` without a cast.
+
 ## 0.1.12
 
 - `DraggableLine`: the label of a vertical line flips to the left of the line when it would run off the overlay (a line near the
