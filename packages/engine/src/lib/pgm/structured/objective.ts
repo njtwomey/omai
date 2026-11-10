@@ -14,6 +14,42 @@ import type { StructuredExample, StructuredOracle, StructuredPenalty, Structured
 const asFloat = (w: ArrayLike<number>): Float64Array => (w instanceof Float64Array ? w : Float64Array.from(w))
 
 /**
+ * Add the penalties c2 ||w||^2 + c1 ||w||_1 of a structured objective: to the value (returned) and, in place, their
+ * gradient 2 c2 w + c1 sign(w) (the L1 term by its subgradient, zero at zero) to `gradient`. The one version of the
+ * penalty shared by the CRF objectives (chain, general and pseudo-likelihood); `structuredObjective` adds the same
+ * terms after rescaling a batch.
+ *
+ * @param w - The weights.
+ * @param value - The unpenalised objective.
+ * @param gradient - The unpenalised gradient, updated in place.
+ * @param penalty - The L2 and L1 coefficients (default none).
+ * @returns The penalised objective.
+ * @concept conditional-random-fields
+ * @example
+ * ```ts
+ * import { addStructuredPenalty } from 'omai-engine/pgm'
+ * const g = new Float64Array([1, 1])
+ * [addStructuredPenalty([2, -1], 5, g, { c2: 1, c1: 0.5 }), Array.from(g)] // => [11.5, [5.5, -1.5]]
+ * ```
+ */
+export function addStructuredPenalty(
+  w: ArrayLike<number>,
+  value: number,
+  gradient: Float64Array,
+  penalty: StructuredPenalty = {},
+): number {
+  const c2 = penalty.c2 ?? 0
+  const c1 = penalty.c1 ?? 0
+  let v = value
+  for (let i = 0; i < w.length; i++) {
+    const wi = w[i] ?? 0
+    v += c2 * wi * wi + c1 * Math.abs(wi)
+    gradient[i] = (gradient[i] ?? 0) + 2 * c2 * wi + c1 * Math.sign(wi)
+  }
+  return v
+}
+
+/**
  * The negative conditional log-likelihood of labelled examples under an oracle, plus the penalties c2 ||w||^2 and
  * c1 ||w||_1, and its gradient: for each example the log-partition function minus the clamped one (the score of the
  * labelling, when the oracle has no `clamped`), whose gradient is the expected minus the clamped feature counts. The

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { bioViolations, entityF1, entityScores, entitySpans } from './sequence-labelling.ts'
+import { accuracyScore } from './classification.ts'
+import { bioViolations, entityF1, entityScores, entitySpans, sequenceAccuracyScore } from './sequence-labelling.ts'
 
 describe('entity spans', () => {
   it('reads BIO, a stray inside tag, IOB1 and a type change', () => {
@@ -72,5 +73,40 @@ describe('entity scores', () => {
     const s = entityScores(t, p)
     expect(s.macro.recall).toBe(0.5)
     expect(s.weighted.recall).toBeCloseTo(0.75, 12)
+  })
+})
+
+describe('sequence accuracy', () => {
+  it('is the share of sequences labelled entirely right (sklearn-crfsuite)', () => {
+    // sklearn_crfsuite.metrics.sequence_accuracy_score([['a','b'],['a','a'],['b']], [['a','b'],['a','b'],['b']]) == 2/3
+    const r = sequenceAccuracyScore([['a', 'b'], ['a', 'a'], ['b']], [['a', 'b'], ['a', 'b'], ['b']])
+    expect(r.estimate.value).toBeCloseTo(2 / 3, 12)
+    expect(r.n).toBe(3)
+    expect(r.breakdown).toEqual({ correct: 2 })
+  })
+
+  it('is stricter than token accuracy and takes numeric labels', () => {
+    const t = [
+      [0, 1, 2],
+      [1, 1],
+    ]
+    const p = [
+      [0, 1, 1],
+      [1, 1],
+    ]
+    expect(sequenceAccuracyScore(t, p).estimate.value).toBe(0.5)
+    expect(accuracyScore(t.flat(), p.flat()).estimate.value).toBe(0.8)
+  })
+
+  it('scores perfect and wholly wrong predictions, and counts an empty sequence as right', () => {
+    expect(sequenceAccuracyScore([['a']], [['a']]).estimate.value).toBe(1)
+    expect(sequenceAccuracyScore([['a'], ['b']], [['b'], ['a']]).estimate.value).toBe(0)
+    expect(sequenceAccuracyScore([[], ['a']], [[], ['a']]).estimate.value).toBe(1)
+  })
+
+  it('rejects mismatched shapes and no sequences', () => {
+    expect(() => sequenceAccuracyScore([['a']], [])).toThrow(/different numbers/)
+    expect(() => sequenceAccuracyScore([['a', 'b']], [['a']])).toThrow(/different lengths/)
+    expect(() => sequenceAccuracyScore([], [])).toThrow(/no sequences/)
   })
 })

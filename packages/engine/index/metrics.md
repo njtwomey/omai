@@ -14,3 +14,4 @@ Evaluation metrics, scikit-learn and torchmetrics style: classification, regress
 - function `meanSquaredError`: Mean squared error; R2, MAE and the rest sit beside it. `src/lib/metrics/regression.ts:35` `omai-engine/metrics`
 - function `r2Score`: Coefficient of determination. `src/lib/metrics/regression.ts:145` `omai-engine/metrics`
 - function `rocAucScore`: Area under the ROC curve; rocCurve gives the curve. `src/lib/metrics/curves.ts:185` `omai-engine/metrics`
+- function `sequenceAccuracyScore`: Share of label sequences predicted entirely right (sklearn-crfsuite sequence_accuracy_score). `src/lib/metrics/sequence-labelling.ts:227` `omai-engine/metrics`

@@ -1,7 +1,8 @@
 /**
  * Inference on chains, hidden Markov models and linear-chain CRFs: the forward-backward algorithm (filtered and
  * smoothed marginals, pairwise posteriors and the likelihood, scaled or in log space), forward filtering, Viterbi
- * decoding of the most probable path, posterior decoding and forward filtering backward sampling for exact path draws.
+ * decoding of the most probable path, the k best paths (list Viterbi), decoding under constraints on the moves,
+ * posterior decoding and forward filtering backward sampling for exact path draws.
  */
 
 import { argmaxOf, logSumExpOf, maxOf, OmaiError } from '../../base/index.ts'
@@ -369,6 +370,204 @@ export function viterbi(
   for (let t = T - 2; t >= 0; t--) path[t] = back[t]?.[path[t + 1] ?? 0] ?? 0
   run.end('completed', T, { logProbability })
   return { path, logProbability }
+}
+
+/** One partial path of the list Viterbi recursion: its score and where it came from. */
+interface Partial {
+  readonly score: number
+  readonly from: number
+  readonly rank: number
+}
+
+/**
+ * List Viterbi (the k best paths, Seshadri and Sundberg 1994): the k highest-scoring state paths in decreasing order of
+ * score, exactly, keeping the k best partial paths into every state at every step. The first is the Viterbi path (ties
+ * go to the lower state, as {@link viterbi}); fewer than k are returned when fewer paths have positive potential.
+ *
+ * @param chain - The chain potentials.
+ * @param k - How many paths to return (a positive integer).
+ * @returns The paths with their log potentials, best first (empty when every path has zero potential).
+ * @throws OmaiError with code `value` for k below 1.
+ * @concept viterbi
+ * @index function List Viterbi: the k best state paths of a chain, exactly.
+ * @example
+ * ```ts
+ * import { viterbiKBest } from 'omai-engine/pgm'
+ * const chain = { logInitial: [0, 0], logTransition: [[0, 0], [0, 0]], logEmission: [[Math.log(3), 0], [0, Math.log(2)]] }
+ * viterbiKBest(chain, 3).map((r) => r.path) // => [[0, 1], [0, 0], [1, 1]]
+ * ```
+ */
+export function viterbiKBest(
+  chain: ChainModel,
+  k: number,
+): { readonly path: number[]; readonly logProbability: number }[] {
+  const { T, K, transitionAt } = check(chain, 'viterbiKBest')
+  if (!Number.isInteger(k) || k < 1) throw new OmaiError('value', 'viterbiKBest: k must be a positive integer')
+  if (T === 0) return [{ path: [], logProbability: 0 }]
+  const byScore = (a: Partial, b: Partial): number => b.score - a.score
+  // lists[t][j]: the best partial paths ending in state j at step t, best first
+  const lists: Partial[][][] = [
+    Array.from({ length: K }, (_, j) => {
+      const score = (chain.logInitial[j] ?? Number.NEGATIVE_INFINITY) + (chain.logEmission[0]?.[j] ?? 0)
+      return score > Number.NEGATIVE_INFINITY ? [{ score, from: -1, rank: 0 }] : []
+    }),
+  ]
+  for (let t = 1; t < T; t++) {
+    const A = transitionAt(t - 1)
+    const prev = lists[t - 1] ?? []
+    const next: Partial[][] = []
+    for (let j = 0; j < K; j++) {
+      const candidates: Partial[] = []
+      for (let i = 0; i < K; i++)
+        for (const [rank, p] of (prev[i] ?? []).entries()) {
+          const score = p.score + (A[i]?.[j] ?? 0) + (chain.logEmission[t]?.[j] ?? 0)
+          if (score > Number.NEGATIVE_INFINITY) candidates.push({ score, from: i, rank })
+        }
+      // a stable sort keeps the lower state (then the better rank) first among equal scores
+      next.push(candidates.sort(byScore).slice(0, k))
+    }
+    lists.push(next)
+  }
+  const finals: (Partial & { readonly state: number })[] = []
+  for (const [state, list] of (lists[T - 1] ?? []).entries())
+    for (const [rank, p] of list.entries()) finals.push({ ...p, from: state, rank, state })
+  finals.sort(byScore)
+  return finals.slice(0, k).map((f) => {
+    const path = new Array<number>(T)
+    let state = f.state
+    let rank = f.rank
+    for (let t = T - 1; t >= 0; t--) {
+      path[t] = state
+      const p = lists[t]?.[state]?.[rank]
+      state = p?.from ?? 0
+      rank = p?.rank ?? 0
+    }
+    return { path, logProbability: f.score }
+  })
+}
+
+/**
+ * Constraints on the paths of a chain: which moves are allowed. Every part is optional, and a path is feasible when it
+ * satisfies all of them. Labels are state indices.
+ */
+export interface ChainConstraints {
+  /** The allowed moves, `[K][K]`: `transitions[i][j]` is true when state i may be followed by state j. */
+  readonly transitions?: readonly (readonly boolean[])[]
+  /** The states a path may start in, one flag per state. */
+  readonly start?: readonly boolean[]
+  /** The states a path may end in, one flag per state. */
+  readonly end?: readonly boolean[]
+  /** For each position, the states allowed there (`undefined` for all of them); positions beyond the list are free. */
+  readonly positions?: readonly (readonly number[] | undefined)[]
+}
+
+/**
+ * The chain with the forbidden moves of the constraints removed (their log potential set to minus infinity): every
+ * path of the result is a feasible path of the original with the same potential, and the normalised distribution over
+ * its paths is the original one conditioned on feasibility. Viterbi, forward-backward and sampling on it are then
+ * constrained decoding, constrained marginals and constrained sampling.
+ *
+ * @param chain - The chain potentials.
+ * @param constraints - The allowed moves.
+ * @returns The constrained chain.
+ * @throws OmaiError with code `shape` for masks of the wrong size.
+ * @concept viterbi
+ * @example
+ * ```ts
+ * import { constrainChain } from 'omai-engine/pgm'
+ * const chain = { logInitial: [0, 0], logTransition: [[0, 0], [0, 0]], logEmission: [[0, 0], [0, 0]] }
+ * constrainChain(chain, { transitions: [[true, false], [true, true]] }).logTransition // => [[0, -Infinity], [0, 0]]
+ * ```
+ */
+export function constrainChain(chain: ChainModel, constraints: ChainConstraints): ChainModel {
+  const { T, K } = check(chain, 'constrainChain')
+  const { transitions, start, end, positions } = constraints
+  if (transitions !== undefined && (transitions.length !== K || transitions.some((r) => r.length !== K)))
+    throw new OmaiError('shape', `constrainChain: transitions must be ${K} x ${K}`)
+  for (const mask of [start, end])
+    if (mask !== undefined && mask.length !== K)
+      throw new OmaiError('shape', `constrainChain: start and end need ${K} flags`)
+  const forbid = (mat: Rows): Rows =>
+    transitions === undefined
+      ? mat
+      : mat.map((row, i) => row.map((v, j) => (transitions[i]?.[j] === true ? v : Number.NEGATIVE_INFINITY)))
+  const logTransition = Array.isArray(chain.logTransition[0]?.[0])
+    ? (chain.logTransition as readonly Rows[]).map(forbid)
+    : forbid(chain.logTransition as Rows)
+  const logInitial = chain.logInitial.map((v, k) =>
+    start === undefined || start[k] === true ? v : Number.NEGATIVE_INFINITY,
+  )
+  const logEmission = chain.logEmission.map((row, t) => {
+    const here = positions?.[t]
+    return row.map((v, k) => {
+      if (t === T - 1 && end !== undefined && end[k] !== true) return Number.NEGATIVE_INFINITY
+      return here === undefined || here.includes(k) ? v : Number.NEGATIVE_INFINITY
+    })
+  })
+  return { logInitial, logTransition, logEmission }
+}
+
+/**
+ * Constrained Viterbi: the highest-scoring path that satisfies the constraints (forbidden moves, allowed first and last
+ * states, allowed states per position), so a decoder over a tagging scheme cannot emit an invalid sequence.
+ *
+ * @param chain - The chain potentials.
+ * @param constraints - The allowed moves.
+ * @param options - Tracer (as {@link viterbi}).
+ * @returns The path and its log potential.
+ * @throws OmaiError with code `value` when no path satisfies the constraints.
+ * @concept viterbi
+ * @index function Viterbi under constraints: forbidden transitions, allowed start, end and per-position states.
+ * @example
+ * ```ts
+ * import { constrainedViterbi } from 'omai-engine/pgm'
+ * const chain = { logInitial: [0, 0], logTransition: [[0, 0], [0, 0]], logEmission: [[0, 2], [3, 0]] }
+ * constrainedViterbi(chain, { transitions: [[true, true], [false, true]] }).path // => [0, 0]
+ * ```
+ */
+export function constrainedViterbi(
+  chain: ChainModel,
+  constraints: ChainConstraints,
+  options: Omit<ChainOptions, 'method'> = {},
+): { readonly path: number[]; readonly logProbability: number } {
+  return viterbi(constrainChain(chain, constraints), options)
+}
+
+/**
+ * Constrained posterior decoding (maximum expected accuracy under constraints): the feasible path that maximises the
+ * sum of the posterior marginals of its states, where the posteriors are those of the distribution conditioned on
+ * feasibility. It minimises the expected number of wrong states among feasible paths, and unlike
+ * {@link posteriorDecode} it can never emit a forbidden move; with no constraints it is posterior decoding.
+ *
+ * @param chain - The chain potentials.
+ * @param constraints - The allowed moves.
+ * @returns The path, the constrained posterior marginals `[T][K]` and the expected number of correct states.
+ * @throws OmaiError with code `value` when no path satisfies the constraints.
+ * @concept forward-backward
+ * @index function Maximum-expected-accuracy decoding of a chain under constraints; never an invalid path.
+ * @example
+ * ```ts
+ * import { constrainedPosteriorDecode } from 'omai-engine/pgm'
+ * const chain = { logInitial: [0, 0], logTransition: [[0, 0], [0, 0]], logEmission: [[0, 1], [1, 0]] }
+ * constrainedPosteriorDecode(chain, { transitions: [[true, true], [false, true]] }).path // => [0, 1]
+ * ```
+ */
+export function constrainedPosteriorDecode(
+  chain: ChainModel,
+  constraints: ChainConstraints = {},
+): { readonly path: number[]; readonly posteriors: number[][]; readonly expectedCorrect: number } {
+  const constrained = constrainChain(chain, constraints)
+  const { T, K } = check(constrained, 'constrainedPosteriorDecode')
+  if (T === 0) return { path: [], posteriors: [], expectedCorrect: 0 }
+  const posteriors = forwardBackward(constrained, { method: 'log' }).posteriors
+  // max-sum of the marginals over feasible paths: the same chain with the marginals as scores and the masks as moves
+  const zeros = Array.from({ length: K }, () => new Array<number>(K).fill(0))
+  const scored = constrainChain(
+    { logInitial: new Array<number>(K).fill(0), logTransition: zeros, logEmission: posteriors },
+    constraints,
+  )
+  const best = viterbi(scored)
+  return { path: best.path, posteriors, expectedCorrect: best.logProbability }
 }
 
 /**

@@ -16,10 +16,13 @@ Inference algorithms for graphical models, part of `omai-engine/pgm`: exact meth
 - function `alphaBetaSwap`: MAP of a multi-label pairwise model by alpha-beta swap graph cuts. `src/lib/pgm/inference/graph-cut-map.ts:513` `omai-engine/pgm`
 - function `alphaExpansion`: MAP of a multi-label pairwise model by alpha-expansion graph cuts. `src/lib/pgm/inference/graph-cut-map.ts:492` `omai-engine/pgm`
 - function `beliefPropagation`: Loopy and tree belief propagation. `src/lib/pgm/inference/belief-propagation.ts:457` `omai-engine/pgm`
-- function `forwardBackward`: Forward-backward smoothing on chains; viterbi finds the best path. `src/lib/pgm/inference/chain.ts:118` `omai-engine/pgm`
+- function `constrainedPosteriorDecode`: Maximum-expected-accuracy decoding of a chain under constraints; never an invalid path. `src/lib/pgm/inference/chain.ts:555` `omai-engine/pgm`
+- function `constrainedViterbi`: Viterbi under constraints: forbidden transitions, allowed start, end and per-position states. `src/lib/pgm/inference/chain.ts:528` `omai-engine/pgm`
+- function `forwardBackward`: Forward-backward smoothing on chains; viterbi finds the best path. `src/lib/pgm/inference/chain.ts:119` `omai-engine/pgm`
 - function `graphCutMap`: Exact MAP of a binary submodular pairwise model by a minimum cut; QPBO fallback. `src/lib/pgm/inference/graph-cut-map.ts:86` `omai-engine/pgm`
 - function `lpRelaxationMap`: MAP by the local-polytope LP relaxation, solved with the linear-programming solvers. `src/lib/pgm/inference/lp-relaxation-map.ts:99` `omai-engine/pgm`
 - function `variableElimination`: Exact inference by variable elimination. `src/lib/pgm/inference/elimination.ts:318` `omai-engine/pgm`
+- function `viterbiKBest`: List Viterbi: the k best state paths of a chain, exactly. `src/lib/pgm/inference/chain.ts:400` `omai-engine/pgm`
 
 ## pgm/learning
 
@@ -40,14 +43,19 @@ The graphical model types, part of `omai-engine/pgm`: Bayes networks, Markov net
 
 Structured prediction: conditional random fields and their neighbours, in one place. Linear-chain CRFs with feature templates, general CRFs on trees, grids, skip chains and arbitrary graphs, semi-Markov and higher-order CRFs, locally normalised MEMMs, latent and partial-label CRFs, max-margin structured learners, constrained and n-best decoding, and the CRF layer over a neural encoder. Every model offers the same small contract (`StructuredOracle`: feature counts, expected feature counts and loss-augmented decoding), so one table of solvers (L-BFGS, OWL-QN for L1, stochastic gradient, perceptron, passive-aggressive, structured SVMs) trains all of them.
 
+- function `allowedTransitions`: Allowed transitions, starts and ends of a tagging scheme (BIO, IOB1, BIOES, BILOU, BMES) over labels. `src/lib/pgm/structured/decoding.ts:84` `omai-engine/pgm`
 - function `attributeExtractor`: CRFsuite attribute templates (bias, BOS/EOS, boundary options) as a feature extractor. `src/lib/pgm/structured/features.ts:245` `omai-engine/pgm`
 - function `combineExtractors`: Several feature extractors merged into one over the same input. `src/lib/pgm/structured/features.ts:364` `omai-engine/pgm`
+- function `crfDecodeConstrained`: Viterbi decoding of a CRF under constraints (e.g. a tagging scheme): never an invalid sequence. `src/lib/pgm/structured/decoding.ts:135` `omai-engine/pgm`
 - function `crfModelFor`: The linear-chain CRF with its feature vocabulary built from an extractor and training inputs. `src/lib/pgm/structured/features.ts:565` `omai-engine/pgm`
+- function `crfNBest`: The n best labellings of a CRF with scores and probabilities, optionally under constraints. `src/lib/pgm/structured/decoding.ts:173` `omai-engine/pgm`
+- function `crfPosteriorDecode`: Marginal (maximum expected accuracy) CRF decoding under constraints; never an invalid sequence. `src/lib/pgm/structured/decoding.ts:211` `omai-engine/pgm`
+- function `crfSample`: Exact samples of label sequences from a CRF's posterior, optionally under constraints. `src/lib/pgm/structured/decoding.ts:242` `omai-engine/pgm`
 - function `crfTemplateWeights`: The weight carried by each template of a fitted CRF, traced through explain. `src/lib/pgm/structured/features.ts:746` `omai-engine/pgm`
 - function `crfTopFeatures`: The top-weighted features of a fitted CRF per label, and its strongest transitions. `src/lib/pgm/structured/features.ts:694` `omai-engine/pgm`
 - function `crfppExtractor`: CRF++ templates as a feature extractor over token tables. `src/lib/pgm/structured/features.ts:110` `omai-engine/pgm`
 - function `functionExtractor`: An extractor from your own per-item (and per-edge) feature functions. `src/lib/pgm/structured/features.ts:310` `omai-engine/pgm`
-- function `graphPseudoLikelihood`: Besag pseudo-likelihood objective and gradient for graph CRFs, no partition function. `src/lib/pgm/structured/graph-pseudo-likelihood.ts:127` `omai-engine/pgm`
+- function `graphPseudoLikelihood`: Besag pseudo-likelihood objective and gradient for graph CRFs, no partition function. `src/lib/pgm/structured/graph-pseudo-likelihood.ts:114` `omai-engine/pgm`
 - function `hashedExtractor`: Hash an extractor's features into a fixed number of buckets (the hashing trick). `src/lib/pgm/structured/features.ts:450` `omai-engine/pgm`
 - function `memmObjective`: MEMM negative log-likelihood and gradient, a sum of local softmax regressions. `src/lib/pgm/structured/memm.ts:183` `omai-engine/pgm`
 - function `structuredHingeObjective`: Structured hinge loss (margin rescaling) of an oracle with its subgradient. `src/lib/pgm/structured/structured-svm.ts:140` `omai-engine/pgm`
