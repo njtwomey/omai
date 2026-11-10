@@ -2,8 +2,8 @@
  * The model specification: `ModelSpec`, a JSON-able description of a probabilistic model as a graph of nodes (data,
  * latent, observed, derived, generated, factor, param, scan) with named dimensions (plates), constraints, and expressions
  * over a closed registry of operators. A spec is a value: it can be inspected, serialised, sent to a worker, analysed
- * without running anything and compiled (to a `sample`/`observe` program by `toProgram`, and later to a factor graph for
- * message passing). It holds no functions and no tensors; the only escape from that is the `custom` expression, which
+ * without running anything and compiled (to a `sample`/`observe` program by `toProgram`, and to a factor graph for message
+ * passing by `toFactorGraph`). It holds no functions and no tensors; the only escape from that is the `custom` expression, which
  * names a function the receiving side must supply.
  *
  * Contracts other code relies on, in one place:
@@ -28,7 +28,7 @@
  *   operator when the two differ. A node whose expression holds a `custom` call, or a family with no
  *   exponential-family form, is opaque to message passing. `analyseSpec` reports these.
  *
- * @index structure ModelSpec: a JSON-able graph of data, latent, observed and derived nodes with named dims.
+ * @index structure ModelSpec: a JSON-able graph of data, latent, observed, derived and scan nodes with named dims.
  */
 
 import type { Json } from '../../base/index.ts'

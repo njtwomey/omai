@@ -20,7 +20,9 @@ import { ar1StateSpace } from './state-space.ts'
 /**
  * Every benchmark model of the suite: the conjugate trio, logistic, probit, Poisson and negative binomial regression, eight
  * schools in two parametrisations, the Gaussian mixture with and without label switching, the funnel in two parametrisations,
- * the banana, the two-mode target, the radon regression, a three-player TrueSkill and the AR(1) state space.
+ * the banana, the two-mode target, the radon regression, a three-player TrueSkill and the AR(1) state space, then the models of
+ * `additionalBenchmarkModels` (stochastic volatility, a Gaussian HMM, Gaussian process regression in two parametrisations, a
+ * topic model, a Bayesian neural network, item response scoring, a stick-breaking mixture and the clutter problem).
  *
  * @returns The models, a fresh array.
  * @concept model-spec
