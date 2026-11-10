@@ -66,17 +66,17 @@ omai-engine/numerics/roots	55	3d31f879c533
 omai-engine/numerics/sparse	72	bf1f1575c648
 omai-engine/numerics/spatial	45	0979524cbbc7
 omai-engine/numerics/special	77	cd8034800153
-omai-engine/optim	814	b5bd522f4508
+omai-engine/optim	819	cfd4d9e5a2fa
 omai-engine/patterns	63	d3340c16b350
 omai-engine/pgm	616	b69a79c516e4
 omai-engine/pgm/causal	59	1dc2cc4bcf4f
 omai-engine/pgm/learning	123	a9e76fe66003
 omai-engine/problems	55	af621d373b9a
-omai-engine/probprog	288	e46f957480c7
-omai-engine/probprog/inference	87	671cb687708d
+omai-engine/probprog	351	e53dbe1c4334
+omai-engine/probprog/inference	103	69df19bf85b5
 omai-engine/probprog/model	104	eef220f98f05
 omai-engine/probprog/model/dists	27	b33bb348e1b9
-omai-engine/probprog/models	64	8b9c85a5327b
+omai-engine/probprog/models	66	5aa97c341e92
 omai-engine/probprog/validation	41	e27b97032c47
 omai-engine/random	52	07ee37b9bd6f
 omai-engine/rl	272	e873cab5f3fa
@@ -125,4 +125,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	277	bb9620c02dbb
-total	19342	e962f3bfc9d8
+total	19428	448b578078bb

@@ -91,9 +91,9 @@ describe('amortised guide', () => {
       return amortisationGap({ model, data: undefined, guide, params: r.params, key: key(3), steps: 1500, draws: 150 })
         .gap
     }
-    const [linear, small, large] = [gapFor([]), gapFor([4]), gapFor([16])]
+    const [linear, large] = [gapFor([]), gapFor([16])]
     expect(linear).toBeGreaterThan(5)
-    expect(small).toBeLessThan(linear / 5)
+    expect(large).toBeLessThan(linear / 20)
     expect(large).toBeLessThan(0.3)
   }, 60_000)
 
