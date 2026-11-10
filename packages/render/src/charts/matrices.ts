@@ -12,6 +12,7 @@ import { type TensorLike, toFlat } from 'omai-engine/tensor'
 import type { Range } from '../figure/aspect.ts'
 import { extentOf } from '../figure/limits.ts'
 import { pngDataUrl } from '../svg/png.ts'
+import { escapeXml } from '../svg/svg.ts'
 import { formatNumber } from '../theme/format.ts'
 import {
   type DivergingName,
@@ -62,6 +63,12 @@ export interface HeatmapOptions {
   /** Show a colour bar (default true) with this label. */
   readonly colourBar?: boolean
   readonly label?: string
+  /**
+   * The tooltip text of a cell, from its value, its row (0 at the bottom), its column and its coordinates: hovering a
+   * cell shows it (plain text, escaped; `\n` breaks a line). Without it a heatmap has no hover text. It adds one
+   * transparent hit area per cell, so it suits grids of up to a few thousand cells.
+   */
+  readonly cellText?: (value: number, row: number, col: number, x: number, y: number) => string
   readonly opacity?: number
   readonly mode?: ColourMode
   readonly name?: string
@@ -89,6 +96,55 @@ export function rampStops(ramp: RampSpec | undefined, mode: ColourMode, divergin
 
 interface ImageApi {
   coord(p: readonly number[]): number[]
+}
+
+// One transparent hit area per cell of a grid (centred on its node, a cell wide and high), whose tooltip is the text the
+// caller gives for it; the image under it is silent, so this is what a hover finds.
+function cellHover(
+  g: Grid2D,
+  xs: readonly number[],
+  ys: readonly number[],
+  dx: number,
+  dy: number,
+  text: (value: number, row: number, col: number, x: number, y: number) => string,
+): SeriesOption {
+  const data: number[][] = []
+  for (let r = 0; r < g.rows; r++)
+    for (let c = 0; c < g.cols; c++) data.push([xs[c] ?? 0, ys[r] ?? 0, g.values[r * g.cols + c] ?? Number.NaN, r, c])
+  const half = (v: number): number => Math.abs(v) / 2
+  return {
+    type: 'custom',
+    name: '__cells',
+    data,
+    encode: { x: 0, y: 1, tooltip: 2 },
+    renderItem: (_params: unknown, api: CellApi): Record<string, unknown> => {
+      const x = api.value(0)
+      const y = api.value(1)
+      const [x0 = 0, y0 = 0] = api.coord([x - half(dx), y + half(dy)])
+      const [x1 = 0, y1 = 0] = api.coord([x + half(dx), y - half(dy)])
+      return {
+        type: 'rect',
+        shape: { x: Math.min(x0, x1), y: Math.min(y0, y1), width: Math.abs(x1 - x0), height: Math.abs(y1 - y0) },
+        style: { fill: 'rgba(0,0,0,0)' },
+        emphasis: { style: { fill: 'rgba(127,127,127,0.18)' } },
+      }
+    },
+    tooltip: {
+      show: true,
+      trigger: 'item',
+      formatter: (p: { readonly data?: readonly number[] }): string => {
+        const [x = 0, y = 0, value = Number.NaN, row = 0, col = 0] = p.data ?? []
+        return escapeXml(text(value, row, col, x, y)).replace(/\n/g, '<br/>')
+      },
+    },
+    clip: true,
+    z: 2,
+  } as unknown as SeriesOption
+}
+
+interface CellApi {
+  coord(p: readonly number[]): number[]
+  value(dim: number): number
 }
 
 /**
@@ -334,6 +390,8 @@ export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
   })
   const showBar = options.colourBar ?? true
   if (showBar) series.push({ type: 'scatter', name: '__colourbar', data: [], silent: true } as SeriesOption)
+  // After the colour bar's series, whose index the visual map names.
+  if (options.cellText !== undefined) series.push(cellHover(g, xs, ys, dx, dy, options.cellText))
   return layer(
     series,
     { x: xr, y: yr, tight: true },
