@@ -68,11 +68,22 @@ export function traceView(record: ChainDiagnostics, options: ChainViewOptions = 
   const mode = fig.mode
   const panels: Record<string, Panel> = {}
   for (const [i, q] of qs.entries()) {
-    const hits = record.divergences.filter((d) => d.draw < (q.chains[d.chain]?.length ?? 0))
+    // The trace may be thinned: its draws sit at their own index among all of the chain's draws.
+    const total = q.ranks.counts[0]?.reduce((a, b) => a + b, 0) ?? q.chains[0]?.length ?? 0
+    const at = (j: number, length: number): number =>
+      length <= 1 || total <= length ? j : Math.round((j * (total - 1)) / (length - 1))
+    const hits = record.divergences.slice(0, q.atDivergences?.length ?? 0)
     panels[`q${i}`] = {
       layers: [
         lines(
-          q.chains.map((c, k) => ({ y: [...c], name: `chain ${k}`, colour: `tab${k}`, width: 1, opacity: 0.85 })),
+          q.chains.map((c, k) => ({
+            x: c.map((_, j) => at(j, c.length)),
+            y: [...c],
+            name: `chain ${k}`,
+            colour: `tab${k}`,
+            width: 1,
+            opacity: 0.85,
+          })),
           { mode },
         ),
         ...(hits.length === 0
@@ -82,7 +93,7 @@ export function traceView(record: ChainDiagnostics, options: ChainViewOptions = 
                 [
                   {
                     x: hits.map((d) => d.draw),
-                    y: hits.map((d) => q.chains[d.chain]?.[d.draw] ?? 0),
+                    y: [...(q.atDivergences ?? [])],
                     name: 'divergent',
                     colour: 'tab3',
                     size: 9,
