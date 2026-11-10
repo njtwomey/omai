@@ -1559,7 +1559,24 @@ export function factorGraphVerdict(
   }
 }
 
-/** The compiled graph of a compilation against the engine's operators. @throws OmaiError when the compilation has issues. */
+/**
+ * The compiled graph (indexed, ready for the engine) of a compilation, against the engine's operators or a registry of
+ * your own.
+ *
+ * @param c - The compilation.
+ * @param operators - The factor operators by name (default the engine's `defaultOperators()`).
+ * @returns The compiled graph.
+ * @throws OmaiError with code `value` when the compilation has issues (no graph), naming each node and reason.
+ * @concept model-spec
+ * @example
+ * ```ts
+ * import { compileFactorGraph, defineModel, toFactorGraph } from 'omai-engine/probprog/model'
+ * import { normal } from 'omai-engine/probprog/model/dists'
+ * const m = defineModel('m', (b) => { b.observe('y', normal(b.latent('mu', normal(0, 2)), 1), b.data('y', { dims: ['row'] })) })
+ * const g = compileFactorGraph(toFactorGraph(m.bind({ y: [1, 2, 3] })))
+ * [g.variables.length, g.factors.length, g.edges.length] // => [4, 4, 4]
+ * ```
+ */
 export function compileFactorGraph(
   c: FactorGraphCompilation,
   operators: Readonly<Record<string, FactorOperator>> = factorOperators(),
