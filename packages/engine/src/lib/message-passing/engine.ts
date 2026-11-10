@@ -140,12 +140,23 @@ function argsOf(
   })
 }
 
-/** The cavity as a raw difference, without the renormalisation of a discrete family: what the evidence's masses are taken of. */
+/** The belief of a variable as the plain sum of its messages: no renormalisation, so the masses of the evidence keep their scale. */
+function rawBelief(g: CompiledGraph, messages: readonly (readonly number[])[], variable: number): number[] {
+  const v = g.variables[variable] as CompiledGraph['variables'][number]
+  const acc = new Array<number>(v.family.size).fill(0)
+  for (const e of v.edges) {
+    const m = messages[e] as Eta
+    for (let i = 0; i < acc.length; i++) acc[i] = (acc[i] ?? 0) + (m[i] ?? 0)
+  }
+  return acc
+}
+
+/** The cavity as a raw difference of raw sums, without the renormalisation of a discrete family: what the evidence's masses are taken of. */
 function rawCavity(g: CompiledGraph, messages: readonly (readonly number[])[], factor: number): Arg[] {
   const f = g.factors[factor] as CompiledGraph['factors'][number]
   return f.ports.map((p): Arg => {
     if (p.edge < 0) return { family: p.family, eta: undefined, value: p.value }
-    const b = beliefOf(g, messages, p.variable as number)
+    const b = rawBelief(g, messages, p.variable as number)
     const own = messages[p.edge] as Eta
     return { family: p.family, eta: b.map((v, i) => v - f.power * (own[i] ?? 0)), value: undefined }
   })
@@ -318,7 +329,7 @@ export function evidenceOf(g: CompiledGraph, s: EngineSettings, state: MpState):
     }
     for (const [i, v] of g.variables.entries()) {
       if (v.observed !== undefined) continue
-      total += (1 - v.edges.length) * v.family.logPartition(beliefOf(g, state.messages, i))
+      total += (1 - v.edges.length) * v.family.logPartition(rawBelief(g, state.messages, i))
     }
     return total
   }
