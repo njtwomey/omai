@@ -2,8 +2,9 @@
  * The model layer: a model written once as a value. A builder (`defineModel`) with named dimensions, data, latent,
  * observed, derived, generated and factor nodes and constraints produces a JSON-able `ModelSpec`; the spec is bound to data
  * (`bind`, `withData`, `bindDataset`), compiled to the existing `sample`/`observe` program (`toProgram`) so every present
- * engine and handler runs it, analysed without running (`analyseSpec`: dependencies, plates, conjugate pairs), drawn
- * (`toStructure`), composed (`include`, `conditionSpec`, `doSpec`) and serialised (`fromJSON`). Expressions use a
+ * engine and handler runs it, compiled to a factor graph for message passing with its plates expanded (`toFactorGraph`, with
+ * the reasons for what cannot be mapped), analysed without running (`analyseSpec`: dependencies, plates, conjugate pairs),
+ * drawn (`toStructure`), composed (`include`, `conditionSpec`, `doSpec`) and serialised (`fromJSON`). Expressions use a
  * closed registry of operators; distributions are named families with the library's constructors behind them
  * (`omai-engine/probprog/model/dists`).
  */
@@ -15,6 +16,7 @@ export * from './check.ts'
 export * from './compile.ts'
 export * from './compose.ts'
 export * from './definition.ts'
+export * from './factors.ts'
 export * from './ids.ts'
 export * from './operators.ts'
 export * from './spec.ts'

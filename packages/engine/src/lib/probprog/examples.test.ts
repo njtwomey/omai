@@ -9,6 +9,7 @@ import * as autodiff from '../autodiff/index.ts'
 import * as base from '../base/index.ts'
 import * as data from '../data/index.ts'
 import * as dists from '../dists/index.ts'
+import * as messagePassing from '../message-passing/index.ts'
 import * as linalg from '../numerics/linalg/index.ts'
 import * as optim from '../optim/index.ts'
 import * as pgm from '../pgm/index.ts'
@@ -27,6 +28,7 @@ const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   'omai-engine/probprog/model/dists': probprog.model.dists,
   'omai-engine/probprog/inference': probprog.inference,
   'omai-engine/probprog/validation': probprog.validation,
+  'omai-engine/message-passing': messagePassing,
   'omai-engine/space': space,
   'omai-engine/sampling': sampling,
   'omai-engine/pgm': pgm,

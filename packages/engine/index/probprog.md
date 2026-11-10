@@ -24,20 +24,22 @@ The inference engines, part of `omai-engine/probprog`: exact ones (enumeration, 
 
 ## probprog/inference
 
-The shared convention of the inference methods of the probabilistic layer, available as `omai-engine/probprog/inference`: what every method has in common (knobs as a `Space`, a typed tape contract, a steppable and resumable algorithm, a capability check, a user-selected budget and anytime snapshots) and nothing that chooses a method for the user. Each method is its own thing with its own knobs and tape. The folder holds the convention (`method.ts`, `runAnytime`), the methods themselves, one per engine and each beside the engine it wraps (`nutsMethod` with one iteration of every chain per step, `sviMethod`, `gibbsMethod`, `laplaceMethod`, `temperedSmcMethod`, `particleFilterMethod`, `emMethod`, `importanceMethod`, `abcSmcMethod`, and the one-step exact ones), each made from a bound spec or a program, and the model registry by name that lets a worker run one. It also holds the building blocks for methods written on the program layer: kernels defined in a few lines on the handlers and trace operations (`defineKernel`, with a resimulation and a random-walk kernel as worked examples).
+The shared convention of the inference methods of the probabilistic layer, available as `omai-engine/probprog/inference`: what every method has in common (knobs as a `Space`, a typed tape contract, a steppable and resumable algorithm, a capability check, a user-selected budget and anytime snapshots) and nothing that chooses a method for the user. Each method is its own thing with its own knobs and tape. The folder holds the convention (`method.ts`, `runAnytime`), the methods themselves, one per engine and each beside the engine it wraps (`nutsMethod` with one iteration of every chain per step, `sviMethod`, `gibbsMethod`, `laplaceMethod`, `temperedSmcMethod`, `particleFilterMethod`, `emMethod`, `importanceMethod`, `abcSmcMethod`, message passing on the factor graph of a spec (`epSpecMethod`, `vmpSpecMethod`, `bpSpecMethod`), and the one-step exact ones), each made from a bound spec or a program, and the model registry by name that lets a worker run one. It also holds the building blocks for methods written on the program layer: kernels defined in a few lines on the handlers and trace operations (`defineKernel`, with a resimulation and a random-walk kernel as worked examples).
 
 - structure `method.ts` (file): InferenceMethod: knobs, typed tape, check, budget and anytime snapshots, the shared convention. `src/lib/probprog/inference/method.ts:1` `omai-engine/probprog/inference`
 
 - function `defineKernel`: Define your own sampler on the handler layer in a few lines. `src/lib/probprog/inference/kernel.ts:188` `omai-engine/probprog/inference`
-- function `inferenceMethods`: The methods an app offers on its registered models, named kind/model, for a worker. `src/lib/probprog/inference/models.ts:143` `omai-engine/probprog/inference`
-- function `modelRegistry`: Models by name for a worker: `modelRegistry({ radon: { definition, data } })`. `src/lib/probprog/inference/models.ts:67` `omai-engine/probprog/inference`
+- function `inferenceMethods`: The methods an app offers on its registered models, named kind/model, for a worker. `src/lib/probprog/inference/models.ts:147` `omai-engine/probprog/inference`
+- function `modelRegistry`: Models by name for a worker: `modelRegistry({ radon: { definition, data } })`. `src/lib/probprog/inference/models.ts:68` `omai-engine/probprog/inference`
 
 - estimator `abcRejectionMethod`: Rejection ABC with summary statistics, as a one-step method. `src/lib/probprog/inference/abc-methods.ts:237` `omai-engine/probprog/inference`
 - estimator `abcSmcMethod`: ABC-SMC, one generation per step, with the tolerance shrinking on the tape. `src/lib/probprog/inference/abc-methods.ts:109` `omai-engine/probprog/inference`
+- estimator `bpSpecMethod`: Belief propagation on a model spec of Bernoulli nodes, posterior by site. `src/lib/probprog/inference/mp.ts:330` `omai-engine/probprog/inference`
 - estimator `chainMethod`: Forward-backward, FFBS and Viterbi on a discrete chain, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:196` `omai-engine/probprog/inference`
 - estimator `conjugateMethod`: Conjugate posteriors in closed form, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:38` `omai-engine/probprog/inference`
 - estimator `emMethod`: Expectation maximisation, one iteration per step, with exact E-steps. `src/lib/probprog/inference/em-method.ts:101` `omai-engine/probprog/inference`
 - estimator `enumerationMethod`: Exact enumeration of discrete models by a junction tree, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:134` `omai-engine/probprog/inference`
+- estimator `epSpecMethod`: Expectation propagation on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:268` `omai-engine/probprog/inference`
 - estimator `gaussianMethod`: Exact linear-Gaussian conditioning, Kalman and Gaussian BP, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:85` `omai-engine/probprog/inference`
 - estimator `gibbsMethod`: Gibbs sampling, one sweep per step, resumable, with anytime draws. `src/lib/probprog/inference/gibbs-method.ts:88` `omai-engine/probprog/inference`
 - estimator `importanceMethod`: Importance sampling in batches, with evidence, ESS and Pareto k-hat as it goes. `src/lib/probprog/inference/importance-method.ts:96` `omai-engine/probprog/inference`
@@ -46,10 +48,11 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `particleFilterMethod`: Bootstrap particle filter over a markov loop, one time step per step. `src/lib/probprog/inference/smc-methods.ts:256` `omai-engine/probprog/inference`
 - estimator `sviMethod`: Stochastic variational inference as a steppable, resumable method with anytime posteriors. `src/lib/probprog/inference/svi-method.ts:93` `omai-engine/probprog/inference`
 - estimator `temperedSmcMethod`: Adaptive-tempering SMC, one temperature per step, with the evidence. `src/lib/probprog/inference/smc-methods.ts:100` `omai-engine/probprog/inference`
+- estimator `vmpSpecMethod`: Variational message passing on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:298` `omai-engine/probprog/inference`
 
 ## probprog/model
 
-The model layer: a model written once as a value. A builder (`defineModel`) with named dimensions, data, latent, observed, derived, generated and factor nodes and constraints produces a JSON-able `ModelSpec`; the spec is bound to data (`bind`, `withData`, `bindDataset`), compiled to the existing `sample`/`observe` program (`toProgram`) so every present engine and handler runs it, analysed without running (`analyseSpec`: dependencies, plates, conjugate pairs), drawn (`toStructure`), composed (`include`, `conditionSpec`, `doSpec`) and serialised (`fromJSON`). Expressions use a closed registry of operators; distributions are named families with the library's constructors behind them (`omai-engine/probprog/model/dists`).
+The model layer: a model written once as a value. A builder (`defineModel`) with named dimensions, data, latent, observed, derived, generated and factor nodes and constraints produces a JSON-able `ModelSpec`; the spec is bound to data (`bind`, `withData`, `bindDataset`), compiled to the existing `sample`/`observe` program (`toProgram`) so every present engine and handler runs it, compiled to a factor graph for message passing with its plates expanded (`toFactorGraph`, with the reasons for what cannot be mapped), analysed without running (`analyseSpec`: dependencies, plates, conjugate pairs), drawn (`toStructure`), composed (`include`, `conditionSpec`, `doSpec`) and serialised (`fromJSON`). Expressions use a closed registry of operators; distributions are named families with the library's constructors behind them (`omai-engine/probprog/model/dists`).
 
 - function `analysis.ts` (file): analyseSpec: static dependency, plate, conjugacy and feature analysis of a ModelSpec. `src/lib/probprog/model/analysis.ts:1` `omai-engine/probprog/model`
 - function `bind.ts` (file): bind: check data against a spec's data nodes and dimensions and make a BoundModel. `src/lib/probprog/model/bind.ts:1` `omai-engine/probprog/model`
@@ -57,7 +60,8 @@ The model layer: a model written once as a value. A builder (`defineModel`) with
 - function `check.ts` (file): validateSpec: check a ModelSpec's names, references, operators, families and dimensions. `src/lib/probprog/model/check.ts:1` `omai-engine/probprog/model`
 - function `compile.ts` (file): toProgram: compile a bound model spec to the existing sample/observe program. `src/lib/probprog/model/compile.ts:1` `omai-engine/probprog/model`
 - function `compose.ts` (file): conditionSpec and doSpec: latent nodes turned into observations or interventions, as new specs. `src/lib/probprog/model/compose.ts:1` `omai-engine/probprog/model`
-- function `ids.ts` (file): nodeId, factorId, plateId and elementId: the id convention of a model spec's picture and tapes. `src/lib/probprog/model/ids.ts:1` `omai-engine/probprog/model`
+- function `factors.ts` (file): toFactorGraph: a bound ModelSpec as a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:1` `omai-engine/probprog/model`
+- function `ids.ts` (file): nodeId, factorId, plateId, elementId and auxId: the id convention of a model spec's picture and tapes. `src/lib/probprog/model/ids.ts:1` `omai-engine/probprog/model`
 - function `structure.ts` (file): toStructure: draw a ModelSpec as plate notation (or its factor graph) with ids that match tapes. `src/lib/probprog/model/structure.ts:1` `omai-engine/probprog/model`
 
 - structure `definition.ts` (file): ModelDefinition: a spec with its custom functions, and the methods bind, condition, do and toJSON. `src/lib/probprog/model/definition.ts:1` `omai-engine/probprog/model`
@@ -68,6 +72,8 @@ The model layer: a model written once as a value. A builder (`defineModel`) with
 - function `analyseSpec`: Static analysis of a ModelSpec: structure, plates, conjugacy and features. `src/lib/probprog/model/analysis.ts:337` `omai-engine/probprog/model`
 - function `bind`: Bind data to a ModelSpec with checks of dims, sizes and supports. `src/lib/probprog/model/bind.ts:338` `omai-engine/probprog/model`
 - function `defineModel`: Build a model spec with named dimensions, data, latents, observations and derived nodes. `src/lib/probprog/model/builder.ts:590` `omai-engine/probprog/model`
+- function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:1366` `omai-engine/probprog/model`
+- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:1246` `omai-engine/probprog/model`
 - function `toProgram`: Compile a bound ModelSpec to a sample/observe program every engine runs. `src/lib/probprog/model/compile.ts:205` `omai-engine/probprog/model`
 
 ### probprog/model/dists

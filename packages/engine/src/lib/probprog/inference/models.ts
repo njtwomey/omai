@@ -21,6 +21,7 @@ import { gibbsMethod } from './gibbs-method.ts'
 import { importanceMethod } from './importance-method.ts'
 import { laplaceMethod } from './laplace-method.ts'
 import type { InferenceMethod } from './method.ts'
+import { bpSpecMethod, epSpecMethod, vmpSpecMethod } from './mp.ts'
 import { nutsMethod } from './nuts-method.ts'
 import { particleFilterMethod, temperedSmcMethod } from './smc-methods.ts'
 import { sviMethod } from './svi-method.ts'
@@ -106,6 +107,9 @@ const renamed =
 export const methodKinds: Readonly<Record<string, MethodMaker>> = {
   nuts: nutsMethod,
   svi: sviMethod,
+  ep: epSpecMethod,
+  vmp: vmpSpecMethod,
+  bp: bpSpecMethod,
   gibbs: gibbsMethod,
   laplace: laplaceMethod,
   em: emMethod,

@@ -17,9 +17,13 @@
  *   prefix (`plate:a` holds `plate:a×b`): the form `omai-render`'s `nestPlates` reads, as for a `pgm` plate model.
  * - **Elements** of a vectorised site, for overlays that go below the site: `<site>[<flat index>]`, the coordinate names
  *   `potentialEnergy` uses (`w[0]`, `w[1]`).
+ * - **Auxiliary variables** of a factor graph (an intermediate value an expression needs, such as the linear predictor of
+ *   one row): `<site>#<k>[<flat index>]` for the k-th auxiliary of an element of site `<site>` (`<site>#<k>` for a site
+ *   over no dimension), with the factor `factor:<site>#<k>[<i>]` that defines it. They belong to `<site>` and no other
+ *   node; `siteOfId` maps any id of this file back to the node or factor site it belongs to.
  * - **Edges** have no id of their own; they are named by their end ids, `<from id>><to id>`.
  *
- * @index function nodeId, factorId, plateId and elementId: the id convention of a model spec's picture and tapes.
+ * @index function nodeId, factorId, plateId, elementId and auxId: the id convention of a model spec's picture and tapes.
  */
 
 import type { ModelNode, ModelSpec } from './spec.ts'
@@ -104,4 +108,41 @@ export function plateId(dims: readonly string[]): string | undefined {
  */
 export function elementId(site: string, index: number): string {
   return `${site}[${index}]`
+}
+
+/**
+ * The id of an auxiliary variable of a factor graph: the k-th intermediate value of an element of a site.
+ *
+ * @param site - The site whose expression needs it.
+ * @param k - Which auxiliary of that element (0 for the first).
+ * @param index - The flat element index, absent for a site over no dimension.
+ * @returns `<site>#<k>[<index>]`, or `<site>#<k>`.
+ * @example
+ * ```ts
+ * import { auxId } from 'omai-engine/probprog/model'
+ * [auxId('y', 0, 3), auxId('y', 1)] // => ['y#0[3]', 'y#1']
+ * ```
+ */
+export function auxId(site: string, k: number, index?: number): string {
+  return index === undefined ? `${site}#${k}` : `${site}#${k}[${index}]`
+}
+
+/**
+ * The node (or factor site) an id of this file belongs to: `w` and `w[2]` belong to `w`, `y#0[3]` to `y`, `factor:y[3]` to
+ * `factor:y`, `data:X` to itself. It is how the ids of an expanded factor graph are laid over the picture of the spec.
+ *
+ * @param id - A variable, factor or element id.
+ * @returns The id of the spec node or of the spec's factor for the site that it belongs to.
+ * @example
+ * ```ts
+ * import { siteOfId } from 'omai-engine/probprog/model'
+ * [siteOfId('w[2]'), siteOfId('y#0[3]'), siteOfId('factor:y#1[3]'), siteOfId('data:X')] // => ['w', 'y', 'factor:y', 'data:X']
+ * ```
+ */
+export function siteOfId(id: string): string {
+  const prefix = id.startsWith('factor:') ? 'factor:' : ''
+  const body = id.slice(prefix.length)
+  if (body.startsWith('data:')) return id
+  const cut = body.search(/[#[]/)
+  return prefix + (cut < 0 ? body : body.slice(0, cut))
 }
