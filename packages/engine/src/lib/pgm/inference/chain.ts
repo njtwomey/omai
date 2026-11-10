@@ -140,10 +140,17 @@ function scaledRecursions(
 ): ForwardBackwardResult {
   const emission = chain.logEmission.map((r) => shifted(r))
   const init = shifted(chain.logInitial)
+  // a homogeneous chain shares one matrix: exponentiate each distinct matrix once
+  const exponentiated = new Map<Rows, { values: number[][]; shift: number }>()
   const trans = Array.from({ length: Math.max(T - 1, 0) }, (_, t) => {
     const m = transitionAt(t)
-    const s = maxOf(m.flat())
-    return { values: m.map((r) => r.map((l) => Math.exp(l - s))), shift: s }
+    let e = exponentiated.get(m)
+    if (e === undefined) {
+      const s = maxOf(m.flat())
+      e = { values: m.map((r) => r.map((l) => Math.exp(l - s))), shift: s }
+      exponentiated.set(m, e)
+    }
+    return e
   })
   const forward: number[][] = []
   const scales: number[] = []
@@ -156,11 +163,12 @@ function scaledRecursions(
     const prev = forward[t - 1] ?? []
     const A = trans[t - 1]
     const e = emission[t]
-    const a = Array.from({ length: K }, (_, j) => {
+    const a = new Array<number>(K)
+    for (let j = 0; j < K; j++) {
       let s = 0
       for (let i = 0; i < K; i++) s += (prev[i] ?? 0) * (A?.values[i]?.[j] ?? 0)
-      return s * (e?.values[j] ?? 0)
-    })
+      a[j] = s * (e?.values[j] ?? 0)
+    }
     const c = normaliseRow(a)
     scales.push(c)
     logL += Math.log(c) + (e?.shift ?? 0) + (A?.shift ?? 0)
@@ -173,25 +181,31 @@ function scaledRecursions(
     const A = trans[t]
     const e = emission[t + 1]
     const c = scales[t + 1] ?? 1
-    backward[t] = Array.from({ length: K }, (_, i) => {
+    const b = new Array<number>(K)
+    for (let i = 0; i < K; i++) {
       let s = 0
       for (let j = 0; j < K; j++) s += (A?.values[i]?.[j] ?? 0) * (e?.values[j] ?? 0) * (next[j] ?? 0)
-      return s / c
-    })
+      b[i] = s / c
+    }
+    backward[t] = b
   }
   const posteriors = forward.map((a, t) => a.map((v, k) => v * (backward[t]?.[k] ?? 0)))
-  const pairwise = Array.from({ length: Math.max(T - 1, 0) }, (_, t) => {
+  const pairwise: number[][][] = new Array(Math.max(T - 1, 0))
+  for (let t = 0; t < T - 1; t++) {
     const A = trans[t]
     const e = emission[t + 1]
     const c = scales[t + 1] ?? 1
-    return Array.from({ length: K }, (_, i) =>
-      Array.from(
-        { length: K },
-        (_, j) =>
-          ((forward[t]?.[i] ?? 0) * (A?.values[i]?.[j] ?? 0) * (e?.values[j] ?? 0) * (backward[t + 1]?.[j] ?? 0)) / c,
-      ),
-    )
-  })
+    const f = forward[t] ?? []
+    const nb = backward[t + 1] ?? []
+    const rows: number[][] = new Array(K)
+    for (let i = 0; i < K; i++) {
+      const row = new Array<number>(K)
+      for (let j = 0; j < K; j++)
+        row[j] = ((f[i] ?? 0) * (A?.values[i]?.[j] ?? 0) * (e?.values[j] ?? 0) * (nb[j] ?? 0)) / c
+      rows[i] = row
+    }
+    pairwise[t] = rows
+  }
   return { logLikelihood: logL, posteriors, pairwise, forward, backward }
 }
 
@@ -326,13 +340,22 @@ export function viterbi(
   const back: number[][] = []
   for (let t = 1; t < T; t++) {
     const A = transitionAt(t - 1)
-    const ptr: number[] = []
-    const next = Array.from({ length: K }, (_, j) => {
-      const cand = score.map((s, i) => s + (A[i]?.[j] ?? 0))
-      const best = argmaxOf(cand)
-      ptr.push(best)
-      return (cand[best] ?? Number.NEGATIVE_INFINITY) + (chain.logEmission[t]?.[j] ?? 0)
-    })
+    const ptr: number[] = new Array(K)
+    const next = new Array<number>(K)
+    for (let j = 0; j < K; j++) {
+      // the first of the largest candidates, as argmaxOf
+      let best = 0
+      let top = (score[0] ?? Number.NEGATIVE_INFINITY) + (A[0]?.[j] ?? 0)
+      for (let i = 1; i < K; i++) {
+        const cand = (score[i] ?? Number.NEGATIVE_INFINITY) + (A[i]?.[j] ?? 0)
+        if (cand > top) {
+          best = i
+          top = cand
+        }
+      }
+      ptr[j] = best
+      next[j] = top + (chain.logEmission[t]?.[j] ?? 0)
+    }
     back.push(ptr)
     score = next
     run.message(t, 'viterbi', { t, values: score }, { to: `z${t}` })
