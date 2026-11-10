@@ -16,5 +16,13 @@ it with `group: '<slug>'` in the poc's `poc.ts`; the index shows one section per
 `/group/<slug>`), a search lists matches flat with the group on each card, and a poc with no group is listed under "More".
 A group with no pocs is not shown.
 
+Pages that run several methods at once within a time budget the user chooses (the probabilistic-programming group) share
+their plumbing in `src/shared/`: `useAnytimeRuns` drives each run as a session through the library's `runAnytimeAsync`
+(slices that hand the thread back, so the page keeps painting; a snapshot of each run about once a second, read by the page's
+`derive`), `RunBar` is the budget choice, the progress and a line per run, `CurveChart` draws curves and points in one box,
+`useDeferred` computes heavy work after the first paint, and `smoke.ts` (`snapshotOf`) reads a run as the page would, for the
+smoke test of a page's `compute.ts`. Each such page keeps its runs and records in `compute.ts` (with a small test) and its layout
+in `Page.tsx`.
+
 A new page's styles arrive with a restart: Tailwind scans for classes when `make pocs` starts, so stop it and start it
 again after adding a page whose layout looks unstyled.
