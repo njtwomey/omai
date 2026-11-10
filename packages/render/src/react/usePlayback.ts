@@ -45,9 +45,10 @@ export interface PlaybackController {
   /** Reset the page's controls to their defaults; absent when the page has none, and so no button. */
   readonly resetForm?: () => void
   /**
-   * Where the run this controller drives is (see `OmaiState`): `preparing` while a live run is still computing its steps
-   * towards its end or `maxSteps`, `ready` once it has ended (and for precomputed frames, at once), `failed` when it
-   * was let go of before it ended. The {@link Player} carries it as `data-omai-state` on its root, so `waitForSettled`
+   * Where the run this controller drives is (see `OmaiState`): `preparing` while a live run is being computed towards its
+   * end or `maxSteps` (it is playing, or a primed or eager run is filling in the background), `idle` when it is
+   * incomplete and nothing is computing (never started, or play stopped: it waits for Play), `ready` once it has ended
+   * (and for precomputed frames, at once), `failed` when it was let go of before it ended. The {@link Player} carries it as `data-omai-state` on its root, so `waitForSettled`
    * waits for the run and not only for the figure beside it. Absent on a controller that does not say: the player then
    * carries no attribute.
    */
@@ -282,7 +283,8 @@ export interface LiveRun<S> {
    * plays, and `{ ok: false, error: 'disposed' }` when the run is let go of before that (`dispose()`, a new algorithm
    * or seed, a reset, unmounting). It never rejects, and is already resolved when the run is whole at the first render.
    * There is one promise per run: a remake gives a fresh one. A run that is not primed and is not played does not
-   * compute, so its promise stays pending. The same as `data-omai-state` of a session figure (see `OmaiState`).
+   * compute, so its promise stays pending (while `controller.state`, `data-omai-state` of the player, reads `idle`: that
+   * is the state an exporter settles on, this promise is the one for the end).
    */
   readonly settled: Promise<SettledResult>
   /** The algorithm's step number of the oldest state still kept (0 until the history buffer starts dropping). */
@@ -400,7 +402,10 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
   const r = run.current as ReturnType<typeof make>
   const last = r.states.last as NonNullable<typeof r.states.last>
   const finished = last.status !== undefined
-  const runState = settledStateOf({ done: finished, disposed: released })
+  // Work is under way while the run is played (the ticker moves only when active) or primed in the background (the
+  // priming effect below); otherwise an incomplete run is idle: it waits for Play.
+  const working = (playing && active) || (prime && active)
+  const runState = settledStateOf({ done: finished, disposed: released, idle: !working })
   const settled = useRunSettled(r, runState, DISPOSED)
   // A fresh run (new algorithm or seed) starts from its first state (`at` was reset with it; a seek made since the
   // render is kept).
