@@ -39,6 +39,13 @@ export interface StructuredOracle<X, Y> {
    */
   clamped?(w: ArrayLike<number>, x: X, y: Y): { readonly counts: Float64Array; readonly logPartition: number }
   /**
+   * Optional fast path of maximum likelihood: add the gradient of the negative log-likelihood of one example (the
+   * expected minus the clamped feature counts) into `gradient` and return that negative log-likelihood, log Z(x) minus
+   * the clamped log-partition function, without allocating a parameter-sized vector per example. A learner that finds
+   * it uses it in place of `expectations` and `clamped`; a model whose parameter vector is large should offer it.
+   */
+  gradientInto?(w: ArrayLike<number>, x: X, y: Y, gradient: Float64Array): number
+  /**
    * The highest-scoring labelling under the weights and its score. With `against` (a gold labelling) the score of every
    * labelling is raised by its task loss against that gold one (cost-augmented, or loss-augmented, decoding: what the
    * passive-aggressive update and the structured SVM's separation oracle need); the returned score includes the cost.
