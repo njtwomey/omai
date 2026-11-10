@@ -169,4 +169,15 @@ describe('predictives and criticism', () => {
     const max = (d: ReturnType<typeof tensor>) => toFlat(d).reduce((a, b) => Math.max(a, b), 0)
     expect(posteriorPredictiveCheck(counts, rep['k'] ?? tensor([]), max).pValue).toBeLessThan(0.02)
   })
+
+  it('summarises the sites a posterior holds and leaves out a listed site it holds nothing of', () => {
+    const post = definePosterior({
+      form: 'variational',
+      engine: 'test',
+      sites: ['x', 'label'],
+      marginals: { x: normal(1, 2) },
+    })
+    expect(post.summary().map((r) => [r.name, r.mean, r.sd])).toEqual([['x', 1, 2]])
+    expect(() => post.mean('label')).toThrow(/no draws of label/)
+  })
 })

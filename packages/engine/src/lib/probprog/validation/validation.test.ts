@@ -2,11 +2,11 @@
 // calibration (exact samplers pass, deliberately wrong ones fail) and Geweke's test. Fixed seeds; seconds.
 import { describe, expect, it } from 'vitest'
 import { expectAgreement, expectCalibrated, expectGeweke, expectMiscalibrated } from '../../../testing/probprog.ts'
-import { bernoulli, beta, gamma, multivariateNormal, normal, poisson } from '../../dists/index.ts'
+import { bernoulli, beta, categorical, gamma, multivariateNormal, normal, poisson } from '../../dists/index.ts'
 import { adam } from '../../optim/index.ts'
 import { normal as drawNormal, foldIn, key as makeKey } from '../../random/index.ts'
-import { item, sum, tensor, type Value } from '../../tensor/index.ts'
-import { conjugateInference, mcmc, svi } from '../engines/index.ts'
+import { item, sum, take, tensor, type Value } from '../../tensor/index.ts'
+import { conjugateInference, laplaceApproximation, mcmc, svi } from '../engines/index.ts'
 import { autoDelta, autoNormal } from '../guides.ts'
 import { randomWalkKernel, resimulationKernel } from '../inference/index.ts'
 import { type Model, observe, plate, sample } from '../primitives.ts'
@@ -173,6 +173,25 @@ describe('agree', () => {
     const a = fromPosterior('exact', conjugateInference(model, undefined), { key: makeKey(2) })
     const table = agree([a], { oracle })
     expectAgreement(table, { ks: 0.05 })
+  })
+
+  it('reads a posterior that lists a site it holds no draws of (the label a Laplace fit sums out)', () => {
+    const y = [-2.1, -1.8, 2.2, 1.9, -2.3, 2.0]
+    const mixture: Model = () => {
+      const mu = sample('mu', normal(0, 3), { sampleShape: [2] })
+      plate('n', y.length, () => {
+        const c = sample('c', categorical({ probs: [0.5, 0.5] }), { infer: { enumerate: 'parallel' } })
+        observe('y', normal(take(mu, c), 1), y)
+      })
+    }
+    const post = laplaceApproximation(mixture, undefined, { key: makeKey(0) })
+    expect(post.sites).toContain('c')
+    expect(post.draws?.['c']).toBeUndefined()
+    // The summary covers the sites the fit holds, and the approximation has draws of those and none of the label.
+    expect(post.summary().map((r) => r.site)).toEqual(['mu', 'mu'])
+    const a = fromPosterior('laplace', post, { key: makeKey(3), numDraws: 500 })
+    expect(Object.keys(a.draws).sort()).toEqual(['mu[0]', 'mu[1]'])
+    expect(() => post.mean('c')).toThrow(/no draws of c/)
   })
 
   it('weightedOracle is a distribution: its quantile inverts its CDF', () => {
