@@ -7,7 +7,7 @@
 
 import { OmaiError } from '../../base/index.ts'
 import { gaussianGrid, gaussianGridOn } from '../_quadrature.ts'
-import type { Arg, FactorOperator, OperatorContext, Port, TiltedMoments } from '../types.ts'
+import type { Arg, FactorOperator, OperatorContext, Params, Port, TiltedMoments } from '../types.ts'
 import { allProper, gaussianOf, massOf, scalarOf } from './args.ts'
 
 /** What {@link numericOperator} builds the operator from. */
@@ -16,8 +16,8 @@ export interface NumericOperatorOptions {
   readonly description?: string
   /** The number of Gaussian arguments (1 to 3: the grid is a product over them). */
   readonly arity: number
-  /** log f at a point, one coordinate per argument. */
-  readonly logDensity: (x: readonly number[]) => number
+  /** log f at a point, one coordinate per argument, and the factor's parameters (its data), so one operator serves every factor of a kind. */
+  readonly logDensity: (x: readonly number[], params: Params) => number
 }
 
 /**
@@ -59,7 +59,7 @@ export function numericOperator(options: NumericOperatorOptions): FactorOperator
       let mass = 0
       const walk = (d: number, w: number): void => {
         if (d === n) {
-          const v = w * Math.exp(c.power * options.logDensity(point))
+          const v = w * Math.exp(c.power * options.logDensity(point, c.params))
           if (!(v > 0)) return
           mass += v
           for (let k = 0; k < n; k++) {
