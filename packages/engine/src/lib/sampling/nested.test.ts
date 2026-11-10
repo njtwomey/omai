@@ -57,9 +57,9 @@ describe('nested sampling evidence', () => {
       sample: (k) => uniform(k, [2], { low: -a, high: a }).data,
       logProb: (x) => (Array.from(x).every((v) => Math.abs(v) < a) ? -2 * Math.log(2 * a) : Number.NEGATIVE_INFINITY),
     })
-    const y = [0.7, -0.3]
+    const y = [0.7, -0.3] as const
     const logL = (x: Float64Array): number =>
-      (-0.5 * ((x[0] ?? 0) - y[0]!) ** 2) / SIGMA ** 2 - (0.5 * ((x[1] ?? 0) - y[1]!) ** 2) / SIGMA ** 2
+      (-0.5 * ((x[0] ?? 0) - y[0]) ** 2) / SIGMA ** 2 - (0.5 * ((x[1] ?? 0) - y[1]) ** 2) / SIGMA ** 2
     const truth = Math.log(2 * Math.PI * SIGMA ** 2) - 2 * Math.log(2 * a)
     const r = nestedSampler(prior, logL, { key: key(4), numLive: 150 })
     expect(Math.abs(r.logZ - truth)).toBeLessThan(4 * r.logZError + 0.05)
@@ -142,7 +142,7 @@ describe('nested sampling as an algorithm', () => {
         alg.step(s, {
           ...ctx,
           log: (path: string, v: unknown) => {
-            if (typeof v === 'number') (logs[path] ??= []).push(v)
+            if (typeof v === 'number') logs[path] = [...(logs[path] ?? []), v]
           },
           wants: () => true,
         } as never),
@@ -154,7 +154,7 @@ describe('nested sampling as an algorithm', () => {
     expect((logs['ns/logZ'] ?? []).every(Number.isFinite)).toBe(true)
     const vol = logs['ns/logVolume'] ?? []
     expect(vol.every((v, i) => i === 0 || v < (vol[i - 1] ?? 0))).toBe(true)
-    expect(Math.abs((logs['ns/logZ'] ?? []).at(-1)! - gaussianTruth(y))).toBeLessThan(0.7)
+    expect(Math.abs(((logs['ns/logZ'] ?? []).at(-1) ?? Number.NaN) - gaussianTruth(y))).toBeLessThan(0.7)
   })
 
   it('rejects bad options', () => {

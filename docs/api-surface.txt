@@ -19,7 +19,7 @@ omai-engine/dynamics	126	0a615b3a29bf
 omai-engine/dynamics/automata	98	4ba661e847d2
 omai-engine/dynamics/celestial	91	9aca0cac03a1
 omai-engine/dynamics/control	122	cf7c2b88ec1b
-omai-engine/dynamics/filtering	122	c3e1e92aeb76
+omai-engine/dynamics/filtering	137	c5c94a1f3bd2
 omai-engine/dynamics/fractals	60	54d95511afcc
 omai-engine/dynamics/ode	193	e5b047171936
 omai-engine/dynamics/pde	142	b420e2fd302d
@@ -73,15 +73,15 @@ omai-engine/pgm/causal	59	1dc2cc4bcf4f
 omai-engine/pgm/learning	123	a9e76fe66003
 omai-engine/problems	55	af621d373b9a
 omai-engine/probprog	286	363ab61ddefd
-omai-engine/probprog/inference	87	671cb687708d
+omai-engine/probprog/inference	116	e4b04dd0da6c
 omai-engine/probprog/model	104	eef220f98f05
 omai-engine/probprog/model/dists	27	b33bb348e1b9
-omai-engine/probprog/models	64	9dc91d07b821
+omai-engine/probprog/models	69	425aa4f4d558
 omai-engine/probprog/validation	41	e27b97032c47
 omai-engine/random	52	07ee37b9bd6f
 omai-engine/rl	272	e873cab5f3fa
 omai-engine/rules	78	608fe8846362
-omai-engine/sampling	276	827b634c9fad
+omai-engine/sampling	304	ecad008214ff
 omai-engine/scene	101	8b415eb6e52c
 omai-engine/search	280	070c120faed9
 omai-engine/signal	374	8f6a6cb8ab0f
@@ -125,4 +125,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	277	bb9620c02dbb
-total	19340	8ebc1628f6e4
+total	19417	de01633abf7f

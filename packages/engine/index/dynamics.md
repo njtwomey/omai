@@ -21,6 +21,8 @@ Control theory for steering dynamical systems: linear-quadratic regulators and e
 State estimation and change detection for time series: Kalman filters and smoothers (linear, extended, unscented, ensemble), EM learning of linear-Gaussian models, particle filters and smoothers, and online and offline changepoint detection. Imported as `omai-engine/dynamics/filtering`.
 
 - function `kalmanFilter`: Kalman filter over a sequence; rtsSmoother smooths it. `src/lib/dynamics/filtering/kalman.ts:310` `omai-engine/dynamics/filtering`
+- function `particleGibbs`: Particle Gibbs with ancestor sampling: conditional SMC path sweeps and parameter moves. `src/lib/dynamics/filtering/pmcmc.ts:381` `omai-engine/dynamics/filtering`
+- function `pmmhKernel`: Particle marginal Metropolis-Hastings kernel: random walk on parameters with a particle filter's likelihood. `src/lib/dynamics/filtering/pmcmc.ts:124` `omai-engine/dynamics/filtering`
 
 - algorithm `kalmanFilterAlgorithm`: Kalman filter, one observation per step, logging the likelihood. `src/lib/dynamics/filtering/kalman.ts:215` `omai-engine/dynamics/filtering`
 

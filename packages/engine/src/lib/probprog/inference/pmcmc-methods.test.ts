@@ -4,59 +4,16 @@
 // between steps; and `check` says why particle Gibbs does not apply to a model without a transition density.
 import { describe, expect, it } from 'vitest'
 import { expectCancelAndContinue, expectResumeEqual, expectSnapshotCadence } from '../../../testing/methods.ts'
-import { filtering } from '../../dynamics/index.ts'
-import { item, mul, type Value } from '../../tensor/index.ts'
 import { session } from '../../trace/index.ts'
-import { ar1StateSpace } from '../models/state-space.ts'
+import {
+  ar1CoefficientPosterior,
+  ar1CoefficientFamily as family,
+  ar1Observations as Y,
+} from '../models/ar1-parameters.ts'
 import { particleGibbsMethod, pmmhMethod } from './pmcmc-methods.ts'
 
-const SX = 0.5
-const SY = 0.6
-const Y = (ar1StateSpace.data.data['y'] as number[]).map((v) => [v])
-
-const family = {
-  dim: 1,
-  names: ['phi'],
-  prior: {
-    dim: 1,
-    logProb: (t: ArrayLike<number>) => (Math.abs(t[0] ?? 2) < 0.99 ? -Math.log(1.98) : Number.NEGATIVE_INFINITY),
-    sample: () => new Float64Array([0.3]),
-  },
-  model: (t: Float64Array) => {
-    const phi = t[0] ?? 0
-    return filtering.gaussianParticleModel({
-      f: (x: Value) => mul(x, phi),
-      h: (x: Value) => x,
-      Q: [[SX ** 2]],
-      R: [[SY ** 2]],
-      x0: [0],
-      P0: [[SX ** 2 / (1 - phi ** 2)]],
-    })
-  },
-  logInitial: (t: Float64Array, x: Float64Array) => {
-    const v = SX ** 2 / (1 - (t[0] ?? 0) ** 2)
-    return -0.5 * ((x[0] ?? 0) ** 2 / v + Math.log(2 * Math.PI * v))
-  },
-}
-
 // The exact posterior of phi: the Kalman marginal likelihood on a fine grid under the uniform prior.
-const exact = (() => {
-  const grid = Array.from({ length: 397 }, (_, i) => -0.99 + (1.98 * (i + 0.5)) / 397)
-  const logL = grid.map((phi) =>
-    item(
-      filtering.kalmanLogLikelihood(
-        { F: [[phi]], H: [[1]], Q: [[SX ** 2]], R: [[SY ** 2]], x0: [0], P0: [[SX ** 2 / (1 - phi ** 2)]] },
-        Y,
-      ),
-    ),
-  )
-  const top = Math.max(...logL)
-  const w = logL.map((l) => Math.exp(l - top))
-  const z = w.reduce((a, b) => a + b, 0)
-  const mean = grid.reduce((a, phi, i) => a + (phi * (w[i] ?? 0)) / z, 0)
-  const sd = Math.sqrt(grid.reduce((a, phi, i) => a + ((phi - mean) ** 2 * (w[i] ?? 0)) / z, 0))
-  return { mean, sd }
-})()
+const exact = ar1CoefficientPosterior()
 
 describe('particle marginal Metropolis-Hastings', () => {
   const method = pmmhMethod(family, Y)
