@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { bernoulli, normal } from '../../dists/index.ts'
 import { ndtr } from '../../numerics/special/index.ts'
 import { foldIn, key, normal as normalDraws } from '../../random/index.ts'
-import { item, matmul, type Tensor, tensor, toFlat } from '../../tensor/index.ts'
+import { clip, item, matmul, type Tensor, tensor, toFlat } from '../../tensor/index.ts'
 import { logJoint } from '../density.ts'
 import { mcmc } from '../engines/nuts.ts'
 import { observe, plate, sample } from '../primitives.ts'
@@ -45,7 +45,8 @@ const { X, y } = dataset()
 /** The same model written by hand against the program layer. */
 const handWritten = (): void => {
   const w = plate('feature', D, () => sample('w', normal(0, 2)))
-  const probs = ndtr(matmul(tensor(X), w))
+  // The `probit` operator keeps its value inside (0, 1), so the same model by hand does too.
+  const probs = clip(ndtr(matmul(tensor(X), w)), 1e-300, 1 - Number.EPSILON / 2)
   plate('row', N, () => observe('y', bernoulli({ probs }), y))
 }
 

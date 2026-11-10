@@ -249,6 +249,15 @@ const atOperator: OperatorDef = {
 }
 
 /**
+ * The range the `probit` operator keeps its value in. The normal CDF rounds to exactly 1 from about 8.3 and underflows to 0
+ * below about -38, where the logit of a Bernoulli on it is infinite and its gradient not a number: a gradient method that
+ * wanders there (a sampler's leapfrog, a variational guide) ends on a failure. Held to these, the value is the same to the
+ * last digit away from the tails and the gradient there is zero.
+ */
+const PROBIT_FLOOR = 1e-300
+const PROBIT_CEILING = 1 - Number.EPSILON / 2
+
+/**
  * The registry the model layer ships: arithmetic (`add`, `sub`, `mul`, `div`, `pow`, `maximum`, `minimum`, `neg`),
  * elementwise functions (`exp`, `log`, `sqrt`, `square`, `abs`, `tanh`), links (`sigmoid`, `probit` (the standard normal
  * CDF, the inverse probit link), `softplus`), comparisons (`gt`, `lt`, `eq`), `where` and `clip`, reductions over a named
@@ -280,7 +289,12 @@ export function defaultOperators(): Record<string, OperatorDef> {
     elementwise('abs', 1, 'absolute value of a', (a) => abs(a)),
     elementwise('tanh', 1, 'hyperbolic tangent of a', (a) => tanh(a)),
     elementwise('sigmoid', 1, 'the logistic function 1 / (1 + exp(-a))', (a) => sigmoid(a), { factor: 'logistic' }),
-    elementwise('probit', 1, 'the standard normal CDF of a (the inverse probit link)', (a) => ndtr(a)),
+    elementwise(
+      'probit',
+      1,
+      'the standard normal CDF of a (the inverse probit link), kept inside (0, 1) so that a Bernoulli on it has a finite logit',
+      (a) => clip(ndtr(a), PROBIT_FLOOR, PROBIT_CEILING),
+    ),
     elementwise('softplus', 1, 'log(1 + exp(a))', (a) => softplus(a)),
     elementwise('gt', 2, 'a > b (a boolean)', (a, b) => greater(a, b), { factor: 'greater-than' }),
     elementwise('lt', 2, 'a < b (a boolean)', (a, b) => less(a, b)),
