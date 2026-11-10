@@ -2,7 +2,8 @@
  * Metrics for sequence labelling at the level of entities (seqeval, the conlleval script): the entity spans a tag
  * sequence in the BIO, IOB1, BIOES or BILOU scheme encodes, the violations of the scheme (an inside tag that continues
  * nothing), and entity-level precision, recall and F1 in which a predicted entity counts only if its type and both ends
- * match a true one, micro, macro and weighted over types, with the per-type scores.
+ * match a true one, micro, macro and weighted over types, with the per-type scores; and the share of sequences labelled
+ * entirely right.
  */
 
 import { OmaiError } from '../base/index.ts'
@@ -206,3 +207,43 @@ export const entityF1: MetricFunction<[readonly (readonly string[])[], readonly 
       return metricResult('entityF1', s.f1, s.support, { precision: s.precision, recall: s.recall, support: s.support })
     },
   )
+
+/**
+ * Sequence accuracy (sklearn_crfsuite.metrics.sequence_accuracy_score): the share of sequences whose every label is
+ * right. Stricter than the token accuracy of flattened sequences, which `accuracyScore` computes.
+ *
+ * @param yTrue - The true label sequences.
+ * @param yPred - The predicted label sequences, of the same lengths.
+ * @returns The metric result: the share, with the number of correct sequences in the breakdown.
+ * @throws OmaiError with code `shape` for sequences of different counts or lengths, `value` for no sequences.
+ * @concept sequence-labelling-metrics
+ * @index function Share of label sequences predicted entirely right (sklearn-crfsuite sequence_accuracy_score).
+ * @example
+ * ```ts
+ * import { sequenceAccuracyScore } from 'omai-engine/metrics'
+ * sequenceAccuracyScore([['A', 'B'], ['A', 'A']], [['A', 'B'], ['A', 'B']]).estimate.value // => 0.5
+ * ```
+ */
+export const sequenceAccuracyScore: MetricFunction<
+  [readonly (readonly (string | number)[])[], readonly (readonly (string | number)[])[]]
+> = defineMetric(
+  {
+    name: 'sequenceAccuracyScore',
+    direction: 'higher',
+    range: [0, 1],
+    inputs: 'labels',
+    category: 'sequence labelling',
+  },
+  (yTrue, yPred) => {
+    const name = 'sequenceAccuracyScore'
+    if (yTrue.length !== yPred.length) throw new OmaiError('shape', `${name}: different numbers of sequences`)
+    if (yTrue.length === 0) throw new OmaiError('value', `${name}: no sequences`)
+    let correct = 0
+    for (const [i, t] of yTrue.entries()) {
+      const p = yPred[i] as readonly (string | number)[]
+      if (t.length !== p.length) throw new OmaiError('shape', `${name}: sequence ${i} has different lengths`)
+      if (t.every((label, j) => label === p[j])) correct++
+    }
+    return metricResult(name, correct / yTrue.length, yTrue.length, { correct })
+  },
+)
