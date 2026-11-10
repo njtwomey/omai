@@ -34,11 +34,23 @@ The `benchmark/` campaigns (the cross-engine agreement of each benchmark model w
 | [benchmark/bimodal](benchmark-bimodal.md)                                           | passed: 1 method(s) agree with the analytic truth, 1 differ as expected; 1 reported                                              | 3.0     |
 | [benchmark/radon](benchmark-radon.md)                                               | passed: 1 method(s) agree with the quadrature truth, 1 differ as expected; 2 reported                                            | 19.8    |
 | [benchmark/trueskill-three-players](benchmark-trueskill-three-players.md)           | passed: 2 method(s) agree with the quadrature truth; 3 reported                                                                  | 25.5    |
-| [benchmark/ar1-state-space](benchmark-ar1-state-space.md)                           | passed: 3 method(s) agree with the exact truth; 2 reported                                                                       | 10.4    |
+| [benchmark/ar1-state-space](benchmark-ar1-state-space.md)                           | passed: 3 method(s) agree with the exact truth; 2 reported                                                                       | 13.5    |
 | [evidence/conjugate](evidence-conjugate.md)                                         | passed: 15 asserted estimates within their stated error (plus slack) of the closed-form log evidence                             | 20.0    |
 | [evidence/harmonic-mean](evidence-harmonic-mean.md)                                 | passed: refused by default; its error is more than three times bridge sampling's at every likelihood width                       | 0.3     |
 | [evidence/nested-gaussian](evidence-nested-gaussian.md)                             | passed: the stated error covers the analytic evidence at its nominal rate in every dimension, with no bias beyond it             | 29.3    |
 | [evidence/particle-filter](evidence-particle-filter.md)                             | passed: every proposal unbiased on the natural scale; the guided proposal is less variable than the bootstrap                    | 1.6     |
 | [evidence/pmcmc-ar1](evidence-pmcmc-ar1.md)                                         | passed: every chain reproduces the exact posterior mean (within four Monte Carlo standard errors) and spread (within 30 percent) | 38.3    |
-| [structure/benchmarks](structure-benchmarks.md)                                     | passed: 18 models: every finding as expected                                                                                     | 0.0     |
+| [structure/benchmarks](structure-benchmarks.md)                                     | passed: 27 models: every finding as expected                                                                                     | 0.0     |
 | [structure/collapse-efficiency](structure-collapse-efficiency.md)                   | passed: collapsed NUTS gets 42 times the ESS of tau per gradient evaluation of the full centred model, with no divergences       | 34.5    |
+| [benchmark/stochastic-volatility](benchmark-stochastic-volatility.md) | passed: 1 method(s) agree with the quadrature truth; 4 reported | 57.8 |
+| [benchmark/gaussian-hmm](benchmark-gaussian-hmm.md) | passed: 2 method(s) agree with the exact truth; 2 reported | 12.2 |
+| [benchmark/gaussian-process-regression](benchmark-gaussian-process-regression.md) | passed: 0 method(s) agree with the quadrature truth, 1 differ as expected; 3 reported | 69.8 |
+| [benchmark/gaussian-process-non-centred](benchmark-gaussian-process-non-centred.md) | passed: 1 method(s) agree with the quadrature truth; 3 reported | 17.2 |
+| [benchmark/lda-lite](benchmark-lda-lite.md) | passed: 2 method(s) agree with the exact truth; 2 reported | 42.1 |
+| [benchmark/bayesian-neural-network](benchmark-bayesian-neural-network.md) | passed: 0 method(s) agree with the reference truth; 4 reported | 83.4 |
+| [benchmark/item-response-scoring](benchmark-item-response-scoring.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 10.2 |
+| [benchmark/stick-breaking-mixture](benchmark-stick-breaking-mixture.md) | passed: 1 method(s) agree with the quadrature truth; 2 reported | 8.6 |
+| [benchmark/clutter-problem](benchmark-clutter-problem.md) | passed: 0 method(s) agree with the quadrature truth; 3 reported | 3.7 |
+| [benchmark/clutter-ep](benchmark-clutter-ep.md) | passed: EP converges under every rule; the integrating rules land on the dominant mode | 3.6 |
+
+The last ten rows (the benchmark models added with the `scan` node: stochastic volatility, the Gaussian HMM, the Gaussian process in two parametrisations, LDA on a tiny corpus, the Bayesian neural network, 2PL IRT scoring, the stick-breaking mixture and the clutter problem, with the clutter EP table) were run with `--only benchmark/<model>` at seed 0, scale 1, at their own commits; they come last in the script's campaign order so no earlier table's random key moved. `benchmark/ar1-state-space` and `structure/benchmarks` were re-run because the AR(1) model is now a `scan` spec and the structure table has 27 models.
