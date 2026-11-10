@@ -12,6 +12,7 @@ import type { FeatureAttributions, Importances } from './attributions.ts'
 import type { AudioClip } from './audio.ts'
 import type { BoardSteps } from './boards.ts'
 import type { ValueGrids } from './cells.ts'
+import type { ChainDiagnostics } from './chain-diagnostics.ts'
 import type { ClusteringSteps, MixtureSteps } from './clustering.ts'
 import type { ComplexPlane } from './complex-plane.ts'
 import type { ConceptScores } from './concepts.ts'
@@ -34,6 +35,7 @@ import type { ImageSteps } from './images.ts'
 import type { LandscapeSlice } from './landscape-slice.ts'
 import type { CoefficientTable, CrossValidationCurve, RegularisationPath } from './linear.ts'
 import type { MarginRecord } from './margins.ts'
+import type { ModelRun } from './model-run.ts'
 import type { LikelihoodTable, NeighbourRecord } from './neighbours.ts'
 import type { PipelineStages } from './pipelines.ts'
 import type { PointsSteps } from './points-steps.ts'
@@ -125,6 +127,8 @@ export type Exposition =
   | AudioClip
   | Transcript
   | SampleGrid
+  | ModelRun
+  | ChainDiagnostics
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -231,4 +235,6 @@ const KINDS: Readonly<Record<ExpositionKind, true>> = {
   audio: true,
   transcript: true,
   sampleGrid: true,
+  modelRun: true,
+  chainDiagnostics: true,
 }

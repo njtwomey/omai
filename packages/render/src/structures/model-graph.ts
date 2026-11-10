@@ -234,7 +234,7 @@ function unroll(
     const to = ends(e.to)
     // Elementwise when both sides are unrolled to the same length, every pair otherwise.
     if (from.length > 1 && from.length === to.length)
-      from.forEach((f, i) => next.push({ ...e, from: f, to: to[i] as string }))
+      for (const [i, f] of from.entries()) next.push({ ...e, from: f, to: to[i] as string })
     else for (const f of from) for (const t of to) next.push({ ...e, from: f, to: t })
   }
   return { nodes: out, edges: next }

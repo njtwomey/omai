@@ -92,6 +92,7 @@ export const SEAL_OPTIONS: Readonly<Record<string, SealOptions>> = {
   sceneSteps: { opaque: ['scene'] },
   structureSteps: { opaque: ['structure'] },
   diagram: { opaque: ['structure'] },
+  modelRun: { opaque: ['structure'] },
   thresholdSweep: {
     gaps: ['tpr', 'fpr', 'precision', 'selectionRate', 'accuracy', 'rocAuc', 'averagePrecision', 'costs', 'cost'],
     unbounded: ['thresholds'],
