@@ -9,7 +9,7 @@
  * shape for all three.
  */
 
-import { normal as drawNormal, foldIn, key as makeKey } from '../../random/index.ts'
+import { normal as drawNormal, foldIn, type Key, key as makeKey } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
@@ -146,6 +146,35 @@ function funnelTruth(): BenchmarkTruth {
 const BANANA = { a: 2, b: 0.5 }
 
 /**
+ * Independent draws from Haario's banana by its exact sampler (`x0 ~ N(0, 2²)`, then `x1 | x0 ~ N(0.5 (x0² - 4), 1)`), for
+ * a picture of the target beside what a sampler or a guide makes of it.
+ *
+ * @param key - The random key.
+ * @param n - The number of draws.
+ * @returns The two coordinates of the draws.
+ * @concept posterior-validation
+ * @index function Exact draws from Haario's banana, for drawing the target.
+ * @example
+ * ```ts
+ * import { bananaDraws } from 'omai-engine/probprog/models'
+ * import { key } from 'omai-engine/random'
+ * const d = bananaDraws(key(1), 500)
+ * [d.x0.length, d.x1.length] // => [500, 500]
+ * ```
+ */
+export function bananaDraws(key: Key, n: number): { readonly x0: Float64Array; readonly x1: Float64Array } {
+  const z = toFlat(drawNormal(key, [n, 2]))
+  const x0 = new Float64Array(n)
+  const x1 = new Float64Array(n)
+  for (let i = 0; i < n; i++) {
+    const v = BANANA.a * (z[2 * i] ?? 0)
+    x0[i] = v
+    x1[i] = BANANA.b * (v * v - BANANA.a * BANANA.a) + (z[2 * i + 1] ?? 0)
+  }
+  return { x0, x1 }
+}
+
+/**
  * Haario's banana: `x_0 ~ N(0, 2²)` and `x_1 | x_0 ~ N(0.5 (x_0² - 4), 1)`, a curved, strongly nonlinear ridge in two
  * dimensions (Haario, Saksman and Tamminen 1999). The marginals are known (`x_0` normal; `x_1` has mean 0 and variance
  * `2 b² a⁴ + 1 = 9`), the shape is not Gaussian: a normal approximation at the mode (the Laplace fit) is a poor description of it
@@ -176,12 +205,7 @@ export const banana: BenchmarkModel = defineBenchmark({
   }),
   generate: () => noData({ ...BANANA }),
   truth: () => {
-    const z = toFlat(drawNormal(foldIn(key0, 2), [ORACLE_DRAWS, 2]))
-    const x1 = new Float64Array(ORACLE_DRAWS)
-    for (let i = 0; i < ORACLE_DRAWS; i++) {
-      const x0 = BANANA.a * (z[2 * i] ?? 0)
-      x1[i] = BANANA.b * (x0 * x0 - BANANA.a * BANANA.a) + (z[2 * i + 1] ?? 0)
-    }
+    const { x1 } = bananaDraws(foldIn(key0, 2), ORACLE_DRAWS)
     return {
       kind: 'analytic',
       source: `x0 is N(0, ${BANANA.a ** 2}) exactly; x1 has mean 0 and variance 2 b² a⁴ + 1 = ${2 * BANANA.b ** 2 * BANANA.a ** 4 + 1}, its CDF the empirical one of ${ORACLE_DRAWS} iid draws of the exact sampler`,

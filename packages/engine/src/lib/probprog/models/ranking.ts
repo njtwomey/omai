@@ -11,7 +11,7 @@ import { ndtr } from '../../numerics/special/index.ts'
 import { uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
 import { item, toFlat } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
-import { defineModel, ops } from '../model/index.ts'
+import { defineModel, type ModelDefinition, ops } from '../model/index.ts'
 import { type BenchmarkData, type BenchmarkModel, defineBenchmark } from './benchmark.ts'
 import { importancePlan, laplacePlan, nutsPlan, sviPlan, temperedPlan } from './plans.ts'
 import { gridTruth } from './truth.ts'
@@ -107,3 +107,97 @@ export const trueskillThreePlayers: BenchmarkModel = defineBenchmark({
     }),
   ],
 })
+
+/** The games of a small tournament, in order, with the skills that produced them. */
+export interface TrueskillTournament {
+  /** The players' names (`A`, `B`, ...). */
+  readonly players: readonly string[]
+  /** The skills the games were drawn from, one per player. */
+  readonly skills: readonly number[]
+  /** Each game as the index of the first and of the second player. */
+  readonly pairs: readonly (readonly [number, number])[]
+  /** 1 where the first player of the game won. */
+  readonly wins: readonly number[]
+}
+
+/** What {@link trueskillTournament} takes besides the key. */
+export interface TrueskillOptions {
+  /** The skills of the players (default `[1, 0, -1]`: three players). */
+  readonly skills?: readonly number[]
+  /** The number of games (default 12), played between the pairs in turn. */
+  readonly games?: number
+}
+
+/**
+ * The games of a small tournament drawn from known skills: pairs meet in turn, in a random order within each round, and
+ * the first of a pair wins with probability `Phi((s_a - s_b) / sqrt 2)` (the TrueSkill performance model with noise 1
+ * and no draws). The same key gives the same games, and the first `n` games of a longer tournament are those of the
+ * shorter one, so a page can add games one at a time.
+ *
+ * @param key - The random key.
+ * @param options - The skills and the number of games.
+ * @returns The tournament.
+ * @concept posterior-validation
+ * @index dataset A small TrueSkill tournament drawn from known skills, games in a fixed order.
+ * @example
+ * ```ts
+ * import { trueskillTournament } from 'omai-engine/probprog/models'
+ * import { key } from 'omai-engine/random'
+ * const t = trueskillTournament(key(1), { games: 6 })
+ * [t.players, t.pairs.length, t.wins.length] // => [['A', 'B', 'C'], 6, 6]
+ * ```
+ */
+export function trueskillTournament(key: Key, options: TrueskillOptions = {}): TrueskillTournament {
+  const skills = options.skills ?? SKILLS
+  const games = options.games ?? 12
+  const n = skills.length
+  const meetings: [number, number][] = []
+  for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) meetings.push([a, b])
+  const flip = toFlat(drawUniform(foldIn(key, 1), [games]))
+  const u = toFlat(drawUniform(foldIn(key, 0), [games]))
+  const pairs = Array.from({ length: games }, (_, g): [number, number] => {
+    const [a, b] = meetings[g % meetings.length] ?? [0, 1]
+    return (flip[g] ?? 0) < 0.5 ? [a, b] : [b, a]
+  })
+  const wins = pairs.map(([a, b], g) => {
+    const diff = ((skills[a] ?? 0) - (skills[b] ?? 0)) / (Math.SQRT2 * BETA)
+    return (u[g] ?? 1) < item(ndtr(diff)) ? 1 : 0
+  })
+  return { players: skills.map((_, i) => String.fromCharCode(65 + i)), skills, pairs, wins }
+}
+
+/**
+ * The tournament as a model with one node per player and one observation per game (no plates), so that its factor graph
+ * has a factor for each game and message passing can be watched game by game: `skill_A ~ N(0, 1)`, and game `g` between
+ * `a` and `b` is `win_g ~ Bernoulli(Phi((skill_a - skill_b) / sqrt 2))` with the result as the data `won_g`.
+ *
+ * @param tournament - The players and the games to include (take the first `games` of a longer tournament to add games).
+ * @param games - How many of the tournament's games the model has (default all).
+ * @returns The model and the data to bind to it.
+ * @concept model-spec
+ * @example
+ * ```ts
+ * import { trueskillModel, trueskillTournament } from 'omai-engine/probprog/models'
+ * import { key } from 'omai-engine/random'
+ * const { definition, data } = trueskillModel(trueskillTournament(key(1), { games: 4 }))
+ * Object.keys(data) // => ['won_1', 'won_2', 'won_3', 'won_4']
+ * definition.bind(data).sizes // => {}
+ * ```
+ */
+export function trueskillModel(
+  tournament: TrueskillTournament,
+  games: number = tournament.pairs.length,
+): { readonly definition: ModelDefinition; readonly data: Readonly<Record<string, number>> } {
+  const pairs = tournament.pairs.slice(0, games)
+  const definition = defineModel(`trueskill-${tournament.players.length}-players-${pairs.length}-games`, (m) => {
+    const skill = tournament.players.map((p) => m.latent(`skill_${p}`, d.normal(0, 1), { doc: `the skill of ${p}` }))
+    for (const [g, [a, b]] of pairs.entries()) {
+      const won = m.data(`won_${g + 1}`, { support: 'binary', role: 'response', doc: `1 when ${tournament.players[a]} beat ${tournament.players[b]}` })
+      const sa = skill[a]
+      const sb = skill[b]
+      if (sa === undefined || sb === undefined) continue
+      m.observe(`win_${g + 1}`, d.bernoulli({ probs: ops.probit(ops.div(sa.sub(sb), Math.SQRT2 * BETA)) }), won)
+    }
+  })
+  return { definition, data: Object.fromEntries(pairs.map((_, g) => [`won_${g + 1}`, tournament.wins[g] ?? 0])) }
+}

@@ -13,9 +13,12 @@ export interface AnytimeRunSpec<T> {
   readonly seed?: number
   /** What the session records on the tape (`'all'` for the message passing and sampling paths a record reads). */
   readonly logs?: 'all' | 'defaults'
-  /** The page's reading of the live state at a snapshot (a posterior, a record, rows): taken now, kept as it is. */
+  /**
+   * The page's reading of the live state at a snapshot (a posterior, a record, rows): taken now, kept as it is. It is
+   * given what it made at the snapshot before, for a record that accumulates.
+   */
   // biome-ignore lint/suspicious/noExplicitAny: the session is generic over the method
-  readonly derive: (s: Session<any, any, any>, snapshot: Snapshot<unknown>) => T
+  readonly derive: (s: Session<any, any, any>, snapshot: Snapshot<unknown>, previous: T | undefined) => T
 }
 
 /** Where one run stands. */
@@ -120,7 +123,7 @@ export function useAnytimeRuns<T>(specs: readonly AnytimeRunSpec<T>[] | undefine
         })
         const history: { t: number; elapsedMs: number; value: T }[] = []
         const take = (x: Snapshot<unknown>): void => {
-          const value = spec.derive(s, x)
+          const value = spec.derive(s, x, history.at(-1)?.value)
           history.push({ t: x.t, elapsedMs: clock() - t0, value })
           view(i, { phase: 'running', t: x.t, elapsedMs: clock() - t0, value, history: [...history] })
         }
