@@ -3,8 +3,8 @@ the additions of Gerard Kuiken, "ushyphmax"), the baseline hyphenator of the hyp
 
 The licence (copyright 1990, 2004, 2005 Gerard D.C. Kuiken) allows copying and distribution of the file, with or without
 modification, in any medium without royalty, provided the copyright notice and this notice are preserved: both are kept
-in the header of the generated file. The patterns of the `\\patterns{...}` block and the exceptions of `\\hyphenation{...}`
-are stored."""
+in the header of the generated file. The patterns of the `\\patterns{...}` block and the exceptions of the
+`\\hyphenation{...}` block are stored."""
 
 import re
 

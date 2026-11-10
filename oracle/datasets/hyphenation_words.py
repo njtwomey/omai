@@ -1,10 +1,10 @@
 """A deterministic sample of the Moby Hyphenator word list (Grady Ward, Project Gutenberg eBook 3204, public domain).
 
-The file `mhyph.txt` (187175 entries, CRLF lines in Latin-1) writes a hyphenation point as the yen sign. The sample keeps
-the entries made of lowercase ASCII letters only, 4 to 14 letters long, whose word has a single hyphenation in the list
-(a word listed twice with different hyphenations, as a noun and a verb, is left out), in the list's own (alphabetical)
-order, and takes every STRIDE-th of them starting at the middle of the first stride. Words are written with `-` at the
-hyphenation points.
+The file `mhyph.txt` (187175 entries, CRLF lines in Latin-1) writes a hyphenation point as the yen sign. The sample
+keeps the entries made of lowercase ASCII letters only, 4 to 14 letters long, whose word has a single hyphenation in
+the list (a word listed twice with different hyphenations, as a noun and a verb, is left out), in the list's own
+(alphabetical) order, and takes every STRIDE-th of them starting at the middle of the first stride. Words are written
+with `-` at the hyphenation points.
 """
 
 import re
