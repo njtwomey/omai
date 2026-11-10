@@ -125,3 +125,44 @@ export function tiltedGrid(
   for (let i = 0; i < x.length; i++) m2 += (w[i] ?? 0) * (gv[i] ?? 0) * ((x[i] ?? 0) - mu) ** 2
   return { mass: m0, mean: mu, variance: m2 / m0 }
 }
+
+/**
+ * Nodes and weights of a composite Gauss-Legendre rule on [lo, hi], with the Gaussian density N(mean, variance)
+ * folded into the weights: the integral of g against the density over a sub-interval, for zooming in on where an
+ * integrand lives inside a much wider message.
+ *
+ * @param mean - The mean of the density.
+ * @param variance - Its variance.
+ * @param lo - Lower end of the interval.
+ * @param hi - Upper end.
+ * @param panels - Panels (default 12).
+ * @param order - Nodes per panel (default 8).
+ * @returns Nodes and weights.
+ */
+export function gaussianGridOn(
+  mean: number,
+  variance: number,
+  lo: number,
+  hi: number,
+  panels = 12,
+  order = 8,
+): { readonly x: Float64Array; readonly w: Float64Array } {
+  let rule = legendre.get(order)
+  if (rule === undefined) {
+    const g = gaussLegendre(order)
+    rule = { x: Float64Array.from(toFlat(g.nodes)), w: Float64Array.from(toFlat(g.weights)) }
+    legendre.set(order, rule)
+  }
+  const h = (hi - lo) / panels
+  const x = new Float64Array(panels * order)
+  const w = new Float64Array(panels * order)
+  const sd = Math.sqrt(variance)
+  for (let p = 0; p < panels; p++)
+    for (let i = 0; i < order; i++) {
+      const xi = lo + p * h + ((rule.x[i] ?? 0) + 1) * 0.5 * h
+      x[p * order + i] = xi
+      w[p * order + i] =
+        ((rule.w[i] ?? 0) * 0.5 * h * Math.exp(-0.5 * ((xi - mean) / sd) ** 2)) / (sd * Math.sqrt(2 * Math.PI))
+    }
+  return { x, w }
+}

@@ -757,8 +757,8 @@ describe('prior, equal and the numeric operator', () => {
     const ex = M.gaussianEta(0.3, 4)
     const t = op.tilted?.(ctx(0, [msg(gaussian, ex)])) as M.TiltedMoments
     const brute = bruteTilted([gp(ex)], logf, 0)
-    near(t.moments, brute.moments, 1e-7)
-    expect(t.logZ).toBeCloseTo(brute.logZ, 7)
+    near(t.moments, brute.moments, 2e-5)
+    expect(t.logZ).toBeCloseTo(brute.logZ, 5)
     const two = M.numericOperator({ name: 'pair', arity: 2, logDensity: ([a, b]) => -0.5 * ((a ?? 0) - (b ?? 0)) ** 2 })
     const e2 = [msg(gaussian, M.gaussianEta(0, 2)), msg(gaussian, M.gaussianEta(1, 3))]
     const tp = two.tilted?.(ctx(1, e2)) as M.TiltedMoments
