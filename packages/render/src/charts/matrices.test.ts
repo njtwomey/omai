@@ -136,6 +136,17 @@ describe('heatmap', () => {
   it('places images from pixels', () => {
     expect(image([[[1, 0, 0]]], { x: [0, 2], y: [0, 1] }).extent.x).toEqual([0, 2])
   })
+  it('takes Pixels as they are: RGBA bytes with their alpha, no shape or range to give', () => {
+    const rgba = new Uint8ClampedArray([200, 100, 50, 128, 0, 0, 0, 0, 255, 255, 255, 255, 10, 20, 30, 40])
+    const pixels = { width: 2, height: 2, rgba }
+    const l = image(pixels, { x: [0, 1000], y: [0, 500], opacity: 0.5 })
+    expect(l.extent).toEqual({ x: [0, 1000], y: [0, 500], tight: true })
+    const drawn = opt(l.series[0]).omaiImage
+    expect(drawn.pixels).toBe(pixels)
+    expect(Array.from(drawn.pixels.rgba)).toEqual(Array.from(rgba))
+    expect(drawn.opacity).toBe(0.5)
+    expect(image(pixels).extent).toEqual({ x: [0, 2], y: [0, 2], tight: true })
+  })
 })
 
 describe('matrix', () => {

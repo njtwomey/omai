@@ -353,24 +353,33 @@ export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
   )
 }
 
+// Pixels (RGBA bytes) rather than image data: an object with `rgba`, which no tensor or nested array has.
+function isPixels(source: Pixels | ImageSource): source is Pixels {
+  return !Array.isArray(source) && 'rgba' in source
+}
+
 /**
  * An image from pixels, or from a 2-D (grey) or RGB(A) tensor as omai-engine's `toPixels` reads it (imshow-style),
- * covering a data rectangle (default one unit per pixel, row 0 at the top).
+ * covering a data rectangle (default one unit per pixel, row 0 at the top). Pixels (`{ width, height, rgba }`, RGBA bytes
+ * as a terrain or relief layer is made) are drawn as they are, with the alpha they carry.
  *
- * @param source - Pixels or image data.
- * @param options - The x and y ranges it covers, the value range for grey images, opacity.
+ * @param source - Pixels, or image data.
+ * @param options - The x and y ranges it covers, the value range for grey images (not used for pixels), opacity.
  * @returns The layer.
  * @example
  * ```ts
  * import { image } from 'omai-render/charts'
  * image([[0, 1], [1, 0]]).extent // => { x: [0, 2], y: [0, 2], tight: true }
+ * image({ width: 3, height: 2, rgba: new Uint8ClampedArray(24) }).extent // => { x: [0, 3], y: [0, 2], tight: true }
  * ```
  */
 export function image(
-  source: ImageSource,
+  source: Pixels | ImageSource,
   options: { readonly x?: Range; readonly y?: Range; readonly range?: Range; readonly opacity?: number } = {},
 ): Layer {
-  const pixels = toPixels(source, options.range === undefined ? {} : { range: options.range })
+  const pixels = isPixels(source)
+    ? source
+    : toPixels(source, options.range === undefined ? {} : { range: options.range })
   const xr = options.x ?? [0, pixels.width]
   const yr = options.y ?? [0, pixels.height]
   return layer([imageSeries(pixels, xr, yr, options.opacity === undefined ? {} : { opacity: options.opacity })], {
