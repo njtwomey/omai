@@ -118,7 +118,8 @@ describe('regression row operators', () => {
         operators,
       ),
     ).toThrow(/observed/)
-    expect(() => M.glmRow('none', { ...M.probit, ep: undefined }, 'x')).toThrow(/no EP rule/)
+    const { ep: _ep, ...withoutEp } = M.probit
+    expect(() => M.glmRow('none', withoutEp, 'x')).toThrow(/no EP rule/)
   })
 
   it('probit-row takes a power: power EP on the rows reproduces the power EP of pgm', () => {
