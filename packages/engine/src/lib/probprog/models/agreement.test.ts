@@ -6,7 +6,7 @@ import { key } from '../../random/index.ts'
 import { item } from '../../tensor/index.ts'
 import { session } from '../../trace/index.ts'
 import { benchmarkAgreement, runPlan } from './agreement.ts'
-import { benchmarkMethods, defineBenchmark } from './benchmark.ts'
+import { benchmarkMethods, defineBenchmark, methodVerdicts } from './benchmark.ts'
 import { benchmarkCampaigns } from './campaigns.ts'
 import { betaBernoulli, gammaPoisson, normalNormal } from './conjugate.ts'
 import { exactPlan, nutsPlan } from './plans.ts'
@@ -25,6 +25,25 @@ describe('the exact methods reproduce the exact truths', () => {
     expect(a.failures).toEqual([])
     expect(a.passed).toBe(true)
     for (const row of a.table.rows) expect(Math.abs(row.meanError), `${row.method} ${row.quantity}`).toBeLessThan(0.1)
+  })
+})
+
+// The funnels, the banana and the two-mode target have no observed node: their methods are made on the bound spec, as every
+// other model's, and every planned method's own check accepts it.
+describe('a target with no observed node runs on its spec', () => {
+  const densities = benchmarkModels().filter((m) => m.target === 'density')
+  it('is the funnels, the banana and the two-mode target', () => {
+    expect(densities.map((m) => m.name)).toEqual(['funnel-centred', 'funnel-non-centred', 'banana', 'bimodal'])
+  })
+  it.each(densities.map((m) => [m.name, m] as const))('%s: every planned method applies and runs', (_name, model) => {
+    expect(typeof model.methodModel()).toBe('object')
+    const verdicts = methodVerdicts(model)
+    for (const plan of model.plans(0.02)) {
+      expect(verdicts.find((v) => v.kind === plan.kind)?.verdict.applies, plan.kind).toBe(true)
+      const run = runPlan(model, plan, { key: key(1) })
+      expect(run.posterior.sites.length, plan.kind).toBeGreaterThan(0)
+      expect(run.status, plan.kind).not.toBe('failed')
+    }
   })
 })
 

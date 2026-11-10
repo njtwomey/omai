@@ -45,6 +45,7 @@ import {
   num,
   pick,
   posteriorJson,
+  priorOnly,
   programOf,
   yes,
 } from './_support.ts'
@@ -156,7 +157,6 @@ export function laplaceMethod(
     })
   }
   const check = checkOf(laplaceEngine(), (a) => {
-    if (!a.hasLikelihood) return no('observed nodes have no likelihood', ['likelihood'], 'add an observed node')
     if (a.continuous.length === 0) return no('no continuous latent nodes', ['continuous latents'], 'use enumeration')
     if (a.unboundedDiscrete.length > 0)
       return no(
@@ -164,7 +164,9 @@ export function laplaceMethod(
         ['finite discrete latents'],
         'bound them',
       )
-    return yes('continuous latents with a differentiable density (the Hessian must be negative definite at the mode)')
+    return yes(
+      `continuous latents with a differentiable density (the Hessian must be negative definite at the mode)${priorOnly(a)}`,
+    )
   })
   const ensure = guard(options.name ?? 'laplace', model, check)
   return defineInferenceMethod<LaplaceRunState, Config, LaplacePath, ModelAnalysis>({

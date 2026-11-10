@@ -25,6 +25,7 @@ import {
   num,
   pick,
   posteriorJson,
+  priorOnly,
   programOf,
   restorable,
   yes,
@@ -133,7 +134,6 @@ export function sviMethod(
     }
   }
   const check = checkOf(sviEngine(), (a) => {
-    if (!a.hasLikelihood) return no('observed nodes have no likelihood', ['likelihood'], 'add an observed node')
     if (a.continuous.length === 0)
       return no('no continuous latent nodes', ['continuous latents'], 'use enumeration or Gibbs')
     if (a.unboundedDiscrete.length > 0)
@@ -142,7 +142,7 @@ export function sviMethod(
         ['finite discrete latents'],
         'bound them, or use Gibbs',
       )
-    return yes('continuous latents with a differentiable density')
+    return yes(`continuous latents with a differentiable density${priorOnly(a)}`)
   })
   const ensure = guard(options.name ?? 'svi', model, check)
   return defineInferenceMethod<SviState, Config, SviPath, ModelAnalysis>({

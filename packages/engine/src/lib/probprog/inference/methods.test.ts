@@ -338,12 +338,12 @@ describe('check says whether a method applies to a spec, and why not', () => {
   it('has a verdict with a reason for every method on every spec, and the matrix is what each method needs', () => {
     const table: [string, InferenceMethod<never, Config, string, ModelAnalysis>, boolean[]][] = [
       //                                                           lg     prior  discrete nonconj param-mixture
-      ['nuts', nuts(), [true, false, false, true, false]],
-      ['svi', sviMethod(normalMean) as never, [true, false, false, true, false]],
-      ['laplace', laplaceMethod(normalMean) as never, [true, false, false, true, false]],
+      ['nuts', nuts(), [true, true, false, true, false]],
+      ['svi', sviMethod(normalMean) as never, [true, true, false, true, false]],
+      ['laplace', laplaceMethod(normalMean) as never, [true, true, false, true, false]],
       ['gibbs', gibbsMethod(normalMean) as never, [true, false, true, false, true]],
-      ['tempered-smc', temperedSmcMethod(normalMean) as never, [true, false, false, true, false]],
-      ['importance', importanceMethod(normalMean) as never, [true, false, true, true, true]],
+      ['tempered-smc', temperedSmcMethod(normalMean) as never, [true, true, false, true, false]],
+      ['importance', importanceMethod(normalMean) as never, [true, true, true, true, true]],
       ['conjugate', conjugateMethod(normalMean) as never, [true, false, false, false, false]],
       ['gaussian', gaussianMethod(normalMean) as never, [true, true, false, false, false]],
       ['enumeration', enumerationMethod(normalMean) as never, [false, false, true, false, true]],
@@ -358,6 +358,33 @@ describe('check says whether a method applies to a spec, and why not', () => {
         if (v?.applies === false) expect(v.missing.length, `${name}: ${v.reason}`).toBeGreaterThan(0)
       }
     }
+  })
+
+  it('lets the samplers and approximations run on a prior-only spec (a density), and says so in the reason', () => {
+    const priorReason = (m: InferenceMethod<never, Config, string, ModelAnalysis>): string | undefined =>
+      m.check?.(prior)?.reason
+    for (const m of [
+      nuts(),
+      sviMethod(normalMean),
+      laplaceMethod(normalMean),
+      temperedSmcMethod(normalMean),
+      importanceMethod(normalMean),
+    ] as InferenceMethod<never, Config, string, ModelAnalysis>[])
+      expect(priorReason(m), m.name).toMatch(/no observed nodes/)
+    // A model with data says nothing of the kind, and a prior-only model still needs what the method needs.
+    expect(nuts().check?.(lg)?.reason).not.toMatch(/no observed/)
+    const bimodal = analyseSpec(defineModel('bimodal', (b) => void b.latent('z', d.categorical({ probs: [0.5, 0.5] }))))
+    expect(gibbsMethod(normalMean).check?.(bimodal)).toMatchObject({ applies: true })
+    expect(gibbsMethod(normalMean).check?.(bimodal)?.reason).toMatch(/no observed nodes/)
+    expect(gibbsMethod(normalMean).check?.(prior)?.reason).toContain('no discrete or conjugate')
+    // Methods that are about data (the posterior of parameters given observations) still ask for it.
+    for (const m of [conjugateMethod(normalMean), emMethod(normalMean), abcSmcMethod(normalMean)] as InferenceMethod<
+      never,
+      Config,
+      string,
+      ModelAnalysis
+    >[])
+      expect(m.check?.(prior)?.applies, m.name).toBe(false)
   })
 
   it('names what is missing and what would help', () => {

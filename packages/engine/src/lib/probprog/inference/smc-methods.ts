@@ -46,6 +46,7 @@ import {
   num,
   pick,
   posteriorJson,
+  priorOnly,
   programOf,
   yes,
 } from './_support.ts'
@@ -120,7 +121,6 @@ export function temperedSmcMethod(
       },
     })
   const check = checkOf(smcEngine(), (a) => {
-    if (!a.hasLikelihood) return no('observed nodes have no likelihood', ['likelihood'], 'add an observed node')
     if (a.continuous.length === 0) return no('no continuous latent nodes', ['continuous latents'], 'use enumeration')
     if (a.finiteDiscrete.length > 0 || a.unboundedDiscrete.length > 0)
       return no(
@@ -128,7 +128,7 @@ export function temperedSmcMethod(
         ['continuous latents only'],
         'use Gibbs, or sum them out and use NUTS',
       )
-    return yes('continuous latents: tempering from the prior to the posterior')
+    return yes(`continuous latents: tempering from the prior to the posterior${priorOnly(a)}`)
   })
   const ensure = guard(options.name ?? 'tempered-smc', model, check)
   return defineInferenceMethod<SMCState, Config, TemperedSmcPath, ModelAnalysis>({

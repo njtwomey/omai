@@ -107,8 +107,8 @@ export interface BenchmarkModel {
   readonly references: readonly string[]
   /**
    * `posterior`: a model with observed nodes, whose posterior is wanted. `density`: a target with no data (the funnel, the
-   * banana): the spec's capability checks read an observed node as the likelihood and refuse a spec without one, so the
-   * methods are made on the compiled program, whose checks are the engines' own.
+   * banana), whose methods sample or approximate the prior; the samplers' and approximations' checks accept a spec without
+   * an observed node and say so in their reason.
    */
   readonly target: 'posterior' | 'density'
   /** The spec, when the model is one (`undefined` for a model written as a program). */
@@ -121,7 +121,7 @@ export interface BenchmarkModel {
   bound(data?: BenchmarkData): BoundModel
   /** The program every engine runs: the compiled spec, or the program itself. */
   program(data?: BenchmarkData): Model
-  /** What a method is made for: the bound spec of a `posterior` model, the program otherwise. */
+  /** What a method is made for: the bound spec of a model that is one, the program otherwise. */
   methodModel(data?: BenchmarkData): MethodModel
   /**
    * Quantities derived from the draws of a method, by name, beyond the sites themselves: a label-switching-aware summary
@@ -211,7 +211,7 @@ export function defineBenchmark(parts: BenchmarkParts): BenchmarkModel {
     generate: parts.generate,
     bound,
     program,
-    methodModel: (data) => (parts.definition !== undefined && target === 'posterior' ? bound(data) : program(data)),
+    methodModel: (data) => (parts.definition !== undefined ? bound(data) : program(data)),
     truth: (data, quality = 'full') => parts.truth(dataOf(data), quality),
     ...(parts.summarise === undefined ? {} : { summarise: parts.summarise }),
     plans: (scale = 1) => parts.plans(scale),
@@ -262,8 +262,8 @@ export function benchmarkRegistry(models: readonly BenchmarkModel[]): ModelRegis
 
 /**
  * The inference methods on offer for a suite, named `<kind>/<model>`, for the producer's `methodRegistry`: a spec model
- * of a `posterior` target goes through the registry's `inferenceMethods`; a `density` target or a program is made on its
- * program under the same naming.
+ * goes through the registry's `inferenceMethods`; a model written as a program is made on its program under the same
+ * naming.
  *
  * @param models - The benchmark models.
  * @param kinds - The kinds on offer (keys of `methodKinds`; default every kind).
@@ -284,7 +284,7 @@ export function benchmarkMethods(
   const out: AnyInferenceMethod[] = []
   for (const m of models)
     for (const kind of kinds) {
-      if (m.definition !== undefined && m.target === 'posterior') out.push(inferenceMethodFor(registry, kind, m.name))
+      if (m.definition !== undefined) out.push(inferenceMethodFor(registry, kind, m.name))
       else {
         const make = methodKinds[kind]
         if (make === undefined)

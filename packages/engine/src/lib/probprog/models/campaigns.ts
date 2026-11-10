@@ -63,7 +63,7 @@ export function benchmarkMarkdown(
     '',
     `Truth (${a.truth.kind}): ${a.truth.source}.${a.truth.logEvidence === undefined ? '' : ` Log evidence ${a.truth.logEvidence.toFixed(4)}.`}`,
     '',
-    `Methods whose own \`check\` says they apply${model.target === 'density' ? ' to the compiled program (a target with no observed node is refused at the spec level)' : ''}: ${applies.join(', ') || 'none'}. Not applicable: ${refused.map((v) => `${v.kind} (${v.verdict.reason})`).join('; ') || 'none'}.`,
+    `Methods whose own \`check\` says they apply: ${applies.join(', ') || 'none'}. Not applicable: ${refused.map((v) => `${v.kind} (${v.verdict.reason})`).join('; ') || 'none'}.`,
     '',
     '| method | expectation | run | diagnostics | why |',
     '| --- | --- | --- | --- | --- |',
