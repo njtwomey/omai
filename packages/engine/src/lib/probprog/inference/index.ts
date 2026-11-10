@@ -5,7 +5,10 @@
  * that chooses a method for the user. Each method is its own thing with its own knobs and tape. The folder holds the
  * convention (`method.ts`, `runAnytime`), the methods themselves, one per engine and each beside the engine it wraps
  * (`nutsMethod` with one iteration of every chain per step, `sviMethod`, `gibbsMethod`, `laplaceMethod`,
- * `temperedSmcMethod`, `particleFilterMethod`, `emMethod`, `importanceMethod`, `abcSmcMethod`, message passing on the factor graph
+ * `temperedSmcMethod`, `particleFilterMethod`, `emMethod`, `importanceMethod`, `abcSmcMethod`, the kernels of the sampling library as methods
+ * (`rwmMethod`, `malaMethod`, `barkerMethod`, `hmcMethod`, `sliceMethod`, `ellipticalSliceMethod`, `sgldMethod`, `sghmcMethod`, `mclmcMethod`,
+ * the ensemble samplers `aiesMethod` and `ensembleSliceMethod`, `cheesMethod`, parallel tempering `temperingMethod`) on a shared driver, the
+ * user's plan of blocks with a kernel each run as one sampler (`hybridMethod`), message passing on the factor graph
  * of a spec (`epSpecMethod`, `vmpSpecMethod`, `bpSpecMethod`), and the one-step exact ones), each made from a bound spec or a
  * program, and the model registry by name that lets a worker run one. It also holds the building blocks for methods written on
  * the program layer: kernels defined in a few lines on the handlers and trace operations (`defineKernel`, with a resimulation

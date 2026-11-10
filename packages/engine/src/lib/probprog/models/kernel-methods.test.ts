@@ -7,6 +7,7 @@ import { nutsMethod, temperingMethod } from '../inference/index.ts'
 import { runPlan } from './agreement.ts'
 import type { MethodPlan } from './benchmark.ts'
 import { bimodal } from './geometry.ts'
+import { logisticRegression } from './glm.ts'
 
 const fractions = (draws: Float64Array, chains: number): number[] => {
   const n = draws.length / chains / 2
@@ -53,5 +54,54 @@ describe('parallel tempering on the bimodal benchmark', () => {
     // Every chain visits both modes.
     expect(f.every((v) => v > 0.2 && v < 0.8)).toBe(true)
     void temperingMethod
+  })
+})
+
+describe('microcanonical Langevin and ChEES-HMC against NUTS on the logistic regression benchmark', () => {
+  it('give the means and spreads of NUTS to within their Monte Carlo and step-size errors', {
+    timeout: 120_000,
+  }, () => {
+    const plans: MethodPlan[] = [
+      {
+        kind: 'nuts',
+        config: { numChains: 2, numWarmup: 150, numDraws: 400 },
+        steps: 1_000_000,
+        expect: 'report',
+        note: 'the reference',
+      },
+      {
+        kind: 'mclmc',
+        config: { numChains: 2, numWarmup: 600, numDraws: 800 },
+        steps: 1_000_000,
+        expect: 'report',
+        note: 'unadjusted',
+      },
+      {
+        kind: 'chees',
+        config: { numChains: 1, numWalkers: 12, numWarmup: 300, numDraws: 400 },
+        steps: 1_000_000,
+        expect: 'report',
+        note: 'jittered HMC',
+      },
+    ]
+    const runs = plans.map((plan, i) => runPlan(logisticRegression, plan, { key: key(20 + i) }))
+    const moments = runs.map((r) => {
+      const x = Array.from(r.posterior.draws?.['w']?.data ?? [])
+      const cols = [0, 1, 2].map((j) => x.filter((_, k) => k % 3 === j))
+      return cols.map((c) => {
+        const mean = c.reduce((a, v) => a + v, 0) / c.length
+        return { mean, sd: Math.sqrt(c.reduce((a, v) => a + (v - mean) ** 2, 0) / (c.length - 1)) }
+      })
+    })
+    for (const j of [0, 1, 2])
+      for (const m of [1, 2]) {
+        const ref = moments[0]?.[j]
+        const got = moments[m]?.[j]
+        expect(Math.abs((got?.mean ?? 0) - (ref?.mean ?? 0)), `${plans[m]?.kind} mean of w[${j}]`).toBeLessThan(
+          0.25 * (ref?.sd ?? 1),
+        )
+        expect((got?.sd ?? 0) / (ref?.sd ?? 1), `${plans[m]?.kind} sd of w[${j}]`).toBeGreaterThan(0.8)
+        expect((got?.sd ?? 0) / (ref?.sd ?? 1), `${plans[m]?.kind} sd of w[${j}]`).toBeLessThan(1.25)
+      }
   })
 })

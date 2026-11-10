@@ -95,7 +95,7 @@ export type BlockKernel = HamiltonianBlockKernel | SliceBlockKernel | GibbsBlock
  * The constructors of block kernels, so a plan reads as `{ sites: ['mu', 'tau'], kernel: blockKernels.nuts() }`.
  *
  * @concept hybrid-sampling
- * @index table The kernels a block of a hybrid plan can have: hmc, nuts, mala, barker, rwm, slice, gibbs, custom.
+ * @index table Kernels a hybrid block can have: hmc, nuts, mala, barker, rwm, slice, gibbs, custom.
  * @example
  * ```ts
  * import { blockKernels } from 'omai-engine/probprog/inference'
@@ -256,7 +256,7 @@ const blockStats = (
  * @returns The method.
  * @throws OmaiError with code `value` (when a session is made) for a plan that does not cover the latent sites.
  * @concept hybrid-sampling
- * @index estimator The user's plan of blocks, each with its own kernel (NUTS, HMC, slice, Gibbs, custom), run as one sampler.
+ * @index estimator The user's plan of blocks, each with its own kernel, run as one sampler.
  * @example
  * ```ts
  * import { blockKernels, hybridMethod } from 'omai-engine/probprog/inference'
