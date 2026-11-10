@@ -157,8 +157,9 @@ export const eightSchoolsCentred: BenchmarkModel = defineBenchmark({
     })
     const mu = m.latent('mu', d.normal(0, 5), { doc: 'the mean effect' })
     const tau = m.latent('tau', d.halfCauchy(5), { doc: 'the spread of the effects' })
-    // The scale is clipped to [1e-6, 1e6] where it enters the distribution: a wild leapfrog step of the step-size search must give a
-    // valid scale; the clip never binds where the posterior has mass.
+    // The scale is clipped to [1e-6, 1e6] where it enters the distribution. This is a modelling floor, not a guard against an
+    // invalid parameter (the sampler treats that as a divergence): the centred density is unbounded as tau goes to 0, and
+    // without the floor the sampler is drawn into that funnel (18 divergences against 8).
     const theta = m.latent('theta', d.normal(mu, ops.clip(tau, 1e-6, 1e6)), {
       dims: [school],
       doc: 'the effect of each school',

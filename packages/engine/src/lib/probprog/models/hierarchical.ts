@@ -294,8 +294,9 @@ export const radon: BenchmarkModel = defineBenchmark({
     const beta = b.latent('beta', d.normal(0, PRIOR.beta), { doc: 'the floor effect' })
     const tau = b.latent('tau', d.halfNormal(PRIOR.tau), { doc: 'the sd of the county intercepts' })
     const sigma = b.latent('sigma', d.halfNormal(PRIOR.sigma), { doc: 'the sd of a house within its county' })
-    // The scales are clipped to [1e-6, 1e6] where they enter a distribution: a wild leapfrog step of the step-size search must
-    // give a valid scale (the distribution constructors refuse an infinite one); the clip never binds where the posterior has mass.
+    // The scales are clipped to [1e-6, 1e6] where they enter a distribution. This is a modelling floor, not a guard against
+    // an invalid parameter (the sampler treats that as a divergence): the centred density is unbounded as tau goes to 0, and
+    // without the floor NUTS is drawn into that funnel (63 divergences against 4, and a sigma outside its tolerance).
     const alpha = b.latent('alpha', d.normal(mu, ops.clip(tau, 1e-6, 1e6)), {
       dims: [county],
       doc: 'the intercept of each county',
