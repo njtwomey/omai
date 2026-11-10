@@ -17,7 +17,7 @@ import * as d from '../probprog/model/dists/index.ts'
 import { defineModel, toStructure } from '../probprog/model/index.ts'
 import { structure } from '../scene/index.ts'
 import { Log, session } from '../trace/index.ts'
-import { chainDiagnostics, chainsFromTape, rankCounts } from './chain-diagnostics.ts'
+import { chainDiagnostics, chainsFromTape, chainTable, rankCounts } from './chain-diagnostics.ts'
 import { modelRun, modelRunAt } from './model-run.ts'
 import { describeMessage, modelRunFromTape, nodeStateOf, nodeStatesOfRows } from './model-run-tape.ts'
 
@@ -349,5 +349,38 @@ describe('chain diagnostics', () => {
     expect(divergent[0]).toHaveLength(15)
     const rec = chainDiagnostics(draws, { divergent })
     expect(rec.quantities[0]?.ranks.counts[0]?.reduce((a, b) => a + b, 0)).toBe(15)
+  })
+
+  it('tabulates mean, sd, R-hat and ESS, marking the R-hat above 1.01 and the ESS under 400, and counting the divergences', () => {
+    const r = chainDiagnostics(
+      {
+        a: [
+          [1, 2, 3],
+          [2, 3, 4],
+        ],
+        b: [
+          [1, 2, 3],
+          [2, 3, 4],
+        ],
+      },
+      {
+        summary: [
+          { site: 'a', name: 'a', rhat: 1.08, ess: 90 },
+          { site: 'b', name: 'b', rhat: 1.001, ess: 900 },
+        ],
+        divergent: [
+          [0, 1, 0],
+          [0, 0, 1],
+        ],
+      },
+    )
+    const t = chainTable(r)
+    expect(t.columns).toEqual(['quantity', 'mean', 'sd', 'R-hat', 'ESS'])
+    expect(t.marks).toEqual([
+      expect.objectContaining({ row: 0, col: 3, status: 'bad' }),
+      expect.objectContaining({ row: 0, col: 4, status: 'warn' }),
+    ])
+    expect(t.caption).toBe('2 divergent transitions')
+    expect(chainTable(chainDiagnostics({ a: [[1, 2]] })).caption).toBe('no divergent transitions')
   })
 })

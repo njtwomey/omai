@@ -97,7 +97,7 @@ export function traceView(record: ChainDiagnostics, options: ChainViewOptions = 
                     y: hits.map((d) => q.chains[d.chain]?.[d.draw] ?? 0),
                     name: 'divergent',
                     colour: 'tab3',
-                    size: 6,
+                    size: 9,
                   },
                 ],
                 { mode },
@@ -144,12 +144,12 @@ export function rankView(record: ChainDiagnostics, options: ChainViewOptions = {
       layers: [
         lines(
           q.ranks.counts.map((c, k) => ({
-            x: c.map((_, b) => b),
-            y: [...c],
+            // A plateau per bin: the count held from the bin's start to its end.
+            x: c.flatMap((_, b) => [b, b + 1]),
+            y: c.flatMap((v) => [v, v]),
             name: `chain ${k}`,
             colour: `tab${k}`,
             width: 1.4,
-            step: 'middle' as const,
           })),
           { mode },
         ),

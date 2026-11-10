@@ -96,7 +96,7 @@ function repeated(plates: readonly StructureGroup[]): Set<string> {
  * @param s - A structure from `toStructure` of a model spec.
  * @param options - Elements to unroll, size symbols, how data is drawn.
  * @returns The structure (the same object when it is not a model's or already prepared).
- * @index function Make a model spec's Structure read as a plate diagram: crossing plates, N = 40 sizes, data dots.
+ * @index function Prepare a model spec's Structure as a plate diagram: crossing plates, sizes, data dots.
  * @example
  * ```ts
  * import { structure } from 'omai-engine/scene'

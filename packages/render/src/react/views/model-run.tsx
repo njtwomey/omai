@@ -6,8 +6,8 @@
  */
 
 import type { ModelRun } from 'omai-engine/exposition'
-import { type ReactElement, useEffect, useMemo, useRef } from 'react'
-import { figure as makeFigure } from '../../figure/figure.ts'
+import { type ReactElement, useCallback, useEffect, useMemo, useRef } from 'react'
+import type { Figure } from '../../figure/figure.ts'
 import {
   modelRunConvergence,
   modelRunDecorate,
@@ -15,8 +15,8 @@ import {
   modelRunOverlay,
   modelRunStatus,
 } from '../../views/model-run.ts'
-import { Chart } from '../Chart.tsx'
 import { Player } from '../Player.tsx'
+import { ResponsiveChart } from '../ResponsiveChart.tsx'
 import { StructureView } from '../StructureView.tsx'
 import { useColourMode } from '../theme.tsx'
 import { usePlayback } from '../usePlayback.ts'
@@ -53,12 +53,10 @@ export function ModelRunPlayer(props: RecordViewProps<ModelRun> & PlayerViewProp
   const frames = useMemo(() => modelRunFrames(record), [record])
   const decorate = useMemo(() => modelRunDecorate(record, step), [record, step])
   const overlay = useMemo(() => modelRunOverlay(record, step), [record, step])
-  const chart = useMemo(
-    () =>
-      modelRunConvergence(record, step, {
-        figure: makeFigure({ width: 440, aspect: Math.max(1.5, 4.2 / (record.series.length + 0.6)), mode }),
-        mode,
-      }),
+  const hasChart = modelRunConvergence(record, step, { mode }) !== undefined
+  const aspect = Math.max(1.5, 4.2 / (record.series.length + 0.6))
+  const build = useCallback(
+    (fig: Figure) => modelRunConvergence(record, step, { figure: fig, mode }) ?? {},
     [record, step, mode],
   )
   return (
@@ -79,14 +77,11 @@ export function ModelRunPlayer(props: RecordViewProps<ModelRun> & PlayerViewProp
       <p className="m-0 text-xs text-(--wb-muted)" role="status">
         {modelRunStatus(record, step)}
       </p>
-      {chart === undefined ? null : (
-        <Chart
-          option={chart}
-          width={440}
-          height={Math.round(440 / Math.max(1.5, 4.2 / (record.series.length + 0.6)))}
-          mode={mode}
-        />
-      )}
+      {hasChart ? (
+        <div style={{ width: 440, maxWidth: '100%' }}>
+          <ResponsiveChart aspect={aspect} narrowAspect={aspect} build={build} />
+        </div>
+      ) : null}
       {count > 1 ? (
         <Player controller={playback} stamp={(f) => record.steps[f]?.caption ?? `step ${record.steps[f]?.step ?? f}`} />
       ) : null}

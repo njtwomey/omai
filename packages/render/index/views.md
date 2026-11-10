@@ -8,9 +8,12 @@ Headless views of exposition records (`omai-engine/exposition`): for each kind o
 
 - function `componentsView`: Biplot, scree and loadings of PCA-like components: `componentsView(record)`. `src/views/components.ts:225` `omai-render/views`
 - function `decisionSurfaceView`: A classifier's decision surface with its rows: `decisionSurfaceView(record)`. `src/views/surfaces.ts:338` `omai-render/views`
+- function `modelRunScene`: A model run at a step: beliefs in the plate diagram's nodes, messages on its edges. `src/views/model-run.ts:206` `omai-render/views`
+- function `rankView`: Rank plots of MCMC chains per quantity: `rankView(chainDiagnostics(draws))`. `src/views/chain-diagnostics.ts:132` `omai-render/views`
 - function `regularisationPathView`: Coefficients against the penalty, lasso style: `regularisationPathView(path)`. `src/views/paths.ts:175` `omai-render/views`
-- function `stillOf`: The chart option or scene that explains a record: `stillOf(record)`. `src/views/registry.ts:671` `omai-render/views`
+- function `stillOf`: The chart option or scene that explains a record: `stillOf(record)`. `src/views/registry.ts:689` `omai-render/views`
+- function `traceView`: Trace plots of MCMC chains per quantity with divergences marked: `traceView(chainDiagnostics(draws))`. `src/views/chain-diagnostics.ts:76` `omai-render/views`
 - function `treeScene`: A decision tree as a scene of cards: `treeScene(record)`. `src/views/trees.ts:85` `omai-render/views`
-- function `viewFor`: The standard view of a record kind: `viewFor('regularisationPath')`. `src/views/registry.ts:645` `omai-render/views`
+- function `viewFor`: The standard view of a record kind: `viewFor('regularisationPath')`. `src/views/registry.ts:663` `omai-render/views`
 
-- structure `StandardView`: A record kind's view: component name, title, whether it plays, and its still. `src/views/registry.ts:71` `omai-render/views`
+- structure `StandardView`: A record kind's view: component name, title, whether it plays, and its still. `src/views/registry.ts:73` `omai-render/views`

@@ -5,3 +5,7 @@
 Typed exposition records: the plain, serialisable data that methods return beside their results so views can explain them, such as paths through a search, grown trees, pipeline stages, iteration steps, tuning trials and RL episodes. Types and small constructors only.
 
 - structure `record.ts` (file): Union of every exposition record a method returns beside its result. `src/lib/exposition/record.ts:1` `omai-engine/exposition`
+
+- function `chainDiagnostics`: Trace, rank and R-hat/ESS data of Markov chains, from draws and a posterior summary. `src/lib/exposition/chain-diagnostics.ts:101` `omai-engine/exposition`
+- function `describeMessage`: Natural parameters of a message as a readable distribution: `describeMessage('gaussian', [h, J])`. `src/lib/exposition/model-run-tape.ts:84` `omai-engine/exposition`
+- function `modelRunFromTape`: Model-graph inference record from a tape or anytime snapshots. `src/lib/exposition/model-run-tape.ts:299` `omai-engine/exposition`

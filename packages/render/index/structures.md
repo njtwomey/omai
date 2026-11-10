@@ -6,6 +6,7 @@ Any engine `Structure` drawn as a diagram: `diagram` lays out and draws it to a 
 
 - function `architecture`: Draw a network from `describe` as a scene: `architecture(desc, 'compact')`. `src/structures/architectures.ts:229` `omai-render/structures`
 - function `bayesNetCards`: A Bayes network as probability-table cards: `bayesNetCards(bn)`. `src/structures/models.ts:345` `omai-render/structures`
-- function `diagram`: Draw a Structure as a scene: `diagram(structure, { layout: 'layered' })`. `src/structures/diagram.ts:737` `omai-render/structures`
+- function `diagram`: Draw a Structure as a scene: `diagram(structure, { layout: 'layered' })`. `src/structures/diagram.ts:865` `omai-render/structures`
+- function `modelGraph`: Prepare a model spec's Structure as a plate diagram: crossing plates, sizes, data dots. `src/structures/model-graph.ts:116` `omai-render/structures`
 - function `traversalFrames`: Overlays that visit nodes in order, for animation: `traversalFrames(s, order)`. `src/structures/overlays.ts:27` `omai-render/structures`
 - function `uNet`: Draw a U-Net as a scene: `uNet(unetLevels(64, [16, 32, 64]))`. `src/structures/models.ts:104` `omai-render/structures`

@@ -33,6 +33,9 @@ export interface ModelRunSceneOptions extends Omit<DiagramOptions, 'overlay' | '
   readonly glyphs?: boolean
 }
 
+/** A number in three significant digits, as the text of a badge (the diagram sizes nodes for the text). */
+const short3 = (x: number): string => String(Number(x.toPrecision(3)))
+
 /** The overlay badges of a belief: its numbers where it has them, else what it is. */
 function badgesOf(state: NodeState): Record<string, string | number> | undefined {
   if (state.improper === true) return { improper: 'yes' }
@@ -42,14 +45,14 @@ function badgesOf(state: NodeState): Record<string, string | number> | undefined
   }
   const out: Record<string, string | number> = {}
   if (state.mean !== undefined && state.elements === undefined && state.probs?.length !== 2) {
-    out['μ'] = state.mean
-    if (state.sd !== undefined) out['σ'] = state.sd
-  } else if (state.probs !== undefined && state.probs.length === 2) out['p'] = state.probs[1] as number
+    out['μ'] = short3(state.mean)
+    if (state.sd !== undefined) out['σ'] = short3(state.sd)
+  } else if (state.probs !== undefined && state.probs.length === 2) out['p'] = short3(state.probs[1] as number)
   else if (state.probs !== undefined && state.probs.length > 2) {
     const best = state.probs.indexOf(Math.max(...state.probs))
     out['state'] = best
-  } else if (state.mean !== undefined) out['μ̄'] = state.mean
-  if (state.rhat !== undefined) out['R̂'] = Number(state.rhat.toFixed(3))
+  } else if (state.mean !== undefined) out['μ̄'] = short3(state.mean)
+  if (state.rhat !== undefined) out['R̂'] = short3(state.rhat)
   return Object.keys(out).length === 0 ? undefined : out
 }
 
@@ -156,7 +159,7 @@ export function modelRunDecorate(record: ModelRun, step?: number): NonNullable<D
   return (node: StructureNode, box: LayoutBox): readonly SceneNode[] | undefined => {
     const n = at?.nodes[node.id]
     if (n === undefined || box.width < 24 || n.observed !== undefined || n.improper === true) return undefined
-    const w = Math.min(56, Math.max(32, box.width))
+    const w = Math.min(72, Math.max(40, box.width * 0.8))
     const x0 = box.x - w / 2
     const y = box.y + box.height / 2 + 8
     if (n.probs !== undefined) {
@@ -176,7 +179,7 @@ export function modelRunDecorate(record: ModelRun, step?: number): NonNullable<D
     const sd = n.sd ?? 0
     return [
       line(x0, y, x0 + w, y, { stroke: 'grid', strokeWidth: 1 }),
-      line(scale(n.mean - sd), y, scale(n.mean + sd), y, { stroke: 'tab0', strokeWidth: 3.5 }),
+      line(scale(n.mean - sd), y, scale(n.mean + sd), y, { stroke: 'tab0', strokeWidth: 4 }),
       circle(scale(n.mean), y, 2.6, { fill: 'fg', stroke: 'bg', strokeWidth: 0.8 }),
     ]
   }
@@ -190,7 +193,7 @@ export function modelRunDecorate(record: ModelRun, step?: number): NonNullable<D
  * @param step - The tape step (default the last recorded).
  * @param options - The diagram's layout options, and whether to draw the glyphs.
  * @returns The scene.
- * @index function The plate diagram of a model run at a step: beliefs in the nodes, messages on the edges.
+ * @index function A model run at a step: beliefs in the plate diagram's nodes, messages on its edges.
  * @example
  * ```ts
  * import { modelRun } from 'omai-engine/exposition'

@@ -63,14 +63,14 @@ describe('the overlay of a model run', () => {
   it('labels the edge a message went along, as the structure draws it, and badges the nodes with beliefs', () => {
     const o = modelRunOverlay(run, 1)
     expect(o.edges).toEqual([{ from: 'a', to: 'b', label: 'N(μ = 1, σ² = 4)' }])
-    expect(o.active?.sort()).toEqual(['a', 'b'])
-    expect(o.badges?.['a']).toEqual({ μ: 0, σ: 2 })
+    expect([...(o.active ?? [])].sort()).toEqual(['a', 'b'])
+    expect(o.badges?.['a']).toEqual({ μ: '0', σ: '2' })
     expect(o.badges?.['b']).toEqual({ obs: 1 })
     // A later step has no messages of its own, and keeps the beliefs said before.
     const later = modelRunOverlay(run, 2)
     expect(later.edges).toEqual([])
     expect(later.badges?.['b']).toEqual({ obs: 1 })
-    expect(later.badges?.['a']).toEqual({ μ: 0.8, σ: 1 })
+    expect(later.badges?.['a']).toEqual({ μ: '0.8', σ: '1' })
     expect(modelRunFrames(run)).toHaveLength(3)
   })
 
@@ -107,10 +107,10 @@ describe('the overlay of a model run', () => {
     const b = modelRunOverlay(r).badges
     expect(b).toEqual({
       i: { improper: 'yes' },
-      p: { p: 0.7 },
+      p: { p: '0.7' },
       k: { state: 2 },
-      v: { μ̄: 2 },
-      r: { μ: 1, σ: 0.1, R̂: 1.012 },
+      v: { μ̄: '2' },
+      r: { μ: '1', σ: '0.1', R̂: '1.01' },
     })
   })
 })
@@ -196,7 +196,7 @@ describe('on a real run', () => {
     expect(texts(modelRunScene(r, 0).children).some((t) => t.startsWith('N(μ = '))).toBe(false)
     const early = modelRunScene(r, r.steps.find((x) => (x.messages ?? []).length > 0)?.step)
     expect(texts(early.children).some((t) => t.startsWith('N(μ = '))).toBe(true)
-    expect(texts(s.children).join('|')).toContain('μ 0.5642 · σ 0.8256')
+    expect(texts(s.children).join('|')).toContain('μ 0.564 · σ 0.826')
   })
 
   it('draws a plate diagram of a spec the same way', () => {
@@ -254,8 +254,10 @@ describe('chain charts', () => {
   it('draws a rank panel per quantity: a stepped line per chain and the expected count', () => {
     const o = rankView(rec, { quantities: ['b'] })
     expect((o.grid as unknown[]).length).toBe(1)
-    const stepped = (o.series as { step?: string; name?: string }[]).filter((s) => s.step === 'middle')
-    expect(stepped.map((s) => s.name)).toEqual(['chain 0', 'chain 1'])
+    const chains = (o.series as { name?: string; data?: unknown[] }[]).filter((s) => s.name?.startsWith('chain'))
+    expect(chains.map((s) => s.name)).toEqual(['chain 0', 'chain 1'])
+    // Three bins, two points each: a plateau per bin.
+    expect(chains[0]?.data).toHaveLength(6)
     expect(JSON.stringify(o)).toContain('markLine')
   })
 })

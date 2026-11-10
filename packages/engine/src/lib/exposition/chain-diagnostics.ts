@@ -263,6 +263,7 @@ export function chainTable(record: ChainDiagnostics): MarkedTable {
     columns: ['quantity', 'mean', 'sd', 'R-hat', 'ESS'],
     cells,
     marks,
+    digits: 4,
     caption: n === 0 ? 'no divergent transitions' : `${n} divergent transition${n === 1 ? '' : 's'}`,
   })
 }

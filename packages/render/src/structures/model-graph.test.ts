@@ -166,3 +166,41 @@ describe('diagram of crossing plates', () => {
     expect(rects(diagram(calm)).has('group:A×B')).toBe(false)
   })
 })
+
+describe('what diagram adds for a run laid over a model', () => {
+  const pair = structure(
+    'model-graph',
+    [
+      { id: 'a', label: 'a', role: 'latent' },
+      { id: 'b', label: 'b', role: 'observed' },
+    ],
+    [{ from: 'a', to: 'b' }],
+  )
+  const labels = (s: ReturnType<typeof diagram>): string[] =>
+    flatten(s.children).flatMap((n) => (n.kind === 'text' ? [n.text] : []))
+
+  it('writes the label of an active edge in the overlay on the edge, and leaves the edges that have their own', () => {
+    expect(
+      labels(diagram(pair, { overlay: { edges: [{ from: 'a', to: 'b', label: 'N(μ = 1, σ² = 2)' }] } })),
+    ).toContain('N(μ = 1, σ² = 2)')
+    const own = { ...pair, edges: [{ from: 'a', to: 'b', label: 'own' }] }
+    const said = labels(diagram(own, { overlay: { edges: [{ from: 'a', to: 'b', label: 'frame' }] } }))
+    expect(said).toContain('own')
+    expect(said).not.toContain('frame')
+  })
+
+  it('draws what decorate returns inside the node group, with the node and its box', () => {
+    const seen: string[] = []
+    const s = diagram(pair, {
+      decorate: (n, box) => {
+        seen.push(`${n.id}:${box.width > 0}`)
+        return n.id === 'a' ? [{ kind: 'circle', cx: box.x, cy: box.y, r: 1, id: 'glyph' } as SceneNode] : undefined
+      },
+    })
+    expect(seen.sort()).toEqual(['a:true', 'b:true'])
+    const a = flatten(s.children).find((n) => n.kind === 'group' && n.id === 'a')
+    expect(a?.kind === 'group' && a.children.some((c) => c.id === 'glyph')).toBe(true)
+    const b = flatten(s.children).find((n) => n.kind === 'group' && n.id === 'b')
+    expect(b?.kind === 'group' && b.children.some((c) => c.id === 'glyph')).toBe(false)
+  })
+})

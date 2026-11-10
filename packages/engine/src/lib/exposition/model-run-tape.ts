@@ -282,7 +282,7 @@ const SERIES: Readonly<Record<string, { readonly label: string; readonly directi
  * @param options - The path prefix, how many steps and messages to keep.
  * @returns The record.
  * @concept structures
- * @index function Beliefs, messages and convergence of an inference run on a model graph, from a tape or snapshots.
+ * @index function Model-graph inference record from a tape or anytime snapshots.
  * @example
  * ```ts
  * import { modelRunFromTape } from 'omai-engine/exposition'
