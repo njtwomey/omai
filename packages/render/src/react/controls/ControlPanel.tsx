@@ -17,8 +17,16 @@ export interface ControlPanelProps {
   readonly children: ReactNode
   /** A heading; with one, the panel can be collapsed from it. */
   readonly title?: ReactNode
-  /** Columns of the grid the controls are laid out in (default 1). */
+  /**
+   * Columns of the grid the controls are laid out in (default 1): at most this many, fewer where the panel is too narrow
+   * for each to be `minColumnWidth` wide, so on a phone a 3-column panel becomes 2 and then 1 instead of overflowing.
+   */
   readonly columns?: number
+  /**
+   * The narrowest a column may get before the panel drops one (a number of pixels or a CSS length; default the
+   * controls' own minimum, 9rem times `--omai-control-scale`). Only for `columns`; `rows` and `areas` keep their grid.
+   */
+  readonly minColumnWidth?: number | string
   /** Rows of the grid: with rows, controls fill each column top to bottom before the next. */
   readonly rows?: number
   /**
@@ -31,6 +39,16 @@ export interface ControlPanelProps {
   /** Open at first (default true). */
   readonly defaultOpen?: boolean
   readonly className?: string
+}
+
+// The column tracks of a panel of at most `n` columns: as many as fit at `min` wide each (up to `n`, empty ones kept so a
+// short row keeps its columns), sharing the width equally. The gap is the panel's 1rem (`gap-x-4`).
+function columnTracks(n: number, min?: number | string): string {
+  const count = Math.max(1, Math.floor(n))
+  if (count === 1) return 'minmax(0, 1fr)'
+  const least =
+    min === undefined ? 'calc(9rem*var(--omai-control-scale,1))' : typeof min === 'number' ? `${min}px` : min
+  return `repeat(auto-fill, minmax(min(100%, max(${least}, calc((100% - ${count - 1}rem) / ${count}))), 1fr))`
 }
 
 /**
@@ -58,7 +76,7 @@ export function ControlPanel(props: ControlPanelProps): ReactNode {
             gridAutoFlow: 'column',
             gridAutoColumns: 'minmax(0, 1fr)',
           }
-        : { gridTemplateColumns: `repeat(${columns ?? 1}, minmax(0, 1fr))` }
+        : { gridTemplateColumns: columnTracks(columns ?? 1, props.minColumnWidth) }
   // A fieldset, not a <section>: inside a reveal.js slide a nested <section> is read as a vertical sub-slide, which
   // turns the slide into a stack whose pointer events are off, so every control stops working after a slide change.
   // `min-w-0` undoes the fieldset's default minimum width, so it shrinks with its column like any other box.
