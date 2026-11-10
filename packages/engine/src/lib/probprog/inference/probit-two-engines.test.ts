@@ -5,10 +5,11 @@
 // main-thread runs; and an anytime snapshot every second of an injected clock from each.
 import { describe, expect, it } from 'vitest'
 import { expectSnapshotCadence } from '../../../testing/methods.ts'
-import { type MomentRow, momentTable, probitData, probitGrid, probitModel } from '../../../testing/probit-slice.ts'
+import { probitData, probitModel } from '../../../testing/probit-slice.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { session } from '../../trace/index.ts'
-import { analyseSpec, boundFromJSON, boundToJSON, toFactorGraph } from '../model/index.ts'
+import { analyseSpec, boundFromJSON, boundToJSON, toFactorGraph, toProgram } from '../model/index.ts'
+import { type AgreementRow, agree, agreementMarkdown, fromPosterior, gridPosterior } from '../validation/index.ts'
 import { laplaceMethod } from './laplace-method.ts'
 import { inferenceMethodFor, inferenceMethods, modelRegistry } from './models.ts'
 import { epSpecMethod } from './mp.ts'
@@ -16,7 +17,9 @@ import { nutsMethod } from './nuts-method.ts'
 
 const { X, y } = probitData()
 const bound = probitModel.bind({ X, y })
-const grid = probitGrid(X, y, 2)
+// The exact answer: the grid posterior of the validation kernel on the program of the same spec (25 points per axis).
+const grid = gridPosterior(toProgram(bound), undefined, { points: 25, maxRefinements: 0 })
+const coordinates = ['w[0]', 'w[1]', 'w[2]']
 const nutsKnobs = { numChains: 2, numWarmup: 250, numDraws: 400 }
 
 const ep = epSpecMethod(bound)
@@ -30,12 +33,21 @@ const posteriors = {
   nuts: nuts.posterior?.(nutsRun.state, nutsRun.config),
   laplace: laplace.posterior?.(laplaceRun.state, laplaceRun.config),
 }
-const table: MomentRow[] = momentTable(grid, posteriors as never)
-const rows = (method: string): MomentRow[] => table.filter((r) => r.method === method)
+// Draws of the three approximations (EP and Laplace are Gaussians: 20000 draws of each) against the grid's marginals.
+const oracle = Object.fromEntries(coordinates.map((q) => [q, grid.marginal(q)]))
+const table = agree(
+  [
+    fromPosterior('ep', posteriors.ep as never, { numDraws: 20000 }),
+    fromPosterior('nuts', posteriors.nuts as never),
+    fromPosterior('laplace', posteriors.laplace as never, { numDraws: 20000 }),
+  ],
+  { oracle, quantities: coordinates },
+)
+const rows = (method: string): AgreementRow[] => table.rows.filter((r) => r.method === method)
 
 describe('the probit regression written once, run by NUTS and by EP, against the exact grid', () => {
   it('has the exact answer on a grid to compare with, and every run ended', () => {
-    expect(grid.sd.every((s) => s > 0.1 && s < 0.5)).toBe(true)
+    expect(coordinates.every((q) => grid.marginal(q).sd > 0.1 && grid.marginal(q).sd < 0.5)).toBe(true)
     expect(epRun.status).toBe('converged')
     expect(nutsRun.status).toBe('converged')
     expect(laplaceRun.status).toBe('converged')
@@ -43,9 +55,9 @@ describe('the probit regression written once, run by NUTS and by EP, against the
 
   it('EP means are within 0.05 posterior standard deviations of the grid, with a spread within 10 per cent', () => {
     for (const r of rows('ep')) {
-      expect(Math.abs(r.meanError), r.coordinate).toBeLessThan(0.05)
-      expect(r.sdRatio, r.coordinate).toBeGreaterThan(0.9)
-      expect(r.sdRatio, r.coordinate).toBeLessThan(1.1)
+      expect(Math.abs(r.meanError), r.quantity).toBeLessThan(0.05)
+      expect(r.sdRatio, r.quantity).toBeGreaterThan(0.9)
+      expect(r.sdRatio, r.quantity).toBeLessThan(1.1)
     }
     const evidence = posteriors.ep?.logEvidence?.value ?? Number.NaN
     expect(Math.abs(evidence - grid.logEvidence)).toBeLessThan(0.05)
@@ -54,35 +66,54 @@ describe('the probit regression written once, run by NUTS and by EP, against the
   it('NUTS means are within three Monte Carlo standard errors of the grid', () => {
     const summary = posteriors.nuts?.summary() ?? []
     expect(summary).toHaveLength(3)
-    for (const [q, row] of summary.entries()) {
-      const mcse = row.sd / Math.sqrt(row.ess ?? 1)
-      expect(Math.abs(row.mean - (grid.mean[q] as number)), row.name).toBeLessThan(3 * mcse)
-      expect(row.rhat ?? 2, row.name).toBeLessThan(1.05)
-      expect(row.sd / (grid.sd[q] as number), row.name).toBeGreaterThan(0.85)
-      expect(row.sd / (grid.sd[q] as number), row.name).toBeLessThan(1.15)
+    for (const row of summary) expect(row.rhat ?? 2, row.name).toBeLessThan(1.05)
+    // The table's z is the error of the mean in Monte Carlo standard errors, with the chain's own effective sample size.
+    for (const r of rows('nuts')) {
+      expect(Math.abs(r.meanZ), r.quantity).toBeLessThan(3)
+      expect(r.sdRatio, r.quantity).toBeGreaterThan(0.85)
+      expect(r.sdRatio, r.quantity).toBeLessThan(1.15)
     }
     // A handful of divergent transitions among 800 draws is what four hundred warm-up iterations leave on a probit posterior.
     expect(posteriors.nuts?.diagnostics['divergences'] as number).toBeLessThanOrEqual(8)
   })
 
   it('reports EP and Laplace with their KL from the grid and their errors in standard deviations; EP is closer on the intercept', () => {
-    const kl = (method: string): number[] => rows(method).map((r) => r.kl)
+    // The Gaussian KL(grid || method) of the moments the table carries (the grid's mean and sd are the oracle's: the error in
+    // sds and the ratio of sds give it), the measure the slice was accepted on.
+    const kl = (method: string): number[] =>
+      rows(method).map((r) => Math.log(r.sdRatio) + (1 + r.meanError ** 2) / (2 * r.sdRatio ** 2) - 0.5)
     expect(kl('ep').every((v) => v >= 0 && v < 0.01)).toBe(true)
     // The expected result of the plan: moment matching beats the Laplace approximation on the intercept (a finding if not).
     expect((kl('ep')[0] as number) < (kl('laplace')[0] as number)).toBe(true)
     // Laplace is a Gaussian at the mode: it is the approximation with the larger errors on this data.
     expect(Math.max(...kl('laplace'))).toBeGreaterThan(Math.max(...kl('ep')))
-    expect(table.map((r) => r.method)).toEqual([
+    // The table's own KL is of the grid's marginal from the histogram of the draws (the shape too, not only the moments): EP's
+    // Gaussian is closer to every marginal than the Laplace one.
+    for (const q of coordinates)
+      expect((rows('ep').find((r) => r.quantity === q) as AgreementRow).kl).toBeLessThan(
+        (rows('laplace').find((r) => r.quantity === q) as AgreementRow).kl,
+      )
+    // One row per quantity and method, the three engines in the order given.
+    expect(table.rows.map((r) => r.method)).toEqual([
       'ep',
-      'ep',
-      'ep',
-      'nuts',
-      'nuts',
       'nuts',
       'laplace',
+      'ep',
+      'nuts',
       'laplace',
+      'ep',
+      'nuts',
       'laplace',
     ])
+  })
+
+  it('prints the three-engine agreement table (NUTS, EP, Laplace against the grid) for the record', () => {
+    const markdown = agreementMarkdown(table)
+    expect(markdown.split('\n')).toHaveLength(2 + 9)
+    // The table is the test's output: it is what a reader of the run sees of how the three engines compare.
+    process.stdout.write(
+      `\nprobit regression, three engines against the grid posterior (${table.oracle})\n${markdown}\n`,
+    )
   })
 })
 
@@ -165,7 +196,8 @@ describe('both run by name from a model registry, with only JSON crossing', () =
 
 describe('both give an anytime snapshot every second of an injected clock', () => {
   it('EP: a snapshot a second, each a posterior that reads, the last flagged final', () => {
-    const snaps = expectSnapshotCadence(ep, {
+    // On the expanded graph, whose sweep is many messages, so there is something to cut a second out of.
+    const snaps = expectSnapshotCadence(epSpecMethod(bound, { plates: 'expand' }), {
       config: { granularity: 'message', tol: 1e-12 },
       steps: 100_000,
       budgetMs: 3500,

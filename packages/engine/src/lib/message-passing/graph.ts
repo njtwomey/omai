@@ -56,6 +56,8 @@ export interface CompiledVariable {
   readonly observed: Observed | undefined
   /** The edges that end at the variable (its factors' ports); none when it is observed. */
   readonly edges: readonly number[]
+  /** The edge of the factor that defines the variable as a deterministic function of others (`FactorOperator.defines`), if one does. */
+  readonly definer: number | undefined
 }
 
 /** One port of a compiled factor: the variable it connects to (or none for a constant), its family and its edge. */
@@ -92,6 +94,8 @@ export interface CompiledGraph {
   readonly edges: readonly CompiledEdge[]
   /** The index of a variable by name. */
   readonly index: ReadonlyMap<string, number>
+  /** Whether some factor defines a variable as a deterministic function of others (`FactorOperator.defines`). */
+  readonly hasDefined: boolean
 }
 
 const portsOf = (op: FactorOperator, params: Params): readonly Port[] =>
@@ -204,6 +208,16 @@ export function compileGraph(
     if (reason !== undefined) throw new OmaiError('value', `factor graph: ${id}: ${reason}`)
     return { id, index: fi, operator: op, params, power, ports: compiled }
   })
+  const definer = new Map<number, number>()
+  for (const f of factors) {
+    const k = f.operator.defines
+    const e = k === undefined ? undefined : f.ports[k]?.edge
+    if (e === undefined || e < 0) continue
+    const v = (edges[e] as { variable: number }).variable
+    if (definer.has(v))
+      throw new OmaiError('value', `factor graph: the variable ${variables[v]?.name} is defined by two factors`)
+    definer.set(v, e)
+  }
   return {
     spec,
     variables: variables.map((v, i) => ({
@@ -211,10 +225,12 @@ export function compileGraph(
       family: families[i] as Family,
       observed: v.observed,
       edges: edgesOfVariable[i] ?? [],
+      definer: definer.get(i),
     })),
     factors,
     edges,
     index,
+    hasDefined: definer.size > 0,
   }
 }
 

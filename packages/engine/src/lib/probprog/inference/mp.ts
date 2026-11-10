@@ -4,16 +4,17 @@
  * (schedule, granularity, damping, improper policy, tolerance, sweep cap) and the typed tape of
  * `omai-engine/message-passing` (`epContract` and `vmpContract`: per-sweep change, the evidence or bound, `message`
  * events and the marginals by variable id), plus the budget and snapshot knobs every inference method has. A bound spec
- * is compiled once to a factor graph (`toFactorGraph`: plates expanded, ids as in `ids.ts`); a step is one sweep (or one
+ * is compiled once to a factor graph (`toFactorGraph`: a regression on a weight vector over a plate is one plated factor,
+ * other plates are expanded, ids as in `ids.ts`); a step is one sweep (or one
  * factor, or one message, by `granularity`); the state is the messages, so a run serialises, resumes, seeks and forks; and
  * `posterior(state)` reads any state as the library's `Posterior` keyed by site name, in the spec's shapes, which is what
  * an anytime snapshot shows. `check` says whether the model has a factor graph at all and why not, naming the node and
  * the reason (an opaque `custom` call, a family with no message family, a random scale, a non-affine operator), and
- * whether the method has a message rule for every operator of the graph (VMP has none for `probit` or `dot-constant`).
+ * whether the method has a message rule for every operator of the graph (VMP has none for a hard comparison, `greater-than`).
  * Nothing chooses among the three: the user does, and a method that does not apply refuses with that reason.
  */
 
-import { type Json, OmaiError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   bpMethod,
   type CompiledGraph,
@@ -23,19 +24,11 @@ import {
   epMethod,
   defaultOperators as factorOperators,
   type MpState,
-  marginalsOf,
+  messagePassingKnobs,
   type VmpPath,
   vmpMethod,
 } from '../../message-passing/index.ts'
-import {
-  type Algorithm,
-  type Config,
-  type Contract,
-  defineContract,
-  derived,
-  Log,
-  type Observation,
-} from '../../trace/index.ts'
+import { type Config, type Contract, defineContract, derived, Log } from '../../trace/index.ts'
 import { analyseSpec } from '../model/analysis.ts'
 import {
   type FactorGraphCompilation,
@@ -60,18 +53,6 @@ const TITLE: Readonly<Record<MessageRule, string>> = {
   bp: 'belief propagation',
 }
 
-/** The knobs and tape of an engine do not depend on a graph, so a graph of one variable stands in to read them. */
-function engineOf(rule: MessageRule): ReturnType<typeof epMethod> {
-  const g = compileGraph(
-    {
-      variables: [{ name: 'x', family: { kind: 'gaussian' } }],
-      factors: [{ operator: 'prior', args: ['x'], params: { eta: [0, 1] } }],
-    },
-    factorOperators(),
-  )
-  return rule === 'ep' ? epMethod(g) : rule === 'vmp' ? (vmpMethod(g) as never) : (bpMethod(g) as never)
-}
-
 /** What a model compiles to, made once per method: the compilation, its graph, and the reason when it has none. */
 interface Prepared {
   readonly compiled: FactorGraphCompilation
@@ -79,9 +60,22 @@ interface Prepared {
   readonly failure: string | undefined
 }
 
-function prepare(model: MethodModel): Prepared | undefined {
+/** What the compiler of a spec method is told: whether the rows of a regression become one plated factor or a factor each. */
+export interface MpSpecOptions {
+  /** The name of the method (default `ep`, `vmp` or `bp`). */
+  readonly name?: string
+  /**
+   * How the rows of a plate are compiled (see `toFactorGraph`): `vectorise` (default) makes an observed node that is one
+   * regression on a weight vector a single plated factor, whose message is computed over all the rows in one call and whose
+   * graph does not grow with the data; `expand` makes a factor and a variable per row (more messages per sweep, so
+   * finer anytime steps, and a graph that draws row by row).
+   */
+  readonly plates?: 'vectorise' | 'expand'
+}
+
+function prepare(model: MethodModel, plates: 'vectorise' | 'expand'): Prepared | undefined {
   if (typeof model === 'function') return undefined
-  const compiled = toFactorGraph(model, { analysis: analyseSpec(model) })
+  const compiled = toFactorGraph(model, { analysis: analyseSpec(model), plates })
   if (compiled.graph === undefined) return { compiled, graph: undefined, failure: undefined }
   try {
     return { compiled, graph: compileGraph(compiled.graph, factorOperators()), failure: undefined }
@@ -127,33 +121,15 @@ function staticVerdict(a: ModelAnalysis, rule: MessageRule): Verdict | undefined
   return undefined
 }
 
-/** An observation of a state whose bound or evidence has no value yet: the counts and the marginals. */
-function improperObservation(g: CompiledGraph, state: MpState): Observation {
-  const marginals = marginalsOf(g, state) as Json
-  return {
-    metrics: {
-      sweeps: state.sweeps,
-      updates: state.updates,
-      improper: state.improper.events,
-      skipped: state.improper.skipped,
-      damped: state.improper.damped,
-      reset: state.improper.reset,
-      ...(Number.isFinite(state.change) ? { change: state.change } : {}),
-    },
-    messages: [{ kind: 'marginals', payload: marginals }],
-    frame: { marginals, sent: [] },
-  }
-}
-
 function specMethod<P extends string>(
   rule: MessageRule,
   model: MethodModel,
-  options: { readonly name?: string },
+  options: MpSpecOptions,
 ): InferenceMethod<MpState, Config, P, ModelAnalysis> {
   const name = options.name ?? rule
   const title = TITLE[rule]
-  const prepared = prepare(model)
-  const engine = engineOf(rule)
+  const prepared = prepare(model, options.plates ?? 'vectorise')
+  const knobs = messagePassingKnobs(rule)
   const check = (a: ModelAnalysis): Verdict => {
     if (prepared === undefined)
       return no(
@@ -198,7 +174,7 @@ function specMethod<P extends string>(
       status: converged ? 'converged' : 'stopped',
     })
   }
-  const base = engine.contract as Contract<MpState, string>
+  const base = knobs.contract as Contract<MpState, string>
   const contract = (): Contract<MpState, P> =>
     defineContract({
       ...base,
@@ -213,7 +189,7 @@ function specMethod<P extends string>(
     name,
     family: 'message-passing',
     description: `${title} on the factor graph of a model spec: one sweep per step, marginals by site`,
-    config: engine.config,
+    config: knobs.config,
     check,
     posterior,
     defaults: (rule === 'vmp'
@@ -225,20 +201,7 @@ function specMethod<P extends string>(
       const g = prepared?.graph
       if (g === undefined) throw new OmaiError('value', `${name}: ${why()}`)
       const m = rule === 'ep' ? epMethod(g) : rule === 'vmp' ? vmpMethod(g) : bpMethod(g)
-      const inner = m.make(config, key) as Algorithm<MpState, string>
-      // The engine's bound at a state with no information yet (flat messages) is an improper quantity and it throws;
-      // an observation there is the marginals without the bound.
-      return {
-        ...inner,
-        observe: (state: MpState, t: number) => {
-          try {
-            return inner.observe?.(state, t) ?? {}
-          } catch (e) {
-            if (!(e instanceof OmaiError && e.code === 'value')) throw e
-            return improperObservation(g, state)
-          }
-        },
-      } as never
+      return m.make(config, key) as never
     },
   })
 }
@@ -249,7 +212,7 @@ function specMethod<P extends string>(
  * sweep per step. The marginals come back as a `Posterior` by site name; the tape has the engine's `mp/*` paths.
  *
  * @param model - A bound spec.
- * @param options - A name for the method (default `ep`).
+ * @param options - A name for the method (default `ep`) and how the plates are compiled (`plates`).
  * @returns The method, with `check` (why a model has no factor graph, or an operator no rule) and `posterior`.
  * @concept expectation-propagation
  * @index estimator Expectation propagation on a model spec's factor graph, posterior by site.
@@ -267,7 +230,7 @@ function specMethod<P extends string>(
  */
 export function epSpecMethod(
   model: MethodModel,
-  options: { readonly name?: string } = {},
+  options: MpSpecOptions = {},
 ): InferenceMethod<MpState, Config, EpSpecPath, ModelAnalysis> {
   return specMethod<EpSpecPath>('ep', model, options)
 }
@@ -275,11 +238,13 @@ export function epSpecMethod(
 /**
  * Variational message passing on a bound spec: the expected-log message of every factor, so each variable's belief is the
  * mean-field distribution that minimises KL(q || p), one sweep per step, with the variational bound on the tape. It applies
- * where every operator of the graph has a variational rule (Gaussian and conjugate models; `check` names the operators
- * that have none, such as `probit` and the affine maps).
+ * where every operator of the graph has a variational rule: Gaussian and conjugate models, affine means (a regression on
+ * scalar or vector weights, a hierarchy with means that are affine in latents; a defined value is the pushforward of
+ * its inputs under the mean field), the probit link by the Albert-Chib augmentation and the logistic link by the Jaakkola
+ * bound. `check` names the operators that have none and why (a hard comparison, `greater-than`).
  *
  * @param model - A bound spec.
- * @param options - A name for the method (default `vmp`).
+ * @param options - A name for the method (default `vmp`) and how the plates are compiled (`plates`).
  * @returns The method.
  * @concept variational-message-passing
  * @index estimator Variational message passing on a model spec's factor graph, posterior by site.
@@ -297,7 +262,7 @@ export function epSpecMethod(
  */
 export function vmpSpecMethod(
   model: MethodModel,
-  options: { readonly name?: string } = {},
+  options: MpSpecOptions = {},
 ): InferenceMethod<MpState, Config, VmpSpecPath, ModelAnalysis> {
   return specMethod<VmpSpecPath>('vmp', model, options)
 }
@@ -308,7 +273,7 @@ export function vmpSpecMethod(
  * latents are refused with the reason.
  *
  * @param model - A bound spec.
- * @param options - A name for the method (default `bp`).
+ * @param options - A name for the method (default `bp`) and how the plates are compiled (`plates`).
  * @returns The method.
  * @concept belief-propagation
  * @index estimator Belief propagation on a model spec of Bernoulli nodes, posterior by site.
@@ -329,7 +294,7 @@ export function vmpSpecMethod(
  */
 export function bpSpecMethod(
   model: MethodModel,
-  options: { readonly name?: string } = {},
+  options: MpSpecOptions = {},
 ): InferenceMethod<MpState, Config, EpSpecPath, ModelAnalysis> {
   return specMethod<EpSpecPath>('bp', model, options)
 }

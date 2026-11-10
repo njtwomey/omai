@@ -27,6 +27,7 @@ import {
 import type { CompiledGraph } from './graph.ts'
 import { klqpProjection, momentProjection, sumProductProjection } from './projections.ts'
 import type { CustomOrder, Granularity, ScheduleKind } from './schedules.ts'
+import type { Mode } from './types.ts'
 
 /** The knobs every message-passing algorithm has; the defaults differ by algorithm. */
 export interface MessagePassingOptions {
@@ -268,6 +269,21 @@ export function bpAlgorithm(g: CompiledGraph, options: MessagePassingOptions = {
   >
 }
 
+/**
+ * The defaults of a message rule's named algorithm: `epDefaults`, `vmpDefaults` or `bpDefaults`.
+ *
+ * @param mode - `ep`, `vmp` or `bp`.
+ * @returns The defaults.
+ * @example
+ * ```ts
+ * import { defaultsOf } from 'omai-engine/message-passing'
+ * defaultsOf('bp').schedule // => 'flooding'
+ * ```
+ */
+export function defaultsOf(mode: Mode): Required<Omit<MessagePassingOptions, 'order' | 'initial'>> {
+  return mode === 'ep' ? epDefaults : mode === 'vmp' ? vmpDefaults : bpDefaults
+}
+
 const SCHEDULES = ['serial', 'flooding', 'tree', 'residual'] as const
 
 /**
@@ -330,6 +346,28 @@ export function messagePassingOptions(c: Config): MessagePassingOptions {
 }
 
 /**
+ * The knobs and the tape of a message rule, with no graph: the `Space` of its knobs (with the rule's defaults) and the
+ * typed contract of its tape. What `epMethod`, `vmpMethod` and `bpMethod` carry, for a caller that has no graph yet (a
+ * method built on a model spec that compiles its graph once it is run).
+ *
+ * @param mode - `ep`, `vmp` or `bp`.
+ * @returns The space and the contract (`epContract` for `ep` and `bp`, `vmpContract` for `vmp`).
+ * @concept message-passing
+ * @index function The knobs (a Space) and the typed tape of a message rule, with no graph.
+ * @example
+ * ```ts
+ * import { messagePassingKnobs } from 'omai-engine/message-passing'
+ * Object.keys(messagePassingKnobs('vmp').contract).includes('mp/elbo') // => true
+ * ```
+ */
+export function messagePassingKnobs(mode: Mode): {
+  readonly config: DictSpace
+  readonly contract: Contract<MpState, EpPath> | Contract<MpState, VmpPath>
+} {
+  return { config: messagePassingSpace(defaultsOf(mode)), contract: mode === 'vmp' ? vmpContract : epContract }
+}
+
+/**
  * Expectation propagation on a graph as a method: the knobs as a space (schedule, granularity, damping, improper
  * policy, tolerance, sweep cap), the tape as the typed contract {@link epContract}, so a session, a worker or a tuner
  * drives it by configuration.
@@ -348,7 +386,7 @@ export function messagePassingOptions(c: Config): MessagePassingOptions {
 export function epMethod(g: CompiledGraph): Method<MpState, Config, EpPath> {
   return defineMethod<MpState, Config, EpPath>({
     name: 'ep',
-    config: messagePassingSpace(epDefaults),
+    config: messagePassingKnobs('ep').config,
     make: (c) => epAlgorithm(g, messagePassingOptions(c)),
     contract: epContract,
   })
@@ -371,7 +409,7 @@ export function epMethod(g: CompiledGraph): Method<MpState, Config, EpPath> {
 export function vmpMethod(g: CompiledGraph): Method<MpState, Config, VmpPath> {
   return defineMethod<MpState, Config, VmpPath>({
     name: 'vmp',
-    config: messagePassingSpace(vmpDefaults),
+    config: messagePassingKnobs('vmp').config,
     make: (c) => vmpAlgorithm(g, messagePassingOptions(c)),
     contract: vmpContract,
   })
@@ -394,7 +432,7 @@ export function vmpMethod(g: CompiledGraph): Method<MpState, Config, VmpPath> {
 export function bpMethod(g: CompiledGraph): Method<MpState, Config, EpPath> {
   return defineMethod<MpState, Config, EpPath>({
     name: 'bp',
-    config: messagePassingSpace(bpDefaults),
+    config: messagePassingKnobs('bp').config,
     make: (c) => bpAlgorithm(g, messagePassingOptions(c)),
     contract: epContract,
   })

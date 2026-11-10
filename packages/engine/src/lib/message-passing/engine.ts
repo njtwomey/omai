@@ -122,16 +122,83 @@ function beliefWithout(
   return acc
 }
 
+/**
+ * What the messages of a variable's other factors add up to, when the variable is defined by a deterministic factor and
+ * the rule is the variational one: the messages those factors would send now (`pull`), summed. A defined variable keeps
+ * no message from them (its belief is its definer's pushforward alone); the definer reads their sum as the cavity of its
+ * output and passes it to its inputs.
+ */
+function pulledCavity(
+  g: CompiledGraph,
+  messages: readonly (readonly number[])[],
+  variable: number,
+  definer: number,
+  projection: Projection,
+): Eta {
+  const v = g.variables[variable] as CompiledGraph['variables'][number]
+  let acc: Eta = v.family.flat
+  for (const e of v.edges) {
+    if (e === definer) continue
+    const edge = g.edges[e] as CompiledGraph['edges'][number]
+    const f = g.factors[edge.factor] as CompiledGraph['factors'][number]
+    const p = operatorMessage(f, projection, edge.port, argsOf(g, messages, edge.factor, projection))
+    if (p.kind === 'message') acc = v.family.product(acc, p.eta)
+  }
+  return acc
+}
+
+/** Whether an edge's message is never stored: under the variational rule, a message to a defined variable from a factor that does not define it. */
+function isPulled(g: CompiledGraph, e: number, projection: Projection): boolean {
+  if (projection.hook !== 'vmp') return false
+  const definer = (
+    g.variables[(g.edges[e] as CompiledGraph['edges'][number]).variable] as CompiledGraph['variables'][number]
+  ).definer
+  return definer !== undefined && definer !== e
+}
+
+/**
+ * Re-send the output message of every deterministic factor whose inputs moved (and, transitively, the factors reading
+ * the outputs that changed), so that under the variational rule a defined variable's belief is at all times the
+ * pushforward of the current beliefs of its inputs, whatever the schedule. The message to a defined output depends on the
+ * inputs' beliefs alone, so the output port is shown no cavity.
+ */
+function refreshDefined(
+  g: CompiledGraph,
+  projection: Projection,
+  messages: (readonly number[])[],
+  edges: readonly number[],
+): void {
+  if (projection.hook !== 'vmp' || !g.hasDefined) return
+  const moved = new Set(edges.map((e) => (g.edges[e] as CompiledGraph['edges'][number]).variable))
+  for (const f of g.factors) {
+    const k = f.operator.defines
+    const out = k === undefined ? undefined : f.ports[k]
+    if (k === undefined || out === undefined || out.edge < 0) continue
+    if (!f.ports.some((p, i) => i !== k && p.variable !== undefined && moved.has(p.variable))) continue
+    const args = argsOf(g, messages, f.index, projection, true)
+    const proposal = operatorMessage(f, projection, k, args)
+    if (proposal.kind === 'message') messages[out.edge] = proposal.eta
+    moved.add(out.variable as number)
+  }
+}
+
 /** The arguments of a factor's operator: the cavity or the belief of each variable, the value of each observed one. */
 function argsOf(
   g: CompiledGraph,
   messages: readonly (readonly number[])[],
   factor: number,
   projection: Projection,
+  forward = false,
 ): Arg[] {
   const f = g.factors[factor] as CompiledGraph['factors'][number]
-  return f.ports.map((p): Arg => {
+  return f.ports.map((p, k): Arg => {
     if (p.edge < 0) return { family: p.family, eta: undefined, value: p.value }
+    if (projection.hook === 'vmp' && f.operator.defines === k)
+      return {
+        family: p.family,
+        eta: forward ? p.family.flat : pulledCavity(g, messages, p.variable as number, p.edge, projection),
+        value: undefined,
+      }
     const b = beliefOf(g, messages, p.variable as number)
     if (projection.arguments === 'belief') return { family: p.family, eta: b, value: undefined }
     const own = messages[p.edge] as Eta
@@ -278,6 +345,7 @@ function propose(
 ): FactorProposal {
   const edge = g.edges[e] as CompiledGraph['edges'][number]
   const f = g.factors[edge.factor] as CompiledGraph['factors'][number]
+  if (isPulled(g, e, s.projection)) return { kind: 'blocked' }
   const alpha = s.projection.alpha
   if (alpha !== undefined && alpha !== 1 && f.operator.power === true && f.power === 1)
     return alphaProposal(g, s, source, e, alpha)
@@ -396,14 +464,22 @@ export function mpSnapshot(g: CompiledGraph, state: MpState): MpSnapshot {
  * (`sum_f log Z_f + sum_v (1 - degree_v) A(belief_v)`, which on a tree is the log evidence and for loopy BP the
  * Bethe approximation), for the expected-log rule the variational lower bound (`sum_f E_q[log f] + sum_v H(q_v)`).
  *
- * @param g - The compiled graph.
- * @param s - The settings that fix the projection.
- * @param state - A state of a run.
  * Factors with a power p contribute `log Z_a / p` and the variable terms use the sum of the inverse powers (power EP).
  *
- * @returns The estimate, or NaN when some factor has no way to give its part, a belief has no density yet, or the projection is an alpha-divergence one.
+ * @param g - The compiled graph.
+ * @param s - What fixes the estimate: the engine settings of a run, or just `{ projection }` (the estimate depends on nothing else).
+ * @param state - A state of a run.
+ * @returns The estimate, or NaN when some factor has no way to give its part, a belief has no density yet (a state with flat
+ * messages, under any projection), or the projection is an alpha-divergence one.
+ * @example
+ * ```ts
+ * import { compileGraph, defaultOperators, evidenceOf, gaussianPrior, klqpProjection, vmpAlgorithm } from 'omai-engine/message-passing'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * const g = compileGraph({ variables: [{ name: 'x', family: { kind: 'gaussian' } }], factors: [gaussianPrior('x', 0, 1)] }, defaultOperators())
+ * Number.isNaN(evidenceOf(g, { projection: klqpProjection }, runAlgorithm(vmpAlgorithm(g), { maxSteps: 0 }).state)) // => true
+ * ```
  */
-export function evidenceOf(g: CompiledGraph, s: EngineSettings, state: MpState): number {
+export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection'>, state: MpState): number {
   let total = 0
   // An alpha-divergence projection has no evidence estimate here (its free energy is not the EP one).
   if (s.projection.alpha !== undefined && s.projection.alpha !== 1) return Number.NaN
@@ -436,10 +512,17 @@ export function evidenceOf(g: CompiledGraph, s: EngineSettings, state: MpState):
   for (const [fi, f] of g.factors.entries()) {
     if (f.operator.expectedLog === undefined) return Number.NaN
     const args = argsOf(g, state.messages, fi, s.projection)
-    total += f.operator.expectedLog({ mode: 'vmp', to: 0, args, params: f.params, power: f.power })
+    try {
+      total += f.operator.expectedLog({ mode: 'vmp', to: 0, args, params: f.params, power: f.power })
+    } catch (err) {
+      // A belief with no density yet (flat messages at the start of a run) has no expectation: no bound, as for EP.
+      if (err instanceof ImproperMessageError || (err instanceof OmaiError && err.code === 'value')) return Number.NaN
+      throw err
+    }
   }
   for (const [i, v] of g.variables.entries()) {
-    if (v.observed !== undefined) continue
+    // A defined variable is a function of the others under the mean field: its entropy is not a term of the bound.
+    if (v.observed !== undefined || v.definer !== undefined) continue
     const b = beliefOf(g, state.messages, i)
     if (!v.family.isProper(b)) return Number.NaN
     total += v.family.entropy(b)
@@ -595,6 +678,7 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
           counts,
         )
         sent.push(best)
+        refreshDefined(g, settings.projection, messages, [best])
         const edge = g.edges[best] as CompiledGraph['edges'][number]
         const touched = new Set<number>()
         for (const e2 of (g.variables[edge.variable] as CompiledGraph['variables'][number]).edges) {
@@ -618,6 +702,7 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
     const messages = state.messages.slice()
     for (const e of group)
       messages[e] = resolve(g, settings, messages, e, propose(g, settings, frozen ?? messages, e), counts)
+    refreshDefined(g, settings.projection, messages, group)
     const cursor = state.cursor + 1
     const updates = state.updates + group.length
     if (cursor >= plan.groups.length) return endOfSweep(state, messages, counts, group, updates, [], [])

@@ -51,7 +51,7 @@ const probitModel = probitDefinition
 describe('the probit regression compiled to a factor graph', () => {
   const { X, y } = probitData()
   const bound = probitModel.bind({ X, y })
-  const c = toFactorGraph(bound)
+  const c = toFactorGraph(bound, { plates: 'expand' })
 
   it('expands the plates with the ids of ids.ts: a vector variable, an auxiliary and an observation per row', () => {
     expect(c.issues).toEqual([])
@@ -184,10 +184,28 @@ describe('a conjugate Gaussian regression: EP equals the closed-form posterior a
     m.observe('y', d.normal(X.matmul(beta), sigma), y)
   })
   const c = toFactorGraph(model.bind({ X: x, y: yv }))
-  it('uses the regression-row operator, a vector variable and no auxiliary', () => {
+  it('uses the regression-row operator, a vector variable and no auxiliary (expanded), or one plated factor on sufficient statistics', () => {
+    const e = toFactorGraph(model.bind({ X: x, y: yv }), { plates: 'expand' })
+    expect(e.issues).toEqual([])
+    expect(new Set(e.graph?.factors.map((f) => f.operator))).toEqual(new Set(['prior', 'linear-regression-row']))
+    expect(e.auxiliary).toEqual([])
+    expect(e.plated).toEqual([])
     expect(c.issues).toEqual([])
-    expect(new Set(c.graph?.factors.map((f) => f.operator))).toEqual(new Set(['prior', 'linear-regression-row']))
-    expect(c.auxiliary).toEqual([])
+    expect(c.graph?.factors.map((f) => `${f.id} ${f.operator}`)).toEqual([
+      'factor:beta prior',
+      'factor:y linear-regression-plate',
+    ])
+    expect(c.graph?.variables.map((v) => v.name)).toEqual(['beta'])
+    expect(c.plated).toEqual(['y'])
+    expect(c.sites.find((s) => s.site === 'y')).toMatchObject({ layout: 'observed', posterior: false })
+    // The expanded graph has the same posterior and evidence as the plated one.
+    const ga = graphOf(c.graph)
+    const gb = graphOf(e.graph)
+    const pa = factorGraphPosterior(c, ga, run(ga).state)
+    const pb = factorGraphPosterior(e, gb, run(gb).state)
+    for (const [q, v] of toFlat(pa.mean('beta')).entries())
+      expect(Math.abs(v - (toFlat(pb.mean('beta'))[q] as number))).toBeLessThan(1e-9)
+    expect(Math.abs((pa.logEvidence?.value ?? 0) - (pb.logEvidence?.value ?? 1))).toBeLessThan(1e-9)
   })
   it('matches the posterior N((I / tau^2 + X^T X / sigma^2)^-1 X^T y / sigma^2, ...) and the marginal likelihood', () => {
     const g = graphOf(c.graph)
@@ -281,11 +299,27 @@ describe('affine values that mix a vector latent and a scalar latent, and the lo
           m.data('y', { dims: [n], support: 'binary' }),
         )
       }).bind({ X: x, y: labels })
-    const a = toFactorGraph(make((eta) => d.bernoulli({ logits: eta })))
-    const b = toFactorGraph(make((eta) => d.bernoulli({ probs: ops.sigmoid(eta) })))
+    const a = toFactorGraph(
+      make((eta) => d.bernoulli({ logits: eta })),
+      { plates: 'expand' },
+    )
+    const b = toFactorGraph(
+      make((eta) => d.bernoulli({ probs: ops.sigmoid(eta) })),
+      { plates: 'expand' },
+    )
     expect(a.issues).toEqual([])
     expect(new Set(a.graph?.factors.map((f) => f.operator))).toEqual(new Set(['prior', 'dot-constant', 'logistic']))
     expect(b.graph).toEqual(a.graph)
+    // The plated forms are one logistic plate each, equal to one another.
+    const pa = toFactorGraph(make((eta) => d.bernoulli({ logits: eta })))
+    const pb = toFactorGraph(make((eta) => d.bernoulli({ probs: ops.sigmoid(eta) })))
+    expect(pa.graph?.factors.map((f) => f.operator)).toEqual(['prior', 'logistic-plate'])
+    expect(pb.graph).toEqual(pa.graph)
+    const platedRun = run(graphOf(pa.graph))
+    const expandedRun = run(graphOf(a.graph))
+    const mp = marginalsOf(graphOf(pa.graph), platedRun.state)['w']?.['mean'] as number[]
+    const me = marginalsOf(graphOf(a.graph), expandedRun.state)['w']?.['mean'] as number[]
+    for (const [q, v] of mp.entries()) expect(Math.abs(v - (me[q] as number))).toBeLessThan(1e-6)
     const g = graphOf(a.graph)
     const r = run(g)
     expect(r.status).toBe('converged')
@@ -574,12 +608,11 @@ describe('what cannot be mapped is refused with the node and the reason', () => 
     const c = toFactorGraph(skip.bind({ y: [1, Number.NaN, 2] }))
     expect(c.issues).toEqual([])
     expect(c.sites.find((s) => s.site === 'y')?.variables).toEqual(['y[0]', null, 'y[2]'])
-    const prod = defineModel('prod', (b) => {
+    const square = defineModel('square', (b) => {
       const a = b.latent('a', d.normal(0, 1))
-      const c2 = b.latent('c', d.normal(0, 1))
-      b.observe('y', d.normal(ops.mul(a, c2), 1), b.data('y', { dims: ['row'] }))
+      b.observe('y', d.normal(ops.mul(a, a), 1), b.data('y', { dims: ['row'] }))
     })
-    expect(toFactorGraph(prod.bind({ y: [1] })).issues[0]?.reason).toMatch(/product of two random values/)
+    expect(toFactorGraph(square.bind({ y: [1] })).issues[0]?.reason).toMatch(/times itself/)
   })
 
   it('the verdict names the reason, the operators without a rule, and the graph without issues', () => {
@@ -592,8 +625,22 @@ describe('what cannot be mapped is refused with the node and the reason', () => 
     const c = toFactorGraph(m.bind({ X: [[1, 2]], y: [1] }))
     const g = compileFactorGraph(c)
     expect(factorGraphVerdict(c, g, 'ep').ok).toBe(true)
-    expect(factorGraphVerdict(c, g, 'vmp')).toMatchObject({ ok: false, missing: ['vmp message rules'] })
-    expect(factorGraphVerdict(c, g, 'vmp').reason).toMatch(/dot-constant, probit have no variational/)
+    // The probit link has a variational rule (the Albert-Chib augmentation), the affine map too.
+    expect(factorGraphVerdict(c, g, 'vmp').ok).toBe(true)
+    // A hard comparison has none, and says why.
+    const hard = defineModel('hard', (b) => {
+      const n = b.range('row')
+      const X = b.data('X', { dims: [n, 'f'] })
+      const w = b.latent('w', d.normal(0, 1), { dims: ['f'] })
+      b.observe('y', d.bernoulli({ probs: ops.gt(X.matmul(w), 0) }), b.data('y', { dims: [n], support: 'binary' }))
+    })
+    const ch = toFactorGraph(hard.bind({ X: [[1, 2]], y: [1] }))
+    const gh = compileFactorGraph(ch)
+    expect(factorGraphVerdict(ch, gh, 'ep').ok).toBe(true)
+    expect(factorGraphVerdict(ch, gh, 'vmp')).toMatchObject({ ok: false, missing: ['vmp message rules'] })
+    expect(factorGraphVerdict(ch, gh, 'vmp').reason).toMatch(
+      /greater-than has no variational.*KL\(q \|\| p\) is infinite/,
+    )
     const bad = toFactorGraph(
       defineModel('bad', (b) => {
         b.observe(
@@ -605,5 +652,402 @@ describe('what cannot be mapped is refused with the node and the reason', () => 
     )
     expect(factorGraphVerdict(bad, undefined, 'ep')).toMatchObject({ ok: false })
     expect(() => compileFactorGraph(bad)).toThrow(/does not compile to a factor graph/)
+  })
+})
+
+// ----- what a product of two random values, a random precision and a gate map to -----
+
+describe('a product of two random values is the product factor (expectation propagation)', () => {
+  const prodModel = defineModel('prod', (b) => {
+    const a = b.latent('a', d.normal(1, 1))
+    const c = b.latent('c', d.normal(2, 1))
+    b.observe('y', d.normal(ops.mul(a, c), 0.5), b.data('y', { dims: ['row'] }))
+  })
+
+  it('compiles to a product factor on an auxiliary variable, and EP lands on the grid posterior of the means', () => {
+    const c = toFactorGraph(prodModel.bind({ y: [2.5] }))
+    expect(c.issues).toEqual([])
+    expect(c.graph?.factors.map((f) => f.operator)).toEqual(['prior', 'prior', 'product', 'gaussian'])
+    expect(c.auxiliary).toEqual(['y#0[0]'])
+    const g = graphOf(c.graph)
+    const { state } = run(g)
+    const post = factorGraphPosterior(c, g, state)
+    // The exact posterior mean of a and c by a two-dimensional grid.
+    const logp = (a: number, cc: number): number => -0.5 * (a - 1) ** 2 - 0.5 * (cc - 2) ** 2 - 2 * (2.5 - a * cc) ** 2
+    let z = 0
+    let ma = 0
+    let mc = 0
+    for (let i = -80; i <= 80; i++)
+      for (let j = -80; j <= 80; j++) {
+        const a = i * 0.1
+        const cc = j * 0.1 + 2
+        const w = Math.exp(logp(a, cc))
+        z += w
+        ma += w * a
+        mc += w * cc
+      }
+    expect(toFlat(post.mean('a'))[0]).toBeCloseTo(ma / z, 1)
+    expect(toFlat(post.mean('c'))[0]).toBeCloseTo(mc / z, 1)
+    // The product has no variational rule: the method says so.
+    expect(factorGraphVerdict(c, g, 'vmp')).toMatchObject({ ok: false })
+  })
+
+  it('a plated product maps per element', () => {
+    const plated = defineModel('plated', (b) => {
+      const n = b.range('row')
+      const a = b.latent('a', d.normal(1, 1), { dims: [n] })
+      const c = b.latent('c', d.normal(2, 1), { dims: [n] })
+      b.observe('y', d.normal(ops.mul(a, c), 0.5), b.data('y', { dims: [n] }))
+    })
+    const c = toFactorGraph(plated.bind({ y: [2.5, 1, 3] }))
+    expect(c.issues).toEqual([])
+    expect(c.graph?.factors.filter((f) => f.operator === 'product').length).toBe(3)
+    expect(c.auxiliary.length).toBe(3)
+  })
+})
+
+describe('a random precision is the gaussian-gamma-precision factor (variational message passing)', () => {
+  const ys = [1.2, 0.4, 1.9, 1.1, 0.7, 1.5]
+  const model = defineModel('precision', (b) => {
+    const tau = b.latent('tau', d.gamma(2, 1))
+    const mu = b.latent('mu', d.normal(0, 10))
+    b.observe('y', d.normal(mu, ops.div(1, ops.sqrt(tau))), b.data('y', { dims: ['row'] }))
+  })
+
+  it('compiles and the fixed point is the closed-form mean field of the conjugate model', () => {
+    const c = toFactorGraph(model.bind({ y: ys }))
+    expect(c.issues).toEqual([])
+    expect(new Set(c.graph?.factors.map((f) => f.operator))).toEqual(new Set(['prior', 'gaussian-gamma-precision']))
+    const g = graphOf(c.graph)
+    const r = runAlgorithm(vmpAlgorithm(g, { tol: 1e-13 }), { maxSteps: 500 })
+    const post = factorGraphPosterior(c, g, r.state as MpState, { rule: 'vmp' })
+    // Closed form (Bishop 10.1.3 with an independent prior on mu): q(mu) = N(m, 1 / lambda), q(tau) = Gamma(a, b).
+    const n = ys.length
+    const sum = ys.reduce((t, v) => t + v, 0)
+    const a = 2 + n / 2
+    let bb = 1
+    let m = 0
+    let lambda = 1 / 100
+    for (let k = 0; k < 500; k++) {
+      const e = a / bb
+      lambda = 1 / 100 + n * e
+      m = (e * sum) / lambda
+      bb = 1 + 0.5 * ys.reduce((t, v) => t + (v - m) ** 2 + 1 / lambda, 0)
+    }
+    expect(toFlat(post.mean('mu'))[0]).toBeCloseTo(m, 8)
+    expect(toFlat(post.stddev('mu'))[0]).toBeCloseTo(Math.sqrt(1 / lambda), 8)
+    expect(toFlat(post.mean('tau'))[0]).toBeCloseTo(a / bb, 8)
+    // The variational bound rises at every sweep.
+    const alg = vmpAlgorithm(g, { tol: 1e-13 })
+    let st = alg.init(undefined as never)
+    let last = Number.NEGATIVE_INFINITY
+    for (let k = 0; k < 15; k++) {
+      st = alg.step(st, undefined as never)
+      const bound = factorGraphPosterior(c, g, st, { rule: 'vmp' }).logEvidence?.value
+      if (bound !== undefined) {
+        expect(bound).toBeGreaterThanOrEqual(last - 1e-9)
+        last = bound
+      }
+    }
+    expect(last).toBeGreaterThan(Number.NEGATIVE_INFINITY)
+  })
+
+  it('maps pow(tau, -0.5) and a hierarchy with a random precision on the group means', () => {
+    const hier = defineModel('hier', (b) => {
+      const j = b.range('group')
+      const tau = b.latent('tau', d.exponential(1))
+      const theta = b.latent('theta', d.normal(0, ops.pow(tau, -0.5)), { dims: [j] })
+      b.observe('y', d.normal(theta, 1), b.data('y', { dims: [j] }))
+    })
+    const c = toFactorGraph(hier.bind({ y: [1, -1, 2] }))
+    expect(c.issues).toEqual([])
+    const g = graphOf(c.graph)
+    const r = runAlgorithm(vmpAlgorithm(g), { maxSteps: 500 })
+    expect(r.status).toBe('converged')
+    expect(toFlat(factorGraphPosterior(c, g, r.state as MpState, { rule: 'vmp' }).mean('theta')).length).toBe(3)
+  })
+
+  it('has no expectation propagation rule, and a scale that is not the idiom is refused with it named', () => {
+    const c = toFactorGraph(model.bind({ y: ys }))
+    expect(factorGraphVerdict(c, graphOf(c.graph), 'ep')).toMatchObject({ ok: false })
+    expect(factorGraphVerdict(c, graphOf(c.graph), 'ep').reason).toMatch(/gaussian-gamma-precision/)
+    const wrong = defineModel('wrong', (b) => {
+      const tau = b.latent('tau', d.gamma(2, 1))
+      b.observe('y', d.normal(0, ops.exp(tau)), b.data('y', { dims: ['row'] }))
+    })
+    expect(toFactorGraph(wrong.bind({ y: [1] })).issues[0]?.reason).toMatch(/1 \/ sqrt\(tau\)/)
+    const notGamma = defineModel('notgamma', (b) => {
+      const s = b.latent('s', d.normal(1, 1))
+      b.observe('y', d.normal(0, ops.div(1, ops.sqrt(s))), b.data('y', { dims: ['row'] }))
+    })
+    expect(toFactorGraph(notGamma.bind({ y: [1] })).issues[0]?.reason).toMatch(/must be a gamma or exponential latent/)
+  })
+})
+
+describe('a categorical gate is the select factor (expectation propagation)', () => {
+  const ys = [-3.1, -2.8, -3.3, 3.0, 2.7, 3.2]
+  const mixture = defineModel('mixture', (b) => {
+    const n = b.range('row')
+    const k = b.range('component')
+    const mu = b.latent('mu', d.normal(b.data('m0', { dims: [k] }), 4), { dims: [k] })
+    const z = b.latent('z', d.categorical({ probs: [0.5, 0.5] }), { dims: [n] })
+    b.observe('y', d.normal(ops.at(mu, z), 0.7), b.data('y', { dims: [n] }))
+  })
+  const bound = mixture.bind({ y: ys, m0: [-1, 1] })
+
+  it('compiles to a categorical variable per row and a select factor per row', () => {
+    const c = toFactorGraph(bound)
+    expect(c.issues).toEqual([])
+    expect(c.graph?.factors.filter((f) => f.operator === 'select').length).toBe(ys.length)
+    expect(c.sites.find((s) => s.site === 'z')).toMatchObject({ family: 'discrete', layout: 'elements' })
+    expect(c.graph?.variables.find((v) => v.name === 'z[0]')?.family).toEqual({ kind: 'discrete', size: 2 })
+  })
+
+  it('EP finds the two cluster means and the assignments of a well-separated mixture, as exact enumeration does', () => {
+    const c = toFactorGraph(bound)
+    const g = graphOf(c.graph)
+    const r = runAlgorithm(epAlgorithm(g, { tol: 1e-10, damping: 0.3 }), { maxSteps: 400 })
+    const post = factorGraphPosterior(c, g, r.state as MpState)
+    // Exact: enumerate the 2^6 assignments; given one, the cluster means are independent Gaussians.
+    const prior = [-1, 1]
+    const v0 = 16
+    const s2 = 0.49
+    let total = 0
+    const meanSum = [0, 0]
+    const zProb = new Array<number>(ys.length).fill(0)
+    // EP settles on one of the two labelings (the prior is weak, so the exact posterior has both): condition on the first row in the first component.
+    for (let a = 0; a < 2 ** ys.length; a += 2) {
+      const members: number[][] = [[], []]
+      for (const [i, y] of ys.entries()) (members[(a >> i) & 1] as number[]).push(y)
+      let logw = 0
+      const m: number[] = []
+      for (const kk of [0, 1]) {
+        const ysk = members[kk] as number[]
+        const p = 1 / v0 + ysk.length / s2
+        const h = (prior[kk] as number) / v0 + ysk.reduce((t, v) => t + v, 0) / s2
+        m.push(h / p)
+        // log marginal likelihood of the members given the Gaussian prior on the mean
+        const sy = ysk.reduce((t, v) => t + v, 0)
+        const syy = ysk.reduce((t, v) => t + v * v, 0)
+        logw +=
+          -0.5 * ysk.length * Math.log(2 * Math.PI * s2) -
+          0.5 * Math.log(v0 * p) -
+          0.5 * (syy / s2 + (prior[kk] as number) ** 2 / v0 - (h * h) / p) +
+          0 * sy
+      }
+      logw += ys.length * Math.log(0.5)
+      const w = Math.exp(logw)
+      total += w
+      meanSum[0] = (meanSum[0] as number) + w * (m[0] as number)
+      meanSum[1] = (meanSum[1] as number) + w * (m[1] as number)
+      for (let i = 0; i < ys.length; i++) zProb[i] = (zProb[i] as number) + w * ((a >> i) & 1)
+    }
+    const mu = toFlat(post.mean('mu'))
+    expect(Math.abs((mu[0] as number) - (meanSum[0] as number) / total)).toBeLessThan(0.15)
+    expect(Math.abs((mu[1] as number) - (meanSum[1] as number) / total)).toBeLessThan(0.15)
+    // Rows 0 to 2 sit at the first mean, rows 3 to 5 at the second.
+    const pz = marginalsOf(g, r.state as MpState)
+    const probsOf = (i: number): number[] => (pz[`z[${i}]`]?.['probs'] ?? []) as number[]
+    for (const i of [0, 1, 2]) expect(probsOf(i)[0] as number).toBeGreaterThan(0.9)
+    for (const i of [3, 4, 5]) expect(probsOf(i)[1] as number).toBeGreaterThan(0.9)
+    for (const i of [1, 4])
+      expect(Math.abs((probsOf(i)[1] as number as number) - (zProb[i] as number) / total)).toBeLessThan(0.05)
+  })
+
+  it('a Dirichlet latent as the probabilities is the conjugate discrete factor; a Bernoulli gate in where is a select', () => {
+    const weights = defineModel('weights', (b) => {
+      const n = b.range('row', { size: 3 })
+      const pi = b.latent('pi', d.dirichlet([1, 1]))
+      b.latent('z', d.categorical({ probs: pi }), { dims: [n] })
+    })
+    const cw = toFactorGraph(weights.bind({}))
+    expect(cw.graph?.factors.filter((f) => f.operator === 'discrete').length).toBe(3)
+    const gate = defineModel('gate', (b) => {
+      const n = b.range('row')
+      const z = b.latent('z', d.bernoulli({ probs: 0.5 }), { dims: [n] })
+      const a = b.latent('a', d.normal(3, 1))
+      const c = b.latent('c', d.normal(-3, 1))
+      b.observe('y', d.normal(ops.where(z, a, c), 0.5), b.data('y', { dims: [n] }))
+    })
+    const cg = toFactorGraph(gate.bind({ y: [2.8, -3.2, 3.1] }))
+    expect(cg.issues).toEqual([])
+    expect(cg.graph?.factors.filter((f) => f.operator === 'select').length).toBe(3)
+    const gg = graphOf(cg.graph)
+    const r = runAlgorithm(epAlgorithm(gg, { tol: 1e-10, damping: 0.3 }), { maxSteps: 400 })
+    const m = marginalsOf(gg, r.state as MpState)
+    expect((m['z[0]']?.['p'] as number) > 0.9).toBe(true)
+    expect((m['z[1]']?.['p'] as number) < 0.1).toBe(true)
+  })
+
+  it('a known component, a computed random index and the normal-gamma idioms are refused with their reasons', () => {
+    const known = defineModel('known', (b) => {
+      const z = b.latent('z', d.categorical({ probs: [0.5, 0.5] }))
+      b.observe('y', d.normal(ops.at(b.data('c', { dims: ['k'] }), z), 1), b.data('y', { dims: ['row'] }))
+    })
+    expect(toFactorGraph(known.bind({ c: [0, 1], y: [0.5] })).issues[0]?.reason).toMatch(/known component|at: /)
+    const normalGamma = defineModel('ng', (b) => {
+      const tau = b.latent('tau', d.gamma(2, 1))
+      const mu = b.latent('mu', d.normal(0, ops.div(1, ops.sqrt(ops.mul(tau, 2)))))
+      b.observe('y', d.normal(mu, ops.div(1, ops.sqrt(tau))), b.data('y', { dims: ['row'] }))
+    })
+    const issue = toFactorGraph(normalGamma.bind({ y: [1, 2] })).issues[0]
+    expect(issue?.node).toBe('mu')
+    expect(issue?.reason).toMatch(/1 \/ sqrt\(tau\)/)
+  })
+})
+
+describe('the larger and the smaller of two random values are the max and min factors', () => {
+  it('compile, run under EP, and refuse a known operand', () => {
+    const m = defineModel('hinge', (b) => {
+      const a = b.latent('a', d.normal(0, 1))
+      const c = b.latent('c', d.normal(1, 1))
+      b.observe('y', d.normal(ops.maximum(a, c), 0.5), b.data('y', { dims: ['row'] }))
+    })
+    const c = toFactorGraph(m.bind({ y: [2] }))
+    expect(c.issues).toEqual([])
+    expect(c.graph?.factors.map((f) => f.operator)).toEqual(['prior', 'prior', 'max', 'gaussian'])
+    const g = graphOf(c.graph)
+    const { state } = run(g)
+    // The exact posterior mean of a by a grid over (a, c), y = max(a, c) observed through N(2, 1/4).
+    let z = 0
+    let ma = 0
+    for (let i = -70; i <= 70; i++)
+      for (let j = -70; j <= 70; j++) {
+        const a = i * 0.1
+        const cc = j * 0.1
+        const w = Math.exp(-0.5 * a * a - 0.5 * (cc - 1) ** 2 - 2 * (2 - Math.max(a, cc)) ** 2)
+        z += w
+        ma += w * a
+      }
+    expect(toFlat(factorGraphPosterior(c, g, state).mean('a'))[0]).toBeCloseTo(ma / z, 1)
+    const low = defineModel('low', (b) => {
+      const a = b.latent('a', d.normal(0, 1))
+      const cc = b.latent('c', d.normal(1, 1))
+      b.observe('y', d.normal(ops.minimum(a, cc), 0.5), b.data('y', { dims: ['row'] }))
+    })
+    expect(toFactorGraph(low.bind({ y: [0] })).graph?.factors.some((f) => f.operator === 'min')).toBe(true)
+    const clip = defineModel('clip', (b) => {
+      const a = b.latent('a', d.normal(0, 1))
+      b.observe('y', d.normal(ops.maximum(a, 0), 0.5), b.data('y', { dims: ['row'] }))
+    })
+    expect(toFactorGraph(clip.bind({ y: [1] })).issues[0]?.reason).toMatch(/random value and a known one/)
+  })
+})
+
+describe('the probit regression as one plated factor', () => {
+  const { X, y } = probitData()
+  const bound = probitModel.bind({ X, y })
+  const c = toFactorGraph(bound)
+  const e = toFactorGraph(bound, { plates: 'expand' })
+
+  it('is a vector variable and two factors whatever the number of rows, with the ids of the spec', () => {
+    expect(c.issues).toEqual([])
+    expect(c.graph?.variables.map((v) => v.name)).toEqual(['w'])
+    expect(c.graph?.factors.map((f) => `${f.id} ${f.operator}`)).toEqual(['factor:w prior', 'factor:y probit-plate'])
+    expect(c.graph?.factors[1]?.params).toMatchObject({ y })
+    expect(c.plated).toEqual(['y'])
+    expect(c.auxiliary).toEqual([])
+    expect(c.expanded.variables).toBe(1)
+    expect(c.expanded.factors).toBe(2)
+    expect(c.sites.map((s) => [s.site, s.layout, s.posterior])).toEqual([
+      ['w', 'packed', true],
+      ['y', 'observed', false],
+    ])
+    // Every id maps onto the drawing of the spec: the weights, and the factors of the prior and of the likelihood.
+    const on = graphOnSpec(c.graph as FactorGraphSpec)
+    const ids = new Set(toStructure(bound, { view: 'factor' }).nodes.map((n) => n.id))
+    for (const site of [...Object.values(on.variables), ...Object.values(on.factors)]) expect(ids.has(site)).toBe(true)
+    expect(new Set(Object.values(on.factors))).toEqual(new Set(['factor:w', 'factor:y']))
+  })
+
+  it('has the posterior and the evidence of the expanded graph, and the grid answer', () => {
+    const ga = graphOf(c.graph)
+    const gb = graphOf(e.graph)
+    const ra = run(ga)
+    const rb = run(gb)
+    expect(ra.status).toBe('converged')
+    const pa = factorGraphPosterior(c, ga, ra.state)
+    const pb = factorGraphPosterior(e, gb, rb.state)
+    const ma = toFlat(pa.mean('w'))
+    const mb = toFlat(pb.mean('w'))
+    for (const [q, v] of ma.entries()) expect(Math.abs(v - (mb[q] as number))).toBeLessThan(1e-6)
+    const sa = toFlat(pa.stddev('w'))
+    const sb = toFlat(pb.stddev('w'))
+    for (const [q, v] of sa.entries()) expect(Math.abs(v - (sb[q] as number))).toBeLessThan(1e-6)
+    expect(Math.abs((pa.logEvidence?.value ?? 0) - (pb.logEvidence?.value ?? 1))).toBeLessThan(1e-5)
+    // The variational bound of the plate is that of the expanded graph's mean field on the weights as one block... under VMP
+    // the plate has the Albert-Chib message, the expanded graph the same one per row, with the predictor as a defined variable.
+    const va = runAlgorithm(vmpAlgorithm(ga, { tol: 1e-12 }), { maxSteps: 400 })
+    const vb = runAlgorithm(vmpAlgorithm(gb, { tol: 1e-12 }), { maxSteps: 400 })
+    const wa = marginalsOf(ga, va.state as MpState)['w']?.['mean'] as number[]
+    const wb = marginalsOf(gb, vb.state as MpState)['w']?.['mean'] as number[]
+    for (const [q, v] of wa.entries()) expect(Math.abs(v - (wb[q] as number))).toBeLessThan(1e-6)
+  })
+
+  it('falls to the expansion for rows that are not one regression on a packed vector, and without the plate operators', () => {
+    const ops2 = { ...factorOperators() }
+    delete (ops2 as Record<string, unknown>)['probit-plate']
+    expect(toFactorGraph(bound, { operators: ops2 }).plated).toEqual([])
+    const scalars = defineModel('scalars', (b) => {
+      const n = b.range('row')
+      const a = b.latent('a', d.normal(0, 2))
+      const s = b.latent('s', d.normal(0, 2))
+      b.observe('y', d.normal(ops.add(a, ops.mul(s, b.data('x', { dims: [n] }))), 0.5), b.data('y', { dims: [n] }))
+    })
+    const cs = toFactorGraph(scalars.bind({ x: [1, 2, 3], y: [1, 2, 3] }))
+    expect(cs.plated).toEqual([])
+    expect(cs.graph?.variables.length).toBeGreaterThan(5)
+    // A per-row scale is not a plate either.
+    const scales = defineModel('scales', (b) => {
+      const n = b.range('row')
+      const f = b.range('feature')
+      const w = b.latent('w', d.normal(0, 2), { dims: [f] })
+      b.observe(
+        'y',
+        d.normal(b.data('X', { dims: [n, f] }).matmul(w), b.data('sd', { dims: [n] })),
+        b.data('y', { dims: [n] }),
+      )
+    })
+    const cc = toFactorGraph(
+      scales.bind({
+        X: [
+          [1, 2],
+          [3, 4],
+        ],
+        y: [1, 2],
+        sd: [0.5, 1],
+      }),
+    )
+    expect(cc.plated).toEqual([])
+    expect(cc.graph?.factors.filter((f) => f.operator === 'linear-regression-row').length).toBe(2)
+  })
+
+  it('leaves missing rows out of the plate and gives the same posterior as the expansion that ignores them', () => {
+    const m = defineModel('gaps', (b) => {
+      const n = b.range('row')
+      const f = b.range('feature')
+      const w = b.latent('w', d.normal(0, 2), { dims: [f] })
+      b.observe('y', d.normal(b.data('X', { dims: [n, f] }).matmul(w), 0.5), b.data('y', { dims: [n] }), {
+        missing: 'ignore',
+      })
+    })
+    const bd = m.bind({
+      X: [
+        [1, 0.5],
+        [1, -1],
+        [1, 2],
+        [1, 0],
+      ],
+      y: [1, Number.NaN, 2, 0.3],
+    })
+    const a = toFactorGraph(bd)
+    const b2 = toFactorGraph(bd, { plates: 'expand' })
+    expect(a.plated).toEqual(['y'])
+    const ga = graphOf(a.graph)
+    const gb = graphOf(b2.graph)
+    const pa = factorGraphPosterior(a, ga, run(ga).state)
+    const pb = factorGraphPosterior(b2, gb, run(gb).state)
+    for (const [q, v] of toFlat(pa.mean('w')).entries())
+      expect(Math.abs(v - (toFlat(pb.mean('w'))[q] as number))).toBeLessThan(1e-9)
   })
 })

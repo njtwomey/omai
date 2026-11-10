@@ -311,6 +311,8 @@ export const equal: FactorOperator = {
     { name: 'y', accepts: ALL },
   ],
   support: { ep: 'exact', vmp: 'exact', bp: 'exact' },
+  // A copy defines x from y: under the mean field x is y, so its belief is y's and what x's other factors say goes to y.
+  defines: 0,
   check: (_, families) =>
     families[0]?.kind === families[1]?.kind && families[0]?.size === families[1]?.size
       ? undefined

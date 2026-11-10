@@ -5,7 +5,7 @@
  * regression, TrueSkill and the step likelihoods of ordinal and censored models.
  */
 
-import { logAddExp } from '../../base/index.ts'
+import { logAddExp, OmaiError } from '../../base/index.ts'
 import { tiltedLogGrid } from '../_quadrature.ts'
 import { logPhi, millsRatio, Phi, phi } from '../_scalar.ts'
 import { bernoulli } from '../families.ts'
@@ -131,10 +131,15 @@ function stepOperator(
  * greaterThan.ep?.({ mode: 'ep', to: 1, args, params: { threshold: 0 }, power: 1 }).message.map((v) => v.toFixed(4)) // => ['2.1957', '1.7519']
  * ```
  */
-export const greaterThan: FactorOperator = stepOperator('greater-than', 'b = [x > threshold]', (params) => {
-  const t = numberParam(params, 'threshold', 0)
-  return { inside: [[t, Number.POSITIVE_INFINITY]], outside: [[Number.NEGATIVE_INFINITY, t]] }
-})
+export const greaterThan: FactorOperator = {
+  ...stepOperator('greater-than', 'b = [x > threshold]', (params) => {
+    const t = numberParam(params, 'threshold', 0)
+    return { inside: [[t, Number.POSITIVE_INFINITY]], outside: [[Number.NEGATIVE_INFINITY, t]] }
+  }),
+  noRule: {
+    vmp: 'a hard step is zero off the half-line, so KL(q || p) is infinite for every Gaussian q (the variational rule needs a step with noise: the probit link, or expectation propagation)',
+  },
+}
 
 /**
  * b = [lower < x < upper] for a Gaussian x: the interval test (the draw of TrueSkill, an interval-censored
@@ -195,11 +200,28 @@ function poweredProbit(c: OperatorContext, sigma: number): { message: Eta; logMa
   return { message: [(site[0] ?? 0) / p, (site[1] ?? 0) / p], logMass: t.logMass }
 }
 
+/** What the Albert-Chib augmentation of an observed probit outcome needs: the side of the cut (+1 for b true), the noise and the belief of x. */
+function albertChib(c: OperatorContext): {
+  readonly sign: 1 | -1
+  readonly sigma: number
+  readonly x: { readonly mean: number; readonly variance: number }
+} {
+  const b = arg(c, 0)
+  if (b.value === undefined)
+    throw new OmaiError('not-implemented', 'probit: the variational rule is for an observed outcome')
+  return { sign: scalarOf(b) > 0 ? 1 : -1, sigma: numberParam(c.params, 'noise', 1), x: gaussianOf(arg(c, 1)) }
+}
+
 /**
  * b | x ~ Bernoulli(Phi(x / noise)): the probit link (`noise` the standard deviation, default 1), the likelihood of
  * probit regression and of Gaussian-process classification. EP is exact in closed form: the mass of a Gaussian under
  * the normal distribution function is `Phi(m / sqrt(noise^2 + v))` and the first two moments follow from the same
  * ratio. An observed outcome gives the usual site update; an incoming Bernoulli message gives the matched mixture.
+ * Variational message passing uses the Albert and Chib (1993) augmentation (`b = [z > 0]` with `z | x ~ N(x, noise^2)`;
+ * the mean-field update of Girolami and Rogers 2006, Consonni and Marin 2007): the message to x is the expected log
+ * `N(z; x, noise^2)` under `q(z)`, the Gaussian `N(E x, noise^2)` cut to the side of the observed outcome, so
+ * `[E z / noise^2, 1 / noise^2]`, and the bound the collapsed `log Phi(+- E x / noise) - Var x / (2 noise^2)`. It needs the
+ * outcome observed.
  *
  * @concept factor-operators
  * @index structure The probit link b | x ~ Bernoulli(Phi(x)): exact EP site updates.
@@ -214,7 +236,7 @@ export const probit: FactorOperator = {
   name: 'probit',
   description: 'b | x ~ Bernoulli(Phi(x / noise))',
   ports: [outcomePort, valuePort],
-  support: { ep: 'exact' },
+  support: { ep: 'exact', vmp: 'exact' },
   readsTarget: (to) => to === 1,
   power: true,
   ep: (c): OperatorResult => {
@@ -241,6 +263,21 @@ export const probit: FactorOperator = {
     const m2 = w0 * (m * m + v) + w1 * ((v + m * m) * cdf + ((2 * m * v) / s - (m * v * v) / s ** 3) * dens)
     const mean = m1 / m0
     return { message: gaussianSiteMessage(etaOf(arg(c, 1)), mean, m2 / m0 - mean * mean) }
+  },
+  vmp: (c): OperatorResult => {
+    if (c.to === 0) throw new OmaiError('not-implemented', 'probit: the variational rule is for an observed outcome')
+    const { sign, sigma, x } = albertChib(c)
+    const u = (sign * x.mean) / sigma
+    // q(z) is N(E x, sigma^2) cut to the side of the outcome: its mean is E x + sign sigma phi(u) / Phi(u); the message is the
+    // expected log N(z; x, sigma^2) over it, a Gaussian in x of precision 1 / sigma^2 centred at E z.
+    const mean = x.mean + sign * sigma * millsRatio(u)
+    return { message: [mean / (sigma * sigma), 1 / (sigma * sigma)] }
+  },
+  expectedLog: (c) => {
+    const { sign, sigma, x } = albertChib(c)
+    // The augmented bound with q(z) at its optimum: log of the integral of exp(E_q(x) log N(z; x, sigma^2)) over the
+    // outcome's side, which is log Phi(sign E x / sigma) - Var x / (2 sigma^2).
+    return logPhi((sign * x.mean) / sigma) - x.variance / (2 * sigma * sigma)
   },
   logEvidence: (c) => {
     if (!allProper(c.args)) return Number.NaN

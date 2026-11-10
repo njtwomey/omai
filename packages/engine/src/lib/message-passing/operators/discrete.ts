@@ -183,7 +183,7 @@ const selectPorts = (params: Params): readonly Port[] => {
   const k = Math.trunc(Number(params['components']))
   return [
     { name: 'y', accepts: ['gaussian', 'gamma', 'beta', 'bernoulli'] },
-    { name: 'z', accepts: ['discrete'], constant: true },
+    { name: 'z', accepts: ['discrete', 'bernoulli'], constant: true },
     ...Array.from(
       { length: k },
       (_, i): Port => ({ name: `c${i}`, accepts: ['gaussian', 'gamma', 'beta', 'bernoulli'] }),
@@ -198,7 +198,8 @@ const logOverlap = (f: Family, a: Eta, b: Eta): number => f.logPartition(a.map((
  * y = c_z: the variable y is the z-th of several variables c_0, ..., c_{K-1} of one family, chosen by a discrete
  * variable z (the gate or switch of Infer.NET: a mixture, a regime, a lookup). The EP messages are the moment-matched
  * mixtures: to y the mixture of the cavities' overlaps, to z the overlaps themselves, to c_k the mixture of "y
- * constrains c_k" and "c_k is not selected". Gaussian, gamma, beta or Bernoulli y.
+ * constrains c_k" and "c_k is not selected". Gaussian, gamma, beta or Bernoulli y; the gate z is discrete or Bernoulli
+ * (state 0 and 1 select the first and the second component).
  *
  * @concept factor-operators
  * @index structure The gate y = c_z selecting one of several variables by a discrete index.
@@ -219,7 +220,8 @@ export const select: FactorOperator = {
   readsTarget: (to) => to >= 2,
   check: (params, families) => {
     const k = Math.trunc(Number(params['components']))
-    if (families[1]?.dim !== k) return 'select: z must have as many states as there are components'
+    const states = families[1]?.kind === 'bernoulli' ? 2 : families[1]?.dim
+    if (states !== k) return 'select: z must have as many states as there are components'
     const kind = families[0]?.kind
     for (let i = 2; i < families.length; i++)
       if (families[i]?.kind !== kind || families[i]?.size !== families[0]?.size)
@@ -232,7 +234,7 @@ export const select: FactorOperator = {
     const pi = (a: Arg): number[] =>
       a.value !== undefined
         ? discreteProbs(discreteEta(Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(a)) ? 1 : 0))))
-        : discreteProbs(etaOf(a))
+        : selectProbs(a)
     const weights = pi(arg(c, 1))
     const etaY = arg(c, 0).eta
     const component = (i: number): Eta => etaOf(arg(c, i + 2))
@@ -247,7 +249,13 @@ export const select: FactorOperator = {
         const top = Math.max(...overlap)
         if (!(top > Number.NEGATIVE_INFINITY))
           throw new ImproperMessageError('select: no component overlaps the output')
-        return { message: discreteEta(overlap.map((v) => Math.exp(v - top))) }
+        const z = arg(c, 1).family
+        return {
+          message:
+            z.kind === 'bernoulli'
+              ? (z.fromLogProbs?.(overlap.map((v) => v - top)) as Eta)
+              : discreteEta(overlap.map((v) => Math.exp(v - top))),
+        }
       }
       const lw = overlap.map((v, i) => v + Math.log(weights[i] ?? 0))
       const top = Math.max(...lw)
@@ -285,7 +293,7 @@ export const select: FactorOperator = {
     const weights =
       arg(c, 1).value !== undefined
         ? Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(arg(c, 1))) ? 1 : 0))
-        : discreteProbs(etaOf(arg(c, 1)))
+        : selectProbs(arg(c, 1))
     const y = etaOf(arg(c, 0))
     const terms = Array.from({ length: k }, (_, i) => {
       const own = etaOf(arg(c, i + 2))
@@ -295,6 +303,11 @@ export const select: FactorOperator = {
     for (let i = 0; i < k; i++) total += massOf(arg(c, i + 2))
     return total + logSumExpOf(terms)
   },
+}
+
+/** The probabilities of the states of the gate argument of a select: a discrete or a Bernoulli message. */
+function selectProbs(a: Arg): number[] {
+  return a.family.kind === 'bernoulli' ? (a.family.logProbs?.(etaOf(a)) ?? []).map(Math.exp) : discreteProbs(etaOf(a))
 }
 
 const mixturePorts = (params: Params): readonly Port[] => {
