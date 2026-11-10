@@ -5,13 +5,14 @@
 import { describe, expect, it } from 'vitest'
 import { expectCancelAndContinue, expectResumeEqual, expectSnapshotCadence } from '../../../testing/methods.ts'
 import { DISCRETE, MODELS, Y4 } from '../../../testing/probprog.ts'
-import { item } from '../../tensor/index.ts'
+import { item, type Tensor } from '../../tensor/index.ts'
 import { session } from '../../trace/index.ts'
 import { analyse } from '../analysis.ts'
 import { normalNormal } from '../validation/exact.ts'
 import { gridPosterior } from '../validation/grid.ts'
 import { nestedMethod } from './nested-method.ts'
 
+const scalar = (t: Tensor | undefined): number => (t === undefined ? Number.NaN : item(t))
 const exactNormal = normalNormal({ priorMean: 0, priorSd: 2, sigma: 1.5, y: Y4 })
 
 describe('nested sampling as a method', () => {
@@ -23,8 +24,8 @@ describe('nested sampling as a method', () => {
     const z = post?.logEvidence
     expect(Math.abs((z?.value ?? 0) - exactNormal.logEvidence)).toBeLessThan(4 * (z?.standardError ?? 0) + 0.02)
     expect(post?.status).toBe('converged')
-    expect(Math.abs(item(post?.mean('mu') ?? 0) - item(exactNormal.posterior.mean()))).toBeLessThan(0.1)
-    expect(Math.abs(item(post?.variance('mu') ?? 0) / item(exactNormal.posterior.variance()) - 1)).toBeLessThan(0.3)
+    expect(Math.abs(scalar(post?.mean('mu')) - item(exactNormal.posterior.mean()))).toBeLessThan(0.1)
+    expect(Math.abs(scalar(post?.variance('mu')) / item(exactNormal.posterior.variance()) - 1)).toBeLessThan(0.3)
   })
 
   it('finds the evidence of a correlated pair under a linear-Gaussian observation', () => {
@@ -44,7 +45,7 @@ describe('nested sampling as a method', () => {
     const z = post?.logEvidence
     expect(Math.abs((z?.value ?? 0) - grid.logEvidence)).toBeLessThan(4 * (z?.standardError ?? 0) + 0.02)
     // The posterior mean of the uniform coordinate, on the constrained scale, against the grid's.
-    expect(Math.abs(item(post?.mean('u') ?? 0) - grid.marginal('u').mean)).toBeLessThan(0.2)
+    expect(Math.abs(scalar(post?.mean('u')) - grid.marginal('u').mean)).toBeLessThan(0.2)
   }, 20_000)
 
   it('has an estimate, the error and the likelihood threshold at every step, and a partial posterior before the end', () => {
