@@ -581,7 +581,32 @@ export function gibbs<D = void>(model: Model<D>, data: D, options: GibbsRunOptio
     ...(options.policy === undefined ? {} : { policy: options.policy }),
     ...(options.parent === undefined ? {} : { parent: options.parent }),
   })
-  const names = Object.keys(r.state.values)
+  return gibbsPosterior(kept, r.status, { sweeps: r.steps, kept: kept.length }, Object.keys(r.state.values))
+}
+
+/**
+ * The posterior of Gibbs draws: the kept sweeps' values stacked by site into `[draw, ...shape]`, as one chain.
+ *
+ * @param kept - The values of every latent site at each kept sweep.
+ * @param status - How the run ended.
+ * @param diagnostics - What to report.
+ * @param sites - The sites to stack (default the sites of the first kept sweep).
+ * @returns The posterior of draws.
+ * @concept gibbs-sampling
+ * @example
+ * ```ts
+ * import { gibbsPosterior } from 'omai-engine/probprog'
+ * import { item, tensor } from 'omai-engine/tensor'
+ * item(gibbsPosterior([{ m: tensor(1) }, { m: tensor(3) }], 'completed', {}).mean('m')) // => 2
+ * ```
+ */
+export function gibbsPosterior(
+  kept: readonly Readonly<Record<string, Value>>[],
+  status: Posterior['status'],
+  diagnostics: Readonly<Record<string, Json>>,
+  sites?: readonly string[],
+): Posterior {
+  const names = sites ?? Object.keys(kept[0] ?? {})
   const draws: Record<string, Tensor> = {}
   for (const name of names) {
     const first = kept[0]?.[name]
@@ -589,12 +614,7 @@ export function gibbs<D = void>(model: Model<D>, data: D, options: GibbsRunOptio
     const rows = kept.flatMap((v) => toFlat(primalOf(v[name] ?? asTensor(0))))
     draws[name] = fromStorage(Float64Array.from(rows), [kept.length, ...shape], 'float64')
   }
-  return samplePosterior(draws, {
-    engine: 'gibbs',
-    status: r.status,
-    chainShape: [1, kept.length],
-    diagnostics: { sweeps: r.steps, kept: kept.length },
-  })
+  return samplePosterior(draws, { engine: 'gibbs', status, chainShape: [1, kept.length], diagnostics })
 }
 
 /**

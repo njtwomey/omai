@@ -7,12 +7,12 @@
 import { type Json, logSumExpOf, OmaiError } from '../../base/index.ts'
 import { bijectors } from '../../dists/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
-import { proposal, type ResamplingScheme, resample, smcSampler } from '../../sampling/index.ts'
+import { type ChainProposal, proposal, type ResamplingScheme, resample, smcSampler } from '../../sampling/index.ts'
 import { fromStorage, item, mul, primalOf, reshape, sliceAxis, sum, toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
 import { maskedLogProb, observedLogProb } from '../_contract.ts'
 import type { ProgramAnalysis } from '../analysis.ts'
-import { constrainDraws, latentLayout, potentialEnergy } from '../density.ts'
+import { constrainDraws, latentLayout, potentialEnergy, type UnconstrainedModel } from '../density.ts'
 import { handle, type ProgramTrace, seed, traceOf } from '../handlers.ts'
 import { type Posterior, samplePosterior, weightedPosterior } from '../posterior.ts'
 import type { Message, Model } from '../primitives.ts'
@@ -210,7 +210,30 @@ export function particleFilter<D = void>(
     ...(options.policy === undefined ? {} : { policy: options.policy }),
     ...(options.parent === undefined ? {} : { parent: options.parent }),
   })
-  const s = r.state
+  return particleFilterPosterior(r.state, r.status)
+}
+
+/**
+ * The weighted posterior of a particle filter's state: the particles' ancestral paths (the sites of every step's trace
+ * stacked by site) with the normalised weights, the evidence estimate and the filter's diagnostics. A state in the middle
+ * of the run gives the filtering posterior up to that step.
+ *
+ * @param s - A state of {@link particleFilterAlgorithm}.
+ * @param status - How the run ended.
+ * @returns The weighted posterior.
+ * @concept sequential-monte-carlo
+ * @example
+ * ```ts
+ * import { markov, observe, particleFilterAlgorithm, particleFilterPosterior, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import type { Value } from 'omai-engine/tensor'
+ * const walk = () => markov('t', 3, (t, x: Value | number) => { const z = sample(`x${t}`, normal(x, 1)); observe(`y${t}`, normal(z, 1), t); return z }, 0)
+ * const run = runAlgorithm(particleFilterAlgorithm(walk, undefined, { numParticles: 20 }), { seed: 0, maxSteps: 10 })
+ * particleFilterPosterior(run.state, run.status).sites // => ['x0', 'x1', 'x2']
+ * ```
+ */
+export function particleFilterPosterior(s: ParticleFilterState, status: Posterior['status']): Posterior {
   const first = s.paths[0] ?? []
   const names = first.flatMap((tr) =>
     [...tr.sites.values()]
@@ -223,7 +246,7 @@ export function particleFilter<D = void>(
   }))
   return weightedPosterior(stackSiteValues(merged, names), s.logWeights, {
     engine: 'smc',
-    status: r.status,
+    status,
     logEvidence: { value: s.logEvidence, standardError: Number.NaN, method: 'particle filter' },
     diagnostics: { method: 'particle filter', resamplings: s.resamplings, finalEss: s.ess, steps: s.t },
   })
@@ -261,7 +284,53 @@ export function temperedSmc<D = void>(
   data: D,
   options: TemperedSmcOptions & EngineRunOptions,
 ): Posterior {
-  const proto = traceOf(seed(model, foldIn(options.key, 0)), data)
+  const problem = temperedProblem(model, data, options.key)
+  const r = smcSampler(problem.prior, problem.logLikelihood, {
+    key: foldIn(options.key, 1),
+    numParticles: options.numParticles ?? 500,
+    ...(options.mcmcSteps === undefined ? {} : { mcmcSteps: options.mcmcSteps }),
+    ...(options.maxStages === undefined ? {} : { maxStages: options.maxStages }),
+    ...(options.tracer === undefined ? {} : { tracer: options.tracer }),
+    ...(options.policy === undefined ? {} : { policy: options.policy }),
+  })
+  return temperedPosterior(problem, Float64Array.from(toFlat(r.particles)), {
+    logEvidence: r.logEvidence,
+    status: r.converged ? 'converged' : 'failed',
+    diagnostics: { method: 'tempered', stages: r.stages, temperatures: [...r.temperatures] },
+  })
+}
+
+/** A program as the inputs of tempered SMC: the prior as a proposal, the likelihood, and the unconstrained model. */
+export interface TemperedProblem {
+  /** The prior on the unconstrained scale (draws and log density, Jacobians included). */
+  readonly prior: ChainProposal
+  /** The log likelihood of the observed sites at an unconstrained point. */
+  readonly logLikelihood: (x: Float64Array) => number
+  readonly um: UnconstrainedModel
+}
+
+/**
+ * The prior and the likelihood of a program for the adaptive-tempering sampler of `sampling`, on the unconstrained scale
+ * of its continuous latent sites. {@link temperedSmc} runs the sampler to the end on it; a method that steps the sampler
+ * (`smcAlgorithm`, one temperature per step) builds it the same way.
+ *
+ * @param model - The program (continuous latent sites).
+ * @param data - Its data.
+ * @param key - The key of the prototype run (shapes only).
+ * @returns The problem.
+ * @throws OmaiError with code `value` for discrete latent sites.
+ * @concept sequential-monte-carlo
+ * @example
+ * ```ts
+ * import { observe, sample, temperedProblem } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * const model = () => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 1) }
+ * temperedProblem(model, undefined, key(0)).prior.dim // => 1
+ * ```
+ */
+export function temperedProblem<D = void>(model: Model<D>, data: D, key: Key): TemperedProblem {
+  const proto = traceOf(seed(model, foldIn(key, 0)), data)
   const { layout, enumerated } = latentLayout(proto)
   if (enumerated.length > 0)
     throw new OmaiError('value', 'temperedSmc: discrete latent sites are not supported; use another engine')
@@ -302,25 +371,61 @@ export function temperedSmc<D = void>(
     },
     logProb: (x) => split(x).prior,
   })
-  const r = smcSampler(prior, (x) => split(x).lik, {
-    key: foldIn(options.key, 1),
-    numParticles: options.numParticles ?? 500,
-    ...(options.mcmcSteps === undefined ? {} : { mcmcSteps: options.mcmcSteps }),
-    ...(options.maxStages === undefined ? {} : { maxStages: options.maxStages }),
-    ...(options.tracer === undefined ? {} : { tracer: options.tracer }),
-    ...(options.policy === undefined ? {} : { policy: options.policy }),
-  })
-  const um = potentialEnergy(model, data, { key: foldIn(options.key, 0), enumerate: false })
-  const draws = constrainDraws(um, Float64Array.from(toFlat(r.particles)))
+  const um = potentialEnergy(model, data, { key: foldIn(key, 0), enumerate: false })
+  return { prior, logLikelihood: (x) => split(x).lik, um }
+}
+
+/**
+ * The posterior of tempered-SMC particles (unconstrained, row-major `[n, dim]`): the particles mapped back to every
+ * latent and deterministic site, equally weighted, with the evidence estimate.
+ *
+ * @param problem - The problem the particles are for.
+ * @param particles - The particles.
+ * @param run - The log evidence, the status and the diagnostics.
+ * @returns The posterior of draws.
+ * @concept sequential-monte-carlo
+ * @example
+ * ```ts
+ * import { observe, sample, temperedPosterior, temperedProblem } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * const model = () => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 1) }
+ * temperedPosterior(temperedProblem(model, undefined, key(0)), Float64Array.of(0, 1), { logEvidence: 0, status: 'converged', diagnostics: {} }).sites // => ['m']
+ * ```
+ */
+export function temperedPosterior(
+  problem: TemperedProblem,
+  particles: Float64Array,
+  run: {
+    readonly logEvidence: number
+    readonly status: Posterior['status']
+    readonly diagnostics: Readonly<Record<string, Json>>
+  },
+): Posterior {
+  const draws = constrainDraws(problem.um, particles)
   return samplePosterior(draws, {
     engine: 'smc',
-    status: r.converged ? 'converged' : 'failed',
-    logEvidence: { value: r.logEvidence, standardError: Number.NaN, method: 'tempered SMC' },
-    diagnostics: { method: 'tempered', stages: r.stages, temperatures: [...r.temperatures] },
+    status: run.status,
+    logEvidence: { value: run.logEvidence, standardError: Number.NaN, method: 'tempered SMC' },
+    diagnostics: run.diagnostics,
   })
 }
 
-function filterable(a: ProgramAnalysis): string | undefined {
+/**
+ * Why a program cannot be run by the bootstrap particle filter, or `undefined` when it can: it needs exactly one `markov`
+ * loop that holds every latent site and has nothing after it.
+ *
+ * @param a - The analysis of the program.
+ * @returns The reason, or `undefined`.
+ * @concept sequential-monte-carlo
+ * @example
+ * ```ts
+ * import { analyse, filterBlocker, observe, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * filterBlocker(analyse(() => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 1) }, undefined)) // => 'no single markov loop'
+ * ```
+ */
+export function filterBlocker(a: ProgramAnalysis): string | undefined {
   if (a.markov.length !== 1) return 'no single markov loop'
   const loop = a.markov[0]
   if (loop === undefined) return 'no markov loop'
@@ -351,7 +456,7 @@ export function smcEngine(options: ParticleFilterOptions & TemperedSmcOptions = 
     applies: (a: ProgramAnalysis) => {
       if (!a.hasLikelihood) return feasibility(false, 'weighted', 0, 'observed sites have no likelihood')
       if (a.latent.length === 0) return feasibility(false, 'weighted', 0, 'no latent sites')
-      const problem = filterable(a)
+      const problem = filterBlocker(a)
       if (problem === undefined) {
         const T = a.markov[0]?.length ?? 1
         return feasibility(
@@ -371,7 +476,7 @@ export function smcEngine(options: ParticleFilterOptions & TemperedSmcOptions = 
       )
     },
     run: <D>(model: Model<D>, data: D, a: ProgramAnalysis, run: EngineRunOptions) =>
-      filterable(a) === undefined
+      filterBlocker(a) === undefined
         ? particleFilter(model, data, { ...options, ...run })
         : temperedSmc(model, data, { ...options, ...run }),
   }

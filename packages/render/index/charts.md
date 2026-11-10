@@ -27,7 +27,7 @@ ECharts option builders. Start from a finished chart (`lineChart`, `scatterChart
 - function `plotRectOf`: The pixel rectangle and ranges of a cartesian plot: `plotRectOf(layers, options)`. `src/charts/plot.ts:622` `omai-render/charts`
 - function `rocChart`: A ROC curve chart: `rocChart(curve)`. `src/charts/evaluation.ts:49` `omai-render/charts`
 - function `sankeyChart`: A Sankey diagram of flows: `sankeyChart([{ source, target, value }])`. `src/charts/flows.ts:33` `omai-render/charts`
-- function `scatterChart`: A scatter plot coloured by group: `scatterChart([{ x, y, groups }])`. `src/charts/points.ts:275` `omai-render/charts`
+- function `scatterChart`: A scatter plot coloured by group: `scatterChart([{ x, y, groups }])`. `src/charts/points.ts:276` `omai-render/charts`
 - function `subplots`: Draw panels of layers on a grid spec: `subplots(grid, panels)`. `src/charts/compose.ts:98` `omai-render/charts`
 - function `vectorField`: Arrows of a vector field: `vectorField(fieldArrows(f, { x, y }))`. `src/charts/fields.ts:334` `omai-render/charts`
 
