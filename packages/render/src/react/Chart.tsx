@@ -223,7 +223,8 @@ export function Chart(props: ChartProps): ReactElement {
     }
     chart.on('datarangeselected', onSelect)
     return () => {
-      chart.off('datarangeselected', onSelect)
+      // React runs the cleanup that disposes the instance first: calling it afterwards makes ECharts warn.
+      if (!chart.isDisposed()) chart.off('datarangeselected', onSelect)
       if (frame !== undefined) cancelAnimationFrame(frame)
     }
   }, [chart, renderer])
@@ -236,7 +237,7 @@ export function Chart(props: ChartProps): ReactElement {
       return [name, fn] as const
     })
     return () => {
-      for (const [name, fn] of bound) chart.off(name, fn)
+      if (!chart.isDisposed()) for (const [name, fn] of bound) chart.off(name, fn)
     }
   }, [chart, onEvents])
 

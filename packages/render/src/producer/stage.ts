@@ -6,18 +6,21 @@
  * worker bundles only this.
  */
 
+/** A handler typed as a method, so a real `Worker`'s `onmessage`/`onerror` (typed on `MessageEvent`/`ErrorEvent`) fits. */
+type Handler<E> = { bivarianceHack(event: E): void }['bivarianceHack']
+
 /** The part of a `Worker` a stage uses. */
 export interface StageWorker {
   postMessage(message: unknown): void
   terminate(): void
-  onmessage: ((event: { readonly data: unknown }) => void) | null
-  onerror: ((event: { readonly message?: string }) => void) | null
+  onmessage: Handler<{ readonly data: unknown }> | null
+  onerror: Handler<{ readonly message?: string }> | null
 }
 
 /** The worker's side of the wire: the part of a dedicated worker's global scope {@link serveStage} uses. */
 export interface StageScope {
   postMessage(message: unknown): void
-  onmessage: ((event: { readonly data: unknown }) => void) | null
+  onmessage: Handler<{ readonly data: unknown }> | null
 }
 
 /** What a stage run reads from its job (a `JobContext` has both). */

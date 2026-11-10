@@ -57,7 +57,8 @@ export interface PointSet {
   readonly symbol?: string
   /**
    * Turn each marker, in degrees clockwise from where it points at 0 (the `plane` points up, so this is a compass
-   * heading): one angle for all, or one per point, by index (the `heading` of an aircraft).
+   * heading): one angle for all, or one per point, by index (the `heading` of an aircraft). ECharts itself turns markers
+   * counterclockwise, so the angle is negated on the way in.
    */
   readonly symbolRotate?: number | readonly number[]
   /** Vary marker shapes by group (default false). */
@@ -143,7 +144,7 @@ export function points(
           value: [x[i], y[i]],
           ...(p.sizes === undefined || hidden ? {} : { symbolSize: sizeOf(i) }),
           ...(valueColour === undefined ? {} : { itemStyle: { color: valueColour(p.values?.[i] ?? 0) } }),
-          ...(typeof p.symbolRotate === 'object' ? { symbolRotate: p.symbolRotate[i] ?? 0 } : {}),
+          ...(typeof p.symbolRotate === 'object' ? { symbolRotate: -(p.symbolRotate[i] ?? 0) } : {}),
           ...(p.labels?.[i] === undefined
             ? {}
             : {
@@ -167,7 +168,7 @@ export function points(
           ? 'circle'
           : symbolOf(p.symbol ?? (p.shapes === true ? (MARKERS[gi % MARKERS.length] ?? 'circle') : 'circle')),
         symbolSize: size,
-        ...(typeof p.symbolRotate === 'number' ? { symbolRotate: p.symbolRotate } : {}),
+        ...(typeof p.symbolRotate === 'number' ? { symbolRotate: -p.symbolRotate } : {}),
         ...(p.symbol !== undefined && symbolOf(p.symbol).startsWith('path://') ? { symbolKeepAspect: true } : {}),
         color: colour,
         itemStyle: {

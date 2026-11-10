@@ -31,11 +31,13 @@ vi.mock('./echarts.ts', () => ({
           chart.calls.push(['on', name])
         },
         off: (name: string, fn: (params: unknown) => void) => {
+          // ECharts warns ("Instance ec_... has been disposed") when it is called after dispose.
+          chart.calls.push([chart.disposed ? 'offAfterDispose' : 'off', name])
           if (chart.handlers.get(name) === fn) chart.handlers.delete(name)
-          chart.calls.push(['off', name])
         },
         dispose: () => {
           chart.disposed = true
+          chart.handlers.clear() // a real dispose drops every handler
         },
         isDisposed: () => chart.disposed,
         resize: () => undefined,
@@ -103,6 +105,8 @@ describe('Chart', () => {
     const last = made[1] as FakeChart
     expect(last.disposed).toBe(true)
     expect(last.handlers.size).toBe(0)
+    // ... and does not call into the instance after disposing it (ECharts warns about that).
+    for (const c of made) expect(c.calls.filter((x) => x[0] === 'offAfterDispose')).toEqual([])
   })
 })
 

@@ -120,18 +120,21 @@ export type ProducerEvent =
   /** Something failed: making the sessions (unknown method, a configuration outside the space) or computing them. */
   | { readonly type: 'error'; readonly id: string; readonly seq: number; readonly message: string }
 
+/** A handler typed as a method, so a real `Worker`'s `onmessage`/`onerror` (typed on `MessageEvent`/`ErrorEvent`) fits. */
+type Handler<E> = { bivarianceHack(event: E): void }['bivarianceHack']
+
 /** The two ends of a producer's wire, as the page sees the worker: the part of a `Worker` it uses. */
 export interface WorkerLike {
   postMessage(message: ProducerRequest): void
   terminate(): void
-  onmessage: ((event: { readonly data: unknown }) => void) | null
-  onerror: ((event: { readonly message?: string }) => void) | null
+  onmessage: Handler<{ readonly data: unknown }> | null
+  onerror: Handler<{ readonly message?: string }> | null
 }
 
 /** The worker's side: the part of a dedicated worker's global scope the server uses. */
 export interface ScopeLike {
   postMessage(message: ProducerEvent): void
-  onmessage: ((event: { readonly data: unknown }) => void) | null
+  onmessage: Handler<{ readonly data: unknown }> | null
 }
 
 const REQUESTS = new Set(['init', 'run', 'advance', 'pause', 'cursor', 'probe', 'dispose'])

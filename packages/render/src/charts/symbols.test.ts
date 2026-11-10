@@ -40,19 +40,19 @@ describe('points: a named symbol, rotation and a label offset', () => {
 
   it('rotates every marker by one angle, or each by its own (a heading per aircraft)', () => {
     const all = opt(points([{ x: [0, 1], y: [0, 1], symbol: 'plane', symbolRotate: 90 }]).series[0])
-    expect(all.symbolRotate).toBe(90)
+    expect(all.symbolRotate).toBe(-90) // ECharts turns counterclockwise; ours is a clockwise heading
     expect(all.data[0].symbolRotate).toBeUndefined()
     const each = opt(points([{ x: [0, 1, 2], y: [0, 1, 2], symbol: 'plane', symbolRotate: [10, 20] }]).series[0])
     expect(each.symbolRotate).toBeUndefined()
-    expect(each.data.map((d: Opt) => d.symbolRotate)).toEqual([10, 20, 0])
+    expect(each.data.map((d: Opt) => d.symbolRotate)).toEqual([-10, -20, -0])
     expect(opt(points([{ x: [0], y: [0] }]).series[0]).symbolRotate).toBeUndefined()
   })
 
   it('rotates the points of each group by their own index in the set', () => {
     const l = points([{ x: [0, 1, 2], y: [0, 1, 2], groups: ['a', 'b', 'a'], symbolRotate: [10, 20, 30] }])
     const [a, b] = l.series.map(opt)
-    expect(a.data.map((d: Opt) => d.symbolRotate)).toEqual([10, 30])
-    expect(b.data.map((d: Opt) => d.symbolRotate)).toEqual([20])
+    expect(a.data.map((d: Opt) => d.symbolRotate)).toEqual([-10, -30])
+    expect(b.data.map((d: Opt) => d.symbolRotate)).toEqual([-20])
   })
 
   it('moves a label from where its position puts it, for the series and for each labelled point', () => {
