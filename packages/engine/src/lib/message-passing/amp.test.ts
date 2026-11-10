@@ -13,18 +13,8 @@ function problem(
   noise: number,
   seed: number,
 ): { problem: M.AmpProblem; truth: number[] } {
-  const k = key(seed)
-  const matrix = toFlat(normal(foldIn(k, 1), [m, n], { scale: 1 / Math.sqrt(m) }))
-  const u = toFlat(uniform(foldIn(k, 2), [n]))
-  const g = toFlat(normal(foldIn(k, 3), [n]))
-  const w = toFlat(normal(foldIn(k, 4), [m], { scale: Math.sqrt(noise) }))
-  const truth = Array.from(g, (v, i) => ((u[i] as number) < rho ? v : 0))
-  const y = Array.from({ length: m }, (_, i) => {
-    let s = w[i] as number
-    for (let j = 0; j < n; j++) s += (matrix[i * n + j] as number) * (truth[j] as number)
-    return s
-  })
-  return { problem: { matrix, rows: m, columns: n, y }, truth }
+  const p = M.ampProblem(key(seed), { columns: n, delta: m / n, sparsity: rho, noiseVariance: noise })
+  return { problem: p.problem, truth: [...p.truth] }
 }
 
 /** The values a metric took on the tape, in order. */

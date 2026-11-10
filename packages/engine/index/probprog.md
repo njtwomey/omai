@@ -149,6 +149,7 @@ The distribution constructors of the model layer, available as `omai-engine/prob
 
 The benchmark models of probabilistic programming, available as `omai-engine/probprog/models`: named models written with `defineModel` (or as a `markov` program where the spec layer has no recurrence yet), each with a title, description, tags and references, a seeded data generator beside its canonical data, the truth the inference methods are compared with (a closed form, a quadrature or an analytic marginal) and the plans of the methods that apply to it, with what to expect of each. `benchmarkModels` lists them, `benchmarkEntries` and `benchmarkMethods` hand them to a worker's registry, and `benchmarkCampaigns` is their cross-engine agreement as periodic validation campaigns. The suite so far: the conjugate trio, logistic, probit, Poisson and negative binomial regression, eight schools (centred and non-centred), the Gaussian mixture (with and without label switching), Neal's funnel (centred and non-centred), the banana, a two-mode target, a radon hierarchy, a three-player TrueSkill and an AR(1) state space. `kernelCampaigns` is the periodic validation of the kernel methods: Geweke tests, calibration, agreement with the truth of three of them and parallel tempering on the two-mode target.
 
+- function `bananaDraws`: Exact draws from Haario's banana, for drawing the target. `src/lib/probprog/models/geometry.ts:165` `omai-engine/probprog/models`
 - function `benchmarkAgreement`: Cross-engine agreement of a benchmark model: every planned method against the truth. `src/lib/probprog/models/agreement.ts:132` `omai-engine/probprog/models`
 - function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:103` `omai-engine/probprog/models`
 - function `defineBenchmark`: Make a benchmark model: a spec or program with generator, truth, tags, references and method plans. `src/lib/probprog/models/benchmark.ts:175` `omai-engine/probprog/models`
@@ -163,9 +164,9 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 
 - dataset `ar1CoefficientFamily`: The AR(1) state-space benchmark with an unknown coefficient, as a family for particle MCMC. `src/lib/probprog/models/ar1-parameters.ts:34` `omai-engine/probprog/models`
 - dataset `ar1StateSpace`: Stationary AR(1) state with noisy observations as a markov program; exact Gaussian smoothing truth. `src/lib/probprog/models/state-space.ts:93` `omai-engine/probprog/models`
-- dataset `banana`: Haario's banana: a curved correlated 2-D ridge; analytic marginals; Laplace and mean field are wrong. `src/lib/probprog/models/geometry.ts:162` `omai-engine/probprog/models`
+- dataset `banana`: Haario's banana: a curved correlated 2-D ridge; analytic marginals; Laplace and mean field are wrong. `src/lib/probprog/models/geometry.ts:191` `omai-engine/probprog/models`
 - dataset `betaBernoulli`: Beta-Bernoulli coin: exact Beta posterior and evidence; the simplest conjugate benchmark. `src/lib/probprog/models/conjugate.ts:43` `omai-engine/probprog/models`
-- dataset `bimodal`: Two equal Gaussian modes in 2-D: the multimodal target for mode weights and R-hat. `src/lib/probprog/models/geometry.ts:236` `omai-engine/probprog/models`
+- dataset `bimodal`: Two equal Gaussian modes in 2-D: the multimodal target for mode weights and R-hat. `src/lib/probprog/models/geometry.ts:260` `omai-engine/probprog/models`
 - dataset `eightSchoolsCentred`: Rubin's eight schools, centred: the funnel; exact quadrature truth. `src/lib/probprog/models/schools.ts:138` `omai-engine/probprog/models`
 - dataset `eightSchoolsNonCentred`: Rubin's eight schools, non-centred: the same posterior without the funnel; truth by quadrature. `src/lib/probprog/models/schools.ts:207` `omai-engine/probprog/models`
 - dataset `funnelCentred`: Neal's funnel, centred: analytic truth; NUTS diverges in the neck. `src/lib/probprog/models/geometry.ts:46` `omai-engine/probprog/models`
@@ -180,6 +181,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - dataset `probitRegression`: Bayesian probit regression (the plan's slice model); the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:118` `omai-engine/probprog/models`
 - dataset `radon`: Hierarchical radon-style regression with varying intercepts; the exact truth integrates the effects out. `src/lib/probprog/models/hierarchical.ts:273` `omai-engine/probprog/models`
 - dataset `trueskillThreePlayers`: Three players rated from pairwise games, TrueSkill-style (probit): the EP target; truth is a 3-D grid. `src/lib/probprog/models/ranking.ts:58` `omai-engine/probprog/models`
+- dataset `trueskillTournament`: A small TrueSkill tournament drawn from known skills, games in a fixed order. `src/lib/probprog/models/ranking.ts:150` `omai-engine/probprog/models`
 
 ## probprog/validation
 
@@ -189,3 +191,5 @@ The validation kernel for probabilistic programs: oracles (the grid posterior, c
 - function `gewekeTest`: Geweke joint-distribution test of a posterior transition operator. `src/lib/probprog/validation/geweke.ts:83` `omai-engine/probprog/validation`
 - function `gridPosterior`: Grid posterior of a small program: evidence, marginals and moments to quadrature accuracy. `src/lib/probprog/validation/grid.ts:162` `omai-engine/probprog/validation`
 - function `sbc`: Simulation-based calibration of an inference method with the exact rank distribution. `src/lib/probprog/validation/sbc.ts:180` `omai-engine/probprog/validation`
+
+- estimator `sbcMethod`: Simulation-based calibration, one replication per step, with the tests of the ranks so far. `src/lib/probprog/validation/sbc-method.ts:68` `omai-engine/probprog/validation`

@@ -17,6 +17,7 @@
 import { type Json, OmaiError } from '../base/index.ts'
 import { dgemv, dnrm2 } from '../numerics/linalg/index.ts'
 import { gaussLegendre } from '../numerics/quadrature/index.ts'
+import { foldIn, type Key, normal, uniform } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import {
@@ -172,6 +173,67 @@ export interface AmpProblem {
   readonly columns: number
   /** The measurements, length M. */
   readonly y: ArrayLike<number>
+}
+
+/** What {@link ampProblem} takes besides the key. */
+export interface AmpProblemOptions {
+  /** The number of unknowns (default 400). */
+  readonly columns?: number
+  /** Measurements per unknown, `M / N` (default 0.5). */
+  readonly delta?: number
+  /** The probability that an entry of the signal is nonzero (default 0.1). */
+  readonly sparsity?: number
+  /** The variance of the measurement noise (default 0.01). */
+  readonly noiseVariance?: number
+}
+
+/**
+ * A compressed-sensing problem with its truth: a matrix of independent Gaussian entries of variance `1 / M` (the case the state
+ * evolution is exact for as the size grows), a signal whose entries are zero or standard normal draws (nonzero with
+ * probability `sparsity`), and measurements with Gaussian noise. The truth is kept, so the error of the run can go on the tape.
+ *
+ * @param key - The random key.
+ * @param options - The size, measurements per unknown, sparsity and noise.
+ * @returns The problem, the signal that made it, and the prior and noise variance that describe it.
+ * @concept approximate-message-passing
+ * @index dataset A compressed-sensing problem (Gaussian matrix, sparse signal, noise) with its truth, for AMP.
+ * @example
+ * ```ts
+ * import { ampProblem } from 'omai-engine/message-passing'
+ * import { key } from 'omai-engine/random'
+ * const p = ampProblem(key(1), { columns: 50, delta: 0.5 })
+ * [p.problem.rows, p.problem.columns, p.truth.length] // => [25, 50, 50]
+ * ```
+ */
+export function ampProblem(
+  key: Key,
+  options: AmpProblemOptions = {},
+): {
+  readonly problem: AmpProblem
+  readonly truth: readonly number[]
+  readonly prior: AmpPrior
+  readonly noiseVariance: number
+} {
+  const n = options.columns ?? 400
+  const m = Math.max(1, Math.round(n * (options.delta ?? 0.5)))
+  const rho = options.sparsity ?? 0.1
+  const noiseVariance = options.noiseVariance ?? 0.01
+  const matrix = toFlat(normal(foldIn(key, 1), [m, n], { scale: 1 / Math.sqrt(m) }))
+  const u = toFlat(uniform(foldIn(key, 2), [n]))
+  const g = toFlat(normal(foldIn(key, 3), [n]))
+  const w = toFlat(normal(foldIn(key, 4), [m], { scale: Math.sqrt(noiseVariance) }))
+  const truth = Array.from(g, (v, i) => ((u[i] as number) < rho ? v : 0))
+  const y = Array.from({ length: m }, (_, i) => {
+    let s = w[i] as number
+    for (let j = 0; j < n; j++) s += (matrix[i * n + j] as number) * (truth[j] as number)
+    return s
+  })
+  return {
+    problem: { matrix, rows: m, columns: n, y },
+    truth,
+    prior: { kind: 'bernoulli-gaussian', sparsity: rho, variance: 1 },
+    noiseVariance,
+  }
 }
 
 /** The knobs of AMP. */
