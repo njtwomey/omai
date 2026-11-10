@@ -8,8 +8,8 @@ import { item, matmul, type Tensor, tensor, toFlat } from '../../tensor/index.ts
 import { logJoint } from '../density.ts'
 import { mcmc } from '../engines/nuts.ts'
 import { observe, plate, sample } from '../primitives.ts'
-import { defineModel, ops, toProgram } from './index.ts'
 import * as d from './dists/index.ts'
+import { defineModel, ops, toProgram } from './index.ts'
 
 const N = 40
 const D = 3

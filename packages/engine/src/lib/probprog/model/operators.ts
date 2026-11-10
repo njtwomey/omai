@@ -260,7 +260,7 @@ const atOperator: OperatorDef = {
  * @example
  * ```ts
  * import { defaultOperators } from 'omai-engine/probprog/model'
- * Object.keys(defaultOperators()).length // => 28
+ * Object.keys(defaultOperators()).length // => 26
  * ```
  */
 export function defaultOperators(): Record<string, OperatorDef> {
@@ -272,7 +272,7 @@ export function defaultOperators(): Record<string, OperatorDef> {
     elementwise('pow', 2, 'a to the power b', (a, b) => pow(a, b)),
     elementwise('maximum', 2, 'the larger of a and b', (a, b) => maximum(a, b), { factor: 'max' }),
     elementwise('minimum', 2, 'the smaller of a and b', (a, b) => minimum(a, b), { factor: 'min' }),
-    elementwise('neg', 1, '-a', (a) => neg(a)),
+    elementwise('neg', 1, 'minus a', (a) => neg(a)),
     elementwise('exp', 1, 'exp(a)', (a) => exp(a)),
     elementwise('log', 1, 'log(a)', (a) => log(a)),
     elementwise('sqrt', 1, 'square root of a', (a) => sqrt(a)),

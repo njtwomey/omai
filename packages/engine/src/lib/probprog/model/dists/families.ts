@@ -123,17 +123,36 @@ const covariance = ['covariance', 'precision', 'scaleTril'] as const
  */
 export function distributionFamilies(): Record<string, FamilyDef> {
   const defs: FamilyDef[] = [
-    family('normal', ['loc', 'scale'], (a) => normal(need('normal', a, 'loc'), need('normal', a, 'scale')), { loc: 0, scale: 1 }, {
-      defaults: { loc: 0, scale: 1 },
-      exponentialFamily: true,
-    }),
-    family('halfNormal', ['scale'], (a) => halfNormal(need('halfNormal', a, 'scale')), { scale: 1 }, {
-      defaults: { scale: 1 },
-    }),
-    family('logNormal', ['mu', 'sigma'], (a) => logNormal(need('logNormal', a, 'mu'), need('logNormal', a, 'sigma')), { mu: 0, sigma: 1 }, {
-      defaults: { mu: 0, sigma: 1 },
-      exponentialFamily: true,
-    }),
+    family(
+      'normal',
+      ['loc', 'scale'],
+      (a) => normal(need('normal', a, 'loc'), need('normal', a, 'scale')),
+      { loc: 0, scale: 1 },
+      {
+        defaults: { loc: 0, scale: 1 },
+        exponentialFamily: true,
+      },
+    ),
+    family(
+      'halfNormal',
+      ['scale'],
+      (a) => halfNormal(need('halfNormal', a, 'scale')),
+      { scale: 1 },
+      {
+        defaults: { scale: 1 },
+        exponentialFamily: true,
+      },
+    ),
+    family(
+      'logNormal',
+      ['mu', 'sigma'],
+      (a) => logNormal(need('logNormal', a, 'mu'), need('logNormal', a, 'sigma')),
+      { mu: 0, sigma: 1 },
+      {
+        defaults: { mu: 0, sigma: 1 },
+        exponentialFamily: true,
+      },
+    ),
     family(
       'truncatedNormal',
       ['loc', 'scale', 'low', 'high'],
@@ -146,24 +165,61 @@ export function distributionFamilies(): Record<string, FamilyDef> {
         ),
       { loc: 0, scale: 1, low: -1, high: 2 },
     ),
-    family('studentT', ['df', 'loc', 'scale'], (a) => studentT(need('studentT', a, 'df'), need('studentT', a, 'loc'), need('studentT', a, 'scale')), { df: 3, loc: 0, scale: 1 }, {
-      defaults: { loc: 0, scale: 1 },
-    }),
-    family('cauchy', ['loc', 'scale'], (a) => cauchy(need('cauchy', a, 'loc'), need('cauchy', a, 'scale')), { loc: 0, scale: 1 }, {
-      defaults: { loc: 0, scale: 1 },
-    }),
-    family('halfCauchy', ['scale'], (a) => halfCauchy(need('halfCauchy', a, 'scale')), { scale: 1 }, { defaults: { scale: 1 } }),
-    family('laplace', ['loc', 'scale'], (a) => laplace(need('laplace', a, 'loc'), need('laplace', a, 'scale')), { loc: 0, scale: 1 }, {
-      defaults: { loc: 0, scale: 1 },
-    }),
-    family('exponential', ['rate'], (a) => exponential(need('exponential', a, 'rate')), { rate: 1 }, {
-      defaults: { rate: 1 },
-      exponentialFamily: true,
-    }),
-    family('gamma', ['concentration', 'rate'], (a) => gamma(need('gamma', a, 'concentration'), need('gamma', a, 'rate')), { concentration: 2, rate: 1 }, {
-      defaults: { rate: 1 },
-      exponentialFamily: true,
-    }),
+    family(
+      'studentT',
+      ['df', 'loc', 'scale'],
+      (a) => studentT(need('studentT', a, 'df'), need('studentT', a, 'loc'), need('studentT', a, 'scale')),
+      { df: 3, loc: 0, scale: 1 },
+      {
+        defaults: { loc: 0, scale: 1 },
+      },
+    ),
+    family(
+      'cauchy',
+      ['loc', 'scale'],
+      (a) => cauchy(need('cauchy', a, 'loc'), need('cauchy', a, 'scale')),
+      { loc: 0, scale: 1 },
+      {
+        defaults: { loc: 0, scale: 1 },
+      },
+    ),
+    family(
+      'halfCauchy',
+      ['scale'],
+      (a) => halfCauchy(need('halfCauchy', a, 'scale')),
+      { scale: 1 },
+      { defaults: { scale: 1 } },
+    ),
+    family(
+      'laplace',
+      ['loc', 'scale'],
+      (a) => laplace(need('laplace', a, 'loc'), need('laplace', a, 'scale')),
+      { loc: 0, scale: 1 },
+      {
+        defaults: { loc: 0, scale: 1 },
+        exponentialFamily: true,
+      },
+    ),
+    family(
+      'exponential',
+      ['rate'],
+      (a) => exponential(need('exponential', a, 'rate')),
+      { rate: 1 },
+      {
+        defaults: { rate: 1 },
+        exponentialFamily: true,
+      },
+    ),
+    family(
+      'gamma',
+      ['concentration', 'rate'],
+      (a) => gamma(need('gamma', a, 'concentration'), need('gamma', a, 'rate')),
+      { concentration: 2, rate: 1 },
+      {
+        defaults: { rate: 1 },
+        exponentialFamily: true,
+      },
+    ),
     family(
       'inverseGamma',
       ['concentration', 'scale'],
@@ -171,13 +227,32 @@ export function distributionFamilies(): Record<string, FamilyDef> {
       { concentration: 3, scale: 1 },
       { defaults: { scale: 1 }, exponentialFamily: true },
     ),
-    family('weibull', ['concentration', 'scale'], (a) => weibull(need('weibull', a, 'concentration'), need('weibull', a, 'scale')), { concentration: 2, scale: 1 }, {
-      defaults: { scale: 1 },
-    }),
-    family('beta', ['a', 'b'], (x) => beta(need('beta', x, 'a'), need('beta', x, 'b')), { a: 2, b: 3 }, { exponentialFamily: true }),
-    family('uniform', ['low', 'high'], (a) => uniform(need('uniform', a, 'low'), need('uniform', a, 'high')), { low: 0, high: 1 }, {
-      defaults: { low: 0, high: 1 },
-    }),
+    family(
+      'weibull',
+      ['concentration', 'scale'],
+      (a) => weibull(need('weibull', a, 'concentration'), need('weibull', a, 'scale')),
+      { concentration: 2, scale: 1 },
+      {
+        defaults: { scale: 1 },
+        exponentialFamily: true,
+      },
+    ),
+    family(
+      'beta',
+      ['a', 'b'],
+      (x) => beta(need('beta', x, 'a'), need('beta', x, 'b')),
+      { a: 2, b: 3 },
+      { exponentialFamily: true },
+    ),
+    family(
+      'uniform',
+      ['low', 'high'],
+      (a) => uniform(need('uniform', a, 'low'), need('uniform', a, 'high')),
+      { low: 0, high: 1 },
+      {
+        defaults: { low: 0, high: 1 },
+      },
+    ),
     family(
       'bernoulli',
       ['probs', 'logits'],
@@ -188,20 +263,38 @@ export function distributionFamilies(): Record<string, FamilyDef> {
       { probs: 0.3 },
       { oneOf: [['probs', 'logits']], discrete: true, finite: true, exponentialFamily: true },
     ),
-    family('binomial', ['n', 'probs'], (a) => binomial(need('binomial', a, 'n'), need('binomial', a, 'probs')), { n: 5, probs: 0.4 }, {
-      discrete: true,
-      finite: true,
-      exponentialFamily: true,
-    }),
-    family('geometric', ['probs'], (a) => geometric(need('geometric', a, 'probs')), { probs: 0.4 }, { discrete: true }),
+    family(
+      'binomial',
+      ['n', 'probs'],
+      (a) => binomial(need('binomial', a, 'n'), need('binomial', a, 'probs')),
+      { n: 5, probs: 0.4 },
+      {
+        discrete: true,
+        finite: true,
+        exponentialFamily: true,
+      },
+    ),
+    family(
+      'geometric',
+      ['probs'],
+      (a) => geometric(need('geometric', a, 'probs')),
+      { probs: 0.4 },
+      { discrete: true, exponentialFamily: true },
+    ),
     family(
       'negativeBinomial',
       ['n', 'probs'],
       (a) => negativeBinomial(need('negativeBinomial', a, 'n'), need('negativeBinomial', a, 'probs')),
       { n: 3, probs: 0.4 },
-      { discrete: true },
+      { discrete: true, exponentialFamily: true },
     ),
-    family('poisson', ['rate'], (a) => poisson(need('poisson', a, 'rate')), { rate: 3 }, { discrete: true, exponentialFamily: true }),
+    family(
+      'poisson',
+      ['rate'],
+      (a) => poisson(need('poisson', a, 'rate')),
+      { rate: 3 },
+      { discrete: true, exponentialFamily: true },
+    ),
     family(
       'categorical',
       ['probs', 'logits'],
@@ -212,10 +305,16 @@ export function distributionFamilies(): Record<string, FamilyDef> {
       { probs: [0.2, 0.3, 0.5] },
       { oneOf: [['probs', 'logits']], discrete: true, finite: true, exponentialFamily: true },
     ),
-    family('dirichlet', ['concentration'], (a) => dirichlet(need('dirichlet', a, 'concentration')), { concentration: [1, 2, 3] }, {
-      eventRank: 1,
-      exponentialFamily: true,
-    }),
+    family(
+      'dirichlet',
+      ['concentration'],
+      (a) => dirichlet(need('dirichlet', a, 'concentration')),
+      { concentration: [1, 2, 3] },
+      {
+        eventRank: 1,
+        exponentialFamily: true,
+      },
+    ),
     family(
       'multivariateNormal',
       ['loc', ...covariance],

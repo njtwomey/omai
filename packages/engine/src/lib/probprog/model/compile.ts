@@ -323,5 +323,5 @@ function observed(node: ModelNode & { readonly kind: 'observed' }, ctx: Context)
   }
   const site = `${node.name}_missing`
   const imputed = fam.make(args)
-  plate(site, at.length, () => sample(site, imputed))
+  plate(`${site}_dim`, at.length, () => sample(site, imputed))
 }

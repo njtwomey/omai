@@ -44,7 +44,8 @@ export function family(name: string, args: Readonly<Record<string, Operand | und
   if (def === undefined)
     throw new OmaiError('value', `unknown distribution family '${name}' (known: ${Object.keys(FAMILIES).join(', ')})`)
   for (const k of Object.keys(args))
-    if (!def.params.includes(k)) throw new OmaiError('value', `${name}: unknown parameter '${k}' (takes ${def.params.join(', ')})`)
+    if (!def.params.includes(k))
+      throw new OmaiError('value', `${name}: unknown parameter '${k}' (takes ${def.params.join(', ')})`)
   const given = def.params.filter((p) => args[p] !== undefined)
   for (const group of def.oneOf) {
     const n = group.filter((p) => given.includes(p)).length
