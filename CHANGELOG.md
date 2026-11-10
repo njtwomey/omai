@@ -5,9 +5,10 @@ mdml-engine, mdml-render and mdml-meta.
 
 ## 0.1.13
 
-Not yet released on GitHub: the incremental versions are tagged locally until the probabilistic-programming work is complete.
-This section records what is on `main` so far; the plan is `docs/probprog/PLAN.md` (with its status section), the
-validation tables are in `docs/probprog/results/`.
+Not yet released on GitHub (no tag has been made and the packages are still 0.1.12): the next GitHub release will cover the
+whole probabilistic-programming increment recorded here, under whichever version number it is given. This section records what
+is on `main` so far; the plan is `docs/probprog/PLAN.md` (with its status section), the validation tables are in
+`docs/probprog/results/`.
 
 Probabilistic programming (omai-engine). The design: a model is written once as a value (a spec), every method is its own
 thing with its own knobs and tape, the user chooses (no universal `infer`, no automatic decomposition; the planner `plan`,
@@ -17,8 +18,14 @@ Model layer (`omai-engine/probprog/model`):
 - `defineModel`: a builder with named dimensions (`range`), `data`, `latent` (with constraints), `observe`, `derived`,
   `generated`, `factor`, `param`, `custom` and `include`, producing a JSON-able `ModelSpec` (`Var` handles and `ops`,
   checked as the model is written). A closed registry of 26 operators (`defaultOperators`) and 22 distribution families as
-  data (`model/dists`, mapped to the constructors of `omai-engine/dists`). Reserved but not built: `scan` (recurrence) and
-  `gate` nodes.
+  data (`model/dists`, mapped to the constructors of `omai-engine/dists`). The `gate` node (mixtures) is reserved and not built.
+- `scan`, the recurrence node: `m.scan(name, { over, init, step, emit })` writes a time series, a state-space model or a
+  hidden Markov chain once (the step reads the previous state, the emissions are observed at each step; one scan is one
+  series). It compiles to one `markov` loop (the states are the sites `<scan>[t]`, the emissions `<emission>[t]`), is checked,
+  drawn (one node in the plate of its dimension with a `t-1` self-loop), identified (`ids.ts`), analysed (`analyseSpec().scans`,
+  `scanLinearGaussian`, a Gaussian chain as one linear-Gaussian block, a structure-report suggestion that names `chain` or the
+  particle filter) and read by the chain and particle-filter methods; `unrollScans` writes it out as scalar nodes, which is what
+  `toFactorGraph` compiles for message passing.
 - Data binding: `bind` (checks arrays against the spec, names the fault), `withData`, `bindDataset`, missing values (NaN in
   an observed node, by policy), batches as subsampled plates, `boundToJSON` and `boundFromJSON`.
 - `toProgram` compiles a bound spec to the existing `sample`/`observe` program, so every engine, handler, guide and
@@ -48,7 +55,20 @@ Inference methods (`omai-engine/probprog/inference`):
   `particleFilterMethod`, `abcSmcMethod`, and one-step methods for the exact engines (`conjugateMethod`,
   `gaussianMethod`, `enumerationMethod`, `chainMethod`, `abcRejectionMethod`). The one-call engines are unchanged.
 - EP, VMP and BP on specs (`epSpecMethod`, `vmpSpecMethod`, `bpSpecMethod`).
-- A model registry by name for workers (`modelRegistry`, `methodKinds` with 26 kinds, `inferenceMethods` naming each
+- The kernels of `omai-engine/sampling` as methods on programs and bound specs, one method each with its own knobs and tape, on
+  a shared driver (one transition of every chain per step, warm-up with the library's own adaptation, enumerated discrete sites
+  recovered as for NUTS, resumable, published as a posterior): `rwmMethod`, `malaMethod`, `barkerMethod`, `hmcMethod`,
+  `sliceMethod`, `ellipticalSliceMethod`, `sgldMethod`, `sghmcMethod`, `mclmcMethod`, the ensemble samplers `aiesMethod` and
+  `ensembleSliceMethod`, `cheesMethod` (ChEES-HMC) and `temperingMethod` (parallel tempering over HMC, NUTS, MALA, Barker or a
+  random walk, with the ladder, the swap rates and the round trips on the tape); `hybridMethod`, the plan the user writes:
+  blocks of latent sites, each with a kernel (`blockKernels`: `hmc`, `nuts`, `mala`, `barker`, `rwm`, `slice`, exact Gibbs
+  conditionals, or `custom`), optionally with discrete sites summed out of a block's density. `GibbsOptions.sites` lets the Gibbs
+  engine update only the sites it is given. Dense mass matrices take a `lowRank` knob. Not built: MEADS, an adaptive temperature
+  ladder, adjusted MCLMC, tempering of the likelihood only, an elliptical slice block in `hybrid`.
+- `runAnytimeAsync`: `runAnytime` in slices that hand the thread back to the page between them (the caller supplies the hand-over:
+  the library has no timers), so a page keeps painting and answering clicks while runs share the thread within a budget.
+- `chainMethod` and `particleFilterMethod` accept a spec with one `scan`, and say why not otherwise.
+- A model registry by name for workers (`modelRegistry`, `methodKinds` with 39 kinds, `inferenceMethods` naming each
   method `<kind>/<model>`): a page asks for `nuts/radon` with only knob values.
 - Variational methods beyond `sviMethod`, each with its own knobs and tape: `traceGraphSviMethod`, `traceEnumSviMethod`,
   `stickingTheLandingMethod`, `renyiSviMethod`, `structuredSviMethod`, `mixtureSviMethod`, `amortisedSviMethod`,
@@ -73,6 +93,13 @@ natural-gradient SVI (`conjugateNaturalGradientAlgorithm`, `gaussianNaturalGradi
 (`pathfinderAlgorithm`, a BlackJAX moments fixture); and ADVI's step-size sequence in `omai-engine/optim` (`scaleByAdvi`,
 the `advi` optimiser, the `adviDecay` schedule, all three in the option tables).
 
+MCMC kernels (`omai-engine/sampling`): `barkerKernel` (Barker's gradient-skewed proposal), `sghmcKernel` (stochastic-gradient
+HMC), `mclmcKernel` with its three-phase tuning `mclmcAdaptationAlgorithm` (microcanonical Langevin Monte Carlo),
+`stretchMoveKernel` (the affine-invariant stretch move, or differential evolution) and `ensembleSliceKernel`,
+`parallelTemperingKernel` with `temperedTarget` and `temperatureLadder` (swap statistics and round trips in the state),
+`cheesKernel` with `cheesAdaptationAlgorithm` (ChEES-HMC), `lowRankInverseMassMatrix` and the `lowRank` option of
+`windowAdaptationAlgorithm`, and `chainEssCurves` (the effective sample size by quantile and as the draws accumulate).
+
 SMC, particle MCMC, nested sampling and evidence: `sampling/pmcmc.ts` (`pseudoMarginalMetropolis`), `sampling/nested.ts`
 (`nestedAlgorithm`, `nestedSampler`, evidence with an error bar), `sampling/evidence.ts` (`bridgeSampling`,
 `thermodynamicIntegration`, `steppingStone`, and `harmonicMeanEvidence`, which refuses by default),
@@ -95,16 +122,28 @@ Validation and benchmarks (`omai-engine/probprog/validation`, `omai-engine/probp
 - A validation kernel: `gridPosterior` (evidence and marginals to quadrature), closed-form conjugate oracles, `agree`
   (error in sds and Monte Carlo standard errors, sd ratio, Kolmogorov, Wasserstein and KL against an oracle),
   simulation-based calibration (`sbc`), Geweke's joint distribution test, and a campaign runner.
-- Eighteen benchmark models as specs with truth, tags, references, a seeded generator and method plans (conjugate
+- Twenty-seven benchmark models as specs with truth, tags, references, a seeded generator and method plans (conjugate
   trio, logistic, probit, Poisson and negative binomial regression, eight schools in both parametrisations, a Gaussian
   mixture with and without label switching, Neal's funnel in both parametrisations, Haario's banana, a two-mode target,
-  radon, a three-player TrueSkill, an AR(1) state space), `benchmarkModels`, `whereBenchmarks`.
+  radon, a three-player TrueSkill, an AR(1) state space as a scan, and nine more: stochastic volatility and a Gaussian
+  hidden Markov model as scans, Gaussian process regression centred and non-centred, a small LDA with an exact posterior
+  by enumeration, a small Bayesian neural network with a reference run, 2PL item response scoring, a truncated
+  stick-breaking mixture and Minka's clutter problem with EP), `benchmarkModels`, `whereBenchmarks`. Simplified from the plan:
+  stochastic volatility has known parameters, the IRT items are known, the stick-breaking components are known, the neural
+  network has a reference and no closed form. `trueskillTournament` and `trueskillModel` (games added one at a time) and
+  `bananaDraws` are generators for the demonstration pages; in `omai-engine/message-passing`, `clutterProblem` (a function,
+  not the benchmark model of the same name in `probprog/models`), `clutterGraph`, `clutterPosterior` and `ampProblem` are the
+  same for EP and AMP.
+- Calibration as a method: `sbcMethod` (one replication per step, the ranks so far as the state, `result(state)` the tests),
+  with `sbcReplication` and `sbcSummary` that `sbc` is made of; `posteriorChains` (a posterior's draws regrouped by chain).
 - `make probprog-validate` (`scripts/probprog-validate.ts`, not part of `make verify` or `make check`) runs the campaigns and
   writes the committed tables of `docs/probprog/results/`: calibration of NUTS and SVI and of two deliberately wrong guides
   (which must fail), agreement with the grid, the funnel under non-centring, Geweke tests, a campaign per benchmark model,
   the evidence estimators against closed forms, nested sampling's error bar, particle filters and particle MCMC against
-  the Kalman filter, the structure report of every model, and the variational methods against the truths. A compiled
-  evaluation plan was measured and not built (`results/eval-overhead.md`).
+  the Kalman filter, the structure report of every model, the variational methods against the truths, the kernel methods
+  (`kernels/geweke`; simulation-based calibration of thirteen methods; agreement with the truth on three models; parallel
+  tempering against NUTS on the two-mode target) and the later benchmark models with the clutter problem's EP comparison. A
+  compiled evaluation plan was measured and not built (`results/eval-overhead.md`).
 
 Engine fixes:
 - `potentialEnergy`: a point where the program builds a distribution that refuses its parameter (an overflowing scale or
@@ -117,6 +156,8 @@ Engine fixes:
   boundary, an ill-conditioned or non-finite curvature) is reported with the coordinates that ran off.
 - A posterior summary skips a listed site the posterior holds nothing of; the samplers' and approximations' spec checks
   accept a model with no observed node (a density) and say so.
+- `traceView` on a thinned trace places each draw at its own index and marks the divergent transitions at their values
+  (`ChainQuantity.atDivergences`), so the markers sit on the line.
 - `numerics/special`: `ndtr`, `erf` and `erfc` no longer give NaN at large arguments (0 times Infinity in `expMinusSquare`).
 
 Rendering and exposition (omai-engine, omai-render):
@@ -124,39 +165,66 @@ Rendering and exposition (omai-engine, omai-render):
   `modelRunFromTape`) and `chainDiagnostics` (trace, rank and R-hat and ESS data of chains, `chainsFromTape`) exposition
   records, with the views `modelRunScene` and friends, `traceView` and `rankView`, the React `ModelRunPlayer` and
   `ChainDiagnosticsView`, and standard views in the registry.
+- Three more records, `sbcRun` (simulation-based calibration: rank histograms with the exact binomial band, the ECDF
+  difference with the simultaneous band of Säilynoja et al., the tests and a verdict that says how a method is wrong),
+  `elboRun` (a variational fit: the bound, the gradient, the guide's parameters, the beliefs and the final posterior against
+  the truth, from the tape of `svi` or Pathfinder or from snapshots, `elboRunFromTape`) and `posteriorComparison` (several
+  methods' posteriors against the oracle's as densities, ECDFs or ECDF differences, with the agreement table), which makes 66
+  record kinds, with the views `sbcRankView`, `sbcEcdfView`, `elboRunView` and `posteriorComparisonView`, the React `SbcRunView`,
+  `ElboRunView` and `PosteriorComparisonView` and standard views in the registry. `chainDiagnostics` gains the charts of ArviZ:
+  the ECDF difference with its band (`ecdfBand`), autocorrelation, the effective sample size by quantile and as the draws
+  accumulate, the energy with each chain's E-BFMI and the pair plot with the divergent transitions marked (`ecdfView`,
+  `autocorrelationView`, `essView`, `energyView`, `pairView`; `ChainDiagnosticsView` offers the charts the record can draw and
+  takes an `initial` chart).
 - Model graphs as plate diagrams: `modelGraph` and `diagram` draw plates that cross (nodes over `[student]`, `[exam]` and
   `[student, exam]`), write sizes as `N = 40`, draw data as dots and unroll vector sites; `StructureNode.groups` and
   `StructureGroup.intersection` in the `Structure` record; `DiagramOptions.decorate` draws a glyph inside each node;
-  overlay edges carry a `label`; `StructureView` scales its diagram down to a narrow container. Gallery recipe
-  `diagrams/16-model-inference`.
-- `apps/pocs` has groups (`src/groups.ts`, a section per group on the index, a page per group); the existing pocs joined
-  `probabilistic-programming`, `structured-prediction`, `models` and `graphics-and-fields`. No new probabilistic-programming pocs
-  yet.
+  overlay edges carry a `label`; `StructureView` scales its diagram down to a narrow container. Gallery recipes
+  `diagrams/16-model-inference` (extended to the new chain charts), `trust/09-simulation-calibration`,
+  `steps/15-variational-run` and `statistical/11-posterior-comparison`.
+- `apps/pocs` has groups (`src/groups.ts`, a section per group on the index, a page per group, `groupPocs`); the existing pocs
+  joined `probabilistic-programming`, `structured-prediction`, `models` and `graphics-and-fields`. Nine new proofs of concept in
+  `probabilistic-programming`: `probit-two-engines`, `ep-alpha-clutter`, `eight-schools-funnel`, `trueskill-messages`,
+  `svi-guides`, `tempering-bimodal`, `calibration-sbc`, `evidence-race` and `amp-sparse`, on shared plumbing (`useAnytimeRuns`,
+  `RunBar`, `CurveChart`, `useDeferred`) that runs several methods at once within a time budget the user chooses, with a
+  snapshot about once a second.
 
 Oracle: `pyro-ppl` joined the `oracle-prob` group (the `lift` and `reparam` goldens use it); new fixtures for `reparam`,
-`lift`, Pathfinder (BlackJAX moments), the grid posterior and the exact conjugate oracles.
+`lift`, Pathfinder (BlackJAX moments), the grid posterior, the exact conjugate oracles and the kernel methods
+(`oracle/cases/probprog/inference/kernels.py`: summaries of long chains of NumPyro's AIES and ESS and BlackJAX's MALA, Barker,
+MCLMC, SGLD and SGHMC on two programs, compared within the Monte Carlo errors of both).
 
 Docs: `docs/probprog/` (the plan with its status, the inventory, the survey, the algorithm repertoire, the verification
 notes and the result tables), `docs/structure.md` sections 4.32 and 4.32a.
 
 Known limits:
 - EP, VMP and BP are tested against references (the grid for the probit regression, `pgm`, `gp`, TrueSkill, the Bayesian
-  mixture), but the benchmark campaigns run NUTS, tempered SMC, importance sampling, Laplace, SVI, Gibbs, the exact methods
-  and the particle filter, not message passing.
+  mixture). Among the benchmark campaigns EP runs only in `benchmark/item-response-scoring` and `benchmark/clutter-ep`; VMP and
+  BP are in none.
+- Region-graph (Kikuchi) belief propagation needs damping and does not converge at strong coupling (the tests cover a moderate
+  one).
 - VMP has no rule for the hard comparison `greater-than`, `max` and `min` are expectation propagation only, and
   `gaussian-gamma-precision` has no EP rule; `check` says so per model. Region graphs and generalised BP are for discrete
   models; AMP is for linear models with iid priors; expectation consistent inference is for a Gaussian times
   one-dimensional sites.
-- State-space models are programs with a `markov` loop (and particle MCMC takes a `StateSpaceFamily`): the spec has no
-  recurrence node yet.
-- Particle MCMC, nested sampling, the evidence methods and the state-space filter are not in `methodKinds` (they take
-  inputs other than a model).
+- The `gate` node (mixtures) is not built. Particle MCMC takes a `StateSpaceFamily`, not a spec with a scan (PMMH on scans is
+  not done). SMC squared, dynamic nested sampling and Chib's estimator are not built.
+- `hybridMethod`, particle MCMC, nested sampling, the evidence methods and the state-space filter are not in `methodKinds`
+  (they take inputs other than a model).
+- MCMC: no MEADS, no adaptive temperature ladder, no adjusted MCLMC, parallel tempering tempers the whole density (the prior
+  too), no elliptical slice block in `hybrid`. MCLMC, SGLD and SGHMC are unadjusted and biased by their step size.
+- The nine later benchmark models are simplified: stochastic volatility with known parameters, 2PL scoring with known items,
+  the stick-breaking mixture with known components, the neural network with a reference run and no closed form. Not in the
+  suite: a normal-gamma linear regression, Gaussian process classification, a change-point model, TrueSkill with teams.
+- The 2-column small multiples of the chain and calibration views clip at narrow widths, and the new records have no panel in
+  `SessionPanels` (a page builds them from snapshots or a tape: the pocs do).
 - Statistical limits recorded in the tables: NUTS diverges on the centred funnel and centred eight schools; a Gaussian guide
   misses the banana and the second mode; Laplace has no mode at tau = 0 of a centred hierarchy; on the logistic regression
   the variational plans are reported, not asserted (the structured guide's means are several Monte Carlo standard errors off,
   sticking the landing's sds are 15 to 20 percent small).
-- No browser timings (everything measured in Node); Pyro's MCMC page and some other web claims of the plan are unverified
-  (`docs/probprog/verification.md`).
+- No browser timings (everything measured in Node), so the decision not to build a compiled evaluation plan rests on Node
+  measurements; Pyro's MCMC page and some other web claims of the plan are unverified (`docs/probprog/verification.md`).
+- No `examples/` programs for probit on two engines, eight schools or the calibration check (the pocs show them).
 
 Fixes (omai-render), from the notes site's 0.1.12 report:
 - A `Chart` no longer makes ECharts warn "has been disposed" when it unmounts (its event handlers were unbound after the
