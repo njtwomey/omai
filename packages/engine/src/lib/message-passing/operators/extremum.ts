@@ -118,7 +118,7 @@ const ports: readonly Port[] = [
  * ```ts
  * import { gaussian, gaussianEta, maximum, messageArg } from 'omai-engine/message-passing'
  * const args = [messageArg(gaussian, gaussian.flat), messageArg(gaussian, gaussianEta(0, 1)), messageArg(gaussian, gaussianEta(0, 1))]
- * maximum.ep?.({ mode: 'ep', to: 0, args, params: {}, power: 1 }).message.map((v) => v.toFixed(4)) // => ['0.8277', '1.4669']
+ * maximum.ep?.({ mode: 'ep', to: 0, args, params: {}, power: 1 }).message.map((v) => v.toFixed(4)) // => ['0.8276', '1.4669']
  * ```
  */
 export const maximum: FactorOperator = {
@@ -143,7 +143,7 @@ const negate = (a: Arg): Arg => (a.eta === undefined ? a : { ...a, eta: [-(a.eta
  * ```ts
  * import { gaussian, gaussianEta, messageArg, minimum } from 'omai-engine/message-passing'
  * const args = [messageArg(gaussian, gaussian.flat), messageArg(gaussian, gaussianEta(0, 1)), messageArg(gaussian, gaussianEta(0, 1))]
- * minimum.ep?.({ mode: 'ep', to: 0, args, params: {}, power: 1 }).message.map((v) => v.toFixed(4)) // => ['-0.8277', '1.4669']
+ * minimum.ep?.({ mode: 'ep', to: 0, args, params: {}, power: 1 }).message.map((v) => v.toFixed(4)) // => ['-0.8276', '1.4669']
  * ```
  */
 export const minimum: FactorOperator = {
