@@ -6,10 +6,11 @@
  */
 
 import { logAddExp } from '../../base/index.ts'
+import { tiltedLogGrid } from '../_quadrature.ts'
 import { logPhi, millsRatio, Phi, phi } from '../_scalar.ts'
 import { bernoulli } from '../families.ts'
 import { truncatedNormalMoments } from '../truncated.ts'
-import type { Arg, FactorOperator, OperatorContext, OperatorResult, Port } from '../types.ts'
+import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult, Port } from '../types.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, scalarOf } from './args.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
@@ -171,6 +172,29 @@ function probitSite(m: number, v: number, sigma: number): [number, number] {
   return [((m * k) / s2 + r / s) / (1 - rho), k / s2 / (1 - rho)]
 }
 
+/** log of the weight the probit factor to the power p gives x when the outcome is true with probability pi: log (pi Phi(x / sigma)^p + (1 - pi) Phi(-x / sigma)^p). */
+const logProbitWeight = (pi: number, x: number, sigma: number, p: number): number =>
+  logAddExp(Math.log(pi) + p * logPhi(x / sigma), Math.log(1 - pi) + p * logPhi(-x / sigma))
+
+/**
+ * The powered probit factor g(x)^power against a Gaussian cavity, by quadrature: the message the factor sends when the
+ * factor is raised to a power (fractional and power EP, alpha-divergences), already divided by the power, and the log
+ * mass of the powered factor.
+ */
+function poweredProbit(c: OperatorContext, sigma: number): { message: Eta; logMass: number } {
+  const x = gaussianOf(arg(c, 1))
+  const p = c.power
+  if (c.to === 0) {
+    const yes = tiltedLogGrid(x.mean, x.variance, (v) => p * logPhi(v / sigma)).logMass
+    const no = tiltedLogGrid(x.mean, x.variance, (v) => p * logPhi(-v / sigma)).logMass
+    return { message: [(yes - no) / p], logMass: Number.NaN }
+  }
+  const pi = outcomeProbability(arg(c, 0))
+  const t = tiltedLogGrid(x.mean, x.variance, (v) => logProbitWeight(pi, v, sigma, p))
+  const site = gaussianSiteMessage(etaOf(arg(c, 1)), t.mean, t.variance)
+  return { message: [(site[0] ?? 0) / p, (site[1] ?? 0) / p], logMass: t.logMass }
+}
+
 /**
  * b | x ~ Bernoulli(Phi(x / noise)): the probit link (`noise` the standard deviation, default 1), the likelihood of
  * probit regression and of Gaussian-process classification. EP is exact in closed form: the mass of a Gaussian under
@@ -192,8 +216,10 @@ export const probit: FactorOperator = {
   ports: [outcomePort, valuePort],
   support: { ep: 'exact' },
   readsTarget: (to) => to === 1,
+  power: true,
   ep: (c): OperatorResult => {
     const sigma = numberParam(c.params, 'noise', 1)
+    if (c.power !== 1) return { message: poweredProbit(c, sigma).message }
     const x = gaussianOf(arg(c, 1))
     const s = Math.sqrt(sigma * sigma + x.variance)
     const z = x.mean / s
@@ -220,6 +246,15 @@ export const probit: FactorOperator = {
     if (!allProper(c.args)) return Number.NaN
     const sigma = numberParam(c.params, 'noise', 1)
     const x = gaussianOf(arg(c, 1))
+    if (c.power !== 1) {
+      const pi = outcomeProbability(arg(c, 0))
+      const p = c.power
+      return (
+        massOf(arg(c, 1)) +
+        (arg(c, 0).value === undefined ? massOf(arg(c, 0)) : 0) +
+        tiltedLogGrid(x.mean, x.variance, (v) => logProbitWeight(pi, v, sigma, p)).logMass
+      )
+    }
     const z = x.mean / Math.sqrt(sigma * sigma + x.variance)
     const b = arg(c, 0)
     if (b.value !== undefined) return massOf(arg(c, 1)) + logPhi(scalarOf(b) > 0 ? z : -z)

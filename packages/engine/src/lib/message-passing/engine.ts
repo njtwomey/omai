@@ -163,39 +163,57 @@ function rawCavity(g: CompiledGraph, messages: readonly (readonly number[])[], f
 }
 
 /** What an update proposes: a message, no information (a flat one), nothing (the old message stays), or a failure. */
-type FactorProposal =
+export type FactorProposal =
   | { readonly kind: 'message'; readonly eta: Eta }
   | { readonly kind: 'flat' }
   | { readonly kind: 'blocked' }
   | { readonly kind: 'failed' }
 
-function propose(
-  g: CompiledGraph,
-  s: EngineSettings,
-  source: readonly (readonly number[])[],
-  e: number,
+/**
+ * The message a factor's operator sends to one port under a projection, from the arguments it is shown: the closed-form
+ * rule of the projection's hook when the operator has one, else (for expectation propagation) the moments of its
+ * `tilted` function projected onto the family and divided by the factor's power. A port whose own incoming message has
+ * no density is `blocked` for an operator that reads it, and an operator that fails for an improper quantity gives
+ * `flat` (when some other message is still flat: nothing is known yet) or `failed`.
+ *
+ * @param f - The compiled factor.
+ * @param projection - The projection (its hook is the rule asked for).
+ * @param to - The port to send to.
+ * @param args - The arguments of every port: the cavities (or the beliefs) and the observed values.
+ * @param power - The exponent of the factor in this call (the factor's own power, or the exponent of an alpha update).
+ * @returns The proposal.
+ */
+export function operatorMessage(
+  f: CompiledGraph['factors'][number],
+  projection: Projection,
+  to: number,
+  args: readonly Arg[],
+  power: number = f.power,
 ): FactorProposal {
-  const edge = g.edges[e] as CompiledGraph['edges'][number]
-  const f = g.factors[edge.factor] as CompiledGraph['factors'][number]
   const op = f.operator
-  const to = edge.port
-  const args = argsOf(g, source, edge.factor, s.projection)
   const target = args[to] as Arg
   const reads = typeof op.readsTarget === 'function' ? op.readsTarget(to) : op.readsTarget === true
   if (reads && target.eta !== undefined && !target.family.isProper(target.eta)) return { kind: 'blocked' }
-  const ctx: OperatorContext = { mode: s.projection.hook, to, args, params: f.params, power: f.power }
-  const hook = s.projection.hook === 'ep' ? op.ep : s.projection.hook === 'vmp' ? op.vmp : op.bp
+  const ctx: OperatorContext = {
+    mode: projection.hook,
+    to,
+    args,
+    params: f.params,
+    power,
+    ...(projection.numeric === undefined ? {} : { rule: projection.numeric }),
+  }
+  const hook = projection.hook === 'ep' ? op.ep : projection.hook === 'vmp' ? op.vmp : op.bp
   try {
     let result: OperatorResult
     if (hook !== undefined) {
       result = hook.call(op, ctx)
-    } else if (s.projection.hook === 'ep' && op.tilted !== undefined) {
+    } else if (projection.hook === 'ep' && op.tilted !== undefined) {
       const t = op.tilted(ctx)
       const own = target.eta as Eta
       const projected = target.family.fromMoments(t.moments)
-      result = { message: projected.map((v, i) => (v - (own[i] ?? 0)) / f.power) }
+      result = { message: projected.map((v, i) => (v - (own[i] ?? 0)) / power) }
     } else {
-      throw new OmaiError('not-implemented', `${op.name} has no ${s.projection.hook} message rule`)
+      throw new OmaiError('not-implemented', `${op.name} has no ${projection.hook} message rule`)
     }
     return { kind: 'message', eta: result.message }
   } catch (err) {
@@ -205,6 +223,65 @@ function propose(
     }
     throw err
   }
+}
+
+/** The largest number of fixed-point iterations of one alpha update. */
+const ALPHA_ITERATIONS = 200
+
+/**
+ * The update of an alpha-divergence projection (Minka 2005) for one edge: the member of the family that minimises the
+ * alpha-divergence D_alpha(f q_cavity || q) of the tilted distribution, found as the fixed point of "project the
+ * distribution proportional to f^alpha cavity^alpha q^(1 - alpha) onto the family by moment matching" (the stationarity
+ * condition of D_alpha for an exponential family). The first iteration at alpha = 1 is the EP update.
+ */
+function alphaProposal(
+  g: CompiledGraph,
+  s: EngineSettings,
+  source: readonly (readonly number[])[],
+  e: number,
+  alpha: number,
+): FactorProposal {
+  const edge = g.edges[e] as CompiledGraph['edges'][number]
+  const f = g.factors[edge.factor] as CompiledGraph['factors'][number]
+  const to = edge.port
+  const cavities = argsOf(g, source, edge.factor, s.projection)
+  const target = cavities[to] as Arg
+  const family = target.family
+  const cavity = target.eta as Eta
+  // The other ports see the cavity with the (1 - alpha) share of their own current message: cavity^alpha q^(1 - alpha).
+  const others = f.ports.map((p, q): Arg => {
+    const a = cavities[q] as Arg
+    if (q === to || p.edge < 0 || a.eta === undefined) return a
+    return { ...a, eta: a.family.product(a.eta, a.family.power(source[p.edge] as Eta, 1 - alpha)) }
+  })
+  let own: Eta = source[e] as Eta
+  for (let k = 0; k < ALPHA_ITERATIONS; k++) {
+    const base = family.product(cavity, family.power(own, 1 - alpha))
+    const args = others.map((a, q) => (q === to ? { ...a, eta: base } : a))
+    const p = operatorMessage(f, s.projection, to, args, alpha)
+    if (p.kind !== 'message') return p
+    // The operator returns (projection - base) / alpha: the projected member of the family is base + alpha * message.
+    const projected = base.map((v, i) => v + alpha * (p.eta[i] ?? 0))
+    const next = projected.map((v, i) => v - (cavity[i] ?? 0))
+    const moved = family.change(own, next)
+    own = next
+    if (!(moved > 1e-12)) break
+  }
+  return { kind: 'message', eta: own }
+}
+
+function propose(
+  g: CompiledGraph,
+  s: EngineSettings,
+  source: readonly (readonly number[])[],
+  e: number,
+): FactorProposal {
+  const edge = g.edges[e] as CompiledGraph['edges'][number]
+  const f = g.factors[edge.factor] as CompiledGraph['factors'][number]
+  const alpha = s.projection.alpha
+  if (alpha !== undefined && alpha !== 1 && f.operator.power === true && f.power === 1)
+    return alphaProposal(g, s, source, e, alpha)
+  return operatorMessage(f, s.projection, edge.port, argsOf(g, source, edge.factor, s.projection))
 }
 
 /** The new message of an edge from a proposal: damped, and repaired if it would make a proper belief improper. */
@@ -322,19 +399,37 @@ export function mpSnapshot(g: CompiledGraph, state: MpState): MpSnapshot {
  * @param g - The compiled graph.
  * @param s - The settings that fix the projection.
  * @param state - A state of a run.
- * @returns The estimate, or NaN when some factor has no way to give its part or a belief has no density yet.
+ * Factors with a power p contribute `log Z_a / p` and the variable terms use the sum of the inverse powers (power EP).
+ *
+ * @returns The estimate, or NaN when some factor has no way to give its part, a belief has no density yet, or the projection is an alpha-divergence one.
  */
 export function evidenceOf(g: CompiledGraph, s: EngineSettings, state: MpState): number {
   let total = 0
+  // An alpha-divergence projection has no evidence estimate here (its free energy is not the EP one).
+  if (s.projection.alpha !== undefined && s.projection.alpha !== 1) return Number.NaN
   if (s.projection.evidence === 'ep-energy') {
+    // The power EP energy: sum_a (1 / p_a) log Z_a + sum_v (1 - sum_{a at v} 1 / p_a) A(belief_v), with Z_a the mass of
+    // the factor to the power p_a against its cavity (the usual EP energy when every power is 1).
+    const inversePowers = new Array<number>(g.variables.length).fill(0)
     for (const [fi, f] of g.factors.entries()) {
       if (f.operator.logEvidence === undefined) return Number.NaN
       const args = rawCavity(g, state.messages, fi)
-      total += f.operator.logEvidence({ mode: s.projection.hook, to: 0, args, params: f.params, power: f.power })
+      total +=
+        f.operator.logEvidence({
+          mode: s.projection.hook,
+          to: 0,
+          args,
+          params: f.params,
+          power: f.power,
+          ...(s.projection.numeric === undefined ? {} : { rule: s.projection.numeric }),
+        }) / f.power
+      for (const p of f.ports) {
+        if (p.edge >= 0) inversePowers[p.variable as number] = (inversePowers[p.variable as number] ?? 0) + 1 / f.power
+      }
     }
     for (const [i, v] of g.variables.entries()) {
       if (v.observed !== undefined) continue
-      total += (1 - v.edges.length) * v.family.logPartition(rawBelief(g, state.messages, i))
+      total += (1 - (inversePowers[i] ?? 0)) * v.family.logPartition(rawBelief(g, state.messages, i))
     }
     return total
   }

@@ -46,7 +46,16 @@ export interface MessagePassingOptions {
   readonly initial?: readonly InitialMessage[]
 }
 
-function settingsOf(
+/**
+ * The engine settings of a named algorithm: the projection and the algorithm's defaults, overridden by the options given.
+ * What `epAlgorithm`, `vmpAlgorithm` and `bpAlgorithm` (and the variants beside them) build their run from.
+ *
+ * @param projection - The projection slot.
+ * @param defaults - The algorithm's defaults.
+ * @param o - The options given.
+ * @returns The settings.
+ */
+export function messagePassingSettings(
   projection: EngineSettings['projection'],
   defaults: Required<Omit<MessagePassingOptions, 'order' | 'initial'>>,
   o: MessagePassingOptions,
@@ -189,7 +198,10 @@ export const vmpContract: Contract<MpState, VmpPath> = defineContract({
  * ```
  */
 export function epAlgorithm(g: CompiledGraph, options: MessagePassingOptions = {}): Algorithm<MpState, EpPath> {
-  return messagePassingAlgorithm(g, settingsOf(momentProjection, epDefaults, options)) as Algorithm<MpState, EpPath>
+  return messagePassingAlgorithm(g, messagePassingSettings(momentProjection, epDefaults, options)) as Algorithm<
+    MpState,
+    EpPath
+  >
 }
 
 /**
@@ -219,7 +231,10 @@ export function epAlgorithm(g: CompiledGraph, options: MessagePassingOptions = {
  * ```
  */
 export function vmpAlgorithm(g: CompiledGraph, options: MessagePassingOptions = {}): Algorithm<MpState, VmpPath> {
-  return messagePassingAlgorithm(g, settingsOf(klqpProjection, vmpDefaults, options)) as Algorithm<MpState, VmpPath>
+  return messagePassingAlgorithm(g, messagePassingSettings(klqpProjection, vmpDefaults, options)) as Algorithm<
+    MpState,
+    VmpPath
+  >
 }
 
 /**
@@ -247,12 +262,22 @@ export function vmpAlgorithm(g: CompiledGraph, options: MessagePassingOptions = 
  * ```
  */
 export function bpAlgorithm(g: CompiledGraph, options: MessagePassingOptions = {}): Algorithm<MpState, EpPath> {
-  return messagePassingAlgorithm(g, settingsOf(sumProductProjection, bpDefaults, options)) as Algorithm<MpState, EpPath>
+  return messagePassingAlgorithm(g, messagePassingSettings(sumProductProjection, bpDefaults, options)) as Algorithm<
+    MpState,
+    EpPath
+  >
 }
 
 const SCHEDULES = ['serial', 'flooding', 'tree', 'residual'] as const
 
-function space(defaults: Required<Omit<MessagePassingOptions, 'order' | 'initial'>>): DictSpace {
+/**
+ * The `Space` of the knobs every message-passing algorithm has (schedule, granularity, damping, improper policy,
+ * tolerance, sweep cap), with the given defaults; a variant adds its own knobs to the dictionary.
+ *
+ * @param defaults - The algorithm's defaults.
+ * @returns The space.
+ */
+export function messagePassingSpace(defaults: Required<Omit<MessagePassingOptions, 'order' | 'initial'>>): DictSpace {
   return dict({
     schedule: choice(SCHEDULES, {
       default: defaults.schedule as (typeof SCHEDULES)[number],
@@ -276,7 +301,14 @@ function space(defaults: Required<Omit<MessagePassingOptions, 'order' | 'initial
   })
 }
 
-function optionsOf(c: Config): MessagePassingOptions {
+/**
+ * The options of a configuration (the values a `Space` of the knobs produced), ignoring entries that are not knobs of
+ * the common message-passing set.
+ *
+ * @param c - The configuration.
+ * @returns The options.
+ */
+export function messagePassingOptions(c: Config): MessagePassingOptions {
   const pick = <T>(name: string, ok: (v: unknown) => v is T): T | undefined =>
     ok(c[name]) ? (c[name] as T) : undefined
   const str = (v: unknown): v is string => typeof v === 'string'
@@ -316,8 +348,8 @@ function optionsOf(c: Config): MessagePassingOptions {
 export function epMethod(g: CompiledGraph): Method<MpState, Config, EpPath> {
   return defineMethod<MpState, Config, EpPath>({
     name: 'ep',
-    config: space(epDefaults),
-    make: (c) => epAlgorithm(g, optionsOf(c)),
+    config: messagePassingSpace(epDefaults),
+    make: (c) => epAlgorithm(g, messagePassingOptions(c)),
     contract: epContract,
   })
 }
@@ -339,8 +371,8 @@ export function epMethod(g: CompiledGraph): Method<MpState, Config, EpPath> {
 export function vmpMethod(g: CompiledGraph): Method<MpState, Config, VmpPath> {
   return defineMethod<MpState, Config, VmpPath>({
     name: 'vmp',
-    config: space(vmpDefaults),
-    make: (c) => vmpAlgorithm(g, optionsOf(c)),
+    config: messagePassingSpace(vmpDefaults),
+    make: (c) => vmpAlgorithm(g, messagePassingOptions(c)),
     contract: vmpContract,
   })
 }
@@ -362,8 +394,8 @@ export function vmpMethod(g: CompiledGraph): Method<MpState, Config, VmpPath> {
 export function bpMethod(g: CompiledGraph): Method<MpState, Config, EpPath> {
   return defineMethod<MpState, Config, EpPath>({
     name: 'bp',
-    config: space(bpDefaults),
-    make: (c) => bpAlgorithm(g, optionsOf(c)),
+    config: messagePassingSpace(bpDefaults),
+    make: (c) => bpAlgorithm(g, messagePassingOptions(c)),
     contract: epContract,
   })
 }

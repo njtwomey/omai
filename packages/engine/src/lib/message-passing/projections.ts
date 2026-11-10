@@ -5,7 +5,7 @@
  * different projection (an alpha-divergence, a Laplace or quadrature site) is another entry of the same shape.
  */
 
-import type { Mode } from './types.ts'
+import type { Mode, TiltedRule } from './types.ts'
 
 /**
  * A projection: the rule an operator is asked for (`hook`), what it is shown as the incoming message of each port
@@ -24,6 +24,18 @@ export interface Projection {
   /** The estimate this projection reports: the EP free energy (also the Bethe value for BP) or the variational bound. */
   readonly evidence: 'ep-energy' | 'elbo'
   readonly description: string
+  /**
+   * The alpha of an alpha-divergence projection (`alphaProjection`): the update minimises D_alpha of the tilted
+   * distribution instead of matching its moments (alpha = 1, KL(p || q), is expectation propagation). Absent for the
+   * three projections of the table. Only factors whose operator supports a power (`FactorOperator.power`) read it; the
+   * others keep their own message rule.
+   */
+  readonly alpha?: number
+  /**
+   * The numeric rule of a numerical projection (`numericProjection`): how operators without a closed form (the numeric
+   * operator) find the moments of their tilted distribution. Absent: each operator's own rule.
+   */
+  readonly numeric?: TiltedRule
 }
 
 /** Moment matching: expectation propagation. */

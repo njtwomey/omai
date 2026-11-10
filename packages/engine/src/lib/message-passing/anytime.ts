@@ -10,8 +10,8 @@ import { type Algorithm, initialSlice, type RunHandle, type RunStatus, runFor, t
 import { type MpSnapshot, type MpState, mpSnapshot } from './engine.ts'
 import type { CompiledGraph } from './graph.ts'
 
-/** Options of {@link runAnytime}. */
-export interface AnytimeOptions {
+/** Options of {@link runAnytime}; `S` is the state of the algorithm and `P` the snapshot it is reported as. */
+export interface AnytimeOptions<S = MpState, P = MpSnapshot> {
   /** The browser budget in milliseconds: the run stops, resumable, when it has used this much of the clock. */
   readonly budgetMs: number
   /** The clock, in milliseconds (injected by the app: the browser's high-resolution timer). */
@@ -21,31 +21,31 @@ export interface AnytimeOptions {
   /** How often to report a snapshot (default 1000 ms); the first and the last are always reported. */
   readonly snapshotEveryMs?: number
   /** Called with each snapshot. */
-  readonly onSnapshot?: (snapshot: MpSnapshot, info: { readonly t: number; readonly elapsedMs: number }) => void
+  readonly onSnapshot?: (snapshot: P, info: { readonly t: number; readonly elapsedMs: number }) => void
   /** Asked between steps: true stops the run (the state stays resumable). */
   readonly isCancelled?: () => boolean
   readonly seed?: number
   /** A run to record into (snapshots are recorded as `mp/snapshot` messages, and the run is ended when it finishes). */
   readonly run?: RunHandle
   /** Continue from where an earlier call stopped. */
-  readonly from?: Slice<MpState>
+  readonly from?: Slice<S>
 }
 
 /** How an anytime run ended: the algorithm's own status, or why it was stopped. */
 export type AnytimeStatus = RunStatus | 'budget' | 'cancelled'
 
 /** The result of {@link runAnytime}. */
-export interface AnytimeResult {
-  readonly state: MpState
+export interface AnytimeResult<S = MpState, P = MpSnapshot> {
+  readonly state: S
   /** Steps taken in total. */
   readonly t: number
   readonly status: AnytimeStatus
   /** The final snapshot. */
-  readonly snapshot: MpSnapshot
+  readonly snapshot: P
   /** How many snapshots were reported. */
   readonly snapshots: number
   /** Where to resume from (a stopped run continues exactly where it left off). */
-  readonly slice: Slice<MpState>
+  readonly slice: Slice<S>
 }
 
 /**
@@ -72,6 +72,35 @@ export interface AnytimeResult {
  * ```
  */
 export function runAnytime(g: CompiledGraph, algorithm: Algorithm<MpState>, options: AnytimeOptions): AnytimeResult {
+  return runAnytimeWith((state) => mpSnapshot(g, state), algorithm, options)
+}
+
+/**
+ * The anytime loop of {@link runAnytime} for any algorithm whose state has a snapshot: the budget, the clock, the
+ * cancellation, the periodic report and the slice to resume from are the same, and `snapshotOf` says what the state is
+ * reported as. The variants of message passing with a state of their own (stochastic EP, region graphs, AMP) use it.
+ *
+ * @param snapshotOf - The snapshot of a state: a function of the state alone.
+ * @param algorithm - The algorithm.
+ * @param options - The budget, the clock and the callbacks.
+ * @returns The state, the status, the last snapshot, and a slice to resume from.
+ * @throws OmaiError with code `value` for a budget or interval that is not positive.
+ * @concept message-passing
+ * @index function The anytime loop for any state with a snapshot: budget, clock, cancellation, resume.
+ * @example
+ * ```ts
+ * import { runAnytimeWith } from 'omai-engine/message-passing'
+ * import type { Algorithm } from 'omai-engine/trace'
+ * const count: Algorithm<number> = { name: 'count', config: {}, init: () => 0, step: (n) => n + 1, done: (n) => (n >= 3 ? 'completed' : undefined) }
+ * let now = 0
+ * runAnytimeWith((n: number) => ({ n }), count, { budgetMs: 100, clock: () => (now += 1) }).snapshot // => { n: 3 }
+ * ```
+ */
+export function runAnytimeWith<S, P>(
+  snapshotOf: (state: S) => P,
+  algorithm: Algorithm<S>,
+  options: AnytimeOptions<S, P>,
+): AnytimeResult<S, P> {
   const every = options.snapshotEveryMs ?? 1000
   if (!(options.budgetMs > 0) || !(every > 0))
     throw new OmaiError('value', 'runAnytime: the budget and the snapshot interval must be positive')
@@ -79,8 +108,8 @@ export function runAnytime(g: CompiledGraph, algorithm: Algorithm<MpState>, opti
   const started = options.clock()
   let lastReport = Number.NEGATIVE_INFINITY
   let reports = 0
-  const report = (slice: Slice<MpState>, now: number): void => {
-    const snap = mpSnapshot(g, slice.state)
+  const report = (slice: Slice<S>, now: number): void => {
+    const snap = snapshotOf(slice.state)
     reports++
     lastReport = now
     options.onSnapshot?.(snap, { t: slice.t, elapsedMs: now - started })
@@ -91,7 +120,7 @@ export function runAnytime(g: CompiledGraph, algorithm: Algorithm<MpState>, opti
     ...(options.seed === undefined ? {} : { seed: options.seed }),
     ...(options.run === undefined ? {} : { run: options.run }),
   }
-  let slice: Slice<MpState> = options.from ?? initialSlice(algorithm, base)
+  let slice: Slice<S> = options.from ?? initialSlice(algorithm, base)
   let status: AnytimeStatus | undefined = slice.status
   if (status === undefined) report(slice, started)
   while (status === undefined) {
@@ -110,5 +139,5 @@ export function runAnytime(g: CompiledGraph, algorithm: Algorithm<MpState>, opti
   }
   report(slice, options.clock())
   if (options.run !== undefined && slice.status !== undefined) options.run.end(slice.status, slice.t)
-  return { state: slice.state, t: slice.t, status, snapshot: mpSnapshot(g, slice.state), snapshots: reports, slice }
+  return { state: slice.state, t: slice.t, status, snapshot: snapshotOf(slice.state), snapshots: reports, slice }
 }
