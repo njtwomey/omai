@@ -13,10 +13,10 @@ import {
 } from 'omai-render/react'
 import { type ReactNode, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { CurveChart } from '../../shared/CurveChart.tsx'
+import { type PoolHandle, type PoolState, runPool, type StatusLine } from '../../shared/workerPool.ts'
 import { Boundary } from './Boundary.tsx'
 import { DEFAULT_METHODS, METHODS } from './methods.ts'
 import { PairPlots } from './PairPlots.tsx'
-import { type PoolHandle, type PoolState, runPool, type StatusLine } from './pool.ts'
 import { DATASETS, makeProblem } from './problem.ts'
 import { CoefficientTable, MethodTable } from './Results.tsx'
 import { chainsAt, colourOf, column, frameAt, gridAt, marginalsAt, visibleRows } from './shown.ts'
@@ -63,7 +63,7 @@ export default function ProbitLab(): ReactNode {
   })
   const [budget, setBudget] = useState<number>(10)
   const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set(DEFAULT_METHODS))
-  const [pool, setPool] = useState<PoolState | undefined>(undefined)
+  const [pool, setPool] = useState<PoolState<MethodResult> | undefined>(undefined)
   const [shown, setShown] = useState<Shown | undefined>(undefined)
   const handle = useRef<PoolHandle | undefined>(undefined)
   const [now, setNow] = useState(() => performance.now())
@@ -88,7 +88,11 @@ export default function ProbitLab(): ReactNode {
     handle.current = runPool(
       picked.map((m) => ({ problem, method: m.id, budgetMs, seed: settings.seed, gridSize: GRID })),
       Object.fromEntries(picked.map((m) => [m.id, m.label])),
-      { ...(typeof Worker === 'undefined' ? {} : { createWorker: makeWorker }), onChange: setPool },
+      {
+        ...(typeof Worker === 'undefined' ? {} : { createWorker: makeWorker }),
+        run: async (request, host) => (await import('./lab.ts')).runLab(request, host),
+        onChange: setPool,
+      },
     )
   }
   const set = <K extends keyof ProblemSettings>(key: K, value: ProblemSettings[K]): void =>

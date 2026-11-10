@@ -1,9 +1,9 @@
 // The probit lab's compute: every method on offer runs on the probit model through the same code a worker runs, within a
 // small budget, and the results hold what the page draws.
 import { describe, expect, it } from 'vitest'
+import { type PoolState, poolSize, runPool } from '../../shared/workerPool.ts'
 import { runLab } from './lab.ts'
 import { METHODS } from './methods.ts'
-import { type PoolState, poolSize, runPool } from './pool.ts'
 import { DATASETS, makeProblem } from './problem.ts'
 import { chainsAt, frameAt, gridAt, marginalsAt, visibleRows } from './shown.ts'
 import type { LabRequest, MethodResult } from './types.ts'
@@ -91,12 +91,13 @@ describe('stopping and the pool', () => {
   })
 
   it('the pool runs the requests where there are no Workers, one after the other, and reports each', async () => {
-    const seen: PoolState[] = []
+    const seen: PoolState<MethodResult>[] = []
     await new Promise<void>((resolve) => {
       runPool(
         [request('laplace', 300), request('ep', 300)],
         { laplace: 'Laplace', ep: 'EP' },
         {
+          run: runLab,
           onChange: (s) => {
             seen.push(s)
             if (!s.running) resolve()
@@ -104,7 +105,7 @@ describe('stopping and the pool', () => {
         },
       )
     })
-    const last = seen.at(-1) as PoolState
+    const last = seen.at(-1) as PoolState<MethodResult>
     expect(last.lines.map((l) => l.phase)).toEqual(['done', 'done'])
     expect(Object.keys(last.results).sort()).toEqual(['ep', 'laplace'])
     expect(last.workers).toBe(0)

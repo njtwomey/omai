@@ -1,14 +1,42 @@
 /**
- * The lab's pool: the requests of a run go to Web Workers, one worker per method, at most `min(methods, cores - 1, 4)` at
- * a time, each through the producer's `workerStage` (which makes the worker, hands it the request, resolves with its
- * result and terminates it when the run is cancelled). The page keeps one status line per method (queued, running with its
- * step and time, finishing, done) and nothing else of a run in progress. Where there are no Workers (a test) the requests
- * run on the main thread one after the other through the same `runLab`.
+ * The pool of the pocs that compute in Web Workers: the requests of a run (each names its `method`, the way of inferring
+ * it runs) go to workers, one worker per request, at most `min(requests, cores - 1, 4)` at a time, each through the
+ * producer's `workerStage` (which makes the worker, hands it the request, resolves with its result and terminates it when
+ * the run is cancelled). The page keeps one status line per request (queued, running with its step and time, finishing,
+ * done) and nothing else of a run in progress: it computes nothing and draws nothing until the results are in. Where there
+ * are no Workers (a test) the requests run on the main thread one after the other through the poc's own `run`. The
+ * worker's side is {@link serveJob}: a poc's `worker.ts` is `serveJob(self, run)`.
  */
 
-import { type StageContext, type StageWorker, workerStage } from 'omai-render/producer'
-import { runLab } from './lab.ts'
-import type { LabRequest, LabStatus, MethodResult } from './types.ts'
+import { type StageContext, type StageWorker, serveStage, workerStage } from 'omai-render/producer'
+
+/** What a worker says while it works. */
+export interface JobStatus {
+  readonly type: 'status'
+  readonly phase: 'running' | 'finishing'
+  readonly step: number
+  readonly elapsedMs: number
+}
+
+/** What a request names, and what a result reports of itself. */
+export interface PoolRequest {
+  readonly method: string
+}
+export interface PoolResult {
+  readonly steps: number
+  readonly elapsedMs: number
+}
+
+/** What a poc's `run` is given by its host: a clock, a way to hand the thread back, whether to stop and where to report. */
+export interface JobHost {
+  readonly now: () => number
+  readonly yieldToPage: () => Promise<void>
+  readonly stopped: () => boolean
+  readonly status: (status: JobStatus) => void
+}
+
+/** A poc's job: one request answered with one result. */
+export type Job<Q, R> = (request: Q, host: JobHost) => Promise<R>
 
 /** Where one method stands. */
 export interface StatusLine {
@@ -21,9 +49,9 @@ export interface StatusLine {
 }
 
 /** What the page knows of a run. */
-export interface PoolState {
+export interface PoolState<R> {
   readonly lines: readonly StatusLine[]
-  readonly results: Readonly<Record<string, MethodResult>>
+  readonly results: Readonly<Record<string, R>>
   readonly running: boolean
   /** The workers the run uses at once (0 where the methods run on the main thread). */
   readonly workers: number
@@ -32,12 +60,14 @@ export interface PoolState {
 }
 
 /** What {@link runPool} needs from its host. */
-export interface PoolOptions {
-  /** Makes a worker of the lab's `worker.ts`; absent, the requests run on this thread. */
+export interface PoolOptions<Q, R> {
+  /** Makes a worker of the poc's `worker.ts`; absent, the requests run on this thread through `run`. */
   readonly createWorker?: () => StageWorker
   /** The cores to leave alone (default: the page's own thread, one). */
   readonly cores?: number
-  readonly onChange: (state: PoolState) => void
+  /** The poc's job, for where there are no Workers. */
+  readonly run: Job<Q, R>
+  readonly onChange: (state: PoolState<R>) => void
 }
 
 /** A handle on a run. */
@@ -48,7 +78,7 @@ export interface PoolHandle {
   readonly cancel: () => void
 }
 
-const isStatus = (x: unknown): x is LabStatus =>
+const isStatus = (x: unknown): x is JobStatus =>
   typeof x === 'object' && x !== null && (x as { readonly type?: unknown }).type === 'status'
 
 /** The number of workers a run of `methods` methods uses: at most `min(methods, cores - 1, 4)`, at least one. */
@@ -77,10 +107,10 @@ const yieldToPage = (): Promise<void> =>
  * @param options - The worker factory and the callback.
  * @returns The handle that stops or cancels the run.
  */
-export function runPool(
-  requests: readonly LabRequest[],
+export function runPool<Q extends PoolRequest, R extends PoolResult>(
+  requests: readonly Q[],
   labels: Readonly<Record<string, string>>,
-  options: PoolOptions,
+  options: PoolOptions<Q, R>,
 ): PoolHandle {
   const startedAt = performance.now()
   let alive = true
@@ -93,7 +123,7 @@ export function runPool(
     elapsedMs: 0,
     error: undefined,
   }))
-  const results: Record<string, MethodResult> = {}
+  const results: Record<string, R> = {}
   const size = options.createWorker === undefined ? 1 : poolSize(requests.length, options.cores)
   let endedAt: number | undefined
   const emit = (): void => {
@@ -114,18 +144,18 @@ export function runPool(
   const live = new Map<string, StageWorker>()
   const cancels = new Set<() => void>()
   let stopInline = false
-  const runOne = async (request: LabRequest): Promise<void> => {
+  const runOne = async (request: Q): Promise<void> => {
     const id = request.method
     if (stopping || !alive) {
       patch(id, { phase: 'stopped' })
       return
     }
     patch(id, { phase: 'running' })
-    const onStatus = (s: LabStatus): void => patch(id, { phase: s.phase, step: s.step, elapsedMs: s.elapsedMs })
+    const onStatus = (s: JobStatus): void => patch(id, { phase: s.phase, step: s.step, elapsedMs: s.elapsedMs })
     try {
-      let result: MethodResult
+      let result: R
       if (options.createWorker === undefined) {
-        result = await runLab(request, {
+        result = await options.run(request, {
           now: () => performance.now(),
           yieldToPage,
           stopped: () => stopInline,
@@ -133,7 +163,7 @@ export function runPool(
         })
       } else {
         const make = options.createWorker
-        const stage = workerStage<LabRequest, MethodResult>({
+        const stage = workerStage<Q, R>({
           name: id,
           input: (r) => r,
           createWorker: () => {
@@ -198,5 +228,38 @@ export function runPool(
       alive = false
       for (const undo of [...cancels]) undo()
     },
+  }
+}
+
+/**
+ * The worker's side of the pool: answers each `run` request with the poc's job on the wire of the producer's `serveStage`,
+ * relays the job's status messages and ends the job early on a `stop` message (it returns what it has). A poc's worker
+ * entry is `serveJob(self, run)`.
+ *
+ * @param scope - The worker's global scope.
+ * @param run - The poc's job.
+ */
+export function serveJob<Q, R>(
+  scope: {
+    postMessage(message: unknown, transfer?: Transferable[]): void
+    onmessage: ((e: { readonly data: unknown }) => void) | null
+  },
+  run: Job<Q, R>,
+): void {
+  let stopRequested = false
+  serveStage<Q, R>(scope, (request) => {
+    stopRequested = false
+    return run(request, {
+      now: () => performance.now(),
+      yieldToPage,
+      stopped: () => stopRequested,
+      status: (status) => scope.postMessage(status),
+    })
+  })
+  const serve = scope.onmessage
+  scope.onmessage = (e) => {
+    const data = e.data as { readonly type?: unknown } | null
+    if (data !== null && typeof data === 'object' && data.type === 'stop') stopRequested = true
+    else serve?.(e)
   }
 }

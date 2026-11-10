@@ -21,7 +21,7 @@ their plumbing in `src/shared/`: `useAnytimeRuns` drives each run as a session t
 (slices that hand the thread back, so the page keeps painting; a snapshot of each run about once a second, read by the page's
 `derive`), `RunBar` is the budget choice, the progress and a line per run, `CurveChart` draws curves and points in one box,
 `useDeferred` computes heavy work after the first paint, and `smoke.ts` (`snapshotOf`) reads a run as the page would, for the
-smoke test of a page's `compute.ts`. Each such page keeps its runs and records in `compute.ts` (with a small test) and its layout
+smoke test of a page's `compute.ts`. A page that would rather compute first and show afterwards (the probit lab and the small classical pages) runs its jobs in Web Workers through `shared/workerPool.ts` (`runPool` on the page's side, `serveJob` in the poc's `worker.ts`: one status line per job, a stop, results as plain data) and replays what the workers recorded on one playhead; the page computes and draws nothing while the budget is running. Each such page keeps its runs and records in `compute.ts` (with a small test) and its layout
 in `Page.tsx`.
 
 A new page's styles arrive with a restart: Tailwind scans for classes when `make pocs` starts, so stop it and start it
