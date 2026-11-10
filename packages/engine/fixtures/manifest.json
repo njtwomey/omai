@@ -3852,15 +3852,6 @@
       "cases": 24
     },
     {
-      "fixture": "pgm/models/crf.json",
-      "source": "oracle/cases/pgm/models/crf.py",
-      "reference": {
-        "pytorch-crf": "0.7.2",
-        "sklearn-crfsuite": "0.5.0"
-      },
-      "cases": 8
-    },
-    {
       "fixture": "pgm/models/dynamic.json",
       "source": "oracle/cases/pgm/models/dynamic.py",
       "reference": {
@@ -3910,6 +3901,15 @@
         "pgmpy": "1.1.2"
       },
       "cases": 36
+    },
+    {
+      "fixture": "pgm/structured/crf.json",
+      "source": "oracle/cases/pgm/structured/crf.py",
+      "reference": {
+        "pytorch-crf": "0.7.2",
+        "sklearn-crfsuite": "0.5.0"
+      },
+      "cases": 8
     },
     {
       "fixture": "pgm/triangulation.json",

@@ -111,6 +111,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'omai-engine/pgm/inference': () => import('omai-engine/pgm/inference'),
   'omai-engine/pgm/learning': () => import('omai-engine/pgm/learning'),
   'omai-engine/pgm/models': () => import('omai-engine/pgm/models'),
+  'omai-engine/pgm/structured': () => import('omai-engine/pgm/structured'),
   'omai-engine/problems': () => import('omai-engine/problems'),
   'omai-engine/probprog': () => import('omai-engine/probprog'),
   'omai-engine/probprog/engines': () => import('omai-engine/probprog/engines'),

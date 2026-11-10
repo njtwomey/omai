@@ -17,7 +17,6 @@ import { type Scm, scmStructure } from './causal/scm.ts'
 import type { Dag } from './graphs.ts'
 import type { Pdag } from './learning/equivalence.ts'
 import type { BayesNet } from './models/bayes-net.ts'
-import type { GeneralCrf, LinearChainCrf } from './models/crf.ts'
 import type { DynamicBayesNet } from './models/dynamic.ts'
 import type { FactorGraph } from './models/factor-graph.ts'
 import type { InfluenceDiagram } from './models/influence.ts'
@@ -25,6 +24,7 @@ import type { Gmrf, GmrfInformation, LinearGaussianBayesNet } from './models/lin
 import type { MarkovNetwork } from './models/markov-network.ts'
 import type { PlateModel } from './models/plates.ts'
 import type { HiddenMarkovModel, LinearDynamicalSystem } from './models/state-space.ts'
+import type { GeneralCrf, LinearChainCrf } from './structured/crf.ts'
 
 /** Every model type of `pgm` that describes itself as a {@link Structure}. */
 export type PgmModel =

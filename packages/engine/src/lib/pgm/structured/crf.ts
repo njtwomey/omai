@@ -21,7 +21,7 @@ import { type DiscreteVariable, type Factor, factorMarginal, logFactor } from '.
 import { type BeliefPropagationOptions, beliefPropagation } from '../inference/belief-propagation.ts'
 import { type ChainModel, forwardBackward, viterbi } from '../inference/chain.ts'
 import { calibrate, junctionTreeQuery } from '../inference/junction-tree.ts'
-import { type FactorGraph, factorGraph } from './factor-graph.ts'
+import { type FactorGraph, factorGraph } from '../models/factor-graph.ts'
 
 /**
  * The observation of one item of a sequence: attribute names with values (1 for an indicator, as CRFsuite). Feature

@@ -22,7 +22,7 @@ function newtonFit(start: P.LinearChainCrf, data: readonly P.LabelledSequence[],
 }
 
 describe('linear-chain CRFs against pytorch-crf and sklearn-crfsuite', () => {
-  for (const c of loadFixture('pgm/models/crf').cases) {
+  for (const c of loadFixture('pgm/structured/crf').cases) {
     it(c.name, () => {
       if (c.fn === 'exact') {
         const emissions = arr(c.inputs[0]) as number[][]

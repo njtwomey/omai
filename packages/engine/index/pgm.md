@@ -26,7 +26,13 @@ Learning graphical models from data, the `pgm.learning` namespace: parameter est
 
 ## pgm/models
 
-The graphical model types, part of `omai-engine/pgm`: Bayes networks, Markov networks and factor graphs, linear-Gaussian networks and Gaussian Markov random fields, dynamic Bayes networks, hidden Markov models and linear dynamical systems, plate models, influence diagrams and conditional random fields.
+The graphical model types, part of `omai-engine/pgm`: Bayes networks, Markov networks and factor graphs, linear-Gaussian networks and Gaussian Markov random fields, dynamic Bayes networks, hidden Markov models and linear dynamical systems, plate models and influence diagrams.
 
 - structure `bayesNet`: Discrete Bayesian network from nodes, parents and tables. `src/lib/pgm/models/bayes-net.ts:62` `omai-engine/pgm`
 - structure `hiddenMarkovModel`: Hidden Markov model with categorical or Gaussian emissions. `src/lib/pgm/models/state-space.ts:64` `omai-engine/pgm`
+
+## pgm/structured
+
+Structured prediction: conditional random fields and their neighbours, in one place. Linear-chain CRFs with feature templates, general CRFs on trees, grids, skip chains and arbitrary graphs, semi-Markov and higher-order CRFs, locally normalised MEMMs, latent and partial-label CRFs, max-margin structured learners, constrained and n-best decoding, and the CRF layer over a neural encoder. Every model offers the same small contract (`StructuredOracle`: feature counts, expected feature counts and loss-augmented decoding), so one table of solvers (L-BFGS, OWL-QN for L1, stochastic gradient, perceptron, passive-aggressive, structured SVMs) trains all of them.
+
+- structure `StructuredOracle`: The contract a structured model offers a learner: features, expectations, decoding, loss. `src/lib/pgm/structured/oracle.ts:20` `omai-engine/pgm`
