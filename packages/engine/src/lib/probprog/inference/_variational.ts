@@ -9,7 +9,7 @@
 import { type GradientTransformation, globalNorm, optimisers } from '../../optim/index.ts'
 import { foldIn, key as makeKey } from '../../random/index.ts'
 import { choice, completeOption, type DictSpace, int, real, type Space } from '../../space/index.ts'
-import { item, primalOf } from '../../tensor/index.ts'
+import { item, primalOf, type Tensor } from '../../tensor/index.ts'
 import {
   type Config,
   type Contract,
@@ -31,6 +31,10 @@ import {
   autoMultivariateNormal,
   autoNormal,
 } from '../guides.ts'
+import { autoFlowNormal } from '../guides-flow.ts'
+import { type LaplaceInitGuide, laplaceInitialParams } from '../guides-init.ts'
+import { autoMixtureNormal } from '../guides-mixture.ts'
+import { autoStructured } from '../guides-structured.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
 import type { Model } from '../primitives.ts'
 import {
@@ -71,7 +75,19 @@ export const guideMakers: Record<string, GuideMaker> = {
   autoLowRankMultivariateNormal: (m, c) =>
     autoLowRankMultivariateNormal(m, num(c, 'rank') > 0 ? { rank: num(c, 'rank') } : {}),
   autoIafNormal: (m, c) => autoIafNormal(m, { numFlows: num(c, 'numFlows') }),
+  autoFlowNormal: (m, c) =>
+    autoFlowNormal(m, { flow: pick(c, 'flow') as 'planar' | 'radial' | 'coupling', numFlows: num(c, 'numFlows') }),
+  autoStructured: (m, c) =>
+    autoStructured(m, {
+      dependencies: pick(c, 'dependencies') as 'none' | 'parents' | 'markov' | 'full',
+      ...(pick(c, 'within') === 'auto' ? {} : { within: pick(c, 'within') as 'diag' | 'full' }),
+    }),
+  autoMixtureNormal: (m, c) => autoMixtureNormal(m, { components: num(c, 'components') }),
 }
+
+/** The knobs that decide which guide is built (the cache key of a guide, and what `init` reads). */
+const GUIDE_KNOBS = ['guide', 'rank', 'numFlows', 'dependencies', 'within', 'flow', 'components'] as const
+const guideKey = (config: Config): string => JSON.stringify(GUIDE_KNOBS.map((k) => config[k] ?? null))
 
 /** The knobs of the guide choice: the family and the ones of the families that have any. */
 export const guideKnobs = (names: readonly string[]): Record<string, Space> => ({
@@ -88,9 +104,35 @@ export const guideKnobs = (names: readonly string[]): Record<string, Space> => (
   numFlows: int(1, 8, {
     default: 2,
     label: 'flow layers',
-    description: 'inverse autoregressive flow layers of autoIafNormal',
+    description: 'layers of autoIafNormal and autoFlowNormal',
   }),
+  flow: choice(['planar', 'radial', 'coupling'], {
+    default: 'planar',
+    label: 'flow',
+    description: 'the layer of autoFlowNormal',
+  }),
+  dependencies: choice(['none', 'parents', 'markov', 'full'], {
+    default: 'markov',
+    label: 'dependencies',
+    description:
+      'what a block of autoStructured depends on: nothing, its parents, its Markov blanket, every earlier block',
+  }),
+  within: choice(['auto', 'diag', 'full'], {
+    default: 'auto',
+    label: 'covariance within a block',
+    description: 'autoStructured: full for a site with no plate and diagonal under one (auto), or the same for all',
+  }),
+  components: int(1, 16, { default: 2, label: 'components', description: 'Gaussians of autoMixtureNormal' }),
 })
+
+/** The `init` knob, for the methods whose guide families can start at the Laplace approximation of the model. */
+export const initKnob: Record<string, Space> = {
+  init: choice(['random', 'laplace'], {
+    default: 'random',
+    label: 'initialisation',
+    description: 'random starting parameters, or the Laplace approximation of the model where the guide family allows',
+  }),
+}
 
 /** The knobs the variational methods share: the optimiser, the step size, the tolerance and the variance estimates. */
 export const optimiserKnobs: Record<string, Space> = {
@@ -125,6 +167,10 @@ export interface VariationalSpec {
   readonly estimator: (config: Config) => ElboEstimator
   /** The automatic guides on offer (the first is the default of `guideKnobs`). */
   readonly guides: readonly string[]
+  /** For a guide made by a function of the configuration: the knobs it reads (they key the guide's cache). */
+  readonly guideKnobs?: readonly string[]
+  /** Starting parameters (constrained, by name) for a configuration, or none: the Laplace start of the `init` knob. */
+  readonly init?: boolean
 }
 
 /** Options of a variational method's factory. */
@@ -132,6 +178,8 @@ export interface VariationalOptions {
   readonly name?: string
   /** A guide written by hand, in place of the automatic guide the `guide` knob names. */
   readonly guide?: Model
+  /** A function of the configuration that builds a guide (an amortised guide whose encoder's size is a knob). */
+  readonly guideFrom?: (config: Config) => Model
 }
 
 /**
@@ -153,26 +201,56 @@ export function variationalMethod(
   const name = options.name ?? spec.name
   const primeKey = foldIn(makeKey(0), 0)
   const guides = new Map<string, AutoGuide<void> | Model>()
+  const custom = options.guide !== undefined || options.guideFrom !== undefined
+  const keyOf = (config: Config): string =>
+    custom ? JSON.stringify((spec.guideKnobs ?? []).map((k) => config[k] ?? null)) : guideKey(config)
   const guideFor = (config: Config): AutoGuide<void> | Model => {
-    if (options.guide !== undefined) return options.guide
-    const kind = pick(config, 'guide')
-    const cacheKey = `${kind}:${config['rank'] ?? ''}:${config['numFlows'] ?? ''}`
+    const cacheKey = keyOf(config)
     let g = guides.get(cacheKey)
-    if (g === undefined) {
+    if (g !== undefined) return g
+    if (options.guideFrom !== undefined) g = options.guideFrom(config)
+    else if (options.guide !== undefined) g = options.guide
+    else {
+      const kind = pick(config, 'guide')
       const make = guideMakers[kind]
       if (make === undefined) throw new Error(`${name}: no guide called '${kind}'`)
       g = make(program, config)
-      guides.set(cacheKey, g)
     }
+    guides.set(cacheKey, g)
     return g
+  }
+  const laplaceCache = new Map<string, Record<string, Tensor>>()
+  /** The Laplace start of the configured guide family (computed once per family), or none where the family cannot start there. */
+  const laplaceStart = (config: Config): Record<string, Tensor> | undefined => {
+    const kind = pick(config, 'guide')
+    const supported: readonly string[] = [
+      'autoNormal',
+      'autoDelta',
+      'autoMultivariateNormal',
+      'autoLowRankMultivariateNormal',
+      'autoStructured',
+      'autoIafNormal',
+    ]
+    if (custom || !supported.includes(kind)) return undefined
+    const cacheKey = keyOf(config)
+    let p = laplaceCache.get(cacheKey)
+    if (p === undefined) {
+      p = laplaceInitialParams(program, undefined, {
+        guide: kind as LaplaceInitGuide,
+        ...(num(config, 'rank') > 0 ? { rank: num(config, 'rank') } : {}),
+        structured: {
+          dependencies: pick(config, 'dependencies') as 'none' | 'parents' | 'markov' | 'full',
+          ...(pick(config, 'within') === 'auto' ? {} : { within: pick(config, 'within') as 'diag' | 'full' }),
+        },
+      }).params as Record<string, Tensor>
+      laplaceCache.set(cacheKey, p)
+    }
+    return p
   }
   const supportsOf = new Map<string, ReturnType<typeof initialParams>['supports']>()
   const posterior = (state: SviState, config: Config): Posterior => {
     const g = guideFor(config)
-    const cacheKey =
-      options.guide !== undefined
-        ? 'custom'
-        : `${pick(config, 'guide')}:${config['rank'] ?? ''}:${config['numFlows'] ?? ''}`
+    const cacheKey = keyOf(config)
     let supports = supportsOf.get(cacheKey)
     if (supports === undefined) {
       supports = initialParams(primeKey, program, g, undefined).supports
@@ -211,7 +289,7 @@ export function variationalMethod(
     return yes(`continuous latents with a differentiable density${priorOnly(a)}`)
   })
   // A guide written by hand is the user's own: the method needs only a likelihood.
-  const check = (a: ModelAnalysis) => (options.guide === undefined ? base(a) : yes('a guide written by hand'))
+  const check = (a: ModelAnalysis) => (custom ? yes('a guide written by hand') : base(a))
   const ensure = guard(name, model, check)
   return defineInferenceMethod<SviState, Config, VariationalPath, ModelAnalysis>({
     name,
@@ -274,7 +352,9 @@ export function variationalMethod(
         },
       }
       const guide = guideFor(config)
+      const initParams = spec.init === true && config['init'] === 'laplace' ? laplaceStart(config) : undefined
       const inner = sviAlgorithm(program, undefined, {
+        ...(initParams === undefined ? {} : { initParams }),
         guide: guide as Model,
         elbo: watched,
         optimizer,

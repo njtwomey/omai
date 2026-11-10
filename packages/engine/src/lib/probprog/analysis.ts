@@ -420,8 +420,22 @@ function linearGaussianCheck<D = void>(
   return { linear: true, reason: 'every site is Gaussian with an affine mean and a constant scale' }
 }
 
-/** Each site's dependencies on sample and param sites, seeing through deterministic sites. */
-function latentDependencies(sites: readonly SiteInfo[]): Map<string, Set<string>> {
+/**
+ * Each site's dependencies on sample and param sites, seeing through deterministic sites: the parents a guide or a
+ * message-passing schedule reads from the analysis.
+ *
+ * @param sites - The sites of an analysis.
+ * @returns For each site name, the sample and param sites its distribution depends on.
+ * @concept model-analysis
+ * @example
+ * ```ts
+ * import { analyse, latentDependencies, observe, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * const model = () => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 1) }
+ * [...(latentDependencies(analyse(model, undefined).sites).get('y') ?? [])] // => ['m']
+ * ```
+ */
+export function latentDependencies(sites: readonly SiteInfo[]): Map<string, Set<string>> {
   const byName = new Map(sites.map((s) => [s.name, s]))
   const out = new Map<string, Set<string>>()
   const visit = (name: string, seen: Set<string>): Set<string> => {
