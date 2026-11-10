@@ -12,7 +12,7 @@ import { mcmc } from '../engines/nuts.ts'
 import { seed, traceOf } from '../handlers.ts'
 import { analyseSpec, applyCollapse, collapsePlan, fromProgram, toProgram } from '../model/index.ts'
 import { eightSchoolsCentred } from './schools.ts'
-import { ar1StateSpace } from './state-space.ts'
+import { ar1MarkovProgram, ar1StateSpace } from './state-space.ts'
 import { STRUCTURE_EXPECTED, structureCampaigns, structureFindings } from './structure-campaigns.ts'
 import { benchmarkModels } from './suite.ts'
 
@@ -48,7 +48,11 @@ describe('the Gaussian blocks are jointly Gaussian given the rest', () => {
         const at = (s: number): number => {
           const values: Record<string, Value> = { ...base }
           let k = 0
-          for (const site of b.sites) {
+          // A scan's block is the whole series of its states, the sites `<scan>[t]` of the program.
+          const sites = b.sites.flatMap((site) =>
+            site in base ? [site] : Object.keys(base).filter((n) => n.startsWith(`${site}[`)),
+          )
+          for (const site of sites) {
             const v = base[site] as Value
             const moved = Array.from(toFlat(v), (x, i) => x + 0.4 * Math.sin(1 + k + i) + s * Math.cos(2 + k + i))
             values[site] = fromStorage(Float64Array.from(moved), v.shape, 'float64')
@@ -136,9 +140,16 @@ describe('collapsed NUTS on eight schools', () => {
   })
 })
 
-describe('the AR(1) state space is a program', () => {
-  it('is lifted to its site structure with every mean opaque, and read from the program analysis', () => {
-    const lifted = fromProgram(ar1StateSpace.program(), undefined)
+describe('the AR(1) state space', () => {
+  it('is a scan: the analysis finds the Gaussian chain that the lift of the hand-written program cannot see', () => {
+    const a = analyseSpec(ar1StateSpace.bound())
+    expect(a.linearGaussianBlocks).toEqual([
+      expect.objectContaining({ sites: ['x'], given: [], observed: ['y'], dimension: 12, whole: true }),
+    ])
+    expect(a.explain()).toContain('Linear-Gaussian blocks')
+  })
+  it('as a markov program is lifted to its site structure with every mean opaque, and read from the program analysis', () => {
+    const lifted = fromProgram(ar1MarkovProgram(ar1StateSpace.data.data['y'] as number[]), undefined)
     expect(lifted.spec.nodes.filter((n) => n.kind === 'latent')).toHaveLength(
       lifted.spec.nodes.filter((n) => n.kind === 'observed').length,
     )

@@ -1,6 +1,6 @@
 /**
  * The benchmark models of probabilistic programming, available as `omai-engine/probprog/models`: named models written with
- * `defineModel` (or as a `markov` program where the spec layer has no recurrence yet), each with a title, description,
+ * `defineModel` (recurrences as `scan` nodes), each with a title, description,
  * tags and references, a seeded data generator beside its canonical data, the truth the inference methods are compared with
  * (a closed form, a quadrature or an analytic marginal) and the plans of the methods that apply to it, with what to expect
  * of each. `benchmarkModels` lists them, `benchmarkEntries` and `benchmarkMethods` hand them to a worker's registry, and

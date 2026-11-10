@@ -164,6 +164,8 @@ export const STRUCTURE_EXPECTED: Readonly<Record<string, StructureFindings>> = {
     suggestions: ['conditional', 'conditional', 'conditional', 'gaussian-block', 'reparameterise'],
   },
   'trueskill-three-players': { ...none, minibatch: ['game'] },
+  // A Gaussian chain: the scan is one block over the series (a Kalman smoother's model), no minibatch axis over time.
+  'ar1-state-space': { ...none, gaussianBlocks: ['x | nothing'], suggestions: ['gaussian-block'] },
 }
 
 const cell = (v: unknown): string => String(v).replaceAll('|', '\\|')

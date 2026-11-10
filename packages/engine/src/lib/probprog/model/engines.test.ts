@@ -1,6 +1,6 @@
 // Every existing engine that applies to a compiled spec runs it: the engines of the program layer need no change to run
-// a model written in the builder. `chain` needs a `markov` loop and has no spec counterpart yet (recurrences are a
-// reserved node kind), so it is the one engine not exercised here.
+// a model written in the builder. `chain` needs a discrete-state `scan` (a recurrence), so it is the one engine not
+// exercised here; `scan.test.ts` runs it.
 import { describe, expect, it } from 'vitest'
 import { key } from '../../random/index.ts'
 import { analyse } from '../analysis.ts'

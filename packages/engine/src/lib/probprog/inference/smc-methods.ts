@@ -235,8 +235,8 @@ const traceOfRecord = (r: PathRecord): ProgramTrace =>
  * up to the step) at any state. The state serialises (a particle's path is kept as the values of its sites), so a run
  * resumes and forks exactly. The run ends `completed` after the loop's last step.
  *
- * @param model - A program closed over its data with every latent site inside one `markov` loop (a spec has no
- *   recurrences yet, so its check refuses it).
+ * @param model - A program closed over its data with every latent site inside one `markov` loop, or a bound spec whose
+ *   only latent is one `scan` (its other nodes data and emissions: no parameters to infer, no derived nodes after it).
  * @returns The method, with `check` and `posterior`.
  * @concept sequential-monte-carlo
  * @index estimator Bootstrap particle filter over a markov loop, one time step per step.
@@ -261,12 +261,30 @@ export function particleFilterMethod(
   const posterior = (state: ParticleFilterState): Posterior =>
     particleFilterPosterior(state, state.ess === 0 && state.t > 0 ? 'failed' : 'completed')
   const check = (a: ModelAnalysis): Verdict => {
-    if (!isProgramAnalysis(a))
-      return no(
-        'a spec has no recurrences yet (the filter runs over a markov loop of a program)',
-        ['markov loop'],
-        'give a program with one markov loop',
-      )
+    if (!isProgramAnalysis(a)) {
+      if (a.scans.length !== 1)
+        return no(
+          'the model has no single scan',
+          ['scan'],
+          'give a spec with one scan, or a program with one markov loop',
+        )
+      if (!a.hasLikelihood) return no('observed nodes have no likelihood', ['likelihood'], 'add an emission')
+      const outside = a.latent.filter((l) => l !== a.scans[0]?.name)
+      if (outside.length > 0)
+        return no(
+          `latent nodes outside the scan (${outside.join(', ')})`,
+          ['scan'],
+          'fix them as data, or use NUTS or tempered SMC',
+        )
+      const after = [...a.derived, ...a.generated, ...a.factors, ...a.params]
+      if (after.length > 0)
+        return no(
+          `nodes beside the scan (${after.join(', ')}) that the filter does not carry`,
+          ['scan'],
+          'leave them out of the model the filter runs',
+        )
+      return yes(`a scan of ${a.scans[0]?.steps ?? 'several'} steps over '${a.scans[0]?.over}'`)
+    }
     if (!a.hasLikelihood) return no('observed sites have no likelihood', ['likelihood'], 'add an observation')
     const blocker = filterBlocker(a)
     return blocker === undefined

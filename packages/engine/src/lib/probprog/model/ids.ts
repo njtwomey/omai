@@ -17,6 +17,9 @@
  *   prefix (`plate:a` holds `plate:a×b`): the form `omai-render`'s `nestPlates` reads, as for a `pgm` plate model.
  * - **Elements** of a vectorised site, for overlays that go below the site: `<site>[<flat index>]`, the coordinate names
  *   `potentialEnergy` uses (`w[0]`, `w[1]`).
+ * - **Scans** (recurrences): the states of a scan `x` are the sites `x[0]`, `x[1]`, ... and an emission `y` of it the sites `y[t]`,
+ *   the element ids of a vectorised site over the scanned dimension, so `siteOfId('x[3]')` is the scan node `x`; the picture
+ *   draws one node `x` and one node per emission in the plate of the scanned dimension, with the recurrence as a self-loop.
  * - **Auxiliary variables** of a factor graph (an intermediate value an expression needs, such as the linear predictor of
  *   one row): `<site>#<k>[<flat index>]` for the k-th auxiliary of an element of site `<site>` (`<site>#<k>` for a site
  *   over no dimension), with the factor `factor:<site>#<k>[<i>]` that defines it. They belong to `<site>` and no other

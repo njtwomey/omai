@@ -164,8 +164,10 @@ export function graphStructure(env: GraphEnv): GraphStructure {
   for (const n of spec.nodes)
     if (n.kind !== 'observed' && n.kind !== 'factor') scope.set(n.name, { dims: n.dims, eventRank: n.eventRank })
   const dimsOf = (n: ModelNode): string[] => canonicalDims(spec, n.dims)
-  const latents = spec.nodes.filter((n) => n.kind === 'latent')
-  const isDensity = (n: ModelNode): boolean => n.kind === 'latent' || n.kind === 'observed' || n.kind === 'factor'
+  // A scan is a latent here (its states are random, and its recurrence ties them to the nodes it reads).
+  const latents = spec.nodes.filter((n) => n.kind === 'latent' || n.kind === 'scan')
+  const isDensity = (n: ModelNode): boolean =>
+    n.kind === 'latent' || n.kind === 'scan' || n.kind === 'observed' || n.kind === 'factor'
   const parentsOf = new Map<string, string[]>()
   for (const n of spec.nodes) {
     if (!isDensity(n)) continue
@@ -210,7 +212,7 @@ export function graphStructure(env: GraphEnv): GraphStructure {
   const scopes: string[][] = []
   for (const n of spec.nodes) {
     if (!isDensity(n)) continue
-    const s = [...(n.kind === 'latent' ? [n.name] : []), ...(parentsOf.get(key(n)) ?? [])]
+    const s = [...(n.kind === 'latent' || n.kind === 'scan' ? [n.name] : []), ...(parentsOf.get(key(n)) ?? [])]
     scopes.push(s)
   }
   const link = (g: Map<string, Set<string>>, a: string, b: string): void => {
@@ -334,6 +336,8 @@ export function graphStructure(env: GraphEnv): GraphStructure {
   for (const n of spec.nodes)
     if (n.kind === 'observed') for (const e of nodeExprs(n)) reductions(e, scope, table, () => true, all)
   for (const n of spec.nodes) if (n.kind === 'data' && n.indexes !== undefined) all.indexed.add(n.indexes)
+  // The steps of a recurrence are not exchangeable: its dimension is no minibatch axis.
+  for (const n of spec.nodes) if (n.kind === 'scan') all.reduced.add(n.over)
   const axes: MinibatchAxis[] = []
   const seen = new Set<string>()
   for (const n of spec.nodes) {

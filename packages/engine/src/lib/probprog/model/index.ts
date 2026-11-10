@@ -1,6 +1,7 @@
 /**
  * The model layer: a model written once as a value. A builder (`defineModel`) with named dimensions, data, latent,
- * observed, derived, generated and factor nodes and constraints produces a JSON-able `ModelSpec`; the spec is bound to data
+ * observed, derived, generated and factor nodes, recurrences (`scan`: time series, state-space models, hidden Markov
+ * chains) and constraints produces a JSON-able `ModelSpec`; the spec is bound to data
  * (`bind`, `withData`, `bindDataset`), compiled to the existing `sample`/`observe` program (`toProgram`) so every present
  * engine and handler runs it, compiled to a factor graph for message passing with its plates expanded (`toFactorGraph`, with
  * the reasons for what cannot be mapped), analysed without running (`analyseSpec`: dependencies, plates, conjugate pairs),
@@ -26,6 +27,7 @@ export * from './factors.ts'
 export * from './from-program.ts'
 export * from './ids.ts'
 export * from './operators.ts'
+export * from './scan.ts'
 export * from './spec.ts'
 export * from './structure-report.ts'
 export * from './structure.ts'

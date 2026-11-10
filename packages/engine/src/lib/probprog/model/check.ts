@@ -10,7 +10,14 @@
 import { OmaiError } from '../../base/index.ts'
 import { distributionFamilies, type FamilyDef } from './dists/families.ts'
 import { defaultOperators, joinShapes, type NamedShape, type OperatorTable, operatorShape } from './operators.ts'
-import { type ExprSpec, MODEL_SPEC_SCHEMA, type ModelNode, type ModelSpec, OPERATOR_REGISTRY } from './spec.ts'
+import {
+  type ExprSpec,
+  MODEL_SPEC_SCHEMA,
+  type ModelNode,
+  type ModelSpec,
+  OPERATOR_REGISTRY,
+  prevName,
+} from './spec.ts'
 
 /** What `validateSpec` checks against: the operator registry and the families (the defaults when left out). */
 export interface CheckOptions {
@@ -145,10 +152,13 @@ export function validateSpec(spec: ModelSpec, options: CheckOptions = {}): void 
       if (sites.has(node.name)) fail(`${where}: the site name is used twice`)
       sites.add(node.name)
     }
-    const distOf = (dist: {
-      readonly family: string
-      readonly params: Readonly<Record<string, ExprSpec>>
-    }): NamedShape => {
+    const distOf = (
+      dist: {
+        readonly family: string
+        readonly params: Readonly<Record<string, ExprSpec>>
+      },
+      at: ReadonlyMap<string, NamedShape> = scope,
+    ): NamedShape => {
       const f = families[dist.family]
       if (f === undefined) return fail(`${where}: unknown distribution family '${dist.family}'`)
       const given = Object.keys(dist.params)
@@ -163,7 +173,7 @@ export function validateSpec(spec: ModelSpec, options: CheckOptions = {}): void 
       const shapes: NamedShape[] = []
       for (const e of Object.values(dist.params)) {
         checkCustoms(e, where)
-        shapes.push(exprShape(e, scope, table))
+        shapes.push(exprShape(e, at, table))
       }
       return { dims: joinShapes(shapes).dims, eventRank: f.eventRank }
     }
@@ -210,6 +220,43 @@ export function validateSpec(spec: ModelSpec, options: CheckOptions = {}): void 
       case 'param':
         if (scope.has(node.name)) fail(`${where}: the name is used twice`)
         break
+      case 'scan': {
+        if (scope.has(node.name)) fail(`${where}: the name is used twice`)
+        const over = node.over
+        if (!dimNames.has(over)) fail(`${where}: the scanned dimension '${over}' is not declared`)
+        if (node.dims.length !== 1 || node.dims[0] !== over)
+          fail(`${where}: a scan's dims are [${over}], got [${node.dims.join(', ')}]`)
+        // What the expressions inside see: every node over the scanned dimension read at the current step.
+        const sliced = new Map<string, NamedShape>()
+        for (const [name, shape] of scope)
+          sliced.set(name, { dims: shape.dims.filter((d) => d !== over), eventRank: shape.eventRank })
+        const withState = new Map(sliced).set(node.name, { dims: [], eventRank: node.eventRank })
+        const inStep = new Map(sliced).set(prevName(node.name), { dims: [], eventRank: node.eventRank })
+        const inEmit = new Map(withState)
+        const scalar = (s: NamedShape, what: string, rank: number): void => {
+          if (s.dims.length > 0)
+            fail(
+              `${where}: ${what} has dimensions [${s.dims.join(', ')}] left inside the scan (one scan is one series)`,
+            )
+          if (s.eventRank !== rank) fail(`${where}: ${what} has event rank ${s.eventRank}, expected ${rank}`)
+        }
+        scalar(distOf(node.init, sliced), 'the initial distribution', node.eventRank)
+        scalar(distOf(node.step, inStep), 'the step distribution', node.eventRank)
+        const names = new Set<string>()
+        for (const m of node.emissions) {
+          const at = `${where} emission '${m.name}'`
+          if (m.name === '' || m.name === node.name || names.has(m.name) || sites.has(m.name))
+            fail(`${at}: the site name is used twice`)
+          names.add(m.name)
+          sites.add(m.name)
+          const s = distOf(m.dist, inEmit)
+          checkCustoms(m.value, at)
+          const v = exprShape(m.value, inEmit, table)
+          scalar(s, 'its distribution', s.eventRank)
+          scalar(v, 'its value', s.eventRank)
+        }
+        break
+      }
     }
     const shape = nodeShape(node)
     if (shape !== undefined) scope.set(node.name, shape)

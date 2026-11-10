@@ -16,6 +16,7 @@ import {
   exprHasCustom,
   exprOps,
   isAffineIn,
+  type LatentMemo,
   latentsIn,
   nodeExprs,
   nodesByName,
@@ -25,6 +26,7 @@ import { type LinearGaussianBlock, linearGaussianBlocks } from './analysis-linea
 import type { ModelLike } from './bind.ts'
 import { distributionFamilies, type FamilyDef } from './dists/families.ts'
 import { canonicalDims, factorId, nodeId, plateId } from './ids.ts'
+import { expandScans, scanLinearGaussian } from './scan.ts'
 import { type ExprSpec, type ModelNode, type ModelSpec, nodeRefs } from './spec.ts'
 import { buildStructureReport, type StructureReport } from './structure-report.ts'
 
@@ -96,6 +98,26 @@ export interface SpecPlateInfo {
   readonly nodes: readonly string[]
 }
 
+/** A recurrence (`scan` node) as the analysis sees it: what its states are, what it reads and whether it is a Gaussian chain. */
+export interface SpecScanInfo {
+  readonly name: string
+  readonly over: string
+  /** The number of steps, when known (fixed in the spec or from the bound model). */
+  readonly steps?: number
+  /** The family of the step distribution (the initial one may differ in its parameters, not in kind). */
+  readonly family: string
+  readonly initFamily: string
+  readonly eventRank: number
+  /** The states are finite discrete (a hidden Markov chain), continuous, or unbounded discrete. */
+  readonly stateKind: 'finite-discrete' | 'continuous' | 'unbounded-discrete'
+  /** The observed nodes (emissions) drawn at every step. */
+  readonly emissions: readonly string[]
+  /** The latents (and other scans) its distributions read, through derived nodes too: its parameters. */
+  readonly parameters: readonly string[]
+  /** Gaussian chain given its parameters (the latents it reads are constants), and why or why not. */
+  readonly linearGaussian: SpecLinearGaussian
+}
+
 /**
  * What a spec reveals without running (see {@link analyseSpec}).
  *
@@ -129,6 +151,8 @@ export interface SpecAnalysis {
    */
   readonly conjugacy: readonly ConjugacyRecord[]
   readonly linearGaussian: SpecLinearGaussian
+  /** The recurrences of the spec (its `scan` nodes), which count as one latent each in `latent` and the discrete and continuous lists. */
+  readonly scans: readonly SpecScanInfo[]
   /** The maximal sets of Gaussian latents that are jointly Gaussian with their observations given the other latents. */
   readonly linearGaussianBlocks: readonly LinearGaussianBlock[]
   /** Nodes message passing cannot see through. */
@@ -148,6 +172,12 @@ function linearGaussian(spec: ModelSpec, byName: ReadonlyMap<string, ModelNode>)
   let any = false
   for (const n of spec.nodes) {
     if (n.kind === 'factor') return { holds: false, reason: `factor '${n.name}' adds an arbitrary density term` }
+    if (n.kind === 'scan') {
+      const r = scanLinearGaussian(n, byName, memo, true)
+      if (!r.holds) return { holds: false, reason: `the scan '${n.name}': ${r.reason}` }
+      any = true
+      continue
+    }
     const d = distOf(n)
     if (d === undefined || n.kind === 'generated') continue
     any = true
@@ -258,7 +288,9 @@ function conjugates(
  * ```
  */
 export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
-  const spec: ModelSpec = 'spec' in model ? model.spec : model
+  const authored: ModelSpec = 'spec' in model ? model.spec : model
+  // The analyses read the spec with each scan followed by its emissions as observed nodes over the scanned dimension.
+  const spec = expandScans(authored)
   const sizes = 'sizes' in model ? (model as { readonly sizes: Readonly<Record<string, number>> }).sizes : {}
   const families: Readonly<Record<string, FamilyDef>> = distributionFamilies()
   // References resolve to value nodes (observed nodes and factors cannot be referred to).
@@ -276,7 +308,7 @@ export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
       edges.push({ from: idOf(parent), to: idOf(n) })
     }
   const nodes: SpecNodeInfo[] = spec.nodes.map((n) => {
-    const d = distOf(n)
+    const d = n.kind === 'scan' ? n.step : distOf(n)
     const fam = d === undefined ? undefined : families[d.family]
     const ops = new Set<string>()
     for (const e of nodeExprs(n)) exprOps(e, ops)
@@ -302,7 +334,7 @@ export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
     }
   })
   const names = (kind: ModelNode['kind']): string[] => spec.nodes.filter((n) => n.kind === kind).map((n) => n.name)
-  const latentInfo = nodes.filter((n) => n.kind === 'latent')
+  const latentInfo = nodes.filter((n) => n.kind === 'latent' || n.kind === 'scan')
   const family = (n: SpecNodeInfo): FamilyDef | undefined => (n.family === undefined ? undefined : families[n.family])
   const continuous = latentInfo.filter((n) => family(n)?.discrete !== true).map((n) => n.name)
   const finiteDiscrete = latentInfo.filter((n) => family(n)?.finite === true).map((n) => n.name)
@@ -337,7 +369,31 @@ export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
       sizes: e.dims.map((x) => sizeOfDim.get(x)),
       nodes: e.nodes,
     }))
+  const memoScan: LatentMemo = new Map()
+  const scans: SpecScanInfo[] = authored.nodes.flatMap((n): SpecScanInfo[] => {
+    if (n.kind !== 'scan') return []
+    const fam = families[n.step.family]
+    const parameters = new Set<string>()
+    for (const e of nodeExprs(n)) for (const l of latentsIn(e, byName, memoScan)) if (l !== n.name) parameters.add(l)
+    const steps = dims.find((x) => x.name === n.over)?.size
+    return [
+      {
+        name: n.name,
+        over: n.over,
+        ...(steps === undefined ? {} : { steps }),
+        family: n.step.family,
+        initFamily: n.init.family,
+        eventRank: n.eventRank,
+        stateKind:
+          fam?.discrete !== true ? 'continuous' : fam.finite === true ? 'finite-discrete' : 'unbounded-discrete',
+        emissions: n.emissions.map((m) => m.name),
+        parameters: [...parameters],
+        linearGaussian: scanLinearGaussian(n, byName, memoScan, false),
+      },
+    ]
+  })
   const features: string[] = []
+  if (scans.length > 0) features.push('recurrences')
   if (continuous.length > 0) features.push('continuous latents')
   if (finiteDiscrete.length > 0) features.push('finite discrete latents')
   if (unboundedDiscrete.length > 0) features.push('unbounded discrete latents')
@@ -357,7 +413,7 @@ export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
     name: spec.name,
     nodes,
     data: names('data'),
-    latent: names('latent'),
+    latent: latentInfo.map((n) => n.name),
     observed: names('observed'),
     derived: names('derived'),
     generated: names('generated'),
@@ -372,6 +428,7 @@ export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
     conjugate,
     conjugacy: conjugacyRecords(env),
     linearGaussian: lg,
+    scans,
     linearGaussianBlocks: linearGaussianBlocks(env),
     opaque,
     hasLikelihood: names('observed').length > 0,

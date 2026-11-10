@@ -40,6 +40,7 @@ export type SuggestionKind =
   | 'split'
   | 'minibatch'
   | 'reparameterise'
+  | 'recurrence'
   | 'limit'
 
 /** One plain statement about what the structure allows, with the sites it is about and what to use. */
@@ -200,6 +201,50 @@ function suggestions(
             },
           ],
     })
+  }
+
+  // Recurrences: the method that follows the chain, by what the states are and what else is random.
+  for (const sc of a.scans) {
+    const only = a.latent.length === 1
+    const steps = sc.steps === undefined ? '' : ` of ${sc.steps} steps`
+    if (sc.stateKind === 'finite-discrete' && only)
+      out.push({
+        kind: 'recurrence',
+        sites: [sc.name],
+        text: `\`${sc.name}\` is a hidden Markov chain${steps} (${sc.family} states, nothing else random): forward-backward gives the exact marginals and the evidence`,
+        reason:
+          'one scan with finite discrete states is the only latent: the chain engine reads its initial, transition and emission potentials',
+        use: [{ kind: 'method', name: 'chain', how: 'forward-backward, FFBS draws and the Viterbi path in one step' }],
+      })
+    else if (sc.stateKind === 'continuous' && only && !sc.linearGaussian.holds)
+      out.push({
+        kind: 'recurrence',
+        sites: [sc.name],
+        text: `\`${sc.name}\` is a state-space model${steps} that is not a Gaussian chain (${sc.linearGaussian.reason}): the bootstrap particle filter follows it step by step, and gives an unbiased evidence estimate`,
+        reason: 'the states are the only latents, so the filter needs nothing else fixed',
+        use: [
+          {
+            kind: 'method',
+            name: 'particle-filter',
+            knobs: { numParticles: 1000 },
+            how: 'one time step per session step, filtering marginals at any step',
+          },
+        ],
+      })
+    else if (!only)
+      out.push({
+        kind: 'recurrence',
+        sites: [sc.name, ...sc.parameters],
+        text: `\`${sc.name}\` is a recurrence${steps} read with the parameters ${list(sc.parameters)}: the sampling methods run on its unrolled density (NUTS differentiates through the steps), and the filter needs the parameters fixed`,
+        reason: 'the states are not the only latents, so a filter over the loop alone does not apply',
+        use: [
+          {
+            kind: 'method',
+            name: 'nuts',
+            how: 'the scan compiles to a markov loop whose log density is a differentiable function of the states and the parameters',
+          },
+        ],
+      })
   }
 
   // Independent sub-problems.
