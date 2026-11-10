@@ -1,6 +1,7 @@
 import { chainDiagnostics, type ModelRun, type ModelRunStep, modelRun, type NodeState } from 'omai-engine/exposition'
 import { defineModel, toStructure } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
+import { chainEssCurves } from 'omai-engine/sampling'
 import { ChainDiagnosticsView, Choice, ControlPanel, ModelRunPlayer } from 'omai-render/react'
 import { modelGraph } from 'omai-render/structures'
 import { type ReactNode, useState } from 'react'
@@ -10,7 +11,7 @@ export const recipe: Recipe = {
   title: 'Inference on a model graph',
   question: 'How do I show what a run believes of each variable of a model, on the picture of the model?',
   explain:
-    'The plate diagram of a model (`toStructure`, drawn with its plates crossing where they share a dimension, sizes as `S = 40`, data as dots) takes a `ModelRun` record: at each step the belief of each node is written in it with a small interval glyph under it, the messages that passed are on the edges, and the change and the evidence are charted below with the improper-update count. The same record serves a finished tape and a run in progress. For samplers, `ChainDiagnosticsView` draws the trace plots, the rank plots and the R-hat table.',
+    'The plate diagram of a model (`toStructure`, drawn with its plates crossing where they share a dimension, sizes as `S = 40`, data as dots) takes a `ModelRun` record: at each step the belief of each node is written in it with a small interval glyph under it, the messages that passed are on the edges, and the change and the evidence are charted below with the improper-update count. The same record serves a finished tape and a run in progress. For samplers, `ChainDiagnosticsView` draws the trace plots, the rank and ECDF-difference plots (with the simultaneous band), the autocorrelation, the effective sample size by quantile and as the draws accumulate, the energy with the E-BFMI, the pair plot with the divergent transitions marked and the R-hat table.',
   shows: ['modelRun', 'chainDiagnostics'],
 }
 
@@ -108,24 +109,34 @@ function toyChains(): ReturnType<typeof chainDiagnostics> {
     spread: number,
     offsets: readonly number[] = [0, 0, 0, 0],
   ): number[][] => offsets.map((o, c) => draw(seed + 17 * c, centre + o, spread, o === 0 ? 0 : 0.4))
-  return chainDiagnostics(
-    {
-      mu: quantity(1, 0.35, 0.2),
-      'difficulty[0]': quantity(5, -0.9, 0.15),
-      'difficulty[2]': quantity(9, 0.4, 0.15, [0, 0, 0.55, 0.9]),
-      'difficulty[3]': quantity(13, 1.0, 0.16),
-    },
-    {
-      bins: 12,
-      summary: [
-        { site: 'mu', name: 'mu', rhat: 1.002, ess: 910 },
-        { site: 'difficulty', name: 'difficulty[0]', rhat: 1.004, ess: 740 },
-        { site: 'difficulty', name: 'difficulty[2]', rhat: 1.31, ess: 38 },
-        { site: 'difficulty', name: 'difficulty[3]', rhat: 1.006, ess: 690 },
-      ],
-      divergent: [[], [], Array.from({ length: 300 }, (_, i) => (i === 120 || i === 121 ? 1 : 0)), []],
-    },
-  )
+  const draws = {
+    mu: quantity(1, 0.35, 0.2),
+    'difficulty[0]': quantity(5, -0.9, 0.15),
+    'difficulty[2]': quantity(9, 0.4, 0.15, [0, 0, 0.55, 0.9]),
+    'difficulty[3]': quantity(13, 1.0, 0.16),
+  }
+  const g = noise(77)
+  // The energy of each chain: a random walk that mostly forgets itself between draws (the E-BFMI near 1) on three chains,
+  // and one that remembers (a low E-BFMI) on the fourth, the chain with the trouble.
+  const energy = [0.2, 0.2, 0.2, 0.93].map((memory, c) => {
+    let e = 0
+    return Array.from({ length: 300 }, () => {
+      e = memory * e + Math.sqrt(1 - memory * memory) * g() + (c === 3 ? 0.02 : 0)
+      return e
+    })
+  })
+  return chainDiagnostics(draws, {
+    bins: 12,
+    summary: [
+      { site: 'mu', name: 'mu', rhat: 1.002, ess: 910 },
+      { site: 'difficulty', name: 'difficulty[0]', rhat: 1.004, ess: 740 },
+      { site: 'difficulty', name: 'difficulty[2]', rhat: 1.31, ess: 38 },
+      { site: 'difficulty', name: 'difficulty[3]', rhat: 1.006, ess: 690 },
+    ],
+    divergent: [[], [], Array.from({ length: 300 }, (_, i) => (i === 120 || i === 121 ? 1 : 0)), []],
+    energy,
+    essCurves: chainEssCurves(draws, { points: 8 }),
+  })
 }
 
 const RUN = toyRun()

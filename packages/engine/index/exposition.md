@@ -6,6 +6,10 @@ Typed exposition records: the plain, serialisable data that methods return besid
 
 - structure `record.ts` (file): Union of every exposition record a method returns beside its result. `src/lib/exposition/record.ts:1` `omai-engine/exposition`
 
-- function `chainDiagnostics`: Trace, rank and R-hat/ESS data of Markov chains, from draws and a posterior summary. `src/lib/exposition/chain-diagnostics.ts:101` `omai-engine/exposition`
-- function `describeMessage`: Natural parameters of a message as a readable distribution: `describeMessage('gaussian', [h, J])`. `src/lib/exposition/model-run-tape.ts:84` `omai-engine/exposition`
-- function `modelRunFromTape`: Model-graph inference record from a tape or anytime snapshots. `src/lib/exposition/model-run-tape.ts:299` `omai-engine/exposition`
+- function `chainDiagnostics`: Trace, rank and R-hat/ESS data of Markov chains, from draws and a posterior summary. `src/lib/exposition/chain-diagnostics.ts:267` `omai-engine/exposition`
+- function `describeMessage`: Natural parameters of a message as a readable distribution: `describeMessage('gaussian', [h, J])`. `src/lib/exposition/model-run-tape.ts:87` `omai-engine/exposition`
+- function `ecdfBand`: Simultaneous band of the ECDF of uniform values: `ecdfBand(100, [0.25, 0.5, 0.75])`. `src/lib/exposition/ecdf-band.ts:146` `omai-engine/exposition`
+- function `elboRunFromTape`: Variational-run record (ELBO, gradient, guide parameters, beliefs) from an svi or pathfinder tape or snapshots. `src/lib/exposition/elbo-run-tape.ts:101` `omai-engine/exposition`
+- function `modelRunFromTape`: Model-graph inference record from a tape or anytime snapshots. `src/lib/exposition/model-run-tape.ts:302` `omai-engine/exposition`
+- function `posteriorComparison`: Posterior approximations against an oracle per quantity, with the agreement table, from `agree`'s inputs. `src/lib/exposition/posterior-comparison.ts:205` `omai-engine/exposition`
+- function `sbcRun`: Rank histogram and ECDF-difference data with exact bands from a simulation-based calibration result. `src/lib/exposition/sbc-run.ts:117` `omai-engine/exposition`

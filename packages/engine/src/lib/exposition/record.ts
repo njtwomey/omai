@@ -20,6 +20,7 @@ import type { CurveSet } from './curves.ts'
 import type { DataBias } from './data-bias.ts'
 import type { Dependence } from './dependence.ts'
 import type { DiagramRecord } from './diagrams.ts'
+import type { ElboRun } from './elbo-run.ts'
 import type { ComponentsRecord, EmbeddingSteps } from './embeddings.ts'
 import type { EnsembleStages } from './ensembles.ts'
 import type { Epicycles } from './epicycles.ts'
@@ -40,10 +41,12 @@ import type { LikelihoodTable, NeighbourRecord } from './neighbours.ts'
 import type { PipelineStages } from './pipelines.ts'
 import type { PointsSteps } from './points-steps.ts'
 import type { PopulationSteps } from './populations.ts'
+import type { PosteriorComparison } from './posterior-comparison.ts'
 import type { HyperparameterSurface, PosteriorGrid } from './posteriors.ts'
 import type { Reachability } from './reachability.ts'
 import type { RuleSet } from './rules.ts'
 import type { SampleGrid } from './sample-grid.ts'
+import type { SbcRun } from './sbc-run.ts'
 import type { SceneSteps } from './scene-steps.ts'
 import type { LearningCurve, SearchTrials } from './searches.ts'
 import type { StateSequence } from './sequences.ts'
@@ -129,6 +132,9 @@ export type Exposition =
   | SampleGrid
   | ModelRun
   | ChainDiagnostics
+  | SbcRun
+  | PosteriorComparison
+  | ElboRun
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -237,4 +243,7 @@ const KINDS: Readonly<Record<ExpositionKind, true>> = {
   sampleGrid: true,
   modelRun: true,
   chainDiagnostics: true,
+  sbcRun: true,
+  posteriorComparison: true,
+  elboRun: true,
 }

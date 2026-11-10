@@ -25,6 +25,7 @@ import { curveSetView } from './curves.ts'
 import { dataBiasView } from './data-bias.ts'
 import { dependenceView } from './dependence.ts'
 import { diagramScene } from './diagrams.ts'
+import { elboRunView } from './elbo-run.ts'
 import { epicycleFrames } from './epicycles.ts'
 import { episodeView } from './episodes.ts'
 import { equationFitView } from './equation-fit.ts'
@@ -41,9 +42,11 @@ import { attributionImageView, attributionSeriesView, tokenStripView } from './m
 import { modelRunScene } from './model-run.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
 import { pointsStepsScene, pointsStepsView } from './points-steps.ts'
+import { posteriorComparisonView } from './posterior-comparison.ts'
 import { reachabilityPlot } from './reachability.ts'
 import { conceptView, ruleListView } from './rules.ts'
 import { sampleGridScene } from './sample-grid.ts'
+import { sbcEcdfView } from './sbc-run.ts'
 import { sceneStepsScene } from './scene-steps.ts'
 import { stateSequenceView } from './sequences.ts'
 import { simplexView } from './simplex.ts'
@@ -449,6 +452,30 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => traceView(r, o),
+  },
+  sbcRun: {
+    kind: 'sbcRun',
+    component: 'SbcRunView',
+    title: 'Simulation-based calibration',
+    plays: false,
+    accepts: [],
+    still: (r, o) => sbcEcdfView(r, o),
+  },
+  posteriorComparison: {
+    kind: 'posteriorComparison',
+    component: 'PosteriorComparisonView',
+    title: 'Posterior comparison',
+    plays: false,
+    accepts: [],
+    still: (r, o) => posteriorComparisonView(r, o),
+  },
+  elboRun: {
+    kind: 'elboRun',
+    component: 'ElboRunView',
+    title: 'Variational run',
+    plays: false,
+    accepts: [],
+    still: (r, o) => elboRunView(r, o),
   },
   structureSteps: {
     kind: 'structureSteps',

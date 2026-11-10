@@ -93,6 +93,11 @@ export const SEAL_OPTIONS: Readonly<Record<string, SealOptions>> = {
   structureSteps: { opaque: ['structure'] },
   diagram: { opaque: ['structure'] },
   modelRun: { opaque: ['structure'] },
+  // A measure the kernel could not compute (a method with no spread has no z) is missing, not an error.
+  posteriorComparison: {
+    gaps: ['meanError', 'meanZ', 'sdRatio', 'ks', 'wasserstein', 'kl', 'ess'],
+    unbounded: ['meanError', 'meanZ', 'sdRatio', 'ks', 'wasserstein', 'kl', 'ess'],
+  },
   thresholdSweep: {
     gaps: ['tpr', 'fpr', 'precision', 'selectionRate', 'accuracy', 'rocAuc', 'averagePrecision', 'costs', 'cost'],
     unbounded: ['thresholds'],

@@ -11,8 +11,7 @@ import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
 import { lines } from '../charts/lines.ts'
 import { points } from '../charts/points.ts'
-import { gridSpec } from '../figure/grid.ts'
-import { type ViewOptions, viewFigure } from './_view.ts'
+import { panelColumns, panelGrid, type ViewOptions, viewFigure } from './_view.ts'
 
 /** Options of {@link traceView} and {@link rankView}. */
 export interface ChainViewOptions extends ViewOptions {
@@ -47,17 +46,6 @@ export function chosenQuantities(record: ChainDiagnostics, options: ChainViewOpt
     .map((x) => x.q)
 }
 
-function gridOf(n: number, cols: number): ReturnType<typeof gridSpec> {
-  const rows = Math.ceil(n / cols)
-  return gridSpec(rows, cols, {
-    hspace: 40,
-    wspace: 52,
-    cells: Array.from({ length: n }, (_, i) => ({ id: `q${i}`, row: Math.floor(i / cols), col: i % cols })),
-  })
-}
-
-const colsFor = (n: number): number => (n > 3 ? 2 : 1)
-
 /**
  * Trace plots: for each quantity the draws of every chain over the iterations, one colour per chain, with the divergent
  * transitions marked on their chain. Chains that mix look like overlapping noise around one level.
@@ -75,16 +63,27 @@ const colsFor = (n: number): number => (n > 3 ? 2 : 1)
  */
 export function traceView(record: ChainDiagnostics, options: ChainViewOptions = {}): EChartsOption {
   const qs = chosenQuantities(record, options)
-  const cols = colsFor(qs.length)
+  const cols = panelColumns(qs.length)
   const fig = viewFigure(options, { aspect: cols === 2 ? 1.7 : Math.max(1.2, 3.2 / Math.max(1, qs.length)) })
   const mode = fig.mode
   const panels: Record<string, Panel> = {}
   for (const [i, q] of qs.entries()) {
-    const hits = record.divergences.filter((d) => d.draw < (q.chains[d.chain]?.length ?? 0))
+    // The trace may be thinned: its draws sit at their own index among all of the chain's draws.
+    const total = q.ranks.counts[0]?.reduce((a, b) => a + b, 0) ?? q.chains[0]?.length ?? 0
+    const at = (j: number, length: number): number =>
+      length <= 1 || total <= length ? j : Math.round((j * (total - 1)) / (length - 1))
+    const hits = record.divergences.slice(0, q.atDivergences?.length ?? 0)
     panels[`q${i}`] = {
       layers: [
         lines(
-          q.chains.map((c, k) => ({ y: [...c], name: `chain ${k}`, colour: `tab${k}`, width: 1, opacity: 0.85 })),
+          q.chains.map((c, k) => ({
+            x: c.map((_, j) => at(j, c.length)),
+            y: [...c],
+            name: `chain ${k}`,
+            colour: `tab${k}`,
+            width: 1,
+            opacity: 0.85,
+          })),
           { mode },
         ),
         ...(hits.length === 0
@@ -94,7 +93,7 @@ export function traceView(record: ChainDiagnostics, options: ChainViewOptions = 
                 [
                   {
                     x: hits.map((d) => d.draw),
-                    y: hits.map((d) => q.chains[d.chain]?.[d.draw] ?? 0),
+                    y: [...(q.atDivergences ?? [])],
                     name: 'divergent',
                     colour: 'tab3',
                     size: 9,
@@ -110,7 +109,7 @@ export function traceView(record: ChainDiagnostics, options: ChainViewOptions = 
       },
     }
   }
-  return subplots(gridOf(qs.length, cols), panels, { figure: fig, legend: false, tooltip: 'item' })
+  return subplots(panelGrid(qs.length, cols), panels, { figure: fig, legend: false, tooltip: 'item' })
 }
 
 /**
@@ -131,7 +130,7 @@ export function traceView(record: ChainDiagnostics, options: ChainViewOptions = 
  */
 export function rankView(record: ChainDiagnostics, options: ChainViewOptions = {}): EChartsOption {
   const qs = chosenQuantities(record, options)
-  const cols = colsFor(qs.length)
+  const cols = panelColumns(qs.length)
   const fig = viewFigure(options, { aspect: cols === 2 ? 1.7 : Math.max(1.2, 3.2 / Math.max(1, qs.length)) })
   const mode = fig.mode
   const panels: Record<string, Panel> = {}
@@ -162,5 +161,5 @@ export function rankView(record: ChainDiagnostics, options: ChainViewOptions = {
       },
     }
   }
-  return subplots(gridOf(qs.length, cols), panels, { figure: fig, legend: false, tooltip: 'item' })
+  return subplots(panelGrid(qs.length, cols), panels, { figure: fig, legend: false, tooltip: 'item' })
 }

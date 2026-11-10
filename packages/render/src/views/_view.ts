@@ -2,6 +2,7 @@ import type { EChartsOption, SeriesOption } from 'echarts'
 import { maxOf, minOf } from 'omai-engine/base'
 import type { Layer } from '../charts/plot.ts'
 import { type Figure, type FigureOptions, figure as makeFigure } from '../figure/figure.ts'
+import { type GridSpec, gridSpec } from '../figure/grid.ts'
 import { formatNumber } from '../theme/format.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
 
@@ -109,4 +110,32 @@ export function ariaOf(description: string): {
   readonly aria: { readonly enabled: true; readonly label: { readonly description: string } }
 } {
   return { aria: { enabled: true, label: { description } } }
+}
+
+/**
+ * A grid of `n` equal panels in `cols` columns, filled row by row (ids `q0`, `q1`, ...): the layout of the small
+ * multiples of the chain and calibration views.
+ *
+ * @param n - The number of panels.
+ * @param cols - The columns.
+ * @param hspace - The vertical gap between rows in pixels (default 40; more where each panel carries an x label).
+ * @returns The grid.
+ * @example
+ * ```ts
+ * import { panelGrid } from 'omai-render/views'
+ * panelGrid(5, 2).cells.map((c) => c.id) // => ['q0', 'q1', 'q2', 'q3', 'q4']
+ * ```
+ */
+export function panelGrid(n: number, cols: number, hspace = 40): GridSpec {
+  const rows = Math.ceil(n / cols)
+  return gridSpec(rows, cols, {
+    hspace,
+    wspace: 52,
+    cells: Array.from({ length: n }, (_, i) => ({ id: `q${i}`, row: Math.floor(i / cols), col: i % cols })),
+  })
+}
+
+/** The columns of small multiples for `n` panels: two from four panels on, else one. */
+export function panelColumns(n: number): number {
+  return n > 3 ? 2 : 1
 }

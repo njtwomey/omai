@@ -31,6 +31,9 @@ export interface TapeEventLike {
   readonly payload?: unknown
   readonly frame?: unknown
   readonly status?: string
+  /** A tensor event's values (row-major), or its summary when the values were not kept. */
+  readonly values?: readonly number[]
+  readonly summary?: { readonly mean?: number }
 }
 
 /** A tape: finished, or the events so far of a run in progress. */

@@ -18,6 +18,7 @@ import { ComponentsView } from './components.tsx'
 import { CurvesView } from './curves.tsx'
 import { DependenceView } from './dependence.tsx'
 import { DiagramPlayer } from './diagrams.tsx'
+import { ElboRunView } from './elbo-run.tsx'
 import { EpicyclePlayer } from './epicycles.tsx'
 import { EpisodeView } from './episodes.tsx'
 import { EquationFitView } from './equation-fit.tsx'
@@ -32,10 +33,12 @@ import { MarkedTableView } from './marked-tables.tsx'
 import { ModelRunPlayer } from './model-run.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
 import { PointsStepsView } from './points-steps.tsx'
+import { PosteriorComparisonView } from './posterior-comparison.tsx'
 import { RecordBoundary } from './RecordBoundary.tsx'
 import { ReachabilityPlotView } from './reachability.tsx'
 import { ConceptView, RuleListView } from './rules.tsx'
 import { SampleGridView } from './sample-grid.tsx'
+import { SbcRunView } from './sbc-run.tsx'
 import { SceneStepsView } from './scene-steps.tsx'
 import { StateSequenceView } from './sequences.tsx'
 import { SimplexView } from './simplex.tsx'
@@ -203,6 +206,12 @@ function StandardRecordView(props: ExpositionViewProps): ReactElement {
       return <ModelRunPlayer record={record} {...common} />
     case 'chainDiagnostics':
       return <ChainDiagnosticsView record={record} {...common} />
+    case 'sbcRun':
+      return <SbcRunView record={record} {...common} />
+    case 'elboRun':
+      return <ElboRunView record={record} {...common} />
+    case 'posteriorComparison':
+      return <PosteriorComparisonView record={record} {...common} />
     case 'structureSteps':
       return <StructureStepsView record={record} {...common} />
     case 'pointsSteps':

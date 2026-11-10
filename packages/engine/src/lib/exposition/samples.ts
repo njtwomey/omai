@@ -18,6 +18,7 @@ import { curveSet } from './curves.ts'
 import { dataBias } from './data-bias.ts'
 import { dependence } from './dependence.ts'
 import { diagramRecord } from './diagrams.ts'
+import { elboRun } from './elbo-run.ts'
 import { componentsRecord, embeddingSteps } from './embeddings.ts'
 import { ensembleStages } from './ensembles.ts'
 import { epicycles } from './epicycles.ts'
@@ -38,11 +39,13 @@ import { likelihoodTable, neighbourRecord } from './neighbours.ts'
 import { pipelineStages } from './pipelines.ts'
 import { pointsSteps } from './points-steps.ts'
 import { populationSteps } from './populations.ts'
+import { posteriorComparison } from './posterior-comparison.ts'
 import { hyperparameterSurface, posteriorGrid } from './posteriors.ts'
 import { reachabilityRecord } from './reachability.ts'
 import type { Exposition, ExpositionKind } from './record.ts'
 import { ruleSet } from './rules.ts'
 import { sampleGrid } from './sample-grid.ts'
+import { sbcRun } from './sbc-run.ts'
 import { sceneSteps } from './scene-steps.ts'
 import { learningCurve, searchTrials } from './searches.ts'
 import { stateSequence } from './sequences.ts'
@@ -540,4 +543,65 @@ export const expositionSamples: { readonly [K in ExpositionKind]: () => Extract<
         ],
       },
     ),
+  sbcRun: () =>
+    sbcRun({
+      replications: 10,
+      numRanks: 3,
+      alpha: 0.01,
+      passes: true,
+      quantities: [
+        {
+          name: 'mu',
+          ranks: [0, 1, 2, 3, 0, 1, 2, 3, 1, 2],
+          numRanks: 3,
+          histogram: [2, 3, 3, 2],
+          chiSquare: { statistic: 0.4, pValue: 0.94 },
+          ecdf: { statistic: 0.05, pValue: 0.9 },
+          pValue: 1,
+          diagnosis: 'uniform',
+          passes: true,
+        },
+      ],
+    }),
+  posteriorComparison: () =>
+    posteriorComparison(
+      [
+        { name: 'draws', draws: { m: [0.1, 0.4, 0.5, 0.9] } },
+        { name: 'vi', normal: { m: { mean: 0.5, sd: 0.3 } } },
+      ],
+      {
+        truth: { m: { name: 'm', mean: 0.5, sd: 0.3, cdf: (x) => Math.min(1, Math.max(0, x)), quantile: (p) => p } },
+        table: {
+          oracle: 'oracle',
+          quantities: ['m'],
+          rows: [
+            {
+              method: 'draws',
+              quantity: 'm',
+              mean: 0.475,
+              sd: 0.3,
+              meanError: -0.08,
+              meanZ: -0.5,
+              sdRatio: 1,
+              ks: 0.1,
+              wasserstein: 0.1,
+              kl: 0.1,
+              ess: 4,
+              numDraws: 4,
+            },
+          ],
+        },
+        quantilePoints: 4,
+        gridPoints: 5,
+      },
+    ),
+  elboRun: () =>
+    elboRun({
+      status: 'running',
+      elbo: { steps: [1, 2, 3], values: [-9, -5, -4] },
+      diagnostics: [],
+      paths: [],
+      parameters: [{ name: 'mu_auto_loc', site: 'mu', role: 'loc', steps: [1, 2, 3], values: [0, 0.4, 0.5] }],
+      beliefs: [{ name: 'mu', steps: [2, 3], values: [0.4, 0.5], sd: [0.9, 0.6] }],
+    }),
 }
