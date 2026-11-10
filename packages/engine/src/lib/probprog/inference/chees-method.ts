@@ -51,7 +51,6 @@ export type CheesMethod = InferenceMethod<McmcRunState, Config, McmcPath | Chees
  * ```
  */
 export function cheesMethod(model: MethodModel, options: { readonly name?: string } = {}): CheesMethod {
-  type W = CheesWarmupState
   return mcmcMethodOf<CheesParameters, CheesPath>(
     {
       name: 'chees',
@@ -99,16 +98,16 @@ export function cheesMethod(model: MethodModel, options: { readonly name?: strin
           numWarmup > 0
             ? {
                 init: (start, key) => cheesAdaptationAlgorithm(b.um.logDensity, start, options).init(key),
-                step: (w, ctx) => shared.step(w as W, ctx),
-                chain: (w) => (w as W).chain,
+                step: (w, ctx) => shared.step(w as CheesWarmupState, ctx),
+                chain: (w) => (w as CheesWarmupState).chain,
                 info: (w) => ({
-                  acceptanceRate: (w as W).chain.acceptProbs.reduce((a, v) => a + v, 0) / walkers,
+                  acceptanceRate: (w as CheesWarmupState).chain.acceptProbs.reduce((a, v) => a + v, 0) / walkers,
                   accepted: true,
-                  stepSize: (w as W).stepSize,
-                  numSteps: (w as W).chain.numSteps,
+                  stepSize: (w as CheesWarmupState).stepSize,
+                  numSteps: (w as CheesWarmupState).chain.numSteps,
                 }),
-                result: (w) => cheesAdaptationResult(w as W),
-                toJson: (w) => shared.serialise?.(w as W) ?? null,
+                result: (w) => cheesAdaptationResult(w as CheesWarmupState),
+                toJson: (w) => shared.serialise?.(w as CheesWarmupState) ?? null,
                 fromJson: (j) => shared.deserialise?.(j),
               }
             : undefined
