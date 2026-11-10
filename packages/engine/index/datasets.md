@@ -16,7 +16,7 @@ Ready-made datasets: generators with exact truths, vendored real datasets (iris,
 
 - structure `Density`: A 2-D target with exact log density and sampler, for samplers and flows. `src/lib/datasets/densities.ts:51` `omai-engine/datasets`
 
-- table `datasetRegistry`: Tagged registry of every generator, vendored and remote dataset. `src/lib/datasets/catalogue.ts:348` `omai-engine/datasets`
+- table `datasetRegistry`: Tagged registry of every generator, vendored and remote dataset. `src/lib/datasets/catalogue.ts:349` `omai-engine/datasets`
 
 - dataset `airPassengers`: Vendored monthly airline passenger series. `src/lib/datasets/timeseries.ts:404` `omai-engine/datasets`
 - dataset `bananaDensity`: Haario's banana: a curved, correlated target for MCMC. `src/lib/datasets/densities.ts:313` `omai-engine/datasets`
@@ -30,6 +30,7 @@ Ready-made datasets: generators with exact truths, vendored real datasets (iris,
 - dataset `friedman1`: Friedman's first nonlinear regression problem. `src/lib/datasets/regression.ts:140` `omai-engine/datasets`
 - dataset `funnelDensity`: Neal's funnel in two dimensions, whose neck defeats fixed step sizes. `src/lib/datasets/densities.ts:355` `omai-engine/datasets`
 - dataset `gaussianMixtureDensity`: Eight Gaussians on a circle, or a 5 by 5 grid of them. `src/lib/datasets/densities.ts:167` `omai-engine/datasets`
+- dataset `hyphenationWords`: English words with their hyphenation points, one tag per letter (Moby Hyphenator sample). `src/lib/datasets/hyphenation.ts:39` `omai-engine/datasets`
 - dataset `makeRegression`: Linear regression problem, like sklearn make_regression. `src/lib/datasets/regression.ts:305` `omai-engine/datasets`
 - dataset `moons`: Two interleaving half circles. `src/lib/datasets/classification.ts:323` `omai-engine/datasets`
 - dataset `multiViewImages`: Posed multi-view images of a small scene, with held-out views. `src/lib/datasets/multiview.ts:240` `omai-engine/datasets`
