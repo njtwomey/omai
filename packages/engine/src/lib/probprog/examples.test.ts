@@ -28,6 +28,7 @@ const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   'omai-engine/probprog/model/dists': probprog.model.dists,
   'omai-engine/probprog/inference': probprog.inference,
   'omai-engine/probprog/validation': probprog.validation,
+  'omai-engine/probprog/models': probprog.models,
   'omai-engine/message-passing': messagePassing,
   'omai-engine/space': space,
   'omai-engine/sampling': sampling,
