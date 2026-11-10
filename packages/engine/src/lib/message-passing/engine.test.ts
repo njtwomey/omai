@@ -315,7 +315,10 @@ describe('the evidence of a state with no information', () => {
   it('is read from the projection alone: the settings of a run are not needed', () => {
     const simple = M.compileGraph(
       {
-        variables: [{ name: 'x', family: { kind: 'gaussian' } }, { name: 'y', family: { kind: 'gaussian' }, observed: 2 }],
+        variables: [
+          { name: 'x', family: { kind: 'gaussian' } },
+          { name: 'y', family: { kind: 'gaussian' }, observed: 2 },
+        ],
         factors: [M.gaussianPrior('x', 0, 1), { operator: 'gaussian', args: ['y', 'x'], params: { precision: 4 } }],
       },
       operators,

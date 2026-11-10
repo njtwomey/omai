@@ -27,13 +27,7 @@ import {
   type VmpPath,
   vmpMethod,
 } from '../../message-passing/index.ts'
-import {
-  type Config,
-  type Contract,
-  defineContract,
-  derived,
-  Log,
-} from '../../trace/index.ts'
+import { type Config, type Contract, defineContract, derived, Log } from '../../trace/index.ts'
 import { analyseSpec } from '../model/analysis.ts'
 import {
   type FactorGraphCompilation,

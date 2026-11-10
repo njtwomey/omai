@@ -26,8 +26,8 @@ import {
 } from './engine.ts'
 import type { CompiledGraph } from './graph.ts'
 import { klqpProjection, momentProjection, sumProductProjection } from './projections.ts'
-import type { Mode } from './types.ts'
 import type { CustomOrder, Granularity, ScheduleKind } from './schedules.ts'
+import type { Mode } from './types.ts'
 
 /** The knobs every message-passing algorithm has; the defaults differ by algorithm. */
 export interface MessagePassingOptions {
