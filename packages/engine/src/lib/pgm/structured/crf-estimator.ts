@@ -63,6 +63,7 @@ import {
   linearChainCrf,
 } from './crf.ts'
 import { type CrfTrainState, crfStructuredProblem } from './crf-training.ts'
+import { crfDecodeConstrained, type DecodingConstraints } from './decoding.ts'
 import {
   type CrfFeatureSummary,
   crfModelFromInputs,
@@ -251,6 +252,11 @@ export interface CrfHyper<I = CrfSequence> {
    * and the observation.
    */
   readonly decoder?: CrfDecoder
+  /**
+   * Constrain `predict`: a label-set scheme name (`'BIO'`, `'IOB2'`, `'BIOES'`, `'BILOU'`, ...) or explicit allowed moves,
+   * so that every decoded sequence is valid (see {@link crfDecodeConstrained}). Ignored when a `decoder` is given.
+   */
+  readonly constraints?: DecodingConstraints
   /**
    * Keep every channel of the training tape (the weights at each step included) instead of the scalar curves that are
    * kept anyway (objective, gradient, loss, sequence error, nonzero weights, mistakes). Default false.
@@ -726,7 +732,9 @@ function verbsOf<I>(
     const observation = input(x)
     const length = 'unigram' in observation ? observation.unigram.length : observation.length
     if (length === 0) return []
-    return [...(h.decoder === undefined ? crfDecode(crf, observation).labels : h.decoder(crf, observation))]
+    if (h.decoder !== undefined) return [...h.decoder(crf, observation)]
+    if (h.constraints !== undefined) return [...crfDecodeConstrained(crf, observation, h.constraints).labels]
+    return [...crfDecode(crf, observation).labels]
   }
   const marginals = (x: I): Record<string, number>[] =>
     crfMarginals(crf, input(x)).map((row) => labelDictionary(params.labels, row, 0))

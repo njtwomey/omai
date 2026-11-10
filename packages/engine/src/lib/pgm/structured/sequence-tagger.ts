@@ -10,7 +10,7 @@
 
 import { valueAndGrad } from '../../autodiff/index.ts'
 import { type Json, OmaiError } from '../../base/index.ts'
-import { accuracyScore, entityScores, type TagScheme } from '../../metrics/index.ts'
+import { accuracyScore, bioViolations, entityScores, type TagScheme } from '../../metrics/index.ts'
 import {
   type ApplyContext,
   applyGradients,
@@ -44,7 +44,7 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../../trace/index.ts'
-import { CRF, type NeuralCrfAllowed, neuralCrfDecode, neuralCrfNegLogLikelihood } from './neural-crf.ts'
+import { NeuralCrf, type NeuralCrfAllowed, neuralCrfDecode, neuralCrfNegLogLikelihood } from './neural-crf.ts'
 
 /** A tagged sequence: token ids and one tag id per token. */
 export interface TaggedSequence {
@@ -140,7 +140,7 @@ export class SequenceTagger extends Module<TagBatch, Value> {
   readonly lstm: LSTM
   readonly classifier: Linear
   /** The CRF layer, absent for the softmax foil. */
-  readonly crfLayer: CRF | undefined
+  readonly crfLayer: NeuralCrf | undefined
 
   constructor(options: SequenceTaggerOptions) {
     const k = options.key ?? makeKey(0)
@@ -159,7 +159,7 @@ export class SequenceTagger extends Module<TagBatch, Value> {
     })
     const classifier = new Linear(hiddenSize * (bidirectional ? 2 : 1), options.numTags, { key: foldIn(k, 2) })
     const crfLayer =
-      options.crf === false ? undefined : new CRF(options.numTags, { batchFirst: true, key: foldIn(k, 3) })
+      options.crf === false ? undefined : new NeuralCrf(options.numTags, { batchFirst: true, key: foldIn(k, 3) })
     super(
       assemble([
         ['embedding', embedding.params],
@@ -337,19 +337,8 @@ export function evaluateTagger(
   return {
     tokenAccuracy: accuracy,
     entityF1: entityScores(yTrue, yPred, options.scheme ?? 'bio').f1,
-    violations: yPred.reduce((a, row) => a + bioBreaks(row), 0),
+    violations: yPred.reduce((a, row) => a + bioViolations(row).length, 0),
   }
-}
-
-/** Tags that break the BIO scheme: an I-X that follows neither B-X nor I-X (or opens a sequence). */
-function bioBreaks(tags: readonly string[]): number {
-  let n = 0
-  for (const [i, t] of tags.entries()) {
-    if (!t.startsWith('I-')) continue
-    const prev = i === 0 ? 'O' : (tags[i - 1] ?? 'O')
-    if (prev === 'O' || prev.slice(2) !== t.slice(2)) n++
-  }
-  return n
 }
 
 /** Options of {@link taggerAlgorithm} and {@link fitTagger}. */

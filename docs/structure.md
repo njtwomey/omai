@@ -2964,6 +2964,25 @@ inlined into `omai-engine/pgm`; `learning` and `causal` are namespaces.
 - `structured/latent-crf.ts`: CRFs with latent or missing labels through the `clamped` oracle: `partialLabelOracle`
   (per-position label sets or unknowns) and `hiddenStateCrf` / `hiddenStateOracle` (hidden-state and latent-dynamic CRFs,
   `completion` for latent perceptrons, marginal or Viterbi decoding).
+- `structured/neural-crf.ts`: the CRF layer of a neural tagger (`torchcrf.CRF`): emissions `[B,T,K]` from an encoder,
+  `transitions`/`startTransitions`/`endTransitions` as parameters, log-likelihood by the log-space forward algorithm over
+  tensors (differentiable into the encoder and the transitions; reductions none/sum/mean/token_mean, masks, batch-first or
+  time-major), partition, exact masked Viterbi with optional allowed transitions, marginals by the gradient of log Z, and
+  the `NeuralCrf` module with torchcrf's parameter names and initialisation. Golden-tested against pytorch-crf with non-zero
+  start and end transitions. `structured/sequence-tagger.ts`: the BiLSTM-CRF tagger (Lample et al. 2016; flair's
+  `SequenceTagger`) as a module (embedding, dropout, LSTM, linear, CRF; `crf: false` is the softmax foil), `padTagging`,
+  `evaluateTagger` (token accuracy, entity F1, BIO violations), and `taggerAlgorithm` / `fitTagger`, which train it end to end
+  with any `optim` optimiser as a traced algorithm.
+- `structured/crf-estimator.ts`, `structured/graph-crf-estimator.ts`: the CRF estimator in sklearn-crfsuite's shape: `crf(hyper)`
+  and the `CRF` class fit sequences of feature dictionaries (or name lists), or raw inputs with a `features` extractor of
+  `features.ts`, with CRFsuite's hyperparameters (`algorithm` lbfgs, owlqn, l2sgd, ap, pa, arow, any solver of the slot and the
+  structured SVMs; `c1`, `c2`, `minFreq`, `allPossibleStates`, `allPossibleTransitions`, `epsilon`, `delta`, `period`) and
+  `constraints` (a label scheme for valid decoding). CRFsuite's feature generation is reproduced by a weight mask, so the
+  weights equal sklearn-crfsuite's. It sits on the iterative base (`.method`, `.session`, `fittedAt(t)`, a tape of objective,
+  gradient, sequence error and nonzeros); the fitted value has `predict`, `predictMarginals`, flat-accuracy `score`,
+  `stateFeatures` / `transitionFeatures` as dictionaries, `scoreSequence`, `logLikelihood`, `topFeatures`, `templateWeights`, a
+  `decoder` hook and JSON params. It has the shape of the estimator protocol over its own data type (`crfData`), because the
+  protocol is tensors-only. `graphCrfEstimator` does the same for trees, grids, skip chains and any graph.
 - `structured/decoding.ts`: `allowedTransitions(labels, scheme)` (BIO, IOB2, IOB1, BIOES, BILOU, BMES as AllenNLP),
   `crfDecodeConstrained`, `crfNBest`, `crfPosteriorDecode` (maximum expected accuracy under constraints) and `crfSample`.
 - `models/plates.ts`: plate notation and template models, grounding against plate elements and relations, grounded

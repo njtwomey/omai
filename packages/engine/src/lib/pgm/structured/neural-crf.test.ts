@@ -4,7 +4,7 @@ import { key, normal } from '../../random/index.ts'
 import { item, sum, tensor, toArray, toFlat, type Value } from '../../tensor/index.ts'
 import { forwardBackward } from '../inference/chain.ts'
 import {
-  CRF,
+  NeuralCrf,
   type NeuralCrfParameters,
   neuralCrfDecode,
   neuralCrfLogLikelihood,
@@ -243,14 +243,14 @@ describe('the CRF layer', () => {
 
 describe('the CRF module', () => {
   it('has torchcrf parameters, initialised uniformly on (-0.1, 0.1)', () => {
-    const crf = new CRF(4, { key: key(9) })
+    const crf = new NeuralCrf(4, { key: key(9) })
     expect(Object.keys(crf.stateDict())).toEqual(['end_transitions', 'start_transitions', 'transitions'])
     expect(crf.parameterCount()).toBe(4 + 4 + 16)
     for (const v of crf.parameters()) for (const x of toFlat(v as Value)) expect(Math.abs(x)).toBeLessThan(0.1)
   })
 
   it('forward is the log-likelihood, decode the Viterbi path, and grad reaches the parameters', () => {
-    const crf = new CRF(K, { batchFirst: true, key: key(10) })
+    const crf = new NeuralCrf(K, { batchFirst: true, key: key(10) })
     crf.loadStateDict({
       transitions: params.transitions,
       start_transitions: params.startTransitions,

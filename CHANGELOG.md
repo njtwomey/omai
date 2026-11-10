@@ -35,6 +35,12 @@ Structured prediction (omai-engine), all under `pgm/structured/`:
   order-k chains and arbitrary graphs with tied weights, exact inference on forests and low-treewidth graphs and loopy or
   tree-reweighted BP otherwise, pseudo-likelihood training, `generalCrfOracle`; `semiMarkovOracle` (semi-Markov CRF);
   `memmSmoothProblem` (the MEMM, with the label-bias example); `partialLabelOracle`, `hiddenStateOracle` (latent-dynamic CRF).
+- The CRF estimator in sklearn-crfsuite's shape: `crf(hyper)` / `CRF` (CRFsuite's hyperparameters and feature generation, any solver
+  of the slot, a tape of the fit, `predictMarginals`, `stateFeatures`, `constraints` for valid decoding; weights equal
+  sklearn-crfsuite's) and `graphCrfEstimator`.
+- The neural CRF layer `NeuralCrf` / `neuralCrfLogLikelihood`, `neuralCrfDecode` and `neuralCrfMarginals` (differentiable over tensors,
+  masks, start and end transitions; golden-tested against pytorch-crf), and the BiLSTM-CRF `SequenceTagger` with `taggerAlgorithm`
+  and `fitTagger`.
 - Max-margin: `structuredSvmModes` (subgradient, block-coordinate Frank-Wolfe, one-slack and n-slack cutting planes) and
   `trainStructuredSvm`.
 - Decoding: `viterbiKBest`, `constrainedViterbi`, `constrainedPosteriorDecode` and `ChainConstraints` (pgm/inference),

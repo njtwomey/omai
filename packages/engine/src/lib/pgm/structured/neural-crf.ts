@@ -438,7 +438,7 @@ export function neuralCrfMarginals(
   return grad((e: Value) => sum(neuralCrfPartition(e, params, options)))(raw)
 }
 
-/** The input of {@link CRF}: emissions and tags with an optional mask and reduction, as torchcrf's `forward` takes. */
+/** The input of {@link NeuralCrf}: emissions and tags with an optional mask and reduction, as torchcrf's `forward` takes. */
 export interface NeuralCrfInput {
   readonly emissions: TensorLike
   readonly tags: TensorLike
@@ -447,7 +447,7 @@ export interface NeuralCrfInput {
   readonly reduction?: NeuralCrfReduction
 }
 
-/** Options of {@link CRF}. */
+/** Options of {@link NeuralCrf}. */
 export interface CrfModuleOptions {
   /** Whether emissions, tags and masks are batch-first `[B, T, ...]` (default false: `[T, B, ...]`, as torchcrf). */
   readonly batchFirst?: boolean
@@ -466,14 +466,14 @@ const LAYER_KEYS = { start: 'start_transitions', end: 'end_transitions', transit
  * @index module CRF layer over emission scores: transition, start and end parameters, log-likelihood, Viterbi.
  * @example
  * ```ts
- * import { CRF } from 'omai-engine/pgm'
+ * import { NeuralCrf } from 'omai-engine/pgm'
  * import { zeros } from 'omai-engine/tensor'
- * const crf = new CRF(3, { batchFirst: true })
+ * const crf = new NeuralCrf(3, { batchFirst: true })
  * Object.keys(crf.stateDict()) // => ['end_transitions', 'start_transitions', 'transitions']
  * crf.decode(zeros([2, 4, 3])).paths.length // => 2
  * ```
  */
-export class CRF extends Module<NeuralCrfInput, Value> {
+export class NeuralCrf extends Module<NeuralCrfInput, Value> {
   readonly kind = 'CRF'
   readonly numTags: number
   readonly batchFirst: boolean

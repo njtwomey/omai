@@ -143,7 +143,7 @@ the counts. Concretely:
 - Tabular and interpretable: EBMs, rule lists, RuleFit, CORELS, stacking, feature selection and the diagnostic charts are there; categorical encoders (WoE, ordered target statistics),
   monotone constraints, FIGS and hierarchical shrinkage, multi-label learners and a few charts are not.
 - Torch ecosystem: the blocks and the audio, vision and text pipelines are strong; the assembled named networks (ResNet, VGG, ViT) and the augmentation policies are not.
-- Structured prediction: CRFs are a strength (see `structured-prediction.md`); the ring around them (neural CRF layer, constrained and n-best decoding, structured SVM, MEMM, semi-Markov CRF) is not there.
+- Structured prediction: CRFs are a strength and, as of 0.1.12, so is the ring around them (neural CRF layer and BiLSTM tagger, constrained and n-best decoding, structured SVMs, MEMM, semi-Markov, latent and partial-label CRFs, graph CRFs, graph-cut and AD3 MAP), all in `pgm/structured` (see `structured-prediction.md` for what is still missing).
 - Adjacent: control, filtering, stumpy, optax, game theory and conformal prediction are close to complete; data-audit reports, conformal risk control, forecasting as a pipeline,
   neighbourhood and graph collaborative filtering, the classic board-game shelf and multi-objective evolutionary algorithms are the gaps.
 

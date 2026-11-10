@@ -433,3 +433,26 @@ describe('the CRF estimator on word hyphenation', () => {
     expect(sparse.score(test.tables, test.labels)).toBeGreaterThan(never + 0.02)
   })
 })
+
+describe('constrained prediction', () => {
+  it('a scheme in `constraints` makes every predicted sequence valid, where plain Viterbi may not be', () => {
+    // I-X only follows B-X in training, but the evidence for the second item points at I-PER whatever the first says
+    const data = [
+      { x: [{ cap: 1 }, { inside: 1 }], y: ['B-PER', 'I-PER'] },
+      { x: [{ low: 1 }, { inside: 1 }], y: ['O', 'O'] },
+      { x: [{ cap: 1 }, { low: 1 }], y: ['B-PER', 'O'] },
+    ]
+    const X = data.map((d) => d.x)
+    const y = data.map((d) => d.y)
+    const plain = P.crf({ c2: 0.01 }).fit(P.crfData(X, y))
+    const constrained = P.crf({ c2: 0.01, constraints: 'BIO' }).fit(P.crfData(X, y))
+    const probe = [{ low: 1 }, { inside: 1 }]
+    const violations = (labels: readonly string[]): number =>
+      labels.filter((l, i) => l.startsWith('I-') && !(labels[i - 1] ?? 'O').endsWith(l.slice(2))).length
+    expect(violations(constrained.predictSingle(probe))).toBe(0)
+    // the constrained prediction is the best valid one, so its score is no better than the unconstrained best
+    expect(constrained.scoreSequence(probe, constrained.predictSingle(probe))).toBeLessThanOrEqual(
+      plain.scoreSequence(probe, plain.predictSingle(probe)) + 1e-9,
+    )
+  })
+})
