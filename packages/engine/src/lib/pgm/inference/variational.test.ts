@@ -104,4 +104,22 @@ describe('tree-reweighted belief propagation', () => {
     )
     expect(() => P.treeReweighted(triple)).toThrow(/pairwise/)
   })
+  it('returns the edge pseudo-marginals: normalised, consistent with the variable beliefs, and exact on a tree', () => {
+    for (const [, m] of models) {
+      const r = P.treeReweighted(m, { tol: 1e-12, maxIter: 5000 })
+      expect(r.edgeBeliefs?.length).toBe(P.modelFactors(m).filter((f) => f.variables.length === 2).length)
+      for (const b of r.edgeBeliefs ?? []) {
+        const [s, t] = b.variables as [string, string]
+        const joint = P.factorValues(b)
+        expect(joint.reduce((a, v) => a + v, 0)).toBeCloseTo(1, 10)
+        const marginal = P.factorValues(P.factorMarginal(b, [s]))
+        expect(marginal).toEqual(P.factorValues(r.marginals[s] as P.Factor).map((p) => expect.closeTo(p, 6)))
+        expect(t).not.toBe(s)
+      }
+    }
+    const chain = P.isingModel({ rows: 1, cols: 3, coupling: 0.9, field: { s_0_0: 0.4 } })
+    const exact = P.junctionTreeQuery(P.calibrate(chain), ['s_0_0', 's_0_1'])
+    const edge = (P.treeReweighted(chain).edgeBeliefs ?? [])[0] as P.Factor
+    expect(P.factorValues(edge)).toEqual(P.factorValues(exact).map((p) => expect.closeTo(p, 8)))
+  })
 })

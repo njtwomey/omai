@@ -67,7 +67,7 @@ omai-engine/numerics/spatial	45	0979524cbbc7
 omai-engine/numerics/special	77	cd8034800153
 omai-engine/optim	813	665607d6af3f
 omai-engine/patterns	63	d3340c16b350
-omai-engine/pgm	403	42a181fcb9c5
+omai-engine/pgm	448	95d1673e1c19
 omai-engine/pgm/causal	59	1dc2cc4bcf4f
 omai-engine/pgm/learning	123	a9e76fe66003
 omai-engine/problems	55	af621d373b9a
@@ -119,4 +119,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	266	aa65704aaa1a
-total	18481	f61549e2fd5a
+total	18526	4ffc8b55a9f8
