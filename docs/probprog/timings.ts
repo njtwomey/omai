@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noConsole: a measurement script that prints its results
 /**
  * Re-measure the three timings quoted in docs/probprog/inventory.md section 6 (eight schools NUTS, logistic regression
  * NUTS, SVI on both): three runs each, wall-clock milliseconds, Node only. Not part of any package and not a gate.
@@ -10,8 +11,16 @@
  * (scripts/banned.ts only covers published source). The numbers depend on the machine: compare ratios, not seconds.
  */
 import { bernoulli, halfCauchy, normal } from '../../packages/engine/src/lib/dists/index.ts'
-import { mcmc, observe, plate, sample, svi, autoNormal, autoMultivariateNormal } from '../../packages/engine/src/lib/probprog/index.ts'
-import { key, normal as drawNormal } from '../../packages/engine/src/lib/random/index.ts'
+import {
+  autoMultivariateNormal,
+  autoNormal,
+  mcmc,
+  observe,
+  plate,
+  sample,
+  svi,
+} from '../../packages/engine/src/lib/probprog/index.ts'
+import { normal as drawNormal, key } from '../../packages/engine/src/lib/random/index.ts'
 import { add, matmul, tensor, toFlat } from '../../packages/engine/src/lib/tensor/index.ts'
 
 // Rubin's eight schools (the classic data).
@@ -55,7 +64,9 @@ function time<T>(label: string, f: () => T): void {
     runs.push(performance.now() - t0)
   }
   const mean = runs.reduce((a, b) => a + b, 0) / runs.length
-  console.log(`${label.padEnd(46)} ${runs.map((v) => (v / 1000).toFixed(2)).join(' ')}  mean ${(mean / 1000).toFixed(2)} s`)
+  console.log(
+    `${label.padEnd(46)} ${runs.map((v) => (v / 1000).toFixed(2)).join(' ')}  mean ${(mean / 1000).toFixed(2)} s`,
+  )
 }
 
 console.log('seconds, three runs')
