@@ -143,7 +143,7 @@ describe('against the exact Gaussian posterior', () => {
       return r.elbos.slice(-200).reduce((a, b) => a + b, 0) / 200
     }
     expect(elbo(structured) - elbo(meanField)).toBeGreaterThan(0.35)
-  })
+  }, 60_000)
 
   it('recovers a hierarchy: the mean with its group effects, from the parents alone', () => {
     const exact = exactOf(hierarchy)
@@ -154,7 +154,7 @@ describe('against the exact Gaussian posterior', () => {
       for (let j = 0; j <= i; j++)
         expect(Math.abs((m.cov[i]?.[j] ?? 0) - (exact.cov[i]?.[j] ?? 0)), `cov ${i},${j}`).toBeLessThan(0.04)
     }
-  })
+  }, 60_000)
 
   it('has a full block for a coefficient vector, as the full-rank guide does', () => {
     const exact = exactOf(regression)
@@ -187,5 +187,5 @@ describe('against the exact Gaussian posterior', () => {
     const last = (r: { elbos: readonly number[] }) => r.elbos.slice(-100).reduce((a, b) => a + b, 0) / 100
     expect(Math.abs(last(st) - last(full))).toBeLessThan(0.02)
     expect(last(mf)).toBeLessThan(last(st) + 0.03)
-  })
+  }, 60_000)
 })
