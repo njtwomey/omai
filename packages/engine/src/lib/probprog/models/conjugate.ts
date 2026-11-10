@@ -15,7 +15,7 @@ import {
 } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
-import { defineModel } from '../model/index.ts'
+import { defineModel, type ModelDefinition } from '../model/index.ts'
 import {
   betaBernoulli as betaBernoulliExact,
   gammaPoisson as gammaPoissonExact,
@@ -25,6 +25,28 @@ import { type BenchmarkData, type BenchmarkModel, defineBenchmark } from './benc
 import { exactPlan, gibbsPlan, importancePlan, laplacePlan, nutsPlan, sviPlan, temperedPlan } from './plans.ts'
 
 const BB_PRIOR = { a: 2, b: 2 }
+
+/**
+ * The Beta-Bernoulli coin with a prior of your choice: `p ~ Beta(a, b)` and flips `y` (bind them with `{ y: [1, 0, ...] }`).
+ * The benchmark {@link betaBernoulli} is this model at `Beta(2, 2)`.
+ *
+ * @param prior - The prior's shape parameters `a` and `b` (default 2 and 2).
+ * @returns The model definition.
+ * @concept posterior-validation
+ * @index function The Beta-Bernoulli coin with a chosen Beta(a, b) prior; bind it to `{ y: flips }`.
+ * @example
+ * ```ts
+ * import { betaBernoulliModel } from 'omai-engine/probprog/models'
+ * betaBernoulliModel({ a: 1, b: 1 }).bind({ y: [1, 0, 1] }).sizes // => { flip: 3 }
+ * ```
+ */
+export function betaBernoulliModel(prior: { readonly a: number; readonly b: number } = BB_PRIOR): ModelDefinition {
+  return defineModel('beta-bernoulli', (m) => {
+    const y = m.data('y', { dims: ['flip'], support: 'binary', role: 'response' })
+    const p = m.latent('p', d.beta(prior.a, prior.b), { doc: 'the probability of heads' })
+    m.observe('y', d.bernoulli({ probs: p }), y)
+  })
+}
 
 /**
  * Beta-Bernoulli: a coin of unknown bias `p ~ Beta(2, 2)` and `n` flips (20 at the canonical size, generated at `p = 0.3`).
@@ -47,11 +69,7 @@ export const betaBernoulli: BenchmarkModel = defineBenchmark({
     'A coin with a Beta(2, 2) prior on its bias and twenty flips: the conjugate model with a closed-form Beta posterior and evidence.',
   tags: ['conjugate', 'exact', 'discrete-data', 'one-dimensional', 'unit-interval'],
   references: ['Gelman et al., Bayesian Data Analysis, 3rd ed., section 2.4 (the beta-binomial model)'],
-  definition: defineModel('beta-bernoulli', (m) => {
-    const y = m.data('y', { dims: ['flip'], support: 'binary', role: 'response' })
-    const p = m.latent('p', d.beta(BB_PRIOR.a, BB_PRIOR.b), { doc: 'the probability of heads' })
-    m.observe('y', d.bernoulli({ probs: p }), y)
-  }),
+  definition: betaBernoulliModel(BB_PRIOR),
   generate: (key: Key, size = 20): BenchmarkData => {
     const p = 0.3
     const y = Array.from(toFlat(drawBernoulli(foldIn(key, 0), p, [size])))
@@ -141,6 +159,30 @@ export const normalNormal: BenchmarkModel = defineBenchmark({
 const GP_PRIOR = { shape: 2, rate: 0.5 }
 
 /**
+ * The Gamma-Poisson rate with a prior of your choice: `rate ~ Gamma(shape, rate)` (shape and rate) and counts `k` (bind
+ * them with `{ k: [3, 5, ...] }`). The benchmark {@link gammaPoisson} is this model at `Gamma(2, 0.5)`.
+ *
+ * @param prior - The prior's shape and rate (default 2 and 0.5).
+ * @returns The model definition.
+ * @concept posterior-validation
+ * @index function The Gamma-Poisson rate with a chosen Gamma(shape, rate) prior; bind it to `{ k: counts }`.
+ * @example
+ * ```ts
+ * import { gammaPoissonModel } from 'omai-engine/probprog/models'
+ * gammaPoissonModel({ shape: 1, rate: 1 }).bind({ k: [3, 1] }).sizes // => { obs: 2 }
+ * ```
+ */
+export function gammaPoissonModel(
+  prior: { readonly shape: number; readonly rate: number } = GP_PRIOR,
+): ModelDefinition {
+  return defineModel('gamma-poisson', (m) => {
+    const k = m.data('k', { dims: ['obs'], support: 'count', role: 'response' })
+    const rate = m.latent('rate', d.gamma(prior.shape, prior.rate), { doc: 'the Poisson rate' })
+    m.observe('k', d.poisson(rate), k)
+  })
+}
+
+/**
  * Gamma-Poisson: a rate `lambda ~ Gamma(2, 0.5)` and fifteen Poisson counts (generated at `lambda = 3.2`). The posterior
  * is `Gamma(2 + sum k, 0.5 + n)`; the rate lives on the positive reals, so the unconstrained methods work on its log.
  *
@@ -159,11 +201,7 @@ export const gammaPoisson: BenchmarkModel = defineBenchmark({
     'The rate of Poisson counts under a Gamma(2, 0.5) prior: conjugate, a Gamma posterior on the positive reals.',
   tags: ['conjugate', 'exact', 'counts', 'one-dimensional', 'positive'],
   references: ['Gelman et al., Bayesian Data Analysis, 3rd ed., section 2.6 (Poisson model)'],
-  definition: defineModel('gamma-poisson', (m) => {
-    const k = m.data('k', { dims: ['obs'], support: 'count', role: 'response' })
-    const rate = m.latent('rate', d.gamma(GP_PRIOR.shape, GP_PRIOR.rate), { doc: 'the Poisson rate' })
-    m.observe('k', d.poisson(rate), k)
-  }),
+  definition: gammaPoissonModel(GP_PRIOR),
   generate: (key: Key, size = 15): BenchmarkData => {
     const rate = 3.2
     return { data: { k: Array.from(toFlat(drawPoisson(foldIn(key, 0), rate, [size]))) }, generating: { rate } }
