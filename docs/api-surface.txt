@@ -27,7 +27,7 @@ omai-engine/embedding	49	4513a5792abc
 omai-engine/ensembles	102	0c7534fcaa39
 omai-engine/environments	260	a49b46f34861
 omai-engine/explain	337	f96fcef47d2d
-omai-engine/exposition	304	5da8650a5a18
+omai-engine/exposition	316	9883d47a38b5
 omai-engine/fairness	201	a880db9b6b90
 omai-engine/fields	117	c5cfdddb8334
 omai-engine/foundations	360	ba6e6ecf1cfd
@@ -119,10 +119,10 @@ omai-render/gym	6	32b6352a0038
 omai-render/layout	37	9aaaf0fb6fd0
 omai-render/maths	21	b0c277e6cca7
 omai-render/producer	52	c98287f1da91
-omai-render/react	536	0d8d6358b8de
+omai-render/react	543	94d4c043f56f
 omai-render/structures	25	8a36eafae87f
 omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
-omai-render/views	297	3d796fa81329
-total	19777	e36c014ad539
+omai-render/views	303	541cc98902e2
+total	19802	f76f4475dfe5

@@ -42,6 +42,7 @@ import type { PipelineStages } from './pipelines.ts'
 import type { PointsSteps } from './points-steps.ts'
 import type { PopulationSteps } from './populations.ts'
 import type { PosteriorComparison } from './posterior-comparison.ts'
+import type { PosteriorPairs } from './posterior-pairs.ts'
 import type { HyperparameterSurface, PosteriorGrid } from './posteriors.ts'
 import type { Reachability } from './reachability.ts'
 import type { RuleSet } from './rules.ts'
@@ -134,6 +135,7 @@ export type Exposition =
   | ChainDiagnostics
   | SbcRun
   | PosteriorComparison
+  | PosteriorPairs
   | ElboRun
 
 /** The tag of an exposition record. */
@@ -245,5 +247,6 @@ const KINDS: Readonly<Record<ExpositionKind, true>> = {
   chainDiagnostics: true,
   sbcRun: true,
   posteriorComparison: true,
+  posteriorPairs: true,
   elboRun: true,
 }

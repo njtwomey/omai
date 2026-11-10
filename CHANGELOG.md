@@ -185,6 +185,15 @@ Rendering and exposition (omai-engine, omai-render):
   accumulate, the energy with each chain's E-BFMI and the pair plot with the divergent transitions marked (`ecdfView`,
   `autocorrelationView`, `essView`, `energyView`, `pairView`; `ChainDiagnosticsView` offers the charts the record can draw and
   takes an `initial` chart).
+- `posteriorPairs` (`omai-engine/exposition`): the corner plot of several methods' posterior draws as a record: each method's
+  draws thinned to `maxPoints` (the same points in every pair, with the step each arrived at, the divergent transitions apart),
+  the shared axis range and grid of each coordinate, and the density, mean, sd and correlations of the draws up to each of
+  `frames` cursor positions, so a view plays the draws arriving with nothing to compute; plain numbers, sized for a Worker
+  boundary. The view `posteriorPairsView` (scatter below the diagonal, densities on it, correlations or Gaussian ellipses
+  above, the truth marked, divergences in red, a cursor, methods and coordinates to show) and the React `PosteriorPairsView`
+  (a switch per method and coordinate, drag to reorder, the upper triangle) and `PosteriorPairsPlayer` (play, pause, scrub, speed;
+  the cursor can be the page's: `cursor` and `onCursor`, the hook `usePairsCursor`). `pairView` shares its grid, edge labels
+  and thinning with it (`pairGrid`, `pairEdge`, `thinEvenly`).
 - Model graphs as plate diagrams: `modelGraph` and `diagram` draw plates that cross (nodes over `[student]`, `[exam]` and
   `[student, exam]`), write sizes as `N = 40`, draw data as dots and unroll vector sites; `StructureNode.groups` and
   `StructureGroup.intersection` in the `Structure` record; `DiagramOptions.decorate` draws a glyph inside each node;

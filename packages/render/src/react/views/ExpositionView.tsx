@@ -34,6 +34,7 @@ import { ModelRunPlayer } from './model-run.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
 import { PointsStepsView } from './points-steps.tsx'
 import { PosteriorComparisonView } from './posterior-comparison.tsx'
+import { PosteriorPairsPlayer } from './posterior-pairs.tsx'
 import { RecordBoundary } from './RecordBoundary.tsx'
 import { ReachabilityPlotView } from './reachability.tsx'
 import { ConceptView, RuleListView } from './rules.tsx'
@@ -212,6 +213,8 @@ function StandardRecordView(props: ExpositionViewProps): ReactElement {
       return <ElboRunView record={record} {...common} />
     case 'posteriorComparison':
       return <PosteriorComparisonView record={record} {...common} />
+    case 'posteriorPairs':
+      return <PosteriorPairsPlayer record={record} {...common} />
     case 'structureSteps':
       return <StructureStepsView record={record} {...common} />
     case 'pointsSteps':
