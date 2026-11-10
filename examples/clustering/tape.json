@@ -6,7 +6,7 @@
       "runId": "gaussian-mixture-em:0",
       "name": "gaussian-mixture-em",
       "seed": 0,
-      "version": "0.1.11",
+      "version": "0.1.12",
       "config": {
         "covarianceType": "full",
         "regCovar": 0.000001,

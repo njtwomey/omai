@@ -6,7 +6,7 @@
       "runId": "kalman-filter:none",
       "name": "kalman-filter",
       "seed": null,
-      "version": "0.1.11",
+      "version": "0.1.12",
       "config": {
         "steps": 150,
         "joseph": true
