@@ -23,7 +23,7 @@ export interface DraggableLineProps {
   readonly max?: number
   /** Round values to this step (also the arrow keys' step; Shift moves ten steps). */
   readonly step?: number
-  /** Shown by the handle. */
+  /** Shown by the handle (a vertical line's label flips to the left of the line when it would run off the overlay). */
   readonly label?: string
   /** A CSS colour or `var(--wb-…)` token (default the foreground). */
   readonly colour?: string
@@ -101,6 +101,9 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
     e.preventDefault()
     onChange(snap(value + dir * s))
   }
+  // A vertical line's label sits to the right of its handle, and flips to the left when it would run off the overlay.
+  const labelWidth = (props.label?.length ?? 0) * 6.6 + 8
+  const flip = vertical && top[0] + labelWidth > width
   return (
     <g
       role="slider"
@@ -144,11 +147,11 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
         />
         {props.label !== undefined && (
           <text
-            x={vertical ? 8 : -14}
+            x={vertical ? (flip ? -8 : 8) : -14}
             y={vertical ? 24 : -8}
             fontSize={11}
             fill={colour}
-            textAnchor={vertical ? 'start' : 'end'}
+            textAnchor={vertical && !flip ? 'start' : 'end'}
             style={{ pointerEvents: 'none', userSelect: 'none' }}
           >
             {props.label}

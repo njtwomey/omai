@@ -69,3 +69,20 @@ describe('DraggableLine span', () => {
     expect(out).toMatch(/y1="70"[^>]*y2="10"|y2="10"[^>]*y1="70"/)
   })
 })
+
+describe('DraggableLine label', () => {
+  it('sits right of a vertical line, and flips to its left when it would run off the overlay', () => {
+    const near = renderToString(
+      <InteractionOverlay projection={projection} width={200} height={100}>
+        <DraggableLine axis="x" value={9.8} onChange={() => undefined} label="mean μ" />
+      </InteractionOverlay>,
+    )
+    expect(near).toMatch(/<text[^>]*text-anchor="end"/)
+    const mid = renderToString(
+      <InteractionOverlay projection={projection} width={200} height={100}>
+        <DraggableLine axis="x" value={2} onChange={() => undefined} label="mean μ" />
+      </InteractionOverlay>,
+    )
+    expect(mid).toMatch(/<text[^>]*text-anchor="start"/)
+  })
+})

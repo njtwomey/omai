@@ -3,6 +3,11 @@
 Versions are released in lockstep for omai-engine, omai-render and omai-meta. Up to 0.1.3 the packages were published as
 mdml-engine, mdml-render and mdml-meta.
 
+## 0.1.12
+
+- `DraggableLine`: the label of a vertical line flips to the left of the line when it would run off the overlay (a line near the
+  right edge of the plot, as on a phone).
+
 ## 0.1.11
 
 From the notes site's port off its local kit.
