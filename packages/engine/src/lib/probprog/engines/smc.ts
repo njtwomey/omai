@@ -411,7 +411,21 @@ export function temperedPosterior(
   })
 }
 
-function filterable(a: ProgramAnalysis): string | undefined {
+/**
+ * Why a program cannot be run by the bootstrap particle filter, or `undefined` when it can: it needs exactly one `markov`
+ * loop that holds every latent site and has nothing after it.
+ *
+ * @param a - The analysis of the program.
+ * @returns The reason, or `undefined`.
+ * @concept sequential-monte-carlo
+ * @example
+ * ```ts
+ * import { analyse, filterBlocker, observe, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * filterBlocker(analyse(() => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 1) }, undefined)) // => 'no single markov loop'
+ * ```
+ */
+export function filterBlocker(a: ProgramAnalysis): string | undefined {
   if (a.markov.length !== 1) return 'no single markov loop'
   const loop = a.markov[0]
   if (loop === undefined) return 'no markov loop'
@@ -442,7 +456,7 @@ export function smcEngine(options: ParticleFilterOptions & TemperedSmcOptions = 
     applies: (a: ProgramAnalysis) => {
       if (!a.hasLikelihood) return feasibility(false, 'weighted', 0, 'observed sites have no likelihood')
       if (a.latent.length === 0) return feasibility(false, 'weighted', 0, 'no latent sites')
-      const problem = filterable(a)
+      const problem = filterBlocker(a)
       if (problem === undefined) {
         const T = a.markov[0]?.length ?? 1
         return feasibility(
@@ -462,7 +476,7 @@ export function smcEngine(options: ParticleFilterOptions & TemperedSmcOptions = 
       )
     },
     run: <D>(model: Model<D>, data: D, a: ProgramAnalysis, run: EngineRunOptions) =>
-      filterable(a) === undefined
+      filterBlocker(a) === undefined
         ? particleFilter(model, data, { ...options, ...run })
         : temperedSmc(model, data, { ...options, ...run }),
   }

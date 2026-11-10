@@ -11,7 +11,7 @@ import type { Json } from '../../base/index.ts'
 import { type Key, key as makeKey } from '../../random/index.ts'
 import { type SMCState, smcAlgorithm } from '../../sampling/index.ts'
 import { choice, type DictSpace, dict, int, real } from '../../space/index.ts'
-import { primalOf, type Tensor, toFlat } from '../../tensor/index.ts'
+import { primalOf, type Tensor } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -25,6 +25,7 @@ import {
   tensor,
 } from '../../trace/index.ts'
 import {
+  filterBlocker,
   type ParticleFilterState,
   particleFilterAlgorithm,
   particleFilterPosterior,
@@ -38,6 +39,7 @@ import type { Posterior } from '../posterior.ts'
 import {
   checkOf,
   guard,
+  isProgramAnalysis,
   type MethodModel,
   type ModelAnalysis,
   no,
@@ -47,7 +49,7 @@ import {
   programOf,
   yes,
 } from './_support.ts'
-import { defineInferenceMethod, type InferenceMethod } from './method.ts'
+import { defineInferenceMethod, type InferenceMethod, type Verdict } from './method.ts'
 
 /** The paths the tempered SMC method logs. */
 export type TemperedSmcPath =
@@ -157,6 +159,7 @@ export function temperedSmcMethod(
         }),
       }),
     make: (config): Algorithm<SMCState, TemperedSmcPath> => {
+      ensure()
       const p = problem()
       const inner = smcAlgorithm(p.prior, p.logLikelihood, {
         numParticles: num(config, 'numParticles'),
@@ -211,12 +214,12 @@ export const particleFilterKnobs: DictSpace = dict({
 // the posterior reads of one (`stackSiteValues` takes `type`, `isObserved` and `value`).
 type PathRecord = Readonly<Record<string, Tensor>>
 
-const recordOf = (tr: ProgramTrace): PathRecord =>
-  Object.fromEntries(
-    [...tr.sites.values()]
-      .filter((x) => (x.type === 'sample' && !x.isObserved) || x.type === 'deterministic')
-      .map((x) => [x.name, primalOf(x.type === 'plate' || x.type === 'markov' ? (undefined as never) : x.value)]),
-  )
+const recordOf = (tr: ProgramTrace): PathRecord => {
+  const out: Record<string, Tensor> = {}
+  for (const x of tr.sites.values())
+    if ((x.type === 'sample' && !x.isObserved) || x.type === 'deterministic') out[x.name] = primalOf(x.value)
+  return out
+}
 
 const traceOfRecord = (r: PathRecord): ProgramTrace =>
   ({
@@ -257,13 +260,19 @@ export function particleFilterMethod(
   const program = programOf(model)
   const posterior = (state: ParticleFilterState): Posterior =>
     particleFilterPosterior(state, state.ess === 0 && state.t > 0 ? 'failed' : 'completed')
-  const check = checkOf(smcEngine(), () =>
-    no(
-      'a spec has no recurrences yet (the filter runs over a markov loop of a program)',
-      ['markov loop'],
-      'give a program with one markov loop',
-    ),
-  )
+  const check = (a: ModelAnalysis): Verdict => {
+    if (!isProgramAnalysis(a))
+      return no(
+        'a spec has no recurrences yet (the filter runs over a markov loop of a program)',
+        ['markov loop'],
+        'give a program with one markov loop',
+      )
+    if (!a.hasLikelihood) return no('observed sites have no likelihood', ['likelihood'], 'add an observation')
+    const blocker = filterBlocker(a)
+    return blocker === undefined
+      ? yes(`a markov loop of ${a.markov[0]?.length ?? 0} steps`)
+      : no(blocker, ['markov loop'], 'give a program with one markov loop holding every latent site')
+  }
   const ensure = guard(options.name ?? 'particle-filter', model, check)
   return defineInferenceMethod<ParticleFilterState, Config, ParticleFilterPath, ModelAnalysis>({
     name: options.name ?? 'particle-filter',
@@ -286,6 +295,7 @@ export function particleFilterMethod(
         }),
       }),
     make: (config): Algorithm<ParticleFilterState, ParticleFilterPath> => {
+      ensure()
       const inner = particleFilterAlgorithm(program, undefined, {
         numParticles: num(config, 'numParticles'),
         resampleThreshold: num(config, 'resampleThreshold'),
@@ -326,5 +336,3 @@ export function particleFilterMethod(
     },
   })
 }
-
-void toFlat

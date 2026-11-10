@@ -199,7 +199,8 @@ export function laplaceMethod(
           compute: (s) => posteriorJson(posterior(s)),
         }),
       }),
-    make: (config, key): Algorithm<LaplaceRunState, LaplacePath> => {
+    make: (config): Algorithm<LaplaceRunState, LaplacePath> => {
+      ensure()
       const um = unconstrained()
       const maxIterations = num(config, 'maxIterations')
       const gradTol = num(config, 'gradTol')
@@ -208,7 +209,6 @@ export function laplaceMethod(
         lbfgsAlgorithm(f, fromStorage(start, [um.dim], 'float64'), { gradTol, ftol: 0 })
       // Stepping and serialising an L-BFGS state do not depend on the start, so one algorithm serves the run.
       const shared = lbfgsOf(new Float64Array(um.dim))
-      void key
       return {
         name: 'probprog/laplace-method',
         config: { maxIterations, gradTol },

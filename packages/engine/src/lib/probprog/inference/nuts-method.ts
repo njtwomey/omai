@@ -445,6 +445,7 @@ export function nutsMethod(
         }),
       }),
     make: (config) => {
+      ensure()
       const c = settings(config)
       const um = unconstrained()
       const dim = um.dim

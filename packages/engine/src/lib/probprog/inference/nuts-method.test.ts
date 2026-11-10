@@ -119,6 +119,8 @@ describe('nutsMethod', () => {
     expect(snap.summary[0]?.ess).toBeGreaterThan(1)
     expect(snap.diagnostics['draws']).toBe(20)
     expect(snap.diagnostics['partial']).toBe(true)
+    // A snapshot is JSON: it survives a round trip unchanged.
+    expect(JSON.parse(JSON.stringify(snap))).toEqual(snap)
   })
 
   it('resumes from a serialised state to the same draws as an uninterrupted run', () => {

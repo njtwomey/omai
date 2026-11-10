@@ -376,6 +376,36 @@ describe('check says whether a method applies to a spec, and why not', () => {
     expect(p(analyseOf(MODELS['logistic'] as never))?.applies).toBe(false)
   })
 
+  it("gives a verdict with a reason for every method on every shared program, the engine's own", () => {
+    const programs = { ...MODELS, ...DISCRETE }
+    const methods = [
+      nuts(),
+      sviMethod(normalMean),
+      laplaceMethod(normalMean),
+      gibbsMethod(normalMean),
+      temperedSmcMethod(normalMean),
+      importanceMethod(normalMean),
+      conjugateMethod(normalMean),
+      gaussianMethod(normalMean),
+      enumerationMethod(normalMean),
+      emMethod(normalMean),
+      abcSmcMethod(normalMean),
+      abcRejectionMethod(normalMean),
+      particleFilterMethod(normalMean),
+    ] as unknown as InferenceMethod<never, Config, string, ModelAnalysis>[]
+    let refused = 0
+    for (const [name, program] of Object.entries(programs)) {
+      const a = analyseOf(program)
+      for (const m of methods) {
+        const v = m.check?.(a)
+        expect(v?.reason.length, `${m.name} on ${name}`).toBeGreaterThan(3)
+        if (v?.applies === false) refused += 1
+      }
+    }
+    // Most pairs do not apply, and each says why.
+    expect(refused).toBeGreaterThan(40)
+  })
+
   it('a method refuses to run on a model it does not apply to, with the same reason', () => {
     const bad = glm.bind({ y: [1, 2, 3] })
     expect(() => session(gibbsMethod(bad), { mode: 'eager', steps: 3 })).toThrow(/no discrete or conjugate/)
