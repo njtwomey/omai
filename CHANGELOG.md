@@ -18,6 +18,24 @@ mdml-engine, mdml-render and mdml-meta.
   drag snap `step` (default unchanged). `DraggableRect` also takes `drawable` (press outside the rectangle and drag to draw a
   new one, clamped, snapped, `minSize` kept, Escape cancels, a click draws nothing) and `onDrawEnd`.
 
+From the notes site's last figures (omai-render):
+- Fix: `useChartProjection` returns a new projection after a redraw that moved the plotting box, so an overlay held as a stable
+  element (`ResponsiveChart`'s `overlay` node) redraws its handles when the chart is resized or its colour bar changes (the
+  handles were left 150 to 260 px off after a resize). A test measures `chartProjection` against real ECharts for a heatmap
+  with and without a colour bar; a colour bar alone was not found to move the box.
+- `DraggablePoints place`: a press on the plot puts the single point (or moves it) and it follows the pointer until release.
+  `InteractionOverlay` now keeps one catching rectangle and passes pointer events to every `Backdrop`, so `Probe`, `Brush`,
+  `NearestHover` and `DraggablePoints` stack instead of blocking one another.
+- `workerStage` and `serveStage` (`omai-render/producer`): a `useJob` stage that runs in a Web Worker with progress and is
+  terminated when the job is replaced. `JobContext.onCancel(undo)` runs cleanups when a job is replaced, deactivated or
+  unmounted, and a stage still pending then is dropped instead of awaited.
+- `image()` takes `Pixels` (RGBA bytes) as well as image data.
+- `ControlPanel columns` drops columns on a narrow screen (`minColumnWidth`, default the controls' own minimum).
+- The `Player` row wraps its scrubber and stamp onto a second line on a narrow screen instead of clipping the stamp.
+- `points` takes `symbol: 'plane'` (new `SYMBOLS` table and `symbolOf`; `cross` moved there from the complex-plane view),
+  `symbolRotate` (one angle or one per point) and `labelOffset` (pixels).
+- `heatmap cellText(value, row, col, x, y)` gives per-cell hover text.
+
 ## 0.1.11
 
 From the notes site's port off its local kit.
