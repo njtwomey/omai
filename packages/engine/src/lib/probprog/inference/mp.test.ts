@@ -148,13 +148,95 @@ describe('vmpSpecMethod', () => {
     expect(pa?.mean('theta').shape).toEqual([5])
   })
 
-  it('refuses a probit regression and names the operators with no variational rule', () => {
+  it('takes a regression with scalar weights and a hierarchy with affine means: exact means, a bound that rises', () => {
+    const xs = [-1, -0.5, 0.2, 0.8, 1.5]
+    const ys = [-1.1, -0.4, 0.5, 1.0, 1.9]
+    const line = defineModel('line', (b) => {
+      const n = b.range('row')
+      const a = b.latent('a', d.normal(0, 2))
+      const s = b.latent('s', d.normal(0, 2))
+      b.observe('y', d.normal(ops.add(a, ops.mul(s, b.data('x', { dims: [n] }))), 0.5), b.data('y', { dims: [n] }))
+    })
+    const m = vmpSpecMethod(line.bind({ x: xs, y: ys }))
+    expect(m.check?.(analyseSpec(line))).toMatchObject({ applies: true })
+    const run = session(m, { config: { tol: 1e-12 }, steps: 500, mode: 'eager' })
+    const post = m.posterior?.(run.state, run.config)
+    // The exact posterior of (a, s) is Gaussian: its mean is the mean field's.
+    const tau = 4
+    const n = xs.length
+    const sx = xs.reduce((t, v) => t + v, 0)
+    const sxx = xs.reduce((t, v) => t + v * v, 0)
+    const P = [1 / 4 + tau * n, tau * sx, tau * sx, 1 / 4 + tau * sxx]
+    const h = [tau * ys.reduce((t, v) => t + v, 0), tau * xs.reduce((t, v, i) => t + v * (ys[i] as number), 0)]
+    const det = (P[0] as number) * (P[3] as number) - (P[1] as number) ** 2
+    expect(toFlat(post?.mean('a') as never)[0]).toBeCloseTo(
+      ((P[3] as number) * (h[0] as number) - (P[1] as number) * (h[1] as number)) / det,
+      6,
+    )
+    expect(toFlat(post?.mean('s') as never)[0]).toBeCloseTo(
+      ((P[0] as number) * (h[1] as number) - (P[2] as number) * (h[0] as number)) / det,
+      6,
+    )
+    const bounds = run
+      .run()
+      .events.filter((e) => 'name' in e && e.name === 'mp/elbo')
+      .map((e) => (e as unknown as { value: number }).value)
+    expect(bounds.length).toBeGreaterThan(3)
+    for (let k = 1; k < bounds.length; k++)
+      expect(bounds[k] as number).toBeGreaterThanOrEqual((bounds[k - 1] as number) - 1e-9)
+    // A hierarchy whose group means are affine in a covariate.
+    const hier = defineModel('hier', (b) => {
+      const j = b.range('group')
+      const alpha = b.latent('alpha', d.normal(0, 3))
+      const beta = b.latent('beta', d.normal(0, 3))
+      const theta = b.latent('theta', d.normal(ops.add(alpha, ops.mul(beta, b.data('z', { dims: [j] }))), 1), {
+        dims: [j],
+      })
+      b.observe('y', d.normal(theta, 0.8), b.data('y', { dims: [j] }))
+    })
+    const hv = vmpSpecMethod(hier.bind({ z: [0, 1, 2, 3], y: [0.2, 1.1, 1.8, 3.2] }))
+    expect(hv.check?.(analyseSpec(hier))).toMatchObject({ applies: true })
+    const hr = session(hv, { config: { tol: 1e-12 }, steps: 800, mode: 'eager' })
+    expect(hr.status).toBe('converged')
+    expect(toFlat(hv.posterior?.(hr.state, hr.config)?.mean('beta') as never)[0] as number).toBeGreaterThan(0.5)
+  })
+
+  it('takes a probit regression (the Albert-Chib augmentation) and raises the bound at every sweep', () => {
     const m = vmpSpecMethod(probitModel.bind({ X, y }))
-    const v = m.check?.(analyseSpec(probitModel))
+    expect(m.check?.(analyseSpec(probitModel))).toMatchObject({ applies: true })
+    const s = session(m, { config: { tol: 1e-10 }, steps: 300, mode: 'eager' })
+    expect(s.status).toBe('converged')
+    const bounds = s
+      .run()
+      .events.filter((e) => 'name' in e && e.name === 'mp/elbo')
+      .map((e) => (e as unknown as { value: number }).value)
+    expect(bounds.length).toBeGreaterThan(3)
+    for (let k = 1; k < bounds.length; k++)
+      expect(bounds[k] as number).toBeGreaterThanOrEqual((bounds[k - 1] as number) - 1e-9)
+    // The weights point the same way as under expectation propagation, with a narrower spread.
+    const ep = epSpecMethod(probitModel.bind({ X, y }))
+    const e = session(ep, { config: { tol: 1e-10 }, steps: 300, mode: 'eager' })
+    const pv = m.posterior?.(s.state, s.config)
+    const pe = ep.posterior?.(e.state, e.config)
+    const mv = toFlat(pv?.mean('w') as never)
+    const me = toFlat(pe?.mean('w') as never)
+    for (const [i, v] of mv.entries()) expect(Math.sign(v as number)).toBe(Math.sign(me[i] as number))
+    expect(Math.abs((mv[1] as number) - (me[1] as number))).toBeLessThan(0.5)
+  })
+
+  it('refuses a hard comparison and names the operator and why it has no variational rule', () => {
+    const hard = defineModel('hard', (b) => {
+      const n = b.range('row')
+      const Xd = b.data('X', { dims: [n, 'feature'] })
+      const w = b.latent('w', d.normal(0, 1), { dims: ['feature'] })
+      b.observe('y', d.bernoulli({ probs: ops.gt(Xd.matmul(w), 0) }), b.data('y', { dims: [n], support: 'binary' }))
+    })
+    const m = vmpSpecMethod(hard.bind({ X, y }))
+    const v = m.check?.(analyseSpec(hard))
     expect(v).toMatchObject({ applies: false, missing: ['vmp message rules'] })
-    expect(v?.reason).toMatch(/dot-constant, probit have no variational message rule/)
+    expect(v?.reason).toMatch(/greater-than has no variational message rule/)
     expect(v?.hint).toMatch(/expectation propagation/)
-    expect(() => session(m, { steps: 5, mode: 'eager' })).toThrow(/dot-constant, probit have no variational/)
+    expect(() => session(m, { steps: 5, mode: 'eager' })).toThrow(/greater-than has no variational/)
   })
 })
 

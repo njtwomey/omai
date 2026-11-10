@@ -592,8 +592,22 @@ describe('what cannot be mapped is refused with the node and the reason', () => 
     const c = toFactorGraph(m.bind({ X: [[1, 2]], y: [1] }))
     const g = compileFactorGraph(c)
     expect(factorGraphVerdict(c, g, 'ep').ok).toBe(true)
-    expect(factorGraphVerdict(c, g, 'vmp')).toMatchObject({ ok: false, missing: ['vmp message rules'] })
-    expect(factorGraphVerdict(c, g, 'vmp').reason).toMatch(/dot-constant, probit have no variational/)
+    // The probit link has a variational rule (the Albert-Chib augmentation), the affine map too.
+    expect(factorGraphVerdict(c, g, 'vmp').ok).toBe(true)
+    // A hard comparison has none, and says why.
+    const hard = defineModel('hard', (b) => {
+      const n = b.range('row')
+      const X = b.data('X', { dims: [n, 'f'] })
+      const w = b.latent('w', d.normal(0, 1), { dims: ['f'] })
+      b.observe('y', d.bernoulli({ probs: ops.gt(X.matmul(w), 0) }), b.data('y', { dims: [n], support: 'binary' }))
+    })
+    const ch = toFactorGraph(hard.bind({ X: [[1, 2]], y: [1] }))
+    const gh = compileFactorGraph(ch)
+    expect(factorGraphVerdict(ch, gh, 'ep').ok).toBe(true)
+    expect(factorGraphVerdict(ch, gh, 'vmp')).toMatchObject({ ok: false, missing: ['vmp message rules'] })
+    expect(factorGraphVerdict(ch, gh, 'vmp').reason).toMatch(
+      /greater-than has no variational.*KL\(q \|\| p\) is infinite/,
+    )
     const bad = toFactorGraph(
       defineModel('bad', (b) => {
         b.observe(

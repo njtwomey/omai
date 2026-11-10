@@ -308,8 +308,8 @@ describe('the evidence of a state with no information', () => {
   it('is NaN under every projection, and a VMP run observes its first state without throwing', () => {
     for (const projection of [M.momentProjection, M.klqpProjection, M.sumProductProjection]) {
       const alg = M.messagePassingAlgorithm(compiled, settings({ projection }))
-      expect(Number.isNaN(M.evidenceOf(compiled, { projection }, alg.init()))).toBe(true)
-      expect(() => alg.observe?.(alg.init(), 0)).not.toThrow()
+      expect(Number.isNaN(M.evidenceOf(compiled, { projection }, alg.init(undefined as never)))).toBe(true)
+      expect(() => alg.observe?.(alg.init(undefined as never), 0)).not.toThrow()
     }
   })
   it('is read from the projection alone: the settings of a run are not needed', () => {

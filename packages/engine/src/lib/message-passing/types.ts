@@ -237,6 +237,15 @@ export interface FactorOperator {
   readonly readsTarget?: boolean | ((to: number) => boolean)
   /** True when the operator reads `OperatorContext.power` (fractional EP); the engine refuses a power on the others. */
   readonly power?: boolean
+  /**
+   * The port this factor defines as a deterministic function of the others (the output of a sum, a projection, a copy), if
+   * it does. Under variational message passing a variable so defined is not a free variable of the mean field: its belief
+   * is the pushforward its definer sends (children's messages never enter it), and the definer is shown the cavity of the
+   * output, the messages its other factors would send, which it passes to the inputs. Absent: a stochastic factor.
+   */
+  readonly defines?: number
+  /** Why a rule has no message, in words, for the capability check (`greater-than` has no variational rule: a hard step has no finite KL). */
+  readonly noRule?: Readonly<Partial<Record<Mode, string>>>
   /** A reason the factor cannot be built from these parameters and families, or `undefined` when it can. */
   check?(params: Params, families: readonly Family[]): string | undefined
   ep?(c: OperatorContext): OperatorResult

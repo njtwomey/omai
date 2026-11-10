@@ -2,7 +2,10 @@
  * The linear-Gaussian operators: an affine combination of Gaussians (and its special cases, the sum, the difference
  * and the scaling by a constant), a Gaussian projection of a Gaussian vector (a dot product and a matrix product with
  * constants), a regression row, and a joint Gaussian potential over scalar variables. All are closed forms under
- * expectation propagation, so EP is exact on a tree of them.
+ * expectation propagation, so EP is exact on a tree of them. The affine ones (`linear`, `plus`, `difference`,
+ * `times-constant`, `sum`, `dot-constant`) are deterministic: they define their output (`FactorOperator.defines`), and
+ * under variational message passing the output is the pushforward of the inputs' beliefs while the messages to the
+ * inputs are the expected log of the output's cavity, which is the mean field of the model with the output substituted.
  */
 
 import { OmaiError } from '../../base/index.ts'
@@ -68,6 +71,28 @@ function affineEvidence(c: OperatorContext, coeffs: readonly number[], offset: n
   return log
 }
 
+/**
+ * The variational message of y = d + sum c_i a_i, which defines y: to the output, the pushforward of the inputs' beliefs
+ * (the output's belief is that alone); to input j, what the mean field makes of the cavity `N(h, J)` of the output (the
+ * messages its other factors send it) once the other inputs are averaged out: `exp E[log cavity(d + sum c_i a_i)]` as a
+ * function of a_j, which is `[c_j (h - J (d + sum_{i != j} c_i E[a_i])), J c_j^2]`. The variances of the other inputs only
+ * add a constant, so they do not appear.
+ */
+function affineVariational(c: OperatorContext, coeffs: readonly number[], offset: number): OperatorResult {
+  if (c.to === 0) return affineMessage(c, coeffs, offset)
+  const j = c.to - 1
+  const k = coeffs[j] ?? 0
+  if (k === 0) return { message: [0, 0] }
+  const out = arg(c, 0)
+  if (out.eta === undefined)
+    throw new OmaiError('not-implemented', 'a deterministic factor with an observed output has no variational message')
+  let rest = offset
+  for (const [i, ki] of coeffs.entries()) if (i !== j) rest += ki * gaussianOf(arg(c, i + 1)).mean
+  const h = out.eta[0] ?? 0
+  const lambda = out.eta[1] ?? 0
+  return { message: [k * (h - lambda * rest), lambda * k * k] }
+}
+
 function affineOperator(
   name: string,
   description: string,
@@ -78,15 +103,21 @@ function affineOperator(
     name,
     description,
     ports,
-    support: { ep: 'exact' },
+    support: { ep: 'exact', vmp: 'exact' },
+    defines: 0,
     ep: (c) => {
       const f = form(c.params)
       return affineMessage(c, f.coeffs, f.offset)
+    },
+    vmp: (c) => {
+      const f = form(c.params)
+      return affineVariational(c, f.coeffs, f.offset)
     },
     logEvidence: (c) => {
       const f = form(c.params)
       return affineEvidence(c, f.coeffs, f.offset)
     },
+    expectedLog: () => 0,
   }
 }
 
@@ -214,32 +245,14 @@ export const dotConstant: FactorOperator = {
     { name: 's', accepts: ['gaussian'] },
     { name: 'w', accepts: ['gaussian-mv'] },
   ],
-  support: { ep: 'exact' },
+  support: { ep: 'exact', vmp: 'exact' },
+  defines: 0,
   check: (params, families) =>
     vectorParam(params, 'a').length === families[1]?.dim ? undefined : 'dot-constant: a must have the length of w',
-  ep: (c): OperatorResult => {
-    const a = vectorParam(c.params, 'a')
-    const d = a.length
-    if (c.to === 1) {
-      const s = etaOf(arg(c, 0))
-      const j = new Array<number>(d * d)
-      for (let i = 0; i < d; i++) for (let k = 0; k < d; k++) j[i * d + k] = (s[1] ?? 0) * (a[i] ?? 0) * (a[k] ?? 0)
-      return { message: [...a.map((v) => (s[0] ?? 0) * v), ...j] }
-    }
-    const w = etaOf(arg(c, 1))
-    const factor = spd(w.slice(d), d)
-    if (factor === undefined)
-      throw new ImproperMessageError('dot-constant: the precision of w is not positive definite')
-    const mean = factor.solve(w.slice(0, d))
-    const z = factor.solve(a)
-    let m = 0
-    let v = 0
-    for (let i = 0; i < d; i++) {
-      m += (a[i] ?? 0) * (mean[i] ?? 0)
-      v += (a[i] ?? 0) * (z[i] ?? 0)
-    }
-    return { message: gaussianMessage(m, v) }
-  },
+  // The message to w is linear in the cavity of s and the pushforward needs only the belief of w, so the variational
+  // rule is the same function as the EP one, with the cavity of the defined output and the belief of the input.
+  vmp: (c): OperatorResult => dotConstantMessage(c),
+  ep: (c): OperatorResult => dotConstantMessage(c),
   logEvidence: (c) => {
     if (!allProper(c.args)) return Number.NaN
     const a = vectorParam(c.params, 'a')
@@ -254,6 +267,31 @@ export const dotConstant: FactorOperator = {
     for (let i = 0; i < d; i++) v += (a[i] ?? 0) * (cov[i] ?? 0)
     return massOf(arg(c, 0)) + massOf(arg(c, 1)) + logNormal(s.mean, m, s.variance + v)
   },
+  expectedLog: () => 0,
+}
+
+/** The message of s = a . w: to w the rank-one message of the cavity of s, to s the pushforward of the moments of w. */
+function dotConstantMessage(c: OperatorContext): OperatorResult {
+  const a = vectorParam(c.params, 'a')
+  const d = a.length
+  if (c.to === 1) {
+    const s = etaOf(arg(c, 0))
+    const j = new Array<number>(d * d)
+    for (let i = 0; i < d; i++) for (let k = 0; k < d; k++) j[i * d + k] = (s[1] ?? 0) * (a[i] ?? 0) * (a[k] ?? 0)
+    return { message: [...a.map((v) => (s[0] ?? 0) * v), ...j] }
+  }
+  const w = etaOf(arg(c, 1))
+  const factor = spd(w.slice(d), d)
+  if (factor === undefined) throw new ImproperMessageError('dot-constant: the precision of w is not positive definite')
+  const mean = factor.solve(w.slice(0, d))
+  const z = factor.solve(a)
+  let m = 0
+  let v = 0
+  for (let i = 0; i < d; i++) {
+    m += (a[i] ?? 0) * (mean[i] ?? 0)
+    v += (a[i] ?? 0) * (z[i] ?? 0)
+  }
+  return { message: gaussianMessage(m, v) }
 }
 
 /**

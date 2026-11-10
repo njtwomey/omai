@@ -14,7 +14,7 @@
  * affine operators of the engine (`plus`, `difference`, `times-constant`, `sum`, `linear`, `dot-constant`). Likelihoods:
  * observed `normal` with a known scale (`gaussian`, or `linear-regression-row` for a regression row), `bernoulli` with
  * `probit(affine)` (`probit`), `sigmoid(affine)` or `logits` (`logistic`), `gt(affine, c)` (`greater-than`, a hard
- * comparison), or `probs` a beta latent (`bernoulli`); `binomial`, `poisson` (with an exposure) and `categorical` on a
+ * comparison; expectation propagation only), or `probs` a beta latent (`bernoulli`); `binomial`, `poisson` (with an exposure) and `categorical` on a
  * beta, gamma or Dirichlet latent (the conjugate operators); and a Bernoulli network over scalar nodes, as `table`
  * factors (what belief propagation runs on). Anything else is reported with a reason, never silently dropped.
  *
@@ -1530,12 +1530,17 @@ export function factorGraphVerdict(
     return { ok: false, reason: reasons.join('; '), missing }
   }
   const lacking = operatorsWithout(g, rule)
-  if (lacking.length > 0)
+  if (lacking.length > 0) {
+    const why = lacking.flatMap((name) => {
+      const note = g.factors.find((f) => f.operator.name === name)?.operator.noRule?.[rule]
+      return note === undefined ? [] : [`${name}: ${note}`]
+    })
     return {
       ok: false,
-      reason: `the operator${lacking.length > 1 ? 's' : ''} ${lacking.join(', ')} ${lacking.length > 1 ? 'have' : 'has'} no ${rule === 'ep' ? 'expectation propagation' : rule === 'vmp' ? 'variational' : 'sum-product'} message rule`,
+      reason: `the operator${lacking.length > 1 ? 's' : ''} ${lacking.join(', ')} ${lacking.length > 1 ? 'have' : 'has'} no ${rule === 'ep' ? 'expectation propagation' : rule === 'vmp' ? 'variational' : 'sum-product'} message rule${why.length > 0 ? ` (${why.join('; ')})` : ''}`,
       missing: [`${rule} message rules`],
     }
+  }
   return {
     ok: true,
     reason: `a factor graph of ${g.variables.length} variables and ${g.factors.length} factors`,

@@ -9,7 +9,7 @@
  * `posterior(state)` reads any state as the library's `Posterior` keyed by site name, in the spec's shapes, which is what
  * an anytime snapshot shows. `check` says whether the model has a factor graph at all and why not, naming the node and
  * the reason (an opaque `custom` call, a family with no message family, a random scale, a non-affine operator), and
- * whether the method has a message rule for every operator of the graph (VMP has none for `probit` or `dot-constant`).
+ * whether the method has a message rule for every operator of the graph (VMP has none for a hard comparison, `greater-than`).
  * Nothing chooses among the three: the user does, and a method that does not apply refuses with that reason.
  */
 
@@ -224,8 +224,10 @@ export function epSpecMethod(
 /**
  * Variational message passing on a bound spec: the expected-log message of every factor, so each variable's belief is the
  * mean-field distribution that minimises KL(q || p), one sweep per step, with the variational bound on the tape. It applies
- * where every operator of the graph has a variational rule (Gaussian and conjugate models; `check` names the operators
- * that have none, such as `probit` and the affine maps).
+ * where every operator of the graph has a variational rule: Gaussian and conjugate models, affine means (a regression on
+ * scalar or vector weights, a hierarchy with means that are affine in latents; a defined value is the pushforward of
+ * its inputs under the mean field), the probit link by the Albert-Chib augmentation and the logistic link by the Jaakkola
+ * bound. `check` names the operators that have none and why (a hard comparison, `greater-than`).
  *
  * @param model - A bound spec.
  * @param options - A name for the method (default `vmp`).
