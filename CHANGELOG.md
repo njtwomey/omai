@@ -198,6 +198,14 @@ Docs: `docs/probprog/` (the plan with its status, the inventory, the survey, the
 notes and the result tables), `docs/structure.md` sections 4.32 and 4.32a.
 
 Known limits:
+- The periodic validation campaigns draw their keys from the campaign's position in the list, so adding or reordering a
+  campaign changes every table's draws; a campaign near its tolerance can then flip. The agreement tolerances of the
+  slow mixers (`rwm`, `aies`, `ensemble-slice`, and `mala`/`barker` on non-centred eight schools) are therefore `report`
+  or carry larger budgets; `rwm` learns its proposal shape from a short warm-up and freezes it, which is the weakness
+  behind that.
+- The agreement table's mean z uses the sampler's reported ESS, which is overestimated for antithetic chains (HMC on some
+  models), so a run with a tiny mean error can still trip `meanZ`; `tempered-smc` shows a mean error larger than its Monte
+  Carlo error on item response scoring at 1000 particles (its moves are weak). Both are listed, not fixed.
 - EP, VMP and BP are tested against references (the grid for the probit regression, `pgm`, `gp`, TrueSkill, the Bayesian
   mixture). Among the benchmark campaigns EP runs only in `benchmark/item-response-scoring` and `benchmark/clutter-ep`; VMP and
   BP are in none.
