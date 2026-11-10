@@ -2,7 +2,7 @@
 
 The harmonic mean estimator is refused by default; shown with its infinite variance acknowledged, on exact posterior draws of a diffuse-prior sharp-likelihood model, it fails where bridge sampling on the same draws does not.
 
-Run on 2026-11-10 at commit 908edcb3; seed 0, budget scale 1 (replications 40, draws 400, widths 3), 0.3 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (replications 40, draws 400, widths 3), 0.2 s.
 
 **Passed**: refused by default; its error is more than three times bridge sampling's at every likelihood width
 

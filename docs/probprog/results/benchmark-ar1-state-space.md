@@ -2,7 +2,7 @@
 
 AR(1) state space: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit aceb09a9; seed 0, budget scale 1 (plans 5, rows 60, scalePercent 100), 13.5 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 5, rows 60, scalePercent 100), 11.5 s.
 
 **Passed**: 3 method(s) agree with the exact truth; 2 reported
 
@@ -12,7 +12,7 @@ A stationary AR(1) latent state observed with Gaussian noise, as a scan: the lin
 
 Truth (exact): dense Gaussian conditioning of the joint of the states and the observations: posterior S (S + R)^-1 y, evidence N(y; 0, S + R). Log evidence -19.2199.
 
-Methods whose own `check` says they apply: nuts, svi, ep, vmp, laplace, importance, tempered-smc, particle-filter, abc-smc, gaussian, abc-rejection. Not applicable: bp (belief propagation sums over finite discrete variables, and 'x' is continuous); gibbs (no discrete or conjugate conditionals); em (no params to estimate); conjugate (no usable conjugate structure for x); enumeration (continuous latent nodes (x)); chain (the states of 'x' are not finite and discrete).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, elliptical-slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, ep, vmp, laplace, importance, tempered-smc, particle-filter, abc-smc, gaussian, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: bp (belief propagation sums over finite discrete variables, and 'x' is continuous); gibbs (no discrete or conjugate conditionals); em (no params to estimate); conjugate (no usable conjugate structure for x); enumeration (continuous latent nodes (x)); chain (the states of 'x' are not finite and discrete); svi-conjugate-natural (no usable conjugate structure for x).
 
 | method          | expectation | run                    | diagnostics   | why                                                                                                                  |
 | --------------- | ----------- | ---------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |

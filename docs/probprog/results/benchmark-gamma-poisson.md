@@ -2,7 +2,7 @@
 
 Gamma-Poisson rate: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit 11026959; seed 0, budget scale 1 (plans 7, rows 7, scalePercent 100), 2.6 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 7, rows 7, scalePercent 100), 2.6 s.
 
 **Passed**: 5 method(s) agree with the exact truth; 2 reported
 
@@ -12,7 +12,7 @@ The rate of Poisson counts under a Gamma(2, 0.5) prior: conjugate, a Gamma poste
 
 Truth (exact): the Gamma(a + sum k, b + n) posterior and its closed-form evidence (probprog/validation/exact.ts). Log evidence -30.5610.
 
-Methods whose own `check` says they apply: nuts, svi, gibbs, laplace, importance, tempered-smc, abc-smc, conjugate, abc-rejection. Not applicable: em (no params to estimate); particle-filter (a spec has no recurrences yet (the filter runs over a markov loop of a program)); gaussian ('rate' is gamma, not Gaussian); enumeration (continuous latent nodes (rate)); chain (a spec has no recurrences yet (the chain is a markov loop of a program)).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, ep, vmp, gibbs, laplace, importance, tempered-smc, abc-smc, conjugate, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, svi-conjugate-natural, pathfinder. Not applicable: elliptical-slice (the prior of rate is gamma, not normal or multivariateNormal); bp (belief propagation sums over finite discrete variables, and 'rate' is continuous); em (no params to estimate); particle-filter (the model has no single scan); gaussian ('rate' is gamma, not Gaussian); enumeration (continuous latent nodes (rate)); chain (the model has no single scan).
 
 | method       | expectation | run                    | diagnostics      | why                                                                                                               |
 | ------------ | ----------- | ---------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------- |

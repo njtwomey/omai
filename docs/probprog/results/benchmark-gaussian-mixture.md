@@ -2,7 +2,7 @@
 
 Gaussian mixture, label switching: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit 11026959; seed 0, budget scale 1 (plans 4, rows 8, scalePercent 100), 8.5 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 4, rows 8, scalePercent 100), 7.6 s.
 
 **Passed**: 1 method(s) agree with the quadrature truth; 3 reported
 
@@ -12,7 +12,7 @@ The two-component mixture with exchangeable means: a bimodal posterior (the rela
 
 Truth (quadrature): grid quadrature of the two means around one mode, the component labels summed out exactly (121 points per axis, evidence error 3.2e-12); that mode is the ordered posterior and the unconstrained one is its even mixture with the relabelling. Log evidence -87.8202.
 
-Methods whose own `check` says they apply: nuts, svi, gibbs, laplace, importance, abc-rejection. Not applicable: em (no params to estimate); tempered-smc (discrete latent nodes (z) prevent tempering); particle-filter (a spec has no recurrences yet (the filter runs over a markov loop of a program)); abc-smc (discrete latent nodes are not supported by ABC-SMC); conjugate (no usable conjugate structure for z); gaussian ('z' is categorical, not Gaussian); enumeration (continuous latent nodes (mu)); chain (a spec has no recurrences yet (the chain is a markov loop of a program)).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, ep, gibbs, laplace, importance, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: elliptical-slice (the prior of z is categorical, not normal or multivariateNormal); vmp (the operator select has no variational message rule); bp (belief propagation sums over finite discrete variables, and 'mu' is continuous); em (no params to estimate); tempered-smc (discrete latent nodes (z) prevent tempering); particle-filter (the model has no single scan); abc-smc (discrete latent nodes are not supported by ABC-SMC); conjugate (no usable conjugate structure for z); gaussian ('z' is categorical, not Gaussian); enumeration (continuous latent nodes (mu)); chain (the model has no single scan); svi-conjugate-natural (no usable conjugate structure for z).
 
 | method  | expectation | run                    | diagnostics                                                    | why                                                                                                                                          |
 | ------- | ----------- | ---------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |

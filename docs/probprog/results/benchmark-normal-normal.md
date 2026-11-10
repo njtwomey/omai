@@ -2,7 +2,7 @@
 
 Normal-normal mean: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit 11026959; seed 0, budget scale 1 (plans 8, rows 8, scalePercent 100), 1.9 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 8, rows 8, scalePercent 100), 1.9 s.
 
 **Passed**: 7 method(s) agree with the exact truth; 1 reported
 
@@ -12,7 +12,7 @@ The mean of normal observations with known noise sd 1.5 under a N(0, 4) prior: c
 
 Truth (exact): the normal posterior of a normal mean with known variance and its closed-form evidence (probprog/validation/exact.ts). Log evidence -23.9485.
 
-Methods whose own `check` says they apply: nuts, svi, gibbs, laplace, importance, tempered-smc, abc-smc, conjugate, gaussian, abc-rejection. Not applicable: em (no params to estimate); particle-filter (a spec has no recurrences yet (the filter runs over a markov loop of a program)); enumeration (continuous latent nodes (mu)); chain (a spec has no recurrences yet (the chain is a markov loop of a program)).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, elliptical-slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, ep, vmp, gibbs, laplace, importance, tempered-smc, abc-smc, conjugate, gaussian, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, svi-conjugate-natural, pathfinder. Not applicable: bp (belief propagation sums over finite discrete variables, and 'mu' is continuous); em (no params to estimate); particle-filter (the model has no single scan); enumeration (continuous latent nodes (mu)); chain (the model has no single scan).
 
 | method       | expectation | run                    | diagnostics      | why                                                                                                               |
 | ------------ | ----------- | ---------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------- |

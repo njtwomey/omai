@@ -2,13 +2,13 @@
 
 Geweke joint-distribution tests of the handler-layer kernels on the normal-normal program (a kernel that never rejects must fail).
 
-Run on 2026-11-10 at commit 4ce8b576; seed 0, budget scale 3 (iterations 18000), 1.6 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (iterations 6000), 0.6 s.
 
 **Passed**: both kernels pass
 
-| kernel       | statistic | marginal-conditional | successive-conditional | z     |
-| ------------ | --------- | -------------------- | ---------------------- | ----- |
-| resimulation | m         | 0.014                | 0.017                  | 0.16  |
-| resimulation | y         | 0.017                | 0.026                  | 0.36  |
-| random walk  | m         | 0.005                | 0.003                  | -0.08 |
-| random walk  | y         | 0.012                | 0.008                  | -0.12 |
+| kernel       | statistic | marginal-conditional | successive-conditional | z    |
+| ------------ | --------- | -------------------- | ---------------------- | ---- |
+| resimulation | m         | 0.019                | 0.052                  | 0.93 |
+| resimulation | y         | 0.035                | 0.075                  | 0.90 |
+| random walk  | m         | -0.017               | 0.056                  | 1.70 |
+| random walk  | y         | 0.006                | 0.058                  | 1.02 |

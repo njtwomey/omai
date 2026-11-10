@@ -2,7 +2,7 @@
 
 Poisson regression: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit 11026959; seed 0, budget scale 1 (plans 5, rows 10, scalePercent 100), 12.0 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 5, rows 10, scalePercent 100), 9.4 s.
 
 **Passed**: 2 method(s) agree with the quadrature truth; 3 reported
 
@@ -12,7 +12,7 @@ Counts with a log-linear mean in one covariate and N(0, 4) priors on the interce
 
 Truth (quadrature): grid quadrature of the posterior density, 161 points per axis over 2 coordinate(s) (32482 density evaluations, evidence error 4.4e-12). Log evidence -179.4826.
 
-Methods whose own `check` says they apply: nuts, svi, laplace, importance, tempered-smc, abc-smc, abc-rejection. Not applicable: gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (a spec has no recurrences yet (the filter runs over a markov loop of a program)); conjugate (no usable conjugate structure for a, b); gaussian ('k' is poisson, not Gaussian); enumeration (continuous latent nodes (a, b)); chain (a spec has no recurrences yet (the chain is a markov loop of a program)).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, elliptical-slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, laplace, importance, tempered-smc, abc-smc, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: ep (k: operator 'exp' applied to a random value has no message rule (message passing handles affine maps of Gaussians; a link such as probit or sigmoid is mapped only as the likelihood of a Bernoulli observation)); vmp (k: operator 'exp' applied to a random value has no message rule (message passing handles affine maps of Gaussians; a link such as probit or sigmoid is mapped only as the likelihood of a Bernoulli observation)); bp (belief propagation sums over finite discrete variables, and 'a', 'b' are continuous); gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (the model has no single scan); conjugate (no usable conjugate structure for a, b); gaussian ('k' is poisson, not Gaussian); enumeration (continuous latent nodes (a, b)); chain (the model has no single scan); svi-conjugate-natural (no usable conjugate structure for a, b).
 
 | method       | expectation | run                    | diagnostics     | why                                                                                             |
 | ------------ | ----------- | ---------------------- | --------------- | ----------------------------------------------------------------------------------------------- |

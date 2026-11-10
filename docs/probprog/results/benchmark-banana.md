@@ -2,7 +2,7 @@
 
 Haario's banana: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit 11026959; seed 0, budget scale 1 (plans 3, rows 6, scalePercent 100), 2.0 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 3, rows 6, scalePercent 100), 2.0 s.
 
 **Passed**: 0 method(s) agree with the analytic truth, 2 differ as expected; 1 reported
 
@@ -12,7 +12,7 @@ A curved two-dimensional ridge: x0 ~ N(0, 4), x1 | x0 ~ N(0.5 (x0^2 - 4), 1). Ma
 
 Truth (analytic): x0 is N(0, 4) exactly; x1 has mean 0 and variance 2 b² a⁴ + 1 = 9, its CDF the empirical one of 100000 iid draws of the exact sampler.
 
-Methods whose own `check` says they apply to the compiled program (a target with no observed node is refused at the spec level): nuts, svi, laplace, importance, tempered-smc. Not applicable: gibbs (no discrete or conjugate conditionals (use NUTS)); em (no params to estimate); particle-filter (no single markov loop); abc-smc (no observed sites); conjugate (no conjugate structure for x0, x1); gaussian (the location of x1 is not affine in its parents); enumeration (continuous latent sites (x0, x1)); chain (the program needs exactly one markov loop); abc-rejection (no observed sites).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, laplace, importance, tempered-smc, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: elliptical-slice (the prior of x1 depends on another node); ep (x1: operator 'square' applied to a random value has no message rule (message passing handles affine maps of Gaussians; a link such as probit or sigmoid is mapped only as the likelihood of a Bernoulli observation)); vmp (x1: operator 'square' applied to a random value has no message rule (message passing handles affine maps of Gaussians; a link such as probit or sigmoid is mapped only as the likelihood of a Bernoulli observation)); bp (belief propagation sums over finite discrete variables, and 'x0', 'x1' are continuous); gibbs (no discrete or conjugate conditionals); em (observed nodes have no likelihood); particle-filter (the model has no single scan); abc-smc (no observed nodes); conjugate (observed nodes have no likelihood); gaussian (the mean of 'x1' is not affine in the latents); enumeration (observed nodes have no likelihood); chain (the model has no single scan); abc-rejection (no observed nodes); svi-conjugate-natural (observed nodes have no likelihood).
 
 | method  | expectation        | run                    | diagnostics                                          | why                                                                                                                                                     |
 | ------- | ------------------ | ---------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -2,7 +2,7 @@
 
 Bayesian logistic regression: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit 11026959; seed 0, budget scale 1 (plans 5, rows 15, scalePercent 100), 16.7 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 5, rows 15, scalePercent 100), 16.3 s.
 
 **Passed**: 2 method(s) agree with the quadrature truth; 3 reported
 
@@ -12,7 +12,7 @@ Logistic regression with an intercept and two covariates and a N(0, 4) prior on 
 
 Truth (quadrature): grid quadrature of the posterior density, 61 points per axis over 3 coordinate(s) (286563 density evaluations, evidence error 6.0e-9). Log evidence -32.2069.
 
-Methods whose own `check` says they apply: nuts, svi, laplace, importance, tempered-smc, abc-smc, abc-rejection. Not applicable: gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (a spec has no recurrences yet (the filter runs over a markov loop of a program)); conjugate (no usable conjugate structure for w); gaussian ('y' is bernoulli, not Gaussian); enumeration (continuous latent nodes (w)); chain (a spec has no recurrences yet (the chain is a markov loop of a program)).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, elliptical-slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, ep, vmp, laplace, importance, tempered-smc, abc-smc, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: bp (belief propagation sums over finite discrete variables, and 'w' is continuous); gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (the model has no single scan); conjugate (no usable conjugate structure for w); gaussian ('y' is bernoulli, not Gaussian); enumeration (continuous latent nodes (w)); chain (the model has no single scan); svi-conjugate-natural (no usable conjugate structure for w).
 
 | method       | expectation | run                    | diagnostics     | why                                                                                                    |
 | ------------ | ----------- | ---------------------- | --------------- | ------------------------------------------------------------------------------------------------------ |

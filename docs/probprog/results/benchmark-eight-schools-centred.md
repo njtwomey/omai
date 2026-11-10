@@ -2,7 +2,7 @@
 
 Eight schools, centred: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit 11026959; seed 0, budget scale 1 (plans 4, rows 40, scalePercent 100), 25.2 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 4, rows 40, scalePercent 100), 22.1 s.
 
 **Passed**: 0 method(s) agree with the quadrature truth, 2 differ as expected; 2 reported
 
@@ -12,14 +12,14 @@ Rubin's eight schools with theta_j ~ N(mu, tau²): the centred hierarchy, whose 
 
 Truth (quadrature): grid quadrature of the posterior of (mu, tau) with the school effects integrated out in closed form (121 points per axis, evidence error 1.5e-5); each theta_j is the grid mixture of its conditional normals. Log evidence -31.3113.
 
-Methods whose own `check` says they apply: nuts, svi, gibbs, laplace, importance, tempered-smc, abc-smc, abc-rejection. Not applicable: em (no params to estimate); particle-filter (a spec has no recurrences yet (the filter runs over a markov loop of a program)); conjugate (no usable conjugate structure for mu, tau, theta); gaussian ('tau' is halfCauchy, not Gaussian); enumeration (continuous latent nodes (mu, tau, theta)); chain (a spec has no recurrences yet (the chain is a markov loop of a program)).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, gibbs, laplace, importance, tempered-smc, abc-smc, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: elliptical-slice (the prior of tau is halfCauchy, not normal or multivariateNormal); ep (expectation propagation needs an exponential-family factor graph: 'tau' is opaque to message passing (a custom call, or a family with no exponential-family form)); vmp (variational message passing needs an exponential-family factor graph: 'tau' is opaque to message passing (a custom call, or a family with no exponential-family form)); bp (belief propagation needs an exponential-family factor graph: 'tau' is opaque to message passing (a custom call, or a family with no exponential-family form)); em (no params to estimate); particle-filter (the model has no single scan); conjugate (no usable conjugate structure for mu, tau, theta); gaussian ('tau' is halfCauchy, not Gaussian); enumeration (continuous latent nodes (mu, tau, theta)); chain (the model has no single scan); svi-conjugate-natural (no usable conjugate structure for mu, tau, theta).
 
-| method       | expectation        | run                    | diagnostics                                           | why                                                                                                         |
-| ------------ | ------------------ | ---------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| nuts         | reported           | converged (1001 steps) | 8 divergences; R-hat high: mu, theta[6]; ESS low: tau | divergent transitions near tau = 0 and a tau that is too large: the funnel (the non-centred model has none) |
-| tempered-smc | reported           | converged (2 steps)    | weights ESS 1051                                      | particles with MCMC moves in the funnel: noisier tau than the non-centred model                             |
-| laplace      | expected to differ | completed (75 steps)   | -                                                     | the mode of the centred density is at tau -> 0 (the density is unbounded there): the fit is not a posterior |
-| svi          | expected to differ | completed (1500 steps) | -                                                     | a mean-field normal on log tau: underestimates the spread of tau and of every effect                        |
+| method       | expectation        | run                    | diagnostics                                                                 | why                                                                                                         |
+| ------------ | ------------------ | ---------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| nuts         | reported           | converged (1001 steps) | 8 divergences; R-hat high: mu, theta[6]; ESS low: tau                       | divergent transitions near tau = 0 and a tau that is too large: the funnel (the non-centred model has none) |
+| tempered-smc | reported           | converged (2 steps)    | weights ESS 1051                                                            | particles with MCMC moves in the funnel: noisier tau than the non-centred model                             |
+| laplace      | expected to differ | completed (75 steps)   | degenerate mode (on the boundary of a scale, or an ill-conditioned Hessian) | the mode of the centred density is at tau -> 0 (the density is unbounded there): the fit is not a posterior |
+| svi          | expected to differ | completed (1500 steps) | -                                                                           | a mean-field normal on log tau: underestimates the spread of tau and of every effect                        |
 
 | method       | quantity | mean     | sd   | mean error (sd) | mean z | sd ratio | KS     | W1 (sd) | KL      | ESS  |
 | ------------ | -------- | -------- | ---- | --------------- | ------ | -------- | ------ | ------- | ------- | ---- |

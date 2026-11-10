@@ -2,9 +2,9 @@
 
 Item response theory (2PL scoring): the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit aceb09a9; seed 0, budget scale 1 (plans 5, rows 60, scalePercent 100), 10.2 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 5, rows 60, scalePercent 100), 10.2 s.
 
-**Passed**: 2 method(s) agree with the quadrature truth; 3 reported
+**FAILED**: 1 row(s) of methods that must agree are outside their tolerances
 
 **Item response theory (2PL scoring)** (item-response-scoring): irt, psychometrics, logistic, binary-data, plates, quadrature
 
@@ -12,75 +12,78 @@ Respondents with latent abilities answer items of known difficulty and discrimin
 
 Truth (quadrature): an independent quadrature per respondent (4001 points over [-8, 8]) of N(theta; 0, 1) times the 2PL response likelihood; the abilities are independent given the items, so the joint is the product. Log evidence -60.5640.
 
-Methods whose own `check` says they apply: nuts, svi, ep, vmp, laplace, importance, tempered-smc, abc-smc, abc-rejection. Not applicable: bp (belief propagation sums over finite discrete variables, and 'theta' is continuous); gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (the model has no single scan); conjugate (no usable conjugate structure for theta); gaussian ('y' is bernoulli, not Gaussian); enumeration (continuous latent nodes (theta)); chain (the model has no single scan).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, elliptical-slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, ep, vmp, laplace, importance, tempered-smc, abc-smc, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: bp (belief propagation sums over finite discrete variables, and 'theta' is continuous); gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (the model has no single scan); conjugate (no usable conjugate structure for theta); gaussian ('y' is bernoulli, not Gaussian); enumeration (continuous latent nodes (theta)); chain (the model has no single scan); svi-conjugate-natural (no usable conjugate structure for theta).
 
 | method       | expectation | run                    | diagnostics     | why                                                                                                                                                  |
 | ------------ | ----------- | ---------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | nuts         | must agree  | converged (1001 steps) | 0 divergences   | twelve independent near-normal posteriors: agrees within Monte Carlo error                                                                           |
-| tempered-smc | reported    | converged (5 steps)    | weights ESS 687 | tempered particles over twelve abilities: consistent, with Monte Carlo error larger than NUTS                                                        |
+| tempered-smc | reported    | converged (5 steps)    | weights ESS 833 | tempered particles over twelve abilities: consistent, with Monte Carlo error larger than NUTS                                                        |
 | ep           | must agree  | converged (17 steps)   | -               | expectation propagation projects each logistic site onto a Gaussian: close to the quadrature on these near-normal posteriors                         |
-| laplace      | reported    | converged (14 steps)   | -               | the posteriors are near normal: the mode and curvature are close                                                                                     |
+| laplace      | reported    | converged (13 steps)   | -               | the posteriors are near normal: the mode and curvature are close                                                                                     |
 | svi          | reported    | completed (1500 steps) | -               | independent abilities, so the mean-field family is right in form; a mean-field normal fitted by stochastic gradients: close, with optimisation noise |
 
-| method       | quantity  | mean     | sd    | mean error (sd) | mean z | sd ratio | KS     | W1 (sd) | KL      | ESS  |
-| ------------ | --------- | -------- | ----- | --------------- | ------ | -------- | ------ | ------- | ------- | ---- |
-| nuts         | theta[0]  | -0.156   | 0.541 | 0.00164         | 0.0723 | 0.974    | 0.0188 | 0.043   | 0.00995 | 1840 |
-| nuts         | theta[1]  | -1.6     | 0.74  | -0.0388         | -1.59  | 1.08     | 0.0354 | 0.0729  | 0.0095  | 1950 |
-| nuts         | theta[2]  | 0.739    | 0.533 | 0.0371          | 1.68   | 0.991    | 0.0354 | 0.0442  | 0.00793 | 2010 |
-| nuts         | theta[3]  | 0.000594 | 0.545 | 0.00971         | 0.533  | 0.997    | 0.0154 | 0.0242  | 0.00857 | 3000 |
-| nuts         | theta[4]  | -1.23    | 0.653 | -0.0122         | -0.663 | 1.01     | 0.0183 | 0.0338  | 0.0144  | 3000 |
-| nuts         | theta[5]  | -0.0298  | 0.548 | 0.00892         | 0.42   | 0.999    | 0.0204 | 0.0265  | 0.0124  | 2210 |
-| nuts         | theta[6]  | -1.56    | 0.68  | 0.0137          | 0.663  | 0.99     | 0.029  | 0.0473  | 0.0119  | 2300 |
-| nuts         | theta[7]  | -0.11    | 0.526 | 0.0282          | 1.35   | 0.951    | 0.032  | 0.045   | 0.0119  | 2070 |
-| nuts         | theta[8]  | 0.111    | 0.536 | -0.00584        | -0.265 | 0.989    | 0.0139 | 0.0227  | 0.0058  | 2010 |
-| nuts         | theta[9]  | -0.467   | 0.575 | 0.0151          | 0.725  | 0.997    | 0.0259 | 0.0444  | 0.0103  | 2270 |
-| nuts         | theta[10] | -0.301   | 0.56  | -0.0345         | -1.75  | 0.996    | 0.0301 | 0.0534  | 0.00764 | 2540 |
-| nuts         | theta[11] | 0.873    | 0.529 | 0.0152          | 0.708  | 0.973    | 0.0205 | 0.0298  | 0.0133  | 2060 |
-| tempered-smc | theta[0]  | -0.167   | 0.557 | -0.0197         | -0.62  | 1        | 0.0205 | 0.0362  | 0.00873 | 1000 |
-| tempered-smc | theta[1]  | -1.55    | 0.659 | 0.0404          | 1.33   | 0.96     | 0.031  | 0.0516  | 0.0111  | 1000 |
-| tempered-smc | theta[2]  | 0.708    | 0.509 | -0.0209         | -0.697 | 0.947    | 0.0348 | 0.0741  | 0.0156  | 1000 |
-| tempered-smc | theta[3]  | 0.0372   | 0.524 | 0.0766          | 2.53   | 0.958    | 0.0544 | 0.0884  | 0.0142  | 1000 |
-| tempered-smc | theta[4]  | -1.2     | 0.626 | 0.0242          | 0.792  | 0.967    | 0.0237 | 0.039   | 0.00695 | 1000 |
-| tempered-smc | theta[5]  | 0.0189   | 0.53  | 0.0977          | 3.2    | 0.966    | 0.0511 | 0.0982  | 0.0146  | 1000 |
-| tempered-smc | theta[6]  | -1.59    | 0.694 | -0.0209         | -0.655 | 1.01     | 0.025  | 0.0313  | 0.00688 | 1000 |
-| tempered-smc | theta[7]  | -0.19    | 0.549 | -0.117          | -3.72  | 0.992    | 0.0538 | 0.117   | 0.0192  | 1000 |
-| tempered-smc | theta[8]  | 0.2      | 0.524 | 0.159           | 5.21   | 0.967    | 0.0938 | 0.162   | 0.026   | 1000 |
-| tempered-smc | theta[9]  | -0.459   | 0.532 | 0.0299          | 1.03   | 0.923    | 0.0495 | 0.0704  | 0.0125  | 1000 |
-| tempered-smc | theta[10] | -0.279   | 0.583 | 0.00361         | 0.11   | 1.04     | 0.0271 | 0.0415  | 0.0123  | 1000 |
-| tempered-smc | theta[11] | 0.821    | 0.502 | -0.0803         | -2.75  | 0.924    | 0.0512 | 0.1     | 0.0134  | 1000 |
-| ep           | theta[0]  | -0.161   | 0.548 | -0.00888        | -0.569 | 0.987    | 0.0174 | 0.0263  | 0.00341 | 4000 |
-| ep           | theta[1]  | -1.58    | 0.678 | -0.00584        | -0.374 | 0.988    | 0.0325 | 0.0545  | 0.00806 | 4000 |
-| ep           | theta[2]  | 0.705    | 0.541 | -0.0256         | -1.61  | 1        | 0.0197 | 0.0266  | 0.00145 | 4000 |
-| ep           | theta[3]  | -0.0166  | 0.549 | -0.0218         | -1.37  | 1        | 0.0234 | 0.033   | 0.00231 | 4000 |
-| ep           | theta[4]  | -1.21    | 0.644 | 0.0128          | 0.812  | 0.995    | 0.0141 | 0.0305  | 0.00297 | 4000 |
-| ep           | theta[5]  | -0.0249  | 0.554 | 0.0179          | 1.12   | 1.01     | 0.0125 | 0.0299  | 0.00396 | 4000 |
-| ep           | theta[6]  | -1.58    | 0.682 | -0.00436        | -0.278 | 0.994    | 0.0177 | 0.0317  | 0.00382 | 4000 |
-| ep           | theta[7]  | -0.115   | 0.556 | 0.019           | 1.19   | 1.01     | 0.0106 | 0.0209  | 0.00197 | 4000 |
-| ep           | theta[8]  | 0.109    | 0.547 | -0.009          | -0.564 | 1.01     | 0.0112 | 0.0199  | 0.00117 | 4000 |
-| ep           | theta[9]  | -0.471   | 0.583 | 0.00795         | 0.498  | 1.01     | 0.0117 | 0.0253  | 0.00209 | 4000 |
-| ep           | theta[10] | -0.283   | 0.563 | -0.00358        | -0.226 | 1        | 0.0167 | 0.0225  | 0.00198 | 4000 |
-| ep           | theta[11] | 0.863    | 0.54  | -0.00312        | -0.199 | 0.994    | 0.0101 | 0.0157  | 0.00203 | 4000 |
-| laplace      | theta[0]  | -0.115   | 0.547 | 0.0743          | 4.76   | 0.986    | 0.0249 | 0.0743  | 0.00579 | 4000 |
-| laplace      | theta[1]  | -1.49    | 0.68  | 0.115           | 7.36   | 0.992    | 0.0364 | 0.115   | 0.00959 | 4000 |
-| laplace      | theta[2]  | 0.712    | 0.522 | -0.0128         | -0.834 | 0.971    | 0.0126 | 0.0223  | 0.00231 | 4000 |
-| laplace      | theta[3]  | 0.0228   | 0.531 | 0.0503          | 3.28   | 0.97     | 0.0242 | 0.0514  | 0.00369 | 4000 |
-| laplace      | theta[4]  | -1.13    | 0.629 | 0.129           | 8.42   | 0.973    | 0.0421 | 0.129   | 0.0131  | 4000 |
-| laplace      | theta[5]  | -0.0136  | 0.532 | 0.0385          | 2.51   | 0.971    | 0.0189 | 0.0405  | 0.00348 | 4000 |
-| laplace      | theta[6]  | -1.48    | 0.684 | 0.131           | 8.28   | 0.997    | 0.0377 | 0.13    | 0.0158  | 4000 |
-| laplace      | theta[7]  | -0.0987  | 0.547 | 0.0489          | 3.13   | 0.988    | 0.0222 | 0.0494  | 0.00421 | 4000 |
-| laplace      | theta[8]  | 0.12     | 0.528 | 0.0121          | 0.785  | 0.975    | 0.0117 | 0.0252  | 0.00326 | 4000 |
-| laplace      | theta[9]  | -0.453   | 0.557 | 0.0402          | 2.64   | 0.965    | 0.0233 | 0.0411  | 0.00379 | 4000 |
-| laplace      | theta[10] | -0.235   | 0.549 | 0.0825          | 5.35   | 0.975    | 0.0302 | 0.0826  | 0.00782 | 4000 |
-| laplace      | theta[11] | 0.852    | 0.527 | -0.0233         | -1.52  | 0.969    | 0.021  | 0.033   | 0.00536 | 4000 |
-| svi          | theta[0]  | -0.212   | 0.564 | -0.101          | -6.27  | 1.02     | 0.0498 | 0.104   | 0.00752 | 4000 |
-| svi          | theta[1]  | -1.63    | 0.507 | -0.0846         | -7.24  | 0.739    | 0.109  | 0.226   | 0.107   | 4000 |
-| svi          | theta[2]  | 0.766    | 0.533 | 0.0881          | 5.63   | 0.991    | 0.0497 | 0.0935  | 0.00747 | 4000 |
-| svi          | theta[3]  | -0.174   | 0.557 | -0.309          | -19.2  | 1.02     | 0.142  | 0.309   | 0.0498  | 4000 |
-| svi          | theta[4]  | -1.45    | 0.624 | -0.354          | -23.2  | 0.965    | 0.163  | 0.355   | 0.0712  | 4000 |
-| svi          | theta[5]  | -0.0984  | 0.572 | -0.116          | -7.04  | 1.04     | 0.0577 | 0.122   | 0.0103  | 4000 |
-| svi          | theta[6]  | -1.52    | 0.803 | 0.0804          | 4.35   | 1.17     | 0.0603 | 0.143   | 0.025   | 4000 |
-| svi          | theta[7]  | -0.133   | 0.533 | -0.014          | -0.919 | 0.963    | 0.0182 | 0.0353  | 0.0027  | 4000 |
-| svi          | theta[8]  | 0.202    | 0.554 | 0.162           | 10     | 1.02     | 0.0736 | 0.163   | 0.0146  | 4000 |
-| svi          | theta[9]  | -0.403   | 0.575 | 0.127           | 8.04   | 0.997    | 0.0468 | 0.127   | 0.0116  | 4000 |
-| svi          | theta[10] | -0.439   | 0.494 | -0.281          | -20.2  | 0.878    | 0.138  | 0.285   | 0.0688  | 4000 |
-| svi          | theta[11] | 0.796    | 0.538 | -0.127          | -8.08  | 0.991    | 0.0487 | 0.127   | 0.00938 | 4000 |
+| method       | quantity  | mean    | sd    | mean error (sd) | mean z  | sd ratio | KS      | W1 (sd) | KL      | ESS  |
+| ------------ | --------- | ------- | ----- | --------------- | ------- | -------- | ------- | ------- | ------- | ---- |
+| nuts         | theta[0]  | -0.161  | 0.609 | -0.00884        | -0.372  | 1.1      | 0.0392  | 0.0829  | 0.0168  | 2140 |
+| nuts         | theta[1]  | -1.55   | 0.695 | 0.0359          | 1.94    | 1.01     | 0.0237  | 0.0379  | 0.00893 | 3000 |
+| nuts         | theta[2]  | 0.725   | 0.534 | 0.0117          | 0.504   | 0.992    | 0.0216  | 0.0365  | 0.00994 | 1830 |
+| nuts         | theta[3]  | -0.0163 | 0.581 | -0.0211         | -1.09   | 1.06     | 0.0308  | 0.0479  | 0.0109  | 3000 |
+| nuts         | theta[4]  | -1.22   | 0.628 | 0.00143         | 0.0721  | 0.971    | 0.0195  | 0.03    | 0.00974 | 2400 |
+| nuts         | theta[5]  | -0.0255 | 0.531 | 0.0168          | 0.913   | 0.968    | 0.0209  | 0.0335  | 0.00464 | 2780 |
+| nuts         | theta[6]  | -1.57   | 0.665 | -0.00132        | -0.0662 | 0.968    | 0.0193  | 0.032   | 0.0123  | 2350 |
+| nuts         | theta[7]  | -0.121  | 0.587 | 0.00769         | 0.345   | 1.06     | 0.0369  | 0.0513  | 0.0108  | 2260 |
+| nuts         | theta[8]  | 0.137   | 0.509 | 0.0434          | 2.48    | 0.939    | 0.0385  | 0.065   | 0.0141  | 2880 |
+| nuts         | theta[9]  | -0.501  | 0.622 | -0.0441         | -1.94   | 1.08     | 0.0293  | 0.0628  | 0.00896 | 2240 |
+| nuts         | theta[10] | -0.28   | 0.619 | 0.00198         | 0.0844  | 1.1      | 0.0277  | 0.074   | 0.00992 | 2200 |
+| nuts         | theta[11] | 0.862   | 0.507 | -0.00606        | -0.253  | 0.933    | 0.0244  | 0.0471  | 0.0142  | 1510 |
+| tempered-smc | theta[0]  | -0.217  | 0.554 | -0.109          | -3.45   | 0.998    | 0.0512  | 0.11    | 0.0127  | 1000 |
+| tempered-smc | theta[1]  | -1.45   | 0.691 | 0.174           | 5.48    | 1.01     | 0.0833  | 0.175   | 0.0211  | 1000 |
+| tempered-smc | theta[2]  | 0.739   | 0.532 | 0.037           | 1.18    | 0.989    | 0.0348  | 0.0488  | 0.0144  | 1000 |
+| tempered-smc | theta[3]  | -0.0683 | 0.537 | -0.116          | -3.74   | 0.982    | 0.0548  | 0.117   | 0.0199  | 1000 |
+| tempered-smc | theta[4]  | -1.2    | 0.665 | 0.0213          | 0.656   | 1.03     | 0.0312  | 0.0398  | 0.00891 | 1000 |
+| tempered-smc | theta[5]  | -0.0502 | 0.55  | -0.0282         | -0.89   | 1        | 0.0209  | 0.0318  | 0.00582 | 1000 |
+| tempered-smc | theta[6]  | -1.35   | 0.614 | 0.327           | 11.6    | 0.894    | 0.145   | 0.327   | 0.0729  | 1000 |
+| tempered-smc | theta[7]  | -0.204  | 0.551 | -0.142          | -4.51   | 0.996    | 0.066   | 0.142   | 0.0154  | 1000 |
+| tempered-smc | theta[8]  | 0.0972  | 0.542 | -0.0307         | -0.972  | 0.999    | 0.018   | 0.0319  | 0.00987 | 1000 |
+| tempered-smc | theta[9]  | -0.382  | 0.562 | 0.162           | 5.26    | 0.974    | 0.0911  | 0.164   | 0.0247  | 1000 |
+| tempered-smc | theta[10] | -0.226  | 0.565 | 0.0983          | 3.09    | 1        | 0.0511  | 0.1     | 0.0128  | 1000 |
+| tempered-smc | theta[11] | 0.837   | 0.528 | -0.0517         | -1.68   | 0.972    | 0.0403  | 0.0565  | 0.0134  | 1000 |
+| ep           | theta[0]  | -0.155  | 0.545 | 0.00167         | 0.108   | 0.982    | 0.0172  | 0.0245  | 0.00373 | 4000 |
+| ep           | theta[1]  | -1.56   | 0.692 | 0.0196          | 1.23    | 1.01     | 0.00983 | 0.0248  | 0.00178 | 4000 |
+| ep           | theta[2]  | 0.736   | 0.523 | 0.0315          | 2.05    | 0.972    | 0.0214  | 0.0427  | 0.00398 | 4000 |
+| ep           | theta[3]  | -0.0042 | 0.547 | 0.00094         | 0.0594  | 1        | 0.0142  | 0.0175  | 0.00309 | 4000 |
+| ep           | theta[4]  | -1.21   | 0.638 | 0.0092          | 0.59    | 0.986    | 0.016   | 0.033   | 0.00463 | 4000 |
+| ep           | theta[5]  | -0.0237 | 0.548 | 0.0202          | 1.28    | 0.999    | 0.0139  | 0.0226  | 0.00248 | 4000 |
+| ep           | theta[6]  | -1.58   | 0.675 | -0.0105         | -0.674  | 0.984    | 0.0227  | 0.049   | 0.00468 | 4000 |
+| ep           | theta[7]  | -0.133  | 0.565 | -0.0135         | -0.836  | 1.02     | 0.0174  | 0.031   | 0.00299 | 4000 |
+| ep           | theta[8]  | 0.115   | 0.546 | 0.00234         | 0.147   | 1.01     | 0.0114  | 0.0214  | 0.00346 | 4000 |
+| ep           | theta[9]  | -0.478  | 0.594 | -0.00344        | -0.211  | 1.03     | 0.0175  | 0.0363  | 0.00508 | 4000 |
+| ep           | theta[10] | -0.275  | 0.558 | 0.011           | 0.699   | 0.992    | 0.011   | 0.0188  | 0.00226 | 4000 |
+| ep           | theta[11] | 0.862   | 0.547 | -0.0046         | -0.289  | 1.01     | 0.0144  | 0.022   | 0.00239 | 4000 |
+| laplace      | theta[0]  | -0.119  | 0.539 | 0.0669          | 4.35    | 0.972    | 0.027   | 0.0671  | 0.00516 | 4000 |
+| laplace      | theta[1]  | -1.51   | 0.664 | 0.0974          | 6.36    | 0.968    | 0.0345  | 0.0973  | 0.0087  | 4000 |
+| laplace      | theta[2]  | 0.704   | 0.52  | -0.0275         | -1.8    | 0.967    | 0.0162  | 0.0327  | 0.0031  | 4000 |
+| laplace      | theta[3]  | 0.0335  | 0.541 | 0.0699          | 4.47    | 0.99     | 0.0285  | 0.07    | 0.00499 | 4000 |
+| laplace      | theta[4]  | -1.16   | 0.638 | 0.0876          | 5.62    | 0.986    | 0.0308  | 0.0875  | 0.00654 | 4000 |
+| laplace      | theta[5]  | -0.0059 | 0.54  | 0.0525          | 3.37    | 0.985    | 0.021   | 0.053   | 0.00391 | 4000 |
+| laplace      | theta[6]  | -1.49   | 0.674 | 0.115           | 7.42    | 0.983    | 0.043   | 0.115   | 0.0103  | 4000 |
+| laplace      | theta[7]  | -0.0928 | 0.536 | 0.0595          | 3.88    | 0.97     | 0.0235  | 0.0595  | 0.00589 | 4000 |
+| laplace      | theta[8]  | 0.14    | 0.536 | 0.0485          | 3.11    | 0.989    | 0.0229  | 0.0488  | 0.00304 | 4000 |
+| laplace      | theta[9]  | -0.423  | 0.569 | 0.0916          | 5.87    | 0.987    | 0.0316  | 0.0915  | 0.00646 | 4000 |
+| laplace      | theta[10] | -0.25   | 0.539 | 0.0562          | 3.71    | 0.958    | 0.0288  | 0.0575  | 0.0058  | 4000 |
+| laplace      | theta[11] | 0.854   | 0.52  | -0.0194         | -1.28   | 0.958    | 0.0173  | 0.0307  | 0.0054  | 4000 |
+| svi          | theta[0]  | -0.115  | 0.574 | 0.075           | 4.59    | 1.03     | 0.0383  | 0.0753  | 0.00773 | 4000 |
+| svi          | theta[1]  | -1.4    | 0.653 | 0.248           | 16.5    | 0.952    | 0.09    | 0.248   | 0.0379  | 4000 |
+| svi          | theta[2]  | 0.736   | 0.518 | 0.0325          | 2.13    | 0.962    | 0.0233  | 0.045   | 0.00415 | 4000 |
+| svi          | theta[3]  | 0.0761  | 0.584 | 0.148           | 8.75    | 1.07     | 0.0671  | 0.148   | 0.0142  | 4000 |
+| svi          | theta[4]  | -1.19   | 0.602 | 0.0445          | 3.03    | 0.93     | 0.0293  | 0.0574  | 0.00837 | 4000 |
+| svi          | theta[5]  | -0.0286 | 0.557 | 0.0111          | 0.69    | 1.02     | 0.0109  | 0.0172  | 0.00191 | 4000 |
+| svi          | theta[6]  | -1.67   | 0.569 | -0.138          | -10.5   | 0.83     | 0.103   | 0.197   | 0.0542  | 4000 |
+| svi          | theta[7]  | -0.0118 | 0.583 | 0.206           | 12.4    | 1.05     | 0.0822  | 0.206   | 0.0249  | 4000 |
+| svi          | theta[8]  | 0.058   | 0.645 | -0.103          | -5.48   | 1.19     | 0.0739  | 0.179   | 0.0288  | 4000 |
+| svi          | theta[9]  | -0.447  | 0.551 | 0.0499          | 3.31    | 0.955    | 0.0251  | 0.0528  | 0.00323 | 4000 |
+| svi          | theta[10] | -0.267  | 0.526 | 0.026           | 1.76    | 0.935    | 0.0238  | 0.0533  | 0.00539 | 4000 |
+| svi          | theta[11] | 0.956   | 0.604 | 0.168           | 9.57    | 1.11     | 0.0912  | 0.182   | 0.0244  | 4000 |
+
+Notes:
+- nuts breaks sdRatio on theta[10], and must agree

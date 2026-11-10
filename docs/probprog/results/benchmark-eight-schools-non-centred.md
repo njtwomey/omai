@@ -2,7 +2,7 @@
 
 Eight schools, non-centred: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit 11026959; seed 0, budget scale 1 (plans 4, rows 24, scalePercent 100), 5.3 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 4, rows 24, scalePercent 100), 5.1 s.
 
 **Passed**: 1 method(s) agree with the quadrature truth; 3 reported
 
@@ -12,7 +12,7 @@ Rubin's eight schools with theta_j = mu + tau z_j: the same posterior as the cen
 
 Truth (quadrature): grid quadrature of the posterior of (mu, tau) with the school effects integrated out in closed form (121 points per axis, evidence error 1.5e-5); each theta_j is the grid mixture of its conditional normals. Log evidence -31.3113.
 
-Methods whose own `check` says they apply: nuts, svi, laplace, importance, tempered-smc, abc-smc, abc-rejection. Not applicable: gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (a spec has no recurrences yet (the filter runs over a markov loop of a program)); conjugate (no usable conjugate structure for mu, tau, z); gaussian ('tau' is halfCauchy, not Gaussian); enumeration (continuous latent nodes (mu, tau, z)); chain (a spec has no recurrences yet (the chain is a markov loop of a program)).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, laplace, importance, tempered-smc, abc-smc, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: elliptical-slice (the prior of tau is halfCauchy, not normal or multivariateNormal); ep (expectation propagation needs an exponential-family factor graph: 'tau' is opaque to message passing (a custom call, or a family with no exponential-family form)); vmp (variational message passing needs an exponential-family factor graph: 'tau' is opaque to message passing (a custom call, or a family with no exponential-family form)); bp (belief propagation needs an exponential-family factor graph: 'tau' is opaque to message passing (a custom call, or a family with no exponential-family form)); gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (the model has no single scan); conjugate (no usable conjugate structure for mu, tau, z); gaussian ('tau' is halfCauchy, not Gaussian); enumeration (continuous latent nodes (mu, tau, z)); chain (the model has no single scan); svi-conjugate-natural (no usable conjugate structure for mu, tau, z).
 
 | method       | expectation | run                    | diagnostics      | why                                                                                                                           |
 | ------------ | ----------- | ---------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------- |

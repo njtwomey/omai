@@ -2,7 +2,7 @@
 
 Neal's funnel, non-centred: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit 11026959; seed 0, budget scale 1 (plans 2, rows 3, scalePercent 100), 2.6 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 2, rows 3, scalePercent 100), 2.4 s.
 
 **Passed**: 1 method(s) agree with the analytic truth; 1 reported
 
@@ -12,7 +12,7 @@ Neal's funnel with x_i = e^(v/2) z_i and z_i standard normal: the same law as th
 
 Truth (analytic): v is N(0, 9) exactly; x_i | v ~ N(0, e^v) is a scale mixture with mean 0 and sd exp(2.25), its CDF the empirical one of 100000 iid draws of the exact sampler.
 
-Methods whose own `check` says they apply to the compiled program (a target with no observed node is refused at the spec level): nuts, svi, laplace, importance, tempered-smc, gaussian. Not applicable: gibbs (no discrete or conjugate conditionals (use NUTS)); em (no params to estimate); particle-filter (no single markov loop); abc-smc (no observed sites); conjugate (no conjugate structure for v, z); enumeration (continuous latent sites (v, z)); chain (the program needs exactly one markov loop); abc-rejection (no observed sites).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, elliptical-slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, laplace, importance, tempered-smc, gaussian, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: ep (x: operator 'exp' applied to a random value has no message rule (message passing handles affine maps of Gaussians; a link such as probit or sigmoid is mapped only as the likelihood of a Bernoulli observation)); vmp (x: operator 'exp' applied to a random value has no message rule (message passing handles affine maps of Gaussians; a link such as probit or sigmoid is mapped only as the likelihood of a Bernoulli observation)); bp (belief propagation sums over finite discrete variables, and 'v', 'z' are continuous); gibbs (no discrete or conjugate conditionals); em (observed nodes have no likelihood); particle-filter (the model has no single scan); abc-smc (no observed nodes); conjugate (observed nodes have no likelihood); enumeration (observed nodes have no likelihood); chain (the model has no single scan); abc-rejection (no observed nodes); svi-conjugate-natural (observed nodes have no likelihood).
 
 | method | expectation | run                    | diagnostics                     | why                                                                      |
 | ------ | ----------- | ---------------------- | ------------------------------- | ------------------------------------------------------------------------ |

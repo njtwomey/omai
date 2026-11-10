@@ -2,7 +2,7 @@
 
 Two Gaussian modes: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit 11026959; seed 0, budget scale 1 (plans 3, rows 6, scalePercent 100), 3.0 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 3, rows 6, scalePercent 100), 3.1 s.
 
 **Passed**: 1 method(s) agree with the analytic truth, 1 differ as expected; 1 reported
 
@@ -12,7 +12,7 @@ An equal mixture of two unit Gaussians at (-3, -3) and (3, 3): the target whose 
 
 Truth (analytic): each coordinate is the even mixture of N(-3, 1) and N(3, 1): a closed-form normal mixture CDF.
 
-Methods whose own `check` says they apply to the compiled program (a target with no observed node is refused at the spec level): nuts, svi, gibbs, laplace, importance. Not applicable: em (no params to estimate); tempered-smc (no single markov loop, and discrete latent sites prevent tempering); particle-filter (no single markov loop); abc-smc (no observed sites); conjugate (no conjugate structure for z, x); gaussian (the program has discrete latent sites); enumeration (continuous latent sites (x)); chain (the program needs exactly one markov loop); abc-rejection (no observed sites).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, gibbs, laplace, importance, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: elliptical-slice (the prior of z is categorical, not normal or multivariateNormal); ep (x: arithmetic on the discrete variable 'z': only Gaussian values add up); vmp (x: arithmetic on the discrete variable 'z': only Gaussian values add up); bp (belief propagation sums over finite discrete variables, and 'x' is continuous); em (observed nodes have no likelihood); tempered-smc (discrete latent nodes (z) prevent tempering); particle-filter (the model has no single scan); abc-smc (no observed nodes); conjugate (observed nodes have no likelihood); gaussian ('z' is categorical, not Gaussian); enumeration (observed nodes have no likelihood); chain (the model has no single scan); abc-rejection (no observed nodes); svi-conjugate-natural (observed nodes have no likelihood).
 
 | method     | expectation        | run                    | diagnostics                     | why                                                                                           |
 | ---------- | ------------------ | ---------------------- | ------------------------------- | --------------------------------------------------------------------------------------------- |

@@ -2,7 +2,7 @@
 
 Negative binomial regression: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit 11026959; seed 0, budget scale 1 (plans 5, rows 15, scalePercent 100), 45.5 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 5, rows 15, scalePercent 100), 41.4 s.
 
 **Passed**: 2 method(s) agree with the quadrature truth; 3 reported
 
@@ -12,7 +12,7 @@ Overdispersed counts with a log-linear mean and a HalfNormal(1) overdispersion: 
 
 Truth (quadrature): grid quadrature of the posterior density, 61 points per axis over 3 coordinate(s) (316354 density evaluations, evidence error 9.6e-5). Log evidence -273.2025.
 
-Methods whose own `check` says they apply: nuts, svi, laplace, importance, tempered-smc, abc-smc, abc-rejection. Not applicable: gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (a spec has no recurrences yet (the filter runs over a markov loop of a program)); conjugate (no usable conjugate structure for a, b, alpha); gaussian ('alpha' is halfNormal, not Gaussian); enumeration (continuous latent nodes (a, b, alpha)); chain (a spec has no recurrences yet (the chain is a markov loop of a program)).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, laplace, importance, tempered-smc, abc-smc, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: elliptical-slice (the prior of alpha is halfNormal, not normal or multivariateNormal); ep (alpha: 'alpha' is halfNormal: the engine has message families gaussian, gamma, beta, bernoulli, discrete and dirichlet, and none for halfNormal; k: 'k' is observed as negativeBinomial: the likelihoods mapped are normal, bernoulli, binomial, poisson and categorical); vmp (alpha: 'alpha' is halfNormal: the engine has message families gaussian, gamma, beta, bernoulli, discrete and dirichlet, and none for halfNormal; k: 'k' is observed as negativeBinomial: the likelihoods mapped are normal, bernoulli, binomial, poisson and categorical); bp (belief propagation sums over finite discrete variables, and 'a', 'b', 'alpha' are continuous); gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (the model has no single scan); conjugate (no usable conjugate structure for a, b, alpha); gaussian ('alpha' is halfNormal, not Gaussian); enumeration (continuous latent nodes (a, b, alpha)); chain (the model has no single scan); svi-conjugate-natural (no usable conjugate structure for a, b, alpha).
 
 | method       | expectation | run                    | diagnostics     | why                                                                                          |
 | ------------ | ----------- | ---------------------- | --------------- | -------------------------------------------------------------------------------------------- |

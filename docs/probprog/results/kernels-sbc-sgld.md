@@ -2,11 +2,11 @@
 
 Simulation-based calibration of the stochastic-gradient Langevin dynamics with the exact gradient (a step-size bias), through its method (knobs, warm-up, thinning and posterior).
 
-Run on 2026-11-10 at commit d30248ff; seed 0, budget scale 2 (replications 200, ranks 19), 5.5 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (replications 100, ranks 19), 2.8 s.
 
-**Passed**: calibrated over 200 replications
+**Passed**: calibrated over 100 replications
 
-| quantity | chi-square p | ECDF p | verdict | rank histogram                                       |
-| -------- | ------------ | ------ | ------- | ---------------------------------------------------- |
-| a        | 0.78         | 0.42   | passes  | 8 10 7 16 12 13 10 15 10 8 8 10 9 10 11 11 6 11 10 5 |
-| b        | 0.97         | 0.87   | passes  | 9 10 16 11 7 7 9 11 12 10 10 8 12 12 13 8 9 8 9 9    |
+| quantity | chi-square p | ECDF p | verdict | rank histogram                          |
+| -------- | ------------ | ------ | ------- | --------------------------------------- |
+| a        | 0.90         | 0.73   | passes  | 8 6 3 5 8 6 4 2 5 4 4 4 6 7 6 4 4 2 7 5 |
+| b        | 0.96         | 0.89   | passes  | 4 3 6 2 7 4 6 6 4 4 6 5 6 5 9 3 5 5 4 6 |

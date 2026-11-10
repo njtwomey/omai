@@ -2,7 +2,7 @@
 
 The particle filters' likelihood estimates against the Kalman filter on the AR(1) benchmark: unbiased on the natural scale (the mean of Z-hat / Z over replications is one within its error) for the bootstrap, auxiliary and guided proposals, with the guided one the least variable.
 
-Run on 2026-11-10 at commit 908edcb3; seed 0, budget scale 1 (replications 80, particles 100, proposals 3), 1.6 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (replications 80, particles 100, proposals 3), 1.4 s.
 
 **Passed**: every proposal unbiased on the natural scale; the guided proposal is less variable than the bootstrap
 

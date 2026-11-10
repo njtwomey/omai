@@ -2,7 +2,7 @@
 
 Gaussian process regression, non-centred: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit aceb09a9; seed 0, budget scale 1 (plans 4, rows 52, scalePercent 100), 17.2 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 4, rows 52, scalePercent 100), 15.8 s.
 
 **Passed**: 1 method(s) agree with the quadrature truth; 3 reported
 
@@ -12,66 +12,66 @@ The Gaussian process regression written as f = L z with a whitened z: the geomet
 
 Truth (quadrature): quadrature over the length scale (321 points, evidence error 1.8e-15) of the marginal likelihood N(y; 0, K + sigma² I) with the function integrated out; each function value is the grid mixture of its exact Gaussian conditionals (mean K (K + sigma² I)^-1 y). Log evidence -11.8396.
 
-Methods whose own `check` says they apply: nuts, svi, laplace, importance, tempered-smc, abc-smc, abc-rejection. Not applicable: ep (expectation propagation needs an exponential-family factor graph: 'f' is opaque to message passing (a custom call, or a family with no exponential-family form)); vmp (variational message passing needs an exponential-family factor graph: 'f' is opaque to message passing (a custom call, or a family with no exponential-family form)); bp (belief propagation needs an exponential-family factor graph: 'f' is opaque to message passing (a custom call, or a family with no exponential-family form)); gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (the model has no single scan); conjugate (no usable conjugate structure for ell, z); gaussian ('ell' is logNormal, not Gaussian); enumeration (continuous latent nodes (ell, z)); chain (the model has no single scan).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, laplace, importance, tempered-smc, abc-smc, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: elliptical-slice (the prior of ell is logNormal, not normal or multivariateNormal); ep (expectation propagation needs an exponential-family factor graph: 'f' is opaque to message passing (a custom call, or a family with no exponential-family form)); vmp (variational message passing needs an exponential-family factor graph: 'f' is opaque to message passing (a custom call, or a family with no exponential-family form)); bp (belief propagation needs an exponential-family factor graph: 'f' is opaque to message passing (a custom call, or a family with no exponential-family form)); gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (the model has no single scan); conjugate (no usable conjugate structure for ell, z); gaussian ('ell' is logNormal, not Gaussian); enumeration (continuous latent nodes (ell, z)); chain (the model has no single scan); svi-conjugate-natural (no usable conjugate structure for ell, z).
 
 | method       | expectation | run                    | diagnostics                                                               | why                                                                                                                 |
 | ------------ | ----------- | ---------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | nuts         | must agree  | converged (401 steps)  | 0 divergences; R-hat high: ell, z[2], z[3], ...; ESS low: ell, z[5], z[6] | whitened, so no funnel: agrees within Monte Carlo error                                                             |
-| tempered-smc | reported    | converged (7 steps)    | weights ESS 924                                                           | tempered particles in thirteen dimensions: consistent, with a noisy tail                                            |
-| laplace      | reported    | converged (77 steps)   | -                                                                         | a Gaussian at the mode of the whitened density: close for the function, the length scale is skewed on the log scale |
+| tempered-smc | reported    | converged (7 steps)    | weights ESS 888                                                           | tempered particles in thirteen dimensions: consistent, with a noisy tail                                            |
+| laplace      | reported    | converged (64 steps)   | -                                                                         | a Gaussian at the mode of the whitened density: close for the function, the length scale is skewed on the log scale |
 | svi          | reported    | completed (1500 steps) | -                                                                         | a mean-field normal on the whitened coordinates: the posterior of z is nearly independent, so the spreads are close |
 
-| method       | quantity | mean   | sd     | mean error (sd) | mean z | sd ratio | KS     | W1 (sd) | KL      | ESS  |
-| ------------ | -------- | ------ | ------ | --------------- | ------ | -------- | ------ | ------- | ------- | ---- |
-| nuts         | ell      | 0.944  | 0.245  | -0.125          | -1.41  | 0.953    | 0.0718 | 0.145   | 0.0338  | 115  |
-| nuts         | f[0]     | -0.614 | 0.199  | 0.0299          | 0.54   | 0.976    | 0.045  | 0.058   | 0.0331  | 311  |
-| nuts         | f[1]     | -0.649 | 0.175  | 0.0239          | 0.464  | 0.997    | 0.0371 | 0.0491  | 0.0177  | 374  |
-| nuts         | f[2]     | -0.715 | 0.197  | 0.0171          | 0.396  | 1.03     | 0.0517 | 0.0623  | 0.0325  | 565  |
-| nuts         | f[3]     | -1.04  | 0.237  | 0.00679         | 0.134  | 1.07     | 0.0409 | 0.0681  | 0.0225  | 444  |
-| nuts         | f[4]     | -1.24  | 0.26   | 0.00929         | 0.185  | 1.06     | 0.0376 | 0.067   | 0.0374  | 447  |
-| nuts         | f[5]     | 0.485  | 0.251  | 0.0291          | 0.53   | 0.986    | 0.0332 | 0.0419  | 0.0188  | 324  |
-| nuts         | f[6]     | 1.15   | 0.198  | 0.0212          | 0.375  | 1.04     | 0.0289 | 0.0494  | 0.0226  | 341  |
-| nuts         | f[7]     | 1.56   | 0.203  | 0.00613         | 0.0899 | 0.97     | 0.0254 | 0.0355  | 0.0189  | 203  |
-| nuts         | f[8]     | 1.51   | 0.196  | -0.0315         | -0.594 | 0.974    | 0.0415 | 0.0513  | 0.0239  | 337  |
-| nuts         | f[9]     | 0.951  | 0.248  | -0.0473         | -0.999 | 1.03     | 0.0411 | 0.0569  | 0.0189  | 472  |
-| nuts         | f[10]    | 0.175  | 0.214  | 0.0139          | 0.282  | 1.07     | 0.0374 | 0.0717  | 0.0336  | 469  |
-| nuts         | f[11]    | 0.161  | 0.219  | 0.0113          | 0.233  | 1.07     | 0.0354 | 0.0729  | 0.0419  | 489  |
-| tempered-smc | ell      | 0.971  | 0.203  | -0.0171         | -0.684 | 0.79     | 0.0931 | 0.209   | 0.102   | 1000 |
-| tempered-smc | f[0]     | -0.63  | 0.19   | -0.0506         | -1.72  | 0.931    | 0.0427 | 0.0774  | 0.0206  | 1000 |
-| tempered-smc | f[1]     | -0.652 | 0.17   | 0.00323         | 0.106  | 0.965    | 0.0188 | 0.0335  | 0.0127  | 1000 |
-| tempered-smc | f[2]     | -0.709 | 0.184  | 0.0496          | 1.64   | 0.955    | 0.0378 | 0.0573  | 0.00893 | 1000 |
-| tempered-smc | f[3]     | -1.04  | 0.196  | 0.00615         | 0.219  | 0.888    | 0.0383 | 0.095   | 0.0187  | 1000 |
-| tempered-smc | f[4]     | -1.26  | 0.234  | -0.0898         | -2.97  | 0.957    | 0.0533 | 0.0959  | 0.0187  | 1000 |
-| tempered-smc | f[5]     | 0.469  | 0.242  | -0.0353         | -1.17  | 0.953    | 0.0287 | 0.0547  | 0.0116  | 1000 |
-| tempered-smc | f[6]     | 1.13   | 0.188  | -0.0847         | -2.7   | 0.994    | 0.0397 | 0.0852  | 0.012   | 1000 |
-| tempered-smc | f[7]     | 1.55   | 0.204  | -0.0507         | -1.64  | 0.975    | 0.0351 | 0.059   | 0.00739 | 1000 |
-| tempered-smc | f[8]     | 1.52   | 0.202  | 0.0445          | 1.4    | 1        | 0.0369 | 0.0458  | 0.0105  | 1000 |
-| tempered-smc | f[9]     | 0.958  | 0.23   | -0.0163         | -0.54  | 0.954    | 0.0431 | 0.0605  | 0.0109  | 1000 |
-| tempered-smc | f[10]    | 0.174  | 0.192  | 0.012           | 0.396  | 0.956    | 0.0242 | 0.0371  | 0.0121  | 1000 |
-| tempered-smc | f[11]    | 0.163  | 0.194  | 0.0211          | 0.701  | 0.95     | 0.0318 | 0.045   | 0.015   | 1000 |
-| laplace      | ell      | 0.781  | 0.302  | -0.756          | -40.7  | 1.17     | 0.341  | 0.774   | 0.314   | 4000 |
-| laplace      | f[0]     | -0.632 | 0.216  | -0.0591         | -3.53  | 1.06     | 0.0365 | 0.0728  | 0.00673 | 4000 |
-| laplace      | f[1]     | -0.655 | 0.182  | -0.0152         | -0.929 | 1.04     | 0.0199 | 0.0348  | 0.00425 | 4000 |
-| laplace      | f[2]     | -0.666 | 0.242  | 0.276           | 13.8   | 1.26     | 0.108  | 0.287   | 0.0401  | 4000 |
-| laplace      | f[3]     | -0.999 | 0.293  | 0.181           | 8.61   | 1.33     | 0.102  | 0.289   | 0.0515  | 4000 |
-| laplace      | f[4]     | -1.25  | 0.35   | -0.0679         | -3.01  | 1.43     | 0.0696 | 0.273   | 0.0447  | 4000 |
-| laplace      | f[5]     | 0.138  | 0.426  | -1.34           | -50.5  | 1.68     | 0.382  | 1.34    | 0.412   | 4000 |
-| laplace      | f[6]     | 0.982  | 0.441  | -0.862          | -23.4  | 2.32     | 0.198  | 0.892   | 0.149   | 4000 |
-| laplace      | f[7]     | 1.56   | 0.451  | 0.015           | 0.439  | 2.16     | 0.143  | 0.722   | 0.145   | 4000 |
-| laplace      | f[8]     | 1.54   | 0.34   | 0.145           | 5.42   | 1.69     | 0.11   | 0.435   | 0.0705  | 4000 |
-| laplace      | f[9]     | 0.961  | 0.352  | -0.00373        | -0.162 | 1.46     | 0.0838 | 0.334   | 0.0704  | 4000 |
-| laplace      | f[10]    | 0.149  | 0.384  | -0.114          | -3.78  | 1.91     | 0.113  | 0.594   | 0.129   | 4000 |
-| laplace      | f[11]    | 0.139  | 0.387  | -0.0977         | -3.26  | 1.89     | 0.109  | 0.583   | 0.127   | 4000 |
-| svi          | ell      | 0.716  | 0.0844 | -1.01           | -195   | 0.328    | 0.609  | 1.03    | 2.46    | 4000 |
-| svi          | f[0]     | -0.602 | 0.15   | 0.0884          | 7.6    | 0.735    | 0.0988 | 0.221   | 0.107   | 4000 |
-| svi          | f[1]     | -0.646 | 0.159  | 0.0359          | 2.51   | 0.904    | 0.036  | 0.0772  | 0.0111  | 4000 |
-| svi          | f[2]     | -0.732 | 0.213  | -0.0682         | -3.9   | 1.11     | 0.0507 | 0.104   | 0.0157  | 4000 |
-| svi          | f[3]     | -1.13  | 0.331  | -0.41           | -17.3  | 1.5      | 0.191  | 0.514   | 0.145   | 4000 |
-| svi          | f[4]     | -1.35  | 0.399  | -0.446          | -17.3  | 1.63     | 0.213  | 0.624   | 0.187   | 4000 |
-| svi          | f[5]     | 0.395  | 0.241  | -0.327          | -21.8  | 0.948    | 0.138  | 0.327   | 0.0707  | 4000 |
-| svi          | f[6]     | 1.18   | 0.25   | 0.173           | 8.33   | 1.32     | 0.118  | 0.303   | 0.0663  | 4000 |
-| svi          | f[7]     | 1.65   | 0.254  | 0.465           | 24.2   | 1.21     | 0.193  | 0.478   | 0.109   | 4000 |
-| svi          | f[8]     | 1.55   | 0.278  | 0.186           | 8.53   | 1.38     | 0.135  | 0.352   | 0.0894  | 4000 |
-| svi          | f[9]     | 0.892  | 0.356  | -0.289          | -12.4  | 1.48     | 0.156  | 0.46    | 0.121   | 4000 |
-| svi          | f[10]    | 0.234  | 0.31   | 0.307           | 12.6   | 1.54     | 0.16   | 0.485   | 0.133   | 4000 |
-| svi          | f[11]    | 0.224  | 0.31   | 0.322           | 13.4   | 1.51     | 0.162  | 0.476   | 0.128   | 4000 |
+| method       | quantity | mean   | sd    | mean error (sd) | mean z  | sd ratio | KS     | W1 (sd) | KL      | ESS  |
+| ------------ | -------- | ------ | ----- | --------------- | ------- | -------- | ------ | ------- | ------- | ---- |
+| nuts         | ell      | 0.974  | 0.253 | -0.00763        | -0.0524 | 0.984    | 0.0285 | 0.0607  | 0.0327  | 45.6 |
+| nuts         | f[0]     | -0.623 | 0.202 | -0.0131         | -0.245  | 0.99     | 0.0294 | 0.0336  | 0.0282  | 344  |
+| nuts         | f[1]     | -0.656 | 0.172 | -0.0179         | -0.319  | 0.979    | 0.0293 | 0.0404  | 0.0133  | 303  |
+| nuts         | f[2]     | -0.72  | 0.187 | -0.00453        | -0.0876 | 0.973    | 0.0395 | 0.0661  | 0.0232  | 354  |
+| nuts         | f[3]     | -1.04  | 0.213 | 0.0122          | 0.238   | 0.966    | 0.0403 | 0.0611  | 0.0242  | 358  |
+| nuts         | f[4]     | -1.23  | 0.24  | 0.0165          | 0.346   | 0.98     | 0.0501 | 0.044   | 0.0219  | 424  |
+| nuts         | f[5]     | 0.482  | 0.27  | 0.017           | 0.283   | 1.06     | 0.0462 | 0.0849  | 0.0212  | 313  |
+| nuts         | f[6]     | 1.14   | 0.2   | -0.049          | -0.922  | 1.05     | 0.069  | 0.0934  | 0.0324  | 392  |
+| nuts         | f[7]     | 1.54   | 0.214 | -0.0678         | -1.06   | 1.02     | 0.0625 | 0.0983  | 0.0219  | 253  |
+| nuts         | f[8]     | 1.51   | 0.196 | -0.031          | -0.631  | 0.97     | 0.0386 | 0.055   | 0.0323  | 390  |
+| nuts         | f[9]     | 0.962  | 0.241 | -0.00191        | -0.0406 | 0.999    | 0.0316 | 0.042   | 0.0231  | 451  |
+| nuts         | f[10]    | 0.176  | 0.191 | 0.0184          | 0.397   | 0.948    | 0.0286 | 0.0504  | 0.0296  | 419  |
+| nuts         | f[11]    | 0.162  | 0.194 | 0.0165          | 0.36    | 0.95     | 0.0317 | 0.049   | 0.0266  | 428  |
+| tempered-smc | ell      | 0.972  | 0.244 | -0.0146         | -0.486  | 0.95     | 0.0618 | 0.0997  | 0.0347  | 1000 |
+| tempered-smc | f[0]     | -0.617 | 0.195 | 0.0132          | 0.437   | 0.956    | 0.0308 | 0.0461  | 0.0143  | 1000 |
+| tempered-smc | f[1]     | -0.656 | 0.168 | -0.0193         | -0.64   | 0.956    | 0.034  | 0.0503  | 0.0223  | 1000 |
+| tempered-smc | f[2]     | -0.731 | 0.185 | -0.065          | -2.13   | 0.964    | 0.0492 | 0.0684  | 0.0153  | 1000 |
+| tempered-smc | f[3]     | -1.06  | 0.196 | -0.0729         | -2.6    | 0.888    | 0.0656 | 0.118   | 0.0318  | 1000 |
+| tempered-smc | f[4]     | -1.22  | 0.237 | 0.0612          | 2.01    | 0.966    | 0.0544 | 0.0639  | 0.0185  | 1000 |
+| tempered-smc | f[5]     | 0.479  | 0.259 | 0.00291         | 0.0902  | 1.02     | 0.0368 | 0.0384  | 0.0126  | 1000 |
+| tempered-smc | f[6]     | 1.13   | 0.185 | -0.0736         | -2.38   | 0.978    | 0.064  | 0.0814  | 0.0159  | 1000 |
+| tempered-smc | f[7]     | 1.55   | 0.198 | -0.0236         | -0.786  | 0.948    | 0.0474 | 0.0619  | 0.0179  | 1000 |
+| tempered-smc | f[8]     | 1.53   | 0.192 | 0.0907          | 3.01    | 0.952    | 0.0531 | 0.102   | 0.0132  | 1000 |
+| tempered-smc | f[9]     | 0.978  | 0.23  | 0.0654          | 2.17    | 0.952    | 0.0555 | 0.0842  | 0.0189  | 1000 |
+| tempered-smc | f[10]    | 0.174  | 0.199 | 0.00948         | 0.303   | 0.989    | 0.0318 | 0.0367  | 0.0191  | 1000 |
+| tempered-smc | f[11]    | 0.162  | 0.202 | 0.0166          | 0.529   | 0.991    | 0.0259 | 0.0349  | 0.0149  | 1000 |
+| laplace      | ell      | 0.773  | 0.296 | -0.789          | -43.3   | 1.15     | 0.355  | 0.807   | 0.336   | 4000 |
+| laplace      | f[0]     | -0.633 | 0.212 | -0.0646         | -3.94   | 1.04     | 0.0403 | 0.0691  | 0.00712 | 4000 |
+| laplace      | f[1]     | -0.658 | 0.181 | -0.0284         | -1.74   | 1.03     | 0.0231 | 0.0438  | 0.00341 | 4000 |
+| laplace      | f[2]     | -0.667 | 0.239 | 0.268           | 13.6    | 1.24     | 0.106  | 0.279   | 0.038   | 4000 |
+| laplace      | f[3]     | -1     | 0.301 | 0.17            | 7.91    | 1.36     | 0.0945 | 0.289   | 0.0512  | 4000 |
+| laplace      | f[4]     | -1.26  | 0.375 | -0.0893         | -3.69   | 1.53     | 0.0731 | 0.316   | 0.0471  | 4000 |
+| laplace      | f[5]     | 0.149  | 0.423 | -1.3            | -49.2   | 1.66     | 0.37   | 1.3     | 0.396   | 4000 |
+| laplace      | f[6]     | 1      | 0.432 | -0.755          | -20.9   | 2.28     | 0.177  | 0.8     | 0.126   | 4000 |
+| laplace      | f[7]     | 1.58   | 0.442 | 0.107           | 3.22    | 2.11     | 0.149  | 0.721   | 0.139   | 4000 |
+| laplace      | f[8]     | 1.55   | 0.334 | 0.174           | 6.67    | 1.66     | 0.123  | 0.445   | 0.0779  | 4000 |
+| laplace      | f[9]     | 0.959  | 0.35  | -0.0124         | -0.54   | 1.45     | 0.0933 | 0.337   | 0.0789  | 4000 |
+| laplace      | f[10]    | 0.151  | 0.382 | -0.103          | -3.41   | 1.9      | 0.111  | 0.583   | 0.124   | 4000 |
+| laplace      | f[11]    | 0.141  | 0.386 | -0.0845         | -2.83   | 1.89     | 0.106  | 0.575   | 0.121   | 4000 |
+| svi          | ell      | 0.693  | 0.064 | -1.1            | -280    | 0.249    | 0.688  | 1.12    | 3.25    | 4000 |
+| svi          | f[0]     | -0.647 | 0.164 | -0.135          | -10.6   | 0.804    | 0.0974 | 0.192   | 0.0603  | 4000 |
+| svi          | f[1]     | -0.68  | 0.167 | -0.156          | -10.4   | 0.951    | 0.0704 | 0.157   | 0.0175  | 4000 |
+| svi          | f[2]     | -0.739 | 0.203 | -0.105          | -6.31   | 1.06     | 0.0517 | 0.106   | 0.0114  | 4000 |
+| svi          | f[3]     | -1.09  | 0.329 | -0.212          | -8.99   | 1.49     | 0.146  | 0.434   | 0.124   | 4000 |
+| svi          | f[4]     | -1.3   | 0.362 | -0.263          | -11.3   | 1.48     | 0.155  | 0.445   | 0.122   | 4000 |
+| svi          | f[5]     | 0.408  | 0.206 | -0.275          | -21.5   | 0.811    | 0.152  | 0.286   | 0.116   | 4000 |
+| svi          | f[6]     | 1.17   | 0.22  | 0.151           | 8.24    | 1.16     | 0.0865 | 0.191   | 0.0302  | 4000 |
+| svi          | f[7]     | 1.6    | 0.242 | 0.208           | 11.4    | 1.16     | 0.109  | 0.235   | 0.0386  | 4000 |
+| svi          | f[8]     | 1.43   | 0.29  | -0.418          | -18.4   | 1.44     | 0.182  | 0.488   | 0.128   | 4000 |
+| svi          | f[9]     | 0.694  | 0.366 | -1.11           | -46.4   | 1.52     | 0.377  | 1.12    | 0.378   | 4000 |
+| svi          | f[10]    | 0.0355 | 0.321 | -0.679          | -26.9   | 1.6      | 0.267  | 0.759   | 0.233   | 4000 |
+| svi          | f[11]    | 0.0298 | 0.321 | -0.63           | -25.4   | 1.57     | 0.251  | 0.711   | 0.215   | 4000 |

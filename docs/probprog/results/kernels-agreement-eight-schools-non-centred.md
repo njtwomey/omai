@@ -2,9 +2,9 @@
 
 Eight schools, non-centred: the kernel methods against the reference truth.
 
-Run on 2026-11-10 at commit d30248ff; seed 0, budget scale 1 (plans 12, rows 120, scalePercent 100), 48.0 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 12, rows 120, scalePercent 100), 30.3 s.
 
-**Passed**: 6 kernel method(s) agree with the quadrature truth; 6 reported
+**FAILED**: 2 row(s) of methods that must agree are outside their tolerances
 
 **Eight schools, non-centred** (eight-schools-non-centred): hierarchical, non-centred, reparametrisation, quadrature, eight-schools
 
@@ -12,142 +12,146 @@ Rubin's eight schools with theta_j = mu + tau z_j: the same posterior as the cen
 
 Truth (quadrature): grid quadrature of the posterior of (mu, tau) with the school effects integrated out in closed form (121 points per axis, evidence error 1.5e-5); each theta_j is the grid mixture of its conditional normals. Log evidence -31.3113.
 
-Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, laplace, importance, tempered-smc, abc-smc, abc-rejection. Not applicable: elliptical-slice (the prior of tau is halfCauchy, not normal or multivariateNormal); ep (expectation propagation needs an exponential-family factor graph: 'tau' is opaque to message passing (a custom call, or a family with no exponential-family form)); vmp (variational message passing needs an exponential-family factor graph: 'tau' is opaque to message passing (a custom call, or a family with no exponential-family form)); bp (belief propagation needs an exponential-family factor graph: 'tau' is opaque to message passing (a custom call, or a family with no exponential-family form)); gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (a spec has no recurrences yet (the filter runs over a markov loop of a program)); conjugate (no usable conjugate structure for mu, tau, z); gaussian ('tau' is halfCauchy, not Gaussian); enumeration (continuous latent nodes (mu, tau, z)); chain (a spec has no recurrences yet (the chain is a markov loop of a program)).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, laplace, importance, tempered-smc, abc-smc, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: elliptical-slice (the prior of tau is halfCauchy, not normal or multivariateNormal); ep (expectation propagation needs an exponential-family factor graph: 'tau' is opaque to message passing (a custom call, or a family with no exponential-family form)); vmp (variational message passing needs an exponential-family factor graph: 'tau' is opaque to message passing (a custom call, or a family with no exponential-family form)); bp (belief propagation needs an exponential-family factor graph: 'tau' is opaque to message passing (a custom call, or a family with no exponential-family form)); gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (the model has no single scan); conjugate (no usable conjugate structure for mu, tau, z); gaussian ('tau' is halfCauchy, not Gaussian); enumeration (continuous latent nodes (mu, tau, z)); chain (the model has no single scan); svi-conjugate-natural (no usable conjugate structure for mu, tau, z).
 
 | method             | expectation | run                    | diagnostics                                                                | why                                                                                                                        |
 | ------------------ | ----------- | ---------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | rwm                | reported    | converged (1901 steps) | 0 divergences; R-hat high: mu, tau, z[0], ...; ESS low: mu, tau, z[0], ... | a consistent sampler, slower mixing: agrees within Monte Carlo error; on this hierarchy it mixes too slowly at this budget |
-| mala               | must agree  | converged (1101 steps) | 0 divergences; R-hat high: mu, tau; ESS low: tau                           | Metropolis-adjusted, so exact up to Monte Carlo error                                                                      |
+| mala               | must agree  | converged (1101 steps) | 0 divergences; R-hat high: tau, z[6]; ESS low: tau, z[0], z[3], ...        | Metropolis-adjusted, so exact up to Monte Carlo error                                                                      |
 | barker             | must agree  | converged (1301 steps) | 0 divergences; R-hat high: mu, tau, z[0], ...; ESS low: mu, tau, z[0], ... | Metropolis-adjusted, so exact up to Monte Carlo error                                                                      |
-| hmc                | must agree  | converged (1201 steps) | 0 divergences; R-hat high: z[2], z[4]                                      | a fixed trajectory with a tuned step size: exact up to Monte Carlo error                                                   |
+| hmc                | must agree  | converged (1201 steps) | 0 divergences; R-hat high: z[3], z[7]                                      | a fixed trajectory with a tuned step size: exact up to Monte Carlo error                                                   |
 | slice              | must agree  | converged (901 steps)  | 0 divergences                                                              | coordinate-wise slice sampling: exact up to Monte Carlo error                                                              |
 | aies               | reported    | converged (701 steps)  | 0 divergences; R-hat high: mu, tau, z[0], ...; ESS low: mu, tau, z[0], ... | an affine-invariant ensemble: exact up to Monte Carlo error; on this hierarchy it mixes too slowly at this budget          |
 | ensemble-slice     | reported    | converged (401 steps)  | 0 divergences; R-hat high: mu, tau, z[0], ...; ESS low: mu, tau, z[0], ... | an ensemble of slice steps: exact up to Monte Carlo error; on this hierarchy it mixes too slowly at this budget            |
-| chees              | must agree  | converged (601 steps)  | 1 divergences; R-hat high: mu, tau; ESS low: mu, tau                       | jittered HMC with an adapted trajectory: exact up to Monte Carlo error                                                     |
+| chees              | must agree  | converged (601 steps)  | 0 divergences; R-hat high: mu; ESS low: mu, tau                            | jittered HMC with an adapted trajectory: exact up to Monte Carlo error                                                     |
 | parallel-tempering | must agree  | converged (901 steps)  | 0 divergences                                                              | the cold replica of a tempered ladder: exact up to Monte Carlo error                                                       |
-| mclmc              | reported    | converged (1601 steps) | 0 divergences; R-hat high: tau; ESS low: tau                               | unadjusted: a small bias that shrinks with the step size                                                                   |
+| mclmc              | reported    | converged (1601 steps) | 0 divergences; ESS low: tau                                                | unadjusted: a small bias that shrinks with the step size                                                                   |
 | sgld               | reported    | converged (3201 steps) | 0 divergences; R-hat high: mu, tau, z[0], ...; ESS low: mu, tau, z[0], ... | unadjusted Langevin with a constant step: a step-size bias in the spread                                                   |
 | sghmc              | reported    | converged (1301 steps) | 0 divergences; R-hat high: mu, tau, z[0], ...; ESS low: mu, tau, z[0], ... | friction-damped Hamiltonian dynamics with a constant step: a step-size bias                                                |
 
 | method             | quantity | mean | sd   | mean error (sd) | mean z  | sd ratio | KS     | W1 (sd) | KL      | ESS  |
 | ------------------ | -------- | ---- | ---- | --------------- | ------- | -------- | ------ | ------- | ------- | ---- |
-| rwm                | mu       | 6.86 | 1.7  | 0.741           | 2.63    | 0.511    | 0.429  | 0.819   | 1.37    | 3.29 |
-| rwm                | tau      | 4.26 | 2.27 | 0.205           | 2.95    | 0.704    | 0.268  | 0.355   | 0.271   | 103  |
-| rwm                | theta[0] | 8.76 | 4.12 | 0.456           | 1.58    | 0.737    | 0.321  | 0.506   | 0.37    | 6.5  |
-| rwm                | theta[1] | 7.97 | 4.84 | 0.649           | 1.16    | 1.04     | 0.324  | 0.669   | 0.311   | 3.41 |
-| rwm                | theta[2] | 6.24 | 4.44 | 0.44            | 6.17    | 0.844    | 0.25   | 0.459   | 0.191   | 140  |
-| rwm                | theta[3] | 9.5  | 3.75 | 0.991           | 2.32    | 0.785    | 0.442  | 0.998   | 1.04    | 3.38 |
-| rwm                | theta[4] | 6.52 | 5.31 | 0.624           | 1.12    | 1.14     | 0.347  | 0.64    | 0.33    | 4.2  |
-| rwm                | theta[5] | 3.9  | 3.64 | -0.0298         | -0.411  | 0.754    | 0.135  | 0.264   | 0.191   | 108  |
-| rwm                | theta[6] | 9.12 | 3.96 | 0.556           | 2.41    | 0.781    | 0.367  | 0.568   | 0.539   | 11.5 |
-| rwm                | theta[7] | 8.59 | 4.76 | 0.706           | 2.1     | 0.899    | 0.338  | 0.721   | 0.372   | 7.16 |
-| mala               | mu       | 4.57 | 3.46 | 0.0522          | 0.892   | 1.04     | 0.0358 | 0.0639  | 0.013   | 317  |
-| mala               | tau      | 3.72 | 2.75 | 0.0391          | 0.448   | 0.855    | 0.082  | 0.132   | 0.047   | 96   |
-| mala               | theta[0] | 6.66 | 5.67 | 0.0804          | 1.47    | 1.01     | 0.0564 | 0.0954  | 0.0239  | 342  |
-| mala               | theta[1] | 5.05 | 4.81 | 0.023           | 0.451   | 1.03     | 0.0327 | 0.0534  | 0.0114  | 407  |
-| mala               | theta[2] | 3.93 | 5.55 | 0.00109         | 0.018   | 1.05     | 0.0225 | 0.0565  | 0.0113  | 304  |
-| mala               | theta[3] | 4.61 | 4.92 | -0.0311         | -0.502  | 1.03     | 0.0566 | 0.067   | 0.0247  | 276  |
-| mala               | theta[4] | 3.83 | 4.61 | 0.0462          | 1.12    | 0.99     | 0.0364 | 0.053   | 0.00977 | 578  |
-| mala               | theta[5] | 3.72 | 4.87 | -0.0664         | -1.25   | 1.01     | 0.0506 | 0.0865  | 0.0142  | 363  |
-| mala               | theta[6] | 6.52 | 5.34 | 0.0449          | 0.876   | 1.05     | 0.0405 | 0.0574  | 0.0137  | 422  |
-| mala               | theta[7] | 4.9  | 5.22 | 0.0088          | 0.186   | 0.986    | 0.0257 | 0.0333  | 0.00842 | 435  |
-| barker             | mu       | 4.8  | 3.02 | 0.123           | 1.73    | 0.91     | 0.0947 | 0.141   | 0.0465  | 165  |
-| barker             | tau      | 3.28 | 3.11 | -0.1            | -0.747  | 0.966    | 0.0869 | 0.127   | 0.0257  | 51.8 |
-| barker             | theta[0] | 6.08 | 5.1  | -0.0238         | -0.332  | 0.912    | 0.0587 | 0.073   | 0.0473  | 162  |
-| barker             | theta[1] | 5.42 | 4.42 | 0.102           | 1.41    | 0.946    | 0.112  | 0.126   | 0.0465  | 171  |
-| barker             | theta[2] | 4.16 | 4.58 | 0.0436          | 0.747   | 0.871    | 0.0787 | 0.159   | 0.0735  | 223  |
-| barker             | theta[3] | 5.02 | 5.24 | 0.0547          | 0.667   | 1.1      | 0.0635 | 0.0997  | 0.0533  | 179  |
-| barker             | theta[4] | 3.62 | 4.23 | 0.000695        | 0.0119  | 0.908    | 0.0469 | 0.0718  | 0.0347  | 243  |
-| barker             | theta[5] | 4.57 | 4.56 | 0.108           | 1.18    | 0.944    | 0.0938 | 0.154   | 0.0655  | 106  |
-| barker             | theta[6] | 6.42 | 4.99 | 0.0246          | 0.346   | 0.982    | 0.0425 | 0.0804  | 0.0242  | 190  |
-| barker             | theta[7] | 5.12 | 5.52 | 0.05            | 0.627   | 1.04     | 0.0938 | 0.107   | 0.0407  | 171  |
-| hmc                | mu       | 4.33 | 3.43 | -0.0196         | -1.36   | 1.03     | 0.0173 | 0.0314  | 0.0069  | 5130 |
-| hmc                | tau      | 3.64 | 3.35 | 0.0142          | 0.483   | 1.04     | 0.0255 | 0.042   | 0.0118  | 1250 |
-| hmc                | theta[0] | 6.13 | 5.51 | -0.0151         | -0.735  | 0.986    | 0.0283 | 0.04    | 0.00674 | 2290 |
-| hmc                | theta[1] | 4.92 | 4.55 | -0.00527        | -0.285  | 0.972    | 0.0256 | 0.0305  | 0.00816 | 2760 |
-| hmc                | theta[2] | 3.95 | 5.92 | 0.00464         | 0.232   | 1.12     | 0.0253 | 0.0705  | 0.00765 | 3150 |
-| hmc                | theta[3] | 4.77 | 4.92 | 0.00337         | 0.182   | 1.03     | 0.0169 | 0.0259  | 0.0046  | 3100 |
-| hmc                | theta[4] | 3.69 | 4.67 | 0.0151          | 0.839   | 1        | 0.0182 | 0.0257  | 0.00645 | 3110 |
-| hmc                | theta[5] | 3.94 | 5.02 | -0.0215         | -1.02   | 1.04     | 0.0231 | 0.0446  | 0.00791 | 2450 |
-| hmc                | theta[6] | 6.41 | 4.87 | 0.0218          | 1.09    | 0.959    | 0.0258 | 0.0423  | 0.00619 | 2290 |
-| hmc                | theta[7] | 4.86 | 5.23 | 0.00056         | 0.0328  | 0.988    | 0.0159 | 0.0189  | 0.00347 | 3350 |
-| slice              | mu       | 4.6  | 3.18 | 0.061           | 1.81    | 0.959    | 0.0461 | 0.0743  | 0.00913 | 808  |
-| slice              | tau      | 3.64 | 3.21 | 0.0122          | 0.334   | 0.998    | 0.0213 | 0.0286  | 0.0053  | 750  |
-| slice              | theta[0] | 6.47 | 5.56 | 0.046           | 1.73    | 0.993    | 0.0379 | 0.0549  | 0.00631 | 1400 |
-| slice              | theta[1] | 5.16 | 4.51 | 0.0463          | 1.77    | 0.965    | 0.049  | 0.0662  | 0.0151  | 1370 |
-| slice              | theta[2] | 4.06 | 5.33 | 0.025           | 0.796   | 1.01     | 0.0425 | 0.0511  | 0.00862 | 1040 |
-| slice              | theta[3] | 5.12 | 4.79 | 0.0769          | 2.86    | 1        | 0.0453 | 0.0831  | 0.00954 | 1390 |
-| slice              | theta[4] | 3.84 | 4.55 | 0.0475          | 1.68    | 0.977    | 0.0271 | 0.0572  | 0.00565 | 1190 |
-| slice              | theta[5] | 4.29 | 4.78 | 0.0513          | 1.83    | 0.989    | 0.0369 | 0.0569  | 0.00696 | 1250 |
-| slice              | theta[6] | 6.38 | 4.94 | 0.0159          | 0.576   | 0.972    | 0.0221 | 0.0354  | 0.00687 | 1250 |
-| slice              | theta[7] | 5.06 | 5.04 | 0.0383          | 1.46    | 0.953    | 0.0295 | 0.0531  | 0.00653 | 1320 |
-| aies               | mu       | 3.6  | 3.08 | -0.24           | -1.75   | 0.929    | 0.113  | 0.244   | 0.0448  | 46.3 |
-| aies               | tau      | 3.72 | 3.2  | 0.0392          | 0.219   | 0.994    | 0.0518 | 0.0781  | 0.0324  | 30.7 |
-| aies               | theta[0] | 6.35 | 6.01 | 0.0242          | 0.154   | 1.07     | 0.0222 | 0.0491  | 0.00955 | 47   |
-| aies               | theta[1] | 4.76 | 4.4  | -0.0396         | -0.297  | 0.942    | 0.0288 | 0.0517  | 0.00625 | 50   |
-| aies               | theta[2] | 3.38 | 5.42 | -0.103          | -0.668  | 1.03     | 0.0845 | 0.137   | 0.025   | 44.5 |
-| aies               | theta[3] | 4.82 | 4.74 | 0.0131          | 0.0906  | 0.991    | 0.0176 | 0.0362  | 0.00713 | 47.2 |
-| aies               | theta[4] | 3.04 | 4.41 | -0.123          | -0.887  | 0.946    | 0.0657 | 0.134   | 0.0239  | 46.5 |
-| aies               | theta[5] | 3.53 | 4.13 | -0.107          | -0.815  | 0.856    | 0.0595 | 0.146   | 0.027   | 42.9 |
-| aies               | theta[6] | 6.22 | 5.48 | -0.0147         | -0.0975 | 1.08     | 0.055  | 0.0775  | 0.0193  | 51.1 |
-| aies               | theta[7] | 5.09 | 5.4  | 0.0451          | 0.268   | 1.02     | 0.0512 | 0.0721  | 0.0116  | 36.9 |
-| ensemble-slice     | mu       | 3.96 | 3.12 | -0.132          | -1.52   | 0.941    | 0.0664 | 0.133   | 0.0179  | 117  |
-| ensemble-slice     | tau      | 3.48 | 3.45 | -0.0372         | -0.413  | 1.07     | 0.0367 | 0.0818  | 0.00631 | 142  |
-| ensemble-slice     | theta[0] | 5.91 | 5.43 | -0.0545         | -0.692  | 0.971    | 0.0645 | 0.092   | 0.0201  | 151  |
-| ensemble-slice     | theta[1] | 4.36 | 4.26 | -0.124          | -2      | 0.911    | 0.076  | 0.128   | 0.0236  | 218  |
-| ensemble-slice     | theta[2] | 2.79 | 5.14 | -0.216          | -2.5    | 0.977    | 0.107  | 0.217   | 0.0434  | 127  |
-| ensemble-slice     | theta[3] | 4.48 | 4.9  | -0.0589         | -0.839  | 1.02     | 0.0446 | 0.0681  | 0.00809 | 213  |
-| ensemble-slice     | theta[4] | 3.1  | 4.56 | -0.111          | -1.29   | 0.978    | 0.0694 | 0.112   | 0.0238  | 128  |
-| ensemble-slice     | theta[5] | 3.57 | 4.33 | -0.0976         | -1.17   | 0.896    | 0.0742 | 0.117   | 0.0284  | 116  |
-| ensemble-slice     | theta[6] | 6.15 | 4.86 | -0.0284         | -0.361  | 0.957    | 0.0336 | 0.059   | 0.0094  | 148  |
-| ensemble-slice     | theta[7] | 4.13 | 5.03 | -0.136          | -2.26   | 0.951    | 0.0668 | 0.137   | 0.0152  | 248  |
-| chees              | mu       | 4.27 | 3.3  | -0.0394         | -0.506  | 0.996    | 0.0315 | 0.0407  | 0.00399 | 164  |
-| chees              | tau      | 3.59 | 3.25 | -0.00182        | -0.0519 | 1.01     | 0.015  | 0.0314  | 0.00421 | 830  |
-| chees              | theta[0] | 5.99 | 5.49 | -0.0405         | -0.814  | 0.982    | 0.0209 | 0.0414  | 0.00283 | 389  |
-| chees              | theta[1] | 4.69 | 4.72 | -0.054          | -1.16   | 1.01     | 0.0312 | 0.0567  | 0.00316 | 469  |
-| chees              | theta[2] | 3.83 | 5.2  | -0.0191         | -0.416  | 0.988    | 0.0215 | 0.0332  | 0.00332 | 466  |
-| chees              | theta[3] | 4.49 | 4.95 | -0.0568         | -1.24   | 1.03     | 0.0309 | 0.0606  | 0.00395 | 508  |
-| chees              | theta[4] | 3.37 | 4.63 | -0.0521         | -1.05   | 0.994    | 0.0375 | 0.0549  | 0.00389 | 404  |
-| chees              | theta[5] | 3.96 | 4.65 | -0.0166         | -0.315  | 0.964    | 0.0184 | 0.0398  | 0.00179 | 334  |
-| chees              | theta[6] | 6.19 | 5.27 | -0.0207         | -0.385  | 1.04     | 0.0252 | 0.0455  | 0.00374 | 371  |
-| chees              | theta[7] | 4.72 | 5.1  | -0.0261         | -0.561  | 0.964    | 0.0195 | 0.0348  | 0.00242 | 430  |
-| parallel-tempering | mu       | 4.26 | 3.45 | -0.0399         | -1.23   | 1.04     | 0.0257 | 0.0444  | 0.00599 | 1030 |
-| parallel-tempering | tau      | 3.64 | 3.36 | 0.0119          | 0.319   | 1.04     | 0.0186 | 0.0336  | 0.0121  | 784  |
-| parallel-tempering | theta[0] | 6.01 | 5.19 | -0.0355         | -1.33   | 0.928    | 0.0201 | 0.0429  | 0.00646 | 1220 |
-| parallel-tempering | theta[1] | 5.02 | 4.59 | 0.0169          | 0.652   | 0.981    | 0.0395 | 0.0498  | 0.014   | 1430 |
-| parallel-tempering | theta[2] | 3.84 | 5.22 | -0.0174         | -0.636  | 0.992    | 0.0296 | 0.0264  | 0.00614 | 1310 |
-| parallel-tempering | theta[3] | 4.54 | 4.77 | -0.0463         | -1.82   | 0.998    | 0.0237 | 0.0479  | 0.00694 | 1540 |
-| parallel-tempering | theta[4] | 3.56 | 4.63 | -0.012          | -0.461  | 0.993    | 0.0219 | 0.0302  | 0.00691 | 1460 |
-| parallel-tempering | theta[5] | 4.03 | 4.6  | -0.00278        | -0.112  | 0.952    | 0.0185 | 0.0312  | 0.00843 | 1470 |
-| parallel-tempering | theta[6] | 6.22 | 5.01 | -0.0157         | -0.612  | 0.986    | 0.0132 | 0.028   | 0.00916 | 1480 |
-| parallel-tempering | theta[7] | 4.65 | 5.22 | -0.0382         | -1.37   | 0.987    | 0.0291 | 0.0551  | 0.00699 | 1260 |
-| mclmc              | mu       | 4.49 | 3.37 | 0.028           | 0.585   | 1.02     | 0.0235 | 0.0301  | 0.00479 | 451  |
-| mclmc              | tau      | 3.24 | 3    | -0.11           | -1.88   | 0.931    | 0.0571 | 0.137   | 0.0145  | 252  |
-| mclmc              | theta[0] | 6.04 | 5.19 | -0.0314         | -0.783  | 0.927    | 0.0152 | 0.0437  | 0.00353 | 536  |
-| mclmc              | theta[1] | 4.94 | 4.42 | -0.000735       | -0.0195 | 0.946    | 0.0161 | 0.0392  | 0.00322 | 628  |
-| mclmc              | theta[2] | 4.2  | 5.07 | 0.0521          | 1.28    | 0.963    | 0.0258 | 0.0596  | 0.00417 | 558  |
-| mclmc              | theta[3] | 4.74 | 4.52 | -0.00369        | -0.0926 | 0.946    | 0.0136 | 0.0341  | 0.00348 | 563  |
-| mclmc              | theta[4] | 3.64 | 4.44 | 0.0053          | 0.13    | 0.953    | 0.0175 | 0.0354  | 0.00437 | 547  |
-| mclmc              | theta[5] | 4.3  | 4.67 | 0.053           | 1.35    | 0.967    | 0.0294 | 0.0538  | 0.00758 | 603  |
-| mclmc              | theta[6] | 5.97 | 4.93 | -0.065          | -1.62   | 0.971    | 0.0344 | 0.067   | 0.00605 | 588  |
-| mclmc              | theta[7] | 4.94 | 5.34 | 0.016           | 0.378   | 1.01     | 0.0148 | 0.0291  | 0.00429 | 573  |
-| sgld               | mu       | 5.19 | 2.68 | 0.238           | 0.905   | 0.809    | 0.208  | 0.347   | 0.262   | 9.47 |
-| sgld               | tau      | 3.59 | 3    | -0.00257        | -0.0125 | 0.931    | 0.0321 | 0.0695  | 0.0272  | 20.6 |
-| sgld               | theta[0] | 6.56 | 4.95 | 0.0623          | 0.389   | 0.885    | 0.0907 | 0.123   | 0.0557  | 30.5 |
-| sgld               | theta[1] | 5.97 | 4.77 | 0.22            | 1.22    | 1.02     | 0.181  | 0.22    | 0.121   | 32.1 |
-| sgld               | theta[2] | 4.95 | 4.62 | 0.194           | 0.623   | 0.877    | 0.16   | 0.218   | 0.0782  | 7.98 |
-| sgld               | theta[3] | 5.15 | 3.49 | 0.0821          | 0.524   | 0.729    | 0.134  | 0.265   | 0.129   | 21.7 |
-| sgld               | theta[4] | 3.31 | 5.03 | -0.0647         | -0.266  | 1.08     | 0.102  | 0.188   | 0.0991  | 19.7 |
-| sgld               | theta[5] | 4.5  | 4.29 | 0.0944          | 0.52    | 0.889    | 0.121  | 0.189   | 0.0802  | 23.9 |
-| sgld               | theta[6] | 6.83 | 4.79 | 0.105           | 0.661   | 0.943    | 0.105  | 0.131   | 0.0516  | 35   |
-| sgld               | theta[7] | 5.8  | 4.8  | 0.179           | 1.03    | 0.906    | 0.193  | 0.203   | 0.111   | 26.9 |
-| sghmc              | mu       | 3.4  | 3.3  | -0.301          | -0.663  | 0.996    | 0.188  | 0.33    | 0.133   | 4.82 |
-| sghmc              | tau      | 4.41 | 3.57 | 0.251           | 1.49    | 1.11     | 0.127  | 0.224   | 0.11    | 43   |
-| sghmc              | theta[0] | 7.34 | 6.72 | 0.201           | 0.816   | 1.2      | 0.096  | 0.233   | 0.0591  | 23.7 |
-| sghmc              | theta[1] | 4.03 | 5.9  | -0.194          | -0.631  | 1.26     | 0.123  | 0.268   | 0.0625  | 16.9 |
-| sghmc              | theta[2] | 2.63 | 5.81 | -0.246          | -0.715  | 1.1      | 0.177  | 0.271   | 0.0908  | 10.3 |
-| sghmc              | theta[3] | 3.09 | 5.38 | -0.35           | -1.08   | 1.12     | 0.191  | 0.354   | 0.0819  | 12.2 |
-| sghmc              | theta[4] | 2.26 | 5.06 | -0.291          | -1.45   | 1.09     | 0.186  | 0.295   | 0.0916  | 29.2 |
-| sghmc              | theta[5] | 2.76 | 5.58 | -0.266          | -0.648  | 1.16     | 0.179  | 0.282   | 0.0827  | 7.91 |
-| sghmc              | theta[6] | 5.33 | 5.29 | -0.19           | -0.533  | 1.04     | 0.117  | 0.19    | 0.0432  | 8.54 |
-| sghmc              | theta[7] | 4.64 | 5.38 | -0.0405         | -0.131  | 1.02     | 0.0813 | 0.116   | 0.0386  | 10.8 |
+| rwm                | mu       | 4.88 | 2.17 | 0.144           | 0.427   | 0.655    | 0.126  | 0.308   | 0.657   | 3.77 |
+| rwm                | tau      | 6.29 | 5.54 | 0.836           | 0.946   | 1.72     | 0.238  | 0.81    | 0.189   | 3.78 |
+| rwm                | theta[0] | 6.07 | 6.74 | -0.0263         | -0.246  | 1.21     | 0.173  | 0.219   | 0.16    | 128  |
+| rwm                | theta[1] | 6.04 | 4.76 | 0.236           | 0.626   | 1.02     | 0.186  | 0.25    | 0.114   | 7.33 |
+| rwm                | theta[2] | 1.11 | 7.22 | -0.536          | -0.864  | 1.37     | 0.172  | 0.536   | 0.209   | 4.9  |
+| rwm                | theta[3] | 4.11 | 4.44 | -0.135          | -0.328  | 0.93     | 0.108  | 0.21    | 0.177   | 5.07 |
+| rwm                | theta[4] | 4.38 | 4.71 | 0.164           | 0.308   | 1.01     | 0.198  | 0.206   | 0.176   | 3.6  |
+| rwm                | theta[5] | 6.64 | 2.65 | 0.538           | 5.77    | 0.549    | 0.391  | 0.547   | 0.965   | 34.6 |
+| rwm                | theta[6] | 8.04 | 4.78 | 0.344           | 3.85    | 0.941    | 0.231  | 0.344   | 0.15    | 111  |
+| rwm                | theta[7] | 5.93 | 5.5  | 0.204           | 0.728   | 1.04     | 0.132  | 0.213   | 0.0637  | 13.8 |
+| mala               | mu       | 4.21 | 3.06 | -0.0553         | -0.974  | 0.923    | 0.048  | 0.0679  | 0.0194  | 265  |
+| mala               | tau      | 3.9  | 3.15 | 0.0929          | 1.04    | 0.977    | 0.0665 | 0.106   | 0.0123  | 119  |
+| mala               | theta[0] | 6.36 | 5.48 | 0.0263          | 0.392   | 0.98     | 0.0342 | 0.0606  | 0.019   | 213  |
+| mala               | theta[1] | 4.75 | 4.99 | -0.0409         | -0.692  | 1.07     | 0.0411 | 0.07    | 0.00916 | 327  |
+| mala               | theta[2] | 3.54 | 4.83 | -0.0742         | -1.31   | 0.918    | 0.0548 | 0.0864  | 0.0273  | 264  |
+| mala               | theta[3] | 4.79 | 4.67 | 0.00627         | 0.0953  | 0.978    | 0.0322 | 0.0466  | 0.012   | 221  |
+| mala               | theta[4] | 3.05 | 4.63 | -0.121          | -1.94   | 0.995    | 0.0617 | 0.125   | 0.0187  | 255  |
+| mala               | theta[5] | 4.32 | 4.68 | 0.0577          | 1.01    | 0.97     | 0.0369 | 0.067   | 0.0186  | 286  |
+| mala               | theta[6] | 6.32 | 5.13 | 0.00485         | 0.0808  | 1.01     | 0.0165 | 0.0249  | 0.00877 | 283  |
+| mala               | theta[7] | 4.36 | 5.41 | -0.0927         | -1.44   | 1.02     | 0.0543 | 0.0957  | 0.0161  | 253  |
+| barker             | mu       | 4.79 | 3.28 | 0.117           | 1.25    | 0.99     | 0.0896 | 0.129   | 0.0356  | 111  |
+| barker             | tau      | 3.75 | 3.24 | 0.0484          | 0.3     | 1.01     | 0.0378 | 0.0543  | 0.0195  | 39   |
+| barker             | theta[0] | 7.16 | 6.28 | 0.169           | 1.77    | 1.12     | 0.0803 | 0.171   | 0.0583  | 138  |
+| barker             | theta[1] | 5.52 | 4.52 | 0.124           | 1.86    | 0.968    | 0.0794 | 0.13    | 0.0181  | 213  |
+| barker             | theta[2] | 4.31 | 4.96 | 0.0735          | 0.894   | 0.942    | 0.0699 | 0.0934  | 0.0288  | 131  |
+| barker             | theta[3] | 5.89 | 4.65 | 0.238           | 3.5     | 0.972    | 0.11   | 0.239   | 0.06    | 205  |
+| barker             | theta[4] | 3.83 | 4.6  | 0.0459          | 0.662   | 0.988    | 0.0415 | 0.0655  | 0.0267  | 204  |
+| barker             | theta[5] | 4.34 | 5    | 0.0618          | 0.783   | 1.04     | 0.0693 | 0.1     | 0.035   | 172  |
+| barker             | theta[6] | 6.5  | 4.7  | 0.0408          | 0.659   | 0.925    | 0.076  | 0.0992  | 0.0372  | 223  |
+| barker             | theta[7] | 5.41 | 5.14 | 0.106           | 1.32    | 0.972    | 0.0952 | 0.12    | 0.0411  | 148  |
+| hmc                | mu       | 4.43 | 3.4  | 0.0102          | 0.712   | 1.02     | 0.0155 | 0.0271  | 0.00868 | 5130 |
+| hmc                | tau      | 3.71 | 3.45 | 0.0348          | 1.1     | 1.07     | 0.0104 | 0.0175  | 0.00175 | 1160 |
+| hmc                | theta[0] | 6.34 | 5.64 | 0.0237          | 1.17    | 1.01     | 0.0187 | 0.0369  | 0.00619 | 2450 |
+| hmc                | theta[1] | 5.12 | 4.81 | 0.0391          | 1.83    | 1.03     | 0.0267 | 0.0425  | 0.00699 | 2320 |
+| hmc                | theta[2] | 3.99 | 5.78 | 0.0112          | 0.552   | 1.1      | 0.0254 | 0.0673  | 0.00799 | 2920 |
+| hmc                | theta[3] | 5    | 4.86 | 0.0505          | 3.29    | 1.02     | 0.0334 | 0.054   | 0.0111  | 4390 |
+| hmc                | theta[4] | 3.58 | 4.53 | -0.00724        | -0.439  | 0.973    | 0.0233 | 0.0387  | 0.00589 | 3480 |
+| hmc                | theta[5] | 4.32 | 4.87 | 0.0585          | 3.29    | 1.01     | 0.0284 | 0.0604  | 0.0073  | 3210 |
+| hmc                | theta[6] | 6.38 | 5    | 0.0165          | 0.901   | 0.984    | 0.0222 | 0.0344  | 0.00781 | 2880 |
+| hmc                | theta[7] | 4.94 | 5.51 | 0.0157          | 0.836   | 1.04     | 0.0153 | 0.028   | 0.00601 | 3060 |
+| slice              | mu       | 4.46 | 3.29 | 0.0186          | 0.624   | 0.991    | 0.0294 | 0.0311  | 0.00804 | 1100 |
+| slice              | tau      | 3.48 | 3.21 | -0.0355         | -1.05   | 0.998    | 0.0415 | 0.065   | 0.0106  | 862  |
+| slice              | theta[0] | 6.17 | 5.58 | -0.00755        | -0.246  | 0.997    | 0.0133 | 0.0166  | 0.00349 | 1060 |
+| slice              | theta[1] | 4.83 | 4.76 | -0.0231         | -0.904  | 1.02     | 0.0122 | 0.0314  | 0.00775 | 1590 |
+| slice              | theta[2] | 3.95 | 5.4  | 0.00434         | 0.159   | 1.03     | 0.0171 | 0.0339  | 0.00408 | 1410 |
+| slice              | theta[3] | 4.74 | 4.9  | -0.00267        | -0.102  | 1.02     | 0.0205 | 0.0314  | 0.0128  | 1520 |
+| slice              | theta[4] | 3.72 | 4.69 | 0.0218          | 0.798   | 1.01     | 0.0248 | 0.0313  | 0.00731 | 1360 |
+| slice              | theta[5] | 4.34 | 4.62 | 0.062           | 2.45    | 0.958    | 0.0364 | 0.0664  | 0.00852 | 1430 |
+| slice              | theta[6] | 6.18 | 4.95 | -0.0233         | -0.913  | 0.975    | 0.0277 | 0.0381  | 0.00931 | 1460 |
+| slice              | theta[7] | 4.88 | 5.58 | 0.00548         | 0.193   | 1.05     | 0.0234 | 0.0362  | 0.00697 | 1380 |
+| aies               | mu       | 2.94 | 3.41 | -0.44           | -2.4    | 1.03     | 0.19   | 0.441   | 0.115   | 31.3 |
+| aies               | tau      | 3.68 | 3.47 | 0.0242          | 0.122   | 1.08     | 0.0263 | 0.036   | 0.00974 | 29.4 |
+| aies               | theta[0] | 4.94 | 5.09 | -0.227          | -1.51   | 0.91     | 0.119  | 0.227   | 0.0404  | 36.9 |
+| aies               | theta[1] | 3.44 | 4.91 | -0.321          | -1.78   | 1.05     | 0.119  | 0.321   | 0.0582  | 34   |
+| aies               | theta[2] | 1.95 | 5.43 | -0.375          | -2.44   | 1.03     | 0.146  | 0.376   | 0.0866  | 45.1 |
+| aies               | theta[3] | 3.6  | 4.66 | -0.241          | -1.76   | 0.976    | 0.124  | 0.241   | 0.0401  | 50.5 |
+| aies               | theta[4] | 2.39 | 4.75 | -0.262          | -1.66   | 1.02     | 0.127  | 0.263   | 0.0525  | 41.5 |
+| aies               | theta[5] | 3.15 | 4.58 | -0.184          | -1.26   | 0.949    | 0.113  | 0.187   | 0.0383  | 42   |
+| aies               | theta[6] | 5.59 | 5.64 | -0.14           | -0.906  | 1.11     | 0.0846 | 0.174   | 0.034   | 51.8 |
+| aies               | theta[7] | 3.67 | 5.59 | -0.225          | -1.32   | 1.06     | 0.124  | 0.241   | 0.0452  | 38.9 |
+| ensemble-slice     | mu       | 4.57 | 3.56 | 0.0536          | 0.55    | 1.07     | 0.0296 | 0.0578  | 0.00796 | 122  |
+| ensemble-slice     | tau      | 3.85 | 3.52 | 0.0782          | 0.663   | 1.09     | 0.0381 | 0.0528  | 0.0116  | 86   |
+| ensemble-slice     | theta[0] | 6.79 | 6.02 | 0.103           | 1.29    | 1.08     | 0.0435 | 0.105   | 0.00888 | 181  |
+| ensemble-slice     | theta[1] | 5.41 | 5    | 0.101           | 1.27    | 1.07     | 0.0492 | 0.106   | 0.00983 | 180  |
+| ensemble-slice     | theta[2] | 3.83 | 5.36 | -0.0184         | -0.242  | 1.02     | 0.0244 | 0.0404  | 0.00252 | 179  |
+| ensemble-slice     | theta[3] | 5.27 | 5.05 | 0.106           | 1.25    | 1.06     | 0.0414 | 0.107   | 0.00921 | 154  |
+| ensemble-slice     | theta[4] | 3.99 | 4.58 | 0.0797          | 0.99    | 0.984    | 0.0358 | 0.082   | 0.00796 | 149  |
+| ensemble-slice     | theta[5] | 4.12 | 5.09 | 0.0168          | 0.202   | 1.05     | 0.0196 | 0.0443  | 0.0048  | 159  |
+| ensemble-slice     | theta[6] | 6.73 | 4.91 | 0.0859          | 1.32    | 0.968    | 0.0448 | 0.0928  | 0.00978 | 220  |
+| ensemble-slice     | theta[7] | 5.79 | 5.61 | 0.177           | 2.07    | 1.06     | 0.0867 | 0.179   | 0.0209  | 153  |
+| chees              | mu       | 4.32 | 3.18 | -0.0232         | -0.264  | 0.958    | 0.0268 | 0.0433  | 0.00804 | 119  |
+| chees              | tau      | 3.63 | 3.46 | 0.00993         | 0.286   | 1.08     | 0.021  | 0.0328  | 0.00336 | 958  |
+| chees              | theta[0] | 6.2  | 5.54 | -0.00162        | -0.0393 | 0.991    | 0.0127 | 0.0187  | 0.00485 | 579  |
+| chees              | theta[1] | 4.83 | 4.57 | -0.0234         | -0.559  | 0.977    | 0.0186 | 0.0297  | 0.00396 | 547  |
+| chees              | theta[2] | 4    | 5.02 | 0.0134          | 0.342   | 0.953    | 0.0165 | 0.0354  | 0.00391 | 592  |
+| chees              | theta[3] | 4.7  | 4.7  | -0.0111         | -0.247  | 0.983    | 0.0143 | 0.0244  | 0.00319 | 480  |
+| chees              | theta[4] | 3.49 | 4.56 | -0.0261         | -0.543  | 0.979    | 0.0206 | 0.0353  | 0.00357 | 415  |
+| chees              | theta[5] | 4.06 | 4.66 | 0.0041          | 0.0966  | 0.965    | 0.018  | 0.0344  | 0.00345 | 517  |
+| chees              | theta[6] | 6.32 | 5.06 | 0.00515         | 0.125   | 0.997    | 0.0103 | 0.0214  | 0.00342 | 588  |
+| chees              | theta[7] | 4.87 | 5.71 | 0.00307         | 0.0595  | 1.08     | 0.01   | 0.0312  | 0.00178 | 435  |
+| parallel-tempering | mu       | 4.39 | 3.34 | -0.00333        | -0.108  | 1.01     | 0.0161 | 0.0223  | 0.0069  | 1070 |
+| parallel-tempering | tau      | 3.61 | 3.33 | 0.00433         | 0.11    | 1.03     | 0.0284 | 0.0329  | 0.0083  | 693  |
+| parallel-tempering | theta[0] | 6.08 | 5.69 | -0.0244         | -0.802  | 1.02     | 0.0287 | 0.0374  | 0.00636 | 1120 |
+| parallel-tempering | theta[1] | 4.76 | 4.47 | -0.0383         | -1.58   | 0.956    | 0.0316 | 0.049   | 0.00887 | 1560 |
+| parallel-tempering | theta[2] | 3.95 | 4.96 | 0.00518         | 0.197   | 0.943    | 0.019  | 0.0423  | 0.00541 | 1290 |
+| parallel-tempering | theta[3] | 4.62 | 4.92 | -0.0287         | -0.947  | 1.03     | 0.0242 | 0.0509  | 0.00705 | 1150 |
+| parallel-tempering | theta[4] | 3.6  | 4.66 | -0.00263        | -0.0938 | 1        | 0.0176 | 0.0252  | 0.00745 | 1280 |
+| parallel-tempering | theta[5] | 3.89 | 4.69 | -0.0311         | -1.24   | 0.972    | 0.0283 | 0.0396  | 0.00694 | 1500 |
+| parallel-tempering | theta[6] | 6.36 | 5.21 | 0.0131          | 0.503   | 1.03     | 0.0179 | 0.0297  | 0.00617 | 1540 |
+| parallel-tempering | theta[7] | 4.71 | 5.45 | -0.0275         | -0.932  | 1.03     | 0.0306 | 0.0532  | 0.0107  | 1220 |
+| mclmc              | mu       | 4.32 | 3.3  | -0.0226         | -0.529  | 0.995    | 0.0155 | 0.0292  | 0.0049  | 541  |
+| mclmc              | tau      | 3.35 | 3.04 | -0.0767         | -1.4    | 0.944    | 0.0429 | 0.105   | 0.0126  | 296  |
+| mclmc              | theta[0] | 6.11 | 5.58 | -0.019          | -0.455  | 0.998    | 0.0202 | 0.0324  | 0.00404 | 574  |
+| mclmc              | theta[1] | 4.98 | 4.65 | 0.0079          | 0.213   | 0.994    | 0.0142 | 0.0211  | 0.00381 | 721  |
+| mclmc              | theta[2] | 3.8  | 5.03 | -0.0232         | -0.576  | 0.956    | 0.0215 | 0.0409  | 0.00824 | 562  |
+| mclmc              | theta[3] | 4.72 | 4.47 | -0.00854        | -0.244  | 0.935    | 0.0264 | 0.0495  | 0.00938 | 713  |
+| mclmc              | theta[4] | 3.7  | 4.47 | 0.0187          | 0.486   | 0.96     | 0.0299 | 0.0452  | 0.00743 | 622  |
+| mclmc              | theta[5] | 4.12 | 4.52 | 0.0152          | 0.412   | 0.937    | 0.0156 | 0.0433  | 0.00568 | 642  |
+| mclmc              | theta[6] | 5.97 | 4.7  | -0.0651         | -1.92   | 0.926    | 0.0377 | 0.074   | 0.00825 | 745  |
+| mclmc              | theta[7] | 4.85 | 5.04 | -0.00139        | -0.0363 | 0.953    | 0.018  | 0.0359  | 0.00671 | 619  |
+| sgld               | mu       | 3.71 | 3.1  | -0.208          | -0.683  | 0.934    | 0.176  | 0.265   | 0.194   | 9.39 |
+| sgld               | tau      | 3.21 | 2.63 | -0.119          | -0.794  | 0.817    | 0.0581 | 0.15    | 0.0362  | 29.8 |
+| sgld               | theta[0] | 5.11 | 4.92 | -0.197          | -0.782  | 0.879    | 0.142  | 0.22    | 0.0626  | 12.2 |
+| sgld               | theta[1] | 4.49 | 4.32 | -0.0969         | -0.496  | 0.925    | 0.104  | 0.161   | 0.0687  | 22.4 |
+| sgld               | theta[2] | 3.69 | 4.57 | -0.0452         | -0.144  | 0.869    | 0.134  | 0.195   | 0.119   | 7.7  |
+| sgld               | theta[3] | 4.93 | 4.26 | 0.0367          | 0.172   | 0.89     | 0.0658 | 0.12    | 0.121   | 17.4 |
+| sgld               | theta[4] | 2.85 | 3.52 | -0.164          | -0.621  | 0.755    | 0.143  | 0.279   | 0.125   | 8.23 |
+| sgld               | theta[5] | 3.43 | 4.43 | -0.127          | -0.61   | 0.917    | 0.103  | 0.138   | 0.0647  | 19.6 |
+| sgld               | theta[6] | 5.37 | 4.62 | -0.182          | -0.633  | 0.91     | 0.101  | 0.2     | 0.0541  | 9.98 |
+| sgld               | theta[7] | 4.68 | 5.1  | -0.033          | -0.148  | 0.963    | 0.098  | 0.12    | 0.049   | 18.7 |
+| sghmc              | mu       | 3.58 | 2.76 | -0.246          | -0.571  | 0.832    | 0.133  | 0.286   | 0.558   | 3.73 |
+| sghmc              | tau      | 3.58 | 2.85 | -0.00466        | -0.0349 | 0.886    | 0.0634 | 0.0993  | 0.0513  | 44   |
+| sghmc              | theta[0] | 4.69 | 4.33 | -0.272          | -1.59   | 0.775    | 0.163  | 0.277   | 0.11    | 20.5 |
+| sghmc              | theta[1] | 4.39 | 4.59 | -0.118          | -0.455  | 0.983    | 0.0614 | 0.126   | 0.0159  | 14.4 |
+| sghmc              | theta[2] | 2.17 | 5.71 | -0.334          | -0.694  | 1.08     | 0.16   | 0.335   | 0.0743  | 5.06 |
+| sghmc              | theta[3] | 4.48 | 4.32 | -0.0577         | -0.179  | 0.904    | 0.052  | 0.0979  | 0.0445  | 7.88 |
+| sghmc              | theta[4] | 2.8  | 4.46 | -0.175          | -0.697  | 0.958    | 0.1    | 0.179   | 0.0566  | 14.5 |
+| sghmc              | theta[5] | 3.09 | 4.51 | -0.197          | -0.628  | 0.934    | 0.115  | 0.204   | 0.0538  | 8.89 |
+| sghmc              | theta[6] | 4.95 | 4.88 | -0.265          | -0.755  | 0.961    | 0.132  | 0.267   | 0.0613  | 7.5  |
+| sghmc              | theta[7] | 4.06 | 4.47 | -0.151          | -0.791  | 0.845    | 0.107  | 0.172   | 0.0479  | 19.7 |
+
+Notes:
+- barker breaks meanError on theta[0], and must agree
+- barker breaks meanError on theta[3], and must agree

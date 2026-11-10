@@ -2,10 +2,10 @@
 
 Simulation-based calibration of the MALA with window adaptation, through its method (knobs, warm-up, thinning and posterior).
 
-Run on 2026-11-10 at commit d30248ff; seed 0, budget scale 2 (replications 200, ranks 19), 2.2 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (replications 100, ranks 19), 1.2 s.
 
-**Passed**: calibrated over 200 replications
+**Passed**: calibrated over 100 replications
 
-| quantity | chi-square p | ECDF p | verdict | rank histogram                                    |
-| -------- | ------------ | ------ | ------- | ------------------------------------------------- |
-| m        | 0.89         | 0.76   | passes  | 9 9 12 6 12 11 12 12 9 8 11 8 9 16 12 12 8 10 5 9 |
+| quantity | chi-square p | ECDF p | verdict | rank histogram                           |
+| -------- | ------------ | ------ | ------- | ---------------------------------------- |
+| m        | 0.17         | 0.57   | passes  | 6 7 5 6 8 2 4 3 2 4 4 7 3 8 10 3 7 1 8 2 |

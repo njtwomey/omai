@@ -2,9 +2,9 @@
 
 Bayesian logistic regression: the kernel methods against the quadrature truth.
 
-Run on 2026-11-10 at commit d30248ff; seed 0, budget scale 1 (plans 13, rows 39, scalePercent 100), 37.4 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 13, rows 39, scalePercent 100), 35.7 s.
 
-**Passed**: 9 kernel method(s) agree with the quadrature truth; 4 reported
+**FAILED**: 2 row(s) of methods that must agree are outside their tolerances
 
 **Bayesian logistic regression** (logistic-regression): glm, classification, logistic, quadrature, three-dimensional
 
@@ -12,62 +12,66 @@ Logistic regression with an intercept and two covariates and a N(0, 4) prior on 
 
 Truth (quadrature): grid quadrature of the posterior density, 61 points per axis over 3 coordinate(s) (286563 density evaluations, evidence error 6.0e-9). Log evidence -32.2069.
 
-Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, elliptical-slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, ep, vmp, laplace, importance, tempered-smc, abc-smc, abc-rejection. Not applicable: bp (belief propagation sums over finite discrete variables, and 'w' is continuous); gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (a spec has no recurrences yet (the filter runs over a markov loop of a program)); conjugate (no usable conjugate structure for w); gaussian ('y' is bernoulli, not Gaussian); enumeration (continuous latent nodes (w)); chain (a spec has no recurrences yet (the chain is a markov loop of a program)).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, elliptical-slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, ep, vmp, laplace, importance, tempered-smc, abc-smc, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: bp (belief propagation sums over finite discrete variables, and 'w' is continuous); gibbs (no discrete or conjugate conditionals); em (no params to estimate); particle-filter (the model has no single scan); conjugate (no usable conjugate structure for w); gaussian ('y' is bernoulli, not Gaussian); enumeration (continuous latent nodes (w)); chain (the model has no single scan); svi-conjugate-natural (no usable conjugate structure for w).
 
 | method             | expectation | run                    | diagnostics                                                            | why                                                                         |
 | ------------------ | ----------- | ---------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| rwm                | must agree  | converged (1901 steps) | 0 divergences; R-hat high: w[0], w[1]; ESS low: w[0]                   | a consistent sampler, slower mixing: agrees within Monte Carlo error        |
+| rwm                | must agree  | converged (1901 steps) | 0 divergences; R-hat high: w[0], w[1], w[2]; ESS low: w[0], w[1]       | a consistent sampler, slower mixing: agrees within Monte Carlo error        |
 | mala               | must agree  | converged (1101 steps) | 0 divergences                                                          | Metropolis-adjusted, so exact up to Monte Carlo error                       |
-| barker             | must agree  | converged (1301 steps) | 0 divergences; R-hat high: w[1]                                        | Metropolis-adjusted, so exact up to Monte Carlo error                       |
-| hmc                | must agree  | converged (1201 steps) | 0 divergences                                                          | a fixed trajectory with a tuned step size: exact up to Monte Carlo error    |
+| barker             | must agree  | converged (1301 steps) | 0 divergences; R-hat high: w[0]                                        | Metropolis-adjusted, so exact up to Monte Carlo error                       |
+| hmc                | must agree  | converged (1201 steps) | 0 divergences; R-hat high: w[0], w[2]; ESS low: w[0]                   | a fixed trajectory with a tuned step size: exact up to Monte Carlo error    |
 | slice              | must agree  | converged (901 steps)  | 0 divergences                                                          | coordinate-wise slice sampling: exact up to Monte Carlo error               |
 | aies               | must agree  | converged (701 steps)  | 0 divergences; R-hat high: w[0], w[1], w[2]; ESS low: w[0], w[1], w[2] | an affine-invariant ensemble: exact up to Monte Carlo error                 |
 | ensemble-slice     | must agree  | converged (401 steps)  | 0 divergences; R-hat high: w[0], w[1], w[2]; ESS low: w[0], w[1], w[2] | an ensemble of slice steps: exact up to Monte Carlo error                   |
 | chees              | must agree  | converged (601 steps)  | 0 divergences                                                          | jittered HMC with an adapted trajectory: exact up to Monte Carlo error      |
 | parallel-tempering | must agree  | converged (901 steps)  | 0 divergences                                                          | the cold replica of a tempered ladder: exact up to Monte Carlo error        |
-| mclmc              | reported    | converged (1601 steps) | 0 divergences                                                          | unadjusted: a small bias that shrinks with the step size                    |
-| sgld               | reported    | converged (3201 steps) | 0 divergences; R-hat high: w[0]                                        | unadjusted Langevin with a constant step: a step-size bias in the spread    |
-| sghmc              | reported    | converged (1301 steps) | 0 divergences; R-hat high: w[1], w[2]                                  | friction-damped Hamiltonian dynamics with a constant step: a step-size bias |
-| elliptical-slice   | reported    | converged (901 steps)  | 0 divergences                                                          | a Gaussian-prior sampler, where it applies                                  |
+| mclmc              | reported    | converged (1601 steps) | 0 divergences; R-hat high: w[0]                                        | unadjusted: a small bias that shrinks with the step size                    |
+| sgld               | reported    | converged (3201 steps) | 0 divergences; R-hat high: w[0], w[1], w[2]; ESS low: w[0]             | unadjusted Langevin with a constant step: a step-size bias in the spread    |
+| sghmc              | reported    | converged (1301 steps) | 0 divergences; R-hat high: w[0], w[2]; ESS low: w[2]                   | friction-damped Hamiltonian dynamics with a constant step: a step-size bias |
+| elliptical-slice   | reported    | converged (901 steps)  | 0 divergences; R-hat high: w[2]                                        | a Gaussian-prior sampler, where it applies                                  |
 
 | method             | quantity | mean   | sd    | mean error (sd) | mean z  | sd ratio | KS     | W1 (sd) | KL      | ESS  |
 | ------------------ | -------- | ------ | ----- | --------------- | ------- | -------- | ------ | ------- | ------- | ---- |
-| rwm                | w[0]     | 0.272  | 0.311 | 0.117           | 1.7     | 0.899    | 0.0848 | 0.141   | 0.0535  | 170  |
-| rwm                | w[1]     | 1.05   | 0.364 | 0.0294          | 0.47    | 0.977    | 0.0502 | 0.0618  | 0.056   | 243  |
-| rwm                | w[2]     | -0.65  | 0.32  | -0.031          | -0.498  | 1.01     | 0.0625 | 0.0645  | 0.0595  | 265  |
-| mala               | w[0]     | 0.263  | 0.349 | 0.0921          | 2.24    | 1.01     | 0.0643 | 0.096   | 0.0274  | 604  |
-| mala               | w[1]     | 1.03   | 0.359 | -0.0263         | -0.705  | 0.965    | 0.0343 | 0.0549  | 0.0139  | 667  |
-| mala               | w[2]     | -0.622 | 0.321 | 0.0567          | 1.54    | 1.02     | 0.0384 | 0.059   | 0.0172  | 757  |
-| barker             | w[0]     | 0.219  | 0.318 | -0.0342         | -0.635  | 0.921    | 0.0979 | 0.129   | 0.0913  | 292  |
-| barker             | w[1]     | 1.01   | 0.372 | -0.057          | -0.901  | 0.999    | 0.0813 | 0.095   | 0.052   | 249  |
-| barker             | w[2]     | -0.653 | 0.303 | -0.0397         | -0.753  | 0.961    | 0.041  | 0.0607  | 0.0401  | 332  |
-| hmc                | w[0]     | 0.227  | 0.348 | -0.0107         | -0.74   | 1.01     | 0.0229 | 0.0344  | 0.0119  | 4820 |
-| hmc                | w[1]     | 1.02   | 0.373 | -0.0293         | -1.15   | 1        | 0.0209 | 0.0348  | 0.00708 | 1560 |
-| hmc                | w[2]     | -0.633 | 0.314 | 0.0234          | 1.42    | 0.993    | 0.0233 | 0.03    | 0.00509 | 3640 |
-| slice              | w[0]     | 0.237  | 0.353 | 0.0163          | 0.597   | 1.02     | 0.0217 | 0.0284  | 0.00924 | 1400 |
-| slice              | w[1]     | 1.04   | 0.375 | 0.014           | 0.508   | 1.01     | 0.0183 | 0.024   | 0.00347 | 1330 |
-| slice              | w[2]     | -0.633 | 0.311 | 0.0223          | 0.896   | 0.985    | 0.0243 | 0.0341  | 0.00711 | 1560 |
-| aies               | w[0]     | 0.252  | 0.342 | 0.0617          | 0.678   | 0.991    | 0.0348 | 0.072   | 0.0104  | 118  |
-| aies               | w[1]     | 1.03   | 0.372 | -0.0136         | -0.193  | 1        | 0.02   | 0.0245  | 0.00402 | 201  |
-| aies               | w[2]     | -0.642 | 0.321 | -0.00786        | -0.0988 | 1.02     | 0.017  | 0.0304  | 0.00578 | 163  |
-| ensemble-slice     | w[0]     | 0.221  | 0.345 | -0.0296         | -0.84   | 0.997    | 0.0185 | 0.0376  | 0.00327 | 801  |
-| ensemble-slice     | w[1]     | 1.05   | 0.361 | 0.042           | 1.26    | 0.97     | 0.0365 | 0.0577  | 0.00778 | 848  |
-| ensemble-slice     | w[2]     | -0.63  | 0.316 | 0.0309          | 0.888   | 1        | 0.0268 | 0.0488  | 0.00448 | 828  |
-| chees              | w[0]     | 0.225  | 0.352 | -0.0165         | -1.1    | 1.02     | 0.0141 | 0.0238  | 0.00213 | 4610 |
-| chees              | w[1]     | 1.04   | 0.376 | 0.00819         | 0.499   | 1.01     | 0.0129 | 0.0195  | 0.00418 | 3790 |
-| chees              | w[2]     | -0.641 | 0.312 | -0.00298        | -0.222  | 0.988    | 0.014  | 0.0305  | 0.00398 | 5400 |
-| parallel-tempering | w[0]     | 0.221  | 0.353 | -0.0295         | -1.75   | 1.02     | 0.023  | 0.0363  | 0.0104  | 3700 |
-| parallel-tempering | w[1]     | 1.04   | 0.368 | 0.00787         | 0.406   | 0.989    | 0.0194 | 0.0336  | 0.00489 | 2600 |
-| parallel-tempering | w[2]     | -0.641 | 0.295 | -0.00303        | -0.183  | 0.933    | 0.0281 | 0.0733  | 0.0205  | 3180 |
-| mclmc              | w[0]     | 0.244  | 0.342 | 0.0371          | 1.09    | 0.991    | 0.0204 | 0.0423  | 0.00548 | 846  |
-| mclmc              | w[1]     | 1.02   | 0.368 | -0.0395         | -1.16   | 0.988    | 0.0233 | 0.0481  | 0.00462 | 840  |
-| mclmc              | w[2]     | -0.661 | 0.315 | -0.0657         | -1.8    | 0.999    | 0.0339 | 0.0666  | 0.00844 | 753  |
-| sgld               | w[0]     | 0.238  | 0.338 | 0.0195          | 0.346   | 0.977    | 0.0272 | 0.0486  | 0.0046  | 299  |
-| sgld               | w[1]     | 1.01   | 0.379 | -0.0658         | -0.924  | 1.02     | 0.0294 | 0.0657  | 0.00465 | 205  |
-| sgld               | w[2]     | -0.607 | 0.332 | 0.104           | 1.94    | 1.05     | 0.042  | 0.105   | 0.00763 | 384  |
-| sghmc              | w[0]     | 0.239  | 0.369 | 0.0232          | 0.324   | 1.07     | 0.0235 | 0.0352  | 0.00697 | 223  |
-| sghmc              | w[1]     | 1.07   | 0.39  | 0.0815          | 1.26    | 1.05     | 0.0441 | 0.0855  | 0.00908 | 263  |
-| sghmc              | w[2]     | -0.671 | 0.338 | -0.0988         | -1.61   | 1.07     | 0.0493 | 0.102   | 0.0108  | 303  |
-| elliptical-slice   | w[0]     | 0.236  | 0.328 | 0.0132          | 0.247   | 0.95     | 0.0281 | 0.0682  | 0.0115  | 313  |
-| elliptical-slice   | w[1]     | 1.01   | 0.349 | -0.0663         | -1.32   | 0.936    | 0.0452 | 0.0797  | 0.011   | 350  |
-| elliptical-slice   | w[2]     | -0.637 | 0.332 | 0.0103          | 0.169   | 1.05     | 0.0177 | 0.0343  | 0.0053  | 299  |
+| rwm                | w[0]     | 0.331  | 0.351 | 0.288           | 1.35    | 1.02     | 0.139  | 0.293   | 0.0838  | 22.7 |
+| rwm                | w[1]     | 1.2    | 0.34  | 0.439           | 1.38    | 0.913    | 0.261  | 0.452   | 0.164   | 8.27 |
+| rwm                | w[2]     | -0.625 | 0.31  | 0.0463          | 0.692   | 0.983    | 0.0509 | 0.0585  | 0.0258  | 217  |
+| mala               | w[0]     | 0.236  | 0.336 | 0.0129          | 0.344   | 0.972    | 0.0415 | 0.0568  | 0.0218  | 671  |
+| mala               | w[1]     | 1.02   | 0.367 | -0.0468         | -1.15   | 0.985    | 0.0483 | 0.06    | 0.019   | 587  |
+| mala               | w[2]     | -0.612 | 0.301 | 0.0893          | 2.28    | 0.955    | 0.0531 | 0.0971  | 0.0371  | 597  |
+| barker             | w[0]     | 0.241  | 0.346 | 0.0275          | 0.587   | 1        | 0.029  | 0.0474  | 0.0184  | 455  |
+| barker             | w[1]     | 1.06   | 0.36  | 0.074           | 1.73    | 0.967    | 0.0558 | 0.0916  | 0.0308  | 513  |
+| barker             | w[2]     | -0.634 | 0.323 | 0.0191          | 0.384   | 1.02     | 0.0517 | 0.0581  | 0.0296  | 424  |
+| hmc                | w[0]     | 0.232  | 0.32  | 0.00247         | 0.0198  | 0.926    | 0.0478 | 0.0922  | 0.0225  | 55.2 |
+| hmc                | w[1]     | 1.03   | 0.351 | -0.0103         | -0.208  | 0.943    | 0.0304 | 0.0606  | 0.0104  | 365  |
+| hmc                | w[2]     | -0.652 | 0.318 | -0.0381         | -0.625  | 1.01     | 0.035  | 0.0447  | 0.0123  | 272  |
+| slice              | w[0]     | 0.239  | 0.338 | 0.0226          | 0.821   | 0.979    | 0.0254 | 0.0492  | 0.0104  | 1260 |
+| slice              | w[1]     | 1.05   | 0.368 | 0.0325          | 1.2     | 0.988    | 0.0304 | 0.0452  | 0.00509 | 1340 |
+| slice              | w[2]     | -0.651 | 0.307 | -0.0358         | -1.39   | 0.974    | 0.024  | 0.0511  | 0.00969 | 1420 |
+| aies               | w[0]     | 0.229  | 0.343 | -0.00577        | -0.0591 | 0.993    | 0.039  | 0.0595  | 0.0106  | 104  |
+| aies               | w[1]     | 1.09   | 0.404 | 0.145           | 1.18    | 1.09     | 0.0593 | 0.145   | 0.0117  | 79.3 |
+| aies               | w[2]     | -0.671 | 0.323 | -0.0975         | -1.14   | 1.02     | 0.0476 | 0.0993  | 0.0081  | 144  |
+| ensemble-slice     | w[0]     | 0.241  | 0.348 | 0.0289          | 0.851   | 1.01     | 0.0279 | 0.0411  | 0.00438 | 881  |
+| ensemble-slice     | w[1]     | 1.06   | 0.381 | 0.0674          | 2.06    | 1.02     | 0.0339 | 0.0701  | 0.0075  | 978  |
+| ensemble-slice     | w[2]     | -0.657 | 0.323 | -0.0531         | -1.55   | 1.02     | 0.0275 | 0.0554  | 0.00472 | 896  |
+| chees              | w[0]     | 0.223  | 0.342 | -0.023          | -1.56   | 0.991    | 0.02   | 0.0388  | 0.00416 | 4540 |
+| chees              | w[1]     | 1.04   | 0.375 | 0.024           | 1.51    | 1.01     | 0.0197 | 0.0291  | 0.00257 | 3980 |
+| chees              | w[2]     | -0.648 | 0.325 | -0.0244         | -1.75   | 1.03     | 0.0173 | 0.0274  | 0.00191 | 5450 |
+| parallel-tempering | w[0]     | 0.232  | 0.344 | 0.00224         | 0.0976  | 0.995    | 0.0237 | 0.035   | 0.00662 | 1870 |
+| parallel-tempering | w[1]     | 1.04   | 0.376 | 0.0128          | 0.479   | 1.01     | 0.0209 | 0.0357  | 0.00652 | 1430 |
+| parallel-tempering | w[2]     | -0.648 | 0.331 | -0.026          | -1.28   | 1.05     | 0.0217 | 0.0431  | 0.00728 | 2690 |
+| mclmc              | w[0]     | 0.206  | 0.362 | -0.0738         | -1.48   | 1.05     | 0.0385 | 0.0752  | 0.00562 | 441  |
+| mclmc              | w[1]     | 1.04   | 0.378 | 0.0208          | 0.465   | 1.02     | 0.0225 | 0.0317  | 0.00368 | 516  |
+| mclmc              | w[2]     | -0.642 | 0.306 | -0.00597        | -0.145  | 0.97     | 0.0282 | 0.0534  | 0.00596 | 551  |
+| sgld               | w[0]     | 0.254  | 0.368 | 0.0657          | 0.845   | 1.07     | 0.031  | 0.0667  | 0.00517 | 188  |
+| sgld               | w[1]     | 1.06   | 0.39  | 0.0546          | 0.755   | 1.05     | 0.0232 | 0.0611  | 0.00379 | 210  |
+| sgld               | w[2]     | -0.606 | 0.322 | 0.107           | 1.75    | 1.02     | 0.0419 | 0.108   | 0.00869 | 277  |
+| sghmc              | w[0]     | 0.249  | 0.364 | 0.0521          | 0.785   | 1.05     | 0.0426 | 0.0661  | 0.00757 | 252  |
+| sghmc              | w[1]     | 1.06   | 0.413 | 0.0682          | 0.981   | 1.11     | 0.0326 | 0.0886  | 0.0107  | 255  |
+| sghmc              | w[2]     | -0.61  | 0.355 | 0.0953          | 1.2     | 1.12     | 0.066  | 0.116   | 0.0202  | 198  |
+| elliptical-slice   | w[0]     | 0.234  | 0.338 | 0.00732         | 0.168   | 0.977    | 0.0331 | 0.0524  | 0.015   | 500  |
+| elliptical-slice   | w[1]     | 1.03   | 0.4   | -0.0162         | -0.252  | 1.08     | 0.0232 | 0.0611  | 0.0064  | 281  |
+| elliptical-slice   | w[2]     | -0.647 | 0.318 | -0.0232         | -0.435  | 1.01     | 0.0234 | 0.0418  | 0.00457 | 359  |
+
+Notes:
+- rwm breaks meanError on w[0], and must agree
+- rwm breaks meanError, ks on w[1], and must agree

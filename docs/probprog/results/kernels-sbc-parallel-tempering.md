@@ -2,10 +2,10 @@
 
 Simulation-based calibration of the parallel tempering over HMC, through its method (knobs, warm-up, thinning and posterior).
 
-Run on 2026-11-10 at commit d30248ff; seed 0, budget scale 2 (replications 200, ranks 19), 15.4 s.
+Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (replications 100, ranks 19), 8.3 s.
 
-**Passed**: calibrated over 200 replications
+**Passed**: calibrated over 100 replications
 
-| quantity | chi-square p | ECDF p | verdict | rank histogram                                      |
-| -------- | ------------ | ------ | ------- | --------------------------------------------------- |
-| m        | 0.84         | 0.94   | passes  | 13 12 11 7 13 10 8 9 7 7 7 10 15 11 11 12 7 13 6 11 |
+| quantity | chi-square p | ECDF p | verdict | rank histogram                           |
+| -------- | ------------ | ------ | ------- | ---------------------------------------- |
+| m        | 0.37         | 0.12   | passes  | 10 6 6 6 8 2 6 4 2 8 6 4 6 4 1 4 6 3 2 6 |
