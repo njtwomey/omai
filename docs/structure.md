@@ -2470,8 +2470,9 @@ oracle: ArviZ (arviz-stats) for every diagnostic and for PSIS on fixed chains; B
 deterministic given the same inputs (integrator trajectories, the U-turn criterion, dual averaging, the warm-up schedule,
 Welford mass matrices, one SVGD step, resampling from the same uniforms, the adaptive-tempering solver); statistical
 agreement (moments within a few MCSE, invariance of exact draws under one transition, KS tests, detailed balance on small
-discrete targets) for the kernels themselves. Every kernel is a BlackJAX-style `MCMCKernel` (`init`, `step(key, state)`)
-traced through `samplerAlgorithm`; every loop has an iteration or depth cap and degenerate targets (NaN densities, zero
+discrete targets) for the kernels themselves; the Barker, MCLMC, SGHMC and ensemble kernels are also run as methods of
+`probprog/inference` against NumPyro's and BlackJAX's samplers (4.32). Every kernel is a BlackJAX-style `MCMCKernel` (`init`,
+`step(key, state)`) traced through `samplerAlgorithm`; every loop has an iteration or depth cap and degenerate targets (NaN densities, zero
 gradients, infinite step sizes) end in rejections or divergences, never hangs.
 - `target.ts`: `LogDensity` (log density, gradient by autodiff or by hand, dimension, names, constraints,
   `constrain`/`unconstrain`), `target`, `numericTarget`, `targetFromDistribution` (unconstrained through
@@ -2492,7 +2493,13 @@ gradients, infinite step sizes) end in rejections or divergences, never hangs.
   progressive sampling, the U-turn checks across subtrees, divergences, `nutsKernel`, `nutsAdaptation`, `nuts`);
   `adaptation.ts` (dual averaging, `findReasonableStepSize`, Welford mass-matrix adaptation, diagonal or dense,
   `windowSchedule`, `windowAdaptation`, and as Algorithms `findReasonableStepSizeAlgorithm` and
-  `windowAdaptationAlgorithm`, one try or one warm-up transition per step, read with `windowAdaptationResult`);
+  `windowAdaptationAlgorithm`, one try or one warm-up transition per step, read with `windowAdaptationResult`; its
+  `lowRank` option keeps only that many directions of the learned correlation structure on a dense mass matrix);
+  `low-rank.ts` (`lowRankInverseMassMatrix`: a low-rank-plus-diagonal inverse mass matrix from a covariance, Sountsov and
+  Hoffman 2021; BlackJAX `window_adaptation_low_rank`); `chees.ts` (ChEES-HMC, Hoffman, Radul and Sountsov 2021: `cheesKernel`,
+  HMC for an ensemble of chains with a jittered trajectory on the product space of the chains, and
+  `cheesAdaptationAlgorithm`, one warm-up transition per step, the trajectory length by ascent on the ChEES criterion across
+  the chains and the step size by dual averaging on their harmonic-mean acceptance, read with `cheesAdaptationResult`);
   `riemannian.ts` (`riemannianHmcKernel` with the generalised leapfrog and a
   given or SoftAbs metric, `riemannianTrajectory`), for small problems.
 - `adaptation-contract.ts`, `adaptation-options.ts`: the `adapt/` paths of the warm-up algorithms (`adapt/stepSize`,
@@ -2501,6 +2508,25 @@ gradients, infinite step sizes) end in rejections or divergences, never hangs.
   `randomWalkAdaptations`.
 - `langevin.ts`: `malaKernel` (optionally preconditioned), `ulaKernel`, `sgldKernel` with `minibatchGradient` and
   `polynomialStepSize`, SVGD (`svgdDirection`, `medianBandwidth`, `svgdAlgorithm`, `svgd`).
+- `barker.ts`: `barkerKernel` (Livingstone and Zanella 2022; BlackJAX `barker`): a gradient-skewed Metropolis-Hastings kernel
+  whose Gaussian increment keeps its sign with a probability that grows uphill, exact and stable over a wide range of step
+  sizes. `sghmc.ts`: `sghmcKernel` (Chen, Fox and Guestrin 2014; BlackJAX `sghmc`): Hamiltonian dynamics with friction on
+  a noisy gradient (`StochasticGradient`, as `sgldKernel` takes), no Metropolis step, so a step-size bias. `mclmc.ts`:
+  `mclmcKernel` (microcanonical Langevin Monte Carlo, Robnik et al. 2023; BlackJAX `mclmc`): the unadjusted isokinetic
+  dynamics with a unit-vector momentum and a partial refresh, one gradient a step, and its three-phase tuning (step size from
+  the energy error, the decoherence length L, a diagonal preconditioner) as `mclmcAdaptationAlgorithm` (one warm-up
+  transition per step, read with `mclmcAdaptationResult`; BlackJAX `mclmc_find_L_and_step_size`). Not built: MEADS and
+  the adjusted MCLMC.
+- `ensemble.ts`: ensemble samplers that need no gradient and no proposal shape, as `MCMCKernel`s on the product space of the
+  walkers (the position holds every walker, row-major `[walkers, dim]`; a transition updates half the walkers given the other
+  half, then the second): `stretchMoveKernel` (the affine-invariant stretch move, or `move: 'differential'` for differential
+  evolution; NumPyro `AIES`) and `ensembleSliceKernel` (ensemble slice sampling, Karamanis and Beutler 2021; NumPyro `ESS`; the
+  scale of its directions is tuned in warm-up only, as it is not Markov).
+- `tempering.ts`: parallel tempering (replica exchange) over any kernel: `temperedTarget` (the density to the power beta),
+  `temperatureLadder` (geometric or linear), `parallelTemperingKernel` (`PTState`: the replicas, the swap acceptances and
+  attempts per adjacent pair, the labels of the walkers and their round trips between the hottest and the coldest replica,
+  the diagnostics of a ladder; swaps of the even and odd pairs in turn or one random pair; the cold replica is the draw).
+  The ladder is fixed: an adaptive ladder is not built.
 - `gibbs.ts`: `blockedGibbs` (systematic or random scan), `sliceSampler` (Neal's stepping-out and shrinkage, coordinate
   by coordinate), `ellipticalSlice`.
 - `importance.ts`: `importanceSampling`, `normaliseLogWeights`, `importanceEss`, `selfNormalisedEstimate`,
@@ -2547,7 +2573,9 @@ gradients, infinite step sizes) end in rejections or divergences, never hangs.
   mean, sd, quantile, median, MAD, local, folded, z-scale, identity; `mcse`: mean, sd, median, quantile);
   `autocorrelation.ts` (`autocovariance`, `autocorrelation` by FFT); `intervals.ts` (`hdi`, also circular, `hdiModes` for
   discrete draws, `eti`; `stats`'s `highestDensityInterval` aliases `hdi`); `reports.ts` (`summary`, `bfmi`,
-  `divergenceReport`, `treeDepthReport`, `diagnose`). TODO: multimodal HDI of continuous draws needs a density estimate
+  `divergenceReport`, `treeDepthReport`, `diagnose`); `ess-curves.ts` (`chainEssCurves`: the effective sample size by
+  quantile and as the draws accumulate, ArviZ's `plot_ess` kinds `quantile` and `evolution`, in the `EssCurves` shape of the
+  `chainDiagnostics` record, which `exposition` cannot compute). TODO: multimodal HDI of continuous draws needs a density estimate
   (ArviZ uses an ISJ-bandwidth KDE, which lives in `stats`), and circular MCSE.
 ### 4.25 `logic/`: logic programming, satisfiability and ILP
 
@@ -3425,7 +3453,10 @@ oracle: NumPyro (log densities, potentials, transforms, handler semantics, trace
 Laplace modes and covariances by scipy on NumPyro's potential), pgmpy and brute-force sums for discrete programs,
 scikit-learn (`GaussianMixture`, `FactorAnalysis`) for EM, ArviZ for PSIS-LOO and model comparison; closed-form
 posteriors (conjugate, Gaussian, grids, brute force) within a few Monte Carlo standard errors for the stochastic
-engines. Shared golden programs: `oracle/cases/probprog/_models.py` and `src/testing/probprog.ts`.
+engines; NumPyro's AIES and ESS and BlackJAX's MALA, Barker, MCLMC, SGLD and SGHMC for the kernel methods (summaries of
+long chains in `fixtures/probprog/inference/kernels.json`, from `oracle/cases/probprog/inference/kernels.py`, compared
+within the Monte Carlo errors of both). Shared golden programs: `oracle/cases/probprog/_models.py` and
+`src/testing/probprog.ts`.
 
 A model is a function of its data that calls the primitives below inside an effect-handler context, or a `ModelSpec`
 written once with the builder of `model/` (a JSON-able graph of nodes with named dimensions) and compiled to such a
@@ -3499,7 +3530,8 @@ the model layer, the inference methods, validation and the benchmark models.
 - `engines/gibbs.ts`: Gibbs sampling with discrete conditionals (enumeration), conjugate conditionals given the rest,
   mixture components group by group, slice steps otherwise, and collapsed Dirichlet and beta sites (topic models). A site
   constrained beyond its family's support (`ordered`, a bound on a normal) is updated by a slice step on its own scale
-  and starts inside its support, since a closed-form conditional would leave it.
+  and starts inside its support, since a closed-form conditional would leave it. `GibbsOptions.sites` updates only the sites
+  it names and leaves the others at the values of the state (the Gibbs block of a `hybrid` sampler).
 - `engines/nuts.ts`: NUTS and HMC on the unconstrained density (`mcmc`), with enumerated discrete sites summed out and
   recovered by `inferDiscrete`; `mcmcAlgorithm` (the driver: a starting point per chain, one step that samples all chains, a
   step per draw to recover enumerated sites; `mcmc/` paths; `mcmcPosterior` reads the state) and `inferDiscreteAlgorithm`
@@ -3557,6 +3589,9 @@ the model layer, the inference methods, validation and the benchmark models.
   weighted draws behind one interface: `marginal(site)`, `sample`, `mean`, `variance`, `quantiles`, `logProb` where
   available, `summary` with ESS and R-hat for chains), `definePosterior`, `samplePosterior`, `weightedPosterior`,
   `pointPosterior`.
+- `posterior-chains.ts`: `posteriorChains`, a sampler's posterior regrouped by chain (each scalar coordinate as one row of
+  draws per chain, with the divergent flags and the energy), the form `chainDiagnostics` of `exposition` takes; a `Posterior`
+  keeps its draws of a site laid end to end.
 - `predictive.ts`: prior and posterior predictive draws (at new data too), per-observation log-likelihoods
   (`logLikelihood`, `pointwiseLogLikelihood`).
 - `criticism.ts`: WAIC, PSIS-LOO (with Pareto k diagnostics), posterior predictive checks, model comparison
@@ -3578,11 +3613,16 @@ dimension order, ids, site names, expressions, the hooks for factor graphs) are 
 `ids.ts`.
 - `spec.ts`: `ModelSpec` (schema `omai.model/1`): nodes `data`, `latent`, `observed`, `derived`, `generated`, `factor`
   and `param` in declaration order, `DimSpec`, `ExprSpec`, `DistSpec`, `ConstraintSpec`, missing-value policies;
-  `isSiteNode`, `exprRefs`, `nodeRefs`. A `scan` (recurrence) node and a `gate` node are reserved kinds with no compiler
-  yet; state-space models are programs with a `markov` loop meanwhile.
+  `isSiteNode`, `exprRefs`, `nodeRefs`. The `scan` node is a recurrence over a named dimension (`ScanNode`: an initial
+  distribution, a step distribution that reads the previous state as `<scan>@prev` (`prevName`), and `emissions` observed at
+  every step from the current state; time series, state-space models and hidden Markov chains are scans); its states are the
+  sites `<scan>[t]` and its emissions `<emission>[t]` of the compiled program, under one `markov` loop. A `gate` node
+  (mixtures) is a reserved kind with no compiler yet.
 - `builder.ts`, `var.ts`: `defineModel(name, (m) => ...)` with the verbs `range` (a named dimension), `data`, `latent`
-  (with a constraint), `observe`, `derived`, `generated`, `factor`, `param`, `custom` and `include` (a sub-model under a
-  prefix); `Var`, a checked expression handle with named dimensions (`X.matmul(w).add(b)`), and `ops`, the operators as
+  (with a constraint), `observe`, `derived`, `generated`, `factor`, `param`, `scan` (a recurrence: `init`, a `step` function
+  of the previous state, an `emit` function that observes at each step; inside it a node over the scanned dimension is read at
+  the current step and every expression has no dimension left, so one scan is one series), `custom` and `include` (a
+  sub-model under a prefix); `Var`, a checked expression handle with named dimensions (`X.matmul(w).add(b)`), and `ops`, the operators as
   functions. Each verb checks names, references, dimensions and parameters as it is called.
 - `operators.ts`: `defaultOperators()`, the closed registry of 26 operators over named dimensions (`add`, `sub`, `mul`,
   `div`, `pow`, `maximum`, `minimum`, `neg`, `exp`, `log`, `sqrt`, `square`, `abs`, `tanh`, `sigmoid`, `probit`,
@@ -3598,22 +3638,35 @@ dimension order, ids, site names, expressions, the hooks for factor graphs) are 
   `bindDataset` (the columns of a library dataset), the `batch` option (a batch dimension compiles to a subsampled plate),
   missing values (NaN in an observed node, handled by the node's policy), `boundToJSON` and `boundFromJSON`.
 - `compile.ts`: `toProgram`, the compiler to the existing `sample`/`observe` program (named dimensions become plates,
-  constraints the supports of `bijectorForSupport`, missing entries masked or imputed as latent sites); there is no
-  second evaluator, the log joint of a spec is `logJoint(toProgram(bound), ...)`.
+  constraints the supports of `bijectorForSupport`, missing entries masked or imputed as latent sites, a `scan` one
+  `markov` loop with history 1); there is no second evaluator, the log joint of a spec is `logJoint(toProgram(bound), ...)`.
 - `definition.ts`, `compose.ts`, `check.ts`: `ModelDefinition` (a spec with its custom functions and the methods `bind`,
   `condition`, `do`, `toJSON`) and `fromJSON`; `conditionSpec`, `doSpec`, `substitute` as pure spec transformations;
-  `validateSpec` and `exprShape`.
+  `validateSpec` and `exprShape` (a scan's expressions are checked with the nodes over its dimension read at the step).
+- `scan.ts`: what the rest of the layer needs of a scan beyond compiling it: `emissionNodes`, `expandScans` (the spec the
+  static analyses read, each scan followed by its emissions as observed nodes over the scanned dimension),
+  `scanLinearGaussian` (a Gaussian initial state, a Gaussian step with a mean affine in the previous state and Gaussian
+  emissions with a mean affine in the state, with scales that do not depend on the states) and `unrollScans`, the bound
+  model with every scan written out as scalar latent and observed nodes `<scan>[t]` and `<emission>[t]` with the same log
+  joint (what the factor-graph compiler reads; it refuses, with `ScanUnrollError`, a scan that reads a series that is not a
+  data node or whose stacked states a later node reads).
 - `ids.ts`: the id convention in one place (`nodeId`, `factorId`, `plateId`, `elementId`, `auxId`, `siteOfId`): a node is
   its name (a data node `data:<name>`), a factor `factor:<site>`, a plate `plate:<a>×<b>` in the spec's dimension order,
   an element `<site>[<i>]`, an auxiliary of a factor graph `<site>#<k>[<i>]`. The same ids name nodes in posteriors,
-  tapes, factor graphs and drawings, so a view can paint live inference state on the picture.
+  tapes, factor graphs and drawings, so a view can paint live inference state on the picture. The states of a scan `x` are the
+  sites `x[0]`, `x[1]`, ... (`siteOfId('x[3]')` is the scan node).
 - `structure.ts`, `expr-text.ts`: `toStructure`, a spec (or a bound model, which adds the plate sizes) as the library's
   `Structure` in plate notation (roles, nested named plates, distributions and expressions written beside the nodes), or
-  with `view: 'factor'` as the bipartite factor graph; `exprText`, `distText`.
+  with `view: 'factor'` as the bipartite factor graph; `exprText`, `distText`. A scan is one node in the plate of its dimension
+  with a self-loop labelled `t-1` and the badge `over <dim>`, and one node per emission.
 - `analysis.ts`: `analyseSpec`: nodes with kind, dimensions, family and parents, dependency edges, plates, conjugate
   pairs (`SpecConjugate`, through direct references and `at` lookups, with the conditions that make a pair usable), a
   conservative linear-Gaussian check, the nodes opaque to message passing (a `custom` call, a family with no
-  exponential-family form) and a feature list that a method's `check` reads; `explain()` prints the structure report.
+  exponential-family form), the recurrences (`scans`: the steps, the emissions, the latents each reads, the kind of its
+  states and whether it is a Gaussian chain; a scan counts as one latent, `linearGaussianBlocks` reports a Gaussian chain as
+  one block, and the structure report names the method that follows a chain: `chain` for finite discrete states, the
+  particle filter for a state-space model that is not Gaussian) and a feature list that a method's `check` reads;
+  `explain()` prints the structure report.
 - `analysis-conjugacy.ts`, `analysis-linear-gaussian.ts`, `analysis-graph.ts`, `analysis-exprs.ts`,
   `structure-report.ts`: the structure analysis, nothing run: `conjugacyRecords` (a latent used conjugately through
   plates, `at` lookups, affine maps of a Gaussian, known multiples of a gamma rate, hierarchies with latent children and
@@ -3630,7 +3683,7 @@ dimension order, ids, site names, expressions, the hooks for factor graphs) are 
   by tracing it at several random values; a parameter that moves with other sites becomes an opaque `custom` node, and
   a program whose structure varies (a site on one branch only, a drawn plate size) is refused with the first difference.
 - `factors.ts`: `toFactorGraph`, a bound spec as a message-passing factor graph (below, 4.32a), with the reasons for what
-  cannot be mapped; `factorGraphPosterior` reads a run back as a `Posterior` keyed by site name; `graphOnSpec`,
+  cannot be mapped (a scan is unrolled by `unrollScans` first: a chain has no plate, one variable and factor per step); `factorGraphPosterior` reads a run back as a `Posterior` keyed by site name; `graphOnSpec`,
   `factorGraphVerdict`, `compileFactorGraph`, `operatorsWithout`.
 
 **Inference methods (`inference/`, `omai-engine/probprog/inference`).** The convention and the methods, with no entry point
@@ -3639,16 +3692,45 @@ of knobs, a typed contract of tape paths, an `Algorithm` whose step is small eno
 so a run resumes, seeks and forks) with a `family`, a `description`, an optional `check` (`Verdict`: does the method
 apply to this model, and if not why and what is missing) and an optional `posterior(state)`; `anytimeKnobs` and
 `withAnytime` add the budget (`budgetMs`, `budgetSteps`) and snapshot (`snapshotEveryMs`, `snapshotEverySteps`) knobs, and
-`runAnytime` drives a session within the budget handing a snapshot to a callback about once a second. The library reads no
-clock: a time budget needs a `clock` injected by the caller, and only moves where slices end, never what a run computes.
+`runAnytime` drives a session within the budget handing a snapshot to a callback about once a second, and `runAnytimeAsync`
+does the same in slices of at most `sliceMs` that hand the thread back to the page between them (the caller supplies
+`yieldToPage`, as the library has no timers), so a page keeps painting and answering clicks, and `shouldStop` is asked after
+every slice. The library reads no clock: a time budget needs a `clock` injected by the caller, and only moves where slices
+end, never what a run computes.
 `model-input.ts` takes a bound spec or a program closed over its data (`programOf`, `analysisOf`).
 - One method per engine, each made from a spec or a program: `nutsMethod` (one iteration of every chain per step, warm-up
   by `windowAdaptationAlgorithm`, enumerated discrete sites recovered), `sviMethod`, `gibbsMethod`, `laplaceMethod` (the
   optimiser's iterations, then one step for the Hessian), `emMethod`, `importanceMethod` (batches), `temperedSmcMethod`,
   `particleFilterMethod`, `abcSmcMethod` (`smc-methods.ts`, `abc-methods.ts`), and the one-step exact ones in
   `exact-methods.ts` and `abc-methods.ts` (`conjugateMethod`, `gaussianMethod`, `enumerationMethod`, `chainMethod`,
-  `abcRejectionMethod`: one computation, honestly one step, via `one-step.ts`). The one-call engines and their planner
+  `abcRejectionMethod`: one computation, honestly one step, via `one-step.ts`). `chainMethod` and `particleFilterMethod`
+  take a spec with one `scan` (a hidden Markov chain with finite discrete states, or a state-space model with no other
+  latent, as well as a program with one `markov` loop), and say why not otherwise. The one-call engines and their planner
   entries are unchanged.
+- The kernels of `sampling` as methods on programs and bound specs, one each with its own knobs and tape, on a shared driver
+  (`_mcmc-driver.ts`: a family says how to build its kernel from tuned parameters and which warm-up tunes them; the driver runs
+  the chains one transition per step on the unconstrained scale of `potentialEnergy`, with enumerated discrete sites recovered
+  as for NUTS, keeps the draws in a state that serialises and publishes them as a `Posterior`; `_mcmc-families.ts`: the
+  window-adapted plan of the Hamiltonian, Langevin and Barker kernels, with the `lowRank` knob of the dense mass matrix, and
+  the plan of a kernel with parameters fixed by its knobs). `mcmc-methods.ts`: `rwmMethod`, `malaMethod`, `barkerMethod`,
+  `hmcMethod`, `sliceMethod`, `ellipticalSliceMethod` (Gaussian-prior latents), `sgldMethod` and `sghmcMethod` (a program with
+  subsampled plates), `mclmcMethod` (tuned in warm-up by `mclmcAdaptationAlgorithm`); `ensemble-methods.ts`: `aiesMethod` (the
+  stretch or differential move) and `ensembleSliceMethod` (every walker is a chain of the posterior, so R-hat and the effective
+  sample size compare walkers); `chees-method.ts`: `cheesMethod` (a jittered trajectory length learned by
+  `cheesAdaptationAlgorithm`, many chains in parallel; `chees/trajectoryLength` and `chees/numSteps` on the tape);
+  `tempering-method.ts`: `temperingMethod` (replicas at a ladder of inverse temperatures over HMC, NUTS, MALA, Barker or a
+  random walk, the cold replica's draws as the posterior; the tape has the ladder, the swap rate of every adjacent pair, the log
+  density of every replica and the round trips of the walkers, `pt/*`; the whole density is tempered, so the prior must be
+  proper). They log the shared `mcmc/*` paths (`mcmc/position`, `mcmc/accept`, `mcmc/stepSize`, `mcmc/energy`,
+  `mcmc/divergent`, `mcmc/stage`, `mcmc/snapshot`, ...). Not built: MEADS, an adaptive temperature ladder, adjusted MCLMC,
+  tempering of the likelihood only.
+- `hybrid.ts`: `hybridMethod(model, plan)`, the explicit plan the user writes (NIMBLE's sampler assignment, NumPyro's
+  `HMCGibbs` and `MixedHMC`, Turing's `Gibbs`): blocks of latent sites, each with a kernel from `blockKernels` (`hmc`, `nuts`,
+  `mala`, `barker`, `rwm`, window-adapted on the block's own conditional; `slice`; `gibbs`, the exact conditional updates of the
+  Gibbs engine through `GibbsOptions.sites`; `custom`, a kernel the user writes), optionally with finite discrete sites summed
+  out of the block's density (`marginalise`) and drawn from their conditional when a draw is kept. One step is one sweep of
+  every block for every chain; the tape has the acceptance and the step size of every block (`hybrid/*`); a plan that leaves a
+  site unassigned is refused with the reason. Nothing chooses the plan. Not built: an elliptical slice block.
 - `mp.ts`: message passing on specs: `epSpecMethod`, `vmpSpecMethod`, `bpSpecMethod` (the spec compiled once to a factor
   graph; a step is a sweep, a factor or a message by `granularity`; the state is the messages; `check` names the node and
   the reason when the model has no factor graph and whether the method has a rule for every operator of the graph).
@@ -3670,9 +3752,9 @@ clock: a time budget needs a `clock` injected by the caller, and only moves wher
   and `randomWalkKernel`.
 - `models.ts`: how a model reaches a method run by name, for instance in a worker (a method's knobs are numbers, strings
   and flags, never a spec): `modelRegistry` of named models (`ModelDefinition` with its data; `bind` rebinds a registered
-  model to JSON data, no spec is trusted from the wire), `methodKinds` (26 kinds: the 17 per-engine and exact methods
-  and the 9 of `sviExtraKinds`; the particle MCMC, nested, evidence and state-space methods take other inputs and are
-  not in it), `inferenceMethods` (a list for the producer's `methodRegistry`, one method per kind and model, named
+  model to JSON data, no spec is trusted from the wire), `methodKinds` (39 kinds: the 30 per-engine, kernel and exact methods
+  and the 9 of `sviExtraKinds` (`svi-kinds.ts`); `hybridMethod` (it takes a plan), the particle MCMC, nested, evidence and
+  state-space methods take other inputs and are not in it), `inferenceMethods` (a list for the producer's `methodRegistry`, one method per kind and model, named
   `<kind>/<model>` such as `nuts/radon`), `inferenceMethodFor`. Nothing registers on import.
 
 **Validation (`validation/`, `omai-engine/probprog/validation`).** The kernel of the periodic heavy validation, pure
@@ -3686,7 +3768,10 @@ library code with no clock and no file system.
   posterior sds and Monte Carlo standard errors, the sd ratio, the Kolmogorov distance, the first Wasserstein distance
   and the KL divergence; `agreementWithin` and `agreementMarkdown` state and print what must agree.
 - `sbc.ts`: simulation-based calibration (`sbc`, rank histograms, a chi-square test and an ECDF-difference test with a
-  simulated null); `geweke.ts`: `gewekeTest` of a transition kernel's joint distribution.
+  simulated null; `sbcReplication`, one replication, and `sbcSummary`, the tests of the ranks so far, are the pieces `sbc` is
+  made of); `sbc-method.ts`: `sbcMethod`, the same as a steppable, resumable method (a step is one replication, the tape has
+  `sbc/replications`, the state the ranks, `result(state)` the tests from the tenth replication on), so a page runs it within a
+  time budget with `runAnytimeAsync` and shows the rank histograms fill in; `geweke.ts`: `gewekeTest` of a transition kernel's joint distribution.
 - `runner.ts`: `Campaign` (a named check with a budget that scales), `runCampaigns`, `campaignMarkdown`.
   `campaigns.ts`: `validationCampaigns`: `sbc/nuts-conjugate`, `sbc/svi-normal-guide`, `sbc/nuts-hierarchical`, two
   deliberately wrong guides that must fail calibration (`sbc/wrong-guide-delta`, `sbc/wrong-guide-narrow`),
@@ -3701,26 +3786,56 @@ library code with no clock and no file system.
 can say them. `benchmark.ts`: `BenchmarkModel` (a spec or program, title, description, tags, references, a seeded data
 generator, the truth as marginal oracles, and `MethodPlan`s: which method, knobs, budget, whether it must agree with the
 truth, is expected to differ or is only reported, and why), `defineBenchmark`, `benchmarkEntries`, `benchmarkMethods` (the
-inputs of `modelRegistry` and the producer's `methodRegistry`). `suite.ts`: `benchmarkModels` (18: beta-Bernoulli,
+inputs of `modelRegistry` and the producer's `methodRegistry`). `suite.ts`: `benchmarkModels` (27: beta-Bernoulli,
 normal-normal, gamma-Poisson; logistic, probit, Poisson and negative binomial regression; eight schools centred and
 non-centred; the Gaussian mixture with and without label switching; Neal's funnel centred and non-centred, Haario's
-banana and a two-mode target; the radon regression; a three-player TrueSkill; an AR(1) state space), `whereBenchmarks`,
-`benchmarkModel`; model files `conjugate.ts`, `glm.ts`, `schools.ts`, `mixture.ts`, `geometry.ts`, `hierarchical.ts`,
-`ranking.ts`, `state-space.ts` (a `markov` program, since the spec layer has no recurrence node yet), `ar1-parameters.ts`
-(the AR(1) coefficient as a `StateSpaceFamily` with the Kalman-grid truth for particle MCMC). `truth.ts`: truths from the
+banana and a two-mode target; the radon regression; a three-player TrueSkill; an AR(1) state space; then the nine of
+`additional.ts`, `additionalBenchmarkModels`: stochastic volatility, a Gaussian hidden Markov model, Gaussian process
+regression centred and non-centred, a small LDA, a small Bayesian neural network, 2PL item response scoring, a truncated
+stick-breaking mixture and Minka's clutter problem), `whereBenchmarks`, `benchmarkModel`; model files `conjugate.ts`,
+`glm.ts`, `schools.ts`, `mixture.ts`, `geometry.ts` (also `bananaDraws`, exact draws from the banana for drawing the target),
+`hierarchical.ts`, `ranking.ts` (also `trueskillTournament`, the games of a small tournament from known skills in a fixed order so
+a page can add games one at a time, and `trueskillModel`, the tournament as a model with a node per player and an observation
+per game), `state-space.ts` (the AR(1) state as a spec with a `scan` node, with `ar1MarkovProgram`, the same model by hand as a
+`markov` program, as the reference of the equivalence tests), `ar1-parameters.ts` (the AR(1) coefficient as a
+`StateSpaceFamily` with the Kalman-grid truth for particle MCMC), `series.ts` (stochastic volatility and the Gaussian HMM as
+scans: the first with the parameters known and a point-mass filter and smoother on a grid as truth, the second with
+forward-backward written out independently of every engine, including the exact distribution of the number of visits to a
+state), `gaussian-process.ts` (a squared-exponential kernel with an unknown length scale, the covariance a `custom` function
+over the library's Gram matrix, so opaque to message passing; the truth is exact given the length scale and quadrature over
+it), `topics.ts` (3 documents of 5 words over 4, two topics: exact by enumerating all 2^15 assignments with the mixtures
+integrated out), `neural-network.ts` (one input, three tanh units, the function at five test inputs as the quantity compared;
+the truth is a stored reference from a long NUTS run, so its plans are reported and not required to agree), `irt.ts`
+(twelve respondents, eight items of known difficulty and discrimination, a quadrature per respondent), `nonparametric.ts` (four
+components, known means, three stick breaks, the labels summed out on a grid; the stick-breaking map is a `custom`
+function), `clutter.ts` (the clutter problem as a spec, with a Bernoulli indicator per observation that NUTS sums out and the
+grid enumerates, and `clutterEp`, EP with a numeric site under a rule of your choice) and `discrete-truth.ts` (`pmfOracle`,
+the marginal oracle of a quantity on a finite set, and `hmmSmoothing`). Simplified from the plan's list: stochastic
+volatility has known parameters, the IRT items are known, the stick-breaking components are known, and the neural network
+has a reference run, not a closed form. `truth.ts`: truths from the
 validation oracles (`gridTruth`, `mixtureOracle`, `samplesOracle`). `plans.ts`: `nutsPlan`, `sviPlan`, `laplacePlan`,
 `importancePlan`, `temperedPlan`, `gibbsPlan`, `exactPlan`, `particleFilterPlan`, with budgets that scale.
 `agreement.ts`: `runPlan`, `benchmarkAgreement`.
 - Campaigns of the periodic validation: `campaigns.ts` (`benchmark/<model>`: each model's planned methods against its truth;
   a campaign passes when every method that must agree does and every method expected to differ differs),
   `evidence-campaigns.ts` (`evidence/conjugate`, `evidence/harmonic-mean`, `evidence/nested-gaussian`,
-  `evidence/particle-filter`, `evidence/pmcmc-ar1`), `svi-plans.ts` (`svi/<model>`: the variational methods beyond
-  `sviMethod` against the truths of banana, bimodal, gamma-Poisson, logistic regression and normal-normal) and
+  `evidence/particle-filter`, `evidence/pmcmc-ar1`), `additional-campaigns.ts` (`additionalCampaigns`: a `benchmark/<model>`
+  campaign for each of the nine later models and `benchmark/clutter-ep`: EP with numeric sites under three integration rules
+  against the exact posterior, beside the Laplace fit and the mean-field guide; they come after every earlier campaign so a
+  campaign's random key does not move), `svi-plans.ts` (`svi/<model>`: the variational methods beyond
+  `sviMethod` against the truths of banana, bimodal, gamma-Poisson, logistic regression and normal-normal),
   `structure-campaigns.ts` (`structure/benchmarks`: every model's structure report against written-down findings, and
-  `structure/collapse-efficiency`: NUTS on centred eight schools with and without the plan's collapsed site).
+  `structure/collapse-efficiency`: NUTS on centred eight schools with and without the plan's collapsed site) and
+  `kernel-campaigns.ts` (`kernelCampaigns`: `kernels/geweke`, Geweke tests of the random walk, MALA, Barker, HMC, slice and
+  elliptical slice kernels and of an unadjusted Langevin that must fail; `kernels/sbc-<method>`, simulation-based calibration end
+  to end of thirteen methods (`rwm`, `mala`, `barker`, `hmc`, `slice`, `elliptical-slice`, `aies`, `ensemble-slice`,
+  `parallel-tempering`, `chees`, `mclmc`, `sgld` and a `hybrid` plan); `kernels/agreement-<model>` on the normal-normal, the
+  logistic regression and the non-centred eight schools, where MCLMC, SGLD and SGHMC are reported, being biased by their step
+  size; and `kernels/bimodal`, parallel tempering on the two-mode target against NUTS).
 - What the tables say (`docs/probprog/results/`): the benchmark plans run NUTS, tempered SMC, importance sampling, Laplace,
-  SVI, Gibbs, the exact methods and the particle filter; EP, VMP and BP are checked in the unit tests against the grid
-  and the `pgm`, `gp` and TrueSkill references, not in the benchmark campaigns. The classical failures are expected and
+  SVI, Gibbs, the exact methods and the particle filter; EP runs in two campaigns (`benchmark/item-response-scoring`, where it
+  must agree with the quadrature, and `benchmark/clutter-ep`), VMP and BP in none, and are checked in the unit tests against the
+  grid and the `pgm`, `gp` and TrueSkill references. The classical failures are expected and
   recorded as such (NUTS diverges in the centred funnel and centred eight schools, a Gaussian guide misses the banana
   and the second mode, Laplace has no mode at tau -> 0 of a centred hierarchy). The variational plans of `svi/<model>` that
   have a quadrature truth (the logistic regression) are reported, not asserted: Pathfinder and natural-gradient SVI are
@@ -3788,7 +3903,11 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   `regionGraph`, `blockClusters`, `regionBpAlgorithm`), `consistent.ts` (expectation consistent inference, adaptive TAP:
   a Gaussian times one-dimensional sites as EP with parallel updates; `expectationConsistentGraph`, `ecAlgorithm`) and
   `amp.ts` (approximate message passing for `y = A x + w` with iid priors, with the state evolution beside it: Gaussian
-  and Bernoulli-Gaussian denoisers; `ampStateEvolution`, `ampAlgorithm`).
+  and Bernoulli-Gaussian denoisers; `ampStateEvolution`, `ampAlgorithm`; `ampProblem`, a compressed-sensing problem with its
+  truth: a Gaussian matrix, a sparse signal, noise).
+- `clutter.ts`: Minka's clutter problem for `alphaEpMethod` and `epMethod`: `clutterProblem` (a seeded generator that keeps its
+  truth), `clutterGraph` (each point a `numericOperator` factor on the one variable), `clutterPosterior` (the exact posterior on
+  a fine grid, with the two Kullback-Leibler divergences of a Gaussian from it, so a sweep of alpha is judged against the truth).
 - `anytime.ts`: `runAnytime` and `runAnytimeWith` for a graph under a budget the caller chooses, with a snapshot of the
   marginals about once a second; the clock is injected, so the budget only decides where a run stops, never what it
   computes. `probprog/inference/method.ts` has the same driver for every method.
@@ -6394,13 +6513,34 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   snapshots, without the model; it reads the `mp/` paths of message passing and the `<method>/snapshot` posterior JSON of
   the samplers and variational methods; `describeMessage`, `nodeStateOf`, `nodeStatesOfRows`);
 - `ChainDiagnostics` (`chainDiagnostics`, `chain-diagnostics.ts`: for each quantity the draws of every chain for trace
-  plots, the rank histograms of each chain (`rankCounts`), the split R-hat and effective sample size where the method
-  reports them and the divergent transitions; `chainsFromTape` reads a sampler's `mcmc/position`, `mcmc/divergent` and
-  `mcmc/stage`; `chainTable` is the R-hat and ESS table as a `MarkedTable`).
+  plots (thinned to a limit, with `atDivergences`, the value of the quantity at each divergent transition, so a trace or a pair
+  plot marks them whatever the thinning), the rank histograms of each chain (`rankCounts`), the ECDF of each chain's pooled
+  ranks minus the uniform CDF with the simultaneous band (`ecdf`, `ecdfDiff`), the autocorrelation of each chain (`acf`), the
+  effective sample size by quantile and as the draws accumulate (`essCurves`, given: `chainEssCurves` in `omai-engine/sampling`
+  makes them, as `exposition` may not import it), the energy of the Hamiltonian with each chain's E-BFMI (`energy`), the split
+  R-hat and effective sample size where the method reports them and the divergent transitions; the autocorrelation and E-BFMI
+  are computed in the record by the formulas of `sampling`, which the tests compare them with; `chainsFromTape` reads a
+  sampler's `mcmc/position`, `mcmc/divergent`, `mcmc/energy` and `mcmc/stage`; `chainTable` is the R-hat and ESS table as a
+  `MarkedTable`; `posteriorChains` of `probprog` regroups a posterior's draws by chain for it). `ecdf-band.ts`: `ecdfBand`,
+  the simultaneous band of an ECDF-difference plot (Säilynoja, Bürkner and Vehtari 2022: an exact recursion over the counts at a
+  grid of points and a search over the pointwise level), with `bandCoverage`, `binomialInterval` and `uniformGrid`;
+- `SbcRun` (`sbcRun`, `sbc-run.ts`: simulation-based calibration, per quantity the histogram of the ranks of the true value
+  with the count each bin should have and the exact binomial band, the ECDF of the ranks minus the uniform CDF with the
+  simultaneous band, the p-values of the uniformity tests and the verdict with its reading (too confident, too wide, biased);
+  built from the validation kernel's `sbc` result by its shape alone (`SbcResultLike`), so the record does not depend on the
+  kernel; `sbcTable` is the verdict as a `MarkedTable`), `PosteriorComparison` (`posteriorComparison`,
+  `posterior-comparison.ts`: per quantity the oracle's CDF on a grid and each method's distribution (equal-mass quantiles of
+  its draws, or a normal given by a mean and an sd), so a view lays them over one another, and the agreement table of `agree`
+  as a marked table with the cells beyond tolerance flagged; built by shape alone from `AgreementTableLike` and
+  `MarginalLike`; `comparisonTable`) and `ElboRun` (`elboRun`, `elbo-run.ts`: a variational fit, the bound at each step with its
+  smoothing, the norm and variance of the gradient and what the estimator reports, the trajectories of the guide's parameters,
+  the beliefs the snapshots held, Pathfinder's paths and Pareto k-hat and, when the truth is known, the final posterior over
+  the truth's marginal; `elbo-run-tape.ts`: `elboRunFromTape`, the same record from the `svi/*` or `pathfinder/*` paths of a
+  tape, finished or running, and any anytime snapshots, thinned to what a chart can draw; `trailingMean`).
   Every record constructor ends in `seal` (`exposition/_check.ts`): the record it returns is a copy that shares no array
   with the caller's, and every number in it is finite except the fields `SEAL_OPTIONS` lists for its kind (a missing
   standard error or a rate with no denominator shown as a gap, an infinite threshold); `expositionSamples`
-  (`samples.ts`) is one small valid record of each kind, the fixtures of the contract test over all kinds and of the
+  (`samples.ts`) is one small valid record of each of the 66 kinds, the fixtures of the contract test over all kinds and of the
   views' smoke tests. The scene builders check their sizes and coordinates the same way (`scene/_check.ts`).
   Records that index the training rows (clusterings, mixtures, margins, neighbours, anomaly scores, decision surfaces)
   carry those rows (`InputRows`, two coordinates each, for data up to a few thousand rows), so a view draws from the
@@ -8057,8 +8197,19 @@ Design rules:
   interval or bar glyph scaled over the whole run), the edges that carried a message at the step active and labelled with
   the message in words, and the convergence series with a cursor: `modelRunScene`, `modelRunOverlay`, `modelRunFrames`,
   `modelRunDecorate`, `modelRunStatus`, `modelRunConvergence`) and `chain-diagnostics.ts` (`ChainDiagnostics`: trace plots
-  with the divergences marked, rank plots with the expected count drawn, and the R-hat and ESS table: `traceView`,
-  `rankView`, `chosenQuantities`).
+  with the divergences marked (on a thinned trace each draw is placed at its own index and the divergent points are the record's
+  `atDivergences` values, so they sit on the line), rank plots with the expected count drawn, and the R-hat and ESS table:
+  `traceView`, `rankView`, `chosenQuantities`), `chain-charts.ts` (the other charts of the record, each reading what it holds
+  and saying what it lacks, `hasChart`: `ecdfView`, the ECDF difference inside the simultaneous band; `autocorrelationView`;
+  `essView`, by quantile or as the draws accumulate; `energyView`, the energy distributions with each chain's E-BFMI;
+  `pairView`, a few quantities with the divergent transitions marked), `sbc-run.ts` (`SbcRun`: `sbcRankView`, the rank
+  histogram with the expected count and its binomial band, and `sbcEcdfView`, the ECDF difference with the simultaneous band,
+  per quantity; `chosenCalibrated`), `elbo-run.ts` (`ElboRun`: `elboRunView`, one of the bound with its smoothing and
+  Pathfinder's paths, the gradient on log axes, the guide's parameters, the beliefs as a mean with its sd band, or the final
+  posterior over the truth, each as far as the run has got; `hasElboChart`) and `posterior-comparison.ts`
+  (`PosteriorComparison`: `posteriorComparisonView`, the oracle's density under each method's, the ECDFs over one another, or the
+  difference of each ECDF from the oracle's CDF, where the Kolmogorov distance is the largest gap). The small multiples of these
+  views come from `_view.ts` (`panelGrid`, `panelColumns`: two columns from four panels on).
 - `registry.ts`: the standard view of each record kind (`viewFor(kind)`: its React component, title, whether it plays,
   what it accepts beside the record) and `stillOf(record)`, a headless still (a chart option, or a scene for trees and
   pipelines) for slides, blogs and server-side export; the registry is exhaustive, so a new record kind does not compile
@@ -8226,7 +8377,11 @@ Design rules:
   `reachability.tsx`: `ReachabilityPlotView`; `scene-steps.tsx`: `SceneStepsView`; `images.tsx` also `ImageGridView`;
   `model-run.tsx`: `ModelRunPlayer` (the plate diagram with beliefs, the messages of the step on their edges, the
   convergence series with a cursor and the counters; a record of a run in progress is followed while the viewer is on the
-  latest step); `chain-diagnostics.tsx`: `ChainDiagnosticsView` (trace, rank and the table under a segmented choice)), each one figure in one
+  latest step); `chain-diagnostics.tsx`: `ChainDiagnosticsView` (trace, rank, ECDF difference, autocorrelation, ESS by quantile and
+  evolution, energy, pairs and the table under a segmented choice offering only the charts the record can draw, an `initial` prop
+  to start on one; `chainChartsOf`); `sbc-run.tsx`: `SbcRunView` (rank histograms, ECDF differences or the verdict table);
+  `elbo-run.tsx`: `ElboRunView` (the bound, gradient, parameters, beliefs or final posterior, redrawn as a run's record grows);
+  `posterior-comparison.tsx`: `PosteriorComparisonView` (densities, ECDFs, ECDF differences or the agreement table)), each one figure in one
   `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record inside a
   `RecordBoundary` (`RecordBoundary.tsx`: a record whose view throws, or whose kind has no view, shows a one-line note and
   the page goes on).
@@ -8395,8 +8550,12 @@ and a thumbnail of one recipe of each gallery section (`Thumbnail`, from `public
   keep their recipes in `panels/`, `specialised/`, `evaluation/` and `animation/`.
 
   The model-graph pieces have one recipe, `diagrams/16-model-inference` (`modelRun` and `chainDiagnostics` records made on
-  toy data: a plate diagram with beliefs, messages and convergence, and the trace, rank and R-hat views; it shows
-  `modelGraph`, `ModelRunPlayer` and `ChainDiagnosticsView`, with thumbnails).
+  toy data: a plate diagram with beliefs, messages and convergence, and the chain charts (trace, rank, ECDF difference,
+  autocorrelation, ESS, energy, pairs and the R-hat table); it shows `modelGraph`, `ModelRunPlayer` and `ChainDiagnosticsView`, with
+  thumbnails). The records of probabilistic inference have one recipe each, on toy data: `trust/09-simulation-calibration`
+  (`sbcRun`, `SbcRunView`: three quantities, one exact, one whose posterior has the wrong width, one shifted), `steps/15-variational-run` (`elboRun`,
+  `ElboRunView`: a normal fitted to a skewed target, with the steps so far as a control) and `statistical/11-posterior-comparison`
+  (`posteriorComparison`, `PosteriorComparisonView`: an exact sampler, a normal that is too narrow and a chain to one side).
 
   The gallery is for general visualisation types only; on 2026-10-25 its model demonstrations (the `exposition/`,
   `fairness/` and `trust/` sections and the RL episodes) moved to the hub, which was removed on 2026-10-28. The
@@ -8406,9 +8565,24 @@ and a thumbnail of one recipe of each gallery section (`Thumbnail`, from `public
 shell, added only on request; see its README). Pocs that belong together are listed together: a group is declared in
 `src/groups.ts` (slug, title, summary), a poc joins it with `group: '<slug>'` in its `poc.ts`, and the index shows one
 section per group (a group's own page is `/group/<slug>`; a search lists matches flat with the group on each card; a poc with
-no group is under "More"). The groups are `probabilistic-programming` (so far `bayes-linear` and `bocpd`; the showcase set
-of the probabilistic-programming plan is scheduled for the end of that work), `structured-prediction`, `models` and
-`graphics-and-fields`.
+no group is under "More"; `groupPocs` makes the sections). The groups are `probabilistic-programming` (eleven pocs: `bayes-linear`,
+`bocpd` and the showcase set of the probabilistic-programming plan below), `structured-prediction`, `models` and
+`graphics-and-fields`. The nine showcase pocs, each a composition of library methods and records with the exact answer beside
+them, are `probit-two-engines` (one probit regression written in the model builder and run by NUTS, EP and Laplace within a time
+budget against the grid, with the plate diagram carrying EP's messages), `ep-alpha-clutter` (Minka's clutter problem, alpha-divergence
+EP at a ladder of alphas against the exact posterior), `eight-schools-funnel` (NUTS on the centred, non-centred and collapsed forms,
+with the divergences in the funnel's neck), `trueskill-messages` (EP's messages game by game on a TrueSkill factor graph, checked
+against NUTS), `svi-guides` (four guides raced on the banana: mean field, full rank and two flows), `tempering-bimodal` (NUTS
+against parallel tempering on two modes, the weight of each mode and the swap rates), `calibration-sbc` (NUTS, a too-narrow
+mean-field guide and a stopped guide calibrated by `sbcMethod`, the rank histograms and ECDF differences filling in),
+`evidence-race` (six marginal-likelihood estimators of a conjugate model with their error bars) and `amp-sparse` (AMP on
+a sparse recovery problem with its state evolution). `src/shared/` holds their plumbing, which composes the library and has no
+logic of its own: `useAnytimeRuns` (several sessions at once, each driven by the library's `runAnytimeAsync` in slices that hand
+the thread back, within a time budget the user chooses, a snapshot of each about once a second read by the page's `derive`, with
+stop and run again), `RunBar` (the budget as a choice, the progress and a line per run), `CurveChart` (curves and points in
+one box), `useDeferred` (heavy work after the first paint) and `smoke.ts` (`snapshotOf`, a run read as the page would, for the
+smoke test of each page's compute). Not built: the `examples/` programs of the plan (probit on two engines, eight schools,
+a calibration check).
 
 `src/docs/` (generated from `omai-meta`'s catalogue of the engine's TSDoc)
 - Navigation mirrors the source tree exactly (`lib/<domain>/<subfolder>/<file>`, `methods/<area>/...`, then the
