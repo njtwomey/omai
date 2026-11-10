@@ -14,13 +14,13 @@ Truth (analytic): v is N(0, 9) exactly; x_i | v ~ N(0, e^v) is a scale mixture w
 
 Methods whose own `check` says they apply to the compiled program (a target with no observed node is refused at the spec level): nuts, svi, laplace, importance, tempered-smc, gaussian. Not applicable: gibbs (no discrete or conjugate conditionals (use NUTS)); em (no params to estimate); particle-filter (no single markov loop); abc-smc (no observed sites); conjugate (no conjugate structure for v, z); enumeration (continuous latent sites (v, z)); chain (the program needs exactly one markov loop); abc-rejection (no observed sites).
 
-| method | expectation | run | diagnostics | why |
-| --- | --- | --- | --- | --- |
-| nuts | must agree | converged (1001 steps) | 0 divergences; R-hat high: z[1] | no funnel in the density: no divergences, agrees with the truth |
-| svi | reported | completed (1500 steps) | - | v and z are independent normals, the mean-field family is exact for them |
+| method | expectation | run                    | diagnostics                     | why                                                                      |
+| ------ | ----------- | ---------------------- | ------------------------------- | ------------------------------------------------------------------------ |
+| nuts   | must agree  | converged (1001 steps) | 0 divergences; R-hat high: z[1] | no funnel in the density: no divergences, agrees with the truth          |
+| svi    | reported    | completed (1500 steps) | -                               | v and z are independent normals, the mean-field family is exact for them |
 
-| method | quantity | mean | sd | mean error (sd) | mean z | sd ratio | KS | W1 (sd) | KL | ESS |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| nuts | v | -0.0667 | 2.86 | -0.0222 | -1.04 | 0.953 | 0.0318 | 0.0482 | 0.0112 | 2000 |
-| nuts | x[0] | 0.0487 | 10.9 | 0.00513 | 0.14 | 1.15 | 0.0231 | 0.0774 | 0.00676 | 982 |
-| svi | v | -0.221 | 3.19 | -0.0736 | -4.38 | 1.06 | 0.0398 | 0.0823 | 0.00678 | 4000 |
+| method | quantity | mean    | sd   | mean error (sd) | mean z | sd ratio | KS     | W1 (sd) | KL      | ESS  |
+| ------ | -------- | ------- | ---- | --------------- | ------ | -------- | ------ | ------- | ------- | ---- |
+| nuts   | v        | -0.0667 | 2.86 | -0.0222         | -1.04  | 0.953    | 0.0318 | 0.0482  | 0.0112  | 2000 |
+| nuts   | x[0]     | 0.0487  | 10.9 | 0.00513         | 0.14   | 1.15     | 0.0231 | 0.0774  | 0.00676 | 982  |
+| svi    | v        | -0.221  | 3.19 | -0.0736         | -4.38  | 1.06     | 0.0398 | 0.0823  | 0.00678 | 4000 |

@@ -14,24 +14,24 @@ Truth (exact): the normal posterior of a normal mean with known variance and its
 
 Methods whose own `check` says they apply: nuts, svi, gibbs, laplace, importance, tempered-smc, abc-smc, conjugate, gaussian, abc-rejection. Not applicable: em (no params to estimate); particle-filter (a spec has no recurrences yet (the filter runs over a markov loop of a program)); enumeration (continuous latent nodes (mu)); chain (a spec has no recurrences yet (the chain is a markov loop of a program)).
 
-| method | expectation | run | diagnostics | why |
-| --- | --- | --- | --- | --- |
-| conjugate | must agree | converged (1 steps) | - | the exact posterior of this model: it is the truth |
-| gaussian | must agree | converged (1 steps) | - | the exact posterior of this model: it is the truth |
-| gibbs | must agree | completed (2300 steps) | - | draws each site from its conditional: exact conditionals, so consistent |
-| nuts | must agree | converged (1001 steps) | 0 divergences | a consistent sampler: agrees within Monte Carlo error |
-| importance | must agree | completed (10 steps) | weights ESS 4671 | weighted draws from the prior: unbiased, with an effective sample size that shrinks as the posterior concentrates |
-| tempered-smc | must agree | converged (2 steps) | weights ESS 595 | tempered particles with MCMC moves: consistent, with a noisier tail than NUTS |
-| laplace | must agree | converged (4 steps) | - | exact: the posterior is normal and the Laplace fit is a normal |
-| svi | reported | completed (1500 steps) | - | a mean-field normal is the right family here; what is left is the noise of the stochastic optimiser |
+| method       | expectation | run                    | diagnostics      | why                                                                                                               |
+| ------------ | ----------- | ---------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------- |
+| conjugate    | must agree  | converged (1 steps)    | -                | the exact posterior of this model: it is the truth                                                                |
+| gaussian     | must agree  | converged (1 steps)    | -                | the exact posterior of this model: it is the truth                                                                |
+| gibbs        | must agree  | completed (2300 steps) | -                | draws each site from its conditional: exact conditionals, so consistent                                           |
+| nuts         | must agree  | converged (1001 steps) | 0 divergences    | a consistent sampler: agrees within Monte Carlo error                                                             |
+| importance   | must agree  | completed (10 steps)   | weights ESS 4671 | weighted draws from the prior: unbiased, with an effective sample size that shrinks as the posterior concentrates |
+| tempered-smc | must agree  | converged (2 steps)    | weights ESS 595  | tempered particles with MCMC moves: consistent, with a noisier tail than NUTS                                     |
+| laplace      | must agree  | converged (4 steps)    | -                | exact: the posterior is normal and the Laplace fit is a normal                                                    |
+| svi          | reported    | completed (1500 steps) | -                | a mean-field normal is the right family here; what is left is the noise of the stochastic optimiser               |
 
-| method | quantity | mean | sd | mean error (sd) | mean z | sd ratio | KS | W1 (sd) | KL | ESS |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| conjugate | mu | 1.4 | 0.42 | 0.0108 | 0.688 | 0.994 | 0.0133 | 0.0168 | 0.00236 | 4000 |
-| gaussian | mu | 1.41 | 0.418 | 0.0151 | 0.966 | 0.987 | 0.0214 | 0.0243 | 0.00436 | 4000 |
-| gibbs | mu | 1.42 | 0.428 | 0.0502 | 2.15 | 1.01 | 0.0322 | 0.055 | 0.00502 | 1880 |
-| nuts | mu | 1.36 | 0.427 | -0.0975 | -1.92 | 1.01 | 0.0512 | 0.0984 | 0.0155 | 395 |
-| importance | mu | 1.4 | 0.42 | 0.00141 | 0.0973 | 0.993 | 0.00733 | 0.0108 | 0.00164 | 4670 |
-| tempered-smc | mu | 1.41 | 0.425 | 0.0352 | 1.11 | 1 | 0.0272 | 0.0382 | 0.00444 | 1000 |
-| laplace | mu | 1.4 | 0.423 | 0.00678 | 0.428 | 1 | 0.00918 | 0.0153 | 0.00286 | 4000 |
-| svi | mu | 1.49 | 0.394 | 0.202 | 13.7 | 0.932 | 0.0916 | 0.203 | 0.0312 | 4000 |
+| method       | quantity | mean | sd    | mean error (sd) | mean z | sd ratio | KS      | W1 (sd) | KL      | ESS  |
+| ------------ | -------- | ---- | ----- | --------------- | ------ | -------- | ------- | ------- | ------- | ---- |
+| conjugate    | mu       | 1.4  | 0.42  | 0.0108          | 0.688  | 0.994    | 0.0133  | 0.0168  | 0.00236 | 4000 |
+| gaussian     | mu       | 1.41 | 0.418 | 0.0151          | 0.966  | 0.987    | 0.0214  | 0.0243  | 0.00436 | 4000 |
+| gibbs        | mu       | 1.42 | 0.428 | 0.0502          | 2.15   | 1.01     | 0.0322  | 0.055   | 0.00502 | 1880 |
+| nuts         | mu       | 1.36 | 0.427 | -0.0975         | -1.92  | 1.01     | 0.0512  | 0.0984  | 0.0155  | 395  |
+| importance   | mu       | 1.4  | 0.42  | 0.00141         | 0.0973 | 0.993    | 0.00733 | 0.0108  | 0.00164 | 4670 |
+| tempered-smc | mu       | 1.41 | 0.425 | 0.0352          | 1.11   | 1        | 0.0272  | 0.0382  | 0.00444 | 1000 |
+| laplace      | mu       | 1.4  | 0.423 | 0.00678         | 0.428  | 1        | 0.00918 | 0.0153  | 0.00286 | 4000 |
+| svi          | mu       | 1.49 | 0.394 | 0.202           | 13.7   | 0.932    | 0.0916  | 0.203   | 0.0312  | 4000 |
