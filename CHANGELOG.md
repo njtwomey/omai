@@ -6,19 +6,157 @@ mdml-engine, mdml-render and mdml-meta.
 ## 0.1.13
 
 Not yet released on GitHub: the incremental versions are tagged locally until the probabilistic-programming work is complete.
+This section records what is on `main` so far; the plan is `docs/probprog/PLAN.md` (with its status section), the
+validation tables are in `docs/probprog/results/`.
 
-Probabilistic programming (omai-engine):
-- Model layer (`omai-engine/probprog/model`): `defineModel` builder with named dimensions, a closed operator registry (26 operators),
-  22 distribution families as data (`model/dists`), constraints, data binding (`bind`, `withData`, `bindDataset`, missing values
-  and batches), `toProgram` (compiles to the existing programs, so every engine and handler runs a bound model), JSON round trip,
-  `analyseSpec` (dependencies, plates, conjugacy hints, opaque nodes), `toStructure` (plate-notation and factor-graph views with
-  ids that match inference tapes), `include`, `conditionSpec` and `doSpec`.
-- `omai-engine/probprog/inference`: the shared convention of inference methods (`defineInferenceMethod`, user-selected budgets
-  and periodic snapshots with `runAnytime`); there is no universal `infer` over methods.
-- `omai-engine/message-passing`: a factor-graph message-passing engine over exponential-family messages with 26 factor operators
-  and EP, VMP and BP as named settings of one steppable, resumable algorithm (`epMethod`, `vmpMethod`, `bpMethod`);
-  improper-message repair with counts; anytime runs with periodic marginal snapshots; reproduces the existing `pgm` BP, EP and
-  VMP, the `gp` probit EP, TrueSkill and the Bayesian Gaussian mixture, and is exact on Gaussian trees.
+Probabilistic programming (omai-engine). The design: a model is written once as a value (a spec), every method is its own
+thing with its own knobs and tape, the user chooses (no universal `infer`, no automatic decomposition; the planner `plan`,
+`explainPlan` and `infer` is unchanged), and every long-running method gives anytime results.
+
+Model layer (`omai-engine/probprog/model`):
+- `defineModel`: a builder with named dimensions (`range`), `data`, `latent` (with constraints), `observe`, `derived`,
+  `generated`, `factor`, `param`, `custom` and `include`, producing a JSON-able `ModelSpec` (`Var` handles and `ops`,
+  checked as the model is written). A closed registry of 26 operators (`defaultOperators`) and 22 distribution families as
+  data (`model/dists`, mapped to the constructors of `omai-engine/dists`). Reserved but not built: `scan` (recurrence) and
+  `gate` nodes.
+- Data binding: `bind` (checks arrays against the spec, names the fault), `withData`, `bindDataset`, missing values (NaN in
+  an observed node, by policy), batches as subsampled plates, `boundToJSON` and `boundFromJSON`.
+- `toProgram` compiles a bound spec to the existing `sample`/`observe` program, so every engine, handler, guide and
+  criticism function runs a spec unchanged (the log joint of a spec is `logJoint(toProgram(bound))`; there is no second
+  evaluator). `conditionSpec`, `doSpec`, `include` and `fromJSON` compose and carry specs.
+- `toStructure` draws a spec in plate notation (or as its factor graph) with ids that name the same nodes in posteriors,
+  tapes and factor graphs (`ids.ts`).
+- `fromProgram` lifts a `sample`/`observe` program to a spec of its site structure by tracing it (opaque `custom` nodes
+  where a parameter moves with other sites; refuses a program whose structure varies).
+- Structure analysis, nothing run: `analyseSpec` (dependencies, plates, conjugate pairs, a linear-Gaussian check, nodes
+  opaque to message passing), `conjugacyRecords` (through plates, `at` lookups, affine maps, scaled rates, hierarchies
+  and joint priors, with the closed form and the conditions), `linearGaussianBlocks`, `graphStructure` (Markov blankets,
+  independent components, discrete width, minibatch axes), `structureReport` and `analyseSpec(model).explain()`: advice
+  that names the existing method or handler and its knobs, never applied by the library. `collapsePlan` and
+  `applyCollapse` (which conjugate sites the `collapse` handler can take out, why not the rest).
+- `toFactorGraph` compiles a bound spec to a message-passing factor graph (a regression on a weight vector over a plate is
+  one plated factor, other plates are expanded; products, gamma precisions, categorical and Bernoulli gates and maxima map
+  to the engine's operators; what cannot be mapped is refused with the node and the reason), and `factorGraphPosterior`
+  reads a run back as a `Posterior` by site name.
+
+Inference methods (`omai-engine/probprog/inference`):
+- The convention (`defineInferenceMethod`): a `Space` of knobs, a typed tape contract, a steppable, resumable `Algorithm`
+  whose state serialises, a capability `check` that says why a method does not apply, an optional `posterior(state)`, and
+  the budget and snapshot knobs (`withAnytime`, `runAnytime` with an injected clock; the library reads no clock).
+- One method per engine, made from a spec or a program: `nutsMethod` (one iteration of every chain per step),
+  `sviMethod`, `gibbsMethod`, `laplaceMethod`, `emMethod`, `importanceMethod`, `temperedSmcMethod`,
+  `particleFilterMethod`, `abcSmcMethod`, and one-step methods for the exact engines (`conjugateMethod`,
+  `gaussianMethod`, `enumerationMethod`, `chainMethod`, `abcRejectionMethod`). The one-call engines are unchanged.
+- EP, VMP and BP on specs (`epSpecMethod`, `vmpSpecMethod`, `bpSpecMethod`).
+- A model registry by name for workers (`modelRegistry`, `methodKinds` with 26 kinds, `inferenceMethods` naming each
+  method `<kind>/<model>`): a page asks for `nuts/radon` with only knob values.
+- Variational methods beyond `sviMethod`, each with its own knobs and tape: `traceGraphSviMethod`, `traceEnumSviMethod`,
+  `stickingTheLandingMethod`, `renyiSviMethod`, `structuredSviMethod`, `mixtureSviMethod`, `amortisedSviMethod`,
+  `naturalGradientSviMethod`, `conjugateNaturalSviMethod`, `pathfinderMethod`.
+- Particle and evidence methods: `pmmhMethod` and `particleGibbsMethod` (particle MCMC; a state-space family, not a spec),
+  `stateSpaceFilterMethod` (resampling scheme, ESS threshold and proposal as knobs), `nestedMethod`, and the evidence
+  estimators `steppingStoneMethod`, `thermodynamicIntegrationMethod`, `bridgeSamplingMethod`, `importanceEvidenceMethod`
+  (`evidenceEstimators` lists what exists and why the harmonic mean is refused).
+- `defineKernel`: write a sampler in a few lines on the handlers and trace operations (`resimulationKernel`,
+  `randomWalkKernel` as worked examples); it runs as a chain or as an `MCMCKernel` of `sampling`.
+
+Handlers (`omai-engine/probprog`): `reparam` with `locScale` (non-centring), `transformReparam` and `circular`; `collapse`
+(delayed sampling of conjugate sites, with `recover`); `lift` (params to latent sites); `scope`; `mean`; `inferConfig` and
+`inferHint`; trace operations `assess`, `generate`, `propose`, `regenerate`, `update` (Gen's interface). Not built: Pyro's
+`escape` and `equalize`.
+
+SVI breadth (`omai-engine/probprog`): the ELBOs `traceGraphElbo` (Rao-Blackwellised score function with baselines),
+`traceEnumElbo` (discrete latents summed out or enumerated), `stlElbo` and `dregElbo`, and `gradientMoments` for the
+variance of a gradient estimator; the guides `autoStructured` (follows the model's graph), `laplaceInitialParams`,
+`amortisedGuide` (with `amortisationGap`), `autoFlowNormal` (planar, radial and coupling flows) and `autoMixtureNormal`;
+natural-gradient SVI (`conjugateNaturalGradientAlgorithm`, `gaussianNaturalGradientAlgorithm`); Pathfinder
+(`pathfinderAlgorithm`, a BlackJAX moments fixture); and ADVI's step-size sequence in `omai-engine/optim` (`scaleByAdvi`,
+the `advi` optimiser, the `adviDecay` schedule, all three in the option tables).
+
+SMC, particle MCMC, nested sampling and evidence: `sampling/pmcmc.ts` (`pseudoMarginalMetropolis`), `sampling/nested.ts`
+(`nestedAlgorithm`, `nestedSampler`, evidence with an error bar), `sampling/evidence.ts` (`bridgeSampling`,
+`thermodynamicIntegration`, `steppingStone`, and `harmonicMeanEvidence`, which refuses by default),
+`dynamics/filtering/guided.ts` (`gaussianGuidedModel`, guided proposals through `ParticleModel.guide`, with unbiased
+evidence) and `dynamics/filtering/pmcmc.ts` (`pmmhKernel`, `conditionalSmc` with ancestor sampling, `particleGibbs`).
+
+Message passing (`omai-engine/message-passing`, a new domain): a factor-graph engine over exponential-family messages
+(Gaussian, gamma, beta, Bernoulli, normal-gamma, multivariate Gaussian, discrete, Dirichlet) with 35 factor operators
+(affine, truncation and probit, logistic, conjugate, discrete tables, gates, mixtures, products, `max` and `min`, regression
+rows and plates, the spin site), and EP, VMP and BP as named settings of one steppable, resumable algorithm
+(`epMethod`, `vmpMethod`, `bpMethod`: projection, schedule and its granularity, damping and the improper-message policy
+with counts as slots). Variations, each its own algorithm and method: power and fractional EP, alpha-divergence message
+passing, numerical projections (Gauss-Hermite, unscented, Laplace and sample rules, panelled quadrature for numeric
+factors), stochastic and averaged EP, region graphs and generalised belief propagation (Bethe, Kikuchi, junction regions),
+expectation consistent inference (adaptive TAP) and approximate message passing with its state evolution. Anytime runs
+with periodic marginal snapshots. It reproduces the existing `pgm` BP, EP and VMP, the `gp` probit EP, TrueSkill and the
+Bayesian Gaussian mixture, matches numerical integration for each operator, and is exact on Gaussian trees.
+
+Validation and benchmarks (`omai-engine/probprog/validation`, `omai-engine/probprog/models`, `make probprog-validate`):
+- A validation kernel: `gridPosterior` (evidence and marginals to quadrature), closed-form conjugate oracles, `agree`
+  (error in sds and Monte Carlo standard errors, sd ratio, Kolmogorov, Wasserstein and KL against an oracle),
+  simulation-based calibration (`sbc`), Geweke's joint distribution test, and a campaign runner.
+- Eighteen benchmark models as specs with truth, tags, references, a seeded generator and method plans (conjugate
+  trio, logistic, probit, Poisson and negative binomial regression, eight schools in both parametrisations, a Gaussian
+  mixture with and without label switching, Neal's funnel in both parametrisations, Haario's banana, a two-mode target,
+  radon, a three-player TrueSkill, an AR(1) state space), `benchmarkModels`, `whereBenchmarks`.
+- `make probprog-validate` (`scripts/probprog-validate.ts`, not part of `make verify` or `make check`) runs the campaigns and
+  writes the committed tables of `docs/probprog/results/`: calibration of NUTS and SVI and of two deliberately wrong guides
+  (which must fail), agreement with the grid, the funnel under non-centring, Geweke tests, a campaign per benchmark model,
+  the evidence estimators against closed forms, nested sampling's error bar, particle filters and particle MCMC against
+  the Kalman filter, the structure report of every model, and the variational methods against the truths. A compiled
+  evaluation plan was measured and not built (`results/eval-overhead.md`).
+
+Engine fixes:
+- `potentialEnergy`: a point where the program builds a distribution that refuses its parameter (an overflowing scale or
+  rate) has log density -Infinity instead of throwing out of the sampler (`invalidIsImpossible`, default on).
+- Gibbs: a site constrained beyond its family's support (`ordered`, a bound on a normal) is updated by slice steps on its
+  own scale and starts inside its support (the ordered mixture now agrees with its truth).
+- SVI and the guides: a vector support over a plated scalar site (ordered means) is the site's event, so the guides draw it
+  outside the plate and SVI runs on the ordered mixture.
+- Laplace: `laplaceAt` is the curvature stage, and a mode that is not a point of the posterior (a scale run off to the
+  boundary, an ill-conditioned or non-finite curvature) is reported with the coordinates that ran off.
+- A posterior summary skips a listed site the posterior holds nothing of; the samplers' and approximations' spec checks
+  accept a model with no observed node (a density) and say so.
+- `numerics/special`: `ndtr`, `erf` and `erfc` no longer give NaN at large arguments (0 times Infinity in `expMinusSquare`).
+
+Rendering and exposition (omai-engine, omai-render):
+- `modelRun` (beliefs, messages and convergence of inference on a model graph, from a tape or anytime snapshots,
+  `modelRunFromTape`) and `chainDiagnostics` (trace, rank and R-hat and ESS data of chains, `chainsFromTape`) exposition
+  records, with the views `modelRunScene` and friends, `traceView` and `rankView`, the React `ModelRunPlayer` and
+  `ChainDiagnosticsView`, and standard views in the registry.
+- Model graphs as plate diagrams: `modelGraph` and `diagram` draw plates that cross (nodes over `[student]`, `[exam]` and
+  `[student, exam]`), write sizes as `N = 40`, draw data as dots and unroll vector sites; `StructureNode.groups` and
+  `StructureGroup.intersection` in the `Structure` record; `DiagramOptions.decorate` draws a glyph inside each node;
+  overlay edges carry a `label`; `StructureView` scales its diagram down to a narrow container. Gallery recipe
+  `diagrams/16-model-inference`.
+- `apps/pocs` has groups (`src/groups.ts`, a section per group on the index, a page per group); the existing pocs joined
+  `probabilistic-programming`, `structured-prediction`, `models` and `graphics-and-fields`. No new probabilistic-programming pocs
+  yet.
+
+Oracle: `pyro-ppl` joined the `oracle-prob` group (the `lift` and `reparam` goldens use it); new fixtures for `reparam`,
+`lift`, Pathfinder (BlackJAX moments), the grid posterior and the exact conjugate oracles.
+
+Docs: `docs/probprog/` (the plan with its status, the inventory, the survey, the algorithm repertoire, the verification
+notes and the result tables), `docs/structure.md` sections 4.32 and 4.32a.
+
+Known limits:
+- EP, VMP and BP are tested against references (the grid for the probit regression, `pgm`, `gp`, TrueSkill, the Bayesian
+  mixture), but the benchmark campaigns run NUTS, tempered SMC, importance sampling, Laplace, SVI, Gibbs, the exact methods
+  and the particle filter, not message passing.
+- VMP has no rule for the hard comparison `greater-than`, `max` and `min` are expectation propagation only, and
+  `gaussian-gamma-precision` has no EP rule; `check` says so per model. Region graphs and generalised BP are for discrete
+  models; AMP is for linear models with iid priors; expectation consistent inference is for a Gaussian times
+  one-dimensional sites.
+- State-space models are programs with a `markov` loop (and particle MCMC takes a `StateSpaceFamily`): the spec has no
+  recurrence node yet.
+- Particle MCMC, nested sampling, the evidence methods and the state-space filter are not in `methodKinds` (they take
+  inputs other than a model).
+- Statistical limits recorded in the tables: NUTS diverges on the centred funnel and centred eight schools; a Gaussian guide
+  misses the banana and the second mode; Laplace has no mode at tau = 0 of a centred hierarchy; on the logistic regression
+  the variational plans are reported, not asserted (the structured guide's means are several Monte Carlo standard errors off,
+  sticking the landing's sds are 15 to 20 percent small).
+- No browser timings (everything measured in Node); Pyro's MCMC page and some other web claims of the plan are unverified
+  (`docs/probprog/verification.md`).
 
 Fixes (omai-render), from the notes site's 0.1.12 report:
 - A `Chart` no longer makes ECharts warn "has been disposed" when it unmounts (its event handlers were unbound after the
