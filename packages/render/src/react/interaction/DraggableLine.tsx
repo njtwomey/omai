@@ -4,8 +4,9 @@
  */
 
 import { type KeyboardEvent, type ReactNode, useState } from 'react'
-import { Handle, type HandleShape } from './Handle.tsx'
+import { Handle, type HandleFill, type HandleShape, handleFillOf } from './Handle.tsx'
 import { useOverlay } from './InteractionOverlay.tsx'
+import { FOCUS_COLOUR, useFocusRing } from './useFocusRing.ts'
 
 /** The shapes of a line's handle: a `bar` across the line (the default), a `square`, a `circle` or a `diamond`. */
 export type LineHandleShape = HandleShape
@@ -21,8 +22,14 @@ export interface DraggableLineProps {
   readonly span?: readonly [number, number]
   readonly min?: number
   readonly max?: number
-  /** Round values to this step (also the arrow keys' step; Shift moves ten steps). */
+  /** Round values to this step (also the arrow keys' step unless `keyStep` is given; Shift moves ten steps). */
   readonly step?: number
+  /**
+   * The arrow keys' step, apart from the drag snap `step` (Shift moves ten steps): drag on a coarse grid and nudge
+   * finely. A nudge by `keyStep` is not rounded to `step` (it still stays inside `min` and `max`). Without it the
+   * arrows use `step`, or a hundredth of the range, or 0.1.
+   */
+  readonly keyStep?: number
   /** Shown by the handle (a vertical line's label flips to the left of the line when it would run off the overlay). */
   readonly label?: string
   /** A CSS colour or `var(--wb-…)` token (default the foreground). */
@@ -42,12 +49,19 @@ export interface DraggableLineProps {
   readonly handleShape?: LineHandleShape
   /** The handle's size in pixels, in place of `handle.size` when both are given (default 10; see `handle`). */
   readonly handleSize?: number
+  /**
+   * What the handle is filled with: `bg` (the page colour, the default; the same as `handle.fill: 'hollow'`), `solid`
+   * (the line's colour; the same as `handle.fill: 'solid'`) or any CSS colour. It wins over `handle.fill` when both are given.
+   */
+  readonly handleFill?: HandleFill
 }
 
 /**
  * A reference line on a figure that the reader drags, inside an `InteractionOverlay`: a threshold, a cut-off, a level.
  * Bind `value` and `onChange` to the same state as a control (a `NumberField`), and the line and the control move
- * together whichever one is used. It is focusable, and the arrow keys nudge it by `step`.
+ * together whichever one is used. It is focusable, and the arrow keys nudge it by `keyStep` (Shift: ten times), which
+ * is `step` unless given. A focused line shows a ring in the accent colour (`var(--wb-accent)`) when focus came from
+ * the keyboard, not from a pointer press. `handleFill` fills the handle (`solid`, `bg` or any CSS colour).
  *
  * @param props - The axis, value, change handler and bounds.
  * @returns The line, its handle and its hit area.
@@ -63,11 +77,11 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
   const { axis, value, onChange, span, min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY } = props
   const { projection, width, height, dataOf } = useOverlay()
   const [dragging, setDragging] = useState(false)
+  const ring = useFocusRing<'line'>()
   const colour = props.colour ?? 'var(--wb-fg)'
   const vertical = axis === 'x'
-  const snap = (v: number): number => {
-    const s = props.step
-    const stepped = s === undefined || s <= 0 ? v : Math.round(v / s) * s
+  const snap = (v: number, step = props.step): number => {
+    const stepped = step === undefined || step <= 0 ? v : Math.round(v / step) * step
     return Math.min(max, Math.max(min, Number(stepped.toPrecision(12))))
   }
   // The line's ends in pixels: across the spanned range of the other axis, or the whole overlay.
@@ -94,12 +108,15 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
     if (Number.isFinite(v)) onChange(snap(v))
   }
   const nudge = (e: KeyboardEvent<SVGGElement>): void => {
-    const s = (props.step ?? (Number.isFinite(max - min) ? (max - min) / 100 : 0.1)) * (e.shiftKey ? 10 : 1)
+    const s =
+      (props.keyStep ?? props.step ?? (Number.isFinite(max - min) ? (max - min) / 100 : 0.1)) * (e.shiftKey ? 10 : 1)
     const keys = vertical ? { ArrowLeft: -1, ArrowRight: 1 } : { ArrowDown: -1, ArrowUp: 1 }
     const dir = (keys as Record<string, number>)[e.key]
     if (dir === undefined) return
     e.preventDefault()
-    onChange(snap(value + dir * s))
+    ring.reveal('line')
+    // A `keyStep` of its own is not rounded to the drag snap.
+    onChange(snap(value + dir * s, props.keyStep === undefined ? props.step : 0))
   }
   // A vertical line's label sits to the right of its handle, and flips to the left when it would run off the overlay.
   const labelWidth = (props.label?.length ?? 0) * 6.6 + 8
@@ -114,8 +131,10 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
       aria-valuemax={Number.isFinite(max) ? max : undefined}
       aria-orientation={vertical ? 'horizontal' : 'vertical'}
       onKeyDown={nudge}
+      {...ring.bind('line')}
       style={{ cursor: vertical ? 'ew-resize' : 'ns-resize', outline: 'none' }}
       onPointerDown={(e) => {
+        ring.press()
         e.currentTarget.setPointerCapture(e.pointerId)
         setDragging(true)
         move(e)
@@ -123,11 +142,30 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
       onPointerMove={(e) => {
         if (dragging) move(e)
       }}
-      onPointerUp={() => setDragging(false)}
-      onPointerCancel={() => setDragging(false)}
+      onPointerUp={() => {
+        setDragging(false)
+        ring.release()
+      }}
+      onPointerCancel={() => {
+        setDragging(false)
+        ring.release()
+      }}
     >
       {/* A wide transparent hit area, so the line is easy to grab. */}
       <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="transparent" strokeWidth={14} />
+      {ring.focused === 'line' && (
+        <line
+          x1={a[0]}
+          y1={a[1]}
+          x2={b[0]}
+          y2={b[1]}
+          stroke={FOCUS_COLOUR}
+          strokeWidth={5}
+          strokeOpacity={0.55}
+          pointerEvents="none"
+          data-focus-ring="true"
+        />
+      )}
       <line
         x1={a[0]}
         y1={a[1]}
@@ -142,8 +180,9 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
           shape={props.handleShape ?? props.handle?.shape ?? 'bar'}
           size={props.handleSize ?? props.handle?.size ?? 10}
           vertical={vertical}
-          fill={props.handle?.fill === 'solid' ? colour : 'var(--wb-bg)'}
+          fill={handleFillOf(props.handleFill ?? (props.handle?.fill === 'solid' ? 'solid' : 'bg'), colour)}
           stroke={colour}
+          ring={ring.focused === 'line'}
         />
         {props.label !== undefined && (
           <text

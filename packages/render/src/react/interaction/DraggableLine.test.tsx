@@ -1,8 +1,11 @@
 import { renderToString } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { type FoundElement, invoke, mountElement, resetGlobals } from '../_harness.tsx'
 import { DraggableLine, type DraggableLineProps } from './DraggableLine.tsx'
 import { InteractionOverlay } from './InteractionOverlay.tsx'
 import { linearProjection } from './projection.ts'
+
+afterEach(resetGlobals)
 
 const projection = linearProjection({ x: [0, 10], y: [0, 1], width: 200, height: 100 })
 const html = (props: Partial<DraggableLineProps> = {}): string =>
@@ -84,5 +87,100 @@ describe('DraggableLine label', () => {
       </InteractionOverlay>,
     )
     expect(mid).toMatch(/<text[^>]*text-anchor="start"/)
+  })
+})
+
+describe('DraggableLine handleFill', () => {
+  const handleFill = (props: Partial<DraggableLineProps>): string | undefined =>
+    /<rect[^>]*x="-5"[^>]*fill="([^"]*)"|<rect[^>]*fill="([^"]*)"[^>]*x="-5"/.exec(
+      html({ colour: 'red', ...props }),
+    )?.[1]
+
+  it('is the page colour by default and with `bg`, the colour with `solid`, or any CSS colour', () => {
+    expect(handleFill({})).toBe('var(--wb-bg)')
+    expect(handleFill({ handleFill: 'bg' })).toBe('var(--wb-bg)')
+    expect(handleFill({ handleFill: 'solid' })).toBe('red')
+    expect(handleFill({ handleFill: '#fc0' })).toBe('#fc0')
+  })
+
+  it('keeps `handle.fill` and lets the flat prop win over it', () => {
+    expect(handleFill({ handle: { fill: 'solid' } })).toBe('red')
+    expect(handleFill({ handle: { fill: 'hollow' } })).toBe('var(--wb-bg)')
+    expect(handleFill({ handle: { fill: 'solid' }, handleFill: 'bg' })).toBe('var(--wb-bg)')
+    expect(handleFill({ handle: { fill: 'hollow' }, handleFill: '#fc0' })).toBe('#fc0')
+  })
+})
+
+describe('DraggableLine focus ring and keyStep', () => {
+  const rings = (m: Awaited<ReturnType<typeof mountElement>>): FoundElement[] =>
+    m.elements().filter((e) => e.props['data-focus-ring'] !== undefined)
+  const slider = (m: Awaited<ReturnType<typeof mountElement>>): FoundElement => {
+    const found = m.elements().find((e) => e.props['role'] === 'slider')
+    if (found === undefined) throw new Error('no slider')
+    return found
+  }
+  const key = (k: string, shiftKey = false): object => ({ key: k, shiftKey, preventDefault: () => undefined })
+  const at = { clientX: 0, clientY: 0, pointerId: 1, currentTarget: { setPointerCapture: () => undefined } }
+  const host = (value: number, props: Partial<DraggableLineProps>, got: number[]): ReturnType<typeof mountElement> =>
+    mountElement(
+      <InteractionOverlay projection={projection} width={200} height={100}>
+        <DraggableLine
+          axis="x"
+          value={value}
+          onChange={(v) => {
+            got.push(v)
+          }}
+          {...props}
+        />
+      </InteractionOverlay>,
+    )
+
+  it('shows a ring on the line and its handle when focus comes from the keyboard, and not after a pointer press', async () => {
+    const m = await host(5, {}, [])
+    expect(rings(m)).toHaveLength(0)
+    await invoke(slider(m), 'onPointerDown', at)
+    await invoke(slider(m), 'onFocus')
+    await invoke(slider(m), 'onPointerUp', at)
+    expect(rings(m)).toHaveLength(0)
+    await invoke(slider(m), 'onBlur')
+    await invoke(slider(m), 'onFocus')
+    // The line's own ring and the handle's.
+    expect(rings(m)).toHaveLength(2)
+    expect(rings(m).every((e) => String(e.props['stroke']).includes('--wb-accent'))).toBe(true)
+    await invoke(slider(m), 'onBlur')
+    expect(rings(m)).toHaveLength(0)
+    await m.unmount()
+  })
+
+  it('shows the ring when an arrow key is pressed on a line the pointer focused', async () => {
+    const m = await host(5, {}, [])
+    await invoke(slider(m), 'onPointerDown', at)
+    await invoke(slider(m), 'onFocus')
+    await invoke(slider(m), 'onKeyDown', key('ArrowRight'))
+    expect(rings(m)).toHaveLength(2)
+    await m.unmount()
+  })
+
+  it('nudges by keyStep, apart from the snap step, Shift ten times', async () => {
+    const got: number[] = []
+    const m = await host(5, { step: 1, keyStep: 0.1 }, got)
+    await invoke(slider(m), 'onKeyDown', key('ArrowRight'))
+    await invoke(slider(m), 'onKeyDown', key('ArrowLeft', true))
+    expect(got).toEqual([5.1, 4])
+    await m.unmount()
+  })
+
+  it('nudges by step when keyStep is not given, and respects the bounds', async () => {
+    const got: number[] = []
+    const m = await host(5.3, { step: 0.5, max: 6 }, got)
+    await invoke(slider(m), 'onKeyDown', key('ArrowRight'))
+    await invoke(slider(m), 'onKeyDown', key('ArrowRight', true))
+    expect(got).toEqual([6, 6])
+    await m.unmount()
+    const keyed: number[] = []
+    const k = await host(5, { keyStep: 0.4, max: 5.5 }, keyed)
+    await invoke(slider(k), 'onKeyDown', key('ArrowRight', true))
+    expect(keyed).toEqual([5.5])
+    await k.unmount()
   })
 })
