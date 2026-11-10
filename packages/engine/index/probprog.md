@@ -28,7 +28,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 
 - structure `method.ts` (file): InferenceMethod: knobs, typed tape, check, budget and anytime snapshots, the shared convention. `src/lib/probprog/inference/method.ts:1` `omai-engine/probprog/inference`
 
-- function `defineKernel`: Define your own sampler on the handler layer in a few lines. `src/lib/probprog/inference/kernel.ts:180` `omai-engine/probprog/inference`
+- function `defineKernel`: Define your own sampler on the handler layer in a few lines. `src/lib/probprog/inference/kernel.ts:188` `omai-engine/probprog/inference`
 - function `inferenceMethods`: The methods an app offers on its registered models, named kind/model, for a worker. `src/lib/probprog/inference/models.ts:143` `omai-engine/probprog/inference`
 - function `modelRegistry`: Models by name for a worker: `modelRegistry({ radon: { definition, data } })`. `src/lib/probprog/inference/models.ts:67` `omai-engine/probprog/inference`
 

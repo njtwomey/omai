@@ -14,7 +14,7 @@ import { handle, type ProgramTrace, type SampleSite, seed, substitute, traceOf }
 import type { Message, Model } from './primitives.ts'
 
 /** Which latent sites an operation applies to: their names, or a predicate on the recorded site. */
-export type Selection = readonly string[] | ((site: SampleSite) => boolean)
+export type SiteSelection = readonly string[] | ((site: SampleSite) => boolean)
 
 /**
  * Whether a recorded site is in a selection.
@@ -31,7 +31,7 @@ export type Selection = readonly string[] | ((site: SampleSite) => boolean)
  * site?.type === 'sample' && inSelection(['x'], site) // => true
  * ```
  */
-export function inSelection(selection: Selection, site: SampleSite): boolean {
+export function inSelection(selection: SiteSelection, site: SampleSite): boolean {
   return typeof selection === 'function' ? selection(site) : selection.includes(site.name)
 }
 
@@ -260,7 +260,7 @@ export function regenerate<D = void>(
   model: Model<D>,
   data: D,
   trace: ProgramTrace,
-  selection: Selection,
+  selection: SiteSelection,
   key: Key,
 ): Changed {
   const selected = (s: SampleSite): boolean => !s.isObserved && inSelection(selection, s)

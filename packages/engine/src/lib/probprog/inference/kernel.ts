@@ -14,7 +14,15 @@ import { add, item, stack, sub, sum, type Tensor, type TensorLike, type Value } 
 import { potentialEnergy, traceLogJoint } from '../density.ts'
 import { isDiscrete, type ProgramTrace, seed, substitute, traceOf } from '../handlers.ts'
 import type { Model } from '../primitives.ts'
-import { assess, type Changed, latentSites, latentValues, regenerate, type Selection, update } from '../trace-ops.ts'
+import {
+  assess,
+  type Changed,
+  latentSites,
+  latentValues,
+  regenerate,
+  type SiteSelection,
+  update,
+} from '../trace-ops.ts'
 
 /** What a kernel's `step` is given about the program it moves. */
 export interface KernelTarget<D> {
@@ -29,7 +37,7 @@ export interface KernelTarget<D> {
   /** The log density of a full assignment of the latent sites. */
   assess(values: Readonly<Record<string, TensorLike>>): number
   /** Redraw selected latent sites from the program given the rest; the weight is the Metropolis-Hastings log ratio. */
-  regenerate(trace: ProgramTrace, selection: Selection, key: Key): Changed
+  regenerate(trace: ProgramTrace, selection: SiteSelection, key: Key): Changed
   /** Change some values and rerun; the weight is the log ratio of new to old density. */
   update(trace: ProgramTrace, changes: Readonly<Record<string, TensorLike>>, key?: Key): Changed
 }
