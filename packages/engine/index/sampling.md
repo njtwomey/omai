@@ -2,27 +2,33 @@
 
 # sampling
 
-Monte Carlo, BlackJAX and ArviZ style: log-density targets, Metropolis, Hamiltonian (HMC, NUTS), Langevin, Gibbs and slice kernels, importance sampling, sequential Monte Carlo, rejection and exact samplers, chains, and convergence diagnostics (R-hat, effective sample size). The hamiltonian and diagnostics folders are part of this entry point.
+Monte Carlo, BlackJAX and ArviZ style: log-density targets, Metropolis, Barker, Hamiltonian (HMC, NUTS, ChEES-HMC), Langevin (MALA, SGLD, SGHMC), microcanonical Langevin, Gibbs, slice and ensemble (stretch move, ensemble slice) kernels, parallel tempering over any kernel, importance sampling, sequential Monte Carlo, rejection and exact samplers, chains, and convergence diagnostics (R-hat, effective sample size). The hamiltonian and diagnostics folders are part of this entry point.
 
 - structure `target.ts` (file): Log-density targets that every sampler runs on. `src/lib/sampling/target.ts:1` `omai-engine/sampling`
 
 - module `importance.ts` (file): Importance sampling: weights, effective sample size, estimates with errors, PSIS diagnostics. `src/lib/sampling/importance.ts:1` `omai-engine/sampling`
 
+- function `barkerKernel`: Barker's gradient-skewed Metropolis-Hastings kernel, robust to the step size. `src/lib/sampling/barker.ts:58` `omai-engine/sampling`
 - function `bridgeSampling`: Bridge sampling evidence from posterior draws and a fitted Gaussian proposal. `src/lib/sampling/evidence.ts:267` `omai-engine/sampling`
+- function `ensembleSliceKernel`: Ensemble slice sampler: slice steps along directions built from the other walkers. `src/lib/sampling/ensemble.ts:214` `omai-engine/sampling`
 - function `importanceEss`: Kish's effective sample size of importance weights. `src/lib/sampling/importance.ts:57` `omai-engine/sampling`
 - function `importanceEstimate`: Unbiased importance sampling estimate with its standard error. `src/lib/sampling/importance.ts:129` `omai-engine/sampling`
 - function `importanceSampling`: Importance sampling from a proposal: weighted draws, evidence and ESS. `src/lib/sampling/importance.ts:211` `omai-engine/sampling`
 - function `logEvidence`: Log normalising constant from importance weights, with standard error. `src/lib/sampling/importance.ts:163` `omai-engine/sampling`
+- function `mclmcKernel`: Microcanonical Langevin Monte Carlo kernel: isokinetic dynamics, no accept step. `src/lib/sampling/mclmc.ts:119` `omai-engine/sampling`
 - function `nestedSampler`: Nested sampling: log evidence with error bar and weighted posterior sample. `src/lib/sampling/nested.ts:446` `omai-engine/sampling`
 - function `normaliseLogWeights`: Normalise log importance weights stably (a softmax). `src/lib/sampling/importance.ts:37` `omai-engine/sampling`
+- function `parallelTemperingKernel`: Parallel tempering (replica exchange) over any kernel, with swap statistics. `src/lib/sampling/tempering.ts:145` `omai-engine/sampling`
 - function `paretoKHat`: Pareto k-hat tail diagnostic of draws. `src/lib/sampling/importance.ts:416` `omai-engine/sampling`
 - function `paretoSmoothedWeights`: Pareto-smoothed importance weights (PSIS, as ArviZ). `src/lib/sampling/importance.ts:367` `omai-engine/sampling`
 - function `pseudoMarginalMetropolis`: Pseudo-marginal random-walk Metropolis on a noisy unbiased likelihood estimate. `src/lib/sampling/pmcmc.ts:61` `omai-engine/sampling`
 - function `randomWalkMetropolis`: Random-walk Metropolis kernel; Langevin kernels sit in langevin.ts. `src/lib/sampling/metropolis.ts:144` `omai-engine/sampling`
 - function `sampleChains`: Run several chains of any MCMC kernel. `src/lib/sampling/chains.ts:423` `omai-engine/sampling`
 - function `selfNormalisedEstimate`: Self-normalised importance estimate with delta-method standard error and ESS. `src/lib/sampling/importance.ts:82` `omai-engine/sampling`
+- function `sghmcKernel`: Stochastic-gradient Hamiltonian Monte Carlo kernel with friction, for minibatch gradients. `src/lib/sampling/sghmc.ts:60` `omai-engine/sampling`
 - function `smcSampler`: Sequential Monte Carlo sampler with adaptive tempering. `src/lib/sampling/smc.ts:541` `omai-engine/sampling`
 - function `steppingStone`: Stepping-stone estimator of the evidence over a ladder of power posteriors. `src/lib/sampling/evidence.ts:411` `omai-engine/sampling`
+- function `stretchMoveKernel`: Affine-invariant ensemble sampler (stretch and differential moves), gradient-free. `src/lib/sampling/ensemble.ts:108` `omai-engine/sampling`
 - function `thermodynamicIntegration`: Thermodynamic integration of the mean log likelihood over a ladder of power posteriors. `src/lib/sampling/evidence.ts:375` `omai-engine/sampling`
 - function `weightDiagnostics`: Diagnostics of importance weights: ESS, largest weight, k-hat and its threshold. `src/lib/sampling/importance.ts:474` `omai-engine/sampling`
 
@@ -42,5 +48,6 @@ MCMC diagnostics, as ArviZ, part of `omai-engine/sampling`: autocorrelation, R-h
 
 Hamiltonian Monte Carlo, BlackJAX and Stan style, part of `omai-engine/sampling`: symplectic integrators and Euclidean metrics, the HMC, NUTS and Riemannian HMC kernels, and Stan's windowed adaptation of step size and mass matrix, with ready-made multi-chain runners.
 
+- function `cheesKernel`: Jittered HMC for an ensemble of chains with a shared step size and trajectory length. `src/lib/sampling/hamiltonian/chees.ts:94` `omai-engine/sampling`
 - function `hmc`: Hamiltonian Monte Carlo chains. `src/lib/sampling/hamiltonian/hmc.ts:178` `omai-engine/sampling`
 - function `nuts`: No-U-Turn sampler chains. `src/lib/sampling/hamiltonian/nuts.ts:265` `omai-engine/sampling`

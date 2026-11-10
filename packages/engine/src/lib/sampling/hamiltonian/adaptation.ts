@@ -21,6 +21,7 @@ import { squareMatrix, vectorOf } from '../_linear.ts'
 import { welfordCovariance, welfordInit, welfordUpdate } from '../_mcmc.ts'
 import { type AdaptPath, chainFromJson, chainToJson } from '../adaptation-contract.ts'
 import type { Adaptation, MCMCKernel, MCMCState, TransitionInfo, Warmup } from '../chains.ts'
+import { lowRankInverseMassMatrix } from './low-rank.ts'
 
 /** The state of Nesterov's dual averaging of log step sizes (BlackJAX `DualAveragingState`). */
 export interface DualAveragingState {
@@ -405,6 +406,11 @@ export interface HamiltonianParameters {
 export interface WindowAdaptationOptions extends WindowScheduleOptions, Omit<DualAveragingOptions, 'targetAcceptance'> {
   /** Adapt a dense mass matrix (default false: diagonal). */
   readonly dense?: boolean
+  /**
+   * With `dense`, keep only this many directions of the learned correlation structure (a low-rank-plus-diagonal estimate, see
+   * `lowRankInverseMassMatrix`); 0 or absent keeps the full covariance.
+   */
+  readonly lowRank?: number
   /** The acceptance rate dual averaging aims for (default 0.8). */
   readonly targetAcceptance?: number
   /** The starting step size (default 1). */
@@ -553,6 +559,15 @@ export function windowAdaptationAlgorithm<S extends MCMCState>(
       let next = stage.slow ? massMatrixUpdate(s.mm, tr.state.position) : s.mm
       if (stage.windowEnd) {
         next = massMatrixFinal(next, regularisation)
+        if (dense && (options.lowRank ?? 0) > 0)
+          next = {
+            ...next,
+            inverseMassMatrix: lowRankInverseMassMatrix(
+              next.inverseMassMatrix,
+              dim,
+              Math.min(dim, options.lowRank ?? 0),
+            ),
+          }
         da = dualAveragingInit(Math.exp(clampLog(da.logStepSizeAvg)))
       }
       const window = stage.slow ? s.windows + 1 : 0
