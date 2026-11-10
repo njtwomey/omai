@@ -361,6 +361,25 @@ export function featureIndex(
 }
 
 /**
+ * Feature strings as an attribute record counting their firings (the observation of one item or edge of a CRF): a
+ * feature that fires twice has value 2.
+ *
+ * @param features - The feature strings of one position.
+ * @returns The record.
+ * @concept crf-features
+ * @example
+ * ```ts
+ * import { featureRecord } from 'omai-engine/text'
+ * featureRecord(['a', 'b', 'a']) // => { a: 2, b: 1 }
+ * ```
+ */
+export function featureRecord(features: readonly string[]): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const f of features) out[f] = (out[f] ?? 0) + 1
+  return out
+}
+
+/**
  * CRF++'s weight offsets: each kept feature, in index order, owns one weight per label if it is a unigram feature
  * (its string starts with `U`) or one per label pair if it is a bigram feature (`B`); the weight of feature f with
  * label y (or labels y', y) is at offset(f) + y (or offset(f) + y' L + y).

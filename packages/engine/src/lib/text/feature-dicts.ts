@@ -165,6 +165,30 @@ export function dictInverse(
   )
 }
 
+/**
+ * The column and sign of a feature name under the hashing trick: `|h| mod width` of the signed 32-bit MurmurHash3 `h`,
+ * with sign -1 when `h < 0` (unless `alternateSign` is off), as sklearn's FeatureHasher.
+ *
+ * @param name - The feature name.
+ * @param width - The number of columns.
+ * @param alternateSign - Flip the sign for negative hashes (default true).
+ * @returns The column and the sign.
+ * @concept feature-hashing
+ * @example
+ * ```ts
+ * import { hashedColumn } from 'omai-engine/text'
+ * [hashedColumn('foo', 4), hashedColumn('bar', 4)] // => [{ column: 0, sign: -1 }, { column: 1, sign: 1 }]
+ * ```
+ */
+export function hashedColumn(
+  name: string,
+  width: number,
+  alternateSign = true,
+): { readonly column: number; readonly sign: 1 | -1 } {
+  const h = murmurhash3(name)
+  return { column: Math.abs(h) % width, sign: !alternateSign || h >= 0 ? 1 : -1 }
+}
+
 /** Options of {@link featureHash}. */
 export interface FeatureHasherOptions {
   /** The number of columns (default 2^20). */
@@ -219,10 +243,10 @@ export function featureHash(samples: readonly HashedSample[], options: FeatureHa
       const name = typeof raw === 'string' ? `${feature}=${raw}` : feature
       const value = typeof raw === 'string' ? 1 : typeof raw === 'boolean' ? (raw ? 1 : 0) : raw
       if (value === 0) continue
-      const h = murmurhash3(name)
+      const { column, sign } = hashedColumn(name, width, options.alternateSign !== false)
       rows.push(i)
-      cols.push(Math.abs(h) % width)
-      values.push(options.alternateSign === false || h >= 0 ? value : -value)
+      cols.push(column)
+      values.push(sign * value)
     }
   return fromCoo(rows, cols, values, [samples.length, width])
 }

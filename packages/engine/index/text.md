@@ -9,7 +9,7 @@ Text processing: normalisation, tokenisation, stemming, vocabularies, subword mo
 
 - function `bm25`: BM25 ranking index. `src/lib/text/features.ts:460` `omai-engine/text`
 - function `dictVectorize`: Vectorise records of numbers and categories: numbers as columns, strings one-hot. `src/lib/text/feature-dicts.ts:91` `omai-engine/text`
-- function `featureHash`: Hash records of features into a fixed-width sparse matrix. `src/lib/text/feature-dicts.ts:210` `omai-engine/text`
+- function `featureHash`: Hash records of features into a fixed-width sparse matrix. `src/lib/text/feature-dicts.ts:234` `omai-engine/text`
 - function `tfidfVectorize`: TF-IDF document vectors; count and hashing vectorisers beside it. `src/lib/text/features.ts:343` `omai-engine/text`
 
 ## text/subword

@@ -8,13 +8,7 @@
 import { type Json, OmaiError } from '../../base/index.ts'
 import type { GradientTransformation } from '../../optim/index.ts'
 import { adam } from '../../optim/index.ts'
-import {
-  type CrfppTemplate,
-  crfppFeatures,
-  featureIndex,
-  type ItemAttributes,
-  type TokenTable,
-} from '../../text/index.ts'
+import { featureIndex, type ItemAttributes } from '../../text/index.ts'
 import { type Algorithm, type RunStatus, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'
 import { type DescentState, gradientDescent } from '../_descent.ts'
 import { type DiscreteVariable, type Factor, factorMarginal, logFactor } from '../factor.ts'
@@ -42,11 +36,36 @@ export interface CrfObservation {
 /** The input of a linear-chain CRF: item attributes, or item and edge attributes. */
 export type CrfInput = readonly ItemFeatures[] | CrfObservation
 
-function unigramOf(x: CrfInput): readonly ItemFeatures[] {
+/**
+ * The item attributes of a CRF input.
+ *
+ * @param x - The input: item attributes, or item and edge attributes.
+ * @returns The attributes of each item.
+ * @concept crf-features
+ * @example
+ * ```ts
+ * import { crfUnigrams } from 'omai-engine/pgm'
+ * crfUnigrams({ unigram: [{ a: 1 }], bigram: [{}] }) // => [{ a: 1 }]
+ * ```
+ */
+export function crfUnigrams(x: CrfInput): readonly ItemFeatures[] {
   return 'unigram' in x ? x.unigram : (x as readonly ItemFeatures[])
 }
 
-function bigramOf(x: CrfInput): readonly ItemFeatures[] | undefined {
+/**
+ * The edge attributes of a CRF input (`bigram[t]` belongs to the edge into item t), or undefined for plain item
+ * attributes.
+ *
+ * @param x - The input: item attributes, or item and edge attributes.
+ * @returns The attributes of each edge, if the input has them.
+ * @concept crf-features
+ * @example
+ * ```ts
+ * import { crfBigrams } from 'omai-engine/pgm'
+ * crfBigrams([{ a: 1 }]) // => undefined
+ * ```
+ */
+export function crfBigrams(x: CrfInput): readonly ItemFeatures[] | undefined {
   return 'bigram' in x ? x.bigram : undefined
 }
 
@@ -146,9 +165,20 @@ export function linearChainCrf(
   }
 }
 
-/** Attribute indices of a model (attributes outside the vocabulary are ignored, as at test time in CRFsuite). */
+const lookups = new WeakMap<readonly string[], Map<string, number>>()
+
+/**
+ * Attribute indices of a model (attributes outside the vocabulary are ignored, as at test time in CRFsuite). Built once
+ * per vocabulary array and kept while it lives: models of one training run share their vocabularies, so an objective
+ * evaluation does not rebuild the table for every sequence.
+ */
 function lookup(names: readonly string[]): Map<string, number> {
-  return new Map(names.map((a, i) => [a, i]))
+  let index = lookups.get(names)
+  if (index === undefined) {
+    index = new Map(names.map((a, i) => [a, i]))
+    lookups.set(names, index)
+  }
+  return index
 }
 
 /** The log transition matrix into item t (t >= 1): plain transitions plus the bigram attributes of the edge. */
@@ -186,7 +216,7 @@ function edgeMatrix(crf: LinearChainCrf, edge: ItemFeatures | undefined, index: 
  */
 export function crfChain(crf: LinearChainCrf, x: CrfInput): ChainModel {
   const K = crf.labels.length
-  const items = unigramOf(x)
+  const items = crfUnigrams(x)
   const index = lookup(crf.attributes)
   const logEmission = items.map((item) => {
     const row = new Array<number>(K).fill(0)
@@ -197,7 +227,7 @@ export function crfChain(crf: LinearChainCrf, x: CrfInput): ChainModel {
     }
     return row
   })
-  const edges = bigramOf(x)
+  const edges = crfBigrams(x)
   const logInitial = new Array<number>(K).fill(0)
   if (edges === undefined || crf.bigramAttributes.length === 0 || items.length < 2)
     return { logInitial, logTransition: edgeMatrix(crf, undefined, index), logEmission }
@@ -280,7 +310,7 @@ export function crfLogLikelihood(crf: LinearChainCrf, x: CrfInput, y: readonly (
  * ```
  */
 export function crfMarginals(crf: LinearChainCrf, x: CrfInput): number[][] {
-  if (unigramOf(x).length === 0) return []
+  if (crfUnigrams(x).length === 0) return []
   return forwardBackward(crfChain(crf, x)).posteriors
 }
 
@@ -298,74 +328,9 @@ export function crfMarginals(crf: LinearChainCrf, x: CrfInput): number[][] {
  * ```
  */
 export function crfDecode(crf: LinearChainCrf, x: CrfInput): { readonly labels: string[]; readonly score: number } {
-  if (unigramOf(x).length === 0) return { labels: [], score: 0 }
+  if (crfUnigrams(x).length === 0) return { labels: [], score: 0 }
   const v = viterbi(crfChain(crf, x))
   return { labels: v.path.map((k) => crf.labels[k] ?? ''), score: v.logProbability }
-}
-
-/** Count each feature string once per firing, as attribute records with value = number of firings. */
-function counted(features: readonly string[]): Record<string, number> {
-  const out: Record<string, number> = {}
-  for (const f of features) out[f] = (out[f] ?? 0) + 1
-  return out
-}
-
-/**
- * The CRF input of a sequence under a CRF++ template (`text.parseCrfppTemplate`): the expanded unigram features of
- * each item and bigram features of each edge, as attributes that count their firings.
- *
- * @param template - The parsed CRF++ template.
- * @param table - The token-by-attribute table of the sequence.
- * @returns The observation.
- * @concept crf-features
- * @example
- * ```ts
- * import { crfppObservation } from 'omai-engine/pgm'
- * import { parseCrfppTemplate } from 'omai-engine/text'
- * crfppObservation(parseCrfppTemplate('U00:%x[0,0]\nB'), [['a'], ['b']]) // => { unigram: [{ 'U00:a': 1 }, { 'U00:b': 1 }], bigram: [{}, { B: 1 }] }
- * ```
- */
-export function crfppObservation(template: CrfppTemplate, table: TokenTable): CrfObservation {
-  const f = crfppFeatures(template, table)
-  return { unigram: f.unigram.map(counted), bigram: f.bigram.map(counted) }
-}
-
-/**
- * A linear-chain CRF in CRF++'s form for a template and training tables: a state weight per unigram feature and label
- * and a weight per bigram feature and label pair (the bare `B` line is the label-pair transition, as a bigram feature
- * that fires on every edge), over the features seen at least `minFrequency` times (CRF++'s `-f`).
- *
- * @param template - The parsed CRF++ template.
- * @param labels - The labels.
- * @param tables - The token-by-attribute tables of the training sequences.
- * @param options - The minimum feature frequency (default 1).
- * @returns The model with zero weights, ready for {@link fitCrf} on {@link crfppObservation} inputs.
- * @concept crf-features
- * @example
- * ```ts
- * import { crfppCrf } from 'omai-engine/pgm'
- * import { parseCrfppTemplate } from 'omai-engine/text'
- * const crf = crfppCrf(parseCrfppTemplate('U00:%x[0,0]\nB'), ['D', 'N'], [[['the'], ['dog']]])
- * [crf.attributes, crf.bigramAttributes, crf.transitionWeights.length] // => [['U00:the', 'U00:dog'], ['B'], 0]
- * ```
- */
-export function crfppCrf(
-  template: CrfppTemplate,
-  labels: readonly string[],
-  tables: readonly TokenTable[],
-  options: { readonly minFrequency?: number } = {},
-): LinearChainCrf {
-  const expanded = tables.map((t) => crfppFeatures(template, t))
-  const min = options.minFrequency === undefined ? {} : { minFrequency: options.minFrequency }
-  const unigram = featureIndex(
-    expanded.map((e) => e.unigram),
-    min,
-  )
-  const bigram = featureIndex(
-    expanded.map((e) => e.bigram.slice(1)),
-    min,
-  )
-  return linearChainCrf(labels, unigram.features, { transitions: false, bigramAttributes: bigram.features })
 }
 
 /** A labelled training sequence. */
@@ -469,9 +434,9 @@ export function crfObjective(
   }
   let value = 0
   for (const { x, y } of data) {
-    const items = unigramOf(x)
+    const items = crfUnigrams(x)
     if (items.length === 0) continue
-    const edges = bigramOf(x)
+    const edges = crfBigrams(x)
     const idx = labelIndices(crf, y)
     if (idx.length !== items.length) throw new OmaiError('shape', 'crfObjective: one label per item')
     const chain = crfChain(crf, x)
@@ -530,8 +495,8 @@ export function crfFeatureCounts(crf: LinearChainCrf, x: CrfInput, y: readonly (
   const nState = crf.stateWeights.length
   const nTrans = crf.transitionWeights.length
   const out = new Float64Array(nState + nTrans + crf.bigramWeights.length)
-  const items = unigramOf(x)
-  const edges = bigramOf(x)
+  const items = crfUnigrams(x)
+  const edges = crfBigrams(x)
   const idx = labelIndices(crf, y)
   if (idx.length !== items.length) throw new OmaiError('shape', 'crfFeatureCounts: one label per item')
   const index = lookup(crf.attributes)
@@ -578,9 +543,9 @@ export function crfExpectedFeatureCounts(
   const nState = crf.stateWeights.length
   const nTrans = crf.transitionWeights.length
   const out = new Float64Array(nState + nTrans + crf.bigramWeights.length)
-  const items = unigramOf(x)
+  const items = crfUnigrams(x)
   if (items.length === 0) return { counts: out, logPartition: 0 }
-  const edges = bigramOf(x)
+  const edges = crfBigrams(x)
   const index = lookup(crf.attributes)
   const bindex = lookup(crf.bigramAttributes)
   const fb = forwardBackward(crfChain(crf, x))
@@ -692,8 +657,8 @@ export function fitCrf(
     options.start ??
     linearChainCrf(
       [...new Set(data.flatMap((d) => d.y.map(String)))],
-      featureIndex(data.map((d) => unigramOf(d.x))).features,
-      { bigramAttributes: featureIndex(data.map((d) => (bigramOf(d.x) ?? []).slice(1))).features },
+      featureIndex(data.map((d) => crfUnigrams(d.x))).features,
+      { bigramAttributes: featureIndex(data.map((d) => (crfBigrams(d.x) ?? []).slice(1))).features },
     )
   const result = runAlgorithm(crfTrainingAlgorithm(start, data, options), {
     maxSteps: options.maxIter ?? 1000,

@@ -35,4 +35,15 @@ The graphical model types, part of `omai-engine/pgm`: Bayes networks, Markov net
 
 Structured prediction: conditional random fields and their neighbours, in one place. Linear-chain CRFs with feature templates, general CRFs on trees, grids, skip chains and arbitrary graphs, semi-Markov and higher-order CRFs, locally normalised MEMMs, latent and partial-label CRFs, max-margin structured learners, constrained and n-best decoding, and the CRF layer over a neural encoder. Every model offers the same small contract (`StructuredOracle`: feature counts, expected feature counts and loss-augmented decoding), so one table of solvers (L-BFGS, OWL-QN for L1, stochastic gradient, perceptron, passive-aggressive, structured SVMs) trains all of them.
 
+- function `attributeExtractor`: CRFsuite attribute templates (bias, BOS/EOS, boundary options) as a feature extractor. `src/lib/pgm/structured/features.ts:245` `omai-engine/pgm`
+- function `combineExtractors`: Several feature extractors merged into one over the same input. `src/lib/pgm/structured/features.ts:364` `omai-engine/pgm`
+- function `crfModelFor`: The linear-chain CRF with its feature vocabulary built from an extractor and training inputs. `src/lib/pgm/structured/features.ts:565` `omai-engine/pgm`
+- function `crfTemplateWeights`: The weight carried by each template of a fitted CRF, traced through explain. `src/lib/pgm/structured/features.ts:746` `omai-engine/pgm`
+- function `crfTopFeatures`: The top-weighted features of a fitted CRF per label, and its strongest transitions. `src/lib/pgm/structured/features.ts:694` `omai-engine/pgm`
+- function `crfppExtractor`: CRF++ templates as a feature extractor over token tables. `src/lib/pgm/structured/features.ts:110` `omai-engine/pgm`
+- function `functionExtractor`: An extractor from your own per-item (and per-edge) feature functions. `src/lib/pgm/structured/features.ts:310` `omai-engine/pgm`
+- function `hashedExtractor`: Hash an extractor's features into a fixed number of buckets (the hashing trick). `src/lib/pgm/structured/features.ts:450` `omai-engine/pgm`
+- function `wapitiExtractor`: Wapiti patterns (with regular-expression tests) as a feature extractor. `src/lib/pgm/structured/features.ts:171` `omai-engine/pgm`
+
+- structure `FeatureExtractor`: A template language and its options as a map from an input to CRF attribute records. `src/lib/pgm/structured/features.ts:71` `omai-engine/pgm`
 - structure `StructuredOracle`: The contract a structured model offers a learner: features, expectations, decoding, loss. `src/lib/pgm/structured/oracle.ts:20` `omai-engine/pgm`

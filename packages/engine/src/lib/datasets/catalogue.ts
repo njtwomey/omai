@@ -51,6 +51,7 @@ import { biasedCredit, germanCredit, titanicSurvival } from './fairness.ts'
 import { glmCurve } from './glm-curves.ts'
 import { contextualSbm, graphFamilies, karateClub, kinshipTriples, lesMiserables, smallMolecules } from './graphs.ts'
 import { dishonestCasino, regimeSwitching } from './hidden-markov.ts'
+import { hyphenationWords } from './hyphenation.ts'
 import { barsAndStripes, digitGlyphs, fashionMnistTest, geometricScenes, shapes } from './images.ts'
 import {
   blockCovarianceData,
@@ -725,6 +726,16 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     modality: 'text',
     size: 16,
     licence: 'Public domain',
+  }),
+  vendoredEntry('hyphenationWords', hyphenationWords, {
+    title: 'English word hyphenation (Moby Hyphenator sample)',
+    description:
+      'A sample of 3984 English words with their dictionary hyphenation points, one tag per letter (a hyphen follows or not), for CRF taggers.',
+    kind: 'sequence-labelling',
+    modality: 'sequence',
+    size: 3984,
+    licence: 'Public domain (by grant of the author)',
+    source: 'Moby Hyphenator II, Grady Ward (Project Gutenberg eBook 3204)',
   }),
   vendoredEntry('deerwester', () => workedExampleCorpus('deerwester'), {
     title: 'Deerwester memo titles',
