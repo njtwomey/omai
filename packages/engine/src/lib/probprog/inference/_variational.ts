@@ -6,7 +6,7 @@
  * folder.
  */
 
-import { type GradientTransformation, globalNorm, optimisers } from '../../optim/index.ts'
+import { type GradientTransformation, globalNorm, optimisers, schedules } from '../../optim/index.ts'
 import { foldIn, key as makeKey } from '../../random/index.ts'
 import { choice, completeOption, type DictSpace, int, real, type Space } from '../../space/index.ts'
 import { item, primalOf, type Tensor } from '../../tensor/index.ts'
@@ -137,6 +137,7 @@ export const initKnob: Record<string, Space> = {
 /** The knobs the variational methods share: the optimiser, the step size, the tolerance and the variance estimates. */
 export const optimiserKnobs: Record<string, Space> = {
   optimiser: { ...optimisers.space, default: 'adam' },
+  schedule: { ...schedules.space, default: 'constant' },
   learningRate: real(1e-5, 1, { log: true, default: 0.01, label: 'learning rate' }),
   tol: real(0, 1, {
     default: 0,
@@ -341,7 +342,7 @@ export function variationalMethod(
         },
       }
       const inner0: GradientTransformation = optimisers.make(completeOption(optimisers, config['optimiser']))(
-        num(config, 'learningRate'),
+        schedules.make(completeOption(schedules, config['schedule']))(num(config, 'learningRate')),
       )
       let gradNorm = Number.NaN
       const optimizer: GradientTransformation = {

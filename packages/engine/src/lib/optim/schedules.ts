@@ -158,6 +158,25 @@ export function inverseSqrtDecay(init: number, decayRate = 1, steps = 1): Learni
 }
 
 /**
+ * The step-size decay of ADVI (Kucukelbir et al. 2017): init (t + 1)^(-1/2 + epsilon), a little slower than the inverse
+ * square root so that the Robbins-Monro conditions hold. With {@link advi}'s adaptive scaling it is the whole sequence
+ * eta k^(-1/2 + epsilon) / (tau + sqrt(s_k)) of Stan's ADVI.
+ *
+ * @param init - The first value (eta).
+ * @param epsilon - The small number added to the exponent (default 1e-16, Stan's).
+ * @returns The schedule, with step 0 the first.
+ * @index function ADVI's step-size decay k^(-1/2 + epsilon).
+ * @example
+ * ```ts
+ * import { adviDecay } from 'omai-engine/optim'
+ * adviDecay(2)(3) // => 1
+ * ```
+ */
+export function adviDecay(init: number, epsilon = 1e-16): LearningRateSchedule {
+  return (t) => init * (t + 1) ** (-0.5 + epsilon)
+}
+
+/**
  * Cosine decay from init to alpha init over `decaySteps`, constant afterwards (optax.cosine_decay_schedule with its
  * exponent; torch CosineAnnealingLR up to T_max).
  *

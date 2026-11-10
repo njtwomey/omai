@@ -29,6 +29,7 @@ import {
   type LearningRate,
   type ParamTree,
   scaleByAdagrad,
+  scaleByAdvi,
   scaleByLearningRate,
   scaleByRms,
   traceMomentum,
@@ -102,6 +103,35 @@ export function rmsprop(options: RmspropOptions): GradientTransformation<unknown
     ...((options.momentum ?? 0) > 0 ? [traceMomentum(options.momentum ?? 0)] : []),
     scaleByLearningRate(options.learningRate),
   )
+}
+
+/** Options of {@link advi}. */
+export interface AdviOptions {
+  readonly learningRate: LearningRate
+  /** The weight of the newest squared gradient (default 0.1). */
+  readonly alpha?: number
+  /** Added to the denominator (default 1). */
+  readonly tau?: number
+}
+
+/**
+ * The optimiser of ADVI's step-size sequence (Kucukelbir et al. 2017, as Stan uses it): the gradient scaled by 1 / (tau +
+ * sqrt(s)) with s the running average of its square started at the first, times the learning rate. Give it
+ * `adviDecay(eta)` as the learning rate for the whole sequence eta k^(-1/2 + epsilon) / (tau + sqrt(s_k)).
+ *
+ * @param options - Learning rate (a number or a schedule), alpha and tau.
+ * @returns The optimiser.
+ * @concept optimisers
+ * @example
+ * ```ts
+ * import { advi, adviDecay } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
+ * const opt = advi({ learningRate: adviDecay(0.5) })
+ * toArray(opt.update(tensor([3]), opt.init(tensor([0]))).updates as never) // => [-0.375]
+ * ```
+ */
+export function advi(options: AdviOptions): GradientTransformation<unknown[]> {
+  return chain(scaleByAdvi(options.alpha ?? 0.1, options.tau ?? 1), scaleByLearningRate(options.learningRate))
 }
 
 /** Options of {@link adagrad}. */

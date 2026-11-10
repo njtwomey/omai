@@ -8,7 +8,7 @@
 
 import { bool, defaults, dict, type Option, type OptionTable, optionTable, real } from '../space/index.ts'
 import { adam, adamax, adamw, amsgrad, lion, nadam, radam } from './adaptive.ts'
-import { adadelta, adagrad, rmsprop, sgd } from './first-order.ts'
+import { adadelta, adagrad, advi, rmsprop, sgd } from './first-order.ts'
 import type { GradientTransformation, LearningRate } from './transform.ts'
 
 /** An optimiser shape: given the learning rate (a number or a schedule over steps), the gradient transformation. */
@@ -45,7 +45,7 @@ const eps = real(1e-12, 1e-2, { log: true, default: 1e-8, label: 'ε' })
 const num = (k: Readonly<Record<string, unknown>>, name: string): number => k[name] as number
 
 /**
- * The optimisers as one slot: SGD (default), RMSprop, Adagrad, Adadelta, Adam, AdamW, AMSGrad, Adamax, NAdam, RAdam
+ * The optimisers as one slot: SGD (default), RMSprop, ADVI, Adagrad, Adadelta, Adam, AdamW, AMSGrad, Adamax, NAdam, RAdam
  * and Lion, each with its own knobs, all taking the learning rate (or a schedule) when made.
  *
  * @index table SGD, RMSprop, Adagrad, Adam and relatives as one slot.
@@ -92,6 +92,15 @@ export const optimisers: OptionTable<OptimiserShape, OptimiserProperties> = opti
           centered: k['centered'] as boolean,
           weightDecay: num(k, 'weightDecay'),
         }),
+    ),
+    advi: shape(
+      { adaptive: true, momentum: false, decoupledDecay: false },
+      "ADVI's scaling: a running mean of squared gradients started at the first, tau in the denominator (with the 'advi' schedule, Stan's step-size sequence)",
+      dict({
+        alpha: real(0.01, 0.99, { default: 0.1, label: 'newest weight α' }),
+        tau: real(1e-8, 100, { log: true, default: 1, label: 'τ' }),
+      }),
+      (k) => (learningRate) => advi({ learningRate, alpha: num(k, 'alpha'), tau: num(k, 'tau') }),
     ),
     adagrad: shape(
       { adaptive: true, momentum: false, decoupledDecay: false },

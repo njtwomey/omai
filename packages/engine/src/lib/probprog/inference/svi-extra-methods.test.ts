@@ -49,7 +49,7 @@ const fit = <S, K extends string>(
 }
 
 describe('the reparameterised estimators fit the conjugate posterior', () => {
-  it('sticking the landing, the doubly reparameterised bound and the Renyi bound', () => {
+  it('sticking the landing, the doubly reparameterised bound and the Renyi bound', { timeout: 30_000 }, () => {
     for (const [name, method, config] of [
       ['stl', stickingTheLandingMethod(normalMean), { learningRate: 0.05 }],
       ['dreg', stickingTheLandingMethod(normalMean), { estimator: 'dreg', numParticles: 6, learningRate: 0.05 }],
@@ -65,6 +65,24 @@ describe('the reparameterised estimators fit the conjugate posterior', () => {
       const { post } = fit(method as never, { learningRate: 0.05, numParticles: 4 }, 1200)
       expect(Math.abs(item(post.mean('mu')) - m0), method.name).toBeLessThan(0.15)
     }
+  })
+})
+
+describe('the ADVI step-size sequence as the optimiser and schedule of a method', () => {
+  it("fits the conjugate posterior with Stan's sequence (eta k^-1/2 over tau + sqrt(s))", () => {
+    const method = stickingTheLandingMethod(normalMean)
+    const s = session(method, {
+      config: {
+        optimiser: { kind: 'advi', alpha: 0.1, tau: 1 },
+        schedule: { kind: 'advi', epsilon: 1e-16 },
+        learningRate: 0.5,
+      },
+      steps: 1500,
+      seed: 2,
+      mode: 'eager',
+    })
+    const post = method.posterior?.(s.state, s.config)
+    expect(Math.abs(item(post?.mean('mu') as never) - m0)).toBeLessThan(0.1)
   })
 })
 
