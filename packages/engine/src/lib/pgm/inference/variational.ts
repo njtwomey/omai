@@ -16,7 +16,7 @@ import {
   type Tracer,
 } from '../../trace/index.ts'
 import { inverse } from '../_dense.ts'
-import type { Factor } from '../factor.ts'
+import { type Factor, logFactor } from '../factor.ts'
 import type { DiscreteModel } from '../models/factor-graph.ts'
 import { type Compiled, compile, marginalFactor, normaliseLog, observedMarginals } from './_compiled.ts'
 
@@ -52,6 +52,12 @@ export interface VariationalResult {
   readonly converged: boolean
   readonly status: RunStatus
   readonly iterations: number
+  /**
+   * The pseudo-marginal of each edge of a pairwise model over its two variables (in model order), for
+   * {@link treeReweighted} only: the beliefs whose inner product with the potentials is the gradient of the bound on
+   * log Z, so what a CRF needs as expected pairwise counts.
+   */
+  readonly edgeBeliefs?: readonly Factor[]
 }
 
 /**
@@ -454,13 +460,17 @@ function trwMessage(p: Pairwise, st: TreeReweightedState, k: number, towardsS: b
 }
 
 /** Beliefs and the TRW bound at a message state. */
-function trwBound(p: Pairwise, st: TreeReweightedState): { unary: Float64Array[]; bound: number } {
+function trwBound(
+  p: Pairwise,
+  st: TreeReweightedState,
+): { unary: Float64Array[]; bound: number; edges: Float64Array[] } {
   const unary = p.c.names.map((_, v) => {
     const b = weightedIn(p, st, v, -1)
     normaliseLog(b)
     return b
   })
   let bound = p.c.constant
+  const edges: Float64Array[] = []
   for (const [v, b] of unary.entries()) {
     for (let x = 0; x < b.length; x++) {
       const pb = Math.exp(b[x] ?? 0)
@@ -484,6 +494,7 @@ function trwBound(p: Pairwise, st: TreeReweightedState): { unary: Float64Array[]
       }
     }
     normaliseLog(logs)
+    edges.push(logs)
     for (let x = 0; x < ks; x++) {
       for (let y = 0; y < kt; y++) {
         const l = logs[x * kt + y] ?? Number.NEGATIVE_INFINITY
@@ -494,7 +505,7 @@ function trwBound(p: Pairwise, st: TreeReweightedState): { unary: Float64Array[]
       }
     }
   }
-  return { unary, bound }
+  return { unary, bound, edges }
 }
 
 /**
@@ -572,9 +583,16 @@ export function treeReweighted(model: DiscreteModel, options: TreeReweightedOpti
     ...(options.tracer === undefined ? {} : { tracer: options.tracer }),
     ...(options.policy === undefined ? {} : { policy: options.policy }),
   })
-  const { unary, bound } = trwBound(p, result.state)
+  const { unary, bound, edges } = trwBound(p, result.state)
   return {
     marginals: finish(p.c, unary),
+    edgeBeliefs: p.edges.map((e, k) =>
+      logFactor(
+        [p.c.names[e.s] ?? '', p.c.names[e.t] ?? ''],
+        [p.c.card[e.s] ?? 1, p.c.card[e.t] ?? 1],
+        edges[k] as Float64Array,
+      ),
+    ),
     logPartitionBound: bound,
     converged: result.status === 'converged',
     status: result.status,
