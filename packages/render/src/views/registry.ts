@@ -25,6 +25,7 @@ import { curveSetView } from './curves.ts'
 import { dataBiasView } from './data-bias.ts'
 import { dependenceView } from './dependence.ts'
 import { diagramScene } from './diagrams.ts'
+import { elboRunView } from './elbo-run.ts'
 import { epicycleFrames } from './epicycles.ts'
 import { episodeView } from './episodes.ts'
 import { equationFitView } from './equation-fit.ts'
@@ -467,6 +468,14 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => posteriorComparisonView(r, o),
+  },
+  elboRun: {
+    kind: 'elboRun',
+    component: 'ElboRunView',
+    title: 'Variational run',
+    plays: false,
+    accepts: [],
+    still: (r, o) => elboRunView(r, o),
   },
   structureSteps: {
     kind: 'structureSteps',

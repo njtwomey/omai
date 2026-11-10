@@ -18,6 +18,7 @@ import { ComponentsView } from './components.tsx'
 import { CurvesView } from './curves.tsx'
 import { DependenceView } from './dependence.tsx'
 import { DiagramPlayer } from './diagrams.tsx'
+import { ElboRunView } from './elbo-run.tsx'
 import { EpicyclePlayer } from './epicycles.tsx'
 import { EpisodeView } from './episodes.tsx'
 import { EquationFitView } from './equation-fit.tsx'
@@ -207,6 +208,8 @@ function StandardRecordView(props: ExpositionViewProps): ReactElement {
       return <ChainDiagnosticsView record={record} {...common} />
     case 'sbcRun':
       return <SbcRunView record={record} {...common} />
+    case 'elboRun':
+      return <ElboRunView record={record} {...common} />
     case 'posteriorComparison':
       return <PosteriorComparisonView record={record} {...common} />
     case 'structureSteps':

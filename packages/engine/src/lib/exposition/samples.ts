@@ -18,6 +18,7 @@ import { curveSet } from './curves.ts'
 import { dataBias } from './data-bias.ts'
 import { dependence } from './dependence.ts'
 import { diagramRecord } from './diagrams.ts'
+import { elboRun } from './elbo-run.ts'
 import { componentsRecord, embeddingSteps } from './embeddings.ts'
 import { ensembleStages } from './ensembles.ts'
 import { epicycles } from './epicycles.ts'
@@ -594,4 +595,13 @@ export const expositionSamples: { readonly [K in ExpositionKind]: () => Extract<
         gridPoints: 5,
       },
     ),
+  elboRun: () =>
+    elboRun({
+      status: 'running',
+      elbo: { steps: [1, 2, 3], values: [-9, -5, -4] },
+      diagnostics: [],
+      paths: [],
+      parameters: [{ name: 'mu_auto_loc', site: 'mu', role: 'loc', steps: [1, 2, 3], values: [0, 0.4, 0.5] }],
+      beliefs: [{ name: 'mu', steps: [2, 3], values: [0.4, 0.5], sd: [0.9, 0.6] }],
+    }),
 }

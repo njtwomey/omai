@@ -20,6 +20,7 @@ import type { CurveSet } from './curves.ts'
 import type { DataBias } from './data-bias.ts'
 import type { Dependence } from './dependence.ts'
 import type { DiagramRecord } from './diagrams.ts'
+import type { ElboRun } from './elbo-run.ts'
 import type { ComponentsRecord, EmbeddingSteps } from './embeddings.ts'
 import type { EnsembleStages } from './ensembles.ts'
 import type { Epicycles } from './epicycles.ts'
@@ -133,6 +134,7 @@ export type Exposition =
   | ChainDiagnostics
   | SbcRun
   | PosteriorComparison
+  | ElboRun
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -243,4 +245,5 @@ const KINDS: Readonly<Record<ExpositionKind, true>> = {
   chainDiagnostics: true,
   sbcRun: true,
   posteriorComparison: true,
+  elboRun: true,
 }
