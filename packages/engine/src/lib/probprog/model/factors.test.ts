@@ -51,7 +51,7 @@ const probitModel = probitDefinition
 describe('the probit regression compiled to a factor graph', () => {
   const { X, y } = probitData()
   const bound = probitModel.bind({ X, y })
-  const c = toFactorGraph(bound)
+  const c = toFactorGraph(bound, { plates: 'expand' })
 
   it('expands the plates with the ids of ids.ts: a vector variable, an auxiliary and an observation per row', () => {
     expect(c.issues).toEqual([])
@@ -184,10 +184,28 @@ describe('a conjugate Gaussian regression: EP equals the closed-form posterior a
     m.observe('y', d.normal(X.matmul(beta), sigma), y)
   })
   const c = toFactorGraph(model.bind({ X: x, y: yv }))
-  it('uses the regression-row operator, a vector variable and no auxiliary', () => {
+  it('uses the regression-row operator, a vector variable and no auxiliary (expanded), or one plated factor on sufficient statistics', () => {
+    const e = toFactorGraph(model.bind({ X: x, y: yv }), { plates: 'expand' })
+    expect(e.issues).toEqual([])
+    expect(new Set(e.graph?.factors.map((f) => f.operator))).toEqual(new Set(['prior', 'linear-regression-row']))
+    expect(e.auxiliary).toEqual([])
+    expect(e.plated).toEqual([])
     expect(c.issues).toEqual([])
-    expect(new Set(c.graph?.factors.map((f) => f.operator))).toEqual(new Set(['prior', 'linear-regression-row']))
-    expect(c.auxiliary).toEqual([])
+    expect(c.graph?.factors.map((f) => `${f.id} ${f.operator}`)).toEqual([
+      'factor:beta prior',
+      'factor:y linear-regression-plate',
+    ])
+    expect(c.graph?.variables.map((v) => v.name)).toEqual(['beta'])
+    expect(c.plated).toEqual(['y'])
+    expect(c.sites.find((s) => s.site === 'y')).toMatchObject({ layout: 'observed', posterior: false })
+    // The expanded graph has the same posterior and evidence as the plated one.
+    const ga = graphOf(c.graph)
+    const gb = graphOf(e.graph)
+    const pa = factorGraphPosterior(c, ga, run(ga).state)
+    const pb = factorGraphPosterior(e, gb, run(gb).state)
+    for (const [q, v] of toFlat(pa.mean('beta')).entries())
+      expect(Math.abs(v - (toFlat(pb.mean('beta'))[q] as number))).toBeLessThan(1e-9)
+    expect(Math.abs((pa.logEvidence?.value ?? 0) - (pb.logEvidence?.value ?? 1))).toBeLessThan(1e-9)
   })
   it('matches the posterior N((I / tau^2 + X^T X / sigma^2)^-1 X^T y / sigma^2, ...) and the marginal likelihood', () => {
     const g = graphOf(c.graph)
@@ -281,11 +299,27 @@ describe('affine values that mix a vector latent and a scalar latent, and the lo
           m.data('y', { dims: [n], support: 'binary' }),
         )
       }).bind({ X: x, y: labels })
-    const a = toFactorGraph(make((eta) => d.bernoulli({ logits: eta })))
-    const b = toFactorGraph(make((eta) => d.bernoulli({ probs: ops.sigmoid(eta) })))
+    const a = toFactorGraph(
+      make((eta) => d.bernoulli({ logits: eta })),
+      { plates: 'expand' },
+    )
+    const b = toFactorGraph(
+      make((eta) => d.bernoulli({ probs: ops.sigmoid(eta) })),
+      { plates: 'expand' },
+    )
     expect(a.issues).toEqual([])
     expect(new Set(a.graph?.factors.map((f) => f.operator))).toEqual(new Set(['prior', 'dot-constant', 'logistic']))
     expect(b.graph).toEqual(a.graph)
+    // The plated forms are one logistic plate each, equal to one another.
+    const pa = toFactorGraph(make((eta) => d.bernoulli({ logits: eta })))
+    const pb = toFactorGraph(make((eta) => d.bernoulli({ probs: ops.sigmoid(eta) })))
+    expect(pa.graph?.factors.map((f) => f.operator)).toEqual(['prior', 'logistic-plate'])
+    expect(pb.graph).toEqual(pa.graph)
+    const platedRun = run(graphOf(pa.graph))
+    const expandedRun = run(graphOf(a.graph))
+    const mp = marginalsOf(graphOf(pa.graph), platedRun.state)['w']?.['mean'] as number[]
+    const me = marginalsOf(graphOf(a.graph), expandedRun.state)['w']?.['mean'] as number[]
+    for (const [q, v] of mp.entries()) expect(Math.abs(v - (me[q] as number))).toBeLessThan(1e-6)
     const g = graphOf(a.graph)
     const r = run(g)
     expect(r.status).toBe('converged')
@@ -897,5 +931,123 @@ describe('the larger and the smaller of two random values are the max and min fa
       b.observe('y', d.normal(ops.maximum(a, 0), 0.5), b.data('y', { dims: ['row'] }))
     })
     expect(toFactorGraph(clip.bind({ y: [1] })).issues[0]?.reason).toMatch(/random value and a known one/)
+  })
+})
+
+describe('the probit regression as one plated factor', () => {
+  const { X, y } = probitData()
+  const bound = probitModel.bind({ X, y })
+  const c = toFactorGraph(bound)
+  const e = toFactorGraph(bound, { plates: 'expand' })
+
+  it('is a vector variable and two factors whatever the number of rows, with the ids of the spec', () => {
+    expect(c.issues).toEqual([])
+    expect(c.graph?.variables.map((v) => v.name)).toEqual(['w'])
+    expect(c.graph?.factors.map((f) => `${f.id} ${f.operator}`)).toEqual(['factor:w prior', 'factor:y probit-plate'])
+    expect(c.graph?.factors[1]?.params).toMatchObject({ y })
+    expect(c.plated).toEqual(['y'])
+    expect(c.auxiliary).toEqual([])
+    expect(c.expanded.variables).toBe(1)
+    expect(c.expanded.factors).toBe(2)
+    expect(c.sites.map((s) => [s.site, s.layout, s.posterior])).toEqual([
+      ['w', 'packed', true],
+      ['y', 'observed', false],
+    ])
+    // Every id maps onto the drawing of the spec: the weights, and the factors of the prior and of the likelihood.
+    const on = graphOnSpec(c.graph as FactorGraphSpec)
+    const ids = new Set(toStructure(bound, { view: 'factor' }).nodes.map((n) => n.id))
+    for (const site of [...Object.values(on.variables), ...Object.values(on.factors)]) expect(ids.has(site)).toBe(true)
+    expect(new Set(Object.values(on.factors))).toEqual(new Set(['factor:w', 'factor:y']))
+  })
+
+  it('has the posterior and the evidence of the expanded graph, and the grid answer', () => {
+    const ga = graphOf(c.graph)
+    const gb = graphOf(e.graph)
+    const ra = run(ga)
+    const rb = run(gb)
+    expect(ra.status).toBe('converged')
+    const pa = factorGraphPosterior(c, ga, ra.state)
+    const pb = factorGraphPosterior(e, gb, rb.state)
+    const ma = toFlat(pa.mean('w'))
+    const mb = toFlat(pb.mean('w'))
+    for (const [q, v] of ma.entries()) expect(Math.abs(v - (mb[q] as number))).toBeLessThan(1e-6)
+    const sa = toFlat(pa.stddev('w'))
+    const sb = toFlat(pb.stddev('w'))
+    for (const [q, v] of sa.entries()) expect(Math.abs(v - (sb[q] as number))).toBeLessThan(1e-6)
+    expect(Math.abs((pa.logEvidence?.value ?? 0) - (pb.logEvidence?.value ?? 1))).toBeLessThan(1e-5)
+    // The variational bound of the plate is that of the expanded graph's mean field on the weights as one block... under VMP
+    // the plate has the Albert-Chib message, the expanded graph the same one per row, with the predictor as a defined variable.
+    const va = runAlgorithm(vmpAlgorithm(ga, { tol: 1e-12 }), { maxSteps: 400 })
+    const vb = runAlgorithm(vmpAlgorithm(gb, { tol: 1e-12 }), { maxSteps: 400 })
+    const wa = marginalsOf(ga, va.state as MpState)['w']?.['mean'] as number[]
+    const wb = marginalsOf(gb, vb.state as MpState)['w']?.['mean'] as number[]
+    for (const [q, v] of wa.entries()) expect(Math.abs(v - (wb[q] as number))).toBeLessThan(1e-6)
+  })
+
+  it('falls to the expansion for rows that are not one regression on a packed vector, and without the plate operators', () => {
+    const ops2 = { ...factorOperators() }
+    delete (ops2 as Record<string, unknown>)['probit-plate']
+    expect(toFactorGraph(bound, { operators: ops2 }).plated).toEqual([])
+    const scalars = defineModel('scalars', (b) => {
+      const n = b.range('row')
+      const a = b.latent('a', d.normal(0, 2))
+      const s = b.latent('s', d.normal(0, 2))
+      b.observe('y', d.normal(ops.add(a, ops.mul(s, b.data('x', { dims: [n] }))), 0.5), b.data('y', { dims: [n] }))
+    })
+    const cs = toFactorGraph(scalars.bind({ x: [1, 2, 3], y: [1, 2, 3] }))
+    expect(cs.plated).toEqual([])
+    expect(cs.graph?.variables.length).toBeGreaterThan(5)
+    // A per-row scale is not a plate either.
+    const scales = defineModel('scales', (b) => {
+      const n = b.range('row')
+      const f = b.range('feature')
+      const w = b.latent('w', d.normal(0, 2), { dims: [f] })
+      b.observe(
+        'y',
+        d.normal(b.data('X', { dims: [n, f] }).matmul(w), b.data('sd', { dims: [n] })),
+        b.data('y', { dims: [n] }),
+      )
+    })
+    const cc = toFactorGraph(
+      scales.bind({
+        X: [
+          [1, 2],
+          [3, 4],
+        ],
+        y: [1, 2],
+        sd: [0.5, 1],
+      }),
+    )
+    expect(cc.plated).toEqual([])
+    expect(cc.graph?.factors.filter((f) => f.operator === 'linear-regression-row').length).toBe(2)
+  })
+
+  it('leaves missing rows out of the plate and gives the same posterior as the expansion that ignores them', () => {
+    const m = defineModel('gaps', (b) => {
+      const n = b.range('row')
+      const f = b.range('feature')
+      const w = b.latent('w', d.normal(0, 2), { dims: [f] })
+      b.observe('y', d.normal(b.data('X', { dims: [n, f] }).matmul(w), 0.5), b.data('y', { dims: [n] }), {
+        missing: 'ignore',
+      })
+    })
+    const bd = m.bind({
+      X: [
+        [1, 0.5],
+        [1, -1],
+        [1, 2],
+        [1, 0],
+      ],
+      y: [1, Number.NaN, 2, 0.3],
+    })
+    const a = toFactorGraph(bd)
+    const b2 = toFactorGraph(bd, { plates: 'expand' })
+    expect(a.plated).toEqual(['y'])
+    const ga = graphOf(a.graph)
+    const gb = graphOf(b2.graph)
+    const pa = factorGraphPosterior(a, ga, run(ga).state)
+    const pb = factorGraphPosterior(b2, gb, run(gb).state)
+    for (const [q, v] of toFlat(pa.mean('w')).entries())
+      expect(Math.abs(v - (toFlat(pb.mean('w'))[q] as number))).toBeLessThan(1e-9)
   })
 })

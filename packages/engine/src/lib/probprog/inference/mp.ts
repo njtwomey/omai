@@ -4,7 +4,8 @@
  * (schedule, granularity, damping, improper policy, tolerance, sweep cap) and the typed tape of
  * `omai-engine/message-passing` (`epContract` and `vmpContract`: per-sweep change, the evidence or bound, `message`
  * events and the marginals by variable id), plus the budget and snapshot knobs every inference method has. A bound spec
- * is compiled once to a factor graph (`toFactorGraph`: plates expanded, ids as in `ids.ts`); a step is one sweep (or one
+ * is compiled once to a factor graph (`toFactorGraph`: a regression on a weight vector over a plate is one plated factor,
+ * other plates are expanded, ids as in `ids.ts`); a step is one sweep (or one
  * factor, or one message, by `granularity`); the state is the messages, so a run serialises, resumes, seeks and forks; and
  * `posterior(state)` reads any state as the library's `Posterior` keyed by site name, in the spec's shapes, which is what
  * an anytime snapshot shows. `check` says whether the model has a factor graph at all and why not, naming the node and
@@ -59,9 +60,22 @@ interface Prepared {
   readonly failure: string | undefined
 }
 
-function prepare(model: MethodModel): Prepared | undefined {
+/** What the compiler of a spec method is told: whether the rows of a regression become one plated factor or a factor each. */
+export interface MpSpecOptions {
+  /** The name of the method (default `ep`, `vmp` or `bp`). */
+  readonly name?: string
+  /**
+   * How the rows of a plate are compiled (see `toFactorGraph`): `vectorise` (default) makes an observed node that is one
+   * regression on a weight vector a single plated factor, whose message is computed over all the rows in one call and whose
+   * graph does not grow with the data; `expand` makes a factor and a variable per row (more messages per sweep, so
+   * finer anytime steps, and a graph that draws row by row).
+   */
+  readonly plates?: 'vectorise' | 'expand'
+}
+
+function prepare(model: MethodModel, plates: 'vectorise' | 'expand'): Prepared | undefined {
   if (typeof model === 'function') return undefined
-  const compiled = toFactorGraph(model, { analysis: analyseSpec(model) })
+  const compiled = toFactorGraph(model, { analysis: analyseSpec(model), plates })
   if (compiled.graph === undefined) return { compiled, graph: undefined, failure: undefined }
   try {
     return { compiled, graph: compileGraph(compiled.graph, factorOperators()), failure: undefined }
@@ -110,11 +124,11 @@ function staticVerdict(a: ModelAnalysis, rule: MessageRule): Verdict | undefined
 function specMethod<P extends string>(
   rule: MessageRule,
   model: MethodModel,
-  options: { readonly name?: string },
+  options: MpSpecOptions,
 ): InferenceMethod<MpState, Config, P, ModelAnalysis> {
   const name = options.name ?? rule
   const title = TITLE[rule]
-  const prepared = prepare(model)
+  const prepared = prepare(model, options.plates ?? 'vectorise')
   const knobs = messagePassingKnobs(rule)
   const check = (a: ModelAnalysis): Verdict => {
     if (prepared === undefined)
@@ -198,7 +212,7 @@ function specMethod<P extends string>(
  * sweep per step. The marginals come back as a `Posterior` by site name; the tape has the engine's `mp/*` paths.
  *
  * @param model - A bound spec.
- * @param options - A name for the method (default `ep`).
+ * @param options - A name for the method (default `ep`) and how the plates are compiled (`plates`).
  * @returns The method, with `check` (why a model has no factor graph, or an operator no rule) and `posterior`.
  * @concept expectation-propagation
  * @index estimator Expectation propagation on a model spec's factor graph, posterior by site.
@@ -216,7 +230,7 @@ function specMethod<P extends string>(
  */
 export function epSpecMethod(
   model: MethodModel,
-  options: { readonly name?: string } = {},
+  options: MpSpecOptions = {},
 ): InferenceMethod<MpState, Config, EpSpecPath, ModelAnalysis> {
   return specMethod<EpSpecPath>('ep', model, options)
 }
@@ -230,7 +244,7 @@ export function epSpecMethod(
  * bound. `check` names the operators that have none and why (a hard comparison, `greater-than`).
  *
  * @param model - A bound spec.
- * @param options - A name for the method (default `vmp`).
+ * @param options - A name for the method (default `vmp`) and how the plates are compiled (`plates`).
  * @returns The method.
  * @concept variational-message-passing
  * @index estimator Variational message passing on a model spec's factor graph, posterior by site.
@@ -248,7 +262,7 @@ export function epSpecMethod(
  */
 export function vmpSpecMethod(
   model: MethodModel,
-  options: { readonly name?: string } = {},
+  options: MpSpecOptions = {},
 ): InferenceMethod<MpState, Config, VmpSpecPath, ModelAnalysis> {
   return specMethod<VmpSpecPath>('vmp', model, options)
 }
@@ -259,7 +273,7 @@ export function vmpSpecMethod(
  * latents are refused with the reason.
  *
  * @param model - A bound spec.
- * @param options - A name for the method (default `bp`).
+ * @param options - A name for the method (default `bp`) and how the plates are compiled (`plates`).
  * @returns The method.
  * @concept belief-propagation
  * @index estimator Belief propagation on a model spec of Bernoulli nodes, posterior by site.
@@ -280,7 +294,7 @@ export function vmpSpecMethod(
  */
 export function bpSpecMethod(
   model: MethodModel,
-  options: { readonly name?: string } = {},
+  options: MpSpecOptions = {},
 ): InferenceMethod<MpState, Config, EpSpecPath, ModelAnalysis> {
   return specMethod<EpSpecPath>('bp', model, options)
 }

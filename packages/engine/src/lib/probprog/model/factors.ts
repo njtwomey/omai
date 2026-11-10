@@ -2,10 +2,15 @@
  * Compiling a bound model spec to a factor graph for message passing: `toFactorGraph` expands the spec's named
  * dimensions (plates) into the scalar and vector variables the engine of `omai-engine/message-passing` supports, maps
  * distribution families and operators to the engine's message families and factor operators, and reports exactly what it
- * cannot map and why. The engine has no plates, so the graph is an expansion: a plate of N rows is N copies of the
- * factors over it, with the data folded into the factors' constants. That is the documented first version; plated
- * operators (a factor over a whole plate, with messages as tensors) would remove the copies, the per-row auxiliary
- * variables and the dependence of the graph on the data values.
+ * cannot map and why. The engine has no plates of its own, so a plate is compiled one of two ways. An observed node whose
+ * rows are i.i.d. draws of one regression on a weight vector (a Gaussian with one known scale, or a Bernoulli with a
+ * probit or logistic link, of `X.matmul(w)` with `w` a vector latent, missing rows left out) is ONE plated factor
+ * (`linear-regression-plate`, `probit-plate`, `logistic-plate`) holding the rows as its parameters and computing its
+ * message over all of them in one call: the graph has no variable or factor per row, does not grow with the data, and
+ * compiles and reads back in time that does not depend on the rows but for copying the design matrix once. Every other plate
+ * is an expansion: N copies of the factors over it, with the data folded into the factors' constants (a hierarchy, rows
+ * with their own variables or scales, scalar weights, discrete tables over a plate). `plates: 'expand'` forces the
+ * expansion everywhere (the same posterior, a message per row, so finer anytime steps).
  *
  * What it maps. Latents: `normal` (a Gaussian variable per element, or one `gaussian-mv` vector variable when a
  * `matmul` reads it, so the posterior keeps its correlations), `gamma`, `exponential`, `beta`, `dirichlet`, and
@@ -131,6 +136,8 @@ export interface FactorGraphCompilation {
   readonly sites: readonly SiteLayout[]
   /** The auxiliary variables the expansion introduced (`y#0[3]`). */
   readonly auxiliary: readonly string[]
+  /** The observed sites compiled as one plated factor over all their rows (no variable or factor per row), by site name. */
+  readonly plated: readonly string[]
   /** What the expansion made: the plates that were unrolled and the sizes of the result. */
   readonly expanded: {
     readonly plates: readonly { readonly dim: string; readonly size: number }[]
@@ -232,6 +239,7 @@ class Compiler {
   readonly issues: FactorIssue[] = []
   readonly sites: SiteLayout[] = []
   readonly auxiliary: string[] = []
+  readonly plated: string[] = []
   private readonly consts = new Map<string, NamedValue>()
   private readonly syms = new Map<string, Sym>()
   private readonly lazy = new Map<string, ExprSpec>()
@@ -251,6 +259,7 @@ class Compiler {
     private readonly bound: BoundModel,
     private readonly modelOps: OperatorTable,
     private readonly ops: Readonly<Record<string, FactorOperator>>,
+    private readonly vectorise: boolean,
   ) {
     this.unbound = new Set(bound.unbound)
     for (const n of bound.spec.nodes) if (n.kind !== 'observed') this.nodes.set(n.name, n)
@@ -1285,6 +1294,7 @@ class Compiler {
     )
     const vars: (string | null)[] = []
     const discreteParents = this.discreteParents(node)
+    if (this.vectorise && node.dims.length > 0 && discreteParents.length === 0 && this.plate(node, fam, values)) return
     if (fam === 'bernoulli' && discreteParents.length > 0) {
       if (node.dims.length > 0)
         throw new Refusal(
@@ -1401,6 +1411,144 @@ class Compiler {
           `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, bernoulli, binomial, poisson and categorical`,
         )
     }
+  }
+
+  /**
+   * The rows of an observed node as a design matrix on one packed weight vector, when every row is `a . w` (plus a known
+   * offset where `offset` is allowed) of the same vector `w`: the vector's name, its size, and the row (`undefined` for a row
+   * with no random part, which says nothing about `w`). Absent when the rows are not of that shape.
+   */
+  private designRows(
+    cells: readonly Cell[],
+    offset: boolean,
+  ):
+    | {
+        readonly vector: string
+        readonly size: number
+        readonly rows: readonly ({ a: number[]; offset: number } | undefined)[]
+      }
+    | undefined {
+    let vector: string | undefined
+    let size = 0
+    const rows: ({ a: number[]; offset: number } | undefined)[] = []
+    for (const c of cells) {
+      if (c.kind !== 'aff') return undefined
+      const terms = [...c.aff.terms].filter(([, k]) => k !== 0)
+      if (terms.length === 0) {
+        rows.push(undefined)
+        continue
+      }
+      if (c.aff.offset !== 0 && !offset) return undefined
+      const atoms = terms.map(([k]) => this.atoms.get(k) as Atom)
+      for (const a of atoms) {
+        if (a.kind !== 'comp') return undefined
+        if (vector === undefined) {
+          vector = a.vector
+          size = a.size
+        } else if (a.vector !== vector) return undefined
+      }
+      const a = new Array<number>(size).fill(0)
+      for (const [k, coefficient] of terms) a[(this.atoms.get(k) as Atom & { kind: 'comp' }).index] = coefficient
+      rows.push({ a, offset: c.aff.offset })
+    }
+    return vector === undefined ? undefined : { vector, size, rows }
+  }
+
+  /**
+   * An observed node over a plate as one plated factor on its weight vector, when its rows are i.i.d. draws of one
+   * regression on a packed vector `w`: a Gaussian likelihood with one known scale (the exact `linear-regression-plate`, by
+   * the sufficient statistics of the rows) or a Bernoulli with a probit or logistic link of `a . w` (`probit-plate`,
+   * `logistic-plate`, the design matrix and outcomes as parameters). Anything else, or an engine registry without the
+   * plate operators, is not handled here and falls to the expansion. Returns whether the node was compiled.
+   */
+  private plate(node: ModelNode & { readonly kind: 'observed' }, fam: string, values: readonly number[]): boolean {
+    if (fam === 'normal') return this.plateNormal(node, values)
+    if (fam === 'bernoulli') return this.plateBernoulli(node, values)
+    return false
+  }
+
+  private addPlated(node: ModelNode & { readonly kind: 'observed' }, f: FactorSpec): void {
+    this.addFactor(f, node.name)
+    this.plated.push(node.name)
+    this.layout(
+      node,
+      'observed',
+      undefined,
+      'observed',
+      new Array<null>(prod(this.shapeOf(node.dims))).fill(null),
+      false,
+    )
+  }
+
+  private plateNormal(node: ModelNode & { readonly kind: 'observed' }, values: readonly number[]): boolean {
+    if (!('linear-regression-plate' in this.ops)) return false
+    const scaleExpr = node.dist.params['scale']
+    if (scaleExpr !== undefined && !this.isConst(scaleExpr)) return false
+    const scales = this.over(this.paramSym(node.dist, 'scale'), node.dims).map(
+      (c) => (c as Cell & { kind: 'aff' }).aff.offset,
+    )
+    const scale = scales[0] as number
+    if (!(scale > 0) || scales.some((v) => v !== scale)) return false
+    const locs = this.cellsOf(node, 'loc', () => this.paramSym(node.dist, 'loc'))
+    const design = this.designRows(locs, true)
+    if (design === undefined) return false
+    const d = design.size
+    const xtx = new Array<number>(d * d).fill(0)
+    const xty = new Array<number>(d).fill(0)
+    let yty = 0
+    let n = 0
+    for (const [i, row] of design.rows.entries()) {
+      const y = (values[i] as number) - (row?.offset ?? 0)
+      if (row === undefined || Number.isNaN(values[i])) continue
+      n++
+      yty += y * y
+      for (let a = 0; a < d; a++) {
+        xty[a] = (xty[a] as number) + (row.a[a] as number) * y
+        for (let b = 0; b < d; b++)
+          xtx[a * d + b] = (xtx[a * d + b] as number) + (row.a[a] as number) * (row.a[b] as number)
+      }
+    }
+    if (n === 0) return false
+    this.addPlated(node, {
+      operator: 'linear-regression-plate',
+      args: [design.vector],
+      params: { xtx, xty, yty, n, precision: 1 / scale ** 2 },
+    })
+    return true
+  }
+
+  private plateBernoulli(node: ModelNode & { readonly kind: 'observed' }, values: readonly number[]): boolean {
+    const probs = node.dist.params['probs']
+    const logits = node.dist.params['logits']
+    let link: 'probit' | 'sigmoid' | undefined
+    let argument: ExprSpec | undefined
+    if (logits !== undefined) {
+      link = 'sigmoid'
+      argument = logits
+    } else if (probs !== undefined) {
+      const e = this.unwrap(probs)
+      if (e.kind === 'op' && (e.op === 'probit' || e.op === 'sigmoid')) {
+        link = e.op
+        argument = e.args[0] as ExprSpec
+      }
+    }
+    if (link === undefined || argument === undefined) return false
+    const operator = link === 'probit' ? 'probit-plate' : 'logistic-plate'
+    if (!(operator in this.ops)) return false
+    const arg = argument
+    const cells = this.cellsOf(node, `link:${link}`, () => this.evalSym(arg))
+    const design = this.designRows(cells, false)
+    if (design === undefined) return false
+    const x: number[] = []
+    const y: number[] = []
+    for (const [i, row] of design.rows.entries()) {
+      if (row === undefined || Number.isNaN(values[i])) continue
+      x.push(...row.a)
+      y.push(values[i] as number)
+    }
+    if (y.length === 0) return false
+    this.addPlated(node, { operator, args: [design.vector], params: { X: x, y } })
+    return true
   }
 
   /** An observed Gaussian with a gamma precision (`gaussian-gamma-precision`): the mean is a variable or a known value. */
@@ -1529,7 +1677,7 @@ class Compiler {
  * issue naming the node and the reason, and no graph is produced.
  *
  * @param bound - The bound model.
- * @param options - The factor operators to compile against (default the engine's `defaultOperators()`) and the model's operator table.
+ * @param options - The factor operators to compile against (default the engine's `defaultOperators()`), the model's operator table, and `plates`: `vectorise` (default) or `expand`.
  * @returns The compilation.
  * @concept model-spec
  * @index function Compile a bound ModelSpec to a message-passing factor graph, plates expanded.
@@ -1544,9 +1692,12 @@ class Compiler {
  *   const w = b.latent('w', normal(0, 2), { dims: [f] })
  *   b.observe('y', bernoulli({ probs: ops.probit(X.matmul(w)) }), y)
  * })
- * const c = toFactorGraph(m.bind({ X: [[1, 0.5], [1, -1]], y: [1, 0] }))
- * c.graph?.variables.map((v) => v.name) // => ['w', 'y#0[0]', 'y[0]', 'y#0[1]', 'y[1]']
- * c.graph?.factors.map((f) => f.id) // => ['factor:w', 'factor:y#0[0]', 'factor:y[0]', 'factor:y#0[1]', 'factor:y[1]']
+ * const bound = m.bind({ X: [[1, 0.5], [1, -1]], y: [1, 0] })
+ * const plated = toFactorGraph(bound)
+ * plated.graph?.factors.map((f) => f.id) // => ['factor:w', 'factor:y']
+ * const rows = toFactorGraph(bound, { plates: 'expand' })
+ * rows.graph?.variables.map((v) => v.name) // => ['w', 'y#0[0]', 'y[0]', 'y#0[1]', 'y[1]']
+ * rows.graph?.factors.map((f) => f.id) // => ['factor:w', 'factor:y#0[0]', 'factor:y[0]', 'factor:y#0[1]', 'factor:y[1]']
  * ```
  */
 export function toFactorGraph(
@@ -1555,9 +1706,16 @@ export function toFactorGraph(
     readonly operators?: Readonly<Record<string, FactorOperator>>
     readonly modelOperators?: OperatorTable
     readonly analysis?: SpecAnalysis
+    /** `vectorise` (default): an observed node whose rows are one regression on a weight vector is one plated factor; `expand`: a factor and a variable per row. */
+    readonly plates?: 'vectorise' | 'expand'
   } = {},
 ): FactorGraphCompilation {
-  const c = new Compiler(bound, options.modelOperators ?? defaultOperators(), options.operators ?? factorOperators())
+  const c = new Compiler(
+    bound,
+    options.modelOperators ?? defaultOperators(),
+    options.operators ?? factorOperators(),
+    options.plates !== 'expand',
+  )
   c.run()
   const graph: FactorGraphSpec = { variables: c.variables, factors: c.factors }
   const opaque = options.analysis?.opaque ?? opaqueNodes(bound)
@@ -1578,6 +1736,7 @@ export function toFactorGraph(
     opaque,
     sites: c.sites,
     auxiliary: c.auxiliary,
+    plated: c.plated,
     expanded: { plates, variables: graph.variables.length, factors: graph.factors.length },
   }
 }
@@ -1598,7 +1757,7 @@ function opaqueNodes(bound: BoundModel): string[] {
 export type MessageRule = 'ep' | 'vmp' | 'bp'
 
 /**
- * The factors of a compiled graph whose operator has no message rule for a method (an operator with only an EP rule cannot
+ * The factors of a compiled graph whose operator has no message rule for a method (an operator with only an EP rule, such as a hard comparison, cannot
  * run variational message passing; one with no `tilted` and no `ep` cannot run EP), with the operator's name: what a
  * method's capability check reports.
  *
@@ -1609,8 +1768,8 @@ export type MessageRule = 'ep' | 'vmp' | 'bp'
  * ```ts
  * import { compileGraph, defaultOperators } from 'omai-engine/message-passing'
  * import { operatorsWithout } from 'omai-engine/probprog/model'
- * const g = compileGraph({ variables: [{ name: 'x', family: { kind: 'gaussian' } }, { name: 'b', family: { kind: 'bernoulli' }, observed: 1 }], factors: [{ operator: 'probit', args: ['b', 'x'] }, { operator: 'prior', args: ['x'], params: { eta: [0, 1] } }] }, defaultOperators())
- * [operatorsWithout(g, 'ep'), operatorsWithout(g, 'vmp')] // => [[], ['probit']]
+ * const g = compileGraph({ variables: [{ name: 'x', family: { kind: 'gaussian' } }, { name: 'b', family: { kind: 'bernoulli' }, observed: 1 }], factors: [{ operator: 'greater-than', args: ['b', 'x'], params: { threshold: 0 } }, { operator: 'prior', args: ['x'], params: { eta: [0, 1] } }] }, defaultOperators())
+ * [operatorsWithout(g, 'ep'), operatorsWithout(g, 'vmp')] // => [[], ['greater-than']]
  * ```
  */
 export function operatorsWithout(g: CompiledGraph, rule: MessageRule): string[] {

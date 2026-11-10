@@ -57,7 +57,7 @@ describe('epSpecMethod', () => {
   })
 
   it('reads a state before any message as a posterior with no information, and a midway state as a partial one', () => {
-    const m = epSpecMethod(probitModel.bind({ X, y }))
+    const m = epSpecMethod(probitModel.bind({ X, y }), { plates: 'expand' })
     const s = session(m, { config: { granularity: 'factor' }, steps: 5000, mode: 'live' })
     const start = m.posterior?.(s.state, s.config)
     expect(start?.diagnostics['sweeps']).toBe(0)
@@ -70,13 +70,13 @@ describe('epSpecMethod', () => {
   })
 
   it('resumes from a serialised state to the same posterior, mid-sweep too', () => {
-    const m = epSpecMethod(probitModel.bind({ X, y }))
+    const m = epSpecMethod(probitModel.bind({ X, y }), { plates: 'expand' })
     expectResumeEqual(m, { config: { tol: 1e-10 }, steps: 500, at: 2 })
     expectResumeEqual(m, { config: { granularity: 'factor', tol: 1e-10 }, steps: 800, at: 40 })
   })
 
   it('cancels between steps and continues, and snapshots on the cadence of a fake clock', () => {
-    const m = epSpecMethod(probitModel.bind({ X, y }))
+    const m = epSpecMethod(probitModel.bind({ X, y }), { plates: 'expand' })
     expectCancelAndContinue(m, { config: { granularity: 'factor' }, steps: 800, cancelAfterSlices: 7 })
     const snaps = expectSnapshotCadence(m, {
       config: { granularity: 'message', tol: 1e-12 },
@@ -86,6 +86,23 @@ describe('epSpecMethod', () => {
       tick: 100,
     })
     expect(snaps.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('compiles a regression over a plate to one plated factor (the same posterior as the expanded graph), and expands on request', () => {
+    const plated = epSpecMethod(probitModel.bind({ X, y }))
+    const expanded = epSpecMethod(probitModel.bind({ X, y }), { plates: 'expand' })
+    const a = session(plated, { config: { tol: 1e-12 }, steps: 500, mode: 'eager' })
+    const b = session(expanded, { config: { tol: 1e-12 }, steps: 500, mode: 'eager' })
+    const pa = plated.posterior?.(a.state, a.config)
+    const pb = expanded.posterior?.(b.state, b.config)
+    expect(pa?.diagnostics['variables']).toBe(1)
+    expect(pb?.diagnostics['variables']).toBeGreaterThan(2 * X.length)
+    const ma = toFlat(pa?.mean('w') as never)
+    const mb = toFlat(pb?.mean('w') as never)
+    for (const [i, v] of ma.entries()) expect(Math.abs((v as number) - (mb[i] as number))).toBeLessThan(1e-6)
+    expect(Math.abs((pa?.logEvidence?.value as number) - (pb?.logEvidence?.value as number))).toBeLessThan(1e-5)
+    // Resuming and cancelling work on a plated graph too (a step is a message, of which it has two).
+    expectResumeEqual(plated, { config: { granularity: 'message', tol: 1e-10 }, steps: 200, at: 3 })
   })
 
   it('takes the knobs of its engine (schedule, damping, improper policy) and the budget knobs of every method', () => {

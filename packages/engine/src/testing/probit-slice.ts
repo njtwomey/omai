@@ -1,11 +1,10 @@
 // The probit regression of the probabilistic-programming vertical slice, shared by the tests of the factor-graph compiler and
 // of the message-passing methods: the dataset (an intercept and two covariates, labels from known weights), the model written
-// in the builder, an exact posterior on a grid, and a table that compares what several methods say with the grid. Node only;
-// not published.
+// in the builder and an exact posterior on a grid (the tests of the methods compare with `gridPosterior` of the validation
+// kernel; this grid is the tests of the compiler's own). Node only; not published.
 import { logNdtr } from '../lib/numerics/special/index.ts'
 import * as d from '../lib/probprog/model/dists/index.ts'
 import { defineModel, type ModelDefinition, ops } from '../lib/probprog/model/index.ts'
-import type { Posterior } from '../lib/probprog/posterior.ts'
 import { foldIn, key, normal as normalDraws, uniform } from '../lib/random/index.ts'
 import { fromStorage, toFlat } from '../lib/tensor/index.ts'
 
@@ -93,46 +92,4 @@ export function probitGrid(X: number[][], y: number[], priorSd: number): GridPos
     hi = mean.map((v, q) => v + 7 * (sd[q] as number))
   }
   return result
-}
-
-/** One row of the moments table: what a method says of one weight, against the grid. */
-export interface MomentRow {
-  readonly method: string
-  readonly coordinate: string
-  readonly mean: number
-  readonly sd: number
-  /** The error of the mean in posterior standard deviations of the grid answer. */
-  readonly meanError: number
-  /** The standard deviation over the grid's. */
-  readonly sdRatio: number
-  /** KL(grid || method) between the Gaussians with those moments, in nats. */
-  readonly kl: number
-}
-
-/**
- * The moments of site `w` under several posteriors, compared with the grid: the error of each mean in grid standard
- * deviations, the ratio of spreads and the Gaussian KL from the grid answer. An `agree` style table for the three weights.
- */
-export function momentTable(grid: GridPosterior, posteriors: Readonly<Record<string, Posterior>>): MomentRow[] {
-  const rows: MomentRow[] = []
-  for (const [method, p] of Object.entries(posteriors)) {
-    const mean = toFlat(p.mean('w'))
-    const sd = toFlat(p.stddev('w'))
-    for (let q = 0; q < 3; q++) {
-      const m = mean[q] as number
-      const s = sd[q] as number
-      const m0 = grid.mean[q] as number
-      const s0 = grid.sd[q] as number
-      rows.push({
-        method,
-        coordinate: `w[${q}]`,
-        mean: m,
-        sd: s,
-        meanError: (m - m0) / s0,
-        sdRatio: s / s0,
-        kl: Math.log(s / s0) + (s0 ** 2 + (m0 - m) ** 2) / (2 * s ** 2) - 0.5,
-      })
-    }
-  }
-  return rows
 }
