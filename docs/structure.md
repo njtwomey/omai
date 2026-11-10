@@ -7720,9 +7720,11 @@ Design rules:
   `DraggableLine` (a vertical or horizontal line the reader drags, bound two-way to a control's value: thresholds,
   cut-offs, levels; snaps to a step, keyboard-nudgeable; a bar, square, circle or diamond handle of a given size),
   `DraggableRect` (a rectangle in data coordinates dragged and resized by eight grips, `handles` `corners`, `edges` or
-  `all`, its body moving it whole; `min`/`max` bounds, `minSize`, `step` snapping, arrow keys with Shift for ten steps,
-  Escape cancels a drag; normalised whichever way the axes run) and `Handle.tsx` (the shared bar, square, circle or
-  diamond grip both draw).
+  `all`, its body moving it whole; `min`/`max` bounds, `minSize`, `step` snapping, arrow keys with Shift for ten steps
+  and a `keyStep` apart from the snap, Escape cancels a drag; `drawable` to draw a new rectangle by dragging on the empty
+  figure (`onDrawEnd`); `handleFill`; normalised whichever way the axes run), `Handle.tsx` (the shared bar, square, circle
+  or diamond grip both draw, with `handleFillOf` and an optional focus ring) and `useFocusRing.ts` (which part of a tool
+  shows its keyboard focus ring, in React state since `:focus-visible` cannot style inline SVG).
 - `MathView.tsx`: `Tex`, `Equation` (live), `Derivation`, `MathProvider` (KaTeX HTML with its stylesheet, MathML for
   assistive technology; live values highlighted).
 - `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a

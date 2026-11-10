@@ -1,13 +1,15 @@
 /**
  * A rectangle the reader drags and resizes on a figure (a zoom window, a region of interest, a crop), bound two-way to
  * its x and y ranges in data coordinates: eight grips (four corners, four edges), the body to move it whole, snapping to
- * a step, bounds, a minimum size, arrow keys, and Escape to cancel a drag.
+ * a step, bounds, a minimum size, arrow keys with a step of their own, a keyboard focus ring, drawing a new rectangle
+ * by dragging on the empty figure, and Escape to cancel a drag.
  */
 
 import { type KeyboardEvent, type PointerEvent, type ReactNode, useEffect, useRef, useState } from 'react'
-import { Handle, type HandleShape } from './Handle.tsx'
+import { Handle, type HandleFill, type HandleShape, handleFillOf } from './Handle.tsx'
 import { useOverlay } from './InteractionOverlay.tsx'
 import type { DataRect } from './selection.ts'
+import { FOCUS_COLOUR, useFocusRing } from './useFocusRing.ts'
 
 /** Which grips a {@link DraggableRect} shows: the four `corners`, the four `edges`, or `all` eight (the default). */
 export type RectHandles = 'corners' | 'edges' | 'all'
@@ -34,15 +36,27 @@ export interface DraggableRectProps {
   readonly minSize?: PerAxis
   /**
    * Round the moved edges to this step in data units, a number for both axes or one per axis. It is also the arrow
-   * keys' step (Shift moves ten steps); without it an arrow moves one pixel's worth of data.
+   * keys' step (Shift moves ten steps) unless `keyStep` is given; without either an arrow moves one pixel's worth of
+   * data.
    */
   readonly step?: PerAxis
+  /**
+   * The arrow keys' step in data units, a number for both axes or one per axis (Shift moves ten steps), apart from the
+   * drag snap `step`: drag on a coarse grid and nudge finely. When it is given a nudge is not rounded to `step` (it
+   * still stays inside `min`, `max` and `minSize`); an axis left out falls back to `step`, then to one pixel's worth.
+   */
+  readonly keyStep?: PerAxis
   /** Which grips to show (default `all`: eight). */
   readonly handles?: RectHandles
   /** The grips' shape (default `square`; a `bar` lies along its edge on an edge grip and is a square on a corner). */
   readonly handleShape?: HandleShape
   /** The grips' size in pixels (default 8). */
   readonly handleSize?: number
+  /**
+   * What the grips are filled with: `bg` (the default: the page colour, filled with `colour` while a grip is being
+   * dragged), `solid` (always `colour`), or any CSS colour (always that colour).
+   */
+  readonly handleFill?: HandleFill
   /** Whether dragging the body moves the whole rectangle (default true). */
   readonly moveable?: boolean
   /** The outline and grip colour: a CSS colour or `var(--wb-…)` token (default the foreground). */
@@ -53,6 +67,16 @@ export interface DraggableRectProps {
   readonly fillOpacity?: number
   /** Names the rectangle for assistive technology (default "rectangle"). */
   readonly label?: string
+  /**
+   * Let the reader draw a new rectangle (default false): pressing on the figure outside the rectangle and dragging
+   * starts one from that point, both corners following the pointer (kept inside `min` and `max`, at least `minSize`,
+   * low end first, snapped to `step`), with `onChange` called as it grows and `onDrawEnd` on release. A press that does
+   * not move (under 3 pixels) draws nothing and leaves the rectangle as it is; Escape puts the starting rectangle back.
+   * The layer that catches the press sits under the rectangle's own grips and body and is only there while `drawable`.
+   */
+  readonly drawable?: boolean
+  /** Called on release with the rectangle a drawing drag ended with (not after Escape, not for a press that did not move). */
+  readonly onDrawEnd?: (rect: DataRect) => void
 }
 
 type Range = readonly [lo: number, hi: number]
@@ -76,6 +100,9 @@ const EDGES: readonly Grip[] = [
   { sx: 0, sy: 1 },
 ]
 const BODY: Grip = { sx: 0, sy: 0 }
+
+// The pointer must travel this many pixels from a press before a drawing drag begins: a click draws nothing.
+const DRAW_SLOP = 3
 
 interface AxisRules {
   readonly min: number
@@ -130,7 +157,13 @@ const same = (a: DataRect, b: DataRect): boolean =>
  *
  * Every grip is focusable and the arrow keys nudge it by `step` (Shift: ten steps), the way they look on screen (the
  * right arrow moves right even on a flipped axis). On a corner the arrows move both edges, on an edge the one it sits
- * on, on the body the whole rectangle. Escape during a drag puts the rectangle back as it was when the drag began.
+ * on, on the body the whole rectangle. `keyStep` gives the keys a step of their own, finer than the drag snap `step`. A
+ * focused grip or body shows a ring in the accent colour (`var(--wb-accent)`) when it was reached from the keyboard, not
+ * when it was pressed with a pointer. Escape during a drag puts the rectangle back as it was when the drag began.
+ *
+ * With `drawable`, pressing outside the rectangle and dragging draws a new one from that point (`onChange` follows,
+ * `onDrawEnd` on release), the rectangle being normalised, clamped, kept at `minSize` and snapped as for a resize; a
+ * plain click draws nothing and Escape cancels. `handleFill` fills the grips (`solid`, `bg` or any CSS colour).
  *
  * @param props - The ranges, the change handler, the bounds, snapping and the look of the grips.
  * @returns The rectangle, its grips and its hit area.
@@ -147,14 +180,18 @@ const same = (a: DataRect, b: DataRect): boolean =>
  *     max={{ x: 10, y: 1 }}
  *     minSize={{ x: 0.5, y: 0.05 }}
  *     step={0.1}
+ *     keyStep={0.01}
+ *     handleFill="solid"
  *     fill="var(--wb-accent)"
+ *     drawable
+ *     onDrawEnd={commit}
  *   />
  * </InteractionOverlay>
  * ```
  */
 export function DraggableRect(props: DraggableRectProps): ReactNode {
   const { onChange, handles = 'all', moveable = true } = props
-  const { projection, dataOf } = useOverlay()
+  const { projection, width, height, dataOf, pixelOf } = useOverlay()
   const colour = props.colour ?? 'var(--wb-fg)'
   const rect: DataRect = {
     x: [Math.min(props.x[0], props.x[1]), Math.max(props.x[0], props.x[1])],
@@ -172,21 +209,34 @@ export function DraggableRect(props: DraggableRectProps): ReactNode {
     readonly from: readonly [number, number]
     readonly start: DataRect
   } | null>(null)
+  // What a drawing drag started from: the pixel and data point of the press, the rectangle then, and whether the
+  // pointer has moved far enough to count as a drag (a click draws nothing).
+  const drawing = useRef<{
+    readonly pixel: readonly [number, number]
+    readonly anchor: readonly [number, number]
+    readonly start: DataRect
+    drawn: DataRect | null
+  } | null>(null)
   const [dragging, setDragging] = useState(false)
+  const ring = useFocusRing<string>()
   const latest = useRef({ onChange, rect })
   latest.current = { onChange, rect }
   const stop = (): void => {
     drag.current = null
     setDragging(false)
+    ring.release()
   }
-  // Escape cancels the drag from wherever the focus is.
+  // Escape cancels the drag (or the drawing) from wherever the focus is.
   useEffect(() => {
     if (!dragging) return
     const onKey = (e: { readonly key: string; preventDefault?: () => void }): void => {
-      if (e.key !== 'Escape' || drag.current === null) return
+      if (e.key !== 'Escape') return
+      const active = drag.current ?? drawing.current
+      if (active === null) return
       e.preventDefault?.()
-      latest.current.onChange(drag.current.start)
+      if (drag.current !== null || drawing.current?.drawn != null) latest.current.onChange(active.start)
       drag.current = null
+      drawing.current = null
       setDragging(false)
     }
     window.addEventListener('keydown', onKey)
@@ -217,11 +267,63 @@ export function DraggableRect(props: DraggableRectProps): ReactNode {
     emit(moved(active.start, active.grip, [d[0] - active.from[0], d[1] - active.from[1]], rules('x'), rules('y')))
   }
   const pointer = (grip: Grip): object => ({
-    onPointerDown: (e: PointerEvent<SVGElement>) => grab(grip, e),
+    onPointerDown: (e: PointerEvent<SVGElement>) => {
+      ring.press()
+      grab(grip, e)
+    },
     onPointerMove: follow,
     onPointerUp: stop,
     onPointerCancel: stop,
   })
+
+  // Drawing a new rectangle: one end is where the press was (snapped, inside the bounds), the other follows the pointer.
+  const fit = (v: number, axis: 'x' | 'y'): number => {
+    const r = rules(axis)
+    return Math.max(r.min, Math.min(tidy(snapped(v, r.step)), r.max))
+  }
+  // The moving end of an axis: at least `size` from the anchor in the direction of the pointer, else the other way.
+  const reach = (anchor: number, to: number, axis: 'x' | 'y'): readonly [number, number] => {
+    const r = rules(axis)
+    const dir = to >= anchor ? 1 : -1
+    let end = fit(to, axis)
+    if (Math.abs(end - anchor) < r.size) {
+      end = fit(anchor + dir * r.size, axis)
+      if (Math.abs(end - anchor) < r.size) end = fit(anchor - dir * r.size, axis)
+    }
+    return end < anchor ? [end, anchor] : [anchor, end]
+  }
+  const inside = (p: readonly [number, number]): boolean =>
+    p[0] >= left && p[0] <= left + pw && p[1] >= top && p[1] <= top + ph
+  const startDraw = (e: PointerEvent<SVGElement>): void => {
+    const pixel = pixelOf(e)
+    const d = dataOf(e)
+    if (!d.every(Number.isFinite) || !pixel.every(Number.isFinite) || inside([pixel[0], pixel[1]])) return
+    e.currentTarget.setPointerCapture(e.pointerId)
+    drawing.current = {
+      pixel: [pixel[0], pixel[1]],
+      anchor: [fit(d[0], 'x'), fit(d[1], 'y')],
+      start: rect,
+      drawn: null,
+    }
+    setDragging(true)
+  }
+  const growDraw = (e: PointerEvent<SVGElement>): void => {
+    const active = drawing.current
+    if (active === null) return
+    const pixel = pixelOf(e)
+    const d = dataOf(e)
+    if (!d.every(Number.isFinite) || !pixel.every(Number.isFinite)) return
+    if (active.drawn === null && Math.hypot(pixel[0] - active.pixel[0], pixel[1] - active.pixel[1]) < DRAW_SLOP) return
+    const next: DataRect = { x: reach(active.anchor[0], d[0], 'x'), y: reach(active.anchor[1], d[1], 'y') }
+    active.drawn = next
+    emit(next)
+  }
+  const endDraw = (): void => {
+    const active = drawing.current
+    drawing.current = null
+    setDragging(false)
+    if (active?.drawn != null) props.onDrawEnd?.(active.drawn)
+  }
 
   // The arrow keys move what is on screen the way they point: the direction of the data along each axis is read from
   // the projection, so a flipped x axis or an inverted y axis needs no care from the caller.
@@ -236,7 +338,7 @@ export function DraggableRect(props: DraggableRectProps): ReactNode {
     const [vx, vy] = projection.unproject(centre[0] + (axis === 'x' ? 1 : 0), centre[1] + (axis === 'y' ? 1 : 0))
     return Math.abs(axis === 'x' ? vx - ux : vy - uy) || 1
   }
-  const nudge = (grip: Grip, e: KeyboardEvent<SVGElement>): void => {
+  const nudge = (key: string, grip: Grip, e: KeyboardEvent<SVGElement>): void => {
     const arrows: Record<string, readonly [number, number]> = {
       ArrowRight: [1, 0],
       ArrowLeft: [-1, 0],
@@ -247,9 +349,16 @@ export function DraggableRect(props: DraggableRectProps): ReactNode {
     if (a === undefined) return
     e.preventDefault()
     const times = e.shiftKey ? 10 : 1
-    const size = (axis: 'x' | 'y'): number => (perAxis(props.step, axis) ?? perPixel(axis)) * times
+    // A `keyStep` of its own is not rounded to the drag snap; the `step` it falls back to is.
+    const size = (axis: 'x' | 'y'): number =>
+      (perAxis(props.keyStep, axis) ?? perAxis(props.step, axis) ?? perPixel(axis)) * times
+    const free = (axis: 'x' | 'y'): AxisRules => {
+      const r = rules(axis)
+      return perAxis(props.keyStep, axis) === undefined ? r : { ...r, step: undefined }
+    }
+    ring.reveal(key)
     emit(
-      moved(rect, grip, [a[0] * direction('x') * size('x'), a[1] * direction('y') * size('y')], rules('x'), rules('y')),
+      moved(rect, grip, [a[0] * direction('x') * size('x'), a[1] * direction('y') * size('y')], free('x'), free('y')),
     )
   }
 
@@ -288,6 +397,22 @@ export function DraggableRect(props: DraggableRectProps): ReactNode {
   )
   return (
     <g>
+      {/* The layer that starts a new rectangle from a press outside this one: under the body and the grips. */}
+      {props.drawable === true && (
+        <rect
+          x={0}
+          y={0}
+          width={width}
+          height={height}
+          fill="transparent"
+          data-rect-draw="layer"
+          style={{ cursor: 'crosshair' }}
+          onPointerDown={startDraw}
+          onPointerMove={growDraw}
+          onPointerUp={endDraw}
+          onPointerCancel={endDraw}
+        />
+      )}
       {/* The body: a transparent or filled area that moves the rectangle whole, focusable when it moves. */}
       {moveable ? (
         <g
@@ -298,7 +423,8 @@ export function DraggableRect(props: DraggableRectProps): ReactNode {
           aria-valuetext={valueText}
           data-rect-grip="body"
           style={{ cursor: dragging ? 'grabbing' : 'move', outline: 'none' }}
-          onKeyDown={(e) => nudge(BODY, e)}
+          onKeyDown={(e) => nudge('body', BODY, e)}
+          {...ring.bind('body')}
           {...pointer(BODY)}
         >
           {body}
@@ -317,6 +443,19 @@ export function DraggableRect(props: DraggableRectProps): ReactNode {
         strokeDasharray={dragging ? undefined : '5 4'}
         pointerEvents="none"
       />
+      {ring.focused === 'body' && (
+        <rect
+          x={left - 3}
+          y={top - 3}
+          width={pw + 6}
+          height={ph + 6}
+          fill="none"
+          stroke={FOCUS_COLOUR}
+          strokeWidth={2}
+          pointerEvents="none"
+          data-focus-ring="true"
+        />
+      )}
       {grips.map((g) => {
         const p = at(g)
         const edge = g.sx === 0 || g.sy === 0
@@ -332,7 +471,8 @@ export function DraggableRect(props: DraggableRectProps): ReactNode {
             aria-valuetext={valueText}
             data-rect-grip={name}
             style={{ cursor: cursorOf(p, g), outline: 'none' }}
-            onKeyDown={(e) => nudge(g, e)}
+            onKeyDown={(e) => nudge(name, g, e)}
+            {...ring.bind(name)}
             {...pointer(g)}
           >
             {/* A larger transparent hit area, so a small grip is easy to take. */}
@@ -347,8 +487,9 @@ export function DraggableRect(props: DraggableRectProps): ReactNode {
               shape={props.handleShape === 'bar' && !edge ? 'square' : (props.handleShape ?? 'square')}
               size={sizeOf}
               vertical={g.sx !== 0}
-              fill={dragging ? colour : 'var(--wb-bg)'}
+              fill={handleFillOf(props.handleFill, colour, dragging)}
               stroke={colour}
+              ring={ring.focused === name}
             />
           </g>
         )
