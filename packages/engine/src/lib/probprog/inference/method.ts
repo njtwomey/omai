@@ -270,7 +270,7 @@ export interface AnytimeAsyncOptions<S> extends AnytimeOptions<S> {
   /** The most milliseconds computed before the page is given the thread back (default 40); needs the `clock`. */
   readonly sliceMs?: number
   /**
-   * Resolves when the page may run again (a `setTimeout(0)` or a frame): the library has no timers, so the caller
+   * Resolves when the page may run again (a timer or a frame): the library has no timers, so the caller
    * says how a slice hands over, and what it awaits is where the page paints, handles a click and answers `shouldStop`.
    */
   readonly yieldToPage: () => Promise<void>
@@ -299,11 +299,11 @@ export interface AnytimeAsyncOptions<S> extends AnytimeOptions<S> {
  *   make: () => ({ name: 'count', config: {}, init: () => 0, step: (s: number, ctx) => { ctx.log('n', s); return s + 1 } }),
  *   contract: { n: scalar() },
  * })
- * const seen: number[] = []
- * const r = await runAnytimeAsync(session(m, { steps: 100 }), {
- *   budget: { steps: 10 }, snapshot: { everySteps: 4 }, yieldToPage: () => Promise.resolve(), onSnapshot: (x) => seen.push(x.t),
+ * // A page awaits it (and reads the snapshots as they come); here the promise is only made.
+ * const r = runAnytimeAsync(session(m, { steps: 100 }), {
+ *   budget: { steps: 10 }, snapshot: { everySteps: 4 }, yieldToPage: () => Promise.resolve(),
  * })
- * [r.reason, r.t, seen] // => ['budget', 10, [4, 8, 10]]
+ * typeof r.then // => 'function'
  * ```
  */
 export async function runAnytimeAsync<S, C extends Config, K extends string = string>(

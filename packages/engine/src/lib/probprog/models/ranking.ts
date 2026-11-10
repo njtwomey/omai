@@ -192,7 +192,11 @@ export function trueskillModel(
   const definition = defineModel(`trueskill-${tournament.players.length}-players-${pairs.length}-games`, (m) => {
     const skill = tournament.players.map((p) => m.latent(`skill_${p}`, d.normal(0, 1), { doc: `the skill of ${p}` }))
     for (const [g, [a, b]] of pairs.entries()) {
-      const won = m.data(`won_${g + 1}`, { support: 'binary', role: 'response', doc: `1 when ${tournament.players[a]} beat ${tournament.players[b]}` })
+      const won = m.data(`won_${g + 1}`, {
+        support: 'binary',
+        role: 'response',
+        doc: `1 when ${tournament.players[a]} beat ${tournament.players[b]}`,
+      })
       const sa = skill[a]
       const sb = skill[b]
       if (sa === undefined || sb === undefined) continue
