@@ -72,10 +72,11 @@ omai-engine/pgm	616	b69a79c516e4
 omai-engine/pgm/causal	59	1dc2cc4bcf4f
 omai-engine/pgm/learning	123	a9e76fe66003
 omai-engine/problems	55	af621d373b9a
-omai-engine/probprog	256	f68e0e95ca0e
-omai-engine/probprog/inference	68	596f69db2798
+omai-engine/probprog	286	af228d561429
+omai-engine/probprog/inference	82	380818594076
 omai-engine/probprog/model	91	de5cdc3687c9
 omai-engine/probprog/model/dists	27	b33bb348e1b9
+omai-engine/probprog/validation	41	e27b97032c47
 omai-engine/random	52	07ee37b9bd6f
 omai-engine/rl	272	e873cab5f3fa
 omai-engine/rules	78	608fe8846362
@@ -123,4 +124,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	266	aa65704aaa1a
-total	19058	d1171b7bb3fa
+total	19143	265a87ba9a96

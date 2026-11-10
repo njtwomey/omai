@@ -7,6 +7,11 @@ Probabilistic programming, NumPyro style: programs written with `sample` and `ob
 - function `analysis.ts` (file): Static analysis of a program from one traced run. `src/lib/probprog/analysis.ts:1` `omai-engine/probprog`
 - function `handlers.ts` (file): Effect handlers (trace, condition, substitute, scale) that give programs meaning. `src/lib/probprog/handlers.ts:1` `omai-engine/probprog`
 - function `primitives.ts` (file): sample, observe and param: the vocabulary programs are written in. `src/lib/probprog/primitives.ts:1` `omai-engine/probprog`
+- function `reparam.ts` (file): Reparameterise a site into an auxiliary draw plus a transform. `src/lib/probprog/reparam.ts:1` `omai-engine/probprog`
+
+- function `collapse`: Integrate conjugate latent sites out of a program (delayed sampling) with recover. `src/lib/probprog/collapse.ts:199` `omai-engine/probprog`
+- function `lift`: Turn param sites into sample sites with priors (Pyro's lift). `src/lib/probprog/lift.ts:40` `omai-engine/probprog`
+- function `regenerate`: Redraw selected sites from the program given the rest, with the MH weight (Gen's regenerate). `src/lib/probprog/trace-ops.ts:259` `omai-engine/probprog`
 
 ## probprog/engines
 
@@ -19,10 +24,11 @@ The inference engines, part of `omai-engine/probprog`: exact ones (enumeration, 
 
 ## probprog/inference
 
-The shared convention of the inference methods of the probabilistic layer, available as `omai-engine/probprog/inference`: what every method has in common (knobs as a `Space`, a typed tape contract, a steppable and resumable algorithm, a capability check, a user-selected budget and anytime snapshots) and nothing that chooses a method for the user. Each method is its own thing with its own knobs and tape. The folder holds the convention (`method.ts`, `runAnytime`), the methods themselves, one per engine and each beside the engine it wraps (`nutsMethod` with one iteration of every chain per step, `sviMethod`, `gibbsMethod`, `laplaceMethod`, `temperedSmcMethod`, `particleFilterMethod`, `emMethod`, `importanceMethod`, `abcSmcMethod`, and the one-step exact ones), each made from a bound spec or a program, and the model registry by name that lets a worker run one.
+The shared convention of the inference methods of the probabilistic layer, available as `omai-engine/probprog/inference`: what every method has in common (knobs as a `Space`, a typed tape contract, a steppable and resumable algorithm, a capability check, a user-selected budget and anytime snapshots) and nothing that chooses a method for the user. Each method is its own thing with its own knobs and tape. The folder holds the convention (`method.ts`, `runAnytime`), the methods themselves, one per engine and each beside the engine it wraps (`nutsMethod` with one iteration of every chain per step, `sviMethod`, `gibbsMethod`, `laplaceMethod`, `temperedSmcMethod`, `particleFilterMethod`, `emMethod`, `importanceMethod`, `abcSmcMethod`, and the one-step exact ones), each made from a bound spec or a program, and the model registry by name that lets a worker run one. It also holds the building blocks for methods written on the program layer: kernels defined in a few lines on the handlers and trace operations (`defineKernel`, with a resimulation and a random-walk kernel as worked examples).
 
 - structure `method.ts` (file): InferenceMethod: knobs, typed tape, check, budget and anytime snapshots, the shared convention. `src/lib/probprog/inference/method.ts:1` `omai-engine/probprog/inference`
 
+- function `defineKernel`: Define your own sampler on the handler layer in a few lines. `src/lib/probprog/inference/kernel.ts:180` `omai-engine/probprog/inference`
 - function `inferenceMethods`: The methods an app offers on its registered models, named kind/model, for a worker. `src/lib/probprog/inference/models.ts:143` `omai-engine/probprog/inference`
 - function `modelRegistry`: Models by name for a worker: `modelRegistry({ radon: { definition, data } })`. `src/lib/probprog/inference/models.ts:67` `omai-engine/probprog/inference`
 
@@ -71,3 +77,12 @@ The distribution constructors of the model layer, available as `omai-engine/prob
 - function `builders.ts` (file): normal, gamma, bernoulli and the other families as model expressions. `src/lib/probprog/model/dists/builders.ts:1` `omai-engine/probprog/model/dists`
 
 - table `families.ts` (file): The distribution families a model spec names, mapped to the library's constructors. `src/lib/probprog/model/dists/families.ts:1` `omai-engine/probprog/model/dists`
+
+## probprog/validation
+
+The validation kernel for probabilistic programs: oracles (the grid posterior, closed-form conjugate posteriors), the agreement table that compares posterior approximations with an oracle or each other, simulation-based calibration with the exact rank distribution, Geweke joint-distribution tests, and the runner that gathers campaigns into a report. The library only returns numbers and records; the test helpers that assert on them are in `src/testing`, and the heavy campaigns are a script run on request, not part of the gate.
+
+- function `agree`: Compare posterior approximations with an oracle or each other: moments, KS, Wasserstein, KL. `src/lib/probprog/validation/agree.ts:188` `omai-engine/probprog/validation`
+- function `gewekeTest`: Geweke joint-distribution test of a posterior transition operator. `src/lib/probprog/validation/geweke.ts:83` `omai-engine/probprog/validation`
+- function `gridPosterior`: Grid posterior of a small program: evidence, marginals and moments to quadrature accuracy. `src/lib/probprog/validation/grid.ts:162` `omai-engine/probprog/validation`
+- function `sbc`: Simulation-based calibration of an inference method with the exact rank distribution. `src/lib/probprog/validation/sbc.ts:180` `omai-engine/probprog/validation`

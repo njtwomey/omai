@@ -47,13 +47,17 @@ export interface MarkovFrame {
 
 /**
  * Inference hints on a sample site: `enumerate: 'parallel'` marks a discrete latent site for exact summation,
- * `isAuxiliary` marks a site that is not a model variable (factors), and `blockPlates` names plates that should not
- * broadcast the site.
+ * `isAuxiliary` marks a site that is not a model variable (factors), `blockPlates` names plates that should not
+ * broadcast the site, and `method` and `block` (set by `inferHint`) say which inference method and which block of a
+ * composite plan the site belongs to. Nothing reads `method` and `block` on its own: they are annotations a plan the
+ * user writes can honour.
  */
 export interface InferConfig {
   readonly enumerate?: 'parallel' | undefined
   readonly isAuxiliary?: boolean
   readonly blockPlates?: readonly string[]
+  readonly method?: string
+  readonly block?: string
 }
 
 /**
