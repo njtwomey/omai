@@ -184,7 +184,7 @@ const rowOf = (d: Tensor, i: number): Tensor => {
   return fromStorage(d.data.slice(i * size, (i + 1) * size) as Float64Array, shape, 'float64')
 }
 
-interface Transition {
+interface KernelTransition {
   readonly acceptanceRate: number
   readonly accepted: boolean
   readonly divergent?: boolean | undefined
@@ -195,7 +195,7 @@ interface Transition {
 }
 
 /** A transition's statistics as the columns of a kept row. */
-const statsOf = (logDensity: number, info: Transition): number[] => [
+const statsOf = (logDensity: number, info: KernelTransition): number[] => [
   logDensity,
   info.acceptanceRate,
   info.accepted ? 1 : 0,

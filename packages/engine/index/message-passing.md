@@ -21,7 +21,7 @@ Message passing on factor graphs of exponential families, the Infer.NET way: a m
 
 - algorithm `bpAlgorithm`: Sum-product belief propagation on a factor graph of discrete variables. `src/lib/message-passing/named.ts:249` `omai-engine/message-passing`
 - algorithm `epAlgorithm`: Expectation propagation on a factor graph of exponential families. `src/lib/message-passing/named.ts:191` `omai-engine/message-passing`
-- algorithm `messagePassingAlgorithm`: The message-passing engine on a factor graph: projection, schedule, damping slots. `src/lib/message-passing/engine.ts:392` `omai-engine/message-passing`
+- algorithm `messagePassingAlgorithm`: The message-passing engine on a factor graph: projection, schedule, damping slots. `src/lib/message-passing/engine.ts:397` `omai-engine/message-passing`
 - algorithm `vmpAlgorithm`: Variational message passing on a factor graph of exponential families. `src/lib/message-passing/named.ts:221` `omai-engine/message-passing`
 
 - structure `FactorOperator`: A factor operator: the message to each argument of a factor. `src/lib/message-passing/types.ts:193` `omai-engine/message-passing`

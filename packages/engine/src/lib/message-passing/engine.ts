@@ -163,13 +163,18 @@ function rawCavity(g: CompiledGraph, messages: readonly (readonly number[])[], f
 }
 
 /** What an update proposes: a message, no information (a flat one), nothing (the old message stays), or a failure. */
-type Proposal =
+type FactorProposal =
   | { readonly kind: 'message'; readonly eta: Eta }
   | { readonly kind: 'flat' }
   | { readonly kind: 'blocked' }
   | { readonly kind: 'failed' }
 
-function propose(g: CompiledGraph, s: EngineSettings, source: readonly (readonly number[])[], e: number): Proposal {
+function propose(
+  g: CompiledGraph,
+  s: EngineSettings,
+  source: readonly (readonly number[])[],
+  e: number,
+): FactorProposal {
   const edge = g.edges[e] as CompiledGraph['edges'][number]
   const f = g.factors[edge.factor] as CompiledGraph['factors'][number]
   const op = f.operator
@@ -208,7 +213,7 @@ function resolve(
   s: EngineSettings,
   current: readonly (readonly number[])[],
   e: number,
-  proposal: Proposal,
+  proposal: FactorProposal,
   counts: { events: number; skipped: number; damped: number; reset: number },
 ): Eta {
   const edge = g.edges[e] as CompiledGraph['edges'][number]
