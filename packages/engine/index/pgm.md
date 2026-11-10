@@ -36,3 +36,7 @@ The graphical model types, part of `omai-engine/pgm`: Bayes networks, Markov net
 Structured prediction: conditional random fields and their neighbours, in one place. Linear-chain CRFs with feature templates, general CRFs on trees, grids, skip chains and arbitrary graphs, semi-Markov and higher-order CRFs, locally normalised MEMMs, latent and partial-label CRFs, max-margin structured learners, constrained and n-best decoding, and the CRF layer over a neural encoder. Every model offers the same small contract (`StructuredOracle`: feature counts, expected feature counts and loss-augmented decoding), so one table of solvers (L-BFGS, OWL-QN for L1, stochastic gradient, perceptron, passive-aggressive, structured SVMs) trains all of them.
 
 - structure `StructuredOracle`: The contract a structured model offers a learner: features, expectations, decoding, loss. `src/lib/pgm/structured/oracle.ts:20` `omai-engine/pgm`
+- structure `chainOracle`: Linear-chain CRF as a structured oracle: counts, expectations, Viterbi, Hamming loss. `src/lib/pgm/structured/chain-oracle.ts:59` `omai-engine/pgm`
+
+- table `crfSolvers`: CRF training solvers: L-BFGS, OWL-QN for L1, SGD, perceptron, passive-aggressive, AROW. `src/lib/pgm/structured/crf-training.ts:104` `omai-engine/pgm`
+- table `structuredSolvers`: Structured-model solvers: L-BFGS, OWL-QN for L1, SGD, perceptron, passive-aggressive, AROW. `src/lib/pgm/structured/solvers.ts:311` `omai-engine/pgm`
