@@ -3982,6 +3982,16 @@
       "cases": 18
     },
     {
+      "fixture": "probprog/engines/pathfinder.json",
+      "source": "oracle/cases/probprog/engines/pathfinder.py",
+      "reference": {
+        "blackjax": "1.7.1",
+        "numpyro": "0.22.0",
+        "jax": "0.12.0.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "probprog/handlers.json",
       "source": "oracle/cases/probprog/handlers.py",
       "reference": {

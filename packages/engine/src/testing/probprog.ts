@@ -233,3 +233,25 @@ export function expectGeweke(result: GewekeResult): void {
     'statistics that differ between the marginal-conditional and successive-conditional simulators',
   ).toEqual([])
 }
+
+/**
+ * The weighted mean and sd of each coordinate of draws laid row by row (`n * dim` values) with normalised or unnormalised
+ * log weights: the moments a posterior of unconstrained draws is compared by.
+ */
+export function weightedMoments(
+  draws: ArrayLike<number>,
+  logWeights: ArrayLike<number>,
+  dim: number,
+): { readonly mean: number[]; readonly sd: number[] } {
+  let m = Number.NEGATIVE_INFINITY
+  for (let i = 0; i < logWeights.length; i++) m = Math.max(m, logWeights[i] ?? Number.NEGATIVE_INFINITY)
+  const w = Float64Array.from({ length: logWeights.length }, (_, i) => Math.exp((logWeights[i] ?? 0) - m))
+  const total = w.reduce((a, b) => a + b, 0)
+  const mean = Array.from({ length: dim }, (_, j) =>
+    w.reduce((a, x, i) => a + (x / total) * (draws[i * dim + j] ?? 0), 0),
+  )
+  const sd = Array.from({ length: dim }, (_, j) =>
+    Math.sqrt(w.reduce((a, x, i) => a + (x / total) * ((draws[i * dim + j] ?? 0) - (mean[j] ?? 0)) ** 2, 0)),
+  )
+  return { mean, sd }
+}
