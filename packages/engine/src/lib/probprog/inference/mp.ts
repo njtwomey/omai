@@ -252,7 +252,7 @@ function specMethod<P extends string>(
  * @param options - A name for the method (default `ep`).
  * @returns The method, with `check` (why a model has no factor graph, or an operator no rule) and `posterior`.
  * @concept expectation-propagation
- * @index estimator Expectation propagation on a model spec: factor graph, one sweep per step, posterior by site.
+ * @index estimator Expectation propagation on a model spec's factor graph, posterior by site.
  * @example
  * ```ts
  * import { epSpecMethod } from 'omai-engine/probprog/inference'
@@ -282,7 +282,7 @@ export function epSpecMethod(
  * @param options - A name for the method (default `vmp`).
  * @returns The method.
  * @concept variational-message-passing
- * @index estimator Variational message passing on a model spec: mean-field factor graph, bound on the tape, posterior by site.
+ * @index estimator Variational message passing on a model spec's factor graph, posterior by site.
  * @example
  * ```ts
  * import { vmpSpecMethod } from 'omai-engine/probprog/inference'
@@ -311,7 +311,7 @@ export function vmpSpecMethod(
  * @param options - A name for the method (default `bp`).
  * @returns The method.
  * @concept belief-propagation
- * @index estimator Belief propagation on a model spec of Bernoulli nodes: tables, sum-product, posterior by site.
+ * @index estimator Belief propagation on a model spec of Bernoulli nodes, posterior by site.
  * @example
  * ```ts
  * import { bpSpecMethod } from 'omai-engine/probprog/inference'

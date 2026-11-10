@@ -221,6 +221,78 @@ describe('a conjugate Gaussian regression: EP equals the closed-form posterior a
   })
 })
 
+describe('affine values that mix a vector latent and a scalar latent, and the logistic link', () => {
+  const rows = 10
+  const x = Array.from({ length: rows }, (_, i) => [Math.sin(i + 1), Math.cos(2 * i)])
+  const yv = x.map((r, i) => 0.7 * (r[0] as number) - 0.4 * (r[1] as number) + 1.5 + 0.2 * Math.sin(5 * i))
+  const model = defineModel('intercept', (m) => {
+    const n = m.range('row')
+    const f = m.range('feature')
+    const X = m.data('X', { dims: [n, f] })
+    const w = m.latent('w', d.normal(0, 2), { dims: [f] })
+    const b = m.latent('b', d.normal(0, 2))
+    m.observe('y', d.normal(ops.add(X.matmul(w), b), 0.5), m.data('y', { dims: [n] }))
+  })
+  const c = toFactorGraph(model.bind({ X: x, y: yv }))
+
+  it('builds a dot product per row and a sum with the scalar: auxiliaries named by site, element and order', () => {
+    expect(c.issues).toEqual([])
+    expect(c.auxiliary.slice(0, 3)).toEqual(['y#0[0]', 'y#1[0]', 'y#0[1]'])
+    expect(c.graph?.factors.slice(1, 4).map((f) => `${f.id} ${f.operator}`)).toEqual([
+      'factor:b prior',
+      'factor:y#0[0] dot-constant',
+      'factor:y#1[0] plus',
+    ])
+  })
+
+  it('has the exact posterior means of the linear regression with an intercept (a loopy Gaussian graph keeps the means)', () => {
+    const g = graphOf(c.graph)
+    const r = runAlgorithm(epAlgorithm(g, { tol: 1e-13, maxSweeps: 2000 }), { maxSteps: 2000 })
+    expect(r.status).toBe('converged')
+    const post = factorGraphPosterior(c, g, r.state as MpState)
+    const design = x.map((row) => [...row, 1])
+    const prior = [1 / 4, 1 / 4, 1 / 4]
+    const precision = [0, 1, 2].map((i) =>
+      [0, 1, 2].map(
+        (j) =>
+          design.reduce((a, row) => a + (row[i] as number) * (row[j] as number), 0) / 0.25 +
+          (i === j ? (prior[i] as number) : 0),
+      ),
+    )
+    const cov = toArray(inv(precision)) as number[][]
+    const xty = [0, 1, 2].map((j) => design.reduce((a, row, i) => a + (row[j] as number) * (yv[i] as number), 0) / 0.25)
+    const mean = cov.map((row) => row.reduce((a, v, j) => a + v * (xty[j] as number), 0))
+    const w = toFlat(post.mean('w'))
+    expect(Math.abs((w[0] as number) - (mean[0] as number))).toBeLessThan(1e-6)
+    expect(Math.abs((w[1] as number) - (mean[1] as number))).toBeLessThan(1e-6)
+    expect(Math.abs(Number(toFlat(post.mean('b'))[0]) - (mean[2] as number))).toBeLessThan(1e-6)
+  })
+
+  it('maps probs = sigmoid(eta), logits = eta and the logistic link to the same logistic factors', () => {
+    const labels = x.map((r, i) => ((r[0] as number) + 0.3 * Math.sin(i) > 0 ? 1 : 0))
+    const make = (likelihood: (eta: ReturnType<typeof ops.add>) => ReturnType<typeof d.bernoulli>) =>
+      defineModel('logit', (m) => {
+        const n = m.range('row')
+        const f = m.range('feature')
+        const w = m.latent('w', d.normal(0, 2), { dims: [f] })
+        m.observe(
+          'y',
+          likelihood(m.data('X', { dims: [n, f] }).matmul(w) as never),
+          m.data('y', { dims: [n], support: 'binary' }),
+        )
+      }).bind({ X: x, y: labels })
+    const a = toFactorGraph(make((eta) => d.bernoulli({ logits: eta })))
+    const b = toFactorGraph(make((eta) => d.bernoulli({ probs: ops.sigmoid(eta) })))
+    expect(a.issues).toEqual([])
+    expect(new Set(a.graph?.factors.map((f) => f.operator))).toEqual(new Set(['prior', 'dot-constant', 'logistic']))
+    expect(b.graph).toEqual(a.graph)
+    const g = graphOf(a.graph)
+    const r = run(g)
+    expect(r.status).toBe('converged')
+    expect(Number(toFlat(factorGraphPosterior(a, g, r.state).mean('w'))[0])).toBeGreaterThan(0)
+  })
+})
+
 describe('a hierarchical Gaussian model with known scales: EP is exact on its tree', () => {
   const y = [28, 8, -3, 7, -1]
   const s = [15, 10, 16, 11, 9]

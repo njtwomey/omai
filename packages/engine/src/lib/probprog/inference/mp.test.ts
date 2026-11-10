@@ -20,7 +20,10 @@ const exactSd = Math.sqrt(1 / exactPrecision)
 const normalMean = defineModel('normal-mean', (b) => {
   b.observe('y', d.normal(b.latent('mu', d.normal(0, 2)), 1.5), b.data('y', { dims: ['data'] }))
 })
-const { X, y } = probitData()
+const data = probitData()
+// Twelve rows are enough for the conventions (steps, resuming, cancelling) and keep the tests quick.
+const X = data.X.slice(0, 12)
+const y = data.y.slice(0, 12)
 
 describe('epSpecMethod', () => {
   it('equals the closed-form posterior of a conjugate Gaussian model, with the posterior keyed by site', () => {
@@ -69,7 +72,7 @@ describe('epSpecMethod', () => {
   it('resumes from a serialised state to the same posterior, mid-sweep too', () => {
     const m = epSpecMethod(probitModel.bind({ X, y }))
     expectResumeEqual(m, { config: { tol: 1e-10 }, steps: 500, at: 2 })
-    expectResumeEqual(m, { config: { granularity: 'factor', tol: 1e-10 }, steps: 800, at: 100 })
+    expectResumeEqual(m, { config: { granularity: 'factor', tol: 1e-10 }, steps: 800, at: 40 })
   })
 
   it('cancels between steps and continues, and snapshots on the cadence of a fake clock', () => {

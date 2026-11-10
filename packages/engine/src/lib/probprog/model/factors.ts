@@ -24,7 +24,7 @@
  * run's marginals on `toStructure(spec)` by site name. Results are read back by `factorGraphPosterior`, which builds
  * the library's `Posterior` keyed by site name, in the spec's shapes.
  *
- * @index function toFactorGraph: compile a bound ModelSpec to a message-passing factor graph, with the reasons for what it cannot map.
+ * @index function toFactorGraph: a bound ModelSpec as a message-passing factor graph, plates expanded.
  */
 
 import { type Json, OmaiError } from '../../base/index.ts'
@@ -239,7 +239,6 @@ class Compiler {
   private readonly components = new Map<string, string>()
   private readonly names = new Set<string>()
   private readonly nodes = new Map<string, ModelNode>()
-  private readonly latentFamilies = new Map<string, string>()
   private readonly families = distributionFamilies()
 
   constructor(
@@ -719,7 +718,6 @@ class Compiler {
         'family',
         `'${node.name}' is ${fam}: the engine has message families gaussian, gamma, beta, bernoulli, discrete and dirichlet, and none for ${fam}`,
       )
-    this.latentFamilies.set(node.name, fam)
     if (fam === 'normal') {
       this.latentNormal(node)
       return
@@ -1228,7 +1226,7 @@ class Compiler {
  * @param options - The factor operators to compile against (default the engine's `defaultOperators()`) and the model's operator table.
  * @returns The compilation.
  * @concept model-spec
- * @index function Compile a bound ModelSpec to a message-passing factor graph, expanding plates, with reasons for what cannot map.
+ * @index function Compile a bound ModelSpec to a message-passing factor graph, plates expanded.
  * @example
  * ```ts
  * import { defineModel, ops, toFactorGraph } from 'omai-engine/probprog/model'
@@ -1241,8 +1239,8 @@ class Compiler {
  *   b.observe('y', bernoulli({ probs: ops.probit(X.matmul(w)) }), y)
  * })
  * const c = toFactorGraph(m.bind({ X: [[1, 0.5], [1, -1]], y: [1, 0] }))
- * [c.graph?.variables.map((v) => v.name), c.graph?.factors.map((f) => f.id), c.issues.length]
- * // => [['w', 'y#0[0]', 'y[0]', 'y#0[1]', 'y[1]'], ['factor:w', 'factor:y#0[0]', 'factor:y[0]', 'factor:y#0[1]', 'factor:y[1]'], 0]
+ * c.graph?.variables.map((v) => v.name) // => ['w', 'y#0[0]', 'y[0]', 'y#0[1]', 'y[1]']
+ * c.graph?.factors.map((f) => f.id) // => ['factor:w', 'factor:y#0[0]', 'factor:y[0]', 'factor:y#0[1]', 'factor:y[1]']
  * ```
  */
 export function toFactorGraph(
@@ -1362,7 +1360,7 @@ const nums = (v: Json | undefined): number[] => (Array.isArray(v) ? (v as number
  * const c = toFactorGraph(m.bind({ y: [1, 2, 3] }))
  * const g = compileGraph(c.graph as never, defaultOperators())
  * const r = runAlgorithm(epAlgorithm(g), { maxSteps: 50 })
- * Number(factorGraphPosterior(c, g, r.state).mean('mu').data[0]).toFixed(4) // => '1.7143'
+ * Number(factorGraphPosterior(c, g, r.state).mean('mu').data[0]).toFixed(4) // => '1.8462'
  * ```
  */
 export function factorGraphPosterior(
@@ -1497,8 +1495,8 @@ export function factorGraphPosterior(
  * @example
  * ```ts
  * import { graphOnSpec } from 'omai-engine/probprog/model'
- * graphOnSpec({ variables: [{ name: 'y#0[3]', family: { kind: 'gaussian' } }], factors: [{ operator: 'prior', args: ['y#0[3]'], params: { eta: [0, 1] }, id: 'factor:y#0[3]' }] })
- * // => { variables: { 'y#0[3]': 'y' }, factors: { 'factor:y#0[3]': 'factor:y' } }
+ * const g = graphOnSpec({ variables: [{ name: 'y#0[3]', family: { kind: 'gaussian' } }], factors: [{ operator: 'prior', args: ['y#0[3]'], params: { eta: [0, 1] }, id: 'factor:y#0[3]' }] })
+ * [g.variables['y#0[3]'], g.factors['factor:y#0[3]']] // => ['y', 'factor:y']
  * ```
  */
 export function graphOnSpec(graph: FactorGraphSpec): {
