@@ -53,3 +53,20 @@ export interface StructuredExample<X, Y> {
   readonly x: X
   readonly y: Y
 }
+
+/** The penalties of a structured learner: the objective adds `c2 ||w||^2 + c1 ||w||_1` (CRFsuite's `c2` and `c1`). */
+export interface StructuredPenalty {
+  readonly c2?: number
+  readonly c1?: number
+}
+
+/**
+ * What a structured learner trains on: an oracle, the labelled examples, the penalties and where to start (zero
+ * weights by default).
+ */
+export interface StructuredProblem<X, Y> {
+  readonly oracle: StructuredOracle<X, Y>
+  readonly data: readonly StructuredExample<X, Y>[]
+  readonly penalty?: StructuredPenalty
+  readonly start?: ArrayLike<number>
+}
