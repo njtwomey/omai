@@ -461,18 +461,17 @@ const FAMILIES: Family[] = [
       'literature (n-best and constrained decoding, semi-Markov, skip-chain and higher-order CRFs, latent and partial-label CRFs, CRF layers on neural encoders, ' +
       'CRF-as-RNN, MEMMs, parsers). The source of omai was read for what each item corresponds to.',
     strong: [
-      'Linear-chain CRFs in both the CRFsuite and CRF++ forms: score, log-likelihood, marginals, Viterbi, posterior decoding, feature counts and expected counts, template-driven features (CRF++ and Wapiti syntax), L1 and L2 penalties.',
-      'Training through a solver slot: L-BFGS, every generic smooth solver, stochastic gradient, and three online algorithms of structured prediction (perceptron, averaged perceptron, passive-aggressive with cost-augmented decoding) on the same tape, which neither CRFsuite nor pystruct offer side by side.',
-      'General CRFs on arbitrary graphs with exact or loopy-BP marginals; Gaussian MRFs, factor graphs, HMM, HSMM and IO-HMM, mean-field and MPLP inference.',
-      'seqeval-style entity metrics (BIO, IOB1, BIOES, BILOU; strict and lenient; micro, macro and per type) and scheme-violation counts; CKY, Earley, PCFG training, arc-standard and Eisner dependency parsing.',
+      'Linear-chain CRFs in both the CRFsuite and CRF++ forms: score, log-likelihood, marginals, Viterbi, posterior decoding, feature counts and expected counts, template-driven features from all three template languages (CRF++, Wapiti, CRFsuite) through one extractor, L1 and L2 penalties.',
+      'Training through one solver slot over a small contract (`StructuredOracle`): L-BFGS, every generic smooth solver, OWL-QN for L1, stochastic gradient, the perceptron, averaged perceptron, passive-aggressive and AROW, and the max-margin learners (subgradient, Frank-Wolfe, one-slack and n-slack cutting planes), on the same tape, which neither CRFsuite nor pystruct offer side by side.',
+      'CRFs beyond the chain, all in `pgm/structured`: trees, grids, skip chains, order-k chains and arbitrary graphs with tied weights, semi-Markov CRFs, latent and partial-label CRFs, the MEMM as the label-bias foil, with exact inference where the graph allows it and loopy or tree-reweighted BP where not; MAP by junction trees, MPLP, graph cuts, alpha-expansion and AD3.',
+      'Constrained, n-best and sampled decoding; the CRF layer over a neural encoder (checked against pytorch-crf) and the BiLSTM-CRF tagger; seqeval-style entity metrics (BIO, IOB1, BIOES, BILOU; strict and lenient; micro, macro and per type), scheme-violation counts and `sequenceAccuracyScore`; CKY, Earley, PCFG training, arc-standard and Eisner dependency parsing.',
     ],
     fullTables: ['crf_libraries'],
     after: [
-      'CRFs are a strength, not a gap. What is still missing is a ring around them: constrained and n-best decoding (a decoder that cannot emit I-X after O), ' +
-        'a CRF layer over a neural encoder with gradients into the encoder (the BiLSTM-CRF), a max-margin structured SVM beside the perceptron, ' +
-        'the locally normalised MEMM as the foil that teaches label bias, semi-Markov CRFs, latent and partial-label CRFs, and graph-cut or AD3-style MAP for pairwise ' +
-        'models. Entity-level metrics, which one might expect to be missing, are present (`metrics/sequence-labelling.ts`). An sklearn-crfsuite-shaped estimator ' +
-        '(`fit`, `predict`, `predict_marginals`, `score` on lists of feature dictionaries) is also absent as a wrapper, though every part is there.',
+      'As of 0.1.12 the ring around the CRF is built (decoding, neural layer and tagger, structured SVMs, MEMM, semi-Markov, latent and partial-label CRFs, graph-cut and AD3 MAP) and ' +
+        'everything lives in `pgm/structured` and `pgm/inference`. What is still missing: dense CRFs with Gaussian-kernel potentials and mean-field layers (CRF-as-RNN), ' +
+        'latent and partial-label models on graphs (they exist for chains), a latent SSVM, user-defined segment features for the semi-Markov CRF, a biaffine dependency parser, ' +
+        'a pretrained-embedding or character encoder for the tagger, and full QPBO (probing and improvement).',
     ],
   },
   {
