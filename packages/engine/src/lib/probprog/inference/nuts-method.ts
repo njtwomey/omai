@@ -35,6 +35,7 @@ import {
   type Contract,
   defineContract,
   derived,
+  Log,
   message,
   numberFromJson,
   numberToJson,
@@ -378,6 +379,15 @@ export function nutsMethod(
     config: nutsKnobs,
     check,
     posterior,
+    defaults: {
+      'mcmc/stage': Log(),
+      'mcmc/logDensity': Log(),
+      'mcmc/stepSize': Log(),
+      'mcmc/accept': Log(),
+      'mcmc/divergent': Log(),
+      'mcmc/divergences': Log(),
+      'mcmc/kept': Log(),
+    },
     contract: (config): Contract<NutsRunState, NutsPath> =>
       defineContract({
         'init/tries': tensor({
