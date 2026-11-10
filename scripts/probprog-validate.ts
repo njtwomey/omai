@@ -58,7 +58,6 @@ const campaigns = [
   ...kernelCampaigns(),
   ...additionalCampaigns(),
 ]
-]
 
 if (process.argv.includes('--check')) {
   const last = Number(git('log', '-1', '--format=%ct', '--', ...WATCHED)) * 1000
