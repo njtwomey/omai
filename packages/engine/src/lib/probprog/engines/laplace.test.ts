@@ -4,9 +4,9 @@ import { halfCauchy, normal } from '../../dists/index.ts'
 import { key } from '../../random/index.ts'
 import { clip, item, mul, square } from '../../tensor/index.ts'
 import { analyse } from '../analysis.ts'
+import { potentialEnergy } from '../density.ts'
 import { factor, type Model, observe, plate, sample } from '../primitives.ts'
 import { conjugateInference } from './conjugate.ts'
-import { potentialEnergy } from '../density.ts'
 import { diagnoseMode, laplaceApproximation, laplaceAt, laplaceEngine } from './laplace.ts'
 
 describe('Laplace approximation', () => {
@@ -104,7 +104,10 @@ describe('Laplace diagnostics of the mode', () => {
     expect(d.boundary[0]).toMatch(/^tau \(unconstrained -30\.0\)/)
     // The same point, reached with a vanishing gradient, is a mode, however extreme.
     expect(diagnoseMode(um, { ...far, converged: true } as typeof fit).boundary).toEqual([])
-    const broken = { ...fit, mode: { ...fit.mode, data: Float64Array.from(mode.map((v, i) => (i === 3 ? Number.NaN : v))) } }
+    const broken = {
+      ...fit,
+      mode: { ...fit.mode, data: Float64Array.from(mode.map((v, i) => (i === 3 ? Number.NaN : v))) },
+    }
     const b = diagnoseMode(um, broken as typeof fit)
     expect(b.nonFinite).toBe(true)
     expect(b.degenerate).toBe(true)

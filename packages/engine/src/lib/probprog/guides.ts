@@ -14,8 +14,8 @@ import {
   lowRankMultivariateNormal,
   multivariateNormal,
   normal,
-  supportRank,
   type Support,
+  supportRank,
 } from '../dists/index.ts'
 import { inv } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, key as makeKey, normal as normalDraws, uniform } from '../random/index.ts'

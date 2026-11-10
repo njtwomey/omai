@@ -7,9 +7,10 @@ import { item } from '../../tensor/index.ts'
 import { session } from '../../trace/index.ts'
 import { benchmarkAgreement, runPlan } from './agreement.ts'
 import { benchmarkMethods, defineBenchmark, methodVerdicts } from './benchmark.ts'
-import { benchmarkCampaigns } from './campaigns.ts'
+import { benchmarkCampaigns, benchmarkMarkdown } from './campaigns.ts'
 import { betaBernoulli, gammaPoisson, normalNormal } from './conjugate.ts'
-import { exactPlan, nutsPlan } from './plans.ts'
+import { exactPlan, laplacePlan, nutsPlan } from './plans.ts'
+import { eightSchoolsCentred } from './schools.ts'
 import { ar1StateSpace } from './state-space.ts'
 import { benchmarkModels } from './suite.ts'
 
@@ -44,6 +45,17 @@ describe('a target with no observed node runs on its spec', () => {
       expect(run.posterior.sites.length, plan.kind).toBeGreaterThan(0)
       expect(run.status, plan.kind).not.toBe('failed')
     }
+  })
+})
+
+describe('the Laplace fit of the centred eight schools says its mode is not a posterior', () => {
+  it('reports the degenerate mode in its diagnostics and in the campaign table', { timeout: 30_000 }, () => {
+    const run = runPlan(eightSchoolsCentred, laplacePlan(1), { key: key(0) })
+    expect(run.posterior.diagnostics['degenerateMode']).toBe(true)
+    expect(String(run.posterior.diagnostics['boundary'])).toMatch(/^tau \(unconstrained -1[0-9]/)
+    const a = benchmarkAgreement(eightSchoolsCentred, { only: ['laplace'], truthQuality: 'fast' })
+    expect(a.passed).toBe(true)
+    expect(benchmarkMarkdown(eightSchoolsCentred, a, [])).toMatch(/degenerate mode/)
   })
 })
 

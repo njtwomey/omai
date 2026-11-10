@@ -132,7 +132,9 @@ export function laplaceAt(
     throw new OmaiError(
       'value',
       `laplace: minus the Hessian at the mode is not positive definite${
-        boundary.length === 0 ? '' : ` (the mode is on a boundary of the support: ${boundary.join(', ')} ran off to an extreme)`
+        boundary.length === 0
+          ? ''
+          : ` (the mode is on a boundary of the support: ${boundary.join(', ')} ran off to an extreme)`
       }`,
       { gradNorm: run.gradNorm, boundary },
     )
@@ -165,7 +167,8 @@ function boundaryCoordinates(um: UnconstrainedModel, point: ArrayLike<number>, c
   for (const l of um.layout) {
     if (l.support.kind === 'real') continue
     for (let i = l.offset; i < l.offset + l.size; i++)
-      if (Math.abs(point[i] ?? 0) > BOUNDARY_LIMIT) out.push(`${um.logDensity.names[i] ?? l.name} (unconstrained ${(point[i] ?? 0).toFixed(1)})`)
+      if (Math.abs(point[i] ?? 0) > BOUNDARY_LIMIT)
+        out.push(`${um.logDensity.names[i] ?? l.name} (unconstrained ${(point[i] ?? 0).toFixed(1)})`)
   }
   return out
 }

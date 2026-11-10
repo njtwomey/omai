@@ -5,7 +5,14 @@
  */
 
 import { type Json, logSumExpOf, OmaiError } from '../../base/index.ts'
-import { bijectors, CONJUGATES, type ConjugatePair, type Distribution, dirichlet, inSupport } from '../../dists/index.ts'
+import {
+  bijectors,
+  CONJUGATES,
+  type ConjugatePair,
+  type Distribution,
+  dirichlet,
+  inSupport,
+} from '../../dists/index.ts'
 import { categorical as drawCategorical, foldIn, type Key } from '../../random/index.ts'
 import { numericTarget, sliceSampler } from '../../sampling/index.ts'
 import {

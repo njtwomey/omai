@@ -29,7 +29,8 @@ function runLine(a: BenchmarkAgreement, index: number): string {
     parts.push(`ESS low: ${ess.slice(0, 3).join(', ')}${ess.length > 3 ? ', ...' : ''}`)
   if (typeof d['ess'] === 'number') parts.push(`weights ESS ${Math.round(d['ess'])}`)
   if (typeof d['reason'] === 'string') parts.push(d['reason'])
-  if (d['degenerateMode'] === true) parts.push('degenerate mode (on the boundary of a scale, or an ill-conditioned Hessian)')
+  if (d['degenerateMode'] === true)
+    parts.push('degenerate mode (on the boundary of a scale, or an ill-conditioned Hessian)')
   const expect =
     run.plan.expect === 'agree' ? 'must agree' : run.plan.expect === 'differ' ? 'expected to differ' : 'reported'
   return `| ${cell(run.plan.kind)} | ${expect} | ${cell(run.status)} (${run.steps} steps) | ${cell(parts.join('; ') || '-')} | ${cell(run.plan.note)} |`

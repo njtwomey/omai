@@ -122,7 +122,8 @@ export function importanceMethod(
   }
   const check = checkOf(importanceEngine(), (a) => {
     if (a.latent.length === 0) return no('no latent nodes', ['latent nodes'])
-    if (!a.hasLikelihood) return yes('draws from the prior; no observed nodes, so the weights are all one and the draws are exact')
+    if (!a.hasLikelihood)
+      return yes('draws from the prior; no observed nodes, so the weights are all one and the draws are exact')
     return yes(
       `draws from the prior weighted by ${a.observed.length} observed node(s); accuracy falls as the posterior concentrates`,
     )
