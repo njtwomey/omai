@@ -15,6 +15,7 @@ import * as pgm from '../pgm/index.ts'
 import * as random from '../random/index.ts'
 import * as sampling from '../sampling/index.ts'
 import * as scene from '../scene/index.ts'
+import * as space from '../space/index.ts'
 import * as stats from '../stats/index.ts'
 import * as tensor from '../tensor/index.ts'
 import * as trace from '../trace/index.ts'
@@ -22,6 +23,10 @@ import * as probprog from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   'omai-engine/probprog': probprog,
+  'omai-engine/probprog/model': probprog.model,
+  'omai-engine/probprog/model/dists': probprog.model.dists,
+  'omai-engine/probprog/inference': probprog.inference,
+  'omai-engine/space': space,
   'omai-engine/sampling': sampling,
   'omai-engine/pgm': pgm,
   'omai-engine/optim': optim,

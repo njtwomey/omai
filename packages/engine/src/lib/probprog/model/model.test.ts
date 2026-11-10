@@ -11,12 +11,20 @@ import { seed, traceOf } from '../handlers.ts'
 import type { Model } from '../primitives.ts'
 import * as d from './dists/index.ts'
 import {
+  analyseSpec,
   boundFromJSON,
   boundToJSON,
+  constant,
   defineModel,
+  elementId,
+  exprText,
+  factorId,
   fromJSON,
   type ModelDefinition,
+  nodeId,
   ops,
+  plateId,
+  texName,
   toProgram,
   toStructure,
   validateSpec,
@@ -481,45 +489,169 @@ describe('batches', () => {
 })
 
 describe('structure', () => {
-  it('draws data, latents, observations and the dimensions as nested plates', () => {
-    const m = defineModel('hier', (b) => {
-      const g = b.range('group')
-      const n = b.range('row')
-      const idx = b.data('g', { dims: [n], support: 'index', indexes: g })
-      const y = b.data('y', { dims: [n] })
-      const mu = b.latent('mu', d.normal(0, 1))
-      const a = b.latent('a', d.normal(mu, 1), { dims: [g] })
-      b.observe('y', d.normal(a.at(idx), 1), y)
-    })
-    const s = toStructure(m.bind({ g: [0, 1, 1], y: [1, 2, 3] }, { sizes: { group: 2 } }))
-    expect(s.type).toBe('model-spec')
+  const hier = defineModel('hier', (b) => {
+    const g = b.range('group')
+    const n = b.range('row')
+    const idx = b.data('g', { dims: [n], support: 'index', indexes: g })
+    const y = b.data('y', { dims: [n], role: 'response' })
+    const mu = b.latent('mu', d.normal(0, 1))
+    const a = b.latent('a', d.normal(mu, 1), { dims: [g] })
+    const eta = b.derived('eta', a.at(idx))
+    b.observe('y', d.normal(eta, 1), y)
+  })
+  const bound = hier.bind({ g: [0, 1, 1], y: [1, 2, 3] }, { sizes: { group: 2 } })
+
+  it('draws latents, derived and observed nodes, the index data, and the dimensions as plates with sizes', () => {
+    const s = toStructure(bound)
+    expect(s.type).toBe('graphical-model')
     expect(s.nodes.map((x) => [x.id, x.role, x.group ?? ''])).toEqual([
-      ['data:g', 'input', 'plate:row'],
-      ['data:y', 'input', 'plate:row'],
+      ['data:g', 'constant', 'plate:row'],
       ['mu', 'latent', ''],
       ['a', 'latent', 'plate:group'],
+      ['eta', 'deterministic', 'plate:row'],
       ['y', 'observed', 'plate:row'],
     ])
-    expect(s.edges.map((e) => `${e.from}>${e.to}`).sort()).toEqual(['a>y', 'data:g>y', 'data:y>y', 'mu>a'])
+    expect(s.edges.map((e) => `${e.from}>${e.to}`).sort()).toEqual(['a>eta', 'data:g>eta', 'eta>y', 'mu>a'])
     expect(s.groups.map((g) => [g.id, g.count])).toEqual([
       ['plate:row', 3],
       ['plate:group', 2],
     ])
   })
 
-  it('nests the plates of a node over two dimensions in the order it declares them', () => {
+  it('writes the distribution or expression beside each node', () => {
+    const s = toStructure(bound)
+    expect(s.nodes.map((x) => x.detail)).toEqual([
+      'index',
+      '~ Normal(0, 1)',
+      '~ Normal(mu, 1)',
+      '= a[g]',
+      '~ Normal(eta, 1)',
+    ])
+    expect(toStructure(bound, { details: false }).nodes.every((x) => x.detail === undefined)).toBe(true)
+  })
+
+  it('can show every data node, or none', () => {
+    expect(toStructure(bound, { data: 'all' }).nodes.map((x) => x.id)).toContain('data:y')
+    expect(toStructure(bound, { data: 'none' }).nodes.some((x) => x.id.startsWith('data:'))).toBe(false)
+  })
+
+  it('uses the ids of the sites, so a posterior or a tape names the node it belongs to', () => {
+    const sites = [...traceOf(seed(toProgram(bound), key(0)), undefined).sites]
+      .filter(([, x]) => x.type !== 'plate')
+      .map(([n]) => n)
+    const ids = toStructure(bound, { data: 'none' }).nodes.map((x) => x.id)
+    expect(ids.sort()).toEqual(sites.sort())
+    expect(
+      toStructure(bound).nodes.every(
+        (x) => (x.data as { site: string | null }).site === (x.id.startsWith('data:') ? null : x.id),
+      ),
+    ).toBe(true)
+  })
+
+  it('nests the plates of a node over two dimensions in the spec dimension order, whatever order it declares', () => {
     const m = defineModel('grid', (b) => {
-      b.latent('x', d.normal(0, 1), { dims: ['a', 'b'] })
+      b.range('a')
+      b.range('b')
+      b.latent('x', d.normal(0, 1), { dims: ['b', 'a'] })
+      b.latent('z', d.normal(0, 1), { dims: ['b'] })
     })
     const s = toStructure(m)
-    expect(s.groups.map((g) => [g.id, g.parent ?? ''])).toEqual([
-      ['plate:a', ''],
-      ['plate:a/b', 'plate:a'],
+    expect(s.groups.map((g) => [g.id, g.parent ?? '', g.label])).toEqual([
+      ['plate:a', '', 'a'],
+      ['plate:a×b', 'plate:a', 'b'],
+      ['plate:b', '', 'b'],
     ])
+    expect(s.nodes.map((x) => [x.id, x.group])).toEqual([
+      ['x', 'plate:a×b'],
+      ['z', 'plate:b'],
+    ])
+  })
+
+  it('draws the factor graph with a factor:<site> square per distribution, operator or term', () => {
+    const s = toStructure(bound, { view: 'factor' })
+    expect(s.type).toBe('factor-graph')
+    expect(s.nodes.filter((x) => x.role === 'factor').map((x) => x.id)).toEqual([
+      'factor:mu',
+      'factor:a',
+      'factor:eta',
+      'factor:y',
+    ])
+    expect(s.edges.map((e) => `${e.from}>${e.to}`).sort()).toEqual(
+      [
+        'a>factor:eta',
+        'data:g>factor:eta',
+        'eta>factor:y',
+        'factor:a>a',
+        'factor:eta>eta',
+        'factor:mu>mu',
+        'factor:y>y',
+        'mu>factor:a',
+      ].sort(),
+    )
+    const withTerm = defineModel('term', (b) => b.factor('penalty', b.latent('p', d.beta(2, 2)).square()))
+    expect(toStructure(withTerm, { view: 'factor' }).nodes.map((x) => x.id)).toEqual([
+      'p',
+      'factor:p',
+      'factor:penalty',
+    ])
+  })
+
+  it('typesets Greek names and subscripts as TeX on request', () => {
+    expect(texName('tau')).toBe('$\\tau$')
+    expect(texName('theta_j')).toBe('$\\theta_{j}$')
+    expect(texName('beta1')).toBe('$\\beta_{1}$')
+    expect(texName('y')).toBe('y')
+    const m = defineModel('t', (b) => void b.latent('sigma', d.halfNormal(1)))
+    expect(toStructure(m, { tex: true }).nodes[0]?.label).toBe('$\\sigma$')
+  })
+
+  it('writes expressions as text', () => {
+    const e = ops.add(ops.mul(2, 3), ops.exp(1))
+    expect(exprText(e.expr)).toBe('(2 * 3) + exp(1)')
+    expect(exprText(ops.sum(constant([1, 2], ['i']), 'i').expr)).toBe('sum_i([1,2])')
   })
 
   it('validates what it builds', () => {
     expect(() => validateSpec(coin.spec)).not.toThrow()
+  })
+})
+
+describe('the id convention', () => {
+  it('names nodes, factors, plates and elements', () => {
+    expect([nodeId({ kind: 'latent', name: 'mu' }), nodeId({ kind: 'data', name: 'y' })]).toEqual(['mu', 'data:y'])
+    expect(factorId('y')).toBe('factor:y')
+    expect(plateId(['row', 'feature'])).toBe('plate:row×feature')
+    expect(plateId([])).toBeUndefined()
+    expect(elementId('w', 1)).toBe('w[1]')
+  })
+
+  it('analysis and structure agree on ids, plates and factors', () => {
+    const m = defineModel('p', (b) => {
+      b.range('row')
+      b.range('feature')
+      b.data('X', { dims: ['feature', 'row'] })
+      b.latent('w', d.normal(0, 1), { dims: ['feature'] })
+    })
+    const a = analyseSpec(m)
+    expect(a.nodes.map((n) => [n.id, n.plate, n.factor])).toEqual([
+      ['data:X', 'plate:row×feature', undefined],
+      ['w', 'plate:feature', 'factor:w'],
+    ])
+    expect(a.plates.map((p) => [p.id, p.parent, p.nodes])).toEqual([
+      ['plate:row', undefined, []],
+      ['plate:feature', undefined, ['w']],
+      ['plate:row×feature', 'plate:row', ['data:X']],
+    ])
+  })
+
+  it('shows the model data of a node over named dimensions in the structure data field', () => {
+    const m = defineModel('p', (b) => void b.latent('w', d.normal(0, 1), { dims: ['feature'] }))
+    expect(toStructure(m).nodes[0]?.data).toEqual({
+      spec: 'latent',
+      site: 'w',
+      dims: ['feature'],
+      plate: 'plate:feature',
+    })
   })
 })
 

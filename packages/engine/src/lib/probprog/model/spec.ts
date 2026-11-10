@@ -12,6 +12,9 @@
  *   leading axes are those dimensions and whose trailing `eventRank` axes belong to the distribution (a Dirichlet
  *   draw's category axis, a multivariate normal's coordinates). Sizes are not in the spec: they come from fixed
  *   `DimSpec.size` or from the data bound to it.
+ * - **Ids.** A node's id in drawings, analyses and factor graphs is its name (data nodes `data:<name>`), a factor's is
+ *   `factor:<site>`, a plate's `plate:<a>×<b>` in the spec's dimension order, an element's `<site>[<i>]`; see `ids.ts`. The
+ *   same ids name nodes in posteriors and on tapes, so a view can paint live inference state on `toStructure`'s picture.
  * - **Site names.** Every latent, observed, derived (recorded), generated, factor and param node is a site of the
  *   compiled program under its own name; data nodes are not sites. An observed node may share its name with the data
  *   node that supplies its value; no other two nodes share a name.
@@ -189,7 +192,17 @@ export interface ModelSpec {
   readonly customs: readonly string[]
 }
 
-/** Whether a node is a site of the compiled program (everything but data). */
+/**
+ * Whether a node is a site of the compiled program (everything but data).
+ *
+ * @param node - The node.
+ * @returns True for every kind but `data`.
+ * @example
+ * ```ts
+ * import { isSiteNode } from 'omai-engine/probprog/model'
+ * isSiteNode({ kind: 'data', name: 'x', dims: [], eventRank: 0 }) // => false
+ * ```
+ */
 export function isSiteNode(node: ModelNode): boolean {
   return node.kind !== 'data'
 }
@@ -222,11 +235,10 @@ export function exprRefs(expr: ExprSpec): string[] {
  * @returns The referenced names, without repeats.
  * @example
  * ```ts
- * import { defineModel } from 'omai-engine/probprog/model'
- * import { normal } from 'omai-engine/dists'
- * import { nodeRefs } from 'omai-engine/probprog/model'
+ * import { defineModel, nodeRefs } from 'omai-engine/probprog/model'
+ * import { normal } from 'omai-engine/probprog/model/dists'
  * const m = defineModel('m', (b) => { const mu = b.latent('mu', normal(0, 1)); b.latent('x', normal(mu, 1)) })
- * nodeRefs(m.spec.nodes[1] ?? m.spec.nodes[0]!) // => ['mu']
+ * nodeRefs(m.spec.nodes.find((n) => n.name === 'x') ?? m.spec.nodes[0] as never) // => ['mu']
  * ```
  */
 export function nodeRefs(node: ModelNode): string[] {

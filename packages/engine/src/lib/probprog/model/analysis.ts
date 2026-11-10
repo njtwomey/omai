@@ -12,6 +12,7 @@
 import { CONJUGATES, type ConjugatePair } from '../../dists/index.ts'
 import type { ModelLike } from './bind.ts'
 import { distributionFamilies, type FamilyDef } from './dists/families.ts'
+import { canonicalDims, factorId, nodeId, plateId } from './ids.ts'
 import { type ExprSpec, type ModelNode, type ModelSpec, nodeRefs } from './spec.ts'
 
 /** One node as the analysis sees it. */
@@ -21,6 +22,10 @@ export interface SpecNodeInfo {
   readonly name: string
   readonly kind: ModelNode['kind']
   readonly dims: readonly string[]
+  /** The id of the plate the node sits in (its dimensions in the spec's order), absent for a node over none. */
+  readonly plate?: string
+  /** The id of the node's factor in a factor graph (`factor:<name>`), for every kind but data. */
+  readonly factor?: string
   readonly eventRank: number
   /** The distribution family of a latent, observed or generated node. */
   readonly family?: string
@@ -68,6 +73,16 @@ export interface SpecLinearGaussian {
   readonly reason: string
 }
 
+/** A plate: the dimensions it is made of (outermost first), the sizes where known, its parent plate and its nodes. */
+export interface SpecPlateInfo {
+  readonly id: string
+  readonly dims: readonly string[]
+  readonly parent?: string
+  readonly sizes: readonly (number | undefined)[]
+  /** The ids of the nodes whose dimensions are exactly this plate's. */
+  readonly nodes: readonly string[]
+}
+
 /**
  * What a spec reveals without running (see {@link analyseSpec}).
  *
@@ -84,6 +99,8 @@ export interface SpecAnalysis {
   readonly factors: readonly string[]
   readonly params: readonly string[]
   readonly dims: readonly SpecDimInfo[]
+  /** The plates the nodes sit in, nested by prefix (`plate:a` holds `plate:a×b`), outer ones first. */
+  readonly plates: readonly SpecPlateInfo[]
   /** Dependency edges between node ids, parent to child, over every node (data included). */
   readonly edges: readonly { readonly from: string; readonly to: string }[]
   /** Latents with a continuous family, and with a finite discrete family (which can be enumerated). */
@@ -324,7 +341,7 @@ export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
   // References resolve to value nodes (observed nodes and factors cannot be referred to).
   const byName = new Map<string, ModelNode>()
   for (const n of spec.nodes) if (n.kind !== 'observed' && n.kind !== 'factor') byName.set(n.name, n)
-  const idOf = (n: ModelNode): string => (n.kind === 'data' ? `data:${n.name}` : n.name)
+  const idOf = nodeId
   const kidNodes = new Map<string, ModelNode[]>()
   const kidIds = new Map<string, string[]>()
   const edges: { from: string; to: string }[] = []
@@ -342,11 +359,14 @@ export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
     const ops = new Set<string>()
     for (const e of nodeExprs(n)) exprOps(e, ops)
     const custom = nodeExprs(n).some(exprHasCustom)
+    const plate = plateId(canonicalDims(spec, n.dims))
     return {
       id: idOf(n),
       name: n.name,
       kind: n.kind,
       dims: n.dims,
+      ...(plate === undefined ? {} : { plate }),
+      ...(n.kind === 'data' ? {} : { factor: factorId(n.name) }),
       eventRank: n.eventRank,
       ...(d === undefined ? {} : { family: d.family }),
       ...(fam === undefined ? {} : { discrete: fam.discrete, exponentialFamily: fam.exponentialFamily }),
@@ -375,6 +395,26 @@ export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
     ...(sizes[d.name] !== undefined ? { size: sizes[d.name] as number } : d.size === undefined ? {} : { size: d.size }),
     nodes: spec.nodes.filter((n) => n.dims.includes(d.name)).map(idOf),
   }))
+  const plateMap = new Map<string, { dims: string[]; nodes: string[] }>()
+  for (const n of spec.nodes) {
+    const dimsOf = canonicalDims(spec, n.dims)
+    for (let k = 1; k <= dimsOf.length; k++) {
+      const id = plateId(dimsOf.slice(0, k)) as string
+      const entry = plateMap.get(id) ?? { dims: dimsOf.slice(0, k), nodes: [] }
+      if (k === dimsOf.length) entry.nodes.push(idOf(n))
+      plateMap.set(id, entry)
+    }
+  }
+  const sizeOfDim = new Map(dims.map((x) => [x.name, x.size]))
+  const plates: SpecPlateInfo[] = [...plateMap.entries()]
+    .sort((x, y) => x[1].dims.length - y[1].dims.length)
+    .map(([id, e]) => ({
+      id,
+      dims: e.dims,
+      ...(e.dims.length > 1 ? { parent: plateId(e.dims.slice(0, -1)) as string } : {}),
+      sizes: e.dims.map((x) => sizeOfDim.get(x)),
+      nodes: e.nodes,
+    }))
   const features: string[] = []
   if (continuous.length > 0) features.push('continuous latents')
   if (finiteDiscrete.length > 0) features.push('finite discrete latents')
@@ -400,6 +440,7 @@ export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
     factors: names('factor'),
     params: names('param'),
     dims,
+    plates,
     edges,
     continuous,
     finiteDiscrete,
