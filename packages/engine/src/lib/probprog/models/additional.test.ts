@@ -223,6 +223,15 @@ describe('the LDA-lite truth', () => {
       expect([0, 1, 2, 3].reduce((a, v) => a + (t.marginals[`phi[${k * 4 + v}]`]?.mean as number), 0)).toBeCloseTo(1, 9)
   })
 
+  // The assignments of the four tokens that share a word flip together, so a sweep's autocorrelation time is near a hundred: 2000
+  // sweeps left mean errors of 0.1 to 0.23 sds depending on the key, against a tolerance of 0.2 (8000 leave about 0.07).
+  it('plans enough Gibbs sweeps for the tolerance of the assignments, and NUTS draws for the sd of the abilities', () => {
+    const gibbs = ldaLite.plans(1).find((p) => p.kind === 'gibbs')
+    expect(gibbs?.config['numDraws']).toBeGreaterThanOrEqual(8000)
+    const nuts = itemResponseScoring.plans(1).find((p) => p.kind === 'nuts')
+    expect(nuts?.config['numDraws']).toBeGreaterThanOrEqual(1500)
+  })
+
   it('NUTS and the exact Dirichlet-categorical Gibbs sweeps land near the exact mixture means (a small run)', {
     timeout: 120_000,
   }, () => {

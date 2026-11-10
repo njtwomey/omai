@@ -296,6 +296,9 @@ export const ldaLite: BenchmarkModel = defineBenchmark({
         quantities: [...mixtures, ...topics],
       }),
       gibbsPlan(scale, {
+        // The four tokens of the third document that share a word move together, so a sweep's autocorrelation time is near a hundred:
+        // 2000 sweeps leave a mean error of the assignments of 0.1 to 0.2 posterior sds, 8000 about 0.07 (20000 sweeps: 0.03 to 0.06).
+        draws: 8000,
         note: 'exact Dirichlet and categorical conditionals in a sweep: consistent, correlated between sweeps (the Kolmogorov distance of a two-valued assignment is not small for a correct sampler, so it is not checked)',
         tolerances: { meanError: 0.2, meanZ: 6, sdRatio: [0.8, 1.25], ks: 1 },
       }),

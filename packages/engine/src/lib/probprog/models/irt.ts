@@ -127,7 +127,11 @@ export const itemResponseScoring: BenchmarkModel = defineBenchmark({
       quality === 'fast' ? 801 : 4001,
     ),
   plans: (scale) => [
-    nutsPlan(scale, { note: 'twelve independent near-normal posteriors: agrees within Monte Carlo error' }),
+    // 1500 draws per chain: the sd of a sample of 1000 draws is off by up to 9% on some of twelve abilities, inside a 10% tolerance only by luck.
+    nutsPlan(scale, {
+      draws: 1500,
+      note: 'twelve independent near-normal posteriors: agrees within Monte Carlo error',
+    }),
     temperedPlan(scale, {
       expect: 'report',
       note: 'tempered particles over twelve abilities: consistent, with Monte Carlo error larger than NUTS',
