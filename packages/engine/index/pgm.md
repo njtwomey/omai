@@ -58,6 +58,8 @@ Structured prediction: conditional random fields and their neighbours, in one pl
 - function `graphPseudoLikelihood`: Besag pseudo-likelihood objective and gradient for graph CRFs, no partition function. `src/lib/pgm/structured/graph-pseudo-likelihood.ts:114` `omai-engine/pgm`
 - function `hashedExtractor`: Hash an extractor's features into a fixed number of buckets (the hashing trick). `src/lib/pgm/structured/features.ts:450` `omai-engine/pgm`
 - function `memmObjective`: MEMM negative log-likelihood and gradient, a sum of local softmax regressions. `src/lib/pgm/structured/memm.ts:183` `omai-engine/pgm`
+- function `neuralCrfDecode`: Exact batched, masked Viterbi decoding of a CRF layer, optionally with allowed transitions. `src/lib/pgm/structured/neural-crf.ts:378` `omai-engine/pgm`
+- function `neuralCrfLogLikelihood`: CRF layer: log-likelihood of tag sequences from emissions, differentiable in the encoder. `src/lib/pgm/structured/neural-crf.ts:306` `omai-engine/pgm`
 - function `structuredHingeObjective`: Structured hinge loss (margin rescaling) of an oracle with its subgradient. `src/lib/pgm/structured/structured-svm.ts:140` `omai-engine/pgm`
 - function `trainStructuredSvm`: Train a structured SVM by subgradient, Frank-Wolfe or cutting planes, with duality gap. `src/lib/pgm/structured/structured-svm.ts:811` `omai-engine/pgm`
 - function `wapitiExtractor`: Wapiti patterns (with regular-expression tests) as a feature extractor. `src/lib/pgm/structured/features.ts:171` `omai-engine/pgm`
@@ -67,6 +69,8 @@ Structured prediction: conditional random fields and their neighbours, in one pl
 - estimator `hiddenStateOracle`: Hidden-state and latent-dynamic CRF oracle: substates per label, clamped sums over hidden paths. `src/lib/pgm/structured/latent-crf.ts:226` `omai-engine/pgm`
 - estimator `partialLabelOracle`: Linear-chain CRF oracle for partial labels: per-position label sets, clamped forward-backward. `src/lib/pgm/structured/latent-crf.ts:95` `omai-engine/pgm`
 - estimator `semiMarkovOracle`: Semi-Markov CRF oracle: segment features, exact expectations, cost-augmented Viterbi over segmentations. `src/lib/pgm/structured/semi-markov-crf.ts:659` `omai-engine/pgm`
+
+- algorithm `taggerAlgorithm`: Train a BiLSTM-CRF tagger end to end, scoring each epoch. `src/lib/pgm/structured/sequence-tagger.ts:398` `omai-engine/pgm`
 
 - structure `FeatureExtractor`: A template language and its options as a map from an input to CRF attribute records. `src/lib/pgm/structured/features.ts:71` `omai-engine/pgm`
 - structure `StructuredOracle`: The contract a structured model offers a learner: features, expectations, decoding, loss. `src/lib/pgm/structured/oracle.ts:20` `omai-engine/pgm`
@@ -80,3 +84,6 @@ Structured prediction: conditional random fields and their neighbours, in one pl
 - table `crfSolvers`: CRF training solvers: L-BFGS, OWL-QN for L1, SGD, perceptron, passive-aggressive, AROW. `src/lib/pgm/structured/crf-training.ts:104` `omai-engine/pgm`
 - table `structuredSolvers`: Structured-model solvers: L-BFGS, OWL-QN for L1, SGD, perceptron, passive-aggressive, AROW. `src/lib/pgm/structured/solvers.ts:311` `omai-engine/pgm`
 - table `structuredSvmSolvers`: Structured-SVM solvers: subgradient, block-coordinate Frank-Wolfe, one-slack and n-slack cutting planes. `src/lib/pgm/structured/structured-svm.ts:673` `omai-engine/pgm`
+
+- module `CRF`: CRF layer over emission scores: transition, start and end parameters, log-likelihood, Viterbi. `src/lib/pgm/structured/neural-crf.ts:476` `omai-engine/pgm`
+- module `SequenceTagger`: BiLSTM-CRF sequence tagger over token ids, trained end to end (Lample et al., flair SequenceTagger). `src/lib/pgm/structured/sequence-tagger.ts:135` `omai-engine/pgm`
