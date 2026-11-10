@@ -4,8 +4,8 @@
  * Jordan's quadratic lower bound on the log logistic, with its variational parameter set from the current belief.
  */
 
-import { sigmoidOf } from '../../base/index.ts'
-import { gaussianExpectation, tiltedGaussian } from '../_quadrature.ts'
+import { logAddExp, sigmoidOf } from '../../base/index.ts'
+import { gaussianExpectation, tiltedGaussian, tiltedLogGrid } from '../_quadrature.ts'
 import { bernoulli } from '../families.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, scalarOf } from './args.ts'
@@ -27,6 +27,13 @@ const weight =
     pi * sigmoidOf(x) + (1 - pi) * sigmoidOf(-x)
 
 const POINTS = 64
+
+/** log sigmoid, stable in both tails. */
+const logSigmoid = (x: number): number => -logAddExp(0, -x)
+
+/** log of the weight the logistic factor to the power p gives x when the outcome is true with probability pi. */
+const logLogisticWeight = (pi: number, x: number, p: number): number =>
+  logAddExp(Math.log(pi) + p * logSigmoid(x), Math.log(1 - pi) + p * logSigmoid(-x))
 
 /**
  * b | x ~ Bernoulli(sigmoid(x)): the logistic link of logistic regression. EP matches the moments of the Gaussian times
@@ -51,8 +58,21 @@ export const logistic: FactorOperator = {
   ],
   support: { ep: 'numeric', vmp: 'bound' },
   readsTarget: (to) => to === 1,
+  power: true,
   ep: (c): OperatorResult => {
     const x = gaussianOf(arg(c, 1))
+    if (c.power !== 1) {
+      const p = c.power
+      if (c.to === 0) {
+        const yes = tiltedLogGrid(x.mean, x.variance, (v) => p * logSigmoid(v)).logMass
+        const no = tiltedLogGrid(x.mean, x.variance, (v) => p * logSigmoid(-v)).logMass
+        return { message: [(yes - no) / p] }
+      }
+      const pi = trueProbability(arg(c, 0))
+      const t = tiltedLogGrid(x.mean, x.variance, (v) => logLogisticWeight(pi, v, p))
+      const site = gaussianSiteMessage(etaOf(arg(c, 1)), t.mean, t.variance)
+      return { message: [(site[0] ?? 0) / p, (site[1] ?? 0) / p] }
+    }
     if (c.to === 0) {
       const yes = gaussianExpectation(x.mean, x.variance, sigmoidOf, POINTS)
       const no = gaussianExpectation(x.mean, x.variance, (v) => sigmoidOf(-v), POINTS)
@@ -71,6 +91,15 @@ export const logistic: FactorOperator = {
     if (!allProper(c.args)) return Number.NaN
     const x = gaussianOf(arg(c, 1))
     const b = arg(c, 0)
+    if (c.power !== 1) {
+      const p = c.power
+      const pi = trueProbability(b)
+      return (
+        massOf(arg(c, 1)) +
+        (b.value === undefined ? massOf(b) : 0) +
+        tiltedLogGrid(x.mean, x.variance, (v) => logLogisticWeight(pi, v, p)).logMass
+      )
+    }
     if (b.value !== undefined) {
       const g = scalarOf(b) > 0 ? sigmoidOf : (v: number) => sigmoidOf(-v)
       return massOf(arg(c, 1)) + Math.log(gaussianExpectation(x.mean, x.variance, g, POINTS))

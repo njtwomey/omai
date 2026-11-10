@@ -24,6 +24,13 @@ export interface Projection {
   /** The estimate this projection reports: the EP free energy (also the Bethe value for BP) or the variational bound. */
   readonly evidence: 'ep-energy' | 'elbo'
   readonly description: string
+  /**
+   * The alpha of an alpha-divergence projection (`alphaProjection`): the update minimises D_alpha of the tilted
+   * distribution instead of matching its moments (alpha = 1, KL(p || q), is expectation propagation). Absent for the
+   * three projections of the table. Only factors whose operator supports a power (`FactorOperator.power`) read it; the
+   * others keep their own message rule.
+   */
+  readonly alpha?: number
 }
 
 /** Moment matching: expectation propagation. */

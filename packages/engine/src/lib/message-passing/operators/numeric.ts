@@ -23,7 +23,8 @@ export interface NumericOperatorOptions {
 /**
  * An operator for a factor given by its log density over Gaussian variables. EP projects the quadrature moments of the
  * tilted distribution onto a Gaussian (the engine does the projection); the factor's mass under the incoming messages
- * is the same quadrature. Arguments may be observed.
+ * is the same quadrature. Arguments may be observed. The operator supports a power (fractional and power EP, the
+ * alpha-divergence projection): the factor raised to `OperatorContext.power` is what is integrated.
  *
  * @param options - The name, arity and log density.
  * @returns The operator, to be put in the registry the graph is compiled against.
@@ -58,7 +59,7 @@ export function numericOperator(options: NumericOperatorOptions): FactorOperator
       let mass = 0
       const walk = (d: number, w: number): void => {
         if (d === n) {
-          const v = w * Math.exp(options.logDensity(point))
+          const v = w * Math.exp(c.power * options.logDensity(point))
           if (!(v > 0)) return
           mass += v
           for (let k = 0; k < n; k++) {
@@ -116,6 +117,7 @@ export function numericOperator(options: NumericOperatorOptions): FactorOperator
     ports,
     support: { ep: 'numeric' },
     readsTarget: true,
+    power: true,
     tilted,
     logEvidence: (c) => (allProper(c.args) ? tilted({ ...c, to: 0 }).logZ : Number.NaN),
   }

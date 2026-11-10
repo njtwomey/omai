@@ -166,3 +166,35 @@ export function gaussianGridOn(
     }
   return { x, w }
 }
+
+/**
+ * The log mass and the mean and variance of the density proportional to N(mean, variance) exp(logg(x)), on the
+ * panelled grid of {@link gaussianGrid} with the log weights shifted by their maximum (so a factor far in the tail of the
+ * message, or raised to a power, does not underflow). The rule of the powered links (`probit`, `logistic` with a power).
+ *
+ * @param mean - The mean of the Gaussian.
+ * @param variance - Its variance (positive).
+ * @param logg - The log of the function that tilts it.
+ * @returns The log of E[exp(logg)] and the moments of the tilted density.
+ */
+export function tiltedLogGrid(
+  mean: number,
+  variance: number,
+  logg: (x: number) => number,
+): { readonly logMass: number; readonly mean: number; readonly variance: number } {
+  const { x, w } = gaussianGrid(mean, variance)
+  const lw = Float64Array.from(x, (xi, i) => Math.log(w[i] ?? 0) + logg(xi))
+  let top = Number.NEGATIVE_INFINITY
+  for (const v of lw) if (v > top) top = v
+  let m0 = 0
+  let m1 = 0
+  for (let i = 0; i < x.length; i++) {
+    const v = Math.exp((lw[i] ?? 0) - top)
+    m0 += v
+    m1 += v * (x[i] ?? 0)
+  }
+  const mu = m1 / m0
+  let m2 = 0
+  for (let i = 0; i < x.length; i++) m2 += Math.exp((lw[i] ?? 0) - top) * ((x[i] ?? 0) - mu) ** 2
+  return { logMass: top + Math.log(m0), mean: mu, variance: m2 / m0 }
+}
