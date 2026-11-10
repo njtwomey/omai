@@ -24,6 +24,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   what the library can do, for development, and exists only because the user asked for it: never add one unasked, and
   never edit one unasked. The docs (`apps/site`, generated from the TSDoc) are where a method is explained. Examples
   (`examples/`) are programs with a figure and a tape, for the front page and the README.
+- **Search before building.** Before writing anything, an agent greps the library for it (names and concepts, `docs/structure.md`,
+  the agent index) and reuses what exists; a second version of the same thing is never made (OWL-QN, max-flow, QP solvers,
+  inference routines, templates and blas kernels all exist). The agent's report says what it searched for and what it reused.
 - **Every agent tests only its own changes.** Its own test files, tsc, barrels, layers, biome and its own examples,
   never the full suite, never `make check`, and never a repo-wide vitest. The main session alone decides when the gate
   runs, and does not run it unless asked.
