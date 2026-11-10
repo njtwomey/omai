@@ -9,9 +9,15 @@
  *
  * What it maps. Latents: `normal` (a Gaussian variable per element, or one `gaussian-mv` vector variable when a
  * `matmul` reads it, so the posterior keeps its correlations), `gamma`, `exponential`, `beta`, `dirichlet`, and
- * `bernoulli` or `categorical` with known probabilities. Values: expressions that are affine in Gaussian latents (`add`,
+ * `bernoulli` or `categorical` with known probabilities (or a Dirichlet latent for them: the conjugate `discrete` factor).
+ * A Gaussian whose scale is the idiom `1 / sqrt(tau)` (or `tau ** -0.5`) of a gamma or exponential latent `tau` is the
+ * `gaussian-gamma-precision` factor, for observations and latents (variational message passing only; the engine has no EP
+ * rule for it). Values: expressions that are affine in Gaussian latents (`add`,
  * `sub`, `neg`, `mul` and `div` by a known value, `sum`, `mean`, `at` by index data, `matmul` with data) become the
- * affine operators of the engine (`plus`, `difference`, `times-constant`, `sum`, `linear`, `dot-constant`). Likelihoods:
+ * affine operators of the engine (`plus`, `difference`, `times-constant`, `sum`, `linear`, `dot-constant`); the product of
+ * two random values is the `product` factor on a new variable, and `at(components, z)` with a categorical latent `z` (or
+ * `where(z, a, b)` with a Bernoulli latent) is the gate `select`, on a new variable of the components' family (expectation
+ * propagation). Likelihoods:
  * observed `normal` with a known scale (`gaussian`, or `linear-regression-row` for a regression row), `bernoulli` with
  * `probit(affine)` (`probit`), `sigmoid(affine)` or `logits` (`logistic`), `gt(affine, c)` (`greater-than`, a hard
  * comparison; expectation propagation only), or `probs` a beta latent (`bernoulli`); `binomial`, `poisson` (with an exposure) and `categorical` on a
@@ -28,13 +34,23 @@
  */
 
 import { type Json, OmaiError } from '../../base/index.ts'
-import { bernoulli, beta, type Distribution, dirichlet, gamma, multivariateNormal, normal } from '../../dists/index.ts'
+import {
+  bernoulli,
+  beta,
+  categorical,
+  type Distribution,
+  dirichlet,
+  gamma,
+  multivariateNormal,
+  normal,
+} from '../../dists/index.ts'
 import {
   bernoulliEta,
   betaEta,
   type CompiledGraph,
   compileGraph,
   dirichletPrior,
+  discretePrior,
   evidenceOf,
   type FactorGraphSpec,
   type FactorOperator,
@@ -181,15 +197,6 @@ function affOf(c: Cell): Aff {
   return c.aff
 }
 
-function mulAff(a: Aff, b: Aff): Aff {
-  if (a.terms.size === 0) return scaleAff(b, a.offset)
-  if (b.terms.size === 0) return scaleAff(a, b.offset)
-  throw new Refusal(
-    'operator',
-    'a product of two random values has no Gaussian message (the `product` factor is not mapped)',
-  )
-}
-
 const prod = (xs: readonly number[]): number => xs.reduce((a, b) => a * b, 1)
 
 function unflatten(flat: number, shape: readonly number[]): number[] {
@@ -237,6 +244,8 @@ class Compiler {
   private readonly names = new Set<string>()
   private readonly nodes = new Map<string, ModelNode>()
   private readonly families = distributionFamilies()
+  /** The node being compiled: the site that auxiliary variables of its expressions are named after. */
+  private current = ''
 
   constructor(
     private readonly bound: BoundModel,
@@ -299,13 +308,18 @@ class Compiler {
     return dims
   }
 
-  private zip(syms: readonly Sym[], f: (cells: readonly Cell[]) => Cell): Sym {
+  private zip(syms: readonly Sym[], f: (cells: readonly Cell[], index: number) => Cell): Sym {
     const dims = this.joinDims(syms)
     const shape = this.shapeOf(dims)
     const cells: Cell[] = []
     for (let i = 0; i < prod(shape); i++) {
       const idx = unflatten(i, shape)
-      cells.push(f(syms.map((s) => this.cellAt(s, dims, idx))))
+      cells.push(
+        f(
+          syms.map((s) => this.cellAt(s, dims, idx)),
+          i,
+        ),
+      )
     }
     return { dims, cells }
   }
@@ -413,7 +427,10 @@ class Compiler {
       case 'neg':
         return { dims: a.dims, cells: a.cells.map((x) => ({ kind: 'aff', aff: scaleAff(affOf(x), -1) })) }
       case 'mul':
-        return this.zip([a, b], ([x, y]) => ({ kind: 'aff', aff: mulAff(affOf(x as Cell), affOf(y as Cell)) }))
+        return this.zip([a, b], ([x, y], i) => ({
+          kind: 'aff',
+          aff: this.mulAff(affOf(x as Cell), affOf(y as Cell), i),
+        }))
       case 'div':
         return this.zip([a, b], ([x, y]) => {
           if (!isConstCell(y as Cell))
@@ -426,6 +443,8 @@ class Compiler {
         return this.reduce(a, typeof params['dim'] === 'string' ? params['dim'] : undefined, op === 'mean')
       case 'at':
         return this.gather(a, b)
+      case 'where':
+        return this.whereGate(args as [Sym, Sym, Sym])
       case 'matmul':
         return this.matmul(a, b)
       default:
@@ -434,6 +453,31 @@ class Compiler {
           `operator '${op}' applied to a random value has no message rule (message passing handles affine maps of Gaussians; a link such as probit or sigmoid is mapped only as the likelihood of a Bernoulli observation)`,
         )
     }
+  }
+
+  /**
+   * The product of two affine forms: a scaling when one is known, else the `product` factor of the engine on a variable for
+   * each (made by `materialise`), whose output is a new Gaussian variable (the moment-matched product of two Gaussians:
+   * expectation propagation only).
+   */
+  private mulAff(a: Aff, b: Aff, index: number): Aff {
+    if (a.terms.size === 0) return scaleAff(b, a.offset)
+    if (b.terms.size === 0) return scaleAff(a, b.offset)
+    const site = this.current
+    const left = this.materialise(a, site, undefined) as string
+    const right = this.materialise(b, site, undefined) as string
+    if (left === right)
+      throw new Refusal(
+        'operator',
+        `a random value times itself (a square): the product factor takes two independent variables, and '${left}' is both`,
+      )
+    const out = this.auxName(site, index)
+    this.need('product')
+    this.addVariable({ name: out, family: { kind: 'gaussian' } })
+    this.addFactor({ operator: 'product', args: [out, left, right] }, out)
+    const key = this.atomKey({ kind: 'var', name: out })
+    this.atoms.set(key, { kind: 'var', name: out })
+    return { terms: new Map([[key, 1]]), offset: 0 }
   }
 
   private reduce(a: Sym, dim: string | undefined, mean: boolean): Sym {
@@ -469,7 +513,23 @@ class Compiler {
     for (let i = 0; i < prod(shape); i++) {
       const at = unflatten(i, shape)
       const code = this.cellAt(idx, dims, at)
-      if (!isConstCell(code)) throw new Refusal('operator', 'at: the index must be data, not random')
+      if (!isConstCell(code)) {
+        if (code.kind !== 'rv' || code.family !== 'discrete')
+          throw new Refusal(
+            'operator',
+            'at: the index must be data or a categorical latent (a gate); a computed random index has no message rule',
+          )
+        let restFlat = 0
+        for (let k = 0; k < rest.length; k++)
+          restFlat = restFlat * (restShape[k] as number) + (at[idx.dims.length + k] as number)
+        cells.push(
+          this.gate(
+            Array.from({ length: this.size(first) }, (_, j) => a.cells[j * prod(restShape) + restFlat] as Cell),
+            code.variable,
+          ),
+        )
+        continue
+      }
       const c = code.aff.offset
       if (!Number.isInteger(c) || c < 0 || c >= this.size(first))
         throw new Refusal('data', `at: index ${c} is out of range for '${first}'`)
@@ -478,6 +538,54 @@ class Compiler {
       cells.push(a.cells[flat] as Cell)
     }
     return { dims, cells }
+  }
+
+  /**
+   * `y = c_z`: a gate that picks one of several random values by a discrete (or Bernoulli) variable, the `select` factor of
+   * the engine on a new variable of the components' family. The components are Gaussian (an affine value becomes a variable)
+   * or variables of one other family; a known component has no variable to select and is refused.
+   */
+  private gate(components: readonly Cell[], z: string): Cell {
+    const site = this.current
+    const first = components[0] as Cell
+    const rv = first.kind === 'rv'
+    const kind: FamilyKind = rv ? first.family : 'gaussian'
+    const names = components.map((c) => {
+      if (rv) {
+        if (c.kind !== 'rv' || c.family !== kind)
+          throw new Refusal('operator', `a gate selects among values of one family: they are not all ${kind}`)
+        return c.variable
+      }
+      const v = this.materialise(affOf(c), site, undefined)
+      if (typeof v === 'number')
+        throw new Refusal(
+          'operator',
+          'a gate selects among random values: a known component has no variable (give it a prior)',
+        )
+      return v
+    })
+    const out = this.auxName(site, undefined)
+    this.need('select')
+    this.addVariable({ name: out, family: { kind } })
+    this.addFactor({ operator: 'select', args: [out, z, ...names], params: { components: names.length } }, out)
+    if (rv) return { kind: 'rv', variable: out, family: kind }
+    const key = this.atomKey({ kind: 'var', name: out })
+    this.atoms.set(key, { kind: 'var', name: out })
+    return { kind: 'aff', aff: { terms: new Map([[key, 1]]), offset: 0 } }
+  }
+
+  /** `where(c, a, b)`: a known condition picks a branch; a Bernoulli latent condition is the gate `c ? a : b`. */
+  private whereGate([cond, a, b]: [Sym, Sym, Sym]): Sym {
+    return this.zip([cond, a, b], ([c, x, y]) => {
+      if (isConstCell(c as Cell)) return (c as Cell & { kind: 'aff' }).aff.offset !== 0 ? (x as Cell) : (y as Cell)
+      const gate = c as Cell
+      if (gate.kind !== 'rv' || gate.family !== 'bernoulli')
+        throw new Refusal(
+          'operator',
+          'where: the condition must be known or a Bernoulli latent; a comparison of random values has no message rule',
+        )
+      return this.gate([y as Cell, x as Cell], gate.variable)
+    })
   }
 
   private matmul(a: Sym, b: Sym): Sym {
@@ -496,7 +604,7 @@ class Compiler {
       for (let j = 0; j < d; j++) {
         const x = this.cellAt({ dims: a.dims, cells: a.cells }, a.dims, [...at.slice(0, left.length), j])
         const y = this.cellAt({ dims: b.dims, cells: b.cells }, b.dims, [j, ...at.slice(left.length)])
-        acc = combine(acc, mulAff(affOf(x), affOf(y)), 1)
+        acc = combine(acc, this.mulAff(affOf(x), affOf(y), i), 1)
       }
       cells.push({ kind: 'aff', aff: acc })
     }
@@ -617,6 +725,7 @@ class Compiler {
 
   run(): void {
     for (const node of this.bound.spec.nodes) {
+      this.current = node.name
       try {
         this.node(node)
       } catch (e) {
@@ -675,6 +784,68 @@ class Compiler {
           `the ${name} of '${node.name}' depends on a random value: ${what} must be known for a message-passing prior`,
         )
       return c.aff.offset
+    })
+  }
+
+  /**
+   * The expression a Gaussian's scale takes when it is the idiom of a random precision: `1 / sqrt(tau)`, `tau ** -0.5` or
+   * `sqrt(1 / tau)`, followed through derived nodes. Absent when the scale is not that shape.
+   */
+  private precisionExpr(scale: ExprSpec): ExprSpec | undefined {
+    const e = this.unwrap(scale)
+    if (e.kind !== 'op') return undefined
+    const isOne = (x: ExprSpec): boolean => {
+      if (!this.isConst(x)) return false
+      return toFlat(this.evalNamed(x).value).every((v) => v === 1)
+    }
+    if (e.op === 'div') {
+      const [num, den] = e.args as [ExprSpec, ExprSpec]
+      const d = this.unwrap(den)
+      if (isOne(num) && d.kind === 'op' && d.op === 'sqrt') return (d.args as [ExprSpec])[0]
+    }
+    if (e.op === 'pow') {
+      const [base, power] = e.args as [ExprSpec, ExprSpec]
+      if (this.isConst(power) && toFlat(this.evalNamed(power).value).every((v) => v === -0.5)) return base
+    }
+    if (e.op === 'sqrt') {
+      const inner = this.unwrap((e.args as [ExprSpec])[0])
+      if (inner.kind === 'op' && inner.op === 'div' && isOne(inner.args[0] as ExprSpec)) return inner.args[1]
+    }
+    return undefined
+  }
+
+  /**
+   * The gamma variables that are the precisions of a Gaussian node whose scale is random, element by element: the scale
+   * must be the idiom `1 / sqrt(tau)` of a gamma (or exponential) latent. Anything else is refused with the idiom named.
+   */
+  private randomPrecisions(node: ModelNode & { readonly dist: DistSpec }): string[] {
+    const scale = node.dist.params['scale']
+    const idiom =
+      'write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only)'
+    const tau = scale === undefined ? undefined : this.precisionExpr(scale)
+    if (tau === undefined)
+      throw new Refusal(
+        'operator',
+        `the scale of '${node.name}' depends on a random value that is not the precision idiom: ${idiom}`,
+      )
+    let sym: Sym
+    try {
+      sym = this.evalSym(tau)
+    } catch (e) {
+      if (e instanceof Refusal && e.kind === 'operator')
+        throw new Refusal(
+          'operator',
+          `the precision of '${node.name}' must be a gamma or exponential latent itself: a scaled or computed precision (kappa * tau, the normal-gamma prior, which would be the 'gaussian-normal-gamma' joint variable) is not mapped; ${idiom}`,
+        )
+      throw e
+    }
+    return this.over(sym, node.dims).map((c) => {
+      if (c.kind !== 'rv' || c.family !== 'gamma')
+        throw new Refusal(
+          'operator',
+          `the precision of '${node.name}' must be a gamma or exponential latent, not a ${c.kind === 'rv' ? `${c.family} variable` : 'value computed from other latents'}: ${idiom}`,
+        )
+      return c.variable
     })
   }
 
@@ -756,6 +927,11 @@ class Compiler {
     const shape = this.shapeOf(node.dims)
     const n = prod(shape)
     const loc = this.over(this.paramSym(node.dist, 'loc'), node.dims)
+    const scaleExpr = node.dist.params['scale']
+    if (scaleExpr !== undefined && !this.isConst(scaleExpr)) {
+      this.latentRandomPrecision(node, loc)
+      return
+    }
     const scale = this.constParam(node, 'scale', 'the scale')
     for (const s of scale)
       if (!(s > 0)) throw new Refusal('data', `the scale of '${node.name}' is ${s}: it must be positive`)
@@ -790,6 +966,30 @@ class Compiler {
         const m = this.materialise(affOf(l), node.name, node.dims.length === 0 ? undefined : i)
         this.addFactor({ operator: 'gaussian', args: [name, m as string], params: { precision: 1 / variance } }, name)
       }
+      cells.push(this.varAtom(name))
+      vars.push(name)
+    }
+    this.syms.set(node.name, { dims: node.dims, cells })
+    this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+  }
+
+  /** A Gaussian latent with a gamma precision: a `gaussian-gamma-precision` factor per element (the mean-field hierarchy of Bishop 2006, 10.2). */
+  private latentRandomPrecision(node: ModelNode & { readonly kind: 'latent' }, loc: readonly Cell[]): void {
+    if (this.packed.has(node.name))
+      throw new Refusal(
+        'operator',
+        `'${node.name}' is read as a vector by a matmul and has a random scale: a joint Gaussian vector has one covariance, so its scale must be known`,
+      )
+    const taus = this.randomPrecisions(node)
+    const cells: Cell[] = []
+    const vars: string[] = []
+    for (const [i, tau] of taus.entries()) {
+      const name = this.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'gaussian' } })
+      const l = loc[i] as Cell
+      const mean = isConstCell(l)
+        ? { const: l.aff.offset }
+        : (this.materialise(affOf(l), node.name, node.dims.length === 0 ? undefined : i) as string)
+      this.addFactor({ operator: 'gaussian-gamma-precision', args: [name, mean, tau] }, name)
       cells.push(this.varAtom(name))
       vars.push(name)
     }
@@ -880,12 +1080,73 @@ class Compiler {
     return values
   }
 
+  /**
+   * A categorical latent: a `discrete` variable per element with a known probability vector (a `prior` factor), or with a
+   * Dirichlet latent as its probabilities (the conjugate `discrete` factor, a mixture weight). Its role in a model is as
+   * the gate of `at(components, z)` or the index of a conjugate observation.
+   */
+  private latentCategorical(node: ModelNode & { readonly kind: 'latent' }): void {
+    const shape = this.shapeOf(node.dims)
+    const n = prod(shape)
+    const probsExpr = node.dist.params['probs']
+    const logitsExpr = node.dist.params['logits']
+    const expr = probsExpr ?? logitsExpr
+    if (expr === undefined) throw new Refusal('structure', `'${node.name}': give probs or logits`)
+    const cells: Cell[] = []
+    const vars: string[] = []
+    if (!this.isConst(expr)) {
+      if (logitsExpr !== undefined)
+        throw new Refusal(
+          'operator',
+          `the logits of '${node.name}' depend on a random value: only probs from a Dirichlet latent map`,
+        )
+      const over = this.over(this.evalSym(expr), node.dims)
+      for (const [i, c] of over.entries()) {
+        if (c.kind !== 'rv' || c.family !== 'dirichlet')
+          throw new Refusal(
+            'operator',
+            `the probabilities of '${node.name}' must be known or a Dirichlet latent for the conjugate 'discrete' operator`,
+          )
+        const size = (this.variables.find((v) => v.name === c.variable)?.family.size ?? 2) as number
+        const name = this.addVariable({
+          name: this.elementName(node.name, node.dims, i),
+          family: { kind: 'discrete', size },
+        })
+        this.addFactor({ operator: 'discrete', args: [name, c.variable] }, name)
+        cells.push({ kind: 'rv', variable: name, family: 'discrete' })
+        vars.push(name)
+      }
+    } else {
+      const nv = this.evalNamed(expr)
+      for (let i = 0; i < n; i++) {
+        const raw = this.eventVector(nv, node.dims, unflatten(i, shape))
+        const probs =
+          logitsExpr === undefined
+            ? raw
+            : (() => {
+                const top = Math.max(...raw)
+                const e = raw.map((v) => Math.exp(v - top))
+                const t = e.reduce((a, b) => a + b, 0)
+                return e.map((v) => v / t)
+              })()
+        const name = this.addVariable({
+          name: this.elementName(node.name, node.dims, i),
+          family: { kind: 'discrete', size: probs.length },
+        })
+        this.addFactor(discretePrior(name, probs), name)
+        cells.push({ kind: 'rv', variable: name, family: 'discrete' })
+        vars.push(name)
+      }
+    }
+    this.syms.set(node.name, { dims: node.dims, cells })
+    this.layout(node, 'latent', 'discrete', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+  }
+
   private latentDiscrete(node: ModelNode & { readonly kind: 'latent' }): void {
-    if (node.dist.family === 'categorical')
-      throw new Refusal(
-        'structure',
-        `'${node.name}' is categorical: a discrete latent is mapped only for Bernoulli, with a table over scalar nodes`,
-      )
+    if (node.dist.family === 'categorical') {
+      this.latentCategorical(node)
+      return
+    }
     const parents = this.discreteParents(node)
     if (node.dims.length > 0 && parents.length > 0)
       throw new Refusal(
@@ -1069,12 +1330,11 @@ class Compiler {
     const index = node.dims.length === 0 ? undefined : i
     switch (fam) {
       case 'normal': {
+        const scaleExpr = node.dist.params['scale']
+        if (scaleExpr !== undefined && !this.isConst(scaleExpr))
+          return this.observedRandomPrecision(node, name, y, i, index)
         const scale = this.paramCell(node, 'scale', i)
-        if (!isConstCell(scale))
-          throw new Refusal(
-            'operator',
-            `the scale of '${node.name}' depends on a random value: a known scale is needed (a Gamma-distributed precision is the 'gaussian-gamma-precision' operator, which is not mapped yet)`,
-          )
+        if (!isConstCell(scale)) throw new Refusal('operator', `the scale of '${node.name}' is not known`)
         if (!(scale.aff.offset > 0))
           throw new Refusal('data', `the scale of '${node.name}' is ${scale.aff.offset}: it must be positive`)
         const precision = 1 / scale.aff.offset ** 2
@@ -1114,6 +1374,27 @@ class Compiler {
           `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, bernoulli, binomial, poisson and categorical`,
         )
     }
+  }
+
+  /** An observed Gaussian with a gamma precision (`gaussian-gamma-precision`): the mean is a variable or a known value. */
+  private observedRandomPrecision(
+    node: ModelNode & { readonly kind: 'observed' },
+    name: string,
+    y: number,
+    i: number,
+    index: number | undefined,
+  ): string {
+    const tau = this.cellsOf(node, 'precision', () => ({
+      dims: node.dims,
+      cells: this.randomPrecisions(node).map((v): Cell => ({ kind: 'rv', variable: v, family: 'gamma' })),
+    }))[i] as Cell & { kind: 'rv' }
+    const loc = this.paramCell(node, 'loc', i)
+    const mean = isConstCell(loc)
+      ? { const: loc.aff.offset }
+      : (this.materialise(affOf(loc), node.name, index) as string)
+    this.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
+    this.addFactor({ operator: 'gaussian-gamma-precision', args: [name, mean, tau.variable] }, name)
+    return name
   }
 
   private observedBernoulli(
@@ -1214,10 +1495,11 @@ class Compiler {
  * model: rebind and compile again for new data.
  *
  * Nodes that the engine has no counterpart for are never dropped silently. A `param` node, a `factor` (log-density)
- * term, a family with no message family, a `custom` call, a random scale, a product of two random values, a non-affine
- * operator on a random value (except as a Bernoulli link), a constraint beyond the family's support, missing data that
- * is not ignored, a subsampling batch and a plated table over discrete nodes each become an issue naming the node and
- * the reason, and no graph is produced.
+ * term, a family with no message family, a `custom` call, a random scale that is not the precision idiom (a scaled
+ * precision, the normal-gamma prior, is not mapped), a square of a random value, a non-affine operator on a random value
+ * (except as a Bernoulli link), a known component of a gate, a computed random index, a constraint beyond the family's
+ * support, missing data that is not ignored, a subsampling batch and a plated table over discrete nodes each become an
+ * issue naming the node and the reason, and no graph is produced.
  *
  * @param bound - The bound model.
  * @param options - The factor operators to compile against (default the engine's `defaultOperators()`) and the model's operator table.
@@ -1432,6 +1714,16 @@ export function factorGraphPosterior(
           ),
         })
         break
+      case 'discrete': {
+        const k = nums(vs[0]?.['probs']).length
+        out[s.site] = categorical({
+          probs: T(
+            vs.flatMap((x) => (nums(x['probs']).length === k ? nums(x['probs']) : new Array<number>(k).fill(1 / k))),
+            [...shape, k],
+          ),
+        })
+        break
+      }
       case 'dirichlet': {
         const k = nums(vs[0]?.['alpha']).length
         out[s.site] = dirichlet(
