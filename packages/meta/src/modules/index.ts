@@ -78,6 +78,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'omai-engine/logic/ilp': () => import('omai-engine/logic/ilp'),
   'omai-engine/losses': () => import('omai-engine/losses'),
   'omai-engine/manifold': () => import('omai-engine/manifold'),
+  'omai-engine/message-passing': () => import('omai-engine/message-passing'),
   'omai-engine/metrics': () => import('omai-engine/metrics'),
   'omai-engine/mixture': () => import('omai-engine/mixture'),
   'omai-engine/nn': () => import('omai-engine/nn'),
