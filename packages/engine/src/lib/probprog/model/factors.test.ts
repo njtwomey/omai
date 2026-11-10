@@ -861,3 +861,41 @@ describe('a categorical gate is the select factor (expectation propagation)', ()
     expect(issue?.reason).toMatch(/1 \/ sqrt\(tau\)/)
   })
 })
+
+describe('the larger and the smaller of two random values are the max and min factors', () => {
+  it('compile, run under EP, and refuse a known operand', () => {
+    const m = defineModel('hinge', (b) => {
+      const a = b.latent('a', d.normal(0, 1))
+      const c = b.latent('c', d.normal(1, 1))
+      b.observe('y', d.normal(ops.maximum(a, c), 0.5), b.data('y', { dims: ['row'] }))
+    })
+    const c = toFactorGraph(m.bind({ y: [2] }))
+    expect(c.issues).toEqual([])
+    expect(c.graph?.factors.map((f) => f.operator)).toEqual(['prior', 'prior', 'max', 'gaussian'])
+    const g = graphOf(c.graph)
+    const { state } = run(g)
+    // The exact posterior mean of a by a grid over (a, c), y = max(a, c) observed through N(2, 1/4).
+    let z = 0
+    let ma = 0
+    for (let i = -70; i <= 70; i++)
+      for (let j = -70; j <= 70; j++) {
+        const a = i * 0.1
+        const cc = j * 0.1
+        const w = Math.exp(-0.5 * a * a - 0.5 * (cc - 1) ** 2 - 2 * (2 - Math.max(a, cc)) ** 2)
+        z += w
+        ma += w * a
+      }
+    expect(toFlat(factorGraphPosterior(c, g, state).mean('a'))[0]).toBeCloseTo(ma / z, 1)
+    const low = defineModel('low', (b) => {
+      const a = b.latent('a', d.normal(0, 1))
+      const cc = b.latent('c', d.normal(1, 1))
+      b.observe('y', d.normal(ops.minimum(a, cc), 0.5), b.data('y', { dims: ['row'] }))
+    })
+    expect(toFactorGraph(low.bind({ y: [0] })).graph?.factors.some((f) => f.operator === 'min')).toBe(true)
+    const clip = defineModel('clip', (b) => {
+      const a = b.latent('a', d.normal(0, 1))
+      b.observe('y', d.normal(ops.maximum(a, 0), 0.5), b.data('y', { dims: ['row'] }))
+    })
+    expect(toFactorGraph(clip.bind({ y: [1] })).issues[0]?.reason).toMatch(/random value and a known one/)
+  })
+})

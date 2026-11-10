@@ -445,6 +445,12 @@ class Compiler {
         return this.gather(a, b)
       case 'where':
         return this.whereGate(args as [Sym, Sym, Sym])
+      case 'maximum':
+      case 'minimum':
+        return this.zip([a, b], ([x, y], i) => ({
+          kind: 'aff',
+          aff: this.extremum(op === 'maximum' ? 'max' : 'min', affOf(x as Cell), affOf(y as Cell), i),
+        }))
       case 'matmul':
         return this.matmul(a, b)
       default:
@@ -475,6 +481,27 @@ class Compiler {
     this.need('product')
     this.addVariable({ name: out, family: { kind: 'gaussian' } })
     this.addFactor({ operator: 'product', args: [out, left, right] }, out)
+    const key = this.atomKey({ kind: 'var', name: out })
+    this.atoms.set(key, { kind: 'var', name: out })
+    return { terms: new Map([[key, 1]]), offset: 0 }
+  }
+
+  /** The larger or smaller of two random values: the `max` or `min` factor of the engine on a new variable (expectation propagation, Clark's moments). */
+  private extremum(operator: 'max' | 'min', a: Aff, b: Aff, index: number): Aff {
+    if (a.terms.size === 0 || b.terms.size === 0)
+      throw new Refusal(
+        'operator',
+        `${operator === 'max' ? 'maximum' : 'minimum'} of a random value and a known one (a rectifier or clip) has no message rule yet: both operands must be random`,
+      )
+    const site = this.current
+    const left = this.materialise(a, site, undefined) as string
+    const right = this.materialise(b, site, undefined) as string
+    if (left === right)
+      throw new Refusal('operator', `the ${operator === 'max' ? 'maximum' : 'minimum'} of a random value with itself`)
+    const out = this.auxName(site, index)
+    this.need(operator)
+    this.addVariable({ name: out, family: { kind: 'gaussian' } })
+    this.addFactor({ operator, args: [out, left, right] }, out)
     const key = this.atomKey({ kind: 'var', name: out })
     this.atoms.set(key, { kind: 'var', name: out })
     return { terms: new Map([[key, 1]]), offset: 0 }
