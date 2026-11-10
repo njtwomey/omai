@@ -2045,233 +2045,6 @@ wheels = [
 ]
 
 [[package]]
-name = "omai-oracle"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "numpy" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pyright" },
-    { name = "ruff" },
-    { name = "scipy-stubs" },
-]
-oracle-core = [
-    { name = "aif360" },
-    { name = "antropy" },
-    { name = "astropy" },
-    { name = "biopython" },
-    { name = "bitarray" },
-    { name = "blackboxauditing" },
-    { name = "clingo" },
-    { name = "control" },
-    { name = "cvxpy" },
-    { name = "datasketch" },
-    { name = "diffprivlib" },
-    { name = "dppy" },
-    { name = "dtw-python" },
-    { name = "fairlearn" },
-    { name = "filterpy" },
-    { name = "gensim" },
-    { name = "imbalanced-learn" },
-    { name = "jellyfish" },
-    { name = "jiwer" },
-    { name = "krippendorff" },
-    { name = "librosa" },
-    { name = "lime" },
-    { name = "mapie" },
-    { name = "mir-eval" },
-    { name = "modal-python" },
-    { name = "networkx" },
-    { name = "nltk" },
-    { name = "nolds" },
-    { name = "npeet" },
-    { name = "optuna" },
-    { name = "padasip" },
-    { name = "pingouin" },
-    { name = "pot" },
-    { name = "prdc" },
-    { name = "properscoring" },
-    { name = "pycocotools" },
-    { name = "pyitlib" },
-    { name = "pymoo" },
-    { name = "pyperplan" },
-    { name = "pyphen" },
-    { name = "pysindy" },
-    { name = "pystoi" },
-    { name = "pysubgroup" },
-    { name = "python-constraint2" },
-    { name = "python-sat" },
-    { name = "pywavelets" },
-    { name = "rank-bm25" },
-    { name = "rapidfuzz" },
-    { name = "reedsolo" },
-    { name = "rouge-score" },
-    { name = "ruptures" },
-    { name = "sacrebleu" },
-    { name = "scikit-commpy" },
-    { name = "scikit-image" },
-    { name = "scikit-learn" },
-    { name = "scipy" },
-    { name = "sdeint" },
-    { name = "sewar" },
-    { name = "shap" },
-    { name = "shapely" },
-    { name = "slycot" },
-    { name = "statsmodels" },
-    { name = "stumpy" },
-    { name = "sympy" },
-    { name = "tokenizers" },
-    { name = "vmdpy" },
-]
-oracle-prob = [
-    { name = "arviz" },
-    { name = "blackjax" },
-    { name = "causal-learn" },
-    { name = "hmmlearn" },
-    { name = "numpyro" },
-    { name = "pgmpy" },
-    { name = "pyagrum" },
-    { name = "sklearn-crfsuite" },
-]
-oracle-rl = [
-    { name = "ecos" },
-    { name = "gymnasium" },
-    { name = "nashpy" },
-    { name = "open-spiel" },
-]
-oracle-torch = [
-    { name = "captum" },
-    { name = "gpytorch" },
-    { name = "monai" },
-    { name = "opacus" },
-    { name = "optax" },
-    { name = "pytorch-crf" },
-    { name = "torch" },
-    { name = "torchdiffeq" },
-    { name = "torchmetrics" },
-    { name = "torchvision" },
-]
-oracle-vision = [
-    { name = "opencv-python-headless" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "numpy", specifier = ">=2" },
-    { name = "pydantic", specifier = ">=2" },
-    { name = "pydantic-settings", specifier = ">=2" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pyright" },
-    { name = "ruff" },
-    { name = "scipy-stubs", specifier = ">=1.18.1.1" },
-]
-oracle-core = [
-    { name = "aif360", specifier = ">=0.6.1" },
-    { name = "antropy", specifier = ">=0.2.3" },
-    { name = "astropy", specifier = ">=8.0.2" },
-    { name = "biopython", specifier = ">=1.88" },
-    { name = "bitarray", specifier = ">=3.12.3" },
-    { name = "blackboxauditing", specifier = ">=0.1.54" },
-    { name = "clingo", specifier = ">=5.8.2" },
-    { name = "control", specifier = ">=0.10.2" },
-    { name = "cvxpy", specifier = ">=1.9.3" },
-    { name = "datasketch", specifier = ">=2.0.0" },
-    { name = "diffprivlib", specifier = ">=0.6.6" },
-    { name = "dppy", specifier = ">=0.3.3" },
-    { name = "dtw-python", specifier = ">=1.9.0" },
-    { name = "fairlearn", specifier = ">=0.15.0" },
-    { name = "filterpy", specifier = ">=1.4.5" },
-    { name = "gensim", specifier = ">=4.4.0" },
-    { name = "imbalanced-learn", specifier = ">=0.14.2" },
-    { name = "jellyfish", specifier = ">=1.3.0" },
-    { name = "jiwer", specifier = ">=4.0.0" },
-    { name = "krippendorff", specifier = ">=0.9.0" },
-    { name = "librosa", specifier = ">=1.0.0" },
-    { name = "lime", specifier = ">=0.2.0.1" },
-    { name = "mapie", specifier = ">=1.6.0" },
-    { name = "mir-eval", specifier = ">=0.8.2" },
-    { name = "modal-python", specifier = ">=0.4.2.1" },
-    { name = "networkx" },
-    { name = "nltk", specifier = ">=3.10.4" },
-    { name = "nolds", specifier = ">=0.6.3" },
-    { name = "npeet", git = "https://github.com/gregversteeg/NPEET" },
-    { name = "optuna", specifier = ">=5.0.0" },
-    { name = "padasip", specifier = ">=1.2.2" },
-    { name = "pingouin", specifier = ">=0.7.0" },
-    { name = "pot", specifier = ">=0.9.7.post1" },
-    { name = "prdc", specifier = ">=0.2" },
-    { name = "properscoring", specifier = ">=0.1" },
-    { name = "pycocotools", specifier = ">=2.0.11" },
-    { name = "pyitlib", specifier = ">=0.3.1" },
-    { name = "pymoo", specifier = ">=0.6.2" },
-    { name = "pyperplan", specifier = ">=2.1" },
-    { name = "pyphen", specifier = ">=0.18.1" },
-    { name = "pysindy", specifier = ">=2.1.0" },
-    { name = "pystoi", specifier = ">=0.4.1" },
-    { name = "pysubgroup", specifier = ">=0.8.0" },
-    { name = "python-constraint2", specifier = ">=2.7.3" },
-    { name = "python-sat", specifier = ">=1.9.dev17" },
-    { name = "pywavelets", specifier = ">=1.10.0" },
-    { name = "rank-bm25", specifier = ">=0.2.2" },
-    { name = "rapidfuzz", specifier = ">=3.14.6" },
-    { name = "reedsolo", specifier = ">=1.7.0" },
-    { name = "rouge-score", specifier = ">=0.1.2" },
-    { name = "ruptures", specifier = ">=1.1.10" },
-    { name = "sacrebleu", specifier = ">=2.6.0" },
-    { name = "scikit-commpy", specifier = ">=0.8.0" },
-    { name = "scikit-image", specifier = ">=0.26.0" },
-    { name = "scikit-learn" },
-    { name = "scipy" },
-    { name = "sdeint", specifier = ">=0.3.0" },
-    { name = "sewar", specifier = ">=0.4.10" },
-    { name = "shap", specifier = ">=0.54.1" },
-    { name = "shapely", specifier = ">=2.2.0" },
-    { name = "slycot", specifier = ">=0.7.1" },
-    { name = "statsmodels" },
-    { name = "stumpy", specifier = ">=1.14.1" },
-    { name = "sympy" },
-    { name = "tokenizers", specifier = ">=0.23.3" },
-    { name = "vmdpy", specifier = ">=0.2" },
-]
-oracle-prob = [
-    { name = "arviz", specifier = ">=1.3.0" },
-    { name = "blackjax", specifier = ">=1.7.1" },
-    { name = "causal-learn", specifier = ">=0.1.4.8" },
-    { name = "hmmlearn", specifier = ">=0.3.3" },
-    { name = "numpyro", specifier = ">=0.22.0" },
-    { name = "pgmpy" },
-    { name = "pyagrum", specifier = ">=3.3.0" },
-    { name = "sklearn-crfsuite", specifier = ">=0.5.0" },
-]
-oracle-rl = [
-    { name = "ecos", specifier = ">=2.0.14" },
-    { name = "gymnasium" },
-    { name = "nashpy", specifier = ">=0.0.43" },
-    { name = "open-spiel", specifier = ">=2.0.2" },
-]
-oracle-torch = [
-    { name = "captum", specifier = ">=0.9.0" },
-    { name = "gpytorch", specifier = ">=1.15.2" },
-    { name = "monai", specifier = ">=1.6.1" },
-    { name = "opacus", specifier = ">=1.6.0" },
-    { name = "optax", specifier = ">=0.2.8" },
-    { name = "pytorch-crf", specifier = ">=0.7.2" },
-    { name = "torch" },
-    { name = "torchdiffeq", specifier = ">=0.2.5" },
-    { name = "torchmetrics", specifier = ">=1.9.0" },
-    { name = "torchvision", specifier = ">=0.29.1" },
-]
-oracle-vision = [{ name = "opencv-python-headless", specifier = ">=4.10" }]
-
-[[package]]
 name = "mir-eval"
 version = "0.8.2"
 source = { registry = "https://pypi.org/simple" }
@@ -2832,6 +2605,235 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/c2/f3/d86c845465a2723ad7e1e5c36dcd75ddb82898b3f53be47ebd429fb2fa5d/nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:4936d1d6780fbe68db454f5e72a42ff64d1fd6397df9f363ae786930fd5c1cd4", size = 148047, upload-time = "2025-09-04T08:29:01.761Z" },
     { url = "https://files.pythonhosted.org/packages/a8/64/3708a90d1ebe202ffdeb7185f878a3c84d15c2b2c31858da2ce0583e2def/nvidia_nvtx-13.0.85-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:cb7780edb6b14107373c835bf8b72e7a178bac7367e23da7acb108f973f157a6", size = 148878, upload-time = "2025-09-04T08:28:53.627Z" },
 ]
+
+[[package]]
+name = "omai-oracle"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "numpy" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pyright" },
+    { name = "ruff" },
+    { name = "scipy-stubs" },
+]
+oracle-core = [
+    { name = "aif360" },
+    { name = "antropy" },
+    { name = "astropy" },
+    { name = "biopython" },
+    { name = "bitarray" },
+    { name = "blackboxauditing" },
+    { name = "clingo" },
+    { name = "control" },
+    { name = "cvxpy" },
+    { name = "datasketch" },
+    { name = "diffprivlib" },
+    { name = "dppy" },
+    { name = "dtw-python" },
+    { name = "fairlearn" },
+    { name = "filterpy" },
+    { name = "gensim" },
+    { name = "imbalanced-learn" },
+    { name = "jellyfish" },
+    { name = "jiwer" },
+    { name = "krippendorff" },
+    { name = "librosa" },
+    { name = "lime" },
+    { name = "mapie" },
+    { name = "mir-eval" },
+    { name = "modal-python" },
+    { name = "networkx" },
+    { name = "nltk" },
+    { name = "nolds" },
+    { name = "npeet" },
+    { name = "optuna" },
+    { name = "padasip" },
+    { name = "pingouin" },
+    { name = "pot" },
+    { name = "prdc" },
+    { name = "properscoring" },
+    { name = "pycocotools" },
+    { name = "pyitlib" },
+    { name = "pymoo" },
+    { name = "pyperplan" },
+    { name = "pyphen" },
+    { name = "pysindy" },
+    { name = "pystoi" },
+    { name = "pysubgroup" },
+    { name = "python-constraint2" },
+    { name = "python-sat" },
+    { name = "pywavelets" },
+    { name = "rank-bm25" },
+    { name = "rapidfuzz" },
+    { name = "reedsolo" },
+    { name = "rouge-score" },
+    { name = "ruptures" },
+    { name = "sacrebleu" },
+    { name = "scikit-commpy" },
+    { name = "scikit-image" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+    { name = "sdeint" },
+    { name = "sewar" },
+    { name = "shap" },
+    { name = "shapely" },
+    { name = "slycot" },
+    { name = "statsmodels" },
+    { name = "stumpy" },
+    { name = "sympy" },
+    { name = "tokenizers" },
+    { name = "vmdpy" },
+]
+oracle-prob = [
+    { name = "arviz" },
+    { name = "blackjax" },
+    { name = "causal-learn" },
+    { name = "hmmlearn" },
+    { name = "numpyro" },
+    { name = "pgmpy" },
+    { name = "pyagrum" },
+    { name = "pyro-ppl" },
+    { name = "sklearn-crfsuite" },
+]
+oracle-rl = [
+    { name = "ecos" },
+    { name = "gymnasium" },
+    { name = "nashpy" },
+    { name = "open-spiel" },
+]
+oracle-torch = [
+    { name = "captum" },
+    { name = "gpytorch" },
+    { name = "monai" },
+    { name = "opacus" },
+    { name = "optax" },
+    { name = "pytorch-crf" },
+    { name = "torch" },
+    { name = "torchdiffeq" },
+    { name = "torchmetrics" },
+    { name = "torchvision" },
+]
+oracle-vision = [
+    { name = "opencv-python-headless" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "numpy", specifier = ">=2" },
+    { name = "pydantic", specifier = ">=2" },
+    { name = "pydantic-settings", specifier = ">=2" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pyright" },
+    { name = "ruff" },
+    { name = "scipy-stubs", specifier = ">=1.18.1.1" },
+]
+oracle-core = [
+    { name = "aif360", specifier = ">=0.6.1" },
+    { name = "antropy", specifier = ">=0.2.3" },
+    { name = "astropy", specifier = ">=8.0.2" },
+    { name = "biopython", specifier = ">=1.88" },
+    { name = "bitarray", specifier = ">=3.12.3" },
+    { name = "blackboxauditing", specifier = ">=0.1.54" },
+    { name = "clingo", specifier = ">=5.8.2" },
+    { name = "control", specifier = ">=0.10.2" },
+    { name = "cvxpy", specifier = ">=1.9.3" },
+    { name = "datasketch", specifier = ">=2.0.0" },
+    { name = "diffprivlib", specifier = ">=0.6.6" },
+    { name = "dppy", specifier = ">=0.3.3" },
+    { name = "dtw-python", specifier = ">=1.9.0" },
+    { name = "fairlearn", specifier = ">=0.15.0" },
+    { name = "filterpy", specifier = ">=1.4.5" },
+    { name = "gensim", specifier = ">=4.4.0" },
+    { name = "imbalanced-learn", specifier = ">=0.14.2" },
+    { name = "jellyfish", specifier = ">=1.3.0" },
+    { name = "jiwer", specifier = ">=4.0.0" },
+    { name = "krippendorff", specifier = ">=0.9.0" },
+    { name = "librosa", specifier = ">=1.0.0" },
+    { name = "lime", specifier = ">=0.2.0.1" },
+    { name = "mapie", specifier = ">=1.6.0" },
+    { name = "mir-eval", specifier = ">=0.8.2" },
+    { name = "modal-python", specifier = ">=0.4.2.1" },
+    { name = "networkx" },
+    { name = "nltk", specifier = ">=3.10.4" },
+    { name = "nolds", specifier = ">=0.6.3" },
+    { name = "npeet", git = "https://github.com/gregversteeg/NPEET" },
+    { name = "optuna", specifier = ">=5.0.0" },
+    { name = "padasip", specifier = ">=1.2.2" },
+    { name = "pingouin", specifier = ">=0.7.0" },
+    { name = "pot", specifier = ">=0.9.7.post1" },
+    { name = "prdc", specifier = ">=0.2" },
+    { name = "properscoring", specifier = ">=0.1" },
+    { name = "pycocotools", specifier = ">=2.0.11" },
+    { name = "pyitlib", specifier = ">=0.3.1" },
+    { name = "pymoo", specifier = ">=0.6.2" },
+    { name = "pyperplan", specifier = ">=2.1" },
+    { name = "pyphen", specifier = ">=0.18.1" },
+    { name = "pysindy", specifier = ">=2.1.0" },
+    { name = "pystoi", specifier = ">=0.4.1" },
+    { name = "pysubgroup", specifier = ">=0.8.0" },
+    { name = "python-constraint2", specifier = ">=2.7.3" },
+    { name = "python-sat", specifier = ">=1.9.dev17" },
+    { name = "pywavelets", specifier = ">=1.10.0" },
+    { name = "rank-bm25", specifier = ">=0.2.2" },
+    { name = "rapidfuzz", specifier = ">=3.14.6" },
+    { name = "reedsolo", specifier = ">=1.7.0" },
+    { name = "rouge-score", specifier = ">=0.1.2" },
+    { name = "ruptures", specifier = ">=1.1.10" },
+    { name = "sacrebleu", specifier = ">=2.6.0" },
+    { name = "scikit-commpy", specifier = ">=0.8.0" },
+    { name = "scikit-image", specifier = ">=0.26.0" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+    { name = "sdeint", specifier = ">=0.3.0" },
+    { name = "sewar", specifier = ">=0.4.10" },
+    { name = "shap", specifier = ">=0.54.1" },
+    { name = "shapely", specifier = ">=2.2.0" },
+    { name = "slycot", specifier = ">=0.7.1" },
+    { name = "statsmodels" },
+    { name = "stumpy", specifier = ">=1.14.1" },
+    { name = "sympy" },
+    { name = "tokenizers", specifier = ">=0.23.3" },
+    { name = "vmdpy", specifier = ">=0.2" },
+]
+oracle-prob = [
+    { name = "arviz", specifier = ">=1.3.0" },
+    { name = "blackjax", specifier = ">=1.7.1" },
+    { name = "causal-learn", specifier = ">=0.1.4.8" },
+    { name = "hmmlearn", specifier = ">=0.3.3" },
+    { name = "numpyro", specifier = ">=0.22.0" },
+    { name = "pgmpy" },
+    { name = "pyagrum", specifier = ">=3.3.0" },
+    { name = "pyro-ppl", specifier = ">=1.9.2" },
+    { name = "sklearn-crfsuite", specifier = ">=0.5.0" },
+]
+oracle-rl = [
+    { name = "ecos", specifier = ">=2.0.14" },
+    { name = "gymnasium" },
+    { name = "nashpy", specifier = ">=0.0.43" },
+    { name = "open-spiel", specifier = ">=2.0.2" },
+]
+oracle-torch = [
+    { name = "captum", specifier = ">=0.9.0" },
+    { name = "gpytorch", specifier = ">=1.15.2" },
+    { name = "monai", specifier = ">=1.6.1" },
+    { name = "opacus", specifier = ">=1.6.0" },
+    { name = "optax", specifier = ">=0.2.8" },
+    { name = "pytorch-crf", specifier = ">=0.7.2" },
+    { name = "torch" },
+    { name = "torchdiffeq", specifier = ">=0.2.5" },
+    { name = "torchmetrics", specifier = ">=1.9.0" },
+    { name = "torchvision", specifier = ">=0.29.1" },
+]
+oracle-vision = [{ name = "opencv-python-headless", specifier = ">=4.10" }]
 
 [[package]]
 name = "opacus"
@@ -3560,6 +3562,31 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e1/1b/244c7b710031ada80f27e579ec20d28a2285dfc318fed0339866b1047f12/pyright-1.1.414.tar.gz", hash = "sha256:523c0a97c60da6333234955c277730c9cf4f5bd6d5399e7b7d2b0fc5d3599524", size = 4154638, upload-time = "2026-09-10T12:26:53.181Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d7/ba/18b6e682ead424ad24bcc134339ae5d1b931cd9ae260540592a058a91279/pyright-1.1.414-py3-none-any.whl", hash = "sha256:2a6b4b3298c9eec174c5ed83bd338de6eee82df2992f3e1930e6199d381be36f", size = 6225049, upload-time = "2026-09-10T12:26:51.427Z" },
+]
+
+[[package]]
+name = "pyro-api"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/25/d7/a0812f5c16b0d4464f80a64a44626c5fe200098070be0f32436dbb662775/pyro-api-0.1.2.tar.gz", hash = "sha256:a1b900d9580aa1c2fab3b123ab7ff33413744da7c5f440bd4aadc4d40d14d920", size = 7349, upload-time = "2020-05-15T16:17:41.501Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fc/81/957ae78e6398460a7230b0eb9b8f1cb954c5e913e868e48d89324c68cec7/pyro_api-0.1.2-py3-none-any.whl", hash = "sha256:10e0e42e9e4401ce464dab79c870e50dfb4f413d326fa777f3582928ef9caf8f", size = 11981, upload-time = "2020-05-15T16:17:40.492Z" },
+]
+
+[[package]]
+name = "pyro-ppl"
+version = "1.9.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "opt-einsum" },
+    { name = "pyro-api" },
+    { name = "torch" },
+    { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/be/7c/e140e52537016af9d9f3d9cd3fc4e0bdfed8ff670985e1326d3ee21010c2/pyro_ppl-1.9.2.tar.gz", hash = "sha256:e4a4b089023777c0bc98c01db4c6ed5e39a1001985ebccfe210dc545bf5b24dd", size = 573958, upload-time = "2026-10-03T18:23:46.639Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/45/65/bc5253ac2542e25fac17f7ede4946f9f70f5b415fe788f49c3d31e548a58/pyro_ppl-1.9.2-py3-none-any.whl", hash = "sha256:4fa9a96e1af113a8b2bdf5d54299f6a86b05aa6f1be1761f520a7114c186902a", size = 760692, upload-time = "2026-10-03T18:23:45.434Z" },
 ]
 
 [[package]]
