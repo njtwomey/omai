@@ -2,7 +2,7 @@
 
 # probprog
 
-Probabilistic programming, NumPyro style: programs written with `sample` and `observe`, effect handlers, log densities, model analysis, inference engines (MCMC, variational, SMC, exact enumeration) chosen by an automatic planner, posteriors, predictive distributions and model criticism. The engines folder is part of this entry point.
+Probabilistic programming, NumPyro style: programs written with `sample` and `observe`, effect handlers (including `reparam`, `collapse`, `lift`, `scope` and Gen-style trace operations), log densities, model analysis, inference engines (MCMC, variational, SMC, exact enumeration) and a planner that can choose among them (one way in, not the only one), posteriors, predictive distributions and model criticism. The engines folder is part of this entry point. Beside the programs, `model` is the model layer (a builder producing a JSON-able spec with named dimensions, data binding, static analysis, structure reports and drawing, compiled to programs and to factor graphs), `inference` holds the inference methods (each with its own knobs, typed tape, budget and anytime snapshots, and no universal entry point), `models` the benchmark models with their truth, and `validation` the grid oracles, agreement tables, simulation-based calibration and the campaigns that check the engines.
 
 - function `analysis.ts` (file): Static analysis of a program from one traced run. `src/lib/probprog/analysis.ts:1` `omai-engine/probprog`
 - function `handlers.ts` (file): Effect handlers (trace, condition, substitute, scale) that give programs meaning. `src/lib/probprog/handlers.ts:1` `omai-engine/probprog`
