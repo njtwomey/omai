@@ -183,24 +183,79 @@ export function sbc<D>(options: SbcOptions<D>): SbcResult {
     throw new OmaiError('value', 'sbc: at least 10 replications are needed')
   if (!Number.isInteger(numRanks) || numRanks < 1)
     throw new OmaiError('value', 'sbc: numRanks must be a positive integer')
-  const alpha = options.alpha ?? 0.01
   const ranks: Record<string, number[]> = {}
-  for (let r = 0; r < replications; r++) {
-    const kr = foldIn(options.key, r)
-    const sim = options.simulate(foldIn(kr, 0))
-    const fit = options.fit(sim.data, foldIn(kr, 1))
-    for (const [name, truth] of Object.entries(sim.truth)) {
-      const draws = fit[name]
-      if (draws === undefined) throw new OmaiError('value', `sbc: the fit returned no draws of ${name}`)
-      const list = ranks[name] ?? []
-      list.push(rankOf(truth, thinTo(draws, numRanks, name)))
-      ranks[name] = list
-    }
+  for (let r = 0; r < replications; r++)
+    for (const [name, rank] of Object.entries(sbcReplication(options, r))) ranks[name] = [...(ranks[name] ?? []), rank]
+  return sbcSummary(ranks, options)
+}
+
+/**
+ * One replication of simulation-based calibration: the parameters and data of replication `r` (from the key folded in
+ * with `r`), the fit, and the rank of each true value among `numRanks` draws. {@link sbc} is `replications` of these
+ * and {@link sbcSummary}; the one replication is the step of a run that shows the ranks as they arrive.
+ *
+ * @param options - The simulator, the fit, `numRanks` and the key.
+ * @param r - The replication's index.
+ * @returns The rank of each quantity's true value.
+ * @throws OmaiError with code `value` for a fit with too few draws or a missing quantity.
+ * @concept posterior-validation
+ * @example
+ * ```ts
+ * import { sbcReplication } from 'omai-engine/probprog/validation'
+ * import { foldIn, key, normal } from 'omai-engine/random'
+ * import { item } from 'omai-engine/tensor'
+ * const ranks = sbcReplication({
+ *   key: key(1), numRanks: 19,
+ *   simulate: (k) => { const m = item(normal(foldIn(k, 0), [])); return { data: m + item(normal(foldIn(k, 1), [])), truth: { m } } },
+ *   fit: (y, k) => ({ m: Array.from(normal(k, [19], { loc: y / 2, scale: Math.SQRT1_2 }).data) }),
+ * }, 0)
+ * ranks['m'] !== undefined && ranks['m'] >= 0 && ranks['m'] <= 19 // => true
+ * ```
+ */
+export function sbcReplication<D>(
+  options: Pick<SbcOptions<D>, 'simulate' | 'fit' | 'numRanks' | 'key'>,
+  r: number,
+): Record<string, number> {
+  const kr = foldIn(options.key, r)
+  const sim = options.simulate(foldIn(kr, 0))
+  const fit = options.fit(sim.data, foldIn(kr, 1))
+  const out: Record<string, number> = {}
+  for (const [name, truth] of Object.entries(sim.truth)) {
+    const draws = fit[name]
+    if (draws === undefined) throw new OmaiError('value', `sbc: the fit returned no draws of ${name}`)
+    out[name] = rankOf(truth, thinTo(draws, options.numRanks, name))
   }
+  return out
+}
+
+/**
+ * The tests of the ranks gathered by {@link sbcReplication}: the histogram, the chi-square test, the ECDF statistic with its
+ * simulated p-value, the diagnosis of a failure and the verdict, for any number of replications from ten.
+ *
+ * @param ranks - The ranks of each quantity, one per replication.
+ * @param options - `numRanks` and the levels, bins and null simulations of {@link sbc}.
+ * @returns The result.
+ * @throws OmaiError with code `value` for fewer than 10 replications.
+ * @concept posterior-validation
+ * @example
+ * ```ts
+ * import { sbcSummary } from 'omai-engine/probprog/validation'
+ * const ranks = Array.from({ length: 40 }, (_, i) => i % 20)
+ * sbcSummary({ m: ranks }, { numRanks: 19, nullSimulations: 200 }).passes // => true
+ * ```
+ */
+export function sbcSummary(
+  ranks: Readonly<Record<string, readonly number[]>>,
+  options: Pick<SbcOptions<unknown>, 'numRanks' | 'bins' | 'alpha' | 'nullSimulations'>,
+): SbcResult {
+  const { numRanks } = options
   const names = Object.keys(ranks)
+  const replications = ranks[names[0] ?? '']?.length ?? 0
+  if (replications < 10) throw new OmaiError('value', 'sbc: at least 10 replications are needed')
+  const alpha = options.alpha ?? 0.01
   const bins = options.bins ?? defaultBins(numRanks + 1)
   const quantities = names.map((name): SbcQuantity => {
-    const rs = ranks[name] as number[]
+    const rs = [...(ranks[name] ?? [])]
     const histogram = new Array<number>(bins).fill(0)
     const width = (numRanks + 1) / bins
     for (const r of rs)

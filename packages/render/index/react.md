@@ -108,7 +108,7 @@ React components for exposition records: `ExpositionView` picks the standard vie
 
 - function `AttributionView`: React component: feature attributions as waterfall, beeswarm or map: `<AttributionView record={attr} />` `src/react/views/attributions.tsx:139` `omai-render/react`
 - function `CalibrationView`: React component: a reliability diagram: `<CalibrationView record={calibration} />` `src/react/views/trust.tsx:23` `omai-render/react`
-- function `ChainDiagnosticsView`: React component: trace, rank, ECDF, ACF, ESS, energy, pair plots and R-hat table of MCMC chains. `src/react/views/chain-diagnostics.tsx:90` `omai-render/react`
+- function `ChainDiagnosticsView`: React component: trace, rank, ECDF, ACF, ESS, energy, pair plots and R-hat table of MCMC chains. `src/react/views/chain-diagnostics.tsx:91` `omai-render/react`
 - function `ClusteringPlayer`: React component: replay a clustering step by step: `<ClusteringPlayer record={steps} points={X} />` `src/react/views/steps.tsx:34` `omai-render/react`
 - function `CurvesView`: React component: several curves on shared axes, played along x: `<CurvesView record={curves} />` `src/react/views/curves.tsx:23` `omai-render/react`
 - function `DecisionSurfaceView`: React component: a classifier's decision surface over the rows: `<DecisionSurfaceView record={surface} points={X} />` `src/react/views/surfaces.tsx:35` `omai-render/react`

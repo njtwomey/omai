@@ -16,6 +16,7 @@ Probabilistic programming, NumPyro style: programs written with `sample` and `ob
 - function `collapse`: Integrate conjugate latent sites out of a program (delayed sampling) with recover. `src/lib/probprog/collapse.ts:199` `omai-engine/probprog`
 - function `laplaceInitialParams`: Initial parameters of an automatic guide from a Laplace fit of the model. `src/lib/probprog/guides-init.ts:84` `omai-engine/probprog`
 - function `lift`: Turn param sites into sample sites with priors (Pyro's lift). `src/lib/probprog/lift.ts:40` `omai-engine/probprog`
+- function `posteriorChains`: MCMC posterior draws by chain and coordinate, with divergences and energy. `src/lib/probprog/posterior-chains.ts:50` `omai-engine/probprog`
 - function `regenerate`: Redraw selected sites from the program given the rest, with the MH weight (Gen's regenerate). `src/lib/probprog/trace-ops.ts:259` `omai-engine/probprog`
 
 - estimator `dregElbo`: Importance-weighted ELBO with the doubly reparameterised (DReG) gradient. `src/lib/probprog/elbo-extra.ts:126` `omai-engine/probprog`
@@ -45,6 +46,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - function `defineKernel`: Define your own sampler on the handler layer in a few lines. `src/lib/probprog/inference/kernel.ts:188` `omai-engine/probprog/inference`
 - function `inferenceMethods`: The methods an app offers on its registered models, named kind/model, for a worker. `src/lib/probprog/inference/models.ts:176` `omai-engine/probprog/inference`
 - function `modelRegistry`: Models by name for a worker: `modelRegistry({ radon: { definition, data } })`. `src/lib/probprog/inference/models.ts:83` `omai-engine/probprog/inference`
+- function `runAnytimeAsync`: runAnytime in slices that hand the page the thread: budget, snapshots, cancellable. `src/lib/probprog/inference/method.ts:309` `omai-engine/probprog/inference`
 
 - estimator `abcRejectionMethod`: Rejection ABC with summary statistics, as a one-step method. `src/lib/probprog/inference/abc-methods.ts:237` `omai-engine/probprog/inference`
 - estimator `abcSmcMethod`: ABC-SMC, one generation per step, with the tolerance shrinking on the tape. `src/lib/probprog/inference/abc-methods.ts:109` `omai-engine/probprog/inference`
@@ -149,6 +151,7 @@ The distribution constructors of the model layer, available as `omai-engine/prob
 The benchmark models of probabilistic programming, available as `omai-engine/probprog/models`: named models written with `defineModel` (recurrences as `scan` nodes), each with a title, description, tags and references, a seeded data generator beside its canonical data, the truth the inference methods are compared with (a closed form, a quadrature or an analytic marginal) and the plans of the methods that apply to it, with what to expect of each. `benchmarkModels` lists them, `benchmarkEntries` and `benchmarkMethods` hand them to a worker's registry, and `benchmarkCampaigns` is their cross-engine agreement as periodic validation campaigns. The suite so far: the conjugate trio, logistic, probit, Poisson and negative binomial regression, eight schools (centred and non-centred), the Gaussian mixture (with and without label switching), Neal's funnel (centred and non-centred), the banana, a two-mode target, a radon hierarchy, a three-player TrueSkill and an AR(1) state space. `kernelCampaigns` is the periodic validation of the kernel methods: Geweke tests, calibration, agreement with the truth of three of them and parallel tempering on the two-mode target.
 
 - function `additionalCampaigns`: The periodic campaigns of the later benchmark models, plus the clutter problem's EP comparison. `src/lib/probprog/models/additional-campaigns.ts:104` `omai-engine/probprog/models`
+- function `bananaDraws`: Exact draws from Haario's banana, for drawing the target. `src/lib/probprog/models/geometry.ts:165` `omai-engine/probprog/models`
 - function `benchmarkAgreement`: Cross-engine agreement of a benchmark model: every planned method against the truth. `src/lib/probprog/models/agreement.ts:132` `omai-engine/probprog/models`
 - function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:103` `omai-engine/probprog/models`
 - function `defineBenchmark`: Make a benchmark model: a spec or program with generator, truth, tags, references and method plans. `src/lib/probprog/models/benchmark.ts:175` `omai-engine/probprog/models`
@@ -164,10 +167,10 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 
 - dataset `ar1CoefficientFamily`: The AR(1) state-space benchmark with an unknown coefficient, as a family for particle MCMC. `src/lib/probprog/models/ar1-parameters.ts:34` `omai-engine/probprog/models`
 - dataset `ar1StateSpace`: Stationary AR(1) state with noisy observations as a scan; exact Gaussian smoothing truth. `src/lib/probprog/models/state-space.ts:126` `omai-engine/probprog/models`
-- dataset `banana`: Haario's banana: a curved correlated 2-D ridge; analytic marginals; Laplace and mean field are wrong. `src/lib/probprog/models/geometry.ts:162` `omai-engine/probprog/models`
+- dataset `banana`: Haario's banana: a curved correlated 2-D ridge; analytic marginals; Laplace and mean field are wrong. `src/lib/probprog/models/geometry.ts:191` `omai-engine/probprog/models`
 - dataset `bayesianNeuralNetwork`: Bayesian neural network (three tanh units) on a small regression; stored NUTS reference for the output. `src/lib/probprog/models/neural-network.ts:145` `omai-engine/probprog/models`
 - dataset `betaBernoulli`: Beta-Bernoulli coin: exact Beta posterior and evidence; the simplest conjugate benchmark. `src/lib/probprog/models/conjugate.ts:43` `omai-engine/probprog/models`
-- dataset `bimodal`: Two equal Gaussian modes in 2-D: the multimodal target for mode weights and R-hat. `src/lib/probprog/models/geometry.ts:236` `omai-engine/probprog/models`
+- dataset `bimodal`: Two equal Gaussian modes in 2-D: the multimodal target for mode weights and R-hat. `src/lib/probprog/models/geometry.ts:260` `omai-engine/probprog/models`
 - dataset `clutterProblem`: Minka's clutter problem with a distractor: bimodal robust location, quadrature truth. `src/lib/probprog/models/clutter.ts:161` `omai-engine/probprog/models`
 - dataset `eightSchoolsCentred`: Rubin's eight schools, centred: the funnel; exact quadrature truth. `src/lib/probprog/models/schools.ts:138` `omai-engine/probprog/models`
 - dataset `eightSchoolsNonCentred`: Rubin's eight schools, non-centred: the same posterior without the funnel; truth by quadrature. `src/lib/probprog/models/schools.ts:207` `omai-engine/probprog/models`
@@ -190,6 +193,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - dataset `stickBreakingMixture`: Truncated stick-breaking (Dirichlet-process style) mixture with known components; a 3-D grid truth. `src/lib/probprog/models/nonparametric.ts:136` `omai-engine/probprog/models`
 - dataset `stochasticVolatility`: Stochastic volatility as a scan, parameters known; the truth is a point-mass smoother on a grid. `src/lib/probprog/models/series.ts:131` `omai-engine/probprog/models`
 - dataset `trueskillThreePlayers`: Three players rated from pairwise games, TrueSkill-style (probit): the EP target; truth is a 3-D grid. `src/lib/probprog/models/ranking.ts:58` `omai-engine/probprog/models`
+- dataset `trueskillTournament`: A small TrueSkill tournament drawn from known skills, games in a fixed order. `src/lib/probprog/models/ranking.ts:150` `omai-engine/probprog/models`
 
 ## probprog/validation
 
@@ -199,3 +203,5 @@ The validation kernel for probabilistic programs: oracles (the grid posterior, c
 - function `gewekeTest`: Geweke joint-distribution test of a posterior transition operator. `src/lib/probprog/validation/geweke.ts:83` `omai-engine/probprog/validation`
 - function `gridPosterior`: Grid posterior of a small program: evidence, marginals and moments to quadrature accuracy. `src/lib/probprog/validation/grid.ts:162` `omai-engine/probprog/validation`
 - function `sbc`: Simulation-based calibration of an inference method with the exact rank distribution. `src/lib/probprog/validation/sbc.ts:180` `omai-engine/probprog/validation`
+
+- estimator `sbcMethod`: Simulation-based calibration, one replication per step, with the tests of the ranks so far. `src/lib/probprog/validation/sbc-method.ts:68` `omai-engine/probprog/validation`

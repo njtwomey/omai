@@ -18,9 +18,9 @@ Message passing on factor graphs of exponential families, the Infer.NET way: a m
 
 - function `alphaEpMethod`: The alpha-divergence method of a graph: an alpha knob beside the EP ones, typed tape. `src/lib/message-passing/alpha.ts:141` `omai-engine/message-passing`
 - function `alphaProjection`: The alpha-divergence projection slot: alpha 1 is EP, toward 0 variational. `src/lib/message-passing/alpha.ts:61` `omai-engine/message-passing`
-- function `ampDenoiser`: The AMP denoiser: posterior mean and derivative for a Gaussian or Bernoulli-Gaussian prior. `src/lib/message-passing/amp.ts:76` `omai-engine/message-passing`
-- function `ampMethod`: The AMP method of a linear problem: the prior's kind and parameters as knobs, typed tape. `src/lib/message-passing/amp.ts:415` `omai-engine/message-passing`
-- function `ampStateEvolution`: The state evolution of AMP: the predicted noise level of every iteration. `src/lib/message-passing/amp.ts:159` `omai-engine/message-passing`
+- function `ampDenoiser`: The AMP denoiser: posterior mean and derivative for a Gaussian or Bernoulli-Gaussian prior. `src/lib/message-passing/amp.ts:77` `omai-engine/message-passing`
+- function `ampMethod`: The AMP method of a linear problem: the prior's kind and parameters as knobs, typed tape. `src/lib/message-passing/amp.ts:477` `omai-engine/message-passing`
+- function `ampStateEvolution`: The state evolution of AMP: the predicted noise level of every iteration. `src/lib/message-passing/amp.ts:160` `omai-engine/message-passing`
 - function `bpMethod`: The belief propagation method of a graph: knobs as a space, typed tape. `src/lib/message-passing/named.ts:432` `omai-engine/message-passing`
 - function `compileGraph`: Validate and compile a factor graph against a registry of operators. `src/lib/message-passing/graph.ts:133` `omai-engine/message-passing`
 - function `dirichlet`: The Dirichlet message family of a given dimension. `src/lib/message-passing/families-vector.ts:189` `omai-engine/message-passing`
@@ -46,7 +46,7 @@ Message passing on factor graphs of exponential families, the Infer.NET way: a m
 - function `vmpMethod`: The variational message passing method of a graph: knobs as a space, typed tape. `src/lib/message-passing/named.ts:409` `omai-engine/message-passing`
 
 - algorithm `alphaEpAlgorithm`: Alpha-divergence message passing: one alpha knob from EP (1) toward variational (0). `src/lib/message-passing/alpha.ts:107` `omai-engine/message-passing`
-- algorithm `ampAlgorithm`: AMP for y = A x + w with an iid prior, with state evolution. `src/lib/message-passing/amp.ts:307` `omai-engine/message-passing`
+- algorithm `ampAlgorithm`: AMP for y = A x + w with an iid prior, with state evolution. `src/lib/message-passing/amp.ts:369` `omai-engine/message-passing`
 - algorithm `bpAlgorithm`: Sum-product belief propagation on a factor graph of discrete variables. `src/lib/message-passing/named.ts:265` `omai-engine/message-passing`
 - algorithm `ecAlgorithm`: Expectation consistent (adaptive TAP) inference: a Gaussian times 1-D sites. `src/lib/message-passing/consistent.ts:139` `omai-engine/message-passing`
 - algorithm `epAlgorithm`: Expectation propagation on a factor graph of exponential families. `src/lib/message-passing/named.ts:201` `omai-engine/message-passing`
@@ -69,6 +69,9 @@ Message passing on factor graphs of exponential families, the Infer.NET way: a m
 - structure `quadratureRule`: The panelled Gauss-Legendre rule of the numeric operator, zoomed onto the tilted mass. `src/lib/message-passing/numerical.ts:69` `omai-engine/message-passing`
 
 - table `projections`: The projection slot's options: moment, klqp, sum-product. `src/lib/message-passing/projections.ts:79` `omai-engine/message-passing`
+
+- dataset `ampProblem`: A compressed-sensing problem (Gaussian matrix, sparse signal, noise) with its truth, for AMP. `src/lib/message-passing/amp.ts:208` `omai-engine/message-passing`
+- dataset `clutterProblem`: Minka's clutter problem: a mean with outliers, whose posterior is lumpy; seeded, with its truth. `src/lib/message-passing/clutter.ts:67` `omai-engine/message-passing`
 
 ## message-passing/operators
 

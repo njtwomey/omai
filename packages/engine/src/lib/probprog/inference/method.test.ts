@@ -6,7 +6,14 @@ import { contains, defaults, dict, int } from '../../space/index.ts'
 import { scalar, session } from '../../trace/index.ts'
 import * as d from '../model/dists/index.ts'
 import { analyseSpec, defineModel } from '../model/index.ts'
-import { anytimeKnobs, defineInferenceMethod, runAnytime, type Snapshot, withAnytime } from './index.ts'
+import {
+  anytimeKnobs,
+  defineInferenceMethod,
+  runAnytime,
+  runAnytimeAsync,
+  type Snapshot,
+  withAnytime,
+} from './index.ts'
 
 const counter = (ends?: number) =>
   defineInferenceMethod({
@@ -134,5 +141,75 @@ describe('runAnytime', () => {
     expect(r).toMatchObject({ reason: 'cancelled', t: 15 })
     const more = runAnytime(s, { budget: { steps: 5 } })
     expect([more.t, more.steps]).toEqual([20, 5])
+  })
+})
+
+describe('runAnytimeAsync', () => {
+  const ticking = (): (() => number) => {
+    let now = 0
+    return () => now++
+  }
+
+  it('hands the page the thread between slices and gives a snapshot per interval, the last flagged', async () => {
+    let handovers = 0
+    const seen: Snapshot<number>[] = []
+    const s = session(counter(), { steps: 100_000 })
+    const r = await runAnytimeAsync(s, {
+      budget: { ms: 100 },
+      snapshot: { everyMs: 30 },
+      sliceMs: 10,
+      clock: ticking(),
+      yieldToPage: async () => {
+        handovers += 1
+      },
+      onSnapshot: (x) => seen.push(x),
+    })
+    expect(r.reason).toBe('budget')
+    expect(handovers).toBeGreaterThanOrEqual(5)
+    expect(seen.length).toBeGreaterThanOrEqual(3)
+    expect(seen.at(-1)?.final).toBe(true)
+    expect(seen.slice(0, -1).every((x) => !x.final)).toBe(true)
+  })
+
+  it('reaches the state of runAnytime and of an uninterrupted session', async () => {
+    const whole = session(counter(), { steps: 37, mode: 'eager' })
+    const s = session(counter(), { steps: 37 })
+    const r = await runAnytimeAsync(s, {
+      snapshot: { everySteps: 5 },
+      yieldToPage: () => Promise.resolve(),
+    })
+    expect([r.reason, r.t, s.state]).toEqual(['ended', whole.t, whole.state])
+  })
+
+  it('stops at a step budget with snapshots every few steps, as runAnytime does', async () => {
+    const seen: number[] = []
+    const r = await runAnytimeAsync(session(counter(), { steps: 1000 }), {
+      budget: { steps: 10 },
+      snapshot: { everySteps: 4 },
+      yieldToPage: () => Promise.resolve(),
+      onSnapshot: (x) => seen.push(x.t),
+    })
+    expect([r.reason, r.t, seen]).toEqual(['budget', 10, [4, 8, 10]])
+  })
+
+  it('asks shouldStop after every slice, and can be continued', async () => {
+    const s = session(counter(), { steps: 1000 })
+    let asked = 0
+    const r = await runAnytimeAsync(s, {
+      snapshot: { everySteps: 5 },
+      yieldToPage: () => Promise.resolve(),
+      shouldStop: () => ++asked > 3,
+    })
+    expect(r).toMatchObject({ reason: 'cancelled', t: 15 })
+    const more = await runAnytimeAsync(s, { budget: { steps: 5 }, yieldToPage: () => Promise.resolve() })
+    expect([more.t, more.steps]).toEqual([20, 5])
+  })
+
+  it('needs a clock for a time budget or a slice length', async () => {
+    const yieldToPage = (): Promise<void> => Promise.resolve()
+    await expect(runAnytimeAsync(session(counter()), { budget: { ms: 5 }, yieldToPage })).rejects.toThrow(
+      /needs a clock/,
+    )
+    await expect(runAnytimeAsync(session(counter()), { sliceMs: 5, yieldToPage })).rejects.toThrow(/needs a clock/)
   })
 })
