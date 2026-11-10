@@ -261,7 +261,7 @@ describe('the CRF estimator as an estimator', () => {
     expect(fitted.predictMarginalsSingle([])).toEqual([])
     expect(fitted.score([[]], [[]])).toBeNaN()
     expect(() => P.crf().fit(P.crfData([[]], [[]]))).toThrow(/no non-empty/)
-    expect(() => P.crf().fit({ x: [0] })).toThrow(/needs sequences/)
+    expect(() => P.crf().fit({ x: [0] } as unknown as P.CrfData)).toThrow(/needs sequences/)
     expect(() => P.crfData([[{ a: 1 }]], [])).toThrow(/label lists/)
     expect(() => P.crf().fit(P.crfData([[{ a: 1 }]], [['X', 'Y']]))).toThrow(/items and/)
   })

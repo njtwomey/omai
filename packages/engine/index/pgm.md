@@ -54,7 +54,9 @@ Structured prediction: conditional random fields and their neighbours, in one pl
 - function `trainStructuredSvm`: Train a structured SVM by subgradient, Frank-Wolfe or cutting planes, with duality gap. `src/lib/pgm/structured/structured-svm.ts:811` `omai-engine/pgm`
 - function `wapitiExtractor`: Wapiti patterns (with regular-expression tests) as a feature extractor. `src/lib/pgm/structured/features.ts:171` `omai-engine/pgm`
 
+- estimator `crf`: Linear-chain CRF estimator over feature dictionaries or templates, sklearn-crfsuite shape. `src/lib/pgm/structured/crf-estimator.ts:822` `omai-engine/pgm`
 - estimator `generalCrfOracle`: The structured-model oracle of a general CRF with per-assignment feature tables. `src/lib/pgm/structured/general-crf-oracle.ts:55` `omai-engine/pgm`
+- estimator `graphCrfEstimator`: Graph CRF estimator: trees, grids and any graph, trained through the structured solver slot. `src/lib/pgm/structured/graph-crf-estimator.ts:262` `omai-engine/pgm`
 - estimator `graphOracle`: The structured-model oracle of a CRF on trees, grids and arbitrary graphs. `src/lib/pgm/structured/graph-oracle.ts:284` `omai-engine/pgm`
 - estimator `hiddenStateOracle`: Hidden-state and latent-dynamic CRF oracle: substates per label, clamped sums over hidden paths. `src/lib/pgm/structured/latent-crf.ts:226` `omai-engine/pgm`
 - estimator `partialLabelOracle`: Linear-chain CRF oracle for partial labels: per-position label sets, clamped forward-backward. `src/lib/pgm/structured/latent-crf.ts:95` `omai-engine/pgm`
@@ -69,6 +71,7 @@ Structured prediction: conditional random fields and their neighbours, in one pl
 - structure `skipChainCrf`: Skip-chain CRF: a chain plus edges between repeated tokens. `src/lib/pgm/structured/graph-structures.ts:256` `omai-engine/pgm`
 - structure `treeCrf`: Tree and forest CRF, exact by sum-product on the tree. `src/lib/pgm/structured/graph-structures.ts:91` `omai-engine/pgm`
 
+- table `crfEstimatorSolvers`: CRF estimator solvers: L-BFGS, OWL-QN, SGD, perceptron family and structured SVMs over free features. `src/lib/pgm/structured/crf-estimator.ts:340` `omai-engine/pgm`
 - table `crfSolvers`: CRF training solvers: L-BFGS, OWL-QN for L1, SGD, perceptron, passive-aggressive, AROW. `src/lib/pgm/structured/crf-training.ts:104` `omai-engine/pgm`
 - table `structuredSolvers`: Structured-model solvers: L-BFGS, OWL-QN for L1, SGD, perceptron, passive-aggressive, AROW. `src/lib/pgm/structured/solvers.ts:311` `omai-engine/pgm`
 - table `structuredSvmSolvers`: Structured-SVM solvers: subgradient, block-coordinate Frank-Wolfe, one-slack and n-slack cutting planes. `src/lib/pgm/structured/structured-svm.ts:673` `omai-engine/pgm`
