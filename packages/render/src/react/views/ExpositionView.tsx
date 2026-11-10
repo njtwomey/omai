@@ -32,6 +32,7 @@ import { MarkedTableView } from './marked-tables.tsx'
 import { ModelRunPlayer } from './model-run.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
 import { PointsStepsView } from './points-steps.tsx'
+import { PosteriorComparisonView } from './posterior-comparison.tsx'
 import { RecordBoundary } from './RecordBoundary.tsx'
 import { ReachabilityPlotView } from './reachability.tsx'
 import { ConceptView, RuleListView } from './rules.tsx'
@@ -206,6 +207,8 @@ function StandardRecordView(props: ExpositionViewProps): ReactElement {
       return <ChainDiagnosticsView record={record} {...common} />
     case 'sbcRun':
       return <SbcRunView record={record} {...common} />
+    case 'posteriorComparison':
+      return <PosteriorComparisonView record={record} {...common} />
     case 'structureSteps':
       return <StructureStepsView record={record} {...common} />
     case 'pointsSteps':

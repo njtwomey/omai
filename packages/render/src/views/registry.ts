@@ -41,6 +41,7 @@ import { attributionImageView, attributionSeriesView, tokenStripView } from './m
 import { modelRunScene } from './model-run.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
 import { pointsStepsScene, pointsStepsView } from './points-steps.ts'
+import { posteriorComparisonView } from './posterior-comparison.ts'
 import { reachabilityPlot } from './reachability.ts'
 import { conceptView, ruleListView } from './rules.ts'
 import { sampleGridScene } from './sample-grid.ts'
@@ -458,6 +459,14 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => sbcEcdfView(r, o),
+  },
+  posteriorComparison: {
+    kind: 'posteriorComparison',
+    component: 'PosteriorComparisonView',
+    title: 'Posterior comparison',
+    plays: false,
+    accepts: [],
+    still: (r, o) => posteriorComparisonView(r, o),
   },
   structureSteps: {
     kind: 'structureSteps',

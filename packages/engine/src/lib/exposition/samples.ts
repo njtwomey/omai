@@ -38,6 +38,7 @@ import { likelihoodTable, neighbourRecord } from './neighbours.ts'
 import { pipelineStages } from './pipelines.ts'
 import { pointsSteps } from './points-steps.ts'
 import { populationSteps } from './populations.ts'
+import { posteriorComparison } from './posterior-comparison.ts'
 import { hyperparameterSurface, posteriorGrid } from './posteriors.ts'
 import { reachabilityRecord } from './reachability.ts'
 import type { Exposition, ExpositionKind } from './record.ts'
@@ -561,4 +562,36 @@ export const expositionSamples: { readonly [K in ExpositionKind]: () => Extract<
         },
       ],
     }),
+  posteriorComparison: () =>
+    posteriorComparison(
+      [
+        { name: 'draws', draws: { m: [0.1, 0.4, 0.5, 0.9] } },
+        { name: 'vi', normal: { m: { mean: 0.5, sd: 0.3 } } },
+      ],
+      {
+        truth: { m: { name: 'm', mean: 0.5, sd: 0.3, cdf: (x) => Math.min(1, Math.max(0, x)), quantile: (p) => p } },
+        table: {
+          oracle: 'oracle',
+          quantities: ['m'],
+          rows: [
+            {
+              method: 'draws',
+              quantity: 'm',
+              mean: 0.475,
+              sd: 0.3,
+              meanError: -0.08,
+              meanZ: -0.5,
+              sdRatio: 1,
+              ks: 0.1,
+              wasserstein: 0.1,
+              kl: 0.1,
+              ess: 4,
+              numDraws: 4,
+            },
+          ],
+        },
+        quantilePoints: 4,
+        gridPoints: 5,
+      },
+    ),
 }

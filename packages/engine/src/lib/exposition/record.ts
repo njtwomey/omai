@@ -40,6 +40,7 @@ import type { LikelihoodTable, NeighbourRecord } from './neighbours.ts'
 import type { PipelineStages } from './pipelines.ts'
 import type { PointsSteps } from './points-steps.ts'
 import type { PopulationSteps } from './populations.ts'
+import type { PosteriorComparison } from './posterior-comparison.ts'
 import type { HyperparameterSurface, PosteriorGrid } from './posteriors.ts'
 import type { Reachability } from './reachability.ts'
 import type { RuleSet } from './rules.ts'
@@ -131,6 +132,7 @@ export type Exposition =
   | ModelRun
   | ChainDiagnostics
   | SbcRun
+  | PosteriorComparison
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -240,4 +242,5 @@ const KINDS: Readonly<Record<ExpositionKind, true>> = {
   modelRun: true,
   chainDiagnostics: true,
   sbcRun: true,
+  posteriorComparison: true,
 }
