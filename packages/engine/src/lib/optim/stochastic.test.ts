@@ -62,6 +62,7 @@ describe('the gradient mode', () => {
       ['sgd', 0.03, constant],
       ['sgd', 0.01, constant, { momentum: 0.9, nesterov: true }],
       ['rmsprop', 0.1, cosine],
+      ['advi', 0.3, cosine],
       ['adagrad', 1, cosine],
       ['adadelta', 10, constant],
       ['adam', 0.1, cosine],
