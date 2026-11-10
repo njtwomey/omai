@@ -5,7 +5,7 @@
  * different projection (an alpha-divergence, a Laplace or quadrature site) is another entry of the same shape.
  */
 
-import type { Mode } from './types.ts'
+import type { Mode, TiltedRule } from './types.ts'
 
 /**
  * A projection: the rule an operator is asked for (`hook`), what it is shown as the incoming message of each port
@@ -31,6 +31,11 @@ export interface Projection {
    * others keep their own message rule.
    */
   readonly alpha?: number
+  /**
+   * The numeric rule of a numerical projection (`numericProjection`): how operators without a closed form (the numeric
+   * operator) find the moments of their tilted distribution. Absent: each operator's own rule.
+   */
+  readonly numeric?: TiltedRule
 }
 
 /** Moment matching: expectation propagation. */

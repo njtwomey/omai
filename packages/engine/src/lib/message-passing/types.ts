@@ -151,6 +151,36 @@ export interface Port {
 /** The parameters of a factor: JSON constants (a coefficient vector, a threshold, a table). */
 export type Params = Readonly<Record<string, Json>>
 
+/** One argument of a numeric problem: a Gaussian (the cavity of a Gaussian port), or a point (variance 0: an observed value). */
+export interface GaussianBase {
+  readonly mean: number
+  readonly variance: number
+}
+
+/** What a numeric rule integrates: a log density against Gaussian bases, and which argument's moments are asked for. */
+export interface TiltedProblem {
+  /** The argument of every port: a Gaussian cavity, or a point for an observed value (variance 0). */
+  readonly bases: readonly GaussianBase[]
+  /** The argument whose marginal moments are asked for. */
+  readonly to: number
+  /** log of the (powered) factor at a point, one coordinate per argument. */
+  readonly logf: (x: readonly number[]) => number
+}
+
+/**
+ * A numeric rule: how the moments of a factor against Gaussian cavities are found when there is no closed form
+ * (quadrature, Laplace's mode and curvature, importance samples, sigma points). It is what the numeric operator asks
+ * of the slot `Projection.numeric` of the engine, so one factor graph runs under any of them.
+ */
+export interface TiltedRule {
+  readonly name: string
+  /**
+   * The log of the integral of the factor against the (normalised) Gaussian bases, and the mean and variance of the
+   * marginal of argument `to` of the density they define.
+   */
+  moments(problem: TiltedProblem): { readonly logMass: number; readonly mean: number; readonly variance: number }
+}
+
 /** What an operator is asked: send a message to port `to`, given the others. */
 export interface OperatorContext {
   readonly mode: Mode
@@ -161,6 +191,8 @@ export interface OperatorContext {
   readonly params: Params
   /** The power of fractional EP (1: ordinary EP). Only operators with `power: true` read it. */
   readonly power: number
+  /** The numeric rule the run asks of operators that integrate numerically (`Projection.numeric`); absent: the operator's own. */
+  readonly rule?: TiltedRule
 }
 
 /** The message an operator sends to the target port. */

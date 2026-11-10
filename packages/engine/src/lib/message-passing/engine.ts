@@ -194,7 +194,14 @@ export function operatorMessage(
   const target = args[to] as Arg
   const reads = typeof op.readsTarget === 'function' ? op.readsTarget(to) : op.readsTarget === true
   if (reads && target.eta !== undefined && !target.family.isProper(target.eta)) return { kind: 'blocked' }
-  const ctx: OperatorContext = { mode: projection.hook, to, args, params: f.params, power }
+  const ctx: OperatorContext = {
+    mode: projection.hook,
+    to,
+    args,
+    params: f.params,
+    power,
+    ...(projection.numeric === undefined ? {} : { rule: projection.numeric }),
+  }
   const hook = projection.hook === 'ep' ? op.ep : projection.hook === 'vmp' ? op.vmp : op.bp
   try {
     let result: OperatorResult
@@ -403,7 +410,14 @@ export function evidenceOf(g: CompiledGraph, s: EngineSettings, state: MpState):
       if (f.operator.logEvidence === undefined) return Number.NaN
       const args = rawCavity(g, state.messages, fi)
       total +=
-        f.operator.logEvidence({ mode: s.projection.hook, to: 0, args, params: f.params, power: f.power }) / f.power
+        f.operator.logEvidence({
+          mode: s.projection.hook,
+          to: 0,
+          args,
+          params: f.params,
+          power: f.power,
+          ...(s.projection.numeric === undefined ? {} : { rule: s.projection.numeric }),
+        }) / f.power
       for (const p of f.ports) {
         if (p.edge >= 0) inversePowers[p.variable as number] = (inversePowers[p.variable as number] ?? 0) + 1 / f.power
       }
