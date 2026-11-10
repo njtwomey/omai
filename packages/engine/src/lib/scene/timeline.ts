@@ -7,10 +7,13 @@ import { OmaiError } from '../base/index.ts'
 import type { Structure } from './structure.ts'
 import type { Scene } from './types.ts'
 
-/** Highlights laid over a structure in one frame of an animation. */
+/**
+ * Highlights laid over a structure in one frame of an animation: the active nodes, the active edges (with a `label` to
+ * write on the edge in this frame, a message's content, for an edge that has none of its own) and value badges.
+ */
 export interface StructureOverlay {
   readonly active?: readonly string[]
-  readonly edges?: readonly { readonly from: string; readonly to: string }[]
+  readonly edges?: readonly { readonly from: string; readonly to: string; readonly label?: string }[]
   readonly badges?: Readonly<Record<string, Readonly<Record<string, string | number>>>>
 }
 

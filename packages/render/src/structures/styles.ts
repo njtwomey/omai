@@ -167,6 +167,17 @@ const graphicalModel: StructureStyle = {
   fontSize: 13,
 }
 
+/**
+ * A model spec's plate diagram (`modelGraph`): the graphical-model shapes, with plain solid arrows for every kind of
+ * edge (a dotted dependency reads as a weak one, and in a model every edge is a distribution's argument), and the
+ * plates in a thin frame.
+ */
+const modelGraphStyle: StructureStyle = {
+  ...graphicalModel,
+  edge: (e) => ({ stroke: e.kind === 'message' ? 'accent' : 'muted', strokeWidth: 1.3, arrow: e.directed !== false }),
+  group: (g) => (g.kind === 'plate' ? { stroke: 'muted', fill: 'none', radius: 3, strokeWidth: 1 } : generalGroup(g)),
+}
+
 /** Undirected graphs (Markov networks, factor graphs): no arrow heads. */
 const undirected: StructureStyle = {
   ...general,
@@ -176,6 +187,21 @@ const undirected: StructureStyle = {
 
 /** Factor graphs: undirected, variables in one row and factors in another. */
 const factorGraph: StructureStyle = { ...undirected, layout: 'bipartite' }
+
+/**
+ * The factor graph of a model spec (`modelGraph` of `toStructure(model, { view: 'factor' })`): undirected, the factors
+ * small squares, laid out in ranks (not two rows) so the plates around a repeated part can be drawn.
+ */
+const modelFactorGraph: StructureStyle = {
+  ...modelGraphStyle,
+  edge: (e) => ({
+    stroke: 'muted',
+    strokeWidth: 1.2,
+    arrow: false,
+    ...(e.kind === 'message' ? { stroke: 'accent' } : {}),
+  }),
+  layout: 'layered',
+}
 
 /** Trees (decision and search trees): leaves green, internal nodes blue, laid out as tidy trees. */
 const tree: StructureStyle = { ...general, layout: 'tree' }
@@ -207,6 +233,8 @@ const STYLES: Readonly<Record<string, StructureStyle>> = {
   'directed-model': graphicalModel,
   'markov-network': undirected,
   'factor-graph': factorGraph,
+  'model-graph': modelGraphStyle,
+  'model-factor-graph': modelFactorGraph,
   undirected,
   tree,
   'decision-tree': tree,
@@ -221,6 +249,9 @@ const STYLES: Readonly<Record<string, StructureStyle>> = {
  * The visual language of a kind of structure (its `type`): graphical models (`bayes-net`, `factor-graph`,
  * `markov-network`), trees (`tree`, `decision-tree`, `search-tree`), automata, networks, and a general language for
  * computation graphs, architectures and pipelines.
+ *
+ * A structure of a model spec (type `model-graph`, made by `modelGraph`) has the plate-diagram language; the plain
+ * `graphical-model` type is the same shapes with dotted dependency edges.
  *
  * @param type - The structure's type.
  * @returns The style.

@@ -108,12 +108,14 @@ React components for exposition records: `ExpositionView` picks the standard vie
 
 - function `AttributionView`: React component: feature attributions as waterfall, beeswarm or map: `<AttributionView record={attr} />` `src/react/views/attributions.tsx:139` `omai-render/react`
 - function `CalibrationView`: React component: a reliability diagram: `<CalibrationView record={calibration} />` `src/react/views/trust.tsx:23` `omai-render/react`
+- function `ChainDiagnosticsView`: React component: trace plots, rank plots and the R-hat/ESS table of MCMC chains. `src/react/views/chain-diagnostics.tsx:25` `omai-render/react`
 - function `ClusteringPlayer`: React component: replay a clustering step by step: `<ClusteringPlayer record={steps} points={X} />` `src/react/views/steps.tsx:34` `omai-render/react`
 - function `CurvesView`: React component: several curves on shared axes, played along x: `<CurvesView record={curves} />` `src/react/views/curves.tsx:23` `omai-render/react`
 - function `DecisionSurfaceView`: React component: a classifier's decision surface over the rows: `<DecisionSurfaceView record={surface} points={X} />` `src/react/views/surfaces.tsx:35` `omai-render/react`
 - function `EpisodeView`: React component: returns, lengths and policy of a reinforcement-learning run: `<EpisodeView record={episodes} />` `src/react/views/episodes.tsx:22` `omai-render/react`
-- function `ExpositionView`: React component: the standard view of any exposition record: `<ExpositionView record={record} />` `src/react/views/ExpositionView.tsx:76` `omai-render/react`
+- function `ExpositionView`: React component: the standard view of any exposition record: `<ExpositionView record={record} />` `src/react/views/ExpositionView.tsx:78` `omai-render/react`
 - function `GroupReportView`: React component: per-group rates, gaps and ROC curves: `<GroupReportView record={report} />` `src/react/views/fairness.tsx:136` `omai-render/react`
+- function `ModelRunPlayer`: React component: a model's plate diagram with live inference state: `<ModelRunPlayer record={r} />` `src/react/views/model-run.tsx:35` `omai-render/react`
 - function `PathView`: React component: coefficients along a regularisation path: `<PathView record={path} />` `src/react/views/paths.tsx:29` `omai-render/react`
 - function `RecordBoundary`: React component: error boundary around a record view: `<RecordBoundary record={r}>` `src/react/views/RecordBoundary.tsx:26` `omai-render/react`
 - function `TreeView`: React component: a fitted tree with candidate splits and growth player: `<TreeView record={tree} />` `src/react/views/trees.tsx:194` `omai-render/react`

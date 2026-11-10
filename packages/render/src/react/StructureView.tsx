@@ -76,7 +76,7 @@ export function StructureView(props: StructureViewProps): ReactElement {
   // biome-ignore lint/correctness/useExhaustiveDependencies: options are compared by content, frames by reference
   const drawing = useMemo(
     () => diagram(structure, frames === undefined ? options : { ...options, frames }),
-    [structure, frames, JSON.stringify(options)],
+    [structure, frames, JSON.stringify(options), layout.decorate],
   )
   const full: View = [0, 0, drawing.width, drawing.height]
   const [view, setView] = useState<View | null>(null)
@@ -121,7 +121,21 @@ export function StructureView(props: StructureViewProps): ReactElement {
   // A new drawing (another structure or layout) starts unzoomed.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset when the drawing's size changes
   useEffect(() => setView(null), [drawing.width, drawing.height])
-  const drawnWidth = width ?? drawing.width
+  // The diagram is drawn at its own width, or at the container's when that is narrower (it scales down to fit), and the
+  // frame holds the height of the figure as drawn, so a narrow screen gets no blank space under a shrunken diagram.
+  const [available, setAvailable] = useState<number | undefined>(undefined)
+  const outer = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const parent = outer.current?.parentElement
+    if (parent === null || parent === undefined || typeof ResizeObserver === 'undefined') return
+    const measure = (): void => setAvailable(parent.clientWidth > 0 ? parent.clientWidth : undefined)
+    measure()
+    const watch = new ResizeObserver(measure)
+    watch.observe(parent)
+    return () => watch.disconnect()
+  }, [])
+  const ownWidth = width ?? drawing.width
+  const drawnWidth = available === undefined ? ownWidth : Math.min(ownWidth, available)
   const drawnHeight = Math.round((drawnWidth * drawing.height) / Math.max(1, drawing.width)) + 2
   const drawingBox = (
     <div
@@ -181,7 +195,11 @@ export function StructureView(props: StructureViewProps): ReactElement {
       </FigureFrame>
     )
   return (
-    <div className={cx('flex w-fit max-w-full flex-col gap-2', className)} {...{ [STATE_ATTRIBUTE]: state }}>
+    <div
+      ref={outer}
+      className={cx('flex w-fit max-w-full flex-col gap-2', className)}
+      {...{ [STATE_ATTRIBUTE]: state }}
+    >
       {framed}
       {/* The hovered node's details and the zoom buttons share a row under the diagram, so neither covers it. */}
       {(details || zooming) && (

@@ -12,6 +12,7 @@ import { AttributionView, ImportanceView } from './attributions.tsx'
 import { AudioView } from './audio.tsx'
 import { BoardPlayer, PopulationPlayer } from './boards.tsx'
 import { ConfusionMatrixView, ValueGridView } from './cells.tsx'
+import { ChainDiagnosticsView } from './chain-diagnostics.tsx'
 import { ComplexPlaneView } from './complex-plane.tsx'
 import { ComponentsView } from './components.tsx'
 import { CurvesView } from './curves.tsx'
@@ -28,6 +29,7 @@ import { ImagePlayer } from './images.tsx'
 import { LandscapeSliceView } from './landscape-slice.tsx'
 import { MarginView } from './margins.tsx'
 import { MarkedTableView } from './marked-tables.tsx'
+import { ModelRunPlayer } from './model-run.tsx'
 import { CrossValidationView, LearningCurveView, PathView, PruningPathView } from './paths.tsx'
 import { PointsStepsView } from './points-steps.tsx'
 import { RecordBoundary } from './RecordBoundary.tsx'
@@ -197,6 +199,10 @@ function StandardRecordView(props: ExpositionViewProps): ReactElement {
       return <StripView record={record} {...common} />
     case 'markedTable':
       return <MarkedTableView record={record} {...common} />
+    case 'modelRun':
+      return <ModelRunPlayer record={record} {...common} />
+    case 'chainDiagnostics':
+      return <ChainDiagnosticsView record={record} {...common} />
     case 'structureSteps':
       return <StructureStepsView record={record} {...common} />
     case 'pointsSteps':

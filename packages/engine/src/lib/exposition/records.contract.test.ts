@@ -34,7 +34,7 @@ const kinds = Object.keys(expositionSamples) as (keyof typeof expositionSamples)
 
 describe('the contract of the exposition records', () => {
   it('has one sample per kind, tagged, plain data, and sealing it again changes nothing', () => {
-    expect(kinds).toHaveLength(61)
+    expect(kinds).toHaveLength(63)
     for (const kind of kinds) {
       const record = expositionSamples[kind]()
       expect([kind, record.kind, isExposition(record)]).toEqual([kind, kind, true])

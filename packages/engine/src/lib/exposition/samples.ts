@@ -10,6 +10,7 @@ import { featureAttributions, importances } from './attributions.ts'
 import { audioClip } from './audio.ts'
 import { boardSteps } from './boards.ts'
 import { valueGrids } from './cells.ts'
+import { chainDiagnostics } from './chain-diagnostics.ts'
 import { clusteringSteps, mixtureSteps } from './clustering.ts'
 import { complexPlane } from './complex-plane.ts'
 import { conceptScores } from './concepts.ts'
@@ -32,6 +33,7 @@ import { imageSteps } from './images.ts'
 import { landscapeSlice } from './landscape-slice.ts'
 import { coefficientTable, crossValidationCurve, regularisationPath } from './linear.ts'
 import { marginRecord } from './margins.ts'
+import { modelRun } from './model-run.ts'
 import { likelihoodTable, neighbourRecord } from './neighbours.ts'
 import { pipelineStages } from './pipelines.ts'
 import { pointsSteps } from './points-steps.ts'
@@ -506,4 +508,36 @@ export const expositionSamples: { readonly [K in ExpositionKind]: () => Extract<
       emitted: 1,
     }),
   sampleGrid: () => sampleGrid({ modality: 'text', steps: [{ step: 0, samples: ['xqz', 'ab'] }] }),
+  modelRun: () =>
+    modelRun({
+      structure: network,
+      status: 'running',
+      series: [
+        { name: 'change', label: 'largest change of a belief', steps: [1, 2], values: [0.5, 0.1], direction: 'lower' },
+      ],
+      steps: [
+        {
+          step: 1,
+          nodes: { x: { mean: 0.5, sd: 1, text: '0.5 ± 1' } },
+          messages: [{ from: 'x', to: 'y', text: 'N(μ = 0.5, σ² = 1)' }],
+        },
+        { step: 2, nodes: { y: { observed: 1, text: 'observed 1' } } },
+      ],
+    }),
+  chainDiagnostics: () =>
+    chainDiagnostics(
+      {
+        mu: [
+          [0.1, 0.4, 0.2, 0.5],
+          [0.3, 0.2, 0.6, 0.4],
+        ],
+      },
+      {
+        bins: 2,
+        divergent: [
+          [0, 0, 1, 0],
+          [0, 0, 0, 0],
+        ],
+      },
+    ),
 }

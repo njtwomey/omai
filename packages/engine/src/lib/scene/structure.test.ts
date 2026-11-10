@@ -120,3 +120,23 @@ describe('structure', () => {
     expect(JSON.parse(JSON.stringify(part))).toEqual(part)
   })
 })
+
+describe('crossing groups', () => {
+  it('prefixes the extra groups of a node and the groups an intersection names when parts are merged', () => {
+    const part = structure(
+      'model-graph',
+      [{ id: 'y', label: 'y', role: 'observed', group: 'plate:a×b', groups: ['plate:a', 'plate:b'] }],
+      [],
+      {
+        groups: [
+          { id: 'plate:a', label: 'a', kind: 'plate' },
+          { id: 'plate:b', label: 'b', kind: 'plate' },
+          { id: 'plate:a×b', label: 'b', kind: 'plate', parent: 'plate:a', intersection: ['plate:a', 'plate:b'] },
+        ],
+      },
+    )
+    const merged = mergeStructures([part], { prefixes: ['m'] })
+    expect(merged.nodes[0]?.groups).toEqual(['m/plate:a', 'm/plate:b'])
+    expect(merged.groups.find((g) => g.id === 'm/plate:a×b')?.intersection).toEqual(['m/plate:a', 'm/plate:b'])
+  })
+})
