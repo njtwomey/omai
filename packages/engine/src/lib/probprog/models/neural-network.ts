@@ -4,7 +4,7 @@
  * test inputs recorded as a derived quantity (`fstar`). The weights are not identified (permuting the hidden units or
  * flipping a unit's signs gives the same function), so the raw weights have no single-mode marginals; the function values
  * are what a comparison reads, and there is no closed form for them. The truth is a stored reference: the moments of the
- * function values from a long NUTS run (`bnnReference` repeats it), so every plan here is reported, not required to agree.
+ * function values from a long NUTS run (`bnnReferenceRun` repeats it), so every plan is reported, not required to agree.
  * What the reference shows, and the plans are read against: the predictive uncertainty is small near the data, larger in the
  * gap and largest far outside the data.
  */
@@ -175,7 +175,7 @@ export const bayesianNeuralNetwork: BenchmarkModel = defineBenchmark({
   plans: (scale) => [
     nutsPlan(scale, {
       expect: 'report',
-      note: 'consistent but multimodal in the weights (unit permutations): the function values are what to compare',
+      note: 'multimodal in the weights (unit permutations) but the function values are well mixed: close to the long run it is compared with (a consistency check only, since the reference is itself NUTS)',
       quantities: [...BNN_TEST_INPUTS.map((_, j) => `fstar[${j}]`)],
     }),
     temperedPlan(scale, {

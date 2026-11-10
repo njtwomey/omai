@@ -170,6 +170,7 @@ export const stochasticVolatility: BenchmarkModel = defineBenchmark({
       note: 'a Gaussian at the mode of the joint density: the log-variance posterior is close to Gaussian, the tails of the return likelihood are not',
     }),
     sviPlan(scale, {
+      steps: 800,
       note: 'a mean-field normal ignores the correlation between neighbouring states: spreads too small',
     }),
   ],

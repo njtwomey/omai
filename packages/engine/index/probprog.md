@@ -133,7 +133,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - dataset `funnelCentred`: Neal's funnel, centred: analytic truth; NUTS diverges in the neck. `src/lib/probprog/models/geometry.ts:46` `omai-engine/probprog/models`
 - dataset `funnelNonCentred`: Neal's funnel, non-centred: the same law of (v, x) with the funnel removed from the density. `src/lib/probprog/models/geometry.ts:94` `omai-engine/probprog/models`
 - dataset `gammaPoisson`: Gamma-Poisson rate: exact Gamma posterior and evidence for counts. `src/lib/probprog/models/conjugate.ts:155` `omai-engine/probprog/models`
-- dataset `gaussianHmm`: Three-state Gaussian HMM as a scan, parameters known; exact forward-backward truth with visit counts. `src/lib/probprog/models/series.ts:272` `omai-engine/probprog/models`
+- dataset `gaussianHmm`: Three-state Gaussian HMM as a scan, parameters known; exact forward-backward truth with visit counts. `src/lib/probprog/models/series.ts:273` `omai-engine/probprog/models`
 - dataset `gaussianMixture`: Two-component Gaussian mixture with label switching; the truth is the even two-mode mixture; sorted summaries. `src/lib/probprog/models/mixture.ts:179` `omai-engine/probprog/models`
 - dataset `gaussianMixtureOrdered`: Two-component Gaussian mixture, means ordered; discrete labels summed out; the truth is a 2-D grid. `src/lib/probprog/models/mixture.ts:133` `omai-engine/probprog/models`
 - dataset `gaussianProcessNonCentred`: Gaussian process regression, non-centred (f = L z); the same quadrature truth as the centred form. `src/lib/probprog/models/gaussian-process.ts:295` `omai-engine/probprog/models`
