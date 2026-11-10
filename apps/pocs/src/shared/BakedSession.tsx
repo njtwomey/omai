@@ -25,6 +25,8 @@ export interface BakedView<F> {
   readonly run: ReturnType<typeof useRun>
   /** Scrubbing by clicking a chart over the steps. */
   readonly seek: ReturnType<typeof useScrubClick>
+  /** Sets the scrubbed step (`null` follows the head), for the panels of `SessionPanels`, which scrub their own cursor. */
+  readonly scrub: (t: number | null) => void
 }
 
 /**
@@ -92,7 +94,7 @@ export function BakedSession<F>(props: {
             }
           }}
         >
-          {children({ live, t, frame: baked.at(t), baked, run, seek })}
+          {children({ live, t, frame: baked.at(t), baked, run, seek, scrub: setAt })}
         </ComputeGate>
       </StaleVeil>
       <SessionPlayer live={live} at={at} onScrub={setAt} onReset={onReset} />
