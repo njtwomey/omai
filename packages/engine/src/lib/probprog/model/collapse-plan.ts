@@ -6,7 +6,7 @@
  * person reads the plan, may edit its `sites`, and applies it, then runs whatever method they like on the collapsed
  * program and draws the removed sites back with `recover`.
  *
- * @index function collapsePlan: which conjugate sites the collapse handler can integrate out, what it gains, and why not the rest.
+ * @index function collapsePlan: which sites the collapse handler can integrate out, and why not the rest.
  */
 
 import { OmaiError } from '../../base/index.ts'

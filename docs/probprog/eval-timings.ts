@@ -21,11 +21,7 @@
 import * as dists from '../../packages/engine/src/lib/dists/index.ts'
 import { potentialEnergy } from '../../packages/engine/src/lib/probprog/index.ts'
 import { toProgram } from '../../packages/engine/src/lib/probprog/model/index.ts'
-import {
-  eightSchoolsCentred,
-  logisticRegression,
-  radon,
-} from '../../packages/engine/src/lib/probprog/models/index.ts'
+import { eightSchoolsCentred, logisticRegression, radon } from '../../packages/engine/src/lib/probprog/models/index.ts'
 import { normal as drawNormal, key } from '../../packages/engine/src/lib/random/index.ts'
 import { target } from '../../packages/engine/src/lib/sampling/index.ts'
 import * as T from '../../packages/engine/src/lib/tensor/index.ts'
@@ -55,11 +51,19 @@ interface Row {
 }
 const rows: Row[] = []
 
-function report(model: string, interpretive: ReturnType<typeof potentialEnergy>['logDensity'], ceiling: ReturnType<typeof target>, hand: (u: Float64Array) => unknown, u: Float64Array, reps: number): void {
+function report(
+  model: string,
+  interpretive: ReturnType<typeof potentialEnergy>['logDensity'],
+  ceiling: ReturnType<typeof target>,
+  hand: (u: Float64Array) => unknown,
+  u: Float64Array,
+  reps: number,
+): void {
   const a = interpretive.logDensity(u)
   const b = ceiling.logDensity(u)
   // The ceiling is the same density: both sides carry the same constants.
-  if (Math.abs(a - b) > 1e-8 * (1 + Math.abs(a))) throw new Error(`${model}: the ceiling is a different density (${a} vs ${b})`)
+  if (Math.abs(a - b) > 1e-8 * (1 + Math.abs(a)))
+    throw new Error(`${model}: the ceiling is a different density (${a} vs ${b})`)
   rows.push({
     model,
     interpretiveValue: time(() => interpretive.logDensity(u), reps),
@@ -137,7 +141,14 @@ function report(model: string, interpretive: ReturnType<typeof potentialEnergy>[
     }
     return lp + g[0]
   }
-  report('eight schools, centred (10 coordinates)', um.logDensity, ceiling, hand, new Float64Array(10).map((_, i) => 0.1 * (i + 1) - 0.3), 150)
+  report(
+    'eight schools, centred (10 coordinates)',
+    um.logDensity,
+    ceiling,
+    hand,
+    new Float64Array(10).map((_, i) => 0.1 * (i + 1) - 0.3),
+    150,
+  )
 }
 
 // Radon: 6 counties of 8 houses, mu, beta, log tau, log sigma and six intercepts.
@@ -193,29 +204,52 @@ function report(model: string, interpretive: ReturnType<typeof potentialEnergy>[
     }
     return lp + g[0]
   }
-  report('radon (6 counties x 8 houses, 10 coordinates)', um.logDensity, ceiling, hand, new Float64Array(10).map((_, i) => 0.05 * (i + 1) - 0.2), 150)
+  report(
+    'radon (6 counties x 8 houses, 10 coordinates)',
+    um.logDensity,
+    ceiling,
+    hand,
+    new Float64Array(10).map((_, i) => 0.05 * (i + 1) - 0.2),
+    150,
+  )
 }
 
 // The interpretive path as the rows grow: logistic regression at 50, 500 and 5000 rows (3 features).
 const growth: { rows: number; interpretive: number; ceiling: number }[] = []
 for (const n of [50, 500, 5000]) {
-  const Xs = Array.from({ length: n }, (_, i) => Array.from({ length: 3 }, (_, j) => T.toFlat(drawNormal(key(i * 3 + j), []))[0] ?? 0))
+  const Xs = Array.from({ length: n }, (_, i) =>
+    Array.from({ length: 3 }, (_, j) => T.toFlat(drawNormal(key(i * 3 + j), []))[0] ?? 0),
+  )
   const ys = Array.from({ length: n }, (_, i) => (i % 3 === 0 ? 1 : 0))
-  const um = potentialEnergy(toProgram(logisticRegression.definition!.bind({ X: Xs, y: ys })), undefined)
+  const logistic = logisticRegression.definition
+  if (logistic === undefined) throw new Error('logistic regression is a spec')
+  const um = potentialEnergy(toProgram(logistic.bind({ X: Xs, y: ys })), undefined)
   const X = T.tensor(Xs)
   const yt = T.tensor(ys)
-  const ceiling = target((w) => T.add(T.sum(dists.normal(0, 2).logProb(w)), T.sum(dists.bernoulli({ logits: T.matmul(X, w) }).logProb(yt))), 3)
+  const ceiling = target(
+    (w) => T.add(T.sum(dists.normal(0, 2).logProb(w)), T.sum(dists.bernoulli({ logits: T.matmul(X, w) }).logProb(yt))),
+    3,
+  )
   const u = new Float64Array(3).fill(0.1)
   const reps = n > 1000 ? 30 : 150
-  growth.push({ rows: n, interpretive: time(() => um.logDensity.valueAndGrad(u), reps), ceiling: time(() => ceiling.valueAndGrad(u), reps) })
+  growth.push({
+    rows: n,
+    interpretive: time(() => um.logDensity.valueAndGrad(u), reps),
+    ceiling: time(() => ceiling.valueAndGrad(u), reps),
+  })
 }
 
 const f = (x: number): string => x.toFixed(1)
-console.log('| model | interpretive log density (us) | interpretive value+grad (us) | plan ceiling value+grad (us) | hand-written value+grad (us) | interpretive / ceiling | interpretive / hand |')
+console.log(
+  '| model | interpretive log density (us) | interpretive value+grad (us) | plan ceiling value+grad (us) | hand-written value+grad (us) | interpretive / ceiling | interpretive / hand |',
+)
 console.log('| --- | --- | --- | --- | --- | --- | --- |')
 for (const r of rows)
-  console.log(`| ${r.model} | ${f(r.interpretiveValue)} | ${f(r.interpretiveGrad)} | ${f(r.ceilingGrad)} | ${f(r.handGrad)} | ${(r.interpretiveGrad / r.ceilingGrad).toFixed(2)}x | ${(r.interpretiveGrad / r.handGrad).toFixed(0)}x |`)
+  console.log(
+    `| ${r.model} | ${f(r.interpretiveValue)} | ${f(r.interpretiveGrad)} | ${f(r.ceilingGrad)} | ${f(r.handGrad)} | ${(r.interpretiveGrad / r.ceilingGrad).toFixed(2)}x | ${(r.interpretiveGrad / r.handGrad).toFixed(0)}x |`,
+  )
 console.log('')
 console.log('| logistic rows | interpretive value+grad (us) | plan ceiling value+grad (us) | interpretive / ceiling |')
 console.log('| --- | --- | --- | --- |')
-for (const g of growth) console.log(`| ${g.rows} | ${f(g.interpretive)} | ${f(g.ceiling)} | ${(g.interpretive / g.ceiling).toFixed(2)}x |`)
+for (const g of growth)
+  console.log(`| ${g.rows} | ${f(g.interpretive)} | ${f(g.ceiling)} | ${(g.interpretive / g.ceiling).toFixed(2)}x |`)

@@ -64,25 +64,35 @@ The shared convention of the inference methods of the probabilistic layer, avail
 
 The model layer: a model written once as a value. A builder (`defineModel`) with named dimensions, data, latent, observed, derived, generated and factor nodes and constraints produces a JSON-able `ModelSpec`; the spec is bound to data (`bind`, `withData`, `bindDataset`), compiled to the existing `sample`/`observe` program (`toProgram`) so every present engine and handler runs it, compiled to a factor graph for message passing with its plates expanded (`toFactorGraph`, with the reasons for what cannot be mapped), analysed without running (`analyseSpec`: dependencies, plates, conjugate pairs), drawn (`toStructure`), composed (`include`, `conditionSpec`, `doSpec`) and serialised (`fromJSON`). Expressions use a closed registry of operators; distributions are named families with the library's constructors behind them (`omai-engine/probprog/model/dists`).
 
+- function `analysis-conjugacy.ts` (file): conjugacyRecords: conjugate pairs through plates, lookups, affine maps, hierarchies and joint priors. `src/lib/probprog/model/analysis-conjugacy.ts:1` `omai-engine/probprog/model`
+- function `analysis-graph.ts` (file): graphStructure: Markov blankets, independent components, discrete-part width and minibatch axes of a spec. `src/lib/probprog/model/analysis-graph.ts:1` `omai-engine/probprog/model`
+- function `analysis-linear-gaussian.ts` (file): linearGaussianBlocks: maximal Gaussian blocks that are exactly marginalisable given the other latents. `src/lib/probprog/model/analysis-linear-gaussian.ts:1` `omai-engine/probprog/model`
 - function `analysis.ts` (file): analyseSpec: static dependency, plate, conjugacy and feature analysis of a ModelSpec. `src/lib/probprog/model/analysis.ts:1` `omai-engine/probprog/model`
 - function `bind.ts` (file): bind: check data against a spec's data nodes and dimensions and make a BoundModel. `src/lib/probprog/model/bind.ts:1` `omai-engine/probprog/model`
 - function `builder.ts` (file): defineModel: build a ModelSpec with named dimensions, data, latent, observed and derived nodes. `src/lib/probprog/model/builder.ts:1` `omai-engine/probprog/model`
 - function `check.ts` (file): validateSpec: check a ModelSpec's names, references, operators, families and dimensions. `src/lib/probprog/model/check.ts:1` `omai-engine/probprog/model`
+- function `collapse-plan.ts` (file): collapsePlan: which sites the collapse handler can integrate out, and why not the rest. `src/lib/probprog/model/collapse-plan.ts:1` `omai-engine/probprog/model`
 - function `compile.ts` (file): toProgram: compile a bound model spec to the existing sample/observe program. `src/lib/probprog/model/compile.ts:1` `omai-engine/probprog/model`
 - function `compose.ts` (file): conditionSpec and doSpec: latent nodes turned into observations or interventions, as new specs. `src/lib/probprog/model/compose.ts:1` `omai-engine/probprog/model`
 - function `factors.ts` (file): toFactorGraph: a bound ModelSpec as a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:1` `omai-engine/probprog/model`
+- function `from-program.ts` (file): fromProgram: lift a program to a ModelSpec of its site structure; refuses a varying one. `src/lib/probprog/model/from-program.ts:1` `omai-engine/probprog/model`
 - function `ids.ts` (file): nodeId, factorId, plateId, elementId and auxId: the id convention of a model spec's picture and tapes. `src/lib/probprog/model/ids.ts:1` `omai-engine/probprog/model`
 - function `structure.ts` (file): toStructure: draw a ModelSpec as plate notation (or its factor graph) with ids that match tapes. `src/lib/probprog/model/structure.ts:1` `omai-engine/probprog/model`
 
 - structure `definition.ts` (file): ModelDefinition: a spec with its custom functions, and the methods bind, condition, do and toJSON. `src/lib/probprog/model/definition.ts:1` `omai-engine/probprog/model`
 - structure `operators.ts` (file): The closed operator registry: shape rules and tensor evaluation over named dimensions. `src/lib/probprog/model/operators.ts:1` `omai-engine/probprog/model`
 - structure `spec.ts` (file): ModelSpec: a JSON-able graph of data, latent, observed and derived nodes with named dims. `src/lib/probprog/model/spec.ts:1` `omai-engine/probprog/model`
+- structure `structure-report.ts` (file): StructureReport: blankets, components, discrete width, conjugate and Gaussian blocks, minibatch axes, suggestions. `src/lib/probprog/model/structure-report.ts:1` `omai-engine/probprog/model`
 - structure `var.ts` (file): Var: a checked expression handle with named dims, and ops, the operators as functions. `src/lib/probprog/model/var.ts:1` `omai-engine/probprog/model`
 
-- function `analyseSpec`: Static analysis of a ModelSpec: structure, plates, conjugacy and features. `src/lib/probprog/model/analysis.ts:337` `omai-engine/probprog/model`
+- function `analyseSpec`: Static analysis of a ModelSpec: structure, plates, conjugacy and features. `src/lib/probprog/model/analysis.ts:260` `omai-engine/probprog/model`
+- function `applyCollapse`: applyCollapse: the collapsed program of a collapsePlan, through the collapse handler. `src/lib/probprog/model/collapse-plan.ts:214` `omai-engine/probprog/model`
 - function `bind`: Bind data to a ModelSpec with checks of dims, sizes and supports. `src/lib/probprog/model/bind.ts:338` `omai-engine/probprog/model`
+- function `collapsePlan`: collapsePlan: which sites the collapse handler can integrate out, with cost and gain; user-invoked. `src/lib/probprog/model/collapse-plan.ts:105` `omai-engine/probprog/model`
 - function `defineModel`: Build a model spec with named dimensions, data, latents, observations and derived nodes. `src/lib/probprog/model/builder.ts:590` `omai-engine/probprog/model`
 - function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:1818` `omai-engine/probprog/model`
+- function `fromProgram`: fromProgram: lift a sample/observe program to a ModelSpec of its site structure; refuses a varying structure. `src/lib/probprog/model/from-program.ts:184` `omai-engine/probprog/model`
+- function `structureReport`: structureReport: what a spec's structure allows, as records and suggestions naming the method to use. `src/lib/probprog/model/analysis.ts:414` `omai-engine/probprog/model`
 - function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:1703` `omai-engine/probprog/model`
 - function `toProgram`: Compile a bound ModelSpec to a sample/observe program every engine runs. `src/lib/probprog/model/compile.ts:205` `omai-engine/probprog/model`
 
@@ -102,6 +112,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:103` `omai-engine/probprog/models`
 - function `defineBenchmark`: Make a benchmark model: a spec or program with generator, truth, tags, references and method plans. `src/lib/probprog/models/benchmark.ts:175` `omai-engine/probprog/models`
 - function `evidenceCampaigns`: Periodic validation of the evidence estimators, nested sampling, particle filters and particle MCMC. `src/lib/probprog/models/evidence-campaigns.ts:521` `omai-engine/probprog/models`
+- function `structureCampaigns`: The structure of every benchmark model, and collapsed against full NUTS, as periodic campaigns. `src/lib/probprog/models/structure-campaigns.ts:321` `omai-engine/probprog/models`
 
 - structure `BenchmarkModel`: A benchmark model: a spec with a data generator, the truth, references, tags and method plans. `src/lib/probprog/models/benchmark.ts:98` `omai-engine/probprog/models`
 

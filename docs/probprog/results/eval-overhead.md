@@ -9,14 +9,13 @@ Measured on 2026-11-10 with `docs/probprog/eval-timings.ts` (Node 24, one machin
 microseconds; **not measured in a browser**, where the same code runs 1.5 to 3 times slower by the plan's estimate, so the ratios carry over
 and the absolute numbers grow):
 
-| model | interpretive log density (us) | interpretive value+grad (us) | plan ceiling value+grad (us) | hand-written value+grad (us) | interpretive / ceiling | interpretive / hand |
-| --- | --- | --- | --- | --- | --- | --- |
-| logistic regression (50 rows, 3 features) | 42.9 | 115.5 | 79.8 | 1.0 | 1.45x | 112x |
-| eight schools, centred (10 coordinates) | 40.0 | 78.5 | 58.9 | 0.3 | 1.33x | 276x |
-| radon (6 counties x 8 houses, 10 coordinates) | 57.1 | 127.3 | 102.2 | 0.4 | 1.25x | 319x |
+| model                                         | interpretive log density (us) | interpretive value+grad (us) | plan ceiling value+grad (us) | hand-written value+grad (us) | interpretive / ceiling | interpretive / hand |
+| --------------------------------------------- | ----------------------------- | ---------------------------- | ---------------------------- | ---------------------------- | ---------------------- | ------------------- |
+| logistic regression (50 rows, 3 features)     | 42.9                          | 115.5                        | 79.8                         | 1.0                          | 1.45x                  | 112x                |
+| eight schools, centred (10 coordinates)       | 40.0                          | 78.5                         | 58.9                         | 0.3                          | 1.33x                  | 276x                |
+| radon (6 counties x 8 houses, 10 coordinates) | 57.1                          | 127.3                        | 102.2                        | 0.4                          | 1.25x                  | 319x                |
 
 The three columns that matter:
-
 - **interpretive** is what every engine runs today.
 - **plan ceiling** is the same density written by hand with the library's own distributions and tensor ops under `target` (the values agree to
   the last digit), with no spec evaluation, no handler stack and no trace. A plan that stays on the library's tensor ops and autodiff cannot be
@@ -26,10 +25,10 @@ The three columns that matter:
 As the rows grow (logistic regression, three features), the interpretive overhead disappears into the tensor work:
 
 | logistic rows | interpretive value+grad (us) | plan ceiling value+grad (us) | interpretive / ceiling |
-| --- | --- | --- | --- |
-| 50 | 92.9 | 73.5 | 1.26x |
-| 500 | 291.8 | 269.4 | 1.08x |
-| 5000 | 2307.9 | 2419.8 | 0.95x |
+| ------------- | ---------------------------- | ---------------------------- | ---------------------- |
+| 50            | 92.9                         | 73.5                         | 1.26x                  |
+| 500           | 291.8                        | 269.4                        | 1.08x                  |
+| 5000          | 2307.9                       | 2419.8                       | 0.95x                  |
 
 ## Decision: not built
 

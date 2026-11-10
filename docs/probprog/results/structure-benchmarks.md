@@ -8,26 +8,26 @@ Run on 2026-11-10 at commit 92876e34; seed 0, budget scale 1 (models 18), 0.0 s.
 
 What `structureReport` finds in each benchmark model. The columns are the findings the campaign checks (`STRUCTURE_EXPECTED` in `probprog/models/structure-campaigns.ts`): the conjugate latents (a hierarchy or an affine map is marked), what the `collapse` handler can integrate out, the Gaussian blocks (`sites | given`), the discrete part, the exchangeable plate axes and the number of independent sub-problems. Below, the full report of each model as `explain()` prints it. The report is advice: nothing is applied.
 
-| model | target | conjugate latents | collapsible by the handler | Gaussian blocks | discrete part | minibatch axes | components |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| beta-bernoulli | posterior | p | p | - | none | flip | 1 |
-| normal-normal | posterior | mu | mu | mu \| nothing | none | obs | 1 |
-| gamma-poisson | posterior | rate | rate | - | none | obs | 1 |
-| logistic-regression | posterior | - | - | - | none | row | 1 |
-| probit-regression | posterior | - | - | - | none | row | 1 |
-| poisson-regression | posterior | - | - | - | none | row | 1 |
-| negative-binomial-regression | posterior | - | - | - | none | row | 1 |
-| eight-schools-centred | posterior | mu (hierarchical, direct); theta | theta | mu,theta \| tau | none | school | 1 |
-| eight-schools-non-centred | posterior | mu (affine); z (affine) | - | mu,z \| tau | none | school | 1 |
-| gaussian-mixture-ordered | posterior | mu (index) not exact | - | - | z: width 0, 2 states | row | 1 |
-| gaussian-mixture | posterior | mu (index) | - | mu \| z | z: width 0, 2 states | row | 1 |
-| funnel-centred | density | - | - | - | none | - | 1 |
-| funnel-non-centred | density | - | - | - | none | - | 2 |
-| banana | density | - | - | - | none | - | 1 |
-| bimodal | density | - | - | - | z: width 0, 2 states | - | 1 |
-| radon | posterior | mu (hierarchical, direct); beta (affine); alpha (affine) | - | mu,beta,alpha \| tau,sigma | none | county; house | 1 |
-| trueskill-three-players | posterior | - | - | - | none | game | 1 |
-| ar1-state-space | program, lifted | y0.loc; x1.loc... opaque | - | whole model (program analysis) | none | markov time (12) | - |
+| model                        | target          | conjugate latents                                        | collapsible by the handler | Gaussian blocks                | discrete part        | minibatch axes   | components |
+| ---------------------------- | --------------- | -------------------------------------------------------- | -------------------------- | ------------------------------ | -------------------- | ---------------- | ---------- |
+| beta-bernoulli               | posterior       | p                                                        | p                          | -                              | none                 | flip             | 1          |
+| normal-normal                | posterior       | mu                                                       | mu                         | mu \| nothing                  | none                 | obs              | 1          |
+| gamma-poisson                | posterior       | rate                                                     | rate                       | -                              | none                 | obs              | 1          |
+| logistic-regression          | posterior       | -                                                        | -                          | -                              | none                 | row              | 1          |
+| probit-regression            | posterior       | -                                                        | -                          | -                              | none                 | row              | 1          |
+| poisson-regression           | posterior       | -                                                        | -                          | -                              | none                 | row              | 1          |
+| negative-binomial-regression | posterior       | -                                                        | -                          | -                              | none                 | row              | 1          |
+| eight-schools-centred        | posterior       | mu (hierarchical, direct); theta                         | theta                      | mu,theta \| tau                | none                 | school           | 1          |
+| eight-schools-non-centred    | posterior       | mu (affine); z (affine)                                  | -                          | mu,z \| tau                    | none                 | school           | 1          |
+| gaussian-mixture-ordered     | posterior       | mu (index) not exact                                     | -                          | -                              | z: width 0, 2 states | row              | 1          |
+| gaussian-mixture             | posterior       | mu (index)                                               | -                          | mu \| z                        | z: width 0, 2 states | row              | 1          |
+| funnel-centred               | density         | -                                                        | -                          | -                              | none                 | -                | 1          |
+| funnel-non-centred           | density         | -                                                        | -                          | -                              | none                 | -                | 2          |
+| banana                       | density         | -                                                        | -                          | -                              | none                 | -                | 1          |
+| bimodal                      | density         | -                                                        | -                          | -                              | z: width 0, 2 states | -                | 1          |
+| radon                        | posterior       | mu (hierarchical, direct); beta (affine); alpha (affine) | -                          | mu,beta,alpha \| tau,sigma     | none                 | county; house    | 1          |
+| trueskill-three-players      | posterior       | -                                                        | -                          | -                              | none                 | game             | 1          |
+| ar1-state-space              | program, lifted | y0.loc; x1.loc... opaque                                 | -                          | whole model (program analysis) | none                 | markov time (12) | -          |
 
 ### Beta-Bernoulli coin (beta-bernoulli)
 
@@ -329,4 +329,3 @@ Suggestions: none; nothing in the structure is specific enough to exploit.
 ### AR(1) state space (ar1-state-space)
 
 A program, not a spec: `fromProgram` recovers 24 sites with 25 constant parameters and 23 opaque ones (every mean is a function of the previous state, which a trace cannot express). The program analysis says: linear-Gaussian yes (every site is Gaussian with an affine mean and a constant scale), a markov loop `time` of length 12. The exact route is the Kalman smoother (`gaussian` with `method: 'kalman'`), not the structure report.
-

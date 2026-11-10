@@ -471,7 +471,13 @@ describe('the structure report', () => {
       const j = b.range('group')
       const a = b.latent('a', d.normal(0, 1), { dims: [j] })
       b.observe('y', d.normal(a, 1), b.data('y', { dims: [j, 'i'] }))
-    }).bind({ y: [[1, 2], [3, 4], [5, 6]] })
+    }).bind({
+      y: [
+        [1, 2],
+        [3, 4],
+        [5, 6],
+      ],
+    })
     const conditional = structureReport(first).suggestions.find((s) => s.kind === 'conditional')
     expect(conditional?.text).toMatch(/trailing dimensions/)
     const text = analyseSpec(bound).explain()

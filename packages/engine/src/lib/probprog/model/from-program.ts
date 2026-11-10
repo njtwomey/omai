@@ -9,7 +9,7 @@
  * sees the opaque nodes and says so. A program whose structure depends on random values (a site that exists only on one
  * branch, a plate whose size is drawn) is refused, with the first difference found.
  *
- * @index function fromProgram: lift a sample/observe program to a ModelSpec of its site structure, refusing a structure that varies.
+ * @index function fromProgram: lift a program to a ModelSpec of its site structure; refuses a varying one.
  */
 
 import { OmaiError } from '../../base/index.ts'

@@ -316,7 +316,6 @@ function pairRecord(env: ConjugacyEnv, prior: LatentNode): ConjugacyRecord | und
     }
     if (!used) problem(`'${n.name}' depends on '${x}' only through its value`, 'other')
   }
-  if (links.length === 0 && problems.length === 0) return undefined
   if (links.length === 0) return undefined
   for (const e of Object.values(prior.dist.params)) for (const l of latentsIn(e, env.byName, env.memo)) given.add(l)
   given.delete(x)
@@ -353,6 +352,7 @@ function pairRecord(env: ConjugacyEnv, prior: LatentNode): ConjugacyRecord | und
       layout = `its dimensions (${own.join(', ')}) are not the trailing dimensions of ${l.node} (${kd.join(', ')}): the handler lines the site up with the last axes, so ${l.node} would have to be declared with dims [..., ${own.join(', ')}] (observe takes \`dims\`)`
   }
   const collapse = collapseVerdict(holds, hierarchical, pairs, [...vias], recorded, layout)
+  const observations = observationCount(env, links)
   return {
     kind: hierarchical ? 'hierarchical' : 'pair',
     sites: [x],
@@ -362,10 +362,7 @@ function pairRecord(env: ConjugacyEnv, prior: LatentNode): ConjugacyRecord | und
     posterior,
     given: givenList,
     sumsOver,
-    ...(() => {
-      const n = observationCount(env, links)
-      return n === undefined ? {} : { observations: n }
-    })(),
+    ...(observations === undefined ? {} : { observations }),
     conditions,
     holds,
     reason,
