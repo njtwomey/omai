@@ -1,7 +1,7 @@
 import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { type FakeFrames, fakeFrames, mountHook, resetGlobals } from './_harness.tsx'
-import { type JobOptions, type JobStage, useJob } from './useJob.ts'
+import { type JobContext, type JobOptions, type JobStage, useJob } from './useJob.ts'
 
 let frames: FakeFrames
 beforeEach(() => {
@@ -268,6 +268,78 @@ describe('useJob active, inputs and unmounting', () => {
     await paint(2)
     expect(run).toHaveBeenCalledTimes(1)
     expect(m.current.phase).toBe('done')
+  })
+})
+
+describe('useJob cancelling a pending stage', () => {
+  it('runs the cleanups a stage registered with onCancel when the job is replaced, deactivated or unmounted, not when it finishes', async () => {
+    const undone: string[] = []
+    let input = 1
+    const hang = (name: string): JobStage =>
+      stage(name, (_prev: never, ctx: JobContext) => {
+        ctx.onCancel(() => undone.push(name))
+        return defer().promise
+      })
+    const m = await mountHook(() => useJob({ stages: [hang(`job${input}`)], inputs: [input] }))
+    await paint()
+    expect(undone).toEqual([])
+    input = 2
+    await m.rerender()
+    expect(undone).toEqual(['job1'])
+    await paint()
+    await m.unmount()
+    expect(undone).toEqual(['job1', 'job2'])
+    // A stage that finishes and takes its cleanup back is not undone later.
+    const finished: string[] = []
+    const ok = stage('ok', (_prev: never, ctx: JobContext) => {
+      const forget = ctx.onCancel(() => finished.push('undone'))
+      forget()
+      return 1
+    })
+    const n = await mountHook(() => useJob({ stages: [ok] }))
+    await paint()
+    await n.unmount()
+    expect(finished).toEqual([])
+  })
+
+  it('stops waiting for a promise that never settles: the next job runs at once, and the cancelled one delivers nothing', async () => {
+    const forever = defer<string>()
+    let input = 1
+    const options = (): JobOptions => ({
+      inputs: [input],
+      stages: [stage('s', input === 1 ? () => forever.promise : () => 'second')],
+    })
+    const m = await mountHook(() => useJob<string>(options()))
+    await paint()
+    expect(m.current.phase).toBe('running')
+    input = 2
+    await m.rerender()
+    await paint(2)
+    expect([m.current.phase, m.current.result]).toEqual(['done', 'second'])
+    // The old promise settles late: nothing changes.
+    forever.resolve('late')
+    await paint()
+    expect(m.current.result).toBe('second')
+    await m.unmount()
+  })
+
+  it('runs onCancel at once for a stage that registers after the job was cancelled', async () => {
+    const seen: string[] = []
+    let ctx: JobContext | undefined
+    const m = await mountHook(() =>
+      useJob({
+        stages: [
+          stage('s', (_prev: never, c: JobContext) => {
+            ctx = c
+            return defer().promise
+          }),
+        ],
+      }),
+    )
+    await paint()
+    await m.unmount()
+    ctx?.onCancel(() => seen.push('late'))
+    expect(seen).toEqual(['late'])
   })
 })
 
