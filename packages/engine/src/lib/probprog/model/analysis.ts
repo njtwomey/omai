@@ -265,6 +265,11 @@ function conjugates(
  * Analyse a model spec statically: nodes with their parents and children, dimensions, conjugate pairs, the
  * linear-Gaussian check, the opaque nodes and the feature list. Accepts a definition, a bound model or a bare spec.
  *
+ * A `scan` (a recurrence) counts as one latent, in the discrete or continuous list by its state family, with its emissions as
+ * observed nodes over the scanned dimension; `scans` describes each (steps, emissions, the latents it reads, and whether it is a
+ * Gaussian chain given them), and `linearGaussianBlocks` reports a Gaussian chain as one block over the series. The latents a scan
+ * reads have no conjugate form through it.
+ *
  * Conjugacy is reported for the pairs of `CONJUGATES` (beta-Bernoulli and binomial, gamma-Poisson, normal-normal with
  * known scale, inverse gamma on a variance, Dirichlet-categorical, ...) between a latent and an observed node whose
  * parameter is the latent itself or an `at` lookup of it. `known`, `hyperparametersKnown` and `exclusive` say whether

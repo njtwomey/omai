@@ -166,6 +166,47 @@ export const STRUCTURE_EXPECTED: Readonly<Record<string, StructureFindings>> = {
   'trueskill-three-players': { ...none, minibatch: ['game'] },
   // A Gaussian chain: the scan is one block over the series (a Kalman smoother's model), no minibatch axis over time.
   'ar1-state-space': { ...none, gaussianBlocks: ['x | nothing'], suggestions: ['gaussian-block'] },
+
+  // The later models. Recurrences: the report names the method that follows the chain; the states have no minibatch axis.
+  'stochastic-volatility': { ...none, suggestions: ['recurrence'] },
+  'gaussian-hmm': { ...none, suggestions: ['recurrence'] },
+  // The centred Gaussian process: the function is conjugate to the observations given the length scale (a Gaussian block over
+  // its twelve values), which the collapse handler takes; the kernel is a custom function, so message passing does not see it.
+  'gaussian-process-regression': {
+    ...none,
+    conjugate: ['f'],
+    collapsible: ['f'],
+    gaussianBlocks: ['f | ell'],
+    suggestions: ['collapse', 'gaussian-block', 'limit'],
+  },
+  // Whitened: the Cholesky factor mixes the points, so the custom function leaves no exchangeable axis and no conjugacy.
+  'gaussian-process-non-centred': { ...none, suggestions: ['limit'] },
+  // LDA: the mixtures and topics are Dirichlet-categorical conjugate (given the assignments), the assignments a finite discrete
+  // site of width 0 whose elements are independent given the mixtures and topics.
+  'lda-lite': {
+    ...none,
+    conjugate: ['theta (hierarchical, direct)', 'phi (index)'],
+    discrete: 'z: width 0',
+    minibatch: ['doc', 'token'],
+    suggestions: ['enumerate', 'conditional', 'conditional'],
+  },
+  // The network: the output layer is a Gaussian block given the hidden layer.
+  'bayesian-neural-network': {
+    ...none,
+    conjugate: ['w2 (affine)', 'b2 (affine)'],
+    gaussianBlocks: ['w2,b2 | w1,b1'],
+    minibatch: ['point'],
+    suggestions: ['conditional', 'conditional', 'gaussian-block'],
+  },
+  // Independent abilities with a logistic link: no conjugacy, two exchangeable axes, nothing specific to exploit.
+  'item-response-scoring': { ...none, minibatch: ['person', 'item'] },
+  'stick-breaking-mixture': {
+    ...none,
+    discrete: 'z: width 0',
+    minibatch: ['row'],
+    suggestions: ['enumerate', 'limit'],
+  },
+  'clutter-problem': { ...none, discrete: 'z: width 0, 2 states', minibatch: ['row'], suggestions: ['enumerate'] },
 }
 
 const cell = (v: unknown): string => String(v).replaceAll('|', '\\|')

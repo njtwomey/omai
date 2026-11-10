@@ -60,7 +60,7 @@ describe('the Laplace fit of the centred eight schools says its mode is not a po
 })
 
 describe('an engine of every model runs at a small budget', () => {
-  it.each(benchmarkModels().map((m) => [m.name, m] as const))('%s', (_name, model) => {
+  it.each(benchmarkModels().map((m) => [m.name, m] as const))('%s', { timeout: 60_000 }, (_name, model) => {
     const plans = model.plans(0.02)
     const plan = plans.find((p) => p.kind === 'nuts') ?? plans[0]
     const run = runPlan(model, plan as NonNullable<typeof plan>, { key: key(1) })

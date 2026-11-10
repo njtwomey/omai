@@ -128,7 +128,26 @@ function reductions(
     } catch {
       // A shape the registry cannot infer here is not a reduction we can name.
     }
-  } else if (e.kind === 'custom') for (const a of e.args) reductions(a, scope, table, pick, out)
+  } else if (e.kind === 'custom') {
+    for (const a of e.args) reductions(a, scope, table, pick, out)
+    // A custom function may mix the elements of any dimension it takes or returns (a Cholesky factor applied to a vector), so
+    // none of them can be called exchangeable.
+    if (!pick(e)) return
+    for (const x of [...e.args.map((a) => safeShape(a, scope, table)), { dims: e.dims, eventRank: e.eventRank }])
+      for (const dim of x?.dims ?? []) out.reduced.add(dim)
+  }
+}
+
+function safeShape(
+  e: ExprSpec,
+  scope: ReadonlyMap<string, NamedShape>,
+  table: ReturnType<typeof defaultOperators>,
+): NamedShape | undefined {
+  try {
+    return exprShape(e, scope, table)
+  } catch {
+    return undefined
+  }
 }
 
 function cardinalityOf(n: ModelNode): number | undefined {

@@ -234,7 +234,8 @@ function dependsOnUnbound(node: ModelNode, skipped: ReadonlySet<string>): string
  * Missing entries (NaN) of an observed node's data follow its `missing` policy: `ignore` masks them out of the
  * likelihood, `impute` also adds a latent site `<name>_missing` over them (scalar-event observations only, and not
  * together with a batch). With a `batch` option the first call draws one subset of the batch dimension and every node
- * over it uses that subset, rescaled by the plate. Observed nodes and generated or derived nodes that depend on an
+ * over it uses that subset, rescaled by the plate. A `scan` node is one `markov` loop (history 1): the state at step `t` is the
+ * site `<name>[t]`, each emission the site `<emission>[t]`, and a node over the scanned dimension is read at the step. Observed nodes and generated or derived nodes that depend on an
  * unbound data node are left out, which is how a model without its response is run forward for prediction.
  *
  * @param bound - The bound model.

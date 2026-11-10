@@ -102,10 +102,10 @@ describe.each(specs)('$name as a spec', (model) => {
   })
 
   it('round-trips through JSON, as a spec and as a bound model', () => {
-    const again = fromJSON(JSON.parse(JSON.stringify(def)))
+    const again = fromJSON(JSON.parse(JSON.stringify(def)), def.customs)
     expect(again.spec).toEqual(def.spec)
     const bound = model.bound()
-    const back = boundFromJSON(JSON.parse(JSON.stringify(boundToJSON(bound))))
+    const back = boundFromJSON(JSON.parse(JSON.stringify(boundToJSON(bound))), def.customs)
     expect(back.sizes).toEqual(bound.sizes)
     const a = logJoint(model.program(), undefined, {}, { key: key(2) }).logJoint
     const b = logJoint(toProgram(back), undefined, {}, { key: key(2) }).logJoint
@@ -127,11 +127,17 @@ describe.each(models)('the truth of $name', (model) => {
       const lo = o?.quantile(0.1) ?? Number.NaN
       const mid = o?.quantile(0.5) ?? Number.NaN
       const hi = o?.quantile(0.9) ?? Number.NaN
-      expect(lo, name).toBeLessThan(mid)
-      expect(mid, name).toBeLessThan(hi)
-      // The CDF inverts the quantile function.
-      expect(Math.abs((o?.cdf(mid) ?? 0) - 0.5), name).toBeLessThan(0.02)
-      expect(o?.cdf(lo) ?? 1, name).toBeLessThan(o?.cdf(hi) ?? 0)
+      // The quantiles do not decrease, and are distinct for a continuous quantity (a quantity on a few values, a hidden state,
+      // has the same quantile at several levels).
+      expect(lo, name).toBeLessThanOrEqual(mid)
+      expect(mid, name).toBeLessThanOrEqual(hi)
+      const atom = (o?.cdf(mid) ?? 0) - (o?.cdf(mid - 1e-6) ?? 0) > 0.02
+      if (!atom) {
+        expect(lo, name).toBeLessThan(hi)
+        // The CDF inverts the quantile function.
+        expect(Math.abs((o?.cdf(mid) ?? 0) - 0.5), name).toBeLessThan(0.02)
+        expect(o?.cdf(lo) ?? 1, name).toBeLessThan(o?.cdf(hi) ?? 0)
+      } else expect(o?.cdf(mid) ?? 0, name).toBeGreaterThanOrEqual(0.5 - 0.02)
     }
   })
 })
