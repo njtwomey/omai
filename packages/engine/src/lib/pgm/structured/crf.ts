@@ -521,12 +521,42 @@ export function crfFeatureCounts(crf: LinearChainCrf, x: CrfInput, y: readonly (
 }
 
 /**
+ * A chain with the labels outside an allowed set ruled out: their emission log potentials become minus infinity, so
+ * forward-backward and Viterbi on the result range over the compatible labellings only.
+ *
+ * @param chain - The chain potentials.
+ * @param allowed - Per position, a flag per label (undefined: every label allowed).
+ * @returns The masked chain.
+ * @throws OmaiError with code `value` when a position allows no label.
+ * @concept conditional-random-fields
+ * @example
+ * ```ts
+ * import { maskChain } from 'omai-engine/pgm'
+ * maskChain({ logInitial: [0, 0], logTransition: [[0, 0], [0, 0]], logEmission: [[1, 2]] }, [[true, false]]).logEmission // => [[1, -Infinity]]
+ * ```
+ */
+export function maskChain(chain: ChainModel, allowed: readonly (readonly boolean[] | undefined)[]): ChainModel {
+  const logEmission = chain.logEmission.map((row, t) => {
+    const mask = allowed[t]
+    if (mask === undefined) return row
+    if (!mask.some(Boolean)) throw new OmaiError('value', `maskChain: position ${t} allows no label`)
+    return row.map((v, k) => (mask[k] === true ? v : Number.NEGATIVE_INFINITY))
+  })
+  return { ...chain, logEmission }
+}
+
+/**
  * The expected feature counts of a sequence under the model, E[phi(x, Y)] with Y drawn from p(. | x), from the
  * forward-backward marginals; with {@link crfFeatureCounts} of the observed labelling this is the gradient of the
  * negative conditional log-likelihood: expected minus observed counts.
  *
+ * With `allowed` (for each position the labels that may occur, or undefined for all of them) the sum runs only over the
+ * labellings that stay inside the sets: the counts are E[phi | compatible] and the log-partition function is the log of
+ * the total score of the compatible labellings (the clamped quantities of partial-label and hidden-state CRFs).
+ *
  * @param crf - The model.
  * @param x - The item (and edge) attributes.
+ * @param allowed - Optionally, per position, a flag per label (undefined: every label allowed).
  * @returns The expected counts (in {@link crfParameters} order) and log Z(x).
  * @concept conditional-random-fields
  * @example
@@ -538,6 +568,7 @@ export function crfFeatureCounts(crf: LinearChainCrf, x: CrfInput, y: readonly (
 export function crfExpectedFeatureCounts(
   crf: LinearChainCrf,
   x: CrfInput,
+  allowed?: readonly (readonly boolean[] | undefined)[],
 ): { readonly counts: Float64Array; readonly logPartition: number } {
   const K = crf.labels.length
   const nState = crf.stateWeights.length
@@ -548,7 +579,7 @@ export function crfExpectedFeatureCounts(
   const edges = crfBigrams(x)
   const index = lookup(crf.attributes)
   const bindex = lookup(crf.bigramAttributes)
-  const fb = forwardBackward(crfChain(crf, x))
+  const fb = forwardBackward(allowed === undefined ? crfChain(crf, x) : maskChain(crfChain(crf, x), allowed))
   for (const [t, item] of items.entries()) {
     const post = fb.posteriors[t] ?? []
     for (const [a, v] of Object.entries(item)) {
