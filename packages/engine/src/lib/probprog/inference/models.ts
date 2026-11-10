@@ -16,10 +16,22 @@ import type { ModelDefinition } from '../model/definition.ts'
 import type { MethodModel } from './_support.ts'
 import { abcRejectionMethod, abcSmcMethod } from './abc-methods.ts'
 import { emMethod } from './em-method.ts'
+import { aiesMethod, ensembleSliceMethod } from './ensemble-methods.ts'
 import { chainMethod, conjugateMethod, enumerationMethod, gaussianMethod } from './exact-methods.ts'
 import { gibbsMethod } from './gibbs-method.ts'
 import { importanceMethod } from './importance-method.ts'
 import { laplaceMethod } from './laplace-method.ts'
+import {
+  barkerMethod,
+  ellipticalSliceMethod,
+  hmcMethod,
+  malaMethod,
+  mclmcMethod,
+  rwmMethod,
+  sghmcMethod,
+  sgldMethod,
+  sliceMethod,
+} from './mcmc-methods.ts'
 import type { InferenceMethod } from './method.ts'
 import { bpSpecMethod, epSpecMethod, vmpSpecMethod } from './mp.ts'
 import { nutsMethod } from './nuts-method.ts'
@@ -106,6 +118,17 @@ const renamed =
  */
 export const methodKinds: Readonly<Record<string, MethodMaker>> = {
   nuts: nutsMethod,
+  hmc: hmcMethod,
+  rwm: rwmMethod,
+  mala: malaMethod,
+  barker: barkerMethod,
+  slice: sliceMethod,
+  'elliptical-slice': ellipticalSliceMethod,
+  sgld: sgldMethod,
+  sghmc: sghmcMethod,
+  mclmc: mclmcMethod,
+  aies: aiesMethod,
+  'ensemble-slice': ensembleSliceMethod,
   svi: sviMethod,
   ep: epSpecMethod,
   vmp: vmpSpecMethod,
