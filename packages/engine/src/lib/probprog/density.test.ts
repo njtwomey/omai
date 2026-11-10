@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { valueAndGrad } from '../autodiff/index.ts'
 import { logSumExpOf } from '../base/index.ts'
-import { bernoulli, categorical, exponential, gamma, normal } from '../dists/index.ts'
+import { bernoulli, categorical, exponential, gamma, negativeBinomial, normal, poisson } from '../dists/index.ts'
 import { key } from '../random/index.ts'
-import { item, mul, type TensorLike, take, tensor, toFlat, type Value } from '../tensor/index.ts'
+import { add, div, exp, item, mul, type TensorLike, take, tensor, toFlat, type Value } from '../tensor/index.ts'
 import {
   constrainSites,
   enumerate,
@@ -191,5 +191,76 @@ describe('enumeration in nested plates', () => {
       const [a, b] = cell(y)
       expect(p[i]).toBeCloseTo(Math.exp(b - logSumExpOf([a, b])), 12)
     })
+  })
+})
+
+describe('potentialEnergy where a distribution refuses its parameter', () => {
+  // A wild leapfrog step lands where exp overflows: the rate, the scale or the probability is then infinite or zero and
+  // the distribution constructor throws. That point has no density, so the potential there is +Infinity (a divergent
+  // trajectory, which the step size search answers by halving), not a throw out of the sampler.
+  const counts = [2, 3, 5]
+  const covariate = [-1, 0, 1]
+  const cases: readonly (readonly [string, () => void, number[]])[] = [
+    [
+      'a poisson rate',
+      () => {
+        const a = sample('a', normal(0, 2))
+        observe('k', poisson(exp(add(a, mul(a, covariate)))), counts)
+      },
+      [0],
+    ],
+    [
+      'a normal scale',
+      () => {
+        const t = sample('t', normal(0, 2))
+        sample('th', normal(0, exp(t)))
+      },
+      [0, 0],
+    ],
+    [
+      'a negative binomial probability',
+      () => {
+        const a = sample('a', normal(0, 2))
+        observe('k', negativeBinomial(2, div(1, add(1, exp(a)))), counts)
+      },
+      [0],
+    ],
+  ]
+  for (const [label, model, at] of cases)
+    it(`reads ${label} that overflows as log density -Infinity, with a zero gradient`, () => {
+      const um = potentialEnergy(model, undefined)
+      const wild = at.map(() => 1000)
+      expect(um.potential(at)).toBeLessThan(Number.POSITIVE_INFINITY)
+      expect(um.potential(wild)).toBe(Number.POSITIVE_INFINITY)
+      expect(um.logDensity.logDensity(wild)).toBe(Number.NEGATIVE_INFINITY)
+      const vg = um.logDensity.valueAndGrad(wild)
+      expect(vg.value).toBe(Number.NEGATIVE_INFINITY)
+      expect(Array.from(vg.grad).every((g) => g === 0)).toBe(true)
+      // The same wild point through the differentiable function (what SVI and Laplace use) is -Infinity, not an error.
+      expect(item(um.fn(tensor(wild)))).toBe(Number.NEGATIVE_INFINITY)
+      // And the point next to it is still an ordinary one.
+      expect(Number.isFinite(um.logDensity.logDensity(at))).toBe(true)
+    })
+
+  it('can be switched off, and never hides other errors or the prototype run', () => {
+    const [, model] = cases[1] as (typeof cases)[number]
+    expect(() => potentialEnergy(model, undefined, { invalidIsImpossible: false }).potential([1000, 0])).toThrow(
+      /scale must be positive/,
+    )
+    // An error that is not a parameter refusal still throws from an evaluation ...
+    let calls = 0
+    const buggy = (): void => {
+      const t = sample('t', normal(0, 1))
+      if (++calls > 1) throw new Error('a bug in the model')
+      sample('th', normal(t, 1))
+    }
+    const um = potentialEnergy(buggy, undefined)
+    expect(() => um.potential([0, 0])).toThrow(/a bug in the model/)
+    // ... and a parameter the prototype run itself refuses is an error at construction.
+    expect(() => potentialEnergy(() => sample('x', normal(0, Number.POSITIVE_INFINITY)), undefined)).toThrow(
+      /scale must be positive/,
+    )
+    // Distribution validation is untouched.
+    expect(() => normal(0, Number.POSITIVE_INFINITY)).toThrow(/scale must be positive/)
   })
 })

@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { expectPosteriorMoments, MODELS } from '../../../testing/probprog.ts'
-import { bernoulli, beta, normal } from '../../dists/index.ts'
+import { bernoulli, beta, halfNormal, normal, poisson } from '../../dists/index.ts'
 import { key } from '../../random/index.ts'
-import { add, asTensor, item, mul, tensor, toFlat } from '../../tensor/index.ts'
+import { add, asTensor, exp, item, mul, tensor, toFlat } from '../../tensor/index.ts'
+import { findReasonableStepSize, hmcKernel } from '../../sampling/index.ts'
 import { analyse } from '../analysis.ts'
+import { potentialEnergy } from '../density.ts'
 import { factor, type Model, observe, plate, sample } from '../primitives.ts'
 import { conjugateInference } from './conjugate.ts'
 import { inferDiscrete, mcmc, nutsEngine } from './nuts.ts'
@@ -96,5 +98,39 @@ describe('NUTS on programs', () => {
       sample('k', bernoulli({ probs: 0.3 }))
     }
     expect(engine.applies(analyse(discrete, undefined)).applies).toBe(false)
+  })
+
+  it('finds a reasonable step size when a huge step makes a scale infinite, and does not without the rule', () => {
+    // exp(10 t) is infinite for t above 71: a step size of 1e6 sends the single leapfrog step far past it, where the
+    // distribution constructor refuses the scale. That is a divergent trajectory, so the search halves the step.
+    const model = (): void => {
+      const t = sample('t', normal(0, 1))
+      const th = sample('th', normal(0, exp(mul(t, 10))))
+      observe('y', normal(th, 1), 1)
+    }
+    const search = (invalidIsImpossible: boolean): number => {
+      const um = potentialEnergy(model, undefined, { invalidIsImpossible })
+      const kernelFor = (stepSize: number): ReturnType<typeof hmcKernel> =>
+        hmcKernel(um.logDensity, { stepSize, numIntegrationSteps: 1 })
+      return findReasonableStepSize(kernelFor, kernelFor(1).init([0.1, 0.1]), { key: key(0), initialStepSize: 1e6 })
+    }
+    const stepSize = search(true)
+    expect(stepSize).toBeGreaterThan(0)
+    expect(stepSize).toBeLessThan(1e3)
+    expect(() => search(false)).toThrow(/scale must be positive/)
+  })
+
+  it('samples a Poisson regression whose rate overflows at wild steps, with no clip in the model', () => {
+    const x = Array.from({ length: 30 }, (_, i) => ((i / 29) * 2 - 1) * 20)
+    const k = x.map((v) => Math.round(Math.exp(0.3 + 0.1 * v)))
+    const model = (): void => {
+      const a = sample('a', normal(0, 2))
+      const b = sample('b', normal(0, 2))
+      observe('k', poisson(exp(add(a, mul(b, x)))), k)
+    }
+    const post = mcmc(model, undefined, { key: key(0), numChains: 1, numWarmup: 200, numDraws: 100 })
+    expect(post.status).toBe('completed')
+    expect(post.diagnostics['divergences']).toBeLessThan(20)
+    expect(toFlat(post.draws?.['b'] ?? tensor([])).every((v) => Number.isFinite(v))).toBe(true)
   })
 })
