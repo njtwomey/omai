@@ -352,6 +352,8 @@ export function messagePassingOptions(c: Config): MessagePassingOptions {
  *
  * @param mode - `ep`, `vmp` or `bp`.
  * @returns The space and the contract (`epContract` for `ep` and `bp`, `vmpContract` for `vmp`).
+ * @concept message-passing
+ * @index function The knobs (a Space) and the typed tape of a message rule, with no graph.
  * @example
  * ```ts
  * import { messagePassingKnobs } from 'omai-engine/message-passing'
