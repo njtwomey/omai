@@ -35,7 +35,6 @@ import {
   type CompiledGraph,
   compileGraph,
   dirichletPrior,
-  type EngineSettings,
   evidenceOf,
   type FactorGraphSpec,
   type FactorOperator,
@@ -45,12 +44,10 @@ import {
   gammaPrior,
   gaussianMvPrior,
   gaussianPrior,
-  klqpProjection,
   type MpState,
   marginalsOf,
-  momentProjection,
   priorFactor,
-  sumProductProjection,
+  projectionOf,
   type VariableSpec,
 } from '../../message-passing/index.ts'
 import { asTensor, fromStorage, type NestedArray, toFlat, type Value } from '../../tensor/index.ts'
@@ -1317,19 +1314,6 @@ export function operatorsWithout(g: CompiledGraph, rule: MessageRule): string[] 
   return [...out]
 }
 
-/** The engine settings a method's projection uses to read the evidence or bound off a state. */
-function settingsFor(rule: MessageRule): EngineSettings {
-  return {
-    projection: rule === 'ep' ? momentProjection : rule === 'vmp' ? klqpProjection : sumProductProjection,
-    schedule: 'serial',
-    granularity: 'sweep',
-    damping: 0,
-    improper: 'skip',
-    tol: 0,
-    maxSweeps: 0,
-  }
-}
-
 const num = (v: Json | undefined): number => (typeof v === 'number' ? v : Number.NaN)
 const nums = (v: Json | undefined): number[] => (Array.isArray(v) ? (v as number[]) : [])
 
@@ -1462,7 +1446,7 @@ export function factorGraphPosterior(
         break
     }
   }
-  const evidence = evidenceOf(g, settingsFor(rule), state)
+  const evidence = evidenceOf(g, { projection: projectionOf(rule) }, state)
   return definePosterior({
     form: 'variational',
     engine: options.engine ?? rule,

@@ -396,14 +396,21 @@ export function mpSnapshot(g: CompiledGraph, state: MpState): MpSnapshot {
  * (`sum_f log Z_f + sum_v (1 - degree_v) A(belief_v)`, which on a tree is the log evidence and for loopy BP the
  * Bethe approximation), for the expected-log rule the variational lower bound (`sum_f E_q[log f] + sum_v H(q_v)`).
  *
- * @param g - The compiled graph.
- * @param s - The settings that fix the projection.
- * @param state - A state of a run.
  * Factors with a power p contribute `log Z_a / p` and the variable terms use the sum of the inverse powers (power EP).
  *
- * @returns The estimate, or NaN when some factor has no way to give its part, a belief has no density yet, or the projection is an alpha-divergence one.
+ * @param g - The compiled graph.
+ * @param s - What fixes the estimate: the engine settings of a run, or just `{ projection }` (the estimate depends on nothing else).
+ * @param state - A state of a run.
+ * @returns The estimate, or NaN when some factor has no way to give its part, a belief has no density yet (a state with flat
+ * messages, under any projection), or the projection is an alpha-divergence one.
+ * @example
+ * ```ts
+ * import { compileGraph, defaultOperators, evidenceOf, gaussianPrior, klqpProjection, vmpAlgorithm } from 'omai-engine/message-passing'
+ * const g = compileGraph({ variables: [{ name: 'x', family: { kind: 'gaussian' } }], factors: [gaussianPrior('x', 0, 1)] }, defaultOperators())
+ * Number.isNaN(evidenceOf(g, { projection: klqpProjection }, vmpAlgorithm(g).init())) // => true
+ * ```
  */
-export function evidenceOf(g: CompiledGraph, s: EngineSettings, state: MpState): number {
+export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection'>, state: MpState): number {
   let total = 0
   // An alpha-divergence projection has no evidence estimate here (its free energy is not the EP one).
   if (s.projection.alpha !== undefined && s.projection.alpha !== 1) return Number.NaN
@@ -436,7 +443,13 @@ export function evidenceOf(g: CompiledGraph, s: EngineSettings, state: MpState):
   for (const [fi, f] of g.factors.entries()) {
     if (f.operator.expectedLog === undefined) return Number.NaN
     const args = argsOf(g, state.messages, fi, s.projection)
-    total += f.operator.expectedLog({ mode: 'vmp', to: 0, args, params: f.params, power: f.power })
+    try {
+      total += f.operator.expectedLog({ mode: 'vmp', to: 0, args, params: f.params, power: f.power })
+    } catch (err) {
+      // A belief with no density yet (flat messages at the start of a run) has no expectation: no bound, as for EP.
+      if (err instanceof ImproperMessageError || (err instanceof OmaiError && err.code === 'value')) return Number.NaN
+      throw err
+    }
   }
   for (const [i, v] of g.variables.entries()) {
     if (v.observed !== undefined) continue

@@ -302,3 +302,37 @@ describe('anytime runs', () => {
     expect(events.length).toBeGreaterThanOrEqual(2)
   })
 })
+
+describe('the evidence of a state with no information', () => {
+  const compiled = M.compileGraph(tree, operators)
+  it('is NaN under every projection, and a VMP run observes its first state without throwing', () => {
+    for (const projection of [M.momentProjection, M.klqpProjection, M.sumProductProjection]) {
+      const alg = M.messagePassingAlgorithm(compiled, settings({ projection }))
+      expect(Number.isNaN(M.evidenceOf(compiled, { projection }, alg.init()))).toBe(true)
+      expect(() => alg.observe?.(alg.init(), 0)).not.toThrow()
+    }
+  })
+  it('is read from the projection alone: the settings of a run are not needed', () => {
+    const simple = M.compileGraph(
+      {
+        variables: [{ name: 'x', family: { kind: 'gaussian' } }, { name: 'y', family: { kind: 'gaussian' }, observed: 2 }],
+        factors: [M.gaussianPrior('x', 0, 1), { operator: 'gaussian', args: ['y', 'x'], params: { precision: 4 } }],
+      },
+      operators,
+    )
+    const vmp = M.vmpAlgorithm(simple)
+    const state = runAlgorithm(vmp, { maxSteps: 50 }).state
+    expect(Number.isFinite(M.evidenceOf(simple, { projection: M.projectionOf('vmp') }, state))).toBe(true)
+    expect(M.evidenceOf(simple, { projection: M.projectionOf('vmp') }, state)).toBe(
+      M.evidenceOf(simple, settings({ projection: M.klqpProjection }), state),
+    )
+  })
+  it('has the knobs and the tape of each rule with no graph', () => {
+    for (const mode of ['ep', 'vmp', 'bp'] as const) {
+      const knobs = M.messagePassingKnobs(mode)
+      expect(Object.keys(knobs.config.spaces)).toEqual(Object.keys(M.messagePassingSpace(M.defaultsOf(mode)).spaces))
+      expect(Object.keys(knobs.contract)).toContain(mode === 'vmp' ? 'mp/elbo' : 'mp/evidence')
+    }
+    expect(M.defaultsOf('bp').schedule).toBe('flooding')
+  })
+})

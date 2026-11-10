@@ -81,3 +81,18 @@ export const projections: Readonly<Record<string, Projection>> = {
   klqp: klqpProjection,
   'sum-product': sumProductProjection,
 }
+
+/**
+ * The projection of a message rule: moment matching for `ep`, the expected log factor for `vmp`, sum-product for `bp`.
+ *
+ * @param mode - The rule.
+ * @returns The projection.
+ * @example
+ * ```ts
+ * import { projectionOf } from 'omai-engine/message-passing'
+ * projectionOf('vmp').name // => 'klqp'
+ * ```
+ */
+export function projectionOf(mode: Mode): Projection {
+  return mode === 'ep' ? momentProjection : mode === 'vmp' ? klqpProjection : sumProductProjection
+}

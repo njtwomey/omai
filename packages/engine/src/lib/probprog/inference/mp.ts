@@ -13,7 +13,7 @@
  * Nothing chooses among the three: the user does, and a method that does not apply refuses with that reason.
  */
 
-import { type Json, OmaiError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   bpMethod,
   type CompiledGraph,
@@ -23,18 +23,16 @@ import {
   epMethod,
   defaultOperators as factorOperators,
   type MpState,
-  marginalsOf,
+  messagePassingKnobs,
   type VmpPath,
   vmpMethod,
 } from '../../message-passing/index.ts'
 import {
-  type Algorithm,
   type Config,
   type Contract,
   defineContract,
   derived,
   Log,
-  type Observation,
 } from '../../trace/index.ts'
 import { analyseSpec } from '../model/analysis.ts'
 import {
@@ -58,18 +56,6 @@ const TITLE: Readonly<Record<MessageRule, string>> = {
   ep: 'expectation propagation',
   vmp: 'variational message passing',
   bp: 'belief propagation',
-}
-
-/** The knobs and tape of an engine do not depend on a graph, so a graph of one variable stands in to read them. */
-function engineOf(rule: MessageRule): ReturnType<typeof epMethod> {
-  const g = compileGraph(
-    {
-      variables: [{ name: 'x', family: { kind: 'gaussian' } }],
-      factors: [{ operator: 'prior', args: ['x'], params: { eta: [0, 1] } }],
-    },
-    factorOperators(),
-  )
-  return rule === 'ep' ? epMethod(g) : rule === 'vmp' ? (vmpMethod(g) as never) : (bpMethod(g) as never)
 }
 
 /** What a model compiles to, made once per method: the compilation, its graph, and the reason when it has none. */
@@ -127,24 +113,6 @@ function staticVerdict(a: ModelAnalysis, rule: MessageRule): Verdict | undefined
   return undefined
 }
 
-/** An observation of a state whose bound or evidence has no value yet: the counts and the marginals. */
-function improperObservation(g: CompiledGraph, state: MpState): Observation {
-  const marginals = marginalsOf(g, state) as Json
-  return {
-    metrics: {
-      sweeps: state.sweeps,
-      updates: state.updates,
-      improper: state.improper.events,
-      skipped: state.improper.skipped,
-      damped: state.improper.damped,
-      reset: state.improper.reset,
-      ...(Number.isFinite(state.change) ? { change: state.change } : {}),
-    },
-    messages: [{ kind: 'marginals', payload: marginals }],
-    frame: { marginals, sent: [] },
-  }
-}
-
 function specMethod<P extends string>(
   rule: MessageRule,
   model: MethodModel,
@@ -153,7 +121,7 @@ function specMethod<P extends string>(
   const name = options.name ?? rule
   const title = TITLE[rule]
   const prepared = prepare(model)
-  const engine = engineOf(rule)
+  const knobs = messagePassingKnobs(rule)
   const check = (a: ModelAnalysis): Verdict => {
     if (prepared === undefined)
       return no(
@@ -198,7 +166,7 @@ function specMethod<P extends string>(
       status: converged ? 'converged' : 'stopped',
     })
   }
-  const base = engine.contract as Contract<MpState, string>
+  const base = knobs.contract as Contract<MpState, string>
   const contract = (): Contract<MpState, P> =>
     defineContract({
       ...base,
@@ -213,7 +181,7 @@ function specMethod<P extends string>(
     name,
     family: 'message-passing',
     description: `${title} on the factor graph of a model spec: one sweep per step, marginals by site`,
-    config: engine.config,
+    config: knobs.config,
     check,
     posterior,
     defaults: (rule === 'vmp'
@@ -225,20 +193,7 @@ function specMethod<P extends string>(
       const g = prepared?.graph
       if (g === undefined) throw new OmaiError('value', `${name}: ${why()}`)
       const m = rule === 'ep' ? epMethod(g) : rule === 'vmp' ? vmpMethod(g) : bpMethod(g)
-      const inner = m.make(config, key) as Algorithm<MpState, string>
-      // The engine's bound at a state with no information yet (flat messages) is an improper quantity and it throws;
-      // an observation there is the marginals without the bound.
-      return {
-        ...inner,
-        observe: (state: MpState, t: number) => {
-          try {
-            return inner.observe?.(state, t) ?? {}
-          } catch (e) {
-            if (!(e instanceof OmaiError && e.code === 'value')) throw e
-            return improperObservation(g, state)
-          }
-        },
-      } as never
+      return m.make(config, key) as never
     },
   })
 }
