@@ -17,7 +17,7 @@
             "runId": "moons-mlp:0",
             "name": "moons-mlp",
             "seed": 0,
-            "version": "0.1.10",
+            "version": "0.1.11",
             "config": {},
             "channels": {
               "metrics": {

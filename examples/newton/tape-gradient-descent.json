@@ -6,7 +6,7 @@
       "runId": "minimizer:none",
       "name": "minimizer",
       "seed": null,
-      "version": "0.1.10",
+      "version": "0.1.11",
       "config": {
         "transformation": "chain(addDecayedWeights, scaleByLearningRate)",
         "gradTol": 0
