@@ -1,7 +1,8 @@
 /**
  * The periodic validation of the probabilistic-programming code: simulation-based calibration, agreement with the grid
  * posterior, the funnel under non-centring and Geweke tests (the campaigns of
- * `packages/engine/src/lib/probprog/validation/campaigns.ts`). It is NOT part of `make verify` or `make check`: run it
+ * `packages/engine/src/lib/probprog/validation/campaigns.ts`), then the cross-engine agreement of every benchmark model
+ * with its truth (`benchmark/<model>`, from `packages/engine/src/lib/probprog/models/campaigns.ts`). It is NOT part of `make verify` or `make check`: run it
  * when the sampling, probprog or message-passing code changed, and commit the tables it writes.
  *
  *   make probprog-validate [ARGS="--only sbc,geweke --scale 2 --seed 1 --out docs/probprog/results"]
@@ -15,6 +16,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { benchmarkCampaigns } from '../packages/engine/src/lib/probprog/models/index.ts'
 import {
   campaignMarkdown,
   runCampaigns,
@@ -36,7 +38,8 @@ function option(name: string): string | undefined {
 const git = (...args: string[]): string => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim()
 const fileOf = (name: string): string => `${name.replaceAll('/', '-')}.md`
 const out = resolve(ROOT, option('out') ?? 'docs/probprog/results')
-const campaigns = validationCampaigns()
+// The benchmark suite's cross-engine agreement comes after the kernel's own campaigns, so adding it changes no other campaign's key.
+const campaigns = [...validationCampaigns(), ...benchmarkCampaigns()]
 
 if (process.argv.includes('--check')) {
   const last = Number(git('log', '-1', '--format=%ct', '--', ...WATCHED)) * 1000
