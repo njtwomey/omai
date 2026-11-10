@@ -18,6 +18,32 @@ mdml-engine, mdml-render and mdml-meta.
   drag snap `step` (default unchanged). `DraggableRect` also takes `drawable` (press outside the rectangle and drag to draw a
   new one, clamped, snapped, `minSize` kept, Escape cancels, a click draws nothing) and `onDrawEnd`.
 
+Structured prediction (omai-engine), all under `pgm/structured/`:
+- The CRF family has one home. `crf.ts` and its training moved from `pgm/models` to `pgm/structured` (still exported from
+  `omai-engine/pgm`; the golden fixture is now `pgm/structured/crf`). Every model there offers the `StructuredOracle` contract
+  (features, expected counts and log Z, an optional `clamped`, cost-augmented `decode`, `loss`), so one table of solvers trains
+  them all.
+- `structuredSolvers` / `trainStructured`: L-BFGS and every generic smooth solver, `owlqn` (the existing OWL-QN as a CRF
+  solver for the L1 penalty, exact zeros, the default when `c1 > 0`; `optim/solvers.ts` gains the reusable `owlqnMode`),
+  and the online `perceptron`, `averaged`, `passive-aggressive` and `arow`. `crfSolvers`, `crfSmoothProblem` and `trainCrf` keep
+  their signatures and now honour `c1`. Chain data can be compiled once (`compileChainData`, `chainOracle`); `forwardBackward`
+  and the CRF attribute lookups are faster.
+- Feature extraction reaches the models from all three template languages: `FeatureExtractor` with `crfppExtractor`,
+  `wapitiExtractor`, `attributeExtractor` (CRFsuite), `functionExtractor`, `combineExtractors` and `hashedExtractor`,
+  `crfModelFor`, and `crfTopFeatures` / `crfTemplateWeights` to read a fitted model back. `text.hashedColumn`, `featureRecord`.
+- CRFs beyond the chain: `graphCrf` / `graphOracle` for trees, grids (4 or 8 neighbourhood, directional), skip chains,
+  order-k chains and arbitrary graphs with tied weights, exact inference on forests and low-treewidth graphs and loopy or
+  tree-reweighted BP otherwise, pseudo-likelihood training, `generalCrfOracle`; `semiMarkovOracle` (semi-Markov CRF);
+  `memmSmoothProblem` (the MEMM, with the label-bias example); `partialLabelOracle`, `hiddenStateOracle` (latent-dynamic CRF).
+- Max-margin: `structuredSvmModes` (subgradient, block-coordinate Frank-Wolfe, one-slack and n-slack cutting planes) and
+  `trainStructuredSvm`.
+- Decoding: `viterbiKBest`, `constrainedViterbi`, `constrainedPosteriorDecode` and `ChainConstraints` (pgm/inference),
+  `allowedTransitions`, `crfDecodeConstrained`, `crfNBest`, `crfPosteriorDecode`, `crfSample`; `sequenceAccuracyScore`.
+- MAP: `graphCutMap` (exact binary submodular MAP by min cut, QPBO roof duality for the rest), `alphaExpansion`,
+  `alphaBetaSwap`, `ad3Map` and `lpRelaxationMap`; `treeReweighted` also returns `edgeBeliefs`.
+- Data: `hyphenationWords` (a 3984-word sample of the public-domain Moby Hyphenator list, one tag per letter),
+  `hyphenationTables` and `hyphenationPatternsEnUs` (TeX's US English patterns as the Liang baseline).
+
 From the notes site's last figures (omai-render):
 - Fix: `useChartProjection` returns a new projection after a redraw that moved the plotting box, so an overlay held as a stable
   element (`ResponsiveChart`'s `overlay` node) redraws its handles when the chart is resized or its colour bar changes (the
