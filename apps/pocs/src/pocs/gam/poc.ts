@@ -6,4 +6,5 @@ export const poc: Poc = {
     'A penalised-spline GAM (mgcv-style) on a curve with noise: choose how the smoothing parameter is picked (REML, GCV or fixed by hand), the basis and its size, and watch the fit, its credible band and the effective degrees of freedom respond.',
   tags: ['gam', 'additive', 'spline', 'smoothing', 'penalty', 'reml', 'gcv', 'regression', 'classic'],
   added: '2026-11-01',
+  group: 'models',
 }

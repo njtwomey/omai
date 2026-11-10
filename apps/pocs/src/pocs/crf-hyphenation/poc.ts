@@ -20,4 +20,5 @@ export const poc: Poc = {
     'perceptron',
   ],
   added: '2026-11-10',
+  group: 'structured-prediction',
 }

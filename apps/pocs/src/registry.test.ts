@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { type PocEntry, searchPocs } from './poc.ts'
+import { GROUPS } from './groups.ts'
+import { groupPocs, type PocEntry, searchPocs } from './poc.ts'
 import { mismatched, POCS, pageOf } from './registry.ts'
 
 const entry = (slug: string, title: string, tags: string[], added: string): PocEntry => ({
@@ -40,5 +41,37 @@ describe('the proofs of concept', () => {
       expect(p.tags.length).toBeGreaterThan(0)
       expect(p.added).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     }
+  })
+})
+
+describe('groups', () => {
+  const g = [
+    { slug: 'x', title: 'X', summary: 's' },
+    { slug: 'y', title: 'Y', summary: 's' },
+  ]
+  const e = (slug: string, group?: string): PocEntry => ({
+    slug,
+    title: slug,
+    summary: slug,
+    tags: ['t'],
+    added: '2026-01-01',
+    ...(group === undefined ? {} : { group }),
+  })
+  it('sections follow the declared order, keep the entry order inside, and leave out empty groups', () => {
+    const s = groupPocs([e('a', 'y'), e('b', 'x'), e('c', 'y'), e('d'), e('f', 'unknown')], g)
+    expect(s.map((x) => [x.group?.slug ?? null, x.entries.map((p) => p.slug)])).toEqual([
+      ['x', ['b']],
+      ['y', ['a', 'c']],
+      [null, ['d', 'f']],
+    ])
+    expect(groupPocs([e('a', 'y')], g).map((x) => x.group?.slug)).toEqual(['y'])
+  })
+  it('a search also matches the group slug', () => {
+    expect(searchPocs([e('a', 'alpha'), e('b', 'beta')], 'alpha').map((p) => p.slug)).toEqual(['a'])
+  })
+  it('every poc names a declared group, and every group slug is unique', () => {
+    const slugs = GROUPS.map((x) => x.slug)
+    expect(new Set(slugs).size).toBe(slugs.length)
+    for (const p of POCS) if (p.group !== undefined) expect(slugs).toContain(p.group)
   })
 })

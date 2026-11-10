@@ -15,4 +15,5 @@ export const poc: Poc = {
     'spectral bias',
   ],
   added: '2026-11-02',
+  group: 'graphics-and-fields',
 }

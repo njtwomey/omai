@@ -15,4 +15,5 @@ export const poc: Poc = {
     'sequential update',
   ],
   added: '2026-11-01',
+  group: 'probabilistic-programming',
 }

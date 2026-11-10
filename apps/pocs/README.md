@@ -11,5 +11,10 @@ estimator's `.method(data)` run with `useSession`, its config as `SpaceControls`
 page stays a composition; anything with substance belongs in `packages/engine/src/lib`. A page that proves its worth can
 be promoted to the site's gallery by moving its recipe there.
 
+Groups: pocs that belong together are listed together. Declare a group in `src/groups.ts` (slug, title, summary) and join
+it with `group: '<slug>'` in the poc's `poc.ts`; the index shows one section per group (a group's own page is
+`/group/<slug>`), a search lists matches flat with the group on each card, and a poc with no group is listed under "More".
+A group with no pocs is not shown.
+
 A new page's styles arrive with a restart: Tailwind scans for classes when `make pocs` starts, so stop it and start it
 again after adding a page whose layout looks unstyled.

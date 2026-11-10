@@ -11,9 +11,18 @@ const SECTIONS = [{ path: '/', title: 'Proofs of concept' }] as const
 function App() {
   const path = usePath()
   const slug = path.startsWith('/poc/') ? path.slice('/poc/'.length).replace(/\/$/, '') : undefined
+  const group = path.startsWith('/group/') ? path.slice('/group/'.length).replace(/\/$/, '') : undefined
   return (
-    <Shell path={path === '/' || slug !== undefined ? '/' : path} sections={SECTIONS} brand="omai pocs">
-      {slug === undefined ? <Index /> : <PocView key={slug} slug={slug} />}
+    <Shell
+      path={path === '/' || slug !== undefined || group !== undefined ? '/' : path}
+      sections={SECTIONS}
+      brand="omai pocs"
+    >
+      {slug !== undefined ? (
+        <PocView key={slug} slug={slug} />
+      ) : (
+        <Index key={group ?? ''} {...(group === undefined ? {} : { group })} />
+      )}
     </Shell>
   )
 }

@@ -14,4 +14,5 @@ export const poc: Poc = {
     'positional encoding',
   ],
   added: '2026-11-02',
+  group: 'graphics-and-fields',
 }
