@@ -13,6 +13,7 @@ import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { colourFor, modeOf, numbers } from './_data.ts'
 import { deferMode, isModeless } from './_mode.ts'
 import { cartesian, type Layer, layer, type PlotOptions } from './plot.ts'
+import { symbolOf } from './symbols.ts'
 
 /** Marker shapes, so group identity need not rely on colour alone. */
 export const MARKERS: readonly string[] = ['circle', 'rect', 'triangle', 'diamond', 'pin', 'roundRect', 'arrow']
@@ -42,12 +43,23 @@ export interface PointSet {
   /** Label weight (default normal) and CSS font family (default the figure's). */
   readonly labelWeight?: 'normal' | 'bold' | number
   readonly labelFamily?: string
+  /**
+   * Move each label this many pixels from where `labelPosition` puts it, `[right, down]` (default none): the way to keep
+   * a label clear of a handle drawn over its point (a label above a draggable point, say, with `[0, -12]`).
+   */
+  readonly labelOffset?: readonly [number, number]
   readonly name?: string
   readonly colour?: string
   /** Marker size in pixels (default 7). */
   readonly size?: number
   readonly opacity?: number
+  /** A marker: an ECharts symbol (`circle`, `triangle`, a `path://`...) or a name of {@link SYMBOLS} (`plane`, `cross`). */
   readonly symbol?: string
+  /**
+   * Turn each marker, in degrees clockwise from where it points at 0 (the `plane` points up, so this is a compass
+   * heading): one angle for all, or one per point, by index (the `heading` of an aircraft).
+   */
+  readonly symbolRotate?: number | readonly number[]
   /** Vary marker shapes by group (default false). */
   readonly shapes?: boolean
   /** Outline markers with the background colour (default true), so overlapping points stay distinct. */
@@ -131,9 +143,17 @@ export function points(
           value: [x[i], y[i]],
           ...(p.sizes === undefined || hidden ? {} : { symbolSize: sizeOf(i) }),
           ...(valueColour === undefined ? {} : { itemStyle: { color: valueColour(p.values?.[i] ?? 0) } }),
+          ...(typeof p.symbolRotate === 'object' ? { symbolRotate: p.symbolRotate[i] ?? 0 } : {}),
           ...(p.labels?.[i] === undefined
             ? {}
-            : { label: { show: true, formatter: p.labels[i], position: p.labelPosition ?? 'right' } }),
+            : {
+                label: {
+                  show: true,
+                  formatter: p.labels[i],
+                  position: p.labelPosition ?? 'right',
+                  ...(p.labelOffset === undefined ? {} : { offset: [...p.labelOffset] }),
+                },
+              }),
           index: i,
         })
       }
@@ -145,8 +165,10 @@ export function points(
         data,
         symbol: hidden
           ? 'circle'
-          : (p.symbol ?? (p.shapes === true ? (MARKERS[gi % MARKERS.length] ?? 'circle') : 'circle')),
+          : symbolOf(p.symbol ?? (p.shapes === true ? (MARKERS[gi % MARKERS.length] ?? 'circle') : 'circle')),
         symbolSize: size,
+        ...(typeof p.symbolRotate === 'number' ? { symbolRotate: p.symbolRotate } : {}),
+        ...(p.symbol !== undefined && symbolOf(p.symbol).startsWith('path://') ? { symbolKeepAspect: true } : {}),
         color: colour,
         itemStyle: {
           color: colour,
@@ -158,6 +180,7 @@ export function points(
           ...(p.labelSize === undefined ? {} : { fontSize: p.labelSize }),
           ...(p.labelWeight === undefined ? {} : { fontWeight: p.labelWeight }),
           ...(p.labelFamily === undefined ? {} : { fontFamily: p.labelFamily }),
+          ...(p.labelOffset === undefined ? {} : { offset: [...p.labelOffset] }),
         },
         emphasis: { scale: 1.3 },
         clip: true,
