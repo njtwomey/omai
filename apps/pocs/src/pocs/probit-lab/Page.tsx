@@ -15,7 +15,7 @@ import { type ReactNode, useDeferredValue, useEffect, useMemo, useRef, useState 
 import { CurveChart } from '../../shared/CurveChart.tsx'
 import { Boundary } from './Boundary.tsx'
 import { DEFAULT_METHODS, METHODS } from './methods.ts'
-import { type PairMethod, PairPlots } from './PairPlots.tsx'
+import { PairPlots } from './PairPlots.tsx'
 import { type PoolHandle, type PoolState, runPool, type StatusLine } from './pool.ts'
 import { DATASETS, makeProblem } from './problem.ts'
 import { CoefficientTable, MethodTable } from './Results.tsx'
@@ -260,18 +260,6 @@ function Outputs(props: { readonly results: readonly MethodResult[]; readonly sh
   const focusResult = results.find((r) => r.id === focus) ?? (results[0] as MethodResult)
   const overlaid = which === 'all' ? results : results.filter((r) => r.id === which)
 
-  const pairs: PairMethod[] = useMemo(
-    () =>
-      overlaid.map((r) => {
-        const rows = visibleRows(r, t)
-        return {
-          name: r.label,
-          colour: colourOf(r.id),
-          columns: Object.fromEntries(coords.map((j) => [j, column(r, rows, j)])),
-        }
-      }),
-    [overlaid, coords, t],
-  )
   const comparison = useMemo(() => marginalsAt(overlaid, coords.slice(0, 4), t), [overlaid, coords, t])
   const diagnostics = useMemo(() => chainsAt(focusResult, coords, t), [focusResult, coords, t])
   const curve = focusResult.curve
@@ -326,13 +314,8 @@ function Outputs(props: { readonly results: readonly MethodResult[]; readonly sh
           </ControlPanel>
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
             {overlaid.map((r) => (
-              <span key={r.id} className="flex items-center gap-1 text-muted">
-                <span
-                  className="inline-block size-2.5 rounded-full"
-                  style={{ background: `var(--wb-tab${colourOf(r.id)}, currentColor)` }}
-                />
-                {r.label}
-                <span className="tabular-nums">({visibleRows(r, t).length} draws)</span>
+              <span key={r.id} className="text-muted">
+                {r.label} <span className="tabular-nums">({visibleRows(r, t).length} draws)</span>
               </span>
             ))}
           </div>
@@ -356,7 +339,7 @@ function Outputs(props: { readonly results: readonly MethodResult[]; readonly sh
           {coords.length < 2 ? (
             <p className="text-sm text-muted">Tick at least two coefficients.</p>
           ) : (
-            <PairPlots methods={pairs} coordinates={coords} labels={labels.map((l, j) => `w${j} ${l}`)} />
+            <PairPlots results={overlaid} coordinates={coords} cursor={t} />
           )}
         </div>
         <div className={SECTION}>
