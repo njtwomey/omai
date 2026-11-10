@@ -35,4 +35,14 @@ The graphical model types, part of `omai-engine/pgm`: Bayes networks, Markov net
 
 Structured prediction: conditional random fields and their neighbours, in one place. Linear-chain CRFs with feature templates, general CRFs on trees, grids, skip chains and arbitrary graphs, semi-Markov and higher-order CRFs, locally normalised MEMMs, latent and partial-label CRFs, max-margin structured learners, constrained and n-best decoding, and the CRF layer over a neural encoder. Every model offers the same small contract (`StructuredOracle`: feature counts, expected feature counts and loss-augmented decoding), so one table of solvers (L-BFGS, OWL-QN for L1, stochastic gradient, perceptron, passive-aggressive, structured SVMs) trains all of them.
 
+- function `graphPseudoLikelihood`: Besag pseudo-likelihood objective and gradient for graph CRFs, no partition function. `src/lib/pgm/structured/graph-pseudo-likelihood.ts:127` `omai-engine/pgm`
+
+- estimator `generalCrfOracle`: The structured-model oracle of a general CRF with per-assignment feature tables. `src/lib/pgm/structured/general-crf-oracle.ts:55` `omai-engine/pgm`
+- estimator `graphOracle`: The structured-model oracle of a CRF on trees, grids and arbitrary graphs. `src/lib/pgm/structured/graph-oracle.ts:284` `omai-engine/pgm`
+
 - structure `StructuredOracle`: The contract a structured model offers a learner: features, expectations, decoding, loss. `src/lib/pgm/structured/oracle.ts:20` `omai-engine/pgm`
+- structure `graphCrf`: CRF model for trees, grids and any graph, with weights tied by type. `src/lib/pgm/structured/graph-crf.ts:140` `omai-engine/pgm`
+- structure `gridCrf`: Grid CRF: 4- or 8-neighbourhood, undirected or directional edge types. `src/lib/pgm/structured/graph-structures.ts:179` `omai-engine/pgm`
+- structure `higherOrderChainCrf`: Order-k chain CRF with tied label n-gram weights, exact by junction tree. `src/lib/pgm/structured/graph-structures.ts:312` `omai-engine/pgm`
+- structure `skipChainCrf`: Skip-chain CRF: a chain plus edges between repeated tokens. `src/lib/pgm/structured/graph-structures.ts:256` `omai-engine/pgm`
+- structure `treeCrf`: Tree and forest CRF, exact by sum-product on the tree. `src/lib/pgm/structured/graph-structures.ts:91` `omai-engine/pgm`
