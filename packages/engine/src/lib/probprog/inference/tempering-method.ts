@@ -9,23 +9,17 @@
  */
 
 import {
-  barkerKernel,
   type HamiltonianParameters,
-  hmcKernel,
-  type LogDensity,
   type MCMCKernel,
   type MCMCState,
-  malaKernel,
-  nutsKernel,
   type PTState,
   parallelTemperingKernel,
-  randomWalkMetropolis,
   temperatureLadder,
 } from '../../sampling/index.ts'
 import { bool, choice, dict, int, real } from '../../space/index.ts'
 import { type Config, defineContract, scalar, stateFromJson, stateToJson, tensor } from '../../trace/index.ts'
 import { type McmcPath, type McmcPlan, type McmcRunState, mcmcMethodOf } from './_mcmc-driver.ts'
-import { massDiagonal, massOf, windowWarmer } from './_mcmc-families.ts'
+import { hamiltonianFamilies, windowWarmer } from './_mcmc-families.ts'
 import { flag, type MethodModel, type ModelAnalysis, num, pick } from './_support.ts'
 import type { InferenceMethod } from './method.ts'
 
@@ -39,54 +33,6 @@ export type TemperingPath =
 
 /** The type of the tempering method. */
 export type TemperingMethod = InferenceMethod<McmcRunState, Config, McmcPath | TemperingPath, ModelAnalysis>
-
-/** The inner kernels a ladder can run: the usual acceptance rate, and how the step size scales with the temperature. */
-const INNER: Readonly<
-  Record<
-    string,
-    {
-      readonly accept: number
-      readonly power: number
-      readonly make: (target: LogDensity, p: HamiltonianParameters, dim: number, c: Config) => MCMCKernel
-    }
-  >
-> = {
-  hmc: {
-    accept: 0.8,
-    power: 0.5,
-    make: (t, p, _dim, c) =>
-      hmcKernel(t, {
-        stepSize: p.stepSize,
-        inverseMassMatrix: p.inverseMassMatrix,
-        numIntegrationSteps: num(c, 'numSteps'),
-      }),
-  },
-  nuts: {
-    accept: 0.8,
-    power: 0.5,
-    make: (t, p, _dim, c) =>
-      nutsKernel(t, {
-        stepSize: p.stepSize,
-        inverseMassMatrix: p.inverseMassMatrix,
-        maxTreeDepth: num(c, 'maxTreeDepth'),
-      }),
-  },
-  mala: {
-    accept: 0.574,
-    power: 1,
-    make: (t, p, dim) => malaKernel(t, { stepSize: p.stepSize, preconditioner: massOf(p, dim) }),
-  },
-  barker: {
-    accept: 0.4,
-    power: 0.5,
-    make: (t, p, dim) => barkerKernel(t, { stepSize: p.stepSize, scale: massDiagonal(p, dim).map(Math.sqrt) }),
-  },
-  rwm: {
-    accept: 0.234,
-    power: 0.5,
-    make: (t, p, dim) => randomWalkMetropolis(t, { scale: massDiagonal(p, dim).map((v) => p.stepSize * Math.sqrt(v)) }),
-  },
-}
 
 /**
  * Parallel tempering as a method: `numTemperatures` replicas at inverse temperatures from 1 down to `minBeta` (geometric or
@@ -165,7 +111,8 @@ export function temperingMethod(model: MethodModel, options: { readonly name?: s
       plan: (b) => {
         const dim = b.um.dim
         const c = b.config
-        const inner = INNER[pick(c, 'kernel')] ?? INNER['hmc']
+        const shape = { numSteps: num(c, 'numSteps'), maxTreeDepth: num(c, 'maxTreeDepth') }
+        const inner = hamiltonianFamilies[pick(c, 'kernel')] ?? hamiltonianFamilies['hmc']
         if (inner === undefined) throw new Error('parallel-tempering: no inner kernel')
         const betas = temperatureLadder(
           num(c, 'numTemperatures'),
@@ -176,7 +123,7 @@ export function temperingMethod(model: MethodModel, options: { readonly name?: s
           parallelTemperingKernel(b.um.logDensity, {
             betas,
             kernelFor: (target, beta) =>
-              inner.make(target, { ...p, stepSize: p.stepSize / beta ** inner.power }, dim, c),
+              inner.make(target, { ...p, stepSize: p.stepSize / beta ** inner.power }, dim, shape),
             swapEvery: num(c, 'swapEvery'),
             swapScheme: pick(c, 'swapScheme') === 'random' ? 'random' : 'even-odd',
           })

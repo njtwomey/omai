@@ -82,6 +82,8 @@ export interface GibbsOptions {
   readonly init?: Readonly<Record<string, TensorLike>>
   /** The slice width for continuous sites without a conjugate conditional (default 1, unconstrained scale). */
   readonly sliceWidth?: number
+  /** Update only these sites, the others keeping the values of the state (the Gibbs block of a hybrid sampler; default every latent site). */
+  readonly sites?: readonly string[]
 }
 
 const product = (shape: readonly number[]): number => shape.reduce((a, b) => a * b, 1)
@@ -372,6 +374,7 @@ export function gibbsAlgorithm<D = void>(model: Model<D>, data: D, options: Gibb
       let values: Record<string, Value> = { ...state.values }
       const collapsed = blocks.flatMap((b) => (b.kind === 'collapsed' ? [b.collapsed] : []))
       blocks.forEach((b, bi) => {
+        if (options.sites !== undefined && !options.sites.includes(b.site)) return
         const key = foldIn(ctx.key, bi)
         if (b.kind === 'discrete')
           values = { ...values, [b.site]: updateDiscrete(model, data, values, b.site, collapsed, key) }

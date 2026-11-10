@@ -6,10 +6,16 @@
 
 import type { Json } from '../../base/index.ts'
 import {
+  barkerKernel,
   type HamiltonianParameters,
+  hmcKernel,
+  type LogDensity,
   type MCMCKernel,
   type MCMCState,
+  malaKernel,
   massMatrixInit,
+  nutsKernel,
+  randomWalkMetropolis,
   type WarmupState,
   windowAdaptationAlgorithm,
   windowAdaptationResult,
@@ -58,6 +64,13 @@ export function windowWarmer(
     result: (w) => windowAdaptationResult(w as WarmupState),
     toJson: (w) => shared.serialise?.(w as WarmupState) ?? null,
     fromJson: (j) => shared.deserialise?.(j) as WarmupState,
+    restart: (w, position) => {
+      const s = w as WarmupState
+      return {
+        ...s,
+        chain: kernelFor({ stepSize: s.stepSize, inverseMassMatrix: s.mm.inverseMassMatrix }).init(position),
+      }
+    },
     windowEnded: (w) => {
       const s = w as WarmupState
       return s.windowEnded ? { stepSize: s.stepSize, inverseMassMatrix: Array.from(s.mm.inverseMassMatrix) } : undefined
@@ -112,4 +125,61 @@ export function fixedPlan<T>(
     tunedFromJson: (j) => stateFromJson(j) as T,
     tunedSummary: summary,
   }
+}
+
+/**
+ * The kernels whose parameters are a step size and an inverse mass matrix, each with its usual acceptance rate and the power of
+ * the temperature the step size scales with (a hotter replica takes larger steps): the inner kernels of a tempering ladder and the
+ * Hamiltonian blocks of a hybrid sampler.
+ */
+export const hamiltonianFamilies: Readonly<
+  Record<
+    string,
+    {
+      readonly accept: number
+      readonly power: number
+      readonly make: (
+        target: LogDensity,
+        p: HamiltonianParameters,
+        dim: number,
+        shape: { readonly numSteps: number; readonly maxTreeDepth: number },
+      ) => MCMCKernel
+    }
+  >
+> = {
+  hmc: {
+    accept: 0.8,
+    power: 0.5,
+    make: (t, p, _dim, c) =>
+      hmcKernel(t, {
+        stepSize: p.stepSize,
+        inverseMassMatrix: p.inverseMassMatrix,
+        numIntegrationSteps: num(c, 'numSteps'),
+      }),
+  },
+  nuts: {
+    accept: 0.8,
+    power: 0.5,
+    make: (t, p, _dim, c) =>
+      nutsKernel(t, {
+        stepSize: p.stepSize,
+        inverseMassMatrix: p.inverseMassMatrix,
+        maxTreeDepth: num(c, 'maxTreeDepth'),
+      }),
+  },
+  mala: {
+    accept: 0.574,
+    power: 1,
+    make: (t, p, dim) => malaKernel(t, { stepSize: p.stepSize, preconditioner: massOf(p, dim) }),
+  },
+  barker: {
+    accept: 0.4,
+    power: 0.5,
+    make: (t, p, dim) => barkerKernel(t, { stepSize: p.stepSize, scale: massDiagonal(p, dim).map(Math.sqrt) }),
+  },
+  rwm: {
+    accept: 0.234,
+    power: 0.5,
+    make: (t, p, dim) => randomWalkMetropolis(t, { scale: massDiagonal(p, dim).map((v) => p.stepSize * Math.sqrt(v)) }),
+  },
 }

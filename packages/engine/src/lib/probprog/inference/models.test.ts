@@ -29,7 +29,9 @@ describe('the model registry', () => {
     const offered = inferenceMethods(models, ['nuts', 'svi', 'laplace'])
     expect(offered.map((m) => m.name)).toEqual(['nuts/normal-mean', 'svi/normal-mean', 'laplace/normal-mean'])
     expect(Object.keys(methodKinds)).toContain('abc-smc')
-    expect(() => inferenceMethodFor(models, 'sgld', 'normal-mean')).toThrow(/no inference method of kind 'sgld'/)
+    expect(() => inferenceMethodFor(models, 'nonesuch', 'normal-mean')).toThrow(
+      /no inference method of kind 'nonesuch'/,
+    )
   })
 })
 

@@ -109,6 +109,8 @@ export interface Warmer<T> {
   result(w: unknown): T
   toJson(w: unknown): Json
   fromJson(j: Json): unknown
+  /** The state with its chain started again at a position (the target moved under it: a block of a hybrid sampler). */
+  restart?(w: unknown, position: Float64Array): unknown
   /** True when the last iteration closed an adaptation window (for the `mcmc/windowEnd` message). */
   windowEnded?(w: unknown): { readonly stepSize: number; readonly inverseMassMatrix: readonly number[] } | undefined
 }
