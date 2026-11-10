@@ -1,8 +1,8 @@
 """Pathfinder (probprog/engines/pathfinder.ts) against BlackJAX's `pathfinder.approximate` on NumPyro's unconstrained
-potential: the moments (mean and sd of every unconstrained coordinate) of 20,000 draws from the approximation of the best
-ELBO along the L-BFGS path, and that ELBO. The two are approximations of the same posterior from different starts, so the
-TypeScript test compares them within a fraction of the posterior sd, not to digits. Coordinates follow the program's
-execution order (as the TypeScript layout)."""
+potential: the moments (mean and sd of every unconstrained coordinate) of 20,000 draws from the approximation of the
+best ELBO along the L-BFGS path, and that ELBO. The two are approximations of the same posterior from different starts,
+so the TypeScript test compares them within a fraction of the posterior sd, not to digits. Coordinates follow the
+program's execution order (as the TypeScript layout)."""
 
 import importlib.metadata
 import importlib.util
