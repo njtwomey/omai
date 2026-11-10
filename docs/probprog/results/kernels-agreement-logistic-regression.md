@@ -2,9 +2,9 @@
 
 Bayesian logistic regression: the kernel methods against the quadrature truth.
 
-Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 13, rows 39, scalePercent 100), 35.7 s.
+Run on 2026-11-10 at commit bcd4c412; seed 0, budget scale 1 (plans 13, rows 39, scalePercent 100), 30.9 s.
 
-**FAILED**: 2 row(s) of methods that must agree are outside their tolerances
+**Passed**: 9 kernel method(s) agree with the quadrature truth; 4 reported
 
 **Bayesian logistic regression** (logistic-regression): glm, classification, logistic, quadrature, three-dimensional
 
@@ -16,7 +16,7 @@ Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, 
 
 | method             | expectation | run                    | diagnostics                                                            | why                                                                         |
 | ------------------ | ----------- | ---------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| rwm                | must agree  | converged (1901 steps) | 0 divergences; R-hat high: w[0], w[1], w[2]; ESS low: w[0], w[1]       | a consistent sampler, slower mixing: agrees within Monte Carlo error        |
+| rwm                | must agree  | converged (6001 steps) | 0 divergences                                                          | a consistent sampler, slower mixing: agrees within Monte Carlo error        |
 | mala               | must agree  | converged (1101 steps) | 0 divergences                                                          | Metropolis-adjusted, so exact up to Monte Carlo error                       |
 | barker             | must agree  | converged (1301 steps) | 0 divergences; R-hat high: w[0]                                        | Metropolis-adjusted, so exact up to Monte Carlo error                       |
 | hmc                | must agree  | converged (1201 steps) | 0 divergences; R-hat high: w[0], w[2]; ESS low: w[0]                   | a fixed trajectory with a tuned step size: exact up to Monte Carlo error    |
@@ -32,9 +32,9 @@ Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, 
 
 | method             | quantity | mean   | sd    | mean error (sd) | mean z  | sd ratio | KS     | W1 (sd) | KL      | ESS  |
 | ------------------ | -------- | ------ | ----- | --------------- | ------- | -------- | ------ | ------- | ------- | ---- |
-| rwm                | w[0]     | 0.331  | 0.351 | 0.288           | 1.35    | 1.02     | 0.139  | 0.293   | 0.0838  | 22.7 |
-| rwm                | w[1]     | 1.2    | 0.34  | 0.439           | 1.38    | 0.913    | 0.261  | 0.452   | 0.164   | 8.27 |
-| rwm                | w[2]     | -0.625 | 0.31  | 0.0463          | 0.692   | 0.983    | 0.0509 | 0.0585  | 0.0258  | 217  |
+| rwm                | w[0]     | 0.219  | 0.342 | -0.0336         | -0.882  | 0.991    | 0.0421 | 0.0694  | 0.0179  | 677  |
+| rwm                | w[1]     | 1.06   | 0.386 | 0.0719          | 1.74    | 1.04     | 0.0433 | 0.0733  | 0.0103  | 633  |
+| rwm                | w[2]     | -0.655 | 0.322 | -0.0483         | -1.22   | 1.02     | 0.034  | 0.0492  | 0.00956 | 670  |
 | mala               | w[0]     | 0.236  | 0.336 | 0.0129          | 0.344   | 0.972    | 0.0415 | 0.0568  | 0.0218  | 671  |
 | mala               | w[1]     | 1.02   | 0.367 | -0.0468         | -1.15   | 0.985    | 0.0483 | 0.06    | 0.019   | 587  |
 | mala               | w[2]     | -0.612 | 0.301 | 0.0893          | 2.28    | 0.955    | 0.0531 | 0.0971  | 0.0371  | 597  |
@@ -71,7 +71,3 @@ Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, 
 | elliptical-slice   | w[0]     | 0.234  | 0.338 | 0.00732         | 0.168   | 0.977    | 0.0331 | 0.0524  | 0.015   | 500  |
 | elliptical-slice   | w[1]     | 1.03   | 0.4   | -0.0162         | -0.252  | 1.08     | 0.0232 | 0.0611  | 0.0064  | 281  |
 | elliptical-slice   | w[2]     | -0.647 | 0.318 | -0.0232         | -0.435  | 1.01     | 0.0234 | 0.0418  | 0.00457 | 359  |
-
-Notes:
-- rwm breaks meanError on w[0], and must agree
-- rwm breaks meanError, ks on w[1], and must agree

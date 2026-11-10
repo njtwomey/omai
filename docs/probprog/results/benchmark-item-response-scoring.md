@@ -2,9 +2,9 @@
 
 Item response theory (2PL scoring): the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 5, rows 60, scalePercent 100), 10.2 s.
+Run on 2026-11-10 at commit bcd4c412; seed 0, budget scale 1 (plans 5, rows 60, scalePercent 100), 12.4 s.
 
-**FAILED**: 1 row(s) of methods that must agree are outside their tolerances
+**Passed**: 2 method(s) agree with the quadrature truth; 3 reported
 
 **Item response theory (2PL scoring)** (item-response-scoring): irt, psychometrics, logistic, binary-data, plates, quadrature
 
@@ -16,7 +16,7 @@ Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, 
 
 | method       | expectation | run                    | diagnostics     | why                                                                                                                                                  |
 | ------------ | ----------- | ---------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| nuts         | must agree  | converged (1001 steps) | 0 divergences   | twelve independent near-normal posteriors: agrees within Monte Carlo error                                                                           |
+| nuts         | must agree  | converged (2001 steps) | 0 divergences   | twelve independent near-normal posteriors: agrees within Monte Carlo error                                                                           |
 | tempered-smc | reported    | converged (5 steps)    | weights ESS 833 | tempered particles over twelve abilities: consistent, with Monte Carlo error larger than NUTS                                                        |
 | ep           | must agree  | converged (17 steps)   | -               | expectation propagation projects each logistic site onto a Gaussian: close to the quadrature on these near-normal posteriors                         |
 | laplace      | reported    | converged (13 steps)   | -               | the posteriors are near normal: the mode and curvature are close                                                                                     |
@@ -24,18 +24,18 @@ Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, 
 
 | method       | quantity  | mean    | sd    | mean error (sd) | mean z  | sd ratio | KS      | W1 (sd) | KL      | ESS  |
 | ------------ | --------- | ------- | ----- | --------------- | ------- | -------- | ------- | ------- | ------- | ---- |
-| nuts         | theta[0]  | -0.161  | 0.609 | -0.00884        | -0.372  | 1.1      | 0.0392  | 0.0829  | 0.0168  | 2140 |
-| nuts         | theta[1]  | -1.55   | 0.695 | 0.0359          | 1.94    | 1.01     | 0.0237  | 0.0379  | 0.00893 | 3000 |
-| nuts         | theta[2]  | 0.725   | 0.534 | 0.0117          | 0.504   | 0.992    | 0.0216  | 0.0365  | 0.00994 | 1830 |
-| nuts         | theta[3]  | -0.0163 | 0.581 | -0.0211         | -1.09   | 1.06     | 0.0308  | 0.0479  | 0.0109  | 3000 |
-| nuts         | theta[4]  | -1.22   | 0.628 | 0.00143         | 0.0721  | 0.971    | 0.0195  | 0.03    | 0.00974 | 2400 |
-| nuts         | theta[5]  | -0.0255 | 0.531 | 0.0168          | 0.913   | 0.968    | 0.0209  | 0.0335  | 0.00464 | 2780 |
-| nuts         | theta[6]  | -1.57   | 0.665 | -0.00132        | -0.0662 | 0.968    | 0.0193  | 0.032   | 0.0123  | 2350 |
-| nuts         | theta[7]  | -0.121  | 0.587 | 0.00769         | 0.345   | 1.06     | 0.0369  | 0.0513  | 0.0108  | 2260 |
-| nuts         | theta[8]  | 0.137   | 0.509 | 0.0434          | 2.48    | 0.939    | 0.0385  | 0.065   | 0.0141  | 2880 |
-| nuts         | theta[9]  | -0.501  | 0.622 | -0.0441         | -1.94   | 1.08     | 0.0293  | 0.0628  | 0.00896 | 2240 |
-| nuts         | theta[10] | -0.28   | 0.619 | 0.00198         | 0.0844  | 1.1      | 0.0277  | 0.074   | 0.00992 | 2200 |
-| nuts         | theta[11] | 0.862   | 0.507 | -0.00606        | -0.253  | 0.933    | 0.0244  | 0.0471  | 0.0142  | 1510 |
+| nuts         | theta[0]  | -0.157  | 0.577 | -0.000415       | -0.0301 | 1.04     | 0.0177  | 0.0317  | 0.00436 | 5670 |
+| nuts         | theta[1]  | -1.56   | 0.692 | 0.0134          | 1.15    | 1.01     | 0.011   | 0.0222  | 0.00182 | 7420 |
+| nuts         | theta[2]  | 0.718   | 0.534 | -0.00232        | -0.17   | 0.993    | 0.0163  | 0.022   | 0.00302 | 5290 |
+| nuts         | theta[3]  | -0.0074 | 0.573 | -0.00491        | -0.409  | 1.05     | 0.0221  | 0.0381  | 0.00451 | 7580 |
+| nuts         | theta[4]  | -1.21   | 0.612 | 0.0163          | 1.42    | 0.945    | 0.0253  | 0.0489  | 0.00657 | 6800 |
+| nuts         | theta[5]  | -0.0323 | 0.55  | 0.0044          | 0.373   | 1        | 0.0154  | 0.0205  | 0.00324 | 7250 |
+| nuts         | theta[6]  | -1.58   | 0.671 | -0.0163         | -1.37   | 0.977    | 0.0155  | 0.0261  | 0.00374 | 6790 |
+| nuts         | theta[7]  | -0.131  | 0.572 | -0.00988        | -0.75   | 1.03     | 0.0165  | 0.0292  | 0.0046  | 6160 |
+| nuts         | theta[8]  | 0.113   | 0.538 | -0.001          | -0.0851 | 0.992    | 0.0106  | 0.0147  | 0.00179 | 7070 |
+| nuts         | theta[9]  | -0.483  | 0.595 | -0.0125         | -0.995  | 1.03     | 0.0145  | 0.0287  | 0.00257 | 6760 |
+| nuts         | theta[10] | -0.279  | 0.578 | 0.00473         | 0.38    | 1.03     | 0.0124  | 0.021   | 0.00255 | 6790 |
+| nuts         | theta[11] | 0.859   | 0.535 | -0.0104         | -0.803  | 0.985    | 0.0157  | 0.0237  | 0.00342 | 5750 |
 | tempered-smc | theta[0]  | -0.217  | 0.554 | -0.109          | -3.45   | 0.998    | 0.0512  | 0.11    | 0.0127  | 1000 |
 | tempered-smc | theta[1]  | -1.45   | 0.691 | 0.174           | 5.48    | 1.01     | 0.0833  | 0.175   | 0.0211  | 1000 |
 | tempered-smc | theta[2]  | 0.739   | 0.532 | 0.037           | 1.18    | 0.989    | 0.0348  | 0.0488  | 0.0144  | 1000 |
@@ -84,6 +84,3 @@ Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, 
 | svi          | theta[9]  | -0.447  | 0.551 | 0.0499          | 3.31    | 0.955    | 0.0251  | 0.0528  | 0.00323 | 4000 |
 | svi          | theta[10] | -0.267  | 0.526 | 0.026           | 1.76    | 0.935    | 0.0238  | 0.0533  | 0.00539 | 4000 |
 | svi          | theta[11] | 0.956   | 0.604 | 0.168           | 9.57    | 1.11     | 0.0912  | 0.182   | 0.0244  | 4000 |
-
-Notes:
-- nuts breaks sdRatio on theta[10], and must agree
