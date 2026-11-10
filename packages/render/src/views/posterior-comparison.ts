@@ -175,18 +175,18 @@ export function posteriorComparisonView(
           ),
         )
     }
+    // The quantity names the x axis (a title would meet the legend on a narrow figure).
     panels[`q${i}`] = {
       layers,
       options: {
-        title: q.name,
-        ...(i >= qs.length - cols ? { x: { label: q.name } } : {}),
+        x: { label: q.name },
         ...(chart === 'difference' ? { y: { label: 'ECDF minus oracle CDF' } } : {}),
         ...(chart === 'ecdf' ? { y: { limits: [0, 1] } } : {}),
       },
     }
   }
   return {
-    ...subplots(panelGrid(qs.length, cols), panels, { figure: fig, legend: true, tooltip: 'item' }),
+    ...subplots(panelGrid(qs.length, cols, 70), panels, { figure: fig, legend: true, tooltip: 'item' }),
     ...ariaOf(
       `${chart === 'difference' ? 'ECDF differences' : chart === 'ecdf' ? 'ECDFs' : 'Densities'} of ${record.methods.join(', ')} against ${record.oracle} for ${qs.map((q) => q.name).join(', ')}`,
     ),

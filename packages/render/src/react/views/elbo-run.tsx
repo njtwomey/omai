@@ -22,7 +22,7 @@ const ORDER: readonly ElboChart[] = ['elbo', 'gradient', 'parameters', 'beliefs'
  *
  * @param props - The record and the frame settings.
  * @returns The figure with its choice.
- * @index function React component: ELBO, gradient, guide parameters, beliefs and final posterior of a variational run, live while it runs.
+ * @index function React component: ELBO, gradient, parameters, beliefs and final posterior of a variational run.
  */
 export function ElboRunView(props: RecordViewProps<ElboRun>): ReactElement {
   const { record } = props

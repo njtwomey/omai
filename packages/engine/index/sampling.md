@@ -42,6 +42,7 @@ Monte Carlo, BlackJAX and ArviZ style: log-density targets, Metropolis, Barker, 
 
 MCMC diagnostics, as ArviZ, part of `omai-engine/sampling`: autocorrelation, R-hat, effective sample sizes and Monte Carlo standard errors, highest density and equal-tailed intervals, and the posterior summary and health checks (divergences, tree depth, E-BFMI) that say whether chains can be trusted.
 
+- function `chainEssCurves`: ESS by quantile and as the draws accumulate, per quantity, for the chain diagnostics record. `src/lib/sampling/diagnostics/ess-curves.ts:42` `omai-engine/sampling`
 - function `rhat`: Split R-hat convergence diagnostic; ess gives effective sample size. `src/lib/sampling/diagnostics/convergence.ts:80` `omai-engine/sampling`
 
 ## sampling/hamiltonian

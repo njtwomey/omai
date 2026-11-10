@@ -124,13 +124,14 @@ function elboPanel(record: ElboRun, mode: ReturnType<typeof viewFigure>['mode'])
       ),
     )
   const limits = boundLimits(record.elbo.values)
+  // The k-hat goes under the axis, not in the title: a long title would meet the legend.
   const k = record.paretoK === undefined ? '' : `   Pareto k̂ ${short(record.paretoK)} (${khatReading(record.paretoK)})`
   const last = record.elbo.values.at(-1)
   return {
     layers,
     options: {
-      title: `${record.method === 'pathfinder' ? 'ELBO of the best normal' : 'ELBO'}${last === undefined ? '' : `   ${short(last)}`}${record.status === 'running' ? '   running' : ''}${k}`,
-      x: { label: record.method === 'pathfinder' ? 'L-BFGS iteration' : 'step' },
+      title: `${record.method === 'pathfinder' ? 'ELBO of the best normal' : 'ELBO'}${last === undefined ? '' : `   ${short(last)}`}${record.status === 'running' ? '   running' : ''}`,
+      x: { label: `${record.method === 'pathfinder' ? 'L-BFGS iteration' : 'step'}${k}` },
       y: { label: 'evidence lower bound', ...(limits === undefined ? {} : { limits }) },
     },
   }
@@ -138,17 +139,22 @@ function elboPanel(record: ElboRun, mode: ReturnType<typeof viewFigure>['mode'])
 
 function gradientPanels(record: ElboRun, mode: ReturnType<typeof viewFigure>['mode']): Record<string, Panel> {
   const out: Record<string, Panel> = {}
-  const add = (id: string, s: RunSeries, name: string, colour: string, label: string): void => {
+  const add = (id: string, s: RunSeries, name: string, colour: string, label: string, last: boolean): void => {
     const log = wantsLog(s.values)
     out[id] = {
       layers: [lines([{ ...pairs(s), name, colour, width: 1.4 }], { mode })],
-      options: { title: name, y: { label, ...(log ? { scale: 'log' as const } : {}) } },
+      options: {
+        title: name,
+        y: { label, ...(log ? { scale: 'log' as const } : {}) },
+        ...(last ? { x: { label: 'step' } } : {}),
+      },
     }
   }
+  const both = (record.gradNorm?.steps.length ?? 0) > 0 && (record.gradVariance?.steps.length ?? 0) > 0
   if (record.gradNorm !== undefined && record.gradNorm.steps.length > 0)
-    add('q0', record.gradNorm, 'gradient norm', 'tab1', 'norm')
+    add('q0', record.gradNorm, 'gradient norm', 'tab1', 'norm', !both)
   if (record.gradVariance !== undefined && record.gradVariance.steps.length > 0)
-    add(`q${Object.keys(out).length}`, record.gradVariance, 'gradient variance', 'tab2', 'total variance')
+    add(`q${Object.keys(out).length}`, record.gradVariance, 'gradient variance', 'tab2', 'total variance', true)
   return out
 }
 
@@ -159,16 +165,17 @@ function parameterPanels(record: ElboRun, mode: ReturnType<typeof viewFigure>['m
     ['q', 'other parameters', record.parameters.filter((p) => p.role === 'other')],
   ]
   const out: Record<string, Panel> = {}
-  for (const [, title, ps] of groups) {
-    if (ps.length === 0) continue
-    out[`q${Object.keys(out).length}`] = {
+  const present = groups.filter(([, , ps]) => ps.length > 0)
+  for (const [k, [, title, ps]] of present.entries()) {
+    out[`q${k}`] = {
       layers: [
         lines(
           ps.map((p, i) => ({ ...pairs(p), name: p.name, colour: `tab${i % 10}`, width: 1.4 })),
           { mode },
         ),
       ],
-      options: { title, x: { label: 'step' } },
+      // Only the last panel is labelled: the label of a upper one would sit on the title of the next.
+      options: { title, ...(k === present.length - 1 ? { x: { label: 'step' } } : {}) },
     }
   }
   return out
@@ -262,7 +269,7 @@ function posteriorPanels(
  * @param options - The chart, mode, figure and the most quantities drawn.
  * @returns The ECharts option.
  * @throws OmaiError `value` when the record has no data for the chart (see {@link hasElboChart}).
- * @index function ELBO, gradient, guide parameters, beliefs and the final posterior over the truth of a variational run: `elboRunView(elboRunFromTape({ run }))`.
+ * @index function ELBO, gradient, guide parameters and beliefs of a variational run: `elboRunView(record)`.
  * @example
  * ```ts
  * import { expositionSamples } from 'omai-engine/exposition'

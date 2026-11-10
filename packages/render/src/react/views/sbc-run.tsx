@@ -20,12 +20,15 @@ type Which = 'ecdf' | 'ranks' | 'table'
  *
  * @param props - The record and the frame settings.
  * @returns The figure with its choice.
- * @index function React component: ECDF-difference and rank plots with exact bands and the verdict table of a calibration run.
+ * @index function React component: ECDF-difference and rank plots with exact bands, verdict table.
  */
 export function SbcRunView(props: RecordViewProps<SbcRun>): ReactElement {
   const { record } = props
   const [which, setWhich] = useState<Which>('ecdf')
-  const defaults = useMemo(() => ({ aspect: record.quantities.length > 3 ? 1.5 : 1.8 }), [record])
+  const defaults = useMemo(
+    () => ({ aspect: record.quantities.length > 3 ? 1.5 : record.quantities.length > 1 ? 1.15 : 1.8 }),
+    [record],
+  )
   const figure = useViewFigure(props.figure, defaults)
   const build = useCallback(
     (fig: Figure) => (which === 'ranks' ? sbcRankView(record, { figure: fig }) : sbcEcdfView(record, { figure: fig })),

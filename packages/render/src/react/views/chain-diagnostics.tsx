@@ -85,7 +85,7 @@ export function chainChartsOf(record: ChainDiagnostics): string[] {
  *
  * @param props - The record and the frame settings.
  * @returns The figure with its choice.
- * @index function React component: trace, rank, ECDF, autocorrelation, ESS, energy and pair plots and the R-hat/ESS table of MCMC chains.
+ * @index function React component: trace, rank, ECDF, ACF, ESS, energy, pair plots and R-hat table of MCMC chains.
  */
 export function ChainDiagnosticsView(props: RecordViewProps<ChainDiagnostics>): ReactElement {
   const { record } = props
@@ -94,7 +94,18 @@ export function ChainDiagnosticsView(props: RecordViewProps<ChainDiagnostics>): 
   // A record that changes (a run in progress) may no longer have the chart that was open: fall back to the first.
   const which = available.includes(chosen) ? chosen : 'trace'
   const defaults = useMemo(
-    () => ({ aspect: which === 'pairs' ? 1 : record.quantities.length > 3 ? 1.5 : 1.8 }),
+    () => ({
+      aspect:
+        which === 'pairs'
+          ? 1
+          : which === 'energy'
+            ? 1.8
+            : record.quantities.length > 3
+              ? 1.5
+              : record.quantities.length > 1
+                ? 1.15
+                : 1.8,
+    }),
     [record, which],
   )
   const figure = useViewFigure(props.figure, defaults)

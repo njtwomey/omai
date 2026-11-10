@@ -6,14 +6,23 @@ Headless views of exposition records (`omai-engine/exposition`): for each kind o
 
 - table `registry.ts` (file): Open first: the standard view of each exposition record kind. `src/views/registry.ts:1` `omai-render/views`
 
+- function `autocorrelationView`: Autocorrelation plots of MCMC chains per quantity: `autocorrelationView(chainDiagnostics(draws))`. `src/views/chain-charts.ts:136` `omai-render/views`
 - function `componentsView`: Biplot, scree and loadings of PCA-like components: `componentsView(record)`. `src/views/components.ts:225` `omai-render/views`
 - function `decisionSurfaceView`: A classifier's decision surface with its rows: `decisionSurfaceView(record)`. `src/views/surfaces.ts:338` `omai-render/views`
+- function `ecdfView`: ECDF-difference plots of MCMC chains with the simultaneous band: `ecdfView(chainDiagnostics(draws))`. `src/views/chain-charts.ts:80` `omai-render/views`
+- function `elboRunView`: ELBO, gradient, guide parameters and beliefs of a variational run: `elboRunView(record)`. `src/views/elbo-run.ts:281` `omai-render/views`
+- function `energyView`: Energy and energy-transition distributions with E-BFMI per chain: `energyView(chainDiagnostics(draws, { energy }))`. `src/views/chain-charts.ts:262` `omai-render/views`
+- function `essView`: Effective sample size by quantile or as the draws accumulate: `essView(chainDiagnostics(draws, { essCurves }))`. `src/views/chain-charts.ts:198` `omai-render/views`
 - function `modelRunScene`: A model run at a step: beliefs in the plate diagram's nodes, messages on its edges. `src/views/model-run.ts:206` `omai-render/views`
-- function `rankView`: Rank plots of MCMC chains per quantity: `rankView(chainDiagnostics(draws))`. `src/views/chain-diagnostics.ts:132` `omai-render/views`
+- function `pairView`: Pair plot of a few quantities with the divergent transitions marked: `pairView(chainDiagnostics(draws, { divergent }))`. `src/views/chain-charts.ts:316` `omai-render/views`
+- function `posteriorComparisonView`: Methods' posteriors over the oracle's as densities, ECDFs or ECDF differences: `posteriorComparisonView(posteriorComparison(methods, { truth }))`. `src/views/posterior-comparison.ts:99` `omai-render/views`
+- function `rankView`: Rank plots of MCMC chains per quantity: `rankView(chainDiagnostics(draws))`. `src/views/chain-diagnostics.ts:131` `omai-render/views`
 - function `regularisationPathView`: Coefficients against the penalty, lasso style: `regularisationPathView(path)`. `src/views/paths.ts:175` `omai-render/views`
-- function `stillOf`: The chart option or scene that explains a record: `stillOf(record)`. `src/views/registry.ts:689` `omai-render/views`
-- function `traceView`: Trace plots of MCMC chains per quantity with divergences marked: `traceView(chainDiagnostics(draws))`. `src/views/chain-diagnostics.ts:76` `omai-render/views`
+- function `sbcEcdfView`: ECDF-difference plots with the simultaneous band of a simulation-based calibration run: `sbcEcdfView(sbcRun(sbc(...)))`. `src/views/sbc-run.ts:125` `omai-render/views`
+- function `sbcRankView`: Rank histograms with the binomial band of a simulation-based calibration run: `sbcRankView(sbcRun(sbc(...)))`. `src/views/sbc-run.ts:66` `omai-render/views`
+- function `stillOf`: The chart option or scene that explains a record: `stillOf(record)`. `src/views/registry.ts:716` `omai-render/views`
+- function `traceView`: Trace plots of MCMC chains per quantity with divergences marked: `traceView(chainDiagnostics(draws))`. `src/views/chain-diagnostics.ts:64` `omai-render/views`
 - function `treeScene`: A decision tree as a scene of cards: `treeScene(record)`. `src/views/trees.ts:85` `omai-render/views`
-- function `viewFor`: The standard view of a record kind: `viewFor('regularisationPath')`. `src/views/registry.ts:663` `omai-render/views`
+- function `viewFor`: The standard view of a record kind: `viewFor('regularisationPath')`. `src/views/registry.ts:690` `omai-render/views`
 
-- structure `StandardView`: A record kind's view: component name, title, whether it plays, and its still. `src/views/registry.ts:73` `omai-render/views`
+- structure `StandardView`: A record kind's view: component name, title, whether it plays, and its still. `src/views/registry.ts:76` `omai-render/views`

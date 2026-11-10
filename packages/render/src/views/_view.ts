@@ -118,6 +118,7 @@ export function ariaOf(description: string): {
  *
  * @param n - The number of panels.
  * @param cols - The columns.
+ * @param hspace - The vertical gap between rows in pixels (default 40; more where each panel carries an x label).
  * @returns The grid.
  * @example
  * ```ts
@@ -125,10 +126,10 @@ export function ariaOf(description: string): {
  * panelGrid(5, 2).cells.map((c) => c.id) // => ['q0', 'q1', 'q2', 'q3', 'q4']
  * ```
  */
-export function panelGrid(n: number, cols: number): GridSpec {
+export function panelGrid(n: number, cols: number, hspace = 40): GridSpec {
   const rows = Math.ceil(n / cols)
   return gridSpec(rows, cols, {
-    hspace: 40,
+    hspace,
     wspace: 52,
     cells: Array.from({ length: n }, (_, i) => ({ id: `q${i}`, row: Math.floor(i / cols), col: i % cols })),
   })
