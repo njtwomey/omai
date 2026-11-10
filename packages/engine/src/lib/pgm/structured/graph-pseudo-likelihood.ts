@@ -11,6 +11,7 @@ import { analyticObjective, type SmoothProblem } from '../../optim/index.ts'
 import type { Value } from '../../tensor/index.ts'
 import { checkGraphInput, graphLabelIndices, type Visit, visitClique, visitEdge, visitNode } from './_graph-features.ts'
 import type { GraphCrf, GraphInput, GraphLabelling } from './graph-crf.ts'
+import { addStructuredPenalty } from './objective.ts'
 import type { StructuredExample, StructuredPenalty } from './oracle.ts'
 
 /** What the pseudo-likelihood objective is trained on. */
@@ -85,20 +86,6 @@ function negativeLogPseudoLikelihood(
   return { value, gradient }
 }
 
-function penalise(
-  w: ArrayLike<number>,
-  r: { value: number; gradient: Float64Array },
-  penalty: StructuredPenalty,
-): void {
-  const c2 = penalty.c2 ?? 0
-  const c1 = penalty.c1 ?? 0
-  for (let i = 0; i < w.length; i++) {
-    const wi = w[i] ?? 0
-    r.value += c2 * wi * wi + c1 * Math.abs(wi)
-    r.gradient[i] = (r.gradient[i] ?? 0) + 2 * c2 * wi + c1 * Math.sign(wi)
-  }
-}
-
 /**
  * The negative log pseudo-likelihood (Besag 1975) of labelled graphs and its gradient, plus the penalties of
  * `StructuredPenalty` (`c2 ||w||^2 + c1 ||w||_1`):
@@ -131,7 +118,7 @@ export function graphPseudoLikelihood(
   penalty: StructuredPenalty = {},
 ): { readonly value: number; readonly gradient: Float64Array } {
   const r = negativeLogPseudoLikelihood(model, data, w)
-  penalise(w, r, penalty)
+  r.value = addStructuredPenalty(w, r.value, r.gradient, penalty)
   return r
 }
 
@@ -164,7 +151,7 @@ export function graphPseudoLikelihoodProblem(problem: GraphPseudoLikelihoodProbl
         r.gradient[i] = g * scale
       })
     }
-    penalise(w, r, penalty)
+    r.value = addStructuredPenalty(w, r.value, r.gradient, penalty)
     return r
   }
   const objectiveOf = (batch?: readonly number[]): ((x: Value) => Value) =>

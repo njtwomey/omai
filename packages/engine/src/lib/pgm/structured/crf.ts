@@ -16,6 +16,7 @@ import { type BeliefPropagationOptions, beliefPropagation } from '../inference/b
 import { type ChainModel, forwardBackward, viterbi } from '../inference/chain.ts'
 import { calibrate, junctionTreeQuery } from '../inference/junction-tree.ts'
 import { type FactorGraph, factorGraph } from '../models/factor-graph.ts'
+import { addStructuredPenalty } from './objective.ts'
 
 /**
  * The observation of one item of a sequence: attribute names with values (1 for an indicator, as CRFsuite). Feature
@@ -388,18 +389,6 @@ export function withCrfParameters(crf: LinearChainCrf, parameters: ArrayLike<num
   return { ...crf, stateWeights: p.slice(0, n), transitionWeights: p.slice(n, n + m), bigramWeights: p.slice(n + m) }
 }
 
-function penalise(w: Float64Array, value: number, gradient: Float64Array, penalty: CrfPenalty): number {
-  const c2 = penalty.c2 ?? 0
-  const c1 = penalty.c1 ?? 0
-  let v = value
-  for (let i = 0; i < w.length; i++) {
-    const wi = w[i] ?? 0
-    v += c2 * wi * wi + c1 * Math.abs(wi)
-    gradient[i] = (gradient[i] ?? 0) + 2 * c2 * wi + c1 * Math.sign(wi)
-  }
-  return v
-}
-
 /**
  * The training objective of a linear-chain CRF and its gradient: the negative conditional log-likelihood of the data
  * plus the penalties, -sum log p(y | x) + c2 ||w||^2 + c1 ||w||_1 (CRFsuite's L-BFGS objective), whose gradient is the
@@ -470,7 +459,7 @@ export function crfObjective(
     }
     value -= score - fb.logLikelihood
   }
-  return { value: penalise(crfParameters(crf), value, gradient, penalty), gradient }
+  return { value: addStructuredPenalty(crfParameters(crf), value, gradient, penalty), gradient }
 }
 
 /**
@@ -838,7 +827,7 @@ export function generalCrfObjective(
     }
     value -= score - logZ
   }
-  return { value: penalise(crf.weights, value, gradient, options), gradient }
+  return { value: addStructuredPenalty(crf.weights, value, gradient, options), gradient }
 }
 
 /**
