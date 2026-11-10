@@ -238,3 +238,25 @@ describe('the method convention', () => {
     expect(m.check?.(analyseSpec(noLatent))).toMatchObject({ applies: false, missing: ['continuous latents'] })
   })
 })
+
+describe('mass matrix variants', () => {
+  it('hmc learns a dense and a low-rank mass matrix of the correlated posterior, and the draws match the closed form', {
+    timeout: 30_000,
+  }, () => {
+    for (const config of [{ dense: true }, { dense: true, lowRank: 1 }, { dense: false }]) {
+      const m = hmcMethod(MODELS['mvn'] as never)
+      const s = session(m, {
+        config: { numChains: 2, numWarmup: 300, numDraws: 500, numSteps: 6, ...config },
+        steps: 20000,
+        mode: 'eager',
+        seed: 7,
+      })
+      const x = Array.from(m.posterior?.(s.state, s.config).draws?.['x']?.data ?? [])
+      const n = x.length / 2
+      const mean0 = Array.from({ length: n }, (_, i) => x[2 * i] ?? 0).reduce((a, b) => a + b, 0) / n
+      expect(Math.abs(mean0 - (mvnTruth.mean[0] as number)), JSON.stringify(config)).toBeLessThan(0.15)
+      const parameters = m.posterior?.(s.state, s.config).diagnostics['parameters'] as { inverseMassMatrix: number[] }[]
+      expect(parameters[0]?.inverseMassMatrix.length).toBe(config.dense ? 4 : 2)
+    }
+  })
+})

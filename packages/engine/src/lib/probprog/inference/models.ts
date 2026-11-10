@@ -15,6 +15,7 @@ import type { BindOptions, BoundModel, DataInput } from '../model/bind.ts'
 import type { ModelDefinition } from '../model/definition.ts'
 import type { MethodModel } from './_support.ts'
 import { abcRejectionMethod, abcSmcMethod } from './abc-methods.ts'
+import { cheesMethod } from './chees-method.ts'
 import { emMethod } from './em-method.ts'
 import { aiesMethod, ensembleSliceMethod } from './ensemble-methods.ts'
 import { chainMethod, conjugateMethod, enumerationMethod, gaussianMethod } from './exact-methods.ts'
@@ -129,6 +130,7 @@ export const methodKinds: Readonly<Record<string, MethodMaker>> = {
   sghmc: sghmcMethod,
   mclmc: mclmcMethod,
   aies: aiesMethod,
+  chees: cheesMethod,
   'parallel-tempering': temperingMethod,
   'ensemble-slice': ensembleSliceMethod,
   svi: sviMethod,

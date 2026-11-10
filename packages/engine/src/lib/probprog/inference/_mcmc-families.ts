@@ -20,7 +20,7 @@ import {
   windowAdaptationAlgorithm,
   windowAdaptationResult,
 } from '../../sampling/index.ts'
-import { bool, type DictSpace, dict, real } from '../../space/index.ts'
+import { bool, type DictSpace, dict, int, real } from '../../space/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
 import type { Config } from '../../trace/index.ts'
 import { stateFromJson, stateToJson } from '../../trace/index.ts'
@@ -44,7 +44,17 @@ export function massDiagonal(p: HamiltonianParameters, dim: number): Float64Arra
 export function windowKnobs(targetAcceptance: number, dense: boolean): DictSpace {
   return dict({
     targetAcceptance: real(0.05, 0.99, { default: targetAcceptance, label: 'target acceptance' }),
-    ...(dense ? { dense: bool({ default: false, label: 'dense mass matrix' }) } : {}),
+    ...(dense
+      ? {
+          dense: bool({ default: false, label: 'dense mass matrix' }),
+          lowRank: int(0, 256, {
+            default: 0,
+            label: 'low-rank directions',
+            description:
+              'with a dense mass matrix, keep this many directions of the learned correlation and the diagonal for the rest (0: all)',
+          }),
+        }
+      : {}),
   })
 }
 
@@ -52,7 +62,12 @@ export function windowKnobs(targetAcceptance: number, dense: boolean): DictSpace
 export function windowWarmer(
   dim: number,
   kernelFor: (p: HamiltonianParameters) => MCMCKernel,
-  options: { readonly numWarmup: number; readonly dense: boolean; readonly targetAcceptance: number },
+  options: {
+    readonly numWarmup: number
+    readonly dense: boolean
+    readonly targetAcceptance: number
+    readonly lowRank?: number
+  },
 ): Warmer<HamiltonianParameters> {
   // Stepping and serialising a warm-up state do not depend on the starting position, so one algorithm serves every chain.
   const shared = windowAdaptationAlgorithm(dim, kernelFor, new Float64Array(dim), options)
@@ -102,7 +117,12 @@ export function windowPlan(
     walkers: 1,
     kernel: kernelFor,
     tuned0: { stepSize: 1, inverseMassMatrix: massMatrixInit(dim, { dense }).inverseMassMatrix },
-    warm: windowWarmer(dim, kernelFor, { numWarmup: num(c, 'numWarmup'), dense, targetAcceptance }),
+    warm: windowWarmer(dim, kernelFor, {
+      numWarmup: num(c, 'numWarmup'),
+      dense,
+      targetAcceptance,
+      ...(c['lowRank'] === undefined ? {} : { lowRank: num(c, 'lowRank') }),
+    }),
     tunedToJson: (t) => stateToJson(t),
     tunedFromJson: (j) => stateFromJson(j) as HamiltonianParameters,
     tunedSummary: (t) => ({ stepSize: t.stepSize, inverseMassMatrix: Array.from(t.inverseMassMatrix) }) as Json,
