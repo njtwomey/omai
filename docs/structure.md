@@ -31,7 +31,11 @@ Version 1 is kept at `docs/history/structure-v1.md`.
    Hyperband and population-based training are samplers and schedulers in that system.
 8. **An inference planner.** `probprog` analyses a model and chooses an engine (exact, conjugate, Kalman,
    forward-backward, EM, Gibbs, NUTS, SVI, SMC, ABC) and explains why. Gaussian mixtures, HMMs, topic models, factor
-   analysis and Bayesian regressions are programs solved by these engines rather than separate implementations.
+   analysis and Bayesian regressions are programs solved by these engines rather than separate implementations. The
+   planner is unchanged, but it is not the only way in (decision of 2026-11-10, `docs/probprog/PLAN.md`): a model can be
+   written once as a spec (`probprog/model`), and every engine, and message passing (`message-passing`, EP, VMP and BP),
+   is also an inference method of its own with its own knobs, tape and anytime snapshots, which the user chooses. There is
+   no universal `infer` over methods and no automatic decomposition.
 9. **Linear models unified** on one penalised GLM core; GAMs deepened (the mgcv basis set, derivatives and curvature of
    smooths with simultaneous intervals, concurvity, basis-dimension checks).
 10. **Reinforcement learning broadened** to the main families (value-based, policy-gradient, actor-critic, model-based,
@@ -63,7 +67,7 @@ Version 1 is kept at `docs/history/structure-v1.md`.
 | Calibration                                              | `lib/learn/calibration.ts`; calibration metrics in `lib/metrics/probabilistic.ts`.                                                                                                                                                                                                                                                    |
 | GIF and MP4 of animations                                | `render/animation/` (timelines from traces, GIF, MP4/WebM, animated SVG).                                                                                                                                                                                                                                                             |
 | Statistical tests with good wrappers                     | `lib/stats/tests/`: every test returns the same `TestResult`; added two-sample, independence, equivalence, Bayesian and sequential tests.                                                                                                                                                                                             |
-| Probabilistic programming that chooses its own inference | `lib/probprog/analysis.ts`, `lib/probprog/infer.ts` (the planner) and `lib/probprog/engines/`.                                                                                                                                                                                                                                        |
+| Probabilistic programming that chooses its own inference | `lib/probprog/analysis.ts`, `lib/probprog/infer.ts` (the planner) and `lib/probprog/engines/`; also, chosen by the user, `lib/probprog/model/` (specs), `lib/probprog/inference/` (a method per engine), `lib/message-passing/` (EP, VMP, BP).                                                                                        |
 | Gradients in traces; a contract for what is traced       | `lib/trace/schema.ts`, `lib/trace/policy.ts`, `lib/trace/taps.ts`; tensor events carry a role (param, grad, state, activation).                                                                                                                                                                                                       |
 | Bayesian optimisation; one parameter-selection mechanism | `lib/tune/` for every kind of objective; BO, TPE, BOHB and PBT in `methods/tuning/` as samplers.                                                                                                                                                                                                                                      |
 | Cross-validation variants and a single split             | `lib/learn/model-selection/splitters.ts` (holdout, train/validation/test, stratified, group, stratified group, time-series windows, purged and embargoed, spatial).                                                                                                                                                                   |
@@ -418,21 +422,21 @@ fetched on demand; heavy work runs in a Web Worker through `omai-meta/worker`.
 
 Everything in the library is written against these contracts. A reader who knows these thirteen ideas can read any file.
 
-|   # | contract                                                        | defined in                                        | spoken by                                                                                     |
-| --: | --------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-|   1 | `Tensor`, `Value`, primitives with derivative rules             | `lib/tensor`, `lib/autodiff`                      | everything numeric                                                                            |
-|   2 | `Key`, `Context`, named key derivation                          | `lib/random`, `lib/context`                       | everything random                                                                             |
-|   3 | `Algorithm`, `TraceSchema`, `TracePolicy`, trace events         | `lib/trace`                                       | every iterative method                                                                        |
-|   4 | `Space`                                                         | `lib/space`                                       | hyperparameters, dataset knobs, action and observation spaces, search spaces, figure controls |
-|   5 | `Distribution`, `ConditionalDistribution`, `Bijector`           | `lib/dists`                                       | priors, likelihoods, every predictive output                                                  |
-|   6 | `Model` (probabilistic program), `InferenceEngine`, `Posterior` | `lib/probprog`                                    | every probabilistic model and how it is solved                                                |
-|   7 | `Estimator`, `Fitted`                                           | `lib/learn`                                       | every learner: linear, kernel, tree, neural, Bayesian                                         |
-|   8 | data schemas, `DatasetGenerator`, `Truth`                       | `lib/data`                                        | datasets, estimators, splitters, metrics                                                      |
-|   9 | `MetricSpec`, `MetricResult`, `TestResult`, `Estimate`          | `lib/base/results.ts`, `lib/metrics`, `lib/stats` | every metric and every statistical test                                                       |
-|  10 | `StudyObjective`, `Study`, `Trial`, `StudySampler`              | `lib/tune`                                        | every selection problem                                                                       |
-|  11 | `Env`, `Agent`                                                  | `lib/rl`                                          | every sequential decision problem                                                             |
-|  12 | `SearchProblem`                                                 | `lib/search`                                      | paths, planning, constraint satisfaction, games, pattern and rule search, ILP                 |
-|  13 | `Scene`, `Structure`, `describe()`                              | `lib/scene`                                       | every picture and every graph-shaped thing                                                    |
+|   # | contract                                                                                                          | defined in                                        | spoken by                                                                                     |
+| --: | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+|   1 | `Tensor`, `Value`, primitives with derivative rules                                                               | `lib/tensor`, `lib/autodiff`                      | everything numeric                                                                            |
+|   2 | `Key`, `Context`, named key derivation                                                                            | `lib/random`, `lib/context`                       | everything random                                                                             |
+|   3 | `Algorithm`, `TraceSchema`, `TracePolicy`, trace events                                                           | `lib/trace`                                       | every iterative method                                                                        |
+|   4 | `Space`                                                                                                           | `lib/space`                                       | hyperparameters, dataset knobs, action and observation spaces, search spaces, figure controls |
+|   5 | `Distribution`, `ConditionalDistribution`, `Bijector`                                                             | `lib/dists`                                       | priors, likelihoods, every predictive output                                                  |
+|   6 | `Model` (probabilistic program), `InferenceEngine`, `Posterior`; `ModelSpec`, `InferenceMethod`, `FactorOperator` | `lib/probprog`, `lib/message-passing`             | every probabilistic model and how it is solved                                                |
+|   7 | `Estimator`, `Fitted`                                                                                             | `lib/learn`                                       | every learner: linear, kernel, tree, neural, Bayesian                                         |
+|   8 | data schemas, `DatasetGenerator`, `Truth`                                                                         | `lib/data`                                        | datasets, estimators, splitters, metrics                                                      |
+|   9 | `MetricSpec`, `MetricResult`, `TestResult`, `Estimate`                                                            | `lib/base/results.ts`, `lib/metrics`, `lib/stats` | every metric and every statistical test                                                       |
+|  10 | `StudyObjective`, `Study`, `Trial`, `StudySampler`                                                                | `lib/tune`                                        | every selection problem                                                                       |
+|  11 | `Env`, `Agent`                                                                                                    | `lib/rl`                                          | every sequential decision problem                                                             |
+|  12 | `SearchProblem`                                                                                                   | `lib/search`                                      | paths, planning, constraint satisfaction, games, pattern and rule search, ILP                 |
+|  13 | `Scene`, `Structure`, `describe()`                                                                                | `lib/scene`                                       | every picture and every graph-shaped thing                                                    |
 
 ### 3.1 Values and derivatives
 
@@ -494,6 +498,13 @@ records the reason, and returns a `Posterior` (exact distributions, a variationa
 all queried the same way). Named models (Gaussian mixtures, HMMs, LDA, factor analysis, Bayesian regressions, IRT,
 TrueSkill) are programs; their fast algorithms (EM, forward-backward, collapsed Gibbs, expectation propagation) are
 engines. A new model is a new program; a new algorithm is a new engine. Neither edits the other.
+
+A model can also be a value: `defineModel` builds a JSON-able `ModelSpec` (named dimensions, data, latent, observed and
+derived nodes over a closed operator registry), `bind` gives it data, and the bound spec is compiled to a program
+(`toProgram`) or to a message-passing factor graph (`toFactorGraph`), analysed without running and drawn in plate notation
+with ids that name the same nodes in posteriors and on tapes. Each algorithm is then offered as an `InferenceMethod` with a
+`Space` of knobs, a typed tape contract, a capability check that says why it does not apply, a user-selected budget and
+anytime snapshots (`runAnytime`); the planner above is one way to choose, and the user choosing is the other (section 4.32).
 
 ### 3.7 Estimators
 
@@ -560,71 +571,72 @@ A reader trains a classifier and sees every contract in turn:
 7. Every function used has a docstring example, checked by the build and shown live in the docs app.
 ## 4. omai-engine core, `packages/engine/src/lib/`
 
-The core has 59 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
+The core has 60 domains, roughly from the most basic to the most composite; a domain imports the domains it needs, and
 the import graph between them has no cycles (section 2). Each domain's own summary is the doc comment of its
 `index.ts`.
 
-| domain           | purpose                                                                                                                                                                                                                                                                                                                       |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `base`           | errors, JSON, shared result shapes, scalar helpers, version                                                                                                                                                                                                                                                                   |
-| `scene`          | drawings (`Scene`), 3-D layers, rasters and graph-shaped descriptions (`Structure`) as data                                                                                                                                                                                                                                   |
-| `tensor`         | arrays, dtypes, shapes, primitives with derivative rules, backends, operations, pytrees                                                                                                                                                                                                                                       |
-| `random`         | immutable counter-based keys and samplers                                                                                                                                                                                                                                                                                     |
-| `symbolic`       | symbolic expressions: simplification, differentiation, series, integration, LaTeX                                                                                                                                                                                                                                             |
-| `exposition`     | typed exposition records that methods return and render draws (paths, trees, stages, steps, trials, episodes)                                                                                                                                                                                                                 |
-| `autodiff`       | reverse, forward and Taylor-mode differentiation, vectorisation, gradient checks                                                                                                                                                                                                                                              |
-| `trace`          | algorithms, trace schemas and policies, events, recording, replay                                                                                                                                                                                                                                                             |
-| `space`          | typed spaces for parameters, knobs, observations and actions                                                                                                                                                                                                                                                                  |
-| `context`        | seeds, named keys, tracer and policy defaults                                                                                                                                                                                                                                                                                 |
-| `numerics`       | special functions, linear algebra, sparse, polynomials, quadrature, roots, interpolation, Fourier, convolution, geometry, nearest neighbours, approximation, inverse problems                                                                                                                                                 |
-| `data`           | dataset schemas, generators and truth, loading, batching, splits, modifiers                                                                                                                                                                                                                                                   |
-| `foundations`    | mathematical foundations: trigonometry, vectors, rotations, curves, surfaces, calculus, series, linear algebra with steps, number theory, combinatorics, complex numbers, elementary probability                                                                                                                              |
-| `graph`          | graphs and graph algorithms, graph signal processing                                                                                                                                                                                                                                                                          |
-| `dists`          | distributions, bijectors, exponential families, GLM families, copulas                                                                                                                                                                                                                                                         |
-| `information`    | entropy, divergences, mutual information estimators, source and channel coding, compression                                                                                                                                                                                                                                   |
-| `systems`        | linear time-invariant systems: representations, responses, stability, discretisation                                                                                                                                                                                                                                          |
-| `worlds`         | discrete worlds: grid and graph maps, mazes and generators, terrain and rules, agents moving discretely or continuously                                                                                                                                                                                                       |
-| `stats`          | descriptive statistics, tests, resampling, density estimation, smoothing bases                                                                                                                                                                                                                                                |
-| `optim`          | optimisers, minimisation, programming, sparse approximation, transport, implicit differentiation                                                                                                                                                                                                                              |
-| `kernels`        | kernel functions, compositions and explicit feature maps                                                                                                                                                                                                                                                                      |
-| `distances`      | named distances and similarities between points, each with its parameters as a space, evaluated by name between rows or all pairs                                                                                                                                                                                             |
-| `signal`         | signal and image processing, spectral and time-frequency analysis, audio features                                                                                                                                                                                                                                             |
-| `text`           | normalisation, tokenisation, subwords, shingles, vectorisers, similarity, parsing, fingerprinting                                                                                                                                                                                                                             |
-| `search`         | state-space search, local and evolutionary search, adversarial search, constraint satisfaction, planning, refinement search                                                                                                                                                                                                   |
-| `stochastic`     | stochastic processes and stochastic calculus, SDE solvers, point processes, DPPs, random measures                                                                                                                                                                                                                             |
-| `sampling`       | Monte Carlo samplers and diagnostics                                                                                                                                                                                                                                                                                          |
-| `graphics`       | rendering mathematics: ray casting over worlds, ray tracing, cameras, shading, textures, rasterisation                                                                                                                                                                                                                        |
-| `logic`          | terms, unification, resolution, Datalog, SAT, first-order proving, ILP                                                                                                                                                                                                                                                        |
-| `dynamics`       | ODE and PDE solvers, nonlinear dynamics, control, filtering, system identification                                                                                                                                                                                                                                            |
-| `pgm`            | graphical models, their inference and learning, causal graphs                                                                                                                                                                                                                                                                 |
-| `metrics`        | evaluation metrics in sixteen categories, with intervals and comparisons                                                                                                                                                                                                                                                      |
-| `losses`         | differentiable training objectives and regularisers                                                                                                                                                                                                                                                                           |
-| `rl`             | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation                                                                                                                                                                                                                                  |
-| `games`          | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms                                                                                                                                                                                                                                  |
-| `probprog`       | probabilistic programs, model analysis, inference engines and the planner, posteriors                                                                                                                                                                                                                                         |
-| `learn`          | estimator protocol, preprocessing, composition, model selection, calibration, conformal, active learning, privacy                                                                                                                                                                                                             |
-| `nn`             | neural networks: functional layers, modules, blocks, description, training, decoding                                                                                                                                                                                                                                          |
-| `tune`           | studies, objectives, samplers, pruners, multi-fidelity schedules                                                                                                                                                                                                                                                              |
-| `datasets`       | dataset generators with exact truths, vendored real datasets, themed dataset collections                                                                                                                                                                                                                                      |
-| `explain`        | attributions (Shapley, LIME, gradients), surrogates, counterfactuals, inspection, data valuation, explanation quality                                                                                                                                                                                                         |
-| `fairness`       | group, individual and intersectional fairness, bias in data, mitigation, trade-off frontiers                                                                                                                                                                                                                                  |
-| `vision`         | classical computer vision: colour, histograms, contours, features and matching, multi-view geometry, calibration, stereo, tracking, denoising, segmentation, detection                                                                                                                                                        |
-| `timeseries`     | ARMA and ARIMA theory, estimators and forecasts, exponential smoothing, decomposition, the matrix profile, online detectors, vector autoregression, volatility and reconciliation                                                                                                                                             |
-| `svm`            | support vector classification and regression (C and nu forms, one-versus-one, Platt probabilities) and novelty detection (one-class, SVDD) as stepped estimators over the SMO duals                                                                                                                                           |
-| `gp`             | Gaussian-process regression and classification (Laplace, EP), sparse approximations, the relevance vector machine, as stepped estimators                                                                                                                                                                                      |
-| `trees`          | decision trees: the tree structure, split criteria, the stepped grower, pruning, ID3, C4.5 and CHAID, the Hoeffding tree, CART estimators                                                                                                                                                                                     |
-| `ensembles`      | bagging, random forests and extra trees, AdaBoost, gradient and histogram boosting, the cyclic booster of explainable boosting, voting and stacking, the balanced ensembles                                                                                                                                                   |
-| `kernel-methods` | kernel ridge regression with exact leave-one-out, online kernel recursive least squares (ALD, coherence, sliding window) and NORMA                                                                                                                                                                                            |
-| `gam`            | generalised additive models: smooth, tensor-product and parametric terms on the penalised bases of `stats/smoothing`, penalised IRLS with REML, GCV and UBRE smoothing selection, backfitting, effective degrees of freedom                                                                                                   |
-| `covariance`     | covariance and precision estimation: shrunk, Ledoit-Wolf and OAS estimators, shrinkage to other targets with a traced path, nonlinear shrinkage, Marchenko-Pastur denoising and detoning, nearest correlation matrix, selection by held-out likelihood, FastMCD, the graphical lasso                                          |
-| `anomaly`        | outlier detection: isolation forest and its extended variant, local and connectivity-based outlier factors, k-nearest-neighbour distances, score normalisation and combination, threshold rules                                                                                                                               |
-| `sketches`       | probabilistic data structures for streams: Bloom, counting Bloom and cuckoo filters, HyperLogLog, Count-Min and Count sketches, Misra-Gries and Space-Saving, MinHash and LSH, reservoir samplers, GK, t-digest and KLL quantile sketches, the skip list                                                                      |
-| `survival`       | survival analysis of right-censored data: Kaplan-Meier and Nelson-Aalen, weighted log-rank tests, Cox proportional hazards with Breslow and Efron ties, accelerated-failure-time models, concordance, censoring-weighted Brier scores and time-dependent AUC                                                                  |
-| `causal`         | causal inference from data: treatment-effect estimators (regression adjustment, propensity scores, matching, entropy balancing, AIPW, TMLE, double machine learning), quasi-experimental designs, heterogeneous effects and uplift, sensitivity analysis                                                                      |
-| `embedding`      | embeddings learned from data: word2vec (skip-gram, CBOW, negative sampling, hierarchical softmax), fastText subwords, GloVe, PPMI with SVD, knowledge-graph embeddings (TransE, DistMult, ComplEx, RotatE) with filtered ranking, and analogy and similarity evaluation, each loss a smooth problem with the optimiser a slot |
-| `patterns`       | pattern mining: Apriori, FP-growth and Eclat (identical itemsets and counts), closed and maximal itemsets, association rules with their measures, PrefixSpan and GSP with gap constraints, subgroup discovery by quality function with beam, exhaustive, CN2-SD and Apriori-SD search                                         |
-| `rules`          | rule learning on the `learn` contract: CN2 (ordered and unordered), PRISM, RIPPER and IREP, OneR and decision tables, CORELS-style certifiably optimal and Bayesian rule lists, the rule, coverage and quality-measure representation, rules from tree paths                                                                  |
-| `fields`         | neural fields: a signal as a network of its coordinates (image, signed distance, radiance), fitted with the optimiser a slot; coordinate encodings and SIREN are in `nn`                                                                                                                                                      |
+| domain            | purpose                                                                                                                                                                                                                                                                                                                       |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `base`            | errors, JSON, shared result shapes, scalar helpers, version                                                                                                                                                                                                                                                                   |
+| `scene`           | drawings (`Scene`), 3-D layers, rasters and graph-shaped descriptions (`Structure`) as data                                                                                                                                                                                                                                   |
+| `tensor`          | arrays, dtypes, shapes, primitives with derivative rules, backends, operations, pytrees                                                                                                                                                                                                                                       |
+| `random`          | immutable counter-based keys and samplers                                                                                                                                                                                                                                                                                     |
+| `symbolic`        | symbolic expressions: simplification, differentiation, series, integration, LaTeX                                                                                                                                                                                                                                             |
+| `exposition`      | typed exposition records that methods return and render draws (paths, trees, stages, steps, trials, episodes)                                                                                                                                                                                                                 |
+| `autodiff`        | reverse, forward and Taylor-mode differentiation, vectorisation, gradient checks                                                                                                                                                                                                                                              |
+| `trace`           | algorithms, trace schemas and policies, events, recording, replay                                                                                                                                                                                                                                                             |
+| `space`           | typed spaces for parameters, knobs, observations and actions                                                                                                                                                                                                                                                                  |
+| `context`         | seeds, named keys, tracer and policy defaults                                                                                                                                                                                                                                                                                 |
+| `numerics`        | special functions, linear algebra, sparse, polynomials, quadrature, roots, interpolation, Fourier, convolution, geometry, nearest neighbours, approximation, inverse problems                                                                                                                                                 |
+| `data`            | dataset schemas, generators and truth, loading, batching, splits, modifiers                                                                                                                                                                                                                                                   |
+| `foundations`     | mathematical foundations: trigonometry, vectors, rotations, curves, surfaces, calculus, series, linear algebra with steps, number theory, combinatorics, complex numbers, elementary probability                                                                                                                              |
+| `graph`           | graphs and graph algorithms, graph signal processing                                                                                                                                                                                                                                                                          |
+| `dists`           | distributions, bijectors, exponential families, GLM families, copulas                                                                                                                                                                                                                                                         |
+| `information`     | entropy, divergences, mutual information estimators, source and channel coding, compression                                                                                                                                                                                                                                   |
+| `systems`         | linear time-invariant systems: representations, responses, stability, discretisation                                                                                                                                                                                                                                          |
+| `worlds`          | discrete worlds: grid and graph maps, mazes and generators, terrain and rules, agents moving discretely or continuously                                                                                                                                                                                                       |
+| `stats`           | descriptive statistics, tests, resampling, density estimation, smoothing bases                                                                                                                                                                                                                                                |
+| `optim`           | optimisers, minimisation, programming, sparse approximation, transport, implicit differentiation                                                                                                                                                                                                                              |
+| `kernels`         | kernel functions, compositions and explicit feature maps                                                                                                                                                                                                                                                                      |
+| `distances`       | named distances and similarities between points, each with its parameters as a space, evaluated by name between rows or all pairs                                                                                                                                                                                             |
+| `signal`          | signal and image processing, spectral and time-frequency analysis, audio features                                                                                                                                                                                                                                             |
+| `text`            | normalisation, tokenisation, subwords, shingles, vectorisers, similarity, parsing, fingerprinting                                                                                                                                                                                                                             |
+| `search`          | state-space search, local and evolutionary search, adversarial search, constraint satisfaction, planning, refinement search                                                                                                                                                                                                   |
+| `stochastic`      | stochastic processes and stochastic calculus, SDE solvers, point processes, DPPs, random measures                                                                                                                                                                                                                             |
+| `sampling`        | Monte Carlo samplers and diagnostics                                                                                                                                                                                                                                                                                          |
+| `graphics`        | rendering mathematics: ray casting over worlds, ray tracing, cameras, shading, textures, rasterisation                                                                                                                                                                                                                        |
+| `logic`           | terms, unification, resolution, Datalog, SAT, first-order proving, ILP                                                                                                                                                                                                                                                        |
+| `dynamics`        | ODE and PDE solvers, nonlinear dynamics, control, filtering, system identification                                                                                                                                                                                                                                            |
+| `pgm`             | graphical models, their inference and learning, causal graphs                                                                                                                                                                                                                                                                 |
+| `metrics`         | evaluation metrics in sixteen categories, with intervals and comparisons                                                                                                                                                                                                                                                      |
+| `losses`          | differentiable training objectives and regularisers                                                                                                                                                                                                                                                                           |
+| `rl`              | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation                                                                                                                                                                                                                                  |
+| `games`           | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms                                                                                                                                                                                                                                  |
+| `message-passing` | message passing on factor graphs of exponential families: EP, VMP and BP as settings of one engine, 35 factor operators, variations (power, alpha, numerical, stochastic, regions, expectation consistent, AMP), anytime runs                                                                                                 |
+| `probprog`        | probabilistic programs and model specs, model analysis and structure reports, inference engines and the planner, a method per engine, validation and benchmark models, posteriors                                                                                                                                             |
+| `learn`           | estimator protocol, preprocessing, composition, model selection, calibration, conformal, active learning, privacy                                                                                                                                                                                                             |
+| `nn`              | neural networks: functional layers, modules, blocks, description, training, decoding                                                                                                                                                                                                                                          |
+| `tune`            | studies, objectives, samplers, pruners, multi-fidelity schedules                                                                                                                                                                                                                                                              |
+| `datasets`        | dataset generators with exact truths, vendored real datasets, themed dataset collections                                                                                                                                                                                                                                      |
+| `explain`         | attributions (Shapley, LIME, gradients), surrogates, counterfactuals, inspection, data valuation, explanation quality                                                                                                                                                                                                         |
+| `fairness`        | group, individual and intersectional fairness, bias in data, mitigation, trade-off frontiers                                                                                                                                                                                                                                  |
+| `vision`          | classical computer vision: colour, histograms, contours, features and matching, multi-view geometry, calibration, stereo, tracking, denoising, segmentation, detection                                                                                                                                                        |
+| `timeseries`      | ARMA and ARIMA theory, estimators and forecasts, exponential smoothing, decomposition, the matrix profile, online detectors, vector autoregression, volatility and reconciliation                                                                                                                                             |
+| `svm`             | support vector classification and regression (C and nu forms, one-versus-one, Platt probabilities) and novelty detection (one-class, SVDD) as stepped estimators over the SMO duals                                                                                                                                           |
+| `gp`              | Gaussian-process regression and classification (Laplace, EP), sparse approximations, the relevance vector machine, as stepped estimators                                                                                                                                                                                      |
+| `trees`           | decision trees: the tree structure, split criteria, the stepped grower, pruning, ID3, C4.5 and CHAID, the Hoeffding tree, CART estimators                                                                                                                                                                                     |
+| `ensembles`       | bagging, random forests and extra trees, AdaBoost, gradient and histogram boosting, the cyclic booster of explainable boosting, voting and stacking, the balanced ensembles                                                                                                                                                   |
+| `kernel-methods`  | kernel ridge regression with exact leave-one-out, online kernel recursive least squares (ALD, coherence, sliding window) and NORMA                                                                                                                                                                                            |
+| `gam`             | generalised additive models: smooth, tensor-product and parametric terms on the penalised bases of `stats/smoothing`, penalised IRLS with REML, GCV and UBRE smoothing selection, backfitting, effective degrees of freedom                                                                                                   |
+| `covariance`      | covariance and precision estimation: shrunk, Ledoit-Wolf and OAS estimators, shrinkage to other targets with a traced path, nonlinear shrinkage, Marchenko-Pastur denoising and detoning, nearest correlation matrix, selection by held-out likelihood, FastMCD, the graphical lasso                                          |
+| `anomaly`         | outlier detection: isolation forest and its extended variant, local and connectivity-based outlier factors, k-nearest-neighbour distances, score normalisation and combination, threshold rules                                                                                                                               |
+| `sketches`        | probabilistic data structures for streams: Bloom, counting Bloom and cuckoo filters, HyperLogLog, Count-Min and Count sketches, Misra-Gries and Space-Saving, MinHash and LSH, reservoir samplers, GK, t-digest and KLL quantile sketches, the skip list                                                                      |
+| `survival`        | survival analysis of right-censored data: Kaplan-Meier and Nelson-Aalen, weighted log-rank tests, Cox proportional hazards with Breslow and Efron ties, accelerated-failure-time models, concordance, censoring-weighted Brier scores and time-dependent AUC                                                                  |
+| `causal`          | causal inference from data: treatment-effect estimators (regression adjustment, propensity scores, matching, entropy balancing, AIPW, TMLE, double machine learning), quasi-experimental designs, heterogeneous effects and uplift, sensitivity analysis                                                                      |
+| `embedding`       | embeddings learned from data: word2vec (skip-gram, CBOW, negative sampling, hierarchical softmax), fastText subwords, GloVe, PPMI with SVD, knowledge-graph embeddings (TransE, DistMult, ComplEx, RotatE) with filtered ranking, and analogy and similarity evaluation, each loss a smooth problem with the optimiser a slot |
+| `patterns`        | pattern mining: Apriori, FP-growth and Eclat (identical itemsets and counts), closed and maximal itemsets, association rules with their measures, PrefixSpan and GSP with gap constraints, subgroup discovery by quality function with beam, exhaustive, CN2-SD and Apriori-SD search                                         |
+| `rules`           | rule learning on the `learn` contract: CN2 (ordered and unordered), PRISM, RIPPER and IREP, OneR and decision tables, CORELS-style certifiably optimal and Bayesian rule lists, the rule, coverage and quality-measure representation, rules from tree paths                                                                  |
+| `fields`          | neural fields: a signal as a network of its coordinates (image, signed distance, radiance), fitted with the optimiser a slot; coordinate encodings and SIREN are in `nn`                                                                                                                                                      |
 
 ### 4.1 `base/`
 
@@ -674,7 +686,9 @@ It uses `base` (errors, `clamp`, `maxOf`) and nothing else, so every other domai
   distance), `layer3d`, `projectLayers` (what renderers call before drawing).
 - `structure.ts`: `Structure` (typed nodes with role, label, value badges and ports; typed edges between ports; groups
   such as plates, repeated blocks and clusters; annotations), `structure` builder, `mergeStructures`, `subStructure`,
-  `isStructure`.
+  `isStructure`. A node may list more groups it sits in beside `group` (`StructureNode.groups`) and a group may be the
+  overlap of others (`StructureGroup.intersection`), for plates that cross (nodes over `[student]`, `[exam]` and
+  `[student, exam]`); a frame's highlighted edges may carry a `label` (a message's content).
 - `timeline.ts`: `Timeline` (frames keyed by step: scene or structure states with highlights), the data behind every
   animation and export; `timeline`, `sceneTimeline`, `isTimeline`.
 - `paint.ts`: `palettes` (the light and dark token colours, tab10 for the categorical tokens), `parsePaint`.
@@ -1822,10 +1836,12 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `transform.ts`: `GradientTransformation`, `applyUpdates`, `chain`, `scaleByLearningRate`, `clipByGlobalNorm`,
   `clipByValue`, `addDecayedWeights`, `masked`, `multiTransform` (different optimisers per parameter group),
   `globalNorm`, `identity`, `setToZero`, `scale`, `scaleByTrustRatio`, and the scalings `traceMomentum` (dampening),
-  `scaleByAdam`, `scaleByRms` (centred), `scaleByAdagrad`.
+  `scaleByAdam`, `scaleByRms` (centred), `scaleByAdagrad`, `scaleByAdvi` (ADVI's scaling, Kucukelbir et al. 2017: RMSprop's
+  scaling started at the first squared gradient, with tau in the denominator).
 - `first-order.ts`: `sgd` (momentum, dampening, Nesterov), `adagrad` (lr decay), `rmsprop` (centred), `adadelta`,
-  `rprop`, `asgd` (averaged iterate), `signSgd` (signSGD and signum), `ema`, `scaleBySign`, `scaleByAdadelta`; torch.optim
-  and optax trajectories.
+  `rprop`, `asgd` (averaged iterate), `signSgd` (signSGD and signum), `ema`, `scaleBySign`, `scaleByAdadelta`, and `advi`
+  (`scaleByAdvi` with the learning rate; with `adviDecay` the whole step-size sequence of Stan's ADVI); torch.optim and
+  optax trajectories.
 - `sparse-updates.ts`: optimisers for sparse gradients (embeddings and very wide linear models): `sparseAdam` and
   `lazyAdagrad` (moments updated only on the active set, element-wise or row-wise; `activeMask`), `sgdCumulativeL1`
   (Tsuruoka et al.) and `truncatedGradient` with `truncate` (Langford et al.), `ftrlProximal` and `ftrlSupport`
@@ -1842,12 +1858,13 @@ that records the objective, gradient norm, step size and (by policy) the iterate
 - `schedules.ts`: constant (`constantSchedule`, `constantFactor`), step (`stepDecay`, `multiStepDecay`), exponential,
   inverse-time, cosine (`cosineDecay`, `cosineWarmRestarts`, `sgdr`), warmup (`warmupCosineDecay`,
   `warmupExponentialDecay`, `warmupConstant`, `linearSchedule`), one-cycle, piecewise (`piecewiseConstant`,
-  `piecewiseInterpolate`, `joinSchedules`), polynomial, cyclical, `reduceOnPlateau`; torch.optim.lr_scheduler and optax.
+  `piecewiseInterpolate`, `joinSchedules`), polynomial, cyclical, `adviDecay` (ADVI's k^(-1/2 + epsilon)),
+  `reduceOnPlateau`; torch.optim.lr_scheduler and optax.
 - `schedule-table.ts`: `schedules`, the schedules as an option table (constant, step, exponential, inverse-time,
-  cosine, restarts, linear, polynomial, warm-ups), each taking the optimiser's learning rate as its peak, with
+  cosine, restarts, linear, polynomial, warm-ups, `advi`), each taking the optimiser's learning rate as its peak, with
   properties (warm-up, decays, restarts) for validity rules.
 - `optimiser-table.ts`: `optimisers`, the optimisers as an option table (SGD with momentum and Nesterov, RMSprop,
-  Adagrad, Adadelta, Adam, AdamW, AMSGrad, Adamax, NAdam, RAdam, Lion), each a shape that takes a learning rate or a
+  Adagrad, Adadelta, Adam, AdamW, AMSGrad, Adamax, NAdam, RAdam, Lion, ADVI), each a shape that takes a learning rate or a
   schedule, with its own knobs and properties (adaptive, momentum, decoupled decay).
 - `stochastic.ts`: `gradientAlgorithm`, a transformation-driven descent over an objective that may be summed over a
   batch (`BatchObjective`, `Batches`): the optimiser at a scheduled rate, a batch of `batch` examples drawn without
@@ -2505,6 +2522,18 @@ gradients, infinite step sizes) end in rejections or divergences, never hangs.
   one step is one rung of the ladder; `aisContract` paths `ais/beta`, `ais/ess`, `ais/log-weight`, `ais/log-z`,
   `ais/particles`).
 - `ais-options.ts`: `annealingLadders`, the option table of temperature ladders (power, linear, log-spaced).
+- `pmcmc.ts`: `pseudoMarginalMetropolis` (Andrieu and Roberts 2009), a random-walk Metropolis chain on parameters whose
+  likelihood is an unbiased noisy estimate (a particle filter, an importance sampler, a simulator): the estimate at the
+  current point is kept with the state and never redrawn, so the chain's marginal is exactly the posterior. The kernel under
+  particle marginal Metropolis-Hastings (`dynamics/filtering/pmcmc.ts`).
+- `nested.ts`: static nested sampling (Skilling 2006) as `nestedAlgorithm` (one live-point replacement per step, by slice or
+  random-walk chains from another live point; `nestedContract`, `nestedPosterior`, `nestedEvidence` with an error bar from the
+  information gained, `nestedLogZDraws`) and `nestedSampler`.
+- `evidence.ts`: estimators of the marginal likelihood from samples, each with its own error estimate: `bridgeSampling`
+  (Meng and Wong 1996; Gronau et al. 2017; `bridgeSamplingFromRatios`, `gaussianProposal`, `fitGaussian`),
+  `thermodynamicIntegration` and `steppingStone` (Xie et al. 2011) over a ladder of power posteriors such as the particles
+  of tempered SMC, and `harmonicMeanEvidence`, which is there only to be refused (infinite variance for the usual models).
+  Importance sampling's evidence is `logEvidence` of `importance.ts`.
 - `rejection.ts`: `rejectionSample` (with envelope-violation counts), `adaptiveRejectionSample` (Gilks and Wild, tangent
   hull and chord squeeze), `ratioOfUniforms` (Kinderman and Monahan), each a run of its steppable Algorithm
   (`rejectionAlgorithm`, `adaptiveRejectionAlgorithm`, `ratioOfUniformsAlgorithm`: one step is one proposal; the state
@@ -2780,6 +2809,15 @@ by the adjoint method in `ode/adjoint.ts`. Neural ODEs and PINNs in `methods/sci
 - `filtering/particle-options.ts`: `resamplers` (multinomial, systematic, stratified, residual) and `particleProposals`
   (bootstrap with its ESS threshold, auxiliary) as option tables, and `gaussianParticleModel`, the particle form of a
   Gaussian nonlinear model so one model feeds both the Kalman and the particle filters.
+- `filtering/guided.ts`: guided proposals for the particle filters: `ParticleModel.guide` (a `ParticleGuide` draws from a
+  proposal that sees the observation and returns the log ratio of the transition to the proposal density, so the evidence
+  estimate stays unbiased) and `gaussianGuidedModel`, the locally optimal Gaussian proposal of a Gaussian state-space model
+  (exact for a linear observation, an extended-Kalman step otherwise).
+- `filtering/pmcmc.ts`: particle MCMC for state-space models with unknown parameters (Andrieu, Doucet and Holenstein 2010):
+  `StateSpaceFamily` (a prior over the parameters and a particle model per value of them), `particleLogLikelihood`,
+  `pmmhKernel` (particle marginal Metropolis-Hastings on `sampling`'s pseudo-marginal kernel), `conditionalSmc` (a conditional
+  SMC sweep with ancestor sampling, Lindsten, Jordan and Schon 2014), `completeDataLogDensity` and `particleGibbs`. The
+  methods are in `probprog/inference/pmcmc-methods.ts`.
 - `filtering/changepoint.ts`: Bayesian online changepoint detection as a steppable algorithm (`bocpdAlgorithm`: the
   state is plain numbers per run-length hypothesis, so it serialises and resumes; it logs the paths of `bocpdContract`
   `bocpd/change-probability`, `map-run-length`, `map-probability`, `log-predictive`, `log-evidence`, `predictive-mean`,
@@ -3389,21 +3427,47 @@ scikit-learn (`GaussianMixture`, `FactorAnalysis`) for EM, ArviZ for PSIS-LOO an
 posteriors (conjugate, Gaussian, grids, brute force) within a few Monte Carlo standard errors for the stochastic
 engines. Shared golden programs: `oracle/cases/probprog/_models.py` and `src/testing/probprog.ts`.
 
-A model is a function of its data that calls the primitives below inside an effect-handler context. `analyse` traces it
-once and describes it; every engine says whether it applies and at what cost; `infer` picks one, records the reason,
-runs it as a traced algorithm and returns a `Posterior`. Adding an engine is adding a file to `engines/` (inlined into
-`omai-engine/probprog`). The handler stack (`_stack.ts`) is internal bookkeeping like the transform depth of
-`autodiff`: pushed and popped by try/finally around one call, empty whenever no program runs.
+A model is a function of its data that calls the primitives below inside an effect-handler context, or a `ModelSpec`
+written once with the builder of `model/` (a JSON-able graph of nodes with named dimensions) and compiled to such a
+function by `toProgram`, so every engine, handler, guide and criticism function runs a spec unchanged. `analyse` traces
+a program once and describes it; every engine says whether it applies and at what cost; `infer` picks one, records the
+reason, runs it as a traced algorithm and returns a `Posterior`. That planner (`plan`, `explainPlan`, `infer`) is
+unchanged and is one way in, not the only one: there is no universal entry point and no automatic decomposition. Every
+engine (and the algorithms beside them) is also an inference method of its own in `inference/`, with its own knobs, typed
+tape, capability check, budget and anytime snapshots, which the user chooses; message passing (EP, VMP, BP) lives in its
+own domain, `message-passing/` (4.32a), and runs on a spec through `model/factors.ts`. Adding an engine is adding a file
+to `engines/` (inlined into `omai-engine/probprog`); the folders `model/`, `inference/`, `models/` and `validation/` are
+namespaces (`omai-engine/probprog/model`, `/inference`, `/models`, `/validation`, with `/model/dists`). The handler stack
+(`_stack.ts`) is internal bookkeeping like the transform depth of `autodiff`: pushed and popped by try/finally around one
+call, empty whenever no program runs.
+
+The sections below follow the folder: the program layer (primitives to criticism, the engines, the ELBOs and guides), then
+the model layer, the inference methods, validation and the benchmark models.
 - `primitives.ts`: `sample` (observed with `obs`, sample shapes, inference hints), `observe`, `deterministic`, `param`
   (with a support), `plate` (dimensions allocated as NumPyro, subsampling with scaling, param slicing), `factor`,
   `markov` (sequential dependence, with a history), the `Model` type, and the extension points `Message`, `Messenger`,
   `message`, `send` and `withMessenger`.
 - `handlers.ts`: `trace` (and `traceOf`), `seed`, `condition`, `substitute`, `replay`, `block`, `scale`, `mask`,
   `doIntervention`, `enumerate` (mark discrete sites for exact summation), `uncondition` (for predictives) and `handle`
-  (custom handlers); the recorded site types.
+  (custom handlers); `scope` (prefix the site names of a sub-model so one program is used several times), `mean`
+  (plug in means), `inferConfig` and `inferHint` (annotate sites with the method and block a plan the user writes should
+  use; the hint changes nothing by itself); the recorded site types. Pyro's `escape` and `equalize` are not built.
+- `reparam.ts`: NumPyro's `reparam` handler and the reparameterisers `locScale` (non-centring, the cure for Neal's funnel
+  and hierarchical models), `transformReparam` (sample the base of a transformed distribution) and `circular`; the
+  program has the same distribution and a sampler sees a different density.
+- `collapse.ts`: `collapse`, delayed sampling as a handler: a latent site whose observed children are conjugate to it (the
+  pairs of `CONJUGATES`) is integrated out, the collapsed program has the marginal likelihood of the children, and
+  `recover` draws the removed sites from their closed-form posteriors given the rest.
+- `lift.ts`: `lift`, `param` sites given priors become latent sample sites, so a point-estimate program is Bayesian.
+- `trace-ops.ts`: Gen's generative-function interface as pure functions over a program's trace: `assess`, `generate`,
+  `propose`, `regenerate` (resample selected sites, with the weight Metropolis-Hastings needs), `update`, with the site
+  selections `SiteSelection`, `inSelection`, `latentSites` and `latentValues`; what a user needs to write a sampler of
+  their own (`defineKernel` in `inference/`).
 - `density.ts`: `initialParamsAlgorithm` (`findInitialParams` stepped, a try per step, `init/` paths), `logJoint` (enumerated sites summed out by plated sum-product contraction, `_contract.ts`, with
   dimension recycling in markov loops), `traceLogJoint`, `siteLogProbs`, `potentialEnergy` (to an unconstrained
-  `LogDensity` with Jacobian corrections, supports re-evaluated per run, discrete sites summed out), `latentLayout`,
+  `LogDensity` with Jacobian corrections, supports re-evaluated per run, discrete sites summed out; a point where the
+  program builds a distribution that refuses its parameter, such as an overflowing scale, has log density -Infinity
+  instead of throwing out of the sampler, option `invalidIsImpossible`), `latentLayout`,
   initialisation strategies (`initToSample`, `initToMedian`, `initToMean`, `initToUniform`, `initToFeasible`,
   `initToValue`, `findInitialParams`), constrain and unconstrain maps (`constrainSites`, `unconstrainSites`,
   `constrainDraws`, `packLatents`).
@@ -3433,14 +3497,27 @@ runs it as a traced algorithm and returns a `Posterior`. Adding an engine is add
   Bernoulli and categorical probabilities, Poisson and exponential rates: mixtures, HMMs), L-BFGS M-steps otherwise
   (mixtures of experts), SQUAREM acceleration.
 - `engines/gibbs.ts`: Gibbs sampling with discrete conditionals (enumeration), conjugate conditionals given the rest,
-  mixture components group by group, slice steps otherwise, and collapsed Dirichlet and beta sites (topic models).
+  mixture components group by group, slice steps otherwise, and collapsed Dirichlet and beta sites (topic models). A site
+  constrained beyond its family's support (`ordered`, a bound on a normal) is updated by a slice step on its own scale
+  and starts inside its support, since a closed-form conditional would leave it.
 - `engines/nuts.ts`: NUTS and HMC on the unconstrained density (`mcmc`), with enumerated discrete sites summed out and
   recovered by `inferDiscrete`; `mcmcAlgorithm` (the driver: a starting point per chain, one step that samples all chains, a
   step per draw to recover enumerated sites; `mcmc/` paths; `mcmcPosterior` reads the state) and `inferDiscreteAlgorithm`
   (a site per step); `engines/mcmc-options.ts`: `mcmcKernels`, `initStrategies`.
 - `engines/svi.ts`: stochastic variational inference (`sviAlgorithm`, `svi`): automatic or custom guides, any ELBO
   estimator, optimisers on unconstrained parameters, subsampling over plates.
-- `engines/laplace.ts`: Laplace approximation at the MAP estimate (`laplaceFit`), with the Laplace evidence.
+- `engines/svi-natural.ts`: natural-gradient SVI (Hoffman et al. 2013): `conjugateNaturalGradientAlgorithm` (minibatch
+  updates in natural parameters for programs whose latents are conjugate priors of their observations, from `dists`'
+  conjugate pairs and `exponentialFamily`; batch CAVI at rate one, `naturalRate`) and `gaussianNaturalGradientAlgorithm`
+  (any model with a mean-field or full-rank Gaussian guide, steps in the mean parameters: `naturalStepDiagonal`,
+  `naturalStepFullRank`).
+- `engines/pathfinder.ts`: Pathfinder (Zhang et al. 2022) as `pathfinderAlgorithm` (one L-BFGS iteration of every path per
+  step; the best-ELBO normal, several paths as a mixture, importance draws with Pareto-smoothed weights and the k-hat) and
+  `pathfinderPosterior`.
+- `engines/laplace.ts`: Laplace approximation at the MAP estimate (`laplaceFit`), with the Laplace evidence;
+  `laplaceAt` is its curvature stage (the Hessian at a point an optimiser reached), and a mode that is not a point of
+  the posterior (a scale run off to the boundary, an ill-conditioned or non-finite curvature) is reported with the
+  coordinates that ran off.
 - `engines/smc.ts`: sequential Monte Carlo: a bootstrap particle filter for programs with `markov` structure, and
   adaptive tempering for static programs, with evidence estimates.
 - `engines/importance.ts`: likelihood weighting and importance sampling with a guide, marginal-likelihood estimates,
@@ -3451,10 +3528,31 @@ runs it as a traced algorithm and returns a `Posterior`. Adding an engine is add
   budget), `infer(model, data, { engine: 'auto' | name | engine, budget })` with fallback when an engine fails,
   `explainPlan`, `withDiagnostics`.
 - `guides.ts`: automatic guides (`autoDelta`, `autoNormal`, `autoMultivariateNormal`, `autoLowRankMultivariateNormal`,
-  `autoLaplace`, and the normalising-flow guide `autoIafNormal`), `guideSites`.
+  `autoLaplace`, and the normalising-flow guide `autoIafNormal`), `guideSites`. A vector support over a plated scalar
+  site (ordered means) is the site's event, so the guides draw it outside the plate.
+- `guides-structured.ts`: `autoStructured`, a Gaussian over the flat unconstrained latent vector that follows the model's
+  graph (blocks with full or diagonal covariance, each block's mean a learned linear function of its parents, its Markov
+  blanket or every earlier block; `guideStructure`, `structuredInitialParams`): between mean field and full rank.
+- `guides-init.ts`: `laplaceInitialParams`, the starting parameters of an automatic guide set from a Laplace fit.
+- `guides-amortised.ts`: `amortisedGuide`, the encoder of a variational autoencoder for the local latents of a plate (the
+  library's `mlp` maps each data point's features to its latent's location and scale), mean-field normals for the global
+  sites, and `amortisationGap`.
+- `guides-flow.ts`: `autoFlowNormal`, planar, radial and RealNVP coupling flows over the flat latent vector.
+- `guides-mixture.ts`: `autoMixtureNormal`, a mixture-of-Gaussians guide whose component is a discrete guide site
+  (`auto_component`), enumerated by `traceEnumElbo`, for posteriors with several modes.
 - `elbo.ts`: ELBO estimators (`traceElbo`: reparameterised with score-function terms and baselines;
   `traceMeanFieldElbo`: analytic KL; `renyiElbo`; `importanceWeightedElbo`), `particle`, `elboAt` (fixed draws),
   `renyiBound`.
+- `elbo-graph.ts`: `traceGraphElbo`, the Rao-Blackwellised score-function ELBO (Pyro's `TraceGraph_ELBO`): a
+  non-reparameterised guide site is credited only with the cost of the sites that depend on it (`dependencyGraph`, costs
+  kept per plate element), with a baseline (moving average, leave-one-out, or learned by recursive least squares).
+- `elbo-enum.ts`: `traceEnumElbo` (Pyro's `TraceEnum_ELBO`): discrete model sites the guide does not draw are summed out
+  by plated contraction inside every particle, finite discrete guide sites are enumerated and weighted, so their
+  parameters get exact gradients.
+- `elbo-extra.ts`: `stlElbo` (sticking the landing) and `dregElbo` (the doubly reparameterised importance-weighted
+  gradient), which change how the gradient is formed and not what the bound is.
+- `elbo-diagnostics.ts`: `gradientMoments`, the mean and per-coordinate variance of an estimator's gradient over repeated
+  draws, its signal-to-noise ratio (a method puts `svi/gradVariance` on its tape with it).
 - `posterior.ts`: `Posterior` (exact distributions, variational approximations, point estimates, equally weighted or
   weighted draws behind one interface: `marginal(site)`, `sample`, `mean`, `variance`, `quantiles`, `logProb` where
   available, `summary` with ESS and R-hat for chains), `definePosterior`, `samplePosterior`, `weightedPosterior`,
@@ -3465,8 +3563,239 @@ runs it as a traced algorithm and returns a `Posterior`. Adding an engine is add
   (`compareModels`) and stacking and pseudo-BMA weights.
 
 TODO: Gaussian belief propagation for programs with correlated (multivariate normal) sites, which use exact
-conditioning meanwhile; EM with discrete and Gaussian E-steps together (mixtures of factor analysers); Pyro as a second
-oracle once the oracle environment has it.
+conditioning meanwhile; EM with discrete and Gaussian E-steps together (mixtures of factor analysers); a compiled
+evaluation plan for specs was measured and not built (`docs/probprog/results/eval-overhead.md`: the interpretive path
+costs 1.25 to 1.45 times what a plan on the same tensor ops could, and nothing at 5000 rows).
+
+Pyro is in the `oracle-prob` group (`pyro-ppl`); the goldens of `reparam`, `lift` and the validation helpers are NumPyro,
+Pyro and scipy fixtures, and Pathfinder's moments are a BlackJAX fixture (`oracle/cases/probprog/engines/pathfinder.py`).
+
+**The model layer (`model/`, `omai-engine/probprog/model`).** A model written once as a value: a builder produces a
+`ModelSpec`, the spec is bound to data, and everything else is a function of the bound spec. A spec holds no functions and
+no tensors (the escape is a `custom` expression naming a function the receiving side supplies), so it can be inspected,
+serialised, sent to a worker and analysed without running anything. The conventions every consumer relies on (node and
+dimension order, ids, site names, expressions, the hooks for factor graphs) are the opening comments of `spec.ts` and
+`ids.ts`.
+- `spec.ts`: `ModelSpec` (schema `omai.model/1`): nodes `data`, `latent`, `observed`, `derived`, `generated`, `factor`
+  and `param` in declaration order, `DimSpec`, `ExprSpec`, `DistSpec`, `ConstraintSpec`, missing-value policies;
+  `isSiteNode`, `exprRefs`, `nodeRefs`. A `scan` (recurrence) node and a `gate` node are reserved kinds with no compiler
+  yet; state-space models are programs with a `markov` loop meanwhile.
+- `builder.ts`, `var.ts`: `defineModel(name, (m) => ...)` with the verbs `range` (a named dimension), `data`, `latent`
+  (with a constraint), `observe`, `derived`, `generated`, `factor`, `param`, `custom` and `include` (a sub-model under a
+  prefix); `Var`, a checked expression handle with named dimensions (`X.matmul(w).add(b)`), and `ops`, the operators as
+  functions. Each verb checks names, references, dimensions and parameters as it is called.
+- `operators.ts`: `defaultOperators()`, the closed registry of 26 operators over named dimensions (`add`, `sub`, `mul`,
+  `div`, `pow`, `maximum`, `minimum`, `neg`, `exp`, `log`, `sqrt`, `square`, `abs`, `tanh`, `sigmoid`, `probit`,
+  `softplus`, `gt`, `lt`, `eq`, `where`, `clip`, `sum`, `mean`, `matmul`, `at`), each with a shape rule and an evaluation
+  on the library's tensor ops; elementwise operators align operands by dimension name. `NamedValue`, `alignTo`.
+- `dists/` (`builders.ts`, `families.ts`): the 22 distribution families as data (`normal`, `halfNormal`, `logNormal`,
+  `truncatedNormal`, `studentT`, `cauchy`, `halfCauchy`, `laplace`, `exponential`, `gamma`, `inverseGamma`, `weibull`,
+  `beta`, `uniform`, `bernoulli`, `binomial`, `geometric`, `negativeBinomial`, `poisson`, `categorical`, `dirichlet`,
+  `multivariateNormal`) as constructors taking numbers or `Var`s, and `distributionFamilies`, the table that maps each
+  name to the library's own constructor from `dists` (no second distribution).
+- `bind.ts`: `bind` (check the arrays against what the spec declares: required nodes, ranks, one size per dimension,
+  supports, integer codes in range) to a `BoundModel`, `withData` (rebind some nodes, `null` unbinds a response),
+  `bindDataset` (the columns of a library dataset), the `batch` option (a batch dimension compiles to a subsampled plate),
+  missing values (NaN in an observed node, handled by the node's policy), `boundToJSON` and `boundFromJSON`.
+- `compile.ts`: `toProgram`, the compiler to the existing `sample`/`observe` program (named dimensions become plates,
+  constraints the supports of `bijectorForSupport`, missing entries masked or imputed as latent sites); there is no
+  second evaluator, the log joint of a spec is `logJoint(toProgram(bound), ...)`.
+- `definition.ts`, `compose.ts`, `check.ts`: `ModelDefinition` (a spec with its custom functions and the methods `bind`,
+  `condition`, `do`, `toJSON`) and `fromJSON`; `conditionSpec`, `doSpec`, `substitute` as pure spec transformations;
+  `validateSpec` and `exprShape`.
+- `ids.ts`: the id convention in one place (`nodeId`, `factorId`, `plateId`, `elementId`, `auxId`, `siteOfId`): a node is
+  its name (a data node `data:<name>`), a factor `factor:<site>`, a plate `plate:<a>×<b>` in the spec's dimension order,
+  an element `<site>[<i>]`, an auxiliary of a factor graph `<site>#<k>[<i>]`. The same ids name nodes in posteriors,
+  tapes, factor graphs and drawings, so a view can paint live inference state on the picture.
+- `structure.ts`, `expr-text.ts`: `toStructure`, a spec (or a bound model, which adds the plate sizes) as the library's
+  `Structure` in plate notation (roles, nested named plates, distributions and expressions written beside the nodes), or
+  with `view: 'factor'` as the bipartite factor graph; `exprText`, `distText`.
+- `analysis.ts`: `analyseSpec`: nodes with kind, dimensions, family and parents, dependency edges, plates, conjugate
+  pairs (`SpecConjugate`, through direct references and `at` lookups, with the conditions that make a pair usable), a
+  conservative linear-Gaussian check, the nodes opaque to message passing (a `custom` call, a family with no
+  exponential-family form) and a feature list that a method's `check` reads; `explain()` prints the structure report.
+- `analysis-conjugacy.ts`, `analysis-linear-gaussian.ts`, `analysis-graph.ts`, `analysis-exprs.ts`,
+  `structure-report.ts`: the structure analysis, nothing run: `conjugacyRecords` (a latent used conjugately through
+  plates, `at` lookups, affine maps of a Gaussian, known multiples of a gamma rate, hierarchies with latent children and
+  the joint normal and inverse-gamma pair, each with its closed form, the conditions and whether each holds),
+  `linearGaussianBlocks` (maximal sets of Gaussian latents that are exactly marginalisable given the others),
+  `graphStructure` (Markov blankets, independent components, the discrete part with an elimination order from `pgm`
+  and its width, minibatch axes), and `buildStructureReport` / `explainReport`, plain suggestions that each name the
+  existing method or handler and the knob values (`collapse`, `nuts` with `inferDiscrete`, a batch bound with `bind`,
+  `reparam` with `locScale`). A report is advice for a person: the library never applies it or selects a method from it.
+- `collapse-plan.ts`: `collapsePlan` (which conjugate sites the `collapse` handler can integrate out, what each gains
+  and costs, and why not for the rest; read from the handler's own conditions) and `applyCollapse` (the collapsed
+  program, with `recover`); nothing chooses to collapse.
+- `from-program.ts`: `fromProgram`, a best-effort lift of a `sample`/`observe` program to a spec of its site structure
+  by tracing it at several random values; a parameter that moves with other sites becomes an opaque `custom` node, and
+  a program whose structure varies (a site on one branch only, a drawn plate size) is refused with the first difference.
+- `factors.ts`: `toFactorGraph`, a bound spec as a message-passing factor graph (below, 4.32a), with the reasons for what
+  cannot be mapped; `factorGraphPosterior` reads a run back as a `Posterior` keyed by site name; `graphOnSpec`,
+  `factorGraphVerdict`, `compileFactorGraph`, `operatorsWithout`.
+
+**Inference methods (`inference/`, `omai-engine/probprog/inference`).** The convention and the methods, with no entry point
+that picks one. `method.ts` is the convention: `defineInferenceMethod` makes a `Method` of the trace library (a `Space`
+of knobs, a typed contract of tape paths, an `Algorithm` whose step is small enough to cancel and whose state serialises
+so a run resumes, seeks and forks) with a `family`, a `description`, an optional `check` (`Verdict`: does the method
+apply to this model, and if not why and what is missing) and an optional `posterior(state)`; `anytimeKnobs` and
+`withAnytime` add the budget (`budgetMs`, `budgetSteps`) and snapshot (`snapshotEveryMs`, `snapshotEverySteps`) knobs, and
+`runAnytime` drives a session within the budget handing a snapshot to a callback about once a second. The library reads no
+clock: a time budget needs a `clock` injected by the caller, and only moves where slices end, never what a run computes.
+`model-input.ts` takes a bound spec or a program closed over its data (`programOf`, `analysisOf`).
+- One method per engine, each made from a spec or a program: `nutsMethod` (one iteration of every chain per step, warm-up
+  by `windowAdaptationAlgorithm`, enumerated discrete sites recovered), `sviMethod`, `gibbsMethod`, `laplaceMethod` (the
+  optimiser's iterations, then one step for the Hessian), `emMethod`, `importanceMethod` (batches), `temperedSmcMethod`,
+  `particleFilterMethod`, `abcSmcMethod` (`smc-methods.ts`, `abc-methods.ts`), and the one-step exact ones in
+  `exact-methods.ts` and `abc-methods.ts` (`conjugateMethod`, `gaussianMethod`, `enumerationMethod`, `chainMethod`,
+  `abcRejectionMethod`: one computation, honestly one step, via `one-step.ts`). The one-call engines and their planner
+  entries are unchanged.
+- `mp.ts`: message passing on specs: `epSpecMethod`, `vmpSpecMethod`, `bpSpecMethod` (the spec compiled once to a factor
+  graph; a step is a sweep, a factor or a message by `granularity`; the state is the messages; `check` names the node and
+  the reason when the model has no factor graph and whether the method has a rule for every operator of the graph).
+- Variational methods beside `sviMethod`: `svi-extra-methods.ts` (`traceGraphSviMethod`, `traceEnumSviMethod`,
+  `stickingTheLandingMethod`, `renyiSviMethod`), `svi-guide-methods.ts` (`structuredSviMethod`, `mixtureSviMethod`,
+  `amortisedSviMethod`), `svi-natural-method.ts` (`naturalGradientSviMethod`, `conjugateNaturalSviMethod`),
+  `pathfinder-method.ts` (`pathfinderMethod`), built on `_variational.ts` (guide table, common knobs, gradient-variance
+  estimates); each has its own `Space` and tape and takes a hand-written guide as well as the automatic ones.
+  `svi-kinds.ts`: `sviExtraKinds`.
+- Particle and evidence methods: `pmcmc-methods.ts` (`pmmhMethod` and `particleGibbsMethod` for a `StateSpaceFamily` with
+  its observations, not a spec), `state-space-methods.ts` (`stateSpaceFilterMethod`: a numeric state-space model with the
+  particle count, resampling scheme, ESS threshold and proposal (bootstrap, auxiliary, guided) as knobs, one observation
+  per step), `nested-method.ts` (`nestedMethod`, one live-point replacement per step) and `evidence-methods.ts`
+  (`steppingStoneMethod`, `thermodynamicIntegrationMethod`, `bridgeSamplingMethod`, `importanceEvidenceMethod`, and
+  `evidenceEstimators`, a lookup of what exists with the harmonic mean listed as refused and why).
+- `kernel.ts`: `defineKernel`, writing a sampler of your own in a few lines on the handlers and trace operations (a `step`
+  that moves a program's trace), run as a chain of draws or as an `MCMCKernel` of `sampling` (so `sampleChain`, the
+  diagnostics and the invariance tests apply); two worked kernels, `resimulationKernel` (lightweight Metropolis-Hastings)
+  and `randomWalkKernel`.
+- `models.ts`: how a model reaches a method run by name, for instance in a worker (a method's knobs are numbers, strings
+  and flags, never a spec): `modelRegistry` of named models (`ModelDefinition` with its data; `bind` rebinds a registered
+  model to JSON data, no spec is trusted from the wire), `methodKinds` (26 kinds: the 17 per-engine and exact methods
+  and the 9 of `sviExtraKinds`; the particle MCMC, nested, evidence and state-space methods take other inputs and are
+  not in it), `inferenceMethods` (a list for the producer's `methodRegistry`, one method per kind and model, named
+  `<kind>/<model>` such as `nuts/radon`), `inferenceMethodFor`. Nothing registers on import.
+
+**Validation (`validation/`, `omai-engine/probprog/validation`).** The kernel of the periodic heavy validation, pure
+library code with no clock and no file system.
+- `grid.ts`: `gridPosterior`, the unconstrained density of a program on a tensor-product grid around the Laplace mode,
+  widened and refined until the evidence stops changing: evidence, marginals, moments and CDFs for up to about four
+  latent coordinates. `exact.ts`: the conjugate models' closed-form posteriors and log evidence (`normalNormal`,
+  `betaBernoulli`, `gammaPoisson`, `dirichletCategorical`). `oracle.ts`: `MarginalOracle` (mean, sd, CDF, quantile
+  function of one quantity), `distributionOracle`, `weightedOracle`.
+- `agree.ts`: `agree`, any set of approximations against an oracle or each other, per quantity: the mean's error in
+  posterior sds and Monte Carlo standard errors, the sd ratio, the Kolmogorov distance, the first Wasserstein distance
+  and the KL divergence; `agreementWithin` and `agreementMarkdown` state and print what must agree.
+- `sbc.ts`: simulation-based calibration (`sbc`, rank histograms, a chi-square test and an ECDF-difference test with a
+  simulated null); `geweke.ts`: `gewekeTest` of a transition kernel's joint distribution.
+- `runner.ts`: `Campaign` (a named check with a budget that scales), `runCampaigns`, `campaignMarkdown`.
+  `campaigns.ts`: `validationCampaigns`: `sbc/nuts-conjugate`, `sbc/svi-normal-guide`, `sbc/nuts-hierarchical`, two
+  deliberately wrong guides that must fail calibration (`sbc/wrong-guide-delta`, `sbc/wrong-guide-narrow`),
+  `agreement/logistic-grid` (NUTS, Laplace and SVI against the grid), `funnel/non-centred` and `geweke/kernels`.
+- `scripts/probprog-validate.ts` (`make probprog-validate`, `ARGS="--only <prefix> --scale 2 --seed 1"` or `"--check"`) runs
+  the campaigns (these and those of `models/`, below) and writes one table per campaign and `README.md` to
+  `docs/probprog/results/`, each with the commit, date, seed, budgets and time. It is not part of `make verify` or
+  `make check`: re-run it when the probprog, sampling or message-passing code changes and commit the tables (`--check`
+  lists the stale ones).
+
+**Benchmark models (`models/`, `omai-engine/probprog/models`).** Models with truth, written as specs where the spec layer
+can say them. `benchmark.ts`: `BenchmarkModel` (a spec or program, title, description, tags, references, a seeded data
+generator, the truth as marginal oracles, and `MethodPlan`s: which method, knobs, budget, whether it must agree with the
+truth, is expected to differ or is only reported, and why), `defineBenchmark`, `benchmarkEntries`, `benchmarkMethods` (the
+inputs of `modelRegistry` and the producer's `methodRegistry`). `suite.ts`: `benchmarkModels` (18: beta-Bernoulli,
+normal-normal, gamma-Poisson; logistic, probit, Poisson and negative binomial regression; eight schools centred and
+non-centred; the Gaussian mixture with and without label switching; Neal's funnel centred and non-centred, Haario's
+banana and a two-mode target; the radon regression; a three-player TrueSkill; an AR(1) state space), `whereBenchmarks`,
+`benchmarkModel`; model files `conjugate.ts`, `glm.ts`, `schools.ts`, `mixture.ts`, `geometry.ts`, `hierarchical.ts`,
+`ranking.ts`, `state-space.ts` (a `markov` program, since the spec layer has no recurrence node yet), `ar1-parameters.ts`
+(the AR(1) coefficient as a `StateSpaceFamily` with the Kalman-grid truth for particle MCMC). `truth.ts`: truths from the
+validation oracles (`gridTruth`, `mixtureOracle`, `samplesOracle`). `plans.ts`: `nutsPlan`, `sviPlan`, `laplacePlan`,
+`importancePlan`, `temperedPlan`, `gibbsPlan`, `exactPlan`, `particleFilterPlan`, with budgets that scale.
+`agreement.ts`: `runPlan`, `benchmarkAgreement`.
+- Campaigns of the periodic validation: `campaigns.ts` (`benchmark/<model>`: each model's planned methods against its truth;
+  a campaign passes when every method that must agree does and every method expected to differ differs),
+  `evidence-campaigns.ts` (`evidence/conjugate`, `evidence/harmonic-mean`, `evidence/nested-gaussian`,
+  `evidence/particle-filter`, `evidence/pmcmc-ar1`), `svi-plans.ts` (`svi/<model>`: the variational methods beyond
+  `sviMethod` against the truths of banana, bimodal, gamma-Poisson, logistic regression and normal-normal) and
+  `structure-campaigns.ts` (`structure/benchmarks`: every model's structure report against written-down findings, and
+  `structure/collapse-efficiency`: NUTS on centred eight schools with and without the plan's collapsed site).
+- What the tables say (`docs/probprog/results/`): the benchmark plans run NUTS, tempered SMC, importance sampling, Laplace,
+  SVI, Gibbs, the exact methods and the particle filter; EP, VMP and BP are checked in the unit tests against the grid
+  and the `pgm`, `gp` and TrueSkill references, not in the benchmark campaigns. The classical failures are expected and
+  recorded as such (NUTS diverges in the centred funnel and centred eight schools, a Gaussian guide misses the banana
+  and the second mode, Laplace has no mode at tau -> 0 of a centred hierarchy). The variational plans of `svi/<model>` that
+  have a quadrature truth (the logistic regression) are reported, not asserted: Pathfinder and natural-gradient SVI are
+  close, the structured guide's means are several Monte Carlo standard errors off and sticking the landing's sds are
+  15 to 20 percent small.
+
+### 4.32a `message-passing/`: message passing on factor graphs (Infer.NET, libDAI, Minka's EP)
+
+oracle: numerical integration (each operator's messages and moments, against quadrature of the tilted distribution),
+closed forms (EP is exact on Gaussian trees), the library's own `pgm` (loopy BP, EP, VMP, the junction tree, TrueSkill),
+`gp` (probit EP), `mixture` (the Bayesian Gaussian mixture) and an adaptive grid for the probit regression slice. Source
+of the design: `docs/probprog/PLAN.md` 5.5.
+
+Messages are exponential-family natural parameters; a factor is a registry operator that says what it tells each of its
+arguments; one engine with slots (projection, schedule, damping, improper handling) runs expectation propagation,
+variational message passing and belief propagation as settings of itself. A run is a steppable, resumable `Algorithm`
+whose state is plain numbers (the message on every edge), so it serialises, cancels between any two steps and reports its
+marginals at any time. Imports: `base`, `trace`, `tensor`, `numerics`, `space`, `random`, `dists`, `scene` and `pgm`
+(discrete tables and the factor-graph drawing); `probprog` imports this domain, never the reverse. Everything a run
+reports is addressed by ids, the same as the picture of the model (`types.ts`; for a spec, `probprog/model/ids.ts`): a
+variable is its name, a factor its `id` (`factor:<site>` from the spec compiler) or `f<i>`, an edge `<factor>><variable>`.
+- `types.ts`: the contracts (`Family`, `FactorOperator`, `FactorGraphSpec` as JSON, `OperatorContext`, `OperatorResult`)
+  and the id convention; nothing computes here.
+- `families.ts`, `families-vector.ts`: the message families: scalar Gaussian (precision form), gamma, beta, Bernoulli and
+  normal-gamma (`defineFamily`), and the multivariate Gaussian, discrete and Dirichlet, with `familyOf` building any of
+  them from its JSON description. `priors.ts`: `priorFactor`, `gaussianPrior`, `gaussianMvPrior`, `gammaPrior`,
+  `betaPrior`, `bernoulliPrior`, `discretePrior`, `dirichletPrior`, `normalGammaPrior`. `truncated.ts`:
+  `truncatedNormalMoments`, the closed form behind every comparison and probit message, accurate in the tails.
+  `_dense.ts`, `_quadrature.ts`, `_scalar.ts`: internal (SPD algebra, Gauss-Hermite against a Gaussian message, scalar
+  special functions and the inverse digamma).
+- `operators/`: the 35 factor operators of `defaultOperators()` (`registry.ts`), each with message rules for the
+  projections it supports and tested against numerical integration: `prior`, `gaussian`, `gaussian-gamma-precision`,
+  `gaussian-normal-gamma`, `product`, `equal` (`gaussian.ts`); `linear`, `plus`, `difference`, `times-constant`, `sum`,
+  `dot-constant`, `matmul-constant`, `linear-regression-row`, `gaussian-joint` (`linear.ts`; the deterministic ones
+  define their output, with a pushforward belief under VMP); `probit`, `greater-than`, `is-between` (`truncation.ts`);
+  `logistic` (`links.ts`: Gauss-Hermite for EP, Jaakkola-Jordan's bound for VMP); `bernoulli`, `discrete`, `poisson`,
+  `binomial` (`conjugate.ts`); `table`, `select`, `gaussian-mixture` (`discrete.ts`); `max` and `min` (`extremum.ts`,
+  Clark's moments; EP only); the regression rows `probit-row`
+  and `logistic-row` (one factor per row on a weight vector, `rows.ts`), the plates `linear-regression-plate`,
+  `probit-plate` and `logistic-plate` (one factor for a whole plate of rows, `plates.ts`: the Gaussian link is closed form
+  and independent of the number of rows, the nonlinear links run EP over the plate inside the call) and the `spin`
+  factor and `spin-row` (`spin.ts`, the Ising site of expectation consistent inference). `numericOperator` (`numeric.ts`)
+  is a constructor, not one of the 35: a factor given only by its log density, whose EP messages come from a panelled
+  product rule (the fallback for a robust likelihood or the clutter problem). `args.ts`: how operators read their
+  arguments. Known limits: VMP has no rule for the hard comparison `greater-than` or for `max` and `min`;
+  `gaussian-gamma-precision` has no EP rule.
+- `engine.ts`, `projections.ts`, `schedules.ts`, `graph.ts`: the engine (`messagePassingAlgorithm`, `EngineSettings`,
+  `MpState`, `marginalsOf`, `evidenceOf`, `beliefOf`, `mpSnapshot`) with its slots: the projection (`momentProjection`
+  for EP, `klqpProjection` for VMP, `sumProductProjection` for BP; `projections`, `projectionOf`), the schedule
+  (`flooding`, `serial`, `tree`, `residual`, `custom`) and its granularity (`sweep`, `factor`, `message`, which is what
+  makes a run steppable and cancellable), damping, the improper policy (`skip`, `damp`, `reset`, `error`, counted on the
+  tape) and the start messages; `compileGraph` validates a `FactorGraphSpec` against an operator registry; `graphStructure`
+  draws the graph in the form `pgm` draws factor graphs, so a diagram can be coloured by a run.
+- `named.ts`: `epAlgorithm`, `vmpAlgorithm`, `bpAlgorithm` with their own defaults (`epDefaults`, `vmpDefaults`,
+  `bpDefaults`), tape contracts (`epContract`, `vmpContract`: `mp/change`, `mp/sweeps`, `mp/updates`, `mp/improper`,
+  `mp/skipped`, `mp/damped`, `mp/reset`, `mp/message`, `mp/marginals`, `mp/frame`, `mp/snapshot`, with `mp/evidence` for EP
+  and BP and `mp/elbo` for VMP) and the `Method`s `epMethod`, `vmpMethod`, `bpMethod` a session or worker drives by name.
+  Nothing picks among the three.
+- Variations, each its own algorithm with its own knobs and a method (`...Method`): `power.ts` (power and fractional EP,
+  per-factor powers, `powerEpAlgorithm`), `alpha.ts` (alpha-divergence message passing: alpha = 1 is EP, toward 0 the
+  variational end; `alphaEpAlgorithm`), `numerical.ts` (the engine's `numeric` slot: panelled quadrature, Gauss-Hermite,
+  unscented, Laplace and sample rules; `numericEpAlgorithm`), `stochastic.ts` (stochastic and averaged EP: one averaged
+  factor for N exchangeable data factors, memory independent of N; `stochasticEpAlgorithm`), `regions.ts` (region graphs
+  and generalised belief propagation on discrete models: Bethe, Kikuchi blocks and junction regions;
+  `regionGraph`, `blockClusters`, `regionBpAlgorithm`), `consistent.ts` (expectation consistent inference, adaptive TAP:
+  a Gaussian times one-dimensional sites as EP with parallel updates; `expectationConsistentGraph`, `ecAlgorithm`) and
+  `amp.ts` (approximate message passing for `y = A x + w` with iid priors, with the state evolution beside it: Gaussian
+  and Bernoulli-Gaussian denoisers; `ampStateEvolution`, `ampAlgorithm`).
+- `anytime.ts`: `runAnytime` and `runAnytimeWith` for a graph under a budget the caller chooses, with a snapshot of the
+  marginals about once a second; the clock is injected, so the budget only decides where a run stops, never what it
+  computes. `probprog/inference/method.ts` has the same driver for every method.
+- Compiling a model to a graph is `probprog/model/factors.ts` (`toFactorGraph`); the spec methods are
+  `probprog/inference/mp.ts`. A regression on a weight vector over a plate becomes one plated factor; any other plate is
+  expanded (`plates: 'expand'` forces it everywhere). What cannot be mapped is reported with the node and the reason,
+  never dropped silently.
 
 ### 4.33 `learn/`: the toolkit around models (scikit-learn's non-model modules)
 
@@ -6056,7 +6385,18 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   optional right-hand axis; optimiser races and studies of schemes or strengths), `DiagramRecord` (`diagram`: a
   `Structure`, such as `describe(net)`, with optional overlays and captions to play over it), `ValueGrids` (feature
   maps, filters, hidden states as cells, with steps through training) and `ConfusionMatrix` (counts per true and
-  predicted class, with steps through training; `confusionCounts` builds them).
+  predicted class, with steps through training; `confusionCounts` builds them);
+- `ModelRun` (`modelRun`, `model-run.ts`: inference on a model graph; a `Structure` (the plate diagram of
+  `probprog/model`'s `toStructure`, or a factor graph) with, at each recorded step, what is believed of each node (a
+  posterior summary by node id, the observed value of an observed one), the messages that passed along the edges with a
+  readable badge, and beside it the convergence series (change, evidence or bound, improper messages); `modelRunAt`) and
+  `model-run-tape.ts` (`modelRunFromTape`: the same record from a tape, finished or still running, and any anytime
+  snapshots, without the model; it reads the `mp/` paths of message passing and the `<method>/snapshot` posterior JSON of
+  the samplers and variational methods; `describeMessage`, `nodeStateOf`, `nodeStatesOfRows`);
+- `ChainDiagnostics` (`chainDiagnostics`, `chain-diagnostics.ts`: for each quantity the draws of every chain for trace
+  plots, the rank histograms of each chain (`rankCounts`), the split R-hat and effective sample size where the method
+  reports them and the divergent transitions; `chainsFromTape` reads a sampler's `mcmc/position`, `mcmc/divergent` and
+  `mcmc/stage`; `chainTable` is the R-hat and ESS table as a `MarkedTable`).
   Every record constructor ends in `seal` (`exposition/_check.ts`): the record it returns is a copy that shares no array
   with the caller's, and every number in it is finite except the fields `SEAL_OPTIONS` lists for its kind (a missing
   standard error or a rate with no denominator shown as a gap, an infinite threshold); `expositionSamples`
@@ -7627,8 +7967,16 @@ Design rules:
   `top-centre`, `bottom-left`; the room for it grows with its size); edges take an opacity and a label style
   (`labelColour`, `labelSize`, `labelWeight`); a `note` may be a `StructureNote` (side, tie line, colour, size, weight).
   A `$...$` line is sized by its typeset width (`texExtent`).
-- `styles.ts`: the visual language per structure kind: graphical models, computation graphs, neural architectures,
-  decision and search trees, automata, pipelines, networks.
+  Groups may cross (`StructureNode.groups`: plates over `[student]` and `[exam]` both hold a node over
+  `[student, exam]`; columns are chosen to leave the fewest nodes inside a frame they are not members of, falling back to
+  the nested `intersection` frame), `DiagramOptions.decorate` draws extra marks inside each node's group (a glyph, a small
+  plot; it takes no part in the layout).
+- `model-graph.ts`: `modelGraph`, plate notation for the structure of a model spec (`toStructure` of
+  `omai-engine/probprog/model`): crossing plates, sizes written `N = 40`, data nodes as the small dots plate notation uses,
+  vector sites unrolled element by element (`w[0]`, `w[1]`); `diagram` applies it to any structure that came from a spec
+  (`isModelStructure`), so a `StructureView` of `toStructure(model)` needs no preparation.
+- `styles.ts`: the visual language per structure kind: graphical models (plate diagrams too), computation graphs, neural
+  architectures, decision and search trees, automata, pipelines, networks.
 - `architectures.ts`: views of a network structure: compact stack, expanded block, tensor-shape flow, parameter-count
   treemap.
 - `overlays.ts`: state overlays for animation: traversal frames (active node, the edge it was reached by, visit order
@@ -7705,6 +8053,12 @@ Design rules:
   step's overlay) and `attributions.ts` (`FeatureAttributions` as a waterfall, played through a sampled estimate's
   convergence, a beeswarm summary coloured by feature value, mean |attribution| bars and dependence scatters coloured
   by the interacting feature; `Importances` as bars with spread whiskers and every repeat).
+- `model-run.ts` (`ModelRun`: the plate diagram at a step with each node's belief written in it (`μ 0.56 · σ 0.83`, a small
+  interval or bar glyph scaled over the whole run), the edges that carried a message at the step active and labelled with
+  the message in words, and the convergence series with a cursor: `modelRunScene`, `modelRunOverlay`, `modelRunFrames`,
+  `modelRunDecorate`, `modelRunStatus`, `modelRunConvergence`) and `chain-diagnostics.ts` (`ChainDiagnostics`: trace plots
+  with the divergences marked, rank plots with the expected count drawn, and the R-hat and ESS table: `traceView`,
+  `rankView`, `chosenQuantities`).
 - `registry.ts`: the standard view of each record kind (`viewFor(kind)`: its React component, title, whether it plays,
   what it accepts beside the record) and `stillOf(record)`, a headless still (a chart option, or a scene for trees and
   pipelines) for slides, blogs and server-side export; the registry is exhaustive, so a new record kind does not compile
@@ -7764,7 +8118,8 @@ Design rules:
 - `SceneView.tsx`: a `Scene` as SVG elements, with hover and click hit-testing.
 - `Scene3DView.tsx`: a 3-D scene with drag-to-orbit camera, re-projected on interaction.
 - `StructureView.tsx`: a `Structure` in a frame (by default) with pan, zoom, hover details and overlay state (`frames`
-  sizes nodes once for a whole animation).
+  sizes nodes once for a whole animation); the diagram is drawn at its own width or at its container's when that is
+  narrower, and the frame holds the height of the figure as drawn.
 - `Player.tsx`: playback of a precomputed timeline or a live algorithm, redesigned and simpler than aifn-engine's:
   a reset of the page's controls to their defaults and an eager toggle when the controller offers them, seek to the
   start, step back, play and pause with a caret menu for the target frames per second, step forward, seek to the end,
@@ -7868,7 +8223,10 @@ Design rules:
   `landscape-slice.tsx`: `LandscapeSliceView`; `stability-region.tsx`: `StabilityRegionView`; `equation-fit.tsx`:
   `EquationFitView`; `audio.tsx`: `AudioView`, `useClipPlayback`; `transcript.tsx`: `TranscriptView`; `sample-grid.tsx`:
   `SampleGridView`;
-  `reachability.tsx`: `ReachabilityPlotView`; `scene-steps.tsx`: `SceneStepsView`; `images.tsx` also `ImageGridView`), each one figure in one
+  `reachability.tsx`: `ReachabilityPlotView`; `scene-steps.tsx`: `SceneStepsView`; `images.tsx` also `ImageGridView`;
+  `model-run.tsx`: `ModelRunPlayer` (the plate diagram with beliefs, the messages of the step on their edges, the
+  convergence series with a cursor and the counters; a record of a run in progress is followed while the viewer is on the
+  latest step); `chain-diagnostics.tsx`: `ChainDiagnosticsView` (trace, rank and the table under a segmented choice)), each one figure in one
   `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record inside a
   `RecordBoundary` (`RecordBoundary.tsx`: a record whose view throws, or whose kind has no view, shows a one-line note and
   the page goes on).
@@ -8036,9 +8394,21 @@ and a thumbnail of one recipe of each gallery section (`Thumbnail`, from `public
   board, agent, ensemble, pipeline, epicycle, state, value, curve, diagram and episode records); the older records
   keep their recipes in `panels/`, `specialised/`, `evaluation/` and `animation/`.
 
+  The model-graph pieces have one recipe, `diagrams/16-model-inference` (`modelRun` and `chainDiagnostics` records made on
+  toy data: a plate diagram with beliefs, messages and convergence, and the trace, rank and R-hat views; it shows
+  `modelGraph`, `ModelRunPlayer` and `ChainDiagnosticsView`, with thumbnails).
+
   The gallery is for general visualisation types only; on 2026-10-25 its model demonstrations (the `exposition/`,
   `fairness/` and `trust/` sections and the RL episodes) moved to the hub, which was removed on 2026-10-28. The
   `animation/` section shows the session player on a toy method.
+
+`apps/pocs/` (a second private app, `make pocs`, http://localhost:5310: proofs of concept, single live pages on the site's own
+shell, added only on request; see its README). Pocs that belong together are listed together: a group is declared in
+`src/groups.ts` (slug, title, summary), a poc joins it with `group: '<slug>'` in its `poc.ts`, and the index shows one
+section per group (a group's own page is `/group/<slug>`; a search lists matches flat with the group on each card; a poc with
+no group is under "More"). The groups are `probabilistic-programming` (so far `bayes-linear` and `bocpd`; the showcase set
+of the probabilistic-programming plan is scheduled for the end of that work), `structured-prediction`, `models` and
+`graphics-and-fields`.
 
 `src/docs/` (generated from `omai-meta`'s catalogue of the engine's TSDoc)
 - Navigation mirrors the source tree exactly (`lib/<domain>/<subfolder>/<file>`, `methods/<area>/...`, then the
@@ -8072,7 +8442,7 @@ and a thumbnail of one recipe of each gallery section (`Thumbnail`, from `public
 
 A uv project (root `pyproject.toml`) with pydantic and pydantic-settings, and dependency groups split by domain so a
 fixture run installs only what it needs: `oracle-core` (numpy, scipy, scikit-learn, statsmodels, sympy, python-sat, clingo,
-networkx, python-control with slycot), `oracle-torch` (torch, torchmetrics, torchdiffeq, torchsde), `oracle-prob` (numpyro, pyro, pgmpy, arviz),
+networkx, python-control with slycot), `oracle-torch` (torch, torchmetrics, torchdiffeq, torchsde), `oracle-prob` (numpyro, pyro (`pyro-ppl`, used by the `lift` and `reparam` cases), blackjax, pgmpy, arviz),
 `oracle-signal` (pywt, librosa, scikit-image, pystoi, pesq), `oracle-text` (tokenizers, tiktoken, nltk, sacrebleu,
 rouge-score, jiwer, rapidfuzz, datasketch, gensim), `oracle-rl` (gymnasium, minatar, pettingzoo, open_spiel with ecos for its LPs, nashpy), `oracle-vision`
 (opencv-python-headless),
@@ -8112,7 +8482,7 @@ library for the same computation. They do not set a higher bar than that library
 
 - `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `docs-catalogue`, `build`, `lint`, `format`, `typecheck`,
   `test`, `test-browser`, `coverage`, `docs`, `concepts`, `barrels`, `layers`, `fixtures`, `fixtures-check`,
-  `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`.
+  `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`, `probprog-validate`.
 - Two gates: `make verify` for every commit and merge (whole-repo checks that take seconds, among them the public API
   surface digest `make api-surface-check`, which fails on any export added, removed or retyped until `make api-surface`
   is run on purpose, then only the tests,
@@ -8156,6 +8526,13 @@ library for the same computation. They do not set a higher bar than that library
   It only makes what is missing (`--force` redoes all; `--only <section | section/slug>` limits it). A figure that is
   moving is captured a few seconds in, and a player waiting at step 0 is started first. Needs Chrome; the images are
   committed.
+- `scripts/probprog-validate.ts` (`make probprog-validate`, run niced): the periodic heavy validation of the
+  probabilistic-programming code (simulation-based calibration, agreement with the grid posterior, Geweke tests, the
+  benchmark, evidence, variational and structure campaigns of `lib/probprog/validation` and `lib/probprog/models`); writes
+  one table per campaign and a `README.md` under `docs/probprog/results/`, each with the commit, date, seed, budgets and
+  time; `ARGS="--only <prefix>"`, `--scale`, `--seed`, `--out`, and `--check` (which tables are older than the last commit
+  that touched the probprog, sampling or message-passing code). Not part of `make verify` or `make check`: re-run it when
+  that code changes and commit the tables.
 - `scripts/concepts.ts`: concept-taxonomy coverage report against `docs/concepts.yaml`.
 - `scripts/version.ts`: `base/version.ts` and equal package versions (changesets fixed group).
 - `scripts/pack.ts`: build and pack the three packages; collect release assets with a manifest.
@@ -8254,6 +8631,9 @@ library for the same computation. They do not set a higher bar than that library
 | mgcv, pygam, gratia               | `methods/gam/`, `lib/stats/smoothing/`                                                            |
 | NumPyro, Pyro                     | `lib/probprog/`, `lib/sampling/`                                                                  |
 | ArviZ                             | `lib/sampling/diagnostics.ts`, `lib/probprog/criticism.ts`                                        |
+| Infer.NET, libDAI                 | `lib/message-passing/` (EP, VMP, BP as one engine), `lib/pgm/`                                    |
+| PyMC, Stan (blocks)               | `lib/probprog/model/` (a spec with named dimensions; no text front end)                           |
+| BlackJAX                          | `lib/sampling/` (kernels), `lib/probprog/engines/pathfinder.ts`                                   |
 | pgmpy                             | `lib/pgm/`                                                                                        |
 | DoWhy, EconML, causal-learn       | `lib/causal/`, `lib/pgm/causal/`, `methods/causal/`                                               |
 | NetworkX                          | `lib/graph/`                                                                                      |
