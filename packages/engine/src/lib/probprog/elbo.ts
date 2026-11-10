@@ -34,6 +34,8 @@ export interface ElboEstimate<S> {
   /** The ELBO estimate (or the bound the estimator targets). */
   readonly elbo: number
   readonly state: S
+  /** Named numbers about the estimate (baselines, enumerated cells, weights' effective size) for a method's tape. */
+  readonly diagnostics?: Readonly<Record<string, number>>
 }
 
 /**
@@ -142,10 +144,19 @@ export interface TraceElboOptions {
   readonly baselineDecay?: number
 }
 
-function scoreTerms(p: Particle, signal: number): Value {
+/**
+ * The score-function terms of a particle: log q(z) times the learning signal for every guide site without a
+ * reparameterised sampler (what {@link traceElbo} adds to its pathwise surrogate), minus the sites in `skip`.
+ *
+ * @param p - The particle.
+ * @param signal - The (baselined) signal that multiplies each log density.
+ * @param skip - Sites left out (enumerated exactly, so they need no score term).
+ * @returns The surrogate term.
+ */
+export function scoreTerms(p: Particle, signal: number, skip: ReadonlySet<string> = new Set()): Value {
   let total: Value = tensor(0)
   for (const site of p.guideTrace.sites.values()) {
-    if (site.type !== 'sample' || site.isObserved || site.fn.hasRsample) continue
+    if (site.type !== 'sample' || site.isObserved || site.fn.hasRsample || skip.has(site.name)) continue
     const lq = mul(sum(maskedLogProb(site)), site.scale)
     total = add(total, mul(lq, signal))
   }
