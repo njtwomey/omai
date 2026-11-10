@@ -18,6 +18,11 @@ export interface JobContext {
   readonly progress: (fraction: number) => void
   /** Whether the job was replaced or unmounted: an awaiting stage can stop early. */
   readonly cancelled: () => boolean
+  /**
+   * Run `undo` when the job is replaced, deactivated or unmounted (not when it finishes or fails): the place to stop what
+   * the stage started, such as a worker. Returns the way to take it back (once the resource is released).
+   */
+  readonly onCancel: (undo: () => void) => () => void
 }
 
 /**
@@ -25,7 +30,8 @@ export interface JobContext {
  * returns this stage's: a value, a promise of one, or a generator (`function*`) that yields its progress as a fraction
  * from 0 to 1 and returns the result, which the hook runs in slices of a few milliseconds per frame so a long stage
  * reports finer progress and the page paints between slices. A stage that neither awaits nor yields blocks the main
- * thread until it returns: only a worker keeps the page responsive then (see `workerProducer`).
+ * thread until it returns: only a worker keeps the page responsive then (see `workerStage`). A job that is replaced
+ * does not wait for a stage still pending: the stage's promise is dropped and its `ctx.onCancel` cleanups run.
  */
 export interface JobStage {
   /** The name shown while the stage runs. */
@@ -113,6 +119,25 @@ function afterPaint(token: Token): Promise<void> {
   })
 }
 
+// The stage's result, or `undefined` as soon as the job is cancelled (a stage that never settles must not hold the job).
+function untilCancelled(value: unknown, token: Token): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const stop = (): void => resolve(undefined)
+    token.undo.add(stop)
+    Promise.resolve(value).then(
+      (v) => {
+        token.undo.delete(stop)
+        resolve(v)
+      },
+      (e: unknown) => {
+        token.undo.delete(stop)
+        if (token.cancelled) resolve(undefined)
+        else reject(e)
+      },
+    )
+  })
+}
+
 const isGenerator = (v: unknown): v is Generator<number, unknown, undefined> =>
   typeof v === 'object' &&
   v !== null &&
@@ -148,6 +173,14 @@ async function execute(
           if (!token.cancelled) set({ ...IDLE, phase: 'running', stage: i, progress: before(i, clamp(f)) })
         },
         cancelled: () => token.cancelled,
+        onCancel: (undo) => {
+          if (token.cancelled) {
+            undo()
+            return () => undefined
+          }
+          token.undo.add(undo)
+          return () => void token.undo.delete(undo)
+        },
       }
       const out = stage.run(prev as never, ctx)
       if (isGenerator(out)) {
@@ -168,7 +201,9 @@ async function execute(
         }
         token.undo.delete(stop)
       } else {
-        prev = await out
+        prev = await untilCancelled(out, token)
+        // A stage still pending when the job was replaced is dropped, not waited for.
+        if (token.cancelled) return
       }
       // A result that arrives after the job was replaced is dropped.
       if (token.cancelled) return
@@ -196,7 +231,10 @@ const sameInputs = (a: readonly unknown[], b: readonly unknown[]): boolean =>
  * - The result is one value held by the hook, set once when the last stage returns, never a state per step.
  * - A stage that neither awaits nor yields blocks the main thread until it returns, however many stages there are: the
  *   page paints between stages, not inside one. Only a worker keeps the page responsive through a single heavy
- *   stage (`workerProducer` makes one for a session); the hook does not make workers.
+ *   stage: `workerStage` (`omai-render/producer`) is a stage that runs in a Web Worker, reports its progress and
+ *   terminates the worker when the job is replaced; the hook itself does not make workers.
+ * - A job that is replaced, deactivated or unmounted while a stage is pending stops waiting for it at once, and runs the
+ *   cleanups the stage registered with `ctx.onCancel`.
  *
  * @param options - The stages, the inputs the job depends on, `active` and the slice length.
  * @returns The phase, the running stage and its name, the progress, the result, the error and `restart`.

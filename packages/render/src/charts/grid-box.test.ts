@@ -6,6 +6,7 @@ import { chartProjection } from '../react/interaction/projection.ts'
 import { barChart, histogram } from './bars.ts'
 import { subplots } from './compose.ts'
 import { lineChart, lines } from './lines.ts'
+import { heatmapChart } from './matrices.ts'
 import { cartesian } from './plot.ts'
 import { points, scatterChart } from './points.ts'
 
@@ -159,4 +160,56 @@ describe('chartProjection against where ECharts draws the axes', () => {
     expect([px, py]).toEqual(direct)
     chart.dispose()
   })
+})
+
+describe('chartProjection on a heatmap with a colour bar', () => {
+  const field = Array.from({ length: 20 }, (_, r) =>
+    Array.from({ length: 20 }, (_, c) => Math.sin(r / 4) * Math.cos(c / 4)),
+  )
+  const geo = { x: [0, 20_000], y: [0, 20_000] } as const
+  const spots = [
+    [0, 0],
+    [20_000, 20_000],
+    [5_000, 15_000],
+    [12_345, 6_789],
+  ] as const
+  const variants: [string, number, number, Record<string, unknown>][] = [
+    ['page', 640, 1, {}],
+    ['narrow', 390, 1, {}],
+    ['wide', 1200, 0.6, {}],
+    ['equal, datalim', 1200, 0.5, { aspect: 'equal' }],
+    ['equal, box', 1200, 0.5, { aspect: 'equal', adjustable: 'box' }],
+    ['titled with a legend', 640, 1, { title: 'Map', legend: true }],
+  ]
+  for (const [name, width, aspect, extra] of variants) {
+    for (const colourBar of [true, false]) {
+      it(`${name}, colourBar ${colourBar}: project and rect are where ECharts draws the axes`, () => {
+        const fig = figure({ medium: 'page', width, aspect })
+        const option = heatmapChart(
+          field,
+          { ...geo, colourBar, label: 'height' },
+          { figure: fig, x: { label: 'east (m)' }, y: { label: 'north (m)' }, ...extra },
+        )
+        const chart = draw(option, fig.width, fig.height)
+        const p = chartProjection({
+          getOption: () => chart.getOption(),
+          convertToPixel: (f, v) => chart.convertToPixel(f, v),
+          convertFromPixel: (f, v) => chart.convertFromPixel(f, v),
+          on: () => undefined,
+        })
+        for (const [a, b] of spots) {
+          const [px, py] = p.project(a, b)
+          const direct = chart.convertToPixel({ gridIndex: 0 }, [a, b]) as number[]
+          expect(Math.abs(px - (direct[0] as number))).toBeLessThan(1e-6)
+          expect(Math.abs(py - (direct[1] as number))).toBeLessThan(1e-6)
+        }
+        const [drawn] = rects(chart)
+        expect(p.rect?.x).toBeCloseTo(drawn?.x ?? Number.NaN, 6)
+        expect(p.rect?.y).toBeCloseTo(drawn?.y ?? Number.NaN, 6)
+        expect(p.rect?.width).toBeCloseTo(drawn?.width ?? Number.NaN, 6)
+        expect(p.rect?.height).toBeCloseTo(drawn?.height ?? Number.NaN, 6)
+        chart.dispose()
+      })
+    }
+  }
 })

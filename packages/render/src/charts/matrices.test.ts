@@ -136,6 +136,17 @@ describe('heatmap', () => {
   it('places images from pixels', () => {
     expect(image([[[1, 0, 0]]], { x: [0, 2], y: [0, 1] }).extent.x).toEqual([0, 2])
   })
+  it('takes Pixels as they are: RGBA bytes with their alpha, no shape or range to give', () => {
+    const rgba = new Uint8ClampedArray([200, 100, 50, 128, 0, 0, 0, 0, 255, 255, 255, 255, 10, 20, 30, 40])
+    const pixels = { width: 2, height: 2, rgba }
+    const l = image(pixels, { x: [0, 1000], y: [0, 500], opacity: 0.5 })
+    expect(l.extent).toEqual({ x: [0, 1000], y: [0, 500], tight: true })
+    const drawn = opt(l.series[0]).omaiImage
+    expect(drawn.pixels).toBe(pixels)
+    expect(Array.from(drawn.pixels.rgba)).toEqual(Array.from(rgba))
+    expect(drawn.opacity).toBe(0.5)
+    expect(image(pixels).extent).toEqual({ x: [0, 2], y: [0, 2], tight: true })
+  })
 })
 
 describe('matrix', () => {
@@ -229,5 +240,70 @@ describe('reencodeImages', () => {
     expect(
       out.filter((s) => opt(s).type === 'custom' && opt(s).renderItem({}, api).style?.image === 'canvas'),
     ).toHaveLength(1)
+  })
+})
+
+describe('heatmap cellText', () => {
+  const z = [
+    [0, 1, 2],
+    [3, 4, 5],
+  ]
+  const text = (value: number, row: number, col: number): string => `${value} at ${row},${col} <b>`
+
+  it('adds one hit area per cell after the colour bar series, and only when asked', () => {
+    expect(heatmap(z).series.map((s) => opt(s).name)).toEqual([expect.any(String), '__colourbar'])
+    const l = heatmap(z, { cellText: text, x: [0, 2], y: [0, 1] })
+    const names = l.series.map((s) => opt(s).name)
+    expect(names).toEqual([expect.any(String), '__colourbar', '__cells'])
+    const cells = opt(l.series[2])
+    expect(cells.data).toHaveLength(6)
+    // The colour bar names its series by index: the hit areas are after it.
+    expect(names.indexOf('__colourbar')).toBe(1)
+    expect(heatmap(z, { cellText: text, colourBar: false }).series.map((s) => opt(s).name)).toEqual([
+      expect.any(String),
+      '__cells',
+    ])
+  })
+
+  it('says each cell as the text the caller gives, escaped, with its value, row (0 at the bottom) and column', () => {
+    const cells = opt(heatmap(z, { cellText: text, x: [0, 2], y: [0, 1] }).series[2])
+    // x, y, value, row, col
+    expect(cells.data[0]).toEqual([0, 0, 0, 0, 0])
+    expect(cells.data[5]).toEqual([2, 1, 5, 1, 2])
+    expect(cells.tooltip.formatter({ data: cells.data[4] })).toBe('4 at 1,1 &lt;b&gt;')
+    const lines = opt(heatmap(z, { cellText: () => 'a\nb' }).series[2])
+    expect(lines.tooltip.formatter({ data: lines.data[0] })).toBe('a<br/>b')
+  })
+
+  it('passes the cell coordinates too', () => {
+    const seen: number[][] = []
+    const note = (...args: number[]): string => {
+      seen.push(args)
+      return ''
+    }
+    const cells = opt(heatmap(z, { cellText: note, x: [10, 30], y: [100, 200] }).series[2])
+    cells.tooltip.formatter({ data: cells.data[4] })
+    expect(seen).toEqual([[4, 1, 1, 20, 200]])
+  })
+
+  it('draws each hit area as a transparent rectangle a cell wide and high around its node', () => {
+    const cells = opt(heatmap(z, { cellText: text, x: [0, 2], y: [0, 1] }).series[2])
+    // The stand-in coordinate system: data to pixels, ten pixels a unit, y down.
+    const api = {
+      coord: (p: readonly number[]) => [(p[0] ?? 0) * 10, -(p[1] ?? 0) * 10],
+      value: (d: number) => (cells.data[4] as number[])[d] ?? 0,
+    }
+    const item = cells.renderItem({}, api)
+    expect(item.type).toBe('rect')
+    // Cell (row 1, col 1): centre (1, 1), a cell is 1 by 1 data units.
+    expect(item.shape).toEqual({ x: 5, y: -15, width: 10, height: 10 })
+    expect(item.style.fill).toBe('rgba(0,0,0,0)')
+  })
+
+  it('works through heatmapChart, and the chart keeps its image series first', () => {
+    const o = opt(heatmapChart(z, { cellText: text, smooth: 'cells' }))
+    expect(o.series.map((s: Opt) => s.name).at(-1)).toBe('__cells')
+    expect(o.series[0].type).toBe('custom')
+    expect(o.visualMap[0].seriesIndex).toBe(1)
   })
 })

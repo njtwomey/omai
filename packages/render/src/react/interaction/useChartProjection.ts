@@ -3,7 +3,7 @@
  * chart exists and again whenever it is recreated (as on a change of colour mode).
  */
 
-import { useCallback, useReducer, useState } from 'react'
+import { useCallback, useMemo, useReducer, useState } from 'react'
 import { chartProjection, type PixelConverter, type Projection } from './projection.ts'
 
 /**
@@ -13,7 +13,9 @@ import { chartProjection, type PixelConverter, type Projection } from './project
  * `max` on its value axes and `outerBoundsMode: 'none'` on the grid (as omai's cartesian charts write them) the
  * projection is computed from the chart's option and ECharts is not asked at all; a hand-written grid (ECharts 6 merges
  * `outerBoundsMode: 'auto'` into it, which moves the plotting box) goes through ECharts' converters (see {@link chartProjection}). The host renders again when a redraw moves the plotting box or the
- * ranges, so handles follow a chart that is resized.
+ * ranges, so handles follow a chart that is resized. The projection returned is a new object after such a redraw, so
+ * an overlay holding it (an {@link InteractionOverlay}, whose tools read it through context) draws again even when the
+ * tools themselves are a stable element that React would otherwise skip.
  *
  * @param gridIndex - Which grid (set of axes) of the chart (default 0).
  * @returns The projection (`null` until the chart exists; its `rect` is the plotting box in pixels, so a caller can
@@ -26,10 +28,30 @@ export function useChartProjection(gridIndex = 0): {
 } {
   const [projection, setProjection] = useState<Projection | null>(null)
   // A redraw that moves the box or the ranges (a fluid chart resized) renders the host again, so handles follow it.
-  const [, redraw] = useReducer((n: number) => n + 1, 0)
+  const [moved, redraw] = useReducer((n: number) => n + 1, 0)
   const onInit = useCallback(
     (chart: PixelConverter) => setProjection(chartProjection(chart, gridIndex, redraw)),
     [gridIndex],
   )
-  return { projection, onInit }
+  // A new identity for each redraw that moved the box: a context value that is the projection then changes, and the
+  // tools inside an overlay are drawn again even when the element that holds them did not change.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `moved` is the trigger
+  const current = useMemo(
+    (): Projection | null => (projection === null ? null : follow(projection)),
+    [projection, moved],
+  )
+  return { projection: current, onInit }
+}
+
+// A projection that answers as `p` does (its box included, read when asked) but is a new object.
+function follow(p: Projection): Projection {
+  return {
+    get rect() {
+      return p.rect ?? null
+    },
+    toPixel: (q) => p.toPixel(q),
+    toData: (q) => p.toData(q),
+    project: (x, y) => p.project(x, y),
+    unproject: (x, y) => p.unproject(x, y),
+  }
 }

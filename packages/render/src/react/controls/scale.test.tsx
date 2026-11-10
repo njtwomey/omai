@@ -200,7 +200,7 @@ describe('Player size', () => {
 
   it('draws every size of its own with the variable, so the host’s scale reaches it', async () => {
     const list = await classes()
-    const wrapper = list.find((c) => c.includes('items-center gap-2'))
+    const wrapper = list.find((c) => c.includes('items-center') && c.includes('min-w-[calc(16rem'))
     expect(wrapper).toContain(`min-w-[calc(16rem*${VAR})]`)
     expect(list.some((c) => c.includes(`size-[calc(0.75rem*${VAR})]`))).toBe(true)
     expect(list.some((c) => c.includes(`h-[calc(0.25rem*${VAR})]`))).toBe(true)

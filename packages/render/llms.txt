@@ -124,9 +124,12 @@ below are the folders of `src`; `react` is large and its index is nested by its 
 - Fluid figures and a page without a kit (React). `ResponsiveChart` measures its container and calls `build(fig)` for that width
   (`narrowAspect` under `narrowBelow`, `square` for equal units, `overlay` for draggable handles with `{ projection, size }`);
   a layer built with no `mode` takes the mode of the chart that draws it; `chartProjection` needs no ECharts call for a chart
-  with numeric grid and axis limits, so dragging logs no warnings. `useParams(initial)` holds a figure's own knobs. `useJob({ stages,
+  with numeric grid and axis limits, so dragging logs no warnings (`useChartProjection` gives a new projection after a redraw that moved the box,
+  so overlays follow a resized chart). `points` takes `symbol: 'plane'` (a table of `SYMBOLS`), `symbolRotate` and `labelOffset`; `heatmap` takes
+  `cellText` for per-cell hover text; `image` takes `Pixels`. `useParams(initial)` holds a figure's own knobs. `useJob({ stages,
   inputs, active })` is the recipe for a heavy one-shot with a progress bar and no autostart (the stage is readable while it runs;
-  a generator stage yields a fraction; a single blocking stage needs a worker). `FigureFrame` has `purpose`, `controls`,
+  a generator stage yields a fraction; a single blocking stage is a `workerStage` (`omai-render/producer`, with `serveStage` in the worker), which
+  is terminated when the job is replaced). `FigureFrame` has `purpose`, `controls`,
   `readouts` and `caption` slots, a permalink on its title, and `Readouts` and `Controls`; `size` and `width` on `NumberField`,
   `Toggle`, `Select` and `Choice`.
 - A deck in one React tree (React). `ActiveProvider active` gates every session hook and player below it (an explicit `active`
@@ -135,7 +138,9 @@ below are the folders of `src`; `react` is large and its index is nested by its 
   take `size`. For export, every live figure root has `data-omai-state` (`preparing`, `idle` when nothing is computing, `ready`, `failed`), `live.settled` is a
   promise of `{ ok }` per run, and `waitForSettled(root)` waits for all figures under a root.
 - Controls and interaction (React). Form controls, controls generated from a `Space` and a dataset picker are in
-  `react/controls`; draggable points, brushes and hover overlays are in `react/interaction`; `Chart`, `SceneView`,
+  `react/controls` (`ControlPanel columns` drops columns on a narrow screen); draggable points (`place` puts the one point where the reader
+  clicks), brushes and hover overlays are in `react/interaction` (an `InteractionOverlay` passes pointer events to every tool's `Backdrop`, so a
+  `Probe` and `DraggablePoints` stack); `Chart`, `SceneView`,
   `StructureView` and `FigureGrid` are the base components in `react`.
 - Look and feel: `omai-render/theme` has the light and dark tokens, palettes and number formatting; `omai-render/maths`
   typesets TeX through KaTeX.
@@ -149,12 +154,12 @@ below are the folders of `src`; `react` is large and its index is nested by its 
 ## Domains
 
 - [animation](index/animation.md): Animation: building timelines of frames from runs, sweeps and structure overlays (`sweepTimeline`, `runTimeline`, `structureTimeline`), easing and tweening between frames (`tweenTimeline`), and exporting a timeline as a self-playing SVG (`animatedSvg`) ... (10 entries)
-- [charts](index/charts.md): ECharts option builders. (25 entries)
+- [charts](index/charts.md): ECharts option builders. (26 entries)
 - [figure](index/figure.md): The headless figure model: `figure` gives a fixed size, box aspect, padding and type size per medium, `gridSpec`, `withMarginals` and `bento` lay out panels (with `layoutGrid` placing them in pixels) ... (11 entries)
 - [gym](index/gym.md): Pictures of environments and worlds: `worldView` draws a grid world from above (with a policy, path or search overlays), `raycastViews` gives the first-person view beside the map, `pathFrames` animates a path ... (4 entries)
 - [layout](index/layout.md): Graph layout: positions only, with no rendering and no layout library. (6 entries)
 - [maths](index/maths.md): Mathematics on the page: TeX typesetting through KaTeX with one shared macro registry (`texToHtml`, `macros`), live equations whose values follow the controls (`tex`, `bindTex`), and derivations set as aligned steps with notes (`derivationTex`). (2 entries)
-- [producer](index/producer.md): The producer of a live session, behind one interface: `inlineProducer`, the main-thread producer that computes in slices, and `workerProducer`, which hands a Web Worker the name of a method and its JSON options (the worker entry is `serveWorker`) ... (8 entries)
+- [producer](index/producer.md): The producer of a live session, behind one interface: `inlineProducer`, the main-thread producer that computes in slices, and `workerProducer`, which hands a Web Worker the name of a method and its JSON options (the worker entry is `serveWorker`) ... (10 entries)
 - [react](index/react.md): React 19 bindings of omai-render. (89 entries)
 - [structures](index/structures.md): Any engine `Structure` drawn as a diagram: `diagram` lays out and draws it to a scene, `styleFor` gives the visual language of each kind of structure (graphical models, trees, automata, networks), `architecture` draws a neural network ... (5 entries)
 - [svg](index/svg.md): Headless SVG and PNG output: `chartToSvg` and `sceneToSvg` give SVG text, `composeSvg` puts charts and labels in one document, `svgToPng` and `svgToPixels` rasterise it in a browser, `encodePng` writes PNG bytes with no dependency ... (7 entries)

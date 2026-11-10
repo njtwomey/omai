@@ -10,10 +10,11 @@ import { type Complex, type ComplexPlane, isStablePole } from 'omai-engine/expos
 import { lines } from '../charts/lines.ts'
 import { cartesian, type Layer } from '../charts/plot.ts'
 import { points } from '../charts/points.ts'
+import { SYMBOLS } from '../charts/symbols.ts'
 import { ariaOf, spanOf, type ViewOptions, viewFigure } from './_view.ts'
 
 // A filled cross (an x), the marker of a pole: a path symbol is a filled shape, so strokes alone would not show.
-const CROSS = 'path://M-3,-2L-2,-3L0,-1L2,-3L3,-2L1,0L3,2L2,3L0,1L-2,3L-3,2L-1,0Z'
+const CROSS = SYMBOLS.cross
 
 /**
  * The axis limits of a complex plane: symmetric about the origin's side, wide enough for every point, the locus and

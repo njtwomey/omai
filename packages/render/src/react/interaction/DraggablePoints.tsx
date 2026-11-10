@@ -18,6 +18,13 @@ export interface DraggablePointsProps {
   readonly constrainEach?: (index: number) => Constraint | undefined
   /** A press on empty space adds a point there (default false). */
   readonly add?: boolean
+  /**
+   * A press on empty space puts the point there (default false): it makes the first point when there is none and
+   * otherwise moves it (the single-point tool: click a map to place the point, click again to move it). The point then
+   * follows the pointer until release. `add` takes precedence while it may still make points. Handles and the other
+   * tools of the overlay ({@link Probe}, {@link Brush}) are unaffected: the press goes to every tool.
+   */
+  readonly place?: boolean
   /** The most points `add` may make (default unlimited). */
   readonly max?: number
   /** A double click (or Delete key) on a point removes it (default false). */
@@ -35,7 +42,7 @@ export interface DraggablePointsProps {
 }
 
 /**
- * Points the reader can drag (and, with `add`, place by pressing empty space; with `remove`, delete by double click),
+ * Points the reader can drag (and, with `add`, place by pressing empty space, or with `place` put the one point there; with `remove`, delete by double click),
  * each kept where its constraint allows: in a box, on a curve, on a grid. The points are controlled: the overlay
  * calls `onChange` with the new list and draws what it is given, so every figure reading the same state follows. Each
  * handle is focusable; arrow keys nudge it by a few pixels (more with Shift).
@@ -45,7 +52,17 @@ export interface DraggablePointsProps {
  * @index function React component: points the reader drags, adds or removes: `<DraggablePoints points={pts} onChange={setPts} add />`
  */
 export function DraggablePoints(props: DraggablePointsProps): ReactNode {
-  const { points, onChange, add = false, remove = false, radius = 6, shape = 'circle', labels, onActive } = props
+  const {
+    points,
+    onChange,
+    add = false,
+    place: putOnPress = false,
+    remove = false,
+    radius = 6,
+    shape = 'circle',
+    labels,
+    onActive,
+  } = props
   const { projection, dataOf } = useOverlay()
   const [active, setActive] = useState(-1)
   const ruleFor = (i: number): Constraint | undefined => props.constrainEach?.(i) ?? props.constrain
@@ -62,6 +79,7 @@ export function DraggablePoints(props: DraggablePointsProps): ReactNode {
   const colourOf = (i: number): string =>
     typeof props.colour === 'function' ? props.colour(i) : (props.colour ?? 'var(--wb-accent, #1f77b4)')
   const canAdd = add && (props.max === undefined || points.length < props.max)
+  const catches = add || putOnPress
   const nudge = (i: number, e: KeyboardEvent): void => {
     const step = e.shiftKey ? 20 : 4
     const d: Record<string, Point2> = {
@@ -82,14 +100,16 @@ export function DraggablePoints(props: DraggablePointsProps): ReactNode {
   }
   return (
     <g>
-      {add ? (
+      {catches ? (
         <Backdrop
-          cursor={canAdd ? 'copy' : 'default'}
+          cursor={canAdd || putOnPress ? 'copy' : 'default'}
           onPointerDown={(e) => {
             const at = dataOf(e)
-            if (!canAdd || !Number.isFinite(at[0]) || !Number.isFinite(at[1])) return
-            const i = points.length
-            const next = [...points, place(i, at)]
+            // Adding makes a point; placing moves the first (or makes it when there is none).
+            if (!(canAdd || putOnPress) || !Number.isFinite(at[0]) || !Number.isFinite(at[1])) return
+            const i = canAdd || points.length === 0 ? points.length : 0
+            const next = [...points]
+            next[i] = place(i, at)
             onChange(next)
             // The new point follows the pointer until release, as if it had been grabbed.
             const target = e.currentTarget

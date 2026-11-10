@@ -25,7 +25,7 @@ React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneVi
 - function `ThresholdExplorer`: React component: drag a threshold across ROC, cost and table: `<ThresholdExplorer yTrue={y} scores={s} />` `src/react/ThresholdExplorer.tsx:98` `omai-render/react`
 - function `useActive`: React hook: whether the figures here may compute and play: `useActive()` `src/react/active.tsx:41` `omai-render/react`
 - function `useColourMode`: React hook: the colour mode figures draw in, light or dark: `useColourMode()` `src/react/theme.tsx:236` `omai-render/react`
-- function `useJob`: React hook: a staged heavy computation with progress, started when active: `useJob({ stages, inputs, active })` `src/react/useJob.ts:220` `omai-render/react`
+- function `useJob`: React hook: a staged heavy computation with progress, started when active: `useJob({ stages, inputs, active })` `src/react/useJob.ts:258` `omai-render/react`
 - function `useLiveRun`: React hook: step an Algorithm live while it plays: `useLiveRun(algorithm, { maxSteps: 200 })` `src/react/usePlayback.ts:345` `omai-render/react`
 - function `usePixelRatio`: React hook: the ambient pixel ratio magnification, if a host set one: `usePixelRatio()` `src/react/pixel-ratio.tsx:38` `omai-render/react`
 - function `usePlayback`: React hook: drive n precomputed frames with play, step and seek: `usePlayback(n)` `src/react/usePlayback.ts:119` `omai-render/react`
@@ -44,8 +44,8 @@ React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneVi
 Form controls for figures and demos, in plain React and Tailwind over the `--wb-*` tokens. Inputs: `NumberField`, `Select`, `Choice`, `Toggle`, `SeedInput`, `ColumnOrder`. Generated from an engine `Space`: `SpaceControls` (options a rule rules out drawn disabled), `SpaceSettings` and `SettingsButton` (a modal applied on confirm), `ModelSelector` (a union's options with a settings popover each) and `SlotVariants` (the options of a slot compared at once). Choosing data: `DatasetPicker` and `DatasetSelector` with `useDataset`, `EnvironmentSelector`. Layout: `ControlPanel` and `ControlLayout` put controls beside a figure. Validity rules read from the option tables' properties, and the rest of the rules behind the controls, are pure modules.
 
 - function `Choice`: React component: a segmented choice among few options: `<Choice label="mode" value={m} options={modes} onChange={setM} />` `src/react/controls/Choice.tsx:49` `omai-render/react`
-- function `ControlLayout`: React component: put controls beside or above a figure: `<ControlLayout controls={panel} placement="left">` `src/react/controls/ControlPanel.tsx:139` `omai-render/react`
-- function `ControlPanel`: React component: lay controls out in columns or bento areas: `<ControlPanel columns={2}>...</ControlPanel>` `src/react/controls/ControlPanel.tsx:44` `omai-render/react`
+- function `ControlLayout`: React component: put controls beside or above a figure: `<ControlLayout controls={panel} placement="left">` `src/react/controls/ControlPanel.tsx:157` `omai-render/react`
+- function `ControlPanel`: React component: lay controls out in columns or bento areas: `<ControlPanel columns={2}>...</ControlPanel>` `src/react/controls/ControlPanel.tsx:62` `omai-render/react`
 - function `ControlScaleProvider`: React component: scale every control and player below by a factor: `<ControlScaleProvider scale={1.3}>` `src/react/controls/scale.tsx:43` `omai-render/react`
 - function `DatasetPicker`: React component: pick a dataset and its knobs: `<DatasetPicker collection="classification2d" value={sel} onChange={setSel} />` `src/react/controls/DatasetPicker.tsx:89` `omai-render/react`
 - function `DatasetSelector`: React component: search the dataset registry: `<DatasetSelector real={false} value={sel} onChange={setSel} />` `src/react/controls/DatasetSelector.tsx:80` `omai-render/react`
@@ -67,13 +67,13 @@ Interaction overlays laid over any figure through a projection between data and 
 
 - function `Brush`: React component: drag out a data-space rectangle: `<Brush value={rect} onChange={setRect} />` `src/react/interaction/Brush.tsx:20` `omai-render/react`
 - function `DraggableLine`: React component: a threshold line dragged across a figure: `<DraggableLine axis="x" value={t} onChange={setT} />` `src/react/interaction/DraggableLine.tsx:76` `omai-render/react`
-- function `DraggablePoints`: React component: points the reader drags, adds or removes: `<DraggablePoints points={pts} onChange={setPts} add />` `src/react/interaction/DraggablePoints.tsx:47` `omai-render/react`
+- function `DraggablePoints`: React component: points the reader drags, adds or removes: `<DraggablePoints points={pts} onChange={setPts} add />` `src/react/interaction/DraggablePoints.tsx:54` `omai-render/react`
 - function `DraggableRect`: React component: a rectangle dragged and resized across a figure: `<DraggableRect x={x} y={y} onChange={set} />` `src/react/interaction/DraggableRect.tsx:192` `omai-render/react`
 - function `Handle`: React component: the grip of an overlay tool: `<Handle shape="square" size={8} />` `src/react/interaction/Handle.tsx:72` `omai-render/react`
-- function `InteractionOverlay`: React component: SVG layer over a figure for tools: `<InteractionOverlay projection={p} width={w} height={h}>...` `src/react/interaction/InteractionOverlay.tsx:46` `omai-render/react`
-- function `Overlaid`: React component: stack a figure and its overlay: `<Overlaid width={w} height={h} overlay={tools}>{chart}</Overlaid>` `src/react/interaction/InteractionOverlay.tsx:92` `omai-render/react`
+- function `InteractionOverlay`: React component: SVG layer over a figure for tools: `<InteractionOverlay projection={p} width={w} height={h}>...` `src/react/interaction/InteractionOverlay.tsx:70` `omai-render/react`
+- function `Overlaid`: React component: stack a figure and its overlay: `<Overlaid width={w} height={h} overlay={tools}>{chart}</Overlaid>` `src/react/interaction/InteractionOverlay.tsx:151` `omai-render/react`
 - function `Probe`: React component: a crosshair reporting the data point under the pointer: `<Probe onProbe={setPoint} />` `src/react/interaction/Probe.tsx:19` `omai-render/react`
-- function `useChartProjection`: React hook: projection of a live Chart for overlays: `useChartProjection()` `src/react/interaction/useChartProjection.ts:23` `omai-render/react`
+- function `useChartProjection`: React hook: projection of a live Chart for overlays: `useChartProjection()` `src/react/interaction/useChartProjection.ts:25` `omai-render/react`
 - function `useFocusRing`: React hook: which part of an overlay tool shows its keyboard focus ring: `useFocusRing<'body'>()` `src/react/interaction/useFocusRing.ts:41` `omai-render/react`
 - function `useLinkState`: React hook: read hover, selection and brush shared by linked figures: `useLinkState(store)` `src/react/interaction/useLinkState.ts:17` `omai-render/react`
 

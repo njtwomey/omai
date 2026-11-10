@@ -70,3 +70,21 @@ describe('Player keys', () => {
     expect(m.window.count('keydown')).toBe(0)
   })
 })
+
+describe('Player on a narrow row', () => {
+  it('wraps, and the scrubber and the stamp wrap together, so a stamp is never pushed past the edge', async () => {
+    const m = await mountElement(<Player controller={controller()} stamp={(f) => `round ${f}`} />)
+    const root = m.elements()[0]
+    expect(String(root?.props['className'])).toContain('flex-wrap')
+    const slider = m.elements().find((e) => e.props['role'] === 'slider')
+    const stamp = m.elements().find((e) => e.text === 'round 3' && e.tag === 'span')
+    expect(slider).toBeDefined()
+    expect(stamp).toBeDefined()
+    // One group holds both (its parent is the same element).
+    const parentOf = (e: { node: object } | undefined): unknown =>
+      e === undefined ? undefined : (e.node as { parentNode?: unknown }).parentNode
+    expect(parentOf(slider)).toBe(parentOf(stamp))
+    expect(parentOf(slider)).not.toBe(root?.node)
+    await m.unmount()
+  })
+})

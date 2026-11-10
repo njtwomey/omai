@@ -147,7 +147,7 @@ export function Player(props: PlayerProps): ReactNode {
     // biome-ignore lint/a11y/noStaticElementInteractions: keyboard shortcuts for the whole player, which holds the buttons
     <div
       className={cx(
-        'flex w-full min-w-[calc(16rem*var(--omai-control-scale,1))] items-center gap-2 text-(--wb-fg)',
+        'flex w-full min-w-[calc(16rem*var(--omai-control-scale,1))] flex-wrap items-center gap-x-2 gap-y-1 text-(--wb-fg)',
         className,
       )}
       {...(c.state === undefined ? {} : { [STATE_ATTRIBUTE]: c.state })}
@@ -253,10 +253,13 @@ export function Player(props: PlayerProps): ReactNode {
           </button>
         </div>
       </div>
-      <Scrubber frame={c.frame} count={c.count} onSeek={c.seek} onGrab={c.pause} size={size} />
-      {label === null ? null : (
-        <span className={cx('shrink-0 font-mono text-(--wb-muted) tabular-nums', sized.text)}>{label}</span>
-      )}
+      {/* The scrubber and the stamp wrap together to a line of their own when the buttons leave them too little room. */}
+      <div className="flex min-w-0 flex-1 basis-[calc(10rem*var(--omai-control-scale,1))] items-center gap-2">
+        <Scrubber frame={c.frame} count={c.count} onSeek={c.seek} onGrab={c.pause} size={size} />
+        {label === null ? null : (
+          <span className={cx('shrink-0 font-mono text-(--wb-muted) tabular-nums', sized.text)}>{label}</span>
+        )}
+      </div>
     </div>
   )
 }
