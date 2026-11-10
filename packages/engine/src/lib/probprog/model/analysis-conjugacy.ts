@@ -323,7 +323,20 @@ function pairRecord(env: ConjugacyEnv, prior: LatentNode): ConjugacyRecord | und
   const reason = holds
     ? `${x} is conjugate (${summary}): its posterior is closed form${givenList.length > 0 ? ` given ${givenList.join(', ')}` : ', with nothing else to condition on'}${sumsOver.length > 0 ? `, summing over ${sumsOver.join(', ')}` : ''}`
     : `${x} would be conjugate (${summary}) but ${problems.join('; ')}`
-  const collapse = collapseVerdict(holds, hierarchical, pairs, [...vias])
+  // A recorded derived node that reads the site is a `deterministic` site that depends on it: the handler refuses it.
+  const recorded = env.spec.nodes
+    .filter((n) => n.kind === 'derived' && n.record && latentsIn(n.expr, env.byName, env.memo).has(x))
+    .map((n) => n.name)
+  // The handler lines the site up with the last axes of its children, in the order the nodes declare their dimensions.
+  const own = prior.dims
+  let layout: string | undefined
+  for (const l of links) {
+    const kid = env.spec.nodes.find((n) => n.name === l.node && n.kind === l.nodeKind)
+    const kd = kid?.dims ?? []
+    if (own.length > 0 && l.via !== 'index' && !own.every((dim, i) => kd[kd.length - own.length + i] === dim))
+      layout = `its dimensions (${own.join(', ')}) are not the trailing dimensions of ${l.node} (${kd.join(', ')}): the handler lines the site up with the last axes, so ${l.node} would have to be declared with dims [..., ${own.join(', ')}] (observe takes \`dims\`)`
+  }
+  const collapse = collapseVerdict(holds, hierarchical, pairs, [...vias], recorded, layout)
   return {
     kind: hierarchical ? 'hierarchical' : 'pair',
     sites: [x],
@@ -349,6 +362,8 @@ function collapseVerdict(
   hierarchical: boolean,
   pairs: readonly ConjugatePair[],
   vias: readonly ConjugacyVia[],
+  recorded: readonly string[],
+  layout: string | undefined,
 ): { readonly applies: boolean; readonly reason: string } {
   if (!holds) return { applies: false, reason: 'the site is not conjugate with everything that depends on it' }
   if (hierarchical)
@@ -357,10 +372,17 @@ function collapseVerdict(
       reason: 'some dependents are latent: collapse integrates a site into observed children, so collapse those first',
     }
   if (pairs.length !== 1) return { applies: false, reason: 'the children are not all of one conjugate pair' }
-  if (vias.some((v) => v !== 'direct'))
+  const unlike = vias.filter((v) => v !== 'direct' && v !== 'variance')
+  if (unlike.length > 0)
     return {
       applies: false,
-      reason: `the handler takes the parameter itself, not ${vias.filter((v) => v !== 'direct').join(' or ')}`,
+      reason: `the handler takes the parameter itself (or the variance behind a scale), not ${[...new Set(unlike)].join(' or ')}`,
+    }
+  if (layout !== undefined) return { applies: false, reason: layout }
+  if (recorded.length > 0)
+    return {
+      applies: false,
+      reason: `the recorded derived node ${recorded.join(', ')} reads the site, and the handler takes only sites whose dependents are observed`,
     }
   return { applies: true, reason: 'the children take the site as their parameter and are all of one conjugate pair' }
 }

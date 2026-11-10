@@ -157,7 +157,7 @@ describe('conjugacy through plates and affine maps', () => {
     })
     const r = analyseSpec(m).conjugacy[0]
     expect(r?.links[0]?.via).toBe('variance')
-    expect(r?.collapse.applies).toBe(false)
+    expect(r?.collapse.applies).toBe(true)
     const bound = m.bind({ y: [0.5, -1, 2] })
     const ss = 0.25 + 1 + 4
     expect(
@@ -449,7 +449,7 @@ describe('the structure report', () => {
       const mu = b.latent('mu', d.normal(0, 5))
       const tau = b.latent('tau', d.halfNormal(1))
       const a = b.latent('a', d.normal(mu, tau), { dims: [j] })
-      b.observe('y', d.normal(a, 1), y)
+      b.observe('y', d.normal(a, 1), y, { dims: ['i', j] })
     })
     const bound = m.bind({
       y: [
@@ -466,6 +466,14 @@ describe('the structure report', () => {
     })
     const reparam = r.suggestions.find((s) => s.kind === 'reparameterise')
     expect(reparam?.use[0]).toMatchObject({ name: 'reparam', knobs: { a: 'locScale(0)' } })
+    // Declared with the group dimension first the handler cannot line the site up, and the report says so.
+    const first = defineModel('hier-first', (b) => {
+      const j = b.range('group')
+      const a = b.latent('a', d.normal(0, 1), { dims: [j] })
+      b.observe('y', d.normal(a, 1), b.data('y', { dims: [j, 'i'] }))
+    }).bind({ y: [[1, 2], [3, 4], [5, 6]] })
+    const conditional = structureReport(first).suggestions.find((s) => s.kind === 'conditional')
+    expect(conditional?.text).toMatch(/trailing dimensions/)
     const text = analyseSpec(bound).explain()
     expect(text).toBe(r.explain())
     expect(text).toMatch(/Structure of hier/)
