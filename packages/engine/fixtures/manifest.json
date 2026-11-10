@@ -3990,6 +3990,16 @@
       "cases": 16
     },
     {
+      "fixture": "probprog/inference/kernels.json",
+      "source": "oracle/cases/probprog/inference/kernels.py",
+      "reference": {
+        "numpyro": "0.22.0",
+        "blackjax": "1.7.1",
+        "jax": "0.12.0.1"
+      },
+      "cases": 14
+    },
+    {
       "fixture": "probprog/lift.json",
       "source": "oracle/cases/probprog/lift.py",
       "reference": {
