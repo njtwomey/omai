@@ -45,6 +45,16 @@ The user read the plan and said to execute it. What that settles:
    request; an `examples/` program of the same figure is fine and does not need one.
 6. **Heavy validation is periodic, not continuous.** A script and a `make` target that is **not** part of `make verify` or
    `make check`, re-run whenever the probabilistic-programming code changes, with committed result tables (section 6).
+7. **Releases.** The incremental 0.1.13 versions are tagged locally only; no GitHub release is made until the
+   probabilistic-programming work is complete. (0.1.12 was released as normal.)
+8. **Pocs groups, scheduled for the end.** After all lanes are merged and gated: `apps/pocs` gains groups of pocs, and a
+   probabilistic-programming group is filled with a set of simple, interesting showcase examples. This overrides decision 5 for
+   that set (the user has asked for it) and runs only once everything else is done.
+9. **The model description drives pictures.** The spec should be describable so that a visual representation connects directly to
+   it: `toStructure` produces plate diagrams (nodes with roles, named and nested plates, observed shading, data and derived nodes),
+   and inference tapes (message events, per-site marginals and samples, ELBO and diagnostics per site) address the same stable
+   node ids, so a view can overlay live inference state on the picture. Lane A owns the spec side and lists the render gaps;
+   WP11 gains a model-graph view (plate diagram with live annotations) in the render package.
 
 ## 1. Executive summary
 
