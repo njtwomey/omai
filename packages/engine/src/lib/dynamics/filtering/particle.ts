@@ -119,6 +119,32 @@ export interface ParticleModel {
   readonly logTransition?: (particles: Value, next: Value, t: number) => Value
   /** A point prediction of each particle's next state (for the auxiliary filter's first stage), `[N, d]`. */
   readonly predict?: (particles: Value, t: number) => Value
+  /**
+   * A guided proposal: when present, particles are moved by it instead of by `transition` and weighted by the ratio of the
+   * transition to the proposal density, so a proposal that looks at the observation wastes fewer particles. Unbiasedness of
+   * the evidence estimate holds whatever the proposal, as long as it covers the transition's support.
+   */
+  readonly guide?: ParticleGuide
+}
+
+/**
+ * A proposal of the particle filters that sees the observation: draws x_t from q(x_t | x_{t-1}, z_t) for every particle
+ * and returns the log of p(x_t | x_{t-1}) / q(x_t | x_{t-1}, z_t) per particle, the correction the weights need.
+ */
+export interface ParticleGuide {
+  /**
+   * @param key - The step's key for the draws.
+   * @param particles - The particles `[N, d]` before the move.
+   * @param z - The observation at this step.
+   * @param t - The step.
+   * @returns The moved particles `[N, d]` and the log ratio `[N]`.
+   */
+  readonly propose: (
+    key: Key,
+    particles: Value,
+    z: Value,
+    t: number,
+  ) => { readonly particles: Value; readonly logRatio: Value }
 }
 
 /** The output of the particle filters. */
@@ -296,10 +322,18 @@ function pfAlgorithm(
         resampledNow = true
         ancestors = idx
       }
-      particles = model.transition(foldIn(kt, 1), particles, t)
+      let logRatio: ArrayLike<number> | undefined
+      if (model.guide === undefined) particles = model.transition(foldIn(kt, 1), particles, t)
+      else {
+        const moved = model.guide.propose(foldIn(kt, 1), particles, zAt(t), t)
+        particles = moved.particles
+        logRatio = numbersOf(moved.logRatio)
+      }
       const ll = numbersOf(model.logLikelihood(zAt(t), particles, t))
       // logW is normalised, so the log-sum of the updated weights estimates log p(z_t | z_1..t-1).
-      const { w, lse } = normalise(Float64Array.from(logW, (v, i) => v + (ll[i] ?? 0) - (firstStage[i] ?? 0)))
+      const { w, lse } = normalise(
+        Float64Array.from(logW, (v, i) => v + (ll[i] ?? 0) + (logRatio?.[i] ?? 0) - (firstStage[i] ?? 0)),
+      )
       const ess = 1 / w.reduce((acc, v) => acc + v * v, 0)
       const mean = weightedMean(particles, w)
       const shown = auxiliary ? ess : essPrev

@@ -35,6 +35,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `abcRejectionMethod`: Rejection ABC with summary statistics, as a one-step method. `src/lib/probprog/inference/abc-methods.ts:237` `omai-engine/probprog/inference`
 - estimator `abcSmcMethod`: ABC-SMC, one generation per step, with the tolerance shrinking on the tape. `src/lib/probprog/inference/abc-methods.ts:109` `omai-engine/probprog/inference`
 - estimator `bpSpecMethod`: Belief propagation on a model spec of Bernoulli nodes, posterior by site. `src/lib/probprog/inference/mp.ts:295` `omai-engine/probprog/inference`
+- estimator `bridgeSamplingMethod`: Bridge sampling evidence: slice-sampling posterior draws and a fitted Gaussian, one pair per step. `src/lib/probprog/inference/evidence-methods.ts:363` `omai-engine/probprog/inference`
 - estimator `chainMethod`: Forward-backward, FFBS and Viterbi on a discrete chain, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:196` `omai-engine/probprog/inference`
 - estimator `conjugateMethod`: Conjugate posteriors in closed form, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:38` `omai-engine/probprog/inference`
 - estimator `emMethod`: Expectation maximisation, one iteration per step, with exact E-steps. `src/lib/probprog/inference/em-method.ts:101` `omai-engine/probprog/inference`
@@ -42,13 +43,22 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `epSpecMethod`: Expectation propagation on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:231` `omai-engine/probprog/inference`
 - estimator `gaussianMethod`: Exact linear-Gaussian conditioning, Kalman and Gaussian BP, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:85` `omai-engine/probprog/inference`
 - estimator `gibbsMethod`: Gibbs sampling, one sweep per step, resumable, with anytime draws. `src/lib/probprog/inference/gibbs-method.ts:89` `omai-engine/probprog/inference`
+- estimator `importanceEvidenceMethod`: Importance-sampling evidence with a pilot-fitted Gaussian proposal and Pareto k-hat. `src/lib/probprog/inference/evidence-methods.ts:618` `omai-engine/probprog/inference`
 - estimator `importanceMethod`: Importance sampling in batches, with evidence, ESS and Pareto k-hat as it goes. `src/lib/probprog/inference/importance-method.ts:96` `omai-engine/probprog/inference`
 - estimator `laplaceMethod`: The Laplace approximation, optimiser iterations then the Hessian, as a steppable method. `src/lib/probprog/inference/laplace-method.ts:129` `omai-engine/probprog/inference`
+- estimator `nestedMethod`: Nested sampling, one live-point replacement per step, with the evidence and its error. `src/lib/probprog/inference/nested-method.ts:94` `omai-engine/probprog/inference`
 - estimator `nutsMethod`: NUTS and HMC as a steppable, cancellable, resumable method with anytime snapshots. `src/lib/probprog/inference/nuts-method.ts:304` `omai-engine/probprog/inference`
 - estimator `particleFilterMethod`: Bootstrap particle filter over a markov loop, one time step per step. `src/lib/probprog/inference/smc-methods.ts:256` `omai-engine/probprog/inference`
+- estimator `particleGibbsMethod`: Particle Gibbs with ancestor sampling: conditional SMC paths and parameter moves. `src/lib/probprog/inference/pmcmc-methods.ts:407` `omai-engine/probprog/inference`
+- estimator `pmmhMethod`: Particle marginal Metropolis-Hastings: random walk on state-space parameters with a particle filter. `src/lib/probprog/inference/pmcmc-methods.ts:240` `omai-engine/probprog/inference`
+- estimator `stateSpaceFilterMethod`: Particle filter of a state-space model: bootstrap, auxiliary or guided proposal, one observation per step. `src/lib/probprog/inference/state-space-methods.ts:86` `omai-engine/probprog/inference`
+- estimator `steppingStoneMethod`: Stepping-stone evidence over the adaptive tempering ladder, one temperature per step. `src/lib/probprog/inference/evidence-methods.ts:243` `omai-engine/probprog/inference`
 - estimator `sviMethod`: Stochastic variational inference as a steppable, resumable method with anytime posteriors. `src/lib/probprog/inference/svi-method.ts:94` `omai-engine/probprog/inference`
 - estimator `temperedSmcMethod`: Adaptive-tempering SMC, one temperature per step, with the evidence. `src/lib/probprog/inference/smc-methods.ts:101` `omai-engine/probprog/inference`
+- estimator `thermodynamicIntegrationMethod`: Thermodynamic integration of the mean log likelihood over the tempering ladder. `src/lib/probprog/inference/evidence-methods.ts:278` `omai-engine/probprog/inference`
 - estimator `vmpSpecMethod`: Variational message passing on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:263` `omai-engine/probprog/inference`
+
+- table `evidenceEstimators`: Evidence estimators by name: bridge, stepping stone, thermodynamic, importance, nested, tempered SMC. `src/lib/probprog/inference/evidence-methods.ts:788` `omai-engine/probprog/inference`
 
 ## probprog/model
 
@@ -91,11 +101,13 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `benchmarkAgreement`: Cross-engine agreement of a benchmark model: every planned method against the truth. `src/lib/probprog/models/agreement.ts:132` `omai-engine/probprog/models`
 - function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:103` `omai-engine/probprog/models`
 - function `defineBenchmark`: Make a benchmark model: a spec or program with generator, truth, tags, references and method plans. `src/lib/probprog/models/benchmark.ts:175` `omai-engine/probprog/models`
+- function `evidenceCampaigns`: Periodic validation of the evidence estimators, nested sampling, particle filters and particle MCMC. `src/lib/probprog/models/evidence-campaigns.ts:521` `omai-engine/probprog/models`
 
 - structure `BenchmarkModel`: A benchmark model: a spec with a data generator, the truth, references, tags and method plans. `src/lib/probprog/models/benchmark.ts:98` `omai-engine/probprog/models`
 
 - table `benchmarkModels`: The benchmark models: specs with truth, generators, tags and method plans. `src/lib/probprog/models/suite.ts:33` `omai-engine/probprog/models`
 
+- dataset `ar1CoefficientFamily`: The AR(1) state-space benchmark with an unknown coefficient, as a family for particle MCMC. `src/lib/probprog/models/ar1-parameters.ts:34` `omai-engine/probprog/models`
 - dataset `ar1StateSpace`: Stationary AR(1) state with noisy observations as a markov program; exact Gaussian smoothing truth. `src/lib/probprog/models/state-space.ts:93` `omai-engine/probprog/models`
 - dataset `banana`: Haario's banana: a curved correlated 2-D ridge; analytic marginals; Laplace and mean field are wrong. `src/lib/probprog/models/geometry.ts:162` `omai-engine/probprog/models`
 - dataset `betaBernoulli`: Beta-Bernoulli coin: exact Beta posterior and evidence; the simplest conjugate benchmark. `src/lib/probprog/models/conjugate.ts:43` `omai-engine/probprog/models`

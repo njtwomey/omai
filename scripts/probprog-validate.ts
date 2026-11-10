@@ -16,7 +16,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { benchmarkCampaigns } from '../packages/engine/src/lib/probprog/models/index.ts'
+import { benchmarkCampaigns, evidenceCampaigns } from '../packages/engine/src/lib/probprog/models/index.ts'
 import {
   campaignMarkdown,
   runCampaigns,
@@ -38,8 +38,8 @@ function option(name: string): string | undefined {
 const git = (...args: string[]): string => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim()
 const fileOf = (name: string): string => `${name.replaceAll('/', '-')}.md`
 const out = resolve(ROOT, option('out') ?? 'docs/probprog/results')
-// The benchmark suite's cross-engine agreement comes after the kernel's own campaigns, so adding it changes no other campaign's key.
-const campaigns = [...validationCampaigns(), ...benchmarkCampaigns()]
+// The benchmark suite's cross-engine agreement comes after the kernel's own campaigns, and the evidence and particle campaigns after those, so adding them changes no other campaign's key.
+const campaigns = [...validationCampaigns(), ...benchmarkCampaigns(), ...evidenceCampaigns()]
 
 if (process.argv.includes('--check')) {
   const last = Number(git('log', '-1', '--format=%ct', '--', ...WATCHED)) * 1000
