@@ -157,7 +157,7 @@ export const gaussianMixtureOrdered: BenchmarkModel = defineBenchmark({
     }),
     laplacePlan(scale, { note: 'a normal at the mode of the ordered density: close, the labels summed out' }),
     sviPlan(scale, {
-      note: 'a mean-field normal on the unconstrained coordinates (the first mean and the log gap): close in the means, narrower',
+      note: 'a mean-field normal on the unconstrained coordinates (the first mean and the log gap): close in the means, but mu[0] too narrow and mu[1], their sum, too wide',
     }),
   ],
 })

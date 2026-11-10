@@ -14,6 +14,7 @@ import {
   lowRankMultivariateNormal,
   multivariateNormal,
   normal,
+  supportRank,
   type Support,
 } from '../dists/index.ts'
 import { inv } from '../numerics/linalg/index.ts'
@@ -124,7 +125,10 @@ export function guideSites<D = void>(model: Model<D>, data: D): GuideSite[] {
       if (site.infer.enumerate === 'parallel') continue
       throw new OmaiError('value', `guide: discrete site ${site.name} cannot be summed out`, { site: site.name })
     }
-    const batchRank = site.fn.batchShape.length
+    // A support over the last axis (ordered, simplex) of a scalar-event distribution under a plate makes that plate axis part
+    // of the event (the elements are not independent): the guide draws the whole vector, outside that plate.
+    const coupled = Math.max(supportRank(site.fn.support) - site.fn.eventShape.length, 0)
+    const batchRank = site.fn.batchShape.length - coupled
     const shape = [...site.value.shape]
     for (const f of site.plates) {
       const axis = shape.length - site.fn.eventShape.length + f.dim
@@ -141,7 +145,7 @@ export function guideSites<D = void>(model: Model<D>, data: D): GuideSite[] {
       bijector,
       eventDim: shape.length - batchRank,
       unconstrainedEventDim: unconstrainedShape.length - batchRank,
-      plates: [...site.plates].reverse(),
+      plates: site.plates.filter((f) => f.dim < -coupled).reverse(),
       offset,
       size,
       subsampled: site.plates.some((f) => f.subsampleSize !== f.size),

@@ -13,7 +13,11 @@ import {
   autoLaplace,
   autoLowRankMultivariateNormal,
   autoMultivariateNormal,
+  autoNormal,
+  guideSites,
 } from '../guides.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, toProgram } from '../model/index.ts'
 import { type Model, observe, param, plate, sample } from '../primitives.ts'
 import { conjugateInference } from './conjugate.ts'
 import { finalElbo, svi, sviEngine } from './svi.ts'
@@ -154,3 +158,45 @@ function conjugateFreeTruth(): { readonly mean: readonly [number, number] } {
   const r = 0.7 - (0 + 2 * 1)
   return { mean: [(Sa[0] ?? 0) * (r / v), 1 + (Sa[1] ?? 0) * (r / v)] }
 }
+
+// A vector support (ordered means) on a scalar-event distribution under a plate couples the plate's elements: the guide has
+// to draw the whole vector, outside that plate, or the model's observed site meets a guide value of the wrong shape.
+describe('SVI on a mixture with ordered means and an enumerated label', () => {
+  const data = [-2.4, -1.7, -2.1, 1.8, 2.5, 2.2, -1.9, 2.0, -2.2, 2.4]
+  const mixture = (): Model =>
+    toProgram(
+      defineModel('ordered-mixture', (m) => {
+        const row = m.range('row')
+        const k = m.range('component', { size: 2 })
+        const y = m.data('y', { dims: [row] })
+        const mu = m.latent('mu', d.normal(0, 3), { dims: [k], constraint: { kind: 'ordered' } })
+        const z = m.latent('z', d.categorical({ probs: [0.5, 0.5] }), { dims: [row] })
+        m.observe('y', d.normal(mu.at(z), 1), y)
+      }).bind({ y: data }, { sizes: { component: 2 } }),
+    )
+
+  it('describes the coupled axis as part of the site event, outside the plate', () => {
+    const [site] = guideSites(mixture(), undefined)
+    expect(site?.name).toBe('mu')
+    expect(site?.shape).toEqual([2])
+    expect(site?.unconstrainedEventDim).toBe(1)
+    expect(site?.plates).toEqual([])
+  })
+
+  it('fits the ordered means with the mean-field, delta and full-rank guides', () => {
+    const model = mixture()
+    for (const guide of [autoNormal(model), autoDelta(model), autoMultivariateNormal(model)]) {
+      const r = svi(model, undefined, { key: key(0), guide, numSteps: 1200, optimizer: decaying(0.03) })
+      expect(r.status).toBe('completed')
+      const mu = toFlat(r.posterior.sample(key(1), 200)['mu'] ?? tensor([]))
+      for (let i = 0; i < mu.length; i += 2) expect(mu[i] ?? 0).toBeLessThan(mu[i + 1] ?? 0)
+      const m = [0, 1].map((j) => mu.filter((_, i) => i % 2 === j).reduce((a, b) => a + b, 0) / 200)
+      expect(Math.abs((m[0] ?? 0) + 2)).toBeLessThan(0.4)
+      expect(Math.abs((m[1] ?? 0) - 2)).toBeLessThan(0.4)
+    }
+  })
+
+  it('applies to the spec: the method no longer stops at the first run', () => {
+    expect(() => svi(mixture(), undefined, { key: key(2), numSteps: 5 })).not.toThrow()
+  })
+})
