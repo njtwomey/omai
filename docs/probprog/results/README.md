@@ -40,3 +40,5 @@ The `benchmark/` campaigns (the cross-engine agreement of each benchmark model w
 | [evidence/nested-gaussian](evidence-nested-gaussian.md)                             | passed: the stated error covers the analytic evidence at its nominal rate in every dimension, with no bias beyond it             | 29.3    |
 | [evidence/particle-filter](evidence-particle-filter.md)                             | passed: every proposal unbiased on the natural scale; the guided proposal is less variable than the bootstrap                    | 1.6     |
 | [evidence/pmcmc-ar1](evidence-pmcmc-ar1.md)                                         | passed: every chain reproduces the exact posterior mean (within four Monte Carlo standard errors) and spread (within 30 percent) | 38.3    |
+| [structure/benchmarks](structure-benchmarks.md) | passed: 18 models: every finding as expected | 0.0 |
+| [structure/collapse-efficiency](structure-collapse-efficiency.md) | passed: collapsed NUTS gets 42 times the ESS of tau per gradient evaluation of the full centred model, with no divergences | 34.5 |

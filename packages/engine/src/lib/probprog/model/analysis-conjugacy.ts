@@ -108,6 +108,16 @@ const POSTERIOR: Readonly<Record<string, string>> = {
   'pareto/uniform/high': 'Pareto(b + n, max(scale, max y))',
 }
 
+/** The support a family has on its own: a constraint equal to it changes nothing. */
+const NATURAL_SUPPORT: Readonly<Record<string, string>> = {
+  normal: 'real',
+  multivariateNormal: 'real',
+  gamma: 'positive',
+  inverseGamma: 'positive',
+  beta: 'unitInterval',
+  dirichlet: 'simplex',
+}
+
 const pairName = (p: ConjugatePair): string => `${p.prior}-${p.likelihood} ${p.parameter}`
 
 const SCALED: ReadonlyMap<string, string> = new Map([
@@ -276,6 +286,12 @@ function pairRecord(env: ConjugacyEnv, prior: LatentNode): ConjugacyRecord | und
     problems.push(text)
     categories.add(category)
   }
+  // A constraint beyond the family's own support (an ordering, a bound) truncates the posterior: the closed form is not it.
+  if (prior.constraint !== undefined && prior.constraint.kind !== NATURAL_SUPPORT[prior.dist.family])
+    problem(
+      `the constraint '${prior.constraint.kind}' on '${x}' truncates the prior, so the closed form is not its posterior`,
+      'other',
+    )
   for (const n of consumers(env, x)) {
     if (n.kind === 'factor') {
       problem(`the factor '${n.name}' adds an arbitrary density term in '${x}'`, 'other')
