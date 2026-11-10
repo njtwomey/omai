@@ -91,7 +91,7 @@ The model layer: a model written once as a value. A builder (`defineModel`) with
 - function `collapsePlan`: collapsePlan: which sites the collapse handler can integrate out, with cost and gain; user-invoked. `src/lib/probprog/model/collapse-plan.ts:105` `omai-engine/probprog/model`
 - function `defineModel`: Build a model spec with named dimensions, data, latents, observations and derived nodes. `src/lib/probprog/model/builder.ts:590` `omai-engine/probprog/model`
 - function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:1818` `omai-engine/probprog/model`
-- function `fromProgram`: fromProgram: lift a sample/observe program to a ModelSpec of its site structure; refuses a varying structure. `src/lib/probprog/model/from-program.ts:184` `omai-engine/probprog/model`
+- function `fromProgram`: fromProgram: lift a sample/observe program to a ModelSpec of its site structure; refuses a varying structure. `src/lib/probprog/model/from-program.ts:185` `omai-engine/probprog/model`
 - function `structureReport`: structureReport: what a spec's structure allows, as records and suggestions naming the method to use. `src/lib/probprog/model/analysis.ts:414` `omai-engine/probprog/model`
 - function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:1703` `omai-engine/probprog/model`
 - function `toProgram`: Compile a bound ModelSpec to a sample/observe program every engine runs. `src/lib/probprog/model/compile.ts:205` `omai-engine/probprog/model`

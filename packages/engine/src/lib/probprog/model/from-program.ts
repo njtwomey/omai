@@ -178,7 +178,8 @@ const same = (a: Value, b: Value): boolean => {
  * import { normal } from 'omai-engine/dists'
  * const program = () => { const mu = sample('mu', normal(0, 2)); plate('n', 3, () => observe('y', normal(mu, 1), [1, 2, 3])) }
  * const lifted = fromProgram(program, undefined)
- * [lifted.spec.nodes.map((n) => n.name), lifted.constants, structureReport(lifted.definition).conjugateBlocks[0]?.pairs[0]] // => [['mu', 'y'], ['mu.loc', 'mu.scale', 'y.scale'], 'normal-normal loc']
+ * // The mean of y moves with mu, so it is an opaque custom node and no conjugacy is claimed through it.
+ * [lifted.spec.nodes.map((n) => n.name), lifted.opaque.map((o) => o.custom), structureReport(lifted.definition).conjugateBlocks.length] // => [['mu', 'y'], ['y.loc'], 0]
  * ```
  */
 export function fromProgram<D = void>(program: Model<D>, data: D, options: LiftProgramOptions = {}): LiftedProgram {
