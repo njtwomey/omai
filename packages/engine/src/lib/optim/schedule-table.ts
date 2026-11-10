@@ -8,6 +8,7 @@
 
 import { bool, dict, int, type Option, type OptionTable, optionTable, real } from '../space/index.ts'
 import {
+  adviDecay,
   constantSchedule,
   cosineDecay,
   cosineWarmRestarts,
@@ -93,6 +94,12 @@ export const schedules: OptionTable<ScheduleShape, ScheduleProperties> = optionT
       'the peak over the square root of one plus rate times step',
       dict({ decayRate: real(1e-4, 10, { log: true, default: 0.01, label: 'decay rate' }) }),
       (k) => (peak) => inverseSqrtDecay(peak, k['decayRate'] as number),
+    ),
+    advi: shape(
+      { warmup: false, decays: true, restarts: false },
+      "ADVI's step-size decay: the peak times (step + 1) to the power -1/2 + epsilon",
+      dict({ epsilon: real(0, 0.5, { default: 1e-16, label: 'ε' }) }),
+      (k) => (peak) => adviDecay(peak, k['epsilon'] as number),
     ),
     cosine: shape(
       { warmup: false, decays: true, restarts: false },

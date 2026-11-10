@@ -9,9 +9,19 @@ Probabilistic programming, NumPyro style: programs written with `sample` and `ob
 - function `primitives.ts` (file): sample, observe and param: the vocabulary programs are written in. `src/lib/probprog/primitives.ts:1` `omai-engine/probprog`
 - function `reparam.ts` (file): Reparameterise a site into an auxiliary draw plus a transform. `src/lib/probprog/reparam.ts:1` `omai-engine/probprog`
 
+- function `amortisedGuide`: Guide whose local latents come from a neural encoder of each data point (amortised inference). `src/lib/probprog/guides-amortised.ts:103` `omai-engine/probprog`
+- function `autoFlowNormal`: Normalising-flow guide with planar, radial or RealNVP coupling layers. `src/lib/probprog/guides-flow.ts:65` `omai-engine/probprog`
+- function `autoMixtureNormal`: Mixture-of-Gaussians guide whose component is an enumerated guide site, for multimodal posteriors. `src/lib/probprog/guides-mixture.ts:48` `omai-engine/probprog`
+- function `autoStructured`: Structured Gaussian guide following the model's graph: parents, Markov blanket or full. `src/lib/probprog/guides-structured.ts:268` `omai-engine/probprog`
 - function `collapse`: Integrate conjugate latent sites out of a program (delayed sampling) with recover. `src/lib/probprog/collapse.ts:199` `omai-engine/probprog`
+- function `laplaceInitialParams`: Initial parameters of an automatic guide from a Laplace fit of the model. `src/lib/probprog/guides-init.ts:84` `omai-engine/probprog`
 - function `lift`: Turn param sites into sample sites with priors (Pyro's lift). `src/lib/probprog/lift.ts:40` `omai-engine/probprog`
 - function `regenerate`: Redraw selected sites from the program given the rest, with the MH weight (Gen's regenerate). `src/lib/probprog/trace-ops.ts:259` `omai-engine/probprog`
+
+- estimator `dregElbo`: Importance-weighted ELBO with the doubly reparameterised (DReG) gradient. `src/lib/probprog/elbo-extra.ts:126` `omai-engine/probprog`
+- estimator `stlElbo`: Sticking-the-landing ELBO: pathwise gradient without the zero-mean score of the guide. `src/lib/probprog/elbo-extra.ts:84` `omai-engine/probprog`
+- estimator `traceEnumElbo`: ELBO with finite discrete latents summed out exactly: the model's by contraction, the guide's by cells. `src/lib/probprog/elbo-enum.ts:119` `omai-engine/probprog`
+- estimator `traceGraphElbo`: Rao-Blackwellised score-function ELBO with baselines for non-reparameterised sites. `src/lib/probprog/elbo-graph.ts:241` `omai-engine/probprog`
 
 ## probprog/engines
 
@@ -19,6 +29,10 @@ The inference engines, part of `omai-engine/probprog`: exact ones (enumeration, 
 
 - function `mcmc`: Run MCMC on a program and return a posterior. `src/lib/probprog/engines/nuts.ts:480` `omai-engine/probprog`
 - function `svi`: Stochastic variational inference for a model and a guide. `src/lib/probprog/engines/svi.ts:221` `omai-engine/probprog`
+
+- algorithm `conjugateNaturalGradientAlgorithm`: Natural-gradient SVI on conjugate models: minibatch conjugate updates with a Robbins-Monro rate. `src/lib/probprog/engines/svi-natural.ts:122` `omai-engine/probprog`
+- algorithm `gaussianNaturalGradientAlgorithm`: Natural-gradient SVI with a mean-field or full-rank Gaussian guide: the step in the mean parameters. `src/lib/probprog/engines/svi-natural.ts:434` `omai-engine/probprog`
+- algorithm `pathfinderAlgorithm`: Pathfinder: normal approximations along an L-BFGS path, best ELBO, PSIS importance draws, multi-path. `src/lib/probprog/engines/pathfinder.ts:173` `omai-engine/probprog`
 
 - table `mcmcKernels`: The MCMC kernels as one slot. `src/lib/probprog/engines/mcmc-options.ts:40` `omai-engine/probprog`
 
@@ -29,15 +43,17 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - structure `method.ts` (file): InferenceMethod: knobs, typed tape, check, budget and anytime snapshots, the shared convention. `src/lib/probprog/inference/method.ts:1` `omai-engine/probprog/inference`
 
 - function `defineKernel`: Define your own sampler on the handler layer in a few lines. `src/lib/probprog/inference/kernel.ts:188` `omai-engine/probprog/inference`
-- function `inferenceMethods`: The methods an app offers on its registered models, named kind/model, for a worker. `src/lib/probprog/inference/models.ts:147` `omai-engine/probprog/inference`
-- function `modelRegistry`: Models by name for a worker: `modelRegistry({ radon: { definition, data } })`. `src/lib/probprog/inference/models.ts:68` `omai-engine/probprog/inference`
+- function `inferenceMethods`: The methods an app offers on its registered models, named kind/model, for a worker. `src/lib/probprog/inference/models.ts:149` `omai-engine/probprog/inference`
+- function `modelRegistry`: Models by name for a worker: `modelRegistry({ radon: { definition, data } })`. `src/lib/probprog/inference/models.ts:69` `omai-engine/probprog/inference`
 
 - estimator `abcRejectionMethod`: Rejection ABC with summary statistics, as a one-step method. `src/lib/probprog/inference/abc-methods.ts:237` `omai-engine/probprog/inference`
 - estimator `abcSmcMethod`: ABC-SMC, one generation per step, with the tolerance shrinking on the tape. `src/lib/probprog/inference/abc-methods.ts:109` `omai-engine/probprog/inference`
+- estimator `amortisedSviMethod`: Variational inference with a neural encoder for the local latents (amortised inference). `src/lib/probprog/inference/svi-guide-methods.ts:158` `omai-engine/probprog/inference`
 - estimator `bpSpecMethod`: Belief propagation on a model spec of Bernoulli nodes, posterior by site. `src/lib/probprog/inference/mp.ts:295` `omai-engine/probprog/inference`
 - estimator `bridgeSamplingMethod`: Bridge sampling evidence: slice-sampling posterior draws and a fitted Gaussian, one pair per step. `src/lib/probprog/inference/evidence-methods.ts:363` `omai-engine/probprog/inference`
 - estimator `chainMethod`: Forward-backward, FFBS and Viterbi on a discrete chain, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:196` `omai-engine/probprog/inference`
 - estimator `conjugateMethod`: Conjugate posteriors in closed form, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:38` `omai-engine/probprog/inference`
+- estimator `conjugateNaturalSviMethod`: Natural-gradient SVI on conjugate models, minibatch CAVI with a Robbins-Monro rate. `src/lib/probprog/inference/svi-natural-method.ts:217` `omai-engine/probprog/inference`
 - estimator `emMethod`: Expectation maximisation, one iteration per step, with exact E-steps. `src/lib/probprog/inference/em-method.ts:101` `omai-engine/probprog/inference`
 - estimator `enumerationMethod`: Exact enumeration of discrete models by a junction tree, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:134` `omai-engine/probprog/inference`
 - estimator `epSpecMethod`: Expectation propagation on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:231` `omai-engine/probprog/inference`
@@ -46,16 +62,24 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `importanceEvidenceMethod`: Importance-sampling evidence with a pilot-fitted Gaussian proposal and Pareto k-hat. `src/lib/probprog/inference/evidence-methods.ts:618` `omai-engine/probprog/inference`
 - estimator `importanceMethod`: Importance sampling in batches, with evidence, ESS and Pareto k-hat as it goes. `src/lib/probprog/inference/importance-method.ts:96` `omai-engine/probprog/inference`
 - estimator `laplaceMethod`: The Laplace approximation, optimiser iterations then the Hessian, as a steppable method. `src/lib/probprog/inference/laplace-method.ts:129` `omai-engine/probprog/inference`
+- estimator `mixtureSviMethod`: Variational inference with a mixture guide whose component is enumerated, for multimodal posteriors. `src/lib/probprog/inference/svi-guide-methods.ts:107` `omai-engine/probprog/inference`
+- estimator `naturalGradientSviMethod`: Natural-gradient SVI with a mean-field or full-rank Gaussian guide. `src/lib/probprog/inference/svi-natural-method.ts:90` `omai-engine/probprog/inference`
 - estimator `nestedMethod`: Nested sampling, one live-point replacement per step, with the evidence and its error. `src/lib/probprog/inference/nested-method.ts:94` `omai-engine/probprog/inference`
 - estimator `nutsMethod`: NUTS and HMC as a steppable, cancellable, resumable method with anytime snapshots. `src/lib/probprog/inference/nuts-method.ts:304` `omai-engine/probprog/inference`
 - estimator `particleFilterMethod`: Bootstrap particle filter over a markov loop, one time step per step. `src/lib/probprog/inference/smc-methods.ts:256` `omai-engine/probprog/inference`
 - estimator `particleGibbsMethod`: Particle Gibbs with ancestor sampling: conditional SMC paths and parameter moves. `src/lib/probprog/inference/pmcmc-methods.ts:407` `omai-engine/probprog/inference`
+- estimator `pathfinderMethod`: Pathfinder: L-BFGS path of normal approximations, best ELBO, PSIS importance draws, multi-path. `src/lib/probprog/inference/pathfinder-method.ts:61` `omai-engine/probprog/inference`
 - estimator `pmmhMethod`: Particle marginal Metropolis-Hastings: random walk on state-space parameters with a particle filter. `src/lib/probprog/inference/pmcmc-methods.ts:240` `omai-engine/probprog/inference`
+- estimator `renyiSviMethod`: Variational inference on the Renyi alpha-divergence bound. `src/lib/probprog/inference/svi-extra-methods.ts:231` `omai-engine/probprog/inference`
 - estimator `stateSpaceFilterMethod`: Particle filter of a state-space model: bootstrap, auxiliary or guided proposal, one observation per step. `src/lib/probprog/inference/state-space-methods.ts:86` `omai-engine/probprog/inference`
 - estimator `steppingStoneMethod`: Stepping-stone evidence over the adaptive tempering ladder, one temperature per step. `src/lib/probprog/inference/evidence-methods.ts:243` `omai-engine/probprog/inference`
+- estimator `stickingTheLandingMethod`: Variational inference with sticking-the-landing and doubly reparameterised gradients. `src/lib/probprog/inference/svi-extra-methods.ts:184` `omai-engine/probprog/inference`
+- estimator `structuredSviMethod`: Variational inference with structured, full-rank, low-rank or flow guides, optionally Laplace-started. `src/lib/probprog/inference/svi-guide-methods.ts:60` `omai-engine/probprog/inference`
 - estimator `sviMethod`: Stochastic variational inference as a steppable, resumable method with anytime posteriors. `src/lib/probprog/inference/svi-method.ts:94` `omai-engine/probprog/inference`
 - estimator `temperedSmcMethod`: Adaptive-tempering SMC, one temperature per step, with the evidence. `src/lib/probprog/inference/smc-methods.ts:101` `omai-engine/probprog/inference`
 - estimator `thermodynamicIntegrationMethod`: Thermodynamic integration of the mean log likelihood over the tempering ladder. `src/lib/probprog/inference/evidence-methods.ts:278` `omai-engine/probprog/inference`
+- estimator `traceEnumSviMethod`: Variational inference with discrete latents summed out exactly (TraceEnum). `src/lib/probprog/inference/svi-extra-methods.ts:130` `omai-engine/probprog/inference`
+- estimator `traceGraphSviMethod`: Variational inference with a Rao-Blackwellised score-function ELBO and baselines (TraceGraph). `src/lib/probprog/inference/svi-extra-methods.ts:71` `omai-engine/probprog/inference`
 - estimator `vmpSpecMethod`: Variational message passing on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:263` `omai-engine/probprog/inference`
 
 - table `evidenceEstimators`: Evidence estimators by name: bridge, stepping stone, thermodynamic, importance, nested, tempered SMC. `src/lib/probprog/inference/evidence-methods.ts:788` `omai-engine/probprog/inference`
@@ -113,6 +137,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `defineBenchmark`: Make a benchmark model: a spec or program with generator, truth, tags, references and method plans. `src/lib/probprog/models/benchmark.ts:175` `omai-engine/probprog/models`
 - function `evidenceCampaigns`: Periodic validation of the evidence estimators, nested sampling, particle filters and particle MCMC. `src/lib/probprog/models/evidence-campaigns.ts:521` `omai-engine/probprog/models`
 - function `structureCampaigns`: The structure of every benchmark model, and collapsed against full NUTS, as periodic campaigns. `src/lib/probprog/models/structure-campaigns.ts:321` `omai-engine/probprog/models`
+- function `sviCampaigns`: Periodic validation campaigns of the variational methods against the benchmark truths. `src/lib/probprog/models/svi-plans.ts:206` `omai-engine/probprog/models`
 
 - structure `BenchmarkModel`: A benchmark model: a spec with a data generator, the truth, references, tags and method plans. `src/lib/probprog/models/benchmark.ts:98` `omai-engine/probprog/models`
 

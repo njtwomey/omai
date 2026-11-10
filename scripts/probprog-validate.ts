@@ -20,6 +20,7 @@ import {
   benchmarkCampaigns,
   evidenceCampaigns,
   structureCampaigns,
+  sviCampaigns,
 } from '../packages/engine/src/lib/probprog/models/index.ts'
 import {
   campaignMarkdown,
@@ -42,8 +43,14 @@ function option(name: string): string | undefined {
 const git = (...args: string[]): string => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim()
 const fileOf = (name: string): string => `${name.replaceAll('/', '-')}.md`
 const out = resolve(ROOT, option('out') ?? 'docs/probprog/results')
-// The benchmark suite's cross-engine agreement comes after the kernel's own campaigns, the evidence and particle campaigns after those and the structure reports last, so adding them changes no other campaign's key.
-const campaigns = [...validationCampaigns(), ...benchmarkCampaigns(), ...evidenceCampaigns(), ...structureCampaigns()]
+// The benchmark suite's cross-engine agreement comes after the kernel's own campaigns, the evidence and particle campaigns, the structure reports and the SVI campaigns after those, so adding them changes no other campaign's key.
+const campaigns = [
+  ...validationCampaigns(),
+  ...benchmarkCampaigns(),
+  ...evidenceCampaigns(),
+  ...structureCampaigns(),
+  ...sviCampaigns(),
+]
 
 if (process.argv.includes('--check')) {
   const last = Number(git('log', '-1', '--format=%ct', '--', ...WATCHED)) * 1000

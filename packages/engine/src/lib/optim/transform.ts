@@ -325,6 +325,42 @@ export function scaleByRms(decay = 0.99, eps = 1e-8, centered = false): Gradient
   }
 }
 
+/** State of {@link scaleByAdvi}: the running average of the squared gradient, empty before the first update. */
+export interface AdviState {
+  readonly nu: ParamTree | undefined
+}
+
+/**
+ * The adaptive scaling of ADVI's step-size sequence (Kucukelbir, Tran, Ranganath, Gelman and Blei 2017, the form Stan
+ * uses): updates = g / (tau + sqrt(s)) with s_1 = g_1^2 and s_k = alpha g_k^2 + (1 - alpha) s_(k-1). It is RMSprop's scaling
+ * started at the first squared gradient instead of at zero (so the first steps are not inflated) and with tau in the
+ * denominator; multiply by `adviDecay` for the full sequence eta k^(-1/2 + epsilon) / (tau + sqrt(s_k)).
+ *
+ * @param alpha - The weight of the newest squared gradient (default 0.1).
+ * @param tau - Added to the denominator (default 1).
+ * @returns The transformation.
+ * @example
+ * ```ts
+ * import { scaleByAdvi } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
+ * const t = scaleByAdvi()
+ * toArray(t.update(tensor([3]), t.init(tensor([0]))).updates as never) // => [0.75]
+ * ```
+ */
+export function scaleByAdvi(alpha = 0.1, tau = 1): GradientTransformation<AdviState> {
+  return {
+    name: 'scaleByAdvi',
+    init: () => ({ nu: undefined }),
+    update: (grads, state) => {
+      const nu =
+        state.nu === undefined
+          ? treeMap((g) => square(g), grads)
+          : treeMap((g, v) => add(mul(square(g), alpha), mul(v, 1 - alpha)), grads, state.nu)
+      return { updates: treeMap((g, v) => div(g, add(sqrt(v), tau)), grads, nu), state: { nu } }
+    },
+  }
+}
+
 /**
  * Adagrad's scaling: updates = g / (sqrt(sum of g^2) + eps) (torch.optim.Adagrad).
  *

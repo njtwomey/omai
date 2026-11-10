@@ -156,7 +156,20 @@ export function guideSites<D = void>(model: Model<D>, data: D): GuideSite[] {
   return out
 }
 
-function cached<D = void>(model: Model<D>): (data: D) => GuideSite[] {
+/**
+ * The guide sites of a model, found once per data value: what a guide calls on every run instead of tracing the model
+ * again.
+ *
+ * @param model - The model.
+ * @returns A function from the data to the guide sites (the last result is kept while the data is the same object).
+ * @example
+ * ```ts
+ * import { cachedGuideSites, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * cachedGuideSites(() => { sample('x', normal(0, 1)) })(undefined).length // => 1
+ * ```
+ */
+export function cachedGuideSites<D = void>(model: Model<D>): (data: D) => GuideSite[] {
   let last: { readonly data: D; readonly sites: GuideSite[] } | undefined
   return (data) => {
     if (last !== undefined && last.data === data) return last.sites
@@ -166,7 +179,22 @@ function cached<D = void>(model: Model<D>): (data: D) => GuideSite[] {
   }
 }
 
-function withPlates<T>(frames: readonly PlateFrame[], fn: () => T): T {
+/**
+ * Run a function inside nested plates, outermost first, as a guide site's plates are (so subsampled plates subsample the
+ * guide's local parameters).
+ *
+ * @param frames - The plates, outermost first (a {@link GuideSite}'s `plates`).
+ * @param fn - What runs inside them.
+ * @returns What `fn` returns.
+ * @example
+ * ```ts
+ * import { guideSites, plate, sample, withPlates } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * const site = guideSites(() => plate('n', 3, () => sample('x', normal(0, 1))), undefined)[0]
+ * withPlates(site?.plates ?? [], () => 1) // => 1
+ * ```
+ */
+export function withPlates<T>(frames: readonly PlateFrame[], fn: () => T): T {
   const [first, ...rest] = frames
   if (first === undefined) return fn()
   return plate(first.name, first.size, () => withPlates(rest, fn), {
@@ -188,7 +216,7 @@ function initialUnconstrained(site: GuideSite, key: Key, options: AutoGuideOptio
  * A guide site's distribution pushed through its bijector, remembering each draw's unconstrained value so its log
  * density needs no inverse (NumPyro's intermediates).
  */
-function pushed(base: Distribution, bijector: bijectors.Bijector): Distribution {
+export function pushed(base: Distribution, bijector: bijectors.Bijector): Distribution {
   const t = compose.transformed(base, bijector)
   let lastY: Value | undefined
   let lastU: Value | undefined
@@ -274,6 +302,62 @@ function constrainFlat(sites: readonly GuideSite[], u: Value, n: number): Record
 }
 
 /**
+ * One site of a mean-field normal guide, as a guide program draws it: an independent normal on the site's unconstrained
+ * scale (`<site>_auto_loc`, `<site>_auto_scale`), pushed onto its support, inside the site's plates. What
+ * {@link autoNormal} does for every site, for a guide that does it for some and something else for the rest.
+ *
+ * @param site - The guide site.
+ * @param options - Initialisation and initial scale.
+ * @example
+ * ```ts
+ * import { guideSites, meanFieldSite, sample, seed, traceOf } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * const model = () => { sample('x', normal(0, 1)) }
+ * const guide = () => { for (const s of guideSites(model, undefined)) meanFieldSite(s) }
+ * [...traceOf(seed(guide, key(0)), undefined).sites.keys()] // => ['x_auto_loc', 'x_auto_scale', 'x']
+ * ```
+ */
+export function meanFieldSite(site: GuideSite, options: AutoGuideOptions = {}): void {
+  const initScale = options.initScale ?? 0.1
+  withPlates(site.plates, () => {
+    const loc = param(`${site.name}_auto_loc`, (k) => initialUnconstrained(site, k, options), {
+      eventDim: site.unconstrainedEventDim,
+    })
+    const scale = param(`${site.name}_auto_scale`, full(site.unconstrainedShape, initScale), {
+      support: { kind: 'positive' },
+      eventDim: site.unconstrainedEventDim,
+    })
+    const n = normal(loc, scale)
+    const base = site.unconstrainedEventDim === 0 ? n : compose.independent(n, site.unconstrainedEventDim)
+    // On the real line the guide site is the normal itself (as NumPyro), so analytic KL terms apply.
+    sample(site.name, site.support.kind === 'real' ? base : pushed(base, site.bijector))
+  })
+}
+
+/**
+ * The distribution of one site of a mean-field normal guide at fitted parameters: the normal of `<site>_auto_loc` and
+ * `<site>_auto_scale`, pushed onto the site's support.
+ *
+ * @param site - The guide site.
+ * @param params - The fitted parameters by name (constrained).
+ * @returns The marginal.
+ * @example
+ * ```ts
+ * import { guideSites, meanFieldMarginal, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
+ * const site = guideSites(() => { sample('x', normal(0, 1)) }, undefined)[0]
+ * site === undefined ? 0 : item(meanFieldMarginal(site, { x_auto_loc: 1, x_auto_scale: 2 }).mean()) // => 1
+ * ```
+ */
+export function meanFieldMarginal(site: GuideSite, params: Readonly<Record<string, TensorLike>>): Distribution {
+  const base = normal(paramOf(params, `${site.name}_auto_loc`), paramOf(params, `${site.name}_auto_scale`))
+  const event = site.unconstrainedEventDim === 0 ? base : compose.independent(base, site.unconstrainedEventDim)
+  return site.support.kind === 'real' ? event : compose.transformed(event, site.bijector)
+}
+
+/**
  * The mean-field normal guide (NumPyro's `AutoNormal`): each continuous latent site gets an independent normal on its
  * unconstrained scale (`<site>_auto_loc`, `<site>_auto_scale`), pushed onto its support, inside the site's plates so
  * subsampled plates subsample the local parameters.
@@ -292,33 +376,15 @@ function constrainFlat(sites: readonly GuideSite[], u: Value, n: number): Record
  * ```
  */
 export function autoNormal<D = void>(model: Model<D>, options: AutoGuideOptions = {}): AutoGuide<D> {
-  const sitesOf = cached(model)
+  const sitesOf = cachedGuideSites(model)
   const initScale = options.initScale ?? 0.1
   const program = (data: D): unknown => {
-    for (const s of sitesOf(data)) {
-      withPlates(s.plates, () => {
-        const loc = param(`${s.name}_auto_loc`, (k) => initialUnconstrained(s, k, options), {
-          eventDim: s.unconstrainedEventDim,
-        })
-        const scale = param(`${s.name}_auto_scale`, full(s.unconstrainedShape, initScale), {
-          support: { kind: 'positive' },
-          eventDim: s.unconstrainedEventDim,
-        })
-        const n = normal(loc, scale)
-        const base = s.unconstrainedEventDim === 0 ? n : compose.independent(n, s.unconstrainedEventDim)
-        // On the real line the guide site is the normal itself (as NumPyro), so analytic KL terms apply.
-        sample(s.name, s.support.kind === 'real' ? base : pushed(base, s.bijector))
-      })
-    }
+    for (const s of sitesOf(data)) meanFieldSite(s, { ...options, initScale })
     return undefined
   }
   const marginals = (params: Readonly<Record<string, TensorLike>>, data: D): Record<string, Distribution> => {
     const out: Record<string, Distribution> = {}
-    for (const s of sitesOf(data)) {
-      const base = normal(paramOf(params, `${s.name}_auto_loc`), paramOf(params, `${s.name}_auto_scale`))
-      const event = s.unconstrainedEventDim === 0 ? base : compose.independent(base, s.unconstrainedEventDim)
-      out[s.name] = s.support.kind === 'real' ? event : compose.transformed(event, s.bijector)
-    }
+    for (const s of sitesOf(data)) out[s.name] = meanFieldMarginal(s, params)
     return out
   }
   const median = (params: Readonly<Record<string, TensorLike>>, data: D): Record<string, Value> =>
@@ -382,7 +448,7 @@ export function autoNormal<D = void>(model: Model<D>, options: AutoGuideOptions 
  * ```
  */
 export function autoDelta<D = void>(model: Model<D>, options: AutoGuideOptions = {}): AutoGuide<D> {
-  const sitesOf = cached(model)
+  const sitesOf = cachedGuideSites(model)
   const program = (data: D): unknown => {
     for (const s of sitesOf(data)) {
       withPlates(s.plates, () => {
@@ -425,8 +491,11 @@ export function autoDelta<D = void>(model: Model<D>, options: AutoGuideOptions =
   })
 }
 
-/** How a joint (`AutoContinuous`) guide draws the flat unconstrained latent vector, and its density. */
-interface JointFamily {
+/**
+ * How a joint (`AutoContinuous`) guide draws the flat unconstrained latent vector, and its density: a family is the
+ * distribution of the flat vector inside a run, at fitted parameters, and its centre.
+ */
+export interface JointFamily {
   /** The distribution of the flat latent `[D]` at the current params (inside a guide run). */
   readonly latent: (D: number, sites: readonly GuideSite[], init: (k: Key) => Value) => Distribution
   /** The same at fitted params, outside a run (given the data, for families that need the model there). */
@@ -435,13 +504,36 @@ interface JointFamily {
   readonly centre: (params: Readonly<Record<string, TensorLike>>) => Value
 }
 
-function jointGuide<D = void>(
+/**
+ * A guide over the flat unconstrained latent vector of the model's continuous sites, from a {@link JointFamily}: the
+ * vector is one auxiliary site (`_auto_latent`) and each model site is its slice pushed onto its support. The full-rank,
+ * low-rank, Laplace and flow guides are families of this.
+ *
+ * @param model - The model.
+ * @param kind - The guide's name.
+ * @param family - The distribution of the flat latent.
+ * @param options - Initialisation.
+ * @returns The guide.
+ * @throws OmaiError with code `value` when a site is in a subsampled plate.
+ * @concept variational-inference
+ * @example
+ * ```ts
+ * import { jointGuide, sample, seed, traceOf } from 'omai-engine/probprog'
+ * import { compose, normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
+ * const family = { latent: (D: number) => compose.independent(normal(zeros([D]), 1), 1), fitted: (_p: never, D: number) => compose.independent(normal(zeros([D]), 1), 1), centre: () => zeros([1]) }
+ * const guide = jointGuide(() => { sample('x', normal(0, 1)) }, 'standard', family, {})
+ * traceOf(seed(guide, key(0)), undefined).sites.has('x') // => true
+ * ```
+ */
+export function jointGuide<D = void>(
   model: Model<D>,
   kind: string,
   family: JointFamily,
   options: AutoGuideOptions,
 ): AutoGuide<D> {
-  const sitesOf = cached(model)
+  const sitesOf = cachedGuideSites(model)
   const dimOf = (sites: readonly GuideSite[]): number => sites.reduce((a, s) => a + s.size, 0)
   const initFlat =
     (sites: readonly GuideSite[]) =>

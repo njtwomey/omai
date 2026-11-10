@@ -9,6 +9,7 @@ Optimisation: optax-style gradient transformations and optimisers with schedules
 
 - function `adam`: Adam as a gradient transformation, like torch.optim.Adam. `src/lib/optim/adaptive.ts:69` `omai-engine/optim`
 - function `admm`: Alternating direction method of multipliers. `src/lib/optim/admm.ts:290` `omai-engine/optim`
+- function `adviDecay`: ADVI's step-size decay k^(-1/2 + epsilon). `src/lib/optim/schedules.ts:175` `omai-engine/optim`
 - function `convolutionalDictionaryLearning`: Learn filters and sparse activation maps from a signal. `src/lib/optim/convolutional-sparse.ts:741` `omai-engine/optim`
 - function `convolutionalSparseCode`: Sparse activations of known filters in a signal: where does each occur? `src/lib/optim/convolutional-sparse.ts:298` `omai-engine/optim`
 - function `convolutionalSynthesis`: Sum of filters convolved with sparse activation maps: the signal they make. `src/lib/optim/convolutional-sparse.ts:144` `omai-engine/optim`
@@ -17,7 +18,7 @@ Optimisation: optax-style gradient transformations and optimisers with schedules
 - function `linprog`: Linear programming by simplex or interior point, scipy form. `src/lib/optim/linear-programming.ts:392` `omai-engine/optim`
 - function `milp`: Mixed-integer linear programming by branch and bound. `src/lib/optim/integer.ts:464` `omai-engine/optim`
 - function `quadprog`: Convex quadratic programming by active set or interior point. `src/lib/optim/quadratic.ts:307` `omai-engine/optim`
-- function `sgd`: SGD with momentum, Nesterov and weight decay. `src/lib/optim/first-order.ts:67` `omai-engine/optim`
+- function `sgd`: SGD with momentum, Nesterov and weight decay. `src/lib/optim/first-order.ts:68` `omai-engine/optim`
 - function `sinkhorn`: Entropic optimal transport by Sinkhorn iterations. `src/lib/optim/transport.ts:491` `omai-engine/optim`
 - function `slicedWasserstein`: Sliced Wasserstein distance with explicit projections; always the p-th root. `src/lib/optim/wasserstein.ts:158` `omai-engine/optim`
 
@@ -26,7 +27,7 @@ Optimisation: optax-style gradient transformations and optimisers with schedules
 
 - table `boundedSolvers`: The solvers of a smooth objective on a box. `src/lib/optim/bounded-solvers.ts:225` `omai-engine/optim`
 - table `optimisers`: SGD, RMSprop, Adagrad, Adam and relatives as one slot. `src/lib/optim/optimiser-table.ts:58` `omai-engine/optim`
-- table `schedules`: Learning-rate schedules as one slot. `src/lib/optim/schedule-table.ts:57` `omai-engine/optim`
+- table `schedules`: Learning-rate schedules as one slot. `src/lib/optim/schedule-table.ts:58` `omai-engine/optim`
 - table `smoothSolvers`: Smooth-objective solvers as one slot: gradient descent to L-BFGS. `src/lib/optim/solvers.ts:325` `omai-engine/optim`
 
 ## optim/minimize
