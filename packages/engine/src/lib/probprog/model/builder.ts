@@ -1,7 +1,8 @@
 /**
  * The model builder: `defineModel(name, (m) => { ... })` runs a function against a `ModelBuilder` whose verbs declare
  * the model in the shape of Stan's blocks and PyMC's named dimensions: `range` (a named dimension), `data`, `latent`
- * (with a constraint), `observe`, `derived`, `generated`, `factor`, `param`, `custom`, and `include` for sub-models. Each verb
+ * (with a constraint), `observe`, `derived`, `generated`, `factor`, `param`, `scan` (a recurrence), `custom`, and `include`
+ * for sub-models. Each verb
  * checks what it can as it is called (names, references, dimensions, parameters) and the result is a `ModelDefinition`
  * holding a plain-JSON `ModelSpec`. The builder computes nothing: expressions are `Var` handles, distributions are
  * `DistExpr`s, and the spec is compiled later by `toProgram`.
@@ -24,6 +25,8 @@ import {
   MODEL_SPEC_SCHEMA,
   type ModelNode,
   OPERATOR_REGISTRY,
+  prevName,
+  type ScanEmission,
 } from './spec.ts'
 import { constant, type Operand, toVar, Var } from './var.ts'
 
@@ -80,6 +83,36 @@ export interface ObserveOptions {
   readonly doc?: string
 }
 
+/** What the `step` function of a scan receives. */
+export interface ScanStepContext {
+  /** The state at the previous step, as an expression (`<scan>@prev`). */
+  readonly prev: Var
+}
+
+/** What the `emit` function of a scan receives: the current state, and the verb that declares an observation at each step. */
+export interface ScanEmitContext {
+  /** The state at the current step. */
+  readonly state: Var
+  /**
+   * Declare an observation drawn at every step, as the site `<name>[t]`: its distribution may read the state, its value is
+   * a node over the scanned dimension (read at the current step) or a constant.
+   */
+  observe(name: string, dist: DistExpr, value: Operand, options?: { readonly doc?: string }): void
+}
+
+/** Options of {@link ModelBuilder.scan}. */
+export interface ScanOptions {
+  /** The scanned dimension (time). */
+  readonly over: DimArg
+  /** The distribution of the state at the first step. */
+  readonly init: DistExpr
+  /** The distribution of the state at later steps, from the previous one. */
+  readonly step: (s: ScanStepContext) => DistExpr
+  /** The observations drawn at every step, from the current state. */
+  readonly emit?: (s: ScanEmitContext) => void
+  readonly doc?: string
+}
+
 const nameOf = (d: DimArg): string => (typeof d === 'string' ? d : d.name)
 
 function constraintOf(c: ConstraintArg): ConstraintSpec {
@@ -102,6 +135,8 @@ export class ModelBuilder {
   private readonly values = new Map<string, ModelNode>()
   private readonly sites = new Set<string>()
   private readonly customFns: Record<string, CustomFn> = {}
+  /** The names a scan's expressions may refer to besides the nodes before it (its state and previous state), while it is built. */
+  private scanNames: ReadonlySet<string> = new Set()
 
   constructor(
     readonly name: string,
@@ -156,7 +191,7 @@ export class ModelBuilder {
   private check(v: Var, who: string): void {
     const missing = new Set<string>()
     const walk = (e: ExprSpec): void => {
-      if (e.kind === 'ref' && !this.values.has(e.name)) missing.add(e.name)
+      if (e.kind === 'ref' && !this.values.has(e.name) && !this.scanNames.has(e.name)) missing.add(e.name)
       else if (e.kind === 'op' || e.kind === 'custom') for (const a of e.args) walk(a)
     }
     walk(v.expr)
@@ -374,6 +409,106 @@ export class ModelBuilder {
   }
 
   /**
+   * Declare a recurrence over a named dimension: a state whose first value is drawn from `init` and each later value from
+   * `step(prev)`, with the observations `emit` declares drawn at every step from the current state. Time series,
+   * state-space models and hidden Markov models are scans. The result is the stack of the states over the dimension (dims
+   * `[over]`), which later nodes may use; inside the scan a node over the dimension is read at the current step and
+   * every expression is a scalar (or the state's event axes): one scan is one series. In the compiled program the states
+   * are the sites `<name>[0]`, `<name>[1]`, ... under one `markov` loop, the observations `<emission>[t]`.
+   *
+   * @param name - The scan's name (the states' prefix).
+   * @param options - The dimension, the initial and step distributions and the emissions.
+   * @returns The stacked states as an expression.
+   * @throws OmaiError with code `shape` when an expression inside the scan keeps a dimension, `value` for a repeated name.
+   * @example
+   * ```ts
+   * import { defineModel } from 'omai-engine/probprog/model'
+   * import { normal } from 'omai-engine/probprog/model/dists'
+   * const m = defineModel('walk', (b) => {
+   *   const y = b.data('y', { dims: ['time'] })
+   *   b.scan('x', {
+   *     over: 'time',
+   *     init: normal(0, 1),
+   *     step: ({ prev }) => normal(prev, 0.5),
+   *     emit: ({ state, observe }) => observe('y', normal(state, 0.3), y),
+   *   })
+   * })
+   * m.spec.nodes.map((n) => n.kind) // => ['data', 'scan']
+   * ```
+   */
+  scan(name: string, options: ScanOptions): Var {
+    this.claimValue(name)
+    this.claimSite(name)
+    const over = this.dimNames([options.over])?.[0] as string
+    const { init } = options
+    this.distChecks(init, `scan '${name}' init`)
+    const rank = init.eventRank
+    this.scanNames = new Set([name, prevName(name)])
+    try {
+      const inside = (d: DistExpr, who: string): void => {
+        const left = d.dims.filter((x) => x !== over)
+        if (left.length > 0)
+          throw new OmaiError(
+            'shape',
+            `${who}: has dimensions [${left.join(', ')}] left inside the scan (one scan is one series)`,
+            {
+              dims: left,
+            },
+          )
+      }
+      inside(init, `scan '${name}' init`)
+      const step = options.step({ prev: new Var({ kind: 'ref', name: prevName(name) }, [], rank) })
+      this.distChecks(step, `scan '${name}' step`)
+      inside(step, `scan '${name}' step`)
+      if (step.eventRank !== rank)
+        throw new OmaiError('shape', `scan '${name}': the step has event rank ${step.eventRank}, the init ${rank}`)
+      const emissions: ScanEmission[] = []
+      options.emit?.({
+        state: new Var({ kind: 'ref', name }, [], rank),
+        observe: (emission, dist, value, o = {}) => {
+          this.claimSite(emission)
+          const v = toVar(value)
+          this.distChecks(dist, `scan '${name}' emission '${emission}'`)
+          this.check(v, `scan '${name}' emission '${emission}'`)
+          inside(dist, `scan '${name}' emission '${emission}'`)
+          if (v.dims.some((d) => d !== over))
+            throw new OmaiError(
+              'shape',
+              `scan '${name}' emission '${emission}': the value has dimensions [${v.dims.join(', ')}]`,
+            )
+          if (v.eventRank !== dist.eventRank)
+            throw new OmaiError(
+              'shape',
+              `scan '${name}' emission '${emission}': the value has ${v.eventRank} event axes, the distribution ${dist.eventRank}`,
+            )
+          emissions.push({
+            name: emission,
+            dist: dist.spec,
+            value: v.expr,
+            ...(o.doc === undefined ? {} : { doc: o.doc }),
+          })
+        },
+      })
+      const node: ModelNode = {
+        kind: 'scan',
+        name,
+        dims: [over],
+        eventRank: rank,
+        over,
+        init: init.spec,
+        step: step.spec,
+        emissions,
+        ...(options.doc === undefined ? {} : { doc: options.doc }),
+      }
+      this.nodes.push(node)
+      this.values.set(name, node)
+      return this.refVar(node)
+    } finally {
+      this.scanNames = new Set()
+    }
+  }
+
+  /**
    * An opaque function of other nodes: the escape hatch for anything the operator registry lacks. It works with the
    * sampling engines and the compiled program; message passing and static analysis treat it as opaque, and the spec
    * lists it in `customs` so a JSON receiver knows to supply it.
@@ -475,8 +610,10 @@ export class ModelBuilder {
     const rename = new Map<string, ExprSpec>()
     for (const n of sub.spec.nodes) {
       if (n.kind === 'data' && bindings.has(n.name)) rename.set(n.name, (bindings.get(n.name) as Var).expr)
-      else if (n.kind !== 'observed' && n.kind !== 'factor')
+      else if (n.kind !== 'observed' && n.kind !== 'factor') {
         rename.set(n.name, { kind: 'ref', name: `${prefix}/${n.name}` })
+        if (n.kind === 'scan') rename.set(prevName(n.name), { kind: 'ref', name: prevName(`${prefix}/${n.name}`) })
+      }
     }
     const out: Record<string, Var> = {}
     const mapExprDims = (e: ExprSpec): ExprSpec => {
@@ -503,6 +640,19 @@ export class ModelBuilder {
         case 'derived':
         case 'factor':
           return { ...base, expr: mapExprDims(base.expr) }
+        case 'scan':
+          return {
+            ...base,
+            over: renameDim(base.over),
+            init: mapDist(base.init),
+            step: mapDist(base.step),
+            emissions: base.emissions.map((m) => ({
+              ...m,
+              name: `${prefix}/${m.name}`,
+              dist: mapDist(m.dist),
+              value: mapExprDims(m.value),
+            })),
+          }
         default:
           return base
       }
@@ -532,6 +682,7 @@ export class ModelBuilder {
   private claimNodeName(node: ModelNode): void {
     if (node.kind !== 'observed' && node.kind !== 'factor') this.claimValue(node.name)
     if (node.kind !== 'data' && !(node.kind === 'derived' && !node.record)) this.claimSite(node.name)
+    if (node.kind === 'scan') for (const m of node.emissions) this.claimSite(m.name)
   }
 
   /** The finished definition, checked. */

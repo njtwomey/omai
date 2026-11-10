@@ -169,10 +169,10 @@ export function enumerationMethod(
 
 /**
  * Forward-backward on a discrete-state chain as a method: posterior marginals and the evidence, exact joint draws by
- * forward filtering and backward sampling, and the Viterbi path. A program with one `markov` loop; a spec has no
- * recurrences yet, so its check says so.
+ * forward filtering and backward sampling, and the Viterbi path. A program with one `markov` loop, or a spec whose only
+ * latent is one `scan` with finite discrete states (a hidden Markov model).
  *
- * @param model - A program closed over its data (a spec's check refuses it).
+ * @param model - A program closed over its data, or a bound spec with a discrete-state scan.
  * @returns The method (one step).
  * @concept hidden-markov-models
  * @index estimator Forward-backward, FFBS and Viterbi on a discrete chain, as a one-step method.
@@ -203,13 +203,31 @@ export function chainMethod(
     description: 'forward-backward, FFBS and Viterbi on a discrete-state chain',
     config: dict({}),
     model,
-    check: checkOf(chainEngine(), () =>
-      no(
-        'a spec has no recurrences yet (the chain is a markov loop of a program)',
-        ['markov loop'],
-        'give a program with one markov loop',
-      ),
-    ),
+    check: checkOf(chainEngine(), (a) => {
+      if (a.scans.length !== 1)
+        return no(
+          'the model has no single scan',
+          ['scan'],
+          'give a spec with one scan, or a program with one markov loop',
+        )
+      if (!a.hasLikelihood) return no('observed nodes have no likelihood', ['likelihood'], 'add an emission')
+      const scan = a.scans[0]
+      if (a.latent.length !== 1 || scan === undefined)
+        return no(
+          `latent nodes outside the scan (${a.latent.filter((l) => l !== scan?.name).join(', ')})`,
+          ['scan'],
+          'fix the parameters, or use NUTS or SMC',
+        )
+      if (scan.stateKind !== 'finite-discrete' || scan.eventRank !== 0)
+        return no(
+          `the states of '${scan.name}' are not finite and discrete`,
+          ['finite discrete states'],
+          'use the Kalman smoother or the particle filter',
+        )
+      return yes(
+        `a hidden Markov chain: '${scan.name}' over ${scan.over}, ${scan.emissions.length} emission(s) per step`,
+      )
+    }),
     run: () => chainInference(program, undefined),
   })
 }

@@ -253,7 +253,7 @@ function consumers(env: ConjugacyEnv, x: string): ModelNode[] {
   return env.spec.nodes.filter(
     (n) =>
       n.name !== x &&
-      (n.kind === 'latent' || n.kind === 'observed' || n.kind === 'factor') &&
+      (n.kind === 'latent' || n.kind === 'observed' || n.kind === 'factor' || n.kind === 'scan') &&
       nodeExprs(n).some((e) => latentsIn(e, env.byName, env.memo).has(x)),
   )
 }
@@ -295,6 +295,10 @@ function pairRecord(env: ConjugacyEnv, prior: LatentNode): ConjugacyRecord | und
   for (const n of consumers(env, x)) {
     if (n.kind === 'factor') {
       problem(`the factor '${n.name}' adds an arbitrary density term in '${x}'`, 'other')
+      continue
+    }
+    if (n.kind === 'scan') {
+      problem(`the scan '${n.name}' uses '${x}' in its recurrence, which is not a conjugate form`, 'other')
       continue
     }
     if (n.kind !== 'latent' && n.kind !== 'observed') continue

@@ -17,7 +17,10 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import {
+  additionalBenchmarkModels,
+  additionalCampaigns,
   benchmarkCampaigns,
+  benchmarkModels,
   evidenceCampaigns,
   kernelCampaigns,
   structureCampaigns,
@@ -44,14 +47,17 @@ function option(name: string): string | undefined {
 const git = (...args: string[]): string => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim()
 const fileOf = (name: string): string => `${name.replaceAll('/', '-')}.md`
 const out = resolve(ROOT, option('out') ?? 'docs/probprog/results')
-// The benchmark suite's cross-engine agreement comes after the validation kernel's own campaigns; the evidence and particle campaigns, the structure reports, the SVI campaigns and the kernel methods' campaigns (`kernels/...`) follow, so adding them changes no other campaign's key.
+// The benchmark suite's cross-engine agreement comes after the validation kernel's own campaigns; the evidence and particle campaigns, the structure reports, the SVI campaigns and the kernel methods' campaigns (`kernels/...`) follow, and the benchmark models added later (scans, a Gaussian process, a topic model, ...) have their campaigns last, so adding them changes no other campaign's key.
+const added = additionalBenchmarkModels()
 const campaigns = [
   ...validationCampaigns(),
-  ...benchmarkCampaigns(),
+  ...benchmarkCampaigns(benchmarkModels().filter((m) => !added.includes(m))),
   ...evidenceCampaigns(),
   ...structureCampaigns(),
   ...sviCampaigns(),
   ...kernelCampaigns(),
+  ...additionalCampaigns(),
+]
 ]
 
 if (process.argv.includes('--check')) {

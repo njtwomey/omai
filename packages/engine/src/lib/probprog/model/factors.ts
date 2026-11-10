@@ -78,6 +78,7 @@ import type { BoundModel } from './bind.ts'
 import { distributionFamilies } from './dists/families.ts'
 import { auxId, elementId, factorId, siteOfId } from './ids.ts'
 import { defaultOperators, type NamedValue, type OperatorTable } from './operators.ts'
+import { ScanUnrollError, unrollScans } from './scan.ts'
 import { type DistSpec, type ExprSpec, type ModelNode, nodeRefs } from './spec.ts'
 
 /** Why a part of a model could not be put on a factor graph: the kind says what to look at. */
@@ -1710,6 +1711,26 @@ export function toFactorGraph(
     readonly plates?: 'vectorise' | 'expand'
   } = {},
 ): FactorGraphCompilation {
+  if (bound.spec.nodes.some((n) => n.kind === 'scan')) {
+    // A chain has no plate: the engine reads it written out, one variable and factor per step.
+    let unrolled: BoundModel
+    try {
+      unrolled = unrollScans(bound)
+    } catch (e) {
+      if (!(e instanceof ScanUnrollError)) throw e
+      return {
+        name: bound.spec.name,
+        graph: undefined,
+        issues: [{ node: e.node, kind: 'structure', reason: e.message }],
+        opaque: [],
+        sites: [],
+        auxiliary: [],
+        plated: [],
+        expanded: { plates: [], variables: 0, factors: 0 },
+      }
+    }
+    return toFactorGraph(unrolled, options)
+  }
   const c = new Compiler(
     bound,
     options.modelOperators ?? defaultOperators(),

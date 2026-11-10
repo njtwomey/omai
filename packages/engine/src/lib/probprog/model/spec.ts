@@ -1,6 +1,6 @@
 /**
  * The model specification: `ModelSpec`, a JSON-able description of a probabilistic model as a graph of nodes (data,
- * latent, observed, derived, generated, factor, param) with named dimensions (plates), constraints, and expressions
+ * latent, observed, derived, generated, factor, param, scan) with named dimensions (plates), constraints, and expressions
  * over a closed registry of operators. A spec is a value: it can be inspected, serialised, sent to a worker, analysed
  * without running anything and compiled (to a `sample`/`observe` program by `toProgram`, and later to a factor graph for
  * message passing). It holds no functions and no tensors; the only escape from that is the `custom` expression, which
@@ -16,7 +16,8 @@
  *   `factor:<site>`, a plate's `plate:<a>×<b>` in the spec's dimension order, an element's `<site>[<i>]`; see `ids.ts`. The
  *   same ids name nodes in posteriors and on tapes, so a view can paint live inference state on `toStructure`'s picture.
  * - **Site names.** Every latent, observed, derived (recorded), generated, factor and param node is a site of the
- *   compiled program under its own name; data nodes are not sites. An observed node may share its name with the data
+ *   compiled program under its own name; data nodes are not sites. A scan is not a site itself: its states are the
+ *   sites `<name>[t]` and its emissions the sites `<emission>[t]`, under one `markov` loop (`elementId`). An observed node may share its name with the data
  *   node that supplies its value; no other two nodes share a name.
  * - **Expressions** are trees: constants, references to earlier nodes by name, operator applications (`op` names an
  *   entry of the operator registry in `operators.ts`) and `custom` calls. Distribution parameters are expressions; the
@@ -169,8 +170,53 @@ export interface ParamNode extends NodeBase {
   readonly constraint?: ConstraintSpec
 }
 
-/** A node of a {@link ModelSpec}. Reserved for later work packages: `scan` (recurrences) and `gate` (mixtures). */
-export type ModelNode = DataNode | LatentNode | ObservedNode | DerivedNode | GeneratedNode | FactorNode | ParamNode
+/**
+ * An observation inside a {@link ScanNode}: drawn once per step, as the site `<name>[t]`. Its distribution may read the
+ * scan's current state (the scan's own name), and its value is an expression of nodes over the scanned dimension
+ * (usually a data node, which is read at the current step).
+ */
+export interface ScanEmission {
+  readonly name: string
+  readonly dist: DistSpec
+  readonly value: ExprSpec
+  readonly doc?: string
+}
+
+/**
+ * A recurrence over a named dimension: a state `x_t` whose first value has distribution `init` and whose later values
+ * have distribution `step`, a function of the previous state and of the nodes before the scan; with the
+ * observations (`emissions`) drawn at every step from the current state. Time-series, state-space and hidden Markov
+ * models are scans. The node's value, as later nodes see it, is the stack of the states over the dimension (`dims` is
+ * `[over]`, `eventRank` the state's).
+ *
+ * Inside `init`, `step` and the emissions: the scan's own name refers to the state at the current step; `prevName(name)`
+ * (`<name>@prev`) to the state at the previous step (`step` only); and a node over the scanned dimension is read at the
+ * current step, so a series of covariates or observations is a node over `over` and used as is. Every expression inside
+ * has no dimension left (a scalar, or the state's event axes): one scan is one series. The states are the sites
+ * `<name>[0]`, `<name>[1]`, ... of the compiled program under one `markov` loop (history 1), the emissions `<emission>[t]`.
+ */
+export interface ScanNode extends NodeBase {
+  readonly kind: 'scan'
+  /** The scanned dimension (time); the node's `dims` is `[over]`. */
+  readonly over: string
+  /** The distribution of the state at the first step. */
+  readonly init: DistSpec
+  /** The distribution of the state at later steps, given the previous one (`prevName(name)`). */
+  readonly step: DistSpec
+  /** The observations drawn at every step. */
+  readonly emissions: readonly ScanEmission[]
+}
+
+/** A node of a {@link ModelSpec}. Reserved for later work: `gate` (mixtures). */
+export type ModelNode =
+  | DataNode
+  | LatentNode
+  | ObservedNode
+  | DerivedNode
+  | GeneratedNode
+  | FactorNode
+  | ParamNode
+  | ScanNode
 
 /** The kinds of {@link ModelNode}. */
 export type NodeKind = ModelNode['kind']
@@ -259,8 +305,34 @@ export function nodeRefs(node: ModelNode): string[] {
     case 'factor':
       add(node.expr)
       break
+    case 'scan': {
+      // The scan's own state and previous state are not dependencies on other nodes.
+      const own = new Set([node.name, prevName(node.name)])
+      const addOuter = (e: ExprSpec): void => {
+        for (const r of exprRefs(e)) if (!own.has(r)) out.add(r)
+      }
+      for (const e of Object.values(node.init.params)) addOuter(e)
+      for (const e of Object.values(node.step.params)) addOuter(e)
+      // The emissions are nodes of their own to the analyses (`expandScans`), with their own references.
+      break
+    }
     default:
       break
   }
   return [...out]
+}
+
+/**
+ * The name a scan's previous state is referred to by inside its `step` expressions: `<scan>@prev`.
+ *
+ * @param scan - The scan node's name.
+ * @returns The reference name.
+ * @example
+ * ```ts
+ * import { prevName } from 'omai-engine/probprog/model'
+ * prevName('x') // => 'x@prev'
+ * ```
+ */
+export function prevName(scan: string): string {
+  return `${scan}@prev`
 }

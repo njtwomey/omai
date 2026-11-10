@@ -19,6 +19,7 @@ import {
   logicalNot,
   type NestedArray,
   reshape,
+  stack,
   take,
   tensor,
   toFlat,
@@ -26,12 +27,12 @@ import {
   where,
 } from '../../tensor/index.ts'
 import { mask as maskHandler } from '../handlers.ts'
-import { deterministic, factor, type Model, observe, param, plate, sample } from '../primitives.ts'
+import { deterministic, factor, type Model, markov, observe, param, plate, sample } from '../primitives.ts'
 import type { BoundModel } from './bind.ts'
 import { distributionFamilies, type FamilyDef } from './dists/families.ts'
 import { alignTo, defaultOperators, type NamedValue, type OperatorTable } from './operators.ts'
-import type { ConstraintSpec, DistSpec, ExprSpec, ModelNode } from './spec.ts'
-import { nodeRefs } from './spec.ts'
+import type { ConstraintSpec, DistSpec, ExprSpec, ModelNode, ScanNode } from './spec.ts'
+import { exprRefs, nodeRefs, prevName } from './spec.ts'
 
 /** Options of {@link toProgram}. */
 export interface CompileOptions {
@@ -164,6 +165,61 @@ function filler(d: Distribution, discrete: boolean): Value {
   }
 }
 
+/** What the markov loop of a scan carries: the previous state, and every state so far (to stack them at the end). */
+interface ScanCarry {
+  readonly prev: Value | undefined
+  readonly states: readonly Value[]
+}
+
+/**
+ * Run a scan as one `markov` loop (history 1): at step `t` the state is the site `<name>[t]`, drawn from the initial or step
+ * distribution, then each emission is observed as `<emission>[t]`. A node over the scanned dimension is read at the step
+ * (the axis is taken away); the stack of the states is bound to the scan's name afterwards. An emission that reads an
+ * unbound node is left out, as an observed node would be; where there is no stack of states to bind (a loop run by a handler
+ * that takes over the steps, such as the particle filter, or states enumerated onto different axes) what reads the
+ * stack is skipped.
+ */
+function runScan(node: ScanNode, ctx: Context, skipped: Set<string>): void {
+  const over = node.over
+  if (ctx.batch?.dim === over)
+    throw new OmaiError('value', `scan '${node.name}': the scanned dimension '${over}' cannot be the batch dimension`)
+  for (const e of [...Object.values(node.init.params), ...Object.values(node.step.params)])
+    for (const r of exprRefs(e))
+      if (skipped.has(r))
+        throw new OmaiError('value', `scan '${node.name}' depends on '${r}', which is not bound`, { name: node.name })
+  const emissions = node.emissions.filter(
+    (m) => ![...Object.values(m.dist.params).flatMap(exprRefs), ...exprRefs(m.value)].some((r) => skipped.has(r)),
+  )
+  const length = sizeOf(ctx, over)
+  const done = markov(
+    `scan:${node.name}`,
+    length,
+    (t: number, carry: ScanCarry): ScanCarry => {
+      const env = new Map<string, NamedValue>()
+      for (const [name, v] of ctx.env) {
+        const axis = v.dims.indexOf(over)
+        env.set(name, axis < 0 ? v : { value: take(v.value, t, axis), dims: v.dims.filter((d) => d !== over) })
+      }
+      const at: Context = { ...ctx, env }
+      if (carry.prev !== undefined) env.set(prevName(node.name), { value: carry.prev, dims: [] })
+      const state = sample(`${node.name}[${t}]`, buildDist(t === 0 ? node.init : node.step, at, []))
+      env.set(node.name, { value: state, dims: [] })
+      for (const m of emissions) observe(`${m.name}[${t}]`, buildDist(m.dist, at, []), evaluate(m.value, at).value)
+      return { prev: state, states: [...carry.states, state] }
+    },
+    { prev: undefined, states: [] } as ScanCarry,
+  )
+  // Enumeration gives each step's state its own batch axis, so the states may have no common shape to stack.
+  const first = done.states[0]
+  const stackable =
+    length > 0 &&
+    first !== undefined &&
+    done.states.length === length &&
+    done.states.every((v) => v.shape.length === first.shape.length && v.shape.every((n, i) => n === first.shape[i]))
+  if (stackable) ctx.env.set(node.name, { value: stack(done.states, 0), dims: [over] })
+  else skipped.add(node.name)
+}
+
 function dependsOnUnbound(node: ModelNode, skipped: ReadonlySet<string>): string | undefined {
   for (const r of nodeRefs(node)) if (skipped.has(r)) return r
   return undefined
@@ -178,7 +234,8 @@ function dependsOnUnbound(node: ModelNode, skipped: ReadonlySet<string>): string
  * Missing entries (NaN) of an observed node's data follow its `missing` policy: `ignore` masks them out of the
  * likelihood, `impute` also adds a latent site `<name>_missing` over them (scalar-event observations only, and not
  * together with a batch). With a `batch` option the first call draws one subset of the batch dimension and every node
- * over it uses that subset, rescaled by the plate. Observed nodes and generated or derived nodes that depend on an
+ * over it uses that subset, rescaled by the plate. A `scan` node is one `markov` loop (history 1): the state at step `t` is the
+ * site `<name>[t]`, each emission the site `<emission>[t]`, and a node over the scanned dimension is read at the step. Observed nodes and generated or derived nodes that depend on an
  * unbound data node are left out, which is how a model without its response is run forward for prediction.
  *
  * @param bound - The bound model.
@@ -269,6 +326,9 @@ export function toProgram(bound: BoundModel, options: CompileOptions = {}): Mode
           inPlates(ctx, node.dims, () => factor(node.name, aligned(v, node.dims)))
           break
         }
+        case 'scan':
+          runScan(node, ctx, skipped)
+          break
         case 'param': {
           const support = node.constraint === undefined ? undefined : constraintSupport(node.constraint)
           const value = param(node.name, asTensor(node.init as NestedArray, 'float64'), {

@@ -50,6 +50,12 @@ export function nodeExprs(n: ModelNode): ExprSpec[] {
     case 'derived':
     case 'factor':
       return [n.expr]
+    case 'scan':
+      return [
+        ...Object.values(n.init.params),
+        ...Object.values(n.step.params),
+        ...n.emissions.flatMap((m) => [...Object.values(m.dist.params), m.value]),
+      ]
     default:
       return []
   }
@@ -62,13 +68,14 @@ export function distOf(
   return n.kind === 'latent' || n.kind === 'generated' || n.kind === 'observed' ? n.dist : undefined
 }
 
-/** The latents an expression depends on, through derived nodes too. */
+/** The latents an expression depends on, through derived nodes too (a scan's states count as one latent). */
 export function latentsIn(e: ExprSpec, byName: NodesByName, memo: LatentMemo): Set<string> {
   const out = new Set<string>()
   const walk = (x: ExprSpec): void => {
     if (x.kind === 'ref') {
       const node = byName.get(x.name)
-      if (node?.kind === 'latent') out.add(x.name)
+      // A scan's stacked states are random: a latent for what reads them.
+      if (node?.kind === 'latent' || node?.kind === 'scan') out.add(x.name)
       else if (node?.kind === 'derived') {
         let m = memo.get(x.name)
         if (m === undefined) {

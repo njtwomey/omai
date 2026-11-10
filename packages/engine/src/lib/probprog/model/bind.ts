@@ -12,9 +12,10 @@
 
 import { type Json, OmaiError } from '../../base/index.ts'
 import { asTensor, cast, fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
+import { nodeExprs } from './analysis-exprs.ts'
 import { validateSpec } from './check.ts'
 import type { CustomFns } from './definition.ts'
-import type { DataNode, ExprSpec, MissingPolicy, ModelNode, ModelSpec } from './spec.ts'
+import type { DataNode, ExprSpec, MissingPolicy, ModelSpec } from './spec.ts'
 
 /** Data for a model's data nodes, by node name: numbers, nested arrays or tensors. `null` leaves a node unbound. */
 export type DataInput = Readonly<Record<string, TensorLike | null>>
@@ -145,21 +146,6 @@ function constSizes(e: ExprSpec, out: (dim: string, size: number, who: string) =
       break
     default:
       break
-  }
-}
-
-function nodeExprs(n: ModelNode): ExprSpec[] {
-  switch (n.kind) {
-    case 'latent':
-    case 'generated':
-      return Object.values(n.dist.params)
-    case 'observed':
-      return [...Object.values(n.dist.params), n.value]
-    case 'derived':
-    case 'factor':
-      return [n.expr]
-    default:
-      return []
   }
 }
 

@@ -10,8 +10,9 @@
  * @index function linearGaussianBlocks: maximal Gaussian blocks that are exactly marginalisable given the other latents.
  */
 
-import { isAffineIn, type LatentMemo, latentsIn, type NodesByName } from './analysis-exprs.ts'
+import { isAffineIn, type LatentMemo, latentsIn, type NodesByName, nodeExprs } from './analysis-exprs.ts'
 import { canonicalDims } from './ids.ts'
+import { scanLinearGaussian } from './scan.ts'
 import type { LatentNode, ModelNode, ModelSpec } from './spec.ts'
 
 /** A set of Gaussian latents that is jointly Gaussian with its observations given the other latents. */
@@ -60,6 +61,44 @@ function candidate(n: ModelNode): n is LatentNode {
  * @returns The blocks, in the order of their first latent.
  */
 export function linearGaussianBlocks(env: LinearGaussianEnv): LinearGaussianBlock[] {
+  const order = new Map(env.spec.nodes.map((n, i) => [n.name, i]))
+  return [...plainBlocks(env), ...scanBlocks(env)].sort(
+    (a, b) => (order.get(a.sites[0] as string) ?? 0) - (order.get(b.sites[0] as string) ?? 0),
+  )
+}
+
+/**
+ * The blocks that are Gaussian chains: a `scan` whose first state, steps and emissions are linear-Gaussian given the latents
+ * it reads. The whole series of states is one block, a joint Gaussian of the length of the series (a Kalman smoother's
+ * model), conditioned on the latents that set its coefficients and scales; those are not folded into it, so a Gaussian
+ * latent that only shifts the emissions is a block of its own given the chain.
+ */
+function scanBlocks(env: LinearGaussianEnv): LinearGaussianBlock[] {
+  const { spec, byName, memo } = env
+  const order = new Map(spec.nodes.map((n, i) => [n.name, i]))
+  const latentCount = spec.nodes.filter((n) => n.kind === 'latent' || n.kind === 'scan').length
+  const out: LinearGaussianBlock[] = []
+  for (const scan of spec.nodes) {
+    if (scan.kind !== 'scan' || scan.emissions.length === 0) continue
+    const r = scanLinearGaussian(scan, byName, memo, false)
+    if (!r.holds) continue
+    const given = new Set<string>()
+    for (const e of nodeExprs(scan)) for (const l of latentsIn(e, byName, memo)) if (l !== scan.name) given.add(l)
+    const size = scan.eventRank === 0 ? env.sizeOf(scan.over) : undefined
+    out.push({
+      sites: [scan.name],
+      given: [...given].sort((a, b) => (order.get(a) ?? 0) - (order.get(b) ?? 0)),
+      observed: scan.emissions.map((m) => m.name),
+      derived: [],
+      ...(size === undefined ? {} : { dimension: size }),
+      whole: given.size === 0 && latentCount === 1,
+      reason: `${r.reason}${given.size === 0 ? '' : `, given ${[...given].join(', ')}`}: jointly Gaussian over the series, exactly marginalisable by a Kalman filter`,
+    })
+  }
+  return out
+}
+
+function plainBlocks(env: LinearGaussianEnv): LinearGaussianBlock[] {
   const { spec, byName, memo } = env
   const order = new Map(spec.nodes.map((n, i) => [n.name, i]))
   const block = new Set(spec.nodes.filter(candidate).map((n) => n.name))

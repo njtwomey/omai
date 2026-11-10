@@ -101,7 +101,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 
 ## probprog/model
 
-The model layer: a model written once as a value. A builder (`defineModel`) with named dimensions, data, latent, observed, derived, generated and factor nodes and constraints produces a JSON-able `ModelSpec`; the spec is bound to data (`bind`, `withData`, `bindDataset`), compiled to the existing `sample`/`observe` program (`toProgram`) so every present engine and handler runs it, compiled to a factor graph for message passing with its plates expanded (`toFactorGraph`, with the reasons for what cannot be mapped), analysed without running (`analyseSpec`: dependencies, plates, conjugate pairs), drawn (`toStructure`), composed (`include`, `conditionSpec`, `doSpec`) and serialised (`fromJSON`). Expressions use a closed registry of operators; distributions are named families with the library's constructors behind them (`omai-engine/probprog/model/dists`).
+The model layer: a model written once as a value. A builder (`defineModel`) with named dimensions, data, latent, observed, derived, generated and factor nodes, recurrences (`scan`: time series, state-space models, hidden Markov chains) and constraints produces a JSON-able `ModelSpec`; the spec is bound to data (`bind`, `withData`, `bindDataset`), compiled to the existing `sample`/`observe` program (`toProgram`) so every present engine and handler runs it, compiled to a factor graph for message passing with its plates expanded (`toFactorGraph`, with the reasons for what cannot be mapped), analysed without running (`analyseSpec`: dependencies, plates, conjugate pairs), drawn (`toStructure`), composed (`include`, `conditionSpec`, `doSpec`) and serialised (`fromJSON`). Expressions use a closed registry of operators; distributions are named families with the library's constructors behind them (`omai-engine/probprog/model/dists`).
 
 - function `analysis-conjugacy.ts` (file): conjugacyRecords: conjugate pairs through plates, lookups, affine maps, hierarchies and joint priors. `src/lib/probprog/model/analysis-conjugacy.ts:1` `omai-engine/probprog/model`
 - function `analysis-graph.ts` (file): graphStructure: Markov blankets, independent components, discrete-part width and minibatch axes of a spec. `src/lib/probprog/model/analysis-graph.ts:1` `omai-engine/probprog/model`
@@ -116,6 +116,7 @@ The model layer: a model written once as a value. A builder (`defineModel`) with
 - function `factors.ts` (file): toFactorGraph: a bound ModelSpec as a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:1` `omai-engine/probprog/model`
 - function `from-program.ts` (file): fromProgram: lift a program to a ModelSpec of its site structure; refuses a varying one. `src/lib/probprog/model/from-program.ts:1` `omai-engine/probprog/model`
 - function `ids.ts` (file): nodeId, factorId, plateId, elementId and auxId: the id convention of a model spec's picture and tapes. `src/lib/probprog/model/ids.ts:1` `omai-engine/probprog/model`
+- function `scan.ts` (file): Unroll every scan of a bound spec into one node per step. `src/lib/probprog/model/scan.ts:1` `omai-engine/probprog/model`
 - function `structure.ts` (file): toStructure: draw a ModelSpec as plate notation (or its factor graph) with ids that match tapes. `src/lib/probprog/model/structure.ts:1` `omai-engine/probprog/model`
 
 - structure `definition.ts` (file): ModelDefinition: a spec with its custom functions, and the methods bind, condition, do and toJSON. `src/lib/probprog/model/definition.ts:1` `omai-engine/probprog/model`
@@ -124,16 +125,16 @@ The model layer: a model written once as a value. A builder (`defineModel`) with
 - structure `structure-report.ts` (file): StructureReport: blankets, components, discrete width, conjugate and Gaussian blocks, minibatch axes, suggestions. `src/lib/probprog/model/structure-report.ts:1` `omai-engine/probprog/model`
 - structure `var.ts` (file): Var: a checked expression handle with named dims, and ops, the operators as functions. `src/lib/probprog/model/var.ts:1` `omai-engine/probprog/model`
 
-- function `analyseSpec`: Static analysis of a ModelSpec: structure, plates, conjugacy and features. `src/lib/probprog/model/analysis.ts:260` `omai-engine/probprog/model`
+- function `analyseSpec`: Static analysis of a ModelSpec: structure, plates, conjugacy and features. `src/lib/probprog/model/analysis.ts:295` `omai-engine/probprog/model`
 - function `applyCollapse`: applyCollapse: the collapsed program of a collapsePlan, through the collapse handler. `src/lib/probprog/model/collapse-plan.ts:214` `omai-engine/probprog/model`
-- function `bind`: Bind data to a ModelSpec with checks of dims, sizes and supports. `src/lib/probprog/model/bind.ts:338` `omai-engine/probprog/model`
+- function `bind`: Bind data to a ModelSpec with checks of dims, sizes and supports. `src/lib/probprog/model/bind.ts:324` `omai-engine/probprog/model`
 - function `collapsePlan`: collapsePlan: which sites the collapse handler can integrate out, with cost and gain; user-invoked. `src/lib/probprog/model/collapse-plan.ts:105` `omai-engine/probprog/model`
-- function `defineModel`: Build a model spec with named dimensions, data, latents, observations and derived nodes. `src/lib/probprog/model/builder.ts:590` `omai-engine/probprog/model`
-- function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:1818` `omai-engine/probprog/model`
+- function `defineModel`: Build a model spec with named dimensions, data, latents, observations and derived nodes. `src/lib/probprog/model/builder.ts:741` `omai-engine/probprog/model`
+- function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:1839` `omai-engine/probprog/model`
 - function `fromProgram`: fromProgram: lift a sample/observe program to a ModelSpec of its site structure; refuses a varying structure. `src/lib/probprog/model/from-program.ts:185` `omai-engine/probprog/model`
-- function `structureReport`: structureReport: what a spec's structure allows, as records and suggestions naming the method to use. `src/lib/probprog/model/analysis.ts:414` `omai-engine/probprog/model`
-- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:1703` `omai-engine/probprog/model`
-- function `toProgram`: Compile a bound ModelSpec to a sample/observe program every engine runs. `src/lib/probprog/model/compile.ts:205` `omai-engine/probprog/model`
+- function `structureReport`: structureReport: what a spec's structure allows, as records and suggestions naming the method to use. `src/lib/probprog/model/analysis.ts:476` `omai-engine/probprog/model`
+- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:1704` `omai-engine/probprog/model`
+- function `toProgram`: Compile a bound ModelSpec to a sample/observe program every engine runs. `src/lib/probprog/model/compile.ts:262` `omai-engine/probprog/model`
 
 ### probprog/model/dists
 
@@ -145,38 +146,49 @@ The distribution constructors of the model layer, available as `omai-engine/prob
 
 ## probprog/models
 
-The benchmark models of probabilistic programming, available as `omai-engine/probprog/models`: named models written with `defineModel` (or as a `markov` program where the spec layer has no recurrence yet), each with a title, description, tags and references, a seeded data generator beside its canonical data, the truth the inference methods are compared with (a closed form, a quadrature or an analytic marginal) and the plans of the methods that apply to it, with what to expect of each. `benchmarkModels` lists them, `benchmarkEntries` and `benchmarkMethods` hand them to a worker's registry, and `benchmarkCampaigns` is their cross-engine agreement as periodic validation campaigns. The suite so far: the conjugate trio, logistic, probit, Poisson and negative binomial regression, eight schools (centred and non-centred), the Gaussian mixture (with and without label switching), Neal's funnel (centred and non-centred), the banana, a two-mode target, a radon hierarchy, a three-player TrueSkill and an AR(1) state space. `kernelCampaigns` is the periodic validation of the kernel methods: Geweke tests, calibration, agreement with the truth of three of them and parallel tempering on the two-mode target.
+The benchmark models of probabilistic programming, available as `omai-engine/probprog/models`: named models written with `defineModel` (recurrences as `scan` nodes), each with a title, description, tags and references, a seeded data generator beside its canonical data, the truth the inference methods are compared with (a closed form, a quadrature or an analytic marginal) and the plans of the methods that apply to it, with what to expect of each. `benchmarkModels` lists them, `benchmarkEntries` and `benchmarkMethods` hand them to a worker's registry, and `benchmarkCampaigns` is their cross-engine agreement as periodic validation campaigns. The suite so far: the conjugate trio, logistic, probit, Poisson and negative binomial regression, eight schools (centred and non-centred), the Gaussian mixture (with and without label switching), Neal's funnel (centred and non-centred), the banana, a two-mode target, a radon hierarchy, a three-player TrueSkill and an AR(1) state space. `kernelCampaigns` is the periodic validation of the kernel methods: Geweke tests, calibration, agreement with the truth of three of them and parallel tempering on the two-mode target.
 
+- function `additionalCampaigns`: The periodic campaigns of the later benchmark models, plus the clutter problem's EP comparison. `src/lib/probprog/models/additional-campaigns.ts:104` `omai-engine/probprog/models`
 - function `benchmarkAgreement`: Cross-engine agreement of a benchmark model: every planned method against the truth. `src/lib/probprog/models/agreement.ts:132` `omai-engine/probprog/models`
 - function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:103` `omai-engine/probprog/models`
 - function `defineBenchmark`: Make a benchmark model: a spec or program with generator, truth, tags, references and method plans. `src/lib/probprog/models/benchmark.ts:175` `omai-engine/probprog/models`
 - function `evidenceCampaigns`: Periodic validation of the evidence estimators, nested sampling, particle filters and particle MCMC. `src/lib/probprog/models/evidence-campaigns.ts:521` `omai-engine/probprog/models`
 - function `kernelCampaigns`: The periodic validation of the kernel methods: Geweke, calibration, agreement and the two-mode target. `src/lib/probprog/models/kernel-campaigns.ts:524` `omai-engine/probprog/models`
-- function `structureCampaigns`: The structure of every benchmark model, and collapsed against full NUTS, as periodic campaigns. `src/lib/probprog/models/structure-campaigns.ts:321` `omai-engine/probprog/models`
+- function `structureCampaigns`: The structure of every benchmark model, and collapsed against full NUTS, as periodic campaigns. `src/lib/probprog/models/structure-campaigns.ts:364` `omai-engine/probprog/models`
 - function `sviCampaigns`: Periodic validation campaigns of the variational methods against the benchmark truths. `src/lib/probprog/models/svi-plans.ts:206` `omai-engine/probprog/models`
 
 - structure `BenchmarkModel`: A benchmark model: a spec with a data generator, the truth, references, tags and method plans. `src/lib/probprog/models/benchmark.ts:98` `omai-engine/probprog/models`
 
-- table `benchmarkModels`: The benchmark models: specs with truth, generators, tags and method plans. `src/lib/probprog/models/suite.ts:33` `omai-engine/probprog/models`
+- table `additionalBenchmarkModels`: The later benchmark models: scans, Gaussian processes, LDA, a neural network, IRT, clutter. `src/lib/probprog/models/additional.ts:30` `omai-engine/probprog/models`
+- table `benchmarkModels`: The benchmark models: specs with truth, generators, tags and method plans. `src/lib/probprog/models/suite.ts:34` `omai-engine/probprog/models`
 
 - dataset `ar1CoefficientFamily`: The AR(1) state-space benchmark with an unknown coefficient, as a family for particle MCMC. `src/lib/probprog/models/ar1-parameters.ts:34` `omai-engine/probprog/models`
-- dataset `ar1StateSpace`: Stationary AR(1) state with noisy observations as a markov program; exact Gaussian smoothing truth. `src/lib/probprog/models/state-space.ts:93` `omai-engine/probprog/models`
+- dataset `ar1StateSpace`: Stationary AR(1) state with noisy observations as a scan; exact Gaussian smoothing truth. `src/lib/probprog/models/state-space.ts:126` `omai-engine/probprog/models`
 - dataset `banana`: Haario's banana: a curved correlated 2-D ridge; analytic marginals; Laplace and mean field are wrong. `src/lib/probprog/models/geometry.ts:162` `omai-engine/probprog/models`
+- dataset `bayesianNeuralNetwork`: Bayesian neural network (three tanh units) on a small regression; stored NUTS reference for the output. `src/lib/probprog/models/neural-network.ts:145` `omai-engine/probprog/models`
 - dataset `betaBernoulli`: Beta-Bernoulli coin: exact Beta posterior and evidence; the simplest conjugate benchmark. `src/lib/probprog/models/conjugate.ts:43` `omai-engine/probprog/models`
 - dataset `bimodal`: Two equal Gaussian modes in 2-D: the multimodal target for mode weights and R-hat. `src/lib/probprog/models/geometry.ts:236` `omai-engine/probprog/models`
+- dataset `clutterProblem`: Minka's clutter problem with a distractor: bimodal robust location, quadrature truth. `src/lib/probprog/models/clutter.ts:161` `omai-engine/probprog/models`
 - dataset `eightSchoolsCentred`: Rubin's eight schools, centred: the funnel; exact quadrature truth. `src/lib/probprog/models/schools.ts:138` `omai-engine/probprog/models`
 - dataset `eightSchoolsNonCentred`: Rubin's eight schools, non-centred: the same posterior without the funnel; truth by quadrature. `src/lib/probprog/models/schools.ts:207` `omai-engine/probprog/models`
 - dataset `funnelCentred`: Neal's funnel, centred: analytic truth; NUTS diverges in the neck. `src/lib/probprog/models/geometry.ts:46` `omai-engine/probprog/models`
 - dataset `funnelNonCentred`: Neal's funnel, non-centred: the same law of (v, x) with the funnel removed from the density. `src/lib/probprog/models/geometry.ts:94` `omai-engine/probprog/models`
 - dataset `gammaPoisson`: Gamma-Poisson rate: exact Gamma posterior and evidence for counts. `src/lib/probprog/models/conjugate.ts:155` `omai-engine/probprog/models`
+- dataset `gaussianHmm`: Three-state Gaussian HMM as a scan, parameters known; exact forward-backward truth with visit counts. `src/lib/probprog/models/series.ts:273` `omai-engine/probprog/models`
 - dataset `gaussianMixture`: Two-component Gaussian mixture with label switching; the truth is the even two-mode mixture; sorted summaries. `src/lib/probprog/models/mixture.ts:179` `omai-engine/probprog/models`
 - dataset `gaussianMixtureOrdered`: Two-component Gaussian mixture, means ordered; discrete labels summed out; the truth is a 2-D grid. `src/lib/probprog/models/mixture.ts:133` `omai-engine/probprog/models`
+- dataset `gaussianProcessNonCentred`: Gaussian process regression, non-centred (f = L z); the same quadrature truth as the centred form. `src/lib/probprog/models/gaussian-process.ts:295` `omai-engine/probprog/models`
+- dataset `gaussianProcessRegression`: Gaussian process regression with an unknown length scale; closed-form function posterior, quadrature over the length scale. `src/lib/probprog/models/gaussian-process.ts:207` `omai-engine/probprog/models`
+- dataset `itemResponseScoring`: 2PL item response scoring with known items; one-dimensional quadrature truth for each respondent. `src/lib/probprog/models/irt.ts:101` `omai-engine/probprog/models`
+- dataset `ldaLite`: LDA-lite: three documents, two topics, four words; the exact posterior by enumeration of the assignments. `src/lib/probprog/models/topics.ts:260` `omai-engine/probprog/models`
 - dataset `logisticRegression`: Bayesian logistic regression with an intercept and two covariates; the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:61` `omai-engine/probprog/models`
 - dataset `negativeBinomialRegression`: Negative binomial regression with an overdispersion parameter; the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:240` `omai-engine/probprog/models`
 - dataset `normalNormal`: Normal-normal mean with known noise: exact normal posterior and evidence. `src/lib/probprog/models/conjugate.ts:99` `omai-engine/probprog/models`
 - dataset `poissonRegression`: Poisson regression with a log link on one covariate; the truth is a 2-D grid. `src/lib/probprog/models/glm.ts:182` `omai-engine/probprog/models`
 - dataset `probitRegression`: Bayesian probit regression (the plan's slice model); the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:118` `omai-engine/probprog/models`
 - dataset `radon`: Hierarchical radon-style regression with varying intercepts; the exact truth integrates the effects out. `src/lib/probprog/models/hierarchical.ts:273` `omai-engine/probprog/models`
+- dataset `stickBreakingMixture`: Truncated stick-breaking (Dirichlet-process style) mixture with known components; a 3-D grid truth. `src/lib/probprog/models/nonparametric.ts:136` `omai-engine/probprog/models`
+- dataset `stochasticVolatility`: Stochastic volatility as a scan, parameters known; the truth is a point-mass smoother on a grid. `src/lib/probprog/models/series.ts:131` `omai-engine/probprog/models`
 - dataset `trueskillThreePlayers`: Three players rated from pairwise games, TrueSkill-style (probit): the EP target; truth is a 3-D grid. `src/lib/probprog/models/ranking.ts:58` `omai-engine/probprog/models`
 
 ## probprog/validation

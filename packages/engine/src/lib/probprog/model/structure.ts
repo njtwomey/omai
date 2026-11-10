@@ -25,7 +25,8 @@ import { analyseSpec } from './analysis.ts'
 import type { ModelLike } from './bind.ts'
 import { distText, exprText } from './expr-text.ts'
 import { canonicalDims, factorId, nodeId, plateId } from './ids.ts'
-import type { DataRole, ModelNode, ModelSpec } from './spec.ts'
+import { expandScans } from './scan.ts'
+import { type DataRole, type ModelNode, type ModelSpec, prevName } from './spec.ts'
 
 /** Options of {@link toStructure}. */
 export interface StructureOptions {
@@ -109,6 +110,7 @@ const ROLE: Readonly<Record<ModelNode['kind'], NodeRole>> = {
   generated: 'latent',
   factor: 'factor',
   param: 'parameter',
+  scan: 'latent',
 }
 
 /**
@@ -144,7 +146,8 @@ const ROLE: Readonly<Record<ModelNode['kind'], NodeRole>> = {
  * ```
  */
 export function toStructure(model: ModelLike | ModelSpec, options: StructureOptions = {}): Structure {
-  const spec: ModelSpec = 'spec' in model ? model.spec : model
+  // Each scan is followed by its emissions as observed nodes over the scanned dimension.
+  const spec: ModelSpec = expandScans('spec' in model ? model.spec : model)
   const view = options.view ?? 'plate'
   if (view !== 'plate' && view !== 'factor') throw new OmaiError('value', `toStructure: unknown view '${String(view)}'`)
   const a = analyseSpec(model)
@@ -199,16 +202,19 @@ export function toStructure(model: ModelLike | ModelSpec, options: StructureOpti
       ? undefined
       : n.kind === 'latent' || n.kind === 'observed' || n.kind === 'generated'
         ? `~ ${distText(n.dist)}`
-        : n.kind === 'derived' || n.kind === 'factor'
-          ? `= ${exprText(n.expr)}`
-          : n.kind === 'data'
-            ? (n.support ?? 'data')
-            : undefined
+        : n.kind === 'scan'
+          ? `${n.name}[0] ~ ${distText(n.init)}; ${n.name}[t] ~ ${distText(n.step).replaceAll(prevName(n.name), `${n.name}[t-1]`)}`
+          : n.kind === 'derived' || n.kind === 'factor'
+            ? `= ${exprText(n.expr)}`
+            : n.kind === 'data'
+              ? (n.support ?? 'data')
+              : undefined
     const badges: Record<string, string | number> = {}
     if (n.dims.length > 0) badges['dims'] = `[${n.dims.join(', ')}]`
     if (n.kind === 'data' && n.role !== undefined) badges['role'] = n.role
     if (n.kind === 'generated') badges['generated'] = 'yes'
     if (n.kind === 'latent' && n.constraint !== undefined) badges['constraint'] = n.constraint.kind
+    if (n.kind === 'scan') badges['recurrence'] = `over ${n.over}`
     const info: Record<string, Json> = { spec: n.kind, site: n.kind === 'data' ? null : n.name, dims: [...n.dims] }
     if (group !== undefined) info['plate'] = group
     nodes.push({
@@ -228,6 +234,9 @@ export function toStructure(model: ModelLike | ModelSpec, options: StructureOpti
     for (const e of a.edges)
       if (ids.has(e.from) && ids.has(e.to))
         edges.push({ from: e.from, to: e.to, directed: true, kind: e.from.startsWith('data:') ? 'data' : 'dependency' })
+    // The recurrence: the state at the previous step is a parent of the state (a self-loop on the plate's scan node).
+    for (const n of visible)
+      if (n.kind === 'scan') edges.push({ from: n.name, to: n.name, directed: true, kind: 'dependency', label: 't-1' })
   } else {
     const kept: StructureNode[] = []
     for (const n of visible) {
@@ -250,6 +259,8 @@ export function toStructure(model: ModelLike | ModelSpec, options: StructureOpti
         data: { spec: 'factor', site: n.name, of: n.kind },
       })
       for (const p of parentsOf(n)) edges.push({ from: p, to: factorId(n.name), directed: false, kind: 'other' })
+      if (n.kind === 'scan')
+        edges.push({ from: id, to: factorId(n.name), directed: false, kind: 'other', label: 't-1' })
       edges.push({ from: factorId(n.name), to: id, directed: false, kind: 'other' })
     }
     nodes.length = 0

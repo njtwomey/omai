@@ -54,6 +54,13 @@ export function substituteNode(node: ModelNode, map: ReadonlyMap<string, ExprSpe
     case 'derived':
     case 'factor':
       return { ...node, expr: substitute(node.expr, map) }
+    case 'scan':
+      return {
+        ...node,
+        init: dist(node.init),
+        step: dist(node.step),
+        emissions: node.emissions.map((m) => ({ ...m, dist: dist(m.dist), value: substitute(m.value, map) })),
+      }
     default:
       return node
   }

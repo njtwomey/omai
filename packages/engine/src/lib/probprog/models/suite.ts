@@ -6,6 +6,7 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
+import { additionalBenchmarkModels } from './additional.ts'
 import type { BenchmarkModel } from './benchmark.ts'
 import { betaBernoulli, gammaPoisson, normalNormal } from './conjugate.ts'
 import { banana, bimodal, funnelCentred, funnelNonCentred } from './geometry.ts'
@@ -50,6 +51,7 @@ export function benchmarkModels(): BenchmarkModel[] {
     radon,
     trueskillThreePlayers,
     ar1StateSpace,
+    ...additionalBenchmarkModels(),
   ]
 }
 

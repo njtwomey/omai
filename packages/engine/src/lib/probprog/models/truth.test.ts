@@ -21,7 +21,7 @@ import { gaussianMixture } from './mixture.ts'
 import { exactPlan } from './plans.ts'
 import { trueskillThreePlayers } from './ranking.ts'
 import { eightSchoolsCentred, eightSchoolsMarginal } from './schools.ts'
-import { ar1StateSpace } from './state-space.ts'
+import { ar1MarkovProgram, ar1StateSpace } from './state-space.ts'
 import { averageOracle, mixtureOracle } from './truth.ts'
 
 /** The integral of `exp(f(x))` over `[lo, hi]` by the trapezoid rule, as a log. */
@@ -202,14 +202,39 @@ describe('the geometry specs are the library densities', () => {
 describe('the AR(1) smoothing truth equals the Kalman smoother', () => {
   it('the means, the sds and the evidence agree with the gaussian method in its Kalman mode', () => {
     const truth = ar1StateSpace.truth()
-    const method = gaussianMethod(ar1StateSpace.program())
+    const method = gaussianMethod(ar1StateSpace.bound())
     const s = session(method, { config: { method: 'kalman' }, steps: 3, mode: 'eager' })
     const post = method.posterior?.(s.state, s.config)
     for (let t = 0; t < 12; t++) {
-      expect(item(post?.mean(`x${t}`) as never)).toBeCloseTo(truth.marginals[`x${t}`]?.mean ?? Number.NaN, 8)
-      expect(item(post?.stddev(`x${t}`) as never)).toBeCloseTo(truth.marginals[`x${t}`]?.sd ?? Number.NaN, 8)
+      expect(item(post?.mean(`x[${t}]`) as never)).toBeCloseTo(truth.marginals[`x[${t}]`]?.mean ?? Number.NaN, 8)
+      expect(item(post?.stddev(`x[${t}]`) as never)).toBeCloseTo(truth.marginals[`x[${t}]`]?.sd ?? Number.NaN, 8)
     }
     expect(post?.logEvidence?.value).toBeCloseTo(truth.logEvidence ?? Number.NaN, 8)
+  })
+})
+
+describe('the AR(1) state space as a scan equals the hand-written markov program', () => {
+  it('has the same log joint at the same states, and the same Kalman truth for the same data', () => {
+    const y = ar1StateSpace.data.data['y'] as number[]
+    const states = y.map((_, t) => 0.3 * Math.sin(t))
+    const scan = logJoint(
+      ar1StateSpace.program(),
+      undefined,
+      Object.fromEntries(states.map((v, t) => [`x[${t}]`, v])),
+    ).logJoint
+    const byHand = logJoint(
+      ar1MarkovProgram(y),
+      undefined,
+      Object.fromEntries(states.map((v, t) => [`x${t}`, v])),
+    ).logJoint
+    expect(item(scan)).toBeCloseTo(item(byHand), 12)
+    // Kalman by the library's own state-space filter on the markov program: the same smoothing means.
+    const m = gaussianMethod(ar1MarkovProgram(y))
+    const s = session(m, { config: { method: 'kalman' }, steps: 3, mode: 'eager' })
+    const post = m.posterior?.(s.state, s.config)
+    const truth = ar1StateSpace.truth()
+    for (let t = 0; t < y.length; t++)
+      expect(item(post?.mean(`x${t}`) as never)).toBeCloseTo(truth.marginals[`x[${t}]`]?.mean ?? Number.NaN, 8)
   })
 })
 
@@ -301,7 +326,8 @@ describe('defineBenchmark checks its parts', () => {
   it('wants a spec or a program, not both and not neither', () => {
     expect(() => defineBenchmark({ ...parts, name: 'neither' })).toThrow(/not both or neither/)
     expect(() => poissonRegression.bound({ data: { x: [1], k: [1, 2] }, generating: {} })).toThrow(/dimension 'row'/)
-    expect(() => ar1StateSpace.bound()).toThrow(/is a program/)
+    const aProgram = defineBenchmark({ ...parts, name: 'a-program', program: () => () => undefined })
+    expect(() => aProgram.bound()).toThrow(/is a program/)
   })
   it('names the oracles of a poisson check: only the dists used here are imported', () => {
     expect(item(poissonDist(2).prob(0))).toBeCloseTo(Math.exp(-2), 12)
