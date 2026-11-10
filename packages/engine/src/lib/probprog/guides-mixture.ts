@@ -8,8 +8,8 @@
  */
 
 import { categorical, compose, normal, type Support } from '../dists/index.ts'
-import { foldIn } from '../random/index.ts'
-import { full, primalOf, stack, take, toFlat, type Value, zeros } from '../tensor/index.ts'
+import { foldIn, uniform } from '../random/index.ts'
+import { full, mean, mul, primalOf, stack, sub, take, toFlat, type Value, zeros } from '../tensor/index.ts'
 import { type AutoGuide, type AutoGuideOptions, jointGuide } from './guides.ts'
 import { type Model, param, sample } from './primitives.ts'
 
@@ -17,6 +17,11 @@ import { type Model, param, sample } from './primitives.ts'
 export interface AutoMixtureOptions extends AutoGuideOptions {
   /** The number of components (default 2). */
   readonly components?: number
+  /**
+   * The components start at independent uniform draws on (-1, 1), centred on their mean and multiplied by this (default 4),
+   * so that they begin apart on opposite sides of their centre: components that start close fall into the same mode.
+   */
+  readonly spread?: number
 }
 
 /**
@@ -43,14 +48,21 @@ export interface AutoMixtureOptions extends AutoGuideOptions {
 export function autoMixtureNormal<D = void>(model: Model<D>, options: AutoMixtureOptions = {}): AutoGuide<D> {
   const K = options.components ?? 2
   const s0 = options.initScale ?? 0.1
+  const spread = options.spread ?? 4
   const positive: Support = { kind: 'positive' }
   return jointGuide(
     model,
     'autoMixtureNormal',
     {
-      latent: (D, _sites, init) => {
+      latent: (D) => {
         const logits = param('auto_logits', zeros([K]))
-        const locs = param('auto_locs', (k) => stack(Array.from({ length: K }, (_, i) => primalOf(init(foldIn(k, i))))))
+        const locs = param('auto_locs', (k) => {
+          const u = stack(
+            Array.from({ length: K }, (_, i) => primalOf(uniform(foldIn(k, i), [D], { low: -1, high: 1 }))),
+          )
+          // Centred on the components' mean, so that they start apart, on opposite sides of their centre.
+          return mul(sub(u, mean(u, 0)), spread)
+        })
         const scales = param('auto_scales', full([K, D], s0), { support: positive })
         const c = sample('auto_component', categorical({ logits }), { infer: { enumerate: 'parallel' } })
         return compose.independent(normal(take(locs, c), take(scales, c)), 1)

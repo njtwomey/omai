@@ -24,6 +24,7 @@ import type { InferenceMethod } from './method.ts'
 import { bpSpecMethod, epSpecMethod, vmpSpecMethod } from './mp.ts'
 import { nutsMethod } from './nuts-method.ts'
 import { particleFilterMethod, temperedSmcMethod } from './smc-methods.ts'
+import { sviExtraKinds } from './svi-kinds.ts'
 import { sviMethod } from './svi-method.ts'
 
 /** A model a registry holds: the definition (spec and custom functions) and the data it is bound to by default. */
@@ -122,6 +123,7 @@ export const methodKinds: Readonly<Record<string, MethodMaker>> = {
   enumeration: renamed(enumerationMethod),
   chain: renamed(chainMethod),
   'abc-rejection': renamed(abcRejectionMethod),
+  ...sviExtraKinds,
 }
 
 /**
