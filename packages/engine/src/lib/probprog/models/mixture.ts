@@ -7,12 +7,15 @@
  * (the sorted means, `mu(1) < mu(2)`) is the same in every mode. The ordered variant constrains `mu_0 < mu_1`, which
  * removes the second mode. The truth is a grid over the two means around one mode (the labels summed out exactly):
  * that mode is the ordered posterior, and the unconstrained posterior is its even mixture with the relabelling.
+ * `gaussianMixtureModel` is the same idea for any number of components with unknown weights and a shared spread, for data of
+ * unit scale (a real dataset standardised), with no closed-form truth.
  */
 
+import { OmaiError } from '../../base/index.ts'
 import { normal as drawNormal, uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
-import { defineModel, toProgram } from '../model/index.ts'
+import { defineModel, type ModelDefinition, toProgram } from '../model/index.ts'
 import { gridPosterior } from '../validation/index.ts'
 import {
   type BenchmarkData,
@@ -65,6 +68,56 @@ export function sortedComponentMeans(draws: Readonly<Record<string, ArrayLike<nu
     hi[i] = Math.max(x, y)
   }
   return { 'mu(1)': lo, 'mu(2)': hi }
+}
+
+/** The options of {@link gaussianMixtureModel}. */
+export interface GaussianMixtureOptions {
+  /** The number of components, 1 or more. */
+  readonly components: number
+  /** Constrain the means to increase (`mu_0 < mu_1 < ...`), which removes the label switching. Default false. */
+  readonly ordered?: boolean
+  /** The standard deviation of the normal prior of each mean (default 2). */
+  readonly meanScale?: number
+}
+
+/**
+ * A one-dimensional Gaussian mixture of `components` normals with everything unknown: the weights (a flat Dirichlet), the
+ * means (`N(0, meanScale^2)`, optionally ordered), one spread the components share (`LogNormal(-1, 0.75)`, a median of 0.37) and a discrete
+ * component label per row, which the samplers sum out or sample. It is written for data of about unit scale, so
+ * standardise the data first. Left unordered the posterior has `components!` modes that are relabellings of one another:
+ * the label switching a chain, a sampler or a guide runs into.
+ *
+ * @param options - The number of components, whether to order the means and the prior scale of the means.
+ * @returns The definition; bind it to `{ y: [...] }`.
+ * @throws OmaiError with code `value` for fewer than one component.
+ * @concept model-spec
+ * @index function A K-component Gaussian mixture with unknown weights, means and a shared spread, optionally ordered.
+ * @example
+ * ```ts
+ * import { gaussianMixtureModel } from 'omai-engine/probprog/models'
+ * gaussianMixtureModel({ components: 3, ordered: true }).bind({ y: [-1, 0.2, 1.4, 0.3] }).sizes // => { row: 4, component: 3 }
+ * ```
+ */
+export function gaussianMixtureModel(options: GaussianMixtureOptions): ModelDefinition {
+  const { components, ordered = false, meanScale = 2 } = options
+  if (!(Number.isInteger(components) && components >= 1))
+    throw new OmaiError('value', 'gaussianMixtureModel: components is a whole number from 1')
+  return defineModel(`gaussian-mixture-${components}${ordered ? '-ordered' : ''}`, (m) => {
+    const row = m.range('row')
+    const k = m.range('component', { size: components })
+    const y = m.data('y', { dims: [row], role: 'response' })
+    const weights = m.latent('weights', d.dirichlet(Array.from({ length: components }, () => 1)), {
+      doc: 'the mixture weights',
+    })
+    const mu = m.latent('mu', d.normal(0, meanScale), {
+      dims: [k],
+      ...(ordered ? { constraint: { kind: 'ordered' as const } } : {}),
+      doc: 'the component means',
+    })
+    const sigma = m.latent('sigma', d.logNormal(-1, 0.75), { doc: 'the spread every component shares' })
+    const z = m.latent('z', d.categorical({ probs: weights }), { dims: [row], doc: 'the component of each row' })
+    m.observe('y', d.normal(mu.at(z), sigma), y)
+  })
 }
 
 const mixtureSpec = (name: string, ordered: boolean) =>

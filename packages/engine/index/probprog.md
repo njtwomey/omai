@@ -156,6 +156,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:103` `omai-engine/probprog/models`
 - function `defineBenchmark`: Make a benchmark model: a spec or program with generator, truth, tags, references and method plans. `src/lib/probprog/models/benchmark.ts:175` `omai-engine/probprog/models`
 - function `evidenceCampaigns`: Periodic validation of the evidence estimators, nested sampling, particle filters and particle MCMC. `src/lib/probprog/models/evidence-campaigns.ts:521` `omai-engine/probprog/models`
+- function `gaussianMixtureModel`: A K-component Gaussian mixture with unknown weights, means and a shared spread, optionally ordered. `src/lib/probprog/models/mixture.ts:101` `omai-engine/probprog/models`
 - function `kernelCampaigns`: The periodic validation of the kernel methods: Geweke, calibration, agreement and the two-mode target. `src/lib/probprog/models/kernel-campaigns.ts:547` `omai-engine/probprog/models`
 - function `polynomialFeatureMap`: The standardised polynomial design of two inputs with an intercept: `polynomialFeatureMap(points, 3).transform(rows)`. `src/lib/probprog/models/probit-classification.ts:58` `omai-engine/probprog/models`
 - function `probitClassifier`: The probit classifier of any design width with a chosen prior scale; bind it with `probitData`. `src/lib/probprog/models/probit-classification.ts:102` `omai-engine/probprog/models`
@@ -182,8 +183,8 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - dataset `funnelNonCentred`: Neal's funnel, non-centred: the same law of (v, x) with the funnel removed from the density. `src/lib/probprog/models/geometry.ts:94` `omai-engine/probprog/models`
 - dataset `gammaPoisson`: Gamma-Poisson rate: exact Gamma posterior and evidence for counts. `src/lib/probprog/models/conjugate.ts:155` `omai-engine/probprog/models`
 - dataset `gaussianHmm`: Three-state Gaussian HMM as a scan, parameters known; exact forward-backward truth with visit counts. `src/lib/probprog/models/series.ts:273` `omai-engine/probprog/models`
-- dataset `gaussianMixture`: Two-component Gaussian mixture with label switching; the truth is the even two-mode mixture; sorted summaries. `src/lib/probprog/models/mixture.ts:179` `omai-engine/probprog/models`
-- dataset `gaussianMixtureOrdered`: Two-component Gaussian mixture, means ordered; discrete labels summed out; the truth is a 2-D grid. `src/lib/probprog/models/mixture.ts:133` `omai-engine/probprog/models`
+- dataset `gaussianMixture`: Two-component Gaussian mixture with label switching; the truth is the even two-mode mixture; sorted summaries. `src/lib/probprog/models/mixture.ts:232` `omai-engine/probprog/models`
+- dataset `gaussianMixtureOrdered`: Two-component Gaussian mixture, means ordered; discrete labels summed out; the truth is a 2-D grid. `src/lib/probprog/models/mixture.ts:186` `omai-engine/probprog/models`
 - dataset `gaussianProcessNonCentred`: Gaussian process regression, non-centred (f = L z); the same quadrature truth as the centred form. `src/lib/probprog/models/gaussian-process.ts:295` `omai-engine/probprog/models`
 - dataset `gaussianProcessRegression`: Gaussian process regression with an unknown length scale; closed-form function posterior, quadrature over the length scale. `src/lib/probprog/models/gaussian-process.ts:207` `omai-engine/probprog/models`
 - dataset `itemResponseScoring`: 2PL item response scoring with known items; one-dimensional quadrature truth for each respondent. `src/lib/probprog/models/irt.ts:101` `omai-engine/probprog/models`
