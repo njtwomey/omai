@@ -113,6 +113,25 @@ describe('the ids of a run are the ids of the structure', () => {
     const frames = events.filter((e) => e.type === 'frame')
     expect(frames.length).toBeGreaterThan(0)
   })
+  it('a factor with an id of its own keeps it on the tape and in the structure', () => {
+    const named: M.FactorGraphSpec = {
+      ...tree,
+      factors: tree.factors.map((f, i) => (i === 3 ? { ...f, id: 'factor:obs' } : f)),
+    }
+    const gn = M.compileGraph(named, operators)
+    expect(gn.factors.map((f) => f.id)).toEqual(['f0', 'f1', 'f2', 'factor:obs'])
+    expect(M.graphStructure(named).nodes.map((n) => n.id)).toContain('factor:obs')
+    const rec = recorder()
+    runAlgorithm(M.epAlgorithm(gn), { maxSteps: 3, tracer: rec, policy: policies.teaching })
+    const from = new Set(
+      rec.run().events.flatMap((e) => (e.type === 'message' && e.kind === 'message' ? [e.from] : [])),
+    )
+    expect(from.has('factor:obs')).toBe(true)
+    expect(from.has('f3')).toBe(false)
+    expect(() =>
+      M.compileGraph({ ...named, factors: named.factors.map((f) => ({ ...f, id: 'same' })) }, operators),
+    ).toThrow(/twice/)
+  })
   it('runs as a method of a session with a typed contract, and the snapshot has every marginal', () => {
     const m = M.epMethod(g)
     const sess = session(m, { steps: 6, mode: 'eager', logs: 'all' })

@@ -10,7 +10,7 @@
 
 import { type Json, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, type RunStatus, stateFromJson, stateToJson } from '../trace/index.ts'
-import { type CompiledGraph, factorId } from './graph.ts'
+import type { CompiledGraph } from './graph.ts'
 import { ImproperMessageError } from './operators/args.ts'
 import type { Projection } from './projections.ts'
 import { type CustomOrder, type Granularity, type Plan, planOf, type ScheduleKind } from './schedules.ts'
@@ -229,7 +229,7 @@ function resolve(
   if (s.improper === 'error') {
     throw new OmaiError(
       'convergence',
-      `message passing: an update of ${factorId(edge.factor)} makes the belief of ${(g.variables[edge.variable] as CompiledGraph['variables'][number]).name} improper`,
+      `message passing: an update of ${(g.factors[edge.factor] as CompiledGraph['factors'][number]).id} makes the belief of ${(g.variables[edge.variable] as CompiledGraph['variables'][number]).name} improper`,
     )
   }
   if (s.improper === 'reset') {
@@ -365,7 +365,7 @@ function configOf(s: EngineSettings): Json {
  * and the run is done when it falls below `tol` (`converged`), when a belief or message stops being finite
  * (`diverged`), or at `maxSweeps` (`completed`). Improper updates are repaired by the `improper` policy and counted.
  * The tape carries, per observation, the largest belief change, the sweeps and messages so far, the improper counts,
- * the evidence or bound, the messages of the last step (from `f<i>` to the variable, ids as in {@link graphStructure}) and the
+ * the evidence or bound, the messages of the last step (from the factor's id to the variable's, ids as in {@link graphStructure}) and the
  * marginals of every variable by id.
  *
  * Expectation propagation, variational message passing and belief propagation are settings of this one (see
@@ -546,7 +546,7 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
         },
       },
       messages: {
-        message: { description: 'a message from a factor to a variable (ids: f<i> and the variable name)' },
+        message: { description: 'a message from a factor to a variable (ids: the factor id and the variable name)' },
         marginals: { description: 'the current marginal of every variable, by variable id' },
       },
       frames: true,
@@ -583,7 +583,7 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
             const name = (g.variables[edge.variable] as CompiledGraph['variables'][number]).name
             return {
               kind: 'message',
-              from: factorId(edge.factor),
+              from: (g.factors[edge.factor] as CompiledGraph['factors'][number]).id,
               to: name,
               payload: {
                 factor: edge.factor,
@@ -601,7 +601,7 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
             const edge = g.edges[e] as CompiledGraph['edges'][number]
             return {
               kind: 'factorToVariable',
-              from: factorId(edge.factor),
+              from: (g.factors[edge.factor] as CompiledGraph['factors'][number]).id,
               to: (g.variables[edge.variable] as CompiledGraph['variables'][number]).name,
             }
           }),

@@ -8,6 +8,8 @@ import {
   integratePositive,
 } from '../../testing/message-passing.ts'
 import { sigmoidOf } from '../base/index.ts'
+import { truncatedNormal } from '../dists/index.ts'
+import { item } from '../tensor/index.ts'
 import * as M from './index.ts'
 
 const runs = { numRuns: 12 }
@@ -389,6 +391,17 @@ describe('truncation operators', () => {
       }),
       { numRuns: 6 },
     )
+  })
+  it('truncatedNormalMoments agrees with the truncated normal distribution of dists', () => {
+    for (const [m, v, lo, hi] of [
+      [0.3, 1.2, -1, 2],
+      [1, 0.5, 0, 4],
+    ] as const) {
+      const t = M.truncatedNormalMoments(m, v, lo, hi)
+      const d = truncatedNormal(m, Math.sqrt(v), lo, hi)
+      expect(t.mean).toBeCloseTo(item(d.mean()), 10)
+      expect(t.variance).toBeCloseTo(item(d.variance()), 10)
+    }
   })
   it('truncatedNormalMoments equals integration, in the upper tail too', () => {
     for (const [m, v, lo, hi] of [

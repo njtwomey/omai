@@ -24,8 +24,8 @@ Message passing on factor graphs of exponential families, the Infer.NET way: a m
 - algorithm `messagePassingAlgorithm`: The message-passing engine on a factor graph: projection, schedule, damping slots. `src/lib/message-passing/engine.ts:392` `omai-engine/message-passing`
 - algorithm `vmpAlgorithm`: Variational message passing on a factor graph of exponential families. `src/lib/message-passing/named.ts:221` `omai-engine/message-passing`
 
-- structure `FactorOperator`: A factor operator: the message to each argument of a factor. `src/lib/message-passing/types.ts:189` `omai-engine/message-passing`
-- structure `Family`: A message family: natural parameters, moments, quotient, KL. `src/lib/message-passing/types.ts:73` `omai-engine/message-passing`
+- structure `FactorOperator`: A factor operator: the message to each argument of a factor. `src/lib/message-passing/types.ts:193` `omai-engine/message-passing`
+- structure `Family`: A message family: natural parameters, moments, quotient, KL. `src/lib/message-passing/types.ts:77` `omai-engine/message-passing`
 - structure `Projection`: The projection slot: moment matching, expected log, sum-product. `src/lib/message-passing/projections.ts:18` `omai-engine/message-passing`
 - structure `bernoulli`: The Bernoulli message family: the logit of the probability of true. `src/lib/message-passing/families.ts:363` `omai-engine/message-passing`
 - structure `beta`: The beta message family on (0, 1). `src/lib/message-passing/families.ts:297` `omai-engine/message-passing`

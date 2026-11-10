@@ -13,17 +13,21 @@
  *
  * ## Ids: one convention for the graph, the tape and the diagram
  *
- * Everything a run reports is addressed by the ids the structure of the same model uses (`pgm/structure.ts`,
- * `toStructure`; a diagram of the model can then be coloured by a run without any lookup):
- * - a **variable** is its own `name` (a model variable's name; observed variables included);
- * - a **factor** is `f<i>`, `i` its index in `FactorGraphSpec.factors` (the id `toStructure` gives the factors of a
- *   `pgm` factor graph); `FactorSpec.name` is a label, never an id;
- * - an **edge** is the pair of ids (factor, variable); a **message** is directed along it: kind `factorToVariable`
- *   (from `f<i>` to the variable) or `variableToFactor`, with `from` and `to` set to the ids, as the message events of
- *   `pgm/inference/belief-propagation.ts`;
- * - the marginals of a run are keyed by variable id, in `Snapshot.marginals` and in the `frame` of each observation
- *   (`{ marginals, sent }`, `sent` the messages of the last step by `{ kind, from, to }`).
- * `factorId`, `variableId` and `graphStructure` (in `graph.ts`) are the one place these are made.
+ * Everything a run reports is addressed by ids, the same ones the picture of the model uses (`pgm/structure.ts`
+ * `toStructure` for a `pgm` factor graph; `probprog/model/ids.ts` for a model spec, whose compiler fills them in), so a
+ * diagram can be coloured and annotated by a run with no lookup:
+ * - a **variable** is its own `name` (the name of the model's variable or site; observed variables included, so a
+ *   spec's `data:<name>` nodes keep that name here);
+ * - a **factor** is `FactorSpec.id` when it has one (a model spec's compiler gives `factor:<site>`), else `f<i>` with
+ *   `i` its index in `FactorGraphSpec.factors` (what `toStructure` gives the factors of a `pgm` factor graph);
+ *   `FactorSpec.name` is a label, never an id; ids are unique;
+ * - an **edge** is named by its ends, `<factor id>><variable id>`; a **message** is directed along it, of kind
+ *   `factorToVariable` (from the factor id to the variable id), the form of the `message` events of
+ *   `pgm/inference/belief-propagation.ts` (`from` and `to` set);
+ * - the marginals of a run are keyed by variable id, in `MpSnapshot.marginals`, in the `mp/marginals` message and in the
+ *   `frame` of each observation (`{ marginals, sent }`, `sent` the messages of the last step as `{ kind, from, to }`).
+ * `factorId`, `variableId` and `graphStructure` (in `graph.ts`) are where the defaults are made; the compiled graph
+ * carries each factor's id.
  */
 
 import type { Json } from '../base/index.ts'
@@ -231,7 +235,10 @@ export interface FactorSpec {
   readonly params?: Params
   /** The power of fractional EP for this factor (default 1). */
   readonly power?: number
+  /** A label for a drawing (default the operator's name). */
   readonly name?: string
+  /** The factor's id on the tape and in a drawing (default `f<index>`); unique within the graph. */
+  readonly id?: string
 }
 
 /** A factor graph as JSON: variables with their families, factors with their operators by name. */

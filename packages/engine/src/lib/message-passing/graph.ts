@@ -37,7 +37,7 @@ import type {
 export const variableId = (name: string): string => name
 
 /**
- * The id of the i-th factor of a graph: `f<i>`, the id that `toStructure` of `pgm` gives the factors of a factor graph.
+ * The default id of the i-th factor of a graph: `f<i>`, the id that `toStructure` of `pgm` gives the factors of a factor graph (a factor with an `id` of its own keeps that).
  *
  * @param index - The factor's index in `FactorGraphSpec.factors`.
  * @returns The id.
@@ -141,8 +141,11 @@ export function compileGraph(
   }
   const families = variables.map((v) => familyOf(v.family))
   const edges: { factor: number; port: number; variable: number }[] = []
+  const ids = new Set<string>()
   const factors: CompiledFactor[] = spec.factors.map((f, fi) => {
-    const id = factorId(fi)
+    const id = f.id ?? factorId(fi)
+    if (ids.has(id)) throw new OmaiError('value', `factor graph: the factor id ${id} is used twice`)
+    ids.add(id)
     const op = operators[f.operator]
     if (op === undefined) throw new OmaiError('value', `factor graph: ${id} uses the unknown operator ${f.operator}`)
     const params = f.params ?? {}
@@ -217,7 +220,7 @@ export function compileGraph(
 
 /**
  * The structure of a factor graph, in the form `toStructure` of `pgm` gives a factor graph: a node for every variable
- * (id its name, role `latent` or `observed`) and every factor (id `f<i>`, role `factor`, its operator as the detail),
+ * (id its name, role `latent` or `observed`) and every factor (id its `id` or `f<i>`, role `factor`, its operator as the detail),
  * an undirected edge between a factor and each variable it touches. Drawn, it takes the colours and annotations of a
  * run keyed by those ids.
  *
@@ -239,14 +242,16 @@ export function graphStructure(spec: FactorGraphSpec): Structure {
     detail: v.family.kind,
   }))
   const factorNodes: StructureNode[] = spec.factors.map((f, i) => ({
-    id: factorId(i),
+    id: f.id ?? factorId(i),
     label: f.name ?? f.operator,
     role: 'factor',
     detail: f.operator,
   }))
   const edges: StructureEdge[] = spec.factors.flatMap((f, i) =>
     f.args.flatMap((a): StructureEdge[] =>
-      typeof a === 'string' ? [{ from: factorId(i), to: variableId(a), directed: false, kind: 'dependency' }] : [],
+      typeof a === 'string'
+        ? [{ from: f.id ?? factorId(i), to: variableId(a), directed: false, kind: 'dependency' }]
+        : [],
     ),
   )
   return structure('factor-graph', [...variableNodes, ...factorNodes], edges, { title: 'Factor graph' })

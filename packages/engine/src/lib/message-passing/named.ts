@@ -124,7 +124,7 @@ const common = {
   'mp/reset': scalar({ from: 'reset', description: 'messages reset to flat' }),
   'mp/message': message({
     from: 'message',
-    description: 'a message from a factor f<i> to a variable (ids as in graphStructure)',
+    description: 'a message from a factor to a variable (ids as in graphStructure)',
     payload: {
       factor: 'the factor index',
       variable: 'the variable name',
