@@ -124,9 +124,12 @@ below are the folders of `src`; `react` is large and its index is nested by its 
 - Fluid figures and a page without a kit (React). `ResponsiveChart` measures its container and calls `build(fig)` for that width
   (`narrowAspect` under `narrowBelow`, `square` for equal units, `overlay` for draggable handles with `{ projection, size }`);
   a layer built with no `mode` takes the mode of the chart that draws it; `chartProjection` needs no ECharts call for a chart
-  with numeric grid and axis limits, so dragging logs no warnings. `useParams(initial)` holds a figure's own knobs. `useJob({ stages,
+  with numeric grid and axis limits, so dragging logs no warnings (`useChartProjection` gives a new projection after a redraw that moved the box,
+  so overlays follow a resized chart). `points` takes `symbol: 'plane'` (a table of `SYMBOLS`), `symbolRotate` and `labelOffset`; `heatmap` takes
+  `cellText` for per-cell hover text; `image` takes `Pixels`. `useParams(initial)` holds a figure's own knobs. `useJob({ stages,
   inputs, active })` is the recipe for a heavy one-shot with a progress bar and no autostart (the stage is readable while it runs;
-  a generator stage yields a fraction; a single blocking stage needs a worker). `FigureFrame` has `purpose`, `controls`,
+  a generator stage yields a fraction; a single blocking stage is a `workerStage` (`omai-render/producer`, with `serveStage` in the worker), which
+  is terminated when the job is replaced). `FigureFrame` has `purpose`, `controls`,
   `readouts` and `caption` slots, a permalink on its title, and `Readouts` and `Controls`; `size` and `width` on `NumberField`,
   `Toggle`, `Select` and `Choice`.
 - A deck in one React tree (React). `ActiveProvider active` gates every session hook and player below it (an explicit `active`
@@ -135,7 +138,9 @@ below are the folders of `src`; `react` is large and its index is nested by its 
   take `size`. For export, every live figure root has `data-omai-state` (`preparing`, `idle` when nothing is computing, `ready`, `failed`), `live.settled` is a
   promise of `{ ok }` per run, and `waitForSettled(root)` waits for all figures under a root.
 - Controls and interaction (React). Form controls, controls generated from a `Space` and a dataset picker are in
-  `react/controls`; draggable points, brushes and hover overlays are in `react/interaction`; `Chart`, `SceneView`,
+  `react/controls` (`ControlPanel columns` drops columns on a narrow screen); draggable points (`place` puts the one point where the reader
+  clicks), brushes and hover overlays are in `react/interaction` (an `InteractionOverlay` passes pointer events to every tool's `Backdrop`, so a
+  `Probe` and `DraggablePoints` stack); `Chart`, `SceneView`,
   `StructureView` and `FigureGrid` are the base components in `react`.
 - Look and feel: `omai-render/theme` has the light and dark tokens, palettes and number formatting; `omai-render/maths`
   typesets TeX through KaTeX.

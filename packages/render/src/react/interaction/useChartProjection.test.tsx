@@ -9,9 +9,15 @@ import { useChartProjection } from './useChartProjection.ts'
 afterEach(resetGlobals)
 
 // A chart whose grid the test moves: the option is read again at each `finished`, as a redrawn chart's would be.
-function fakeChart(): { readonly chart: PixelConverter; width: number; finish(): void } {
+interface FakeChart {
+  readonly chart: PixelConverter
+  width: number
+  finish(): void
+}
+
+function fakeChart(): FakeChart {
   const handlers: (() => void)[] = []
-  const state = {
+  const state: FakeChart = {
     width: 100,
     finish: (): void => {
       for (const h of handlers) h()
