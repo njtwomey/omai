@@ -21,6 +21,7 @@ import {
   timesConstant,
 } from './linear.ts'
 import { logistic } from './links.ts'
+import { linearRegressionPlate, logisticPlate, probitPlate } from './plates.ts'
 import { logisticRow, probitRow, spinRow } from './rows.ts'
 import { spin } from './spin.ts'
 import { greaterThan, isBetween, probit } from './truncation.ts'
@@ -29,7 +30,7 @@ import { greaterThan, isBetween, probit } from './truncation.ts'
  * The library's factor operators by name: `prior`, `gaussian`, `gaussian-gamma-precision`, `gaussian-normal-gamma`,
  * `product`, `max`, `min`, `equal`, `linear`, `plus`, `difference`, `times-constant`, `sum`, `dot-constant`, `matmul-constant`,
  * `linear-regression-row`, `gaussian-joint`, `probit`, `greater-than`, `is-between`, `logistic`, `bernoulli`,
- * `discrete`, `poisson`, `binomial`, `table`, `select`, `gaussian-mixture`, the regression rows `probit-row` and `logistic-row`, the
+ * `discrete`, `poisson`, `binomial`, `table`, `select`, `gaussian-mixture`, the regression rows `probit-row` and `logistic-row`, the plates of rows `linear-regression-plate`, `probit-plate` and `logistic-plate`, the
  * spin site `spin` and its row `spin-row`. A new object each call, so a caller may
  * add its own (`{ ...defaultOperators(), mine }`).
  *
@@ -74,6 +75,9 @@ export function defaultOperators(): Record<string, FactorOperator> {
     gaussianMixture,
     probitRow,
     logisticRow,
+    linearRegressionPlate,
+    probitPlate,
+    logisticPlate,
     spin,
     spinRow,
   ]
