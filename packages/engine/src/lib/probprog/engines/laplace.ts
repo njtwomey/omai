@@ -7,7 +7,7 @@
 import { hessian } from '../../autodiff/index.ts'
 import { OmaiError } from '../../base/index.ts'
 import { multivariateNormal, normal } from '../../dists/index.ts'
-import { cholesky, inv, slogdet } from '../../numerics/linalg/index.ts'
+import { cholesky, eigvalsh, inv, slogdet } from '../../numerics/linalg/index.ts'
 import { lbfgs } from '../../optim/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
@@ -128,9 +128,14 @@ export function laplaceAt(
   try {
     cholesky(precision)
   } catch {
-    throw new OmaiError('value', 'laplace: minus the Hessian at the mode is not positive definite', {
-      gradNorm: run.gradNorm,
-    })
+    const boundary = boundaryCoordinates(um, toFlat(mode), run.converged)
+    throw new OmaiError(
+      'value',
+      `laplace: minus the Hessian at the mode is not positive definite${
+        boundary.length === 0 ? '' : ` (the mode is on a boundary of the support: ${boundary.join(', ')} ran off to an extreme)`
+      }`,
+      { gradNorm: run.gradNorm, boundary },
+    )
   }
   const covariance = primalOf(inv(precision))
   return {
@@ -141,6 +146,87 @@ export function laplaceAt(
     iterations: run.iterations,
     converged: run.converged,
   }
+}
+
+/** The unconstrained value beyond which a coordinate of a constrained site is read as having run to its boundary: e^-10 is 4.5e-5. */
+const BOUNDARY_LIMIT = 10
+/** The condition number of the covariance beyond which the curvature is not a usable description of the posterior. */
+const CONDITION_LIMIT = 1e12
+
+/**
+ * The coordinates of constrained sites (a scale, a probability, an ordered gap) whose unconstrained value is beyond
+ * {@link BOUNDARY_LIMIT} at a point the optimiser stopped at without converging: the signature of a density that keeps
+ * increasing towards the boundary of the support (a hierarchical scale going to 0), where the mode is not a point of the
+ * posterior. A point where the gradient vanished is a mode, however extreme, and is not reported.
+ */
+function boundaryCoordinates(um: UnconstrainedModel, point: ArrayLike<number>, converged: boolean): string[] {
+  if (converged) return []
+  const out: string[] = []
+  for (const l of um.layout) {
+    if (l.support.kind === 'real') continue
+    for (let i = l.offset; i < l.offset + l.size; i++)
+      if (Math.abs(point[i] ?? 0) > BOUNDARY_LIMIT) out.push(`${um.logDensity.names[i] ?? l.name} (unconstrained ${(point[i] ?? 0).toFixed(1)})`)
+  }
+  return out
+}
+
+/** What {@link diagnoseMode} found about a Laplace fit. */
+export interface ModeDiagnosis {
+  /** Whether the mode is not a point the normal approximation can describe: any of the findings below. */
+  readonly degenerate: boolean
+  /** Coordinates that ran off to the boundary of their support, with their unconstrained value (empty when none). */
+  readonly boundary: readonly string[]
+  /** max / min eigenvalue of the covariance (Infinity when it is not positive definite or not finite). */
+  readonly conditionNumber: number
+  /** Whether the mode or the covariance has a non-finite entry. */
+  readonly nonFinite: boolean
+  /** The findings in words, empty for a well-behaved fit. */
+  readonly messages: readonly string[]
+}
+
+/**
+ * Whether a Laplace fit sits at a usable mode, which it does not when the density increases without bound towards the
+ * boundary of the support (the centred hierarchical posterior as its scale goes to 0: the density is unbounded there and
+ * the optimiser runs to the floor of the scale). Reads the fit only, the maths is unchanged: a coordinate of a constrained
+ * site at an extreme unconstrained value that the optimiser did not converge to (a log scale of -14), a covariance whose
+ * condition number is beyond 1e12 (the Hessian is singular in some direction, as it is along such a ridge), and a
+ * non-finite mode or covariance.
+ *
+ * @param um - The unconstrained model.
+ * @param fit - The fit.
+ * @returns The diagnosis.
+ * @concept laplace-approximation
+ * @example
+ * ```ts
+ * import { diagnoseMode, laplaceFit, observe, potentialEnergy, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * const um = potentialEnergy(() => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 2) }, undefined)
+ * diagnoseMode(um, laplaceFit(um, [0])).degenerate // => false
+ * ```
+ */
+export function diagnoseMode(um: UnconstrainedModel, fit: LaplaceFit): ModeDiagnosis {
+  const mode = toFlat(fit.mode)
+  const cov = toFlat(fit.covariance)
+  const nonFinite = mode.some((v) => !Number.isFinite(v)) || cov.some((v) => !Number.isFinite(v))
+  let conditionNumber = Number.POSITIVE_INFINITY
+  if (!nonFinite) {
+    const eig = toFlat(eigvalsh(fit.covariance))
+    const low = eig[0] ?? 0
+    const high = eig[eig.length - 1] ?? 0
+    conditionNumber = low > 0 ? high / low : Number.POSITIVE_INFINITY
+  }
+  const boundary = boundaryCoordinates(um, mode, fit.converged)
+  const messages: string[] = []
+  if (boundary.length > 0)
+    messages.push(
+      `the mode is on a boundary of the support, not a point of the posterior: ${boundary.join(', ')} ran off to an extreme (the density is unbounded towards it, as the centred hierarchical posterior is as its scale goes to 0)`,
+    )
+  if (nonFinite) messages.push('the mode or the covariance has a non-finite entry')
+  else if (!(conditionNumber < CONDITION_LIMIT))
+    messages.push(
+      `the covariance is ill-conditioned (condition number ${Number.isFinite(conditionNumber) ? conditionNumber.toExponential(1) : 'infinite'}): the Hessian is singular in some direction, so the normal approximation does not describe the posterior`,
+    )
+  return { degenerate: messages.length > 0, boundary, conditionNumber, nonFinite, messages }
 }
 
 /** Options of {@link laplaceApproximation}. */
@@ -154,7 +240,8 @@ export interface LaplaceOptions {
  * The Laplace approximation of a program's posterior: a normal on the unconstrained scale at the MAP point with the
  * inverse Hessian as covariance, pushed onto each site's support for draws, with the Laplace estimate of the evidence
  * log p(u*) + D/2 log 2 pi - 1/2 log det(-H). Degenerate programs (no valid start, a singular Hessian) end with status
- * `failed` and the reason.
+ * `failed` and the reason. The diagnostics say whether the mode is a point of the posterior (see {@link diagnoseMode}):
+ * `degenerateMode`, the `boundary` coordinates, the `conditionNumber` of the covariance and the `messages`.
  *
  * @param model - The program.
  * @param data - Its data.
@@ -251,6 +338,7 @@ export function laplacePosterior(um: UnconstrainedModel, fit: LaplaceFit): Poste
       reshape(fromStorage(Float64Array.from(sd), [l.size], 'float64'), l.shape),
     )
   }
+  const mode = diagnoseMode(um, fit)
   return definePosterior({
     form: 'variational',
     engine: 'laplace',
@@ -263,6 +351,10 @@ export function laplacePosterior(um: UnconstrainedModel, fit: LaplaceFit): Poste
       gradNorm: fit.gradNorm,
       iterations: fit.iterations,
       mode: toFlat(fit.mode),
+      degenerateMode: mode.degenerate,
+      conditionNumber: Number.isFinite(mode.conditionNumber) ? mode.conditionNumber : null,
+      boundary: [...mode.boundary],
+      messages: [...mode.messages],
     },
     sampler: (key: Key, n: number) => {
       const u = primalOf(q.sample(key, [n]))
