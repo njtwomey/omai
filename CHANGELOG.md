@@ -7,6 +7,16 @@ mdml-engine, mdml-render and mdml-meta.
 
 - `DraggableLine`: the label of a vertical line flips to the left of the line when it would run off the overlay (a line near the
   right edge of the plot, as on a phone).
+- `data-omai-state` has a fourth value, `idle`: the run is incomplete and nothing is computing now (a `useLiveRun` that has not
+  been played or is paused, a session that is inactive or was halted, a live session never played). `preparing` is work under way
+  towards the end, `ready` is the whole run, `failed` is an error. `waitForSettled` treats `idle` like `ready` and `failed`
+  (an exporter captures what is shown) and lists the idle roots in its result (`idle`); `live.settled` still resolves only when
+  the whole tape exists. A paused live (`'play'`) session stays `preparing`: pausing does not stop its producer, which goes on
+  computing the whole run. Before, an unstarted `useLiveRun` read `preparing` for ever, so an exporter waited out its timeout.
+- `DraggableRect` and `DraggableLine`: `handleFill` (`'solid'`, `'bg'` or a CSS colour), a visible focus ring drawn in the accent
+  colour when focus comes from the keyboard (not from a pointer press), and `keyStep`, the arrow-key step separate from the
+  drag snap `step` (default unchanged). `DraggableRect` also takes `drawable` (press outside the rectangle and drag to draw a
+  new one, clamped, snapped, `minSize` kept, Escape cancels, a click draws nothing) and `onDrawEnd`.
 
 ## 0.1.11
 

@@ -13,7 +13,7 @@ React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneVi
 - function `FigureFrame`: React component: wrap a chart with expand and export: `<FigureFrame title="Loss"><Chart option={o} /></FigureFrame>` `src/react/FigureFrame.tsx:355` `omai-render/react`
 - function `FigureGrid`: React component: charts and text on a grid: `<FigureGrid grid={g} panels={p} />` `src/react/FigureGrid.tsx:78` `omai-render/react`
 - function `PixelRatioProvider`: React component: set the pixel ratio magnification of the charts below: `<PixelRatioProvider ratio={1.6}>` `src/react/pixel-ratio.tsx:28` `omai-render/react`
-- function `Player`: React component: play, step and scrub a playback controller: `<Player controller={c} />` `src/react/Player.tsx:94` `omai-render/react`
+- function `Player`: React component: play, step and scrub a playback controller: `<Player controller={c} />` `src/react/Player.tsx:96` `omai-render/react`
 - function `Readouts`: React component: label and value pairs as a dl: `<Readouts items={...} />` `src/react/FigureParts.tsx:40` `omai-render/react`
 - function `ResponsiveChart`: React component: chart built for its container's width: `<ResponsiveChart build={(fig) => option} />` `src/react/ResponsiveChart.tsx:109` `omai-render/react`
 - function `Scene3DView`: React component: a 3-D scene you orbit by dragging: `<Scene3DView scene={scene3d} />` `src/react/Scene3DView.tsx:35` `omai-render/react`
@@ -26,17 +26,17 @@ React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneVi
 - function `useActive`: React hook: whether the figures here may compute and play: `useActive()` `src/react/active.tsx:41` `omai-render/react`
 - function `useColourMode`: React hook: the colour mode figures draw in, light or dark: `useColourMode()` `src/react/theme.tsx:236` `omai-render/react`
 - function `useJob`: React hook: a staged heavy computation with progress, started when active: `useJob({ stages, inputs, active })` `src/react/useJob.ts:220` `omai-render/react`
-- function `useLiveRun`: React hook: step an Algorithm live while it plays: `useLiveRun(algorithm, { maxSteps: 200 })` `src/react/usePlayback.ts:343` `omai-render/react`
+- function `useLiveRun`: React hook: step an Algorithm live while it plays: `useLiveRun(algorithm, { maxSteps: 200 })` `src/react/usePlayback.ts:345` `omai-render/react`
 - function `usePixelRatio`: React hook: the ambient pixel ratio magnification, if a host set one: `usePixelRatio()` `src/react/pixel-ratio.tsx:38` `omai-render/react`
-- function `usePlayback`: React hook: drive n precomputed frames with play, step and seek: `usePlayback(n)` `src/react/usePlayback.ts:118` `omai-render/react`
-- function `useTimelinePlayback`: React hook: play a Timeline, giving the frame to draw: `useTimelinePlayback(timeline)` `src/react/usePlayback.ts:184` `omai-render/react`
-- function `waitForSettled`: Wait until every `data-omai-state` figure under an element is ready or failed: `await waitForSettled(root)` `src/react/settled.ts:182` `omai-render/react`
+- function `usePlayback`: React hook: drive n precomputed frames with play, step and seek: `usePlayback(n)` `src/react/usePlayback.ts:119` `omai-render/react`
+- function `useTimelinePlayback`: React hook: play a Timeline, giving the frame to draw: `useTimelinePlayback(timeline)` `src/react/usePlayback.ts:185` `omai-render/react`
+- function `waitForSettled`: Wait until every `data-omai-state` figure under an element is ready, idle or failed: `await waitForSettled(root)` `src/react/settled.ts:202` `omai-render/react`
 
-- structure `OmaiState`: Where a live figure is: 'preparing', 'ready' or 'failed' (`data-omai-state`) `src/react/settled.ts:30` `omai-render/react`
+- structure `OmaiState`: Where a live figure is: 'preparing', 'idle', 'ready' or 'failed' (`data-omai-state`) `src/react/settled.ts:38` `omai-render/react`
 - structure `PlayStatus`: Where a session is: 'preparing', 'ready' or 'running' (`live.status`) `src/react/start.ts:31` `omai-render/react`
 - structure `PlaybackController`: The state and verbs of a playback: `c.frame`, `c.seek(n)`, `c.toggle()` `src/react/usePlayback.ts:24` `omai-render/react`
 - structure `RingBuffer`: The latest n items, the oldest dropped: `new RingBuffer(2000)`, `ring.push(x)`, `ring.at(0)` `src/react/ring.ts:12` `omai-render/react`
-- structure `SettledResult`: What `live.settled` resolves with: `{ ok: true }` or `{ ok: false, error }` `src/react/settled.ts:39` `omai-render/react`
+- structure `SettledResult`: What `live.settled` resolves with: `{ ok: true }` or `{ ok: false, error }` `src/react/settled.ts:47` `omai-render/react`
 - structure `StartPolicy`: When a session computes and where its cursor starts: 'play' (live), 'first' (primed), 'end' (eager) `src/react/start.ts:21` `omai-render/react`
 
 ## react/controls
@@ -66,14 +66,15 @@ Form controls for figures and demos, in plain React and Tailwind over the `--wb-
 Interaction overlays laid over any figure through a projection between data and pixels: get the projection of a `Chart` with `useChartProjection`, stack the figure and an `InteractionOverlay` with `Overlaid`, and put tools inside: `DraggablePoints` (kept where a `Constraint` allows), `DraggableLine`, `DraggableRect`, `Brush`, `Probe` and `NearestHover`. `useLinkState` reads state shared between linked figures, and `useHeldKeys` captures the keys a game-like figure reads.
 
 - function `Brush`: React component: drag out a data-space rectangle: `<Brush value={rect} onChange={setRect} />` `src/react/interaction/Brush.tsx:20` `omai-render/react`
-- function `DraggableLine`: React component: a threshold line dragged across a figure: `<DraggableLine axis="x" value={t} onChange={setT} />` `src/react/interaction/DraggableLine.tsx:62` `omai-render/react`
+- function `DraggableLine`: React component: a threshold line dragged across a figure: `<DraggableLine axis="x" value={t} onChange={setT} />` `src/react/interaction/DraggableLine.tsx:76` `omai-render/react`
 - function `DraggablePoints`: React component: points the reader drags, adds or removes: `<DraggablePoints points={pts} onChange={setPts} add />` `src/react/interaction/DraggablePoints.tsx:47` `omai-render/react`
-- function `DraggableRect`: React component: a rectangle dragged and resized across a figure: `<DraggableRect x={x} y={y} onChange={set} />` `src/react/interaction/DraggableRect.tsx:155` `omai-render/react`
-- function `Handle`: React component: the grip of an overlay tool: `<Handle shape="square" size={8} />` `src/react/interaction/Handle.tsx:43` `omai-render/react`
+- function `DraggableRect`: React component: a rectangle dragged and resized across a figure: `<DraggableRect x={x} y={y} onChange={set} />` `src/react/interaction/DraggableRect.tsx:192` `omai-render/react`
+- function `Handle`: React component: the grip of an overlay tool: `<Handle shape="square" size={8} />` `src/react/interaction/Handle.tsx:72` `omai-render/react`
 - function `InteractionOverlay`: React component: SVG layer over a figure for tools: `<InteractionOverlay projection={p} width={w} height={h}>...` `src/react/interaction/InteractionOverlay.tsx:46` `omai-render/react`
 - function `Overlaid`: React component: stack a figure and its overlay: `<Overlaid width={w} height={h} overlay={tools}>{chart}</Overlaid>` `src/react/interaction/InteractionOverlay.tsx:92` `omai-render/react`
 - function `Probe`: React component: a crosshair reporting the data point under the pointer: `<Probe onProbe={setPoint} />` `src/react/interaction/Probe.tsx:19` `omai-render/react`
 - function `useChartProjection`: React hook: projection of a live Chart for overlays: `useChartProjection()` `src/react/interaction/useChartProjection.ts:23` `omai-render/react`
+- function `useFocusRing`: React hook: which part of an overlay tool shows its keyboard focus ring: `useFocusRing<'body'>()` `src/react/interaction/useFocusRing.ts:41` `omai-render/react`
 - function `useLinkState`: React hook: read hover, selection and brush shared by linked figures: `useLinkState(store)` `src/react/interaction/useLinkState.ts:17` `omai-render/react`
 
 - structure `Constraint`: Where a dragged point may go; build with `inBox`, `onGraph`, `onCircle`, `onGrid`, `chain` `src/react/interaction/constraints.ts:13` `omai-render/react`
@@ -86,19 +87,19 @@ Sessions in React. `useSession` runs a method live (`useSessions` runs several v
 
 - function `NarrativeView`: React component: one session told in pages: `<NarrativeView id="n" narrative={n} live={live} ... />` `src/react/session/NarrativeView.tsx:60` `omai-render/react`
 - function `SessionExport`: React component: page export menu: PNG, SVG, GIF, WebM, tape JSON: `<SessionExport live={live} ... />` `src/react/session/SessionExport.tsx:73` `omai-render/react`
-- function `SessionPanels`: React component: panels of a layout over a session: `<SessionPanels id="p" live={live} at={at} layout={l} />` `src/react/session/SessionPanels.tsx:95` `omai-render/react`
-- function `SessionPlayer`: React component: play a session with controls: `<SessionPlayer live={live} at={at} onScrub={setAt} />` `src/react/session/SessionPlayer.tsx:45` `omai-render/react`
+- function `SessionPanels`: React component: panels of a layout over a session: `<SessionPanels id="p" live={live} at={at} layout={l} />` `src/react/session/SessionPanels.tsx:96` `omai-render/react`
+- function `SessionPlayer`: React component: play a session with controls: `<SessionPlayer live={live} at={at} onScrub={setAt} />` `src/react/session/SessionPlayer.tsx:48` `omai-render/react`
 - function `SessionPreferencesProvider`: React component: a store of session preferences for a subtree: `<SessionPreferencesProvider defaults={{ fps: 30 }} storage={false}>` `src/react/session/preferences.ts:183` `omai-render/react`
 - function `TapeView`: React component: draw whatever a session logged: `<TapeView live={live} at={at} onScrub={setAt} />` `src/react/session/TapeView.tsx:68` `omai-render/react`
-- function `useSession`: React hook: run a method live: `useSession(method, { config, steps }, [config])` `src/react/session/useSession.ts:580` `omai-render/react`
+- function `useSession`: React hook: run a method live: `useSession(method, { config, steps }, [config])` `src/react/session/useSession.ts:601` `omai-render/react`
 - function `useSessionPreferences`: React hook: the reader's live or eager mode, hold and rate: `useSessionPreferences().mode` `src/react/session/preferences.ts:147` `omai-render/react`
-- function `useSessions`: React hook: run variants of one method in step: `useSessions(method, options, variants, deps)` `src/react/session/useSession.ts:298` `omai-render/react`
+- function `useSessions`: React hook: run variants of one method in step: `useSessions(method, options, variants, deps)` `src/react/session/useSession.ts:307` `omai-render/react`
 - function `useStepCursor`: React hook: the viewed step inside a panel: `useStepCursor()` `src/react/session/cursor.tsx:33` `omai-render/react`
 - function `useTape`: React hook: replay a loaded tape file as a live handle: `useTape(file, registry)` `src/react/session/useTape.ts:74` `omai-render/react`
 - function `variantsOfSlot`: Make one comparison variant per option of a slot: `variantsOfSlot(method.config, 'solver')` `src/react/session/slots.ts:57` `omai-render/react`
 
-- structure `LiveSession`: A live session: `live.session`, `live.head`, `live.compute()`, `live.apply()` `src/react/session/useSession.ts:161` `omai-render/react`
-- structure `LiveSessions`: A comparison of variants under one producer: `live.variants`, `live.head` `src/react/session/useSession.ts:188` `omai-render/react`
+- structure `LiveSession`: A live session: `live.session`, `live.head`, `live.compute()`, `live.apply()` `src/react/session/useSession.ts:170` `omai-render/react`
+- structure `LiveSessions`: A comparison of variants under one producer: `live.variants`, `live.head` `src/react/session/useSession.ts:197` `omai-render/react`
 - structure `Narrative`: A session told in pages: `{ pages: [{ id, title, text, layout }] }` `src/react/session/layout.ts:407` `omai-render/react`
 
 ## react/views

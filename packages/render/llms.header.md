@@ -132,7 +132,7 @@ below are the folders of `src`; `react` is large and its index is nested by its 
 - A deck in one React tree (React). `ActiveProvider active` gates every session hook and player below it (an explicit `active`
   wins); `ThemeProvider mode tokens cssVariables` nests, pins a slide's theme and names the host's CSS variables;
   `--omai-control-scale` (or `ControlScaleProvider`) scales controls and players with their popups, and `Player` and `SessionPlayer`
-  take `size`. For export, every live figure root has `data-omai-state` (`preparing`, `ready`, `failed`), `live.settled` is a
+  take `size`. For export, every live figure root has `data-omai-state` (`preparing`, `idle` when nothing is computing, `ready`, `failed`), `live.settled` is a
   promise of `{ ok }` per run, and `waitForSettled(root)` waits for all figures under a root.
 - Controls and interaction (React). Form controls, controls generated from a `Space` and a dataset picker are in
   `react/controls`; draggable points, brushes and hover overlays are in `react/interaction`; `Chart`, `SceneView`,
