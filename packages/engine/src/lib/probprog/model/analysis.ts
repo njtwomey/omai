@@ -10,10 +10,23 @@
  */
 
 import { CONJUGATES, type ConjugatePair } from '../../dists/index.ts'
+import { type ConjugacyRecord, conjugacyRecords } from './analysis-conjugacy.ts'
+import {
+  distOf,
+  exprHasCustom,
+  exprOps,
+  isAffineIn,
+  latentsIn,
+  nodeExprs,
+  nodesByName,
+  useOf,
+} from './analysis-exprs.ts'
+import { type LinearGaussianBlock, linearGaussianBlocks } from './analysis-linear-gaussian.ts'
 import type { ModelLike } from './bind.ts'
 import { distributionFamilies, type FamilyDef } from './dists/families.ts'
 import { canonicalDims, factorId, nodeId, plateId } from './ids.ts'
 import { type ExprSpec, type ModelNode, type ModelSpec, nodeRefs } from './spec.ts'
+import { buildStructureReport, type StructureReport } from './structure-report.ts'
 
 /** One node as the analysis sees it. */
 export interface SpecNodeInfo {
@@ -108,108 +121,25 @@ export interface SpecAnalysis {
   readonly finiteDiscrete: readonly string[]
   readonly unboundedDiscrete: readonly string[]
   readonly conjugate: readonly SpecConjugate[]
+  /**
+   * The conjugacy of the latents with what depends on them, beyond the direct and `at` pairs of `conjugate`: through plates
+   * (the dimensions summed over), affine maps of Gaussian latents, known multiples of gamma rates, latent children (a
+   * hierarchy) and joint normal and inverse-gamma priors, each with its closed-form posterior, the latents it is
+   * conditional on, its conditions and whether the `collapse` handler can take it.
+   */
+  readonly conjugacy: readonly ConjugacyRecord[]
   readonly linearGaussian: SpecLinearGaussian
+  /** The maximal sets of Gaussian latents that are jointly Gaussian with their observations given the other latents. */
+  readonly linearGaussianBlocks: readonly LinearGaussianBlock[]
   /** Nodes message passing cannot see through. */
   readonly opaque: readonly string[]
   readonly hasLikelihood: boolean
   /** The features methods' `check` reads, as short phrases (`continuous latents`, `conjugate sites`, ...). */
   readonly features: readonly string[]
-}
-
-function exprOps(e: ExprSpec, out: Set<string>): void {
-  if (e.kind === 'op') {
-    out.add(e.op)
-    for (const a of e.args) exprOps(a, out)
-  } else if (e.kind === 'custom') for (const a of e.args) exprOps(a, out)
-}
-
-function exprHasCustom(e: ExprSpec): boolean {
-  if (e.kind === 'custom') return true
-  return e.kind === 'op' && e.args.some(exprHasCustom)
-}
-
-function nodeExprs(n: ModelNode): ExprSpec[] {
-  switch (n.kind) {
-    case 'latent':
-    case 'generated':
-      return Object.values(n.dist.params)
-    case 'observed':
-      return [...Object.values(n.dist.params), n.value]
-    case 'derived':
-    case 'factor':
-      return [n.expr]
-    default:
-      return []
-  }
-}
-
-function distOf(
-  n: ModelNode,
-): { readonly family: string; readonly params: { readonly [k: string]: ExprSpec } } | undefined {
-  return n.kind === 'latent' || n.kind === 'generated' || n.kind === 'observed' ? n.dist : undefined
-}
-
-/** The latents an expression depends on, through derived nodes too. */
-function latentsIn(e: ExprSpec, byName: ReadonlyMap<string, ModelNode>, memo: Map<string, Set<string>>): Set<string> {
-  const out = new Set<string>()
-  const walk = (x: ExprSpec): void => {
-    if (x.kind === 'ref') {
-      const node = byName.get(x.name)
-      if (node?.kind === 'latent') out.add(x.name)
-      else if (node?.kind === 'derived') {
-        let m = memo.get(x.name)
-        if (m === undefined) {
-          m = latentsIn(node.expr, byName, memo)
-          memo.set(x.name, m)
-        }
-        for (const l of m) out.add(l)
-      }
-    } else if (x.kind === 'op' || x.kind === 'custom') for (const a of x.args) walk(a)
-  }
-  walk(e)
-  return out
-}
-
-/** Whether an expression is affine in the latents (constants and data aside), and whether it uses any. */
-function affine(e: ExprSpec, byName: ReadonlyMap<string, ModelNode>, memo: Map<string, Set<string>>): boolean {
-  const uses = (x: ExprSpec): boolean => latentsIn(x, byName, memo).size > 0
-  switch (e.kind) {
-    case 'const':
-      return true
-    case 'ref': {
-      const node = byName.get(e.name)
-      return node?.kind === 'derived' ? affine(node.expr, byName, memo) : true
-    }
-    case 'custom':
-      return !e.args.some(uses)
-    case 'op': {
-      const [a, b] = e.args
-      switch (e.op) {
-        case 'add':
-        case 'sub':
-          return e.args.every((x) => affine(x, byName, memo))
-        case 'neg':
-        case 'sum':
-        case 'mean':
-          return e.args.every((x) => affine(x, byName, memo))
-        case 'mul':
-        case 'matmul':
-          return (
-            a !== undefined &&
-            b !== undefined &&
-            affine(a, byName, memo) &&
-            affine(b, byName, memo) &&
-            !(uses(a) && uses(b))
-          )
-        case 'div':
-          return a !== undefined && b !== undefined && affine(a, byName, memo) && !uses(b)
-        case 'at':
-          return a !== undefined && b !== undefined && affine(a, byName, memo) && !uses(b)
-        default:
-          return !e.args.some(uses)
-      }
-    }
-  }
+  /** The structure report: blankets, components, the discrete part, minibatch axes and suggestions (see {@link structureReport}). */
+  structure(): StructureReport
+  /** What the structure allows, as text: what was found, which method or handler could use it and why. Advice only. */
+  explain(): string
 }
 
 function linearGaussian(spec: ModelSpec, byName: ReadonlyMap<string, ModelNode>): SpecLinearGaussian {
@@ -224,7 +154,7 @@ function linearGaussian(spec: ModelSpec, byName: ReadonlyMap<string, ModelNode>)
     if (!gaussian.has(d.family)) return { holds: false, reason: `'${n.name}' is ${d.family}, not Gaussian` }
     for (const [p, e] of Object.entries(d.params)) {
       const isLocation = p === 'loc'
-      if (isLocation ? !affine(e, byName, memo) : latentsIn(e, byName, memo).size > 0)
+      if (isLocation ? !isAffineIn(e, byName, memo) : latentsIn(e, byName, memo).size > 0)
         return {
           holds: false,
           reason: isLocation
@@ -236,13 +166,6 @@ function linearGaussian(spec: ModelSpec, byName: ReadonlyMap<string, ModelNode>)
   return any
     ? { holds: true, reason: 'Gaussian nodes with means affine in the latents and known scales' }
     : { holds: false, reason: 'no random nodes' }
-}
-
-/** Whether `e` is the reference `name`, or a lookup `at(name, index)`; the form of use that keeps a pair conjugate. */
-function useOf(e: ExprSpec, name: string): 'direct' | 'index' | undefined {
-  if (e.kind === 'ref' && e.name === name) return 'direct'
-  if (e.kind === 'op' && e.op === 'at' && e.args[0]?.kind === 'ref' && e.args[0].name === name) return 'index'
-  return undefined
 }
 
 function conjugates(
@@ -339,8 +262,7 @@ export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
   const sizes = 'sizes' in model ? (model as { readonly sizes: Readonly<Record<string, number>> }).sizes : {}
   const families: Readonly<Record<string, FamilyDef>> = distributionFamilies()
   // References resolve to value nodes (observed nodes and factors cannot be referred to).
-  const byName = new Map<string, ModelNode>()
-  for (const n of spec.nodes) if (n.kind !== 'observed' && n.kind !== 'factor') byName.set(n.name, n)
+  const byName = nodesByName(spec)
   const idOf = nodeId
   const kidNodes = new Map<string, ModelNode[]>()
   const kidIds = new Map<string, string[]>()
@@ -429,7 +351,9 @@ export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
   if (dims.some((d) => d.nodes.length > 0)) features.push('plates')
   if (spec.nodes.some((n) => n.kind === 'latent' && nodeRefs(n).some((r) => byName.get(r)?.kind === 'latent')))
     features.push('hierarchical')
-  return {
+  const sizeOf = (dim: string): number | undefined => dims.find((x) => x.name === dim)?.size
+  const env = { spec, byName, memo: new Map<string, Set<string>>(), sizeOf }
+  const base = {
     name: spec.name,
     nodes,
     data: names('data'),
@@ -446,9 +370,47 @@ export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
     finiteDiscrete,
     unboundedDiscrete,
     conjugate,
+    conjugacy: conjugacyRecords(env),
     linearGaussian: lg,
+    linearGaussianBlocks: linearGaussianBlocks(env),
     opaque,
     hasLikelihood: names('observed').length > 0,
     features,
   }
+  const analysis = base as unknown as SpecAnalysis
+  let report: StructureReport | undefined
+  const structure = (): StructureReport => {
+    report ??= buildStructureReport(spec, base, sizeOf)
+    return report
+  }
+  // Methods, not data: they stay out of enumeration, JSON and equality, so an analysis is still a plain value.
+  Object.defineProperty(analysis, 'structure', { value: structure, enumerable: false })
+  Object.defineProperty(analysis, 'explain', { value: () => structure().explain(), enumerable: false })
+  return analysis
+}
+
+/**
+ * The structure report of a model: what its structure lets a method exploit (conjugate sites and the collapse handler
+ * that takes them, Gaussian blocks, the discrete part's width, independent components, minibatch axes, funnel geometry), as
+ * records and as plain suggestions that name the method or handler to use and the knob values that apply. It is advice for
+ * a person to read: nothing is selected or applied. Same as `analyseSpec(model).structure()`.
+ *
+ * @param model - A `ModelDefinition`, a `BoundModel` (which gives the sizes of the dimensions) or a `ModelSpec`.
+ * @returns The report, with `explain()` for the text.
+ * @concept model-analysis
+ * @index function structureReport: what a spec's structure allows, as records and suggestions naming the method to use.
+ * @example
+ * ```ts
+ * import { defineModel, structureReport } from 'omai-engine/probprog/model'
+ * import { beta, bernoulli } from 'omai-engine/probprog/model/dists'
+ * const m = defineModel('coin', (b) => {
+ *   const y = b.data('y', { dims: ['flip'], support: 'binary' })
+ *   b.observe('y', bernoulli({ probs: b.latent('p', beta(1, 1)) }), y)
+ * })
+ * const r = structureReport(m)
+ * [r.conjugateBlocks[0]?.pairs[0], r.suggestions[0]?.kind] // => ['beta-bernoulli probs', 'closed-form']
+ * ```
+ */
+export function structureReport(model: ModelLike | ModelSpec): StructureReport {
+  return analyseSpec(model).structure()
 }
