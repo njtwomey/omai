@@ -40,6 +40,7 @@ import { bipartiteLayout } from '../layout/grids.ts'
 import { layered } from '../layout/layered.ts'
 import { tidyTree } from '../layout/trees.ts'
 import { texExtent } from '../maths/tex.ts'
+import { modelGraph } from './model-graph.ts'
 import { type EdgeLook, type GroupLook, type NodeLook, type StructureStyle, styleFor } from './styles.ts'
 
 /** Options of {@link diagram}. */
@@ -669,23 +670,29 @@ function clipToOutlines(
 }
 
 /** Every group's members, with the members of its descendant groups. */
-function groupMembers(s: Structure): Map<string, Set<string>> {
-  const parent = new Map(s.groups.map((g) => [g.id, g.parent]))
-  const out = new Map<string, Set<string>>(s.groups.map((g) => [g.id, new Set<string>()]))
-  for (const n of s.nodes) {
-    let g = n.group
-    const seen = new Set<string>()
-    while (g !== undefined && !seen.has(g)) {
-      seen.add(g)
-      out.get(g)?.add(n.id)
-      g = parent.get(g)
+function groupMembers(
+  groups: readonly StructureGroup[],
+  nodes: readonly StructureNode[],
+  memberOf: (n: StructureNode) => readonly string[],
+): Map<string, Set<string>> {
+  const parent = new Map(groups.map((g) => [g.id, g.parent]))
+  const out = new Map<string, Set<string>>(groups.map((g) => [g.id, new Set<string>()]))
+  for (const n of nodes) {
+    for (const own of memberOf(n)) {
+      let g: string | undefined = own
+      const seen = new Set<string>()
+      while (g !== undefined && !seen.has(g)) {
+        seen.add(g)
+        out.get(g)?.add(n.id)
+        g = parent.get(g)
+      }
     }
   }
   return out
 }
 
-function depthOf(s: Structure, id: string): number {
-  const parent = new Map(s.groups.map((g) => [g.id, g.parent]))
+function depthOf(groups: readonly StructureGroup[], id: string): number {
+  const parent = new Map(groups.map((g) => [g.id, g.parent]))
   let d = 0
   let g = parent.get(id)
   while (g !== undefined && d < 32) {
@@ -693,6 +700,121 @@ function depthOf(s: Structure, id: string): number {
     g = parent.get(g)
   }
   return d
+}
+
+/** Every permutation of a short list. */
+function permutations<T>(xs: readonly T[]): T[][] {
+  if (xs.length <= 1) return [[...xs]]
+  return xs.flatMap((x, i) => permutations([...xs.slice(0, i), ...xs.slice(i + 1)]).map((rest) => [x, ...rest]))
+}
+
+/**
+ * Columns for crossing groups: a layout's ranks keep their heights, and each node goes to a column by where its groups
+ * stand in an order of the groups (the mean of their places; a node in none goes first), so a node in two groups sits
+ * between the nodes in only one of them and the groups' frames cross where they share it. The order of the groups is the
+ * one (of every order, for up to six groups) that leaves the fewest nodes inside a frame they are not members of.
+ */
+function crossColumns(
+  graph: LayoutGraph,
+  placed: GraphLayout,
+  groups: readonly StructureGroup[],
+  nodes: readonly StructureNode[],
+  memberOf: (n: StructureNode) => readonly string[],
+  options: { readonly flow: 'down' | 'right'; readonly route: EdgeRouting; readonly gap: number },
+): GraphLayout {
+  const parent = new Map(groups.map((g) => [g.id, g.parent]))
+  const closure = (n: StructureNode): string[] => {
+    const out = new Set<string>()
+    for (const own of memberOf(n)) {
+      let g: string | undefined = own
+      while (g !== undefined && !out.has(g) && parent.has(g)) {
+        out.add(g)
+        g = parent.get(g)
+      }
+    }
+    return [...out]
+  }
+  const own = new Map(nodes.map((n) => [n.id, closure(n)]))
+  const size = new Map(graph.nodes.map((v) => [v.id, v]))
+  const ids = groups.map((g) => g.id)
+  const place = (order: readonly string[]): { positions: Record<string, [number, number]>; bad: number } => {
+    const at = new Map(order.map((g, i) => [g, i]))
+    const key = new Map(
+      nodes.map((n) => {
+        const mine = own.get(n.id) ?? []
+        return [n.id, mine.length === 0 ? -1 : mine.reduce((a, g) => a + (at.get(g) as number), 0) / mine.length]
+      }),
+    )
+    const keys = [...new Set(key.values())].sort((a, b) => a - b)
+    const cells = new Map<string, string[]>()
+    for (const n of nodes) {
+      const cell = `${Math.round((placed.nodes[n.id] as LayoutBox).y)}\u0000${key.get(n.id)}`
+      cells.set(cell, [...(cells.get(cell) ?? []), n.id])
+    }
+    // A column is as wide as its fullest cell of nodes side by side, and the columns follow one another.
+    const span = (c: readonly string[]): number =>
+      c.reduce((a, id) => a + (size.get(id)?.width ?? 0) + options.gap, 0) - options.gap
+    const widthOf = keys.map((k) =>
+      Math.max(
+        0,
+        ...[...cells].filter(([cell]) => Number(cell.split('\u0000')[1]) === k).map(([, members]) => span(members)),
+      ),
+    )
+    const left: number[] = []
+    let x = 0
+    for (const w of widthOf) {
+      left.push(x)
+      x += w + options.gap * 2
+    }
+    const positions: Record<string, [number, number]> = {}
+    for (const [cell, members] of cells) {
+      const k = keys.indexOf(Number(cell.split('\u0000')[1]))
+      members.sort((a, b) => (placed.nodes[a] as LayoutBox).x - (placed.nodes[b] as LayoutBox).x)
+      let at = (left[k] as number) + ((widthOf[k] as number) - span(members)) / 2
+      for (const id of members) {
+        const w = size.get(id)?.width ?? 0
+        positions[id] = [at + w / 2, (placed.nodes[id] as LayoutBox).y]
+        at += w + options.gap
+      }
+    }
+    // Nodes inside a frame (a member's extent, with the room a frame takes) of a group they are not in.
+    const inside = groupMembers(groups, nodes, memberOf)
+    let bad = 0
+    for (const g of groups) {
+      const members = inside.get(g.id) ?? new Set<string>()
+      let [x0, y0, x1, y1] = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, -Infinity, -Infinity]
+      for (const id of members) {
+        const p = positions[id]
+        const v = size.get(id)
+        if (p === undefined || v === undefined) continue
+        x0 = Math.min(x0, p[0] - v.width / 2)
+        x1 = Math.max(x1, p[0] + v.width / 2)
+        y0 = Math.min(y0, p[1] - v.height / 2)
+        y1 = Math.max(y1, p[1] + v.height / 2)
+      }
+      for (const n of nodes) {
+        const p = positions[n.id]
+        if (
+          p !== undefined &&
+          !members.has(n.id) &&
+          p[0] > x0 - 12 &&
+          p[0] < x1 + 12 &&
+          p[1] > y0 - 24 &&
+          p[1] < y1 + 22
+        )
+          bad++
+      }
+    }
+    return { positions, bad }
+  }
+  const orders = ids.length <= 6 ? permutations(ids) : [ids]
+  let best = place(orders[0] as string[])
+  for (const o of orders.slice(1)) {
+    if (best.bad === 0) break
+    const t = place(o)
+    if (t.bad < best.bad) best = t
+  }
+  return manualLayout(graph, best.positions, { route: options.route, flow: options.flow })
 }
 
 /**
@@ -734,7 +856,26 @@ function depthOf(s: Structure, id: string): number {
  * diagram(row, { route: 'orthogonal', clearance: 40 }).height > diagram(row, { route: 'orthogonal' }).height // => true
  * ```
  */
-export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
+export function diagram(given: Structure, options: DiagramOptions = {}): Scene {
+  const s = modelGraph(given)
+  if (!s.nodes.some((n) => n.groups !== undefined)) return drawDiagram(s, options, 'chain').scene
+  // Groups that cross (plates over [student] and [exam] around a node over both): laid out without groups and framed
+  // around their members; when a frame would take in a node that is not a member, the nested chain of `group` instead.
+  const crossing = drawDiagram(s, options, 'cross')
+  return crossing.crowded ? drawDiagram(s, options, 'chain').scene : crossing.scene
+}
+
+/** How a drawing was made: the scene, and whether a group's frame (of crossing groups) took in a node that is not its member. */
+interface Drawn {
+  readonly scene: Scene
+  readonly crowded: boolean
+}
+
+function drawDiagram(s: Structure, options: DiagramOptions, mode: 'chain' | 'cross'): Drawn {
+  const crossing = mode === 'cross'
+  const groups = crossing ? s.groups.filter((g) => g.intersection === undefined) : s.groups
+  const memberOf = (n: StructureNode): readonly string[] =>
+    crossing ? (n.groups ?? (n.group === undefined ? [] : [n.group])) : n.group === undefined ? [] : [n.group]
   const style = options.style ?? styleFor(s.type)
   const size = style.fontSize
   const overlay = options.overlay
@@ -803,7 +944,7 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       return {
         id: n.id,
         ...box,
-        ...(n.group === undefined ? {} : { group: n.group }),
+        ...(n.group === undefined || crossing ? {} : { group: n.group }),
         ...(reach === undefined ? {} : { reach }),
         ...(orthogonal && !obstacle(n) ? { obstacle: false } : {}),
       }
@@ -822,7 +963,9 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
           }
         : {}),
     })),
-    groups: s.groups.map((g) => ({ id: g.id, ...(g.parent === undefined ? {} : { parent: g.parent }) })),
+    groups: crossing
+      ? []
+      : s.groups.map((g) => ({ id: g.id, ...(g.parent === undefined ? {} : { parent: g.parent }) })),
   }
   // The router's own knobs, given only for orthogonal routes (straight diagrams are left exactly as they were).
   const router = {
@@ -877,26 +1020,35 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
                   ...(options.rankSep === undefined ? {} : { rankSep: options.rankSep }),
                   ...(options.nodeSep === undefined ? {} : { nodeSep: options.nodeSep }),
                 })
+  // Crossing groups: the ranks stay, the columns follow the groups (see crossColumns).
+  const arranged: GraphLayout =
+    crossing && which === 'layered'
+      ? crossColumns(graph, placed, groups, s.nodes, memberOf, {
+          flow: direction,
+          route: routing,
+          gap: options.nodeSep ?? 28,
+        })
+      : placed
   // The layouts that draw straight lines take right angles from the router, which keeps their node boxes.
   const layout: GraphLayout =
     orthogonal && which !== 'manual' && which !== 'layered'
-      ? withOrthogonalRoutes(placed, graph, {
+      ? withOrthogonalRoutes(arranged, graph, {
           flow: direction,
           ...(options.merge === undefined ? {} : { merge: options.merge }),
           clearance: router.clearance,
           spacing: router.trackGap,
           separate: router.separate,
         })
-      : placed
+      : arranged
 
   // Groups: deepest first, each around its members and its child groups, with room for its label. The label is one
   // under the type size, and the room for it 24 px; a `labelSize` takes the room with it (its size plus 13).
   const groupLookOf = (g: StructureGroup): GroupLook => ({ ...style.group(g), ...g.look })
   const labelSizeOf = (look: GroupLook): number => look.labelSize ?? size - 1
   const labelRoom = (look: GroupLook): number => (look.labelSize === undefined ? 24 : look.labelSize + 13)
-  const members = groupMembers(s)
+  const members = groupMembers(groups, s.nodes, memberOf)
   const boxes = new Map<string, [number, number, number, number]>()
-  const ordered = [...s.groups].sort((a, b) => depthOf(s, b.id) - depthOf(s, a.id))
+  const ordered = [...groups].sort((a, b) => depthOf(groups, b.id) - depthOf(groups, a.id))
   for (const g of ordered) {
     let [x0, y0, x1, y1] = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, -Infinity, -Infinity]
     for (const id of members.get(g.id) ?? []) {
@@ -926,7 +1078,7 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
         }
       }
     }
-    for (const child of s.groups.filter((c) => c.parent === g.id)) {
+    for (const child of groups.filter((c) => c.parent === g.id)) {
       const c = boxes.get(child.id)
       if (c === undefined) continue
       x0 = Math.min(x0, c[0])
@@ -947,8 +1099,31 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       ])
     }
   }
-  const groupScene: SceneNode[] = [...s.groups]
-    .sort((a, b) => depthOf(s, a.id) - depthOf(s, b.id))
+  // Crossing frames take in nothing but their own members, or the picture is not the plates it stands for.
+  const intruded =
+    crossing &&
+    groups.some((g) => {
+      const b = boxes.get(g.id)
+      const own = members.get(g.id)
+      return (
+        b !== undefined &&
+        own !== undefined &&
+        s.nodes.some((n) => {
+          const nb = layout.nodes[n.id]
+          return (
+            !own.has(n.id) &&
+            nb !== undefined &&
+            // The centre inside the frame: a node that only brushes a frame's padding is not in it.
+            nb.x > b[0] &&
+            nb.x < b[2] &&
+            nb.y > b[1] &&
+            nb.y < b[3]
+          )
+        })
+      )
+    })
+  const groupScene: SceneNode[] = [...groups]
+    .sort((a, b) => depthOf(groups, a.id) - depthOf(groups, b.id))
     .flatMap((g) => {
       const b = boxes.get(g.id)
       if (b === undefined) return []
@@ -1442,10 +1617,13 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     maxY = Math.max(maxY, y + 6)
   }
   const children = [...groupScene, ...edgeScene, ...nodeScene, ...labelScene, ...notes]
-  return scene(
-    maxX - minX,
-    maxY - minY,
-    minX === 0 && minY === 0 ? children : [groupNode(children, { translate: [-minX, -minY] })],
-    { ...(s.title === undefined ? {} : { title: s.title }) },
-  )
+  return {
+    scene: scene(
+      maxX - minX,
+      maxY - minY,
+      minX === 0 && minY === 0 ? children : [groupNode(children, { translate: [-minX, -minY] })],
+      { ...(s.title === undefined ? {} : { title: s.title }) },
+    ),
+    crowded: intruded,
+  }
 }

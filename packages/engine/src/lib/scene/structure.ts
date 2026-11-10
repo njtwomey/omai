@@ -130,6 +130,13 @@ export interface StructureNode {
   readonly label: string
   readonly role: NodeRole
   readonly group?: string
+  /**
+   * More groups the node sits in besides `group`, for groups that cross: plates over `[student]` and `[exam]` both hold
+   * a node over `[student, exam]`. A diagram draws each group's frame around all its members, so the two frames
+   * overlap where a node is in both; when the layout cannot keep other nodes out of the frames it falls back to
+   * `group` alone and the `intersection` groups (see {@link StructureGroup.intersection}).
+   */
+  readonly groups?: readonly string[]
   readonly detail?: string
   readonly badges?: Readonly<Record<string, string | number>>
   readonly ports?: readonly StructurePort[]
@@ -228,6 +235,12 @@ export interface StructureGroup {
   readonly parent?: string
   readonly count?: number | string
   readonly look?: StructureGroupLook
+  /**
+   * Marks a group that stands for the overlap of other groups (the ids named here), kept as a frame nested in the first
+   * of them. A diagram that can draw the groups crossing (nodes list the groups they are in with `StructureNode.groups`)
+   * leaves such a group out; one that cannot (another node would sit inside a crossing frame) draws it as the nested frame.
+   */
+  readonly intersection?: readonly string[]
 }
 
 /**
@@ -325,7 +338,12 @@ export function mergeStructures(
   for (const [i, part] of parts.entries()) {
     const p = prefixes === undefined ? (id: string): string => id : (id: string): string => `${prefixes[i]}/${id}`
     for (const n of part.nodes) {
-      const node: StructureNode = { ...n, id: p(n.id), ...(n.group === undefined ? {} : { group: p(n.group) }) }
+      const node: StructureNode = {
+        ...n,
+        id: p(n.id),
+        ...(n.group === undefined ? {} : { group: p(n.group) }),
+        ...(n.groups === undefined ? {} : { groups: n.groups.map(p) }),
+      }
       const old = nodes.get(node.id)
       if (old === undefined) {
         nodes.set(node.id, node)
@@ -342,7 +360,12 @@ export function mergeStructures(
       })
     }
     for (const g of part.groups) {
-      const group: StructureGroup = { ...g, id: p(g.id), ...(g.parent === undefined ? {} : { parent: p(g.parent) }) }
+      const group: StructureGroup = {
+        ...g,
+        id: p(g.id),
+        ...(g.parent === undefined ? {} : { parent: p(g.parent) }),
+        ...(g.intersection === undefined ? {} : { intersection: g.intersection.map(p) }),
+      }
       const old = groups.get(group.id)
       groups.set(group.id, {
         ...old,
