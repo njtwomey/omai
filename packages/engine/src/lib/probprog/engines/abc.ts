@@ -495,22 +495,65 @@ export function abcSmc<D = void>(
     ...(options.policy === undefined ? {} : { policy: options.policy }),
     ...(options.parent === undefined ? {} : { parent: options.parent }),
   })
-  const st = r.state
-  const first = st.traces[0]
+  return abcSmcPosterior(abcSmcDraws(r.state.traces), r.state, r.status)
+}
+
+/**
+ * The latent and deterministic sites of an ABC-SMC population's simulations, stacked `[n, ...shape]`: what a population
+ * is as draws, and what a state needs to keep of its traces to be read as a posterior.
+ *
+ * @param traces - The traces of the population (`AbcSmcState.traces`).
+ * @returns The draws by site.
+ * @concept approximate-bayesian-computation
+ * @example
+ * ```ts
+ * import { abcSmcAlgorithm, abcSmcDraws, observe, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * const model = () => { const m = sample('m', normal(0, 3)); observe('y', normal(m, 1), 1) }
+ * abcSmcDraws(runAlgorithm(abcSmcAlgorithm(model, undefined, { numParticles: 20 }), { seed: 0, maxSteps: 1 }).state.traces)['m']?.shape // => [20]
+ * ```
+ */
+export function abcSmcDraws(traces: readonly ProgramTrace[]): Record<string, Tensor> {
+  const first = traces[0]
   const names =
     first === undefined
       ? []
       : [...first.sites.values()]
           .filter((x) => (x.type === 'sample' && !x.isObserved) || x.type === 'deterministic')
           .map((x) => x.name)
-  return weightedPosterior(stack1(st.traces, names), st.logWeights, {
+  return stack1(traces, names)
+}
+
+/**
+ * The weighted posterior of an ABC-SMC population: its draws (see {@link abcSmcDraws}), weights, the generation reached,
+ * the tolerance and the acceptance rate.
+ *
+ * @param draws - The population's draws.
+ * @param state - The generation, weights, tolerance and acceptance (`AbcSmcState` has them).
+ * @param status - How the run ended.
+ * @returns The weighted posterior.
+ * @concept approximate-bayesian-computation
+ * @example
+ * ```ts
+ * import { abcSmcPosterior } from 'omai-engine/probprog'
+ * import { tensor } from 'omai-engine/tensor'
+ * abcSmcPosterior({ m: tensor([0, 1]) }, { logWeights: Float64Array.of(-0.7, -0.7), generation: 1, epsilon: 0.5, acceptance: 0.4 }, 'completed').engine // => 'abc'
+ * ```
+ */
+export function abcSmcPosterior(
+  draws: Readonly<Record<string, Tensor>>,
+  state: Pick<AbcSmcState, 'logWeights' | 'generation' | 'epsilon' | 'acceptance'>,
+  status: Posterior['status'],
+): Posterior {
+  return weightedPosterior(draws, state.logWeights, {
     engine: 'abc',
-    status: r.status,
+    status,
     diagnostics: {
       method: 'abc-smc',
-      generations: st.generation,
-      epsilon: Number.isFinite(st.epsilon) ? st.epsilon : null,
-      acceptance: st.acceptance,
+      generations: state.generation,
+      epsilon: Number.isFinite(state.epsilon) ? state.epsilon : null,
+      acceptance: state.acceptance,
     },
   })
 }

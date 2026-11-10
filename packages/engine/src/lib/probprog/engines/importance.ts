@@ -92,16 +92,9 @@ export function importanceInference<D = void>(
   const traces: ProgramTrace[] = []
   const lw = new Float64Array(n)
   for (let i = 0; i < n; i++) {
-    const k = foldIn(options.key, i)
-    if (options.proposal === undefined) {
-      const t = traceOf(seed(model, k), data)
-      traces.push(t)
-      lw[i] = observedLogProb(t)
-    } else {
-      const p = particle(k, model, options.proposal, data, options.proposalParams ?? {})
-      traces.push(p.modelTrace)
-      lw[i] = item(primalOf(p.logP)) - item(primalOf(p.logQ))
-    }
+    const d = importanceDraw(model, data, options, i)
+    traces.push(d.trace)
+    lw[i] = d.logWeight
   }
   const first = traces[0]
   const names =
@@ -110,6 +103,67 @@ export function importanceInference<D = void>(
       : [...first.sites.values()]
           .filter((s) => (s.type === 'sample' && !s.isObserved) || s.type === 'deterministic')
           .map((s) => s.name)
+  return importancePosterior(stackSiteValues(traces, names), lw, options)
+}
+
+/**
+ * One draw of {@link importanceInference}: draw `i` of a run at a key, from the prior (weighted by the likelihood of the
+ * observed sites) or from the proposal program (weighted by log p(z, x) - log q(z)). The draws of a run are independent
+ * and keyed by their index, so a run can be taken in batches and resumed.
+ *
+ * @param model - The program.
+ * @param data - Its data.
+ * @param options - The key and the proposal.
+ * @param i - The index of the draw.
+ * @returns The trace of the model at the draw and its unnormalised log weight.
+ * @concept importance-sampling
+ * @example
+ * ```ts
+ * import { importanceDraw, observe, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * const model = () => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 1) }
+ * Number.isFinite(importanceDraw(model, undefined, { key: key(0) }, 0).logWeight) // => true
+ * ```
+ */
+export function importanceDraw<D = void>(
+  model: Model<D>,
+  data: D,
+  options: Pick<ImportanceOptions<D>, 'proposal' | 'proposalParams'> & Pick<EngineRunOptions, 'key'>,
+  i: number,
+): { readonly trace: ProgramTrace; readonly logWeight: number } {
+  const k = foldIn(options.key, i)
+  if (options.proposal === undefined) {
+    const t = traceOf(seed(model, k), data)
+    return { trace: t, logWeight: observedLogProb(t) }
+  }
+  const p = particle(k, model, options.proposal, data, options.proposalParams ?? {})
+  return { trace: p.modelTrace, logWeight: item(primalOf(p.logP)) - item(primalOf(p.logQ)) }
+}
+
+/**
+ * The weighted posterior of importance draws: the Pareto k-hat of the weights (PSIS), Kish's ESS and the evidence
+ * estimate, with optionally Pareto-smoothed weights. {@link importanceInference} returns it; a run taken in batches
+ * reads the posterior of the draws so far the same way.
+ *
+ * @param draws - The latent and deterministic sites' draws stacked `[n, ...shape]`.
+ * @param lw - The unnormalised log weights `[n]`.
+ * @param options - Whether to smooth the weights, and whether a proposal was used (for the diagnostics).
+ * @returns The weighted posterior.
+ * @concept importance-sampling
+ * @example
+ * ```ts
+ * import { importancePosterior } from 'omai-engine/probprog'
+ * import { tensor } from 'omai-engine/tensor'
+ * importancePosterior({ m: tensor([0, 1]) }, Float64Array.of(0, 0), {}).engine // => 'importance'
+ * ```
+ */
+export function importancePosterior<D = void>(
+  draws: Readonly<Record<string, Tensor>>,
+  lw: Float64Array,
+  options: Pick<ImportanceOptions<D>, 'proposal' | 'smooth'>,
+): Posterior {
+  const n = lw.length
   const finite = lw.some((v) => Number.isFinite(v))
   let k = Number.NaN
   let smoothed: Float64Array | undefined
@@ -130,16 +184,12 @@ export function importanceInference<D = void>(
     paretoK: Number.isNaN(k) ? null : k,
     proposal: options.proposal === undefined ? 'prior' : 'guide',
   }
-  return weightedPosterior(
-    stackSiteValues(traces, names),
-    options.smooth === true && smoothed !== undefined ? smoothed : lw,
-    {
-      engine: 'importance',
-      status: finite ? 'completed' : 'failed',
-      logEvidence: evidence,
-      diagnostics: finite ? diagnostics : { ...diagnostics, reason: 'every draw has zero likelihood' },
-    },
-  )
+  return weightedPosterior(draws, options.smooth === true && smoothed !== undefined ? smoothed : lw, {
+    engine: 'importance',
+    status: finite ? 'completed' : 'failed',
+    logEvidence: evidence,
+    diagnostics: finite ? diagnostics : { ...diagnostics, reason: 'every draw has zero likelihood' },
+  })
 }
 
 /**

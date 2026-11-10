@@ -703,7 +703,7 @@ export interface EmRunOptions extends EmOptions {
  * ```
  */
 export function em<D = void>(model: Model<D>, data: D, options: EmRunOptions & EngineRunOptions): Posterior {
-  const parts = emParts(model, data, options)
+  const parts = emWithPosterior(model, data, options)
   const r = runAlgorithm(parts.algorithm, {
     key: options.key,
     maxSteps: options.maxIter ?? 500,
@@ -711,73 +711,120 @@ export function em<D = void>(model: Model<D>, data: D, options: EmRunOptions & E
     ...(options.policy === undefined ? {} : { policy: options.policy }),
     ...(options.parent === undefined ? {} : { parent: options.parent }),
   })
-  const p = parts.problem()
-  const values = r.state.values
-  const marginals: Record<string, Distribution> = {}
-  let sampler: ((key: Key, n: number) => Record<string, Tensor>) | undefined
-  if (p.discrete.length > 0) {
-    const t = enumTrace(p, values)
-    const { factors, sumVars, scales } = traceFactors(t, p.depth)
-    const { marginals: ms } = enumeratedMarginals(factors, sumVars, scales)
-    for (const [name, mg] of ms) {
-      const s = siteOf(t, name)
-      const low = s?.fn.support.kind === 'integerInterval' ? s.fn.support.low : 0
-      marginals[name] = shiftedCategorical(mg.probs, low)
-    }
-    sampler = (key, n) => {
-      const out: Record<string, number[]> = {}
-      const shapes: Record<string, readonly number[]> = {}
-      for (let i = 0; i < n; i++) {
-        const d = inferDiscrete(model, data, values, foldIn(key, i))
-        for (const name of p.discrete) {
-          const v = primalOf(asTensor(d[name] as TensorLike))
-          shapes[name] = v.shape
-          out[name] = [...(out[name] ?? []), ...toFlat(v)]
+  return parts.posterior(r.state, { status: r.status, iterations: r.steps })
+}
+
+/**
+ * EM as a traced algorithm together with the reading of its states: `posterior(state, run)` is what {@link em} returns
+ * for a state (point estimates of the estimated sites, exact marginals of the integrated ones and joint draws), so a
+ * method that steps the algorithm and reads the posterior of any state, partial or final, builds it the same way. The
+ * posterior can be read once the algorithm has been initialised.
+ *
+ * @param model - The program.
+ * @param data - Its data.
+ * @param options - EM options.
+ * @returns The algorithm and `posterior`.
+ * @throws OmaiError with code `value` when `posterior` is called before the algorithm's `init`.
+ * @concept expectation-maximisation
+ * @example
+ * ```ts
+ * import { emWithPosterior, observe, param, plate, sample } from 'omai-engine/probprog'
+ * import { categorical, normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { take } from 'omai-engine/tensor'
+ * const y = [-2.1, -1.9, -2.2, 2.0, 1.8, 2.3]
+ * const gmm = () => {
+ *   const mu = param('mu', [-1, 1])
+ *   plate('n', y.length, () => { const z = sample('z', categorical({ probs: [0.5, 0.5] })); observe('y', normal(take(mu, z), 0.5), y) })
+ * }
+ * const parts = emWithPosterior(gmm, undefined, {})
+ * parts.posterior(parts.algorithm.init(key(0)), { status: 'completed', iterations: 0 }).sites // => ['mu', 'z']
+ * ```
+ */
+export function emWithPosterior<D = void>(
+  model: Model<D>,
+  data: D,
+  options: EmOptions,
+): {
+  readonly algorithm: Algorithm<EmState>
+  readonly posterior: (
+    state: EmState,
+    run: { readonly status: Posterior['status']; readonly iterations: number },
+  ) => Posterior
+} {
+  const parts = emParts(model, data, options)
+  return {
+    algorithm: parts.algorithm,
+    posterior: (state, run) => {
+      const p = parts.problem()
+      const values = state.values
+      const marginals: Record<string, Distribution> = {}
+      let sampler: ((key: Key, n: number) => Record<string, Tensor>) | undefined
+      if (p.discrete.length > 0) {
+        const t = enumTrace(p, values)
+        const { factors, sumVars, scales } = traceFactors(t, p.depth)
+        const { marginals: ms } = enumeratedMarginals(factors, sumVars, scales)
+        for (const [name, mg] of ms) {
+          const s = siteOf(t, name)
+          const low = s?.fn.support.kind === 'integerInterval' ? s.fn.support.low : 0
+          marginals[name] = shiftedCategorical(mg.probs, low)
+        }
+        sampler = (key, n) => {
+          const out: Record<string, number[]> = {}
+          const shapes: Record<string, readonly number[]> = {}
+          for (let i = 0; i < n; i++) {
+            const d = inferDiscrete(model, data, values, foldIn(key, i))
+            for (const name of p.discrete) {
+              const v = primalOf(asTensor(d[name] as TensorLike))
+              shapes[name] = v.shape
+              out[name] = [...(out[name] ?? []), ...toFlat(v)]
+            }
+          }
+          const res: Record<string, Tensor> = {}
+          for (const name of p.discrete)
+            res[name] = fromStorage(Float64Array.from(out[name] ?? []), [n, ...(shapes[name] ?? [])], 'float64')
+          for (const e of p.estimated) {
+            const v = values[e.name] as Value
+            res[e.name] = primalOf(broadcastTo(reshape(v, [1, ...v.shape]), [n, ...v.shape]))
+          }
+          return res
         }
       }
-      const res: Record<string, Tensor> = {}
-      for (const name of p.discrete)
-        res[name] = fromStorage(Float64Array.from(out[name] ?? []), [n, ...(shapes[name] ?? [])], 'float64')
-      for (const e of p.estimated) {
-        const v = values[e.name] as Value
-        res[e.name] = primalOf(broadcastTo(reshape(v, [1, ...v.shape]), [n, ...v.shape]))
+      const constants = (n: number): Record<string, Tensor> => {
+        const res: Record<string, Tensor> = {}
+        for (const e of p.estimated) {
+          const v = values[e.name] as Value
+          res[e.name] = primalOf(broadcastTo(reshape(v, [1, ...v.shape]), [n, ...v.shape]))
+        }
+        return res
       }
-      return res
-    }
-  }
-  const constants = (n: number): Record<string, Tensor> => {
-    const res: Record<string, Tensor> = {}
-    for (const e of p.estimated) {
-      const v = values[e.name] as Value
-      res[e.name] = primalOf(broadcastTo(reshape(v, [1, ...v.shape]), [n, ...v.shape]))
-    }
-    return res
-  }
-  if (p.gaussian.length > 0) {
-    // The integrated sites' Gaussian posterior given the estimates.
-    const params: Record<string, Value> = {}
-    const fixed: Record<string, Value> = {}
-    for (const e of p.estimated) (e.kind === 'param' ? params : fixed)[e.name] = values[e.name] as Value
-    const g = gaussianInference(condition(substitute(model, params), fixed), data, { method: 'joint' })
-    for (const name of p.gaussian) marginals[name] = g.marginal(name)
-    sampler = (key, n) => ({ ...constants(n), ...g.sample(key, n) })
-  }
-  const pointMarginals: Record<string, Distribution> = {}
-  for (const e of p.estimated) pointMarginals[e.name] = compose.deterministic(values[e.name] as Value)
-  return definePosterior({
-    form: 'point',
-    engine: 'em',
-    sites: [...p.estimated.map((e) => e.name), ...p.discrete, ...p.gaussian],
-    status: r.status,
-    marginals: { ...pointMarginals, ...marginals },
-    ...(sampler === undefined ? {} : { sampler }),
-    diagnostics: {
-      iterations: r.steps,
-      objective: r.state.objective,
-      closedForm: [...p.closed.keys()],
-      eStep: p.discrete.length > 0 ? 'enumeration' : 'gaussian',
+      if (p.gaussian.length > 0) {
+        // The integrated sites' Gaussian posterior given the estimates.
+        const params: Record<string, Value> = {}
+        const fixed: Record<string, Value> = {}
+        for (const e of p.estimated) (e.kind === 'param' ? params : fixed)[e.name] = values[e.name] as Value
+        const g = gaussianInference(condition(substitute(model, params), fixed), data, { method: 'joint' })
+        for (const name of p.gaussian) marginals[name] = g.marginal(name)
+        sampler = (key, n) => ({ ...constants(n), ...g.sample(key, n) })
+      }
+      const pointMarginals: Record<string, Distribution> = {}
+      for (const e of p.estimated) pointMarginals[e.name] = compose.deterministic(values[e.name] as Value)
+      return definePosterior({
+        form: 'point',
+        engine: 'em',
+        sites: [...p.estimated.map((e) => e.name), ...p.discrete, ...p.gaussian],
+        status: run.status,
+        marginals: { ...pointMarginals, ...marginals },
+        ...(sampler === undefined ? {} : { sampler }),
+        diagnostics: {
+          iterations: run.iterations,
+          objective: state.objective,
+          closedForm: [...p.closed.keys()],
+          eStep: p.discrete.length > 0 ? 'enumeration' : 'gaussian',
+        },
+      })
     },
-  })
+  }
 }
 
 /**

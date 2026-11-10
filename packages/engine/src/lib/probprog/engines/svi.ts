@@ -238,17 +238,79 @@ export function svi<D = void>(model: Model<D>, data: D, options: SviOptions<D> &
     ...(options.parent === undefined ? {} : { parent: options.parent }),
   })
   const init = initialParams(options.key, model, guide, data)
-  const params: Record<string, Tensor> = {}
-  for (const [name, u] of Object.entries(r.state.params)) {
-    const b = bijectors.bijectorForSupport(init.supports[name] ?? { kind: 'real' })
-    params[name] = primalOf(b.forward(u))
-  }
+  const params = constrainParams(r.state.params, init.supports)
   const status = r.status
   const diagnostics: Record<string, Json> = {
     steps: r.steps,
     finalElbo: elbos[elbos.length - 1] ?? null,
     guide: isAutoGuide(guide) ? guide.kind : 'custom',
   }
+  const posterior = sviPosterior(guide, data, params, { key: options.key, status, diagnostics })
+  return { params, elbos, status, steps: r.steps, posterior }
+}
+
+/**
+ * The constrained parameters of an SVI state: the unconstrained values mapped through the bijector of each parameter's
+ * support (as {@link initialParams} found it).
+ *
+ * @param unconstrained - The state's parameters.
+ * @param supports - The supports by parameter name.
+ * @returns The constrained values by name.
+ * @concept variational-inference
+ * @example
+ * ```ts
+ * import { constrainParams } from 'omai-engine/probprog'
+ * import { item, tensor } from 'omai-engine/tensor'
+ * item(constrainParams({ s: tensor(0) }, { s: { kind: 'positive' } })['s'] ?? 0) // => 1
+ * ```
+ */
+export function constrainParams(
+  unconstrained: Readonly<Record<string, Value>>,
+  supports: Readonly<Record<string, Support>>,
+): Record<string, Tensor> {
+  const params: Record<string, Tensor> = {}
+  for (const [name, u] of Object.entries(unconstrained)) {
+    const b = bijectors.bijectorForSupport(supports[name] ?? { kind: 'real' })
+    params[name] = primalOf(b.forward(u))
+  }
+  return params
+}
+
+/**
+ * The variational posterior of fitted parameters: from an automatic guide's own `posterior`, or Monte Carlo runs of a
+ * custom guide. {@link svi} returns it; a method that reads the posterior of a state while the run goes on builds it the
+ * same way.
+ *
+ * @param guide - The guide.
+ * @param data - The data.
+ * @param params - The fitted parameters on the constrained scale.
+ * @param info - The key (for the draws of a custom guide), the status and the diagnostics.
+ * @returns The posterior.
+ * @concept variational-inference
+ * @example
+ * ```ts
+ * import { autoNormal, initialParams, observe, sample, sviPosterior } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { primalOf } from 'omai-engine/tensor'
+ * const model = () => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 1) }
+ * const guide = autoNormal(model)
+ * const init = initialParams(key(0), model, guide, undefined)
+ * const params = Object.fromEntries(Object.entries(init.values).map(([k, v]) => [k, primalOf(v)]))
+ * sviPosterior(guide, undefined, params, { key: key(0), status: 'completed', diagnostics: {} }).sites // => ['m']
+ * ```
+ */
+export function sviPosterior<D = void>(
+  guide: Model<D>,
+  data: D,
+  params: Readonly<Record<string, Tensor>>,
+  info: {
+    readonly key: Key
+    readonly status: Posterior['status']
+    readonly diagnostics: Readonly<Record<string, Json>>
+  },
+): Posterior {
+  const { status, diagnostics } = info
   let posterior: Posterior
   if (isAutoGuide(guide)) {
     const p = guide.posterior(params, data)
@@ -271,7 +333,7 @@ export function svi<D = void>(model: Model<D>, data: D, options: SviOptions<D> &
       ),
     })
   } else {
-    const sites = [...traceOf(seed(substitute(guide, params), foldIn(options.key, 9)), data).sites.values()]
+    const sites = [...traceOf(seed(substitute(guide, params), foldIn(info.key, 9)), data).sites.values()]
       .filter((s) => s.type === 'sample' && !s.isObserved)
       .map((s) => s.name)
     posterior = definePosterior({
@@ -301,7 +363,7 @@ export function svi<D = void>(model: Model<D>, data: D, options: SviOptions<D> &
       },
     })
   }
-  return { params, elbos, status, steps: r.steps, posterior }
+  return posterior
 }
 
 function isAutoGuide<D = void>(g: Model<D>): g is AutoGuide<D> {

@@ -88,24 +88,58 @@ export function laplaceFit(
     ...(options.tracer === undefined ? {} : { tracer: options.tracer }),
     ...(options.policy === undefined ? {} : { policy: options.policy }),
   })
-  const mode = fromStorage(Float64Array.from(toFlat(primalOf(r.x as Value))), [um.dim], 'float64')
+  return laplaceAt(um, toFlat(primalOf(r.x as Value)), {
+    logDensity: -r.fun,
+    gradNorm: r.gradNorm,
+    iterations: r.steps,
+    converged: r.converged,
+  })
+}
+
+/**
+ * The curvature stage of {@link laplaceFit}: the Hessian of the unconstrained log density at a point taken as the mode,
+ * and the covariance from it. Together with an optimiser that finds the mode step by step it is the Laplace
+ * approximation as a method with a fine step.
+ *
+ * @param um - The unconstrained model.
+ * @param point - The mode (unconstrained).
+ * @param run - What the optimisation reached: the log density at the point, the gradient norm, the iterations and whether
+ *   it converged.
+ * @returns The fit.
+ * @throws OmaiError with code `value` when minus the Hessian at the point is not positive definite.
+ * @concept laplace-approximation
+ * @example
+ * ```ts
+ * import { laplaceAt, observe, potentialEnergy, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
+ * const um = potentialEnergy(() => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 2) }, undefined)
+ * toArray(laplaceAt(um, [1], { logDensity: 0, gradNorm: 0, iterations: 0, converged: true }).covariance).map((v) => Math.round(v * 1e8) / 1e8) // => [0.5]
+ * ```
+ */
+export function laplaceAt(
+  um: UnconstrainedModel,
+  point: ArrayLike<number>,
+  run: Pick<LaplaceFit, 'logDensity' | 'gradNorm' | 'iterations' | 'converged'>,
+): LaplaceFit {
+  const mode = fromStorage(Float64Array.from(point), [um.dim], 'float64')
   const H = primalOf(hessian((u: Value) => um.fn(u))(mode))
   const precision = primalOf(neg(H))
   try {
     cholesky(precision)
   } catch {
     throw new OmaiError('value', 'laplace: minus the Hessian at the mode is not positive definite', {
-      gradNorm: r.gradNorm,
+      gradNorm: run.gradNorm,
     })
   }
   const covariance = primalOf(inv(precision))
   return {
     mode,
     covariance: primalOf(mul(add(covariance, transpose(covariance)), 0.5)),
-    logDensity: -r.fun,
-    gradNorm: r.gradNorm,
-    iterations: r.steps,
-    converged: r.converged,
+    logDensity: run.logDensity,
+    gradNorm: run.gradNorm,
+    iterations: run.iterations,
+    converged: run.converged,
   }
 }
 
@@ -173,6 +207,28 @@ export function laplaceApproximation<D = void>(
   } catch (e) {
     return fail(e instanceof Error ? e.message : String(e))
   }
+  return laplacePosterior(um, fit)
+}
+
+/**
+ * The Laplace posterior of a fit: the normal at the mode with its covariance on the unconstrained scale, pushed through
+ * each site's support for draws and marginals, with the Laplace estimate of the evidence log p(u*) + D/2 log 2 pi - 1/2 log
+ * det(-H).
+ *
+ * @param um - The unconstrained model.
+ * @param fit - The mode and the covariance ({@link laplaceFit} or {@link laplaceAt}).
+ * @returns The posterior.
+ * @concept laplace-approximation
+ * @example
+ * ```ts
+ * import { laplaceFit, laplacePosterior, observe, potentialEnergy, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
+ * const um = potentialEnergy(() => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 2) }, undefined)
+ * Math.abs(item(laplacePosterior(um, laplaceFit(um, [0])).variance('m')) - 0.5) < 1e-8 // => true
+ * ```
+ */
+export function laplacePosterior(um: UnconstrainedModel, fit: LaplaceFit): Posterior {
   const q = multivariateNormal(fit.mode, { covariance: fit.covariance })
   const { logabsdet } = slogdet(fit.covariance)
   const logEvidence = fit.logDensity + 0.5 * um.dim * Math.log(2 * Math.PI) + 0.5 * item(logabsdet)
