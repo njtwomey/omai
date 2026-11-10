@@ -588,3 +588,136 @@ export function uncondition<D = void>(model: Model<D>, options: { readonly sites
 export function handle<D = void>(model: Model<D>, make: () => Messenger): Model<D> {
   return wrap(model, make)
 }
+
+/** Options of {@link scope}. */
+export interface ScopeOptions {
+  /** What joins the prefix and the name (default `/`). */
+  readonly divider?: string
+  /** Message types whose names are left alone (`plate` also covers the plate names carried by sites). */
+  readonly hideTypes?: readonly (Message['type'] | 'plate')[]
+}
+
+/**
+ * Prefix the names of a program's sites (NumPyro's `scope`): a sub-model written once can be used several times in a
+ * larger program, each use under its own prefix (`a/theta`, `b/theta`). Handlers inside the scope see the plain names,
+ * handlers outside it the prefixed ones, and scopes nest (`a/b/x`).
+ *
+ * @param model - The program.
+ * @param prefix - The prefix.
+ * @param options - The divider and the message types to leave unrenamed.
+ * @returns The program with prefixed site names.
+ * @concept effect-handlers
+ * @example
+ * ```ts
+ * import { sample, scope, seed, traceOf } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * const part = () => sample('theta', normal(0, 1))
+ * const both = () => { scope(seed(part, key(0)), 'a')(undefined); scope(seed(part, key(1)), 'b')(undefined) }
+ * [...traceOf(both, undefined).sites.keys()] // => ['a/theta', 'b/theta']
+ * ```
+ */
+export function scope<D = void>(model: Model<D>, prefix: string, options: ScopeOptions = {}): Model<D> {
+  const divider = options.divider ?? '/'
+  const hidden = options.hideTypes ?? []
+  const rename = (name: string): string => `${prefix}${divider}${name}`
+  return wrap(model, () => ({
+    process: (msg) => {
+      if (msg.name !== '' && !hidden.includes(msg.type)) msg.name = rename(msg.name)
+      if (!hidden.includes('plate')) {
+        msg.plates = msg.plates.map((f) => ({ ...f, name: rename(f.name) }))
+        msg.markov = msg.markov.map((f) => ({ ...f, name: rename(f.name) }))
+      }
+    },
+  }))
+}
+
+/**
+ * Update the inference hints of sample sites by a function of the message (NumPyro's `infer_config`): the function's
+ * result is merged into the site's `infer` record.
+ *
+ * @param model - The program.
+ * @param config - Maps a sample message to the hints to add, or undefined to leave the site alone.
+ * @returns The program with annotated sites.
+ * @concept effect-handlers
+ * @example
+ * ```ts
+ * import { inferConfig, sample, seed, traceOf } from 'omai-engine/probprog'
+ * import { bernoulli } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * const model = () => sample('c', bernoulli({ probs: 0.3 }))
+ * const site = traceOf(seed(inferConfig(model, () => ({ enumerate: 'parallel' })), key(0)), undefined).sites.get('c')
+ * site?.type === 'sample' ? site.infer.enumerate : undefined // => 'parallel'
+ * ```
+ */
+export function inferConfig<D = void>(model: Model<D>, config: (msg: Message) => InferConfig | undefined): Model<D> {
+  return wrap(model, () => ({
+    process: (msg) => {
+      if (msg.type !== 'sample') return
+      const extra = config(msg)
+      if (extra !== undefined) msg.infer = { ...msg.infer, ...extra }
+    },
+  }))
+}
+
+/**
+ * Annotate sites with the inference method and block they belong to, as a plan the user writes (a composite of
+ * methods over blocks of sites, in the manner of NIMBLE's sampler assignment) can read them back from the trace's
+ * `infer` records. The hint changes nothing by itself.
+ *
+ * @param model - The program.
+ * @param site - The site name, or names.
+ * @param hint - The method (`'nuts'`, `'gibbs'`, `'conjugate'`, ...) and the block's name.
+ * @returns The annotated program.
+ * @concept effect-handlers
+ * @example
+ * ```ts
+ * import { inferHint, sample, seed, traceOf } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * const model = () => sample('mu', normal(0, 1))
+ * const hinted = inferHint(model, 'mu', { method: 'nuts', block: 'global' })
+ * const site = traceOf(seed(hinted, key(0)), undefined).sites.get('mu')
+ * site?.type === 'sample' ? `${site.infer.method}/${site.infer.block}` : '' // => 'nuts/global'
+ * ```
+ */
+export function inferHint<D = void>(
+  model: Model<D>,
+  site: string | readonly string[],
+  hint: { readonly method?: string; readonly block?: string },
+): Model<D> {
+  const names = typeof site === 'string' ? [site] : site
+  return inferConfig(model, (msg) => (names.includes(msg.name) ? hint : undefined))
+}
+
+/** Options of {@link mean}. */
+export interface MeanOptions {
+  /** Only these sites (default every latent site with a continuous support). */
+  readonly sites?: readonly string[]
+}
+
+/**
+ * Plug in means (a plug-in prediction): latent sample sites without a value take their distribution's mean instead of
+ * a draw, so the program runs deterministically at its expected values and needs no key.
+ *
+ * @param model - The program.
+ * @param options - The sites to plug in (default every latent site with a continuous support).
+ * @returns The program that uses means.
+ * @concept effect-handlers
+ * @example
+ * ```ts
+ * import { mean, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { item, type Value } from 'omai-engine/tensor'
+ * item(mean(() => sample('x', normal(3, 1)))() as Value) // => 3
+ * ```
+ */
+export function mean<D = void>(model: Model<D>, options: MeanOptions = {}): Model<D> {
+  return wrap(model, () => ({
+    process: (msg) => {
+      if (msg.type !== 'sample' || msg.isObserved || msg.value !== undefined || msg.fn === undefined) return
+      if (options.sites !== undefined ? !options.sites.includes(msg.name) : isDiscrete(msg.fn.support)) return
+      msg.value = msg.fn.mean()
+    },
+  }))
+}
