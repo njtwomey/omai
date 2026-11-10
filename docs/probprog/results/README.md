@@ -42,15 +42,15 @@ The `benchmark/` campaigns (the cross-engine agreement of each benchmark model w
 | [evidence/pmcmc-ar1](evidence-pmcmc-ar1.md)                                         | passed: every chain reproduces the exact posterior mean (within four Monte Carlo standard errors) and spread (within 30 percent) | 38.3    |
 | [structure/benchmarks](structure-benchmarks.md)                                     | passed: 27 models: every finding as expected                                                                                     | 0.0     |
 | [structure/collapse-efficiency](structure-collapse-efficiency.md)                   | passed: collapsed NUTS gets 42 times the ESS of tau per gradient evaluation of the full centred model, with no divergences       | 34.5    |
-| [benchmark/stochastic-volatility](benchmark-stochastic-volatility.md) | passed: 1 method(s) agree with the quadrature truth; 4 reported | 57.8 |
-| [benchmark/gaussian-hmm](benchmark-gaussian-hmm.md) | passed: 2 method(s) agree with the exact truth; 2 reported | 12.2 |
-| [benchmark/gaussian-process-regression](benchmark-gaussian-process-regression.md) | passed: 0 method(s) agree with the quadrature truth, 1 differ as expected; 3 reported | 69.8 |
-| [benchmark/gaussian-process-non-centred](benchmark-gaussian-process-non-centred.md) | passed: 1 method(s) agree with the quadrature truth; 3 reported | 17.2 |
-| [benchmark/lda-lite](benchmark-lda-lite.md) | passed: 2 method(s) agree with the exact truth; 2 reported | 42.1 |
-| [benchmark/bayesian-neural-network](benchmark-bayesian-neural-network.md) | passed: 0 method(s) agree with the reference truth; 4 reported | 83.4 |
-| [benchmark/item-response-scoring](benchmark-item-response-scoring.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 10.2 |
-| [benchmark/stick-breaking-mixture](benchmark-stick-breaking-mixture.md) | passed: 1 method(s) agree with the quadrature truth; 2 reported | 8.6 |
-| [benchmark/clutter-problem](benchmark-clutter-problem.md) | passed: 0 method(s) agree with the quadrature truth; 3 reported | 3.7 |
-| [benchmark/clutter-ep](benchmark-clutter-ep.md) | passed: EP converges under every rule; the integrating rules land on the dominant mode | 3.6 |
+| [benchmark/stochastic-volatility](benchmark-stochastic-volatility.md)               | passed: 1 method(s) agree with the quadrature truth; 4 reported                                                                  | 57.8    |
+| [benchmark/gaussian-hmm](benchmark-gaussian-hmm.md)                                 | passed: 2 method(s) agree with the exact truth; 2 reported                                                                       | 12.2    |
+| [benchmark/gaussian-process-regression](benchmark-gaussian-process-regression.md)   | passed: 0 method(s) agree with the quadrature truth, 1 differ as expected; 3 reported                                            | 69.8    |
+| [benchmark/gaussian-process-non-centred](benchmark-gaussian-process-non-centred.md) | passed: 1 method(s) agree with the quadrature truth; 3 reported                                                                  | 17.2    |
+| [benchmark/lda-lite](benchmark-lda-lite.md)                                         | passed: 2 method(s) agree with the exact truth; 2 reported                                                                       | 42.1    |
+| [benchmark/bayesian-neural-network](benchmark-bayesian-neural-network.md)           | passed: 0 method(s) agree with the reference truth; 4 reported                                                                   | 83.4    |
+| [benchmark/item-response-scoring](benchmark-item-response-scoring.md)               | passed: 2 method(s) agree with the quadrature truth; 3 reported                                                                  | 10.2    |
+| [benchmark/stick-breaking-mixture](benchmark-stick-breaking-mixture.md)             | passed: 1 method(s) agree with the quadrature truth; 2 reported                                                                  | 8.6     |
+| [benchmark/clutter-problem](benchmark-clutter-problem.md)                           | passed: 0 method(s) agree with the quadrature truth; 3 reported                                                                  | 3.7     |
+| [benchmark/clutter-ep](benchmark-clutter-ep.md)                                     | passed: EP converges under every rule; the integrating rules land on the dominant mode                                           | 3.6     |
 
 The last ten rows (the benchmark models added with the `scan` node: stochastic volatility, the Gaussian HMM, the Gaussian process in two parametrisations, LDA on a tiny corpus, the Bayesian neural network, 2PL IRT scoring, the stick-breaking mixture and the clutter problem, with the clutter EP table) were run with `--only benchmark/<model>` at seed 0, scale 1, at their own commits; they come last in the script's campaign order so no earlier table's random key moved. `benchmark/ar1-state-space` and `structure/benchmarks` were re-run because the AR(1) model is now a `scan` spec and the structure table has 27 models.
