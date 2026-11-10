@@ -394,7 +394,7 @@ interface Partial {
  * ```ts
  * import { viterbiKBest } from 'omai-engine/pgm'
  * const chain = { logInitial: [0, 0], logTransition: [[0, 0], [0, 0]], logEmission: [[Math.log(3), 0], [0, Math.log(2)]] }
- * viterbiKBest(chain, 3).map((r) => r.path) // => [[0, 1], [1, 1], [0, 0]]
+ * viterbiKBest(chain, 3).map((r) => r.path) // => [[0, 1], [0, 0], [1, 1]]
  * ```
  */
 export function viterbiKBest(
@@ -548,8 +548,8 @@ export function constrainedViterbi(
  * @example
  * ```ts
  * import { constrainedPosteriorDecode } from 'omai-engine/pgm'
- * const chain = { logInitial: [0, 0], logTransition: [[0, 0], [0, 0]], logEmission: [[0, 1], [2, 0]] }
- * constrainedPosteriorDecode(chain, { transitions: [[true, true], [false, true]] }).path // => [1, 1]
+ * const chain = { logInitial: [0, 0], logTransition: [[0, 0], [0, 0]], logEmission: [[0, 1], [1, 0]] }
+ * constrainedPosteriorDecode(chain, { transitions: [[true, true], [false, true]] }).path // => [0, 1]
  * ```
  */
 export function constrainedPosteriorDecode(
