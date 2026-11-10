@@ -24,7 +24,7 @@ function weights(c: OperatorContext): { plus: number; minus: number } {
  * distribution is a hyperbolic tangent, its variance `1 - mean^2`), and the factor's mass is the sum of the two weights.
  *
  * @concept factor-operators
- * @index structure The spin factor x in {-1, +1} with a field: the closed-form site of the Ising model for EC and EP.
+ * @index structure The spin factor x in {-1, +1} with a field, exact EP.
  * @example
  * ```ts
  * import { gaussian, gaussianEta, messageArg, spin } from 'omai-engine/message-passing'

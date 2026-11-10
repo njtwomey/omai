@@ -294,7 +294,7 @@ const marginalOf = (state: AmpState): Record<string, Json> => ({
  * @concept approximate-message-passing
  * @reference Donoho, D. L., Maleki, A. and Montanari, A. (2009). Message-passing algorithms for compressed sensing. Proceedings of the National Academy of Sciences 106(45).
  * @reference Bayati, M. and Montanari, A. (2011). The dynamics of message passing on dense graphs, with applications to compressed sensing. IEEE Transactions on Information Theory 57(2).
- * @index algorithm Approximate message passing for y = A x + w with an iid prior, with state evolution on the tape.
+ * @index algorithm AMP for y = A x + w with an iid prior, with state evolution.
  * @example
  * ```ts
  * import { ampAlgorithm } from 'omai-engine/message-passing'

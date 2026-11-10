@@ -125,7 +125,7 @@ export const ecDefaults: Required<Omit<MessagePassingOptions, 'order' | 'initial
  * @concept expectation-consistent
  * @reference Opper, M. and Winther, O. (2005). Expectation consistent approximate inference. Journal of Machine Learning Research 6.
  * @reference Opper, M. and Winther, O. (2001). Adaptive and self-averaging Thouless-Anderson-Palmer mean-field theory for probabilistic modeling. Physical Review E 64.
- * @index algorithm Expectation consistent (adaptive TAP) inference for a Gaussian times 1-D sites: parallel EP with the EC evidence.
+ * @index algorithm Expectation consistent (adaptive TAP) inference: a Gaussian times 1-D sites.
  * @example
  * ```ts
  * import { ecAlgorithm, expectationConsistentGraph, marginalsOf } from 'omai-engine/message-passing'

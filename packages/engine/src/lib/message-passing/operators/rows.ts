@@ -44,7 +44,7 @@ function predictor(c: OperatorContext, a: readonly number[], w: number): { mean:
  * @param description - The operator's description.
  * @returns The operator.
  * @concept factor-operators
- * @index function Lift a scalar link operator (probit, logistic) to a row of a regression on a weight vector.
+ * @index function Lift a scalar link (probit, logistic) to a regression row on weights.
  * @example
  * ```ts
  * import { gaussianMv, gaussianMvEta, glmRow, messageArg, probit, valueArg, bernoulli } from 'omai-engine/message-passing'
@@ -125,6 +125,6 @@ export const logisticRow: FactorOperator = glmRow('logistic-row', logistic, 'y |
  * expectation consistent (adaptive TAP) approximation of an Ising model. `a` is usually a unit vector.
  *
  * @concept factor-operators
- * @index structure One spin site a . x in {-1, +1} on a Gaussian vector: the site of expectation consistent inference.
+ * @index structure One spin site on a Gaussian vector, for expectation consistent inference.
  */
 export const spinRow: FactorOperator = glmRow('spin-row', spin, 'a . x in {-1, +1} with weight exp(field a . x)')
