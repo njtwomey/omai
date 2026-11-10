@@ -3912,6 +3912,14 @@
       "cases": 8
     },
     {
+      "fixture": "pgm/structured/neural_crf.json",
+      "source": "oracle/cases/pgm/structured/neural_crf.py",
+      "reference": {
+        "pytorch-crf": "0.7.2"
+      },
+      "cases": 5
+    },
+    {
       "fixture": "pgm/triangulation.json",
       "source": "oracle/cases/pgm/triangulation.py",
       "reference": {
