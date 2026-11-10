@@ -93,7 +93,7 @@ const NN_PRIOR = { priorMean: 0, priorSd: 2, sigma: 1.5 }
  * @example
  * ```ts
  * import { normalNormal } from 'omai-engine/probprog/models'
- * normalNormal.truth().marginals['mu']?.sd.toFixed(3) // => '0.403'
+ * normalNormal.truth().marginals['mu']?.sd.toFixed(3) // => '0.423'
  * ```
  */
 export const normalNormal: BenchmarkModel = defineBenchmark({
