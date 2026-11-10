@@ -99,12 +99,12 @@ describe('the max and min operators equal the integral of the exact message', ()
     const args = [msg(flat), msg(ea), msg(eb)]
     const toY = M.maximum.ep?.(ctx(0, args)).message as M.Eta
     const clark = M.clarkMax({ mean: 0.3, variance: 1.2 }, { mean: -0.2, variance: 0.8 })
-    expect(toY[0]! / toY[1]!).toBeCloseTo(clark.mean, 12)
-    expect(1 / toY[1]!).toBeCloseTo(clark.variance, 12)
+    expect((toY[0] as number) / (toY[1] as number)).toBeCloseTo(clark.mean, 12)
+    expect(1 / (toY[1] as number)).toBeCloseTo(clark.variance, 12)
     const low = M.minimum.ep?.(ctx(0, args)).message as M.Eta
     const clarkMin = M.clarkMax({ mean: -0.3, variance: 1.2 }, { mean: 0.2, variance: 0.8 })
-    expect(low[0]! / low[1]!).toBeCloseTo(-clarkMin.mean, 12)
-    expect(1 / low[1]!).toBeCloseTo(clarkMin.variance, 12)
+    expect((low[0] as number) / (low[1] as number)).toBeCloseTo(-clarkMin.mean, 12)
+    expect(1 / (low[1] as number)).toBeCloseTo(clarkMin.variance, 12)
   })
 
   it('is in the registry and runs in a graph: a hinge of a Gaussian against another has the integral posterior mean', () => {
