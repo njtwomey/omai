@@ -36,6 +36,7 @@ import { RecordBoundary } from './RecordBoundary.tsx'
 import { ReachabilityPlotView } from './reachability.tsx'
 import { ConceptView, RuleListView } from './rules.tsx'
 import { SampleGridView } from './sample-grid.tsx'
+import { SbcRunView } from './sbc-run.tsx'
 import { SceneStepsView } from './scene-steps.tsx'
 import { StateSequenceView } from './sequences.tsx'
 import { SimplexView } from './simplex.tsx'
@@ -203,6 +204,8 @@ function StandardRecordView(props: ExpositionViewProps): ReactElement {
       return <ModelRunPlayer record={record} {...common} />
     case 'chainDiagnostics':
       return <ChainDiagnosticsView record={record} {...common} />
+    case 'sbcRun':
+      return <SbcRunView record={record} {...common} />
     case 'structureSteps':
       return <StructureStepsView record={record} {...common} />
     case 'pointsSteps':

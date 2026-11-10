@@ -11,8 +11,7 @@ import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
 import { lines } from '../charts/lines.ts'
 import { points } from '../charts/points.ts'
-import { gridSpec } from '../figure/grid.ts'
-import { type ViewOptions, viewFigure } from './_view.ts'
+import { panelColumns, panelGrid, type ViewOptions, viewFigure } from './_view.ts'
 
 /** Options of {@link traceView} and {@link rankView}. */
 export interface ChainViewOptions extends ViewOptions {
@@ -47,17 +46,6 @@ export function chosenQuantities(record: ChainDiagnostics, options: ChainViewOpt
     .map((x) => x.q)
 }
 
-function gridOf(n: number, cols: number): ReturnType<typeof gridSpec> {
-  const rows = Math.ceil(n / cols)
-  return gridSpec(rows, cols, {
-    hspace: 40,
-    wspace: 52,
-    cells: Array.from({ length: n }, (_, i) => ({ id: `q${i}`, row: Math.floor(i / cols), col: i % cols })),
-  })
-}
-
-const colsFor = (n: number): number => (n > 3 ? 2 : 1)
-
 /**
  * Trace plots: for each quantity the draws of every chain over the iterations, one colour per chain, with the divergent
  * transitions marked on their chain. Chains that mix look like overlapping noise around one level.
@@ -75,7 +63,7 @@ const colsFor = (n: number): number => (n > 3 ? 2 : 1)
  */
 export function traceView(record: ChainDiagnostics, options: ChainViewOptions = {}): EChartsOption {
   const qs = chosenQuantities(record, options)
-  const cols = colsFor(qs.length)
+  const cols = panelColumns(qs.length)
   const fig = viewFigure(options, { aspect: cols === 2 ? 1.7 : Math.max(1.2, 3.2 / Math.max(1, qs.length)) })
   const mode = fig.mode
   const panels: Record<string, Panel> = {}
@@ -110,7 +98,7 @@ export function traceView(record: ChainDiagnostics, options: ChainViewOptions = 
       },
     }
   }
-  return subplots(gridOf(qs.length, cols), panels, { figure: fig, legend: false, tooltip: 'item' })
+  return subplots(panelGrid(qs.length, cols), panels, { figure: fig, legend: false, tooltip: 'item' })
 }
 
 /**
@@ -131,7 +119,7 @@ export function traceView(record: ChainDiagnostics, options: ChainViewOptions = 
  */
 export function rankView(record: ChainDiagnostics, options: ChainViewOptions = {}): EChartsOption {
   const qs = chosenQuantities(record, options)
-  const cols = colsFor(qs.length)
+  const cols = panelColumns(qs.length)
   const fig = viewFigure(options, { aspect: cols === 2 ? 1.7 : Math.max(1.2, 3.2 / Math.max(1, qs.length)) })
   const mode = fig.mode
   const panels: Record<string, Panel> = {}
@@ -162,5 +150,5 @@ export function rankView(record: ChainDiagnostics, options: ChainViewOptions = {
       },
     }
   }
-  return subplots(gridOf(qs.length, cols), panels, { figure: fig, legend: false, tooltip: 'item' })
+  return subplots(panelGrid(qs.length, cols), panels, { figure: fig, legend: false, tooltip: 'item' })
 }

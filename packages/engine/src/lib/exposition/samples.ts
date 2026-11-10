@@ -43,6 +43,7 @@ import { reachabilityRecord } from './reachability.ts'
 import type { Exposition, ExpositionKind } from './record.ts'
 import { ruleSet } from './rules.ts'
 import { sampleGrid } from './sample-grid.ts'
+import { sbcRun } from './sbc-run.ts'
 import { sceneSteps } from './scene-steps.ts'
 import { learningCurve, searchTrials } from './searches.ts'
 import { stateSequence } from './sequences.ts'
@@ -540,4 +541,24 @@ export const expositionSamples: { readonly [K in ExpositionKind]: () => Extract<
         ],
       },
     ),
+  sbcRun: () =>
+    sbcRun({
+      replications: 10,
+      numRanks: 3,
+      alpha: 0.01,
+      passes: true,
+      quantities: [
+        {
+          name: 'mu',
+          ranks: [0, 1, 2, 3, 0, 1, 2, 3, 1, 2],
+          numRanks: 3,
+          histogram: [2, 3, 3, 2],
+          chiSquare: { statistic: 0.4, pValue: 0.94 },
+          ecdf: { statistic: 0.05, pValue: 0.9 },
+          pValue: 1,
+          diagnosis: 'uniform',
+          passes: true,
+        },
+      ],
+    }),
 }

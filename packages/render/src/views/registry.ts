@@ -44,6 +44,7 @@ import { pointsStepsScene, pointsStepsView } from './points-steps.ts'
 import { reachabilityPlot } from './reachability.ts'
 import { conceptView, ruleListView } from './rules.ts'
 import { sampleGridScene } from './sample-grid.ts'
+import { sbcEcdfView } from './sbc-run.ts'
 import { sceneStepsScene } from './scene-steps.ts'
 import { stateSequenceView } from './sequences.ts'
 import { simplexView } from './simplex.ts'
@@ -449,6 +450,14 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => traceView(r, o),
+  },
+  sbcRun: {
+    kind: 'sbcRun',
+    component: 'SbcRunView',
+    title: 'Simulation-based calibration',
+    plays: false,
+    accepts: [],
+    still: (r, o) => sbcEcdfView(r, o),
   },
   structureSteps: {
     kind: 'structureSteps',

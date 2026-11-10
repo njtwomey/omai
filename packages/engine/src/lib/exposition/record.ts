@@ -44,6 +44,7 @@ import type { HyperparameterSurface, PosteriorGrid } from './posteriors.ts'
 import type { Reachability } from './reachability.ts'
 import type { RuleSet } from './rules.ts'
 import type { SampleGrid } from './sample-grid.ts'
+import type { SbcRun } from './sbc-run.ts'
 import type { SceneSteps } from './scene-steps.ts'
 import type { LearningCurve, SearchTrials } from './searches.ts'
 import type { StateSequence } from './sequences.ts'
@@ -129,6 +130,7 @@ export type Exposition =
   | SampleGrid
   | ModelRun
   | ChainDiagnostics
+  | SbcRun
 
 /** The tag of an exposition record. */
 export type ExpositionKind = Exposition['kind']
@@ -237,4 +239,5 @@ const KINDS: Readonly<Record<ExpositionKind, true>> = {
   sampleGrid: true,
   modelRun: true,
   chainDiagnostics: true,
+  sbcRun: true,
 }
