@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { OmaiError } from '../../base/index.ts'
 import { type PairKind, randomPairwise } from '../../../testing/pairwise-models.ts'
-import { metricSeries, recorder } from '../../trace/index.ts'
-import { runAlgorithm } from '../../trace/index.ts'
+import type { OmaiError } from '../../base/index.ts'
+import { metricSeries, recorder, runAlgorithm } from '../../trace/index.ts'
 import * as P from '../index.ts'
 
 /** Every labelling of the model's variables with its log value, by enumeration. */
@@ -54,7 +53,11 @@ describe('graphCutMap', () => {
     expect(r.assignment).toEqual({ s_0_0: '+1', s_0_1: '+1', s_1_0: '+1', s_1_1: '+1' })
     const ev = P.graphCutMap(ising, { evidence: { s_1_1: '-1' } })
     expect(ev.logValue).toBeCloseTo(
-      Math.max(...enumerateAll(ising).filter((a) => a.x[3] === 0).map((a) => a.logValue)),
+      Math.max(
+        ...enumerateAll(ising)
+          .filter((a) => a.x[3] === 0)
+          .map((a) => a.logValue),
+      ),
       9,
     )
     expect(Object.keys(ev.indices)).not.toContain('s_1_1')
@@ -82,7 +85,13 @@ describe('graphCutMap', () => {
   describe('roof duality (QPBO) for terms that are not submodular', () => {
     for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
       it(`labels persistently and bounds the optimum (seed ${seed})`, () => {
-        const model = randomPairwise({ seed, shape: seed % 2 === 0 ? 'grid' : 'random', size: seed % 2 === 0 ? 3 : 8, cols: 3, kind: 'any' })
+        const model = randomPairwise({
+          seed,
+          shape: seed % 2 === 0 ? 'grid' : 'random',
+          size: seed % 2 === 0 ? 3 : 8,
+          cols: 3,
+          kind: 'any',
+        })
         const r = P.graphCutMap(model, { nonSubmodular: 'qpbo' })
         const all = enumerateAll(model)
         const optimum = Math.max(...all.map((a) => a.logValue))
@@ -131,7 +140,13 @@ describe('pairwiseMoveConditions', () => {
     const table = [0, 1, 5, 1, 0, 1, 5, 1, 0]
     const model = P.markovNetwork(
       ['a', 'b'].map((name) => ({ name, states: ['0', '1', '2'] })),
-      [P.logFactor(['a', 'b'], [3, 3], table.map((e) => -e))],
+      [
+        P.logFactor(
+          ['a', 'b'],
+          [3, 3],
+          table.map((e) => -e),
+        ),
+      ],
     )
     const c = P.pairwiseMoveConditions(model)
     expect(c.semiMetric).toBe(true)
@@ -201,7 +216,8 @@ describe('alphaExpansion and alphaBetaSwap', () => {
     const energy = metricSeries(rec.run(), 'energy').values
     expect(energy.length).toBe(r.energyTrace.length)
     expect(energy.at(-1)).toBeCloseTo(r.energy, 12)
-    for (let i = 1; i < r.energyTrace.length; i++) expect(r.energyTrace[i] ?? 0).toBeLessThanOrEqual((r.energyTrace[i - 1] ?? 0) + 1e-9)
+    for (let i = 1; i < r.energyTrace.length; i++)
+      expect(r.energyTrace[i] ?? 0).toBeLessThanOrEqual((r.energyTrace[i - 1] ?? 0) + 1e-9)
     expect(r.energyTrace.at(-1)).toBeCloseTo(r.energy, 12)
     expect(r.energyTrace[0] ?? 0).toBeGreaterThan(r.energy)
     const swap = runAlgorithm(P.alphaBetaSwapAlgorithm(model), { maxSteps: 50 })

@@ -12,8 +12,13 @@ Probabilistic graphical models, pgmpy style: factors, Bayesian and Markov networ
 
 Inference algorithms for graphical models, part of `omai-engine/pgm`: exact methods (enumeration, variable elimination, junction trees, forward-backward on chains), message passing (loopy and Gaussian belief propagation, expectation propagation), variational methods, MAP search and sampling.
 
+- function `ad3Map`: MAP by AD3, alternating-directions dual decomposition of the LP relaxation. `src/lib/pgm/inference/lp-relaxation-map.ts:452` `omai-engine/pgm`
+- function `alphaBetaSwap`: MAP of a multi-label pairwise model by alpha-beta swap graph cuts. `src/lib/pgm/inference/graph-cut-map.ts:513` `omai-engine/pgm`
+- function `alphaExpansion`: MAP of a multi-label pairwise model by alpha-expansion graph cuts. `src/lib/pgm/inference/graph-cut-map.ts:492` `omai-engine/pgm`
 - function `beliefPropagation`: Loopy and tree belief propagation. `src/lib/pgm/inference/belief-propagation.ts:457` `omai-engine/pgm`
 - function `forwardBackward`: Forward-backward smoothing on chains; viterbi finds the best path. `src/lib/pgm/inference/chain.ts:118` `omai-engine/pgm`
+- function `graphCutMap`: Exact MAP of a binary submodular pairwise model by a minimum cut; QPBO fallback. `src/lib/pgm/inference/graph-cut-map.ts:86` `omai-engine/pgm`
+- function `lpRelaxationMap`: MAP by the local-polytope LP relaxation, solved with the linear-programming solvers. `src/lib/pgm/inference/lp-relaxation-map.ts:99` `omai-engine/pgm`
 - function `variableElimination`: Exact inference by variable elimination. `src/lib/pgm/inference/elimination.ts:318` `omai-engine/pgm`
 
 ## pgm/learning

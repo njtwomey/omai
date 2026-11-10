@@ -21,7 +21,12 @@ export interface RandomPairwiseOptions {
 }
 
 /** The edges of the topology as pairs of variable indices. */
-export function topologyEdges(shape: RandomPairwiseOptions['shape'], size: number, cols: number, u: Float64Array): [number, number][] {
+export function topologyEdges(
+  shape: RandomPairwiseOptions['shape'],
+  size: number,
+  cols: number,
+  u: Float64Array,
+): [number, number][] {
   const edges: [number, number][] = []
   if (shape === 'chain') for (let i = 0; i + 1 < size; i++) edges.push([i, i + 1])
   else if (shape === 'grid') {
@@ -32,7 +37,8 @@ export function topologyEdges(shape: RandomPairwiseOptions['shape'], size: numbe
       }
   } else {
     let at = 0
-    for (let i = 0; i < size; i++) for (let j = i + 1; j < size; j++) if (Math.abs(u[at++] ?? 0) < 0.6) edges.push([i, j])
+    for (let i = 0; i < size; i++)
+      for (let j = i + 1; j < size; j++) if (Math.abs(u[at++] ?? 0) < 0.6) edges.push([i, j])
   }
   return edges
 }
@@ -53,7 +59,16 @@ export function randomPairwise(options: RandomPairwiseOptions): MarkovNetwork {
     states: Array.from({ length: K }, (_, k) => String(k)),
   }))
   const potentials = variables.map((v) =>
-    logFactor([v.name], [K], Array.from({ length: K }, () => -(options.unaryScale ?? 1) * (options.kind === 'potts' || options.kind === 'truncatedLinear' ? Math.abs(draw()) : draw()))),
+    logFactor(
+      [v.name],
+      [K],
+      Array.from(
+        { length: K },
+        () =>
+          -(options.unaryScale ?? 1) *
+          (options.kind === 'potts' || options.kind === 'truncatedLinear' ? Math.abs(draw()) : draw()),
+      ),
+    ),
   )
   const kind = options.kind ?? 'any'
   for (const [i, j] of edges) {
@@ -65,8 +80,15 @@ export function randomPairwise(options: RandomPairwiseOptions): MarkovNetwork {
         else if (kind === 'potts') energy[a * K + b] = a === b ? 0 : w
         else energy[a * K + b] = w * Math.min(Math.abs(a - b), 2)
       }
-    if (kind === 'submodular') energy[3] = Math.min(energy[3] ?? 0, (energy[1] ?? 0) + (energy[2] ?? 0) - (energy[0] ?? 0))
-    potentials.push(logFactor([`v${i}`, `v${j}`], [K, K], Array.from(energy, (e) => -e)))
+    if (kind === 'submodular')
+      energy[3] = Math.min(energy[3] ?? 0, (energy[1] ?? 0) + (energy[2] ?? 0) - (energy[0] ?? 0))
+    potentials.push(
+      logFactor(
+        [`v${i}`, `v${j}`],
+        [K, K],
+        Array.from(energy, (e) => -e),
+      ),
+    )
   }
   return markovNetwork(variables, potentials)
 }

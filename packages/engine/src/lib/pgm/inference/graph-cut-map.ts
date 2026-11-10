@@ -5,9 +5,17 @@
  * (Boykov, Veksler and Zabih 2001). Each move-making run is a traced algorithm with the energy after every cycle.
  */
 
-import { OmaiError } from '../../base/index.ts'
 import type { Json } from '../../base/index.ts'
-import { type Algorithm, channels, type RunStatus, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'
+import { OmaiError } from '../../base/index.ts'
+import {
+  type Algorithm,
+  channels,
+  type RunStatus,
+  runAlgorithm,
+  type TracePolicy,
+  type Tracer,
+} from '../../trace/index.ts'
+import type { DiscreteModel } from '../models/factor-graph.ts'
 import { type BinaryTerm, minimiseSubmodular, roofDuality, submodularMargin } from './_binary-cut.ts'
 import {
   descendOver,
@@ -19,7 +27,6 @@ import {
   pairwiseEnergy,
   unaryArgmin,
 } from './_pairwise.ts'
-import type { DiscreteModel } from '../models/factor-graph.ts'
 import type { MapResult } from './map.ts'
 
 /** Tolerance for the inequalities that make a pair term submodular or regular, relative to the table's scale. */
@@ -80,7 +87,11 @@ export function graphCutMap(model: DiscreteModel, options: GraphCutMapOptions = 
   const p = pairwiseEnergy(model, options.evidence ?? {}, 'graphCutMap')
   const n = p.names.length
   for (const [i, k] of p.card.entries())
-    if (k !== 2) throw new OmaiError('value', `graphCutMap: ${p.names[i]} has ${k} states; binary models only (try alphaExpansion)`)
+    if (k !== 2)
+      throw new OmaiError(
+        'value',
+        `graphCutMap: ${p.names[i]} has ${k} states; binary models only (try alphaExpansion)`,
+      )
   const u0 = Float64Array.from(p.unary, (u) => u[0] ?? 0)
   const u1 = Float64Array.from(p.unary, (u) => u[1] ?? 0)
   const terms: BinaryTerm[] = p.pairs.map((t) => ({
@@ -143,7 +154,8 @@ function conditionsOf(p: PairwiseEnergy): PairwiseConditions {
   const violations: { semiMetric?: string; metric?: string; expansion?: string; swap?: string } = {}
   for (const [index, t] of p.pairs.entries()) {
     const K = p.card[t.i] ?? 1
-    if (K !== (p.card[t.j] ?? 1)) throw new OmaiError('value', 'pairwise conditions: the variables of a pair need the same states')
+    if (K !== (p.card[t.j] ?? 1))
+      throw new OmaiError('value', 'pairwise conditions: the variables of a pair need the same states')
     const tol = slack(t.table)
     const at = (a: number, b: number): number => pairEnergy(p, index, a, b)
     const name = `${p.names[t.i]}-${p.names[t.j]}`
@@ -157,7 +169,8 @@ function conditionsOf(p: PairwiseEnergy): PairwiseConditions {
         for (let c = 0; c < K; c++) {
           if (at(a, b) + at(c, c) > at(a, c) + at(c, b) + tol)
             violations.expansion ??= `${name}: E(${a},${b}) + E(${c},${c}) > E(${a},${c}) + E(${c},${b})`
-          if (at(a, c) > at(a, b) + at(b, c) + tol) violations.metric ??= `${name}: E(${a},${c}) > E(${a},${b}) + E(${b},${c})`
+          if (at(a, c) > at(a, b) + at(b, c) + tol)
+            violations.metric ??= `${name}: E(${a},${c}) > E(${a},${b}) + E(${b},${c})`
         }
       }
     }
@@ -304,7 +317,12 @@ function moveMaking(
   model: DiscreteModel,
   options: MoveMakingOptions,
   condition: 'expansion' | 'swap',
-  cycle: (p: PairwiseEnergy, x: Int32Array, energy: number, K: number) => { x: Int32Array; energy: number; moves: number },
+  cycle: (
+    p: PairwiseEnergy,
+    x: Int32Array,
+    energy: number,
+    K: number,
+  ) => { x: Int32Array; energy: number; moves: number },
 ): Algorithm<MoveMakingState> {
   const p = pairwiseEnergy(model, options.evidence ?? {}, name)
   const K = requireSameStates(p, name)
@@ -358,7 +376,10 @@ function moveMaking(
  * r.status // => 'converged'
  * ```
  */
-export function alphaExpansionAlgorithm(model: DiscreteModel, options: MoveMakingOptions = {}): Algorithm<MoveMakingState> {
+export function alphaExpansionAlgorithm(
+  model: DiscreteModel,
+  options: MoveMakingOptions = {},
+): Algorithm<MoveMakingState> {
   return moveMaking('alphaExpansion', model, options, 'expansion', (p, x0, e0, K) => {
     let x = x0
     let energy = e0
@@ -394,7 +415,10 @@ export function alphaExpansionAlgorithm(model: DiscreteModel, options: MoveMakin
  * r.status // => 'converged'
  * ```
  */
-export function alphaBetaSwapAlgorithm(model: DiscreteModel, options: MoveMakingOptions = {}): Algorithm<MoveMakingState> {
+export function alphaBetaSwapAlgorithm(
+  model: DiscreteModel,
+  options: MoveMakingOptions = {},
+): Algorithm<MoveMakingState> {
   return moveMaking('alphaBetaSwap', model, options, 'swap', (p, x0, e0, K) => {
     let x = x0
     let energy = e0

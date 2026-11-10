@@ -8,11 +8,18 @@
 import { argmaxOf, type Json, maxOf, OmaiError } from '../../base/index.ts'
 import { linprog, projectSimplex, qpActiveSet, qpArrays } from '../../optim/index.ts'
 import { toFlat } from '../../tensor/index.ts'
-import { type Algorithm, channels, type RunStatus, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'
+import {
+  type Algorithm,
+  channels,
+  type RunStatus,
+  runAlgorithm,
+  type TracePolicy,
+  type Tracer,
+} from '../../trace/index.ts'
 import type { DiscreteModel } from '../models/factor-graph.ts'
-import { type Compiled, compile } from './_compiled.ts'
-import { type MapResult } from './map.ts'
 import { stateNames } from '../models/factor-graph.ts'
+import { type Compiled, compile } from './_compiled.ts'
+import { iteratedConditionalModes, type MapResult } from './map.ts'
 
 function logValueOf(c: Compiled, x: ArrayLike<number>): number {
   let s = c.constant
@@ -35,7 +42,8 @@ function splitFactors(c: Compiled, caller: string): { theta: Float64Array[]; clu
   const clusters: number[] = []
   for (const [a, f] of c.factors.entries()) {
     for (const v of f.logValues)
-      if (!Number.isFinite(v)) throw new OmaiError('value', `${caller}: a factor value is ${v}; log values must be finite`)
+      if (!Number.isFinite(v))
+        throw new OmaiError('value', `${caller}: a factor value is ${v}; log values must be finite`)
     if (f.vars.length === 1) {
       const t = theta[f.vars[0] ?? 0] as Float64Array
       for (let x = 0; x < t.length; x++) t[x] = (t[x] ?? 0) + (f.logValues[x] ?? 0)
@@ -57,7 +65,10 @@ export interface LpRelaxationResult extends MapResult {
   readonly dualBound: number
   /** The bound minus the log value of the decoded assignment; zero certifies the assignment is a MAP. */
   readonly integralityGap: number
-  /** Whether the relaxed solution is integral (every node marginal is one-hot), hence a MAP assignment. */
+  /**
+   * Whether the relaxation is tight: the relaxed solution is integral (every node marginal is one-hot) or, for AD3, the
+   * bound met the value of the rounded assignment. Either way the assignment is a MAP.
+   */
   readonly integral: boolean
   /** The node marginals of the relaxed solution, by variable. */
   readonly marginals: Readonly<Record<string, readonly number[]>>
@@ -101,7 +112,8 @@ export function lpRelaxationMap(model: DiscreteModel, options: LpRelaxationOptio
     size += c.factors[a]?.logValues.length ?? 0
   }
   const cost = new Float64Array(size)
-  for (let i = 0; i < n; i++) for (let x = 0; x < (c.card[i] ?? 1); x++) cost[(nodeAt[i] ?? 0) + x] = -(theta[i]?.[x] ?? 0)
+  for (let i = 0; i < n; i++)
+    for (let x = 0; x < (c.card[i] ?? 1); x++) cost[(nodeAt[i] ?? 0) + x] = -(theta[i]?.[x] ?? 0)
   for (const [m, a] of clusters.entries()) {
     const f = c.factors[a]
     for (let e = 0; e < (f?.logValues.length ?? 0); e++) cost[(clusterAt[m] ?? 0) + e] = -(f?.logValues[e] ?? 0)
@@ -122,7 +134,8 @@ export function lpRelaxationMap(model: DiscreteModel, options: LpRelaxationOptio
     for (const [p, v] of f.vars.entries()) {
       for (let x = 0; x < (c.card[v] ?? 1); x++) {
         const r = row()
-        for (let e = 0; e < f.logValues.length; e++) if ((f.digits[e * k + p] ?? 0) === x) r[(clusterAt[m] ?? 0) + e] = 1
+        for (let e = 0; e < f.logValues.length; e++)
+          if ((f.digits[e * k + p] ?? 0) === x) r[(clusterAt[m] ?? 0) + e] = 1
         r[(nodeAt[v] ?? 0) + x] = -1
         rows.push(r)
         rhs.push(0)
@@ -130,7 +143,8 @@ export function lpRelaxationMap(model: DiscreteModel, options: LpRelaxationOptio
     }
   }
   const sol = linprog({ c: cost, aEq: rows.map((r) => Array.from(r)), bEq: rhs })
-  if (sol.status !== 'optimal') throw new OmaiError('convergence', `lpRelaxationMap: the linear program ended ${sol.status}`)
+  if (sol.status !== 'optimal')
+    throw new OmaiError('convergence', `lpRelaxationMap: the linear program ended ${sol.status}`)
   const mu = toFlat(sol.x)
   const marginals: Record<string, number[]> = {}
   const x = new Int32Array(n)
@@ -159,6 +173,8 @@ export interface Ad3Options {
   /** Stop when the integrality gap falls below this (default 1e-9). */
   readonly gapTol?: number
   readonly maxIter?: number
+  /** In {@link ad3Map}: polish the rounded assignment by iterated conditional modes (default true). */
+  readonly polish?: boolean
   readonly tracer?: Tracer
   readonly policy?: TracePolicy
 }
@@ -222,7 +238,10 @@ export function ad3Algorithm(model: DiscreteModel, options: Ad3Options = {}): Al
   const n = c.names.length
   /** The factor of each cluster, its edge ids (in scope order) and its number of entries. */
   const parts = clusters.map((a) => ({ f: c.factors[a] as Compiled['factors'][number], edges: c.factorEdges[a] ?? [] }))
-  const degree = c.names.map((_, i) => (c.variableEdges[i] ?? []).filter((e) => (c.factors[c.edges[e]?.factor ?? 0]?.vars.length ?? 0) > 1).length)
+  const degree = c.names.map(
+    (_, i) =>
+      (c.variableEdges[i] ?? []).filter((e) => (c.factors[c.edges[e]?.factor ?? 0]?.vars.length ?? 0) > 1).length,
+  )
 
   const marginalOf = (m: number, k: number, q: Float64Array): Float64Array => {
     const { f } = parts[m] as (typeof parts)[number]
@@ -279,7 +298,9 @@ export function ad3Algorithm(model: DiscreteModel, options: Ad3Options = {}): Al
     init: () => {
       const u = c.names.map((_, i) => {
         const k = c.card[i] ?? 1
-        return degree[i] === 0 ? Float64Array.from({ length: k }, (_, x) => (x === argmaxOf(theta[i] ?? [0]) ? 1 : 0)) : new Float64Array(k).fill(1 / k)
+        return degree[i] === 0
+          ? Float64Array.from({ length: k }, (_, x) => (x === argmaxOf(theta[i] ?? [0]) ? 1 : 0))
+          : new Float64Array(k).fill(1 / k)
       })
       const q = parts.map((p) => new Float64Array(p.f.logValues.length).fill(1 / Math.max(p.f.logValues.length, 1)))
       const y = c.edges.map((e) => new Float64Array(c.card[e.variable] ?? 1))
@@ -323,7 +344,13 @@ export function ad3Algorithm(model: DiscreteModel, options: Ad3Options = {}): Al
           }),
         )
         const sol = qpActiveSet(
-          qpArrays({ P, q: linear, A: [new Array<number>(entries).fill(1)], b: [1], lb: new Array<number>(entries).fill(0) }),
+          qpArrays({
+            P,
+            q: linear,
+            A: [new Array<number>(entries).fill(1)],
+            b: [1],
+            lb: new Array<number>(entries).fill(0),
+          }),
           { x0: s.q[m] ?? new Float64Array(entries).fill(1 / entries) },
         )
         return sol.x
@@ -410,7 +437,7 @@ export function ad3Algorithm(model: DiscreteModel, options: Ad3Options = {}): Al
  *
  * @param model - A model with factors of any size.
  * @param options - Evidence, penalty, tolerances, iteration limit and tracer.
- * @returns The assignment, its log value, the bound, the gap, whether the node marginals are integral, the marginals
+ * @returns The assignment, its log value, the bound, the gap, whether the relaxation was tight, the marginals
  *   and how the run ended.
  * @concept map-inference
  * @concept dual-decomposition
@@ -434,11 +461,21 @@ export function ad3Map(
   })
   const s = run.state
   const marginals = Object.fromEntries(c.names.map((v, i) => [v, Array.from(s.u[i] ?? [])]))
+  let result = resultOf(model, c, s.best)
+  if ((options.polish ?? true) && !s.integral) {
+    // Rounding fractional marginals can tie or disagree with the factors; a few conditional-mode sweeps repair that.
+    const init = Object.fromEntries(c.names.map((v, i) => [v, s.best[i] ?? 0]))
+    const icm = runAlgorithm(
+      iteratedConditionalModes(model, init, options.evidence === undefined ? {} : { evidence: options.evidence }),
+      { maxSteps: 100 },
+    ).state
+    if (icm.logValue > result.logValue) result = resultOf(model, c, icm.x)
+  }
   return {
-    ...resultOf(model, c, s.best),
+    ...result,
     dualBound: s.bestBound,
-    integralityGap: s.bestBound - s.bestValue,
-    integral: s.integral,
+    integralityGap: s.bestBound - result.logValue,
+    integral: s.integral || s.bestBound - result.logValue <= (options.gapTol ?? 1e-9),
     marginals,
     status: run.status,
     iterations: run.steps,

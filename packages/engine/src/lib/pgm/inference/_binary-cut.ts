@@ -135,7 +135,8 @@ export function roofDuality(
   }
   const labels = new Int8Array(n).fill(-1)
   const edges = cap.edges()
-  if (edges.length === 0) return { labels: Int8Array.from(diff, (d) => (d > 0 ? 0 : d < 0 ? 1 : -1)), lowerBound: constant }
+  if (edges.length === 0)
+    return { labels: Int8Array.from(diff, (d) => (d > 0 ? 0 : d < 0 ? 1 : -1)), lowerBound: constant }
   const cut = minCut(digraph(edges, { nodes }), s, t)
   const source = new Uint8Array(nodes)
   for (const v of cut.partition[0]) source[v] = 1

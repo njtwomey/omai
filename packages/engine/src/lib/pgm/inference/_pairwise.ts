@@ -46,7 +46,8 @@ export function pairwiseEnergy(
     if (f.vars.length > 2)
       throw new OmaiError('value', `${caller}: a factor over ${f.vars.length} variables; pairwise models only`)
     for (const v of f.logValues)
-      if (!Number.isFinite(v)) throw new OmaiError('value', `${caller}: a factor value is ${v}; energies must be finite`)
+      if (!Number.isFinite(v))
+        throw new OmaiError('value', `${caller}: a factor value is ${v}; energies must be finite`)
     if (f.vars.length === 1) {
       const u = unary[f.vars[0] ?? 0] as Float64Array
       for (let x = 0; x < u.length; x++) u[x] = (u[x] ?? 0) - (f.logValues[x] ?? 0)
