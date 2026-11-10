@@ -43,6 +43,7 @@ import { modelRunScene } from './model-run.ts'
 import { crossValidationView, learningCurveView, pruningPathView, regularisationPathView } from './paths.ts'
 import { pointsStepsScene, pointsStepsView } from './points-steps.ts'
 import { posteriorComparisonView } from './posterior-comparison.ts'
+import { posteriorPairsView } from './posterior-pairs.ts'
 import { reachabilityPlot } from './reachability.ts'
 import { conceptView, ruleListView } from './rules.ts'
 import { sampleGridScene } from './sample-grid.ts'
@@ -476,6 +477,14 @@ const REGISTRY: Registry = {
     plays: false,
     accepts: [],
     still: (r, o) => elboRunView(r, o),
+  },
+  posteriorPairs: {
+    kind: 'posteriorPairs',
+    component: 'PosteriorPairsPlayer',
+    title: 'Posterior pair plot',
+    plays: true,
+    accepts: [],
+    still: (r, o) => posteriorPairsView(r, o),
   },
   structureSteps: {
     kind: 'structureSteps',

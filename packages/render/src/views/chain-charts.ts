@@ -15,7 +15,7 @@ import { referenceLines } from '../charts/functions.ts'
 import { band, lines } from '../charts/lines.ts'
 import { points } from '../charts/points.ts'
 import { gridSpec } from '../figure/grid.ts'
-import { ariaOf, panelColumns, panelGrid, short, viewFigure } from './_view.ts'
+import { ariaOf, pairEdge, pairGrid, panelColumns, panelGrid, short, thinEvenly, viewFigure } from './_view.ts'
 import { type ChainViewOptions, chosenQuantities } from './chain-diagnostics.ts'
 
 /** The charts of a chain record beyond the trace and rank plots, by name. */
@@ -317,30 +317,20 @@ export function pairView(record: ChainDiagnostics, options: PairViewOptions = {}
   const qs = chosenQuantities(record, { ...options, max: options.max ?? 4 })
   if (qs.length < 2) throw new OmaiError('value', 'pairView: needs at least two quantities')
   const k = qs.length
+  const names = qs.map((q) => q.name)
   const fig = viewFigure(options, { aspect: 1 })
   const mode = fig.mode
   const cap = options.maxPoints ?? 150
-  const thin = (v: readonly number[]): number[] =>
-    v.length <= cap
-      ? [...v]
-      : Array.from({ length: cap }, (_, i) => v[Math.floor((i * (v.length - 1)) / (cap - 1))] as number)
-  const grid = gridSpec(k, k, {
-    hspace: 12,
-    wspace: 12,
-    cells: qs.flatMap((_, r) => qs.slice(0, r + 1).map((__, c) => ({ id: `p${r}_${c}`, row: r, col: c }))),
-  })
+  const grid = pairGrid(k)
   const panels: Record<string, Panel> = {}
   const shown = Math.min(record.divergences.length, MAX_DIVERGENT_VALUES)
   for (const [r, qy] of qs.entries())
     for (const [c, qx] of qs.slice(0, r + 1).entries()) {
-      const edge = {
-        ...(r === k - 1 ? { x: { label: qx.name } } : {}),
-        ...(c === 0 && r > 0 ? { y: { label: qy.name } } : {}),
-      }
+      const edge = pairEdge(names, r, c)
       if (r === c) {
         panels[`p${r}_${c}`] = {
           layers: [kde(qx.chains.flat(), { mode, colour: 'tab0', fill: 0.2 })],
-          options: r === k - 1 ? { x: { label: qx.name } } : {},
+          options: edge,
         }
         continue
       }
@@ -348,8 +338,8 @@ export function pairView(record: ChainDiagnostics, options: PairViewOptions = {}
         points(
           [
             {
-              x: thin(xs),
-              y: thin(qy.chains[chain] ?? []),
+              x: thinEvenly(xs, cap),
+              y: thinEvenly(qy.chains[chain] ?? [], cap),
               name: `chain ${chain}`,
               colour: `tab${chain}`,
               size: 4,

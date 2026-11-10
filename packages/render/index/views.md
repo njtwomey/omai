@@ -16,13 +16,14 @@ Headless views of exposition records (`omai-engine/exposition`): for each kind o
 - function `modelRunScene`: A model run at a step: beliefs in the plate diagram's nodes, messages on its edges. `src/views/model-run.ts:206` `omai-render/views`
 - function `pairView`: Pair plot of a few quantities with the divergent transitions marked: `pairView(chainDiagnostics(draws, { divergent }))`. `src/views/chain-charts.ts:316` `omai-render/views`
 - function `posteriorComparisonView`: Methods' posteriors over the oracle's as densities, ECDFs or ECDF differences: `posteriorComparisonView(posteriorComparison(methods, { truth }))`. `src/views/posterior-comparison.ts:99` `omai-render/views`
+- function `posteriorPairsView`: Corner plot of methods' posterior draws at a step: `posteriorPairsView(r)`. `src/views/posterior-pairs.ts:123` `omai-render/views`
 - function `rankView`: Rank plots of MCMC chains per quantity: `rankView(chainDiagnostics(draws))`. `src/views/chain-diagnostics.ts:131` `omai-render/views`
 - function `regularisationPathView`: Coefficients against the penalty, lasso style: `regularisationPathView(path)`. `src/views/paths.ts:175` `omai-render/views`
 - function `sbcEcdfView`: ECDF-difference plots with the simultaneous band of a simulation-based calibration run: `sbcEcdfView(sbcRun(sbc(...)))`. `src/views/sbc-run.ts:125` `omai-render/views`
 - function `sbcRankView`: Rank histograms with the binomial band of a simulation-based calibration run: `sbcRankView(sbcRun(sbc(...)))`. `src/views/sbc-run.ts:66` `omai-render/views`
-- function `stillOf`: The chart option or scene that explains a record: `stillOf(record)`. `src/views/registry.ts:716` `omai-render/views`
+- function `stillOf`: The chart option or scene that explains a record: `stillOf(record)`. `src/views/registry.ts:725` `omai-render/views`
 - function `traceView`: Trace plots of MCMC chains per quantity with divergences marked: `traceView(chainDiagnostics(draws))`. `src/views/chain-diagnostics.ts:64` `omai-render/views`
 - function `treeScene`: A decision tree as a scene of cards: `treeScene(record)`. `src/views/trees.ts:85` `omai-render/views`
-- function `viewFor`: The standard view of a record kind: `viewFor('regularisationPath')`. `src/views/registry.ts:690` `omai-render/views`
+- function `viewFor`: The standard view of a record kind: `viewFor('regularisationPath')`. `src/views/registry.ts:699` `omai-render/views`
 
-- structure `StandardView`: A record kind's view: component name, title, whether it plays, and its still. `src/views/registry.ts:76` `omai-render/views`
+- structure `StandardView`: A record kind's view: component name, title, whether it plays, and its still. `src/views/registry.ts:77` `omai-render/views`

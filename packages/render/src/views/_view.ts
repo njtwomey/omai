@@ -139,3 +139,71 @@ export function panelGrid(n: number, cols: number, hspace = 40): GridSpec {
 export function panelColumns(n: number): number {
   return n > 3 ? 2 : 1
 }
+
+/**
+ * The grid of a pair plot of `k` quantities: the lower triangle with the diagonal (ids `p{row}_{col}`), or all `k` by
+ * `k` cells with `full`, for views that use the upper triangle too (`pairView`, `posteriorPairsView`).
+ *
+ * @param k - The number of quantities.
+ * @param full - Whether to include the upper triangle (default false).
+ * @returns The grid.
+ * @example
+ * ```ts
+ * import { pairGrid } from 'omai-render/views'
+ * [pairGrid(3).cells.length, pairGrid(3, true).cells.length] // => [6, 9]
+ * ```
+ */
+export function pairGrid(k: number, full = false): GridSpec {
+  return gridSpec(k, k, {
+    hspace: full ? 6 : 12,
+    wspace: full ? 6 : 12,
+    cells: Array.from({ length: k * k }, (_, i) => ({
+      id: `p${Math.floor(i / k)}_${i % k}`,
+      row: Math.floor(i / k),
+      col: i % k,
+    })).filter((c) => full || c.col <= c.row),
+  })
+}
+
+/**
+ * The axis labels of a panel of a pair plot: the quantity's name under the bottom row and beside the first column
+ * (below its first row, whose panel is a density).
+ *
+ * @param names - The names of the quantities.
+ * @param row - The panel's row.
+ * @param col - The panel's column.
+ * @returns The panel's axis options (empty inside the plot).
+ * @example
+ * ```ts
+ * import { pairEdge } from 'omai-render/views'
+ * [pairEdge(['a', 'b'], 1, 0), pairEdge(['a', 'b'], 0, 0)] // => [{ x: { label: 'a' }, y: { label: 'b' } }, {}]
+ * ```
+ */
+export function pairEdge(
+  names: readonly string[],
+  row: number,
+  col: number,
+): { readonly x?: { readonly label: string }; readonly y?: { readonly label: string } } {
+  return {
+    ...(row === names.length - 1 ? { x: { label: names[col] ?? '' } } : {}),
+    ...(col === 0 && row > 0 ? { y: { label: names[row] ?? '' } } : {}),
+  }
+}
+
+/**
+ * At most `cap` of the values, spread evenly over them, the first and the last included: a scatter of thousands is a blob.
+ *
+ * @param values - The values.
+ * @param cap - The most to keep.
+ * @returns The thinned values (all of them when there are no more than `cap`).
+ * @example
+ * ```ts
+ * import { thinEvenly } from 'omai-render/views'
+ * [thinEvenly([1, 2, 3, 4, 5, 6, 7], 3), thinEvenly([1, 2], 3)] // => [[1, 4, 7], [1, 2]]
+ * ```
+ */
+export function thinEvenly(values: readonly number[], cap: number): number[] {
+  return values.length <= cap
+    ? [...values]
+    : Array.from({ length: cap }, (_, i) => values[Math.floor((i * (values.length - 1)) / (cap - 1))] as number)
+}

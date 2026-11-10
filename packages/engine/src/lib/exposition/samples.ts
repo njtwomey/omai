@@ -40,6 +40,7 @@ import { pipelineStages } from './pipelines.ts'
 import { pointsSteps } from './points-steps.ts'
 import { populationSteps } from './populations.ts'
 import { posteriorComparison } from './posterior-comparison.ts'
+import { posteriorPairs } from './posterior-pairs.ts'
 import { hyperparameterSurface, posteriorGrid } from './posteriors.ts'
 import { reachabilityRecord } from './reachability.ts'
 import type { Exposition, ExpositionKind } from './record.ts'
@@ -604,4 +605,16 @@ export const expositionSamples: { readonly [K in ExpositionKind]: () => Extract<
       parameters: [{ name: 'mu_auto_loc', site: 'mu', role: 'loc', steps: [1, 2, 3], values: [0, 0.4, 0.5] }],
       beliefs: [{ name: 'mu', steps: [2, 3], values: [0.4, 0.5], sd: [0.9, 0.6] }],
     }),
+  posteriorPairs: () =>
+    posteriorPairs(
+      [
+        {
+          name: 'nuts',
+          draws: { a: [0.1, 0.4, 0.5, 0.9, 0.3, 0.7], b: [1, 0.2, 0.6, 0.1, 0.8, 0.5] },
+          divergent: [0, 0, 0, 1, 0, 0],
+        },
+        { name: 'vi', draws: { a: [0.2, 0.5, 0.4, 0.6, 0.5, 0.3], b: [0.7, 0.5, 0.4, 0.6, 0.5, 0.6] } },
+      ],
+      { frames: 3, gridPoints: 8, maxPoints: 4, truth: { a: 0.5 } },
+    ),
 }

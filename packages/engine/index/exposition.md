@@ -12,4 +12,5 @@ Typed exposition records: the plain, serialisable data that methods return besid
 - function `elboRunFromTape`: Variational-run record (ELBO, gradient, guide parameters, beliefs) from an svi or pathfinder tape or snapshots. `src/lib/exposition/elbo-run-tape.ts:101` `omai-engine/exposition`
 - function `modelRunFromTape`: Model-graph inference record from a tape or anytime snapshots. `src/lib/exposition/model-run-tape.ts:302` `omai-engine/exposition`
 - function `posteriorComparison`: Posterior approximations against an oracle per quantity, with the agreement table, from `agree`'s inputs. `src/lib/exposition/posterior-comparison.ts:205` `omai-engine/exposition`
+- function `posteriorPairs`: Methods' posterior draws for a corner plot, with densities and correlations along the run. `src/lib/exposition/posterior-pairs.ts:249` `omai-engine/exposition`
 - function `sbcRun`: Rank histogram and ECDF-difference data with exact bands from a simulation-based calibration result. `src/lib/exposition/sbc-run.ts:117` `omai-engine/exposition`

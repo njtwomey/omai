@@ -6532,7 +6532,10 @@ record kinds methods return, each a plain, serialisable value with a `kind` tag:
   `posterior-comparison.ts`: per quantity the oracle's CDF on a grid and each method's distribution (equal-mass quantiles of
   its draws, or a normal given by a mean and an sd), so a view lays them over one another, and the agreement table of `agree`
   as a marked table with the cells beyond tolerance flagged; built by shape alone from `AgreementTableLike` and
-  `MarginalLike`; `comparisonTable`) and `ElboRun` (`elboRun`, `elbo-run.ts`: a variational fit, the bound at each step with its
+  `MarginalLike`; `comparisonTable`), `PosteriorPairs` (`posteriorPairs`, `posterior-pairs.ts`: several methods' draws of a few
+  coordinates for a corner plot, thinned with the step of each draw, the shared range and grid of each coordinate and, at `frames`
+  cursor positions, each method's density, mean, sd and correlations of the draws so far; `pairIndex`, `drawsUpTo`, `pairsFrameAt`;
+  the kernel density and correlation are computed there because `exposition` may not import `stats`) and `ElboRun` (`elboRun`, `elbo-run.ts`: a variational fit, the bound at each step with its
   smoothing, the norm and variance of the gradient and what the estimator reports, the trajectories of the guide's parameters,
   the beliefs the snapshots held, Pathfinder's paths and Pareto k-hat and, when the truth is known, the final posterior over
   the truth's marginal; `elbo-run-tape.ts`: `elboRunFromTape`, the same record from the `svi/*` or `pathfinder/*` paths of a
@@ -8208,7 +8211,9 @@ Design rules:
   Pathfinder's paths, the gradient on log axes, the guide's parameters, the beliefs as a mean with its sd band, or the final
   posterior over the truth, each as far as the run has got; `hasElboChart`) and `posterior-comparison.ts`
   (`PosteriorComparison`: `posteriorComparisonView`, the oracle's density under each method's, the ECDFs over one another, or the
-  difference of each ECDF from the oracle's CDF, where the Kolmogorov distance is the largest gap). The small multiples of these
+  difference of each ECDF from the oracle's CDF, where the Kolmogorov distance is the largest gap) and `posterior-pairs.ts`
+  (`PosteriorPairs`: `posteriorPairsView`, the corner plot of several methods at a cursor step; its grid, edge labels and even
+  thinning, `pairGrid`, `pairEdge` and `thinEvenly` of `_view.ts`, are `pairView`'s too). The small multiples of these
   views come from `_view.ts` (`panelGrid`, `panelColumns`: two columns from four panels on).
 - `registry.ts`: the standard view of each record kind (`viewFor(kind)`: its React component, title, whether it plays,
   what it accepts beside the record) and `stillOf(record)`, a headless still (a chart option, or a scene for trees and
@@ -8381,7 +8386,9 @@ Design rules:
   evolution, energy, pairs and the table under a segmented choice offering only the charts the record can draw, an `initial` prop
   to start on one; `chainChartsOf`); `sbc-run.tsx`: `SbcRunView` (rank histograms, ECDF differences or the verdict table);
   `elbo-run.tsx`: `ElboRunView` (the bound, gradient, parameters, beliefs or final posterior, redrawn as a run's record grows);
-  `posterior-comparison.tsx`: `PosteriorComparisonView` (densities, ECDFs, ECDF differences or the agreement table)), each one figure in one
+  `posterior-comparison.tsx`: `PosteriorComparisonView` (densities, ECDFs, ECDF differences or the agreement table);
+  `posterior-pairs.tsx`: `PosteriorPairsView` (the corner plot with a switch per method and coordinate) and `PosteriorPairsPlayer`
+  (with a player; `usePairsCursor` keeps its cursor in step with one the page owns)), each one figure in one
   `FigureFrame` with any player beneath it, and `ExpositionView`, which picks the standard view of any record inside a
   `RecordBoundary` (`RecordBoundary.tsx`: a record whose view throws, or whose kind has no view, shows a one-line note and
   the page goes on).
