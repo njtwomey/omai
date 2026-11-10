@@ -13,14 +13,15 @@ import { gaussianMv, gaussianMvMoments } from '../families-vector.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
 import { allProper, etaOf, messageArg, vectorParam } from './args.ts'
 import { logistic } from './links.ts'
+import { spin } from './spin.ts'
 import { probit } from './truncation.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
-/** The predictor's cavity: the mean and variance of a . w under the weights' Gaussian message. */
-function predictor(c: OperatorContext, a: readonly number[]): { mean: number; variance: number } {
+/** The predictor's cavity: the mean and variance of a . w under the weights' Gaussian message (the argument at port `w`). */
+function predictor(c: OperatorContext, a: readonly number[], w: number): { mean: number; variance: number } {
   const d = a.length
-  const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, 1)), d)
+  const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, w)), d)
   let m = 0
   let v = 0
   for (let i = 0; i < d; i++) {
@@ -55,27 +56,32 @@ function predictor(c: OperatorContext, a: readonly number[]): { mean: number; va
  */
 export function glmRow(name: string, link: FactorOperator, description: string): FactorOperator {
   if (link.ep === undefined) throw new OmaiError('value', `glmRow: ${link.name} has no EP rule to lift`)
+  const linkPorts = typeof link.ports === 'function' ? link.ports({}) : link.ports
+  // A link has the predictor alone (a spin) or an observed outcome and the predictor (a probit).
+  const outcome = linkPorts.length === 2
+  const w = outcome ? 1 : 0
   const lift = (c: OperatorContext): { z: Arg; a: readonly number[] } => {
     const a = vectorParam(c.params, 'a')
-    const z = predictor(c, a)
+    const z = predictor(c, a, w)
     return { z: messageArg(gaussian, gaussianEta(z.mean, z.variance)), a }
   }
+  const linkArgs = (c: OperatorContext, z: Arg): Arg[] => (outcome ? [arg(c, 0), z] : [z])
   return {
     name,
     description,
     ports: [
-      { name: 'y', accepts: ['bernoulli'], constant: true, observed: true },
-      { name: 'w', accepts: ['gaussian-mv'] },
+      ...(outcome ? [{ name: 'y', accepts: ['bernoulli' as const], constant: true, observed: true }] : []),
+      { name: 'w', accepts: ['gaussian-mv' as const] },
     ],
     support: { ep: link.support.ep ?? 'numeric' },
-    readsTarget: (to) => to === 1,
+    readsTarget: (to) => to === w,
     ...(link.power === true ? { power: true } : {}),
     check: (params, families) =>
-      vectorParam(params, 'a').length === families[1]?.dim ? undefined : `${name}: a must have the length of w`,
+      vectorParam(params, 'a').length === families[w]?.dim ? undefined : `${name}: a must have the length of w`,
     ep: (c): OperatorResult => {
-      if (c.to !== 1) throw new OmaiError('value', `${name}: nothing is sent to the observed outcome`)
+      if (c.to !== w) throw new OmaiError('value', `${name}: nothing is sent to the observed outcome`)
       const { z, a } = lift(c)
-      const site = (link.ep as NonNullable<FactorOperator['ep']>)({ ...c, to: 1, args: [arg(c, 0), z] }).message
+      const site = (link.ep as NonNullable<FactorOperator['ep']>)({ ...c, to: w, args: linkArgs(c, z) }).message
       const nu = site[0] ?? 0
       const lambda = site[1] ?? 0
       const d = a.length
@@ -88,10 +94,10 @@ export function glmRow(name: string, link: FactorOperator, description: string):
     logEvidence: (c) => {
       if (!allProper(c.args) || link.logEvidence === undefined) return Number.NaN
       const { z, a } = lift(c)
-      const w = gaussianMv(a.length)
+      const mv = gaussianMv(a.length)
       // The link's value counts the mass of the predictor's message (a normalised Gaussian here); the weights' own mass replaces it.
       const normalised = gaussian.logPartition(etaOf(z))
-      return link.logEvidence({ ...c, args: [arg(c, 0), z] }) - normalised + w.logPartition(etaOf(arg(c, 1)))
+      return link.logEvidence({ ...c, args: linkArgs(c, z) }) - normalised + mv.logPartition(etaOf(arg(c, w)))
     },
   }
 }
@@ -113,3 +119,12 @@ export const probitRow: FactorOperator = glmRow('probit-row', probit, 'y | a . w
  * @index structure One logistic regression row on a Gaussian weight vector, quadrature EP.
  */
 export const logisticRow: FactorOperator = glmRow('logistic-row', logistic, 'y | a . w ~ Bernoulli(sigmoid(a . w))')
+
+/**
+ * One spin of a vector of spins coupled through a Gaussian: `x . a in {-1, +1}` with a field, the non-Gaussian site of the
+ * expectation consistent (adaptive TAP) approximation of an Ising model. `a` is usually a unit vector.
+ *
+ * @concept factor-operators
+ * @index structure One spin site a . x in {-1, +1} on a Gaussian vector: the site of expectation consistent inference.
+ */
+export const spinRow: FactorOperator = glmRow('spin-row', spin, 'a . x in {-1, +1} with weight exp(field a . x)')
