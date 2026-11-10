@@ -185,7 +185,7 @@ export const vmpContract: Contract<MpState, VmpPath> = defineContract({
  *   defaultOperators(),
  * )
  * const r = runAlgorithm(epAlgorithm(g), { maxSteps: 50 })
- * Number(marginalsOf(g, r.state).x?.mean).toFixed(4) // => '0.7979'
+ * Number(marginalsOf(g, r.state).x?.mean).toFixed(4) // => '0.5642'
  * ```
  */
 export function epAlgorithm(g: CompiledGraph, options: MessagePassingOptions = {}): Algorithm<MpState, EpPath> {

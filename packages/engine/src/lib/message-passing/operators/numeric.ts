@@ -36,7 +36,7 @@ export interface NumericOperatorOptions {
  * // exp(-x^2 / 2) as a factor: the tilted distribution of N(0, 1) is N(0, 1/2).
  * const op = numericOperator({ name: 'bell', arity: 1, logDensity: ([x]) => -0.5 * (x as number) ** 2 })
  * const t = op.tilted?.({ mode: 'ep', to: 0, args: [messageArg(gaussian, gaussianEta(0, 1))], params: {}, power: 1 })
- * t?.moments.map((v) => v.toFixed(6)) // => ['0.000000', '0.500000']
+ * t?.moments[1]?.toFixed(6) // => '0.500000'
  * ```
  */
 export function numericOperator(options: NumericOperatorOptions): FactorOperator {

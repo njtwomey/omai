@@ -103,7 +103,7 @@ function affineOperator(
  * const a = messageArg(gaussian, gaussianEta(1, 1))
  * const b = messageArg(gaussian, gaussianEta(2, 0.25))
  * const args = [messageArg(gaussian, gaussian.flat), a, b]
- * linear.ep?.({ mode: 'ep', to: 0, args, params: { coeffs: [2, 1], offset: 1 }, power: 1 }).message // => [0.2, 0.2]
+ * linear.ep?.({ mode: 'ep', to: 0, args, params: { coeffs: [2, 1], offset: 1 }, power: 1 }).message.map((v) => Math.round(v * 1e6) / 1e6) // => [1.176471, 0.235294]
  * ```
  */
 export const linear: FactorOperator = affineOperator(
@@ -339,7 +339,7 @@ export const matmulConstant: FactorOperator = {
  * import { gaussian, gaussianMv, linearRegressionRow, messageArg, valueArg } from 'omai-engine/message-passing'
  * const w = gaussianMv(2)
  * const args = [valueArg(gaussian, 3), messageArg(w, w.flat)]
- * linearRegressionRow.ep?.({ mode: 'ep', to: 1, args, params: { a: [1, 2], precision: 2 }, power: 1 }).message // => [6, 12, 4, 8, 2, 4, 8]
+ * linearRegressionRow.ep?.({ mode: 'ep', to: 1, args, params: { a: [1, 2], precision: 2 }, power: 1 }).message // => [6, 12, 2, 4, 4, 8]
  * ```
  */
 export const linearRegressionRow: FactorOperator = {
@@ -435,7 +435,7 @@ function rowMessage(a: readonly number[], tau: number, y: number): number[] {
  * ```ts
  * import { gaussian, gaussianEta, gaussianJoint, messageArg } from 'omai-engine/message-passing'
  * const args = [messageArg(gaussian, gaussian.flat), messageArg(gaussian, gaussianEta(2, 1))]
- * gaussianJoint.ep?.({ mode: 'ep', to: 0, args, params: { J: [2, -1, -1, 2], h: [0, 0] }, power: 1 }).message // => [1, 1.5]
+ * gaussianJoint.ep?.({ mode: 'ep', to: 0, args, params: { J: [2, -1, -1, 2], h: [0, 0] }, power: 1 }).message.map((v) => Math.round(v * 1e6) / 1e6) // => [0.666667, 1.666667]
  * ```
  */
 export const gaussianJoint: FactorOperator = {

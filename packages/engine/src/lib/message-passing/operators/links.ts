@@ -39,7 +39,7 @@ const POINTS = 64
  * ```ts
  * import { gaussian, gaussianEta, logistic, messageArg, valueArg } from 'omai-engine/message-passing'
  * const args = [valueArg(gaussian, 1), messageArg(gaussian, gaussianEta(0, 1))]
- * logistic.ep?.({ mode: 'ep', to: 1, args, params: {}, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.431', '0.185']
+ * logistic.ep?.({ mode: 'ep', to: 1, args, params: {}, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.498', '0.206']
  * ```
  */
 export const logistic: FactorOperator = {

@@ -105,7 +105,7 @@ function tablePorts(params: Params): readonly Port[] {
  * const d = discrete(2)
  * const args = [messageArg(d, d.flat), messageArg(d, discreteEta([0.2, 0.8]))]
  * const m = table.bp?.({ mode: 'bp', to: 0, args, params: { states: [2, 2], values: [0.9, 0.1, 0.4, 0.6] }, power: 1 }).message
- * m?.map((v) => Math.exp(v).toFixed(4)) // => ['0.2000', '0.2000']
+ * m?.map((v) => Math.exp(v).toFixed(4)) // => ['0.3171', '0.6829']
  * ```
  */
 export const table: FactorOperator = {
@@ -149,7 +149,7 @@ export const table: FactorOperator = {
  * @example
  * ```ts
  * import { logicTable } from 'omai-engine/message-passing'
- * logicTable('and', 2).values // => [1, 0, 1, 0, 1, 0, 0, 1]
+ * logicTable('and', 2).values // => [1, 1, 1, 0, 0, 0, 0, 1]
  * ```
  */
 export function logicTable(

@@ -215,7 +215,7 @@ export const gaussianNormalGamma: FactorOperator = {
  * const a = messageArg(gaussian, gaussianEta(2, 1))
  * const b = messageArg(gaussian, gaussianEta(3, 4))
  * const message = product.ep?.({ mode: 'ep', to: 0, power: 1, params: {}, args: [messageArg(gaussian, gaussian.flat), a, b] }).message
- * message?.map((v) => Math.round(v * 1e9) / 1e9) // => [0.24, 0.04]
+ * message?.map((v) => Math.round(v * 1e9) / 1e9) // => [0.206896552, 0.034482759]
  * ```
  */
 export const product: FactorOperator = {

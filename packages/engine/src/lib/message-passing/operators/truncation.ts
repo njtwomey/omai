@@ -127,7 +127,7 @@ function stepOperator(
  * ```ts
  * import { gaussian, gaussianEta, greaterThan, messageArg, valueArg } from 'omai-engine/message-passing'
  * const args = [valueArg(gaussian, 1), messageArg(gaussian, gaussianEta(0, 1))]
- * greaterThan.ep?.({ mode: 'ep', to: 1, args, params: { threshold: 0 }, power: 1 }).message.map((v) => v.toFixed(4)) // => ['0.7979', '0.6366']
+ * greaterThan.ep?.({ mode: 'ep', to: 1, args, params: { threshold: 0 }, power: 1 }).message.map((v) => v.toFixed(4)) // => ['2.1957', '1.7519']
  * ```
  */
 export const greaterThan: FactorOperator = stepOperator('greater-than', 'b = [x > threshold]', (params) => {
@@ -183,7 +183,7 @@ function probitSite(m: number, v: number, sigma: number): [number, number] {
  * ```ts
  * import { gaussian, gaussianEta, messageArg, probit, valueArg } from 'omai-engine/message-passing'
  * const args = [valueArg(gaussian, 1), messageArg(gaussian, gaussianEta(0, 1))]
- * probit.ep?.({ mode: 'ep', to: 1, args, params: {}, power: 1 }).message.map((v) => v.toFixed(4)) // => ['0.5642', '0.3183']
+ * probit.ep?.({ mode: 'ep', to: 1, args, params: {}, power: 1 }).message.map((v) => v.toFixed(4)) // => ['0.8276', '0.4669']
  * ```
  */
 export const probit: FactorOperator = {
