@@ -28,6 +28,9 @@ function runLine(a: BenchmarkAgreement, index: number): string {
   if (Array.isArray(ess) && ess.length > 0)
     parts.push(`ESS low: ${ess.slice(0, 3).join(', ')}${ess.length > 3 ? ', ...' : ''}`)
   if (typeof d['ess'] === 'number') parts.push(`weights ESS ${Math.round(d['ess'])}`)
+  if (typeof d['reason'] === 'string') parts.push(d['reason'])
+  if (d['degenerateMode'] === true)
+    parts.push('degenerate mode (on the boundary of a scale, or an ill-conditioned Hessian)')
   const expect =
     run.plan.expect === 'agree' ? 'must agree' : run.plan.expect === 'differ' ? 'expected to differ' : 'reported'
   return `| ${cell(run.plan.kind)} | ${expect} | ${cell(run.status)} (${run.steps} steps) | ${cell(parts.join('; ') || '-')} | ${cell(run.plan.note)} |`
@@ -63,7 +66,7 @@ export function benchmarkMarkdown(
     '',
     `Truth (${a.truth.kind}): ${a.truth.source}.${a.truth.logEvidence === undefined ? '' : ` Log evidence ${a.truth.logEvidence.toFixed(4)}.`}`,
     '',
-    `Methods whose own \`check\` says they apply${model.target === 'density' ? ' to the compiled program (a target with no observed node is refused at the spec level)' : ''}: ${applies.join(', ') || 'none'}. Not applicable: ${refused.map((v) => `${v.kind} (${v.verdict.reason})`).join('; ') || 'none'}.`,
+    `Methods whose own \`check\` says they apply: ${applies.join(', ') || 'none'}. Not applicable: ${refused.map((v) => `${v.kind} (${v.verdict.reason})`).join('; ') || 'none'}.`,
     '',
     '| method | expectation | run | diagnostics | why |',
     '| --- | --- | --- | --- | --- |',

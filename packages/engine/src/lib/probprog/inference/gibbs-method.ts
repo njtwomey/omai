@@ -33,6 +33,7 @@ import {
   no,
   num,
   posteriorJson,
+  priorOnly,
   programOf,
   restorable,
   yes,
@@ -119,7 +120,6 @@ export function gibbsMethod(
     }
   }
   const check = checkOf(gibbsEngine(), (a) => {
-    if (!a.hasLikelihood) return no('observed nodes have no likelihood', ['likelihood'], 'add an observed node')
     if (a.latent.length === 0) return no('no latent nodes', ['latent nodes'])
     if (a.unboundedDiscrete.length > 0)
       return no(
@@ -129,7 +129,7 @@ export function gibbsMethod(
       )
     if (a.finiteDiscrete.length === 0 && a.conjugate.length === 0)
       return no('no discrete or conjugate conditionals', ['finite discrete latents', 'conjugate sites'], 'use NUTS')
-    return yes('discrete or conjugate conditionals')
+    return yes(`discrete or conjugate conditionals${priorOnly(a)}`)
   })
   const ensure = guard(options.name ?? 'gibbs', model, check)
   return defineInferenceMethod<GibbsRunState, Config, GibbsPath, ModelAnalysis>({

@@ -18,6 +18,13 @@ export { analysisOf, isProgramAnalysis, type MethodModel, type ModelAnalysis, pr
 /** A verdict that the method applies. */
 export const yes = (reason: string): Verdict => ({ applies: true, reason, missing: [] })
 
+/**
+ * What a verdict's reason adds when the spec has no observed node: the model is a density (the funnel, the banana), the
+ * target is the prior, and a sampler or an approximation of it is a sensible thing to run. Empty for a model with data.
+ */
+export const priorOnly = (a: { readonly hasLikelihood: boolean }): string =>
+  a.hasLikelihood ? '' : '; no observed nodes, so the target is the prior (a density)'
+
 /** A verdict that it does not, with what is missing and what would help. */
 export const no = (reason: string, missing: readonly string[], hint?: string): Verdict => ({
   applies: false,

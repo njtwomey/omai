@@ -64,6 +64,7 @@ import {
   num,
   pick,
   posteriorJson,
+  priorOnly,
   programOf,
   yes,
 } from './_support.ts'
@@ -356,7 +357,6 @@ export function nutsMethod(
     })
   }
   const check = checkOf(nutsEngine(), (a) => {
-    if (!a.hasLikelihood) return no('observed nodes have no likelihood', ['likelihood'], 'add an observed node')
     if (a.continuous.length === 0)
       return no('no continuous latent nodes', ['continuous latents'], 'use enumeration for a discrete model, or Gibbs')
     if (a.unboundedDiscrete.length > 0)
@@ -366,9 +366,11 @@ export function nutsMethod(
         'bound them, or use Gibbs',
       )
     return yes(
-      a.finiteDiscrete.length > 0
-        ? 'continuous latents with a differentiable density; the finite discrete ones are summed out'
-        : 'continuous latents with a differentiable density',
+      `${
+        a.finiteDiscrete.length > 0
+          ? 'continuous latents with a differentiable density; the finite discrete ones are summed out'
+          : 'continuous latents with a differentiable density'
+      }${priorOnly(a)}`,
     )
   })
   const ensure = guard(options.name ?? 'nuts', model, check)

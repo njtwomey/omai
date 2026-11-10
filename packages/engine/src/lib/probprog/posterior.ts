@@ -80,7 +80,10 @@ export interface Posterior {
   quantiles(site: string, probs: readonly number[]): Tensor
   /** log q(values) under the posterior, when it has a density. */
   logProb?(values: Readonly<Record<string, TensorLike>>): number
-  /** Means, standard deviations, medians and equal-tailed intervals per coordinate (with ESS and R-hat for chains). */
+  /**
+   * Means, standard deviations, medians and equal-tailed intervals per coordinate (with ESS and R-hat for chains). A listed
+   * site the posterior holds no marginal, draws or samples of (the discrete label a Laplace fit sums out) has no row.
+   */
   summary(options?: { readonly prob?: number }): PosteriorSummaryRow[]
 }
 
@@ -252,11 +255,22 @@ export function definePosterior(spec: PosteriorSpec): Posterior {
     const { x, w } = drawsOf(site)
     return w === undefined ? compose.empirical(x) : compose.empirical(x, w)
   }
+  // A site the posterior lists but holds nothing of (the discrete label a Laplace fit sums out) has no row: a summary of the
+  // rest still reads, where asking for that site's mean fails with 'no draws'.
+  const covered = (site: string): boolean => {
+    if (spec.marginals?.[site] !== undefined || spec.draws?.[site] !== undefined) return true
+    try {
+      return monteCarlo()[site] !== undefined
+    } catch {
+      return false
+    }
+  }
   const summary = (options: { readonly prob?: number } = {}): PosteriorSummaryRow[] => {
     const prob = options.prob ?? 0.9
     const lo = (1 - prob) / 2
     const rows: PosteriorSummaryRow[] = []
     for (const site of spec.sites) {
+      if (!covered(site)) continue
       const m = toFlat(mean(site))
       const v = toFlat(variance(site))
       const q = quantiles(site, [lo, 0.5, 1 - lo])

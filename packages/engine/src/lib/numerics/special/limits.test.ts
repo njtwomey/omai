@@ -861,3 +861,51 @@ describe('special functions on grids of arguments at the edges, against scipy.sp
     }
   })
 })
+
+describe('the normal CDF family at huge arguments', () => {
+  // Regression: exp(-x^2 / 2) was formed as exp(-m^2) * exp(-small part), and the small part is negative for about half
+  // of the large arguments, so the product was 0 * Infinity = NaN (ndtr(1e10) and ndtr(1e13) gave NaN).
+  const big = [1e5, 1e8, 1e10, 1e12, 1e13, 1e100, 1e300, 1.7976931348623157e308]
+  it('ndtr is 1 for large positive and 0 for large negative arguments, never NaN', () => {
+    for (const x of big) {
+      expect(item(S.ndtr(x))).toBe(1)
+      expect(item(S.ndtr(-x))).toBe(0)
+    }
+    // Arguments just either side of the point where the exponential underflows, on a fine grid of roundings.
+    for (let i = 0; i < 400; i++) {
+      const x = 36 + i * 0.0137 + i * 1e-13
+      expect(Number.isNaN(item(S.ndtr(x)))).toBe(false)
+      expect(item(S.ndtr(-x))).toBeLessThan(1e-250 + (x < 37 ? 1 : 0))
+      expect(item(S.ndtr(x))).toBe(1)
+    }
+    expect(item(S.ndtr(Number.POSITIVE_INFINITY))).toBe(1)
+    expect(item(S.ndtr(Number.NEGATIVE_INFINITY))).toBe(0)
+    expect(item(S.ndtr(NaN_))).toBeNaN()
+  })
+  it('logNdtr is 0 above and the exact tail below, never NaN', () => {
+    for (const x of big) {
+      expect(Object.is(item(S.logNdtr(x)), 0)).toBe(true)
+      const got = item(S.logNdtr(-x))
+      if (x > 1e100) expect(got).toBe(-Infinity)
+      else expect(got / (-x * x * 0.5 - Math.log(x) - 0.9189385332046728)).toBeCloseTo(1, 12)
+    }
+    expect(item(S.logNdtr(INF))).toBe(0)
+    expect(item(S.logNdtr(-INF))).toBe(-INF)
+    expect(item(S.logNdtr(NaN_))).toBeNaN()
+  })
+  it('erf, erfc and erfcx reach their limits and NaN propagates', () => {
+    for (const x of big) {
+      expect(item(S.erf(x))).toBe(1)
+      expect(item(S.erf(-x))).toBe(-1)
+      expect(item(S.erfc(x))).toBe(0)
+      expect(item(S.erfc(-x))).toBe(2)
+      expect(item(S.erfcx(x))).toBeCloseTo(0, 1)
+    }
+    for (const f of [S.erf, S.erfc, S.erfcx, S.ndtr, S.logNdtr, S.ndtri]) expect(item(f(NaN_))).toBeNaN()
+  })
+  it('ndtri stays finite on the probabilities next to 0 and 1 and inverts ndtr in the far tails', () => {
+    expect(item(S.ndtri(1 - Number.EPSILON))).toBeGreaterThan(8)
+    expect(item(S.ndtri(Number.MIN_VALUE))).toBeLessThan(-38)
+    for (const p of [1e-300, 1e-100, 1e-20, 0.3]) expect(item(S.ndtr(item(S.ndtri(p)))) / p).toBeCloseTo(1, 9)
+  })
+})

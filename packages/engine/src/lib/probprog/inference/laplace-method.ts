@@ -45,6 +45,7 @@ import {
   num,
   pick,
   posteriorJson,
+  priorOnly,
   programOf,
   yes,
 } from './_support.ts'
@@ -104,7 +105,9 @@ const failedPosterior = (reason: string): Posterior =>
  * The Laplace approximation on a model as a method with a fine step: L-BFGS to the MAP point of the unconstrained density
  * one iteration per step, then one step for the Hessian. The run ends `converged` (or `completed` at the iteration cap) after
  * the Hessian and `failed` when no starting point is valid or minus the Hessian is not positive definite. `posterior(state)`
- * is the point estimate at the current iterate while optimising and the normal approximation, with the Laplace evidence, after.
+ * is the point estimate at the current iterate while optimising and the normal approximation, with the Laplace evidence, after,
+ * and its diagnostics say whether the mode is one (`degenerateMode`, `boundary`, `conditionNumber`, `messages`: a scale that ran
+ * to the boundary, an ill-conditioned curvature).
  *
  * @param model - A bound spec, or a program closed over its data.
  * @returns The method, with `check` (a likelihood, continuous latent sites and a differentiable density) and `posterior`.
@@ -156,7 +159,6 @@ export function laplaceMethod(
     })
   }
   const check = checkOf(laplaceEngine(), (a) => {
-    if (!a.hasLikelihood) return no('observed nodes have no likelihood', ['likelihood'], 'add an observed node')
     if (a.continuous.length === 0) return no('no continuous latent nodes', ['continuous latents'], 'use enumeration')
     if (a.unboundedDiscrete.length > 0)
       return no(
@@ -164,7 +166,13 @@ export function laplaceMethod(
         ['finite discrete latents'],
         'bound them',
       )
-    return yes('continuous latents with a differentiable density (the Hessian must be negative definite at the mode)')
+    // A centred hierarchy has a density that is unbounded as a scale goes to 0: the fit then reports a degenerate mode.
+    const hierarchical = a.features.includes('hierarchical')
+      ? '; a hierarchical scale can run to the boundary, which the fit reports as a degenerate mode (diagnostics.degenerateMode)'
+      : ''
+    return yes(
+      `continuous latents with a differentiable density (the Hessian must be negative definite at the mode)${priorOnly(a)}${hierarchical}`,
+    )
   })
   const ensure = guard(options.name ?? 'laplace', model, check)
   return defineInferenceMethod<LaplaceRunState, Config, LaplacePath, ModelAnalysis>({

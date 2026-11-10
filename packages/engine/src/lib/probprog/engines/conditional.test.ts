@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { expectPosteriorMoments } from '../../../testing/probprog.ts'
 import { categorical, dirichlet, inverseGamma, normal } from '../../dists/index.ts'
-import { lgamma } from '../../numerics/special/index.ts'
+import { lgamma, ndtr, normalPdf } from '../../numerics/special/index.ts'
 import { key } from '../../random/index.ts'
 import { item, mul, sqrt, stack, type Tensor, take, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import { nullTracer, runAlgorithm, startRun, stepContext } from '../../trace/index.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, toProgram } from '../model/index.ts'
 import { type Model, markov, observe, param, plate, sample } from '../primitives.ts'
 import { chainInference } from './chain.ts'
 import { em, emAlgorithm } from './em.ts'
@@ -235,5 +237,59 @@ describe('discrete chains and EM', () => {
     }
     for (let i = 1; i < objectives.length; i++)
       expect(objectives[i] ?? 0).toBeGreaterThanOrEqual((objectives[i - 1] ?? 0) - 1e-9)
+  })
+})
+
+// A conjugate or mixture-component conditional is drawn on the family's own support, so a site constrained beyond it (an
+// ordered pair of means, a lower bound) has to be updated by a step on its own unconstrained scale instead.
+describe('Gibbs sampling of constrained sites', { timeout: 30_000 }, () => {
+  const y = [-0.5, 0.2, -0.1]
+  const bounded = (constrained: boolean): Model =>
+    toProgram(
+      defineModel('bounded', (m) => {
+        const row = m.range('row')
+        const obs = m.data('y', { dims: [row] })
+        const mu = m.latent('mu', d.normal(0, 1), constrained ? { constraint: { lower: 0 } } : {})
+        m.observe('y', d.normal(mu, 1), obs)
+      }).bind({ y }),
+    )
+
+  it('keeps a conjugate normal mean above its lower bound and samples the truncated posterior', () => {
+    // Prior N(0, 1), three unit-variance observations: the posterior is N(sum(y) / 4, 1 / 4), cut at zero.
+    const m = (y[0] ?? 0) / 4 + (y[1] ?? 0) / 4 + (y[2] ?? 0) / 4
+    const s = 0.5
+    const alpha = (0 - m) / s
+    const mean = m + (s * item(normalPdf(alpha))) / (1 - item(ndtr(alpha)))
+    const unconstrained = gibbs(bounded(false), undefined, { key: key(0), numDraws: 1500, numWarmup: 50 })
+    expect(Math.min(...toFlat(unconstrained.draws?.['mu'] as Tensor))).toBeLessThan(0)
+    for (const k of [0, 1, 2, 3]) {
+      const post = gibbs(bounded(true), undefined, { key: key(k), numDraws: 2500, numWarmup: 100 })
+      const mu = toFlat(post.draws?.['mu'] as Tensor)
+      expect(Math.min(...mu)).toBeGreaterThanOrEqual(0)
+      expectPosteriorMoments(post, 'mu', { mean }, { z: 5 })
+    }
+  })
+
+  it('keeps the ordered means of a mixture ordered whichever order the start is in, with the labels exact', () => {
+    const data = [-2.4, -1.7, -2.1, 1.8, 2.5, 2.2, -1.9, 2.0]
+    const model = toProgram(
+      defineModel('ordered-mixture', (m) => {
+        const row = m.range('row')
+        const k = m.range('component', { size: 2 })
+        const obs = m.data('y', { dims: [row] })
+        const mu = m.latent('mu', d.normal(0, 3), { dims: [k], constraint: { kind: 'ordered' } })
+        const z = m.latent('z', d.categorical({ probs: [0.5, 0.5] }), { dims: [row] })
+        m.observe('y', d.normal(mu.at(z), 1), obs)
+      }).bind({ y: data }, { sizes: { component: 2 } }),
+    )
+    // Without the constraint the same chain stays wherever it starts; with it every draw is ordered, for starts of both orders.
+    for (const k of [0, 1, 2, 3, 4, 5, 6, 7]) {
+      const post = gibbs(model, undefined, { key: key(k), numDraws: 200, numWarmup: 40 })
+      const mu = toFlat(post.draws?.['mu'] as Tensor)
+      for (let i = 0; i < mu.length; i += 2) expect(mu[i] ?? 0, `key ${k} draw ${i / 2}`).toBeLessThan(mu[i + 1] ?? 0)
+      // Four labels each side: the means are those of the two clusters, shrunk a little towards the prior mean 0.
+      expectPosteriorMoments(post, 'mu', { mean: (4 * -2.025) / (4 + 1 / 9) }, { z: 6, index: 0 })
+      expectPosteriorMoments(post, 'mu', { mean: (4 * 2.125) / (4 + 1 / 9) }, { z: 6, index: 1 })
+    }
   })
 })

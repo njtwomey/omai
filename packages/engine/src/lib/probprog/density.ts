@@ -5,7 +5,7 @@
  * strategies (`initToMedian`, `initToSample` and others) for finding a valid starting point.
  */
 
-import { type Json, OmaiError, quantileOf } from '../base/index.ts'
+import { isOmaiError, type Json, OmaiError, quantileOf } from '../base/index.ts'
 import { bijectors, type Support } from '../dists/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../random/index.ts'
 import { type LogDensity, target } from '../sampling/index.ts'
@@ -219,6 +219,18 @@ export interface PotentialOptions {
   readonly key?: Key
   /** Sum finite discrete latent sites out by enumeration (default true); otherwise they are an error. */
   readonly enumerate?: boolean
+  /**
+   * Whether a point at which the program builds a distribution with an invalid parameter (an infinite rate or scale, a
+   * probability outside [0, 1]: the `OmaiError` of `validateParams`) has log density -Infinity (default true), as it
+   * has no density there, instead of throwing out of the sampler. Only evaluations at a point `u` read this way; the
+   * prototype run that fixes the layout, and any other error, still throw.
+   */
+  readonly invalidIsImpossible?: boolean
+}
+
+/** Whether an error is a distribution refusing a parameter (the `OmaiError` of `validateParams`, which names it). */
+function isInvalidParameter(e: unknown): boolean {
+  return isOmaiError(e, 'value') && typeof e.details['parameter'] === 'string'
 }
 
 const product = (shape: readonly number[]): number => shape.reduce((a, b) => a * b, 1)
@@ -337,7 +349,19 @@ export function potentialEnergy<D = void>(
       if (site.type === 'deterministic' && values[site.name] === undefined) values[site.name] = site.value
     return { logDensity: add(r.logJoint, ldj), values }
   }
-  const fn = (u: Value): Value => runAt(u).logDensity
+  const impossible = options.invalidIsImpossible !== false
+  // A leapfrog step can land where a scale or rate overflows (exp of a large coordinate) and the program then builds a
+  // distribution that refuses its parameter. The density there is 0, which is what Stan and NumPyro's samplers take it
+  // to be (a non-finite energy is a divergent trajectory, and the step size shrinks); the sampler needs the value, not
+  // the throw. Distribution validation stays as it is (a user calling `normal(0, Infinity)` still gets the error).
+  const fn = (u: Value): Value => {
+    try {
+      return runAt(u).logDensity
+    } catch (e) {
+      if (impossible && isInvalidParameter(e)) return tensor(Number.NEGATIVE_INFINITY)
+      throw e
+    }
+  }
   const asVector = (u: ArrayLike<number> | Value): Value =>
     isValue(u) ? u : fromStorage(Float64Array.from(u), [dim], 'float64')
   const unconstrain = (values: Readonly<Record<string, TensorLike>>): Float64Array => {

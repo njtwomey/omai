@@ -138,8 +138,10 @@ describe('nutsMethod', () => {
   it('says whether it applies, and why not', () => {
     const m = nutsMethod(MODELS['normalMean'] as never)
     expect(m.check?.(analyseSpec(spec))).toMatchObject({ applies: true })
+    // A density with no observed node is a target to sample, and the reason says so.
     const prior = defineModel('prior', (b) => void b.latent('x', d.normal(0, 1)))
-    expect(m.check?.(analyseSpec(prior))).toMatchObject({ applies: false, missing: ['likelihood'] })
+    expect(m.check?.(analyseSpec(prior))).toMatchObject({ applies: true })
+    expect(m.check?.(analyseSpec(prior))?.reason).toMatch(/no observed nodes, so the target is the prior/)
     const discrete = defineModel('discrete', (b) => {
       b.observe('y', d.normal(b.latent('z', d.bernoulli({ probs: 0.3 })), 1), b.data('y', { dims: ['n'] }))
     })
@@ -150,8 +152,23 @@ describe('nutsMethod', () => {
   })
 
   it('refuses to start on a model it does not apply to, with the verdict as the error', () => {
-    const prior = defineModel('prior', (b) => void b.latent('x', d.normal(0, 1)))
-    const m = nutsMethod(prior.bind({}))
-    expect(() => session(m, { mode: 'eager', steps: 5 })).toThrow(/no likelihood/)
+    const discrete = defineModel('discrete', (b) => {
+      b.observe('y', d.normal(b.latent('z', d.bernoulli({ probs: 0.3 })), 1), b.data('y', { dims: ['n'] }))
+    })
+    const m = nutsMethod(discrete.bind({ y: [0.1, 0.2] }))
+    expect(() => session(m, { mode: 'eager', steps: 5 })).toThrow(/no continuous latent nodes/)
+  })
+
+  it('samples a prior-only spec: the funnel of a spec is the same density as the program', () => {
+    const density = defineModel('density', (b) => {
+      const v = b.latent('v', d.normal(0, 1))
+      b.latent('x', d.normal(v, 0.5))
+    })
+    const m = nutsMethod(density.bind({}))
+    const s = session(m, { config: small, seed: 1, steps: 200, mode: 'eager' })
+    const post = m.posterior?.(s.state, s.config)
+    // v ~ N(0, 1) and x ~ N(0, 1 + 0.25): exactly known.
+    expect(Math.abs(toArray(post?.mean('v') as never) as unknown as number)).toBeLessThan(0.6)
+    expect(post?.status).toBe('completed')
   })
 })

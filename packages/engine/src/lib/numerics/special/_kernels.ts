@@ -50,18 +50,23 @@ function erfcFraction(x: number, start = 1): number {
 
 /**
  * exp(-x^2 / 2^e) with x^2 formed exactly: x = m + f with m a multiple of 1/128, so m^2 is exact and only the small
- * part 2 m f + f^2 is rounded (Cephes expx2). Rounding x^2 directly would cost a relative error of x^2 eps.
+ * part 2 m f + f^2 is rounded (Cephes expx2). Rounding x^2 directly would cost a relative error of x^2 eps. Beyond the
+ * underflow of the exponential the result is 0: forming the two factors there would give 0 * Infinity = NaN whenever the
+ * small part is negative (x = 1e10 gave `ndtr` NaN).
  */
 export function expMinusSquare(x: number, halve = false): number {
   const ax = Math.abs(x)
   const m = Math.floor(128 * ax + 0.5) / 128
   const f = ax - m
   const u = m * m
+  if (u > (halve ? 2 : 1) * EXP_UNDERFLOW) return 0
   const u1 = 2 * m * f + f * f
   return halve ? Math.exp(-u / 2) * Math.exp(-u1 / 2) : Math.exp(-u) * Math.exp(-u1)
 }
 
 const CF_THRESHOLD = 1.5
+// exp(-u) is 0 in doubles from u = 745.2 on; a margin above it keeps the exact-square split for every argument that matters.
+const EXP_UNDERFLOW = 750
 
 export function erf(x: number): number {
   if (Number.isNaN(x)) return Number.NaN
@@ -115,7 +120,7 @@ export function ndtr(x: number): number {
 
 /** log of the normal CDF, accurate in the far lower tail through erfcx. */
 export function logNdtr(x: number): number {
-  if (x > 0) return Math.log1p(-ndtr(-x))
+  if (x > 0) return Math.log1p(-ndtr(-x)) + 0 // + 0: log1p(-0) is -0
   if (x > -5) return Math.log(ndtr(x))
   if (x === Number.NEGATIVE_INFINITY) return Number.NEGATIVE_INFINITY
   const z = -x / Math.SQRT2

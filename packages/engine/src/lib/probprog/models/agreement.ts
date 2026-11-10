@@ -72,20 +72,6 @@ export function runPlan(
   return { plan, posterior, status: s.status ?? 'running', steps: s.t }
 }
 
-/**
- * A posterior whose summary reads: one that lists a site it holds no draws of (the discrete label of a mixture, for a
- * Laplace or variational fit) cannot be summarised, so it is given an empty summary and `agree` falls back to Kish's
- * effective sample size from the weights.
- */
-function summarisable(p: Posterior): Posterior {
-  try {
-    p.summary()
-    return p
-  } catch {
-    return { ...p, summary: () => [] }
-  }
-}
-
 /** What a model's plans did: one table against the truth, the runs and which `agree` rows broke their tolerances. */
 export interface BenchmarkAgreement {
   readonly model: string
@@ -168,7 +154,7 @@ export function benchmarkAgreement(model: BenchmarkModel, options: BenchmarkAgre
       return
     }
     runs.push(run)
-    const sampled = fromPosterior(plan.kind, summarisable(run.posterior), {
+    const sampled = fromPosterior(plan.kind, run.posterior, {
       key: foldIn(root, 100 + i),
       ...(options.numDraws === undefined ? {} : { numDraws: options.numDraws }),
     })

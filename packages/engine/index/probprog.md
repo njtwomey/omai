@@ -41,13 +41,13 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `enumerationMethod`: Exact enumeration of discrete models by a junction tree, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:134` `omai-engine/probprog/inference`
 - estimator `epSpecMethod`: Expectation propagation on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:268` `omai-engine/probprog/inference`
 - estimator `gaussianMethod`: Exact linear-Gaussian conditioning, Kalman and Gaussian BP, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:85` `omai-engine/probprog/inference`
-- estimator `gibbsMethod`: Gibbs sampling, one sweep per step, resumable, with anytime draws. `src/lib/probprog/inference/gibbs-method.ts:88` `omai-engine/probprog/inference`
+- estimator `gibbsMethod`: Gibbs sampling, one sweep per step, resumable, with anytime draws. `src/lib/probprog/inference/gibbs-method.ts:89` `omai-engine/probprog/inference`
 - estimator `importanceMethod`: Importance sampling in batches, with evidence, ESS and Pareto k-hat as it goes. `src/lib/probprog/inference/importance-method.ts:96` `omai-engine/probprog/inference`
-- estimator `laplaceMethod`: The Laplace approximation, optimiser iterations then the Hessian, as a steppable method. `src/lib/probprog/inference/laplace-method.ts:126` `omai-engine/probprog/inference`
-- estimator `nutsMethod`: NUTS and HMC as a steppable, cancellable, resumable method with anytime snapshots. `src/lib/probprog/inference/nuts-method.ts:303` `omai-engine/probprog/inference`
+- estimator `laplaceMethod`: The Laplace approximation, optimiser iterations then the Hessian, as a steppable method. `src/lib/probprog/inference/laplace-method.ts:129` `omai-engine/probprog/inference`
+- estimator `nutsMethod`: NUTS and HMC as a steppable, cancellable, resumable method with anytime snapshots. `src/lib/probprog/inference/nuts-method.ts:304` `omai-engine/probprog/inference`
 - estimator `particleFilterMethod`: Bootstrap particle filter over a markov loop, one time step per step. `src/lib/probprog/inference/smc-methods.ts:256` `omai-engine/probprog/inference`
-- estimator `sviMethod`: Stochastic variational inference as a steppable, resumable method with anytime posteriors. `src/lib/probprog/inference/svi-method.ts:93` `omai-engine/probprog/inference`
-- estimator `temperedSmcMethod`: Adaptive-tempering SMC, one temperature per step, with the evidence. `src/lib/probprog/inference/smc-methods.ts:100` `omai-engine/probprog/inference`
+- estimator `sviMethod`: Stochastic variational inference as a steppable, resumable method with anytime posteriors. `src/lib/probprog/inference/svi-method.ts:94` `omai-engine/probprog/inference`
+- estimator `temperedSmcMethod`: Adaptive-tempering SMC, one temperature per step, with the evidence. `src/lib/probprog/inference/smc-methods.ts:101` `omai-engine/probprog/inference`
 - estimator `vmpSpecMethod`: Variational message passing on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:298` `omai-engine/probprog/inference`
 
 ## probprog/model
@@ -88,8 +88,8 @@ The distribution constructors of the model layer, available as `omai-engine/prob
 
 The benchmark models of probabilistic programming, available as `omai-engine/probprog/models`: named models written with `defineModel` (or as a `markov` program where the spec layer has no recurrence yet), each with a title, description, tags and references, a seeded data generator beside its canonical data, the truth the inference methods are compared with (a closed form, a quadrature or an analytic marginal) and the plans of the methods that apply to it, with what to expect of each. `benchmarkModels` lists them, `benchmarkEntries` and `benchmarkMethods` hand them to a worker's registry, and `benchmarkCampaigns` is their cross-engine agreement as periodic validation campaigns. The suite so far: the conjugate trio, logistic, probit, Poisson and negative binomial regression, eight schools (centred and non-centred), the Gaussian mixture (with and without label switching), Neal's funnel (centred and non-centred), the banana, a two-mode target, a radon hierarchy, a three-player TrueSkill and an AR(1) state space.
 
-- function `benchmarkAgreement`: Cross-engine agreement of a benchmark model: every planned method against the truth. `src/lib/probprog/models/agreement.ts:146` `omai-engine/probprog/models`
-- function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:100` `omai-engine/probprog/models`
+- function `benchmarkAgreement`: Cross-engine agreement of a benchmark model: every planned method against the truth. `src/lib/probprog/models/agreement.ts:132` `omai-engine/probprog/models`
+- function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:103` `omai-engine/probprog/models`
 - function `defineBenchmark`: Make a benchmark model: a spec or program with generator, truth, tags, references and method plans. `src/lib/probprog/models/benchmark.ts:175` `omai-engine/probprog/models`
 
 - structure `BenchmarkModel`: A benchmark model: a spec with a data generator, the truth, references, tags and method plans. `src/lib/probprog/models/benchmark.ts:98` `omai-engine/probprog/models`
@@ -97,18 +97,18 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - table `benchmarkModels`: The benchmark models: specs with truth, generators, tags and method plans. `src/lib/probprog/models/suite.ts:33` `omai-engine/probprog/models`
 
 - dataset `ar1StateSpace`: Stationary AR(1) state with noisy observations as a markov program; exact Gaussian smoothing truth. `src/lib/probprog/models/state-space.ts:93` `omai-engine/probprog/models`
-- dataset `banana`: Haario's banana: a curved correlated 2-D ridge; analytic marginals; Laplace and mean field are wrong. `src/lib/probprog/models/geometry.ts:164` `omai-engine/probprog/models`
+- dataset `banana`: Haario's banana: a curved correlated 2-D ridge; analytic marginals; Laplace and mean field are wrong. `src/lib/probprog/models/geometry.ts:162` `omai-engine/probprog/models`
 - dataset `betaBernoulli`: Beta-Bernoulli coin: exact Beta posterior and evidence; the simplest conjugate benchmark. `src/lib/probprog/models/conjugate.ts:43` `omai-engine/probprog/models`
-- dataset `bimodal`: Two equal Gaussian modes in 2-D: the multimodal target for mode weights and R-hat. `src/lib/probprog/models/geometry.ts:238` `omai-engine/probprog/models`
+- dataset `bimodal`: Two equal Gaussian modes in 2-D: the multimodal target for mode weights and R-hat. `src/lib/probprog/models/geometry.ts:236` `omai-engine/probprog/models`
 - dataset `eightSchoolsCentred`: Rubin's eight schools, centred: the funnel; exact quadrature truth. `src/lib/probprog/models/schools.ts:138` `omai-engine/probprog/models`
-- dataset `eightSchoolsNonCentred`: Rubin's eight schools, non-centred: the same posterior without the funnel; truth by quadrature. `src/lib/probprog/models/schools.ts:206` `omai-engine/probprog/models`
+- dataset `eightSchoolsNonCentred`: Rubin's eight schools, non-centred: the same posterior without the funnel; truth by quadrature. `src/lib/probprog/models/schools.ts:207` `omai-engine/probprog/models`
 - dataset `funnelCentred`: Neal's funnel, centred: analytic truth; NUTS diverges in the neck. `src/lib/probprog/models/geometry.ts:46` `omai-engine/probprog/models`
-- dataset `funnelNonCentred`: Neal's funnel, non-centred: the same law of (v, x) with the funnel removed from the density. `src/lib/probprog/models/geometry.ts:96` `omai-engine/probprog/models`
+- dataset `funnelNonCentred`: Neal's funnel, non-centred: the same law of (v, x) with the funnel removed from the density. `src/lib/probprog/models/geometry.ts:94` `omai-engine/probprog/models`
 - dataset `gammaPoisson`: Gamma-Poisson rate: exact Gamma posterior and evidence for counts. `src/lib/probprog/models/conjugate.ts:155` `omai-engine/probprog/models`
-- dataset `gaussianMixture`: Two-component Gaussian mixture with label switching; the truth is the even two-mode mixture; sorted summaries. `src/lib/probprog/models/mixture.ts:180` `omai-engine/probprog/models`
+- dataset `gaussianMixture`: Two-component Gaussian mixture with label switching; the truth is the even two-mode mixture; sorted summaries. `src/lib/probprog/models/mixture.ts:179` `omai-engine/probprog/models`
 - dataset `gaussianMixtureOrdered`: Two-component Gaussian mixture, means ordered; discrete labels summed out; the truth is a 2-D grid. `src/lib/probprog/models/mixture.ts:133` `omai-engine/probprog/models`
 - dataset `logisticRegression`: Bayesian logistic regression with an intercept and two covariates; the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:61` `omai-engine/probprog/models`
-- dataset `negativeBinomialRegression`: Negative binomial regression with an overdispersion parameter; the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:242` `omai-engine/probprog/models`
+- dataset `negativeBinomialRegression`: Negative binomial regression with an overdispersion parameter; the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:240` `omai-engine/probprog/models`
 - dataset `normalNormal`: Normal-normal mean with known noise: exact normal posterior and evidence. `src/lib/probprog/models/conjugate.ts:99` `omai-engine/probprog/models`
 - dataset `poissonRegression`: Poisson regression with a log link on one covariate; the truth is a 2-D grid. `src/lib/probprog/models/glm.ts:182` `omai-engine/probprog/models`
 - dataset `probitRegression`: Bayesian probit regression (the plan's slice model); the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:118` `omai-engine/probprog/models`

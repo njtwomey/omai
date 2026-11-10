@@ -195,9 +195,7 @@ export const poissonRegression: BenchmarkModel = defineBenchmark({
     const k = m.data('k', { dims: [n], support: 'count', role: 'response' })
     const a = m.latent('a', d.normal(0, 2), { doc: 'the log rate at x = 0' })
     const b = m.latent('b', d.normal(0, 2), { doc: 'the slope of the log rate' })
-    // The linear predictor is clipped to [-30, 30]: a wild leapfrog step of the step-size search must give a huge but finite
-    // rate, since the distribution constructors refuse an infinite one (the clip never binds where the posterior has mass).
-    m.observe('k', d.poisson(ops.exp(ops.clip(a.add(b.mul(x)), -30, 30))), k)
+    m.observe('k', d.poisson(ops.exp(a.add(b.mul(x)))), k)
   }),
   generate: (key: Key, size = 80): BenchmarkData => {
     const { x, mu } = logLinkCurve(foldIn(key, 0), size, POISSON.intercept, POISSON.slope)
@@ -256,13 +254,9 @@ export const negativeBinomialRegression: BenchmarkModel = defineBenchmark({
     const a = m.latent('a', d.normal(0, 2), { doc: 'the log mean at x = 0' })
     const b = m.latent('b', d.normal(0, 2), { doc: 'the slope of the log mean' })
     const alpha = m.latent('alpha', d.halfNormal(1), { doc: 'overdispersion: variance = mean + alpha mean^2' })
-    // The linear predictor and the overdispersion are clipped ([-30, 30] and [1e-6, 1e6]) in the likelihood so that a wild
-    // leapfrog step of the step-size search gives a huge but finite mean and a positive probability, which the
-    // distribution constructors require; the clip never binds where the posterior has mass.
-    const mean = ops.exp(ops.clip(a.add(b.mul(x)), -30, 30))
-    const over = ops.clip(alpha, 1e-6, 1e6)
+    const mean = ops.exp(a.add(b.mul(x)))
     // NB2: r = 1 / alpha successes, success probability r / (r + mean) = 1 / (1 + alpha mean).
-    m.observe('k', d.negativeBinomial(ops.div(1, over), ops.div(1, ops.add(1, over.mul(mean)))), k)
+    m.observe('k', d.negativeBinomial(ops.div(1, alpha), ops.div(1, ops.add(1, alpha.mul(mean)))), k)
   }),
   generate: (key: Key, size = 100): BenchmarkData => {
     const { x, mu } = logLinkCurve(foldIn(key, 0), size, NEGBIN.intercept, NEGBIN.slope)
