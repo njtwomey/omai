@@ -1,5 +1,5 @@
 import { type AnytimeResult, runAnytimeAsync, type Snapshot } from 'omai-engine/probprog/inference'
-import { type Config, type Method, type Session, session } from 'omai-engine/trace'
+import { type Config, type Method, type Session, type Subscription, session } from 'omai-engine/trace'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /** One run of an inference method on a page: what to run, and what the page keeps of it at each snapshot. */
@@ -11,8 +11,10 @@ export interface AnytimeRunSpec<T> {
   /** Knobs over the method's defaults. */
   readonly config?: Config
   readonly seed?: number
-  /** What the session records on the tape (`'all'` for the message passing and sampling paths a record reads). */
-  readonly logs?: 'all' | 'defaults'
+  /** How often a snapshot is taken, in milliseconds (default 1000: about once a second). */
+  readonly snapshotMs?: number
+  /** What the session records on the tape (`'all'` for the message passing paths a record reads, or the paths wanted and how). */
+  readonly logs?: Subscription<string>
   /**
    * The page's reading of the live state at a snapshot (a posterior, a record, rows): taken now, kept as it is. It is
    * given what it made at the snapshot before, for a record that accumulates.
@@ -130,7 +132,7 @@ export function useAnytimeRuns<T>(specs: readonly AnytimeRunSpec<T>[] | undefine
         // The first snapshot comes early, the rest every second.
         let result: AnytimeResult = await runAnytimeAsync(s, {
           budget: { ms: Math.min(EARLY_MS, budgetMs) },
-          snapshot: { everyMs: SNAPSHOT_MS },
+          snapshot: { everyMs: spec.snapshotMs ?? SNAPSHOT_MS },
           clock,
           sliceMs: SLICE_MS,
           yieldToPage,
@@ -141,7 +143,7 @@ export function useAnytimeRuns<T>(specs: readonly AnytimeRunSpec<T>[] | undefine
         if (result.reason === 'budget' && left > 1)
           result = await runAnytimeAsync(s, {
             budget: { ms: left },
-            snapshot: { everyMs: SNAPSHOT_MS },
+            snapshot: { everyMs: spec.snapshotMs ?? SNAPSHOT_MS },
             clock,
             sliceMs: SLICE_MS,
             yieldToPage,
