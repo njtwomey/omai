@@ -51,8 +51,12 @@ Structured prediction: conditional random fields and their neighbours, in one pl
 
 - structure `FeatureExtractor`: A template language and its options as a map from an input to CRF attribute records. `src/lib/pgm/structured/features.ts:71` `omai-engine/pgm`
 - structure `StructuredOracle`: The contract a structured model offers a learner: features, expectations, decoding, loss. `src/lib/pgm/structured/oracle.ts:20` `omai-engine/pgm`
+- structure `chainOracle`: Linear-chain CRF as a structured oracle: counts, expectations, Viterbi, Hamming loss. `src/lib/pgm/structured/chain-oracle.ts:59` `omai-engine/pgm`
 - structure `graphCrf`: CRF model for trees, grids and any graph, with weights tied by type. `src/lib/pgm/structured/graph-crf.ts:140` `omai-engine/pgm`
 - structure `gridCrf`: Grid CRF: 4- or 8-neighbourhood, undirected or directional edge types. `src/lib/pgm/structured/graph-structures.ts:179` `omai-engine/pgm`
 - structure `higherOrderChainCrf`: Order-k chain CRF with tied label n-gram weights, exact by junction tree. `src/lib/pgm/structured/graph-structures.ts:312` `omai-engine/pgm`
 - structure `skipChainCrf`: Skip-chain CRF: a chain plus edges between repeated tokens. `src/lib/pgm/structured/graph-structures.ts:256` `omai-engine/pgm`
 - structure `treeCrf`: Tree and forest CRF, exact by sum-product on the tree. `src/lib/pgm/structured/graph-structures.ts:91` `omai-engine/pgm`
+
+- table `crfSolvers`: CRF training solvers: L-BFGS, OWL-QN for L1, SGD, perceptron, passive-aggressive, AROW. `src/lib/pgm/structured/crf-training.ts:104` `omai-engine/pgm`
+- table `structuredSolvers`: Structured-model solvers: L-BFGS, OWL-QN for L1, SGD, perceptron, passive-aggressive, AROW. `src/lib/pgm/structured/solvers.ts:311` `omai-engine/pgm`

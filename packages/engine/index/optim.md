@@ -27,7 +27,7 @@ Optimisation: optax-style gradient transformations and optimisers with schedules
 - table `boundedSolvers`: The solvers of a smooth objective on a box. `src/lib/optim/bounded-solvers.ts:225` `omai-engine/optim`
 - table `optimisers`: SGD, RMSprop, Adagrad, Adam and relatives as one slot. `src/lib/optim/optimiser-table.ts:58` `omai-engine/optim`
 - table `schedules`: Learning-rate schedules as one slot. `src/lib/optim/schedule-table.ts:57` `omai-engine/optim`
-- table `smoothSolvers`: Smooth-objective solvers as one slot: gradient descent to L-BFGS. `src/lib/optim/solvers.ts:279` `omai-engine/optim`
+- table `smoothSolvers`: Smooth-objective solvers as one slot: gradient descent to L-BFGS. `src/lib/optim/solvers.ts:325` `omai-engine/optim`
 
 ## optim/minimize
 

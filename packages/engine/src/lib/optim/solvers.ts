@@ -47,6 +47,7 @@ import {
 } from './minimize/gradient.ts'
 import { newtonAlgorithm } from './minimize/newton.ts'
 import type { Parameters } from './minimize/objective.ts'
+import { type OwlqnState, owlqnAlgorithm } from './minimize/owlqn.ts'
 import { bfgsAlgorithm, lbfgsAlgorithm } from './minimize/quasi-newton.ts'
 import { optimisers } from './optimiser-table.ts'
 import { schedules } from './schedule-table.ts'
@@ -219,6 +220,51 @@ const gradient: ModeSpec<SmoothProblem, GradientState, VectorParams> = {
     })
   },
   params: vector,
+}
+
+/**
+ * The OWL-QN mode for a family's solver table: orthant-wise limited-memory quasi-Newton (`owlqnAlgorithm`) on the
+ * family's smooth objective plus an L1 penalty, giving exact zeros at quasi-Newton speed. The L1 weight comes from the
+ * problem (the family's own penalty setting), not from a knob, and the smooth part must not contain the L1 term. It is
+ * not in `smoothSolvers` (that table has no penalty to take the weight from); a family adds it to its own table
+ * through the extra modes of {@link familySolvers}.
+ *
+ * @param spec - The family's smooth part (without the L1 term) and the L1 weight of a problem (a scalar, or one weight
+ * per parameter).
+ * @returns The mode, whose state is OWL-QN's (`value` the full objective, `grad` the pseudo-gradient).
+ * @concept sparsity
+ * @example
+ * ```ts
+ * import { analyticObjective, familySolvers, owlqnMode } from 'omai-engine/optim'
+ * type P = { readonly c1: number }
+ * const smooth = () => ({
+ *   objective: analyticObjective({ value: (x) => (x[0] ?? 0) ** 2, gradient: (x) => [2 * (x[0] ?? 0)] }),
+ *   x0: [1],
+ * })
+ * familySolvers<P>({ owlqn: owlqnMode<P>({ toSmooth: smooth, l1: (p) => p.c1 }) }, smooth).names.includes('owlqn') // => true
+ * ```
+ */
+export function owlqnMode<Problem>(spec: {
+  readonly toSmooth: (problem: Problem) => SmoothProblem
+  readonly l1: (problem: Problem) => number | ArrayLike<number>
+}): ModeSpec<Problem, OwlqnState, VectorParams> {
+  return {
+    description:
+      'orthant-wise limited-memory quasi-Newton (Andrew and Gao 2007) on the smooth objective plus an L1 penalty: exact zeros at quasi-Newton speed',
+    space: dict({ memory: int(1, 50, { default: 10, label: 'curvature pairs kept' }), ftol: ftolKnob, gradTol }),
+    make: (p, k) => {
+      const smooth = spec.toSmooth(p)
+      return owlqnAlgorithm(smooth.objective, smooth.x0, {
+        l1: spec.l1(p),
+        ...given({
+          memory: numberKnob(k, 'memory'),
+          ftol: numberKnob(k, 'ftol'),
+          gradTol: numberKnob(k, 'gradTol'),
+        }),
+      })
+    },
+    params: vector,
+  }
 }
 
 /**
