@@ -36,7 +36,7 @@ const ORACLE_DRAWS = 100_000
  * normal, `x_i` is a normal scale mixture with mean 0 and sd `exp(9 / 4)`.
  *
  * @concept posterior-validation
- * @index dataset Neal's funnel, centred: v ~ N(0, 9), x_i | v ~ N(0, e^v); analytic truth; NUTS diverges in the neck.
+ * @index dataset Neal's funnel, centred: analytic truth; NUTS diverges in the neck.
  * @example
  * ```ts
  * import { funnelCentred } from 'omai-engine/probprog/models'

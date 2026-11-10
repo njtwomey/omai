@@ -23,7 +23,7 @@ import { ar1StateSpace } from './state-space.ts'
  *
  * @returns The models, a fresh array.
  * @concept model-spec
- * @index table The benchmark models: specs with truth, data generators, tags and the plans of the methods that apply.
+ * @index table The benchmark models: specs with truth, generators, tags and method plans.
  * @example
  * ```ts
  * import { benchmarkModels } from 'omai-engine/probprog/models'

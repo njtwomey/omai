@@ -128,7 +128,7 @@ function schoolsTruth(data: BenchmarkData, quality: TruthQuality): BenchmarkTrut
  * underestimates `tau`'s spread; the exact truth shows by how much.
  *
  * @concept posterior-validation
- * @index dataset Rubin's eight schools, centred: the funnel; truth by quadrature of (mu, tau) with the effects integrated out.
+ * @index dataset Rubin's eight schools, centred: the funnel; exact quadrature truth.
  * @example
  * ```ts
  * import { eightSchoolsCentred } from 'omai-engine/probprog/models'
