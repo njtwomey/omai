@@ -4,11 +4,14 @@
  * (a Dirichlet draw is a vector), whether it is discrete or an exponential family, and `make`, which builds the
  * library's own distribution from evaluated parameters. Nothing here is a second distribution: every `make` calls the
  * constructor in `omai-engine/dists`. The table is what turns a JSON `DistSpec` back into a `Distribution`.
+ * One family is a composition: `normalSpikeSlab`, the zero-mean two-component scale mixture of the spike and slab prior,
+ * built as `mixture` of two normals.
  *
  * @index table The distribution families a model spec names, mapped to the library's constructors.
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { mixture } from '../../../dists/compose/index.ts'
 import {
   bernoulli,
   beta,
@@ -34,7 +37,7 @@ import {
   uniform,
   weibull,
 } from '../../../dists/index.ts'
-import type { Value } from '../../../tensor/index.ts'
+import { stack, sub, type Value } from '../../../tensor/index.ts'
 
 /** The evaluated parameters of a family, by name. */
 export type FamilyArgs = Readonly<Record<string, Value>>
@@ -314,6 +317,17 @@ export function distributionFamilies(): Record<string, FamilyDef> {
         eventRank: 1,
         exponentialFamily: true,
       },
+    ),
+    family(
+      'normalSpikeSlab',
+      ['inclusion', 'slab', 'spike'],
+      (a) => {
+        const inclusion = need('normalSpikeSlab', a, 'inclusion')
+        const slab = need('normalSpikeSlab', a, 'slab')
+        const spike = need('normalSpikeSlab', a, 'spike')
+        return mixture({ probs: stack([inclusion, sub(1, inclusion)], -1) }, [normal(0, slab), normal(0, spike)])
+      },
+      { inclusion: 0.5, slab: 2, spike: 0.1 },
     ),
     family(
       'multivariateNormal',
