@@ -79,9 +79,11 @@
  */
 
 import { type Json, OmaiError } from '../../base/index.ts'
+import { transformed } from '../../dists/compose/index.ts'
 import {
   bernoulli,
   beta,
+  bijectors,
   categorical,
   type Distribution,
   dirichlet,
@@ -186,6 +188,8 @@ export interface SiteLayout {
    * conjugate pair): which part of the joint it is, `mean` (a Student t marginal) or `precision` (a gamma marginal).
    */
   readonly part?: 'mean' | 'precision'
+  /** For a beta variable that carries a correlation `rho = 2 u - 1`: the posterior is read as the correlation, not as `u`. */
+  readonly correlation?: boolean
 }
 
 /** What a compilation to a factor graph reports. */
@@ -539,6 +543,8 @@ class Compiler {
     { readonly plan: NormalGammaPlan; readonly multiple: number }
   >()
   /** The Wishart (or inverse-Wishart) matrix latents: the variable that carries the precision matrix, its order and whether the site is the covariance. */
+  /** The correlation latents (`(rho + 1) / 2` is the beta variable that carries each). */
+  private readonly correlations = new Map<string, string>()
   private readonly wisharts = new Map<
     string,
     { readonly variable: string; readonly d: number; readonly covariance: boolean }
@@ -1774,7 +1780,7 @@ class Compiler {
     layout: SiteLayout['layout'],
     variables: readonly (string | null)[],
     posterior: boolean,
-    extra: Partial<Pick<SiteLayout, 'reciprocal' | 'part'>> = {},
+    extra: Partial<Pick<SiteLayout, 'reciprocal' | 'part' | 'correlation'>> = {},
   ): void {
     this.sites.push({
       site: node.name,
@@ -1805,6 +1811,15 @@ class Compiler {
       this.latentWishart(node)
       return
     }
+    if (fam === 'correlation') {
+      this.latentCorrelation(node)
+      return
+    }
+    if (fam === 'bivariateNormal')
+      throw new Refusal(
+        'structure',
+        `'${node.name}' is a latent bivariateNormal: only observed vectors are mapped (write the vectors with a Wishart precision, or observe them)`,
+      )
     if (fam === 'multivariateNormal' && this.wishartOf(node) !== undefined) {
       this.latentMvnWishart(node)
       return
@@ -2147,7 +2162,7 @@ class Compiler {
     d: number,
     plateDims: readonly string[],
     vectorDim: string | undefined,
-  ): (row: number) => string | { readonly const: readonly number[] } {
+  ): { readonly at: (row: number) => string | { readonly const: readonly number[] }; readonly shared: boolean } {
     const e = node.dist.params['loc']
     if (e === undefined) throw new Refusal('structure', `'${node.name}': the mean is missing`)
     if (this.isConst(e)) {
@@ -2156,9 +2171,12 @@ class Compiler {
       const shape = this.shapeOf(plateDims)
       if (nv.value.shape.length - kept.length !== 1 || nv.value.shape[nv.value.shape.length - 1] !== d)
         throw new Refusal('structure', `the mean of '${node.name}' must be a vector of ${d} (per row, when it varies)`)
-      return (row) => ({
-        const: this.eventVector({ value: nv.value, dims: kept }, plateDims, unflatten(row, shape)),
-      })
+      return {
+        shared: kept.length === 0,
+        at: (row) => ({
+          const: this.eventVector({ value: nv.value, dims: kept }, plateDims, unflatten(row, shape)),
+        }),
+      }
     }
     const sym = this.evalSym(e)
     let vector: string | undefined
@@ -2180,7 +2198,7 @@ class Compiler {
         )
       vector = atom.vector
     }
-    return () => vector as string
+    return { shared: true, at: () => vector as string }
   }
 
   /**
@@ -2215,7 +2233,7 @@ class Compiler {
         name: this.elementName(node.name, plateDims, r),
         family: { kind: 'gaussian-mv', size: d },
       })
-      this.addFactor({ operator: 'mvn-wishart', args: [name, mean(r), w.variable] }, name)
+      this.addFactor({ operator: 'mvn-wishart', args: [name, mean.at(r), w.variable] }, name)
       for (let k = 0; k < d; k++) cells.push(this.compAtom(name, k, d))
       vars.push(name)
     }
@@ -2235,6 +2253,7 @@ class Compiler {
       throw new Refusal('structure', `'${node.name}' is observed as vectors of ${d} entries over [${node.dims}]`)
     const shape = this.shapeOf(node.dims)
     const mean = this.vectorMean(node, d, node.dims, undefined)
+    if (this.plateVectors(node, nv, d, mean, 'mvn-wishart', [w.variable])) return
     const vars: (string | null)[] = []
     for (let i = 0; i < prod(shape); i++) {
       const y = this.eventVector(nv, node.dims, unflatten(i, shape))
@@ -2247,7 +2266,135 @@ class Compiler {
         family: { kind: 'gaussian-mv', size: d },
         observed: y,
       })
-      this.addFactor({ operator: 'mvn-wishart', args: [name, mean(i), w.variable] }, name)
+      this.addFactor({ operator: 'mvn-wishart', args: [name, mean.at(i), w.variable] }, name)
+      vars.push(name)
+    }
+    this.layout(node, 'observed', undefined, node.dims.length === 0 ? 'scalar' : 'observed', vars, false)
+  }
+
+  /**
+   * The rows of an observed vector node with a shared mean as ONE factor of `operator` (`mvn-wishart`, `mvn-sd-corr`): the sample mean of the
+   * rows, their count and their scatter about it are all the likelihood depends on, so the graph does not grow with the data. False
+   * when the rows are not plated (`plates: 'expand'`, a mean that varies by row, no plate dimension).
+   */
+  private plateVectors(
+    node: ModelNode & { readonly kind: 'observed' },
+    nv: NamedValue,
+    d: number,
+    mean: { readonly at: (row: number) => string | { readonly const: readonly number[] }; readonly shared: boolean },
+    operator: string,
+    tail: readonly (string | { readonly const: number })[],
+  ): boolean {
+    if (!this.vectorise || node.dims.length === 0 || !mean.shared) return false
+    const shape = this.shapeOf(node.dims)
+    const rows: number[][] = []
+    for (let i = 0; i < prod(shape); i++) {
+      const y = this.eventVector(nv, node.dims, unflatten(i, shape))
+      if (!y.some((v) => Number.isNaN(v))) rows.push(y)
+    }
+    if (rows.length === 0) return false
+    const n = rows.length
+    const ybar = Array.from({ length: d }, (_, k) => rows.reduce((acc, y) => acc + (y[k] as number), 0) / n)
+    const scatter = new Array<number>(d * d).fill(0)
+    for (const y of rows)
+      for (let a = 0; a < d; a++)
+        for (let b = 0; b < d; b++)
+          scatter[a * d + b] =
+            (scatter[a * d + b] as number) +
+            ((y[a] as number) - (ybar[a] as number)) * ((y[b] as number) - (ybar[b] as number))
+    this.addPlated(node, { operator, args: [{ const: ybar }, mean.at(0), ...tail], params: { count: n, scatter } })
+    return true
+  }
+
+  /** A correlation latent: `rho = 2 u - 1` with `u ~ Beta(eta, eta)` (the LKJ prior of a 2 by 2 matrix), one beta variable with that prior. */
+  private latentCorrelation(node: ModelNode & { readonly kind: 'latent' }): void {
+    if (node.dims.length > 0)
+      throw new Refusal('structure', `'${node.name}' is a correlation over [${node.dims}]: one correlation is mapped`)
+    const e = node.dist.params['eta']
+    const eta = e === undefined ? 1 : this.isConst(e) ? (toFlat(this.evalNamed(e).value)[0] as number) : Number.NaN
+    if (!(eta > 0)) throw new Refusal('operator', `the concentration of '${node.name}' must be a known positive value`)
+    const name = this.addVariable({ name: node.name, family: { kind: 'beta' } })
+    this.addFactor({ operator: 'prior', args: [name], params: { eta: betaEta(eta, eta) } }, name)
+    this.correlations.set(node.name, name)
+    this.layout(node, 'latent', 'beta', 'scalar', [name], true, { correlation: true })
+  }
+
+  /** A standard deviation of a bivariate normal as the precision port of `mvn-sd-corr`: a known value, or the idiom `1 / sqrt(tau)` of a gamma latent. */
+  private precisionPort(
+    node: ModelNode & { readonly dist: DistSpec },
+    param: string,
+  ): string | { readonly const: number } {
+    const e = node.dist.params[param]
+    if (e === undefined) throw new Refusal('structure', `'${node.name}': ${param} is missing`)
+    if (this.isConst(e)) {
+      const v = toFlat(this.evalNamed(e).value)[0] as number
+      if (!(v > 0)) throw new Refusal('data', `${param} of '${node.name}' must be positive`)
+      return { const: 1 / (v * v) }
+    }
+    const tau = this.precisionExpr(e)
+    if (tau === undefined)
+      throw new Refusal(
+        'operator',
+        `the ${param} of '${node.name}' depends on a random value that is not the precision idiom: write it as 1 / sqrt(tau) with tau a gamma latent`,
+      )
+    const cell = this.evalSym(tau).cells[0] as Cell
+    const scaled = scaledOf(cell)
+    if (
+      scaled === undefined ||
+      scaled.scale !== 1 ||
+      scaled.offset !== 0 ||
+      cell.kind !== 'rv' ||
+      cell.family !== 'gamma'
+    )
+      throw new Refusal(
+        'operator',
+        `the ${param} of '${node.name}' must be 1 / sqrt(tau) with tau a gamma latent (a known multiple or offset of it is not mapped)`,
+      )
+    return scaled.variable
+  }
+
+  /** The correlation of a bivariate normal as the beta port of `mvn-sd-corr`: a known value or a `correlation` latent. */
+  private correlationPort(node: ModelNode & { readonly dist: DistSpec }): string | { readonly const: number } {
+    const e = node.dist.params['rho']
+    if (e === undefined) throw new Refusal('structure', `'${node.name}': rho is missing`)
+    if (this.isConst(e)) {
+      const v = toFlat(this.evalNamed(e).value)[0] as number
+      if (!(v > -1 && v < 1)) throw new Refusal('data', `rho of '${node.name}' must be in (-1, 1)`)
+      return { const: v }
+    }
+    const u = this.unwrap(e)
+    const variable = u.kind === 'ref' ? this.correlations.get(u.name) : undefined
+    if (variable === undefined)
+      throw new Refusal('operator', `the rho of '${node.name}' must be known or a latent with the correlation prior`)
+    return variable
+  }
+
+  /**
+   * Observed vectors `y_i ~ bivariateNormal(loc, scale1, scale2, rho)` with the two standard deviations known or `1 / sqrt(tau)` of gamma latents and
+   * the correlation known or a `correlation` latent: one `mvn-sd-corr` factor for the rows of a shared mean (a plate), else one per row.
+   */
+  private observedBivariateNormal(node: ModelNode & { readonly kind: 'observed' }): void {
+    const nv = this.evalNamedValue(node)
+    if (nv.value.shape[nv.value.shape.length - 1] !== 2 || nv.value.shape.length !== node.dims.length + 1)
+      throw new Refusal('structure', `'${node.name}' is observed as vectors of 2 entries over [${node.dims}]`)
+    const vectorDim = node.dist.eventDims?.[0]
+    const mean = this.vectorMean(node, 2, node.dims, vectorDim)
+    const tail = [this.precisionPort(node, 'scale1'), this.precisionPort(node, 'scale2'), this.correlationPort(node)]
+    if (this.plateVectors(node, nv, 2, mean, 'mvn-sd-corr', tail)) return
+    const shape = this.shapeOf(node.dims)
+    const vars: (string | null)[] = []
+    for (let i = 0; i < prod(shape); i++) {
+      const y = this.eventVector(nv, node.dims, unflatten(i, shape))
+      if (y.some((v) => Number.isNaN(v))) {
+        vars.push(null)
+        continue
+      }
+      const name = this.addVariable({
+        name: this.elementName(node.name, node.dims, i),
+        family: { kind: 'gaussian-mv', size: 2 },
+        observed: y,
+      })
+      this.addFactor({ operator: 'mvn-sd-corr', args: [name, mean.at(i), ...tail] }, name)
       vars.push(name)
     }
     this.layout(node, 'observed', undefined, node.dims.length === 0 ? 'scalar' : 'observed', vars, false)
@@ -3419,6 +3566,10 @@ class Compiler {
   private observed(node: ModelNode & { readonly kind: 'observed' }): void {
     if (node.dist.family === 'multivariateNormal' && this.wishartOf(node) !== undefined) {
       this.observedMvnWishart(node)
+      return
+    }
+    if (node.dist.family === 'bivariateNormal') {
+      this.observedBivariateNormal(node)
       return
     }
     const moved = this.valueMovedToMean(node)
@@ -5277,6 +5428,12 @@ export function factorGraphPosterior(
         break
       }
       case 'beta':
+        if (s.correlation === true) {
+          const x = vs[0] ?? {}
+          const proper = x['improper'] !== true
+          out[s.site] = transformed(beta(proper ? num(x['a']) : 1, proper ? num(x['b']) : 1), bijectors.affine(-1, 2))
+          break
+        }
         out[s.site] = beta(
           T(
             vs.map((x) => (x['improper'] === true ? 1 : num(x['a']))),

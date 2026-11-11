@@ -105,10 +105,12 @@ const portsOf = (op: FactorOperator, params: Params): readonly Port[] =>
   typeof op.ports === 'function' ? op.ports(params) : op.ports
 
 /** The family a constant argument is read in: the first kind its port accepts (sizes of vector kinds are not needed for a constant). */
-function constantFamily(port: Port): Family {
+function constantFamily(port: Port, value?: Observed): Family {
   const kind: FamilyKind = port.accepts[0] ?? 'gaussian'
+  // a constant vector has the size of its value
+  const size = kind === 'gaussian-mv' && Array.isArray(value) ? value.length : 2
   const spec: FamilySpec =
-    kind === 'discrete' || kind === 'dirichlet' || kind === 'gaussian-mv' ? { kind, size: 2 } : { kind }
+    kind === 'discrete' || kind === 'dirichlet' || kind === 'gaussian-mv' ? { kind, size } : { kind }
   return familyOf(spec)
 }
 
@@ -199,7 +201,7 @@ export function compileGraph(
       }
       if (port.constant !== true)
         throw new OmaiError('value', `factor graph: port ${port.name} of ${id} (${op.name}) cannot take a constant`)
-      return { variable: undefined, family: constantFamily(port), value: a.const, edge: -1 }
+      return { variable: undefined, family: constantFamily(port, a.const), value: a.const, edge: -1 }
     })
     if (compiled.every((p) => p.edge < 0)) {
       throw new OmaiError('value', `factor graph: ${id} (${op.name}) has only observed arguments, so it sends nothing`)

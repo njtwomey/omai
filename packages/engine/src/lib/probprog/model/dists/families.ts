@@ -13,11 +13,12 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { mixture, truncated } from '../../../dists/compose/index.ts'
+import { mixture, transformed, truncated } from '../../../dists/compose/index.ts'
 import {
   asymmetricLaplace,
   bernoulli,
   beta,
+  bijectors,
   binomial,
   categorical,
   cauchy,
@@ -47,7 +48,7 @@ import {
 } from '../../../dists/index.ts'
 import { gaussHermite } from '../../../numerics/quadrature/index.ts'
 import { ndtr } from '../../../numerics/special/index.ts'
-import { add, concat, mul, split, stack, sub, toFlat, type Value } from '../../../tensor/index.ts'
+import { add, concat, mul, split, sqrt, stack, sub, toFlat, type Value } from '../../../tensor/index.ts'
 
 /** The evaluated parameters of a family, by name. */
 export type FamilyArgs = Readonly<Record<string, Value>>
@@ -149,7 +150,7 @@ const covariance = ['covariance', 'precision', 'scaleTril'] as const
 /**
  * The table of distribution families: zeroTruncatedPoisson and hurdlePoisson (the positive part of a hurdle model, and the whole count), normal, halfNormal, logNormal, truncatedNormal, studentT, cauchy, halfCauchy,
  * laplace, asymmetricLaplace, exponential, gamma, inverseGamma, weibull, beta, uniform, bernoulli, binomial, geometric, negativeBinomial,
- * poisson, categorical, categoricalProbit, orderedProbit, orderedLogistic, dirichlet, multivariateNormal, wishart and inverseWishart (matrix-valued: event rank 2). Parameter names are those of the constructors in
+ * poisson, categorical, categoricalProbit, orderedProbit, orderedLogistic, dirichlet, multivariateNormal, wishart and inverseWishart (matrix-valued: event rank 2), correlation (the marginal of an LKJ prior on a 2 by 2 correlation matrix) and bivariateNormal (a normal vector from two standard deviations and a correlation). Parameter names are those of the constructors in
  * `omai-engine/dists`.
  *
  * @returns The families by name (a fresh object each call).
@@ -495,6 +496,32 @@ export function distributionFamilies(): Record<string, FamilyDef> {
         ],
       },
       { eventRank: 2, messagePassing: true },
+    ),
+    family(
+      'correlation',
+      ['eta'],
+      (a) => {
+        const eta = need('correlation', a, 'eta')
+        return transformed(beta(eta, eta), bijectors.affine(-1, 2))
+      },
+      { eta: 2 },
+      { defaults: { eta: 1 }, messagePassing: true },
+    ),
+    family(
+      'bivariateNormal',
+      ['loc', 'scale1', 'scale2', 'rho'],
+      (a) => {
+        // the Cholesky factor of [[s1^2, rho s1 s2], [rho s1 s2, s2^2]] is [[s1, 0], [rho s2, s2 sqrt(1 - rho^2)]]
+        const s1 = need('bivariateNormal', a, 'scale1')
+        const s2 = need('bivariateNormal', a, 'scale2')
+        const rho = need('bivariateNormal', a, 'rho')
+        const zero = mul(s1, 0)
+        const top = stack([s1, zero], -1)
+        const bottom = stack([mul(rho, s2), mul(s2, sqrt(sub(1, mul(rho, rho))))], -1)
+        return multivariateNormal(need('bivariateNormal', a, 'loc'), { scaleTril: stack([top, bottom], -2) })
+      },
+      { loc: [0, 0], scale1: 1, scale2: 1, rho: 0.3 },
+      { eventRank: 1, messagePassing: true },
     ),
   ]
   return Object.fromEntries(defs.map((d) => [d.name, d]))

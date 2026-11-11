@@ -291,3 +291,28 @@ export function wishart(df: Operand, scale: Operand): DistExpr {
 export function inverseWishart(df: Operand, scale: Operand): DistExpr {
   return family('inverseWishart', { df, scale })
 }
+
+/**
+ * The prior of the correlation of a bivariate normal: the marginal of the LKJ distribution on 2 by 2 correlation matrices with
+ * concentration `eta`, `p(rho) = (1 - rho^2)^(eta - 1)` on (-1, 1) (uniform at `eta = 1`, pulled towards zero above it). Message passing
+ * carries `(rho + 1) / 2` as a beta variable `Beta(eta, eta)`.
+ */
+export function correlation(eta: Operand = 1): DistExpr {
+  return family('correlation', { eta })
+}
+
+/**
+ * A bivariate normal from its standard deviations and correlation, `x ~ N(loc, [[s1^2, rho s1 s2], [rho s1 s2, s2^2]])`, a vector over the axis
+ * `over` of `loc`. With gamma precisions `tau` (the sds written `1 / sqrt(tau)`) and a `correlation` latent for `rho`, message passing
+ * integrates the three jointly (`mvn-sd-corr`); the standard deviations and the correlation may be known.
+ */
+export function bivariateNormal(
+  loc: Operand,
+  params: { readonly scale1: Operand; readonly scale2: Operand; readonly rho: Operand },
+  options: { readonly over?: string | { readonly name: string } } = {},
+): DistExpr {
+  const d = family('bivariateNormal', { loc, ...params })
+  if (options.over === undefined) return d
+  const over = typeof options.over === 'string' ? options.over : options.over.name
+  return { ...d, dims: d.dims.filter((x) => x !== over), spec: { ...d.spec, eventDims: [over] } }
+}
