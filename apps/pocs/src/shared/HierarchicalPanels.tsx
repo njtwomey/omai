@@ -1,4 +1,5 @@
-import type { ChainDiagnostics, GroupEstimates, PosteriorPairs, PosteriorRows } from 'omai-engine/bayesian-examples'
+import type { GroupEstimates, PosteriorRows } from 'omai-engine/bayesian-examples'
+import type { ChainDiagnostics, PosteriorPairs } from 'omai-engine/exposition'
 import { ChainDiagnosticsView, FigurePanel, PosteriorPairsView, useProbe } from 'omai-render/react'
 import type { ReactNode } from 'react'
 import { type ExampleView, fmt, Objective, ReferenceCheck, Table, useRecord, Waiting } from './ExamplePage.tsx'
