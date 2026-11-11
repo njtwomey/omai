@@ -216,3 +216,10 @@ Still open, in the order of the work packages that follow:
   replacement of the operators' flat-cavity reads by start messages, the multi-coefficient horseshoe's shrunk-coefficient widths.
 - The atoms suite and the coverage figure (`epCoverage()` as a library function with a test): done by pp51; the atoms `gate`,
   `ordered-means` and `scaled-precision` were flipped to `runs`.
+  The mixtures are written as the gates they are (an explicit switch `z`, so EP reports P(z) and the branches): the gate between
+  known values, between random values (select and index), spike and slab (a gate between a narrow and a wide Gaussian, and the
+  switch-summed-out mixture site as a second setup) and clutter (a switch per observation). Checked on 36 combinations of observed
+  value, inclusion probability and widths: EP's P(slab), mean and sd of the coefficient equal the closed form to 1e-4 (moment
+  matching through a gate is exact); the Gaussian EP gives for a spike-plus-slab posterior is the moment-matched projection of a
+  two-hump mixture, so it sits between the humps. EP runs on 24 of the 30 atoms; the other six (exp, tanh, Poisson with a log link,
+  half-Cauchy, half-normal, the product of two Gaussians) show the library's reason on their pages.
