@@ -385,6 +385,7 @@ function tiltedSite(
  * @param name - The operator's name.
  * @param table - The likelihoods to choose from (default {@link likelihoods}).
  * @param fixed - The entry the operator always is, or `undefined` for one chosen by a parameter.
+ * @param options - `needsDensity`: a flat cavity is shown to it wide by the engine (a prior site, which has to speak first).
  * @returns The operator.
  * @concept factor-operators
  * @index function A numeric EP likelihood site from a registry of log densities.
@@ -401,6 +402,7 @@ export function likelihoodSite(
   name: string,
   table: Readonly<Record<string, Likelihood>> = likelihoods(),
   fixed?: string,
+  options: { readonly needsDensity?: boolean } = {},
 ): FactorOperator {
   const tilted = (c: OperatorContext): { logMass: number; mean: number; variance: number } =>
     tiltedSite(table, fixed, c)
@@ -411,6 +413,7 @@ export function likelihoodSite(
     ports: [{ name: 'u', accepts: ['gaussian'] }],
     support: { ep: 'numeric' },
     readsTarget: true,
+    ...(options.needsDensity === true ? { needsDensity: true } : {}),
     power: true,
     check: (params) => {
       try {

@@ -50,20 +50,6 @@ function branchesOf(params: Params): readonly Branch[] {
   })
 }
 
-/** The precision a flat Gaussian cavity is read as inside a gate: a variable only the gate speaks of has no information yet, and the branches' evidence needs a density. */
-const WIDE_PRECISION = 1e-8
-
-/** A context in which every flat Gaussian cavity is a very wide one (the message the gate returns is then taken against that cavity, so the repair cancels to within its precision). */
-function widened(c: OperatorContext): OperatorContext {
-  if (!c.args.some((a) => a.eta !== undefined && a.family.kind === 'gaussian' && !a.family.isProper(a.eta))) return c
-  const wide = (a: Arg): Arg => {
-    const eta = a.eta
-    if (eta === undefined || a.family.kind !== 'gaussian' || a.family.isProper(eta)) return a
-    return Math.abs(eta[0] ?? 0) < 1e-12 && Math.abs(eta[1] ?? 0) < 1e-12 ? { ...a, eta: [0, WIDE_PRECISION] } : a
-  }
-  return { ...c, args: c.args.map(wide) }
-}
-
 /** The probabilities of the states of z (an observed one is a point mass). */
 function stateProbabilities(a: Arg, k: number): number[] {
   if (a.value !== undefined) return Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(a)) ? 1 : 0))
@@ -177,6 +163,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
   return {
     name: 'gate',
     description: 'a discrete variable selects which factor holds, each branch over its own variables',
+    needsDensity: true,
     ports: (params: Params): readonly Port[] => [
       { name: 'z', accepts: ['discrete', 'bernoulli'], constant: true },
       ...Array.from(
@@ -212,8 +199,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
       }
       return undefined
     },
-    ep: (c0): OperatorResult => {
-      const c = widened(c0)
+    ep: (c): OperatorResult => {
       const branches = branchesOf(c.params)
       const k = branches.length
       const z = arg(c, 0)
@@ -249,8 +235,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
       }
       return { message: family.fromMoments(mixed).map((v, i) => (v - (own[i] ?? 0)) / c.power) }
     },
-    vmp: (c0): OperatorResult => {
-      const c = widened(c0)
+    vmp: (c): OperatorResult => {
       const branches = branchesOf(c.params)
       const z = arg(c, 0)
       if (c.to === 0) {
@@ -275,9 +260,8 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
       }
       return { message: out }
     },
-    logEvidence: (c0) => {
+    logEvidence: (c) => {
       try {
-        const c = widened(c0)
         const branches = branchesOf(c.params)
         const pz = stateProbabilities(arg(c, 0), branches.length)
         const terms = branches.map((b, i) => Math.log(pz[i] ?? 0) + logBranch(c, b))

@@ -10,7 +10,9 @@ import {
 import { sigmoidOf } from '../base/index.ts'
 import { truncatedNormal } from '../dists/index.ts'
 import { item } from '../tensor/index.ts'
+import { operatorMessage } from './engine.ts'
 import * as M from './index.ts'
+import { momentProjection } from './projections.ts'
 
 const runs = { numRuns: 12 }
 const mean = fc.double({ min: -2, max: 2, noNaN: true })
@@ -715,8 +717,15 @@ describe('variational operators equal the expected log factor', () => {
   it('gaussian-gamma-precision starts from a flat cavity of a latent value: a proper message, the prior predictive', () => {
     // x ~ N(0, 1 / lambda), lambda ~ Gamma(2, 2), nothing yet known of x: the message to x is the matched Student-t (variance E[1/lambda] = rate / (shape - 1) = 2).
     const args = [msg(gaussian, gaussian.flat), M.valueArg(gaussian, 0), msg(M.gamma, M.gammaEta(2, 2))]
-    expect(M.gaussianGammaPrecision.readsTarget).toBeTypeOf('function')
-    const message = M.gaussianGammaPrecision.ep?.(ctx(0, args)).message as M.Eta
+    // The operator declares that it needs a density; the engine shows a flat cavity wide (flat-cavity.test.ts).
+    expect(M.gaussianGammaPrecision.needsDensity).toBe(true)
+    const p = operatorMessage(
+      { operator: M.gaussianGammaPrecision, params: {}, power: 1, ports: [] } as never,
+      momentProjection,
+      0,
+      args,
+    )
+    const message = p.kind === 'message' ? p.eta : []
     expect(message[0]).toBeCloseTo(0, 6)
     expect(1 / (message[1] as number)).toBeCloseTo(2, 2)
   })

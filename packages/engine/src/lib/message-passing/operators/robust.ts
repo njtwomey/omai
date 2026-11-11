@@ -77,6 +77,7 @@ export const mixtureSite: FactorOperator = {
   ports: [{ name: 'x', accepts: ['gaussian'] }],
   support: { ep: 'exact' },
   readsTarget: true,
+  needsDensity: true,
   ep: (c): OperatorResult => {
     const t = mixtureTilted(c)
     return { message: gaussianSiteMessage(etaOf(c.args[0] as never), t.mean, t.variance) }

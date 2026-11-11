@@ -2258,9 +2258,9 @@ class Compiler {
   /**
    * A spike and slab latent (`normalSpikeSlab`: a mixture of a wide and a narrow zero-mean normal on every element): each
    * element is a Gaussian variable (or a coordinate of one packed Gaussian vector, when a `matmul` reads it) with a
-   * `mixture-site` (`mixture-row`) factor, whose EP message is exact. The factor starts with a very wide Gaussian message
-   * (a hundred slab standard deviations), so the other factors have a proper cavity to begin from; its own first update
-   * replaces it, so the model is unchanged.
+   * `mixture-site` (`mixture-row`) factor, whose EP message is exact. A scalar site speaks first through the engine's flat-cavity
+   * policy (`needsDensity`); the row on a packed vector starts with a very wide Gaussian message (a hundred slab standard
+   * deviations), so the other factors have a proper cavity to begin from, and its own first update replaces it.
    */
   private latentSpikeSlab(node: ModelNode & { readonly kind: 'latent' }): void {
     const n = prod(this.shapeOf(node.dims))
@@ -2305,7 +2305,7 @@ class Compiler {
     const vars: string[] = []
     for (let i = 0; i < n; i++) {
       const name = this.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'gaussian' } })
-      this.addFactor({ operator: 'mixture-site', args: [name], params: mixture(i), start: [[0, 1 / wide(i)]] }, name)
+      this.addFactor({ operator: 'mixture-site', args: [name], params: mixture(i) }, name)
       cells.push(this.varAtom(name))
       vars.push(name)
     }
@@ -2361,13 +2361,11 @@ class Compiler {
       // State 0 of the switch is the spike, state 1 the slab (the probability of the Bernoulli is the inclusion).
       const branches = [branch(spike[i] as never), branch(slab[i] as never)]
       this.need('gate')
-      // The element is spoken of by the gate alone until its likelihood answers: a very wide first message gives the others a cavity.
       this.addFactor(
         {
           operator: 'gate',
           args: [z, ...variables],
           params: { arity: variables.length, branches: branches as unknown as Json },
-          start: [null, [0, 1e-8], ...variables.slice(1).map(() => null)],
         },
         name,
       )
@@ -2530,16 +2528,7 @@ class Compiler {
       const mean = isConstCell(l)
         ? { const: l.aff.offset }
         : (this.materialise(affOf(l), node.name, node.dims.length === 0 ? undefined : i) as string)
-      // A zero-mean (known-mean) Gaussian with an unknown precision sends no proper message to the variable, so the likelihood
-      // would have no cavity to start from: the factor starts with a very wide Gaussian message (variance 1e8), which its own
-      // first update replaces.
-      this.addFactor(
-        {
-          ...precisionFactor(name, mean, tau),
-          ...(isConstCell(l) ? { start: [[0, 1e-8], null, null] } : {}),
-        },
-        name,
-      )
+      this.addFactor(precisionFactor(name, mean, tau), name)
       cells.push(this.varAtom(name))
       vars.push(name)
     }

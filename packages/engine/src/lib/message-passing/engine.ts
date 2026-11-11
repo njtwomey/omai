@@ -248,6 +248,40 @@ function rawCavity(g: CompiledGraph, messages: readonly (readonly number[])[], f
   })
 }
 
+/**
+ * The precision a flat Gaussian cavity is shown as to an operator that `needsDensity` (variance 1e6): wide enough that the other
+ * factors decide, proper so that the tilted distribution has a density. This is the engine's one policy for a cavity with no
+ * information yet at the start of a run; an operator never repairs it itself.
+ */
+export const FLAT_CAVITY_PRECISION = 1e-6
+
+/**
+ * The arguments an operator that `needsDensity` is shown: every flat Gaussian message replaced by a very wide one. Returns the
+ * arguments unchanged for the others, and for a context in which nothing is flat.
+ *
+ * @param operator - The operator.
+ * @param args - The cavities (or beliefs) and observed values.
+ * @param to - The port the message is for.
+ * @returns The arguments to show, and whether the target port was widened.
+ */
+function readable(
+  operator: CompiledGraph['factors'][number]['operator'],
+  args: readonly Arg[],
+  to: number,
+): { readonly args: readonly Arg[]; readonly widenedTarget: boolean } {
+  if (operator.needsDensity !== true) return { args, widenedTarget: false }
+  const flat = (a: Arg): boolean =>
+    a.eta !== undefined &&
+    a.family.kind === 'gaussian' &&
+    Math.abs(a.eta[0] ?? 0) < 1e-12 &&
+    Math.abs(a.eta[1] ?? 0) < 1e-12
+  if (!args.some(flat)) return { args, widenedTarget: false }
+  return {
+    args: args.map((a): Arg => (flat(a) ? { ...a, eta: [0, FLAT_CAVITY_PRECISION] } : a)),
+    widenedTarget: flat(args[to] as Arg),
+  }
+}
+
 /** What an update proposes: a message, no information (a flat one), nothing (the old message stays), or a failure. */
 export type FactorProposal =
   | { readonly kind: 'message'; readonly eta: Eta }
@@ -279,11 +313,14 @@ export function operatorMessage(
   const op = f.operator
   const target = args[to] as Arg
   const reads = typeof op.readsTarget === 'function' ? op.readsTarget(to) : op.readsTarget === true
-  if (reads && target.eta !== undefined && !target.family.isProper(target.eta)) return { kind: 'blocked' }
+  const shown = readable(op, args, to)
+  // A flat target of an operator that needs a density is shown wide, so it is not blocked; an improper one still is.
+  if (reads && !shown.widenedTarget && target.eta !== undefined && !target.family.isProper(target.eta))
+    return { kind: 'blocked' }
   const ctx: OperatorContext = {
     mode: projection.hook,
     to,
-    args,
+    args: shown.args,
     params: f.params,
     power,
     ...(projection.numeric === undefined ? {} : { rule: projection.numeric }),
@@ -293,6 +330,10 @@ export function operatorMessage(
     let result: OperatorResult
     if (hook !== undefined) {
       result = hook.call(op, ctx)
+      // The message of a moment-matching rule is the projection divided by the cavity it was shown: against the flat cavity
+      // that is the same message plus the wide one.
+      if (shown.widenedTarget && projection.hook === 'ep')
+        result = { ...result, message: result.message.map((v, i) => v + (i === 1 ? FLAT_CAVITY_PRECISION / power : 0)) }
     } else if (projection.hook === 'ep' && op.tilted !== undefined) {
       const t = op.tilted(ctx)
       const own = target.eta as Eta
@@ -509,7 +550,7 @@ export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection
     const inversePowers = new Array<number>(g.variables.length).fill(0)
     for (const [fi, f] of g.factors.entries()) {
       if (f.operator.logEvidence === undefined) return Number.NaN
-      const args = rawCavity(g, state.messages, fi)
+      const args = readable(f.operator, rawCavity(g, state.messages, fi), 0).args
       total +=
         f.operator.logEvidence({
           mode: s.projection.hook,
