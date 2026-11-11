@@ -9,8 +9,11 @@ Statistics, scipy.stats and statsmodels style: descriptive statistics, hypothesi
 
 - function `bootstrap`: Bootstrap confidence intervals for any statistic. `src/lib/stats/resampling.ts:470` `omai-engine/stats`
 - function `gaussianKde`: Gaussian kernel density estimate with bandwidth rules. `src/lib/stats/density.ts:236` `omai-engine/stats`
+- function `periodicCopies`: The copies of a periodic value a period or more away, to score in one log-sum-exp. `src/lib/stats/periodic.ts:46` `omai-engine/stats`
 - function `permutationTest`: Permutation test of any statistic, exact when feasible. `src/lib/stats/resampling.ts:279` `omai-engine/stats`
 - function `quantile`: Sample quantiles by any of the nine Hyndman-Fan definitions. `src/lib/stats/quantiles.ts:125` `omai-engine/stats`
+- function `threeCopiesBound`: Relative error bound of the three-copy wrapped density. `src/lib/stats/periodic.ts:118` `omai-engine/stats`
+- function `wrappedNormalLogPdf`: Wrapped normal log density as a log-sum-exp of ordinary normals at the copies. `src/lib/stats/periodic.ts:95` `omai-engine/stats`
 
 - table `mleSolvers`: Solvers of the maximum-likelihood slot. `src/lib/stats/fit.ts:237` `omai-engine/stats`
 
