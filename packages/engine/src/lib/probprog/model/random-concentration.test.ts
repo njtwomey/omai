@@ -77,7 +77,9 @@ describe('a symmetric beta or Dirichlet with a random concentration', () => {
     const { marginals } = run(m.bind({ y: [0, 1, 1, 2] }))
     const ref = exact(counts, gammaPrior, 1)
     expect(Math.abs((marginals['alpha']?.['mean'] as number) / ref.alpha - 1)).toBeLessThan(0.05)
-    expect(Math.abs((((marginals['p'] as Record<string, unknown>)['mean'] as number[])[1] as number) - ref.p)).toBeLessThan(0.01)
+    expect(
+      Math.abs((((marginals['p'] as Record<string, unknown>)['mean'] as number[])[1] as number) - ref.p),
+    ).toBeLessThan(0.01)
   })
 
   it('a log-normal concentration (carried on its log) is the numeric rule on a Gaussian', () => {

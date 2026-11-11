@@ -129,7 +129,7 @@ function strengthExact(
     range: [Math.max(0, mean - 4 * sd), mean + 7 * sd],
   }
   // The components that carry weight: the marginal of a probability is their mixture of betas.
-  const keep = w.map((v, i) => i).filter((i) => (w[i] as number) > 1e-7 * Math.max(...w))
+  const keep = w.map((_, i) => i).filter((i) => (w[i] as number) > 1e-7 * Math.max(...w))
   const kept = keep.map((i) => w[i] as number)
   const total = sum(kept)
   const p = counts.map((c): ExactMarginal => {
