@@ -15,8 +15,8 @@ import { betaAxis, integrateAxes } from '../_gridn.ts'
 import { beta, gamma } from '../families.ts'
 import { gaussianMvEta } from '../families-vector.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
+import { evaluatorOf, gaussianSide, type Rows, rowsOf } from './_sides.ts'
 import { ImproperMessageError, siteMessage } from './args.ts'
-import { evaluatorOf, gaussianSide, type Rows, rowsOf } from './covariance.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 const softplus = (x: number): number => (x > 0 ? x + Math.log1p(Math.exp(-x)) : Math.log1p(Math.exp(x)))

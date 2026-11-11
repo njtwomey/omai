@@ -363,6 +363,66 @@ describe('mvn-wishart: a plate of rows (count and scatter) is the product of the
   })
 })
 
+describe('mvn-wishart in three dimensions', () => {
+  const G3 = gaussianMv(3)
+  const W3 = wishart(3)
+  const eye3 = [1, 0, 0, 0, 1, 0, 0, 0, 1]
+  const scale = [0.6, 0.1, 0.05, 0.1, 0.5, 0.0, 0.05, 0.0, 0.4]
+  const cavity = wishartEta(8, scale, 3)
+  const ctx3 = (to: number, args: readonly Arg[]): OperatorContext => ({ mode: 'ep', to, args, params: {}, power: 1 })
+
+  it('the Bartlett rule has the mean E L = nu S and the right log determinant to within its bias', () => {
+    const p = wishartParams(cavity, 3) as NonNullable<ReturnType<typeof wishartParams>>
+    // the lower Cholesky factor of the scale, by hand
+    const l = new Float64Array(9)
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j <= i; j++) {
+        let v = p.scale[i * 3 + j] as number
+        for (let k = 0; k < j; k++) v -= (l[i * 3 + k] as number) * (l[j * 3 + k] as number)
+        l[i * 3 + j] = i === j ? Math.sqrt(v) : v / (l[j * 3 + j] as number)
+      }
+    const rule = wishartRule(p.nu, l, 3)
+    expect(rule.count).toBe(5 ** 6)
+    const mean = new Float64Array(9)
+    for (let k = 0; k < rule.count; k++)
+      for (let e = 0; e < 9; e++)
+        mean[e] = (mean[e] as number) + (rule.weight[k] as number) * (rule.lambda[k * 9 + e] as number)
+    for (let e = 0; e < 9; e++) expect(mean[e]).toBeCloseTo(p.mean[e] as number, 10)
+    expect(Math.abs(rule.logDetBias)).toBeLessThan(0.02)
+  })
+
+  it('with a narrow Gaussian cavity on the vector the message is the conjugate update, and the matrix and the vector messages are proper', () => {
+    const y = [0.8, -0.5, 0.3]
+    const xeta = gaussianMvEta(y, [1e-4, 0, 0, 0, 1e-4, 0, 0, 0, 1e-4])
+    const args = [messageArg(G3, xeta), valueArg(G3, [0, 0, 0]), messageArg(W3, cavity)]
+    const msg = mvnWishart.ep?.(ctx3(2, args)).message as number[]
+    const exact = mvnWishart.ep?.(ctx3(2, [valueArg(G3, y), valueArg(G3, [0, 0, 0]), messageArg(W3, cavity)]))
+      .message as number[]
+    const [a, b] = [W3.moments(W3.product(cavity, msg)), W3.moments(W3.product(cavity, exact))]
+    for (let e = 1; e < 10; e++) expect(a[e]).toBeCloseTo(b[e] as number, 2)
+    const toX = mvnWishart.ep?.(
+      ctx3(0, [messageArg(G3, gaussianMvEta([0.5, 0, 0], eye3)), valueArg(G3, [0, 0, 0]), messageArg(W3, cavity)]),
+    ).message as number[]
+    expect(G3.isProper(G3.product(gaussianMvEta([0.5, 0, 0], eye3), toX))).toBe(true)
+  })
+
+  it('the exact conjugate case works at any dimension', () => {
+    const d = 5
+    const w = wishart(d)
+    const y = [0.3, -0.2, 0.5, 0.1, -0.4]
+    const eta = wishartEta(
+      9,
+      Array.from({ length: d * d }, (_, i) => (Math.floor(i / d) === i % d ? 1 : 0)),
+      d,
+    )
+    const msg = mvnWishart.ep?.(
+      ctx3(2, [valueArg(gaussianMv(d), y), valueArg(gaussianMv(d), new Array<number>(d).fill(0)), messageArg(w, eta)]),
+    ).message as number[]
+    expect(msg.length).toBe(1 + d * d)
+    expect(msg[0]).toBe(0.5)
+  })
+})
+
 describe('mvn-normal-wishart: the exact conjugate update', () => {
   const NW = normalWishart(2)
   it('n rows give the normal-Wishart posterior of the textbook (beta + n, nu + n, the scatter about the sample mean)', () => {

@@ -252,3 +252,201 @@ describe('correlated random effects: a vector per group with a Wishart precision
     expect(th1.mean[0]).toBeLessThan(0.8)
   })
 })
+
+describe('three dimensions end to end', () => {
+  const rows3 = [
+    [1, 0.5, -0.2],
+    [-0.3, 0.2, 0.4],
+    [0.8, -1.1, 0.1],
+    [0.1, 0.4, -0.6],
+    [0.6, 0.0, 0.9],
+    [-0.9, 0.3, 0.2],
+    [0.2, -0.5, -0.1],
+  ]
+  const s0 = [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+  ]
+  const posteriorScale = (centre: number[]): number[][] => {
+    // S^-1 = I + sum (y - centre)(y - centre)'
+    const inv = s0.map((r) => [...r])
+    for (const y of rows3)
+      for (let i = 0; i < 3; i++)
+        for (let j = 0; j < 3; j++)
+          (inv[i] as number[])[j] =
+            ((inv[i] as number[])[j] as number) +
+            ((y[i] as number) - (centre[i] as number)) * ((y[j] as number) - (centre[j] as number))
+    return inv
+  }
+  const invert3 = (a: number[][]): number[][] => {
+    const [[a0, a1, a2], [b0, b1, b2], [c0, c1, c2]] = a as [
+      [number, number, number],
+      [number, number, number],
+      [number, number, number],
+    ]
+    const det = a0 * (b1 * c2 - b2 * c1) - a1 * (b0 * c2 - b2 * c0) + a2 * (b0 * c1 - b1 * c0)
+    return [
+      [(b1 * c2 - b2 * c1) / det, (a2 * c1 - a1 * c2) / det, (a1 * b2 - a2 * b1) / det],
+      [(b2 * c0 - b0 * c2) / det, (a0 * c2 - a2 * c0) / det, (a2 * b0 - a0 * b2) / det],
+      [(b0 * c1 - b1 * c0) / det, (a1 * c0 - a0 * c1) / det, (a0 * b1 - a1 * b0) / det],
+    ]
+  }
+
+  it('a known mean: the exact conjugate posterior of a 3 by 3 precision matrix', () => {
+    const model = defineModel('mvn3', (m) => {
+      const row = m.range('row')
+      const lambda = m.latent('Lambda', d.wishart(5, s0))
+      m.observe('y', d.multivariateNormal([0, 0, 0], { precision: lambda }), m.data('y', { dims: [row], eventRank: 1 }))
+    })
+    const { marginals } = run(model.bind({ y: rows3 }))
+    const lambda = marginals['Lambda'] as { nu: number; scale: number[][] }
+    expect(lambda.nu).toBeCloseTo(12, 7)
+    const expected = invert3(posteriorScale([0, 0, 0]))
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++) expect(lambda.scale[i]?.[j]).toBeCloseTo(expected[i]?.[j] as number, 7)
+  })
+
+  it('an unknown mean with a nearly flat prior: the Wishart of n - 1 degrees of freedom and the scatter about the sample mean', () => {
+    const model = defineModel('mvn3-mean', (m) => {
+      const row = m.range('row')
+      const coef = m.range('coef', { size: 3 })
+      const mu = m.latent(
+        'mu',
+        d.multivariateNormal([0, 0, 0], {
+          covariance: [
+            [1e4, 0, 0],
+            [0, 1e4, 0],
+            [0, 0, 1e4],
+          ],
+        }),
+        { dims: [coef] },
+      )
+      const lambda = m.latent('Lambda', d.wishart(5, s0))
+      m.observe(
+        'y',
+        d.multivariateNormal(mu, { precision: lambda }, { over: coef }),
+        m.data('y', { dims: [row], eventRank: 1 }),
+      )
+    })
+    const { marginals } = run(model.bind({ y: rows3 }))
+    const lambda = marginals['Lambda'] as { nu: number; scale: number[][]; mean: number[][] }
+    const ybar = [0, 1, 2].map((k) => rows3.reduce((s, y) => s + (y[k] as number), 0) / rows3.length)
+    // the exact marginal of the matrix is Wishart(nu0 + n - 1, (S0^-1 + scatter)^-1) in the flat-mean limit; EP matches its moments
+    const expected = invert3(posteriorScale(ybar))
+    const nu = 5 + rows3.length - 1
+    expect(Math.abs(lambda.nu - nu) / nu).toBeLessThan(0.02)
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        expect(Math.abs((lambda.mean[i]?.[j] as number) - nu * (expected[i]?.[j] as number))).toBeLessThan(
+          0.02 * (1 + Math.abs(nu * (expected[i]?.[j] as number))),
+        )
+    const mu = marginals['mu'] as { mean: number[] }
+    for (let k = 0; k < 3; k++) expect(mu.mean[k]).toBeCloseTo(ybar[k] as number, 2)
+  })
+})
+
+describe('a bivariate normal with standard deviations and a correlation', () => {
+  const rows = [
+    [1.1, 0.6],
+    [-0.4, -0.2],
+    [0.9, 1.3],
+    [0.2, 0.1],
+    [-1.2, -0.8],
+    [0.5, 0.9],
+  ]
+  const build = (known: boolean) =>
+    defineModel('bivariate', (m) => {
+      const row = m.range('row')
+      const coef = m.range('coef', { size: 2 })
+      const rho = m.latent('rho', d.correlation(1))
+      const y = m.data('y', { dims: [row], eventRank: 1 })
+      if (known) {
+        m.observe('y', d.bivariateNormal([0, 0], { scale1: 1, scale2: 1, rho }), y)
+        return
+      }
+      const tau1 = m.latent('tau1', d.gamma(2, 2))
+      const tau2 = m.latent('tau2', d.gamma(2, 2))
+      const mu = m.latent(
+        'mu',
+        d.multivariateNormal([0, 0], {
+          covariance: [
+            [4, 0],
+            [0, 4],
+          ],
+        }),
+        { dims: [coef] },
+      )
+      const sd1 = ops.div(1, ops.sqrt(tau1))
+      const sd2 = ops.div(1, ops.sqrt(tau2))
+      m.observe('y', d.bivariateNormal(mu, { scale1: sd1, scale2: sd2, rho }, { over: coef }), y)
+    })
+
+  it('compiles to one plated factor over the precisions, the correlation and the mean, and reads the correlation as a correlation', () => {
+    const { c, g, state } = run(build(false).bind({ y: rows }))
+    expect(c.graph?.factors.filter((f) => f.operator === 'mvn-sd-corr')).toHaveLength(1)
+    const p = factorGraphPosterior(c, g, state)
+    expect(p.sites).toEqual(['rho', 'tau1', 'tau2', 'mu'])
+    const mean = Number(toArray(p.mean('rho')))
+    const sd = Number(toArray(p.stddev('rho')))
+    expect(mean).toBeGreaterThan(0)
+    expect(mean).toBeLessThan(1)
+    expect(sd).toBeGreaterThan(0)
+  })
+
+  it('known sds and mean: the plate is the exact one-dimensional posterior of the correlation, a factor per row an approximation of it', () => {
+    // the exact posterior: (1 - rho^2)^(-n / 2) exp(-(sxx - 2 rho sxy + syy) / (2 (1 - rho^2))) on (-1, 1), uniform prior
+    const n = rows.length
+    const sxx = rows.reduce((acc, r) => acc + (r[0] as number) ** 2, 0)
+    const syy = rows.reduce((acc, r) => acc + (r[1] as number) ** 2, 0)
+    const sxy = rows.reduce((acc, r) => acc + (r[0] as number) * (r[1] as number), 0)
+    let z = 0
+    let m1 = 0
+    let m2 = 0
+    const N = 4000
+    for (let i = 0; i < N; i++) {
+      const rho = -1 + (2 * (i + 0.5)) / N
+      const w = Math.exp(-(n / 2) * Math.log(1 - rho * rho) - (sxx - 2 * rho * sxy + syy) / (2 * (1 - rho * rho)))
+      z += w
+      m1 += w * rho
+      m2 += w * rho * rho
+    }
+    const [mean, sd] = [m1 / z, Math.sqrt(m2 / z - (m1 / z) ** 2)]
+    const betaMean = (m: { a: number; b: number }): number => (2 * m.a) / (m.a + m.b) - 1
+    const plated = run(build(true).bind({ y: rows })).marginals['rho'] as { a: number; b: number }
+    expect(Math.abs(betaMean(plated) - mean) / sd).toBeLessThan(0.05)
+    const c = toFactorGraph(build(true).bind({ y: rows }), { plates: 'expand' })
+    expect(c.issues).toEqual([])
+    expect(c.graph?.factors.filter((f) => f.operator === 'mvn-sd-corr')).toHaveLength(rows.length)
+    const g = compileGraph(c.graph as never, factorOperators())
+    const r = runAlgorithm(epAlgorithm(g, { tol: 1e-10, damping: 0.4 }), { maxSteps: 400 })
+    const expanded = marginalsOf(g, r.state as MpState)['rho'] as unknown as { a: number; b: number }
+    // a factor per row is ordinary EP with six sites on the one variable: a looser match (measured below one posterior sd)
+    expect(Math.abs(betaMean(expanded) - mean) / sd).toBeLessThan(1)
+  })
+
+  it('refusals: a latent bivariate normal, a scale that is not the precision idiom', () => {
+    const issues = (build: Parameters<typeof defineModel>[1], data: Record<string, unknown>): string[] =>
+      toFactorGraph(defineModel('bad', build).bind(data as never)).issues.map((i) => i.reason)
+    const a = issues((m) => {
+      const row = m.range('row')
+      const rho = m.latent('rho', d.correlation(1))
+      m.latent('x', d.bivariateNormal([0, 0], { scale1: 1, scale2: 1, rho }), { dims: [row] })
+    }, {})
+    expect(a.join(' ')).toMatch(/only observed vectors are mapped/)
+    const b = issues(
+      (m) => {
+        const row = m.range('row')
+        const s = m.latent('s', d.halfNormal(1))
+        const rho = m.latent('rho', d.correlation(1))
+        m.observe(
+          'y',
+          d.bivariateNormal([0, 0], { scale1: s, scale2: 1, rho }),
+          m.data('y', { dims: [row], eventRank: 1 }),
+        )
+      },
+      { y: rows },
+    )
+    expect(b.join(' ')).toMatch(/precision idiom/)
+  })
+})
