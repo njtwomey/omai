@@ -34,7 +34,8 @@
  * propagation); a lookup of known values by a discrete latent (`at(means, z)`, `z * 6 - 3`) is the mean of a Gaussian observation (a
  * `table` over `z`) or of a Gaussian latent (a `gate` of one Gaussian prior per state, the gate of Minka and Winn), and
  * `categorical` with probabilities `at(A, z)` (a known matrix `A`, a discrete latent `z`) is a `table` over the two (a Markov
- * chain). A Gaussian latent's constraint (`ordered`, `positive`, bounds) is comparison factors with an observed true outcome
+ * chain), and when the rows of `A` are Dirichlet latents (a transition matrix to learn) one `gate` per step whose branch `j` is the
+ * conjugate `discrete` factor on row `j`. A Gaussian latent's constraint (`ordered`, `positive`, bounds) is comparison factors with an observed true outcome
  * (a truncated Gaussian under moment matching). A Gaussian whose precision is a known multiple of a gamma latent plus a known
  * value (`lambda d_j + n_j`) is the `gaussian-gamma-precision` factor with a `scale` and an `offset`, and when a vector read by a
  * `matmul` has the precisions of one shared gamma latent (a smoothing parameter) it is one `gaussian-mv` variable with a
@@ -2587,6 +2588,47 @@ class Compiler {
         cells.push({ kind: 'rv', variable: name, family: 'discrete' })
         vars.push(name)
       }
+    } else if (!this.isConst(expr) && this.randomTransitionRow(expr) !== undefined) {
+      // The rows of the matrix are Dirichlet latents (a transition matrix to learn), chosen by another discrete variable: one
+      // `gate` per element, whose state is the previous state and whose branch `j` is the conjugate `discrete` factor of this
+      // state on row `j`. Each row then hears only the transitions out of its state, weighted by the belief that the chain was there.
+      const chosen = this.randomTransitionRow(expr) as { readonly matrix: ExprSpec; readonly index: ExprSpec }
+      const matrix = this.evalSym(chosen.matrix)
+      const rows = matrix.cells
+      const parents = this.over(this.evalSym(chosen.index), node.dims)
+      if (matrix.dims.length !== 1 || rows.some((r) => r.kind !== 'rv' || r.family !== 'dirichlet'))
+        throw new Refusal(
+          'operator',
+          `the rows of the matrix behind '${node.name}' must be one Dirichlet latent each (a latent over the dimension of the states)`,
+        )
+      const rowVars = rows.map((r) => (r as { readonly variable: string }).variable)
+      const size = (this.variables.find((v) => v.name === rowVars[0])?.family.size ?? 2) as number
+      for (const [i, p] of parents.entries()) {
+        if (p.kind !== 'rv' || (p.family !== 'discrete' && p.family !== 'bernoulli'))
+          throw new Refusal(
+            'operator',
+            `the row of '${node.name}' must be chosen by a discrete latent, not a computed value`,
+          )
+        const from =
+          p.family === 'bernoulli'
+            ? 2
+            : ((this.variables.find((v) => v.name === p.variable)?.family.size ?? 2) as number)
+        if (from !== rowVars.length)
+          throw new Refusal('data', `'${node.name}' has ${from} previous states and its matrix ${rowVars.length} rows`)
+        const name = this.addVariable({
+          name: this.elementName(node.name, node.dims, i),
+          family: { kind: 'discrete', size },
+        })
+        this.need('gate')
+        this.need('discrete')
+        const branches = rowVars.map((_, j) => ({ operator: 'discrete', args: [0, 1 + j], params: {} }))
+        this.addFactor(
+          { operator: 'gate', args: [p.variable, name, ...rowVars], params: { arity: 1 + rowVars.length, branches } },
+          name,
+        )
+        cells.push({ kind: 'rv', variable: name, family: 'discrete' })
+        vars.push(name)
+      }
     } else if (!this.isConst(expr)) {
       if (logitsExpr !== undefined)
         throw new Refusal(
@@ -2644,6 +2686,17 @@ class Compiler {
     if (e.kind !== 'op' || e.op !== 'at') return undefined
     const [matrix, index] = e.args as [ExprSpec, ExprSpec]
     return this.isConst(matrix) && !this.isConst(index) ? { matrix, index } : undefined
+  }
+
+  /**
+   * The matrix and the index of `at(A, z)` when it is the probability row of a categorical and the matrix is random (its
+   * rows are latents), the index an expression of discrete latents. Absent for any other expression.
+   */
+  private randomTransitionRow(expr: ExprSpec): { readonly matrix: ExprSpec; readonly index: ExprSpec } | undefined {
+    const e = this.unwrap(expr)
+    if (e.kind !== 'op' || e.op !== 'at') return undefined
+    const [matrix, index] = e.args as [ExprSpec, ExprSpec]
+    return !this.isConst(matrix) && !this.isConst(index) ? { matrix, index } : undefined
   }
 
   private latentDiscrete(node: ModelNode & { readonly kind: 'latent' }): void {
