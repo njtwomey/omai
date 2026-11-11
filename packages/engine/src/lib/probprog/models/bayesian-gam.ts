@@ -19,7 +19,7 @@ import { dpotrf, dpotrs, dsyev } from '../../numerics/linalg/index.ts'
 import { ndtr } from '../../numerics/special/index.ts'
 import { type Key, key as makeKey } from '../../random/index.ts'
 import { bs, ps } from '../../stats/smoothing/index.ts'
-import { fromStorage, toFlat } from '../../tensor/index.ts'
+import { fromStorage, toFlat, type Value } from '../../tensor/index.ts'
 import { type Config, derived } from '../../trace/index.ts'
 import { type MethodSpace, methodSpace } from '../inference/method-space.ts'
 import { type AnyInferenceMethod, methodKinds } from '../inference/models.ts'
@@ -91,6 +91,8 @@ export interface BayesianGam {
   }
   /** The prior of the coefficients. */
   readonly prior: 'penalty' | 'spikeSlab' | 'ard'
+  /** Whether the basis is local: B-splines that are non-negative, sum to one and vanish away from their knots (so each coefficient is the height of one hump). */
+  readonly local: boolean
   /** The ARD prior's settings (zero for the others). */
   readonly ard: { readonly sparsity: number; readonly shape: number; readonly rate: number }
   /** The spike-and-slab prior's settings (zero for the penalty prior): inclusion, slab and spike standard deviations. */
@@ -140,37 +142,56 @@ export function bayesianGam(x: readonly number[], y: readonly number[], options:
   const nullScale = options.nullScale ?? 5
   if (!(logLambda.sd > 0 && logSigma.sd > 0 && nullScale > 0))
     throw new OmaiError('value', 'bayesianGam: the prior scales are positive')
-  const term: GamTerm = smoothTerm(0, {
-    basis: options.basis ?? 'ps',
-    k: options.k ?? 10,
-    degree: options.degree ?? 3,
-    order: options.order ?? 2,
-  })
-  const points = x.map((v) => [v])
-  const built = buildDesign(points, [term])
-  const block = built.terms[0]
-  if (block === undefined || block.penalties.length === 0)
-    throw new OmaiError('value', 'bayesianGam: the basis has no penalty')
-  const w = block.width
-  const p = built.p
-  // The penalty's eigendirections, scaled so the largest eigenvalue is one: the smoothing parameter is then relative.
-  const eig = dsyev(block.penalties[0]?.matrix ?? new Float64Array(w * w), w)
+  const kind = options.basis ?? 'ps'
+  const k = options.k ?? 10
+  const degree = options.degree ?? 3
+  const order = options.order ?? 2
+  // The basis the coefficients are on. A local one (B-splines: `ps`, `bs`) is used raw, a partition of unity with no separate
+  // intercept, so every coefficient is the height of one hump. The others (`cr`, `tp`, global bases) come from the gam term,
+  // centred, with the intercept as its own column.
+  const local = kind === 'ps' || kind === 'bs'
+  let evaluateRaw: (at: readonly number[]) => number[][]
+  let p: number
+  let S: Float64Array
+  if (local) {
+    const basis = kind === 'ps' ? ps(x, { k, degree, order }) : bs(x, { df: k, degree, intercept: true })
+    evaluateRaw = rowsOf(basis)
+    p = evaluateRaw([x[0] ?? 0])[0]?.length ?? 0
+    S = Float64Array.from(toFlat(basis.penalties[0] as Value))
+  } else {
+    const term: GamTerm = smoothTerm(0, { basis: kind, k, degree, order })
+    const built = buildDesign(
+      x.map((v) => [v]),
+      [term],
+    )
+    const block = built.terms[0]
+    if (block === undefined || block.penalties.length === 0)
+      throw new OmaiError('value', 'bayesianGam: the basis has no penalty')
+    p = built.p
+    const w = block.width
+    // The penalty of the block, with a zero row and column for the intercept.
+    S = new Float64Array(p * p)
+    for (let a = 0; a < w; a++)
+      for (let c = 0; c < w; c++) S[(1 + a) * p + 1 + c] = block.penalties[0]?.matrix[a * w + c] ?? 0
+    evaluateRaw = (at) => {
+      const grid = evaluateDesign(
+        built,
+        at.map((v) => [v]),
+      )
+      return Array.from({ length: grid.n }, (_, i) => Array.from({ length: p }, (_, j) => grid.X[i * p + j] ?? 0))
+    }
+  }
+  // The penalty's eigendirections, scaled so the largest eigenvalue is one: the smoothing parameter is then relative. The
+  // directions it does not touch (a constant and a line) get the wide prior.
+  const eig = dsyev(S, p)
   const top = Math.max(...eig.w)
-  const penalised = Array.from(eig.w, (e) => (e > PENALISED * top ? e / top : 0))
-  const rotate = (X: Float64Array, rows: number): number[][] =>
-    Array.from({ length: rows }, (_, i) => {
-      const row = new Array<number>(p).fill(0)
-      row[0] = X[i * p] ?? 1
-      for (let j = 0; j < w; j++) {
-        let acc = 0
-        for (let c = 0; c < w; c++) acc += (X[i * p + 1 + c] ?? 0) * (eig.v[c * w + j] ?? 0)
-        row[1 + j] = acc
-      }
-      return row
-    })
+  const diagonal = Array.from(eig.w, (e) => (e > PENALISED * top ? e / top : 0))
+  const rotate = (rows: number[][]): number[][] =>
+    rows.map((row) =>
+      Array.from({ length: p }, (_, j) => row.reduce((acc, v, c) => acc + v * (eig.v[c * p + j] ?? 0), 0)),
+    )
   const mean = y.reduce((a, v) => a + v, 0) / y.length
   const sd = Math.sqrt(y.reduce((a, v) => a + (v - mean) ** 2, 0) / y.length) || 1
-  const diagonal = [0, ...penalised]
   const nullPrecision = diagonal.map((e) => (e === 0 ? 1 / nullScale ** 2 : 0))
   const definition = defineModel('bayesian-gam', (m) => {
     const row = m.range('row')
@@ -202,41 +223,37 @@ export function bayesianGam(x: readonly number[], y: readonly number[], options:
     m.observe('y', d.normal(X.matmul(gamma), logSig.exp()), y)
   })
   const standardised = y.map((v) => (v - mean) / sd)
-  const design = (at: readonly number[]): number[][] => {
-    const grid = evaluateDesign(
-      built,
-      at.map((v) => [v]),
-    )
-    return rotate(grid.X, grid.n)
-  }
   return {
     definition,
-    data: { X: rotate(built.X, built.n), penalty: diagonal, nullPrecision, y: standardised },
+    data: { X: rotate(evaluateRaw(x)), penalty: diagonal, nullPrecision, y: standardised },
     rows: { x, y },
     size: p,
-    penalised: penalised.filter((e) => e > 0).length,
+    penalised: diagonal.filter((e) => e > 0).length,
     standardisation: { mean, sd },
     priors: { logLambda, logSigma },
     prior: 'penalty',
+    local,
     slab: { inclusion: 0, slab: 0, spike: 0 },
     ard: { sparsity: 0, shape: 0, rate: 0 },
-    design,
-    parts: (at) => {
-      const grid = evaluateDesign(
-        built,
-        at.map((v) => [v]),
-      )
-      return Array.from({ length: grid.n }, (_, i) => Array.from({ length: p }, (_, j) => grid.X[i * p + j] ?? 0))
-    },
-    // The first coefficient is the intercept; the rest are rotated back from the eigendirections of the penalty.
+    design: (at) => rotate(evaluateRaw(at)),
+    parts: evaluateRaw,
+    // The eigendirections rotated back to the coefficients of the basis functions.
     original: (gamma) =>
       Array.from({ length: p }, (_, j) => {
-        if (j === 0) return gamma[0] ?? 0
         let acc = 0
-        for (let c = 0; c < w; c++) acc += (eig.v[(j - 1) * w + c] ?? 0) * (gamma[1 + c] ?? 0)
+        for (let c = 0; c < p; c++) acc += (eig.v[j * p + c] ?? 0) * (gamma[c] ?? 0)
         return acc
       }),
     precision: (logLam) => diagonal.map((e, j) => Math.exp(logLam) * e + (nullPrecision[j] ?? 0)),
+  }
+}
+
+/** The rows of a basis at covariate values, as nested numbers. */
+function rowsOf(basis: { readonly evaluate: (x: number[]) => Value }): (at: readonly number[]) => number[][] {
+  return (at) => {
+    const m = toFlat(basis.evaluate([...at]))
+    const cols = Math.floor(m.length / Math.max(1, at.length))
+    return Array.from({ length: at.length }, (_, i) => Array.from({ length: cols }, (_, j) => m[i * cols + j] ?? 0))
   }
 }
 
@@ -319,6 +336,7 @@ function localGam(x: readonly number[], y: readonly number[], options: BayesianG
     standardisation: { mean, sd },
     priors: { logLambda: { mean: 0, sd: 1 }, logSigma },
     prior: ardPrior ? 'ard' : 'spikeSlab',
+    local: true,
     slab: ardPrior ? { inclusion: 0, slab: 0, spike: 0 } : { inclusion, slab, spike },
     ard: ardPrior ? { sparsity, shape: alphaShape, rate: alphaRate } : { sparsity: 0, shape: 0, rate: 0 },
     design: raw,
@@ -354,6 +372,8 @@ export interface BayesianGamFit {
     readonly curves: readonly (readonly (readonly number[])[])[]
     /** Where each basis function peaks on the grid. */
     readonly centres: readonly number[]
+    /** Whether the basis is local (each part vanishes away from its knots); the parts of a global basis (`cr`, `tp`) are not humps. */
+    readonly local: boolean
   }
   /** For the spike and slab prior: the posterior probability that each coefficient is in the slab. */
   readonly inclusion?: readonly number[]
@@ -477,7 +497,7 @@ export function bayesianGamFit(
     Array.from({ length: size }, (_, j) =>
       Array.from({ length: G }, (_, g) => {
         const B = rows[g]?.[j] ?? 0
-        return ys * B * (b[j] ?? 0) + (spike ? ym * B : j === 0 ? ym : 0)
+        return ys * B * (b[j] ?? 0) + (model.local ? ym * B : j === 0 ? ym : 0)
       }),
     )
   const meanBeta = Array.from({ length: size }, (_, j) => beta.reduce((a, b) => a + (b[j] ?? 0), 0) / Math.max(1, n))
@@ -510,7 +530,7 @@ export function bayesianGamFit(
       ? { logSigma: lsig, 'f(25%)': column(G), 'f(75%)': column(G + 1), 'active bases': active }
       : { logLambda: ll, logSigma: lsig, 'f(25%)': column(G), 'f(75%)': column(G + 1) },
     hyper: { logLambda: spike ? null : stat(ll), logSigma: stat(lsig) },
-    bases: { mean: partsOf(meanBeta), curves: picks.map((i) => partsOf(beta[i] ?? [])), centres },
+    bases: { mean: partsOf(meanBeta), curves: picks.map((i) => partsOf(beta[i] ?? [])), centres, local: model.local },
     ...(spike
       ? {
           inclusion: Array.from(
@@ -724,7 +744,7 @@ export interface BayesianGamAgreement {
  * @example
  * ```ts
  * import { bayesianGamAgreement } from 'omai-engine/probprog/models'
- * const f = { grid: [0, 1], mean: [0, 1], lower: [-1, 0], upper: [1, 2], level: 0.9, curves: [], draws: {}, hyper: { logLambda: [0, 1], logSigma: [0, 1] }, bases: { mean: [], curves: [], centres: [] }, count: 1 } as const
+ * const f = { grid: [0, 1], mean: [0, 1], lower: [-1, 0], upper: [1, 2], level: 0.9, curves: [], draws: {}, hyper: { logLambda: [0, 1], logSigma: [0, 1] }, bases: { mean: [], curves: [], centres: [], local: true }, count: 1 } as const
  * bayesianGamAgreement(f, { ...f }, 1) // => { meanError: 0, bandRatio: 1, logLambdaShift: 0 }
  * ```
  */
