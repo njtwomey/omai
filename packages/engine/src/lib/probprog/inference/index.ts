@@ -2,7 +2,7 @@
  * The shared convention of the inference methods of the probabilistic layer, available as
  * `omai-engine/probprog/inference`: what every method has in common (knobs as a `Space`, a typed tape contract, a
  * steppable and resumable algorithm, a capability check, a user-selected budget and anytime snapshots) and nothing
- * that chooses a method for the user. Each method is its own thing with its own knobs and tape. The folder holds the
+ * that chooses a method for the user (except `epRoute`, which says how expectation propagation runs a model: plain, inside a grid, or not). Each method is its own thing with its own knobs and tape. The folder holds the
  * convention (`method.ts`, `runAnytime`), the methods themselves, one per engine and each beside the engine it wraps
  * (`nutsMethod` with one iteration of every chain per step, `sviMethod`, `gibbsMethod`, `laplaceMethod`,
  * `temperedSmcMethod`, `particleFilterMethod`, `emMethod`, `importanceMethod`, `abcSmcMethod`, the kernels of the sampling library as methods
@@ -21,6 +21,7 @@ export * from './em-method.ts'
 export * from './ensemble-methods.ts'
 export * from './ep-grid.ts'
 export * from './ep-multistart.ts'
+export * from './ep-route.ts'
 export * from './evidence-methods.ts'
 export * from './exact-methods.ts'
 export * from './gibbs-method.ts'

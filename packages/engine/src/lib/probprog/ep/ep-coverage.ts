@@ -6,7 +6,7 @@
  */
 
 import { type Config, session } from '../../trace/index.ts'
-import { epGridMethod, epSpecMethod, vmpSpecMethod } from '../inference/index.ts'
+import { epRoute, vmpSpecMethod } from '../inference/index.ts'
 import { analysisOf } from '../inference/model-input.ts'
 import { benchmarkModels } from '../models/index.ts'
 import { epAtoms } from './ep-atom-list.ts'
@@ -80,13 +80,10 @@ export function epCoverage(): EpCoverage {
         missing: ['a model spec'],
       }
     try {
-      const bound = m.bound()
-      const verdict = epSpecMethod(bound).check?.(analysisOf(bound))
-      if (verdict?.applies === true) return { ...base, status: 'runs', via: 'ep', reason: '', missing: [] }
-      // A model whose graph exists once some scalar latents are known runs inside a grid over them.
-      const grid = epGridMethod(bound).check?.(analysisOf(bound))
-      if (grid?.applies === true) return { ...base, status: 'runs', via: 'ep-grid', reason: '', missing: [] }
-      return { ...base, status: 'planned', reason: verdict?.reason ?? 'no verdict', missing: verdict?.missing ?? [] }
+      const route = epRoute(m.bound())
+      if (route.via === 'none')
+        return { ...base, status: 'planned', reason: route.verdict.reason, missing: route.verdict.missing }
+      return { ...base, status: 'runs', via: route.via, reason: '', missing: [] }
     } catch (e) {
       return {
         ...base,
@@ -183,7 +180,7 @@ export function vmpCoverage(
       if (s.status !== 'converged')
         s = session(method, { seed: 1, steps: 1002, mode: 'eager', config: VMP_STEADY_KNOBS, logs: 'off' })
       const posterior = method.posterior?.(s.state, s.config)
-      const beliefs = posterior === undefined ? {} : atomBeliefs(problem, posterior as never)
+      const beliefs = posterior === undefined ? {} : atomBeliefs(problem, posterior)
       // A derived quantity (the value a gate selects, from EP's branch beliefs) is a reading of EP's, not of the mean field's.
       const direct = problem.quantities.filter((q) => q.derive === undefined)
       const proper = direct.every((q) => beliefs[q.name]?.proper === true)

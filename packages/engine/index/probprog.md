@@ -47,13 +47,13 @@ The expectation-propagation suite of the probabilistic programming stack: the at
 
 - function `activeSetScore`: The score of inclusion probabilities against the true active set: AUC and counts at a threshold. `src/lib/probprog/ep/ep-recovery.ts:134` `omai-engine/probprog/ep`
 - function `atomCalibration`: Calibration of an extended EP atom: interval coverage of the truth over many simulated seeds. `src/lib/probprog/ep/ep-extended.ts:271` `omai-engine/probprog/ep`
-- function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/probprog/ep/ep-atoms.ts:694` `omai-engine/probprog/ep`
+- function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/probprog/ep/ep-atoms.ts:706` `omai-engine/probprog/ep`
 - function `atomRecovery`: EP's belief of each parameter beside the truth it was simulated from: interval and coverage. `src/lib/probprog/ep/ep-extended.ts:97` `omai-engine/probprog/ep`
-- function `atomReference`: The reference of an EP atom: exact or grid marginals as curves, and a joint. `src/lib/probprog/ep/ep-atoms.ts:369` `omai-engine/probprog/ep`
-- function `atomRun`: Run EP on an atom's model: beliefs per sweep, a message record, or the refusal. `src/lib/probprog/ep/ep-atoms.ts:600` `omai-engine/probprog/ep`
-- function `atomVerdict`: Whether EP applies to an atom's model, and the library's reason if not. `src/lib/probprog/ep/ep-atoms.ts:430` `omai-engine/probprog/ep`
+- function `atomReference`: The reference of an EP atom: exact or grid marginals as curves, and a joint. `src/lib/probprog/ep/ep-atoms.ts:376` `omai-engine/probprog/ep`
+- function `atomRun`: Run EP on an atom's model: beliefs per sweep, a message record, or the refusal. `src/lib/probprog/ep/ep-atoms.ts:590` `omai-engine/probprog/ep`
+- function `atomVerdict`: Whether EP applies to an atom's model, and the library's reason if not. `src/lib/probprog/ep/ep-atoms.ts:437` `omai-engine/probprog/ep`
 - function `beliefCredibleInterval`: The equal-tailed credible interval of an EP belief on its support. `src/lib/probprog/ep/ep-extended.ts:42` `omai-engine/probprog/ep`
-- function `beliefDensity`: The density of a belief from its mean and sd on a support. `src/lib/probprog/ep/ep-atoms.ts:278` `omai-engine/probprog/ep`
+- function `beliefDensity`: The density of a belief from its mean and sd on a support. `src/lib/probprog/ep/ep-atoms.ts:285` `omai-engine/probprog/ep`
 - function `calibrationTable`: The calibration table of an extended EP atom from its seeds: coverage, bias and error per parameter. `src/lib/probprog/ep/ep-extended.ts:208` `omai-engine/probprog/ep`
 - function `clutterPosterior`: Exact clutter posterior with unknown centre, precisions and weight, by quadrature. `src/lib/probprog/ep/ep-atoms-gibbs.ts:267` `omai-engine/probprog/ep`
 - function `epCoverage`: What EP covers today: atoms and benchmark models as runs or planned, with reasons. `src/lib/probprog/ep/ep-coverage.ts:58` `omai-engine/probprog/ep`
@@ -61,7 +61,7 @@ The expectation-propagation suite of the probabilistic programming stack: the at
 - function `mixtureInterval`: The equal-tailed credible interval of a mixture of Gaussians (a gated coefficient). `src/lib/probprog/ep/ep-recovery.ts:25` `omai-engine/probprog/ep`
 - function `outlierMixturePosterior`: Exact outlier-mixture posterior with unknown centre, precision and share. `src/lib/probprog/ep/ep-atoms-gibbs.ts:395` `omai-engine/probprog/ep`
 - function `recoverySummary`: How well a posterior recovered the truth: interval coverage, error, agreement with a reference. `src/lib/probprog/ep/ep-recovery.ts:82` `omai-engine/probprog/ep`
-- function `vmpCoverage`: What variational message passing covers today: atoms as runs or planned, with the operators lacking a rule. `src/lib/probprog/ep/ep-coverage.ts:162` `omai-engine/probprog/ep`
+- function `vmpCoverage`: What variational message passing covers today: atoms as runs or planned, with the operators lacking a rule. `src/lib/probprog/ep/ep-coverage.ts:159` `omai-engine/probprog/ep`
 
 - estimator `betaBernoulliAtom`: EP atom: beta and Bernoulli (conjugate, exact). `src/lib/probprog/ep/ep-atoms-conjugate.ts:105` `omai-engine/probprog/ep`
 - estimator `betaBernoulliLearnedAtom`: EP atom: groups of flips with a beta prior of unknown strength, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-extended-conjugate.ts:248` `omai-engine/probprog/ep`
@@ -160,11 +160,12 @@ The expectation-propagation suite of the probabilistic programming stack: the at
 
 ## probprog/inference
 
-The shared convention of the inference methods of the probabilistic layer, available as `omai-engine/probprog/inference`: what every method has in common (knobs as a `Space`, a typed tape contract, a steppable and resumable algorithm, a capability check, a user-selected budget and anytime snapshots) and nothing that chooses a method for the user. Each method is its own thing with its own knobs and tape. The folder holds the convention (`method.ts`, `runAnytime`), the methods themselves, one per engine and each beside the engine it wraps (`nutsMethod` with one iteration of every chain per step, `sviMethod`, `gibbsMethod`, `laplaceMethod`, `temperedSmcMethod`, `particleFilterMethod`, `emMethod`, `importanceMethod`, `abcSmcMethod`, the kernels of the sampling library as methods (`rwmMethod`, `malaMethod`, `barkerMethod`, `hmcMethod`, `sliceMethod`, `ellipticalSliceMethod`, `sgldMethod`, `sghmcMethod`, `mclmcMethod`, the ensemble samplers `aiesMethod` and `ensembleSliceMethod`, `cheesMethod`, parallel tempering `temperingMethod`) on a shared driver, the user's plan of blocks with a kernel each run as one sampler (`hybridMethod`), message passing on the factor graph of a spec (`epSpecMethod`, `vmpSpecMethod`, `bpSpecMethod`), and the one-step exact ones), each made from a bound spec or a program, and the model registry by name that lets a worker run one. It also holds the building blocks for methods written on the program layer: kernels defined in a few lines on the handlers and trace operations (`defineKernel`, with a resimulation and a random-walk kernel as worked examples).
+The shared convention of the inference methods of the probabilistic layer, available as `omai-engine/probprog/inference`: what every method has in common (knobs as a `Space`, a typed tape contract, a steppable and resumable algorithm, a capability check, a user-selected budget and anytime snapshots) and nothing that chooses a method for the user (except `epRoute`, which says how expectation propagation runs a model: plain, inside a grid, or not). Each method is its own thing with its own knobs and tape. The folder holds the convention (`method.ts`, `runAnytime`), the methods themselves, one per engine and each beside the engine it wraps (`nutsMethod` with one iteration of every chain per step, `sviMethod`, `gibbsMethod`, `laplaceMethod`, `temperedSmcMethod`, `particleFilterMethod`, `emMethod`, `importanceMethod`, `abcSmcMethod`, the kernels of the sampling library as methods (`rwmMethod`, `malaMethod`, `barkerMethod`, `hmcMethod`, `sliceMethod`, `ellipticalSliceMethod`, `sgldMethod`, `sghmcMethod`, `mclmcMethod`, the ensemble samplers `aiesMethod` and `ensembleSliceMethod`, `cheesMethod`, parallel tempering `temperingMethod`) on a shared driver, the user's plan of blocks with a kernel each run as one sampler (`hybridMethod`), message passing on the factor graph of a spec (`epSpecMethod`, `vmpSpecMethod`, `bpSpecMethod`), and the one-step exact ones), each made from a bound spec or a program, and the model registry by name that lets a worker run one. It also holds the building blocks for methods written on the program layer: kernels defined in a few lines on the handlers and trace operations (`defineKernel`, with a resimulation and a random-walk kernel as worked examples).
 
 - structure `method.ts` (file): InferenceMethod: knobs, typed tape, check, budget and anytime snapshots, the shared convention. `src/lib/probprog/inference/method.ts:1` `omai-engine/probprog/inference`
 
 - function `defineKernel`: Define your own sampler on the handler layer in a few lines. `src/lib/probprog/inference/kernel.ts:188` `omai-engine/probprog/inference`
+- function `epRoute`: How EP runs a bound model: plain, inside a grid over hyperparameters, or refused. `src/lib/probprog/inference/ep-route.ts:40` `omai-engine/probprog/inference`
 - function `inferenceMethods`: The methods an app offers on its registered models, named kind/model, for a worker. `src/lib/probprog/inference/models.ts:180` `omai-engine/probprog/inference`
 - function `methodSpace`: Every inference method that runs on a model, as one union of knobs. `src/lib/probprog/inference/method-space.ts:68` `omai-engine/probprog/inference`
 - function `modelRegistry`: Models by name for a worker: `modelRegistry({ radon: { definition, data } })`. `src/lib/probprog/inference/models.ts:85` `omai-engine/probprog/inference`
@@ -175,7 +176,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `aiesMethod`: Affine-invariant ensemble sampler (stretch and differential moves) as a steppable method. `src/lib/probprog/inference/ensemble-methods.ts:67` `omai-engine/probprog/inference`
 - estimator `amortisedSviMethod`: Variational inference with a neural encoder for the local latents (amortised inference). `src/lib/probprog/inference/svi-guide-methods.ts:158` `omai-engine/probprog/inference`
 - estimator `barkerMethod`: Barker's proposal with window-adapted step size as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:220` `omai-engine/probprog/inference`
-- estimator `bpSpecMethod`: Belief propagation on a model spec of Bernoulli nodes, posterior by site. `src/lib/probprog/inference/mp.ts:386` `omai-engine/probprog/inference`
+- estimator `bpSpecMethod`: Belief propagation on a model spec of Bernoulli nodes, posterior by site. `src/lib/probprog/inference/mp.ts:388` `omai-engine/probprog/inference`
 - estimator `bridgeSamplingMethod`: Bridge sampling evidence: slice-sampling posterior draws and a fitted Gaussian, one pair per step. `src/lib/probprog/inference/evidence-methods.ts:363` `omai-engine/probprog/inference`
 - estimator `chainMethod`: Forward-backward, FFBS and Viterbi on a discrete chain, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:196` `omai-engine/probprog/inference`
 - estimator `cheesMethod`: ChEES-HMC: jittered HMC over many chains with an adapted trajectory length, as a steppable method. `src/lib/probprog/inference/chees-method.ts:53` `omai-engine/probprog/inference`
@@ -185,9 +186,9 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `emMethod`: Expectation maximisation, one iteration per step, with exact E-steps. `src/lib/probprog/inference/em-method.ts:101` `omai-engine/probprog/inference`
 - estimator `ensembleSliceMethod`: Ensemble slice sampling with a tuned direction scale as a steppable method. `src/lib/probprog/inference/ensemble-methods.ts:125` `omai-engine/probprog/inference`
 - estimator `enumerationMethod`: Exact enumeration of discrete models by a junction tree, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:134` `omai-engine/probprog/inference`
-- estimator `epGridMethod`: Expectation propagation inside an evidence-weighted grid over the hyperparameters of a model. `src/lib/probprog/inference/ep-grid.ts:337` `omai-engine/probprog/inference`
+- estimator `epGridMethod`: Expectation propagation inside an evidence-weighted grid over the hyperparameters of a model. `src/lib/probprog/inference/ep-grid.ts:340` `omai-engine/probprog/inference`
 - estimator `epMultiStartMethod`: Expectation propagation from several starts, the fixed points weighted by their evidence. `src/lib/probprog/inference/ep-multistart.ts:287` `omai-engine/probprog/inference`
-- estimator `epSpecMethod`: Expectation propagation on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:322` `omai-engine/probprog/inference`
+- estimator `epSpecMethod`: Expectation propagation on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:327` `omai-engine/probprog/inference`
 - estimator `gaussianMethod`: Exact linear-Gaussian conditioning, Kalman and Gaussian BP, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:85` `omai-engine/probprog/inference`
 - estimator `gibbsMethod`: Gibbs sampling, one sweep per step, resumable, with anytime draws. `src/lib/probprog/inference/gibbs-method.ts:89` `omai-engine/probprog/inference`
 - estimator `hmcMethod`: HMC with a fixed trajectory and window adaptation as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:263` `omai-engine/probprog/inference`
@@ -220,7 +221,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `thermodynamicIntegrationMethod`: Thermodynamic integration of the mean log likelihood over the tempering ladder. `src/lib/probprog/inference/evidence-methods.ts:278` `omai-engine/probprog/inference`
 - estimator `traceEnumSviMethod`: Variational inference with discrete latents summed out exactly (TraceEnum). `src/lib/probprog/inference/svi-extra-methods.ts:130` `omai-engine/probprog/inference`
 - estimator `traceGraphSviMethod`: Variational inference with a Rao-Blackwellised score-function ELBO and baselines (TraceGraph). `src/lib/probprog/inference/svi-extra-methods.ts:71` `omai-engine/probprog/inference`
-- estimator `vmpSpecMethod`: Variational message passing on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:354` `omai-engine/probprog/inference`
+- estimator `vmpSpecMethod`: Variational message passing on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:356` `omai-engine/probprog/inference`
 
 - table `blockKernels`: Kernels a hybrid block can have: hmc, nuts, mala, barker, rwm, slice, gibbs, custom. `src/lib/probprog/inference/hybrid.ts:105` `omai-engine/probprog/inference`
 - table `evidenceEstimators`: Evidence estimators by name: bridge, stepping stone, thermodynamic, importance, nested, tempered SMC. `src/lib/probprog/inference/evidence-methods.ts:788` `omai-engine/probprog/inference`

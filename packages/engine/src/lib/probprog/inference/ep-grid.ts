@@ -77,6 +77,9 @@ export interface GridAxis {
   readonly to: number
 }
 
+/** EP inside a grid over hyperparameters, as a method. */
+export type EpGridMethod = InferenceMethod<EpGridState, Config, EpGridPath, ModelAnalysis>
+
 /** The state of {@link epGridMethod}: the axes, the nodes still to run (in order) and the nodes run. */
 export interface EpGridState {
   readonly axes: readonly GridAxis[]
@@ -334,10 +337,7 @@ function growth(state: EpGridState, edge: number): { axis: number; side: -1 | 1 
  * [run.status, post?.sites, Number(post?.mean('mu').data[0]).toFixed(2)] // => ['completed', ['s', 'mu'], '1.98']
  * ```
  */
-export function epGridMethod(
-  model: MethodModel,
-  options: EpGridOptions = {},
-): InferenceMethod<EpGridState, Config, EpGridPath, ModelAnalysis> {
+export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): EpGridMethod {
   const name = options.name ?? 'ep-grid'
   const plates = options.plates ?? 'vectorise'
   const packScalars = options.packScalars ?? true

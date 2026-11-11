@@ -11,7 +11,9 @@
  * an anytime snapshot shows. `check` says whether the model has a factor graph at all and why not, naming the node and
  * the reason (an opaque `custom` call, a family with no message family, a random scale, a non-affine operator), and
  * whether the method has a message rule for every operator of the graph (VMP has none for a hard comparison, `greater-than`).
- * Nothing chooses among the three: the user does, and a method that does not apply refuses with that reason.
+ * Nothing chooses among the three: the user does, and a method that does not apply refuses with that reason. Within
+ * expectation propagation `epRoute` (`ep-route.ts`) chooses how it runs a model: plain, or inside a grid over hyperparameters
+ * (`ep-grid.ts`), or not at all.
  */
 
 import { OmaiError } from '../../base/index.ts'
@@ -51,6 +53,9 @@ import { defineInferenceMethod, type InferenceMethod, type Verdict } from './met
 
 /** The paths an expectation propagation or belief propagation method logs: the engine's, and the posterior of a state as JSON. */
 export type EpSpecPath = EpPath | 'mp/posterior'
+
+/** An expectation propagation method on a model spec. */
+export type EpSpecMethod = InferenceMethod<MpState, Config, EpSpecPath, ModelAnalysis>
 
 /** The paths a variational message passing method logs: the engine's, and the posterior of a state as JSON. */
 export type VmpSpecPath = VmpPath | 'mp/posterior'
@@ -319,10 +324,7 @@ function specMethod<P extends string>(
  * [s.status, Number(m.posterior?.(s.state, s.config).mean('mu').data[0]).toFixed(4)] // => ['converged', '1.8462']
  * ```
  */
-export function epSpecMethod(
-  model: MethodModel,
-  options: MpSpecOptions = {},
-): InferenceMethod<MpState, Config, EpSpecPath, ModelAnalysis> {
+export function epSpecMethod(model: MethodModel, options: MpSpecOptions = {}): EpSpecMethod {
   return specMethod<EpSpecPath>('ep', model, options)
 }
 

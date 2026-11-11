@@ -20,9 +20,15 @@ import { type ModelRun, modelRunFromTape } from '../../exposition/index.ts'
 import type { DictSpace } from '../../space/index.ts'
 import { defaults } from '../../space/index.ts'
 import { toFlat } from '../../tensor/index.ts'
-import { type Config, session } from '../../trace/index.ts'
-import { type EpGridState, epGridMethod, epSpecMethod, type Verdict } from '../inference/index.ts'
-import { analysisOf } from '../inference/model-input.ts'
+import { type Config, type Session, session } from '../../trace/index.ts'
+import {
+  type EpGridState,
+  epRoute,
+  epSpecMethod,
+  type InferenceMethod,
+  type ModelAnalysis,
+  type Verdict,
+} from '../inference/index.ts'
 import {
   type BindOptions,
   type BoundModel,
@@ -33,6 +39,7 @@ import {
   toProgram,
   toStructure,
 } from '../model/index.ts'
+import type { Posterior } from '../posterior.ts'
 import { type GridOptions, gridPosterior } from '../validation/index.ts'
 import { lg } from './_util.ts'
 
@@ -428,26 +435,7 @@ export function atomReference<K extends Config>(atom: EpAtom<K>, problem: AtomPr
  * ```
  */
 export function atomVerdict(problem: AtomProblem): Verdict {
-  const bound = atomBound(problem)
-  const ep = epSpecMethod(bound).check?.(analysisOf(bound)) ?? {
-    applies: false,
-    reason: 'the method has no check',
-    missing: [] as string[],
-  }
-  if (ep.applies) return ep
-  // A model whose graph exists once some scalar latents are known runs by EP inside a grid over them.
-  const grid = epGridMethod(bound).check?.(analysisOf(bound))
-  return grid?.applies === true ? grid : ep
-}
-
-/** EP inside a grid over the hyperparameters, as the type of the plain EP method (a step is one node, an EP run of at most `maxSweeps` sweeps). */
-function gridMethodOf(bound: BoundModel): ReturnType<typeof epSpecMethod> {
-  return epGridMethod(bound) as never
-}
-
-/** Whether EP runs on the model as it is (`ep`) or inside a grid over the hyperparameters its custom functions read (`ep-grid`). */
-function atomRoute(bound: BoundModel): 'ep' | 'ep-grid' {
-  return epSpecMethod(bound).check?.(analysisOf(bound))?.applies === true ? 'ep' : 'ep-grid'
+  return epRoute(atomBound(problem)).verdict
 }
 
 /** The messages of EP at the most probable node of a grid run: the model conditioned on the hyperparameters there, run as a plain EP session. */
@@ -457,10 +445,8 @@ function gridRecord(bound: BoundModel, state: EpGridState): ModelRun {
     if (best === undefined || n.logEvidence + n.logPrior > best.logEvidence + best.logPrior) best = n
   const values = Object.fromEntries(state.axes.map((a, k) => [a.name, best?.x[k] ?? 0]))
   const cond = bind({ spec: doSpec(bound.spec, values), customs: bound.customs }, bound.data, bound.options)
-  const run = session(epSpecMethod(cond), { seed: 1, steps: 202, mode: 'eager', config: { tol: 1e-9 } }) as never as {
-    run: () => never
-  }
-  return modelRunFromTape(toStructure(cond, { view: 'factor' }), { run: run.run() }, { maxSteps: 120, maxMessages: 6 })
+  const s = session(epSpecMethod(cond), { seed: 1, steps: 202, mode: 'eager', config: { tol: 1e-9 } })
+  return modelRunFromTape(toStructure(cond, { view: 'factor' }), { run: s.run() }, { maxSteps: 120, maxMessages: 6 })
 }
 
 /** The beliefs at one sweep. */
@@ -535,7 +521,7 @@ export function marginalMean(reference: AtomReference): Record<string, number> {
 
 /** Moments of a quantity (`name` or `site[i]`) in a posterior. */
 function momentsOf(
-  posterior: { mean: (s: string) => never; stddev: (s: string) => never; sites: readonly string[] },
+  posterior: Pick<Posterior, 'mean' | 'stddev' | 'sites'>,
   name: string,
   support: AtomSupport,
 ): Belief {
@@ -567,10 +553,14 @@ function momentsOf(
  * const problem = gaussianAtom.problem(gaussianAtom.defaults)
  * const method = epSpecMethod(atomBound(problem))
  * const s = session(method, { steps: 50, mode: 'eager' })
- * atomBeliefs(problem, method.posterior?.(s.state, s.config) as never).mu?.proper // => true
+ * const posterior = method.posterior?.(s.state, s.config)
+ * posterior === undefined ? false : atomBeliefs(problem, posterior).mu?.proper // => true
  * ```
  */
-export function atomBeliefs(problem: AtomProblem, posterior: Parameters<typeof momentsOf>[0]): Record<string, Belief> {
+export function atomBeliefs(
+  problem: AtomProblem,
+  posterior: Pick<Posterior, 'mean' | 'stddev' | 'sites'>,
+): Record<string, Belief> {
   const out: Record<string, Belief> = {}
   for (const q of problem.quantities) {
     const b = q.derive === undefined ? momentsOf(posterior, q.name, q.support) : q.derive(out)
@@ -601,58 +591,80 @@ export function atomRun(problem: AtomProblem, ep: Config = {}, options: { readon
   // region inference
   const bound = problem.definition.bind(problem.data, problem.bindOptions)
   // compile to a factor graph and run EP on it: a rule for every factor
-  const via = atomRoute(bound)
   // (a covariance that is a custom function of a random value makes it a grid over that value)
-  const method = via === 'ep' ? epSpecMethod(bound) : gridMethodOf(bound)
+  const route = epRoute(bound)
   // endregion
-  const verdict = atomVerdict(problem)
-  if (!verdict.applies) return { status: 'refused', reason: verdict.reason, missing: verdict.missing }
+  if (route.via === 'none') return { status: 'refused', reason: route.verdict.reason, missing: route.verdict.missing }
   const config: Config = { tol: 1e-9, ...ep }
   const maxSweeps = typeof config['maxSweeps'] === 'number' ? config['maxSweeps'] : 200
-  let s: ReturnType<typeof session<never, Config, string>>
   const logs = options.light === true ? 'off' : 'all'
+  const run = { problem, config, logs, light: options.light === true } as const
+  return route.via === 'ep'
+    ? runRoute(run, route.method, maxSweeps + 2, (s) => ({
+        converged: s.status === 'converged',
+        record: () =>
+          modelRunFromTape(toStructure(bound, { view: 'factor' }), { run: s.run() }, { maxSteps: 120, maxMessages: 6 }),
+      }))
+    : runRoute<EpGridState>(run, route.method, 1000, (s, posterior) => ({
+        converged: posterior?.status === 'converged',
+        record: () => gridRecord(bound, s.state),
+      }))
+}
+
+/** How a run of one route is read: whether it converged and the messages as a model-run record. */
+interface RouteReading {
+  readonly converged: boolean
+  readonly record: () => ModelRun
+}
+
+/** Run the method of a route sweep by sweep (one step of the grid method is one EP run) and read the beliefs at the sweeps kept. */
+function runRoute<S>(
+  run: {
+    readonly problem: AtomProblem
+    readonly config: Config
+    readonly logs: 'off' | 'all'
+    readonly light: boolean
+  },
+  method: InferenceMethod<S, Config, string, ModelAnalysis>,
+  steps: number,
+  reading: (s: Session<S, Config, string>, posterior: Posterior | undefined) => RouteReading,
+): AtomRun {
+  const { problem, config, logs, light } = run
+  let s: Session<S, Config, string>
   try {
     // region inference
     // one step is one sweep of EP over the factors, recorded
-    s = session(method, {
-      seed: 1,
-      steps: via === 'ep' ? maxSweeps + 2 : 1000,
-      mode: 'eager',
-      config,
-      logs,
-    }) as never
+    s = session(method, { seed: 1, steps, mode: 'eager', config, logs })
     // endregion
   } catch (e) {
     return { status: 'failed', reason: e instanceof Error ? e.message : String(e) }
   }
-  const read = (state: never): Record<string, Belief> => {
+  const read = (state: S): Record<string, Belief> => {
     // region inference
     // the beliefs by site
-    const posterior = method.posterior?.(state, s.config as never)
+    const posterior = method.posterior?.(state, s.config)
     // endregion
-    return posterior === undefined ? {} : atomBeliefs(problem, posterior as never)
+    return posterior === undefined ? {} : atomBeliefs(problem, posterior)
   }
   const last = s.t
-  const keep = new Set<number>(options.light === true ? [last] : [0, last])
+  const keep = new Set<number>(light ? [last] : [0, last])
   const stride = Math.max(1, Math.ceil(last / 60))
-  if (options.light !== true) for (let t = 0; t <= last; t += stride) keep.add(t)
+  if (!light) for (let t = 0; t <= last; t += stride) keep.add(t)
   const history = [...keep]
     .filter((t) => t >= 0 && t <= last)
     .sort((a, b) => a - b)
-    .map((t): SweepBeliefs => ({ sweep: t, beliefs: read(s.stateAt(t) as never) }))
-  const final = read(s.state as never)
-  const posterior = method.posterior?.(s.state, s.config as never)
+    .map((t): SweepBeliefs => ({ sweep: t, beliefs: read(s.stateAt(t)) }))
+  const final = read(s.state)
+  const posterior = method.posterior?.(s.state, s.config)
   const evidence = posterior?.logEvidence?.value
+  const { converged, record } = reading(s, posterior)
   return {
     status: 'ran',
-    converged: via === 'ep' ? s.status === 'converged' : posterior?.status === 'converged',
+    converged,
     sweeps: last,
     beliefs: final,
     history,
-    record: () =>
-      via === 'ep'
-        ? modelRunFromTape(toStructure(bound, { view: 'factor' }), { run: s.run() }, { maxSteps: 120, maxMessages: 6 })
-        : gridRecord(bound, s.state as never as EpGridState),
+    record,
     ...(evidence === undefined ? {} : { evidence }),
   }
 }
