@@ -31,7 +31,18 @@
  * `probit(affine)` (`probit`), `sigmoid(affine)` or `logits` (`logistic`), `gt(affine, c)` (`greater-than`, a hard
  * comparison; expectation propagation only), or `probs` a beta latent (`bernoulli`); `binomial`, `poisson` (with an exposure) and `categorical` on a
  * beta, gamma or Dirichlet latent (the conjugate operators); and a Bernoulli network over scalar nodes, as `table`
- * factors (what belief propagation runs on). Anything else is reported with a reason, never silently dropped.
+ * factors (what belief propagation runs on). Expectation propagation also maps the numeric likelihoods of the registry of
+ * `message-passing/operators/likelihoods.ts` (`poisson` with `exposure * exp(affine)`, `binomial` with `sigmoid` or `probit`, a
+ * `negativeBinomial` in the NB2 idiom with a known or a random positive dispersion, `weibull` with `scale = exp(affine)`,
+ * `studentT`, `laplace`) and, on a log-normal outcome, the exact Gaussian rule on its log; a unary function of a random value
+ * (`exp`, `square`, `tanh`, `softplus`, `abs`, `sigmoid`, and `max` or `min` with a known operand as a rectifier) is the `apply`
+ * factor on a new variable. A prior with no message family (`halfNormal`, `halfCauchy`, `logNormal`, `uniform`,
+ * `truncatedNormal`) is projected once onto a Gaussian: a positive scale on its log (the value `tau` is `exp` of that variable),
+ * a bounded real value on itself, so the graph holds the projected prior, not the original. Such a scale (or an `exp` of a
+ * Gaussian) is the scale of a latent normal in its non-centred form (a product with a standard normal), and the scale of an
+ * observed normal through the `gaussian-scale` factor (the mean may be random too); a `clip` on a scale is read as a floor
+ * that never binds. With `packScalars` the scalar normal latents an observed node reads together are one joint vector. Anything
+ * else is reported with a reason, never silently dropped.
  *
  * Ids follow `ids.ts`: a variable is its site's name, `<site>[<i>]` for an element of a site over dimensions, and
  * `<site>#<k>[<i>]` for an auxiliary variable; a factor is `factor:` and the id of the variable it defines (an observed
