@@ -126,6 +126,8 @@ export type ExampleOffer = MethodSpace
  *
  * @param problem - The problem to bind the methods to.
  * @param modelName - The name the model is registered under (the example's own).
+ * @param override - Knob values an example opens its methods on, over {@link exampleStarting} (a model whose gradient is dear opens NUTS on a shorter run).
+ * @param opening - The kind the controls open on (default NUTS; an example whose NUTS run takes many seconds opens on a quicker one).
  * @returns The union space, the applicable kinds and the reasons for the others.
  * @example
  * ```ts
@@ -135,10 +137,18 @@ export type ExampleOffer = MethodSpace
  * [offer.applicable.includes('nuts'), 'enumeration' in offer.unavailable] // => [true, true]
  * ```
  */
-export function exampleInferenceSpace(problem: ExampleProblem, modelName: string): ExampleOffer {
+export function exampleInferenceSpace(
+  problem: ExampleProblem,
+  modelName: string,
+  override: Readonly<Record<string, Readonly<Record<string, number | string | boolean>>>> = {},
+  opening = 'nuts',
+): ExampleOffer {
   const registry = modelRegistry({ [modelName]: { definition: problem.definition, data: problem.data } })
   const model = registry.need(modelName)
-  const first = methodSpace(model, { omit: ['inferDiscrete', 'method'], first: 'nuts' })
+  const first = methodSpace(model, {
+    omit: ['inferDiscrete', 'method'],
+    first: opening in methodKinds ? opening : 'nuts',
+  })
   // Short runs: a sampler that opens with thousands of draws opens with at most a few hundred (the table has its own).
   const starting: Record<string, Readonly<Record<string, number | string | boolean>>> = {}
   for (const kind of first.applicable) {
@@ -150,9 +160,11 @@ export function exampleInferenceSpace(problem: ExampleProblem, modelName: string
     starting[kind] = Object.fromEntries([...cap('numChains', 2), ...cap('numWarmup', 100), ...cap('numDraws', 200)])
   }
   const offer = methodSpace(model, {
-    starting: Object.fromEntries(first.applicable.map((k) => [k, { ...starting[k], ...exampleStarting[k] }])),
+    starting: Object.fromEntries(
+      first.applicable.map((k) => [k, { ...starting[k], ...exampleStarting[k], ...override[k] }]),
+    ),
     omit: ['inferDiscrete', 'method'],
-    first: 'nuts',
+    first: opening in methodKinds ? opening : 'nuts',
   })
   const options: Record<string, DictSpace> = { ...offer.space.options }
   for (const kind of offer.applicable) {
@@ -370,6 +382,10 @@ export interface ExampleContext<P extends ExampleProblem> {
 export interface ExampleSpec<P extends ExampleProblem> {
   /** The default time budget in milliseconds (default 2000): an example whose default run needs longer says so here. */
   readonly budgetMs?: number
+  /** Knob values some methods open on, over {@link exampleStarting} (an example whose model is dear to differentiate opens NUTS on a shorter run). */
+  readonly starting?: Readonly<Record<string, Readonly<Record<string, number | string | boolean>>>>
+  /** The inference kind the example opens on (default `nuts`). */
+  readonly first?: string
   /** The method's name (`classify`). */
   readonly name: string
   readonly description: string
@@ -431,7 +447,8 @@ export interface Example<P extends ExampleProblem> {
 export function defineExample<P extends ExampleProblem>(spec: ExampleSpec<P>): Example<P> {
   const problemKey = (config: Config): string => JSON.stringify(spec.problemKnobs.map((k) => config[k]))
   const own = dict({ ...spec.dataKnobs.spaces, ...spec.modelKnobs.spaces })
-  const offerFor = (config: Config): ExampleOffer => exampleInferenceSpace(spec.problem(config), spec.modelName)
+  const offerFor = (config: Config): ExampleOffer =>
+    exampleInferenceSpace(spec.problem(config), spec.modelName, spec.starting, spec.first)
   const offer = offerFor(defaults(own) as Config)
   let offered: { readonly id: string; readonly offer: ExampleOffer } | undefined
   const knobs = dict({ ...own.spaces, inference: offer.space })

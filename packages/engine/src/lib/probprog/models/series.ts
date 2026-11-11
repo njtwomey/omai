@@ -40,6 +40,7 @@ function generateReturns(key: Key, size = 30): BenchmarkData {
  *
  * @param y - The returns.
  * @param points - The grid size (default 800).
+ * @param parameters - The known `mu`, `phi` and `sigma` (default the benchmark's).
  * @returns The truth: an oracle for each state `h[t]` and the log evidence.
  * @concept posterior-validation
  * @example
@@ -48,7 +49,13 @@ function generateReturns(key: Key, size = 30): BenchmarkData {
  * Object.keys(stochasticVolatilityTruth([0.3, -0.1, 0.5], 100).marginals) // => ['h[0]', 'h[1]', 'h[2]']
  * ```
  */
-export function stochasticVolatilityTruth(y: readonly number[], points = 800): BenchmarkTruth {
+export function stochasticVolatilityTruth(
+  y: readonly number[],
+  points = 800,
+  parameters: { readonly mu: number; readonly phi: number; readonly sigma: number } = SV,
+): BenchmarkTruth {
+  const SV = parameters
+  const SV_S0 = SV.sigma / Math.sqrt(1 - SV.phi ** 2)
   const G = points
   const lo = SV.mu - 6 * SV_S0
   const step = (12 * SV_S0) / (G - 1)
