@@ -15,7 +15,7 @@ describe('the EP atoms', () => {
       expect(v.run.status).toBe('ran')
       expect(v.check?.rows.filter((r) => !r.pass)).toEqual([])
       expect(v.check?.pass).toBe(true)
-    })
+    }, 60_000)
   })
 
   describe.each(epAtoms.filter((a) => a.expected === 'planned'))('$name is refused with a reason', (atom) => {

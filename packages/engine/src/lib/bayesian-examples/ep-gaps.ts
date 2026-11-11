@@ -41,6 +41,17 @@ export interface EpGap {
  */
 export const epGaps: readonly EpGap[] = [
   {
+    id: 'laplace-random-scale',
+    title: 'A Laplace likelihood with a random scale',
+    kind: 'missing-rule',
+    status: 'queued',
+    summary:
+      'The library takes a Laplace likelihood with a known scale only ("the scale of y is random"); the Laplace is a Gaussian scale mixture with an exponential mixing variance, which is not a gamma precision and has no message family, so a Laplace noise whose scale is learned is refused.',
+    plan: 'A two-variable numeric site over the (location, scale) beliefs, in the pattern of `negative-binomial-dispersion` (a Gauss-Hermite product rule over two Gaussian beliefs, the scale on the log), registered under the Laplace observation with a random scale; the `laplace-learned` atom then runs with no change to its page, and its grid posterior is the reference it is held to.',
+    size: 'small',
+    refuses: ['laplace-learned'],
+  },
+  {
     id: 'kernel-hyperparameters',
     title: 'Kernel hyperparameters as random values',
     kind: 'missing-mapping',
