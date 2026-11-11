@@ -3135,6 +3135,8 @@ class Compiler {
     switch (fam) {
       case 'normal': {
         const scaleExpr = node.dist.params['scale']
+        // A log scale (and a mean) chosen by one discrete variable, each state with random ones of its own: one gate of `gaussian-scale` branches.
+        if (this.observedSwitchLogScale(node, y, i, index)) return null
         // A mean or a scale chosen by a discrete variable (a lookup): a table or a gate over that variable.
         const switched = this.switchedCells(node, i)
         if (switched !== undefined) return this.observedSwitch(node, name, y, index, switched.loc, switched.scale)
@@ -3861,6 +3863,76 @@ class Compiler {
     })
     this.addFactor({ operator: 'gate', args: [z, ...variables], params: { arity: variables.length, branches } }, name)
     return null
+  }
+
+  /**
+   * An observed Gaussian whose scale is `exp(s)` with `s` chosen by a discrete variable `z` among Gaussian forms of its own (a spread
+   * per component of a mixture, `exp(at(logSd, z))`), whose mean may be chosen by the same `z` among random ones: ONE `gate` on `z`
+   * whose branch `k` is the `gaussian-scale` factor of the observation on the mean and the log scale of state `k`, so the
+   * component that explains the reading is the one whose mean and spread both move (a `select` of each would let EP lose which
+   * component the pair came from, and a spread per component run off). False when the scale is not of that form (the other
+   * routes are tried).
+   */
+  private observedSwitchLogScale(
+    node: ModelNode & { readonly kind: 'observed' },
+    y: number,
+    i: number,
+    index: number | undefined,
+  ): boolean {
+    const scaleExpr = node.dist.params['scale']
+    if (scaleExpr === undefined || this.isConst(scaleExpr)) return false
+    const e = this.stripClip(scaleExpr)
+    if (e.kind !== 'op' || e.op !== 'exp' || !this.mentionsDiscrete(e.args[0] as ExprSpec)) return false
+    let loc: Cell
+    let logScale: Cell
+    this.lookupMode = true
+    try {
+      loc = this.paramCell(node, 'loc', i)
+      logScale = this.cellsOf(node, 'logScaleLookup', () => this.evalSym(e.args[0] as ExprSpec))[i] as Cell
+    } catch (err) {
+      if (err instanceof Refusal) return false
+      throw err
+    } finally {
+      this.lookupMode = false
+    }
+    if (logScale.kind !== 'lookup' || logScale.precisions !== undefined) return false
+    const z = logScale.variable
+    const states = logScale.values.length
+    if (loc.kind === 'lookup' && (loc.variable !== z || loc.values.length !== states || loc.precisions !== undefined))
+      throw new Refusal(
+        'operator',
+        `the mean and the spread of '${node.name}' are chosen by different discrete variables`,
+      )
+    if (loc.kind !== 'lookup' && loc.kind !== 'aff')
+      throw new Refusal('operator', `the mean of '${node.name}' is not a Gaussian form or a lookup`)
+    const locAt = (k: number): Aff | number => {
+      if (loc.kind === 'lookup') return loc.items?.[k] ?? (loc.values[k] as number)
+      return affOf(loc)
+    }
+    const variables: string[] = []
+    const argOf = (form: Aff | number | undefined, fallback: number): number | { readonly const: number } => {
+      if (form === undefined || typeof form === 'number' || form.terms.size === 0)
+        return { const: form === undefined ? fallback : typeof form === 'number' ? form : form.offset }
+      const v = this.materialise(form, node.name, index) as string
+      let at = variables.indexOf(v)
+      if (at < 0) {
+        at = variables.length
+        variables.push(v)
+      }
+      return at
+    }
+    this.need('gate')
+    this.need('gaussian-scale')
+    const branches = Array.from({ length: states }, (_, k) => ({
+      operator: 'gaussian-scale',
+      args: [{ const: y }, argOf(locAt(k), 0), argOf(logScale.items?.[k], logScale.values[k] as number)],
+      params: {},
+    }))
+    this.addFactor(
+      { operator: 'gate', args: [z, ...variables], params: { arity: variables.length, branches } },
+      this.elementName(node.name, node.dims, i),
+    )
+    return true
   }
 
   /**
