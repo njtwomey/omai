@@ -4,35 +4,8 @@
  * atoms' pages draw: marginals as curves with their moments, and the probability that each switch is on.
  */
 
-import type { ExactMarginal } from './marginal.ts'
+import { type ExactMarginal, weightedMarginal } from './marginal.ts'
 import { lg } from './special.ts'
-
-/** The marginal of one axis of a grid posterior: `mass` at `points`, as a density interpolated between them. */
-function axisMarginal(points: readonly number[], mass: readonly number[]): ExactMarginal {
-  const z = mass.reduce((a, b) => a + b, 0)
-  const mean = points.reduce((a, p, i) => a + (p * (mass[i] as number)) / z, 0)
-  const sd = Math.sqrt(points.reduce((a, p, i) => a + ((p - mean) ** 2 * (mass[i] as number)) / z, 0))
-  // The density at a grid point: its mass over the width of its cell (in the variable's own units).
-  const dens = points.map((p, i) => {
-    const prev = points[i - 1] ?? p - ((points[1] as number) - p)
-    const next = points[i + 1] ?? p + (p - (points[i - 1] as number))
-    return (mass[i] as number) / z / ((next - prev) / 2)
-  })
-  const top = Math.max(...dens)
-  const live = points.filter((_, i) => (dens[i] as number) > 1e-5 * top)
-  return {
-    mean,
-    sd,
-    pdf: (x) => {
-      if (x <= (points[0] as number) || x >= (points[points.length - 1] as number)) return 0
-      let lo = 0
-      while ((points[lo + 1] as number) < x) lo++
-      const t = (x - (points[lo] as number)) / ((points[lo + 1] as number) - (points[lo] as number))
-      return (1 - t) * (dens[lo] as number) + t * (dens[lo + 1] as number)
-    },
-    range: [Math.min(...live), Math.max(...live)],
-  }
-}
 
 /** The priors of the clutter problem with unknown precisions. */
 export interface ClutterPriors {
@@ -161,10 +134,10 @@ export function clutterPosterior(y: readonly number[], priors: ClutterPriors, po
         }
     }
   return {
-    centre: axisMarginal(centres, margins.centre),
-    inlier: axisMarginal(tIn, margins.inlier),
-    clutter: axisMarginal(tOut, margins.clutter),
-    weight: axisMarginal(weights, margins.weight),
+    centre: weightedMarginal(centres, margins.centre, 'linear'),
+    inlier: weightedMarginal(tIn, margins.inlier, 'linear'),
+    clutter: weightedMarginal(tOut, margins.clutter, 'linear'),
+    weight: weightedMarginal(weights, margins.weight, 'linear'),
     clutterProbability: clutter.map((v) => v / norm),
   }
 }
@@ -261,8 +234,8 @@ export function outlierMixturePosterior(
         margins[2][e] = (margins[2][e] as number) + w
       }
   return {
-    centre: axisMarginal(centres, margins[0]),
-    precision: axisMarginal(tau, margins[1]),
-    share: axisMarginal(shares, margins[2]),
+    centre: weightedMarginal(centres, margins[0], 'linear'),
+    precision: weightedMarginal(tau, margins[1], 'linear'),
+    share: weightedMarginal(shares, margins[2], 'linear'),
   }
 }

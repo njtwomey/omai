@@ -21,7 +21,9 @@ import {
   mixtureGibbs,
   normalPdf,
   outlierMixturePosterior,
+  probabilityMarginal,
   samplesMarginal,
+  weightedMarginal,
 } from '../validation/index.ts'
 import { type AtomProblem, type AtomSupport, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
@@ -31,8 +33,6 @@ const learnedKnobs = (n: number, max: number): Record<string, ReturnType<typeof 
   ...simulationKnobs(n),
   n: int(8, max, { default: n, label: 'observations' }),
 })
-
-const probability = (p: number): ExactMarginal => ({ mean: p, sd: Math.sqrt(p * (1 - p)), pdf: () => 0 })
 
 const sig = (v: number, digits = 3): number => Number(v.toPrecision(digits))
 
@@ -107,7 +107,7 @@ function clutterLearnedProblem(k: Config): AtomProblem {
       inlier: post.inlier,
       clutter: post.clutter,
       share: post.weight,
-      ...Object.fromEntries(post.clutterProbability.map((p, i) => [`z[${i}]`, probability(p)])),
+      ...Object.fromEntries(post.clutterProbability.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])),
     },
     referenceSource: 'quadrature over the centre, the two precisions and the share, the switches summed out',
     figure: {
@@ -477,7 +477,7 @@ function gateRandomLearnedProblem(k: Config): AtomProblem {
     lowPrecision: samplesMarginal(gibbs.precision[0] as number[]),
     highPrecision: samplesMarginal(gibbs.precision[1] as number[]),
     share: samplesMarginal(gibbs.weight[1] as number[]),
-    ...Object.fromEntries(gibbs.responsibility.map((r, i) => [`z[${i}]`, probability(r[1] as number)])),
+    ...Object.fromEntries(gibbs.responsibility.map((r, i) => [`z[${i}]`, probabilityMarginal(r[1] as number)])),
   }
   const figure = mixtureFigure(
     y,
@@ -646,8 +646,8 @@ function spikeSlabLearnedProblem(k: Config): AtomProblem {
   const shareMass = ps.map((_, i) => ts.reduce((a, __, jj) => a + (mass[jj * ps.length + i] as number), 0))
   const precisionMass = ts.map((_, jj) => ps.reduce((a, __, i) => a + (mass[jj * ps.length + i] as number), 0))
   const pipMean = y.map((_, j) => mass.reduce((a, m, c) => a + (m * ((pips[c] as number[])[j] as number)) / norm, 0))
-  const shareMarginal = weightedMarginal(ps, shareMass)
-  const precisionExact = weightedMarginal(ts, precisionMass)
+  const shareMarginal = weightedMarginal(ps, shareMass, 'nearest')
+  const precisionExact = weightedMarginal(ts, precisionMass, 'nearest')
   const at = y.map((_, j) => j + 1)
   const x = [0, p + 1]
   return {
@@ -678,7 +678,7 @@ function spikeSlabLearnedProblem(k: Config): AtomProblem {
     exact: {
       share: shareMarginal,
       slabPrecision: precisionExact,
-      ...Object.fromEntries(pipMean.map((v, j) => [`z[${j}]`, probability(v)])),
+      ...Object.fromEntries(pipMean.map((v, j) => [`z[${j}]`, probabilityMarginal(v)])),
     },
     referenceSource: 'the posterior of the share and the slab precision on a grid, the coefficients summed out',
     figure: {
@@ -700,27 +700,6 @@ function spikeSlabLearnedProblem(k: Config): AtomProblem {
       ],
       notes: [`The truly active coefficients are ${ACTIVE.map(([j]) => j + 1).join(', ')}.`],
     },
-  }
-}
-
-/** A marginal from weights on points (not nested in a grid): moments and a piecewise-constant density. */
-function weightedMarginal(points: readonly number[], weights: readonly number[]): ExactMarginal {
-  const z = weights.reduce((a, b) => a + b, 0)
-  const mean = points.reduce((a, v, i) => a + (v * (weights[i] as number)) / z, 0)
-  const sd = Math.sqrt(points.reduce((a, v, i) => a + ((v - mean) ** 2 * (weights[i] as number)) / z, 0))
-  const live = points.filter((_, i) => (weights[i] as number) > 1e-5 * Math.max(...weights))
-  return {
-    mean,
-    sd,
-    pdf: (xx) => {
-      let nearest = 0
-      for (let i = 1; i < points.length; i++)
-        if (Math.abs((points[i] as number) - xx) < Math.abs((points[nearest] as number) - xx)) nearest = i
-      const left = points[Math.max(0, nearest - 1)] as number
-      const right = points[Math.min(points.length - 1, nearest + 1)] as number
-      return (weights[nearest] as number) / z / ((right - left) / 2)
-    },
-    range: [Math.min(...live), Math.max(...live)],
   }
 }
 

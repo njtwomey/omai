@@ -13,7 +13,7 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import type { ExactMarginal } from '../validation/index.ts'
+import { type ExactMarginal, probabilityMarginal, weightedMarginal } from '../validation/index.ts'
 import { type AtomProblem, type AtomTolerance, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 const BASE = [-2.1, 1.9, 0.3, 2.2, -0.4, 1.7, 0.6, -1.8, 0.9, 2.3]
@@ -43,28 +43,6 @@ const lgammaStirling = (x: number): number => {
 /** The observations the knob `spread` makes: the base set scaled towards zero, where the two components overlap. */
 const observations = (k: Config): number[] => BASE.map((v) => v * configNumber(k, 'spread'))
 
-/** A probability quantity: the exact probability that a switch is on, and its spread as a coin. */
-const responsibility = (p: number): ExactMarginal => ({ mean: p, sd: Math.sqrt(p * (1 - p)), pdf: () => 0 })
-
-/** The marginal of a quantity on a grid of midpoints with weights, as an exact marginal with a piecewise-constant density. */
-function gridMarginal(points: readonly number[], weights: readonly number[]): ExactMarginal {
-  const z = weights.reduce((a, b) => a + b, 0)
-  const mean = points.reduce((a, x, i) => a + (x * (weights[i] as number)) / z, 0)
-  const sd = Math.sqrt(points.reduce((a, x, i) => a + ((x - mean) ** 2 * (weights[i] as number)) / z, 0))
-  const step = (points[1] as number) - (points[0] as number)
-  const top = Math.max(...weights)
-  const live = points.filter((_, i) => (weights[i] as number) > 1e-6 * top)
-  return {
-    mean,
-    sd,
-    pdf: (x) => {
-      const i = Math.round((x - (points[0] as number)) / step)
-      return i < 0 || i >= points.length ? 0 : (weights[i] as number) / z / step
-    },
-    range: [Math.min(...live) - step, Math.max(...live) + step],
-  }
-}
-
 /**
  * The exact posterior of the weight of the second component (a beta prior) and each observation's responsibility: the switches
  * summed out one by one, so the posterior of the weight is its prior times the product of the observations' mixture likelihoods, a
@@ -85,7 +63,7 @@ function twoComponentExact(
   const w = logs.map((v) => Math.exp(v - top))
   const z = w.reduce((a, b) => a + b, 0)
   return {
-    weight: gridMarginal(ps, w),
+    weight: weightedMarginal(ps, w),
     responsibilities: x.map((_, i) =>
       ps.reduce(
         (a, p, j) =>
@@ -154,7 +132,7 @@ function explicitProblem(k: Config): AtomProblem {
     quantities: weightQuantities(x.length),
     exact: {
       pi: exact.weight,
-      ...Object.fromEntries(exact.responsibilities.map((p, i) => [`z[${i}]`, responsibility(p)])),
+      ...Object.fromEntries(exact.responsibilities.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])),
     },
   }
 }
@@ -284,7 +262,7 @@ function dirichletWeightProblem(k: Config): AtomProblem {
     ;(marg[2][k2] as number) += w
   }
   const points = Array.from({ length: G }, (_, i) => (i + 0.5) / G)
-  const exact = Object.fromEntries(marg.map((w, c) => [`pi[${c}]`, gridMarginal(points, w)]))
+  const exact = Object.fromEntries(marg.map((w, c) => [`pi[${c}]`, weightedMarginal(points, w)]))
   return {
     definition,
     data: { x, means: THREE },
@@ -384,7 +362,7 @@ function hyperWeightProblem(k: Config): AtomProblem {
   const piW = w.map((row) => row.reduce((a, v) => a + v, 0))
   const sW = ts.map((_, j) => w.reduce((a, row) => a + (row[j] as number), 0))
   const exact = {
-    pi: gridMarginal(ps, piW),
+    pi: weightedMarginal(ps, piW),
     strength: ((): ExactMarginal => {
       const alphas = ts.map(Math.exp)
       const mean = alphas.reduce((a, s, j) => a + (s * (sW[j] as number)) / z, 0)
@@ -425,7 +403,7 @@ function hyperWeightProblem(k: Config): AtomProblem {
     exact: {
       pi: exact.pi,
       strength: exact.strength,
-      ...Object.fromEntries(responsibilities.map((p, i) => [`z[${i}]`, responsibility(p)])),
+      ...Object.fromEntries(responsibilities.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])),
     },
   }
 }

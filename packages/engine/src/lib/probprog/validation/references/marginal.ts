@@ -135,3 +135,88 @@ export function samplesMarginal(draws: readonly number[]): ExactMarginal {
     range: [Math.min(...draws) - 2 * h, Math.max(...draws) + 2 * h],
   }
 }
+
+/**
+ * How the density of a weighted marginal is read off its points: `cell` (equally spaced points: the weight of the nearest
+ * index over the spacing, a piecewise-constant density; points with under 1e-6 of the top weight are outside the range, which
+ * is padded by a step), `nearest` (any spacing: the weight of the nearest point over its cell, half the distance between its
+ * neighbours; under 1e-5 of the top weight is outside the range) and `linear` (the density at each point is its mass over its
+ * cell, interpolated between points, zero outside them; the range is where it exceeds 1e-5 of its top).
+ */
+export type WeightedDensity = 'cell' | 'nearest' | 'linear'
+
+/**
+ * The marginal of a quantity from weights on a grid of points (a density summed over every other coordinate, or a posterior
+ * over a hyperparameter): the moments of the weights and a density read off the points as `density` says.
+ *
+ * @param points - The grid points, ascending.
+ * @param weights - The weight of each point (not normalised).
+ * @param density - How the density is read off the points (default `cell`).
+ * @returns The marginal.
+ * @example
+ * ```ts
+ * import { weightedMarginal } from 'omai-engine/probprog/validation'
+ * weightedMarginal([0, 1, 2], [1, 2, 1]).mean // => 1
+ * ```
+ */
+export function weightedMarginal(
+  points: readonly number[],
+  weights: readonly number[],
+  density: WeightedDensity = 'cell',
+): ExactMarginal {
+  const z = weights.reduce((a, b) => a + b, 0)
+  const mean = points.reduce((a, x, i) => a + (x * (weights[i] as number)) / z, 0)
+  const sd = Math.sqrt(points.reduce((a, x, i) => a + ((x - mean) ** 2 * (weights[i] as number)) / z, 0))
+  const first = points[0] as number
+  const last = points[points.length - 1] as number
+  if (density === 'cell') {
+    const step = (points[1] as number) - first
+    const top = Math.max(...weights)
+    const live = points.filter((_, i) => (weights[i] as number) > 1e-6 * top)
+    return {
+      mean,
+      sd,
+      pdf: (x) => {
+        const i = Math.round((x - first) / step)
+        return i < 0 || i >= points.length ? 0 : (weights[i] as number) / z / step
+      },
+      range: [Math.min(...live) - step, Math.max(...live) + step],
+    }
+  }
+  if (density === 'nearest') {
+    const live = points.filter((_, i) => (weights[i] as number) > 1e-5 * Math.max(...weights))
+    return {
+      mean,
+      sd,
+      pdf: (x) => {
+        let nearest = 0
+        for (let i = 1; i < points.length; i++)
+          if (Math.abs((points[i] as number) - x) < Math.abs((points[nearest] as number) - x)) nearest = i
+        const left = points[Math.max(0, nearest - 1)] as number
+        const right = points[Math.min(points.length - 1, nearest + 1)] as number
+        return (weights[nearest] as number) / z / ((right - left) / 2)
+      },
+      range: [Math.min(...live), Math.max(...live)],
+    }
+  }
+  // The density at a grid point: its mass over the width of its cell (in the variable's own units).
+  const dens = points.map((p, i) => {
+    const prev = points[i - 1] ?? p - ((points[1] as number) - p)
+    const next = points[i + 1] ?? p + (p - (points[i - 1] as number))
+    return (weights[i] as number) / z / ((next - prev) / 2)
+  })
+  const top = Math.max(...dens)
+  const live = points.filter((_, i) => (dens[i] as number) > 1e-5 * top)
+  return {
+    mean,
+    sd,
+    pdf: (x) => {
+      if (x <= first || x >= last) return 0
+      let lo = 0
+      while ((points[lo + 1] as number) < x) lo++
+      const t = (x - (points[lo] as number)) / ((points[lo + 1] as number) - (points[lo] as number))
+      return (1 - t) * (dens[lo] as number) + t * (dens[lo + 1] as number)
+    },
+    range: [Math.min(...live), Math.max(...live)],
+  }
+}

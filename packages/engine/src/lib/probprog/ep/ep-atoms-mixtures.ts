@@ -18,9 +18,14 @@ import {
   type ExactMarginal,
   mixtureMarginal,
   momentMatch,
+  type NormalComponent,
   normalPdf,
+  probabilityMarginal,
   quadratureMarginal,
   selectedBranch,
+  spikeSlabPosterior,
+  type TwoComponentGate,
+  twoComponentGate,
 } from '../validation/index.ts'
 import {
   type AtomProblem,
@@ -30,82 +35,6 @@ import {
   type MixtureBranch,
   type MixtureView,
 } from './ep-atoms.ts'
-
-/** A Gaussian: its mean and sd. */
-interface Normal {
-  readonly mean: number
-  readonly sd: number
-}
-
-/** The conjugate update of a Gaussian component observed through Gaussian noise `s` at `y`. */
-function update(prior: Normal, y: number, s: number): Normal {
-  const prec = 1 / prior.sd ** 2 + 1 / s ** 2
-  return { mean: (prior.mean / prior.sd ** 2 + y / s ** 2) / prec, sd: Math.sqrt(1 / prec) }
-}
-
-/** What a switch between two Gaussian components, observed through noise, has as its exact posterior. */
-export interface TwoComponentGate {
-  /** P(z = 1): the switch selects component 1. */
-  readonly p1: number
-  /** The components' conjugate updates (what each is if it is the selected one). */
-  readonly updated: readonly [Normal, Normal]
-  /** What is selected: the mixture of the two updates weighted by the switch. */
-  readonly selected: ExactMarginal
-  /** Each component's marginal: its update if selected, its prior otherwise. */
-  readonly marginals: readonly [ExactMarginal, ExactMarginal]
-}
-
-/**
- * The exact posterior of a switch `z` (P(z = 1) = `pi`) that selects one of two independent Gaussian components, with `y`
- * observed through Gaussian noise `s`: the posterior of the switch is the ratio of the branches' evidence, each branch is the
- * conjugate update of its component, the selected value is their mixture and each component's marginal is its update if it was
- * selected and its prior otherwise.
- *
- * @param pi - The prior probability of component 1.
- * @param components - The two components' priors.
- * @param y - The observation.
- * @param s - The observation noise.
- * @returns The posterior.
- * @concept expectation-propagation
- * @example
- * ```ts
- * import { twoComponentGate } from 'omai-engine/probprog/ep'
- * const g = twoComponentGate(0.5, [{ mean: 0, sd: 1 }, { mean: 0, sd: 1 }], 0.3, 1)
- * g.p1 // => 0.5
- * ```
- */
-export function twoComponentGate(
-  pi: number,
-  components: readonly [Normal, Normal],
-  y: number,
-  s: number,
-): TwoComponentGate {
-  const e = components.map((c) => normalPdf(y, c.mean, Math.sqrt(c.sd ** 2 + s ** 2)))
-  const e1 = pi * (e[1] ?? 0)
-  const e0 = (1 - pi) * (e[0] ?? 0)
-  const p1 = e1 / (e1 + e0)
-  const updated: [Normal, Normal] = [update(components[0], y, s), update(components[1], y, s)]
-  return {
-    p1,
-    updated,
-    selected: mixtureMarginal([
-      { weight: 1 - p1, ...updated[0] },
-      { weight: p1, ...updated[1] },
-    ]),
-    marginals: [
-      mixtureMarginal([
-        { weight: 1 - p1, ...updated[0] },
-        { weight: p1, ...components[0] },
-      ]),
-      mixtureMarginal([
-        { weight: p1, ...updated[1] },
-        { weight: 1 - p1, ...components[1] },
-      ]),
-    ],
-  }
-}
-
-const probability = (p: number): ExactMarginal => ({ mean: p, sd: Math.sqrt(p * (1 - p)), pdf: () => 0 })
 
 /** EP's belief that is not a belief of the model but of a function of its beliefs, proper when the pieces are. */
 const belief = (m: { mean: number; sd: number } | undefined): Belief =>
@@ -119,7 +48,7 @@ function epBranches(
   b: Readonly<Record<string, Belief>>,
   names: readonly [string, string],
   sites: readonly [string, string],
-  priors: readonly [Normal, Normal],
+  priors: readonly [NormalComponent, NormalComponent],
   z: string,
 ): readonly [MixtureBranch, MixtureBranch] | undefined {
   const p1 = b[z]?.mean
@@ -140,7 +69,7 @@ function epBranches(
 function epSelected(
   b: Readonly<Record<string, Belief>>,
   sites: readonly [string, string],
-  priors: readonly [Normal, Normal],
+  priors: readonly [NormalComponent, NormalComponent],
   z: string,
 ): Belief {
   const br = epBranches(b, ['0', '1'], sites, priors, z)
@@ -153,7 +82,7 @@ function componentView(
   label: string,
   index: 0 | 1,
   gate: TwoComponentGate,
-  prior: Normal,
+  prior: NormalComponent,
   z: string,
 ): MixtureView {
   const pSel = index === 1 ? gate.p1 : 1 - gate.p1
@@ -207,7 +136,7 @@ function knownGateProblem(k: Config): AtomProblem {
       `observe y = ${y}`,
     ],
     quantities: [{ name: 'z', label: 'P(z = 1)', support: 'probability' }],
-    exact: { z: probability(p) },
+    exact: { z: probabilityMarginal(p) },
     figure: {
       caption:
         'Each branch of the gate explains the observation with its own weight: the prior probability of the branch times the density of y under it. The posterior of z is the share of the taller one.',
@@ -266,7 +195,7 @@ function randomGateProblem(k: Config, form: 'select' | 'index'): AtomProblem {
   const pi = configNumber(k, 'pi')
   const y = configNumber(k, 'y')
   const s = 0.5
-  const priors: readonly [Normal, Normal] = [
+  const priors: readonly [NormalComponent, NormalComponent] = [
     { mean: -2, sd: 1 },
     { mean: 2, sd: 1 },
   ]
@@ -330,7 +259,12 @@ function randomGateProblem(k: Config, form: 'select' | 'index'): AtomProblem {
         derive: (b) => epSelected(b, sites, priors, 'z'),
       },
     ],
-    exact: { z: probability(gate.p1), [sites[0]]: gate.marginals[0], [sites[1]]: gate.marginals[1], g: gate.selected },
+    exact: {
+      z: probabilityMarginal(gate.p1),
+      [sites[0]]: gate.marginals[0],
+      [sites[1]]: gate.marginals[1],
+      g: gate.selected,
+    },
     mixtures: [
       selectedView,
       componentView(sites[0], names[0], 0, gate, priors[0], 'z'),
@@ -404,35 +338,6 @@ export const mixtureComponentsAtom: EpAtom = defineAtom({
 // ---------------------------------------------------------------------------------------------------------------------
 // Spike and slab.
 
-/**
- * The exact posterior of a coefficient with a spike and slab prior (inclusion probability `pi`, slab sd, spike sd) observed
- * through noise: a switch between the spike and the slab, so the same closed form as a two-component gate with zero means.
- *
- * @param pi - The prior probability of the slab.
- * @param slab - The slab's sd.
- * @param spike - The spike's sd.
- * @param y - The observation.
- * @param s - The noise sd.
- * @returns The posterior: `p1` is the posterior probability of the slab, `updated[0]` the spike branch and `updated[1]` the slab branch.
- * @concept expectation-propagation
- * @example
- * ```ts
- * import { spikeSlabPosterior } from 'omai-engine/probprog/ep'
- * spikeSlabPosterior(0.5, 2, 0.1, 0, 0.5).p1 < 0.2 // => true
- * ```
- */
-export function spikeSlabPosterior(pi: number, slab: number, spike: number, y: number, s: number): TwoComponentGate {
-  return twoComponentGate(
-    pi,
-    [
-      { mean: 0, sd: spike },
-      { mean: 0, sd: slab },
-    ],
-    y,
-    s,
-  )
-}
-
 const SPIKE_NOISE = 0.5
 
 const spikeKnobs = dict({
@@ -448,7 +353,7 @@ function spikeSlabGateProblem(k: Config): AtomProblem {
   const slab = configNumber(k, 'slab')
   const spike = configNumber(k, 'spike')
   const s = SPIKE_NOISE
-  const priors: readonly [Normal, Normal] = [
+  const priors: readonly [NormalComponent, NormalComponent] = [
     { mean: 0, sd: spike },
     { mean: 0, sd: slab },
   ]
@@ -478,7 +383,7 @@ function spikeSlabGateProblem(k: Config): AtomProblem {
       { name: 'slab', label: 'slab component', support: 'real', hidden: true },
       { name: 'x', label: 'x (the coefficient)', support: 'real', derive: (b) => epSelected(b, sites, priors, 'z') },
     ],
-    exact: { z: probability(gate.p1), spike: gate.marginals[0], slab: gate.marginals[1], x: gate.selected },
+    exact: { z: probabilityMarginal(gate.p1), spike: gate.marginals[0], slab: gate.marginals[1], x: gate.selected },
     mixtures: [
       {
         title: 'The coefficient x: the spike branch and the slab branch, each weighted by its posterior probability',
@@ -649,7 +554,7 @@ function clutterGateProblem(k: Config): AtomProblem {
         support: 'probability' as const,
       })),
     ],
-    exact: { theta: marginal, ...Object.fromEntries(pClutter.map((p, i) => [`z[${i}]`, probability(p)])) },
+    exact: { theta: marginal, ...Object.fromEntries(pClutter.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])) },
     figure: {
       caption:
         'The eight observations, coloured by whether EP believes each is clutter (a draw from the wide component around 0) or a detection of the centre (the line). The two bands are the two branches of every gate.',
