@@ -8,9 +8,10 @@
  * @index module The message-passing engine: one algorithm, slots for projection, schedule, damping, improper handling.
  */
 
-import { type Json, OmaiError } from '../../base/index.ts'
+import type { Json } from '../../base/index.ts'
 import { type Algorithm, channels, type RunStatus, stateFromJson, stateToJson } from '../../trace/index.ts'
 import { assertDamping } from '../core/_messages.ts'
+import { ParameterError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import type { Eta } from '../core/types.ts'
 import { advancerOf } from './_advance.ts'
@@ -68,7 +69,7 @@ function configOf(s: EngineSettings): Json {
  */
 export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettings): Algorithm<MpState> {
   assertDamping(settings.damping, 'message passing')
-  if (g.edges.length === 0) throw new OmaiError('value', 'message passing: the graph has no edge to send a message on')
+  if (g.edges.length === 0) throw new ParameterError('message passing: the graph has no edge to send a message on')
   const plan: Plan = planOf(g, settings.schedule, settings.granularity, settings.order)
   const residual = settings.schedule === 'residual'
   const emptyBeliefs = (messages: readonly (readonly number[])[]): number[][] =>
@@ -89,7 +90,7 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
     for (const m of settings.initial ?? []) {
       const e = g.factors[m.factor]?.ports[m.port]?.edge
       if (e === undefined || e < 0)
-        throw new OmaiError('value', `message passing: no edge at port ${m.port} of factor ${m.factor}`)
+        throw new ParameterError(`message passing: no edge at port ${m.port} of factor ${m.factor}`)
       messages[e] = [...m.eta]
     }
     const candidates: (number[] | null)[] = []

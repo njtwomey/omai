@@ -6,14 +6,13 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg, evidenceOrNaN } from '../../core/_messages.ts'
+import { arg, errorText, evidenceOrNaN } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
   gaussianMessage,
   gaussianOf,
   gaussianSiteMessage,
-  ImproperMessageError,
   logGaussianIntegral,
   logNormal,
   massOf,
@@ -23,7 +22,9 @@ import {
   siteMessage,
   vectorParam,
 } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
+import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, FamilyKind, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
 import { gaussianGrid, tiltedGrid, tiltedLogGrid } from '../../numerics/_quadrature.ts'
 import { digammaOf, trigammaOf } from '../../numerics/_scalar.ts'
@@ -60,6 +61,7 @@ export const prior: FactorOperator = {
   name: 'prior',
   description: 'a normalised density with the given natural parameters on one variable',
   ports: [{ name: 'x', accepts: ALL }],
+  params: { eta: param.vector() },
   support: { ep: 'exact', vmp: 'exact', bp: 'exact' },
   check: (params, families) =>
     vectorParam(params, 'eta').length === families[0]?.size
@@ -110,6 +112,7 @@ export const gaussianOperator: FactorOperator = {
   name: 'gaussian',
   description: 'x ~ N(mean, 1 / precision) with a fixed precision',
   ports: gaussianPorts,
+  params: { precision: param.positive() },
   support: { ep: 'exact', vmp: 'exact' },
   ep: (c): OperatorResult => {
     const o = gaussianOf(arg(c, 1 - c.to))
@@ -270,6 +273,15 @@ export const gaussianGammaPrecision: FactorOperator = {
   name: 'gaussian-gamma-precision',
   description: 'x ~ N(mean, 1 / (scale lambda + offset)) with lambda a gamma-distributed precision',
   ports: [...gaussianPorts, { name: 'precision', accepts: ['gamma'] }],
+  params: { scale: param.nonNegative({ optional: true }), offset: param.nonNegative({ optional: true }) },
+  check: (params) => {
+    try {
+      precisionParams(params)
+      return undefined
+    } catch (e) {
+      return errorText(e)
+    }
+  },
   support: { ep: 'numeric', vmp: 'exact' },
   // The precision's own cavity must be a gamma density; a Gaussian port whose cavity is still flat is shown very wide by the engine (`needsDensity`).
   readsTarget: (to) => to === 2,
@@ -319,7 +331,7 @@ function precisionParams(params: Params): { readonly scale: number; readonly off
   const scale = numberParam(params, 'scale', 1)
   const offset = numberParam(params, 'offset', 0)
   if (!(scale >= 0 && offset >= 0 && scale + offset > 0))
-    throw new OmaiError('value', 'gaussian-gamma-precision: the scale and the offset are non-negative, not both zero')
+    throw new ParameterError('gaussian-gamma-precision: the scale and the offset are non-negative, not both zero')
   return { scale, offset }
 }
 
@@ -358,13 +370,14 @@ export const gaussianLogScale: FactorOperator = {
     { name: 'x', accepts: ['gaussian'] as const, constant: true },
     { name: 'logScale', accepts: ['gaussian'] as const },
   ],
+  params: { loc: param.number({ optional: true }) },
   support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: (to) => to === 1,
   // The mean field: the non-conjugate message of log N(x; loc, exp(2 s)) in the log scale (and in a latent x), by quadrature.
   vmp: (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), c.to, logScaleAt(c)) }),
   expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), logScaleAt(c)),
   ep: (c): OperatorResult => {
-    if (c.to !== 1) throw new OmaiError('value', 'gaussian-log-scale: the value x must be observed')
+    if (c.to !== 1) throw new ParameterError('gaussian-log-scale: the value x must be observed')
     const y = gaussianOf(arg(c, 0)).mean
     const loc = c.params['loc'] === undefined ? 0 : numberParam(c.params, 'loc')
     const s = gaussianOf(arg(c, 1))
@@ -407,12 +420,13 @@ export const gaussianNormalGamma: FactorOperator = {
     { name: 'x', accepts: ['gaussian'], constant: true },
     { name: 'theta', accepts: ['normal-gamma'] },
   ],
+  params: { precision: param.positive({ optional: true }) },
   support: { ep: 'exact', vmp: 'exact' },
   ep: (c): OperatorResult => {
     const x = arg(c, 0)
     if (x.value === undefined)
-      throw new OmaiError('value', 'gaussian-normal-gamma: expectation propagation needs the observation observed')
-    if (c.to !== 1) throw new OmaiError('value', 'gaussian-normal-gamma: the value is observed, nothing is sent to it')
+      throw new ParameterError('gaussian-normal-gamma: expectation propagation needs the observation observed')
+    if (c.to !== 1) throw new ParameterError('gaussian-normal-gamma: the value is observed, nothing is sent to it')
     const k = numberParam(c.params, 'precision', 1)
     const v = gaussianOf(x).mean
     return { message: [k * v, -k / 2, (-k * v * v) / 2, 0.5] }
@@ -471,6 +485,7 @@ export const product: FactorOperator = {
     { name: 'a', accepts: ['gaussian'], constant: true },
     { name: 'b', accepts: ['gaussian'], constant: true },
   ],
+  params: {},
   support: { ep: 'numeric', vmp: 'exact' },
   readsTarget: (to) => to !== 0,
   // Deterministic: under the mean field `y` is the pushforward of `a` and `b` (the moments of a product of independent variables are
@@ -556,7 +571,7 @@ function productDensity(
   return (a) => {
     const v = a * a * other.variance + y.variance
     if (!(v > 0))
-      throw new OmaiError('value', 'product: the output and one factor are both observed, which determines the other')
+      throw new ParameterError('product: the output and one factor are both observed, which determines the other')
     return Math.exp(logNormal(a * other.mean, y.mean, v))
   }
 }
@@ -581,6 +596,7 @@ export const equal: FactorOperator = {
     { name: 'x', accepts: ALL },
     { name: 'y', accepts: ALL },
   ],
+  params: {},
   support: { ep: 'exact', vmp: 'exact', bp: 'exact' },
   // A copy defines x from y: under the mean field x is y, so its belief is y's and what x's other factors say goes to y.
   defines: 0,

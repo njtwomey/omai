@@ -5,8 +5,8 @@
  * stops and when it reports, never what it computes, so any slicing of a run reaches the same states.
  */
 
-import { OmaiError } from '../../base/index.ts'
 import { type Algorithm, initialSlice, type RunHandle, type RunStatus, runFor, type Slice } from '../../trace/index.ts'
+import { ParameterError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import { mpSnapshot } from '../engine/cavity.ts'
 import type { MpSnapshot, MpState } from '../engine/state.ts'
@@ -104,7 +104,7 @@ export function runAnytimeWith<S, P>(
 ): AnytimeResult<S, P> {
   const every = options.snapshotEveryMs ?? 1000
   if (!(options.budgetMs > 0) || !(every > 0))
-    throw new OmaiError('value', 'runAnytime: the budget and the snapshot interval must be positive')
+    throw new ParameterError('runAnytime: the budget and the snapshot interval must be positive')
   const maxSteps = options.maxSteps ?? 1_000_000
   const started = options.clock()
   let lastReport = Number.NEGATIVE_INFINITY

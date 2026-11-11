@@ -5,9 +5,9 @@
  * algorithm and method that run EP with it.
  */
 
-import { OmaiError } from '../../base/index.ts'
 import { dict, int, real, union } from '../../space/index.ts'
 import { type Algorithm, type Config, defineMethod, type Method } from '../../trace/index.ts'
+import { ParameterError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import type { TiltedRule } from '../core/types.ts'
 import type { Projection } from '../engine/projections.ts'
@@ -139,7 +139,7 @@ export function numericEpMethod(g: CompiledGraph): Method<MpState, Config, EpPat
         }
       }
       const make = numericRules[kind]
-      if (make === undefined) throw new OmaiError('value', `numeric EP: unknown rule ${kind}`)
+      if (make === undefined) throw new ParameterError(`numeric EP: unknown rule ${kind}`)
       return numericEpAlgorithm(g, { ...messagePassingOptions(c), rule: make(knobs) })
     },
     contract: epContract,

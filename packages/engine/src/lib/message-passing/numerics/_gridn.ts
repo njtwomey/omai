@@ -4,7 +4,7 @@
 // takes any number of axes (an observed or known coordinate is a single node), a coordinate being the value of a Gaussian, the log of
 // a gamma variable or the logit of a beta variable, each with the Jacobian in its density.
 
-import { OmaiError } from '../../base/index.ts'
+import { ImproperMessageError, ParameterError } from '../core/errors.ts'
 import type { GridAxis } from './_grid.ts'
 import { legendreRule } from './_quadrature.ts'
 import { digammaOf, lgammaOf, softplusOf, trigammaOf } from './_scalar.ts'
@@ -63,7 +63,7 @@ function panelNodes(lo: number, hi: number, shape: { panels: number; order: numb
  */
 export function integrateAxes(axes: readonly GridAxis[], logf: (t: Float64Array) => number): GridNResult {
   const k = axes.length
-  if (k < 1 || k > 3) throw new OmaiError('value', 'integrateAxes: one to three axes')
+  if (k < 1 || k > 3) throw new ParameterError('integrateAxes: one to three axes')
   let window: [number, number][] = axes.map((a) => [a.lo, a.hi])
   let result: GridNResult | undefined
   let fine = false
@@ -97,7 +97,7 @@ export function integrateAxes(axes: readonly GridAxis[], logf: (t: Float64Array)
           if (v > top) top = v
         }
     if (!Number.isFinite(top))
-      throw new OmaiError('value', 'numeric rule: the factor has no mass under the incoming messages')
+      throw new ImproperMessageError('numeric rule: the factor has no mass under the incoming messages')
     let total = 0
     for (let i = 0; i < lw.length; i++) {
       const e = Math.exp((lw[i] as number) - top)

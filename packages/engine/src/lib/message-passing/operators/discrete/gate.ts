@@ -14,10 +14,12 @@
  */
 
 import { type Json, logSumExpOf, OmaiError } from '../../../base/index.ts'
-import { arg, evidenceOrNaN } from '../../core/_messages.ts'
-import { etaOf, ImproperMessageError, massOf, numberParam, scalarOf, valueArg } from '../../core/args.ts'
+import { arg, errorText, evidenceOrNaN } from '../../core/_messages.ts'
+import { etaOf, massOf, numberParam, scalarOf, valueArg } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gaussian } from '../../core/families.ts'
 import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
+import { param, validateParams } from '../../core/params.ts'
 import type {
   Arg,
   Eta,
@@ -38,7 +40,7 @@ interface Branch {
 
 function branchesOf(params: Params): readonly Branch[] {
   const raw = params['branches']
-  if (!Array.isArray(raw)) throw new OmaiError('value', 'gate: the parameter branches must be an array')
+  if (!Array.isArray(raw)) throw new ParameterError('gate: the parameter branches must be an array')
   return raw.map((b, k) => {
     const r = b as { readonly operator?: Json; readonly args?: Json; readonly params?: Json }
     const args = Array.isArray(r.args) ? r.args : []
@@ -48,10 +50,7 @@ function branchesOf(params: Params): readonly Branch[] {
         if (typeof a === 'number') return a
         if (a !== null && typeof a === 'object' && !Array.isArray(a) && typeof a['const'] === 'number')
           return { const: a['const'] }
-        throw new OmaiError(
-          'value',
-          `gate: branch ${k} has an argument that is neither a variable index nor a constant`,
-        )
+        throw new ParameterError(`gate: branch ${k} has an argument that is neither a variable index nor a constant`)
       }),
       params: (r.params ?? {}) as Params,
     }
@@ -87,7 +86,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
   const innerOf = (b: Branch): FactorOperator | undefined => {
     if (b.operator === undefined) return undefined
     const op = inner[b.operator]
-    if (op === undefined) throw new OmaiError('value', `gate: no operator '${b.operator}' in the registry`)
+    if (op === undefined) throw new ParameterError(`gate: no operator '${b.operator}' in the registry`)
     return op
   }
   /** The arguments a branch is shown: the gate's cavities (or beliefs) of its variables and its constants. */
@@ -194,6 +193,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
         }),
       ),
     ],
+    params: { arity: param.integer({ min: 1 }), branches: param.any({ example: [] }) },
     support: { ep: 'numeric', vmp: 'bound' },
     // A power (fractional EP, an alpha-divergence) is taken of the branches: each is the factor to the power p, and the gate's indicators are disjoint so the factor to the power p is the gate of the branches to the power p.
     power: (params) => branchesOf(params).every((b) => b.operator === undefined || powerable(b) !== undefined),
@@ -208,6 +208,13 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
         for (const a of b.args)
           if (typeof a === 'number' && !(a >= 0 && a < arity)) return `gate: branch ${k}: variable ${a} is out of range`
         if (op !== undefined) {
+          if (op.params !== undefined) {
+            try {
+              validateParams(`gate: branch ${k} (${op.name})`, op.params, b.params)
+            } catch (e) {
+              return errorText(e)
+            }
+          }
           const ports = typeof op.ports === 'function' ? op.ports(b.params) : op.ports
           if (ports.length !== b.args.length)
             return `gate: branch ${k}: ${op.name} has ${ports.length} ports, ${b.args.length} given`

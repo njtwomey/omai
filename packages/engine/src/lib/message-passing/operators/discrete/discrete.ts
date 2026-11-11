@@ -5,11 +5,13 @@
  * the discrete factors of `pgm` for the sums.
  */
 
-import { logSumExpOf, OmaiError } from '../../../base/index.ts'
+import { logSumExpOf } from '../../../base/index.ts'
 import { factor, factorProductAll, logFactor, logTotal, marginalise, reduceFactor } from '../../../pgm/factor.ts'
 import { arg } from '../../core/_messages.ts'
-import { allProper, etaOf, ImproperMessageError, massOf, scalarOf, vectorParam } from '../../core/args.ts'
+import { allProper, etaOf, massOf, scalarOf, vectorParam } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
+import { param } from '../../core/params.ts'
 import type {
   Arg,
   Eta,
@@ -28,7 +30,7 @@ function logProbabilities(a: Arg, k: number): number[] {
   if (a.value !== undefined)
     return Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(a)) ? 0 : Number.NEGATIVE_INFINITY))
   const lp = a.family.logProbs
-  if (lp === undefined) throw new OmaiError('value', 'a table argument must be a Bernoulli or discrete variable')
+  if (lp === undefined) throw new ParameterError('a table argument must be a Bernoulli or discrete variable')
   return [...lp(etaOf(a))]
 }
 
@@ -60,7 +62,7 @@ function sumProduct(c: OperatorContext, to: number | undefined): { readonly logs
 /** The discrete message from log weights, in the argument's family (Bernoulli or discrete). */
 function toMessage(family: Family, logs: readonly number[]): Eta {
   if (family.fromLogProbs === undefined)
-    throw new OmaiError('value', 'a table port must be a Bernoulli or discrete variable')
+    throw new ParameterError('a table port must be a Bernoulli or discrete variable')
   return family.fromLogProbs(logs)
 }
 
@@ -120,6 +122,7 @@ export const table: FactorOperator = {
   name: 'table',
   description: 'a non-negative table over discrete variables',
   ports: tablePorts,
+  params: { states: param.vector(), values: param.vector() },
   support: { ep: 'exact', bp: 'exact', vmp: 'exact' },
   check: (params, families) => {
     const states = statesOf(params)
@@ -225,6 +228,7 @@ export const select: FactorOperator = {
   name: 'select',
   description: 'y = c_z: select one of several variables by a discrete index',
   ports: selectPorts,
+  params: { components: param.integer({ min: 1 }) },
   support: { ep: 'exact', vmp: 'exact' },
   readsTarget: (to) => to >= 2,
   // The output is the selected component, so under the mean field it is defined by the others: its belief is the mixture of the
@@ -383,6 +387,7 @@ export const gaussianMixture: FactorOperator = {
   name: 'gaussian-mixture',
   description: 'x ~ N(mu_z, 1 / lambda_z) with normal-gamma components',
   ports: mixturePorts,
+  params: { components: param.integer({ min: 1 }) },
   support: { vmp: 'exact' },
   check: (params, families) =>
     families[1]?.dim === Math.trunc(Number(params['components']))

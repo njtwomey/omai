@@ -10,19 +10,11 @@
  * `_grid.ts`.
  */
 
-import { OmaiError } from '../../../base/index.ts'
 import { arg, evidenceOrNaN } from '../../core/_messages.ts'
-import {
-  allProper,
-  etaOf,
-  gaussianOf,
-  gaussianSiteMessage,
-  ImproperMessageError,
-  massOf,
-  siteMessage,
-  vectorParam,
-} from '../../core/args.ts'
+import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, siteMessage, vectorParam } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
+import { param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { axisOf, integratePair } from '../../numerics/_grid.ts'
 import { digammaOf, lgammaOf, trigammaOf } from '../../numerics/_scalar.ts'
@@ -41,8 +33,7 @@ function concentrations(c: OperatorContext): { readonly w: readonly number[]; re
     o.some((v) => !(v >= 0)) ||
     w.every((v, k) => v === 0 && o[k] === 0)
   )
-    throw new OmaiError(
-      'value',
+    throw new ParameterError(
       'dirichlet-concentration: weights and offsets are non-negative vectors of one length, never both zero',
     )
   return { w, o }
@@ -199,6 +190,7 @@ export const dirichletConcentration: FactorOperator = {
     { name: 'p', accepts: ['beta', 'dirichlet'] },
     { name: 'alpha', accepts: ['gamma', 'gaussian'] },
   ],
+  params: { weights: param.vector(), offsets: param.vector({ optional: true }), log: param.flag({ optional: true }) },
   support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: () => true,
   // The mean field: to the probabilities the Dirichlet with the mean concentration (exact), to the concentration the natural
@@ -322,6 +314,7 @@ export const betaTwoShapes: FactorOperator = {
     { name: 'a', accepts: ['gamma', 'gaussian'] },
     { name: 'b', accepts: ['gamma', 'gaussian'] },
   ],
+  params: {},
   support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: () => true,
   power: true,

@@ -9,6 +9,7 @@
 
 import { arg, perPower } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, logNormal, massOf, scalarOf } from '../../core/args.ts'
+import { param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { tiltedByQuadrature } from '../../numerics/_tilted.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
@@ -61,6 +62,7 @@ export const gaussianScale: FactorOperator = {
     { name: 'mean', accepts: ['gaussian'], constant: true },
     { name: 'logScale', accepts: ['gaussian'] },
   ],
+  params: {},
   support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: (to) => to !== 0,
   power: true,

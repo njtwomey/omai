@@ -12,7 +12,8 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { gaussianMessage, gaussianOf, ImproperMessageError, scalarOf } from '../../core/args.ts'
+import { gaussianMessage, gaussianOf, scalarOf } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import type { Arg, Eta } from '../../core/types.ts'
 import { gaussianGridOn, gaussianNodes } from '../../numerics/_quadrature.ts'
@@ -154,7 +155,7 @@ export function quadraturePort(a: Arg, options: QuadOptions = {}): QuadPort {
       stats: Array.from(t, (u): [number, number] => [-log1pExp(-u), -log1pExp(u)]),
     }
   }
-  throw new OmaiError('value', `non-conjugate variational message passing has no quadrature for a ${kind} variable`)
+  throw new ParameterError(`non-conjugate variational message passing has no quadrature for a ${kind} variable`)
 }
 
 /**
@@ -267,7 +268,7 @@ export function numericExpectedLog(ports: readonly QuadPort[], logf: (x: readonl
  */
 export function numericMessage(ports: readonly QuadPort[], to: number, logf: (x: readonly number[]) => number): Eta {
   const target = ports[to] as QuadPort
-  if (target.stats.length === 0) throw new OmaiError('value', 'a variational message is not sent to an observed port')
+  if (target.stats.length === 0) throw new ParameterError('a variational message is not sent to an observed port')
   const n = target.coords.length
   const x = new Array<number>(ports.length).fill(0)
   const g = new Float64Array(n)

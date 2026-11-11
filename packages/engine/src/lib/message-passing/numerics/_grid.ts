@@ -4,7 +4,7 @@
 // (its coordinate is the log of the value, the density in that coordinate carrying the Jacobian), and the integrand is a
 // function of the two coordinates.
 
-import { OmaiError } from '../../base/index.ts'
+import { ImproperMessageError } from '../core/errors.ts'
 import type { Arg } from '../core/types.ts'
 import { legendreRule } from './_quadrature.ts'
 import { digammaOf, lgammaOf, trigammaOf } from './_scalar.ts'
@@ -132,7 +132,7 @@ export function integratePair(
       }
     }
     if (!Number.isFinite(top))
-      throw new OmaiError('value', 'numeric rule: the factor has no mass under the incoming messages')
+      throw new ImproperMessageError('numeric rule: the factor has no mass under the incoming messages')
     let total = 0
     for (let k = 0; k < lw.length; k++) {
       const v = Math.exp((lw[k] as number) - top)
@@ -251,10 +251,10 @@ export function axisOf(a: Arg, kinks: readonly number[] = []): GridAxis {
     const shape = (eta[0] ?? 0) + 1
     const rate = -(eta[1] ?? 0)
     if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
-      throw new OmaiError('value', 'a gamma message has no density')
+      throw new ImproperMessageError('a gamma message has no density')
     return gammaAxis(shape, rate, kinks)
   }
   const j = eta[1] ?? 0
-  if (!(j > 0) || !Number.isFinite(j)) throw new OmaiError('value', 'a Gaussian message has no density')
+  if (!(j > 0) || !Number.isFinite(j)) throw new ImproperMessageError('a Gaussian message has no density')
   return gaussianAxis((eta[0] ?? 0) / j, 1 / j, kinks)
 }

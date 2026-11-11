@@ -1,9 +1,10 @@
 // What a message-passing run reports when it stops: `converged` only at a real fixed point. A run whose beliefs stopped moving
 // because some updates cannot be computed is `stopped` with the reason `stalled`, a fixed point with a belief that has no density
 // is `failed` as `degenerate`, an automatic damped restart can recover a stall, and the tape says which and why.
+
 import { describe, expect, it } from 'vitest'
 import { policies, recorder, runAlgorithm } from '../../trace/index.ts'
-import { ImproperMessageError } from '../core/args.ts'
+import { ImproperMessageError } from '../core/errors.ts'
 import type { FactorOperator } from '../core/types.ts'
 import * as M from '../index.ts'
 

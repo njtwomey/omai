@@ -9,11 +9,12 @@
  * correlation is a one-dimensional integral.
  */
 
-import { OmaiError } from '../../../base/index.ts'
 import { arg, evidenceOrNaN } from '../../core/_messages.ts'
-import { ImproperMessageError, siteMessage } from '../../core/args.ts'
+import { siteMessage } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { beta, gamma } from '../../core/families.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
+import { param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { type GridAxis, gammaAxis, pointAxis } from '../../numerics/_grid.ts'
 import { betaAxis, integrateAxes } from '../../numerics/_gridn.ts'
@@ -25,10 +26,10 @@ function axisOfPort(a: Arg, kind: 'precision' | 'correlation'): GridAxis {
   if (a.value !== undefined) {
     const v = typeof a.value === 'number' ? a.value : Number.NaN
     if (kind === 'precision') {
-      if (!(v > 0)) throw new OmaiError('value', 'mvn-sd-corr: a known precision is positive')
+      if (!(v > 0)) throw new ParameterError('mvn-sd-corr: a known precision is positive')
       return pointAxis(Math.log(v))
     }
-    if (!(v > -1 && v < 1)) throw new OmaiError('value', 'mvn-sd-corr: a known correlation is in (-1, 1)')
+    if (!(v > -1 && v < 1)) throw new ParameterError('mvn-sd-corr: a known correlation is in (-1, 1)')
     const u = (v + 1) / 2
     return pointAxis(Math.log(u / (1 - u)))
   }
@@ -110,6 +111,7 @@ export const mvnSdCorr: FactorOperator = {
     { name: 'precision 2', accepts: ['gamma'], constant: true },
     { name: 'correlation', accepts: ['beta'], constant: true },
   ],
+  params: { count: param.number({ min: 1, optional: true }), scatter: param.vector({ optional: true }) },
   support: { ep: 'numeric' },
   readsTarget: (to) => to >= 2,
   noRule: { vmp: 'the expected log density of a correlation that is a beta variable has no closed form' },

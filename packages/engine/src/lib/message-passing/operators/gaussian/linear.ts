@@ -16,7 +16,6 @@ import {
   etaOf,
   gaussianMessage,
   gaussianOf,
-  ImproperMessageError,
   logNormal,
   massOf,
   numberParam,
@@ -24,7 +23,9 @@ import {
   scalarOf,
   vectorParam,
 } from '../../core/args.ts'
+import { ImproperMessageError } from '../../core/errors.ts'
 import { gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
+import { type ParamSpec, param } from '../../core/params.ts'
 import type { FactorOperator, Family, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
 import { spd } from '../../numerics/_dense.ts'
 
@@ -98,12 +99,14 @@ function affineOperator(
   name: string,
   description: string,
   ports: readonly Port[] | ((params: OperatorContext['params']) => readonly Port[]),
+  declared: ParamSpec,
   form: (params: OperatorContext['params']) => { readonly coeffs: readonly number[]; readonly offset: number },
 ): FactorOperator {
   return {
     name,
     description,
     ports,
+    params: declared,
     support: { ep: 'exact', vmp: 'exact' },
     defines: 0,
     ep: (c) => {
@@ -142,6 +145,7 @@ export const linear: FactorOperator = affineOperator(
   'linear',
   'y = offset + sum of coefficient times argument, for Gaussians',
   (params) => [gaussianPort('y'), ...vectorParam(params, 'coeffs').map((_, i) => gaussianPort(`a${i}`))],
+  { coeffs: param.vector(), offset: param.number({ optional: true }) },
   (params) => ({ coeffs: vectorParam(params, 'coeffs'), offset: numberParam(params, 'offset', 0) }),
 )
 
@@ -161,6 +165,7 @@ export const plus: FactorOperator = affineOperator(
   'plus',
   'y = a + b for Gaussians',
   [gaussianPort('y'), gaussianPort('a'), gaussianPort('b')],
+  {},
   () => ({ coeffs: [1, 1], offset: 0 }),
 )
 
@@ -180,6 +185,7 @@ export const difference: FactorOperator = affineOperator(
   'difference',
   'y = a - b for Gaussians',
   [gaussianPort('y'), gaussianPort('a'), gaussianPort('b')],
+  {},
   () => ({ coeffs: [1, -1], offset: 0 }),
 )
 
@@ -199,6 +205,7 @@ export const timesConstant: FactorOperator = affineOperator(
   'times-constant',
   'y = factor a for a constant factor',
   [gaussianPort('y'), gaussianPort('a')],
+  { factor: param.number() },
   (params) => ({ coeffs: [numberParam(params, 'factor')], offset: 0 }),
 )
 
@@ -218,6 +225,7 @@ export const sum: FactorOperator = affineOperator(
   'sum',
   'y = a_1 + ... + a_n for Gaussians',
   (params) => [gaussianPort('y'), ...Array.from({ length: numberParam(params, 'n') }, (_, i) => gaussianPort(`a${i}`))],
+  { n: param.integer({ min: 1 }) },
   (params) => ({ coeffs: Array.from({ length: numberParam(params, 'n') }, () => 1), offset: 0 }),
 )
 
@@ -246,6 +254,7 @@ export const dotConstant: FactorOperator = {
     { name: 's', accepts: ['gaussian'] },
     { name: 'w', accepts: ['gaussian-mv'] },
   ],
+  params: { a: param.vector() },
   support: { ep: 'exact', vmp: 'exact' },
   defines: 0,
   check: (params, families) =>
@@ -325,6 +334,7 @@ export const matmulConstant: FactorOperator = {
     { name: 'y', accepts: ['gaussian-mv'] },
     { name: 'w', accepts: ['gaussian-mv'] },
   ],
+  params: { matrix: param.vector() },
   support: { ep: 'exact', vmp: 'exact' },
   defines: 0,
   check: (params, families) => {
@@ -427,6 +437,7 @@ export const linearRegressionRow: FactorOperator = {
     { name: 'y', accepts: ['gaussian'], constant: true },
     { name: 'w', accepts: ['gaussian-mv'] },
   ],
+  params: { a: param.vector(), precision: param.positive() },
   support: { ep: 'exact', vmp: 'exact' },
   check: (params, families) =>
     vectorParam(params, 'a').length === families[1]?.dim
@@ -520,6 +531,7 @@ export const gaussianJoint: FactorOperator = {
   name: 'gaussian-joint',
   description: 'exp(g + h x - x J x / 2) over scalar Gaussian variables',
   ports: (params) => vectorParam(params, 'h').map((_, i) => gaussianPort(`x${i}`)),
+  params: { h: param.vector(), J: param.vector(), g: param.number({ optional: true }) },
   support: { ep: 'exact', vmp: 'exact' },
   check: (params) => {
     const n = vectorParam(params, 'h').length

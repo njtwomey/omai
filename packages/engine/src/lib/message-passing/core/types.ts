@@ -31,6 +31,7 @@
  */
 
 import type { Json } from '../../base/index.ts'
+import type { ParamSpecOf } from './params.ts'
 
 /** A message: the natural parameters of a member of a family, in the layout the family documents. */
 export type Eta = readonly number[]
@@ -265,6 +266,13 @@ export interface FactorOperator {
    * a graph can run, so the refusal names the factor and the reason instead of failing in the run.
    */
   unsupported?(mode: Mode, params: Params): string | undefined
+  /**
+   * The JSON parameters the operator reads (`param.number()`, `param.vector()`, ...: see `params.ts`), or a function of the
+   * parameters when the names depend on one of them. `compileGraph` parses a factor's parameters against it before anything
+   * else, so an unknown, missing or ill-typed parameter is a `ParameterError` naming the operator and the parameter. Every
+   * operator of the library declares it (`{}` for none); an operator of your own without it is not checked.
+   */
+  readonly params?: ParamSpecOf
   /** A reason the factor cannot be built from these parameters and families, or `undefined` when it can. */
   check?(params: Params, families: readonly Family[]): string | undefined
   ep?(c: OperatorContext): OperatorResult

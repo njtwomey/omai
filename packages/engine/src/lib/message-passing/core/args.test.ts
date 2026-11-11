@@ -6,7 +6,6 @@ import {
   gaussianMessage,
   gaussianOf,
   gaussianSiteMessage,
-  ImproperMessageError,
   logGaussianIntegral,
   massOf,
   messageArg,
@@ -18,6 +17,7 @@ import {
   vectorOf,
   vectorParam,
 } from './args.ts'
+import { ImproperMessageError } from './errors.ts'
 import { gaussian, gaussianEta } from './families.ts'
 
 describe('how operators read their arguments', () => {

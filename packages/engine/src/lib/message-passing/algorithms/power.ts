@@ -14,9 +14,9 @@
  * @index module Power and fractional EP: per-factor powers on the message-passing engine, as an algorithm and a method.
  */
 
-import { OmaiError } from '../../base/index.ts'
 import { dict, real } from '../../space/index.ts'
 import { type Algorithm, type Config, defineMethod, type Method } from '../../trace/index.ts'
+import { ParameterError } from '../core/errors.ts'
 import type { CompiledFactor, CompiledGraph } from '../core/graph.ts'
 import { takesPower } from '../core/types.ts'
 import { momentProjection } from '../engine/projections.ts'
@@ -75,9 +75,9 @@ export function withPowers(g: CompiledGraph, powerOf: (f: CompiledFactor) => num
     factors: g.factors.map((f) => {
       const power = powerOf(f)
       if (!(power > 0 && Number.isFinite(power)))
-        throw new OmaiError('value', `power EP: the power of ${f.id} must be positive, got ${power}`)
+        throw new ParameterError(`power EP: the power of ${f.id} must be positive, got ${power}`)
       if (power !== 1 && !takesPower(f.operator, f.params))
-        throw new OmaiError('value', `power EP: ${f.id} (${f.operator.name}) does not support a power`)
+        throw new ParameterError(`power EP: ${f.id} (${f.operator.name}) does not support a power`)
       return power === f.power ? f : { ...f, power }
     }),
   }
@@ -122,7 +122,7 @@ export function powerEpAlgorithm(g: CompiledGraph, options: PowerEpOptions = {})
   const named = options.powers ?? {}
   const ids = new Set(g.factors.map((f) => f.id))
   for (const id of Object.keys(named)) {
-    if (!ids.has(id)) throw new OmaiError('value', `power EP: there is no factor with the id ${id}`)
+    if (!ids.has(id)) throw new ParameterError(`power EP: there is no factor with the id ${id}`)
   }
   const powered = withPowers(g, (f) => named[f.id] ?? (takesPower(f.operator, f.params) ? power : 1))
   const alg = messagePassingAlgorithm(powered, messagePassingSettings(momentProjection, epDefaults, options))

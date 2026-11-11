@@ -8,6 +8,7 @@
 
 import { logAddExp } from '../../../base/index.ts'
 import { allProper, etaOf, gaussianSiteMessage, numberParam } from '../../core/args.ts'
+import { param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 
 /** log of the weights of the two spin values against a Gaussian message `exp(h x - j x^2 / 2)`: the points x = +1 and x = -1. */
@@ -36,6 +37,7 @@ export const spin: FactorOperator = {
   name: 'spin',
   description: 'x in {-1, +1} with weight exp(field x)',
   ports: [{ name: 'x', accepts: ['gaussian'] }],
+  params: { field: param.number({ optional: true }) },
   support: { ep: 'exact' },
   noRule: {
     vmp: 'the spin is two point masses at plus and minus one: KL(q || p) is infinite for every Gaussian q (use expectation propagation, or a binary variable with a table)',

@@ -3,8 +3,9 @@
  * every variable by id and the snapshot of a run. Functions of the messages alone, so any state of a run has them.
  */
 
-import { type Json, OmaiError } from '../../base/index.ts'
+import type { Json } from '../../base/index.ts'
 import { FLAT_CAVITY_PRECISION } from '../core/args.ts'
+import { ParameterError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import type { Eta } from '../core/types.ts'
 import type { MpSnapshot, MpState } from './state.ts'
@@ -12,7 +13,7 @@ import type { MpSnapshot, MpState } from './state.ts'
 /** The belief of a variable: the product of the messages of its edges (flat for none). */
 export function beliefOf(g: CompiledGraph, messages: readonly (readonly number[])[], variable: number): Eta {
   const v = g.variables[variable]
-  if (v === undefined) throw new OmaiError('value', `no variable ${variable}`)
+  if (v === undefined) throw new ParameterError(`no variable ${variable}`)
   let acc: Eta = v.family.flat
   for (const e of v.edges) acc = v.family.product(acc, messages[e] as Eta)
   return acc

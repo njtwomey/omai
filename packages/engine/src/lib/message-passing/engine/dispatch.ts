@@ -6,7 +6,8 @@
 
 import { OmaiError } from '../../base/index.ts'
 import { isFlat } from '../core/_messages.ts'
-import { FLAT_CAVITY_PRECISION, ImproperMessageError } from '../core/args.ts'
+import { FLAT_CAVITY_PRECISION } from '../core/args.ts'
+import { ImproperMessageError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import type { Arg, Eta, OperatorContext, OperatorResult } from '../core/types.ts'
 import { readable } from './_cavities.ts'
@@ -74,7 +75,7 @@ export function operatorMessage(
     }
     return { kind: 'message', eta: result.message }
   } catch (err) {
-    if (err instanceof ImproperMessageError || (err instanceof OmaiError && err.code === 'value')) {
+    if (err instanceof ImproperMessageError) {
       const others = args.filter((a, q) => q !== to && a.eta !== undefined)
       return others.some((a) => isFlat(a.eta)) ? { kind: 'flat' } : { kind: 'failed' }
     }

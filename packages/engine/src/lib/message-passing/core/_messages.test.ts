@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { OmaiError } from '../../base/index.ts'
 import { arg, assertDamping, errorText, evidenceOrNaN, isFlat, perPower } from './_messages.ts'
-import { ImproperMessageError, messageArg } from './args.ts'
+import { messageArg } from './args.ts'
+import { ImproperMessageError } from './errors.ts'
 import { gaussian, gaussianEta } from './families.ts'
 
 describe('the shared conventions of operators', () => {

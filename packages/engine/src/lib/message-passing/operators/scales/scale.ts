@@ -10,8 +10,10 @@
 
 import { OmaiError } from '../../../base/index.ts'
 import { arg, evidenceOrNaN } from '../../core/_messages.ts'
-import { etaOf, ImproperMessageError, siteMessage, vectorParam } from '../../core/args.ts'
+import { etaOf, siteMessage, vectorParam } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
+import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { spd } from '../../numerics/_dense.ts'
 import { digammaOf, trigammaOf } from '../../numerics/_scalar.ts'
@@ -29,8 +31,7 @@ function precisions(c: OperatorContext): { readonly scale: readonly number[]; re
     const s = scale[j] ?? 0
     const o = offset[j] ?? 0
     if (!(s >= 0 && o >= 0 && s + o > 0))
-      throw new OmaiError(
-        'value',
+      throw new ParameterError(
         'gaussian-mv-precision-scale: each precision needs a non-negative scale and offset, not both zero',
       )
   }
@@ -258,6 +259,7 @@ export const gaussianMvPrecisionScale: FactorOperator = {
     { name: 'beta', accepts: ['gaussian-mv'] },
     { name: 'lambda', accepts: ['gamma'] },
   ],
+  params: { scale: param.vector(), offset: param.vector({ optional: true }) },
   support: { ep: 'numeric', vmp: 'exact' },
   readsTarget: (to) => to === 1,
   check: (params, families) =>
