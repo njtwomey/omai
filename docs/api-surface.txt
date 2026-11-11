@@ -126,10 +126,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	303	541cc98902e2
-<<<<<<< HEAD
-total	20108	ab4b8f3a0898
-||||||| 0de7f0fc
-total	20269	4a47b93353e2
-=======
-total	20280	114571eab7bb
->>>>>>> agent-pp172-variational
+total	20119	4899961ca41b
