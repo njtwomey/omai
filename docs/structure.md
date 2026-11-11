@@ -8715,7 +8715,7 @@ library for the same computation. They do not set a higher bar than that library
 
 - `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `docs-catalogue`, `build`, `lint`, `format`, `typecheck`,
   `test`, `test-browser`, `coverage`, `docs`, `concepts`, `barrels`, `layers`, `fixtures`, `fixtures-check`,
-  `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`, `probprog-validate`.
+  `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`, `probprog-validate`, `ep-digest`, `ep-digest-check`.
 - Two gates: `make verify` for every commit and merge (whole-repo checks that take seconds, among them the public API
   surface digest `make api-surface-check`, which fails on any export added, removed or retyped until `make api-surface`
   is run on purpose, then only the tests,
@@ -8766,6 +8766,26 @@ library for the same computation. They do not set a higher bar than that library
   time; `ARGS="--only <prefix>"`, `--scale`, `--seed`, `--out`, and `--check` (which tables are older than the last commit
   that touched the probprog, sampling or message-passing code). Not part of `make verify` or `make check`: re-run it when
   that code changes and commit the tables.
+- `scripts/ep-digest.ts` (with `ep-digest-core.ts`, `ep-digest-programs.ts`; `make ep-digest`, `make ep-digest-check`, run niced):
+  the proof that a behaviour-preserving change of the EP capability (the model compiler, the message-passing engine and
+  operators, the atoms, methods and coverage) changed nothing. It runs, serially in one process (about 2 to 2.5 minutes),
+  every EP atom (`epAtoms`), every benchmark model, the variational run of each atom and the EP programs of the pocs
+  (the `infer` of each `ep-program-*/program.ts`, imported from `apps/pocs`; their reference samplers and calibrations are
+  excluded), and records per item the compiled factor graph (sha256 of its canonical JSON in three compilations: EP's,
+  rows expanded, variational), the verdict (route, status, sweeps, restarts, improper and repaired counts, reasons), the
+  beliefs and log evidence at full precision, the atom's check rows and the `epCoverage` / `vmpCoverage` rows; plus the
+  registry (the operator names and what each declares: ports, support, hooks, flags) and the knob spaces. The committed
+  baseline is `docs/probprog/ep-digest.json` (numbers to 12 significant digits, evidences at full precision, a `bits`
+  hash of the full-precision numbers per item); the full graph JSONs go to the gitignored `.cache/ep-digest/graphs/`,
+  so a report can say which variable or factor of which graph changed. `make ep-digest` writes the digest to
+  `.cache/ep-digest/` (and says whether it equals the baseline); `make ep-digest-check` compares and exits 1 on a
+  difference, printing item, field, old and new value (`ARGS="--only <name or prefix>"` for part of it, with the
+  coverage rows left out; `--exact` and `--bits` for the stricter levels; `--accept` rewrites the baseline). Levels, from
+  the strictest: BITS (every number identical), EXACT (graphs, verdicts, counts identical and numbers equal to 12
+  digits), TOLERANT (beliefs within 1e-9 relative, evidence within 1e-12 absolute, check statistics within 1e-9). The
+  digest reads no clock and no random source, and two runs of the same code are byte-identical. Not part of `make verify`
+  or `make check`: a step of a refactoring of that code runs it (see `docs/probprog/review-compiler.md`,
+  `review-rules.md` and `review-suite.md`, "How a step uses the digest").
 - `scripts/concepts.ts`: concept-taxonomy coverage report against `docs/concepts.yaml`.
 - `scripts/version.ts`: `base/version.ts` and equal package versions (changesets fixed group).
 - `scripts/pack.ts`: build and pack the three packages; collect release assets with a manifest.

@@ -112,6 +112,14 @@ ep-check: ## The expectation propagation suite in one command (setups, coverage,
 probprog-validate: ## Periodic heavy validation of probabilistic programming (SBC, agreement, Geweke); writes docs/probprog/results (ARGS="--only sbc --scale 2" or "--check"); not part of verify or check
 	nice -n 15 $(NODE) --conditions=source --experimental-transform-types --no-warnings scripts/probprog-validate.ts $(ARGS)
 
+.PHONY: ep-digest
+ep-digest: ## Compute the EP digest (every atom, benchmark model and program: compiled graphs, verdicts, beliefs, evidence, registry) into .cache/ep-digest/ (ARGS="--only gaussian")
+	nice -n 15 $(NODE) --conditions=source --experimental-transform-types --no-warnings scripts/ep-digest.ts $(ARGS)
+
+.PHONY: ep-digest-check
+ep-digest-check: ## Compare the EP digest to docs/probprog/ep-digest.json and say what moved; exit 1 on a change (ARGS="--exact", "--bits", "--only <name>", "--accept" for a deliberate change)
+	nice -n 15 $(NODE) --conditions=source --experimental-transform-types --no-warnings scripts/ep-digest.ts --check $(ARGS)
+
 .PHONY: build
 build: barrels ## Build all packages
 	@for p in $(PACKAGES); do $(PNPM) --dir packages/$$p run build || exit 1; done
