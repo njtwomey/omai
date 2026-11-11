@@ -136,20 +136,29 @@ const TILT_POINTS = 801
 const TILT_SPAN = 20
 
 /**
- * The moments of the tilted distribution of a Gaussian observation `y ~ N(u, 1 / lambda)` of a Gaussian mean `u ~ N(m, v)`
- * with a gamma precision `lambda ~ Gamma(shape, rate)` (the two cavities): integrating `u` out leaves a Student-t shaped
- * function of the precision, `Gamma(lambda) N(y; m, v + 1 / lambda)`, whose moments (`E log lambda`, `E lambda`) are
- * computed on a grid in `log lambda`, and `u` given `lambda` is Gaussian with the usual shrinkage, whose mixture over
- * `lambda` gives the mean and variance of `u`. This is what expectation propagation needs of a Gaussian with unknown noise.
+ * The moments of the tilted distribution of the factor `x ~ N(u, 1 / lambda)` with the two Gaussian cavities `x ~ N(mx, vx)`
+ * and `u ~ N(mu, vu)` (either may be observed: a variance of zero) and the gamma cavity of `lambda`. The factor depends on
+ * `x - u` only, so given `lambda` it is a Gaussian observation of that difference and each of `x` and `u` has the Kalman
+ * update; integrating both out leaves `Gamma(lambda) N(0; mx - mu, vx + vu + 1 / lambda)`, a Student-t shaped function of
+ * the precision whose moments (`E log lambda`, `E lambda`) are computed on a grid in `log lambda`, and the Gaussians' moments
+ * are the mixtures of the updates over it. This is what expectation propagation needs of a Gaussian with an unknown
+ * noise level or population spread.
  */
 function precisionTilt(
-  y: number,
-  cavity: { readonly mean: number; readonly variance: number },
+  x: { readonly mean: number; readonly variance: number },
+  u: { readonly mean: number; readonly variance: number },
   lambda: readonly number[],
-): { readonly meanU: number; readonly varU: number; readonly logLambda: number; readonly lambda: number } {
+): {
+  readonly x: { readonly mean: number; readonly variance: number }
+  readonly u: { readonly mean: number; readonly variance: number }
+  readonly logLambda: number
+  readonly lambda: number
+} {
   const { shape, rate } = gammaShapeRate(lambda)
   if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
     throw new ImproperMessageError('a gamma message has no density (its shape and rate are not positive)')
+  const gap = x.mean - u.mean
+  const joint = x.variance + u.variance
   const centre = digammaOf(shape) - Math.log(rate)
   const half = TILT_SPAN * Math.sqrt(trigammaOf(shape))
   const lo = Math.max(centre - half, -60)
@@ -159,38 +168,52 @@ function precisionTilt(
   let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < TILT_POINTS; i++) {
     const t = lo + i * step
-    // The gamma density in t = log lambda is exp(shape t - rate e^t); the observation integrated over u is N(y; m, v + e^-t).
-    const lw = shape * t - rate * Math.exp(t) + logNormal(y, cavity.mean, cavity.variance + Math.exp(-t))
+    // The gamma density in t = log lambda is exp(shape t - rate e^t); the difference integrated out is N(0; gap, joint + e^-t).
+    const lw = shape * t - rate * Math.exp(t) + logNormal(0, gap, joint + Math.exp(-t))
     logw[i] = lw
     if (lw > top) top = lw
   }
   let z = 0
   let eLog = 0
   let eLam = 0
-  let eMean = 0
-  let eSquare = 0
+  let eX = 0
+  let eX2 = 0
+  let eU = 0
+  let eU2 = 0
   for (let i = 0; i < TILT_POINTS; i++) {
     const t = lo + i * step
     const w = Math.exp((logw[i] ?? 0) - top)
-    const k = cavity.variance / (cavity.variance + Math.exp(-t))
-    const mean = cavity.mean + k * (y - cavity.mean)
+    const s = joint + Math.exp(-t)
+    const mx = x.mean - (x.variance * gap) / s
+    const vx = x.variance - (x.variance * x.variance) / s
+    const mu = u.mean + (u.variance * gap) / s
+    const vu = u.variance - (u.variance * u.variance) / s
     z += w
     eLog += w * t
     eLam += w * Math.exp(t)
-    eMean += w * mean
-    eSquare += w * (cavity.variance * (1 - k) + mean * mean)
+    eX += w * mx
+    eX2 += w * (vx + mx * mx)
+    eU += w * mu
+    eU2 += w * (vu + mu * mu)
   }
-  const meanU = eMean / z
-  return { meanU, varU: eSquare / z - meanU * meanU, logLambda: eLog / z, lambda: eLam / z }
+  const meanX = eX / z
+  const meanU = eU / z
+  return {
+    x: { mean: meanX, variance: eX2 / z - meanX * meanX },
+    u: { mean: meanU, variance: eU2 / z - meanU * meanU },
+    logLambda: eLog / z,
+    lambda: eLam / z,
+  }
 }
 
 /**
  * x ~ N(mean, 1 / lambda) with a gamma-distributed precision lambda: the factor of a Gaussian with unknown noise.
  * Variational message passing (Winn and Bishop) uses the expected log density, closed forms that make the model
- * conjugate-exponential. Expectation propagation, for an observed `x` and a Gaussian `mean`, matches the moments of the
- * tilted distribution (the Gaussian mean's cavity times the Gamma cavity times the observation), computed by quadrature
- * in `log lambda`: the mean gets a Gaussian site, the precision a gamma site (the projection of `E log lambda` and
- * `E lambda`). This is what the linear regression with an unknown noise level needs.
+ * conjugate-exponential. Expectation propagation matches the moments of the tilted distribution (the cavities of `x`, of the
+ * mean and of the precision times the factor), computed by quadrature in `log lambda`: `x` and the mean each get a Gaussian
+ * site, the precision a gamma site (the projection of `E log lambda` and `E lambda`), for an observed or a latent `x`. This
+ * is what the linear regression with an unknown noise level needs, and a population of latent values with an unknown spread
+ * (the abilities of an item response model).
  *
  * @concept factor-operators
  * @index structure A Gaussian with a gamma precision (variational message passing; expectation propagation for an observed value).
@@ -206,14 +229,12 @@ export const gaussianGammaPrecision: FactorOperator = {
   description: 'x ~ N(mean, 1 / lambda) with lambda a gamma-distributed precision',
   ports: [...gaussianPorts, { name: 'precision', accepts: ['gamma'] }],
   support: { ep: 'numeric', vmp: 'exact' },
-  readsTarget: (to) => to === 1 || to === 2,
+  readsTarget: true,
   ep: (c): OperatorResult => {
-    if (arg(c, 0).value === undefined)
-      throw new OmaiError('value', 'gaussian-gamma-precision: expectation propagation needs the Gaussian observed')
-    const tilt = precisionTilt(gaussianOf(arg(c, 0)).mean, gaussianOf(arg(c, 1)), etaOf(arg(c, 2)))
-    if (c.to === 1) return { message: gaussianSiteMessage(etaOf(arg(c, 1)), tilt.meanU, tilt.varU) }
-    if (c.to === 2) return { message: siteMessage(gamma, etaOf(arg(c, 2)), [tilt.logLambda, tilt.lambda]) }
-    throw new OmaiError('value', 'gaussian-gamma-precision: the observed value takes no message')
+    const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)))
+    if (c.to === 0) return { message: gaussianSiteMessage(etaOf(arg(c, 0)), tilt.x.mean, tilt.x.variance) }
+    if (c.to === 1) return { message: gaussianSiteMessage(etaOf(arg(c, 1)), tilt.u.mean, tilt.u.variance) }
+    return { message: siteMessage(gamma, etaOf(arg(c, 2)), [tilt.logLambda, tilt.lambda]) }
   },
   vmp: (c): OperatorResult => {
     const lambda = arg(c, 2)

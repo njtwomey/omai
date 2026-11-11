@@ -873,6 +873,39 @@ describe('a random precision is the gaussian-gamma-precision factor (variational
     expect(Math.abs((toFlat(post.mean('tau'))[0] ?? 0) / (eTau / z) - 1)).toBeLessThan(0.15)
   })
 
+  it('a population of latent values with an unknown spread runs under expectation propagation and finds the exact posterior', () => {
+    const y = [1.4, -0.6, 2.1, 0.3, -1.2, 0.9]
+    const hier = defineModel('population', (b) => {
+      const j = b.range('group')
+      const tau = b.latent('tau', d.gamma(2, 1))
+      const theta = b.latent('theta', d.normal(0, ops.div(1, ops.sqrt(tau))), { dims: [j] })
+      b.observe('y', d.normal(theta, 1), b.data('y', { dims: [j] }))
+    })
+    const c = toFactorGraph(hier.bind({ y }))
+    expect(c.issues).toEqual([])
+    const g = graphOf(c.graph)
+    expect(factorGraphVerdict(c, g, 'ep')).toMatchObject({ ok: true })
+    const r = runAlgorithm(epAlgorithm(g, { tol: 1e-10 }), { maxSteps: 600 })
+    expect(r.status).toBe('converged')
+    const post = factorGraphPosterior(c, g, r.state as MpState, { rule: 'ep' })
+    // Exact: y_j | tau ~ N(0, 1 + 1 / tau), so tau has a one-dimensional posterior; given tau, theta_j has mean y_j / (1 + tau).
+    let z = 0
+    let eTau = 0
+    const eTheta = y.map(() => 0)
+    for (let i = 0; i < 6000; i++) {
+      const tau = (30 * (i + 0.5)) / 6000
+      const v = 1 + 1 / tau
+      const logp = Math.log(tau) - tau - 0.5 * y.reduce((t, x) => t + Math.log(v) + (x * x) / v, 0)
+      const w = Math.exp(logp)
+      z += w
+      eTau += w * tau
+      for (const [k, x] of y.entries()) eTheta[k] = (eTheta[k] as number) + (w * x) / (1 + tau)
+    }
+    const means = toFlat(post.mean('theta'))
+    for (const [k, e] of eTheta.entries()) expect(means[k]).toBeCloseTo(e / z, 1)
+    expect(Math.abs((toFlat(post.mean('tau'))[0] ?? 0) / (eTau / z) - 1)).toBeLessThan(0.2)
+  })
+
   it('a scale that is not the idiom is refused with it named', () => {
     const wrong = defineModel('wrong', (b) => {
       const tau = b.latent('tau', d.gamma(2, 1))

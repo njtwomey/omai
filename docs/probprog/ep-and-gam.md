@@ -34,7 +34,8 @@ is not Gaussian (it is a scale mixture of Gaussians), so a method has to approxi
    Gaussian mean it integrates the mean out (`N(y; m, v + 1/lambda)`), computes the moments of the precision on a grid in
    `log lambda`, and gives the mean a Gaussian site and the precision a Gamma site. Checked against the exact posterior on a
    grid: an intercept-only model, and a two-feature linear regression with learned noise, both agree (coefficients to
-   about 0.05, the noise precision within 15%); on the page's `gammaNoise` variant EP agrees with the exact reference
+   about 0.05, the noise precision within 15%); the rule also covers a latent Gaussian (a population of values with an
+   unknown spread: abilities, group effects), checked against the exact posterior on a grid; on the page's `gammaNoise` variant EP agrees with the exact reference
    (mean error under 0.03 response sd, band width within 15%).
 3. **A random smoothing parameter on a vector.** `lambda` scales the precision of every coefficient at once
    (`beta_j ~ N(0, 1 / (lambda d_j))`). The factor-graph compiler maps a Gaussian vector with one known covariance, and
@@ -74,3 +75,11 @@ model; it is a missing method, not a missing theory.
 
 Tests: `probprog/model/factors.test.ts` ("runs under expectation propagation ...", "a linear regression with an unknown noise
 level ..."), `probprog/models/bayesian-gam.test.ts` (the verdicts and the agreement with the exact reference per variant).
+
+## Item response and other hierarchies
+
+The Rasch model `P(y_ij = 1) = sigmoid(theta_i - b_j)` is a logistic regression with a one-dimensional embedding for each
+person and each item, and EP runs on it as it stands (factors `prior`, `difference`, `logistic`; verdict ok for EP and VMP).
+With the population spread of the abilities learned, the model is a Gaussian with a random precision, so it needs the
+precision idiom: write `theta_i ~ N(0, 1 / sqrt(tau))` with `tau` gamma-distributed (a half-normal sd is refused), and the
+rule above (now for a latent value as well as an observed one) lets EP and VMP run it.
