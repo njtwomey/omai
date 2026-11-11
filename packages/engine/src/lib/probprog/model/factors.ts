@@ -39,28 +39,22 @@ import {
   gammaPrior,
   gaussianMvPrior,
   gaussianPrior,
-  normalGammaPrior,
   priorFactor,
 } from '../../message-passing/index.ts'
-import { toFlat } from '../../tensor/index.ts'
 import type { SpecAnalysis } from './analysis.ts'
 import type { BoundModel } from './bind.ts'
 import { eventToDims } from './event-dims.ts'
 import { type GateBranch, GateBuilder, precisionBranch, precisionFactor } from './factor-graph/_builder.ts'
-import {
-  affOf,
-  type Cell,
-  combine,
-  isConstCell,
-  logName,
-  type Precision,
-  prod,
-  scaledOf,
-} from './factor-graph/_cells.ts'
+import { affOf, type Cell, combine, isConstCell, logName, type Precision, prod } from './factor-graph/_cells.ts'
 import { Context } from './factor-graph/_context.ts'
-import { expArgument, logVariableOf, precisionExpr, stripClip, unwrap } from './factor-graph/_idioms.ts'
+import { expArgument, precisionExpr, stripClip, unwrap } from './factor-graph/_idioms.ts'
 import { derived } from './factor-graph/_mappings/derived.ts'
 import { bernoulliTable, latentDirichlet, latentDiscrete } from './factor-graph/_mappings/latent-discrete.ts'
+import {
+  latentGammaRate,
+  latentNormalGamma,
+  latentRandomConcentration,
+} from './factor-graph/_mappings/latent-positive.ts'
 import {
   latentCorrelation,
   latentMultivariateNormal,
@@ -142,14 +136,6 @@ const PROJECTED_PRIORS: ReadonlySet<string> = new Set([
   'uniform',
   'truncatedNormal',
 ])
-
-/** One component of a random concentration, `weight * alpha + offset`, with the variable of `alpha` (the variable of its log when `log`). */
-interface ConcentrationPart {
-  readonly variable?: string
-  readonly log?: boolean
-  readonly weight: number
-  readonly offset: number
-}
 
 class Compiler {
   /** The state of the compilation, which the evaluator and the mappings work on. */
@@ -251,7 +237,7 @@ class Compiler {
       this.cx.layout(node, 'latent', 'normal-gamma', 'scalar', [meanOf.variable], true, { part: 'mean' })
       return
     }
-    if ((fam === 'gamma' || fam === 'inverseGamma') && this.latentNormalGamma(node)) return
+    if ((fam === 'gamma' || fam === 'inverseGamma') && latentNormalGamma(this.cx, node)) return
     const kind = MESSAGE_FAMILY[fam]
     if (kind === undefined)
       throw new Refusal(
@@ -277,12 +263,12 @@ class Compiler {
     }
     if (fam === 'dirichlet') {
       const concentration = node.dist.params['concentration']
-      if (concentration !== undefined && !this.cx.isConst(concentration)) this.latentRandomConcentration(node)
+      if (concentration !== undefined && !this.cx.isConst(concentration)) latentRandomConcentration(this.cx, node)
       else latentDirichlet(this.cx, node)
       return
     }
     if (fam === 'beta' && ['a', 'b'].some((k) => !this.cx.isConst(node.dist.params[k] as ExprSpec))) {
-      this.latentRandomConcentration(node)
+      latentRandomConcentration(this.cx, node)
       return
     }
     // An inverse gamma `x` with scale `b` is the precision `1 / x` ~ Gamma(a, rate b): the variable is that gamma, the site its reciprocal.
@@ -290,7 +276,7 @@ class Compiler {
     const rateName = inverse ? 'scale' : 'rate'
     const rateExpr = node.dist.params[rateName]
     if ((fam === 'gamma' || inverse) && rateExpr !== undefined && !this.cx.isConst(rateExpr)) {
-      this.latentGammaRate(node)
+      latentGammaRate(this.cx, node)
       return
     }
     const shape = this.cx.shapeOf(node.dims)
@@ -315,40 +301,6 @@ class Compiler {
       vars.push(name)
     }
     this.cx.finishLatent(node, kind, cells, vars, inverse ? { reciprocal: true } : {})
-  }
-
-  /**
-   * The normal-gamma pair of a gamma (or inverse-gamma) latent `T` (a precision or a variance), when the plan found one (a Gaussian
-   * latent `M` with a known mean and the variance `1 / (kappa lambda)` and observed Gaussians `y ~ N(M, 1 / (c lambda))`, with
-   * nothing else reading either of them; `_plan.ts` has the detection). The pair is one `normal-gamma` variable with a prior of both
-   * and a `gaussian-normal-gamma` factor per observation, so the joint posterior is exactly the conjugate normal-gamma (the classic
-   * normal-inverse-gamma prior on a mean and a variance). Returns false (and changes nothing) when the model is not that shape: the
-   * mean and precision then compile to a Gaussian with a gamma precision each.
-   */
-  private latentNormalGamma(node: ModelNode & { readonly kind: 'latent' }): boolean {
-    const detection = this.cx.plan.normalGamma.get(node.name)
-    if (detection === undefined) return false
-    for (const name of detection.customs) this.cx.handledCustoms.add(name)
-    if (detection.failure !== undefined) throw detection.failure
-    if (detection.pair === undefined) return false
-    const { plan, multiples } = detection.pair
-    const inverse = plan.inverse
-    const rateName = inverse ? 'scale' : 'rate'
-    const mean = this.cx.nodes.get(plan.mean) as ModelNode & { readonly kind: 'latent' }
-    this.cx.g.need('gaussian-normal-gamma')
-    const a = constParam(this.cx, node, 'concentration', 'the shape')[0] as number
-    const b = constParam(this.cx, node, rateName, 'the rate')[0] as number
-    const m = constParam(this.cx, mean, 'loc', 'the mean')[0] as number
-    this.cx.normalGammaByMean.set(mean.name, plan)
-    for (const name of plan.observed)
-      this.cx.normalGammaObserved.set(name, { plan, multiple: multiples.get(name) as number })
-    this.cx.g.addVariable({ name: plan.variable, family: { kind: 'normal-gamma' } })
-    this.cx.g.addFactor(normalGammaPrior(plan.variable, m, plan.kappa, a, b), plan.variable)
-    this.cx.layout(node, 'latent', 'normal-gamma', 'scalar', [plan.variable], true, {
-      part: 'precision',
-      ...(inverse ? { reciprocal: true } : {}),
-    })
-    return true
   }
 
   // ----- matrix-valued latents: a Wishart (or inverse-Wishart) precision, and the Gaussian vectors that read it -----
@@ -788,43 +740,6 @@ class Compiler {
     this.cx.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)
   }
 
-  /**
-   * A gamma latent whose rate is a known multiple of another gamma latent (`gamma(0.5, b)` with `b` gamma: the
-   * Makalic-Schmidt half-Cauchy, or a Student-t's mixing precision): a `gamma-rate` factor per element, whose shape is known.
-   */
-  private latentGammaRate(node: ModelNode & { readonly kind: 'latent' }): void {
-    const inverse = node.dist.family === 'inverseGamma'
-    const shapes = constParam(this.cx, node, 'concentration', 'the shape')
-    const rate = node.dist.params[inverse ? 'scale' : 'rate'] as ExprSpec
-    const cells = this.cx.over(evalSym(this.cx, rate), node.dims)
-    const out: Cell[] = []
-    const vars: string[] = []
-    for (const [i, c] of cells.entries()) {
-      const r = scaledOf(c)
-      if (r === undefined || r.offset !== 0 || !(r.scale > 0))
-        throw new Refusal(
-          'operator',
-          `the rate of '${node.name}' must be a known multiple of a gamma latent (the message rule integrates the gamma's rate); it is not`,
-        )
-      const name = this.cx.g.addVariable({
-        name: this.cx.elementName(node.name, node.dims, i),
-        family: { kind: 'gamma' },
-      })
-      this.cx.g.need('gamma-rate')
-      this.cx.g.addFactor(
-        {
-          operator: 'gamma-rate',
-          args: [name, r.variable],
-          params: { shape: shapes[i] as number, ...(r.scale === 1 ? {} : { scale: r.scale }) },
-        },
-        name,
-      )
-      out.push(inverse ? { kind: 'recip', variable: name, scale: 1 } : { kind: 'rv', variable: name, family: 'gamma' })
-      vars.push(name)
-    }
-    this.cx.finishLatent(node, 'gamma', out, vars, inverse ? { reciprocal: true } : {})
-  }
-
   /** A Gaussian latent with a gamma precision: a `gaussian-gamma-precision` factor per element (the mean-field hierarchy of Bishop 2006, 10.2). */
   private latentRandomPrecision(node: ModelNode & { readonly kind: 'latent' }, loc: readonly Cell[]): void {
     if (this.cx.plan.packed.has(node.name))
@@ -847,150 +762,6 @@ class Compiler {
       vars.push(name)
     }
     this.cx.finishLatent(node, 'gaussian', cells, vars)
-  }
-
-  /**
-   * A beta or Dirichlet latent whose concentrations are known multiples of one random positive value plus known offsets
-   * (`beta(alpha, alpha)`, `beta(alpha, 2)`, `dirichlet(alpha * ones)`: the strength of the prior learned from the data) with `alpha`
-   * a gamma latent or a log-normal one (carried on its log): a `dirichlet-concentration` factor per element, which is the
-   * prior of the variable (a numeric rule: a grid over `log alpha`).
-   */
-  private latentRandomConcentration(node: ModelNode & { readonly kind: 'latent' }): void {
-    const isBeta = node.dist.family === 'beta'
-    const shape = this.cx.shapeOf(node.dims)
-    const n = prod(shape)
-    // The concentration of each element: one cell per component (a beta has two parameters, a Dirichlet an event axis).
-    let perElement: ConcentrationPart[][]
-    if (isBeta) {
-      const a = this.cx.over(evalSym(this.cx, node.dist.params['a'] as ExprSpec), node.dims)
-      const b = this.cx.over(evalSym(this.cx, node.dist.params['b'] as ExprSpec), node.dims)
-      perElement = Array.from({ length: n }, (_, i) => [
-        this.concentrationOf(node, a[i] as Cell),
-        this.concentrationOf(node, b[i] as Cell),
-      ])
-    } else {
-      // `concentration = S * V + O` with `S` random (a gamma or log-normal latent, a known multiple of one plus a known value) and `V`, `O`
-      // known vectors over the event axis: the cell of each component is `V_k S + O_k`.
-      const parsed = this.concentrationForm(node.dist.params['concentration'] as ExprSpec)
-      if (parsed === undefined)
-        throw new Refusal(
-          'operator',
-          `the concentration of '${node.name}' is not a random value times a known vector plus a known vector`,
-        )
-      const scalar = this.cx.over(evalSym(this.cx, parsed.random), node.dims)
-      perElement = scalar.map((s) => {
-        const base = this.concentrationOf(node, s)
-        return parsed.scale.map(
-          (v, k): ConcentrationPart => ({
-            ...base,
-            weight: v * base.weight,
-            offset: v * base.offset + (parsed.offset[k] as number),
-          }),
-        )
-      })
-    }
-    const cells: Cell[] = []
-    const vars: string[] = []
-    this.cx.g.need('dirichlet-concentration')
-    for (const [i, parts] of perElement.entries()) {
-      const comps = parts
-      const random = parts.filter((p) => p.variable !== undefined)
-      const variable = random[0]?.variable
-      const log = random[0]?.log === true
-      // Two separate random shapes, each exactly a gamma or log-normal latent: the two-dimensional rule.
-      const [pa, pb] = comps
-      if (
-        isBeta &&
-        pa?.variable !== undefined &&
-        pb?.variable !== undefined &&
-        pa.variable !== pb.variable &&
-        [pa, pb].every((q) => q.weight === 1 && q.offset === 0)
-      ) {
-        this.cx.g.need('beta-two-shapes')
-        const name = this.cx.g.addVariable({
-          name: this.cx.elementName(node.name, node.dims, i),
-          family: { kind: 'beta' },
-        })
-        this.cx.g.addFactor({ operator: 'beta-two-shapes', args: [name, pa.variable, pb.variable] }, name)
-        cells.push({ kind: 'rv', variable: name, family: 'beta' })
-        vars.push(name)
-        continue
-      }
-      if (variable === undefined || random.some((p) => p.variable !== variable || (p.log === true) !== log))
-        throw new Refusal(
-          'operator',
-          `the concentration of '${node.name}' must be known multiples of one random positive value (a gamma or log-normal latent) plus known offsets`,
-        )
-      const family: FamilyKind = isBeta ? 'beta' : 'dirichlet'
-      const name = this.cx.g.addVariable({
-        name: this.cx.elementName(node.name, node.dims, i),
-        family: isBeta ? { kind: 'beta' } : { kind: 'dirichlet', size: comps.length },
-      })
-      this.cx.g.addFactor(
-        {
-          operator: 'dirichlet-concentration',
-          args: [name, variable],
-          params: {
-            weights: parts.map((p) => p.weight),
-            offsets: parts.map((p) => p.offset),
-            ...(log ? { log: true } : {}),
-          },
-        },
-        name,
-      )
-      cells.push({ kind: 'rv', variable: name, family })
-      vars.push(name)
-    }
-    this.cx.finishLatent(node, isBeta ? 'beta' : 'dirichlet', cells, vars)
-  }
-
-  /** `S * V + O` for known vectors `V` and `O` over an event axis and a random scalar expression `S`: the form of a Dirichlet's random concentration. */
-  private concentrationForm(
-    e: ExprSpec,
-  ): { readonly random: ExprSpec; readonly scale: readonly number[]; readonly offset: readonly number[] } | undefined {
-    const u = unwrap(this.cx.nodes, e)
-    const vector = (x: ExprSpec): number[] | undefined => {
-      if (!this.cx.isConst(x)) return undefined
-      const nv = this.cx.evalNamed(x)
-      return nv.value.shape.length > nv.dims.length ? toFlat(nv.value) : undefined
-    }
-    if (u.kind !== 'op') return undefined
-    const [a, b] = u.args as [ExprSpec, ExprSpec]
-    if (u.op === 'mul') {
-      const va = vector(a)
-      const vb = vector(b)
-      if (va !== undefined && vb === undefined) return { random: b, scale: va, offset: va.map(() => 0) }
-      if (vb !== undefined && va === undefined) return { random: a, scale: vb, offset: vb.map(() => 0) }
-      return undefined
-    }
-    if (u.op === 'add') {
-      const va = vector(a)
-      const vb = vector(b)
-      const [inner, o] = va !== undefined ? [b, va] : vb !== undefined ? [a, vb] : [undefined, undefined]
-      if (inner === undefined || o === undefined) return undefined
-      const base = this.concentrationForm(inner)
-      return base === undefined ? undefined : { ...base, offset: base.offset.map((v, k) => v + (o[k] as number)) }
-    }
-    return undefined
-  }
-
-  /**
-   * One component of a concentration as `weight * alpha + offset`: a known value, a gamma variable (or a known multiple of one
-   * plus an offset), or a positive latent carried on its log (`alpha = exp(l)`, the variable returned is `l`, with `log`).
-   */
-  private concentrationOf(node: ModelNode, c: Cell): ConcentrationPart {
-    if (isConstCell(c)) return { weight: 0, offset: c.aff.offset }
-    const g = scaledOf(c)
-    if (g !== undefined) return { variable: g.variable, weight: g.scale, offset: g.offset }
-    if (c.kind === 'aff' && c.aff.terms.size === 1) {
-      const [key, coefficient] = [...c.aff.terms][0] as [string, number]
-      const l = logVariableOf(this.cx.g.atoms, this.cx.logScale, key)
-      if (l !== undefined) return { variable: l, log: true, weight: coefficient, offset: c.aff.offset }
-    }
-    throw new Refusal(
-      'operator',
-      `a concentration of '${node.name}' is not a known multiple of a gamma or log-normal latent plus a known value`,
-    )
   }
 
   private observed(node: ModelNode & { readonly kind: 'observed' }): void {
