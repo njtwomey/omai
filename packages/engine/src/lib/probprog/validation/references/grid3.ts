@@ -8,7 +8,7 @@
 
 import { lgamma } from '../../../numerics/special/index.ts'
 import { item } from '../../../tensor/index.ts'
-import type { ExactMarginal } from './marginal.ts'
+import { type ExactMarginal, gaussianMixtureMarginal } from './marginal.ts'
 
 /** The box of one coordinate: where the grid starts and the limits it must stay inside. */
 export interface CoordinateBox {
@@ -80,8 +80,8 @@ export function posterior3(
     marginal,
     expect: (f) => solved().nodes.reduce((acc, n) => acc + n.w * f(n.x[0], n.x[1], n.x[2]), 0),
     mixture: (given) => {
-      let mix: { mean: number; sd: number; pdf: (x: number) => number } | undefined
-      const built = (): NonNullable<typeof mix> => {
+      let mix: ExactMarginal | undefined
+      const built = (): ExactMarginal => {
         if (mix !== undefined) return mix
         // The nodes are pruned to the mass that matters (the heaviest, to all but 1e-6 of it) before the conditionals are asked for.
         const sorted = [...solved().nodes].sort((p, q) => q.w - p.w)
@@ -92,19 +92,10 @@ export function posterior3(
           mass += node.w
           if (mass > 1 - 1e-6 || kept.length >= 6000) break
         }
-        const parts = kept.map((node) => ({ w: node.w / mass, ...given(node.x[0], node.x[1], node.x[2]) }))
-        const mean = parts.reduce((acc, p) => acc + p.w * p.mean, 0)
-        const second = parts.reduce((acc, p) => acc + p.w * (p.variance + p.mean * p.mean), 0)
-        mix = {
-          mean,
-          sd: Math.sqrt(second - mean * mean),
-          pdf: (x) =>
-            parts.reduce(
-              (acc, p) =>
-                acc + (p.w * Math.exp((-0.5 * (x - p.mean) ** 2) / p.variance)) / Math.sqrt(2 * Math.PI * p.variance),
-              0,
-            ),
-        }
+        mix = gaussianMixtureMarginal(
+          kept.map((node) => ({ weight: node.w / mass, ...given(node.x[0], node.x[1], node.x[2]) })),
+          (mean, sd) => [mean - 8 * sd, mean + 8 * sd],
+        )
         return mix
       }
       return {
@@ -116,7 +107,7 @@ export function posterior3(
         },
         pdf: (x) => built().pdf(x),
         get range() {
-          return [built().mean - 8 * built().sd, built().mean + 8 * built().sd] as const
+          return built().range as readonly [number, number]
         },
       }
     },

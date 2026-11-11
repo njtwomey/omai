@@ -17,7 +17,7 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { gpPosteriorGivenLengthScale } from '../models/index.ts'
-import type { ExactMarginal } from '../validation/index.ts'
+import { type ExactMarginal, gaussianMixtureMarginal } from '../validation/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 
@@ -74,21 +74,10 @@ function exactMarginals(x: readonly number[], y: readonly number[]): Record<stri
     range: [Math.max(1e-3, ellMean - 5 * ellSd), ellMean + 8 * ellSd],
   }
   x.forEach((_, j) => {
-    const mean = given.reduce((a, g, i) => a + (g.mean[j] ?? 0) * (w[i] ?? 0), 0)
-    const second = given.reduce((a, g, i) => a + ((g.sd[j] ?? 0) ** 2 + (g.mean[j] ?? 0) ** 2) * (w[i] ?? 0), 0)
-    const sd = Math.sqrt(second - mean * mean)
-    out[`f[${j}]`] = {
-      mean,
-      sd,
-      pdf: (v) =>
-        given.reduce((a, g, i) => {
-          const s = g.sd[j] ?? 1
-          return (
-            a + (w[i] ?? 0) * (Math.exp((-0.5 * (v - (g.mean[j] ?? 0)) ** 2) / (s * s)) / (s * Math.sqrt(2 * Math.PI)))
-          )
-        }, 0),
-      range: [mean - 6 * sd, mean + 6 * sd],
-    }
+    out[`f[${j}]`] = gaussianMixtureMarginal(
+      given.map((g, i) => ({ weight: w[i] ?? 0, mean: g.mean[j] ?? 0, variance: (g.sd[j] ?? 1) ** 2 })),
+      (mean, sd) => [mean - 6 * sd, mean + 6 * sd],
+    )
   })
   return out
 }

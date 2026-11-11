@@ -10,7 +10,7 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import type { ExactMarginal } from '../validation/index.ts'
+import { type ExactMarginal, gaussianMixtureMarginal } from '../validation/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 const Y6 = [1.2, 0.4, 1.9, 1.1, 0.7, 1.5]
@@ -121,23 +121,12 @@ function scaledExact(
   const tauSd = Math.sqrt(taus.reduce((acc, t, i) => acc + (pw[i] ?? 0) * (t - tauMean) ** 2, 0))
   const theta = y.map((yj, j): ExactMarginal => {
     const m = mult[j] ?? 1
-    const comp = (t: number): { mean: number; v: number } => {
-      const prec = t * m + 1 / (s * s)
-      return { mean: yj / (s * s) / prec, v: 1 / prec }
-    }
-    let m1 = 0
-    let m2 = 0
-    taus.forEach((t, i) => {
-      const c = comp(t)
-      m1 += (pw[i] ?? 0) * c.mean
-      m2 += (pw[i] ?? 0) * (c.v + c.mean ** 2)
-    })
-    const pdf = (x: number): number =>
-      taus.reduce((acc, t, i) => {
-        const c = comp(t)
-        return acc + ((pw[i] ?? 0) * Math.exp((-0.5 * (x - c.mean) ** 2) / c.v)) / Math.sqrt(2 * Math.PI * c.v)
-      }, 0)
-    return { mean: m1, sd: Math.sqrt(Math.max(m2 - m1 * m1, 0)), pdf }
+    return gaussianMixtureMarginal(
+      taus.map((t, i) => {
+        const prec = t * m + 1 / (s * s)
+        return { weight: pw[i] ?? 0, mean: yj / (s * s) / prec, variance: 1 / prec }
+      }),
+    )
   })
   return {
     tau: {

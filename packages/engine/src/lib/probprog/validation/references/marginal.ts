@@ -229,3 +229,45 @@ export function weightedMarginal(
     range: [Math.min(...live), Math.max(...live)],
   }
 }
+
+/** One node of a mixture over a grid: its weight (the weights sum to one), and the Gaussian (mean, variance) or other density a quantity has there. */
+export interface MixturePart {
+  readonly weight: number
+  readonly mean: number
+  readonly variance: number
+  /** The density at the node (default the Gaussian of the node's mean and variance). */
+  readonly pdf?: (x: number) => number
+}
+
+/**
+ * The marginal of a quantity that, given the nodes of a grid over what it depends on (a hyperparameter, the entries of a
+ * covariance), has a known mean and variance and density: the mixture of those over the nodes' weights, with the mixture's
+ * moments from the total-variance formula and its density as the weighted sum.
+ *
+ * @param parts - The nodes, with weights that sum to one.
+ * @param range - The interval to draw on, from the mixture's mean and sd (default none: the mean plus or minus eight sd).
+ * @returns The marginal.
+ * @example
+ * ```ts
+ * import { gaussianMixtureMarginal } from 'omai-engine/probprog/validation'
+ * gaussianMixtureMarginal([{ weight: 0.5, mean: -1, variance: 1 }, { weight: 0.5, mean: 1, variance: 1 }]).sd // => 1.4142135623730951
+ * ```
+ */
+export function gaussianMixtureMarginal(
+  parts: readonly MixturePart[],
+  range?: (mean: number, sd: number) => readonly [number, number],
+): ExactMarginal {
+  const mean = parts.reduce((a, p) => a + p.weight * p.mean, 0)
+  const second = parts.reduce((a, p) => a + p.weight * (p.variance + p.mean ** 2), 0)
+  const sd = Math.sqrt(Math.max(second - mean * mean, 0))
+  const density = (p: MixturePart, x: number): number =>
+    p.pdf === undefined
+      ? (p.weight * Math.exp((-0.5 * (x - p.mean) ** 2) / p.variance)) / Math.sqrt(2 * Math.PI * p.variance)
+      : p.weight * p.pdf(x)
+  return {
+    mean,
+    sd,
+    pdf: (x) => parts.reduce((a, p) => a + density(p, x), 0),
+    ...(range === undefined ? {} : { range: range(mean, sd) }),
+  }
+}

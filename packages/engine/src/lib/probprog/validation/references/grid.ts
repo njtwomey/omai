@@ -6,7 +6,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import type { ExactMarginal } from './marginal.ts'
+import { type ExactMarginal, gaussianMixtureMarginal } from './marginal.ts'
 
 /**
  * The marginal of a one-dimensional posterior known up to a constant (its log density), by the midpoint rule on `points`
@@ -206,15 +206,10 @@ export function hyperPosterior(
     mix: (given) => {
       const parts = keep.map((i) => ({ weight: w[i] ?? 0, ...given(hs[i] ?? 1) }))
       const total = parts.reduce((a, p) => a + p.weight, 0)
-      const m1 = parts.reduce((a, p) => a + (p.weight / total) * p.mean, 0)
-      const m2 = parts.reduce((a, p) => a + (p.weight / total) * (p.variance + p.mean ** 2), 0)
-      const sdm = Math.sqrt(Math.max(m2 - m1 * m1, 0))
-      return {
-        mean: m1,
-        sd: sdm,
-        pdf: (x) => parts.reduce((a, p) => a + (p.weight / total) * p.pdf(x), 0),
-        range: [m1 - 6 * sdm, m1 + 8 * sdm],
-      }
+      return gaussianMixtureMarginal(
+        parts.map((p) => ({ ...p, weight: p.weight / total })),
+        (m, sdm) => [m - 6 * sdm, m + 8 * sdm],
+      )
     },
   }
 }
