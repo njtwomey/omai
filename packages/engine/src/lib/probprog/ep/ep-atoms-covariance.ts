@@ -328,7 +328,9 @@ function mvnWishartLearnedProblem(k: Config): AtomProblem {
       vd
     return lp + 0.5 * (n - 1) * Math.log(det) - 0.5 * (a * t11 + 2 * b * t12 + c * t22) - 0.5 * Math.log(vd) - 0.5 * q
   }
-  const estimate = inverse2(t11 / n, t12 / n, t22 / n)
+  // where the box starts: the Wishart posterior mean with the mean integrated out and the prior's inverse scale (nu I) added to the scatter, always positive definite
+  const [e11, e12, e22] = inverse2(nu + t11, t12, nu + t22)
+  const estimate: [number, number, number] = [(nu + n - 1) * e11, (nu + n - 1) * e12, (nu + n - 1) * e22]
   const grid = posterior3(boxesAround(estimate, nu + n), logDensity)
   const meanMix = (c: 0 | 1): ExactMarginal =>
     grid.mixture((a, b, cc) => {
