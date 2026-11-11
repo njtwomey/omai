@@ -3,7 +3,7 @@
 // `power` knob of `epSpecMethod`) widens them to the exact spread, the run settles, and the mean moves by a fraction of a sd.
 import { describe, expect, it } from 'vitest'
 import { session } from '../../trace/index.ts'
-import { epSpecMethod, vmpSpecMethod } from '../inference/index.ts'
+import { epMultiStartMethod, epSpecMethod, vmpSpecMethod } from '../inference/index.ts'
 import { epAtom } from './ep-atom-list.ts'
 import { atomBeliefs, atomBound } from './ep-atoms.ts'
 
@@ -54,4 +54,19 @@ describe('fractional EP (the power knob) on the softmax classifier', () => {
     expect(knobs(method)).toContain('power')
     expect(knobs(vmpSpecMethod(atomBound(problem)))).not.toContain('power')
   })
+
+  it('the multi-start method takes the same power: a power below one widens the slopes there too', () => {
+    const sdOf = (power: number): number => {
+      const method = epMultiStartMethod(atomBound(problem))
+      const run = session(method, {
+        seed: 1,
+        steps: 1,
+        mode: 'eager',
+        config: { starts: 1, tol: 1e-6, damping: 0.5, maxSweeps: 400, power },
+      })
+      const post = method.posterior?.(run.state, run.config)
+      return post?.summary().find((r) => r.site === problem.quantities[0]?.name.replace(/\[.*$/, ''))?.sd ?? Number.NaN
+    }
+    expect(sdOf(0.2)).toBeGreaterThan(sdOf(1))
+  }, 60_000)
 })

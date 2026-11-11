@@ -98,7 +98,6 @@ export const gammaPrecisionLearnedAtom: EpAtom = defineAtom({
   what: 'The Gaussian with a gamma precision of the basic atom, with the mean and the precision both unknown and the data simulated from a stated mean and sd: the recovery of both, against the grid posterior of the same model.',
   factors: ['prior (gaussian)', 'prior (gamma)', 'gaussian-gamma-precision (observed value)'],
   family: 'scales',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.15,
@@ -252,7 +251,6 @@ export const sharedPrecisionLearnedAtom: EpAtom = defineAtom({
   what: 'The shared precision of the basic atom with the population mean also unknown and each value observed with its own known noise: a hierarchical model in the shape of the eight schools, simulated from a stated mean and spread.',
   factors: ['prior (gamma)', 'prior (gaussian)', 'gaussian-gamma-precision (latent value)', 'gaussian likelihood'],
   family: 'scales',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.15,

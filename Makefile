@@ -105,8 +105,17 @@ examples: ## Run every @example of the engine core and check its `// =>` lines (
 	$(NODE) scripts/examples.ts $(ARGS)
 
 .PHONY: ep-check
-ep-check: ## The expectation propagation suite in one command (setups, coverage, gaps, evidence, programs, message passing, the compiler) with a 60 s test timeout
+ep-check: ## The expectation propagation suite in one command (setups, coverage, gaps, evidence, programs, message passing, the compiler, and the generated status page) with a 60 s test timeout
 	OMAI_TEST_TIMEOUT=60000 $(PNPM) exec vitest run ep- message-passing probprog/model probprog/inference apps/pocs/src/registry
+	$(MAKE) ep-report-check
+
+.PHONY: ep-report
+ep-report: ## Write docs/probprog/ep-status.md from the code (operators, coverage, gaps, atoms); about 1 minute
+	nice -n 15 $(NODE) --conditions=source --experimental-transform-types --no-warnings scripts/ep-report.ts
+
+.PHONY: ep-report-check
+ep-report-check: ## Fail when docs/probprog/ep-status.md is out of date or the atlas ep-priors.md names an atom that does not run
+	nice -n 15 $(NODE) --conditions=source --experimental-transform-types --no-warnings scripts/ep-report.ts --check
 
 .PHONY: probprog-validate
 probprog-validate: ## Periodic heavy validation of probabilistic programming (SBC, agreement, Geweke); writes docs/probprog/results (ARGS="--only sbc --scale 2" or "--check"); not part of verify or check

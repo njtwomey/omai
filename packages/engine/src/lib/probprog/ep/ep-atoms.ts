@@ -5,25 +5,33 @@
  * model as a `ModelDefinition` with its data, the quantities it asks about with their human names, the picture of the
  * data), the reference (the exact posterior in closed form, or the posterior on a grid of the same model written as a
  * program, so it exists whether or not expectation propagation applies), a tolerance with its reason, and what is
- * expected today: `runs` (the library's EP applies) or `planned` (it is refused, and the library's verdict says why).
- * `runAtom` compiles the model, asks the EP method for its verdict, runs it sweep by sweep and returns the beliefs at every
+ * expected (`runs`, the default, or `planned` for an atom the library refuses on purpose, with the verdict's reason).
+ * `atomRun` compiles the model, asks the EP method for its verdict, runs it sweep by sweep and returns the beliefs at every
  * sweep, the messages as a model-run record and the check against the reference; `atomReference` is the reference alone
  * (marginal curves, and the joint of a pair for contours); `atomVerdict` is the compile-time verdict alone, which is all a
  * coverage table needs. A page of the proofs of concept is a composition of these, and a test generated from the registry
- * asserts every `runs` atom passes its check and every `planned` atom is refused with a reason, so coverage only goes up.
+ * asserts every atom passes its check (and every `planned` one, none today, is refused with a reason).
  *
  * @index structure EP atom scaffold: a bare setup, its reference, a tolerance, the EP verdict and run.
  */
 
 import { OmaiError } from '../../base/index.ts'
 import { type ModelRun, modelRunFromTape } from '../../exposition/index.ts'
-import { lgamma } from '../../numerics/special/index.ts'
 import type { DictSpace } from '../../space/index.ts'
 import { defaults } from '../../space/index.ts'
-import { item, toFlat } from '../../tensor/index.ts'
-import { type Config, session } from '../../trace/index.ts'
-import { type EpGridState, epGridMethod, epSpecMethod, type Verdict } from '../inference/index.ts'
-import { analysisOf } from '../inference/model-input.ts'
+import { toFlat } from '../../tensor/index.ts'
+import { type Config, type Session, session } from '../../trace/index.ts'
+import {
+  checkKnobKeys,
+  type EpGridState,
+  type EpKnobs,
+  epRoute,
+  epRunKnobs,
+  epSpecMethod,
+  type InferenceMethod,
+  type ModelAnalysis,
+  type Verdict,
+} from '../inference/index.ts'
 import {
   type BindOptions,
   type BoundModel,
@@ -34,7 +42,9 @@ import {
   toProgram,
   toStructure,
 } from '../model/index.ts'
+import type { Posterior } from '../posterior.ts'
 import { type GridOptions, gridPosterior } from '../validation/index.ts'
+import { lg } from './_util.ts'
 
 /** Where a quantity lives, which fixes the family its belief is drawn in. */
 export type AtomSupport = 'real' | 'positive' | 'unit' | 'probability'
@@ -196,9 +206,12 @@ export interface AtomSpec<K extends Config> {
   readonly factors: readonly string[]
   /** The family of the atom, for the coverage table's grouping. */
   readonly family: string
-  /** `runs` when EP applies today, `planned` when the library refuses (the verdict is asked at run time either way). */
-  readonly expected: 'runs' | 'planned'
-  /** For a `planned` atom, where in `docs/probprog/ep-plan.md` the missing rule is, and what it is. */
+  /**
+   * `runs` (the default: every atom of the suite runs under EP, and the registry test fails when one does not) or `planned`, the
+   * escape hatch for an atom the library refuses on purpose (the verdict is asked at run time either way). Nothing is planned today.
+   */
+  readonly expected?: 'runs' | 'planned'
+  /** For a `planned` atom, what the missing rule is and where it is described (`epGaps`). */
   readonly plan?: string
   /**
    * `exact` (closed form), `grid` (quadrature of the model), or `truth`: no reference posterior exists to compare with (a model with
@@ -210,8 +223,8 @@ export interface AtomSpec<K extends Config> {
   readonly knobs: DictSpace
   /** The problem a configuration of the knobs makes. */
   readonly problem: (knobs: K) => AtomProblem
-  /** Knobs of EP the atom opens on, over the method's defaults (`{ damping: 0.3 }` for an atom that needs it). */
-  readonly ep?: Readonly<Record<string, number | string | boolean>>
+  /** Knobs of EP the atom opens on, over the method's defaults (`{ damping: 0.3 }` for an atom that needs it); a key that is not a knob is refused. */
+  readonly ep?: EpKnobs
   /**
    * The name of the basic atom this one extends: the same setup in which the numbers the basic atom fixes are unknown,
    * with priors, and the data are simulated from a stated truth (knobs: the true values and a `seed`). Set together with
@@ -223,7 +236,9 @@ export interface AtomSpec<K extends Config> {
 }
 
 /** A declared atom. */
-export interface EpAtom<K extends Config = Config> extends AtomSpec<K> {
+export interface EpAtom<K extends Config = Config> extends Omit<AtomSpec<K>, 'expected'> {
+  /** What the atom promises: `runs` unless it was declared `planned`. */
+  readonly expected: 'runs' | 'planned'
   /** The default knobs. */
   readonly defaults: K
 }
@@ -233,8 +248,8 @@ export interface EpAtom<K extends Config = Config> extends AtomSpec<K> {
  *
  * @param spec - What the atom declares.
  * @returns The atom, with its default knobs.
- * @throws OmaiError with code `value` for an atom with no name, no factors, a `planned` atom with no plan, or one that
- * gives `extends` without `recovery` (or the reverse).
+ * @throws OmaiError with code `value` for an atom with no name, no factors, a `planned` atom with no plan, one that
+ * gives `extends` without `recovery` (or the reverse), or an `ep` with a key that is not an EP knob.
  * @concept expectation-propagation
  * @example
  * ```ts
@@ -247,9 +262,10 @@ export function defineAtom<K extends Config>(spec: AtomSpec<K>): EpAtom<K> {
     throw new OmaiError('value', 'defineAtom: an atom has a name and the factors it exercises')
   if (spec.expected === 'planned' && (spec.plan === undefined || spec.plan === ''))
     throw new OmaiError('value', `defineAtom: the planned atom '${spec.name}' says where its rule is planned`)
+  if (spec.ep !== undefined) checkKnobKeys(`defineAtom: '${spec.name}'`, spec.ep, epRunKnobs('ep'))
   if ((spec.extends === undefined) !== (spec.recovery === undefined))
     throw new OmaiError('value', `defineAtom: '${spec.name}' gives both 'extends' and 'recovery' or neither`)
-  return { ...spec, defaults: defaults(spec.knobs) as K }
+  return { ...spec, expected: spec.expected ?? 'runs', defaults: defaults(spec.knobs) as K }
 }
 
 /** The belief of a coordinate: its mean and standard deviation, and whether it is a proper belief (not an unset message). */
@@ -291,9 +307,6 @@ export function beliefDensity(support: AtomSupport, mean: number, sd: number): (
   }
   return (x) => Math.exp(-0.5 * ((x - mean) / sd) ** 2) / (sd * Math.sqrt(2 * Math.PI))
 }
-
-/** `log Gamma(x)` of a number. */
-const lg = (x: number): number => item(lgamma(x))
 
 /** A marginal as a curve with its moments. */
 export interface RefMarginal {
@@ -431,26 +444,7 @@ export function atomReference<K extends Config>(atom: EpAtom<K>, problem: AtomPr
  * ```
  */
 export function atomVerdict(problem: AtomProblem): Verdict {
-  const bound = atomBound(problem)
-  const ep = epSpecMethod(bound).check?.(analysisOf(bound)) ?? {
-    applies: false,
-    reason: 'the method has no check',
-    missing: [] as string[],
-  }
-  if (ep.applies) return ep
-  // A model whose graph exists once some scalar latents are known runs by EP inside a grid over them.
-  const grid = epGridMethod(bound).check?.(analysisOf(bound))
-  return grid?.applies === true ? grid : ep
-}
-
-/** EP inside a grid over the hyperparameters, as the type of the plain EP method (a step is one node, an EP run of at most `maxSweeps` sweeps). */
-function gridMethodOf(bound: BoundModel): ReturnType<typeof epSpecMethod> {
-  return epGridMethod(bound) as never
-}
-
-/** Whether EP runs on the model as it is (`ep`) or inside a grid over the hyperparameters its custom functions read (`ep-grid`). */
-function atomRoute(bound: BoundModel): 'ep' | 'ep-grid' {
-  return epSpecMethod(bound).check?.(analysisOf(bound))?.applies === true ? 'ep' : 'ep-grid'
+  return epRoute(atomBound(problem)).verdict
 }
 
 /** The messages of EP at the most probable node of a grid run: the model conditioned on the hyperparameters there, run as a plain EP session. */
@@ -460,10 +454,8 @@ function gridRecord(bound: BoundModel, state: EpGridState): ModelRun {
     if (best === undefined || n.logEvidence + n.logPrior > best.logEvidence + best.logPrior) best = n
   const values = Object.fromEntries(state.axes.map((a, k) => [a.name, best?.x[k] ?? 0]))
   const cond = bind({ spec: doSpec(bound.spec, values), customs: bound.customs }, bound.data, bound.options)
-  const run = session(epSpecMethod(cond), { seed: 1, steps: 202, mode: 'eager', config: { tol: 1e-9 } }) as never as {
-    run: () => never
-  }
-  return modelRunFromTape(toStructure(cond, { view: 'factor' }), { run: run.run() }, { maxSteps: 120, maxMessages: 6 })
+  const s = session(epSpecMethod(cond), { seed: 1, steps: 202, mode: 'eager', config: { tol: 1e-9 } })
+  return modelRunFromTape(toStructure(cond, { view: 'factor' }), { run: s.run() }, { maxSteps: 120, maxMessages: 6 })
 }
 
 /** The beliefs at one sweep. */
@@ -538,7 +530,7 @@ export function marginalMean(reference: AtomReference): Record<string, number> {
 
 /** Moments of a quantity (`name` or `site[i]`) in a posterior. */
 function momentsOf(
-  posterior: { mean: (s: string) => never; stddev: (s: string) => never; sites: readonly string[] },
+  posterior: Pick<Posterior, 'mean' | 'stddev' | 'sites'>,
   name: string,
   support: AtomSupport,
 ): Belief {
@@ -570,10 +562,14 @@ function momentsOf(
  * const problem = gaussianAtom.problem(gaussianAtom.defaults)
  * const method = epSpecMethod(atomBound(problem))
  * const s = session(method, { steps: 50, mode: 'eager' })
- * atomBeliefs(problem, method.posterior?.(s.state, s.config) as never).mu?.proper // => true
+ * const posterior = method.posterior?.(s.state, s.config)
+ * posterior === undefined ? false : atomBeliefs(problem, posterior).mu?.proper // => true
  * ```
  */
-export function atomBeliefs(problem: AtomProblem, posterior: Parameters<typeof momentsOf>[0]): Record<string, Belief> {
+export function atomBeliefs(
+  problem: AtomProblem,
+  posterior: Pick<Posterior, 'mean' | 'stddev' | 'sites'>,
+): Record<string, Belief> {
   const out: Record<string, Belief> = {}
   for (const q of problem.quantities) {
     const b = q.derive === undefined ? momentsOf(posterior, q.name, q.support) : q.derive(out)
@@ -588,9 +584,10 @@ export function atomBeliefs(problem: AtomProblem, posterior: Parameters<typeof m
  * a model-run record. A problem the library refuses is not run: the result carries the library's verdict.
  *
  * @param problem - The problem.
- * @param ep - The knobs of EP over its defaults (damping, schedule, tolerance, the sweep cap).
+ * @param ep - The knobs of EP over its defaults (damping, schedule, tolerance, the sweep cap, the power).
  * @param options - `light` keeps no tape and no per-sweep beliefs (only the final ones): what a calibration over many seeds needs.
  * @returns The run, or the refusal.
+ * @throws OmaiError with code `value` for a key of `ep` that is not a knob of the method (a misspelled knob would run on the defaults).
  * @concept expectation-propagation
  * @index function Run EP on an atom's model: beliefs per sweep, a message record, or the refusal.
  * @example
@@ -604,58 +601,82 @@ export function atomRun(problem: AtomProblem, ep: Config = {}, options: { readon
   // region inference
   const bound = problem.definition.bind(problem.data, problem.bindOptions)
   // compile to a factor graph and run EP on it: a rule for every factor
-  const via = atomRoute(bound)
   // (a covariance that is a custom function of a random value makes it a grid over that value)
-  const method = via === 'ep' ? epSpecMethod(bound) : gridMethodOf(bound)
+  const route = epRoute(bound)
   // endregion
-  const verdict = atomVerdict(problem)
-  if (!verdict.applies) return { status: 'refused', reason: verdict.reason, missing: verdict.missing }
+  // a misspelled knob is an error, not a run on the defaults
+  checkKnobKeys('atomRun', ep, route.method?.config ?? epRunKnobs('ep'))
+  if (route.via === 'none') return { status: 'refused', reason: route.verdict.reason, missing: route.verdict.missing }
   const config: Config = { tol: 1e-9, ...ep }
   const maxSweeps = typeof config['maxSweeps'] === 'number' ? config['maxSweeps'] : 200
-  let s: ReturnType<typeof session<never, Config, string>>
   const logs = options.light === true ? 'off' : 'all'
+  const run = { problem, config, logs, light: options.light === true } as const
+  return route.via === 'ep'
+    ? runRoute(run, route.method, maxSweeps + 2, (s) => ({
+        converged: s.status === 'converged',
+        record: () =>
+          modelRunFromTape(toStructure(bound, { view: 'factor' }), { run: s.run() }, { maxSteps: 120, maxMessages: 6 }),
+      }))
+    : runRoute<EpGridState>(run, route.method, 1000, (s, posterior) => ({
+        converged: posterior?.status === 'converged',
+        record: () => gridRecord(bound, s.state),
+      }))
+}
+
+/** How a run of one route is read: whether it converged and the messages as a model-run record. */
+interface RouteReading {
+  readonly converged: boolean
+  readonly record: () => ModelRun
+}
+
+/** Run the method of a route sweep by sweep (one step of the grid method is one EP run) and read the beliefs at the sweeps kept. */
+function runRoute<S>(
+  run: {
+    readonly problem: AtomProblem
+    readonly config: Config
+    readonly logs: 'off' | 'all'
+    readonly light: boolean
+  },
+  method: InferenceMethod<S, Config, string, ModelAnalysis>,
+  steps: number,
+  reading: (s: Session<S, Config, string>, posterior: Posterior | undefined) => RouteReading,
+): AtomRun {
+  const { problem, config, logs, light } = run
+  let s: Session<S, Config, string>
   try {
     // region inference
     // one step is one sweep of EP over the factors, recorded
-    s = session(method, {
-      seed: 1,
-      steps: via === 'ep' ? maxSweeps + 2 : 1000,
-      mode: 'eager',
-      config,
-      logs,
-    }) as never
+    s = session(method, { seed: 1, steps, mode: 'eager', config, logs })
     // endregion
   } catch (e) {
     return { status: 'failed', reason: e instanceof Error ? e.message : String(e) }
   }
-  const read = (state: never): Record<string, Belief> => {
+  const read = (state: S): Record<string, Belief> => {
     // region inference
     // the beliefs by site
-    const posterior = method.posterior?.(state, s.config as never)
+    const posterior = method.posterior?.(state, s.config)
     // endregion
-    return posterior === undefined ? {} : atomBeliefs(problem, posterior as never)
+    return posterior === undefined ? {} : atomBeliefs(problem, posterior)
   }
   const last = s.t
-  const keep = new Set<number>(options.light === true ? [last] : [0, last])
+  const keep = new Set<number>(light ? [last] : [0, last])
   const stride = Math.max(1, Math.ceil(last / 60))
-  if (options.light !== true) for (let t = 0; t <= last; t += stride) keep.add(t)
+  if (!light) for (let t = 0; t <= last; t += stride) keep.add(t)
   const history = [...keep]
     .filter((t) => t >= 0 && t <= last)
     .sort((a, b) => a - b)
-    .map((t): SweepBeliefs => ({ sweep: t, beliefs: read(s.stateAt(t) as never) }))
-  const final = read(s.state as never)
-  const posterior = method.posterior?.(s.state, s.config as never)
+    .map((t): SweepBeliefs => ({ sweep: t, beliefs: read(s.stateAt(t)) }))
+  const final = read(s.state)
+  const posterior = method.posterior?.(s.state, s.config)
   const evidence = posterior?.logEvidence?.value
+  const { converged, record } = reading(s, posterior)
   return {
     status: 'ran',
-    converged: via === 'ep' ? s.status === 'converged' : posterior?.status === 'converged',
+    converged,
     sweeps: last,
     beliefs: final,
     history,
-    record: () =>
-      via === 'ep'
-        ? modelRunFromTape(toStructure(bound, { view: 'factor' }), { run: s.run() }, { maxSteps: 120, maxMessages: 6 })
-        : gridRecord(bound, s.state as never as EpGridState),
+    record,
     ...(evidence === undefined ? {} : { evidence }),
   }
 }

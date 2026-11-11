@@ -1,8 +1,7 @@
 /**
- * The registry of the expectation propagation atoms: every atom of the suite in the order the coverage page lists them,
- * and the lookup by name. The registry test is generated from this list: each atom is run (or refused) and its outcome
- * compared with what it declares, so a rule that lands in the library turns a `planned` atom's test red until the atom is
- * flipped to `runs`.
+ * The registry of the expectation propagation atoms: every atom of the suite and the lookup by name. The registry test is
+ * generated from this list: each atom is run and its outcome compared with what it declares (`runs` unless it says `planned`),
+ * so a rule that breaks turns its atom's test red.
  */
 
 import { OmaiError } from '../../base/index.ts'
@@ -110,7 +109,7 @@ import {
 } from './ep-atoms-weights.ts'
 
 /**
- * Every EP atom, in the order of the coverage page: the gates and mixtures first, then the rest as they are added.
+ * Every EP atom, in the order they were added (the gates and mixtures first).
  *
  * @concept expectation-propagation
  * @index table The EP atoms: bare setups that each exercise one factor of the message passing suite.

@@ -4,6 +4,7 @@
  * by the midpoint rule on a fine grid.
  */
 
+import { OmaiError } from '../../base/index.ts'
 import { ndtr } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
 import type { ExactMarginal } from './ep-atoms.ts'
@@ -110,6 +111,8 @@ export function quadratureMarginal(
 /** The marginals of a density on a tensor grid, and the joint of any two of its coordinates. */
 export interface GridMarginals {
   readonly marginals: readonly ExactMarginal[]
+  /** The marginal of coordinate `k`. */
+  readonly marginal: (k: number) => ExactMarginal
   /** The joint of coordinates `a` and `b`, on their axes. */
   readonly joint: (
     a: number,
@@ -182,6 +185,11 @@ export function gridMarginals(
   })
   return {
     marginals,
+    marginal: (k) => {
+      const m = marginals[k]
+      if (m === undefined) throw new OmaiError('value', `gridMarginals: there is no coordinate ${k}`)
+      return m
+    },
     joint: (a, b) => {
       const p = Array.from({ length: n }, () => new Array<number>(n).fill(0))
       for (let flat = 0; flat < total; flat++) {

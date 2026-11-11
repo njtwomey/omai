@@ -10,7 +10,52 @@ whole probabilistic-programming increment recorded here, under whichever version
 is on `main` so far; the plan is `docs/probprog/PLAN.md` (with its status section), the validation tables are in
 `docs/probprog/results/`.
 
-Expectation propagation for a Gaussian with an unknown noise level (omai-engine, message passing): the `gaussian-gamma-precision` factor now has an EP rule for an observed value and a Gaussian mean (the mean is integrated out, the moments of the precision come from a grid in `log lambda`, the mean gets a Gaussian site and the precision a Gamma site), so linear regression with a gamma-precision noise runs under EP and agrees with the exact posterior; `docs/probprog/ep-and-gam.md` says what is still missing for the penalised additive model (a random smoothing parameter on a coefficient vector).
+Expectation propagation, from a few rules to a suite (omai-engine, `message-passing`, `probprog/model`, `probprog/inference`,
+`probprog/ep`; the numbers are those of 2026-11-11, and `docs/probprog/ep-status.md` is generated from the code and says what they are
+today). EP stopped being a handful of models that happened to compile and became a capability with a design (`docs/probprog/ep.md`),
+a measurement and a proof that a change moved nothing. What a user gets:
+- **EP on a model spec.** `epSpecMethod(bound)` compiles a bound spec to a factor graph (`toFactorGraph`) and runs EP with the knobs of
+  the engine (schedule, granularity, damping, improper policy, tolerance, sweep cap, restarts) and `power` for fractional EP; its
+  `check` names the node and the missing rule when it does not apply. EP runs on all 27 benchmark models (25 as they are, 2 inside a
+  grid over hyperparameters). The rules are the engine's 66 factor operators (35 with a closed-form EP message, 30 numeric), 19 of which take a
+  power; the message families now include `wishart` and `normal-wishart` beside the Gaussian, gamma, beta, Bernoulli, discrete,
+  Dirichlet and normal-gamma ones.
+- **What the compiler reads** (beyond the first increment's normal, probit, logistic, conjugate and gate forms): a Gaussian with an
+  unknown noise level (`gaussian-gamma-precision`, an EP rule for an observed value and a latent one, the moments of the precision from a
+  grid in `log lambda`), the normal-inverse-gamma pair (exact), the numeric likelihood registry (Student-t, Laplace, Poisson and negative
+  binomial with a log link, Weibull, ordinal probit and logistic, asymmetric Laplace, binomial and the hurdle count), the two-variable
+  numeric site (a random scale or shape beside the location), the multiclass site (softmax and multinomial probit), unary functions of a
+  random value (`exp`, `square`, `tanh`, ...), exact numeric priors (half-normal, half-Cauchy, uniform, truncated normal, log-normal),
+  gates (`ops.pick`, `where`, `at` over known or random components, switches summed out, random transition rows, a gate whose components
+  have gamma precisions of their own), spike and slab, dense Gaussian vectors (Gaussian processes, a Kalman chain with a vector state,
+  `gaussian-transition`), a random smoothing parameter on a whole coefficient vector (`gaussian-mv-precision-scale`) and the dense
+  non-centred form (`gaussian-mv-function-scale`, the Bayesian GAM on all 12 forms), stick-breaking, and the covariance families
+  (`mvn-wishart`, `mvn-normal-wishart`, a bivariate normal with sds and a correlation, `mvn-sd-corr`). The explicit `gate` node of the model
+  layer is still reserved and not built; the gate atoms run through the lookups above.
+- **Two more methods.** `epGridMethod` (EP inside an evidence-weighted grid over the scalar hyperparameters a custom function reads: a
+  Gaussian process length scale, a stochastic-volatility persistence) and `epMultiStartMethod` (EP from several starts of the discrete
+  messages, with relabelling and a canonical read-out, the distinct fixed points weighted by their EP evidence), both registered in
+  `methodKinds`. `epRoute(bound)` says how EP runs a model (plain, in a grid, or refused) and is the one place that chooses; the three
+  methods share one declaration of the run knobs (`epRunKnobs`, per-method defaults) and the grid and multi-start methods take
+  `schedule`, `improper`, `restarts` and `power` as plain EP does.
+- **What EP reports.** An honest verdict (converged only when every update was recomputed, stalled, degenerate), a damped restart of a
+  stalled run, one flat-cavity policy for the operators that need a density, the log evidence of every rule (and of a plated factor with an
+  improper cavity, from the rows-expanded model, named as such), variational messages for the numeric rules (`vmpSpecMethod` runs 84 of the 92
+  atoms), `describeMessage` for a long vector.
+- **The suite** (`omai-engine/probprog/ep`): 92 atoms (63 basic, 29 `-learned` twins whose data are simulated from a stated truth and whose
+  90% intervals are held to a recovery promise), each a small model with a reference that is not EP (closed form, quadrature or a sampler)
+  and a tolerance with its reason; `epCoverage` and `vmpCoverage` (measured, not remembered); `epGaps` and `epDirections` as data, the refusals
+  of a gap derived from the verdicts; `atomCalibration` and `recoverySummary`; the typed knobs of an atom (`EpKnobs`: a misspelled knob now
+  throws instead of running on the defaults). The atlas of priors (`docs/probprog/ep-priors.md`) and the notes in `docs/probprog/notes/`
+  (covariance matrices, the dense non-centred scale, multimodality, power EP on the softmax slopes, stochastic volatility on a grid, the
+  evidence of plated factors) record what was measured. The proofs of concept show a page per atom, the programs and a coverage page.
+- **The digest** (`make ep-digest`, `make ep-digest-check`, the committed `docs/probprog/ep-digest.json`): the compiled graphs, verdicts, beliefs
+  and evidence of every atom, benchmark model and EP program, the operator registry and the knob spaces, compared bit for bit; the proof for
+  a refactoring that nothing moved. `make ep-report` writes `docs/probprog/ep-status.md` and `make ep-report-check` fails when it is stale.
+- **Known limits** (each is a gap in `ep-gaps.ts`, with its plan): a non-conjugate Wishart beyond dimension 3 and an LKJ prior beyond a
+  bivariate correlation, the softmax beyond six classes, random ordinal cut points, a gate over likelihoods of different families
+  chosen by a latent the data do not determine, EP on a multimodal posterior (one run commits to one reading: the multi-start method
+  is the answer, the calibration shows the rest), loopy overconfidence, and stochastic volatility with unknown parameters.
 
 Chart labels (omai-render): the values on bars and the other series labels are plain token-coloured text with no outline. ECharts gave a label with no colour of its own an automatic contrast colour and a stroke to match, which showed as an embossed, outlined number on a dark page; the theme now sets the colour and no border for the series that carry labels (`echartsTheme`), so every chart is fixed at once, in the page and in SVG export.
 
@@ -120,7 +165,7 @@ SMC, particle MCMC, nested sampling and evidence: `sampling/pmcmc.ts` (`pseudoMa
 evidence) and `dynamics/filtering/pmcmc.ts` (`pmmhKernel`, `conditionalSmc` with ancestor sampling, `particleGibbs`).
 
 Message passing (`omai-engine/message-passing`, a new domain): a factor-graph engine over exponential-family messages
-(Gaussian, gamma, beta, Bernoulli, normal-gamma, multivariate Gaussian, discrete, Dirichlet) with 35 factor operators
+(Gaussian, gamma, beta, Bernoulli, normal-gamma, multivariate Gaussian, discrete, Dirichlet) with 35 factor operators at its first version (66 by the end of this increment)
 (affine, truncation and probit, logistic, conjugate, discrete tables, gates, mixtures, products, `max` and `min`, regression
 rows and plates, the spin site), and EP, VMP and BP as named settings of one steppable, resumable algorithm
 (`epMethod`, `vmpMethod`, `bpMethod`: projection, schedule and its granularity, damping and the improper-message policy
@@ -229,15 +274,16 @@ Known limits:
   models), so a run with a tiny mean error can still trip `meanZ`; `tempered-smc` shows a mean error larger than its Monte
   Carlo error on item response scoring at 1000 particles (its moves are weak). Both are listed, not fixed.
 - EP, VMP and BP are tested against references (the grid for the probit regression, `pgm`, `gp`, TrueSkill, the Bayesian
-  mixture). Among the benchmark campaigns EP runs only in `benchmark/item-response-scoring` and `benchmark/clutter-ep`; VMP and
-  BP are in none.
+  mixture; the 92 EP atoms against closed forms, quadratures and samplers). The probprog-validate benchmark campaigns still include
+  EP in only two (`benchmark/item-response-scoring`, `benchmark/clutter-ep`) and VMP and BP in none; the whole benchmark suite is
+  covered by `epCoverage` instead (EP runs on all 27 models), and the atoms are the accuracy check.
 - Region-graph (Kikuchi) belief propagation needs damping and does not converge at strong coupling (the tests cover a moderate
   one).
-- VMP has no rule for the hard comparison `greater-than`, `max` and `min` are expectation propagation only, and
-  `gaussian-gamma-precision` has no EP rule; `check` says so per model. Region graphs and generalised BP are for discrete
+- VMP has no rule for the hard comparison `greater-than` (and the like), and `max` and `min` are expectation propagation only;
+  `check` says so per model. (`gaussian-gamma-precision` has an EP rule for an observed and a latent value: see the EP paragraph.) Region graphs and generalised BP are for discrete
   models; AMP is for linear models with iid priors; expectation consistent inference is for a Gaussian times
   one-dimensional sites.
-- The `gate` node (mixtures) is not built. Particle MCMC takes a `StateSpaceFamily`, not a spec with a scan (PMMH on scans is
+- The explicit `gate` node is not built (mixtures run through `ops.pick`, `where` and `at`). Particle MCMC takes a `StateSpaceFamily`, not a spec with a scan (PMMH on scans is
   not done). SMC squared, dynamic nested sampling and Chib's estimator are not built.
 - `hybridMethod`, particle MCMC, nested sampling, the evidence methods and the state-space filter are not in `methodKinds`
   (they take inputs other than a model).

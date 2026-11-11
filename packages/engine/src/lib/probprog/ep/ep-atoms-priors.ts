@@ -8,13 +8,12 @@
  * grid of the model written as a program for the rest. `docs/probprog/ep-priors.md` is the table the atoms illustrate.
  */
 
-import { lgamma } from '../../numerics/special/index.ts'
 import { dict, real } from '../../space/index.ts'
-import { item } from '../../tensor/index.ts'
 import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
+import { lg, sum } from './_util.ts'
 import {
   type AtomProblem,
   type AtomTolerance,
@@ -24,9 +23,6 @@ import {
   type RefJoint,
 } from './ep-atoms.ts'
 import { normalPdf, quadratureMarginal } from './ep-atoms-quad.ts'
-
-const lg = (x: number): number => item(lgamma(x))
-const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0)
 
 const EXACT: AtomTolerance = {
   meanZ: 1e-6,
@@ -263,7 +259,6 @@ export const priorNormalInverseGammaAtom: EpAtom = defineAtom({
   what: 'An inverse-gamma prior on the variance of a Gaussian and, given it, a normal prior on its mean with variance sigma2 / kappa: the conjugate pair, one normal-gamma variable and a factor per observation.',
   factors: ['prior (normal-gamma)', 'gaussian-normal-gamma (observed value)'],
   family: 'priors',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 1e-6,
@@ -364,7 +359,6 @@ export const priorNormalHyperAtom: EpAtom = defineAtom({
   what: 'A normal prior on a Gaussian mean whose centre is itself normal: a chain of three Gaussians, jointly Gaussian, so the posterior of the mean and of the centre are closed forms.',
   factors: ['prior (gaussian)', 'gaussian with a random mean (difference)', 'gaussian likelihood'],
   family: 'priors',
-  expected: 'runs',
   reference: 'exact',
   tolerance: EXACT,
   knobs: dict({
@@ -420,7 +414,6 @@ export const priorInverseGammaHyperAtom: EpAtom = defineAtom({
   what: 'An inverse-gamma prior on a variance whose scale is gamma distributed, six Gaussian observations around a known mean: the variance is a gamma precision with a random rate (the gamma-rate hierarchy).',
   factors: ['prior (gamma)', 'gamma-rate (a gamma with a gamma rate)', 'gaussian-gamma-precision (observed value)'],
   family: 'priors',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.15,
@@ -483,7 +476,6 @@ export const priorGammaPoissonHyperAtom: EpAtom = defineAtom({
   what: 'A gamma prior on a Poisson rate whose rate parameter is gamma distributed, four counts: the gamma-rate hierarchy under the conjugate Poisson factor.',
   factors: ['prior (gamma)', 'gamma-rate', 'poisson likelihood (gamma-poisson)'],
   family: 'priors',
-  expected: 'runs',
   reference: 'grid',
   tolerance: HYPER,
   knobs: dict({
@@ -534,7 +526,6 @@ export const priorLogNormalPoissonAtom: EpAtom = defineAtom({
   what: 'A log-normal prior on a Poisson rate and four counts: a Gaussian on the log rate and the numeric Poisson likelihood with a log link.',
   factors: ['prior (gaussian, on the log rate)', 'numeric likelihood: poisson with an exp link'],
   family: 'priors',
-  expected: 'runs',
   reference: 'grid',
   tolerance: { ...HYPER, meanZ: 0.2 },
   knobs: dict({
@@ -587,7 +578,6 @@ export const priorLogNormalPoissonHyperAtom: EpAtom = defineAtom({
   what: 'The log of a Poisson rate is normal around a centre that is itself normal: two Gaussians and the numeric Poisson likelihood with a log link.',
   factors: ['prior (gaussian)', 'gaussian with a random mean', 'numeric likelihood: poisson with an exp link'],
   family: 'priors',
-  expected: 'runs',
   reference: 'grid',
   tolerance: { ...HYPER, meanZ: 0.2 },
   knobs: dict({
@@ -639,7 +629,6 @@ export const priorGammaExponentialAtom: EpAtom = defineAtom({
   what: 'A gamma prior on the rate of exponential waiting times and five observed times: a conjugate gamma message from each observation.',
   factors: ['prior (gamma)', 'gamma-observed (an exponential value with a gamma rate)'],
   family: 'priors',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     ...EXACT,
@@ -703,7 +692,6 @@ export const priorNormalWeibullAtom: EpAtom = defineAtom({
   what: 'The log of a Weibull scale is normal around a normal centre, five observed lifetimes with a known shape: two Gaussians and the numeric Weibull likelihood.',
   factors: ['prior (gaussian)', 'gaussian with a random mean', 'numeric likelihood: weibull with a log link'],
   family: 'priors',
-  expected: 'runs',
   reference: 'grid',
   tolerance: { ...HYPER, meanZ: 0.2 },
   knobs: dict({
@@ -755,7 +743,6 @@ export const priorBetaGeometricAtom: EpAtom = defineAtom({
   what: 'A beta prior on the success probability and four geometric counts (trials to the first success): the likelihood is a beta in the probability.',
   factors: ['prior (beta)', 'negative-binomial-beta (a geometric count with a beta probability)'],
   family: 'priors',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     ...EXACT,
@@ -836,7 +823,6 @@ export const priorBetaStrengthGammaAtom: EpAtom = defineAtom({
     'bernoulli likelihood (beta-bernoulli)',
   ],
   family: 'priors',
-  expected: 'runs',
   reference: 'exact',
   tolerance: STRENGTH_TOLERANCE,
   knobs: dict({
@@ -866,7 +852,6 @@ export const priorBetaStrengthLogNormalAtom: EpAtom = defineAtom({
     'bernoulli likelihood (beta-bernoulli)',
   ],
   family: 'priors',
-  expected: 'runs',
   reference: 'exact',
   tolerance: { ...STRENGTH_TOLERANCE, ks: 0.12 },
   knobs: dict({
@@ -917,7 +902,6 @@ export const priorDirichletCategoricalAtom: EpAtom = defineAtom({
   what: 'A symmetric Dirichlet prior on three category probabilities and seven categorical observations: the Dirichlet-categorical conjugate pair.',
   factors: ['prior (dirichlet)', 'discrete likelihood (discrete-dirichlet)'],
   family: 'priors',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     ...EXACT,
@@ -977,7 +961,6 @@ export const priorDirichletStrengthAtom: EpAtom = defineAtom({
     'discrete likelihood (discrete-dirichlet)',
   ],
   family: 'priors',
-  expected: 'runs',
   reference: 'exact',
   tolerance: STRENGTH_TOLERANCE,
   knobs: dict({
@@ -1033,7 +1016,6 @@ export const priorLogitNormalAtom: EpAtom = defineAtom({
   what: 'The log odds of a Bernoulli probability are normal around a normal centre, seven flips: two Gaussians and the logistic factor.',
   factors: ['prior (gaussian)', 'gaussian with a random mean', 'logistic likelihood'],
   family: 'priors',
-  expected: 'runs',
   reference: 'grid',
   tolerance: { ...HYPER, meanZ: 0.2 },
   knobs: dict({
@@ -1081,7 +1063,6 @@ export const priorUniformAtom: EpAtom = defineAtom({
   what: 'A uniform prior on a Gaussian mean with six observations: the density has no message family, so it is carried as an exact numeric site that EP matches against the current cavity at every sweep.',
   factors: ['numeric prior site (uniform, exact)', 'gaussian likelihood'],
   family: 'priors',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.25,
@@ -1145,7 +1126,6 @@ export const priorLogNormalScaleAtom: EpAtom = defineAtom({
   what: 'The log of a Gaussian standard deviation is normal around a normal centre, four zero-mean observations: two Gaussians and the Gaussian with an exp(h) scale.',
   factors: ['prior (gaussian)', 'gaussian with a random mean', 'gaussian-log-scale'],
   family: 'priors',
-  expected: 'runs',
   reference: 'grid',
   tolerance: { ...HYPER, meanZ: 0.2 },
   knobs: dict({
@@ -1207,7 +1187,6 @@ export const priorBetaTwoShapesAtom: EpAtom = defineAtom({
     'bernoulli likelihood',
   ],
   family: 'priors',
-  expected: 'runs',
   reference: 'grid',
   tolerance: { ...HYPER, meanZ: 0.25 },
   knobs: dict({ logSd: real(0.2, 2, { default: 0.7, step: 0.1, label: 'sd of each log shape' }) }),

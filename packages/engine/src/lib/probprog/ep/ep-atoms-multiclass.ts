@@ -12,14 +12,8 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, type ModelDefinition } from '../model/index.ts'
-import {
-  type AtomFigure,
-  type AtomProblem,
-  defineAtom,
-  type EpAtom,
-  type ExactMarginal,
-  type FigureCurve,
-} from './ep-atoms.ts'
+import { once } from './_util.ts'
+import { type AtomFigure, type AtomProblem, defineAtom, type EpAtom, type FigureCurve } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 import { gridMarginals } from './ep-atoms-quad.ts'
 
@@ -33,12 +27,6 @@ const softmax = (w: readonly number[], x: number): number[] => {
   const e = z.map((v) => Math.exp(v - top))
   const s = e.reduce((a, b) => a + b, 0)
   return e.map((v) => v / s)
-}
-
-/** A value computed the first time it is asked for. */
-function once<T>(make: () => T): () => T {
-  let value: T | undefined
-  return () => (value ??= make())
 }
 
 /** The model both atoms share: three class slopes with Gaussian priors and a categorical outcome with softmax probabilities of `x w_k`. */
@@ -130,7 +118,7 @@ function softmaxProblem(k: Config): AtomProblem {
     })),
     pair: ['w[0]', 'w[1]'],
     get exact() {
-      return Object.fromEntries([0, 1, 2].map((j) => [`w[${j}]`, grid().marginals[j] as ExactMarginal]))
+      return Object.fromEntries([0, 1, 2].map((j) => [`w[${j}]`, grid().marginal(j)]))
     },
     get exactJoint() {
       return { a: 'w[0]', b: 'w[1]', ...grid().joint(0, 1) }
@@ -158,7 +146,6 @@ export const softmaxRegressionAtom: EpAtom = defineAtom({
   what: 'Three class slopes with Gaussian priors and ten labelled points through a softmax: the multiclass site, an adaptive Gauss-Hermite integral over the three class scores of each point.',
   factors: ['prior (gaussian) x3', 'scale (known covariate times a slope)', 'multiclass-site (softmax)'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.25,
@@ -205,7 +192,7 @@ function softmaxLearnedProblem(k: Config): AtomProblem {
     })),
     pair: ['w[0]', 'w[1]'],
     get exact() {
-      return Object.fromEntries([0, 1, 2].map((j) => [`w[${j}]`, grid().marginals[j] as ExactMarginal]))
+      return Object.fromEntries([0, 1, 2].map((j) => [`w[${j}]`, grid().marginal(j)]))
     },
     get exactJoint() {
       return { a: 'w[0]', b: 'w[1]', ...grid().joint(0, 1) }
@@ -240,7 +227,6 @@ export const softmaxRegressionLearnedAtom: EpAtom = defineAtom({
   what: 'The softmax classifier of the basic atom with the three class slopes unknown, the classes simulated from stated slopes.',
   factors: ['prior (gaussian) x3', 'scale (known covariate times a slope)', 'multiclass-site (softmax)'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.5,

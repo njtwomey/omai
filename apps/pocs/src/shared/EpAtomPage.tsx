@@ -1,5 +1,5 @@
-import { messagePassingKnobs } from 'omai-engine/message-passing'
 import { atomBound, type EpAtom, marginalMean } from 'omai-engine/probprog/ep'
+import { epRunKnobs } from 'omai-engine/probprog/inference'
 import { toStructure } from 'omai-engine/probprog/model'
 import { type DictSpace, defaults, dict } from 'omai-engine/space'
 import type { Config } from 'omai-engine/trace'
@@ -30,7 +30,7 @@ const sig = (v: number, digits = 3): string => (Number.isFinite(v) ? String(Numb
 
 /** The EP knobs a page offers: the library's own space for the method, without the budgets. */
 const epSpace: DictSpace = dict(
-  Object.fromEntries(Object.entries(messagePassingKnobs('ep').config.spaces).filter(([k]) => EP_KNOBS.includes(k))),
+  Object.fromEntries(Object.entries(epRunKnobs('ep').spaces).filter(([k]) => EP_KNOBS.includes(k))),
 )
 
 const tone = (ok: boolean): { color: string; borderColor: string } => ({

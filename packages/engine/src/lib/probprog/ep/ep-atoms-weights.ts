@@ -180,7 +180,6 @@ export const gateWeightAtom: EpAtom = defineAtom({
     'table (the component mean chosen by the switch)',
   ],
   family: 'gate weights',
-  expected: 'runs',
   reference: 'exact',
   tolerance: GATE_TOLERANCE,
   knobs: dict(priorKnobs),
@@ -226,7 +225,6 @@ export const gateWeightSummedOutAtom: EpAtom = defineAtom({
   what: 'The same mixture and beta prior with the switches summed out: one mixture-weight factor per observation on the weight, so EP reports the weight but not each observation’s responsibility.',
   factors: ['prior (beta)', 'mixture-weight (a two-component mixture with a beta weight)'],
   family: 'gate weights',
-  expected: 'runs',
   reference: 'exact',
   tolerance: GATE_TOLERANCE,
   knobs: dict(priorKnobs),
@@ -324,7 +322,6 @@ export const gateWeightDirichletAtom: EpAtom = defineAtom({
     'table (the component mean chosen by the switch)',
   ],
   family: 'gate weights',
-  expected: 'runs',
   reference: 'exact',
   tolerance: { ...GATE_TOLERANCE, meanZ: 0.2, sdRatio: [0.8, 1.2], ks: 0.1 },
   knobs: dict({
@@ -455,7 +452,6 @@ export const gateWeightHyperAtom: EpAtom = defineAtom({
     'table',
   ],
   family: 'gate weights',
-  expected: 'runs',
   reference: 'exact',
   tolerance: { ...GATE_TOLERANCE, meanZ: 0.2, sdRatio: [0.8, 1.2], ks: 0.1 },
   knobs: dict({

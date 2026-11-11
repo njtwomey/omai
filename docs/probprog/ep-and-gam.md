@@ -1,16 +1,17 @@
 # Expectation propagation and the Bayesian additive model
 
 A note on why EP did not run on the Bayesian additive model (the `bayesian-gam` page) or on linear regression with a learned
-noise level, whether that is a limit of EP or of the setup, and what has changed. Written 2026-11-11; the checks quoted are the
-library's own verdicts (`factorGraphVerdict`) and the tests named at the end.
+noise level, whether that is a limit of EP or of the setup, and what has changed. Written 2026-11-11 (a note, kept as it was found
+out; both gaps it names are closed, see below); the checks quoted are the library's own verdicts (`factorGraphVerdict`) and the tests
+named at the end.
 
 ## Short answer
 
 It is a gap in the message-passing library's rules, not a limit of EP. EP is not restricted to Gaussian models: it only needs,
 for each factor, the moments of "the factor times the cavities", and where those have no closed form they can be computed by a
 low-dimensional quadrature (the library already does that for the logistic and probit links, products and clutter). What was
-missing were a few factor rules. One is now written (an unknown noise level); one is the real remaining gap (an unknown
-smoothing parameter on a whole vector of coefficients).
+missing were a few factor rules. Both are now written: an unknown noise level, and an unknown smoothing parameter on a whole
+vector of coefficients (the dense `gaussian-mv-precision-scale` and `gaussian-mv-function-scale` factors, section 3 of `ep-plan.md`).
 
 ## The model, as regression
 
@@ -105,7 +106,7 @@ Measured on the page's data (sine, 60 rows, 10 coefficients), the forms of the p
 | spike and slab, all four               | yes          |                                |                  |                        | (earlier work)                           |
 
 Variational message passing still refuses these forms (its non-conjugate message for a scale is degenerate): gap
-`non-centred-scale` in `ep-gaps.ts`, now only that and the 12% spreads. Notes: `ep-notes-densegam.md`.
+`non-centred-scale` in `ep-gaps.ts`, now only that and the 12% spreads. Notes: `notes/ep-notes-densegam.md`.
 
 ## Optimising instead
 

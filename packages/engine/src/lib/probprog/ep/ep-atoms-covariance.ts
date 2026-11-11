@@ -242,7 +242,6 @@ export const mvnWishartAtom: EpAtom = defineAtom({
   what: 'Six pairs from a bivariate normal with a known mean, whose precision matrix is a Wishart latent: the conjugate update of the matrix, exact in one sweep, checked against the closed-form posterior.',
   factors: ['prior (wishart)', 'mvn-wishart (observed vector, known mean)'],
   family: 'covariance',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 1e-3,
@@ -403,7 +402,6 @@ export const mvnWishartLearnedAtom: EpAtom = defineAtom({
   what: 'The bivariate normal of the basic atom with the mean also unknown (a Gaussian prior) and the data simulated from a stated mean and covariance: the Wishart is no longer conjugate (the mean and the precision are independent in the prior), so EP integrates the mean out and matches the matrix by quadrature.',
   factors: ['prior (gaussian-mv)', 'prior (wishart)', 'mvn-wishart (plate of rows, random mean)'],
   family: 'covariance',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.05,
@@ -516,7 +514,6 @@ export const bivariateCorrelationAtom: EpAtom = defineAtom({
   what: 'Eight pairs from a bivariate normal with known zero means and unit sds, whose correlation has the LKJ prior of a 2 by 2 matrix (a beta variable on (rho + 1) / 2): a one-dimensional numeric site, checked against the posterior of the correlation by quadrature.',
   factors: ['prior (beta)', 'mvn-sd-corr (plate of rows, known mean and sds)'],
   family: 'covariance',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.1,
@@ -678,7 +675,6 @@ export const bivariateCorrelationLearnedAtom: EpAtom = defineAtom({
   what: 'The bivariate normal of the basic atom with the mean and both standard deviations also unknown (a Gaussian prior, gamma precisions) and the data simulated from a stated mean, sds and correlation: three numeric coordinates, matched at once by EP.',
   factors: ['prior (gaussian-mv)', 'prior (gamma)', 'prior (beta)', 'mvn-sd-corr (plate of rows, random mean)'],
   family: 'covariance',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.05,
@@ -964,7 +960,6 @@ export const randomInterceptsSlopesAtom: EpAtom = defineAtom({
     'linear-regression-row (the reading of the line)',
   ],
   family: 'covariance',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.1,
@@ -1157,7 +1152,6 @@ export const randomInterceptsSlopesLearnedAtom: EpAtom = defineAtom({
     'linear-regression-row',
   ],
   family: 'covariance',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.15,

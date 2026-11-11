@@ -11,7 +11,9 @@
  * an anytime snapshot shows. `check` says whether the model has a factor graph at all and why not, naming the node and
  * the reason (an opaque `custom` call, a family with no message family, a random scale, a non-affine operator), and
  * whether the method has a message rule for every operator of the graph (VMP has none for a hard comparison, `greater-than`).
- * Nothing chooses among the three: the user does, and a method that does not apply refuses with that reason.
+ * Nothing chooses among the three: the user does, and a method that does not apply refuses with that reason. Within
+ * expectation propagation `epRoute` (`ep-route.ts`) chooses how it runs a model: plain, or inside a grid over hyperparameters
+ * (`ep-grid.ts`), or not at all.
  */
 
 import { OmaiError } from '../../base/index.ts'
@@ -28,12 +30,9 @@ import {
   mpVerdict,
   projectionOf,
   type ScheduleKind,
-  takesPower,
   type VmpPath,
   vmpMethod,
-  withPowers,
 } from '../../message-passing/index.ts'
-import { dict, real } from '../../space/index.ts'
 import { type Config, type Contract, defineContract, derived, Log, runAlgorithm } from '../../trace/index.ts'
 import { factorGraphPosterior } from '../model/factor-graph/readback.ts'
 import { factorGraphVerdict, type MessageRule } from '../model/factor-graph/verdict.ts'
@@ -48,10 +47,14 @@ import {
   prepare,
   yes,
 } from './_support.ts'
+import { atPower, epRunKnobs, powerOf } from './ep-knobs.ts'
 import { defineInferenceMethod, type InferenceMethod, type Verdict } from './method.ts'
 
 /** The paths an expectation propagation or belief propagation method logs: the engine's, and the posterior of a state as JSON. */
 export type EpSpecPath = EpPath | 'mp/posterior'
+
+/** An expectation propagation method on a model spec. */
+export type EpSpecMethod = InferenceMethod<MpState, Config, EpSpecPath, ModelAnalysis>
 
 /** The paths a variational message passing method logs: the engine's, and the posterior of a state as JSON. */
 export type VmpSpecPath = VmpPath | 'mp/posterior'
@@ -130,33 +133,15 @@ function specMethod<P extends string>(
   const prepared = prepare(model, options.plates ?? 'vectorise', options.packScalars ?? rule === 'ep')
   const base = messagePassingKnobs(rule)
   // Expectation propagation also takes the power of fractional EP, on every factor whose operator supports one (the likelihood
-  // links, the softmax site, the shape and concentration sites, unary functions).
-  const knobs =
-    rule === 'ep'
-      ? {
-          ...base,
-          config: dict({
-            ...base.config.spaces,
-            power: real(0.05, 2, {
-              default: 1,
-              label: 'power',
-              description:
-                'fractional EP: the power of every factor that supports one (1 is EP). Below 1 the spreads of variables that many factors share come out wider: where one Gaussian per variable leaves them too narrow (the class slopes of a softmax classifier), a power near 5 / rows restores the coverage of their intervals',
-            }),
-          }),
-        }
-      : base
+  // links, the softmax site, the shape and concentration sites, unary functions): the knobs are the shared declaration.
+  const knobs = rule === 'ep' ? { ...base, config: epRunKnobs('ep') } : base
   const powered = new Map<number, CompiledGraph | undefined>()
   /** The graph at the configuration's power (the prepared one at 1): the factors that take a power get it, the others stay at 1. */
   const graphAt = (config: Config): CompiledGraph | undefined => {
     const g = prepared?.graph
-    const p = typeof config['power'] === 'number' ? config['power'] : 1
+    const p = powerOf(config)
     if (g === undefined || p === 1 || rule !== 'ep') return g
-    if (!powered.has(p))
-      powered.set(
-        p,
-        withPowers(g, (f) => (takesPower(f.operator, f.params) ? p : 1)),
-      )
+    if (!powered.has(p)) powered.set(p, atPower(g, p))
     return powered.get(p)
   }
   const check = (a: ModelAnalysis): Verdict => {
@@ -320,10 +305,7 @@ function specMethod<P extends string>(
  * [s.status, Number(m.posterior?.(s.state, s.config).mean('mu').data[0]).toFixed(4)] // => ['converged', '1.8462']
  * ```
  */
-export function epSpecMethod(
-  model: MethodModel,
-  options: MpSpecOptions = {},
-): InferenceMethod<MpState, Config, EpSpecPath, ModelAnalysis> {
+export function epSpecMethod(model: MethodModel, options: MpSpecOptions = {}): EpSpecMethod {
   return specMethod<EpSpecPath>('ep', model, options)
 }
 

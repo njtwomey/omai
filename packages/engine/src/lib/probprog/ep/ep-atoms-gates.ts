@@ -71,7 +71,6 @@ export const orderedPairAtom: EpAtom = defineAtom({
   what: 'Two independent Gaussians a and b with the observation that a > b: the greater-than factor, a truncation of their difference.',
   factors: ['prior (gaussian) x2', 'greater-than (truncation)'],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.15,
@@ -129,7 +128,7 @@ function orderedMeansProblem(k: Config): AtomProblem {
       { name: 'mu[1]', label: 'mu_2', support: 'real' },
     ],
     pair: ['mu[0]', 'mu[1]'],
-    exact: { 'mu[0]': g.marginals[0] as never, 'mu[1]': g.marginals[1] as never },
+    exact: { 'mu[0]': g.marginal(0), 'mu[1]': g.marginal(1) },
     exactJoint: { a: 'mu[0]', b: 'mu[1]', ...g.joint(0, 1) },
   }
 }
@@ -151,7 +150,6 @@ export const orderedMeansAtom: EpAtom = defineAtom({
   what: 'Two means with an ordered-vector constraint mu_1 < mu_2 and data that prefer the opposite order: the constraint is a greater-than factor between neighbours, and the posterior is cut along the diagonal.',
   factors: ['prior (gaussian) x2', 'ordered constraint (greater-than between neighbours)', 'gaussian likelihood'],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.15,

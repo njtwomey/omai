@@ -174,7 +174,6 @@ export const clutterLearnedAtom: EpAtom = defineAtom({
     'select gate per observation (gaussian-gamma-precision branches)',
   ],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.15,
@@ -412,7 +411,6 @@ export const mixtureComponentsLearnedAtom: EpAtom = defineAtom({
     'index gate (gaussian-gamma-precision branches)',
   ],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.3,
@@ -557,7 +555,6 @@ export const gateRandomLearnedAtom: EpAtom = defineAtom({
     'select gate per observation (gaussian-gamma-precision branches)',
   ],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.3,
@@ -753,7 +750,6 @@ export const spikeSlabLearnedAtom: EpAtom = defineAtom({
     'gaussian likelihood',
   ],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.2,
@@ -839,7 +835,6 @@ export const spikeSlabMarginalLearnedAtom: EpAtom = defineAtom({
     'gaussian likelihood',
   ],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.2,
@@ -969,7 +964,6 @@ export const clutterMixtureLearnedAtom: EpAtom = defineAtom({
     'gate of inlier and outlier branches (gaussian-gamma-precision)',
   ],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.5,

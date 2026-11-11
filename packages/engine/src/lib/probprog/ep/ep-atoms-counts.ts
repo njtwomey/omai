@@ -69,8 +69,8 @@ function hurdleProblem(k: Config): AtomProblem {
     pair: ['b0', 'b1'],
     exact: {
       zero: quadratureMarginal(logBeta, 0, 1, 4000),
-      b0: g.marginals[0] as never,
-      b1: g.marginals[1] as never,
+      b0: g.marginal(0),
+      b1: g.marginal(1),
     },
     exactJoint: { a: 'b0', b: 'b1', ...g.joint(0, 1) },
     referenceSource: 'a Beta for the zero probability and a grid over the coefficients with the positive counts',
@@ -116,7 +116,6 @@ export const hurdlePoissonAtom: EpAtom = defineAtom({
     'likelihood-site (poisson-log-truncated)',
   ],
   family: 'counts',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.05,

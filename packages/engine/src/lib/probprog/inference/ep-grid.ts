@@ -42,6 +42,7 @@ import type { ExprSpec, ModelNode, ModelSpec } from '../model/spec.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
 import { recordOf, type SiteRecord, siteMixturePosterior } from './_site-mixture.ts'
 import { isProgramAnalysis, type MethodModel, type ModelAnalysis, no, num, posteriorJson, yes } from './_support.ts'
+import { atPower, epRunKnobs, epRunSettings, powerOf } from './ep-knobs.ts'
 import { defineInferenceMethod, type InferenceMethod, type Verdict } from './method.ts'
 
 /** The paths the grid method logs. */
@@ -74,6 +75,9 @@ export interface GridAxis {
   readonly from: number
   readonly to: number
 }
+
+/** EP inside a grid over hyperparameters, as a method. */
+export type EpGridMethod = InferenceMethod<EpGridState, Config, EpGridPath, ModelAnalysis>
 
 /** The state of {@link epGridMethod}: the axes, the nodes still to run (in order) and the nodes run. */
 export interface EpGridState {
@@ -109,9 +113,8 @@ export const epGridKnobs: DictSpace = dict({
     label: 'edge mass',
     description: 'extend the grid where an edge node has this share of the heaviest node',
   }),
-  tol: real(1e-12, 1e-2, { log: true, default: 1e-9, description: 'the tolerance of each EP run' }),
-  maxSweeps: int(1, 10_000, { default: 200, description: 'the sweeps of each EP run, at most' }),
-  damping: real(0, 0.95, { default: 0, description: 'the damping of each EP run' }),
+  // The knobs of each EP run (schedule, damping, improper, tol, maxSweeps, restarts, power): the shared declaration.
+  ...epRunKnobs('ep-grid').spaces,
 })
 
 /** Options of {@link epGridMethod}. */
@@ -332,10 +335,7 @@ function growth(state: EpGridState, edge: number): { axis: number; side: -1 | 1 
  * [run.status, post?.sites, Number(post?.mean('mu').data[0]).toFixed(2)] // => ['completed', ['s', 'mu'], '1.98']
  * ```
  */
-export function epGridMethod(
-  model: MethodModel,
-  options: EpGridOptions = {},
-): InferenceMethod<EpGridState, Config, EpGridPath, ModelAnalysis> {
+export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): EpGridMethod {
   const name = options.name ?? 'ep-grid'
   const plates = options.plates ?? 'vectorise'
   const packScalars = options.packScalars ?? true
@@ -467,7 +467,9 @@ export function epGridMethod(
       const tail = num(config, 'tail')
       const maxNodes = num(config, 'maxNodes')
       const edge = num(config, 'edge')
-      const settings = { tol: num(config, 'tol'), maxSweeps: num(config, 'maxSweeps'), damping: num(config, 'damping') }
+      const settings = epRunSettings(config)
+      const maxSweeps = num(config, 'maxSweeps')
+      const power = powerOf(config)
       const hs = (): Hyper[] => hypersFor(tail)
       const run = (index: readonly number[], axes: readonly GridAxis[]): GridNode => {
         const h = hs()
@@ -479,8 +481,9 @@ export function epGridMethod(
             'value',
             `${name}: the model does not compile at ${names.join(', ')} = ${x.join(', ')}: ${failure ?? c.issues.map((i) => i.reason).join('; ')}`,
           )
-        const r = runAlgorithm(epAlgorithm(g, settings), { maxSteps: settings.maxSweeps + 2, seed: 0 })
-        const post = factorGraphPosterior(c, g, r.state, { engine: name })
+        const powered = atPower(g, power)
+        const r = runAlgorithm(epAlgorithm(powered, settings), { maxSteps: maxSweeps + 2, seed: 0 })
+        const post = factorGraphPosterior(c, powered, r.state, { engine: name })
         const sites: Record<string, GridSiteRecord> = {}
         for (const s of post.sites) sites[s] = recordOf(post.marginal(s))
         const ev = post.logEvidence?.value
@@ -497,7 +500,7 @@ export function epGridMethod(
       }
       return {
         name: 'probprog/ep-grid-method',
-        config: { points, tail, maxNodes, edge, ...settings },
+        config: { points, tail, maxNodes, edge, ...settings, power },
         init: (): EpGridState => {
           const h = hs()
           const axes = h.map(

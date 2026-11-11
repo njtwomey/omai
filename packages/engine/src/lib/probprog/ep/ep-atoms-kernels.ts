@@ -159,7 +159,6 @@ export const gpLengthScaleAtom: EpAtom = defineAtom({
     'the EP evidence as the weight of a node (ep-grid)',
   ],
   family: 'kernels',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.01,
@@ -286,7 +285,6 @@ export const gpProbitLearnedAtom: EpAtom = defineAtom({
     'the EP evidence as the weight of a node (ep-grid)',
   ],
   family: 'kernels',
-  expected: 'runs',
   reference: 'truth',
   tolerance: {
     meanZ: 1,
