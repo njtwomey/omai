@@ -9,10 +9,13 @@ export function Link(props: {
   /** Mark the link as the current page (`aria-current="page"`). */
   readonly current?: boolean
   readonly title?: string
+  /** Called on a plain click, before it navigates (a menu closes itself here). */
+  readonly onChoose?: () => void
 }): ReactNode {
   const onClick = (e: MouseEvent<HTMLAnchorElement>): void => {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
     e.preventDefault()
+    props.onChoose?.()
     navigate(props.to)
   }
   return (
