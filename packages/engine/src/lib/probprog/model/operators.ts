@@ -250,6 +250,35 @@ const atOperator: OperatorDef = {
   },
 }
 
+const pickOperator: OperatorDef = {
+  name: 'pick',
+  arity: 2,
+  description:
+    'along the last dimension of the first operand, the entry that the integer codes of the second name (the prediction of the class each row belongs to)',
+  factor: 'pick',
+  shape: ([a, i]) => {
+    const x = a as NamedShape
+    const idx = i as NamedShape
+    if (x.dims.length === 0 || x.eventRank !== 0 || idx.eventRank !== 0)
+      throw new OmaiError('shape', 'pick: the first operand needs a last dimension to pick along, and no event axes')
+    return joinShapes([{ dims: x.dims.slice(0, -1), eventRank: 0 }, idx])
+  },
+  evaluate: ([a, i]) => {
+    const x = a as NamedValue
+    const idx = i as NamedValue
+    const axis = x.value.shape.length - 1
+    const kept = x.dims.slice(0, -1)
+    const out = joinShapes([{ dims: kept, eventRank: 0 }, shapeOfValue(idx)])
+    const code = alignTo(idx, out.dims, 0)
+    let picked: Value | undefined
+    for (let k = (x.value.shape[axis] as number) - 1; k >= 0; k--) {
+      const entry = alignTo({ value: take(x.value, k, axis), dims: kept }, out.dims, 0)
+      picked = picked === undefined ? entry : where(equal(code, k), entry, picked)
+    }
+    return { value: picked as Value, dims: out.dims }
+  },
+}
+
 const stickBreakingOperator: OperatorDef = {
   name: 'stickBreaking',
   arity: 1,
@@ -291,7 +320,7 @@ const PROBIT_CEILING = 1 - Number.EPSILON / 2
  * The registry the model layer ships: arithmetic (`add`, `sub`, `mul`, `div`, `pow`, `maximum`, `minimum`, `neg`),
  * elementwise functions (`exp`, `log`, `sqrt`, `square`, `abs`, `tanh`), links (`sigmoid`, `probit` (the standard normal
  * CDF, the inverse probit link), `softplus`), comparisons (`gt`, `lt`, `eq`), `where` and `clip`, reductions over a named
- * dimension (`sum`, `mean`), `matmul`, the gather `at` and `stickBreaking` (the weights of a stick-breaking process from its break fractions). Elementwise operators align operands by dimension name.
+ * dimension (`sum`, `mean`), `matmul`, the gather `at` and `pick` (the entry of the last dimension that an index names: the branch a class selects) and `stickBreaking` (the weights of a stick-breaking process from its break fractions). Elementwise operators align operands by dimension name.
  * Message-passing factors for these are keyed by the same names.
  *
  * @returns The operator table (a fresh object each call, so it can be extended without side effects).
@@ -299,7 +328,7 @@ const PROBIT_CEILING = 1 - Number.EPSILON / 2
  * @example
  * ```ts
  * import { defaultOperators } from 'omai-engine/probprog/model'
- * Object.keys(defaultOperators()).length // => 27
+ * Object.keys(defaultOperators()).length // => 28
  * ```
  */
 export function defaultOperators(): Record<string, OperatorDef> {
@@ -340,6 +369,7 @@ export function defaultOperators(): Record<string, OperatorDef> {
     matmulOperator,
     atOperator,
     stickBreakingOperator,
+    pickOperator,
   ]
   return Object.fromEntries(defs.map((d) => [d.name, d]))
 }

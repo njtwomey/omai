@@ -74,6 +74,7 @@ import {
   priorNormalWeibullAtom,
   priorUniformAtom,
 } from './ep-atoms-priors.ts'
+import { mixtureRegressionAtom } from './ep-atoms-regression-gates.ts'
 import {
   gammaPrecisionAtom,
   halfCauchyAtom,
@@ -174,6 +175,7 @@ export const epAtoms: readonly EpAtom[] = [
   gateWeightHyperAtom,
   stickBreakingAtom,
   topicModelAtom,
+  mixtureRegressionAtom,
 ]
 
 /**

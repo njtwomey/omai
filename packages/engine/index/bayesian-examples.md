@@ -77,6 +77,7 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `mixtureComponentsAtom`: EP atom: a random index into random components (mu[z]), drawn as its branches. `src/lib/bayesian-examples/ep-atoms-mixtures.ts:383` `omai-engine/bayesian-examples`
 - estimator `mixtureComponentsLearnedAtom`: EP atom: mixture with unknown means, widths and weights, learned. `src/lib/bayesian-examples/ep-atoms-extended-gates.ts:396` `omai-engine/bayesian-examples`
 - estimator `mixtureMethod`: Gaussian mixture method: generated or Old Faithful data, free or ordered means, one inference method. `src/lib/bayesian-examples/mixture-method.ts:535` `omai-engine/bayesian-examples`
+- estimator `mixtureRegressionAtom`: EP atom: a mixture of two regressions, a class per row picking the line (a gate of Gaussian likelihoods). `src/lib/bayesian-examples/ep-atoms-regression-gates.ts:103` `omai-engine/bayesian-examples`
 - estimator `orderedMeansAtom`: EP atom: two means with an ordered constraint, against data that disagree. `src/lib/bayesian-examples/ep-atoms-gates.ts:148` `omai-engine/bayesian-examples`
 - estimator `orderedPairAtom`: EP atom: an ordered pair, a hard comparison (greater-than, truncation). `src/lib/bayesian-examples/ep-atoms-gates.ts:68` `omai-engine/bayesian-examples`
 - estimator `poissonLogAtom`: EP atom: a Poisson count with a log link. `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:474` `omai-engine/bayesian-examples`
@@ -120,4 +121,4 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `volatilityMethod`: Stochastic volatility method: AR(1) log-variance, centred or non-centred, one inference method. `src/lib/bayesian-examples/stochastic-volatility-method.ts:523` `omai-engine/bayesian-examples`
 - estimator `weibullLearnedAtom`: EP atom: a Weibull regression with a log link, coefficients recovered from simulated times. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:749` `omai-engine/bayesian-examples`
 
-- table `epAtoms`: The EP atoms: bare setups that each exercise one factor of the message passing suite. `src/lib/bayesian-examples/ep-atom-list.ts:102` `omai-engine/bayesian-examples`
+- table `epAtoms`: The EP atoms: bare setups that each exercise one factor of the message passing suite. `src/lib/bayesian-examples/ep-atom-list.ts:103` `omai-engine/bayesian-examples`

@@ -1017,6 +1017,8 @@ class Compiler {
         return this.matmul(a, b)
       case 'stickBreaking':
         return this.stickBreaking(a)
+      case 'pick':
+        return this.pick(a, b)
       case 'exp':
       case 'square':
       case 'tanh':
@@ -1147,42 +1149,74 @@ class Compiler {
     for (let i = 0; i < prod(shape); i++) {
       const at = unflatten(i, shape)
       const code = this.cellAt(idx, dims, at)
-      if (!isConstCell(code)) {
-        if (code.kind === 'lookup' && code.items === undefined) {
-          // The index is a known function of a discrete variable (a change point's `t > tau`): the component per state.
-          let restFlat = 0
-          for (let k = 0; k < rest.length; k++)
-            restFlat = restFlat * (restShape[k] as number) + (at[idx.dims.length + k] as number)
-          const comps = code.values.map((v) => {
-            if (!Number.isInteger(v) || v < 0 || v >= this.size(first))
-              throw new Refusal('data', `at: index ${v} is out of range for '${first}'`)
-            return a.cells[v * prod(restShape) + restFlat] as Cell
-          })
-          cells.push(this.lookupOf(comps, code.variable))
-          continue
-        }
-        if (code.kind !== 'rv' || code.family !== 'discrete')
-          throw new Refusal(
-            'operator',
-            'at: the index must be data or a categorical latent (a gate); a computed random index has no message rule',
-          )
-        let restFlat = 0
-        for (let k = 0; k < rest.length; k++)
-          restFlat = restFlat * (restShape[k] as number) + (at[idx.dims.length + k] as number)
-        cells.push(
-          this.gate(
-            Array.from({ length: this.size(first) }, (_, j) => a.cells[j * prod(restShape) + restFlat] as Cell),
-            code.variable,
-          ),
-        )
-        continue
-      }
+      let restFlat = 0
+      for (let k = 0; k < rest.length; k++)
+        restFlat = restFlat * (restShape[k] as number) + (at[idx.dims.length + k] as number)
+      cells.push(this.choose(code, this.size(first), (j) => a.cells[j * prod(restShape) + restFlat] as Cell, first))
+    }
+    return { dims, cells }
+  }
+
+  /**
+   * The cell chosen by an index cell among `states` components: a known index picks one, an index that is a known function of a
+   * discrete variable (a change point's `t > tau`) is a lookup of the components, and a categorical or Bernoulli latent is the
+   * gate that selects among them.
+   */
+  private choose(
+    code: Cell,
+    states: number,
+    component: (state: number) => Cell,
+    dim: string,
+    asLookup = false,
+  ): Cell {
+    if (isConstCell(code)) {
       const c = code.aff.offset
-      if (!Number.isInteger(c) || c < 0 || c >= this.size(first))
-        throw new Refusal('data', `at: index ${c} is out of range for '${first}'`)
-      let flat = c
-      for (let k = 0; k < rest.length; k++) flat = flat * (restShape[k] as number) + (at[idx.dims.length + k] as number)
-      cells.push(a.cells[flat] as Cell)
+      if (!Number.isInteger(c) || c < 0 || c >= states)
+        throw new Refusal('data', `at: index ${c} is out of range for '${dim}'`)
+      return component(c)
+    }
+    if (code.kind === 'lookup' && code.items === undefined) {
+      const comps = code.values.map((v) => {
+        if (!Number.isInteger(v) || v < 0 || v >= states)
+          throw new Refusal('data', `at: index ${v} is out of range for '${dim}'`)
+        return component(v)
+      })
+      return this.lookupOf(comps, code.variable)
+    }
+    if (code.kind !== 'rv' || code.family !== 'discrete')
+      throw new Refusal(
+        'operator',
+        'at: the index must be data or a categorical latent (a gate); a computed random index has no message rule',
+      )
+    const comps = Array.from({ length: states }, (_, k) => component(k))
+    // The branches of a `pick` stay the states of one lookup (their random Gaussian forms are the branches of the gate the observation
+    // is), instead of one `select` variable: the observation is a gate of likelihoods, exact in the discrete variable.
+    if (asLookup && comps.every((c) => c.kind === 'aff')) return this.lookupOf(comps, code.variable)
+    return this.gate(comps, code.variable)
+  }
+
+  /**
+   * `pick(values, index)`: along the last dimension of `values`, the entry that `index` names, for every element of the other
+   * dimensions (a different regression per class of a mixture of regressions: `values` the predictions of each class, `index` the
+   * class of each row). A known index selects, a categorical latent is the gate over the branches.
+   */
+  private pick(values: Sym, idx: Sym): Sym {
+    const component = values.dims[values.dims.length - 1]
+    if (component === undefined) throw new Refusal('structure', 'pick: the values need a dimension to pick along')
+    const states = this.size(component)
+    const kept = values.dims.slice(0, -1)
+    const dims = this.joinDims([{ dims: kept, cells: [] }, idx])
+    const shape = this.shapeOf(dims)
+    const cells: Cell[] = []
+    for (let i = 0; i < prod(shape); i++) {
+      const at = unflatten(i, shape)
+      const code = this.cellAt(idx, dims, at)
+      const compAt = (k: number): Cell => {
+        let flat = 0
+        for (const d of kept) flat = flat * this.size(d) + (at[dims.indexOf(d)] as number)
+        return values.cells[flat * states + k] as Cell
+      }
+      cells.push(this.choose(code, states, compAt, component, true))
     }
     return { dims, cells }
   }

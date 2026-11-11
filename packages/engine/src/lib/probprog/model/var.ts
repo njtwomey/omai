@@ -237,6 +237,8 @@ export interface Ops {
   mean(a: Operand, dim?: string | { readonly name: string }): Var
   matmul(a: Operand, b: Operand): Var
   at(a: Operand, index: Operand): Var
+  /** Along the last dimension of the first operand, the entry the integer codes of the second name (the prediction of each row's class). */
+  pick(a: Operand, index: Operand): Var
   /** The stick-breaking weights of break fractions over the last dimension (one more weight than breaks, as an event axis). */
   stickBreaking(a: Operand): Var
 }
@@ -278,5 +280,6 @@ export const ops: Ops = {
   mean: (a, dim) => apply('mean', [a], dimParams(dim)),
   matmul: (a, b) => apply('matmul', [a, b]),
   at: (a, index) => apply('at', [a, index]),
+  pick: (a, index) => apply('pick', [a, index]),
   stickBreaking: (a) => apply('stickBreaking', [a]),
 }
