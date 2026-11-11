@@ -26,7 +26,7 @@ describe('generateRadonCounties', () => {
 describe('radonCountiesDefinition', () => {
   for (const pooling of ['pooled', 'unpooled', 'partial', 'slopes'] as const) {
     it(`${pooling}: binds to flat data of unequal groups and NUTS runs on it`, () => {
-      const bound = radonCountiesDefinition(pooling).bind(data.data, data.options)
+      const bound = radonCountiesDefinition(pooling).bind(data.data)
       expect(bound.sizes['county']).toBe(8)
       expect(bound.sizes['house']).toBe((data.data['y'] as number[]).length)
       expect(nutsMethod(bound).check?.(analysisOf(bound)).applies).toBe(true)

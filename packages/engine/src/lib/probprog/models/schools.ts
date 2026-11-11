@@ -177,7 +177,7 @@ export interface SchoolsPriors {
   readonly muScale?: number
   /** The scale of the half-Cauchy prior of the spread `tau` (default 5). */
   readonly tauScale?: number
-  /** The sd of the normal prior of each effect when nothing pools them (`no-pooling`, default 20). */
+  /** The sd of the normal prior of each effect when nothing pools them (`no-pooling`, default 100: nearly flat, so nothing is pooled). */
   readonly effectScale?: number
 }
 
@@ -204,7 +204,7 @@ export function eightSchoolsDefinition(
   parameterisation: SchoolsParameterisation,
   priors: SchoolsPriors = {},
 ): ModelDefinition {
-  const { muScale = 5, tauScale = 5, effectScale = 20 } = priors
+  const { muScale = 5, tauScale = 5, effectScale = 100 } = priors
   return defineModel(`eight-schools-${parameterisation}`, (m) => {
     const school = m.range('school')
     const y = m.data('y', { dims: [school], role: 'response', doc: 'the estimated coaching effects' })

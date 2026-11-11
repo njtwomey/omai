@@ -31,7 +31,7 @@ export interface RadonPriors {
 }
 
 /**
- * The radon regression of houses in counties as a spec, in one of four poolings. The data are flat over the houses: `county`
+ * The radon regression of houses in counties as a spec, in one of four poolings. The data are flat over the houses: `size` (the houses of each county), `county`
  * (the index of each house's county), `floor` (1 for a house measured on the first floor, 0 for a basement) and `y` (log
  * radon). The latents by form: `pooled` has `alpha`, `beta`, `sigma`; `unpooled` has `alpha` per county, `beta`, `sigma`;
  * `partial` has `mu`, `tau`, `alpha` per county (centred) or `z` per county with `alpha` derived (non-centred), `beta`, `sigma`;
@@ -73,6 +73,9 @@ export function radonCountiesDefinition(
       role: 'covariate',
       doc: '1 for a house measured on the first floor, 0 for a basement',
     })
+    // The number of houses of each county: not in the density, it gives the county range its size (index data do not), so the
+    // model binds to plain data with no options and crosses a worker boundary as a configuration.
+    m.data('size', { dims: [county], role: 'covariate', doc: 'the number of houses in each county' })
     const y = m.data('y', { dims: [house], role: 'response', doc: 'log radon' })
     const sigma = m.latent('sigma', d.halfNormal(scale), { doc: 'the sd of a house within its county' })
     // The scales are clipped to [1e-6, 1e6] where they enter a distribution: a modelling floor, not a guard (the sampler treats
@@ -149,7 +152,7 @@ export const RADON_TRUTH: Readonly<{ mu: number; beta: number; sigma: number }> 
  *
  * @param key - The random key.
  * @param options - The number of counties, the smallest size, and the spreads of the county effects.
- * @returns The data (`county`, `floor`, `y`, flat over the houses), the bind option that sizes the `county` range (the index data do not fix it) and what generated them.
+ * @returns The data (`county`, `floor`, `y` flat over the houses, and `size`, the houses of each county, which sizes the `county` range) and what generated them.
  * @concept posterior-validation
  * @example
  * ```ts
@@ -190,8 +193,7 @@ export function generateRadonCounties(key: Key, options: RadonCountiesOptions): 
     }
   })
   return {
-    data: { county, floor, y },
-    options: { sizes: { county: J } },
+    data: { county, floor, y, size: sizes },
     generating: { ...RADON_TRUTH, tau, slopeSd, rho, alpha, slope, sizes },
   }
 }
