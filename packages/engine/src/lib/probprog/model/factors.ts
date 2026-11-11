@@ -595,11 +595,31 @@ class Compiler {
   }
 
   /** Arithmetic on a discrete variable's lookup or on a gamma variable's precision: undefined when neither operand is one. */
-  private special(op: string, x: Cell, y: Cell): Cell | undefined {
-    return (
-      lookupArithmetic(op, x, y, (v) => (this.variables.find((u) => u.name === v)?.family.size ?? 2) as number) ??
-      scaledArithmetic(op, x, y)
+  private special(op: string, x: Cell, y: Cell, index?: number): Cell | undefined {
+    const look = lookupArithmetic(
+      op,
+      x,
+      y,
+      (v) => (this.variables.find((u) => u.name === v)?.family.size ?? 2) as number,
     )
+    if (look !== undefined) return look
+    const left = scaledOf(x)
+    const right = scaledOf(y)
+    if (op === 'mul' && left !== undefined && right !== undefined && left.offset === 0 && right.offset === 0) {
+      if (left.variable === right.variable)
+        throw new Refusal(
+          'operator',
+          `the square of the gamma variable '${left.variable}' as a precision has no message rule`,
+        )
+      // The product of two gamma variables (a local times a global precision): a gamma variable defined by `gamma-product`.
+      const site = this.current
+      const out = this.auxName(site, index)
+      this.need('gamma-product')
+      this.addVariable({ name: out, family: { kind: 'gamma' } })
+      this.addFactor({ operator: 'gamma-product', args: [out, left.variable, right.variable] }, out)
+      return { kind: 'scaled', variable: out, scale: left.scale * right.scale, offset: 0 }
+    }
+    return scaledArithmetic(op, x, y)
   }
 
   private symOp(op: string, args: readonly Sym[], params: { readonly [k: string]: Json }): Sym {
@@ -635,7 +655,7 @@ class Compiler {
         return this.zip(
           [a, b],
           ([x, y], i) =>
-            this.special(op, x as Cell, y as Cell) ?? {
+            this.special(op, x as Cell, y as Cell, i) ?? {
               kind: 'aff',
               aff: this.mulAff(affOf(x as Cell), affOf(y as Cell), i),
             },
@@ -1157,6 +1177,10 @@ class Compiler {
       this.latentDirichlet(node)
       return
     }
+    if (fam === 'gamma' && node.dist.params['rate'] !== undefined && !this.isConst(node.dist.params['rate'])) {
+      this.latentGammaRate(node)
+      return
+    }
     const shape = this.shapeOf(node.dims)
     const n = prod(shape)
     const params =
@@ -1445,6 +1469,40 @@ class Compiler {
       cells: Array.from({ length: n }, (_, j) => this.compAtom(node.name, j, n)),
     })
     this.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)
+  }
+
+  /**
+   * A gamma latent whose rate is a known multiple of another gamma latent (`gamma(0.5, b)` with `b` gamma: the
+   * Makalic-Schmidt half-Cauchy, or a Student-t's mixing precision): a `gamma-rate` factor per element, whose shape is known.
+   */
+  private latentGammaRate(node: ModelNode & { readonly kind: 'latent' }): void {
+    const shapes = this.constParam(node, 'concentration', 'the shape')
+    const rate = node.dist.params['rate'] as ExprSpec
+    const cells = this.over(this.evalSym(rate), node.dims)
+    const out: Cell[] = []
+    const vars: string[] = []
+    for (const [i, c] of cells.entries()) {
+      const r = scaledOf(c)
+      if (r === undefined || r.offset !== 0 || !(r.scale > 0))
+        throw new Refusal(
+          'operator',
+          `the rate of '${node.name}' must be a known multiple of a gamma latent (the message rule integrates the gamma's rate); it is not`,
+        )
+      const name = this.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'gamma' } })
+      this.need('gamma-rate')
+      this.addFactor(
+        {
+          operator: 'gamma-rate',
+          args: [name, r.variable],
+          params: { shape: shapes[i] as number, ...(r.scale === 1 ? {} : { scale: r.scale }) },
+        },
+        name,
+      )
+      out.push({ kind: 'rv', variable: name, family: 'gamma' })
+      vars.push(name)
+    }
+    this.syms.set(node.name, { dims: node.dims, cells: out })
+    this.layout(node, 'latent', 'gamma', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
   }
 
   /** A Gaussian latent with a gamma precision: a `gaussian-gamma-precision` factor per element (the mean-field hierarchy of Bishop 2006, 10.2). */
