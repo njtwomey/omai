@@ -1056,7 +1056,8 @@ class Compiler {
 
   private latent(node: ModelNode & { readonly kind: 'latent' }): void {
     const fam = node.dist.family
-    if (node.constraint !== undefined && node.constraint.kind !== 'real')
+    const truncated = node.constraint !== undefined && node.constraint.kind !== 'real' && fam === 'normal'
+    if (node.constraint !== undefined && node.constraint.kind !== 'real' && !truncated)
       throw new Refusal(
         'constraint',
         `'${node.name}' has the constraint '${node.constraint.kind}': a message family lives on the family's own support, so a constraint beyond it is not expressible`,
@@ -1069,6 +1070,7 @@ class Compiler {
       )
     if (fam === 'normal') {
       this.latentNormal(node)
+      if (truncated) this.truncate(node)
       return
     }
     if (fam === 'multivariateNormal') {
@@ -1158,6 +1160,58 @@ class Compiler {
       cells: Array.from({ length: n }, (_, j) => this.compAtom(node.name, j, n)),
     })
     this.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)
+  }
+
+  /**
+   * The constraint of a Gaussian latent as comparison factors on its variables: `positive`, `nonNegative`, `greaterThan`,
+   * `lessThan` and `interval` with known scalar bounds truncate each element (a `greater-than` or `is-between` factor with an
+   * observed true outcome, whose moment matching is the truncated Gaussian), and `ordered` says each element is above the
+   * previous one (a `greater-than` on the difference of neighbours). The prior is not renormalised, as in Stan.
+   */
+  private truncate(node: ModelNode & { readonly kind: 'latent' }): void {
+    const c = node.constraint
+    if (c === undefined) return
+    const cells = this.syms.get(node.name)?.cells ?? []
+    const flag = (x: string, operator: 'greater-than' | 'is-between', params: Record<string, Json>, i: number): void => {
+      const name = this.auxName(node.name, i)
+      this.need(operator)
+      this.addVariable({ name, family: { kind: 'bernoulli' }, observed: 1 })
+      this.addFactor({ operator, args: [name, x], params }, name)
+    }
+    const number = (v: Json): number => {
+      if (typeof v !== 'number')
+        throw new Refusal('constraint', `the bound of the constraint of '${node.name}' must be one known number`)
+      return v
+    }
+    if (c.kind === 'ordered') {
+      if (node.dims.length !== 1)
+        throw new Refusal('constraint', `'${node.name}' is ordered over [${node.dims}]: one dimension is mapped`)
+      for (let i = 0; i + 1 < cells.length; i++) {
+        const gap = combine(affOf(cells[i + 1] as Cell), affOf(cells[i] as Cell), -1)
+        flag(this.materialise(gap, node.name, i) as string, 'greater-than', { threshold: 0 }, i)
+      }
+      return
+    }
+    const bounds =
+      c.kind === 'positive' || c.kind === 'nonNegative'
+        ? { lower: 0, upper: Number.POSITIVE_INFINITY }
+        : c.kind === 'greaterThan'
+          ? { lower: number(c.low), upper: Number.POSITIVE_INFINITY }
+          : c.kind === 'lessThan'
+            ? { lower: Number.NEGATIVE_INFINITY, upper: number(c.high) }
+            : c.kind === 'interval'
+              ? { lower: number(c.low), upper: number(c.high) }
+              : undefined
+    if (bounds === undefined)
+      throw new Refusal(
+        'constraint',
+        `'${node.name}' has the constraint '${c.kind}': only ordered and bounds on a Gaussian are mapped`,
+      )
+    for (const [i, cell] of cells.entries()) {
+      const x = this.materialise(affOf(cell), node.name, node.dims.length === 0 ? undefined : i) as string
+      if (bounds.upper === Number.POSITIVE_INFINITY) flag(x, 'greater-than', { threshold: bounds.lower }, i)
+      else flag(x, 'is-between', { lower: Math.max(bounds.lower, -1e12), upper: bounds.upper }, i)
+    }
   }
 
   private latentNormal(node: ModelNode & { readonly kind: 'latent' }): void {
