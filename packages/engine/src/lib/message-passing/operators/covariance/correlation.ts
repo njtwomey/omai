@@ -4,7 +4,7 @@
  * correlation `rho = 2 u - 1` for a beta variable `u` (a uniform correlation is `Beta(1, 1)`, the LKJ prior of a 2 by 2 matrix with
  * concentration `eta` is `Beta(eta, eta)`). The vector and the mean are Gaussian (or observed), integrated out in closed form given
  * the three; expectation propagation matches the gammas and the beta to the moments of a panelled three-dimensional grid over their
- * coordinates (`_gridn.ts`: the log of each precision, the logit of `u`), and the Gaussians to the mixture of their conditionals over
+ * coordinates (`_grid.ts`: the log of each precision, the logit of `u`), and the Gaussians to the mixture of their conditionals over
  * it. A known precision or correlation is a single node of its axis, so a Gaussian with known standard deviations and an unknown
  * correlation is a one-dimensional integral.
  */
@@ -16,8 +16,7 @@ import { beta, gamma } from '../../core/families.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
-import { type GridAxis, gammaAxis, pointAxis } from '../../numerics/_grid.ts'
-import { betaAxis, integrateAxes } from '../../numerics/_gridn.ts'
+import { betaAxis, type GridAxis, gammaAxis, integrateAxes, pointAxis } from '../../numerics/_grid.ts'
 import { softplusOf } from '../../numerics/_scalar.ts'
 import { evaluatorOf, gaussianSide, type Rows, rowsOf } from './_sides.ts'
 

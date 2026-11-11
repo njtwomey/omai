@@ -3896,7 +3896,7 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   declared parameters of an operator, `FactorOperator.params`: `param.number()`, `param.vector()`, ..., parsed by `compileGraph`
   so an unknown, missing or ill-typed parameter fails at compile time naming the operator and the parameter), `args.ts`, the internal `_messages.ts` (the conventions operators share: `arg`, `perPower`,
   `evidenceOrNaN`, `isFlat`, `assertDamping`), `families*.ts`, `graph.ts`, `priors.ts`, `truncated.ts`.
-  `numerics/`: `_scalar.ts`, `_dense.ts`, `_bartlett.ts`, `_quadrature.ts`, `_grid.ts`, `_gridn.ts`, `_tilted.ts` (internal)
+  `numerics/`: `_scalar.ts`, `_dense.ts`, `_bartlett.ts`, `_quadrature.ts`, `_grid.ts` (the one panelled grid for two and three axes, with its `gridProfiles`), `_windows.ts` (the named windows of every cavity coordinate), `_tilted.ts` (internal)
   and `numeric-rules.ts` (the `TiltedRule`s of the engine's `numeric` slot). `engine/`: `state.ts` (settings and
   state types), `cavity.ts` (beliefs, marginals, snapshot), `dispatch.ts` (`operatorMessage`), `evidence.ts`, `verdict.ts`,
   `run.ts` (`messagePassingAlgorithm`), the slots `projections.ts` and `schedules.ts`, and the internal `_cavities.ts`,

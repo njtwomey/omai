@@ -127,11 +127,8 @@ describe('a graph with a wrong parameter fails at compile, as a ParameterError',
   })
 
   it('an operator of your own, with no declared parameters, is not checked', () => {
-    const mine: M.FactorOperator = {
-      ...(operators['times-constant'] as M.FactorOperator),
-      name: 'mine',
-      params: undefined,
-    }
+    const { params: _declared, ...undeclared } = operators['times-constant'] as M.FactorOperator
+    const mine: M.FactorOperator = { ...undeclared, name: 'mine' }
     expect(() => M.compileGraph(graph('mine', { anything: 1 }), { ...operators, mine })).not.toThrow()
   })
 

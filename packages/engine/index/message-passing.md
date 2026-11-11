@@ -114,7 +114,7 @@ The factor operators: the registry of closed-form and numeric message rules (a p
 The operators of covariance matrices and correlation: the multivariate Gaussian with a Wishart precision, its normal- Wishart form, and the bivariate Gaussian with two gamma precisions and a beta correlation; with the shared sides of a matrix message. Part of `omai-engine/message-passing`.
 
 - structure `mvnNormalWishart`: The conjugate update of a Gaussian vector with unknown mean and precision matrix (normal-Wishart). `src/lib/message-passing/operators/covariance/covariance.ts:328` `omai-engine/message-passing`
-- structure `mvnSdCorr`: A bivariate Gaussian with sds and correlation as separate variables (gamma precisions, a beta correlation). `src/lib/message-passing/operators/covariance/correlation.ts:104` `omai-engine/message-passing`
+- structure `mvnSdCorr`: A bivariate Gaussian with sds and correlation as separate variables (gamma precisions, a beta correlation). `src/lib/message-passing/operators/covariance/correlation.ts:103` `omai-engine/message-passing`
 - structure `mvnWishart`: A multivariate Gaussian with a Wishart precision matrix: a learned covariance. `src/lib/message-passing/operators/covariance/covariance.ts:239` `omai-engine/message-passing`
 
 ### message-passing/operators/discrete
