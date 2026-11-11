@@ -387,3 +387,21 @@ Read in full: `types.ts`, `engine.ts`, `projections.ts`, `_grid.ts`, `_gridn.ts`
 of `gaussian.ts`, `gate.ts`, `multiclass.ts`, `gamma-scale.ts`, `concentration.ts`, `scale.ts`, `priors.ts`, `numerical.ts`, `named.ts`, `families*.ts`. Measured by script: the operator-declaration histogram (instantiating `defaultOperators()`), the import graph (file-level
 cycles and layer inversions), unused exports, run time of the 92-atom suite (67.9 s), and two experiments on silent failure (finding 3). Not read in depth: `regions.ts`, `amp.ts`, `consistent.ts`, `clutter.ts`, `covariance.ts`, `correlation.ts`, `transition.ts`, `stick-breaking.ts`, `plates.ts` internals, and
 the 5,763-line `probprog/model/factors.ts` compiler (out of scope; it is the consumer of the registry and will need the alias map in S6). The counts are exact for the grep patterns quoted; "about N lines" figures for grids are the line spans of the functions named, rounded.
+
+## How a step uses the digest (step 0, built)
+
+The safety net that this plan's step 0 asks for exists: `scripts/ep-digest.ts` (`make ep-digest`, `make ep-digest-check`; the
+committed baseline is `docs/probprog/ep-digest.json`, section 10 of `docs/structure.md` says what it holds). It covers every
+atom (92) with its variational twin, every benchmark model (27) and the EP programs of the pocs (15 runs), as the compiled
+factor-graph hashes (EP's, rows expanded, variational), the verdicts and counts, the beliefs, the evidence, the check rows, the
+coverage rows, and the operator registry with the knob spaces. A step of this plan runs `make ep-digest` once on the unchanged
+branch (it fills `.cache/ep-digest/graphs/`, so a later report can show the graph that changed, not only its hash), and after
+every step `make ep-digest-check ARGS="--exact"` (about 2.5 minutes; `--only <atom or model prefix>` while iterating, 10 to 20
+seconds). **Every step that the plan calls preserving must pass EXACT**: graphs, verdicts, sweep, restart and improper counts
+identical and numbers equal to 12 digits (a compiler step that leaves the graph hashes alone gets identical beliefs and
+evidence by construction). A step the plan allows to reorder sums or change a quadrature (the rules review's 5a is bit-identical,
+5c is not) states that it passes TOLERANT (beliefs 1e-9 relative, evidence 1e-12 absolute, check statistics 1e-9) and why. A
+deliberate behaviour change (the error taxonomy of S3, a typo in a knob now throwing, a wider window) says so in its commit
+message, shows the moves that `make ep-digest-check` printed, and runs `make ep-digest-check ARGS="--accept"` in a commit of its
+own, so the baseline's history is the list of intended changes. A step that adds an atom, model or program adds its item the same
+way. The digest is not part of `make verify` or `make check`; it is the gate of this refactoring.

@@ -14,8 +14,12 @@ import { operatorMessage } from './engine.ts'
 import * as M from './index.ts'
 import { momentProjection } from './projections.ts'
 
-// OMAI_FC_SEED runs every property of this file on one fixed seed: a property that depends on its seed shows on a few of them.
-if (process.env['OMAI_FC_SEED'] !== undefined) fc.configureGlobal({ seed: Number(process.env['OMAI_FC_SEED']) })
+// Every property of this file runs on one fixed seed, so the file is deterministic by default (a refactoring step that
+// changes nothing cannot fail by luck). OMAI_FC_SEED=<n> runs another seed (a property that depends on its seed shows on a
+// few of them); OMAI_FC_SEED=random draws a fresh one each run (a stress run).
+const FC_SEED = 20261111
+const seedOverride = process.env['OMAI_FC_SEED']
+if (seedOverride !== 'random') fc.configureGlobal({ seed: seedOverride === undefined ? FC_SEED : Number(seedOverride) })
 // OMAI_FC_SCALE multiplies every property's number of runs (a stress run, 15 times the runs, found nothing on five seeds).
 const scale = Number(process.env['OMAI_FC_SCALE'] ?? 1)
 const runs = { numRuns: 12 * scale }
