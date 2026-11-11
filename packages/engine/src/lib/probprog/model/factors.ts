@@ -69,6 +69,7 @@ import {
   gammaPrior,
   gaussianMvPrior,
   gaussianPrior,
+  likelihoods,
   type MpState,
   marginalsOf,
   priorFactor,
@@ -1517,51 +1518,178 @@ class Compiler {
           if (logScale !== undefined) return logScale
           return this.observedRandomPrecision(node, name, y, i, index)
         }
-        const scale = this.paramCell(node, 'scale', i)
-        if (!isConstCell(scale)) throw new Refusal('operator', `the scale of '${node.name}' is not known`)
-        if (!(scale.aff.offset > 0))
-          throw new Refusal('data', `the scale of '${node.name}' is ${scale.aff.offset}: it must be positive`)
-        const precision = 1 / scale.aff.offset ** 2
-        const loc = this.paramCell(node, 'loc', i)
-        if (isConstCell(loc)) return null
-        const aff = affOf(loc)
-        const terms = [...aff.terms].filter(([, c]) => c !== 0)
-        const comps = terms.map(([k]) => this.atoms.get(k) as Atom)
-        const oneVector =
-          aff.offset === 0 &&
-          comps.length > 0 &&
-          comps.every((a) => a.kind === 'comp' && a.vector === (comps[0] as Atom & { kind: 'comp' }).vector)
-        this.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
-        if (oneVector) {
-          const first = comps[0] as Atom & { kind: 'comp' }
-          const a = new Array<number>(first.size).fill(0)
-          for (const [k, c] of terms) a[(this.atoms.get(k) as Atom & { kind: 'comp' }).index] = c
-          this.addFactor(
-            { operator: 'linear-regression-row', args: [name, first.vector], params: { a, precision } },
-            name,
-          )
-        } else {
-          const m = this.materialise(aff, node.name, index)
-          this.addFactor({ operator: 'gaussian', args: [name, m as string], params: { precision } }, name)
-        }
-        return name
+        return this.observedGaussian(node, name, y, i, index, 'loc', 'scale')
       }
       case 'studentT':
       case 'laplace':
       case 'normalOutliers':
         return this.observedHeavy(node, fam, y, i, index)
+      case 'logNormal':
+        // log y is Gaussian around the predictor: the exact Gaussian rule on the log of the outcome.
+        if (!(y > 0)) throw new Refusal('data', `'${node.name}' is log-normal: the outcome ${y} must be positive`)
+        return this.observedGaussian(node, name, Math.log(y), i, index, 'mu', 'sigma')
       case 'bernoulli':
         return this.observedBernoulli(node, name, y, i, index)
       case 'binomial':
-      case 'poisson':
+      case 'poisson': {
+        const numeric = this.observedNumeric(node, fam, y, i, index)
+        return numeric !== undefined ? numeric : this.observedConjugate(node, fam, name, y, i)
+      }
       case 'categorical':
         return this.observedConjugate(node, fam, name, y, i)
+      case 'negativeBinomial':
+      case 'weibull': {
+        const numeric = this.observedNumeric(node, fam, y, i, index)
+        if (numeric === undefined)
+          throw new Refusal(
+            'operator',
+            `the parameters of '${node.name}' (${fam}) are not in a form with a message rule (see the log-link idioms of its observedNumeric)`,
+          )
+        return numeric
+      }
       default:
         throw new Refusal(
           'family',
-          `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, studentT, laplace, normalOutliers, bernoulli, binomial, poisson and categorical`,
+          `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, normalOutliers, bernoulli, binomial, poisson, negativeBinomial, weibull and categorical`,
         )
     }
+  }
+
+  /** The value of a known expression at element `i` of an observed node. */
+  private constAt(node: ModelNode, e: ExprSpec, i: number): number {
+    return (this.over(this.fromNamed(this.evalNamed(e)), node.dims)[i] as Cell & { kind: 'aff' }).aff.offset
+  }
+
+  /** `exp(L)` or `k * exp(L)` (with `k` known), followed through derived nodes: the log-link idiom of a rate, mean or scale. */
+  private scaledExp(e: ExprSpec): { readonly inner: ExprSpec; readonly scale: ExprSpec | undefined } | undefined {
+    const u = this.unwrap(e)
+    if (u.kind !== 'op') return undefined
+    if (u.op === 'exp') return { inner: u.args[0] as ExprSpec, scale: undefined }
+    if (u.op === 'mul') {
+      const [a, b] = u.args as [ExprSpec, ExprSpec]
+      const ea = this.unwrap(a)
+      const eb = this.unwrap(b)
+      if (this.isConst(a) && eb.kind === 'op' && eb.op === 'exp') return { inner: eb.args[0] as ExprSpec, scale: a }
+      if (this.isConst(b) && ea.kind === 'op' && ea.op === 'exp') return { inner: ea.args[0] as ExprSpec, scale: b }
+    }
+    return undefined
+  }
+
+  /**
+   * The likelihoods of the registry of `message-passing/operators/likelihoods.ts` for `observe y ~ D(g(affine))`: Poisson with
+   * `rate = exposure * exp(affine)`, binomial with `probs = sigmoid(affine)` or `probit(affine)`, negative binomial with a log
+   * link and a known dispersion (`n = r`, `probs = r / (r + mean)`, the mean `exposure * exp(affine)`), and a Weibull with
+   * `scale = exp(affine)` and a known shape. Returns `undefined` when the parameters are not that shape (the caller tries the
+   * conjugate rule or refuses), else the factor's outcome (always `null`: the outcome is a parameter of the factor).
+   */
+  private observedNumeric(
+    node: ModelNode & { readonly kind: 'observed' },
+    fam: string,
+    y: number,
+    i: number,
+    index: number | undefined,
+  ): string | null | undefined {
+    const dist = node.dist.params
+    const known = (p: string, what: string): number => {
+      let c: Cell
+      try {
+        c = this.paramCell(node, p, i)
+      } catch (e) {
+        // A parameter computed from a random value (1 / alpha with alpha a latent) is random.
+        if (e instanceof Refusal && e.kind === 'operator')
+          throw new Refusal(
+            'operator',
+            `the ${what} of '${node.name}' is random (${e.message}): the ${fam} likelihood has a message rule for a known ${what} only`,
+          )
+        throw e
+      }
+      if (!isConstCell(c))
+        throw new Refusal(
+          'operator',
+          `the ${what} of '${node.name}' is random: the ${fam} likelihood has a message rule for a known ${what} only`,
+        )
+      return c.aff.offset
+    }
+    const emit = (likelihood: string, expr: ExprSpec, extra: Record<string, Json>): string | null => {
+      const params: Record<string, Json> = { likelihood, y, ...extra }
+      const why = likelihoods()[likelihood]?.check?.(y, params)
+      if (why !== undefined) throw new Refusal('data', `'${node.name}' (${likelihood}): ${why}`)
+      const cell = this.cellsOf(node, 'predictor', () => this.evalSym(expr))[i] as Cell
+      return this.emitSite(node, cell, i, index, 'likelihood-row', 'likelihood-site', params)
+    }
+    if (fam === 'poisson') {
+      const m = dist['rate'] === undefined ? undefined : this.scaledExp(dist['rate'])
+      if (m === undefined) return undefined
+      return emit('poisson-log', m.inner, { exposure: m.scale === undefined ? 1 : this.constAt(node, m.scale, i) })
+    }
+    if (fam === 'binomial') {
+      const probs = dist['probs'] === undefined ? undefined : this.unwrap(dist['probs'])
+      if (probs?.kind !== 'op' || (probs.op !== 'sigmoid' && probs.op !== 'probit')) return undefined
+      return emit(probs.op === 'sigmoid' ? 'binomial-logit' : 'binomial-probit', probs.args[0] as ExprSpec, {
+        n: known('n', 'number of trials'),
+      })
+    }
+    if (fam === 'weibull') {
+      const m = dist['scale'] === undefined ? undefined : this.scaledExp(dist['scale'])
+      if (m === undefined || m.scale !== undefined) return undefined
+      return emit('weibull-log', m.inner, { shape: known('concentration', 'shape') })
+    }
+    if (fam === 'negativeBinomial') {
+      // The negative binomial with a log link: n = r, probs = r / (r + mean) = A / (A + K exp(L)) with mean = n K exp(L) / A.
+      const r = known('n', 'dispersion (the number of successes n = 1 / dispersion)')
+      const probs = dist['probs'] === undefined ? undefined : this.unwrap(dist['probs'])
+      if (probs?.kind !== 'op' || probs.op !== 'div') return undefined
+      const [num, den] = probs.args as [ExprSpec, ExprSpec]
+      const d = this.unwrap(den)
+      if (!this.isConst(num) || d.kind !== 'op' || d.op !== 'add') return undefined
+      const [p, q] = d.args as [ExprSpec, ExprSpec]
+      const [one, rest] = this.isConst(p) ? [p, q] : [q, p]
+      if (!this.isConst(one)) return undefined
+      const A = this.constAt(node, num, i)
+      if (Math.abs(this.constAt(node, one, i) - A) > 1e-12 * Math.abs(A)) return undefined
+      const m = this.scaledExp(rest)
+      if (m === undefined) return undefined
+      const K = m.scale === undefined ? 1 : this.constAt(node, m.scale, i)
+      return emit('negative-binomial-log', m.inner, { dispersion: 1 / r, exposure: (r * K) / A })
+    }
+    return undefined
+  }
+
+  /** An observed Gaussian with a known scale around an affine mean, named by the node's parameters (`loc`/`scale`, or a log-normal's `mu`/`sigma`). */
+  private observedGaussian(
+    node: ModelNode & { readonly kind: 'observed' },
+    name: string,
+    y: number,
+    i: number,
+    index: number | undefined,
+    locName: string,
+    scaleName: string,
+  ): string | null {
+    const scale = this.paramCell(node, scaleName, i)
+    if (!isConstCell(scale)) throw new Refusal('operator', `the scale of '${node.name}' is not known`)
+    if (!(scale.aff.offset > 0))
+      throw new Refusal('data', `the scale of '${node.name}' is ${scale.aff.offset}: it must be positive`)
+    const precision = 1 / scale.aff.offset ** 2
+    const loc = this.paramCell(node, locName, i)
+    if (isConstCell(loc)) return null
+    const aff = affOf(loc)
+    const terms = [...aff.terms].filter(([, c]) => c !== 0)
+    const comps = terms.map(([k]) => this.atoms.get(k) as Atom)
+    const oneVector =
+      aff.offset === 0 &&
+      comps.length > 0 &&
+      comps.every((a) => a.kind === 'comp' && a.vector === (comps[0] as Atom & { kind: 'comp' }).vector)
+    this.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
+    if (oneVector) {
+      const first = comps[0] as Atom & { kind: 'comp' }
+      const a = new Array<number>(first.size).fill(0)
+      for (const [k, c] of terms) a[(this.atoms.get(k) as Atom & { kind: 'comp' }).index] = c
+      this.addFactor({ operator: 'linear-regression-row', args: [name, first.vector], params: { a, precision } }, name)
+    } else {
+      const m = this.materialise(aff, node.name, index)
+      this.addFactor({ operator: 'gaussian', args: [name, m as string], params: { precision } }, name)
+    }
+    return name
   }
 
   /**
@@ -1605,9 +1733,25 @@ class Compiler {
       row = 'mixture-row'
       site = 'mixture-site'
     }
-    const loc = this.paramCell(node, 'loc', i)
-    if (isConstCell(loc)) return null
-    const aff = affOf(loc)
+    return this.emitSite(node, this.paramCell(node, 'loc', i), i, index, row, site, params)
+  }
+
+  /**
+   * The factor of a numeric likelihood of an affine predictor: one row factor on the packed weights when the predictor is a
+   * single dot product with one vector, else a site factor on an auxiliary predictor variable. The outcome is a parameter of
+   * the factor, so the observed value has no variable of its own. A predictor with no random part says nothing (no factor).
+   */
+  private emitSite(
+    node: ModelNode & { readonly kind: 'observed' },
+    predictor: Cell,
+    i: number,
+    index: number | undefined,
+    row: string,
+    site: string,
+    params: Record<string, Json>,
+  ): string | null {
+    if (isConstCell(predictor)) return null
+    const aff = affOf(predictor)
     const terms = [...aff.terms].filter(([, c]) => c !== 0)
     const comps = terms.map(([k]) => this.atoms.get(k) as Atom)
     const oneVector =

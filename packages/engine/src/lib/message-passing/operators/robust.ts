@@ -5,15 +5,15 @@
  * outliers (`mu = y`, the clutter problem's observation); a Gaussian cavity times it is a mixture of Gaussians, so the
  * moments are exact and need no quadrature. `student-t-site` and `laplace-site` are heavy-tailed likelihoods of an observed
  * outcome (`f(x) = t_nu(y; x, scale)`, `f(x) = Laplace(y; x, scale)`), whose tilted moments are found on a panelled grid laid
- * where the factor lives (a cavity that is much wider than the likelihood is common in the first sweeps). Each also comes
+ * where the factor lives (a cavity that is much wider than the likelihood is common in the first sweeps); both are rows of
+ * the registry of `likelihoods.ts`, which holds the other numeric likelihoods. Each also comes
  * lifted to a regression row on a weight vector (`mixture-row`, `student-t-row`, `laplace-row`) by `glmRow`, so a model
  * `y ~ studentT(df, X w, s)` is one rank-one factor per row on the packed weights.
  */
 
-import { gaussianGridOn } from '../_quadrature.ts'
-import { lgammaOf } from '../_scalar.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../types.ts'
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, vectorParam } from './args.ts'
+import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, vectorParam } from './args.ts'
+import { likelihoodSite, likelihoods } from './likelihoods.ts'
 import { glmRow } from './rows.ts'
 
 /** The mixture's components from the parameters, with the weights normalised. */
@@ -84,99 +84,6 @@ export const mixtureSite: FactorOperator = {
   logEvidence: (c) => (allProper(c.args) ? massOf(c.args[0] as never) + mixtureTilted(c).logMass : Number.NaN),
 }
 
-/** How wide a window around the outcome (in scales) a heavy-tailed likelihood is integrated over. */
-const REACH = 120
-
-/**
- * The tilted log mass, mean and variance of the Gaussian cavity times a likelihood of the variable that is centred on `y`
- * with the given scale: integrated on a panelled Gauss-Legendre grid over the part of the cavity's window that the
- * likelihood occupies, split at `y` (where a Laplace density has its kink).
- */
-function tiltedWindow(
-  cavity: { readonly mean: number; readonly variance: number },
-  y: number,
-  scale: number,
-  logf: (x: number) => number,
-): { logMass: number; mean: number; variance: number } {
-  const sd = Math.sqrt(cavity.variance)
-  let lo = cavity.mean - 9 * sd
-  let hi = cavity.mean + 9 * sd
-  lo = Math.max(lo, y - REACH * scale)
-  hi = Math.min(hi, y + REACH * scale)
-  if (!(hi > lo)) {
-    // The cavity is far from the outcome: take the part of its window nearest to it.
-    lo = cavity.mean - 9 * sd
-    hi = cavity.mean + 9 * sd
-  }
-  const pieces: [number, number][] =
-    y > lo && y < hi
-      ? [
-          [lo, y],
-          [y, hi],
-        ]
-      : [[lo, hi]]
-  const xs: number[] = []
-  const lw: number[] = []
-  for (const [a, b] of pieces) {
-    const g = gaussianGridOn(cavity.mean, cavity.variance, a, b, 40, 8)
-    for (let i = 0; i < g.x.length; i++) {
-      xs.push(g.x[i] ?? 0)
-      lw.push(Math.log(g.w[i] ?? 0) + logf(g.x[i] ?? 0))
-    }
-  }
-  const top = Math.max(...lw)
-  let m0 = 0
-  let m1 = 0
-  for (const [i, v] of lw.entries()) {
-    const e = Math.exp(v - top)
-    m0 += e
-    m1 += e * (xs[i] ?? 0)
-  }
-  const mean = m1 / m0
-  let m2 = 0
-  for (const [i, v] of lw.entries()) m2 += Math.exp(v - top) * ((xs[i] ?? 0) - mean) ** 2
-  return { logMass: top + Math.log(m0), mean, variance: m2 / m0 }
-}
-
-/** log of the Student-t density with `df` degrees of freedom, centred at `x`, evaluated at the outcome. */
-const logStudentT = (y: number, x: number, scale: number, df: number): number =>
-  lgammaOf((df + 1) / 2) -
-  lgammaOf(df / 2) -
-  0.5 * Math.log(df * Math.PI) -
-  Math.log(scale) -
-  ((df + 1) / 2) * Math.log(1 + ((y - x) / scale) ** 2 / df)
-
-/** log of the Laplace density with scale `b`, centred at `x`, evaluated at the outcome. */
-const logLaplace = (y: number, x: number, scale: number): number => -Math.log(2 * scale) - Math.abs(y - x) / scale
-
-/** A heavy-tailed likelihood site of a Gaussian predictor given by its log density. */
-function heavySite(
-  name: string,
-  description: string,
-  log: (c: OperatorContext) => (x: number) => number,
-  scale: (c: OperatorContext) => number,
-): FactorOperator {
-  const tilted = (c: OperatorContext): { logMass: number; mean: number; variance: number } => {
-    const y = numberParam(c.params, 'y')
-    const logf = log(c)
-    return tiltedWindow(gaussianOf(c.args[0] as never), y, scale(c), (x) => c.power * logf(x))
-  }
-  return {
-    name,
-    description,
-    ports: [{ name: 'x', accepts: ['gaussian'] }],
-    support: { ep: 'numeric' },
-    readsTarget: true,
-    power: true,
-    ep: (c): OperatorResult => {
-      const t = tilted(c)
-      const site = gaussianSiteMessage(etaOf(c.args[0] as never), t.mean, t.variance)
-      return { message: c.power === 1 ? site : site.map((v) => v / c.power) }
-    },
-    logEvidence: (c) => (allProper(c.args) ? massOf(c.args[0] as never) + tilted(c).logMass : Number.NaN),
-  }
-}
-
 /**
  * A Student-t likelihood of a Gaussian predictor, `y | x ~ t_df(x, scale)` with the outcome `y`, the degrees of freedom `df`
  * and the `scale` known (parameters): the robust regression likelihood. EP matches the moments of the Gaussian cavity times
@@ -191,17 +98,7 @@ function heavySite(
  * studentTSite.ep?.({ mode: 'ep', to: 0, args, params: { y: 1, scale: 1, df: 4 }, power: 1 }).message.map((v) => v.toFixed(2)) // => ['0.93', '0.75']
  * ```
  */
-export const studentTSite: FactorOperator = heavySite(
-  'student-t-site',
-  'y | x ~ Student t(df, x, scale)',
-  (c) => {
-    const y = numberParam(c.params, 'y')
-    const scale = numberParam(c.params, 'scale')
-    const df = numberParam(c.params, 'df')
-    return (x) => logStudentT(y, x, scale, df)
-  },
-  (c) => numberParam(c.params, 'scale'),
-)
+export const studentTSite: FactorOperator = likelihoodSite('student-t-site', likelihoods(), 'student-t')
 
 /**
  * A Laplace likelihood of a Gaussian predictor, `y | x ~ Laplace(x, scale)`: the absolute-error (median-like) robust
@@ -216,16 +113,7 @@ export const studentTSite: FactorOperator = heavySite(
  * laplaceSite.ep?.({ mode: 'ep', to: 0, args, params: { y: 1, scale: 1 }, power: 1 }).message.map((v) => v.toFixed(2)) // => ['0.89', '0.79']
  * ```
  */
-export const laplaceSite: FactorOperator = heavySite(
-  'laplace-site',
-  'y | x ~ Laplace(x, scale)',
-  (c) => {
-    const y = numberParam(c.params, 'y')
-    const scale = numberParam(c.params, 'scale')
-    return (x) => logLaplace(y, x, scale)
-  },
-  (c) => numberParam(c.params, 'scale'),
-)
+export const laplaceSite: FactorOperator = likelihoodSite('laplace-site', likelihoods(), 'laplace')
 
 /**
  * One row of a regression with a Gaussian mixture on a weight vector, `a . w ~ sum_i pi_i N(mu_i, s_i^2)`: a coefficient with a
