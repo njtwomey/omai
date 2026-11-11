@@ -239,3 +239,240 @@ export const epGaps: readonly EpGap[] = [
     refuses: [],
   },
 ]
+
+/** How far a direction is covered today: runs in the suite, partly (some forms run), being built now, or not started. */
+export type EpDirectionStatus = 'covered' | 'partial' | 'in progress' | 'not yet'
+
+/** A kind of model or problem the suite could cover: what it is, how far it is covered and what supporting it needs. */
+export interface EpDirection {
+  readonly id: string
+  readonly title: string
+  /** The area it belongs to, for grouping. */
+  readonly area:
+    | 'time series'
+    | 'counts and survival'
+    | 'ranking and preference'
+    | 'latent structure'
+    | 'regression and classification'
+    | 'spatial and nonparametric'
+    | 'inference quality'
+  readonly status: EpDirectionStatus
+  /** What the problem is, in a sentence. */
+  readonly what: string
+  /** What supporting it takes beyond what exists (a rule, a mapping, a family), or what already supports it. */
+  readonly needs: string
+  readonly size: 'small' | 'medium' | 'large'
+  /** The suite's pages (poc slugs) that already show something of it. */
+  readonly pages: readonly string[]
+}
+
+/**
+ * The wider suite: not only what is refused today (the gaps above) but what else the suite could cover and what each would need,
+ * written by hand and meant to grow. It is a map of directions for choosing the next programs and rules, not a promise.
+ *
+ * @example
+ * ```ts
+ * import { epDirections } from 'omai-engine/bayesian-examples'
+ * epDirections.every((d) => d.needs.length > 0) // => true
+ * ```
+ */
+export const epDirections: readonly EpDirection[] = [
+  {
+    id: 'periodic',
+    title: 'Periodic and circular data without a circular distribution',
+    area: 'latent structure',
+    status: 'in progress',
+    what: 'Clock times, bearings and phases: a wrapped normal written as three ordinary normals, by shifting the means (the paper) or shifting the data (the post), fitted by EP.',
+    needs:
+      'Gates and an interval constraint exist; the copy index as a lookup on the data side may need a mapping. Higher dimensions (a torus) are a grid of copies.',
+    size: 'medium',
+    pages: [],
+  },
+  {
+    id: 'kalman',
+    title: 'Linear dynamical systems and Kalman smoothing with vector states',
+    area: 'time series',
+    status: 'partial',
+    what: 'A latent vector state with a linear transition and linear observations: tracking, dynamic regression, random-walk coefficients.',
+    needs:
+      'Scalar AR(1) chains run; a vector-valued `scan` with matrix transitions needs dense Gaussian transition factors (the dense Gaussian family and the matrix-times-vector operators exist).',
+    size: 'medium',
+    pages: ['ep-program-tracker'],
+  },
+  {
+    id: 'switching',
+    title: 'Switching state spaces and regime models',
+    area: 'time series',
+    status: 'partial',
+    what: 'A hidden regime chain over which the dynamics or the observation model switches: hidden Markov models with continuous emissions, switching Kalman filters, change points.',
+    needs:
+      'Discrete chains and Gaussian emissions run exactly; unknown emission parameters shared across time are loopy (the changepoint program is overconfident when a regime is barely visited) and a gate over a whole sub-chain needs the gate node.',
+    size: 'large',
+    pages: ['ep-program-changepoint'],
+  },
+  {
+    id: 'volatility',
+    title: 'Volatility models beyond one latent chain',
+    area: 'time series',
+    status: 'partial',
+    what: 'Stochastic volatility with inferred persistence runs; leverage effects, jumps and GARCH-style recursions do not.',
+    needs:
+      'A correlated pair of chains (dense transitions), a jump gate, and for GARCH a deterministic non-Gaussian recursion (`apply` through time).',
+    size: 'large',
+    pages: ['ep-log-scale'],
+  },
+  {
+    id: 'survival',
+    title: 'Survival, reliability and censored data',
+    area: 'counts and survival',
+    status: 'partial',
+    what: 'Waiting times with censoring: Weibull and log-normal regression, competing risks, the Cox model.',
+    needs:
+      'Weibull and log-normal likelihoods with right censoring are in the registry; a random shape, interval censoring and the Cox partial likelihood (a ranking over risk sets) are not.',
+    size: 'medium',
+    pages: [],
+  },
+  {
+    id: 'count-models',
+    title: 'Over-dispersed, zero-inflated and hurdle counts',
+    area: 'counts and survival',
+    status: 'partial',
+    what: 'Poisson and negative-binomial regression and zero inflation run; hurdle models, Conway-Maxwell-Poisson and counts with a random exposure do not.',
+    needs:
+      'A gate over a Poisson and a truncated Poisson branch (the gate node), and a rule for a count with a random rate shape.',
+    size: 'medium',
+    pages: ['ep-poisson-log', 'ep-program-zero-inflated'],
+  },
+  {
+    id: 'ranking',
+    title: 'Rating and ranking systems',
+    area: 'ranking and preference',
+    status: 'partial',
+    what: 'Skills from match results: TrueSkill with draws and teams, Bradley-Terry, Plackett-Luce rankings, time-varying skills.',
+    needs:
+      'Win/loss on a skill difference runs; draws need the ordinal-probit distribution, teams are sums (affine, supported), a Plackett-Luce ranking needs a softmax factor, drifting skills a scalar chain per player.',
+    size: 'medium',
+    pages: ['ep-skill-difference', 'ep-program-skills'],
+  },
+  {
+    id: 'factor-models',
+    title: 'Matrix factorisation, factor analysis and recommenders',
+    area: 'latent structure',
+    status: 'not yet',
+    what: 'Ratings or measurements as a product of latent user and item vectors (probabilistic matrix factorisation), factor analysis, probabilistic PCA with ARD.',
+    needs:
+      'The numeric `product` factor exists for scalars; a bilinear factor on whole vectors with packed beliefs, and an ARD precision per factor (the gamma precision rule); many loops, so structured or stochastic EP.',
+    size: 'large',
+    pages: [],
+  },
+  {
+    id: 'mixed-membership',
+    title: 'Mixed membership, topic and community models',
+    area: 'latent structure',
+    status: 'not yet',
+    what: 'Topic models, stochastic block models, mixed-membership networks: discrete assignments with Dirichlet-distributed proportions at several levels.',
+    needs:
+      'The conjugate discrete-Dirichlet operators exist; plates of Dirichlets and discrete indices through a lookup need the compiler (the LDA gap), and a pair of indices (blocks) a two-index gate.',
+    size: 'large',
+    pages: ['ep-gate-weight-dirichlet'],
+  },
+  {
+    id: 'mixture-regression',
+    title: 'Mixtures of regressions and experts',
+    area: 'regression and classification',
+    status: 'partial',
+    what: 'Different regressions in different regimes of the input or hidden classes: mixtures of linear experts, switching regressions.',
+    needs:
+      'The gate over Gaussian branches runs; branches that are regressions on a shared design need the gate node over sub-models.',
+    size: 'medium',
+    pages: ['ep-gate', 'ep-gate-random'],
+  },
+  {
+    id: 'multiclass',
+    title: 'Multiclass classification',
+    area: 'regression and classification',
+    status: 'not yet',
+    what: 'More than two classes: multinomial probit and logit, multiclass GP classification.',
+    needs:
+      'A softmax or multinomial-probit factor (a (K-1)-dimensional tilted moment: quadrature for K = 3, a delta method beyond).',
+    size: 'medium',
+    pages: [],
+  },
+  {
+    id: 'bnn',
+    title: 'Bayesian neural networks by probabilistic backpropagation',
+    area: 'regression and classification',
+    status: 'partial',
+    what: 'Weights as Gaussian beliefs, moments pushed through the units.',
+    needs:
+      '`tanh`, `relu` and the rest compile; a hidden unit can collapse and the posterior is multimodal (sign and permutation symmetries): symmetry breaking in the initial messages and a layer-wise packed form.',
+    size: 'large',
+    pages: ['ep-tanh'],
+  },
+  {
+    id: 'sparse-recovery',
+    title: 'Sparse recovery and compressed sensing',
+    area: 'regression and classification',
+    status: 'partial',
+    what: 'A sparse signal from few linear measurements: spike-and-slab regression runs; approximate message passing, which is EP on a dense linear model, lives in its own domain.',
+    needs:
+      'Connect the two: express the AMP problem on the compiler and compare EP with the AMP state evolution on the same data.',
+    size: 'small',
+    pages: ['ep-spike-and-slab', 'ep-program-sparse'],
+  },
+  {
+    id: 'spatial',
+    title: 'Spatial and temporal Gaussian processes',
+    area: 'spatial and nonparametric',
+    status: 'partial',
+    what: 'Cox processes, GP classification and regression with learned kernels, sparse GPs with inducing points, GPs on a grid in two dimensions.',
+    needs:
+      'Fixed-kernel dense GPs run (a one-dimensional Cox process, GP classification); learned kernels (an outer loop), low-rank (inducing point) priors and Kronecker structure for grids.',
+    size: 'large',
+    pages: ['ep-program-cox', 'ep-gp-probit'],
+  },
+  {
+    id: 'nonparametric',
+    title: 'Dirichlet-process and other nonparametric mixtures',
+    area: 'spatial and nonparametric',
+    status: 'not yet',
+    what: 'A mixture with an unbounded number of components.',
+    needs:
+      'Stick-breaking as a first-class transform (the stick-breaking gap), truncated; the gate and the discrete operators take the weights.',
+    size: 'medium',
+    pages: [],
+  },
+  {
+    id: 'measurement-error',
+    title: 'Measurement error, missing data and censored inputs',
+    area: 'regression and classification',
+    status: 'partial',
+    what: 'Regressors observed with noise, missing entries to impute, truncated or censored values.',
+    needs:
+      'Truncation factors and products of random inputs exist; a Tobit-style truncated-normal observation and a missing-value mechanism (a gate on missingness) need mappings.',
+    size: 'medium',
+    pages: ['ep-ordered-pair'],
+  },
+  {
+    id: 'calibration',
+    title: 'Calibration of EP itself across the whole suite',
+    area: 'inference quality',
+    status: 'in progress',
+    what: "Every setup and program with a calibration panel (many seeds, coverage of the truth by EP's intervals), the cases where it fails collected, and the variants (damping, power and alpha EP, stochastic and structured EP) compared on them.",
+    needs:
+      'The extended setups and the programs carry the panels; a suite-level table across all of them and the choice of a better default.',
+    size: 'medium',
+    pages: ['ep-coverage'],
+  },
+  {
+    id: 'scale',
+    title: 'Scaling to many observations and large graphs',
+    area: 'inference quality',
+    status: 'not yet',
+    what: 'Thousands of rows and hundreds of latents: the cost of the dense and gridded rules, memory of per-factor messages.',
+    needs:
+      'Stochastic EP (the engine has it) in the examples, vectorised plates for the likelihood rules, and timing and size limits recorded in the coverage table.',
+    size: 'medium',
+    pages: [],
+  },
+]

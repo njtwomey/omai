@@ -1,3 +1,4 @@
+import { epDirections } from 'omai-engine/bayesian-examples'
 import { describe, expect, it } from 'vitest'
 import { GROUPS } from './groups.ts'
 import { groupPocs, type PocEntry, searchPocs, splitSubgroups } from './poc.ts'
@@ -108,5 +109,13 @@ describe('splitSubgroups', () => {
     const mine = POCS.filter((p) => p.group === 'expectation-propagation')
     const sections = splitSubgroups(mine, ep)
     expect(sections.flatMap((s) => s.entries).length).toBe(mine.length)
+  })
+})
+
+describe('the wider suite of the EP coverage page', () => {
+  it('every page it points at exists', () => {
+    const slugs = new Set(POCS.map((p) => p.slug))
+    const missing = epDirections.flatMap((d) => d.pages.filter((s) => !slugs.has(s)).map((s) => `${d.id}: ${s}`))
+    expect(missing).toEqual([])
   })
 })
