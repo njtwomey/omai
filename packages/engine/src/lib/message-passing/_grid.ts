@@ -166,7 +166,7 @@ export function integratePair(
     const m2 = [0, 0]
     const me = [0, 0]
     for (let k = 0; k < 2; k++) {
-      const xs = grids[k].x
+      const xs = (grids[k] as { x: number[] }).x
       const pk = margins[k] as Float64Array
       for (let i = 0; i < xs.length; i++) {
         const x = xs[i] as number
