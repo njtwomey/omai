@@ -18,7 +18,7 @@
  */
 
 import * as d from '../probprog/model/dists/index.ts'
-import { defineModel } from '../probprog/model/index.ts'
+import { defineModel, ops } from '../probprog/model/index.ts'
 import type { InferenceMethod } from '../probprog/inference/method.ts'
 import type { Posterior } from '../probprog/posterior.ts'
 import { normal as drawNormal, uniform as drawUniform, foldIn, key } from '../random/index.ts'
@@ -38,6 +38,7 @@ import {
   curveBands,
   exactNormalPosterior,
   monomials,
+  noiseSdOf,
   polynomialAt,
   type RegressionReference,
   type RegressionShape,
@@ -84,7 +85,10 @@ export interface LinearProblem extends ExampleProblem {
   /** The coefficients of the generating model (padded with zeros to the fitted degree). */
   readonly truth: readonly number[]
   readonly noiseSd: number
+  /** Whether the noise is inferred (half-normal sd, or a gamma precision). */
   readonly learned: boolean
+  /** Whether the noise is written as a gamma-distributed precision (`tau`, the textbook form message passing accepts). */
+  readonly precision: boolean
   readonly degree: number
   /** The names of the coefficients: `intercept`, `slope`, `x^2`, ... (or `x1`, `x2`, ... for the sparse truth). */
   readonly names: readonly string[]
@@ -130,14 +134,18 @@ export function linearRegressionProblem(config: Config): LinearProblem {
     : (TRUTH[exampleString(config, 'truth')] ?? [1, 2])
   const noiseSd = exampleNumber(config, 'noise')
   const priorScale = exampleNumber(config, 'priorScale')
-  const learned = exampleString(config, 'noiseModel') === 'learned'
+  const noiseModel = exampleString(config, 'noiseModel')
+  const gammaNoise = noiseModel === 'precision'
+  const learned = noiseModel === 'learned' || gammaNoise
   const sigmaScale = exampleNumber(config, 'sigmaScale')
+  const noiseShape = exampleNumber(config, 'noiseShape') || 2
+  const noiseRate = exampleNumber(config, 'noiseRate') || 1
   const prior = linearPriors.includes(exampleString(config, 'prior')) ? exampleString(config, 'prior') : 'gaussian'
   const settings: LinearPriorSettings = {
     inclusion: exampleNumber(config, 'inclusion') || 0.5,
     spikeRatio: exampleNumber(config, 'spikeRatio') || 0.03,
     sparsity: 'sparsity' in config ? exampleNumber(config, 'sparsity') : 1,
-    ardRate: exampleNumber(config, 'ardRate') || 0.01,
+    ardRate: exampleNumber(config, 'ardRate') || 0.001,
   }
   const seed = foldIn(key(exampleNumber(config, 'dataSeed')), 0)
   const e = toFlat(drawNormal(foldIn(seed, 1), [n]))
@@ -166,19 +174,27 @@ export function linearRegressionProblem(config: Config): LinearProblem {
         doc: 'the coefficients: each in the slab (used) or the spike (off)',
       })
     } else if (prior === 'ard') {
-      // Non-centred: the coefficient is z over the square root of its precision, a mix of the plain prior and alpha_j.
-      const logSd = m.latent('logSd', d.normal(Math.log(priorScale), settings.ardRate), { dims: [feature] })
-      const z = m.latent('z', d.normal(0, 1), { dims: [feature], doc: 'the coefficients in units of their prior sd' })
-      const precision = m.derived('precision', logSd.mul(-2).exp().mul(settings.sparsity).add((1 - settings.sparsity) / priorScale ** 2))
-      w = m.derived('w', z.div(precision.sqrt()), { doc: 'the coefficients' })
+      // Centred: the data say more about each coefficient than the prior does, so the coefficient is drawn given its own sd.
+      const alpha = m.latent('alpha', d.gamma(1, settings.ardRate), {
+        dims: [feature],
+        doc: 'the precision of each coefficient (relevance): a large one prunes it',
+      })
+      const precision = m.derived(
+        'precision',
+        alpha.mul(settings.sparsity).add((1 - settings.sparsity) / priorScale ** 2),
+        { doc: 'the prior precision of each coefficient' },
+      )
+      w = m.latent('w', d.normal(0, precision.sqrt().pow(-1)), { dims: [feature], doc: 'the coefficients' })
     } else if (prior === 'horseshoe') {
       const lambda = m.latent('lambda', d.halfCauchy(1), { dims: [feature], doc: 'the local scale of each coefficient' })
-      const tau = m.latent('tau', d.halfCauchy(priorScale), { doc: 'the global scale' })
-      const z = m.latent('z', d.normal(0, 1), { dims: [feature], doc: 'the coefficients in units of their scale' })
-      m.derived('precision', lambda.mul(tau).square().pow(-1))
-      w = m.derived('w', z.mul(lambda).mul(tau), { doc: 'the coefficients' })
+      const global = m.latent('globalScale', d.halfCauchy(priorScale), { doc: 'the global scale' })
+      m.derived('precision', lambda.mul(global).square().pow(-1))
+      w = m.latent('w', d.normal(0, lambda.mul(global)), { dims: [feature], doc: 'the coefficients' })
     } else w = m.latent('w', d.normal(0, priorScale), { dims: [feature], doc: 'the coefficient of each column' })
-    if (learned) {
+    if (gammaNoise) {
+      const tau = m.latent('tau', d.gamma(noiseShape, noiseRate), { doc: 'the noise precision, one over its variance' })
+      m.observe('y', d.normal(X.matmul(w), ops.div(1, ops.sqrt(tau))), yy)
+    } else if (learned) {
       const sigma = m.latent('sigma', d.halfNormal(sigmaScale), { doc: 'the noise standard deviation' })
       m.observe('y', d.normal(X.matmul(w), sigma), yy)
     } else m.observe('y', d.normal(X.matmul(w), noiseSd), yy)
@@ -189,6 +205,7 @@ export function linearRegressionProblem(config: Config): LinearProblem {
     truth,
     noiseSd,
     learned,
+    precision: gammaNoise,
     degree,
     names: sparse
       ? Array.from({ length: features }, (_, j) => `x${j + 1}`)
@@ -284,20 +301,34 @@ export const linearModelKnobs: DictSpace = dict({
     description:
       'how much of each coefficient\'s precision is its own relevance: 0 is a plain normal prior (a smooth fit with every coefficient), 1 is ARD alone; raise it from 0 to see coefficients switch off (a burn-in by hand)',
   }),
-  ardRate: real(0.001, 10, {
-    default: 0.01,
+  ardRate: real(0.0001, 10, {
+    default: 0.001,
     log: true,
     label: 'ARD precision rate',
     description:
-      'the gamma prior of each precision has shape 1 and this rate: a small rate allows precisions large enough to switch a coefficient off',
+      'the gamma prior of each precision has shape 1 and this rate (mean 1 / rate): a small rate allows precisions large enough to switch a coefficient off; a larger one prunes less',
   }),
-  noiseModel: choice(['known', 'learned'], {
+  noiseModel: choice(['known', 'learned', 'precision'], {
     default: 'known',
     label: 'noise',
     descriptions: {
       known: 'the noise sd is known (its true value)',
       learned: 'the noise sd is unknown, with a half-normal prior: no closed form, the reference is a long NUTS run',
+      precision:
+        'the noise precision (1 / variance) is unknown, with a gamma prior (the textbook form): message passing (EP, VMP) applies; no closed form for the coefficients, the reference is a long NUTS run',
     },
+  }),
+  noiseShape: real(0.1, 20, {
+    default: 2,
+    log: true,
+    label: 'precision prior shape',
+    description: 'shape of the gamma prior on the noise precision',
+  }),
+  noiseRate: real(0.01, 20, {
+    default: 1,
+    log: true,
+    label: 'precision prior rate',
+    description: 'rate of the gamma prior on the noise precision (its mean is shape / rate)',
   }),
   sigmaScale: real(0.1, 10, {
     default: 1,
@@ -325,6 +356,8 @@ export const linearProblemKnobs: readonly string[] = [
   'ardRate',
   'noiseModel',
   'sigmaScale',
+  'noiseShape',
+  'noiseRate',
 ]
 
 /** The knobs a configuration does not use (the sparse truth's, the noise prior of a known noise, the priors the choice leaves out). */
@@ -334,6 +367,7 @@ export function linearHiddenKnobs(config: Config): readonly string[] {
   return [
     ...(sparse ? ['inputs', 'degree'] : ['features', 'active']),
     ...(exampleString(config, 'noiseModel') === 'learned' ? [] : ['sigmaScale']),
+    ...(exampleString(config, 'noiseModel') === 'precision' ? [] : ['noiseShape', 'noiseRate']),
     ...(prior === 'spikeSlab' ? [] : ['inclusion', 'spikeRatio']),
     ...(prior === 'ard' ? [] : ['sparsity', 'ardRate']),
   ]
@@ -360,7 +394,10 @@ function shapeOf(problem: LinearProblem): RegressionShape {
   return {
     names: problem.names,
     truth: problem.truth,
-    scalars: [{ site: 'sigma', name: 'sigma', truth: problem.noiseSd }],
+    scalars: [
+      { site: 'sigma', name: 'sigma', truth: problem.noiseSd },
+      { site: 'tau', name: 'tau', truth: 1 / problem.noiseSd ** 2 },
+    ],
   }
 }
 
@@ -431,7 +468,7 @@ const linearExample: Example<LinearProblem> = defineExample<LinearProblem>({
             rows,
             p,
             grid,
-            (r, _s, zz) => (got.names.includes('sigma') ? (r[p] ?? 0) : problem.noiseSd) * zz,
+            (r, _s, zz) => noiseSdOf(got.names, r, problem.noiseSd) * zz,
             LINES,
             z,
           )
@@ -464,15 +501,17 @@ const linearExample: Example<LinearProblem> = defineExample<LinearProblem>({
           const method = post(state)
           if (!method.sites.includes('w')) return null
           const p = problem.names.length
-          const learned = method.sites.includes('sigma')
+          const noiseSite = method.sites.includes('sigma') ? 'sigma' : method.sites.includes('tau') ? 'tau' : undefined
+          const learned = noiseSite !== undefined
           const hasPrecision = method.sites.includes('precision')
-          const sites = ['w', ...(learned ? ['sigma'] : []), ...(hasPrecision ? ['precision'] : [])]
+          const sites = ['w', ...(noiseSite === undefined ? [] : [noiseSite]), ...(hasPrecision ? ['precision'] : [])]
           const got = drawRows(method, sites, COEFFICIENT_DRAWS)
           if (got === undefined) return null
           const ws = got.rows.map((r) => r.slice(0, p))
           const { mean, sd } = columnMoments(ws, p)
           const sorted = Array.from({ length: p }, (_, j) => ws.map((r) => r[j] ?? 0).sort((a, b) => a - b))
-          const sigmaAt = (r: readonly number[]): number => (learned ? (r[p] ?? 1) : problem.noiseSd)
+          const sigmaAt = (r: readonly number[]): number =>
+            noiseSite === 'sigma' ? (r[p] ?? 1) : noiseSite === 'tau' ? 1 / Math.sqrt(r[p] ?? 1) : problem.noiseSd
           let score: number[] | null = null
           let scoreLabel: string | null = null
           const { inclusion, spikeRatio } = problem.settings
@@ -491,16 +530,17 @@ const linearExample: Example<LinearProblem> = defineExample<LinearProblem>({
             scoreLabel = 'posterior inclusion probability'
           } else if ((problem.prior === 'ard' || problem.prior === 'horseshoe') && hasPrecision) {
             const offset = p + (learned ? 1 : 0)
+            // The typical (median) shrinkage over the draws: a coefficient that is nearly always pruned scores near 0.
             score = Array.from({ length: p }, (_, j) => {
-              let a = 0
-              for (const r of got.rows) {
-                const data = (problem.norms[j] ?? 0) / sigmaAt(r) ** 2
-                const prior = r[offset + j] ?? 0
-                a += data / (data + prior)
-              }
-              return a / got.rows.length
+              const gammas = got.rows
+                .map((r) => {
+                  const data = (problem.norms[j] ?? 0) / sigmaAt(r) ** 2
+                  return data / (data + (r[offset + j] ?? 0))
+                })
+                .sort((a, b) => a - b)
+              return gammas[Math.floor((gammas.length - 1) / 2)] ?? Number.NaN
             })
-            scoreLabel = 'relevance (1 minus shrinkage)'
+            scoreLabel = 'relevance (median of 1 minus shrinkage)'
           }
           const active = problem.truth.map((v) => v !== 0)
           const chosen = score === null ? [] : score.map((s, j) => (s >= 0.5 ? j : -1)).filter((j) => j >= 0)

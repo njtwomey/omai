@@ -134,6 +134,27 @@ export function regressionDraws(post: Posterior, shape: RegressionShape, n: numb
   }
 }
 
+/**
+ * The noise standard deviation of a draw: the `sigma` column, or `1 / sqrt(tau)` of the `tau` column (the noise written as
+ * a gamma precision), or `known` when the draws have neither.
+ *
+ * @param names - The names of the columns of the draws.
+ * @param row - A draw.
+ * @param known - The noise standard deviation when it is not inferred.
+ * @returns The standard deviation.
+ * @example
+ * ```ts
+ * import { noiseSdOf } from 'omai-engine/bayesian-examples'
+ * noiseSdOf(['a', 'tau'], [1, 4], 9) // => 0.5
+ * ```
+ */
+export function noiseSdOf(names: readonly string[], row: readonly number[], known: number): number {
+  const s = names.indexOf('sigma')
+  if (s >= 0) return row[s] ?? known
+  const t = names.indexOf('tau')
+  return t >= 0 ? 1 / Math.sqrt(row[t] ?? 1 / known ** 2) : known
+}
+
 /** The curve bands of a polynomial regression at a grid of inputs. */
 export interface CurveBands {
   readonly mean: number[]
