@@ -112,7 +112,7 @@ export default function Page(): ReactNode {
             yLabel="skill"
           />
           <p className="max-w-4xl text-xs text-muted">
-            The skills are recovered to within their bands, which are wide because a player has only{' '}
+            The bands are wide because a player has only{' '}
             {(run.setup.players - 1) * run.setup.rounds} games. EP also infers how spread out the players are (the
             precision τ: {sig(run.found.tau.mean, 3)} ± {sig(run.found.tau.sd, 2)}; the truth is{' '}
             {sig(1 / run.setup.spread ** 2, 3)}).
