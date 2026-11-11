@@ -17,10 +17,12 @@ import {
   gaussianOf,
   gaussianSiteMessage,
   ImproperMessageError,
+  logGaussianIntegral,
   logNormal,
   massOf,
   numberParam,
   rawSum,
+  scalarOf,
   siteMessage,
   vectorParam,
 } from './args.ts'
@@ -116,15 +118,22 @@ export const gaussianOperator: FactorOperator = {
     const o = gaussianOf(arg(c, 1 - c.to))
     return { message: [tau * o.mean, tau] }
   },
+  // The two cavities need only be proper together (a message that is the site of a likelihood can have a negative
+  // precision), so the integral is taken over the pair in natural parameters.
   logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const x = gaussianOf(arg(c, 0))
-    const m = gaussianOf(arg(c, 1))
-    return (
-      massOf(arg(c, 0)) +
-      massOf(arg(c, 1)) +
-      logNormal(x.mean, m.mean, x.variance + m.variance + 1 / numberParam(c.params, 'precision'))
-    )
+    const tau = numberParam(c.params, 'precision')
+    const x = arg(c, 0)
+    const m = arg(c, 1)
+    const base = 0.5 * Math.log(tau / (2 * Math.PI))
+    if (x.value !== undefined && m.value !== undefined) return base - 0.5 * tau * (scalarOf(x) - scalarOf(m)) ** 2
+    if (x.value !== undefined || m.value !== undefined) {
+      const [v, e] = x.value !== undefined ? [scalarOf(x), etaOf(m)] : [scalarOf(m), etaOf(x)]
+      return base - 0.5 * tau * v * v + logGaussianIntegral([(e[0] ?? 0) + tau * v], [(e[1] ?? 0) + tau], 1)
+    }
+    const ex = etaOf(x)
+    const em = etaOf(m)
+    const p = [(ex[1] ?? 0) + tau, -tau, -tau, (em[1] ?? 0) + tau]
+    return base + logGaussianIntegral([ex[0] ?? 0, em[0] ?? 0], p, 2)
   },
   expectedLog: (c) => {
     const tau = numberParam(c.params, 'precision')
@@ -171,6 +180,8 @@ function precisionTilt(
   readonly u: { readonly mean: number; readonly variance: number }
   readonly logLambda: number
   readonly lambda: number
+  /** log of the integral of the factor against the Gaussian cavities (normalised densities) and the unnormalised gamma cavity. */
+  readonly logMass: number
 } {
   const { shape, rate } = gammaShapeRate(lambda)
   if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
@@ -221,6 +232,7 @@ function precisionTilt(
     u: { mean: meanU, variance: eU2 / z - meanU * meanU },
     logLambda: eLog / z,
     lambda: eLam / z,
+    logMass: top + Math.log(z * step),
   }
 }
 
@@ -258,6 +270,14 @@ export const gaussianGammaPrecision: FactorOperator = {
     if (c.to === 0) return { message: gaussianSiteMessage(etaOf(arg(c, 0)), tilt.x.mean, tilt.x.variance) }
     if (c.to === 1) return { message: gaussianSiteMessage(etaOf(arg(c, 1)), tilt.u.mean, tilt.u.variance) }
     return { message: siteMessage(gamma, etaOf(arg(c, 2)), [tilt.logLambda, tilt.lambda]) }
+  },
+  // The evidence is the masses of the two Gaussian cavities times the integral over the precision, whose grid weights
+  // already carry the gamma cavity unnormalised (so its own mass is not added). A flat Gaussian cavity has no mass.
+  logEvidence: (c) => {
+    if (!allProper(c.args)) return Number.NaN
+    const { scale, offset } = precisionParams(c.params)
+    const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset)
+    return massOf(arg(c, 0)) + massOf(arg(c, 1)) + tilt.logMass
   },
   vmp: (c): OperatorResult => {
     const { scale, offset } = precisionParams(c.params)
