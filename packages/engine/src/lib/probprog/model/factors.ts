@@ -89,6 +89,7 @@ import {
   transitionRow,
   unwrap,
 } from './factor-graph/_idioms.ts'
+import { addPlated, plate } from './factor-graph/_mappings/plates.ts'
 import {
   cellsOf,
   constAt,
@@ -635,7 +636,7 @@ class Compiler {
           scatter[a * d + b] =
             (scatter[a * d + b] as number) +
             ((y[a] as number) - (ybar[a] as number)) * ((y[b] as number) - (ybar[b] as number))
-    this.addPlated(node, { operator, args: [{ const: ybar }, mean.at(0), ...tail], params: { count: n, scatter } })
+    addPlated(this.cx, node, { operator, args: [{ const: ybar }, mean.at(0), ...tail], params: { count: n, scatter } })
     return true
   }
 
@@ -1935,7 +1936,7 @@ class Compiler {
     }
     const vars: (string | null)[] = []
     const parentsOf = discreteParents(this.cx, node)
-    if (this.cx.vectorise && node.dims.length > 0 && parentsOf.length === 0 && this.plate(node, fam, values)) return
+    if (this.cx.vectorise && node.dims.length > 0 && parentsOf.length === 0 && plate(this.cx, node, fam, values)) return
     if (fam === 'bernoulli' && parentsOf.length > 0) {
       if (node.dims.length > 0)
         throw new Refusal(
@@ -2628,144 +2629,6 @@ class Compiler {
       this.cx.g.addFactor({ operator: site, args: [m], params }, id)
     }
     return null
-  }
-
-  /**
-   * The rows of an observed node as a design matrix on one packed weight vector, when every row is `a . w` (plus a known
-   * offset where `offset` is allowed) of the same vector `w`: the vector's name, its size, and the row (`undefined` for a row
-   * with no random part, which says nothing about `w`). Absent when the rows are not of that shape.
-   */
-  private designRows(
-    cells: readonly Cell[],
-    offset: boolean,
-  ):
-    | {
-        readonly vector: string
-        readonly size: number
-        readonly rows: readonly ({ a: number[]; offset: number } | undefined)[]
-      }
-    | undefined {
-    let vector: string | undefined
-    let size = 0
-    const rows: ({ a: number[]; offset: number } | undefined)[] = []
-    for (const c of cells) {
-      if (c.kind !== 'aff') return undefined
-      const terms = [...c.aff.terms].filter(([, k]) => k !== 0)
-      if (terms.length === 0) {
-        rows.push(undefined)
-        continue
-      }
-      if (c.aff.offset !== 0 && !offset) return undefined
-      const atoms = terms.map(([k]) => this.cx.g.atoms.get(k) as Atom)
-      for (const a of atoms) {
-        if (a.kind !== 'comp') return undefined
-        if (vector === undefined) {
-          vector = a.vector
-          size = a.size
-        } else if (a.vector !== vector) return undefined
-      }
-      const a = new Array<number>(size).fill(0)
-      for (const [k, coefficient] of terms) a[(this.cx.g.atoms.get(k) as Atom & { kind: 'comp' }).index] = coefficient
-      rows.push({ a, offset: c.aff.offset })
-    }
-    return vector === undefined ? undefined : { vector, size, rows }
-  }
-
-  /**
-   * An observed node over a plate as one plated factor on its weight vector, when its rows are i.i.d. draws of one
-   * regression on a packed vector `w`: a Gaussian likelihood with one known scale (the exact `linear-regression-plate`, by
-   * the sufficient statistics of the rows) or a Bernoulli with a probit or logistic link of `a . w` (`probit-plate`,
-   * `logistic-plate`, the design matrix and outcomes as parameters). Anything else, or an engine registry without the
-   * plate operators, is not handled here and falls to the expansion. Returns whether the node was compiled.
-   */
-  private plate(node: ModelNode & { readonly kind: 'observed' }, fam: string, values: readonly number[]): boolean {
-    if (fam === 'normal') return this.plateNormal(node, values)
-    if (fam === 'bernoulli') return this.plateBernoulli(node, values)
-    return false
-  }
-
-  private addPlated(node: ModelNode & { readonly kind: 'observed' }, f: FactorSpec): void {
-    this.cx.g.addFactor(f, node.name)
-    this.cx.plated.push(node.name)
-    this.cx.layout(
-      node,
-      'observed',
-      undefined,
-      'observed',
-      new Array<null>(prod(this.cx.shapeOf(node.dims))).fill(null),
-      false,
-    )
-  }
-
-  private plateNormal(node: ModelNode & { readonly kind: 'observed' }, values: readonly number[]): boolean {
-    if (!('linear-regression-plate' in this.cx.g.ops)) return false
-    const scaleExpr = node.dist.params['scale']
-    if (scaleExpr !== undefined && !this.cx.isConst(scaleExpr)) return false
-    const scales = this.cx
-      .over(paramSym(this.cx, node.dist, 'scale'), node.dims)
-      .map((c) => (c as Cell & { kind: 'aff' }).aff.offset)
-    const scale = scales[0] as number
-    if (!(scale > 0) || scales.some((v) => v !== scale)) return false
-    const locs = cellsOf(this.cx, node, 'loc', () => paramSym(this.cx, node.dist, 'loc'))
-    const design = this.designRows(locs, true)
-    if (design === undefined) return false
-    const d = design.size
-    const xtx = new Array<number>(d * d).fill(0)
-    const xty = new Array<number>(d).fill(0)
-    let yty = 0
-    let n = 0
-    for (const [i, row] of design.rows.entries()) {
-      const y = (values[i] as number) - (row?.offset ?? 0)
-      if (row === undefined || Number.isNaN(values[i])) continue
-      n++
-      yty += y * y
-      for (let a = 0; a < d; a++) {
-        xty[a] = (xty[a] as number) + (row.a[a] as number) * y
-        for (let b = 0; b < d; b++)
-          xtx[a * d + b] = (xtx[a * d + b] as number) + (row.a[a] as number) * (row.a[b] as number)
-      }
-    }
-    if (n === 0) return false
-    this.addPlated(node, {
-      operator: 'linear-regression-plate',
-      args: [design.vector],
-      params: { xtx, xty, yty, n, precision: 1 / scale ** 2 },
-    })
-    return true
-  }
-
-  private plateBernoulli(node: ModelNode & { readonly kind: 'observed' }, values: readonly number[]): boolean {
-    const probs = node.dist.params['probs']
-    const logits = node.dist.params['logits']
-    let link: 'probit' | 'sigmoid' | undefined
-    let argument: ExprSpec | undefined
-    if (logits !== undefined) {
-      link = 'sigmoid'
-      argument = logits
-    } else if (probs !== undefined) {
-      const e = unwrap(this.cx.nodes, probs)
-      if (e.kind === 'op' && (e.op === 'probit' || e.op === 'sigmoid')) {
-        link = e.op
-        argument = e.args[0] as ExprSpec
-      }
-    }
-    if (link === undefined || argument === undefined) return false
-    const operator = link === 'probit' ? 'probit-plate' : 'logistic-plate'
-    if (!(operator in this.cx.g.ops)) return false
-    const arg = argument
-    const cells = cellsOf(this.cx, node, `link:${link}`, () => evalSym(this.cx, arg))
-    const design = this.designRows(cells, false)
-    if (design === undefined) return false
-    const x: number[] = []
-    const y: number[] = []
-    for (const [i, row] of design.rows.entries()) {
-      if (row === undefined || Number.isNaN(values[i])) continue
-      x.push(...row.a)
-      y.push(values[i] as number)
-    }
-    if (y.length === 0) return false
-    this.addPlated(node, { operator, args: [design.vector], params: { X: x, y } })
-    return true
   }
 
   /** The location and scale cells of an observed normal element when one of them is a lookup by a discrete variable; absent otherwise. */
