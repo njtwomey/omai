@@ -2,11 +2,12 @@
 
 # bayesian-examples
 
-The canonical Bayesian examples as methods a page or a worker runs by name and a few knobs: each rebuilds its data and model from the knobs (a model-bound inference method closes over its data, so the configuration is all that crosses a Worker boundary), takes one inference method from a table with its own knobs and a time budget, and reads the posterior at any step of the run through derived paths of its contract. `example-method.ts` is the scaffold they are declared on (`defineExample`); the examples so far are a biased coin (and counts), Bayesian linear regression, Bayesian classification of a two-dimensional data set (probit or logistic, polynomial features), eight schools and hierarchical radon.
+The canonical Bayesian examples as methods a page or a worker runs by name and a few knobs: each rebuilds its data and model from the knobs (a model-bound inference method closes over its data, so the configuration is all that crosses a Worker boundary), takes one inference method from a table with its own knobs and a time budget, and reads the posterior at any step of the run through derived paths of its contract. `example-method.ts` is the scaffold they are declared on (`defineExample`); the examples so far are a biased coin (and counts), Bayesian linear regression, Bayesian classification of a two-dimensional data set (probit or logistic, polynomial features), eight schools, hierarchical radon and Gaussian process classification.
 
 - estimator `classifier-method.ts` (file): Bayesian probit or logistic classifier on 2-D data: one chosen inference method with its knobs. `src/lib/bayesian-examples/classifier-method.ts:1` `omai-engine/bayesian-examples`
 - estimator `coin-method.ts` (file): Biased coin (Beta-Bernoulli) or counts (Gamma-Poisson): one inference method checked against the exact posterior. `src/lib/bayesian-examples/coin-method.ts:1` `omai-engine/bayesian-examples`
 - estimator `eight-schools-method.ts` (file): Eight schools hierarchical model (centred, non-centred, pooled, unpooled): data, model and inference as knobs. `src/lib/bayesian-examples/eight-schools-method.ts:1` `omai-engine/bayesian-examples`
+- estimator `gp-classification-method.ts` (file): Gaussian process classification: latent GP, Bernoulli link, one inference method, NUTS reference. `src/lib/bayesian-examples/gp-classification-method.ts:1` `omai-engine/bayesian-examples`
 - estimator `linear-regression-method.ts` (file): Bayesian linear regression: polynomial data with known truth, one inference method, checked against the exact posterior. `src/lib/bayesian-examples/linear-regression-method.ts:1` `omai-engine/bayesian-examples`
 - estimator `radon-method.ts` (file): Hierarchical radon (pooled, unpooled, partial pooling, varying slopes) over counties of unequal size. `src/lib/bayesian-examples/radon-method.ts:1` `omai-engine/bayesian-examples`
 
@@ -14,4 +15,5 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 
 - estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:510` `omai-engine/bayesian-examples`
 - estimator `coinMethod`: Biased coin method: Beta-Bernoulli or Gamma-Poisson, one inference method, checked against the exact posterior. `src/lib/bayesian-examples/coin-method.ts:280` `omai-engine/bayesian-examples`
+- estimator `gpClassificationMethod`: Gaussian process classification method: GP prior on the latent function, Bernoulli link, one inference method. `src/lib/bayesian-examples/gp-classification-method.ts:929` `omai-engine/bayesian-examples`
 - estimator `linearRegressionMethod`: Bayesian linear regression method: polynomial data, known or learned noise, one inference method. `src/lib/bayesian-examples/linear-regression-method.ts:447` `omai-engine/bayesian-examples`
