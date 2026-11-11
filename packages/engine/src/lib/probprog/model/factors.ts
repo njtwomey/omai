@@ -167,21 +167,22 @@ class Compiler {
   private readonly logScale = new Map<string, string>()
   /** The apply factors made so far: the input variable and the chain of steps behind each output, so arithmetic on an output collapses into one chain. */
   private readonly applied = new Map<string, { readonly input: string; readonly steps: readonly ApplyStep[] }>()
-  /** The normal-gamma pairs (a Gaussian mean and the precision its variance shares), by the name of the precision's node and of the mean's. */
-  private readonly normalGammaOf = new Map<string, NormalGammaPlan>()
+  /** The normal-gamma pairs (a Gaussian mean and the precision its variance shares), by the name of the mean's node. */
   private readonly normalGammaByMean = new Map<string, NormalGammaPlan>()
   /** The observed Gaussian nodes of a normal-gamma pair, with the known multiple of the precision each carries. */
   private readonly normalGammaObserved = new Map<
     string,
     { readonly plan: NormalGammaPlan; readonly multiple: number }
   >()
-  /** The Wishart (or inverse-Wishart) matrix latents: the variable that carries the precision matrix, its order and whether the site is the covariance. */
   /** The correlation latents (`(rho + 1) / 2` is the beta variable that carries each). */
   private readonly correlations = new Map<string, string>()
+  /** The Wishart (or inverse-Wishart) matrix latents: the variable that carries the precision matrix, its order and whether the site is the covariance. */
   private readonly wisharts = new Map<
     string,
     { readonly variable: string; readonly d: number; readonly covariance: boolean }
   >()
+  /** The cells of the parameters of observed nodes over their dimensions, by `node|key`, made once (`cellsOf`; the gated mean of a node stores its `loc` here too). */
+  private readonly cells = new Map<string, Cell[]>()
   /** The custom functions the compiler has evaluated or read as a matrix, so a node that calls only these is not opaque. */
   readonly handledCustoms = new Set<string>()
   private readonly nodes = new Map<string, ModelNode>()
@@ -1517,7 +1518,6 @@ class Compiler {
       kappa,
       observed: observed.map((n) => n.name),
     }
-    this.normalGammaOf.set(node.name, plan)
     this.normalGammaByMean.set(mean.name, plan)
     for (const n of observed) this.normalGammaObserved.set(n.name, { plan, multiple: multiples.get(n.name) as number })
     this.g.addVariable({ name: plan.variable, family: { kind: 'normal-gamma' } })
@@ -1912,6 +1912,8 @@ class Compiler {
     }
     this.layout(node, 'observed', undefined, node.dims.length === 0 ? 'scalar' : 'observed', vars, false)
   }
+
+  // ----- Gaussian latents: a transition from the previous state, projected and truncated priors, the normal and its groups -----
 
   /**
    * A multivariate normal latent whose mean is `F w + c` for a known matrix and another Gaussian vector `w` (the step of a linear
@@ -3196,8 +3198,6 @@ class Compiler {
       throw e
     }
   }
-
-  private readonly cells = new Map<string, Cell[]>()
 
   /** The cells of a distribution parameter or a link's argument of an observed node over its dimensions, made once. */
   private cellsOf(node: ModelNode, key: string, make: () => Sym): Cell[] {
