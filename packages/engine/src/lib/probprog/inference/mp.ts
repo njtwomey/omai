@@ -71,11 +71,18 @@ export interface MpSpecOptions {
    * finer anytime steps, and a graph that draws row by row).
    */
   readonly plates?: 'vectorise' | 'expand'
+  /**
+   * Whether the scalar normal latents an observed node reads together (`a + b * x`) are compiled as one joint Gaussian vector
+   * (see `toFactorGraph`). Default true for expectation propagation: as separate scalars the loop between them is loopy
+   * Gaussian belief propagation, whose marginal spreads come out two to three times too small; as one vector the correlation is
+   * kept. Default false for the others (a variational method over a joint vector is not mean-field).
+   */
+  readonly packScalars?: boolean
 }
 
-function prepare(model: MethodModel, plates: 'vectorise' | 'expand'): Prepared | undefined {
+function prepare(model: MethodModel, plates: 'vectorise' | 'expand', packScalars: boolean): Prepared | undefined {
   if (typeof model === 'function') return undefined
-  const compiled = toFactorGraph(model, { analysis: analyseSpec(model), plates })
+  const compiled = toFactorGraph(model, { analysis: analyseSpec(model), plates, packScalars })
   if (compiled.graph === undefined) return { compiled, graph: undefined, failure: undefined }
   try {
     return { compiled, graph: compileGraph(compiled.graph, factorOperators()), failure: undefined }
@@ -128,7 +135,7 @@ function specMethod<P extends string>(
 ): InferenceMethod<MpState, Config, P, ModelAnalysis> {
   const name = options.name ?? rule
   const title = TITLE[rule]
-  const prepared = prepare(model, options.plates ?? 'vectorise')
+  const prepared = prepare(model, options.plates ?? 'vectorise', options.packScalars ?? rule === 'ep')
   const knobs = messagePassingKnobs(rule)
   const check = (a: ModelAnalysis): Verdict => {
     if (prepared === undefined)
@@ -212,7 +219,7 @@ function specMethod<P extends string>(
  * sweep per step. The marginals come back as a `Posterior` by site name; the tape has the engine's `mp/*` paths.
  *
  * @param model - A bound spec.
- * @param options - A name for the method (default `ep`) and how the plates are compiled (`plates`).
+ * @param options - A name for the method (default `ep`), how the plates are compiled (`plates`) and whether scalars sharing a predictor are packed (`packScalars`, on by default).
  * @returns The method, with `check` (why a model has no factor graph, or an operator no rule) and `posterior`.
  * @concept expectation-propagation
  * @index estimator Expectation propagation on a model spec's factor graph, posterior by site.
