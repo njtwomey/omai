@@ -10,7 +10,8 @@
 # 4. clears the Vite and Vitest caches (a stale glob hid new pages more than once) and nudges the dev server's file lists;
 # 5. runs the EP suite (`make ep-check`) with a long timeout plus a vitest filter per changed engine domain, and prints one
 #    line per step.
-# A branch is merged after it has merged main itself (agents are told to), so conflicts here are rare and small.
+# Light by default (the fan matters): the merge, the generated files, the static checks and tsc, and only the tests of the changed
+# engine domains' own files; FULL=1 adds the whole EP suite and the broad filters. A branch is merged after it has merged main itself (agents are told to), so conflicts here are rare and small.
 set -u
 branch="${1:?usage: scripts/integrate.sh <branch> [message] [vitest filters...]}"
 message="${2:-Merge $branch}"
@@ -46,5 +47,14 @@ touch apps/pocs/src/shared/ep/atomSource.ts apps/pocs/src/registry.ts 2>/dev/nul
 filters="$(echo "$changed" | sed -n 's#^packages/engine/src/lib/\([^/]*\(/[^/]*\)\?\)/.*#\1#p' | sort -u | tr '\n' ' ')"
 export OMAI_TEST_WORKERS="${OMAI_TEST_WORKERS:-3}" OMAI_TEST_TIMEOUT=60000
 # shellcheck disable=SC2086
-run tests mise exec -- pnpm exec vitest run ep- message-passing probprog/model probprog/inference apps/pocs/src/registry $filters "$@"
+if [ "${FULL:-0}" = "1" ]; then
+  run tests mise exec -- pnpm exec vitest run ep- message-passing probprog/model probprog/inference apps/pocs/src/registry $filters "$@"
+else
+  changed_tests="$(echo "$changed" | grep -E '\.test\.tsx?$' | tr '\n' ' ')"
+  if [ -n "$changed_tests" ]; then
+    export OMAI_TEST_WORKERS=1
+    # shellcheck disable=SC2086
+    run tests nice -n 15 mise exec -- pnpm exec vitest run $changed_tests "$@"
+  else step tests "none changed (light mode: FULL=1 for the EP suite)"; fi
+fi
 echo; printf '%s\n' "${summary[@]}"
