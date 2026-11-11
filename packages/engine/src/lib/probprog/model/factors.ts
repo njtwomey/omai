@@ -53,7 +53,6 @@ import type { BoundModel } from './bind.ts'
 import { eventToDims } from './event-dims.ts'
 import {
   discreteRowGate,
-  factorName,
   type GateBranch,
   GateBuilder,
   precisionBranch,
@@ -84,8 +83,14 @@ import {
   unwrap,
 } from './factor-graph/_idioms.ts'
 import {
+  observedBernoulli,
+  observedConjugate,
+  observedFailures,
+  observedGammaRate,
+  observedMixtureWeight,
+} from './factor-graph/_mappings/observed-conjugate.ts'
+import {
   hiddenSwitch,
-  observedRowGate,
   observedSwitch,
   observedSwitchLogScale,
   switchedCells,
@@ -101,7 +106,6 @@ import {
 import { addPlated, plate } from './factor-graph/_mappings/plates.ts'
 import {
   cellsOf,
-  constAt,
   constParam,
   discreteParents,
   evalNamedValue,
@@ -1981,16 +1985,16 @@ class Compiler {
         if (!(y > 0)) throw new Refusal('data', `'${node.name}' is log-normal: the outcome ${y} must be positive`)
         return this.observedGaussian(node, name, Math.log(y), i, index, 'mu', 'sigma')
       case 'bernoulli':
-        return this.observedBernoulli(node, name, y, i, index)
+        return observedBernoulli(this.cx, node, name, y, i, index)
       case 'binomial':
       case 'poisson': {
         const numeric = observedNumeric(this.cx, node, fam, y, i, index)
-        return numeric !== undefined ? numeric : this.observedConjugate(node, fam, name, y, i)
+        return numeric !== undefined ? numeric : observedConjugate(this.cx, node, fam, name, y, i)
       }
       case 'categorical':
         if (node.dist.params['logits'] !== undefined)
           return observedMulticlass(this.cx, node, y, i, index, 'logits', 'logit')
-        return this.observedConjugate(node, fam, name, y, i)
+        return observedConjugate(this.cx, node, fam, name, y, i)
       case 'categoricalProbit':
         return observedMulticlass(this.cx, node, y, i, index, 'scores', 'probit')
       case 'zeroTruncatedPoisson': {
@@ -2005,16 +2009,16 @@ class Compiler {
       case 'hurdlePoisson':
         return observedHurdle(this.cx, node, y, i, index)
       case 'normalPair':
-        return this.observedMixtureWeight(node, name, y, i)
+        return observedMixtureWeight(this.cx, node, name, y, i)
       case 'exponential':
       case 'gamma':
-        return this.observedGammaRate(node, fam, name, y, i)
+        return observedGammaRate(this.cx, node, fam, name, y, i)
       case 'geometric':
-        return this.observedFailures(node, fam, name, y, i)
+        return observedFailures(this.cx, node, fam, name, y, i)
       case 'negativeBinomial':
       case 'weibull': {
         const numeric = observedNumeric(this.cx, node, fam, y, i, index)
-        if (numeric === undefined && fam === 'negativeBinomial') return this.observedFailures(node, fam, name, y, i)
+        if (numeric === undefined && fam === 'negativeBinomial') return observedFailures(this.cx, node, fam, name, y, i)
         if (numeric === undefined)
           throw new Refusal(
             'operator',
@@ -2247,199 +2251,6 @@ class Compiler {
     const mean = this.cx.g.portOf(loc, node.name, index)
     this.cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
     this.cx.g.addFactor(precisionFactor(name, mean, tau), name)
-    return name
-  }
-
-  private observedBernoulli(
-    node: ModelNode & { readonly kind: 'observed' },
-    name: string,
-    y: number,
-    i: number,
-    index: number | undefined,
-  ): string | null {
-    const probs = node.dist.params['probs']
-    const logits = node.dist.params['logits']
-    const link = (op: string, arg: ExprSpec, params: Record<string, Json> = {}): string | null => {
-      const factor = factorName(this.cx.modelOps, op)
-      this.cx.g.need(factor)
-      const c = cellsOf(this.cx, node, `link:${op}`, () => evalSym(this.cx, arg))[i] as Cell
-      if (isConstCell(c)) return null
-      const x = this.cx.g.materialise(affOf(c), node.name, index) as string
-      this.cx.g.addVariable({ name, family: { kind: 'bernoulli' }, observed: y })
-      this.cx.g.addFactor({ operator: factor, args: [name, x], params }, name)
-      return name
-    }
-    if (logits !== undefined) return link('sigmoid', logits)
-    if (probs === undefined) throw new Refusal('structure', `'${node.name}': give probs or logits`)
-    const e = unwrap(this.cx.nodes, probs)
-    if (e.kind === 'op' && e.op === 'probit') return link('probit', e.args[0] as ExprSpec)
-    if (e.kind === 'op' && e.op === 'sigmoid') return link('sigmoid', e.args[0] as ExprSpec)
-    if (e.kind === 'op' && e.op === 'gt') {
-      const threshold = this.cx.evalNamed(e.args[1] as ExprSpec)
-      const cell = this.cx.over(this.cx.fromNamed(threshold), node.dims)[i] as Cell & { kind: 'aff' }
-      return link('gt', e.args[0] as ExprSpec, { threshold: cell.aff.offset })
-    }
-    const p = paramCell(this.cx, node, 'probs', i)
-    if (isConstCell(p)) return null
-    if (p.kind === 'rv' && p.family === 'beta') {
-      this.cx.g.addVariable({ name, family: { kind: 'bernoulli' }, observed: y })
-      this.cx.g.addFactor({ operator: 'bernoulli', args: [name, p.variable] }, name)
-      return name
-    }
-    throw new Refusal(
-      'operator',
-      `the probability of '${node.name}' is not a link of an affine value (probit, sigmoid, a comparison) or a beta latent: no message rule`,
-    )
-  }
-
-  /**
-   * An observed exponential or gamma value (a known shape) whose rate is a gamma latent or a known multiple of one: the conjugate
-   * `gamma-observed` factor, a gamma message to the rate (a waiting time with a gamma prior on the rate).
-   */
-  private observedGammaRate(
-    node: ModelNode & { readonly kind: 'observed' },
-    fam: string,
-    name: string,
-    y: number,
-    i: number,
-  ): string | null {
-    if (!(y > 0)) throw new Refusal('data', `'${node.name}' is ${fam}: the value ${y} must be positive`)
-    const shape = fam === 'gamma' ? constAt(this.cx, node, node.dist.params['concentration'] as ExprSpec, i) : 1
-    const target = paramCell(this.cx, node, 'rate', i)
-    if (isConstCell(target)) return null
-    const tau = scaledOf(target)
-    if (tau === undefined || tau.offset !== 0 || !(tau.scale > 0))
-      throw new Refusal(
-        'operator',
-        `the rate of '${node.name}' must be a gamma latent or a known multiple of one for the conjugate '${fam}' operator, it is not`,
-      )
-    this.cx.g.need('gamma-observed')
-    this.cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
-    this.cx.g.addFactor(
-      {
-        operator: 'gamma-observed',
-        args: [name, tau.variable],
-        params: { shape, ...(tau.scale === 1 ? {} : { scale: tau.scale }) },
-      },
-      name,
-    )
-    return name
-  }
-
-  /**
-   * An observed two-component mixture with known means and scale and a beta weight (`normalPair`, the switch summed out): the
-   * `mixture-weight` factor on the weight, with the likelihood of the value under each component.
-   */
-  private observedMixtureWeight(
-    node: ModelNode & { readonly kind: 'observed' },
-    name: string,
-    y: number,
-    i: number,
-  ): string | null {
-    const target = paramCell(this.cx, node, 'weight', i)
-    if (isConstCell(target)) return null
-    if (target.kind !== 'rv' || target.family !== 'beta')
-      throw new Refusal(
-        'operator',
-        `the weight of '${node.name}' must be a beta latent for the 'mixture-weight' operator`,
-      )
-    const [low, high, scale] = ['low', 'high', 'scale'].map((k) =>
-      constAt(this.cx, node, node.dist.params[k] as ExprSpec, i),
-    )
-    const density = (m: number): number =>
-      Math.exp(-0.5 * ((y - m) / (scale as number)) ** 2) / ((scale as number) * Math.sqrt(2 * Math.PI))
-    this.cx.g.need('mixture-weight')
-    this.cx.g.addFactor(
-      {
-        operator: 'mixture-weight',
-        args: [target.variable],
-        params: { l1: density(high as number), l0: density(low as number) },
-      },
-      name,
-    )
-    return null
-  }
-
-  /**
-   * An observed geometric (trials up to the first success) or negative binomial (failures before the `n`-th success, `n` known)
-   * count whose success probability is a beta latent: the conjugate `negative-binomial-beta` factor.
-   */
-  private observedFailures(
-    node: ModelNode & { readonly kind: 'observed' },
-    fam: string,
-    name: string,
-    y: number,
-    i: number,
-  ): string | null {
-    const geometric = fam === 'geometric'
-    const failures = geometric ? y - 1 : y
-    if (!(failures >= 0 && Number.isInteger(failures)))
-      throw new Refusal('data', `'${node.name}' is ${fam}: the count ${y} is not on its support`)
-    const successes = geometric ? 1 : constAt(this.cx, node, node.dist.params['n'] as ExprSpec, i)
-    const target = paramCell(this.cx, node, 'probs', i)
-    if (isConstCell(target)) return null
-    if (target.kind !== 'rv' || target.family !== 'beta')
-      throw new Refusal(
-        'operator',
-        `the probs of '${node.name}' must be a beta latent for the conjugate '${fam}' operator, it is not`,
-      )
-    this.cx.g.need('negative-binomial-beta')
-    this.cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: failures })
-    this.cx.g.addFactor(
-      { operator: 'negative-binomial-beta', args: [name, target.variable], params: { successes } },
-      name,
-    )
-    return name
-  }
-
-  private observedConjugate(
-    node: ModelNode & { readonly kind: 'observed' },
-    fam: string,
-    name: string,
-    y: number,
-    i: number,
-  ): string | null {
-    const param = fam === 'poisson' ? 'rate' : 'probs'
-    const expr = node.dist.params[param]
-    if (expr === undefined) throw new Refusal('structure', `'${node.name}': the ${param} is missing`)
-    // A word read through a discrete index of Dirichlet rows (`phi.at(z)`, a topic model): a gate over the index.
-    if (fam === 'categorical' && randomTransitionRow(this.cx.idiom, expr) !== undefined)
-      return observedRowGate(this.cx, node, name, y, i, expr)
-    let exposure = 1
-    let target: Cell
-    const e = unwrap(this.cx.nodes, expr)
-    if (fam === 'poisson' && e.kind === 'op' && e.op === 'mul') {
-      const [a, b] = e.args as [ExprSpec, ExprSpec]
-      const [k, r] = this.cx.isConst(a) ? [a, b] : [b, a]
-      if (!this.cx.isConst(k))
-        throw new Refusal('operator', `the rate of '${node.name}' is a product of two random values`)
-      exposure = (this.cx.over(this.cx.fromNamed(this.cx.evalNamed(k)), node.dims)[i] as Cell & { kind: 'aff' }).aff
-        .offset
-      target = this.cx.over(evalSym(this.cx, r), node.dims)[i] as Cell
-    } else target = paramCell(this.cx, node, param, i)
-    if (isConstCell(target)) return null
-    const want: FamilyKind = fam === 'poisson' ? 'gamma' : fam === 'binomial' ? 'beta' : 'dirichlet'
-    if (target.kind !== 'rv' || target.family !== want)
-      throw new Refusal(
-        'operator',
-        `the ${param} of '${node.name}' must be a ${want} latent for the conjugate '${fam}' operator, it is not`,
-      )
-    if (fam === 'poisson') {
-      this.cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
-      this.cx.g.addFactor({ operator: 'poisson', args: [name, target.variable], params: { exposure } }, name)
-    } else if (fam === 'binomial') {
-      const trials = (
-        this.cx.over(this.cx.fromNamed(this.cx.evalNamed(node.dist.params['n'] as ExprSpec)), node.dims)[i] as Cell & {
-          kind: 'aff'
-        }
-      ).aff.offset
-      this.cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
-      this.cx.g.addFactor({ operator: 'binomial', args: [name, target.variable], params: { n: trials } }, name)
-    } else {
-      const size = this.cx.g.sizeOf(target.variable)
-      this.cx.g.addVariable({ name, family: { kind: 'discrete', size }, observed: y })
-      this.cx.g.addFactor({ operator: 'discrete', args: [name, target.variable] }, name)
-    }
     return name
   }
 }
