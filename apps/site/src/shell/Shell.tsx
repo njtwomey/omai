@@ -25,8 +25,10 @@ export function Shell(props: {
   readonly sections?: readonly { readonly path: string; readonly title: string }[]
   /** The name beside the logo (default `omai`). */
   readonly brand?: string
+  /** Breadcrumbs shown after the name in the top bar (the proofs of concept app's trail: group and page, each a drop-down). */
+  readonly crumbs?: ReactNode
 }): ReactNode {
-  const { path, children, sidebar, sections = SECTIONS, brand = 'omai' } = props
+  const { path, children, sidebar, sections = SECTIONS, brand = 'omai', crumbs } = props
   // On narrow screens the sidebar is a drawer, closed again by navigating.
   const [drawer, setDrawer] = useState(false)
   // biome-ignore lint/correctness/useExhaustiveDependencies: close on every change of page
@@ -59,6 +61,7 @@ export function Shell(props: {
           <span className="size-3 rounded-sm bg-gradient-to-br from-[#1f77b4] via-[#2ca02c] to-[#ff7f0e]" />
           {brand}
         </Link>
+        {crumbs}
         <nav className="flex gap-1 text-sm">
           {sections.map((s) => (
             <Link

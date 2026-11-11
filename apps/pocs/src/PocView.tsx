@@ -1,7 +1,6 @@
 import { type ReactNode, Suspense } from 'react'
 import { ErrorBoundary } from '../../site/src/shell/ErrorBoundary.tsx'
 import { Link } from '../../site/src/shell/Link.tsx'
-import { GROUPS } from './groups.ts'
 import { POCS, pageOf } from './registry.ts'
 
 /** One proof of concept: its title and summary, then its page (loaded when first opened). */
@@ -19,22 +18,11 @@ export function PocView(props: { readonly slug: string }): ReactNode {
       </p>
     )
   }
-  const group = GROUPS.find((g) => g.slug === entry.group)
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <p className="flex gap-3 text-xs text-muted">
-          <Link to="/" className="hover:text-fg">
-            ← all proofs of concept
-          </Link>
-          {group === undefined ? null : (
-            <Link to={`/group/${group.slug}`} className="hover:text-fg">
-              {group.title}
-            </Link>
-          )}
-        </p>
-        <h1 className="text-xl font-semibold tracking-tight">{entry.title}</h1>
-        <p className="max-w-3xl text-sm text-muted">{entry.summary}</p>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <h1 className="text-lg font-semibold tracking-tight">{entry.title}</h1>
+        <p className="min-w-0 max-w-3xl flex-1 text-sm text-muted">{entry.summary}</p>
       </div>
       <ErrorBoundary>
         <Suspense fallback={<p className="text-sm text-muted">Loading…</p>}>

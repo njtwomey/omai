@@ -2,11 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { usePath } from '../../site/src/shell/router.ts'
 import { Shell } from '../../site/src/shell/Shell.tsx'
+import { Crumbs } from './Crumbs.tsx'
 import { Index } from './Index.tsx'
 import { PocView } from './PocView.tsx'
 import './styles.css'
-
-const SECTIONS = [{ path: '/', title: 'Proofs of concept' }] as const
 
 function App() {
   const path = usePath()
@@ -15,8 +14,9 @@ function App() {
   return (
     <Shell
       path={path === '/' || slug !== undefined || group !== undefined ? '/' : path}
-      sections={SECTIONS}
+      sections={[]}
       brand="omai pocs"
+      crumbs={<Crumbs group={group} slug={slug} />}
     >
       {slug !== undefined ? (
         <PocView key={slug} slug={slug} />
