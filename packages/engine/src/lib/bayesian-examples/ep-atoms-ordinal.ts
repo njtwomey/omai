@@ -320,7 +320,9 @@ function quantileLearnedProblem(k: Config): AtomProblem {
   const kk = key(seed)
   const x = Array.from(toFlat(uniform(foldIn(kk, 0), [n])), (v) => 4 * v - 2)
   const q = toFlat(uniform(foldIn(kk, 1), [n]))
-  const noise = (p: number): number => (p < tau ? Math.log(p / tau) / (1 - tau) : -Math.log((1 - p) / (1 - tau)) / tau)
+  const below = (p: number): number => Math.log(p / tau) / (1 - tau)
+  const above = (p: number): number => -Math.log((1 - p) / (1 - tau)) / tau
+  const noise = (p: number): number => (p < tau ? below(p) : above(p))
   const y = x.map((xi, i) => trueA + trueB * xi + scale * noise(q[i] ?? 0.5))
   const definition = defineModel('quantile-regression-learned', (m) => {
     const row = m.range('row')
