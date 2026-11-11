@@ -30,12 +30,9 @@ import {
   mpVerdict,
   projectionOf,
   type ScheduleKind,
-  takesPower,
   type VmpPath,
   vmpMethod,
-  withPowers,
 } from '../../message-passing/index.ts'
-import { dict, real } from '../../space/index.ts'
 import { type Config, type Contract, defineContract, derived, Log, runAlgorithm } from '../../trace/index.ts'
 import { factorGraphPosterior, factorGraphVerdict, type MessageRule } from '../model/factors.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
@@ -49,6 +46,7 @@ import {
   prepare,
   yes,
 } from './_support.ts'
+import { atPower, epRunKnobs, powerOf } from './ep-knobs.ts'
 import { defineInferenceMethod, type InferenceMethod, type Verdict } from './method.ts'
 
 /** The paths an expectation propagation or belief propagation method logs: the engine's, and the posterior of a state as JSON. */
@@ -134,33 +132,15 @@ function specMethod<P extends string>(
   const prepared = prepare(model, options.plates ?? 'vectorise', options.packScalars ?? rule === 'ep')
   const base = messagePassingKnobs(rule)
   // Expectation propagation also takes the power of fractional EP, on every factor whose operator supports one (the likelihood
-  // links, the softmax site, the shape and concentration sites, unary functions).
-  const knobs =
-    rule === 'ep'
-      ? {
-          ...base,
-          config: dict({
-            ...base.config.spaces,
-            power: real(0.05, 2, {
-              default: 1,
-              label: 'power',
-              description:
-                'fractional EP: the power of every factor that supports one (1 is EP). Below 1 the spreads of variables that many factors share come out wider: where one Gaussian per variable leaves them too narrow (the class slopes of a softmax classifier), a power near 5 / rows restores the coverage of their intervals',
-            }),
-          }),
-        }
-      : base
+  // links, the softmax site, the shape and concentration sites, unary functions): the knobs are the shared declaration.
+  const knobs = rule === 'ep' ? { ...base, config: epRunKnobs('ep') } : base
   const powered = new Map<number, CompiledGraph | undefined>()
   /** The graph at the configuration's power (the prepared one at 1): the factors that take a power get it, the others stay at 1. */
   const graphAt = (config: Config): CompiledGraph | undefined => {
     const g = prepared?.graph
-    const p = typeof config['power'] === 'number' ? config['power'] : 1
+    const p = powerOf(config)
     if (g === undefined || p === 1 || rule !== 'ep') return g
-    if (!powered.has(p))
-      powered.set(
-        p,
-        withPowers(g, (f) => (takesPower(f.operator, f.params) ? p : 1)),
-      )
+    if (!powered.has(p)) powered.set(p, atPower(g, p))
     return powered.get(p)
   }
   const check = (a: ModelAnalysis): Verdict => {

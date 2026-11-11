@@ -41,6 +41,7 @@ import {
   prepare,
   yes,
 } from './_support.ts'
+import { atPower, epRunKnobs, epRunSettings, powerOf } from './ep-knobs.ts'
 import { defineInferenceMethod, type InferenceMethod, type Verdict } from './method.ts'
 
 /** The paths the multi-start method logs. */
@@ -105,9 +106,8 @@ export const epMultiStartKnobs: DictSpace = dict({
     label: 'merge tolerance',
     description: 'two runs are one mode when every site mean differs by less than this share of the larger sd',
   }),
-  tol: real(1e-12, 1e-2, { log: true, default: 1e-9, description: 'the tolerance of each EP run' }),
-  maxSweeps: int(1, 10_000, { default: 300, description: 'the sweeps of each EP run, at most' }),
-  damping: real(0, 0.95, { default: 0, description: 'the damping of each EP run' }),
+  // The knobs of each EP run (schedule, damping, improper, tol, maxSweeps, restarts, power): the shared declaration.
+  ...epRunKnobs('ep-multistart').spaces,
 })
 
 /** Options of {@link epMultiStartMethod}. */
@@ -391,11 +391,13 @@ export function epMultiStartMethod(
       const starts = num(config, 'starts')
       const jitter = num(config, 'jitter')
       const exclusions = flag(config, 'exclusions')
-      const settings = { tol: num(config, 'tol'), maxSweeps: num(config, 'maxSweeps'), damping: num(config, 'damping') }
+      const settings = epRunSettings(config)
+      const maxSweeps = num(config, 'maxSweeps')
+      const power = powerOf(config)
       const graph = (): CompiledGraph => {
         if (prepared?.graph === undefined)
           throw new OmaiError('value', `${name}: ${prepared?.failure ?? 'the model has no factor graph'}`)
-        return prepared.graph
+        return atPower(prepared.graph, power)
       }
       const merge = num(config, 'merge')
       const labels = pick(config, 'labels')
@@ -408,7 +410,7 @@ export function epMultiStartMethod(
       ): StartRun => {
         const g = graph()
         const r = runAlgorithm(epAlgorithm(g, { ...settings, ...(initial.length === 0 ? {} : { initial }) }), {
-          maxSteps: settings.maxSweeps + 2,
+          maxSteps: maxSweeps + 2,
           seed: 1,
         })
         const final = r.state as MpState
@@ -466,7 +468,7 @@ export function epMultiStartMethod(
       }
       return {
         name: 'probprog/ep-multistart-method',
-        config: { starts, jitter, exclusions, labels, merge, ...settings },
+        config: { starts, jitter, exclusions, labels, merge, ...settings, power },
         init: (): EpMultiStartState => {
           graph()
           return { runs: [] }

@@ -22,8 +22,11 @@ import { defaults } from '../../space/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { type Config, type Session, session } from '../../trace/index.ts'
 import {
+  checkKnobKeys,
   type EpGridState,
+  type EpKnobs,
   epRoute,
+  epRunKnobs,
   epSpecMethod,
   type InferenceMethod,
   type ModelAnalysis,
@@ -217,8 +220,8 @@ export interface AtomSpec<K extends Config> {
   readonly knobs: DictSpace
   /** The problem a configuration of the knobs makes. */
   readonly problem: (knobs: K) => AtomProblem
-  /** Knobs of EP the atom opens on, over the method's defaults (`{ damping: 0.3 }` for an atom that needs it). */
-  readonly ep?: Readonly<Record<string, number | string | boolean>>
+  /** Knobs of EP the atom opens on, over the method's defaults (`{ damping: 0.3 }` for an atom that needs it); a key that is not a knob is refused. */
+  readonly ep?: EpKnobs
   /**
    * The name of the basic atom this one extends: the same setup in which the numbers the basic atom fixes are unknown,
    * with priors, and the data are simulated from a stated truth (knobs: the true values and a `seed`). Set together with
@@ -240,8 +243,8 @@ export interface EpAtom<K extends Config = Config> extends AtomSpec<K> {
  *
  * @param spec - What the atom declares.
  * @returns The atom, with its default knobs.
- * @throws OmaiError with code `value` for an atom with no name, no factors, a `planned` atom with no plan, or one that
- * gives `extends` without `recovery` (or the reverse).
+ * @throws OmaiError with code `value` for an atom with no name, no factors, a `planned` atom with no plan, one that
+ * gives `extends` without `recovery` (or the reverse), or an `ep` with a key that is not an EP knob.
  * @concept expectation-propagation
  * @example
  * ```ts
@@ -254,6 +257,7 @@ export function defineAtom<K extends Config>(spec: AtomSpec<K>): EpAtom<K> {
     throw new OmaiError('value', 'defineAtom: an atom has a name and the factors it exercises')
   if (spec.expected === 'planned' && (spec.plan === undefined || spec.plan === ''))
     throw new OmaiError('value', `defineAtom: the planned atom '${spec.name}' says where its rule is planned`)
+  if (spec.ep !== undefined) checkKnobKeys(`defineAtom: '${spec.name}'`, spec.ep, epRunKnobs('ep'))
   if ((spec.extends === undefined) !== (spec.recovery === undefined))
     throw new OmaiError('value', `defineAtom: '${spec.name}' gives both 'extends' and 'recovery' or neither`)
   return { ...spec, defaults: defaults(spec.knobs) as K }
@@ -575,9 +579,10 @@ export function atomBeliefs(
  * a model-run record. A problem the library refuses is not run: the result carries the library's verdict.
  *
  * @param problem - The problem.
- * @param ep - The knobs of EP over its defaults (damping, schedule, tolerance, the sweep cap).
+ * @param ep - The knobs of EP over its defaults (damping, schedule, tolerance, the sweep cap, the power).
  * @param options - `light` keeps no tape and no per-sweep beliefs (only the final ones): what a calibration over many seeds needs.
  * @returns The run, or the refusal.
+ * @throws OmaiError with code `value` for a key of `ep` that is not a knob of the method (a misspelled knob would run on the defaults).
  * @concept expectation-propagation
  * @index function Run EP on an atom's model: beliefs per sweep, a message record, or the refusal.
  * @example
@@ -594,6 +599,8 @@ export function atomRun(problem: AtomProblem, ep: Config = {}, options: { readon
   // (a covariance that is a custom function of a random value makes it a grid over that value)
   const route = epRoute(bound)
   // endregion
+  // a misspelled knob is an error, not a run on the defaults
+  checkKnobKeys('atomRun', ep, route.method?.config ?? epRunKnobs('ep'))
   if (route.via === 'none') return { status: 'refused', reason: route.verdict.reason, missing: route.verdict.missing }
   const config: Config = { tol: 1e-9, ...ep }
   const maxSweeps = typeof config['maxSweeps'] === 'number' ? config['maxSweeps'] : 200
