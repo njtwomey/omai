@@ -19,6 +19,15 @@ export function factorName(table: OperatorTable, op: string): string {
   return table[op]?.factor ?? op
 }
 
+/** How much a graph under construction held when `checkpoint` was taken (what `restore` cuts back to). */
+export interface BuilderCheckpoint {
+  readonly variables: number
+  readonly factors: number
+  readonly auxiliary: number
+  readonly auxNames: number
+  readonly atoms: number
+}
+
 /** The variables, factors and names of a graph being built, against a registry of factor operators. */
 export class GraphBuilder {
   readonly variables: VariableSpec[] = []
@@ -27,6 +36,8 @@ export class GraphBuilder {
   /** The scalar random values the affine forms are made of, by key (see `atomKey`). */
   readonly atoms: Map<string, Atom> = new Map()
   private readonly auxCount = new Map<string, number>()
+  /** The keys of `auxCount` in the order they were counted up, so `restore` can count them down again. */
+  private readonly auxLog: string[] = []
   private readonly components = new Map<string, string>()
   private readonly names = new Set<string>()
 
@@ -34,6 +45,44 @@ export class GraphBuilder {
     readonly ops: Readonly<Record<string, FactorOperator>>,
     private readonly modelOps: OperatorTable,
   ) {}
+
+  /** What the graph holds now, to `restore` it if a mapping that only tried a node finds the node is not its pattern. */
+  checkpoint(): BuilderCheckpoint {
+    return {
+      variables: this.variables.length,
+      factors: this.factors.length,
+      auxiliary: this.auxiliary.length,
+      auxNames: this.auxLog.length,
+      atoms: this.atoms.size,
+    }
+  }
+
+  /** Whether a variable, factor or auxiliary name was made since `checkpoint`. */
+  changedSince(cp: BuilderCheckpoint): boolean {
+    return (
+      this.variables.length !== cp.variables ||
+      this.factors.length !== cp.factors ||
+      this.auxiliary.length !== cp.auxiliary
+    )
+  }
+
+  /**
+   * Cut the graph back to a checkpoint: the variables, factors and auxiliary names made since are removed (with the names they took and the
+   * components and atoms they introduced), so what an attempt made leaves no residue. The counters of auxiliary names are counted down
+   * too, so the ids made after a failed attempt are the ids they would have had if it had not been made.
+   */
+  restore(cp: BuilderCheckpoint): void {
+    for (const v of this.variables.slice(cp.variables)) {
+      this.names.delete(v.name)
+      this.components.delete(v.name)
+    }
+    this.variables.length = cp.variables
+    this.factors.length = cp.factors
+    this.auxiliary.length = cp.auxiliary
+    for (const key of this.auxLog.splice(cp.auxNames)) this.auxCount.set(key, (this.auxCount.get(key) as number) - 1)
+    let k = 0
+    for (const key of [...this.atoms.keys()]) if (k++ >= cp.atoms) this.atoms.delete(key)
+  }
 
   need(name: string): FactorOperator {
     const op = this.ops[name]
@@ -95,6 +144,7 @@ export class GraphBuilder {
     const key = `${site}|${index ?? ''}`
     const k = this.auxCount.get(key) ?? 0
     this.auxCount.set(key, k + 1)
+    this.auxLog.push(key)
     const name = auxId(site, k, index)
     this.auxiliary.push(name)
     return name

@@ -1,9 +1,16 @@
-import { type FamilyKind, normalGammaPrior } from '../../../../message-passing/index.ts'
+import {
+  betaEta,
+  type FamilyKind,
+  gammaPrior,
+  normalGammaPrior,
+  priorFactor,
+} from '../../../../message-passing/index.ts'
 import { toFlat } from '../../../../tensor/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
 import { type Cell, isConstCell, prod, scaledOf } from '../_cells.ts'
 import type { Context } from '../_context.ts'
 import { logVariableOf, unwrap } from '../_idioms.ts'
+import { NOT_MINE, type NotMine } from '../_mapping.ts'
 import { constParam } from '../_params.ts'
 import { Refusal } from '../_refusal.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
@@ -21,15 +28,15 @@ export interface ConcentrationPart {
  * latent `M` with a known mean and the variance `1 / (kappa lambda)` and observed Gaussians `y ~ N(M, 1 / (c lambda))`, with
  * nothing else reading either of them; `_plan.ts` has the detection). The pair is one `normal-gamma` variable with a prior of both
  * and a `gaussian-normal-gamma` factor per observation, so the joint posterior is exactly the conjugate normal-gamma (the classic
- * normal-inverse-gamma prior on a mean and a variance). Returns false (and changes nothing) when the model is not that shape: the
+ * normal-inverse-gamma prior on a mean and a variance). Returns `NOT_MINE` (and changes nothing) when the model is not that shape: the
  * mean and precision then compile to a Gaussian with a gamma precision each.
  */
-export function latentNormalGamma(cx: Context, node: ModelNode & { readonly kind: 'latent' }): boolean {
+export function latentNormalGamma(cx: Context, node: ModelNode & { readonly kind: 'latent' }): true | NotMine {
   const detection = cx.plan.normalGamma.get(node.name)
-  if (detection === undefined) return false
+  if (detection === undefined) return NOT_MINE
   for (const name of detection.customs) cx.handledCustoms.add(name)
   if (detection.failure !== undefined) throw detection.failure
-  if (detection.pair === undefined) return false
+  if (detection.pair === undefined) return NOT_MINE
   const { plan, multiples } = detection.pair
   const inverse = plan.inverse
   const rateName = inverse ? 'scale' : 'rate'
@@ -47,6 +54,39 @@ export function latentNormalGamma(cx: Context, node: ModelNode & { readonly kind
     ...(inverse ? { reciprocal: true } : {}),
   })
   return true
+}
+
+/**
+ * A beta, gamma, inverse-gamma or exponential latent whose parameters are all known: one variable per element of the message family
+ * `kind` and its prior factor (`beta-eta`, or `gamma-prior`). An inverse gamma `x` with scale `b` is the precision `1 / x` ~ Gamma(a,
+ * rate b): the variable is that gamma and the site its reciprocal.
+ */
+export function latentKnownPrior(cx: Context, node: ModelNode & { readonly kind: 'latent' }, kind: FamilyKind): void {
+  const fam = node.dist.family
+  const inverse = fam === 'inverseGamma'
+  const rateName = inverse ? 'scale' : 'rate'
+  const shape = cx.shapeOf(node.dims)
+  const n = prod(shape)
+  const params =
+    fam === 'gamma' || inverse
+      ? [constParam(cx, node, 'concentration', 'the shape'), constParam(cx, node, rateName, 'the rate')]
+      : fam === 'exponential'
+        ? [new Array<number>(n).fill(1), constParam(cx, node, 'rate', 'the rate')]
+        : [constParam(cx, node, 'a', 'the shape'), constParam(cx, node, 'b', 'the shape')]
+  const cells: Cell[] = []
+  const vars: string[] = []
+  for (let i = 0; i < n; i++) {
+    const name = cx.g.addVariable({ name: cx.elementName(node.name, node.dims, i), family: { kind } })
+    const p = [params[0]?.[i] as number, params[1]?.[i] as number]
+    const f =
+      fam === 'beta'
+        ? priorFactor(name, betaEta(p[0] as number, p[1] as number))
+        : gammaPrior(name, p[0] as number, p[1] as number)
+    cx.g.addFactor(f, name)
+    cells.push(inverse ? { kind: 'recip', variable: name, scale: 1 } : { kind: 'rv', variable: name, family: kind })
+    vars.push(name)
+  }
+  cx.finishLatent(node, kind, cells, vars, inverse ? { reciprocal: true } : {})
 }
 
 /**

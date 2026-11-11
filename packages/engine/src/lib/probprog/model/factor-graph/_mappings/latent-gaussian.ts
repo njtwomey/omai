@@ -11,6 +11,7 @@ import { type GateBranch, GateBuilder, precisionBranch, precisionFactor } from '
 import { affOf, type Cell, combine, isConstCell, logName, type Precision, prod } from '../_cells.ts'
 import type { Context } from '../_context.ts'
 import { precisionExpr, stripClip } from '../_idioms.ts'
+import { NOT_MINE, probe } from '../_mapping.ts'
 import { constParam, paramIsConst, paramSym, randomPrecisions } from '../_params.ts'
 import { Refusal } from '../_refusal.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
@@ -372,15 +373,9 @@ export function latentRandomScale(
   loc: readonly Cell[],
   scaleExpr: ExprSpec,
 ): void {
-  let scales: Cell[]
-  try {
-    scales = cx.over(evalSym(cx, stripClip(cx.idiom, scaleExpr)), node.dims)
-  } catch (e) {
-    if (!(e instanceof Refusal)) throw e
-    latentRandomPrecision(cx, node, loc)
-    return
-  }
-  if (scales.some((c) => c.kind !== 'aff')) {
+  // Not an affine form of Gaussian variables (a gamma latent, a product of random values): the precision idiom is the route.
+  const scales = probe(cx, () => cx.over(evalSym(cx, stripClip(cx.idiom, scaleExpr)), node.dims))
+  if (scales === NOT_MINE || scales.some((c) => c.kind !== 'aff')) {
     latentRandomPrecision(cx, node, loc)
     return
   }
