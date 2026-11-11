@@ -17,7 +17,7 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import type { Arg, Eta } from '../../core/types.ts'
 import { gaussianGridOn, gaussianNodes } from '../../numerics/_quadrature.ts'
-import { trigammaOf } from '../../numerics/_scalar.ts'
+import { betaModeWindow, gammaModeWindow, shiftedWeights, uniformNodes } from '../../numerics/_windows.ts'
 
 /** The quadrature of one port under its belief: the nodes (the coordinate the log density reads), their weights and the statistics. */
 export interface QuadPort {
@@ -43,25 +43,14 @@ const log1pExp = (x: number): number => (x > 30 ? x : x < -30 ? Math.exp(x) : Ma
 
 /** A uniform grid of `points` on `[lo, hi]` with weights proportional to `exp(logDensity)`, normalised to sum to one. */
 function gridWeights(
-  lo: number,
-  hi: number,
+  window: { readonly lo: number; readonly hi: number },
   points: number,
   logDensity: (t: number) => number,
 ): { t: Float64Array; w: Float64Array } {
-  const t = new Float64Array(points)
-  const logw = new Float64Array(points)
-  let top = Number.NEGATIVE_INFINITY
-  for (let i = 0; i < points; i++) {
-    t[i] = lo + ((hi - lo) * i) / (points - 1)
-    logw[i] = logDensity(t[i] as number)
-    if ((logw[i] as number) > top) top = logw[i] as number
-  }
+  const t = uniformNodes(window, points)
+  const { weights: w } = shiftedWeights(Float64Array.from(t, logDensity))
   let total = 0
-  const w = new Float64Array(points)
-  for (let i = 0; i < points; i++) {
-    w[i] = Math.exp((logw[i] as number) - top)
-    total += w[i] as number
-  }
+  for (let i = 0; i < points; i++) total += w[i] as number
   for (let i = 0; i < points; i++) w[i] = (w[i] as number) / total
   return { t, w }
 }
@@ -120,13 +109,8 @@ export function quadraturePort(a: Arg, options: QuadOptions = {}): QuadPort {
     const { shape, rate } = gammaShapeRate(eta)
     if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
       throw new ImproperMessageError('a gamma belief has no density (its shape and rate are not positive)')
-    const sd = Math.sqrt(trigammaOf(shape))
-    const mode = Math.log(shape / rate)
-    const left = Math.min(Math.max(9 * sd, 20 / shape), 45)
-    const right = Math.min(9 * sd, 8)
     const { t, w } = gridWeights(
-      mode - left,
-      mode + right,
+      gammaModeWindow(shape, rate),
       options.points ?? 161,
       (u) => shape * u - rate * Math.exp(u),
     )
@@ -141,13 +125,9 @@ export function quadraturePort(a: Arg, options: QuadOptions = {}): QuadPort {
     const q = (eta[1] ?? Number.NaN) + 1
     if (!(p > 0 && q > 0 && Number.isFinite(p) && Number.isFinite(q)))
       throw new ImproperMessageError('a beta belief has no density (its shapes are not positive)')
-    const sd = Math.sqrt(trigammaOf(p) + trigammaOf(q))
-    const mode = Math.log(p / q)
-    const left = Math.min(Math.max(9 * sd, 20 / p), 45)
-    const right = Math.min(Math.max(9 * sd, 20 / q), 45)
     // In u = logit(x) the density is x^p (1 - x)^q.
     const logOf = (u: number): number => -p * log1pExp(-u) - q * log1pExp(u)
-    const { t, w } = gridWeights(mode - left, mode + right, options.points ?? 161, logOf)
+    const { t, w } = gridWeights(betaModeWindow(p, q), options.points ?? 161, logOf)
     const probs = Float64Array.from(t, (u) => 1 / (1 + Math.exp(-u)))
     return {
       coords: probs,

@@ -101,6 +101,51 @@ export function gaussianWindow(mean: number, variance: number, profile: WindowPr
   }
 }
 
+/** How the window of a belief in the variational quadrature is laid around its mode: the reach, the floor of the left reach per unit of `1 / shape`, and the caps. */
+export const variationalWindow: {
+  readonly reach: number
+  readonly leftPerShape: number
+  readonly leftCap: number
+  readonly rightCap: number
+} = { reach: 9, leftPerShape: 20, leftCap: 45, rightCap: 8 }
+
+/**
+ * The window of a gamma belief `Gamma(shape, rate)` in `t = log value` for the variational quadrature: around the mode `log(shape / rate)`,
+ * reaching left by at least `20 / shape` (the left tail of the density of `t` is only exponential) and at most 45, right by nine standard
+ * deviations of `t` and at most 8.
+ *
+ * @param shape - The belief's shape.
+ * @param rate - The belief's rate.
+ * @returns The window.
+ */
+export function gammaModeWindow(shape: number, rate: number): Window {
+  const sd = Math.sqrt(trigammaOf(shape))
+  const mode = Math.log(shape / rate)
+  const left = Math.min(
+    Math.max(variationalWindow.reach * sd, variationalWindow.leftPerShape / shape),
+    variationalWindow.leftCap,
+  )
+  const right = Math.min(variationalWindow.reach * sd, variationalWindow.rightCap)
+  return { centre: mode, lo: mode - left, hi: mode + right }
+}
+
+/**
+ * The window of a beta belief `Beta(p, q)` in `s = logit(value)` for the variational quadrature: around the mode `log(p / q)`, reaching each
+ * side by at least `20 / shape` of that side's shape and at most 45.
+ *
+ * @param p - The belief's first shape.
+ * @param q - The belief's second shape.
+ * @returns The window.
+ */
+export function betaModeWindow(p: number, q: number): Window {
+  const sd = Math.sqrt(trigammaOf(p) + trigammaOf(q))
+  const mode = Math.log(p / q)
+  const reach = variationalWindow.reach * sd
+  const left = Math.min(Math.max(reach, variationalWindow.leftPerShape / p), variationalWindow.leftCap)
+  const right = Math.min(Math.max(reach, variationalWindow.leftPerShape / q), variationalWindow.leftCap)
+  return { centre: mode, lo: mode - left, hi: mode + right }
+}
+
 /** The points of a uniform grid over a window: `lo + i * step`, `i` from `0` to `points - 1`. */
 export interface UniformGrid {
   readonly lo: number
@@ -118,6 +163,18 @@ export interface UniformGrid {
  */
 export function uniformGrid(window: { readonly lo: number; readonly hi: number }, points: number): UniformGrid {
   return { lo: window.lo, hi: window.hi, points, step: (window.hi - window.lo) / (points - 1) }
+}
+
+/**
+ * The `points` nodes of a uniform grid over a window, `lo + (hi - lo) i / (points - 1)` (the multiplication first: not the same last bit as
+ * `lo + i * step`, which `uniformGrid` gives; the variational quadrature has always laid its nodes this way).
+ *
+ * @param window - The window.
+ * @param points - The number of nodes (at least 2).
+ * @returns The nodes.
+ */
+export function uniformNodes(window: { readonly lo: number; readonly hi: number }, points: number): Float64Array {
+  return Float64Array.from({ length: points }, (_, i) => window.lo + ((window.hi - window.lo) * i) / (points - 1))
 }
 
 /**
