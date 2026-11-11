@@ -6,10 +6,16 @@ import type { PocGroup } from './poc.ts'
  */
 export const GROUPS: readonly PocGroup[] = [
   {
-    slug: 'probabilistic-programming',
-    title: 'Probabilistic programming and inference',
+    slug: 'bayesian-examples',
+    title: 'Bayesian examples',
     summary:
-      'Models written as programs or graphs and the ways of inferring from them: exact and sequential Bayesian updates, message passing, variational inference and sampling.',
+      'Canonical Bayesian models, from a coin to hierarchical and latent-variable models. Each page is one experiment: choose the data, the model and one inference method, see what it infers, and check it against a reference.',
+  },
+  {
+    slug: 'probabilistic-programming',
+    title: 'Probabilistic programming (earlier pages, parked)',
+    summary:
+      'The first pages on models written as programs or graphs and the ways of inferring from them. Parked while the Bayesian examples are built.',
   },
   {
     slug: 'structured-prediction',
