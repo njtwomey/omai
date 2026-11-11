@@ -189,7 +189,14 @@ type Cell =
   | { readonly kind: 'scaled'; readonly variable: string; readonly scale: number; readonly offset: number }
   // A known function of a discrete variable, one number per state (`at(means, z)`, `z * 6 - 3`): a value that is not Gaussian
   // but selects among known ones, which a likelihood or a prior reads through a table or a gate.
-  | { readonly kind: 'lookup'; readonly variable: string; readonly values: readonly number[] }
+  // `items[k]`, when present, is a random Gaussian form that state k takes in place of the known `values[k]` (a mixture of a known
+  // value and a random one: the clutter problem's `where(z, 0, theta)`).
+  | {
+      readonly kind: 'lookup'
+      readonly variable: string
+      readonly values: readonly number[]
+      readonly items?: readonly (Aff | undefined)[]
+    }
 
 /** A tensor over named dimensions whose elements are cells, row-major in the order of `dims`. */
 interface Sym {
@@ -256,6 +263,11 @@ function lookupArithmetic(op: string, x: Cell, y: Cell, states: (variable: strin
   const a = asLookup(x)
   const b = asLookup(y)
   if (a === undefined && b === undefined) return undefined
+  if ((a?.items ?? b?.items)?.some((v) => v !== undefined))
+    throw new Refusal(
+      'operator',
+      `'${op}' of a value that is random in some states of a discrete variable has no message rule`,
+    )
   const f = (u: number, v: number): number =>
     op === 'add' ? u + v : op === 'sub' ? u - v : op === 'mul' ? u * v : u / v
   if (!['add', 'sub', 'mul', 'div'].includes(op))
@@ -622,6 +634,29 @@ class Compiler {
     return scaledArithmetic(op, x, y)
   }
 
+  /** A comparison of a known function of a discrete variable with a known value: a lookup of 0 and 1 over its states. */
+  private compare(op: string, x: Cell, y: Cell): Cell {
+    const asLookup = (c: Cell): (Cell & { kind: 'lookup' }) | undefined =>
+      lookupArithmetic(
+        'add',
+        c,
+        constCell(0),
+        (v) => (this.variables.find((u) => u.name === v)?.family.size ?? 2) as number,
+      ) as (Cell & { kind: 'lookup' }) | undefined
+    const a = asLookup(x)
+    const b = asLookup(y)
+    const f = (u: number, v: number): number => Number(op === 'gt' ? u > v : op === 'lt' ? u < v : u === v)
+    if (a !== undefined && isConstCell(y))
+      return { kind: 'lookup', variable: a.variable, values: a.values.map((u) => f(u, y.aff.offset)) }
+    if (b !== undefined && isConstCell(x))
+      return { kind: 'lookup', variable: b.variable, values: b.values.map((u) => f(x.aff.offset, u)) }
+    if (isConstCell(x) && isConstCell(y)) return constCell(f(x.aff.offset, y.aff.offset))
+    throw new Refusal(
+      'operator',
+      `'${op}' of random values has no message rule (only a discrete variable against a known value is mapped, as a gate)`,
+    )
+  }
+
   private symOp(op: string, args: readonly Sym[], params: { readonly [k: string]: Json }): Sym {
     const [a, b] = args as [Sym, Sym]
     switch (op) {
@@ -676,6 +711,10 @@ class Compiler {
         return this.gather(a, b)
       case 'where':
         return this.whereGate(args as [Sym, Sym, Sym])
+      case 'gt':
+      case 'lt':
+      case 'eq':
+        return this.zip([a, b], ([x, y]) => this.compare(op, x as Cell, y as Cell))
       case 'maximum':
       case 'minimum':
         return this.zip([a, b], ([x, y], i) => ({
@@ -772,6 +811,19 @@ class Compiler {
       const at = unflatten(i, shape)
       const code = this.cellAt(idx, dims, at)
       if (!isConstCell(code)) {
+        if (code.kind === 'lookup' && code.items === undefined) {
+          // The index is a known function of a discrete variable (a change point's `t > tau`): the component per state.
+          let restFlat = 0
+          for (let k = 0; k < rest.length; k++)
+            restFlat = restFlat * (restShape[k] as number) + (at[idx.dims.length + k] as number)
+          const comps = code.values.map((v) => {
+            if (!Number.isInteger(v) || v < 0 || v >= this.size(first))
+              throw new Refusal('data', `at: index ${v} is out of range for '${first}'`)
+            return a.cells[v * prod(restShape) + restFlat] as Cell
+          })
+          cells.push(this.lookupOf(comps, code.variable))
+          continue
+        }
         if (code.kind !== 'rv' || code.family !== 'discrete')
           throw new Refusal(
             'operator',
@@ -808,6 +860,14 @@ class Compiler {
     // Known components: the value is a known function of the discrete variable (a lookup), not a random value to select.
     if (components.every(isConstCell))
       return { kind: 'lookup', variable: z, values: components.map((c) => (c as Cell & { kind: 'aff' }).aff.offset) }
+    // A mix of known and random Gaussian forms: a lookup whose random states carry their forms (a gate of Gaussian branches).
+    if (components.every((c) => c.kind === 'aff') && components.some(isConstCell))
+      return {
+        kind: 'lookup',
+        variable: z,
+        values: components.map((c) => (isConstCell(c) ? c.aff.offset : 0)),
+        items: components.map((c) => (isConstCell(c) ? undefined : (c as Cell & { kind: 'aff' }).aff)),
+      }
     const first = components[0] as Cell
     const rv = first.kind === 'rv'
     const kind: FamilyKind = rv ? first.family : 'gaussian'
@@ -835,11 +895,36 @@ class Compiler {
     return { kind: 'aff', aff: { terms: new Map([[key, 1]]), offset: 0 } }
   }
 
+  /**
+   * The value that is `components[k]` in state `k` of the discrete variable `z`, as a lookup: known numbers, or Gaussian forms
+   * that are random in some states (read by a gate of Gaussian branches, over the variables the branches share).
+   */
+  private lookupOf(components: readonly Cell[], z: string): Cell {
+    if (!components.every((c) => c.kind === 'aff'))
+      throw new Refusal(
+        'operator',
+        'a value chosen by a discrete variable must be known or a Gaussian form in every state',
+      )
+    const values = components.map((c) => (isConstCell(c) ? c.aff.offset : 0))
+    if (components.every(isConstCell)) return { kind: 'lookup', variable: z, values }
+    return {
+      kind: 'lookup',
+      variable: z,
+      values,
+      items: components.map((c) => (isConstCell(c) ? undefined : (c as Cell & { kind: 'aff' }).aff)),
+    }
+  }
+
   /** `where(c, a, b)`: a known condition picks a branch; a Bernoulli latent condition is the gate `c ? a : b`. */
   private whereGate([cond, a, b]: [Sym, Sym, Sym]): Sym {
     return this.zip([cond, a, b], ([c, x, y]) => {
       if (isConstCell(c as Cell)) return (c as Cell & { kind: 'aff' }).aff.offset !== 0 ? (x as Cell) : (y as Cell)
       const gate = c as Cell
+      if (gate.kind === 'lookup' && gate.items === undefined)
+        return this.lookupOf(
+          gate.values.map((v) => (v !== 0 ? (x as Cell) : (y as Cell))),
+          gate.variable,
+        )
       if (gate.kind !== 'rv' || gate.family !== 'bernoulli')
         throw new Refusal(
           'operator',
@@ -1351,21 +1436,26 @@ class Compiler {
       const l = loc[i] as Cell
       const variance = (scale[i] as number) ** 2
       if (l.kind === 'lookup') {
-        // A mean chosen by a discrete variable (a mixture of known components): a gate over one Gaussian prior per state.
+        // A mean chosen by a discrete variable (a mixture of components): a gate over one Gaussian prior per state, over the
+        // variable and the random means of some states.
         this.need('gate')
+        const others: string[] = []
+        const branches = l.values.map((v, k) => {
+          const item = l.items?.[k]
+          let mean: number | { readonly const: number } = { const: v }
+          if (item !== undefined && item.terms.size > 0) {
+            const m = this.materialise(item, node.name, node.dims.length === 0 ? undefined : i) as string
+            let at = others.indexOf(m)
+            if (at < 0) {
+              at = others.length
+              others.push(m)
+            }
+            mean = at + 1
+          }
+          return { operator: 'gaussian', args: [0, mean], params: { precision: 1 / variance } }
+        })
         this.addFactor(
-          {
-            operator: 'gate',
-            args: [l.variable, name],
-            params: {
-              arity: 1,
-              branches: l.values.map((v) => ({
-                operator: 'gaussian',
-                args: [0, { const: v }],
-                params: { precision: 1 / variance },
-              })),
-            },
-          },
+          { operator: 'gate', args: [l.variable, name, ...others], params: { arity: 1 + others.length, branches } },
           name,
         )
       } else if (isConstCell(l)) this.addFactor(gaussianPrior(name, l.aff.offset, variance), name)
@@ -1921,6 +2011,9 @@ class Compiler {
     switch (fam) {
       case 'normal': {
         const scaleExpr = node.dist.params['scale']
+        // A mean or a scale chosen by a discrete variable (a lookup): a table or a gate over that variable.
+        const switched = this.switchedCells(node, i)
+        if (switched !== undefined) return this.observedSwitch(node, name, y, index, switched.loc, switched.scale)
         if (scaleExpr !== undefined && !this.isConst(scaleExpr)) {
           const e = this.unwrap(scaleExpr)
           const logScale =
@@ -1935,21 +2028,6 @@ class Compiler {
         const precision = 1 / scale.aff.offset ** 2
         const loc = this.paramCell(node, 'loc', i)
         if (isConstCell(loc)) return null
-        if (loc.kind === 'lookup') {
-          // The mean is chosen by a discrete variable: the likelihood of y under each state is a table over that variable.
-          this.need('table')
-          const sd = scale.aff.offset
-          const pdf = (m: number): number => Math.exp(-0.5 * ((y - m) / sd) ** 2) / (sd * Math.sqrt(2 * Math.PI))
-          this.addFactor(
-            {
-              operator: 'table',
-              args: [loc.variable],
-              params: { states: [loc.values.length], values: loc.values.map(pdf) },
-            },
-            name,
-          )
-          return null
-        }
         const aff = affOf(loc)
         const terms = [...aff.terms].filter(([, c]) => c !== 0)
         const comps = terms.map(([k]) => this.atoms.get(k) as Atom)
@@ -2190,6 +2268,112 @@ class Compiler {
     if (y.length === 0) return false
     this.addPlated(node, { operator, args: [design.vector], params: { X: x, y } })
     return true
+  }
+
+  /** Whether an expression depends, through derived nodes, on a Bernoulli or categorical latent. */
+  private mentionsDiscrete(e: ExprSpec): boolean {
+    if (e.kind === 'ref') {
+      const n = this.nodes.get(e.name)
+      if (n?.kind === 'latent') return n.dist.family === 'bernoulli' || n.dist.family === 'categorical'
+      return n?.kind === 'derived' && this.mentionsDiscrete(n.expr)
+    }
+    return (e.kind === 'op' || e.kind === 'custom') && e.args.some((a) => this.mentionsDiscrete(a))
+  }
+
+  /** The location and scale cells of an observed normal element when one of them is a lookup by a discrete variable; absent otherwise. */
+  private switchedCells(
+    node: ModelNode & { readonly kind: 'observed' },
+    i: number,
+  ): { readonly loc: Cell; readonly scale: Cell } | undefined {
+    const locExpr = node.dist.params['loc']
+    const scaleExpr = node.dist.params['scale']
+    const discrete = (e: ExprSpec | undefined): boolean =>
+      e !== undefined && !this.isConst(e) && this.mentionsDiscrete(e)
+    if (!discrete(locExpr) && !discrete(scaleExpr)) return undefined
+    const loc = this.paramCell(node, 'loc', i)
+    const scale = this.paramCell(node, 'scale', i)
+    return loc.kind === 'lookup' || scale.kind === 'lookup' ? { loc, scale } : undefined
+  }
+
+  /**
+   * An observed Gaussian whose location and (or) scale is a lookup by one discrete variable `z`: when the location is known in
+   * every state, a table over `z` (the likelihood of the value under each state: a hidden Markov model's emission); when it is
+   * random in some states, a `gate` of one Gaussian likelihood per state, over the random variables of the branches (the clutter
+   * problem, a mixture with a known component, a change point).
+   */
+  private observedSwitch(
+    node: ModelNode & { readonly kind: 'observed' },
+    name: string,
+    y: number,
+    index: number | undefined,
+    loc: Cell,
+    scale: Cell,
+  ): null {
+    const looks = [loc, scale].filter((c): c is Cell & { kind: 'lookup' } => c.kind === 'lookup')
+    const z = (looks[0] as Cell & { kind: 'lookup' }).variable
+    if (looks.some((l) => l.variable !== z))
+      throw new Refusal(
+        'operator',
+        `the location and the scale of '${node.name}' are chosen by different discrete variables`,
+      )
+    const states = (looks[0] as Cell & { kind: 'lookup' }).values.length
+    if (looks.some((l) => l.values.length !== states))
+      throw new Refusal('operator', `the lookups of '${node.name}' have different numbers of states`)
+    if (scale.kind === 'lookup' && scale.items !== undefined)
+      throw new Refusal(
+        'operator',
+        `the scale of '${node.name}' is random in some states of a discrete variable: it must be known`,
+      )
+    if (scale.kind !== 'lookup' && !isConstCell(scale))
+      throw new Refusal('operator', `the scale of '${node.name}' is not known`)
+    const sdAt = (k: number): number =>
+      scale.kind === 'lookup' ? (scale.values[k] as number) : (scale as Cell & { kind: 'aff' }).aff.offset
+    for (let k = 0; k < states; k++)
+      if (!(sdAt(k) > 0)) throw new Refusal('data', `the scale of '${node.name}' is ${sdAt(k)}: it must be positive`)
+    const locAt = (k: number): Aff | number => {
+      if (loc.kind === 'lookup') return loc.items?.[k] ?? (loc.values[k] as number)
+      return affOf(loc)
+    }
+    const known = Array.from({ length: states }, (_, k) => locAt(k)).every(
+      (m) => typeof m === 'number' || m.terms.size === 0,
+    )
+    const pdf = (m: number, sd: number): number => Math.exp(-0.5 * ((y - m) / sd) ** 2) / (sd * Math.sqrt(2 * Math.PI))
+    const value = (m: Aff | number): number => (typeof m === 'number' ? m : m.offset)
+    if (known) {
+      this.need('table')
+      this.addFactor(
+        {
+          operator: 'table',
+          args: [z],
+          params: { states: [states], values: Array.from({ length: states }, (_, k) => pdf(value(locAt(k)), sdAt(k))) },
+        },
+        name,
+      )
+      return null
+    }
+    this.need('gate')
+    const variables: string[] = []
+    const branches = Array.from({ length: states }, (_, k) => {
+      const m = locAt(k)
+      let mean: number | { readonly const: number }
+      if (typeof m === 'number' || m.terms.size === 0) mean = { const: value(m) }
+      else {
+        const v = this.materialise(m, node.name, index) as string
+        let at = variables.indexOf(v)
+        if (at < 0) {
+          at = variables.length
+          variables.push(v)
+        }
+        mean = at
+      }
+      return {
+        operator: 'gaussian',
+        args: [{ const: y }, typeof mean === 'number' ? mean : mean],
+        params: { precision: 1 / sdAt(k) ** 2 },
+      }
+    })
+    this.addFactor({ operator: 'gate', args: [z, ...variables], params: { arity: variables.length, branches } }, name)
+    return null
   }
 
   /**
