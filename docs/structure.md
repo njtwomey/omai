@@ -3901,7 +3901,7 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   state types), `cavity.ts` (beliefs, marginals, snapshot), `dispatch.ts` (`operatorMessage`), `evidence.ts`, `verdict.ts`,
   `run.ts` (`messagePassingAlgorithm`), the slots `projections.ts` and `schedules.ts`, and the internal `_cavities.ts`,
   `_arguments.ts`, `_update.ts` (the proposal, damping and `repairImproper`), `_restart.ts`, `_advance.ts`. `algorithms/`: `named.ts`, `power.ts`, `alpha.ts`, `numerical.ts`, `stochastic.ts`, `regions.ts`,
-  `consistent.ts`, `amp.ts`, `anytime.ts`, `clutter.ts`. `operators/`: `registry.ts` and one folder per kind of factor,
+  `consistent.ts`, `amp.ts`, `anytime.ts`, `clutter.ts`. `operators/`: `registry.ts`, `names.ts` (`operatorNames` and the type `OperatorName`, held equal to the registry by a test; `GateBranch` in `discrete/gate.ts` types a gate's branch) and one folder per kind of factor,
   `gaussian/` (`gaussian`, `linear`, `transition`, `extremum`, `log-scale`), `links/` (`truncation`, `links`, `spin`,
   `multiclass`), `lifts/` (`rows`, `plates`), `likelihoods/` (`likelihoods`, `pairs`, `robust`, `prior-sites`, `functions`,
   `numeric`), `scales/` (`scale`, `function-scale`, `gamma-scale`, `concentration`, `stick-breaking`), `covariance/`

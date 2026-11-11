@@ -30,6 +30,17 @@ import type {
   Params,
   Port,
 } from '../../core/types.ts'
+import type { OperatorName } from '../names.ts'
+
+/**
+ * One branch of a gate as its JSON parameter `branches` gives it: the inner operator by name (absent: the constant 1), its arguments
+ * (an index into the gate's variables, or a `{ const }` number) in the inner operator's own port order, and its parameters.
+ */
+export interface GateBranch {
+  readonly operator?: OperatorName
+  readonly args: readonly (number | { readonly const: number })[]
+  readonly params?: Params
+}
 
 /** One branch as the parameters give it: an inner operator, its arguments (indices into the gate's variables, or constants) and its parameters. */
 interface Branch {
@@ -65,7 +76,7 @@ function stateProbabilities(a: Arg, k: number): number[] {
 
 /**
  * The gate over a registry of operators: `z` (discrete, or Bernoulli for two branches) and `arity` variables, whose
- * parameter `branches` lists one entry per state of `z`, each `{ operator, args, params }` with `args` indices into the
+ * parameter `branches` lists one entry per state of `z`, each a `GateBranch` `{ operator, args, params }` with `args` indices into the
  * variables (or `{ const }` numbers) in the inner operator's own port order; a branch without an operator is the constant 1.
  *
  * @param inner - The inner operators by name.

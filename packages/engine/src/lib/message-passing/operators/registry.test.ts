@@ -1,6 +1,7 @@
 // The registry as a whole: every operator is keyed by its own name, declares what it supports consistently with the hooks
 // it has, and the gate that runs the others is the last. The net under the moves and merges of the operator files.
 import { describe, expect, it } from 'vitest'
+import { operatorNames } from './names.ts'
 import { defaultOperators } from './registry.ts'
 
 describe('defaultOperators', () => {
@@ -12,6 +13,10 @@ describe('defaultOperators', () => {
     expect(names.at(-1)).toBe('gate')
     expect(new Set(names).size).toBe(names.length)
     expect(names.slice(0, 3)).toEqual(['prior', 'gaussian', 'gaussian-gamma-precision'])
+  })
+
+  it('lists the names as a typed tuple, in registry order', () => {
+    expect([...operatorNames]).toEqual(names)
   })
 
   it('keys every operator by its own name and gives it ports and a description', () => {
