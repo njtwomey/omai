@@ -65,7 +65,6 @@ import {
   combine,
   isConstCell,
   logName,
-  lookup,
   type Precision,
   prod,
   scaledOf,
@@ -75,7 +74,6 @@ import { Context } from './factor-graph/_context.ts'
 import {
   expArgument,
   logVariableOf,
-  logVariableOfCell,
   precisionExpr,
   randomTransitionRow,
   stripClip,
@@ -97,7 +95,14 @@ import {
   valueMovedToMean,
 } from './factor-graph/_mappings/observed-gates.ts'
 import {
-  emitSite,
+  observedGaussian,
+  observedHeavy,
+  observedLogScale,
+  observedNormalGamma,
+  observedRandomPrecision,
+  observedRandomScale,
+} from './factor-graph/_mappings/observed-gaussian.ts'
+import {
   observedHurdle,
   observedMulticlass,
   observedNumeric,
@@ -105,18 +110,15 @@ import {
 } from './factor-graph/_mappings/observed-numeric.ts'
 import { addPlated, plate } from './factor-graph/_mappings/plates.ts'
 import {
-  cellsOf,
   constParam,
   discreteParents,
   evalNamedValue,
   eventVector,
-  paramCell,
   paramIsConst,
   paramSym,
   randomPrecisions,
   rvName,
 } from './factor-graph/_params.ts'
-import type { NormalGammaPlan } from './factor-graph/_plan.ts'
 import { Refusal } from './factor-graph/_refusal.ts'
 import { evalSym } from './factor-graph/_symbolic/_affine.ts'
 import type { ApplyStep } from './factor-graph/_symbolic/_functions.ts'
@@ -360,33 +362,6 @@ class Compiler {
       ...(inverse ? { reciprocal: true } : {}),
     })
     return true
-  }
-
-  /** The observed Gaussian rows of a normal-gamma pair: a `gaussian-normal-gamma` factor on the shared variable per row. */
-  private observedNormalGamma(
-    node: ModelNode & { readonly kind: 'observed' },
-    ng: { readonly plan: NormalGammaPlan; readonly multiple: number },
-    values: readonly number[],
-  ): void {
-    const vars: (string | null)[] = []
-    values.forEach((y, i) => {
-      if (Number.isNaN(y)) {
-        vars.push(null)
-        return
-      }
-      const name = this.cx.elementName(node.name, node.dims, i)
-      this.cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
-      this.cx.g.addFactor(
-        {
-          operator: 'gaussian-normal-gamma',
-          args: [name, ng.plan.variable],
-          ...(ng.multiple === 1 ? {} : { params: { precision: ng.multiple } }),
-        },
-        name,
-      )
-      vars.push(name)
-    })
-    this.cx.layout(node, 'observed', undefined, node.dims.length === 0 ? 'scalar' : 'observed', vars, false)
   }
 
   /**
@@ -1891,7 +1866,7 @@ class Compiler {
       .map((c) => (c as Cell & { kind: 'aff' }).aff.offset)
     const normalGamma = this.cx.normalGammaObserved.get(node.name)
     if (normalGamma !== undefined) {
-      this.observedNormalGamma(node, normalGamma, values)
+      observedNormalGamma(this.cx, node, normalGamma, values)
       return
     }
     const vars: (string | null)[] = []
@@ -1954,19 +1929,19 @@ class Compiler {
         if (scaleExpr !== undefined && !this.cx.isConst(scaleExpr)) {
           const logScale =
             expArgument(unwrap(this.cx.nodes, scaleExpr)) !== undefined
-              ? this.observedLogScale(node, name, y, i, index)
+              ? observedLogScale(this.cx, node, name, y, i, index)
               : undefined
           if (logScale !== undefined) return logScale
           if (precisionExpr(this.cx.idiom, scaleExpr) === undefined)
-            return this.observedRandomScale(node, name, y, i, index, scaleExpr)
-          return this.observedRandomPrecision(node, name, y, i, index)
+            return observedRandomScale(this.cx, node, name, y, i, index, scaleExpr)
+          return observedRandomPrecision(this.cx, node, name, y, i, index)
         }
-        return this.observedGaussian(node, name, y, i, index, 'loc', 'scale')
+        return observedGaussian(this.cx, node, name, y, i, index, 'loc', 'scale')
       }
       case 'studentT':
       case 'laplace':
       case 'normalOutliers':
-        return this.observedHeavy(node, fam, y, i, index)
+        return observedHeavy(this.cx, node, fam, y, i, index)
       case 'beta':
         return observedPair(this.cx, node, 'beta-shapes', y, i, index)
       case 'orderedProbit':
@@ -1983,7 +1958,7 @@ class Compiler {
       case 'logNormal':
         // log y is Gaussian around the predictor: the exact Gaussian rule on the log of the outcome.
         if (!(y > 0)) throw new Refusal('data', `'${node.name}' is log-normal: the outcome ${y} must be positive`)
-        return this.observedGaussian(node, name, Math.log(y), i, index, 'mu', 'sigma')
+        return observedGaussian(this.cx, node, name, Math.log(y), i, index, 'mu', 'sigma')
       case 'bernoulli':
         return observedBernoulli(this.cx, node, name, y, i, index)
       case 'binomial':
@@ -2032,226 +2007,6 @@ class Compiler {
           `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, asymmetricLaplace, orderedProbit, orderedLogistic, categoricalProbit, normalOutliers, bernoulli, binomial, poisson, normalPair, exponential, gamma, geometric, negativeBinomial, weibull and categorical`,
         )
     }
-  }
-
-  /** An observed Gaussian with a known scale around an affine mean, named by the node's parameters (`loc`/`scale`, or a log-normal's `mu`/`sigma`). */
-  private observedGaussian(
-    node: ModelNode & { readonly kind: 'observed' },
-    name: string,
-    y: number,
-    i: number,
-    index: number | undefined,
-    locName: string,
-    scaleName: string,
-  ): string | null {
-    const scale = paramCell(this.cx, node, scaleName, i)
-    if (!isConstCell(scale)) throw new Refusal('operator', `the scale of '${node.name}' is not known`)
-    if (!(scale.aff.offset > 0))
-      throw new Refusal('data', `the scale of '${node.name}' is ${scale.aff.offset}: it must be positive`)
-    const precision = 1 / scale.aff.offset ** 2
-    const loc = paramCell(this.cx, node, locName, i)
-    if (isConstCell(loc)) return null
-    const aff = affOf(loc)
-    const terms = [...aff.terms].filter(([, c]) => c !== 0)
-    const comps = terms.map(([k]) => this.cx.g.atoms.get(k) as Atom)
-    const oneVector =
-      aff.offset === 0 &&
-      comps.length > 0 &&
-      comps.every((a) => a.kind === 'comp' && a.vector === (comps[0] as Atom & { kind: 'comp' }).vector)
-    this.cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
-    if (oneVector) {
-      const first = comps[0] as Atom & { kind: 'comp' }
-      const a = new Array<number>(first.size).fill(0)
-      for (const [k, c] of terms) a[(this.cx.g.atoms.get(k) as Atom & { kind: 'comp' }).index] = c
-      this.cx.g.addFactor(
-        { operator: 'linear-regression-row', args: [name, first.vector], params: { a, precision } },
-        name,
-      )
-    } else {
-      const m = this.cx.g.materialise(aff, node.name, index)
-      this.cx.g.addFactor({ operator: 'gaussian', args: [name, m as string], params: { precision } }, name)
-    }
-    return name
-  }
-
-  /**
-   * A heavy-tailed likelihood of an affine predictor with a known scale: `studentT` (the degrees of freedom known),
-   * `laplace`, or `normalOutliers` (a mixture of two normal noise levels). One row factor on the packed weights when the
-   * predictor is a single dot product with one vector, else a site factor on an auxiliary predictor variable. The outcome
-   * is a parameter of the factor, so the observed value has no variable of its own.
-   */
-  private observedHeavy(
-    node: ModelNode & { readonly kind: 'observed' },
-    fam: string,
-    y: number,
-    i: number,
-    index: number | undefined,
-  ): string | null {
-    const known = (p: string): number => {
-      const c = paramCell(this.cx, node, p, i)
-      if (!isConstCell(c))
-        throw new Refusal(
-          'operator',
-          `the ${p} of '${node.name}' is random: the ${fam} likelihood has a message rule for a known ${p} only`,
-        )
-      return c.aff.offset
-    }
-    if (fam === 'laplace' && !isConstCell(paramCell(this.cx, node, 'scale', i)))
-      return observedPair(this.cx, node, 'laplace-scale', y, i, index)
-    if (fam === 'studentT' && !isConstCell(paramCell(this.cx, node, 'df', i)))
-      return observedPair(this.cx, node, 'student-t-df', y, i, index)
-    if (fam === 'normalOutliers' && ['scale', 'outlier'].some((p) => !paramIsConst(this.cx, node, p)))
-      return this.observedOutlierSwitch(node, y, i, index)
-    const scale = known('scale')
-    if (!(scale > 0)) throw new Refusal('data', `the scale of '${node.name}' is ${scale}: it must be positive`)
-    let params: Record<string, Json>
-    let row: string
-    let site: string
-    if (fam === 'studentT') {
-      params = { y, scale, df: known('df') }
-      row = 'student-t-row'
-      site = 'student-t-site'
-    } else if (fam === 'laplace') {
-      params = { y, scale }
-      row = 'laplace-row'
-      site = 'laplace-site'
-    } else {
-      const outlier = known('outlier')
-      params = { weights: [1 - outlier, outlier], means: [y, y], sds: [scale, scale * known('width')] }
-      row = 'mixture-row'
-      site = 'mixture-site'
-    }
-    return emitSite(this.cx, node, paramCell(this.cx, node, 'loc', i), i, index, row, site, params)
-  }
-
-  /**
-   * An observation `normalOutliers(loc, scale, share, width)` with a random scale (the precision idiom of a gamma latent) or a
-   * random share (a beta latent), the switch summed out: the gate of an inlier and an outlier branch over a hidden Bernoulli
-   * switch, read through the same route as an observation whose precision is chosen by a discrete variable (`observedSwitch`):
-   * the inlier has the precision `tau`, the outlier `tau / width^2`, both `gaussian-gamma-precision` branches over the centre and
-   * the gamma precision.
-   */
-  private observedOutlierSwitch(
-    node: ModelNode & { readonly kind: 'observed' },
-    y: number,
-    i: number,
-    index: number | undefined,
-  ): string | null {
-    const widthCell = paramCell(this.cx, node, 'width', i)
-    if (!isConstCell(widthCell))
-      throw new Refusal(
-        'operator',
-        `the width of '${node.name}' is random: the outlier mixture has a message rule for a known width`,
-      )
-    const width = widthCell.aff.offset
-    if (!(width > 0)) throw new Refusal('data', `the width of '${node.name}' is ${width}: it must be positive`)
-    const z = hiddenSwitch(this.cx, node, paramCell(this.cx, node, 'outlier', i), index)
-    const loc = paramCell(this.cx, node, 'loc', i)
-    let scale: Cell
-    if (paramIsConst(this.cx, node, 'scale')) {
-      const sd = (paramCell(this.cx, node, 'scale', i) as Cell & { kind: 'aff' }).aff.offset
-      scale = lookup(z, [sd, sd * width])
-    } else {
-      const scaleExpr = node.dist.params['scale'] as ExprSpec
-      const precision = precisionExpr(this.cx.idiom, scaleExpr)
-      const tau =
-        precision === undefined
-          ? undefined
-          : scaledOf(cellsOf(this.cx, node, 'precisionProbe', () => evalSym(this.cx, precision))[i] as Cell)
-      if (tau === undefined)
-        throw new Refusal(
-          'operator',
-          `the scale of '${node.name}' must be the precision idiom 1 / sqrt(tau) of a gamma or exponential latent for the outlier mixture`,
-        )
-      const w2 = width * width
-      scale = lookup(z, [0, 0], { precisions: [tau, { ...tau, scale: tau.scale / w2, offset: tau.offset / w2 }] })
-    }
-    return observedSwitch(this.cx, node, this.cx.elementName(node.name, node.dims, i), y, index, loc, scale)
-  }
-
-  /**
-   * An observed Gaussian whose scale is `exp(s)` with `s` an affine form of Gaussian variables (a `gaussian-log-scale`
-   * factor: the observation of a stochastic volatility model); the mean must be known.
-   */
-  private observedLogScale(
-    node: ModelNode & { readonly kind: 'observed' },
-    name: string,
-    y: number,
-    i: number,
-    index: number | undefined,
-  ): string | undefined {
-    const inner = unwrap(this.cx.nodes, node.dist.params['scale'] as ExprSpec) as ExprSpec & { readonly kind: 'op' }
-    const loc = paramCell(this.cx, node, 'loc', i)
-    if (!isConstCell(loc)) return undefined
-    let cell: Cell
-    try {
-      cell = cellsOf(this.cx, node, 'logScale', () => evalSym(this.cx, inner.args[0] as ExprSpec))[i] as Cell
-    } catch (e) {
-      // Not an affine form of Gaussian variables (a product of random values, a gamma latent): the precision idiom is tried next.
-      if (e instanceof Refusal) return undefined
-      throw e
-    }
-    if (isConstCell(cell) || cell.kind !== 'aff') return undefined
-    const s = this.cx.g.materialise(affOf(cell), node.name, index) as string
-    this.cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
-    this.cx.g.addFactor({ operator: 'gaussian-log-scale', args: [name, s], params: { loc: loc.aff.offset } }, name)
-    return name
-  }
-
-  /**
-   * An observed Gaussian whose scale is a positive latent (the `exp` of a Gaussian log-scale variable: a half-normal or
-   * half-Cauchy sd projected by `latentProjected`, or `exp(affine)`) and whose mean may be random too: the `gaussian-scale`
-   * factor, a one-dimensional quadrature over the log scale. Anything else is refused with the precision idiom named.
-   */
-  private observedRandomScale(
-    node: ModelNode & { readonly kind: 'observed' },
-    name: string,
-    y: number,
-    i: number,
-    index: number | undefined,
-    scaleExpr: ExprSpec,
-  ): string {
-    const stripped = stripClip(this.cx.idiom, scaleExpr)
-    let logVar: string | undefined
-    try {
-      const logArgument = expArgument(stripped)
-      if (logArgument !== undefined) {
-        const cell = cellsOf(this.cx, node, 'logScale', () => evalSym(this.cx, logArgument))[i] as Cell
-        if (cell.kind === 'aff' && !isConstCell(cell))
-          logVar = this.cx.g.materialise(cell.aff, node.name, index) as string
-      } else {
-        const cell = cellsOf(this.cx, node, 'scaleValue', () => evalSym(this.cx, stripped))[i] as Cell
-        logVar = logVariableOfCell(cell, this.cx.g.atoms, this.cx.logScale)
-      }
-    } catch (e) {
-      if (!(e instanceof Refusal)) throw e
-    }
-    if (logVar === undefined) randomPrecisions(this.cx, node)
-    const loc = paramCell(this.cx, node, 'loc', i)
-    const mean = this.cx.g.portOf(loc, node.name, index)
-    this.cx.g.need('gaussian-scale')
-    this.cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
-    this.cx.g.addFactor({ operator: 'gaussian-scale', args: [name, mean, logVar as string] }, name)
-    return name
-  }
-
-  /** An observed Gaussian with a gamma precision (`gaussian-gamma-precision`): the mean is a variable or a known value. */
-  private observedRandomPrecision(
-    node: ModelNode & { readonly kind: 'observed' },
-    name: string,
-    y: number,
-    i: number,
-    index: number | undefined,
-  ): string {
-    const tau = cellsOf(this.cx, node, 'precision', () => ({
-      dims: node.dims,
-      cells: randomPrecisions(this.cx, node).map((p): Cell => ({ kind: 'scaled', ...p })),
-    }))[i] as Cell & { kind: 'scaled' }
-    const loc = paramCell(this.cx, node, 'loc', i)
-    const mean = this.cx.g.portOf(loc, node.name, index)
-    this.cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
-    this.cx.g.addFactor(precisionFactor(name, mean, tau), name)
-    return name
   }
 }
 
