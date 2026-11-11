@@ -14,15 +14,8 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import {
-  type AtomProblem,
-  type AtomRecoverySpec,
-  defineAtom,
-  type EpAtom,
-  type ExactMarginal,
-  type FigureCurve,
-} from './ep-atoms.ts'
-import { type CoordinateBox, logWishart2, posterior3 } from './ep-atoms-covariance-ref.ts'
+import { type CoordinateBox, type ExactMarginal, logWishart2, posterior3 } from '../validation/index.ts'
+import { type AtomProblem, type AtomRecoverySpec, defineAtom, type EpAtom, type FigureCurve } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 
 /** The 2 by 2 matrix `[[a, b], [b, c]]` as a nested array. */

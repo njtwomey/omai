@@ -17,7 +17,8 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { gpPosteriorGivenLengthScale } from '../models/index.ts'
-import { type AtomProblem, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
+import type { ExactMarginal } from '../validation/index.ts'
+import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 
 const X6 = [-2.4, -1.5, -0.6, 0.3, 1.2, 2.3]

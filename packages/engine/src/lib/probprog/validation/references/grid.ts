@@ -1,74 +1,12 @@
 /**
- * The closed forms and quadratures the atoms' exact answers are made of: the normal density and distribution function, a
- * finite mixture of normals as an exact marginal, and the marginal of a one-dimensional posterior known up to a constant,
- * by the midpoint rule on a fine grid.
+ * The references by grid: the marginal of a one-dimensional density known up to a constant (midpoint rule), of a positive
+ * hyperparameter on a log-spaced grid with what hangs below it mixed over its posterior, and of a density on a tensor grid in a
+ * box (marginals and pairwise joints). Each takes a log density as a callback, so the model it is the reference of is written
+ * once, by hand, independent of the rule under test.
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { ndtr } from '../../numerics/special/index.ts'
-import { item } from '../../tensor/index.ts'
-import type { ExactMarginal } from './ep-atoms.ts'
-
-/**
- * The normal density.
- *
- * @param x - The point.
- * @param mean - The mean.
- * @param sd - The standard deviation.
- * @returns The density.
- * @example
- * ```ts
- * import { normalPdf } from 'omai-engine/probprog/ep'
- * normalPdf(0, 0, 1).toFixed(4) // => '0.3989'
- * ```
- */
-export function normalPdf(x: number, mean: number, sd: number): number {
-  return Math.exp(-0.5 * ((x - mean) / sd) ** 2) / (sd * Math.sqrt(2 * Math.PI))
-}
-
-/**
- * The standard normal distribution function.
- *
- * @param x - The point.
- * @returns P(Z <= x).
- * @example
- * ```ts
- * import { normalCdf } from 'omai-engine/probprog/ep'
- * normalCdf(0) // => 0.5
- * ```
- */
-export function normalCdf(x: number): number {
-  return item(ndtr(Math.max(-40, Math.min(40, x))))
-}
-
-/** One component of a mixture of normals. */
-export interface MixtureComponent {
-  readonly weight: number
-  readonly mean: number
-  readonly sd: number
-}
-
-/**
- * The marginal of a finite mixture of normals, exactly: its moments from the components and its density as their weighted sum.
- *
- * @param components - The weighted components (the weights are normalised).
- * @returns The marginal.
- * @example
- * ```ts
- * import { mixtureMarginal } from 'omai-engine/probprog/ep'
- * mixtureMarginal([{ weight: 1, mean: -1, sd: 1 }, { weight: 1, mean: 1, sd: 1 }]).mean // => 0
- * ```
- */
-export function mixtureMarginal(components: readonly MixtureComponent[]): ExactMarginal {
-  const total = components.reduce((a, c) => a + c.weight, 0)
-  const parts = components.map((c) => ({ ...c, weight: c.weight / total }))
-  const mean = parts.reduce((a, c) => a + c.weight * c.mean, 0)
-  const second = parts.reduce((a, c) => a + c.weight * (c.sd ** 2 + c.mean ** 2), 0)
-  const sd = Math.sqrt(Math.max(second - mean * mean, 0))
-  const lo = Math.min(...parts.map((c) => c.mean - 5 * c.sd))
-  const hi = Math.max(...parts.map((c) => c.mean + 5 * c.sd))
-  return { mean, sd, pdf: (x) => parts.reduce((a, c) => a + c.weight * normalPdf(x, c.mean, c.sd), 0), range: [lo, hi] }
-}
+import { OmaiError } from '../../../base/index.ts'
+import type { ExactMarginal } from './marginal.ts'
 
 /**
  * The marginal of a one-dimensional posterior known up to a constant (its log density), by the midpoint rule on `points`
@@ -81,7 +19,7 @@ export function mixtureMarginal(components: readonly MixtureComponent[]): ExactM
  * @returns The marginal.
  * @example
  * ```ts
- * import { quadratureMarginal } from 'omai-engine/probprog/ep'
+ * import { quadratureMarginal } from 'omai-engine/probprog/validation'
  * Math.abs(quadratureMarginal((x) => -0.5 * x * x, -10, 10).sd - 1) < 1e-6 // => true
  * ```
  */
@@ -130,7 +68,7 @@ export interface GridMarginals {
  * @returns The marginals (piecewise-linear densities) and the joint.
  * @example
  * ```ts
- * import { gridMarginals } from 'omai-engine/probprog/ep'
+ * import { gridMarginals } from 'omai-engine/probprog/validation'
  * const g = gridMarginals((x) => -0.5 * (x[0] ?? 0) ** 2 - 0.5 * (x[1] ?? 0) ** 2, [[-6, 6], [-6, 6]], 41)
  * Math.abs((g.marginals[0]?.sd ?? 0) - 1) < 1e-3 // => true
  * ```
@@ -203,55 +141,6 @@ export function gridMarginals(
   }
 }
 
-/**
- * The branch of a mixture that a switch selects, from the marginal belief of a component that is the selected branch with
- * probability `p` and its prior otherwise: if `b` is that marginal's mean and sd, the selected branch's moments follow from
- * the mixture's (`E[x] = p m1 + (1 - p) m0`, `E[x²] = p (s1² + m1²) + (1 - p)(s0² + m0²)`). Exact when `b` has the mixture's
- * own moments, as an EP message through a gate has.
- *
- * @param b - The component's marginal mean and sd.
- * @param p - The probability that the component is the selected one.
- * @param prior - The mean and sd the component keeps when it is not selected.
- * @returns The selected branch's mean and sd, or undefined when `p` is zero or the moments do not make a variance.
- * @example
- * ```ts
- * import { selectedBranch } from 'omai-engine/probprog/ep'
- * selectedBranch({ mean: 0.5, sd: 1 }, 0.5, { mean: 0, sd: 1 })?.mean // => 1
- * ```
- */
-export function selectedBranch(
-  b: { readonly mean: number; readonly sd: number },
-  p: number,
-  prior: { readonly mean: number; readonly sd: number },
-): { readonly mean: number; readonly sd: number } | undefined {
-  if (!(p > 1e-12)) return undefined
-  const m1 = (b.mean - (1 - p) * prior.mean) / p
-  const second = (b.sd ** 2 + b.mean ** 2 - (1 - p) * (prior.sd ** 2 + prior.mean ** 2)) / p
-  const v = second - m1 * m1
-  return v > 0 ? { mean: m1, sd: Math.sqrt(v) } : undefined
-}
-
-/**
- * The mean and standard deviation of a mixture of Gaussians: what a single Gaussian that matches its moments has.
- *
- * @param branches - The weighted branches (the weights are normalised).
- * @returns The mean and sd.
- * @example
- * ```ts
- * import { momentMatch } from 'omai-engine/probprog/ep'
- * momentMatch([{ weight: 1, mean: -1, sd: 0 }, { weight: 1, mean: 1, sd: 0 }]).sd // => 1
- * ```
- */
-export function momentMatch(branches: readonly { weight: number; mean: number; sd: number }[]): {
-  mean: number
-  sd: number
-} {
-  const total = branches.reduce((a, c) => a + c.weight, 0)
-  const mean = branches.reduce((a, c) => a + (c.weight / total) * c.mean, 0)
-  const second = branches.reduce((a, c) => a + (c.weight / total) * (c.sd ** 2 + c.mean ** 2), 0)
-  return { mean, sd: Math.sqrt(Math.max(second - mean * mean, 0)) }
-}
-
 /** What a hyperparameter's value makes of one quantity: its moments and density given that value. */
 export interface ConditionalMarginal {
   readonly mean: number
@@ -280,7 +169,7 @@ export interface HyperPosterior {
  * @returns The hyperparameter's marginal, and the mixing function.
  * @example
  * ```ts
- * import { hyperPosterior } from 'omai-engine/probprog/ep'
+ * import { hyperPosterior } from 'omai-engine/probprog/validation'
  * const post = hyperPosterior((h) => 2 * Math.log(h) - 3 * h, 1e-3, 40)
  * Math.abs(post.hyper.mean - 3 / 3) < 1e-3 // => true
  * ```

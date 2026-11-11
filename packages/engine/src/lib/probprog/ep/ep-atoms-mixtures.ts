@@ -15,15 +15,21 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import {
+  type ExactMarginal,
+  mixtureMarginal,
+  momentMatch,
+  normalPdf,
+  quadratureMarginal,
+  selectedBranch,
+} from '../validation/index.ts'
+import {
   type AtomProblem,
   type Belief,
   defineAtom,
   type EpAtom,
-  type ExactMarginal,
   type MixtureBranch,
   type MixtureView,
 } from './ep-atoms.ts'
-import { mixtureMarginal, momentMatch, normalPdf, quadratureMarginal, selectedBranch } from './ep-atoms-quad.ts'
 
 /** A Gaussian: its mean and sd. */
 interface Normal {

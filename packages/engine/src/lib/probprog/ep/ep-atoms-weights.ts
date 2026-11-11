@@ -13,7 +13,8 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { type AtomProblem, type AtomTolerance, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
+import type { ExactMarginal } from '../validation/index.ts'
+import { type AtomProblem, type AtomTolerance, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 const BASE = [-2.1, 1.9, 0.3, 2.2, -0.4, 1.7, 0.6, -1.8, 0.9, 2.3]
 const SD = 0.5

@@ -6,9 +6,9 @@
  * the three, and a Gaussian mixture's density over the grid (the marginal of a coordinate that is Gaussian given the three).
  */
 
-import { lgamma } from '../../numerics/special/index.ts'
-import { item } from '../../tensor/index.ts'
-import type { ExactMarginal } from './ep-atoms.ts'
+import { lgamma } from '../../../numerics/special/index.ts'
+import { item } from '../../../tensor/index.ts'
+import type { ExactMarginal } from './marginal.ts'
 
 /** The box of one coordinate: where the grid starts and the limits it must stay inside. */
 export interface CoordinateBox {

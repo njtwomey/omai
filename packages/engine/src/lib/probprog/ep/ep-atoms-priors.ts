@@ -13,16 +13,9 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { lg, sum } from './_util.ts'
-import {
-  type AtomProblem,
-  type AtomTolerance,
-  defineAtom,
-  type EpAtom,
-  type ExactMarginal,
-  type RefJoint,
-} from './ep-atoms.ts'
-import { normalPdf, quadratureMarginal } from './ep-atoms-quad.ts'
+import { type ExactMarginal, lg, normalPdf, quadratureMarginal } from '../validation/index.ts'
+import { sum } from './_util.ts'
+import { type AtomProblem, type AtomTolerance, defineAtom, type EpAtom, type RefJoint } from './ep-atoms.ts'
 
 const EXACT: AtomTolerance = {
   meanZ: 1e-6,

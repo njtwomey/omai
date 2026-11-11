@@ -12,9 +12,9 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
+import { type ConditionalMarginal, hyperPosterior, normalPdf } from '../validation/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
-import { type ConditionalMarginal, hyperPosterior, normalPdf } from './ep-atoms-quad.ts'
 
 function precisionLearnedProblem(k: Config): AtomProblem {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]

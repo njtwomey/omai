@@ -15,10 +15,16 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { type AtomProblem, type AtomSupport, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
+import {
+  clutterPosterior,
+  type ExactMarginal,
+  mixtureGibbs,
+  normalPdf,
+  outlierMixturePosterior,
+  samplesMarginal,
+} from '../validation/index.ts'
+import { type AtomProblem, type AtomSupport, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
-import { clutterPosterior, mixtureGibbs, outlierMixturePosterior, samplesMarginal } from './ep-atoms-gibbs.ts'
-import { normalPdf } from './ep-atoms-quad.ts'
 
 /** The knobs every extended atom has (the seed and the number of observations), with this atom's most observations. */
 const learnedKnobs = (n: number, max: number): Record<string, ReturnType<typeof int>> => ({

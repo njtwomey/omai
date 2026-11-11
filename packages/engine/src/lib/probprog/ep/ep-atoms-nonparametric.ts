@@ -12,9 +12,8 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { lg } from './_util.ts'
-import { type AtomProblem, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
-import { gridMarginals, normalPdf } from './ep-atoms-quad.ts'
+import { type ExactMarginal, gridMarginals, lg, normalPdf } from '../validation/index.ts'
+import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 // ----- the stick-breaking mixture -----
 

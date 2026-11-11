@@ -10,8 +10,8 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
+import { gridMarginals, quadratureMarginal } from '../validation/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
-import { gridMarginals, quadratureMarginal } from './ep-atoms-quad.ts'
 
 const XS = [-1, -0.6, -0.2, 0.1, 0.5, 0.9, 1.3, -0.8, 0.3, 1.1, -0.4, 0.7]
 const YS = [0, 0, 1, 0, 2, 4, 6, 1, 3, 0, 1, 5]

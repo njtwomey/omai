@@ -13,6 +13,7 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
+import { gridMarginals } from '../validation/index.ts'
 import { once } from './_util.ts'
 import {
   type AtomFigure,
@@ -23,7 +24,6 @@ import {
   type FigureCurve,
 } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
-import { gridMarginals } from './ep-atoms-quad.ts'
 
 const CUTS = [-0.6, 0.5, 1.4]
 const CURVE_X = Array.from({ length: 41 }, (_, i) => -2 + i / 10)

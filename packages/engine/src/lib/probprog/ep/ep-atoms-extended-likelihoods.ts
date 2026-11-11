@@ -15,18 +15,17 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { lg, normalCdfFast, once, sum } from './_util.ts'
+import { type ExactMarginal, gridMarginals, lg, normalCdfFast } from '../validation/index.ts'
+import { once, sum } from './_util.ts'
 import {
   type AtomFigure,
   type AtomProblem,
   type AtomRecoverySpec,
   defineAtom,
   type EpAtom,
-  type ExactMarginal,
   type FigureCurve,
 } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
-import { gridMarginals } from './ep-atoms-quad.ts'
 
 /** The recovery promise most of these share: 40 seeds, 0.75 of the true values inside the 90% intervals, errors under 1.6 sds. */
 const recoveryOf = (reason: string, seeds = 40): AtomRecoverySpec => ({

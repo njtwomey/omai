@@ -43,8 +43,7 @@ import {
   toStructure,
 } from '../model/index.ts'
 import type { Posterior } from '../posterior.ts'
-import { type GridOptions, gridPosterior } from '../validation/index.ts'
-import { lg } from './_util.ts'
+import { type ExactMarginal, type GridOptions, gridPosterior, lg } from '../validation/index.ts'
 
 /** Where a quantity lives, which fixes the family its belief is drawn in. */
 export type AtomSupport = 'real' | 'positive' | 'unit' | 'probability'
@@ -133,15 +132,6 @@ export interface AtomFigure {
   readonly answer?: (means: Readonly<Record<string, number>>) => readonly FigureCurve[]
   /** Lines of text that say the data in words (the matches played, the labels given), for data a plot does not carry. */
   readonly notes?: readonly string[]
-}
-
-/** The closed-form marginal of a quantity: its moments and its density. */
-export interface ExactMarginal {
-  readonly mean: number
-  readonly sd: number
-  readonly pdf: (x: number) => number
-  /** The interval the curve is drawn on (default the mean plus or minus eight standard deviations, kept inside the support). */
-  readonly range?: readonly [number, number]
 }
 
 /** What an atom's knobs make: the model, its data and everything the page and the checks need around them. */

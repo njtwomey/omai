@@ -12,10 +12,10 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, type ModelDefinition } from '../model/index.ts'
+import { gridMarginals } from '../validation/index.ts'
 import { once } from './_util.ts'
 import { type AtomFigure, type AtomProblem, defineAtom, type EpAtom, type FigureCurve } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
-import { gridMarginals } from './ep-atoms-quad.ts'
 
 const CLASSES = 3
 const GRID = 37

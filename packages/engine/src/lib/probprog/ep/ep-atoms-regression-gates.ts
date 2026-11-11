@@ -10,9 +10,8 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { mixtureOfRegressions } from '../validation/index.ts'
+import { mixtureMarginal, mixtureOfRegressions } from '../validation/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
-import { mixtureMarginal } from './ep-atoms-quad.ts'
 
 // Two lines, y = 1 + 2 x and y = -1 - x, eight rows whose classes are not told.
 const XS = [-1.5, -0.5, 0.2, 1.1, -0.9, 0.7, 1.6, -1.2]

@@ -14,8 +14,8 @@ import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { probitClassifier, probitData } from '../models/probit-classification.ts'
 import { trueskillModel } from '../models/ranking.ts'
+import { gridMarginals, normalCdf } from '../validation/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
-import { gridMarginals, normalCdf } from './ep-atoms-quad.ts'
 
 const HEAVY = [0.2, -0.1, 0.4, 0.0, 4.5]
 
