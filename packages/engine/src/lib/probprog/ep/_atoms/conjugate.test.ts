@@ -2,9 +2,9 @@
 // the same posterior by an independent path, to 1e-12 in the moments and 1e-9 in the density. (The atoms keep their own
 // closed forms: taking the library's makes the check's KS distance 0 become 1e-16, which a bitwise digest of the suite notices.)
 import { describe, expect, it } from 'vitest'
-import { betaBernoulli, conjugateMarginal, gammaPoisson, normalNormal } from '../validation/index.ts'
-import { epAtom } from './ep-atom-list.ts'
-import { atomReference } from './ep-atoms.ts'
+import { betaBernoulli, conjugateMarginal, gammaPoisson, normalNormal } from '../../validation/index.ts'
+import { epAtom } from '../ep-atom-list.ts'
+import { atomReference } from '../ep-atoms.ts'
 
 describe('the conjugate atoms against the library conjugate table', () => {
   const cases = [

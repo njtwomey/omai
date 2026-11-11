@@ -7,24 +7,18 @@
  * two precisions and the correlation) with the means and the random effects integrated out in closed form.
  */
 
-import { foldIn, key, normal } from '../../random/index.ts'
-import { dict, int, real } from '../../space/index.ts'
-import { toFlat } from '../../tensor/index.ts'
-import type { Config } from '../../trace/index.ts'
-import { configNumber } from '../inference/method.ts'
-import * as d from '../model/dists/index.ts'
-import { defineModel, ops } from '../model/index.ts'
-import { type CoordinateBox, type ExactMarginal, logWeights, logWishart2, posterior3 } from '../validation/index.ts'
-import {
-  type AtomParts,
-  type AtomProblem,
-  type AtomRecoverySpec,
-  defineAtom,
-  type EpAtom,
-  type FigureCurve,
-} from './ep-atoms.ts'
-import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
-import { recovery, tolerance } from './ep-tolerance.ts'
+import { foldIn, key, normal } from '../../../random/index.ts'
+import { dict, int, real } from '../../../space/index.ts'
+import { toFlat } from '../../../tensor/index.ts'
+import type { Config } from '../../../trace/index.ts'
+import { configNumber } from '../../inference/method.ts'
+import * as d from '../../model/dists/index.ts'
+import { defineModel, ops } from '../../model/index.ts'
+import { type CoordinateBox, type ExactMarginal, logWeights, logWishart2, posterior3 } from '../../validation/index.ts'
+import { defineAtom } from '../_define.ts'
+import { recovery, tolerance } from '../_tolerance.ts'
+import type { AtomParts, AtomProblem, AtomRecoverySpec, EpAtom, FigureCurve } from '../atom-types.ts'
+import { simulationKnobs } from './conjugate.ts'
 
 /** The 2 by 2 matrix `[[a, b], [b, c]]` as a nested array. */
 const matrix2 = (a: number, b: number, c: number): number[][] => [
@@ -235,15 +229,8 @@ function mvnWishartProblem(k: Config): AtomParts {
 /**
  * A multivariate normal with a known mean and a Wishart precision matrix, the conjugate case of a learned covariance: the posterior is the
  * Wishart with the degrees of freedom and the scatter of the rows added, and EP, which sends the exact conjugate message, reaches it in one sweep.
- *
- * @index estimator EP atom: a multivariate normal with a Wishart precision matrix and a known mean (exact).
- * @example
- * ```ts
- * import { mvnWishartAtom } from 'omai-engine/probprog/ep'
- * mvnWishartAtom.expected // => 'runs'
- * ```
  */
-export const mvnWishartAtom: EpAtom = defineAtom({
+const mvnWishartAtom: EpAtom = defineAtom({
   name: 'mvn-wishart',
   title: 'Multivariate normal with a Wishart precision',
   what: 'Six pairs from a bivariate normal with a known mean, whose precision matrix is a Wishart latent: the conjugate update of the matrix, exact in one sweep, checked against the closed-form posterior.',
@@ -391,15 +378,8 @@ function mvnWishartLearnedProblem(k: Config): AtomParts {
  * A bivariate normal with an unknown mean and an unknown precision matrix (a Wishart), learned from data simulated from a stated mean and
  * covariance: the vector is read through one plated factor, EP matches the Wishart to the moments of its tilted distribution on a Bartlett grid,
  * and the page checks the truth is recovered and how often the 90% intervals hold it.
- *
- * @index estimator EP atom: a bivariate normal with unknown mean and Wishart precision matrix, recovered from simulated data.
- * @example
- * ```ts
- * import { mvnWishartLearnedAtom } from 'omai-engine/probprog/ep'
- * mvnWishartLearnedAtom.extends // => 'mvn-wishart'
- * ```
  */
-export const mvnWishartLearnedAtom: EpAtom = defineAtom({
+const mvnWishartLearnedAtom: EpAtom = defineAtom({
   name: 'mvn-wishart-learned',
   title: 'Multivariate normal with a Wishart precision: parameters learned',
   extends: 'mvn-wishart',
@@ -507,15 +487,8 @@ function bivariateCorrelationProblem(k: Config): AtomParts {
 /**
  * A bivariate normal with known standard deviations and mean and an unknown correlation under the LKJ prior (a beta variable on `(rho + 1) / 2`):
  * the likelihood of the rows is a function of three scatter sums and the correlation, a one-dimensional integral EP matches to a beta.
- *
- * @index estimator EP atom: a bivariate normal with an unknown correlation (LKJ prior).
- * @example
- * ```ts
- * import { bivariateCorrelationAtom } from 'omai-engine/probprog/ep'
- * bivariateCorrelationAtom.expected // => 'runs'
- * ```
  */
-export const bivariateCorrelationAtom: EpAtom = defineAtom({
+const bivariateCorrelationAtom: EpAtom = defineAtom({
   name: 'bivariate-correlation',
   title: 'Bivariate normal with an unknown correlation',
   what: 'Eight pairs from a bivariate normal with known zero means and unit sds, whose correlation has the LKJ prior of a 2 by 2 matrix (a beta variable on (rho + 1) / 2): a one-dimensional numeric site, checked against the posterior of the correlation by quadrature.',
@@ -670,15 +643,8 @@ function bivariateCorrelationLearnedProblem(k: Config): AtomParts {
 /**
  * A bivariate normal with an unknown mean, unknown standard deviations (gamma precisions) and an unknown correlation (LKJ), learned from data
  * simulated from a stated truth: one plated factor over the two precisions and the correlation, integrated on a zooming three-dimensional grid.
- *
- * @index estimator EP atom: a bivariate normal with unknown mean, standard deviations and correlation, recovered from simulated data.
- * @example
- * ```ts
- * import { bivariateCorrelationLearnedAtom } from 'omai-engine/probprog/ep'
- * bivariateCorrelationLearnedAtom.extends // => 'bivariate-correlation'
- * ```
  */
-export const bivariateCorrelationLearnedAtom: EpAtom = defineAtom({
+const bivariateCorrelationLearnedAtom: EpAtom = defineAtom({
   name: 'bivariate-correlation-learned',
   title: 'Bivariate normal with an unknown correlation: parameters learned',
   extends: 'bivariate-correlation',
@@ -956,15 +922,8 @@ function randomEffectsProblem(k: Config): AtomParts {
  * Correlated random intercepts and slopes: a line per group whose (intercept, slope) pair is drawn from a bivariate normal with a Wishart precision
  * matrix (a known population mean), observed with known noise. EP carries a Gaussian vector per group and matches the matrix by quadrature
  * against the tilted distribution of each group.
- *
- * @index estimator EP atom: correlated random intercepts and slopes (a Wishart covariance of the effects).
- * @example
- * ```ts
- * import { randomInterceptsSlopesAtom } from 'omai-engine/probprog/ep'
- * randomInterceptsSlopesAtom.expected // => 'runs'
- * ```
  */
-export const randomInterceptsSlopesAtom: EpAtom = defineAtom({
+const randomInterceptsSlopesAtom: EpAtom = defineAtom({
   name: 'random-intercepts-slopes',
   title: 'Correlated random intercepts and slopes',
   what: 'A line per group, its intercept and slope drawn together from a bivariate normal with a Wishart precision matrix and a known mean, observed with known noise: a Gaussian vector per group read through its coordinates, the matrix learned from the groups, checked against quadrature of the matrix with the effects integrated out.',
@@ -1142,15 +1101,8 @@ function randomEffectsLearnedProblem(k: Config): AtomParts {
 /**
  * Correlated random intercepts and slopes with the population mean and the covariance of the effects both unknown, learned from groups simulated from a
  * stated truth: does EP recover the covariance, the mean and each group's line, and how often do its 90% intervals hold them?
- *
- * @index estimator EP atom: correlated random intercepts and slopes with learned mean and covariance, recovered from simulated groups.
- * @example
- * ```ts
- * import { randomInterceptsSlopesLearnedAtom } from 'omai-engine/probprog/ep'
- * randomInterceptsSlopesLearnedAtom.extends // => 'random-intercepts-slopes'
- * ```
  */
-export const randomInterceptsSlopesLearnedAtom: EpAtom = defineAtom({
+const randomInterceptsSlopesLearnedAtom: EpAtom = defineAtom({
   name: 'random-intercepts-slopes-learned',
   title: 'Correlated random intercepts and slopes: parameters learned',
   extends: 'random-intercepts-slopes',
@@ -1186,3 +1138,13 @@ export const randomInterceptsSlopesLearnedAtom: EpAtom = defineAtom({
   }),
   parts: randomEffectsLearnedProblem,
 })
+
+/** The atoms of the `covariance` file, basic and learned twins together. */
+export const covarianceAtoms: readonly EpAtom[] = [
+  mvnWishartAtom,
+  mvnWishartLearnedAtom,
+  bivariateCorrelationAtom,
+  bivariateCorrelationLearnedAtom,
+  randomInterceptsSlopesAtom,
+  randomInterceptsSlopesLearnedAtom,
+]

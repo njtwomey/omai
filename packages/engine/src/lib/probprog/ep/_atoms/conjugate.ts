@@ -1,21 +1,184 @@
 /**
- * The extended twins of the conjugate atoms: the same setups with the numbers the basic atoms fix made unknown and learned.
- * A Gaussian whose mean and variance are both unknown (the normal-inverse-gamma prior), a population of Bernoulli
- * probabilities whose beta prior has an unknown strength, a population of Poisson rates whose gamma prior has an unknown rate.
- * The data are simulated from a stated truth with a seed, EP runs, and the page checks that the truth is recovered (and, over
- * many seeds, that EP's 90% intervals hold it about nine times in ten).
+ * The conjugate setups of expectation propagation, bare and with their unknowns learned: a Gaussian mean, a beta with Bernoulli flips, a gamma with Poisson counts, and the same three with the numbers the basic atoms fix made unknown (the variance, the strength, the prior rate) and the data simulated from a stated truth. The posterior of each basic atom is in closed form, so these are the sanity setups of the suite: EP is exact on them, up to rounding, and they show the factor graph at its simplest.
  */
 
-import { beta, foldIn, gamma, key, normal, poisson, uniform } from '../../random/index.ts'
-import { dict, int, real } from '../../space/index.ts'
-import { item, toFlat } from '../../tensor/index.ts'
-import type { Config } from '../../trace/index.ts'
-import { configNumber } from '../inference/method.ts'
-import * as d from '../model/dists/index.ts'
-import { defineModel, ops } from '../model/index.ts'
-import { type ConditionalMarginal, hyperPosterior, lg, normalInverseGammaPosterior, sum } from '../validation/index.ts'
-import { type AtomParts, type AtomRecoverySpec, defineAtom, type EpAtom } from './ep-atoms.ts'
-import { recovery, tolerance } from './ep-tolerance.ts'
+import { beta, foldIn, gamma, key, normal, poisson, uniform } from '../../../random/index.ts'
+import { type DictSpace, dict, int, real } from '../../../space/index.ts'
+import { item, toFlat } from '../../../tensor/index.ts'
+import type { Config } from '../../../trace/index.ts'
+import { configNumber } from '../../inference/method.ts'
+import * as d from '../../model/dists/index.ts'
+import { defineModel, ops } from '../../model/index.ts'
+import {
+  type ConditionalMarginal,
+  hyperPosterior,
+  lg,
+  normalInverseGammaPosterior,
+  normalPdf,
+  sum,
+} from '../../validation/index.ts'
+import { defineAtom } from '../_define.ts'
+import { recovery, tolerance } from '../_tolerance.ts'
+import type { AtomParts, AtomRecoverySpec, EpAtom } from '../atom-types.ts'
+import { beliefDensity } from '../ep-atoms.ts'
+
+const EXACT = tolerance(
+  'exact',
+  'a conjugate model: EP is exact, so its belief equals the closed-form posterior up to rounding',
+)
+
+const GAUSSIAN_Y = [1.2, 0.4, 1.9]
+
+function gaussianProblem(k: Config): AtomParts {
+  const ps = configNumber(k, 'priorSd')
+  const s = 1
+  // region gaussian
+  const definition = defineModel('gaussian', (m) => {
+    const mu = m.latent('mu', d.normal(0, ps))
+    m.observe('y', d.normal(mu, s), m.data('y', { dims: ['i'], role: 'response' }))
+  })
+  // endregion
+  const prec = 1 / ps ** 2 + GAUSSIAN_Y.length / s ** 2
+  const mean = sum(GAUSSIAN_Y) / s ** 2 / prec
+  const sd = Math.sqrt(1 / prec)
+  return {
+    build: {
+      definition,
+      data: { y: GAUSSIAN_Y },
+      quantities: [{ name: 'mu', label: 'mu', support: 'real' }],
+    },
+    reference: {
+      exact: { mu: { mean, sd, pdf: (x) => normalPdf(x, mean, sd) } },
+    },
+    present: {
+      equations: [`mu ~ N(0, ${ps}²)`, `y_i ~ N(mu, 1²), i = 1..3`, `observe y = (${GAUSSIAN_Y.join(', ')})`],
+    },
+  }
+}
+
+/**
+ * A Gaussian mean with Gaussian observations: the simplest factor graph, a prior and one likelihood factor.
+ */
+const gaussianAtom: EpAtom = defineAtom({
+  name: 'gaussian',
+  title: 'Gaussian',
+  what: 'A Gaussian prior on a mean and three Gaussian observations: a prior factor and a linear-Gaussian likelihood factor, closed-form posterior.',
+  factors: ['prior (gaussian)', 'gaussian likelihood (linear)'],
+  family: 'conjugate',
+  reference: 'exact',
+  tolerance: EXACT,
+  evidence: { nats: 1e-5, reason: 'conjugate: exact' },
+  knobs: dict({ priorSd: real(0.3, 10, { default: 2, step: 0.1, label: 'prior sd' }) }),
+  parts: gaussianProblem,
+})
+
+const FLIPS = [1, 1, 0, 1, 1, 0, 1]
+
+function betaProblem(k: Config): AtomParts {
+  const a = configNumber(k, 'a')
+  const b = configNumber(k, 'b')
+  // region beta-bernoulli
+  const definition = defineModel('beta-bernoulli', (m) => {
+    const p = m.latent('p', d.beta(a, b))
+    const observed = m.data('y', { dims: ['i'], support: 'binary', role: 'response' })
+    m.observe('y', d.bernoulli({ probs: p }), observed)
+  })
+  // endregion
+  const heads = sum(FLIPS)
+  const A = a + heads
+  const B = b + FLIPS.length - heads
+  const mean = A / (A + B)
+  const sd = Math.sqrt((A * B) / ((A + B) ** 2 * (A + B + 1)))
+  return {
+    build: {
+      definition,
+      data: { y: FLIPS },
+      quantities: [{ name: 'p', label: 'p', support: 'unit' }],
+    },
+    reference: {
+      exact: { p: { mean, sd, pdf: beliefDensity('unit', mean, sd), range: [0, 1] } },
+    },
+    present: {
+      equations: [`p ~ Beta(${a}, ${b})`, 'y_i ~ Bernoulli(p), i = 1..7', `observe y = (${FLIPS.join(', ')})`],
+    },
+  }
+}
+
+/**
+ * A beta prior and Bernoulli observations.
+ */
+const betaBernoulliAtom: EpAtom = defineAtom({
+  name: 'beta-bernoulli',
+  title: 'Beta and Bernoulli',
+  what: 'A beta prior on a probability and seven Bernoulli observations: the beta-Bernoulli conjugate pair, a beta message from each observation.',
+  factors: ['prior (beta)', 'bernoulli likelihood (beta-bernoulli)'],
+  family: 'conjugate',
+  reference: 'exact',
+  tolerance: EXACT,
+  evidence: { nats: 1e-5, reason: 'conjugate: exact' },
+  knobs: dict({
+    a: real(0.2, 20, { default: 2, step: 0.1, label: 'prior a' }),
+    b: real(0.2, 20, { default: 2, step: 0.1, label: 'prior b' }),
+  }),
+  parts: betaProblem,
+})
+
+const COUNTS = [3, 5, 2, 4]
+
+function gammaProblem(k: Config): AtomParts {
+  const a = configNumber(k, 'shape')
+  const b = configNumber(k, 'rate')
+  // region gamma-poisson
+  const definition = defineModel('gamma-poisson', (m) => {
+    const rate = m.latent('rate', d.gamma(a, b))
+    const observed = m.data('y', { dims: ['i'], support: 'count', role: 'response' })
+    m.observe('y', d.poisson(rate), observed)
+  })
+  // endregion
+  const A = a + sum(COUNTS)
+  const B = b + COUNTS.length
+  const mean = A / B
+  const sd = Math.sqrt(A) / B
+  return {
+    build: {
+      definition,
+      data: { y: COUNTS },
+      quantities: [{ name: 'rate', label: 'rate', support: 'positive' }],
+    },
+    reference: {
+      exact: {
+        rate: {
+          mean,
+          sd,
+          pdf: beliefDensity('positive', mean, sd),
+          range: [Math.max(0, mean - 6 * sd), mean + 8 * sd],
+        },
+      },
+    },
+    present: {
+      equations: [`rate ~ Gamma(${a}, ${b})`, 'y_i ~ Poisson(rate), i = 1..4', `observe y = (${COUNTS.join(', ')})`],
+    },
+  }
+}
+
+/**
+ * A gamma prior and Poisson observations.
+ */
+const gammaPoissonAtom: EpAtom = defineAtom({
+  name: 'gamma-poisson',
+  title: 'Gamma and Poisson',
+  what: 'A gamma prior on a rate and four Poisson observations: the gamma-Poisson conjugate pair, a gamma message from each observation.',
+  factors: ['prior (gamma)', 'poisson likelihood (gamma-poisson)'],
+  family: 'conjugate',
+  reference: 'exact',
+  tolerance: EXACT,
+  evidence: { nats: 1e-5, reason: 'conjugate: exact' },
+  knobs: dict({
+    shape: real(0.2, 20, { default: 2, step: 0.1, label: 'prior shape' }),
+    rate: real(0.05, 5, { default: 1, step: 0.05, label: 'prior rate' }),
+  }) as DictSpace,
+  parts: gammaProblem,
+})
 
 /** The knobs every extended atom has: the seed of the simulation and the number of observations. */
 export const simulationKnobs = (n: number): Record<string, ReturnType<typeof int>> => ({
@@ -102,15 +265,8 @@ const sigmaMean = (a: number, b: number): string => (a > 1 ? String(Number((b / 
  * The Gaussian with both its mean and its variance unknown, learned from data simulated from a stated truth: the
  * normal-inverse-gamma pair under EP (one normal-gamma variable and a factor per observation), exact, with the recovery of
  * the truth checked over many seeds.
- *
- * @index estimator EP atom: a Gaussian with unknown mean and variance, recovered from simulated data (exact).
- * @example
- * ```ts
- * import { gaussianLearnedAtom } from 'omai-engine/probprog/ep'
- * gaussianLearnedAtom.extends // => 'gaussian'
- * ```
  */
-export const gaussianLearnedAtom: EpAtom = defineAtom({
+const gaussianLearnedAtom: EpAtom = defineAtom({
   name: 'gaussian-learned',
   title: 'Gaussian: parameters learned',
   extends: 'gaussian',
@@ -242,15 +398,8 @@ function betaLearnedProblem(k: Config): AtomParts {
  * A population of Bernoulli probabilities whose symmetric beta prior has an unknown, gamma-distributed strength, learned from
  * flips simulated from a stated truth: does EP recover the strength (how far the probabilities spread from one half) and each
  * group's probability?
- *
- * @index estimator EP atom: groups of flips with a beta prior of unknown strength, recovered from simulated data.
- * @example
- * ```ts
- * import { betaBernoulliLearnedAtom } from 'omai-engine/probprog/ep'
- * betaBernoulliLearnedAtom.extends // => 'beta-bernoulli'
- * ```
  */
-export const betaBernoulliLearnedAtom: EpAtom = defineAtom({
+const betaBernoulliLearnedAtom: EpAtom = defineAtom({
   name: 'beta-bernoulli-learned',
   title: 'Beta and Bernoulli: parameters learned',
   extends: 'beta-bernoulli',
@@ -369,15 +518,8 @@ function gammaLearnedProblem(k: Config): AtomParts {
 /**
  * A population of Poisson rates drawn from a gamma whose rate is unknown (gamma-distributed), learned from counts simulated
  * from a stated truth: does EP recover the prior rate and each group's rate?
- *
- * @index estimator EP atom: groups of counts with a gamma prior of unknown rate, recovered from simulated data.
- * @example
- * ```ts
- * import { gammaPoissonLearnedAtom } from 'omai-engine/probprog/ep'
- * gammaPoissonLearnedAtom.extends // => 'gamma-poisson'
- * ```
  */
-export const gammaPoissonLearnedAtom: EpAtom = defineAtom({
+const gammaPoissonLearnedAtom: EpAtom = defineAtom({
   name: 'gamma-poisson-learned',
   title: 'Gamma and Poisson: parameters learned',
   extends: 'gamma-poisson',
@@ -403,3 +545,13 @@ export const gammaPoissonLearnedAtom: EpAtom = defineAtom({
   }),
   parts: gammaLearnedProblem,
 })
+
+/** The atoms of the `conjugate` file, basic and learned twins together. */
+export const conjugateAtoms: readonly EpAtom[] = [
+  gaussianAtom,
+  betaBernoulliAtom,
+  gammaPoissonAtom,
+  gaussianLearnedAtom,
+  betaBernoulliLearnedAtom,
+  gammaPoissonLearnedAtom,
+]

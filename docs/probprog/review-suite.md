@@ -338,6 +338,20 @@ this runs in about 2 minutes. Everything below proves itself against it, plus `m
 | 9 | pocs atom pages generated (needs the user's explicit request) | delete 92 `ep-<atom>/` dirs; registry adds entries from `epAtoms`; one `AtomRoute`; subgroup `match` derives from `atom.family` instead of slug globs; group summary corrected | page list identical (title, summary, tags, group) before and after; `ep-atoms.test.ts` stays; open 5 pages in a browser | M / low | 6 done |
 | 10 | Programs into the library (needs the user's request) | the programs' recovery check goes to `ep/calibration`; their Gibbs/NUTS references to `validation/references/sampler.ts`; `changepoint-extended/calibration.ts` and `Calibration.tsx` replaced by `atomCalibration`/`ExtendedParts`; each program becomes an atom with `reference: {kind:'sampler'}` or a thin file | the 5 `ep-programs*.test.ts` unchanged; check numbers on each page equal before and after | L / medium | after 4 and 9 |
 
+**Status (2026-11-11).** Steps 0, 1, 2, 3, 7 and 8 are done (phase 1). Steps 4, 5 and 6 are done (phase 2, `agent-pp223-suite`), with these
+differences from the plan above: (4) the references are one family in `validation/references/` (7 files, flat in the barrel) with 8 shared
+kernels replacing the copies; the three conjugate atoms keep their hand closed forms, because taking `validation/exact.ts` moves their KS
+distance 0 to 1e-16 (TOLERANT, not EXACT), and a test checks them against that table instead; `strengthExact`, `correlationMarginal`,
+the Dirichlet simplex grid, `positiveFromLog` and the beta mixtures are model-specific and stay with their atoms. (5) `parts()` returns
+`{ build, reference, present }` and `atom.problem()` composes them, so pages are unchanged; tolerance has 16 named rungs plus `measured`
+(50 distinct triples became 26; 35 atoms were loosened to a rung where their measured statistics are under half of it, none tightened),
+recovery 3 rungs plus `measured`; `evidence` moved into 49 atoms; `expected`/`plan` stay as the escape hatch. (6) one file per family
+under `_atoms/` (12 files; `likelihoods` is split into `likelihoods` and `ordinal` for size), arrays per family, atoms not exported
+individually, the registry keeps the old order through `ADDED_ORDER`, `runEp` is public (`run.ts`), the authoring (`_define.ts`,
+`_tolerance.ts`) is internal, the 92 `@index estimator` lines are gone (one `@index table` on `epAtoms`, one `function` on `runEp`).
+Steps 9 and 10 need the owner's request. The renames of the plan (`extended` to `learned`, `checkAgainst`, `calibrate`) were not done:
+the file names no longer carry `extended`, the function names are unchanged so the pocs are untouched.
+
 Order: 0 first; then 1, 2, 3 and 8 in parallel (different files); 4 by family in parallel with each other after 1; 5 then 6 as
 two sequential mechanical sweeps (no other atom edits meanwhile; a freeze of new atoms for the duration is the real cost of
 this plan); 7 alongside 5 and 6; 9 and 10 last and only on request. Total: about 3 to 5 agent-days of work if parallelised as

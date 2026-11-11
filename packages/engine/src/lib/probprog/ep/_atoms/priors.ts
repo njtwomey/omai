@@ -8,11 +8,11 @@
  * grid of the model written as a program for the rest. `docs/probprog/ep-priors.md` is the table the atoms illustrate.
  */
 
-import { dict, real } from '../../space/index.ts'
-import type { Config } from '../../trace/index.ts'
-import { configNumber } from '../inference/method.ts'
-import * as d from '../model/dists/index.ts'
-import { defineModel, ops } from '../model/index.ts'
+import { dict, real } from '../../../space/index.ts'
+import type { Config } from '../../../trace/index.ts'
+import { configNumber } from '../../inference/method.ts'
+import * as d from '../../model/dists/index.ts'
+import { defineModel, ops } from '../../model/index.ts'
 import {
   betaMarginal,
   type ExactMarginal,
@@ -25,9 +25,10 @@ import {
   quadratureMarginal,
   studentMarginal,
   sum,
-} from '../validation/index.ts'
-import { type AtomParts, type AtomTolerance, defineAtom, type EpAtom } from './ep-atoms.ts'
-import { tolerance } from './ep-tolerance.ts'
+} from '../../validation/index.ts'
+import { defineAtom } from '../_define.ts'
+import { tolerance } from '../_tolerance.ts'
+import type { AtomParts, AtomTolerance, EpAtom } from '../atom-types.ts'
 
 const EXACT = tolerance(
   'exact',
@@ -157,15 +158,8 @@ function nigProblem(k: Config): AtomParts {
  * The classic conjugate prior on a Gaussian's mean and variance, written the natural way (an inverse gamma on the variance, a
  * normal on the mean whose variance is that variance over `kappa`): the compiler reads the pair as one normal-gamma variable and
  * the posterior is exact, a Student t for the mean and an inverse gamma for the variance.
- *
- * @index estimator EP atom: a normal-inverse-gamma prior on a Gaussian mean and variance (exact).
- * @example
- * ```ts
- * import { priorNormalInverseGammaAtom } from 'omai-engine/probprog/ep'
- * priorNormalInverseGammaAtom.name // => 'prior-normal-inverse-gamma'
- * ```
  */
-export const priorNormalInverseGammaAtom: EpAtom = defineAtom({
+const priorNormalInverseGammaAtom: EpAtom = defineAtom({
   name: 'prior-normal-inverse-gamma',
   title: 'Prior: normal-inverse-gamma on a Gaussian mean and variance',
   what: 'An inverse-gamma prior on the variance of a Gaussian and, given it, a normal prior on its mean with variance sigma2 / kappa: the conjugate pair, one normal-gamma variable and a factor per observation.',
@@ -261,15 +255,8 @@ function hierarchicalNormalProblem(k: Config): AtomParts {
 /**
  * A normal prior on a Gaussian mean whose centre has a normal hyperprior of its own: jointly Gaussian, so EP is exact, and the
  * data inform the centre only through the mean.
- *
- * @index estimator EP atom: a normal prior on a mean with a normal hyperprior on its centre (exact).
- * @example
- * ```ts
- * import { priorNormalHyperAtom } from 'omai-engine/probprog/ep'
- * priorNormalHyperAtom.name // => 'prior-normal-hyperprior'
- * ```
  */
-export const priorNormalHyperAtom: EpAtom = defineAtom({
+const priorNormalHyperAtom: EpAtom = defineAtom({
   name: 'prior-normal-hyperprior',
   title: 'Prior: normal on a Gaussian mean, normal hyperprior on its centre',
   what: 'A normal prior on a Gaussian mean whose centre is itself normal: a chain of three Gaussians, jointly Gaussian, so the posterior of the mean and of the centre are closed forms.',
@@ -323,15 +310,8 @@ function inverseGammaHyperProblem(k: Config): AtomParts {
 /**
  * A gamma hyperprior on the scale of an inverse-gamma variance: the variance is a gamma precision whose rate is the
  * hyperparameter, the `gamma-rate` hierarchy, and the Gaussian observations are the gamma-precision factor.
- *
- * @index estimator EP atom: an inverse-gamma prior on a variance with a gamma hyperprior on its scale.
- * @example
- * ```ts
- * import { priorInverseGammaHyperAtom } from 'omai-engine/probprog/ep'
- * priorInverseGammaHyperAtom.family // => 'priors'
- * ```
  */
-export const priorInverseGammaHyperAtom: EpAtom = defineAtom({
+const priorInverseGammaHyperAtom: EpAtom = defineAtom({
   name: 'prior-inverse-gamma-hyperprior',
   title: 'Prior: inverse-gamma on a Gaussian variance, gamma hyperprior on its scale',
   what: 'An inverse-gamma prior on a variance whose scale is gamma distributed, six Gaussian observations around a known mean: the variance is a gamma precision with a random rate (the gamma-rate hierarchy).',
@@ -390,15 +370,8 @@ function gammaPoissonHyperProblem(k: Config): AtomParts {
 /**
  * A gamma prior on a Poisson rate whose own rate has a gamma hyperprior: the `gamma-rate` hierarchy under the conjugate
  * Poisson factor.
- *
- * @index estimator EP atom: a gamma prior on a Poisson rate with a gamma hyperprior on the prior's rate.
- * @example
- * ```ts
- * import { priorGammaPoissonHyperAtom } from 'omai-engine/probprog/ep'
- * priorGammaPoissonHyperAtom.expected // => 'runs'
- * ```
  */
-export const priorGammaPoissonHyperAtom: EpAtom = defineAtom({
+const priorGammaPoissonHyperAtom: EpAtom = defineAtom({
   name: 'prior-gamma-poisson-hyperprior',
   title: 'Prior: gamma on a Poisson rate, gamma hyperprior on its rate',
   what: 'A gamma prior on a Poisson rate whose rate parameter is gamma distributed, four counts: the gamma-rate hierarchy under the conjugate Poisson factor.',
@@ -447,15 +420,8 @@ function logNormalPoissonProblem(k: Config): AtomParts {
 /**
  * A log-normal prior on a Poisson rate: the prior is a Gaussian on the log rate (projected once, carried on its log) and the
  * count is read through the log link, the numeric likelihood of the registry.
- *
- * @index estimator EP atom: a log-normal prior on a Poisson rate.
- * @example
- * ```ts
- * import { priorLogNormalPoissonAtom } from 'omai-engine/probprog/ep'
- * priorLogNormalPoissonAtom.name // => 'prior-lognormal-poisson'
- * ```
  */
-export const priorLogNormalPoissonAtom: EpAtom = defineAtom({
+const priorLogNormalPoissonAtom: EpAtom = defineAtom({
   name: 'prior-lognormal-poisson',
   title: 'Prior: log-normal on a Poisson rate',
   what: 'A log-normal prior on a Poisson rate and four counts: a Gaussian on the log rate and the numeric Poisson likelihood with a log link.',
@@ -506,15 +472,8 @@ function logNormalPoissonHyperProblem(k: Config): AtomParts {
 
 /**
  * A log-normal prior on a Poisson rate written on the log scale, with a normal hyperprior on the centre of the log rate.
- *
- * @index estimator EP atom: a log-normal prior on a Poisson rate with a normal hyperprior on its log centre.
- * @example
- * ```ts
- * import { priorLogNormalPoissonHyperAtom } from 'omai-engine/probprog/ep'
- * priorLogNormalPoissonHyperAtom.family // => 'priors'
- * ```
  */
-export const priorLogNormalPoissonHyperAtom: EpAtom = defineAtom({
+const priorLogNormalPoissonHyperAtom: EpAtom = defineAtom({
   name: 'prior-lognormal-poisson-hyperprior',
   title: 'Prior: log-normal on a Poisson rate, normal hyperprior on its log centre',
   what: 'The log of a Poisson rate is normal around a centre that is itself normal: two Gaussians and the numeric Poisson likelihood with a log link.',
@@ -563,15 +522,8 @@ function gammaExponentialProblem(k: Config): AtomParts {
 /**
  * A gamma prior on the rate of exponential waiting times: the likelihood is a gamma in the rate, so the posterior is the gamma
  * with the shape plus the count and the rate plus the total time.
- *
- * @index estimator EP atom: a gamma prior on an exponential rate (conjugate, exact).
- * @example
- * ```ts
- * import { priorGammaExponentialAtom } from 'omai-engine/probprog/ep'
- * priorGammaExponentialAtom.reference // => 'exact'
- * ```
  */
-export const priorGammaExponentialAtom: EpAtom = defineAtom({
+const priorGammaExponentialAtom: EpAtom = defineAtom({
   name: 'prior-gamma-exponential',
   title: 'Prior: gamma on an exponential rate',
   what: 'A gamma prior on the rate of exponential waiting times and five observed times: a conjugate gamma message from each observation.',
@@ -629,15 +581,8 @@ function weibullProblem(k: Config): AtomParts {
 /**
  * A normal prior on the log scale of a Weibull lifetime (so a log-normal scale) with a normal hyperprior on its centre: the
  * numeric Weibull likelihood of the registry with a log link.
- *
- * @index estimator EP atom: a normal prior on a Weibull log scale with a normal hyperprior on its centre.
- * @example
- * ```ts
- * import { priorNormalWeibullAtom } from 'omai-engine/probprog/ep'
- * priorNormalWeibullAtom.name // => 'prior-normal-weibull-scale'
- * ```
  */
-export const priorNormalWeibullAtom: EpAtom = defineAtom({
+const priorNormalWeibullAtom: EpAtom = defineAtom({
   name: 'prior-normal-weibull-scale',
   title: 'Prior: normal on a Weibull log scale, normal hyperprior on its centre',
   what: 'The log of a Weibull scale is normal around a normal centre, five observed lifetimes with a known shape: two Gaussians and the numeric Weibull likelihood.',
@@ -687,15 +632,8 @@ function betaGeometricProblem(k: Config): AtomParts {
 
 /**
  * A beta prior on the success probability of a geometric count: the likelihood `p (1 - p)^(y - 1)` is a beta in `p`, exact.
- *
- * @index estimator EP atom: a beta prior on a geometric success probability (conjugate, exact).
- * @example
- * ```ts
- * import { priorBetaGeometricAtom } from 'omai-engine/probprog/ep'
- * priorBetaGeometricAtom.name // => 'prior-beta-geometric'
- * ```
  */
-export const priorBetaGeometricAtom: EpAtom = defineAtom({
+const priorBetaGeometricAtom: EpAtom = defineAtom({
   name: 'prior-beta-geometric',
   title: 'Prior: beta on a geometric success probability',
   what: 'A beta prior on the success probability and four geometric counts (trials to the first success): the likelihood is a beta in the probability.',
@@ -763,15 +701,8 @@ const STRENGTH_TOLERANCE = tolerance(
 /**
  * A symmetric beta prior on a Bernoulli probability whose strength has a gamma hyperprior: the numeric `dirichlet-concentration`
  * factor (a grid over the log strength). The exact answer is a quadrature over the strength.
- *
- * @index estimator EP atom: a beta prior on a probability with a gamma hyperprior on its strength.
- * @example
- * ```ts
- * import { priorBetaStrengthGammaAtom } from 'omai-engine/probprog/ep'
- * priorBetaStrengthGammaAtom.family // => 'priors'
- * ```
  */
-export const priorBetaStrengthGammaAtom: EpAtom = defineAtom({
+const priorBetaStrengthGammaAtom: EpAtom = defineAtom({
   name: 'prior-beta-strength-gamma',
   title: 'Prior: beta on a probability, gamma hyperprior on its strength',
   what: 'A symmetric Beta(strength, strength) prior on a Bernoulli probability with a gamma-distributed strength: the strength says whether the probability sits near one half or near the ends.',
@@ -793,15 +724,8 @@ export const priorBetaStrengthGammaAtom: EpAtom = defineAtom({
 
 /**
  * The same with a log-normal hyperprior on the strength, carried on its log (a Gaussian site in the factor).
- *
- * @index estimator EP atom: a beta prior on a probability with a log-normal hyperprior on its strength.
- * @example
- * ```ts
- * import { priorBetaStrengthLogNormalAtom } from 'omai-engine/probprog/ep'
- * priorBetaStrengthLogNormalAtom.family // => 'priors'
- * ```
  */
-export const priorBetaStrengthLogNormalAtom: EpAtom = defineAtom({
+const priorBetaStrengthLogNormalAtom: EpAtom = defineAtom({
   name: 'prior-beta-strength-lognormal',
   title: 'Prior: beta on a probability, log-normal hyperprior on its strength',
   what: 'A symmetric Beta(strength, strength) prior on a Bernoulli probability with a log-normal strength: the factor takes the log strength as a Gaussian variable.',
@@ -853,15 +777,8 @@ function dirichletCategoricalProblem(k: Config): AtomParts {
 
 /**
  * A Dirichlet prior on the probabilities of a categorical variable: each marginal of the posterior is the beta of its count.
- *
- * @index estimator EP atom: a Dirichlet prior on categorical probabilities (conjugate, exact).
- * @example
- * ```ts
- * import { priorDirichletCategoricalAtom } from 'omai-engine/probprog/ep'
- * priorDirichletCategoricalAtom.name // => 'prior-dirichlet-categorical'
- * ```
  */
-export const priorDirichletCategoricalAtom: EpAtom = defineAtom({
+const priorDirichletCategoricalAtom: EpAtom = defineAtom({
   name: 'prior-dirichlet-categorical',
   title: 'Prior: Dirichlet on categorical probabilities',
   what: 'A symmetric Dirichlet prior on three category probabilities and seven categorical observations: the Dirichlet-categorical conjugate pair.',
@@ -911,15 +828,8 @@ function dirichletStrengthProblem(k: Config): AtomParts {
 /**
  * A symmetric Dirichlet prior on categorical probabilities whose concentration has a gamma hyperprior: the numeric
  * `dirichlet-concentration` factor with three components.
- *
- * @index estimator EP atom: a Dirichlet prior on categorical probabilities with a gamma hyperprior on its concentration.
- * @example
- * ```ts
- * import { priorDirichletStrengthAtom } from 'omai-engine/probprog/ep'
- * priorDirichletStrengthAtom.family // => 'priors'
- * ```
  */
-export const priorDirichletStrengthAtom: EpAtom = defineAtom({
+const priorDirichletStrengthAtom: EpAtom = defineAtom({
   name: 'prior-dirichlet-strength-gamma',
   title: 'Prior: Dirichlet on categorical probabilities, gamma hyperprior on its concentration',
   what: 'A symmetric Dirichlet with a gamma-distributed concentration over three categories: the concentration says how even the probabilities are, and the data inform it through the counts.',
@@ -976,15 +886,8 @@ function logitNormalProblem(k: Config): AtomParts {
 /**
  * A logit-normal prior on a Bernoulli probability (a normal on the log odds) with a normal hyperprior on its centre: the logistic
  * factor on a Gaussian predictor.
- *
- * @index estimator EP atom: a logit-normal prior on a Bernoulli probability with a normal hyperprior on its centre.
- * @example
- * ```ts
- * import { priorLogitNormalAtom } from 'omai-engine/probprog/ep'
- * priorLogitNormalAtom.family // => 'priors'
- * ```
  */
-export const priorLogitNormalAtom: EpAtom = defineAtom({
+const priorLogitNormalAtom: EpAtom = defineAtom({
   name: 'prior-logit-normal-bernoulli',
   title: 'Prior: logit-normal on a Bernoulli probability, normal hyperprior on its centre',
   what: 'The log odds of a Bernoulli probability are normal around a normal centre, seven flips: two Gaussians and the logistic factor.',
@@ -1030,15 +933,8 @@ function uniformProblem(k: Config): AtomParts {
 /**
  * A uniform prior on a Gaussian mean: a prior with no message family, kept as the exact numeric `prior-site` (its message is the
  * moment match against the current cavity at every sweep), so the posterior is the truncated Gaussian approximated by a Gaussian.
- *
- * @index estimator EP atom: a uniform prior on a Gaussian mean (exact numeric site).
- * @example
- * ```ts
- * import { priorUniformAtom } from 'omai-engine/probprog/ep'
- * priorUniformAtom.name // => 'prior-uniform-mean'
- * ```
  */
-export const priorUniformAtom: EpAtom = defineAtom({
+const priorUniformAtom: EpAtom = defineAtom({
   name: 'prior-uniform-mean',
   title: 'Prior: uniform on a Gaussian mean',
   what: 'A uniform prior on a Gaussian mean with six observations: the density has no message family, so it is carried as an exact numeric site that EP matches against the current cavity at every sweep.',
@@ -1101,15 +997,8 @@ function logNormalScaleProblem(k: Config): AtomParts {
 /**
  * A log-normal prior on the standard deviation of a Gaussian (a normal on its log) with a normal hyperprior on the centre: the
  * `gaussian-log-scale` factor, a one-dimensional quadrature in the log scale.
- *
- * @index estimator EP atom: a log-normal prior on a Gaussian scale with a normal hyperprior on its log centre.
- * @example
- * ```ts
- * import { priorLogNormalScaleAtom } from 'omai-engine/probprog/ep'
- * priorLogNormalScaleAtom.family // => 'priors'
- * ```
  */
-export const priorLogNormalScaleAtom: EpAtom = defineAtom({
+const priorLogNormalScaleAtom: EpAtom = defineAtom({
   name: 'prior-lognormal-scale-hyperprior',
   title: 'Prior: log-normal on a Gaussian scale, normal hyperprior on its log centre',
   what: 'The log of a Gaussian standard deviation is normal around a normal centre, four zero-mean observations: two Gaussians and the Gaussian with an exp(h) scale.',
@@ -1164,15 +1053,8 @@ function betaTwoShapesProblem(k: Config): AtomParts {
  * A beta prior with two random shapes, each with its own log-normal hyperprior: the tilted distribution is two-dimensional (a
  * grid over both shapes), which the one-dimensional concentration factor does not cover; the `beta-two-shapes` factor does, with a
  * grid in `(log a, log b)` and the conjugate update of `p` at each node.
- *
- * @index estimator EP atom: a beta prior on a probability with two random shapes.
- * @example
- * ```ts
- * import { priorBetaTwoShapesAtom } from 'omai-engine/probprog/ep'
- * priorBetaTwoShapesAtom.expected // => 'runs'
- * ```
  */
-export const priorBetaTwoShapesAtom: EpAtom = defineAtom({
+const priorBetaTwoShapesAtom: EpAtom = defineAtom({
   name: 'prior-beta-two-shapes',
   title: 'Prior: beta with two random shapes',
   what: 'A beta prior on a Bernoulli probability whose two shapes are separate log-normal variables: a three-variable factor with a two-dimensional tilted integral, which a grid in the two log shapes does.',
@@ -1188,3 +1070,24 @@ export const priorBetaTwoShapesAtom: EpAtom = defineAtom({
   knobs: dict({ logSd: real(0.2, 2, { default: 0.7, step: 0.1, label: 'sd of each log shape' }) }),
   parts: betaTwoShapesProblem,
 })
+
+/** The atoms of the `priors` file, basic and learned twins together. */
+export const priorsAtoms: readonly EpAtom[] = [
+  priorNormalInverseGammaAtom,
+  priorNormalHyperAtom,
+  priorInverseGammaHyperAtom,
+  priorGammaPoissonHyperAtom,
+  priorLogNormalPoissonAtom,
+  priorLogNormalPoissonHyperAtom,
+  priorGammaExponentialAtom,
+  priorNormalWeibullAtom,
+  priorBetaGeometricAtom,
+  priorBetaStrengthGammaAtom,
+  priorBetaStrengthLogNormalAtom,
+  priorDirichletCategoricalAtom,
+  priorDirichletStrengthAtom,
+  priorLogitNormalAtom,
+  priorUniformAtom,
+  priorLogNormalScaleAtom,
+  priorBetaTwoShapesAtom,
+]

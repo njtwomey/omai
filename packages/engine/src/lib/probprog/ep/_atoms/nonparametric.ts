@@ -7,14 +7,15 @@
  * Dirichlets integrated out, which makes every posterior a mixture of betas.
  */
 
-import { dict, real } from '../../space/index.ts'
-import type { Config } from '../../trace/index.ts'
-import { configNumber } from '../inference/method.ts'
-import * as d from '../model/dists/index.ts'
-import { defineModel, ops } from '../model/index.ts'
-import { type ExactMarginal, gridMarginals, lg, logWeights, normalPdf } from '../validation/index.ts'
-import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
-import { tolerance } from './ep-tolerance.ts'
+import { dict, real } from '../../../space/index.ts'
+import type { Config } from '../../../trace/index.ts'
+import { configNumber } from '../../inference/method.ts'
+import * as d from '../../model/dists/index.ts'
+import { defineModel, ops } from '../../model/index.ts'
+import { type ExactMarginal, gridMarginals, lg, logWeights, normalPdf } from '../../validation/index.ts'
+import { defineAtom } from '../_define.ts'
+import { tolerance } from '../_tolerance.ts'
+import type { AtomParts, EpAtom } from '../atom-types.ts'
 
 // ----- the stick-breaking mixture -----
 
@@ -83,15 +84,8 @@ function stickBreakingProblem(k: Config): AtomParts {
 /**
  * A truncated Dirichlet-process mixture of three known Gaussians: two Beta breaks whose stick-breaking weights are the
  * probabilities of the assignments. The exact posterior of the breaks is a two-dimensional grid with the assignments summed out.
- *
- * @index estimator EP atom: a stick-breaking mixture (truncated Dirichlet process), the stick-breaking factor on beta breaks.
- * @example
- * ```ts
- * import { stickBreakingAtom } from 'omai-engine/probprog/ep'
- * stickBreakingAtom.name // => 'stick-breaking'
- * ```
  */
-export const stickBreakingAtom: EpAtom = defineAtom({
+const stickBreakingAtom: EpAtom = defineAtom({
   name: 'stick-breaking',
   title: 'Stick-breaking mixture (truncated Dirichlet process)',
   what: 'Ten observations from three known Gaussians whose weights are the stick-breaking of two Beta breaks, with a categorical assignment per observation: EP reads the weights through one stick-breaking factor per assignment, against the grid over the breaks.',
@@ -249,15 +243,8 @@ function topicModelProblem(k: Config): AtomParts {
  * A topic model of two documents of four words over a vocabulary of two, with two topics: a Dirichlet mixture per document, a Dirichlet
  * word distribution per topic and a categorical topic per token, with each word read through its token's topic. The exact posterior
  * enumerates the assignments of the tokens to topics.
- *
- * @index estimator EP atom: a topic model (Dirichlet mixtures and topics, a word read through its token's topic: a gate of discrete factors).
- * @example
- * ```ts
- * import { topicModelAtom } from 'omai-engine/probprog/ep'
- * topicModelAtom.name // => 'topic-model'
- * ```
  */
-export const topicModelAtom: EpAtom = defineAtom({
+const topicModelAtom: EpAtom = defineAtom({
   name: 'topic-model',
   title: 'Topic model (Dirichlet mixtures, a word read through its topic)',
   what: 'Two documents of four words, two topics: a Dirichlet mixture per document, a Dirichlet word distribution per topic, a topic per token and the word drawn from that topic: one gate per token over the topics’ conjugate discrete factors, against the enumeration of the assignments.',
@@ -278,3 +265,6 @@ export const topicModelAtom: EpAtom = defineAtom({
   }),
   parts: topicModelProblem,
 })
+
+/** The atoms of the `nonparametric` file, basic and learned twins together. */
+export const nonparametricAtoms: readonly EpAtom[] = [stickBreakingAtom, topicModelAtom]

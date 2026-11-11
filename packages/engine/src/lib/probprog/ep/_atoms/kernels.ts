@@ -7,20 +7,21 @@
  * function values as the mixture of their Gaussian conditionals, is what EP must reproduce.
  */
 
-import { gram, rbfKernel, scaleKernel } from '../../kernels/index.ts'
-import { cholesky } from '../../numerics/linalg/index.ts'
-import { foldIn, key, normal, uniform } from '../../random/index.ts'
-import { dict, real } from '../../space/index.ts'
-import { clip, matmul, reshape, tensor, toFlat, type Value } from '../../tensor/index.ts'
-import type { Config } from '../../trace/index.ts'
-import { configNumber } from '../inference/method.ts'
-import * as d from '../model/dists/index.ts'
-import { defineModel, ops } from '../model/index.ts'
-import { gpPosteriorGivenLengthScale } from '../models/index.ts'
-import { type ExactMarginal, gaussianMixtureMarginal } from '../validation/index.ts'
-import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
-import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
-import { recovery, tolerance } from './ep-tolerance.ts'
+import { gram, rbfKernel, scaleKernel } from '../../../kernels/index.ts'
+import { cholesky } from '../../../numerics/linalg/index.ts'
+import { foldIn, key, normal, uniform } from '../../../random/index.ts'
+import { dict, real } from '../../../space/index.ts'
+import { clip, matmul, reshape, tensor, toFlat, type Value } from '../../../tensor/index.ts'
+import type { Config } from '../../../trace/index.ts'
+import { configNumber } from '../../inference/method.ts'
+import * as d from '../../model/dists/index.ts'
+import { defineModel, ops } from '../../model/index.ts'
+import { gpPosteriorGivenLengthScale } from '../../models/index.ts'
+import { type ExactMarginal, gaussianMixtureMarginal } from '../../validation/index.ts'
+import { defineAtom } from '../_define.ts'
+import { recovery, tolerance } from '../_tolerance.ts'
+import type { AtomParts, EpAtom } from '../atom-types.ts'
+import { simulationKnobs } from './conjugate.ts'
 
 const X6 = [-2.4, -1.5, -0.6, 0.3, 1.2, 2.3]
 const Y6 = [-0.8, -1.1, -0.3, 0.7, 0.9, 0.2]
@@ -138,15 +139,8 @@ function gpLengthScaleProblem(_k: Config): AtomParts {
  * A Gaussian process regression on six points whose length scale is random: the covariance of the function is a custom
  * function of it, so the graph is built at each value of a grid over the length scale (EP inside a grid, the EP evidence of each
  * run as its weight), with a Gaussian likelihood in which EP is exact at every node.
- *
- * @index estimator EP atom: Gaussian process regression with a learned length scale (EP inside an evidence-weighted grid).
- * @example
- * ```ts
- * import { gpLengthScaleAtom } from 'omai-engine/probprog/ep'
- * gpLengthScaleAtom.name // => 'gp-length-scale'
- * ```
  */
-export const gpLengthScaleAtom: EpAtom = defineAtom({
+const gpLengthScaleAtom: EpAtom = defineAtom({
   name: 'gp-length-scale',
   title: 'Gaussian process with a learned length scale',
   what: 'A dense Gaussian prior on six function values whose kernel has a random length scale (a custom function), and a Gaussian observation of each: EP runs inside a grid over the length scale, each node weighted by its EP evidence and the prior.',
@@ -258,15 +252,8 @@ function gpClassLearnedProblem(k: Config): AtomParts {
  * labelled through a probit link, and the model's length scale random (so the covariance is a custom function of it, and EP runs
  * inside a grid over it). Does EP recover the length scale and the function from the labels, and how often do its 90% intervals
  * hold them?
- *
- * @index estimator EP atom: a probit Gaussian process classifier with a learned length scale, recovered from simulated labels.
- * @example
- * ```ts
- * import { gpProbitLearnedAtom } from 'omai-engine/probprog/ep'
- * gpProbitLearnedAtom.extends // => 'gp-probit'
- * ```
  */
-export const gpProbitLearnedAtom: EpAtom = defineAtom({
+const gpProbitLearnedAtom: EpAtom = defineAtom({
   name: 'gp-probit-learned',
   title: 'Gaussian process with a probit likelihood: parameters learned',
   extends: 'gp-probit',
@@ -292,3 +279,6 @@ export const gpProbitLearnedAtom: EpAtom = defineAtom({
   }),
   parts: gpClassLearnedProblem,
 })
+
+/** The atoms of the `kernels` file, basic and learned twins together. */
+export const kernelsAtoms: readonly EpAtom[] = [gpLengthScaleAtom, gpProbitLearnedAtom]

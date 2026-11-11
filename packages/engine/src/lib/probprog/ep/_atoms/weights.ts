@@ -8,14 +8,15 @@
  * distribution differs from the exact one.
  */
 
-import { dict, real } from '../../space/index.ts'
-import type { Config } from '../../trace/index.ts'
-import { configNumber } from '../inference/method.ts'
-import * as d from '../model/dists/index.ts'
-import { defineModel, ops } from '../model/index.ts'
-import { type ExactMarginal, logWeights, probabilityMarginal, weightedMarginal } from '../validation/index.ts'
-import { type AtomParts, type AtomProblem, type AtomTolerance, defineAtom, type EpAtom } from './ep-atoms.ts'
-import { tolerance } from './ep-tolerance.ts'
+import { dict, real } from '../../../space/index.ts'
+import type { Config } from '../../../trace/index.ts'
+import { configNumber } from '../../inference/method.ts'
+import * as d from '../../model/dists/index.ts'
+import { defineModel, ops } from '../../model/index.ts'
+import { type ExactMarginal, logWeights, probabilityMarginal, weightedMarginal } from '../../validation/index.ts'
+import { defineAtom } from '../_define.ts'
+import { tolerance } from '../_tolerance.ts'
+import type { AtomParts, AtomProblem, AtomTolerance, EpAtom } from '../atom-types.ts'
 
 const BASE = [-2.1, 1.9, 0.3, 2.2, -0.4, 1.7, 0.6, -1.8, 0.9, 2.3]
 const SD = 0.5
@@ -144,15 +145,8 @@ function explicitProblem(k: Config): AtomParts {
  * A mixture of two known Gaussians whose mixing weight has a beta prior, the switch of each observation kept as a variable: the
  * conjugate Bernoulli-beta factor ties every switch to the weight, and EP reports the weight as one beta and each observation's
  * responsibility. The exact answer sums the switches out analytically.
- *
- * @index estimator EP atom: a gate with an unknown mixing weight (a beta prior on the Bernoulli switch probability).
- * @example
- * ```ts
- * import { gateWeightAtom } from 'omai-engine/probprog/ep'
- * gateWeightAtom.name // => 'gate-weight'
- * ```
  */
-export const gateWeightAtom: EpAtom = defineAtom({
+const gateWeightAtom: EpAtom = defineAtom({
   name: 'gate-weight',
   title: 'Gate with an unknown mixing weight (beta prior)',
   what: 'A mixture of two known narrow Gaussians with ten observations, each with its own switch z_i ~ Bernoulli(pi) and a beta prior on pi: the posterior of the weight and each switch from EP, against the switches summed out exactly.',
@@ -200,15 +194,8 @@ function summedOutProblem(k: Config): AtomParts {
  * The same model with the switches summed out: each observation is one factor on the weight, `l1 pi + l0 (1 - pi)`. EP's message
  * from it equals the one the explicit gate sends, so the two routes give the same posterior of the weight; this one has no
  * variable for the switches and so no responsibilities.
- *
- * @index estimator EP atom: a mixture with an unknown weight, the switches summed out (mixture-weight factor).
- * @example
- * ```ts
- * import { gateWeightSummedOutAtom } from 'omai-engine/probprog/ep'
- * gateWeightSummedOutAtom.name // => 'gate-weight-summed-out'
- * ```
  */
-export const gateWeightSummedOutAtom: EpAtom = defineAtom({
+const gateWeightSummedOutAtom: EpAtom = defineAtom({
   name: 'gate-weight-summed-out',
   title: 'Mixture with an unknown weight, switches summed out',
   what: 'The same mixture and beta prior with the switches summed out: one mixture-weight factor per observation on the weight, so EP reports the weight but not each observation’s responsibility.',
@@ -299,15 +286,8 @@ function dirichletWeightProblem(k: Config): AtomParts {
 /**
  * A mixture of three known Gaussians with a Dirichlet prior on the weights and a categorical switch per observation: the
  * conjugate discrete-Dirichlet factor. The exact answer is the posterior on the simplex, summed over the switches analytically.
- *
- * @index estimator EP atom: a gate with unknown weights of three components (a Dirichlet prior on the switch probabilities).
- * @example
- * ```ts
- * import { gateWeightDirichletAtom } from 'omai-engine/probprog/ep'
- * gateWeightDirichletAtom.name // => 'gate-weight-dirichlet'
- * ```
  */
-export const gateWeightDirichletAtom: EpAtom = defineAtom({
+const gateWeightDirichletAtom: EpAtom = defineAtom({
   name: 'gate-weight-dirichlet',
   title: 'Gate with unknown mixing weights (Dirichlet prior, three components)',
   what: 'A mixture of three known narrow Gaussians with ten observations, a categorical switch per observation and a Dirichlet prior on the three weights: the posterior of each weight from EP, against the exact one on the simplex.',
@@ -434,15 +414,8 @@ function hyperWeightProblem(k: Config): AtomParts {
  * The mixing weight's prior is a symmetric beta whose strength has a gamma hyperprior: priors and hyperpriors going up through a
  * gate. The strength factor is the numeric `dirichlet-concentration`; the exact answer is a two-dimensional quadrature over the
  * weight and the strength with the switches summed out.
- *
- * @index estimator EP atom: a gate whose weight has a beta prior with a gamma hyperprior on its strength.
- * @example
- * ```ts
- * import { gateWeightHyperAtom } from 'omai-engine/probprog/ep'
- * gateWeightHyperAtom.family // => 'gate weights'
- * ```
  */
-export const gateWeightHyperAtom: EpAtom = defineAtom({
+const gateWeightHyperAtom: EpAtom = defineAtom({
   name: 'gate-weight-hyperprior',
   title: 'Gate with an unknown mixing weight, gamma hyperprior on its prior strength',
   what: 'The beta prior on the mixing weight is symmetric with a gamma-distributed strength: a hyperprior one level above the gate, so the data inform the strength through how unbalanced the switches are.',
@@ -467,3 +440,11 @@ export const gateWeightHyperAtom: EpAtom = defineAtom({
   }),
   parts: hyperWeightProblem,
 })
+
+/** The atoms of the `weights` file, basic and learned twins together. */
+export const weightsAtoms: readonly EpAtom[] = [
+  gateWeightAtom,
+  gateWeightSummedOutAtom,
+  gateWeightDirichletAtom,
+  gateWeightHyperAtom,
+]

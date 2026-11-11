@@ -2,9 +2,11 @@
 import { describe, expect, it } from 'vitest'
 import * as d from '../model/dists/index.ts'
 import { defineModel } from '../model/index.ts'
-import { epAtoms } from './ep-atom-list.ts'
-import { defineAtom, verifyAtom } from './ep-atoms.ts'
-import { gaussianAtom } from './ep-atoms-conjugate.ts'
+import { defineAtom } from './_define.ts'
+import { epAtom, epAtoms } from './ep-atom-list.ts'
+import { verifyAtom } from './ep-atoms.ts'
+
+const gaussianAtom = epAtom('gaussian')
 
 describe('the EP atoms', () => {
   it('have distinct names and say what they exercise', () => {

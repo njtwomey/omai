@@ -5,13 +5,14 @@
  * is a one- or two-dimensional quadrature (the model written as a program, which runs whether or not EP applies).
  */
 
-import { dict, real } from '../../space/index.ts'
-import type { Config } from '../../trace/index.ts'
-import { configNumber } from '../inference/method.ts'
-import * as d from '../model/dists/index.ts'
-import { defineModel, ops } from '../model/index.ts'
-import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
-import { tolerance } from './ep-tolerance.ts'
+import { dict, real } from '../../../space/index.ts'
+import type { Config } from '../../../trace/index.ts'
+import { configNumber } from '../../inference/method.ts'
+import * as d from '../../model/dists/index.ts'
+import { defineModel, ops } from '../../model/index.ts'
+import { defineAtom } from '../_define.ts'
+import { tolerance } from '../_tolerance.ts'
+import type { AtomParts, EpAtom } from '../atom-types.ts'
 
 const G = 61
 
@@ -43,15 +44,8 @@ function expProblem(k: Config): AtomParts {
 /**
  * A Gaussian pushed through the exponential and observed: the unary-function rule (`apply`), whose message back to the
  * input is the tilted moment of the input under the cavity of the output.
- *
- * @index estimator EP atom: exp of a Gaussian (unary function of a random value).
- * @example
- * ```ts
- * import { expAtom } from 'omai-engine/probprog/ep'
- * expAtom.name // => 'exp'
- * ```
  */
-export const expAtom: EpAtom = defineAtom({
+const expAtom: EpAtom = defineAtom({
   name: 'exp',
   title: 'Exp of a Gaussian',
   what: 'A Gaussian x, the value g = exp(x) observed through Gaussian noise: the unary-function factor, whose exact posterior is skewed (log-normal likelihood against a Gaussian prior).',
@@ -86,15 +80,8 @@ function tanhProblem(k: Config): AtomParts {
 
 /**
  * A Gaussian pushed through tanh and observed: the neural-network unit of probabilistic backpropagation.
- *
- * @index estimator EP atom: tanh of a Gaussian (a squashing unit).
- * @example
- * ```ts
- * import { tanhAtom } from 'omai-engine/probprog/ep'
- * tanhAtom.family // => 'functions'
- * ```
  */
-export const tanhAtom: EpAtom = defineAtom({
+const tanhAtom: EpAtom = defineAtom({
   name: 'tanh',
   title: 'Tanh of a Gaussian',
   what: 'A Gaussian x, the value g = tanh(x) observed through Gaussian noise: the squashing unit of a Bayesian neural network, saturating at plus and minus one.',
@@ -136,15 +123,8 @@ function logScaleProblem(k: Config): AtomParts {
 
 /**
  * An observation whose scale is the exponential of a latent Gaussian: the stochastic-volatility step.
- *
- * @index estimator EP atom: a Gaussian with the exponential of a latent as its scale (stochastic volatility step).
- * @example
- * ```ts
- * import { logScaleAtom } from 'omai-engine/probprog/ep'
- * logScaleAtom.name // => 'log-scale'
- * ```
  */
-export const logScaleAtom: EpAtom = defineAtom({
+const logScaleAtom: EpAtom = defineAtom({
   name: 'log-scale',
   title: 'Gaussian with an exp(h) scale',
   what: 'A latent h and one observation y ~ N(0, exp(h/2)²): the observation says how large the variance is, and the likelihood of h is not Gaussian (the stochastic volatility step).',
@@ -196,15 +176,8 @@ function productProblem(k: Config): AtomParts {
 /**
  * The product of two Gaussians observed: a banana-shaped posterior (a b is fixed by the observation, so a and b trade off),
  * and the numeric product factor.
- *
- * @index estimator EP atom: the product of two Gaussians (numeric product rule, a banana posterior).
- * @example
- * ```ts
- * import { productAtom } from 'omai-engine/probprog/ep'
- * productAtom.name // => 'product'
- * ```
  */
-export const productAtom: EpAtom = defineAtom({
+const productAtom: EpAtom = defineAtom({
   name: 'product',
   title: 'Product of two Gaussians',
   what: 'Two Gaussians a and b and an observation of their product a b: the product factor, a banana posterior along a b = y that a belief per variable cannot follow.',
@@ -257,15 +230,8 @@ function maxProblem(k: Config): AtomParts {
 /**
  * The maximum of two Gaussians observed: the max factor, whose posterior has an L shape (one of the two is at the observed
  * value and the other is below it).
- *
- * @index estimator EP atom: the maximum of two Gaussians (max factor, an L-shaped posterior).
- * @example
- * ```ts
- * import { maxAtom } from 'omai-engine/probprog/ep'
- * maxAtom.name // => 'max'
- * ```
  */
-export const maxAtom: EpAtom = defineAtom({
+const maxAtom: EpAtom = defineAtom({
   name: 'max',
   title: 'Max of two Gaussians',
   what: 'Two Gaussians a and b and an observation of max(a, b): the max factor; the posterior is an L, one of the two sits at the observation and the other is free below it.',
@@ -280,3 +246,6 @@ export const maxAtom: EpAtom = defineAtom({
   knobs: dict({ y: real(-2, 3, { default: 1.5, step: 0.1, label: 'observed y' }) }),
   parts: maxProblem,
 })
+
+/** The atoms of the `functions` file, basic and learned twins together. */
+export const functionsAtoms: readonly EpAtom[] = [expAtom, tanhAtom, logScaleAtom, productAtom, maxAtom]

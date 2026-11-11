@@ -8,7 +8,7 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
-import type { AtomRecoverySpec, AtomTolerance } from './ep-atoms.ts'
+import type { AtomRecoverySpec, AtomTolerance } from './atom-types.ts'
 
 /** The name of a rung of the tolerance ladder, or `measured` (the atom gives its own numbers). */
 export type ToleranceTier =

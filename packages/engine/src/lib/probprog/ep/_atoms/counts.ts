@@ -5,14 +5,15 @@
  * (a numeric rule). The exact answers are a Beta for the zero probability and a grid for the coefficients.
  */
 
-import { dict, real } from '../../space/index.ts'
-import type { Config } from '../../trace/index.ts'
-import { configNumber } from '../inference/method.ts'
-import * as d from '../model/dists/index.ts'
-import { defineModel, ops } from '../model/index.ts'
-import { gridMarginals, quadratureMarginal } from '../validation/index.ts'
-import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
-import { tolerance } from './ep-tolerance.ts'
+import { dict, real } from '../../../space/index.ts'
+import type { Config } from '../../../trace/index.ts'
+import { configNumber } from '../../inference/method.ts'
+import * as d from '../../model/dists/index.ts'
+import { defineModel, ops } from '../../model/index.ts'
+import { gridMarginals, quadratureMarginal } from '../../validation/index.ts'
+import { defineAtom } from '../_define.ts'
+import { tolerance } from '../_tolerance.ts'
+import type { AtomParts, EpAtom } from '../atom-types.ts'
 
 const XS = [-1, -0.6, -0.2, 0.1, 0.5, 0.9, 1.3, -0.8, 0.3, 1.1, -0.4, 0.7]
 const YS = [0, 0, 1, 0, 2, 4, 6, 1, 3, 0, 1, 5]
@@ -105,15 +106,8 @@ function hurdleProblem(k: Config): AtomParts {
 /**
  * A hurdle regression on twelve counts: a Beta probability of a zero and a log-linear rate of the positive counts, which are
  * zero-truncated Poisson. The zero part is a conjugate Bernoulli observation, the positive part a truncated-Poisson site.
- *
- * @index estimator EP atom: a hurdle count (a Beta zero probability, a zero-truncated Poisson on a log-linear rate).
- * @example
- * ```ts
- * import { hurdlePoissonAtom } from 'omai-engine/probprog/ep'
- * hurdlePoissonAtom.name // => 'hurdle-poisson'
- * ```
  */
-export const hurdlePoissonAtom: EpAtom = defineAtom({
+const hurdlePoissonAtom: EpAtom = defineAtom({
   name: 'hurdle-poisson',
   title: 'Hurdle count (a zero, or a zero-truncated Poisson)',
   what: 'Twelve counts that are zero with an unknown probability and otherwise zero-truncated Poisson with a log-linear rate: a conjugate Bernoulli factor on the zero probability and a zero-truncated-Poisson site on the two coefficients.',
@@ -131,3 +125,6 @@ export const hurdlePoissonAtom: EpAtom = defineAtom({
   knobs: dict({ priorSd: real(0.5, 4, { default: 1.5, step: 0.1, label: 'prior sd of the coefficients' }) }),
   parts: hurdleProblem,
 })
+
+/** The atoms of the `counts` file, basic and learned twins together. */
+export const countsAtoms: readonly EpAtom[] = [hurdlePoissonAtom]

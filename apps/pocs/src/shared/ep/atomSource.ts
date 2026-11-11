@@ -2,11 +2,18 @@ import type { AtomProblem, EpAtom } from 'omai-engine/probprog/ep'
 import { snippetOf } from '../../../../site/src/shell/snippet.ts'
 
 /** The atoms' source files, as text (`?raw`): the code shown is the code that runs. */
-const SOURCES = import.meta.glob(['../../../../../packages/engine/src/lib/probprog/ep/ep-atoms*.ts', '!**/*.test.ts'], {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>
+const SOURCES = import.meta.glob(
+  [
+    '../../../../../packages/engine/src/lib/probprog/ep/_atoms/*.ts',
+    '../../../../../packages/engine/src/lib/probprog/ep/run.ts',
+    '!**/*.test.ts',
+  ],
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+) as Record<string, string>
 
 /** The data a problem binds, as it would be written: a line per key, a long array summarised by its length. */
 function dataText(data: AtomProblem['data']): string {
@@ -21,7 +28,7 @@ function dataText(data: AtomProblem['data']): string {
 
 /**
  * The code of an atom's page, assembled from its own source: the region of the atoms' files marked with its name (its model),
- * the data the page binds, and the lines of the scaffold's `atomRun` marked `inference` (compile, EP, read the beliefs). Empty
+ * the data the page binds, and the lines of `runEp` marked `inference` (compile, EP, read the beliefs). Empty
  * when the atom has no region.
  *
  * @param atom - The atom.
@@ -35,7 +42,7 @@ export function atomSource(
   let model = ''
   let file = ''
   for (const [path, text] of Object.entries(SOURCES)) {
-    const found = path.endsWith('/ep-atoms.ts') ? '' : snippetOf(text, { region: atom.name })
+    const found = path.endsWith('/run.ts') ? '' : snippetOf(text, { region: atom.name })
     if (found.trim() !== '') {
       model = found
       file = path.split('/').pop() as string
@@ -43,7 +50,7 @@ export function atomSource(
     }
   }
   if (model === '') return { code: '', file: '' }
-  const scaffold = Object.entries(SOURCES).find(([path]) => path.endsWith('/ep-atoms.ts'))?.[1] ?? ''
+  const scaffold = Object.entries(SOURCES).find(([path]) => path.endsWith('/run.ts'))?.[1] ?? ''
   const inference = snippetOf(scaffold, { region: 'inference' })
   const data = problem === undefined ? '' : `\n// the data the page binds\nconst data = ${dataText(problem.data)}\n`
   return { code: `${model}${data}\n// what the page runs on it\n${inference}`, file }

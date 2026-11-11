@@ -39,121 +39,28 @@ The inference engines, part of `omai-engine/probprog`: exact ones (enumeration, 
 
 ## probprog/ep
 
-The expectation-propagation suite of the probabilistic programming stack: the atoms (bare setups of one factor or one family each, written as programs and run through the compiler mappings and the EP methods of `probprog/inference`, with the references they are checked against (closed forms, quadratures and samplers, in `ep-atoms-quad.ts`, `ep-atoms-covariance-ref.ts` and `ep-atoms-gibbs.ts`; `gridPosterior` comes from `probprog/validation`), the calibration and recovery helpers and the tested measurement of what EP runs on) and the registry of gaps and directions that says what is still missing. The rules themselves are in `message-passing` and the compiler mappings in `probprog/model`; this folder composes them and nothing in the engine imports it. The design is `docs/probprog/ep.md`.
+What a user of expectation propagation on a model needs, and the suite that tests it. The capability: `runEp` runs EP on a bound model through the route that applies (`epRoute` of `probprog/inference`) and returns the beliefs per sweep, a message record and the evidence, or the library's refusal; the check of beliefs against a reference (`atomCheck`), the credible intervals, the calibration and recovery of a method over simulated data sets, the measurement of what EP and the variational method run on (`epCoverage`, `vmpCoverage`) and the registry of gaps and directions. The suite: the atoms (bare setups of one factor or one family each, with a reference answer and a tolerance, in `_atoms/`, one file per family with the basic and learned twins together; the registry `epAtoms` and `epAtom(name)` are the only way to reach one), whose references are in `probprog/validation`. The rules are in `message-passing` and the compiler mappings in `probprog/model`; this folder composes them and nothing in the engine imports it. The design is `docs/probprog/ep.md`.
 
-- structure `ep-atoms.ts` (file): EP atom scaffold: a bare setup, its reference, a tolerance, the EP verdict and run. `src/lib/probprog/ep/ep-atoms.ts:1` `omai-engine/probprog/ep`
+- structure `ep-atoms.ts` (file): EP atom functions: the reference of an atom, its verdict, the check of a run against it. `src/lib/probprog/ep/ep-atoms.ts:1` `omai-engine/probprog/ep`
 
 - module `ep-gaps.ts` (file): The gaps and limits of expectation propagation, each with its plan, size and status, tied to what it refuses. `src/lib/probprog/ep/ep-gaps.ts:1` `omai-engine/probprog/ep`
 
 - function `activeSetScore`: The score of inclusion probabilities against the true active set: AUC and counts at a threshold. `src/lib/probprog/ep/ep-recovery.ts:133` `omai-engine/probprog/ep`
-- function `atomCalibration`: Calibration of an extended EP atom: interval coverage of the truth over many simulated seeds. `src/lib/probprog/ep/ep-extended.ts:271` `omai-engine/probprog/ep`
-- function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/probprog/ep/ep-atoms.ts:766` `omai-engine/probprog/ep`
-- function `atomRecovery`: EP's belief of each parameter beside the truth it was simulated from: interval and coverage. `src/lib/probprog/ep/ep-extended.ts:97` `omai-engine/probprog/ep`
-- function `atomReference`: The reference of an EP atom: exact or grid marginals as curves, and a joint. `src/lib/probprog/ep/ep-atoms.ts:433` `omai-engine/probprog/ep`
-- function `atomRun`: Run EP on an atom's model: beliefs per sweep, a message record, or the refusal. `src/lib/probprog/ep/ep-atoms.ts:648` `omai-engine/probprog/ep`
-- function `atomVerdict`: Whether EP applies to an atom's model, and the library's reason if not. `src/lib/probprog/ep/ep-atoms.ts:494` `omai-engine/probprog/ep`
-- function `beliefCredibleInterval`: The equal-tailed credible interval of an EP belief on its support. `src/lib/probprog/ep/ep-extended.ts:42` `omai-engine/probprog/ep`
-- function `beliefDensity`: The density of a belief from its mean and sd on a support. `src/lib/probprog/ep/ep-atoms.ts:351` `omai-engine/probprog/ep`
-- function `calibrationTable`: The calibration table of an extended EP atom from its seeds: coverage, bias and error per parameter. `src/lib/probprog/ep/ep-extended.ts:208` `omai-engine/probprog/ep`
-- function `epCoverage`: What EP covers today: atoms and benchmark models as runs or planned, with reasons. `src/lib/probprog/ep/ep-coverage.ts:58` `omai-engine/probprog/ep`
+- function `atomCalibration`: Calibration of an extended EP atom: interval coverage of the truth over many simulated seeds. `src/lib/probprog/ep/ep-extended.ts:265` `omai-engine/probprog/ep`
+- function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/probprog/ep/ep-atoms.ts:223` `omai-engine/probprog/ep`
+- function `atomRecovery`: EP's belief of each parameter beside the truth it was simulated from: interval and coverage. `src/lib/probprog/ep/ep-extended.ts:91` `omai-engine/probprog/ep`
+- function `atomReference`: The reference of an EP atom: exact or grid marginals as curves, and a joint. `src/lib/probprog/ep/ep-atoms.ts:109` `omai-engine/probprog/ep`
+- function `atomVerdict`: Whether EP applies to an atom's model, and the library's reason if not. `src/lib/probprog/ep/ep-atoms.ts:170` `omai-engine/probprog/ep`
+- function `beliefCredibleInterval`: The equal-tailed credible interval of an EP belief on its support. `src/lib/probprog/ep/ep-extended.ts:36` `omai-engine/probprog/ep`
+- function `beliefDensity`: The density of a belief from its mean and sd on a support. `src/lib/probprog/ep/ep-atoms.ts:49` `omai-engine/probprog/ep`
+- function `calibrationTable`: The calibration table of an extended EP atom from its seeds: coverage, bias and error per parameter. `src/lib/probprog/ep/ep-extended.ts:202` `omai-engine/probprog/ep`
+- function `epCoverage`: What EP covers today: atoms and benchmark models as runs or planned, with reasons. `src/lib/probprog/ep/ep-coverage.ts:59` `omai-engine/probprog/ep`
 - function `mixtureInterval`: The equal-tailed credible interval of a mixture of Gaussians (a gated coefficient). `src/lib/probprog/ep/ep-recovery.ts:24` `omai-engine/probprog/ep`
 - function `recoverySummary`: How well a posterior recovered the truth: interval coverage, error, agreement with a reference. `src/lib/probprog/ep/ep-recovery.ts:81` `omai-engine/probprog/ep`
-- function `vmpCoverage`: What variational message passing covers today: atoms as runs or planned, with the operators lacking a rule. `src/lib/probprog/ep/ep-coverage.ts:159` `omai-engine/probprog/ep`
+- function `runEp`: Run EP on a bound model: beliefs per sweep, a record, or the refusal. `src/lib/probprog/ep/run.ts:135` `omai-engine/probprog/ep`
+- function `vmpCoverage`: What variational message passing covers today: atoms as runs or planned, with the operators lacking a rule. `src/lib/probprog/ep/ep-coverage.ts:160` `omai-engine/probprog/ep`
 
-- estimator `betaBernoulliAtom`: EP atom: beta and Bernoulli (conjugate, exact). `src/lib/probprog/ep/ep-atoms-conjugate.ts:115` `omai-engine/probprog/ep`
-- estimator `betaBernoulliLearnedAtom`: EP atom: groups of flips with a beta prior of unknown strength, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-extended-conjugate.ts:253` `omai-engine/probprog/ep`
-- estimator `bivariateCorrelationAtom`: EP atom: a bivariate normal with an unknown correlation (LKJ prior). `src/lib/probprog/ep/ep-atoms-covariance.ts:518` `omai-engine/probprog/ep`
-- estimator `bivariateCorrelationLearnedAtom`: EP atom: a bivariate normal with unknown mean, standard deviations and correlation, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-covariance.ts:681` `omai-engine/probprog/ep`
-- estimator `clutterAtom`: EP atom: clutter, a gate per observation between the centre and wide clutter. `src/lib/probprog/ep/ep-atoms-mixtures.ts:618` `omai-engine/probprog/ep`
-- estimator `clutterLearnedAtom`: EP atom: clutter with centre, both precisions and share learned. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:172` `omai-engine/probprog/ep`
-- estimator `clutterMixtureAtom`: EP atom: an inlier and outlier mixture likelihood with the switches summed out (mixture site). `src/lib/probprog/ep/ep-atoms-mixtures.ts:682` `omai-engine/probprog/ep`
-- estimator `clutterMixtureLearnedAtom`: EP atom: summed-out outlier mixture, learned width and share. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:951` `omai-engine/probprog/ep`
-- estimator `expAtom`: EP atom: exp of a Gaussian (unary function of a random value). `src/lib/probprog/ep/ep-atoms-functions.ts:54` `omai-engine/probprog/ep`
-- estimator `gammaPoissonAtom`: EP atom: gamma and Poisson (conjugate, exact). `src/lib/probprog/ep/ep-atoms-conjugate.ts:179` `omai-engine/probprog/ep`
-- estimator `gammaPoissonLearnedAtom`: EP atom: groups of counts with a gamma prior of unknown rate, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-extended-conjugate.ts:380` `omai-engine/probprog/ep`
-- estimator `gammaPrecisionAtom`: EP atom: a Gaussian with an unknown precision (gamma-precision rule, observed value). `src/lib/probprog/ep/ep-atoms-scales.ts:83` `omai-engine/probprog/ep`
-- estimator `gammaPrecisionLearnedAtom`: EP atom: a Gaussian with unknown mean and gamma precision, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-extended-scales.ts:94` `omai-engine/probprog/ep`
-- estimator `gateKnownAtom`: EP atom: a gate (select) between two known components. `src/lib/probprog/ep/ep-atoms-mixtures.ts:179` `omai-engine/probprog/ep`
-- estimator `gateRandomAtom`: EP atom: a gate between two random components (select), drawn as its branches. `src/lib/probprog/ep/ep-atoms-mixtures.ts:303` `omai-engine/probprog/ep`
-- estimator `gateRandomLearnedAtom`: EP atom: select gate with unknown means, widths and weight, learned. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:556` `omai-engine/probprog/ep`
-- estimator `gateWeightAtom`: EP atom: a gate with an unknown mixing weight (a beta prior on the Bernoulli switch probability). `src/lib/probprog/ep/ep-atoms-weights.ts:155` `omai-engine/probprog/ep`
-- estimator `gateWeightDirichletAtom`: EP atom: a gate with unknown weights of three components (a Dirichlet prior on the switch probabilities). `src/lib/probprog/ep/ep-atoms-weights.ts:310` `omai-engine/probprog/ep`
-- estimator `gateWeightHyperAtom`: EP atom: a gate whose weight has a beta prior with a gamma hyperprior on its strength. `src/lib/probprog/ep/ep-atoms-weights.ts:445` `omai-engine/probprog/ep`
-- estimator `gateWeightSummedOutAtom`: EP atom: a mixture with an unknown weight, the switches summed out (mixture-weight factor). `src/lib/probprog/ep/ep-atoms-weights.ts:211` `omai-engine/probprog/ep`
-- estimator `gaussianAtom`: EP atom: Gaussian mean (conjugate, exact). `src/lib/probprog/ep/ep-atoms-conjugate.ts:60` `omai-engine/probprog/ep`
-- estimator `gaussianLearnedAtom`: EP atom: a Gaussian with unknown mean and variance, recovered from simulated data (exact). `src/lib/probprog/ep/ep-atoms-extended-conjugate.ts:113` `omai-engine/probprog/ep`
-- estimator `gpLengthScaleAtom`: EP atom: Gaussian process regression with a learned length scale (EP inside an evidence-weighted grid). `src/lib/probprog/ep/ep-atoms-kernels.ts:149` `omai-engine/probprog/ep`
-- estimator `gpLogisticAtom`: EP atom: a dense Gaussian-process prior with a logistic likelihood (three inputs). `src/lib/probprog/ep/ep-atoms-likelihoods.ts:409` `omai-engine/probprog/ep`
-- estimator `gpProbitAtom`: EP atom: a dense Gaussian-process prior with a probit likelihood (three inputs). `src/lib/probprog/ep/ep-atoms-likelihoods.ts:434` `omai-engine/probprog/ep`
-- estimator `gpProbitLearnedAtom`: EP atom: a probit Gaussian process classifier with a learned length scale, recovered from simulated labels. `src/lib/probprog/ep/ep-atoms-kernels.ts:269` `omai-engine/probprog/ep`
-- estimator `halfCauchyAtom`: EP atom: a half-Cauchy prior on a scale. `src/lib/probprog/ep/ep-atoms-scales.ts:303` `omai-engine/probprog/ep`
-- estimator `halfNormalAtom`: EP atom: a half-normal prior on a scale. `src/lib/probprog/ep/ep-atoms-scales.ts:330` `omai-engine/probprog/ep`
-- estimator `hurdlePoissonAtom`: EP atom: a hurdle count (a Beta zero probability, a zero-truncated Poisson on a log-linear rate). `src/lib/probprog/ep/ep-atoms-counts.ts:116` `omai-engine/probprog/ep`
-- estimator `laplaceAtom`: EP atom: a Laplace likelihood on a mean. `src/lib/probprog/ep/ep-atoms-likelihoods.ts:98` `omai-engine/probprog/ep`
-- estimator `laplaceLearnedAtom`: EP atom: a Laplace likelihood with unknown location and scale, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:265` `omai-engine/probprog/ep`
-- estimator `logScaleAtom`: EP atom: a Gaussian with the exponential of a latent as its scale (stochastic volatility step). `src/lib/probprog/ep/ep-atoms-functions.ts:147` `omai-engine/probprog/ep`
-- estimator `logisticAtom`: EP atom: a logistic link on eight labelled points (numeric tilted moments). `src/lib/probprog/ep/ep-atoms-likelihoods.ts:229` `omai-engine/probprog/ep`
-- estimator `logisticLearnedAtom`: EP atom: a logistic classifier with a learned weight precision, recovered from simulated labels. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:447` `omai-engine/probprog/ep`
-- estimator `maxAtom`: EP atom: the maximum of two Gaussians (max factor, an L-shaped posterior). `src/lib/probprog/ep/ep-atoms-functions.ts:268` `omai-engine/probprog/ep`
-- estimator `mixtureComponentsAtom`: EP atom: a random index into random components (mu[z]), drawn as its branches. `src/lib/probprog/ep/ep-atoms-mixtures.ts:326` `omai-engine/probprog/ep`
-- estimator `mixtureComponentsLearnedAtom`: EP atom: mixture with unknown means, widths and weights, learned. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:410` `omai-engine/probprog/ep`
-- estimator `mixtureRegressionAtom`: EP atom: a mixture of two regressions, a class per row picking the line (a gate of Gaussian likelihoods). `src/lib/probprog/ep/ep-atoms-regression-gates.ts:109` `omai-engine/probprog/ep`
-- estimator `mvnWishartAtom`: EP atom: a multivariate normal with a Wishart precision matrix and a known mean (exact). `src/lib/probprog/ep/ep-atoms-covariance.ts:246` `omai-engine/probprog/ep`
-- estimator `mvnWishartLearnedAtom`: EP atom: a bivariate normal with unknown mean and Wishart precision matrix, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-covariance.ts:402` `omai-engine/probprog/ep`
-- estimator `orderedMeansAtom`: EP atom: two means with an ordered constraint, against data that disagree. `src/lib/probprog/ep/ep-atoms-gates.ts:157` `omai-engine/probprog/ep`
-- estimator `orderedPairAtom`: EP atom: an ordered pair, a hard comparison (greater-than, truncation). `src/lib/probprog/ep/ep-atoms-gates.ts:75` `omai-engine/probprog/ep`
-- estimator `ordinalProbitAtom`: EP atom: an ordinal probit regression with fixed cut points. `src/lib/probprog/ep/ep-atoms-ordinal.ts:124` `omai-engine/probprog/ep`
-- estimator `ordinalProbitLearnedAtom`: EP atom: an ordinal probit regression with coefficients recovered from simulated outcomes. `src/lib/probprog/ep/ep-atoms-ordinal.ts:196` `omai-engine/probprog/ep`
-- estimator `poissonLogAtom`: EP atom: a Poisson count with a log link. `src/lib/probprog/ep/ep-atoms-likelihoods.ts:479` `omai-engine/probprog/ep`
-- estimator `poissonLogDispersionLearnedAtom`: EP atom: a negative-binomial regression with unknown dispersion, recovered from simulated counts. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:651` `omai-engine/probprog/ep`
-- estimator `poissonLogLearnedAtom`: EP atom: a Poisson regression with a log link, intercept and slope recovered from simulated counts. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:566` `omai-engine/probprog/ep`
-- estimator `priorBetaGeometricAtom`: EP atom: a beta prior on a geometric success probability (conjugate, exact). `src/lib/probprog/ep/ep-atoms-priors.ts:698` `omai-engine/probprog/ep`
-- estimator `priorBetaStrengthGammaAtom`: EP atom: a beta prior on a probability with a gamma hyperprior on its strength. `src/lib/probprog/ep/ep-atoms-priors.ts:774` `omai-engine/probprog/ep`
-- estimator `priorBetaStrengthLogNormalAtom`: EP atom: a beta prior on a probability with a log-normal hyperprior on its strength. `src/lib/probprog/ep/ep-atoms-priors.ts:804` `omai-engine/probprog/ep`
-- estimator `priorBetaTwoShapesAtom`: EP atom: a beta prior on a probability with two random shapes. `src/lib/probprog/ep/ep-atoms-priors.ts:1175` `omai-engine/probprog/ep`
-- estimator `priorDirichletCategoricalAtom`: EP atom: a Dirichlet prior on categorical probabilities (conjugate, exact). `src/lib/probprog/ep/ep-atoms-priors.ts:864` `omai-engine/probprog/ep`
-- estimator `priorDirichletStrengthAtom`: EP atom: a Dirichlet prior on categorical probabilities with a gamma hyperprior on its concentration. `src/lib/probprog/ep/ep-atoms-priors.ts:922` `omai-engine/probprog/ep`
-- estimator `priorGammaExponentialAtom`: EP atom: a gamma prior on an exponential rate (conjugate, exact). `src/lib/probprog/ep/ep-atoms-priors.ts:574` `omai-engine/probprog/ep`
-- estimator `priorGammaPoissonHyperAtom`: EP atom: a gamma prior on a Poisson rate with a gamma hyperprior on the prior's rate. `src/lib/probprog/ep/ep-atoms-priors.ts:401` `omai-engine/probprog/ep`
-- estimator `priorInverseGammaHyperAtom`: EP atom: an inverse-gamma prior on a variance with a gamma hyperprior on its scale. `src/lib/probprog/ep/ep-atoms-priors.ts:334` `omai-engine/probprog/ep`
-- estimator `priorLogNormalPoissonAtom`: EP atom: a log-normal prior on a Poisson rate. `src/lib/probprog/ep/ep-atoms-priors.ts:458` `omai-engine/probprog/ep`
-- estimator `priorLogNormalPoissonHyperAtom`: EP atom: a log-normal prior on a Poisson rate with a normal hyperprior on its log centre. `src/lib/probprog/ep/ep-atoms-priors.ts:517` `omai-engine/probprog/ep`
-- estimator `priorLogNormalScaleAtom`: EP atom: a log-normal prior on a Gaussian scale with a normal hyperprior on its log centre. `src/lib/probprog/ep/ep-atoms-priors.ts:1112` `omai-engine/probprog/ep`
-- estimator `priorLogitNormalAtom`: EP atom: a logit-normal prior on a Bernoulli probability with a normal hyperprior on its centre. `src/lib/probprog/ep/ep-atoms-priors.ts:987` `omai-engine/probprog/ep`
-- estimator `priorNormalHyperAtom`: EP atom: a normal prior on a mean with a normal hyperprior on its centre (exact). `src/lib/probprog/ep/ep-atoms-priors.ts:272` `omai-engine/probprog/ep`
-- estimator `priorNormalInverseGammaAtom`: EP atom: a normal-inverse-gamma prior on a Gaussian mean and variance (exact). `src/lib/probprog/ep/ep-atoms-priors.ts:168` `omai-engine/probprog/ep`
-- estimator `priorNormalWeibullAtom`: EP atom: a normal prior on a Weibull log scale with a normal hyperprior on its centre. `src/lib/probprog/ep/ep-atoms-priors.ts:640` `omai-engine/probprog/ep`
-- estimator `priorUniformAtom`: EP atom: a uniform prior on a Gaussian mean (exact numeric site). `src/lib/probprog/ep/ep-atoms-priors.ts:1041` `omai-engine/probprog/ep`
-- estimator `probitAtom`: EP atom: a probit link on eight labelled points. `src/lib/probprog/ep/ep-atoms-likelihoods.ts:203` `omai-engine/probprog/ep`
-- estimator `probitLearnedAtom`: EP atom: a probit classifier with a learned weight precision, recovered from simulated labels. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:410` `omai-engine/probprog/ep`
-- estimator `productAtom`: EP atom: the product of two Gaussians (numeric product rule, a banana posterior). `src/lib/probprog/ep/ep-atoms-functions.ts:207` `omai-engine/probprog/ep`
-- estimator `quantileRegressionAtom`: EP atom: Bayesian quantile regression with the asymmetric Laplace. `src/lib/probprog/ep/ep-atoms-ordinal.ts:306` `omai-engine/probprog/ep`
-- estimator `quantileRegressionLearnedAtom`: EP atom: Bayesian quantile regression with coefficients recovered from simulated points. `src/lib/probprog/ep/ep-atoms-ordinal.ts:394` `omai-engine/probprog/ep`
-- estimator `randomInterceptsSlopesAtom`: EP atom: correlated random intercepts and slopes (a Wishart covariance of the effects). `src/lib/probprog/ep/ep-atoms-covariance.ts:967` `omai-engine/probprog/ep`
-- estimator `randomInterceptsSlopesLearnedAtom`: EP atom: correlated random intercepts and slopes with learned mean and covariance, recovered from simulated groups. `src/lib/probprog/ep/ep-atoms-covariance.ts:1153` `omai-engine/probprog/ep`
-- estimator `scaledPrecisionAtom`: EP atom: latent values whose precisions are a known multiple of one unknown precision (scaled precision). `src/lib/probprog/ep/ep-atoms-scales.ts:253` `omai-engine/probprog/ep`
-- estimator `sharedPrecisionAtom`: EP atom: latent values with a shared unknown precision (gamma-precision rule, latent form). `src/lib/probprog/ep/ep-atoms-scales.ts:223` `omai-engine/probprog/ep`
-- estimator `sharedPrecisionLearnedAtom`: EP atom: a population with unknown mean and spread, each value observed with known noise, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-extended-scales.ts:248` `omai-engine/probprog/ep`
-- estimator `skillDifferenceAtom`: EP atom: a probit factor on a difference of two skills (three players, five matches). `src/lib/probprog/ep/ep-atoms-likelihoods.ts:309` `omai-engine/probprog/ep`
-- estimator `skillDifferenceLearnedAtom`: EP atom: a tournament with unknown skill spread, skills and spread recovered from simulated games. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:1122` `omai-engine/probprog/ep`
-- estimator `skillDrawsAtom`: EP atom: a tournament with draws, an ordinal probit factor on a difference of two skills (the TrueSkill draw margin). `src/lib/probprog/ep/ep-atoms-ordinal.ts:552` `omai-engine/probprog/ep`
-- estimator `skillDrawsLearnedAtom`: EP atom: a tournament with draws, skills recovered from simulated games. `src/lib/probprog/ep/ep-atoms-ordinal.ts:635` `omai-engine/probprog/ep`
-- estimator `softmaxRegressionAtom`: EP atom: a multinomial logit classifier (softmax of three Gaussian class scores). `src/lib/probprog/ep/ep-atoms-multiclass.ts:150` `omai-engine/probprog/ep`
-- estimator `softmaxRegressionLearnedAtom`: EP atom: a multinomial logit classifier with slopes learned from simulated classes. `src/lib/probprog/ep/ep-atoms-multiclass.ts:230` `omai-engine/probprog/ep`
-- estimator `spikeSlabAtom`: EP atom: spike and slab as a gate between a narrow and a wide Gaussian. `src/lib/probprog/ep/ep-atoms-mixtures.ts:425` `omai-engine/probprog/ep`
-- estimator `spikeSlabLearnedAtom`: EP atom: spike and slab with unknown share and slab width, learned. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:730` `omai-engine/probprog/ep`
-- estimator `spikeSlabMarginalAtom`: EP atom: spike and slab with the switch summed out (mixture site, no P(slab)). `src/lib/probprog/ep/ep-atoms-mixtures.ts:499` `omai-engine/probprog/ep`
-- estimator `spikeSlabMarginalLearnedAtom`: EP atom: summed-out spike and slab, learned share and width. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:819` `omai-engine/probprog/ep`
-- estimator `stickBreakingAtom`: EP atom: a stick-breaking mixture (truncated Dirichlet process), the stick-breaking factor on beta breaks. `src/lib/probprog/ep/ep-atoms-nonparametric.ts:94` `omai-engine/probprog/ep`
-- estimator `studentTAtom`: EP atom: a Student-t likelihood on a mean (robust to an outlier). `src/lib/probprog/ep/ep-atoms-likelihoods.ts:72` `omai-engine/probprog/ep`
-- estimator `studentTDfLearnedAtom`: EP atom: a Student-t likelihood with unknown location and degrees of freedom, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:878` `omai-engine/probprog/ep`
-- estimator `studentTLearnedAtom`: EP atom: a Student-t likelihood with unknown location and scale, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:139` `omai-engine/probprog/ep`
-- estimator `tanhAtom`: EP atom: tanh of a Gaussian (a squashing unit). `src/lib/probprog/ep/ep-atoms-functions.ts:97` `omai-engine/probprog/ep`
-- estimator `topicModelAtom`: EP atom: a topic model (Dirichlet mixtures and topics, a word read through its token's topic: a gate of discrete factors). `src/lib/probprog/ep/ep-atoms-nonparametric.ts:260` `omai-engine/probprog/ep`
-- estimator `weibullLearnedAtom`: EP atom: a Weibull regression with a log link, coefficients recovered from simulated times. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:741` `omai-engine/probprog/ep`
-- estimator `weibullShapeLearnedAtom`: EP atom: a Weibull with unknown scale and shape, recovered from simulated times. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:1011` `omai-engine/probprog/ep`
-
-- table `epAtoms`: The EP atoms: bare setups that each exercise one factor of the message passing suite. `src/lib/probprog/ep/ep-atom-list.ts:122` `omai-engine/probprog/ep`
+- table `epAtoms`: The EP atoms: bare setups of one factor each, with a reference and a tolerance (look one up by name). `src/lib/probprog/ep/ep-atom-list.ts:153` `omai-engine/probprog/ep`
 
 ## probprog/inference
 
@@ -162,7 +69,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - structure `method.ts` (file): InferenceMethod: knobs, typed tape, check, budget and anytime snapshots, the shared convention. `src/lib/probprog/inference/method.ts:1` `omai-engine/probprog/inference`
 
 - function `defineKernel`: Define your own sampler on the handler layer in a few lines. `src/lib/probprog/inference/kernel.ts:188` `omai-engine/probprog/inference`
-- function `epRoute`: How EP runs a bound model: plain, inside a grid over hyperparameters, or refused. `src/lib/probprog/inference/ep-route.ts:40` `omai-engine/probprog/inference`
+- function `epRoute`: How EP runs a bound model: plain, inside a grid over hyperparameters, or refused. `src/lib/probprog/inference/ep-route.ts:41` `omai-engine/probprog/inference`
 - function `inferenceMethods`: The methods an app offers on its registered models, named kind/model, for a worker. `src/lib/probprog/inference/models.ts:180` `omai-engine/probprog/inference`
 - function `methodSpace`: Every inference method that runs on a model, as one union of knobs. `src/lib/probprog/inference/method-space.ts:68` `omai-engine/probprog/inference`
 - function `modelRegistry`: Models by name for a worker: `modelRegistry({ radon: { definition, data } })`. `src/lib/probprog/inference/models.ts:85` `omai-engine/probprog/inference`
