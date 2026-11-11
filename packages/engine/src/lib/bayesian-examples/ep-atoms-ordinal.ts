@@ -1,12 +1,13 @@
 /**
  * The ordinal and quantile atoms: an ordered outcome (four categories) through the cumulative probit of a linear predictor with
  * the cut points fixed (the `ordinal-probit` row of the likelihood registry), and quantile regression, a line fitted to the 80th
- * percentile of the outcome with the asymmetric Laplace (the `asymmetric-laplace` row). Each has a basic page on a handful of fixed
- * observations and a twin that learns the intercept and slope from data simulated from stated values.
+ * percentile of the outcome with the asymmetric Laplace (the `asymmetric-laplace` row), and a tournament whose games can be drawn, the
+ * TrueSkill draw margin as an ordinal probit on the difference of two skills. Each has a basic page on a handful of fixed observations
+ * and a twin that learns the unknowns from data simulated from stated values.
  */
 
 import * as d from '../probprog/model/dists/index.ts'
-import { defineModel } from '../probprog/model/index.ts'
+import { defineModel, ops } from '../probprog/model/index.ts'
 import { foldIn, key, normal, uniform } from '../random/index.ts'
 import { dict, real } from '../space/index.ts'
 import { toFlat } from '../tensor/index.ts'
@@ -17,12 +18,20 @@ import {
   type AtomRecoverySpec,
   defineAtom,
   type EpAtom,
+  type ExactMarginal,
   type FigureCurve,
 } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
+import { gridMarginals } from './ep-atoms-quad.ts'
 import { exampleNumber } from './example-method.ts'
 
 const CUTS = [-0.6, 0.5, 1.4]
+/** A value computed the first time it is asked for. */
+function once<T>(make: () => T): () => T {
+  let value: T | undefined
+  return () => (value ??= make())
+}
+
 const CURVE_X = Array.from({ length: 41 }, (_, i) => -2 + i / 10)
 
 /** The standard normal distribution function in plain arithmetic (Abramowitz and Stegun 26.2.17). */
@@ -404,4 +413,238 @@ export const quantileRegressionLearnedAtom: EpAtom = defineAtom({
     priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }),
   }),
   problem: quantileLearnedProblem,
+})
+
+// ----- a tournament with draws: the TrueSkill draw margin -----
+
+const PLAYERS = ['A', 'B', 'C']
+const PAIRS: readonly (readonly [number, number])[] = [
+  [0, 1],
+  [0, 2],
+  [1, 2],
+  [0, 1],
+  [1, 2],
+  [0, 2],
+]
+/** The result of each game for the first player of its pair: 0 a loss, 1 a draw, 2 a win. */
+const RESULTS = [2, 1, 0, 1, 2, 2]
+
+/** The standard normal log density difference `log (Phi(b) - Phi(a))` in plain arithmetic, for the reference grids. */
+const logBetween = (a: number, b: number): number => Math.log(Math.max(phi(b) - phi(a), 1e-300))
+
+/** The exact posterior of the three skills (prior N(0, spread^2)) on a grid: games between the pairs with the draw margin. */
+function skillGrid(
+  pairs: readonly (readonly [number, number])[],
+  results: readonly number[],
+  margin: number,
+  spread: number,
+) {
+  const half = margin / Math.SQRT2
+  return gridMarginals(
+    (sk) => {
+      let lp = (-0.5 * sk.reduce((a, v) => a + v * v, 0)) / spread ** 2
+      for (const [g, [a, b]] of pairs.entries()) {
+        const u = ((sk[a] as number) - (sk[b] as number)) / Math.SQRT2
+        const r = results[g] as number
+        lp += logBetween(
+          r === 0 ? -Infinity : r === 1 ? -half - u : half - u,
+          r === 0 ? -half - u : r === 1 ? half - u : Infinity,
+        )
+      }
+      return lp
+    },
+    [
+      [-3 * spread, 3 * spread],
+      [-3 * spread, 3 * spread],
+      [-3 * spread, 3 * spread],
+    ],
+    33,
+  )
+}
+
+function drawsFigure(skillTruth?: readonly number[]): AtomFigure {
+  const at = [1, 2, 3]
+  return {
+    caption: `The belief about each player's skill after the games (the bars)${skillTruth === undefined ? '' : ', and the skill the games were played with (green)'}.`,
+    xLabel: 'player',
+    yLabel: 'skill',
+    xLimits: [0.4, 3.6],
+    points: [],
+    ...(skillTruth === undefined
+      ? {}
+      : {
+          curves: PLAYERS.map((n, i) => ({
+            name: `true skill of ${n}`,
+            colour: 'tab2',
+            x: [(at[i] ?? 0) - 0.3, (at[i] ?? 0) + 0.3],
+            y: [skillTruth[i] ?? 0, skillTruth[i] ?? 0],
+          })),
+        }),
+    answer: (m) =>
+      PLAYERS.map((n, i) => ({
+        name: `player ${n}`,
+        x: [(at[i] ?? 0) - 0.3, (at[i] ?? 0) + 0.3],
+        y: [m[`skill[${i}]`] ?? Number.NaN, m[`skill[${i}]`] ?? Number.NaN],
+      })),
+  }
+}
+
+function drawsProblem(k: Config): AtomProblem {
+  const margin = exampleNumber(k, 'margin')
+  const cuts = [-margin / Math.SQRT2, margin / Math.SQRT2]
+  // region skill-draws
+  const definition = defineModel('skill-draws', (m) => {
+    const player = m.range('player', { size: 3 })
+    const game = m.range('game')
+    // who played whom, and the result for the first player: lost (0), drawn (1) or won (2)
+    const a = m.data('a', { dims: [game], support: 'index', indexes: player })
+    const b = m.data('b', { dims: [game], support: 'index', indexes: player })
+    const result = m.data('result', { dims: [game], support: 'count' })
+    // the skill of each player
+    const skill = m.latent('skill', d.normal(0, 1), { dims: [player] })
+    // the game is lost, drawn or won as the performance gap falls below, inside or above the margin
+    const gap = ops.div(skill.at(a).sub(skill.at(b)), Math.SQRT2)
+    m.observe('result', d.orderedProbit(gap, cuts), result)
+  })
+  // endregion
+  const grid = once(() => skillGrid(PAIRS, RESULTS, margin, 1))
+  const notes = PAIRS.map(([a, b], g) => {
+    const r = RESULTS[g] as number
+    return `Game ${g + 1}: ${PLAYERS[a]} ${r === 1 ? 'drew with' : r === 2 ? 'beat' : 'lost to'} ${PLAYERS[b]}`
+  })
+  return {
+    definition,
+    data: { a: PAIRS.map((p) => p[0]), b: PAIRS.map((p) => p[1]), result: RESULTS },
+    equations: [
+      'skill_A, skill_B, skill_C ~ N(0, 1)',
+      `game between a and b: lost, drawn or won as (skill_a - skill_b) / sqrt 2 + noise falls below -${(margin / Math.SQRT2).toFixed(3)}, inside, or above ${(margin / Math.SQRT2).toFixed(3)} (draw margin ${margin})`,
+      ...notes,
+    ],
+    quantities: PLAYERS.map((n, i) => ({ name: `skill[${i}]`, label: `skill_${n}`, support: 'real' as const })),
+    get exact() {
+      return Object.fromEntries(PLAYERS.map((_, i) => [`skill[${i}]`, grid().marginals[i] as ExactMarginal]))
+    },
+    referenceSource: 'the posterior of the three skills on a 33 by 33 by 33 grid',
+    figure: { ...drawsFigure(), notes },
+  }
+}
+
+/**
+ * Three players and six games, some drawn: each game is an ordered probit of the difference of two skills with the draw margin as the
+ * cut points (the TrueSkill performance model with draws), the `ordinal-probit` site on a difference of two Gaussian variables,
+ * against the posterior of the three skills on a grid.
+ *
+ * @index estimator EP atom: a tournament with draws, an ordinal probit factor on a difference of two skills (the TrueSkill draw margin).
+ * @example
+ * ```ts
+ * import { skillDrawsAtom } from 'omai-engine/bayesian-examples'
+ * skillDrawsAtom.name // => 'skill-draws'
+ * ```
+ */
+export const skillDrawsAtom: EpAtom = defineAtom({
+  name: 'skill-draws',
+  title: 'Ordinal probit on a difference (draws)',
+  what: 'Three Gaussian skills and six games that may be drawn, each an ordinal probit of the difference of two skills with the draw margin as cut points (the TrueSkill performance model with draws): every factor joins two variables.',
+  factors: ['prior (gaussian) x3', 'ordinal probit on a difference of two variables'],
+  family: 'likelihoods',
+  expected: 'runs',
+  reference: 'exact',
+  tolerance: {
+    meanZ: 0.2,
+    sdRatio: [0.75, 1.2],
+    ks: 0.1,
+    reason:
+      'each result is a Gaussian times the mass between two cut points that EP projects onto a Gaussian, and the skills share the games',
+  },
+  knobs: dict({ margin: real(0.1, 2, { default: 0.7, step: 0.05, label: 'draw margin' }) }),
+  problem: drawsProblem,
+})
+
+function drawsLearnedProblem(k: Config): AtomProblem {
+  const [seed, rounds] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
+  const margin = exampleNumber(k, 'margin')
+  const truth = [exampleNumber(k, 'trueSkillA'), exampleNumber(k, 'trueSkillB'), exampleNumber(k, 'trueSkillC')]
+  const cuts = [-margin / Math.SQRT2, margin / Math.SQRT2]
+  // region skill-draws-learned
+  // the ground truth: every pair plays in turn, the better performance wins unless the gap is inside the draw margin
+  const games: (readonly [number, number])[] = []
+  for (let r = 0; r < rounds; r++) {
+    for (const [a, b] of PAIRS.slice(0, 3)) games.push(r % 2 ? [b, a] : [a, b])
+  }
+  const noise = toFlat(normal(foldIn(key(seed), 0), [games.length], { scale: Math.SQRT2 }))
+  const skill = (i: number): number => truth[i] as number
+  const gaps = games.map(([a, b], g) => skill(a) - skill(b) + (noise[g] as number))
+  const results = gaps.map((v) => (v < -margin ? 0 : v > margin ? 2 : 1))
+  const definition = defineModel('skill-draws-learned', (m) => {
+    const player = m.range('player', { size: 3 })
+    const game = m.range('game')
+    const a = m.data('a', { dims: [game], support: 'index', indexes: player })
+    const b = m.data('b', { dims: [game], support: 'index', indexes: player })
+    const result = m.data('result', { dims: [game], support: 'count' })
+    // the skill of each player: all unknown
+    const skill = m.latent('skill', d.normal(0, 1), { dims: [player] })
+    const gap = ops.div(skill.at(a).sub(skill.at(b)), Math.SQRT2)
+    m.observe('result', d.orderedProbit(gap, cuts), result)
+  })
+  // endregion
+  const grid = once(() => skillGrid(games, results, margin, 1))
+  return {
+    definition,
+    data: { a: games.map((p) => p[0]), b: games.map((p) => p[1]), result: results },
+    equations: [
+      `truth: skills (${truth.join(', ')}), draw margin ${margin}; ${games.length} games (each pair ${rounds} times), seed ${seed}`,
+      'skill_A, skill_B, skill_C ~ N(0, 1)',
+      `game g between a and b: lost, drawn or won by the ordinal probit of (skill_a - skill_b) / sqrt 2 with cut points -${cuts[1]?.toFixed(3)} and ${cuts[1]?.toFixed(3)}`,
+    ],
+    quantities: PLAYERS.map((n, i) => ({
+      name: `skill[${i}]`,
+      label: `skill_${n}`,
+      support: 'real' as const,
+      truth: truth[i] as number,
+    })),
+    get exact() {
+      return Object.fromEntries(PLAYERS.map((_, i) => [`skill[${i}]`, grid().marginals[i] as ExactMarginal]))
+    },
+    referenceSource: 'the posterior of the three skills on a 33 by 33 by 33 grid',
+    figure: drawsFigure(truth),
+  }
+}
+
+/**
+ * The tournament with draws and the skills learned from games simulated from stated skills: over many seeds, how often EP's 90%
+ * intervals hold them.
+ *
+ * @index estimator EP atom: a tournament with draws, skills recovered from simulated games.
+ * @example
+ * ```ts
+ * import { skillDrawsLearnedAtom } from 'omai-engine/bayesian-examples'
+ * skillDrawsLearnedAtom.extends // => 'skill-draws'
+ * ```
+ */
+export const skillDrawsLearnedAtom: EpAtom = defineAtom({
+  name: 'skill-draws-learned',
+  title: 'Ordinal probit on a difference (draws): parameters learned',
+  extends: 'skill-draws',
+  recovery: recoveryOf(
+    'the skills share the games (a loop: players who met have correlated posteriors and EP is a little narrow) and only differences are identified, the prior fixing the level; the truth is drawn from the prior scale, so the floor leaves room',
+  ),
+  what: 'The tournament with draws of the basic atom with the three skills unknown, the games (each pair several times) simulated from stated skills and the same draw margin.',
+  factors: ['prior (gaussian) x3', 'ordinal probit on a difference of two variables'],
+  family: 'likelihoods',
+  expected: 'runs',
+  reference: 'exact',
+  tolerance: {
+    meanZ: 0.25,
+    sdRatio: [0.7, 1.2],
+    ks: 0.12,
+    reason: 'the skills share every game, so one Gaussian each cannot hold their correlations',
+  },
+  knobs: dict({
+    ...simulationKnobs(4),
+    margin: real(0.1, 2, { default: 0.7, step: 0.05, label: 'draw margin' }),
+    trueSkillA: real(-2, 2, { default: 0.9, step: 0.1, label: 'true skill of A' }),
+    trueSkillB: real(-2, 2, { default: -0.2, step: 0.1, label: 'true skill of B' }),
+    trueSkillC: real(-2, 2, { default: -0.7, step: 0.1, label: 'true skill of C' }),
+  }),
+  problem: drawsLearnedProblem,
 })

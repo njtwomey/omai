@@ -62,6 +62,8 @@ import {
   ordinalProbitLearnedAtom,
   quantileRegressionAtom,
   quantileRegressionLearnedAtom,
+  skillDrawsAtom,
+  skillDrawsLearnedAtom,
 } from './ep-atoms-ordinal.ts'
 import {
   priorBetaGeometricAtom,
@@ -153,6 +155,8 @@ export const epAtoms: readonly EpAtom[] = [
   ordinalProbitLearnedAtom,
   quantileRegressionAtom,
   quantileRegressionLearnedAtom,
+  skillDrawsAtom,
+  skillDrawsLearnedAtom,
   gpLengthScaleAtom,
   gpProbitLearnedAtom,
   poissonLogAtom,
