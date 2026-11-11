@@ -144,6 +144,8 @@ describe('Gaussian operators equal the integral of the exact message', () => {
     )
   })
   it('product: EP to the output and to each factor', () => {
+    // The product has a ridge along a b = y that the 14-panel grid resolves only to about 2e-4 when y is precise and a, b are wide.
+    const brute = { panels: 30, order: 14 }
     fc.assert(
       fc.property(gaussianArg, gaussianArg, gaussianArg, (ey, ea, eb) => {
         const args = [msg(gaussian, ey), msg(gaussian, ea), msg(gaussian, eb)]
@@ -154,22 +156,32 @@ describe('Gaussian operators equal the integral of the exact message', () => {
         ]
         near(
           implied(gaussian, ey, M.product.ep?.(ctx(0, args)).message as M.Eta),
-          bruteTilted(free, () => 0, 0, { panels: 14, order: 14 }).moments,
+          bruteTilted(free, () => 0, 0, brute).moments,
           3e-4,
         )
         // To a: b is integrated out; y = a b is the derived port of a free (a, b) pair.
         near(
           implied(gaussian, ea, M.product.ep?.(ctx(1, args)).message as M.Eta),
-          bruteTilted(free, () => 0, 1, { panels: 14, order: 14 }).moments,
+          bruteTilted(free, () => 0, 1, brute).moments,
           1e-4,
         )
         near(
           implied(gaussian, eb, M.product.ep?.(ctx(2, args)).message as M.Eta),
-          bruteTilted(free, () => 0, 2, { panels: 14, order: 14 }).moments,
+          bruteTilted(free, () => 0, 2, brute).moments,
           1e-4,
         )
       }),
-      { numRuns: 4 },
+      // The counterexample that 14 panels could not resolve (a precise y against wide a and b: the brute-force error was 2.2e-4).
+      {
+        numRuns: 4,
+        examples: [
+          [
+            [0, 3.3333333333333335],
+            [-0.11952662893229665, 0.38647342995170597],
+            [0, 0.3333333333340008],
+          ],
+        ],
+      },
     )
   })
   it('product with nothing known about y is the matched pushforward', () => {
