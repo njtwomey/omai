@@ -195,6 +195,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - dataset `gaussianMixtureOrdered`: Two-component Gaussian mixture, means ordered; discrete labels summed out; the truth is a 2-D grid. `src/lib/probprog/models/mixture.ts:194` `omai-engine/probprog/models`
 - dataset `gaussianProcessNonCentred`: Gaussian process regression, non-centred (f = L z); the same quadrature truth as the centred form. `src/lib/probprog/models/gaussian-process.ts:295` `omai-engine/probprog/models`
 - dataset `gaussianProcessRegression`: Gaussian process regression with an unknown length scale; closed-form function posterior, quadrature over the length scale. `src/lib/probprog/models/gaussian-process.ts:207` `omai-engine/probprog/models`
+- dataset `generateIrt`: Item response answers from known abilities, difficulties and discriminations. `src/lib/probprog/models/irt-hierarchical.ts:150` `omai-engine/probprog/models`
 - dataset `itemResponseScoring`: 2PL item response scoring with known items; one-dimensional quadrature truth for each respondent. `src/lib/probprog/models/irt.ts:101` `omai-engine/probprog/models`
 - dataset `ldaLite`: LDA-lite: three documents, two topics, four words; the exact posterior by enumeration of the assignments. `src/lib/probprog/models/topics.ts:260` `omai-engine/probprog/models`
 - dataset `logisticRegression`: Bayesian logistic regression with an intercept and two covariates; the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:61` `omai-engine/probprog/models`

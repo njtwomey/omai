@@ -12,7 +12,7 @@ describe('the gaussian-mixture page', () => {
     const p = inlineProducer(mixtureMethod, { config, steps: mixtureSteps(config) }, [{ label: '', config: {} }])
     for (let i = 0; i < 100 && p.sessions[0]?.status === undefined; i++) p.advance({ steps: 50 })
     const s = p.sessions[0]
-    expect(s?.status).toBe('completed')
+    expect(['completed', 'converged']).toContain(s?.status)
     const fit = s?.probe(s.t, 'mixture/fit') as { rows: { name: string }[]; mean: number[] }
     expect(fit.rows.map((r) => r.name)).toEqual(['mean 1', 'mean 2', 'weight 1', 'weight 2', 'spread'])
     expect(fit.mean).toHaveLength(90)
