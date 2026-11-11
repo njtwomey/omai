@@ -17,8 +17,10 @@
 import { OmaiError } from '../../base/index.ts'
 import {
   bpMethod,
+  type CompiledGraph,
   defaultsOf,
   type EpPath,
+  epAlgorithm,
   epDefaults,
   epMethod,
   type MpState,
@@ -26,10 +28,13 @@ import {
   mpVerdict,
   projectionOf,
   type ScheduleKind,
+  takesPower,
   type VmpPath,
   vmpMethod,
+  withPowers,
 } from '../../message-passing/index.ts'
-import { type Config, type Contract, defineContract, derived, Log } from '../../trace/index.ts'
+import { dict, real } from '../../space/index.ts'
+import { type Config, type Contract, defineContract, derived, Log, runAlgorithm } from '../../trace/index.ts'
 import { factorGraphPosterior, factorGraphVerdict, type MessageRule } from '../model/factors.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
 import {
@@ -122,7 +127,37 @@ function specMethod<P extends string>(
   const name = options.name ?? rule
   const title = TITLE[rule]
   const prepared = prepare(model, options.plates ?? 'vectorise', options.packScalars ?? rule === 'ep')
-  const knobs = messagePassingKnobs(rule)
+  const base = messagePassingKnobs(rule)
+  // Expectation propagation also takes the power of fractional EP, on every factor whose operator supports one (the likelihood
+  // links, the softmax site, the shape and concentration sites, unary functions).
+  const knobs =
+    rule === 'ep'
+      ? {
+          ...base,
+          config: dict({
+            ...base.config.spaces,
+            power: real(0.05, 2, {
+              default: 1,
+              label: 'power',
+              description:
+                'fractional EP: the power of every factor that supports one (1 is EP). Below 1 the spreads of variables that many factors share come out wider: where one Gaussian per variable leaves them too narrow (the class slopes of a softmax classifier), a power near 5 / rows restores the coverage of their intervals',
+            }),
+          }),
+        }
+      : base
+  const powered = new Map<number, CompiledGraph | undefined>()
+  /** The graph at the configuration's power (the prepared one at 1): the factors that take a power get it, the others stay at 1. */
+  const graphAt = (config: Config): CompiledGraph | undefined => {
+    const g = prepared?.graph
+    const p = typeof config['power'] === 'number' ? config['power'] : 1
+    if (g === undefined || p === 1 || rule !== 'ep') return g
+    if (!powered.has(p))
+      powered.set(
+        p,
+        withPowers(g, (f) => (takesPower(f.operator, f.params) ? p : 1)),
+      )
+    return powered.get(p)
+  }
   const check = (a: ModelAnalysis): Verdict => {
     if (prepared === undefined)
       return no(
@@ -151,6 +186,35 @@ function specMethod<P extends string>(
       ? 'a closure program has no factor graph'
       : (prepared.failure ?? prepared.compiled.issues.map((i) => `${i.node}: ${i.reason}`).join('; '))
   const tol = (config: Config): number => (typeof config['tol'] === 'number' ? config['tol'] : epDefaults.tol)
+  // The evidence of a state whose plated factor has an improper cavity, from the same model with a factor per row, by state.
+  const rowEvidence = new WeakMap<MpState, { readonly value: number; readonly method: string } | null>()
+  const evidenceByRows = (
+    state: MpState,
+    config: Config,
+  ): { readonly value: number; readonly method: string } | null => {
+    const known = rowEvidence.get(state)
+    if (known !== undefined) return known
+    let found: { readonly value: number; readonly method: string } | null = null
+    const rows = prepare(model, 'expand', options.packScalars ?? rule === 'ep')
+    if (rows?.graph !== undefined) {
+      const run = runAlgorithm(
+        epAlgorithm(rows.graph, {
+          tol: tol(config),
+          maxSweeps: 400,
+          damping: typeof config['damping'] === 'number' ? config['damping'] : defaultsOf(rule).damping,
+        }),
+        { maxSteps: 402, seed: 1 },
+      )
+      const v = factorGraphPosterior(rows.compiled, rows.graph, run.state as MpState, {
+        engine: name,
+        rule,
+      }).logEvidence
+      if (v !== undefined && Number.isFinite(v.value) && run.status === 'converged')
+        found = { value: v.value, method: 'ep-energy (rows expanded)' }
+    }
+    rowEvidence.set(state, found)
+    return found
+  }
   const posterior = (state: MpState, config: Config): Posterior => {
     if (prepared?.graph === undefined)
       return definePosterior({
@@ -160,7 +224,8 @@ function specMethod<P extends string>(
         status: 'failed',
         diagnostics: { reason: why() },
       })
-    const verdict = mpVerdict(prepared.graph, state, {
+    const graph = graphAt(config) ?? prepared.graph
+    const verdict = mpVerdict(graph, state, {
       tol: tol(config),
       maxSweeps: Number.POSITIVE_INFINITY,
       schedule: (typeof config['schedule'] === 'string'
@@ -170,22 +235,45 @@ function specMethod<P extends string>(
       restarts: typeof config['restarts'] === 'number' ? config['restarts'] : defaultsOf(rule).restarts,
       projection: projectionOf(rule),
     })
-    return factorGraphPosterior(prepared.compiled, prepared.graph, state, {
+    const status = verdict.status === 'converged' ? 'converged' : 'stopped'
+    const reason = verdict.reason === undefined ? {} : { reason: verdict.reason }
+    const own = factorGraphPosterior(prepared.compiled, graph, state, {
       engine: name,
       rule,
-      status: verdict.status === 'converged' ? 'converged' : 'stopped',
-      ...(verdict.reason === undefined ? {} : { reason: verdict.reason }),
+      status,
+      ...reason,
     })
+    // A converged run whose plated factor has an improper cavity has no EP energy of its own: the evidence of the same model with a
+    // factor per row (each cavity proper) stands for it, and the diagnostics say so.
+    if (
+      rule !== 'ep' ||
+      status !== 'converged' ||
+      (options.plates ?? 'vectorise') === 'expand' ||
+      own.logEvidence !== undefined ||
+      !Array.isArray(own.diagnostics['evidenceUndefinedAt']) ||
+      own.diagnostics['evidenceUndefinedAt'].length === 0
+    )
+      return own
+    const evidence = evidenceByRows(state, config)
+    return evidence === null
+      ? own
+      : factorGraphPosterior(prepared.compiled, graph, state, {
+          engine: name,
+          rule,
+          status,
+          ...reason,
+          evidence,
+        })
   }
-  const base = knobs.contract as Contract<MpState, string>
-  const contract = (): Contract<MpState, P> =>
+  const tape = knobs.contract as Contract<MpState, string>
+  const contract = (config: Config): Contract<MpState, P> =>
     defineContract({
-      ...base,
+      ...tape,
       'mp/posterior': derived<MpState>({
         cost: 'dear',
         description:
           'the posterior of the state as JSON: the marginal of every site, in the spec shapes, with the evidence or bound',
-        compute: (s) => posteriorJson(posterior(s, {})),
+        compute: (s) => posteriorJson(posterior(s, config)),
       }),
     } as never) as Contract<MpState, P>
   return defineInferenceMethod<MpState, Config, P, ModelAnalysis>({
@@ -201,7 +289,7 @@ function specMethod<P extends string>(
     contract,
     make: (config, key) => {
       ensure()
-      const g = prepared?.graph
+      const g = graphAt(config)
       if (g === undefined) throw new OmaiError('value', `${name}: ${why()}`)
       const m = rule === 'ep' ? epMethod(g) : rule === 'vmp' ? vmpMethod(g) : bpMethod(g)
       return m.make(config, key) as never

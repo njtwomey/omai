@@ -11,7 +11,7 @@
 import { OmaiError } from '../../base/index.ts'
 import { type CompiledGraph, epAlgorithm, type InitialMessage, type MpState } from '../../message-passing/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
-import { bool, type DictSpace, dict, int, real } from '../../space/index.ts'
+import { bool, choice, type DictSpace, dict, int, real } from '../../space/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import {
   type Algorithm,
@@ -26,6 +26,7 @@ import {
 import { factorGraphPosterior, factorGraphVerdict } from '../model/factors.ts'
 import type { Posterior } from '../posterior.ts'
 import { definePosterior } from '../posterior.ts'
+import { canonicalSites, moveAxis, orderingSite, permutations } from './_relabel.ts'
 import { recordOf, type SiteRecord, siteMixturePosterior } from './_site-mixture.ts'
 import {
   flag,
@@ -35,6 +36,7 @@ import {
   no,
   num,
   type Prepared,
+  pick,
   posteriorJson,
   prepare,
   yes,
@@ -52,10 +54,19 @@ export type EpMultiStartPath =
 export interface StartRun {
   /** Which start it was (0 is plain EP). */
   readonly start: number
+  /** How it was started: plain EP, a category ruled out, random messages, or the discrete messages of run `of` relabelled by `perm`. */
+  readonly origin: 'plain' | 'exclude' | 'random' | 'relabel'
+  /** For a relabelled start: the run whose discrete messages were moved, and the permutation (entry `q` goes to `perm[q]`). */
+  readonly of?: number
+  readonly perm?: readonly number[]
+  /** The discrete messages of the fixed point, one array per start port, in the order of the graph's discrete ports. */
+  readonly discrete: readonly (readonly number[])[]
   /** The EP estimate of log p(data) at the fixed point it reached (negative infinity when it has none). */
   readonly logEvidence: number
   readonly converged: boolean
   readonly sweeps: number
+  /** The largest change of a belief over the last sweep (the run's distance from a fixed point). */
+  readonly change: number
   readonly sites: Readonly<Record<string, SiteRecord>>
 }
 
@@ -82,6 +93,12 @@ export const epMultiStartKnobs: DictSpace = dict({
     description:
       'start also from messages that rule out one category of every discrete variable (a regime nobody visits)',
   }),
+  labels: choice(['keep', 'permute', 'sort'], {
+    default: 'keep',
+    label: 'labels',
+    description:
+      'keep: the components as the model names them; permute: also start from every relabelling of each reading found (the labellings the priors allow, each with its evidence); sort: the same, read with the components sorted by the first vector of parameters, so the relabellings of a reading are one reading',
+  }),
   merge: real(0.001, 1, {
     log: true,
     default: 0.05,
@@ -103,14 +120,23 @@ export interface EpMultiStartOptions {
   readonly packScalars?: boolean
 }
 
+/** A port that carries a discrete or Bernoulli message: its place, the size of the message, its edge and the family. */
+interface StartPort {
+  readonly factor: number
+  readonly port: number
+  readonly size: number
+  readonly edge: number
+  readonly kind: string
+}
+
 /** The ports of the graph that carry a discrete or Bernoulli message of a factor that is not a fixed prior: where a start is set. */
-function discretePorts(g: CompiledGraph): { factor: number; port: number; size: number }[] {
-  const out: { factor: number; port: number; size: number }[] = []
+function discretePorts(g: CompiledGraph): StartPort[] {
+  const out: StartPort[] = []
   g.factors.forEach((f, factor) => {
     if (f.operator.name === 'prior') return
     f.ports.forEach((p, port) => {
       if (p.edge >= 0 && (p.family.kind === 'discrete' || p.family.kind === 'bernoulli'))
-        out.push({ factor, port, size: p.family.size })
+        out.push({ factor, port, size: p.family.size, edge: p.edge, kind: p.family.kind })
     })
   })
   return out
@@ -118,7 +144,7 @@ function discretePorts(g: CompiledGraph): { factor: number; port: number; size: 
 
 /** The start messages of start number `s`: nothing for plain EP, else random log-probabilities, or ones that rule out category `off`. */
 function startMessages(
-  ports: readonly { factor: number; port: number; size: number }[],
+  ports: readonly StartPort[],
   key: Key,
   jitter: number,
   off: number | undefined,
@@ -136,23 +162,93 @@ function startMessages(
   })
 }
 
-/** The runs grouped into modes: the best-evidence run of each set whose site means agree within `merge` of the larger sd. */
-function modesOf(runs: readonly StartRun[], merge: number): StartRun[] {
+/** Whether two fixed points agree: every site mean within `merge` of the larger sd. */
+function sameSites(
+  a: Readonly<Record<string, SiteRecord>>,
+  b: Readonly<Record<string, SiteRecord>>,
+  merge: number,
+): boolean {
+  return Object.entries(a).every(([site, ra]) => {
+    const rb = b[site]
+    if (rb === undefined) return false
+    return ra.mean.every((m, i) => {
+      const sd = Math.max(Math.sqrt(ra.variance[i] ?? 0), Math.sqrt(rb.variance[i] ?? 0), 1e-6)
+      return Math.abs(m - (rb.mean[i] ?? 0)) <= merge * sd + 1e-9
+    })
+  })
+}
+
+/** The runs that count (those that converged when any did, with an evidence), best evidence first. */
+function usableRuns(runs: readonly StartRun[]): StartRun[] {
   const usable = runs.filter((r) => Number.isFinite(r.logEvidence))
   const converged = usable.filter((r) => r.converged)
-  const pool = (converged.length > 0 ? converged : usable).slice().sort((a, b) => b.logEvidence - a.logEvidence)
-  const same = (a: StartRun, b: StartRun): boolean =>
-    Object.entries(a.sites).every(([site, ra]) => {
-      const rb = b.sites[site]
-      if (rb === undefined) return false
-      return ra.mean.every((m, i) => {
-        const sd = Math.max(Math.sqrt(ra.variance[i] ?? 0), Math.sqrt(rb.variance[i] ?? 0), 1e-6)
-        return Math.abs(m - (rb.mean[i] ?? 0)) <= merge * sd + 1e-9
-      })
-    })
+  return (converged.length > 0 ? converged : usable).slice().sort((a, b) => b.logEvidence - a.logEvidence)
+}
+
+/** The runs grouped into modes: the best-evidence run of each set whose site means agree within `merge` of the larger sd. */
+function modesOf(runs: readonly StartRun[], merge: number): StartRun[] {
   const modes: StartRun[] = []
-  for (const r of pool) if (!modes.some((m) => same(m, r))) modes.push(r)
+  for (const r of usableRuns(runs)) if (!modes.some((m) => sameSites(m.sites, r.sites, merge))) modes.push(r)
   return modes
+}
+
+/** One component of the posterior: what it believes of every site, and its log weight (its EP evidence). */
+interface Mode {
+  readonly sites: Readonly<Record<string, SiteRecord>>
+  readonly logEvidence: number
+}
+
+/** The log of a sum of exponentials. */
+function logSumExp(xs: readonly number[]): number {
+  const top = Math.max(...xs)
+  return top + Math.log(xs.reduce((a, v) => a + Math.exp(v - top), 0))
+}
+
+/**
+ * The fixed points as the components of the posterior, each with its EP evidence as its weight. With relabelling each is put in
+ * canonical form first (the components sorted by the mean of the first vector of parameters, `key`): the labellings of a reading
+ * are different fixed points under asymmetric priors, each with its evidence, and read in one order they are one set of components.
+ */
+function posteriorModes(
+  runs: readonly StartRun[],
+  merge: number,
+  canonical: { key: string; k: number } | undefined,
+): Mode[] {
+  const raw = modesOf(runs, merge)
+  const modes = raw.map((r) => ({
+    sites: canonical === undefined ? r.sites : canonicalSites(r.sites, canonical.key, canonical.k),
+    logEvidence: r.logEvidence,
+  }))
+  return modes
+}
+
+/** The category counts the discrete messages of the graph have (two for a Bernoulli switch), the largest first. */
+function categoryCounts(ports: readonly StartPort[]): number[] {
+  const sizes = new Set(ports.filter((p) => p.kind === 'discrete').map((p) => p.size))
+  if (ports.some((p) => p.kind === 'bernoulli')) sizes.add(2)
+  return [...sizes].sort((a, b) => b - a)
+}
+
+/** The most components whose relabellings are all tried: 4 gives 24 labellings of every mode. */
+const MAX_RELABELLED = 4
+
+/** The discrete messages with the components relabelled: entry `q` of every message over `k` categories goes to `perm[q]`, a Bernoulli logit changes sign when the two are swapped. */
+function relabelMessages(
+  ports: readonly StartPort[],
+  messages: readonly (readonly number[])[],
+  perm: readonly number[],
+  k: number,
+): InitialMessage[] {
+  return ports.map((p, i) => {
+    const eta = messages[i] ?? []
+    const moved =
+      p.kind === 'discrete' && p.size === k
+        ? moveAxis(eta, perm)
+        : p.kind === 'bernoulli' && k === 2 && perm[0] === 1
+          ? eta.map((v) => -v)
+          : eta.slice()
+    return { factor: p.factor, port: p.port, eta: moved }
+  })
 }
 
 /**
@@ -161,7 +257,11 @@ function modesOf(runs: readonly StartRun[], merge: number): StartRun[] {
  * one run reports one mode with a spread that is far too small. The discrete messages of the graph are started at random and,
  * when `exclusions` is on, at messages that rule out one category; runs that end at the same fixed point are one mode; the
  * posterior is the mixture of the modes' beliefs with weights proportional to their EP evidence, and the evidence of the model is
- * the log sum of the modes' (the modes found: a mode that no start reaches, or the relabellings of a symmetric one, are not in it).
+ * the log sum of the modes' (the modes found: a mode that no start reaches is not in it). With `labels: 'permute'` every reading found is
+ * also started from each relabelling of its discrete messages, and with `labels: 'sort'` the posterior is read with the components
+ * sorted by the mean of the first vector of parameters of their number (the relabellings of a reading become one reading, as wide as
+ * the sampler's where every component is visited). The runs are weighted by their EP evidence, so a model with none at its fixed
+ * point (a factor whose cavity is improper) gives no posterior.
  *
  * @param model - A bound spec.
  * @param options - The name and how plates are compiled.
@@ -213,6 +313,24 @@ export function epMultiStartMethod(
     )
   }
 
+  /**
+   * The components of the model and the site that sorts them: the largest category count (at most the number whose relabellings are
+   * all tried) for which some continuous site is a vector of that length (a rate or a location per component), or undefined.
+   */
+  const componentsOf = (runs: readonly StartRun[]): { key: string; k: number } | undefined => {
+    if (prepared?.graph === undefined) return undefined
+    const first = runs.find((r) => r.converged) ?? runs[0]
+    if (first === undefined) return undefined
+    for (const k of categoryCounts(discretePorts(prepared.graph))) {
+      if (k < 2 || k > MAX_RELABELLED) continue
+      const key = orderingSite(first.sites, k)
+      if (key !== undefined) return { key, k }
+    }
+    return undefined
+  }
+  const canonicalOf = (runs: readonly StartRun[], labels: string): { key: string; k: number } | undefined =>
+    labels === 'sort' ? componentsOf(runs) : undefined
+
   const posterior = (state: EpMultiStartState, config: Config): Posterior => {
     if (prepared?.graph === undefined || state.runs.length === 0)
       return definePosterior({
@@ -222,7 +340,7 @@ export function epMultiStartMethod(
         status: 'failed',
         diagnostics: { reason: 'no run yet' },
       })
-    const modes = modesOf(state.runs, num(config, 'merge'))
+    const modes = posteriorModes(state.runs, num(config, 'merge'), canonicalOf(state.runs, pick(config, 'labels')))
     if (modes.length === 0)
       return definePosterior({
         form: 'variational',
@@ -279,49 +397,87 @@ export function epMultiStartMethod(
           throw new OmaiError('value', `${name}: ${prepared?.failure ?? 'the model has no factor graph'}`)
         return prepared.graph
       }
-      const run = (start: number): StartRun => {
+      const merge = num(config, 'merge')
+      const labels = pick(config, 'labels')
+      /** One EP run from the given start messages. */
+      const run = (
+        index: number,
+        origin: StartRun['origin'],
+        initial: readonly InitialMessage[],
+        extra: { of?: number; perm?: readonly number[] } = {},
+      ): StartRun => {
         const g = graph()
-        const ports = discretePorts(g)
-        const categories = Math.max(0, ...ports.map((p) => p.size))
-        // Start 0 is plain EP; with exclusions, starts 1..K rule out category 0..K-1; the rest are random.
-        const off = exclusions && start >= 1 && start <= categories ? start - 1 : undefined
-        const initial = start === 0 ? [] : startMessages(ports, foldIn(key, start), jitter, off)
         const r = runAlgorithm(epAlgorithm(g, { ...settings, ...(initial.length === 0 ? {} : { initial }) }), {
           maxSteps: settings.maxSweeps + 2,
           seed: 1,
         })
-        const post = factorGraphPosterior((prepared as Prepared).compiled, g, r.state as MpState, { engine: name })
+        const final = r.state as MpState
+        const post = factorGraphPosterior((prepared as Prepared).compiled, g, final, { engine: name })
         const sites: Record<string, SiteRecord> = {}
         for (const s of post.sites) sites[s] = recordOf(post.marginal(s))
         const ev = post.logEvidence?.value
         return {
-          start,
+          start: index,
+          origin,
+          ...extra,
+          discrete: discretePorts(g).map((p) => final.messages[p.edge] ?? []),
           logEvidence: ev === undefined || !Number.isFinite(ev) ? Number.NEGATIVE_INFINITY : ev,
           converged: r.status === 'converged',
           sweeps: r.steps,
+          change: final.change,
           sites,
         }
       }
+      /**
+       * The next run. First the relabellings of every new reading (a converged fixed point whose canonical form no earlier one has,
+       * that was not itself a relabelling): its discrete messages with the components permuted, every permutation once. Then the
+       * base starts: plain EP, one per excluded category (when asked), then random ones.
+       */
+      const next = (runs: readonly StartRun[]): StartRun => {
+        const g = graph()
+        const ports = discretePorts(g)
+        const canon = labels !== 'keep' ? componentsOf(runs) : undefined
+        if (canon !== undefined) {
+          const k = canon.k
+          const perms = permutations(k)
+          const seen: Readonly<Record<string, SiteRecord>>[] = []
+          for (const [i, r] of runs.entries()) {
+            if (!r.converged || !Number.isFinite(r.logEvidence)) continue
+            const sites = canonicalSites(r.sites, canon.key, canon.k)
+            if (seen.some((q) => sameSites(q, sites, merge))) continue
+            seen.push(sites)
+            if (r.origin === 'relabel') continue
+            for (const perm of perms.slice(1)) {
+              if (runs.some((q) => q.of === i && q.perm?.every((v, j) => v === perm[j]) === true)) continue
+              return run(runs.length, 'relabel', relabelMessages(ports, r.discrete, perm, k), { of: i, perm })
+            }
+          }
+        }
+        const base = runs.filter((r) => r.origin !== 'relabel').length
+        if (base === 0) return run(runs.length, 'plain', [])
+        const categories = Math.max(0, ...ports.map((p) => p.size))
+        // With exclusions, base starts 1..K rule out category 0..K-1; the rest are random.
+        const off = exclusions && base <= categories ? base - 1 : undefined
+        return run(
+          runs.length,
+          off === undefined ? 'random' : 'exclude',
+          startMessages(ports, foldIn(key, base), jitter, off),
+        )
+      }
       return {
         name: 'probprog/ep-multistart-method',
-        config: { starts, jitter, exclusions, merge: num(config, 'merge'), ...settings },
+        config: { starts, jitter, exclusions, labels, merge, ...settings },
         init: (): EpMultiStartState => {
           graph()
           return { runs: [] }
         },
         step: (s, ctx) => {
-          const next: EpMultiStartState = { runs: [...s.runs, run(s.runs.length)] }
-          const modes = modesOf(next.runs, num(config, 'merge'))
-          ctx.log('ep-multistart/starts', next.runs.length)
+          const state: EpMultiStartState = { runs: [...s.runs, next(s.runs)] }
+          const modes = posteriorModes(state.runs, merge, canonicalOf(state.runs, labels))
+          ctx.log('ep-multistart/starts', state.runs.length)
           ctx.log('ep-multistart/modes', modes.length)
-          if (modes.length > 0) {
-            const top = Math.max(...modes.map((m) => m.logEvidence))
-            ctx.log(
-              'ep-multistart/logEvidence',
-              top + Math.log(modes.reduce((a, m) => a + Math.exp(m.logEvidence - top), 0)),
-            )
-          }
-          return next
+          if (modes.length > 0) ctx.log('ep-multistart/logEvidence', logSumExp(modes.map((m) => m.logEvidence)))
+          return state
         },
         done: (s) => (s.runs.length >= starts ? 'completed' : undefined),
         serialise: (s) => JSON.parse(JSON.stringify(s)),

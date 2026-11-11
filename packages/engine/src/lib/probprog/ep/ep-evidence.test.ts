@@ -151,12 +151,15 @@ describe('the EP evidence of the learned logistic regression (the weights share 
     return method.posterior?.(s.state, s.config as never)
   }
 
-  it('has no evidence as one plated factor, and says why: the cavity of the plate is improper', () => {
+  it('reports the evidence of the rows-expanded model when the plated factor has an improper cavity, and says so', () => {
     // The scale mixture on the weights sends a site with a negative precision, so the cavity of the plate (all rows, one factor)
-    // is indefinite and its integral against the logistic likelihood diverges: the EP energy is undefined, not wrong.
+    // is indefinite and its integral against the logistic likelihood diverges: the plate has no EP energy of its own. The method
+    // gives the energy of the same model with a factor per row, whose cavities are proper, and names it.
     const post = posteriorOf('vectorise')
-    expect(post?.logEvidence).toBeUndefined()
-    expect(post?.diagnostics['evidenceUndefinedAt']).toEqual(['factor:y: improper cavity'])
+    expect(post?.logEvidence?.method).toBe('ep-energy (rows expanded)')
+    const grid = gridPosterior(toProgram(bound), undefined, { maxRefinements: 0, ...problem.grid })
+    expect(Math.abs((post?.logEvidence?.value ?? Number.NaN) - grid.logEvidence)).toBeLessThan(0.1)
+    expect(post?.diagnostics['evidenceUndefinedAt']).toBeUndefined()
   })
 
   it('has the evidence with a factor per row (a proper cavity for each), within 0.1 nats of the grid (0.046 measured)', () => {

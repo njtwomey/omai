@@ -162,12 +162,12 @@ export const softmaxRegressionAtom: EpAtom = defineAtom({
   reference: 'exact',
   tolerance: {
     meanZ: 0.25,
-    sdRatio: [0.7, 1.25],
+    sdRatio: [0.8, 1.25],
     ks: 0.12,
     reason:
-      'the three slopes share every observation, so one Gaussian each cannot hold their correlations and EP is a little narrow; the means are close',
+      'the three slopes share every observation, so one Gaussian each cannot hold their correlations and plain EP is narrow (0.75 of the exact spread, 0.80 coverage of the truth over 80 seeds with ten points); the factors take a power of 0.5 (fractional EP), which gives 0.89 and 0.92 coverage with the means a tenth of an exact sd off',
   },
-  ep: { damping: 0.5, tol: 1e-4 },
+  ep: { damping: 0.5, tol: 1e-4, power: 0.5 },
   knobs: dict({ priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the slopes' }) }),
   problem: softmaxProblem,
 })
@@ -243,13 +243,13 @@ export const softmaxRegressionLearnedAtom: EpAtom = defineAtom({
   expected: 'runs',
   reference: 'exact',
   tolerance: {
-    meanZ: 0.3,
-    sdRatio: [0.5, 1.3],
+    meanZ: 0.5,
+    sdRatio: [0.8, 1.25],
     ks: 0.2,
     reason:
-      'the slopes are correlated in the posterior (every observation joins the three) and EP carries one Gaussian each, so its spreads are 0.55 to 0.8 of the exact ones and its means within 0.15 of an exact sd',
+      'the slopes are correlated in the posterior (every observation joins the three) and one Gaussian each is too narrow (0.4 to 0.6 of the exact spread with 24 points, and the truth inside its 90% interval only 0.63 of the time over 80 seeds drawn from the prior): the factors take a power of 0.25 (fractional EP), which gives the exact spreads (0.93 coverage) and moves the means by up to half an exact sd',
   },
-  ep: { damping: 0.5, tol: 1e-4 },
+  ep: { damping: 0.5, tol: 1e-4, power: 0.25 },
   knobs: dict({
     ...simulationKnobs(24),
     trueSlope0: real(-3, 3, { default: -1.5, step: 0.1, label: 'true slope of class 0' }),
