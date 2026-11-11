@@ -3878,8 +3878,10 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   and `logistic-row` (one factor per row on a weight vector, `rows.ts`), the plates `linear-regression-plate`,
   `probit-plate` and `logistic-plate` (one factor for a whole plate of rows, `plates.ts`: the Gaussian link is closed form
   and independent of the number of rows, the nonlinear links run EP over the plate inside the call) and the `spin`
-  factor and `spin-row` (`spin.ts`, the Ising site of expectation consistent inference). `numericOperator` (`numeric.ts`)
-  is a constructor, not one of the 35: a factor given only by its log density, whose EP messages come from a panelled
+  factor and `spin-row` (`spin.ts`, the Ising site of expectation consistent inference), and the robust sites
+  `mixture-site` (exact EP: spike and slab prior, inlier and outlier noise), `student-t-site` and `laplace-site` (quadrature EP)
+  with their rows `mixture-row`, `student-t-row`, `laplace-row` (`robust.ts`). `numericOperator` (`numeric.ts`)
+  is a constructor, not one of the 41: a factor given only by its log density, whose EP messages come from a panelled
   product rule (the fallback for a robust likelihood or the clutter problem). `args.ts`: how operators read their
   arguments. Known limits: VMP has no rule for the hard comparison `greater-than` or for `max` and `min`;
   `gaussian-gamma-precision` has no EP rule.

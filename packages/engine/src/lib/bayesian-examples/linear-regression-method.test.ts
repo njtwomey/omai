@@ -122,4 +122,21 @@ describe('linearRegressionMethod', () => {
     const c = ep.probe(ep.t, 'linreg/check', { reference: draws } as never) as { maxMeanError: number }
     expect(c.maxMeanError).toBeLessThan(0.5)
   })
+
+  it('EP is offered for the spike and slab and ARD priors and agrees with a long NUTS run', { timeout: 60_000 }, () => {
+    for (const prior of ['spikeSlab', 'ard']) {
+      const over = { truth: 'sparse', rows: 40, features: 6, active: 2, prior }
+      expect(
+        linearExample.offer({
+          ...(defaults(linearRegressionMethod.config) as Record<string, unknown>),
+          ...over,
+        } as never).applicable,
+      ).toContain('ep')
+      const ref = run(configOf('nuts', { numChains: 2, numWarmup: 150, numDraws: 300 }, over))
+      const draws = ref.probe(ref.t, 'linreg/draws') as { names: string[] }
+      const ep = run(configOf('ep', {}, over))
+      const c = ep.probe(ep.t, 'linreg/check', { reference: draws } as never) as { maxMeanError: number }
+      expect(c.maxMeanError).toBeLessThan(0.5)
+    }
+  })
 })

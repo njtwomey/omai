@@ -181,12 +181,18 @@ export function linearRegressionProblem(config: Config): LinearProblem {
         dims: [feature],
         doc: 'the precision of each coefficient (relevance): a large one prunes it',
       })
-      const precision = m.derived(
-        'precision',
-        alpha.mul(settings.sparsity).add((1 - settings.sparsity) / priorScale ** 2),
-        { doc: 'the prior precision of each coefficient' },
-      )
-      w = m.latent('w', d.normal(0, precision.sqrt().pow(-1)), { dims: [feature], doc: 'the coefficients' })
+      if (settings.sparsity === 1) {
+        // The precision idiom message passing accepts: each coefficient is a normal with scale 1 / sqrt(alpha_j).
+        m.derived('precision', alpha, { doc: 'the prior precision of each coefficient' })
+        w = m.latent('w', d.normal(0, ops.div(1, ops.sqrt(alpha))), { dims: [feature], doc: 'the coefficients' })
+      } else {
+        const precision = m.derived(
+          'precision',
+          alpha.mul(settings.sparsity).add((1 - settings.sparsity) / priorScale ** 2),
+          { doc: 'the prior precision of each coefficient' },
+        )
+        w = m.latent('w', d.normal(0, precision.sqrt().pow(-1)), { dims: [feature], doc: 'the coefficients' })
+      }
     } else if (prior === 'horseshoe') {
       const lambda = m.latent('lambda', d.halfCauchy(1), {
         dims: [feature],
@@ -510,8 +516,18 @@ const linearExample: Example<LinearProblem> = defineExample<LinearProblem>({
           const p = problem.names.length
           const noiseSite = method.sites.includes('sigma') ? 'sigma' : method.sites.includes('tau') ? 'tau' : undefined
           const learned = noiseSite !== undefined
-          const hasPrecision = method.sites.includes('precision')
-          const sites = ['w', ...(noiseSite === undefined ? [] : [noiseSite]), ...(hasPrecision ? ['precision'] : [])]
+          // The prior precision of each coefficient: its own site, or the ARD precision alpha when the sparsity is full.
+          const precisionSite = method.sites.includes('precision')
+            ? 'precision'
+            : problem.prior === 'ard' && method.sites.includes('alpha')
+              ? 'alpha'
+              : undefined
+          const hasPrecision = precisionSite !== undefined
+          const sites = [
+            'w',
+            ...(noiseSite === undefined ? [] : [noiseSite]),
+            ...(precisionSite === undefined ? [] : [precisionSite]),
+          ]
           const got = drawRows(method, sites, COEFFICIENT_DRAWS)
           if (got === undefined) return null
           const ws = got.rows.map((r) => r.slice(0, p))

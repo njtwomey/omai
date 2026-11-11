@@ -2,8 +2,7 @@
  * Robust regression as an example method: a line (or a polynomial) with a known truth and noise, a fraction of the rows
  * replaced by outliers (their size, and where they sit: anywhere, or as leverage points at the ends of the input range), and
  * a model whose LIKELIHOOD is the choice: Gaussian, Student-t (the degrees of freedom fixed or learned with a prior), Laplace,
- * or a two-component Gaussian mixture of inliers and outliers (written with the library's scale mixture of normals on the
- * residual). One inference method of the library with its own knobs and a budget runs it. The Gaussian likelihood is dragged
+ * or a two-component Gaussian mixture of inliers and outliers (`normalOutliers`). One inference method of the library with its own knobs and a budget runs it. The Gaussian likelihood is dragged
  * towards the outliers and the heavy-tailed ones are not, which is what the page shows: `robust/fit` (the fitted curve with its
  * band, the data with the outliers marked, the Gaussian conjugate fit to the same rows and the Gaussian fit to the inliers
  * alone, and how far each is from the truth), `robust/df` (the posterior of the degrees of freedom against its prior),
@@ -150,16 +149,7 @@ export function robustRegressionProblem(config: Config): RobustProblem {
     if (likelihood === 'gaussian') m.observe('y', d.normal(mean, scale), yy)
     else if (likelihood === 'laplace')
       m.observe('y', d.laplace(mean, typeof scale === 'number' ? scale / Math.SQRT2 : scale.div(Math.SQRT2)), yy)
-    else if (likelihood === 'mixture')
-      m.observe(
-        'y',
-        d.normalSpikeSlab(
-          1 - contamination,
-          scale,
-          typeof scale === 'number' ? scale * outlierScale : scale.mul(outlierScale),
-        ),
-        yy.sub(mean),
-      )
+    else if (likelihood === 'mixture') m.observe('y', d.normalOutliers(mean, scale, contamination, outlierScale), yy)
     else if (dfLearned) {
       const excess = m.latent('nuExcess', d.gamma(2, 2 / (dfPriorMean - 1)), {
         doc: 'the degrees of freedom above one',

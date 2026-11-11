@@ -80,4 +80,21 @@ describe('robustRegressionMethod', () => {
     for (const kind of ['nuts', 'svi', 'laplace']) expect(offer.applicable).toContain(kind)
     expect(Object.keys(offer.unavailable).length).toBeGreaterThan(0)
   })
+
+  it('EP is offered for the Student-t, Laplace and mixture likelihoods with a known scale, and agrees with a long NUTS run', () => {
+    const base = defaults(robustRegressionMethod.config) as Record<string, unknown>
+    for (const likelihood of ['studentT', 'laplace', 'mixture']) {
+      const over = { likelihood, dfModel: 'fixed', df: 3, noiseModel: 'known', rows: 30, outliers: 0.2 }
+      expect(robustExample.offer({ ...base, ...over } as never).applicable).toContain('ep')
+      const ref = run(configOf('nuts', { numChains: 2, numWarmup: 150, numDraws: 300 }, over))
+      const draws = ref.probe(ref.t, 'robust/draws') as { names: string[] }
+      const ep = run(configOf('ep', {}, over))
+      const c = ep.probe(ep.t, 'robust/check', { reference: draws } as never) as { maxMeanError: number }
+      expect(c.maxMeanError).toBeLessThan(0.5)
+    }
+    // An unknown scale and learned degrees of freedom have no message rule: EP is refused with the reason.
+    const learned = robustExample.offer({ ...base, likelihood: 'studentT', noiseModel: 'learned' } as never)
+    expect(learned.applicable).not.toContain('ep')
+    expect(learned.unavailable['ep']).toBeDefined()
+  })
 })

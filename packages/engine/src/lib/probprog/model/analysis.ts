@@ -335,7 +335,7 @@ export function analyseSpec(model: ModelLike | ModelSpec): SpecAnalysis {
       }),
       children: kidIds.get(idOf(n)) ?? [],
       operators: [...ops],
-      opaque: custom || (fam !== undefined && !fam.exponentialFamily),
+      opaque: custom || (fam !== undefined && !fam.exponentialFamily && !fam.messagePassing),
     }
   })
   const names = (kind: ModelNode['kind']): string[] => spec.nodes.filter((n) => n.kind === kind).map((n) => n.name)

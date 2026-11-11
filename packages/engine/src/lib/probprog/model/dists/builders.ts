@@ -182,6 +182,15 @@ export function normalSpikeSlab(inclusion: Operand, slab: Operand, spike: Operan
   return family('normalSpikeSlab', { inclusion, slab, spike })
 }
 
+/**
+ * A normal with outliers, a mixture of two normals around `loc`: probability `1 - outlier` of one with standard deviation
+ * `scale` (the inliers) and `outlier` of one `width` times as wide. The likelihood of a regression that is robust to a
+ * fraction of wild observations (the clutter problem).
+ */
+export function normalOutliers(loc: Operand, scale: Operand, outlier: Operand, width: Operand): DistExpr {
+  return family('normalOutliers', { loc, scale, outlier, width })
+}
+
 /** A multivariate normal over the last axis, with a `covariance`, `precision` or `scaleTril`. */
 export function multivariateNormal(
   loc: Operand,

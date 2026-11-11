@@ -174,7 +174,7 @@ describe('structure and features', () => {
       const x = b.latent('x', d.normal(0, 1))
       const c = b.custom('f', ([v]) => (v as NamedValue).value, [x])
       b.observe('y', d.normal(c, 1), 0)
-      b.latent('t', d.studentT(3))
+      b.latent('t', d.cauchy(0, 1))
     })
     const a = analyseSpec(m)
     expect(a.opaque).toEqual(['y', 't'])

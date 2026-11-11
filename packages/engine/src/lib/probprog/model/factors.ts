@@ -225,6 +225,7 @@ function unflatten(flat: number, shape: readonly number[]): number[] {
 /** A factor-graph name for the family of a distribution family, for the families the first version maps. */
 const MESSAGE_FAMILY: Readonly<Record<string, FamilyKind>> = {
   normal: 'gaussian',
+  normalSpikeSlab: 'gaussian',
   gamma: 'gamma',
   exponential: 'gamma',
   beta: 'beta',
@@ -281,7 +282,15 @@ class Compiler {
       if (e.kind === 'op' && e.op === 'matmul')
         for (const a of e.args) {
           const target = a.kind === 'ref' ? this.nodes.get(a.name) : undefined
-          if (target?.kind === 'latent' && target.dims.length === 1 && target.dist.family === 'normal')
+          // A normal with a random scale (ARD: a precision of its own for each coefficient) cannot be one joint Gaussian vector:
+          // its elements stay separate variables, each with its own gaussian-gamma-precision factor.
+          const scale = target?.kind === 'latent' ? target.dist.params['scale'] : undefined
+          const randomScale = scale !== undefined && this.dependsOnLatent(scale)
+          if (
+            target?.kind === 'latent' &&
+            target.dims.length === 1 &&
+            ((target.dist.family === 'normal' && !randomScale) || target.dist.family === 'normalSpikeSlab')
+          )
             this.packed.add(target.name)
         }
       for (const a of e.args) walk(a)
@@ -291,6 +300,15 @@ class Compiler {
         for (const e of Object.values(n.dist.params)) walk(e)
       if (n.kind === 'derived' || n.kind === 'factor') walk(n.expr)
     }
+  }
+
+  /** Whether an expression refers (through derived nodes) to a latent: a random value, where data and constants are known. */
+  private dependsOnLatent(e: ExprSpec): boolean {
+    if (e.kind === 'ref') {
+      const n = this.nodes.get(e.name)
+      return n?.kind === 'latent' || (n?.kind === 'derived' && this.dependsOnLatent(n.expr))
+    }
+    return (e.kind === 'op' || e.kind === 'custom') && e.args.some((a) => this.dependsOnLatent(a))
   }
 
   // ----- sizes and indexing -----
@@ -936,6 +954,10 @@ class Compiler {
       this.latentMultivariateNormal(node)
       return
     }
+    if (fam === 'normalSpikeSlab') {
+      this.latentSpikeSlab(node)
+      return
+    }
     if (fam === 'bernoulli' || fam === 'categorical') {
       this.latentDiscrete(node)
       return
@@ -1067,6 +1089,61 @@ class Compiler {
     this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
   }
 
+  /**
+   * A spike and slab latent (`normalSpikeSlab`: a mixture of a wide and a narrow zero-mean normal on every element): each
+   * element is a Gaussian variable (or a coordinate of one packed Gaussian vector, when a `matmul` reads it) with a
+   * `mixture-site` (`mixture-row`) factor, whose EP message is exact. The variable also gets a very wide Gaussian prior
+   * (a hundred slab standard deviations), so the factors have a proper cavity to start from; it changes the model by
+   * about one part in ten thousand.
+   */
+  private latentSpikeSlab(node: ModelNode & { readonly kind: 'latent' }): void {
+    const n = prod(this.shapeOf(node.dims))
+    const inclusion = this.constParam(node, 'inclusion', 'the inclusion probability')
+    const slab = this.constParam(node, 'slab', 'the slab scale')
+    const spike = this.constParam(node, 'spike', 'the spike scale')
+    for (let i = 0; i < n; i++)
+      if (!(slab[i] !== undefined && spike[i] !== undefined && (slab[i] as number) > 0 && (spike[i] as number) > 0))
+        throw new Refusal('data', `the scales of '${node.name}' must be positive`)
+    const mixture = (i: number): Record<string, Json> => ({
+      weights: [inclusion[i] as number, 1 - (inclusion[i] as number)],
+      means: [0, 0],
+      sds: [slab[i] as number, spike[i] as number],
+    })
+    const wide = (i: number): number => (100 * Math.max(slab[i] as number, spike[i] as number)) ** 2
+    if (this.packed.has(node.name)) {
+      this.need('mixture-row')
+      const cov = new Array<number>(n * n).fill(0)
+      for (let i = 0; i < n; i++) cov[i * n + i] = wide(i)
+      this.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
+      this.addFactor(gaussianMvPrior(node.name, new Array<number>(n).fill(0), cov), node.name)
+      for (let i = 0; i < n; i++) {
+        const a = new Array<number>(n).fill(0)
+        a[i] = 1
+        this.addFactor(
+          { operator: 'mixture-row', args: [node.name], params: { a, ...mixture(i) } },
+          this.elementName(node.name, node.dims, i),
+        )
+      }
+      this.syms.set(node.name, {
+        dims: node.dims,
+        cells: Array.from({ length: n }, (_, j) => this.compAtom(node.name, j, n)),
+      })
+      this.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)
+      return
+    }
+    const cells: Cell[] = []
+    const vars: string[] = []
+    for (let i = 0; i < n; i++) {
+      const name = this.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'gaussian' } })
+      this.addFactor(gaussianPrior(name, 0, wide(i)), auxId(node.name, 9, node.dims.length === 0 ? undefined : i))
+      this.addFactor({ operator: 'mixture-site', args: [name], params: mixture(i) }, name)
+      cells.push(this.varAtom(name))
+      vars.push(name)
+    }
+    this.syms.set(node.name, { dims: node.dims, cells })
+    this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+  }
+
   /** A Gaussian latent with a gamma precision: a `gaussian-gamma-precision` factor per element (the mean-field hierarchy of Bishop 2006, 10.2). */
   private latentRandomPrecision(node: ModelNode & { readonly kind: 'latent' }, loc: readonly Cell[]): void {
     if (this.packed.has(node.name))
@@ -1084,6 +1161,13 @@ class Compiler {
         ? { const: l.aff.offset }
         : (this.materialise(affOf(l), node.name, node.dims.length === 0 ? undefined : i) as string)
       this.addFactor({ operator: 'gaussian-gamma-precision', args: [name, mean, tau] }, name)
+      // A zero-mean (known-mean) Gaussian with an unknown precision sends no proper message to the variable, so the likelihood
+      // would have no cavity to start from: a very wide Gaussian (variance 1e8, about one part in 1e8 of the model) starts it.
+      if (isConstCell(l))
+        this.addFactor(
+          gaussianPrior(name, l.aff.offset, 1e8),
+          auxId(node.name, 9, node.dims.length === 0 ? undefined : i),
+        )
       cells.push(this.varAtom(name))
       vars.push(name)
     }
@@ -1462,6 +1546,10 @@ class Compiler {
         }
         return name
       }
+      case 'studentT':
+      case 'laplace':
+      case 'normalOutliers':
+        return this.observedHeavy(node, fam, y, i, index)
       case 'bernoulli':
         return this.observedBernoulli(node, name, y, i, index)
       case 'binomial':
@@ -1471,9 +1559,73 @@ class Compiler {
       default:
         throw new Refusal(
           'family',
-          `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, bernoulli, binomial, poisson and categorical`,
+          `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, studentT, laplace, normalOutliers, bernoulli, binomial, poisson and categorical`,
         )
     }
+  }
+
+  /**
+   * A heavy-tailed likelihood of an affine predictor with a known scale: `studentT` (the degrees of freedom known),
+   * `laplace`, or `normalOutliers` (a mixture of two normal noise levels). One row factor on the packed weights when the
+   * predictor is a single dot product with one vector, else a site factor on an auxiliary predictor variable. The outcome
+   * is a parameter of the factor, so the observed value has no variable of its own.
+   */
+  private observedHeavy(
+    node: ModelNode & { readonly kind: 'observed' },
+    fam: string,
+    y: number,
+    i: number,
+    index: number | undefined,
+  ): string | null {
+    const known = (p: string): number => {
+      const c = this.paramCell(node, p, i)
+      if (!isConstCell(c))
+        throw new Refusal(
+          'operator',
+          `the ${p} of '${node.name}' is random: the ${fam} likelihood has a message rule for a known ${p} only`,
+        )
+      return c.aff.offset
+    }
+    const scale = known('scale')
+    if (!(scale > 0)) throw new Refusal('data', `the scale of '${node.name}' is ${scale}: it must be positive`)
+    let params: Record<string, Json>
+    let row: string
+    let site: string
+    if (fam === 'studentT') {
+      params = { y, scale, df: known('df') }
+      row = 'student-t-row'
+      site = 'student-t-site'
+    } else if (fam === 'laplace') {
+      params = { y, scale }
+      row = 'laplace-row'
+      site = 'laplace-site'
+    } else {
+      const outlier = known('outlier')
+      params = { weights: [1 - outlier, outlier], means: [y, y], sds: [scale, scale * known('width')] }
+      row = 'mixture-row'
+      site = 'mixture-site'
+    }
+    const loc = this.paramCell(node, 'loc', i)
+    if (isConstCell(loc)) return null
+    const aff = affOf(loc)
+    const terms = [...aff.terms].filter(([, c]) => c !== 0)
+    const comps = terms.map(([k]) => this.atoms.get(k) as Atom)
+    const oneVector =
+      aff.offset === 0 &&
+      comps.length > 0 &&
+      comps.every((a) => a.kind === 'comp' && a.vector === (comps[0] as Atom & { kind: 'comp' }).vector)
+    const id = this.elementName(node.name, node.dims, i)
+    if (oneVector) {
+      const first = comps[0] as Atom & { kind: 'comp' }
+      const a = new Array<number>(first.size).fill(0)
+      for (const [k, c] of terms) a[(this.atoms.get(k) as Atom & { kind: 'comp' }).index] = c
+      this.addFactor({ operator: row, args: [first.vector], params: { a, ...params } }, id)
+    } else {
+      const m = this.materialise(aff, node.name, index)
+      if (typeof m !== 'string') return null
+      this.addFactor({ operator: site, args: [m], params }, id)
+    }
+    return null
   }
 
   /**
