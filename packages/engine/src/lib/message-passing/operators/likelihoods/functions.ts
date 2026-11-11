@@ -16,7 +16,7 @@
  */
 
 import { logAddExp, OmaiError, sigmoidOf } from '../../../base/index.ts'
-import { arg, perPower } from '../../core/_messages.ts'
+import { arg, isFlat, perPower } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -108,8 +108,6 @@ export function unaryFunctions(): Record<string, UnaryFunction> {
   ]
   return Object.fromEntries(all.map((u) => [u.name, u]))
 }
-
-const isFlat = (eta: Eta): boolean => (eta[0] ?? 0) === 0 && (eta[1] ?? 0) === 0
 
 /** One step of a chain: a registry function by name, or `mul`, `add`, `pow` with its constant. */
 export type Step = readonly [string, number?]

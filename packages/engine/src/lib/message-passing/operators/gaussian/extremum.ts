@@ -7,7 +7,7 @@
  * inputs are non-conjugate, by quadrature.
  */
 
-import { arg } from '../../core/_messages.ts'
+import { arg, isFlat } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -50,8 +50,6 @@ export function clarkMax(x: Moments, y: Moments): Moments {
   const second = (x.mean ** 2 + x.variance) * cdf + (y.mean ** 2 + y.variance) * (1 - cdf) + (x.mean + y.mean) * dens
   return { mean, variance: Math.max(second - mean * mean, 0) }
 }
-
-const isFlat = (eta: Eta): boolean => (eta[0] ?? 0) === 0 && (eta[1] ?? 0) === 0
 
 /** The density of the maximum of independent N(a), N(b) at y, up to nothing: N_a(y) Phi_b(y) + N_b(y) Phi_a(y). */
 function maxDensity(a: Moments, b: Moments): (y: number) => number {
