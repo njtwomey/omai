@@ -164,52 +164,114 @@ export function linearRegressionProblem(config: Config): LinearProblem {
   }
   const truth = Array.from({ length: degree + 1 }, (_, j) => generating[j] ?? 0)
   const y = design.map((row, i) => row.reduce((a, v, j) => a + v * (truth[j] ?? 0), 0) + noiseSd * (e[i] ?? 0))
+  // region linear
   const definition = defineModel('linear-regression', (m) => {
     const row = m.range('row')
     const feature = m.range('feature')
     const X = m.data('X', { dims: [row, feature], role: 'covariate' })
     const yy = m.data('y', { dims: [row], role: 'response' })
-    let w: Var
+    const observe = (w: Var): void => {
+      // endregion
+      if (gammaNoise) {
+        // region linear:precision
+        const tau = m.latent('tau', d.gamma(noiseShape, noiseRate), {
+          doc: 'the noise precision, one over its variance',
+        })
+        m.observe('y', d.normal(X.matmul(w), ops.div(1, ops.sqrt(tau))), yy)
+        // endregion
+      } else if (learned) {
+        // region linear:learned
+        const sigma = m.latent('sigma', d.halfNormal(sigmaScale), {
+          doc: 'the noise standard deviation',
+        })
+        m.observe('y', d.normal(X.matmul(w), sigma), yy)
+        // endregion
+      } else {
+        // region linear:known
+        m.observe('y', d.normal(X.matmul(w), noiseSd), yy)
+        // endregion
+      }
+      // region linear:observe-end
+    }
+    // endregion
     if (prior === 'spikeSlab') {
-      w = m.latent('w', d.normalSpikeSlab(settings.inclusion, priorScale, priorScale * settings.spikeRatio), {
+      // region linear:spike-slab
+      const spike = priorScale * settings.spikeRatio
+      const w = m.latent('w', d.normalSpikeSlab(settings.inclusion, priorScale, spike), {
         dims: [feature],
         doc: 'the coefficients: each in the slab (used) or the spike (off)',
       })
-    } else if (prior === 'ard') {
-      // Centred: the data say more about each coefficient than the prior does, so the coefficient is drawn given its own sd.
+      observe(w)
+      // endregion
+      return
+    }
+    if (prior === 'ard' && settings.sparsity === 1) {
+      // region linear:ard
+      // Centred: the data say more about each coefficient than the prior does, so the coefficient is
+      // drawn given its own sd.
       const alpha = m.latent('alpha', d.gamma(1, settings.ardRate), {
         dims: [feature],
         doc: 'the precision of each coefficient (relevance): a large one prunes it',
       })
-      if (settings.sparsity === 1) {
-        // The precision idiom message passing accepts: each coefficient is a normal with scale 1 / sqrt(alpha_j).
-        m.derived('precision', alpha, { doc: 'the prior precision of each coefficient' })
-        w = m.latent('w', d.normal(0, ops.div(1, ops.sqrt(alpha))), { dims: [feature], doc: 'the coefficients' })
-      } else {
-        const precision = m.derived(
-          'precision',
-          alpha.mul(settings.sparsity).add((1 - settings.sparsity) / priorScale ** 2),
-          { doc: 'the prior precision of each coefficient' },
-        )
-        w = m.latent('w', d.normal(0, precision.sqrt().pow(-1)), { dims: [feature], doc: 'the coefficients' })
-      }
-    } else if (prior === 'horseshoe') {
+      // The precision idiom message passing accepts: each coefficient is a normal with scale
+      // 1 / sqrt(alpha_j).
+      m.derived('precision', alpha, { doc: 'the prior precision of each coefficient' })
+      const w = m.latent('w', d.normal(0, ops.div(1, ops.sqrt(alpha))), {
+        dims: [feature],
+        doc: 'the coefficients',
+      })
+      observe(w)
+      // endregion
+      return
+    }
+    if (prior === 'ard') {
+      // region linear:ard-mixed
+      // Centred: the data say more about each coefficient than the prior does, so the coefficient is
+      // drawn given its own sd.
+      const alpha = m.latent('alpha', d.gamma(1, settings.ardRate), {
+        dims: [feature],
+        doc: 'the precision of each coefficient (relevance): a large one prunes it',
+      })
+      // Part of the precision is the relevance's (sparsity), the rest a plain normal prior's.
+      const precision = m.derived(
+        'precision',
+        alpha.mul(settings.sparsity).add((1 - settings.sparsity) / priorScale ** 2),
+        { doc: 'the prior precision of each coefficient' },
+      )
+      const w = m.latent('w', d.normal(0, precision.sqrt().pow(-1)), {
+        dims: [feature],
+        doc: 'the coefficients',
+      })
+      observe(w)
+      // endregion
+      return
+    }
+    if (prior === 'horseshoe') {
+      // region linear:horseshoe
       const lambda = m.latent('lambda', d.halfCauchy(1), {
         dims: [feature],
         doc: 'the local scale of each coefficient',
       })
       const global = m.latent('globalScale', d.halfCauchy(priorScale), { doc: 'the global scale' })
       m.derived('precision', lambda.mul(global).square().pow(-1))
-      w = m.latent('w', d.normal(0, lambda.mul(global)), { dims: [feature], doc: 'the coefficients' })
-    } else w = m.latent('w', d.normal(0, priorScale), { dims: [feature], doc: 'the coefficient of each column' })
-    if (gammaNoise) {
-      const tau = m.latent('tau', d.gamma(noiseShape, noiseRate), { doc: 'the noise precision, one over its variance' })
-      m.observe('y', d.normal(X.matmul(w), ops.div(1, ops.sqrt(tau))), yy)
-    } else if (learned) {
-      const sigma = m.latent('sigma', d.halfNormal(sigmaScale), { doc: 'the noise standard deviation' })
-      m.observe('y', d.normal(X.matmul(w), sigma), yy)
-    } else m.observe('y', d.normal(X.matmul(w), noiseSd), yy)
+      const w = m.latent('w', d.normal(0, lambda.mul(global)), {
+        dims: [feature],
+        doc: 'the coefficients',
+      })
+      observe(w)
+      // endregion
+      return
+    }
+    // region linear:gaussian
+    const w = m.latent('w', d.normal(0, priorScale), {
+      dims: [feature],
+      doc: 'the coefficient of each column',
+    })
+    observe(w)
+    // endregion
+    // region linear:end
   })
+  // endregion
   return {
     x,
     y,

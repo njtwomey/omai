@@ -156,14 +156,14 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `additionalCampaigns`: The periodic campaigns of the later benchmark models, plus the clutter problem's EP comparison. `src/lib/probprog/models/additional-campaigns.ts:104` `omai-engine/probprog/models`
 - function `bananaDraws`: Exact draws from Haario's banana, for drawing the target. `src/lib/probprog/models/geometry.ts:165` `omai-engine/probprog/models`
 - function `bayesianGam`: Bayesian GAM of one covariate as a model spec: penalty or spike-slab prior. `src/lib/probprog/models/bayesian-gam.ts:169` `omai-engine/probprog/models`
-- function `bayesianGamFit`: Curve, band, sampled curves and weighted bases of a Bayesian GAM posterior. `src/lib/probprog/models/bayesian-gam.ts:526` `omai-engine/probprog/models`
-- function `bayesianGamReference`: Exact posterior curve and band of a Bayesian GAM by quadrature. `src/lib/probprog/models/bayesian-gam.ts:773` `omai-engine/probprog/models`
+- function `bayesianGamFit`: Curve, band, sampled curves and weighted bases of a Bayesian GAM posterior. `src/lib/probprog/models/bayesian-gam.ts:551` `omai-engine/probprog/models`
+- function `bayesianGamReference`: Exact posterior curve and band of a Bayesian GAM by quadrature. `src/lib/probprog/models/bayesian-gam.ts:798` `omai-engine/probprog/models`
 - function `benchmarkAgreement`: Cross-engine agreement of a benchmark model: every planned method against the truth. `src/lib/probprog/models/agreement.ts:132` `omai-engine/probprog/models`
 - function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:103` `omai-engine/probprog/models`
 - function `betaBernoulliModel`: The Beta-Bernoulli coin with a chosen Beta(a, b) prior; bind it to `{ y: flips }`. `src/lib/probprog/models/conjugate.ts:43` `omai-engine/probprog/models`
 - function `defineBenchmark`: Make a benchmark model: a spec or program with generator, truth, tags, references and method plans. `src/lib/probprog/models/benchmark.ts:175` `omai-engine/probprog/models`
 - function `evidenceCampaigns`: Periodic validation of the evidence estimators, nested sampling, particle filters and particle MCMC. `src/lib/probprog/models/evidence-campaigns.ts:521` `omai-engine/probprog/models`
-- function `gammaPoissonModel`: The Gamma-Poisson rate with a chosen Gamma(shape, rate) prior; bind it to `{ k: counts }`. `src/lib/probprog/models/conjugate.ts:175` `omai-engine/probprog/models`
+- function `gammaPoissonModel`: The Gamma-Poisson rate with a chosen Gamma(shape, rate) prior; bind it to `{ k: counts }`. `src/lib/probprog/models/conjugate.ts:178` `omai-engine/probprog/models`
 - function `gaussianMixtureModel`: A K-component Gaussian mixture with unknown weights, means and a shared spread, optionally ordered. `src/lib/probprog/models/mixture.ts:105` `omai-engine/probprog/models`
 - function `kernelCampaigns`: The periodic validation of the kernel methods: Geweke, calibration, agreement and the two-mode target. `src/lib/probprog/models/kernel-campaigns.ts:547` `omai-engine/probprog/models`
 - function `polynomialFeatureMap`: The standardised polynomial design of two inputs with an intercept: `polynomialFeatureMap(points, 3).transform(rows)`. `src/lib/probprog/models/probit-classification.ts:60` `omai-engine/probprog/models`
@@ -173,7 +173,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `structureCampaigns`: The structure of every benchmark model, and collapsed against full NUTS, as periodic campaigns. `src/lib/probprog/models/structure-campaigns.ts:364` `omai-engine/probprog/models`
 - function `sviCampaigns`: Periodic validation campaigns of the variational methods against the benchmark truths. `src/lib/probprog/models/svi-plans.ts:206` `omai-engine/probprog/models`
 
-- estimator `bayesianGamMethod`: A Bayesian GAM under any inference method, with its fit as a tape probe. `src/lib/probprog/models/bayesian-gam.ts:956` `omai-engine/probprog/models`
+- estimator `bayesianGamMethod`: A Bayesian GAM under any inference method, with its fit as a tape probe. `src/lib/probprog/models/bayesian-gam.ts:981` `omai-engine/probprog/models`
 
 - structure `BenchmarkModel`: A benchmark model: a spec with a data generator, the truth, references, tags and method plans. `src/lib/probprog/models/benchmark.ts:98` `omai-engine/probprog/models`
 
@@ -184,25 +184,25 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - dataset `ar1StateSpace`: Stationary AR(1) state with noisy observations as a scan; exact Gaussian smoothing truth. `src/lib/probprog/models/state-space.ts:126` `omai-engine/probprog/models`
 - dataset `banana`: Haario's banana: a curved correlated 2-D ridge; analytic marginals; Laplace and mean field are wrong. `src/lib/probprog/models/geometry.ts:191` `omai-engine/probprog/models`
 - dataset `bayesianNeuralNetwork`: Bayesian neural network (three tanh units) on a small regression; stored NUTS reference for the output. `src/lib/probprog/models/neural-network.ts:145` `omai-engine/probprog/models`
-- dataset `betaBernoulli`: Beta-Bernoulli coin: exact Beta posterior and evidence; the simplest conjugate benchmark. `src/lib/probprog/models/conjugate.ts:65` `omai-engine/probprog/models`
+- dataset `betaBernoulli`: Beta-Bernoulli coin: exact Beta posterior and evidence; the simplest conjugate benchmark. `src/lib/probprog/models/conjugate.ts:68` `omai-engine/probprog/models`
 - dataset `bimodal`: Two equal Gaussian modes in 2-D: the multimodal target for mode weights and R-hat. `src/lib/probprog/models/geometry.ts:260` `omai-engine/probprog/models`
 - dataset `clutterProblem`: Minka's clutter problem with a distractor: bimodal robust location, quadrature truth. `src/lib/probprog/models/clutter.ts:161` `omai-engine/probprog/models`
-- dataset `eightSchoolsCentred`: Rubin's eight schools, centred: the funnel; exact quadrature truth. `src/lib/probprog/models/schools.ts:259` `omai-engine/probprog/models`
-- dataset `eightSchoolsNonCentred`: Rubin's eight schools, non-centred: the same posterior without the funnel; truth by quadrature. `src/lib/probprog/models/schools.ts:309` `omai-engine/probprog/models`
+- dataset `eightSchoolsCentred`: Rubin's eight schools, centred: the funnel; exact quadrature truth. `src/lib/probprog/models/schools.ts:283` `omai-engine/probprog/models`
+- dataset `eightSchoolsNonCentred`: Rubin's eight schools, non-centred: the same posterior without the funnel; truth by quadrature. `src/lib/probprog/models/schools.ts:333` `omai-engine/probprog/models`
 - dataset `funnelCentred`: Neal's funnel, centred: analytic truth; NUTS diverges in the neck. `src/lib/probprog/models/geometry.ts:46` `omai-engine/probprog/models`
 - dataset `funnelNonCentred`: Neal's funnel, non-centred: the same law of (v, x) with the funnel removed from the density. `src/lib/probprog/models/geometry.ts:94` `omai-engine/probprog/models`
-- dataset `gammaPoisson`: Gamma-Poisson rate: exact Gamma posterior and evidence for counts. `src/lib/probprog/models/conjugate.ts:197` `omai-engine/probprog/models`
+- dataset `gammaPoisson`: Gamma-Poisson rate: exact Gamma posterior and evidence for counts. `src/lib/probprog/models/conjugate.ts:203` `omai-engine/probprog/models`
 - dataset `gaussianHmm`: Three-state Gaussian HMM as a scan, parameters known; exact forward-backward truth with visit counts. `src/lib/probprog/models/series.ts:280` `omai-engine/probprog/models`
-- dataset `gaussianMixture`: Two-component Gaussian mixture with label switching; the truth is the even two-mode mixture; sorted summaries. `src/lib/probprog/models/mixture.ts:240` `omai-engine/probprog/models`
-- dataset `gaussianMixtureOrdered`: Two-component Gaussian mixture, means ordered; discrete labels summed out; the truth is a 2-D grid. `src/lib/probprog/models/mixture.ts:194` `omai-engine/probprog/models`
+- dataset `gaussianMixture`: Two-component Gaussian mixture with label switching; the truth is the even two-mode mixture; sorted summaries. `src/lib/probprog/models/mixture.ts:263` `omai-engine/probprog/models`
+- dataset `gaussianMixtureOrdered`: Two-component Gaussian mixture, means ordered; discrete labels summed out; the truth is a 2-D grid. `src/lib/probprog/models/mixture.ts:217` `omai-engine/probprog/models`
 - dataset `gaussianProcessNonCentred`: Gaussian process regression, non-centred (f = L z); the same quadrature truth as the centred form. `src/lib/probprog/models/gaussian-process.ts:295` `omai-engine/probprog/models`
 - dataset `gaussianProcessRegression`: Gaussian process regression with an unknown length scale; closed-form function posterior, quadrature over the length scale. `src/lib/probprog/models/gaussian-process.ts:207` `omai-engine/probprog/models`
-- dataset `generateIrt`: Item response answers from known abilities, difficulties and discriminations. `src/lib/probprog/models/irt-hierarchical.ts:174` `omai-engine/probprog/models`
+- dataset `generateIrt`: Item response answers from known abilities, difficulties and discriminations. `src/lib/probprog/models/irt-hierarchical.ts:212` `omai-engine/probprog/models`
 - dataset `itemResponseScoring`: 2PL item response scoring with known items; one-dimensional quadrature truth for each respondent. `src/lib/probprog/models/irt.ts:101` `omai-engine/probprog/models`
 - dataset `ldaLite`: LDA-lite: three documents, two topics, four words; the exact posterior by enumeration of the assignments. `src/lib/probprog/models/topics.ts:260` `omai-engine/probprog/models`
 - dataset `logisticRegression`: Bayesian logistic regression with an intercept and two covariates; the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:61` `omai-engine/probprog/models`
 - dataset `negativeBinomialRegression`: Negative binomial regression with an overdispersion parameter; the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:240` `omai-engine/probprog/models`
-- dataset `normalNormal`: Normal-normal mean with known noise: exact normal posterior and evidence. `src/lib/probprog/models/conjugate.ts:117` `omai-engine/probprog/models`
+- dataset `normalNormal`: Normal-normal mean with known noise: exact normal posterior and evidence. `src/lib/probprog/models/conjugate.ts:120` `omai-engine/probprog/models`
 - dataset `poissonRegression`: Poisson regression with a log link on one covariate; the truth is a 2-D grid. `src/lib/probprog/models/glm.ts:182` `omai-engine/probprog/models`
 - dataset `probitRegression`: Bayesian probit regression (the plan's slice model); the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:118` `omai-engine/probprog/models`
 - dataset `radon`: Hierarchical radon-style regression with varying intercepts; the exact truth integrates the effects out. `src/lib/probprog/models/hierarchical.ts:273` `omai-engine/probprog/models`

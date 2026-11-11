@@ -257,6 +257,9 @@ function unitFactor(
   return toFlat(cholesky(gram(k, problem.x as number[][], { jitter: JITTER })))
 }
 
+/** An argument of the custom node: a value. */
+type Arg = { readonly value: Value }
+
 /** The model of a configuration: the whitened latent function with a probit or logistic Bernoulli observation. */
 function definitionOf(p: {
   readonly kernel: string
@@ -268,20 +271,44 @@ function definitionOf(p: {
   readonly variance: number
   readonly priorSpread: number
 }): ModelDefinition {
-  const observed = (
-    f: Parameters<typeof ops.probit>[0],
-  ): { probs: ReturnType<typeof ops.probit> } | { logits: typeof f } =>
-    p.link === 'probit' ? { probs: ops.probit(f) } : { logits: f }
-  if (!p.inferred)
-    return defineModel('gp-classification', (m) => {
+  if (!p.inferred) {
+    // region gp:fixed
+    const fixed = defineModel('gp-classification', (m) => {
       const row = m.range('row')
       const latent = m.range('latent')
       const L = m.data('L', { dims: [row, latent], role: 'covariate' })
       const y = m.data('y', { dims: [row], support: 'binary', role: 'response' })
-      const z = m.latent('z', d.normal(0, 1), { dims: [latent], doc: 'the whitened latent function: f = L z' })
-      m.observe('y', d.bernoulli(observed(L.matmul(z))), y)
+      const z = m.latent('z', d.normal(0, 1), {
+        dims: [latent],
+        doc: 'the whitened latent function: f = L z',
+      })
+      const f = L.matmul(z)
+      // endregion
+      if (p.link === 'probit') {
+        // region gp:fixed:probit
+        m.observe('y', d.bernoulli({ probs: ops.probit(f) }), y)
+        // endregion
+      } else {
+        // region gp:fixed:logistic
+        m.observe('y', d.bernoulli({ logits: f }), y)
+        // endregion
+      }
+      // region gp:fixed:end
     })
-  return defineModel('gp-classification', (m) => {
+    // endregion
+    return fixed
+  }
+  // region gp:function
+  // The latent function from the kernel's hyperparameters: f = sqrt(variance) L(ell) z.
+  const latentFunction = (args: readonly { readonly value: Value }[]): Value => {
+    const [xs, scale, v, white] = args as readonly [Arg, Arg, Arg, Arg]
+    const kernel = kernelOf(p.kernel, clip(scale.value, 0.05, 20), p.period, p.dim)
+    const L = cholesky(gram(kernel, xs.value, { jitter: JITTER }))
+    return mul(matmul(L, white.value), sqrt(clip(v.value, 0.01, 200)))
+  }
+  // endregion
+  // region gp:inferred
+  const inferred = defineModel('gp-classification', (m) => {
     const row = m.range('row')
     const dim = m.range('dim')
     const x = m.data('x', { dims: [row, dim], role: 'covariate' })
@@ -296,24 +323,21 @@ function definitionOf(p: {
       dims: [row],
       doc: 'the whitened latent function: f = sqrt(variance) L(ell) z',
     })
-    const f = m.custom(
-      'gpLatent',
-      (args) => {
-        const [xs, scale, v, white] = args as readonly { readonly value: Value }[] as readonly [
-          { readonly value: Value },
-          { readonly value: Value },
-          { readonly value: Value },
-          { readonly value: Value },
-        ]
-        const kernel = kernelOf(p.kernel, clip(scale.value, 0.05, 20), p.period, p.dim)
-        const L = cholesky(gram(kernel, xs.value, { jitter: JITTER }))
-        return mul(matmul(L, white.value), sqrt(clip(v.value, 0.01, 200)))
-      },
-      [x, ell, variance, z],
-      { dims: [row] },
-    )
-    m.observe('y', d.bernoulli(observed(f)), y)
+    const f = m.custom('gpLatent', latentFunction, [x, ell, variance, z], { dims: [row] })
+    // endregion
+    if (p.link === 'probit') {
+      // region gp:inferred:probit
+      m.observe('y', d.bernoulli({ probs: ops.probit(f) }), y)
+      // endregion
+    } else {
+      // region gp:inferred:logistic
+      m.observe('y', d.bernoulli({ logits: f }), y)
+      // endregion
+    }
+    // region gp:inferred:end
   })
+  // endregion
+  return inferred
 }
 
 const memo = new Map<string, GpClassificationProblem>()

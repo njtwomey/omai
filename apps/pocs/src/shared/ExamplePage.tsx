@@ -21,6 +21,8 @@ import {
   useSession,
 } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
+import { ExampleSource, SOURCE_PANEL } from './ExampleSource.tsx'
+import { exampleCode } from './exampleCode.ts'
 import { StaleVeil } from './StaleVeil.tsx'
 
 // biome-ignore lint/suspicious/noExplicitAny: a session is generic over its method
@@ -102,7 +104,11 @@ export function ExamplePage(props: {
   const start = useMemo(() => defaults(method.config) as Config, [method])
   const [config, setConfig] = useState<Config>(start)
   const [at, setAt] = useState<number | null>(null)
-  const panels = usePanels(props.id, props.panels)
+  const code = exampleCode[props.id]
+  const panels = usePanels(
+    props.id,
+    code === undefined ? props.panels : { ...props.panels, [SOURCE_PANEL]: 'The code that ran' },
+  )
   // The tape keeps what the page draws from it: the objective curve of the chosen method (a sampler's draws come from probes).
   const objective = example.objective(config)
   // Every method that runs on this problem (the verdicts are of the model the knobs make), and why the others do not.
@@ -257,6 +263,7 @@ export function ExamplePage(props: {
             {props.observe(view)}
             <SessionPlayer live={live} at={at} onScrub={setAt} onReset={() => setConfig(start)} start="end" />
             {props.check(view)}
+            {code === undefined ? null : <ExampleSource panels={panels} entry={code} name={props.id} config={config} />}
           </div>
         </StaleVeil>
       </section>

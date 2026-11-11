@@ -39,7 +39,7 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 
 - estimator `betaBernoulliAtom`: EP atom: beta and Bernoulli (conjugate, exact). `src/lib/bayesian-examples/ep-atoms-conjugate.ts:105` `omai-engine/bayesian-examples`
 - estimator `betaBernoulliLearnedAtom`: EP atom: groups of flips with a beta prior of unknown strength, recovered from simulated data. `src/lib/bayesian-examples/ep-atoms-extended-conjugate.ts:251` `omai-engine/bayesian-examples`
-- estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:510` `omai-engine/bayesian-examples`
+- estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:526` `omai-engine/bayesian-examples`
 - estimator `clutterAtom`: EP atom: clutter, a gate per observation between the centre and wide clutter. `src/lib/bayesian-examples/ep-atoms-mixtures.ts:689` `omai-engine/bayesian-examples`
 - estimator `clutterLearnedAtom`: EP atom: clutter with centre, both precisions and share learned. `src/lib/bayesian-examples/ep-atoms-extended-gates.ts:159` `omai-engine/bayesian-examples`
 - estimator `clutterMixtureAtom`: EP atom: an inlier and outlier mixture likelihood with the switches summed out (mixture site). `src/lib/bayesian-examples/ep-atoms-mixtures.ts:750` `omai-engine/bayesian-examples`
@@ -59,7 +59,7 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `gateWeightSummedOutAtom`: EP atom: a mixture with an unknown weight, the switches summed out (mixture-weight factor). `src/lib/bayesian-examples/ep-atoms-weights.ts:223` `omai-engine/bayesian-examples`
 - estimator `gaussianAtom`: EP atom: Gaussian mean (conjugate, exact). `src/lib/bayesian-examples/ep-atoms-conjugate.ts:56` `omai-engine/bayesian-examples`
 - estimator `gaussianLearnedAtom`: EP atom: a Gaussian with unknown mean and variance, recovered from simulated data (exact). `src/lib/bayesian-examples/ep-atoms-extended-conjugate.ts:111` `omai-engine/bayesian-examples`
-- estimator `gpClassificationMethod`: Gaussian process classification method: GP prior on the latent function, Bernoulli link, one inference method. `src/lib/bayesian-examples/gp-classification-method.ts:929` `omai-engine/bayesian-examples`
+- estimator `gpClassificationMethod`: Gaussian process classification method: GP prior on the latent function, Bernoulli link, one inference method. `src/lib/bayesian-examples/gp-classification-method.ts:953` `omai-engine/bayesian-examples`
 - estimator `gpLengthScaleAtom`: EP atom: Gaussian process regression with a learned length scale (EP inside an evidence-weighted grid). `src/lib/bayesian-examples/ep-atoms-kernels.ts:152` `omai-engine/bayesian-examples`
 - estimator `gpLogisticAtom`: EP atom: a dense Gaussian-process prior with a logistic likelihood (three inputs). `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:402` `omai-engine/bayesian-examples`
 - estimator `gpProbitAtom`: EP atom: a dense Gaussian-process prior with a probit likelihood (three inputs). `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:430` `omai-engine/bayesian-examples`
@@ -70,7 +70,7 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `irtMethod`: Item response method: Rasch or 2PL, generated answers, one inference method. `src/lib/bayesian-examples/irt-method.ts:534` `omai-engine/bayesian-examples`
 - estimator `laplaceAtom`: EP atom: a Laplace likelihood on a mean. `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:96` `omai-engine/bayesian-examples`
 - estimator `laplaceLearnedAtom`: EP atom: a Laplace likelihood with unknown location and scale, recovered from simulated data. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:281` `omai-engine/bayesian-examples`
-- estimator `linearRegressionMethod`: Linear regression method: polynomial or sparse data, sparse priors, one inference method. `src/lib/bayesian-examples/linear-regression-method.ts:656` `omai-engine/bayesian-examples`
+- estimator `linearRegressionMethod`: Linear regression method: polynomial or sparse data, sparse priors, one inference method. `src/lib/bayesian-examples/linear-regression-method.ts:718` `omai-engine/bayesian-examples`
 - estimator `logScaleAtom`: EP atom: a Gaussian with the exponential of a latent as its scale (stochastic volatility step). `src/lib/bayesian-examples/ep-atoms-functions.ts:141` `omai-engine/bayesian-examples`
 - estimator `logisticAtom`: EP atom: a logistic link on eight labelled points (numeric tilted moments). `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:226` `omai-engine/bayesian-examples`
 - estimator `logisticLearnedAtom`: EP atom: a logistic classifier with a learned weight precision, recovered from simulated labels. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:462` `omai-engine/bayesian-examples`
@@ -108,7 +108,7 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `productAtom`: EP atom: the product of two Gaussians (numeric product rule, a banana posterior). `src/lib/bayesian-examples/ep-atoms-functions.ts:197` `omai-engine/bayesian-examples`
 - estimator `quantileRegressionAtom`: EP atom: Bayesian quantile regression with the asymmetric Laplace. `src/lib/bayesian-examples/ep-atoms-ordinal.ts:300` `omai-engine/bayesian-examples`
 - estimator `quantileRegressionLearnedAtom`: EP atom: Bayesian quantile regression with coefficients recovered from simulated points. `src/lib/bayesian-examples/ep-atoms-ordinal.ts:385` `omai-engine/bayesian-examples`
-- estimator `robustRegressionMethod`: Robust regression method: outliers in the data, Gaussian, Student-t, Laplace or mixture likelihood, one inference method. `src/lib/bayesian-examples/robust-regression-method.ts:542` `omai-engine/bayesian-examples`
+- estimator `robustRegressionMethod`: Robust regression method: outliers in the data, Gaussian, Student-t, Laplace or mixture likelihood, one inference method. `src/lib/bayesian-examples/robust-regression-method.ts:605` `omai-engine/bayesian-examples`
 - estimator `scaledPrecisionAtom`: EP atom: latent values whose precisions are a known multiple of one unknown precision (scaled precision). `src/lib/bayesian-examples/ep-atoms-scales.ts:254` `omai-engine/bayesian-examples`
 - estimator `sharedPrecisionAtom`: EP atom: latent values with a shared unknown precision (gamma-precision rule, latent form). `src/lib/bayesian-examples/ep-atoms-scales.ts:220` `omai-engine/bayesian-examples`
 - estimator `sharedPrecisionLearnedAtom`: EP atom: a population with unknown mean and spread, each value observed with known noise, recovered from simulated data. `src/lib/bayesian-examples/ep-atoms-extended-scales.ts:241` `omai-engine/bayesian-examples`

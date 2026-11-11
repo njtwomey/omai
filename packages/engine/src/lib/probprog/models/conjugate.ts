@@ -41,11 +41,14 @@ const BB_PRIOR = { a: 2, b: 2 }
  * ```
  */
 export function betaBernoulliModel(prior: { readonly a: number; readonly b: number } = BB_PRIOR): ModelDefinition {
-  return defineModel('beta-bernoulli', (m) => {
+  // region coin:beta-bernoulli
+  const model = defineModel('beta-bernoulli', (m) => {
     const y = m.data('y', { dims: ['flip'], support: 'binary', role: 'response' })
     const p = m.latent('p', d.beta(prior.a, prior.b), { doc: 'the probability of heads' })
     m.observe('y', d.bernoulli({ probs: p }), y)
   })
+  // endregion
+  return model
 }
 
 /**
@@ -175,11 +178,14 @@ const GP_PRIOR = { shape: 2, rate: 0.5 }
 export function gammaPoissonModel(
   prior: { readonly shape: number; readonly rate: number } = GP_PRIOR,
 ): ModelDefinition {
-  return defineModel('gamma-poisson', (m) => {
+  // region coin:gamma-poisson
+  const model = defineModel('gamma-poisson', (m) => {
     const k = m.data('k', { dims: ['obs'], support: 'count', role: 'response' })
     const rate = m.latent('rate', d.gamma(prior.shape, prior.rate), { doc: 'the Poisson rate' })
     m.observe('k', d.poisson(rate), k)
   })
+  // endregion
+  return model
 }
 
 /**

@@ -14,7 +14,7 @@
 
 import type { InferenceMethod } from '../probprog/inference/method.ts'
 import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, type Var } from '../probprog/model/index.ts'
+import { defineModel } from '../probprog/model/index.ts'
 import type { Posterior } from '../probprog/posterior.ts'
 import { normal as drawNormal, uniform as drawUniform, foldIn, gammaVariates, key } from '../random/index.ts'
 import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
@@ -136,28 +136,91 @@ export function robustRegressionProblem(config: Config): RobustProblem {
   })
   const truth = Array.from({ length: degree + 1 }, (_, j) => generating[j] ?? 0)
   const design = x.map((xi) => monomials(xi, degree))
+  // region robust
   const definition = defineModel('robust-regression', (m) => {
     const row = m.range('row')
     const feature = m.range('feature')
     const X = m.data('X', { dims: [row, feature], role: 'covariate' })
     const yy = m.data('y', { dims: [row], role: 'response' })
-    const w = m.latent('w', d.normal(0, priorScale), { dims: [feature], doc: 'the coefficient of each power of x' })
-    const scale: Var | number = learned
-      ? m.latent('sigma', d.halfNormal(sigmaScale), { doc: 'the noise scale' })
-      : noiseSd
+    const w = m.latent('w', d.normal(0, priorScale), {
+      dims: [feature],
+      doc: 'the coefficient of each power of x',
+    })
     const mean = X.matmul(w)
-    if (likelihood === 'gaussian') m.observe('y', d.normal(mean, scale), yy)
-    else if (likelihood === 'laplace')
-      m.observe('y', d.laplace(mean, typeof scale === 'number' ? scale / Math.SQRT2 : scale.div(Math.SQRT2)), yy)
-    else if (likelihood === 'mixture') m.observe('y', d.normalOutliers(mean, scale, contamination, outlierScale), yy)
-    else if (dfLearned) {
+    // endregion
+    if (likelihood === 'gaussian') {
+      if (learned) {
+        // region robust:gaussian-learned
+        const sigma = m.latent('sigma', d.halfNormal(sigmaScale), { doc: 'the noise scale' })
+        m.observe('y', d.normal(mean, sigma), yy)
+        // endregion
+        return
+      }
+      // region robust:gaussian-known
+      m.observe('y', d.normal(mean, noiseSd), yy)
+      // endregion
+      return
+    }
+    if (likelihood === 'laplace') {
+      if (learned) {
+        // region robust:laplace-learned
+        const sigma = m.latent('sigma', d.halfNormal(sigmaScale), { doc: 'the noise scale' })
+        m.observe('y', d.laplace(mean, sigma.div(Math.SQRT2)), yy)
+        // endregion
+        return
+      }
+      // region robust:laplace-known
+      m.observe('y', d.laplace(mean, noiseSd / Math.SQRT2), yy)
+      // endregion
+      return
+    }
+    if (likelihood === 'mixture') {
+      if (learned) {
+        // region robust:mixture-learned
+        const sigma = m.latent('sigma', d.halfNormal(sigmaScale), { doc: 'the noise scale' })
+        m.observe('y', d.normalOutliers(mean, sigma, contamination, outlierScale), yy)
+        // endregion
+        return
+      }
+      // region robust:mixture-known
+      m.observe('y', d.normalOutliers(mean, noiseSd, contamination, outlierScale), yy)
+      // endregion
+      return
+    }
+    if (dfLearned) {
+      if (learned) {
+        // region robust:student-learned-df-learned
+        const sigma = m.latent('sigma', d.halfNormal(sigmaScale), { doc: 'the noise scale' })
+        const excess = m.latent('nuExcess', d.gamma(2, 2 / (dfPriorMean - 1)), {
+          doc: 'the degrees of freedom above one',
+        })
+        const nu = m.derived('nu', excess.add(1), { doc: 'the degrees of freedom of the t likelihood' })
+        m.observe('y', d.studentT(nu, mean, sigma), yy)
+        // endregion
+        return
+      }
+      // region robust:student-known-df-learned
       const excess = m.latent('nuExcess', d.gamma(2, 2 / (dfPriorMean - 1)), {
         doc: 'the degrees of freedom above one',
       })
       const nu = m.derived('nu', excess.add(1), { doc: 'the degrees of freedom of the t likelihood' })
-      m.observe('y', d.studentT(nu, mean, scale), yy)
-    } else m.observe('y', d.studentT(df, mean, scale), yy)
+      m.observe('y', d.studentT(nu, mean, noiseSd), yy)
+      // endregion
+      return
+    }
+    if (learned) {
+      // region robust:student-learned-df-fixed
+      const sigma = m.latent('sigma', d.halfNormal(sigmaScale), { doc: 'the noise scale' })
+      m.observe('y', d.studentT(df, mean, sigma), yy)
+      // endregion
+      return
+    }
+    // region robust:student-known-df-fixed
+    m.observe('y', d.studentT(df, mean, noiseSd), yy)
+    // endregion
+    // region robust:end
   })
+  // endregion
   return {
     x,
     y,
