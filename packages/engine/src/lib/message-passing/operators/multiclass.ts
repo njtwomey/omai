@@ -17,7 +17,7 @@ import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam } from './args.ts'
 
 /** The nodes per free score for a number of free scores (the grid is their product): the cap keeps a site at some tens of thousands of evaluations. */
-const NODES: Readonly<Record<number, number>> = { 1: 48, 2: 24, 3: 14, 4: 10, 5: 8, 6: 6 }
+const NODES: Readonly<Record<number, number>> = { 1: 48, 2: 24, 3: 8, 4: 7, 5: 6, 6: 5 }
 
 /** Rounds of adaptation of the proposal: the first uses the cavity, each next the Gaussian of the tilted moments of the one before. */
 const ROUNDS = 3
@@ -82,8 +82,23 @@ interface Tilt {
   readonly free: readonly number[]
 }
 
+/**
+ * The last integral, kept: the cavities of the scores of one factor are the same for every port (each port is a different variable),
+ * so the messages to the `K` ports and the evidence of one sweep share one integral.
+ */
+let last: { readonly key: string; readonly value: Tilt } | undefined
+
 /** The tilted mean, covariance and log mass of the free scores against the cavities (the integral over normalised cavities). */
 function tilt(c: OperatorContext): Tilt {
+  const key = JSON.stringify([c.args.map((a) => (a.value !== undefined ? a.value : a.eta)), c.params, c.power])
+  if (last?.key === key) return last.value
+  const value = integrate(c)
+  last = { key, value }
+  return value
+}
+
+/** The integral itself. */
+function integrate(c: OperatorContext): Tilt {
   const { classes, y, probit } = classesOf(c.params)
   const free: number[] = []
   const fixed = new Array<number>(classes).fill(0)
@@ -107,13 +122,13 @@ function tilt(c: OperatorContext): Tilt {
   const grid = gaussianNodes(0, 1, n)
   const z = fixed.slice()
   const logf = probit ? logProbit : logSoftmax
-  // The cavity as a Gaussian: log density at a point of the free scores.
+  // The cavity as a Gaussian: log density at a point of the free scores, its constants made once.
+  const cavMean = cavity.map((g) => g.mean)
+  const cavHalfPrecision = cavity.map((g) => 0.5 / g.variance)
+  const cavConstant = -0.5 * cavity.reduce((a, g) => a + Math.log(2 * Math.PI * g.variance), 0)
   const logCav = (x: readonly number[]): number => {
-    let s = 0
-    for (let i = 0; i < r; i++) {
-      const g = cavity[i] as { mean: number; variance: number }
-      s += -0.5 * (Math.log(2 * Math.PI * g.variance) + ((x[i] as number) - g.mean) ** 2 / g.variance)
-    }
+    let s = cavConstant
+    for (let i = 0; i < r; i++) s -= ((x[i] as number) - (cavMean[i] as number)) ** 2 * (cavHalfPrecision[i] as number)
     return s
   }
   let mu = cavity.map((g) => g.mean)
@@ -182,9 +197,14 @@ function tilt(c: OperatorContext): Tilt {
         v[i * r + k] = e
         v[k * r + i] = e
       }
+    const done =
+      result !== undefined &&
+      m.every((mi, i) => Math.abs(mi - (result?.mean[i] as number)) <= 1e-3 * Math.sqrt(v[i * r + i] as number)) &&
+      m.every((_, i) => Math.abs((v[i * r + i] as number) / (result?.cov[i * r + i] as number) - 1) <= 1e-3)
     result = { logMass: top + Math.log(sum), mean: m, cov: v, free }
     mu = m
     cov = v
+    if (done) break
   }
   return result as Tilt
 }

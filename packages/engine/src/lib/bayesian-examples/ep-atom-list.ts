@@ -56,6 +56,7 @@ import {
   spikeSlabAtom,
   spikeSlabMarginalAtom,
 } from './ep-atoms-mixtures.ts'
+import { softmaxRegressionAtom, softmaxRegressionLearnedAtom } from './ep-atoms-multiclass.ts'
 import {
   priorBetaGeometricAtom,
   priorBetaStrengthGammaAtom,
@@ -140,6 +141,8 @@ export const epAtoms: readonly EpAtom[] = [
   skillDifferenceLearnedAtom,
   gpProbitAtom,
   gpLogisticAtom,
+  softmaxRegressionAtom,
+  softmaxRegressionLearnedAtom,
   gpLengthScaleAtom,
   gpProbitLearnedAtom,
   poissonLogAtom,
