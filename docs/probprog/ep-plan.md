@@ -280,7 +280,6 @@ third coupled latent, gives overconfident and sometimes improper beliefs, and a 
 Gaussian rule over (level, persistence) or a block update. (3) A Weibull with a random shape and a negative binomial with a gamma
 dispersion are not mapped (the shape and the gamma form of the dispersion have no rule); the dispersion here is the half-normal
 numeric site.
-||||||| c999d320
 ## 10. The gaps, as tested data
 
 The open items of this plan (what EP cannot run, where it is less good than it should be, the infrastructure and integration tasks)
