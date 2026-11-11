@@ -591,6 +591,43 @@ export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection
   return total
 }
 
+/**
+ * The factors that give no part of the EP evidence at a state, with why: a factor whose cavity has no density (an `improper cavity`: the
+ * integral of the factor against it diverges, which happens when another factor's site has a negative precision, as the site of a
+ * scale mixture on a weight vector does, and the factor is one plate over many rows) or an operator with no evidence rule. The
+ * evidence of the graph is then undefined. A rows-expanded graph (`plates: 'expand'`) has a proper cavity for each row.
+ *
+ * @param g - The compiled graph.
+ * @param s - The projection (the estimate depends on nothing else).
+ * @param state - A state of a run.
+ * @returns The factors' ids and reasons, empty when every factor gives its part.
+ */
+export function evidenceDefects(
+  g: CompiledGraph,
+  s: Pick<EngineSettings, 'projection'>,
+  state: MpState,
+): readonly { readonly factor: string; readonly reason: 'improper cavity' | 'no evidence rule' }[] {
+  const out: { factor: string; reason: 'improper cavity' | 'no evidence rule' }[] = []
+  if (s.projection.evidence !== 'ep-energy') return out
+  for (const [fi, f] of g.factors.entries()) {
+    if (f.operator.logEvidence === undefined) {
+      out.push({ factor: f.id, reason: 'no evidence rule' })
+      continue
+    }
+    const args = readable(f.operator, rawCavity(g, state.messages, fi), 0).args
+    const value = f.operator.logEvidence({
+      mode: s.projection.hook,
+      to: 0,
+      args,
+      params: f.params,
+      power: f.power,
+      ...(s.projection.numeric === undefined ? {} : { rule: s.projection.numeric }),
+    })
+    if (!Number.isFinite(value)) out.push({ factor: f.id, reason: 'improper cavity' })
+  }
+  return out
+}
+
 /** The edges whose candidate message could not be computed (a message to a defined variable under the variational rule is never stored, so does not count). */
 function residualUnresolved(g: CompiledGraph, projection: Projection, candidates: MpState['candidates']): number {
   return candidates.filter((c, e) => c === null && !isPulled(g, e, projection)).length

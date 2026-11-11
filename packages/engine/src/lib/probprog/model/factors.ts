@@ -98,6 +98,7 @@ import {
   compileGraph,
   dirichletPrior,
   discretePrior,
+  evidenceDefects,
   evidenceOf,
   type FactorGraphSpec,
   type FactorOperator,
@@ -5002,6 +5003,15 @@ export function factorGraphPosterior(
       unresolved: state.unresolved ?? 0,
       restarts: state.restarts ?? 0,
       ...(options.reason === undefined ? {} : { reason: options.reason }),
+      // Why there is no evidence (when there is none): the factors with no part of it. A plated factor whose cavity is improper
+      // (a negative-precision site on the weights) is the usual one; `plates: 'expand'` has a proper cavity per row.
+      ...(rule === 'ep' && !Number.isFinite(evidence)
+        ? {
+            evidenceUndefinedAt: evidenceDefects(g, { projection: projectionOf(rule) }, state).map(
+              (d) => `${d.factor}: ${d.reason}`,
+            ),
+          }
+        : {}),
       variables: g.variables.length,
       factors: g.factors.length,
     },

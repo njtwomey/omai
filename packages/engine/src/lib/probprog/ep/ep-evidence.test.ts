@@ -1,6 +1,8 @@
 // EP's log evidence against the grid evidence of the same model, on the atoms whose grid is fast: every rule that carries an evidence
 // is checked at model level, not only per operator (operators/evidence.test.ts). The tolerances are in nats and say why they are not tight.
 import { describe, expect, it } from 'vitest'
+import { session } from '../../trace/index.ts'
+import { epSpecMethod } from '../inference/index.ts'
 import { toProgram } from '../model/index.ts'
 import { gridPosterior } from '../validation/index.ts'
 import { epAtom } from './ep-atom-list.ts'
@@ -124,5 +126,31 @@ describe('the EP log evidence of the summed-out spike and slab with a learned sh
     const grid =
       top + Math.log(terms.reduce((a, l) => a + Math.exp(l - top), 0)) + Math.log(1 / nP) + Math.log((hi - lo) / nT)
     expect(Math.abs((run.evidence ?? Number.NaN) - grid)).toBeLessThan(0.05)
+  })
+})
+
+describe('the EP evidence of the learned logistic regression (the weights share an unknown precision)', () => {
+  const atom = epAtom('logistic-learned')
+  const problem = atom.problem(atom.defaults)
+  const bound = atomBound(problem)
+  const posteriorOf = (plates: 'vectorise' | 'expand') => {
+    const method = epSpecMethod(bound, { plates })
+    const s = session(method, { seed: 1, steps: 400, mode: 'eager', config: { tol: 1e-9, ...(atom.ep ?? {}) } })
+    return method.posterior?.(s.state, s.config as never)
+  }
+
+  it('has no evidence as one plated factor, and says why: the cavity of the plate is improper', () => {
+    // The scale mixture on the weights sends a site with a negative precision, so the cavity of the plate (all rows, one factor)
+    // is indefinite and its integral against the logistic likelihood diverges: the EP energy is undefined, not wrong.
+    const post = posteriorOf('vectorise')
+    expect(post?.logEvidence).toBeUndefined()
+    expect(post?.diagnostics['evidenceUndefinedAt']).toEqual(['factor:y: improper cavity'])
+  })
+
+  it('has the evidence with a factor per row (a proper cavity for each), within 0.1 nats of the grid (0.046 measured)', () => {
+    const post = posteriorOf('expand')
+    expect(post?.diagnostics['evidenceUndefinedAt']).toBeUndefined()
+    const grid = gridPosterior(toProgram(bound), undefined, { maxRefinements: 0, ...problem.grid })
+    expect(Math.abs((post?.logEvidence?.value ?? Number.NaN) - grid.logEvidence)).toBeLessThan(0.1)
   })
 })
