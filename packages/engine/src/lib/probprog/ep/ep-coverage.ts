@@ -1,8 +1,8 @@
 /**
  * The measurement of what expectation propagation covers today: every EP atom (run, not only compiled: the atoms are
- * milliseconds) and every benchmark model of the suite (compiled to a factor graph and asked for the EP verdict, the audit
- * of `docs/probprog/ep-plan.md` section 1), each as `runs` or `planned` with the library's reason. It is a measurement for
- * the developer: the coverage page lists it, and its test fixes the figure so that coverage only goes up.
+ * milliseconds) and every benchmark model of the suite (compiled to a factor graph and asked for the EP route), each as `runs`
+ * or `planned` with the library's reason. It is a measurement, not a record: the coverage page lists it, `docs/probprog/ep-status.md`
+ * is generated from it, and its test holds the invariants (every atom and every benchmark model runs, or says why not).
  */
 
 import { type Config, session } from '../../trace/index.ts'

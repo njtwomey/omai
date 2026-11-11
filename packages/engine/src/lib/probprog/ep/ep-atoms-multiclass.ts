@@ -146,7 +146,6 @@ export const softmaxRegressionAtom: EpAtom = defineAtom({
   what: 'Three class slopes with Gaussian priors and ten labelled points through a softmax: the multiclass site, an adaptive Gauss-Hermite integral over the three class scores of each point.',
   factors: ['prior (gaussian) x3', 'scale (known covariate times a slope)', 'multiclass-site (softmax)'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.25,
@@ -228,7 +227,6 @@ export const softmaxRegressionLearnedAtom: EpAtom = defineAtom({
   what: 'The softmax classifier of the basic atom with the three class slopes unknown, the classes simulated from stated slopes.',
   factors: ['prior (gaussian) x3', 'scale (known covariate times a slope)', 'multiclass-site (softmax)'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.5,

@@ -5,12 +5,12 @@
  * model as a `ModelDefinition` with its data, the quantities it asks about with their human names, the picture of the
  * data), the reference (the exact posterior in closed form, or the posterior on a grid of the same model written as a
  * program, so it exists whether or not expectation propagation applies), a tolerance with its reason, and what is
- * expected today: `runs` (the library's EP applies) or `planned` (it is refused, and the library's verdict says why).
- * `runAtom` compiles the model, asks the EP method for its verdict, runs it sweep by sweep and returns the beliefs at every
+ * expected (`runs`, the default, or `planned` for an atom the library refuses on purpose, with the verdict's reason).
+ * `atomRun` compiles the model, asks the EP method for its verdict, runs it sweep by sweep and returns the beliefs at every
  * sweep, the messages as a model-run record and the check against the reference; `atomReference` is the reference alone
  * (marginal curves, and the joint of a pair for contours); `atomVerdict` is the compile-time verdict alone, which is all a
  * coverage table needs. A page of the proofs of concept is a composition of these, and a test generated from the registry
- * asserts every `runs` atom passes its check and every `planned` atom is refused with a reason, so coverage only goes up.
+ * asserts every atom passes its check (and every `planned` one, none today, is refused with a reason).
  *
  * @index structure EP atom scaffold: a bare setup, its reference, a tolerance, the EP verdict and run.
  */
@@ -206,9 +206,12 @@ export interface AtomSpec<K extends Config> {
   readonly factors: readonly string[]
   /** The family of the atom, for the coverage table's grouping. */
   readonly family: string
-  /** `runs` when EP applies today, `planned` when the library refuses (the verdict is asked at run time either way). */
-  readonly expected: 'runs' | 'planned'
-  /** For a `planned` atom, where in `docs/probprog/ep-plan.md` the missing rule is, and what it is. */
+  /**
+   * `runs` (the default: every atom of the suite runs under EP, and the registry test fails when one does not) or `planned`, the
+   * escape hatch for an atom the library refuses on purpose (the verdict is asked at run time either way). Nothing is planned today.
+   */
+  readonly expected?: 'runs' | 'planned'
+  /** For a `planned` atom, what the missing rule is and where it is described (`epGaps`). */
   readonly plan?: string
   /**
    * `exact` (closed form), `grid` (quadrature of the model), or `truth`: no reference posterior exists to compare with (a model with
@@ -233,7 +236,9 @@ export interface AtomSpec<K extends Config> {
 }
 
 /** A declared atom. */
-export interface EpAtom<K extends Config = Config> extends AtomSpec<K> {
+export interface EpAtom<K extends Config = Config> extends Omit<AtomSpec<K>, 'expected'> {
+  /** What the atom promises: `runs` unless it was declared `planned`. */
+  readonly expected: 'runs' | 'planned'
   /** The default knobs. */
   readonly defaults: K
 }
@@ -260,7 +265,7 @@ export function defineAtom<K extends Config>(spec: AtomSpec<K>): EpAtom<K> {
   if (spec.ep !== undefined) checkKnobKeys(`defineAtom: '${spec.name}'`, spec.ep, epRunKnobs('ep'))
   if ((spec.extends === undefined) !== (spec.recovery === undefined))
     throw new OmaiError('value', `defineAtom: '${spec.name}' gives both 'extends' and 'recovery' or neither`)
-  return { ...spec, defaults: defaults(spec.knobs) as K }
+  return { ...spec, expected: spec.expected ?? 'runs', defaults: defaults(spec.knobs) as K }
 }
 
 /** The belief of a coordinate: its mean and standard deviation, and whether it is a proper belief (not an unset message). */

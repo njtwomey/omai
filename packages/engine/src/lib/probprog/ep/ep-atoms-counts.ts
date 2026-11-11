@@ -116,7 +116,6 @@ export const hurdlePoissonAtom: EpAtom = defineAtom({
     'likelihood-site (poisson-log-truncated)',
   ],
   family: 'counts',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.05,

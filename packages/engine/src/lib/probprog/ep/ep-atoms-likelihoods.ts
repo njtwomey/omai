@@ -70,7 +70,6 @@ export const studentTAtom: EpAtom = defineAtom({
   what: 'A mean mu observed five times through Student-t noise with three degrees of freedom, one observation being far from the rest: the Student-t site.',
   factors: ['prior (gaussian)', 'student-t-site (quadrature)'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.15,
@@ -99,7 +98,6 @@ export const laplaceAtom: EpAtom = defineAtom({
   what: 'A mean mu observed five times through Laplace (double exponential) noise, one observation being far from the rest: the Laplace site, an absolute-error likelihood whose posterior is piecewise Gaussian.',
   factors: ['prior (gaussian)', 'laplace-site (quadrature)'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.15,
@@ -200,7 +198,6 @@ export const probitAtom: EpAtom = defineAtom({
   what: 'Three weights (an offset and two slopes) with Gaussian priors and eight binary labels through a probit link: the probit factor, a truncated Gaussian with closed-form moments, on a linear predictor.',
   factors: ['prior (gaussian)', 'matmul (linear predictor)', 'probit link'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.15,
@@ -229,7 +226,6 @@ export const logisticAtom: EpAtom = defineAtom({
   what: 'The same three weights and eight labels through a logistic link: no closed-form tilted moments, so the rule is a numeric quadrature.',
   factors: ['prior (gaussian)', 'matmul (linear predictor)', 'logistic link (numeric quadrature)'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.1,
@@ -308,7 +304,6 @@ export const skillDifferenceAtom: EpAtom = defineAtom({
   what: 'Three Gaussian skills and five results, each a probit factor on the difference of two skills (the TrueSkill performance model): every factor joins two variables.',
   factors: ['prior (gaussian) x3', 'probit link on a difference of two variables'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.15,
@@ -405,7 +400,6 @@ export const gpLogisticAtom: EpAtom = defineAtom({
   what: 'A dense Gaussian prior on three function values (an RBF kernel) and a logistic Bernoulli observation of each: the dense Gaussian-vector prior factor of GP classification.',
   factors: ['dense prior (gaussian-mv)', 'logistic link (numeric quadrature)'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.1,
@@ -433,7 +427,6 @@ export const gpProbitAtom: EpAtom = defineAtom({
   what: 'A dense Gaussian prior on three function values and a probit Bernoulli observation of each: GP classification with closed-form tilted moments.',
   factors: ['dense prior (gaussian-mv)', 'probit link'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.15,
@@ -477,7 +470,6 @@ export const poissonLogAtom: EpAtom = defineAtom({
   what: 'A Gaussian predictor x and a Poisson count with rate exp(x): the numeric likelihood on a linear predictor (the log link of Poisson regression).',
   factors: ['prior (gaussian)', 'numeric likelihood: poisson with an exp link'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.1,

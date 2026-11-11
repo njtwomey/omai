@@ -1,9 +1,10 @@
 /**
  * What expectation propagation cannot do yet, and what it does less well than it should, as data the coverage page shows and a test
- * holds to account: every setup and benchmark model that EP refuses is named by at least one gap, so a refusal is never an orphan,
- * and every gap says why, how it would be closed, how big that is and where it stands. The list is written by hand from what the
- * audits, the atoms, the programs and the agents' reports found (2026-11-11); when a rule lands the gap is edited or removed and
- * the coverage test says which refused item no longer needs it.
+ * holds to account: every setup and benchmark model that EP refuses is claimed by at least one gap, so a refusal is never an orphan,
+ * and every gap says why, how it would be closed, how big that is and where it stands. The prose is written by hand from what the
+ * audits, the atoms, the programs and the agents' reports found; which items a gap refuses is not: a gap carries the phrases its
+ * refusals contain (`markers`), and `epGapsRefusing` reads the coverage's verdicts against them. When a rule lands the gap is edited
+ * or removed; counts and dates do not belong in the prose (`docs/probprog/ep-status.md` is generated from the coverage).
  *
  * @index module The gaps and limits of expectation propagation, each with its plan, size and status, tied to what it refuses.
  */
@@ -26,7 +27,12 @@ export interface EpGap {
   readonly plan: string
   /** A rough size of the work: small (a day or less), medium (a few days), large (a week or more). */
   readonly size: 'small' | 'medium' | 'large'
-  /** The setups and benchmark models EP refuses today because of it (names as in the coverage table). */
+  /**
+   * Phrases that the reason or the missing tags of a refusal (a verdict, or the error of a run) contain when this gap is what
+   * refuses the item; empty for a shortfall that refuses nothing (a quality problem, an infrastructure task).
+   */
+  readonly markers: readonly string[]
+  /** The setups and benchmark models EP refuses because of it, by name: always derived from the coverage (`epGapsRefusing`), empty in `epGaps`. */
   readonly refuses: readonly string[]
 }
 
@@ -39,151 +45,200 @@ export interface EpGap {
  * epGaps.every((g) => g.plan.length > 0 && g.summary.length > 0) // => true
  * ```
  */
-export const epGaps: readonly EpGap[] = [
-  {
-    id: 'grid-hyperparameters',
-    title: 'Hyperparameters on a grid: a few scalars, one family at a time',
-    kind: 'missing-mapping',
-    status: 'open',
-    summary:
-      'A Gaussian process with a random length scale runs by EP inside a grid over the hyperparameters a custom function reads (`epGridMethod`: each node conditions the model, EP runs, the EP evidence weights the node), exact for a Gaussian likelihood. The grid is a product over the hyperparameters, so it serves one to three scalars; an ARD kernel with a length scale per input, a hyperparameter that is a vector or has a prior that depends on another node, and a custom function that is not known or affine once the hyperparameters are set are refused.',
-    plan: 'A numeric site over the length scale for the one-dimensional case inside one EP run (the hyperparameter as a latent whose message is a grid), a sparse grid or a Laplace step over several hyperparameters, and a model-layer kernel node (a Gram matrix as a first-class operator on a latent length scale) so that the custom function is not needed.',
-    size: 'medium',
-    refuses: [],
-  },
-  {
-    id: 'matrix-larger',
-    title: 'Covariance matrices beyond what the Wishart and the bivariate sd-and-correlation sites reach',
-    kind: 'missing-rule',
-    status: 'open',
-    summary:
-      'Closed 2026-11-11 (`agent-pp191-matrix`): a Wishart family, the exact conjugate and the Bartlett-quadrature EP rule (`mvn-wishart`, dimensions 2 and 3, the exact update in any dimension), the normal-Wishart conjugate form, the sd-and-correlation site for a bivariate normal (`mvn-sd-corr`: gamma precisions, an LKJ correlation as a beta variable), and six atoms. What remains: a non-conjugate Wishart (an unknown mean or a Gaussian vector per group) in dimension 4 and above (the quadrature is a product rule with d (d + 1) / 2 coordinates: 5 nodes per coordinate at d = 3 already costs 12 s for eight groups of three effects), an LKJ prior on a correlation matrix of order 3 and above (three correlations are three coordinates of the numeric site, six with the standard deviations), a latent bivariate vector with standard deviations and a correlation of its own (a three-dimensional grid per group: about a second per sweep per group), and a normal-Wishart variable inside a larger model (the compiler maps the Wishart form only).',
-    plan: 'A sparse-grid or Laplace step for the Wishart tilt beyond dimension 3 (the conjugate part of the factor is already taken out, so the remainder is smooth), the Cholesky-of-correlation (canonical partial correlations) parameterisation with one beta variable per partial correlation for the LKJ prior of order 3, a shared tilt across the ports of one factor so that a group costs one integral per sweep, and the compiler pattern that reads `mu | L ~ N(m, (kappa L)^-1)` as one normal-Wishart variable.',
-    size: 'medium',
-    refuses: [],
-  },
-  {
-    id: 'hierarchical-matrix-few-groups',
-    title: 'A learned covariance with few groups: the shared mean is too narrow, the matrix too wide',
-    kind: 'quality',
-    status: 'open',
-    summary:
-      'Measured against the exact posterior (three-dimensional grid over the precision matrix, effects and mean integrated out) on the correlated random intercepts and slopes: with the population mean known EP is within 1% of the exact spread of the matrix and of every group (three to ten groups, prior degrees of freedom 1.2 to 2.2); with the mean unknown its spread is 0.77 to 0.89 of the exact at three or four groups (0.93 at six and eight) and the precision matrix is 1.05 to 1.25 times too wide (1.5 to 1.7 when the prior has barely more degrees of freedom than the dimension, and slow: 30 to 40 sweeps), the means within 0.5 posterior sd. A bivariate correlation carried as a beta (a plated factor, so the beta matches the exact marginal on its two log moments) has a spread 0.81 to 0.92 of the exact when it is strong (0.9 to 0.99) and the pairs few. A single plated factor (rows with a shared random mean) is exact in every case measured, including two rows and 1.2 degrees of freedom.',
-    plan: 'The hierarchical error is the usual one of EP with one vector variable per group sharing a mean: a joint site over the population mean and the groups (the mean integrated out of the Gaussian chain, as the exact reference does) would remove it; for the correlation, a skew-aware belief (a beta on the Fisher transform, or a Gaussian on it) in place of the beta on (rho + 1) / 2.',
-    size: 'medium',
-    refuses: [],
-  },
-  {
-    id: 'softmax-many-classes',
-    title: 'Softmax beyond six classes, and a multiclass Gaussian process',
-    kind: 'missing-rule',
-    status: 'open',
-    summary:
-      'The multiclass site (`multiclass-site`: a softmax or multinomial probit of Gaussian class scores, adaptive Gauss-Hermite over all the free scores) integrates up to six classes, and the classifier atoms use one slope per class on a scalar covariate. More classes, and a Gaussian process whose latent function is a vector over the classes (a joint Gaussian across them), are not mapped.',
-    plan: 'A delta-method or Laplace-based site (Knowles and Minka) beyond six classes, where the product grid is too large; a vector-valued belief per observation (one Gaussian over the K scores) for the multiclass GP.',
-    size: 'medium',
-    refuses: [],
-  },
-  {
-    id: 'ordinal-random-cuts',
-    title: 'Ordinal cut points that are random, and a Student-t with random degrees of freedom and scale',
-    kind: 'missing-rule',
-    status: 'open',
-    summary:
-      'The ordinal probit and logit and the asymmetric Laplace are model-layer distributions mapped to the registry (`orderedProbit`, `orderedLogistic`, `asymmetricLaplace`, the draw margin of a tournament among them) with the cut points known; random cut points (a prior on increasing thresholds, a learned draw margin) are refused with the reason. The two-variable site takes one random scale or shape beside the location, so a Student-t whose degrees of freedom and scale are both random (three variables) is refused too.',
-    plan: 'A three-axis version of the grid in `_grid.ts` (the pair rule with a third coordinate) serves a Student-t with random df and scale; the cut points as a numeric site over the predictor and the cut points on their log gaps (one gap for a draw margin).',
-    size: 'medium',
-    refuses: [],
-  },
-  {
-    id: 'gate-node',
-    title: 'A gate over likelihoods of different families: no explicit gate node',
-    kind: 'missing-mapping',
-    status: 'open',
-    summary:
-      'A discrete latent that picks among branch predictions of one likelihood runs: `ops.pick(values, index)` is the gate over Gaussian regressions on a shared design (mixtures of regressions and switching regressions, one engine gate of Gaussian likelihoods per row, agreeing with the enumeration of the class assignments within 0.2 sds), and a hurdle count runs as a family (a conjugate Bernoulli on the zero part, a zero-truncated Poisson site on the positive part). What is not mapped is a gate whose branches are different families chosen by a latent that is not determined by the data (a Poisson against a negative binomial, a regression against a constant), because a distribution of the model language has no nested distributions.',
-    plan: 'A `gate` distribution family whose parameters are the index and, per branch, the family and its parameters (flattened into the parameter table so that every analysis still sees the expressions), compiled to the engine gate with one inner operator per branch family; pick and the hurdle count then become special cases.',
-    size: 'medium',
-    refuses: [],
-  },
-  {
-    id: 'multimodal',
-    title: 'One Gaussian per variable cannot show two modes',
-    kind: 'quality',
-    status: 'open',
-    summary:
-      "On a bimodal or label-ambiguous posterior one EP run commits to one reading and reports a narrow spread: on the changepoint program (24 seeds, 72 intervals) the truth is inside the 90% interval for 0.778 of the rates (the sampler 0.931), with errors up to 4.5 sds. EP from several starts weighted by evidence (`epMultiStartMethod`) covers 0.931, but is 3.9 times wider than the sampler everywhere, because it holds the relabellings of every reading; with `labels: 'sort'` (starts from every relabelling, the posterior read with the components sorted by their rates) it covers 0.889 with spreads 0.95 of the sampler's where every regime is visited and the unvisited regime's rate at 0.77 to 1.27 of it (one run: 0.05 to 0.15). Remaining: a regime visited by a handful of steps (seeds 4, 7, 10 of the 24: spreads 0.2 to 0.35 of the sampler's, errors 2 to 4.5 sds), where every start reaches the same reading and the other readings are not fixed points of EP (the runs cycle); and models whose evidence is undefined at the fixed point (the circular mixture's row gates), which cannot be weighted. Power EP, alpha-divergences, damping and a damped retry of the starts do not help (docs/probprog/ep-plan.md section 11, docs/probprog/ep-notes-quality2.md section 1).",
-    plan: 'The chain summed out given the shared rates (a forward-algorithm site over the three rates, a numeric message of the rates) so that the loop between a shared rate and a discrete state per step is gone; an evidence for the row gates with an improper cavity (the same expansion as the plated factor) so that the circular mixture can be multi-started.',
-    size: 'medium',
-    refuses: [],
-  },
-  {
-    id: 'loopy-overconfidence',
-    title: 'Loops make the spreads too small',
-    kind: 'quality',
-    status: 'open',
-    summary:
-      'Scalar latents that share a predictor were 2 to 3 times too narrow (packing them into one joint Gaussian fixed the common case, and the packed logistic and probit regressions are calibrated). Remaining: players who met in a tournament (75 to 87% of the reference sd; no power or alpha changes it), the two shapes of beta outcomes (0.65 to 0.8; a power below 1 makes it worse, a power near 1.15 gives the exact spread with the mean 0.1 to 0.2 sds off), hierarchical priors that defeat the packing detector (radon slopes at 0.7 times the truth), the 2PL item response model (a 17% coverage of the discriminations). The softmax class slopes (0.4 to 0.75 of the exact spread, the truth inside the 90% interval 0.45 to 0.80 of the time against the exact 0.96) are repaired by fractional EP, the `power` knob of `epSpecMethod` (power about 5 divided by the rows: coverage 0.92 to 0.96 with 10 rows, 0.93 with 24, 0.92 with 48, the means 0.1 to 0.2 exact sds off) and the two softmax atoms run at it; the sign of the correction depends on the model, so it is not a default.',
-    plan: 'Pack more structures (plate vectors, hierarchical priors, the class slopes of the multiclass site as one joint vector, which makes the power unnecessary) and try structured EP (regions, the engine has them); keep the calibration panels honest so a regression shows.',
-    size: 'medium',
-    refuses: [],
-  },
-  {
-    id: 'sv-parameters',
-    title: 'Stochastic volatility with an unknown level, persistence and innovation precision is not calibrated',
-    kind: 'quality',
-    status: 'open',
-    summary:
-      "With the three parameters unknown the model compiles and EP runs in seconds, but one run covers the truth for 0.48 of the levels, 0.58 of the persistences and 0.63 of the precisions (30 seeds of 60 returns), with the level's sd a fifth to a third of a NUTS run's. EP inside a grid over the persistence (`epGridMethod(bound, { over: ['phi'] })`, the level and the precision inside each run) gives 0.97, 0.68 and 1.00 (pooled 0.88 against 0.57) with the means within 0.02 of NUTS; the persistence is still too narrow (0.12 against 0.17 to 0.2: the nodes at high persistence do not settle and a few collapse), and a fit takes 25 s.",
-    plan: 'A joint rule over the level and the persistence (a block update on the chain, or the pair site of `pairs.ts` for (mu, phi)), or a grid that refines where the persistence has mass and drops the collapsed nodes; until then the setup is not offered as a learned-parameters page.',
-    size: 'medium',
-    refuses: [],
-  },
-  {
-    id: 'non-centred-scale',
-    title: 'A non-centred scale (z / sqrt(precision)) has no variational message passing rule',
-    kind: 'quality',
-    status: 'open',
-    summary:
-      'A coefficient vector written `z / sqrt(g(x))` runs under EP in two forms. With one latent `x` behind every coefficient (the non-centred Bayesian GAM, penalty prior with log-normal hyperpriors) the compiler makes it one Gaussian vector with a `gaussian-mv-function-scale` factor (the standard normals are integrated out, `x` on a grid), so the posterior keeps the correlations: against the exact reference the curve is 0.004 response sd off, the band 1.02 to 1.03 of the reference (it was 1.17 as per-coefficient marginals), the log smoothing 0.03 off (0.25), in 23 sweeps and 1.2 s (about 200 sweeps and 8 s before). With a latent of its own for each coefficient (ARD) each coefficient is an `apply-product` factor on a coordinate of one Gaussian vector the likelihood reads (the rows are dot products, not a loop of sums): band 0.99 of a long NUTS (1.06), 24 sweeps (64). What remains: variational message passing has no rule for either factor (the non-conjugate message of a scale collapses the noise to a point; the gamma-multiplier form `gaussian-mv-precision-scale` has the conjugate one), and the spreads of the log smoothing and the log noise are about 12% wide against the exact reference (a moment match of a skewed marginal).',
-    plan: 'A variational rule for `gaussian-mv-function-scale` and `apply-product` from the exact conjugate one at a fixed scale (the factor given `x` is a Gaussian, so the message to the vector is its expectation over the variational `q(x)`, and the message to `x` the expected log density, both by the same grid).',
-    size: 'small',
-    refuses: [],
-  },
-  {
-    id: 'evidence',
-    title: 'The EP log evidence is exact where EP is, and has two known limits',
-    kind: 'infrastructure',
-    status: 'open',
-    summary:
-      "Every rule of the registry carries a log evidence (each tested against a brute-force integral) and the posterior and the tape (`mp/evidence`) give the model's: against the grid evidence it is within 1e-5 on the conjugate atoms, 1e-3 on the gates, the Student-t, the clutter, the summed-out mixtures, 0.01 to 0.05 on the probit, logistic, Laplace and product atoms, and the numeric priors (half-normal, half-Cauchy, uniform, truncated) are the exact prior, not a projection (uniform exact, half-normal 0.004, half-Cauchy 0.015 nats). Two limits remain: a fixed point with a factor whose cavity is improper has no evidence (the learned logistic regression as one plated factor: the scale mixture's site has a negative precision, so the cavity of the plate is indefinite and its integral diverges; the evidence is then that of the rows-expanded model, named `ep-energy (rows expanded)`, 0.05 nats from the grid; when that does not converge the posterior says which factor in `diagnostics.evidenceUndefinedAt`); a fixed point whose row gates have an improper cavity (the circular mixture, more than a hundred of them) still has none, and an alpha-divergence run has no EP energy.",
-    plan: 'Give the gates with an improper cavity an evidence in natural parameters (as the Gaussian, dot and apply rules have), and give the alpha runs the energy of their own divergence.',
-    size: 'medium',
-    refuses: [],
-  },
-  {
-    id: 'variational-rules',
-    title: 'Variational message passing: what it cannot run and where the mean field is poor',
-    kind: 'infrastructure',
-    status: 'open',
-    summary:
-      'Variational message passing runs 78 of the 86 atoms (36 before the non-conjugate message by quadrature, the deterministic factors that define their output and the gates): the numeric likelihoods, scales, shapes, softmax, products, maxima, unary functions, gamma products and selects all have a mean-field message, each checked against the brute-force bound. What is left: the hard comparisons (`greater-than`, `is-between`, `spin`: KL(q || p) is infinite for a Gaussian q, the probit link is their variational form), the Weibull with a random shape (its expected log is infinite under a Gaussian or gamma belief), the custom functions of a random value, and the mixtures, where the mean field settles on the optimum that explains everything as clutter or as the spike (clutter and spike-and-slab) and the banana posterior of a product that a belief per variable cannot follow.',
-    plan: 'Start the mean field of a mixture from the data or from several restarts (as `epMultiStartMethod` does for EP), give the hard comparisons their probit form in the model compiler, and keep the coverage floor (`vmpCoverage`) going up.',
-    size: 'small',
-    refuses: [],
-  },
-  {
-    id: 'docs-drift',
-    title: 'The prior atlas can drift from the code',
-    kind: 'infrastructure',
-    status: 'open',
-    summary:
-      'The atlas tables (`docs/probprog/ep-priors.md`) were written from probes of the library; when a rule lands the table is not updated automatically.',
-    plan: 'Generate the status column from the coverage data in a test (fail when the document and the coverage disagree).',
-    size: 'small',
-    refuses: [],
-  },
-]
+export const epGaps: readonly EpGap[] = gapList().map((g) => ({ ...g, refuses: [] }))
+
+/** The gaps as written: everything but the names they refuse, which the coverage gives. */
+function gapList(): readonly Omit<EpGap, 'refuses'>[] {
+  return [
+    {
+      id: 'grid-hyperparameters',
+      title: 'Hyperparameters on a grid: a few scalars, one family at a time',
+      kind: 'missing-mapping',
+      status: 'open',
+      summary:
+        'A Gaussian process with a random length scale runs by EP inside a grid over the hyperparameters a custom function reads (`epGridMethod`: each node conditions the model, EP runs, the EP evidence weights the node), exact for a Gaussian likelihood. The grid is a product over the hyperparameters, so it serves one to three scalars; an ARD kernel with a length scale per input, a hyperparameter that is a vector or has a prior that depends on another node, and a custom function that is not known or affine once the hyperparameters are set are refused.',
+      plan: 'A numeric site over the length scale for the one-dimensional case inside one EP run (the hyperparameter as a latent whose message is a grid), a sparse grid or a Laplace step over several hyperparameters, and a model-layer kernel node (a Gram matrix as a first-class operator on a latent length scale) so that the custom function is not needed.',
+      size: 'medium',
+      markers: ['hyperparameters', 'opaque to message passing'],
+    },
+    {
+      id: 'matrix-larger',
+      title: 'Covariance matrices beyond what the Wishart and the bivariate sd-and-correlation sites reach',
+      kind: 'missing-rule',
+      status: 'open',
+      summary:
+        'Done: a Wishart family, the exact conjugate and the Bartlett-quadrature EP rule (`mvn-wishart`, dimensions 2 and 3, the exact update in any dimension), the normal-Wishart conjugate form, the sd-and-correlation site for a bivariate normal (`mvn-sd-corr`: gamma precisions, an LKJ correlation as a beta variable), and six atoms. What remains: a non-conjugate Wishart (an unknown mean or a Gaussian vector per group) in dimension 4 and above (the quadrature is a product rule with d (d + 1) / 2 coordinates: 5 nodes per coordinate at d = 3 already costs 12 s for eight groups of three effects), an LKJ prior on a correlation matrix of order 3 and above (three correlations are three coordinates of the numeric site, six with the standard deviations), a latent bivariate vector with standard deviations and a correlation of its own (a three-dimensional grid per group: about a second per sweep per group), and a normal-Wishart variable inside a larger model (the compiler maps the Wishart form only).',
+      plan: 'A sparse-grid or Laplace step for the Wishart tilt beyond dimension 3 (the conjugate part of the factor is already taken out, so the remainder is smooth), the Cholesky-of-correlation (canonical partial correlations) parameterisation with one beta variable per partial correlation for the LKJ prior of order 3, a shared tilt across the ports of one factor so that a group costs one integral per sweep, and the compiler pattern that reads `mu | L ~ N(m, (kappa L)^-1)` as one normal-Wishart variable.',
+      size: 'medium',
+      markers: ['the quadrature is built for dimensions up to 3'],
+    },
+    {
+      id: 'hierarchical-matrix-few-groups',
+      title: 'A learned covariance with few groups: the shared mean is too narrow, the matrix too wide',
+      kind: 'quality',
+      status: 'open',
+      summary:
+        'Measured against the exact posterior (three-dimensional grid over the precision matrix, effects and mean integrated out) on the correlated random intercepts and slopes: with the population mean known EP is within 1% of the exact spread of the matrix and of every group (three to ten groups, prior degrees of freedom 1.2 to 2.2); with the mean unknown its spread is 0.77 to 0.89 of the exact at three or four groups (0.93 at six and eight) and the precision matrix is 1.05 to 1.25 times too wide (1.5 to 1.7 when the prior has barely more degrees of freedom than the dimension, and slow: 30 to 40 sweeps), the means within 0.5 posterior sd. A bivariate correlation carried as a beta (a plated factor, so the beta matches the exact marginal on its two log moments) has a spread 0.81 to 0.92 of the exact when it is strong (0.9 to 0.99) and the pairs few. A single plated factor (rows with a shared random mean) is exact in every case measured, including two rows and 1.2 degrees of freedom.',
+      plan: 'The hierarchical error is the usual one of EP with one vector variable per group sharing a mean: a joint site over the population mean and the groups (the mean integrated out of the Gaussian chain, as the exact reference does) would remove it; for the correlation, a skew-aware belief (a beta on the Fisher transform, or a Gaussian on it) in place of the beta on (rho + 1) / 2.',
+      size: 'medium',
+      markers: [],
+    },
+    {
+      id: 'softmax-many-classes',
+      title: 'Softmax beyond six classes, and a multiclass Gaussian process',
+      kind: 'missing-rule',
+      status: 'open',
+      summary:
+        'The multiclass site (`multiclass-site`: a softmax or multinomial probit of Gaussian class scores, adaptive Gauss-Hermite over all the free scores) integrates up to six classes, and the classifier atoms use one slope per class on a scalar covariate. More classes, and a Gaussian process whose latent function is a vector over the classes (a joint Gaussian across them), are not mapped.',
+      plan: 'A delta-method or Laplace-based site (Knowles and Minka) beyond six classes, where the product grid is too large; a vector-valued belief per observation (one Gaussian over the K scores) for the multiclass GP.',
+      size: 'medium',
+      markers: ['more than the six this rule integrates'],
+    },
+    {
+      id: 'ordinal-random-cuts',
+      title: 'Ordinal cut points that are random, and a Student-t with random degrees of freedom and scale',
+      kind: 'missing-rule',
+      status: 'open',
+      summary:
+        'The ordinal probit and logit and the asymmetric Laplace are model-layer distributions mapped to the registry (`orderedProbit`, `orderedLogistic`, `asymmetricLaplace`, the draw margin of a tournament among them) with the cut points known; random cut points (a prior on increasing thresholds, a learned draw margin) are refused with the reason. The two-variable site takes one random scale or shape beside the location, so a Student-t whose degrees of freedom and scale are both random (three variables) is refused too.',
+      plan: 'The three-axis grid exists (`_gridn.ts`, what the covariance sites integrate with); a likelihood-pair site over it would serve a Student-t with random df and scale; the cut points as a numeric site over the predictor and the cut points on their log gaps (one gap for a draw margin).',
+      size: 'medium',
+      markers: [],
+    },
+    {
+      id: 'gate-node',
+      title: 'A gate over likelihoods of different families: no explicit gate node',
+      kind: 'missing-mapping',
+      status: 'open',
+      summary:
+        'A discrete latent that picks among branch predictions of one likelihood runs: `ops.pick(values, index)` is the gate over Gaussian regressions on a shared design (mixtures of regressions and switching regressions, one engine gate of Gaussian likelihoods per row, agreeing with the enumeration of the class assignments within 0.2 sds), and a hurdle count runs as a family (a conjugate Bernoulli on the zero part, a zero-truncated Poisson site on the positive part). What is not mapped is a gate whose branches are different families chosen by a latent that is not determined by the data (a Poisson against a negative binomial, a regression against a constant), because a distribution of the model language has no nested distributions.',
+      plan: 'A `gate` distribution family whose parameters are the index and, per branch, the family and its parameters (flattened into the parameter table so that every analysis still sees the expressions), compiled to the engine gate with one inner operator per branch family; pick and the hurdle count then become special cases.',
+      size: 'medium',
+      markers: ['a gate selects among values of one family'],
+    },
+    {
+      id: 'multimodal',
+      title: 'One Gaussian per variable cannot show two modes',
+      kind: 'quality',
+      status: 'open',
+      summary:
+        "On a bimodal or label-ambiguous posterior one EP run commits to one reading and reports a narrow spread: on the changepoint program (24 seeds, 72 intervals) the truth is inside the 90% interval for 0.778 of the rates (the sampler 0.931), with errors up to 4.5 sds. EP from several starts weighted by evidence (`epMultiStartMethod`) covers 0.931, but is 3.9 times wider than the sampler everywhere, because it holds the relabellings of every reading; with `labels: 'sort'` (starts from every relabelling, the posterior read with the components sorted by their rates) it covers 0.889 with spreads 0.95 of the sampler's where every regime is visited and the unvisited regime's rate at 0.77 to 1.27 of it (one run: 0.05 to 0.15). Remaining: a regime visited by a handful of steps (seeds 4, 7, 10 of the 24: spreads 0.2 to 0.35 of the sampler's, errors 2 to 4.5 sds), where every start reaches the same reading and the other readings are not fixed points of EP (the runs cycle); and models whose evidence is undefined at the fixed point (the circular mixture's row gates), which cannot be weighted. Power EP, alpha-divergences, damping and a damped retry of the starts do not help (docs/probprog/ep-plan.md section 11, docs/probprog/ep-notes-quality2.md section 1).",
+      plan: 'The chain summed out given the shared rates (a forward-algorithm site over the three rates, a numeric message of the rates) so that the loop between a shared rate and a discrete state per step is gone; an evidence for the row gates with an improper cavity (the same expansion as the plated factor) so that the circular mixture can be multi-started.',
+      size: 'medium',
+      markers: [],
+    },
+    {
+      id: 'loopy-overconfidence',
+      title: 'Loops make the spreads too small',
+      kind: 'quality',
+      status: 'open',
+      summary:
+        'Scalar latents that share a predictor were 2 to 3 times too narrow (packing them into one joint Gaussian fixed the common case, and the packed logistic and probit regressions are calibrated). Remaining: players who met in a tournament (75 to 87% of the reference sd; no power or alpha changes it), the two shapes of beta outcomes (0.65 to 0.8; a power below 1 makes it worse, a power near 1.15 gives the exact spread with the mean 0.1 to 0.2 sds off), hierarchical priors that defeat the packing detector (radon slopes at 0.7 times the truth), the 2PL item response model (a 17% coverage of the discriminations). The softmax class slopes (0.4 to 0.75 of the exact spread, the truth inside the 90% interval 0.45 to 0.80 of the time against the exact 0.96) are repaired by fractional EP, the `power` knob of `epSpecMethod` (power about 5 divided by the rows: coverage 0.92 to 0.96 with 10 rows, 0.93 with 24, 0.92 with 48, the means 0.1 to 0.2 exact sds off) and the two softmax atoms run at it; the sign of the correction depends on the model, so it is not a default.',
+      plan: 'Pack more structures (plate vectors, hierarchical priors, the class slopes of the multiclass site as one joint vector, which makes the power unnecessary) and try structured EP (regions, the engine has them); keep the calibration panels honest so a regression shows.',
+      size: 'medium',
+      markers: [],
+    },
+    {
+      id: 'sv-parameters',
+      title: 'Stochastic volatility with an unknown level, persistence and innovation precision is not calibrated',
+      kind: 'quality',
+      status: 'open',
+      summary:
+        "With the three parameters unknown the model compiles and EP runs in seconds, but one run covers the truth for 0.48 of the levels, 0.58 of the persistences and 0.63 of the precisions (30 seeds of 60 returns), with the level's sd a fifth to a third of a NUTS run's. EP inside a grid over the persistence (`epGridMethod(bound, { over: ['phi'] })`, the level and the precision inside each run) gives 0.97, 0.68 and 1.00 (pooled 0.88 against 0.57) with the means within 0.02 of NUTS; the persistence is still too narrow (0.12 against 0.17 to 0.2: the nodes at high persistence do not settle and a few collapse), and a fit takes 25 s.",
+      plan: 'A joint rule over the level and the persistence (a block update on the chain, or the pair site of `pairs.ts` for (mu, phi)), or a grid that refines where the persistence has mass and drops the collapsed nodes; until then the setup is not offered as a learned-parameters page.',
+      size: 'medium',
+      markers: [],
+    },
+    {
+      id: 'non-centred-scale',
+      title: 'A non-centred scale (z / sqrt(precision)) has no variational message passing rule',
+      kind: 'quality',
+      status: 'open',
+      summary:
+        'A coefficient vector written `z / sqrt(g(x))` runs under EP in two forms. With one latent `x` behind every coefficient (the non-centred Bayesian GAM, penalty prior with log-normal hyperpriors) the compiler makes it one Gaussian vector with a `gaussian-mv-function-scale` factor (the standard normals are integrated out, `x` on a grid), so the posterior keeps the correlations: against the exact reference the curve is 0.004 response sd off, the band 1.02 to 1.03 of the reference (it was 1.17 as per-coefficient marginals), the log smoothing 0.03 off (0.25), in 23 sweeps and 1.2 s (about 200 sweeps and 8 s before). With a latent of its own for each coefficient (ARD) each coefficient is an `apply-product` factor on a coordinate of one Gaussian vector the likelihood reads (the rows are dot products, not a loop of sums): band 0.99 of a long NUTS (1.06), 24 sweeps (64). What remains: variational message passing has no rule for either factor (the non-conjugate message of a scale collapses the noise to a point; the gamma-multiplier form `gaussian-mv-precision-scale` has the conjugate one), and the spreads of the log smoothing and the log noise are about 12% wide against the exact reference (a moment match of a skewed marginal).',
+      plan: 'A variational rule for `gaussian-mv-function-scale` and `apply-product` from the exact conjugate one at a fixed scale (the factor given `x` is a Gaussian, so the message to the vector is its expectation over the variational `q(x)`, and the message to `x` the expected log density, both by the same grid).',
+      size: 'small',
+      markers: [],
+    },
+    {
+      id: 'evidence',
+      title: 'The EP log evidence is exact where EP is, and has two known limits',
+      kind: 'infrastructure',
+      status: 'open',
+      summary:
+        "Every rule of the registry carries a log evidence (each tested against a brute-force integral) and the posterior and the tape (`mp/evidence`) give the model's: against the grid evidence it is within 1e-5 on the conjugate atoms, 1e-3 on the gates, the Student-t, the clutter, the summed-out mixtures, 0.01 to 0.05 on the probit, logistic, Laplace and product atoms, and the numeric priors (half-normal, half-Cauchy, uniform, truncated) are the exact prior, not a projection (uniform exact, half-normal 0.004, half-Cauchy 0.015 nats). Two limits remain: a fixed point with a factor whose cavity is improper has no evidence (the learned logistic regression as one plated factor: the scale mixture's site has a negative precision, so the cavity of the plate is indefinite and its integral diverges; the evidence is then that of the rows-expanded model, named `ep-energy (rows expanded)`, 0.05 nats from the grid; when that does not converge the posterior says which factor in `diagnostics.evidenceUndefinedAt`); a fixed point whose row gates have an improper cavity (the circular mixture, more than a hundred of them) still has none, and an alpha-divergence run has no EP energy.",
+      plan: 'Give the gates with an improper cavity an evidence in natural parameters (as the Gaussian, dot and apply rules have), and give the alpha runs the energy of their own divergence.',
+      size: 'medium',
+      markers: [],
+    },
+    {
+      id: 'variational-rules',
+      title: 'Variational message passing: what it cannot run and where the mean field is poor',
+      kind: 'infrastructure',
+      status: 'open',
+      summary:
+        'Variational message passing runs most of the atoms (`vmpCoverage` counts them): the numeric likelihoods, scales, shapes, softmax, products, maxima, unary functions, gamma products and selects all have a mean-field message, each checked against the brute-force bound. What is left: the hard comparisons (`greater-than`, `is-between`, `spin`: KL(q || p) is infinite for a Gaussian q, the probit link is their variational form), the Weibull with a random shape (its expected log is infinite under a Gaussian or gamma belief), the custom functions of a random value, and the mixtures, where the mean field settles on the optimum that explains everything as clutter or as the spike (clutter and spike-and-slab) and the banana posterior of a product that a belief per variable cannot follow.',
+      plan: 'Start the mean field of a mixture from the data or from several restarts (as `epMultiStartMethod` does for EP), give the hard comparisons their probit form in the model compiler, and keep `vmpCoverage` and the committed digest honest as the count goes up.',
+      size: 'small',
+      markers: [],
+    },
+    {
+      id: 'docs-drift',
+      title: 'The prior atlas can drift from the code',
+      kind: 'infrastructure',
+      status: 'open',
+      summary:
+        'The atlas tables (`docs/probprog/ep-priors.md`) were written from probes of the library; when a rule lands the table is not updated automatically.',
+      plan: 'Generate the status column from the coverage data in a test (fail when the document and the coverage disagree).',
+      size: 'small',
+      markers: [],
+    },
+  ]
+}
+
+/** What a gap needs to know of an item EP does not run: its name and why (the verdict's reason and missing tags, or the error of the run). */
+export interface RefusedItem {
+  readonly name: string
+  readonly reason: string
+  readonly missing: readonly string[]
+}
+
+const claims = (g: Omit<EpGap, 'refuses'>, r: RefusedItem): boolean =>
+  g.markers.some((m) => r.reason.includes(m) || r.missing.some((t) => t.includes(m)))
+
+/**
+ * The gaps with the items each refuses, derived from the verdicts: an item the coverage says EP does not run belongs to every gap
+ * one of whose markers its reason or its missing tags contain. Nothing is kept by hand: a rule that lands removes the refusal, and
+ * the gap stops naming the item.
+ *
+ * @param refused - The items EP does not run, with the library's reasons (the `planned` rows of `epCoverage`).
+ * @returns The gaps, each with its `refuses`.
+ * @example
+ * ```ts
+ * import { epGapsRefusing } from 'omai-engine/probprog/ep'
+ * const gaps = epGapsRefusing([{ name: 'many-classes', reason: 'multiclass-site: 8 free scores are more than the six this rule integrates', missing: [] }])
+ * gaps.filter((g) => g.refuses.length > 0).map((g) => g.id) // => ['softmax-many-classes']
+ * ```
+ */
+export function epGapsRefusing(refused: readonly RefusedItem[]): readonly EpGap[] {
+  return gapList().map((g) => ({ ...g, refuses: refused.filter((r) => claims(g, r)).map((r) => r.name) }))
+}
+
+/**
+ * The items EP does not run that no gap claims: a refusal nobody has written down. The coverage test holds this empty.
+ *
+ * @param refused - The items EP does not run, with the library's reasons.
+ * @returns The names of the unclaimed ones.
+ * @example
+ * ```ts
+ * import { unclaimedRefusals } from 'omai-engine/probprog/ep'
+ * unclaimedRefusals([{ name: 'new', reason: 'something nobody has seen', missing: [] }]) // => ['new']
+ * ```
+ */
+export function unclaimedRefusals(refused: readonly RefusedItem[]): readonly string[] {
+  const list = gapList()
+  return refused.filter((r) => !list.some((g) => claims(g, r))).map((r) => r.name)
+}
 
 /** How far a direction is covered today: runs in the suite, partly (some forms run), being built now, or not started. */
 export type EpDirectionStatus = 'covered' | 'partial' | 'in progress' | 'not yet'

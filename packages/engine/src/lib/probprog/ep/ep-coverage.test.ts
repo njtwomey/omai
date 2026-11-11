@@ -1,5 +1,7 @@
-// The coverage figure is tested so that it only goes up: a rule that lands raises it and the test is moved up with it.
+// The coverage is measured, never remembered: the invariants are that every atom and every benchmark model runs under EP (or says why
+// not), and the regression net for the numbers themselves is the committed digest (`make ep-digest-check`), not a floor in a test.
 import { describe, expect, it } from 'vitest'
+import { benchmarkModels } from '../models/index.ts'
 import { epAtoms } from './ep-atom-list.ts'
 import { epCoverage, vmpCoverage } from './ep-coverage.ts'
 
@@ -8,7 +10,7 @@ describe('epCoverage', () => {
 
   it('lists every atom and every benchmark model with a reason for each that does not run', () => {
     expect(c.atoms.length).toBe(epAtoms.length)
-    expect(c.benchmarks.length).toBeGreaterThanOrEqual(27)
+    expect(c.benchmarks.length).toBe(benchmarkModels().length)
     for (const r of [...c.atoms, ...c.benchmarks])
       if (r.status === 'planned') expect(r.reason.length).toBeGreaterThan(10)
   })
@@ -17,9 +19,10 @@ describe('epCoverage', () => {
     expect(c.atoms.filter((r) => r.status !== r.declared).map((r) => r.name)).toEqual([])
   })
 
-  it('runs on at least 27 benchmark models (27 once the stick-breaking mixture and LDA-lite map; 25 once EP runs inside a grid over the length scale of the two Gaussian process regressions; 9 of 27 in the audit of 2026-11-11, 10 once stochastic volatility mapped, 23 with the likelihood registry, apply, the projected priors, gates, ordered constraints and the shared precisions; 46 of 47 atoms with the prior atlas), and only goes up; 92 of 92 atoms with the covariance atoms (six: Wishart precision, bivariate correlation, correlated random intercepts and slopes, each basic and learned); 86 of 86 atoms once the summed-out mixtures with a random share and precision map (84 before); 84 of 86 atoms once the two-variable sites, the multiclass site, ordinal probit, quantile regression and the draw margin landed (72 before)', () => {
-    expect(c.benchmarksRun).toBeGreaterThanOrEqual(27)
-    expect(c.atomsRun).toBeGreaterThanOrEqual(92)
+  it('runs every atom and every benchmark model, and says by which route a benchmark model runs', () => {
+    expect(c.atomsRun).toBe(epAtoms.length)
+    expect(c.benchmarksRun).toBe(c.benchmarks.length)
+    for (const r of c.benchmarks) expect(['ep', 'ep-grid'], r.name).toContain(r.via)
   })
 })
 
@@ -31,11 +34,10 @@ describe('vmpCoverage', () => {
     for (const r of c.atoms) if (r.status === 'planned') expect(r.reason.length).toBeGreaterThan(10)
   })
 
-  it('runs on at least 78 of 92 atoms (36 before the numeric likelihoods, scales, shapes, softmax, deterministic functions, gamma products and gates had variational messages), 76 of them to a fixed point, and only goes up', () => {
-    expect(c.atomsRun).toBeGreaterThanOrEqual(78)
-    expect(c.atomsConverged).toBeGreaterThanOrEqual(76)
-    // the two atoms with a correlation (`mvn-sd-corr`) run under EP only: the expected log of a beta correlation has no closed form
-    expect(c.behindEp).toBeLessThanOrEqual(8)
+  it('counts consistently: the atoms it runs, those that settle, and those EP runs that it does not (the rule gaps)', () => {
+    expect(c.atomsRun).toBe(c.atoms.filter((r) => r.status === 'runs').length)
+    expect(c.atomsConverged).toBeLessThanOrEqual(c.atomsRun)
+    expect(c.behindEp).toBe(c.atoms.filter((r) => r.epRuns && r.status !== 'runs').length)
   })
 
   it('refuses with a reason what has no mean-field message: a hard comparison, the Weibull shape, a custom function', () => {

@@ -95,7 +95,6 @@ export const stickBreakingAtom: EpAtom = defineAtom({
     'table (the component mean chosen by the assignment)',
   ],
   family: 'nonparametric',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.1,
@@ -260,7 +259,6 @@ export const topicModelAtom: EpAtom = defineAtom({
     'gate (the topic chooses which word distribution reads the word)',
   ],
   family: 'nonparametric',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.15,

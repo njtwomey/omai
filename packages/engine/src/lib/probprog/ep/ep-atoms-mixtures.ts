@@ -239,7 +239,6 @@ export const gateKnownAtom: EpAtom = defineAtom({
   what: 'A Bernoulli switch z selects between the known values 0 and 3, and y is that value plus Gaussian noise: the select factor, whose message to z is the ratio of the two branches’ evidence.',
   factors: ['prior (bernoulli)', 'select gate (known components)', 'gaussian likelihood'],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 1e-6,
@@ -363,7 +362,6 @@ export const gateRandomAtom: EpAtom = defineAtom({
   what: 'A Bernoulli switch z selects one of two Gaussian variables a and b, and y is the selected one plus noise. EP reports the probability of z; the exact posterior of what is selected is the mixture of the two updated components, weighted by it.',
   factors: ['prior (bernoulli)', 'prior (gaussian) x2', 'select gate (fresh random components)', 'gaussian likelihood'],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: gateTolerance,
   knobs: gateKnobs,
@@ -391,7 +389,6 @@ export const mixtureComponentsAtom: EpAtom = defineAtom({
     'gaussian likelihood',
   ],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: gateTolerance,
   knobs: gateKnobs,
@@ -513,7 +510,6 @@ export const spikeSlabAtom: EpAtom = defineAtom({
     'gaussian likelihood',
   ],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: gateTolerance,
   knobs: spikeKnobs,
@@ -576,7 +572,6 @@ export const spikeSlabMarginalAtom: EpAtom = defineAtom({
   what: 'The same prior with the switch summed out (the mixture-site form): one variable with a two-component zero-centred prior. EP matches the mean and variance of the exact two-branch posterior with one Gaussian and has no variable for the probability of the slab.',
   factors: ['mixture-site (two-component prior)', 'gaussian likelihood'],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 1e-3,
@@ -696,7 +691,6 @@ export const clutterAtom: EpAtom = defineAtom({
     'select gate per observation (random centre, known clutter)',
   ],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.5,
@@ -753,7 +747,6 @@ export const clutterMixtureAtom: EpAtom = defineAtom({
   what: 'An unknown mean mu observed eight times through a mixture of a narrow and a wide Gaussian around it, two observations being far from the rest: the mixture site as a likelihood. The switch per observation is summed out, so EP gives a belief about mu and no probability that an observation is an outlier.',
   factors: ['prior (gaussian)', 'mixture-site (inlier and outlier noise)'],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.3,

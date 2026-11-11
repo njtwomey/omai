@@ -110,7 +110,6 @@ export const mixtureRegressionAtom: EpAtom = defineAtom({
     'gate (the class picks the branch of Gaussian likelihoods)',
   ],
   family: 'gates',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.2,

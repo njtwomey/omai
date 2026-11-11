@@ -77,7 +77,6 @@ export const gammaPrecisionAtom: EpAtom = defineAtom({
   what: 'A Gaussian mean mu and a gamma-distributed precision tau, six observations y_i ~ N(mu, 1/tau): the gamma-precision factor with an observed value, a Student-t-like joint posterior.',
   factors: ['prior (gaussian)', 'prior (gamma)', 'gaussian-gamma-precision (observed value)'],
   family: 'scales',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.1,
@@ -223,7 +222,6 @@ export const sharedPrecisionAtom: EpAtom = defineAtom({
   what: 'Six latent values theta_j ~ N(0, 1/tau) with one gamma-distributed precision tau, each observed once with unit noise: the gamma-precision factor on latent values, six factors on one gamma variable (the hierarchy).',
   factors: ['prior (gamma)', 'gaussian-gamma-precision (latent value)', 'gaussian likelihood'],
   family: 'scales',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.1,
@@ -257,7 +255,6 @@ export const scaledPrecisionAtom: EpAtom = defineAtom({
   what: 'Six latent values theta_j ~ N(0, 1/(tau c_j)) with known multipliers c_j and one gamma-distributed tau, each observed once: the penalised-spline coefficient prior, one random smoothing parameter on a vector.',
   factors: ['prior (gamma)', 'gaussian-gamma-precision with a known multiplier', 'gaussian likelihood'],
   family: 'scales',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.1,
@@ -306,7 +303,6 @@ export const halfCauchyAtom: EpAtom = defineAtom({
   what: 'A half-Cauchy prior on a standard deviation sigma and four zero-mean Gaussian observations with that scale: a heavy-tailed scale prior that has no message family of its own.',
   factors: ['numeric prior (half-Cauchy)', 'gaussian with a random scale'],
   family: 'scales',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.2,
@@ -334,7 +330,6 @@ export const halfNormalAtom: EpAtom = defineAtom({
   what: 'A half-normal prior on a standard deviation sigma and four zero-mean Gaussian observations with that scale.',
   factors: ['numeric prior (half-normal)', 'gaussian with a random scale'],
   family: 'scales',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.2,

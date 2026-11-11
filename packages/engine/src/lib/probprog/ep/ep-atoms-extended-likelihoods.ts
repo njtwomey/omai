@@ -153,7 +153,6 @@ export const studentTLearnedAtom: EpAtom = defineAtom({
     'gaussian with a random scale',
   ],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.2,
@@ -271,7 +270,6 @@ export const laplaceLearnedAtom: EpAtom = defineAtom({
   what: 'The Laplace noise of the basic atom with the location and the scale both unknown, and the data simulated from a stated location and scale.',
   factors: ['prior (gaussian)', 'numeric prior (half-normal)', 'likelihood-pair: laplace with a random scale'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.2,
@@ -412,7 +410,6 @@ export const probitLearnedAtom: EpAtom = defineAtom({
   what: 'The probit classifier of the basic atom with the prior precision of the weights learned (a gamma precision shared by the three weights) and the labels simulated from stated true weights: the weights and the decision boundary are recovered from the data.',
   factors: ['prior (gamma)', 'gaussian-gamma-precision (latent vector)', 'matmul (linear predictor)', 'probit link'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.25,
@@ -457,7 +454,6 @@ export const logisticLearnedAtom: EpAtom = defineAtom({
     'logistic link (numeric quadrature)',
   ],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.25,
@@ -568,7 +564,6 @@ export const poissonLogLearnedAtom: EpAtom = defineAtom({
   what: 'The Poisson count with a log link of the basic atom, now a regression with an unknown intercept and slope, and the counts simulated from stated true coefficients.',
   factors: ['prior (gaussian) x2', 'matmul (linear predictor)', 'numeric likelihood: poisson with an exp link'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.15,
@@ -657,7 +652,6 @@ export const poissonLogDispersionLearnedAtom: EpAtom = defineAtom({
     'negative-binomial-dispersion (a two-variable numeric site)',
   ],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.35,
@@ -739,7 +733,6 @@ export const weibullLearnedAtom: EpAtom = defineAtom({
   what: 'The Weibull time with a normal prior on the log of its scale, as a regression: the intercept and slope of the log scale are unknown (the centre and the effect of a covariate) and the times are simulated from stated true values, with the shape fixed.',
   factors: ['prior (gaussian) x2', 'matmul (linear predictor)', 'numeric likelihood: weibull with a log link'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.15,
@@ -876,7 +869,6 @@ export const studentTDfLearnedAtom: EpAtom = defineAtom({
   what: 'The Student-t noise of the basic atom (scale one) with the location and the degrees of freedom both unknown, the data simulated from a stated location and a stated number of degrees of freedom.',
   factors: ['prior (gaussian)', 'prior (gamma)', 'likelihood-pair: student-t with random degrees of freedom'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.25,
@@ -1006,7 +998,6 @@ export const weibullShapeLearnedAtom: EpAtom = defineAtom({
   what: 'The Weibull time of the basic atom with its log scale and its shape both unknown, the times simulated from a stated scale and shape.',
   factors: ['prior (gaussian)', 'prior (gaussian, on the log shape)', 'likelihood-pair: weibull with a random shape'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.25,
@@ -1115,7 +1106,6 @@ export const skillDifferenceLearnedAtom: EpAtom = defineAtom({
   what: 'The TrueSkill probit factor of the basic atom on a round robin of players whose skills share an unknown precision, with the results simulated from stated true skills: the skills and the spread of the players are recovered from the games alone.',
   factors: ['prior (gamma)', 'gaussian-gamma-precision (latent value)', 'probit link on a difference of two variables'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'truth',
   tolerance: {
     meanZ: 1,

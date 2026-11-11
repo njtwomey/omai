@@ -120,7 +120,6 @@ export const ordinalProbitAtom: EpAtom = defineAtom({
   what: 'An intercept and a slope with Gaussian priors and twelve ordered outcomes in four categories through a cumulative probit with fixed cut points: the ordinal numeric site on the linear predictor.',
   factors: ['prior (gaussian) x2', 'matmul (linear predictor)', 'numeric likelihood: ordinal probit'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.15,
@@ -193,7 +192,6 @@ export const ordinalProbitLearnedAtom: EpAtom = defineAtom({
   what: 'The ordinal probit regression of the basic atom with the intercept and the slope unknown, the outcomes simulated from stated values with the same cut points.',
   factors: ['prior (gaussian) x2', 'matmul (linear predictor)', 'numeric likelihood: ordinal probit'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.15,
@@ -297,7 +295,6 @@ export const quantileRegressionAtom: EpAtom = defineAtom({
   what: 'An intercept and a slope with Gaussian priors and ten observations whose 80th percentile line is fitted, the asymmetric Laplace as the likelihood: the numeric quantile site on the linear predictor.',
   factors: ['prior (gaussian) x2', 'matmul (linear predictor)', 'numeric likelihood: asymmetric Laplace'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.15,
@@ -390,7 +387,6 @@ export const quantileRegressionLearnedAtom: EpAtom = defineAtom({
   what: 'The quantile regression of the basic atom with the intercept and the slope unknown, the points simulated from a stated line with asymmetric Laplace noise.',
   factors: ['prior (gaussian) x2', 'matmul (linear predictor)', 'numeric likelihood: asymmetric Laplace'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.15,
@@ -541,7 +537,6 @@ export const skillDrawsAtom: EpAtom = defineAtom({
   what: 'Three Gaussian skills and six games that may be drawn, each an ordinal probit of the difference of two skills with the draw margin as cut points (the TrueSkill performance model with draws): every factor joins two variables.',
   factors: ['prior (gaussian) x3', 'ordinal probit on a difference of two variables'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.2,
@@ -625,7 +620,6 @@ export const skillDrawsLearnedAtom: EpAtom = defineAtom({
   what: 'The tournament with draws of the basic atom with the three skills unknown, the games (each pair several times) simulated from stated skills and the same draw margin.',
   factors: ['prior (gaussian) x3', 'ordinal probit on a difference of two variables'],
   family: 'likelihoods',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.25,

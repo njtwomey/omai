@@ -116,7 +116,6 @@ export const gaussianLearnedAtom: EpAtom = defineAtom({
   what: 'The Gaussian of the basic atom with its mean and its variance both unknown (a normal-inverse-gamma prior), observed through data simulated from a stated mean and sd: does EP recover them, and how often does its 90% interval hold the truth?',
   factors: ['prior (normal-gamma)', 'gaussian-normal-gamma (observed value)'],
   family: 'conjugate',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 1e-6,
@@ -263,7 +262,6 @@ export const betaBernoulliLearnedAtom: EpAtom = defineAtom({
     'bernoulli likelihood (beta-bernoulli)',
   ],
   family: 'conjugate',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.15,
@@ -387,7 +385,6 @@ export const gammaPoissonLearnedAtom: EpAtom = defineAtom({
   what: 'The gamma and Poisson of the basic atom for a population of groups: each group has its own rate drawn from a gamma whose rate is unknown, so the groups teach each other where the rates lie.',
   factors: ['prior (gamma)', 'gamma-rate', 'poisson likelihood (gamma-poisson)'],
   family: 'conjugate',
-  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.15,

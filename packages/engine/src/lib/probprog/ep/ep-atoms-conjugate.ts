@@ -59,7 +59,6 @@ export const gaussianAtom: EpAtom = defineAtom({
   what: 'A Gaussian prior on a mean and three Gaussian observations: a prior factor and a linear-Gaussian likelihood factor, closed-form posterior.',
   factors: ['prior (gaussian)', 'gaussian likelihood (linear)'],
   family: 'conjugate',
-  expected: 'runs',
   reference: 'exact',
   tolerance: EXACT,
   knobs: dict({ priorSd: real(0.3, 10, { default: 2, step: 0.1, label: 'prior sd' }) }),
@@ -108,7 +107,6 @@ export const betaBernoulliAtom: EpAtom = defineAtom({
   what: 'A beta prior on a probability and seven Bernoulli observations: the beta-Bernoulli conjugate pair, a beta message from each observation.',
   factors: ['prior (beta)', 'bernoulli likelihood (beta-bernoulli)'],
   family: 'conjugate',
-  expected: 'runs',
   reference: 'exact',
   tolerance: EXACT,
   knobs: dict({
@@ -161,7 +159,6 @@ export const gammaPoissonAtom: EpAtom = defineAtom({
   what: 'A gamma prior on a rate and four Poisson observations: the gamma-Poisson conjugate pair, a gamma message from each observation.',
   factors: ['prior (gamma)', 'poisson likelihood (gamma-poisson)'],
   family: 'conjugate',
-  expected: 'runs',
   reference: 'exact',
   tolerance: EXACT,
   knobs: dict({

@@ -52,7 +52,6 @@ export const expAtom: EpAtom = defineAtom({
   what: 'A Gaussian x, the value g = exp(x) observed through Gaussian noise: the unary-function factor, whose exact posterior is skewed (log-normal likelihood against a Gaussian prior).',
   factors: ['prior (gaussian)', 'apply: exp of a random value', 'gaussian likelihood'],
   family: 'functions',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.2,
@@ -96,7 +95,6 @@ export const tanhAtom: EpAtom = defineAtom({
   what: 'A Gaussian x, the value g = tanh(x) observed through Gaussian noise: the squashing unit of a Bayesian neural network, saturating at plus and minus one.',
   factors: ['prior (gaussian)', 'apply: tanh of a random value', 'gaussian likelihood'],
   family: 'functions',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.2,
@@ -144,7 +142,6 @@ export const logScaleAtom: EpAtom = defineAtom({
   what: 'A latent h and one observation y ~ N(0, exp(h/2)²): the observation says how large the variance is, and the likelihood of h is not Gaussian (the stochastic volatility step).',
   factors: ['prior (gaussian)', 'gaussian-log-scale'],
   family: 'functions',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.15,
@@ -200,7 +197,6 @@ export const productAtom: EpAtom = defineAtom({
   what: 'Two Gaussians a and b and an observation of their product a b: the product factor, a banana posterior along a b = y that a belief per variable cannot follow.',
   factors: ['prior (gaussian) x2', 'product (numeric)', 'gaussian likelihood'],
   family: 'functions',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.35,
@@ -258,7 +254,6 @@ export const maxAtom: EpAtom = defineAtom({
   what: 'Two Gaussians a and b and an observation of max(a, b): the max factor; the posterior is an L, one of the two sits at the observation and the other is free below it.',
   factors: ['prior (gaussian) x2', 'max', 'gaussian likelihood'],
   family: 'functions',
-  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.3,

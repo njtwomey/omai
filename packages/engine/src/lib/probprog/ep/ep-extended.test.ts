@@ -48,7 +48,8 @@ describe('atomRecovery', () => {
 
 describe('the extended atoms', () => {
   it('exist, name a basic twin that is in the registry, and are titled after it', () => {
-    expect(extended.length).toBeGreaterThanOrEqual(12)
+    // an atom is extended exactly when its name says it is learned
+    expect(extended.map((a) => a.name)).toEqual(epAtoms.filter((a) => a.name.endsWith('-learned')).map((a) => a.name))
     for (const a of extended) {
       const basic = epAtom(a.extends as string)
       expect(a.title.startsWith(basic.title), `${a.name}: ${a.title} vs ${basic.title}`).toBe(true)
