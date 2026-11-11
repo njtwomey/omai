@@ -34,6 +34,13 @@ describe('gaussianMixtureModel', () => {
     expect(gaussianMixtureModel({ components: 3, ordered: true }).name).toBe('gaussian-mixture-3-ordered')
   })
 
+  it('takes a concentration for the weights and a spread of its own for each component', () => {
+    const spec = gaussianMixtureModel({ components: 3, concentration: 0.5, sharedSpread: false })
+    expect(spec.name).toBe('gaussian-mixture-3-spreads-c0.5')
+    expect(spec.bind({ y }).sizes).toEqual({ row: y.length, component: 3 })
+    expect(() => gaussianMixtureModel({ components: 2, concentration: 0 })).toThrow(OmaiError)
+  })
+
   it('refuses fewer than one component', () => {
     expect(() => gaussianMixtureModel({ components: 0 })).toThrow(OmaiError)
   })

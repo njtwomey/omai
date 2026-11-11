@@ -8,6 +8,7 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `coin-method.ts` (file): Biased coin (Beta-Bernoulli) or counts (Gamma-Poisson): one inference method checked against the exact posterior. `src/lib/bayesian-examples/coin-method.ts:1` `omai-engine/bayesian-examples`
 - estimator `eight-schools-method.ts` (file): Eight schools hierarchical model (centred, non-centred, pooled, unpooled): data, model and inference as knobs. `src/lib/bayesian-examples/eight-schools-method.ts:1` `omai-engine/bayesian-examples`
 - estimator `linear-regression-method.ts` (file): Bayesian linear regression: polynomial data with known truth, one inference method, checked against the exact posterior. `src/lib/bayesian-examples/linear-regression-method.ts:1` `omai-engine/bayesian-examples`
+- estimator `mixture-method.ts` (file): Gaussian mixture example: generated or Old Faithful data, free or ordered means, label-invariant check. `src/lib/bayesian-examples/mixture-method.ts:1` `omai-engine/bayesian-examples`
 - estimator `radon-method.ts` (file): Hierarchical radon (pooled, unpooled, partial pooling, varying slopes) over counties of unequal size. `src/lib/bayesian-examples/radon-method.ts:1` `omai-engine/bayesian-examples`
 
 - structure `example-method.ts` (file): Example scaffold: a problem from knobs, one chosen inference method, derived posterior paths. `src/lib/bayesian-examples/example-method.ts:1` `omai-engine/bayesian-examples`
@@ -15,3 +16,4 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:510` `omai-engine/bayesian-examples`
 - estimator `coinMethod`: Biased coin method: Beta-Bernoulli or Gamma-Poisson, one inference method, checked against the exact posterior. `src/lib/bayesian-examples/coin-method.ts:280` `omai-engine/bayesian-examples`
 - estimator `linearRegressionMethod`: Bayesian linear regression method: polynomial data, known or learned noise, one inference method. `src/lib/bayesian-examples/linear-regression-method.ts:447` `omai-engine/bayesian-examples`
+- estimator `mixtureMethod`: Gaussian mixture method: generated or Old Faithful data, free or ordered means, one inference method. `src/lib/bayesian-examples/mixture-method.ts:535` `omai-engine/bayesian-examples`
