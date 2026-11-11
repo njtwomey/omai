@@ -8,6 +8,7 @@
 import { OmaiError } from '../base/index.ts'
 import type { EpAtom } from './ep-atoms.ts'
 import { betaBernoulliAtom, gammaPoissonAtom, gaussianAtom } from './ep-atoms-conjugate.ts'
+import { hurdlePoissonAtom } from './ep-atoms-counts.ts'
 import {
   betaBernoulliLearnedAtom,
   gammaPoissonLearnedAtom,
@@ -176,6 +177,7 @@ export const epAtoms: readonly EpAtom[] = [
   stickBreakingAtom,
   topicModelAtom,
   mixtureRegressionAtom,
+  hurdlePoissonAtom,
 ]
 
 /**

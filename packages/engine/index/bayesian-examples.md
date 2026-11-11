@@ -66,6 +66,7 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `gpProbitLearnedAtom`: EP atom: a probit Gaussian process classifier with a learned length scale, recovered from simulated labels. `src/lib/bayesian-examples/ep-atoms-kernels.ts:271` `omai-engine/bayesian-examples`
 - estimator `halfCauchyAtom`: EP atom: a half-Cauchy prior on a scale. `src/lib/bayesian-examples/ep-atoms-scales.ts:303` `omai-engine/bayesian-examples`
 - estimator `halfNormalAtom`: EP atom: a half-normal prior on a scale. `src/lib/bayesian-examples/ep-atoms-scales.ts:331` `omai-engine/bayesian-examples`
+- estimator `hurdlePoissonAtom`: EP atom: a hurdle count (a Beta zero probability, a zero-truncated Poisson on a log-linear rate). `src/lib/bayesian-examples/ep-atoms-counts.ts:109` `omai-engine/bayesian-examples`
 - estimator `irtMethod`: Item response method: Rasch or 2PL, generated answers, one inference method. `src/lib/bayesian-examples/irt-method.ts:534` `omai-engine/bayesian-examples`
 - estimator `laplaceAtom`: EP atom: a Laplace likelihood on a mean. `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:96` `omai-engine/bayesian-examples`
 - estimator `laplaceLearnedAtom`: EP atom (planned): a Laplace likelihood with unknown location and scale. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:280` `omai-engine/bayesian-examples`
@@ -121,4 +122,4 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `volatilityMethod`: Stochastic volatility method: AR(1) log-variance, centred or non-centred, one inference method. `src/lib/bayesian-examples/stochastic-volatility-method.ts:523` `omai-engine/bayesian-examples`
 - estimator `weibullLearnedAtom`: EP atom: a Weibull regression with a log link, coefficients recovered from simulated times. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:749` `omai-engine/bayesian-examples`
 
-- table `epAtoms`: The EP atoms: bare setups that each exercise one factor of the message passing suite. `src/lib/bayesian-examples/ep-atom-list.ts:103` `omai-engine/bayesian-examples`
+- table `epAtoms`: The EP atoms: bare setups that each exercise one factor of the message passing suite. `src/lib/bayesian-examples/ep-atom-list.ts:104` `omai-engine/bayesian-examples`

@@ -1162,13 +1162,7 @@ class Compiler {
    * discrete variable (a change point's `t > tau`) is a lookup of the components, and a categorical or Bernoulli latent is the
    * gate that selects among them.
    */
-  private choose(
-    code: Cell,
-    states: number,
-    component: (state: number) => Cell,
-    dim: string,
-    asLookup = false,
-  ): Cell {
+  private choose(code: Cell, states: number, component: (state: number) => Cell, dim: string, asLookup = false): Cell {
     if (isConstCell(code)) {
       const c = code.aff.offset
       if (!Number.isInteger(c) || c < 0 || c >= states)
@@ -3086,6 +3080,17 @@ class Compiler {
       }
       case 'categorical':
         return this.observedConjugate(node, fam, name, y, i)
+      case 'zeroTruncatedPoisson': {
+        const numeric = this.observedNumeric(node, fam, y, i, index)
+        if (numeric === undefined)
+          throw new Refusal(
+            'operator',
+            `the rate of '${node.name}' must be \`exposure * exp(affine)\` for the zero-truncated Poisson`,
+          )
+        return numeric
+      }
+      case 'hurdlePoisson':
+        return this.observedHurdle(node, y, i, index)
       case 'normalPair':
         return this.observedMixtureWeight(node, name, y, i)
       case 'exponential':
@@ -3303,6 +3308,13 @@ class Compiler {
       if (why !== undefined) throw new Refusal('data', `'${node.name}' (${likelihood}): ${why}`)
       const cell = this.cellsOf(node, 'predictor', () => this.evalSym(expr))[i] as Cell
       return this.emitSite(node, cell, i, index, 'likelihood-row', 'likelihood-site', params)
+    }
+    if (fam === 'zeroTruncatedPoisson' || fam === 'hurdlePoisson') {
+      const m = dist['rate'] === undefined ? undefined : this.scaledExp(dist['rate'])
+      if (m === undefined) return undefined
+      return emit('poisson-log-truncated', m.inner, {
+        exposure: m.scale === undefined ? 1 : this.constAt(node, m.scale, i),
+      })
     }
     if (fam === 'poisson') {
       const m = dist['rate'] === undefined ? undefined : this.scaledExp(dist['rate'], true)
@@ -4040,6 +4052,39 @@ class Compiler {
       name,
     )
     return name
+  }
+
+  /**
+   * An observed hurdle count: zero with probability `zero`, else a zero-truncated Poisson of `exposure * exp(affine)`. The state
+   * of the hurdle (a structural zero, or a positive count) is determined by the count and summed out exactly: a zero is an
+   * observation of the Bernoulli `zero`, with a beta probability the conjugate `bernoulli` factor, and a positive count is the same
+   * Bernoulli observed false and the zero-truncated Poisson site on the log rate (the gate of {point mass at zero, truncated
+   * Poisson}, with its switch observed). The positive part and the zero part share no variable, so each is exact.
+   */
+  private observedHurdle(
+    node: ModelNode & { readonly kind: 'observed' },
+    y: number,
+    i: number,
+    index: number | undefined,
+  ): string | null {
+    if (!(Number.isInteger(y) && y >= 0))
+      throw new Refusal('data', `'${node.name}' is a hurdle count: ${y} is not a count`)
+    const zero = this.paramCell(node, 'zero', i)
+    if (!isConstCell(zero)) {
+      if (zero.kind !== 'rv' || zero.family !== 'beta')
+        throw new Refusal('operator', `the zero probability of '${node.name}' must be known or a beta latent`)
+      const crossed = this.auxName(node.name, index)
+      this.addVariable({ name: crossed, family: { kind: 'bernoulli' }, observed: y === 0 ? 1 : 0 })
+      this.addFactor({ operator: 'bernoulli', args: [crossed, zero.variable] }, crossed)
+    }
+    if (y === 0) return null
+    const numeric = this.observedNumeric(node, 'hurdlePoisson', y, i, index)
+    if (numeric === undefined)
+      throw new Refusal(
+        'operator',
+        `the rate of '${node.name}' must be \`exposure * exp(affine)\` for the hurdle Poisson`,
+      )
+    return numeric
   }
 
   private observedConjugate(
