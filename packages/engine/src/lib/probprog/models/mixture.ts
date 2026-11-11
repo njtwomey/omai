@@ -108,24 +108,47 @@ export function gaussianMixtureModel(options: GaussianMixtureOptions): ModelDefi
     throw new OmaiError('value', 'gaussianMixtureModel: components is a whole number from 1')
   if (!(concentration > 0)) throw new OmaiError('value', 'gaussianMixtureModel: concentration is positive')
   const tag = `${ordered ? '-ordered' : ''}${sharedSpread ? '' : '-spreads'}${concentration === 1 ? '' : `-c${concentration}`}`
-  return defineModel(`gaussian-mixture-${components}${tag}`, (m) => {
+  // region mixture
+  const definition = defineModel(`gaussian-mixture-${components}${tag}`, (m) => {
     const row = m.range('row')
     const k = m.range('component', { size: components })
     const y = m.data('y', { dims: [row], role: 'response' })
-    const weights = m.latent('weights', d.dirichlet(Array.from({ length: components }, () => concentration)), {
-      doc: 'the mixture weights',
-    })
+    const prior = Array.from({ length: components }, () => concentration)
+    const weights = m.latent('weights', d.dirichlet(prior), { doc: 'the mixture weights' })
     const mu = m.latent('mu', d.normal(0, meanScale), {
       dims: [k],
       ...(ordered ? { constraint: { kind: 'ordered' as const } } : {}),
       doc: 'the component means',
     })
-    const sigma = sharedSpread
-      ? m.latent('sigma', d.logNormal(-1, 0.75), { doc: 'the spread every component shares' })
-      : m.latent('sigma', d.logNormal(-1, 0.75), { dims: [k], doc: 'the spread of each component' })
-    const z = m.latent('z', d.categorical({ probs: weights }), { dims: [row], doc: 'the component of each row' })
-    m.observe('y', d.normal(mu.at(z), sharedSpread ? sigma : (sigma as typeof mu).at(z)), y)
+    // endregion
+    if (sharedSpread) {
+      // region mixture:shared
+      const sigma = m.latent('sigma', d.logNormal(-1, 0.75), {
+        doc: 'the spread every component shares',
+      })
+      const z = m.latent('z', d.categorical({ probs: weights }), {
+        dims: [row],
+        doc: 'the component of each row',
+      })
+      m.observe('y', d.normal(mu.at(z), sigma), y)
+      // endregion
+      return
+    }
+    // region mixture:spreads
+    const sigma = m.latent('sigma', d.logNormal(-1, 0.75), {
+      dims: [k],
+      doc: 'the spread of each component',
+    })
+    const z = m.latent('z', d.categorical({ probs: weights }), {
+      dims: [row],
+      doc: 'the component of each row',
+    })
+    m.observe('y', d.normal(mu.at(z), sigma.at(z)), y)
+    // endregion
+    // region mixture:end
   })
+  // endregion
+  return definition
 }
 
 const mixtureSpec = (name: string, ordered: boolean) =>

@@ -204,8 +204,9 @@ export function eightSchoolsDefinition(
   parameterisation: SchoolsParameterisation,
   priors: SchoolsPriors = {},
 ): ModelDefinition {
+  // region schools
   const { muScale = 5, tauScale = 5, effectScale = 100 } = priors
-  return defineModel(`eight-schools-${parameterisation}`, (m) => {
+  const definition = defineModel(`eight-schools-${parameterisation}`, (m) => {
     const school = m.range('school')
     const y = m.data('y', { dims: [school], role: 'response', doc: 'the estimated coaching effects' })
     const sigma = m.data('sigma', {
@@ -214,32 +215,55 @@ export function eightSchoolsDefinition(
       role: 'covariate',
       doc: 'their standard errors (known)',
     })
+    // endregion
     if (parameterisation === 'no-pooling') {
-      const theta = m.latent('theta', d.normal(0, effectScale), { dims: [school], doc: 'the effect of each school' })
+      // region schools:no-pooling
+      const theta = m.latent('theta', d.normal(0, effectScale), {
+        dims: [school],
+        doc: 'the effect of each school',
+      })
       m.observe('y', d.normal(theta, sigma), y)
+      // endregion
       return
     }
+    // region schools:mu
     const mu = m.latent('mu', d.normal(0, muScale), { doc: 'the mean effect' })
+    // endregion
     if (parameterisation === 'complete-pooling') {
+      // region schools:complete-pooling
       m.observe('y', d.normal(mu, sigma), y)
+      // endregion
       return
     }
+    // region schools:tau
     const tau = m.latent('tau', d.halfCauchy(tauScale), { doc: 'the spread of the effects' })
+    // endregion
     if (parameterisation === 'centred') {
-      // The scale is clipped to [1e-6, 1e6] where it enters the distribution. This is a modelling floor, not a guard against an
-      // invalid parameter (the sampler treats that as a divergence): the centred density is unbounded as tau goes to 0, and
-      // without the floor the sampler is drawn into that funnel (18 divergences against 8).
+      // region schools:centred
+      // The scale is clipped to [1e-6, 1e6] where it enters the distribution. This is a modelling floor,
+      // not a guard against an invalid parameter (the sampler treats that as a divergence): the centred
+      // density is unbounded as tau goes to 0, and without the floor the sampler is drawn into that
+      // funnel (18 divergences against 8).
       const theta = m.latent('theta', d.normal(mu, ops.clip(tau, 1e-6, 1e6)), {
         dims: [school],
         doc: 'the effect of each school',
       })
       m.observe('y', d.normal(theta, sigma), y)
+      // endregion
       return
     }
-    const z = m.latent('z', d.normal(0, 1), { dims: [school], doc: 'the standardised effect of each school' })
+    // region schools:non-centred
+    const z = m.latent('z', d.normal(0, 1), {
+      dims: [school],
+      doc: 'the standardised effect of each school',
+    })
     const theta = m.derived('theta', mu.add(tau.mul(z)), { doc: 'the effect of each school' })
     m.observe('y', d.normal(theta, sigma), y)
+    // endregion
+    // region schools:end
   })
+  // endregion
+  return definition
 }
 
 /**

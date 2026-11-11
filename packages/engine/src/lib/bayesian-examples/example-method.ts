@@ -27,7 +27,7 @@ import { posteriorChains } from '../probprog/posterior-chains.ts'
 import { key } from '../random/index.ts'
 import { type DictSpace, defaults, dict, int, type RealSpace, type UnionSpace } from '../space/index.ts'
 import { toFlat } from '../tensor/index.ts'
-import { type Config, type Contract, type DerivedSource, session } from '../trace/index.ts'
+import { type Config, type Contract, type DerivedSource, type RunStatus, session } from '../trace/index.ts'
 
 /**
  * Where the controls of each inference method open (short runs: an answer in a second or two); a method not listed opens
@@ -145,10 +145,13 @@ export function exampleInferenceSpace(
 ): ExampleOffer {
   const registry = modelRegistry({ [modelName]: { definition: problem.definition, data: problem.data } })
   const model = registry.need(modelName)
+  // region inference:offer
+  // Every method of the library that can run on this model, and the reason for each that cannot.
   const first = methodSpace(model, {
     omit: ['inferDiscrete', 'method'],
     first: opening in methodKinds ? opening : 'nuts',
   })
+  // endregion
   // Short runs: a sampler that opens with thousands of draws opens with at most a few hundred (the table has its own).
   const starting: Record<string, Readonly<Record<string, number | string | boolean>>> = {}
   for (const kind of first.applicable) {
@@ -206,8 +209,12 @@ export function exampleSteps(config: Config): number {
     : isSampler(knobs)
       ? exampleNumber(knobs, 'numWarmup') + exampleNumber(knobs, 'numDraws') + 2
       : 400
+  // region inference:steps
+  // The step budget caps the steps a run takes (0 for none); the time budget is the session's.
   const cap = exampleNumber(config, 'budgetSteps')
-  return cap > 0 ? Math.min(own, cap) : own
+  const capped = cap > 0 ? Math.min(own, cap) : own
+  // endregion
+  return capped
 }
 
 /**
@@ -464,8 +471,12 @@ export function defineExample<P extends ExampleProblem>(spec: ExampleSpec<P>): E
   const construct = (config: Config): Built => {
     const { kind, knobs: given } = inferenceOf(config)
     const problem = spec.problem(config)
-    const registry = modelRegistry({ [spec.modelName]: { definition: problem.definition, data: problem.data } })
+    // region inference:bind
+    // The chosen method, bound to the model and its data.
+    const bound = { definition: problem.definition, data: problem.data }
+    const registry = modelRegistry({ [spec.modelName]: bound })
     const inner = inferenceMethodFor(registry, kind, spec.modelName)
+    // endregion
     const { steps: _steps, ...rest } = given
     const fixed = Object.entries(FIXED[kind] ?? {}).filter(([k]) => k in inner.config.spaces)
     return {
@@ -517,15 +528,16 @@ export function defineExample<P extends ExampleProblem>(spec: ExampleSpec<P>): E
       }
     },
     make: (config, k) => {
-      const b = build(config)
-      const algorithm = b.inner.make(b.innerConfig, k)
-      const steps = hasStepsKnob(b.kind) ? exampleSteps(config) : undefined
-      return steps === undefined
-        ? algorithm
-        : {
-            ...algorithm,
-            done: (s: State, t: number) => algorithm.done?.(s, t) ?? (t >= steps ? 'converged' : undefined),
-          }
+      const { inner, innerConfig, kind } = build(config)
+      // region inference:run
+      // The method's own algorithm, run until it is done or the step budget is used.
+      const algorithm = inner.make(innerConfig, k)
+      const limit = hasStepsKnob(kind) ? exampleSteps(config) : Number.POSITIVE_INFINITY
+      const done = (s: State, t: number): RunStatus | undefined =>
+        algorithm.done?.(s, t) ?? (t >= limit ? 'converged' : undefined)
+      const budgeted = { ...algorithm, done }
+      // endregion
+      return budgeted
     },
   }) as never
   const budgetKnobs: DictSpace =

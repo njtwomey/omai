@@ -17,11 +17,11 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 
 - structure `example-method.ts` (file): Example scaffold: a problem from knobs, one chosen inference method, derived posterior paths. `src/lib/bayesian-examples/example-method.ts:1` `omai-engine/bayesian-examples`
 
-- estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:510` `omai-engine/bayesian-examples`
+- estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:526` `omai-engine/bayesian-examples`
 - estimator `coinMethod`: Biased coin method: Beta-Bernoulli or Gamma-Poisson, one inference method, checked against the exact posterior. `src/lib/bayesian-examples/coin-method.ts:280` `omai-engine/bayesian-examples`
-- estimator `gpClassificationMethod`: Gaussian process classification method: GP prior on the latent function, Bernoulli link, one inference method. `src/lib/bayesian-examples/gp-classification-method.ts:929` `omai-engine/bayesian-examples`
+- estimator `gpClassificationMethod`: Gaussian process classification method: GP prior on the latent function, Bernoulli link, one inference method. `src/lib/bayesian-examples/gp-classification-method.ts:953` `omai-engine/bayesian-examples`
 - estimator `irtMethod`: Item response method: Rasch or 2PL, generated answers, one inference method. `src/lib/bayesian-examples/irt-method.ts:534` `omai-engine/bayesian-examples`
-- estimator `linearRegressionMethod`: Linear regression method: polynomial or sparse data, sparse priors, one inference method. `src/lib/bayesian-examples/linear-regression-method.ts:656` `omai-engine/bayesian-examples`
+- estimator `linearRegressionMethod`: Linear regression method: polynomial or sparse data, sparse priors, one inference method. `src/lib/bayesian-examples/linear-regression-method.ts:718` `omai-engine/bayesian-examples`
 - estimator `mixtureMethod`: Gaussian mixture method: generated or Old Faithful data, free or ordered means, one inference method. `src/lib/bayesian-examples/mixture-method.ts:535` `omai-engine/bayesian-examples`
-- estimator `robustRegressionMethod`: Robust regression method: outliers in the data, Gaussian, Student-t, Laplace or mixture likelihood, one inference method. `src/lib/bayesian-examples/robust-regression-method.ts:542` `omai-engine/bayesian-examples`
+- estimator `robustRegressionMethod`: Robust regression method: outliers in the data, Gaussian, Student-t, Laplace or mixture likelihood, one inference method. `src/lib/bayesian-examples/robust-regression-method.ts:605` `omai-engine/bayesian-examples`
 - estimator `volatilityMethod`: Stochastic volatility method: AR(1) log-variance, centred or non-centred, one inference method. `src/lib/bayesian-examples/stochastic-volatility-method.ts:523` `omai-engine/bayesian-examples`

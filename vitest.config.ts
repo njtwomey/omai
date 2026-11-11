@@ -10,7 +10,10 @@ const maxWorkers = workers === undefined ? (onCi ? '100%' : '50%') : workers.end
 
 // The CI runner is several times slower than a developer machine and runs the whole suite at once: a test that takes
 // a second or two locally can pass 5 s there. Locally the strict default stays, so a slow test still shows up.
-const testTimeout = onCi ? 30_000 : 5_000
+// OMAI_TEST_TIMEOUT (milliseconds) overrides it: several agents and the integrating session test at once on one machine, and a
+// slow EP test that takes 3 s alone passes 5 s under that load; `make ep-check` and `scripts/integrate.sh` set 60 s.
+const timeoutOverride = process.env['OMAI_TEST_TIMEOUT']
+const testTimeout = timeoutOverride === undefined ? (onCi ? 30_000 : 5_000) : Number(timeoutOverride)
 
 // Each test file normally gets a fresh module graph, which re-imports and re-transforms the engine every time: about
 // half the worker time of a full run (measured: the suite took 716 s with isolation and 407 s without, at two workers

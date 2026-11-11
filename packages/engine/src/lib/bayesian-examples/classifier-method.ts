@@ -111,14 +111,30 @@ const pointsOf = (data: ClassificationData): { x: number[][]; y: number[] } => {
 
 /** The classifier as a model definition: `y ~ Bernoulli(link(X w))`, `w ~ N(0, priorScale^2)` on every weight. */
 function classifierDefinition(link: 'probit' | 'logistic', priorScale: number): ModelDefinition {
-  return defineModel(`${link}-classification`, (m) => {
+  // region classify
+  const definition = defineModel(`${link}-classification`, (m) => {
     const n = m.range('row')
     const f = m.range('feature')
     const X = m.data('X', { dims: [n, f], role: 'covariate' })
     const y = m.data('y', { dims: [n], support: 'binary', role: 'response' })
-    const w = m.latent('w', d.normal(0, priorScale), { dims: [f], doc: 'the weight of each column of the design' })
-    m.observe('y', d.bernoulli(link === 'probit' ? { probs: ops.probit(X.matmul(w)) } : { logits: X.matmul(w) }), y)
+    const w = m.latent('w', d.normal(0, priorScale), {
+      dims: [f],
+      doc: 'the weight of each column of the design',
+    })
+    // endregion
+    if (link === 'probit') {
+      // region classify:probit
+      m.observe('y', d.bernoulli({ probs: ops.probit(X.matmul(w)) }), y)
+      // endregion
+      return
+    }
+    // region classify:logistic
+    m.observe('y', d.bernoulli({ logits: X.matmul(w) }), y)
+    // endregion
+    // region classify:end
   })
+  // endregion
+  return definition
 }
 
 /**

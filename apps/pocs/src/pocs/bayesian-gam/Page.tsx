@@ -30,6 +30,8 @@ import {
 } from 'omai-render/react'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { type CurveData, curveData } from '../../shared/curve-data.ts'
+import { ExampleCodeBlock } from '../../shared/ExampleSource.tsx'
+import { type ExampleCode, exampleCode } from '../../shared/exampleCode.ts'
 import { StaleVeil } from '../../shared/StaleVeil.tsx'
 import { fitChart, inclusionChart, NARROW, traceChart, WIDE } from './charts.ts'
 import { Panel } from './panel.tsx'
@@ -268,26 +270,34 @@ function Fit(props: {
       : 'numDraws' in config
         ? Number(config['numWarmup'] ?? 0) + Number(config['numDraws']) + 10
         : 3000
+  // region gam:run
   // The time budget: the worker is stopped when it is spent (what is on the tape stays). It is counted from the first
   // step, so that the worker starting up (loading the engine) is not charged to the method.
   const [spent, setSpent] = useState(false)
   const [started, setStarted] = useState(false)
+  // endregion
   // biome-ignore lint/correctness/useExhaustiveDependencies: a new problem, method or budget is a new run
   useEffect(() => {
     setSpent(false)
     setStarted(false)
   }, [name, configKey, budget.budgetMs, steps])
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the clock starts once, at the first step
+  // region gam:run
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the clock starts once, at the first step // hide
   useEffect(() => {
     if (!started || budget.budgetMs <= 0) return
     const timer = setTimeout(() => setSpent(true), budget.budgetMs)
     return () => clearTimeout(timer)
   }, [started, name, configKey, budget.budgetMs, steps])
-  const live = useSession(inference, { config: config as never, steps }, [inference, configKey, steps], {
+  // endregion
+  // region gam:run
+  // The session steps the method in a worker, up to the steps asked for, until the budget is spent.
+  const rerun = [inference, configKey, steps]
+  const live = useSession(inference, { config: config as never, steps }, rerun, {
     start: 'end',
     active: !spent,
     producer: PRODUCER,
   })
+  // endregion
   // The exact posterior of the problem, in its own worker: it does not wait for the run, nor the run for it.
   const stages = useMemo(
     () => [
@@ -335,6 +345,14 @@ function Fit(props: {
         gaps); the smoothing parameter is not set but inferred, so the band includes the doubt about how wiggly the
         curve is. Scrub the player to see the posterior at an earlier step of the run.
       </p>
+      <details open className="flex flex-col gap-2">
+        <summary className="cursor-pointer text-sm font-semibold">The code that ran</summary>
+        <ExampleCodeBlock
+          entry={exampleCode['bayesian-gam'] as ExampleCode}
+          name="bayesian-gam"
+          config={{ prior: model.prior, hyper: model.hyper }}
+        />
+      </details>
     </div>
   )
 }
