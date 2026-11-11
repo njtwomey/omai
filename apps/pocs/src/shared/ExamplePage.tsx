@@ -84,6 +84,8 @@ export function ExamplePage(props: {
   /** The inference knobs of the reference run, over the defaults of the chosen method; none when the check is against an exact answer. */
   readonly reference?: Config
   readonly referenceSeed?: number
+  /** The time budget of the reference run in milliseconds (default 20 s). */
+  readonly referenceBudgetMs?: number
   /** Whether a configuration's check needs the reference run (default always, when there is one): a check against an exact answer needs none. */
   readonly referenceFor?: (config: Config) => boolean
   /** The knob that is the data seed (shown as a seed input, never a button group). Default `dataSeed`. */
@@ -138,7 +140,7 @@ export function ExamplePage(props: {
   )
   const problem = JSON.stringify(pick(config, example.problemKnobs))
   // biome-ignore lint/correctness/useExhaustiveDependencies: the reference depends on the problem alone, not on the method
-  const referenceConfig = useMemo(() => example.reference(config, props.reference ?? {}), [problem])
+  const referenceConfig = useMemo(() => example.reference(config, props.reference ?? {}, props.referenceBudgetMs), [problem])
   // A reference nobody can see is not computed: hiding the check panel spares the run.
   const reference = useSession(
     method,

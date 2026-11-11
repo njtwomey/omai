@@ -133,10 +133,10 @@ The model layer: a model written once as a value. A builder (`defineModel`) with
 - function `bind`: Bind data to a ModelSpec with checks of dims, sizes and supports. `src/lib/probprog/model/bind.ts:324` `omai-engine/probprog/model`
 - function `collapsePlan`: collapsePlan: which sites the collapse handler can integrate out, with cost and gain; user-invoked. `src/lib/probprog/model/collapse-plan.ts:105` `omai-engine/probprog/model`
 - function `defineModel`: Build a model spec with named dimensions, data, latents, observations and derived nodes. `src/lib/probprog/model/builder.ts:741` `omai-engine/probprog/model`
-- function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:1839` `omai-engine/probprog/model`
+- function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:1930` `omai-engine/probprog/model`
 - function `fromProgram`: fromProgram: lift a sample/observe program to a ModelSpec of its site structure; refuses a varying structure. `src/lib/probprog/model/from-program.ts:185` `omai-engine/probprog/model`
 - function `structureReport`: structureReport: what a spec's structure allows, as records and suggestions naming the method to use. `src/lib/probprog/model/analysis.ts:476` `omai-engine/probprog/model`
-- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:1704` `omai-engine/probprog/model`
+- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:1795` `omai-engine/probprog/model`
 - function `toProgram`: Compile a bound ModelSpec to a sample/observe program every engine runs. `src/lib/probprog/model/compile.ts:262` `omai-engine/probprog/model`
 
 ### probprog/model/dists
@@ -190,7 +190,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - dataset `funnelCentred`: Neal's funnel, centred: analytic truth; NUTS diverges in the neck. `src/lib/probprog/models/geometry.ts:46` `omai-engine/probprog/models`
 - dataset `funnelNonCentred`: Neal's funnel, non-centred: the same law of (v, x) with the funnel removed from the density. `src/lib/probprog/models/geometry.ts:94` `omai-engine/probprog/models`
 - dataset `gammaPoisson`: Gamma-Poisson rate: exact Gamma posterior and evidence for counts. `src/lib/probprog/models/conjugate.ts:197` `omai-engine/probprog/models`
-- dataset `gaussianHmm`: Three-state Gaussian HMM as a scan, parameters known; exact forward-backward truth with visit counts. `src/lib/probprog/models/series.ts:273` `omai-engine/probprog/models`
+- dataset `gaussianHmm`: Three-state Gaussian HMM as a scan, parameters known; exact forward-backward truth with visit counts. `src/lib/probprog/models/series.ts:280` `omai-engine/probprog/models`
 - dataset `gaussianMixture`: Two-component Gaussian mixture with label switching; the truth is the even two-mode mixture; sorted summaries. `src/lib/probprog/models/mixture.ts:240` `omai-engine/probprog/models`
 - dataset `gaussianMixtureOrdered`: Two-component Gaussian mixture, means ordered; discrete labels summed out; the truth is a 2-D grid. `src/lib/probprog/models/mixture.ts:194` `omai-engine/probprog/models`
 - dataset `gaussianProcessNonCentred`: Gaussian process regression, non-centred (f = L z); the same quadrature truth as the centred form. `src/lib/probprog/models/gaussian-process.ts:295` `omai-engine/probprog/models`
@@ -205,7 +205,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - dataset `probitRegression`: Bayesian probit regression (the plan's slice model); the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:118` `omai-engine/probprog/models`
 - dataset `radon`: Hierarchical radon-style regression with varying intercepts; the exact truth integrates the effects out. `src/lib/probprog/models/hierarchical.ts:273` `omai-engine/probprog/models`
 - dataset `stickBreakingMixture`: Truncated stick-breaking (Dirichlet-process style) mixture with known components; a 3-D grid truth. `src/lib/probprog/models/nonparametric.ts:136` `omai-engine/probprog/models`
-- dataset `stochasticVolatility`: Stochastic volatility as a scan, parameters known; the truth is a point-mass smoother on a grid. `src/lib/probprog/models/series.ts:131` `omai-engine/probprog/models`
+- dataset `stochasticVolatility`: Stochastic volatility as a scan, parameters known; the truth is a point-mass smoother on a grid. `src/lib/probprog/models/series.ts:138` `omai-engine/probprog/models`
 - dataset `trueskillThreePlayers`: Three players rated from pairwise games, TrueSkill-style (probit): the EP target; truth is a 3-D grid. `src/lib/probprog/models/ranking.ts:58` `omai-engine/probprog/models`
 - dataset `trueskillTournament`: A small TrueSkill tournament drawn from known skills, games in a fixed order. `src/lib/probprog/models/ranking.ts:150` `omai-engine/probprog/models`
 

@@ -69,6 +69,21 @@ describe('Gaussian operators equal the integral of the exact message', () => {
       runs,
     )
   })
+  it('gaussian-log-scale: EP to the log scale matches the brute-force tilted moments and evidence', () => {
+    fc.assert(
+      fc.property(gaussianArg, fc.double({ min: -3, max: 3, noNaN: true }), mean, (es, y, loc) => {
+        const logf = ([, s]: readonly number[]): number =>
+          -0.5 * Math.log(2 * Math.PI) - (s ?? 0) - 0.5 * (y - loc) ** 2 * Math.exp(-2 * (s ?? 0))
+        const args = [M.valueArg(gaussian, y), msg(gaussian, es)]
+        const m = M.gaussianLogScale.ep?.(ctx(1, args, { loc })).message as M.Eta
+        const ports: BrutePort[] = [{ kind: 'gaussian', value: y }, gp(es)]
+        const brute = bruteTilted(ports, logf, 1)
+        near(implied(gaussian, es, m), brute.moments, 1e-4)
+        expect(M.gaussianLogScale.logEvidence?.(ctx(1, args, { loc }))).toBeCloseTo(brute.logZ, 4)
+      }),
+      runs,
+    )
+  })
   it('gaussian with an observed argument is the likelihood of the mean', () => {
     const em = M.gaussianEta(0.3, 1.2)
     const m = M.gaussianOperator.ep?.(ctx(1, [M.valueArg(gaussian, 1.5), msg(gaussian, em)], { precision: 2 }))
