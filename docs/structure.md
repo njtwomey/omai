@@ -3885,7 +3885,7 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   with their rows `mixture-row`, `student-t-row`, `laplace-row` (`robust.ts`; the last two are rows of the registry of numeric likelihoods of
   `likelihoods.ts`, `likelihoods()`: Poisson and negative binomial with a log link, Weibull and log-normal survival, binomial with
   a logistic or probit link, ordinal probit, asymmetric Laplace, Student t, Laplace, behind the generic `likelihood-site` and
-  `likelihood-row`, integrated by the zooming panelled quadrature of `_tilted.ts`), `gaussian-scale` (`scale.ts`: an observed value with a Gaussian mean and log scale, one quadrature over the log scale), and `apply` (`functions.ts`: `y = f(x)` for `exp`, `square`, `tanh`, `relu` (closed
+  `likelihood-row`, integrated by the zooming panelled quadrature of `_tilted.ts`), `gaussian-scale` (`scale.ts`: an observed value with a Gaussian mean and log scale, one quadrature over the log scale), `negative-binomial-dispersion` (`likelihoods.ts`: a count with a log link and a random log dispersion, a 24-point Gauss-Hermite product rule), and `apply` (`functions.ts`: `y = f(x)` for `exp`, `square`, `tanh`, `relu` (closed
   form), `softplus`, `abs`, `sigmoid` of a Gaussian variable, the output matched under the input's cavity: EP only). `numericOperator` (`numeric.ts`)
   is a constructor, not one of the 41: a factor given only by its log density, whose EP messages come from a panelled
   product rule (the fallback for a robust likelihood or the clutter problem). `args.ts`: how operators read their

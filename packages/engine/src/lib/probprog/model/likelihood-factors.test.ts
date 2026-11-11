@@ -160,4 +160,67 @@ describe('numeric likelihoods of the registry under expectation propagation', ()
     const c = toFactorGraph(def.bind({ X, y: COUNTS }))
     expect(c.issues.map((i) => i.reason).join(' ')).toMatch(/dispersion/)
   })
+
+  it('negative binomial with a random half-normal dispersion, scalar coefficients packed: the exact posterior of (a, b, alpha) on a grid', () => {
+    const def = defineModel('nb-dispersion', (m) => {
+      const row = m.range('row')
+      const x = m.data('x', { dims: [row] })
+      const a = m.latent('a', d.normal(0, 2))
+      const b = m.latent('b', d.normal(0, 2))
+      const alpha = m.latent('alpha', d.halfNormal(1))
+      const mean = ops.exp(a.add(b.mul(x)))
+      m.observe(
+        'y',
+        d.negativeBinomial(ops.div(1, alpha), ops.div(1, ops.add(1, alpha.mul(mean)))),
+        m.data('y', { dims: [row], support: 'count' }),
+      )
+    })
+    const data = { x: [-1, -0.6, -0.2, 0.2, 0.6, 1, 0.4, -0.8, 0.9, 0.1], y: [0, 1, 1, 2, 4, 6, 3, 0, 9, 2] }
+    const bound = def.bind(data)
+    const c = toFactorGraph(bound, { packScalars: true })
+    expect(c.issues).toEqual([])
+    expect(c.graph?.factors.filter((f) => f.operator === 'negative-binomial-dispersion')).toHaveLength(10)
+    const g = graphOf(c.graph)
+    const r = runAlgorithm(epAlgorithm(g, { tol: 1e-7, damping: 0.5 }), { maxSteps: 400 })
+    expect(r.status).toBe('converged')
+    const post = factorGraphPosterior(c, g, r.state as MpState, { rule: 'ep' })
+    const ref = gridPosterior(toProgram(bound), undefined, { points: 27, maxRefinements: 0 })
+    for (const name of ['a', 'b', 'alpha']) {
+      const m = ref.marginal(name)
+      const got = {
+        mean: toFlat(post.mean(name))[0] as number,
+        sd: post.summary().find((s) => s.site === name)?.sd as number,
+      }
+      expect(Math.abs(got.mean - m.mean) / m.sd, `mean of ${name}`).toBeLessThan(0.3)
+      expect(got.sd / m.sd, `sd of ${name}`).toBeGreaterThan(0.75)
+      expect(got.sd / m.sd, `sd of ${name}`).toBeLessThan(1.3)
+    }
+  }, 60_000)
+
+  it('packScalars: scalar coefficients that share a predictor keep their correlation (the marginal sds of a loop of scalar messages come out too small)', () => {
+    const def = defineModel('poisson-scalars', (m) => {
+      const row = m.range('row')
+      const x = m.data('x', { dims: [row] })
+      const a = m.latent('a', d.normal(0, 2))
+      const b = m.latent('b', d.normal(0, 2))
+      m.observe('y', d.poisson(ops.exp(a.add(b.mul(x)))), m.data('y', { dims: [row], support: 'count' }))
+    })
+    const bound = def.bind({ x: [0, 0.5, 1, 1.5, 2, 2.5, 3, 0.2], y: [1, 1, 3, 4, 8, 11, 17, 1] })
+    const ref = gridPosterior(toProgram(bound), undefined, { points: 81, maxRefinements: 1 })
+    const sds = (pack: boolean): Record<string, number> => {
+      const c = toFactorGraph(bound, { packScalars: pack })
+      const g = graphOf(c.graph)
+      const r = runAlgorithm(epAlgorithm(g, { tol: 1e-9, damping: 0.3 }), { maxSteps: 600 })
+      const post = factorGraphPosterior(c, g, r.state as MpState, { rule: 'ep' })
+      return Object.fromEntries(['a', 'b'].map((n) => [n, post.summary().find((s) => s.site === n)?.sd as number]))
+    }
+    const loose = sds(false)
+    const packed = sds(true)
+    for (const n of ['a', 'b']) {
+      const sd = ref.marginal(n).sd
+      expect((packed[n] as number) / sd, `packed sd of ${n}`).toBeGreaterThan(0.9)
+      expect((packed[n] as number) / sd, `packed sd of ${n}`).toBeLessThan(1.1)
+      expect((loose[n] as number) / sd, `scalar sd of ${n}`).toBeLessThan(0.8)
+    }
+  })
 })

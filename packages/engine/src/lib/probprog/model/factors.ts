@@ -271,6 +271,9 @@ class Compiler {
   private readonly atoms = new Map<string, Atom>()
   private readonly auxCount = new Map<string, number>()
   private readonly packed = new Set<string>()
+  /** Scalar normal latents that share a predictor and are compiled as the coordinates of one joint Gaussian vector (`packScalars`), by member name. */
+  private readonly groups = new Map<string, { readonly vector: string; readonly members: readonly string[] }>()
+  private readonly groupsMade = new Set<string>()
   /** The Gaussian log-scale variable behind a positive scale variable (the value variable `tau` is `exp` of it), by the value variable's name. */
   private readonly logScale = new Map<string, string>()
   private readonly components = new Map<string, string>()
@@ -285,10 +288,12 @@ class Compiler {
     private readonly modelOps: OperatorTable,
     private readonly ops: Readonly<Record<string, FactorOperator>>,
     private readonly vectorise: boolean,
+    private readonly packScalars: boolean,
   ) {
     this.unbound = new Set(bound.unbound)
     for (const n of bound.spec.nodes) if (n.kind !== 'observed') this.nodes.set(n.name, n)
     this.findPacked()
+    if (this.packScalars) this.findGroups()
   }
 
   // ----- the plan: which vector latents stay one vector variable -----
@@ -317,6 +322,57 @@ class Compiler {
       if (n.kind === 'latent' || n.kind === 'observed' || n.kind === 'generated')
         for (const e of Object.values(n.dist.params)) walk(e)
       if (n.kind === 'derived' || n.kind === 'factor') walk(n.expr)
+    }
+  }
+
+  /**
+   * With `packScalars`: the scalar normal latents (known prior) that an observed node reads together, directly or through
+   * derived nodes, are grouped: each group is one joint Gaussian vector, so a likelihood on `a + b x` sees the correlation of
+   * `a` and `b` instead of a loop of scalar messages (which keeps the means and loses the correlations: marginal sds too small).
+   */
+  private findGroups(): void {
+    const staticExpr = (e: ExprSpec): boolean =>
+      e.kind === 'const' ||
+      (e.kind === 'ref' && this.nodes.get(e.name)?.kind === 'data') ||
+      (e.kind === 'op' && e.args.every(staticExpr))
+    const candidate = (n: ModelNode | undefined): n is ModelNode & { readonly kind: 'latent' } =>
+      n?.kind === 'latent' &&
+      n.dims.length === 0 &&
+      n.dist.family === 'normal' &&
+      !this.packed.has(n.name) &&
+      Object.values(n.dist.params).every(staticExpr)
+    const parent = new Map<string, string>()
+    const find = (x: string): string => {
+      let r = x
+      while ((parent.get(r) ?? r) !== r) r = parent.get(r) as string
+      parent.set(x, r)
+      return r
+    }
+    for (const n of this.bound.spec.nodes) {
+      if (n.kind !== 'observed') continue
+      const found: string[] = []
+      const seen = new Set<string>()
+      const visit = (name: string): void => {
+        if (seen.has(name)) return
+        seen.add(name)
+        const t = this.nodes.get(name)
+        if (candidate(t)) found.push(name)
+        else if (t?.kind === 'derived') for (const r of nodeRefs(t)) visit(r)
+      }
+      for (const r of nodeRefs(n)) visit(r)
+      for (const f of found) {
+        if (!parent.has(f)) parent.set(f, f)
+        if (found[0] !== undefined) parent.set(find(f), find(found[0]))
+      }
+    }
+    const byRoot = new Map<string, string[]>()
+    for (const name of parent.keys()) byRoot.set(find(name), [...(byRoot.get(find(name)) ?? []), name])
+    const order = new Map(this.bound.spec.nodes.map((n, i) => [n.name, i]))
+    for (const members of byRoot.values()) {
+      if (members.length < 2) continue
+      members.sort((a, b) => (order.get(a) as number) - (order.get(b) as number))
+      const vector = auxId(members[0] as string, 8)
+      for (const m of members) this.groups.set(m, { vector, members })
     }
   }
 
@@ -1171,6 +1227,11 @@ class Compiler {
     const scale = this.constParam(node, 'scale', 'the scale')
     for (const s of scale)
       if (!(s > 0)) throw new Refusal('data', `the scale of '${node.name}' is ${s}: it must be positive`)
+    const group = this.groups.get(node.name)
+    if (group !== undefined) {
+      this.latentGrouped(node, group)
+      return
+    }
     if (this.packed.has(node.name)) {
       const mean = loc.map((c) => {
         if (!isConstCell(c))
@@ -1207,6 +1268,43 @@ class Compiler {
     }
     this.syms.set(node.name, { dims: node.dims, cells })
     this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+  }
+
+  /**
+   * A scalar normal latent that belongs to a group (`findGroups`): the first member made creates the joint Gaussian vector of
+   * the group with a diagonal prior and a scalar readout variable for each member (the marginal of its coordinate, which is
+   * what the posterior reads), and the members' cells are coordinates of the vector, so a predictor over several of them is
+   * one dot product on it.
+   */
+  private latentGrouped(
+    node: ModelNode & { readonly kind: 'latent' },
+    group: { readonly vector: string; readonly members: readonly string[] },
+  ): void {
+    if (!this.groupsMade.has(group.vector)) {
+      this.groupsMade.add(group.vector)
+      const size = group.members.length
+      const mean: number[] = []
+      const cov = new Array<number>(size * size).fill(0)
+      group.members.forEach((m, k) => {
+        const member = this.nodes.get(m) as ModelNode & { readonly kind: 'latent' }
+        const loc = this.constParam(member, 'loc', 'the mean')[0] as number
+        const sd = this.constParam(member, 'scale', 'the scale')[0] as number
+        if (!(sd > 0)) throw new Refusal('data', `the scale of '${m}' is ${sd}: it must be positive`)
+        mean.push(loc)
+        cov[k * size + k] = sd * sd
+      })
+      this.addVariable({ name: group.vector, family: { kind: 'gaussian-mv', size } })
+      this.auxiliary.push(group.vector)
+      this.addFactor(gaussianMvPrior(group.vector, mean, cov), group.vector)
+      group.members.forEach((m, k) => {
+        this.addVariable({ name: m, family: { kind: 'gaussian' } })
+        const a = new Array<number>(size).fill(0)
+        a[k] = 1
+        this.addFactor({ operator: 'dot-constant', args: [m, group.vector], params: { a } }, m)
+        this.syms.set(m, { dims: [], cells: [this.compAtom(group.vector, k, size)] })
+      })
+    }
+    this.layout(node, 'latent', 'gaussian', 'scalar', [node.name], true)
   }
 
   /**
@@ -1754,6 +1852,61 @@ class Compiler {
   }
 
   /**
+   * The negative binomial in the NB2 idiom with a random dispersion `a`: `n = 1 / a`, `probs = 1 / (1 + a * mean)` with `mean`
+   * `exp(L)` (times a known exposure) and `a` a positive latent (carried on its log by `latentProjected`): the
+   * `negative-binomial-dispersion` factor on the predictor `L` and the log of `a`. `undefined` when the parameters are not that
+   * idiom or the dispersion is known (the registry's `negative-binomial-log` takes that).
+   */
+  private negBinomialRandomDispersion(
+    node: ModelNode & { readonly kind: 'observed' },
+    y: number,
+    i: number,
+    index: number | undefined,
+  ): string | null | undefined {
+    const dist = node.dist.params
+    const nExpr = dist['n'] === undefined ? undefined : this.unwrap(dist['n'])
+    const pExpr = dist['probs'] === undefined ? undefined : this.unwrap(dist['probs'])
+    if (nExpr?.kind !== 'op' || nExpr.op !== 'div' || pExpr?.kind !== 'op' || pExpr.op !== 'div') return undefined
+    const isOne = (e: ExprSpec): boolean => this.isConst(e) && this.constAt(node, e, i) === 1
+    const [one, a] = nExpr.args as [ExprSpec, ExprSpec]
+    if (!isOne(one) || this.isConst(a)) return undefined
+    const [num, den] = pExpr.args as [ExprSpec, ExprSpec]
+    const d = this.unwrap(den)
+    if (!isOne(num) || d.kind !== 'op' || d.op !== 'add') return undefined
+    const [p, q] = d.args as [ExprSpec, ExprSpec]
+    const [unit, product] = this.isConst(p) ? [p, this.unwrap(q)] : [q, this.unwrap(p)]
+    if (!isOne(unit) || product.kind !== 'op' || product.op !== 'mul') return undefined
+    const same = (x: ExprSpec, z: ExprSpec): boolean =>
+      JSON.stringify(this.unwrap(x)) === JSON.stringify(this.unwrap(z))
+    const [m1, m2] = product.args as [ExprSpec, ExprSpec]
+    const mean = same(m1, a) ? m2 : same(m2, a) ? m1 : undefined
+    if (mean === undefined) return undefined
+    const m = this.scaledExp(mean)
+    if (m === undefined) return undefined
+    const aCell = this.cellsOf(node, 'dispersion', () => this.evalSym(a))[i] as Cell
+    const only =
+      aCell.kind === 'aff' && aCell.aff.offset === 0 && aCell.aff.terms.size === 1 ? [...aCell.aff.terms] : []
+    const atom = only.length === 1 && only[0]?.[1] === 1 ? this.atoms.get(only[0][0]) : undefined
+    const logDispersion = atom?.kind === 'var' ? this.logScale.get(atom.name) : undefined
+    if (logDispersion === undefined)
+      throw new Refusal(
+        'operator',
+        `the dispersion of '${node.name}' is random but not a positive latent (a half-normal, half-Cauchy, log-normal or uniform prior carried on its log): the negative-binomial-dispersion factor needs the log of it`,
+      )
+    const params: Record<string, Json> = { y, exposure: m.scale === undefined ? 1 : this.constAt(node, m.scale, i) }
+    if (!(Number.isInteger(y) && y >= 0))
+      throw new Refusal('data', `'${node.name}' (negative binomial): the outcome must be a non-negative integer`)
+    const cell = this.cellsOf(node, 'predictor', () => this.evalSym(m.inner))[i] as Cell
+    if (isConstCell(cell)) return null
+    const u = this.materialise(affOf(cell), node.name, index) as string
+    this.addFactor(
+      { operator: 'negative-binomial-dispersion', args: [u, logDispersion], params },
+      this.elementName(node.name, node.dims, i),
+    )
+    return null
+  }
+
+  /**
    * The likelihoods of the registry of `message-passing/operators/likelihoods.ts` for `observe y ~ D(g(affine))`: Poisson with
    * `rate = exposure * exp(affine)`, binomial with `probs = sigmoid(affine)` or `probit(affine)`, negative binomial with a log
    * link and a known dispersion (`n = r`, `probs = r / (r + mean)`, the mean `exposure * exp(affine)`), and a Weibull with
@@ -1813,6 +1966,8 @@ class Compiler {
       return emit('weibull-log', m.inner, { shape: known('concentration', 'shape') })
     }
     if (fam === 'negativeBinomial') {
+      const random = this.negBinomialRandomDispersion(node, y, i, index)
+      if (random !== undefined) return random
       // The negative binomial with a log link: n = r, probs = r / (r + mean) = A / (A + K exp(L)) with mean = n K exp(L) / A.
       const r = known('n', 'dispersion (the number of successes n = 1 / dispersion)')
       const probs = dist['probs'] === undefined ? undefined : this.unwrap(dist['probs'])
@@ -2314,6 +2469,12 @@ export function toFactorGraph(
     readonly analysis?: SpecAnalysis
     /** `vectorise` (default): an observed node whose rows are one regression on a weight vector is one plated factor; `expand`: a factor and a variable per row. */
     readonly plates?: 'vectorise' | 'expand'
+    /**
+     * Compile the scalar normal latents that an observed node reads together (the intercept and slope of `a + b x`) as the
+     * coordinates of one joint Gaussian vector, so message passing keeps their correlation (default false: scalar variables,
+     * whose loop of messages keeps the means and loses the correlation, so the marginal sds come out too small).
+     */
+    readonly packScalars?: boolean
   } = {},
 ): FactorGraphCompilation {
   if (bound.spec.nodes.some((n) => n.kind === 'scan')) {
@@ -2341,6 +2502,7 @@ export function toFactorGraph(
     options.modelOperators ?? defaultOperators(),
     options.operators ?? factorOperators(),
     options.plates !== 'expand',
+    options.packScalars === true,
   )
   c.run()
   const graph: FactorGraphSpec = { variables: c.variables, factors: c.factors }

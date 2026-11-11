@@ -13,8 +13,10 @@
 import { logAddExp, OmaiError } from '../../base/index.ts'
 import { lgammaOf, logPhi } from '../_scalar.ts'
 import { tiltedByQuadrature, type WindowHint } from '../_tilted.ts'
+import { gaussHermiteRule } from '../numerical.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../types.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, vectorParam } from './args.ts'
+import { numericOperator } from './numeric.ts'
 import { glmRow } from './rows.ts'
 
 /**
@@ -396,3 +398,51 @@ export const likelihoodRowOperator: FactorOperator = glmRow(
   likelihoodSiteOperator,
   'y | a . w ~ a numeric likelihood of the registry',
 )
+
+/** log of the rising factorial r (r + 1) ... (r + y - 1) = Gamma(y + r) / Gamma(r): a sum of logs for a modest count, the log gamma difference beyond. */
+const logRising = (r: number, y: number): number => {
+  if (y > 80) return lgammaOf(y + r) - lgammaOf(r)
+  let s = 0
+  for (let k = 0; k < y; k++) s += Math.log(r + k)
+  return s
+}
+
+const factorials: number[] = [0]
+/** log y! for an integer y, memoised. */
+const logFactorial = (y: number): number => {
+  for (let k = factorials.length; k <= y; k++) factorials.push((factorials[k - 1] as number) + Math.log(k))
+  return factorials[y] as number
+}
+
+/**
+ * A negative binomial count with a log link whose dispersion is random too: `y | u, s ~ NegBin(mean exposure exp(u),
+ * variance mean + exp(s) mean^2)` for a Gaussian predictor `u` and a Gaussian log dispersion `s` (ports `u` and `s`), the
+ * parameters `y` and `exposure`. A numeric operator over both: a 24-point Gauss-Hermite product rule against the two cavities
+ * (576 evaluations, each a sum of logs for a modest count), so a hundred rows are cheap; use a `Projection.numeric` rule to
+ * integrate more finely.
+ *
+ * @concept factor-operators
+ * @index structure A negative binomial count with a log link and a random log dispersion: a numeric EP site on two variables.
+ * @example
+ * ```ts
+ * import { gaussian, gaussianEta, messageArg, negativeBinomialDispersion } from 'omai-engine/message-passing'
+ * const args = [messageArg(gaussian, gaussianEta(1, 0.5)), messageArg(gaussian, gaussianEta(-1, 0.5))]
+ * negativeBinomialDispersion.tilted?.({ mode: 'ep', to: 0, args, params: { y: 3, exposure: 1 }, power: 1 }).moments.map((v) => v.toFixed(3)) // => ['1.039', '1.377']
+ * ```
+ */
+export const negativeBinomialDispersion: FactorOperator = numericOperator({
+  name: 'negative-binomial-dispersion',
+  description:
+    'y | u, s ~ NegBin(mean exposure exp(u), dispersion exp(s)): a count with a log link and a random dispersion',
+  arity: 2,
+  rule: gaussHermiteRule(24),
+  logDensity: ([u, s], params) => {
+    const y = numberParam(params, 'y')
+    const logE = Math.log(numberParam(params, 'exposure', 1))
+    const logR = -(s as number)
+    const r = Math.exp(logR)
+    const logMu = logE + (u as number)
+    const logDen = logAddExp(logR, logMu)
+    return logRising(r, y) - logFactorial(y) + r * logR - (r + y) * logDen + y * logMu
+  },
+})
