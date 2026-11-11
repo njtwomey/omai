@@ -29,7 +29,7 @@ describe('the classify page', () => {
   })
 
   it('names the curve of a variational method and none for a sampler', () => {
-    expect(classifierObjective({ inference: { kind: 'svi' } })?.path).toBe('svi/elbo')
+    expect(classifierObjective({ inference: { method: 'svi' } })?.path).toBe('svi/elbo')
     expect(classifierObjective(config)).toBeUndefined()
   })
 })
