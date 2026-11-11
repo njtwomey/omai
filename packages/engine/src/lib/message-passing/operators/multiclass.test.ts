@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { logPhi } from '../_scalar.ts'
+import { ndtr } from '../../numerics/special/_kernels.ts'
 import { gaussian, gaussianEta } from '../families.ts'
 import type { Arg } from '../types.ts'
 import { massOf, messageArg, valueArg } from './args.ts'
@@ -22,9 +22,9 @@ const logProbit = (z: readonly number[], y: number): number => {
   let total = 0
   for (let i = 0; i < n; i++) {
     const e = -8 + ((i + 0.5) * 16) / n
-    let lp = -0.5 * e * e - 0.5 * Math.log(2 * Math.PI)
-    for (let j = 0; j < z.length; j++) if (j !== y) lp += logPhi((z[y] as number) - (z[j] as number) + e)
-    total += (Math.exp(lp) * 16) / n
+    let p = Math.exp(-0.5 * e * e - 0.5 * Math.log(2 * Math.PI))
+    for (let j = 0; j < z.length; j++) if (j !== y) p *= ndtr((z[y] as number) - (z[j] as number) + e)
+    total += (p * 16) / n
   }
   return Math.log(total)
 }

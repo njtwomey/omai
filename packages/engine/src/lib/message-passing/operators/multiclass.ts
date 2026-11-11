@@ -11,8 +11,8 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
+import { ndtr } from '../../numerics/special/_kernels.ts'
 import { gaussianNodes } from '../_quadrature.ts'
-import { logPhi } from '../_scalar.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../types.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam } from './args.ts'
 
@@ -45,16 +45,16 @@ function logSoftmax(z: ArrayLike<number>, y: number): number {
   return (z[y] as number) - top - Math.log(s)
 }
 
-const E_NODES = gaussianNodes(0, 1, 24)
+const E_NODES = gaussianNodes(0, 1, 20)
 
 /** log P(y | z) under the multinomial probit: the largest of `z_k + e_k`, `e_k` standard normal; one integral over `e_y`. */
 function logProbit(z: ArrayLike<number>, y: number): number {
   let total = 0
   for (let i = 0; i < E_NODES.x.length; i++) {
-    let lp = 0
+    let p = 1
     for (let j = 0; j < z.length; j++)
-      if (j !== y) lp += logPhi((z[y] as number) - (z[j] as number) + (E_NODES.x[i] as number))
-    total += (E_NODES.w[i] as number) * Math.exp(lp)
+      if (j !== y) p *= ndtr((z[y] as number) - (z[j] as number) + (E_NODES.x[i] as number))
+    total += (E_NODES.w[i] as number) * p
   }
   return Math.log(total)
 }
