@@ -19,15 +19,10 @@ import {
 } from '../../trace/index.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import type { Mode } from '../core/types.ts'
-import {
-  type EngineSettings,
-  type ImproperPolicy,
-  type InitialMessage,
-  type MpState,
-  messagePassingAlgorithm,
-} from '../engine/engine.ts'
 import { klqpProjection, momentProjection, sumProductProjection } from '../engine/projections.ts'
+import { messagePassingAlgorithm } from '../engine/run.ts'
 import type { CustomOrder, Granularity, ScheduleKind } from '../engine/schedules.ts'
+import type { EngineSettings, ImproperPolicy, InitialMessage, MpState } from '../engine/state.ts'
 
 /** The knobs every message-passing algorithm has; the defaults differ by algorithm. */
 export interface MessagePassingOptions {

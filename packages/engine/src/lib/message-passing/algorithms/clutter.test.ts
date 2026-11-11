@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import { key } from '../../random/index.ts'
 import { recorder, runAlgorithm } from '../../trace/index.ts'
-import { marginalsOf } from '../engine/engine.ts'
+import { marginalsOf } from '../engine/cavity.ts'
 import { alphaEpAlgorithm } from './alpha.ts'
 import { clutterGraph, clutterPosterior, clutterProblem } from './clutter.ts'
 

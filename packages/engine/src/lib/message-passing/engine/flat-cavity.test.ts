@@ -2,7 +2,8 @@
 // wide Gaussian and its message is taken back against the flat cavity, so the first message is the factor's own predictive.
 import { describe, expect, it } from 'vitest'
 import * as M from '../index.ts'
-import { FLAT_CAVITY_PRECISION, operatorMessage } from './engine.ts'
+import { FLAT_CAVITY_PRECISION } from './cavity.ts'
+import { operatorMessage } from './dispatch.ts'
 import { momentProjection } from './projections.ts'
 
 const operators = M.defaultOperators()

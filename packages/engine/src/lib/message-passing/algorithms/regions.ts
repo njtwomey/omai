@@ -48,7 +48,7 @@ import {
   stateFromJson,
   stateToJson,
 } from '../../trace/index.ts'
-import type { MpSnapshot } from '../engine/engine.ts'
+import type { MpSnapshot } from '../engine/state.ts'
 
 /** A region: its variables, the factors inside it, its counting number and its place in the region graph. */
 export interface Region {

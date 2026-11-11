@@ -35,7 +35,7 @@ import {
   stateFromJson,
   stateToJson,
 } from '../../trace/index.ts'
-import type { MpSnapshot } from '../engine/engine.ts'
+import type { MpSnapshot } from '../engine/state.ts'
 
 /** The prior of every entry of x: a Gaussian of mean zero, or a Bernoulli-Gaussian (zero, or a Gaussian, with a given probability). */
 export type AmpPrior =

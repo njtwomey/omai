@@ -3,7 +3,8 @@
 // the compiler used to make (`projectedPrior`).
 import { describe, expect, it } from 'vitest'
 import { densityMoments, projectedPrior } from '../../core/priors.ts'
-import { FLAT_CAVITY_PRECISION, operatorMessage } from '../../engine/engine.ts'
+import { FLAT_CAVITY_PRECISION } from '../../engine/cavity.ts'
+import { operatorMessage } from '../../engine/dispatch.ts'
 import { momentProjection } from '../../engine/projections.ts'
 import * as M from '../../index.ts'
 

@@ -20,8 +20,9 @@ import { choice, dict, int, real } from '../../space/index.ts'
 import { type Algorithm, type Config, defineMethod, type Method } from '../../trace/index.ts'
 import { type CompiledGraph, compileGraph } from '../core/graph.ts'
 import type { FactorSpec, VariableSpec } from '../core/types.ts'
-import { type MpState, messagePassingAlgorithm } from '../engine/engine.ts'
 import { momentProjection } from '../engine/projections.ts'
+import { messagePassingAlgorithm } from '../engine/run.ts'
+import type { MpState } from '../engine/state.ts'
 import { defaultOperators } from '../operators/registry.ts'
 import {
   type EpPath,

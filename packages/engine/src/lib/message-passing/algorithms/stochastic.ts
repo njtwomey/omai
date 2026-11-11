@@ -34,8 +34,9 @@ import {
 } from '../../trace/index.ts'
 import type { CompiledFactor, CompiledGraph } from '../core/graph.ts'
 import type { Arg, Eta, Family } from '../core/types.ts'
-import { type ImproperCounts, type ImproperPolicy, type MpSnapshot, operatorMessage } from '../engine/engine.ts'
+import { operatorMessage } from '../engine/dispatch.ts'
 import { momentProjection } from '../engine/projections.ts'
+import type { ImproperCounts, ImproperPolicy, MpSnapshot } from '../engine/state.ts'
 
 /** The knobs of stochastic EP. */
 export interface StochasticEpOptions {

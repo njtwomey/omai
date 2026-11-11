@@ -19,8 +19,9 @@ import { dict, real } from '../../space/index.ts'
 import { type Algorithm, type Config, defineMethod, type Method } from '../../trace/index.ts'
 import type { CompiledFactor, CompiledGraph } from '../core/graph.ts'
 import { takesPower } from '../core/types.ts'
-import { type MpState, messagePassingAlgorithm } from '../engine/engine.ts'
 import { momentProjection } from '../engine/projections.ts'
+import { messagePassingAlgorithm } from '../engine/run.ts'
+import type { MpState } from '../engine/state.ts'
 import {
   type EpPath,
   epContract,

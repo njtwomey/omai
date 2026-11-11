@@ -10,7 +10,7 @@ import {
 import { sigmoidOf } from '../../base/index.ts'
 import { truncatedNormal } from '../../dists/index.ts'
 import { item } from '../../tensor/index.ts'
-import { operatorMessage } from '../engine/engine.ts'
+import { operatorMessage } from '../engine/dispatch.ts'
 import { momentProjection } from '../engine/projections.ts'
 import * as M from '../index.ts'
 
