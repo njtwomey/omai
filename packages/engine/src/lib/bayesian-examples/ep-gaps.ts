@@ -52,17 +52,6 @@ export const epGaps: readonly EpGap[] = [
     refuses: [],
   },
   {
-    id: 'mixture-site-random-parameters',
-    title: 'A mixture site with a random precision and a random weight',
-    kind: 'missing-mapping',
-    status: 'queued',
-    summary:
-      'The closed-form mixture sites (the outlier mixture and the spike and slab, with the switch summed out) take a known scale, share and slab width; the explicit-switch (gate) form with gamma precisions and a Beta weight runs, but the summed-out form with those unknown is refused.',
-    plan: 'Map the summed-out mixture with gamma-precision branches and a Beta weight onto the gate of precision branches the compiler already builds, marginalising the switch inside the rule (the evidence and moments are sums over the branches).',
-    size: 'small',
-    refuses: ['clutter-mixture-learned', 'spike-and-slab-marginal-learned'],
-  },
-  {
     id: 'matrix-families',
     title: 'Covariance matrices: Wishart, inverse-Wishart, normal-Wishart, LKJ',
     kind: 'missing-rule',

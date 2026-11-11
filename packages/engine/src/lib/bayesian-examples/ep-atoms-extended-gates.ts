@@ -809,15 +809,15 @@ function spikeSlabMarginalLearnedProblem(k: Config): AtomProblem {
 
 /**
  * The same sparse sequence with each coefficient's switch summed out (the library's spike and slab family) and the inclusion
- * probability and the slab precision unknown. The compiler refuses it today: the mixture site takes known weights and widths. The
- * page shows the library's reason and the exact posterior of the share and the slab precision that EP will be held to; the
- * explicit-switch twin (spike and slab: parameters learned) runs.
+ * probability and the slab precision unknown: the compiler gives each coefficient the gate of its spike and slab over a switch
+ * that the posterior does not report, the same graph as the explicit-switch twin, so EP agrees with the exact posterior of the
+ * share and the slab precision (the coefficients summed out) about as closely as the twin does.
  *
- * @index estimator EP atom (planned): summed-out spike and slab, learned share and width.
+ * @index estimator EP atom: summed-out spike and slab, learned share and width.
  * @example
  * ```ts
  * import { spikeSlabMarginalLearnedAtom } from 'omai-engine/bayesian-examples'
- * spikeSlabMarginalLearnedAtom.expected // => 'planned'
+ * spikeSlabMarginalLearnedAtom.expected // => 'runs'
  * ```
  */
 export const spikeSlabMarginalLearnedAtom: EpAtom = defineAtom({
@@ -828,25 +828,32 @@ export const spikeSlabMarginalLearnedAtom: EpAtom = defineAtom({
     seeds: 30,
     coverage: 0.7,
     zrms: 1.6,
-    reason: 'what the explicit-switch twin achieves (spike and slab: parameters learned); this form is planned',
+    reason:
+      'the same posterior and the same floor as the explicit-switch twin (spike and slab: parameters learned): the share and the slab precision are learned from a handful of values',
   },
-  what: 'The spike and slab prior with the switch summed out (the mixture site) on a sequence of coefficients, with the inclusion probability and the slab precision unknown, and the data simulated from a stated set of active coefficients. The compiler refuses it today, and the page says what is missing.',
-  factors: ['prior (beta, gamma)', 'mixture-site with a random weight and a random slab width (planned)'],
+  what: 'The spike and slab prior with the switch summed out (the mixture form, no variable for the probability of the slab) on a sequence of coefficients, with the inclusion probability and the slab precision unknown, and the data simulated from a stated set of active coefficients: EP recovers how common the active coefficients are and how wide the slab is.',
+  factors: [
+    'prior (beta, gamma)',
+    'bernoulli (a hidden switch with a beta probability)',
+    'gate of spike and slab components (gaussian-gamma-precision slab)',
+    'gaussian likelihood',
+  ],
   family: 'gates',
-  expected: 'planned',
-  plan: 'docs/probprog/ep-plan.md section C1 (mixture-site): the mixture site takes a known inclusion probability and known widths. A random inclusion probability needs the beta message through the sum (the rule `mixture-weight` has for a two-component mixture with known components) and a random slab precision needs the slab as a gaussian-gamma-precision branch of the sum; both exist inside the gate, which is why the explicit-switch twin runs',
+  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.2,
     sdRatio: [0.8, 1.2],
     ks: 0.1,
-    reason: 'the same posterior as the explicit-switch twin: EP carries a beta and a gamma',
+    reason:
+      'the same posterior as the explicit-switch twin: EP carries a beta and a gamma (measured: 0.006 and 0.003 posterior sds, spreads 0.98)',
   },
   knobs: dict({
     seed: simulationKnobs(10)['seed'] as ReturnType<typeof int>,
     n: int(7, 14, { default: 10, label: 'coefficients' }),
     noise: real(0.2, 1.2, { default: 0.5, step: 0.05, label: 'noise sd (known)' }),
   }),
+  ep: { damping: 0.5, tol: 1e-4 },
   problem: spikeSlabMarginalLearnedProblem,
 })
 
@@ -900,7 +907,7 @@ function clutterMixtureLearnedProblem(k: Config): AtomProblem {
     referenceSource: 'quadrature over the centre, the precision and the share, the switches summed out',
     figure: {
       caption:
-        'The simulated observations (outliers drawn ten times wider around the same centre, marked) and the centre with the inlier band at two sds: green, the truth; thick and dashed, what EP will believe once the library maps this form.',
+        'The simulated observations (outliers drawn ten times wider around the same centre, marked) and the centre with the inlier band at two sds: green, the truth; thick and dashed, what EP believes.',
       xLabel: 'observation',
       yLabel: 'value',
       xLimits: x as [number, number],
@@ -933,15 +940,16 @@ function clutterMixtureLearnedProblem(k: Config): AtomProblem {
 
 /**
  * The inlier and outlier mixture with the switches summed out (the library's `normalOutliers`) and the centre, the width of the
- * inliers and the share of outliers all unknown, learned from data simulated from a stated truth. The compiler refuses it today:
- * the mixture site takes a known width and a known share. The page shows the library's reason and the exact posterior EP will
- * be held to; the explicit-switch twin (clutter: parameters learned) runs.
+ * inliers and the share of outliers all unknown, learned from data simulated from a stated truth. The compiler reads each
+ * observation as the gate of an inlier and an outlier branch over a switch the posterior does not report (the graph of the
+ * explicit-switch twin, clutter: parameters learned), and EP agrees with the exact posterior (quadrature over the centre, the
+ * precision and the share, the switches summed out).
  *
- * @index estimator EP atom (planned): summed-out outlier mixture, learned width and share.
+ * @index estimator EP atom: summed-out outlier mixture, learned width and share.
  * @example
  * ```ts
  * import { clutterMixtureLearnedAtom } from 'omai-engine/bayesian-examples'
- * clutterMixtureLearnedAtom.expected // => 'planned'
+ * clutterMixtureLearnedAtom.expected // => 'runs'
  * ```
  */
 export const clutterMixtureLearnedAtom: EpAtom = defineAtom({
@@ -952,19 +960,23 @@ export const clutterMixtureLearnedAtom: EpAtom = defineAtom({
     seeds: 20,
     coverage: 0.7,
     zrms: 1.6,
-    reason: 'what the explicit-switch twin achieves (clutter: parameters learned); this form is planned',
+    reason: 'the same floor as the explicit-switch twin (clutter: parameters learned)',
   },
-  what: 'The inlier and outlier mixture likelihood of the basic atom with the centre, the width of the inliers and the share of outliers all unknown (priors), and the data simulated from a stated truth. The switches are summed out, so the library needs a mixture site with a random width and a random share; it refuses today and the page says what is missing.',
-  factors: ['prior (gaussian, gamma, beta)', 'mixture-site with a random scale and a random share (planned)'],
+  what: 'The inlier and outlier mixture likelihood of the basic atom with the centre, the width of the inliers and the share of outliers all unknown (priors), and the data simulated from a stated truth. The switches are summed out, so EP gives beliefs about the centre, the precision and the share, and no probability that an observation is an outlier.',
+  factors: [
+    'prior (gaussian, gamma, beta)',
+    'bernoulli (a hidden switch per observation with a beta probability)',
+    'gate of inlier and outlier branches (gaussian-gamma-precision)',
+  ],
   family: 'gates',
-  expected: 'planned',
-  plan: 'docs/probprog/ep-plan.md section C1 (mixture-site): `normalOutliers` has a message rule for a known scale and a known share (the likelihood mixture of two Gaussians around the random centre). A random scale is a gamma precision shared by both components (the precision idiom inside the sum) and a random share a beta through the sum; the gate maps both (see clutter: parameters learned, which runs), so the missing piece is the summed-out form of the same message: a mixture-site with a gamma precision and a beta weight',
+  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.5,
     sdRatio: [0.5, 1.6],
     ks: 0.3,
-    reason: 'the posterior is lumpy and EP matches only its mean and variance with a Gaussian, a gamma and a beta',
+    reason:
+      'the posterior can be lumpy and EP matches only its mean and variance with a Gaussian, a gamma and a beta (measured on the default data: within 0.02 posterior sds, spreads 0.96 to 1.0)',
   },
   knobs: dict({
     ...learnedKnobs(50, 80),
@@ -972,5 +984,6 @@ export const clutterMixtureLearnedAtom: EpAtom = defineAtom({
     trueSd: real(0.2, 1.5, { default: 0.5, step: 0.05, label: 'true inlier sd' }),
     trueWeight: real(0.05, 0.5, { default: 0.25, step: 0.01, label: 'true share of outliers' }),
   }),
+  ep: { damping: 0.5, tol: 1e-4 },
   problem: clutterMixtureLearnedProblem,
 })

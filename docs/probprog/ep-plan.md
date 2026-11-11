@@ -388,9 +388,8 @@ The extended gate atoms run on it, each against an exact or sampled reference (d
 | mixture-components-learned | Gibbs sampler (means relabelled in order) | means within 0.1 sd, spreads 0.88 to 1.01 of the sampler's | 20 seeds: 0.75 to 1.00; closer components: second mean 0.55 to 0.60, EP's spreads 0.5 to 0.7 of the sampler's (one reading of the labels) |
 | spike-and-slab-learned | exact (share and slab precision on a grid) | share 0.417 +- 0.148 against 0.421 +- 0.152, slab precision 0.201 +- 0.093 against 0.201 +- 0.104 | 20 seeds: 1.00 and 1.00 |
 
-Planned: the two summed-out forms (`clutter-mixture-learned`, `spike-and-slab-marginal-learned`): `normalOutliers` and
-`normalSpikeSlab` take a known scale, share and slab width; the missing piece is a mixture site with a gamma precision and a beta
-weight (inside the gate it exists). The AR(1) twin has no basic atom (the tracker is a program page).
+The two summed-out forms (`clutter-mixture-learned`, `spike-and-slab-marginal-learned`) run since section 17. The AR(1) twin has no
+basic atom (the tracker is a program page).
 
 ## 14. The changepoint program with the rates and the transition matrix learned (2026-11-11, `agent-pp111-cpext`)
 
