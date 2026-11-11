@@ -1,7 +1,14 @@
-import { nutsReference } from './reference.ts'
+import { epHooks } from '../../shared/ep/sweeps.ts'
+import { serveRun } from '../../shared/runWorker.ts'
+import { nutsReference, type Reference } from './reference.ts'
 
 type Request = { counts: number[]; prior: { amplitude: number; lengthScale: number } }
 
-self.onmessage = (e: MessageEvent<Request>): void => {
-  self.postMessage(nutsReference(e.data.counts, e.data.prior, { chains: 2, warmup: 300, draws: 1000 }))
-}
+serveRun<Request, Reference>(self, (request, host) =>
+  nutsReference(
+    request.counts,
+    request.prior,
+    { chains: 2, warmup: 300, draws: 1000 },
+    epHooks(host, 'NUTS reference', 'iteration'),
+  ),
+)

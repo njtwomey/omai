@@ -9,9 +9,12 @@ import {
   epGaps,
   verifyAtom,
 } from 'omai-engine/bayesian-examples'
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
+import { RunProgress } from '../../shared/RunProgress.tsx'
+import type { RunHost } from '../../shared/run.ts'
 import { useDeferred } from '../../shared/useDeferred.ts'
+import { useRun } from '../../shared/useRun.ts'
 
 const sig = (v: number): string => (Number.isFinite(v) ? String(Number(v.toPrecision(2))) : '-')
 
@@ -209,44 +212,46 @@ function Gaps(props: { readonly atoms: ReadonlySet<string> }): ReactNode {
 
 export default function EpCoverage(): ReactNode {
   const coverage = useDeferred(epCoverage)
-  const [outcomes, setOutcomes] = useState<Readonly<Record<string, Outcome>>>({})
-  const [running, setRunning] = useState(false)
-  const stop = useRef(false)
-  const runChecks = useCallback((names: readonly string[]) => {
-    stop.current = false
-    setRunning(true)
-    let i = 0
-    const next = (): void => {
-      const name = names[i++]
-      if (name === undefined || stop.current) {
-        setRunning(false)
-        return
-      }
-      let outcome: Outcome
-      try {
-        const v = verifyAtom(epAtom(name))
-        outcome =
-          v.check === undefined
-            ? { error: 'EP did not run' }
-            : {
-                pass: v.check.pass,
-                worstZ: Math.max(...v.check.rows.map((r) => r.meanZ)),
-                worstKs: Math.max(...v.check.rows.map((r) => r.ks)),
+  // The checks run one setup at a time, each a slice of work, so the page paints, shows how far it is, and Stop keeps the
+  // outcomes so far.
+  const [queue, setQueue] = useState<readonly string[] | undefined>(undefined)
+  const task = useMemo(
+    () =>
+      queue === undefined
+        ? undefined
+        : async (host: RunHost<Readonly<Record<string, Outcome>>>): Promise<Readonly<Record<string, Outcome>>> => {
+            const done: Record<string, Outcome> = {}
+            for (const [i, name] of queue.entries()) {
+              host.report({
+                stage: 'checks',
+                done: i,
+                total: queue.length,
+                detail: `${name}: check ${i + 1} of ${queue.length}`,
+              })
+              await host.yieldToPage()
+              if (host.stopped()) break
+              try {
+                const v = verifyAtom(epAtom(name))
+                done[name] =
+                  v.check === undefined
+                    ? { error: 'EP did not run' }
+                    : {
+                        pass: v.check.pass,
+                        worstZ: Math.max(...v.check.rows.map((r) => r.meanZ)),
+                        worstKs: Math.max(...v.check.rows.map((r) => r.ks)),
+                      }
+              } catch (e) {
+                done[name] = { error: e instanceof Error ? e.message : String(e) }
               }
-      } catch (e) {
-        outcome = { error: e instanceof Error ? e.message : String(e) }
-      }
-      setOutcomes((o) => ({ ...o, [name]: outcome }))
-      setTimeout(next, 20)
-    }
-    setTimeout(next, 20)
-  }, [])
-  useEffect(
-    () => () => {
-      stop.current = true
-    },
-    [],
+              host.partial({ ...done })
+            }
+            return done
+          },
+    [queue],
   )
+  const checks = useRun<Readonly<Record<string, Outcome>>>(task)
+  const outcomes = checks.value ?? {}
+  const running = checks.going
   if (coverage === undefined)
     return <p className="text-sm text-muted">Compiling every setup and every benchmark model...</p>
   const runnable = coverage.atoms.filter((r) => r.status === 'runs').map((r) => r.name)
@@ -261,7 +266,7 @@ export default function EpCoverage(): ReactNode {
             type="button"
             className="rounded border border-line px-3 py-1 text-xs hover:bg-surface disabled:opacity-50"
             disabled={running}
-            onClick={() => runChecks(runnable)}
+            onClick={() => setQueue([...runnable])}
           >
             {running ? 'Running the checks...' : `Run the ${runnable.length} checks`}
           </button>
@@ -269,6 +274,7 @@ export default function EpCoverage(): ReactNode {
             Each check runs EP and compares it with the exact answer; a few take a second or two.
           </span>
         </div>
+        <RunProgress run={checks} label="Checks" />
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="text-xs text-muted">

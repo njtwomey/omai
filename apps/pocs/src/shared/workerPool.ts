@@ -9,6 +9,7 @@
  */
 
 import { type StageContext, type StageWorker, serveStage, workerStage } from 'omai-render/producer'
+import { yieldToPage } from './run.ts'
 
 /** What a worker says while it works. */
 export interface JobStatus {
@@ -88,16 +89,6 @@ export function poolSize(
 ): number {
   return Math.max(1, Math.min(methods, cores - 1, 4))
 }
-
-const yieldToPage = (): Promise<void> =>
-  new Promise((resolve) => {
-    const channel = new MessageChannel()
-    channel.port1.onmessage = () => {
-      channel.port1.close()
-      resolve()
-    }
-    channel.port2.postMessage(null)
-  })
 
 /**
  * Runs the requests, each in its own worker, and reports the state as it changes.

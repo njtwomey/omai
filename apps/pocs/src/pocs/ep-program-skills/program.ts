@@ -1,10 +1,11 @@
 import { ndtr } from 'omai-engine/numerics/special'
-import { epSpecMethod } from 'omai-engine/probprog/inference'
+import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { foldIn, key, normal, uniform } from 'omai-engine/random'
 import { item, toFlat } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
+import type { EpHooks } from '../../shared/ep/sweeps.ts'
 
 /** What the page changes about the data. */
 export interface SkillsSetup {
@@ -52,12 +53,20 @@ export const tournamentModel = defineModel('tournament', (m) => {
 // endregion
 
 // region infer
-export function infer(data: ReturnType<typeof simulate>) {
+export async function infer(data: ReturnType<typeof simulate>, hooks: EpHooks = {}) {
   const games = { a: data.a, b: data.b, win: data.win }
   const bound = tournamentModel.bind(games, { sizes: { player: data.players } })
   const method = epSpecMethod(bound)
   const config = { tol: 1e-8 }
-  const run = session(method, { config, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
+  const cap = 300
+  const run = session(method, { config, seed: 1, steps: cap, mode: 'live', logs: 'all' })
+  // One sweep at a time: the page hears of each (the bar), and may stop the run.
+  await runAnytimeAsync(run, {
+    snapshot: { everySteps: 1 },
+    onSnapshot: ({ t, state }) => hooks.onSweep?.({ sweep: t, cap, change: state.change, tol: config.tol }),
+    shouldStop: () => hooks.stopped?.() === true,
+    yieldToPage: hooks.yieldToPage ?? (() => Promise.resolve()),
+  })
   // The marginals by site: skill, tau.
   const posterior = method.posterior?.(run.state, run.config)
   if (posterior === undefined) throw new Error('EP gave no posterior')
@@ -66,7 +75,7 @@ export function infer(data: ReturnType<typeof simulate>) {
 // endregion
 
 /** The skills as a posterior recovered them: mean, sd and a 90% interval per player. */
-export function skillsOf(posterior: ReturnType<typeof infer>['posterior']) {
+export function skillsOf(posterior: Awaited<ReturnType<typeof infer>>['posterior']) {
   const mean = Array.from(toFlat(posterior.mean('skill')))
   const sd = Array.from(toFlat(posterior.stddev('skill')))
   return {

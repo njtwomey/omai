@@ -1,9 +1,10 @@
-import { epSpecMethod } from 'omai-engine/probprog/inference'
+import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { foldIn, key, poisson, split, uniform } from 'omai-engine/random'
 import { toFlat } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
+import type { EpHooks } from '../../shared/ep/sweeps.ts'
 
 export const RATES = [3, 9, 22] // the truth: the rate of each regime
 export const PRIOR = { shape: [2, 2, 2], rate: [0.5, 1 / 6, 1 / 15] } // the model's: means 4, 12 and 30, each broad (a low, a middle and a high regime)
@@ -62,11 +63,19 @@ export function model(stay: number) {
 
 // region infer
 /** Expectation propagation on the factor graph: the regime probabilities per step and the rates. */
-export function infer(y: readonly number[], stay: number) {
+export async function infer(y: readonly number[], stay: number, hooks: EpHooks = {}) {
   const bound = model(stay).bind({ y })
   const ep = epSpecMethod(bound)
   const config = { tol: 1e-9 }
-  const run = session(ep, { config, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
+  const cap = 300
+  const run = session(ep, { config, seed: 1, steps: cap, mode: 'live', logs: 'all' })
+  // One sweep at a time: the page hears of each (the bar), and may stop the run.
+  await runAnytimeAsync(run, {
+    snapshot: { everySteps: 1 },
+    onSnapshot: ({ t, state }) => hooks.onSweep?.({ sweep: t, cap, change: state.change, tol: config.tol }),
+    shouldStop: () => hooks.stopped?.() === true,
+    yieldToPage: hooks.yieldToPage ?? (() => Promise.resolve()),
+  })
   const post = ep.posterior?.(run.state, run.config)
   const regimes = Array.from({ length: y.length }, (_, t) =>
     [0, 1, 2].map((k) => toFlat(post?.marginal(`z[${t}]`).prob(k) as never)[0] ?? 0),

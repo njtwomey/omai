@@ -21,6 +21,7 @@ import { BeliefChart, DataFigure, JointChart, MixtureChart, ProbabilityBars } fr
 import { atomSource } from './ep/atomSource.ts'
 import { CalibrationPanel, RecoveryPanel, TwinNote } from './ep/ExtendedParts.tsx'
 import { type AtomState, useAtom } from './ep/useAtom.ts'
+import { RunProgress } from './RunProgress.tsx'
 
 const EP_KNOBS = ['schedule', 'damping', 'improper', 'tol', 'maxSweeps']
 
@@ -175,6 +176,7 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
                 ? 'Expectation propagation does not run on this model (the library says why, above).'
                 : `${run.converged ? 'Converged' : 'Stopped without converging'} after ${run.sweeps} sweeps (${sig(state.runMs, 2)} ms).`}
         </p>
+        <RunProgress run={state.referenceRun} label="Reference (quadrature on a grid)" />
       </section>
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold">What to observe</h2>

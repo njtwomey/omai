@@ -15,42 +15,42 @@ import * as zip from './ep-program-zero-inflated/compute.ts'
 interface Program {
   readonly name: string
   readonly seeds: readonly number[]
-  readonly check: (seed: number) => ProgramCheck
+  readonly check: (seed: number) => Promise<ProgramCheck>
 }
 
 const programs: readonly Program[] = [
   {
     name: 'sparse regression with outliers and unknown noise',
     seeds: [1, 2, 3],
-    check: (seed) => {
-      const run = runSparse({ ...defaultSetup, seed })
-      return checkSparse(run, exactSparse(run))
+    check: async (seed) => {
+      const run = await runSparse({ ...defaultSetup, seed })
+      return checkSparse(run, exactSparse({ features: run.setup.features, ...run.data }))
     },
   },
   {
     name: 'counts with excess zeros',
     seeds: [1, 2, 3],
-    check: (seed) => {
-      const run = zip.runZip({ ...zip.defaultSetup, seed })
-      return zip.checkZip(run, zip.exactZip(run))
+    check: async (seed) => {
+      const run = await zip.runZip({ ...zip.defaultSetup, seed })
+      return zip.checkZip(run, zip.exactZip(run.data))
     },
   },
   {
     name: 'who is better: a tournament with unknown skills',
     seeds: [1, 2, 3],
-    check: (seed) => {
-      const run = skills.runSkills({ ...skills.defaultSetup, seed })
-      return skills.checkSkills(run, skills.referenceSkills(run))
+    check: async (seed) => {
+      const run = await skills.runSkills({ ...skills.defaultSetup, seed })
+      return skills.checkSkills(run, (await skills.referenceSkills(run.data)) as skills.SkillsReference)
     },
   },
 ]
 
 describe('the tournament skills, pooled over seeds', () => {
-  it('EP\u2019s 90% intervals cover at least 80% of the true skills', () => {
+  it('EP\u2019s 90% intervals cover at least 80% of the true skills', async () => {
     let inside = 0
     let total = 0
     for (const seed of [1, 2, 3]) {
-      const run = skills.runSkills({ ...skills.defaultSetup, seed })
+      const run = await skills.runSkills({ ...skills.defaultSetup, seed })
       inside += skills.coverageOf(run.data.skills, run.found) * run.data.skills.length
       total += run.data.skills.length
     }
@@ -61,8 +61,8 @@ describe('the tournament skills, pooled over seeds', () => {
 describe.each(programs)('$name', (program) => {
   it.each(program.seeds)(
     'recovers the truth (seed %i)',
-    (seed) => {
-      const check = program.check(seed)
+    async (seed) => {
+      const check = await program.check(seed)
       const failed = check.rows
         .filter((r) => r.gating !== false && !r.pass)
         .map((r) => `${r.label}: ${r.value} (${r.tolerance})`)

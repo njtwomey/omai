@@ -10,8 +10,10 @@ import {
   type EpAtom,
 } from 'omai-engine/bayesian-examples'
 import type { Config } from 'omai-engine/trace'
-import { useCallback, useMemo } from 'react'
-import { useDeferred } from '../useDeferred.ts'
+import { useMemo } from 'react'
+import { workerTask } from '../runWorker.ts'
+import { type UseRun, useRun } from '../useRun.ts'
+import type { AtomReferenceRequest } from './atomReference.worker.ts'
 
 /** What a page of an atom shows: the problem, the library's verdict, EP's run (when it applies), the reference and the check. */
 export interface AtomState {
@@ -26,7 +28,11 @@ export interface AtomState {
   readonly check: AtomCheck | undefined
   /** An error from the problem, the run or the reference, in words. */
   readonly error: string | undefined
+  /** The run of the reference when it is computed in a worker (a grid), for its bar; idle for a closed form. */
+  readonly referenceRun: UseRun<AtomReference>
 }
+
+const makeWorker = (): Worker => new Worker(new URL('./atomReference.worker.ts', import.meta.url), { type: 'module' })
 
 /**
  * The state of an atom's page for some knobs and some EP knobs: the problem and EP's run at once (they take a few
@@ -58,16 +64,28 @@ export function useAtom(atom: EpAtom, knobs: Config, ep: Config): AtomState {
     }
   }, [atom, knobKey, epKey])
   const problem = made.problem
-  const compute = useCallback((): { reference?: AtomReference; error?: string } => {
-    if (problem === undefined) return {}
+  // A closed form or the truth is instant, on this thread. A grid takes up to seconds: it goes to a worker, with a bar.
+  const inline = useMemo((): { reference?: AtomReference; error?: string } | undefined => {
+    if (problem === undefined || atom.reference === 'grid') return undefined
     try {
       return { reference: atomReference(atom, problem) }
     } catch (e) {
       return { error: e instanceof Error ? e.message : String(e) }
     }
   }, [atom, problem])
-  const refd = useDeferred(compute)
-  const reference = refd?.reference
+  const gridTask = useMemo(
+    () =>
+      problem === undefined || atom.reference !== 'grid'
+        ? undefined
+        : workerTask<AtomReferenceRequest, AtomReference>(
+            makeWorker,
+            { name: atom.name, knobs: JSON.parse(knobKey) as Config },
+            0,
+          ),
+    [atom, problem, knobKey],
+  )
+  const referenceRun = useRun<AtomReference>(gridTask)
+  const reference = inline?.reference ?? referenceRun.value
   const check = useMemo(
     () =>
       problem !== undefined && made.run?.status === 'ran' && reference !== undefined
@@ -82,6 +100,7 @@ export function useAtom(atom: EpAtom, knobs: Config, ep: Config): AtomState {
     runMs: made.runMs,
     reference,
     check,
-    error: made.error ?? refd?.error,
+    error: made.error ?? inline?.error ?? (referenceRun.phase === 'failed' ? referenceRun.error : undefined),
+    referenceRun,
   }
 }

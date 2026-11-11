@@ -1,9 +1,10 @@
-import { epSpecMethod } from 'omai-engine/probprog/inference'
+import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { foldIn, key, normal, poisson, uniform } from 'omai-engine/random'
 import { toFlat } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
+import type { EpHooks } from '../../shared/ep/sweeps.ts'
 
 /** What the page changes about the data. */
 export interface ZipSetup {
@@ -51,11 +52,19 @@ export const zeroInflatedModel = defineModel('zero-inflated-poisson', (m) => {
 // endregion
 
 // region infer
-export function infer(data: ReturnType<typeof simulate>, damping = 0.5) {
+export async function infer(data: ReturnType<typeof simulate>, damping = 0.5, hooks: EpHooks = {}) {
   const bound = zeroInflatedModel.bind({ x: data.x, y: data.y, on: [1, 0] })
   const method = epSpecMethod(bound)
   const config = { tol: 1e-8, damping }
-  const run = session(method, { config, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
+  const cap = 300
+  const run = session(method, { config, seed: 1, steps: cap, mode: 'live', logs: 'all' })
+  // One sweep at a time: the page hears of each (the bar), and may stop the run.
+  await runAnytimeAsync(run, {
+    snapshot: { everySteps: 1 },
+    onSnapshot: ({ t, state }) => hooks.onSweep?.({ sweep: t, cap, change: state.change, tol: config.tol }),
+    shouldStop: () => hooks.stopped?.() === true,
+    yieldToPage: hooks.yieldToPage ?? (() => Promise.resolve()),
+  })
   // The marginals by site: w, z, b0, b1.
   const posterior = method.posterior?.(run.state, run.config)
   if (posterior === undefined) throw new Error('EP gave no posterior')
@@ -64,7 +73,7 @@ export function infer(data: ReturnType<typeof simulate>, damping = 0.5) {
 // endregion
 
 /** The inflation and the two coefficients as EP recovered them: mean, sd and a 90% interval (the inflation's from its Beta marginal). */
-export function parameters(posterior: ReturnType<typeof infer>['posterior']) {
+export function parameters(posterior: Awaited<ReturnType<typeof infer>>['posterior']) {
   const first = (t: ReturnType<typeof posterior.mean>): number => toFlat(t)[1] ?? Number.NaN
   const q = toFlat(posterior.quantiles('w', [0.05, 0.95])) // the inflation is the second component
   const gaussian = (site: string) => {
