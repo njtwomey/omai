@@ -69,19 +69,43 @@ for a Gaussian `x`, a grid in `log x` for a gamma). A first version with a separ
 approximation of `f(x)` in between) gave the curve but a smoothing parameter 1.2 to 3.2 log units off and answers that moved
 with the damping; the fused factor does not.
 
-Measured on the page's data (sine, 60 rows, 10 coefficients), against the exact reference or a long sampler:
+**One vector, not coefficient marginals (2026-11-11, `agent-pp192-densegam`).** With one `apply-product` per coefficient the
+posterior of the coefficients came back as a marginal for each (the likelihood's message went through a loop of scalar sums), so
+the credible band was 17% too wide and the log-normal form needed about 200 sweeps. Now the compiler detects the pattern `D = z / S`
+(a latent vector of independent standard normals that nothing else reads, divided by a scale that is a chain of unary steps
+from one variable, `D` read by a `matmul`) and makes `D` one Gaussian vector with the factor `gaussian-mv-function-scale`
+(`operators/function-scale.ts`): given the log smoothing parameter `x` the coefficients are Gaussian with the diagonal
+covariance `1 / (exp(x) d_j + n_j)`, so against the Gaussian cavity of the whole vector they integrate out in closed form and
+what is left is one scalar integral over `x` on the grid that `gaussian-mv-precision-scale` already uses (it is the same factor for
+a gamma multiplier, and the two share the grid and the mixture of conditionals); the message to the vector is the dense Gaussian
+with the moments of the mixture, and `z` is not a variable of the graph. With a scale of its own for each coefficient (ARD, one
+latent per coefficient) there is no one scalar to integrate, so each coefficient keeps its `apply-product` factor but on a coordinate
+of one Gaussian vector (a `dot-constant` factor each), which the likelihood's rows read as dot products. Against the exact reference
+(the log-normal form, 60 points on each hyperparameter) or a long NUTS (ARD: two chains of 800 draws), before and after:
+
+| form                                   | mean curve error (response sd) | band width ratio | log smoothing (reference)         | sweeps | time   |
+| -------------------------------------- | ------------------------------ | ---------------- | --------------------------------- | ------ | ------ |
+| penalty, `logNormal`, per coefficient  | 0.005                          | 1.17 to 1.19     | 2.783 +- 0.630 (2.533 +- 0.619)   | 200 (cap, never met) | 8.2 s |
+| penalty, `logNormal`, one vector       | 0.004                          | 1.025            | 2.566 +- 0.694 (2.533 +- 0.619)   | 23     | 1.2 to 1.5 s |
+| ARD, per coefficient                   | 0.011                          | 1.06             |                                   | 64     | 1.8 s  |
+| ARD, coefficients on one vector        | 0.009                          | 0.99             |                                   | 24     | 1.0 s  |
+
+The log noise standard deviation of the log-normal form is -1.691 +- 0.111 (reference -1.690 +- 0.098), so the spreads of the two
+log-scale hyperparameters are about 12% wide; the page's reference at 28 points per hyperparameter under-resolves the noise (its
+sd 0.041 against 0.098 at 60 points), which the test now avoids.
+
+Measured on the page's data (sine, 60 rows, 10 coefficients), the forms of the page:
 
 | form                                   | offered (EP) | mean curve error (response sd) | band width ratio | log smoothing          | note                                     |
 | -------------------------------------- | ------------ | ------------------------------ | ---------------- | ---------------------- | ---------------------------------------- |
-| penalty, `gammaSmooth` (dense vector)  | yes          | 0.004                          | 1.015            | 2.664 +- 0.533 (2.716) | converges in 21 sweeps, 0.65 s           |
-| penalty, `logNormal` (non-centred)     | yes          | 0.005                          | 1.17             | 2.783 +- 0.630 (2.533 +- 0.619) | about 80 sweeps, 3 s; never flags convergence |
+| penalty, `gammaSmooth` (dense vector)  | yes          | 0.004                          | 1.02             | 2.664 +- 0.533 (2.716) | 21 sweeps, 0.7 s                         |
+| penalty, `logNormal` (non-centred, dense vector) | yes | 0.004                         | 1.025            | 2.566 +- 0.694 (2.533 +- 0.619) | 23 sweeps, 1.2 s                |
 | penalty, `gammaNoise`, `fixed`         | yes          | under 0.03                     | 0.85 to 1.15     |                        | (tests of the earlier forms)             |
-| ARD (the four hyper settings are one model) | yes     | 0.011 at worst against NUTS    | 1.09             |                        | 64 sweeps, 1.8 s; bases in use within 0.05 of NUTS |
+| ARD (the four hyper settings are one model) | yes     | 0.009 against NUTS             | 0.99             |                        | 24 sweeps, 1.0 s; bases in use within 0.05 of NUTS |
 | spike and slab, all four               | yes          |                                |                  |                        | (earlier work)                           |
 
-The band is wide because the posterior of a non-centred coefficient comes back as a marginal per coefficient (the dense form's one
-vector keeps their correlations): gap `non-centred-scale` in `ep-gaps.ts`. Variational message passing still refuses these
-forms (its non-conjugate message for a scale is degenerate).
+Variational message passing still refuses these forms (its non-conjugate message for a scale is degenerate): gap
+`non-centred-scale` in `ep-gaps.ts`, now only that and the 12% spreads. Notes: `ep-notes-densegam.md`.
 
 ## Optimising instead
 
@@ -99,11 +123,11 @@ model; it is a missing method, not a missing theory.
 
 | prior and hyperpriors                                                        | what runs                                                                                     |
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| smoothness penalty, log-normal hyperpriors                                   | the samplers, SVI, Pathfinder, Laplace (poor), importance, and EP (the `apply-product` factor)  |
+| smoothness penalty, log-normal hyperpriors                                   | the samplers, SVI, Pathfinder, Laplace (poor), importance, and EP (the dense `gaussian-mv-function-scale` factor)  |
 | penalty, gamma smoothing parameter and gamma noise precision (`gammaSmooth`, the page's default) | the above, plus VMP, and EP first (the dense scale factor), against the exact reference |
 | penalty, Gamma noise precision, smoothing fixed (`gammaNoise`)               | the above, plus VMP and EP                                                                    |
 | penalty, smoothing and noise fixed (`fixed`)                                 | EP, VMP, the exact Gaussian method (all exact), and the rest                                  |
-| spike and slab, ARD                                                          | the samplers and variational methods, and EP (mixture sites; the `apply-product` factor for ARD) |
+| spike and slab, ARD                                                          | the samplers and variational methods, and EP (mixture sites; `apply-product` on the coordinates of one vector for ARD) |
 
 ## Next steps, in order of value
 

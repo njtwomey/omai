@@ -141,13 +141,13 @@ export const epGaps: readonly EpGap[] = [
   },
   {
     id: 'non-centred-scale',
-    title: 'A non-centred scale (z / sqrt(precision)) is read through independent coefficient marginals',
+    title: 'A non-centred scale (z / sqrt(precision)) has no variational message passing rule',
     kind: 'quality',
     status: 'open',
     summary:
-      'A coefficient written `z / sqrt(g(x))` (the non-centred Bayesian GAM, penalty prior with log-normal hyperpriors, and ARD) runs under EP through the `apply-product` factor, one per coefficient, with the curve within 0.005 response sd of the exact reference and the smoothing within 0.4 reference sd, but the posterior hands back each coefficient as its own marginal, so the credible band is 17% too wide (the dense gamma-smoothing form, whose coefficients are one vector, is within 2%). The log-normal form reaches its fixed point in about 80 sweeps without the tolerance ever being met (quadrature noise), and variational message passing has no rule for the factor (the non-conjugate message of a scale collapses the noise to a point).',
-    plan: 'A dense variant: `apply-product` on the whole coefficient vector against a Gaussian log smoothing parameter (the grid of `gaussian-mv-precision-scale` over a Gaussian instead of a gamma cavity), so the posterior keeps the correlations; a tolerance relative to the quadrature accuracy; a variational rule for the factor from the exact conjugate one at a fixed scale.',
-    size: 'medium',
+      'A coefficient vector written `z / sqrt(g(x))` runs under EP in two forms. With one latent `x` behind every coefficient (the non-centred Bayesian GAM, penalty prior with log-normal hyperpriors) the compiler makes it one Gaussian vector with a `gaussian-mv-function-scale` factor (the standard normals are integrated out, `x` on a grid), so the posterior keeps the correlations: against the exact reference the curve is 0.004 response sd off, the band 1.02 to 1.03 of the reference (it was 1.17 as per-coefficient marginals), the log smoothing 0.03 off (0.25), in 23 sweeps and 1.2 s (about 200 sweeps and 8 s before). With a latent of its own for each coefficient (ARD) each coefficient is an `apply-product` factor on a coordinate of one Gaussian vector the likelihood reads (the rows are dot products, not a loop of sums): band 0.99 of a long NUTS (1.06), 24 sweeps (64). What remains: variational message passing has no rule for either factor (the non-conjugate message of a scale collapses the noise to a point; the gamma-multiplier form `gaussian-mv-precision-scale` has the conjugate one), and the spreads of the log smoothing and the log noise are about 12% wide against the exact reference (a moment match of a skewed marginal).',
+    plan: 'A variational rule for `gaussian-mv-function-scale` and `apply-product` from the exact conjugate one at a fixed scale (the factor given `x` is a Gaussian, so the message to the vector is its expectation over the variational `q(x)`, and the message to `x` the expected log density, both by the same grid).',
+    size: 'small',
     refuses: [],
   },
   {
