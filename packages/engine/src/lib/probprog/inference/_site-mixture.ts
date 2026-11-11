@@ -10,6 +10,7 @@ import { OmaiError } from '../../base/index.ts'
 import { mixture, mixtureSameFamily } from '../../dists/compose/index.ts'
 import {
   beta as betaDist,
+  categorical,
   type Distribution,
   gamma as gammaDist,
   multivariateNormal,
@@ -23,12 +24,14 @@ import { definePosterior, type Posterior } from '../posterior.ts'
 /** What one run keeps of a site's belief: enough to rebuild the marginal and to mix it. */
 export interface SiteRecord {
   /** The family the belief was in (`normal`, `multivariateNormal`, `gamma`, `beta`), or `moments` for any other (read as a moment-matched normal). */
-  readonly kind: 'normal' | 'multivariateNormal' | 'gamma' | 'beta' | 'moments'
+  readonly kind: 'normal' | 'multivariateNormal' | 'gamma' | 'beta' | 'categorical' | 'moments'
   readonly shape: readonly number[]
   readonly mean: readonly number[]
   readonly variance: readonly number[]
   /** The covariance of a vector site, row-major. */
   readonly covariance?: readonly number[]
+  /** The probabilities of a categorical site (`shape.product` rows of one category axis, row-major). */
+  readonly probs?: readonly number[]
 }
 
 /** What a node keeps of a distribution of a site. */
@@ -39,6 +42,11 @@ export function recordOf(d: Distribution): SiteRecord {
   const cov = (d as unknown as { covariance?: () => Tensor }).covariance
   if (d.name === 'multivariateNormal' && cov !== undefined)
     return { kind: 'multivariateNormal', shape, mean, variance, covariance: Array.from(toFlat(cov.call(d))) }
+  if (d.name === 'categorical') {
+    const probs = d.params['probs']
+    if (probs !== undefined)
+      return { kind: 'categorical', shape, mean, variance, probs: Array.from(toFlat(probs as Tensor)) }
+  }
   const kind = d.name === 'normal' || d.name === 'gamma' || d.name === 'beta' ? d.name : 'moments'
   return { kind, shape, mean, variance }
 }
@@ -50,6 +58,15 @@ export function distributionOf(r: SiteRecord): Distribution {
     const n = r.mean.length
     const cov = fromStorage(Float64Array.from(r.covariance), [n, n], 'float64')
     return multivariateNormal(t(r.mean), { covariance: cov })
+  }
+  if (r.kind === 'categorical' && r.probs !== undefined) {
+    const k =
+      r.probs.length /
+      Math.max(
+        1,
+        r.shape.reduce((a, b) => a * b, 1),
+      )
+    return categorical({ probs: fromStorage(Float64Array.from(r.probs), [...r.shape, k], 'float64') })
   }
   const sd = r.variance.map((v) => Math.sqrt(Math.max(v, 1e-300)))
   if (r.kind === 'gamma')
@@ -146,9 +163,16 @@ export function siteMixturePosterior(spec: SiteMixture): Posterior {
     const records = spec.runs.map((r) => r[s] as SiteRecord)
     const record = first[s] as SiteRecord
     marginals[s] =
-      record.kind === 'multivariateNormal'
-        ? mixture({ probs: w }, records.map(distributionOf))
-        : mixtureSameFamily({ probs: w }, stackBatch(records, record.shape))
+      record.kind === 'categorical'
+        ? distributionOf({
+            ...record,
+            probs: (record.probs ?? []).map((_, i) =>
+              records.reduce((a, r, j) => a + (w[j] ?? 0) * (r.probs?.[i] ?? 0), 0),
+            ),
+          })
+        : record.kind === 'multivariateNormal'
+          ? mixture({ probs: w }, records.map(distributionOf))
+          : mixtureSameFamily({ probs: w }, stackBatch(records, record.shape))
   }
   const draws: Record<string, Tensor> = {}
   for (const v of valueNames) draws[v] = tensor([...(spec.values?.[v] ?? [])])

@@ -123,6 +123,32 @@ describe('epMultiStartMethod on a regime model with an empty regime', () => {
     expect(mixed[0]?.sd ?? 0).toBeGreaterThanOrEqual((base[0]?.sd ?? 0) - 1e-9)
   })
 
+  it('labels permute: also starts from every relabelling of a reading found, and the mixture stays at the exact posterior', () => {
+    const method = epMultiStartMethod(bound)
+    const run = session(method, { steps: 40, mode: 'eager', config: { starts: 30, labels: 'permute' } })
+    const relabelled = run.state.runs.filter((r) => r.origin === 'relabel')
+    // Two regimes: the one relabelling (a swap) of the first reading, then of each new reading.
+    expect(relabelled.length).toBeGreaterThanOrEqual(1)
+    expect(relabelled[0]?.perm).toEqual([1, 0])
+    const post = method.posterior?.(run.state, run.config)
+    const mixed = post?.summary().filter((r) => r.site === 'rate') ?? []
+    for (const k of [0, 1])
+      expect(Math.abs((mixed[k]?.mean ?? 0) - (want.mean[k] as number)) / (want.sd[k] as number)).toBeLessThan(0.3)
+  })
+
+  it('labels sort: the components are read in order, so the rate of the first is never above the second, and the evidence is the same', () => {
+    const keep = epMultiStartMethod(bound)
+    const kept = session(keep, { steps: 40, mode: 'eager', config: { starts: 30, labels: 'permute' } })
+    const sorted = epMultiStartMethod(bound)
+    const run = session(sorted, { steps: 40, mode: 'eager', config: { starts: 30, labels: 'sort' } })
+    const a = keep.posterior?.(kept.state, kept.config)
+    const b = sorted.posterior?.(run.state, run.config)
+    // Sorting only moves components inside each reading: the weights, hence the evidence, do not change.
+    expect(b?.logEvidence?.value).toBeCloseTo(a?.logEvidence?.value ?? Number.NaN, 8)
+    const rows = b?.summary().filter((r) => r.site === 'rate') ?? []
+    expect(rows[0]?.mean ?? Number.POSITIVE_INFINITY).toBeLessThan(rows[1]?.mean ?? 0)
+  })
+
   it('a snapshot is the mixture of the modes found so far, and the tape counts starts and modes', () => {
     const method = epMultiStartMethod(bound)
     const run = session(method, { steps: 40, mode: 'eager', config: { starts: 12 } })
