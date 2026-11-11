@@ -395,7 +395,7 @@ export function distributionFamilies(): Record<string, FamilyDef> {
       ['scores'],
       (a) => categorical({ probs: probitProbs(need('categoricalProbit', a, 'scores')) }),
       { scores: [0.2, 0.5, -0.3] },
-      { discrete: true, finite: true, messagePassing: true },
+      { discrete: true, finite: true, exponentialFamily: true, messagePassing: true },
     ),
     family(
       'dirichlet',

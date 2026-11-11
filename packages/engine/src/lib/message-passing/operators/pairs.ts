@@ -233,7 +233,7 @@ function resolve(
  * @param table - The densities to choose from (default {@link pairLikelihoods}).
  * @returns The operator, named `likelihood-pair`.
  * @concept factor-operators
- * @index function A two-variable numeric EP site from a registry of densities (a likelihood over a location and a random scale or shape).
+ * @index function A two-variable numeric EP site from a registry of densities.
  * @example
  * ```ts
  * import { gaussian, gaussianEta, messageArg, pairLikelihoodOperator } from 'omai-engine/message-passing'
