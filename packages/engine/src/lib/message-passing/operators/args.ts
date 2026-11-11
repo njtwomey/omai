@@ -5,6 +5,7 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
+import { spd } from '../_dense.ts'
 import type { Arg, Eta, Family, Observed, Params } from '../types.ts'
 
 /** Thrown by an operator that cannot form a message because a quantity it needs is improper; the engine counts it and repairs. */
@@ -136,3 +137,17 @@ export function siteMessage(family: Family, cavity: Eta, moments: Eta): Eta {
 
 /** The sum of two messages without any renormalisation: the product of the unnormalised messages, for the masses the evidence needs. */
 export const rawSum = (a: Eta, b: Eta): Eta => a.map((v, i) => v + (b[i] ?? 0))
+
+/**
+ * log of the integral of exp(h . z - z' P z / 2) over z in R^n: `n/2 log 2 pi - log det P / 2 + h' P^-1 h / 2`, the log mass of an
+ * unnormalised Gaussian message in natural parameters (the evidence of a factor against cavities that need not be proper one by one,
+ * only together). NaN when `P` (row-major, `n x n`) is not positive definite.
+ */
+export function logGaussianIntegral(h: readonly number[], p: readonly number[], n: number): number {
+  const factor = spd(p, n)
+  if (factor === undefined) return Number.NaN
+  const solved = factor.solve(h)
+  let quad = 0
+  for (let i = 0; i < n; i++) quad += (h[i] ?? 0) * (solved[i] ?? 0)
+  return 0.5 * (n * Math.log(2 * Math.PI) - factor.logDet + quad)
+}

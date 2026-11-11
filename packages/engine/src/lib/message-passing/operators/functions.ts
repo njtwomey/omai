@@ -235,9 +235,12 @@ export function applyFunction(
       return { message: c.power === 1 ? site : site.map((v) => v / c.power) }
     },
     logEvidence: (c) => {
+      const incoming = etaOf(arg(c, 0))
+      // An output nothing else reads (a flat cavity) integrates to one: the evidence is the mass of the input's cavity.
+      if (isFlat(incoming)) return allProper([arg(c, 1)]) ? massOf(arg(c, 1)) : Number.NaN
       if (!allProper(c.args)) return Number.NaN
       const fn = resolve(table, c.params)
-      return massOf(arg(c, 1)) + tilt(fn, gaussianOf(arg(c, 1)), etaOf(arg(c, 0)), c.power).logMass
+      return massOf(arg(c, 1)) + tilt(fn, gaussianOf(arg(c, 1)), incoming, c.power).logMass
     },
   }
 }

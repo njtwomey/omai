@@ -52,15 +52,15 @@ export const epGaps: readonly EpGap[] = [
     refuses: ['laplace-learned'],
   },
   {
-    id: 'kernel-hyperparameters',
-    title: 'Kernel hyperparameters as random values',
+    id: 'grid-hyperparameters',
+    title: 'Hyperparameters on a grid: a few scalars, one family at a time',
     kind: 'missing-mapping',
-    status: 'queued',
+    status: 'open',
     summary:
-      'A Gaussian process whose length scale or amplitude is a latent builds its Gram matrix from a random value, and the Cholesky of it is an opaque custom function: the graph cannot be compiled. With the kernel fixed (a constant covariance) GP classification already runs.',
-    plan: 'Run EP inside a grid over the hyperparameters (the log evidence of each EP run weights the grid, as the gp domain does for its marginal likelihood), so the compiler sees a constant Gram matrix at each node; later a numeric site over the length scale if one grid axis is not enough. Needs the EP log evidence of the dense prior and the likelihood sites.',
+      'A Gaussian process with a random length scale runs by EP inside a grid over the hyperparameters a custom function reads (`epGridMethod`: each node conditions the model, EP runs, the EP evidence weights the node), exact for a Gaussian likelihood. The grid is a product over the hyperparameters, so it serves one to three scalars; an ARD kernel with a length scale per input, a hyperparameter that is a vector or has a prior that depends on another node, and a custom function that is not known or affine once the hyperparameters are set are refused.',
+    plan: 'A numeric site over the length scale for the one-dimensional case inside one EP run (the hyperparameter as a latent whose message is a grid), a sparse grid or a Laplace step over several hyperparameters, and a model-layer kernel node (a Gram matrix as a first-class operator on a latent length scale) so that the custom function is not needed.',
     size: 'medium',
-    refuses: ['gaussian-process-regression', 'gaussian-process-non-centred'],
+    refuses: [],
   },
   {
     id: 'stick-breaking',
@@ -176,11 +176,11 @@ export const epGaps: readonly EpGap[] = [
     id: 'multimodal',
     title: 'One Gaussian per variable cannot show two modes',
     kind: 'quality',
-    status: 'open',
+    status: 'investigating',
     summary:
-      'On a bimodal or label-ambiguous posterior (clutter, overlapping mixture components, a regime that is hardly visited) EP commits to one reading and reports a narrow spread: the changepoint program with an unvisited regime gives rate spreads 0.05 to 0.3 of the reference and 70% regime accuracy. Measured: power EP, alpha-divergences (alpha down to 0.3), damping and stochastic EP do not restore calibration (docs/probprog/ep-plan.md section 11): the posterior over which steps belong to a rarely visited regime is multimodal and one message per variable cannot hold that. The relabelling of regimes whose likelihoods are alike is the one multimodal case damping does fix: on the changepoint program with learned transitions (100 steps) undamped EP took the swapped labelling on 3 of 30 seeds with every regime visited (and 2 more with a regime of under 15 steps), damping by half on none, while the seeds with a regime of under 6 steps stay wrong (EP within 0.05 of Gibbs on 1 of 6 such seeds of 24, two did not converge).',
-    plan: 'Several EP runs from different starts weighted by their evidence (needs the log evidence of the rules), or a mixture-of-Gaussians belief per variable; for the label problem a Gibbs or SMC pass as the reference and a warning on the page; the explicit gate already reports the probability of each branch.',
-    size: 'large',
+      "On a bimodal or label-ambiguous posterior (clutter, overlapping mixture components, a regime that is hardly visited) one EP run commits to one reading and reports a narrow spread: the changepoint program with an unvisited regime gives rate spreads 0.05 to 0.3 of the reference. Power EP, alpha-divergences, damping and stochastic EP do not restore calibration (docs/probprog/ep-plan.md section 11). EP from several starts weighted by evidence (`epMultiStartMethod`, section 15) does for the regime that nobody visits: the spread of its rate goes from 0.05 to 0.15 of the sampler's to 0.65 to 0.94 on seeds 2, 5 and 8, the means within 0.2 sampler sds. It also finds the relabelled modes of the visited regimes (the broad priors only weakly prefer one labelling, 1.4 to 8 nats), so on seed 1, where one run is exact, the mixture is wider than the sampler that was started in the data-ordered mode (the truth is inside every interval); the spreads of the other rates, which the sampler also gets from label switching, are not recovered on seeds 2 and 8.",
+    plan: 'Starts that permute the labels of the regimes (the relabellings of a mode have its evidence, so each adds a copy of the mode) and starts from the data (the regimes ordered by the counts they explain); a mixture-of-Gaussians belief per variable so that one run holds several modes; the explicit gate already reports the probability of each branch.',
+    size: 'medium',
     refuses: [],
   },
   {
@@ -229,12 +229,12 @@ export const epGaps: readonly EpGap[] = [
   },
   {
     id: 'evidence',
-    title: 'Log evidence for the new numeric rules',
+    title: 'The EP log evidence is exact where EP is, and has three known limits',
     kind: 'infrastructure',
     status: 'open',
     summary:
-      'Several of the new operators (the gamma-precision rule, the likelihood sites, the gates) return moments but not their log evidence, so the evidence of a whole model, hyperparameter learning by maximising it and model comparison are unavailable for them.',
-    plan: 'Add `logEvidence` to each rule (the tilted mass is already computed) and test it against the brute-force integral.',
+      "Every rule of the registry carries a log evidence (each tested against a brute-force integral) and the posterior and the tape (`mp/evidence`) give the model's: against the grid evidence it is within 1e-5 on the conjugate atoms, 1e-3 on the gates, the Student-t, the clutter, and 0.01 to 0.05 on the probit, logistic, Laplace and product atoms. Three limits remain: a projected prior (half-normal, half-Cauchy, uniform) shifts it by 0.1 to 0.5 nats because the model carries the projection; a fixed point with a factor whose cavity is improper gives no evidence for it (the learned logistic regression: NaN); an alpha-divergence run has no EP energy.",
+    plan: 'Keep the exact prior as a numeric site (gap projected-priors), define the energy of a factor with an improper cavity from its last proper cavity or by a damped restart, and give the alpha runs the energy of their own divergence.',
     size: 'medium',
     refuses: [],
   },

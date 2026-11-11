@@ -613,7 +613,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `rl`              | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation                                                                                                                                                                                                                                  |
 | `games`           | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms                                                                                                                                                                                                                                  |
 | `message-passing` | message passing on factor graphs of exponential families: EP, VMP and BP as settings of one engine, 46 factor operators, variations (power, alpha, numerical, stochastic, regions, expectation consistent, AMP), anytime runs                                                                                                 |
-| `bayesian-examples` | the canonical Bayesian examples as methods run by name and knobs (data, model, one inference method with its own knobs and a time budget, posterior probes): `example-method.ts` is the scaffold every example is declared on (`defineExample`: a problem from knobs, every applicable inference method from `methodSpace`, derived paths), and `classifier-method.ts` is Bayesian classification of a 2-D data set; the EP atoms are bare setups of one factor each (`ep-atoms.ts`: `defineAtom`, `atomRun`, `atomReference`, `atomCheck`; the atoms in `ep-atoms-{conjugate,gates,functions,scales,likelihoods}.ts`, the registry `ep-atom-list.ts`, closed forms in `ep-atoms-quad.ts`) and `ep-coverage.ts` is `epCoverage()`, the tested measurement of what EP runs on |
+| `bayesian-examples` | the canonical Bayesian examples as methods run by name and knobs (data, model, one inference method with its own knobs and a time budget, posterior probes): `example-method.ts` is the scaffold every example is declared on (`defineExample`: a problem from knobs, every applicable inference method from `methodSpace`, derived paths), and `classifier-method.ts` is Bayesian classification of a 2-D data set; the EP atoms are bare setups of one factor each (`ep-atoms.ts`: `defineAtom`, `atomRun`, `atomReference`, `atomCheck`; the atoms in `ep-atoms-{conjugate,gates,functions,scales,likelihoods,kernels}.ts`, the registry `ep-atom-list.ts`, closed forms in `ep-atoms-quad.ts`) and `ep-coverage.ts` is `epCoverage()`, the tested measurement of what EP runs on |
 | `probprog`        | probabilistic programs and model specs, model analysis and structure reports, inference engines and the planner, a method per engine, validation and benchmark models, posteriors                                                                                                                                             |
 | `learn`           | estimator protocol, preprocessing, composition, model selection, calibration, conformal, active learning, privacy                                                                                                                                                                                                             |
 | `nn`              | neural networks: functional layers, modules, blocks, description, training, decoding                                                                                                                                                                                                                                          |
@@ -3688,7 +3688,10 @@ dimension order, ids, site names, expressions, the hooks for factor graphs) are 
   a program whose structure varies (a site on one branch only, a drawn plate size) is refused with the first difference.
 - `factors.ts`: `toFactorGraph`, a bound spec as a message-passing factor graph (below, 4.32a), with the reasons for what
   cannot be mapped (a scan is unrolled by `unrollScans` first: a chain has no plate, one variable and factor per step); `factorGraphPosterior` reads a run back as a `Posterior` keyed by site name; `graphOnSpec`,
-  `factorGraphVerdict`, `compileFactorGraph`, `operatorsWithout`.
+  `factorGraphVerdict`, `compileFactorGraph`, `operatorsWithout`. A `custom` function of known values is evaluated by the
+  compiler (a Gram matrix at a fixed length scale), and one that is affine in a single random vector is read as a matrix (the
+  whitened form `f = L(ell) z`); an unnamed event vector (a multivariate normal latent and its observation through a
+  diagonal known covariance) is read as a vector over a dimension of its size by `event-dims.ts` (`eventToDims`).
 
 **Inference methods (`inference/`, `omai-engine/probprog/inference`).** The convention and the methods, with no entry point
 that picks one. `method.ts` is the convention: `defineInferenceMethod` makes a `Method` of the trace library (a `Space`
@@ -3738,6 +3741,10 @@ end, never what a run computes.
 - `mp.ts`: message passing on specs: `epSpecMethod`, `vmpSpecMethod`, `bpSpecMethod` (the spec compiled once to a factor
   graph; a step is a sweep, a factor or a message by `granularity`; the state is the messages; `check` names the node and
   the reason when the model has no factor graph and whether the method has a rule for every operator of the graph).
+- `ep-grid.ts`: `epGridMethod` (kind `ep-grid`): EP inside a grid over the scalar hyperparameters a `custom` function reads (a
+  kernel's length scale): each node conditions the spec on the values (`doSpec`), EP runs on the graph that is left, and the
+  EP log evidence plus the log prior weights the node; the posterior is the evidence-weighted mixture, a step is one node in
+  a coarse-to-fine order (any snapshot is a usable posterior), and the grid extends outwards where an edge still has mass.
 - Variational methods beside `sviMethod`: `svi-extra-methods.ts` (`traceGraphSviMethod`, `traceEnumSviMethod`,
   `stickingTheLandingMethod`, `renyiSviMethod`), `svi-guide-methods.ts` (`structuredSviMethod`, `mixtureSviMethod`,
   `amortisedSviMethod`), `svi-natural-method.ts` (`naturalGradientSviMethod`, `conjugateNaturalSviMethod`),
