@@ -20,20 +20,26 @@ export interface RunProgress {
   readonly converged?: boolean
 }
 
-/** What a task is given. */
-export interface RunHost {
+/** What a task, in the page's thread or a worker, can do: say how far it is, ask whether to stop, hand the thread back. */
+export interface HostBase {
   /** Says how far the task is. The state never goes backwards within a stage. */
   readonly report: (progress: RunProgress) => void
   /** Whether the run has been stopped or replaced: the task returns what it has. */
   readonly stopped: () => boolean
   /** Resolves when the page has painted and answered what was waiting (a message to ourselves, not a timer). */
   readonly yieldToPage: () => Promise<void>
+}
+
+/** What a task is given. */
+export interface RunHost<R = unknown> extends HostBase {
+  /** Hands the page a result so far (the seeds done), which stays as the value if the run is stopped. */
+  readonly partial: (value: R) => void
   /** Calls `handler` when the run is stopped or replaced (a worker is terminated there). */
   readonly onStop: (handler: () => void) => void
 }
 
 /** A piece of work: it returns its result, or what it has when it is stopped (undefined when it has nothing). */
-export type RunTask<R> = (host: RunHost) => Promise<R | undefined>
+export type RunTask<R> = (host: RunHost<R>) => Promise<R | undefined>
 
 /** Where a run stands. */
 export type RunPhase = 'idle' | 'queued' | 'running' | 'converged' | 'done' | 'stopped' | 'failed'
@@ -127,8 +133,11 @@ export function startRun<R>(
     const done = Math.min(total, Math.max(0, same ? Math.max(before.done, p.done) : p.done))
     emit({ phase: 'running', progress: { ...p, done, total } })
   }
-  const host: RunHost = {
+  const host: RunHost<R> = {
     report,
+    partial: (value) => {
+      if (alive && going(state.phase)) emit({ value })
+    },
     stopped: () => stopRequested || !alive,
     yieldToPage: hand,
     onStop: (handler) => {
@@ -156,7 +165,7 @@ export function startRun<R>(
       emit({
         phase: stopRequested ? 'stopped' : p?.converged === true ? 'converged' : 'done',
         endedAt: now(),
-        value,
+        value: value ?? state.value,
         progress: finished && p !== undefined ? { ...p, done: p.total } : p,
       })
     } catch (e) {

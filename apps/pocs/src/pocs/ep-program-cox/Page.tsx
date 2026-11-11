@@ -4,7 +4,7 @@ import { endedText, ProgramFrame, RecoveryChart, RecoveryCheck, ReferenceBar } f
 import { agreement, recovery } from '../../shared/ep/recovery.ts'
 import { epHooks } from '../../shared/ep/sweeps.ts'
 import { RunProgress } from '../../shared/RunProgress.tsx'
-import type { RunHost } from '../../shared/run.ts'
+import type { HostBase } from '../../shared/run.ts'
 import { workerTask } from '../../shared/runWorker.ts'
 import { useRun } from '../../shared/useRun.ts'
 import { BASE, infer, simulate, WIDTH } from './program.ts'
@@ -17,7 +17,7 @@ const makeWorker = (): Worker => new Worker(new URL('./reference.worker.ts', imp
 type Made = Awaited<ReturnType<typeof fit>>
 
 /** Simulates the data and runs EP on them, reporting each sweep to the host. */
-async function fit(seed: number, amplitude: number, lengthScale: number, host: RunHost) {
+async function fit(seed: number, amplitude: number, lengthScale: number, host: HostBase) {
   const sim = simulate(seed, { amplitude, lengthScale })
   const t0 = performance.now()
   const run = await infer(sim.counts, sim.prior, epHooks(host, 'EP'))
@@ -28,8 +28,8 @@ export default function Page(): ReactNode {
   const [seed, setSeed] = useState(1)
   const [amplitude, setAmplitude] = useState(0.8)
   const [lengthScale, setLengthScale] = useState(1.5)
-  const task = useCallback((host: RunHost) => fit(seed, amplitude, lengthScale, host), [seed, amplitude, lengthScale])
-  const ep = useRun(task)
+  const task = useCallback((host: HostBase) => fit(seed, amplitude, lengthScale, host), [seed, amplitude, lengthScale])
+  const ep = useRun<Made>(task)
   const made = ep.value
   const nutsTask = useMemo(
     () =>

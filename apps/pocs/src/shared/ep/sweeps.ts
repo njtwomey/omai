@@ -7,7 +7,7 @@
 
 import { type AnytimeResult, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import type { Config, Session } from 'omai-engine/trace'
-import type { RunHost } from '../run.ts'
+import type { HostBase } from '../run.ts'
 
 /** The hooks of a program that steps: all optional. */
 export interface EpHooks {
@@ -35,11 +35,7 @@ const exp = (v: number): string => (Number.isFinite(v) ? v.toExponential(1) : 'n
  * @param unit - The word for one step ('sweep', 'iteration', 'seed').
  * @returns The hooks, to pass to a program's `infer`.
  */
-export function epHooks(
-  host: Pick<RunHost, 'report' | 'stopped' | 'yieldToPage'>,
-  stage: string,
-  unit = 'sweep',
-): EpHooks {
+export function epHooks(host: HostBase, stage: string, unit = 'sweep'): EpHooks {
   return {
     onSweep: ({ sweep, cap, change, tol }) => {
       const converged = change !== undefined && tol !== undefined && change <= tol

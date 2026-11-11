@@ -1,11 +1,12 @@
 import { type MixtureComponent, mixtureInterval, mixtureMarginal, selectedBranch } from 'omai-engine/bayesian-examples'
 import { ddot } from 'omai-engine/numerics/linalg'
-import { epSpecMethod } from 'omai-engine/probprog/inference'
+import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { foldIn, key, normal, permutation, uniform } from 'omai-engine/random'
 import { toFlat } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
+import type { EpHooks } from '../../shared/ep/sweeps.ts'
 
 /** What the page changes about the data. */
 export interface SparseSetup {
@@ -70,11 +71,19 @@ export function sparseModel(likelihood: 'gaussian' | 'student-t', noise: number)
 // region infer
 type Data = ReturnType<typeof simulate>
 
-export function infer(model: ReturnType<typeof sparseModel>, data: Data, damping = 0.5) {
+export async function infer(model: ReturnType<typeof sparseModel>, data: Data, damping = 0.5, hooks: EpHooks = {}) {
   const bound = model.bind({ X: data.X, y: data.y })
   const method = epSpecMethod(bound)
   const config = { tol: 1e-8, damping }
-  const run = session(method, { config, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
+  const cap = 300
+  const run = session(method, { config, seed: 1, steps: cap, mode: 'live', logs: 'all' })
+  // One sweep at a time: the page hears of each (the bar), and may stop the run.
+  await runAnytimeAsync(run, {
+    snapshot: { everySteps: 1 },
+    onSnapshot: ({ t, state }) => hooks.onSweep?.({ sweep: t, cap, change: state.change, tol: config.tol }),
+    shouldStop: () => hooks.stopped?.() === true,
+    yieldToPage: hooks.yieldToPage ?? (() => Promise.resolve()),
+  })
   // The marginals by site: z, slab, spike, tau.
   const posterior = method.posterior?.(run.state, run.config)
   if (posterior === undefined) throw new Error('EP gave no posterior')
@@ -101,7 +110,7 @@ export function sparseMixtureModel() {
  * component's marginal belief is its selected branch with the switch's probability and its prior otherwise, so the branch is
  * recovered from it (`selectedBranch`) before the two are mixed.
  */
-export function coefficients(posterior: ReturnType<typeof infer>['posterior']) {
+export function coefficients(posterior: Awaited<ReturnType<typeof infer>>['posterior']) {
   const get = (site: string, f: 'mean' | 'stddev'): number[] => Array.from(toFlat(posterior[f](site)))
   const [slabMean, slabSd, spikeMean, spikeSd] = [
     get('slab', 'mean'),

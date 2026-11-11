@@ -28,7 +28,7 @@ export interface Found {
 }
 
 /** The estimates of a posterior over the three sites: `quantiles` runs over (5%, 50%, 95%). */
-export function foundOf(posterior: ReturnType<typeof infer>['posterior'], components: number): Found {
+export function foundOf(posterior: Awaited<ReturnType<typeof infer>>['posterior'], components: number): Found {
   const probs = [0.05, 0.5, 0.95]
   const row = (site: string, k: number): number[] =>
     Array.from(toFlat(posterior.quantiles(site, probs))).slice(3 * k, 3 * k + 3)
@@ -80,7 +80,7 @@ export function runCircular(setup: CircularSetup, hours?: readonly number[]): Ci
 }
 
 /** For each reading, the probability that EP reads it as an early or a late copy (a shift of a period), for the two models with copies. */
-function wrappedShare(setup: CircularSetup, posterior: ReturnType<typeof infer>['posterior'], rows: number): number[] {
+function wrappedShare(setup: CircularSetup, posterior: Awaited<ReturnType<typeof infer>>['posterior'], rows: number): number[] {
   if (setup.variant !== 'means' && setup.variant !== 'data') return []
   const marginal = posterior.marginal('copy')
   const share = new Array<number>(rows).fill(0)

@@ -1,9 +1,10 @@
-import { epSpecMethod } from 'omai-engine/probprog/inference'
+import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { key, normal, split, uniform } from 'omai-engine/random'
 import { toFlat } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
+import type { EpHooks } from '../../shared/ep/sweeps.ts'
 
 export const PATH = { phi: 0.97, sigma: 0.3, start: 1.5 } // x_t = phi x_(t-1) + N(0, sigma^2)
 export const WIDTH = 8 // an outlier's noise is 8 times as wide as an ordinary one
@@ -51,11 +52,19 @@ export function model({ sd, outliers }: Noise, robust = true) {
 
 // region infer
 /** Expectation propagation on the chain: the state at each step, with 90% intervals. */
-export function infer(y: readonly number[], noise: Noise, robust = true) {
+export async function infer(y: readonly number[], noise: Noise, robust = true, hooks: EpHooks = {}) {
   const bound = model(noise, robust).bind({ y })
   const ep = epSpecMethod(bound)
   const config = { tol: 1e-9 }
-  const run = session(ep, { config, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
+  const cap = 300
+  const run = session(ep, { config, seed: 1, steps: cap, mode: 'live', logs: 'all' })
+  // One sweep at a time: the page hears of each (the bar), and may stop the run.
+  await runAnytimeAsync(run, {
+    snapshot: { everySteps: 1 },
+    onSnapshot: ({ t, state }) => hooks.onSweep?.({ sweep: t, cap, change: state.change, tol: config.tol }),
+    shouldStop: () => hooks.stopped?.() === true,
+    yieldToPage: hooks.yieldToPage ?? (() => Promise.resolve()),
+  })
   const rows =
     ep
       .posterior?.(run.state, run.config)

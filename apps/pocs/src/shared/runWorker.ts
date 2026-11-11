@@ -7,7 +7,7 @@
  * page, whose `stopped` turns true on the page's Stop and whose `partial` sends a result so far.
  */
 
-import type { RunHost, RunProgress, RunTask } from './run.ts'
+import type { HostBase, RunProgress, RunTask } from './run.ts'
 import { yieldToPage } from './run.ts'
 
 /** What a worker says to the page. */
@@ -21,7 +21,7 @@ export type WorkerMessage<R> =
 export type PageMessage<Q> = { readonly type: 'run'; readonly request: Q } | { readonly type: 'stop' }
 
 /** What a worker's task is given: the host, and a way to send a result so far. */
-export interface WorkerHost<R> extends Omit<RunHost, 'onStop'> {
+export interface WorkerHost<R> extends HostBase {
   readonly partial: (value: R) => void
 }
 
@@ -90,8 +90,10 @@ export function workerTask<Q, R>(make: () => Worker, request: Q, graceMs = 4000)
       worker.onmessage = (e: MessageEvent<WorkerMessage<R>>): void => {
         const m = e.data
         if (m.type === 'progress') host.report(m.progress)
-        else if (m.type === 'partial') last = m.value
-        else if (m.type === 'result') settle(() => resolve(m.value ?? last))
+        else if (m.type === 'partial') {
+          last = m.value
+          host.partial(m.value)
+        } else if (m.type === 'result') settle(() => resolve(m.value ?? last))
         else settle(() => reject(new Error(m.message)))
       }
       worker.onerror = (e): void => settle(() => reject(new Error(e.message)))

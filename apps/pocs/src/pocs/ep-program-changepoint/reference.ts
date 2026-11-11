@@ -3,6 +3,7 @@
 // Not part of the program shown.
 import { gamma, keyFromPath, uniform } from 'omai-engine/random'
 import { toFlat } from 'omai-engine/tensor'
+import { type EpHooks, pacer } from '../../shared/ep/sweeps.ts'
 import { PRIOR } from './program.ts'
 
 /** What the reference gives back: P(z_t = k) and the posterior mean and sd of each rate. */
@@ -16,11 +17,12 @@ export interface Reference {
 const logPmf = (y: number, rate: number): number => y * Math.log(rate) - rate // up to a constant of y
 
 /** Gibbs with forward-filtering backward-sampling for the regimes. */
-export function gibbsReference(
+export async function gibbsReference(
   y: readonly number[],
   stay: number,
   options: { sweeps?: number; burn?: number; seed?: number } = {},
-): Reference {
+  hooks: EpHooks = {},
+): Promise<Reference> {
   const { sweeps = 3000, burn = 300, seed = 11 } = options
   const T = y.length
   const K = 3
@@ -30,7 +32,14 @@ export function gibbsReference(
   const visits = Array.from({ length: T }, () => new Array<number>(K).fill(0))
   const sum = new Array<number>(K).fill(0)
   const sum2 = new Array<number>(K).fill(0)
+  // The sampler goes on through a stop until it has 100 draws, so that what it returns can be read.
+  const pace = pacer(hooks)
+  let ran = sweeps
   for (let sweep = 0; sweep < sweeps; sweep++) {
+    if ((await pace(sweep, sweeps)) && sweep >= burn + 100) {
+      ran = sweep
+      break
+    }
     const u = toFlat(uniform(keyFromPath(seed, 'z', sweep), [T]))
     // Forward: filtered probabilities.
     const alpha: number[][] = []
@@ -81,7 +90,7 @@ export function gibbsReference(
       })
     }
   }
-  const n = sweeps - burn
+  const n = ran - burn
   const rateMean = sum.map((s) => s / n)
   return {
     regimes: visits.map((v) => v.map((c) => c / n)),
