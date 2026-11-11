@@ -245,7 +245,10 @@ function Fit(props: {
       k: model.k,
       degree: model.degree,
       order: model.order,
-      logLambdaPrior: { mean: model.logLambdaMean, sd: model.logLambdaSd },
+      // A knob that does not apply to the choices made is absent from the value: the library's default stands.
+      ...(model.logLambdaMean === undefined || model.logLambdaSd === undefined
+        ? {}
+        : { logLambdaPrior: { mean: model.logLambdaMean, sd: model.logLambdaSd } }),
       inclusion: model.inclusion,
       slabScale: model.slabScale,
       spikeRatio: model.spikeRatio,
