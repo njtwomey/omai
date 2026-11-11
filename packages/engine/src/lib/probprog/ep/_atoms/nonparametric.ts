@@ -7,21 +7,22 @@
  * Dirichlets integrated out, which makes every posterior a mixture of betas.
  */
 
-import { dict, real } from '../../space/index.ts'
-import type { Config } from '../../trace/index.ts'
-import { configNumber } from '../inference/method.ts'
-import * as d from '../model/dists/index.ts'
-import { defineModel, ops } from '../model/index.ts'
-import { lg } from './_util.ts'
-import { type AtomProblem, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
-import { gridMarginals, normalPdf } from './ep-atoms-quad.ts'
+import { dict, real } from '../../../space/index.ts'
+import type { Config } from '../../../trace/index.ts'
+import { configNumber } from '../../inference/method.ts'
+import * as d from '../../model/dists/index.ts'
+import { defineModel, ops } from '../../model/index.ts'
+import { type ExactMarginal, gridMarginals, lg, logWeights, normalPdf } from '../../validation/index.ts'
+import { defineAtom } from '../_define.ts'
+import { tolerance } from '../_tolerance.ts'
+import type { AtomParts, EpAtom } from '../atom-types.ts'
 
 // ----- the stick-breaking mixture -----
 
 const COMPONENT_MEANS = [-3, 0, 3]
 const STICK_DATA = [-3.2, -2.8, -0.4, -3.1, 2.9, 0.3, -2.7, 3.3, -0.2, -3.4]
 
-function stickBreakingProblem(k: Config): AtomProblem {
+function stickBreakingProblem(k: Config): AtomParts {
   const alpha = configNumber(k, 'concentration')
   const noise = configNumber(k, 'noise')
   // region stick-breaking
@@ -55,37 +56,36 @@ function stickBreakingProblem(k: Config): AtomProblem {
     301,
   )
   return {
-    definition,
-    data: { y: STICK_DATA },
-    equations: [
-      `v_1, v_2 ~ Beta(1, ${alpha})   (the breaks)`,
-      'pi = (v_1, v_2 (1 - v_1), (1 - v_1)(1 - v_2))   (stick-breaking, truncated at three components)',
-      `z_i ~ Categorical(pi),  y_i ~ N(mean[z_i], ${noise}²), means (${COMPONENT_MEANS.join(', ')})`,
-      `observe y = (${STICK_DATA.join(', ')})`,
-    ],
-    quantities: [
-      { name: 'v[0]', label: 'v_1 (the share taken by the first component)', support: 'unit' },
-      { name: 'v[1]', label: 'v_2 (the share of the rest taken by the second)', support: 'unit' },
-    ],
-    pair: ['v[0]', 'v[1]'],
-    exact: { 'v[0]': g.marginal(0), 'v[1]': g.marginal(1) },
-    exactJoint: { a: 'v[0]', b: 'v[1]', ...g.joint(0, 1) },
-    referenceSource: 'a grid over the two breaks with the assignments summed out',
+    build: {
+      definition,
+      data: { y: STICK_DATA },
+      quantities: [
+        { name: 'v[0]', label: 'v_1 (the share taken by the first component)', support: 'unit' },
+        { name: 'v[1]', label: 'v_2 (the share of the rest taken by the second)', support: 'unit' },
+      ],
+    },
+    reference: {
+      exact: { 'v[0]': g.marginal(0), 'v[1]': g.marginal(1) },
+      exactJoint: { a: 'v[0]', b: 'v[1]', ...g.joint(0, 1) },
+      referenceSource: 'a grid over the two breaks with the assignments summed out',
+    },
+    present: {
+      equations: [
+        `v_1, v_2 ~ Beta(1, ${alpha})   (the breaks)`,
+        'pi = (v_1, v_2 (1 - v_1), (1 - v_1)(1 - v_2))   (stick-breaking, truncated at three components)',
+        `z_i ~ Categorical(pi),  y_i ~ N(mean[z_i], ${noise}²), means (${COMPONENT_MEANS.join(', ')})`,
+        `observe y = (${STICK_DATA.join(', ')})`,
+      ],
+      pair: ['v[0]', 'v[1]'],
+    },
   }
 }
 
 /**
  * A truncated Dirichlet-process mixture of three known Gaussians: two Beta breaks whose stick-breaking weights are the
  * probabilities of the assignments. The exact posterior of the breaks is a two-dimensional grid with the assignments summed out.
- *
- * @index estimator EP atom: a stick-breaking mixture (truncated Dirichlet process), the stick-breaking factor on beta breaks.
- * @example
- * ```ts
- * import { stickBreakingAtom } from 'omai-engine/probprog/ep'
- * stickBreakingAtom.name // => 'stick-breaking'
- * ```
  */
-export const stickBreakingAtom: EpAtom = defineAtom({
+const stickBreakingAtom: EpAtom = defineAtom({
   name: 'stick-breaking',
   title: 'Stick-breaking mixture (truncated Dirichlet process)',
   what: 'Ten observations from three known Gaussians whose weights are the stick-breaking of two Beta breaks, with a categorical assignment per observation: EP reads the weights through one stick-breaking factor per assignment, against the grid over the breaks.',
@@ -96,18 +96,15 @@ export const stickBreakingAtom: EpAtom = defineAtom({
   ],
   family: 'nonparametric',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.1,
-    sdRatio: [0.85, 1.15],
-    ks: 0.08,
-    reason:
-      'the assignments are summed out exactly in each factor and the breaks are matched to one Beta each, so what EP approximates is the loop over the breaks that every assignment shares: measured within 0.02 reference sds',
-  },
+  tolerance: tolerance(
+    'gamma-projected',
+    'the assignments are summed out exactly in each factor and the breaks are matched to one Beta each, so what EP approximates is the loop over the breaks that every assignment shares: measured within 0.02 reference sds',
+  ),
   knobs: dict({
     concentration: real(1, 6, { default: 1, step: 0.25, label: 'concentration of the Dirichlet process (alpha)' }),
     noise: real(0.3, 1.5, { default: 1.3, step: 0.05, label: 'spread of each component (large: they overlap)' }),
   }),
-  problem: stickBreakingProblem,
+  parts: stickBreakingProblem,
 })
 
 // ----- the topic model -----
@@ -149,7 +146,7 @@ function betaMixture(
   }
 }
 
-function topicModelProblem(k: Config): AtomProblem {
+function topicModelProblem(k: Config): AtomParts {
   const alpha = configNumber(k, 'mixture')
   const sharp = configNumber(k, 'topicPrior')
   // each topic's prior leans to its own word: topic 0 to word 0, topic 1 to word 1 (the labels are softly fixed)
@@ -198,8 +195,7 @@ function topicModelProblem(k: Config): AtomProblem {
     for (let kk = 0; kk < 2; kk++) logw += logPrior(topic[kk] as number[], beta[kk] as number[])
     assignments.push({ logw, doc, topic })
   }
-  const top = Math.max(...assignments.map((a) => a.logw))
-  const weights = assignments.map((a) => Math.exp(a.logw - top))
+  const { weights } = logWeights(assignments.map((a) => a.logw))
   const exact: Record<string, ExactMarginal> = {}
   for (let dd = 0; dd < DOCS; dd++)
     exact[`theta[${dd * 2}]`] = betaMixture(
@@ -218,22 +214,28 @@ function topicModelProblem(k: Config): AtomProblem {
       })),
     )
   return {
-    definition,
-    data: { w: WORD_DATA },
-    equations: [
-      `theta_d ~ Dirichlet(${alpha}, ${alpha}) for the two documents   (the topic mixture of each)`,
-      `phi_0 ~ Dirichlet(${beta[0]?.join(', ')}),  phi_1 ~ Dirichlet(${beta[1]?.join(', ')})   (the word distribution of each topic)`,
-      'z_dn ~ Categorical(theta_d),  w_dn ~ Categorical(phi[z_dn])   (a topic per token, the word read through it)',
-      `observe w = (${WORD_DATA.map((r) => r.join(' ')).join(' | ')})`,
-    ],
-    quantities: [
-      { name: 'theta[0]', label: 'theta_1 (document 1: the share of topic 0)', support: 'unit' },
-      { name: 'theta[2]', label: 'theta_2 (document 2: the share of topic 0)', support: 'unit' },
-      { name: 'phi[0]', label: 'phi_0 (topic 0: the probability of word 0)', support: 'unit' },
-      { name: 'phi[2]', label: 'phi_1 (topic 1: the probability of word 0)', support: 'unit' },
-    ],
-    exact,
-    referenceSource: 'the 256 assignments of the eight tokens to topics, the Dirichlets integrated out',
+    build: {
+      definition,
+      data: { w: WORD_DATA },
+      quantities: [
+        { name: 'theta[0]', label: 'theta_1 (document 1: the share of topic 0)', support: 'unit' },
+        { name: 'theta[2]', label: 'theta_2 (document 2: the share of topic 0)', support: 'unit' },
+        { name: 'phi[0]', label: 'phi_0 (topic 0: the probability of word 0)', support: 'unit' },
+        { name: 'phi[2]', label: 'phi_1 (topic 1: the probability of word 0)', support: 'unit' },
+      ],
+    },
+    reference: {
+      exact,
+      referenceSource: 'the 256 assignments of the eight tokens to topics, the Dirichlets integrated out',
+    },
+    present: {
+      equations: [
+        `theta_d ~ Dirichlet(${alpha}, ${alpha}) for the two documents   (the topic mixture of each)`,
+        `phi_0 ~ Dirichlet(${beta[0]?.join(', ')}),  phi_1 ~ Dirichlet(${beta[1]?.join(', ')})   (the word distribution of each topic)`,
+        'z_dn ~ Categorical(theta_d),  w_dn ~ Categorical(phi[z_dn])   (a topic per token, the word read through it)',
+        `observe w = (${WORD_DATA.map((r) => r.join(' ')).join(' | ')})`,
+      ],
+    },
   }
 }
 
@@ -241,15 +243,8 @@ function topicModelProblem(k: Config): AtomProblem {
  * A topic model of two documents of four words over a vocabulary of two, with two topics: a Dirichlet mixture per document, a Dirichlet
  * word distribution per topic and a categorical topic per token, with each word read through its token's topic. The exact posterior
  * enumerates the assignments of the tokens to topics.
- *
- * @index estimator EP atom: a topic model (Dirichlet mixtures and topics, a word read through its token's topic: a gate of discrete factors).
- * @example
- * ```ts
- * import { topicModelAtom } from 'omai-engine/probprog/ep'
- * topicModelAtom.name // => 'topic-model'
- * ```
  */
-export const topicModelAtom: EpAtom = defineAtom({
+const topicModelAtom: EpAtom = defineAtom({
   name: 'topic-model',
   title: 'Topic model (Dirichlet mixtures, a word read through its topic)',
   what: 'Two documents of four words, two topics: a Dirichlet mixture per document, a Dirichlet word distribution per topic, a topic per token and the word drawn from that topic: one gate per token over the topics’ conjugate discrete factors, against the enumeration of the assignments.',
@@ -260,16 +255,16 @@ export const topicModelAtom: EpAtom = defineAtom({
   ],
   family: 'nonparametric',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.8, 1.2],
-    ks: 0.08,
-    reason:
-      'the exact posteriors are mixtures of betas over the assignments (the label-swapped reading too), which one Dirichlet each cannot be; measured within 0.06 reference sds and 4 percent of the spread',
-  },
+  tolerance: tolerance(
+    'close',
+    'the exact posteriors are mixtures of betas over the assignments (the label-swapped reading too), which one Dirichlet each cannot be; measured within 0.06 reference sds and 4 percent of the spread',
+  ),
   knobs: dict({
     mixture: real(0.3, 3, { default: 1, step: 0.1, label: 'concentration of each document’s topic mixture' }),
     topicPrior: real(1, 5, { default: 2, step: 0.25, label: 'how strongly each topic’s prior leans to its own word' }),
   }),
-  problem: topicModelProblem,
+  parts: topicModelProblem,
 })
+
+/** The atoms of the `nonparametric` file, basic and learned twins together. */
+export const nonparametricAtoms: readonly EpAtom[] = [stickBreakingAtom, topicModelAtom]

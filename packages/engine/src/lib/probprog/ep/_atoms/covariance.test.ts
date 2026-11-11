@@ -1,7 +1,7 @@
 // The covariance atoms: the closed-form pieces of their references against direct computations, and each atom against its reference.
 import { describe, expect, it } from 'vitest'
-import { epAtoms } from './ep-atom-list.ts'
-import { verifyAtom } from './ep-atoms.ts'
+import { epAtoms } from '../ep-atom-list.ts'
+import { verifyAtom } from '../ep-atoms.ts'
 
 const covariance = epAtoms.filter((a) => a.family === 'covariance')
 

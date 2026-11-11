@@ -1,7 +1,9 @@
 // The references of the extended gate atoms: the Gibbs sampler of a mixture finds the components of well-separated data, the
 // ordered form relabels every draw, and the clutter quadrature puts the far observations on the clutter and the near ones on the centre.
 import { describe, expect, it } from 'vitest'
-import { clutterPosterior, mixtureGibbs, samplesMarginal } from './ep-atoms-gibbs.ts'
+import { clutterPosterior } from './clutter.ts'
+import { samplesMarginal } from './marginal.ts'
+import { mixtureGibbs } from './sampler.ts'
 
 describe('mixtureGibbs', () => {
   const x = [-2.1, -1.8, -2.4, -1.5, -2.0, -1.7, 2.2, 1.9, 3.1, 2.4, 2.6, 2.0]

@@ -1,9 +1,9 @@
 // The spike and slab setups against their closed form (a two-component mixture whose weights are the branches' evidence),
 // across observed values, inclusion probabilities and widths: EP's probability of the slab, mean and sd of the coefficient.
 import { describe, expect, it } from 'vitest'
-import { epAtom } from './ep-atom-list.ts'
-import { verifyAtom } from './ep-atoms.ts'
-import { spikeSlabPosterior, twoComponentGate } from './ep-atoms-mixtures.ts'
+import { spikeSlabPosterior, twoComponentGate } from '../../validation/index.ts'
+import { epAtom } from '../ep-atom-list.ts'
+import { verifyAtom } from '../ep-atoms.ts'
 
 describe('spike and slab as a gate', () => {
   const cases = [] as { y: number; pi: number; slab: number; spike: number }[]

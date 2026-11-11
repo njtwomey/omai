@@ -8,12 +8,15 @@
  * distribution differs from the exact one.
  */
 
-import { dict, real } from '../../space/index.ts'
-import type { Config } from '../../trace/index.ts'
-import { configNumber } from '../inference/method.ts'
-import * as d from '../model/dists/index.ts'
-import { defineModel, ops } from '../model/index.ts'
-import { type AtomProblem, type AtomTolerance, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
+import { dict, real } from '../../../space/index.ts'
+import type { Config } from '../../../trace/index.ts'
+import { configNumber } from '../../inference/method.ts'
+import * as d from '../../model/dists/index.ts'
+import { defineModel, ops } from '../../model/index.ts'
+import { type ExactMarginal, logWeights, probabilityMarginal, weightedMarginal } from '../../validation/index.ts'
+import { defineAtom } from '../_define.ts'
+import { tolerance } from '../_tolerance.ts'
+import type { AtomParts, AtomProblem, AtomTolerance, EpAtom } from '../atom-types.ts'
 
 const BASE = [-2.1, 1.9, 0.3, 2.2, -0.4, 1.7, 0.6, -1.8, 0.9, 2.3]
 const SD = 0.5
@@ -42,28 +45,6 @@ const lgammaStirling = (x: number): number => {
 /** The observations the knob `spread` makes: the base set scaled towards zero, where the two components overlap. */
 const observations = (k: Config): number[] => BASE.map((v) => v * configNumber(k, 'spread'))
 
-/** A probability quantity: the exact probability that a switch is on, and its spread as a coin. */
-const responsibility = (p: number): ExactMarginal => ({ mean: p, sd: Math.sqrt(p * (1 - p)), pdf: () => 0 })
-
-/** The marginal of a quantity on a grid of midpoints with weights, as an exact marginal with a piecewise-constant density. */
-function gridMarginal(points: readonly number[], weights: readonly number[]): ExactMarginal {
-  const z = weights.reduce((a, b) => a + b, 0)
-  const mean = points.reduce((a, x, i) => a + (x * (weights[i] as number)) / z, 0)
-  const sd = Math.sqrt(points.reduce((a, x, i) => a + ((x - mean) ** 2 * (weights[i] as number)) / z, 0))
-  const step = (points[1] as number) - (points[0] as number)
-  const top = Math.max(...weights)
-  const live = points.filter((_, i) => (weights[i] as number) > 1e-6 * top)
-  return {
-    mean,
-    sd,
-    pdf: (x) => {
-      const i = Math.round((x - (points[0] as number)) / step)
-      return i < 0 || i >= points.length ? 0 : (weights[i] as number) / z / step
-    },
-    range: [Math.min(...live) - step, Math.max(...live) + step],
-  }
-}
-
 /**
  * The exact posterior of the weight of the second component (a beta prior) and each observation's responsibility: the switches
  * summed out one by one, so the posterior of the weight is its prior times the product of the observations' mixture likelihoods, a
@@ -80,11 +61,10 @@ function twoComponentExact(
   const logs = ps.map(
     (p) => logPrior(p) + x.reduce((a, _, i) => a + Math.log(p * (l1[i] as number) + (1 - p) * (l0[i] as number)), 0),
   )
-  const top = Math.max(...logs)
-  const w = logs.map((v) => Math.exp(v - top))
+  const { weights: w } = logWeights(logs)
   const z = w.reduce((a, b) => a + b, 0)
   return {
-    weight: gridMarginal(ps, w),
+    weight: weightedMarginal(ps, w),
     responsibilities: x.map((_, i) =>
       ps.reduce(
         (a, p, j) =>
@@ -96,13 +76,10 @@ function twoComponentExact(
   }
 }
 
-const GATE_TOLERANCE: AtomTolerance = {
-  meanZ: 0.15,
-  sdRatio: [0.85, 1.15],
-  ks: 0.08,
-  reason:
-    'the exact posterior of the weight is a product of mixtures of two terms each, skewed or two-humped where observations are ambiguous; EP carries one beta for it, matched on its log moments through each switch',
-}
+const GATE_TOLERANCE = tolerance(
+  'close',
+  'the exact posterior of the weight is a product of mixtures of two terms each, skewed or two-humped where observations are ambiguous; EP carries one beta for it, matched on its log moments through each switch',
+)
 
 const priorKnobs = {
   a: real(0.3, 8, { default: 1, step: 0.1, label: 'prior a of the weight' }),
@@ -133,7 +110,7 @@ const equationsOf = (a: number, b: number, x: readonly number[], summed: boolean
   `observe x = (${x.map((v) => v.toFixed(2)).join(', ')})`,
 ]
 
-function explicitProblem(k: Config): AtomProblem {
+function explicitProblem(k: Config): AtomParts {
   const [a, b] = [configNumber(k, 'a'), configNumber(k, 'b')]
   const x = observations(k)
   // region gate-weight
@@ -147,13 +124,19 @@ function explicitProblem(k: Config): AtomProblem {
   // endregion
   const exact = twoComponentExact(x, (p) => (a - 1) * Math.log(p) + (b - 1) * Math.log(1 - p))
   return {
-    definition,
-    data: { x },
-    equations: equationsOf(a, b, x, false),
-    quantities: weightQuantities(x.length),
-    exact: {
-      pi: exact.weight,
-      ...Object.fromEntries(exact.responsibilities.map((p, i) => [`z[${i}]`, responsibility(p)])),
+    build: {
+      definition,
+      data: { x },
+      quantities: weightQuantities(x.length),
+    },
+    reference: {
+      exact: {
+        pi: exact.weight,
+        ...Object.fromEntries(exact.responsibilities.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])),
+      },
+    },
+    present: {
+      equations: equationsOf(a, b, x, false),
     },
   }
 }
@@ -162,15 +145,8 @@ function explicitProblem(k: Config): AtomProblem {
  * A mixture of two known Gaussians whose mixing weight has a beta prior, the switch of each observation kept as a variable: the
  * conjugate Bernoulli-beta factor ties every switch to the weight, and EP reports the weight as one beta and each observation's
  * responsibility. The exact answer sums the switches out analytically.
- *
- * @index estimator EP atom: a gate with an unknown mixing weight (a beta prior on the Bernoulli switch probability).
- * @example
- * ```ts
- * import { gateWeightAtom } from 'omai-engine/probprog/ep'
- * gateWeightAtom.name // => 'gate-weight'
- * ```
  */
-export const gateWeightAtom: EpAtom = defineAtom({
+const gateWeightAtom: EpAtom = defineAtom({
   name: 'gate-weight',
   title: 'Gate with an unknown mixing weight (beta prior)',
   what: 'A mixture of two known narrow Gaussians with ten observations, each with its own switch z_i ~ Bernoulli(pi) and a beta prior on pi: the posterior of the weight and each switch from EP, against the switches summed out exactly.',
@@ -182,11 +158,12 @@ export const gateWeightAtom: EpAtom = defineAtom({
   family: 'gate weights',
   reference: 'exact',
   tolerance: GATE_TOLERANCE,
+  evidence: { nats: 1e-3, reason: 'a gate with a beta weight' },
   knobs: dict(priorKnobs),
-  problem: explicitProblem,
+  parts: explicitProblem,
 })
 
-function summedOutProblem(k: Config): AtomProblem {
+function summedOutProblem(k: Config): AtomParts {
   const [a, b] = [configNumber(k, 'a'), configNumber(k, 'b')]
   const x = observations(k)
   // region gate-weight-summed-out
@@ -199,11 +176,17 @@ function summedOutProblem(k: Config): AtomProblem {
   // endregion
   const exact = twoComponentExact(x, (p) => (a - 1) * Math.log(p) + (b - 1) * Math.log(1 - p))
   return {
-    definition,
-    data: { x },
-    equations: equationsOf(a, b, x, true),
-    quantities: [{ name: 'pi', label: 'pi (the mixing weight of the + component)', support: 'unit' }],
-    exact: { pi: exact.weight },
+    build: {
+      definition,
+      data: { x },
+      quantities: [{ name: 'pi', label: 'pi (the mixing weight of the + component)', support: 'unit' }],
+    },
+    reference: {
+      exact: { pi: exact.weight },
+    },
+    present: {
+      equations: equationsOf(a, b, x, true),
+    },
   }
 }
 
@@ -211,15 +194,8 @@ function summedOutProblem(k: Config): AtomProblem {
  * The same model with the switches summed out: each observation is one factor on the weight, `l1 pi + l0 (1 - pi)`. EP's message
  * from it equals the one the explicit gate sends, so the two routes give the same posterior of the weight; this one has no
  * variable for the switches and so no responsibilities.
- *
- * @index estimator EP atom: a mixture with an unknown weight, the switches summed out (mixture-weight factor).
- * @example
- * ```ts
- * import { gateWeightSummedOutAtom } from 'omai-engine/probprog/ep'
- * gateWeightSummedOutAtom.name // => 'gate-weight-summed-out'
- * ```
  */
-export const gateWeightSummedOutAtom: EpAtom = defineAtom({
+const gateWeightSummedOutAtom: EpAtom = defineAtom({
   name: 'gate-weight-summed-out',
   title: 'Mixture with an unknown weight, switches summed out',
   what: 'The same mixture and beta prior with the switches summed out: one mixture-weight factor per observation on the weight, so EP reports the weight but not each observation’s responsibility.',
@@ -228,7 +204,7 @@ export const gateWeightSummedOutAtom: EpAtom = defineAtom({
   reference: 'exact',
   tolerance: GATE_TOLERANCE,
   knobs: dict(priorKnobs),
-  problem: summedOutProblem,
+  parts: summedOutProblem,
 })
 
 // ----- three components and a Dirichlet on the weights -----
@@ -236,7 +212,7 @@ export const gateWeightSummedOutAtom: EpAtom = defineAtom({
 const THREE = [-3, 0, 3]
 const BASE3 = [-2.9, 3.1, 0.2, 2.8, -0.3, -3.2, 0.5, 1.4, -1.6, 2.9]
 
-function dirichletWeightProblem(k: Config): AtomProblem {
+function dirichletWeightProblem(k: Config): AtomParts {
   const a = configNumber(k, 'concentration')
   const x = BASE3.map((v) => v * configNumber(k, 'spread'))
   // region gate-weight-dirichlet
@@ -283,36 +259,35 @@ function dirichletWeightProblem(k: Config): AtomProblem {
     ;(marg[2][k2] as number) += w
   }
   const points = Array.from({ length: G }, (_, i) => (i + 0.5) / G)
-  const exact = Object.fromEntries(marg.map((w, c) => [`pi[${c}]`, gridMarginal(points, w)]))
+  const exact = Object.fromEntries(marg.map((w, c) => [`pi[${c}]`, weightedMarginal(points, w)]))
   return {
-    definition,
-    data: { x, means: THREE },
-    equations: [
-      `pi ~ Dirichlet(${a}, ${a}, ${a})   (the weights of the three components)`,
-      `z_i ~ Categorical(pi),  x_i ~ N(mean[z_i], ${SD}²), means (${THREE.join(', ')})`,
-      `observe x = (${x.map((v) => v.toFixed(2)).join(', ')})`,
-    ],
-    quantities: THREE.map((c, i) => ({
-      name: `pi[${i}]`,
-      label: `pi of the component at ${c}`,
-      support: 'unit' as const,
-    })),
-    exact,
+    build: {
+      definition,
+      data: { x, means: THREE },
+      quantities: THREE.map((c, i) => ({
+        name: `pi[${i}]`,
+        label: `pi of the component at ${c}`,
+        support: 'unit' as const,
+      })),
+    },
+    reference: {
+      exact,
+    },
+    present: {
+      equations: [
+        `pi ~ Dirichlet(${a}, ${a}, ${a})   (the weights of the three components)`,
+        `z_i ~ Categorical(pi),  x_i ~ N(mean[z_i], ${SD}²), means (${THREE.join(', ')})`,
+        `observe x = (${x.map((v) => v.toFixed(2)).join(', ')})`,
+      ],
+    },
   }
 }
 
 /**
  * A mixture of three known Gaussians with a Dirichlet prior on the weights and a categorical switch per observation: the
  * conjugate discrete-Dirichlet factor. The exact answer is the posterior on the simplex, summed over the switches analytically.
- *
- * @index estimator EP atom: a gate with unknown weights of three components (a Dirichlet prior on the switch probabilities).
- * @example
- * ```ts
- * import { gateWeightDirichletAtom } from 'omai-engine/probprog/ep'
- * gateWeightDirichletAtom.name // => 'gate-weight-dirichlet'
- * ```
  */
-export const gateWeightDirichletAtom: EpAtom = defineAtom({
+const gateWeightDirichletAtom: EpAtom = defineAtom({
   name: 'gate-weight-dirichlet',
   title: 'Gate with unknown mixing weights (Dirichlet prior, three components)',
   what: 'A mixture of three known narrow Gaussians with ten observations, a categorical switch per observation and a Dirichlet prior on the three weights: the posterior of each weight from EP, against the exact one on the simplex.',
@@ -323,7 +298,7 @@ export const gateWeightDirichletAtom: EpAtom = defineAtom({
   ],
   family: 'gate weights',
   reference: 'exact',
-  tolerance: { ...GATE_TOLERANCE, meanZ: 0.2, sdRatio: [0.8, 1.2], ks: 0.1 },
+  tolerance: tolerance('wide', GATE_TOLERANCE.reason),
   knobs: dict({
     concentration: real(0.3, 6, { default: 1, step: 0.1, label: 'prior concentration of each weight' }),
     spread: real(0.1, 1.2, {
@@ -332,12 +307,12 @@ export const gateWeightDirichletAtom: EpAtom = defineAtom({
       label: 'spread of the observations (small: the components overlap)',
     }),
   }),
-  problem: dirichletWeightProblem,
+  parts: dirichletWeightProblem,
 })
 
 // ----- a hyperprior on the strength of the prior on the weight -----
 
-function hyperWeightProblem(k: Config): AtomProblem {
+function hyperWeightProblem(k: Config): AtomParts {
   const [shape, rate] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
   const x = observations(k)
   // region gate-weight-hyperprior
@@ -383,7 +358,7 @@ function hyperWeightProblem(k: Config): AtomProblem {
   const piW = w.map((row) => row.reduce((a, v) => a + v, 0))
   const sW = ts.map((_, j) => w.reduce((a, row) => a + (row[j] as number), 0))
   const exact = {
-    pi: gridMarginal(ps, piW),
+    pi: weightedMarginal(ps, piW),
     strength: ((): ExactMarginal => {
       const alphas = ts.map(Math.exp)
       const mean = alphas.reduce((a, s, j) => a + (s * (sW[j] as number)) / z, 0)
@@ -409,22 +384,28 @@ function hyperWeightProblem(k: Config): AtomProblem {
     ),
   )
   return {
-    definition,
-    data: { x },
-    equations: [
-      `strength ~ Gamma(${shape}, ${rate})   (the hyperprior: how concentrated the weight prior is)`,
-      'pi ~ Beta(strength, strength)   (the weight of the + component)',
-      'z_i ~ Bernoulli(pi),  z_i = 0: x_i ~ N(-2, 0.5²), z_i = 1: x_i ~ N(+2, 0.5²)',
-      `observe x = (${x.map((v) => v.toFixed(2)).join(', ')})`,
-    ],
-    quantities: [
-      ...weightQuantities(x.length),
-      { name: 'strength', label: 'strength (the hyperparameter)', support: 'positive' },
-    ],
-    exact: {
-      pi: exact.pi,
-      strength: exact.strength,
-      ...Object.fromEntries(responsibilities.map((p, i) => [`z[${i}]`, responsibility(p)])),
+    build: {
+      definition,
+      data: { x },
+      quantities: [
+        ...weightQuantities(x.length),
+        { name: 'strength', label: 'strength (the hyperparameter)', support: 'positive' },
+      ],
+    },
+    reference: {
+      exact: {
+        pi: exact.pi,
+        strength: exact.strength,
+        ...Object.fromEntries(responsibilities.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])),
+      },
+    },
+    present: {
+      equations: [
+        `strength ~ Gamma(${shape}, ${rate})   (the hyperprior: how concentrated the weight prior is)`,
+        'pi ~ Beta(strength, strength)   (the weight of the + component)',
+        'z_i ~ Bernoulli(pi),  z_i = 0: x_i ~ N(-2, 0.5²), z_i = 1: x_i ~ N(+2, 0.5²)',
+        `observe x = (${x.map((v) => v.toFixed(2)).join(', ')})`,
+      ],
     },
   }
 }
@@ -433,15 +414,8 @@ function hyperWeightProblem(k: Config): AtomProblem {
  * The mixing weight's prior is a symmetric beta whose strength has a gamma hyperprior: priors and hyperpriors going up through a
  * gate. The strength factor is the numeric `dirichlet-concentration`; the exact answer is a two-dimensional quadrature over the
  * weight and the strength with the switches summed out.
- *
- * @index estimator EP atom: a gate whose weight has a beta prior with a gamma hyperprior on its strength.
- * @example
- * ```ts
- * import { gateWeightHyperAtom } from 'omai-engine/probprog/ep'
- * gateWeightHyperAtom.family // => 'gate weights'
- * ```
  */
-export const gateWeightHyperAtom: EpAtom = defineAtom({
+const gateWeightHyperAtom: EpAtom = defineAtom({
   name: 'gate-weight-hyperprior',
   title: 'Gate with an unknown mixing weight, gamma hyperprior on its prior strength',
   what: 'The beta prior on the mixing weight is symmetric with a gamma-distributed strength: a hyperprior one level above the gate, so the data inform the strength through how unbalanced the switches are.',
@@ -453,7 +427,8 @@ export const gateWeightHyperAtom: EpAtom = defineAtom({
   ],
   family: 'gate weights',
   reference: 'exact',
-  tolerance: { ...GATE_TOLERANCE, meanZ: 0.2, sdRatio: [0.8, 1.2], ks: 0.1 },
+  tolerance: tolerance('wide', GATE_TOLERANCE.reason),
+  evidence: { nats: 1e-3, reason: 'a gate with a beta weight and a hyperprior' },
   knobs: dict({
     shape: real(0.5, 8, { default: 2, step: 0.1, label: 'shape of the strength prior' }),
     rate: real(0.1, 4, { default: 1, step: 0.1, label: 'rate of the strength prior' }),
@@ -463,5 +438,13 @@ export const gateWeightHyperAtom: EpAtom = defineAtom({
       label: 'spread of the observations (small: the components overlap)',
     }),
   }),
-  problem: hyperWeightProblem,
+  parts: hyperWeightProblem,
 })
+
+/** The atoms of the `weights` file, basic and learned twins together. */
+export const weightsAtoms: readonly EpAtom[] = [
+  gateWeightAtom,
+  gateWeightSummedOutAtom,
+  gateWeightDirichletAtom,
+  gateWeightHyperAtom,
+]

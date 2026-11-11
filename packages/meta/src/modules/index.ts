@@ -136,6 +136,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'omai-engine/probprog/model/factor-graph': () => import('omai-engine/probprog/model/factor-graph'),
   'omai-engine/probprog/models': () => import('omai-engine/probprog/models'),
   'omai-engine/probprog/validation': () => import('omai-engine/probprog/validation'),
+  'omai-engine/probprog/validation/references': () => import('omai-engine/probprog/validation/references'),
   'omai-engine/random': () => import('omai-engine/random'),
   'omai-engine/rl': () => import('omai-engine/rl'),
   'omai-engine/rules': () => import('omai-engine/rules'),
