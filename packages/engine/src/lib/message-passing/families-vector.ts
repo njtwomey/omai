@@ -11,6 +11,7 @@ import { dgemv } from '../numerics/linalg/index.ts'
 import { spd } from './_dense.ts'
 import { digammaOf, lgammaOf } from './_scalar.ts'
 import { bernoulli, beta, defineFamily, dirichletShapesFromLogMeans, gamma, gaussian, normalGamma } from './families.ts'
+import { normalWishart, wishart } from './families-matrix.ts'
 import type { Eta, Family, FamilySpec } from './types.ts'
 
 const LOG_2PI = Math.log(2 * Math.PI)
@@ -252,6 +253,12 @@ export function familyOf(spec: FamilySpec): Family {
     case 'dirichlet':
       if (size === undefined) throw new OmaiError('value', 'familyOf: dirichlet needs a size')
       return dirichlet(size)
+    case 'wishart':
+      if (size === undefined) throw new OmaiError('value', 'familyOf: wishart needs a size')
+      return wishart(size)
+    case 'normal-wishart':
+      if (size === undefined) throw new OmaiError('value', 'familyOf: normal-wishart needs a size')
+      return normalWishart(size)
     default:
       throw new OmaiError('value', `familyOf: unknown family ${String((spec as { kind: unknown }).kind)}`)
   }

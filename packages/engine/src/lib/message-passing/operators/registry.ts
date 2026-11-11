@@ -15,6 +15,7 @@ import {
   negativeBinomialBeta,
   poisson,
 } from './conjugate.ts'
+import { mvnNormalWishart, mvnWishart } from './covariance.ts'
 import { gaussianMixture, select, table } from './discrete.ts'
 import { maximum, minimum } from './extremum.ts'
 import { apply, applyProductOperator } from './functions.ts'
@@ -60,7 +61,7 @@ import { greaterThan, isBetween, probit } from './truncation.ts'
  * `product`, `max`, `min`, `equal`, `linear`, `plus`, `difference`, `times-constant`, `sum`, `dot-constant`, `matmul-constant`,
  * `linear-regression-row`, `gaussian-joint`, `probit`, `greater-than`, `is-between`, `logistic`, `bernoulli`,
  * `discrete`, `poisson`, `binomial`, `gamma-observed`, `negative-binomial-beta`, `mixture-weight`, `table`, `select`, `gaussian-mixture`, the regression rows `probit-row` and `logistic-row`, the plates of rows `linear-regression-plate`, `probit-plate` and `logistic-plate`, the
- * spin site `spin` and its row `spin-row`, and the robust sites `mixture-site`, `student-t-site` and `laplace-site` with their rows `mixture-row`, `student-t-row` and `laplace-row`, the shared smoothing parameter of a Gaussian vector `gaussian-mv-precision-scale`, the gamma scale hierarchies `gamma-rate` and `gamma-product`, the random concentration of a beta or Dirichlet `dirichlet-concentration` and a beta with two random shapes `beta-two-shapes`, the stick-breaking assignment of a truncated Dirichlet process `stick-breaking`, the Gaussian vector step of a linear dynamical system `gaussian-transition`, the Gaussian with a random log scale and mean `gaussian-scale`, the negative binomial with a random log dispersion `negative-binomial-dispersion`, the two-variable likelihood sites `likelihood-pair` (a registry: Laplace with a random scale, Student-t with random degrees of freedom, Weibull with a random shape, beta with two random shapes), the multiclass categorical with softmax or multinomial-probit probabilities `multiclass-site`, the unary function `apply` (`exp`, `square`, `tanh`, `relu`, `softplus`, `abs`, `sigmoid`, `sqrt`, `recip`, or a chain of them, of a Gaussian or gamma variable) and its product with a Gaussian `apply-product` (a non-centred scale), and the exact numeric prior `prior-site` (half-normal, half-Cauchy, uniform, truncated normal), the generic numeric likelihood `likelihood-site` with its row `likelihood-row` (a registry of count, survival, ordinal, quantile and robust likelihoods), and the `gate` of Minka and Winn (a discrete variable selects among branches that are operators of this registry). A new object each call, so a caller may
+ * spin site `spin` and its row `spin-row`, and the robust sites `mixture-site`, `student-t-site` and `laplace-site` with their rows `mixture-row`, `student-t-row` and `laplace-row`, the shared smoothing parameter of a Gaussian vector `gaussian-mv-precision-scale`, the gamma scale hierarchies `gamma-rate` and `gamma-product`, the random concentration of a beta or Dirichlet `dirichlet-concentration` and a beta with two random shapes `beta-two-shapes`, the stick-breaking assignment of a truncated Dirichlet process `stick-breaking`, the Gaussian vector step of a linear dynamical system `gaussian-transition`, the multivariate Gaussian with a Wishart precision matrix `mvn-wishart` and its normal-Wishart conjugate form `mvn-normal-wishart`, the Gaussian with a random log scale and mean `gaussian-scale`, the negative binomial with a random log dispersion `negative-binomial-dispersion`, the two-variable likelihood sites `likelihood-pair` (a registry: Laplace with a random scale, Student-t with random degrees of freedom, Weibull with a random shape, beta with two random shapes), the multiclass categorical with softmax or multinomial-probit probabilities `multiclass-site`, the unary function `apply` (`exp`, `square`, `tanh`, `relu`, `softplus`, `abs`, `sigmoid`, `sqrt`, `recip`, or a chain of them, of a Gaussian or gamma variable) and its product with a Gaussian `apply-product` (a non-centred scale), and the exact numeric prior `prior-site` (half-normal, half-Cauchy, uniform, truncated normal), the generic numeric likelihood `likelihood-site` with its row `likelihood-row` (a registry of count, survival, ordinal, quantile and robust likelihoods), and the `gate` of Minka and Winn (a discrete variable selects among branches that are operators of this registry). A new object each call, so a caller may
  * add its own (`{ ...defaultOperators(), mine }`).
  *
  * @returns The operators, keyed by their names.
@@ -135,6 +136,8 @@ export function defaultOperators(): Record<string, FactorOperator> {
     betaTwoShapes,
     stickBreaking,
     gaussianTransition,
+    mvnWishart,
+    mvnNormalWishart,
   ]
   const registry: Record<string, FactorOperator> = Object.fromEntries(all.map((o) => [o.name, o]))
   // The gate runs any operator of the registry as a branch, itself included (gates nest).
