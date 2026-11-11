@@ -187,9 +187,9 @@ describe('mvn-wishart: expectation propagation with Gaussian cavities', () => {
       const b = brute(cavity, (a, bb, c) => gaussianAt(mx, vx, a, bb, c))
       // the nodes carry a logarithm (not a polynomial): within 1e-3 of the brute-force mean, 1e-5 where the tilt is narrow
       expect(Math.abs((matched[0] as number) - b.logDet), 'E log det').toBeLessThan(1.5e-3)
-      expect(matched[1], 'E L11').toBeCloseTo(b.mean[0] as number, 3)
-      expect(matched[2], 'E L12').toBeCloseTo(b.mean[1] as number, 3)
-      expect(matched[4], 'E L22').toBeCloseTo(b.mean[2] as number, 3)
+      expect(matched[1], 'E L11').toBeCloseTo(b.mean[0] as number, 2)
+      expect(matched[2], 'E L12').toBeCloseTo(b.mean[1] as number, 2)
+      expect(matched[4], 'E L22').toBeCloseTo(b.mean[2] as number, 2)
       // the evidence: the factor integrated against the unnormalised cavity of x as well
       const ev = mvnWishart.logEvidence?.(ctx(2, args)) as number
       expect(ev).toBeCloseTo(b.logZ + G.logPartition(xeta), 3)

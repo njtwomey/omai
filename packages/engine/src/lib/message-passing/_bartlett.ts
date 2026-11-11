@@ -104,7 +104,7 @@ export function normalRule(order: number): { readonly x: Float64Array; readonly 
 }
 
 /** The order of the one-dimensional rules by matrix dimension: the product has `order^(d (d + 1) / 2)` nodes. */
-export const BARTLETT_ORDER: Readonly<Record<number, number>> = { 1: 40, 2: 14, 3: 6 }
+export const BARTLETT_ORDER: Readonly<Record<number, number>> = { 1: 40, 2: 12, 3: 5 }
 
 /** A quadrature rule for a Wishart distribution. */
 export interface WishartRule {
