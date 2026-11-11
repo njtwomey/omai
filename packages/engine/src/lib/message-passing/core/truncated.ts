@@ -5,10 +5,10 @@
  * the lower one).
  */
 
-import { OmaiError } from '../../base/index.ts'
 import { logIntervalProbability } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
 import { logPhiDensity } from '../numerics/_scalar.ts'
+import { ImproperMessageError, ParameterError } from './errors.ts'
 
 /** The mass and the first two moments of a truncated Gaussian. */
 export interface TruncatedMoments {
@@ -39,9 +39,8 @@ export interface TruncatedMoments {
  */
 export function truncatedNormalMoments(mean: number, variance: number, lower: number, upper: number): TruncatedMoments {
   if (!(variance > 0))
-    throw new OmaiError('value', `truncatedNormalMoments: the variance must be positive, got ${variance}`)
-  if (!(lower < upper))
-    throw new OmaiError('value', `truncatedNormalMoments: the interval (${lower}, ${upper}) is empty`)
+    throw new ImproperMessageError(`truncatedNormalMoments: the variance must be positive, got ${variance}`)
+  if (!(lower < upper)) throw new ParameterError(`truncatedNormalMoments: the interval (${lower}, ${upper}) is empty`)
   const sd = Math.sqrt(variance)
   let a = (lower - mean) / sd
   let b = (upper - mean) / sd

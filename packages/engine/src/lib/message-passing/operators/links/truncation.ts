@@ -9,6 +9,7 @@ import { logAddExp, OmaiError } from '../../../base/index.ts'
 import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, scalarOf } from '../../core/args.ts'
 import { bernoulli } from '../../core/families.ts'
+import { type ParamSpec, param } from '../../core/params.ts'
 import { truncatedNormalMoments } from '../../core/truncated.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
 import { tiltedLogGrid } from '../../numerics/_quadrature.ts'
@@ -72,6 +73,7 @@ function stepRegions(
 function stepOperator(
   name: string,
   description: string,
+  declared: ParamSpec,
   regions: (params: OperatorContext['params']) => {
     readonly inside: readonly (readonly [number, number])[]
     readonly outside: readonly (readonly [number, number])[]
@@ -86,6 +88,7 @@ function stepOperator(
   return {
     name,
     description,
+    params: declared,
     ports: [outcomePort, valuePort],
     support: { ep: 'exact' },
     readsTarget: (to) => to === 1,
@@ -131,7 +134,7 @@ function stepOperator(
  * ```
  */
 export const greaterThan: FactorOperator = {
-  ...stepOperator('greater-than', 'b = [x > threshold]', (params) => {
+  ...stepOperator('greater-than', 'b = [x > threshold]', { threshold: param.number({ optional: true }) }, (params) => {
     const t = numberParam(params, 'threshold', 0)
     return { inside: [[t, Number.POSITIVE_INFINITY]], outside: [[Number.NEGATIVE_INFINITY, t]] }
   }),
@@ -154,17 +157,24 @@ export const greaterThan: FactorOperator = {
  * ```
  */
 export const isBetween: FactorOperator = {
-  ...stepOperator('is-between', 'b = [lower < x < upper]', (params) => {
-    const lo = numberParam(params, 'lower')
-    const hi = numberParam(params, 'upper')
-    return {
-      inside: [[lo, hi]],
-      outside: [
-        [Number.NEGATIVE_INFINITY, lo],
-        [hi, Number.POSITIVE_INFINITY],
-      ],
-    }
-  }),
+  ...stepOperator(
+    'is-between',
+    'b = [lower < x < upper]',
+    { lower: param.number(), upper: param.number({ example: 2 }) },
+    (params) => {
+      const lo = numberParam(params, 'lower')
+      const hi = numberParam(params, 'upper')
+      return {
+        inside: [[lo, hi]],
+        outside: [
+          [Number.NEGATIVE_INFINITY, lo],
+          [hi, Number.POSITIVE_INFINITY],
+        ],
+      }
+    },
+  ),
+  check: (params) =>
+    numberParam(params, 'lower') < numberParam(params, 'upper') ? undefined : 'is-between: lower must be below upper',
   noRule: {
     vmp: 'a hard interval test is zero off the interval, so KL(q || p) is infinite for every Gaussian q (use the probit link with noise, or expectation propagation)',
   },
@@ -240,6 +250,7 @@ export const probit: FactorOperator = {
   name: 'probit',
   description: 'b | x ~ Bernoulli(Phi(x / noise))',
   ports: [outcomePort, valuePort],
+  params: { noise: param.positive({ optional: true }) },
   support: { ep: 'exact', vmp: 'exact' },
   readsTarget: (to) => to === 1,
   power: true,

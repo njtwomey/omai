@@ -15,7 +15,7 @@
  * message to it is the gamma with the tilted moments.
  */
 
-import { OmaiError, sigmoidOf } from '../../../base/index.ts'
+import { sigmoidOf } from '../../../base/index.ts'
 import { arg, errorText, isFlat, perPower } from '../../core/_messages.ts'
 import {
   allProper,
@@ -23,11 +23,12 @@ import {
   gaussianMessage,
   gaussianOf,
   gaussianSiteMessage,
-  ImproperMessageError,
   massOf,
   siteMessage,
 } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma } from '../../core/families.ts'
+import { param } from '../../core/params.ts'
 import { truncatedNormalMoments } from '../../core/truncated.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { Phi, phi, softplusOf } from '../../numerics/_scalar.ts'
@@ -119,8 +120,7 @@ export function chainOf(table: Readonly<Record<string, UnaryFunction>>, steps: r
     if (name === 'pow') return (x) => x ** c
     const fn = table[name]
     if (fn === undefined)
-      throw new OmaiError(
-        'value',
+      throw new ParameterError(
         `apply: unknown step ${name} (the registry has ${Object.keys(table).join(', ')}, and mul, add, pow with a constant)`,
       )
     return fn.f
@@ -145,8 +145,7 @@ function resolve(
   const key = params['fn']
   const fn = typeof key === 'string' ? table[key] : undefined
   if (fn === undefined)
-    throw new OmaiError(
-      'value',
+    throw new ParameterError(
       `apply: unknown function ${String(key)} (the registry has ${Object.keys(table).join(', ')})`,
     )
   return fn
@@ -294,6 +293,10 @@ export function applyFunction(
   return {
     name,
     description: 'y = f(x) for a unary function (or a chain of them) of a Gaussian or gamma variable',
+    params: {
+      fn: param.text({ optional: true, choices: Object.keys(table) }),
+      steps: param.any({ optional: true }),
+    },
     ports: [
       { name: 'y', accepts: ['gaussian'] },
       { name: 'x', accepts: ['gaussian', 'gamma'] },
@@ -493,6 +496,10 @@ export function applyProduct(
   return {
     name,
     description: 'y = z f(x) for a Gaussian z and a function of a Gaussian or gamma variable x',
+    params: {
+      fn: param.text({ optional: true, choices: Object.keys(table) }),
+      steps: param.any({ optional: true }),
+    },
     ports: [
       { name: 'y', accepts: ['gaussian'] },
       { name: 'z', accepts: ['gaussian'] },

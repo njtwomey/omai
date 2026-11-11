@@ -10,11 +10,13 @@
 
 import { OmaiError } from '../../../base/index.ts'
 import { arg, evidenceOrNaN } from '../../core/_messages.ts'
-import { etaOf, ImproperMessageError, siteMessage, vectorParam } from '../../core/args.ts'
+import { etaOf, siteMessage, vectorParam } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
+import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { spd } from '../../numerics/_dense.ts'
-import { digammaOf, trigammaOf } from '../../numerics/_scalar.ts'
+import { gammaLogWindow, windowProfiles } from '../../numerics/_windows.ts'
 
 const COARSE_POINTS = 81
 const FINE_POINTS = 121
@@ -29,8 +31,7 @@ function precisions(c: OperatorContext): { readonly scale: readonly number[]; re
     const s = scale[j] ?? 0
     const o = offset[j] ?? 0
     if (!(s >= 0 && o >= 0 && s + o > 0))
-      throw new OmaiError(
-        'value',
+      throw new ParameterError(
         'gaussian-mv-precision-scale: each precision needs a non-negative scale and offset, not both zero',
       )
   }
@@ -197,16 +198,15 @@ function scaleTilt(c: OperatorContext): VectorScaleTilt & { readonly d: number }
   const { shape, rate } = gammaShapeRate(etaOf(arg(c, 1)))
   if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
     throw new ImproperMessageError('a gamma message has no density (its shape and rate are not positive)')
-  const centre = digammaOf(shape) - Math.log(rate)
-  const half = 15 * Math.sqrt(trigammaOf(shape))
+  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.vectorScale)
   return vectorScaleTilt(h, jmat, {
     precisions: (t) => {
       const lam = Math.exp(t)
       return scale.map((s, j) => s * lam + (offset[j] ?? 0))
     },
     logCavity: (t) => shape * t - rate * Math.exp(t),
-    lo: Math.max(centre - half, -60),
-    hi: Math.min(centre + half, 60),
+    lo,
+    hi,
   })
 }
 
@@ -258,6 +258,7 @@ export const gaussianMvPrecisionScale: FactorOperator = {
     { name: 'beta', accepts: ['gaussian-mv'] },
     { name: 'lambda', accepts: ['gamma'] },
   ],
+  params: { scale: param.vector(), offset: param.vector({ optional: true }) },
   support: { ep: 'numeric', vmp: 'exact' },
   readsTarget: (to) => to === 1,
   check: (params, families) =>

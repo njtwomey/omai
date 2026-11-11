@@ -17,6 +17,7 @@ import {
   logNormal,
   massOf,
 } from '../../core/args.ts'
+import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
 import { tiltedGrid } from '../../numerics/_quadrature.ts'
 import { Phi, phi } from '../../numerics/_scalar.ts'
@@ -132,6 +133,7 @@ export const maximum: FactorOperator = {
   name: 'max',
   description: 'y = max(a, b) for Gaussians',
   ports,
+  params: {},
   support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: (to) => to !== 0,
   // Deterministic: under the mean field `y` is the pushforward (Clark's moments), and the message to an input is the
@@ -168,6 +170,7 @@ export const minimum: FactorOperator = {
   name: 'min',
   description: 'y = min(a, b) for Gaussians',
   ports,
+  params: {},
   support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: (to) => to !== 0,
   defines: 0,

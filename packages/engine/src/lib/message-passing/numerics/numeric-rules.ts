@@ -11,9 +11,9 @@
  * @index module Numeric rules: quadrature, Gauss-Hermite, Laplace, sample and sigma-point rules for numeric factors.
  */
 
-import { OmaiError } from '../../base/index.ts'
 import { foldIn, key, normal } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
+import { ImproperMessageError, ParameterError } from '../core/errors.ts'
 import type { GaussianBase, TiltedProblem, TiltedRule } from '../core/types.ts'
 import { spd } from './_dense.ts'
 import { gaussianGrid, gaussianGridOn, gaussianNodes } from './_quadrature.ts'
@@ -29,7 +29,7 @@ function weightedMoments(
   let top = Number.NEGATIVE_INFINITY
   for (const v of logWeights) if (v > top) top = v
   if (!Number.isFinite(top))
-    throw new OmaiError('value', 'numeric rule: the factor has no mass under the incoming messages')
+    throw new ImproperMessageError('numeric rule: the factor has no mass under the incoming messages')
   let m0 = 0
   let m1 = 0
   for (const [i, p] of points.entries()) {
@@ -111,7 +111,7 @@ export const quadratureRule: TiltedRule = {
       if (second.mass > 0) pass = second
     }
     const mass = pass.mass
-    if (!(mass > 0)) throw new OmaiError('value', 'numeric rule: the factor has no mass under the incoming messages')
+    if (!(mass > 0)) throw new ImproperMessageError('numeric rule: the factor has no mass under the incoming messages')
     const mean = pass.ws.reduce((s, w, i) => s + w * (pass.xs[i] ?? 0), 0) / mass
     const variance = pass.ws.reduce((s, w, i) => s + w * ((pass.xs[i] ?? 0) - mean) ** 2, 0) / mass
     return { logMass: Math.log(mass), mean, variance }
@@ -137,8 +137,7 @@ export const quadratureRule: TiltedRule = {
  * ```
  */
 export function gaussHermiteRule(points = 32): TiltedRule {
-  if (!(Number.isInteger(points) && points >= 2))
-    throw new OmaiError('value', 'gaussHermiteRule: need at least 2 nodes')
+  if (!(Number.isInteger(points) && points >= 2)) throw new ParameterError('gaussHermiteRule: need at least 2 nodes')
   return {
     name: `gauss-hermite(${points})`,
     moments: ({ bases, to, logf }) => {
@@ -147,7 +146,7 @@ export function gaussHermiteRule(points = 32): TiltedRule {
       )
       const total = grids.reduce((a, g) => a * g.x.length, 1)
       if (total > 40_000)
-        throw new OmaiError('value', `gaussHermiteRule: ${total} evaluations are more than the cap of 40000`)
+        throw new ParameterError(`gaussHermiteRule: ${total} evaluations are more than the cap of 40000`)
       const pts: number[][] = []
       const logw: number[] = []
       const walk = (d: number, lw: number, point: number[]): void => {
@@ -188,7 +187,7 @@ export function gaussHermiteRule(points = 32): TiltedRule {
  * ```
  */
 export function unscentedRule(kappa = 2): TiltedRule {
-  if (!(kappa > 0)) throw new OmaiError('value', 'unscentedRule: kappa must be positive')
+  if (!(kappa > 0)) throw new ParameterError('unscentedRule: kappa must be positive')
   return {
     name: `unscented(${kappa})`,
     moments: ({ bases, to, logf }) => {
@@ -244,7 +243,7 @@ function antitheticDraws(seed: number, pairs: number, d: number): readonly numbe
  * ```
  */
 export function sampleRule(samples = 2048, seed = 0): TiltedRule {
-  if (!(Number.isInteger(samples) && samples >= 2)) throw new OmaiError('value', 'sampleRule: need at least 2 samples')
+  if (!(Number.isInteger(samples) && samples >= 2)) throw new ParameterError('sampleRule: need at least 2 samples')
   const pairs = Math.ceil(samples / 2)
   return {
     name: `sample(${2 * pairs})`,
@@ -353,7 +352,7 @@ export const laplaceRule: TiltedRule = {
     }
     let value = h(x)
     if (!Number.isFinite(value))
-      throw new OmaiError('value', 'laplace: the factor is not finite at the mean of the cavities')
+      throw new ImproperMessageError('laplace: the factor is not finite at the mean of the cavities')
     for (let iter = 0; iter < 100; iter++) {
       const { grad, hess } = derivatives(x)
       // Newton step on the negative Hessian, made positive definite by a ridge when it is not.
@@ -370,7 +369,7 @@ export const laplaceRule: TiltedRule = {
         )
       }
       if (fact === undefined)
-        throw new OmaiError('value', 'laplace: the curvature at the mean of the cavities is not usable')
+        throw new ImproperMessageError('laplace: the curvature at the mean of the cavities is not usable')
       const step = fact.solve(grad)
       let t = 1
       let moved = false
@@ -397,7 +396,7 @@ export const laplaceRule: TiltedRule = {
       d,
     )
     if (fact === undefined)
-      throw new OmaiError('value', 'laplace: the density has no maximum with negative-definite curvature here')
+      throw new ImproperMessageError('laplace: the density has no maximum with negative-definite curvature here')
     const covariance = fact.inverse()
     const k = free.indexOf(to)
     const variance = k >= 0 ? (covariance[k * d + k] ?? 0) : 0

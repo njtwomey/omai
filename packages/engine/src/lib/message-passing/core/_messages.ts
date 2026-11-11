@@ -4,8 +4,7 @@
  * density yet, and the text of a caught error. Internal to message passing.
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { ImproperMessageError } from './args.ts'
+import { ImproperMessageError, ParameterError } from './errors.ts'
 import type { Arg, Eta, OperatorContext } from './types.ts'
 
 /** The argument of port `i` of an operator context. */
@@ -27,10 +26,36 @@ export function evidenceOrNaN(compute: () => number): number {
   }
 }
 
+/**
+ * A key for a cache: the text of a value in which every number is written in full (`NaN`, `Infinity` and `-Infinity` stay
+ * distinct, which JSON does not do), arrays and objects recursively, so two values have one key exactly when they are the same numbers.
+ */
+export function keyOf(value: unknown): string {
+  if (typeof value === 'number') return String(value)
+  if (Array.isArray(value) || value instanceof Float64Array)
+    return `[${Array.from(value as ArrayLike<unknown>, keyOf).join(',')}]`
+  if (value !== null && typeof value === 'object')
+    return `{${Object.entries(value)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([k, v]) => `${JSON.stringify(k)}:${keyOf(v)}`)
+      .join(',')}}`
+  return JSON.stringify(value) ?? 'undefined'
+}
+
+/** The value of `compute` kept in the context's cache under `key` (computed every time when the context has none). A throw is not kept. */
+export function memoised<T>(c: OperatorContext, key: string, compute: () => T): T {
+  const memo = c.memo
+  if (memo === undefined) return compute()
+  if (memo.has(key)) return memo.get(key) as T
+  const value = compute()
+  memo.set(key, value)
+  return value
+}
+
 /** The text of a caught value: the message of an error, else the value as a string. */
 export const errorText = (e: unknown): string => (e instanceof Error ? e.message : String(e))
 
 /** Refuse a damping outside [0, 1): the message is `who: damping must be in [0, 1), got ...` (code `value`). */
 export function assertDamping(damping: number, who: string): void {
-  if (!(damping >= 0 && damping < 1)) throw new OmaiError('value', `${who}: damping must be in [0, 1), got ${damping}`)
+  if (!(damping >= 0 && damping < 1)) throw new ParameterError(`${who}: damping must be in [0, 1), got ${damping}`)
 }

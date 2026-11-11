@@ -5,8 +5,9 @@
  * non-conjugate link, the clutter problem.
  */
 
-import { OmaiError } from '../../../base/index.ts'
 import { allProper, gaussianOf, massOf, scalarOf } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
+import type { ParamSpecOf } from '../../core/params.ts'
 import type {
   Arg,
   FactorOperator,
@@ -30,6 +31,8 @@ export interface NumericOperatorOptions {
   readonly logDensity: (x: readonly number[], params: Params) => number
   /** The rule that integrates the factor against the cavities (default: the panelled quadrature); a run's `Projection.numeric` overrides it. */
   readonly rule?: TiltedRule
+  /** The parameters `logDensity` reads (checked at compile: see `FactorOperator.params`); absent: not checked. */
+  readonly params?: ParamSpecOf
 }
 
 /**
@@ -40,7 +43,7 @@ export interface NumericOperatorOptions {
  *
  * @param options - The name, arity and log density.
  * @returns The operator, to be put in the registry the graph is compiled against.
- * @throws OmaiError with code `value` for an arity outside 1 to 3.
+ * @throws ParameterError (code `value`) for an arity outside 1 to 3.
  * @concept factor-operators
  * @index function An EP operator for any density over Gaussian variables, by quadrature.
  * @example
@@ -55,7 +58,7 @@ export interface NumericOperatorOptions {
 export function numericOperator(options: NumericOperatorOptions): FactorOperator {
   const n = options.arity
   if (!(Number.isInteger(n) && n >= 1 && n <= 3))
-    throw new OmaiError('value', 'numericOperator: the arity must be 1, 2 or 3')
+    throw new ParameterError('numericOperator: the arity must be 1, 2 or 3')
   const ports: Port[] = Array.from({ length: n }, (_, i) => ({ name: `x${i}`, accepts: ['gaussian'], constant: true }))
   const tilted = (c: OperatorContext): TiltedMoments => {
     const bases = c.args.map(
@@ -66,8 +69,8 @@ export function numericOperator(options: NumericOperatorOptions): FactorOperator
     try {
       t = rule.moments({ bases, to: c.to, logf: (x) => c.power * options.logDensity(x, c.params) })
     } catch (err) {
-      if (err instanceof OmaiError && err.code === 'value')
-        throw new OmaiError('value', `${options.name}: ${err.message}`)
+      if (err instanceof ImproperMessageError) throw new ImproperMessageError(`${options.name}: ${err.message}`)
+      if (err instanceof ParameterError) throw new ParameterError(`${options.name}: ${err.message}`)
       throw err
     }
     let logZ = t.logMass
@@ -78,6 +81,7 @@ export function numericOperator(options: NumericOperatorOptions): FactorOperator
     name: options.name,
     description: options.description ?? `a factor given by its log density over ${n} Gaussian variable(s)`,
     ports,
+    ...(options.params === undefined ? {} : { params: options.params }),
     support: { ep: 'numeric', vmp: 'numeric' },
     readsTarget: true,
     power: true,

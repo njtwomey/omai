@@ -3891,14 +3891,17 @@ marginals at any time. Imports: `base`, `trace`, `tensor`, `numerics`, `space`, 
 reports is addressed by ids, the same as the picture of the model (`types.ts`; for a spec, `probprog/model/ids.ts`): a
 variable is its name, a factor its `id` (`factor:<site>` from the spec compiler) or `f<i>`, an edge `<factor>><variable>`.
 - Layout (by concern, every folder an inlined part of `omai-engine/message-passing`; the file names below are unchanged,
-  only their folders are new). `core/`: `types.ts`, `args.ts`, the internal `_messages.ts` (the conventions operators share: `arg`, `perPower`,
+  only their folders are new). `core/`: `types.ts`, `errors.ts` (`ImproperMessageError`, a numerical failure the engine repairs and
+  counts, and `ParameterError`, a misconfiguration that is never swallowed: the engine catches only the first), `params.ts` (the
+  declared parameters of an operator, `FactorOperator.params`: `param.number()`, `param.vector()`, ..., parsed by `compileGraph`
+  so an unknown, missing or ill-typed parameter fails at compile time naming the operator and the parameter), `args.ts`, the internal `_messages.ts` (the conventions operators share: `arg`, `perPower`,
   `evidenceOrNaN`, `isFlat`, `assertDamping`), `families*.ts`, `graph.ts`, `priors.ts`, `truncated.ts`.
-  `numerics/`: `_scalar.ts`, `_dense.ts`, `_bartlett.ts`, `_quadrature.ts`, `_grid.ts`, `_gridn.ts`, `_tilted.ts` (internal)
+  `numerics/`: `_scalar.ts`, `_dense.ts`, `_bartlett.ts`, `_quadrature.ts`, `_grid.ts` (the one panelled grid for two and three axes, with its `gridProfiles`), `_windows.ts` (the named windows of every cavity coordinate), `_tilted.ts` (internal)
   and `numeric-rules.ts` (the `TiltedRule`s of the engine's `numeric` slot). `engine/`: `state.ts` (settings and
   state types), `cavity.ts` (beliefs, marginals, snapshot), `dispatch.ts` (`operatorMessage`), `evidence.ts`, `verdict.ts`,
   `run.ts` (`messagePassingAlgorithm`), the slots `projections.ts` and `schedules.ts`, and the internal `_cavities.ts`,
   `_arguments.ts`, `_update.ts` (the proposal, damping and `repairImproper`), `_restart.ts`, `_advance.ts`. `algorithms/`: `named.ts`, `power.ts`, `alpha.ts`, `numerical.ts`, `stochastic.ts`, `regions.ts`,
-  `consistent.ts`, `amp.ts`, `anytime.ts`, `clutter.ts`. `operators/`: `registry.ts` and one folder per kind of factor,
+  `consistent.ts`, `amp.ts`, `anytime.ts`, `clutter.ts`. `operators/`: `registry.ts`, `names.ts` (`operatorNames` and the type `OperatorName`, held equal to the registry by a test; `GateBranch` in `discrete/gate.ts` types a gate's branch) and one folder per kind of factor,
   `gaussian/` (`gaussian`, `linear`, `transition`, `extremum`, `log-scale`), `links/` (`truncation`, `links`, `spin`,
   `multiclass`), `lifts/` (`rows`, `plates`), `likelihoods/` (`likelihoods`, `pairs`, `robust`, `prior-sites`, `functions`,
   `numeric`), `scales/` (`scale`, `function-scale`, `gamma-scale`, `concentration`, `stick-breaking`), `covariance/`

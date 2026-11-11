@@ -10,26 +10,18 @@
  * `_grid.ts`.
  */
 
-import { OmaiError } from '../../../base/index.ts'
 import { arg, evidenceOrNaN } from '../../core/_messages.ts'
-import {
-  allProper,
-  etaOf,
-  gaussianOf,
-  gaussianSiteMessage,
-  ImproperMessageError,
-  massOf,
-  siteMessage,
-  vectorParam,
-} from '../../core/args.ts'
+import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, siteMessage, vectorParam } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
+import { param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { axisOf, integratePair } from '../../numerics/_grid.ts'
-import { digammaOf, lgammaOf, trigammaOf } from '../../numerics/_scalar.ts'
+import { digammaOf, lgammaOf } from '../../numerics/_scalar.ts'
+import { gammaLogWindow, gaussianWindow, uniformGrid, type Window, windowProfiles } from '../../numerics/_windows.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 const POINTS = 241
-const SPAN = 14
 
 /** The concentration `kappa_k = w_k e^t + o_k` and its pieces from the parameters. */
 function concentrations(c: OperatorContext): { readonly w: readonly number[]; readonly o: readonly number[] } {
@@ -41,8 +33,7 @@ function concentrations(c: OperatorContext): { readonly w: readonly number[]; re
     o.some((v) => !(v >= 0)) ||
     w.every((v, k) => v === 0 && o[k] === 0)
   )
-    throw new OmaiError(
-      'value',
+    throw new ParameterError(
       'dirichlet-concentration: weights and offsets are non-negative vectors of one length, never both zero',
     )
   return { w, o }
@@ -106,25 +97,21 @@ function tilt(c: OperatorContext): Tilt {
   const K = w.length
   if (eta.length !== K || eta.some((v) => !(v > -1) || !Number.isFinite(v)))
     throw new ImproperMessageError('dirichlet-concentration: the cavity of the probabilities has no density')
-  let centre: number
-  let half: number
+  let window: Window
   let logCavity: (t: number) => number
   if (logMode) {
     const g = gaussianOf(arg(c, 1))
-    centre = g.mean
-    half = SPAN * Math.sqrt(g.variance)
+    window = gaussianWindow(g.mean, g.variance, windowProfiles.concentration)
     logCavity = (t) => (-0.5 * (t - g.mean) ** 2) / g.variance + (g.mean * g.mean) / (2 * g.variance)
   } else {
     const { shape, rate } = gammaShapeRate(cav)
     if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
       throw new ImproperMessageError('dirichlet-concentration: the cavity of the concentration has no density')
-    centre = digammaOf(shape) - Math.log(rate)
-    half = SPAN * Math.sqrt(trigammaOf(shape))
+    window = gammaLogWindow(shape, rate, windowProfiles.concentration)
     logCavity = (t) => shape * t - rate * Math.exp(t)
   }
-  const lo = Math.max(centre - half, -40)
-  const hi = Math.min(centre + half, 40)
-  const step = (hi - lo) / (POINTS - 1)
+  const { lo } = window
+  const { step } = uniformGrid(window, POINTS)
   const logw = new Float64Array(POINTS)
   let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < POINTS; i++) {
@@ -199,6 +186,7 @@ export const dirichletConcentration: FactorOperator = {
     { name: 'p', accepts: ['beta', 'dirichlet'] },
     { name: 'alpha', accepts: ['gamma', 'gaussian'] },
   ],
+  params: { weights: param.vector(), offsets: param.vector({ optional: true }), log: param.flag({ optional: true }) },
   support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: () => true,
   // The mean field: to the probabilities the Dirichlet with the mean concentration (exact), to the concentration the natural
@@ -322,6 +310,7 @@ export const betaTwoShapes: FactorOperator = {
     { name: 'a', accepts: ['gamma', 'gaussian'] },
     { name: 'b', accepts: ['gamma', 'gaussian'] },
   ],
+  params: {},
   support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: () => true,
   power: true,

@@ -7,11 +7,12 @@
  * stochastic and averaged EP of `stochastic.ts` runs on, and what the compiler of a model with a plate will emit.
  */
 
-import { OmaiError } from '../../../base/index.ts'
 import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, messageArg, vectorParam } from '../../core/args.ts'
+import { ParameterError } from '../../core/errors.ts'
 import { gaussian, gaussianEta } from '../../core/families.ts'
 import { gaussianMv, gaussianMvMoments } from '../../core/families-vector.ts'
+import { mergeParams, param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { logistic } from '../links/links.ts'
 import { spin } from '../links/spin.ts'
@@ -54,7 +55,7 @@ function predictor(c: OperatorContext, a: readonly number[], w: number): { mean:
  * ```
  */
 export function glmRow(name: string, link: FactorOperator, description: string): FactorOperator {
-  if (link.ep === undefined) throw new OmaiError('value', `glmRow: ${link.name} has no EP rule to lift`)
+  if (link.ep === undefined) throw new ParameterError(`glmRow: ${link.name} has no EP rule to lift`)
   const linkPorts = typeof link.ports === 'function' ? link.ports({}) : link.ports
   // A link has the predictor alone (a spin) or an observed outcome and the predictor (a probit).
   const outcome = linkPorts.length === 2
@@ -65,9 +66,11 @@ export function glmRow(name: string, link: FactorOperator, description: string):
     return { z: messageArg(gaussian, gaussianEta(z.mean, z.variance)), a }
   }
   const linkArgs = (c: OperatorContext, z: Arg): Arg[] => (outcome ? [arg(c, 0), z] : [z])
+  const declared = mergeParams({ a: param.vector() }, link.params)
   return {
     name,
     description,
+    ...(declared === undefined ? {} : { params: declared }),
     ports: [
       ...(outcome ? [{ name: 'y', accepts: ['bernoulli' as const], constant: true, observed: true }] : []),
       { name: 'w', accepts: ['gaussian-mv' as const] },
@@ -82,7 +85,7 @@ export function glmRow(name: string, link: FactorOperator, description: string):
     check: (params, families) =>
       vectorParam(params, 'a').length === families[w]?.dim ? undefined : `${name}: a must have the length of w`,
     ep: (c): OperatorResult => {
-      if (c.to !== w) throw new OmaiError('value', `${name}: nothing is sent to the observed outcome`)
+      if (c.to !== w) throw new ParameterError(`${name}: nothing is sent to the observed outcome`)
       const { z, a } = lift(c)
       const site = (link.ep as NonNullable<FactorOperator['ep']>)({ ...c, to: w, args: linkArgs(c, z) }).message
       const nu = site[0] ?? 0
@@ -100,7 +103,7 @@ export function glmRow(name: string, link: FactorOperator, description: string):
       ? {}
       : {
           vmp: (c: OperatorContext): OperatorResult => {
-            if (c.to !== w) throw new OmaiError('value', `${name}: nothing is sent to the observed outcome`)
+            if (c.to !== w) throw new ParameterError(`${name}: nothing is sent to the observed outcome`)
             const { z, a } = lift(c)
             const site = (link.vmp as NonNullable<FactorOperator['vmp']>)({ ...c, to: w, args: linkArgs(c, z) }).message
             const nu = site[0] ?? 0

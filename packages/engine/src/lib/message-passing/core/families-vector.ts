@@ -6,10 +6,11 @@
  * @index module The vector message families: multivariate Gaussian, discrete, Dirichlet.
  */
 
-import { type Json, logSumExpOf, OmaiError } from '../../base/index.ts'
+import { type Json, logSumExpOf } from '../../base/index.ts'
 import { dgemv } from '../../numerics/linalg/index.ts'
 import { spd } from '../numerics/_dense.ts'
 import { digammaOf, lgammaOf } from '../numerics/_scalar.ts'
+import { ImproperMessageError, ParameterError } from './errors.ts'
 import { bernoulli, beta, defineFamily, dirichletShapesFromLogMeans, gamma, gaussian, normalGamma } from './families.ts'
 import { normalWishart, wishart } from './families-matrix.ts'
 import type { Eta, Family, FamilySpec } from './types.ts'
@@ -20,7 +21,7 @@ const LOG_2PI = Math.log(2 * Math.PI)
 export function gaussianMvEta(mean: readonly number[], covariance: readonly number[]): Eta {
   const d = mean.length
   const factor = spd(covariance, d)
-  if (factor === undefined) throw new OmaiError('value', 'gaussianMvEta: the covariance is not positive definite')
+  if (factor === undefined) throw new ImproperMessageError('gaussianMvEta: the covariance is not positive definite')
   const j = factor.inverse()
   return [...dgemv(j, d, d, mean), ...j]
 }
@@ -31,7 +32,7 @@ export function gaussianMvMoments(
   d: number,
 ): { readonly mean: Float64Array; readonly covariance: Float64Array } {
   const factor = spd(eta.slice(d), d)
-  if (factor === undefined) throw new OmaiError('value', 'gaussianMvMoments: the precision is not positive definite')
+  if (factor === undefined) throw new ImproperMessageError('gaussianMvMoments: the precision is not positive definite')
   return { mean: factor.solve(eta.slice(0, d)), covariance: factor.inverse() }
 }
 
@@ -54,7 +55,7 @@ export function gaussianMvMoments(
  */
 export function gaussianMv(d: number): Family {
   if (!(Number.isInteger(d) && d >= 1))
-    throw new OmaiError('value', `gaussianMv: the dimension must be at least 1, got ${d}`)
+    throw new ParameterError(`gaussianMv: the dimension must be at least 1, got ${d}`)
   return defineFamily({
     spec: { kind: 'gaussian-mv', size: d },
     dim: d,
@@ -149,7 +150,7 @@ export function discreteProbs(eta: Eta): number[] {
  * ```
  */
 export function discrete(k: number): Family {
-  if (!(Number.isInteger(k) && k >= 2)) throw new OmaiError('value', `discrete: needs at least two states, got ${k}`)
+  if (!(Number.isInteger(k) && k >= 2)) throw new ParameterError(`discrete: needs at least two states, got ${k}`)
   return defineFamily({
     spec: { kind: 'discrete', size: k },
     dim: k,
@@ -188,8 +189,7 @@ export function discrete(k: number): Family {
  * ```
  */
 export function dirichlet(k: number): Family {
-  if (!(Number.isInteger(k) && k >= 2))
-    throw new OmaiError('value', `dirichlet: needs at least two components, got ${k}`)
+  if (!(Number.isInteger(k) && k >= 2)) throw new ParameterError(`dirichlet: needs at least two components, got ${k}`)
   const shapes = (eta: Eta): number[] => eta.map((v) => v + 1)
   return defineFamily({
     spec: { kind: 'dirichlet', size: k },
@@ -245,21 +245,21 @@ export function familyOf(spec: FamilySpec): Family {
     case 'normal-gamma':
       return normalGamma
     case 'gaussian-mv':
-      if (size === undefined) throw new OmaiError('value', 'familyOf: gaussian-mv needs a size')
+      if (size === undefined) throw new ParameterError('familyOf: gaussian-mv needs a size')
       return gaussianMv(size)
     case 'discrete':
-      if (size === undefined) throw new OmaiError('value', 'familyOf: discrete needs a size')
+      if (size === undefined) throw new ParameterError('familyOf: discrete needs a size')
       return discrete(size)
     case 'dirichlet':
-      if (size === undefined) throw new OmaiError('value', 'familyOf: dirichlet needs a size')
+      if (size === undefined) throw new ParameterError('familyOf: dirichlet needs a size')
       return dirichlet(size)
     case 'wishart':
-      if (size === undefined) throw new OmaiError('value', 'familyOf: wishart needs a size')
+      if (size === undefined) throw new ParameterError('familyOf: wishart needs a size')
       return wishart(size)
     case 'normal-wishart':
-      if (size === undefined) throw new OmaiError('value', 'familyOf: normal-wishart needs a size')
+      if (size === undefined) throw new ParameterError('familyOf: normal-wishart needs a size')
       return normalWishart(size)
     default:
-      throw new OmaiError('value', `familyOf: unknown family ${String((spec as { kind: unknown }).kind)}`)
+      throw new ParameterError(`familyOf: unknown family ${String((spec as { kind: unknown }).kind)}`)
   }
 }

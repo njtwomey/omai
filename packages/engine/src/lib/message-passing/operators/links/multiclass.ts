@@ -10,10 +10,11 @@
  * row on the scores `a . w_k` of the rows (the compiler makes each score a Gaussian variable).
  */
 
-import { OmaiError } from '../../../base/index.ts'
 import { ndtr } from '../../../numerics/special/_kernels.ts'
-import { errorText } from '../../core/_messages.ts'
+import { errorText, keyOf, memoised } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
+import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
 import { choleskyInPlace } from '../../numerics/_bartlett.ts'
 import { gaussianNodes } from '../../numerics/_quadrature.ts'
@@ -30,12 +31,12 @@ function classesOf(params: Params): { readonly classes: number; readonly y: numb
   const classes = numberParam(params, 'classes')
   const y = numberParam(params, 'y')
   if (!(Number.isInteger(classes) && classes >= 2))
-    throw new OmaiError('value', 'multiclass-site: classes is an integer of at least 2')
+    throw new ParameterError('multiclass-site: classes is an integer of at least 2')
   if (!(Number.isInteger(y) && y >= 0 && y < classes))
-    throw new OmaiError('value', `multiclass-site: the class must be an integer from 0 to ${classes - 1}`)
+    throw new ParameterError(`multiclass-site: the class must be an integer from 0 to ${classes - 1}`)
   const link = params['link'] ?? 'logit'
   if (link !== 'logit' && link !== 'probit')
-    throw new OmaiError('value', "multiclass-site: the link is 'logit' or 'probit'")
+    throw new ParameterError("multiclass-site: the link is 'logit' or 'probit'")
   return { classes, y, probit: link === 'probit' }
 }
 
@@ -71,18 +72,13 @@ interface Tilt {
 }
 
 /**
- * The last integral, kept: the cavities of the scores of one factor are the same for every port (each port is a different variable),
- * so the messages to the `K` ports and the evidence of one sweep share one integral.
+ * The tilted mean, covariance and log mass of the free scores against the cavities (the integral over normalised cavities). The
+ * cavities of the scores of one factor are the same for every port (each port is a different variable), so the messages to the `K`
+ * ports and the evidence of one sweep share one integral: the engine's cache keeps it under everything it depends on.
  */
-let last: { readonly key: string; readonly value: Tilt } | undefined
-
-/** The tilted mean, covariance and log mass of the free scores against the cavities (the integral over normalised cavities). */
 function tilt(c: OperatorContext): Tilt {
-  const key = JSON.stringify([c.args.map((a) => (a.value !== undefined ? a.value : a.eta)), c.params, c.power])
-  if (last?.key === key) return last.value
-  const value = integrate(c)
-  last = { key, value }
-  return value
+  const inputs = [c.args.map((a) => (a.value !== undefined ? a.value : a.eta)), c.params, c.power, c.rule?.name]
+  return memoised(c, `multiclass-tilt:${keyOf(inputs)}`, () => integrate(c))
 }
 
 /** The integral itself. */
@@ -106,7 +102,7 @@ function integrate(c: OperatorContext): Tilt {
     return { logMass: c.power * lp, mean: [], cov: [], free }
   }
   if (n === undefined)
-    throw new OmaiError('value', `multiclass-site: ${r} free scores are more than the six this rule integrates`)
+    throw new ParameterError(`multiclass-site: ${r} free scores are more than the six this rule integrates`)
   const grid = gaussianNodes(0, 1, n)
   const z = fixed.slice()
   const logf = probit ? logProbit : logSoftmax
@@ -127,7 +123,7 @@ function integrate(c: OperatorContext): Tilt {
   for (let round = 0; round < ROUNDS; round++) {
     const l = Float64Array.from(cov)
     if (!choleskyInPlace(l, r))
-      throw new OmaiError('value', 'multiclass-site: the tilted covariance is not positive definite')
+      throw new ImproperMessageError('multiclass-site: the tilted covariance is not positive definite')
     let logDet = 0
     for (let i = 0; i < r; i++) logDet += 2 * Math.log(l[i * r + i] as number)
     const logw = new Float64Array(total)
@@ -161,7 +157,7 @@ function integrate(c: OperatorContext): Tilt {
       if (v > top) top = v
     }
     if (!Number.isFinite(top))
-      throw new OmaiError('value', 'multiclass-site: the factor has no mass under the cavities')
+      throw new ImproperMessageError('multiclass-site: the factor has no mass under the cavities')
     let sum = 0
     const m = new Array<number>(r).fill(0)
     for (let idx = 0; idx < total; idx++) {
@@ -231,6 +227,11 @@ export const multiclassSite: FactorOperator = {
       accepts: ['gaussian'],
       constant: true,
     })),
+  params: {
+    classes: param.integer({ min: 2 }),
+    y: param.integer({ min: 0 }),
+    link: param.text({ optional: true, choices: ['logit', 'probit'] }),
+  },
   support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: true,
   power: true,

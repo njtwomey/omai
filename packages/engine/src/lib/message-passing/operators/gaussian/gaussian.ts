@@ -6,14 +6,13 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg, evidenceOrNaN } from '../../core/_messages.ts'
+import { arg, errorText, evidenceOrNaN, keyOf, memoised } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
   gaussianMessage,
   gaussianOf,
   gaussianSiteMessage,
-  ImproperMessageError,
   logGaussianIntegral,
   logNormal,
   massOf,
@@ -23,10 +22,12 @@ import {
   siteMessage,
   vectorParam,
 } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
+import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, FamilyKind, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
 import { gaussianGrid, tiltedGrid, tiltedLogGrid } from '../../numerics/_quadrature.ts'
-import { digammaOf, trigammaOf } from '../../numerics/_scalar.ts'
+import { gammaLogWindow, uniformGrid, windowProfiles } from '../../numerics/_windows.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 const ALL: readonly FamilyKind[] = [
@@ -60,6 +61,7 @@ export const prior: FactorOperator = {
   name: 'prior',
   description: 'a normalised density with the given natural parameters on one variable',
   ports: [{ name: 'x', accepts: ALL }],
+  params: { eta: param.vector() },
   support: { ep: 'exact', vmp: 'exact', bp: 'exact' },
   check: (params, families) =>
     vectorParam(params, 'eta').length === families[0]?.size
@@ -110,6 +112,7 @@ export const gaussianOperator: FactorOperator = {
   name: 'gaussian',
   description: 'x ~ N(mean, 1 / precision) with a fixed precision',
   ports: gaussianPorts,
+  params: { precision: param.positive() },
   support: { ep: 'exact', vmp: 'exact' },
   ep: (c): OperatorResult => {
     const o = gaussianOf(arg(c, 1 - c.to))
@@ -144,7 +147,6 @@ export const gaussianOperator: FactorOperator = {
 }
 
 const TILT_POINTS = 801
-const TILT_SPAN = 20
 /**
  * The moments of the tilted distribution of the factor `x ~ N(u, 1 / lambda)` with the two Gaussian cavities `x ~ N(mx, vx)`
  * and `u ~ N(mu, vu)` (either may be observed: a variance of zero) and the gamma cavity of `lambda`. The factor depends on
@@ -159,21 +161,16 @@ function precisionTilt(
   x: { readonly mean: number; readonly variance: number },
   u: { readonly mean: number; readonly variance: number },
   lambda: readonly number[],
-  scale = 1,
-  offset = 0,
+  scale: number,
+  offset: number,
+  c: OperatorContext,
 ): Tilt {
   // A gate asks for the same tilt of a branch several times in a row (its evidence, then the message to each variable), and
-  // each is a grid of hundreds of points: the last few are kept by their inputs.
-  const key = `${x.mean},${x.variance},${u.mean},${u.variance},${lambda.join(',')},${scale},${offset}`
-  const hit = tiltCache.get(key)
-  if (hit !== undefined) return hit
-  const made = precisionTiltGrid(x, u, lambda, scale, offset)
-  if (tiltCache.size >= 64) tiltCache.delete(tiltCache.keys().next().value as string)
-  tiltCache.set(key, made)
-  return made
+  // each is a grid of hundreds of points: the engine's cache for the call keeps it under its inputs.
+  return memoised(c, `precision-tilt:${keyOf([x.mean, x.variance, u.mean, u.variance, lambda, scale, offset])}`, () =>
+    precisionTiltGrid(x, u, lambda, scale, offset),
+  )
 }
-
-const tiltCache = new Map<string, Tilt>()
 
 /** What the grid over the precision gives: the moments of both Gaussians and of the precision, and the integral. */
 interface Tilt {
@@ -197,11 +194,8 @@ function precisionTiltGrid(
     throw new ImproperMessageError('a gamma message has no density (its shape and rate are not positive)')
   const gap = x.mean - u.mean
   const joint = x.variance + u.variance
-  const centre = digammaOf(shape) - Math.log(rate)
-  const half = TILT_SPAN * Math.sqrt(trigammaOf(shape))
-  const lo = Math.max(centre - half, -60)
-  const hi = Math.min(centre + half, 60)
-  const step = (hi - lo) / (TILT_POINTS - 1)
+  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.precisionTilt)
+  const { step } = uniformGrid({ lo, hi }, TILT_POINTS)
   const logw = new Float64Array(TILT_POINTS)
   let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < TILT_POINTS; i++) {
@@ -270,13 +264,22 @@ export const gaussianGammaPrecision: FactorOperator = {
   name: 'gaussian-gamma-precision',
   description: 'x ~ N(mean, 1 / (scale lambda + offset)) with lambda a gamma-distributed precision',
   ports: [...gaussianPorts, { name: 'precision', accepts: ['gamma'] }],
+  params: { scale: param.nonNegative({ optional: true }), offset: param.nonNegative({ optional: true }) },
+  check: (params) => {
+    try {
+      precisionParams(params)
+      return undefined
+    } catch (e) {
+      return errorText(e)
+    }
+  },
   support: { ep: 'numeric', vmp: 'exact' },
   // The precision's own cavity must be a gamma density; a Gaussian port whose cavity is still flat is shown very wide by the engine (`needsDensity`).
   readsTarget: (to) => to === 2,
   needsDensity: true,
   ep: (c): OperatorResult => {
     const { scale, offset } = precisionParams(c.params)
-    const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset)
+    const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset, c)
     if (c.to === 0) return { message: gaussianSiteMessage(etaOf(arg(c, 0)), tilt.x.mean, tilt.x.variance) }
     if (c.to === 1) return { message: gaussianSiteMessage(etaOf(arg(c, 1)), tilt.u.mean, tilt.u.variance) }
     return { message: siteMessage(gamma, etaOf(arg(c, 2)), [tilt.logLambda, tilt.lambda]) }
@@ -297,7 +300,7 @@ export const gaussianGammaPrecision: FactorOperator = {
   logEvidence: (c) => {
     return evidenceOrNaN(() => {
       const { scale, offset } = precisionParams(c.params)
-      const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset)
+      const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset, c)
       return massOf(arg(c, 0)) + massOf(arg(c, 1)) + tilt.logZ
     })
   },
@@ -319,7 +322,7 @@ function precisionParams(params: Params): { readonly scale: number; readonly off
   const scale = numberParam(params, 'scale', 1)
   const offset = numberParam(params, 'offset', 0)
   if (!(scale >= 0 && offset >= 0 && scale + offset > 0))
-    throw new OmaiError('value', 'gaussian-gamma-precision: the scale and the offset are non-negative, not both zero')
+    throw new ParameterError('gaussian-gamma-precision: the scale and the offset are non-negative, not both zero')
   return { scale, offset }
 }
 
@@ -358,13 +361,14 @@ export const gaussianLogScale: FactorOperator = {
     { name: 'x', accepts: ['gaussian'] as const, constant: true },
     { name: 'logScale', accepts: ['gaussian'] as const },
   ],
+  params: { loc: param.number({ optional: true }) },
   support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: (to) => to === 1,
   // The mean field: the non-conjugate message of log N(x; loc, exp(2 s)) in the log scale (and in a latent x), by quadrature.
   vmp: (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), c.to, logScaleAt(c)) }),
   expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), logScaleAt(c)),
   ep: (c): OperatorResult => {
-    if (c.to !== 1) throw new OmaiError('value', 'gaussian-log-scale: the value x must be observed')
+    if (c.to !== 1) throw new ParameterError('gaussian-log-scale: the value x must be observed')
     const y = gaussianOf(arg(c, 0)).mean
     const loc = c.params['loc'] === undefined ? 0 : numberParam(c.params, 'loc')
     const s = gaussianOf(arg(c, 1))
@@ -407,12 +411,13 @@ export const gaussianNormalGamma: FactorOperator = {
     { name: 'x', accepts: ['gaussian'], constant: true },
     { name: 'theta', accepts: ['normal-gamma'] },
   ],
+  params: { precision: param.positive({ optional: true }) },
   support: { ep: 'exact', vmp: 'exact' },
   ep: (c): OperatorResult => {
     const x = arg(c, 0)
     if (x.value === undefined)
-      throw new OmaiError('value', 'gaussian-normal-gamma: expectation propagation needs the observation observed')
-    if (c.to !== 1) throw new OmaiError('value', 'gaussian-normal-gamma: the value is observed, nothing is sent to it')
+      throw new ParameterError('gaussian-normal-gamma: expectation propagation needs the observation observed')
+    if (c.to !== 1) throw new ParameterError('gaussian-normal-gamma: the value is observed, nothing is sent to it')
     const k = numberParam(c.params, 'precision', 1)
     const v = gaussianOf(x).mean
     return { message: [k * v, -k / 2, (-k * v * v) / 2, 0.5] }
@@ -471,6 +476,7 @@ export const product: FactorOperator = {
     { name: 'a', accepts: ['gaussian'], constant: true },
     { name: 'b', accepts: ['gaussian'], constant: true },
   ],
+  params: {},
   support: { ep: 'numeric', vmp: 'exact' },
   readsTarget: (to) => to !== 0,
   // Deterministic: under the mean field `y` is the pushforward of `a` and `b` (the moments of a product of independent variables are
@@ -556,7 +562,7 @@ function productDensity(
   return (a) => {
     const v = a * a * other.variance + y.variance
     if (!(v > 0))
-      throw new OmaiError('value', 'product: the output and one factor are both observed, which determines the other')
+      throw new ParameterError('product: the output and one factor are both observed, which determines the other')
     return Math.exp(logNormal(a * other.mean, y.mean, v))
   }
 }
@@ -581,6 +587,7 @@ export const equal: FactorOperator = {
     { name: 'x', accepts: ALL },
     { name: 'y', accepts: ALL },
   ],
+  params: {},
   support: { ep: 'exact', vmp: 'exact', bp: 'exact' },
   // A copy defines x from y: under the mean field x is y, so its belief is y's and what x's other factors say goes to y.
   defines: 0,

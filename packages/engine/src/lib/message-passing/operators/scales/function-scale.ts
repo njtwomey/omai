@@ -10,12 +10,13 @@
  * induce, which the marginal per coefficient of the scalar factor cannot.
  */
 
-import { OmaiError } from '../../../base/index.ts'
 import { arg, errorText, evidenceOrNaN } from '../../core/_messages.ts'
-import { etaOf, gaussianSiteMessage, ImproperMessageError, siteMessage } from '../../core/args.ts'
+import { etaOf, gaussianSiteMessage, siteMessage } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
+import { param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
-import { digammaOf, trigammaOf } from '../../numerics/_scalar.ts'
+import { gammaLogWindow, windowProfiles } from '../../numerics/_windows.ts'
 import { chainOf, type Step, unaryFunctions } from '../likelihoods/functions.ts'
 import { type VectorScaleTilt, vectorMessageOf, vectorScaleTilt } from './scale.ts'
 
@@ -23,7 +24,7 @@ import { type VectorScaleTilt, vectorMessageOf, vectorScaleTilt } from './scale.
 function chains(params: Readonly<Record<string, unknown>>): ((x: number) => number)[] {
   const steps = params['steps']
   if (!Array.isArray(steps) || steps.length === 0 || !steps.every((s) => Array.isArray(s)))
-    throw new OmaiError('value', 'gaussian-mv-function-scale: steps is one chain of unary steps for each coefficient')
+    throw new ParameterError('gaussian-mv-function-scale: steps is one chain of unary steps for each coefficient')
   const table = unaryFunctions()
   return (steps as Step[][]).map((chain) => chainOf(table, chain).f)
 }
@@ -51,13 +52,12 @@ function functionScaleTilt(c: OperatorContext): VectorScaleTilt & { readonly d: 
     const { shape, rate } = gammaShapeRate(eta)
     if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
       throw new ImproperMessageError('a gamma message has no density (its shape and rate are not positive)')
-    const centre = digammaOf(shape) - Math.log(rate)
-    const half = 15 * Math.sqrt(trigammaOf(shape))
+    const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.vectorScale)
     return vectorScaleTilt(h, jmat, {
       precisions: (t) => precisionsAt(Math.exp(t)),
       logCavity: (t) => shape * t - rate * Math.exp(t),
-      lo: Math.max(centre - half, -60),
-      hi: Math.min(centre + half, 60),
+      lo,
+      hi,
     })
   }
   const hx = eta[0] ?? 0
@@ -103,6 +103,7 @@ export const gaussianMvFunctionScale: FactorOperator = {
     { name: 'beta', accepts: ['gaussian-mv'] },
     { name: 'x', accepts: ['gaussian', 'gamma'] },
   ],
+  params: { steps: param.any({ example: [['square']] }) },
   support: { ep: 'numeric' },
   readsTarget: (to) => to === 1,
   check: (params, families) => {

@@ -7,7 +7,7 @@
  * steppable and cancellable.
  */
 
-import { OmaiError } from '../../base/index.ts'
+import { ParameterError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 
 /** The orders of a sweep. */
@@ -87,15 +87,14 @@ export function planOf(g: CompiledGraph, kind: ScheduleKind, granularity: Granul
   } else if (kind === 'residual') {
     steps = g.edges.map((_, e) => [e])
   } else {
-    if (order === undefined || order.length === 0)
-      throw new OmaiError('value', 'a custom schedule needs a non-empty order')
+    if (order === undefined || order.length === 0) throw new ParameterError('a custom schedule needs a non-empty order')
     steps = order.flatMap(([f, port]) => {
       const factor = g.factors[f]
-      if (factor === undefined) throw new OmaiError('value', `custom schedule: there is no factor ${f}`)
+      if (factor === undefined) throw new ParameterError(`custom schedule: there is no factor ${f}`)
       if (port === null) return edgesOfFactor(g, f).map((e) => [e, f])
       const p = factor.ports[port]
       if (p === undefined || p.edge < 0)
-        throw new OmaiError('value', `custom schedule: factor ${f} has no message to send at port ${port}`)
+        throw new ParameterError(`custom schedule: factor ${f} has no message to send at port ${port}`)
       return [[p.edge, f]]
     })
   }

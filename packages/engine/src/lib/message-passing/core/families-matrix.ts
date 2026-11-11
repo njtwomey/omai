@@ -11,9 +11,10 @@
  * @index module The matrix message families: Wishart and normal-Wishart.
  */
 
-import { type Json, LOG_2PI, OmaiError } from '../../base/index.ts'
+import { type Json, LOG_2PI } from '../../base/index.ts'
 import { spd } from '../numerics/_dense.ts'
 import { digammaOf, lgammaOf, trigammaOf } from '../numerics/_scalar.ts'
+import { ImproperMessageError, ParameterError } from './errors.ts'
 import { defineFamily } from './families.ts'
 import type { Eta, Family } from './types.ts'
 
@@ -62,8 +63,7 @@ const scaled = (a: ArrayLike<number>, f: number, n: number): number[] =>
 export function wishartShapeFromMoments(logDetMean: number, meanLogDet: number, d: number): number {
   const s = meanLogDet - logDetMean
   if (!(s > 0))
-    throw new OmaiError(
-      'value',
+    throw new ParameterError(
       `wishart: E log|L| = ${logDetMean} and log|E L| = ${meanLogDet} violate Jensen's inequality`,
     )
   const floor = (d - 1) / 2
@@ -92,7 +92,7 @@ export function wishartShapeFromMoments(logDetMean: number, meanLogDet: number, 
 /** The Wishart message from the degrees of freedom `nu` and the scale matrix `S` (row-major `d x d`): `[(nu - d - 1) / 2, -S^-1 / 2]`. */
 export function wishartEta(nu: number, scale: ArrayLike<number>, d: number): Eta {
   const factor = spd(scale, d)
-  if (factor === undefined) throw new OmaiError('value', 'wishartEta: the scale matrix is not positive definite')
+  if (factor === undefined) throw new ImproperMessageError('wishartEta: the scale matrix is not positive definite')
   return [(nu - d - 1) / 2, ...scaled(symmetric(factor.inverse(), d), -0.5, d * d)]
 }
 
@@ -134,8 +134,7 @@ export const identityMatrix = (d: number): number[] =>
  * ```
  */
 export function wishart(d: number): Family {
-  if (!(Number.isInteger(d) && d >= 1))
-    throw new OmaiError('value', `wishart: the dimension must be at least 1, got ${d}`)
+  if (!(Number.isInteger(d) && d >= 1)) throw new ParameterError(`wishart: the dimension must be at least 1, got ${d}`)
   const n = d * d
   const blockOf = (eta: Eta): number[] => scaled(eta.slice(1, 1 + n), -1, n)
   return defineFamily({
@@ -152,7 +151,7 @@ export function wishart(d: number): Family {
     fromMoments: (m) => {
       const mean = symmetric(m.slice(1), d)
       const factor = spd(mean, d)
-      if (factor === undefined) throw new OmaiError('value', 'wishart.fromMoments: E[L] is not positive definite')
+      if (factor === undefined) throw new ImproperMessageError('wishart.fromMoments: E[L] is not positive definite')
       const k = wishartShapeFromMoments(m[0] ?? 0, factor.logDet, d)
       // -B = k (E L)^-1
       return [k - (d + 1) / 2, ...scaled(symmetric(factor.inverse(), d), -k, n)]
@@ -198,7 +197,8 @@ export function wishart(d: number): Family {
 export function normalWishartEta(m: readonly number[], beta: number, nu: number, scale: ArrayLike<number>): Eta {
   const d = m.length
   const factor = spd(scale, d)
-  if (factor === undefined) throw new OmaiError('value', 'normalWishartEta: the scale matrix is not positive definite')
+  if (factor === undefined)
+    throw new ImproperMessageError('normalWishartEta: the scale matrix is not positive definite')
   const inverse = factor.inverse()
   const b = Array.from(
     { length: d * d },
@@ -253,7 +253,7 @@ export function normalWishartParams(
  */
 export function normalWishart(d: number): Family {
   if (!(Number.isInteger(d) && d >= 1))
-    throw new OmaiError('value', `normalWishart: the dimension must be at least 1, got ${d}`)
+    throw new ParameterError(`normalWishart: the dimension must be at least 1, got ${d}`)
   const n = d * d
   return defineFamily({
     spec: { kind: 'normal-wishart', size: d },
@@ -277,14 +277,15 @@ export function normalWishart(d: number): Family {
     fromMoments: (mo) => {
       const mean = symmetric(mo.slice(1, 1 + n), d)
       const factor = spd(mean, d)
-      if (factor === undefined) throw new OmaiError('value', 'normalWishart.fromMoments: E[L] is not positive definite')
+      if (factor === undefined)
+        throw new ImproperMessageError('normalWishart.fromMoments: E[L] is not positive definite')
       const g = mo.slice(1 + n, 1 + n + d)
       const m = factor.solve(g)
       let gm = 0
       for (let i = 0; i < d; i++) gm += (g[i] ?? 0) * (m[i] ?? 0)
       const spread = (mo[1 + n + d] ?? 0) - gm
       if (!(spread > 0))
-        throw new OmaiError('value', 'normalWishart.fromMoments: the moments imply a non-positive 1 / beta')
+        throw new ImproperMessageError('normalWishart.fromMoments: the moments imply a non-positive 1 / beta')
       const k = wishartShapeFromMoments(mo[0] ?? 0, factor.logDet, d)
       // E log|L| = psi_d(nu / 2) + d log 2 + log |S| and E L = nu S, so the Wishart part is that of `wishart(d).fromMoments` with log|L| shifted.
       const nu = 2 * k

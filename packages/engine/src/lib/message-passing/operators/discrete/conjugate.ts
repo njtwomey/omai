@@ -10,6 +10,7 @@ import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, massOf, numberParam, rawSum, scalarOf } from '../../core/args.ts'
 import { bernoulli, beta } from '../../core/families.ts'
 import { dirichlet, discreteEta, discreteProbs } from '../../core/families-vector.ts'
+import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { lgammaOf } from '../../numerics/_scalar.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
@@ -42,6 +43,7 @@ export const bernoulliBeta: FactorOperator = {
     { name: 'b', accepts: ['bernoulli'], constant: true },
     { name: 'p', accepts: ['beta'] },
   ],
+  params: {},
   support: { ep: 'exact', vmp: 'exact' },
   readsTarget: (to) => to === 1,
   ep: (c): OperatorResult => {
@@ -121,6 +123,7 @@ export const discreteDirichlet: FactorOperator = {
     { name: 'z', accepts: ['discrete'], constant: true },
     { name: 'pi', accepts: ['dirichlet'] },
   ],
+  params: {},
   support: { ep: 'exact', vmp: 'exact' },
   readsTarget: (to) => to === 1,
   ep: (c): OperatorResult => {
@@ -190,6 +193,7 @@ export const poisson: FactorOperator = {
     { name: 'n', accepts: ['gaussian'], constant: true, observed: true },
     { name: 'rate', accepts: ['gamma'] },
   ],
+  params: { exposure: param.positive({ optional: true }) },
   support: { ep: 'exact', vmp: 'exact' },
   ep: (c) => ({ message: [scalarOf(arg(c, 0)), -numberParam(c.params, 'exposure', 1)] }),
   vmp: (c) => ({ message: [scalarOf(arg(c, 0)), -numberParam(c.params, 'exposure', 1)] }),
@@ -227,6 +231,7 @@ export const binomial: FactorOperator = {
     { name: 'k', accepts: ['gaussian'], constant: true, observed: true },
     { name: 'p', accepts: ['beta'] },
   ],
+  params: { n: param.integer({ min: 0 }) },
   support: { ep: 'exact', vmp: 'exact' },
   ep: (c) => ({ message: [scalarOf(arg(c, 0)), numberParam(c.params, 'n') - scalarOf(arg(c, 0))] }),
   vmp: (c) => ({ message: [scalarOf(arg(c, 0)), numberParam(c.params, 'n') - scalarOf(arg(c, 0))] }),
@@ -265,6 +270,7 @@ export const gammaObserved: FactorOperator = {
     { name: 'x', accepts: ['gaussian'], constant: true, observed: true },
     { name: 'r', accepts: ['gamma'] },
   ],
+  params: { shape: param.positive({ optional: true }), scale: param.positive({ optional: true }) },
   support: { ep: 'exact', vmp: 'exact' },
   ep: (c) => ({
     message: [numberParam(c.params, 'shape', 1), -numberParam(c.params, 'scale', 1) * scalarOf(arg(c, 0))],
@@ -310,6 +316,7 @@ export const negativeBinomialBeta: FactorOperator = {
     { name: 'k', accepts: ['gaussian'], constant: true, observed: true },
     { name: 'p', accepts: ['beta'] },
   ],
+  params: { successes: param.positive({ optional: true }) },
   support: { ep: 'exact', vmp: 'exact' },
   ep: (c) => ({ message: [numberParam(c.params, 'successes', 1), scalarOf(arg(c, 0))] }),
   vmp: (c) => ({ message: [numberParam(c.params, 'successes', 1), scalarOf(arg(c, 0))] }),
@@ -353,6 +360,7 @@ export const mixtureWeight: FactorOperator = {
   name: 'mixture-weight',
   description: 'f(p) = l1 p + l0 (1 - p): an observation of a two-component mixture with a beta weight',
   ports: [{ name: 'p', accepts: ['beta'] }],
+  params: { l1: param.nonNegative(), l0: param.nonNegative() },
   support: { ep: 'exact', vmp: 'numeric' },
   readsTarget: () => true,
   // The mean field of the switch summed out: the expected log of `l1 p + l0 (1 - p)` is not linear in the beta's statistics, so the

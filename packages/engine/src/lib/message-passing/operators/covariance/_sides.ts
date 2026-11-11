@@ -1,8 +1,10 @@
 // What the Gaussian-vector sites read their arguments through: a Gaussian side (a point, or a cavity that is shown very wide when it says nothing),
 // the rows a plated factor stands for, and the evaluator of the closed-form integral over the unknown vectors at one precision matrix. Shared by the
 // Wishart site (`covariance.ts`) and the standard-deviation-and-correlation site (`correlation.ts`).
+
 import { OmaiError } from '../../../base/index.ts'
-import { FLAT_CAVITY_PRECISION, ImproperMessageError, numberParam } from '../../core/args.ts'
+import { FLAT_CAVITY_PRECISION, numberParam } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import type { Arg, Eta, OperatorContext } from '../../core/types.ts'
 import { choleskyInPlace, choleskyInverse, choleskyLogDet, choleskySolveInPlace } from '../../numerics/_bartlett.ts'
 
@@ -20,7 +22,7 @@ export interface Rows {
 /** The rows of a factor from its parameters. */
 export function rowsOf(params: OperatorContext['params'], d: number): Rows {
   const count = numberParam(params, 'count', 1)
-  if (!(count >= 1)) throw new OmaiError('value', 'mvn-wishart: count is the number of rows, at least 1')
+  if (!(count >= 1)) throw new ParameterError('mvn-wishart: count is the number of rows, at least 1')
   const given = params['scatter']
   const scatter = given === undefined ? new Float64Array(d * d) : Float64Array.from(given as readonly number[])
   if (scatter.length !== d * d)

@@ -9,9 +9,10 @@
  * density has and zoomed onto where the mass is, so the sites cost a few thousand evaluations of the density each.
  */
 
-import { OmaiError } from '../../../base/index.ts'
 import { errorText } from '../../core/_messages.ts'
-import { allProper, ImproperMessageError, massOf, numberParam } from '../../core/args.ts'
+import { allProper, massOf, numberParam } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
+import { namedParams, param } from '../../core/params.ts'
 import type { FactorOperator, Family, OperatorContext, Params, Port, TiltedMoments } from '../../core/types.ts'
 import { axisOf, integratePair } from '../../numerics/_grid.ts'
 import { lgammaOf } from '../../numerics/_scalar.ts'
@@ -220,13 +221,12 @@ function resolve(
   const key = params['likelihood']
   const likelihood = typeof key === 'string' ? table[key] : undefined
   if (likelihood === undefined)
-    throw new OmaiError(
-      'value',
+    throw new ParameterError(
       `likelihood-pair: unknown likelihood ${String(key)} (the registry has ${Object.keys(table).join(', ')})`,
     )
   const y = numberParam(params, 'y')
   const why = likelihood.check?.(y, params)
-  if (why !== undefined) throw new OmaiError('value', `${likelihood.name}: ${why}`)
+  if (why !== undefined) throw new ParameterError(`${likelihood.name}: ${why}`)
   return { likelihood, y }
 }
 
@@ -299,6 +299,15 @@ export function pairLikelihoodOperator(
     description:
       'y | x0, x1 ~ a density of the registry over two random scalars (a location and a scale, a shape, a pair of shapes)',
     ports,
+    params: (p) => {
+      const key = p['likelihood']
+      const entry = typeof key === 'string' ? table[key] : undefined
+      return {
+        likelihood: param.text({ choices: Object.keys(table) }),
+        y: param.number(),
+        ...(entry === undefined ? {} : namedParams(entry.params, { optional: ['censored'] })),
+      }
+    },
     support: { ep: 'numeric', vmp: 'numeric' },
     readsTarget: true,
     power: true,

@@ -18,17 +18,11 @@
 
 import { OmaiError } from '../../../base/index.ts'
 import { arg } from '../../core/_messages.ts'
-import {
-  allProper,
-  etaOf,
-  ImproperMessageError,
-  messageArg,
-  numberParam,
-  valueArg,
-  vectorParam,
-} from '../../core/args.ts'
+import { allProper, etaOf, messageArg, numberParam, valueArg, vectorParam } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { bernoulli, gaussian, gaussianEta } from '../../core/families.ts'
 import { gaussianMv, gaussianMvMoments } from '../../core/families-vector.ts'
+import { mergeParams, param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { spd } from '../../numerics/_dense.ts'
 import { logistic } from '../links/links.ts'
@@ -46,10 +40,7 @@ function rowsOf(params: OperatorContext['params'], d: number): Rows {
   const x = vectorParam(params, 'X')
   const y = vectorParam(params, 'y')
   if (x.length !== y.length * d)
-    throw new OmaiError(
-      'value',
-      `a plate: X must have as many entries as outcomes times the weights, ${y.length} x ${d}`,
-    )
+    throw new ParameterError(`a plate: X must have as many entries as outcomes times the weights, ${y.length} x ${d}`)
   return { n: y.length, d, x, y }
 }
 
@@ -281,10 +272,12 @@ function plateExpectedLog(link: FactorOperator, c: OperatorContext, r: Rows): nu
  * ```
  */
 export function glmPlate(name: string, link: FactorOperator, description: string): FactorOperator {
-  if (link.ep === undefined) throw new OmaiError('value', `glmPlate: ${link.name} has no EP rule to lift`)
+  if (link.ep === undefined) throw new ParameterError(`glmPlate: ${link.name} has no EP rule to lift`)
+  const declared = mergeParams({ X: param.vector(), y: param.vector() }, link.params)
   return {
     name,
     description,
+    ...(declared === undefined ? {} : { params: declared }),
     ports: [{ name: 'w', accepts: ['gaussian-mv'] }],
     support: {
       ep: link.support.ep ?? 'numeric',
@@ -368,6 +361,13 @@ export const linearRegressionPlate: FactorOperator = {
   name: 'linear-regression-plate',
   description: 'a plate of rows y_i ~ N(a_i . w, 1 / precision), by sufficient statistics',
   ports: [{ name: 'w', accepts: ['gaussian-mv'] }],
+  params: {
+    xtx: param.vector(),
+    xty: param.vector(),
+    yty: param.number(),
+    n: param.number(),
+    precision: param.positive(),
+  },
   support: { ep: 'exact', vmp: 'exact' },
   check: (params, families) => {
     const d = families[0]?.dim ?? 0
