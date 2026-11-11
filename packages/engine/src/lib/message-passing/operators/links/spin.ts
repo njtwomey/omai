@@ -6,9 +6,9 @@
  * moment match.
  */
 
-import { logAddExp } from '../../base/index.ts'
-import type { FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
-import { allProper, etaOf, gaussianSiteMessage, numberParam } from './args.ts'
+import { logAddExp } from '../../../base/index.ts'
+import { allProper, etaOf, gaussianSiteMessage, numberParam } from '../../core/args.ts'
+import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 
 /** log of the weights of the two spin values against a Gaussian message `exp(h x - j x^2 / 2)`: the points x = +1 and x = -1. */
 function weights(c: OperatorContext): { plus: number; minus: number } {

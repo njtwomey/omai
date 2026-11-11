@@ -5,13 +5,13 @@
  * regression, TrueSkill and the step likelihoods of ordinal and censored models.
  */
 
-import { logAddExp, OmaiError } from '../../base/index.ts'
-import { tiltedLogGrid } from '../_quadrature.ts'
-import { logPhi, millsRatio, Phi, phi } from '../_scalar.ts'
-import { bernoulli } from '../families.ts'
-import { truncatedNormalMoments } from '../truncated.ts'
-import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult, Port } from '../types.ts'
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, scalarOf } from './args.ts'
+import { logAddExp, OmaiError } from '../../../base/index.ts'
+import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, scalarOf } from '../../core/args.ts'
+import { bernoulli } from '../../core/families.ts'
+import { truncatedNormalMoments } from '../../core/truncated.ts'
+import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
+import { tiltedLogGrid } from '../../numerics/_quadrature.ts'
+import { logPhi, millsRatio, Phi, phi } from '../../numerics/_scalar.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 

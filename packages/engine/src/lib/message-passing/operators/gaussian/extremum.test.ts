@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { type BrutePort, bruteTilted, integrate } from '../../testing/message-passing.ts'
-import { Phi } from './_scalar.ts'
-import * as M from './index.ts'
+import { type BrutePort, bruteTilted, integrate } from '../../../../testing/message-passing.ts'
+import * as M from '../../index.ts'
+import { Phi } from '../../numerics/_scalar.ts'
 
 const gaussian = M.gaussian
 const msg = (eta: M.Eta): M.Arg => M.messageArg(gaussian, eta)

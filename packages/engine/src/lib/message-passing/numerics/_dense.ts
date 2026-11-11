@@ -1,8 +1,8 @@
 // Small dense symmetric positive-definite algebra for the multivariate Gaussian message: a Cholesky factorisation that
 // answers "not positive definite" with `undefined` instead of an exception, and the solves, inverse and log determinant
 // that follow from it. Matrices are row-major `Float64Array`s over numerics/linalg.
-import { cholesky, choSolve } from '../numerics/linalg/index.ts'
-import { fromStorage, toFlat } from '../tensor/index.ts'
+import { cholesky, choSolve } from '../../numerics/linalg/index.ts'
+import { fromStorage, toFlat } from '../../tensor/index.ts'
 
 /** A factored symmetric positive-definite matrix. */
 export interface Spd {

@@ -10,12 +10,12 @@
  * row on the scores `a . w_k` of the rows (the compiler makes each score a Gaussian variable).
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { ndtr } from '../../numerics/special/_kernels.ts'
-import { gaussianNodes } from '../_quadrature.ts'
-import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../types.ts'
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam } from './args.ts'
-import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
+import { OmaiError } from '../../../base/index.ts'
+import { ndtr } from '../../../numerics/special/_kernels.ts'
+import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam } from '../../core/args.ts'
+import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
+import { gaussianNodes } from '../../numerics/_quadrature.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 /** The nodes per free score for a number of free scores (the grid is their product): the cap keeps a site at some tens of thousands of evaluations. */
 const NODES: Readonly<Record<number, number>> = { 1: 48, 2: 24, 3: 8, 4: 7, 5: 6, 6: 5 }

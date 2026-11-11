@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { gaussian, gaussianEta } from '../families.ts'
-import { messageArg, valueArg } from './args.ts'
+import { messageArg, valueArg } from '../../core/args.ts'
+import { gaussian, gaussianEta } from '../../core/families.ts'
 import { gaussianScale } from './log-scale.ts'
 
 /** The moments of m and s under N(m; mm, vm) N(s; ms, vs) N(x; m, exp(2 s)) on a 2-D grid, and the log mass. */

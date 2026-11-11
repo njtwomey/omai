@@ -13,10 +13,10 @@
  * @index module Stochastic and averaged EP: one averaged factor for N exchangeable data factors, memory independent of N.
  */
 
-import { type Json, OmaiError } from '../base/index.ts'
-import { foldIn, key, uniform } from '../random/index.ts'
-import { choice, dict, int, real } from '../space/index.ts'
-import { toFlat } from '../tensor/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
+import { foldIn, key, uniform } from '../../random/index.ts'
+import { choice, dict, int, real } from '../../space/index.ts'
+import { toFlat } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -31,11 +31,11 @@ import {
   scalar,
   stateFromJson,
   stateToJson,
-} from '../trace/index.ts'
-import { type ImproperCounts, type ImproperPolicy, type MpSnapshot, operatorMessage } from './engine.ts'
-import type { CompiledFactor, CompiledGraph } from './graph.ts'
-import { momentProjection } from './projections.ts'
-import type { Arg, Eta, Family } from './types.ts'
+} from '../../trace/index.ts'
+import type { CompiledFactor, CompiledGraph } from '../core/graph.ts'
+import type { Arg, Eta, Family } from '../core/types.ts'
+import { type ImproperCounts, type ImproperPolicy, type MpSnapshot, operatorMessage } from '../engine/engine.ts'
+import { momentProjection } from '../engine/projections.ts'
 
 /** The knobs of stochastic EP. */
 export interface StochasticEpOptions {

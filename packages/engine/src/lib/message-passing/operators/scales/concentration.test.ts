@@ -1,9 +1,9 @@
 // dirichlet-concentration: the tilted moments of the concentration and of E log p against a brute-force double integral.
 import { describe, expect, it } from 'vitest'
-import { lgammaOf } from '../_scalar.ts'
-import { beta, betaEta, gamma, gammaEta, gaussian, gaussianEta } from '../families.ts'
-import type { Arg } from '../types.ts'
-import { massOf, messageArg } from './args.ts'
+import { massOf, messageArg } from '../../core/args.ts'
+import { beta, betaEta, gamma, gammaEta, gaussian, gaussianEta } from '../../core/families.ts'
+import type { Arg } from '../../core/types.ts'
+import { lgammaOf } from '../../numerics/_scalar.ts'
 import { betaTwoShapes, dirichletConcentration } from './concentration.ts'
 
 /** The reference: the joint density of (p, alpha) on a fine grid, p ~ Beta(w1 a + o1, w2 a + o2) times the cavities. */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { gamma, gammaEta, gaussian, gaussianEta, gaussianMoments } from '../families.ts'
-import { gaussianMv, gaussianMvEta, gaussianMvMoments } from '../families-vector.ts'
-import { messageArg } from './args.ts'
+import { messageArg } from '../../core/args.ts'
+import { gamma, gammaEta, gaussian, gaussianEta, gaussianMoments } from '../../core/families.ts'
+import { gaussianMv, gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
 import { gaussianMvFunctionScale } from './function-scale.ts'
 import { gaussianMvPrecisionScale } from './scale.ts'
 

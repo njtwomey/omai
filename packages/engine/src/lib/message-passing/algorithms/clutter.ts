@@ -10,12 +10,12 @@
  * two Kullback-Leibler divergences of a Gaussian from it, so a sweep of alpha can be judged against the truth.
  */
 
-import { foldIn, type Key, normal, uniform } from '../random/index.ts'
-import { toFlat } from '../tensor/index.ts'
-import { type CompiledGraph, compileGraph } from './graph.ts'
-import { numericOperator } from './operators/numeric.ts'
-import { defaultOperators } from './operators/registry.ts'
-import { gaussianPrior } from './priors.ts'
+import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
+import { toFlat } from '../../tensor/index.ts'
+import { type CompiledGraph, compileGraph } from '../core/graph.ts'
+import { gaussianPrior } from '../core/priors.ts'
+import { numericOperator } from '../operators/likelihoods/numeric.ts'
+import { defaultOperators } from '../operators/registry.ts'
 
 /** A clutter problem: the observations, and what generated them. */
 export interface ClutterProblem {

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { integrateBox } from '../../testing/message-passing.ts'
-import { logNdtr } from '../numerics/special/index.ts'
-import { gaussianEp } from '../pgm/index.ts'
-import { foldIn, key, normal, uniform } from '../random/index.ts'
-import { fromStorage, toFlat } from '../tensor/index.ts'
-import { runAlgorithm } from '../trace/index.ts'
-import * as M from './index.ts'
+import { integrateBox } from '../../../testing/message-passing.ts'
+import { logNdtr } from '../../numerics/special/index.ts'
+import { gaussianEp } from '../../pgm/index.ts'
+import { foldIn, key, normal, uniform } from '../../random/index.ts'
+import { fromStorage, toFlat } from '../../tensor/index.ts'
+import { runAlgorithm } from '../../trace/index.ts'
+import * as M from '../index.ts'
 
 const operators = M.defaultOperators()
 

@@ -1,7 +1,6 @@
 // A beta or Dirichlet variable whose concentration is random (a gamma or log-normal hyperprior on the strength of the prior), under
 // EP, against the exact posterior by quadrature over the concentration (given it the variable is conjugate).
 import { describe, expect, it } from 'vitest'
-import { lgammaOf } from '../../message-passing/_scalar.ts'
 import {
   compileGraph,
   epAlgorithm,
@@ -9,6 +8,7 @@ import {
   type MpState,
   marginalsOf,
 } from '../../message-passing/index.ts'
+import { lgammaOf } from '../../message-passing/numerics/_scalar.ts'
 import { runAlgorithm } from '../../trace/index.ts'
 import * as d from './dists/index.ts'
 import { defineModel, factorGraphVerdict, ops, toFactorGraph } from './index.ts'

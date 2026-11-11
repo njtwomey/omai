@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { lgammaOf } from '../_scalar.ts'
-import { gamma, gammaEta } from '../families.ts'
-import { messageArg } from './args.ts'
+import { messageArg } from '../../core/args.ts'
+import { gamma, gammaEta } from '../../core/families.ts'
+import { lgammaOf } from '../../numerics/_scalar.ts'
 import { gammaProduct, gammaRate } from './gamma-scale.ts'
 
 const N = 900

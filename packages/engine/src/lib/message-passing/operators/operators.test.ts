@@ -6,13 +6,13 @@ import {
   integrate,
   integrateBox,
   integratePositive,
-} from '../../testing/message-passing.ts'
-import { sigmoidOf } from '../base/index.ts'
-import { truncatedNormal } from '../dists/index.ts'
-import { item } from '../tensor/index.ts'
-import { operatorMessage } from './engine.ts'
-import * as M from './index.ts'
-import { momentProjection } from './projections.ts'
+} from '../../../testing/message-passing.ts'
+import { sigmoidOf } from '../../base/index.ts'
+import { truncatedNormal } from '../../dists/index.ts'
+import { item } from '../../tensor/index.ts'
+import { operatorMessage } from '../engine/engine.ts'
+import { momentProjection } from '../engine/projections.ts'
+import * as M from '../index.ts'
 
 // Every property of this file runs on one fixed seed, so the file is deterministic by default (a refactoring step that
 // changes nothing cannot fail by luck). OMAI_FC_SEED=<n> runs another seed (a property that depends on its seed shows on a

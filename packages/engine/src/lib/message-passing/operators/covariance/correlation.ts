@@ -9,14 +9,14 @@
  * correlation is a one-dimensional integral.
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { type GridAxis, gammaAxis, pointAxis } from '../_grid.ts'
-import { betaAxis, integrateAxes } from '../_gridn.ts'
-import { beta, gamma } from '../families.ts'
-import { gaussianMvEta } from '../families-vector.ts'
-import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
+import { OmaiError } from '../../../base/index.ts'
+import { ImproperMessageError, siteMessage } from '../../core/args.ts'
+import { beta, gamma } from '../../core/families.ts'
+import { gaussianMvEta } from '../../core/families-vector.ts'
+import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { type GridAxis, gammaAxis, pointAxis } from '../../numerics/_grid.ts'
+import { betaAxis, integrateAxes } from '../../numerics/_gridn.ts'
 import { evaluatorOf, gaussianSide, type Rows, rowsOf } from './_sides.ts'
-import { ImproperMessageError, siteMessage } from './args.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 const softplus = (x: number): number => (x > 0 ? x + Math.log1p(Math.exp(-x)) : Math.log1p(Math.exp(x)))

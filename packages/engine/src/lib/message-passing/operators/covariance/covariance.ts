@@ -8,7 +8,11 @@
  * their conditionals over the nodes. The variational rule is closed form throughout.
  */
 
-import { OmaiError } from '../../base/index.ts'
+import { OmaiError } from '../../../base/index.ts'
+import { ImproperMessageError, rawSum, siteMessage, vectorOf } from '../../core/args.ts'
+import { normalWishart, wishart, wishartParams } from '../../core/families-matrix.ts'
+import { gaussianMvEta } from '../../core/families-vector.ts'
+import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import {
   BARTLETT_ORDER,
   choleskyInPlace,
@@ -17,12 +21,8 @@ import {
   choleskySolveInPlace,
   type WishartRule,
   wishartRule,
-} from '../_bartlett.ts'
-import { normalWishart, wishart, wishartParams } from '../families-matrix.ts'
-import { gaussianMvEta } from '../families-vector.ts'
-import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
+} from '../../numerics/_bartlett.ts'
 import { type Evaluator, evaluatorOf, type GaussianSide, gaussianSide, NO_ROWS, type Rows, rowsOf } from './_sides.ts'
-import { ImproperMessageError, rawSum, siteMessage, vectorOf } from './args.ts'
 
 const LOG_2PI = Math.log(2 * Math.PI)
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg

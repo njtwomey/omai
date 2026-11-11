@@ -5,7 +5,7 @@
  * different projection (an alpha-divergence, a Laplace or quadrature site) is another entry of the same shape.
  */
 
-import type { Mode, TiltedRule } from './types.ts'
+import type { Mode, TiltedRule } from '../core/types.ts'
 
 /**
  * A projection: the rule an operator is asked for (`hook`), what it is shown as the incoming message of each port

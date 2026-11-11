@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { wishartRule } from '../_bartlett.ts'
-import { normalWishart, normalWishartEta, wishart, wishartEta, wishartParams } from '../families-matrix.ts'
-import { gaussianMv, gaussianMvEta } from '../families-vector.ts'
-import type { Arg, Eta, OperatorContext } from '../types.ts'
-import { messageArg, valueArg } from './args.ts'
+import { messageArg, valueArg } from '../../core/args.ts'
+import { normalWishart, normalWishartEta, wishart, wishartEta, wishartParams } from '../../core/families-matrix.ts'
+import { gaussianMv, gaussianMvEta } from '../../core/families-vector.ts'
+import type { Arg, Eta, OperatorContext } from '../../core/types.ts'
+import { wishartRule } from '../../numerics/_bartlett.ts'
 import { mvnNormalWishart, mvnWishart } from './covariance.ts'
 
 const W = wishart(2)

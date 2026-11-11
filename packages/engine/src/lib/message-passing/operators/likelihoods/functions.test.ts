@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { gamma, gammaEta, gaussian, gaussianEta } from '../families.ts'
-import { messageArg } from './args.ts'
+import { messageArg } from '../../core/args.ts'
+import { gamma, gammaEta, gaussian, gaussianEta } from '../../core/families.ts'
 import { apply, applyProductOperator, unaryFunctions } from './functions.ts'
 
 /** The moments of x and f(x) under N(m, v) exp(h f(x) - J f(x)^2 / 2) on a fine grid: the reference. */

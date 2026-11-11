@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { integrateBox } from '../../testing/message-passing.ts'
-import { probitRows } from '../../testing/mp-variants.ts'
-import { sigmoidOf } from '../base/index.ts'
-import { gaussianEp } from '../pgm/index.ts'
-import { runAlgorithm } from '../trace/index.ts'
-import { millsRatio } from './_scalar.ts'
-import * as M from './index.ts'
+import { integrateBox } from '../../../../testing/message-passing.ts'
+import { probitRows } from '../../../../testing/mp-variants.ts'
+import { sigmoidOf } from '../../../base/index.ts'
+import { gaussianEp } from '../../../pgm/index.ts'
+import { runAlgorithm } from '../../../trace/index.ts'
+import * as M from '../../index.ts'
+import { millsRatio } from '../../numerics/_scalar.ts'
 
 const operators = M.defaultOperators()
 const close = (a: number, b: number, tol: number): void => {

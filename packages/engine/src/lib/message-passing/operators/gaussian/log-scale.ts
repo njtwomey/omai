@@ -7,10 +7,10 @@
  * over it; the work does not grow with the number of random arguments.
  */
 
-import { tiltedByQuadrature } from '../_tilted.ts'
-import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, logNormal, massOf, scalarOf } from './args.ts'
-import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
+import { allProper, etaOf, gaussianOf, gaussianSiteMessage, logNormal, massOf, scalarOf } from '../../core/args.ts'
+import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { tiltedByQuadrature } from '../../numerics/_tilted.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 

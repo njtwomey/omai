@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { lgammaOf } from '../_scalar.ts'
-import { gamma, gammaEta, gaussian, gaussianEta } from '../families.ts'
-import { discrete, discreteEta, discreteProbs } from '../families-vector.ts'
-import { messageArg, valueArg } from './args.ts'
-import { defaultOperators } from './registry.ts'
+import { messageArg, valueArg } from '../../core/args.ts'
+import { gamma, gammaEta, gaussian, gaussianEta } from '../../core/families.ts'
+import { discrete, discreteEta, discreteProbs } from '../../core/families-vector.ts'
+import { lgammaOf } from '../../numerics/_scalar.ts'
+import { defaultOperators } from '../registry.ts'
 
 const ops = defaultOperators()
 const gate = ops['gate']

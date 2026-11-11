@@ -11,9 +11,9 @@
  * @index module The matrix message families: Wishart and normal-Wishart.
  */
 
-import { type Json, LOG_2PI, OmaiError } from '../base/index.ts'
-import { spd } from './_dense.ts'
-import { digammaOf, lgammaOf, trigammaOf } from './_scalar.ts'
+import { type Json, LOG_2PI, OmaiError } from '../../base/index.ts'
+import { spd } from '../numerics/_dense.ts'
+import { digammaOf, lgammaOf, trigammaOf } from '../numerics/_scalar.ts'
 import { defineFamily } from './families.ts'
 import type { Eta, Family } from './types.ts'
 

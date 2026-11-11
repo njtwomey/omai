@@ -7,14 +7,14 @@
  * stochastic and averaged EP of `stochastic.ts` runs on, and what the compiler of a model with a plate will emit.
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { gaussian, gaussianEta } from '../families.ts'
-import { gaussianMv, gaussianMvMoments } from '../families-vector.ts'
-import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
-import { allProper, etaOf, messageArg, vectorParam } from './args.ts'
-import { logistic } from './links.ts'
-import { spin } from './spin.ts'
-import { probit } from './truncation.ts'
+import { OmaiError } from '../../../base/index.ts'
+import { allProper, etaOf, messageArg, vectorParam } from '../../core/args.ts'
+import { gaussian, gaussianEta } from '../../core/families.ts'
+import { gaussianMv, gaussianMvMoments } from '../../core/families-vector.ts'
+import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { logistic } from '../links/links.ts'
+import { spin } from '../links/spin.ts'
+import { probit } from '../links/truncation.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { expectResumable } from '../../testing/mp-variants.ts'
-import { runAlgorithm } from '../trace/index.ts'
-import * as M from './index.ts'
+import { expectResumable } from '../../../testing/mp-variants.ts'
+import { runAlgorithm } from '../../trace/index.ts'
+import * as M from '../index.ts'
 
 const close = (a: number, b: number, tol: number): void => {
   expect(Math.abs(a - b), `${a} vs ${b}`).toBeLessThanOrEqual(tol * (1 + Math.abs(b)))

@@ -5,7 +5,7 @@
  * picks among them for you.
  */
 
-import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
+import { choice, type DictSpace, dict, int, real } from '../../space/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -16,18 +16,18 @@ import {
   type Method,
   message,
   scalar,
-} from '../trace/index.ts'
+} from '../../trace/index.ts'
+import type { CompiledGraph } from '../core/graph.ts'
+import type { Mode } from '../core/types.ts'
 import {
   type EngineSettings,
   type ImproperPolicy,
   type InitialMessage,
   type MpState,
   messagePassingAlgorithm,
-} from './engine.ts'
-import type { CompiledGraph } from './graph.ts'
-import { klqpProjection, momentProjection, sumProductProjection } from './projections.ts'
-import type { CustomOrder, Granularity, ScheduleKind } from './schedules.ts'
-import type { Mode } from './types.ts'
+} from '../engine/engine.ts'
+import { klqpProjection, momentProjection, sumProductProjection } from '../engine/projections.ts'
+import type { CustomOrder, Granularity, ScheduleKind } from '../engine/schedules.ts'
 
 /** The knobs every message-passing algorithm has; the defaults differ by algorithm. */
 export interface MessagePassingOptions {

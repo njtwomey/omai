@@ -8,11 +8,8 @@
  * inputs are the expected log of the output's cavity, which is the mean field of the model with the output substituted.
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { dgemv } from '../../numerics/linalg/index.ts'
-import { spd } from '../_dense.ts'
-import { gaussianMvEta, gaussianMvMoments } from '../families-vector.ts'
-import type { Arg, FactorOperator, Family, OperatorContext, OperatorResult, Port } from '../types.ts'
+import { OmaiError } from '../../../base/index.ts'
+import { dgemv } from '../../../numerics/linalg/index.ts'
 import {
   allProper,
   etaOf,
@@ -25,7 +22,10 @@ import {
   rawSum,
   scalarOf,
   vectorParam,
-} from './args.ts'
+} from '../../core/args.ts'
+import { gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
+import type { Arg, FactorOperator, Family, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
+import { spd } from '../../numerics/_dense.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 const gaussianPort = (name: string): Port => ({ name, accepts: ['gaussian'], constant: true })

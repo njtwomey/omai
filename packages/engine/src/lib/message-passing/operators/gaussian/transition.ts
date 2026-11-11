@@ -6,11 +6,11 @@
  * the natural parameters.
  */
 
-import { dgemm, dgemv } from '../../numerics/linalg/index.ts'
-import { spd } from '../_dense.ts'
-import { gaussianMvEta, gaussianMvMoments } from '../families-vector.ts'
-import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
-import { etaOf, ImproperMessageError, vectorParam } from './args.ts'
+import { dgemm, dgemv } from '../../../numerics/linalg/index.ts'
+import { etaOf, ImproperMessageError, vectorParam } from '../../core/args.ts'
+import { gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
+import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { spd } from '../../numerics/_dense.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 

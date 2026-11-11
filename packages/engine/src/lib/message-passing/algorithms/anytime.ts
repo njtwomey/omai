@@ -5,10 +5,10 @@
  * stops and when it reports, never what it computes, so any slicing of a run reaches the same states.
  */
 
-import { OmaiError } from '../base/index.ts'
-import { type Algorithm, initialSlice, type RunHandle, type RunStatus, runFor, type Slice } from '../trace/index.ts'
-import { type MpSnapshot, type MpState, mpSnapshot } from './engine.ts'
-import type { CompiledGraph } from './graph.ts'
+import { OmaiError } from '../../base/index.ts'
+import { type Algorithm, initialSlice, type RunHandle, type RunStatus, runFor, type Slice } from '../../trace/index.ts'
+import type { CompiledGraph } from '../core/graph.ts'
+import { type MpSnapshot, type MpState, mpSnapshot } from '../engine/engine.ts'
 
 /** Options of {@link runAnytime}; `S` is the state of the algorithm and `P` the snapshot it is reported as. */
 export interface AnytimeOptions<S = MpState, P = MpSnapshot> {

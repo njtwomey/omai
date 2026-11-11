@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { expectResumable, probitRows } from '../../testing/mp-variants.ts'
-import { gaussianEp } from '../pgm/index.ts'
-import { runAlgorithm } from '../trace/index.ts'
-import { gaussianNodes } from './_quadrature.ts'
-import { millsRatio } from './_scalar.ts'
-import * as M from './index.ts'
+import { expectResumable, probitRows } from '../../../testing/mp-variants.ts'
+import { gaussianEp } from '../../pgm/index.ts'
+import { runAlgorithm } from '../../trace/index.ts'
+import * as M from '../index.ts'
+import { gaussianNodes } from '../numerics/_quadrature.ts'
+import { millsRatio } from '../numerics/_scalar.ts'
 
 const operators = M.defaultOperators()
 const close = (a: number, b: number, tol = 1e-8): void => {

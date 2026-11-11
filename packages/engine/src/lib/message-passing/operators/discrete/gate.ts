@@ -13,11 +13,20 @@
  * (A gate that selects among variables with a `select` factor, `y = c_z`, cannot: a point-mass constraint has no power.)
  */
 
-import { type Json, logSumExpOf, OmaiError } from '../../base/index.ts'
-import { gaussian } from '../families.ts'
-import { discreteEta, discreteProbs } from '../families-vector.ts'
-import type { Arg, Eta, FactorOperator, Family, OperatorContext, OperatorResult, Params, Port } from '../types.ts'
-import { etaOf, ImproperMessageError, massOf, numberParam, scalarOf, valueArg } from './args.ts'
+import { type Json, logSumExpOf, OmaiError } from '../../../base/index.ts'
+import { etaOf, ImproperMessageError, massOf, numberParam, scalarOf, valueArg } from '../../core/args.ts'
+import { gaussian } from '../../core/families.ts'
+import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
+import type {
+  Arg,
+  Eta,
+  FactorOperator,
+  Family,
+  OperatorContext,
+  OperatorResult,
+  Params,
+  Port,
+} from '../../core/types.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 

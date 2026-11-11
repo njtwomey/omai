@@ -1,10 +1,10 @@
 // What the Gaussian-vector sites read their arguments through: a Gaussian side (a point, or a cavity that is shown very wide when it says nothing),
 // the rows a plated factor stands for, and the evaluator of the closed-form integral over the unknown vectors at one precision matrix. Shared by the
 // Wishart site (`covariance.ts`) and the standard-deviation-and-correlation site (`correlation.ts`).
-import { OmaiError } from '../../base/index.ts'
-import { choleskyInPlace, choleskyInverse, choleskyLogDet, choleskySolveInPlace } from '../_bartlett.ts'
-import type { Arg, Eta, OperatorContext } from '../types.ts'
-import { FLAT_CAVITY_PRECISION, ImproperMessageError, numberParam } from './args.ts'
+import { OmaiError } from '../../../base/index.ts'
+import { FLAT_CAVITY_PRECISION, ImproperMessageError, numberParam } from '../../core/args.ts'
+import type { Arg, Eta, OperatorContext } from '../../core/types.ts'
+import { choleskyInPlace, choleskyInverse, choleskyLogDet, choleskySolveInPlace } from '../../numerics/_bartlett.ts'
 
 const LOG_2PI = Math.log(2 * Math.PI)
 

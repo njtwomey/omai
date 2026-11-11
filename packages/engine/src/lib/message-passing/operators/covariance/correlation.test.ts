@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { choleskyInPlace, choleskyLogDet, choleskySolveInPlace } from '../_bartlett.ts'
-import { lgammaOf } from '../_scalar.ts'
-import { beta, betaEta, gamma, gammaEta } from '../families.ts'
-import { gaussianMv, gaussianMvEta } from '../families-vector.ts'
-import type { Arg, Eta, OperatorContext } from '../types.ts'
-import { messageArg, valueArg } from './args.ts'
+import { messageArg, valueArg } from '../../core/args.ts'
+import { beta, betaEta, gamma, gammaEta } from '../../core/families.ts'
+import { gaussianMv, gaussianMvEta } from '../../core/families-vector.ts'
+import type { Arg, Eta, OperatorContext } from '../../core/types.ts'
+import { choleskyInPlace, choleskyLogDet, choleskySolveInPlace } from '../../numerics/_bartlett.ts'
+import { lgammaOf } from '../../numerics/_scalar.ts'
 import { mvnSdCorr } from './correlation.ts'
 
 const G = gaussianMv(2)

@@ -7,8 +7,8 @@
  * @index module Compile and draw a factor graph: variables, factors, edges, ids.
  */
 
-import { OmaiError } from '../base/index.ts'
-import { type Structure, type StructureEdge, type StructureNode, structure } from '../scene/index.ts'
+import { OmaiError } from '../../base/index.ts'
+import { type Structure, type StructureEdge, type StructureNode, structure } from '../../scene/index.ts'
 import { familyOf } from './families-vector.ts'
 import {
   type ArgSpec,

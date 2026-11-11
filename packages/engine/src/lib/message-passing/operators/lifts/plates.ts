@@ -16,14 +16,22 @@
  * log factor under the current belief), so a sweep is one pass.
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { spd } from '../_dense.ts'
-import { bernoulli, gaussian, gaussianEta } from '../families.ts'
-import { gaussianMv, gaussianMvMoments } from '../families-vector.ts'
-import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
-import { allProper, etaOf, ImproperMessageError, messageArg, numberParam, valueArg, vectorParam } from './args.ts'
-import { logistic } from './links.ts'
-import { probit } from './truncation.ts'
+import { OmaiError } from '../../../base/index.ts'
+import {
+  allProper,
+  etaOf,
+  ImproperMessageError,
+  messageArg,
+  numberParam,
+  valueArg,
+  vectorParam,
+} from '../../core/args.ts'
+import { bernoulli, gaussian, gaussianEta } from '../../core/families.ts'
+import { gaussianMv, gaussianMvMoments } from '../../core/families-vector.ts'
+import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { spd } from '../../numerics/_dense.ts'
+import { logistic } from '../links/links.ts'
+import { probit } from '../links/truncation.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 

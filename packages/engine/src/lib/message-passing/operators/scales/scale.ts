@@ -8,12 +8,12 @@
  * that grid, dense, so the posterior keeps the correlations between the coefficients that the data induce.
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { spd } from '../_dense.ts'
-import { digammaOf, trigammaOf } from '../_scalar.ts'
-import { gamma, gammaShapeRate } from '../families.ts'
-import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
-import { etaOf, ImproperMessageError, siteMessage, vectorParam } from './args.ts'
+import { OmaiError } from '../../../base/index.ts'
+import { etaOf, ImproperMessageError, siteMessage, vectorParam } from '../../core/args.ts'
+import { gamma, gammaShapeRate } from '../../core/families.ts'
+import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { spd } from '../../numerics/_dense.ts'
+import { digammaOf, trigammaOf } from '../../numerics/_scalar.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 

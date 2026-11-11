@@ -1,10 +1,10 @@
 // stick-breaking: the messages to the assignment and to each break against a brute-force integral over the breaks, with the
 // log evidence against the same integral, for three and four states.
 import { describe, expect, it } from 'vitest'
-import { lgammaOf } from '../_scalar.ts'
-import { beta, betaEta } from '../families.ts'
-import { discrete, discreteEta, discreteProbs } from '../families-vector.ts'
-import { messageArg } from './args.ts'
+import { messageArg } from '../../core/args.ts'
+import { beta, betaEta } from '../../core/families.ts'
+import { discrete, discreteEta, discreteProbs } from '../../core/families-vector.ts'
+import { lgammaOf } from '../../numerics/_scalar.ts'
 import { stickBreaking } from './stick-breaking.ts'
 
 /** p(z = k | v) for the stick-breaking weights. */

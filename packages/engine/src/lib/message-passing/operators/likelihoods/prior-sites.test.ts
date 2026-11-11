@@ -2,10 +2,10 @@
 // of `densityMoments`, the evidence against the same integral, and the first message (a flat cavity) against the one-off projection
 // the compiler used to make (`projectedPrior`).
 import { describe, expect, it } from 'vitest'
-import { FLAT_CAVITY_PRECISION, operatorMessage } from '../engine.ts'
-import * as M from '../index.ts'
-import { densityMoments, projectedPrior } from '../priors.ts'
-import { momentProjection } from '../projections.ts'
+import { densityMoments, projectedPrior } from '../../core/priors.ts'
+import { FLAT_CAVITY_PRECISION, operatorMessage } from '../../engine/engine.ts'
+import { momentProjection } from '../../engine/projections.ts'
+import * as M from '../../index.ts'
 
 const logPhi = (z: number): number => Math.log(0.5 * (1 + erf(z / Math.SQRT2)))
 function erf(x: number): number {

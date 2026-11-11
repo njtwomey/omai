@@ -8,8 +8,8 @@
  * @index module The scalar message families: Gaussian, gamma, beta, Bernoulli, normal-gamma.
  */
 
-import { type Json, LOG_2PI, OmaiError } from '../base/index.ts'
-import { digammaOf, lgammaOf, trigammaOf } from './_scalar.ts'
+import { type Json, LOG_2PI, OmaiError } from '../../base/index.ts'
+import { digammaOf, lgammaOf, trigammaOf } from '../numerics/_scalar.ts'
 import type { Eta, Family, FamilyKind, FamilySpec, Quotient } from './types.ts'
 
 /** What a family supplies: the pieces that differ; the rest of `Family` follows from them. */

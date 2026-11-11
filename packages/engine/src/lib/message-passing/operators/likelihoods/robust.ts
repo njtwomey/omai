@@ -11,11 +11,11 @@
  * `y ~ studentT(df, X w, s)` is one rank-one factor per row on the packed weights.
  */
 
-import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../types.ts'
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, vectorParam } from './args.ts'
+import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, vectorParam } from '../../core/args.ts'
+import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
+import { glmRow } from '../lifts/rows.ts'
 import { likelihoodSite, likelihoods } from './likelihoods.ts'
-import { glmRow } from './rows.ts'
-import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
 
 /** The mixture's components from the parameters, with the weights normalised. */
 function components(params: Params): {

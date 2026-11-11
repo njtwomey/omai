@@ -1,7 +1,7 @@
 // Gauss-Hermite quadrature against a Gaussian message: the expectation of a function under a Gaussian and the moments
 // of a Gaussian times a function, what the numeric operators (a logistic link, a product, a user's density) integrate.
-import { gaussHermite, gaussLegendre } from '../numerics/quadrature/index.ts'
-import { toFlat } from '../tensor/index.ts'
+import { gaussHermite, gaussLegendre } from '../../numerics/quadrature/index.ts'
+import { toFlat } from '../../tensor/index.ts'
 
 const rules = new Map<number, { readonly x: Float64Array; readonly w: Float64Array }>()
 

@@ -30,7 +30,7 @@
  * carries each factor's id.
  */
 
-import type { Json } from '../base/index.ts'
+import type { Json } from '../../base/index.ts'
 
 /** A message: the natural parameters of a member of a family, in the layout the family documents. */
 export type Eta = readonly number[]

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { digammaOf, lgammaOf } from '../_scalar.ts'
-import { gamma, gammaEta, gaussian, gaussianEta } from '../families.ts'
-import type { Arg, Eta, FactorOperator, Family } from '../types.ts'
-import { massOf, messageArg, valueArg } from './args.ts'
+import { massOf, messageArg, valueArg } from '../../core/args.ts'
+import { gamma, gammaEta, gaussian, gaussianEta } from '../../core/families.ts'
+import type { Arg, Eta, FactorOperator, Family } from '../../core/types.ts'
+import { digammaOf, lgammaOf } from '../../numerics/_scalar.ts'
+import { defaultOperators } from '../registry.ts'
 import { pairLikelihoodOperator, pairLikelihoods } from './pairs.ts'
-import { defaultOperators } from './registry.ts'
 
 /*
  * Each case integrates the density against the two cavities on a fine midpoint grid in the coordinates, with no code of the

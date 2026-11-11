@@ -2,11 +2,11 @@
 // divergences of a Gaussian in both directions, and the alpha family moves from expectation propagation (wide, KL(p || q)
 // small) toward the variational Gaussian (narrow, KL(q || p) small) on it.
 import { describe, expect, it } from 'vitest'
-import { key } from '../random/index.ts'
-import { recorder, runAlgorithm } from '../trace/index.ts'
+import { key } from '../../random/index.ts'
+import { recorder, runAlgorithm } from '../../trace/index.ts'
+import { marginalsOf } from '../engine/engine.ts'
 import { alphaEpAlgorithm } from './alpha.ts'
 import { clutterGraph, clutterPosterior, clutterProblem } from './clutter.ts'
-import { marginalsOf } from './engine.ts'
 
 const problem = clutterProblem(key(7))
 const exact = clutterPosterior(problem)

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { integrate, integrateBox } from '../../testing/message-passing.ts'
-import { gaussianExpectation } from './_quadrature.ts'
-import { logPhi } from './_scalar.ts'
-import * as M from './index.ts'
+import { integrate, integrateBox } from '../../../testing/message-passing.ts'
+import * as M from '../index.ts'
+import { gaussianExpectation } from '../numerics/_quadrature.ts'
+import { logPhi } from '../numerics/_scalar.ts'
 
 const operators = M.defaultOperators()
 const gaussian = M.gaussian

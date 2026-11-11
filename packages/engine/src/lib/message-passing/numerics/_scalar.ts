@@ -1,10 +1,10 @@
 // Scalar special functions for the message algebra: thin wrappers that take and return plain numbers over the tensor
 // special functions of numerics/special (messages are number arrays, so the hot loops stay free of tensors), and the
 // inverse digamma that moment matching onto a gamma, beta or Dirichlet needs.
-import { OmaiError } from '../base/index.ts'
-import { digamma, lgamma, polygamma } from '../numerics/special/_kernels.ts'
-import { erfcx, logNdtr, ndtr, normalLogPdf } from '../numerics/special/index.ts'
-import { item } from '../tensor/index.ts'
+import { OmaiError } from '../../base/index.ts'
+import { digamma, lgamma, polygamma } from '../../numerics/special/_kernels.ts'
+import { erfcx, logNdtr, ndtr, normalLogPdf } from '../../numerics/special/index.ts'
+import { item } from '../../tensor/index.ts'
 
 /** The standard normal distribution function. */
 export const Phi = (x: number): number => item(ndtr(x))

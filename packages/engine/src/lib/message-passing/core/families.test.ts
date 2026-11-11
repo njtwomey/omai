@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { integrate, integratePositive } from '../../testing/message-passing.ts'
+import { integrate, integratePositive } from '../../../testing/message-passing.ts'
 import {
   bernoulli as bernoulliDist,
   beta as betaDist,
@@ -8,9 +8,9 @@ import {
   gamma as gammaDist,
   multivariateNormal,
   normal,
-} from '../dists/index.ts'
-import { toFlat } from '../tensor/index.ts'
-import * as M from './index.ts'
+} from '../../dists/index.ts'
+import { toFlat } from '../../tensor/index.ts'
+import * as M from '../index.ts'
 
 const close = (a: readonly number[], b: readonly number[], tol = 1e-9): void => {
   expect(a.length).toBe(b.length)

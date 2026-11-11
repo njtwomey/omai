@@ -5,11 +5,7 @@
  * messages to its factors are numerical (one-dimensional quadrature, the rest in closed form).
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { gaussianGrid, tiltedGrid, tiltedLogGrid } from '../_quadrature.ts'
-import { digammaOf, trigammaOf } from '../_scalar.ts'
-import { gamma, gammaShapeRate } from '../families.ts'
-import type { Arg, FactorOperator, FamilyKind, OperatorContext, OperatorResult, Params } from '../types.ts'
+import { OmaiError } from '../../../base/index.ts'
 import {
   allProper,
   etaOf,
@@ -25,8 +21,12 @@ import {
   scalarOf,
   siteMessage,
   vectorParam,
-} from './args.ts'
-import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
+} from '../../core/args.ts'
+import { gamma, gammaShapeRate } from '../../core/families.ts'
+import type { Arg, FactorOperator, FamilyKind, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
+import { gaussianGrid, tiltedGrid, tiltedLogGrid } from '../../numerics/_quadrature.ts'
+import { digammaOf, trigammaOf } from '../../numerics/_scalar.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 const ALL: readonly FamilyKind[] = [
   'gaussian',

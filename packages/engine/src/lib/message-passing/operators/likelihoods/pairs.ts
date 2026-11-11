@@ -9,12 +9,12 @@
  * density has and zoomed onto where the mass is, so the sites cost a few thousand evaluations of the density each.
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { axisOf, integratePair } from '../_grid.ts'
-import { lgammaOf } from '../_scalar.ts'
-import type { FactorOperator, Family, OperatorContext, Params, Port, TiltedMoments } from '../types.ts'
-import { allProper, ImproperMessageError, massOf, numberParam } from './args.ts'
-import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
+import { OmaiError } from '../../../base/index.ts'
+import { allProper, ImproperMessageError, massOf, numberParam } from '../../core/args.ts'
+import type { FactorOperator, Family, OperatorContext, Params, Port, TiltedMoments } from '../../core/types.ts'
+import { axisOf, integratePair } from '../../numerics/_grid.ts'
+import { lgammaOf } from '../../numerics/_scalar.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 /** One coordinate of a pair likelihood: a real value, or a positive one (the coordinate is then its log). */
 export interface PairPort {

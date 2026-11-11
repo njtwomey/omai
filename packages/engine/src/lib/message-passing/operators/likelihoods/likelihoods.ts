@@ -10,15 +10,15 @@
  * The Student-t and Laplace sites of `robust.ts` are two entries of the table under their own names.
  */
 
-import { logAddExp, OmaiError } from '../../base/index.ts'
-import { lgammaOf, logPhi } from '../_scalar.ts'
-import { tiltedByQuadrature, type WindowHint } from '../_tilted.ts'
-import { gaussHermiteRule } from '../numerical.ts'
-import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../types.ts'
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, vectorParam } from './args.ts'
+import { logAddExp, OmaiError } from '../../../base/index.ts'
+import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, vectorParam } from '../../core/args.ts'
+import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
+import { lgammaOf, logPhi } from '../../numerics/_scalar.ts'
+import { tiltedByQuadrature, type WindowHint } from '../../numerics/_tilted.ts'
+import { gaussHermiteRule } from '../../numerics/numeric-rules.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
+import { glmRow } from '../lifts/rows.ts'
 import { numericOperator } from './numeric.ts'
-import { glmRow } from './rows.ts'
-import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
 
 /**
  * One likelihood of the registry: the log density of an outcome given a Gaussian linear predictor `u`, with the parameters it

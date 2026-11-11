@@ -1,8 +1,8 @@
 // The engine's one policy for a flat cavity (no information yet at the start of a run): an operator that `needsDensity` is shown a very
 // wide Gaussian and its message is taken back against the flat cavity, so the first message is the factor's own predictive.
 import { describe, expect, it } from 'vitest'
+import * as M from '../index.ts'
 import { FLAT_CAVITY_PRECISION, operatorMessage } from './engine.ts'
-import * as M from './index.ts'
 import { momentProjection } from './projections.ts'
 
 const operators = M.defaultOperators()

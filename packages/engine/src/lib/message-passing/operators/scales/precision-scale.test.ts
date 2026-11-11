@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { gamma, gammaEta, gaussian, gaussianEta } from '../families.ts'
-import { messageArg, valueArg } from './args.ts'
-import { gaussianGammaPrecision } from './gaussian.ts'
+import { messageArg, valueArg } from '../../core/args.ts'
+import { gamma, gammaEta, gaussian, gaussianEta } from '../../core/families.ts'
+import { gaussianGammaPrecision } from '../gaussian/gaussian.ts'
 
 /** The moments of x (cavity N(m, v)) and of lambda (gamma cavity) under the factor N(x; 0, 1 / (scale lambda + offset)), by a two-dimensional grid. */
 function brute(m: number, v: number, shape: number, rate: number, scale: number, offset: number) {
@@ -79,8 +79,8 @@ describe('gaussian-gamma-precision with a scale and an offset', () => {
   })
 })
 
-import { gammaShapeRate } from '../families.ts'
-import { gaussianMv, gaussianMvEta, gaussianMvMoments } from '../families-vector.ts'
+import { gammaShapeRate } from '../../core/families.ts'
+import { gaussianMv, gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
 import { gaussianMvPrecisionScale } from './scale.ts'
 
 /** The moments of beta (cavity N(m, V), two coordinates) and lambda under prod N(beta_j; 0, 1 / (s_j lambda + o_j)), by a three-dimensional grid. */

@@ -6,12 +6,12 @@
  * outcome and a moment-matched mixture of two conjugate updates to the probability.
  */
 
-import { lgammaOf } from '../_scalar.ts'
-import { bernoulli, beta } from '../families.ts'
-import { dirichlet, discreteEta, discreteProbs } from '../families-vector.ts'
-import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
-import { allProper, etaOf, massOf, numberParam, rawSum, scalarOf } from './args.ts'
-import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
+import { allProper, etaOf, massOf, numberParam, rawSum, scalarOf } from '../../core/args.ts'
+import { bernoulli, beta } from '../../core/families.ts'
+import { dirichlet, discreteEta, discreteProbs } from '../../core/families-vector.ts'
+import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { lgammaOf } from '../../numerics/_scalar.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 

@@ -12,7 +12,7 @@
  * @index module Region graphs and generalised belief propagation: Bethe, Kikuchi and junction regions on discrete models.
  */
 
-import { type Json, OmaiError } from '../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import {
   type DiscreteModel,
   type DiscreteVariable,
@@ -31,8 +31,8 @@ import {
   normaliseFactor,
   permuteFactor,
   unitFactor,
-} from '../pgm/index.ts'
-import { choice, dict, int, real } from '../space/index.ts'
+} from '../../pgm/index.ts'
+import { choice, dict, int, real } from '../../space/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -47,8 +47,8 @@ import {
   scalar,
   stateFromJson,
   stateToJson,
-} from '../trace/index.ts'
-import type { MpSnapshot } from './engine.ts'
+} from '../../trace/index.ts'
+import type { MpSnapshot } from '../engine/engine.ts'
 
 /** A region: its variables, the factors inside it, its counting number and its place in the region graph. */
 export interface Region {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { expectResumable, probitRows } from '../../testing/mp-variants.ts'
-import { policies, recorder, runAlgorithm } from '../trace/index.ts'
-import * as M from './index.ts'
+import { expectResumable, probitRows } from '../../../testing/mp-variants.ts'
+import { policies, recorder, runAlgorithm } from '../../trace/index.ts'
+import * as M from '../index.ts'
 
 const operators = M.defaultOperators()
 const close = (a: number, b: number, tol: number): void => {

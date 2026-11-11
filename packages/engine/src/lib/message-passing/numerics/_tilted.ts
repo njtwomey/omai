@@ -2,8 +2,9 @@
 // variable, on a panelled Gauss-Legendre grid laid where the factor lives (a window from the factor's own hint, split at its
 // kinks) and then zoomed onto where the mass is found to be, so a cavity much wider than the likelihood (the first sweeps of
 // a run) and one much narrower both resolve. What the likelihood sites, the unary functions and the numeric priors share.
+
+import { ImproperMessageError } from '../core/args.ts'
 import { gaussianGridOn } from './_quadrature.ts'
-import { ImproperMessageError } from './operators/args.ts'
 
 /** Where a factor, as a function of the variable, lives: a centre and a scale, how far (in scales) to look, and the kinks to split panels at. */
 export interface WindowHint {

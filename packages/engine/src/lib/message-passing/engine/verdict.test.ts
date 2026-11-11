@@ -2,10 +2,10 @@
 // because some updates cannot be computed is `stopped` with the reason `stalled`, a fixed point with a belief that has no density
 // is `failed` as `degenerate`, an automatic damped restart can recover a stall, and the tape says which and why.
 import { describe, expect, it } from 'vitest'
-import { policies, recorder, runAlgorithm } from '../trace/index.ts'
-import * as M from './index.ts'
-import { ImproperMessageError } from './operators/args.ts'
-import type { FactorOperator } from './types.ts'
+import { policies, recorder, runAlgorithm } from '../../trace/index.ts'
+import { ImproperMessageError } from '../core/args.ts'
+import type { FactorOperator } from '../core/types.ts'
+import * as M from '../index.ts'
 
 /** An operator that cannot compute its message for its first `failures` calls (an improper cavity), then sends a message about `mean`. */
 function reluctant(failures: number): FactorOperator {

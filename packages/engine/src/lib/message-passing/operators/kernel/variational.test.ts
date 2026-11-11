@@ -5,9 +5,9 @@
 // must equal that brute-force bound at the fixed point. A deterministic factor (which defines its output) is checked against the
 // same bound of the model with the output substituted.
 import { describe, expect, it } from 'vitest'
-import { type BruteBelief, bruteExpectation } from '../../../testing/message-passing.ts'
-import { lgammaOf } from '../_scalar.ts'
-import * as M from '../index.ts'
+import { type BruteBelief, bruteExpectation } from '../../../../testing/message-passing.ts'
+import * as M from '../../index.ts'
+import { lgammaOf } from '../../numerics/_scalar.ts'
 
 const operators = M.defaultOperators()
 

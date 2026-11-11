@@ -14,11 +14,13 @@
  * @index module Power and fractional EP: per-factor powers on the message-passing engine, as an algorithm and a method.
  */
 
-import { OmaiError } from '../base/index.ts'
-import { dict, real } from '../space/index.ts'
-import { type Algorithm, type Config, defineMethod, type Method } from '../trace/index.ts'
-import { type MpState, messagePassingAlgorithm } from './engine.ts'
-import type { CompiledFactor, CompiledGraph } from './graph.ts'
+import { OmaiError } from '../../base/index.ts'
+import { dict, real } from '../../space/index.ts'
+import { type Algorithm, type Config, defineMethod, type Method } from '../../trace/index.ts'
+import type { CompiledFactor, CompiledGraph } from '../core/graph.ts'
+import { takesPower } from '../core/types.ts'
+import { type MpState, messagePassingAlgorithm } from '../engine/engine.ts'
+import { momentProjection } from '../engine/projections.ts'
 import {
   type EpPath,
   epContract,
@@ -28,8 +30,6 @@ import {
   messagePassingSettings,
   messagePassingSpace,
 } from './named.ts'
-import { momentProjection } from './projections.ts'
-import { takesPower } from './types.ts'
 
 /** The knobs of power EP: the common ones and the powers. */
 export interface PowerEpOptions extends MessagePassingOptions {

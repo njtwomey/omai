@@ -5,8 +5,8 @@
  * non-conjugate link, the clutter problem.
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { quadratureRule } from '../numerical.ts'
+import { OmaiError } from '../../../base/index.ts'
+import { allProper, gaussianOf, massOf, scalarOf } from '../../core/args.ts'
 import type {
   Arg,
   FactorOperator,
@@ -16,9 +16,9 @@ import type {
   Port,
   TiltedMoments,
   TiltedRule,
-} from '../types.ts'
-import { allProper, gaussianOf, massOf, scalarOf } from './args.ts'
-import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
+} from '../../core/types.ts'
+import { quadratureRule } from '../../numerics/numeric-rules.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 /** What {@link numericOperator} builds the operator from. */
 export interface NumericOperatorOptions {

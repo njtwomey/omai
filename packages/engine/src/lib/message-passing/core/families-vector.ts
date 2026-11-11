@@ -6,10 +6,10 @@
  * @index module The vector message families: multivariate Gaussian, discrete, Dirichlet.
  */
 
-import { type Json, logSumExpOf, OmaiError } from '../base/index.ts'
-import { dgemv } from '../numerics/linalg/index.ts'
-import { spd } from './_dense.ts'
-import { digammaOf, lgammaOf } from './_scalar.ts'
+import { type Json, logSumExpOf, OmaiError } from '../../base/index.ts'
+import { dgemv } from '../../numerics/linalg/index.ts'
+import { spd } from '../numerics/_dense.ts'
+import { digammaOf, lgammaOf } from '../numerics/_scalar.ts'
 import { bernoulli, beta, defineFamily, dirichletShapesFromLogMeans, gamma, gaussian, normalGamma } from './families.ts'
 import { normalWishart, wishart } from './families-matrix.ts'
 import type { Eta, Family, FamilySpec } from './types.ts'

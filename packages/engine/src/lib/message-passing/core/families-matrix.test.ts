@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { gamma as gammaDist, inverseWishart, wishart as wishartDist } from '../dists/index.ts'
-import { toArray, toFlat } from '../tensor/index.ts'
-import * as M from './index.ts'
+import { gamma as gammaDist, inverseWishart, wishart as wishartDist } from '../../dists/index.ts'
+import { toArray, toFlat } from '../../tensor/index.ts'
+import * as M from '../index.ts'
 
 const S = [2, 0.6, 0.6, 1.1]
 const close = (a: readonly number[], b: readonly number[], tol = 1e-10): void => {

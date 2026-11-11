@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { epAlgorithm as gpEpAlgorithm } from '../gp/index.ts'
-import { variationalMixtureAlgorithm, variationalPriors } from '../mixture/index.ts'
-import { ndtri } from '../numerics/special/index.ts'
+import { epAlgorithm as gpEpAlgorithm } from '../../gp/index.ts'
+import { variationalMixtureAlgorithm, variationalPriors } from '../../mixture/index.ts'
+import { ndtri } from '../../numerics/special/index.ts'
 import {
   beliefPropagation,
   expectationPropagation,
@@ -13,10 +13,10 @@ import {
   gmrf,
   trueskillUpdate,
   variationalMessagePassing,
-} from '../pgm/index.ts'
-import { item } from '../tensor/index.ts'
-import { runAlgorithm } from '../trace/index.ts'
-import * as M from './index.ts'
+} from '../../pgm/index.ts'
+import { item } from '../../tensor/index.ts'
+import { runAlgorithm } from '../../trace/index.ts'
+import * as M from '../index.ts'
 
 const operators = M.defaultOperators()
 const close = (a: number, b: number, tol = 1e-8): void => {

@@ -4,7 +4,7 @@
  * think in (a mean and a variance, a shape and a rate). Each returns the factor to put in a graph's `factors`.
  */
 
-import { OmaiError } from '../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { bernoulliEta, betaEta, gamma, gammaEta, gaussianEta, normalGammaEta } from './families.ts'
 import { discreteEta, gaussianMvEta } from './families-vector.ts'
 import type { Eta, FactorSpec } from './types.ts'

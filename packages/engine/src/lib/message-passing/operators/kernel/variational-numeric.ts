@@ -11,12 +11,12 @@
  * other factors keep it proper.
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { gaussianGridOn, gaussianNodes } from '../_quadrature.ts'
-import { trigammaOf } from '../_scalar.ts'
-import { gammaShapeRate } from '../families.ts'
-import type { Arg, Eta } from '../types.ts'
-import { gaussianMessage, gaussianOf, ImproperMessageError, scalarOf } from './args.ts'
+import { OmaiError } from '../../../base/index.ts'
+import { gaussianMessage, gaussianOf, ImproperMessageError, scalarOf } from '../../core/args.ts'
+import { gammaShapeRate } from '../../core/families.ts'
+import type { Arg, Eta } from '../../core/types.ts'
+import { gaussianGridOn, gaussianNodes } from '../../numerics/_quadrature.ts'
+import { trigammaOf } from '../../numerics/_scalar.ts'
 
 /** The quadrature of one port under its belief: the nodes (the coordinate the log density reads), their weights and the statistics. */
 export interface QuadPort {

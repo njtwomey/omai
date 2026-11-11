@@ -6,11 +6,11 @@
  * betas to a break, and exact under variational message passing.
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { beta } from '../families.ts'
-import { discreteEta, discreteProbs } from '../families-vector.ts'
-import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../types.ts'
-import { allProper, etaOf, massOf, numberParam, scalarOf } from './args.ts'
+import { OmaiError } from '../../../base/index.ts'
+import { allProper, etaOf, massOf, numberParam, scalarOf } from '../../core/args.ts'
+import { beta } from '../../core/families.ts'
+import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
+import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 

@@ -7,8 +7,8 @@
  * steppable and cancellable.
  */
 
-import { OmaiError } from '../base/index.ts'
-import type { CompiledGraph } from './graph.ts'
+import { OmaiError } from '../../base/index.ts'
+import type { CompiledGraph } from '../core/graph.ts'
 
 /** The orders of a sweep. */
 export type ScheduleKind = 'flooding' | 'serial' | 'tree' | 'residual' | 'custom'

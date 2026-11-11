@@ -14,12 +14,12 @@
  * @index module Approximate message passing for linear models with iid priors, with its state evolution.
  */
 
-import { type Json, OmaiError } from '../base/index.ts'
-import { dgemv, dnrm2 } from '../numerics/linalg/index.ts'
-import { gaussLegendre } from '../numerics/quadrature/index.ts'
-import { foldIn, type Key, normal, uniform } from '../random/index.ts'
-import { choice, dict, int, real } from '../space/index.ts'
-import { toFlat } from '../tensor/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
+import { dgemv, dnrm2 } from '../../numerics/linalg/index.ts'
+import { gaussLegendre } from '../../numerics/quadrature/index.ts'
+import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
+import { choice, dict, int, real } from '../../space/index.ts'
+import { toFlat } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -34,8 +34,8 @@ import {
   scalar,
   stateFromJson,
   stateToJson,
-} from '../trace/index.ts'
-import type { MpSnapshot } from './engine.ts'
+} from '../../trace/index.ts'
+import type { MpSnapshot } from '../engine/engine.ts'
 
 /** The prior of every entry of x: a Gaussian of mean zero, or a Bernoulli-Gaussian (zero, or a Gaussian, with a given probability). */
 export type AmpPrior =

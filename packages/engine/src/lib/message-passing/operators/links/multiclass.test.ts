@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { ndtr } from '../../numerics/special/_kernels.ts'
-import { gaussian, gaussianEta } from '../families.ts'
-import type { Arg } from '../types.ts'
-import { massOf, messageArg, valueArg } from './args.ts'
+import { ndtr } from '../../../numerics/special/_kernels.ts'
+import { massOf, messageArg, valueArg } from '../../core/args.ts'
+import { gaussian, gaussianEta } from '../../core/families.ts'
+import type { Arg } from '../../core/types.ts'
+import { defaultOperators } from '../registry.ts'
 import { multiclassSite } from './multiclass.ts'
-import { defaultOperators } from './registry.ts'
 
 /*
  * The tilted means and variances of the class scores and the log evidence against a brute-force integral over a fine grid of the

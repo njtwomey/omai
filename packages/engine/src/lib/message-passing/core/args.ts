@@ -5,8 +5,8 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
-import { spd } from '../_dense.ts'
-import type { Arg, Eta, Family, Observed, Params } from '../types.ts'
+import { spd } from '../numerics/_dense.ts'
+import type { Arg, Eta, Family, Observed, Params } from './types.ts'
 
 /** Thrown by an operator that cannot form a message because a quantity it needs is improper; the engine counts it and repairs. */
 export class ImproperMessageError extends OmaiError {

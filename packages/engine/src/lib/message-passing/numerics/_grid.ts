@@ -3,11 +3,11 @@
 // scalar, a beta with two random shapes) integrate with. A variable is a Gaussian (its coordinate is the value) or a gamma
 // (its coordinate is the log of the value, the density in that coordinate carrying the Jacobian), and the integrand is a
 // function of the two coordinates.
-import { OmaiError } from '../base/index.ts'
-import { gaussLegendre } from '../numerics/quadrature/index.ts'
-import { toFlat } from '../tensor/index.ts'
+import { OmaiError } from '../../base/index.ts'
+import { gaussLegendre } from '../../numerics/quadrature/index.ts'
+import { toFlat } from '../../tensor/index.ts'
+import type { Arg } from '../core/types.ts'
 import { digammaOf, lgammaOf, trigammaOf } from './_scalar.ts'
-import type { Arg } from './types.ts'
 
 /** One coordinate of the integral: where the cavity lives, its normalised log density, and the kinks the integrand has. */
 export interface GridAxis {

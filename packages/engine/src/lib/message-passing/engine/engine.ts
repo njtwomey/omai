@@ -8,13 +8,13 @@
  * @index module The message-passing engine: one algorithm, slots for projection, schedule, damping, improper handling.
  */
 
-import { type Json, OmaiError } from '../base/index.ts'
-import { type Algorithm, channels, type RunStatus, stateFromJson, stateToJson } from '../trace/index.ts'
-import type { CompiledGraph } from './graph.ts'
-import { FLAT_CAVITY_PRECISION, ImproperMessageError } from './operators/args.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
+import { type Algorithm, channels, type RunStatus, stateFromJson, stateToJson } from '../../trace/index.ts'
+import { FLAT_CAVITY_PRECISION, ImproperMessageError } from '../core/args.ts'
+import type { CompiledGraph } from '../core/graph.ts'
+import { type Arg, type Eta, type OperatorContext, type OperatorResult, takesPower } from '../core/types.ts'
 import type { Projection } from './projections.ts'
 import { type CustomOrder, type Granularity, type Plan, planOf, type ScheduleKind } from './schedules.ts'
-import { type Arg, type Eta, type OperatorContext, type OperatorResult, takesPower } from './types.ts'
 
 /** What to do when an update would make a proper belief improper (a negative precision: the usual failure of EP). */
 export type ImproperPolicy = 'skip' | 'damp' | 'reset' | 'error'

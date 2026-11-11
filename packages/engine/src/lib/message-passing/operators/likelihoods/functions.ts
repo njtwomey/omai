@@ -15,12 +15,7 @@
  * message to it is the gamma with the tilted moments.
  */
 
-import { logAddExp, OmaiError, sigmoidOf } from '../../base/index.ts'
-import { Phi, phi } from '../_scalar.ts'
-import { tiltedByQuadrature, type WindowHint } from '../_tilted.ts'
-import { gamma } from '../families.ts'
-import { truncatedNormalMoments } from '../truncated.ts'
-import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
+import { logAddExp, OmaiError, sigmoidOf } from '../../../base/index.ts'
 import {
   allProper,
   etaOf,
@@ -30,8 +25,13 @@ import {
   ImproperMessageError,
   massOf,
   siteMessage,
-} from './args.ts'
-import { definedFunctionMessage, quadraturePort } from './variational-numeric.ts'
+} from '../../core/args.ts'
+import { gamma } from '../../core/families.ts'
+import { truncatedNormalMoments } from '../../core/truncated.ts'
+import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { Phi, phi } from '../../numerics/_scalar.ts'
+import { tiltedByQuadrature, type WindowHint } from '../../numerics/_tilted.ts'
+import { definedFunctionMessage, quadraturePort } from '../kernel/variational-numeric.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 

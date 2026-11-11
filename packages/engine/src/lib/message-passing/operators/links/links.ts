@@ -4,11 +4,11 @@
  * Jordan's quadratic lower bound on the log logistic, with its variational parameter set from the current belief.
  */
 
-import { logAddExp, sigmoidOf } from '../../base/index.ts'
-import { gaussianExpectation, tiltedGaussian, tiltedLogGrid } from '../_quadrature.ts'
-import { bernoulli } from '../families.ts'
-import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, scalarOf } from './args.ts'
+import { logAddExp, sigmoidOf } from '../../../base/index.ts'
+import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, scalarOf } from '../../core/args.ts'
+import { bernoulli } from '../../core/families.ts'
+import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { gaussianExpectation, tiltedGaussian, tiltedLogGrid } from '../../numerics/_quadrature.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 

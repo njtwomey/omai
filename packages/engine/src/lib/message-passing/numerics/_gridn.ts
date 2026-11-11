@@ -3,9 +3,9 @@
 // and a correlation as separate variables integrate with. The two-coordinate version of the likelihood sites is `_grid.ts`; this one
 // takes any number of axes (an observed or known coordinate is a single node), a coordinate being the value of a Gaussian, the log of
 // a gamma variable or the logit of a beta variable, each with the Jacobian in its density.
-import { OmaiError } from '../base/index.ts'
-import { gaussLegendre } from '../numerics/quadrature/index.ts'
-import { toFlat } from '../tensor/index.ts'
+import { OmaiError } from '../../base/index.ts'
+import { gaussLegendre } from '../../numerics/quadrature/index.ts'
+import { toFlat } from '../../tensor/index.ts'
 import type { GridAxis } from './_grid.ts'
 import { digammaOf, lgammaOf, trigammaOf } from './_scalar.ts'
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { expectResumable } from '../../testing/mp-variants.ts'
+import { expectResumable } from '../../../testing/mp-variants.ts'
 import {
   beliefPropagation,
   calibrate,
@@ -9,9 +9,9 @@ import {
   factorMarginal,
   factorValues,
   junctionTreeMarginals,
-} from '../pgm/index.ts'
-import { policies, recorder, runAlgorithm } from '../trace/index.ts'
-import * as M from './index.ts'
+} from '../../pgm/index.ts'
+import { policies, recorder, runAlgorithm } from '../../trace/index.ts'
+import * as M from '../index.ts'
 
 const STATES = ['0', '1']
 const name = (r: number, c: number): string => `x${r}${c}`

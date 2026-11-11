@@ -15,11 +15,14 @@
  * @index module Expectation consistent inference (adaptive TAP): a Gaussian times one-dimensional sites, as EP with parallel updates.
  */
 
-import { OmaiError } from '../base/index.ts'
-import { choice, dict, int, real } from '../space/index.ts'
-import { type Algorithm, type Config, defineMethod, type Method } from '../trace/index.ts'
-import { type MpState, messagePassingAlgorithm } from './engine.ts'
-import { type CompiledGraph, compileGraph } from './graph.ts'
+import { OmaiError } from '../../base/index.ts'
+import { choice, dict, int, real } from '../../space/index.ts'
+import { type Algorithm, type Config, defineMethod, type Method } from '../../trace/index.ts'
+import { type CompiledGraph, compileGraph } from '../core/graph.ts'
+import type { FactorSpec, VariableSpec } from '../core/types.ts'
+import { type MpState, messagePassingAlgorithm } from '../engine/engine.ts'
+import { momentProjection } from '../engine/projections.ts'
+import { defaultOperators } from '../operators/registry.ts'
 import {
   type EpPath,
   epContract,
@@ -29,9 +32,6 @@ import {
   messagePassingSettings,
   messagePassingSpace,
 } from './named.ts'
-import { defaultOperators } from './operators/registry.ts'
-import { momentProjection } from './projections.ts'
-import type { FactorSpec, VariableSpec } from './types.ts'
 
 /** A one-dimensional site of an expectation consistent model. */
 export type EcSite =

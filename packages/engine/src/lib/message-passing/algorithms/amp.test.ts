@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { expectResumable } from '../../testing/mp-variants.ts'
-import { foldIn, key, normal, uniform } from '../random/index.ts'
-import { toFlat } from '../tensor/index.ts'
-import { policies, recorder, runAlgorithm } from '../trace/index.ts'
-import * as M from './index.ts'
+import { expectResumable } from '../../../testing/mp-variants.ts'
+import { foldIn, key, normal, uniform } from '../../random/index.ts'
+import { toFlat } from '../../tensor/index.ts'
+import { policies, recorder, runAlgorithm } from '../../trace/index.ts'
+import * as M from '../index.ts'
 
 /** A compressed-sensing problem: a Gaussian matrix of variance 1 / M, a sparse signal, noise of the given variance. */
 function problem(

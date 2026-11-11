@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { policies, recorder, runAlgorithm, runFor, session, startRun } from '../trace/index.ts'
-import * as M from './index.ts'
+import { policies, recorder, runAlgorithm, runFor, session, startRun } from '../../trace/index.ts'
+import * as M from '../index.ts'
 
 const operators = M.defaultOperators()
 const settings = (o: Partial<M.EngineSettings> = {}): M.EngineSettings => ({

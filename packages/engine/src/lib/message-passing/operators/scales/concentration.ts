@@ -10,11 +10,7 @@
  * `_grid.ts`.
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { axisOf, integratePair } from '../_grid.ts'
-import { digammaOf, lgammaOf, trigammaOf } from '../_scalar.ts'
-import { gamma, gammaShapeRate } from '../families.ts'
-import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
+import { OmaiError } from '../../../base/index.ts'
 import {
   allProper,
   etaOf,
@@ -24,8 +20,12 @@ import {
   massOf,
   siteMessage,
   vectorParam,
-} from './args.ts'
-import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
+} from '../../core/args.ts'
+import { gamma, gammaShapeRate } from '../../core/families.ts'
+import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { axisOf, integratePair } from '../../numerics/_grid.ts'
+import { digammaOf, lgammaOf, trigammaOf } from '../../numerics/_scalar.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 

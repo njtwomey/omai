@@ -1,7 +1,7 @@
 // The brute-force reference the message-passing tests share: numerical integration by composite Gauss-Legendre over
 // boxes (the exact message of a factor, by integrating it against the incoming messages), and the tilted moments of a
 // port computed that way. Node only; not published.
-import { lgammaOf, trigammaOf } from '../lib/message-passing/_scalar.ts'
+import { lgammaOf, trigammaOf } from '../lib/message-passing/numerics/_scalar.ts'
 import { gaussLegendre } from '../lib/numerics/quadrature/index.ts'
 import { toFlat } from '../lib/tensor/index.ts'
 

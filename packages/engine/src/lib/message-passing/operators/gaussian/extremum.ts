@@ -7,11 +7,19 @@
  * inputs are non-conjugate, by quadrature.
  */
 
-import { tiltedGrid } from '../_quadrature.ts'
-import { Phi, phi } from '../_scalar.ts'
-import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult, Port } from '../types.ts'
-import { allProper, etaOf, gaussianMessage, gaussianOf, gaussianSiteMessage, logNormal, massOf } from './args.ts'
-import { definedFunctionMessage } from './variational-numeric.ts'
+import {
+  allProper,
+  etaOf,
+  gaussianMessage,
+  gaussianOf,
+  gaussianSiteMessage,
+  logNormal,
+  massOf,
+} from '../../core/args.ts'
+import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
+import { tiltedGrid } from '../../numerics/_quadrature.ts'
+import { Phi, phi } from '../../numerics/_scalar.ts'
+import { definedFunctionMessage } from '../kernel/variational-numeric.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 

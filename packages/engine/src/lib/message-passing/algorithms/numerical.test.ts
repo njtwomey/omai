@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { integrate, integrateBox } from '../../testing/message-passing.ts'
-import { expectResumable } from '../../testing/mp-variants.ts'
-import { sigmoidOf } from '../base/index.ts'
-import { runAlgorithm } from '../trace/index.ts'
-import * as M from './index.ts'
+import { integrate, integrateBox } from '../../../testing/message-passing.ts'
+import { expectResumable } from '../../../testing/mp-variants.ts'
+import { sigmoidOf } from '../../base/index.ts'
+import { runAlgorithm } from '../../trace/index.ts'
+import * as M from '../index.ts'
 
 const density = (x: number, m: number, v: number): number =>
   Math.exp((-0.5 * (x - m) ** 2) / v) / Math.sqrt(2 * Math.PI * v)

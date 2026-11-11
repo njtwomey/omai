@@ -3,9 +3,9 @@
 // distribution: nodes and weights that integrate a smooth function of a Wishart matrix exactly up to a polynomial degree, from
 // the decomposition `L = C A A' C'` with `A` lower triangular, `A_ii^2 ~ chi-square(nu - i)` and `A_ij ~ N(0, 1)` below the
 // diagonal, all independent, so a product of generalised Gauss-Laguerre and Gauss-Hermite rules is a rule for the matrix.
-import { OmaiError } from '../base/index.ts'
-import { gaussHermite, gaussLaguerre } from '../numerics/quadrature/index.ts'
-import { toFlat } from '../tensor/index.ts'
+import { OmaiError } from '../../base/index.ts'
+import { gaussHermite, gaussLaguerre } from '../../numerics/quadrature/index.ts'
+import { toFlat } from '../../tensor/index.ts'
 import { digammaOf } from './_scalar.ts'
 
 /**

@@ -8,11 +8,11 @@
  * includes the Jacobian), which is how the compiler carries a positive scale.
  */
 
-import { logPhi } from '../_scalar.ts'
-import type { WindowHint } from '../_tilted.ts'
-import { gaussian } from '../families.ts'
-import type { Eta, FactorOperator, Params } from '../types.ts'
-import { FLAT_CAVITY_PRECISION, messageArg, numberParam } from './args.ts'
+import { FLAT_CAVITY_PRECISION, messageArg, numberParam } from '../../core/args.ts'
+import { gaussian } from '../../core/families.ts'
+import type { Eta, FactorOperator, Params } from '../../core/types.ts'
+import { logPhi } from '../../numerics/_scalar.ts'
+import type { WindowHint } from '../../numerics/_tilted.ts'
 import { type Likelihood, likelihoodSite } from './likelihoods.ts'
 
 /** log Phi(b) - log Phi(a) for a < b, accurate in both tails. */

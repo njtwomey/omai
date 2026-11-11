@@ -1,10 +1,10 @@
 // gaussian-transition: the messages against the exact marginals of the joint Gaussian of (x, w) (the cavities times the factor),
 // for a square invertible matrix, a non-square one, an offset, and cavities that are flat or only partly informative.
 import { describe, expect, it } from 'vitest'
-import { dgemm } from '../../numerics/linalg/index.ts'
-import { spd } from '../_dense.ts'
-import { gaussianMv } from '../families-vector.ts'
-import { messageArg } from './args.ts'
+import { dgemm } from '../../../numerics/linalg/index.ts'
+import { messageArg } from '../../core/args.ts'
+import { gaussianMv } from '../../core/families-vector.ts'
+import { spd } from '../../numerics/_dense.ts'
 import { gaussianTransition } from './transition.ts'
 
 /** The marginal natural parameters of x and of w in the joint of the two cavities and the factor, by inverting the joint precision. */

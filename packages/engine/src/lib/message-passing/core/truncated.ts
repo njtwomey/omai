@@ -5,10 +5,10 @@
  * the lower one).
  */
 
-import { OmaiError } from '../base/index.ts'
-import { logIntervalProbability } from '../numerics/special/index.ts'
-import { item } from '../tensor/index.ts'
-import { logPhiDensity } from './_scalar.ts'
+import { OmaiError } from '../../base/index.ts'
+import { logIntervalProbability } from '../../numerics/special/index.ts'
+import { item } from '../../tensor/index.ts'
+import { logPhiDensity } from '../numerics/_scalar.ts'
 
 /** The mass and the first two moments of a truncated Gaussian. */
 export interface TruncatedMoments {

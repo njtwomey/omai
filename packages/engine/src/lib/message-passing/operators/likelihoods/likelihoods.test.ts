@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { gaussian, gaussianEta } from '../families.ts'
-import { gaussianMv, gaussianMvEta } from '../families-vector.ts'
-import { messageArg } from './args.ts'
+import { messageArg } from '../../core/args.ts'
+import { gaussian, gaussianEta } from '../../core/families.ts'
+import { gaussianMv, gaussianMvEta } from '../../core/families-vector.ts'
 import { likelihoodRowOperator, likelihoodSiteOperator, likelihoods } from './likelihoods.ts'
 
 /** The mean, variance and log mass of N(m, v) f(x) on a fine uniform grid: the reference every rule is checked against. */
