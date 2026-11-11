@@ -388,11 +388,18 @@ function View(props: {
           <Chart option={loss} figure={NARROW} onInit={seek} />
         </Panel>
       </div>
-      <Toggle
-        label="show the basis functions, weighted by their coefficients"
-        value={showBases}
-        onChange={setShowBases}
-      />
+      {fit !== undefined && !fit.bases.local ? (
+        <p className="text-xs text-muted">
+          The basis functions of a global basis (cr, tp) are not local humps (each is spread over the whole range, with
+          a centring constant), so they are not drawn; choose ps or bs to see the weighted bases.
+        </p>
+      ) : (
+        <Toggle
+          label="show the basis functions, weighted by their coefficients (each B-spline times its coefficient)"
+          value={showBases}
+          onChange={setShowBases}
+        />
+      )}
       {inclusion === undefined ? null : (
         <Panel id="bases" title="which bases are in use">
           <Chart option={inclusion} figure={NARROW} />

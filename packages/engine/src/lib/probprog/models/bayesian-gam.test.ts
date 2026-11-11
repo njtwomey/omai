@@ -149,3 +149,38 @@ describe('the ARD prior', () => {
     expect(Math.min(...(fit.inclusion ?? [0]))).toBeCloseTo(1, 8)
   })
 })
+
+describe('the weighted bases of the penalty prior', () => {
+  const fitOf = (basis: 'ps' | 'bs' | 'cr') => {
+    const g = bayesianGam(x, y, { k: 10, basis })
+    const s = session(bayesianGamMethod('pathfinder', g, { fit: { gridSize: 101 } }), { steps: 200, mode: 'eager' })
+    return { g, fit: s.probe(s.t, 'gam/fit') as unknown as ReturnType<typeof bayesianGamFit> }
+  }
+
+  it('are local humps that add up to the posterior mean curve and vanish away from their knots', () => {
+    for (const basis of ['ps', 'bs'] as const) {
+      const { g, fit } = fitOf(basis)
+      expect(g.local).toBe(true)
+      expect(fit.bases.local).toBe(true)
+      // A partition of unity: the raw basis sums to one, and there is no separate intercept column.
+      const B = g.parts(fit.grid)
+      for (const row of B) expect(row.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 10)
+      expect(Math.min(...B.flat())).toBeGreaterThanOrEqual(-1e-12)
+      for (let i = 0; i < fit.grid.length; i++)
+        expect(fit.bases.mean.reduce((a, b) => a + (b[i] ?? 0), 0)).toBeCloseTo(fit.mean[i] ?? 0, 8)
+      // Each weighted basis is exactly zero outside its support (four spans of a cubic), the same for every sampled curve.
+      const support = (4 / 7) * 1.05
+      for (const parts of [fit.bases.mean, ...fit.bases.curves])
+        for (const part of parts)
+          expect(part.filter((v) => Math.abs(v) > 1e-12).length).toBeLessThanOrEqual(support * fit.grid.length)
+    }
+  })
+
+  it('are not local for a global basis, and the fit says so', () => {
+    const { g, fit } = fitOf('cr')
+    expect(g.local).toBe(false)
+    expect(fit.bases.local).toBe(false)
+    for (let i = 0; i < fit.grid.length; i++)
+      expect(fit.bases.mean.reduce((a, b) => a + (b[i] ?? 0), 0)).toBeCloseTo(fit.mean[i] ?? 0, 8)
+  })
+})

@@ -65,7 +65,7 @@ export function fitChart(o: FitChart): ReturnType<typeof cartesian> {
         { mode },
       ),
     )
-    if (o.bases)
+    if (o.bases && bases.local)
       for (const parts of bases.curves.slice(0, SHOWN))
         layers.push(
           lines(
@@ -86,7 +86,7 @@ export function fitChart(o: FitChart): ReturnType<typeof cartesian> {
         { mode },
       ),
     )
-    if (o.bases)
+    if (o.bases && bases.local)
       layers.push(
         lines(
           bases.mean.map((y, j) => ({
