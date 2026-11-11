@@ -70,7 +70,7 @@ function stateMeans(mean: readonly number[]): number[] {
  * `z`; the variational messages are the expected logs. Exact for a tree, and the building block of a Dirichlet-process mixture.
  *
  * @concept factor-operators
- * @index structure A discrete variable with stick-breaking weights of beta breaks (a truncated Dirichlet-process mixture).
+ * @index structure Discrete variable with stick-breaking weights of beta breaks (truncated Dirichlet process).
  * @example
  * ```ts
  * import { beta, betaEta, discrete, discreteEta, messageArg, stickBreaking } from 'omai-engine/message-passing'

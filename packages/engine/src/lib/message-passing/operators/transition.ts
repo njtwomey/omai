@@ -38,7 +38,7 @@ function parameters(c: OperatorContext): {
  * of `x` passed through the noise by `J' = J - J (J + Q^-1)^-1 J`. EP on a chain of these with linear Gaussian readings is exact.
  *
  * @concept factor-operators
- * @index structure A Gaussian vector step x ~ N(F w + c, Q): the dynamics of a linear dynamical system.
+ * @index structure Gaussian vector step x ~ N(F w + c, Q), the dynamics of a linear system.
  * @example
  * ```ts
  * import { gaussianMv, gaussianMvEta, gaussianTransition, messageArg } from 'omai-engine/message-passing'
