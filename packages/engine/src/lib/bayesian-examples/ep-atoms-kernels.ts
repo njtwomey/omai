@@ -7,14 +7,18 @@
  * function values as the mixture of their Gaussian conditionals, is what EP must reproduce.
  */
 
-import { gram, rbfKernel } from '../kernels/index.ts'
+import { gram, rbfKernel, scaleKernel } from '../kernels/index.ts'
+import { cholesky } from '../numerics/linalg/index.ts'
 import * as d from '../probprog/model/dists/index.ts'
-import { defineModel } from '../probprog/model/index.ts'
+import { defineModel, ops } from '../probprog/model/index.ts'
 import { gpPosteriorGivenLengthScale } from '../probprog/models/index.ts'
-import { dict } from '../space/index.ts'
-import { clip, reshape, type Value } from '../tensor/index.ts'
+import { foldIn, key, normal, uniform } from '../random/index.ts'
+import { dict, real } from '../space/index.ts'
+import { clip, matmul, reshape, tensor, toFlat, type Value } from '../tensor/index.ts'
 import type { Config } from '../trace/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
+import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
+import { exampleNumber } from './example-method.ts'
 
 const X6 = [-2.4, -1.5, -0.6, 0.3, 1.2, 2.3]
 const Y6 = [-0.8, -1.1, -0.3, 0.7, 0.9, 0.2]
@@ -166,4 +170,134 @@ export const gpLengthScaleAtom: EpAtom = defineAtom({
   },
   knobs: dict({}),
   problem: gpLengthScaleProblem,
+})
+
+// ----- a Gaussian process classifier whose length scale is learned -----
+
+/** The variance of the kernel of the classifier (the amplitude the function varies over). */
+const CLASS_VARIANCE = 2
+
+/** The Gram matrix of the classifier's kernel: a variance times a squared-exponential kernel, at a length scale. */
+const classGramOf = (x: Value, scale: Value): Value =>
+  gram(
+    scaleKernel(rbfKernel({ lengthScale: clip(scale, 0.05, 20) }), CLASS_VARIANCE),
+    reshape(x, [x.shape[0] ?? 0, 1]),
+    { jitter: 1e-6 },
+  )
+
+/** The covariance function of the model, as a custom function receives its arguments. */
+const classGram = ([xs, scale]: readonly { readonly value: Value }[]): Value =>
+  classGramOf((xs as { value: Value }).value, (scale as { value: Value }).value)
+
+const phiOf = (z: number): number => 0.5 * (1 + erfOf(z / Math.SQRT2))
+
+/** The error function (Abramowitz and Stegun 7.1.26, error under 2e-7), in plain arithmetic: the labels are drawn once. */
+function erfOf(x: number): number {
+  const t = 1 / (1 + 0.3275911 * Math.abs(x))
+  const poly = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))))
+  const v = 1 - poly * Math.exp(-x * x)
+  return x >= 0 ? v : -v
+}
+
+function gpClassLearnedProblem(k: Config): AtomProblem {
+  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
+  const trueEll = exampleNumber(k, 'trueLengthScale')
+  // the ground truth: a function drawn from the process at the true length scale, labelled through a probit link
+  const inputs = Array.from({ length: n }, (_, i) => -2.4 + (4.8 * i) / Math.max(1, n - 1))
+  const kk = key(seed)
+  const white = normal(foldIn(kk, 0), [n, 1])
+  const f = Array.from(toFlat(matmul(cholesky(classGramOf(tensor(inputs), tensor(trueEll))), white)))
+  const u = toFlat(uniform(foldIn(kk, 1), [n]))
+  const y = f.map((v, i) => ((u[i] ?? 1) < phiOf(v) ? 1 : 0))
+  const zeros = new Array<number>(n).fill(0)
+  // region gp-probit-learned
+  const definition = defineModel('gp-probit-learned', (m) => {
+    const x = m.data('x', { dims: ['i'], role: 'covariate' })
+    const yy = m.data('y', { dims: ['i'], support: 'binary', role: 'response' })
+    // the length scale is random, and the covariance is a custom function of it
+    const ell = m.latent('ell', d.logNormal(0, 0.5))
+    const cov = m.custom('rbfGram', classGram, [x, ell], { eventRank: 2 })
+    // the function at the inputs, labelled through a probit link
+    const prior = d.multivariateNormal(zeros, { covariance: cov })
+    const fn = m.latent('f', prior, { dims: ['i'] })
+    m.observe('y', d.bernoulli({ probs: ops.probit(fn) }), yy)
+  })
+  // endregion
+  return {
+    definition,
+    data: { x: inputs, y },
+    equations: [
+      `truth: a function drawn from the process at the length scale ${trueEll} (kernel variance ${CLASS_VARIANCE}), labelled through a probit link at ${n} inputs; seed ${seed}`,
+      'ell ~ LogNormal(0, 0.5²)   (the length scale)',
+      'f ~ N(0, K(ell)),  K_ij = 2 exp(-(x_i - x_j)² / (2 ell²))',
+      'y_i ~ Bernoulli(Phi(f_i))',
+    ],
+    quantities: [
+      { name: 'ell', label: 'length scale', support: 'positive', truth: trueEll },
+      ...inputs.map((_, i) => ({
+        name: `f[${i}]`,
+        label: `f(x_${i + 1})`,
+        support: 'real' as const,
+        truth: f[i] as number,
+      })),
+    ],
+    figure: {
+      caption:
+        'The labels (0 or 1) at the inputs; the green line is the true function, the black one the posterior mean of the function.',
+      xLabel: 'x',
+      yLabel: 'f',
+      points: [{ name: 'labels', x: inputs, y: [...y], group: y, groupNames: { 0: 'label 0', 1: 'label 1' } }],
+      curves: [{ name: 'true function', colour: 'tab2', x: inputs, y: f }],
+      answer: (means) => [
+        { name: 'f (posterior mean)', x: inputs, y: inputs.map((_, i) => means[`f[${i}]`] ?? Number.NaN) },
+      ],
+    },
+  }
+}
+
+/**
+ * Gaussian process classification with the length scale learned: a function drawn from the process at a stated length scale,
+ * labelled through a probit link, and the model's length scale random (so the covariance is a custom function of it, and EP runs
+ * inside a grid over it). Does EP recover the length scale and the function from the labels, and how often do its 90% intervals
+ * hold them?
+ *
+ * @index estimator EP atom: a probit Gaussian process classifier with a learned length scale, recovered from simulated labels.
+ * @example
+ * ```ts
+ * import { gpProbitLearnedAtom } from 'omai-engine/bayesian-examples'
+ * gpProbitLearnedAtom.extends // => 'gp-probit'
+ * ```
+ */
+export const gpProbitLearnedAtom: EpAtom = defineAtom({
+  name: 'gp-probit-learned',
+  title: 'Gaussian process with a probit likelihood: parameters learned',
+  extends: 'gp-probit',
+  recovery: {
+    seeds: 40,
+    coverage: 0.75,
+    zrms: 1.5,
+    reason:
+      "a length scale from eight binary labels is weakly identified, so its posterior stays close to the prior and the interval holds the truth every time (the coverage is 1, not 0.9: the spread is the prior's); the function values are exact up to the probit tilts at each node of the grid, and hold the truth in 83 to 98% of the runs",
+  },
+  what: 'The probit Gaussian process classifier of the basic atom with the length scale of its kernel unknown (a log-normal prior, the covariance a custom function of it) and the labels simulated from a function drawn at a stated length scale: EP runs inside a grid over the length scale, each node weighted by its EP evidence.',
+  factors: [
+    'dense prior (gaussian-mv) at each grid node',
+    'probit link',
+    'the EP evidence as the weight of a node (ep-grid)',
+  ],
+  family: 'kernels',
+  expected: 'runs',
+  reference: 'truth',
+  tolerance: {
+    meanZ: 1,
+    sdRatio: [0, 10],
+    ks: 1,
+    reason:
+      'there is no reference posterior (a nine-dimensional density); the check is the recovery of the true values',
+  },
+  knobs: dict({
+    ...simulationKnobs(8),
+    trueLengthScale: real(0.3, 3, { default: 1, step: 0.1, label: 'true length scale' }),
+  }),
+  problem: gpClassLearnedProblem,
 })
