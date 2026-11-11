@@ -2,6 +2,7 @@ omai-engine/agents	384	087622c4ecbd
 omai-engine/anomaly	72	400acde8599f
 omai-engine/autodiff	54	5516094c4630
 omai-engine/base	77	fdbd8838ace3
+omai-engine/bayesian-examples	16	927cd3bbc52d
 omai-engine/causal	145	d7654979b881
 omai-engine/cluster	180	d0f79fe16a8a
 omai-engine/context	11	172aca3d0e69
@@ -101,7 +102,7 @@ omai-engine/tensor	240	82713e7c43fa
 omai-engine/text	359	ca80c4da3faf
 omai-engine/text/subword	32	544e2a9ad3ce
 omai-engine/timeseries	304	80098329574f
-omai-engine/trace	154	ca34ca38dc13
+omai-engine/trace	154	1d6c5457a45a
 omai-engine/trees	92	b31797072f4f
 omai-engine/tune	141	0b821c7e910d
 omai-engine/vision	331	7251e6487677
@@ -118,11 +119,11 @@ omai-render/figure	39	d5f3cf56a2ab
 omai-render/gym	6	32b6352a0038
 omai-render/layout	37	9aaaf0fb6fd0
 omai-render/maths	21	b0c277e6cca7
-omai-render/producer	52	c98287f1da91
+omai-render/producer	55	9df8c1e8c529
 omai-render/react	543	94d4c043f56f
 omai-render/structures	25	8a36eafae87f
 omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	303	541cc98902e2
-total	19806	5f64a15573af
+total	19825	24616aa037f9
