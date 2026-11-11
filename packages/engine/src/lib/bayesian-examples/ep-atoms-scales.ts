@@ -252,8 +252,7 @@ export const scaledPrecisionAtom: EpAtom = defineAtom({
   what: 'Six latent values theta_j ~ N(0, 1/(tau c_j)) with known multipliers c_j and one gamma-distributed tau, each observed once: the penalised-spline coefficient prior, one random smoothing parameter on a vector.',
   factors: ['prior (gamma)', 'gaussian-gamma-precision with a known multiplier', 'gaussian likelihood'],
   family: 'scales',
-  expected: 'planned',
-  plan: 'ep-plan.md section 3 (the GAM), route 2: a known constant multiplier on a precision (a one-line generalisation of the gamma-precision rule) with an unpacked compilation; in progress on another branch.',
+  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.1,

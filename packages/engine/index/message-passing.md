@@ -22,7 +22,7 @@ Message passing on factor graphs of exponential families, the Infer.NET way: a m
 - function `ampMethod`: The AMP method of a linear problem: the prior's kind and parameters as knobs, typed tape. `src/lib/message-passing/amp.ts:477` `omai-engine/message-passing`
 - function `ampStateEvolution`: The state evolution of AMP: the predicted noise level of every iteration. `src/lib/message-passing/amp.ts:160` `omai-engine/message-passing`
 - function `bpMethod`: The belief propagation method of a graph: knobs as a space, typed tape. `src/lib/message-passing/named.ts:432` `omai-engine/message-passing`
-- function `compileGraph`: Validate and compile a factor graph against a registry of operators. `src/lib/message-passing/graph.ts:133` `omai-engine/message-passing`
+- function `compileGraph`: Validate and compile a factor graph against a registry of operators. `src/lib/message-passing/graph.ts:135` `omai-engine/message-passing`
 - function `dirichlet`: The Dirichlet message family of a given dimension. `src/lib/message-passing/families-vector.ts:189` `omai-engine/message-passing`
 - function `discrete`: The discrete message family on k states: log weights. `src/lib/message-passing/families-vector.ts:150` `omai-engine/message-passing`
 - function `ecMethod`: The expectation consistent method of a graph: knobs as a space, typed tape. `src/lib/message-passing/consistent.ts:158` `omai-engine/message-passing`
@@ -77,6 +77,7 @@ Message passing on factor graphs of exponential families, the Infer.NET way: a m
 
 The factor operators: the registry of closed-form message rules (a prior, Gaussian and linear-Gaussian factors, truncation and the probit link, conjugate probability factors, discrete tables and gates, a logistic link, and a numeric operator for any other density), each a value collected by `defaultOperators()`. Part of `omai-engine/message-passing`.
 
+- function `gateOperator`: The gate of Minka and Winn: a discrete variable selects among branch factors. `src/lib/message-passing/operators/gate.ts:86` `omai-engine/message-passing`
 - function `glmPlate`: Lift a scalar link to a plate of rows: one factor on the weights, vectorised. `src/lib/message-passing/operators/plates.ts:276` `omai-engine/message-passing`
 - function `glmRow`: Lift a scalar link (probit, logistic) to a regression row on weights. `src/lib/message-passing/operators/rows.ts:57` `omai-engine/message-passing`
 - function `numericOperator`: An EP operator for any density over Gaussian variables, by quadrature. `src/lib/message-passing/operators/numeric.ts:54` `omai-engine/message-passing`
@@ -86,12 +87,15 @@ The factor operators: the registry of closed-form message rules (a prior, Gaussi
 - structure `difference`: The difference of two Gaussian variables. `src/lib/message-passing/operators/linear.ts:178` `omai-engine/message-passing`
 - structure `discreteDirichlet`: A discrete variable with a Dirichlet probability vector (conjugate). `src/lib/message-passing/operators/conjugate.ts:116` `omai-engine/message-passing`
 - structure `dotConstant`: A Gaussian vector projected on a constant direction s = a . w. `src/lib/message-passing/operators/linear.ts:241` `omai-engine/message-passing`
-- structure `equal`: Equality of two variables of one family: a copy. `src/lib/message-passing/operators/gaussian.ts:462` `omai-engine/message-passing`
-- structure `gaussianGammaPrecision`: A Gaussian with a gamma precision (variational and expectation propagation, observed or latent). `src/lib/message-passing/operators/gaussian.ts:243` `omai-engine/message-passing`
+- structure `equal`: Equality of two variables of one family: a copy. `src/lib/message-passing/operators/gaussian.ts:486` `omai-engine/message-passing`
+- structure `gammaProduct`: The product of two gamma variables p = u tau: a local times a global precision. `src/lib/message-passing/operators/gamma-scale.ts:181` `omai-engine/message-passing`
+- structure `gammaRate`: A gamma variable whose rate is a known multiple of another gamma variable: scale-mixture hierarchies. `src/lib/message-passing/operators/gamma-scale.ts:117` `omai-engine/message-passing`
+- structure `gaussianGammaPrecision`: A Gaussian with a gamma precision (variational and expectation propagation, observed or latent). `src/lib/message-passing/operators/gaussian.ts:248` `omai-engine/message-passing`
 - structure `gaussianJoint`: A joint Gaussian potential over scalar variables in information form. `src/lib/message-passing/operators/linear.ts:479` `omai-engine/message-passing`
-- structure `gaussianLogScale`: An observation with a Gaussian log scale, x ~ N(loc, exp(2 s)): quadrature expectation propagation. `src/lib/message-passing/operators/gaussian.ts:292` `omai-engine/message-passing`
+- structure `gaussianLogScale`: An observation with a Gaussian log scale, x ~ N(loc, exp(2 s)): quadrature expectation propagation. `src/lib/message-passing/operators/gaussian.ts:316` `omai-engine/message-passing`
 - structure `gaussianMixture`: A Gaussian mixture observation with normal-gamma components (variational). `src/lib/message-passing/operators/discrete.ts:337` `omai-engine/message-passing`
-- structure `gaussianNormalGamma`: A Gaussian observation of a normal-gamma mean and precision (variational). `src/lib/message-passing/operators/gaussian.ts:337` `omai-engine/message-passing`
+- structure `gaussianMvPrecisionScale`: A Gaussian vector whose precisions share one gamma multiplier (a smoothing parameter). `src/lib/message-passing/operators/scale.ts:173` `omai-engine/message-passing`
+- structure `gaussianNormalGamma`: A Gaussian observation of a normal-gamma mean and precision (variational). `src/lib/message-passing/operators/gaussian.ts:361` `omai-engine/message-passing`
 - structure `gaussianOperator`: A Gaussian with a fixed precision: likelihood or prior of a mean. `src/lib/message-passing/operators/gaussian.ts:105` `omai-engine/message-passing`
 - structure `greaterThan`: The comparison b = [x > threshold] of a Gaussian: truncated-Gaussian moment matching. `src/lib/message-passing/operators/truncation.ts:134` `omai-engine/message-passing`
 - structure `isBetween`: The interval test b = [lower < x < upper] of a Gaussian. `src/lib/message-passing/operators/truncation.ts:157` `omai-engine/message-passing`
@@ -114,7 +118,7 @@ The factor operators: the registry of closed-form message rules (a prior, Gaussi
 - structure `probit`: The probit link b | x ~ Bernoulli(Phi(x)): exact EP site updates. `src/lib/message-passing/operators/truncation.ts:235` `omai-engine/message-passing`
 - structure `probitPlate`: A plate of probit regression rows on a Gaussian weight vector, one vectorised factor. `src/lib/message-passing/operators/plates.ts:318` `omai-engine/message-passing`
 - structure `probitRow`: One probit regression row on a Gaussian weight vector, exact EP. `src/lib/message-passing/operators/rows.ts:112` `omai-engine/message-passing`
-- structure `product`: The product of two Gaussian variables (moment matching). `src/lib/message-passing/operators/gaussian.ts:377` `omai-engine/message-passing`
+- structure `product`: The product of two Gaussian variables (moment matching). `src/lib/message-passing/operators/gaussian.ts:401` `omai-engine/message-passing`
 - structure `select`: The gate y = c_z selecting one of several variables by a discrete index. `src/lib/message-passing/operators/discrete.ts:215` `omai-engine/message-passing`
 - structure `spin`: The spin factor x in {-1, +1} with a field, exact EP. `src/lib/message-passing/operators/spin.ts:35` `omai-engine/message-passing`
 - structure `spinRow`: One spin site on a Gaussian vector, for expectation consistent inference. `src/lib/message-passing/operators/rows.ts:130` `omai-engine/message-passing`
@@ -124,4 +128,4 @@ The factor operators: the registry of closed-form message rules (a prior, Gaussi
 - structure `table`: A table over discrete variables: sum-product and mean-field messages. `src/lib/message-passing/operators/discrete.ts:111` `omai-engine/message-passing`
 - structure `timesConstant`: A Gaussian variable scaled by a constant. `src/lib/message-passing/operators/linear.ts:197` `omai-engine/message-passing`
 
-- table `defaultOperators`: The library's factor operators by name. `src/lib/message-passing/operators/registry.ts:55` `omai-engine/message-passing`
+- table `defaultOperators`: The library's factor operators by name. `src/lib/message-passing/operators/registry.ts:58` `omai-engine/message-passing`

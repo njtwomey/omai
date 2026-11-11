@@ -17,8 +17,8 @@ describe('epCoverage', () => {
     expect(c.atoms.filter((r) => r.status !== r.declared).map((r) => r.name)).toEqual([])
   })
 
-  it('runs on at least the nine benchmark models (9 of 27 in the audit of 2026-11-11, 10 once stochastic volatility mapped), and only goes up', () => {
-    expect(c.benchmarksRun).toBeGreaterThanOrEqual(10)
+  it('runs on at least fourteen benchmark models (9 of 27 in the audit of 2026-11-11, 10 once stochastic volatility mapped, 14 with the gate, the ordered constraint and the Gaussian HMM), and only goes up', () => {
+    expect(c.benchmarksRun).toBeGreaterThanOrEqual(14)
     expect(c.atomsRun).toBeGreaterThanOrEqual(19)
   })
 })

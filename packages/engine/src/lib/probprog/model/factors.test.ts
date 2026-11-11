@@ -580,11 +580,22 @@ describe('what cannot be mapped is refused with the node and the reason', () => 
     const constrained = defineModel('cons', (b) => {
       b.observe(
         'y',
-        d.normal(b.latent('x', d.normal(0, 1), { constraint: { lower: 0 } }), 1),
+        d.normal(b.latent('x', d.normal(0, 1), { constraint: { kind: 'simplex' } }), 1),
         b.data('y', { dims: ['row'] }),
       )
     })
     expect(issuesOf(constrained, { y: [1] }).issues[0]).toMatchObject({ node: 'x', kind: 'constraint' })
+    // A lower bound on a Gaussian is a truncated Gaussian: a comparison factor with an observed true outcome.
+    const bounded = defineModel('bounded', (b) => {
+      b.observe(
+        'y',
+        d.normal(b.latent('x', d.normal(0, 1), { constraint: { lower: 0 } }), 1),
+        b.data('y', { dims: ['row'] }),
+      )
+    })
+    const compiled = issuesOf(bounded, { y: [1] })
+    expect(compiled.issues).toEqual([])
+    expect(compiled.graph?.factors.some((f) => f.operator === 'greater-than')).toBe(true)
 
     const other = defineModel('other', (b) => {
       b.param('theta', 1)
@@ -1020,13 +1031,36 @@ describe('a categorical gate is the select factor (expectation propagation)', ()
       const z = b.latent('z', d.categorical({ probs: [0.5, 0.5] }))
       b.observe('y', d.normal(ops.at(b.data('c', { dims: ['k'] }), z), 1), b.data('y', { dims: ['row'] }))
     })
-    expect(toFactorGraph(known.bind({ c: [0, 1], y: [0.5] })).issues[0]?.reason).toMatch(/known component|at: /)
+    // Known components are a lookup of the discrete variable (a table over it), not a refusal.
+    const lookup = toFactorGraph(known.bind({ c: [0, 1], y: [0.5] }))
+    expect(lookup.issues).toEqual([])
+    expect(lookup.graph?.factors.map((f) => f.operator)).toEqual(['prior', 'table'])
     const normalGamma = defineModel('ng', (b) => {
       const tau = b.latent('tau', d.gamma(2, 1))
       const mu = b.latent('mu', d.normal(0, ops.div(1, ops.sqrt(ops.mul(tau, 2)))))
       b.observe('y', d.normal(mu, ops.div(1, ops.sqrt(tau))), b.data('y', { dims: ['row'] }))
     })
-    const issue = toFactorGraph(normalGamma.bind({ y: [1, 2] })).issues[0]
+    // A known multiple of the gamma precision is the scale of the factor (the conditional prior of the normal-gamma mean).
+    const scaled = toFactorGraph(normalGamma.bind({ y: [1, 2] }))
+    expect(scaled.issues).toEqual([])
+    expect(scaled.graph?.factors.find((f) => f.id === 'factor:mu')?.params).toEqual({ scale: 2 })
+    // The product of two gamma precisions is a gamma variable defined by the `gamma-product` factor (a local times a global precision).
+    const product = defineModel('product', (b) => {
+      const tau = b.latent('tau', d.gamma(2, 1))
+      const kappa = b.latent('kappa', d.gamma(2, 1))
+      const mu = b.latent('mu', d.normal(0, ops.div(1, ops.sqrt(ops.mul(tau, kappa)))))
+      b.observe('y', d.normal(mu, 1), b.data('y', { dims: ['row'] }))
+    })
+    const joint = toFactorGraph(product.bind({ y: [1, 2] }))
+    expect(joint.issues).toEqual([])
+    expect(joint.graph?.factors.some((f) => f.operator === 'gamma-product')).toBe(true)
+    // The square of one gamma variable is not: refused with the idiom named.
+    const square = defineModel('square', (b) => {
+      const tau = b.latent('tau', d.gamma(2, 1))
+      const mu = b.latent('mu', d.normal(0, ops.div(1, ops.sqrt(ops.mul(tau, tau)))))
+      b.observe('y', d.normal(mu, 1), b.data('y', { dims: ['row'] }))
+    })
+    const issue = toFactorGraph(square.bind({ y: [1, 2] })).issues[0]
     expect(issue?.node).toBe('mu')
     expect(issue?.reason).toMatch(/1 \/ sqrt\(tau\)/)
   })

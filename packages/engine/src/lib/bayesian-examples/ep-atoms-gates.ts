@@ -55,8 +55,7 @@ export const gateKnownAtom: EpAtom = defineAtom({
   what: 'A Bernoulli switch z selects between the known values 0 and 3, and y is that value plus Gaussian noise: the select factor, whose message to z is the ratio of the two branches’ evidence.',
   factors: ['prior (bernoulli)', 'select gate (known components)', 'gaussian likelihood'],
   family: 'gates',
-  expected: 'planned',
-  plan: 'ep-plan.md section 2, C2 (the gate proper): the select factor needs a variable for each component, and a known value has none; the compiler asks for a prior on the components. Writing the components as fresh variables with tight priors works today (the next page).',
+  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 1e-6,
@@ -414,8 +413,7 @@ export const orderedMeansAtom: EpAtom = defineAtom({
   what: 'Two means with an ordered-vector constraint mu_1 < mu_2 and data that prefer the opposite order: the constraint is a greater-than factor between neighbours, and the posterior is cut along the diagonal.',
   factors: ['prior (gaussian) x2', 'ordered constraint (greater-than between neighbours)', 'gaussian likelihood'],
   family: 'gates',
-  expected: 'planned',
-  plan: 'ep-plan.md section 2, C (`ordered` as a chain of greater-than factors: the factor exists, the compiler does not map the constraint); in progress on another branch.',
+  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.15,

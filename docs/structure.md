@@ -612,7 +612,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `losses`          | differentiable training objectives and regularisers                                                                                                                                                                                                                                                                           |
 | `rl`              | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation                                                                                                                                                                                                                                  |
 | `games`           | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms                                                                                                                                                                                                                                  |
-| `message-passing` | message passing on factor graphs of exponential families: EP, VMP and BP as settings of one engine, 35 factor operators, variations (power, alpha, numerical, stochastic, regions, expectation consistent, AMP), anytime runs                                                                                                 |
+| `message-passing` | message passing on factor graphs of exponential families: EP, VMP and BP as settings of one engine, 46 factor operators, variations (power, alpha, numerical, stochastic, regions, expectation consistent, AMP), anytime runs                                                                                                 |
 | `bayesian-examples` | the canonical Bayesian examples as methods run by name and knobs (data, model, one inference method with its own knobs and a time budget, posterior probes): `example-method.ts` is the scaffold every example is declared on (`defineExample`: a problem from knobs, every applicable inference method from `methodSpace`, derived paths), and `classifier-method.ts` is Bayesian classification of a 2-D data set; the EP atoms are bare setups of one factor each (`ep-atoms.ts`: `defineAtom`, `atomRun`, `atomReference`, `atomCheck`; the atoms in `ep-atoms-{conjugate,gates,functions,scales,likelihoods}.ts`, the registry `ep-atom-list.ts`, closed forms in `ep-atoms-quad.ts`) and `ep-coverage.ts` is `epCoverage()`, the tested measurement of what EP runs on |
 | `probprog`        | probabilistic programs and model specs, model analysis and structure reports, inference engines and the planner, a method per engine, validation and benchmark models, posteriors                                                                                                                                             |
 | `learn`           | estimator protocol, preprocessing, composition, model selection, calibration, conformal, active learning, privacy                                                                                                                                                                                                             |
@@ -3867,7 +3867,7 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   `truncatedNormalMoments`, the closed form behind every comparison and probit message, accurate in the tails.
   `_dense.ts`, `_quadrature.ts`, `_scalar.ts`: internal (SPD algebra, Gauss-Hermite against a Gaussian message, scalar
   special functions and the inverse digamma).
-- `operators/`: the 35 factor operators of `defaultOperators()` (`registry.ts`), each with message rules for the
+- `operators/`: the 46 factor operators of `defaultOperators()` (`registry.ts`), each with message rules for the
   projections it supports and tested against numerical integration: `prior`, `gaussian`, `gaussian-gamma-precision`,
   `gaussian-normal-gamma`, `product`, `equal` (`gaussian.ts`); `linear`, `plus`, `difference`, `times-constant`, `sum`,
   `dot-constant`, `matmul-constant`, `linear-regression-row`, `gaussian-joint` (`linear.ts`; the deterministic ones
@@ -3880,11 +3880,17 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   and independent of the number of rows, the nonlinear links run EP over the plate inside the call) and the `spin`
   factor and `spin-row` (`spin.ts`, the Ising site of expectation consistent inference), and the robust sites
   `mixture-site` (exact EP: spike and slab prior, inlier and outlier noise), `student-t-site` and `laplace-site` (quadrature EP)
-  with their rows `mixture-row`, `student-t-row`, `laplace-row` (`robust.ts`). `numericOperator` (`numeric.ts`)
-  is a constructor, not one of the 41: a factor given only by its log density, whose EP messages come from a panelled
+  with their rows `mixture-row`, `student-t-row`, `laplace-row` (`robust.ts`); `gaussian-mv-precision-scale` (`scale.ts`: a Gaussian
+  vector whose coefficients have the precisions `s_j lambda + o_j` of one shared gamma multiplier, the smoothing parameter of a
+  penalised spline: a grid in `log lambda` and a dense Gaussian message); `gamma-rate` and `gamma-product` (`gamma-scale.ts`: a gamma
+  variable whose rate is a multiple of another, and the product of two gamma variables, the half-Cauchy and Student-t scale
+  mixtures and a local times a global precision); and `gate` (`gate.ts`: the gate of Minka and Winn, a discrete variable selecting
+  among branches that are operators of the registry, each over its own variables, EP and VMP). `gaussian-gamma-precision`
+  takes a `scale` and an `offset` for the precision `scale lambda + offset`. A factor spec may carry `start` messages (a vague
+  Gaussian on a port, replaced by the factor's own first update) so the other factors have a proper cavity to begin from. `numericOperator` (`numeric.ts`)
+  is a constructor, not one of the 46: a factor given only by its log density, whose EP messages come from a panelled
   product rule (the fallback for a robust likelihood or the clutter problem). `args.ts`: how operators read their
-  arguments. Known limits: VMP has no rule for the hard comparison `greater-than` or for `max` and `min`;
-  `gaussian-gamma-precision` has no EP rule.
+  arguments. Known limits: VMP has no rule for the hard comparison `greater-than` or for `max` and `min`.
 - `engine.ts`, `projections.ts`, `schedules.ts`, `graph.ts`: the engine (`messagePassingAlgorithm`, `EngineSettings`,
   `MpState`, `marginalsOf`, `evidenceOf`, `beliefOf`, `mpSnapshot`) with its slots: the projection (`momentProjection`
   for EP, `klqpProjection` for VMP, `sumProductProjection` for BP; `projections`, `projectionOf`), the schedule

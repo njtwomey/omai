@@ -50,8 +50,15 @@ export interface BayesianGamOptions {
    * `tau = 1 / sigma^2` is a gamma latent (`noiseShape`, `noiseRate`), the coefficients centred with known scales: a
    * normal-gamma model that variational message passing runs. `fixed`: the smoothing and the noise (`noiseSd`) are both knobs,
    * a linear-Gaussian model with an exact Gaussian posterior that expectation propagation and exact Gaussian inference run.
+   * `gammaSmooth`: both are inferred in the precision idiom, the smoothing parameter `lambda` a gamma latent (`lambdaShape`,
+   * `lambdaRate`) that scales the precision of the coefficients (`lambda d_j + n_j`, written for the coefficients in the
+   * eigenbasis of the penalty) and the noise precision a gamma latent: the model message passing runs in full (the Bayesian
+   * GAM under expectation propagation: one dense Gaussian vector with a shared random precision multiplier).
    */
-  readonly hyper?: 'logNormal' | 'gammaNoise' | 'fixed'
+  readonly hyper?: 'logNormal' | 'gammaNoise' | 'fixed' | 'gammaSmooth'
+  /** The shape and rate of the gamma prior of the smoothing parameter, for `gammaSmooth` (defaults 1 and 0.05: mean 20, relative to the largest eigenvalue of the penalty). */
+  readonly lambdaShape?: number
+  readonly lambdaRate?: number
   /** The smoothing parameter of `gammaNoise` and `fixed`, relative to the largest eigenvalue of the penalty (default 10). */
   readonly lambda?: number
   /** The shape and rate of the gamma prior of the noise precision of the standardised response, for `gammaNoise` (defaults 1 and 0.05: mean 20). */
@@ -113,8 +120,10 @@ export interface BayesianGam {
   readonly ard: { readonly sparsity: number; readonly shape: number; readonly rate: number }
   /** The hyperprior form of the penalty prior and its settings (`logNormal` for the other priors). */
   readonly hyper: {
-    readonly kind: 'logNormal' | 'gammaNoise' | 'fixed'
+    readonly kind: 'logNormal' | 'gammaNoise' | 'fixed' | 'gammaSmooth'
     readonly lambda: number
+    readonly lambdaShape: number
+    readonly lambdaRate: number
     readonly noiseShape: number
     readonly noiseRate: number
     readonly noiseSd: number
@@ -222,33 +231,19 @@ export function bayesianGam(x: readonly number[], y: readonly number[], options:
   const noiseShape = options.noiseShape ?? 1
   const noiseRate = options.noiseRate ?? 0.05
   const noiseSd = options.noiseSd ?? 0.3
-  if (!(lambda0 > 0 && noiseShape > 0 && noiseRate > 0 && noiseSd > 0))
+  const lambdaShape = options.lambdaShape ?? 1
+  const lambdaRate = options.lambdaRate ?? 0.05
+  if (!(lambda0 > 0 && noiseShape > 0 && noiseRate > 0 && noiseSd > 0 && lambdaShape > 0 && lambdaRate > 0))
     throw new OmaiError(
       'value',
       'bayesianGam: the smoothing parameter, the gamma parameters and the noise are positive',
     )
   const fixedScale = diagonal.map((e, j) => 1 / Math.sqrt(lambda0 * e + (nullPrecision[j] ?? 0)))
   const definition =
-    hyperKind !== 'logNormal'
-      ? defineModel(`bayesian-gam-${hyperKind}`, (m) => {
-          // Centred, with the scale of each coefficient known: a Gaussian vector with a known covariance.
-          const row = m.range('row')
-          const coef = m.range('coef')
-          const X = m.data('X', { dims: [row, coef], role: 'covariate' })
-          const scale = m.data('scale', { dims: [coef], doc: 'the prior standard deviation of each coefficient' })
-          const y = m.data('y', { dims: [row], role: 'response' })
-          const gamma = m.latent('gamma', d.normal(0, scale), {
-            dims: [coef],
-            doc: 'the spline coefficients, with the penalty as the precision of their prior',
-          })
-          if (hyperKind === 'fixed') {
-            m.observe('y', d.normal(X.matmul(gamma), noiseSd), y)
-            return
-          }
-          const tau = m.latent('tau', d.gamma(noiseShape, noiseRate), { doc: 'the noise precision, 1 / sigma squared' })
-          m.observe('y', d.normal(X.matmul(gamma), tau.pow(-0.5)), y)
-        })
-      : defineModel('bayesian-gam', (m) => {
+    hyperKind === 'gammaSmooth'
+      ? defineModel('bayesian-gam-gamma-smooth', (m) => {
+          // The precision idiom throughout: lambda and tau are gamma latents, the coefficients (in the eigenbasis of the penalty)
+          // have the precision lambda d_j + n_j, the noise the precision tau.
           const row = m.range('row')
           const coef = m.range('coef')
           const X = m.data('X', { dims: [row, coef], role: 'covariate' })
@@ -261,39 +256,86 @@ export function bayesianGam(x: readonly number[], y: readonly number[], options:
             doc: 'the prior precision of a coefficient the penalty does not touch',
           })
           const y = m.data('y', { dims: [row], role: 'response' })
-          const logLam = m.latent('logLambda', d.normal(logLambda.mean, logLambda.sd), {
-            doc: 'the log of the smoothing parameter: how heavily wiggliness is penalised',
+          const lam = m.latent('lambda', d.gamma(lambdaShape, lambdaRate), {
+            doc: 'the smoothing parameter: how heavily wiggliness is penalised',
           })
-          const logSig = m.latent('logSigma', d.normal(logSigma.mean, logSigma.sd), {
-            doc: 'the log of the noise standard deviation',
-          })
-          const z = m.latent('z', d.normal(0, 1), {
+          const tau = m.latent('tau', d.gamma(noiseShape, noiseRate), { doc: 'the noise precision, 1 / sigma squared' })
+          const gamma = m.latent('gamma', d.normal(0, lam.mul(penalty).add(flat).pow(-0.5)), {
             dims: [coef],
-            doc: 'the coefficients in units of their prior standard deviation',
-          })
-          const gamma = m.derived('gamma', z.div(logLam.exp().mul(penalty).add(flat).sqrt()), {
             doc: 'the spline coefficients, with the penalty as the precision of their prior',
-            record: false,
           })
-          m.observe('y', d.normal(X.matmul(gamma), logSig.exp()), y)
+          m.observe('y', d.normal(X.matmul(gamma), tau.pow(-0.5)), y)
         })
+      : hyperKind !== 'logNormal'
+        ? defineModel(`bayesian-gam-${hyperKind}`, (m) => {
+            // Centred, with the scale of each coefficient known: a Gaussian vector with a known covariance.
+            const row = m.range('row')
+            const coef = m.range('coef')
+            const X = m.data('X', { dims: [row, coef], role: 'covariate' })
+            const scale = m.data('scale', { dims: [coef], doc: 'the prior standard deviation of each coefficient' })
+            const y = m.data('y', { dims: [row], role: 'response' })
+            const gamma = m.latent('gamma', d.normal(0, scale), {
+              dims: [coef],
+              doc: 'the spline coefficients, with the penalty as the precision of their prior',
+            })
+            if (hyperKind === 'fixed') {
+              m.observe('y', d.normal(X.matmul(gamma), noiseSd), y)
+              return
+            }
+            const tau = m.latent('tau', d.gamma(noiseShape, noiseRate), {
+              doc: 'the noise precision, 1 / sigma squared',
+            })
+            m.observe('y', d.normal(X.matmul(gamma), tau.pow(-0.5)), y)
+          })
+        : defineModel('bayesian-gam', (m) => {
+            const row = m.range('row')
+            const coef = m.range('coef')
+            const X = m.data('X', { dims: [row, coef], role: 'covariate' })
+            const penalty = m.data('penalty', {
+              dims: [coef],
+              doc: 'the eigenvalue of the penalty along each coefficient (0: not smoothed)',
+            })
+            const flat = m.data('nullPrecision', {
+              dims: [coef],
+              doc: 'the prior precision of a coefficient the penalty does not touch',
+            })
+            const y = m.data('y', { dims: [row], role: 'response' })
+            const logLam = m.latent('logLambda', d.normal(logLambda.mean, logLambda.sd), {
+              doc: 'the log of the smoothing parameter: how heavily wiggliness is penalised',
+            })
+            const logSig = m.latent('logSigma', d.normal(logSigma.mean, logSigma.sd), {
+              doc: 'the log of the noise standard deviation',
+            })
+            const z = m.latent('z', d.normal(0, 1), {
+              dims: [coef],
+              doc: 'the coefficients in units of their prior standard deviation',
+            })
+            const gamma = m.derived('gamma', z.div(logLam.exp().mul(penalty).add(flat).sqrt()), {
+              doc: 'the spline coefficients, with the penalty as the precision of their prior',
+              record: false,
+            })
+            m.observe('y', d.normal(X.matmul(gamma), logSig.exp()), y)
+          })
   const standardised = y.map((v) => (v - mean) / sd)
   return {
     definition,
     data:
-      hyperKind === 'logNormal'
+      hyperKind === 'logNormal' || hyperKind === 'gammaSmooth'
         ? { X: rotate(evaluateRaw(x)), penalty: diagonal, nullPrecision, y: standardised }
         : { X: rotate(evaluateRaw(x)), scale: fixedScale, y: standardised },
     rows: { x, y },
     size: p,
     penalised: diagonal.filter((e) => e > 0).length,
     standardisation: { mean, sd },
-    priors: { logLambda, logSigma },
+    priors:
+      hyperKind === 'gammaSmooth'
+        ? { logLambda: { mean: Math.log(lambdaShape / lambdaRate), sd: 3 }, logSigma }
+        : { logLambda, logSigma },
     prior: 'penalty',
     local,
     slab: { inclusion: 0, slab: 0, spike: 0 },
     ard: { sparsity: 0, shape: 0, rate: 0 },
-    hyper: { kind: hyperKind, lambda: lambda0, noiseShape, noiseRate, noiseSd },
+    hyper: { kind: hyperKind, lambda: lambda0, lambdaShape, lambdaRate, noiseShape, noiseRate, noiseSd },
     design: (at) => rotate(evaluateRaw(at)),
     parts: evaluateRaw,
     // The eigendirections rotated back to the coefficients of the basis functions.
@@ -398,7 +440,7 @@ function localGam(x: readonly number[], y: readonly number[], options: BayesianG
     local: true,
     slab: ardPrior ? { inclusion: 0, slab: 0, spike: 0 } : { inclusion, slab, spike },
     ard: ardPrior ? { sparsity, shape: alphaShape, rate: alphaRate } : { sparsity: 0, shape: 0, rate: 0 },
-    hyper: { kind: 'logNormal', lambda: 0, noiseShape: 0, noiseRate: 0, noiseSd: 0 },
+    hyper: { kind: 'logNormal', lambda: 0, lambdaShape: 0, lambdaRate: 0, noiseShape: 0, noiseRate: 0, noiseSd: 0 },
     design: raw,
     parts: raw,
     original: (gamma) => Array.from({ length: size }, (_, j) => gamma[j] ?? 0),
@@ -499,6 +541,8 @@ export function bayesianGamFit(
   // precision `tau` or a known constant.
   const centred = prior === 'penalty' && model.hyper.kind !== 'logNormal'
   const fixedNoise = centred && model.hyper.kind === 'fixed'
+  const smooth = centred && model.hyper.kind === 'gammaSmooth'
+  const lambdaDraws = draws['lambda']
   const logLam = draws['logLambda']
   const alphaDraws = draws['alpha']
   const tauDraws = draws['tau']
@@ -515,7 +559,12 @@ export function bayesianGamFit(
       `bayesianGamFit: the posterior has no draws of ${centred ? 'gamma and tau' : { penalty: 'z and logLambda', spikeSlab: 'beta', ard: 'z and alpha' }[prior]} and logSigma`,
     )
   const raw = toFlat(source)
-  const lams = logLam === undefined ? new Float64Array(0) : toFlat(logLam)
+  const lams =
+    smooth && lambdaDraws !== undefined
+      ? Float64Array.from(toFlat(lambdaDraws), Math.log)
+      : logLam === undefined
+        ? new Float64Array(0)
+        : toFlat(logLam)
   const alphas = alphaDraws === undefined ? new Float64Array(0) : toFlat(alphaDraws)
   const n = Math.min(
     Math.floor(raw.length / size),
@@ -585,7 +634,7 @@ export function bayesianGamFit(
     const c = ((1 - pi) * Math.exp(-0.5 * (v / narrow) ** 2)) / narrow
     return a / (a + c)
   }
-  const ll = logLam === undefined ? [] : Array.from(lams).slice(0, n)
+  const ll = lams.length === 0 ? [] : Array.from(lams).slice(0, n)
   // How much each basis function is in use in a draw: the posterior probability of the slab, or under ARD the share of the unit
   // ridge's width its precision leaves (1 for a precision of the ridge or less, towards 0 as the basis is pruned).
   const inUse = (i: number, j: number): number =>
@@ -602,13 +651,14 @@ export function bayesianGamFit(
       ? { logSigma: lsig, 'f(25%)': column(G), 'f(75%)': column(G + 1), 'active bases': active }
       : centred
         ? {
+            ...(smooth && ll.length > 0 ? { logLambda: ll } : {}),
             ...(fixedNoise ? {} : { logSigma: lsig }),
             'f(25%)': column(G),
             'f(75%)': column(G + 1),
             'f(50%)': column((G + 2) as number),
           }
         : { logLambda: ll, logSigma: lsig, 'f(25%)': column(G), 'f(75%)': column(G + 1) },
-    hyper: { logLambda: spike || centred ? null : stat(ll), logSigma: stat(lsig) },
+    hyper: { logLambda: spike || (centred && !(smooth && ll.length > 0)) ? null : stat(ll), logSigma: stat(lsig) },
     bases: { mean: partsOf(meanBeta), curves: picks.map((i) => partsOf(beta[i] ?? [])), centres, local: model.local },
     ...(spike
       ? {
@@ -681,12 +731,20 @@ function conditional(
       Math.log(2 * tau)
     )
   }
+  // The smoothing parameter's gamma prior written for its log: log Gamma(lambda) + ll (the Jacobian).
+  const lambdaLog = (ll2: number): number =>
+    h.lambdaShape * Math.log(h.lambdaRate) -
+    item(lgamma(h.lambdaShape)) +
+    h.lambdaShape * ll2 -
+    h.lambdaRate * Math.exp(ll2)
   const logPrior =
-    h.kind === 'logNormal'
-      ? -0.5 * ((ll - pl.mean) / pl.sd) ** 2 - Math.log(pl.sd) - 0.5 * ((ls - pn.mean) / pn.sd) ** 2 - Math.log(pn.sd)
-      : h.kind === 'gammaNoise'
-        ? gammaLog(ls)
-        : 0
+    h.kind === 'gammaSmooth'
+      ? lambdaLog(ll) + gammaLog(ls)
+      : h.kind === 'logNormal'
+        ? -0.5 * ((ll - pl.mean) / pl.sd) ** 2 - Math.log(pl.sd) - 0.5 * ((ls - pn.mean) / pn.sd) ** 2 - Math.log(pn.sd)
+        : h.kind === 'gammaNoise'
+          ? gammaLog(ls)
+          : 0
   return { ll, ls, logWeight: logMarginal + logPrior, mean, factor }
 }
 
@@ -735,7 +793,7 @@ export function bayesianGamReference(
   const points = options.points ?? 40
   // The axes of the quadrature: both logs when both are inferred; with a known smoothing parameter or noise that axis is one point.
   const h = model.hyper
-  const knownLambda = h.kind !== 'logNormal'
+  const knownLambda = h.kind !== 'logNormal' && h.kind !== 'gammaSmooth'
   const knownNoise = h.kind === 'fixed'
   const run = (llRange: readonly [number, number], lsRange: readonly [number, number]): Cell[] => {
     const cells: Cell[] = []
@@ -964,7 +1022,7 @@ export const bayesianGamNotes: Readonly<Record<string, string>> = {
  */
 export function bayesianGamMethods(
   prior: 'penalty' | 'spikeSlab' | 'ard' = 'penalty',
-  hyper: 'logNormal' | 'gammaNoise' | 'fixed' = 'logNormal',
+  hyper: 'logNormal' | 'gammaNoise' | 'fixed' | 'gammaSmooth' = 'logNormal',
 ): MethodSpace {
   const probe = bayesianGam(
     Array.from({ length: 8 }, (_, i) => i),
