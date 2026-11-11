@@ -22,7 +22,7 @@ function against(power: number): { sdRatio: number; meanError: number; converged
   })
   const post = method.posterior?.(run.state, run.config)
   if (post === undefined) throw new Error('no posterior')
-  const beliefs = atomBeliefs(problem, post)
+  const beliefs = atomBeliefs(problem, post as never)
   const names = problem.quantities.map((q) => q.name)
   const ratio = names.map((n) => (beliefs[n]?.sd ?? Number.NaN) / (exact[n]?.sd ?? 1))
   const error = names.map(

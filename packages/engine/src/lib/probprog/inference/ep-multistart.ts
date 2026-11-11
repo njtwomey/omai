@@ -257,7 +257,11 @@ function relabelMessages(
  * one run reports one mode with a spread that is far too small. The discrete messages of the graph are started at random and,
  * when `exclusions` is on, at messages that rule out one category; runs that end at the same fixed point are one mode; the
  * posterior is the mixture of the modes' beliefs with weights proportional to their EP evidence, and the evidence of the model is
- * the log sum of the modes' (the modes found: a mode that no start reaches, or the relabellings of a symmetric one, are not in it).
+ * the log sum of the modes' (the modes found: a mode that no start reaches is not in it). With `labels: 'permute'` every reading found is
+ * also started from each relabelling of its discrete messages, and with `labels: 'sort'` the posterior is read with the components
+ * sorted by the mean of the first vector of parameters of their number (the relabellings of a reading become one reading, as wide as
+ * the sampler's where every component is visited). The runs are weighted by their EP evidence, so a model with none at its fixed
+ * point (a factor whose cavity is improper) gives no posterior.
  *
  * @param model - A bound spec.
  * @param options - The name and how plates are compiled.

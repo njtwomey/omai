@@ -169,7 +169,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `aiesMethod`: Affine-invariant ensemble sampler (stretch and differential moves) as a steppable method. `src/lib/probprog/inference/ensemble-methods.ts:67` `omai-engine/probprog/inference`
 - estimator `amortisedSviMethod`: Variational inference with a neural encoder for the local latents (amortised inference). `src/lib/probprog/inference/svi-guide-methods.ts:158` `omai-engine/probprog/inference`
 - estimator `barkerMethod`: Barker's proposal with window-adapted step size as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:220` `omai-engine/probprog/inference`
-- estimator `bpSpecMethod`: Belief propagation on a model spec of Bernoulli nodes, posterior by site. `src/lib/probprog/inference/mp.ts:298` `omai-engine/probprog/inference`
+- estimator `bpSpecMethod`: Belief propagation on a model spec of Bernoulli nodes, posterior by site. `src/lib/probprog/inference/mp.ts:386` `omai-engine/probprog/inference`
 - estimator `bridgeSamplingMethod`: Bridge sampling evidence: slice-sampling posterior draws and a fitted Gaussian, one pair per step. `src/lib/probprog/inference/evidence-methods.ts:363` `omai-engine/probprog/inference`
 - estimator `chainMethod`: Forward-backward, FFBS and Viterbi on a discrete chain, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:196` `omai-engine/probprog/inference`
 - estimator `cheesMethod`: ChEES-HMC: jittered HMC over many chains with an adapted trajectory length, as a steppable method. `src/lib/probprog/inference/chees-method.ts:53` `omai-engine/probprog/inference`
@@ -179,9 +179,9 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `emMethod`: Expectation maximisation, one iteration per step, with exact E-steps. `src/lib/probprog/inference/em-method.ts:101` `omai-engine/probprog/inference`
 - estimator `ensembleSliceMethod`: Ensemble slice sampling with a tuned direction scale as a steppable method. `src/lib/probprog/inference/ensemble-methods.ts:125` `omai-engine/probprog/inference`
 - estimator `enumerationMethod`: Exact enumeration of discrete models by a junction tree, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:134` `omai-engine/probprog/inference`
-- estimator `epGridMethod`: Expectation propagation inside an evidence-weighted grid over the hyperparameters of a model. `src/lib/probprog/inference/ep-grid.ts:334` `omai-engine/probprog/inference`
-- estimator `epMultiStartMethod`: Expectation propagation from several starts, the fixed points weighted by their evidence. `src/lib/probprog/inference/ep-multistart.ts:187` `omai-engine/probprog/inference`
-- estimator `epSpecMethod`: Expectation propagation on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:234` `omai-engine/probprog/inference`
+- estimator `epGridMethod`: Expectation propagation inside an evidence-weighted grid over the hyperparameters of a model. `src/lib/probprog/inference/ep-grid.ts:337` `omai-engine/probprog/inference`
+- estimator `epMultiStartMethod`: Expectation propagation from several starts, the fixed points weighted by their evidence. `src/lib/probprog/inference/ep-multistart.ts:287` `omai-engine/probprog/inference`
+- estimator `epSpecMethod`: Expectation propagation on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:322` `omai-engine/probprog/inference`
 - estimator `gaussianMethod`: Exact linear-Gaussian conditioning, Kalman and Gaussian BP, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:85` `omai-engine/probprog/inference`
 - estimator `gibbsMethod`: Gibbs sampling, one sweep per step, resumable, with anytime draws. `src/lib/probprog/inference/gibbs-method.ts:89` `omai-engine/probprog/inference`
 - estimator `hmcMethod`: HMC with a fixed trajectory and window adaptation as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:263` `omai-engine/probprog/inference`
@@ -214,7 +214,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `thermodynamicIntegrationMethod`: Thermodynamic integration of the mean log likelihood over the tempering ladder. `src/lib/probprog/inference/evidence-methods.ts:278` `omai-engine/probprog/inference`
 - estimator `traceEnumSviMethod`: Variational inference with discrete latents summed out exactly (TraceEnum). `src/lib/probprog/inference/svi-extra-methods.ts:130` `omai-engine/probprog/inference`
 - estimator `traceGraphSviMethod`: Variational inference with a Rao-Blackwellised score-function ELBO and baselines (TraceGraph). `src/lib/probprog/inference/svi-extra-methods.ts:71` `omai-engine/probprog/inference`
-- estimator `vmpSpecMethod`: Variational message passing on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:266` `omai-engine/probprog/inference`
+- estimator `vmpSpecMethod`: Variational message passing on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:354` `omai-engine/probprog/inference`
 
 - table `blockKernels`: Kernels a hybrid block can have: hmc, nuts, mala, barker, rwm, slice, gibbs, custom. `src/lib/probprog/inference/hybrid.ts:105` `omai-engine/probprog/inference`
 - table `evidenceEstimators`: Evidence estimators by name: bridge, stepping stone, thermodynamic, importance, nested, tempered SMC. `src/lib/probprog/inference/evidence-methods.ts:788` `omai-engine/probprog/inference`
