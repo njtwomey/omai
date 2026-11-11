@@ -12,6 +12,7 @@
  * @index structure Example scaffold: a problem from knobs, one chosen inference method, derived posterior paths.
  */
 
+import { type ChainDiagnostics, chainDiagnostics } from '../exposition/index.ts'
 import { anytimeKnobs, defineInferenceMethod, type InferenceMethod } from '../probprog/inference/method.ts'
 import { type MethodSpace, methodConfig, methodSpace } from '../probprog/inference/method-space.ts'
 import {
@@ -22,6 +23,7 @@ import {
 } from '../probprog/inference/models.ts'
 import type { DataInput, ModelDefinition } from '../probprog/model/index.ts'
 import type { Posterior } from '../probprog/posterior.ts'
+import { posteriorChains } from '../probprog/posterior-chains.ts'
 import { key } from '../random/index.ts'
 import { type DictSpace, defaults, dict, int, type RealSpace, type UnionSpace } from '../space/index.ts'
 import { toFlat } from '../tensor/index.ts'
@@ -135,9 +137,21 @@ export type ExampleOffer = MethodSpace
  */
 export function exampleInferenceSpace(problem: ExampleProblem, modelName: string): ExampleOffer {
   const registry = modelRegistry({ [modelName]: { definition: problem.definition, data: problem.data } })
-  const offer = methodSpace(registry.need(modelName), {
-    starting: exampleStarting,
-    omit: ['inferDiscrete'],
+  const model = registry.need(modelName)
+  const first = methodSpace(model, { omit: ['inferDiscrete', 'method'], first: 'nuts' })
+  // Short runs: a sampler that opens with thousands of draws opens with at most a few hundred (the table has its own).
+  const starting: Record<string, Readonly<Record<string, number | string | boolean>>> = {}
+  for (const kind of first.applicable) {
+    const spaces = first.space.options[kind]?.spaces ?? {}
+    const cap = (knob: string, most: number): [string, number][] => {
+      const space = spaces[knob] as { default?: unknown } | undefined
+      return typeof space?.default === 'number' ? [[knob, Math.min(space.default, most)]] : []
+    }
+    starting[kind] = Object.fromEntries([...cap('numChains', 2), ...cap('numWarmup', 100), ...cap('numDraws', 200)])
+  }
+  const offer = methodSpace(model, {
+    starting: Object.fromEntries(first.applicable.map((k) => [k, { ...starting[k], ...exampleStarting[k] }])),
+    omit: ['inferDiscrete', 'method'],
     first: 'nuts',
   })
   const options: Record<string, DictSpace> = { ...offer.space.options }
@@ -292,6 +306,46 @@ export function columnMoments(
     Math.sqrt(rows.reduce((a, r) => a + ((r[j] ?? 0) - (mean[j] ?? 0)) ** 2, 0) / Math.max(1, n - 1)),
   )
   return { mean, sd }
+}
+
+/**
+ * The chain diagnostics of a sampler's posterior (trace, rank, R-hat and ESS per coordinate: a `chainDiagnostics` record)
+ * for some sites, with the coordinates renamed for display and at most `most` of them; `null` for a posterior that is
+ * not made of chains.
+ *
+ * @param posterior - The posterior of a run.
+ * @param sites - The sites to show.
+ * @param rename - How a coordinate (`w[0]`) is called on the page.
+ * @param most - The most coordinates to show (default 5).
+ * @returns The record, or `null`.
+ * @example
+ * ```ts
+ * import { exampleDiagnostics } from 'omai-engine/bayesian-examples'
+ * exampleDiagnostics({ chains: undefined } as never, ['w'], (n) => n) // => null
+ * ```
+ */
+export function exampleDiagnostics(
+  posterior: Posterior,
+  sites: readonly string[],
+  rename: (name: string) => string,
+  most = 5,
+): ChainDiagnostics | null {
+  if (posterior.chains === undefined) return null
+  const chains = posteriorChains(posterior, { sites: [...sites] })
+  const columns = Object.fromEntries(
+    Object.entries(chains.draws)
+      .slice(0, most)
+      .map(([name, rows]) => [rename(name), rows]),
+  )
+  if (Object.keys(columns).length === 0) return null
+  const summary = posterior
+    .summary()
+    .filter((r) => sites.includes(r.site))
+    .map((r) => ({ ...r, name: rename(r.name) }))
+  return chainDiagnostics(columns, {
+    summary,
+    ...(chains.divergent === undefined ? {} : { divergent: chains.divergent }),
+  })
 }
 
 /** The state of an example is the inner method's own. */

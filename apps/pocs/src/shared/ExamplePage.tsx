@@ -84,6 +84,8 @@ export function ExamplePage(props: {
   /** The inference knobs of the reference run, over the defaults of the chosen method; none when the check is against an exact answer. */
   readonly reference?: Config
   readonly referenceSeed?: number
+  /** Whether a configuration's check needs the reference run (default always, when there is one): a check against an exact answer needs none. */
+  readonly referenceFor?: (config: Config) => boolean
   /** The knob that is the data seed (shown as a seed input, never a button group). Default `dataSeed`. */
   readonly seedKnob?: string
   /** Knobs to leave out of the data and model panels (a list, or a function of the configuration). */

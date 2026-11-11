@@ -13,7 +13,7 @@
 
 import { type ClassificationData, generate, trainTestSplit } from '../data/index.ts'
 import { blobs, circles, moons, spirals, xor } from '../datasets/index.ts'
-import { chainDiagnostics, decisionSurface, posteriorPairs } from '../exposition/index.ts'
+import { decisionSurface, posteriorPairs } from '../exposition/index.ts'
 import type { InferenceMethod } from '../probprog/inference/method.ts'
 import * as d from '../probprog/model/dists/index.ts'
 import { type DataInput, defineModel, type ModelDefinition, ops } from '../probprog/model/index.ts'
@@ -25,7 +25,6 @@ import {
   probitPredictive,
   probitPredictiveGrid,
 } from '../probprog/models/probit-classification.ts'
-import { posteriorChains } from '../probprog/posterior-chains.ts'
 import { foldIn, type Key, key } from '../random/index.ts'
 import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
 import { toFlat } from '../tensor/index.ts'
@@ -36,6 +35,7 @@ import {
   drawRows,
   type Example,
   exampleBudgetKnobs,
+  exampleDiagnostics,
   exampleInferenceSpace,
   exampleNumber,
   exampleObjective,
@@ -445,24 +445,8 @@ export const classifierExample: Example<ClassifierProblem> = defineExample<Class
         description:
           'trace, rank, R-hat and ESS of the chains of a sampler (a chainDiagnostics record); null for the others',
         compute: (state) => {
-          const posterior = post(state)
-          if (posterior.chains === undefined) return null
-          const chains = posteriorChains(posterior, { sites: ['w'] })
           const rename = (name: string): string => names[Number(/\[(\d+)\]/.exec(name)?.[1])] ?? name
-          const columns = Object.fromEntries(
-            Object.entries(chains.draws)
-              .slice(0, PAIR_COORDINATES)
-              .map(([name, rows]) => [rename(name), rows]),
-          )
-          if (Object.keys(columns).length === 0) return null
-          const summary = posterior
-            .summary()
-            .filter((r) => r.site === 'w')
-            .map((r) => ({ ...r, name: rename(r.name) }))
-          return chainDiagnostics(columns, {
-            summary,
-            ...(chains.divergent === undefined ? {} : { divergent: chains.divergent }),
-          }) as never
+          return exampleDiagnostics(post(state), ['w'], rename, PAIR_COORDINATES) as never
         },
       }),
       'classify/check': derived<unknown>({
@@ -514,9 +498,10 @@ export const classifierKnobs: DictSpace = classifierExample.knobs
  * @example
  * ```ts
  * import { classifierMethod, classifierSteps } from 'omai-engine/bayesian-examples'
- * import { defaults } from 'omai-engine/space'
+ * import { defaults, type UnionSpace } from 'omai-engine/space'
  * import { session } from 'omai-engine/trace'
- * const config = { ...defaults(classifierMethod.config), rows: 60, inference: { method: 'laplace' } }
+ * const laplace = (classifierMethod.config.spaces['inference'] as UnionSpace).options['laplace']
+ * const config = { ...defaults(classifierMethod.config), rows: 60, inference: { method: 'laplace', ...defaults(laplace) } }
  * const s = session(classifierMethod, { config, steps: classifierSteps(config), mode: 'eager' })
  * const surface = s.probe(s.t, 'classify/surface', { size: 5 }) as { kind: string }
  * surface.kind // => 'decisionSurface'
