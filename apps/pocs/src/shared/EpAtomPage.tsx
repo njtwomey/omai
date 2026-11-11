@@ -109,7 +109,6 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
       <Banner atom={atom} state={state} />
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">The setup</h2>
-        <p className="max-w-3xl text-sm text-muted">{atom.what}</p>
         {problem === undefined ? null : (
           <pre className="max-w-3xl overflow-x-auto rounded border border-line bg-surface px-3 py-2 font-mono text-xs leading-relaxed">
             {problem.equations.join('\n')}
