@@ -253,6 +253,9 @@ type Cell =
       readonly precisions?: readonly (Precision | undefined)[]
     }
 
+/** One step of an `apply` chain: a function of the registry by name, or `mul`, `add`, `pow` with its constant. */
+type ApplyStep = readonly [string, number?]
+
 /** A gamma variable's multiple plus an offset: the precision `scale tau + offset`. */
 interface Precision {
   readonly variable: string
@@ -519,6 +522,8 @@ class Compiler {
   /** The Gaussian log-scale variable behind a positive scale variable (the value variable `tau` is `exp` of it), by the value variable's name. */
   private readonly logScale = new Map<string, string>()
   private readonly components = new Map<string, string>()
+  /** The apply factors made so far: the input variable and the chain of steps behind each output, so arithmetic on an output collapses into one chain. */
+  private readonly applied = new Map<string, { readonly input: string; readonly steps: readonly ApplyStep[] }>()
   /** The normal-gamma pairs (a Gaussian mean and the precision its variance shares), by the name of the precision's node and of the mean's. */
   private readonly normalGammaOf = new Map<string, NormalGammaPlan>()
   private readonly normalGammaByMean = new Map<string, NormalGammaPlan>()
@@ -1024,11 +1029,18 @@ class Compiler {
             },
         )
       case 'div':
-        return this.zip([a, b], ([x, y]) => {
+        return this.zip([a, b], ([x, y], i) => {
           const scaled = this.special(op, x as Cell, y as Cell)
           if (scaled !== undefined) return scaled
-          if (!isConstCell(y as Cell))
-            throw new Refusal('operator', 'division by a random value has no Gaussian message')
+          if (!isConstCell(y as Cell)) {
+            // A random divisor that is a function of one latent (`z / sqrt(precision)`, the scale of a non-centred coefficient): the
+            // quotient is one `apply-product` factor, the numerator times the reciprocal of the chain behind the divisor.
+            const quotient =
+              (y as Cell).kind === 'aff' ? this.quotientByChain(affOf(x as Cell), affOf(y as Cell), i) : undefined
+            if (quotient === undefined)
+              throw new Refusal('operator', 'division by a random value has no Gaussian message')
+            return { kind: 'aff', aff: quotient }
+          }
           const d = (y as Cell & { kind: 'aff' }).aff.offset
           return { kind: 'aff', aff: scaleAff(affOf(x as Cell), 1 / d) }
         })
@@ -1062,6 +1074,18 @@ class Compiler {
       case 'abs':
       case 'sigmoid':
         return { dims: a.dims, cells: a.cells.map((c, i) => ({ kind: 'aff', aff: this.applyAff(op, affOf(c), i) })) }
+      case 'sqrt':
+        // The square root of a Gaussian value, or of a known multiple of a gamma variable plus a known offset (a precision).
+        return {
+          dims: a.dims,
+          cells: a.cells.map((c, i): Cell => {
+            const gammaArg = scaledOf(c)
+            return {
+              kind: 'aff',
+              aff: gammaArg === undefined ? this.applyAff(op, affOf(c), i) : this.applyGamma(op, gammaArg, i),
+            }
+          }),
+        }
       default:
         throw new Refusal(
           'operator',
@@ -1114,17 +1138,84 @@ class Compiler {
 
   /**
    * A unary function of an affine value: a known value is evaluated; a random one becomes a new Gaussian variable defined
-   * by the `apply` factor of the engine (`exp`, `square`, `tanh`, `softplus`, `abs`, `sigmoid`, `relu`: the output matched
-   * by moments under the input's cavity, expectation propagation only).
+   * by the `apply` factor of the engine (`exp`, `square`, `tanh`, `softplus`, `abs`, `sigmoid`, `relu`, `sqrt`, the reciprocal:
+   * the output matched by moments under the input's cavity, expectation propagation only). When the value is a known affine
+   * map of the output of an earlier `apply` (`sqrt(d exp(x) + n)`), the new factor is the whole chain from the earlier one's
+   * input, not a second Gaussian approximation on top of the first.
    */
   private applyAff(fn: string, a: Aff, index: number): Aff {
     if (a.terms.size === 0) return constAff((unaryFunctions()[fn] as { f: (x: number) => number }).f(a.offset))
+    return this.applyChain(this.chainOf(a), [fn], index)
+  }
+
+  /**
+   * `numerator / divisor` for a divisor that is a known affine map of the output of an `apply` (a function of a latent): the
+   * `apply-product` factor of the numerator and the divisor's chain with the reciprocal appended. Undefined for any other divisor.
+   */
+  private quotientByChain(numerator: Aff, divisor: Aff, index: number): Aff | undefined {
+    const terms = [...divisor.terms].filter(([, c]) => c !== 0)
+    const atom = terms.length === 1 ? (this.atoms.get(terms[0]?.[0] as string) as Atom) : undefined
+    if (atom?.kind !== 'var' || !this.applied.has(atom.name)) return undefined
+    const base = this.chainOf(divisor)
+    const steps = [...base.steps, ['recip'] as ApplyStep]
+    if (numerator.terms.size === 0) return scaleAff(this.applyChain(base, ['recip'], index), numerator.offset)
+    const z = this.materialise(numerator, this.current, undefined) as string
+    const out = this.auxName(this.current, index)
+    this.need('apply-product')
+    this.addVariable({ name: out, family: { kind: 'gaussian' } })
+    this.addFactor(
+      { operator: 'apply-product', args: [out, z, base.input], params: { steps: steps as unknown as Json } },
+      out,
+    )
+    const key = this.atomKey({ kind: 'var', name: out })
+    this.atoms.set(key, { kind: 'var', name: out })
+    return { terms: new Map([[key, 1]]), offset: 0 }
+  }
+
+  /** A known multiple of a gamma variable plus an offset (a precision) through a unary function: an `apply` factor on the gamma variable. */
+  private applyGamma(fn: string, g: Precision, index: number): Aff {
+    const steps: ApplyStep[] = []
+    if (g.scale !== 1) steps.push(['mul', g.scale])
+    if (g.offset !== 0) steps.push(['add', g.offset])
+    return this.applyChain({ input: g.variable, steps }, [fn], index)
+  }
+
+  /**
+   * The variable an affine value is read from and the steps from it: the output of an earlier `apply` under a known affine map is
+   * followed back to that factor's input (its steps, then the map), any other value is a variable of its own (no steps).
+   */
+  private chainOf(a: Aff): { readonly input: string; readonly steps: readonly ApplyStep[] } {
+    const terms = [...a.terms].filter(([, c]) => c !== 0)
+    const [key, coefficient] = terms[0] as [string, number]
+    const atom = terms.length === 1 ? (this.atoms.get(key) as Atom) : undefined
+    const earlier = atom?.kind === 'var' ? this.applied.get(atom.name) : undefined
+    if (earlier === undefined) return { input: this.materialise(a, this.current, undefined) as string, steps: [] }
+    const steps: ApplyStep[] = [...earlier.steps]
+    if (coefficient !== 1) steps.push(['mul', coefficient])
+    if (a.offset !== 0) steps.push(['add', a.offset])
+    return { input: earlier.input, steps }
+  }
+
+  private applyChain(
+    base: { readonly input: string; readonly steps: readonly ApplyStep[] },
+    more: readonly (string | ApplyStep)[],
+    index: number,
+  ): Aff {
+    const steps = [...base.steps, ...more.map((m): ApplyStep => (typeof m === 'string' ? [m] : m))]
     const site = this.current
-    const x = this.materialise(a, site, undefined) as string
     const out = this.auxName(site, index)
     this.need('apply')
     this.addVariable({ name: out, family: { kind: 'gaussian' } })
-    this.addFactor({ operator: 'apply', args: [out, x], params: { fn } }, out)
+    const single = steps.length === 1 && steps[0]?.[1] === undefined ? steps[0]?.[0] : undefined
+    this.addFactor(
+      {
+        operator: 'apply',
+        args: [out, base.input],
+        params: single === undefined ? { steps: steps as unknown as Json } : { fn: single },
+      },
+      out,
+    )
+    this.applied.set(out, { input: base.input, steps })
     const key = this.atomKey({ kind: 'var', name: out })
     this.atoms.set(key, { kind: 'var', name: out })
     return { terms: new Map([[key, 1]]), offset: 0 }
@@ -1395,6 +1486,27 @@ class Compiler {
   private addFactor(f: FactorSpec, variable: string): void {
     this.need(f.operator)
     this.factors.push({ ...f, id: factorId(variable) })
+  }
+
+  /**
+   * Drops the `apply` factors whose output nothing reads (the Gaussian approximation an arithmetic chain passed through before it was
+   * collapsed into one factor from the chain's input): a flat output sends nothing back, so they only cost time.
+   */
+  prune(): void {
+    const kept = new Set(this.sites.flatMap((s) => s.variables.filter((v): v is string => v !== null)))
+    for (const v of this.variables) if (v.observed !== undefined) kept.add(v.name)
+    for (;;) {
+      const used = new Set<string>(kept)
+      for (const f of this.factors)
+        for (const [i, a] of f.args.entries())
+          if (typeof a === 'string' && !(f.operator === 'apply' && i === 0)) used.add(a)
+      const dead = this.factors.filter((f) => f.operator === 'apply' && !used.has(f.args[0] as string))
+      if (dead.length === 0) return
+      const gone = new Set(dead.map((f) => f.args[0] as string))
+      this.factors.splice(0, this.factors.length, ...this.factors.filter((f) => !dead.includes(f)))
+      this.variables.splice(0, this.variables.length, ...this.variables.filter((v) => !gone.has(v.name)))
+      this.auxiliary.splice(0, this.auxiliary.length, ...this.auxiliary.filter((n) => !gone.has(n)))
+    }
   }
 
   private auxName(site: string, index: number | undefined): string {
@@ -4596,6 +4708,7 @@ export function toFactorGraph(
     options.sharedScale !== 'elements',
   )
   c.run()
+  c.prune()
   const graph: FactorGraphSpec = { variables: c.variables, factors: c.factors }
   const opaque = (options.analysis?.opaque ?? opaqueNodes(bound)).filter((name) => {
     const node = bound.spec.nodes.find((n) => n.name === name && n.kind !== 'data')

@@ -62,7 +62,9 @@ describe('bayesianGamMethod', () => {
       expect.arrayContaining(['hmc', 'nuts', 'mclmc', 'mala', 'pathfinder', 'svi', 'laplace']),
     )
     expect(offer.applicable.length).toBeGreaterThan(15)
-    expect(offer.unavailable['ep']).toContain('has no message rule')
+    // Expectation propagation runs on the log-normal form too (the non-centred scale is the `apply-product` factor).
+    expect(offer.applicable).toContain('ep')
+    expect(offer.unavailable['vmp']).toContain('has no variational message rule')
     expect(Object.keys(offer.space.options)).toEqual(
       expect.arrayContaining([...offer.applicable, ...Object.keys(offer.unavailable)]),
     )
@@ -199,8 +201,9 @@ describe('the message-passing forms of the penalty prior', () => {
     return s.probe(s.t, 'gam/fit') as unknown as ReturnType<typeof bayesianGamFit>
   }
 
-  it('say which methods apply: the log-normal form none of the message passing, the gamma-noise form VMP and EP, the fixed form too', () => {
-    expect(bayesianGamMethods('penalty').unavailable['vmp']).toContain('has no message rule')
+  it('say which methods apply: the log-normal form EP only (of the message passing), the gamma-noise form VMP and EP, the fixed form too', () => {
+    expect(bayesianGamMethods('penalty').applicable).toContain('ep')
+    expect(bayesianGamMethods('penalty').unavailable['vmp']).toContain('has no variational message rule')
     const gamma = bayesianGamMethods('penalty', 'gammaNoise')
     expect(gamma.applicable).toEqual(expect.arrayContaining(['vmp', 'ep']))
     const fixed = bayesianGamMethods('penalty', 'fixed')

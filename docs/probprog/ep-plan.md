@@ -658,3 +658,10 @@ several restarts is the fix (as `epMultiStartMethod` for EP). (5) `product` (a b
 sweeps, as is usual for the mean field of a strongly correlated pair. (6) The non-conjugate message is not guaranteed to raise the bound at every sweep
 (the conjugate ones are): damping 0.3 with the `damp` repair settles every atom that runs but those of (5).
 
+
+Done for the GAM's remaining forms (2026-11-11, `agent-pp181-gamep`): EP runs on all twelve (prior, hyperprior) combinations of the
+Bayesian GAM. `apply` takes a chain of steps (`mul`, `add`, `pow` and the registry, now with `sqrt` and `recip`) and a gamma input;
+the compiler collapses arithmetic on an `apply` output into one chain and prunes unread `apply` factors; `z / g(x)` for a chain `g`
+is the new fused factor `apply-product` (`y = z f(x)`, closed form in `z`, one integral over `x`). Penalty with log-normal
+hyperpriors: curve 0.005 response sd from the exact reference, log smoothing 2.78 against 2.53; ARD: 0.011 sd from NUTS. Remaining:
+the posterior of the non-centred coefficients is per-coefficient marginals (band 17% wide), no VMP rule (gap `non-centred-scale`).

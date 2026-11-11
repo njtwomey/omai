@@ -56,6 +56,33 @@ is not Gaussian (it is a scale mixture of Gaussians), so a method has to approxi
    The dense route is accurate to a few percent; the per-coefficient one has the right curve and smoothing parameter and a
    band 19% too wide (the loopy sum over coefficients), and is the form that carries ARD and bases with their own precisions.
 
+## The non-centred forms (2026-11-11, later)
+
+The default model (log-normal hyperpriors) and ARD write the coefficient non-centred, `z / sqrt(precision)` with `z` standard
+normal and the precision a known map of a latent (`exp(log lambda) d_j + n_j` of a Gaussian, or `s alpha_j + 1 - s` of a gamma
+relevance). That is not a refusal of EP any more: `operators/functions.ts` has two additions. The unary `apply` factor takes a
+chain of steps (`exp`, then `mul`, `add`, `sqrt`, the reciprocal) and a gamma input, and the compiler collapses the arithmetic on
+the output of an `apply` into one chain from the latent (no Gaussian approximation of the intermediate values; the factors left
+unread are pruned). The quotient of a variable by such a chain is the `apply-product` factor `y = z f(x)`: given `x` the factor is
+linear in `z`, so the integral over `z` is closed form and what remains is a one-dimensional integral over `x` (a panelled grid
+for a Gaussian `x`, a grid in `log x` for a gamma). A first version with a separate `apply` and `product` (a Gaussian
+approximation of `f(x)` in between) gave the curve but a smoothing parameter 1.2 to 3.2 log units off and answers that moved
+with the damping; the fused factor does not.
+
+Measured on the page's data (sine, 60 rows, 10 coefficients), against the exact reference or a long sampler:
+
+| form                                   | offered (EP) | mean curve error (response sd) | band width ratio | log smoothing          | note                                     |
+| -------------------------------------- | ------------ | ------------------------------ | ---------------- | ---------------------- | ---------------------------------------- |
+| penalty, `gammaSmooth` (dense vector)  | yes          | 0.004                          | 1.015            | 2.664 +- 0.533 (2.716) | converges in 21 sweeps, 0.65 s           |
+| penalty, `logNormal` (non-centred)     | yes          | 0.005                          | 1.17             | 2.783 +- 0.630 (2.533 +- 0.619) | about 80 sweeps, 3 s; never flags convergence |
+| penalty, `gammaNoise`, `fixed`         | yes          | under 0.03                     | 0.85 to 1.15     |                        | (tests of the earlier forms)             |
+| ARD (the four hyper settings are one model) | yes     | 0.011 at worst against NUTS    | 1.09             |                        | 64 sweeps, 1.8 s; bases in use within 0.05 of NUTS |
+| spike and slab, all four               | yes          |                                |                  |                        | (earlier work)                           |
+
+The band is wide because the posterior of a non-centred coefficient comes back as a marginal per coefficient (the dense form's one
+vector keeps their correlations): gap `non-centred-scale` in `ep-gaps.ts`. Variational message passing still refuses these
+forms (its non-conjugate message for a scale is degenerate).
+
 ## Optimising instead
 
 The user's regression view is right: for fixed `lambda` and `sigma` nothing needs approximating, and the classical GAM
@@ -72,17 +99,17 @@ model; it is a missing method, not a missing theory.
 
 | prior and hyperpriors                                                        | what runs                                                                                     |
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| smoothness penalty, log-normal hyperpriors (default)                         | the samplers, SVI, Pathfinder, Laplace (poor), importance; no message passing                 |
-| penalty, gamma smoothing parameter and gamma noise precision (`gammaSmooth`) | the above, plus EP (the dense scale factor), against the exact reference                      |
+| smoothness penalty, log-normal hyperpriors                                   | the samplers, SVI, Pathfinder, Laplace (poor), importance, and EP (the `apply-product` factor)  |
+| penalty, gamma smoothing parameter and gamma noise precision (`gammaSmooth`, the page's default) | the above, plus VMP, and EP first (the dense scale factor), against the exact reference |
 | penalty, Gamma noise precision, smoothing fixed (`gammaNoise`)               | the above, plus VMP and EP                                                                    |
 | penalty, smoothing and noise fixed (`fixed`)                                 | EP, VMP, the exact Gaussian method (all exact), and the rest                                  |
-| spike and slab, ARD                                                          | the samplers and variational methods; the posterior is not Gaussian given the hyperparameters |
+| spike and slab, ARD                                                          | the samplers and variational methods, and EP (mixture sites; the `apply-product` factor for ARD) |
 
 ## Next steps, in order of value
 
 1. ~~The EP rule and compiler mapping for a Gaussian vector with a random precision scale (gap 3)~~: done, see above.
 2. A method kind that marginalises the Gaussian block (empirical Bayes or Laplace on the hyperparameters).
-3. A Gamma-precision form of the default model so the message-passing methods are not refused for parameterisation reasons.
+3. ~~A Gamma-precision form of the default model~~: done (`gammaSmooth`, now the page's default); and the non-centred form runs under EP anyway.
 
 Tests: `probprog/model/factors.test.ts` ("runs under expectation propagation ...", "a linear regression with an unknown noise
 level ..."), `probprog/models/bayesian-gam.test.ts` (the verdicts and the agreement with the exact reference per variant).

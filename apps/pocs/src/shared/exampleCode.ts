@@ -211,11 +211,13 @@ export const exampleCode: Readonly<Record<string, ExampleCode>> = {
       const prior = text(c, 'prior', 'penalty')
       if (prior === 'ard') return around('gam:local', ['gam:local:ard', 1])
       if (prior === 'spikeSlab') return around('gam:local', ['gam:local:spike-slab', 1])
-      const hyper = text(c, 'hyper', 'logNormal')
+      const hyper = text(c, 'hyper', 'gammaSmooth')
+      if (hyper === 'gammaSmooth') return [['gam:gamma-smooth', 0]]
       if (hyper === 'logNormal') return [['gam:log-normal', 0]]
       return around('gam:known-scale', [hyper === 'fixed' ? 'gam:known-scale:fixed' : 'gam:known-scale:learned', 1])
     },
     variants: [
+      { prior: 'penalty', hyper: 'gammaSmooth' },
       { prior: 'penalty', hyper: 'logNormal' },
       { prior: 'penalty', hyper: 'gammaNoise' },
       { prior: 'penalty', hyper: 'fixed' },
