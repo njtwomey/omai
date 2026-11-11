@@ -17,7 +17,7 @@ import { gridMarginals } from '../validation/index.ts'
 import { once } from './_util.ts'
 import {
   type AtomFigure,
-  type AtomProblem,
+  type AtomParts,
   type AtomRecoverySpec,
   defineAtom,
   type EpAtom,
@@ -71,7 +71,7 @@ function ordinalFigure(x: readonly number[], y: readonly number[], truth?: reado
   }
 }
 
-function ordinalProblem(k: Config): AtomProblem {
+function ordinalProblem(k: Config): AtomParts {
   const s = configNumber(k, 'priorScale')
   // region ordinal-probit
   const definition = defineModel('ordinal-probit', (m) => {
@@ -86,20 +86,26 @@ function ordinalProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { x: OX, y: OY },
-    equations: [
-      `a, b ~ N(0, ${s}²)   (the intercept and the slope)`,
-      `y_i ~ OrderedProbit(a + b x_i, cuts = (${CUTS.join(', ')})), i = 1..${OX.length}   (four ordered categories)`,
-      `observe x = (${OX.join(', ')}) and y = (${OY.join(', ')})`,
-    ],
-    quantities: [
-      { name: 'a', label: 'a (intercept)', support: 'real' },
-      { name: 'b', label: 'b (slope)', support: 'real' },
-    ],
-    pair: ['a', 'b'],
-    grid: { points: 41, maxRefinements: 0 },
-    figure: ordinalFigure(OX, OY),
+    build: {
+      definition,
+      data: { x: OX, y: OY },
+      quantities: [
+        { name: 'a', label: 'a (intercept)', support: 'real' },
+        { name: 'b', label: 'b (slope)', support: 'real' },
+      ],
+    },
+    reference: {
+      grid: { points: 41, maxRefinements: 0 },
+    },
+    present: {
+      equations: [
+        `a, b ~ N(0, ${s}²)   (the intercept and the slope)`,
+        `y_i ~ OrderedProbit(a + b x_i, cuts = (${CUTS.join(', ')})), i = 1..${OX.length}   (four ordered categories)`,
+        `observe x = (${OX.join(', ')}) and y = (${OY.join(', ')})`,
+      ],
+      pair: ['a', 'b'],
+      figure: ordinalFigure(OX, OY),
+    },
   }
 }
 
@@ -129,10 +135,10 @@ export const ordinalProbitAtom: EpAtom = defineAtom({
       'a Gaussian projection of each tilted distribution (a Gaussian times the mass between two cut points), by quadrature',
   },
   knobs: dict({ priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }) }),
-  problem: ordinalProblem,
+  parts: ordinalProblem,
 })
 
-function ordinalLearnedProblem(k: Config): AtomProblem {
+function ordinalLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueA, trueB] = [configNumber(k, 'trueIntercept'), configNumber(k, 'trueSlope')]
   const s = configNumber(k, 'priorScale')
@@ -154,20 +160,26 @@ function ordinalLearnedProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { x, y },
-    equations: [
-      `truth: score ${trueA} + ${trueB} x + N(0, 1) noise cut at (${CUTS.join(', ')}); ${n} points, seed ${seed}`,
-      `a, b ~ N(0, ${s}²)   (the unknown intercept and slope)`,
-      `y_i ~ OrderedProbit(a + b x_i, cuts), i = 1..${n}`,
-    ],
-    quantities: [
-      { name: 'a', label: 'a (intercept)', support: 'real', truth: trueA },
-      { name: 'b', label: 'b (slope)', support: 'real', truth: trueB },
-    ],
-    pair: ['a', 'b'],
-    grid: { points: 41, maxRefinements: 0 },
-    figure: ordinalFigure(x, y, [trueA, trueB]),
+    build: {
+      definition,
+      data: { x, y },
+      quantities: [
+        { name: 'a', label: 'a (intercept)', support: 'real', truth: trueA },
+        { name: 'b', label: 'b (slope)', support: 'real', truth: trueB },
+      ],
+    },
+    reference: {
+      grid: { points: 41, maxRefinements: 0 },
+    },
+    present: {
+      equations: [
+        `truth: score ${trueA} + ${trueB} x + N(0, 1) noise cut at (${CUTS.join(', ')}); ${n} points, seed ${seed}`,
+        `a, b ~ N(0, ${s}²)   (the unknown intercept and slope)`,
+        `y_i ~ OrderedProbit(a + b x_i, cuts), i = 1..${n}`,
+      ],
+      pair: ['a', 'b'],
+      figure: ordinalFigure(x, y, [trueA, trueB]),
+    },
   }
 }
 
@@ -205,7 +217,7 @@ export const ordinalProbitLearnedAtom: EpAtom = defineAtom({
     trueSlope: real(-2, 2, { default: 1, step: 0.1, label: 'true slope' }),
     priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }),
   }),
-  problem: ordinalLearnedProblem,
+  parts: ordinalLearnedProblem,
 })
 
 // ----- quantile regression -----
@@ -237,7 +249,7 @@ function quantileFigure(
   }
 }
 
-function quantileProblem(k: Config): AtomProblem {
+function quantileProblem(k: Config): AtomParts {
   const [tau, scale, s] = [configNumber(k, 'tau'), configNumber(k, 'scale'), configNumber(k, 'priorScale')]
   // region quantile-regression
   const definition = defineModel('quantile-regression', (m) => {
@@ -252,28 +264,34 @@ function quantileProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { x: QX, y: QY },
-    equations: [
-      `a, b ~ N(0, ${s}²)   (the intercept and the slope of the line at the quantile level)`,
-      `y_i ~ AsymmetricLaplace(a + b x_i, scale ${scale}, tau ${tau}), i = 1..${QX.length}   (the check-loss likelihood of quantile regression)`,
-      `observe x = (${QX.join(', ')}) and y = (${QY.join(', ')})`,
-    ],
-    quantities: [
-      { name: 'a', label: 'a (intercept)', support: 'real' },
-      { name: 'b', label: 'b (slope)', support: 'real' },
-    ],
-    pair: ['a', 'b'],
-    // the kinked log density has no curvature for the library's Laplace box to find: an explicit box around the prior's mass
-    grid: {
-      points: 81,
-      maxRefinements: 0,
-      box: [
-        [-3, 3],
-        [-3, 3],
+    build: {
+      definition,
+      data: { x: QX, y: QY },
+      quantities: [
+        { name: 'a', label: 'a (intercept)', support: 'real' },
+        { name: 'b', label: 'b (slope)', support: 'real' },
       ],
     },
-    figure: quantileFigure('observations', QX, QY, tau),
+    reference: {
+      // the kinked log density has no curvature for the library's Laplace box to find: an explicit box around the prior's mass
+      grid: {
+        points: 81,
+        maxRefinements: 0,
+        box: [
+          [-3, 3],
+          [-3, 3],
+        ],
+      },
+    },
+    present: {
+      equations: [
+        `a, b ~ N(0, ${s}²)   (the intercept and the slope of the line at the quantile level)`,
+        `y_i ~ AsymmetricLaplace(a + b x_i, scale ${scale}, tau ${tau}), i = 1..${QX.length}   (the check-loss likelihood of quantile regression)`,
+        `observe x = (${QX.join(', ')}) and y = (${QY.join(', ')})`,
+      ],
+      pair: ['a', 'b'],
+      figure: quantileFigure('observations', QX, QY, tau),
+    },
   }
 }
 
@@ -308,10 +326,10 @@ export const quantileRegressionAtom: EpAtom = defineAtom({
     scale: real(0.1, 2, { default: 0.5, step: 0.05, label: 'scale of the check loss' }),
     priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }),
   }),
-  problem: quantileProblem,
+  parts: quantileProblem,
 })
 
-function quantileLearnedProblem(k: Config): AtomProblem {
+function quantileLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueA, trueB] = [configNumber(k, 'trueIntercept'), configNumber(k, 'trueSlope')]
   const [tau, scale, s] = [configNumber(k, 'tau'), configNumber(k, 'scale'), configNumber(k, 'priorScale')]
@@ -337,28 +355,34 @@ function quantileLearnedProblem(k: Config): AtomProblem {
   // endregion
   const half = Math.max(0.6, (10 * scale) / Math.sqrt(n))
   return {
-    definition,
-    data: { x, y },
-    equations: [
-      `truth: the ${Math.round(tau * 100)}th percentile line ${trueA} + ${trueB} x with asymmetric Laplace noise of scale ${scale}; ${n} points, seed ${seed}`,
-      `a, b ~ N(0, ${s}²)   (the unknown intercept and slope)`,
-      `y_i ~ AsymmetricLaplace(a + b x_i, scale ${scale}, tau ${tau}), i = 1..${n}`,
-    ],
-    quantities: [
-      { name: 'a', label: 'a (intercept)', support: 'real', truth: trueA },
-      { name: 'b', label: 'b (slope)', support: 'real', truth: trueB },
-    ],
-    pair: ['a', 'b'],
-    // an explicit box around the truth, as wide as the posterior of a median-like fit can be
-    grid: {
-      points: 81,
-      maxRefinements: 0,
-      box: [
-        [trueA - half, trueA + half],
-        [trueB - half, trueB + half],
+    build: {
+      definition,
+      data: { x, y },
+      quantities: [
+        { name: 'a', label: 'a (intercept)', support: 'real', truth: trueA },
+        { name: 'b', label: 'b (slope)', support: 'real', truth: trueB },
       ],
     },
-    figure: quantileFigure('simulated points', x, y, tau, [trueA, trueB]),
+    reference: {
+      // an explicit box around the truth, as wide as the posterior of a median-like fit can be
+      grid: {
+        points: 81,
+        maxRefinements: 0,
+        box: [
+          [trueA - half, trueA + half],
+          [trueB - half, trueB + half],
+        ],
+      },
+    },
+    present: {
+      equations: [
+        `truth: the ${Math.round(tau * 100)}th percentile line ${trueA} + ${trueB} x with asymmetric Laplace noise of scale ${scale}; ${n} points, seed ${seed}`,
+        `a, b ~ N(0, ${s}²)   (the unknown intercept and slope)`,
+        `y_i ~ AsymmetricLaplace(a + b x_i, scale ${scale}, tau ${tau}), i = 1..${n}`,
+      ],
+      pair: ['a', 'b'],
+      figure: quantileFigure('simulated points', x, y, tau, [trueA, trueB]),
+    },
   }
 }
 
@@ -402,7 +426,7 @@ export const quantileRegressionLearnedAtom: EpAtom = defineAtom({
     scale: real(0.1, 2, { default: 0.5, step: 0.05, label: 'scale of the check loss' }),
     priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }),
   }),
-  problem: quantileLearnedProblem,
+  parts: quantileLearnedProblem,
 })
 
 // ----- a tournament with draws: the TrueSkill draw margin -----
@@ -479,7 +503,7 @@ function drawsFigure(skillTruth?: readonly number[]): AtomFigure {
   }
 }
 
-function drawsProblem(k: Config): AtomProblem {
+function drawsProblem(k: Config): AtomParts {
   const margin = configNumber(k, 'margin')
   const cuts = [-margin / Math.SQRT2, margin / Math.SQRT2]
   // region skill-draws
@@ -503,19 +527,25 @@ function drawsProblem(k: Config): AtomProblem {
     return `Game ${g + 1}: ${PLAYERS[a]} ${r === 1 ? 'drew with' : r === 2 ? 'beat' : 'lost to'} ${PLAYERS[b]}`
   })
   return {
-    definition,
-    data: { a: PAIRS.map((p) => p[0]), b: PAIRS.map((p) => p[1]), result: RESULTS },
-    equations: [
-      'skill_A, skill_B, skill_C ~ N(0, 1)',
-      `game between a and b: lost, drawn or won as (skill_a - skill_b) / sqrt 2 + noise falls below -${(margin / Math.SQRT2).toFixed(3)}, inside, or above ${(margin / Math.SQRT2).toFixed(3)} (draw margin ${margin})`,
-      ...notes,
-    ],
-    quantities: PLAYERS.map((n, i) => ({ name: `skill[${i}]`, label: `skill_${n}`, support: 'real' as const })),
-    get exact() {
-      return Object.fromEntries(PLAYERS.map((_, i) => [`skill[${i}]`, grid().marginal(i)]))
+    build: {
+      definition,
+      data: { a: PAIRS.map((p) => p[0]), b: PAIRS.map((p) => p[1]), result: RESULTS },
+      quantities: PLAYERS.map((n, i) => ({ name: `skill[${i}]`, label: `skill_${n}`, support: 'real' as const })),
     },
-    referenceSource: 'the posterior of the three skills on a 33 by 33 by 33 grid',
-    figure: { ...drawsFigure(), notes },
+    reference: {
+      get exact() {
+        return Object.fromEntries(PLAYERS.map((_, i) => [`skill[${i}]`, grid().marginal(i)]))
+      },
+      referenceSource: 'the posterior of the three skills on a 33 by 33 by 33 grid',
+    },
+    present: {
+      equations: [
+        'skill_A, skill_B, skill_C ~ N(0, 1)',
+        `game between a and b: lost, drawn or won as (skill_a - skill_b) / sqrt 2 + noise falls below -${(margin / Math.SQRT2).toFixed(3)}, inside, or above ${(margin / Math.SQRT2).toFixed(3)} (draw margin ${margin})`,
+        ...notes,
+      ],
+      figure: { ...drawsFigure(), notes },
+    },
   }
 }
 
@@ -546,10 +576,10 @@ export const skillDrawsAtom: EpAtom = defineAtom({
       'each result is a Gaussian times the mass between two cut points that EP projects onto a Gaussian, and the skills share the games',
   },
   knobs: dict({ margin: real(0.1, 2, { default: 0.7, step: 0.05, label: 'draw margin' }) }),
-  problem: drawsProblem,
+  parts: drawsProblem,
 })
 
-function drawsLearnedProblem(k: Config): AtomProblem {
+function drawsLearnedProblem(k: Config): AtomParts {
   const [seed, rounds] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const margin = configNumber(k, 'margin')
   const truth = [configNumber(k, 'trueSkillA'), configNumber(k, 'trueSkillB'), configNumber(k, 'trueSkillC')]
@@ -578,24 +608,30 @@ function drawsLearnedProblem(k: Config): AtomProblem {
   // endregion
   const grid = once(() => skillGrid(games, results, margin, 1))
   return {
-    definition,
-    data: { a: games.map((p) => p[0]), b: games.map((p) => p[1]), result: results },
-    equations: [
-      `truth: skills (${truth.join(', ')}), draw margin ${margin}; ${games.length} games (each pair ${rounds} times), seed ${seed}`,
-      'skill_A, skill_B, skill_C ~ N(0, 1)',
-      `game g between a and b: lost, drawn or won by the ordinal probit of (skill_a - skill_b) / sqrt 2 with cut points -${cuts[1]?.toFixed(3)} and ${cuts[1]?.toFixed(3)}`,
-    ],
-    quantities: PLAYERS.map((n, i) => ({
-      name: `skill[${i}]`,
-      label: `skill_${n}`,
-      support: 'real' as const,
-      truth: truth[i] as number,
-    })),
-    get exact() {
-      return Object.fromEntries(PLAYERS.map((_, i) => [`skill[${i}]`, grid().marginal(i)]))
+    build: {
+      definition,
+      data: { a: games.map((p) => p[0]), b: games.map((p) => p[1]), result: results },
+      quantities: PLAYERS.map((n, i) => ({
+        name: `skill[${i}]`,
+        label: `skill_${n}`,
+        support: 'real' as const,
+        truth: truth[i] as number,
+      })),
     },
-    referenceSource: 'the posterior of the three skills on a 33 by 33 by 33 grid',
-    figure: drawsFigure(truth),
+    reference: {
+      get exact() {
+        return Object.fromEntries(PLAYERS.map((_, i) => [`skill[${i}]`, grid().marginal(i)]))
+      },
+      referenceSource: 'the posterior of the three skills on a 33 by 33 by 33 grid',
+    },
+    present: {
+      equations: [
+        `truth: skills (${truth.join(', ')}), draw margin ${margin}; ${games.length} games (each pair ${rounds} times), seed ${seed}`,
+        'skill_A, skill_B, skill_C ~ N(0, 1)',
+        `game g between a and b: lost, drawn or won by the ordinal probit of (skill_a - skill_b) / sqrt 2 with cut points -${cuts[1]?.toFixed(3)} and ${cuts[1]?.toFixed(3)}`,
+      ],
+      figure: drawsFigure(truth),
+    },
   }
 }
 
@@ -634,5 +670,5 @@ export const skillDrawsLearnedAtom: EpAtom = defineAtom({
     trueSkillB: real(-2, 2, { default: -0.2, step: 0.1, label: 'true skill of B' }),
     trueSkillC: real(-2, 2, { default: -0.7, step: 0.1, label: 'true skill of C' }),
   }),
-  problem: drawsLearnedProblem,
+  parts: drawsLearnedProblem,
 })

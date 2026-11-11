@@ -18,7 +18,7 @@ import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { gpPosteriorGivenLengthScale } from '../models/index.ts'
 import { type ExactMarginal, gaussianMixtureMarginal } from '../validation/index.ts'
-import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 
 const X6 = [-2.4, -1.5, -0.6, 0.3, 1.2, 2.3]
@@ -86,7 +86,7 @@ function exactMarginals(x: readonly number[], y: readonly number[]): Record<stri
 const rbfGramOf = ([xs, scale]: readonly { readonly value: Value }[]): Value =>
   rbfGram((xs as { value: Value }).value, (scale as { value: Value }).value)
 
-function gpLengthScaleProblem(_k: Config): AtomProblem {
+function gpLengthScaleProblem(_k: Config): AtomParts {
   const zeros = new Array<number>(X6.length).fill(0)
   // region gp-length-scale
   const definition = defineModel('gp-length-scale', (m) => {
@@ -104,25 +104,31 @@ function gpLengthScaleProblem(_k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { x: X6, y: Y6 },
-    exact: exactMarginals(X6, Y6),
-    equations: [
-      `ell ~ LogNormal(0, ${PRIOR_SD}²)   (the length scale)`,
-      'f ~ N(0, K(ell)),  K_ij = exp(-(x_i - x_j)² / (2 ell²))   (a dense Gaussian vector, a custom function of ell)',
-      `y_i ~ N(f_i, ${NOISE}²), i = 1..${X6.length}`,
-      `observe y = (${Y6.join(', ')}) at x = (${X6.join(', ')})`,
-    ],
-    quantities: [
-      { name: 'ell', label: 'length scale', support: 'positive' },
-      ...X6.map((_, i) => ({ name: `f[${i}]`, label: `f(x_${i + 1})`, support: 'real' as const })),
-    ],
-    figure: {
-      caption: 'The six observations and the posterior mean of the function at them (the line joins the means).',
-      xLabel: 'x',
-      yLabel: 'y',
-      points: [{ name: 'observations', x: X6, y: Y6 }],
-      answer: (means) => [{ name: 'f (posterior mean)', x: X6, y: X6.map((_, i) => means[`f[${i}]`] ?? Number.NaN) }],
+    build: {
+      definition,
+      data: { x: X6, y: Y6 },
+      quantities: [
+        { name: 'ell', label: 'length scale', support: 'positive' },
+        ...X6.map((_, i) => ({ name: `f[${i}]`, label: `f(x_${i + 1})`, support: 'real' as const })),
+      ],
+    },
+    reference: {
+      exact: exactMarginals(X6, Y6),
+    },
+    present: {
+      equations: [
+        `ell ~ LogNormal(0, ${PRIOR_SD}²)   (the length scale)`,
+        'f ~ N(0, K(ell)),  K_ij = exp(-(x_i - x_j)² / (2 ell²))   (a dense Gaussian vector, a custom function of ell)',
+        `y_i ~ N(f_i, ${NOISE}²), i = 1..${X6.length}`,
+        `observe y = (${Y6.join(', ')}) at x = (${X6.join(', ')})`,
+      ],
+      figure: {
+        caption: 'The six observations and the posterior mean of the function at them (the line joins the means).',
+        xLabel: 'x',
+        yLabel: 'y',
+        points: [{ name: 'observations', x: X6, y: Y6 }],
+        answer: (means) => [{ name: 'f (posterior mean)', x: X6, y: X6.map((_, i) => means[`f[${i}]`] ?? Number.NaN) }],
+      },
     },
   }
 }
@@ -158,7 +164,7 @@ export const gpLengthScaleAtom: EpAtom = defineAtom({
       'EP is exact at every node (a Gaussian likelihood), so the answer is the quadrature over the length scale of the exact conditionals; the gamma drawn for the length scale is a moment-matched summary of a log-normal-like posterior',
   },
   knobs: dict({}),
-  problem: gpLengthScaleProblem,
+  parts: gpLengthScaleProblem,
 })
 
 // ----- a Gaussian process classifier whose length scale is learned -----
@@ -188,7 +194,7 @@ function erfOf(x: number): number {
   return x >= 0 ? v : -v
 }
 
-function gpClassLearnedProblem(k: Config): AtomProblem {
+function gpClassLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const trueEll = configNumber(k, 'trueLengthScale')
   // the ground truth: a function drawn from the process at the true length scale, labelled through a probit link
@@ -213,33 +219,37 @@ function gpClassLearnedProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { x: inputs, y },
-    equations: [
-      `truth: a function drawn from the process at the length scale ${trueEll} (kernel variance ${CLASS_VARIANCE}), labelled through a probit link at ${n} inputs; seed ${seed}`,
-      'ell ~ LogNormal(0, 0.5²)   (the length scale)',
-      'f ~ N(0, K(ell)),  K_ij = 2 exp(-(x_i - x_j)² / (2 ell²))',
-      'y_i ~ Bernoulli(Phi(f_i))',
-    ],
-    quantities: [
-      { name: 'ell', label: 'length scale', support: 'positive', truth: trueEll },
-      ...inputs.map((_, i) => ({
-        name: `f[${i}]`,
-        label: `f(x_${i + 1})`,
-        support: 'real' as const,
-        truth: f[i] as number,
-      })),
-    ],
-    figure: {
-      caption:
-        'The labels (0 or 1) at the inputs; the green line is the true function, the black one the posterior mean of the function.',
-      xLabel: 'x',
-      yLabel: 'f',
-      points: [{ name: 'labels', x: inputs, y: [...y], group: y, groupNames: { 0: 'label 0', 1: 'label 1' } }],
-      curves: [{ name: 'true function', colour: 'tab2', x: inputs, y: f }],
-      answer: (means) => [
-        { name: 'f (posterior mean)', x: inputs, y: inputs.map((_, i) => means[`f[${i}]`] ?? Number.NaN) },
+    build: {
+      definition,
+      data: { x: inputs, y },
+      quantities: [
+        { name: 'ell', label: 'length scale', support: 'positive', truth: trueEll },
+        ...inputs.map((_, i) => ({
+          name: `f[${i}]`,
+          label: `f(x_${i + 1})`,
+          support: 'real' as const,
+          truth: f[i] as number,
+        })),
       ],
+    },
+    present: {
+      equations: [
+        `truth: a function drawn from the process at the length scale ${trueEll} (kernel variance ${CLASS_VARIANCE}), labelled through a probit link at ${n} inputs; seed ${seed}`,
+        'ell ~ LogNormal(0, 0.5²)   (the length scale)',
+        'f ~ N(0, K(ell)),  K_ij = 2 exp(-(x_i - x_j)² / (2 ell²))',
+        'y_i ~ Bernoulli(Phi(f_i))',
+      ],
+      figure: {
+        caption:
+          'The labels (0 or 1) at the inputs; the green line is the true function, the black one the posterior mean of the function.',
+        xLabel: 'x',
+        yLabel: 'f',
+        points: [{ name: 'labels', x: inputs, y: [...y], group: y, groupNames: { 0: 'label 0', 1: 'label 1' } }],
+        curves: [{ name: 'true function', colour: 'tab2', x: inputs, y: f }],
+        answer: (means) => [
+          { name: 'f (posterior mean)', x: inputs, y: inputs.map((_, i) => means[`f[${i}]`] ?? Number.NaN) },
+        ],
+      },
     },
   }
 }
@@ -287,5 +297,5 @@ export const gpProbitLearnedAtom: EpAtom = defineAtom({
     ...simulationKnobs(8),
     trueLengthScale: real(0.3, 3, { default: 1, step: 0.1, label: 'true length scale' }),
   }),
-  problem: gpClassLearnedProblem,
+  parts: gpClassLearnedProblem,
 })

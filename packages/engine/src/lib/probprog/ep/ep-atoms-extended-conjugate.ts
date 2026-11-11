@@ -14,7 +14,7 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type ConditionalMarginal, hyperPosterior, lg, normalInverseGammaPosterior, sum } from '../validation/index.ts'
-import { type AtomProblem, type AtomRecoverySpec, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { type AtomParts, type AtomRecoverySpec, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 /** The knobs every extended atom has: the seed of the simulation and the number of observations. */
 export const simulationKnobs = (n: number): Record<string, ReturnType<typeof int>> => ({
@@ -30,7 +30,7 @@ const GAUSSIAN_RECOVERY: AtomRecoverySpec = {
     'the posterior is exact (the model is conjugate), so over seeds drawn from the truth the intervals hold it close to nine times in ten; 40 seeds leave a binomial spread of about 0.05, and the prior pulls a little',
 }
 
-function gaussianLearnedProblem(k: Config): AtomProblem {
+function gaussianLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueMean, trueSd] = [configNumber(k, 'trueMean'), configNumber(k, 'trueSd')]
   const [m0, kappa, a, b] = [
@@ -52,41 +52,47 @@ function gaussianLearnedProblem(k: Config): AtomProblem {
   const { mu, sigma2, joint } = normalInverseGammaPosterior(y, m0, kappa, a, b)
   const x = [0, n + 1]
   return {
-    definition,
-    data: { y },
-    equations: [
-      `truth: mean ${trueMean}, sd ${trueSd}; ${n} observations drawn with seed ${seed}`,
-      `sigma2 ~ InverseGamma(${a}, ${b})   (the unknown variance; prior mean ${sigmaMean(a, b)})`,
-      `mu | sigma2 ~ N(${m0}, sigma2 / ${kappa})   (the unknown mean, worth ${kappa} observations)`,
-      `y_i ~ N(mu, sigma2), i = 1..${n}`,
-    ],
-    quantities: [
-      { name: 'mu', label: 'mu (the mean)', support: 'real', truth: trueMean },
-      { name: 'sigma2', label: 'sigma2 (the variance)', support: 'positive', truth: trueSd ** 2 },
-    ],
-    pair: ['mu', 'sigma2'],
-    exact: { mu, sigma2 },
-    exactJoint: joint,
-    figure: {
-      caption:
-        'The simulated observations. Solid lines: the true mean and its two-sd band; thick and dashed: the fitted ones.',
-      xLabel: 'observation',
-      yLabel: 'y',
-      xLimits: x as [number, number],
-      points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
-      curves: [
-        { name: 'true mean', colour: 'tab2', x, y: [trueMean, trueMean] },
-        { name: 'true mean + 2 sd', colour: 'tab2', x, y: [trueMean + 2 * trueSd, trueMean + 2 * trueSd] },
-        { name: 'true mean - 2 sd', colour: 'tab2', x, y: [trueMean - 2 * trueSd, trueMean - 2 * trueSd] },
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'mu', label: 'mu (the mean)', support: 'real', truth: trueMean },
+        { name: 'sigma2', label: 'sigma2 (the variance)', support: 'positive', truth: trueSd ** 2 },
       ],
-      answer: (mm) => {
-        const mean = mm['mu'] ?? Number.NaN
-        const w = 2 * Math.sqrt(mm['sigma2'] ?? Number.NaN)
-        return [
-          { name: 'mu', x, y: [mean, mean] },
-          { name: 'mu + 2 sd', x, y: [mean + w, mean + w] },
-          { name: 'mu - 2 sd', x, y: [mean - w, mean - w] },
-        ]
+    },
+    reference: {
+      exact: { mu, sigma2 },
+      exactJoint: joint,
+    },
+    present: {
+      equations: [
+        `truth: mean ${trueMean}, sd ${trueSd}; ${n} observations drawn with seed ${seed}`,
+        `sigma2 ~ InverseGamma(${a}, ${b})   (the unknown variance; prior mean ${sigmaMean(a, b)})`,
+        `mu | sigma2 ~ N(${m0}, sigma2 / ${kappa})   (the unknown mean, worth ${kappa} observations)`,
+        `y_i ~ N(mu, sigma2), i = 1..${n}`,
+      ],
+      pair: ['mu', 'sigma2'],
+      figure: {
+        caption:
+          'The simulated observations. Solid lines: the true mean and its two-sd band; thick and dashed: the fitted ones.',
+        xLabel: 'observation',
+        yLabel: 'y',
+        xLimits: x as [number, number],
+        points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
+        curves: [
+          { name: 'true mean', colour: 'tab2', x, y: [trueMean, trueMean] },
+          { name: 'true mean + 2 sd', colour: 'tab2', x, y: [trueMean + 2 * trueSd, trueMean + 2 * trueSd] },
+          { name: 'true mean - 2 sd', colour: 'tab2', x, y: [trueMean - 2 * trueSd, trueMean - 2 * trueSd] },
+        ],
+        answer: (mm) => {
+          const mean = mm['mu'] ?? Number.NaN
+          const w = 2 * Math.sqrt(mm['sigma2'] ?? Number.NaN)
+          return [
+            { name: 'mu', x, y: [mean, mean] },
+            { name: 'mu + 2 sd', x, y: [mean + w, mean + w] },
+            { name: 'mu - 2 sd', x, y: [mean - w, mean - w] },
+          ]
+        },
       },
     },
   }
@@ -131,7 +137,7 @@ export const gaussianLearnedAtom: EpAtom = defineAtom({
     shape: real(1.5, 6, { default: 3, step: 0.1, label: 'shape a of the inverse gamma' }),
     scale: real(0.2, 5, { default: 1.5, step: 0.1, label: 'scale b of the inverse gamma' }),
   }),
-  problem: gaussianLearnedProblem,
+  parts: gaussianLearnedProblem,
 })
 
 /** The group of each of `groups * per` observations, group by group. */
@@ -140,7 +146,7 @@ const groupIndex = (groups: number, per: number): number[] =>
 
 const FIGURE_GROUPS = (groups: number): number[] => Array.from({ length: groups }, (_, j) => j + 1)
 
-function betaLearnedProblem(k: Config): AtomProblem {
+function betaLearnedProblem(k: Config): AtomParts {
   const [seed, groups, per] = [configNumber(k, 'seed'), configNumber(k, 'groups'), configNumber(k, 'n')]
   const trueStrength = configNumber(k, 'trueStrength')
   const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
@@ -189,43 +195,49 @@ function betaLearnedProblem(k: Config): AtomProblem {
   const at = FIGURE_GROUPS(groups)
   const share = counts.map((c) => c / per)
   return {
-    definition,
-    data: { y, group },
-    bindOptions: { sizes: { group: groups } },
-    equations: [
-      `truth: strength ${trueStrength}, so p_j ~ Beta(${trueStrength}, ${trueStrength}); ${groups} groups of ${per} flips, seed ${seed}`,
-      `strength ~ Gamma(${a}, ${b})   (unknown: how far from one half the probabilities lie; prior mean ${Number((a / b).toPrecision(3))})`,
-      `p_j ~ Beta(strength, strength), j = 1..${groups}`,
-      `y_ji ~ Bernoulli(p_j), i = 1..${per}`,
-    ],
-    quantities: [
-      { name: 'strength', label: 'strength (the hyperparameter)', support: 'positive', truth: trueStrength },
-      ...p.map((t, j) => ({
-        name: `p[${j}]`,
-        label: `p_${j + 1}`,
-        support: 'unit' as const,
-        truth: t,
-        pool: 'p (every group)',
-      })),
-    ],
-    exact: { strength: post.hyper, ...Object.fromEntries(exactP.map((e, j) => [`p[${j}]`, e])) },
-    figure: {
-      caption:
-        'The share of heads in each group (dots), the true probability of each group (the open marks) and what EP believes of it (bars): the groups with few heads are pulled up and the others down, by an amount the learned strength sets.',
-      xLabel: 'group',
-      yLabel: 'probability',
-      xLimits: [0, groups + 1],
-      yLimits: [0, 1],
-      points: [
-        { name: 'share of heads', x: at, y: share },
-        { name: 'true probability', x: at, y: p },
-      ],
-      answer: (mm) =>
-        at.map((j) => ({
-          name: `p_${j}`,
-          x: [j - 0.3, j + 0.3],
-          y: [mm[`p[${j - 1}]`] ?? Number.NaN, mm[`p[${j - 1}]`] ?? Number.NaN],
+    build: {
+      definition,
+      data: { y, group },
+      bindOptions: { sizes: { group: groups } },
+      quantities: [
+        { name: 'strength', label: 'strength (the hyperparameter)', support: 'positive', truth: trueStrength },
+        ...p.map((t, j) => ({
+          name: `p[${j}]`,
+          label: `p_${j + 1}`,
+          support: 'unit' as const,
+          truth: t,
+          pool: 'p (every group)',
         })),
+      ],
+    },
+    reference: {
+      exact: { strength: post.hyper, ...Object.fromEntries(exactP.map((e, j) => [`p[${j}]`, e])) },
+    },
+    present: {
+      equations: [
+        `truth: strength ${trueStrength}, so p_j ~ Beta(${trueStrength}, ${trueStrength}); ${groups} groups of ${per} flips, seed ${seed}`,
+        `strength ~ Gamma(${a}, ${b})   (unknown: how far from one half the probabilities lie; prior mean ${Number((a / b).toPrecision(3))})`,
+        `p_j ~ Beta(strength, strength), j = 1..${groups}`,
+        `y_ji ~ Bernoulli(p_j), i = 1..${per}`,
+      ],
+      figure: {
+        caption:
+          'The share of heads in each group (dots), the true probability of each group (the open marks) and what EP believes of it (bars): the groups with few heads are pulled up and the others down, by an amount the learned strength sets.',
+        xLabel: 'group',
+        yLabel: 'probability',
+        xLimits: [0, groups + 1],
+        yLimits: [0, 1],
+        points: [
+          { name: 'share of heads', x: at, y: share },
+          { name: 'true probability', x: at, y: p },
+        ],
+        answer: (mm) =>
+          at.map((j) => ({
+            name: `p_${j}`,
+            x: [j - 0.3, j + 0.3],
+            y: [mm[`p[${j - 1}]`] ?? Number.NaN, mm[`p[${j - 1}]`] ?? Number.NaN],
+          })),
+      },
     },
   }
 }
@@ -275,10 +287,10 @@ export const betaBernoulliLearnedAtom: EpAtom = defineAtom({
     shape: real(0.5, 8, { default: 2, step: 0.1, label: 'shape of the strength prior' }),
     rate: real(0.1, 4, { default: 0.4, step: 0.1, label: 'rate of the strength prior' }),
   }),
-  problem: betaLearnedProblem,
+  parts: betaLearnedProblem,
 })
 
-function gammaLearnedProblem(k: Config): AtomProblem {
+function gammaLearnedProblem(k: Config): AtomParts {
   const [seed, groups, per] = [configNumber(k, 'seed'), configNumber(k, 'groups'), configNumber(k, 'n')]
   const [a, trueRate] = [configNumber(k, 'shape'), configNumber(k, 'trueRate')]
   const [c, dd] = [configNumber(k, 'hyperShape'), configNumber(k, 'hyperRate')]
@@ -318,42 +330,48 @@ function gammaLearnedProblem(k: Config): AtomProblem {
   )
   const at = FIGURE_GROUPS(groups)
   return {
-    definition,
-    data: { y, group },
-    bindOptions: { sizes: { group: groups } },
-    equations: [
-      `truth: priorRate ${trueRate}, so rate_j ~ Gamma(${a}, ${trueRate}); ${groups} groups of ${per} counts, seed ${seed}`,
-      `priorRate ~ Gamma(${c}, ${dd})   (unknown: the typical size of a rate is ${a} / priorRate)`,
-      `rate_j ~ Gamma(${a}, priorRate), j = 1..${groups}`,
-      `y_ji ~ Poisson(rate_j), i = 1..${per}`,
-    ],
-    quantities: [
-      { name: 'priorRate', label: 'priorRate (the hyperparameter)', support: 'positive', truth: trueRate },
-      ...rates.map((t, j) => ({
-        name: `rate[${j}]`,
-        label: `rate_${j + 1}`,
-        support: 'positive' as const,
-        truth: t,
-        pool: 'rate (every group)',
-      })),
-    ],
-    exact: { priorRate: post.hyper, ...Object.fromEntries(exactRate.map((e, j) => [`rate[${j}]`, e])) },
-    figure: {
-      caption:
-        'The mean count of each group (dots), the true rate of each group (the open marks) and what EP believes of it (bars): the learned prior rate sets how hard the groups are pulled together.',
-      xLabel: 'group',
-      yLabel: 'rate',
-      xLimits: [0, groups + 1],
-      points: [
-        { name: 'mean count', x: at, y: totals.map((t) => t / per) },
-        { name: 'true rate', x: at, y: rates },
-      ],
-      answer: (mm) =>
-        at.map((j) => ({
-          name: `rate_${j}`,
-          x: [j - 0.3, j + 0.3],
-          y: [mm[`rate[${j - 1}]`] ?? Number.NaN, mm[`rate[${j - 1}]`] ?? Number.NaN],
+    build: {
+      definition,
+      data: { y, group },
+      bindOptions: { sizes: { group: groups } },
+      quantities: [
+        { name: 'priorRate', label: 'priorRate (the hyperparameter)', support: 'positive', truth: trueRate },
+        ...rates.map((t, j) => ({
+          name: `rate[${j}]`,
+          label: `rate_${j + 1}`,
+          support: 'positive' as const,
+          truth: t,
+          pool: 'rate (every group)',
         })),
+      ],
+    },
+    reference: {
+      exact: { priorRate: post.hyper, ...Object.fromEntries(exactRate.map((e, j) => [`rate[${j}]`, e])) },
+    },
+    present: {
+      equations: [
+        `truth: priorRate ${trueRate}, so rate_j ~ Gamma(${a}, ${trueRate}); ${groups} groups of ${per} counts, seed ${seed}`,
+        `priorRate ~ Gamma(${c}, ${dd})   (unknown: the typical size of a rate is ${a} / priorRate)`,
+        `rate_j ~ Gamma(${a}, priorRate), j = 1..${groups}`,
+        `y_ji ~ Poisson(rate_j), i = 1..${per}`,
+      ],
+      figure: {
+        caption:
+          'The mean count of each group (dots), the true rate of each group (the open marks) and what EP believes of it (bars): the learned prior rate sets how hard the groups are pulled together.',
+        xLabel: 'group',
+        yLabel: 'rate',
+        xLimits: [0, groups + 1],
+        points: [
+          { name: 'mean count', x: at, y: totals.map((t) => t / per) },
+          { name: 'true rate', x: at, y: rates },
+        ],
+        answer: (mm) =>
+          at.map((j) => ({
+            name: `rate_${j}`,
+            x: [j - 0.3, j + 0.3],
+            y: [mm[`rate[${j - 1}]`] ?? Number.NaN, mm[`rate[${j - 1}]`] ?? Number.NaN],
+          })),
+      },
     },
   }
 }
@@ -399,5 +417,5 @@ export const gammaPoissonLearnedAtom: EpAtom = defineAtom({
     hyperShape: real(0.5, 6, { default: 2, step: 0.1, label: 'shape of the prior-rate prior' }),
     hyperRate: real(0.2, 4, { default: 1, step: 0.1, label: 'rate of the prior-rate prior' }),
   }),
-  problem: gammaLearnedProblem,
+  parts: gammaLearnedProblem,
 })

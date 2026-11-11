@@ -34,13 +34,19 @@ describe('the EP atoms', () => {
       name: 'planned-synthetic',
       expected: 'planned',
       plan: 'a random scale on a Gaussian is not in the precision idiom here',
-      problem: (k) => ({
-        ...gaussianAtom.problem(k),
-        definition: defineModel('planned-synthetic', (b) => {
-          b.observe('y', d.normal(0, b.latent('s', d.gamma(2, 2))), b.data('y', { dims: ['row'] }))
-        }),
-        data: { y: [1, 2] },
-      }),
+      parts: (k) => {
+        const base = gaussianAtom.parts(k)
+        return {
+          ...base,
+          build: {
+            ...base.build,
+            definition: defineModel('planned-synthetic', (b) => {
+              b.observe('y', d.normal(0, b.latent('s', d.gamma(2, 2))), b.data('y', { dims: ['row'] }))
+            }),
+            data: { y: [1, 2] },
+          },
+        }
+      },
     })
     const run = verifyAtom(planned).run
     expect(run.status).toBe('refused')

@@ -11,11 +11,11 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type ExactMarginal, gaussianMixtureMarginal, logWeights } from '../validation/index.ts'
-import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 const Y6 = [1.2, 0.4, 1.9, 1.1, 0.7, 1.5]
 
-function precisionProblem(k: Config): AtomProblem {
+function precisionProblem(k: Config): AtomParts {
   const a = configNumber(k, 'shape')
   const b = configNumber(k, 'rate')
   // region gamma-precision
@@ -27,35 +27,42 @@ function precisionProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { y: Y6 },
-    equations: [
-      `tau ~ Gamma(${a}, ${b})   (a precision)`,
-      'mu ~ N(0, 10²)',
-      'y_i ~ N(mu, 1 / tau), i = 1..6',
-      `observe y = (${Y6.join(', ')})`,
-    ],
-    quantities: [
-      { name: 'mu', label: 'mu', support: 'real' },
-      { name: 'tau', label: 'tau (precision)', support: 'positive' },
-    ],
-    pair: ['mu', 'tau'],
-    grid: { points: 61, maxRefinements: 0 },
-    figure: {
-      caption: 'The six observations; the line is mu and the band two standard deviations, 2 / sqrt(tau), either side.',
-      xLabel: 'observation',
-      yLabel: 'y',
-      xLimits: [0, Y6.length + 1],
-      points: [{ name: 'observations', x: Y6.map((_, i) => i + 1), y: [...Y6] }],
-      answer: (m) => {
-        const mu = m['mu'] ?? Number.NaN
-        const w = 2 / Math.sqrt(m['tau'] ?? Number.NaN)
-        const x = [0, Y6.length + 1]
-        return [
-          { name: 'mu', x, y: [mu, mu] },
-          { name: 'mu + 2 sd', x, y: [mu + w, mu + w] },
-          { name: 'mu - 2 sd', x, y: [mu - w, mu - w] },
-        ]
+    build: {
+      definition,
+      data: { y: Y6 },
+      quantities: [
+        { name: 'mu', label: 'mu', support: 'real' },
+        { name: 'tau', label: 'tau (precision)', support: 'positive' },
+      ],
+    },
+    reference: {
+      grid: { points: 61, maxRefinements: 0 },
+    },
+    present: {
+      equations: [
+        `tau ~ Gamma(${a}, ${b})   (a precision)`,
+        'mu ~ N(0, 10²)',
+        'y_i ~ N(mu, 1 / tau), i = 1..6',
+        `observe y = (${Y6.join(', ')})`,
+      ],
+      pair: ['mu', 'tau'],
+      figure: {
+        caption:
+          'The six observations; the line is mu and the band two standard deviations, 2 / sqrt(tau), either side.',
+        xLabel: 'observation',
+        yLabel: 'y',
+        xLimits: [0, Y6.length + 1],
+        points: [{ name: 'observations', x: Y6.map((_, i) => i + 1), y: [...Y6] }],
+        answer: (m) => {
+          const mu = m['mu'] ?? Number.NaN
+          const w = 2 / Math.sqrt(m['tau'] ?? Number.NaN)
+          const x = [0, Y6.length + 1]
+          return [
+            { name: 'mu', x, y: [mu, mu] },
+            { name: 'mu + 2 sd', x, y: [mu + w, mu + w] },
+            { name: 'mu - 2 sd', x, y: [mu - w, mu - w] },
+          ]
+        },
       },
     },
   }
@@ -90,7 +97,7 @@ export const gammaPrecisionAtom: EpAtom = defineAtom({
     shape: real(0.5, 10, { default: 2, step: 0.1, label: 'prior shape of tau' }),
     rate: real(0.1, 10, { default: 1, step: 0.1, label: 'prior rate of tau' }),
   }),
-  problem: precisionProblem,
+  parts: precisionProblem,
 })
 
 /** The exact posterior of the precision and of each effect, by quadrature over the precision (the effects are Gaussian given it). */
@@ -140,7 +147,7 @@ function scaledExact(
 
 const Y_POP = [1.4, -0.6, 2.1, 0.3, -1.2, 0.9]
 
-function populationProblem(mult: readonly number[], name: string, k: Config): AtomProblem {
+function populationProblem(mult: readonly number[], name: string, k: Config): AtomParts {
   const a = configNumber(k, 'shape')
   const b = configNumber(k, 'rate')
   const J = Y_POP.length
@@ -158,33 +165,39 @@ function populationProblem(mult: readonly number[], name: string, k: Config): At
   const exact = scaledExact(Y_POP, mult, 1, a, b)
   const at = Y_POP.map((_, i) => i + 1)
   return {
-    definition,
-    data: { y: Y_POP, mult: [...mult] },
-    equations: [
-      `tau ~ Gamma(${a}, ${b})`,
-      scaled
-        ? `theta_j ~ N(0, 1 / (tau c_j)), c = (${mult.join(', ')})   (a known multiplier on the precision of each)`
-        : 'theta_j ~ N(0, 1 / tau), j = 1..6   (one precision shared by all)',
-      'y_j ~ N(theta_j, 1²)',
-      `observe y = (${Y_POP.join(', ')})`,
-    ],
-    quantities: [
-      { name: 'tau', label: 'tau (precision)', support: 'positive' },
-      ...at.map((i) => ({ name: `theta[${i - 1}]`, label: `theta_${i}`, support: 'real' as const })),
-    ],
-    exact: { tau: exact.tau, ...Object.fromEntries(exact.theta.map((e, i) => [`theta[${i}]`, e])) },
-    figure: {
-      caption: `The observed y_j (dots) and the belief about theta_j (bars): each is pulled towards zero by an amount that depends on the precision the data suggest${scaled ? ' and on its multiplier' : ''}.`,
-      xLabel: 'j',
-      yLabel: 'value',
-      xLimits: [0, J + 1],
-      points: [{ name: 'observed y', x: at, y: [...Y_POP] }],
-      answer: (m) =>
-        at.map((j) => ({
-          name: `theta_${j}`,
-          x: [j - 0.3, j + 0.3],
-          y: [m[`theta[${j - 1}]`] ?? Number.NaN, m[`theta[${j - 1}]`] ?? Number.NaN],
-        })),
+    build: {
+      definition,
+      data: { y: Y_POP, mult: [...mult] },
+      quantities: [
+        { name: 'tau', label: 'tau (precision)', support: 'positive' },
+        ...at.map((i) => ({ name: `theta[${i - 1}]`, label: `theta_${i}`, support: 'real' as const })),
+      ],
+    },
+    reference: {
+      exact: { tau: exact.tau, ...Object.fromEntries(exact.theta.map((e, i) => [`theta[${i}]`, e])) },
+    },
+    present: {
+      equations: [
+        `tau ~ Gamma(${a}, ${b})`,
+        scaled
+          ? `theta_j ~ N(0, 1 / (tau c_j)), c = (${mult.join(', ')})   (a known multiplier on the precision of each)`
+          : 'theta_j ~ N(0, 1 / tau), j = 1..6   (one precision shared by all)',
+        'y_j ~ N(theta_j, 1²)',
+        `observe y = (${Y_POP.join(', ')})`,
+      ],
+      figure: {
+        caption: `The observed y_j (dots) and the belief about theta_j (bars): each is pulled towards zero by an amount that depends on the precision the data suggest${scaled ? ' and on its multiplier' : ''}.`,
+        xLabel: 'j',
+        yLabel: 'value',
+        xLimits: [0, J + 1],
+        points: [{ name: 'observed y', x: at, y: [...Y_POP] }],
+        answer: (m) =>
+          at.map((j) => ({
+            name: `theta_${j}`,
+            x: [j - 0.3, j + 0.3],
+            y: [m[`theta[${j - 1}]`] ?? Number.NaN, m[`theta[${j - 1}]`] ?? Number.NaN],
+          })),
+      },
     },
   }
 }
@@ -220,7 +233,7 @@ export const sharedPrecisionAtom: EpAtom = defineAtom({
       'the posterior of tau is skewed and EP projects it onto a gamma; each theta is a scale mixture that EP matches with a Gaussian',
   },
   knobs: POP_KNOBS,
-  problem: (k) =>
+  parts: (k) =>
     populationProblem(
       Y_POP.map(() => 1),
       'shared-precision',
@@ -252,10 +265,10 @@ export const scaledPrecisionAtom: EpAtom = defineAtom({
     reason: 'as for the shared precision: a gamma projection of tau and a Gaussian for each value',
   },
   knobs: POP_KNOBS,
-  problem: (k) => populationProblem([1, 2, 4, 8, 16, 32], 'scaled-precision', k),
+  parts: (k) => populationProblem([1, 2, 4, 8, 16, 32], 'scaled-precision', k),
 })
 
-function halfProblem(kind: 'cauchy' | 'normal', k: Config): AtomProblem {
+function halfProblem(kind: 'cauchy' | 'normal', k: Config): AtomParts {
   const y = [0.5, -1.2, 2.0, 0.3]
   const scale = configNumber(k, 'priorScale')
   // region half-cauchy half-normal
@@ -265,14 +278,18 @@ function halfProblem(kind: 'cauchy' | 'normal', k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { y },
-    equations: [
-      kind === 'cauchy' ? `sigma ~ HalfCauchy(${scale})` : `sigma ~ HalfNormal(${scale})`,
-      'y_i ~ N(0, sigma²), i = 1..4',
-      `observe y = (${y.join(', ')})`,
-    ],
-    quantities: [{ name: 'sigma', label: 'sigma', support: 'positive' }],
+    build: {
+      definition,
+      data: { y },
+      quantities: [{ name: 'sigma', label: 'sigma', support: 'positive' }],
+    },
+    present: {
+      equations: [
+        kind === 'cauchy' ? `sigma ~ HalfCauchy(${scale})` : `sigma ~ HalfNormal(${scale})`,
+        'y_i ~ N(0, sigma²), i = 1..4',
+        `observe y = (${y.join(', ')})`,
+      ],
+    },
   }
 }
 
@@ -300,7 +317,7 @@ export const halfCauchyAtom: EpAtom = defineAtom({
     reason: 'the posterior of the scale is skewed and heavy-tailed; EP projects it onto a gamma',
   },
   knobs: dict({ priorScale: real(0.2, 5, { default: 1, step: 0.1, label: 'prior scale' }) }),
-  problem: (k) => halfProblem('cauchy', k),
+  parts: (k) => halfProblem('cauchy', k),
 })
 
 /**
@@ -327,5 +344,5 @@ export const halfNormalAtom: EpAtom = defineAtom({
     reason: 'the posterior of the scale is skewed; EP projects it onto a gamma',
   },
   knobs: dict({ priorScale: real(0.2, 5, { default: 1, step: 0.1, label: 'prior scale' }) }),
-  problem: (k) => halfProblem('normal', k),
+  parts: (k) => halfProblem('normal', k),
 })

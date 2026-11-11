@@ -14,7 +14,7 @@ import * as d from '../model/dists/index.ts'
 import { defineModel, type ModelDefinition } from '../model/index.ts'
 import { gridMarginals } from '../validation/index.ts'
 import { once } from './_util.ts'
-import { type AtomFigure, type AtomProblem, defineAtom, type EpAtom, type FigureCurve } from './ep-atoms.ts'
+import { type AtomFigure, type AtomParts, defineAtom, type EpAtom, type FigureCurve } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 
 const CLASSES = 3
@@ -100,31 +100,37 @@ function figureOf(x: readonly number[], y: readonly number[]): AtomFigure {
 const X = [-1.4, -0.9, -0.5, -0.1, 0.2, 0.6, 1.0, 1.5, -0.3, 0.8]
 const Y = [0, 0, 0, 2, 1, 1, 1, 1, 2, 2]
 
-function softmaxProblem(k: Config): AtomProblem {
+function softmaxProblem(k: Config): AtomParts {
   const s = configNumber(k, 'priorScale')
   const grid = once(() => slopeGrid(X, Y, s))
   return {
-    definition: softmaxModel('softmax-regression', s),
-    data: { x: X, y: Y },
-    equations: [
-      `w_0, w_1, w_2 ~ N(0, ${s}²)   (one slope per class)`,
-      'y_i ~ Categorical(softmax(w_0 x_i, w_1 x_i, w_2 x_i)), i = 1..10',
-      `observe x = (${X.join(', ')}) and the classes y = (${Y.join(', ')})`,
-    ],
-    quantities: [0, 1, 2].map((j) => ({
-      name: `w[${j}]`,
-      label: `w_${j} (slope of class ${j})`,
-      support: 'real' as const,
-    })),
-    pair: ['w[0]', 'w[1]'],
-    get exact() {
-      return Object.fromEntries([0, 1, 2].map((j) => [`w[${j}]`, grid().marginal(j)]))
+    build: {
+      definition: softmaxModel('softmax-regression', s),
+      data: { x: X, y: Y },
+      quantities: [0, 1, 2].map((j) => ({
+        name: `w[${j}]`,
+        label: `w_${j} (slope of class ${j})`,
+        support: 'real' as const,
+      })),
     },
-    get exactJoint() {
-      return { a: 'w[0]', b: 'w[1]', ...grid().joint(0, 1) }
+    reference: {
+      get exact() {
+        return Object.fromEntries([0, 1, 2].map((j) => [`w[${j}]`, grid().marginal(j)]))
+      },
+      get exactJoint() {
+        return { a: 'w[0]', b: 'w[1]', ...grid().joint(0, 1) }
+      },
+      referenceSource: `the posterior of the three slopes on a ${GRID} by ${GRID} by ${GRID} grid`,
     },
-    referenceSource: `the posterior of the three slopes on a ${GRID} by ${GRID} by ${GRID} grid`,
-    figure: figureOf(X, Y),
+    present: {
+      equations: [
+        `w_0, w_1, w_2 ~ N(0, ${s}²)   (one slope per class)`,
+        'y_i ~ Categorical(softmax(w_0 x_i, w_1 x_i, w_2 x_i)), i = 1..10',
+        `observe x = (${X.join(', ')}) and the classes y = (${Y.join(', ')})`,
+      ],
+      pair: ['w[0]', 'w[1]'],
+      figure: figureOf(X, Y),
+    },
   }
 }
 
@@ -156,10 +162,10 @@ export const softmaxRegressionAtom: EpAtom = defineAtom({
   },
   ep: { damping: 0.5, tol: 1e-4, power: 0.5 },
   knobs: dict({ priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the slopes' }) }),
-  problem: softmaxProblem,
+  parts: softmaxProblem,
 })
 
-function softmaxLearnedProblem(k: Config): AtomProblem {
+function softmaxLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const truth = [configNumber(k, 'trueSlope0'), configNumber(k, 'trueSlope1'), configNumber(k, 'trueSlope2')]
   const s = configNumber(k, 'priorScale')
@@ -177,28 +183,34 @@ function softmaxLearnedProblem(k: Config): AtomProblem {
   // endregion
   const grid = once(() => slopeGrid(x, y, s))
   return {
-    definition,
-    data: { x, y },
-    equations: [
-      `truth: slopes (${truth.join(', ')}); ${n} covariates uniform on [-2, 2], classes from the softmax, seed ${seed}`,
-      `w_0, w_1, w_2 ~ N(0, ${s}²)   (one slope per class)`,
-      `y_i ~ Categorical(softmax(w_0 x_i, w_1 x_i, w_2 x_i)), i = 1..${n}`,
-    ],
-    quantities: [0, 1, 2].map((j) => ({
-      name: `w[${j}]`,
-      label: `w_${j} (slope of class ${j})`,
-      support: 'real' as const,
-      truth: truth[j] as number,
-    })),
-    pair: ['w[0]', 'w[1]'],
-    get exact() {
-      return Object.fromEntries([0, 1, 2].map((j) => [`w[${j}]`, grid().marginal(j)]))
+    build: {
+      definition,
+      data: { x, y },
+      quantities: [0, 1, 2].map((j) => ({
+        name: `w[${j}]`,
+        label: `w_${j} (slope of class ${j})`,
+        support: 'real' as const,
+        truth: truth[j] as number,
+      })),
     },
-    get exactJoint() {
-      return { a: 'w[0]', b: 'w[1]', ...grid().joint(0, 1) }
+    reference: {
+      get exact() {
+        return Object.fromEntries([0, 1, 2].map((j) => [`w[${j}]`, grid().marginal(j)]))
+      },
+      get exactJoint() {
+        return { a: 'w[0]', b: 'w[1]', ...grid().joint(0, 1) }
+      },
+      referenceSource: `the posterior of the three slopes on a ${GRID} by ${GRID} by ${GRID} grid`,
     },
-    referenceSource: `the posterior of the three slopes on a ${GRID} by ${GRID} by ${GRID} grid`,
-    figure: figureOf(x, y),
+    present: {
+      equations: [
+        `truth: slopes (${truth.join(', ')}); ${n} covariates uniform on [-2, 2], classes from the softmax, seed ${seed}`,
+        `w_0, w_1, w_2 ~ N(0, ${s}²)   (one slope per class)`,
+        `y_i ~ Categorical(softmax(w_0 x_i, w_1 x_i, w_2 x_i)), i = 1..${n}`,
+      ],
+      pair: ['w[0]', 'w[1]'],
+      figure: figureOf(x, y),
+    },
   }
 }
 
@@ -243,5 +255,5 @@ export const softmaxRegressionLearnedAtom: EpAtom = defineAtom({
     trueSlope2: real(-3, 3, { default: 1.2, step: 0.1, label: 'true slope of class 2' }),
     priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the slopes' }),
   }),
-  problem: softmaxLearnedProblem,
+  parts: softmaxLearnedProblem,
 })

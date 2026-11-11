@@ -134,21 +134,17 @@ export interface AtomFigure {
   readonly notes?: readonly string[]
 }
 
-/** What an atom's knobs make: the model, its data and everything the page and the checks need around them. */
-export interface AtomProblem {
+/** What an atom builds from its knobs: the model, its data and the quantities it asks about. All the run needs. */
+export interface AtomBuild {
   readonly definition: ModelDefinition
   readonly data: DataInput
   readonly bindOptions?: BindOptions
   /** The quantities checked and drawn, in order (at most three coordinates when the reference is a grid). */
   readonly quantities: readonly AtomQuantity[]
-  /** Two quantities whose joint posterior is drawn as contours, when it is worth seeing. */
-  readonly pair?: readonly [string, string]
-  /** The model written out, one line each, with its numbers (`x ~ N(0, 1)`, `g = exp(x)`, `y ~ N(g, 0.3²)`, `observe y = 2.5`). */
-  readonly equations: readonly string[]
-  /** A picture of the data, when there is data worth a picture (points in the plane); most setups have none. */
-  readonly figure?: AtomFigure
-  /** Mixtures to draw as their branches (a gate's selected value, a component that may or may not be selected). */
-  readonly mixtures?: readonly MixtureView[]
+}
+
+/** The reference answer an atom brings (for `exact` and `grid` references), written by hand and independent of the rule under test. */
+export interface AtomReferenceData {
   /** The closed-form marginals, by quantity name (when the atom's reference is `exact`). */
   readonly exact?: Readonly<Record<string, ExactMarginal>>
   /** The closed-form joint of the atom's pair (for contours), when the reference is `exact`. */
@@ -157,6 +153,51 @@ export interface AtomProblem {
   readonly referenceSource?: string
   /** Options of the grid (points per axis, an explicit box) when the reference is a grid. */
   readonly grid?: GridOptions
+}
+
+/** What a page shows of an atom besides its answer: the model in words, the picture of the data, the pair drawn as contours and the mixtures. */
+export interface AtomPresentation {
+  /** Two quantities whose joint posterior is drawn as contours, when it is worth seeing. */
+  readonly pair?: readonly [string, string]
+  /** The model written out, one line each, with its numbers (`x ~ N(0, 1)`, `g = exp(x)`, `y ~ N(g, 0.3²)`, `observe y = 2.5`). */
+  readonly equations: readonly string[]
+  /** A picture of the data, when there is data worth a picture (points in the plane); most setups have none. */
+  readonly figure?: AtomFigure
+  /** Mixtures to draw as their branches (a gate's selected value, a component that may or may not be selected). */
+  readonly mixtures?: readonly MixtureView[]
+}
+
+/** What an atom's knobs make, in its three parts: what is built and run, the reference it is checked against, and what a page shows. */
+export interface AtomParts {
+  readonly build: AtomBuild
+  /** Absent for a `truth` atom (no reference posterior) and for a `grid` atom that needs no option. */
+  readonly reference?: AtomReferenceData
+  readonly present: AtomPresentation
+}
+
+/**
+ * What an atom's knobs make, composed: the three parts in one record, which is what the runs, the references and the pages
+ * read. A part's lazy fields (a reference grid that a calibration over many seeds never reads) stay lazy.
+ */
+export type AtomProblem = AtomBuild & AtomReferenceData & AtomPresentation
+
+/**
+ * The three parts of an atom as one problem record, field by field (a getter stays a getter, so a reference that is computed
+ * when first read is not computed here).
+ *
+ * @param parts - The parts.
+ * @returns The composed problem.
+ * @example
+ * ```ts
+ * import { composeProblem, gaussianAtom } from 'omai-engine/probprog/ep'
+ * Object.keys(composeProblem(gaussianAtom.parts(gaussianAtom.defaults))).includes('equations') // => true
+ * ```
+ */
+export function composeProblem(parts: AtomParts): AtomProblem {
+  const out = {}
+  for (const part of [parts.build, parts.reference ?? {}, parts.present])
+    Object.defineProperties(out, Object.getOwnPropertyDescriptors(part))
+  return out as AtomProblem
 }
 
 /** How close EP's beliefs must be to the reference for the atom to pass, with the reason EP is that far off (it is approximate). */
@@ -185,6 +226,20 @@ export interface AtomRecoverySpec {
   readonly reason: string
 }
 
+/** The families of the suite (the files of this folder, one each, and the rows of the coverage table). */
+export type AtomFamily =
+  | 'conjugate'
+  | 'priors'
+  | 'scales'
+  | 'likelihoods'
+  | 'gates'
+  | 'gate weights'
+  | 'functions'
+  | 'kernels'
+  | 'covariance'
+  | 'nonparametric'
+  | 'counts'
+
 /** What an atom declares. */
 export interface AtomSpec<K extends Config> {
   /** The slug (`gaussian-mean`), the name of the page `ep-<name>`. */
@@ -195,7 +250,7 @@ export interface AtomSpec<K extends Config> {
   /** The factors or rules it exercises, by the library's names (`gaussian-gamma-precision`, `probit`). */
   readonly factors: readonly string[]
   /** The family of the atom, for the coverage table's grouping. */
-  readonly family: string
+  readonly family: AtomFamily
   /**
    * `runs` (the default: every atom of the suite runs under EP, and the registry test fails when one does not) or `planned`, the
    * escape hatch for an atom the library refuses on purpose (the verdict is asked at run time either way). Nothing is planned today.
@@ -211,8 +266,8 @@ export interface AtomSpec<K extends Config> {
   readonly tolerance: AtomTolerance
   /** The knobs of the problem (sizes, values, the seed). */
   readonly knobs: DictSpace
-  /** The problem a configuration of the knobs makes. */
-  readonly problem: (knobs: K) => AtomProblem
+  /** What a configuration of the knobs makes: the build, the reference and the presentation. */
+  readonly parts: (knobs: K) => AtomParts
   /** Knobs of EP the atom opens on, over the method's defaults (`{ damping: 0.3 }` for an atom that needs it); a key that is not a knob is refused. */
   readonly ep?: EpKnobs
   /**
@@ -229,6 +284,8 @@ export interface AtomSpec<K extends Config> {
 export interface EpAtom<K extends Config = Config> extends Omit<AtomSpec<K>, 'expected'> {
   /** What the atom promises: `runs` unless it was declared `planned`. */
   readonly expected: 'runs' | 'planned'
+  /** The problem a configuration of the knobs makes, the three parts composed. */
+  readonly problem: (knobs: K) => AtomProblem
   /** The default knobs. */
   readonly defaults: K
 }
@@ -255,7 +312,12 @@ export function defineAtom<K extends Config>(spec: AtomSpec<K>): EpAtom<K> {
   if (spec.ep !== undefined) checkKnobKeys(`defineAtom: '${spec.name}'`, spec.ep, epRunKnobs('ep'))
   if ((spec.extends === undefined) !== (spec.recovery === undefined))
     throw new OmaiError('value', `defineAtom: '${spec.name}' gives both 'extends' and 'recovery' or neither`)
-  return { ...spec, expected: spec.expected ?? 'runs', defaults: defaults(spec.knobs) as K }
+  return {
+    ...spec,
+    expected: spec.expected ?? 'runs',
+    problem: (knobs) => composeProblem(spec.parts(knobs)),
+    defaults: defaults(spec.knobs) as K,
+  }
 }
 
 /** The belief of a coordinate: its mean and standard deviation, and whether it is a proper belief (not an unset message). */
@@ -342,7 +404,7 @@ function exactCurve(name: string, support: AtomSupport, m: ExactMarginal): RefMa
  * atomBound(gaussianAtom.problem(gaussianAtom.defaults)).sizes // => { i: 3 }
  * ```
  */
-export function atomBound(problem: AtomProblem): BoundModel {
+export function atomBound(problem: AtomBuild): BoundModel {
   return problem.definition.bind(problem.data, problem.bindOptions)
 }
 
@@ -424,7 +486,7 @@ export function atomReference<K extends Config>(atom: EpAtom<K>, problem: AtomPr
  * atomVerdict(gaussianAtom.problem(gaussianAtom.defaults)).applies // => true
  * ```
  */
-export function atomVerdict(problem: AtomProblem): Verdict {
+export function atomVerdict(problem: AtomBuild): Verdict {
   return epRoute(atomBound(problem)).verdict
 }
 
@@ -548,7 +610,7 @@ function momentsOf(
  * ```
  */
 export function atomBeliefs(
-  problem: AtomProblem,
+  problem: Pick<AtomBuild, 'quantities'>,
   posterior: Pick<Posterior, 'mean' | 'stddev' | 'sites'>,
 ): Record<string, Belief> {
   const out: Record<string, Belief> = {}
@@ -578,7 +640,7 @@ export function atomBeliefs(
  * r.status // => 'ran'
  * ```
  */
-export function atomRun(problem: AtomProblem, ep: Config = {}, options: { readonly light?: boolean } = {}): AtomRun {
+export function atomRun(problem: AtomBuild, ep: Config = {}, options: { readonly light?: boolean } = {}): AtomRun {
   // region inference
   const bound = problem.definition.bind(problem.data, problem.bindOptions)
   // compile to a factor graph and run EP on it: a rule for every factor
@@ -613,7 +675,7 @@ interface RouteReading {
 /** Run the method of a route sweep by sweep (one step of the grid method is one EP run) and read the beliefs at the sweeps kept. */
 function runRoute<S>(
   run: {
-    readonly problem: AtomProblem
+    readonly problem: AtomBuild
     readonly config: Config
     readonly logs: 'off' | 'all'
     readonly light: boolean
@@ -697,7 +759,7 @@ function ksOf(pdf: (x: number) => number, ref: RefMarginal): number {
  * ```
  */
 export function atomCheck(
-  problem: AtomProblem,
+  problem: Pick<AtomBuild, 'quantities'>,
   beliefs: Readonly<Record<string, Belief>>,
   reference: AtomReference,
   tolerance: AtomTolerance,

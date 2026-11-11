@@ -10,9 +10,9 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { gridMarginals, normalCdf, normalPdf, quadratureMarginal, type RefJoint } from '../validation/index.ts'
-import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
 
-function orderedProblem(k: Config): AtomProblem {
+function orderedProblem(k: Config): AtomParts {
   const gap = configNumber(k, 'gap')
   const [ma, mb, s] = [0, gap, 1]
   // region ordered-pair
@@ -41,16 +41,22 @@ function orderedProblem(k: Config): AtomProblem {
     p: xs.map((x) => xs.map((y) => (x > y ? (normalPdf(x, ma, s) * normalPdf(y, mb, s)) / za : 0))),
   }
   return {
-    definition,
-    data: { ordered: 1 },
-    equations: [`a ~ N(${ma}, ${s}²)`, `b ~ N(${mb}, ${s}²)`, 'observe a > b   (a hard comparison: a truncation)'],
-    quantities: [
-      { name: 'a', label: 'a', support: 'real' },
-      { name: 'b', label: 'b', support: 'real' },
-    ],
-    pair: ['a', 'b'],
-    exact: { a: quadratureMarginal(logA, lo, hi, 4000), b: quadratureMarginal(logB, lo, hi, 4000) },
-    exactJoint: joint,
+    build: {
+      definition,
+      data: { ordered: 1 },
+      quantities: [
+        { name: 'a', label: 'a', support: 'real' },
+        { name: 'b', label: 'b', support: 'real' },
+      ],
+    },
+    reference: {
+      exact: { a: quadratureMarginal(logA, lo, hi, 4000), b: quadratureMarginal(logB, lo, hi, 4000) },
+      exactJoint: joint,
+    },
+    present: {
+      equations: [`a ~ N(${ma}, ${s}²)`, `b ~ N(${mb}, ${s}²)`, 'observe a > b   (a hard comparison: a truncation)'],
+      pair: ['a', 'b'],
+    },
   }
 }
 
@@ -80,10 +86,10 @@ export const orderedPairAtom: EpAtom = defineAtom({
       'the exact beliefs are skew-normal; EP matches their mean and variance with Gaussians, and the joint leans where the two beliefs cannot',
   },
   knobs: dict({ gap: real(-2, 2, { default: 0.5, step: 0.1, label: 'mean of b (a has mean 0)' }) }),
-  problem: orderedProblem,
+  parts: orderedProblem,
 })
 
-function orderedMeansProblem(k: Config): AtomProblem {
+function orderedMeansProblem(k: Config): AtomParts {
   const priorSd = configNumber(k, 'priorSd')
   const y1 = [0.8, 1.2]
   const y2 = [0.3, 0.6]
@@ -115,21 +121,27 @@ function orderedMeansProblem(k: Config): AtomProblem {
     161,
   )
   return {
-    definition,
-    data: { g: [0, 0, 1, 1], y: [...y1, ...y2] },
-    bindOptions: { sizes: { group: 2 } },
-    equations: [
-      `mu_1, mu_2 ~ N(0, ${priorSd}²), constrained to mu_1 < mu_2   (an ordered vector)`,
-      'y ~ N(mu_group, 1²), two observations per group',
-      `observe group 1: y = (${y1.join(', ')}),  group 2: y = (${y2.join(', ')})   (the data disagree with the order)`,
-    ],
-    quantities: [
-      { name: 'mu[0]', label: 'mu_1', support: 'real' },
-      { name: 'mu[1]', label: 'mu_2', support: 'real' },
-    ],
-    pair: ['mu[0]', 'mu[1]'],
-    exact: { 'mu[0]': g.marginal(0), 'mu[1]': g.marginal(1) },
-    exactJoint: { a: 'mu[0]', b: 'mu[1]', ...g.joint(0, 1) },
+    build: {
+      definition,
+      data: { g: [0, 0, 1, 1], y: [...y1, ...y2] },
+      bindOptions: { sizes: { group: 2 } },
+      quantities: [
+        { name: 'mu[0]', label: 'mu_1', support: 'real' },
+        { name: 'mu[1]', label: 'mu_2', support: 'real' },
+      ],
+    },
+    reference: {
+      exact: { 'mu[0]': g.marginal(0), 'mu[1]': g.marginal(1) },
+      exactJoint: { a: 'mu[0]', b: 'mu[1]', ...g.joint(0, 1) },
+    },
+    present: {
+      equations: [
+        `mu_1, mu_2 ~ N(0, ${priorSd}²), constrained to mu_1 < mu_2   (an ordered vector)`,
+        'y ~ N(mu_group, 1²), two observations per group',
+        `observe group 1: y = (${y1.join(', ')}),  group 2: y = (${y2.join(', ')})   (the data disagree with the order)`,
+      ],
+      pair: ['mu[0]', 'mu[1]'],
+    },
   }
 }
 
@@ -158,5 +170,5 @@ export const orderedMeansAtom: EpAtom = defineAtom({
     reason: 'the truncated posterior is skewed; EP matches the mean and variance of each margin with a Gaussian',
   },
   knobs: dict({ priorSd: real(0.5, 6, { default: 3, step: 0.1, label: 'prior sd of the means' }) }),
-  problem: orderedMeansProblem,
+  parts: orderedMeansProblem,
 })

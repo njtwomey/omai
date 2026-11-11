@@ -10,11 +10,11 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 const G = 61
 
-function expProblem(k: Config): AtomProblem {
+function expProblem(k: Config): AtomParts {
   const y = configNumber(k, 'y')
   // region exp
   const definition = defineModel('exp-of-gaussian', (m) => {
@@ -23,15 +23,19 @@ function expProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { y },
-    equations: [
-      'x ~ N(0, 1)',
-      'g = exp(x)   (a unary function of a random value)',
-      'y ~ N(g, 0.3²)',
-      `observe y = ${y}`,
-    ],
-    quantities: [{ name: 'x', label: 'x', support: 'real' }],
+    build: {
+      definition,
+      data: { y },
+      quantities: [{ name: 'x', label: 'x', support: 'real' }],
+    },
+    present: {
+      equations: [
+        'x ~ N(0, 1)',
+        'g = exp(x)   (a unary function of a random value)',
+        'y ~ N(g, 0.3²)',
+        `observe y = ${y}`,
+      ],
+    },
   }
 }
 
@@ -60,10 +64,10 @@ export const expAtom: EpAtom = defineAtom({
     reason: 'the posterior is skewed; EP matches its mean and variance with a Gaussian',
   },
   knobs: dict({ y: real(0.2, 8, { default: 2.5, step: 0.1, label: 'observed y' }) }),
-  problem: expProblem,
+  parts: expProblem,
 })
 
-function tanhProblem(k: Config): AtomProblem {
+function tanhProblem(k: Config): AtomParts {
   const y = configNumber(k, 'y')
   // region tanh
   const definition = defineModel('tanh-of-gaussian', (m) => {
@@ -72,10 +76,14 @@ function tanhProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { y },
-    equations: ['x ~ N(0, 1)', 'g = tanh(x)   (a squashing unit)', 'y ~ N(g, 0.2²)', `observe y = ${y}`],
-    quantities: [{ name: 'x', label: 'x', support: 'real' }],
+    build: {
+      definition,
+      data: { y },
+      quantities: [{ name: 'x', label: 'x', support: 'real' }],
+    },
+    present: {
+      equations: ['x ~ N(0, 1)', 'g = tanh(x)   (a squashing unit)', 'y ~ N(g, 0.2²)', `observe y = ${y}`],
+    },
   }
 }
 
@@ -103,10 +111,10 @@ export const tanhAtom: EpAtom = defineAtom({
     reason: 'the posterior is skewed by the saturation; EP matches its mean and variance with a Gaussian',
   },
   knobs: dict({ y: real(-0.95, 0.95, { default: 0.8, step: 0.05, label: 'observed y' }) }),
-  problem: tanhProblem,
+  parts: tanhProblem,
 })
 
-function logScaleProblem(k: Config): AtomProblem {
+function logScaleProblem(k: Config): AtomParts {
   const y = configNumber(k, 'y')
   // region log-scale
   const definition = defineModel('log-scale', (m) => {
@@ -115,14 +123,18 @@ function logScaleProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { y },
-    equations: [
-      'h ~ N(0, 1)',
-      'y ~ N(0, exp(h / 2)²)   (the scale is the exponential of a Gaussian state)',
-      `observe y = ${y}`,
-    ],
-    quantities: [{ name: 'h', label: 'h (log variance)', support: 'real' }],
+    build: {
+      definition,
+      data: { y },
+      quantities: [{ name: 'h', label: 'h (log variance)', support: 'real' }],
+    },
+    present: {
+      equations: [
+        'h ~ N(0, 1)',
+        'y ~ N(0, exp(h / 2)²)   (the scale is the exponential of a Gaussian state)',
+        `observe y = ${y}`,
+      ],
+    },
   }
 }
 
@@ -150,10 +162,10 @@ export const logScaleAtom: EpAtom = defineAtom({
     reason: 'the likelihood of h is a skewed, non-Gaussian bump that EP projects onto a Gaussian',
   },
   knobs: dict({ y: real(-4, 4, { default: 1.5, step: 0.1, label: 'observed y' }) }),
-  problem: logScaleProblem,
+  parts: logScaleProblem,
 })
 
-function productProblem(k: Config): AtomProblem {
+function productProblem(k: Config): AtomParts {
   const y = configNumber(k, 'y')
   // region product
   const definition = defineModel('product', (m) => {
@@ -163,20 +175,26 @@ function productProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { y },
-    equations: [
-      'a ~ N(2, 1²)',
-      'b ~ N(1, 1²)',
-      'y ~ N(a b, 0.3²)   (a product of two random values)',
-      `observe y = ${y}`,
-    ],
-    quantities: [
-      { name: 'a', label: 'a', support: 'real' },
-      { name: 'b', label: 'b', support: 'real' },
-    ],
-    pair: ['a', 'b'],
-    grid: { points: G, maxRefinements: 0 },
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'a', label: 'a', support: 'real' },
+        { name: 'b', label: 'b', support: 'real' },
+      ],
+    },
+    reference: {
+      grid: { points: G, maxRefinements: 0 },
+    },
+    present: {
+      equations: [
+        'a ~ N(2, 1²)',
+        'b ~ N(1, 1²)',
+        'y ~ N(a b, 0.3²)   (a product of two random values)',
+        `observe y = ${y}`,
+      ],
+      pair: ['a', 'b'],
+    },
   }
 }
 
@@ -207,10 +225,10 @@ export const productAtom: EpAtom = defineAtom({
   },
   knobs: dict({ y: real(-3, 4, { default: 2, step: 0.1, label: 'observed y' }) }),
   ep: { damping: 0.5 },
-  problem: productProblem,
+  parts: productProblem,
 })
 
-function maxProblem(k: Config): AtomProblem {
+function maxProblem(k: Config): AtomParts {
   const y = configNumber(k, 'y')
   // region max
   const definition = defineModel('max-of-two', (m) => {
@@ -220,20 +238,26 @@ function maxProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { y },
-    equations: [
-      'a ~ N(0, 1²)',
-      'b ~ N(0.5, 1²)',
-      'y ~ N(max(a, b), 0.3²)   (the maximum of two random values)',
-      `observe y = ${y}`,
-    ],
-    quantities: [
-      { name: 'a', label: 'a', support: 'real' },
-      { name: 'b', label: 'b', support: 'real' },
-    ],
-    pair: ['a', 'b'],
-    grid: { points: G, maxRefinements: 0 },
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'a', label: 'a', support: 'real' },
+        { name: 'b', label: 'b', support: 'real' },
+      ],
+    },
+    reference: {
+      grid: { points: G, maxRefinements: 0 },
+    },
+    present: {
+      equations: [
+        'a ~ N(0, 1²)',
+        'b ~ N(0.5, 1²)',
+        'y ~ N(max(a, b), 0.3²)   (the maximum of two random values)',
+        `observe y = ${y}`,
+      ],
+      pair: ['a', 'b'],
+    },
   }
 }
 
@@ -262,5 +286,5 @@ export const maxAtom: EpAtom = defineAtom({
     reason: 'the posterior is L-shaped and EP matches the mean and variance of each margin with a Gaussian',
   },
   knobs: dict({ y: real(-2, 3, { default: 1.5, step: 0.1, label: 'observed y' }) }),
-  problem: maxProblem,
+  parts: maxProblem,
 })

@@ -13,14 +13,14 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type ExactMarginal, gridMarginals, lg, logWeights, normalPdf } from '../validation/index.ts'
-import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 // ----- the stick-breaking mixture -----
 
 const COMPONENT_MEANS = [-3, 0, 3]
 const STICK_DATA = [-3.2, -2.8, -0.4, -3.1, 2.9, 0.3, -2.7, 3.3, -0.2, -3.4]
 
-function stickBreakingProblem(k: Config): AtomProblem {
+function stickBreakingProblem(k: Config): AtomParts {
   const alpha = configNumber(k, 'concentration')
   const noise = configNumber(k, 'noise')
   // region stick-breaking
@@ -54,22 +54,28 @@ function stickBreakingProblem(k: Config): AtomProblem {
     301,
   )
   return {
-    definition,
-    data: { y: STICK_DATA },
-    equations: [
-      `v_1, v_2 ~ Beta(1, ${alpha})   (the breaks)`,
-      'pi = (v_1, v_2 (1 - v_1), (1 - v_1)(1 - v_2))   (stick-breaking, truncated at three components)',
-      `z_i ~ Categorical(pi),  y_i ~ N(mean[z_i], ${noise}²), means (${COMPONENT_MEANS.join(', ')})`,
-      `observe y = (${STICK_DATA.join(', ')})`,
-    ],
-    quantities: [
-      { name: 'v[0]', label: 'v_1 (the share taken by the first component)', support: 'unit' },
-      { name: 'v[1]', label: 'v_2 (the share of the rest taken by the second)', support: 'unit' },
-    ],
-    pair: ['v[0]', 'v[1]'],
-    exact: { 'v[0]': g.marginal(0), 'v[1]': g.marginal(1) },
-    exactJoint: { a: 'v[0]', b: 'v[1]', ...g.joint(0, 1) },
-    referenceSource: 'a grid over the two breaks with the assignments summed out',
+    build: {
+      definition,
+      data: { y: STICK_DATA },
+      quantities: [
+        { name: 'v[0]', label: 'v_1 (the share taken by the first component)', support: 'unit' },
+        { name: 'v[1]', label: 'v_2 (the share of the rest taken by the second)', support: 'unit' },
+      ],
+    },
+    reference: {
+      exact: { 'v[0]': g.marginal(0), 'v[1]': g.marginal(1) },
+      exactJoint: { a: 'v[0]', b: 'v[1]', ...g.joint(0, 1) },
+      referenceSource: 'a grid over the two breaks with the assignments summed out',
+    },
+    present: {
+      equations: [
+        `v_1, v_2 ~ Beta(1, ${alpha})   (the breaks)`,
+        'pi = (v_1, v_2 (1 - v_1), (1 - v_1)(1 - v_2))   (stick-breaking, truncated at three components)',
+        `z_i ~ Categorical(pi),  y_i ~ N(mean[z_i], ${noise}²), means (${COMPONENT_MEANS.join(', ')})`,
+        `observe y = (${STICK_DATA.join(', ')})`,
+      ],
+      pair: ['v[0]', 'v[1]'],
+    },
   }
 }
 
@@ -106,7 +112,7 @@ export const stickBreakingAtom: EpAtom = defineAtom({
     concentration: real(1, 6, { default: 1, step: 0.25, label: 'concentration of the Dirichlet process (alpha)' }),
     noise: real(0.3, 1.5, { default: 1.3, step: 0.05, label: 'spread of each component (large: they overlap)' }),
   }),
-  problem: stickBreakingProblem,
+  parts: stickBreakingProblem,
 })
 
 // ----- the topic model -----
@@ -148,7 +154,7 @@ function betaMixture(
   }
 }
 
-function topicModelProblem(k: Config): AtomProblem {
+function topicModelProblem(k: Config): AtomParts {
   const alpha = configNumber(k, 'mixture')
   const sharp = configNumber(k, 'topicPrior')
   // each topic's prior leans to its own word: topic 0 to word 0, topic 1 to word 1 (the labels are softly fixed)
@@ -216,22 +222,28 @@ function topicModelProblem(k: Config): AtomProblem {
       })),
     )
   return {
-    definition,
-    data: { w: WORD_DATA },
-    equations: [
-      `theta_d ~ Dirichlet(${alpha}, ${alpha}) for the two documents   (the topic mixture of each)`,
-      `phi_0 ~ Dirichlet(${beta[0]?.join(', ')}),  phi_1 ~ Dirichlet(${beta[1]?.join(', ')})   (the word distribution of each topic)`,
-      'z_dn ~ Categorical(theta_d),  w_dn ~ Categorical(phi[z_dn])   (a topic per token, the word read through it)',
-      `observe w = (${WORD_DATA.map((r) => r.join(' ')).join(' | ')})`,
-    ],
-    quantities: [
-      { name: 'theta[0]', label: 'theta_1 (document 1: the share of topic 0)', support: 'unit' },
-      { name: 'theta[2]', label: 'theta_2 (document 2: the share of topic 0)', support: 'unit' },
-      { name: 'phi[0]', label: 'phi_0 (topic 0: the probability of word 0)', support: 'unit' },
-      { name: 'phi[2]', label: 'phi_1 (topic 1: the probability of word 0)', support: 'unit' },
-    ],
-    exact,
-    referenceSource: 'the 256 assignments of the eight tokens to topics, the Dirichlets integrated out',
+    build: {
+      definition,
+      data: { w: WORD_DATA },
+      quantities: [
+        { name: 'theta[0]', label: 'theta_1 (document 1: the share of topic 0)', support: 'unit' },
+        { name: 'theta[2]', label: 'theta_2 (document 2: the share of topic 0)', support: 'unit' },
+        { name: 'phi[0]', label: 'phi_0 (topic 0: the probability of word 0)', support: 'unit' },
+        { name: 'phi[2]', label: 'phi_1 (topic 1: the probability of word 0)', support: 'unit' },
+      ],
+    },
+    reference: {
+      exact,
+      referenceSource: 'the 256 assignments of the eight tokens to topics, the Dirichlets integrated out',
+    },
+    present: {
+      equations: [
+        `theta_d ~ Dirichlet(${alpha}, ${alpha}) for the two documents   (the topic mixture of each)`,
+        `phi_0 ~ Dirichlet(${beta[0]?.join(', ')}),  phi_1 ~ Dirichlet(${beta[1]?.join(', ')})   (the word distribution of each topic)`,
+        'z_dn ~ Categorical(theta_d),  w_dn ~ Categorical(phi[z_dn])   (a topic per token, the word read through it)',
+        `observe w = (${WORD_DATA.map((r) => r.join(' ')).join(' | ')})`,
+      ],
+    },
   }
 }
 
@@ -269,5 +281,5 @@ export const topicModelAtom: EpAtom = defineAtom({
     mixture: real(0.3, 3, { default: 1, step: 0.1, label: 'concentration of each document’s topic mixture' }),
     topicPrior: real(1, 5, { default: 2, step: 0.25, label: 'how strongly each topic’s prior leans to its own word' }),
   }),
-  problem: topicModelProblem,
+  parts: topicModelProblem,
 })

@@ -14,7 +14,7 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type ExactMarginal, logWeights, probabilityMarginal, weightedMarginal } from '../validation/index.ts'
-import { type AtomProblem, type AtomTolerance, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { type AtomParts, type AtomProblem, type AtomTolerance, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 const BASE = [-2.1, 1.9, 0.3, 2.2, -0.4, 1.7, 0.6, -1.8, 0.9, 2.3]
 const SD = 0.5
@@ -111,7 +111,7 @@ const equationsOf = (a: number, b: number, x: readonly number[], summed: boolean
   `observe x = (${x.map((v) => v.toFixed(2)).join(', ')})`,
 ]
 
-function explicitProblem(k: Config): AtomProblem {
+function explicitProblem(k: Config): AtomParts {
   const [a, b] = [configNumber(k, 'a'), configNumber(k, 'b')]
   const x = observations(k)
   // region gate-weight
@@ -125,13 +125,19 @@ function explicitProblem(k: Config): AtomProblem {
   // endregion
   const exact = twoComponentExact(x, (p) => (a - 1) * Math.log(p) + (b - 1) * Math.log(1 - p))
   return {
-    definition,
-    data: { x },
-    equations: equationsOf(a, b, x, false),
-    quantities: weightQuantities(x.length),
-    exact: {
-      pi: exact.weight,
-      ...Object.fromEntries(exact.responsibilities.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])),
+    build: {
+      definition,
+      data: { x },
+      quantities: weightQuantities(x.length),
+    },
+    reference: {
+      exact: {
+        pi: exact.weight,
+        ...Object.fromEntries(exact.responsibilities.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])),
+      },
+    },
+    present: {
+      equations: equationsOf(a, b, x, false),
     },
   }
 }
@@ -161,10 +167,10 @@ export const gateWeightAtom: EpAtom = defineAtom({
   reference: 'exact',
   tolerance: GATE_TOLERANCE,
   knobs: dict(priorKnobs),
-  problem: explicitProblem,
+  parts: explicitProblem,
 })
 
-function summedOutProblem(k: Config): AtomProblem {
+function summedOutProblem(k: Config): AtomParts {
   const [a, b] = [configNumber(k, 'a'), configNumber(k, 'b')]
   const x = observations(k)
   // region gate-weight-summed-out
@@ -177,11 +183,17 @@ function summedOutProblem(k: Config): AtomProblem {
   // endregion
   const exact = twoComponentExact(x, (p) => (a - 1) * Math.log(p) + (b - 1) * Math.log(1 - p))
   return {
-    definition,
-    data: { x },
-    equations: equationsOf(a, b, x, true),
-    quantities: [{ name: 'pi', label: 'pi (the mixing weight of the + component)', support: 'unit' }],
-    exact: { pi: exact.weight },
+    build: {
+      definition,
+      data: { x },
+      quantities: [{ name: 'pi', label: 'pi (the mixing weight of the + component)', support: 'unit' }],
+    },
+    reference: {
+      exact: { pi: exact.weight },
+    },
+    present: {
+      equations: equationsOf(a, b, x, true),
+    },
   }
 }
 
@@ -206,7 +218,7 @@ export const gateWeightSummedOutAtom: EpAtom = defineAtom({
   reference: 'exact',
   tolerance: GATE_TOLERANCE,
   knobs: dict(priorKnobs),
-  problem: summedOutProblem,
+  parts: summedOutProblem,
 })
 
 // ----- three components and a Dirichlet on the weights -----
@@ -214,7 +226,7 @@ export const gateWeightSummedOutAtom: EpAtom = defineAtom({
 const THREE = [-3, 0, 3]
 const BASE3 = [-2.9, 3.1, 0.2, 2.8, -0.3, -3.2, 0.5, 1.4, -1.6, 2.9]
 
-function dirichletWeightProblem(k: Config): AtomProblem {
+function dirichletWeightProblem(k: Config): AtomParts {
   const a = configNumber(k, 'concentration')
   const x = BASE3.map((v) => v * configNumber(k, 'spread'))
   // region gate-weight-dirichlet
@@ -263,19 +275,25 @@ function dirichletWeightProblem(k: Config): AtomProblem {
   const points = Array.from({ length: G }, (_, i) => (i + 0.5) / G)
   const exact = Object.fromEntries(marg.map((w, c) => [`pi[${c}]`, weightedMarginal(points, w)]))
   return {
-    definition,
-    data: { x, means: THREE },
-    equations: [
-      `pi ~ Dirichlet(${a}, ${a}, ${a})   (the weights of the three components)`,
-      `z_i ~ Categorical(pi),  x_i ~ N(mean[z_i], ${SD}²), means (${THREE.join(', ')})`,
-      `observe x = (${x.map((v) => v.toFixed(2)).join(', ')})`,
-    ],
-    quantities: THREE.map((c, i) => ({
-      name: `pi[${i}]`,
-      label: `pi of the component at ${c}`,
-      support: 'unit' as const,
-    })),
-    exact,
+    build: {
+      definition,
+      data: { x, means: THREE },
+      quantities: THREE.map((c, i) => ({
+        name: `pi[${i}]`,
+        label: `pi of the component at ${c}`,
+        support: 'unit' as const,
+      })),
+    },
+    reference: {
+      exact,
+    },
+    present: {
+      equations: [
+        `pi ~ Dirichlet(${a}, ${a}, ${a})   (the weights of the three components)`,
+        `z_i ~ Categorical(pi),  x_i ~ N(mean[z_i], ${SD}²), means (${THREE.join(', ')})`,
+        `observe x = (${x.map((v) => v.toFixed(2)).join(', ')})`,
+      ],
+    },
   }
 }
 
@@ -310,12 +328,12 @@ export const gateWeightDirichletAtom: EpAtom = defineAtom({
       label: 'spread of the observations (small: the components overlap)',
     }),
   }),
-  problem: dirichletWeightProblem,
+  parts: dirichletWeightProblem,
 })
 
 // ----- a hyperprior on the strength of the prior on the weight -----
 
-function hyperWeightProblem(k: Config): AtomProblem {
+function hyperWeightProblem(k: Config): AtomParts {
   const [shape, rate] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
   const x = observations(k)
   // region gate-weight-hyperprior
@@ -387,22 +405,28 @@ function hyperWeightProblem(k: Config): AtomProblem {
     ),
   )
   return {
-    definition,
-    data: { x },
-    equations: [
-      `strength ~ Gamma(${shape}, ${rate})   (the hyperprior: how concentrated the weight prior is)`,
-      'pi ~ Beta(strength, strength)   (the weight of the + component)',
-      'z_i ~ Bernoulli(pi),  z_i = 0: x_i ~ N(-2, 0.5²), z_i = 1: x_i ~ N(+2, 0.5²)',
-      `observe x = (${x.map((v) => v.toFixed(2)).join(', ')})`,
-    ],
-    quantities: [
-      ...weightQuantities(x.length),
-      { name: 'strength', label: 'strength (the hyperparameter)', support: 'positive' },
-    ],
-    exact: {
-      pi: exact.pi,
-      strength: exact.strength,
-      ...Object.fromEntries(responsibilities.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])),
+    build: {
+      definition,
+      data: { x },
+      quantities: [
+        ...weightQuantities(x.length),
+        { name: 'strength', label: 'strength (the hyperparameter)', support: 'positive' },
+      ],
+    },
+    reference: {
+      exact: {
+        pi: exact.pi,
+        strength: exact.strength,
+        ...Object.fromEntries(responsibilities.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])),
+      },
+    },
+    present: {
+      equations: [
+        `strength ~ Gamma(${shape}, ${rate})   (the hyperprior: how concentrated the weight prior is)`,
+        'pi ~ Beta(strength, strength)   (the weight of the + component)',
+        'z_i ~ Bernoulli(pi),  z_i = 0: x_i ~ N(-2, 0.5²), z_i = 1: x_i ~ N(+2, 0.5²)',
+        `observe x = (${x.map((v) => v.toFixed(2)).join(', ')})`,
+      ],
     },
   }
 }
@@ -441,5 +465,5 @@ export const gateWeightHyperAtom: EpAtom = defineAtom({
       label: 'spread of the observations (small: the components overlap)',
     }),
   }),
-  problem: hyperWeightProblem,
+  parts: hyperWeightProblem,
 })

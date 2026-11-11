@@ -13,10 +13,10 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type ConditionalMarginal, hyperPosterior, normalPdf } from '../validation/index.ts'
-import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 
-function precisionLearnedProblem(k: Config): AtomProblem {
+function precisionLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueMean, trueSd] = [configNumber(k, 'trueMean'), configNumber(k, 'trueSd')]
   const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
@@ -34,40 +34,46 @@ function precisionLearnedProblem(k: Config): AtomProblem {
   // endregion
   const x = [0, n + 1]
   return {
-    definition,
-    data: { y },
-    equations: [
-      `truth: mean ${trueMean}, sd ${trueSd} (precision ${Number((1 / trueSd ** 2).toPrecision(3))}); ${n} observations drawn with seed ${seed}`,
-      `tau ~ Gamma(${a}, ${b})   (the unknown precision; prior mean ${Number((a / b).toPrecision(3))})`,
-      `mu ~ N(0, ${priorSd}²)   (the unknown mean)`,
-      `y_i ~ N(mu, 1 / tau), i = 1..${n}`,
-    ],
-    quantities: [
-      { name: 'mu', label: 'mu (the mean)', support: 'real', truth: trueMean },
-      { name: 'tau', label: 'tau (the precision)', support: 'positive', truth: 1 / trueSd ** 2 },
-    ],
-    pair: ['mu', 'tau'],
-    grid: { points: 61, maxRefinements: 0 },
-    figure: {
-      caption:
-        'The simulated observations. Green lines: the true mean and its two-sd band; thick and dashed: the fitted ones.',
-      xLabel: 'observation',
-      yLabel: 'y',
-      xLimits: x as [number, number],
-      points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
-      curves: [
-        { name: 'true mean', colour: 'tab2', x, y: [trueMean, trueMean] },
-        { name: 'true mean + 2 sd', colour: 'tab2', x, y: [trueMean + 2 * trueSd, trueMean + 2 * trueSd] },
-        { name: 'true mean - 2 sd', colour: 'tab2', x, y: [trueMean - 2 * trueSd, trueMean - 2 * trueSd] },
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'mu', label: 'mu (the mean)', support: 'real', truth: trueMean },
+        { name: 'tau', label: 'tau (the precision)', support: 'positive', truth: 1 / trueSd ** 2 },
       ],
-      answer: (mm) => {
-        const mean = mm['mu'] ?? Number.NaN
-        const w = 2 / Math.sqrt(mm['tau'] ?? Number.NaN)
-        return [
-          { name: 'mu', x, y: [mean, mean] },
-          { name: 'mu + 2 sd', x, y: [mean + w, mean + w] },
-          { name: 'mu - 2 sd', x, y: [mean - w, mean - w] },
-        ]
+    },
+    reference: {
+      grid: { points: 61, maxRefinements: 0 },
+    },
+    present: {
+      equations: [
+        `truth: mean ${trueMean}, sd ${trueSd} (precision ${Number((1 / trueSd ** 2).toPrecision(3))}); ${n} observations drawn with seed ${seed}`,
+        `tau ~ Gamma(${a}, ${b})   (the unknown precision; prior mean ${Number((a / b).toPrecision(3))})`,
+        `mu ~ N(0, ${priorSd}²)   (the unknown mean)`,
+        `y_i ~ N(mu, 1 / tau), i = 1..${n}`,
+      ],
+      pair: ['mu', 'tau'],
+      figure: {
+        caption:
+          'The simulated observations. Green lines: the true mean and its two-sd band; thick and dashed: the fitted ones.',
+        xLabel: 'observation',
+        yLabel: 'y',
+        xLimits: x as [number, number],
+        points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
+        curves: [
+          { name: 'true mean', colour: 'tab2', x, y: [trueMean, trueMean] },
+          { name: 'true mean + 2 sd', colour: 'tab2', x, y: [trueMean + 2 * trueSd, trueMean + 2 * trueSd] },
+          { name: 'true mean - 2 sd', colour: 'tab2', x, y: [trueMean - 2 * trueSd, trueMean - 2 * trueSd] },
+        ],
+        answer: (mm) => {
+          const mean = mm['mu'] ?? Number.NaN
+          const w = 2 / Math.sqrt(mm['tau'] ?? Number.NaN)
+          return [
+            { name: 'mu', x, y: [mean, mean] },
+            { name: 'mu + 2 sd', x, y: [mean + w, mean + w] },
+            { name: 'mu - 2 sd', x, y: [mean - w, mean - w] },
+          ]
+        },
       },
     },
   }
@@ -114,13 +120,13 @@ export const gammaPrecisionLearnedAtom: EpAtom = defineAtom({
     shape: real(0.5, 10, { default: 1.5, step: 0.1, label: 'prior shape of tau' }),
     rate: real(0.1, 10, { default: 1, step: 0.1, label: 'prior rate of tau' }),
   }),
-  problem: precisionLearnedProblem,
+  parts: precisionLearnedProblem,
 })
 
 /** The known noise sd of each of the eight observed values (the standard errors of the eight schools' estimates, in spirit). */
 const NOISE = [1, 1.5, 0.7, 2, 1.2, 0.9, 1.8, 1.1]
 
-function populationLearnedProblem(k: Config): AtomProblem {
+function populationLearnedProblem(k: Config): AtomParts {
   const [seed, groups] = [configNumber(k, 'seed'), configNumber(k, 'groups')]
   const [trueMean, trueSpread] = [configNumber(k, 'trueMean'), configNumber(k, 'trueSpread')]
   const [a, b, priorSd] = [configNumber(k, 'shape'), configNumber(k, 'rate'), configNumber(k, 'priorSd')]
@@ -184,43 +190,49 @@ function populationLearnedProblem(k: Config): AtomProblem {
   )
   const at = effects.map((_, j) => j + 1)
   return {
-    definition,
-    data: { y, sd: noise },
-    equations: [
-      `truth: effects around ${trueMean} with sd ${trueSpread} (precision ${Number((1 / trueSpread ** 2).toPrecision(3))}); ${groups} groups, seed ${seed}`,
-      `tau ~ Gamma(${a}, ${b})   (the unknown precision of the effects)`,
-      `mu ~ N(0, ${priorSd}²)   (the unknown mean of the effects)`,
-      `theta_j ~ N(mu, 1 / tau), j = 1..${groups}`,
-      `y_j ~ N(theta_j, s_j²), s = (${noise.join(', ')})   (known noise)`,
-    ],
-    quantities: [
-      { name: 'tau', label: 'tau (the precision of the effects)', support: 'positive', truth: 1 / trueSpread ** 2 },
-      { name: 'mu', label: 'mu (the mean effect)', support: 'real', truth: trueMean },
-      ...effects.map((t, j) => ({
-        name: `theta[${j}]`,
-        label: `theta_${j + 1}`,
-        support: 'real' as const,
-        truth: t,
-        pool: 'theta (every group)',
-      })),
-    ],
-    exact: { tau: post.hyper, mu: exactMu, ...Object.fromEntries(exactTheta.map((e, j) => [`theta[${j}]`, e])) },
-    figure: {
-      caption:
-        'The observed value of each group (dots), its true effect (open marks) and what EP believes of the effect (bars): each is pulled towards the mean by how much the learned spread allows.',
-      xLabel: 'group',
-      yLabel: 'value',
-      xLimits: [0, groups + 1],
-      points: [
-        { name: 'observed y', x: at, y },
-        { name: 'true effect', x: at, y: effects },
-      ],
-      answer: (mm) =>
-        at.map((j) => ({
-          name: `theta_${j}`,
-          x: [j - 0.3, j + 0.3],
-          y: [mm[`theta[${j - 1}]`] ?? Number.NaN, mm[`theta[${j - 1}]`] ?? Number.NaN],
+    build: {
+      definition,
+      data: { y, sd: noise },
+      quantities: [
+        { name: 'tau', label: 'tau (the precision of the effects)', support: 'positive', truth: 1 / trueSpread ** 2 },
+        { name: 'mu', label: 'mu (the mean effect)', support: 'real', truth: trueMean },
+        ...effects.map((t, j) => ({
+          name: `theta[${j}]`,
+          label: `theta_${j + 1}`,
+          support: 'real' as const,
+          truth: t,
+          pool: 'theta (every group)',
         })),
+      ],
+    },
+    reference: {
+      exact: { tau: post.hyper, mu: exactMu, ...Object.fromEntries(exactTheta.map((e, j) => [`theta[${j}]`, e])) },
+    },
+    present: {
+      equations: [
+        `truth: effects around ${trueMean} with sd ${trueSpread} (precision ${Number((1 / trueSpread ** 2).toPrecision(3))}); ${groups} groups, seed ${seed}`,
+        `tau ~ Gamma(${a}, ${b})   (the unknown precision of the effects)`,
+        `mu ~ N(0, ${priorSd}²)   (the unknown mean of the effects)`,
+        `theta_j ~ N(mu, 1 / tau), j = 1..${groups}`,
+        `y_j ~ N(theta_j, s_j²), s = (${noise.join(', ')})   (known noise)`,
+      ],
+      figure: {
+        caption:
+          'The observed value of each group (dots), its true effect (open marks) and what EP believes of the effect (bars): each is pulled towards the mean by how much the learned spread allows.',
+        xLabel: 'group',
+        yLabel: 'value',
+        xLimits: [0, groups + 1],
+        points: [
+          { name: 'observed y', x: at, y },
+          { name: 'true effect', x: at, y: effects },
+        ],
+        answer: (mm) =>
+          at.map((j) => ({
+            name: `theta_${j}`,
+            x: [j - 0.3, j + 0.3],
+            y: [mm[`theta[${j - 1}]`] ?? Number.NaN, mm[`theta[${j - 1}]`] ?? Number.NaN],
+          })),
+      },
     },
   }
 }
@@ -268,5 +280,5 @@ export const sharedPrecisionLearnedAtom: EpAtom = defineAtom({
     shape: real(0.5, 8, { default: 1.5, step: 0.1, label: 'prior shape of tau' }),
     rate: real(0.1, 8, { default: 1, step: 0.1, label: 'prior rate of tau' }),
   }),
-  problem: populationLearnedProblem,
+  parts: populationLearnedProblem,
 })

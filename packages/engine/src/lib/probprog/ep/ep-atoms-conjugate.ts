@@ -10,7 +10,7 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel } from '../model/index.ts'
 import { normalPdf, sum } from '../validation/index.ts'
-import { type AtomProblem, beliefDensity, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { type AtomParts, beliefDensity, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 const EXACT = {
   meanZ: 1e-6,
@@ -21,7 +21,7 @@ const EXACT = {
 
 const GAUSSIAN_Y = [1.2, 0.4, 1.9]
 
-function gaussianProblem(k: Config): AtomProblem {
+function gaussianProblem(k: Config): AtomParts {
   const ps = configNumber(k, 'priorSd')
   const s = 1
   // region gaussian
@@ -34,11 +34,17 @@ function gaussianProblem(k: Config): AtomProblem {
   const mean = sum(GAUSSIAN_Y) / s ** 2 / prec
   const sd = Math.sqrt(1 / prec)
   return {
-    definition,
-    data: { y: GAUSSIAN_Y },
-    equations: [`mu ~ N(0, ${ps}²)`, `y_i ~ N(mu, 1²), i = 1..3`, `observe y = (${GAUSSIAN_Y.join(', ')})`],
-    quantities: [{ name: 'mu', label: 'mu', support: 'real' }],
-    exact: { mu: { mean, sd, pdf: (x) => normalPdf(x, mean, sd) } },
+    build: {
+      definition,
+      data: { y: GAUSSIAN_Y },
+      quantities: [{ name: 'mu', label: 'mu', support: 'real' }],
+    },
+    reference: {
+      exact: { mu: { mean, sd, pdf: (x) => normalPdf(x, mean, sd) } },
+    },
+    present: {
+      equations: [`mu ~ N(0, ${ps}²)`, `y_i ~ N(mu, 1²), i = 1..3`, `observe y = (${GAUSSIAN_Y.join(', ')})`],
+    },
   }
 }
 
@@ -61,12 +67,12 @@ export const gaussianAtom: EpAtom = defineAtom({
   reference: 'exact',
   tolerance: EXACT,
   knobs: dict({ priorSd: real(0.3, 10, { default: 2, step: 0.1, label: 'prior sd' }) }),
-  problem: gaussianProblem,
+  parts: gaussianProblem,
 })
 
 const FLIPS = [1, 1, 0, 1, 1, 0, 1]
 
-function betaProblem(k: Config): AtomProblem {
+function betaProblem(k: Config): AtomParts {
   const a = configNumber(k, 'a')
   const b = configNumber(k, 'b')
   // region beta-bernoulli
@@ -82,11 +88,17 @@ function betaProblem(k: Config): AtomProblem {
   const mean = A / (A + B)
   const sd = Math.sqrt((A * B) / ((A + B) ** 2 * (A + B + 1)))
   return {
-    definition,
-    data: { y: FLIPS },
-    equations: [`p ~ Beta(${a}, ${b})`, 'y_i ~ Bernoulli(p), i = 1..7', `observe y = (${FLIPS.join(', ')})`],
-    quantities: [{ name: 'p', label: 'p', support: 'unit' }],
-    exact: { p: { mean, sd, pdf: beliefDensity('unit', mean, sd), range: [0, 1] } },
+    build: {
+      definition,
+      data: { y: FLIPS },
+      quantities: [{ name: 'p', label: 'p', support: 'unit' }],
+    },
+    reference: {
+      exact: { p: { mean, sd, pdf: beliefDensity('unit', mean, sd), range: [0, 1] } },
+    },
+    present: {
+      equations: [`p ~ Beta(${a}, ${b})`, 'y_i ~ Bernoulli(p), i = 1..7', `observe y = (${FLIPS.join(', ')})`],
+    },
   }
 }
 
@@ -112,12 +124,12 @@ export const betaBernoulliAtom: EpAtom = defineAtom({
     a: real(0.2, 20, { default: 2, step: 0.1, label: 'prior a' }),
     b: real(0.2, 20, { default: 2, step: 0.1, label: 'prior b' }),
   }),
-  problem: betaProblem,
+  parts: betaProblem,
 })
 
 const COUNTS = [3, 5, 2, 4]
 
-function gammaProblem(k: Config): AtomProblem {
+function gammaProblem(k: Config): AtomParts {
   const a = configNumber(k, 'shape')
   const b = configNumber(k, 'rate')
   // region gamma-poisson
@@ -132,12 +144,23 @@ function gammaProblem(k: Config): AtomProblem {
   const mean = A / B
   const sd = Math.sqrt(A) / B
   return {
-    definition,
-    data: { y: COUNTS },
-    equations: [`rate ~ Gamma(${a}, ${b})`, 'y_i ~ Poisson(rate), i = 1..4', `observe y = (${COUNTS.join(', ')})`],
-    quantities: [{ name: 'rate', label: 'rate', support: 'positive' }],
-    exact: {
-      rate: { mean, sd, pdf: beliefDensity('positive', mean, sd), range: [Math.max(0, mean - 6 * sd), mean + 8 * sd] },
+    build: {
+      definition,
+      data: { y: COUNTS },
+      quantities: [{ name: 'rate', label: 'rate', support: 'positive' }],
+    },
+    reference: {
+      exact: {
+        rate: {
+          mean,
+          sd,
+          pdf: beliefDensity('positive', mean, sd),
+          range: [Math.max(0, mean - 6 * sd), mean + 8 * sd],
+        },
+      },
+    },
+    present: {
+      equations: [`rate ~ Gamma(${a}, ${b})`, 'y_i ~ Poisson(rate), i = 1..4', `observe y = (${COUNTS.join(', ')})`],
     },
   }
 }
@@ -164,5 +187,5 @@ export const gammaPoissonAtom: EpAtom = defineAtom({
     shape: real(0.2, 20, { default: 2, step: 0.1, label: 'prior shape' }),
     rate: real(0.05, 5, { default: 1, step: 0.05, label: 'prior rate' }),
   }) as DictSpace,
-  problem: gammaProblem,
+  parts: gammaProblem,
 })

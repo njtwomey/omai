@@ -11,12 +11,12 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { gridMarginals, quadratureMarginal } from '../validation/index.ts'
-import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 const XS = [-1, -0.6, -0.2, 0.1, 0.5, 0.9, 1.3, -0.8, 0.3, 1.1, -0.4, 0.7]
 const YS = [0, 0, 1, 0, 2, 4, 6, 1, 3, 0, 1, 5]
 
-function hurdleProblem(k: Config): AtomProblem {
+function hurdleProblem(k: Config): AtomParts {
   const priorSd = configNumber(k, 'priorSd')
   // region hurdle-poisson
   const definition = defineModel('hurdle-poisson', (m) => {
@@ -53,43 +53,49 @@ function hurdleProblem(k: Config): AtomProblem {
     161,
   )
   return {
-    definition,
-    data: { x: XS, y: YS },
-    equations: [
-      'zero ~ Beta(1, 1)   (the probability that a count is a zero of the hurdle)',
-      `b_0, b_1 ~ N(0, ${priorSd}²),  rate_i = exp(b_0 + b_1 x_i)`,
-      'y_i = 0 with probability zero, else y_i ~ Poisson(rate_i) given y_i > 0   (a hurdle count)',
-      `observe the twelve counts drawn in the figure (${zeros} zeros)`,
-    ],
-    quantities: [
-      { name: 'zero', label: 'zero (probability of a zero)', support: 'unit' },
-      { name: 'b0', label: 'b_0 (log rate at x = 0)', support: 'real' },
-      { name: 'b1', label: 'b_1 (slope of the log rate)', support: 'real' },
-    ],
-    pair: ['b0', 'b1'],
-    exact: {
-      zero: quadratureMarginal(logBeta, 0, 1, 4000),
-      b0: g.marginal(0),
-      b1: g.marginal(1),
+    build: {
+      definition,
+      data: { x: XS, y: YS },
+      quantities: [
+        { name: 'zero', label: 'zero (probability of a zero)', support: 'unit' },
+        { name: 'b0', label: 'b_0 (log rate at x = 0)', support: 'real' },
+        { name: 'b1', label: 'b_1 (slope of the log rate)', support: 'real' },
+      ],
     },
-    exactJoint: { a: 'b0', b: 'b1', ...g.joint(0, 1) },
-    referenceSource: 'a Beta for the zero probability and a grid over the coefficients with the positive counts',
-    figure: {
-      caption: 'The twelve counts and the rate of the positive part, exp(b_0 + b_1 x), at the means of the beliefs.',
-      xLabel: 'x',
-      yLabel: 'count',
-      xLimits: [-1.5, 1.5],
-      yLimits: [-0.5, 8],
-      points: [{ name: 'counts', x: XS, y: YS }],
-      answer: (mean) => {
-        const grid = Array.from({ length: 31 }, (_, i) => -1.5 + (3 * i) / 30)
-        return [
-          {
-            name: 'rate',
-            x: grid,
-            y: grid.map((x) => Math.exp((mean['b0'] ?? Number.NaN) + (mean['b1'] ?? Number.NaN) * x)),
-          },
-        ]
+    reference: {
+      exact: {
+        zero: quadratureMarginal(logBeta, 0, 1, 4000),
+        b0: g.marginal(0),
+        b1: g.marginal(1),
+      },
+      exactJoint: { a: 'b0', b: 'b1', ...g.joint(0, 1) },
+      referenceSource: 'a Beta for the zero probability and a grid over the coefficients with the positive counts',
+    },
+    present: {
+      equations: [
+        'zero ~ Beta(1, 1)   (the probability that a count is a zero of the hurdle)',
+        `b_0, b_1 ~ N(0, ${priorSd}²),  rate_i = exp(b_0 + b_1 x_i)`,
+        'y_i = 0 with probability zero, else y_i ~ Poisson(rate_i) given y_i > 0   (a hurdle count)',
+        `observe the twelve counts drawn in the figure (${zeros} zeros)`,
+      ],
+      pair: ['b0', 'b1'],
+      figure: {
+        caption: 'The twelve counts and the rate of the positive part, exp(b_0 + b_1 x), at the means of the beliefs.',
+        xLabel: 'x',
+        yLabel: 'count',
+        xLimits: [-1.5, 1.5],
+        yLimits: [-0.5, 8],
+        points: [{ name: 'counts', x: XS, y: YS }],
+        answer: (mean) => {
+          const grid = Array.from({ length: 31 }, (_, i) => -1.5 + (3 * i) / 30)
+          return [
+            {
+              name: 'rate',
+              x: grid,
+              y: grid.map((x) => Math.exp((mean['b0'] ?? Number.NaN) + (mean['b1'] ?? Number.NaN) * x)),
+            },
+          ]
+        },
       },
     },
   }
@@ -125,5 +131,5 @@ export const hurdlePoissonAtom: EpAtom = defineAtom({
       'the zero probability is exact (a Beta of the counts); the coefficients are the truncated-Poisson likelihood matched by one Gaussian each: measured within 0.004 reference sds and 3 percent of the spread',
   },
   knobs: dict({ priorSd: real(0.5, 4, { default: 1.5, step: 0.1, label: 'prior sd of the coefficients' }) }),
-  problem: hurdleProblem,
+  parts: hurdleProblem,
 })

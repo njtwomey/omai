@@ -25,7 +25,7 @@ import {
   samplesMarginal,
   weightedMarginal,
 } from '../validation/index.ts'
-import { type AtomProblem, type AtomSupport, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { type AtomParts, type AtomProblem, type AtomSupport, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 
 /** The knobs every extended atom has (the seed and the number of observations), with this atom's most observations. */
@@ -47,7 +47,7 @@ const CLUTTER_PRIORS = {
   weight: { a: 2, b: 5 },
 } as const
 
-function clutterLearnedProblem(k: Config): AtomProblem {
+function clutterLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueTheta, trueInlierSd] = [configNumber(k, 'trueTheta'), configNumber(k, 'trueInlierSd')]
   const [trueClutterSd, trueWeight] = [configNumber(k, 'trueClutterSd'), configNumber(k, 'trueWeight')]
@@ -79,71 +79,77 @@ function clutterLearnedProblem(k: Config): AtomProblem {
   const x = [0, n + 1]
   const [inSd, outSd] = [trueInlierSd, trueClutterSd]
   return {
-    definition,
-    data: { y },
-    equations: [
-      `truth: centre ${trueTheta}, inlier sd ${trueInlierSd} (precision ${sig(1 / inSd ** 2)}), clutter sd ${trueClutterSd} (precision ${sig(1 / outSd ** 2)}), clutter share ${trueWeight}; ${n} observations, seed ${seed}`,
-      'theta ~ N(0, 5²)   (the centre)',
-      'inlier ~ Gamma(2, 1)   (precision of the inliers: mean 2, sd 1.4)',
-      'clutter ~ Gamma(2, 20)   (precision of the clutter: mean 0.1, a standard deviation of about 3: wider than the inliers)',
-      'share ~ Beta(2, 5)   (the share of clutter: a minority, mean 0.29)',
-      'z_i ~ Bernoulli(share)   (z_i = 1: observation i is clutter)',
-      'y_i ~ z_i ? N(0, 1 / clutter) : N(theta, 1 / inlier)   (a gate per observation; each branch has its own precision)',
-    ],
-    quantities: [
-      { name: 'theta', label: 'theta (the centre)', support: 'real', truth: trueTheta },
-      { name: 'inlier', label: 'inlier precision', support: 'positive', truth: 1 / inSd ** 2 },
-      { name: 'clutter', label: 'clutter precision', support: 'positive', truth: 1 / outSd ** 2 },
-      { name: 'share', label: 'share of clutter', support: 'unit', truth: trueWeight },
-      ...at.map((i) => ({
-        name: `z[${i - 1}]`,
-        label: `observation ${i} is clutter`,
-        support: 'probability' as const,
-        hidden: true,
-      })),
-    ],
-    exact: {
-      theta: post.centre,
-      inlier: post.inlier,
-      clutter: post.clutter,
-      share: post.weight,
-      ...Object.fromEntries(post.clutterProbability.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])),
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'theta', label: 'theta (the centre)', support: 'real', truth: trueTheta },
+        { name: 'inlier', label: 'inlier precision', support: 'positive', truth: 1 / inSd ** 2 },
+        { name: 'clutter', label: 'clutter precision', support: 'positive', truth: 1 / outSd ** 2 },
+        { name: 'share', label: 'share of clutter', support: 'unit', truth: trueWeight },
+        ...at.map((i) => ({
+          name: `z[${i - 1}]`,
+          label: `observation ${i} is clutter`,
+          support: 'probability' as const,
+          hidden: true,
+        })),
+      ],
     },
-    referenceSource: 'quadrature over the centre, the two precisions and the share, the switches summed out',
-    figure: {
-      caption:
-        'The simulated observations, coloured by what EP believes of each (clutter, a draw from the wide component around 0, or an inlier, a detection of the centre). Green: the truth (the centre, the inlier band and the clutter band at two sds); thick and dashed: what EP learned.',
-      xLabel: 'observation',
-      yLabel: 'value',
-      xLimits: x as [number, number],
-      points: [
-        {
-          name: 'observations',
-          x: at,
-          y,
-          group: isClutter.map((c) => (c ? 1 : 0)),
-          groupNames: { 0: 'inlier', 1: 'clutter' },
-          groupFrom: (m) => at.map((i) => ((m[`z[${i - 1}]`] ?? 0) > 0.5 ? 1 : 0)),
+    reference: {
+      exact: {
+        theta: post.centre,
+        inlier: post.inlier,
+        clutter: post.clutter,
+        share: post.weight,
+        ...Object.fromEntries(post.clutterProbability.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])),
+      },
+      referenceSource: 'quadrature over the centre, the two precisions and the share, the switches summed out',
+    },
+    present: {
+      equations: [
+        `truth: centre ${trueTheta}, inlier sd ${trueInlierSd} (precision ${sig(1 / inSd ** 2)}), clutter sd ${trueClutterSd} (precision ${sig(1 / outSd ** 2)}), clutter share ${trueWeight}; ${n} observations, seed ${seed}`,
+        'theta ~ N(0, 5²)   (the centre)',
+        'inlier ~ Gamma(2, 1)   (precision of the inliers: mean 2, sd 1.4)',
+        'clutter ~ Gamma(2, 20)   (precision of the clutter: mean 0.1, a standard deviation of about 3: wider than the inliers)',
+        'share ~ Beta(2, 5)   (the share of clutter: a minority, mean 0.29)',
+        'z_i ~ Bernoulli(share)   (z_i = 1: observation i is clutter)',
+        'y_i ~ z_i ? N(0, 1 / clutter) : N(theta, 1 / inlier)   (a gate per observation; each branch has its own precision)',
+      ],
+      figure: {
+        caption:
+          'The simulated observations, coloured by what EP believes of each (clutter, a draw from the wide component around 0, or an inlier, a detection of the centre). Green: the truth (the centre, the inlier band and the clutter band at two sds); thick and dashed: what EP learned.',
+        xLabel: 'observation',
+        yLabel: 'value',
+        xLimits: x as [number, number],
+        points: [
+          {
+            name: 'observations',
+            x: at,
+            y,
+            group: isClutter.map((c) => (c ? 1 : 0)),
+            groupNames: { 0: 'inlier', 1: 'clutter' },
+            groupFrom: (m) => at.map((i) => ((m[`z[${i - 1}]`] ?? 0) > 0.5 ? 1 : 0)),
+          },
+        ],
+        curves: [
+          { name: 'true centre', colour: 'tab2', x, y: band(trueTheta, 0) },
+          { name: 'true inlier band', colour: 'tab2', x, y: band(trueTheta, 2 * inSd) },
+          { name: 'true inlier band', colour: 'tab2', x, y: band(trueTheta, -2 * inSd) },
+          { name: 'true clutter band', colour: 'tab1', x, y: band(0, 2 * outSd) },
+          { name: 'true clutter band', colour: 'tab1', x, y: band(0, -2 * outSd) },
+        ],
+        answer: (m) => {
+          const centre = m['theta'] ?? Number.NaN
+          const w = 2 / Math.sqrt(m['inlier'] ?? Number.NaN)
+          const o = 2 / Math.sqrt(m['clutter'] ?? Number.NaN)
+          return [
+            { name: 'theta', x, y: band(centre, 0) },
+            { name: 'theta + 2 inlier sd', x, y: band(centre, w) },
+            { name: 'theta - 2 inlier sd', x, y: band(centre, -w) },
+            { name: 'clutter + 2 sd', x, y: band(0, o) },
+            { name: 'clutter - 2 sd', x, y: band(0, -o) },
+          ]
         },
-      ],
-      curves: [
-        { name: 'true centre', colour: 'tab2', x, y: band(trueTheta, 0) },
-        { name: 'true inlier band', colour: 'tab2', x, y: band(trueTheta, 2 * inSd) },
-        { name: 'true inlier band', colour: 'tab2', x, y: band(trueTheta, -2 * inSd) },
-        { name: 'true clutter band', colour: 'tab1', x, y: band(0, 2 * outSd) },
-        { name: 'true clutter band', colour: 'tab1', x, y: band(0, -2 * outSd) },
-      ],
-      answer: (m) => {
-        const centre = m['theta'] ?? Number.NaN
-        const w = 2 / Math.sqrt(m['inlier'] ?? Number.NaN)
-        const o = 2 / Math.sqrt(m['clutter'] ?? Number.NaN)
-        return [
-          { name: 'theta', x, y: band(centre, 0) },
-          { name: 'theta + 2 inlier sd', x, y: band(centre, w) },
-          { name: 'theta - 2 inlier sd', x, y: band(centre, -w) },
-          { name: 'clutter + 2 sd', x, y: band(0, o) },
-          { name: 'clutter - 2 sd', x, y: band(0, -o) },
-        ]
       },
     },
   }
@@ -196,7 +202,7 @@ export const clutterLearnedAtom: EpAtom = defineAtom({
     trueWeight: real(0.05, 0.5, { default: 0.25, step: 0.01, label: 'true share of clutter' }),
   }),
   ep: { damping: 0.5, tol: 1e-4 },
-  problem: clutterLearnedProblem,
+  parts: clutterLearnedProblem,
 })
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -318,7 +324,7 @@ function fittedMixture(
   }
 }
 
-function mixtureLearnedProblem(k: Config): AtomProblem {
+function mixtureLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const K = configNumber(k, 'components')
   const gap = configNumber(k, 'separation')
@@ -361,27 +367,33 @@ function mixtureLearnedProblem(k: Config): AtomProblem {
     exact[wn(c)] = samplesMarginal(gibbs.weight[c] as number[])
   }
   return {
-    definition,
-    data: { y },
-    bindOptions: { sizes: { component: K } },
-    equations: [
-      `truth: weights ${truth.weights.join(', ')}, means ${truth.means.map((v) => sig(v)).join(', ')}, sds ${truth.sds.join(', ')}; ${n} observations, seed ${seed}`,
-      `mu_1 < ... < mu_${K}, each ~ N(0, 4²)   (an ordered vector: the first has the smallest mean)`,
-      'tau_k ~ Gamma(2, 2)   (the precision of each component: mean 1)',
-      `weights ~ Dirichlet(${alpha.join(', ')})`,
-      'z_i ~ Categorical(weights)   (which component)',
-      'y_i ~ N(mu[z_i], 1 / tau[z_i])   (the mean and the precision both picked by the index)',
-    ],
-    quantities: mixtureQuantities(truth, wn, mn, pn, names),
-    exact,
-    referenceSource: `a Gibbs sampler of the same model (1500 draws after 300), the means relabelled in increasing order`,
-    figure: mixtureFigure(
-      y,
-      from,
-      truth,
-      (m) => fittedMixture(m, K, wn, mn, pn),
-      Object.fromEntries(Array.from({ length: K }, (_, c) => [c, names(c)])),
-    ),
+    build: {
+      definition,
+      data: { y },
+      bindOptions: { sizes: { component: K } },
+      quantities: mixtureQuantities(truth, wn, mn, pn, names),
+    },
+    reference: {
+      exact,
+      referenceSource: `a Gibbs sampler of the same model (1500 draws after 300), the means relabelled in increasing order`,
+    },
+    present: {
+      equations: [
+        `truth: weights ${truth.weights.join(', ')}, means ${truth.means.map((v) => sig(v)).join(', ')}, sds ${truth.sds.join(', ')}; ${n} observations, seed ${seed}`,
+        `mu_1 < ... < mu_${K}, each ~ N(0, 4²)   (an ordered vector: the first has the smallest mean)`,
+        'tau_k ~ Gamma(2, 2)   (the precision of each component: mean 1)',
+        `weights ~ Dirichlet(${alpha.join(', ')})`,
+        'z_i ~ Categorical(weights)   (which component)',
+        'y_i ~ N(mu[z_i], 1 / tau[z_i])   (the mean and the precision both picked by the index)',
+      ],
+      figure: mixtureFigure(
+        y,
+        from,
+        truth,
+        (m) => fittedMixture(m, K, wn, mn, pn),
+        Object.fromEntries(Array.from({ length: K }, (_, c) => [c, names(c)])),
+      ),
+    },
   }
 }
 
@@ -431,10 +443,10 @@ export const mixtureComponentsLearnedAtom: EpAtom = defineAtom({
     separation: real(1, 6, { default: 4, step: 0.25, label: 'distance between the true means' }),
   }),
   ep: { damping: 0.5, tol: 1e-4 },
-  problem: mixtureLearnedProblem,
+  parts: mixtureLearnedProblem,
 })
 
-function gateRandomLearnedProblem(k: Config): AtomProblem {
+function gateRandomLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const gap = configNumber(k, 'separation')
   const truth: TrueMixture = { weights: [0.65, 0.35], means: [-gap / 2, gap / 2], sds: [0.8, 1.2] }
@@ -492,42 +504,48 @@ function gateRandomLearnedProblem(k: Config): AtomProblem {
     (m) => at.map((i) => ((m[`z[${i - 1}]`] ?? 0) > 0.5 ? 1 : 0)),
   )
   return {
-    definition,
-    data: { y },
-    equations: [
-      `truth: weights ${truth.weights.join(', ')}, means ${truth.means.map((v) => sig(v)).join(', ')}, sds ${truth.sds.join(', ')}; ${n} observations, seed ${seed}`,
-      'low ~ N(-2, 2²),  high ~ N(2, 2²)   (the two components, told apart by their priors)',
-      'lowPrecision, highPrecision ~ Gamma(2, 2)   (their widths: mean 1)',
-      'share ~ Beta(2, 2)   (the weight of the high component)',
-      'z_i ~ Bernoulli(share)',
-      'y_i ~ z_i ? N(high, 1 / highPrecision) : N(low, 1 / lowPrecision)   (a select gate: centre and precision together)',
-    ],
-    quantities: [
-      { name: 'low', label: 'mean of the low component', support: 'real', truth: truth.means[0] as number },
-      { name: 'high', label: 'mean of the high component', support: 'real', truth: truth.means[1] as number },
-      {
-        name: 'lowPrecision',
-        label: 'precision of the low component',
-        support: 'positive',
-        truth: 1 / (truth.sds[0] as number) ** 2,
-      },
-      {
-        name: 'highPrecision',
-        label: 'precision of the high component',
-        support: 'positive',
-        truth: 1 / (truth.sds[1] as number) ** 2,
-      },
-      { name: 'share', label: 'weight of the high component', support: 'unit', truth: truth.weights[1] as number },
-      ...at.map((i) => ({
-        name: `z[${i - 1}]`,
-        label: `observation ${i} is from the high component`,
-        support: 'probability' as const,
-        hidden: true,
-      })),
-    ],
-    exact,
-    referenceSource: 'a Gibbs sampler of the same model (1500 draws after 300)',
-    figure,
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'low', label: 'mean of the low component', support: 'real', truth: truth.means[0] as number },
+        { name: 'high', label: 'mean of the high component', support: 'real', truth: truth.means[1] as number },
+        {
+          name: 'lowPrecision',
+          label: 'precision of the low component',
+          support: 'positive',
+          truth: 1 / (truth.sds[0] as number) ** 2,
+        },
+        {
+          name: 'highPrecision',
+          label: 'precision of the high component',
+          support: 'positive',
+          truth: 1 / (truth.sds[1] as number) ** 2,
+        },
+        { name: 'share', label: 'weight of the high component', support: 'unit', truth: truth.weights[1] as number },
+        ...at.map((i) => ({
+          name: `z[${i - 1}]`,
+          label: `observation ${i} is from the high component`,
+          support: 'probability' as const,
+          hidden: true,
+        })),
+      ],
+    },
+    reference: {
+      exact,
+      referenceSource: 'a Gibbs sampler of the same model (1500 draws after 300)',
+    },
+    present: {
+      equations: [
+        `truth: weights ${truth.weights.join(', ')}, means ${truth.means.map((v) => sig(v)).join(', ')}, sds ${truth.sds.join(', ')}; ${n} observations, seed ${seed}`,
+        'low ~ N(-2, 2²),  high ~ N(2, 2²)   (the two components, told apart by their priors)',
+        'lowPrecision, highPrecision ~ Gamma(2, 2)   (their widths: mean 1)',
+        'share ~ Beta(2, 2)   (the weight of the high component)',
+        'z_i ~ Bernoulli(share)',
+        'y_i ~ z_i ? N(high, 1 / highPrecision) : N(low, 1 / lowPrecision)   (a select gate: centre and precision together)',
+      ],
+      figure,
+    },
   }
 }
 
@@ -574,7 +592,7 @@ export const gateRandomLearnedAtom: EpAtom = defineAtom({
     separation: real(1, 6, { default: 4, step: 0.25, label: 'distance between the true means' }),
   }),
   ep: { damping: 0.5, tol: 1e-4 },
-  problem: gateRandomLearnedProblem,
+  parts: gateRandomLearnedProblem,
 })
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -588,7 +606,7 @@ const ACTIVE: readonly (readonly [number, number])[] = [
 ]
 const SPIKE_SD = 0.1
 
-function spikeSlabLearnedProblem(k: Config): AtomProblem {
+function spikeSlabLearnedProblem(k: Config): AtomParts {
   const [seed, p] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const noise = configNumber(k, 'noise')
   // region spike-and-slab-learned
@@ -651,54 +669,60 @@ function spikeSlabLearnedProblem(k: Config): AtomProblem {
   const at = y.map((_, j) => j + 1)
   const x = [0, p + 1]
   return {
-    definition,
-    data: { y },
-    equations: [
-      `truth: coefficients ${ACTIVE.map(([j, v]) => `${j + 1}: ${v}`).join(', ')} active (share ${sig(trueShare)}), the other ${p - ACTIVE.length} zero; noise sd ${noise} known; seed ${seed}`,
-      'share ~ Beta(1.5, 3.5)   (the inclusion probability: mean 0.3)',
-      'slabPrecision ~ Gamma(2, 8)   (the precision of the active coefficients: mean 0.25, a slab sd of about 2)',
-      'z_j ~ Bernoulli(share)   (z_j = 1: coefficient j is in the slab)',
-      'slab_j ~ N(0, 1 / slabPrecision),  spike_j ~ N(0, 0.1²)   (a wide and a narrow component)',
-      `y_j ~ N(z_j ? slab_j : spike_j, ${noise}²), j = 1..${p}`,
-    ],
-    quantities: [
-      { name: 'share', label: 'share of active coefficients', support: 'unit', truth: trueShare },
-      {
-        name: 'slabPrecision',
-        label: 'slab precision (1 / rms of the active coefficients squared)',
-        support: 'positive',
-        truth: 1 / rms ** 2,
-      },
-      ...at.map((i) => ({
-        name: `z[${i - 1}]`,
-        label: `coefficient ${i} is active`,
-        support: 'probability' as const,
-      })),
-    ],
-    exact: {
-      share: shareMarginal,
-      slabPrecision: precisionExact,
-      ...Object.fromEntries(pipMean.map((v, j) => [`z[${j}]`, probabilityMarginal(v)])),
-    },
-    referenceSource: 'the posterior of the share and the slab precision on a grid, the coefficients summed out',
-    figure: {
-      caption:
-        'The observed value of each coefficient, coloured by whether it is truly active (marks) and by what EP believes (P(slab) above one half). The green lines are the truth at zero and the true values of the active ones.',
-      xLabel: 'coefficient',
-      yLabel: 'observed value',
-      xLimits: x as [number, number],
-      points: [
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'share', label: 'share of active coefficients', support: 'unit', truth: trueShare },
         {
-          name: 'observed y',
-          x: at,
-          y: [...y],
-          group: active.map((a) => (a ? 1 : 0)),
-          groupNames: { 0: 'inactive', 1: 'active' },
-          groupFrom: (m) => at.map((i) => ((m[`z[${i - 1}]`] ?? 0) > 0.5 ? 1 : 0)),
+          name: 'slabPrecision',
+          label: 'slab precision (1 / rms of the active coefficients squared)',
+          support: 'positive',
+          truth: 1 / rms ** 2,
         },
-        { name: 'true value', x: at, y: values },
+        ...at.map((i) => ({
+          name: `z[${i - 1}]`,
+          label: `coefficient ${i} is active`,
+          support: 'probability' as const,
+        })),
       ],
-      notes: [`The truly active coefficients are ${ACTIVE.map(([j]) => j + 1).join(', ')}.`],
+    },
+    reference: {
+      exact: {
+        share: shareMarginal,
+        slabPrecision: precisionExact,
+        ...Object.fromEntries(pipMean.map((v, j) => [`z[${j}]`, probabilityMarginal(v)])),
+      },
+      referenceSource: 'the posterior of the share and the slab precision on a grid, the coefficients summed out',
+    },
+    present: {
+      equations: [
+        `truth: coefficients ${ACTIVE.map(([j, v]) => `${j + 1}: ${v}`).join(', ')} active (share ${sig(trueShare)}), the other ${p - ACTIVE.length} zero; noise sd ${noise} known; seed ${seed}`,
+        'share ~ Beta(1.5, 3.5)   (the inclusion probability: mean 0.3)',
+        'slabPrecision ~ Gamma(2, 8)   (the precision of the active coefficients: mean 0.25, a slab sd of about 2)',
+        'z_j ~ Bernoulli(share)   (z_j = 1: coefficient j is in the slab)',
+        'slab_j ~ N(0, 1 / slabPrecision),  spike_j ~ N(0, 0.1²)   (a wide and a narrow component)',
+        `y_j ~ N(z_j ? slab_j : spike_j, ${noise}²), j = 1..${p}`,
+      ],
+      figure: {
+        caption:
+          'The observed value of each coefficient, coloured by whether it is truly active (marks) and by what EP believes (P(slab) above one half). The green lines are the truth at zero and the true values of the active ones.',
+        xLabel: 'coefficient',
+        yLabel: 'observed value',
+        xLimits: x as [number, number],
+        points: [
+          {
+            name: 'observed y',
+            x: at,
+            y: [...y],
+            group: active.map((a) => (a ? 1 : 0)),
+            groupNames: { 0: 'inactive', 1: 'active' },
+            groupFrom: (m) => at.map((i) => ((m[`z[${i - 1}]`] ?? 0) > 0.5 ? 1 : 0)),
+          },
+          { name: 'true value', x: at, y: values },
+        ],
+        notes: [`The truly active coefficients are ${ACTIVE.map(([j]) => j + 1).join(', ')}.`],
+      },
     },
   }
 }
@@ -749,10 +773,10 @@ export const spikeSlabLearnedAtom: EpAtom = defineAtom({
     noise: real(0.2, 1.2, { default: 0.5, step: 0.05, label: 'noise sd (known)' }),
   }),
   ep: { damping: 0.5, tol: 1e-4 },
-  problem: spikeSlabLearnedProblem,
+  parts: spikeSlabLearnedProblem,
 })
 
-function spikeSlabMarginalLearnedProblem(k: Config): AtomProblem {
+function spikeSlabMarginalLearnedProblem(k: Config): AtomParts {
   const base = spikeSlabLearnedProblem(k)
   const [seed, p] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const noise = configNumber(k, 'noise')
@@ -773,18 +797,26 @@ function spikeSlabMarginalLearnedProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    ...base,
-    definition,
-    data: { y: observed },
-    equations: base.equations
-      .map((line) =>
-        line.startsWith('z_j ~')
-          ? 'w_j ~ share N(0, 1 / slabPrecision) + (1 - share) N(0, 0.1²)   (the switch summed out)'
-          : line,
-      )
-      .filter((line) => !line.startsWith('slab_j ~')),
-    quantities: base.quantities.filter((q) => q.support !== 'probability'),
-    exact: Object.fromEntries(Object.entries(base.exact ?? {}).filter(([name]) => !name.startsWith('z['))),
+    build: {
+      ...base.build,
+      definition,
+      data: { y: observed },
+      quantities: base.build.quantities.filter((q) => q.support !== 'probability'),
+    },
+    reference: {
+      ...base.reference,
+      exact: Object.fromEntries(Object.entries(base.reference?.exact ?? {}).filter(([name]) => !name.startsWith('z['))),
+    },
+    present: {
+      ...base.present,
+      equations: base.present.equations
+        .map((line) =>
+          line.startsWith('z_j ~')
+            ? 'w_j ~ share N(0, 1 / slabPrecision) + (1 - share) N(0, 0.1²)   (the switch summed out)'
+            : line,
+        )
+        .filter((line) => !line.startsWith('slab_j ~')),
+    },
   }
 }
 
@@ -834,10 +866,10 @@ export const spikeSlabMarginalLearnedAtom: EpAtom = defineAtom({
     noise: real(0.2, 1.2, { default: 0.5, step: 0.05, label: 'noise sd (known)' }),
   }),
   ep: { damping: 0.5, tol: 1e-4 },
-  problem: spikeSlabMarginalLearnedProblem,
+  parts: spikeSlabMarginalLearnedProblem,
 })
 
-function clutterMixtureLearnedProblem(k: Config): AtomProblem {
+function clutterMixtureLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueTheta, trueSd, trueWeight] = [
     configNumber(k, 'trueTheta'),
@@ -869,50 +901,56 @@ function clutterMixtureLearnedProblem(k: Config): AtomProblem {
   const x = [0, n + 1]
   const band = (c: number, w: number): number[] => [c + w, c + w]
   return {
-    definition,
-    data: { y },
-    equations: [
-      `truth: centre ${trueTheta}, inlier sd ${trueSd} (precision ${sig(1 / trueSd ** 2)}), outlier share ${trueWeight}, outliers ${width} times wider; ${n} observations, seed ${seed}`,
-      'mu ~ N(0, 5²)   (the centre)',
-      'precision ~ Gamma(2, 1)   (of the inliers)',
-      'share ~ Beta(2, 5)   (the share of outliers)',
-      `y_i ~ (1 - share) N(mu, 1 / precision) + share N(mu, ${width}² / precision)   (the switch summed out)`,
-    ],
-    quantities: [
-      { name: 'mu', label: 'mu (the centre)', support: 'real', truth: trueTheta },
-      { name: 'precision', label: 'inlier precision', support: 'positive', truth: 1 / trueSd ** 2 },
-      { name: 'share', label: 'share of outliers', support: 'unit', truth: trueWeight },
-    ],
-    exact: { mu: post.centre, precision: post.precision, share: post.share },
-    referenceSource: 'quadrature over the centre, the precision and the share, the switches summed out',
-    figure: {
-      caption:
-        'The simulated observations (outliers drawn ten times wider around the same centre, marked) and the centre with the inlier band at two sds: green, the truth; thick and dashed, what EP believes.',
-      xLabel: 'observation',
-      yLabel: 'value',
-      xLimits: x as [number, number],
-      points: [
-        {
-          name: 'observations',
-          x: at,
-          y,
-          group: isOutlier.map((o) => (o ? 1 : 0)),
-          groupNames: { 0: 'inlier', 1: 'outlier' },
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'mu', label: 'mu (the centre)', support: 'real', truth: trueTheta },
+        { name: 'precision', label: 'inlier precision', support: 'positive', truth: 1 / trueSd ** 2 },
+        { name: 'share', label: 'share of outliers', support: 'unit', truth: trueWeight },
+      ],
+    },
+    reference: {
+      exact: { mu: post.centre, precision: post.precision, share: post.share },
+      referenceSource: 'quadrature over the centre, the precision and the share, the switches summed out',
+    },
+    present: {
+      equations: [
+        `truth: centre ${trueTheta}, inlier sd ${trueSd} (precision ${sig(1 / trueSd ** 2)}), outlier share ${trueWeight}, outliers ${width} times wider; ${n} observations, seed ${seed}`,
+        'mu ~ N(0, 5²)   (the centre)',
+        'precision ~ Gamma(2, 1)   (of the inliers)',
+        'share ~ Beta(2, 5)   (the share of outliers)',
+        `y_i ~ (1 - share) N(mu, 1 / precision) + share N(mu, ${width}² / precision)   (the switch summed out)`,
+      ],
+      figure: {
+        caption:
+          'The simulated observations (outliers drawn ten times wider around the same centre, marked) and the centre with the inlier band at two sds: green, the truth; thick and dashed, what EP believes.',
+        xLabel: 'observation',
+        yLabel: 'value',
+        xLimits: x as [number, number],
+        points: [
+          {
+            name: 'observations',
+            x: at,
+            y,
+            group: isOutlier.map((o) => (o ? 1 : 0)),
+            groupNames: { 0: 'inlier', 1: 'outlier' },
+          },
+        ],
+        curves: [
+          { name: 'true centre', colour: 'tab2', x, y: band(trueTheta, 0) },
+          { name: 'true inlier band', colour: 'tab2', x, y: band(trueTheta, 2 * trueSd) },
+          { name: 'true inlier band', colour: 'tab2', x, y: band(trueTheta, -2 * trueSd) },
+        ],
+        answer: (m) => {
+          const centre = m['mu'] ?? Number.NaN
+          const w = 2 / Math.sqrt(m['precision'] ?? Number.NaN)
+          return [
+            { name: 'mu', x, y: band(centre, 0) },
+            { name: 'mu + 2 inlier sd', x, y: band(centre, w) },
+            { name: 'mu - 2 inlier sd', x, y: band(centre, -w) },
+          ]
         },
-      ],
-      curves: [
-        { name: 'true centre', colour: 'tab2', x, y: band(trueTheta, 0) },
-        { name: 'true inlier band', colour: 'tab2', x, y: band(trueTheta, 2 * trueSd) },
-        { name: 'true inlier band', colour: 'tab2', x, y: band(trueTheta, -2 * trueSd) },
-      ],
-      answer: (m) => {
-        const centre = m['mu'] ?? Number.NaN
-        const w = 2 / Math.sqrt(m['precision'] ?? Number.NaN)
-        return [
-          { name: 'mu', x, y: band(centre, 0) },
-          { name: 'mu + 2 inlier sd', x, y: band(centre, w) },
-          { name: 'mu - 2 inlier sd', x, y: band(centre, -w) },
-        ]
       },
     },
   }
@@ -964,5 +1002,5 @@ export const clutterMixtureLearnedAtom: EpAtom = defineAtom({
     trueWeight: real(0.05, 0.5, { default: 0.25, step: 0.01, label: 'true share of outliers' }),
   }),
   ep: { damping: 0.5, tol: 1e-4 },
-  problem: clutterMixtureLearnedProblem,
+  parts: clutterMixtureLearnedProblem,
 })

@@ -15,7 +15,14 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type CoordinateBox, type ExactMarginal, logWeights, logWishart2, posterior3 } from '../validation/index.ts'
-import { type AtomProblem, type AtomRecoverySpec, defineAtom, type EpAtom, type FigureCurve } from './ep-atoms.ts'
+import {
+  type AtomParts,
+  type AtomProblem,
+  type AtomRecoverySpec,
+  defineAtom,
+  type EpAtom,
+  type FigureCurve,
+} from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 
 /** The 2 by 2 matrix `[[a, b], [b, c]]` as a nested array. */
@@ -165,7 +172,7 @@ const WISHART_ROWS = [
 ]
 const KNOWN_MEAN = [0.1, 0.2]
 
-function mvnWishartProblem(k: Config): AtomProblem {
+function mvnWishartProblem(k: Config): AtomParts {
   const nu = configNumber(k, 'df')
   const prior = configNumber(k, 'priorScale')
   const rows = WISHART_ROWS.slice(0, configNumber(k, 'n'))
@@ -193,27 +200,33 @@ function mvnWishartProblem(k: Config): AtomProblem {
   const cov = (m: Readonly<Record<string, number>>): [number, number, number] =>
     inverse2(m['Lambda[0]'] ?? 1, m['Lambda[1]'] ?? 0, m['Lambda[3]'] ?? 1)
   return {
-    definition,
-    data: { y: rows },
-    equations: [
-      `Lambda ~ Wishart(${nu}, ${prior} I)   (the precision matrix; prior mean ${nu * prior} I)`,
-      `y_i ~ N((${KNOWN_MEAN.join(', ')}), Lambda^-1), i = 1..${n}   (the mean is known)`,
-      `posterior: Wishart(${nu + n}, (Lambda0^-1 + sum (y - m)(y - m)')^-1), exactly`,
-    ],
-    quantities: [
-      { name: 'Lambda[0]', label: 'Lambda 11', support: 'positive' },
-      { name: 'Lambda[1]', label: 'Lambda 12', support: 'real' },
-      { name: 'Lambda[3]', label: 'Lambda 22', support: 'positive' },
-    ],
-    exact: posterior,
-    referenceSource: 'the closed-form Wishart posterior (the marginal of the off-diagonal entry by quadrature)',
-    figure: {
-      caption:
-        'The observed pairs and the covariance ellipse (two sds) the posterior mean precision implies, beside the exact one.',
-      xLabel: 'y1',
-      yLabel: 'y2',
-      points: [{ name: 'observations', x: rows.map((r) => r[0] as number), y: rows.map((r) => r[1] as number) }],
-      answer: (mm) => [ellipse('two sds', undefined, KNOWN_MEAN, cov(mm))],
+    build: {
+      definition,
+      data: { y: rows },
+      quantities: [
+        { name: 'Lambda[0]', label: 'Lambda 11', support: 'positive' },
+        { name: 'Lambda[1]', label: 'Lambda 12', support: 'real' },
+        { name: 'Lambda[3]', label: 'Lambda 22', support: 'positive' },
+      ],
+    },
+    reference: {
+      exact: posterior,
+      referenceSource: 'the closed-form Wishart posterior (the marginal of the off-diagonal entry by quadrature)',
+    },
+    present: {
+      equations: [
+        `Lambda ~ Wishart(${nu}, ${prior} I)   (the precision matrix; prior mean ${nu * prior} I)`,
+        `y_i ~ N((${KNOWN_MEAN.join(', ')}), Lambda^-1), i = 1..${n}   (the mean is known)`,
+        `posterior: Wishart(${nu + n}, (Lambda0^-1 + sum (y - m)(y - m)')^-1), exactly`,
+      ],
+      figure: {
+        caption:
+          'The observed pairs and the covariance ellipse (two sds) the posterior mean precision implies, beside the exact one.',
+        xLabel: 'y1',
+        yLabel: 'y2',
+        points: [{ name: 'observations', x: rows.map((r) => r[0] as number), y: rows.map((r) => r[1] as number) }],
+        answer: (mm) => [ellipse('two sds', undefined, KNOWN_MEAN, cov(mm))],
+      },
     },
   }
 }
@@ -248,7 +261,7 @@ export const mvnWishartAtom: EpAtom = defineAtom({
     priorScale: real(0.2, 2, { default: 0.5, step: 0.05, label: 'prior scale (mean precision is df x this)' }),
     n: int(1, 6, { default: 6, label: 'observations' }),
   }),
-  problem: mvnWishartProblem,
+  parts: mvnWishartProblem,
 })
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -271,7 +284,7 @@ const CORRELATION_RECOVERY: AtomRecoverySpec = {
     'one plated factor: EP carries the marginals of the exact posterior (gammas for the precisions, a beta for the correlation, a Gaussian for the mean), whose intervals hold the truth close to nine times in ten; the correlation, bounded and skewed, has errors a third larger than its spread says; 40 seeds leave a binomial spread of about 0.05',
 }
 
-function mvnWishartLearnedProblem(k: Config): AtomProblem {
+function mvnWishartLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueMean1, trueMean2] = [configNumber(k, 'trueMean1'), configNumber(k, 'trueMean2')]
   const [sd1, sd2, rho] = [configNumber(k, 'trueSd1'), configNumber(k, 'trueSd2'), configNumber(k, 'trueRho')]
@@ -340,37 +353,44 @@ function mvnWishartLearnedProblem(k: Config): AtomProblem {
   const cov = (mm: Readonly<Record<string, number>>): [number, number, number] =>
     inverse2(mm['Lambda[0]'] ?? 1, mm['Lambda[1]'] ?? 0, mm['Lambda[3]'] ?? 1)
   return {
-    definition,
-    data: { y: rows },
-    equations: [
-      `truth: mean (${trueMean1}, ${trueMean2}), sds (${sd1}, ${sd2}), correlation ${rho}; ${n} pairs drawn with seed ${seed}`,
-      `mu ~ N(0, ${priorSd}^2 I)   (the unknown mean)`,
-      `Lambda ~ Wishart(${nu}, I / ${nu})   (the unknown precision matrix, prior mean the identity)`,
-      `y_i ~ N(mu, Lambda^-1), i = 1..${n}`,
-    ],
-    quantities: [
-      { name: 'mu[0]', label: 'mu 1', support: 'real', truth: trueMean1 },
-      { name: 'mu[1]', label: 'mu 2', support: 'real', truth: trueMean2 },
-      { name: 'Lambda[0]', label: 'Lambda 11', support: 'positive', truth: trueLambda[0] },
-      { name: 'Lambda[1]', label: 'Lambda 12', support: 'real', truth: trueLambda[1] },
-      { name: 'Lambda[3]', label: 'Lambda 22', support: 'positive', truth: trueLambda[2] },
-    ],
-    exact: {
-      'mu[0]': meanMix(0),
-      'mu[1]': meanMix(1),
-      'Lambda[0]': grid.marginal(0),
-      'Lambda[1]': grid.marginal(1),
-      'Lambda[3]': grid.marginal(2),
+    build: {
+      definition,
+      data: { y: rows },
+      quantities: [
+        { name: 'mu[0]', label: 'mu 1', support: 'real', truth: trueMean1 },
+        { name: 'mu[1]', label: 'mu 2', support: 'real', truth: trueMean2 },
+        { name: 'Lambda[0]', label: 'Lambda 11', support: 'positive', truth: trueLambda[0] },
+        { name: 'Lambda[1]', label: 'Lambda 12', support: 'real', truth: trueLambda[1] },
+        { name: 'Lambda[3]', label: 'Lambda 22', support: 'positive', truth: trueLambda[2] },
+      ],
     },
-    referenceSource: 'quadrature of the three entries of the precision matrix, the mean integrated out in closed form',
-    figure: {
-      caption:
-        'The simulated pairs, the true covariance ellipse (green) and the one the posterior mean implies (two sds).',
-      xLabel: 'y1',
-      yLabel: 'y2',
-      points: [{ name: 'observations', x: rows.map((r) => r[0] as number), y: rows.map((r) => r[1] as number) }],
-      curves: [ellipse('true', 'tab2', truth, trueCov)],
-      answer: (mm) => [ellipse('fitted', undefined, [mm['mu[0]'] ?? 0, mm['mu[1]'] ?? 0], cov(mm))],
+    reference: {
+      exact: {
+        'mu[0]': meanMix(0),
+        'mu[1]': meanMix(1),
+        'Lambda[0]': grid.marginal(0),
+        'Lambda[1]': grid.marginal(1),
+        'Lambda[3]': grid.marginal(2),
+      },
+      referenceSource:
+        'quadrature of the three entries of the precision matrix, the mean integrated out in closed form',
+    },
+    present: {
+      equations: [
+        `truth: mean (${trueMean1}, ${trueMean2}), sds (${sd1}, ${sd2}), correlation ${rho}; ${n} pairs drawn with seed ${seed}`,
+        `mu ~ N(0, ${priorSd}^2 I)   (the unknown mean)`,
+        `Lambda ~ Wishart(${nu}, I / ${nu})   (the unknown precision matrix, prior mean the identity)`,
+        `y_i ~ N(mu, Lambda^-1), i = 1..${n}`,
+      ],
+      figure: {
+        caption:
+          'The simulated pairs, the true covariance ellipse (green) and the one the posterior mean implies (two sds).',
+        xLabel: 'y1',
+        yLabel: 'y2',
+        points: [{ name: 'observations', x: rows.map((r) => r[0] as number), y: rows.map((r) => r[1] as number) }],
+        curves: [ellipse('true', 'tab2', truth, trueCov)],
+        answer: (mm) => [ellipse('fitted', undefined, [mm['mu[0]'] ?? 0, mm['mu[1]'] ?? 0], cov(mm))],
+      },
     },
   }
 }
@@ -413,7 +433,7 @@ export const mvnWishartLearnedAtom: EpAtom = defineAtom({
     df: real(2.2, 12, { default: 3, step: 0.2, label: 'prior degrees of freedom' }),
     priorSd: real(1, 10, { default: 4, step: 0.5, label: 'prior sd of the mean' }),
   }),
-  problem: mvnWishartLearnedProblem,
+  parts: mvnWishartLearnedProblem,
 })
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -452,7 +472,7 @@ function correlationMarginal(eta: number, n: number, sxx: number, sxy: number, s
   }
 }
 
-function bivariateCorrelationProblem(k: Config): AtomProblem {
+function bivariateCorrelationProblem(k: Config): AtomParts {
   const eta = configNumber(k, 'eta')
   const rows = PAIRS.slice(0, configNumber(k, 'n'))
   // region bivariate-correlation
@@ -469,22 +489,28 @@ function bivariateCorrelationProblem(k: Config): AtomProblem {
   const syy = rows.reduce((s, r) => s + (r[1] as number) ** 2, 0)
   const sxy = rows.reduce((s, r) => s + (r[0] as number) * (r[1] as number), 0)
   return {
-    definition,
-    data: { y: rows },
-    equations: [
-      `rho ~ LKJ(2, ${eta})   (p(rho) = (1 - rho^2)^${eta - 1} on (-1, 1))`,
-      `y_i ~ N(0, [[1, rho], [rho, 1]]), i = 1..${n}   (mean and sds known)`,
-      `p(rho | y) = (1 - rho^2)^(${eta - 1} - ${n} / 2) exp(-(sum y1^2 - 2 rho sum y1 y2 + sum y2^2) / (2 (1 - rho^2)))`,
-    ],
-    quantities: [{ name: 'rho', label: 'rho (the correlation)', support: 'real' }],
-    exact: { rho: correlationMarginal(eta, n, sxx, sxy, syy) },
-    referenceSource: 'the posterior of the correlation, one-dimensional, by quadrature',
-    figure: {
-      caption: 'The observed pairs and the unit-variance ellipse (two sds) the posterior mean correlation implies.',
-      xLabel: 'y1',
-      yLabel: 'y2',
-      points: [{ name: 'observations', x: rows.map((r) => r[0] as number), y: rows.map((r) => r[1] as number) }],
-      answer: (mm) => [ellipse('two sds', undefined, [0, 0], [1, mm['rho'] ?? 0, 1])],
+    build: {
+      definition,
+      data: { y: rows },
+      quantities: [{ name: 'rho', label: 'rho (the correlation)', support: 'real' }],
+    },
+    reference: {
+      exact: { rho: correlationMarginal(eta, n, sxx, sxy, syy) },
+      referenceSource: 'the posterior of the correlation, one-dimensional, by quadrature',
+    },
+    present: {
+      equations: [
+        `rho ~ LKJ(2, ${eta})   (p(rho) = (1 - rho^2)^${eta - 1} on (-1, 1))`,
+        `y_i ~ N(0, [[1, rho], [rho, 1]]), i = 1..${n}   (mean and sds known)`,
+        `p(rho | y) = (1 - rho^2)^(${eta - 1} - ${n} / 2) exp(-(sum y1^2 - 2 rho sum y1 y2 + sum y2^2) / (2 (1 - rho^2)))`,
+      ],
+      figure: {
+        caption: 'The observed pairs and the unit-variance ellipse (two sds) the posterior mean correlation implies.',
+        xLabel: 'y1',
+        yLabel: 'y2',
+        points: [{ name: 'observations', x: rows.map((r) => r[0] as number), y: rows.map((r) => r[1] as number) }],
+        answer: (mm) => [ellipse('two sds', undefined, [0, 0], [1, mm['rho'] ?? 0, 1])],
+      },
     },
   }
 }
@@ -518,10 +544,10 @@ export const bivariateCorrelationAtom: EpAtom = defineAtom({
     eta: real(0.5, 8, { default: 1, step: 0.25, label: 'LKJ concentration eta' }),
     n: int(2, 8, { default: 8, label: 'observations' }),
   }),
-  problem: bivariateCorrelationProblem,
+  parts: bivariateCorrelationProblem,
 })
 
-function bivariateCorrelationLearnedProblem(k: Config): AtomProblem {
+function bivariateCorrelationLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueMean1, trueMean2] = [configNumber(k, 'trueMean1'), configNumber(k, 'trueMean2')]
   const [sd1, sd2, rho0] = [configNumber(k, 'trueSd1'), configNumber(k, 'trueSd2'), configNumber(k, 'trueRho')]
@@ -609,40 +635,46 @@ function bivariateCorrelationLearnedProblem(k: Config): AtomProblem {
       return c === 0 ? { mean: c11 * h1 + c12 * h2, variance: c11 } : { mean: c12 * h1 + c22 * h2, variance: c22 }
     })
   return {
-    definition,
-    data: { y: rows },
-    equations: [
-      `truth: mean (${trueMean1}, ${trueMean2}), sds (${sd1}, ${sd2}), correlation ${rho0}; ${n} pairs drawn with seed ${seed}`,
-      `tau1, tau2 ~ Gamma(${a}, ${b})   (the precisions: sd = 1 / sqrt(tau))`,
-      `rho ~ LKJ(2, ${eta});  mu ~ N(0, ${priorSd}^2 I)`,
-      `y_i ~ N(mu, [[1 / tau1, rho / sqrt(tau1 tau2)], [rho / sqrt(tau1 tau2), 1 / tau2]]), i = 1..${n}`,
-    ],
-    quantities: [
-      { name: 'mu[0]', label: 'mu 1', support: 'real', truth: trueMean1 },
-      { name: 'mu[1]', label: 'mu 2', support: 'real', truth: trueMean2 },
-      { name: 'tau1', label: 'tau 1 (precision of y1)', support: 'positive', truth: 1 / (sd1 * sd1) },
-      { name: 'tau2', label: 'tau 2 (precision of y2)', support: 'positive', truth: 1 / (sd2 * sd2) },
-      { name: 'rho', label: 'rho (the correlation)', support: 'real', truth: rho0 },
-    ],
-    exact: {
-      'mu[0]': meanMix(0),
-      'mu[1]': meanMix(1),
-      tau1: grid.marginal(0),
-      tau2: grid.marginal(1),
-      rho: grid.marginal(2),
+    build: {
+      definition,
+      data: { y: rows },
+      quantities: [
+        { name: 'mu[0]', label: 'mu 1', support: 'real', truth: trueMean1 },
+        { name: 'mu[1]', label: 'mu 2', support: 'real', truth: trueMean2 },
+        { name: 'tau1', label: 'tau 1 (precision of y1)', support: 'positive', truth: 1 / (sd1 * sd1) },
+        { name: 'tau2', label: 'tau 2 (precision of y2)', support: 'positive', truth: 1 / (sd2 * sd2) },
+        { name: 'rho', label: 'rho (the correlation)', support: 'real', truth: rho0 },
+      ],
     },
-    referenceSource: 'quadrature of the two precisions and the correlation, the mean integrated out in closed form',
-    figure: {
-      caption:
-        'The simulated pairs, the true covariance ellipse (green) and the one the posterior means imply (two sds).',
-      xLabel: 'y1',
-      yLabel: 'y2',
-      points: [{ name: 'observations', x: rows.map((r) => r[0] as number), y: rows.map((r) => r[1] as number) }],
-      curves: [ellipse('true', 'tab2', truth, [sd1 * sd1, rho0 * sd1 * sd2, sd2 * sd2])],
-      answer: (mm) => {
-        const [s1, s2] = [1 / Math.sqrt(mm['tau1'] ?? 1), 1 / Math.sqrt(mm['tau2'] ?? 1)]
-        const r = mm['rho'] ?? 0
-        return [ellipse('fitted', undefined, [mm['mu[0]'] ?? 0, mm['mu[1]'] ?? 0], [s1 * s1, r * s1 * s2, s2 * s2])]
+    reference: {
+      exact: {
+        'mu[0]': meanMix(0),
+        'mu[1]': meanMix(1),
+        tau1: grid.marginal(0),
+        tau2: grid.marginal(1),
+        rho: grid.marginal(2),
+      },
+      referenceSource: 'quadrature of the two precisions and the correlation, the mean integrated out in closed form',
+    },
+    present: {
+      equations: [
+        `truth: mean (${trueMean1}, ${trueMean2}), sds (${sd1}, ${sd2}), correlation ${rho0}; ${n} pairs drawn with seed ${seed}`,
+        `tau1, tau2 ~ Gamma(${a}, ${b})   (the precisions: sd = 1 / sqrt(tau))`,
+        `rho ~ LKJ(2, ${eta});  mu ~ N(0, ${priorSd}^2 I)`,
+        `y_i ~ N(mu, [[1 / tau1, rho / sqrt(tau1 tau2)], [rho / sqrt(tau1 tau2), 1 / tau2]]), i = 1..${n}`,
+      ],
+      figure: {
+        caption:
+          'The simulated pairs, the true covariance ellipse (green) and the one the posterior means imply (two sds).',
+        xLabel: 'y1',
+        yLabel: 'y2',
+        points: [{ name: 'observations', x: rows.map((r) => r[0] as number), y: rows.map((r) => r[1] as number) }],
+        curves: [ellipse('true', 'tab2', truth, [sd1 * sd1, rho0 * sd1 * sd2, sd2 * sd2])],
+        answer: (mm) => {
+          const [s1, s2] = [1 / Math.sqrt(mm['tau1'] ?? 1), 1 / Math.sqrt(mm['tau2'] ?? 1)]
+          const r = mm['rho'] ?? 0
+          return [ellipse('fitted', undefined, [mm['mu[0]'] ?? 0, mm['mu[1]'] ?? 0], [s1 * s1, r * s1 * s2, s2 * s2])]
+        },
       },
     },
   }
@@ -687,7 +719,7 @@ export const bivariateCorrelationLearnedAtom: EpAtom = defineAtom({
     eta: real(0.5, 8, { default: 1, step: 0.25, label: 'LKJ concentration eta' }),
     priorSd: real(1, 10, { default: 4, step: 0.5, label: 'prior sd of the mean' }),
   }),
-  problem: bivariateCorrelationLearnedProblem,
+  parts: bivariateCorrelationLearnedProblem,
 })
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -847,7 +879,7 @@ function randomEffectsFigure(
 const KNOWN_POPULATION = [0.4, -0.3] as const
 const [POPULATION_1, POPULATION_2] = KNOWN_POPULATION
 
-function randomEffectsProblem(k: Config): AtomProblem {
+function randomEffectsProblem(k: Config): AtomParts {
   const groups = configNumber(k, 'groups')
   const noise = configNumber(k, 'noise')
   const nu = configNumber(k, 'df')
@@ -897,36 +929,42 @@ function randomEffectsProblem(k: Config): AtomProblem {
     exact[`theta[${2 * j + 1}]`] = effect(j, 1)
   }
   return {
-    definition,
-    data: { X: design.map((o) => [1, o.t]), g: design.map((o) => o.g), y: data.y.flat() },
-    equations: [
-      `Lambda ~ Wishart(${nu}, I / ${nu})   (the precision of the (intercept, slope) pairs; prior mean the identity)`,
-      `theta_j ~ N((${KNOWN_POPULATION.join(', ')}), Lambda^-1), j = 1..${groups}   (the population mean is known)`,
-      `y_jt ~ N(theta_j1 + theta_j2 t, ${noise}^2), t = ${TIMES.join(', ')}`,
-    ],
-    quantities: [
-      { name: 'Lambda[0]', label: 'Lambda 11', support: 'positive' },
-      { name: 'Lambda[1]', label: 'Lambda 12', support: 'real' },
-      { name: 'Lambda[3]', label: 'Lambda 22', support: 'positive' },
-      ...Array.from({ length: groups }, (_, j) => [
-        {
-          name: `theta[${2 * j}]`,
-          label: `intercept ${j + 1}`,
-          support: 'real' as const,
-          pool: 'intercepts (every group)',
-        },
-        {
-          name: `theta[${2 * j + 1}]`,
-          label: `slope ${j + 1}`,
-          support: 'real' as const,
-          pool: 'slopes (every group)',
-        },
-      ]).flat(),
-    ],
-    exact,
-    referenceSource:
-      'quadrature of the three entries of the precision matrix, the effects integrated out in closed form (each is a Gaussian mixture over it)',
-    figure: randomEffectsFigure(data.y),
+    build: {
+      definition,
+      data: { X: design.map((o) => [1, o.t]), g: design.map((o) => o.g), y: data.y.flat() },
+      quantities: [
+        { name: 'Lambda[0]', label: 'Lambda 11', support: 'positive' },
+        { name: 'Lambda[1]', label: 'Lambda 12', support: 'real' },
+        { name: 'Lambda[3]', label: 'Lambda 22', support: 'positive' },
+        ...Array.from({ length: groups }, (_, j) => [
+          {
+            name: `theta[${2 * j}]`,
+            label: `intercept ${j + 1}`,
+            support: 'real' as const,
+            pool: 'intercepts (every group)',
+          },
+          {
+            name: `theta[${2 * j + 1}]`,
+            label: `slope ${j + 1}`,
+            support: 'real' as const,
+            pool: 'slopes (every group)',
+          },
+        ]).flat(),
+      ],
+    },
+    reference: {
+      exact,
+      referenceSource:
+        'quadrature of the three entries of the precision matrix, the effects integrated out in closed form (each is a Gaussian mixture over it)',
+    },
+    present: {
+      equations: [
+        `Lambda ~ Wishart(${nu}, I / ${nu})   (the precision of the (intercept, slope) pairs; prior mean the identity)`,
+        `theta_j ~ N((${KNOWN_POPULATION.join(', ')}), Lambda^-1), j = 1..${groups}   (the population mean is known)`,
+        `y_jt ~ N(theta_j1 + theta_j2 t, ${noise}^2), t = ${TIMES.join(', ')}`,
+      ],
+      figure: randomEffectsFigure(data.y),
+    },
   }
 }
 
@@ -965,10 +1003,10 @@ export const randomInterceptsSlopesAtom: EpAtom = defineAtom({
     noise: real(0.1, 1, { default: 0.3, step: 0.05, label: 'noise sd (known)' }),
     df: real(2.2, 12, { default: 4, step: 0.2, label: 'prior degrees of freedom' }),
   }),
-  problem: randomEffectsProblem,
+  parts: randomEffectsProblem,
 })
 
-function randomEffectsLearnedProblem(k: Config): AtomProblem {
+function randomEffectsLearnedProblem(k: Config): AtomParts {
   const [seed, groups] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [m1, m2] = [configNumber(k, 'trueMean1'), configNumber(k, 'trueMean2')]
   const [sd1, sd2, rho] = [configNumber(k, 'trueSd1'), configNumber(k, 'trueSd2'), configNumber(k, 'trueRho')]
@@ -1076,41 +1114,47 @@ function randomEffectsLearnedProblem(k: Config): AtomProblem {
   }
   const effects = data.effects ?? []
   return {
-    definition,
-    data: { X: design.map((o) => [1, o.t]), g: design.map((o) => o.g), y: data.y.flat() },
-    equations: [
-      `truth: population mean (${m1}, ${m2}), sds (${sd1}, ${sd2}), correlation ${rho}, noise ${noise}; ${groups} groups of ${TIMES.length}, seed ${seed}`,
-      `mu ~ N(0, ${priorSd}^2 I);  Lambda ~ Wishart(${nu}, I / ${nu})`,
-      `theta_j ~ N(mu, Lambda^-1), j = 1..${groups}`,
-      `y_jt ~ N(theta_j1 + theta_j2 t, ${noise}^2), t = ${TIMES.join(', ')}`,
-    ],
-    quantities: [
-      { name: 'mu[0]', label: 'mean intercept', support: 'real', truth: m1 },
-      { name: 'mu[1]', label: 'mean slope', support: 'real', truth: m2 },
-      { name: 'Lambda[0]', label: 'Lambda 11', support: 'positive', truth: trueLambda[0] },
-      { name: 'Lambda[1]', label: 'Lambda 12', support: 'real', truth: trueLambda[1] },
-      { name: 'Lambda[3]', label: 'Lambda 22', support: 'positive', truth: trueLambda[2] },
-      ...Array.from({ length: groups }, (_, j) => [
-        {
-          name: `theta[${2 * j}]`,
-          label: `intercept ${j + 1}`,
-          support: 'real' as const,
-          truth: effects[j]?.[0] as number,
-          pool: 'intercepts (every group)',
-        },
-        {
-          name: `theta[${2 * j + 1}]`,
-          label: `slope ${j + 1}`,
-          support: 'real' as const,
-          truth: effects[j]?.[1] as number,
-          pool: 'slopes (every group)',
-        },
-      ]).flat(),
-    ],
-    exact,
-    referenceSource:
-      'quadrature of the three entries of the precision matrix, the mean and the effects integrated out in closed form',
-    figure: randomEffectsFigure(data.y, effects),
+    build: {
+      definition,
+      data: { X: design.map((o) => [1, o.t]), g: design.map((o) => o.g), y: data.y.flat() },
+      quantities: [
+        { name: 'mu[0]', label: 'mean intercept', support: 'real', truth: m1 },
+        { name: 'mu[1]', label: 'mean slope', support: 'real', truth: m2 },
+        { name: 'Lambda[0]', label: 'Lambda 11', support: 'positive', truth: trueLambda[0] },
+        { name: 'Lambda[1]', label: 'Lambda 12', support: 'real', truth: trueLambda[1] },
+        { name: 'Lambda[3]', label: 'Lambda 22', support: 'positive', truth: trueLambda[2] },
+        ...Array.from({ length: groups }, (_, j) => [
+          {
+            name: `theta[${2 * j}]`,
+            label: `intercept ${j + 1}`,
+            support: 'real' as const,
+            truth: effects[j]?.[0] as number,
+            pool: 'intercepts (every group)',
+          },
+          {
+            name: `theta[${2 * j + 1}]`,
+            label: `slope ${j + 1}`,
+            support: 'real' as const,
+            truth: effects[j]?.[1] as number,
+            pool: 'slopes (every group)',
+          },
+        ]).flat(),
+      ],
+    },
+    reference: {
+      exact,
+      referenceSource:
+        'quadrature of the three entries of the precision matrix, the mean and the effects integrated out in closed form',
+    },
+    present: {
+      equations: [
+        `truth: population mean (${m1}, ${m2}), sds (${sd1}, ${sd2}), correlation ${rho}, noise ${noise}; ${groups} groups of ${TIMES.length}, seed ${seed}`,
+        `mu ~ N(0, ${priorSd}^2 I);  Lambda ~ Wishart(${nu}, I / ${nu})`,
+        `theta_j ~ N(mu, Lambda^-1), j = 1..${groups}`,
+        `y_jt ~ N(theta_j1 + theta_j2 t, ${noise}^2), t = ${TIMES.join(', ')}`,
+      ],
+      figure: randomEffectsFigure(data.y, effects),
+    },
   }
 }
 
@@ -1164,5 +1208,5 @@ export const randomInterceptsSlopesLearnedAtom: EpAtom = defineAtom({
     df: real(2.2, 12, { default: 3, step: 0.2, label: 'prior degrees of freedom' }),
     priorSd: real(1, 10, { default: 3, step: 0.5, label: 'prior sd of the mean' }),
   }),
-  problem: randomEffectsLearnedProblem,
+  parts: randomEffectsLearnedProblem,
 })

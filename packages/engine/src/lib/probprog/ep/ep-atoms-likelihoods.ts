@@ -15,11 +15,11 @@ import { defineModel, ops } from '../model/index.ts'
 import { probitClassifier, probitData } from '../models/probit-classification.ts'
 import { trueskillModel } from '../models/ranking.ts'
 import { gridMarginals, normalCdf } from '../validation/index.ts'
-import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 const HEAVY = [0.2, -0.1, 0.4, 0.0, 4.5]
 
-function heavyProblem(kind: 'student-t' | 'laplace', k: Config): AtomProblem {
+function heavyProblem(kind: 'student-t' | 'laplace', k: Config): AtomParts {
   const s = configNumber(k, 'scale')
   const df = 3
   // region student-t laplace
@@ -33,22 +33,26 @@ function heavyProblem(kind: 'student-t' | 'laplace', k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { y: HEAVY },
-    equations: [
-      'mu ~ N(0, 5²)',
-      kind === 'student-t' ? `y_i ~ Student-t(df = ${df}, mu, ${s})` : `y_i ~ Laplace(mu, ${s})`,
-      `observe y = (${HEAVY.join(', ')})   (the last is far from the rest)`,
-    ],
-    quantities: [{ name: 'mu', label: 'mu', support: 'real' }],
-    figure: {
-      caption:
-        'The five observations; the line is where the belief puts mu. A heavy-tailed likelihood lets the last one be an outlier instead of dragging mu towards it.',
-      xLabel: 'observation',
-      yLabel: 'y',
-      xLimits: [0, HEAVY.length + 1],
-      points: [{ name: 'observations', x: HEAVY.map((_, i) => i + 1), y: [...HEAVY] }],
-      answer: (m) => [{ name: 'mu', x: [0, HEAVY.length + 1], y: [m['mu'] ?? Number.NaN, m['mu'] ?? Number.NaN] }],
+    build: {
+      definition,
+      data: { y: HEAVY },
+      quantities: [{ name: 'mu', label: 'mu', support: 'real' }],
+    },
+    present: {
+      equations: [
+        'mu ~ N(0, 5²)',
+        kind === 'student-t' ? `y_i ~ Student-t(df = ${df}, mu, ${s})` : `y_i ~ Laplace(mu, ${s})`,
+        `observe y = (${HEAVY.join(', ')})   (the last is far from the rest)`,
+      ],
+      figure: {
+        caption:
+          'The five observations; the line is where the belief puts mu. A heavy-tailed likelihood lets the last one be an outlier instead of dragging mu towards it.',
+        xLabel: 'observation',
+        yLabel: 'y',
+        xLimits: [0, HEAVY.length + 1],
+        points: [{ name: 'observations', x: HEAVY.map((_, i) => i + 1), y: [...HEAVY] }],
+        answer: (m) => [{ name: 'mu', x: [0, HEAVY.length + 1], y: [m['mu'] ?? Number.NaN, m['mu'] ?? Number.NaN] }],
+      },
     },
   }
 }
@@ -79,7 +83,7 @@ export const studentTAtom: EpAtom = defineAtom({
       'the posterior is bumpy (the outlier may or may not count) and EP matches its mean and variance with one Gaussian',
   },
   knobs: dict({ scale: real(0.1, 2, { default: 0.5, step: 0.05, label: 'noise scale' }) }),
-  problem: (k) => heavyProblem('student-t', k),
+  parts: (k) => heavyProblem('student-t', k),
 })
 
 /**
@@ -106,7 +110,7 @@ export const laplaceAtom: EpAtom = defineAtom({
     reason: 'the posterior has kinks at the observations and EP matches its mean and variance with one Gaussian',
   },
   knobs: dict({ scale: real(0.1, 2, { default: 0.5, step: 0.05, label: 'noise scale' }) }),
-  problem: (k) => heavyProblem('laplace', k),
+  parts: (k) => heavyProblem('laplace', k),
 })
 
 const POINTS: readonly (readonly [number, number, number])[] = [
@@ -121,7 +125,7 @@ const POINTS: readonly (readonly [number, number, number])[] = [
 ]
 const LIMIT = 3
 
-function classesProblem(link: 'probit' | 'logistic', k: Config): AtomProblem {
+function classesProblem(link: 'probit' | 'logistic', k: Config): AtomParts {
   const s = configNumber(k, 'priorScale')
   const design = POINTS.map(([a, b]) => [1, a, b])
   const y = POINTS.map((p) => p[2])
@@ -140,42 +144,48 @@ function classesProblem(link: 'probit' | 'logistic', k: Config): AtomProblem {
   // endregion
   const edge = [-LIMIT, LIMIT]
   return {
-    definition,
-    data: probitData(design, y),
-    equations: [
-      `w_0, w_1, w_2 ~ N(0, ${s}²)   (offset and two slopes)`,
-      link === 'probit'
-        ? 'y_i ~ Bernoulli(Phi(w_0 + w_1 x_i1 + w_2 x_i2)), i = 1..8'
-        : 'y_i ~ Bernoulli(sigmoid(w_0 + w_1 x_i1 + w_2 x_i2)), i = 1..8',
-      'observe the eight labelled points drawn in the figure',
-    ],
-    quantities: [0, 1, 2].map((j) => ({
-      name: `w[${j}]`,
-      label: ['w_0 (offset)', 'w_1 (slope in x1)', 'w_2 (slope in x2)'][j] ?? `w_${j}`,
-      support: 'real' as const,
-    })),
-    pair: ['w[1]', 'w[2]'],
-    grid: { points: 25, maxRefinements: 0 },
-    figure: {
-      caption: 'The eight labelled points and the boundary w_0 + w_1 x1 + w_2 x2 = 0 at the mean of the belief.',
-      xLabel: 'x1',
-      yLabel: 'x2',
-      xLimits: [-LIMIT, LIMIT],
-      yLimits: [-LIMIT, LIMIT],
-      points: [
-        {
-          name: 'points',
-          x: POINTS.map((p) => p[0]),
-          y: POINTS.map((p) => p[1]),
-          group: y,
-          groupNames: { 0: 'label 0', 1: 'label 1' },
-        },
+    build: {
+      definition,
+      data: probitData(design, y),
+      quantities: [0, 1, 2].map((j) => ({
+        name: `w[${j}]`,
+        label: ['w_0 (offset)', 'w_1 (slope in x1)', 'w_2 (slope in x2)'][j] ?? `w_${j}`,
+        support: 'real' as const,
+      })),
+    },
+    reference: {
+      grid: { points: 25, maxRefinements: 0 },
+    },
+    present: {
+      equations: [
+        `w_0, w_1, w_2 ~ N(0, ${s}²)   (offset and two slopes)`,
+        link === 'probit'
+          ? 'y_i ~ Bernoulli(Phi(w_0 + w_1 x_i1 + w_2 x_i2)), i = 1..8'
+          : 'y_i ~ Bernoulli(sigmoid(w_0 + w_1 x_i1 + w_2 x_i2)), i = 1..8',
+        'observe the eight labelled points drawn in the figure',
       ],
-      answer: (m) => {
-        const a = m['w[0]'] ?? Number.NaN
-        const b = m['w[1]'] ?? Number.NaN
-        const c = m['w[2]'] ?? Number.NaN
-        return [{ name: 'boundary', x: edge, y: edge.map((x) => -(a + b * x) / c) }]
+      pair: ['w[1]', 'w[2]'],
+      figure: {
+        caption: 'The eight labelled points and the boundary w_0 + w_1 x1 + w_2 x2 = 0 at the mean of the belief.',
+        xLabel: 'x1',
+        yLabel: 'x2',
+        xLimits: [-LIMIT, LIMIT],
+        yLimits: [-LIMIT, LIMIT],
+        points: [
+          {
+            name: 'points',
+            x: POINTS.map((p) => p[0]),
+            y: POINTS.map((p) => p[1]),
+            group: y,
+            groupNames: { 0: 'label 0', 1: 'label 1' },
+          },
+        ],
+        answer: (m) => {
+          const a = m['w[0]'] ?? Number.NaN
+          const b = m['w[1]'] ?? Number.NaN
+          const c = m['w[2]'] ?? Number.NaN
+          return [{ name: 'boundary', x: edge, y: edge.map((x) => -(a + b * x) / c) }]
+        },
       },
     },
   }
@@ -207,7 +217,7 @@ export const probitAtom: EpAtom = defineAtom({
       'EP matches a Gaussian to each truncated-Gaussian tilted distribution; the posterior is skewed, so it is close, not exact',
   },
   knobs: dict({ priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the weights' }) }),
-  problem: (k) => classesProblem('probit', k),
+  parts: (k) => classesProblem('probit', k),
 })
 
 /**
@@ -234,7 +244,7 @@ export const logisticAtom: EpAtom = defineAtom({
     reason: 'a Gaussian projection of each logistic tilted distribution, evaluated by quadrature',
   },
   knobs: dict({ priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the weights' }) }),
-  problem: (k) => classesProblem('logistic', k),
+  parts: (k) => classesProblem('logistic', k),
 })
 
 const TOURNAMENT = {
@@ -250,7 +260,7 @@ const TOURNAMENT = {
   wins: [1, 1, 1, 1, 0],
 }
 
-function skillsProblem(): AtomProblem {
+function skillsProblem(): AtomParts {
   // region skill-difference
   const { definition, data } = trueskillModel(TOURNAMENT)
   // endregion
@@ -261,29 +271,35 @@ function skillsProblem(): AtomProblem {
   })
   const at = [1, 2, 3]
   return {
-    definition,
-    data,
-    equations: [
-      'skill_A, skill_B, skill_C ~ N(0, 1)',
-      'match g between a and b: a wins ~ Bernoulli(Phi((skill_a - skill_b) / sqrt 2))',
-      ...notes,
-    ],
-    quantities: names.map((n) => ({ name: `skill_${n}`, label: `skill_${n}`, support: 'real' as const })),
-    pair: ['skill_A', 'skill_B'],
-    grid: { points: 25, maxRefinements: 0 },
-    figure: {
-      caption: 'The belief about each player’s skill after the five matches (the bars).',
-      xLabel: 'player',
-      yLabel: 'skill',
-      xLimits: [0.4, 3.6],
-      yLimits: [-2, 2],
-      points: [],
-      answer: (m) =>
-        names.map((n, i) => ({
-          name: `player ${n}`,
-          x: [(at[i] ?? 0) - 0.3, (at[i] ?? 0) + 0.3],
-          y: [m[`skill_${n}`] ?? Number.NaN, m[`skill_${n}`] ?? Number.NaN],
-        })),
+    build: {
+      definition,
+      data,
+      quantities: names.map((n) => ({ name: `skill_${n}`, label: `skill_${n}`, support: 'real' as const })),
+    },
+    reference: {
+      grid: { points: 25, maxRefinements: 0 },
+    },
+    present: {
+      equations: [
+        'skill_A, skill_B, skill_C ~ N(0, 1)',
+        'match g between a and b: a wins ~ Bernoulli(Phi((skill_a - skill_b) / sqrt 2))',
+        ...notes,
+      ],
+      pair: ['skill_A', 'skill_B'],
+      figure: {
+        caption: 'The belief about each player’s skill after the five matches (the bars).',
+        xLabel: 'player',
+        yLabel: 'skill',
+        xLimits: [0.4, 3.6],
+        yLimits: [-2, 2],
+        points: [],
+        answer: (m) =>
+          names.map((n, i) => ({
+            name: `player ${n}`,
+            x: [(at[i] ?? 0) - 0.3, (at[i] ?? 0) + 0.3],
+            y: [m[`skill_${n}`] ?? Number.NaN, m[`skill_${n}`] ?? Number.NaN],
+          })),
+      },
     },
   }
 }
@@ -313,7 +329,7 @@ export const skillDifferenceAtom: EpAtom = defineAtom({
       'each result is a truncated-Gaussian tilted distribution that EP projects onto a Gaussian: close, not exact',
   },
   knobs: dict({}),
-  problem: () => skillsProblem(),
+  parts: () => skillsProblem(),
 })
 
 /** The inverse of a 3 by 3 matrix by cofactors. */
@@ -332,7 +348,7 @@ function invert3(a: readonly (readonly number[])[]): number[][] {
 const GP_X = [[-1.2], [0.1], [1.4]]
 const GP_Y = [0, 1, 1]
 
-function gpProblem(link: 'probit' | 'logistic', k: Config): AtomProblem {
+function gpProblem(link: 'probit' | 'logistic', k: Config): AtomParts {
   const ls = configNumber(k, 'lengthScale')
   const kernel = scaleKernel(rbfKernel({ lengthScale: ls }), 1.5)
   const n = GP_X.length
@@ -369,17 +385,23 @@ function gpProblem(link: 'probit' | 'logistic', k: Config): AtomProblem {
   )
   const pair = g.joint(0, 1)
   return {
-    definition,
-    data: { y: GP_Y },
-    exact: Object.fromEntries(g.marginals.map((m, i) => [`f[${i}]`, m])),
-    exactJoint: { a: 'f[0]', b: 'f[1]', ...pair },
-    equations: [
-      `f ~ N(0, K),  K = 1.5 exp(-(x - x')² / (2 · ${ls}²))  at x = (${GP_X.map((r) => r[0]).join(', ')})   (a dense Gaussian vector)`,
-      link === 'probit' ? 'y_i ~ Bernoulli(Phi(f_i))' : 'y_i ~ Bernoulli(sigmoid(f_i))',
-      `observe y = (${GP_Y.join(', ')})`,
-    ],
-    quantities: GP_X.map((_, i) => ({ name: `f[${i}]`, label: `f(x_${i + 1})`, support: 'real' as const })),
-    pair: ['f[0]', 'f[1]'],
+    build: {
+      definition,
+      data: { y: GP_Y },
+      quantities: GP_X.map((_, i) => ({ name: `f[${i}]`, label: `f(x_${i + 1})`, support: 'real' as const })),
+    },
+    reference: {
+      exact: Object.fromEntries(g.marginals.map((m, i) => [`f[${i}]`, m])),
+      exactJoint: { a: 'f[0]', b: 'f[1]', ...pair },
+    },
+    present: {
+      equations: [
+        `f ~ N(0, K),  K = 1.5 exp(-(x - x')² / (2 · ${ls}²))  at x = (${GP_X.map((r) => r[0]).join(', ')})   (a dense Gaussian vector)`,
+        link === 'probit' ? 'y_i ~ Bernoulli(Phi(f_i))' : 'y_i ~ Bernoulli(sigmoid(f_i))',
+        `observe y = (${GP_Y.join(', ')})`,
+      ],
+      pair: ['f[0]', 'f[1]'],
+    },
   }
 }
 
@@ -408,7 +430,7 @@ export const gpLogisticAtom: EpAtom = defineAtom({
     reason: 'a Gaussian projection of each logistic tilted distribution against a dense Gaussian cavity',
   },
   knobs: dict({ lengthScale: real(0.3, 3, { default: 1, step: 0.1, label: 'kernel length scale' }) }),
-  problem: (k) => gpProblem('logistic', k),
+  parts: (k) => gpProblem('logistic', k),
 })
 
 /**
@@ -435,10 +457,10 @@ export const gpProbitAtom: EpAtom = defineAtom({
     reason: 'a Gaussian projection of each truncated-Gaussian tilted distribution against a dense Gaussian cavity',
   },
   knobs: dict({ lengthScale: real(0.3, 3, { default: 1, step: 0.1, label: 'kernel length scale' }) }),
-  problem: (k) => gpProblem('probit', k),
+  parts: (k) => gpProblem('probit', k),
 })
 
-function poissonLogProblem(k: Config): AtomProblem {
+function poissonLogProblem(k: Config): AtomParts {
   const y = configNumber(k, 'y')
   // region poisson-log
   const definition = defineModel('poisson-log-link', (m) => {
@@ -447,10 +469,14 @@ function poissonLogProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { y },
-    equations: ['x ~ N(0, 1)', 'y ~ Poisson(exp(x))   (a log link)', `observe y = ${y}`],
-    quantities: [{ name: 'x', label: 'x', support: 'real' }],
+    build: {
+      definition,
+      data: { y },
+      quantities: [{ name: 'x', label: 'x', support: 'real' }],
+    },
+    present: {
+      equations: ['x ~ N(0, 1)', 'y ~ Poisson(exp(x))   (a log link)', `observe y = ${y}`],
+    },
   }
 }
 
@@ -478,5 +504,5 @@ export const poissonLogAtom: EpAtom = defineAtom({
     reason: 'a Gaussian projection of the tilted distribution, evaluated by quadrature',
   },
   knobs: dict({ y: real(0, 20, { default: 5, step: 1, integer: true, label: 'observed count' } as never) }),
-  problem: poissonLogProblem,
+  parts: poissonLogProblem,
 })

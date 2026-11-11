@@ -11,7 +11,7 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { mixtureMarginal, mixtureOfRegressions } from '../validation/index.ts'
-import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 // Two lines, y = 1 + 2 x and y = -1 - x, eight rows whose classes are not told.
 const XS = [-1.5, -0.5, 0.2, 1.1, -0.9, 0.7, 1.6, -1.2]
@@ -22,7 +22,7 @@ const PRIOR_MEAN = [
   [-1, -1.5],
 ]
 
-function mixtureRegressionProblem(k: Config): AtomProblem {
+function mixtureRegressionProblem(k: Config): AtomParts {
   const noise = configNumber(k, 'noise')
   const priorSd = configNumber(k, 'priorSd')
   const design = XS.map((x) => [1, x])
@@ -51,39 +51,45 @@ function mixtureRegressionProblem(k: Config): AtomProblem {
   const post = mixtureOfRegressions({ X: design, y: YS, priorMean: PRIOR_MEAN, priorSd, noiseSd: noise })
   const names = ['intercept of class 1', 'intercept of class 2', 'slope of class 1', 'slope of class 2']
   return {
-    definition,
-    data: { X: design, y: YS },
-    equations: [
-      `B_class,0 and B_class,1 (an intercept and a slope) ~ N(prior mean, ${priorSd}²), prior means (1, 1.5) and (-1, -1.5)`,
-      `z_i ~ Categorical(1/2, 1/2),  y_i ~ N(B_z[i],0 + B_z[i],1 x_i, ${noise}²)`,
-      `observe the eight points drawn in the figure`,
-    ],
-    quantities: [0, 1, 2, 3].map((i) => ({
-      name: `B[${i}]`,
-      label: names[i] ?? `B_${i}`,
-      support: 'real' as const,
-    })),
-    exact: Object.fromEntries(
-      [0, 1, 2, 3].map((i) => {
-        const feature = Math.floor(i / 2)
-        const klass = i % 2
-        return [`B[${i}]`, mixtureMarginal(((post.coefficients[klass] ?? [])[feature]?.components ?? []).slice())]
-      }),
-    ),
-    referenceSource: 'the 256 assignments of the eight rows to the two classes, each class conjugate given its rows',
-    figure: {
-      caption: 'The eight points and the two lines at the means of the beliefs.',
-      xLabel: 'x',
-      yLabel: 'y',
-      xLimits: [-2, 2],
-      yLimits: [-3.5, 4],
-      points: [{ name: 'rows', x: XS, y: YS }],
-      answer: (mean) =>
-        [0, 1].map((c) => ({
-          name: `class ${c + 1}`,
-          x: [-2, 2],
-          y: [-2, 2].map((x) => (mean[`B[${c}]`] ?? Number.NaN) + (mean[`B[${2 + c}]`] ?? Number.NaN) * x),
-        })),
+    build: {
+      definition,
+      data: { X: design, y: YS },
+      quantities: [0, 1, 2, 3].map((i) => ({
+        name: `B[${i}]`,
+        label: names[i] ?? `B_${i}`,
+        support: 'real' as const,
+      })),
+    },
+    reference: {
+      exact: Object.fromEntries(
+        [0, 1, 2, 3].map((i) => {
+          const feature = Math.floor(i / 2)
+          const klass = i % 2
+          return [`B[${i}]`, mixtureMarginal(((post.coefficients[klass] ?? [])[feature]?.components ?? []).slice())]
+        }),
+      ),
+      referenceSource: 'the 256 assignments of the eight rows to the two classes, each class conjugate given its rows',
+    },
+    present: {
+      equations: [
+        `B_class,0 and B_class,1 (an intercept and a slope) ~ N(prior mean, ${priorSd}²), prior means (1, 1.5) and (-1, -1.5)`,
+        `z_i ~ Categorical(1/2, 1/2),  y_i ~ N(B_z[i],0 + B_z[i],1 x_i, ${noise}²)`,
+        `observe the eight points drawn in the figure`,
+      ],
+      figure: {
+        caption: 'The eight points and the two lines at the means of the beliefs.',
+        xLabel: 'x',
+        yLabel: 'y',
+        xLimits: [-2, 2],
+        yLimits: [-3.5, 4],
+        points: [{ name: 'rows', x: XS, y: YS }],
+        answer: (mean) =>
+          [0, 1].map((c) => ({
+            name: `class ${c + 1}`,
+            x: [-2, 2],
+            y: [-2, 2].map((x) => (mean[`B[${c}]`] ?? Number.NaN) + (mean[`B[${2 + c}]`] ?? Number.NaN) * x),
+          })),
+      },
     },
   }
 }
@@ -121,5 +127,5 @@ export const mixtureRegressionAtom: EpAtom = defineAtom({
     noise: real(0.3, 1.5, { default: 0.6, step: 0.05, label: 'noise sd of each row' }),
     priorSd: real(0.5, 4, { default: 1.5, step: 0.1, label: 'prior sd of each coefficient' }),
   }),
-  problem: mixtureRegressionProblem,
+  parts: mixtureRegressionProblem,
 })

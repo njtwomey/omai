@@ -19,7 +19,7 @@ import { type ExactMarginal, gridMarginals, lg, normalCdfFast, sum } from '../va
 import { once } from './_util.ts'
 import {
   type AtomFigure,
-  type AtomProblem,
+  type AtomParts,
   type AtomRecoverySpec,
   defineAtom,
   type EpAtom,
@@ -39,7 +39,7 @@ const recoveryOf = (reason: string, seeds = 40): AtomRecoverySpec => ({
 
 const T_DF = 3
 
-function studentLearnedProblem(k: Config): AtomProblem {
+function studentLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueLoc, trueScale] = [configNumber(k, 'trueLoc'), configNumber(k, 'trueScale')]
   const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
@@ -93,34 +93,40 @@ function studentLearnedProblem(k: Config): AtomProblem {
   )
   const x = [0, n + 1]
   return {
-    definition,
-    data: { y },
-    equations: [
-      `truth: location ${trueLoc}, scale ${trueScale} (precision ${Number((1 / trueScale ** 2).toPrecision(3))}), Student-t noise with ${df} degrees of freedom; ${n} draws with seed ${seed}`,
-      'mu ~ N(0, 5²)   (the unknown location)',
-      `tau ~ Gamma(${a}, ${b})   (the unknown precision of the noise)`,
-      `mix_i ~ Gamma(${df}/2, ${df}/2); y_i ~ N(mu, 1 / (mix_i tau))   (the scale mixture: marginally y_i ~ Student-t(${df}, mu, 1/sqrt(tau)))`,
-    ],
-    quantities: [
-      { name: 'mu', label: 'mu (the location)', support: 'real', truth: trueLoc },
-      { name: 'tau', label: 'tau (the precision of the noise)', support: 'positive', truth: 1 / trueScale ** 2 },
-    ],
-    pair: ['mu', 'tau'],
-    get exact() {
-      return { mu: grid().marginal(0), tau: grid().marginal(1) }
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'mu', label: 'mu (the location)', support: 'real', truth: trueLoc },
+        { name: 'tau', label: 'tau (the precision of the noise)', support: 'positive', truth: 1 / trueScale ** 2 },
+      ],
     },
-    get exactJoint() {
-      return { a: 'mu', b: 'tau', ...grid().joint(0, 1) }
+    reference: {
+      get exact() {
+        return { mu: grid().marginal(0), tau: grid().marginal(1) }
+      },
+      get exactJoint() {
+        return { a: 'mu', b: 'tau', ...grid().joint(0, 1) }
+      },
     },
-    figure: {
-      caption:
-        'The simulated observations (heavy tails: a few lie far from the rest). Green: the true location; thick and dashed: the fitted one.',
-      xLabel: 'observation',
-      yLabel: 'y',
-      xLimits: x as [number, number],
-      points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
-      curves: [{ name: 'true location', colour: 'tab2', x, y: [trueLoc, trueLoc] }],
-      answer: (mm) => [{ name: 'mu', x, y: [mm['mu'] ?? Number.NaN, mm['mu'] ?? Number.NaN] }],
+    present: {
+      equations: [
+        `truth: location ${trueLoc}, scale ${trueScale} (precision ${Number((1 / trueScale ** 2).toPrecision(3))}), Student-t noise with ${df} degrees of freedom; ${n} draws with seed ${seed}`,
+        'mu ~ N(0, 5²)   (the unknown location)',
+        `tau ~ Gamma(${a}, ${b})   (the unknown precision of the noise)`,
+        `mix_i ~ Gamma(${df}/2, ${df}/2); y_i ~ N(mu, 1 / (mix_i tau))   (the scale mixture: marginally y_i ~ Student-t(${df}, mu, 1/sqrt(tau)))`,
+      ],
+      pair: ['mu', 'tau'],
+      figure: {
+        caption:
+          'The simulated observations (heavy tails: a few lie far from the rest). Green: the true location; thick and dashed: the fitted one.',
+        xLabel: 'observation',
+        yLabel: 'y',
+        xLimits: x as [number, number],
+        points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
+        curves: [{ name: 'true location', colour: 'tab2', x, y: [trueLoc, trueLoc] }],
+        answer: (mm) => [{ name: 'mu', x, y: [mm['mu'] ?? Number.NaN, mm['mu'] ?? Number.NaN] }],
+      },
     },
   }
 }
@@ -168,12 +174,12 @@ export const studentTLearnedAtom: EpAtom = defineAtom({
     shape: real(0.5, 8, { default: 2, step: 0.1, label: 'prior shape of tau' }),
     rate: real(0.1, 8, { default: 1, step: 0.1, label: 'prior rate of tau' }),
   }),
-  problem: studentLearnedProblem,
+  parts: studentLearnedProblem,
 })
 
 // ----- a Laplace likelihood with an unknown location and scale -----
 
-function laplaceLearnedProblem(k: Config): AtomProblem {
+function laplaceLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueLoc, trueScale] = [configNumber(k, 'trueLoc'), configNumber(k, 'trueScale')]
   // region laplace-learned
@@ -216,33 +222,39 @@ function laplaceLearnedProblem(k: Config): AtomProblem {
   )
   const x = [0, n + 1]
   return {
-    definition,
-    data: { y },
-    equations: [
-      `truth: location ${trueLoc}, scale ${trueScale}, Laplace noise; ${n} draws with seed ${seed}`,
-      'mu ~ N(0, 5²)   (the unknown location)',
-      'scale ~ HalfNormal(2)   (the unknown scale)',
-      `y_i ~ Laplace(mu, scale), i = 1..${n}`,
-    ],
-    quantities: [
-      { name: 'mu', label: 'mu (the location)', support: 'real', truth: trueLoc },
-      { name: 'scale', label: 'scale (of the noise)', support: 'positive', truth: trueScale },
-    ],
-    pair: ['mu', 'scale'],
-    get exact() {
-      return { mu: grid().marginal(0), scale: grid().marginal(1) }
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'mu', label: 'mu (the location)', support: 'real', truth: trueLoc },
+        { name: 'scale', label: 'scale (of the noise)', support: 'positive', truth: trueScale },
+      ],
     },
-    get exactJoint() {
-      return { a: 'mu', b: 'scale', ...grid().joint(0, 1) }
+    reference: {
+      get exact() {
+        return { mu: grid().marginal(0), scale: grid().marginal(1) }
+      },
+      get exactJoint() {
+        return { a: 'mu', b: 'scale', ...grid().joint(0, 1) }
+      },
     },
-    figure: {
-      caption: 'The simulated observations. Green: the true location; thick and dashed: the fitted one.',
-      xLabel: 'observation',
-      yLabel: 'y',
-      xLimits: x as [number, number],
-      points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
-      curves: [{ name: 'true location', colour: 'tab2', x, y: [trueLoc, trueLoc] }],
-      answer: (mm) => [{ name: 'mu', x, y: [mm['mu'] ?? Number.NaN, mm['mu'] ?? Number.NaN] }],
+    present: {
+      equations: [
+        `truth: location ${trueLoc}, scale ${trueScale}, Laplace noise; ${n} draws with seed ${seed}`,
+        'mu ~ N(0, 5²)   (the unknown location)',
+        'scale ~ HalfNormal(2)   (the unknown scale)',
+        `y_i ~ Laplace(mu, scale), i = 1..${n}`,
+      ],
+      pair: ['mu', 'scale'],
+      figure: {
+        caption: 'The simulated observations. Green: the true location; thick and dashed: the fitted one.',
+        xLabel: 'observation',
+        yLabel: 'y',
+        xLimits: x as [number, number],
+        points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
+        curves: [{ name: 'true location', colour: 'tab2', x, y: [trueLoc, trueLoc] }],
+        answer: (mm) => [{ name: 'mu', x, y: [mm['mu'] ?? Number.NaN, mm['mu'] ?? Number.NaN] }],
+      },
     },
   }
 }
@@ -281,7 +293,7 @@ export const laplaceLearnedAtom: EpAtom = defineAtom({
     trueLoc: real(-3, 3, { default: 1, step: 0.1, label: 'true location' }),
     trueScale: real(0.1, 2, { default: 0.5, step: 0.05, label: 'true scale' }),
   }),
-  problem: laplaceLearnedProblem,
+  parts: laplaceLearnedProblem,
 })
 
 // ----- a probit or a logistic classifier whose weights share an unknown prior precision -----
@@ -289,7 +301,7 @@ export const laplaceLearnedAtom: EpAtom = defineAtom({
 const WEIGHTS = [0.4, 1.6, -1.1]
 const LIMIT = 3
 
-function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomProblem {
+function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [w0, w1, w2] = [configNumber(k, 'trueOffset'), configNumber(k, 'trueSlope1'), configNumber(k, 'trueSlope2')]
   const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
@@ -345,44 +357,50 @@ function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomProb
   const px = Array.from({ length: n }, (_, i) => pts[2 * i] ?? 0)
   const py = Array.from({ length: n }, (_, i) => pts[2 * i + 1] ?? 0)
   return {
-    definition,
-    data: { X: design, y },
-    equations: [
-      `truth: w = (${truth.join(', ')}) (offset and two slopes); ${n} points ~ N(0, I), labelled through the ${link} link; seed ${seed}`,
-      `tau ~ Gamma(${a}, ${b})   (the unknown precision the three weights share)`,
-      'w_0, w_1, w_2 ~ N(0, 1 / tau)',
-      link === 'probit'
-        ? 'y_i ~ Bernoulli(Phi(w_0 + w_1 x_i1 + w_2 x_i2))'
-        : 'y_i ~ Bernoulli(sigmoid(w_0 + w_1 x_i1 + w_2 x_i2))',
-    ],
-    quantities: [
-      { name: 'tau', label: 'tau (the precision of the weights)', support: 'positive' },
-      ...[0, 1, 2].map((j) => ({
-        name: `w[${j}]`,
-        label: ['w_0 (offset)', 'w_1 (slope in x1)', 'w_2 (slope in x2)'][j] ?? `w_${j}`,
-        support: 'real' as const,
-        truth: truth[j] as number,
-      })),
-    ],
-    pair: ['w[1]', 'w[2]'],
-    get exact() {
-      return Object.fromEntries(grid().marginals.map((m, i) => [i === 0 ? 'tau' : `w[${i - 1}]`, m]))
-    },
-    get exactJoint() {
-      return { a: 'w[1]', b: 'w[2]', ...grid().joint(2, 3) }
-    },
-    figure: {
-      caption:
-        'The labelled points, the true decision boundary (green) and the fitted one at the mean of the belief (thick: the exact; dashed: EP).',
-      xLabel: 'x1',
-      yLabel: 'x2',
-      xLimits: [-LIMIT, LIMIT],
-      yLimits: [-LIMIT, LIMIT],
-      points: [{ name: 'points', x: px, y: py, group: y, groupNames: { 0: 'label 0', 1: 'label 1' } }],
-      curves: [boundary(truth, 'true boundary', 'tab2')],
-      answer: (mm) => [
-        boundary([mm['w[0]'] ?? Number.NaN, mm['w[1]'] ?? Number.NaN, mm['w[2]'] ?? Number.NaN], 'boundary'),
+    build: {
+      definition,
+      data: { X: design, y },
+      quantities: [
+        { name: 'tau', label: 'tau (the precision of the weights)', support: 'positive' },
+        ...[0, 1, 2].map((j) => ({
+          name: `w[${j}]`,
+          label: ['w_0 (offset)', 'w_1 (slope in x1)', 'w_2 (slope in x2)'][j] ?? `w_${j}`,
+          support: 'real' as const,
+          truth: truth[j] as number,
+        })),
       ],
+    },
+    reference: {
+      get exact() {
+        return Object.fromEntries(grid().marginals.map((m, i) => [i === 0 ? 'tau' : `w[${i - 1}]`, m]))
+      },
+      get exactJoint() {
+        return { a: 'w[1]', b: 'w[2]', ...grid().joint(2, 3) }
+      },
+    },
+    present: {
+      equations: [
+        `truth: w = (${truth.join(', ')}) (offset and two slopes); ${n} points ~ N(0, I), labelled through the ${link} link; seed ${seed}`,
+        `tau ~ Gamma(${a}, ${b})   (the unknown precision the three weights share)`,
+        'w_0, w_1, w_2 ~ N(0, 1 / tau)',
+        link === 'probit'
+          ? 'y_i ~ Bernoulli(Phi(w_0 + w_1 x_i1 + w_2 x_i2))'
+          : 'y_i ~ Bernoulli(sigmoid(w_0 + w_1 x_i1 + w_2 x_i2))',
+      ],
+      pair: ['w[1]', 'w[2]'],
+      figure: {
+        caption:
+          'The labelled points, the true decision boundary (green) and the fitted one at the mean of the belief (thick: the exact; dashed: EP).',
+        xLabel: 'x1',
+        yLabel: 'x2',
+        xLimits: [-LIMIT, LIMIT],
+        yLimits: [-LIMIT, LIMIT],
+        points: [{ name: 'points', x: px, y: py, group: y, groupNames: { 0: 'label 0', 1: 'label 1' } }],
+        curves: [boundary(truth, 'true boundary', 'tab2')],
+        answer: (mm) => [
+          boundary([mm['w[0]'] ?? Number.NaN, mm['w[1]'] ?? Number.NaN, mm['w[2]'] ?? Number.NaN], 'boundary'),
+        ],
+      },
     },
   }
 }
@@ -425,7 +443,7 @@ export const probitLearnedAtom: EpAtom = defineAtom({
     shape: real(0.5, 6, { default: 2, step: 0.1, label: 'prior shape of tau' }),
     rate: real(0.1, 6, { default: 2, step: 0.1, label: 'prior rate of tau' }),
   }),
-  problem: (k) => classesLearnedProblem('probit', k),
+  parts: (k) => classesLearnedProblem('probit', k),
 })
 
 /**
@@ -469,7 +487,7 @@ export const logisticLearnedAtom: EpAtom = defineAtom({
     shape: real(0.5, 6, { default: 2, step: 0.1, label: 'prior shape of tau' }),
     rate: real(0.1, 6, { default: 2, step: 0.1, label: 'prior rate of tau' }),
   }),
-  problem: (k) => classesLearnedProblem('logistic', k),
+  parts: (k) => classesLearnedProblem('logistic', k),
 })
 
 // ----- a regression with a log link: Poisson, negative binomial, Weibull -----
@@ -506,7 +524,7 @@ function regressionFigure(
   }
 }
 
-function poissonLearnedProblem(k: Config): AtomProblem {
+function poissonLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueA, trueB] = [configNumber(k, 'trueIntercept'), configNumber(k, 'trueSlope')]
   const priorSd = configNumber(k, 'priorSd')
@@ -524,20 +542,26 @@ function poissonLearnedProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { x, y },
-    equations: [
-      `truth: log rate = ${trueA} + ${trueB} x; ${n} counts at x ~ Uniform(-1, 1), seed ${seed}`,
-      `a ~ N(0, ${priorSd}²), b ~ N(0, ${priorSd}²)   (the unknown intercept and slope)`,
-      `y_i ~ Poisson(exp(a + b x_i)), i = 1..${n}`,
-    ],
-    quantities: [
-      { name: 'a', label: 'a (intercept of the log rate)', support: 'real', truth: trueA },
-      { name: 'b', label: 'b (slope of the log rate)', support: 'real', truth: trueB },
-    ],
-    pair: ['a', 'b'],
-    grid: { points: 61, maxRefinements: 0 },
-    figure: regressionFigure('counts', x, y, (a, b) => (v) => Math.exp(a + b * v), [trueA, trueB]),
+    build: {
+      definition,
+      data: { x, y },
+      quantities: [
+        { name: 'a', label: 'a (intercept of the log rate)', support: 'real', truth: trueA },
+        { name: 'b', label: 'b (slope of the log rate)', support: 'real', truth: trueB },
+      ],
+    },
+    reference: {
+      grid: { points: 61, maxRefinements: 0 },
+    },
+    present: {
+      equations: [
+        `truth: log rate = ${trueA} + ${trueB} x; ${n} counts at x ~ Uniform(-1, 1), seed ${seed}`,
+        `a ~ N(0, ${priorSd}²), b ~ N(0, ${priorSd}²)   (the unknown intercept and slope)`,
+        `y_i ~ Poisson(exp(a + b x_i)), i = 1..${n}`,
+      ],
+      pair: ['a', 'b'],
+      figure: regressionFigure('counts', x, y, (a, b) => (v) => Math.exp(a + b * v), [trueA, trueB]),
+    },
   }
 }
 
@@ -576,10 +600,10 @@ export const poissonLogLearnedAtom: EpAtom = defineAtom({
     trueSlope: real(-2, 2, { default: 1.2, step: 0.1, label: 'true slope' }),
     priorSd: real(0.5, 5, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }),
   }),
-  problem: poissonLearnedProblem,
+  parts: poissonLearnedProblem,
 })
 
-function dispersionLearnedProblem(k: Config): AtomProblem {
+function dispersionLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueA, trueB, trueAlpha] = [
     configNumber(k, 'trueIntercept'),
@@ -607,21 +631,27 @@ function dispersionLearnedProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { x, y },
-    equations: [
-      `truth: mean exp(${trueA} + ${trueB} x), dispersion ${trueAlpha} (variance = mean + ${trueAlpha} mean²); ${n} counts, seed ${seed}`,
-      `a ~ N(0, ${priorSd}²), b ~ N(0, ${priorSd}²), alpha ~ HalfNormal(1)   (intercept, slope, dispersion)`,
-      `y_i ~ NegativeBinomial(mean exp(a + b x_i), dispersion alpha), i = 1..${n}`,
-    ],
-    quantities: [
-      { name: 'a', label: 'a (intercept of the log mean)', support: 'real', truth: trueA },
-      { name: 'b', label: 'b (slope of the log mean)', support: 'real', truth: trueB },
-      { name: 'alpha', label: 'alpha (the dispersion)', support: 'positive', truth: trueAlpha },
-    ],
-    pair: ['a', 'b'],
-    grid: { points: 27, maxRefinements: 0 },
-    figure: regressionFigure('counts', x, y, (a, b) => (v) => Math.exp(a + b * v), [trueA, trueB]),
+    build: {
+      definition,
+      data: { x, y },
+      quantities: [
+        { name: 'a', label: 'a (intercept of the log mean)', support: 'real', truth: trueA },
+        { name: 'b', label: 'b (slope of the log mean)', support: 'real', truth: trueB },
+        { name: 'alpha', label: 'alpha (the dispersion)', support: 'positive', truth: trueAlpha },
+      ],
+    },
+    reference: {
+      grid: { points: 27, maxRefinements: 0 },
+    },
+    present: {
+      equations: [
+        `truth: mean exp(${trueA} + ${trueB} x), dispersion ${trueAlpha} (variance = mean + ${trueAlpha} mean²); ${n} counts, seed ${seed}`,
+        `a ~ N(0, ${priorSd}²), b ~ N(0, ${priorSd}²), alpha ~ HalfNormal(1)   (intercept, slope, dispersion)`,
+        `y_i ~ NegativeBinomial(mean exp(a + b x_i), dispersion alpha), i = 1..${n}`,
+      ],
+      pair: ['a', 'b'],
+      figure: regressionFigure('counts', x, y, (a, b) => (v) => Math.exp(a + b * v), [trueA, trueB]),
+    },
   }
 }
 
@@ -667,12 +697,12 @@ export const poissonLogDispersionLearnedAtom: EpAtom = defineAtom({
     trueDispersion: real(0.1, 2, { default: 0.5, step: 0.05, label: 'true dispersion' }),
     priorSd: real(0.5, 5, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }),
   }),
-  problem: dispersionLearnedProblem,
+  parts: dispersionLearnedProblem,
 })
 
 const WEIBULL_SHAPE = 1.5
 
-function weibullLearnedProblem(k: Config): AtomProblem {
+function weibullLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueA, trueB] = [configNumber(k, 'trueIntercept'), configNumber(k, 'trueSlope')]
   const priorSd = configNumber(k, 'priorSd')
@@ -693,20 +723,26 @@ function weibullLearnedProblem(k: Config): AtomProblem {
   })
   // endregion
   return {
-    definition,
-    data: { x, y },
-    equations: [
-      `truth: Weibull times, shape ${shape} (known), scale exp(${trueA} + ${trueB} x); ${n} times, seed ${seed}`,
-      `a ~ N(0, ${priorSd}²), b ~ N(0, ${priorSd}²)   (the unknown intercept and slope of the log scale)`,
-      `y_i ~ Weibull(${shape}, exp(a + b x_i)), i = 1..${n}`,
-    ],
-    quantities: [
-      { name: 'a', label: 'a (intercept of the log scale)', support: 'real', truth: trueA },
-      { name: 'b', label: 'b (slope of the log scale)', support: 'real', truth: trueB },
-    ],
-    pair: ['a', 'b'],
-    grid: { points: 61, maxRefinements: 0 },
-    figure: regressionFigure('times', x, y, (a, b) => (v) => Math.exp(a + b * v), [trueA, trueB]),
+    build: {
+      definition,
+      data: { x, y },
+      quantities: [
+        { name: 'a', label: 'a (intercept of the log scale)', support: 'real', truth: trueA },
+        { name: 'b', label: 'b (slope of the log scale)', support: 'real', truth: trueB },
+      ],
+    },
+    reference: {
+      grid: { points: 61, maxRefinements: 0 },
+    },
+    present: {
+      equations: [
+        `truth: Weibull times, shape ${shape} (known), scale exp(${trueA} + ${trueB} x); ${n} times, seed ${seed}`,
+        `a ~ N(0, ${priorSd}²), b ~ N(0, ${priorSd}²)   (the unknown intercept and slope of the log scale)`,
+        `y_i ~ Weibull(${shape}, exp(a + b x_i)), i = 1..${n}`,
+      ],
+      pair: ['a', 'b'],
+      figure: regressionFigure('times', x, y, (a, b) => (v) => Math.exp(a + b * v), [trueA, trueB]),
+    },
   }
 }
 
@@ -745,7 +781,7 @@ export const weibullLearnedAtom: EpAtom = defineAtom({
     trueSlope: real(-2, 2, { default: -0.8, step: 0.1, label: 'true slope' }),
     priorSd: real(0.5, 5, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }),
   }),
-  problem: weibullLearnedProblem,
+  parts: weibullLearnedProblem,
 })
 
 // ----- two-variable sites: a Student-t with learned degrees of freedom, a Weibull with a learned shape -----
@@ -778,7 +814,7 @@ function positiveFromLog(base: ExactMarginal): ExactMarginal {
   }
 }
 
-function studentDfLearnedProblem(k: Config): AtomProblem {
+function studentDfLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueLoc, trueDf] = [configNumber(k, 'trueLoc'), configNumber(k, 'trueDf')]
   const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
@@ -816,31 +852,37 @@ function studentDfLearnedProblem(k: Config): AtomProblem {
   )
   const x = [0, n + 1]
   return {
-    definition,
-    data: { y },
-    equations: [
-      `truth: location ${trueLoc}, scale 1, Student-t noise with ${trueDf} degrees of freedom; ${n} draws with seed ${seed}`,
-      'mu ~ N(0, 5²)   (the unknown location)',
-      `df ~ Gamma(${a}, ${b})   (the unknown degrees of freedom)`,
-      `y_i ~ Student-t(df, mu, 1), i = 1..${n}`,
-    ],
-    quantities: [
-      { name: 'mu', label: 'mu (the location)', support: 'real', truth: trueLoc },
-      { name: 'df', label: 'df (degrees of freedom)', support: 'positive', truth: trueDf },
-    ],
-    get exact() {
-      return { mu: grid().marginal(0), df: positiveFromLog(grid().marginal(1)) }
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'mu', label: 'mu (the location)', support: 'real', truth: trueLoc },
+        { name: 'df', label: 'df (degrees of freedom)', support: 'positive', truth: trueDf },
+      ],
     },
-    referenceSource: 'the posterior of the location and the log of the degrees of freedom on a 141 by 141 grid',
-    figure: {
-      caption:
-        'The simulated observations (heavy tails: a few lie far from the rest). Green: the true location; thick and dashed: the fitted one.',
-      xLabel: 'observation',
-      yLabel: 'y',
-      xLimits: x as [number, number],
-      points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
-      curves: [{ name: 'true location', colour: 'tab2', x, y: [trueLoc, trueLoc] }],
-      answer: (mm) => [{ name: 'mu', x, y: [mm['mu'] ?? Number.NaN, mm['mu'] ?? Number.NaN] }],
+    reference: {
+      get exact() {
+        return { mu: grid().marginal(0), df: positiveFromLog(grid().marginal(1)) }
+      },
+      referenceSource: 'the posterior of the location and the log of the degrees of freedom on a 141 by 141 grid',
+    },
+    present: {
+      equations: [
+        `truth: location ${trueLoc}, scale 1, Student-t noise with ${trueDf} degrees of freedom; ${n} draws with seed ${seed}`,
+        'mu ~ N(0, 5²)   (the unknown location)',
+        `df ~ Gamma(${a}, ${b})   (the unknown degrees of freedom)`,
+        `y_i ~ Student-t(df, mu, 1), i = 1..${n}`,
+      ],
+      figure: {
+        caption:
+          'The simulated observations (heavy tails: a few lie far from the rest). Green: the true location; thick and dashed: the fitted one.',
+        xLabel: 'observation',
+        yLabel: 'y',
+        xLimits: x as [number, number],
+        points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
+        curves: [{ name: 'true location', colour: 'tab2', x, y: [trueLoc, trueLoc] }],
+        answer: (mm) => [{ name: 'mu', x, y: [mm['mu'] ?? Number.NaN, mm['mu'] ?? Number.NaN] }],
+      },
     },
   }
 }
@@ -884,10 +926,10 @@ export const studentTDfLearnedAtom: EpAtom = defineAtom({
     shape: real(0.5, 8, { default: 3, step: 0.1, label: 'prior shape of df' }),
     rate: real(0.02, 2, { default: 0.4, step: 0.02, label: 'prior rate of df' }),
   }),
-  problem: studentDfLearnedProblem,
+  parts: studentDfLearnedProblem,
 })
 
-function weibullShapeLearnedProblem(k: Config): AtomProblem {
+function weibullShapeLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueLogScale, trueShape] = [configNumber(k, 'trueLogScale'), configNumber(k, 'trueShape')]
   const [priorSd, shapeSd] = [configNumber(k, 'priorSd'), configNumber(k, 'shapeSd')]
@@ -932,43 +974,49 @@ function weibullShapeLearnedProblem(k: Config): AtomProblem {
   const x = y.map((_, i) => i + 1)
   const median = (ls: number, shape: number): number => Math.exp(ls) * Math.LN2 ** (1 / shape)
   return {
-    definition,
-    data: { y },
-    equations: [
-      `truth: Weibull times, scale exp(${trueLogScale}), shape ${trueShape}; ${n} times, seed ${seed}`,
-      `logScale ~ N(0, ${priorSd}²)   (the unknown log of the scale)`,
-      `shape ~ LogNormal(0.4, ${shapeSd}²)   (the unknown shape)`,
-      `y_i ~ Weibull(shape, exp(logScale)), i = 1..${n}`,
-    ],
-    quantities: [
-      { name: 'logScale', label: 'logScale (the log of the Weibull scale)', support: 'real', truth: trueLogScale },
-      { name: 'shape', label: 'shape (of the Weibull)', support: 'positive', truth: trueShape },
-    ],
-    get exact() {
-      return {
-        logScale: grid().marginal(0),
-        shape: positiveFromLog(grid().marginal(1)),
-      }
-    },
-    referenceSource: 'the posterior of the log scale and the log shape on a 141 by 141 grid',
-    figure: {
-      caption:
-        'The simulated times. Green: the true median; thick and dashed: the median at the fitted scale and shape.',
-      xLabel: 'observation',
-      yLabel: 'time',
-      xLimits: [0, n + 1],
-      points: [{ name: 'times', x, y }],
-      curves: [
-        {
-          name: 'true median',
-          colour: 'tab2',
-          x: [0, n + 1],
-          y: [median(trueLogScale, trueShape), median(trueLogScale, trueShape)],
-        },
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'logScale', label: 'logScale (the log of the Weibull scale)', support: 'real', truth: trueLogScale },
+        { name: 'shape', label: 'shape (of the Weibull)', support: 'positive', truth: trueShape },
       ],
-      answer: (mm) => {
-        const v = median(mm['logScale'] ?? Number.NaN, mm['shape'] ?? Number.NaN)
-        return [{ name: 'median', x: [0, n + 1], y: [v, v] }]
+    },
+    reference: {
+      get exact() {
+        return {
+          logScale: grid().marginal(0),
+          shape: positiveFromLog(grid().marginal(1)),
+        }
+      },
+      referenceSource: 'the posterior of the log scale and the log shape on a 141 by 141 grid',
+    },
+    present: {
+      equations: [
+        `truth: Weibull times, scale exp(${trueLogScale}), shape ${trueShape}; ${n} times, seed ${seed}`,
+        `logScale ~ N(0, ${priorSd}²)   (the unknown log of the scale)`,
+        `shape ~ LogNormal(0.4, ${shapeSd}²)   (the unknown shape)`,
+        `y_i ~ Weibull(shape, exp(logScale)), i = 1..${n}`,
+      ],
+      figure: {
+        caption:
+          'The simulated times. Green: the true median; thick and dashed: the median at the fitted scale and shape.',
+        xLabel: 'observation',
+        yLabel: 'time',
+        xLimits: [0, n + 1],
+        points: [{ name: 'times', x, y }],
+        curves: [
+          {
+            name: 'true median',
+            colour: 'tab2',
+            x: [0, n + 1],
+            y: [median(trueLogScale, trueShape), median(trueLogScale, trueShape)],
+          },
+        ],
+        answer: (mm) => {
+          const v = median(mm['logScale'] ?? Number.NaN, mm['shape'] ?? Number.NaN)
+          return [{ name: 'median', x: [0, n + 1], y: [v, v] }]
+        },
       },
     },
   }
@@ -1013,12 +1061,12 @@ export const weibullShapeLearnedAtom: EpAtom = defineAtom({
     priorSd: real(0.5, 5, { default: 2, step: 0.1, label: 'prior sd of the log scale' }),
     shapeSd: real(0.2, 2, { default: 0.7, step: 0.1, label: 'prior sd of the log shape' }),
   }),
-  problem: weibullShapeLearnedProblem,
+  parts: weibullShapeLearnedProblem,
 })
 
 // ----- a tournament in which the spread of the skills is unknown -----
 
-function skillsLearnedProblem(k: Config): AtomProblem {
+function skillsLearnedProblem(k: Config): AtomParts {
   const [seed, players, rounds] = [configNumber(k, 'seed'), configNumber(k, 'players'), configNumber(k, 'n')]
   const [spread, a, b] = [configNumber(k, 'trueSpread'), configNumber(k, 'shape'), configNumber(k, 'rate')]
   // region skill-difference-learned
@@ -1047,38 +1095,42 @@ function skillsLearnedProblem(k: Config): AtomProblem {
   // endregion
   const at = skills.map((_, i) => i + 1)
   return {
-    definition,
-    data: { a: games.map((g) => g[0]), b: games.map((g) => g[1]), win },
-    bindOptions: { sizes: { player: players } },
-    equations: [
-      `truth: ${players} skills ~ N(0, ${spread}²) (precision ${Number((1 / spread ** 2).toPrecision(3))}); a round robin played ${rounds} times (${games.length} games), seed ${seed}`,
-      `tau ~ Gamma(${a}, ${b})   (the unknown precision of the skills: how spread out the players are)`,
-      `skill_j ~ N(0, 1 / tau), j = 1..${players}`,
-      'game g between a and b: a wins ~ Bernoulli(Phi((skill_a - skill_b) / sqrt 2))',
-    ],
-    quantities: [
-      { name: 'tau', label: 'tau (the precision of the skills)', support: 'positive', truth: 1 / spread ** 2 },
-      ...skills.map((t, j) => ({
-        name: `skill[${j}]`,
-        label: `skill of player ${j + 1}`,
-        support: 'real' as const,
-        truth: t,
-        pool: 'skill (every player)',
-      })),
-    ],
-    figure: {
-      caption:
-        'The true skill of each player (open marks) and what EP believes of it (bars) after the tournament: the better players are found, and the spread tau they share is learned from the same games.',
-      xLabel: 'player',
-      yLabel: 'skill',
-      xLimits: [0, players + 1],
-      points: [{ name: 'true skill', x: at, y: skills }],
-      answer: (mm) =>
-        at.map((j) => ({
-          name: `player ${j}`,
-          x: [j - 0.3, j + 0.3],
-          y: [mm[`skill[${j - 1}]`] ?? Number.NaN, mm[`skill[${j - 1}]`] ?? Number.NaN],
+    build: {
+      definition,
+      data: { a: games.map((g) => g[0]), b: games.map((g) => g[1]), win },
+      bindOptions: { sizes: { player: players } },
+      quantities: [
+        { name: 'tau', label: 'tau (the precision of the skills)', support: 'positive', truth: 1 / spread ** 2 },
+        ...skills.map((t, j) => ({
+          name: `skill[${j}]`,
+          label: `skill of player ${j + 1}`,
+          support: 'real' as const,
+          truth: t,
+          pool: 'skill (every player)',
         })),
+      ],
+    },
+    present: {
+      equations: [
+        `truth: ${players} skills ~ N(0, ${spread}²) (precision ${Number((1 / spread ** 2).toPrecision(3))}); a round robin played ${rounds} times (${games.length} games), seed ${seed}`,
+        `tau ~ Gamma(${a}, ${b})   (the unknown precision of the skills: how spread out the players are)`,
+        `skill_j ~ N(0, 1 / tau), j = 1..${players}`,
+        'game g between a and b: a wins ~ Bernoulli(Phi((skill_a - skill_b) / sqrt 2))',
+      ],
+      figure: {
+        caption:
+          'The true skill of each player (open marks) and what EP believes of it (bars) after the tournament: the better players are found, and the spread tau they share is learned from the same games.',
+        xLabel: 'player',
+        yLabel: 'skill',
+        xLimits: [0, players + 1],
+        points: [{ name: 'true skill', x: at, y: skills }],
+        answer: (mm) =>
+          at.map((j) => ({
+            name: `player ${j}`,
+            x: [j - 0.3, j + 0.3],
+            y: [mm[`skill[${j - 1}]`] ?? Number.NaN, mm[`skill[${j - 1}]`] ?? Number.NaN],
+          })),
+      },
     },
   }
 }
@@ -1121,5 +1173,5 @@ export const skillDifferenceLearnedAtom: EpAtom = defineAtom({
     shape: real(0.5, 8, { default: 2, step: 0.1, label: 'prior shape of tau' }),
     rate: real(0.1, 8, { default: 2, step: 0.1, label: 'prior rate of tau' }),
   }),
-  problem: skillsLearnedProblem,
+  parts: skillsLearnedProblem,
 })

@@ -29,7 +29,7 @@ import {
   twoComponentGate,
 } from '../validation/index.ts'
 import {
-  type AtomProblem,
+  type AtomParts,
   type Belief,
   defineAtom,
   type EpAtom,
@@ -114,7 +114,7 @@ function componentView(
 // ---------------------------------------------------------------------------------------------------------------------
 // A switch between two known values.
 
-function knownGateProblem(k: Config): AtomProblem {
+function knownGateProblem(k: Config): AtomParts {
   const pi = configNumber(k, 'pi')
   const y = configNumber(k, 'y')
   // region gate
@@ -128,32 +128,38 @@ function knownGateProblem(k: Config): AtomProblem {
   const p = w1 / (w1 + w0)
   const ys = Array.from({ length: 141 }, (_, i) => -4 + (i * 11) / 140)
   return {
-    definition,
-    data: { y },
-    equations: [
-      `z ~ Bernoulli(${pi})`,
-      'g = z ? 3 : 0   (the gate: a select between two known values)',
-      'y ~ N(g, 1²)',
-      `observe y = ${y}`,
-    ],
-    quantities: [{ name: 'z', label: 'P(z = 1)', support: 'probability' }],
-    exact: { z: probabilityMarginal(p) },
-    figure: {
-      caption:
-        'Each branch of the gate explains the observation with its own weight: the prior probability of the branch times the density of y under it. The posterior of z is the share of the taller one.',
-      xLabel: 'y',
-      yLabel: 'prior weight x density of y',
-      xLimits: [-4, 7],
-      points: [{ name: 'observed y', x: [y], y: [0] }],
-      curves: [
-        {
-          name: `z = 0: ${(1 - pi).toFixed(2)} N(y; 0, 1)`,
-          colour: 'tab1',
-          x: ys,
-          y: ys.map((v) => (1 - pi) * normalPdf(v, 0, 1)),
-        },
-        { name: `z = 1: ${pi} N(y; 3, 1)`, colour: 'tab2', x: ys, y: ys.map((v) => pi * normalPdf(v, 3, 1)) },
+    build: {
+      definition,
+      data: { y },
+      quantities: [{ name: 'z', label: 'P(z = 1)', support: 'probability' }],
+    },
+    reference: {
+      exact: { z: probabilityMarginal(p) },
+    },
+    present: {
+      equations: [
+        `z ~ Bernoulli(${pi})`,
+        'g = z ? 3 : 0   (the gate: a select between two known values)',
+        'y ~ N(g, 1²)',
+        `observe y = ${y}`,
       ],
+      figure: {
+        caption:
+          'Each branch of the gate explains the observation with its own weight: the prior probability of the branch times the density of y under it. The posterior of z is the share of the taller one.',
+        xLabel: 'y',
+        yLabel: 'prior weight x density of y',
+        xLimits: [-4, 7],
+        points: [{ name: 'observed y', x: [y], y: [0] }],
+        curves: [
+          {
+            name: `z = 0: ${(1 - pi).toFixed(2)} N(y; 0, 1)`,
+            colour: 'tab1',
+            x: ys,
+            y: ys.map((v) => (1 - pi) * normalPdf(v, 0, 1)),
+          },
+          { name: `z = 1: ${pi} N(y; 3, 1)`, colour: 'tab2', x: ys, y: ys.map((v) => pi * normalPdf(v, 3, 1)) },
+        ],
+      },
     },
   }
 }
@@ -186,13 +192,13 @@ export const gateKnownAtom: EpAtom = defineAtom({
     pi: real(0.02, 0.98, { default: 0.3, step: 0.01, label: 'P(z = 1) before the observation' }),
     y: real(-3, 6, { default: 2.5, step: 0.1, label: 'observed y' }),
   }),
-  problem: knownGateProblem,
+  parts: knownGateProblem,
 })
 
 // ---------------------------------------------------------------------------------------------------------------------
 // A switch between two random values, as a select and as an index.
 
-function randomGateProblem(k: Config, form: 'select' | 'index'): AtomProblem {
+function randomGateProblem(k: Config, form: 'select' | 'index'): AtomParts {
   const pi = configNumber(k, 'pi')
   const y = configNumber(k, 'y')
   const s = 0.5
@@ -231,46 +237,52 @@ function randomGateProblem(k: Config, form: 'select' | 'index'): AtomProblem {
     ep: (b) => epBranches(b, [`z = 0: ${names[0]}`, `z = 1: ${names[1]}`], sites, priors, 'z'),
   }
   return {
-    definition,
-    data: form === 'select' ? { y } : { y, loc: [priors[0].mean, priors[1].mean] },
-    ...(form === 'select' ? {} : { bindOptions: { sizes: { component: 2 } } }),
-    equations:
-      form === 'select'
-        ? [
-            `z ~ Bernoulli(${pi})`,
-            `a ~ N(${priors[0].mean}, ${priors[0].sd}²),  b ~ N(${priors[1].mean}, ${priors[1].sd}²)`,
-            'g = z ? b : a   (the gate: a select between two random variables)',
-            `y ~ N(g, ${s}²)`,
-            `observe y = ${y}`,
-          ]
-        : [
-            `z ~ Categorical(${(1 - pi).toFixed(2)}, ${pi})   (which component)`,
-            `mu_1 ~ N(${priors[0].mean}, ${priors[0].sd}²),  mu_2 ~ N(${priors[1].mean}, ${priors[1].sd}²)`,
-            `y ~ N(mu[z], ${s}²)   (the component picked by a random index)`,
-            `observe y = ${y}`,
-          ],
-    quantities: [
-      { name: 'z', label: 'P(z = 1)', support: 'probability' },
-      { name: sites[0], label: names[0], support: 'real' },
-      { name: sites[1], label: names[1], support: 'real' },
-      {
-        name: 'g',
-        label: form === 'select' ? 'g (the selected value)' : 'mu[z] (the selected value)',
-        support: 'real',
-        derive: (b) => epSelected(b, sites, priors, 'z'),
-      },
-    ],
-    exact: {
-      z: probabilityMarginal(gate.p1),
-      [sites[0]]: gate.marginals[0],
-      [sites[1]]: gate.marginals[1],
-      g: gate.selected,
+    build: {
+      definition,
+      data: form === 'select' ? { y } : { y, loc: [priors[0].mean, priors[1].mean] },
+      ...(form === 'select' ? {} : { bindOptions: { sizes: { component: 2 } } }),
+      quantities: [
+        { name: 'z', label: 'P(z = 1)', support: 'probability' },
+        { name: sites[0], label: names[0], support: 'real' },
+        { name: sites[1], label: names[1], support: 'real' },
+        {
+          name: 'g',
+          label: form === 'select' ? 'g (the selected value)' : 'mu[z] (the selected value)',
+          support: 'real',
+          derive: (b) => epSelected(b, sites, priors, 'z'),
+        },
+      ],
     },
-    mixtures: [
-      selectedView,
-      componentView(sites[0], names[0], 0, gate, priors[0], 'z'),
-      componentView(sites[1], names[1], 1, gate, priors[1], 'z'),
-    ],
+    reference: {
+      exact: {
+        z: probabilityMarginal(gate.p1),
+        [sites[0]]: gate.marginals[0],
+        [sites[1]]: gate.marginals[1],
+        g: gate.selected,
+      },
+    },
+    present: {
+      equations:
+        form === 'select'
+          ? [
+              `z ~ Bernoulli(${pi})`,
+              `a ~ N(${priors[0].mean}, ${priors[0].sd}²),  b ~ N(${priors[1].mean}, ${priors[1].sd}²)`,
+              'g = z ? b : a   (the gate: a select between two random variables)',
+              `y ~ N(g, ${s}²)`,
+              `observe y = ${y}`,
+            ]
+          : [
+              `z ~ Categorical(${(1 - pi).toFixed(2)}, ${pi})   (which component)`,
+              `mu_1 ~ N(${priors[0].mean}, ${priors[0].sd}²),  mu_2 ~ N(${priors[1].mean}, ${priors[1].sd}²)`,
+              `y ~ N(mu[z], ${s}²)   (the component picked by a random index)`,
+              `observe y = ${y}`,
+            ],
+      mixtures: [
+        selectedView,
+        componentView(sites[0], names[0], 0, gate, priors[0], 'z'),
+        componentView(sites[1], names[1], 1, gate, priors[1], 'z'),
+      ],
+    },
   }
 }
 
@@ -306,7 +318,7 @@ export const gateRandomAtom: EpAtom = defineAtom({
   reference: 'exact',
   tolerance: gateTolerance,
   knobs: gateKnobs,
-  problem: (k) => randomGateProblem(k, 'select'),
+  parts: (k) => randomGateProblem(k, 'select'),
 })
 
 /**
@@ -333,7 +345,7 @@ export const mixtureComponentsAtom: EpAtom = defineAtom({
   reference: 'exact',
   tolerance: gateTolerance,
   knobs: gateKnobs,
-  problem: (k) => randomGateProblem(k, 'index'),
+  parts: (k) => randomGateProblem(k, 'index'),
 })
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -348,7 +360,7 @@ const spikeKnobs = dict({
   spike: real(0.01, 0.5, { default: 0.1, step: 0.01, label: 'spike width (sd)' }),
 })
 
-function spikeSlabGateProblem(k: Config): AtomProblem {
+function spikeSlabGateProblem(k: Config): AtomParts {
   const pi = configNumber(k, 'pi')
   const y = configNumber(k, 'y')
   const slab = configNumber(k, 'slab')
@@ -369,34 +381,40 @@ function spikeSlabGateProblem(k: Config): AtomProblem {
   const gate = spikeSlabPosterior(pi, slab, spike, y, s)
   const sites: readonly [string, string] = ['spike', 'slab']
   return {
-    definition,
-    data: { y },
-    equations: [
-      `z ~ Bernoulli(${pi})   (z = 1: the coefficient is in the slab)`,
-      `spike ~ N(0, ${spike}²),  slab ~ N(0, ${slab}²)   (a narrow and a wide component)`,
-      'x = z ? slab : spike   (the gate: the coefficient is the component z selects)',
-      `y ~ N(x, ${s}²)`,
-      `observe y = ${y}`,
-    ],
-    quantities: [
-      { name: 'z', label: 'P(slab)', support: 'probability' },
-      { name: 'spike', label: 'spike component', support: 'real', hidden: true },
-      { name: 'slab', label: 'slab component', support: 'real', hidden: true },
-      { name: 'x', label: 'x (the coefficient)', support: 'real', derive: (b) => epSelected(b, sites, priors, 'z') },
-    ],
-    exact: { z: probabilityMarginal(gate.p1), spike: gate.marginals[0], slab: gate.marginals[1], x: gate.selected },
-    mixtures: [
-      {
-        title: 'The coefficient x: the spike branch and the slab branch, each weighted by its posterior probability',
-        quantity: 'x',
-        label: 'x',
-        exact: [
-          { label: 'spike (z = 0)', weight: 1 - gate.p1, ...gate.updated[0] },
-          { label: 'slab (z = 1)', weight: gate.p1, ...gate.updated[1] },
-        ],
-        ep: (b) => epBranches(b, ['spike (z = 0)', 'slab (z = 1)'], sites, priors, 'z'),
-      },
-    ],
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'z', label: 'P(slab)', support: 'probability' },
+        { name: 'spike', label: 'spike component', support: 'real', hidden: true },
+        { name: 'slab', label: 'slab component', support: 'real', hidden: true },
+        { name: 'x', label: 'x (the coefficient)', support: 'real', derive: (b) => epSelected(b, sites, priors, 'z') },
+      ],
+    },
+    reference: {
+      exact: { z: probabilityMarginal(gate.p1), spike: gate.marginals[0], slab: gate.marginals[1], x: gate.selected },
+    },
+    present: {
+      equations: [
+        `z ~ Bernoulli(${pi})   (z = 1: the coefficient is in the slab)`,
+        `spike ~ N(0, ${spike}²),  slab ~ N(0, ${slab}²)   (a narrow and a wide component)`,
+        'x = z ? slab : spike   (the gate: the coefficient is the component z selects)',
+        `y ~ N(x, ${s}²)`,
+        `observe y = ${y}`,
+      ],
+      mixtures: [
+        {
+          title: 'The coefficient x: the spike branch and the slab branch, each weighted by its posterior probability',
+          quantity: 'x',
+          label: 'x',
+          exact: [
+            { label: 'spike (z = 0)', weight: 1 - gate.p1, ...gate.updated[0] },
+            { label: 'slab (z = 1)', weight: gate.p1, ...gate.updated[1] },
+          ],
+          ep: (b) => epBranches(b, ['spike (z = 0)', 'slab (z = 1)'], sites, priors, 'z'),
+        },
+      ],
+    },
   }
 }
 
@@ -425,10 +443,10 @@ export const spikeSlabAtom: EpAtom = defineAtom({
   reference: 'exact',
   tolerance: gateTolerance,
   knobs: spikeKnobs,
-  problem: spikeSlabGateProblem,
+  parts: spikeSlabGateProblem,
 })
 
-function spikeSlabMarginalProblem(k: Config): AtomProblem {
+function spikeSlabMarginalProblem(k: Config): AtomParts {
   const pi = configNumber(k, 'pi')
   const y = configNumber(k, 'y')
   const slab = configNumber(k, 'slab')
@@ -442,28 +460,34 @@ function spikeSlabMarginalProblem(k: Config): AtomProblem {
   // endregion
   const gate = spikeSlabPosterior(pi, slab, spike, y, s)
   return {
-    definition,
-    data: { y },
-    equations: [
-      `w ~ ${pi} N(0, ${slab}²) + ${(1 - pi).toFixed(2)} N(0, ${spike}²)   (spike and slab, the switch summed out)`,
-      `y ~ N(w, ${s}²)`,
-      `observe y = ${y}`,
-    ],
-    quantities: [{ name: 'w', label: 'w (the coefficient)', support: 'real' }],
-    exact: { w: gate.selected },
-    mixtures: [
-      {
-        title:
-          'The coefficient w as the gate it is: the exact spike and slab branches. This form has no switch variable, so EP reports only its single Gaussian',
-        quantity: 'w',
-        label: 'w',
-        exact: [
-          { label: 'spike (z = 0)', weight: 1 - gate.p1, ...gate.updated[0] },
-          { label: 'slab (z = 1)', weight: gate.p1, ...gate.updated[1] },
-        ],
-        ep: () => undefined,
-      },
-    ],
+    build: {
+      definition,
+      data: { y },
+      quantities: [{ name: 'w', label: 'w (the coefficient)', support: 'real' }],
+    },
+    reference: {
+      exact: { w: gate.selected },
+    },
+    present: {
+      equations: [
+        `w ~ ${pi} N(0, ${slab}²) + ${(1 - pi).toFixed(2)} N(0, ${spike}²)   (spike and slab, the switch summed out)`,
+        `y ~ N(w, ${s}²)`,
+        `observe y = ${y}`,
+      ],
+      mixtures: [
+        {
+          title:
+            'The coefficient w as the gate it is: the exact spike and slab branches. This form has no switch variable, so EP reports only its single Gaussian',
+          quantity: 'w',
+          label: 'w',
+          exact: [
+            { label: 'spike (z = 0)', weight: 1 - gate.p1, ...gate.updated[0] },
+            { label: 'slab (z = 1)', weight: gate.p1, ...gate.updated[1] },
+          ],
+          ep: () => undefined,
+        },
+      ],
+    },
   }
 }
 
@@ -493,7 +517,7 @@ export const spikeSlabMarginalAtom: EpAtom = defineAtom({
       'the mean and variance are exact; the exact posterior is a spike hump and a slab hump and EP draws one Gaussian',
   },
   knobs: spikeKnobs,
-  problem: spikeSlabMarginalProblem,
+  parts: spikeSlabMarginalProblem,
 })
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -503,7 +527,7 @@ const CLUTTER_Y = [1.0, 1.4, 0.9, 1.2, 1.6, -4.2, 1.1, 9.5]
 const INLIER_SD = 0.5
 const CLUTTER_SD = 5
 
-function clutterGateProblem(k: Config): AtomProblem {
+function clutterGateProblem(k: Config): AtomParts {
   const w = configNumber(k, 'share')
   const priorSd = 5
   // region clutter
@@ -538,44 +562,50 @@ function clutterGateProblem(k: Config): AtomProblem {
   const at = CLUTTER_Y.map((_, i) => i + 1)
   const n = CLUTTER_Y.length
   return {
-    definition,
-    data: { y: CLUTTER_Y },
-    equations: [
-      `theta ~ N(0, ${priorSd}²)   (the hidden centre)`,
-      `z_i ~ Bernoulli(${w})   (z_i = 1: observation i is clutter)`,
-      `y_i ~ z_i ? N(0, ${CLUTTER_SD}²) : N(theta, ${INLIER_SD}²)   (a gate per observation: clutter or the centre)`,
-      `observe y = (${CLUTTER_Y.join(', ')})`,
-    ],
-    quantities: [
-      { name: 'theta', label: 'theta (the centre)', support: 'real' },
-      ...at.map((i) => ({
-        name: `z[${i - 1}]`,
-        label: `observation ${i} is clutter`,
-        support: 'probability' as const,
-      })),
-    ],
-    exact: { theta: marginal, ...Object.fromEntries(pClutter.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])) },
-    figure: {
-      caption:
-        'The eight observations, coloured by whether EP believes each is clutter (a draw from the wide component around 0) or a detection of the centre (the line). The two bands are the two branches of every gate.',
-      xLabel: 'observation',
-      yLabel: 'value',
-      xLimits: [0, n + 1],
-      points: [
-        {
-          name: 'observations',
-          x: at,
-          y: [...CLUTTER_Y],
-          group: pClutter.map((p) => (p > 0.5 ? 1 : 0)),
-          groupNames: { 0: 'centre', 1: 'clutter' },
-          groupFrom: (m) => at.map((i) => ((m[`z[${i - 1}]`] ?? 0) > 0.5 ? 1 : 0)),
-        },
+    build: {
+      definition,
+      data: { y: CLUTTER_Y },
+      quantities: [
+        { name: 'theta', label: 'theta (the centre)', support: 'real' },
+        ...at.map((i) => ({
+          name: `z[${i - 1}]`,
+          label: `observation ${i} is clutter`,
+          support: 'probability' as const,
+        })),
       ],
-      curves: [
-        { name: 'clutter branch: 0 ± 2 sd', colour: 'tab1', x: [0, n + 1], y: [2 * CLUTTER_SD, 2 * CLUTTER_SD] },
-        { name: 'clutter branch: 0 ± 2 sd', colour: 'tab1', x: [0, n + 1], y: [-2 * CLUTTER_SD, -2 * CLUTTER_SD] },
+    },
+    reference: {
+      exact: { theta: marginal, ...Object.fromEntries(pClutter.map((p, i) => [`z[${i}]`, probabilityMarginal(p)])) },
+    },
+    present: {
+      equations: [
+        `theta ~ N(0, ${priorSd}²)   (the hidden centre)`,
+        `z_i ~ Bernoulli(${w})   (z_i = 1: observation i is clutter)`,
+        `y_i ~ z_i ? N(0, ${CLUTTER_SD}²) : N(theta, ${INLIER_SD}²)   (a gate per observation: clutter or the centre)`,
+        `observe y = (${CLUTTER_Y.join(', ')})`,
       ],
-      answer: (m) => [{ name: 'theta', x: [0, n + 1], y: [m['theta'] ?? Number.NaN, m['theta'] ?? Number.NaN] }],
+      figure: {
+        caption:
+          'The eight observations, coloured by whether EP believes each is clutter (a draw from the wide component around 0) or a detection of the centre (the line). The two bands are the two branches of every gate.',
+        xLabel: 'observation',
+        yLabel: 'value',
+        xLimits: [0, n + 1],
+        points: [
+          {
+            name: 'observations',
+            x: at,
+            y: [...CLUTTER_Y],
+            group: pClutter.map((p) => (p > 0.5 ? 1 : 0)),
+            groupNames: { 0: 'centre', 1: 'clutter' },
+            groupFrom: (m) => at.map((i) => ((m[`z[${i - 1}]`] ?? 0) > 0.5 ? 1 : 0)),
+          },
+        ],
+        curves: [
+          { name: 'clutter branch: 0 ± 2 sd', colour: 'tab1', x: [0, n + 1], y: [2 * CLUTTER_SD, 2 * CLUTTER_SD] },
+          { name: 'clutter branch: 0 ± 2 sd', colour: 'tab1', x: [0, n + 1], y: [-2 * CLUTTER_SD, -2 * CLUTTER_SD] },
+        ],
+        answer: (m) => [{ name: 'theta', x: [0, n + 1], y: [m['theta'] ?? Number.NaN, m['theta'] ?? Number.NaN] }],
+      },
     },
   }
 }
@@ -612,10 +642,10 @@ export const clutterAtom: EpAtom = defineAtom({
   },
   knobs: dict({ share: real(0.02, 0.6, { default: 0.25, step: 0.01, label: 'prior probability of clutter' }) }),
   ep: { damping: 0.5 },
-  problem: clutterGateProblem,
+  parts: clutterGateProblem,
 })
 
-function clutterMixtureProblem(k: Config): AtomProblem {
+function clutterMixtureProblem(k: Config): AtomParts {
   const share = configNumber(k, 'share')
   const [s, width, priorSd] = [0.5, 10, 5]
   // region clutter-mixture
@@ -629,15 +659,21 @@ function clutterMixtureProblem(k: Config): AtomProblem {
     Math.log(normalPdf(x, 0, priorSd)) +
     CLUTTER_Y.reduce((a, v) => a + Math.log((1 - share) * normalPdf(v, x, s) + share * normalPdf(v, x, width * s)), 0)
   return {
-    definition,
-    data: { y: CLUTTER_Y },
-    equations: [
-      `mu ~ N(0, ${priorSd}²)`,
-      `y_i ~ ${(1 - share).toFixed(2)} N(mu, ${s}²) + ${share} N(mu, ${width * s}²)   (inlier or outlier, the switch summed out)`,
-      `observe y = (${CLUTTER_Y.join(', ')})`,
-    ],
-    quantities: [{ name: 'mu', label: 'mu', support: 'real' }],
-    exact: { mu: quadratureMarginal(logPost, -20, 20) },
+    build: {
+      definition,
+      data: { y: CLUTTER_Y },
+      quantities: [{ name: 'mu', label: 'mu', support: 'real' }],
+    },
+    reference: {
+      exact: { mu: quadratureMarginal(logPost, -20, 20) },
+    },
+    present: {
+      equations: [
+        `mu ~ N(0, ${priorSd}²)`,
+        `y_i ~ ${(1 - share).toFixed(2)} N(mu, ${s}²) + ${share} N(mu, ${width * s}²)   (inlier or outlier, the switch summed out)`,
+        `observe y = (${CLUTTER_Y.join(', ')})`,
+      ],
+    },
   }
 }
 
@@ -666,5 +702,5 @@ export const clutterMixtureAtom: EpAtom = defineAtom({
     reason: 'the posterior is lumpy and EP matches only its mean and variance with one Gaussian',
   },
   knobs: dict({ share: real(0.02, 0.6, { default: 0.25, step: 0.01, label: 'outlier share' }) }),
-  problem: clutterMixtureProblem,
+  parts: clutterMixtureProblem,
 })
