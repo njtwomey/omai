@@ -76,11 +76,11 @@ describe('LDA-lite under EP', () => {
       b.observe('w', d.categorical({ probs: phi.at(z) }), w)
     })
     const post = runEp(model.bind({ w: [[2]] }) as never)
-    const weight = [alpha[0] / 2, alpha[1] / 2].map(
-      (t, k) => (t * ((beta[k] as number[])[2] as number)) / (beta[k] as number[]).reduce((a, v) => a + v, 0),
+    const weight = alpha.map(
+      (t, k) => ((t / 2) * ((beta[k] as number[])[2] as number)) / (beta[k] as number[]).reduce((a, v) => a + v, 0),
     )
-    const total = weight[0] + weight[1]
+    const total = (weight[0] as number) + (weight[1] as number)
     const z = post.summary().find((r) => r.name === 'z[0]')
-    expect(z?.mean).toBeCloseTo(weight[1] / total, 8)
+    expect(z?.mean).toBeCloseTo((weight[1] as number) / total, 8)
   })
 })

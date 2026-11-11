@@ -219,6 +219,9 @@ interface Aff {
 type Cell =
   | { readonly kind: 'aff'; readonly aff: Aff }
   | { readonly kind: 'rv'; readonly variable: string; readonly family: FamilyKind }
+  // The stick-breaking weights of beta variables, `v_k prod_{j<k} (1 - v_j)` and the remainder (one more weight than breaks): the
+  // probabilities of a categorical, which reads them through the `stick-breaking` factor (the truncated Dirichlet process).
+  | { readonly kind: 'sticks'; readonly variables: readonly string[] }
   // A known multiple of a gamma variable plus a known offset, `scale tau + offset`: the precision of a Gaussian that shares
   // one smoothing parameter or one global scale (it has no other use: it is not a Gaussian value).
   | { readonly kind: 'scaled'; readonly variable: string; readonly scale: number; readonly offset: number }
@@ -287,6 +290,11 @@ function affOf(c: Cell): Aff {
     throw new Refusal(
       'operator',
       `arithmetic on the inverse-gamma variable behind '${c.variable}': only a known multiple of it is mapped, and only as the squared scale of a Gaussian (the precision idiom)`,
+    )
+  if (c.kind === 'sticks')
+    throw new Refusal(
+      'operator',
+      'arithmetic on stick-breaking weights: they are only the probabilities of a categorical',
     )
   if (c.kind !== 'aff')
     throw new Refusal('operator', `arithmetic on the ${c.family} variable '${c.variable}': only Gaussian values add up`)
@@ -1007,6 +1015,8 @@ class Compiler {
         }))
       case 'matmul':
         return this.matmul(a, b)
+      case 'stickBreaking':
+        return this.stickBreaking(a)
       case 'exp':
       case 'square':
       case 'tanh':
@@ -1020,6 +1030,23 @@ class Compiler {
           `operator '${op}' applied to a random value has no message rule (message passing handles affine maps of Gaussians, exp, square, tanh, softplus, abs, sigmoid and the rectifier of a random value, and a link such as probit only as the likelihood of a Bernoulli observation)`,
         )
     }
+  }
+
+  /**
+   * The stick-breaking weights of beta latents along the last dimension: one `sticks` cell for each index of the leading
+   * dimensions, holding the beta variables of its breaks (the categorical that reads it makes the `stick-breaking` factor).
+   */
+  private stickBreaking(a: Sym): Sym {
+    const sticks = a.dims.length === 0 ? 0 : this.size(a.dims[a.dims.length - 1] as string)
+    if (sticks === 0) throw new Refusal('structure', 'stickBreaking needs a vector of breaks over a named dimension')
+    const cells: Cell[] = []
+    for (let i = 0; i < a.cells.length; i += sticks) {
+      const breaks = a.cells.slice(i, i + sticks)
+      if (breaks.some((c) => c.kind !== 'rv' || c.family !== 'beta'))
+        throw new Refusal('operator', 'the breaks of a stick-breaking process must be beta latents')
+      cells.push({ kind: 'sticks', variables: breaks.map((c) => (c as { readonly variable: string }).variable) })
+    }
+    return { dims: a.dims.slice(0, -1), cells }
   }
 
   /**
@@ -2637,6 +2664,21 @@ class Compiler {
         )
       const over = this.over(this.evalSym(expr), node.dims)
       for (const [i, c] of over.entries()) {
+        if (c.kind === 'sticks') {
+          // The weights are the stick-breaking of beta breaks: a `stick-breaking` factor on the assignment and the breaks.
+          const name = this.addVariable({
+            name: this.elementName(node.name, node.dims, i),
+            family: { kind: 'discrete', size: c.variables.length + 1 },
+          })
+          this.need('stick-breaking')
+          this.addFactor(
+            { operator: 'stick-breaking', args: [name, ...c.variables], params: { sticks: c.variables.length } },
+            name,
+          )
+          cells.push({ kind: 'rv', variable: name, family: 'discrete' })
+          vars.push(name)
+          continue
+        }
         if (c.kind !== 'rv' || c.family !== 'dirichlet')
           throw new Refusal(
             'operator',
@@ -2781,7 +2823,9 @@ class Compiler {
       this.layout(node, 'derived', undefined, 'constant', new Array<null>(prod(shape)).fill(null), false)
       return
     }
-    if (!node.record) {
+    // Stick-breaking weights are not a random variable of the graph (the assignments read the breaks through one factor), so there is
+    // nothing to record: the weights are read back from the breaks.
+    if (!node.record || cells.some((c) => c.kind === 'sticks')) {
       this.syms.set(node.name, { dims: node.dims, cells })
       return
     }

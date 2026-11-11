@@ -35,10 +35,12 @@ import {
   softplus,
   sqrt,
   square,
+  stack,
   sub,
   sum,
   take,
   tanh,
+  tensor,
   transpose,
   type Value,
   where,
@@ -248,6 +250,34 @@ const atOperator: OperatorDef = {
   },
 }
 
+const stickBreakingOperator: OperatorDef = {
+  name: 'stickBreaking',
+  arity: 1,
+  description:
+    'the stick-breaking weights of break fractions along the last dimension: w_k = v_k prod_{j<k} (1 - v_j), the last weight taking what is left (one more weight than breaks, as an event axis)',
+  factor: 'stick-breaking',
+  shape: ([a]) => {
+    const x = a as NamedShape
+    if (x.eventRank !== 0 || x.dims.length === 0)
+      throw new OmaiError('shape', 'stickBreaking: the operand must be a vector of breaks over a named dimension')
+    return { dims: x.dims.slice(0, -1), eventRank: 1 }
+  },
+  evaluate: ([a]) => {
+    const x = a as NamedValue
+    const axis = x.value.shape.length - 1
+    const sticks = x.value.shape[axis] as number
+    const parts: Value[] = []
+    let rest: Value | undefined
+    for (let i = 0; i < sticks; i++) {
+      const v = take(x.value, i, axis)
+      parts.push(rest === undefined ? v : mul(v, rest))
+      rest = mul(rest ?? tensor(1), sub(1, v))
+    }
+    parts.push(rest ?? tensor(1))
+    return { value: stack(parts, axis), dims: x.dims.slice(0, -1) }
+  },
+}
+
 /**
  * The range the `probit` operator keeps its value in. The normal CDF rounds to exactly 1 from about 8.3 and underflows to 0
  * below about -38, where the logit of a Bernoulli on it is infinite and its gradient not a number: a gradient method that
@@ -261,7 +291,7 @@ const PROBIT_CEILING = 1 - Number.EPSILON / 2
  * The registry the model layer ships: arithmetic (`add`, `sub`, `mul`, `div`, `pow`, `maximum`, `minimum`, `neg`),
  * elementwise functions (`exp`, `log`, `sqrt`, `square`, `abs`, `tanh`), links (`sigmoid`, `probit` (the standard normal
  * CDF, the inverse probit link), `softplus`), comparisons (`gt`, `lt`, `eq`), `where` and `clip`, reductions over a named
- * dimension (`sum`, `mean`), `matmul` and the gather `at`. Elementwise operators align operands by dimension name.
+ * dimension (`sum`, `mean`), `matmul`, the gather `at` and `stickBreaking` (the weights of a stick-breaking process from its break fractions). Elementwise operators align operands by dimension name.
  * Message-passing factors for these are keyed by the same names.
  *
  * @returns The operator table (a fresh object each call, so it can be extended without side effects).
@@ -269,7 +299,7 @@ const PROBIT_CEILING = 1 - Number.EPSILON / 2
  * @example
  * ```ts
  * import { defaultOperators } from 'omai-engine/probprog/model'
- * Object.keys(defaultOperators()).length // => 26
+ * Object.keys(defaultOperators()).length // => 27
  * ```
  */
 export function defaultOperators(): Record<string, OperatorDef> {
@@ -309,6 +339,7 @@ export function defaultOperators(): Record<string, OperatorDef> {
     ),
     matmulOperator,
     atOperator,
+    stickBreakingOperator,
   ]
   return Object.fromEntries(defs.map((d) => [d.name, d]))
 }
