@@ -15,6 +15,7 @@
 import { OmaiError } from '../../../base/index.ts'
 import { mixture } from '../../../dists/compose/index.ts'
 import {
+  asymmetricLaplace,
   bernoulli,
   beta,
   binomial,
@@ -33,6 +34,8 @@ import {
   multivariateNormal,
   negativeBinomial,
   normal,
+  orderedLogistic,
+  orderedProbit,
   poisson,
   studentT,
   truncatedNormal,
@@ -142,8 +145,8 @@ const covariance = ['covariance', 'precision', 'scaleTril'] as const
 
 /**
  * The table of distribution families: normal, halfNormal, logNormal, truncatedNormal, studentT, cauchy, halfCauchy,
- * laplace, exponential, gamma, inverseGamma, weibull, beta, uniform, bernoulli, binomial, geometric, negativeBinomial,
- * poisson, categorical, dirichlet and multivariateNormal. Parameter names are those of the constructors in
+ * laplace, asymmetricLaplace, exponential, gamma, inverseGamma, weibull, beta, uniform, bernoulli, binomial, geometric, negativeBinomial,
+ * poisson, categorical, categoricalProbit, orderedProbit, orderedLogistic, dirichlet and multivariateNormal. Parameter names are those of the constructors in
  * `omai-engine/dists`.
  *
  * @returns The families by name (a fresh object each call).
@@ -235,6 +238,18 @@ export function distributionFamilies(): Record<string, FamilyDef> {
         defaults: { loc: 0, scale: 1 },
         exponentialFamily: true,
       },
+    ),
+    family(
+      'asymmetricLaplace',
+      ['loc', 'scale', 'tau'],
+      (a) =>
+        asymmetricLaplace(
+          need('asymmetricLaplace', a, 'loc'),
+          need('asymmetricLaplace', a, 'scale'),
+          need('asymmetricLaplace', a, 'tau'),
+        ),
+      { loc: 0, scale: 1, tau: 0.5 },
+      { defaults: { loc: 0, scale: 1, tau: 0.5 }, messagePassing: true },
     ),
     family(
       'exponential',
@@ -341,6 +356,20 @@ export function distributionFamilies(): Record<string, FamilyDef> {
       },
       { probs: [0.2, 0.3, 0.5] },
       { oneOf: [['probs', 'logits']], discrete: true, finite: true, exponentialFamily: true },
+    ),
+    family(
+      'orderedProbit',
+      ['predictor', 'cutpoints'],
+      (a) => orderedProbit(need('orderedProbit', a, 'predictor'), need('orderedProbit', a, 'cutpoints')),
+      { predictor: 0.3, cutpoints: [-0.5, 0.7] },
+      { discrete: true, finite: true, messagePassing: true },
+    ),
+    family(
+      'orderedLogistic',
+      ['predictor', 'cutpoints'],
+      (a) => orderedLogistic(need('orderedLogistic', a, 'predictor'), need('orderedLogistic', a, 'cutpoints')),
+      { predictor: 0.3, cutpoints: [-0.5, 0.7] },
+      { discrete: true, finite: true, messagePassing: true },
     ),
     family(
       'categoricalProbit',

@@ -152,6 +152,27 @@ export function geometric(probs: Operand): DistExpr {
   return family('geometric', { probs })
 }
 
+/**
+ * The asymmetric Laplace distribution of quantile regression: `loc` is the `tau` quantile (`tau` in (0, 1), 1/2 the median) and
+ * `scale` the scale of the check-loss. `y ~ asymmetricLaplace(X w, scale, tau)` is Bayesian quantile regression.
+ */
+export function asymmetricLaplace(loc: Operand = 0, scale: Operand = 1, tau: Operand = 0.5): DistExpr {
+  return family('asymmetricLaplace', { loc, scale, tau })
+}
+
+/**
+ * An ordinal outcome 0 to K-1 by the cumulative probit: `P(y <= k) = Phi(cutpoints_k - predictor)` for the increasing `cutpoints`
+ * (K - 1 known values). `y ~ orderedProbit(X w, cuts)` is ordered probit regression.
+ */
+export function orderedProbit(predictor: Operand, cutpoints: Operand): DistExpr {
+  return family('orderedProbit', { predictor, cutpoints })
+}
+
+/** An ordinal outcome 0 to K-1 by the cumulative logit (proportional odds): `P(y <= k) = sigmoid(cutpoints_k - predictor)`. */
+export function orderedLogistic(predictor: Operand, cutpoints: Operand): DistExpr {
+  return family('orderedLogistic', { predictor, cutpoints })
+}
+
 /** A negative binomial distribution. */
 export function negativeBinomial(n: Operand, probs: Operand): DistExpr {
   return family('negativeBinomial', { n, probs })

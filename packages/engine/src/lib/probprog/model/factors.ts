@@ -3013,6 +3013,17 @@ class Compiler {
         return this.observedHeavy(node, fam, y, i, index)
       case 'beta':
         return this.observedPair(node, 'beta-shapes', y, i, index)
+      case 'orderedProbit':
+      case 'orderedLogistic':
+      case 'asymmetricLaplace': {
+        const numeric = this.observedNumeric(node, fam, y, i, index)
+        if (numeric === undefined)
+          throw new Refusal(
+            'operator',
+            `the parameters of '${node.name}' (${fam}) are not in a form with a message rule`,
+          )
+        return numeric
+      }
       case 'logNormal':
         // log y is Gaussian around the predictor: the exact Gaussian rule on the log of the outcome.
         if (!(y > 0)) throw new Refusal('data', `'${node.name}' is log-normal: the outcome ${y} must be positive`)
@@ -3051,7 +3062,7 @@ class Compiler {
       default:
         throw new Refusal(
           'family',
-          `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, normalOutliers, bernoulli, binomial, poisson, normalPair, exponential, gamma, geometric, negativeBinomial, weibull and categorical`,
+          `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, asymmetricLaplace, orderedProbit, orderedLogistic, categoricalProbit, normalOutliers, bernoulli, binomial, poisson, normalPair, exponential, gamma, geometric, negativeBinomial, weibull and categorical`,
         )
     }
   }
@@ -3260,6 +3271,22 @@ class Compiler {
       if (probs?.kind !== 'op' || (probs.op !== 'sigmoid' && probs.op !== 'probit')) return undefined
       return emit(probs.op === 'sigmoid' ? 'binomial-logit' : 'binomial-probit', probs.args[0] as ExprSpec, {
         n: known('n', 'number of trials'),
+      })
+    }
+    if (fam === 'orderedProbit' || fam === 'orderedLogistic') {
+      const cutsExpr = dist['cutpoints'] as ExprSpec
+      if (!this.isConst(cutsExpr))
+        throw new Refusal(
+          'operator',
+          `the cut points of '${node.name}' are random: the ordinal likelihoods have a message rule for known cut points only`,
+        )
+      const cuts = Array.from(toFlat(this.evalNamed(cutsExpr).value))
+      return emit(fam === 'orderedProbit' ? 'ordinal-probit' : 'ordinal-logit', dist['predictor'] as ExprSpec, { cuts })
+    }
+    if (fam === 'asymmetricLaplace') {
+      return emit('asymmetric-laplace', dist['loc'] as ExprSpec, {
+        scale: known('scale', 'scale'),
+        tau: known('tau', 'quantile level'),
       })
     }
     if (fam === 'weibull') {

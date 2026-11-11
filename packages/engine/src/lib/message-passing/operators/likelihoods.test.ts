@@ -53,7 +53,11 @@ const cases: readonly { name: string; y: number; params: Record<string, number |
   { name: 'ordinal-probit', y: 1, params: { cuts: [-0.5, 0.7, 1.9] } },
   { name: 'ordinal-probit', y: 3, params: { cuts: [-0.5, 0.7, 1.9] } },
   { name: 'ordinal-probit', y: 0, params: { cuts: [-0.5, 0.7, 1.9] } },
+  { name: 'ordinal-logit', y: 1, params: { cuts: [-0.5, 0.7, 1.9] } },
+  { name: 'ordinal-logit', y: 3, params: { cuts: [-0.5, 0.7, 1.9] } },
+  { name: 'ordinal-logit', y: 0, params: { cuts: [-0.5, 0.7, 1.9] } },
   { name: 'asymmetric-laplace', y: 1.3, params: { scale: 0.5, tau: 0.8 } },
+  { name: 'asymmetric-laplace', y: -0.4, params: { scale: 0.3, tau: 0.15 } },
   { name: 'student-t', y: 1.3, params: { scale: 0.6, df: 3 } },
   { name: 'laplace', y: 1.3, params: { scale: 0.6 } },
 ]
@@ -110,6 +114,7 @@ describe('the registry of numeric likelihoods', () => {
     expect(total('binomial-logit', [0, 1, 2, 3, 4, 5, 6, 7], { n: 7 })).toBeCloseTo(1, 12)
     expect(total('binomial-probit', [0, 1, 2, 3, 4, 5, 6, 7], { n: 7 })).toBeCloseTo(1, 12)
     expect(total('ordinal-probit', [0, 1, 2, 3], { cuts: [-0.5, 0.7, 1.9] })).toBeCloseTo(1, 12)
+    expect(total('ordinal-logit', [0, 1, 2, 3], { cuts: [-0.5, 0.7, 1.9] })).toBeCloseTo(1, 12)
   })
 
   it('the Weibull and log-normal densities are the continuous densities of the time, and the censored form is their survival', () => {

@@ -401,7 +401,7 @@
       "reference": {
         "scipy": "1.18.1"
       },
-      "cases": 104
+      "cases": 134
     },
     {
       "fixture": "dists/continuous/normal.json",
