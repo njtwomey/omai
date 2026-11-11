@@ -21,6 +21,7 @@ import {
   type AtomRecoverySpec,
   defineAtom,
   type EpAtom,
+  type ExactMarginal,
   type FigureCurve,
 } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
@@ -266,15 +267,15 @@ function laplaceLearnedProblem(k: Config): AtomProblem {
 }
 
 /**
- * A location observed through Laplace noise whose scale is unknown too, with data simulated from a stated truth. The library's
- * Laplace rule takes a known scale only (the Laplace is a scale mixture with an exponential, not a gamma, mixing variance), so
- * the page is planned: the reference is the grid posterior of the same model, what EP will be compared against.
+ * A location observed through Laplace noise whose scale is unknown too, with data simulated from a stated truth: the
+ * `likelihood-pair` factor (the Laplace density over the location and the log of the scale, a two-variable numeric site), against
+ * the grid posterior of the same model.
  *
- * @index estimator EP atom (planned): a Laplace likelihood with unknown location and scale.
+ * @index estimator EP atom: a Laplace likelihood with unknown location and scale, recovered from simulated data.
  * @example
  * ```ts
  * import { laplaceLearnedAtom } from 'omai-engine/bayesian-examples'
- * laplaceLearnedAtom.expected // => 'planned'
+ * laplaceLearnedAtom.expected // => 'runs'
  * ```
  */
 export const laplaceLearnedAtom: EpAtom = defineAtom({
@@ -282,13 +283,12 @@ export const laplaceLearnedAtom: EpAtom = defineAtom({
   title: 'Laplace likelihood: parameters learned',
   extends: 'laplace',
   recovery: recoveryOf(
-    'the reference is the posterior of the same model on a grid, what EP will be held to once it takes a random Laplace scale',
+    'EP carries one Gaussian for the location and one for the log of the scale (the half-normal prior is projected onto the log once), against 15 absolute errors that tell the location well and the scale less so',
   ),
   what: 'The Laplace noise of the basic atom with the location and the scale both unknown, and the data simulated from a stated location and scale.',
-  factors: ['prior (gaussian)', 'numeric prior (half-normal)', 'laplace likelihood with a random scale'],
+  factors: ['prior (gaussian)', 'numeric prior (half-normal)', 'likelihood-pair: laplace with a random scale'],
   family: 'likelihoods',
-  expected: 'planned',
-  plan: 'docs/probprog/ep-plan.md, scale mixtures: a Laplace likelihood with a random scale needs a rule over (location, scale) as a two-variable numeric site, like the negative-binomial dispersion operator (`negative-binomial-dispersion` is the pattern: a Gauss-Hermite product rule over the Gaussian beliefs of the two); the alternative is the exponential mixing variance, which is not a gamma precision and has no message family today.',
+  expected: 'runs',
   reference: 'exact',
   tolerance: {
     meanZ: 0.2,
@@ -771,6 +771,276 @@ export const weibullLearnedAtom: EpAtom = defineAtom({
     priorSd: real(0.5, 5, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }),
   }),
   problem: weibullLearnedProblem,
+})
+
+// ----- two-variable sites: a Student-t with learned degrees of freedom, a Weibull with a learned shape -----
+
+/**
+ * The marginal of a positive value from the marginal of its log (the coordinate `t = log x` of a grid): the density of the value
+ * carries the Jacobian, and its moments are integrated over the grid's range by the midpoint rule.
+ */
+function positiveFromLog(base: ExactMarginal): ExactMarginal {
+  const [lo, hi] = base.range ?? [base.mean - 8 * base.sd, base.mean + 8 * base.sd]
+  const n = 4000
+  const h = (hi - lo) / n
+  let z = 0
+  let m1 = 0
+  let m2 = 0
+  for (let i = 0; i < n; i++) {
+    const t = lo + (i + 0.5) * h
+    const w = base.pdf(t) * h
+    const v = Math.exp(t)
+    z += w
+    m1 += w * v
+    m2 += w * v * v
+  }
+  const mean = m1 / z
+  return {
+    mean,
+    sd: Math.sqrt(Math.max(m2 / z - mean * mean, 0)),
+    pdf: (x) => (x > 0 ? base.pdf(Math.log(x)) / x : 0),
+    range: [Math.exp(lo), Math.exp(hi)],
+  }
+}
+
+function studentDfLearnedProblem(k: Config): AtomProblem {
+  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
+  const [trueLoc, trueDf] = [exampleNumber(k, 'trueLoc'), exampleNumber(k, 'trueDf')]
+  const [a, b] = [exampleNumber(k, 'shape'), exampleNumber(k, 'rate')]
+  // region student-t-df-learned
+  // the ground truth the data are drawn from: Student-t noise with a stated number of degrees of freedom
+  const noise = toFlat(studentT(foldIn(key(seed), 0), [n], trueDf))
+  const y = Array.from(noise, (e) => trueLoc + e)
+  const definition = defineModel('student-t-df-learned', (m) => {
+    // the location and the degrees of freedom of the noise (its scale is one): both unknown
+    const mu = m.latent('mu', d.normal(0, 5))
+    const df = m.latent('df', d.gamma(a, b))
+    m.observe('y', d.studentT(df, mu, 1), m.data('y', { dims: ['i'], role: 'response' }))
+  })
+  // endregion
+  // The exact posterior of (mu, log df) on a grid: the gamma prior of df in the coordinate log df is df^a exp(-b df).
+  const sorted = [...y].sort((p, q) => p - q)
+  const med = sorted[Math.floor(n / 2)] ?? 0
+  const half = 7 / Math.sqrt(n) + 0.5
+  const logT = (v: number, mu: number, df: number): number =>
+    lg((df + 1) / 2) - lg(df / 2) - 0.5 * Math.log(df * Math.PI) - ((df + 1) / 2) * Math.log1p((v - mu) ** 2 / df)
+  const grid = once(() =>
+    gridMarginals(
+      ([mu, t]) => {
+        const df = Math.exp(t as number)
+        return (
+          -0.5 * ((mu as number) / 5) ** 2 + a * (t as number) - b * df + sum(y.map((v) => logT(v, mu as number, df)))
+        )
+      },
+      [
+        [med - half, med + half],
+        [Math.log(0.4), Math.log(250)],
+      ],
+      141,
+    ),
+  )
+  const x = [0, n + 1]
+  return {
+    definition,
+    data: { y },
+    equations: [
+      `truth: location ${trueLoc}, scale 1, Student-t noise with ${trueDf} degrees of freedom; ${n} draws with seed ${seed}`,
+      'mu ~ N(0, 5²)   (the unknown location)',
+      `df ~ Gamma(${a}, ${b})   (the unknown degrees of freedom)`,
+      `y_i ~ Student-t(df, mu, 1), i = 1..${n}`,
+    ],
+    quantities: [
+      { name: 'mu', label: 'mu (the location)', support: 'real', truth: trueLoc },
+      { name: 'df', label: 'df (degrees of freedom)', support: 'positive', truth: trueDf },
+    ],
+    get exact() {
+      return { mu: grid().marginals[0] as ExactMarginal, df: positiveFromLog(grid().marginals[1] as ExactMarginal) }
+    },
+    referenceSource: 'the posterior of the location and the log of the degrees of freedom on a 141 by 141 grid',
+    figure: {
+      caption:
+        'The simulated observations (heavy tails: a few lie far from the rest). Green: the true location; thick and dashed: the fitted one.',
+      xLabel: 'observation',
+      yLabel: 'y',
+      xLimits: x as [number, number],
+      points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
+      curves: [{ name: 'true location', colour: 'tab2', x, y: [trueLoc, trueLoc] }],
+      answer: (mm) => [{ name: 'mu', x, y: [mm['mu'] ?? Number.NaN, mm['mu'] ?? Number.NaN] }],
+    },
+  }
+}
+
+/**
+ * A location observed through Student-t noise whose degrees of freedom are unknown too (a gamma prior on them), learned from data
+ * simulated from a stated truth: the `likelihood-pair` factor reads the location and the degrees of freedom (a gamma variable,
+ * integrated in its log) together, against the exact posterior of both on a grid. How heavy the tails are is itself learned.
+ *
+ * @index estimator EP atom: a Student-t likelihood with unknown location and degrees of freedom, recovered from simulated data.
+ * @example
+ * ```ts
+ * import { studentTDfLearnedAtom } from 'omai-engine/bayesian-examples'
+ * studentTDfLearnedAtom.extends // => 'student-t'
+ * ```
+ */
+export const studentTDfLearnedAtom: EpAtom = defineAtom({
+  name: 'student-t-df-learned',
+  title: 'Student-t likelihood: parameters learned (the degrees of freedom too)',
+  extends: 'student-t',
+  recovery: recoveryOf(
+    'the degrees of freedom are weakly identified by a few dozen draws (the posterior is skewed with a long right tail, and EP carries a gamma for it), so the floor leaves room (the exact posterior covers 0.96 of 25 seeds at these defaults, EP the same); each run integrates a grid in the location and the log of the degrees of freedom, so 20 seeds and a floor of 0.7',
+    20,
+  ),
+  what: 'The Student-t noise of the basic atom (scale one) with the location and the degrees of freedom both unknown, the data simulated from a stated location and a stated number of degrees of freedom.',
+  factors: ['prior (gaussian)', 'prior (gamma)', 'likelihood-pair: student-t with random degrees of freedom'],
+  family: 'likelihoods',
+  expected: 'runs',
+  reference: 'exact',
+  tolerance: {
+    meanZ: 0.25,
+    sdRatio: [0.7, 1.3],
+    ks: 0.12,
+    reason:
+      'the posterior of the degrees of freedom is skewed with a long right tail and EP carries a gamma for it; the location is nearly Gaussian',
+  },
+  ep: { damping: 0.3 },
+  knobs: dict({
+    ...simulationKnobs(40),
+    trueLoc: real(-3, 3, { default: 1, step: 0.1, label: 'true location' }),
+    trueDf: real(1.5, 20, { default: 5, step: 0.5, label: 'true degrees of freedom' }),
+    shape: real(0.5, 8, { default: 3, step: 0.1, label: 'prior shape of df' }),
+    rate: real(0.02, 2, { default: 0.4, step: 0.02, label: 'prior rate of df' }),
+  }),
+  problem: studentDfLearnedProblem,
+})
+
+function weibullShapeLearnedProblem(k: Config): AtomProblem {
+  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
+  const [trueLogScale, trueShape] = [exampleNumber(k, 'trueLogScale'), exampleNumber(k, 'trueShape')]
+  const [priorSd, shapeSd] = [exampleNumber(k, 'priorSd'), exampleNumber(k, 'shapeSd')]
+  // region weibull-shape-learned
+  // the ground truth: Weibull times with a stated scale and shape
+  const u = toFlat(uniform(foldIn(key(seed), 1), [n]))
+  const y = Array.from(u, (v) => Math.exp(trueLogScale) * (-Math.log(1 - v)) ** (1 / trueShape))
+  const definition = defineModel('weibull-shape-learned', (m) => {
+    // the log of the scale and the shape: both unknown
+    const logScale = m.latent('logScale', d.normal(0, priorSd))
+    const shape = m.latent('shape', d.logNormal(0.4, shapeSd))
+    const times = m.data('y', { dims: ['i'], support: 'positive' })
+    m.observe('y', d.weibull(shape, ops.exp(logScale)), times)
+  })
+  // endregion
+  const u0 = sum(y.map((v) => Math.log(v))) / n
+  const grid = once(() =>
+    gridMarginals(
+      ([ls, t]) => {
+        const shape = Math.exp(t as number)
+        return (
+          -0.5 * ((ls as number) / priorSd) ** 2 -
+          (0.5 * ((t as number) - 0.4) ** 2) / shapeSd ** 2 +
+          sum(
+            y.map(
+              (v) =>
+                (t as number) +
+                (shape - 1) * Math.log(v) -
+                shape * (ls as number) -
+                (v * Math.exp(-(ls as number))) ** shape,
+            ),
+          )
+        )
+      },
+      [
+        [u0 - 1.2, u0 + 1.2],
+        [Math.log(0.3), Math.log(9)],
+      ],
+      141,
+    ),
+  )
+  const x = y.map((_, i) => i + 1)
+  const median = (ls: number, shape: number): number => Math.exp(ls) * Math.LN2 ** (1 / shape)
+  return {
+    definition,
+    data: { y },
+    equations: [
+      `truth: Weibull times, scale exp(${trueLogScale}), shape ${trueShape}; ${n} times, seed ${seed}`,
+      `logScale ~ N(0, ${priorSd}²)   (the unknown log of the scale)`,
+      `shape ~ LogNormal(0.4, ${shapeSd}²)   (the unknown shape)`,
+      `y_i ~ Weibull(shape, exp(logScale)), i = 1..${n}`,
+    ],
+    quantities: [
+      { name: 'logScale', label: 'logScale (the log of the Weibull scale)', support: 'real', truth: trueLogScale },
+      { name: 'shape', label: 'shape (of the Weibull)', support: 'positive', truth: trueShape },
+    ],
+    get exact() {
+      return {
+        logScale: grid().marginals[0] as ExactMarginal,
+        shape: positiveFromLog(grid().marginals[1] as ExactMarginal),
+      }
+    },
+    referenceSource: 'the posterior of the log scale and the log shape on a 141 by 141 grid',
+    figure: {
+      caption:
+        'The simulated times. Green: the true median; thick and dashed: the median at the fitted scale and shape.',
+      xLabel: 'observation',
+      yLabel: 'time',
+      xLimits: [0, n + 1],
+      points: [{ name: 'times', x, y }],
+      curves: [
+        {
+          name: 'true median',
+          colour: 'tab2',
+          x: [0, n + 1],
+          y: [median(trueLogScale, trueShape), median(trueLogScale, trueShape)],
+        },
+      ],
+      answer: (mm) => {
+        const v = median(mm['logScale'] ?? Number.NaN, mm['shape'] ?? Number.NaN)
+        return [{ name: 'median', x: [0, n + 1], y: [v, v] }]
+      },
+    },
+  }
+}
+
+/**
+ * A Weibull time with an unknown scale and an unknown shape (a log-normal prior on it), learned from times simulated from a
+ * stated truth: the `likelihood-pair` factor reads the log scale and the log shape together, against the exact posterior of both on
+ * a grid. The shape of the Weibull (increasing or decreasing hazard) is itself learned.
+ *
+ * @index estimator EP atom: a Weibull with unknown scale and shape, recovered from simulated times.
+ * @example
+ * ```ts
+ * import { weibullShapeLearnedAtom } from 'omai-engine/bayesian-examples'
+ * weibullShapeLearnedAtom.extends // => 'prior-normal-weibull-scale'
+ * ```
+ */
+export const weibullShapeLearnedAtom: EpAtom = defineAtom({
+  name: 'weibull-shape-learned',
+  title: 'Prior: normal on a Weibull log scale, normal hyperprior on its centre: parameters learned (the shape too)',
+  extends: 'prior-normal-weibull-scale',
+  recovery: recoveryOf(
+    'the shape and the log scale are correlated in the posterior and EP carries one Gaussian for each (the log-normal shape is a Gaussian on its log); each run integrates a grid in both, so 20 seeds and a floor of 0.7',
+    20,
+  ),
+  what: 'The Weibull time of the basic atom with its log scale and its shape both unknown, the times simulated from a stated scale and shape.',
+  factors: ['prior (gaussian)', 'prior (gaussian, on the log shape)', 'likelihood-pair: weibull with a random shape'],
+  family: 'likelihoods',
+  expected: 'runs',
+  reference: 'exact',
+  tolerance: {
+    meanZ: 0.25,
+    sdRatio: [0.7, 1.3],
+    ks: 0.12,
+    reason:
+      'the scale and the shape are coupled in the posterior (a larger shape moves the scale), and EP carries one Gaussian for each',
+  },
+  ep: { damping: 0.3 },
+  knobs: dict({
+    ...simulationKnobs(30),
+    trueLogScale: real(-1, 2, { default: 0.5, step: 0.1, label: 'true log scale' }),
+    trueShape: real(0.6, 4, { default: 1.8, step: 0.1, label: 'true shape' }),
+    priorSd: real(0.5, 5, { default: 2, step: 0.1, label: 'prior sd of the log scale' }),
+    shapeSd: real(0.2, 2, { default: 0.7, step: 0.1, label: 'prior sd of the log shape' }),
+  }),
+  problem: weibullShapeLearnedProblem,
 })
 
 // ----- a tournament in which the spread of the skills is unknown -----

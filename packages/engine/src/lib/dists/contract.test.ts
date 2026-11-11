@@ -24,6 +24,7 @@ const families: readonly (readonly [string, () => D.Distribution])[] = [
   ['cauchy', () => D.cauchy(0, 1)],
   ['halfCauchy', () => D.halfCauchy(1)],
   ['laplace', () => D.laplace(0, 1)],
+  ['asymmetricLaplace', () => D.asymmetricLaplace(0.3, 1.5, 0.3)],
   ['logistic', () => D.logistic(0, 1)],
   ['pareto', () => D.pareto(3, 1)],
   ['johnsonSU', () => D.johnsonSU(0.5, 2, 0, 1)],

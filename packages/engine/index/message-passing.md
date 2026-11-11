@@ -51,7 +51,7 @@ Message passing on factor graphs of exponential families, the Infer.NET way: a m
 - algorithm `bpAlgorithm`: Sum-product belief propagation on a factor graph of discrete variables. `src/lib/message-passing/named.ts:291` `omai-engine/message-passing`
 - algorithm `ecAlgorithm`: Expectation consistent (adaptive TAP) inference: a Gaussian times 1-D sites. `src/lib/message-passing/consistent.ts:139` `omai-engine/message-passing`
 - algorithm `epAlgorithm`: Expectation propagation on a factor graph of exponential families. `src/lib/message-passing/named.ts:227` `omai-engine/message-passing`
-- algorithm `messagePassingAlgorithm`: The message-passing engine on a factor graph: projection, schedule, damping slots. `src/lib/message-passing/engine.ts:687` `omai-engine/message-passing`
+- algorithm `messagePassingAlgorithm`: The message-passing engine on a factor graph: projection, schedule, damping slots. `src/lib/message-passing/engine.ts:688` `omai-engine/message-passing`
 - algorithm `numericEpAlgorithm`: EP with numeric factors projected by quadrature, Laplace, sample or sigma-point rules. `src/lib/message-passing/numerical.ts:490` `omai-engine/message-passing`
 - algorithm `powerEpAlgorithm`: Power and fractional EP: per-factor powers on the message-passing engine. `src/lib/message-passing/power.ts:119` `omai-engine/message-passing`
 - algorithm `regionBpAlgorithm`: Generalised belief propagation on a region graph: Bethe, Kikuchi or junction regions. `src/lib/message-passing/regions.ts:609` `omai-engine/message-passing`
@@ -82,15 +82,17 @@ The factor operators: the registry of closed-form message rules (a prior, Gaussi
 - function `gateOperator`: The gate of Minka and Winn: a discrete variable selects among branch factors. `src/lib/message-passing/operators/gate.ts:92` `omai-engine/message-passing`
 - function `glmPlate`: Lift a scalar link to a plate of rows: one factor on the weights, vectorised. `src/lib/message-passing/operators/plates.ts:276` `omai-engine/message-passing`
 - function `glmRow`: Lift a scalar link (probit, logistic) to a regression row on weights. `src/lib/message-passing/operators/rows.ts:57` `omai-engine/message-passing`
-- function `likelihoodOperators`: The likelihood-site and likelihood-row operators of a registry of numeric likelihoods. `src/lib/message-passing/operators/likelihoods.ts:416` `omai-engine/message-passing`
-- function `likelihoodSite`: A numeric EP likelihood site from a registry of log densities. `src/lib/message-passing/operators/likelihoods.ts:369` `omai-engine/message-passing`
+- function `likelihoodOperators`: The likelihood-site and likelihood-row operators of a registry of numeric likelihoods. `src/lib/message-passing/operators/likelihoods.ts:447` `omai-engine/message-passing`
+- function `likelihoodSite`: A numeric EP likelihood site from a registry of log densities. `src/lib/message-passing/operators/likelihoods.ts:400` `omai-engine/message-passing`
 - function `numericOperator`: An EP operator for any density over Gaussian variables, by quadrature. `src/lib/message-passing/operators/numeric.ts:54` `omai-engine/message-passing`
+- function `pairLikelihoodOperator`: A two-variable numeric EP site from a registry of densities. `src/lib/message-passing/operators/pairs.ts:245` `omai-engine/message-passing`
 
 - structure `apply`: The factor y = f(x) of a unary function of a Gaussian (exp, square, tanh, relu, softplus, abs, sigmoid). `src/lib/message-passing/operators/functions.ts:254` `omai-engine/message-passing`
 - structure `bernoulliBeta`: A Bernoulli outcome with a beta probability (conjugate). `src/lib/message-passing/operators/conjugate.ts:38` `omai-engine/message-passing`
+- structure `betaTwoShapes`: A beta variable with two random shapes (gamma or log-normal each): a 2-d grid EP site. `src/lib/message-passing/operators/concentration.ts:251` `omai-engine/message-passing`
 - structure `binomial`: An observed binomial count with a beta probability (conjugate). `src/lib/message-passing/operators/conjugate.ts:223` `omai-engine/message-passing`
 - structure `difference`: The difference of two Gaussian variables. `src/lib/message-passing/operators/linear.ts:179` `omai-engine/message-passing`
-- structure `dirichletConcentration`: A beta or Dirichlet variable with a random concentration: a hyperprior on the prior's own strength. `src/lib/message-passing/operators/concentration.ts:143` `omai-engine/message-passing`
+- structure `dirichletConcentration`: A beta or Dirichlet variable with a random concentration: a hyperprior on the prior's own strength. `src/lib/message-passing/operators/concentration.ts:155` `omai-engine/message-passing`
 - structure `discreteDirichlet`: A discrete variable with a Dirichlet probability vector (conjugate). `src/lib/message-passing/operators/conjugate.ts:117` `omai-engine/message-passing`
 - structure `dotConstant`: A Gaussian vector projected on a constant direction s = a . w. `src/lib/message-passing/operators/linear.ts:242` `omai-engine/message-passing`
 - structure `equal`: Equality of two variables of one family: a copy. `src/lib/message-passing/operators/gaussian.ts:562` `omai-engine/message-passing`
@@ -122,8 +124,9 @@ The factor operators: the registry of closed-form message rules (a prior, Gaussi
 - structure `mixtureRow`: A Gaussian mixture on a linear function of the weights (spike and slab row): exact EP. `src/lib/message-passing/operators/robust.ts:126` `omai-engine/message-passing`
 - structure `mixtureSite`: A mixture of Gaussians in one variable (spike and slab, outlier mixture): exact EP. `src/lib/message-passing/operators/robust.ts:74` `omai-engine/message-passing`
 - structure `mixtureWeight`: A two-component mixture likelihood with a beta weight: the switch summed out. `src/lib/message-passing/operators/conjugate.ts:346` `omai-engine/message-passing`
+- structure `multiclassSite`: A categorical outcome with softmax or multinomial-probit probabilities of Gaussian class scores (adaptive Gauss-Hermite). `src/lib/message-passing/operators/multiclass.ts:228` `omai-engine/message-passing`
 - structure `negativeBinomialBeta`: An observed geometric or negative binomial count with a beta probability (conjugate). `src/lib/message-passing/operators/conjugate.ts:305` `omai-engine/message-passing`
-- structure `negativeBinomialDispersion`: A negative binomial count with a log link and a random log dispersion: a numeric EP site on two variables. `src/lib/message-passing/operators/likelihoods.ts:462` `omai-engine/message-passing`
+- structure `negativeBinomialDispersion`: A negative binomial count with a log link and a random log dispersion: a numeric EP site on two variables. `src/lib/message-passing/operators/likelihoods.ts:493` `omai-engine/message-passing`
 - structure `plus`: The sum of two Gaussian variables. `src/lib/message-passing/operators/linear.ts:160` `omai-engine/message-passing`
 - structure `poisson`: An observed Poisson count with a gamma rate (conjugate). `src/lib/message-passing/operators/conjugate.ts:186` `omai-engine/message-passing`
 - structure `prior`: The prior: a fixed message on a variable, in any family. `src/lib/message-passing/operators/gaussian.ts:57` `omai-engine/message-passing`
@@ -141,6 +144,7 @@ The factor operators: the registry of closed-form message rules (a prior, Gaussi
 - structure `table`: A table over discrete variables: sum-product and mean-field messages. `src/lib/message-passing/operators/discrete.ts:111` `omai-engine/message-passing`
 - structure `timesConstant`: A Gaussian variable scaled by a constant. `src/lib/message-passing/operators/linear.ts:198` `omai-engine/message-passing`
 
-- table `defaultOperators`: The library's factor operators by name. `src/lib/message-passing/operators/registry.ts:72` `omai-engine/message-passing`
-- table `likelihoods`: The numeric likelihoods of a Gaussian predictor (count, survival, ordinal, quantile, robust) by name. `src/lib/message-passing/operators/likelihoods.ts:299` `omai-engine/message-passing`
+- table `defaultOperators`: The library's factor operators by name. `src/lib/message-passing/operators/registry.ts:74` `omai-engine/message-passing`
+- table `likelihoods`: The numeric likelihoods of a Gaussian predictor (count, survival, ordinal, quantile, robust) by name. `src/lib/message-passing/operators/likelihoods.ts:329` `omai-engine/message-passing`
+- table `pairLikelihoods`: The likelihoods over two random scalars (Laplace scale, Student-t degrees of freedom, Weibull shape, beta shapes). `src/lib/message-passing/operators/pairs.ts:204` `omai-engine/message-passing`
 - table `unaryFunctions`: The unary functions of a Gaussian variable (exp, square, tanh, relu, softplus, abs, sigmoid) by name. `src/lib/message-passing/operators/functions.ts:49` `omai-engine/message-passing`

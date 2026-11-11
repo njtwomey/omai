@@ -156,6 +156,7 @@ export function validateSpec(spec: ModelSpec, options: CheckOptions = {}): void 
       dist: {
         readonly family: string
         readonly params: Readonly<Record<string, ExprSpec>>
+        readonly eventDims?: readonly string[]
       },
       at: ReadonlyMap<string, NamedShape> = scope,
     ): NamedShape => {
@@ -175,7 +176,10 @@ export function validateSpec(spec: ModelSpec, options: CheckOptions = {}): void 
         checkCustoms(e, where)
         shapes.push(exprShape(e, at, table))
       }
-      return { dims: joinShapes(shapes).dims, eventRank: f.eventRank }
+      return {
+        dims: joinShapes(shapes).dims.filter((x) => !(dist.eventDims ?? []).includes(x)),
+        eventRank: f.eventRank,
+      }
     }
     const within = (inner: readonly string[]): void => {
       for (const d of inner)

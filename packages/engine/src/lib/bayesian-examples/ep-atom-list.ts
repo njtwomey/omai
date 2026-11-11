@@ -29,8 +29,10 @@ import {
   poissonLogLearnedAtom,
   probitLearnedAtom,
   skillDifferenceLearnedAtom,
+  studentTDfLearnedAtom,
   studentTLearnedAtom,
   weibullLearnedAtom,
+  weibullShapeLearnedAtom,
 } from './ep-atoms-extended-likelihoods.ts'
 import { gammaPrecisionLearnedAtom, sharedPrecisionLearnedAtom } from './ep-atoms-extended-scales.ts'
 import { expAtom, logScaleAtom, maxAtom, productAtom, tanhAtom } from './ep-atoms-functions.ts'
@@ -55,7 +57,16 @@ import {
   spikeSlabAtom,
   spikeSlabMarginalAtom,
 } from './ep-atoms-mixtures.ts'
+import { softmaxRegressionAtom, softmaxRegressionLearnedAtom } from './ep-atoms-multiclass.ts'
 import { stickBreakingAtom, topicModelAtom } from './ep-atoms-nonparametric.ts'
+import {
+  ordinalProbitAtom,
+  ordinalProbitLearnedAtom,
+  quantileRegressionAtom,
+  quantileRegressionLearnedAtom,
+  skillDrawsAtom,
+  skillDrawsLearnedAtom,
+} from './ep-atoms-ordinal.ts'
 import {
   priorBetaGeometricAtom,
   priorBetaStrengthGammaAtom,
@@ -141,6 +152,14 @@ export const epAtoms: readonly EpAtom[] = [
   skillDifferenceLearnedAtom,
   gpProbitAtom,
   gpLogisticAtom,
+  softmaxRegressionAtom,
+  softmaxRegressionLearnedAtom,
+  ordinalProbitAtom,
+  ordinalProbitLearnedAtom,
+  quantileRegressionAtom,
+  quantileRegressionLearnedAtom,
+  skillDrawsAtom,
+  skillDrawsLearnedAtom,
   gpLengthScaleAtom,
   gpProbitLearnedAtom,
   poissonLogAtom,
@@ -161,6 +180,8 @@ export const epAtoms: readonly EpAtom[] = [
   priorLogNormalPoissonHyperAtom,
   priorNormalWeibullAtom,
   weibullLearnedAtom,
+  weibullShapeLearnedAtom,
+  studentTDfLearnedAtom,
   priorBetaGeometricAtom,
   priorBetaStrengthGammaAtom,
   priorBetaStrengthLogNormalAtom,

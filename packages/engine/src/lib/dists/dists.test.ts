@@ -34,6 +34,7 @@ const continuous: readonly (readonly [string, D.Distribution])[] = [
   ['beta (small shapes)', D.beta(0.3, 0.6)],
   ['studentT', D.studentT(6, 1, 2)],
   ['laplace', D.laplace(-1, 0.5)],
+  ['asymmetricLaplace', D.asymmetricLaplace(-1, 0.5, 0.25)],
   ['logistic', D.logistic(2, 0.7)],
   ['pareto', D.pareto(9, 2)],
   ['gumbel', D.gumbel(1, 2)],

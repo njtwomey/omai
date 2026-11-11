@@ -1,5 +1,5 @@
 /**
- * Heavy-tailed and flexible-shape continuous distributions: Student's t, Cauchy and half-Cauchy, Laplace, logistic,
+ * Heavy-tailed and flexible-shape continuous distributions: Student's t, Cauchy and half-Cauchy, Laplace, the asymmetric Laplace of quantile regression, logistic,
  * Pareto, Johnson's S_U and the sinh-arcsinh family of Jones and Pewsey, whose tails and skewness can be tuned, as
  * scipy.stats, torch.distributions and TFP.
  */
@@ -267,6 +267,72 @@ export function laplace(loc: TensorLike = 0, scale: TensorLike = 1): Distributio
     variance: () => b(mul(square(s), 2)),
     mode: () => b(mu),
     entropy: () => b(add(log(mul(s, 2)), 1)),
+  })
+}
+
+/**
+ * The asymmetric Laplace distribution of quantile regression (scipy.stats.laplace_asymmetric with `kappa = sqrt(tau / (1 - tau))`
+ * and the scale `scale / sqrt(tau (1 - tau))`): density `tau (1 - tau) / scale exp(-z (tau - 1{z < 0}))` with `z = (x - loc) / scale`, so
+ * the `tau` quantile is the location. `tau = 1/2` is the Laplace with scale `2 scale`.
+ *
+ * @param loc - Location: the `tau` quantile.
+ * @param scale - Scale (positive).
+ * @param tau - The quantile level in (0, 1).
+ * @returns The distribution; `rsample` is the quantile of uniform noise.
+ * @concept distributions
+ * @index distribution The asymmetric Laplace distribution of quantile regression.
+ * @example
+ * ```ts
+ * import { asymmetricLaplace } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
+ * item(asymmetricLaplace(0, 1, 0.3).cdf(0)) // => 0.3
+ * ```
+ */
+export function asymmetricLaplace(loc: TensorLike = 0, scale: TensorLike = 1, tau: TensorLike = 0.5): Distribution {
+  const [mu, s, q] = promoteFloat(loc, scale, tau) as [Value, Value, Value]
+  validateParams('asymmetricLaplace', {
+    loc: [mu, 'real'],
+    scale: [s, 'positive'],
+    tau: [q, 'openUnitInterval'],
+  })
+  const batchShape = batchShapeOf(mu, s, q)
+  const b = (v: Value): Value => broadcastBatch(v, batchShape)
+  const z = (x: Value): Value => div(sub(x, mu), s)
+  const lowerSide = (v: Value): Value => less(v, 0)
+  const oneMinus = sub(1, q)
+  // The two slopes: exp(-tau z) above the location and exp((1 - tau) z) below it.
+  const logProb = (x: Value): Value => {
+    const v = z(x)
+    return sub(add(log(mul(q, oneMinus)), neg(log(s))), mul(v, where(lowerSide(v), neg(oneMinus), q)))
+  }
+  const ppf = (p: Value): Value => {
+    const lowerQ = div(log(div(p, q)), oneMinus)
+    const upperQ = neg(div(log(div(sub(1, p), oneMinus)), q))
+    return add(mu, mul(s, where(less(p, q), lowerQ, upperQ)))
+  }
+  const cdf = (x: Value): Value => {
+    const v = z(x)
+    return where(lowerSide(v), mul(q, exp(mul(v, oneMinus))), sub(1, mul(oneMinus, exp(neg(mul(v, q))))))
+  }
+  const sf = (x: Value): Value => {
+    const v = z(x)
+    return where(lowerSide(v), sub(1, mul(q, exp(mul(v, oneMinus)))), mul(oneMinus, exp(neg(mul(v, q)))))
+  }
+  return defineDistribution({
+    name: 'asymmetricLaplace',
+    params: { loc: mu, scale: s, tau: q },
+    support: { kind: 'real' },
+    batchShape,
+    logProb,
+    cdf,
+    sf,
+    ppf,
+    isf: (p) => ppf(sub(1, p)),
+    rsample: (key, shape) => ppf(uniformOpen(key, [...shape, ...batchShape])),
+    mean: () => b(add(mu, div(mul(s, sub(1, mul(q, 2))), mul(q, oneMinus)))),
+    variance: () => b(div(mul(square(s), add(sub(1, mul(q, 2)), mul(square(q), 2))), square(mul(q, oneMinus)))),
+    mode: () => b(mu),
+    entropy: () => b(add(log(div(s, mul(q, oneMinus))), 1)),
   })
 }
 

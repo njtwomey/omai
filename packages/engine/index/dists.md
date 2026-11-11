@@ -28,6 +28,7 @@ Univariate continuous distributions, scipy.stats and torch.distributions style, 
 
 - function `marchenkoPasturEdges`: Edges of the Marchenko-Pastur support from the aspect ratio. `src/lib/dists/continuous/random-matrix.ts:51` `omai-engine/dists`
 
+- distribution `asymmetricLaplace`: The asymmetric Laplace distribution of quantile regression. `src/lib/dists/continuous/heavy-tailed.ts:291` `omai-engine/dists`
 - distribution `beta`: Beta distribution. `src/lib/dists/continuous/bounded.ts:109` `omai-engine/dists`
 - distribution `gamma`: Gamma distribution with shape and rate. `src/lib/dists/continuous/gamma.ts:72` `omai-engine/dists`
 - distribution `marchenkoPastur`: Marchenko-Pastur law of sample covariance eigenvalues, by aspect ratio. `src/lib/dists/continuous/random-matrix.ts:83` `omai-engine/dists`
