@@ -45,6 +45,12 @@ export interface MessagePassingOptions {
   readonly maxSweeps?: number
   /** Messages to start from instead of the flat ones. */
   readonly initial?: readonly InitialMessage[]
+  /**
+   * How many times a run that stalls or diverges is restarted from its start messages with a stronger damping (0.5, then
+   * more) before it is reported as stalled: a stall is a run whose beliefs stopped moving because some updates could not be
+   * computed (see `mpVerdict`). Each restart is counted on the tape (`mp/restarts`).
+   */
+  readonly restarts?: number
 }
 
 /**
@@ -69,12 +75,13 @@ export function messagePassingSettings(
     improper: o.improper ?? defaults.improper,
     tol: o.tol ?? defaults.tol,
     maxSweeps: o.maxSweeps ?? defaults.maxSweeps,
+    restarts: o.restarts ?? defaults.restarts,
     ...(o.order === undefined ? {} : { order: o.order }),
     ...(o.initial === undefined ? {} : { initial: o.initial }),
   }
 }
 
-/** The defaults of expectation propagation: serial sweeps, a repair that halves a step until the belief stays proper. */
+/** The defaults of expectation propagation: serial sweeps, a repair that halves a step until the belief stays proper, one damped restart of a run that stalls. */
 export const epDefaults: Required<Omit<MessagePassingOptions, 'order' | 'initial'>> = {
   schedule: 'serial',
   granularity: 'sweep',
@@ -82,6 +89,7 @@ export const epDefaults: Required<Omit<MessagePassingOptions, 'order' | 'initial
   improper: 'damp',
   tol: 1e-8,
   maxSweeps: 200,
+  restarts: 1,
 }
 
 /** The defaults of variational message passing: serial sweeps; an update that breaks a belief is dropped. */
@@ -92,6 +100,7 @@ export const vmpDefaults: Required<Omit<MessagePassingOptions, 'order' | 'initia
   improper: 'skip',
   tol: 1e-8,
   maxSweeps: 200,
+  restarts: 0,
 }
 
 /** The defaults of belief propagation: flooding sweeps, undamped. */
@@ -102,6 +111,7 @@ export const bpDefaults: Required<Omit<MessagePassingOptions, 'order' | 'initial
   improper: 'skip',
   tol: 1e-10,
   maxSweeps: 200,
+  restarts: 0,
 }
 
 /** The paths on the tape of every message-passing run, apart from the evidence and the bound. */
@@ -113,6 +123,9 @@ type CommonPath =
   | 'mp/skipped'
   | 'mp/damped'
   | 'mp/reset'
+  | 'mp/unresolved'
+  | 'mp/restarts'
+  | 'mp/verdict'
   | 'mp/message'
   | 'mp/marginals'
   | 'mp/frame'
@@ -132,6 +145,19 @@ const common = {
   'mp/skipped': scalar({ from: 'skipped', description: 'updates dropped by the improper policy' }),
   'mp/damped': scalar({ from: 'damped', description: 'updates shortened until the belief stayed proper' }),
   'mp/reset': scalar({ from: 'reset', description: 'messages reset to flat' }),
+  'mp/unresolved': scalar({
+    from: 'unresolved',
+    description: 'updates of the last completed sweep that could not be computed: those messages were not recomputed',
+  }),
+  'mp/restarts': scalar({
+    from: 'restarts',
+    description: 'automatic restarts from the start messages with a stronger damping',
+  }),
+  'mp/verdict': message({
+    from: 'verdict',
+    description: 'why a run that ended did not converge: stalled, degenerate, diverged or completed, with the reason',
+    payload: { status: 'the run status it reaches', reason: 'what went wrong' },
+  }),
   'mp/message': message({
     from: 'message',
     description: 'a message from a factor to a variable (ids as in graphStructure)',
@@ -314,6 +340,11 @@ export function messagePassingSpace(defaults: Required<Omit<MessagePassingOption
       description: 'stop when no belief moves more than this over a sweep',
     }),
     maxSweeps: int(1, 10_000, { default: defaults.maxSweeps, description: 'the sweep cap' }),
+    restarts: int(0, 5, {
+      default: defaults.restarts,
+      description:
+        'automatic restarts with a stronger damping when the run stalls (its beliefs stop moving because updates cannot be computed)',
+    }),
   })
 }
 
@@ -335,6 +366,7 @@ export function messagePassingOptions(c: Config): MessagePassingOptions {
   const improper = pick('improper', str)
   const tol = pick('tol', num)
   const maxSweeps = pick('maxSweeps', num)
+  const restarts = pick('restarts', num)
   return {
     ...(schedule === undefined ? {} : { schedule: schedule as ScheduleKind }),
     ...(granularity === undefined ? {} : { granularity: granularity as Granularity }),
@@ -342,6 +374,7 @@ export function messagePassingOptions(c: Config): MessagePassingOptions {
     ...(improper === undefined ? {} : { improper: improper as ImproperPolicy }),
     ...(tol === undefined ? {} : { tol }),
     ...(maxSweeps === undefined ? {} : { maxSweeps }),
+    ...(restarts === undefined ? {} : { restarts }),
   }
 }
 

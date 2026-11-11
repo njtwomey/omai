@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { epCoverage } from './ep-coverage.ts'
-import { epGaps } from './ep-gaps.ts'
+import { epDirections, epGaps } from './ep-gaps.ts'
 
 describe('the gaps of the EP suite', () => {
   const coverage = epCoverage()
@@ -23,6 +23,14 @@ describe('the gaps of the EP suite', () => {
     for (const g of epGaps) {
       expect(g.summary.length, g.id).toBeGreaterThan(40)
       expect(g.plan.length, g.id).toBeGreaterThan(40)
+    }
+  })
+
+  it('the wider suite has distinct directions, each with what it is and what it needs', () => {
+    expect(new Set(epDirections.map((d) => d.id)).size).toBe(epDirections.length)
+    for (const d of epDirections) {
+      expect(d.what.length, d.id).toBeGreaterThan(30)
+      expect(d.needs.length, d.id).toBeGreaterThan(30)
     }
   })
 })

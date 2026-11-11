@@ -1,9 +1,11 @@
 import {
   type CoverageRow,
+  type EpDirection,
   type EpGap,
   type EpGapKind,
   epAtom,
   epCoverage,
+  epDirections,
   epGaps,
   verifyAtom,
 } from 'omai-engine/bayesian-examples'
@@ -53,6 +55,84 @@ const STATUS_COLOUR: Readonly<Record<EpGap['status'], string>> = {
   queued: 'var(--wb-warning)',
   investigating: 'var(--wb-success)',
   open: 'var(--wb-muted)',
+}
+
+const AREAS: readonly EpDirection['area'][] = [
+  'time series',
+  'counts and survival',
+  'ranking and preference',
+  'latent structure',
+  'regression and classification',
+  'spatial and nonparametric',
+  'inference quality',
+]
+
+const DIRECTION_COLOUR: Readonly<Record<EpDirection['status'], string>> = {
+  covered: 'var(--wb-success)',
+  partial: 'var(--wb-warning)',
+  'in progress': 'var(--wb-accent)',
+  'not yet': 'var(--wb-muted)',
+}
+
+/** One direction the suite could cover: what it is, how far it is covered and what supporting it needs. */
+function Direction(props: { readonly d: EpDirection }): ReactNode {
+  const { d } = props
+  return (
+    <div className="flex flex-col gap-1 rounded-lg border border-line p-3">
+      <div className="flex flex-wrap items-baseline gap-2">
+        <h4 className="text-sm font-semibold">{d.title}</h4>
+        <span className="text-xs" style={{ color: DIRECTION_COLOUR[d.status] }}>
+          {d.status}
+        </span>
+        <span className="text-xs text-muted">{d.size} to add</span>
+      </div>
+      <p className="m-0 text-sm text-muted">{d.what}</p>
+      <p className="m-0 text-sm">
+        <span className="text-muted">What it takes: </span>
+        {d.needs}
+      </p>
+      {d.pages.length === 0 ? null : (
+        <p className="m-0 text-xs text-muted">
+          Shown so far in:{' '}
+          {d.pages.map((s, i) => (
+            <span key={s}>
+              {i === 0 ? '' : ', '}
+              <Link to={`/poc/${s}`} className="underline">
+                {s}
+              </Link>
+            </span>
+          ))}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** The wider suite by area: the directions the setups and programs could grow into, and what each would need. */
+function Directions(): ReactNode {
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-sm font-semibold">The wider suite: what else we could cover</h2>
+      <p className="max-w-3xl text-xs text-muted">
+        The gaps above are only what is clearly broken today. This is the larger map: the kinds of model and problem the
+        suite could grow into, how far each is covered, and what supporting it would take. It is for choosing the next
+        programs and rules, not a promise; add a direction when a new idea comes up.
+      </p>
+      {AREAS.map((a) => {
+        const items = epDirections.filter((d) => d.area === a)
+        return items.length === 0 ? null : (
+          <div key={a} className="flex flex-col gap-2">
+            <h3 className="text-sm font-medium capitalize">{a}</h3>
+            <div className="grid gap-2 lg:grid-cols-2">
+              {items.map((d) => (
+                <Direction key={d.id} d={d} />
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </section>
+  )
 }
 
 /** One gap: what is missing, why it matters, how it would be closed, and which refused setups it holds up. */
@@ -267,6 +347,7 @@ export default function EpCoverage(): ReactNode {
         </div>
       </section>
       <Gaps atoms={new Set(coverage.atoms.map((r) => r.name))} />
+      <Directions />
     </div>
   )
 }

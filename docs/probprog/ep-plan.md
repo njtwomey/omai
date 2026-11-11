@@ -248,6 +248,38 @@ with a beta or Dirichlet probability (a gate with an unknown mixing weight) and 
 a positive latent (log-normal and the like) as a rate of the log-link likelihoods. 21 atom pages (`family: 'priors'` and
 `'gate weights'`), all with the model code that ran at the bottom.
 
+## 12. The extended atoms: parameters learned (2026-11-11)
+
+Each basic atom with fixed numbers has a twin `<name>-learned` (`extends: '<basic>'`, `recovery: {...}`) in
+`ep-atoms-extended-{conjugate,scales,likelihoods}.ts`: the numbers the basic atom fixes are latents with stated priors, the data are simulated
+from a stated truth (knobs: the true values, `seed`, `n`), and `atomCalibration` (`ep-extended.ts`) repeats it over the atom's seeds and
+reports per parameter the share of runs whose 90% interval holds the truth. The registry test (`ep-extended.test.ts`) asserts the promised
+floors. Coverage over 40 seeds (25 for the negative binomial) at the default knobs:
+
+| atom | parameter: coverage (error in sds, rms) |
+| --- | --- |
+| gaussian-learned | mean 0.82 (1.10), variance 0.95 (0.79) |
+| gamma-precision-learned | mean 0.82 (1.09), precision 0.97 (0.70) |
+| shared-precision-learned | precision 0.85 (1.01), mean 0.85 (1.21), the 8 values 0.86 (1.18) |
+| beta-bernoulli-learned | strength 1.00 (0.81), the 8 probabilities 0.90 (1.02) |
+| gamma-poisson-learned | prior rate 0.90 (0.89), the 8 rates 0.89 (1.04) |
+| student-t-learned | location 0.88 (1.01), precision 0.97 (0.87) |
+| probit-learned | offset 0.97, slopes 0.93 and 0.88 (0.9 to 1.2) |
+| logistic-learned | offset 0.90, slopes 0.82 and 0.78 (shrinkage of fixed weights, 1.3) |
+| poisson-log-learned | intercept 0.88, slope 0.85 (1.05, 1.11) |
+| poisson-log-dispersion-learned | intercept 0.92, slope 0.96, dispersion 0.96 |
+| weibull-learned | intercept 0.97, slope 0.88 |
+| skill-difference-learned | spread precision 1.00 (0.53, an informative prior), the 8 skills 0.86 (1.14) |
+
+Gaps found. (1) `laplace-learned` is planned: the library takes a Laplace likelihood with a known scale only ("the scale of 'y' is
+random"); the missing rule is a two-variable numeric site over (location, scale) in the pattern of `negative-binomial-dispersion`. The grid
+posterior of the model is the reference. (2) Stochastic volatility with an unknown level, persistence and innovation precision compiles and
+runs, but is not calibrated (30 seeds of 60 returns: the truth inside the 90% interval for 37% of the levels, 60% of the persistences and 47%
+of the precisions, with errors of 10 to 40 posterior sds: the product factor of the persistence and the previous state, with the level as a
+third coupled latent, gives overconfident and sometimes improper beliefs, and a run takes seconds), so it is not an atom; it needs a joint
+Gaussian rule over (level, persistence) or a block update. (3) A Weibull with a random shape and a negative binomial with a gamma
+dispersion are not mapped (the shape and the gamma form of the dispersion have no rule); the dispersion here is the half-normal
+numeric site.
 ## 10. The gaps, as tested data
 
 The open items of this plan (what EP cannot run, where it is less good than it should be, the infrastructure and integration tasks)
@@ -257,3 +289,105 @@ and benchmark model EP refuses is named by a gap, and a gap that names something
 rules (`message-passing/operators`), the compiler mappings (`probprog/model/factors.ts`), the model families
 (`probprog/model/dists`) and the methods (`probprog/inference`) are in the library proper; the setups, programs, coverage and
 recovery helpers are still in `bayesian-examples` and are to move to `probprog/ep` (gap `integration`).
+## 11. Robustness: what EP reports and what the variants do (2026-11-11, `agent-pp81-robust`)
+
+**False convergence (found by the sparse regression with outliers).** The engine took "the beliefs moved less than `tol` over a
+sweep" for convergence. An update that cannot be computed (an operator throws for an improper or empty cavity: the proposal is
+`failed`, or `blocked` when the own message of a port it reads has no density) leaves the old message in place, so a run in which
+a share of the updates cannot be computed has a change of zero for want of updates, not because it is at a fixed point.
+Reproduction: the sparse program with noise sd 1, seed 3, undamped (the original report, seed 6 at noise 0.5, no longer
+reproduces on the compiler as it stands; the mechanism is the same): the wild first sweeps (changes up to 6e3) leave the gamma
+noise precision with a cavity that is improper for 20 of the 60 row factors, which are skipped for ever (40 failed or blocked
+updates per sweep from then on), the other 40 settle around a precision of 2e-5, every inclusion probability stays at the prior
+0.2, and the run reported `converged` after 43 sweeps. Damping 0.2 to 0.7 gives the right answer (precision 0.0986, the four
+active coefficients at 0.95 to 1.00) in 29 to 105 sweeps. Over 120 setups and seeds (noise, outlier share, rows, features, active coefficients) this was the only collapse, and in every
+other converged run (all of the changepoint and sparse seeds measured) the unresolved count at convergence was zero.
+
+What the engine does now (`message-passing/engine.ts`, tests in `verdict.test.ts`):
+
+- Every sweep counts the updates that could not be computed, or that the improper-message policy dropped or reset
+  (`MpState.unresolved`, the tape metric `mp/unresolved`). `mpVerdict(g, state, settings)` is the one place that says how a run
+  stands and is what `done`, the posterior's `status` and the tape use.
+- `converged`: the beliefs stopped moving and every update was recomputed in the last sweep. `stopped` with the reason `stalled`:
+  they stopped moving with updates that cannot be computed (the case above). `failed` with `degenerate`: a fixed point with a
+  belief that has no density. `diverged`: a message that is not finite. `completed`: the sweep budget ran out. The reason is on the
+  tape (`mp/verdict`, a message with `{ status, reason }`, only for a run whose verdict has a reason) and in the posterior's
+  `diagnostics.reason`.
+- A restart (`restarts`, a knob of every EP and of its variants; default 1 for EP, 0 for variational and belief propagation): a
+  run that stalls or diverges is started again from its start messages with damping `max(damping, 0.5)` (then 0.8, 0.9), counted
+  on the tape (`mp/restarts`); the sweep cap counts from the last restart. The sparse case recovers by it (converged, 100 sweeps,
+  precision 0.0986, one restart). A run that has been restarted and is stuck on the same kind of update is `converged` with the
+  count in the reason ("converged after 1 damped restart, but 3 message updates could not be computed even then"): the stall is
+  then not an artifact of its first trajectory but the usual skip of an update with an improper cavity. This is what the
+  horseshoe regression (three shrunk coefficients whose precision cavity is improper at the fixed point, and whose marginals agree
+  with a long NUTS run) does, and it keeps that test, and every page that reads `converged`, working. With `restarts: 0` the same
+  run is `stopped`/`stalled`, which is the honest report when nothing has checked it against a damped run.
+
+**Overconfidence when a regime is unvisited (the 3-state Poisson changepoint).** The compiled graph has the operators `prior`,
+`table` (the sticky chain), `select` (`y = c_z`, a point-mass constraint) and `poisson`. Measured against the program's Gibbs
+reference (mean regime-probability gap, accuracy of the most probable regime, ratio of EP's rate sds to the sampler's):
+
+| seed | plain EP | damping 0.3 | power 0.5 or alpha 0.5 on the compiled graph |
+| --- | --- | --- | --- |
+| 1 (all regimes visited) | exact (gap 0.001) | same | power: the same numbers (it has nothing to act on); alpha: refused ("no factor supports a power") |
+| 2 | gap 0.26, accuracy 0.70, sd ratios 0.31 / 0.15 / 0.12, 155 sweeps | gap 0.32, accuracy 1.00, 0.31 / 1.22 / 0.09 | as plain EP |
+| 5 | gap 0.25, accuracy 1.00, 0.96 / 0.12 / 0.09 | does not converge, gap 0.29 | as plain EP |
+| 8 | does not converge, gap 0.22, accuracy 0.79, 0.42 / 0.05 / 0.13 | does not converge | as plain EP |
+| 3 (visited) | exact | does not converge (gap 0.5), damping breaks a good run | as plain EP |
+
+Power EP and the alpha divergence do nothing on this graph for a structural reason: the only approximating factor is the
+`select`, a point-mass constraint `y = c_z`, and a delta has no power (raising the select to a power was tried: it gives thousands of
+improper updates and, before the verdict above, runs that reported `converged`). They do apply to the same model written as one
+soft factor per step, a gate of Poisson branches (`z_t` chooses which rate's likelihood holds); the gate of closed-form branches now
+takes a power (`operators/gate.ts`: the message to `z` is the branch evidences to the power `1/p`, to a variable the matched mixture
+divided by `p`; tested against a grid). On that form (hand-built in the experiment; the compiler does not emit it) with the label
+permutation of the modes aligned to the Gibbs run:
+
+| seed | plain EP | power 0.5 | alpha 0.5 | alpha 0.3 |
+| --- | --- | --- | --- | --- |
+| 1 | gap 0.001, sd ratios 0.96 / 1.00 / 1.01 | same | same | same |
+| 2 | gap 0.32, accuracy 1.00, 0.31 / 1.22 / 0.09 | 0.32, 0.31 / 1.19 / 0.09 | 0.32, 0.31 / 1.19 / 0.09 | does not converge, 0.38, 0.43 / 0.10 / 0.09 |
+| 5 | does not converge, gap 0.36, accuracy 0.46, 0.25 / 0.15 / 0.16 | does not converge, 0.34, 0.42 | does not converge, 0.34, 0.46 | converged, 0.25, accuracy 0.85, 0.25 / 1.02 / 0.09 |
+| 8 | does not converge, gap 0.25, accuracy 0.69, 0.38 / 0.05 / 0.13 | does not converge, 0.24, 0.69 | does not converge, 0.22, 0.75 | does not converge, 0.24, 0.66 |
+
+No variant restores calibrated rates or regime probabilities; the rate sds of the barely visited regimes stay at 0.05 to 0.3 of the
+sampler's. Alpha 0.3 on seed 5 is the one improvement (a converged run, accuracy 0.85, one sd ratio restored) and it is not
+reproduced on seeds 2 and 8. The cause is not the direction of the divergence: the posterior over which steps belong to a rarely
+visited regime is multimodal (and so is the label of the regimes: the same model on the gate form settled in a cyclic relabelling of
+the regimes, with the same rates) and a Gaussian-or-gamma message per variable cannot hold it; the three rates are shared by all
+the steps, a loop that double-counts, which a power only softens. What would help is another kind of method (Gibbs, SMC, or
+several EP starts weighted by their evidence), not a slot of this engine. The test of the program holds plain EP to this limit
+(`ep-programs.test.ts`).
+
+**The tournament skills (`ep-program-skills`, sds 0.79 to 0.83 of a long NUTS run).** Plain EP, damping 0.5, power 0.8, 0.5, 0.3
+and alpha 0.8, 0.5, 0.3 on seeds 1, 2, 3: the mean sd ratio is 0.790, 0.832, 0.816 for every one of them (at most 0.001 apart), the means agree within 0.08 NUTS sd, the precision of the skills within 6%. The probit factor takes a power; it just does not matter,
+because the likelihood of a difference of two skills is smooth and near Gaussian. The variants cost: power EP is 25 times slower
+(2 s against 0.08 s) and alpha 200 to 900 times (17 to 70 s). The shortfall is not the divergence either.
+
+**Rendering.** The message player's label for a packed Gaussian wrote its whole precision diagonal
+(`N-60(precision diag 2, 4, ...)` across the panel). `describeMessage` (`exposition/model-run-tape.ts`) now writes at most the first
+four numbers and the count: `N-60(precision diag 2, 2, 2, 2, ... (60))`, and the same for a long discrete or Dirichlet message and an
+unknown family.
+
+## 13. Gates whose components have gamma precisions of their own (2026-11-11)
+
+A Gaussian observation whose mean and precision are chosen by the same discrete variable (`where(z, clutter, inlier)` as the
+precision idiom `1 / sqrt(precision)`, `at(tau, z)`, with a switch that is a Bernoulli over a beta or a categorical over a
+Dirichlet) compiles to one `gate` per observation whose branches are `gaussian-gamma-precision` factors over the means and the
+gamma variables of the components (`probprog/model/factors.ts`, `observedSwitch`; the precision cell is a lookup with
+`precisions`, read in a "lookup mode" in which a gate keeps its components as states instead of a `select` each). The operator
+gained `logEvidence` (what the gate weighs its branches by). Tests: `probprog/model/gate-precisions.test.ts` (the clutter problem
+against a four-dimensional grid with the switches summed out; a two-component mixture) and `operators/precision-scale.test.ts`.
+
+The extended gate atoms run on it, each against an exact or sampled reference (default knobs; EP over the reference's sd):
+
+| atom | reference | EP against it | recovery over seeds (coverage of the 90% intervals) |
+| --- | --- | --- | --- |
+| clutter-learned | quadrature over four unknowns, switches summed out | centre 1.412 against 1.412 (+- 0.082 against 0.083), inlier precision 3.96 +- 0.88 against 3.97 +- 0.88, clutter precision 0.0995 against 0.0996, share 0.163 against 0.164; responsibilities within 0.004 | 40 seeds: centre 1.00, inlier 0.93, clutter 0.90, share 0.88 |
+| gate-random-learned | Gibbs sampler | means within 0.12 sd, precisions within 0.05 sd, share 0.406 +- 0.076 against 0.408 +- 0.083 | 20 seeds: 0.75 to 1.00 |
+| mixture-components-learned | Gibbs sampler (means relabelled in order) | means within 0.1 sd, spreads 0.88 to 1.01 of the sampler's | 20 seeds: 0.75 to 1.00; closer components: second mean 0.55 to 0.60, EP's spreads 0.5 to 0.7 of the sampler's (one reading of the labels) |
+| spike-and-slab-learned | exact (share and slab precision on a grid) | share 0.417 +- 0.148 against 0.421 +- 0.152, slab precision 0.201 +- 0.093 against 0.201 +- 0.104 | 20 seeds: 1.00 and 1.00 |
+
+Planned: the two summed-out forms (`clutter-mixture-learned`, `spike-and-slab-marginal-learned`): `normalOutliers` and
+`normalSpikeSlab` take a known scale, share and slab width; the missing piece is a mixture site with a gamma precision and a beta
+weight (inside the gate it exists). The AR(1) twin has no basic atom (the tracker is a program page).

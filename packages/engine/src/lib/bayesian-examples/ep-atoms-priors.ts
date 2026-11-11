@@ -162,23 +162,34 @@ const CATEGORIES = [0, 1, 1, 2, 1, 0, 1]
 
 // ----- the normal-inverse-gamma prior on a Gaussian mean and variance -----
 
-function nigProblem(k: Config): AtomProblem {
-  const [m0, kappa, a, b] = [
-    exampleNumber(k, 'priorMean'),
-    exampleNumber(k, 'kappa'),
-    exampleNumber(k, 'shape'),
-    exampleNumber(k, 'scale'),
-  ]
-  // region prior-normal-inverse-gamma
-  const definition = defineModel('normal-inverse-gamma', (m) => {
-    const sigma2 = m.latent('sigma2', d.inverseGamma(a, b))
-    const mu = m.latent('mu', d.normal(m0, ops.sqrt(ops.div(sigma2, kappa))))
-    m.observe('y', d.normal(mu, ops.sqrt(sigma2)), m.data('y', { dims: ['i'], role: 'response' }))
-  })
-  // endregion
-  const n = Y6.length
-  const ybar = sum(Y6) / n
-  const ss = sum(Y6.map((v) => (v - ybar) ** 2))
+/**
+ * The exact posterior of a Gaussian's mean and variance under the conjugate normal-inverse-gamma prior (`sigma2` inverse gamma
+ * with shape `a` and scale `b`, `mu | sigma2` normal around `m0` with variance `sigma2 / kappa`): a Student t for the mean, an
+ * inverse gamma for the variance and their joint on a grid, as the exact references of an atom.
+ *
+ * @param y - The observations.
+ * @param m0 - The prior mean of the mean.
+ * @param kappa - The prior observations behind the mean.
+ * @param a - The inverse gamma's shape.
+ * @param b - The inverse gamma's scale.
+ * @returns The marginals of the mean and the variance, and the joint for contours.
+ * @concept expectation-propagation
+ * @example
+ * ```ts
+ * import { normalInverseGammaPosterior } from 'omai-engine/bayesian-examples'
+ * normalInverseGammaPosterior([1, 2, 3], 0, 1, 3, 2).mu.mean // => 1.5
+ * ```
+ */
+export function normalInverseGammaPosterior(
+  y: readonly number[],
+  m0: number,
+  kappa: number,
+  a: number,
+  b: number,
+): { readonly mu: ExactMarginal; readonly sigma2: ExactMarginal; readonly joint: RefJoint } {
+  const n = y.length
+  const ybar = sum(y) / n
+  const ss = sum(y.map((v) => (v - ybar) ** 2))
   const kn = kappa + n
   const mn = (kappa * m0 + n * ybar) / kn
   const an = a + n / 2
@@ -197,6 +208,24 @@ function nigProblem(k: Config): AtomProblem {
     y: ys,
     p: xs.map((x) => ys.map((s2) => normalPdf(x, mn, Math.sqrt(s2 / kn)) * sigma2.pdf(s2))),
   }
+  return { mu, sigma2, joint }
+}
+
+function nigProblem(k: Config): AtomProblem {
+  const [m0, kappa, a, b] = [
+    exampleNumber(k, 'priorMean'),
+    exampleNumber(k, 'kappa'),
+    exampleNumber(k, 'shape'),
+    exampleNumber(k, 'scale'),
+  ]
+  // region prior-normal-inverse-gamma
+  const definition = defineModel('normal-inverse-gamma', (m) => {
+    const sigma2 = m.latent('sigma2', d.inverseGamma(a, b))
+    const mu = m.latent('mu', d.normal(m0, ops.sqrt(ops.div(sigma2, kappa))))
+    m.observe('y', d.normal(mu, ops.sqrt(sigma2)), m.data('y', { dims: ['i'], role: 'response' }))
+  })
+  // endregion
+  const { mu, sigma2, joint } = normalInverseGammaPosterior(Y6, m0, kappa, a, b)
   return {
     definition,
     data: { y: Y6 },

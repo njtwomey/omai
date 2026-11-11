@@ -10,17 +10,18 @@
 import { OmaiError } from '../base/index.ts'
 import { type Structure, type StructureEdge, type StructureNode, structure } from '../scene/index.ts'
 import { familyOf } from './families-vector.ts'
-import type {
-  ArgSpec,
-  FactorGraphSpec,
-  FactorOperator,
-  Family,
-  FamilyKind,
-  FamilySpec,
-  Observed,
-  Params,
-  Port,
-  VariableSpec,
+import {
+  type ArgSpec,
+  type FactorGraphSpec,
+  type FactorOperator,
+  type Family,
+  type FamilyKind,
+  type FamilySpec,
+  type Observed,
+  type Params,
+  type Port,
+  takesPower,
+  type VariableSpec,
 } from './types.ts'
 
 /**
@@ -163,7 +164,7 @@ export function compileGraph(
       )
     }
     const power = f.power ?? 1
-    if (power !== 1 && op.power !== true)
+    if (power !== 1 && !takesPower(op, params))
       throw new OmaiError('value', `factor graph: ${id} (${op.name}) does not support a power`)
     const compiled: CompiledPort[] = f.args.map((a: ArgSpec, pi): CompiledPort => {
       const port = ports[pi] as Port

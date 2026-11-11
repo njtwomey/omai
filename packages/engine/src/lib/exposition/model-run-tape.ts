@@ -66,11 +66,18 @@ const isObject = (x: unknown): x is Readonly<Record<string, unknown>> =>
 /** A number for a line of text: three significant digits, no trailing noise. */
 const fmt = (x: number): string => String(Number(x.toPrecision(3)))
 
+/** The numbers of a vector for a line of text: all of them up to `max`, else the first `max` and `… (n)` for how many there are, so a long vector (a packed Gaussian over a hundred coordinates) is a short label. */
+function listOf(xs: readonly number[], max = 4): string {
+  return xs.length <= max ? xs.map(fmt).join(', ') : `${xs.slice(0, max).map(fmt).join(', ')}, … (${xs.length})`
+}
+
 /**
  * Natural parameters as a distribution in words. The layouts are those of the message passing families: a Gaussian is
  * `[h, J]` (mean `h / J`, variance `1 / J`), a gamma `[shape - 1, -rate]`, a beta `[a - 1, b - 1]`, a Bernoulli its
  * logit, a discrete message log weights, a Dirichlet `alpha - 1`, a multivariate Gaussian `h` then the precision matrix.
- * A message that is not proper (a precision at or below zero) is said to be, with its parameters.
+ * A message that is not proper (a precision at or below zero) is said to be, with its parameters. A vector of more than four
+ * numbers (the states of a discrete variable, the precision diagonal of a packed Gaussian) is written as its first four
+ * and the count: `N-60(precision diag 2, 4, 1.5, 3, … (60))`.
  *
  * @param family - The family of the variable the message is for (`gaussian`, `gamma`, `beta`, `bernoulli`, `discrete`, `dirichlet`, `gaussian-mv`); another is written as its parameters.
  * @param eta - The natural parameters.
@@ -82,6 +89,7 @@ const fmt = (x: number): string => String(Number(x.toPrecision(3)))
  * describeMessage('gaussian', [0.5, 2]) // => 'N(μ = 0.25, σ² = 0.5)'
  * describeMessage('bernoulli', [0]) // => 'p = 0.5'
  * describeMessage('gaussian', [1, -1]) // => 'improper (precision -1)'
+ * describeMessage('discrete', [0, 0, 0, 0, 0, 0]) // => '[0.167, 0.167, 0.167, 0.167, … (6)]'
  * ```
  */
 export function describeMessage(family: string | undefined, eta: readonly number[]): string {
@@ -102,20 +110,20 @@ export function describeMessage(family: string | undefined, eta: readonly number
       const top = Math.max(...eta)
       const w = eta.map((v) => Math.exp(v - top))
       const total = w.reduce((s, v) => s + v, 0)
-      return `[${w.map((v) => fmt(v / total)).join(', ')}]`
+      return `[${listOf(w.map((v) => v / total))}]`
     }
     case 'dirichlet':
-      return `Dir(${eta.map((v) => fmt(v + 1)).join(', ')})`
+      return `Dir(${listOf(eta.map((v) => v + 1))})`
     case 'gaussian-mv': {
       const d = Math.round((-1 + Math.sqrt(1 + 4 * eta.length)) / 2)
       const prec = eta.slice(d)
       const diag = Array.from({ length: d }, (_, i) => prec[i * d + i] ?? 0)
       return diag.every((v) => v > 0)
-        ? `N-${d}(precision diag ${diag.map(fmt).join(', ')})`
-        : `improper (precision diag ${diag.map(fmt).join(', ')})`
+        ? `N-${d}(precision diag ${listOf(diag)})`
+        : `improper (precision diag ${listOf(diag)})`
     }
     default:
-      return `η = [${eta.map(fmt).join(', ')}]`
+      return `η = [${listOf(eta)}]`
   }
 }
 

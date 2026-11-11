@@ -166,12 +166,37 @@ function precisionTilt(
   lambda: readonly number[],
   scale = 1,
   offset = 0,
-): {
+): Tilt {
+  // A gate asks for the same tilt of a branch several times in a row (its evidence, then the message to each variable), and
+  // each is a grid of hundreds of points: the last few are kept by their inputs.
+  const key = `${x.mean},${x.variance},${u.mean},${u.variance},${lambda.join(',')},${scale},${offset}`
+  const hit = tiltCache.get(key)
+  if (hit !== undefined) return hit
+  const made = precisionTiltGrid(x, u, lambda, scale, offset)
+  if (tiltCache.size >= 64) tiltCache.delete(tiltCache.keys().next().value as string)
+  tiltCache.set(key, made)
+  return made
+}
+
+const tiltCache = new Map<string, Tilt>()
+
+/** What the grid over the precision gives: the moments of both Gaussians and of the precision, and the integral. */
+interface Tilt {
   readonly x: { readonly mean: number; readonly variance: number }
   readonly u: { readonly mean: number; readonly variance: number }
   readonly logLambda: number
   readonly lambda: number
-} {
+  /** log of the integral of the (unnormalised) gamma cavity times the normal density of the difference, over `log lambda`. */
+  readonly logZ: number
+}
+
+function precisionTiltGrid(
+  x: { readonly mean: number; readonly variance: number },
+  u: { readonly mean: number; readonly variance: number },
+  lambda: readonly number[],
+  scale: number,
+  offset: number,
+): Tilt {
   const { shape, rate } = gammaShapeRate(lambda)
   if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
     throw new ImproperMessageError('a gamma message has no density (its shape and rate are not positive)')
@@ -221,6 +246,7 @@ function precisionTilt(
     u: { mean: meanU, variance: eU2 / z - meanU * meanU },
     logLambda: eLog / z,
     lambda: eLam / z,
+    logZ: top + Math.log(z * step),
   }
 }
 
@@ -269,6 +295,18 @@ export const gaussianGammaPrecision: FactorOperator = {
     if (c.to === 2) return { message: [0.5, -0.5 * scale * expectedSquare(arg(c, 0), arg(c, 1))] }
     const o = gaussianOf(arg(c, c.to === 0 ? 1 : 0))
     return { message: [meanLambda * o.mean, meanLambda] }
+  },
+  // The integral of the cavities (unnormalised, so their masses are in it) times the factor: the Gaussian cavities' masses and the
+  // grid's integral over the precision, in which the gamma cavity's unnormalised density is already part of the weight.
+  logEvidence: (c) => {
+    try {
+      const { scale, offset } = precisionParams(c.params)
+      const tilt = precisionTilt(cavityOf(arg(c, 0)), cavityOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset)
+      return massOf(arg(c, 0)) + massOf(arg(c, 1)) + tilt.logZ
+    } catch (err) {
+      if (err instanceof ImproperMessageError) return Number.NaN
+      throw err
+    }
   },
   expectedLog: (c) => {
     const { scale, offset } = precisionParams(c.params)

@@ -19,6 +19,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { CodeBlock } from '../../../site/src/shell/CodeBlock.tsx'
 import { BeliefChart, DataFigure, JointChart, MixtureChart, ProbabilityBars } from './ep/AtomCharts.tsx'
 import { atomSource } from './ep/atomSource.ts'
+import { CalibrationPanel, RecoveryPanel, TwinNote } from './ep/ExtendedParts.tsx'
 import { type AtomState, useAtom } from './ep/useAtom.ts'
 
 const EP_KNOBS = ['schedule', 'damping', 'improper', 'tol', 'maxSweeps']
@@ -65,7 +66,7 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
   const panels = usePanels(`ep-${atom.name}`, {
     graph: 'The model as a diagram',
     messages: 'The messages, step by step',
-    numbers: 'The numbers',
+    numbers: atom.extends === undefined ? 'The numbers' : 'EP against the exact posterior',
   })
   const state = useAtom(atom, knobs, ep)
   const { problem, run, reference, check } = state
@@ -105,13 +106,15 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
   const qb = pair === undefined ? undefined : qs.find((q) => q.name === pair[1])
   const planned = run !== undefined && run.status !== 'ran'
   const hasKnobs = Object.keys(atom.knobs.spaces).length > 0
-  const probabilities = qs.filter((q) => q.support === 'probability')
+  // A probability marked hidden (the switch of each of dozens of observations) is drawn in the data figure, not as a bar each.
+  const probabilities = qs.filter((q) => q.support === 'probability' && q.hidden !== true)
   const mixtures = problem?.mixtures ?? []
   const covered = new Set(mixtures.map((m) => m.quantity))
   const source = useMemo(() => atomSource(atom, problem), [atom, problem])
   return (
     <div className="flex flex-col gap-5">
       <Banner atom={atom} state={state} />
+      <TwinNote atom={atom} />
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">The setup</h2>
         {problem === undefined ? null : (
@@ -244,6 +247,26 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
       </section>
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">How we know it works</h2>
+        {atom.extends === undefined ? null : (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <h3 className="text-xs font-semibold text-muted">
+                Recovery: the truth against EP&apos;s belief, this seed
+              </h3>
+              {problem === undefined || ran === undefined ? (
+                <p className="text-sm text-muted">EP does not run on this model, so there is nothing to recover yet.</p>
+              ) : (
+                <RecoveryPanel problem={problem} beliefs={ran.beliefs} />
+              )}
+            </div>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-xs font-semibold text-muted">
+                Calibration: the same truth over many seeds, how often EP&apos;s 90% interval holds it
+              </h3>
+              <CalibrationPanel atom={atom} knobs={knobs} runs={ran !== undefined} />
+            </div>
+          </div>
+        )}
         <FigurePanel panels={panels} name="numbers">
           <Check atom={atom} state={state} />
         </FigurePanel>
@@ -319,7 +342,20 @@ function Check(props: { readonly atom: EpAtom; readonly state: AtomState }): Rea
       </p>
     )
   if (check === undefined) return <p className="text-sm text-muted">Computing the reference...</p>
+  if (check.rows.length === 0)
+    return (
+      <p className="text-sm text-muted">
+        There is no reference posterior to compare with ({reference?.source}): the recovery and the calibration above
+        are the check.
+      </p>
+    )
   const t = check.tolerance
+  const hiddenNames = new Set((state.problem?.quantities ?? []).filter((q) => q.hidden === true).map((q) => q.name))
+  const shown = check.rows.filter((r) => !hiddenNames.has(r.name))
+  const folded = check.rows.filter(
+    (r) =>
+      hiddenNames.has(r.name) && state.problem?.quantities.find((q) => q.name === r.name)?.support === 'probability',
+  )
   return (
     <div className="flex flex-col gap-2">
       <div className="overflow-x-auto">
@@ -338,7 +374,7 @@ function Check(props: { readonly atom: EpAtom; readonly state: AtomState }): Rea
             </tr>
           </thead>
           <tbody>
-            {check.rows.map((r) => (
+            {shown.map((r) => (
               <tr key={r.name} className="border-t border-line">
                 <td className="py-1">{r.label}</td>
                 <td>{sig(r.ep.mean, 4)}</td>
@@ -351,6 +387,20 @@ function Check(props: { readonly atom: EpAtom; readonly state: AtomState }): Rea
                 <td style={{ color: tone(r.pass).color }}>{r.pass ? 'pass' : 'FAIL'}</td>
               </tr>
             ))}
+            {folded.length === 0 ? null : (
+              <tr className="border-t border-line">
+                <td className="py-1" colSpan={3}>
+                  the {folded.length} switches (each observation's probability of its branch)
+                </td>
+                <td colSpan={5}>
+                  largest difference from the exact probability{' '}
+                  {sig(Math.max(...folded.map((r) => Math.abs(r.ep.mean - r.refMean))), 2)}
+                </td>
+                <td style={{ color: tone(folded.every((r) => r.pass)).color }}>
+                  {folded.every((r) => r.pass) ? 'pass' : 'FAIL'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

@@ -235,8 +235,11 @@ export interface FactorOperator {
    * has no density, since there is nothing to match.
    */
   readonly readsTarget?: boolean | ((to: number) => boolean)
-  /** True when the operator reads `OperatorContext.power` (fractional EP); the engine refuses a power on the others. */
-  readonly power?: boolean
+  /**
+   * True when the operator reads `OperatorContext.power` (fractional EP); the engine refuses a power on the others. A function
+   * of the parameters for an operator that takes one only for some of its configurations (a gate, by its branches); see `takesPower`.
+   */
+  readonly power?: boolean | ((params: Params) => boolean)
   /**
    * The port this factor defines as a deterministic function of the others (the output of a sum, a projection, a copy), if
    * it does. Under variational message passing a variable so defined is not a free variable of the mean field: its belief
@@ -293,4 +296,15 @@ export interface FactorSpec {
 export interface FactorGraphSpec {
   readonly variables: readonly VariableSpec[]
   readonly factors: readonly FactorSpec[]
+}
+
+/**
+ * Whether a factor of this operator and these parameters takes a power other than 1 (fractional EP, an alpha-divergence).
+ *
+ * @param op - The operator.
+ * @param params - The factor's parameters.
+ * @returns True when the operator declares a power for them.
+ */
+export function takesPower(op: FactorOperator, params: Params): boolean {
+  return typeof op.power === 'function' ? op.power(params) : op.power === true
 }
