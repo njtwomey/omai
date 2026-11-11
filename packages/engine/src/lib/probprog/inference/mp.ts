@@ -166,6 +166,8 @@ function specMethod<P extends string>(
       schedule: (typeof config['schedule'] === 'string'
         ? config['schedule']
         : defaultsOf(rule).schedule) as ScheduleKind,
+      damping: typeof config['damping'] === 'number' ? config['damping'] : defaultsOf(rule).damping,
+      restarts: typeof config['restarts'] === 'number' ? config['restarts'] : defaultsOf(rule).restarts,
       projection: projectionOf(rule),
     })
     return factorGraphPosterior(prepared.compiled, prepared.graph, state, {
