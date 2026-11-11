@@ -155,3 +155,38 @@ routes (E, F). D is split between A and C. Each ends with its pages offering EP.
 Three example agents were building EP rules for their own pages when the work was paused (Student-t, spike and slab and ARD
 for robust and sparse regression; the hierarchical Rasch and the 2PL product for item response; the GP prior mapping and the SV
 observation). Their reports say what exists; the work packages above absorb it rather than redo it.
+
+## 7. Status at the end of 2026-11-11 (built by the example agents while the plan was written)
+
+Done, each with tests against an exact or brute-force reference (details in the commits):
+
+- `gaussian-gamma-precision`: EP for a gamma precision on an observed or a latent Gaussian (starts from a flat cavity: a first
+  version blocked on one, fixed). Linear regression with unknown noise, a population with an unknown spread, the hierarchical
+  Rasch model: EP within 0.1 reference sd of NUTS.
+- `mixture-site` (closed form, exact: spike and slab prior, inlier/outlier likelihood), `student-t-site`, `laplace-site`
+  (quadrature), and their rows on a packed weight vector (`operators/robust.ts`); model family `normalOutliers`; the
+  `messagePassing` family flag. Student-t (df fixed), Laplace, outlier mixture, spike and slab, and ARD (a precision per
+  coefficient, unpacked) all agree with long NUTS runs to about 0.15 sd (ARD, spike and slab: a vague-prior workaround for
+  improper first cavities: to be replaced by proper initial messages).
+- `gaussian-log-scale` (a Gaussian observation whose scale is `exp` of a Gaussian state): EP on stochastic volatility with known
+  `mu, phi, sigma` agrees with the exact smoother (0.13 to 0.19 sd). The AR(1) scan maps.
+- A dense `multivariateNormal` prior with a constant covariance compiles to a `gaussian-mv` prior: GP classification under EP
+  (probit and logistic) agrees with the gp domain's own EP (5e-3) and a long NUTS run.
+- Item response: Rasch, hierarchical, under EP and VMP; 2PL with normal discriminations runs under EP (numeric `product`) but is
+  inaccurate (a sign symmetry in the posterior); 2PL with log-normal discriminations needs `exp` of a random value.
+
+Still open, in the order of the work packages that follow:
+
+- WP-A (likelihood and function rules): a generic numeric 1-D likelihood operator and registry (Poisson and negative binomial
+  with a log link, Weibull, ordinal probit, binomial logistic; the Student-t and Laplace sites folded into it), `apply` for unary
+  functions of a random value (`exp`, `square`, `tanh`, `relu`, `softplus`, `abs`: `exp` for log-normal discriminations,
+  Poisson regression, the non-centred funnel; `tanh` and `relu` for the Bayesian neural network), numeric priors (half-normal,
+  half-Cauchy, log-normal, uniform, truncated: eight schools, radon, the GP length scale), an EP-friendly negative binomial.
+- WP-B (structure and scales): the model-layer `gate` node with EP and VMP messages (Gaussian HMM, change points,
+  zero-inflation, mixtures with random components), `ordered` as greater-than factors, a constant multiplier on a precision and
+  the penalised spline with a random smoothing parameter (both GAM routes of section 3, with the posterior of the smoothing
+  parameter checked against the exact reference of the Bayesian GAM page), the horseshoe in the precision idiom (inverse-gamma
+  scale mixture), a heavy-tailed likelihood with an unknown scale (a Gaussian with a gamma precision per row), Student-t with
+  learned degrees of freedom, proper initial messages in place of the vague-prior workaround, and stochastic volatility with
+  `phi` and `sigma` inferred (a product with a random slope).
+- The atoms suite and the coverage figure (`epCoverage()` as a library function with a test): in progress, port 5350.
