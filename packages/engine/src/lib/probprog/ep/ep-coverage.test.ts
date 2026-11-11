@@ -17,9 +17,9 @@ describe('epCoverage', () => {
     expect(c.atoms.filter((r) => r.status !== r.declared).map((r) => r.name)).toEqual([])
   })
 
-  it('runs on at least 27 benchmark models (27 once the stick-breaking mixture and LDA-lite map; 25 once EP runs inside a grid over the length scale of the two Gaussian process regressions; 9 of 27 in the audit of 2026-11-11, 10 once stochastic volatility mapped, 23 with the likelihood registry, apply, the projected priors, gates, ordered constraints and the shared precisions; 46 of 47 atoms with the prior atlas), and only goes up; 86 of 86 atoms once the summed-out mixtures with a random share and precision map (84 before); 84 of 86 atoms once the two-variable sites, the multiclass site, ordinal probit, quantile regression and the draw margin landed (72 before)', () => {
+  it('runs on at least 27 benchmark models (27 once the stick-breaking mixture and LDA-lite map; 25 once EP runs inside a grid over the length scale of the two Gaussian process regressions; 9 of 27 in the audit of 2026-11-11, 10 once stochastic volatility mapped, 23 with the likelihood registry, apply, the projected priors, gates, ordered constraints and the shared precisions; 46 of 47 atoms with the prior atlas), and only goes up; 92 of 92 atoms with the covariance atoms (six: Wishart precision, bivariate correlation, correlated random intercepts and slopes, each basic and learned); 86 of 86 atoms once the summed-out mixtures with a random share and precision map (84 before); 84 of 86 atoms once the two-variable sites, the multiclass site, ordinal probit, quantile regression and the draw margin landed (72 before)', () => {
     expect(c.benchmarksRun).toBeGreaterThanOrEqual(27)
-    expect(c.atomsRun).toBeGreaterThanOrEqual(86)
+    expect(c.atomsRun).toBeGreaterThanOrEqual(92)
   })
 })
 
@@ -31,10 +31,11 @@ describe('vmpCoverage', () => {
     for (const r of c.atoms) if (r.status === 'planned') expect(r.reason.length).toBeGreaterThan(10)
   })
 
-  it('runs on at least 78 of 86 atoms (36 before the numeric likelihoods, scales, shapes, softmax, deterministic functions, gamma products and gates had variational messages), 76 of them to a fixed point, and only goes up', () => {
+  it('runs on at least 78 of 92 atoms (36 before the numeric likelihoods, scales, shapes, softmax, deterministic functions, gamma products and gates had variational messages), 76 of them to a fixed point, and only goes up', () => {
     expect(c.atomsRun).toBeGreaterThanOrEqual(78)
     expect(c.atomsConverged).toBeGreaterThanOrEqual(76)
-    expect(c.behindEp).toBeLessThanOrEqual(6)
+    // the two atoms with a correlation (`mvn-sd-corr`) run under EP only: the expected log of a beta correlation has no closed form
+    expect(c.behindEp).toBeLessThanOrEqual(8)
   })
 
   it('refuses with a reason what has no mean-field message: a hard comparison, the Weibull shape, a custom function', () => {
