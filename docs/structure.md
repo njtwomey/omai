@@ -1726,6 +1726,9 @@ of the rank tests); `tests/_shapiro.ts`,
 `tests/_kolmogorov.ts`, `tests/_cvm.ts` (null distributions).
 - `descriptive.ts`: `mean`, `variance` (two-pass, `ddof`), `std`, `skewness`, `kurtosis`, `moment`, weighted versions,
   `describe`, `zscore`, `sem`, `mode`, `geometricMean`, `harmonicMean`, `gini`.
+- `periodic.ts`: periodic data (clock times, angles) without a circular distribution: `wrapToPeriod`, `periodicCopies` (a value
+  and its copies whole periods away) and `periodicGrid` (the (2K + 1)^d copies of a point on a torus), `wrappedNormalLogPdf` (the
+  wrapped normal as a log-sum-exp over the copies) and `threeCopiesBound` (the relative error of keeping three copies).
 - `running.ts`: Welford moments (`momentState`, `push`, `pushAll`, `merge`, `momentsOf`), P-squared quantiles
   (`p2Quantile`, `p2Push`, `p2Estimate`), exponentially weighted moments (`ewmState`, `ewmPush`, `ewmMean`, `ewmVar`,
   `ewmStd`).

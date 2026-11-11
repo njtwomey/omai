@@ -32,6 +32,7 @@ export function wrapToPeriod(x: number, period: number): number {
  * them in one log-sum-exp is the wrapped density; adding them as extra rows of a dataset is not (it scores each copy
  * separately).
  *
+ * @index function The copies of a periodic value a period or more away, to score in one log-sum-exp.
  * @param x - The value.
  * @param period - The period.
  * @param k - How many periods each way (default 1: three copies).
@@ -77,6 +78,7 @@ export function periodicGrid(point: readonly number[], periods: readonly number[
  * `mu` and standard deviation `sigma`, scored at `x - k period` (the copies in one log-sum-exp). It is the density on the circle
  * of period `period`; `copies = 1` is the three-copy approximation, large `K` the wrapped normal itself.
  *
+ * @index function Wrapped normal log density as a log-sum-exp of ordinary normals at the copies.
  * @param x - The value.
  * @param mu - The mean.
  * @param sigma - The standard deviation.
@@ -103,6 +105,7 @@ export function wrappedNormalLogPdf(x: number, mu: number, sigma: number, period
  * period: `2 e^(-3a/4) / (1 - e^(-3a))` with `a = period^2 / (2 sigma^2)`. About 8e-11 at sigma = 3 on a 24 hour day, under
  * 0.005 nats at sigma = 6, about 0.4 at sigma = 12: three copies are accurate while sigma is small against the period.
  *
+ * @index function Relative error bound of the three-copy wrapped density.
  * @param sigma - The standard deviation.
  * @param period - The period.
  * @returns The bound on the relative error of the density.

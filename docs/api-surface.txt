@@ -90,7 +90,7 @@ omai-engine/signal/audio	86	fe25e9b7c0f3
 omai-engine/signal/image	103	6ca1dee9522b
 omai-engine/sketches	105	ef0b45733d03
 omai-engine/space	52	64cd6a08e840
-omai-engine/stats	270	2eb07a95f5c9
+omai-engine/stats	275	59ec960a628c
 omai-engine/stats/smoothing	44	584706716b19
 omai-engine/stats/tests	169	6ccae625b720
 omai-engine/stochastic	347	2468447f061f
@@ -126,4 +126,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	303	541cc98902e2
-total	20162	4de5a08b4d2a
+total	20167	4b3aef7ce16a

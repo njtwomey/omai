@@ -56,8 +56,9 @@ export function model(variant: Variant, components: number) {
     const hours = m.data('hours', { dims: [row] })
     // Where each component starts, spread evenly round the day.
     const start = m.data('start', { dims: [comp] })
-    const inside = variant === 'ignore' ? undefined : { lower: 0, upper: PERIOD }
-    const mean = m.latent('mean', d.normal(start, 8), { dims: [comp], constraint: inside })
+    // Except for the plain mixture, the central mean is held inside one period.
+    const held = variant === 'ignore' ? { dims: [comp] } : { dims: [comp], constraint: { lower: 0, upper: PERIOD } }
+    const mean = m.latent('mean', d.normal(start, 8), held)
     // The shared precision: sd 3 hours, broadly.
     const tau = m.latent('tau', d.gamma(2, 18))
     const sd = ops.div(1, ops.sqrt(tau))
