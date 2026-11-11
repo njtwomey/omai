@@ -6,16 +6,17 @@
  * betas to a break, and exact under variational message passing.
  */
 
-import { OmaiError } from '../../../base/index.ts'
 import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, massOf, numberParam, scalarOf } from '../../core/args.ts'
+import { ParameterError } from '../../core/errors.ts'
 import { beta } from '../../core/families.ts'
 import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
+import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
 
 const sticksOf = (params: Params): number => {
   const k = Math.trunc(numberParam(params, 'sticks'))
-  if (!(k >= 1)) throw new OmaiError('value', 'stick-breaking: sticks must be at least 1')
+  if (!(k >= 1)) throw new ParameterError('stick-breaking: sticks must be at least 1')
   return k
 }
 
@@ -81,6 +82,7 @@ export const stickBreaking: FactorOperator = {
   name: 'stick-breaking',
   description: 'z ~ Discrete(pi) with pi the stick-breaking weights of beta breaks',
   ports,
+  params: { sticks: param.integer({ min: 1 }) },
   support: { ep: 'exact', vmp: 'exact' },
   readsTarget: (to) => to > 0,
   ep: (c): OperatorResult => {

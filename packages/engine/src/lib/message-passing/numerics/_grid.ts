@@ -1,13 +1,17 @@
-// A two-dimensional integral of a log density against the cavities of two variables, by a panelled Gauss-Legendre grid that
-// is zoomed onto where the mass is: what the two-variable numeric sites (a likelihood over a predictor and a second random
-// scalar, a beta with two random shapes) integrate with. A variable is a Gaussian (its coordinate is the value) or a gamma
-// (its coordinate is the log of the value, the density in that coordinate carrying the Jacobian), and the integrand is a
-// function of the two coordinates.
+// The integral of a log density against the cavities of up to three variables, by a panelled Gauss-Legendre grid that is zoomed
+// onto where the mass is: what the numeric sites over two or three random scalars (a likelihood over a predictor and a second
+// random scalar, a beta with two random shapes, a bivariate Gaussian with two gamma precisions and a beta correlation) integrate
+// with. A coordinate is the value of a Gaussian, the log of a gamma variable or the logit of a beta variable, each with the
+// Jacobian in its density; an observed coordinate is a single node. One algorithm (panel each axis, add the log weights, shift
+// by the maximum, normalise, find the marginals, shrink the window onto them, again) with the choices that differ between its
+// callers as the named `gridProfiles`: how the panels are laid and graded towards a kink, the panels and nodes of the coarse and
+// the fine pass, and the order the weights are stored in (the order the sums run in, so a result is the same number as it was).
 
-import { OmaiError } from '../../base/index.ts'
+import { ImproperMessageError, ParameterError } from '../core/errors.ts'
 import type { Arg } from '../core/types.ts'
 import { legendreRule } from './_quadrature.ts'
-import { digammaOf, lgammaOf, trigammaOf } from './_scalar.ts'
+import { lgammaOf, softplusOf } from './_scalar.ts'
+import { betaLogitWindow, gammaLogWindow, windowProfiles } from './_windows.ts'
 
 /** One coordinate of the integral: where the cavity lives, its normalised log density, and the kinks the integrand has. */
 export interface GridAxis {
@@ -22,15 +26,57 @@ export interface GridAxis {
   readonly kinks: readonly number[]
 }
 
-/** The result of an integral: the log mass, and per coordinate the mean, the variance and the mean of `exp(x)`. */
-export interface GridResult {
+/** The panels and nodes per panel of one pass. */
+export interface PassShape {
+  readonly panels: number
+  readonly order: number
+}
+
+/**
+ * How a grid is laid and searched.
+ *
+ * - `coarse` and `fine`: the passes that only find the window, and the last, which gives the answer.
+ * - `passes`: the most passes.
+ * - `panelling`: `graded` splits the window at the kinks and grades the panels geometrically towards a kink; `uniform` has equal
+ *   panels and no kinks.
+ * - `layout`: where the weight of the node `(i0, i1, i2)` is stored. `first-fastest` is `i0 + n0 (i1 + n1 i2)`; `first-slowest` (two
+ *   axes) is `i0 n1 + i1`. The sums of a pass run in storage order, so the layout decides the last digits of a result.
+ */
+export interface GridProfile {
+  readonly coarse: PassShape
+  readonly fine: PassShape
+  readonly passes: number
+  readonly panelling: 'graded' | 'uniform'
+  readonly layout: 'first-fastest' | 'first-slowest'
+}
+
+/** The profiles of the library's grids: `pair` (the likelihood sites of two scalars, with kinks) and `axes` (the covariance sites of up to three). */
+export const gridProfiles: { readonly pair: GridProfile; readonly axes: GridProfile } = {
+  pair: {
+    coarse: { panels: 8, order: 5 },
+    fine: { panels: 10, order: 6 },
+    passes: 6,
+    panelling: 'graded',
+    layout: 'first-slowest',
+  },
+  axes: {
+    coarse: { panels: 4, order: 4 },
+    fine: { panels: 6, order: 4 },
+    passes: 6,
+    panelling: 'uniform',
+    layout: 'first-fastest',
+  },
+}
+
+/** The result of the integral: the log mass, and over the final grid the nodes of each axis, the normalised weights and the marginal weights per axis. */
+export interface GridNResult {
   readonly logMass: number
-  readonly mean: readonly [number, number]
-  readonly variance: readonly [number, number]
-  readonly meanExp: readonly [number, number]
-  /** The final grid, for a caller that needs another expectation under the same weights: the nodes of each axis and `weights[i * n1 + j]`, summing to one. */
-  readonly nodes: readonly [Float64Array, Float64Array]
+  /** The coordinates of the nodes of each axis. */
+  readonly nodes: readonly Float64Array[]
+  /** The normalised weight of the node `(i0, i1, i2)`, stored as the profile's layout says (missing axes have one node). */
   readonly weights: Float64Array
+  /** The marginal weights of the nodes of each axis. */
+  readonly marginals: readonly Float64Array[]
 }
 
 /** The offsets 0, 2^-(n-1), ..., 1/4, 1/2 of a stretch of n panels, each half the one after it (the last boundary, 1, is the stretch's end). */
@@ -59,7 +105,7 @@ function boundaries(a: number, b: number, count: number, kinkLeft: boolean, kink
 }
 
 /** The nodes and weights of a panelled rule on [lo, hi], with the panels split at the kinks that fall inside and graded towards them. */
-function panels(
+function gradedPanels(
   lo: number,
   hi: number,
   kinks: readonly number[],
@@ -87,123 +133,222 @@ function panels(
   return { x, w }
 }
 
-/** The grid of the passes that only find the window (coarse) and of the last pass, which gives the answer (fine): panels per axis and nodes per panel. */
-const COARSE = { panels: 8, order: 5 }
-const FINE = { panels: 10, order: 6 }
-const PASSES = 6
+/** The nodes and weights of equal panels on [lo, hi] (no kinks). */
+function uniformPanels(lo: number, hi: number, shape: PassShape): { readonly x: number[]; readonly w: number[] } {
+  const r = legendreRule(shape.order)
+  const x: number[] = []
+  const w: number[] = []
+  const h = (hi - lo) / shape.panels
+  for (let p = 0; p < shape.panels; p++)
+    for (let i = 0; i < shape.order; i++) {
+      x.push(lo + p * h + ((r.x[i] as number) + 1) * 0.5 * h)
+      w.push((r.w[i] as number) * 0.5 * h)
+    }
+  return { x, w }
+}
 
 /**
- * The integral of `exp(logf(x0, x1))` against the two cavities, found on a panelled grid over each axis, then again on a window
- * around where the mass was (up to four passes, while the window shrinks), so a cavity much wider than the integrand, as in the
- * first sweeps of a run, is integrated as well as a narrow one.
- *
- * @param axes - The two coordinates.
- * @param column - The log of the integrand as a function of the second coordinate that returns a function of the first, so what
- * depends on the second coordinate alone (a gamma function of a shape) is computed once per node of it, not once per point.
- * @returns The log mass and the moments of each coordinate under the normalised integrand.
- * @throws OmaiError with code `value` when the integrand has no mass under the cavities.
+ * The integrand of a grid: for the coordinates of the axes after the first, the log of the integrand as a function of the first
+ * coordinate. The split lets what depends on the later coordinates alone (a gamma function of a shape) be computed once per node
+ * of them, not once per point.
  */
-export function integratePair(
-  axes: readonly [GridAxis, GridAxis],
-  column: (x1: number) => (x0: number) => number,
-): GridResult {
+export type GridIntegrand = (rest: readonly number[]) => (x0: number) => number
+
+/**
+ * The integral of `exp(logf(t))` against the cavities of one to three axes: a first grid over each axis's window finds where the
+ * mass lives (each window is shrunk to the nodes where the marginal weight is not negligible, until it settles), and a fine grid
+ * over the settled window gives the answer.
+ *
+ * @param axes - The coordinates (one to three).
+ * @param integrand - The log of the integrand (the cavities' densities are separate).
+ * @param profile - How the grid is laid (`gridProfiles`).
+ * @returns The log mass and the weights of the final grid.
+ * @throws ParameterError for no axis or more than three.
+ * @throws ImproperMessageError when the integrand has no mass under the cavities.
+ */
+export function integrateGrid(
+  axes: readonly GridAxis[],
+  integrand: GridIntegrand,
+  profile: GridProfile = gridProfiles.axes,
+): GridNResult {
+  const k = axes.length
+  if (k < 1 || k > 3) throw new ParameterError('integrateAxes: one to three axes')
   let window: [number, number][] = axes.map((a) => [a.lo, a.hi])
-  let result: GridResult | undefined
+  let result: GridNResult | undefined
   let fine = false
-  for (let pass = 0; pass < PASSES; pass++) {
-    const grid = fine || pass === PASSES - 1 ? FINE : COARSE
-    const grids = axes.map((a, k) => {
-      if (a.point) return { x: [a.lo], w: [1], logw: [0] }
-      const [lo, hi] = window[k] as [number, number]
-      const g = panels(lo, hi, a.kinks, grid.panels, grid.order)
-      return { x: g.x, w: g.w, logw: g.x.map((xi, i) => Math.log(g.w[i] as number) + a.logWeight(xi)) }
-    }) as [{ x: number[]; w: number[]; logw: number[] }, { x: number[]; w: number[]; logw: number[] }]
-    const n0 = grids[0].x.length
-    const n1 = grids[1].x.length
-    const lw = new Float64Array(n0 * n1)
+  for (let pass = 0; pass < profile.passes; pass++) {
+    const shape = fine || pass === profile.passes - 1 ? profile.fine : profile.coarse
+    const grids = axes.map((a, i) => {
+      if (a.point) return { x: [a.lo], logw: [0] }
+      const [lo, hi] = window[i] as [number, number]
+      const g =
+        profile.panelling === 'graded'
+          ? gradedPanels(lo, hi, a.kinks, shape.panels, shape.order)
+          : uniformPanels(lo, hi, shape)
+      return { x: g.x, logw: g.x.map((xi, q) => Math.log(g.w[q] as number) + a.logWeight(xi)) }
+    })
+    const sizes = grids.map((g) => g.x.length)
+    const n0 = sizes[0] as number
+    const n1 = sizes[1] ?? 1
+    const n2 = sizes[2] ?? 1
+    const first = (grids[0] as { x: number[]; logw: number[] }).x
+    const logw0 = (grids[0] as { logw: number[] }).logw
+    const slowest = profile.layout === 'first-slowest'
+    const at = (a: number, b: number, c: number): number => (slowest ? a * n1 + b : a + n0 * (b + n1 * c))
+    const lw = new Float64Array(n0 * n1 * n2)
+    const rest = new Array<number>(k - 1)
     let top = Number.NEGATIVE_INFINITY
-    for (let j = 0; j < n1; j++) {
-      const f = column(grids[1].x[j] as number)
-      const wj = grids[1].logw[j] as number
-      for (let i = 0; i < n0; i++) {
-        const v = (grids[0].logw[i] as number) + wj + f(grids[0].x[i] as number)
-        lw[i * n1 + j] = v
-        if (v > top) top = v
+    for (let c = 0; c < n2; c++)
+      for (let b = 0; b < n1; b++) {
+        if (k > 1) rest[0] = (grids[1] as { x: number[] }).x[b] as number
+        if (k > 2) rest[1] = (grids[2] as { x: number[] }).x[c] as number
+        const f = integrand(rest)
+        const lw1 = k > 1 ? ((grids[1] as { logw: number[] }).logw[b] as number) : 0
+        const lw2 = k > 2 ? ((grids[2] as { logw: number[] }).logw[c] as number) : 0
+        for (let a = 0; a < n0; a++) {
+          const v = (logw0[a] as number) + lw1 + lw2 + f(first[a] as number)
+          lw[at(a, b, c)] = v
+          if (v > top) top = v
+        }
       }
-    }
     if (!Number.isFinite(top))
-      throw new OmaiError('value', 'numeric rule: the factor has no mass under the incoming messages')
+      throw new ImproperMessageError('numeric rule: the factor has no mass under the incoming messages')
     let total = 0
-    for (let k = 0; k < lw.length; k++) {
-      const v = Math.exp((lw[k] as number) - top)
-      lw[k] = v
-      total += v
+    for (let i = 0; i < lw.length; i++) {
+      const e = Math.exp((lw[i] as number) - top)
+      lw[i] = e
+      total += e
     }
-    // The marginal weights of the nodes of each axis give every moment without visiting the points again.
-    const p0 = new Float64Array(n0)
-    const p1 = new Float64Array(n1)
-    for (let i = 0; i < n0; i++)
-      for (let j = 0; j < n1; j++) {
-        const w = (lw[i * n1 + j] as number) / total
-        lw[i * n1 + j] = w
-        p0[i] = (p0[i] as number) + w
-        p1[j] = (p1[j] as number) + w
-      }
-    const margins = [p0, p1] as const
-    const m = [0, 0]
-    const m2 = [0, 0]
-    const me = [0, 0]
-    for (let k = 0; k < 2; k++) {
-      const xs = (grids[k] as { x: number[] }).x
-      const pk = margins[k] as Float64Array
-      for (let i = 0; i < xs.length; i++) {
-        const x = xs[i] as number
-        const w = pk[i] as number
-        m[k] = (m[k] as number) + w * x
-        m2[k] = (m2[k] as number) + w * x * x
-        me[k] = (me[k] as number) + w * Math.exp(x)
-      }
+    // The weights in storage order: normalise them, and add each to the marginal of every axis it lies on.
+    const marginals = sizes.map((n) => new Float64Array(n))
+    const m0 = marginals[0] as Float64Array
+    const m1 = marginals[1]
+    const m2 = marginals[2]
+    const visit = (a: number, b: number, c: number): void => {
+      const i = at(a, b, c)
+      const w = (lw[i] as number) / total
+      lw[i] = w
+      m0[a] = (m0[a] as number) + w
+      if (m1 !== undefined) m1[b] = (m1[b] as number) + w
+      if (m2 !== undefined) m2[c] = (m2[c] as number) + w
     }
-    const variance = [
-      Math.max((m2[0] as number) - (m[0] as number) ** 2, 0),
-      Math.max((m2[1] as number) - (m[1] as number) ** 2, 0),
-    ]
-    result = {
-      logMass: top + Math.log(total),
-      mean: [m[0] as number, m[1] as number],
-      variance: [variance[0] as number, variance[1] as number],
-      meanExp: [me[0] as number, me[1] as number],
-      nodes: [Float64Array.from(grids[0].x), Float64Array.from(grids[1].x)],
-      weights: lw,
+    if (slowest) {
+      for (let a = 0; a < n0; a++) for (let b = 0; b < n1; b++) visit(a, b, 0)
+    } else {
+      for (let c = 0; c < n2; c++) for (let b = 0; b < n1; b++) for (let a = 0; a < n0; a++) visit(a, b, c)
     }
+    result = { logMass: top + Math.log(total), nodes: grids.map((g) => Float64Array.from(g.x)), weights: lw, marginals }
     // Zoom onto the mass: the range of nodes where the marginal weight is not negligible, a node wider on each side, inside the cavity's window.
     let shrunk = false
-    const next = axes.map((a, k): [number, number] => {
-      const [lo, hi] = window[k] as [number, number]
+    const next = axes.map((a, i): [number, number] => {
+      const [lo, hi] = window[i] as [number, number]
       if (a.point) return [lo, hi]
-      const g = (grids[k] as { x: number[] }).x
-      const marginal = margins[k] as Float64Array
-      const top = marginal.reduce((p, q) => Math.max(p, q), 0)
-      let first = 0
-      while (first < g.length && (marginal[first] as number) < 1e-9 * top) first++
-      let last = g.length - 1
-      while (last > first && (marginal[last] as number) < 1e-9 * top) last--
-      const spacing = (hi - lo) / g.length
-      const nlo = Math.max(a.lo, (g[Math.max(first - 1, 0)] as number) - spacing)
-      const nhi = Math.min(a.hi, (g[Math.min(last + 1, g.length - 1)] as number) + spacing)
+      const x = (grids[i] as { x: number[] }).x
+      const m = marginals[i] as Float64Array
+      const peak = m.reduce((p, q) => Math.max(p, q), 0)
+      let from = 0
+      while (from < x.length && (m[from] as number) < ZOOM_FLOOR * peak) from++
+      let to = x.length - 1
+      while (to > from && (m[to] as number) < ZOOM_FLOOR * peak) to--
+      const spacing = (hi - lo) / x.length
+      const nlo = Math.max(a.lo, (x[Math.max(from - 1, 0)] as number) - spacing)
+      const nhi = Math.min(a.hi, (x[Math.min(to + 1, x.length - 1)] as number) + spacing)
       if (!(nhi > nlo)) return [lo, hi]
-      if (nhi - nlo < 0.7 * (hi - lo)) shrunk = true
+      if (nhi - nlo < ZOOM_SHRINK * (hi - lo)) shrunk = true
       return [nlo, nhi]
     })
     if (!shrunk) {
-      if (fine || grid === FINE) break
+      if (fine || shape === profile.fine) break
       // The window has settled: one fine pass over it is the answer.
       fine = true
       continue
     }
     window = next
   }
-  return result as GridResult
+  return result as GridNResult
+}
+
+/** A node whose marginal weight is below this fraction of the largest is outside the mass: the zoom cuts there. */
+const ZOOM_FLOOR = 1e-9
+/** A window that shrinks to less than this fraction of itself is still moving: another coarse pass. */
+const ZOOM_SHRINK = 0.7
+
+/**
+ * The integral over one to three axes in the profile `axes` (equal panels, no kinks): the covariance sites' grid.
+ *
+ * @param axes - The coordinates (one to three).
+ * @param logf - The log of the integrand at the coordinates `t[0], t[1], ...` (the cavities' densities are separate).
+ * @returns The log mass and the weights of the final grid.
+ * @throws ParameterError for no axis or more than three.
+ * @throws ImproperMessageError when the integrand has no mass under the cavities.
+ */
+export function integrateAxes(axes: readonly GridAxis[], logf: (t: Float64Array) => number): GridNResult {
+  const t = new Float64Array(axes.length)
+  return integrateGrid(
+    axes,
+    (rest) => {
+      for (let i = 0; i < rest.length; i++) t[i + 1] = rest[i] as number
+      return (x0) => {
+        t[0] = x0
+        return logf(t)
+      }
+    },
+    gridProfiles.axes,
+  )
+}
+
+/** The result of a two-coordinate integral: the log mass, and per coordinate the mean, the variance and the mean of `exp(x)`. */
+export interface GridResult {
+  readonly logMass: number
+  readonly mean: readonly [number, number]
+  readonly variance: readonly [number, number]
+  readonly meanExp: readonly [number, number]
+  /** The final grid, for a caller that needs another expectation under the same weights: the nodes of each axis and `weights[i * n1 + j]`, summing to one. */
+  readonly nodes: readonly [Float64Array, Float64Array]
+  readonly weights: Float64Array
+}
+
+/**
+ * The integral of `exp(logf(x0, x1))` against the two cavities in the profile `pair` (graded panels with kinks, the window
+ * zoomed up to four times while it shrinks), with the moments of each coordinate: so a cavity much wider than the integrand, as in
+ * the first sweeps of a run, is integrated as well as a narrow one.
+ *
+ * @param axes - The two coordinates.
+ * @param column - The log of the integrand as a function of the second coordinate that returns a function of the first, so what
+ * depends on the second coordinate alone (a gamma function of a shape) is computed once per node of it, not once per point.
+ * @returns The log mass and the moments of each coordinate under the normalised integrand.
+ * @throws ImproperMessageError when the integrand has no mass under the cavities.
+ */
+export function integratePair(
+  axes: readonly [GridAxis, GridAxis],
+  column: (x1: number) => (x0: number) => number,
+): GridResult {
+  const r = integrateGrid(axes, (rest) => column(rest[0] as number), gridProfiles.pair)
+  const m = [0, 0]
+  const m2 = [0, 0]
+  const me = [0, 0]
+  for (let k = 0; k < 2; k++) {
+    const xs = r.nodes[k] as Float64Array
+    const pk = r.marginals[k] as Float64Array
+    for (let i = 0; i < xs.length; i++) {
+      const x = xs[i] as number
+      const w = pk[i] as number
+      m[k] = (m[k] as number) + w * x
+      m2[k] = (m2[k] as number) + w * x * x
+      me[k] = (me[k] as number) + w * Math.exp(x)
+    }
+  }
+  return {
+    logMass: r.logMass,
+    mean: [m[0] as number, m[1] as number],
+    variance: [
+      Math.max((m2[0] as number) - (m[0] as number) ** 2, 0),
+      Math.max((m2[1] as number) - (m[1] as number) ** 2, 0),
+    ],
+    meanExp: [me[0] as number, me[1] as number],
+    nodes: [r.nodes[0] as Float64Array, r.nodes[1] as Float64Array],
+    weights: r.weights,
+  }
 }
 
 /** The axis of a Gaussian cavity (an observed value is a point). */
@@ -228,15 +373,22 @@ export function pointAxis(x: number): GridAxis {
  * `value^shape exp(-rate value)` over the gamma normaliser, the Jacobian included.
  */
 export function gammaAxis(shape: number, rate: number, kinks: readonly number[] = []): GridAxis {
-  const centre = digammaOf(shape) - Math.log(rate)
-  const sd = Math.sqrt(trigammaOf(shape))
+  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.pairGrid)
   const logNorm = lgammaOf(shape) - shape * Math.log(rate)
+  return { point: false, lo, hi, kinks, logWeight: (t) => shape * t - rate * Math.exp(t) - logNorm }
+}
+
+/** The axis of a beta cavity `Beta(a, b)` in the coordinate `s = logit(u)`: the density of `s` is `u^a (1 - u)^b` over the beta function. */
+export function betaAxis(a: number, b: number): GridAxis {
+  const { lo, hi } = betaLogitWindow(a, b, windowProfiles.betaGrid)
+  const logNorm = lgammaOf(a) + lgammaOf(b) - lgammaOf(a + b)
   return {
     point: false,
-    lo: Math.max(centre - 12 * sd, -45),
-    hi: Math.min(centre + 8 * sd, 45),
-    kinks,
-    logWeight: (t) => shape * t - rate * Math.exp(t) - logNorm,
+    lo,
+    hi,
+    kinks: [],
+    // u = 1 / (1 + e^-s): log u = -softplus(-s), log (1 - u) = -softplus(s)
+    logWeight: (s) => -a * softplusOf(-s) - b * softplusOf(s) - logNorm,
   }
 }
 
@@ -251,10 +403,10 @@ export function axisOf(a: Arg, kinks: readonly number[] = []): GridAxis {
     const shape = (eta[0] ?? 0) + 1
     const rate = -(eta[1] ?? 0)
     if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
-      throw new OmaiError('value', 'a gamma message has no density')
+      throw new ImproperMessageError('a gamma message has no density')
     return gammaAxis(shape, rate, kinks)
   }
   const j = eta[1] ?? 0
-  if (!(j > 0) || !Number.isFinite(j)) throw new OmaiError('value', 'a Gaussian message has no density')
+  if (!(j > 0) || !Number.isFinite(j)) throw new ImproperMessageError('a Gaussian message has no density')
   return gaussianAxis((eta[0] ?? 0) / j, 1 / j, kinks)
 }

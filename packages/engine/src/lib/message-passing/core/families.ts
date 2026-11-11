@@ -8,8 +8,9 @@
  * @index module The scalar message families: Gaussian, gamma, beta, Bernoulli, normal-gamma.
  */
 
-import { type Json, LOG_2PI, OmaiError } from '../../base/index.ts'
+import { type Json, LOG_2PI } from '../../base/index.ts'
 import { digammaOf, lgammaOf, trigammaOf } from '../numerics/_scalar.ts'
+import { ImproperMessageError } from './errors.ts'
 import type { Eta, Family, FamilyKind, FamilySpec, Quotient } from './types.ts'
 
 /** What a family supplies: the pieces that differ; the rest of `Family` follows from them. */
@@ -99,7 +100,7 @@ export function defineFamily(def: FamilyDefinition): Family {
 
 /** The Gaussian message from a mean and a variance (a precision form `[mean / variance, 1 / variance]`). */
 export function gaussianEta(mean: number, variance: number): Eta {
-  if (!(variance > 0)) throw new OmaiError('value', `gaussianEta: the variance must be positive, got ${variance}`)
+  if (!(variance > 0)) throw new ImproperMessageError(`gaussianEta: the variance must be positive, got ${variance}`)
   return [mean / variance, 1 / variance]
 }
 
@@ -137,7 +138,8 @@ export const gaussian: Family = defineFamily({
   },
   fromMoments: (m) => {
     const variance = (m[1] ?? 0) - (m[0] ?? 0) ** 2
-    if (!(variance > 0)) throw new OmaiError('value', `gaussian.fromMoments: the variance ${variance} is not positive`)
+    if (!(variance > 0))
+      throw new ImproperMessageError(`gaussian.fromMoments: the variance ${variance} is not positive`)
     return gaussianEta(m[0] ?? 0, variance)
   },
   logPartition: (eta) => {
@@ -182,7 +184,7 @@ export function gammaShapeRate(eta: Eta): { readonly shape: number; readonly rat
 export function gammaShapeFromMoments(logMean: number, mean: number): number {
   const s = Math.log(mean) - logMean
   if (!(s > 0))
-    throw new OmaiError('value', `gamma: E[log x] = ${logMean} and E[x] = ${mean} violate Jensen's inequality`)
+    throw new ImproperMessageError(`gamma: E[log x] = ${logMean} and E[x] = ${mean} violate Jensen's inequality`)
   let a = (3 - s + Math.sqrt((s - 3) ** 2 + 24 * s)) / (12 * s)
   for (let i = 0; i < 30; i++) {
     const f = Math.log(a) - digammaOf(a) - s
@@ -437,7 +439,7 @@ export const normalGamma: Family = defineFamily({
     const m = (mo[0] ?? 0) / lambda
     const inverseBeta = (mo[1] ?? 0) - m * m * lambda
     if (!(inverseBeta > 0))
-      throw new OmaiError('value', 'normalGamma.fromMoments: the moments imply a non-positive 1 / beta')
+      throw new ImproperMessageError('normalGamma.fromMoments: the moments imply a non-positive 1 / beta')
     const a = gammaShapeFromMoments(mo[3] ?? 0, lambda)
     return normalGammaEta(m, 1 / inverseBeta, a, a / lambda)
   },

@@ -3691,6 +3691,25 @@ dimension order, ids, site names, expressions, the hooks for factor graphs) are 
   compiler (a Gram matrix at a fixed length scale), and one that is affine in a single random vector is read as a matrix (the
   whitened form `f = L(ell) z`); an unnamed event vector (a multivariate normal latent and its observation through a
   diagonal known covariance) is read as a vector over a dimension of its size by `event-dims.ts` (`eventToDims`).
+- `factor-graph/` (an `@inline` folder of `model/`, the pieces of the compiler that `factors.ts` drives; the files that start with `_` are private,
+  not exported). Public: `types.ts` (`FactorIssue`, `SiteLayout`, `FactorGraphCompilation`), `readback.ts` (`factorGraphPosterior`,
+  `graphOnSpec`: a run read back by site name) and `verdict.ts` (`factorGraphVerdict`, `compileFactorGraph`, `operatorsWithout`). Private, in
+  the order a compilation uses them: `_known.ts` (the constants pass: bound data and the derived nodes built from known things only,
+  evaluated by the operator registry before the walk, as `Known`; a derived node that is constant only after its symbolic evaluation, `0 * z`, is
+  declared by the walk into the same `Known` and listed in `Known.semantic`, because that knowledge is order-dependent by nature),
+  `_idioms.ts` (the pure recognisers: the precision idiom of a scale, the known multiple of a gamma variable, an inverse-gamma variance,
+  `dependsOnLatent` and `sharedGamma` as the analysis module's `usesLatent` and `latentsIn`), `_plan.ts` (the `LayoutPlan`, immutable, found from the
+  whole spec before any node is mapped, in a fixed order: `findPacked`, then `findNonCentred` (reads what a `matmul` reads), then `findGroups` (reads the
+  packed vectors; only with `packScalars`), then `findNormalGamma` (reads the constants as of each precision's position)); `_context.ts`
+  (`Context`, the state of one compilation: the graph builder, the issues and site layouts, `Known`, the plan, the symbolic value of each node, and
+  the few operations every mapping needs); `_symbolic/` (the evaluator of expressions: `_dims.ts` the named dimensions, `_affine.ts` `evalSym` and
+  the value algebra, `_gates.ts` values chosen by a discrete variable, `_functions.ts` the `product`, `apply` and `max`/`min` factors that arithmetic on random values
+  makes; `EvalMode` says whether a gate keeps its components as a lookup); `_cells.ts` (the value algebra: pure), `_builder.ts` (the graph builder, `GateBuilder`)
+  and `_refusal.ts` (`Refusal`); `_params.ts` (a node's parameters as the mappings read them: `paramSym`, `constParam`, `cellsOf`, `paramCell`,
+  `discreteParents`); `_mappings/` (one file per concern, the mappings as functions of a `Context` and a node: `latent-gaussian`, `latent-positive`,
+  `latent-discrete`, `matrix`, `derived`, `observed-gaussian`, `observed-numeric`, `observed-conjugate`, `observed-gates`, `plates`; the folder is private
+  so that its functions are not exports). `factors.ts` is the driver: it walks the spec in order and dispatches each node by the chains of `latent`,
+  `observed` and `observedElement`, whose order is part of the meaning (normal-gamma before the family lookup, a value moved to the mean first).
 
 **Inference methods (`inference/`, `omai-engine/probprog/inference`).** The convention and the methods, with no entry point
 that picks one. `method.ts` is the convention: `defineInferenceMethod` makes a `Method` of the trace library (a `Space`
@@ -3899,14 +3918,17 @@ marginals at any time. Imports: `base`, `trace`, `tensor`, `numerics`, `space`, 
 reports is addressed by ids, the same as the picture of the model (`types.ts`; for a spec, `probprog/model/ids.ts`): a
 variable is its name, a factor its `id` (`factor:<site>` from the spec compiler) or `f<i>`, an edge `<factor>><variable>`.
 - Layout (by concern, every folder an inlined part of `omai-engine/message-passing`; the file names below are unchanged,
-  only their folders are new). `core/`: `types.ts`, `args.ts`, the internal `_messages.ts` (the conventions operators share: `arg`, `perPower`,
+  only their folders are new). `core/`: `types.ts`, `errors.ts` (`ImproperMessageError`, a numerical failure the engine repairs and
+  counts, and `ParameterError`, a misconfiguration that is never swallowed: the engine catches only the first), `params.ts` (the
+  declared parameters of an operator, `FactorOperator.params`: `param.number()`, `param.vector()`, ..., parsed by `compileGraph`
+  so an unknown, missing or ill-typed parameter fails at compile time naming the operator and the parameter), `args.ts`, the internal `_messages.ts` (the conventions operators share: `arg`, `perPower`,
   `evidenceOrNaN`, `isFlat`, `assertDamping`), `families*.ts`, `graph.ts`, `priors.ts`, `truncated.ts`.
-  `numerics/`: `_scalar.ts`, `_dense.ts`, `_bartlett.ts`, `_quadrature.ts`, `_grid.ts`, `_gridn.ts`, `_tilted.ts` (internal)
+  `numerics/`: `_scalar.ts`, `_dense.ts`, `_bartlett.ts`, `_quadrature.ts`, `_grid.ts` (the one panelled grid for two and three axes, with its `gridProfiles`), `_windows.ts` (the named windows of every cavity coordinate), `_tilted.ts` (internal)
   and `numeric-rules.ts` (the `TiltedRule`s of the engine's `numeric` slot). `engine/`: `state.ts` (settings and
   state types), `cavity.ts` (beliefs, marginals, snapshot), `dispatch.ts` (`operatorMessage`), `evidence.ts`, `verdict.ts`,
   `run.ts` (`messagePassingAlgorithm`), the slots `projections.ts` and `schedules.ts`, and the internal `_cavities.ts`,
   `_arguments.ts`, `_update.ts` (the proposal, damping and `repairImproper`), `_restart.ts`, `_advance.ts`. `algorithms/`: `named.ts`, `power.ts`, `alpha.ts`, `numerical.ts`, `stochastic.ts`, `regions.ts`,
-  `consistent.ts`, `amp.ts`, `anytime.ts`, `clutter.ts`. `operators/`: `registry.ts` and one folder per kind of factor,
+  `consistent.ts`, `amp.ts`, `anytime.ts`, `clutter.ts`. `operators/`: `registry.ts`, `names.ts` (`operatorNames` and the type `OperatorName`, held equal to the registry by a test; `GateBranch` in `discrete/gate.ts` types a gate's branch) and one folder per kind of factor,
   `gaussian/` (`gaussian`, `linear`, `transition`, `extremum`, `log-scale`), `links/` (`truncation`, `links`, `spin`,
   `multiclass`), `lifts/` (`rows`, `plates`), `likelihoods/` (`likelihoods`, `pairs`, `robust`, `prior-sites`, `functions`,
   `numeric`), `scales/` (`scale`, `function-scale`, `gamma-scale`, `concentration`, `stick-breaking`), `covariance/`

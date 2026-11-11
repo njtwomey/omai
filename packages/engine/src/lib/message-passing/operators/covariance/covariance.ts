@@ -10,9 +10,11 @@
 
 import { OmaiError } from '../../../base/index.ts'
 import { arg, evidenceOrNaN } from '../../core/_messages.ts'
-import { ImproperMessageError, rawSum, siteMessage, vectorOf } from '../../core/args.ts'
+import { rawSum, siteMessage, vectorOf } from '../../core/args.ts'
+import { ImproperMessageError } from '../../core/errors.ts'
 import { normalWishart, wishart, wishartParams } from '../../core/families-matrix.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
+import { param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { BARTLETT_ORDER, choleskyInPlace, type WishartRule, wishartRule } from '../../numerics/_bartlett.ts'
 import { type Evaluator, evaluatorOf, type GaussianSide, gaussianSide, NO_ROWS, type Rows, rowsOf } from './_sides.ts'
@@ -242,6 +244,7 @@ export const mvnWishart: FactorOperator = {
     { name: 'mean', accepts: ['gaussian-mv'], constant: true },
     { name: 'precision', accepts: ['wishart'] },
   ],
+  params: { count: param.number({ min: 1, optional: true }), scatter: param.vector({ optional: true }) },
   support: { ep: 'numeric', vmp: 'exact' },
   check: (_params, families) => {
     const dims = families.map((f) => f.dim)
@@ -329,6 +332,7 @@ export const mvnNormalWishart: FactorOperator = {
     { name: 'x', accepts: ['gaussian-mv'], observed: true, constant: true },
     { name: 'theta', accepts: ['normal-wishart'] },
   ],
+  params: {},
   support: { ep: 'exact', vmp: 'exact', bp: 'exact' },
   check: (_params, families) =>
     families[0]?.dim === families[1]?.dim

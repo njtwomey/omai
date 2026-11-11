@@ -7,7 +7,7 @@
 import { OmaiError } from '../../base/index.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import type { Family } from '../core/types.ts'
-import { type Arg, type Eta, takesPower } from '../core/types.ts'
+import { type Arg, type Eta, type Memo, takesPower } from '../core/types.ts'
 import { argsOf } from './_arguments.ts'
 import { beliefWithout, isPulled } from './_cavities.ts'
 import { beliefOf } from './cavity.ts'
@@ -29,6 +29,7 @@ function alphaProposal(
   source: readonly (readonly number[])[],
   e: number,
   alpha: number,
+  memo: Memo,
 ): FactorProposal {
   const edge = g.edges[e] as CompiledGraph['edges'][number]
   const f = g.factors[edge.factor] as CompiledGraph['factors'][number]
@@ -47,7 +48,7 @@ function alphaProposal(
   for (let k = 0; k < ALPHA_ITERATIONS; k++) {
     const base = family.product(cavity, family.power(own, 1 - alpha))
     const args = others.map((a, q) => (q === to ? { ...a, eta: base } : a))
-    const p = operatorMessage(f, s.projection, to, args, alpha)
+    const p = operatorMessage(f, s.projection, to, args, alpha, memo)
     if (p.kind !== 'message') return p
     // The operator returns (projection - base) / alpha: the projected member of the family is base + alpha * message.
     const projected = base.map((v, i) => v + alpha * (p.eta[i] ?? 0))
@@ -64,14 +65,15 @@ export function propose(
   s: EngineSettings,
   source: readonly (readonly number[])[],
   e: number,
+  memo: Memo = new Map(),
 ): FactorProposal {
   const edge = g.edges[e] as CompiledGraph['edges'][number]
   const f = g.factors[edge.factor] as CompiledGraph['factors'][number]
   if (isPulled(g, e, s.projection)) return { kind: 'blocked' }
   const alpha = s.projection.alpha
   if (alpha !== undefined && alpha !== 1 && takesPower(f.operator, f.params) && f.power === 1)
-    return alphaProposal(g, s, source, e, alpha)
-  return operatorMessage(f, s.projection, edge.port, argsOf(g, source, edge.factor, s.projection))
+    return alphaProposal(g, s, source, e, alpha, memo)
+  return operatorMessage(f, s.projection, edge.port, argsOf(g, source, edge.factor, s.projection), f.power, memo)
 }
 
 /**

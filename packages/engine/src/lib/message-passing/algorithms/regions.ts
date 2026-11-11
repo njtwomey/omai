@@ -12,7 +12,7 @@
  * @index module Region graphs and generalised belief propagation: Bethe, Kikuchi and junction regions on discrete models.
  */
 
-import { type Json, OmaiError } from '../../base/index.ts'
+import type { Json } from '../../base/index.ts'
 import {
   type DiscreteModel,
   type DiscreteVariable,
@@ -49,6 +49,7 @@ import {
   stateToJson,
 } from '../../trace/index.ts'
 import { assertDamping } from '../core/_messages.ts'
+import { ParameterError } from '../core/errors.ts'
 import type { MpSnapshot } from '../engine/state.ts'
 
 /** A region: its variables, the factors inside it, its counting number and its place in the region graph. */
@@ -111,7 +112,7 @@ export function blockClusters(
   size = 2,
 ): string[][] {
   if (!(Number.isInteger(size) && size >= 1 && size <= rows && size <= columns))
-    throw new OmaiError('value', `blockClusters: a block of ${size} does not fit a ${rows} by ${columns} grid`)
+    throw new ParameterError(`blockClusters: a block of ${size} does not fit a ${rows} by ${columns} grid`)
   const out: string[][] = []
   for (let r = 0; r + size <= rows; r++) {
     for (let c = 0; c + size <= columns; c++) {
@@ -158,7 +159,7 @@ export function regionGraph(model: DiscreteModel, options: RegionOptions): Regio
   const rank = new Map(names.map((n, i) => [n, i]))
   const known = new Set(names)
   for (const f of factors)
-    for (const v of f.variables) if (!known.has(v)) throw new OmaiError('value', `regionGraph: unknown variable ${v}`)
+    for (const v of f.variables) if (!known.has(v)) throw new ParameterError(`regionGraph: unknown variable ${v}`)
   const scopes = factors.map((f) => sorted(f.variables, rank))
   let outer: string[][]
   let tree: JunctionTree = { cliques: [], edges: [] }
@@ -171,7 +172,7 @@ export function regionGraph(model: DiscreteModel, options: RegionOptions): Regio
   } else if (options.kind === 'clusters') {
     for (const c of options.clusters)
       for (const v of c)
-        if (!known.has(v)) throw new OmaiError('value', `regionGraph: the cluster has the unknown variable ${v}`)
+        if (!known.has(v)) throw new ParameterError(`regionGraph: the cluster has the unknown variable ${v}`)
     outer = [...new Map(options.clusters.map((c) => sorted(c, rank)).map((c) => [key(c), c])).values()]
   } else {
     const graph = interactionGraph(factors, names)
@@ -251,8 +252,7 @@ export function regionGraph(model: DiscreteModel, options: RegionOptions): Regio
   for (const v of names) {
     const total = regionVars.reduce((a, vars, r) => a + (vars.includes(v) ? (count[r] as number) : 0), 0)
     if (total !== 1)
-      throw new OmaiError(
-        'value',
+      throw new ParameterError(
         `regionGraph: the counting numbers of the regions containing ${v} sum to ${total}, not 1`,
       )
   }
@@ -260,8 +260,7 @@ export function regionGraph(model: DiscreteModel, options: RegionOptions): Regio
   for (const [fi, scope] of scopes.entries()) {
     const total = regionVars.reduce((a, vars, r) => a + (subsetOf(scope, vars) ? (count[r] as number) : 0), 0)
     if (total !== 1)
-      throw new OmaiError(
-        'value',
+      throw new ParameterError(
         `regionGraph: the regions containing the factor ${fi} over [${scope.join(', ')}] have counting numbers that sum to ${total}, not 1 (add the intersection of its regions as a cluster)`,
       )
   }
@@ -777,7 +776,7 @@ export function regionBpMethod(
       let graph: RegionGraph
       if (kind === 'kikuchi') {
         if (clusters === undefined)
-          throw new OmaiError('value', 'region BP: the kikuchi regions need clusters (see blockClusters)')
+          throw new ParameterError('region BP: the kikuchi regions need clusters (see blockClusters)')
         graph = regionGraph(model, { kind: 'clusters', clusters })
       } else graph = regionGraph(model, { kind: kind === 'junction' ? 'junction' : 'bethe' })
       const schedule = c['schedule'] === 'serial' ? 'serial' : 'parallel'

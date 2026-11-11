@@ -1,10 +1,12 @@
 // Scalar special functions for the message algebra: thin wrappers that take and return plain numbers over the tensor
 // special functions of numerics/special (messages are number arrays, so the hot loops stay free of tensors), and the
 // inverse digamma that moment matching onto a gamma, beta or Dirichlet needs.
-import { logAddExp, OmaiError } from '../../base/index.ts'
+
+import { logAddExp } from '../../base/index.ts'
 import { digamma, lgamma, polygamma } from '../../numerics/special/_kernels.ts'
 import { erfcx, logNdtr, ndtr, normalLogPdf } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
+import { ImproperMessageError } from '../core/errors.ts'
 
 /** The standard normal distribution function. */
 export const Phi = (x: number): number => item(ndtr(x))
@@ -39,7 +41,7 @@ export const lgammaOf = (x: number): number => lgamma(x)
  * @throws OmaiError with code `value` for a non-finite y.
  */
 export function inverseDigamma(y: number): number {
-  if (!Number.isFinite(y)) throw new OmaiError('value', 'inverseDigamma: the argument must be finite')
+  if (!Number.isFinite(y)) throw new ImproperMessageError('inverseDigamma: the argument must be finite')
   let x = y >= -2.22 ? Math.exp(y) + 0.5 : -1 / (y + 0.5772156649015329)
   for (let i = 0; i < 12; i++) {
     const step = (digammaOf(x) - y) / trigammaOf(x)

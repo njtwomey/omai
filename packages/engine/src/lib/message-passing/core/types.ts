@@ -31,6 +31,7 @@
  */
 
 import type { Json } from '../../base/index.ts'
+import type { ParamSpecOf } from './params.ts'
 
 /** A message: the natural parameters of a member of a family, in the layout the family documents. */
 export type Eta = readonly number[]
@@ -195,7 +196,16 @@ export interface OperatorContext {
   readonly power: number
   /** The numeric rule the run asks of operators that integrate numerically (`Projection.numeric`); absent: the operator's own. */
   readonly rule?: TiltedRule
+  /**
+   * A cache the engine owns for a stretch of the run (one call of an operator, and for the messages of one sweep): an operator that
+   * integrates once for every port may keep the integral under a key it builds from its inputs alone (`memoised`), so another port, or
+   * the evidence, of the same cavities reuses it. The key must say everything the value depends on; absent: nothing is kept.
+   */
+  readonly memo?: Memo
 }
+
+/** The cache of `OperatorContext.memo`: values by a key built from everything they were computed from. */
+export type Memo = Map<string, unknown>
 
 /** The message an operator sends to the target port. */
 export interface OperatorResult {
@@ -265,6 +275,13 @@ export interface FactorOperator {
    * a graph can run, so the refusal names the factor and the reason instead of failing in the run.
    */
   unsupported?(mode: Mode, params: Params): string | undefined
+  /**
+   * The JSON parameters the operator reads (`param.number()`, `param.vector()`, ...: see `params.ts`), or a function of the
+   * parameters when the names depend on one of them. `compileGraph` parses a factor's parameters against it before anything
+   * else, so an unknown, missing or ill-typed parameter is a `ParameterError` naming the operator and the parameter. Every
+   * operator of the library declares it (`{}` for none); an operator of your own without it is not checked.
+   */
+  readonly params?: ParamSpecOf
   /** A reason the factor cannot be built from these parameters and families, or `undefined` when it can. */
   check?(params: Params, families: readonly Family[]): string | undefined
   ep?(c: OperatorContext): OperatorResult

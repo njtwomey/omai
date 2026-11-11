@@ -4,6 +4,7 @@
 // quadrature of its own (`bruteExpectation`: composite Gauss-Legendre, not the library's rule), and the engine's reported bound
 // must equal that brute-force bound at the fixed point. A deterministic factor (which defines its output) is checked against the
 // same bound of the model with the output substituted.
+
 import { describe, expect, it } from 'vitest'
 import { type BruteBelief, bruteExpectation } from '../../../../testing/message-passing.ts'
 import * as M from '../../index.ts'

@@ -10,9 +10,11 @@
  * The Student-t and Laplace sites of `robust.ts` are two entries of the table under their own names.
  */
 
-import { logAddExp, OmaiError } from '../../../base/index.ts'
+import { logAddExp } from '../../../base/index.ts'
 import { errorText, perPower } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, vectorParam } from '../../core/args.ts'
+import { ParameterError } from '../../core/errors.ts'
+import { namedParams, type ParamSpec, param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
 import { lgammaOf, logPhi, logSigmoidOf } from '../../numerics/_scalar.ts'
 import { tiltedByQuadrature, type WindowHint } from '../../numerics/_tilted.ts'
@@ -30,6 +32,8 @@ export interface Likelihood {
   readonly description: string
   /** The numeric parameters the density needs besides `y` (each a number, except where the description says a vector). */
   readonly params: readonly string[]
+  /** The declared parameters when `params` (all numbers, `exposure` and `censored` optional, `cuts` a vector) does not say it all. */
+  readonly spec?: ParamSpec
   /** A reason the outcome or the parameters are not valid, or `undefined`. */
   check?(y: number, p: Params): string | undefined
   /** The log density of the outcome as a function of the predictor, with the constants of `y` and the parameters precomputed. */
@@ -40,6 +44,12 @@ export interface Likelihood {
 
 const positive = (p: Params, name: string): string | undefined =>
   numberParam(p, name) > 0 ? undefined : `${name} must be positive`
+
+/** The parameters a likelihood declares besides `likelihood` itself: the outcome `y` and the entry's own. */
+const likelihoodParams = (l: Likelihood): ParamSpec => ({
+  y: param.number(),
+  ...(l.spec ?? namedParams(l.params, { optional: ['exposure', 'censored'], vectors: ['cuts'] })),
+})
 
 const countCheck = (y: number): string | undefined =>
   Number.isInteger(y) && y >= 0 ? undefined : 'the outcome must be a non-negative integer'
@@ -353,13 +363,12 @@ function resolve(
   const key = fixed ?? params['likelihood']
   const likelihood = typeof key === 'string' ? table[key] : undefined
   if (likelihood === undefined)
-    throw new OmaiError(
-      'value',
+    throw new ParameterError(
       `likelihood-site: unknown likelihood ${String(key)} (the registry has ${Object.keys(table).join(', ')})`,
     )
   const y = numberParam(params, 'y')
   const why = likelihood.check?.(y, params)
-  if (why !== undefined) throw new OmaiError('value', `${likelihood.name}: ${why}`)
+  if (why !== undefined) throw new ParameterError(`${likelihood.name}: ${why}`)
   return { likelihood, y }
 }
 
@@ -411,6 +420,17 @@ export function likelihoodSite(
     description:
       fixed === undefined ? 'y | u ~ a numeric likelihood of the registry' : (table[fixed]?.description ?? name),
     ports: [{ name: 'u', accepts: ['gaussian'] }],
+    params:
+      fixed === undefined
+        ? (p) => {
+            const key = p['likelihood']
+            const entry = typeof key === 'string' ? table[key] : undefined
+            return {
+              likelihood: param.text({ choices: Object.keys(table) }),
+              ...(entry === undefined ? { y: param.number() } : likelihoodParams(entry)),
+            }
+          }
+        : likelihoodParams(table[fixed] as Likelihood),
     support: { ep: 'numeric', vmp: 'numeric' },
     readsTarget: true,
     ...(options.needsDensity === true ? { needsDensity: true } : {}),
@@ -511,6 +531,7 @@ export const negativeBinomialDispersion: FactorOperator = numericOperator({
   description:
     'y | u, s ~ NegBin(mean exposure exp(u), dispersion exp(s)): a count with a log link and a random dispersion',
   arity: 2,
+  params: { y: param.number(), exposure: param.positive({ optional: true }) },
   rule: gaussHermiteRule(24),
   logDensity: ([u, s], params) => {
     const y = numberParam(params, 'y')

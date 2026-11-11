@@ -3,8 +3,7 @@
  * the factors that give no part of the EP evidence at a state, with why.
  */
 
-import { OmaiError } from '../../base/index.ts'
-import { ImproperMessageError } from '../core/args.ts'
+import { ImproperMessageError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import { argsOf } from './_arguments.ts'
 import { rawBelief, rawCavity, readable } from './_cavities.ts'
@@ -49,6 +48,7 @@ export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection
           args,
           params: f.params,
           power: f.power,
+          memo: new Map(),
           ...(s.projection.numeric === undefined ? {} : { rule: s.projection.numeric }),
         }) / f.power
       for (const p of f.ports) {
@@ -68,7 +68,7 @@ export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection
       total += f.operator.expectedLog({ mode: 'vmp', to: 0, args, params: f.params, power: f.power })
     } catch (err) {
       // A belief with no density yet (flat messages at the start of a run) has no expectation: no bound, as for EP.
-      if (err instanceof ImproperMessageError || (err instanceof OmaiError && err.code === 'value')) return Number.NaN
+      if (err instanceof ImproperMessageError) return Number.NaN
       throw err
     }
   }
@@ -112,6 +112,7 @@ export function evidenceDefects(
       args,
       params: f.params,
       power: f.power,
+      memo: new Map(),
       ...(s.projection.numeric === undefined ? {} : { rule: s.projection.numeric }),
     })
     if (!Number.isFinite(value)) out.push({ factor: f.id, reason: 'improper cavity' })

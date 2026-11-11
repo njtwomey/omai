@@ -8,6 +8,7 @@ import { logAddExp, sigmoidOf } from '../../../base/index.ts'
 import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, scalarOf } from '../../core/args.ts'
 import { bernoulli } from '../../core/families.ts'
+import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorResult } from '../../core/types.ts'
 import { gaussianExpectation, tiltedGaussian, tiltedLogGrid } from '../../numerics/_quadrature.ts'
 import { logSigmoidOf } from '../../numerics/_scalar.ts'
@@ -55,6 +56,7 @@ export const logistic: FactorOperator = {
     { name: 'b', accepts: ['bernoulli'], constant: true },
     { name: 'x', accepts: ['gaussian'] },
   ],
+  params: {},
   support: { ep: 'numeric', vmp: 'bound' },
   readsTarget: (to) => to === 1,
   power: true,

@@ -4,7 +4,7 @@
  * think in (a mean and a variance, a shape and a rate). Each returns the factor to put in a graph's `factors`.
  */
 
-import { OmaiError } from '../../base/index.ts'
+import { ParameterError } from './errors.ts'
 import { bernoulliEta, betaEta, gamma, gammaEta, gaussianEta, normalGammaEta } from './families.ts'
 import { discreteEta, gaussianMvEta } from './families-vector.ts'
 import type { Eta, FactorSpec } from './types.ts'
@@ -117,7 +117,7 @@ export const bernoulliPrior = (variable: string, p: number): FactorSpec => prior
  */
 export function discretePrior(variable: string, probs: readonly number[]): FactorSpec {
   if (probs.some((p) => p < 0) || probs.every((p) => p === 0))
-    throw new OmaiError('value', 'discretePrior: needs non-negative probabilities that do not all vanish')
+    throw new ParameterError('discretePrior: needs non-negative probabilities that do not all vanish')
   return priorFactor(variable, discreteEta(probs))
 }
 
@@ -286,10 +286,10 @@ export function projectedPrior(variable: string, logDensity: LogDensity, options
     (family === 'gamma' ? [0, Number.POSITIVE_INFINITY] : [Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY])
   const m = densityMoments(logDensity, lo, hi, options.start ?? (family === 'gamma' ? 1 : 0))
   if (family === 'gamma') {
-    if (!(lo >= 0)) throw new OmaiError('value', 'projectedPrior: a gamma needs a density on the positive half line')
+    if (!(lo >= 0)) throw new ParameterError('projectedPrior: a gamma needs a density on the positive half line')
     return priorFactor(variable, gamma.fromMoments([m.meanLog, m.mean]))
   }
   if (!(m.variance > 0) || !Number.isFinite(m.variance))
-    throw new OmaiError('value', 'projectedPrior: the density has no finite variance')
+    throw new ParameterError('projectedPrior: the density has no finite variance')
   return gaussianPrior(variable, m.mean, m.variance)
 }

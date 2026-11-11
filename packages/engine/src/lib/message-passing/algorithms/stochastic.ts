@@ -13,7 +13,7 @@
  * @index module Stochastic and averaged EP: one averaged factor for N exchangeable data factors, memory independent of N.
  */
 
-import { type Json, OmaiError } from '../../base/index.ts'
+import type { Json } from '../../base/index.ts'
 import { foldIn, key, uniform } from '../../random/index.ts'
 import { choice, dict, int, real } from '../../space/index.ts'
 import { toFlat } from '../../tensor/index.ts'
@@ -33,6 +33,7 @@ import {
   stateToJson,
 } from '../../trace/index.ts'
 import { assertDamping } from '../core/_messages.ts'
+import { ParameterError } from '../core/errors.ts'
 import type { CompiledFactor, CompiledGraph } from '../core/graph.ts'
 import type { Arg, Eta, Family } from '../core/types.ts'
 import { repairImproper } from '../engine/_update.ts'
@@ -154,19 +155,15 @@ function layoutOf(g: CompiledGraph, options: StochasticEpOptions): Layout {
   let shared: number
   if (options.shared === undefined) {
     if (latent.length !== 1)
-      throw new OmaiError(
-        'value',
-        `stochastic EP: name the shared variable (the graph has ${latent.length} latent ones)`,
-      )
+      throw new ParameterError(`stochastic EP: name the shared variable (the graph has ${latent.length} latent ones)`)
     shared = (latent[0] as { i: number }).i
   } else {
     const i = g.index.get(options.shared)
-    if (i === undefined) throw new OmaiError('value', `stochastic EP: there is no variable ${options.shared}`)
+    if (i === undefined) throw new ParameterError(`stochastic EP: there is no variable ${options.shared}`)
     shared = i
   }
   if (latent.some(({ i }) => i !== shared))
-    throw new OmaiError(
-      'value',
+    throw new ParameterError(
       'stochastic EP: every factor must touch the shared variable only (the others are observed)',
     )
   const sharedVar = g.variables[shared] as CompiledGraph['variables'][number]
@@ -174,11 +171,11 @@ function layoutOf(g: CompiledGraph, options: StochasticEpOptions): Layout {
   const named = options.data === undefined ? undefined : new Set(options.data)
   if (named !== undefined) {
     const ids = new Set(g.factors.map((f) => f.id))
-    for (const id of named) if (!ids.has(id)) throw new OmaiError('value', `stochastic EP: there is no factor ${id}`)
+    for (const id of named) if (!ids.has(id)) throw new ParameterError(`stochastic EP: there is no factor ${id}`)
   }
   const isData = (f: CompiledFactor): boolean => (named === undefined ? f.operator.name !== 'prior' : named.has(f.id))
   const data = g.factors.filter(isData)
-  if (data.length === 0) throw new OmaiError('value', 'stochastic EP: the graph has no data factor')
+  if (data.length === 0) throw new ParameterError('stochastic EP: the graph has no data factor')
   let fixed: Eta = family.flat
   for (const f of g.factors) {
     if (isData(f)) continue
@@ -191,8 +188,7 @@ function layoutOf(g: CompiledGraph, options: StochasticEpOptions): Layout {
     )
     const p = operatorMessage(f, momentProjection, port, args)
     if (p.kind !== 'message')
-      throw new OmaiError(
-        'value',
+      throw new ParameterError(
         `stochastic EP: the fixed factor ${f.id} must send a message that does not depend on the cavity`,
       )
     fixed = family.product(fixed, p.eta)
@@ -299,7 +295,7 @@ export function stochasticEpAlgorithm(
   const o = { ...stochasticEpDefaults, ...options }
   assertDamping(o.damping, 'stochastic EP')
   if (!(Number.isInteger(o.batchSize) && o.batchSize >= 1))
-    throw new OmaiError('value', 'stochastic EP: the batch size must be a positive integer')
+    throw new ParameterError('stochastic EP: the batch size must be a positive integer')
   const l = layoutOf(g, options)
   const n = l.data.length
   const family = l.family

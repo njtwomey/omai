@@ -7,15 +7,16 @@
  * grid in that one variable and every moment follows in closed form.
  */
 
-import { OmaiError } from '../../../base/index.ts'
 import { arg, evidenceOrNaN } from '../../core/_messages.ts'
-import { etaOf, ImproperMessageError, numberParam, siteMessage } from '../../core/args.ts'
+import { etaOf, numberParam, siteMessage } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
+import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
-import { digammaOf, lgammaOf, trigammaOf } from '../../numerics/_scalar.ts'
+import { digammaOf, lgammaOf } from '../../numerics/_scalar.ts'
+import { gammaLogWindow, uniformGrid, windowProfiles } from '../../numerics/_windows.ts'
 
 const POINTS = 241
-const SPAN = 18
 
 /**
  * The tilted moments of two gamma variables `G` and `H` under a weight `q_G(g) q_H(h) w(g h)`-type factor that, integrated over `h`,
@@ -43,11 +44,8 @@ function pairTilt(
     throw new ImproperMessageError(
       'the integral over the dependent gamma variable diverges (its shape is not positive)',
     )
-  const centre = digammaOf(shape) - Math.log(rate)
-  const half = SPAN * Math.sqrt(trigammaOf(shape))
-  const lo = Math.max(centre - half, -60)
-  const hi = Math.min(centre + half, 60)
-  const step = (hi - lo) / (POINTS - 1)
+  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.gammaScale)
+  const { step } = uniformGrid({ lo, hi }, POINTS)
   const logw = new Float64Array(POINTS)
   let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < POINTS; i++) {
@@ -92,7 +90,7 @@ function pairTilt(
 function rateParams(c: OperatorContext): { readonly shape: number; readonly scale: number } {
   const shape = numberParam(c.params, 'shape')
   const scale = numberParam(c.params, 'scale', 1)
-  if (!(shape > 0 && scale > 0)) throw new OmaiError('value', 'gamma-rate: the shape and the scale are positive')
+  if (!(shape > 0 && scale > 0)) throw new ParameterError('gamma-rate: the shape and the scale are positive')
   return { shape, scale }
 }
 
@@ -120,6 +118,7 @@ export const gammaRate: FactorOperator = {
     { name: 'x', accepts: ['gamma'] },
     { name: 'r', accepts: ['gamma'] },
   ],
+  params: { shape: param.positive(), scale: param.positive({ optional: true }) },
   support: { ep: 'numeric', vmp: 'exact' },
   readsTarget: (to) => to === 1,
   ep: (c): OperatorResult => {
@@ -184,6 +183,7 @@ export const gammaProduct: FactorOperator = {
     { name: 'u', accepts: ['gamma'] },
     { name: 'tau', accepts: ['gamma'] },
   ],
+  params: {},
   support: { ep: 'numeric', vmp: 'exact' },
   // Deterministic: under the mean field `p` is the pushforward of `u` and `tau`, and the messages to them are those of the
   // substituted model. `E log p = E log u + E log tau` and `E p = E u E tau` are exact, so the gamma of those two moments serves

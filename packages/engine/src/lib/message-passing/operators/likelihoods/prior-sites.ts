@@ -10,6 +10,7 @@
 
 import { FLAT_CAVITY_PRECISION, messageArg, numberParam } from '../../core/args.ts'
 import { gaussian } from '../../core/families.ts'
+import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, Params } from '../../core/types.ts'
 import { logPhi } from '../../numerics/_scalar.ts'
 import type { WindowHint } from '../../numerics/_tilted.ts'
@@ -87,6 +88,14 @@ const prior: Likelihood = {
   description:
     'a prior density on a Gaussian variable, or on its log: half-normal, half-Cauchy, uniform, truncated normal',
   params: ['base', 'log', 'scale', 'loc', 'low', 'high'],
+  spec: {
+    base: param.text({ choices: BASES }),
+    log: param.number({ optional: true }),
+    scale: param.positive({ optional: true }),
+    loc: param.number({ optional: true }),
+    low: param.number({ optional: true, infinite: true }),
+    high: param.number({ optional: true, infinite: true }),
+  },
   check: (_y, p) => {
     const base = p['base']
     if (!(typeof base === 'string' && (BASES as readonly string[]).includes(base)))

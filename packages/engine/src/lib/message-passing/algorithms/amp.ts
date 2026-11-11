@@ -36,6 +36,7 @@ import {
   stateToJson,
 } from '../../trace/index.ts'
 import { assertDamping } from '../core/_messages.ts'
+import { ParameterError } from '../core/errors.ts'
 import type { MpSnapshot } from '../engine/state.ts'
 
 /** The prior of every entry of x: a Gaussian of mean zero, or a Bernoulli-Gaussian (zero, or a Gaussian, with a given probability). */
@@ -44,9 +45,9 @@ export type AmpPrior =
   | { readonly kind: 'bernoulli-gaussian'; readonly sparsity: number; readonly variance: number }
 
 function checkPrior(prior: AmpPrior): void {
-  if (!(prior.variance > 0)) throw new OmaiError('value', 'AMP: the prior variance must be positive')
+  if (!(prior.variance > 0)) throw new ParameterError('AMP: the prior variance must be positive')
   if (prior.kind === 'bernoulli-gaussian' && !(prior.sparsity > 0 && prior.sparsity <= 1))
-    throw new OmaiError('value', 'AMP: the sparsity must be in (0, 1]')
+    throw new ParameterError('AMP: the sparsity must be in (0, 1]')
 }
 
 const GL16 = ((): { readonly x: readonly number[]; readonly w: readonly number[] } => {
@@ -77,7 +78,7 @@ const priorSecondMoment = (prior: AmpPrior): number =>
  */
 export function ampDenoiser(prior: AmpPrior, r: number, tau2: number): { mean: number; derivative: number } {
   checkPrior(prior)
-  if (!(tau2 > 0)) throw new OmaiError('value', 'AMP: the noise variance must be positive')
+  if (!(tau2 > 0)) throw new ParameterError('AMP: the noise variance must be positive')
   const gain = prior.variance / (prior.variance + tau2)
   if (prior.kind === 'gaussian') return { mean: gain * r, derivative: gain }
   // The posterior probability that the entry is nonzero, from the odds of the two components of the marginal of r.
@@ -159,8 +160,8 @@ export function ampMmse(prior: AmpPrior, tau2: number): number {
  * ```
  */
 export function ampStateEvolution(prior: AmpPrior, delta: number, noiseVariance: number, iterations: number): number[] {
-  if (!(delta > 0)) throw new OmaiError('value', 'AMP: delta must be positive')
-  if (!(noiseVariance >= 0)) throw new OmaiError('value', 'AMP: the noise variance must not be negative')
+  if (!(delta > 0)) throw new ParameterError('AMP: delta must be positive')
+  if (!(noiseVariance >= 0)) throw new ParameterError('AMP: the noise variance must not be negative')
   const out = [noiseVariance + priorSecondMoment(prior) / delta]
   for (let t = 0; t < iterations; t++) out.push(noiseVariance + ampMmse(prior, out[t] as number) / delta)
   return out

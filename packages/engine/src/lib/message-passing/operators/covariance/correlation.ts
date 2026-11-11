@@ -4,19 +4,19 @@
  * correlation `rho = 2 u - 1` for a beta variable `u` (a uniform correlation is `Beta(1, 1)`, the LKJ prior of a 2 by 2 matrix with
  * concentration `eta` is `Beta(eta, eta)`). The vector and the mean are Gaussian (or observed), integrated out in closed form given
  * the three; expectation propagation matches the gammas and the beta to the moments of a panelled three-dimensional grid over their
- * coordinates (`_gridn.ts`: the log of each precision, the logit of `u`), and the Gaussians to the mixture of their conditionals over
+ * coordinates (`_grid.ts`: the log of each precision, the logit of `u`), and the Gaussians to the mixture of their conditionals over
  * it. A known precision or correlation is a single node of its axis, so a Gaussian with known standard deviations and an unknown
  * correlation is a one-dimensional integral.
  */
 
-import { OmaiError } from '../../../base/index.ts'
 import { arg, evidenceOrNaN } from '../../core/_messages.ts'
-import { ImproperMessageError, siteMessage } from '../../core/args.ts'
+import { siteMessage } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { beta, gamma } from '../../core/families.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
+import { param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
-import { type GridAxis, gammaAxis, pointAxis } from '../../numerics/_grid.ts'
-import { betaAxis, integrateAxes } from '../../numerics/_gridn.ts'
+import { betaAxis, type GridAxis, gammaAxis, integrateAxes, pointAxis } from '../../numerics/_grid.ts'
 import { softplusOf } from '../../numerics/_scalar.ts'
 import { evaluatorOf, gaussianSide, type Rows, rowsOf } from './_sides.ts'
 
@@ -25,10 +25,10 @@ function axisOfPort(a: Arg, kind: 'precision' | 'correlation'): GridAxis {
   if (a.value !== undefined) {
     const v = typeof a.value === 'number' ? a.value : Number.NaN
     if (kind === 'precision') {
-      if (!(v > 0)) throw new OmaiError('value', 'mvn-sd-corr: a known precision is positive')
+      if (!(v > 0)) throw new ParameterError('mvn-sd-corr: a known precision is positive')
       return pointAxis(Math.log(v))
     }
-    if (!(v > -1 && v < 1)) throw new OmaiError('value', 'mvn-sd-corr: a known correlation is in (-1, 1)')
+    if (!(v > -1 && v < 1)) throw new ParameterError('mvn-sd-corr: a known correlation is in (-1, 1)')
     const u = (v + 1) / 2
     return pointAxis(Math.log(u / (1 - u)))
   }
@@ -110,6 +110,7 @@ export const mvnSdCorr: FactorOperator = {
     { name: 'precision 2', accepts: ['gamma'], constant: true },
     { name: 'correlation', accepts: ['beta'], constant: true },
   ],
+  params: { count: param.number({ min: 1, optional: true }), scatter: param.vector({ optional: true }) },
   support: { ep: 'numeric' },
   readsTarget: (to) => to >= 2,
   noRule: { vmp: 'the expected log density of a correlation that is a beta variable has no closed form' },

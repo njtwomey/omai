@@ -8,8 +8,10 @@
 
 import { dgemm, dgemv } from '../../../numerics/linalg/index.ts'
 import { arg } from '../../core/_messages.ts'
-import { etaOf, ImproperMessageError, vectorParam } from '../../core/args.ts'
+import { etaOf, vectorParam } from '../../core/args.ts'
+import { ImproperMessageError } from '../../core/errors.ts'
 import { gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
+import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { spd } from '../../numerics/_dense.ts'
 
@@ -65,6 +67,7 @@ export const gaussianTransition: FactorOperator = {
     { name: 'x', accepts: ['gaussian-mv'] },
     { name: 'w', accepts: ['gaussian-mv'] },
   ],
+  params: { matrix: param.vector(), covariance: param.vector(), offset: param.vector({ optional: true }) },
   support: { ep: 'exact', vmp: 'exact' },
   check: (params, families) => {
     const rows = families[0]?.dim ?? 0

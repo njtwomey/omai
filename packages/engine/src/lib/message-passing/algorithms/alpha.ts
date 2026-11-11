@@ -13,9 +13,9 @@
  * @index module Alpha-divergence message passing: the alpha slot of the engine, as an algorithm and a method.
  */
 
-import { OmaiError } from '../../base/index.ts'
 import { dict, real } from '../../space/index.ts'
 import { type Algorithm, type Config, defineMethod, type Method } from '../../trace/index.ts'
+import { ParameterError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import { takesPower } from '../core/types.ts'
 import type { Projection } from '../engine/projections.ts'
@@ -61,7 +61,7 @@ export const alphaEpDefaults: Required<Omit<MessagePassingOptions, 'order' | 'in
  * ```
  */
 export function alphaProjection(alpha: number): Projection {
-  if (!(alpha > 0 && alpha <= 1)) throw new OmaiError('value', `alpha: alpha must be in (0, 1], got ${alpha}`)
+  if (!(alpha > 0 && alpha <= 1)) throw new ParameterError(`alpha: alpha must be in (0, 1], got ${alpha}`)
   return {
     name: `alpha(${alpha})`,
     hook: 'ep',
@@ -111,16 +111,12 @@ export function alphaEpAlgorithm(g: CompiledGraph, options: AlphaEpOptions = {})
   const projection = alphaProjection(alpha)
   for (const f of g.factors) {
     if (f.power !== 1)
-      throw new OmaiError(
-        'value',
+      throw new ParameterError(
         `alpha: ${f.id} has a power of its own; alpha-divergence updates take factors of power 1`,
       )
   }
   if (alpha !== 1 && !g.factors.some((f) => takesPower(f.operator, f.params)))
-    throw new OmaiError(
-      'value',
-      'alpha: no factor of the graph supports a power, so there is nothing to project by alpha',
-    )
+    throw new ParameterError('alpha: no factor of the graph supports a power, so there is nothing to project by alpha')
   const alg = messagePassingAlgorithm(g, messagePassingSettings(projection, epDefaults, options))
   return { ...alg, name: 'alpha-ep' } as Algorithm<MpState, EpPath>
 }

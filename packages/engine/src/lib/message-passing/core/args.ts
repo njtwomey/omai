@@ -4,17 +4,9 @@
  * operator throws when a message it needs has no density. The operators of the other files are built from these.
  */
 
-import { OmaiError } from '../../base/index.ts'
 import { spd } from '../numerics/_dense.ts'
+import { ImproperMessageError, ParameterError } from './errors.ts'
 import type { Arg, Eta, Family, Observed, Params } from './types.ts'
-
-/** Thrown by an operator that cannot form a message because a quantity it needs is improper; the engine counts it and repairs. */
-export class ImproperMessageError extends OmaiError {
-  constructor(message: string) {
-    super('value', message)
-    this.name = 'ImproperMessageError'
-  }
-}
 
 /**
  * The precision a flat Gaussian cavity is shown as to an operator that `needsDensity` (variance 1e6): wide enough that the other
@@ -60,21 +52,21 @@ export const isObserved = (a: Arg): boolean => a.value !== undefined
 
 /** The message of an argument that has one. */
 export function etaOf(a: Arg): Eta {
-  if (a.eta === undefined) throw new OmaiError('value', 'operator: expected a message, the argument is observed')
+  if (a.eta === undefined) throw new ParameterError('operator: expected a message, the argument is observed')
   return a.eta
 }
 
 /** The scalar value of an observed argument. */
 export function scalarOf(a: Arg): number {
   const v = a.value
-  if (typeof v !== 'number') throw new OmaiError('value', 'operator: expected an observed number')
+  if (typeof v !== 'number') throw new ParameterError('operator: expected an observed number')
   return v
 }
 
 /** The vector value of an observed argument. */
 export function vectorOf(a: Arg): readonly number[] {
   const v = a.value
-  if (v === undefined || typeof v === 'number') throw new OmaiError('value', 'operator: expected an observed vector')
+  if (v === undefined || typeof v === 'number') throw new ParameterError('operator: expected an observed vector')
   return v
 }
 
@@ -106,14 +98,14 @@ export function numberParam(params: Params, name: string, fallback?: number): nu
   const v = params[name]
   if (typeof v === 'number') return v
   if (v === undefined && fallback !== undefined) return fallback
-  throw new OmaiError('value', `operator: the parameter ${name} must be a number`)
+  throw new ParameterError(`operator: the parameter ${name} must be a number`)
 }
 
 /** A vector parameter. */
 export function vectorParam(params: Params, name: string): readonly number[] {
   const v = params[name]
   if (Array.isArray(v) && v.every((x) => typeof x === 'number')) return v as readonly number[]
-  throw new OmaiError('value', `operator: the parameter ${name} must be an array of numbers`)
+  throw new ParameterError(`operator: the parameter ${name} must be an array of numbers`)
 }
 
 /** The Gaussian message of a given mean and variance; the variance must be positive. */

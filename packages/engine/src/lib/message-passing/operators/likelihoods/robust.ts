@@ -12,6 +12,7 @@
  */
 
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, vectorParam } from '../../core/args.ts'
+import { param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 import { glmRow } from '../lifts/rows.ts'
@@ -89,6 +90,7 @@ export const mixtureSite: FactorOperator = {
   name: 'mixture-site',
   description: 'f(x) = sum_i pi_i N(x; mu_i, s_i^2): a mixture of Gaussians in one variable',
   ports: [{ name: 'x', accepts: ['gaussian'] }],
+  params: { weights: param.vector(), means: param.vector(), sds: param.vector() },
   support: { ep: 'exact', vmp: 'numeric' },
   readsTarget: true,
   needsDensity: true,
