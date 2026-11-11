@@ -33,8 +33,14 @@ describe('ep-program-cox: a log-Gaussian Cox process', () => {
   }, 120_000)
 })
 
-/** Mean over steps of the largest gap between EP's and Gibbs's probability of a regime. */
-function regimeGap(seed: number): { gap: number; accuracy: number; converged: boolean } {
+/** Mean over steps of the largest gap between EP's and Gibbs's probability of a regime, and the smallest ratio of EP's rate sd to Gibbs's. */
+function regimeGap(seed: number): {
+  gap: number
+  accuracy: number
+  converged: boolean
+  status: string
+  sdRatio: number
+} {
   const sim = simulateChange(seed)
   const ep = inferChange(sim.y, sim.stay)
   const gibbs = gibbsReference(sim.y, sim.stay)
@@ -44,7 +50,8 @@ function regimeGap(seed: number): { gap: number; accuracy: number; converged: bo
       0,
     ) / ep.regimes.length
   const accuracy = ep.regimes.filter((p, t) => p.indexOf(Math.max(...p)) === sim.z[t]).length / ep.regimes.length
-  return { gap, accuracy, converged: ep.run.status === 'converged' }
+  const sdRatio = Math.min(...ep.rates.map((r, k) => r.sd / (gibbs.rateSd[k] as number)))
+  return { gap, accuracy, converged: ep.run.status === 'converged', status: String(ep.run.status), sdRatio }
 }
 
 describe('ep-program-changepoint: a Poisson rate that switches between three regimes, rates unknown', () => {
@@ -57,8 +64,20 @@ describe('ep-program-changepoint: a Poisson rate that switches between three reg
     }
   }, 60_000)
 
-  it('is poor, and says so, when a regime is not visited (seeds 2, 5, 8): EP commits to one reading where Gibbs is spread (flip this when EP improves)', () => {
-    for (const seed of [2, 5, 8]) expect(regimeGap(seed).gap, `seed ${seed}`).toBeGreaterThan(0.1)
+  it('is poor, and says so, when a regime is not visited (seeds 2, 5, 8): EP commits to one reading where Gibbs is spread, and no variant of the engine changes that', () => {
+    // Plain EP, with its default damped restart. Measured against Gibbs: the mean regime-probability gap is 0.2 to 0.3 and the
+    // rate sds of the barely visited regimes are 0.05 to 0.3 of the sampler's. Power EP and alpha-divergence (on a gate of
+    // Poisson branches, the one form of this model they apply to), damping and the improper-message policies do not restore
+    // them (see docs/probprog/ep-plan.md section 9), so this is held as the limit of plain EP, to be flipped when that changes.
+    for (const seed of [2, 5, 8]) {
+      const r = regimeGap(seed)
+      expect(r.gap, `seed ${seed}`).toBeGreaterThan(0.1)
+      expect(r.sdRatio, `seed ${seed}: the narrowest rate sd against Gibbs`).toBeLessThan(0.4)
+    }
+  }, 60_000)
+
+  it('does not report a success it did not reach: seed 8 does not converge, and says so', () => {
+    expect(regimeGap(8).status).not.toBe('converged')
   }, 60_000)
 })
 
