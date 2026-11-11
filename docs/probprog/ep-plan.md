@@ -542,3 +542,62 @@ What remains: the explicit `gate` family with different likelihood families per 
 the model layer), the weights `pi` as a site, a random concentration on the stick-breaking breaks and components with unknown means in the
 Dirichlet-process mixture, a random transition matrix or non-square readings in the vector-state scan, and the four atoms planned on other
 work packages (`laplace-learned`, `prior-beta-two-shapes`, `clutter-mixture-learned`, `spike-and-slab-marginal-learned`).
+
+## 16. WP-G: the two-variable numeric site, the multiclass site, the ordinal and quantile distributions (2026-11-11, `agent-pp131-rules`)
+
+**The two-variable numeric site (`message-passing/operators/pairs.ts`, `_grid.ts`).** One operator, `likelihood-pair`, reads a row of a
+registry of densities `p(y | x0, x1)` over two random scalars: `laplace-scale`, `asymmetric-laplace-scale`, `student-t-df` (known scale),
+`weibull-shape` and `beta-shapes` (a beta outcome with two random shapes). A coordinate is a real value or a positive one that is a
+Gaussian on its log (log-normal, half-normal, half-Cauchy and uniform priors, which the compiler already carries on the log) or a gamma
+variable (integrated in its log, the density in that coordinate carries the Jacobian), and the message to a gamma port is matched on
+`E log x` and `E x`. The integral is a panelled Gauss-Legendre grid in both coordinates (`_grid.ts`: coarse passes that find the window from
+the marginal weights, a fine pass over it; panels split at the kinks of the density and graded towards them, which a Laplace needs; a
+density may give a column form so what depends on the second coordinate alone is computed once per node). About 4,000 evaluations per
+message once the window is found. Tested against a brute-force midpoint integral of both cavities (`operators/pairs.test.ts`): moments of
+both ports and the log evidence within 2e-4 for the narrow and gamma cases, 5e-4 for a location cavity much wider than the likelihood. A
+beta variable with two random shapes is `beta-two-shapes` (`operators/concentration.ts`), the two-dimensional version of
+`dirichlet-concentration` on the same grid: the conjugate integral `B(a + e1, b + e2) / B(a, b)` against the two shape cavities,
+messages to `p` matched on `E log p` and `E log (1 - p)`; tested against a triple brute-force integral.
+
+*Compiler (`factors.ts`, `observedPair`, `positivePort`).* `laplace(mu, scale)`, `asymmetricLaplace(mu, scale, tau)` and `studentT(df, mu, s)`
+with a random scale or df, `weibull(shape, exp(affine))` with a random shape and `beta(a, b)` observed map to `likelihood-pair`; a random
+positive parameter must be a gamma or exponential latent, a positive latent carried on its log, or `exp` of an affine value, else the
+refusal says so. A latent `beta(a, b)` with two different random shapes (each exactly a gamma or log-normal latent) maps to `beta-two-shapes`.
+Model tests against exact grids (`probprog/model/pair-factors.test.ts`): Laplace scale, Student-t df and Weibull shape within 0.2 reference
+sds and spreads 0.8 to 1.2; the latent beta with two shapes: `p` within 0.01 of the exact mean. Beta outcomes with two shapes keep
+the means but their spreads are 0.65 to 0.8 of the exact ones: the two shapes are strongly correlated and one Gaussian each cannot hold that
+(gap `loopy-overconfidence`).
+
+*Atoms.* `laplace-learned` (mean z 0.005 and 0.05, sd ratios 1.02 and 0.93; 40 seeds: coverage 0.93 and 0.97), `prior-beta-two-shapes` (p
+0.66717 against 0.66710, sd ratio 1.001; the shapes within 0.004 sd), and the new `student-t-df-learned` (gamma df prior; sd ratios 1.0 and
+0.94; the prior and the truth chosen so the exact posterior covers 0.96, EP the same) and `weibull-shape-learned` (sd ratios 0.95, 0.975;
+coverage 1.00 and 0.95 over 20 seeds). Closed gaps: `laplace-random-scale`, `two-random-shapes`, `learned-df`.
+
+**The multiclass site (`operators/multiclass.ts`).** `multiclass-site`: a categorical outcome whose probabilities are a softmax (or the
+multinomial probit) of K Gaussian class scores, one port per class. The tilted mean and variance of every free score is a K-dimensional
+integral against the product of the cavities, found by adaptive Gauss-Hermite with a full-covariance proposal (the cavity, then the Gaussian
+of the tilted moments, up to three rounds, stopped when the moments settle), 8 nodes per score for K = 3 and up to six free scores; the
+integral of a sweep is shared by the K ports and the evidence (one memoised slot). Tested against brute-force integrals for the logit (three
+classes, wide cavities, two classes, an observed score) and the probit (three classes within 1.5e-2, grid-limited; two classes within 4e-3).
+*Model layer:* `categorical({ logits }, { over: cls })` takes the class axis as a named event dimension (`DistSpec.eventDims`, honoured by
+the checker and by the program form, which lays it out as the last axis) and `categoricalProbit(scores, { over })` is the probit family; the compiler
+makes one `multiclass-site` per observation on the K scores. Model tests (`multiclass-factors.test.ts`): a softmax and a probit classifier with
+one slope per class against exact three-dimensional grids: means within 0.06 of an exact sd, spreads 0.78 to 0.86 (the three slopes share every
+observation). Atoms `softmax-regression` and `softmax-regression-learned` (24 points: spreads 0.55 to 0.8 of the exact, coverage 1.0, 0.94 and 1.0
+over 16 seeds; the sweeps converge slowly, so `tol: 1e-4`). Gap `softmax` became `softmax-many-classes` (more than six classes, a multiclass GP).
+
+**Ordinal probit, ordered logistic, the asymmetric Laplace and the draw margin.** Model-layer families `orderedProbit`, `orderedLogistic`
+(the library's own distributions, whose fixtures exist) and `asymmetricLaplace`: a new library distribution
+(`dists/continuous/heavy-tailed.ts`, scipy `laplace_asymmetric` fixtures for three quantile levels, in the golden, contract and sampling
+tests), all mapped to the registry rows (`ordinal-probit`, the new `ordinal-logit`, `asymmetric-laplace`); known cut points only (random ones are
+refused with the reason). Model tests against exact grids (`ordinal-quantile-factors.test.ts`). Atoms `ordinal-probit(-learned)`, `quantile-regression(-learned)`
+(an explicit grid box, since the Laplace fit of a kinked density finds no curvature: EP equals the exact posterior to three digits on 20 seeds,
+which itself covers the slope only 0.85 of the time, so the recovery floor is 0.65) and `skill-draws(-learned)`: the TrueSkill draw margin comes out
+naturally as an ordinal probit of the skill difference with cut points `-m/sqrt 2, m/sqrt 2` (EP within 0.1% of the exact posterior on the
+tree-like three-player graph, spreads 0.83 to 0.95 in the plated form). Gap `ordinal-asymmetric` became `ordinal-random-cuts` (random cut points, a
+Student-t with random df and scale: a third axis of the grid).
+
+**Coverage:** atoms 84 of 86 run (72 of 76 at the merge with main; this package added ten atoms and flipped two); benchmarks 27 of 27. The EP log
+evidence against the grid evidence of the same model on the new atoms: beta two shapes 2e-5, ordinal 0.002, Student-t df 0.006, Weibull shape 0.036,
+quantile 0.07 and 0.02, draws 0.12 (loops), softmax 0.30 (loops).
+

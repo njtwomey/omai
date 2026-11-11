@@ -84,6 +84,11 @@ export type ExprSpec =
 export interface DistSpec {
   readonly family: string
   readonly params: { readonly [name: string]: ExprSpec }
+  /**
+   * Dimensions of the parameters that are axes of the event, not plates (the class axis of the logits of a categorical): the
+   * observation has no element per entry of them.
+   */
+  readonly eventDims?: readonly string[]
 }
 
 /**

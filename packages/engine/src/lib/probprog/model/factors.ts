@@ -109,6 +109,7 @@ import {
   type MpState,
   marginalsOf,
   normalGammaPrior,
+  pairLikelihoods,
   priorFactor,
   projectedPrior,
   projectionOf,
@@ -2562,6 +2563,22 @@ class Compiler {
       const random = parts.filter((p) => p.variable !== undefined)
       const variable = random[0]?.variable
       const log = random[0]?.log === true
+      // Two separate random shapes, each exactly a gamma or log-normal latent: the two-dimensional rule.
+      const [pa, pb] = comps
+      if (
+        isBeta &&
+        pa?.variable !== undefined &&
+        pb?.variable !== undefined &&
+        pa.variable !== pb.variable &&
+        [pa, pb].every((q) => q.weight === 1 && q.offset === 0)
+      ) {
+        this.need('beta-two-shapes')
+        const name = this.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'beta' } })
+        this.addFactor({ operator: 'beta-two-shapes', args: [name, pa.variable, pb.variable] }, name)
+        cells.push({ kind: 'rv', variable: name, family: 'beta' })
+        vars.push(name)
+        continue
+      }
       if (variable === undefined || random.some((p) => p.variable !== variable || (p.log === true) !== log))
         throw new Refusal(
           'operator',
@@ -3164,6 +3181,19 @@ class Compiler {
       case 'laplace':
       case 'normalOutliers':
         return this.observedHeavy(node, fam, y, i, index)
+      case 'beta':
+        return this.observedPair(node, 'beta-shapes', y, i, index)
+      case 'orderedProbit':
+      case 'orderedLogistic':
+      case 'asymmetricLaplace': {
+        const numeric = this.observedNumeric(node, fam, y, i, index)
+        if (numeric === undefined)
+          throw new Refusal(
+            'operator',
+            `the parameters of '${node.name}' (${fam}) are not in a form with a message rule`,
+          )
+        return numeric
+      }
       case 'logNormal':
         // log y is Gaussian around the predictor: the exact Gaussian rule on the log of the outcome.
         if (!(y > 0)) throw new Refusal('data', `'${node.name}' is log-normal: the outcome ${y} must be positive`)
@@ -3176,7 +3206,11 @@ class Compiler {
         return numeric !== undefined ? numeric : this.observedConjugate(node, fam, name, y, i)
       }
       case 'categorical':
+        if (node.dist.params['logits'] !== undefined)
+          return this.observedMulticlass(node, y, i, index, 'logits', 'logit')
         return this.observedConjugate(node, fam, name, y, i)
+      case 'categoricalProbit':
+        return this.observedMulticlass(node, y, i, index, 'scores', 'probit')
       case 'zeroTruncatedPoisson': {
         const numeric = this.observedNumeric(node, fam, y, i, index)
         if (numeric === undefined)
@@ -3209,7 +3243,7 @@ class Compiler {
       default:
         throw new Refusal(
           'family',
-          `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, normalOutliers, bernoulli, binomial, poisson, normalPair, exponential, gamma, geometric, negativeBinomial, weibull and categorical`,
+          `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, asymmetricLaplace, orderedProbit, orderedLogistic, categoricalProbit, normalOutliers, bernoulli, binomial, poisson, normalPair, exponential, gamma, geometric, negativeBinomial, weibull and categorical`,
         )
     }
   }
@@ -3427,9 +3461,29 @@ class Compiler {
         n: known('n', 'number of trials'),
       })
     }
+    if (fam === 'orderedProbit' || fam === 'orderedLogistic') {
+      const cutsExpr = dist['cutpoints'] as ExprSpec
+      if (!this.isConst(cutsExpr))
+        throw new Refusal(
+          'operator',
+          `the cut points of '${node.name}' are random: the ordinal likelihoods have a message rule for known cut points only`,
+        )
+      const cuts = Array.from(toFlat(this.evalNamed(cutsExpr).value))
+      return emit(fam === 'orderedProbit' ? 'ordinal-probit' : 'ordinal-logit', dist['predictor'] as ExprSpec, { cuts })
+    }
+    if (fam === 'asymmetricLaplace') {
+      if (!isConstCell(this.paramCell(node, 'scale', i)))
+        return this.observedPair(node, 'asymmetric-laplace-scale', y, i, index)
+      return emit('asymmetric-laplace', dist['loc'] as ExprSpec, {
+        scale: known('scale', 'scale'),
+        tau: known('tau', 'quantile level'),
+      })
+    }
     if (fam === 'weibull') {
       const m = dist['scale'] === undefined ? undefined : this.scaledExp(dist['scale'])
       if (m === undefined || m.scale !== undefined) return undefined
+      if (!isConstCell(this.paramCell(node, 'concentration', i)))
+        return this.observedPair(node, 'weibull-shape', y, i, index)
       return emit('weibull-log', m.inner, { shape: known('concentration', 'shape') })
     }
     if (fam === 'negativeBinomial') {
@@ -3453,6 +3507,147 @@ class Compiler {
       return emit('negative-binomial-log', m.inner, { dispersion: 1 / r, exposure: (r * K) / A })
     }
     return undefined
+  }
+
+  /**
+   * A categorical outcome whose class scores are affine forms of Gaussian variables over one extra dimension (the classes): a
+   * `logits` expression `X W` with `W` over (feature, class) for the softmax, or `scores` for the multinomial probit. One
+   * `multiclass-site` factor per observation on the `K` scores (each a Gaussian variable, or a known value). The outcome is a
+   * parameter of the factor.
+   */
+  private observedMulticlass(
+    node: ModelNode & { readonly kind: 'observed' },
+    y: number,
+    i: number,
+    index: number | undefined,
+    param: string,
+    link: 'logit' | 'probit',
+  ): string | null {
+    const key = `${node.name}|${param}`
+    let cells = this.cells.get(key)
+    if (cells === undefined) {
+      const sym = this.evalSym(node.dist.params[param] as ExprSpec)
+      const extra = sym.dims.filter((dim) => (node.dist.eventDims ?? []).includes(dim))
+      if (extra.length !== 1)
+        throw new Refusal(
+          'structure',
+          `the ${param} of '${node.name}' must carry the class dimension declared by \`over\` (categorical(..., { over })), it has [${sym.dims}]`,
+        )
+      cells = this.over(sym, [...node.dims, extra[0] as string])
+      this.cells.set(key, cells)
+    }
+    const classes = cells.length / Math.max(1, prod(this.shapeOf(node.dims)))
+    if (!(Number.isInteger(y) && y >= 0 && y < classes))
+      throw new Refusal('data', `'${node.name}': the class ${y} is outside 0 to ${classes - 1}`)
+    const args = Array.from({ length: classes }, (_, k) => {
+      const cell = cells?.[i * classes + k] as Cell
+      if (isConstCell(cell)) return { const: cell.aff.offset }
+      return this.materialise(affOf(cell), node.name, index) as string
+    })
+    if (args.every((a) => typeof a !== 'string')) return null
+    this.addFactor(
+      { operator: 'multiclass-site', args, params: { y, classes, link } },
+      this.elementName(node.name, node.dims, i),
+    )
+    return null
+  }
+
+  /**
+   * A positive random parameter of an observed node as one port of a `likelihood-pair` factor, in the coordinate the rule reads
+   * (the log of the value): a gamma variable (its own variable), a positive latent carried on its log (a log-normal, half-normal or
+   * half-Cauchy prior: the log variable), or `exp(affine)` (a Gaussian variable made of the affine form). A known value is the
+   * constant coordinate `log value`.
+   */
+  private positivePort(
+    node: ModelNode & { readonly kind: 'observed' },
+    key: string,
+    i: number,
+    index: number | undefined,
+  ): string | { readonly const: number } {
+    const expr = node.dist.params[key]
+    const e = expr === undefined ? undefined : this.stripClip(expr)
+    if (e?.kind === 'op' && e.op === 'exp') {
+      const cell = this.cellsOf(node, `${key}:log`, () => this.evalSym(e.args[0] as ExprSpec))[i] as Cell
+      if (cell.kind === 'aff') {
+        const m = this.materialise(cell.aff, node.name, index)
+        return typeof m === 'string' ? m : { const: m }
+      }
+    }
+    const c = this.paramCell(node, key, i)
+    if (isConstCell(c)) {
+      if (!(c.aff.offset > 0))
+        throw new Refusal('data', `the ${key} of '${node.name}' is ${c.aff.offset}: it must be positive`)
+      return { const: Math.log(c.aff.offset) }
+    }
+    if (c.kind === 'rv' && c.family === 'gamma') return c.variable
+    if (c.kind === 'aff' && c.aff.offset === 0 && c.aff.terms.size === 1) {
+      const only = [...c.aff.terms][0] as [string, number]
+      const atom = only[1] === 1 ? this.atoms.get(only[0]) : undefined
+      const logVar = atom?.kind === 'var' ? this.logScale.get(atom.name) : undefined
+      if (logVar !== undefined) return logVar
+    }
+    throw new Refusal(
+      'operator',
+      `the ${key} of '${node.name}' is random but not a gamma or exponential latent, a positive latent carried on its log (a half-normal, half-Cauchy, log-normal or uniform prior) or exp of an affine value: the likelihood-pair factor needs one of those`,
+    )
+  }
+
+  /**
+   * A numeric likelihood over two random scalars (`likelihood-pair`): a Laplace with a random scale, a Student-t with random
+   * degrees of freedom (known scale), a Weibull with a random shape (`scale = exp(affine)`) and a beta outcome with two random
+   * shapes. The outcome is a parameter of the factor. A parameter that is known is a constant coordinate; nothing random at
+   * all says nothing.
+   */
+  private observedPair(
+    node: ModelNode & { readonly kind: 'observed' },
+    likelihood: string,
+    y: number,
+    i: number,
+    index: number | undefined,
+  ): string | null {
+    const extra: Record<string, Json> = {}
+    const predictor = (cell: Cell): string | { readonly const: number } => {
+      if (isConstCell(cell)) return { const: cell.aff.offset }
+      return this.materialise(affOf(cell), node.name, index) as string
+    }
+    let args: [string | { readonly const: number }, string | { readonly const: number }]
+    if (likelihood === 'laplace-scale' || likelihood === 'asymmetric-laplace-scale') {
+      if (likelihood === 'asymmetric-laplace-scale') {
+        const tau = this.paramCell(node, 'tau', i)
+        if (!isConstCell(tau))
+          throw new Refusal('operator', `the quantile level of '${node.name}' is random: it must be known`)
+        extra['tau'] = tau.aff.offset
+      }
+      args = [predictor(this.paramCell(node, 'loc', i)), this.positivePort(node, 'scale', i, index)]
+    } else if (likelihood === 'student-t-df') {
+      const scale = this.paramCell(node, 'scale', i)
+      if (!isConstCell(scale))
+        throw new Refusal(
+          'operator',
+          `the degrees of freedom and the scale of '${node.name}' are both random: the likelihood-pair factor takes one random scale or shape beside the location`,
+        )
+      extra['scale'] = scale.aff.offset
+      args = [predictor(this.paramCell(node, 'loc', i)), this.positivePort(node, 'df', i, index)]
+    } else if (likelihood === 'weibull-shape') {
+      const m = node.dist.params['scale'] === undefined ? undefined : this.scaledExp(node.dist.params['scale'])
+      if (m === undefined || m.scale !== undefined)
+        throw new Refusal(
+          'operator',
+          `the scale of '${node.name}' is not exp of an affine value: the Weibull with a random shape needs the log link`,
+        )
+      args = [
+        predictor(this.cellsOf(node, 'predictor', () => this.evalSym(m.inner))[i] as Cell),
+        this.positivePort(node, 'concentration', i, index),
+      ]
+    } else {
+      args = [this.positivePort(node, 'a', i, index), this.positivePort(node, 'b', i, index)]
+    }
+    const params: Record<string, Json> = { likelihood, y, ...extra }
+    const why = pairLikelihoods()[likelihood]?.check?.(y, params)
+    if (why !== undefined) throw new Refusal('data', `'${node.name}' (${likelihood}): ${why}`)
+    if (typeof args[0] !== 'string' && typeof args[1] !== 'string') return null
+    this.addFactor({ operator: 'likelihood-pair', args, params }, this.elementName(node.name, node.dims, i))
+    return null
   }
 
   /** An observed Gaussian with a known scale around an affine mean, named by the node's parameters (`loc`/`scale`, or a log-normal's `mu`/`sigma`). */
@@ -3514,6 +3709,10 @@ class Compiler {
         )
       return c.aff.offset
     }
+    if (fam === 'laplace' && !isConstCell(this.paramCell(node, 'scale', i)))
+      return this.observedPair(node, 'laplace-scale', y, i, index)
+    if (fam === 'studentT' && !isConstCell(this.paramCell(node, 'df', i)))
+      return this.observedPair(node, 'student-t-df', y, i, index)
     const scale = known('scale')
     if (!(scale > 0)) throw new Refusal('data', `the scale of '${node.name}' is ${scale}: it must be positive`)
     let params: Record<string, Json>

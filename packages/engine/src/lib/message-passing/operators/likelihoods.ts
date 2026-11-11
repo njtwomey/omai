@@ -2,7 +2,7 @@
  * The generic numeric likelihood of a Gaussian linear predictor: a registry of log densities `log p(y | u)` of an outcome `y`
  * given the predictor `u` (the inverse link already inside), and the operators built from it. One implementation serves
  * many likelihoods: a rule is a row of the table (`poisson-log`, `poisson-log-truncated`, `negative-binomial-log`, `weibull-log`, `log-normal`,
- * `binomial-logit`, `binomial-probit`, `ordinal-probit`, `asymmetric-laplace`, `student-t`, `laplace`), and the operator
+ * `binomial-logit`, `binomial-probit`, `ordinal-probit`, `ordinal-logit`, `asymmetric-laplace`, `student-t`, `laplace`), and the operator
  * `likelihood-site` (a scalar predictor) or `likelihood-row` (one row of a regression on a weight vector) reads which one
  * from its parameters. EP matches the moments of the Gaussian cavity of the predictor times the density by the panelled
  * quadrature of `_tilted.ts`, laid where the density lives (its entry says where) and zoomed onto where the mass is found, so
@@ -256,34 +256,64 @@ const binomialProbit: Likelihood = {
   },
 }
 
+/** The cut points around category `y` from the parameters, with the checks: the lower and upper cut (infinite at the ends). */
+function ordinalCuts(y: number, p: Params): { readonly lower: number; readonly upper: number } {
+  const cuts = vectorParam(p, 'cuts')
+  return {
+    lower: y === 0 ? Number.NEGATIVE_INFINITY : (cuts[y - 1] as number),
+    upper: y === cuts.length ? Number.POSITIVE_INFINITY : (cuts[y] as number),
+  }
+}
+
+const ordinalCheck = (y: number, p: Params): string | undefined => {
+  const cuts = vectorParam(p, 'cuts')
+  if (!(Number.isInteger(y) && y >= 0 && y <= cuts.length))
+    return 'the category must be an integer from 0 to the number of cuts'
+  return cuts.every((c, i) => i === 0 || c > (cuts[i - 1] as number)) ? undefined : 'the cut points must increase'
+}
+
+const ordinalLocate = (y: number, p: Params): WindowHint => {
+  const cuts = vectorParam(p, 'cuts')
+  const lower = y === 0 ? (cuts[0] as number) - 1 : (cuts[y - 1] as number)
+  const upper = y === cuts.length ? (cuts[cuts.length - 1] as number) + 1 : (cuts[y] as number)
+  return { centre: (lower + upper) / 2, scale: 1 + (upper - lower) / 2, reach: 100 }
+}
+
 const ordinalProbit: Likelihood = {
   name: 'ordinal-probit',
   description:
     'y | u ~ ordinal probit with fixed cut points: P(y = k) = Phi(c_(k+1) - u) - Phi(c_k - u), the outcome a category 0 to K-1',
   params: ['cuts'],
-  check: (y, p) => {
-    const cuts = vectorParam(p, 'cuts')
-    if (!(Number.isInteger(y) && y >= 0 && y <= cuts.length))
-      return 'the category must be an integer from 0 to the number of cuts'
-    return cuts.every((c, i) => i === 0 || c > (cuts[i - 1] as number)) ? undefined : 'the cut points must increase'
-  },
+  check: ordinalCheck,
   density: (y, p) => {
-    const cuts = vectorParam(p, 'cuts')
-    const lower = y === 0 ? Number.NEGATIVE_INFINITY : (cuts[y - 1] as number)
-    const upper = y === cuts.length ? Number.POSITIVE_INFINITY : (cuts[y] as number)
+    const { lower, upper } = ordinalCuts(y, p)
     return (u) => logDiffPhi(lower - u, upper - u)
   },
-  locate: (y, p) => {
-    const cuts = vectorParam(p, 'cuts')
-    const lower = y === 0 ? (cuts[0] as number) - 1 : (cuts[y - 1] as number)
-    const upper = y === cuts.length ? (cuts[cuts.length - 1] as number) + 1 : (cuts[y] as number)
-    return { centre: (lower + upper) / 2, scale: 1 + (upper - lower) / 2, reach: 100 }
+  locate: ordinalLocate,
+}
+
+/** log (sigmoid(b) - sigmoid(a)) for a < b, stable at both ends: sigmoid(b) sigmoid(-a) (1 - exp(a - b)). */
+const logDiffSigmoid = (a: number, b: number): number =>
+  logSigmoid(b) +
+  logSigmoid(-a) +
+  (a === Number.NEGATIVE_INFINITY || b === Number.POSITIVE_INFINITY ? 0 : Math.log1p(-Math.exp(a - b)))
+
+const ordinalLogit: Likelihood = {
+  name: 'ordinal-logit',
+  description:
+    'y | u ~ ordinal logit (proportional odds) with fixed cut points: P(y = k) = sigmoid(c_(k+1) - u) - sigmoid(c_k - u), the outcome a category 0 to K-1',
+  params: ['cuts'],
+  check: ordinalCheck,
+  density: (y, p) => {
+    const { lower, upper } = ordinalCuts(y, p)
+    return (u) => logDiffSigmoid(lower - u, upper - u)
   },
+  locate: ordinalLocate,
 }
 
 /**
  * The registry of numeric likelihoods by name: `poisson-log`, `negative-binomial-log`, `weibull-log`, `log-normal`,
- * `binomial-logit`, `binomial-probit`, `ordinal-probit`, `asymmetric-laplace`, `student-t` and `laplace`. A new object each
+ * `binomial-logit`, `binomial-probit`, `ordinal-probit`, `ordinal-logit`, `asymmetric-laplace`, `student-t` and `laplace`. A new object each
  * call, so a caller may add a row of its own and build operators from it with {@link likelihoodOperators}.
  *
  * @returns The likelihoods, keyed by name.
@@ -306,6 +336,7 @@ export function likelihoods(): Record<string, Likelihood> {
     binomialLogit,
     binomialProbit,
     ordinalProbit,
+    ordinalLogit,
     asymmetricLaplace,
     studentT,
     laplace,

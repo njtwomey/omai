@@ -152,6 +152,27 @@ export function geometric(probs: Operand): DistExpr {
   return family('geometric', { probs })
 }
 
+/**
+ * The asymmetric Laplace distribution of quantile regression: `loc` is the `tau` quantile (`tau` in (0, 1), 1/2 the median) and
+ * `scale` the scale of the check-loss. `y ~ asymmetricLaplace(X w, scale, tau)` is Bayesian quantile regression.
+ */
+export function asymmetricLaplace(loc: Operand = 0, scale: Operand = 1, tau: Operand = 0.5): DistExpr {
+  return family('asymmetricLaplace', { loc, scale, tau })
+}
+
+/**
+ * An ordinal outcome 0 to K-1 by the cumulative probit: `P(y <= k) = Phi(cutpoints_k - predictor)` for the increasing `cutpoints`
+ * (K - 1 known values). `y ~ orderedProbit(X w, cuts)` is ordered probit regression.
+ */
+export function orderedProbit(predictor: Operand, cutpoints: Operand): DistExpr {
+  return family('orderedProbit', { predictor, cutpoints })
+}
+
+/** An ordinal outcome 0 to K-1 by the cumulative logit (proportional odds): `P(y <= k) = sigmoid(cutpoints_k - predictor)`. */
+export function orderedLogistic(predictor: Operand, cutpoints: Operand): DistExpr {
+  return family('orderedLogistic', { predictor, cutpoints })
+}
+
 /** A negative binomial distribution. */
 export function negativeBinomial(n: Operand, probs: Operand): DistExpr {
   return family('negativeBinomial', { n, probs })
@@ -175,9 +196,32 @@ export function hurdlePoisson(rate: Operand, zero: Operand): DistExpr {
   return family('hurdlePoisson', { rate, zero })
 }
 
-/** A categorical distribution over the last axis of `probs` or `logits`. */
-export function categorical(params: { readonly probs: Operand } | { readonly logits: Operand }): DistExpr {
-  return family('categorical', params)
+/**
+ * A categorical distribution over the last axis of `probs` or `logits`. With `over`, the classes are a named dimension of the
+ * parameters (the logits `X w` over `row` and `class`, as a multinomial logit classifier writes them): that dimension is the
+ * event axis, so the observation has one entry per row, not per row and class.
+ */
+export function categorical(
+  params: { readonly probs: Operand } | { readonly logits: Operand },
+  options: { readonly over?: string | { readonly name: string } } = {},
+): DistExpr {
+  const d = family('categorical', params)
+  if (options.over === undefined) return d
+  const over = typeof options.over === 'string' ? options.over : options.over.name
+  return { ...d, dims: d.dims.filter((x) => x !== over), spec: { ...d.spec, eventDims: [over] } }
+}
+
+/**
+ * A categorical outcome by the multinomial probit: the class whose utility `score_k + e_k`, with standard normal `e_k`, is the
+ * largest. The `scores` carry the classes as the dimension `over`, as the logits of `categorical` do.
+ */
+export function categoricalProbit(
+  scores: Operand,
+  options: { readonly over: string | { readonly name: string } },
+): DistExpr {
+  const d = family('categoricalProbit', { scores })
+  const over = typeof options.over === 'string' ? options.over : options.over.name
+  return { ...d, dims: d.dims.filter((x) => x !== over), spec: { ...d.spec, eventDims: [over] } }
 }
 
 /** A Dirichlet distribution over the simplex; the last axis of `concentration` is the category axis. */

@@ -597,7 +597,8 @@ export interface MpVerdict {
 export function mpVerdict(
   g: CompiledGraph,
   state: MpState,
-  s: Pick<EngineSettings, 'tol' | 'maxSweeps' | 'schedule' | 'projection'> & Partial<Pick<EngineSettings, 'damping' | 'restarts'>>,
+  s: Pick<EngineSettings, 'tol' | 'maxSweeps' | 'schedule' | 'projection'> &
+    Partial<Pick<EngineSettings, 'damping' | 'restarts'>>,
 ): MpVerdict {
   if (state.messages.some((m) => m.some((v) => Number.isNaN(v) || v === Number.POSITIVE_INFINITY)))
     return { status: 'diverged', reason: 'a message is not finite' }

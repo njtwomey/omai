@@ -132,7 +132,12 @@ function inPlates<T>(ctx: Context, dims: readonly string[], fn: () => T): T {
 
 function distArgs(spec: DistSpec, ctx: Context, dims: readonly string[]): Record<string, Value> {
   const out: Record<string, Value> = {}
-  for (const [name, e] of Object.entries(spec.params)) out[name] = aligned(evaluate(e, ctx), dims)
+  // A dimension of the distribution's event (the classes of a categorical's logits) is laid out after the plate dimensions, as its last axis.
+  const events = spec.eventDims ?? []
+  for (const [name, e] of Object.entries(spec.params)) {
+    const x = evaluate(e, ctx)
+    out[name] = aligned(x, [...dims, ...events.filter((d) => x.dims.includes(d))])
+  }
   return out
 }
 

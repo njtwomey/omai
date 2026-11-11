@@ -14,6 +14,7 @@ const FAMILIES: Readonly<Record<string, Family>> = {
   cauchy: (p) => D.cauchy(t(p, 0), t(p, 1)),
   halfCauchy: (p) => D.halfCauchy(t(p, 0)),
   laplace: (p) => D.laplace(t(p, 0), t(p, 1)),
+  asymmetricLaplace: (p) => D.asymmetricLaplace(t(p, 0), t(p, 1), t(p, 2)),
   logistic: (p) => D.logistic(t(p, 0), t(p, 1)),
   pareto: (p) => D.pareto(t(p, 0), t(p, 1)),
   johnsonSU: (p) => D.johnsonSU(t(p, 0), t(p, 1), t(p, 2), t(p, 3)),

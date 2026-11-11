@@ -95,11 +95,11 @@ describe('a symmetric beta or Dirichlet with a random concentration', () => {
     expect(Math.abs((marginals['p']?.['mean'] as number) - ref.p)).toBeLessThan(0.01)
   })
 
-  it('refuses a concentration that is not a known multiple of one random value', () => {
+  it('refuses two shapes that are not each exactly one random value (two plain shapes map to beta-two-shapes)', () => {
     const bad = defineModel('bad', (b) => {
       const a1 = b.latent('a1', d.gamma(2, 1))
       const a2 = b.latent('a2', d.gamma(2, 1))
-      const p = b.latent('p', d.beta(a1, a2))
+      const p = b.latent('p', d.beta(a1.mul(2), a2))
       b.observe('y', d.bernoulli({ probs: p }), b.data('y', { dims: ['i'], support: 'binary' }))
     })
     const c = toFactorGraph(bad.bind({ y: [1, 0] }))

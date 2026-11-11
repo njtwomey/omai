@@ -68,7 +68,7 @@ Atom pages are named `ep-<atom>`. "exact" is a closed-form posterior, "grid" is 
 | exponential | rate | gamma | (gamma on the prior's rate: as the Poisson row) | `rate ~ gamma(a, b)`, `y ~ exponential(rate)` | `gamma-observed` (**new**) | runs, exact | `prior-gamma-exponential`, exact |
 | gamma, known shape | rate | gamma | | `y ~ gamma(k, rate)` | `gamma-observed` (**new**) | runs, exact | test |
 | Weibull, known shape | log scale | normal | normal on its centre | `centre ~ normal(0, s0)`, `logScale ~ normal(centre, s1)`, `y ~ weibull(k, exp(logScale))` | numeric `weibull-log` | runs | `prior-normal-weibull-scale`, grid |
-| Weibull | shape | gamma, log-normal | | `k ~ gamma(...)`, `y ~ weibull(k, s)` | none (a random shape has no rule) | planned | |
+| Weibull | shape | gamma, log-normal | | `k ~ gamma(...)`, `y ~ weibull(k, s)` | `likelihood-pair` (`weibull-shape`): a grid over the predictor and the shape (a gamma variable, integrated in its log) | **runs** | `weibull-shape-learned` |
 | geometric, negative binomial (known successes) | success probability | beta | none | `y ~ geometric(p)` | `negative-binomial-beta` (**new**) | runs, exact | `prior-beta-geometric`, exact |
 | negative binomial | dispersion | positive latent (half-normal, gamma, log-normal) | | NB2 idiom | `negative-binomial-dispersion` | runs | `ep-plan.md` section 8 |
 
@@ -80,11 +80,11 @@ Atom pages are named `ep-<atom>`. "exact" is a closed-form posterior, "grid" is 
 | Bernoulli, binomial | probability | beta, symmetric | gamma on the strength | `s ~ gamma(a, b)`, `p ~ beta(s, s)` | `dirichlet-concentration` (**new**, a grid over `log s`) | **runs** | `prior-beta-strength-gamma`, exact (quadrature over s) |
 | Bernoulli, binomial | probability | beta, symmetric | log-normal on the strength | `s ~ logNormal(m, v)`, `p ~ beta(s, s)` | `dirichlet-concentration`, log mode | **runs** | `prior-beta-strength-lognormal`, exact |
 | Bernoulli, binomial | probability | beta with one shape random (`beta(s, 2)`) | gamma or log-normal on it | | `dirichlet-concentration` with offsets | runs (tested) | |
-| Bernoulli, binomial | probability | beta, both shapes random | one hyperprior each | `a ~ logNormal`, `b ~ logNormal`, `p ~ beta(a, b)` | none: the tilted integral is two-dimensional (a grid over `(log a, log b)`) | **planned** | `prior-beta-two-shapes`, grid (refused today) |
+| Bernoulli, binomial | probability | beta, both shapes random | one hyperprior each | `a ~ logNormal`, `b ~ logNormal`, `p ~ beta(a, b)` | `beta-two-shapes`: a grid over `(log a, log b)` with the conjugate update of `p` at each node | **runs** | `prior-beta-two-shapes`, grid |
 | Bernoulli | log odds | normal (logit-normal) | normal on its centre | `centre ~ normal(0, s0)`, `logit ~ normal(centre, s1)`, `y ~ bernoulli({ logits: logit })` | `logistic` | runs | `prior-logit-normal-bernoulli`, grid |
 | categorical | probabilities | Dirichlet | none | `p ~ dirichlet([a, a, a])` | `discrete` (conjugate) | runs, exact | `prior-dirichlet-categorical`, exact |
 | categorical | probabilities | Dirichlet, symmetric | gamma on the concentration | `s ~ gamma(a, b)`, `p ~ dirichlet(mul(s, const([1, 1, 1])))` | `dirichlet-concentration` (**new**) | **runs** | `prior-dirichlet-strength-gamma`, exact |
-| categorical | log odds | logistic-normal (softmax of Gaussians) | | | a `(K-1)`-dimensional tilted moment | planned: a delta-method or Laplace rule (`ep-plan.md` G) | |
+| categorical | log odds | logistic-normal (softmax of Gaussians) | | | `multiclass-site`: adaptive Gauss-Hermite over all the class scores (up to six classes) | **runs**; beyond six classes a delta-method rule is planned | `softmax-regression` |
 | categorical switch of a mixture | mixing weights | beta (two components), Dirichlet (more) | gamma on the beta's strength | `pi ~ beta(a, b)`, `z ~ bernoulli({ probs: pi })`, `x ~ normal(at(means, z), s)` | `bernoulli` or `discrete` conjugate factor tied to the gate (**compiler mapping new**) | **runs** | `gate-weight`, `gate-weight-dirichlet`, `gate-weight-hyperprior`, exact (switches summed out) |
 | two-component mixture, switch summed out | mixing weight | beta | | `x ~ normalPair(pi, low, high, s)` | `mixture-weight` (**new**) | **runs**, the same beta as the explicit switches | `gate-weight-summed-out`, exact |
 
@@ -128,7 +128,7 @@ a gamma hyperprior on its prior strength, the weight 0.650 against 0.650 and the
 
 1. A direct `studentT` / `laplace` / `cauchy` prior on a latent: map to the gamma scale mixture the compiler already runs (the table
    above says how to write it by hand).
-2. A beta (or Dirichlet) with several random shapes: the two-dimensional tilted integral (`prior-beta-two-shapes` is the planned page).
+2. A beta (or Dirichlet) with several random shapes: the two-dimensional tilted integral (`beta-two-shapes`, page `prior-beta-two-shapes`).
 3. Matrix families (Wishart, inverse Wishart, normal-Wishart, LKJ): a new family and the exact normal-Wishart rule (big: the family of
    dense matrices, its moments, a model-layer distribution, the compiler's pair recognition for vectors).
 4. A random Weibull shape, a random Student-t degree of freedom (no exponential-family rule for the gamma's shape).
