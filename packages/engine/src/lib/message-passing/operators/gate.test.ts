@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { gaussian, gaussianEta } from '../families.ts'
+import { lgammaOf } from '../_scalar.ts'
+import { gamma, gammaEta, gaussian, gaussianEta } from '../families.ts'
 import { discrete, discreteEta, discreteProbs } from '../families-vector.ts'
 import { messageArg, valueArg } from './args.ts'
 import { defaultOperators } from './registry.ts'
@@ -118,6 +119,73 @@ describe('the gate', () => {
     const j = 1 / 100 + (out[1] ?? 0)
     expect(1 / j).toBeGreaterThan(8)
     expect(1 / j).toBeLessThan(10.5)
+  })
+
+  it('a power of the gate: the messages are those of the factor to the power p against its cavities, by a grid, and power one is the plain rule', () => {
+    // Two Poisson branches on one gamma rate: counts 2 and 9 chosen by z; the cavity of the rate is Gamma(3, 0.5), that of z (0.3, 0.7).
+    const params = {
+      arity: 1,
+      branches: [
+        { operator: 'poisson', args: [{ const: 2 }, 0], params: { exposure: 1 } },
+        { operator: 'poisson', args: [{ const: 9 }, 0], params: { exposure: 1 } },
+      ],
+    }
+    const pz = [0.3, 0.7]
+    const cavity = gammaEta(3, 0.5)
+    const args = [messageArg(discrete(2), discreteEta(pz)), messageArg(gamma, cavity)]
+    const counts = [2, 9]
+    for (const power of [1, 0.5, 0.25]) {
+      // The grid: log r over a wide range, the cavity density times the branch likelihood to the power p.
+      const n = 40000
+      const lo = Math.log(1e-3)
+      const hi = Math.log(120)
+      const step = (hi - lo) / (n - 1)
+      const mass = [0, 0]
+      let eLog = 0
+      let eR = 0
+      for (let i = 0; i < n; i++) {
+        const t = lo + i * step
+        const r = Math.exp(t)
+        const density = Math.exp(3 * t - 0.5 * r) // the cavity in t = log r, up to its constant
+        for (const [k, count] of counts.entries()) {
+          const w = (pz[k] as number) * density * Math.exp(power * (count * t - r - lgammaOf(count + 1)))
+          mass[k] = (mass[k] as number) + w
+          eLog += w * t
+          eR += w * r
+        }
+      }
+      const total = (mass[0] as number) + (mass[1] as number)
+      const projected = gamma.fromMoments([eLog / total, eR / total])
+      const want = projected.map((v, i) => (v - (cavity[i] ?? 0)) / power)
+      const got = gate?.ep?.({ mode: 'ep', to: 1, args, params, power }).message as number[]
+      for (const [i, v] of want.entries()) expect(got[i] as number).toBeCloseTo(v, 3)
+      // The message to z is the evidence of each branch to the power 1 / p: its probabilities are proportional to Z_k^(1 / p).
+      const evidence = counts.map((count) => {
+        let z = 0
+        for (let i = 0; i < n; i++) {
+          const t = lo + i * step
+          z += Math.exp(3 * t - 0.5 * Math.exp(t) + power * (count * t - Math.exp(t) - lgammaOf(count + 1)))
+        }
+        return z * step
+      })
+      const raw = evidence.map((z) => z ** (1 / power))
+      const sum = raw.reduce((a, b) => a + b, 0)
+      const toZ = discreteProbs(gate?.ep?.({ mode: 'ep', to: 0, args, params, power }).message as number[])
+      for (const [k, v] of raw.entries()) expect(toZ[k] as number).toBeCloseTo(v / sum, 4)
+    }
+  })
+
+  it('refuses a power on a branch that has no closed-form message over one variable', () => {
+    const params = {
+      arity: 2,
+      branches: [{ operator: 'gaussian', args: [0, 1], params: { precision: 2 } }, {}],
+    }
+    const args = [
+      messageArg(discrete(2), discreteEta([0.5, 0.5])),
+      messageArg(gaussian, gaussianEta(0, 1)),
+      messageArg(gaussian, gaussianEta(0, 1)),
+    ]
+    expect(() => gate?.ep?.({ mode: 'ep', to: 1, args, params, power: 0.5 })).toThrow(/closed-form message/)
   })
 
   it('checks its branches against the registry and the states of z', () => {
