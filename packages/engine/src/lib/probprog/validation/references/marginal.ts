@@ -93,6 +93,15 @@ export function momentMatch(branches: readonly { weight: number; mean: number; s
   return { mean, sd: Math.sqrt(Math.max(second - mean * mean, 0)) }
 }
 
+/** The joint of two quantities on a grid, for contours. */
+export interface RefJoint {
+  readonly a: string
+  readonly b: string
+  readonly x: readonly number[]
+  readonly y: readonly number[]
+  readonly p: readonly (readonly number[])[]
+}
+
 /**
  * The marginal of a probability (the exact probability that a switch is on): its value and its spread as a coin, with no density
  * (a probability is checked on its mean, not drawn).

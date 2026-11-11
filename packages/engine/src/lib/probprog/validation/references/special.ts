@@ -1,5 +1,5 @@
 /**
- * The scalar functions the reference answers are written with: the log-gamma of a number, the normal density and distribution
+ * The scalar functions the reference answers are written with: the log-gamma of a number, a plain sum, the normal density and distribution
  * function (the library's `ndtr`, and a fast approximation for a grid that calls it millions of times).
  */
 
@@ -8,6 +8,9 @@ import { item } from '../../../tensor/index.ts'
 
 /** `log Gamma(x)` of a number. */
 export const lg = (x: number): number => item(lgamma(x))
+
+/** The sum of a list of numbers, left to right. */
+export const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0)
 
 /**
  * The normal density.

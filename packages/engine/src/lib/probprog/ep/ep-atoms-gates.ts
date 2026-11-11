@@ -9,8 +9,8 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { gridMarginals, normalCdf, normalPdf, quadratureMarginal } from '../validation/index.ts'
-import { type AtomProblem, defineAtom, type EpAtom, type RefJoint } from './ep-atoms.ts'
+import { gridMarginals, normalCdf, normalPdf, quadratureMarginal, type RefJoint } from '../validation/index.ts'
+import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 function orderedProblem(k: Config): AtomProblem {
   const gap = configNumber(k, 'gap')

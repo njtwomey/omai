@@ -43,7 +43,7 @@ import {
   toStructure,
 } from '../model/index.ts'
 import type { Posterior } from '../posterior.ts'
-import { type ExactMarginal, type GridOptions, gridPosterior, lg } from '../validation/index.ts'
+import { type ExactMarginal, type GridOptions, gridPosterior, lg, type RefJoint } from '../validation/index.ts'
 
 /** Where a quantity lives, which fixes the family its belief is drawn in. */
 export type AtomSupport = 'real' | 'positive' | 'unit' | 'probability'
@@ -305,15 +305,6 @@ export interface RefMarginal {
   readonly sd: number
   readonly x: readonly number[]
   readonly p: readonly number[]
-}
-
-/** The joint of two quantities on a grid, for contours. */
-export interface RefJoint {
-  readonly a: string
-  readonly b: string
-  readonly x: readonly number[]
-  readonly y: readonly number[]
-  readonly p: readonly (readonly number[])[]
 }
 
 /** The reference answer of an atom. */

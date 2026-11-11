@@ -15,8 +15,8 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { type ExactMarginal, gridMarginals, lg, normalCdfFast } from '../validation/index.ts'
-import { once, sum } from './_util.ts'
+import { type ExactMarginal, gridMarginals, lg, normalCdfFast, sum } from '../validation/index.ts'
+import { once } from './_util.ts'
 import {
   type AtomFigure,
   type AtomProblem,

@@ -13,9 +13,19 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { type ExactMarginal, lg, normalPdf, quadratureMarginal } from '../validation/index.ts'
-import { sum } from './_util.ts'
-import { type AtomProblem, type AtomTolerance, defineAtom, type EpAtom, type RefJoint } from './ep-atoms.ts'
+import {
+  betaMarginal,
+  type ExactMarginal,
+  gammaMarginal,
+  inverseGammaMarginal,
+  lg,
+  normalInverseGammaPosterior,
+  normalPdf,
+  quadratureMarginal,
+  studentMarginal,
+  sum,
+} from '../validation/index.ts'
+import { type AtomProblem, type AtomTolerance, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 const EXACT: AtomTolerance = {
   meanZ: 1e-6,
@@ -34,50 +44,6 @@ const HYPER: AtomTolerance = {
 }
 
 // ----- closed-form marginals -----
-
-const gammaPdf = (x: number, shape: number, rate: number): number =>
-  x <= 0 ? 0 : Math.exp(shape * Math.log(rate) - lg(shape) + (shape - 1) * Math.log(x) - rate * x)
-
-/** The gamma distribution as an exact marginal. */
-function gammaExact(shape: number, rate: number): ExactMarginal {
-  const mean = shape / rate
-  const sd = Math.sqrt(shape) / rate
-  return { mean, sd, pdf: (x) => gammaPdf(x, shape, rate), range: [Math.max(0, mean - 6 * sd), mean + 8 * sd] }
-}
-
-/** The inverse gamma distribution (shape `a`, scale `b`) as an exact marginal. */
-function inverseGammaExact(a: number, b: number): ExactMarginal {
-  const mean = b / (a - 1)
-  const sd = Math.sqrt((b * b) / ((a - 1) ** 2 * (a - 2)))
-  return {
-    mean,
-    sd,
-    pdf: (x) => (x <= 0 ? 0 : Math.exp(a * Math.log(b) - lg(a) - (a + 1) * Math.log(x) - b / x)),
-    range: [Math.max(1e-6, mean - 3 * sd), mean + 8 * sd],
-  }
-}
-
-/** A Student t with `nu` degrees of freedom around `loc` with the squared scale `s2`, as an exact marginal. */
-function studentExact(nu: number, loc: number, s2: number): ExactMarginal {
-  const s = Math.sqrt(s2)
-  const logNorm = lg((nu + 1) / 2) - lg(nu / 2) - 0.5 * Math.log(nu * Math.PI) - Math.log(s)
-  const sd = Math.sqrt((s2 * nu) / (nu - 2))
-  return {
-    mean: loc,
-    sd,
-    pdf: (x) => Math.exp(logNorm - ((nu + 1) / 2) * Math.log(1 + ((x - loc) / s) ** 2 / nu)),
-    range: [loc - 7 * sd, loc + 7 * sd],
-  }
-}
-
-/** A beta distribution as an exact marginal. */
-function betaExact(a: number, b: number): ExactMarginal {
-  const mean = a / (a + b)
-  const sd = Math.sqrt((a * b) / ((a + b) ** 2 * (a + b + 1)))
-  return { mean, sd, pdf: (x) => betaPdf(x, a, b), range: [0, 1] }
-}
-const betaPdf = (x: number, a: number, b: number): number =>
-  x <= 0 || x >= 1 ? 0 : Math.exp(lg(a + b) - lg(a) - lg(b) + (a - 1) * Math.log(x) + (b - 1) * Math.log(1 - x))
 
 /**
  * The exact posterior of the strength `alpha` of a symmetric Dirichlet (or beta, for two categories) prior and of each category's
@@ -150,55 +116,6 @@ const FLIPS = [1, 1, 0, 1, 1, 0, 1]
 const CATEGORIES = [0, 1, 1, 2, 1, 0, 1]
 
 // ----- the normal-inverse-gamma prior on a Gaussian mean and variance -----
-
-/**
- * The exact posterior of a Gaussian's mean and variance under the conjugate normal-inverse-gamma prior (`sigma2` inverse gamma
- * with shape `a` and scale `b`, `mu | sigma2` normal around `m0` with variance `sigma2 / kappa`): a Student t for the mean, an
- * inverse gamma for the variance and their joint on a grid, as the exact references of an atom.
- *
- * @param y - The observations.
- * @param m0 - The prior mean of the mean.
- * @param kappa - The prior observations behind the mean.
- * @param a - The inverse gamma's shape.
- * @param b - The inverse gamma's scale.
- * @returns The marginals of the mean and the variance, and the joint for contours.
- * @concept expectation-propagation
- * @example
- * ```ts
- * import { normalInverseGammaPosterior } from 'omai-engine/probprog/ep'
- * normalInverseGammaPosterior([1, 2, 3], 0, 1, 3, 2).mu.mean // => 1.5
- * ```
- */
-export function normalInverseGammaPosterior(
-  y: readonly number[],
-  m0: number,
-  kappa: number,
-  a: number,
-  b: number,
-): { readonly mu: ExactMarginal; readonly sigma2: ExactMarginal; readonly joint: RefJoint } {
-  const n = y.length
-  const ybar = sum(y) / n
-  const ss = sum(y.map((v) => (v - ybar) ** 2))
-  const kn = kappa + n
-  const mn = (kappa * m0 + n * ybar) / kn
-  const an = a + n / 2
-  const bn = b + ss / 2 + (kappa * n * (ybar - m0) ** 2) / (2 * kn)
-  const mu = studentExact(2 * an, mn, bn / (an * kn))
-  const sigma2 = inverseGammaExact(an, bn)
-  // The joint: N(mu; mn, sigma2 / kn) times the inverse gamma, on a grid for the contours.
-  const xs = Array.from({ length: 80 }, (_, i) => mu.mean - 5 * mu.sd + (i * 10 * mu.sd) / 79)
-  const lo = Math.max(1e-3, sigma2.range?.[0] ?? 0)
-  const hi = sigma2.range?.[1] ?? sigma2.mean * 4
-  const ys = Array.from({ length: 80 }, (_, i) => lo + (i * (hi - lo)) / 79)
-  const joint: RefJoint = {
-    a: 'mu',
-    b: 'sigma2',
-    x: xs,
-    y: ys,
-    p: xs.map((x) => ys.map((s2) => normalPdf(x, mn, Math.sqrt(s2 / kn)) * sigma2.pdf(s2))),
-  }
-  return { mu, sigma2, joint }
-}
 
 function nigProblem(k: Config): AtomProblem {
   const [m0, kappa, a, b] = [
@@ -601,7 +518,7 @@ function gammaExponentialProblem(k: Config): AtomProblem {
       `observe y = (${WAITS.join(', ')})`,
     ],
     quantities: [{ name: 'rate', label: 'rate (of the waiting times)', support: 'positive' }],
-    exact: { rate: gammaExact(a + WAITS.length, b + sum(WAITS)) },
+    exact: { rate: gammaMarginal(a + WAITS.length, b + sum(WAITS)) },
   }
 }
 
@@ -716,7 +633,7 @@ function betaGeometricProblem(k: Config): AtomProblem {
       `observe y = (${TRIALS.join(', ')})`,
     ],
     quantities: [{ name: 'p', label: 'p (the success probability)', support: 'unit' }],
-    exact: { p: betaExact(a + TRIALS.length, b + sum(TRIALS) - TRIALS.length) },
+    exact: { p: betaMarginal(a + TRIALS.length, b + sum(TRIALS) - TRIALS.length) },
   }
 }
 
@@ -875,7 +792,7 @@ function dirichletCategoricalProblem(k: Config): AtomProblem {
       `observe y = (${CATEGORIES.join(', ')})   (counts ${counts.join(', ')})`,
     ],
     quantities: counts.map((_, c) => ({ name: `p[${c}]`, label: `p of category ${c}`, support: 'unit' as const })),
-    exact: Object.fromEntries(counts.map((n, c) => [`p[${c}]`, betaExact(a + n, 2 * a + N - n)])),
+    exact: Object.fromEntries(counts.map((n, c) => [`p[${c}]`, betaMarginal(a + n, 2 * a + N - n)])),
   }
 }
 

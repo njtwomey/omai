@@ -13,10 +13,8 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { type ConditionalMarginal, hyperPosterior, lg } from '../validation/index.ts'
-import { sum } from './_util.ts'
+import { type ConditionalMarginal, hyperPosterior, lg, normalInverseGammaPosterior, sum } from '../validation/index.ts'
 import { type AtomProblem, type AtomRecoverySpec, defineAtom, type EpAtom } from './ep-atoms.ts'
-import { normalInverseGammaPosterior } from './ep-atoms-priors.ts'
 
 /** The knobs every extended atom has: the seed of the simulation and the number of observations. */
 export const simulationKnobs = (n: number): Record<string, ReturnType<typeof int>> => ({

@@ -9,8 +9,7 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel } from '../model/index.ts'
-import { normalPdf } from '../validation/index.ts'
-import { sum } from './_util.ts'
+import { normalPdf, sum } from '../validation/index.ts'
 import { type AtomProblem, beliefDensity, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 const EXACT = {
