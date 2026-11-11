@@ -11,8 +11,8 @@
  * @index estimator Eight schools hierarchical model (centred, non-centred, pooled, unpooled): data, model and inference as knobs.
  */
 
-import { eightSchoolsCentred, eightSchoolsDefinition, generateSchoolGroups } from '../probprog/models/index.ts'
 import type { SchoolsParameterisation } from '../probprog/models/index.ts'
+import { eightSchoolsCentred, eightSchoolsDefinition, generateSchoolGroups } from '../probprog/models/index.ts'
 import type { Posterior } from '../probprog/posterior.ts'
 import { key } from '../random/index.ts'
 import { choice, type DictSpace, dict, int, real, union } from '../space/index.ts'
@@ -24,9 +24,9 @@ import {
   flattenCheck,
   groupEstimates,
   type PairCoordinate,
-  pairsRecord,
   type PosteriorRow,
   type PosteriorRows,
+  pairsRecord,
   posteriorRows,
   withDerivedSites,
 } from './hierarchical-views.ts'
@@ -72,7 +72,8 @@ export const schoolsDataKnobs: DictSpace = dict({
             default: 0.4,
             step: 0.1,
             label: 'standard errors differ',
-            description: 'the sd of the log standard error between groups: groups with a larger one have less data behind them',
+            description:
+              'the sd of the log standard error between groups: groups with a larger one have less data behind them',
           }),
         },
         { description: 'effects drawn from the model with known mu = 4 and tau, and standard errors that differ' },
@@ -99,7 +100,8 @@ export const schoolsModelKnobs: DictSpace = dict({
     default: 5,
     log: true,
     label: 'prior scale of tau',
-    description: 'the scale of the half-Cauchy prior of the spread of the effects (ignored when nothing pools or all pool)',
+    description:
+      'the scale of the half-Cauchy prior of the spread of the effects (ignored when nothing pools or all pool)',
   }),
 })
 
@@ -176,7 +178,8 @@ const UNPOOLED_PAIRS: readonly PairCoordinate[] = [0, 1, 2].map((j) => ({ label:
 /** Eight schools declared as an example: its knobs, the problem they make and the derived paths that read the posterior (`schools/summary`, `schools/estimates`, `schools/pairs`, `schools/diagnostics`, `schools/check`). */
 const declared: Example<SchoolsProblem> = defineExample<SchoolsProblem>({
   name: 'schools',
-  description: 'Rubin\'s eight schools (or generated groups) by a hierarchical model with one inference method chosen from a table',
+  description:
+    "Rubin's eight schools (or generated groups) by a hierarchical model with one inference method chosen from a table",
   modelName: 'schools',
   dataKnobs: schoolsDataKnobs,
   modelKnobs: schoolsModelKnobs,
@@ -190,10 +193,15 @@ const declared: Example<SchoolsProblem> = defineExample<SchoolsProblem>({
       const post = fitted(state)
       if (problem.parameterisation === 'non-centred')
         return withDerivedSites(post, ['theta'], (d) => ({
-          theta: Array.from({ length: groups }, (_, j) => (d['mu']?.[0] ?? 0) + (d['tau']?.[0] ?? 0) * (d['z']?.[j] ?? 0)),
+          theta: Array.from(
+            { length: groups },
+            (_, j) => (d['mu']?.[0] ?? 0) + (d['tau']?.[0] ?? 0) * (d['z']?.[j] ?? 0),
+          ),
         }))
       if (problem.parameterisation === 'complete-pooling')
-        return withDerivedSites(post, ['theta'], (d) => ({ theta: Array.from({ length: groups }, () => d['mu']?.[0] ?? 0) }))
+        return withDerivedSites(post, ['theta'], (d) => ({
+          theta: Array.from({ length: groups }, () => d['mu']?.[0] ?? 0),
+        }))
       return post
     }
     const rowsOf = (state: unknown): PosteriorRows | undefined => {
@@ -206,7 +214,11 @@ const declared: Example<SchoolsProblem> = defineExample<SchoolsProblem>({
     const truth = problem.truth
     // Complete pooling has one parameter (every theta is mu), so no pair plot.
     const pairCoordinates =
-      problem.parameterisation === 'no-pooling' ? UNPOOLED_PAIRS : problem.parameterisation === 'complete-pooling' ? [] : PAIRS
+      problem.parameterisation === 'no-pooling'
+        ? UNPOOLED_PAIRS
+        : problem.parameterisation === 'complete-pooling'
+          ? []
+          : PAIRS
     return {
       'schools/summary': derived({
         cost: 'dear',
@@ -239,18 +251,23 @@ const declared: Example<SchoolsProblem> = defineExample<SchoolsProblem>({
       'schools/pairs': derived({
         cost: 'dear',
         description:
-          'the pair plot of mu, log tau and the first school\'s effect (and its standardised form for the non-centred model), the divergent transitions marked (a posteriorPairs record)',
+          "the pair plot of mu, log tau and the first school's effect (and its standardised form for the non-centred model), the divergent transitions marked (a posteriorPairs record)",
         compute: (state) => {
           const truthOf =
             truth === undefined
               ? {}
-              : { mu: truth.mu, ...(truth.tau > 0 ? { 'log tau': Math.log(truth.tau) } : {}), 'theta[0]': truth.theta[0] ?? 0 }
+              : {
+                  mu: truth.mu,
+                  ...(truth.tau > 0 ? { 'log tau': Math.log(truth.tau) } : {}),
+                  'theta[0]': truth.theta[0] ?? 0,
+                }
           return pairsRecord(posterior(state), pairCoordinates, kind, truthOf) ?? null
         },
       }),
       'schools/diagnostics': derived({
         cost: 'dear',
-        description: 'trace, rank, R-hat and ESS of the chains of a sampler for mu, tau and the first school (a chainDiagnostics record)',
+        description:
+          'trace, rank, R-hat and ESS of the chains of a sampler for mu, tau and the first school (a chainDiagnostics record)',
         compute: (state) => chainsRecord(posterior(state), ['mu', 'tau', 'theta[0]', 'z[0]']) ?? null,
       }),
       'schools/check': derived({

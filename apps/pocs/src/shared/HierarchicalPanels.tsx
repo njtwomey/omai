@@ -44,7 +44,7 @@ export function HierarchicalObserve(props: {
     if (summary.divergences !== null) rows.push(['divergent transitions', String(summary.divergences)])
     if (summary.maxRhat !== null) rows.push(['largest R-hat', fmt(summary.maxRhat)])
     if (summary.minEss !== null) rows.push(['smallest effective sample size', fmt(summary.minEss, 0)])
-    for (const name of ['mu', 'tau', 'sigma', 'beta', 'rho']) {
+    for (const name of ['mu', 'tau', 'sigma', 'beta', 'mu_b', 'tau_b', 'rho']) {
       const r = summary.rows.find((x) => x.name === name)
       if (r !== undefined) rows.push([`${name} (mean, sd)`, `${fmt(r.mean)}, ${fmt(r.sd)}`])
     }
@@ -55,7 +55,7 @@ export function HierarchicalObserve(props: {
     rows.push(['shrinkage of the third with the most data', fmt(shrink.shrinkageOfLargest, 2)])
   }
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
       <FigurePanel panels={panels} name="estimates">
         {estimates === undefined ? (
           <Waiting done={done} />
@@ -81,7 +81,7 @@ export function HierarchicalObserve(props: {
         )}
       </FigurePanel>
       <FigurePanel panels={panels} name="numbers">
-        <Table rows={rows} />
+        {summary === undefined || summary === null ? <Waiting done={done} /> : <Table rows={rows} />}
       </FigurePanel>
     </div>
   )
@@ -102,16 +102,20 @@ export function HierarchicalCheck(props: {
       explain={explain}
       rows={(c) => {
         const x = c as unknown as Record<string, number | string | null>
-        const z = typeof x['maxZ'] === 'number' ? `${fmt(x['maxZ'], 1)} (${text(x['worstZ'])})` : 'not defined (no chains)'
+        const z =
+          typeof x['maxZ'] === 'number' ? `${fmt(x['maxZ'], 1)} (${text(x['worstZ'])})` : 'not defined (no chains)'
         const out: [string, string][] = [
           ['coordinates compared', String(x['compared'])],
           ['largest difference of means, in reference sds', `${fmt(x['maxMeanError'])} (${text(x['worst'])})`],
           ['largest difference, in Monte Carlo errors', z],
           ['median ratio of spreads (method / reference)', fmt(x['medianSdRatio'])],
         ]
-        for (const name of ['mu', 'tau', 'sigma', 'beta']) {
+        for (const name of ['mu', 'tau', 'sigma', 'beta', 'mu_b', 'tau_b', 'rho']) {
           if (typeof x[`${name}Error`] === 'number')
-            out.push([`${name}: mean difference in reference sds, spread ratio`, `${fmt(x[`${name}Error`])}, ${fmt(x[`${name}Ratio`])}`])
+            out.push([
+              `${name}: mean difference in reference sds, spread ratio`,
+              `${fmt(x[`${name}Error`])}, ${fmt(x[`${name}Ratio`])}`,
+            ])
         }
         out.push(['draws in the reference', String(x['referenceDraws'])])
         return out

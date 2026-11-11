@@ -24,8 +24,9 @@ export default function RadonPage(): ReactNode {
             <>
               Each county's raw estimate (diamond, from its own houses alone) is pulled towards the population mean
               (dashed line) to its posterior mean (dot) with its interval: the counties with the fewest houses, on the
-              left, have the least data behind them and borrow most from the rest. The crosses are the true intercepts of
-              the generated data. Unpooled leaves every county at its raw estimate, pooled puts every county on one value.
+              left, have the least data behind them and borrow most from the rest. The crosses are the true intercepts
+              of the generated data. Unpooled leaves every county at its raw estimate, pooled puts every county on one
+              value.
             </>
           }
           pairsNote={
@@ -43,10 +44,10 @@ export default function RadonPage(): ReactNode {
           prefix="radon"
           explain={
             <>
-              The reference is a long NUTS run (2 chains, 300 warm-up, 700 draws) of the same data, non-centred where the
-              model is partial pooling, in a worker of its own once this run has ended. The check puts the chosen run's
-              posterior against it, coordinate by coordinate: the difference of the means in the reference's spreads,
-              and in Monte Carlo errors for samplers.
+              The reference is a long NUTS run (2 chains, 300 warm-up, 700 draws) of the same data, non-centred where
+              the model is partial pooling, in a worker of its own once this run has ended. The check puts the chosen
+              run's posterior against it, coordinate by coordinate: the difference of the means in the reference's
+              spreads, and in Monte Carlo errors for samplers.
             </>
           }
         />

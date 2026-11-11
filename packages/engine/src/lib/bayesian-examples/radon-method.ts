@@ -11,7 +11,12 @@
  * @index estimator Hierarchical radon (pooled, unpooled, partial pooling, varying slopes) over counties of unequal size.
  */
 
-import { generateRadonCounties, type RadonParameterisation, type RadonPooling, radonCountiesDefinition } from '../probprog/models/index.ts'
+import {
+  generateRadonCounties,
+  type RadonParameterisation,
+  type RadonPooling,
+  radonCountiesDefinition,
+} from '../probprog/models/index.ts'
 import type { Posterior } from '../probprog/posterior.ts'
 import { key } from '../random/index.ts'
 import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
@@ -23,9 +28,9 @@ import {
   flattenCheck,
   groupEstimates,
   type PairCoordinate,
-  pairsRecord,
   type PosteriorRow,
   type PosteriorRows,
+  pairsRecord,
   posteriorRows,
   withDerivedSites,
 } from './hierarchical-views.ts'
@@ -57,9 +62,18 @@ export interface RadonProblem extends ExampleProblem {
 
 /** The knobs of the data: how many counties, how small the smallest is, and how much they and their floor effects differ. */
 export const radonDataKnobs: DictSpace = dict({
-  counties: int(4, 80, { default: 20, log: true, label: 'counties' }),
-  minSize: int(1, 20, { default: 2, label: 'smallest county', description: 'the fewest houses in a county; the others have more, in a long tail' }),
-  tau: real(0, 1.5, { default: 0.4, step: 0.05, label: 'true county sd', description: 'the sd of the county intercepts' }),
+  counties: int(4, 80, { default: 12, log: true, label: 'counties' }),
+  minSize: int(1, 20, {
+    default: 2,
+    label: 'smallest county',
+    description: 'the fewest houses in a county; the others have more, in a long tail',
+  }),
+  tau: real(0, 1.5, {
+    default: 0.4,
+    step: 0.05,
+    label: 'true county sd',
+    description: 'the sd of the county intercepts',
+  }),
   slopeSd: real(0, 1, {
     default: 0.3,
     step: 0.05,
@@ -207,7 +221,10 @@ const declared: Example<RadonProblem> = defineExample<RadonProblem>({
         // A pooled model has one intercept: every county is at it.
         return rows === undefined || one === undefined
           ? rows
-          : { ...rows, rows: [...rows.rows, ...Array.from({ length: counties }, (_, j) => ({ ...one, name: `alpha[${j}]` }))] }
+          : {
+              ...rows,
+              rows: [...rows.rows, ...Array.from({ length: counties }, (_, j) => ({ ...one, name: `alpha[${j}]` }))],
+            }
       } catch {
         return undefined
       }
@@ -221,7 +238,7 @@ const declared: Example<RadonProblem> = defineExample<RadonProblem>({
       { label: 'rho', from: 'rho' },
       ...(problem.pooling === 'slopes' ? [] : [{ label: 'sigma', from: 'sigma' }]),
       { label: 'beta', from: 'beta' },
-      { label: `alpha[${s}] (smallest)`, from: `alpha[${s}]` },
+      { label: `alpha[${s}]`, from: `alpha[${s}]` },
     ]
     const truthOf: Record<string, number> = {
       mu: t.mu,
@@ -232,7 +249,7 @@ const declared: Example<RadonProblem> = defineExample<RadonProblem>({
       rho: t.rho,
       sigma: t.sigma,
       beta: t.beta,
-      [`alpha[${s}] (smallest)`]: t.alpha[s] ?? 0,
+      [`alpha[${s}]`]: t.alpha[s] ?? 0,
     }
     return {
       'radon/summary': derived({
@@ -272,10 +289,13 @@ const declared: Example<RadonProblem> = defineExample<RadonProblem>({
       }),
       'radon/diagnostics': derived({
         cost: 'dear',
-        description: 'trace, rank, R-hat and ESS of the chains of a sampler for the hyperparameters (a chainDiagnostics record)',
+        description:
+          'trace, rank, R-hat and ESS of the chains of a sampler for the hyperparameters (a chainDiagnostics record)',
         compute: (state) =>
-          chainsRecord(posterior(state), [...SITES, `alpha[${s}]`].filter((n) => n !== 'alpha' || problem.pooling === 'pooled')) ??
-          null,
+          chainsRecord(
+            posterior(state),
+            [...SITES, `alpha[${s}]`].filter((n) => n !== 'alpha' || problem.pooling === 'pooled'),
+          ) ?? null,
       }),
       'radon/check': derived({
         cost: 'dear',
@@ -285,7 +305,7 @@ const declared: Example<RadonProblem> = defineExample<RadonProblem>({
           const ref = (args as { summary?: PosteriorRows } | null | undefined)?.summary
           const mine = rowsOf(state)
           if (ref === undefined || mine === undefined) return null
-          const check = checkRows(mine, ref, ['mu', 'tau', 'sigma', 'beta'])
+          const check = checkRows(mine, ref, ['mu', 'tau', 'sigma', 'beta', 'mu_b', 'tau_b', 'rho'])
           return check === undefined ? null : flattenCheck(check)
         },
       }),

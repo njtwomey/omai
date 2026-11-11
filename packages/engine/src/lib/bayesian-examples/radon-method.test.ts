@@ -38,7 +38,12 @@ describe('radonExample', () => {
       const summary = s.probe(s.t, 'radon/summary') as { rows: { name: string }[]; draws: number }
       expect(summary.draws).toBe(120)
       expect(summary.rows.some((r) => r.name === 'alpha[7]')).toBe(true)
-      const est = s.probe(s.t, 'radon/estimates') as { kind: string; mean: number[]; x: number[]; population: number | null }
+      const est = s.probe(s.t, 'radon/estimates') as {
+        kind: string
+        mean: number[]
+        x: number[]
+        population: number | null
+      }
       expect(est.kind).toBe('groupEstimates')
       expect(est.mean).toHaveLength(8)
       expect(est.population === null).toBe(pooling === 'unpooled')
@@ -64,10 +69,17 @@ describe('radonExample', () => {
   }
 
   it('checks a run against a reference run of the same data', () => {
-    const reference = run({ pooling: 'partial', parameterisation: 'non-centred' }, { ...nuts, numWarmup: 80, numDraws: 200 })
+    const reference = run(
+      { pooling: 'partial', parameterisation: 'non-centred' },
+      { ...nuts, numWarmup: 80, numDraws: 200 },
+    )
     const summary = reference.probe(reference.t, 'radon/summary')
     const mine = run({ pooling: 'partial', parameterisation: 'centred' }, nuts)
-    const check = mine.probe(mine.t, 'radon/check', { summary } as never) as { compared: number; maxMeanError: number; tauError: number }
+    const check = mine.probe(mine.t, 'radon/check', { summary } as never) as {
+      compared: number
+      maxMeanError: number
+      tauError: number
+    }
     expect(check.compared).toBeGreaterThan(10)
     expect(check.maxMeanError).toBeLessThan(5)
     expect(Number.isFinite(check.tauError)).toBe(true)

@@ -28,17 +28,51 @@ export function GroupEstimatesView(props: {
         ? []
         : [
             lines(
-              [{ x: [x, x1], y: [r.population, r.population], name: 'population mean', dash: 'dashed', width: 1.5, colour: 'muted' }],
+              [
+                {
+                  x: [x, x1],
+                  y: [r.population, r.population],
+                  name: 'population mean',
+                  dash: 'dashed',
+                  width: 1.5,
+                  colour: 'muted',
+                },
+              ],
               { mode },
             ),
           ]),
-      lines([{ x: gap((j) => [r.x[j] as number, r.x[j] as number]), y: gap((j) => [r.raw[j] as number, r.mean[j] as number]), width: 1, colour: 'muted', name: 'moved' }], { mode }),
-      lines([{ x: gap((j) => [r.x[j] as number, r.x[j] as number]), y: gap((j) => [r.lo[j] as number, r.hi[j] as number]), width: 3, opacity: 0.55, colour: 'tab0', name: '90% interval' }], { mode }),
+      lines(
+        [
+          {
+            x: gap((j) => [r.x[j] as number, r.x[j] as number]),
+            y: gap((j) => [r.raw[j] as number, r.mean[j] as number]),
+            width: 1,
+            colour: 'muted',
+            name: 'moved',
+          },
+        ],
+        { mode },
+      ),
+      lines(
+        [
+          {
+            x: gap((j) => [r.x[j] as number, r.x[j] as number]),
+            y: gap((j) => [r.lo[j] as number, r.hi[j] as number]),
+            width: 3,
+            opacity: 0.55,
+            colour: 'tab0',
+            name: '90% interval',
+          },
+        ],
+        { mode },
+      ),
       points(
         [
           { x: r.x, y: r.raw, name: 'raw estimate', symbol: 'diamond', colour: 'tab1', size: 8, outline: true },
           { x: r.x, y: r.mean, name: 'posterior mean', symbol: 'circle', colour: 'tab0', size: 7 },
-          ...(r.truth === null ? [] : [{ x: r.x, y: r.truth, name: 'true effect', symbol: 'cross', colour: 'fg', size: 7 }]),
+          ...(r.truth === null
+            ? []
+            : [{ x: r.x, y: r.truth, name: 'true effect', symbol: 'cross', colour: 'fg', size: 7 }]),
         ],
         { mode },
       ),

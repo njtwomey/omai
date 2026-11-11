@@ -185,8 +185,8 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - dataset `betaBernoulli`: Beta-Bernoulli coin: exact Beta posterior and evidence; the simplest conjugate benchmark. `src/lib/probprog/models/conjugate.ts:65` `omai-engine/probprog/models`
 - dataset `bimodal`: Two equal Gaussian modes in 2-D: the multimodal target for mode weights and R-hat. `src/lib/probprog/models/geometry.ts:260` `omai-engine/probprog/models`
 - dataset `clutterProblem`: Minka's clutter problem with a distractor: bimodal robust location, quadrature truth. `src/lib/probprog/models/clutter.ts:161` `omai-engine/probprog/models`
-- dataset `eightSchoolsCentred`: Rubin's eight schools, centred: the funnel; exact quadrature truth. `src/lib/probprog/models/schools.ts:138` `omai-engine/probprog/models`
-- dataset `eightSchoolsNonCentred`: Rubin's eight schools, non-centred: the same posterior without the funnel; truth by quadrature. `src/lib/probprog/models/schools.ts:207` `omai-engine/probprog/models`
+- dataset `eightSchoolsCentred`: Rubin's eight schools, centred: the funnel; exact quadrature truth. `src/lib/probprog/models/schools.ts:259` `omai-engine/probprog/models`
+- dataset `eightSchoolsNonCentred`: Rubin's eight schools, non-centred: the same posterior without the funnel; truth by quadrature. `src/lib/probprog/models/schools.ts:309` `omai-engine/probprog/models`
 - dataset `funnelCentred`: Neal's funnel, centred: analytic truth; NUTS diverges in the neck. `src/lib/probprog/models/geometry.ts:46` `omai-engine/probprog/models`
 - dataset `funnelNonCentred`: Neal's funnel, non-centred: the same law of (v, x) with the funnel removed from the density. `src/lib/probprog/models/geometry.ts:94` `omai-engine/probprog/models`
 - dataset `gammaPoisson`: Gamma-Poisson rate: exact Gamma posterior and evidence for counts. `src/lib/probprog/models/conjugate.ts:197` `omai-engine/probprog/models`

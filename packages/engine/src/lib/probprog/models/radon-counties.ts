@@ -47,8 +47,8 @@ export interface RadonPriors {
  * ```ts
  * import { radonCountiesDefinition } from 'omai-engine/probprog/models'
  * const latents = (p: 'pooled' | 'unpooled' | 'partial' | 'slopes') =>
- *   radonCountiesDefinition(p).spec.nodes.filter((n) => n.kind === 'latent').map((n) => n.name)
- * [latents('pooled'), latents('partial'), latents('slopes')] // => [['alpha', 'beta', 'sigma'], ['mu', 'tau', 'z', 'beta', 'sigma'], ['mu', 'mu_b', 'tau', 'tau_b', 'rho', 'z_a', 'z_b', 'sigma']]
+ *   radonCountiesDefinition(p).spec.nodes.filter((n) => n.kind === 'latent' && n.name !== 'sigma').map((n) => n.name)
+ * [latents('pooled'), latents('partial'), latents('slopes')] // => [['alpha', 'beta'], ['mu', 'tau', 'beta', 'z'], ['mu', 'tau', 'mu_b', 'tau_b', 'rho', 'z_a', 'z_b']]
  * ```
  */
 export function radonCountiesDefinition(
@@ -114,7 +114,10 @@ export function radonCountiesDefinition(
     const tauB = m.latent('tau_b', d.halfNormal(scale), { doc: 'the sd of the county floor effects' })
     const rho = m.latent('rho', d.uniform(-1, 1), { doc: 'the correlation of a county intercept and floor effect' })
     const za = m.latent('z_a', d.normal(0, 1), { dims: [county], doc: 'the standardised intercept of each county' })
-    const zb = m.latent('z_b', d.normal(0, 1), { dims: [county], doc: 'the part of the floor effect independent of it' })
+    const zb = m.latent('z_b', d.normal(0, 1), {
+      dims: [county],
+      doc: 'the part of the floor effect independent of it',
+    })
     const alpha = m.derived('alpha', mu.add(tau.mul(za)), { doc: 'the intercept of each county' })
     // The Cholesky factor of the 2 x 2 correlation matrix written out: slope_j = mu_b + tau_b (rho z_a + sqrt(1 - rho^2) z_b).
     const rest = ops.sqrt(ops.clip(ops.sub(1, rho.square()), 1e-12, 1))

@@ -57,8 +57,12 @@ describe('schoolsExample', () => {
     const pooled = p.probe(p.t, 'schools/estimates') as { mean: number[]; population: number }
     expect(Math.max(...pooled.mean) - Math.min(...pooled.mean)).toBeLessThan(1e-9)
     const unpooled = run({ model: 'no-pooling' }, nuts)
-    const est = unpooled.probe(unpooled.t, 'schools/estimates') as { mean: number[]; raw: number[]; meanShrinkage: number }
-    est.mean.forEach((m, j) => expect(Math.abs(m - (est.raw[j] as number))).toBeLessThan(12))
+    const est = unpooled.probe(unpooled.t, 'schools/estimates') as {
+      mean: number[]
+      raw: number[]
+      meanShrinkage: number
+    }
+    for (const [j, m] of est.mean.entries()) expect(Math.abs(m - (est.raw[j] as number))).toBeLessThan(12)
   })
 
   for (const kind of ['svi', 'laplace', 'pathfinder']) {

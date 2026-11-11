@@ -45,8 +45,9 @@ export default function EightSchoolsPage(): ReactNode {
               data, in a worker of its own once this run has ended (for complete and no pooling, the same model, which
               has no funnel). The check puts the chosen run's posterior against it, coordinate by coordinate: the
               difference of the means in the reference's spreads, and in Monte Carlo errors for samplers. Centred and
-              non-centred are the same posterior, so a sampler that works agrees within a few Monte Carlo errors; the
-              centred model's tau is the one that does not, and a mean-field fit is expected to be too narrow.
+              non-centred are the same posterior, so a sampler that works agrees within a few Monte Carlo errors. Where
+              it does not (the centred model's tau when it diverges) or cannot (a mean-field fit is too narrow) the
+              numbers say by how much.
             </>
           }
         />

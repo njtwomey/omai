@@ -12,9 +12,9 @@ describe('generateSchoolGroups', () => {
   })
 
   it('takes the standard errors as given and no spread as the same one', () => {
-    expect(generateSchoolGroups(key(1), { groups: 3, mu: 0, tau: 1, standardErrors: [1, 2, 3] }).data['sigma']).toEqual([
-      1, 2, 3,
-    ])
+    expect(generateSchoolGroups(key(1), { groups: 3, mu: 0, tau: 1, standardErrors: [1, 2, 3] }).data['sigma']).toEqual(
+      [1, 2, 3],
+    )
     expect(generateSchoolGroups(key(1), { groups: 4, mu: 0, tau: 1, se: 7, seSpread: 0 }).data['sigma']).toEqual([
       7, 7, 7, 7,
     ])

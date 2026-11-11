@@ -72,13 +72,20 @@ export function posteriorRows(post: Posterior, sites: readonly string[], prob = 
   } catch {
     return undefined
   }
+  // No rows, a non-finite one, or every spread zero (a sampler stopped before its first draw reports where it started): nothing to read yet.
   if (rows.length === 0 || !rows.every((r) => Number.isFinite(r.mean) && Number.isFinite(r.sd))) return undefined
+  if (rows.every((r) => r.sd < 1e-12)) return undefined
   const rhat = rows.flatMap((r) => (r.rhat === null ? [] : [r.rhat]))
   const ess = rows.flatMap((r) => (r.ess === null ? [] : [r.ess]))
   const divergences = post.diagnostics['divergences']
   return {
     rows,
-    draws: post.chains === undefined ? (post.draws === undefined ? 0 : drawCount(post)) : post.chains.numChains * post.chains.numDraws,
+    draws:
+      post.chains === undefined
+        ? post.draws === undefined
+          ? 0
+          : drawCount(post)
+        : post.chains.numChains * post.chains.numDraws,
     divergences: typeof divergences === 'number' ? divergences : null,
     maxRhat: rhat.length > 0 ? Math.max(...rhat) : null,
     minEss: ess.length > 0 ? Math.min(...ess) : null,
@@ -122,7 +129,9 @@ export function pairsRecord(
   method: string,
   truth: Readonly<Record<string, number>> = {},
 ): PosteriorPairs | undefined {
-  const sites = [...new Set(coordinates.map((c) => c.from.replace(/\[\d+\]$/, '')))].filter((s) => post.sites.includes(s))
+  const sites = [...new Set(coordinates.map((c) => c.from.replace(/\[\d+\]$/, '')))].filter((s) =>
+    post.sites.includes(s),
+  )
   const draws = drawRows(post, sites, 500)
   if (draws === undefined || draws.rows.length < 3) return undefined
   const present = coordinates.filter((c) => draws.names.includes(c.from))
@@ -318,7 +327,11 @@ export function checkRows(
       : Math.abs(r.mean - ref.mean) / Math.sqrt(Math.max(1e-300, r.sd ** 2 / r.ess + ref.sd ** 2 / ref.ess)),
   )
   const argmax = (v: readonly number[]): number =>
-    v.reduce((best, x, i) => (Number.isFinite(x) && (!Number.isFinite(v[best] ?? Number.NaN) || x > (v[best] as number)) ? i : best), 0)
+    v.reduce(
+      (best, x, i) =>
+        Number.isFinite(x) && (!Number.isFinite(v[best] ?? Number.NaN) || x > (v[best] as number)) ? i : best,
+      0,
+    )
   const bestError = argmax(error)
   const bestZ = argmax(z)
   const hasZ = Number.isFinite(z[bestZ] ?? Number.NaN)
@@ -354,7 +367,12 @@ export function flattenCheck(check: RowsCheck): Record<string, number | string |
   const { focus, ...rest } = check
   return {
     ...rest,
-    ...Object.fromEntries(focus.flatMap((f) => [[`${f.name}Error`, f.meanError], [`${f.name}Ratio`, f.sdRatio]])),
+    ...Object.fromEntries(
+      focus.flatMap((f) => [
+        [`${f.name}Error`, f.meanError],
+        [`${f.name}Ratio`, f.sdRatio],
+      ]),
+    ),
   }
 }
 
