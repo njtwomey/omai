@@ -4,6 +4,8 @@
 // honestly achieves, with the reason.
 import { describe, expect, it } from 'vitest'
 import { agreement, passes, recovery } from '../shared/ep/recovery.ts'
+import { infer as inferChange, simulate as simulateChange } from './ep-program-changepoint/program.ts'
+import { gibbsReference } from './ep-program-changepoint/reference.ts'
 import { infer as inferCox, simulate as simulateCox } from './ep-program-cox/program.ts'
 import { nutsReference } from './ep-program-cox/reference.ts'
 
@@ -27,4 +29,33 @@ describe('ep-program-cox: a log-Gaussian Cox process', () => {
     expect(a.sdRatioRange[0]).toBeGreaterThan(0.85)
     expect(a.sdRatioRange[1]).toBeLessThan(1.15)
   }, 120_000)
+})
+
+/** Mean over steps of the largest gap between EP's and Gibbs's probability of a regime. */
+function regimeGap(seed: number): { gap: number; accuracy: number; converged: boolean } {
+  const sim = simulateChange(seed)
+  const ep = inferChange(sim.y, sim.stay)
+  const gibbs = gibbsReference(sim.y, sim.stay)
+  const gap =
+    ep.regimes.reduce(
+      (s, p, t) => s + Math.max(...p.map((v, k) => Math.abs(v - ((gibbs.regimes[t] as number[])[k] as number)))),
+      0,
+    ) / ep.regimes.length
+  const accuracy = ep.regimes.filter((p, t) => p.indexOf(Math.max(...p)) === sim.z[t]).length / ep.regimes.length
+  return { gap, accuracy, converged: ep.run.status === 'converged' }
+}
+
+describe('ep-program-changepoint: a Poisson rate that switches between three regimes, rates unknown', () => {
+  it('recovers the regimes and agrees with Gibbs when every regime is visited (seeds 1, 3, 6)', () => {
+    for (const seed of [1, 3, 6]) {
+      const r = regimeGap(seed)
+      expect(r.converged, `seed ${seed}`).toBe(true)
+      expect(r.accuracy, `seed ${seed}`).toBeGreaterThanOrEqual(0.9)
+      expect(r.gap, `seed ${seed}`).toBeLessThan(0.05)
+    }
+  }, 60_000)
+
+  it('is poor, and says so, when a regime is not visited (seeds 2, 5, 8): EP commits to one reading where Gibbs is spread (flip this when EP improves)', () => {
+    for (const seed of [2, 5, 8]) expect(regimeGap(seed).gap, `seed ${seed}`).toBeGreaterThan(0.1)
+  }, 60_000)
 })

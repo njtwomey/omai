@@ -44,12 +44,27 @@ export function RecoveryChart(props: {
   readonly bands: readonly BandSeries[]
   readonly truth?: { readonly x: readonly number[]; readonly y: readonly number[]; readonly name?: string }
   readonly dots?: readonly PointSet[]
+  /** Further curves (a reference, other series), drawn as given. */
+  readonly curves?: readonly Curve[]
+  readonly yLimits?: readonly [number, number]
+  readonly dotOffset?: number
   readonly steps?: boolean
   readonly xLabel?: string
   readonly yLabel?: string
   readonly aspect?: number
 }): ReactNode {
-  const { bands, truth, dots, steps = false, xLabel, yLabel, aspect = 2.2 } = props
+  const {
+    bands,
+    truth,
+    dots,
+    curves: more,
+    yLimits,
+    dotOffset = 3,
+    steps = false,
+    xLabel,
+    yLabel,
+    aspect = 2.2,
+  } = props
   const mode = useColourMode()
   const build = useCallback(
     (figure: Figure) => {
@@ -64,6 +79,7 @@ export function RecoveryChart(props: {
           dash: b.dash ?? 'solid',
           ...edge,
         })),
+        ...(more ?? []),
         ...(truth === undefined
           ? []
           : [
@@ -92,18 +108,25 @@ export function RecoveryChart(props: {
             { mode },
           ),
           lines(curves, { mode }),
-          ...(dots === undefined ? [] : [points(dots, { mode, colourOffset: 3 })]),
+          ...(dots === undefined ? [] : [points(dots, { mode, colourOffset: dotOffset })]),
         ],
         {
           mode,
           figure,
           tooltip: 'axis',
           ...(xLabel === undefined ? {} : { x: { label: xLabel } }),
-          ...(yLabel === undefined ? {} : { y: { label: yLabel } }),
+          ...(yLabel === undefined && yLimits === undefined
+            ? {}
+            : {
+                y: {
+                  ...(yLabel === undefined ? {} : { label: yLabel }),
+                  ...(yLimits === undefined ? {} : { limits: yLimits }),
+                },
+              }),
         },
       )
     },
-    [bands, truth, dots, steps, xLabel, yLabel, mode],
+    [bands, truth, dots, more, yLimits, dotOffset, steps, xLabel, yLabel, mode],
   )
   return <ResponsiveChart aspect={aspect} narrowAspect={1.5} build={build} />
 }
@@ -300,6 +323,59 @@ export function ReferenceBar(props: {
           {sig(a.sdRatioRange[1], 2)}).
         </p>
       )}
+      {props.note === undefined ? null : <div className="max-w-3xl text-xs text-muted">{props.note}</div>}
+    </div>
+  )
+}
+
+/** One line of a check: what was measured, its value, the rule it is held to and whether it passes. */
+export interface CheckLine {
+  readonly label: string
+  readonly value: string
+  readonly rule: string
+  readonly ok: boolean
+}
+
+/**
+ * A check as a table of lines with an overall PASS or FAIL badge, for programs whose recovery is not one set of intervals
+ * (regime probabilities, agreement with a reference, whether EP converged).
+ *
+ * @param props - The lines and a note (why EP is poor, when it is).
+ * @returns The check.
+ */
+export function CheckLines(props: { readonly lines: readonly CheckLine[]; readonly note?: ReactNode }): ReactNode {
+  const ok = props.lines.every((l) => l.ok)
+  const colour = ok ? 'var(--wb-success)' : 'var(--wb-danger)'
+  return (
+    <div className="flex flex-col gap-2">
+      <span
+        className="inline-block w-fit rounded border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide"
+        style={{ color: colour, borderColor: colour }}
+      >
+        {ok ? 'pass' : 'fail'}
+      </span>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm tabular-nums">
+          <thead className="text-xs text-muted">
+            <tr>
+              <th className="py-1 font-normal">what</th>
+              <th className="font-normal">value</th>
+              <th className="font-normal">held to</th>
+              <th className="font-normal" />
+            </tr>
+          </thead>
+          <tbody>
+            {props.lines.map((l) => (
+              <tr key={l.label} className="border-t border-line">
+                <td className="py-1">{l.label}</td>
+                <td>{l.value}</td>
+                <td className="text-muted">{l.rule}</td>
+                <td style={{ color: l.ok ? 'var(--wb-success)' : 'var(--wb-danger)' }}>{l.ok ? 'pass' : 'FAIL'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {props.note === undefined ? null : <div className="max-w-3xl text-xs text-muted">{props.note}</div>}
     </div>
   )
