@@ -481,7 +481,7 @@ export function distributionFamilies(): Record<string, FamilyDef> {
           [0.3, 1],
         ],
       },
-      { eventRank: 2, messagePassing: true },
+      { eventRank: 2, exponentialFamily: true, messagePassing: true },
     ),
     family(
       'inverseWishart',
