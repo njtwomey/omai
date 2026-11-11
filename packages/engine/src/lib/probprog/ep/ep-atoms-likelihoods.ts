@@ -5,22 +5,22 @@
  * logistic likelihood. References are grids of the model written as a program.
  */
 
-import { gram, rbfKernel, scaleKernel } from '../kernels/index.ts'
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { probitClassifier, probitData } from '../probprog/models/probit-classification.ts'
-import { trueskillModel } from '../probprog/models/ranking.ts'
-import { dict, real } from '../space/index.ts'
-import { toFlat } from '../tensor/index.ts'
-import type { Config } from '../trace/index.ts'
+import { gram, rbfKernel, scaleKernel } from '../../kernels/index.ts'
+import { dict, real } from '../../space/index.ts'
+import { toFlat } from '../../tensor/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
+import { probitClassifier, probitData } from '../models/probit-classification.ts'
+import { trueskillModel } from '../models/ranking.ts'
 import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { gridMarginals, normalCdf } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 const HEAVY = [0.2, -0.1, 0.4, 0.0, 4.5]
 
 function heavyProblem(kind: 'student-t' | 'laplace', k: Config): AtomProblem {
-  const s = exampleNumber(k, 'scale')
+  const s = configNumber(k, 'scale')
   const df = 3
   // region student-t laplace
   const definition = defineModel(`${kind}-likelihood`, (m) => {
@@ -60,7 +60,7 @@ function heavyProblem(kind: 'student-t' | 'laplace', k: Config): AtomProblem {
  * @index estimator EP atom: a Student-t likelihood on a mean (robust to an outlier).
  * @example
  * ```ts
- * import { studentTAtom } from 'omai-engine/bayesian-examples'
+ * import { studentTAtom } from 'omai-engine/probprog/ep'
  * studentTAtom.name // => 'student-t'
  * ```
  */
@@ -89,7 +89,7 @@ export const studentTAtom: EpAtom = defineAtom({
  * @index estimator EP atom: a Laplace likelihood on a mean.
  * @example
  * ```ts
- * import { laplaceAtom } from 'omai-engine/bayesian-examples'
+ * import { laplaceAtom } from 'omai-engine/probprog/ep'
  * laplaceAtom.name // => 'laplace'
  * ```
  */
@@ -124,7 +124,7 @@ const POINTS: readonly (readonly [number, number, number])[] = [
 const LIMIT = 3
 
 function classesProblem(link: 'probit' | 'logistic', k: Config): AtomProblem {
-  const s = exampleNumber(k, 'priorScale')
+  const s = configNumber(k, 'priorScale')
   const design = POINTS.map(([a, b]) => [1, a, b])
   const y = POINTS.map((p) => p[2])
   // region probit logistic
@@ -190,7 +190,7 @@ function classesProblem(link: 'probit' | 'logistic', k: Config): AtomProblem {
  * @index estimator EP atom: a probit link on eight labelled points.
  * @example
  * ```ts
- * import { probitAtom } from 'omai-engine/bayesian-examples'
+ * import { probitAtom } from 'omai-engine/probprog/ep'
  * probitAtom.name // => 'probit'
  * ```
  */
@@ -219,7 +219,7 @@ export const probitAtom: EpAtom = defineAtom({
  * @index estimator EP atom: a logistic link on eight labelled points (numeric tilted moments).
  * @example
  * ```ts
- * import { logisticAtom } from 'omai-engine/bayesian-examples'
+ * import { logisticAtom } from 'omai-engine/probprog/ep'
  * logisticAtom.family // => 'likelihoods'
  * ```
  */
@@ -298,7 +298,7 @@ function skillsProblem(): AtomProblem {
  * @index estimator EP atom: a probit factor on a difference of two skills (three players, five matches).
  * @example
  * ```ts
- * import { skillDifferenceAtom } from 'omai-engine/bayesian-examples'
+ * import { skillDifferenceAtom } from 'omai-engine/probprog/ep'
  * skillDifferenceAtom.name // => 'skill-difference'
  * ```
  */
@@ -338,7 +338,7 @@ const GP_X = [[-1.2], [0.1], [1.4]]
 const GP_Y = [0, 1, 1]
 
 function gpProblem(link: 'probit' | 'logistic', k: Config): AtomProblem {
-  const ls = exampleNumber(k, 'lengthScale')
+  const ls = configNumber(k, 'lengthScale')
   const kernel = scaleKernel(rbfKernel({ lengthScale: ls }), 1.5)
   const n = GP_X.length
   const flat = toFlat(gram(kernel, GP_X, { jitter: 1e-6 }))
@@ -395,7 +395,7 @@ function gpProblem(link: 'probit' | 'logistic', k: Config): AtomProblem {
  * @index estimator EP atom: a dense Gaussian-process prior with a logistic likelihood (three inputs).
  * @example
  * ```ts
- * import { gpLogisticAtom } from 'omai-engine/bayesian-examples'
+ * import { gpLogisticAtom } from 'omai-engine/probprog/ep'
  * gpLogisticAtom.name // => 'gp-logistic'
  * ```
  */
@@ -423,7 +423,7 @@ export const gpLogisticAtom: EpAtom = defineAtom({
  * @index estimator EP atom: a dense Gaussian-process prior with a probit likelihood (three inputs).
  * @example
  * ```ts
- * import { gpProbitAtom } from 'omai-engine/bayesian-examples'
+ * import { gpProbitAtom } from 'omai-engine/probprog/ep'
  * gpProbitAtom.name // => 'gp-probit'
  * ```
  */
@@ -446,7 +446,7 @@ export const gpProbitAtom: EpAtom = defineAtom({
 })
 
 function poissonLogProblem(k: Config): AtomProblem {
-  const y = exampleNumber(k, 'y')
+  const y = configNumber(k, 'y')
   // region poisson-log
   const definition = defineModel('poisson-log-link', (m) => {
     const x = m.latent('x', d.normal(0, 1))
@@ -467,7 +467,7 @@ function poissonLogProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a Poisson count with a log link.
  * @example
  * ```ts
- * import { poissonLogAtom } from 'omai-engine/bayesian-examples'
+ * import { poissonLogAtom } from 'omai-engine/probprog/ep'
  * poissonLogAtom.name // => 'poisson-log'
  * ```
  */

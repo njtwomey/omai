@@ -1,6 +1,6 @@
 // The enumeration oracle of the spike and slab regression against closed forms and a brute-force grid.
 import { describe, expect, it } from 'vitest'
-import { spikeSlabPosterior } from '../../bayesian-examples/ep-atoms-mixtures.ts'
+import { spikeSlabPosterior } from '../ep/ep-atoms-mixtures.ts'
 import { mixtureOfRegressions, spikeSlabRegression, zeroInflatedPoisson } from './enumeration.ts'
 
 describe('spikeSlabRegression', () => {

@@ -1,8 +1,8 @@
 // EP's log evidence against the grid evidence of the same model, on the atoms whose grid is fast: every rule that carries an evidence
 // is checked at model level, not only per operator (operators/evidence.test.ts). The tolerances are in nats and say why they are not tight.
 import { describe, expect, it } from 'vitest'
-import { toProgram } from '../probprog/model/index.ts'
-import { gridPosterior } from '../probprog/validation/index.ts'
+import { toProgram } from '../model/index.ts'
+import { gridPosterior } from '../validation/index.ts'
 import { epAtom } from './ep-atom-list.ts'
 import { atomBound, atomRun } from './ep-atoms.ts'
 

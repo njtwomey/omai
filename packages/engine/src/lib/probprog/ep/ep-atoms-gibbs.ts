@@ -8,10 +8,10 @@
  * each switch is on.
  */
 
-import { OmaiError } from '../base/index.ts'
-import { lgamma } from '../numerics/special/index.ts'
-import { foldIn, gammaVariates, type Key, key, uniformStream } from '../random/index.ts'
-import { item } from '../tensor/index.ts'
+import { OmaiError } from '../../base/index.ts'
+import { lgamma } from '../../numerics/special/index.ts'
+import { foldIn, gammaVariates, type Key, key, uniformStream } from '../../random/index.ts'
+import { item } from '../../tensor/index.ts'
 import type { ExactMarginal } from './ep-atoms.ts'
 import { normalPdf } from './ep-atoms-quad.ts'
 
@@ -27,7 +27,7 @@ const lg = (x: number): number => item(lgamma(x))
  * @concept posterior-validation
  * @example
  * ```ts
- * import { samplesMarginal } from 'omai-engine/bayesian-examples'
+ * import { samplesMarginal } from 'omai-engine/probprog/ep'
  * samplesMarginal([0, 1, 2, 3, 4]).mean // => 2
  * ```
  */
@@ -110,7 +110,7 @@ export interface MixtureGibbs {
  * @index function Gibbs sampler for a Gaussian mixture, the gate atoms' reference.
  * @example
  * ```ts
- * import { mixtureGibbs } from 'omai-engine/bayesian-examples'
+ * import { mixtureGibbs } from 'omai-engine/probprog/ep'
  * const x = [-2, -2.2, -1.8, 2, 2.1, 1.9]
  * const g = mixtureGibbs({ x, means: [{ mean: 0, sd: 3 }, { mean: 0, sd: 3 }], precision: { shape: 2, rate: 2 }, weights: [2, 2], seed: 1, burn: 50, draws: 100, ordered: true })
  * g.mean[0]?.length // => 100
@@ -261,7 +261,7 @@ const logGammaDensity = (t: number, shape: number, rate: number, constant: numbe
  * @index function Exact clutter posterior with unknown centre, precisions and weight, by quadrature.
  * @example
  * ```ts
- * import { clutterPosterior } from 'omai-engine/bayesian-examples'
+ * import { clutterPosterior } from 'omai-engine/probprog/ep'
  * const priors = { centre: 5, inlier: { shape: 2, rate: 1 }, clutter: { shape: 2, rate: 20 }, weight: { a: 2, b: 5 } }
  * clutterPosterior([1.4, 1.6, 1.5, 1.3, 9, 1.5], priors, 8).clutterProbability.length // => 6
  * ```
@@ -389,7 +389,7 @@ export interface OutlierMixturePosterior {
  * @index function Exact outlier-mixture posterior with unknown centre, precision and share.
  * @example
  * ```ts
- * import { outlierMixturePosterior } from 'omai-engine/bayesian-examples'
+ * import { outlierMixturePosterior } from 'omai-engine/probprog/ep'
  * const priors = { centre: 5, precision: { shape: 2, rate: 1 }, share: { a: 2, b: 5 }, width: 8 }
  * Math.abs(outlierMixturePosterior([1.4, 1.6, 1.5, 1.3, 9, 1.5], priors, 12).centre.mean - 1.5) < 0.6 // => true
  * ```

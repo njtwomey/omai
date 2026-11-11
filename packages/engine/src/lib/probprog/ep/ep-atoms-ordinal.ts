@@ -6,12 +6,13 @@
  * and a twin that learns the unknowns from data simulated from stated values.
  */
 
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { foldIn, key, normal, uniform } from '../random/index.ts'
-import { dict, real } from '../space/index.ts'
-import { toFlat } from '../tensor/index.ts'
-import type { Config } from '../trace/index.ts'
+import { foldIn, key, normal, uniform } from '../../random/index.ts'
+import { dict, real } from '../../space/index.ts'
+import { toFlat } from '../../tensor/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import {
   type AtomFigure,
   type AtomProblem,
@@ -23,7 +24,6 @@ import {
 } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 import { gridMarginals } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 const CUTS = [-0.6, 0.5, 1.4]
 /** A value computed the first time it is asked for. */
@@ -78,7 +78,7 @@ function ordinalFigure(x: readonly number[], y: readonly number[], truth?: reado
 }
 
 function ordinalProblem(k: Config): AtomProblem {
-  const s = exampleNumber(k, 'priorScale')
+  const s = configNumber(k, 'priorScale')
   // region ordinal-probit
   const definition = defineModel('ordinal-probit', (m) => {
     const row = m.range('row')
@@ -116,7 +116,7 @@ function ordinalProblem(k: Config): AtomProblem {
  * @index estimator EP atom: an ordinal probit regression with fixed cut points.
  * @example
  * ```ts
- * import { ordinalProbitAtom } from 'omai-engine/bayesian-examples'
+ * import { ordinalProbitAtom } from 'omai-engine/probprog/ep'
  * ordinalProbitAtom.name // => 'ordinal-probit'
  * ```
  */
@@ -140,9 +140,9 @@ export const ordinalProbitAtom: EpAtom = defineAtom({
 })
 
 function ordinalLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const [trueA, trueB] = [exampleNumber(k, 'trueIntercept'), exampleNumber(k, 'trueSlope')]
-  const s = exampleNumber(k, 'priorScale')
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const [trueA, trueB] = [configNumber(k, 'trueIntercept'), configNumber(k, 'trueSlope')]
+  const s = configNumber(k, 'priorScale')
   // region ordinal-probit-learned
   // the ground truth: a latent score with standard normal noise, cut at the known cut points
   const kk = key(seed)
@@ -185,7 +185,7 @@ function ordinalLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: an ordinal probit regression with coefficients recovered from simulated outcomes.
  * @example
  * ```ts
- * import { ordinalProbitLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { ordinalProbitLearnedAtom } from 'omai-engine/probprog/ep'
  * ordinalProbitLearnedAtom.extends // => 'ordinal-probit'
  * ```
  */
@@ -246,7 +246,7 @@ function quantileFigure(
 }
 
 function quantileProblem(k: Config): AtomProblem {
-  const [tau, scale, s] = [exampleNumber(k, 'tau'), exampleNumber(k, 'scale'), exampleNumber(k, 'priorScale')]
+  const [tau, scale, s] = [configNumber(k, 'tau'), configNumber(k, 'scale'), configNumber(k, 'priorScale')]
   // region quantile-regression
   const definition = defineModel('quantile-regression', (m) => {
     const row = m.range('row')
@@ -293,7 +293,7 @@ function quantileProblem(k: Config): AtomProblem {
  * @index estimator EP atom: Bayesian quantile regression with the asymmetric Laplace.
  * @example
  * ```ts
- * import { quantileRegressionAtom } from 'omai-engine/bayesian-examples'
+ * import { quantileRegressionAtom } from 'omai-engine/probprog/ep'
  * quantileRegressionAtom.name // => 'quantile-regression'
  * ```
  */
@@ -321,9 +321,9 @@ export const quantileRegressionAtom: EpAtom = defineAtom({
 })
 
 function quantileLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const [trueA, trueB] = [exampleNumber(k, 'trueIntercept'), exampleNumber(k, 'trueSlope')]
-  const [tau, scale, s] = [exampleNumber(k, 'tau'), exampleNumber(k, 'scale'), exampleNumber(k, 'priorScale')]
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const [trueA, trueB] = [configNumber(k, 'trueIntercept'), configNumber(k, 'trueSlope')]
+  const [tau, scale, s] = [configNumber(k, 'tau'), configNumber(k, 'scale'), configNumber(k, 'priorScale')]
   // region quantile-regression-learned
   // the ground truth: asymmetric Laplace noise around the line, so its tau quantile is the line
   const kk = key(seed)
@@ -378,7 +378,7 @@ function quantileLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: Bayesian quantile regression with coefficients recovered from simulated points.
  * @example
  * ```ts
- * import { quantileRegressionLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { quantileRegressionLearnedAtom } from 'omai-engine/probprog/ep'
  * quantileRegressionLearnedAtom.extends // => 'quantile-regression'
  * ```
  */
@@ -490,7 +490,7 @@ function drawsFigure(skillTruth?: readonly number[]): AtomFigure {
 }
 
 function drawsProblem(k: Config): AtomProblem {
-  const margin = exampleNumber(k, 'margin')
+  const margin = configNumber(k, 'margin')
   const cuts = [-margin / Math.SQRT2, margin / Math.SQRT2]
   // region skill-draws
   const definition = defineModel('skill-draws', (m) => {
@@ -537,7 +537,7 @@ function drawsProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a tournament with draws, an ordinal probit factor on a difference of two skills (the TrueSkill draw margin).
  * @example
  * ```ts
- * import { skillDrawsAtom } from 'omai-engine/bayesian-examples'
+ * import { skillDrawsAtom } from 'omai-engine/probprog/ep'
  * skillDrawsAtom.name // => 'skill-draws'
  * ```
  */
@@ -561,9 +561,9 @@ export const skillDrawsAtom: EpAtom = defineAtom({
 })
 
 function drawsLearnedProblem(k: Config): AtomProblem {
-  const [seed, rounds] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const margin = exampleNumber(k, 'margin')
-  const truth = [exampleNumber(k, 'trueSkillA'), exampleNumber(k, 'trueSkillB'), exampleNumber(k, 'trueSkillC')]
+  const [seed, rounds] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const margin = configNumber(k, 'margin')
+  const truth = [configNumber(k, 'trueSkillA'), configNumber(k, 'trueSkillB'), configNumber(k, 'trueSkillC')]
   const cuts = [-margin / Math.SQRT2, margin / Math.SQRT2]
   // region skill-draws-learned
   // the ground truth: every pair plays in turn, the better performance wins unless the gap is inside the draw margin
@@ -617,7 +617,7 @@ function drawsLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a tournament with draws, skills recovered from simulated games.
  * @example
  * ```ts
- * import { skillDrawsLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { skillDrawsLearnedAtom } from 'omai-engine/probprog/ep'
  * skillDrawsLearnedAtom.extends // => 'skill-draws'
  * ```
  */

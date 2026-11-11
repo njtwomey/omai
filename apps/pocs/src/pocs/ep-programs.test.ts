@@ -3,7 +3,7 @@
 // under the stated bound) over a few seeds. A program where EP is poor says so in its check and is held here to what it
 // honestly achieves, with the reason.
 
-import { calibrationTable } from 'omai-engine/bayesian-examples'
+import { calibrationTable } from 'omai-engine/probprog/ep'
 import { describe, expect, it } from 'vitest'
 import { agreement, passes, recovery } from '../shared/ep/recovery.ts'
 import { infer as inferChange, simulate as simulateChange } from './ep-program-changepoint/program.ts'

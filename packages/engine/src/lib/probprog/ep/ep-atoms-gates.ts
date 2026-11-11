@@ -4,16 +4,16 @@
  * truncated Gaussian and a grid of the constrained density.
  */
 
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { dict, real } from '../space/index.ts'
-import type { Config } from '../trace/index.ts'
+import { dict, real } from '../../space/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom, type RefJoint } from './ep-atoms.ts'
 import { gridMarginals, normalCdf, normalPdf, quadratureMarginal } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 function orderedProblem(k: Config): AtomProblem {
-  const gap = exampleNumber(k, 'gap')
+  const gap = configNumber(k, 'gap')
   const [ma, mb, s] = [0, gap, 1]
   // region ordered-pair
   const definition = defineModel('ordered-pair', (m) => {
@@ -61,7 +61,7 @@ function orderedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: an ordered pair, a hard comparison (greater-than, truncation).
  * @example
  * ```ts
- * import { orderedPairAtom } from 'omai-engine/bayesian-examples'
+ * import { orderedPairAtom } from 'omai-engine/probprog/ep'
  * orderedPairAtom.name // => 'ordered-pair'
  * ```
  */
@@ -85,7 +85,7 @@ export const orderedPairAtom: EpAtom = defineAtom({
 })
 
 function orderedMeansProblem(k: Config): AtomProblem {
-  const priorSd = exampleNumber(k, 'priorSd')
+  const priorSd = configNumber(k, 'priorSd')
   const y1 = [0.8, 1.2]
   const y2 = [0.3, 0.6]
   // region ordered-means
@@ -141,7 +141,7 @@ function orderedMeansProblem(k: Config): AtomProblem {
  * @index estimator EP atom: two means with an ordered constraint, against data that disagree.
  * @example
  * ```ts
- * import { orderedMeansAtom } from 'omai-engine/bayesian-examples'
+ * import { orderedMeansAtom } from 'omai-engine/probprog/ep'
  * orderedMeansAtom.name // => 'ordered-means'
  * ```
  */

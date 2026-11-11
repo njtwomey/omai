@@ -8,7 +8,7 @@
  * @index module The gaps and limits of expectation propagation, each with its plan, size and status, tied to what it refuses.
  */
 
-/** What kind of shortfall: no rule, no compiler mapping, a quality problem of EP itself, an infrastructure or integration task. */
+/** What kind of shortfall: no rule, no compiler mapping, a quality problem of EP itself, an infrastructure task. */
 export type EpGapKind = 'missing-rule' | 'missing-mapping' | 'quality' | 'infrastructure'
 
 /** Where a gap stands: queued (next in line, not started), investigating (someone is on it), open (no plan to start yet). */
@@ -35,7 +35,7 @@ export interface EpGap {
  *
  * @example
  * ```ts
- * import { epGaps } from 'omai-engine/bayesian-examples'
+ * import { epGaps } from 'omai-engine/probprog/ep'
  * epGaps.every((g) => g.plan.length > 0 && g.summary.length > 0) // => true
  * ```
  */
@@ -184,17 +184,6 @@ export const epGaps: readonly EpGap[] = [
     refuses: [],
   },
   {
-    id: 'integration',
-    title: 'The EP suite lives in the examples folder',
-    kind: 'infrastructure',
-    status: 'queued',
-    summary:
-      'The rules, the compiler mappings and the model families are in the library proper (`message-passing`, `probprog/model`, `probprog/inference`); the setups, programs, coverage and recovery helpers are in `bayesian-examples`, next to the example pages, where they do not belong.',
-    plan: 'Move them to `probprog/ep` (they use the compiler and the methods, so they cannot sit in `message-passing`), keep a re-export while the pages move, and update the structure document; do it once the agents editing the atoms have finished, to avoid conflicts.',
-    size: 'small',
-    refuses: [],
-  },
-  {
     id: 'docs-drift',
     title: 'The prior atlas can drift from the code',
     kind: 'infrastructure',
@@ -239,7 +228,7 @@ export interface EpDirection {
  *
  * @example
  * ```ts
- * import { epDirections } from 'omai-engine/bayesian-examples'
+ * import { epDirections } from 'omai-engine/probprog/ep'
  * epDirections.every((d) => d.needs.length > 0) // => true
  * ```
  */

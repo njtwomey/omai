@@ -1,4 +1,4 @@
-import { epAtom } from 'omai-engine/bayesian-examples'
+import { epAtom } from 'omai-engine/probprog/ep'
 import type { ReactNode } from 'react'
 import { EpAtomPage } from '../../shared/EpAtomPage.tsx'
 

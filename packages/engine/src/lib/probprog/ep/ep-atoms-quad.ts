@@ -4,8 +4,8 @@
  * by the midpoint rule on a fine grid.
  */
 
-import { ndtr } from '../numerics/special/index.ts'
-import { item } from '../tensor/index.ts'
+import { ndtr } from '../../numerics/special/index.ts'
+import { item } from '../../tensor/index.ts'
 import type { ExactMarginal } from './ep-atoms.ts'
 
 /**
@@ -17,7 +17,7 @@ import type { ExactMarginal } from './ep-atoms.ts'
  * @returns The density.
  * @example
  * ```ts
- * import { normalPdf } from 'omai-engine/bayesian-examples'
+ * import { normalPdf } from 'omai-engine/probprog/ep'
  * normalPdf(0, 0, 1).toFixed(4) // => '0.3989'
  * ```
  */
@@ -32,7 +32,7 @@ export function normalPdf(x: number, mean: number, sd: number): number {
  * @returns P(Z <= x).
  * @example
  * ```ts
- * import { normalCdf } from 'omai-engine/bayesian-examples'
+ * import { normalCdf } from 'omai-engine/probprog/ep'
  * normalCdf(0) // => 0.5
  * ```
  */
@@ -54,7 +54,7 @@ export interface MixtureComponent {
  * @returns The marginal.
  * @example
  * ```ts
- * import { mixtureMarginal } from 'omai-engine/bayesian-examples'
+ * import { mixtureMarginal } from 'omai-engine/probprog/ep'
  * mixtureMarginal([{ weight: 1, mean: -1, sd: 1 }, { weight: 1, mean: 1, sd: 1 }]).mean // => 0
  * ```
  */
@@ -80,7 +80,7 @@ export function mixtureMarginal(components: readonly MixtureComponent[]): ExactM
  * @returns The marginal.
  * @example
  * ```ts
- * import { quadratureMarginal } from 'omai-engine/bayesian-examples'
+ * import { quadratureMarginal } from 'omai-engine/probprog/ep'
  * Math.abs(quadratureMarginal((x) => -0.5 * x * x, -10, 10).sd - 1) < 1e-6 // => true
  * ```
  */
@@ -127,7 +127,7 @@ export interface GridMarginals {
  * @returns The marginals (piecewise-linear densities) and the joint.
  * @example
  * ```ts
- * import { gridMarginals } from 'omai-engine/bayesian-examples'
+ * import { gridMarginals } from 'omai-engine/probprog/ep'
  * const g = gridMarginals((x) => -0.5 * (x[0] ?? 0) ** 2 - 0.5 * (x[1] ?? 0) ** 2, [[-6, 6], [-6, 6]], 41)
  * Math.abs((g.marginals[0]?.sd ?? 0) - 1) < 1e-3 // => true
  * ```
@@ -207,7 +207,7 @@ export function gridMarginals(
  * @returns The selected branch's mean and sd, or undefined when `p` is zero or the moments do not make a variance.
  * @example
  * ```ts
- * import { selectedBranch } from 'omai-engine/bayesian-examples'
+ * import { selectedBranch } from 'omai-engine/probprog/ep'
  * selectedBranch({ mean: 0.5, sd: 1 }, 0.5, { mean: 0, sd: 1 })?.mean // => 1
  * ```
  */
@@ -230,7 +230,7 @@ export function selectedBranch(
  * @returns The mean and sd.
  * @example
  * ```ts
- * import { momentMatch } from 'omai-engine/bayesian-examples'
+ * import { momentMatch } from 'omai-engine/probprog/ep'
  * momentMatch([{ weight: 1, mean: -1, sd: 0 }, { weight: 1, mean: 1, sd: 0 }]).sd // => 1
  * ```
  */
@@ -272,7 +272,7 @@ export interface HyperPosterior {
  * @returns The hyperparameter's marginal, and the mixing function.
  * @example
  * ```ts
- * import { hyperPosterior } from 'omai-engine/bayesian-examples'
+ * import { hyperPosterior } from 'omai-engine/probprog/ep'
  * const post = hyperPosterior((h) => 2 * Math.log(h) - 3 * h, 1e-3, 40)
  * Math.abs(post.hyper.mean - 3 / 3) < 1e-3 // => true
  * ```

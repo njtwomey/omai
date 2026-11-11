@@ -1,4 +1,4 @@
-import { type CalibrationSample, calibrationSample, epAtom } from 'omai-engine/bayesian-examples'
+import { type CalibrationSample, calibrationSample, epAtom } from 'omai-engine/probprog/ep'
 import type { Config } from 'omai-engine/trace'
 import { serveRun } from '../runWorker.ts'
 

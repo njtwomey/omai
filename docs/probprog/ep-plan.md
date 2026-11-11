@@ -282,13 +282,16 @@ dispersion are not mapped (the shape and the gamma form of the dispersion have n
 numeric site.
 ## 10. The gaps, as tested data
 
-The open items of this plan (what EP cannot run, where it is less good than it should be, the infrastructure and integration tasks)
-are kept as data in `packages/engine/src/lib/bayesian-examples/ep-gaps.ts` and shown at the end of the EP coverage page, each with
+The open items of this plan (what EP cannot run, where it is less good than it should be, the infrastructure tasks)
+are kept as data in `packages/engine/src/lib/probprog/ep/ep-gaps.ts` and shown at the end of the EP coverage page, each with
 why, how it would be closed, its size and its status. A test (`ep-gaps.test.ts`) holds the list to the coverage table: every setup
 and benchmark model EP refuses is named by a gap, and a gap that names something EP now runs is stale. Where the code lives: the
 rules (`message-passing/operators`), the compiler mappings (`probprog/model/factors.ts`), the model families
-(`probprog/model/dists`) and the methods (`probprog/inference`) are in the library proper; the setups, programs, coverage and
-recovery helpers are still in `bayesian-examples` and are to move to `probprog/ep` (gap `integration`).
+(`probprog/model/dists`) and the methods (`probprog/inference`) are in the library proper, and so is the suite that runs them:
+the setups (the atoms), coverage, recovery, calibration and the gaps themselves are in `probprog/ep` (`omai-engine/probprog/ep`;
+2026-11-11, `agent-pp161-move`, which closed the gap `integration`). `bayesian-examples` keeps the example methods of the pages.
+The one helper the atoms took from the example scaffold (`exampleNumber`) is `configNumber` in `probprog/inference/method.ts`, so
+`probprog` does not import `bayesian-examples`.
 ## 11. Robustness: what EP reports and what the variants do (2026-11-11, `agent-pp81-robust`)
 
 **False convergence (found by the sparse regression with outliers).** The engine took "the beliefs moved less than `tol` over a
@@ -452,7 +455,7 @@ as the mean of a Gaussian, made `gaussian`, `dot-constant` and `apply` return Na
 `product`, `max`, half-Cauchy, half-normal, skill-difference, log-link Poisson regressions). They now integrate the pair (or the vector
 and the output) in natural parameters, which needs only the sum to be proper (`logGaussianIntegral`), and a flat output integrates to one.
 
-**EP's model evidence against the grid evidence of the same model** (`bayesian-examples/ep-evidence.test.ts`, 39 atoms; the posterior
+**EP's model evidence against the grid evidence of the same model** (`probprog/ep/ep-evidence.test.ts`, 39 atoms; the posterior
 and the tape `mp/evidence` carry it, nothing new was needed there): conjugate setups (Gaussian with a normal-gamma pair, beta-Bernoulli,
 gamma-Poisson, gamma-exponential, beta-geometric, Dirichlet-categorical, normal-inverse-gamma) within 2e-6; a log-link Poisson, a gate
 with a beta weight, the spike and slab, the clutter, the ordered means, a gate of random components, a beta with a random

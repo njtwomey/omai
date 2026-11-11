@@ -5,12 +5,13 @@
  * with the calibration of the intervals over seeds.
  */
 
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, type ModelDefinition } from '../probprog/model/index.ts'
-import { foldIn, key, uniform } from '../random/index.ts'
-import { dict, real } from '../space/index.ts'
-import { toFlat } from '../tensor/index.ts'
-import type { Config } from '../trace/index.ts'
+import { foldIn, key, uniform } from '../../random/index.ts'
+import { dict, real } from '../../space/index.ts'
+import { toFlat } from '../../tensor/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, type ModelDefinition } from '../model/index.ts'
 import {
   type AtomFigure,
   type AtomProblem,
@@ -21,7 +22,6 @@ import {
 } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 import { gridMarginals } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 const CLASSES = 3
 const GRID = 37
@@ -113,7 +113,7 @@ const X = [-1.4, -0.9, -0.5, -0.1, 0.2, 0.6, 1.0, 1.5, -0.3, 0.8]
 const Y = [0, 0, 0, 2, 1, 1, 1, 1, 2, 2]
 
 function softmaxProblem(k: Config): AtomProblem {
-  const s = exampleNumber(k, 'priorScale')
+  const s = configNumber(k, 'priorScale')
   const grid = once(() => slopeGrid(X, Y, s))
   return {
     definition: softmaxModel('softmax-regression', s),
@@ -148,7 +148,7 @@ function softmaxProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a multinomial logit classifier (softmax of three Gaussian class scores).
  * @example
  * ```ts
- * import { softmaxRegressionAtom } from 'omai-engine/bayesian-examples'
+ * import { softmaxRegressionAtom } from 'omai-engine/probprog/ep'
  * softmaxRegressionAtom.name // => 'softmax-regression'
  * ```
  */
@@ -173,9 +173,9 @@ export const softmaxRegressionAtom: EpAtom = defineAtom({
 })
 
 function softmaxLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const truth = [exampleNumber(k, 'trueSlope0'), exampleNumber(k, 'trueSlope1'), exampleNumber(k, 'trueSlope2')]
-  const s = exampleNumber(k, 'priorScale')
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const truth = [configNumber(k, 'trueSlope0'), configNumber(k, 'trueSlope1'), configNumber(k, 'trueSlope2')]
+  const s = configNumber(k, 'priorScale')
   // region softmax-regression-learned
   // the ground truth: covariates on [-2, 2] and a class drawn from the softmax of the true slopes times the covariate
   const kk = key(seed)
@@ -222,7 +222,7 @@ function softmaxLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a multinomial logit classifier with slopes learned from simulated classes.
  * @example
  * ```ts
- * import { softmaxRegressionLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { softmaxRegressionLearnedAtom } from 'omai-engine/probprog/ep'
  * softmaxRegressionLearnedAtom.extends // => 'softmax-regression'
  * ```
  */

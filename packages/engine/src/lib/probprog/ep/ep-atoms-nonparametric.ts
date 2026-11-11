@@ -7,15 +7,15 @@
  * Dirichlets integrated out, which makes every posterior a mixture of betas.
  */
 
-import { lgamma } from '../numerics/special/index.ts'
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { dict, real } from '../space/index.ts'
-import { item } from '../tensor/index.ts'
-import type { Config } from '../trace/index.ts'
+import { lgamma } from '../../numerics/special/index.ts'
+import { dict, real } from '../../space/index.ts'
+import { item } from '../../tensor/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
 import { gridMarginals, normalPdf } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 const lg = (x: number): number => item(lgamma(x))
 
@@ -25,8 +25,8 @@ const COMPONENT_MEANS = [-3, 0, 3]
 const STICK_DATA = [-3.2, -2.8, -0.4, -3.1, 2.9, 0.3, -2.7, 3.3, -0.2, -3.4]
 
 function stickBreakingProblem(k: Config): AtomProblem {
-  const alpha = exampleNumber(k, 'concentration')
-  const noise = exampleNumber(k, 'noise')
+  const alpha = configNumber(k, 'concentration')
+  const noise = configNumber(k, 'noise')
   // region stick-breaking
   const definition = defineModel('stick-breaking', (m) => {
     const row = m.range('row')
@@ -84,7 +84,7 @@ function stickBreakingProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a stick-breaking mixture (truncated Dirichlet process), the stick-breaking factor on beta breaks.
  * @example
  * ```ts
- * import { stickBreakingAtom } from 'omai-engine/bayesian-examples'
+ * import { stickBreakingAtom } from 'omai-engine/probprog/ep'
  * stickBreakingAtom.name // => 'stick-breaking'
  * ```
  */
@@ -154,8 +154,8 @@ function betaMixture(
 }
 
 function topicModelProblem(k: Config): AtomProblem {
-  const alpha = exampleNumber(k, 'mixture')
-  const sharp = exampleNumber(k, 'topicPrior')
+  const alpha = configNumber(k, 'mixture')
+  const sharp = configNumber(k, 'topicPrior')
   // each topic's prior leans to its own word: topic 0 to word 0, topic 1 to word 1 (the labels are softly fixed)
   const beta = [
     [sharp, 1],
@@ -249,7 +249,7 @@ function topicModelProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a topic model (Dirichlet mixtures and topics, a word read through its token's topic: a gate of discrete factors).
  * @example
  * ```ts
- * import { topicModelAtom } from 'omai-engine/bayesian-examples'
+ * import { topicModelAtom } from 'omai-engine/probprog/ep'
  * topicModelAtom.name // => 'topic-model'
  * ```
  */

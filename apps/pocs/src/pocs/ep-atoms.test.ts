@@ -1,5 +1,5 @@
 // Every EP atom of the registry has a page of the group, with the atom's title: the pages are generated from the registry.
-import { epAtoms } from 'omai-engine/bayesian-examples'
+import { epAtoms } from 'omai-engine/probprog/ep'
 import { describe, expect, it } from 'vitest'
 import { POCS, pageOf } from '../registry.ts'
 import { atomSource } from '../shared/ep/atomSource.ts'

@@ -1,11 +1,12 @@
-import type { AtomProblem, EpAtom } from 'omai-engine/bayesian-examples'
+import type { AtomProblem, EpAtom } from 'omai-engine/probprog/ep'
 import { snippetOf } from '../../../../site/src/shell/snippet.ts'
 
 /** The atoms' source files, as text (`?raw`): the code shown is the code that runs. */
-const SOURCES = import.meta.glob(
-  ['../../../../../packages/engine/src/lib/bayesian-examples/ep-atoms*.ts', '!**/*.test.ts'],
-  { query: '?raw', import: 'default', eager: true },
-) as Record<string, string>
+const SOURCES = import.meta.glob(['../../../../../packages/engine/src/lib/probprog/ep/ep-atoms*.ts', '!**/*.test.ts'], {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>
 
 /** The data a problem binds, as it would be written: a line per key, a long array summarised by its length. */
 function dataText(data: AtomProblem['data']): string {

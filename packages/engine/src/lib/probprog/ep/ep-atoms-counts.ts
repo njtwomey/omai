@@ -5,19 +5,19 @@
  * (a numeric rule). The exact answers are a Beta for the zero probability and a grid for the coefficients.
  */
 
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { dict, real } from '../space/index.ts'
-import type { Config } from '../trace/index.ts'
+import { dict, real } from '../../space/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { gridMarginals, quadratureMarginal } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 const XS = [-1, -0.6, -0.2, 0.1, 0.5, 0.9, 1.3, -0.8, 0.3, 1.1, -0.4, 0.7]
 const YS = [0, 0, 1, 0, 2, 4, 6, 1, 3, 0, 1, 5]
 
 function hurdleProblem(k: Config): AtomProblem {
-  const priorSd = exampleNumber(k, 'priorSd')
+  const priorSd = configNumber(k, 'priorSd')
   // region hurdle-poisson
   const definition = defineModel('hurdle-poisson', (m) => {
     const row = m.range('row')
@@ -102,7 +102,7 @@ function hurdleProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a hurdle count (a Beta zero probability, a zero-truncated Poisson on a log-linear rate).
  * @example
  * ```ts
- * import { hurdlePoissonAtom } from 'omai-engine/bayesian-examples'
+ * import { hurdlePoissonAtom } from 'omai-engine/probprog/ep'
  * hurdlePoissonAtom.name // => 'hurdle-poisson'
  * ```
  */

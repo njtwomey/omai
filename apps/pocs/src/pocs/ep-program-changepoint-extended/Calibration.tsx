@@ -1,4 +1,4 @@
-import { type AtomCalibration, type CalibrationSample, calibrationTable } from 'omai-engine/bayesian-examples'
+import { type AtomCalibration, type CalibrationSample, calibrationTable } from 'omai-engine/probprog/ep'
 import { type ReactNode, useMemo } from 'react'
 import { sig } from '../../shared/ep/ProgramParts.tsx'
 import { RunProgress } from '../../shared/RunProgress.tsx'

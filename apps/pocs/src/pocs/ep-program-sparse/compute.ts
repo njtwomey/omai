@@ -1,5 +1,5 @@
-import { activeSetScore, recoverySummary } from 'omai-engine/bayesian-examples'
 import { modelRunFromTape } from 'omai-engine/exposition'
+import { activeSetScore, recoverySummary } from 'omai-engine/probprog/ep'
 import { toFactorGraph, toStructure } from 'omai-engine/probprog/model'
 import { type SpikeSlabPosterior, spikeSlabRegression } from 'omai-engine/probprog/validation'
 import { toFlat } from 'omai-engine/tensor'

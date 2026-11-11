@@ -8,12 +8,13 @@
  * grid of the model written as a program for the rest. `docs/probprog/ep-priors.md` is the table the atoms illustrate.
  */
 
-import { lgamma } from '../numerics/special/index.ts'
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { dict, real } from '../space/index.ts'
-import { item } from '../tensor/index.ts'
-import type { Config } from '../trace/index.ts'
+import { lgamma } from '../../numerics/special/index.ts'
+import { dict, real } from '../../space/index.ts'
+import { item } from '../../tensor/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import {
   type AtomProblem,
   type AtomTolerance,
@@ -23,7 +24,6 @@ import {
   type RefJoint,
 } from './ep-atoms.ts'
 import { normalPdf, quadratureMarginal } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 const lg = (x: number): number => item(lgamma(x))
 const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0)
@@ -176,7 +176,7 @@ const CATEGORIES = [0, 1, 1, 2, 1, 0, 1]
  * @concept expectation-propagation
  * @example
  * ```ts
- * import { normalInverseGammaPosterior } from 'omai-engine/bayesian-examples'
+ * import { normalInverseGammaPosterior } from 'omai-engine/probprog/ep'
  * normalInverseGammaPosterior([1, 2, 3], 0, 1, 3, 2).mu.mean // => 1.5
  * ```
  */
@@ -213,10 +213,10 @@ export function normalInverseGammaPosterior(
 
 function nigProblem(k: Config): AtomProblem {
   const [m0, kappa, a, b] = [
-    exampleNumber(k, 'priorMean'),
-    exampleNumber(k, 'kappa'),
-    exampleNumber(k, 'shape'),
-    exampleNumber(k, 'scale'),
+    configNumber(k, 'priorMean'),
+    configNumber(k, 'kappa'),
+    configNumber(k, 'shape'),
+    configNumber(k, 'scale'),
   ]
   // region prior-normal-inverse-gamma
   const definition = defineModel('normal-inverse-gamma', (m) => {
@@ -253,7 +253,7 @@ function nigProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a normal-inverse-gamma prior on a Gaussian mean and variance (exact).
  * @example
  * ```ts
- * import { priorNormalInverseGammaAtom } from 'omai-engine/bayesian-examples'
+ * import { priorNormalInverseGammaAtom } from 'omai-engine/probprog/ep'
  * priorNormalInverseGammaAtom.name // => 'prior-normal-inverse-gamma'
  * ```
  */
@@ -284,7 +284,7 @@ export const priorNormalInverseGammaAtom: EpAtom = defineAtom({
 // ----- a normal prior on a mean with a normal hyperprior on its centre -----
 
 function hierarchicalNormalProblem(k: Config): AtomProblem {
-  const [s0, s1] = [exampleNumber(k, 'hyperSd'), exampleNumber(k, 'priorSd')]
+  const [s0, s1] = [configNumber(k, 'hyperSd'), configNumber(k, 'priorSd')]
   // region prior-normal-hyperprior
   const definition = defineModel('normal-hyperprior', (m) => {
     const centre = m.latent('centre', d.normal(0, s0))
@@ -354,7 +354,7 @@ function hierarchicalNormalProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a normal prior on a mean with a normal hyperprior on its centre (exact).
  * @example
  * ```ts
- * import { priorNormalHyperAtom } from 'omai-engine/bayesian-examples'
+ * import { priorNormalHyperAtom } from 'omai-engine/probprog/ep'
  * priorNormalHyperAtom.name // => 'prior-normal-hyperprior'
  * ```
  */
@@ -377,7 +377,7 @@ export const priorNormalHyperAtom: EpAtom = defineAtom({
 // ----- an inverse gamma on a variance with a gamma hyperprior on its scale -----
 
 function inverseGammaHyperProblem(k: Config): AtomProblem {
-  const [a, c, dd] = [exampleNumber(k, 'shape'), exampleNumber(k, 'hyperShape'), exampleNumber(k, 'hyperRate')]
+  const [a, c, dd] = [configNumber(k, 'shape'), configNumber(k, 'hyperShape'), configNumber(k, 'hyperRate')]
   // region prior-inverse-gamma-hyperprior
   const definition = defineModel('inverse-gamma-hyperprior', (m) => {
     const scale = m.latent('scale', d.gamma(c, dd))
@@ -410,7 +410,7 @@ function inverseGammaHyperProblem(k: Config): AtomProblem {
  * @index estimator EP atom: an inverse-gamma prior on a variance with a gamma hyperprior on its scale.
  * @example
  * ```ts
- * import { priorInverseGammaHyperAtom } from 'omai-engine/bayesian-examples'
+ * import { priorInverseGammaHyperAtom } from 'omai-engine/probprog/ep'
  * priorInverseGammaHyperAtom.family // => 'priors'
  * ```
  */
@@ -440,7 +440,7 @@ export const priorInverseGammaHyperAtom: EpAtom = defineAtom({
 // ----- a gamma on a Poisson rate with a gamma hyperprior on the prior's rate -----
 
 function gammaPoissonHyperProblem(k: Config): AtomProblem {
-  const [a, c, dd] = [exampleNumber(k, 'shape'), exampleNumber(k, 'hyperShape'), exampleNumber(k, 'hyperRate')]
+  const [a, c, dd] = [configNumber(k, 'shape'), configNumber(k, 'hyperShape'), configNumber(k, 'hyperRate')]
   // region prior-gamma-poisson-hyperprior
   const definition = defineModel('gamma-poisson-hyperprior', (m) => {
     const prior = m.latent('priorRate', d.gamma(c, dd))
@@ -473,7 +473,7 @@ function gammaPoissonHyperProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a gamma prior on a Poisson rate with a gamma hyperprior on the prior's rate.
  * @example
  * ```ts
- * import { priorGammaPoissonHyperAtom } from 'omai-engine/bayesian-examples'
+ * import { priorGammaPoissonHyperAtom } from 'omai-engine/probprog/ep'
  * priorGammaPoissonHyperAtom.expected // => 'runs'
  * ```
  */
@@ -497,7 +497,7 @@ export const priorGammaPoissonHyperAtom: EpAtom = defineAtom({
 // ----- a log-normal prior on a Poisson rate -----
 
 function logNormalPoissonProblem(k: Config): AtomProblem {
-  const [mu0, s0] = [exampleNumber(k, 'logMean'), exampleNumber(k, 'logSd')]
+  const [mu0, s0] = [configNumber(k, 'logMean'), configNumber(k, 'logSd')]
   // region prior-lognormal-poisson
   const definition = defineModel('lognormal-poisson', (m) => {
     const rate = m.latent('rate', d.logNormal(mu0, s0))
@@ -524,7 +524,7 @@ function logNormalPoissonProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a log-normal prior on a Poisson rate.
  * @example
  * ```ts
- * import { priorLogNormalPoissonAtom } from 'omai-engine/bayesian-examples'
+ * import { priorLogNormalPoissonAtom } from 'omai-engine/probprog/ep'
  * priorLogNormalPoissonAtom.name // => 'prior-lognormal-poisson'
  * ```
  */
@@ -545,7 +545,7 @@ export const priorLogNormalPoissonAtom: EpAtom = defineAtom({
 })
 
 function logNormalPoissonHyperProblem(k: Config): AtomProblem {
-  const [s0, s1] = [exampleNumber(k, 'hyperSd'), exampleNumber(k, 'logSd')]
+  const [s0, s1] = [configNumber(k, 'hyperSd'), configNumber(k, 'logSd')]
   // region prior-lognormal-poisson-hyperprior
   const definition = defineModel('lognormal-poisson-hyperprior', (m) => {
     const centre = m.latent('centre', d.normal(1, s0))
@@ -577,7 +577,7 @@ function logNormalPoissonHyperProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a log-normal prior on a Poisson rate with a normal hyperprior on its log centre.
  * @example
  * ```ts
- * import { priorLogNormalPoissonHyperAtom } from 'omai-engine/bayesian-examples'
+ * import { priorLogNormalPoissonHyperAtom } from 'omai-engine/probprog/ep'
  * priorLogNormalPoissonHyperAtom.family // => 'priors'
  * ```
  */
@@ -602,7 +602,7 @@ export const priorLogNormalPoissonHyperAtom: EpAtom = defineAtom({
 const WAITS = [0.8, 1.9, 0.3, 1.2, 0.6]
 
 function gammaExponentialProblem(k: Config): AtomProblem {
-  const [a, b] = [exampleNumber(k, 'shape'), exampleNumber(k, 'rate')]
+  const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
   // region prior-gamma-exponential
   const definition = defineModel('gamma-exponential', (m) => {
     const rate = m.latent('rate', d.gamma(a, b))
@@ -629,7 +629,7 @@ function gammaExponentialProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a gamma prior on an exponential rate (conjugate, exact).
  * @example
  * ```ts
- * import { priorGammaExponentialAtom } from 'omai-engine/bayesian-examples'
+ * import { priorGammaExponentialAtom } from 'omai-engine/probprog/ep'
  * priorGammaExponentialAtom.reference // => 'exact'
  * ```
  */
@@ -658,8 +658,8 @@ export const priorGammaExponentialAtom: EpAtom = defineAtom({
 const LIFETIMES = [2.1, 0.7, 1.4, 3.0, 1.1]
 
 function weibullProblem(k: Config): AtomProblem {
-  const [s0, s1] = [exampleNumber(k, 'hyperSd'), exampleNumber(k, 'logSd')]
-  const shape = exampleNumber(k, 'shape')
+  const [s0, s1] = [configNumber(k, 'hyperSd'), configNumber(k, 'logSd')]
+  const shape = configNumber(k, 'shape')
   // region prior-normal-weibull-scale
   const definition = defineModel('normal-weibull-scale', (m) => {
     const centre = m.latent('centre', d.normal(0, s0))
@@ -693,7 +693,7 @@ function weibullProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a normal prior on a Weibull log scale with a normal hyperprior on its centre.
  * @example
  * ```ts
- * import { priorNormalWeibullAtom } from 'omai-engine/bayesian-examples'
+ * import { priorNormalWeibullAtom } from 'omai-engine/probprog/ep'
  * priorNormalWeibullAtom.name // => 'prior-normal-weibull-scale'
  * ```
  */
@@ -719,7 +719,7 @@ export const priorNormalWeibullAtom: EpAtom = defineAtom({
 const TRIALS = [3, 5, 2, 4]
 
 function betaGeometricProblem(k: Config): AtomProblem {
-  const [a, b] = [exampleNumber(k, 'a'), exampleNumber(k, 'b')]
+  const [a, b] = [configNumber(k, 'a'), configNumber(k, 'b')]
   // region prior-beta-geometric
   const definition = defineModel('beta-geometric', (m) => {
     const p = m.latent('p', d.beta(a, b))
@@ -745,7 +745,7 @@ function betaGeometricProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a beta prior on a geometric success probability (conjugate, exact).
  * @example
  * ```ts
- * import { priorBetaGeometricAtom } from 'omai-engine/bayesian-examples'
+ * import { priorBetaGeometricAtom } from 'omai-engine/probprog/ep'
  * priorBetaGeometricAtom.name // => 'prior-beta-geometric'
  * ```
  */
@@ -773,8 +773,8 @@ export const priorBetaGeometricAtom: EpAtom = defineAtom({
 
 function betaStrengthProblem(kind: 'gamma' | 'lognormal', k: Config): AtomProblem {
   const [a, b] = [
-    exampleNumber(k, kind === 'gamma' ? 'shape' : 'logMean'),
-    exampleNumber(k, kind === 'gamma' ? 'rate' : 'logSd'),
+    configNumber(k, kind === 'gamma' ? 'shape' : 'logMean'),
+    configNumber(k, kind === 'gamma' ? 'rate' : 'logSd'),
   ]
   // region prior-beta-strength-gamma prior-beta-strength-lognormal
   const definition = defineModel(`beta-strength-${kind}`, (m) => {
@@ -822,7 +822,7 @@ const STRENGTH_TOLERANCE: AtomTolerance = {
  * @index estimator EP atom: a beta prior on a probability with a gamma hyperprior on its strength.
  * @example
  * ```ts
- * import { priorBetaStrengthGammaAtom } from 'omai-engine/bayesian-examples'
+ * import { priorBetaStrengthGammaAtom } from 'omai-engine/probprog/ep'
  * priorBetaStrengthGammaAtom.family // => 'priors'
  * ```
  */
@@ -852,7 +852,7 @@ export const priorBetaStrengthGammaAtom: EpAtom = defineAtom({
  * @index estimator EP atom: a beta prior on a probability with a log-normal hyperprior on its strength.
  * @example
  * ```ts
- * import { priorBetaStrengthLogNormalAtom } from 'omai-engine/bayesian-examples'
+ * import { priorBetaStrengthLogNormalAtom } from 'omai-engine/probprog/ep'
  * priorBetaStrengthLogNormalAtom.family // => 'priors'
  * ```
  */
@@ -879,7 +879,7 @@ export const priorBetaStrengthLogNormalAtom: EpAtom = defineAtom({
 // ----- a Dirichlet prior on categorical probabilities -----
 
 function dirichletCategoricalProblem(k: Config): AtomProblem {
-  const a = exampleNumber(k, 'concentration')
+  const a = configNumber(k, 'concentration')
   // region prior-dirichlet-categorical
   const definition = defineModel('dirichlet-categorical', (m) => {
     const p = m.latent('p', d.dirichlet([a, a, a]))
@@ -907,7 +907,7 @@ function dirichletCategoricalProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a Dirichlet prior on categorical probabilities (conjugate, exact).
  * @example
  * ```ts
- * import { priorDirichletCategoricalAtom } from 'omai-engine/bayesian-examples'
+ * import { priorDirichletCategoricalAtom } from 'omai-engine/probprog/ep'
  * priorDirichletCategoricalAtom.name // => 'prior-dirichlet-categorical'
  * ```
  */
@@ -929,7 +929,7 @@ export const priorDirichletCategoricalAtom: EpAtom = defineAtom({
 })
 
 function dirichletStrengthProblem(k: Config): AtomProblem {
-  const [a, b] = [exampleNumber(k, 'shape'), exampleNumber(k, 'rate')]
+  const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
   // region prior-dirichlet-strength-gamma
   const definition = defineModel('dirichlet-strength-gamma', (m) => {
     const strength = m.latent('strength', d.gamma(a, b))
@@ -963,7 +963,7 @@ function dirichletStrengthProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a Dirichlet prior on categorical probabilities with a gamma hyperprior on its concentration.
  * @example
  * ```ts
- * import { priorDirichletStrengthAtom } from 'omai-engine/bayesian-examples'
+ * import { priorDirichletStrengthAtom } from 'omai-engine/probprog/ep'
  * priorDirichletStrengthAtom.family // => 'priors'
  * ```
  */
@@ -990,7 +990,7 @@ export const priorDirichletStrengthAtom: EpAtom = defineAtom({
 // ----- a logit-normal prior on a Bernoulli probability -----
 
 function logitNormalProblem(k: Config): AtomProblem {
-  const [s0, s1] = [exampleNumber(k, 'hyperSd'), exampleNumber(k, 'logitSd')]
+  const [s0, s1] = [configNumber(k, 'hyperSd'), configNumber(k, 'logitSd')]
   // region prior-logit-normal-bernoulli
   const definition = defineModel('logit-normal-bernoulli', (m) => {
     const centre = m.latent('centre', d.normal(0, s0))
@@ -1023,7 +1023,7 @@ function logitNormalProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a logit-normal prior on a Bernoulli probability with a normal hyperprior on its centre.
  * @example
  * ```ts
- * import { priorLogitNormalAtom } from 'omai-engine/bayesian-examples'
+ * import { priorLogitNormalAtom } from 'omai-engine/probprog/ep'
  * priorLogitNormalAtom.family // => 'priors'
  * ```
  */
@@ -1046,7 +1046,7 @@ export const priorLogitNormalAtom: EpAtom = defineAtom({
 // ----- a uniform prior on a Gaussian mean -----
 
 function uniformProblem(k: Config): AtomProblem {
-  const [lo, hi] = [exampleNumber(k, 'low'), exampleNumber(k, 'high')]
+  const [lo, hi] = [configNumber(k, 'low'), configNumber(k, 'high')]
   // region prior-uniform-mean
   const definition = defineModel('uniform-mean', (m) => {
     const mu = m.latent('mu', d.uniform(lo, hi))
@@ -1071,7 +1071,7 @@ function uniformProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a uniform prior on a Gaussian mean (projected).
  * @example
  * ```ts
- * import { priorUniformAtom } from 'omai-engine/bayesian-examples'
+ * import { priorUniformAtom } from 'omai-engine/probprog/ep'
  * priorUniformAtom.name // => 'prior-uniform-mean'
  * ```
  */
@@ -1102,7 +1102,7 @@ export const priorUniformAtom: EpAtom = defineAtom({
 const SMALL = [0.5, -1.2, 2.0, 0.3]
 
 function logNormalScaleProblem(k: Config): AtomProblem {
-  const [s0, s1] = [exampleNumber(k, 'hyperSd'), exampleNumber(k, 'logSd')]
+  const [s0, s1] = [configNumber(k, 'hyperSd'), configNumber(k, 'logSd')]
   // region prior-lognormal-scale-hyperprior
   const definition = defineModel('lognormal-scale-hyperprior', (m) => {
     const centre = m.latent('centre', d.normal(0, s0))
@@ -1135,7 +1135,7 @@ function logNormalScaleProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a log-normal prior on a Gaussian scale with a normal hyperprior on its log centre.
  * @example
  * ```ts
- * import { priorLogNormalScaleAtom } from 'omai-engine/bayesian-examples'
+ * import { priorLogNormalScaleAtom } from 'omai-engine/probprog/ep'
  * priorLogNormalScaleAtom.family // => 'priors'
  * ```
  */
@@ -1158,7 +1158,7 @@ export const priorLogNormalScaleAtom: EpAtom = defineAtom({
 // ----- a beta with two random shapes -----
 
 function betaTwoShapesProblem(k: Config): AtomProblem {
-  const s = exampleNumber(k, 'logSd')
+  const s = configNumber(k, 'logSd')
   // region prior-beta-two-shapes
   const definition = defineModel('beta-two-shapes', (m) => {
     const a = m.latent('a', d.logNormal(0.5, s))
@@ -1193,7 +1193,7 @@ function betaTwoShapesProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a beta prior on a probability with two random shapes.
  * @example
  * ```ts
- * import { priorBetaTwoShapesAtom } from 'omai-engine/bayesian-examples'
+ * import { priorBetaTwoShapesAtom } from 'omai-engine/probprog/ep'
  * priorBetaTwoShapesAtom.expected // => 'runs'
  * ```
  */
