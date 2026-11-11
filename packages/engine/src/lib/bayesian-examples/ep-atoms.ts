@@ -46,6 +46,38 @@ export interface AtomQuantity {
   readonly support: AtomSupport
   /** The value the data were generated with, when there is one (drawn as a mark). */
   readonly truth?: number
+  /**
+   * A quantity that is not a site of the model but a function of EP's beliefs of others (the value a gate selects, from the
+   * beliefs of its components and its switch): computed from the beliefs at each sweep, after the quantities before it.
+   */
+  readonly derive?: (beliefs: Readonly<Record<string, Belief>>) => Belief
+  /** Checked but not drawn on its own (a component of a gate, which is drawn through the gate's branches). */
+  readonly hidden?: boolean
+}
+
+/** One component of a mixture: what it weighs, and its Gaussian. */
+export interface MixtureBranch {
+  readonly label: string
+  readonly weight: number
+  readonly mean: number
+  readonly sd: number
+}
+
+/**
+ * A mixture drawn as the gate it is: the exact branches (each its Gaussian scaled by its posterior weight), their sum, the
+ * branches as EP's beliefs imply them (dashed) and the single Gaussian EP's belief is, the moment-matched projection of
+ * the mixture.
+ */
+export interface MixtureView {
+  readonly title: string
+  /** The quantity whose belief this replaces on the page (its single Gaussian is drawn here, as the projection of the mixture). */
+  readonly quantity: string
+  /** The axis label (the quantity the mixture is of). */
+  readonly label: string
+  /** The exact branches, with their posterior weights. */
+  readonly exact: readonly MixtureBranch[]
+  /** The branches EP's beliefs imply at a sweep (its weights are EP's switch probabilities), or undefined when they cannot be told apart. */
+  readonly ep: (beliefs: Readonly<Record<string, Belief>>) => readonly MixtureBranch[] | undefined
 }
 
 /** A set of points of the data figure. */
@@ -63,6 +95,8 @@ export interface FigurePoints {
 /** A curve of the data figure. */
 export interface FigureCurve {
   readonly name: string
+  /** A colour token (`tab1`) for a curve that is not the answer; default a muted line. */
+  readonly colour?: string
   readonly x: readonly number[]
   readonly y: readonly number[]
 }
@@ -106,6 +140,8 @@ export interface AtomProblem {
   readonly equations: readonly string[]
   /** A picture of the data, when there is data worth a picture (points in the plane); most setups have none. */
   readonly figure?: AtomFigure
+  /** Mixtures to draw as their branches (a gate's selected value, a component that may or may not be selected). */
+  readonly mixtures?: readonly MixtureView[]
   /** The closed-form marginals, by quantity name (when the atom's reference is `exact`). */
   readonly exact?: Readonly<Record<string, ExactMarginal>>
   /** The closed-form joint of the atom's pair (for contours), when the reference is `exact`. */
@@ -479,9 +515,13 @@ export function atomRun(problem: AtomProblem, ep: Config = {}): AtomRun {
   const read = (state: never): Record<string, Belief> => {
     const posterior = method.posterior?.(state, s.config as never)
     if (posterior === undefined) return {}
-    return Object.fromEntries(
-      problem.quantities.map((q) => [q.name, momentsOf(posterior as never, q.name, q.support)] as const),
-    )
+    const out: Record<string, Belief> = {}
+    for (const q of problem.quantities) {
+      const b = q.derive === undefined ? momentsOf(posterior as never, q.name, q.support) : q.derive(out)
+      const spread = q.support === 'probability' ? b.sd >= 0 : b.sd > 0
+      out[q.name] = { ...b, proper: b.proper && Number.isFinite(b.mean) && Number.isFinite(b.sd) && spread }
+    }
+    return out
   }
   const last = s.t
   const keep = new Set<number>([0, last])
@@ -550,7 +590,8 @@ export function atomCheck(
     const ep = beliefs[q.name] ?? { mean: Number.NaN, sd: Number.NaN, proper: false }
     const ref = reference.marginals[q.name] as RefMarginal
     const meanZ = Math.abs(ep.mean - ref.mean) / ref.sd
-    const sdRatio = ep.sd / ref.sd
+    // A probability's spread is that of a coin: where it is nearly certain both are about zero and their ratio means nothing.
+    const sdRatio = q.support === 'probability' ? (ep.sd + 1e-2) / (ref.sd + 1e-2) : ep.sd / ref.sd
     const ks =
       q.support === 'probability' ? 0 : ep.proper ? ksOf(beliefDensity(q.support, ep.mean, ep.sd), ref) : Number.NaN
     const pass =

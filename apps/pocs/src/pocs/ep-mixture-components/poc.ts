@@ -3,7 +3,7 @@ import type { Poc } from '../../poc.ts'
 export const poc: Poc = {
   title: 'Random index into random components',
   summary:
-    'Two random component means mu_1 and mu_2 and a random index z that picks one of them for the observation y: the gate written as an index, mu[z], whose exact marginals are two-component mixtures.',
+    'The same switch written as an index: a categorical z picks component mu[z] of two random component means for the observation y. EP reports the probability of each component; the exact posterior of the selected value is the mixture of the updated components.',
   tags: ['expectation propagation', 'ep', 'atom', 'gates', 'prior', 'prior', 'index gate', 'gaussian likelihood'],
   added: '2026-11-11',
   group: 'expectation-propagation',

@@ -4,6 +4,7 @@ import {
   type AtomReference,
   type Belief,
   beliefDensity,
+  type MixtureView,
   type RefJoint,
   type RefMarginal,
 } from 'omai-engine/bayesian-examples'
@@ -110,9 +111,9 @@ export function DataFigure(props: {
       name: c.name,
       x: c.x,
       y: c.y,
-      colour: 'muted',
-      width: 1.4,
-      opacity: 0.8,
+      colour: c.colour ?? 'muted',
+      width: c.colour === undefined ? 1.4 : 2.4,
+      opacity: 0.85,
     }))
     const answers = (means: Readonly<Record<string, number>> | undefined): Curve[] =>
       means === undefined || figure.answer === undefined
@@ -286,5 +287,87 @@ export function ProbabilityBars(props: {
         </div>
       ))}
     </div>
+  )
+}
+
+const BRANCH_COLOURS = ['tab1', 'tab2']
+
+/**
+ * A mixture drawn as the gate it is: each exact branch as its Gaussian scaled by its posterior weight (two colours), their sum
+ * as the exact posterior, the branches EP's beliefs imply (dashed, same colours) and the single Gaussian EP's belief is.
+ */
+export function MixtureChart(props: {
+  readonly view: MixtureView
+  /** EP's belief of the mixed quantity, at the viewed sweep. */
+  readonly belief: Belief | undefined
+  /** All of EP's beliefs at the viewed sweep, from which the branches it implies are told. */
+  readonly beliefs: Readonly<Record<string, Belief>> | undefined
+}): ReactNode {
+  const { view, belief, beliefs } = props
+  const shape = useMemo(() => {
+    const all = [...view.exact]
+    const lo = Math.min(...all.map((b) => b.mean - 4.5 * b.sd))
+    const hi = Math.max(...all.map((b) => b.mean + 4.5 * b.sd))
+    const xs = linspace(lo, hi, 500)
+    const at = (b: { weight: number; mean: number; sd: number }): number[] =>
+      xs.map((x) => b.weight * beliefDensity('real', b.mean, b.sd)(x))
+    return { xs, at, lo, hi }
+  }, [view])
+  const curves = useMemo(() => {
+    const { xs, at } = shape
+    const exact = view.exact.map((b) => at(b))
+    const total = xs.map((_, i) => exact.reduce((a, c) => a + (c[i] ?? 0), 0))
+    const out: Curve[] = [
+      ...view.exact.map((b, i) => ({
+        name: `${b.label}: ${b.weight.toFixed(3)}`,
+        x: xs,
+        y: exact[i] ?? [],
+        colour: BRANCH_COLOURS[i] ?? 'tab3',
+        width: 2,
+        area: 0.18,
+      })),
+      { name: 'exact: the sum', x: xs, y: total, colour: 'fg', width: 3.4 },
+    ]
+    const ep = view.ep
+    return { out, total, ep, xs }
+  }, [shape, view])
+  const full = useMemo(() => {
+    const { xs } = curves
+    const out = [...curves.out]
+    const branches = beliefs === undefined ? undefined : view.ep(beliefs)
+    branches?.forEach((b, i) => {
+      out.push({
+        name: `EP: ${b.label}`,
+        x: xs,
+        y: xs.map((x) => b.weight * beliefDensity('real', b.mean, b.sd)(x)),
+        colour: BRANCH_COLOURS[i] ?? 'tab3',
+        width: 1.4,
+        dash: 'dashed',
+      })
+    })
+    if (belief?.proper)
+      out.push({
+        name: 'EP: one Gaussian',
+        x: xs,
+        y: xs.map(beliefDensity('real', belief.mean, belief.sd)),
+        colour: 'tab0',
+        width: 2.6,
+        dash: 'dashed',
+      })
+    return out
+  }, [curves, belief, beliefs, view])
+  const top =
+    Math.max(
+      ...curves.total,
+      ...(belief?.proper ? curves.xs.map(beliefDensity('real', belief.mean, belief.sd)) : [0]),
+    ) * 1.1
+  return (
+    <CurveChart
+      curves={full}
+      x={{ label: view.label, limits: [shape.lo, shape.hi] }}
+      y={{ label: 'density', limits: [0, top] }}
+      aspect={2.2}
+      narrowAspect={1.6}
+    />
   )
 }

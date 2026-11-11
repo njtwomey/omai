@@ -16,7 +16,7 @@ import {
 } from 'omai-render/react'
 import { modelGraph } from 'omai-render/structures'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import { BeliefChart, DataFigure, JointChart, ProbabilityBars } from './ep/AtomCharts.tsx'
+import { BeliefChart, DataFigure, JointChart, MixtureChart, ProbabilityBars } from './ep/AtomCharts.tsx'
 import { type AtomState, useAtom } from './ep/useAtom.ts'
 
 const EP_KNOBS = ['schedule', 'damping', 'improper', 'tol', 'maxSweeps']
@@ -104,6 +104,8 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
   const planned = run !== undefined && run.status !== 'ran'
   const hasKnobs = Object.keys(atom.knobs.spaces).length > 0
   const probabilities = qs.filter((q) => q.support === 'probability')
+  const mixtures = problem?.mixtures ?? []
+  const covered = new Set(mixtures.map((m) => m.quantity))
   return (
     <div className="flex flex-col gap-5">
       <Banner atom={atom} state={state} />
@@ -170,9 +172,33 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
       </section>
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold">What to observe</h2>
+        {probabilities.length === 0 ? null : (
+          <div className="flex flex-col gap-1">
+            <h3 className="text-xs font-semibold text-muted">
+              The switch: the posterior probability of each branch, exact and from EP
+            </h3>
+            <ProbabilityBars quantities={probabilities} exact={reference?.marginals} ep={at} />
+          </div>
+        )}
+        {mixtures.length === 0 ? null : (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {mixtures.map((view) => (
+              <div key={view.quantity} className="flex min-w-0 flex-col gap-1">
+                <h3 className="text-xs font-semibold text-muted">{view.title}</h3>
+                <MixtureChart view={view} belief={at?.[view.quantity]} beliefs={at} />
+              </div>
+            ))}
+            <p className="text-xs text-muted lg:col-span-2">
+              Thick white: the exact posterior, which is the sum of the two weighted branches (the filled curves).
+              Dashed blue: what EP believes, one Gaussian per quantity, the moment-matched projection of that mixture
+              (its mean and spread are the mixture&apos;s, so it sits between the humps). Thin dashed in the branch
+              colours: the branches as EP&apos;s beliefs imply them.
+            </p>
+          </div>
+        )}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {qs
-            .filter((q) => q.support !== 'probability')
+            .filter((q) => q.support !== 'probability' && q.hidden !== true && !covered.has(q.name))
             .map((q) => (
               <div key={q.name} className="flex min-w-0 flex-col gap-1">
                 <h3 className="text-xs font-semibold text-muted">
@@ -200,9 +226,6 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
             </div>
           ) : null}
         </div>
-        {probabilities.length === 0 ? null : (
-          <ProbabilityBars quantities={probabilities} exact={reference?.marginals} ep={at} />
-        )}
         {ran === undefined || frames.length < 2 ? null : (
           <Player controller={playback} stamp={(f) => `sweep ${frames[f]?.sweep ?? f}`} />
         )}
