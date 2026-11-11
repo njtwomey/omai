@@ -37,6 +37,9 @@ export const spin: FactorOperator = {
   description: 'x in {-1, +1} with weight exp(field x)',
   ports: [{ name: 'x', accepts: ['gaussian'] }],
   support: { ep: 'exact' },
+  noRule: {
+    vmp: 'the spin is two point masses at plus and minus one: KL(q || p) is infinite for every Gaussian q (use expectation propagation, or a binary variable with a table)',
+  },
   readsTarget: true,
   ep: (c): OperatorResult => {
     const { plus, minus } = weights(c)

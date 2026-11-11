@@ -257,6 +257,12 @@ export interface FactorOperator {
   readonly defines?: number
   /** Why a rule has no message, in words, for the capability check (`greater-than` has no variational rule: a hard step has no finite KL). */
   readonly noRule?: Readonly<Partial<Record<Mode, string>>>
+  /**
+   * A reason this factor, from its parameters, has no message under a rule although the operator has one for others (a row of a
+   * registry whose expected log is infinite under any Gaussian or gamma belief): checked with `noRule` when a method asks whether
+   * a graph can run, so the refusal names the factor and the reason instead of failing in the run.
+   */
+  unsupported?(mode: Mode, params: Params): string | undefined
   /** A reason the factor cannot be built from these parameters and families, or `undefined` when it can. */
   check?(params: Params, families: readonly Family[]): string | undefined
   ep?(c: OperatorContext): OperatorResult

@@ -1,7 +1,7 @@
-import { classifierExample } from 'omai-engine/bayesian-examples'
 import type { ChainDiagnostics, DecisionSurface, PosteriorPairs } from 'omai-engine/exposition'
 import { ChainDiagnosticsView, DecisionSurfaceView, FigurePanel, PosteriorPairsView, useProbe } from 'omai-render/react'
 import type { ReactNode } from 'react'
+import { classifierExample } from '../../examples/index.ts'
 import {
   ExamplePage,
   type ExampleView,

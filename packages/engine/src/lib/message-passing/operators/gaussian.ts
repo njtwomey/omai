@@ -26,6 +26,7 @@ import {
   siteMessage,
   vectorParam,
 } from './args.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
 
 const ALL: readonly FamilyKind[] = [
   'gaussian',
@@ -328,13 +329,20 @@ function precisionParams(params: Params): { readonly scale: number; readonly off
 const logLikelihoodOfLogScale = (y: number, loc: number, s: number): number =>
   -0.5 * Math.log(2 * Math.PI) - s - 0.5 * (y - loc) ** 2 * Math.exp(-2 * s)
 
+/** The log density of the factor at the coordinates (x, s): the location is the parameter `loc`. */
+const logScaleAt =
+  (c: OperatorContext) =>
+  (v: readonly number[]): number =>
+    logLikelihoodOfLogScale(v[0] as number, numberParam(c.params, 'loc', 0), v[1] as number)
+
 /**
  * x ~ N(loc, exp(2 s)) with the log of the scale `s` a Gaussian variable and the value `x` observed: the observation of a
  * stochastic volatility model (the returns have scale `exp(h / 2)` with `h` a Gaussian log-variance). The log likelihood
  * `-s - (x - loc)^2 exp(-2 s) / 2` is concave in `s`, so the tilted density (the cavity of `s` times the likelihood) is
  * unimodal; expectation propagation matches its moments by quadrature on a grid over the cavity and sends the Gaussian
- * site that turns the cavity into them. There is no variational rule (the expected likelihood has no closed form in a Gaussian
- * `s`).
+ * site that turns the cavity into them. Variational message passing is non-conjugate: the expected log is closed form in a
+ * Gaussian `s` (`E exp(-2 s)` is a log-normal moment) but `exp(-2 s)` is not a statistic of the Gaussian, so the message is the
+ * natural gradient of the expectation (log-concave in `s`: the precision is positive).
  *
  * @concept factor-operators
  * @index structure An observation with a Gaussian log scale, x ~ N(loc, exp(2 s)): quadrature expectation propagation.
@@ -352,11 +360,11 @@ export const gaussianLogScale: FactorOperator = {
     { name: 'x', accepts: ['gaussian'] as const, constant: true },
     { name: 'logScale', accepts: ['gaussian'] as const },
   ],
-  support: { ep: 'numeric' },
+  support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: (to) => to === 1,
-  noRule: {
-    vmp: 'the expected Gaussian likelihood of a log scale has no closed form (use expectation propagation or a sampler)',
-  },
+  // The mean field: the non-conjugate message of log N(x; loc, exp(2 s)) in the log scale (and in a latent x), by quadrature.
+  vmp: (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), c.to, logScaleAt(c)) }),
+  expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), logScaleAt(c)),
   ep: (c): OperatorResult => {
     if (c.to !== 1) throw new OmaiError('value', 'gaussian-log-scale: the value x must be observed')
     const y = gaussianOf(arg(c, 0)).mean
@@ -465,8 +473,32 @@ export const product: FactorOperator = {
     { name: 'a', accepts: ['gaussian'], constant: true },
     { name: 'b', accepts: ['gaussian'], constant: true },
   ],
-  support: { ep: 'numeric' },
+  support: { ep: 'numeric', vmp: 'exact' },
   readsTarget: (to) => to !== 0,
+  // Deterministic: under the mean field `y` is the pushforward of `a` and `b` (the moments of a product of independent variables are
+  // closed form, and are all a Gaussian reader of `y` sees), and the message to `a` is the expected log of the cavity `(h, J)` of
+  // `y` over `b`: `[h E b, J E b^2]`.
+  defines: 0,
+  vmp: (c): OperatorResult => {
+    const a = gaussianOf(arg(c, 1))
+    const b = gaussianOf(arg(c, 2))
+    if (c.to === 0)
+      return {
+        message: gaussianMessage(
+          a.mean * b.mean,
+          a.variance * b.variance + a.variance * b.mean ** 2 + b.variance * a.mean ** 2,
+        ),
+      }
+    const out = arg(c, 0).eta
+    if (out === undefined)
+      throw new OmaiError(
+        'not-implemented',
+        'a deterministic factor with an observed output has no variational message',
+      )
+    const other = c.to === 1 ? b : a
+    return { message: [(out[0] ?? 0) * other.mean, (out[1] ?? 0) * (other.variance + other.mean ** 2)] }
+  },
+  expectedLog: () => 0,
   ep: (c): OperatorResult => {
     const a = gaussianOf(arg(c, 1))
     const b = gaussianOf(arg(c, 2))

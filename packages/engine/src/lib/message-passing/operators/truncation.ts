@@ -154,17 +154,22 @@ export const greaterThan: FactorOperator = {
  * isBetween.ep?.({ mode: 'ep', to: 1, args, params: { lower: -1, upper: 1 }, power: 1 }).message.length // => 2
  * ```
  */
-export const isBetween: FactorOperator = stepOperator('is-between', 'b = [lower < x < upper]', (params) => {
-  const lo = numberParam(params, 'lower')
-  const hi = numberParam(params, 'upper')
-  return {
-    inside: [[lo, hi]],
-    outside: [
-      [Number.NEGATIVE_INFINITY, lo],
-      [hi, Number.POSITIVE_INFINITY],
-    ],
-  }
-})
+export const isBetween: FactorOperator = {
+  ...stepOperator('is-between', 'b = [lower < x < upper]', (params) => {
+    const lo = numberParam(params, 'lower')
+    const hi = numberParam(params, 'upper')
+    return {
+      inside: [[lo, hi]],
+      outside: [
+        [Number.NEGATIVE_INFINITY, lo],
+        [hi, Number.POSITIVE_INFINITY],
+      ],
+    }
+  }),
+  noRule: {
+    vmp: 'a hard interval test is zero off the interval, so KL(q || p) is infinite for every Gaussian q (use the probit link with noise, or expectation propagation)',
+  },
+}
 
 /** The site message of N(m, v) Phi(x / sigma) for an observed true outcome, in the form that does not subtract nearly equal precisions. */
 function probitSite(m: number, v: number, sigma: number): [number, number] {

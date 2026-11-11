@@ -10,6 +10,7 @@
 import { tiltedByQuadrature } from '../_tilted.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, logNormal, massOf, scalarOf } from './args.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
@@ -30,12 +31,19 @@ function logLikelihood(x: number, m: { mean: number; variance: number }, power: 
   }
 }
 
+/** log N(x; m, exp(2 s)) at the coordinates (x, m, s): the density is log-concave in the mean and in the log scale. */
+const logScaleDensity = (v: readonly number[]): number =>
+  -(v[2] as number) -
+  0.5 * Math.log(2 * Math.PI) -
+  0.5 * ((v[0] as number) - (v[1] as number)) ** 2 * Math.exp(-2 * (v[2] as number))
+
 /**
  * x ~ N(m, exp(2 s)) for an observed x, a Gaussian mean m (or a known one) and a Gaussian log scale s. EP integrates the
  * mean out in closed form and the log scale by a quadrature that zooms onto where the tilted mass is: the message to the
  * log scale is its moment match, and the message to the mean is the moment match of the mixture of conditional Gaussians
- * over the tilted log scale. Variational message passing has no rule (the expected Gaussian likelihood of a log scale has no
- * closed form); the moments are checked against a two-dimensional brute-force grid.
+ * over the tilted log scale; the moments are checked against a two-dimensional brute-force grid. Variational message passing is
+ * non-conjugate (the expected log is `-E s - E[(x - m)^2] E[exp(-2 s)] / 2`, closed form, but `exp(-2 s)` is not a statistic of a
+ * Gaussian): the message to the log scale is the natural gradient of that expectation, to the mean the exact conjugate one.
  *
  * @concept factor-operators
  * @index structure An observation with a Gaussian mean and a Gaussian log scale, x ~ N(m, exp(2 s)): EP by one quadrature.
@@ -54,12 +62,11 @@ export const gaussianScale: FactorOperator = {
     { name: 'mean', accepts: ['gaussian'], constant: true },
     { name: 'logScale', accepts: ['gaussian'] },
   ],
-  support: { ep: 'numeric' },
+  support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: (to) => to !== 0,
   power: true,
-  noRule: {
-    vmp: 'the expected Gaussian likelihood of a log scale has no closed form (use expectation propagation or a sampler)',
-  },
+  vmp: (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), c.to, logScaleDensity) }),
+  expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), logScaleDensity),
   ep: (c): OperatorResult => {
     const { x, m, s } = read(c)
     const logf = logLikelihood(x, m, c.power)

@@ -1,7 +1,7 @@
 /** What the page and its worker share: the library's coin method and the producer that runs it in a worker. */
 
-import { coinMethod } from 'omai-engine/bayesian-examples'
 import { type WorkerLike, workerProducer } from 'omai-render/producer'
+import { coinMethod } from '../../examples/index.ts'
 
 export { coinMethod }
 

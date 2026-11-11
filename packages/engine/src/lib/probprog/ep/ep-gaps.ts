@@ -141,13 +141,13 @@ export const epGaps: readonly EpGap[] = [
   },
   {
     id: 'variational-rules',
-    title: 'Variational message passing lags behind EP',
+    title: 'Variational message passing: what it cannot run and where the mean field is poor',
     kind: 'infrastructure',
     status: 'open',
     summary:
-      'The new rules (mixture sites, likelihood sites, gates over random components, gamma products) have EP rules only, so the variational comparison is missing for them.',
-    plan: 'Add the mean-field rules where they exist in closed form and say so where they do not.',
-    size: 'medium',
+      'Variational message passing runs 78 of the 86 atoms (36 before the non-conjugate message by quadrature, the deterministic factors that define their output and the gates): the numeric likelihoods, scales, shapes, softmax, products, maxima, unary functions, gamma products and selects all have a mean-field message, each checked against the brute-force bound. What is left: the hard comparisons (`greater-than`, `is-between`, `spin`: KL(q || p) is infinite for a Gaussian q, the probit link is their variational form), the Weibull with a random shape (its expected log is infinite under a Gaussian or gamma belief), the custom functions of a random value, and the mixtures, where the mean field settles on the optimum that explains everything as clutter or as the spike (clutter and spike-and-slab) and the banana posterior of a product that a belief per variable cannot follow.',
+    plan: 'Start the mean field of a mixture from the data or from several restarts (as `epMultiStartMethod` does for EP), give the hard comparisons their probit form in the model compiler, and keep the coverage floor (`vmpCoverage`) going up.',
+    size: 'small',
     refuses: [],
   },
   {

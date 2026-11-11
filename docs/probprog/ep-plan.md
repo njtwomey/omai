@@ -18,16 +18,16 @@ Compiling each of the 27 benchmark models and asking for the EP verdict: **EP ru
 gamma-Poisson, logistic and probit regression, the Gaussian mixture, TrueSkill, the AR(1) state space, item response scoring).
 The other 18 are refused for a small number of reasons:
 
-| blocked by | models |
-| --- | --- |
-| `exp`, `square`, `tanh` of a random value (no unary-function rule) | poisson regression, funnel (non-centred), banana, Bayesian neural network |
-| a prior with no message family: half-normal, half-Cauchy, log-normal | eight schools (both forms), radon, negative binomial, GP (length scale), funnel |
-| a likelihood not mapped: negative binomial, Student-t, Laplace | negative binomial regression, (robust regression page) |
-| a random scale that is not the precision idiom | eight schools, funnel (centred), stochastic volatility, clutter |
-| a constraint (`ordered`) | ordered Gaussian mixture |
-| a dense Gaussian vector (`multivariateNormal`) and opaque custom functions (kernel Cholesky, stick breaking) | GP regression (both), stick-breaking mixture |
-| a gate over random components, a discrete variable in arithmetic | Gaussian HMM, bimodal |
-| a Dirichlet with no declared size (the compiler throws instead of refusing: a bug) | LDA |
+| blocked by                                                                                                   | models                                                                          |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `exp`, `square`, `tanh` of a random value (no unary-function rule)                                           | poisson regression, funnel (non-centred), banana, Bayesian neural network       |
+| a prior with no message family: half-normal, half-Cauchy, log-normal                                         | eight schools (both forms), radon, negative binomial, GP (length scale), funnel |
+| a likelihood not mapped: negative binomial, Student-t, Laplace                                               | negative binomial regression, (robust regression page)                          |
+| a random scale that is not the precision idiom                                                               | eight schools, funnel (centred), stochastic volatility, clutter                 |
+| a constraint (`ordered`)                                                                                     | ordered Gaussian mixture                                                        |
+| a dense Gaussian vector (`multivariateNormal`) and opaque custom functions (kernel Cholesky, stick breaking) | GP regression (both), stick-breaking mixture                                    |
+| a gate over random components, a discrete variable in arithmetic                                             | Gaussian HMM, bimodal                                                           |
+| a Dirichlet with no declared size (the compiler throws instead of refusing: a bug)                           | LDA                                                                             |
 
 Added on 2026-11-11: an EP rule for a Gaussian with a gamma-distributed precision (`gaussian-gamma-precision`), for an
 observed or a latent value (linear regression with an unknown noise level, a population with an unknown spread; checked against
@@ -55,16 +55,16 @@ stochastic-volatility observation (`N(0, exp(h))`) need. The SV observation is a
 
 **C. Gates and mixtures (Minka and Winn, "Gates")**: a discrete latent `z` selecting among sub-models. Spike and slab is the
 simplest gate: `z_j ~ Bernoulli(pi)`, `beta_j | z_j` narrow or wide. Two parts:
-  1. *A mixture-of-Gaussians prior factor* on a scalar (closed form: a Gaussian cavity times a K-component Gaussian mixture is a
-     K-component Gaussian mixture, so the moments are exact; no quadrature). This is spike and slab, scale mixtures, a
-     Student-t as a finite mixture, outlier models, and the `normalSpikeSlab` family of the model layer maps to it directly.
-  2. *The gate proper*: the model layer's `gate` node (listed as not built) and its EP/VMP messages, so a branch with its own
-     random variables works (the Gaussian HMM, the change-point models, zero-inflation, mixtures of regressions). The
-     message to `z` is the ratio of the branches' evidence under their cavities; the branch variables get messages weighted by
-     `z`'s cavity.
-  Plus `ordered` as a chain of `greater-than` factors (the factor exists, the compiler does not map the constraint).
+1. _A mixture-of-Gaussians prior factor_ on a scalar (closed form: a Gaussian cavity times a K-component Gaussian mixture is a
+   K-component Gaussian mixture, so the moments are exact; no quadrature). This is spike and slab, scale mixtures, a
+   Student-t as a finite mixture, outlier models, and the `normalSpikeSlab` family of the model layer maps to it directly.
+2. _The gate proper_: the model layer's `gate` node (listed as not built) and its EP/VMP messages, so a branch with its own
+   random variables works (the Gaussian HMM, the change-point models, zero-inflation, mixtures of regressions). The
+   message to `z` is the ratio of the branches' evidence under their cavities; the branch variables get messages weighted by
+   `z`'s cavity.
+   Plus `ordered` as a chain of `greater-than` factors (the factor exists, the compiler does not map the constraint).
 
-**D. Priors with no family: half-normal, half-Cauchy, inverse-gamma, log-normal, uniform, truncated normal**: a numeric *prior*
+**D. Priors with no family: half-normal, half-Cauchy, inverse-gamma, log-normal, uniform, truncated normal**: a numeric _prior_
 factor (project the density once onto the variable's family: Gamma for a positive scale, Gaussian for a real one), plus the
 known conjugate identities where they exist (a half-Cauchy as an inverse-gamma mixture; an inverse-gamma on a variance is a
 gamma on a precision). Scales that are not in the precision idiom (`sigma ~ halfNormal`, `exp(log sigma)`) are then handled by
@@ -89,8 +89,7 @@ The user's instinct is right: it should be doable with an accurate approximation
 `B` with a Gaussian prior of precision `lambda D` on the coefficients. Given `lambda` and the noise it is exactly Gaussian (EP is
 exact); the only non-Gaussian part is the smoothing parameter, a single positive scalar that scales the precision of the whole
 vector. Two routes, both modest:
-
-1. *Scale-mixture factor on the vector* (the principled one). The factor `f(beta, lambda) = N(beta; 0, (lambda K + P0)^-1)`, with
+1. _Scale-mixture factor on the vector_ (the principled one). The factor `f(beta, lambda) = N(beta; 0, (lambda K + P0)^-1)`, with
    `K` the penalty and `P0` a fixed precision for the unpenalised directions. With a Gaussian cavity `N(m, V)` on `beta` and a
    Gamma cavity on `lambda`, integrating `beta` out gives `Gamma(lambda) N(m; 0, V + (lambda K + P0)^-1)`: a function of the
    scalar `lambda` only, so the moments of `lambda` come from a grid in `log lambda` (the same device as the rule added today),
@@ -99,7 +98,7 @@ vector. Two routes, both modest:
    in the penalty's eigenbasis when the cavity is diagonal. The approximation is: `beta | y` Gaussian, `lambda | y` Gamma, which
    is accurate when the posterior of `log lambda` is close to a log-gamma, as it usually is. The compiler change: allow a random
    scale on a packed vector with a known constant matrix.
-2. *Per-coefficient route* (cheaper, covers ARD and basis selection too). Work in the penalty's eigenbasis, where the prior is
+2. _Per-coefficient route_ (cheaper, covers ARD and basis selection too). Work in the penalty's eigenbasis, where the prior is
    `gamma_j ~ N(0, 1 / (lambda d_j))`: the existing rule with a known constant multiplier `d_j` on the precision (a one-line
    generalisation of `precisionTilt`), with the coefficients as scalar variables (an "unpacked" compilation of the matmul: one
    sum-of-products row per observation) instead of one packed vector. ARD is the same with a precision per coefficient; basis
@@ -112,21 +111,21 @@ is already handled. The rest of the page's model (log-normal hyperpriors) is D a
 
 ## 4. Other distributions and use cases to plan for
 
-| use case | what it needs | in section 2 |
-| --- | --- | --- |
-| robust regression, outlier models | Student-t, Cauchy, Laplace, a mixture of inliers and outliers | A, C1 |
-| count data: Poisson, negative binomial, zero-inflated | exp link, negative binomial, a gate | A, B, C |
-| survival, reliability, censoring | Weibull, log-normal, exponential with a log link; truncation | A, B |
-| ordinal and ranking (ratings, Bradley-Terry, Plackett-Luce) | ordinal probit, logistic on differences (IRT is this) | A, existing |
-| quantile regression | asymmetric Laplace | A |
-| variable selection, sparse regression | spike and slab, ARD, horseshoe (a scale mixture: half-Cauchy via inverse gamma) | C1, D |
-| hierarchical models with a learned spread | precision idiom, half-normal and half-Cauchy sds | D, done for the gamma form |
-| correlated random effects, varying slopes | LKJ or Wishart | G |
-| Gaussian processes: classification, count and survival GPs | dense MVN prior, kernel Gram data, A for the likelihood | E, A |
-| Bayesian neural networks | `tanh`, `relu`, `sigmoid` on random values | B |
-| state space, stochastic volatility, change points | `exp` variance, scan chains, gates | B, C2 |
-| mixtures, HMMs, topic models | gates, `table` / BP, Dirichlet sizes | C2, G |
-| factor models, matrix factorisation, recommenders | products of Gaussians (exist), ARD precisions | existing, F |
+| use case                                                    | what it needs                                                                   | in section 2               |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------- | -------------------------- |
+| robust regression, outlier models                           | Student-t, Cauchy, Laplace, a mixture of inliers and outliers                   | A, C1                      |
+| count data: Poisson, negative binomial, zero-inflated       | exp link, negative binomial, a gate                                             | A, B, C                    |
+| survival, reliability, censoring                            | Weibull, log-normal, exponential with a log link; truncation                    | A, B                       |
+| ordinal and ranking (ratings, Bradley-Terry, Plackett-Luce) | ordinal probit, logistic on differences (IRT is this)                           | A, existing                |
+| quantile regression                                         | asymmetric Laplace                                                              | A                          |
+| variable selection, sparse regression                       | spike and slab, ARD, horseshoe (a scale mixture: half-Cauchy via inverse gamma) | C1, D                      |
+| hierarchical models with a learned spread                   | precision idiom, half-normal and half-Cauchy sds                                | D, done for the gamma form |
+| correlated random effects, varying slopes                   | LKJ or Wishart                                                                  | G                          |
+| Gaussian processes: classification, count and survival GPs  | dense MVN prior, kernel Gram data, A for the likelihood                         | E, A                       |
+| Bayesian neural networks                                    | `tanh`, `relu`, `sigmoid` on random values                                      | B                          |
+| state space, stochastic volatility, change points           | `exp` variance, scan chains, gates                                              | B, C2                      |
+| mixtures, HMMs, topic models                                | gates, `table` / BP, Dirichlet sizes                                            | C2, G                      |
+| factor models, matrix factorisation, recommenders           | products of Gaussians (exist), ARD precisions                                   | existing, F                |
 
 ## 5. Plan
 
@@ -159,7 +158,6 @@ observation). Their reports say what exists; the work packages above absorb it r
 ## 7. Status at the end of 2026-11-11 (built by the example agents while the plan was written)
 
 Done, each with tests against an exact or brute-force reference (details in the commits):
-
 - `gaussian-gamma-precision`: EP for a gamma precision on an observed or a latent Gaussian (starts from a flat cavity: a first
   version blocked on one, fixed). Linear regression with unknown noise, a population with an unknown spread, the hierarchical
   Rasch model: EP within 0.1 reference sd of NUTS.
@@ -176,7 +174,6 @@ Done, each with tests against an exact or brute-force reference (details in the 
   inaccurate (a sign symmetry in the posterior); 2PL with log-normal discriminations needs `exp` of a random value.
 
 Done in WP-B (2026-11-11, `agent-pp53-rulesb`), each against an exact or brute-force reference:
-
 - The gate of Minka and Winn (`operators/gate.ts`, `gate`): a discrete variable selects among branch factors, each any operator of
   the registry over its own variables; the message to the variable is the ratio of the branches' evidence under their cavities, to a
   variable the moment-matched mixture over the branches (weighted by the variable's cavity and the evidence); VMP too (expected
@@ -199,11 +196,10 @@ Done in WP-B (2026-11-11, `agent-pp53-rulesb`), each against an exact or brute-f
 - Start messages on a factor spec (`FactorSpec.start`, carried by the compiled graph and read by the engine's `init`) replace the
   vague prior factors the compiler added for spike and slab and random precisions: the factor's own first update replaces the vague
   message, so the model is no longer changed by them. (The operators' own flat-cavity reads, `cavityOf` in
-  `gaussian-gamma-precision` and `widened` in the gate, were replaced by one engine policy, section 17.)
+  `gaussian-gamma-precision` and `widened` in the gate, were replaced by one engine policy, section 18.)
 - The benchmark audit: EP runs on 14 of 27 (10 before: gate-ordered mixture, bimodal, Gaussian HMM, clutter).
 
 Still open, in the order of the work packages that follow:
-
 - WP-A (likelihood and function rules): built, see section 8 (the likelihood registry, `apply`, the projected priors, the
   negative binomial with a random dispersion). Remaining of it: model-layer distributions for the ordinal probit and the
   asymmetric Laplace (their rules are in the registry), `sqrt` and `log` of a random value, the GP length scale (a kernel
@@ -225,7 +221,7 @@ With WP-A alone EP ran on 19 of the 27 benchmark models; with WP-B merged it run
   (exact, on the log). Ordinal probit and asymmetric Laplace are in the registry but have no model-layer distribution yet.
 - `apply` (`functions.ts`): `exp`, `square`, `tanh`, `relu` (closed form), `softplus`, `abs`, `sigmoid`; `max`/`min` with a known
   operand is a rectifier. Poisson regression, the funnels, the banana and the Bayesian neural network compile.
-- Priors without a message family (first projected once with `projectedPrior`, `priors.ts`, since section 17 the exact numeric
+- Priors without a message family (first projected once with `projectedPrior`, `priors.ts`, since section 18 the exact numeric
   `prior-site`): half-normal, half-Cauchy, log-normal, uniform and truncated normal, a positive scale on its log; a latent with a random scale is written non-centred, an observed value with a
   random scale is `gaussian-scale`. Eight schools (both forms), the centred funnel and radon compile.
 - `toFactorGraph(bound, { packScalars: true })`: scalar normal latents that share a predictor are one joint vector, so EP keeps
@@ -256,20 +252,20 @@ from a stated truth (knobs: the true values, `seed`, `n`), and `atomCalibration`
 reports per parameter the share of runs whose 90% interval holds the truth. The registry test (`ep-extended.test.ts`) asserts the promised
 floors. Coverage over 40 seeds (25 for the negative binomial) at the default knobs:
 
-| atom | parameter: coverage (error in sds, rms) |
-| --- | --- |
-| gaussian-learned | mean 0.82 (1.10), variance 0.95 (0.79) |
-| gamma-precision-learned | mean 0.82 (1.09), precision 0.97 (0.70) |
-| shared-precision-learned | precision 0.85 (1.01), mean 0.85 (1.21), the 8 values 0.86 (1.18) |
-| beta-bernoulli-learned | strength 1.00 (0.81), the 8 probabilities 0.90 (1.02) |
-| gamma-poisson-learned | prior rate 0.90 (0.89), the 8 rates 0.89 (1.04) |
-| student-t-learned | location 0.88 (1.01), precision 0.97 (0.87) |
-| probit-learned | offset 0.97, slopes 0.93 and 0.88 (0.9 to 1.2) |
-| logistic-learned | offset 0.90, slopes 0.82 and 0.78 (shrinkage of fixed weights, 1.3) |
-| poisson-log-learned | intercept 0.88, slope 0.85 (1.05, 1.11) |
-| poisson-log-dispersion-learned | intercept 0.92, slope 0.96, dispersion 0.96 |
-| weibull-learned | intercept 0.97, slope 0.88 |
-| skill-difference-learned | spread precision 1.00 (0.53, an informative prior), the 8 skills 0.86 (1.14) |
+| atom                           | parameter: coverage (error in sds, rms)                                      |
+| ------------------------------ | ---------------------------------------------------------------------------- |
+| gaussian-learned               | mean 0.82 (1.10), variance 0.95 (0.79)                                       |
+| gamma-precision-learned        | mean 0.82 (1.09), precision 0.97 (0.70)                                      |
+| shared-precision-learned       | precision 0.85 (1.01), mean 0.85 (1.21), the 8 values 0.86 (1.18)            |
+| beta-bernoulli-learned         | strength 1.00 (0.81), the 8 probabilities 0.90 (1.02)                        |
+| gamma-poisson-learned          | prior rate 0.90 (0.89), the 8 rates 0.89 (1.04)                              |
+| student-t-learned              | location 0.88 (1.01), precision 0.97 (0.87)                                  |
+| probit-learned                 | offset 0.97, slopes 0.93 and 0.88 (0.9 to 1.2)                               |
+| logistic-learned               | offset 0.90, slopes 0.82 and 0.78 (shrinkage of fixed weights, 1.3)          |
+| poisson-log-learned            | intercept 0.88, slope 0.85 (1.05, 1.11)                                      |
+| poisson-log-dispersion-learned | intercept 0.92, slope 0.96, dispersion 0.96                                  |
+| weibull-learned                | intercept 0.97, slope 0.88                                                   |
+| skill-difference-learned       | spread precision 1.00 (0.53, an informative prior), the 8 skills 0.86 (1.14) |
 
 Gaps found. (1) `laplace-learned` is planned: the library takes a Laplace likelihood with a known scale only ("the scale of 'y' is
 random"); the missing rule is a two-variable numeric site over (location, scale) in the pattern of `negative-binomial-dispersion`. The grid
@@ -289,9 +285,9 @@ and benchmark model EP refuses is named by a gap, and a gap that names something
 rules (`message-passing/operators`), the compiler mappings (`probprog/model/factors.ts`), the model families
 (`probprog/model/dists`) and the methods (`probprog/inference`) are in the library proper, and so is the suite that runs them:
 the setups (the atoms), coverage, recovery, calibration and the gaps themselves are in `probprog/ep` (`omai-engine/probprog/ep`;
-2026-11-11, `agent-pp161-move`, which closed the gap `integration`). `bayesian-examples` keeps the example methods of the pages.
-The one helper the atoms took from the example scaffold (`exampleNumber`) is `configNumber` in `probprog/inference/method.ts`, so
-`probprog` does not import `bayesian-examples`.
+2026-11-11, `agent-pp161-move`, which closed the gap `integration`). The example methods of the Bayesian pages (`defineExample`, the per-example knobs and budgets, the views) are not library: they are
+pocs code, in `apps/pocs/src/examples/` (moved there 2026-11-11: a demonstration composes library estimators, it is not one). The one
+helper the atoms took from the example scaffold (`exampleNumber`) is `configNumber` in `probprog/inference/method.ts`.
 ## 11. Robustness: what EP reports and what the variants do (2026-11-11, `agent-pp81-robust`)
 
 **False convergence (found by the sparse regression with outliers).** The engine took "the beliefs moved less than `tol` over a
@@ -307,7 +303,6 @@ active coefficients at 0.95 to 1.00) in 29 to 105 sweeps. Over 120 setups and se
 other converged run (all of the changepoint and sparse seeds measured) the unresolved count at convergence was zero.
 
 What the engine does now (`message-passing/engine.ts`, tests in `verdict.test.ts`):
-
 - Every sweep counts the updates that could not be computed, or that the improper-message policy dropped or reset
   (`MpState.unresolved`, the tape metric `mp/unresolved`). `mpVerdict(g, state, settings)` is the one place that says how a run
   stands and is what `done`, the posterior's `status` and the tape use.
@@ -330,13 +325,13 @@ What the engine does now (`message-passing/engine.ts`, tests in `verdict.test.ts
 `table` (the sticky chain), `select` (`y = c_z`, a point-mass constraint) and `poisson`. Measured against the program's Gibbs
 reference (mean regime-probability gap, accuracy of the most probable regime, ratio of EP's rate sds to the sampler's):
 
-| seed | plain EP | damping 0.3 | power 0.5 or alpha 0.5 on the compiled graph |
-| --- | --- | --- | --- |
-| 1 (all regimes visited) | exact (gap 0.001) | same | power: the same numbers (it has nothing to act on); alpha: refused ("no factor supports a power") |
-| 2 | gap 0.26, accuracy 0.70, sd ratios 0.31 / 0.15 / 0.12, 155 sweeps | gap 0.32, accuracy 1.00, 0.31 / 1.22 / 0.09 | as plain EP |
-| 5 | gap 0.25, accuracy 1.00, 0.96 / 0.12 / 0.09 | does not converge, gap 0.29 | as plain EP |
-| 8 | does not converge, gap 0.22, accuracy 0.79, 0.42 / 0.05 / 0.13 | does not converge | as plain EP |
-| 3 (visited) | exact | does not converge (gap 0.5), damping breaks a good run | as plain EP |
+| seed                    | plain EP                                                          | damping 0.3                                            | power 0.5 or alpha 0.5 on the compiled graph                                                      |
+| ----------------------- | ----------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| 1 (all regimes visited) | exact (gap 0.001)                                                 | same                                                   | power: the same numbers (it has nothing to act on); alpha: refused ("no factor supports a power") |
+| 2                       | gap 0.26, accuracy 0.70, sd ratios 0.31 / 0.15 / 0.12, 155 sweeps | gap 0.32, accuracy 1.00, 0.31 / 1.22 / 0.09            | as plain EP                                                                                       |
+| 5                       | gap 0.25, accuracy 1.00, 0.96 / 0.12 / 0.09                       | does not converge, gap 0.29                            | as plain EP                                                                                       |
+| 8                       | does not converge, gap 0.22, accuracy 0.79, 0.42 / 0.05 / 0.13    | does not converge                                      | as plain EP                                                                                       |
+| 3 (visited)             | exact                                                             | does not converge (gap 0.5), damping breaks a good run | as plain EP                                                                                       |
 
 Power EP and the alpha divergence do nothing on this graph for a structural reason: the only approximating factor is the
 `select`, a point-mass constraint `y = c_z`, and a delta has no power (raising the select to a power was tried: it gives thousands of
@@ -346,12 +341,12 @@ takes a power (`operators/gate.ts`: the message to `z` is the branch evidences t
 divided by `p`; tested against a grid). On that form (hand-built in the experiment; the compiler does not emit it) with the label
 permutation of the modes aligned to the Gibbs run:
 
-| seed | plain EP | power 0.5 | alpha 0.5 | alpha 0.3 |
-| --- | --- | --- | --- | --- |
-| 1 | gap 0.001, sd ratios 0.96 / 1.00 / 1.01 | same | same | same |
-| 2 | gap 0.32, accuracy 1.00, 0.31 / 1.22 / 0.09 | 0.32, 0.31 / 1.19 / 0.09 | 0.32, 0.31 / 1.19 / 0.09 | does not converge, 0.38, 0.43 / 0.10 / 0.09 |
-| 5 | does not converge, gap 0.36, accuracy 0.46, 0.25 / 0.15 / 0.16 | does not converge, 0.34, 0.42 | does not converge, 0.34, 0.46 | converged, 0.25, accuracy 0.85, 0.25 / 1.02 / 0.09 |
-| 8 | does not converge, gap 0.25, accuracy 0.69, 0.38 / 0.05 / 0.13 | does not converge, 0.24, 0.69 | does not converge, 0.22, 0.75 | does not converge, 0.24, 0.66 |
+| seed | plain EP                                                       | power 0.5                     | alpha 0.5                     | alpha 0.3                                          |
+| ---- | -------------------------------------------------------------- | ----------------------------- | ----------------------------- | -------------------------------------------------- |
+| 1    | gap 0.001, sd ratios 0.96 / 1.00 / 1.01                        | same                          | same                          | same                                               |
+| 2    | gap 0.32, accuracy 1.00, 0.31 / 1.22 / 0.09                    | 0.32, 0.31 / 1.19 / 0.09      | 0.32, 0.31 / 1.19 / 0.09      | does not converge, 0.38, 0.43 / 0.10 / 0.09        |
+| 5    | does not converge, gap 0.36, accuracy 0.46, 0.25 / 0.15 / 0.16 | does not converge, 0.34, 0.42 | does not converge, 0.34, 0.46 | converged, 0.25, accuracy 0.85, 0.25 / 1.02 / 0.09 |
+| 8    | does not converge, gap 0.25, accuracy 0.69, 0.38 / 0.05 / 0.13 | does not converge, 0.24, 0.69 | does not converge, 0.22, 0.75 | does not converge, 0.24, 0.66                      |
 
 No variant restores calibrated rates or regime probabilities; the rate sds of the barely visited regimes stay at 0.05 to 0.3 of the
 sampler's. Alpha 0.3 on seed 5 is the one improvement (a converged run, accuracy 0.85, one sd ratio restored) and it is not
@@ -384,14 +379,14 @@ against a four-dimensional grid with the switches summed out; a two-component mi
 
 The extended gate atoms run on it, each against an exact or sampled reference (default knobs; EP over the reference's sd):
 
-| atom | reference | EP against it | recovery over seeds (coverage of the 90% intervals) |
-| --- | --- | --- | --- |
-| clutter-learned | quadrature over four unknowns, switches summed out | centre 1.412 against 1.412 (+- 0.082 against 0.083), inlier precision 3.96 +- 0.88 against 3.97 +- 0.88, clutter precision 0.0995 against 0.0996, share 0.163 against 0.164; responsibilities within 0.004 | 40 seeds: centre 1.00, inlier 0.93, clutter 0.90, share 0.88 |
-| gate-random-learned | Gibbs sampler | means within 0.12 sd, precisions within 0.05 sd, share 0.406 +- 0.076 against 0.408 +- 0.083 | 20 seeds: 0.75 to 1.00 |
-| mixture-components-learned | Gibbs sampler (means relabelled in order) | means within 0.1 sd, spreads 0.88 to 1.01 of the sampler's | 20 seeds: 0.75 to 1.00; closer components: second mean 0.55 to 0.60, EP's spreads 0.5 to 0.7 of the sampler's (one reading of the labels) |
-| spike-and-slab-learned | exact (share and slab precision on a grid) | share 0.417 +- 0.148 against 0.421 +- 0.152, slab precision 0.201 +- 0.093 against 0.201 +- 0.104 | 20 seeds: 1.00 and 1.00 |
+| atom                       | reference                                          | EP against it                                                                                                                                                                                              | recovery over seeds (coverage of the 90% intervals)                                                                                       |
+| -------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| clutter-learned            | quadrature over four unknowns, switches summed out | centre 1.412 against 1.412 (+- 0.082 against 0.083), inlier precision 3.96 +- 0.88 against 3.97 +- 0.88, clutter precision 0.0995 against 0.0996, share 0.163 against 0.164; responsibilities within 0.004 | 40 seeds: centre 1.00, inlier 0.93, clutter 0.90, share 0.88                                                                              |
+| gate-random-learned        | Gibbs sampler                                      | means within 0.12 sd, precisions within 0.05 sd, share 0.406 +- 0.076 against 0.408 +- 0.083                                                                                                               | 20 seeds: 0.75 to 1.00                                                                                                                    |
+| mixture-components-learned | Gibbs sampler (means relabelled in order)          | means within 0.1 sd, spreads 0.88 to 1.01 of the sampler's                                                                                                                                                 | 20 seeds: 0.75 to 1.00; closer components: second mean 0.55 to 0.60, EP's spreads 0.5 to 0.7 of the sampler's (one reading of the labels) |
+| spike-and-slab-learned     | exact (share and slab precision on a grid)         | share 0.417 +- 0.148 against 0.421 +- 0.152, slab precision 0.201 +- 0.093 against 0.201 +- 0.104                                                                                                          | 20 seeds: 1.00 and 1.00                                                                                                                   |
 
-The two summed-out forms (`clutter-mixture-learned`, `spike-and-slab-marginal-learned`) run since section 17. The AR(1) twin has no
+The two summed-out forms (`clutter-mixture-learned`, `spike-and-slab-marginal-learned`) run since section 18. The AR(1) twin has no
 basic atom (the tracker is a program page).
 
 ## 14. The changepoint program with the rates and the transition matrix learned (2026-11-11, `agent-pp111-cpext`)
@@ -462,7 +457,7 @@ concentration within 1e-3 (the gate and the clutter are exact: 0.0000); `exp`, `
 and the max (0.001) of Gaussians, a Gaussian with a gamma precision 0.024 and 0.038 (the gamma projected from a Student-t shaped tilt),
 Laplace 0.04, probit 0.016, logistic 0.019, the skill difference 0.001, a log-normal rate through `exp` 0.003 and 0.004, a Weibull
 0.009, a negative binomial with a learned dispersion 0.2. Three limits at the time (the first two are
-closed or explained in section 17): the projected priors (half-normal 0.42, half-Cauchy 0.19, uniform 0.09 nats: the graph carried the
+closed or explained in section 18): the projected priors (half-normal 0.42, half-Cauchy 0.19, uniform 0.09 nats: the graph carried the
 projection, not the prior); a fixed point with a factor whose cavity is improper (the learned logistic regression: NaN); an alpha
 divergence has no EP energy.
 
@@ -504,12 +499,12 @@ for one run (the exact spread counts the steps that may belong to the other regi
 On the changepoint program (`ep-program-changepoint`, 80 steps, stay 0.95, rates 3, 9, 22, 24 starts, Gibbs reference of the page; spreads as
 ratios of the sampler's, errors in sampler sds; one run -> the mixture):
 
-| seed | the rarely visited regime | the other rates | modes |
-| --- | --- | --- | --- |
-| 2 | rate[1] 19.5 +- 1.06 -> 18.8 +- 5.8 (Gibbs 17.5 +- 7.0): sd ratio 0.15 -> 0.83, error 0.28 -> 0.18 | rate[0] 0.31 -> 0.31, rate[2] 0.12 -> 1.27 | 4 |
-| 5 | rate[1] 8.4 +- 0.85 -> 12.3 +- 6.8 (Gibbs 13.2 +- 7.2): sd ratio 0.12 -> 0.94, error -0.66 -> -0.12 | rate[0] 0.96, rate[2] 0.09 -> 0.75 | 3 |
-| 8 | rate[1] 2.9 +- 0.45 -> 8.8 +- 6.0 (Gibbs 10.1 +- 9.2): sd ratio 0.05 -> 0.65, error -0.78 -> -0.15 | rate[0] 0.21, rate[2] 0.13 (unchanged) | 1 |
-| 1 (all visited) | one run is exact (sd ratios 1.00, 0.97, 1.01) -> the mixture is 4 to 12 times wider: it contains the relabelled modes | | 6 |
+| seed            | the rarely visited regime                                                                                             | the other rates                            | modes |
+| --------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----- |
+| 2               | rate[1] 19.5 +- 1.06 -> 18.8 +- 5.8 (Gibbs 17.5 +- 7.0): sd ratio 0.15 -> 0.83, error 0.28 -> 0.18                    | rate[0] 0.31 -> 0.31, rate[2] 0.12 -> 1.27 | 4     |
+| 5               | rate[1] 8.4 +- 0.85 -> 12.3 +- 6.8 (Gibbs 13.2 +- 7.2): sd ratio 0.12 -> 0.94, error -0.66 -> -0.12                   | rate[0] 0.96, rate[2] 0.09 -> 0.75         | 3     |
+| 8               | rate[1] 2.9 +- 0.45 -> 8.8 +- 6.0 (Gibbs 10.1 +- 9.2): sd ratio 0.05 -> 0.65, error -0.78 -> -0.15                    | rate[0] 0.21, rate[2] 0.13 (unchanged)     | 1     |
+| 1 (all visited) | one run is exact (sd ratios 1.00, 0.97, 1.01) -> the mixture is 4 to 12 times wider: it contains the relabelled modes |                                            | 6     |
 
 So calibration is restored for the regime nobody visits (the spread to 0.65 to 0.94 of the sampler's, the mean within 0.2 sds) and EP's
 mixture needs 2 to 6 EP runs' worth of time per start (23 to 47 s for 24 starts of a chain of 80 steps; 3 s on the easy seed). It is not
@@ -528,13 +523,13 @@ ordered by the counts) and a start for each relabelling are the next steps (gap 
 Four compiler mappings and one engine rule, each with a brute-force or exact reference, an atom or program page, and the coverage floors up
 (benchmarks 25 -> 27 of 27, atoms 68 of 72 -> 72 of 76 with the four new ones; the four planned atoms are the rule gaps of other work packages).
 
-| Mapping | Compiles to | Reference | EP against it |
-| --- | --- | --- | --- |
-| LDA-lite (`lda-lite`): a plate of Dirichlet mixtures over documents and of Dirichlet word distributions over topics, `categorical({ probs: phi.at(z) })` read through a discrete index | one conjugate `discrete` factor per token on its document's mixture and one `gate` per token on its topic whose branch `k` is the conjugate `discrete` factor of the observed word on topic `k`'s Dirichlet (`observedRowGate`, the same gate as an unknown transition row with an observed outcome) | the enumeration of the 2^15 topic assignments with the Dirichlets integrated out (the benchmark's own truth) | full EP in 2 s (35 variables, 35 factors): the 26 marginals within 0.26 truth sds at worst, spreads 0.58 to 1.16 of the truth's (the tokens that share a word share a topic); stochastic EP was not needed. Page `ep-topic-model` (two documents, exact beta mixtures over the 256 assignments): within 0.06 sds |
-| Stick-breaking mixture (`stick-breaking-mixture`) | `ops.stickBreaking(v)` is a first-class model operator (differentiable, so the other engines read it as before: the benchmark's `custom` function is gone), a `sticks` cell in the compiler and one `stick-breaking` factor per label (a new engine operator: the message to the label is the mean weights, to a break the beta matched on the log moments to cavity times `r_j v + (later states)(1 - v) + (earlier states)`, VMP the expected logs) | the 3-D quadrature of the benchmark | operator against a 3-D integral to 1e-3 (messages and evidence); the three breaks within 0.017 truth sds, spreads 0.89 to 0.97, log evidence 0.13 nats off. The weights `pi` are not a site of the graph (they are read back from the breaks). Page `ep-stick-breaking` (grid over the two breaks): within 0.02 sds |
-| Mixtures and switching regressions (gap `gate-node`, direction `mixture-regression`) | `ops.pick(matmul(X, B), z)`: the prediction of the class a row's discrete latent picks, one `gate` of Gaussian likelihoods per row over the classes' predictions (a known index selects, a known function of a discrete variable is the lookup of the branches) | `mixtureOfRegressions` (new, `validation/enumeration.ts`): the exact posterior by enumerating the assignments, validated against closed forms | coefficient means within 0.14 sds, spreads 0.72 to 1.05 of the exact, class probabilities within 0.12. Page `ep-mixture-regression` |
-| Hurdle counts (direction `count-models`) | families `zeroTruncatedPoisson` and `hurdlePoisson` (a zero with probability `zero`, else zero-truncated Poisson); the state of the hurdle is determined by the count, so a zero is a conjugate `bernoulli` observation of the Beta `zero` and a positive count the same observed false plus a `poisson-log-truncated` site (a new row of the likelihood registry) on the log rate | a Beta for `zero` (closed form) and a grid over the coefficients | `zero` exact to 1e-6, coefficients within 0.004 sds, spreads within 3%. Page `ep-hurdle-poisson` |
-| Vector-state linear dynamical systems (direction `kalman`) | `ops.matvec(F, prev)` and `ops.dot(h, state)`; a scan of multivariate normal states is one Gaussian vector per step, a `gaussian-transition` (new operator: `x ~ N(F w + c, Q)`, messages in information form so a cavity that sees only the position still passes information to the velocity; evidence in the joint's information form) between neighbours and a `linear-regression-row` per reading | the engine's Kalman filter and RTS smoother (`dynamics/filtering`) and the filter's log likelihood | means and sds of every step to 1e-6, the log evidence to 1e-8 (EP is exact on the chain); calibrated over 12 seeds (50 steps): the truth inside the 90% intervals at 87% (position) and 90% (velocity, which is never read), errors 1.07 and 0.98 posterior sds. Page `ep-program-kalman` |
+| Mapping                                                                                                                                                                                | Compiles to                                                                                                                                                                                                                                                                                                                                                                                                                                           | Reference                                                                                                                                     | EP against it                                                                                                                                                                                                                                                                                                       |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LDA-lite (`lda-lite`): a plate of Dirichlet mixtures over documents and of Dirichlet word distributions over topics, `categorical({ probs: phi.at(z) })` read through a discrete index | one conjugate `discrete` factor per token on its document's mixture and one `gate` per token on its topic whose branch `k` is the conjugate `discrete` factor of the observed word on topic `k`'s Dirichlet (`observedRowGate`, the same gate as an unknown transition row with an observed outcome)                                                                                                                                                  | the enumeration of the 2^15 topic assignments with the Dirichlets integrated out (the benchmark's own truth)                                  | full EP in 2 s (35 variables, 35 factors): the 26 marginals within 0.26 truth sds at worst, spreads 0.58 to 1.16 of the truth's (the tokens that share a word share a topic); stochastic EP was not needed. Page `ep-topic-model` (two documents, exact beta mixtures over the 256 assignments): within 0.06 sds    |
+| Stick-breaking mixture (`stick-breaking-mixture`)                                                                                                                                      | `ops.stickBreaking(v)` is a first-class model operator (differentiable, so the other engines read it as before: the benchmark's `custom` function is gone), a `sticks` cell in the compiler and one `stick-breaking` factor per label (a new engine operator: the message to the label is the mean weights, to a break the beta matched on the log moments to cavity times `r_j v + (later states)(1 - v) + (earlier states)`, VMP the expected logs) | the 3-D quadrature of the benchmark                                                                                                           | operator against a 3-D integral to 1e-3 (messages and evidence); the three breaks within 0.017 truth sds, spreads 0.89 to 0.97, log evidence 0.13 nats off. The weights `pi` are not a site of the graph (they are read back from the breaks). Page `ep-stick-breaking` (grid over the two breaks): within 0.02 sds |
+| Mixtures and switching regressions (gap `gate-node`, direction `mixture-regression`)                                                                                                   | `ops.pick(matmul(X, B), z)`: the prediction of the class a row's discrete latent picks, one `gate` of Gaussian likelihoods per row over the classes' predictions (a known index selects, a known function of a discrete variable is the lookup of the branches)                                                                                                                                                                                       | `mixtureOfRegressions` (new, `validation/enumeration.ts`): the exact posterior by enumerating the assignments, validated against closed forms | coefficient means within 0.14 sds, spreads 0.72 to 1.05 of the exact, class probabilities within 0.12. Page `ep-mixture-regression`                                                                                                                                                                                 |
+| Hurdle counts (direction `count-models`)                                                                                                                                               | families `zeroTruncatedPoisson` and `hurdlePoisson` (a zero with probability `zero`, else zero-truncated Poisson); the state of the hurdle is determined by the count, so a zero is a conjugate `bernoulli` observation of the Beta `zero` and a positive count the same observed false plus a `poisson-log-truncated` site (a new row of the likelihood registry) on the log rate                                                                    | a Beta for `zero` (closed form) and a grid over the coefficients                                                                              | `zero` exact to 1e-6, coefficients within 0.004 sds, spreads within 3%. Page `ep-hurdle-poisson`                                                                                                                                                                                                                    |
+| Vector-state linear dynamical systems (direction `kalman`)                                                                                                                             | `ops.matvec(F, prev)` and `ops.dot(h, state)`; a scan of multivariate normal states is one Gaussian vector per step, a `gaussian-transition` (new operator: `x ~ N(F w + c, Q)`, messages in information form so a cavity that sees only the position still passes information to the velocity; evidence in the joint's information form) between neighbours and a `linear-regression-row` per reading                                                | the engine's Kalman filter and RTS smoother (`dynamics/filtering`) and the filter's log likelihood                                            | means and sds of every step to 1e-6, the log evidence to 1e-8 (EP is exact on the chain); calibrated over 12 seeds (50 steps): the truth inside the 90% intervals at 87% (position) and 90% (velocity, which is never read), errors 1.07 and 0.98 posterior sds. Page `ep-program-kalman`                           |
 
 Also closed: gap `gate-random-scale` (a mean and a log spread chosen by one discrete variable, `exp(at(logSd, z))`): the observation is one
 `gate` whose branch `k` is the `gaussian-scale` factor on the mean and the log scale of state `k`, instead of two selects that lost which
@@ -562,7 +557,7 @@ beta variable with two random shapes is `beta-two-shapes` (`operators/concentrat
 `dirichlet-concentration` on the same grid: the conjugate integral `B(a + e1, b + e2) / B(a, b)` against the two shape cavities,
 messages to `p` matched on `E log p` and `E log (1 - p)`; tested against a triple brute-force integral.
 
-*Compiler (`factors.ts`, `observedPair`, `positivePort`).* `laplace(mu, scale)`, `asymmetricLaplace(mu, scale, tau)` and `studentT(df, mu, s)`
+_Compiler (`factors.ts`, `observedPair`, `positivePort`)._ `laplace(mu, scale)`, `asymmetricLaplace(mu, scale, tau)` and `studentT(df, mu, s)`
 with a random scale or df, `weibull(shape, exp(affine))` with a random shape and `beta(a, b)` observed map to `likelihood-pair`; a random
 positive parameter must be a gamma or exponential latent, a positive latent carried on its log, or `exp` of an affine value, else the
 refusal says so. A latent `beta(a, b)` with two different random shapes (each exactly a gamma or log-normal latent) maps to `beta-two-shapes`.
@@ -571,7 +566,7 @@ sds and spreads 0.8 to 1.2; the latent beta with two shapes: `p` within 0.01 of 
 the means but their spreads are 0.65 to 0.8 of the exact ones: the two shapes are strongly correlated and one Gaussian each cannot hold that
 (gap `loopy-overconfidence`).
 
-*Atoms.* `laplace-learned` (mean z 0.005 and 0.05, sd ratios 1.02 and 0.93; 40 seeds: coverage 0.93 and 0.97), `prior-beta-two-shapes` (p
+_Atoms._ `laplace-learned` (mean z 0.005 and 0.05, sd ratios 1.02 and 0.93; 40 seeds: coverage 0.93 and 0.97), `prior-beta-two-shapes` (p
 0.66717 against 0.66710, sd ratio 1.001; the shapes within 0.004 sd), and the new `student-t-df-learned` (gamma df prior; sd ratios 1.0 and
 0.94; the prior and the truth chosen so the exact posterior covers 0.96, EP the same) and `weibull-shape-learned` (sd ratios 0.95, 0.975;
 coverage 1.00 and 0.95 over 20 seeds). Closed gaps: `laplace-random-scale`, `two-random-shapes`, `learned-df`.
@@ -582,7 +577,7 @@ integral against the product of the cavities, found by adaptive Gauss-Hermite wi
 of the tilted moments, up to three rounds, stopped when the moments settle), 8 nodes per score for K = 3 and up to six free scores; the
 integral of a sweep is shared by the K ports and the evidence (one memoised slot). Tested against brute-force integrals for the logit (three
 classes, wide cavities, two classes, an observed score) and the probit (three classes within 1.5e-2, grid-limited; two classes within 4e-3).
-*Model layer:* `categorical({ logits }, { over: cls })` takes the class axis as a named event dimension (`DistSpec.eventDims`, honoured by
+_Model layer:_ `categorical({ logits }, { over: cls })` takes the class axis as a named event dimension (`DistSpec.eventDims`, honoured by
 the checker and by the program form, which lays it out as the last axis) and `categoricalProbit(scores, { over })` is the probit family; the compiler
 makes one `multiclass-site` per observation on the K scores. Model tests (`multiclass-factors.test.ts`): a softmax and a probit classifier with
 one slope per class against exact three-dimensional grids: means within 0.06 of an exact sd, spreads 0.78 to 0.86 (the three slopes share every
@@ -604,7 +599,7 @@ Student-t with random df and scale: a third axis of the grid).
 evidence against the grid evidence of the same model on the new atoms: beta two shapes 2e-5, ordinal 0.002, Student-t df 0.006, Weibull shape 0.036,
 quantile 0.07 and 0.02, draws 0.12 (loops), softmax 0.30 (loops).
 
-## 17. Engine quality: summed-out mixtures with random parameters, one flat-cavity policy, exact priors, the NaN evidence explained (2026-11-11, `agent-pp171-quality`)
+## 18. Engine quality: summed-out mixtures with random parameters, one flat-cavity policy, exact priors, the NaN evidence explained (2026-11-11, `agent-pp171-quality`)
 
 **Summed-out mixtures with a random share or random precisions (gap `mixture-site-random-parameters`, closed).** `normalOutliers(loc, scale,
 share, width)` with a random scale (the precision idiom of a gamma latent) or a random share (a beta latent), and `normalSpikeSlab(inclusion,
@@ -654,3 +649,64 @@ plated factor with a negative-precision neighbour.
 was right and the 14-panel brute-force reference was the error (2.2e-4 on the second moment of `b` for a precise `y` against wide `a`, `b`,
 tolerance 1e-4): the reference now uses 30 panels (400 random runs pass), and the counterexample of seed 1817728420 is pinned as a fixed
 example with the same `numRuns`.
+||||||| 0de7f0fc
+
+## 17. WP-V: the variational message of every operator that can have one (2026-11-11, `agent-pp172-variational`)
+
+**What was there.** Of the 60 operators of `defaultOperators()`, 30 had a variational (mean-field) message: the conjugate and affine ones, the probit
+and logistic links (Albert-Chib, Jaakkola-Jordan), the normal-gamma, the gate and the stick-breaking assignment. The other 30 had EP only, so the
+variational comparison was missing for 50 of the 86 atoms (36 ran).
+
+**The rule that closes most of it: the non-conjugate message (`operators/variational-numeric.ts`).** Knowles and Minka's non-conjugate variational
+message passing: the message of a factor to a port is the natural gradient of `E_q[log f]` in that port's belief, `F^-1 Cov_q(T, log f)` with `T` the
+sufficient statistics of the port's family (Gaussian: `(x, -x^2 / 2)`; gamma: `(log x, x)`; beta: `(log p, log(1 - p))`), found by quadrature under the
+beliefs of the other ports (Gauss-Hermite for a Gaussian, a grid in the log for a gamma, in the logit for a beta, panels cut at the kinks of a density
+such as a Laplace). It needs only the log density of the factor, so any factor with one gets a variational message at once, and the bound's term is the
+same quadrature. Where the density is log-concave the message has a positive precision (the softmax, the Gaussian with a log scale, the Poisson with a log
+link); where it is not (a Student-t, a mixture) the message can have a negative one, which the engine's damping and its `damp` repair for an improper
+belief handle. A fixed point is a stationary point of the bound (the checks below).
+
+**Operators that gained a variational message.** Through the non-conjugate message (support `numeric`): `likelihood-site` and its row (a registry of count,
+survival, ordinal, quantile and robust likelihoods), `student-t-site`, `laplace-site`, `mixture-site` and the three rows, `gaussian-scale`,
+`gaussian-log-scale`, `negative-binomial-dispersion`, `likelihood-pair` (a Gaussian or gamma coordinate read through its log), `multiclass-site` (softmax and
+multinomial probit: a product rule over the free scores, 5 to 12 nodes each), `dirichlet-concentration` and `beta-two-shapes` (exact to the beta or
+Dirichlet, non-conjugate in the concentration: `lgamma` of it), `mixture-weight`, every `numericOperator` (a user's density over Gaussians), and
+`probit-row` and `logistic-row` (the row lifts the link's message through `glmRow`, as `glmPlate` does). *Deterministic* factors define their output under
+the mean field (`FactorOperator.defines`): `product`, `gamma-product` (the gamma of `E log u + E log tau` and `E u E tau`, exact for a gamma or Gaussian
+reader), `matmul-constant`, `select` (the mixture of the components' beliefs, the switch gets the expected log of the output's cavity under each
+component, a component gets the cavity weighted by its probability), `max` and `min` (Clark's moments), and the unary functions of `apply` (the Gaussian of
+the pushforward's mean and variance, which is all a Gaussian reader sees; a reader that needs more sees an approximation). Conjugate, exact:
+`gaussian-transition` (the dynamics of a linear system: the information form from the other's mean; the mean field under-estimates the spread of a chain).
+
+Now 56 of the 60 do. **What cannot have one, and says so.** `greater-than` and `is-between` (a hard step is zero off its region, so KL(q || p) is infinite for every Gaussian
+q: the probit link with noise is the variational form), `spin` and `spin-row` (two point masses). The `likelihood-pair` row `weibull-shape`: its survival
+term `exp(shape (log y - log scale))` is a double exponential in a Gaussian or gamma shape, so its expected log under a mean-field belief is infinite (the
+fixed-shape `weibull-log` has a message); a new hook `FactorOperator.unsupported(mode, params)` carries a reason that depends on the parameters, and the
+compiler's capability check (`operatorsWithout`, `factorGraphVerdict`) reports it with the operator's own `noRule`, so the refusal names the factor and does
+not fail in the run.
+
+**Verification (`operators/variational.test.ts`).** The brute-force reference is the bound itself, computed with a quadrature of its own (composite
+Gauss-Legendre in `testing/message-passing.ts`, `bruteExpectation`, not the library's Gauss-Hermite and grids): for each factor, the fixed point of
+variational message passing must (1) have the engine's reported bound equal the brute-force bound there (1e-5; 1e-4 at a kink), (2) have a zero gradient of
+the brute-force bound in every natural parameter (central differences, 2e-4; 2e-3 at a kink), and (3) be a local maximum (steps of 0.04 in each natural
+parameter lower it). 28 cases: the Poisson, Student-t, Laplace and Weibull likelihoods, `gaussian-scale`, `gaussian-log-scale`, the Laplace pair with a gamma
+scale, the negative binomial dispersion, the Dirichlet concentration, `beta-two-shapes`, the softmax, `mixture-weight`, `mixture-site`, `gamma-product`
+(read by a gamma-precision Gaussian), `product`, `apply` (exp, tanh, softplus, square), `max`, `min`, `select` (with a free discrete switch) and
+`gaussian-transition`; the deterministic ones against the bound of the model with the output substituted. `matmul-constant` is the `dot-constant` rule on a
+one-row matrix; the row operators equal the expanded graph (predictor variable) to 1e-6.
+
+**Coverage (`vmpCoverage` in `ep-coverage.ts`, tested with a floor).** Atoms under variational message passing: **78 of 86 run** (36 before), 77 to a
+fixed point, 6 that EP runs are still planned. Against each atom's reference (closed form or grid), the mean error and the ratio of the standard
+deviations of the 16 atoms of the accuracy test: means within 0.5 sd (most within 0.1), spreads 0.53 to 1.1 of the reference (a mean field
+under-estimates: gamma-precision 0.88, quantile regression 0.81, softmax regression 0.73, Student-t 0.99, Poisson 0.97, Laplace 1.06 (a kinked
+density), Weibull 0.98, the two shapes of a beta 0.81 to 0.91, stick-breaking 0.82). The coverage page has a variational column.
+
+**Remaining (gap `variational-rules`).** (1) The hard comparisons (`ordered-pair`, `ordered-means`, `mixture-components-learned`): no mean-field rule
+exists, the probit form of the model has one. (2) The Weibull shape (`weibull-shape-learned`), as above. (3) A custom function of a random value
+(`gp-length-scale`, `gp-probit-learned`) has no exponential-family graph. (4) The mean field of a mixture finds a local optimum: `clutter`,
+`clutter-learned`, `spike-and-slab` and `spike-and-slab-learned` run and settle, but on the optimum that explains everything as clutter or as the spike
+(means 5 to 17 exact sds off, spreads 0.02 to 60 of the exact); EP, which the atoms were written for, finds the mixture; a start from the data or
+several restarts is the fix (as `epMultiStartMethod` for EP). (5) `product` (a banana posterior a belief per variable cannot follow) does not settle in 1000
+sweeps, as is usual for the mean field of a strongly correlated pair. (6) The non-conjugate message is not guaranteed to raise the bound at every sweep
+(the conjugate ones are): damping 0.3 with the `damp` repair settles every atom that runs but those of (5).
+

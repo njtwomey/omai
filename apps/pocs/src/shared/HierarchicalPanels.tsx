@@ -1,7 +1,7 @@
-import type { GroupEstimates, PosteriorRows } from 'omai-engine/bayesian-examples'
 import type { ChainDiagnostics, PosteriorPairs } from 'omai-engine/exposition'
 import { ChainDiagnosticsView, FigurePanel, PosteriorPairsView, useProbe } from 'omai-render/react'
 import type { ReactNode } from 'react'
+import type { GroupEstimates, PosteriorRows } from '../examples/index.ts'
 import { type ExampleView, fmt, Objective, ReferenceCheck, Table, useRecord, Waiting } from './ExamplePage.tsx'
 import { GroupEstimatesView } from './GroupEstimatesView.tsx'
 

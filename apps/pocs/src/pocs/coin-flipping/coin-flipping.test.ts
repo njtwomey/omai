@@ -1,8 +1,8 @@
-import { coinSteps } from 'omai-engine/bayesian-examples'
 import { defaults } from 'omai-engine/space'
 import type { Config } from 'omai-engine/trace'
 import { inlineProducer } from 'omai-render/producer'
 import { describe, expect, it } from 'vitest'
+import { coinSteps } from '../../examples/index.ts'
 import { coinMethod } from './method.ts'
 
 const config = { ...(defaults(coinMethod.config) as Config), flips: 12 }

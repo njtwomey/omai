@@ -1,7 +1,7 @@
 /** What the page and its worker share: the library's robust regression method and the producer that runs it in a worker. */
 
-import { robustRegressionMethod } from 'omai-engine/bayesian-examples'
 import { type WorkerLike, workerProducer } from 'omai-render/producer'
+import { robustRegressionMethod } from '../../examples/index.ts'
 
 export { robustRegressionMethod }
 

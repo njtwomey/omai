@@ -556,6 +556,34 @@ function momentsOf(
 }
 
 /**
+ * The beliefs of an atom's quantities in a posterior: the mean and standard deviation of each (a derived quantity from the
+ * beliefs before it), and whether each is a proper belief. What a run of any message-passing method reads at a sweep.
+ *
+ * @param problem - The problem (the quantities and their supports).
+ * @param posterior - The posterior of a message-passing state.
+ * @returns The beliefs by quantity name.
+ * @example
+ * ```ts
+ * import { atomBeliefs, atomBound, gaussianAtom } from 'omai-engine/probprog/ep'
+ * import { epSpecMethod } from 'omai-engine/probprog/inference'
+ * import { session } from 'omai-engine/trace'
+ * const problem = gaussianAtom.problem(gaussianAtom.defaults)
+ * const method = epSpecMethod(atomBound(problem))
+ * const s = session(method, { steps: 50, mode: 'eager' })
+ * atomBeliefs(problem, method.posterior?.(s.state, s.config) as never).mu?.proper // => true
+ * ```
+ */
+export function atomBeliefs(problem: AtomProblem, posterior: Parameters<typeof momentsOf>[0]): Record<string, Belief> {
+  const out: Record<string, Belief> = {}
+  for (const q of problem.quantities) {
+    const b = q.derive === undefined ? momentsOf(posterior, q.name, q.support) : q.derive(out)
+    const spread = q.support === 'probability' ? b.sd >= 0 : b.sd > 0
+    out[q.name] = { ...b, proper: b.proper && Number.isFinite(b.mean) && Number.isFinite(b.sd) && spread }
+  }
+  return out
+}
+
+/**
  * Run expectation propagation on an atom's problem, sweep by sweep, and keep the beliefs at each sweep and the messages as
  * a model-run record. A problem the library refuses is not run: the result carries the library's verdict.
  *
@@ -605,14 +633,7 @@ export function atomRun(problem: AtomProblem, ep: Config = {}, options: { readon
     // the beliefs by site
     const posterior = method.posterior?.(state, s.config as never)
     // endregion
-    if (posterior === undefined) return {}
-    const out: Record<string, Belief> = {}
-    for (const q of problem.quantities) {
-      const b = q.derive === undefined ? momentsOf(posterior as never, q.name, q.support) : q.derive(out)
-      const spread = q.support === 'probability' ? b.sd >= 0 : b.sd > 0
-      out[q.name] = { ...b, proper: b.proper && Number.isFinite(b.mean) && Number.isFinite(b.sd) && spread }
-    }
-    return out
+    return posterior === undefined ? {} : atomBeliefs(problem, posterior as never)
   }
   const last = s.t
   const keep = new Set<number>(options.light === true ? [last] : [0, last])

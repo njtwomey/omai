@@ -1,7 +1,7 @@
 /** What the page and its worker share: the library's radon method and the producer that runs it in a worker. */
 
-import { radonExample } from 'omai-engine/bayesian-examples'
 import { type WorkerLike, workerProducer } from 'omai-render/producer'
+import { radonExample } from '../../examples/index.ts'
 
 export { radonExample }
 

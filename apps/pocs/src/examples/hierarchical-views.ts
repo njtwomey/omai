@@ -6,11 +6,10 @@
  * They are plain functions of a `Posterior`, so each example's derived paths are a few lines over them.
  */
 
-import { type ChainDiagnostics, chainDiagnostics, type PosteriorPairs, posteriorPairs } from '../exposition/index.ts'
-import { type Posterior, samplePosterior } from '../probprog/posterior.ts'
-import { posteriorChains } from '../probprog/posterior-chains.ts'
-import { key } from '../random/index.ts'
-import { tensor, toFlat } from '../tensor/index.ts'
+import { type ChainDiagnostics, chainDiagnostics, type PosteriorPairs, posteriorPairs } from 'omai-engine/exposition'
+import { type Posterior, posteriorChains, samplePosterior } from 'omai-engine/probprog'
+import { key } from 'omai-engine/random'
+import { tensor, toFlat } from 'omai-engine/tensor'
 import { drawRows } from './example-method.ts'
 
 /** One scalar coordinate of a posterior: its mean, spread, interval, and the effective sample size and R-hat of chains. */
@@ -50,7 +49,7 @@ const finite = (v: number | undefined): number | null => (v !== undefined && Num
  * @returns The rows and the run's numbers.
  * @example
  * ```ts
- * import { posteriorRows } from 'omai-engine/bayesian-examples'
+ * import { posteriorRows } from './index.ts'
  * posteriorRows({ sites: [], form: 'point', diagnostics: {}, summary: () => [] } as never, ['mu']) // => undefined
  * ```
  */
@@ -119,7 +118,7 @@ export interface PairCoordinate {
  * @returns The record.
  * @example
  * ```ts
- * import { pairsRecord } from 'omai-engine/bayesian-examples'
+ * import { pairsRecord } from './index.ts'
  * pairsRecord({ sites: [] } as never, [], 'nuts') // => undefined
  * ```
  */
@@ -173,7 +172,7 @@ export function pairsRecord(
  * @returns The record.
  * @example
  * ```ts
- * import { chainsRecord } from 'omai-engine/bayesian-examples'
+ * import { chainsRecord } from './index.ts'
  * chainsRecord({ chains: undefined } as never, ['mu']) // => undefined
  * ```
  */
@@ -223,7 +222,7 @@ export type GroupEstimates = {
  * @returns The record.
  * @example
  * ```ts
- * import { groupEstimates } from 'omai-engine/bayesian-examples'
+ * import { groupEstimates } from './index.ts'
  * const row = (mean: number) => ({ name: 'a', mean, sd: 1, lo: mean - 1, hi: mean + 1, ess: null, rhat: null })
  * const g = groupEstimates({ xLabel: 'n', yLabel: 'effect', labels: ['a', 'b'], x: [1, 9], raw: [4, 4], rows: [row(2), row(3.5)], population: 0, dataIsLargeX: true })
  * [g.shrinkageOfSmallest, g.shrinkageOfLargest] // => [0.5, 0.125]
@@ -302,7 +301,7 @@ export type RowsCheck = {
  * @returns The comparison, or `undefined` when no coordinate is in both.
  * @example
  * ```ts
- * import { checkRows } from 'omai-engine/bayesian-examples'
+ * import { checkRows } from './index.ts'
  * const row = (name: string, mean: number) => ({ name, mean, sd: 1, lo: 0, hi: 0, ess: 100, rhat: 1 })
  * const c = checkRows({ rows: [row('mu', 1.1)], draws: 100, divergences: 0, maxRhat: 1, minEss: 100, form: 'samples' }, { rows: [row('mu', 1)], draws: 400, divergences: 0, maxRhat: 1, minEss: 100, form: 'samples' }, ['mu'])
  * [c?.compared, c?.maxMeanError.toFixed(1)] // => [1, '0.1']
@@ -359,7 +358,7 @@ export function checkRows(
  * @returns The flat record.
  * @example
  * ```ts
- * import { flattenCheck } from 'omai-engine/bayesian-examples'
+ * import { flattenCheck } from './index.ts'
  * flattenCheck({ compared: 2, referenceDraws: 9, referenceMinEss: null, maxMeanError: 0.1, worst: 'mu', medianSdRatio: 1, maxZ: null, worstZ: null, focus: [{ name: 'tau', meanError: 0.3, sdRatio: 0.9 }] }).tauError // => 0.3
  * ```
  */
@@ -389,7 +388,7 @@ export function flattenCheck(check: RowsCheck): Record<string, number | string |
  * @returns The posterior with the sites.
  * @example
  * ```ts
- * import { withDerivedSites } from 'omai-engine/bayesian-examples'
+ * import { withDerivedSites } from './index.ts'
  * import { pointPosterior } from 'omai-engine/probprog'
  * import { tensor } from 'omai-engine/tensor'
  * const p = withDerivedSites(pointPosterior({ a: tensor(2) }, { engine: 'test' }), ['b'], (d) => ({ b: [(d['a']?.[0] ?? 0) * 3] }), 4)

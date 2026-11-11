@@ -11,16 +11,16 @@
  * @index estimator Hierarchical radon (pooled, unpooled, partial pooling, varying slopes) over counties of unequal size.
  */
 
+import type { Posterior } from 'omai-engine/probprog'
 import {
   generateRadonCounties,
   type RadonParameterisation,
   type RadonPooling,
   radonCountiesDefinition,
-} from '../probprog/models/index.ts'
-import type { Posterior } from '../probprog/posterior.ts'
-import { key } from '../random/index.ts'
-import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
-import { type Config, derived } from '../trace/index.ts'
+} from 'omai-engine/probprog/models'
+import { key } from 'omai-engine/random'
+import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
+import { type Config, derived } from 'omai-engine/trace'
 import { defineExample, type Example, type ExampleProblem, exampleNumber, exampleString } from './example-method.ts'
 import {
   chainsRecord,
@@ -118,7 +118,7 @@ export function radonReferenceKnobs(config: Config): Config {
  * @returns The problem.
  * @example
  * ```ts
- * import { radonProblem } from 'omai-engine/bayesian-examples'
+ * import { radonProblem } from './index.ts'
  * const p = radonProblem({ counties: 10, minSize: 3, tau: 0.4, slopeSd: 0.3, dataSeed: 2, pooling: 'partial', parameterisation: 'non-centred' })
  * [p.sizes.length, Math.min(...p.sizes) >= 3] // => [10, true]
  * ```
@@ -321,7 +321,7 @@ const declared: Example<RadonProblem> = defineExample<RadonProblem>({
  * @concept inference-engines
  * @example
  * ```ts
- * import { radonExample } from 'omai-engine/bayesian-examples'
+ * import { radonExample } from './index.ts'
  * radonExample.reference({ pooling: 'partial', parameterisation: 'centred' }, { method: 'nuts' })['parameterisation'] // => 'non-centred'
  * ```
  */

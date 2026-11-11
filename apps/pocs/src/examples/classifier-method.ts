@@ -11,12 +11,12 @@
  * @index estimator Bayesian probit or logistic classifier on 2-D data: one chosen inference method with its knobs.
  */
 
-import { type ClassificationData, generate, trainTestSplit } from '../data/index.ts'
-import { blobs, circles, moons, spirals, xor } from '../datasets/index.ts'
-import { decisionSurface, posteriorPairs } from '../exposition/index.ts'
-import type { InferenceMethod } from '../probprog/inference/method.ts'
-import * as d from '../probprog/model/dists/index.ts'
-import { type DataInput, defineModel, type ModelDefinition, ops } from '../probprog/model/index.ts'
+import { type ClassificationData, generate, trainTestSplit } from 'omai-engine/data'
+import { blobs, circles, moons, spirals, xor } from 'omai-engine/datasets'
+import { decisionSurface, posteriorPairs } from 'omai-engine/exposition'
+import type { InferenceMethod } from 'omai-engine/probprog/inference'
+import { type DataInput, defineModel, type ModelDefinition, ops } from 'omai-engine/probprog/model'
+import * as d from 'omai-engine/probprog/model/dists'
 import {
   heldOutScores,
   type PolynomialFeatureMap,
@@ -24,11 +24,11 @@ import {
   probitData,
   probitPredictive,
   probitPredictiveGrid,
-} from '../probprog/models/probit-classification.ts'
-import { foldIn, type Key, key } from '../random/index.ts'
-import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
-import { toFlat } from '../tensor/index.ts'
-import { type Config, derived } from '../trace/index.ts'
+} from 'omai-engine/probprog/models'
+import { foldIn, type Key, key } from 'omai-engine/random'
+import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
+import { toFlat } from 'omai-engine/tensor'
+import { type Config, derived } from 'omai-engine/trace'
 import {
   columnMoments,
   defineExample,
@@ -146,7 +146,7 @@ function classifierDefinition(link: 'probit' | 'logistic', priorScale: number): 
  * @returns The problem.
  * @example
  * ```ts
- * import { classifierProblem } from 'omai-engine/bayesian-examples'
+ * import { classifierProblem } from './index.ts'
  * const p = classifierProblem({ dataset: 'moons', rows: 100, noise: 0.3, dataSeed: 1, link: 'probit', degree: 2, priorScale: 1 })
  * [p.train.x.length + p.test.x.length, p.map.size] // => [100, 6]
  * ```
@@ -333,7 +333,7 @@ export const classifierBudgetKnobs: DictSpace = exampleBudgetKnobs
  * @returns The steps.
  * @example
  * ```ts
- * import { classifierSteps } from 'omai-engine/bayesian-examples'
+ * import { classifierSteps } from './index.ts'
  * classifierSteps({ inference: { method: 'nuts', numWarmup: 100, numDraws: 200 } }) // => 302
  * ```
  */
@@ -350,7 +350,7 @@ export function classifierSteps(config: Config): number {
  * @returns The path and the label.
  * @example
  * ```ts
- * import { classifierObjective } from 'omai-engine/bayesian-examples'
+ * import { classifierObjective } from './index.ts'
  * classifierObjective({ inference: { method: 'svi' } }) // => { path: 'svi/elbo', label: 'ELBO' }
  * ```
  */
@@ -513,7 +513,7 @@ export const classifierKnobs: DictSpace = classifierExample.knobs
  * @index estimator Bayesian classifier method: data, link, degree, prior, one inference method as knobs.
  * @example
  * ```ts
- * import { classifierMethod, classifierSteps } from 'omai-engine/bayesian-examples'
+ * import { classifierMethod, classifierSteps } from './index.ts'
  * import { defaults, type UnionSpace } from 'omai-engine/space'
  * import { session } from 'omai-engine/trace'
  * const laplace = (classifierMethod.config.spaces['inference'] as UnionSpace).options['laplace']

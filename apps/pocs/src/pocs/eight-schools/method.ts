@@ -1,7 +1,7 @@
 /** What the page and its worker share: the library's eight schools method and the producer that runs it in a worker. */
 
-import { schoolsExample } from 'omai-engine/bayesian-examples'
 import { type WorkerLike, workerProducer } from 'omai-render/producer'
+import { schoolsExample } from '../../examples/index.ts'
 
 export { schoolsExample }
 

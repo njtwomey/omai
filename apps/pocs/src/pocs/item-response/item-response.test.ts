@@ -1,8 +1,8 @@
-import { irtSteps } from 'omai-engine/bayesian-examples'
 import { defaults } from 'omai-engine/space'
 import type { Config } from 'omai-engine/trace'
 import { inlineProducer } from 'omai-render/producer'
 import { describe, expect, it } from 'vitest'
+import { irtSteps } from '../../examples/index.ts'
 import { irtMethod } from './method.ts'
 
 const config = { ...(defaults(irtMethod.config) as Config), students: 15, questions: 6, budgetMs: 0 }

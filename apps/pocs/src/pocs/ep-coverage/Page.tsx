@@ -7,7 +7,10 @@ import {
   epCoverage,
   epDirections,
   epGaps,
+  type VmpCoverage,
+  type VmpCoverageRow,
   verifyAtom,
+  vmpCoverage,
 } from 'omai-engine/probprog/ep'
 import { type ReactNode, useMemo, useState } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
@@ -15,6 +18,9 @@ import { RunProgress } from '../../shared/RunProgress.tsx'
 import type { RunHost } from '../../shared/run.ts'
 import { useDeferred } from '../../shared/useDeferred.ts'
 import { useRun } from '../../shared/useRun.ts'
+
+/** The variational coverage of every setup, a module-level function so that the deferred computation keeps its identity. */
+const variationalCoverage = (): VmpCoverage => vmpCoverage()
 
 const sig = (v: number): string => (Number.isFinite(v) ? String(Number(v.toPrecision(2))) : '-')
 
@@ -31,6 +37,23 @@ function Status(props: { readonly row: CoverageRow }): ReactNode {
     <span style={{ color: off ? 'var(--wb-danger)' : ok ? 'var(--wb-success)' : 'var(--wb-warning)' }}>
       {row.status}
       {off ? ` (declared ${row.declared})` : ''}
+    </span>
+  )
+}
+
+/** Whether variational message passing runs a setup: runs (settled or not), or planned with the operators that lack a mean-field message as the reason. */
+function VariationalStatus(props: { readonly row: VmpCoverageRow | undefined }): ReactNode {
+  const { row } = props
+  if (row === undefined) return <span className="text-muted">-</span>
+  if (row.status === 'planned')
+    return (
+      <span title={row.reason} style={{ color: row.epRuns ? 'var(--wb-warning)' : 'var(--wb-muted)' }}>
+        planned
+      </span>
+    )
+  return (
+    <span style={{ color: row.converged === true ? 'var(--wb-success)' : 'var(--wb-warning)' }}>
+      runs{row.converged === true ? '' : ' (not settled)'}
     </span>
   )
 }
@@ -212,6 +235,11 @@ function Gaps(props: { readonly atoms: ReadonlySet<string> }): ReactNode {
 
 export default function EpCoverage(): ReactNode {
   const coverage = useDeferred(epCoverage)
+  const variational = useDeferred(variationalCoverage)
+  const variationalRows = useMemo(
+    () => new Map((variational?.atoms ?? []).map((r) => [r.name, r] as const)),
+    [variational],
+  )
   // The checks run one setup at a time, each a slice of work, so the page paints, shows how far it is, and Stop keeps the
   // outcomes so far.
   const [queue, setQueue] = useState<readonly string[] | undefined>(undefined)
@@ -274,6 +302,13 @@ export default function EpCoverage(): ReactNode {
             Each check runs EP and compares it with the exact answer; a few take a second or two.
           </span>
         </div>
+        <p className="max-w-3xl text-xs text-muted">
+          The variational column is the mean-field method on the same setups: every operator of the graph needs a
+          variational message, and the ones that have none say why (hover a planned entry).{' '}
+          {variational === undefined
+            ? 'Running the mean-field method on every setup...'
+            : `Variational message passing runs on ${variational.atomsRun} of ${variational.atoms.length}, ${variational.atomsConverged} of them to a fixed point.`}
+        </p>
         <RunProgress run={checks} label="Checks" />
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -282,6 +317,7 @@ export default function EpCoverage(): ReactNode {
                 <th className="py-1 font-normal">setup</th>
                 <th className="font-normal">family</th>
                 <th className="font-normal">status</th>
+                <th className="font-normal">variational</th>
                 <th className="font-normal">check</th>
                 <th className="font-normal">the factors, or the library’s reason</th>
               </tr>
@@ -299,6 +335,9 @@ export default function EpCoverage(): ReactNode {
                     <td className="pr-3 text-muted">{r.group}</td>
                     <td className="pr-3">
                       <Status row={r} />
+                    </td>
+                    <td className="pr-3">
+                      <VariationalStatus row={variationalRows.get(r.name)} />
                     </td>
                     <td className="pr-3 tabular-nums">
                       {o === undefined ? (

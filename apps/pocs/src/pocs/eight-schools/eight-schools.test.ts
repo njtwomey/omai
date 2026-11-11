@@ -1,8 +1,8 @@
-import { exampleSteps } from 'omai-engine/bayesian-examples'
 import { defaults } from 'omai-engine/space'
 import type { Config } from 'omai-engine/trace'
 import { inlineProducer } from 'omai-render/producer'
 import { describe, expect, it } from 'vitest'
+import { exampleSteps } from '../../examples/index.ts'
 import { schoolsExample } from './method.ts'
 
 const config = { ...(defaults(schoolsExample.method.config) as Config), budgetMs: 0 }

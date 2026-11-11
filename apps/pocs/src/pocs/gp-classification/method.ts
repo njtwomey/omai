@@ -1,7 +1,7 @@
 /** What the page and its worker share: the library's Gaussian process classification method and the producer that runs it in a worker. */
 
-import { gpClassificationMethod } from 'omai-engine/bayesian-examples'
 import { type WorkerLike, workerProducer } from 'omai-render/producer'
+import { gpClassificationMethod } from '../../examples/index.ts'
 
 export { gpClassificationMethod }
 

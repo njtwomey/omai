@@ -17,10 +17,10 @@
  * @index estimator Gaussian process classification: latent GP, Bernoulli link, one inference method, NUTS reference.
  */
 
-import { type ClassificationData, generate } from '../data/index.ts'
-import { circles, moons } from '../datasets/index.ts'
-import { posteriorComparison, posteriorPairs } from '../exposition/index.ts'
-import { gpClassifier } from '../gp/classification.ts'
+import { type ClassificationData, generate } from 'omai-engine/data'
+import { circles, moons } from 'omai-engine/datasets'
+import { posteriorComparison, posteriorPairs } from 'omai-engine/exposition'
+import { gpClassifier } from 'omai-engine/gp'
 import {
   crossGram,
   gram,
@@ -31,19 +31,19 @@ import {
   productKernel,
   rbfKernel,
   scaleKernel,
-} from '../kernels/index.ts'
-import { cholesky, solveTriangular } from '../numerics/linalg/index.ts'
-import { ndtr } from '../numerics/special/index.ts'
-import type { InferenceMethod } from '../probprog/inference/method.ts'
-import * as d from '../probprog/model/dists/index.ts'
-import { type DataInput, defineModel, type ModelDefinition, ops } from '../probprog/model/index.ts'
-import type { Posterior } from '../probprog/posterior.ts'
-import { type Approximation, agree, type MarginalOracle, weightedOracle } from '../probprog/validation/index.ts'
-import { normal as drawNormal, uniform as drawUniform, foldIn, key } from '../random/index.ts'
-import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
-import { quantile } from '../stats/index.ts'
-import { clip, matmul, mul, sqrt, tensor, toFlat, type Value } from '../tensor/index.ts'
-import { type Config, derived } from '../trace/index.ts'
+} from 'omai-engine/kernels'
+import { cholesky, solveTriangular } from 'omai-engine/numerics/linalg'
+import { ndtr } from 'omai-engine/numerics/special'
+import type { Posterior } from 'omai-engine/probprog'
+import type { InferenceMethod } from 'omai-engine/probprog/inference'
+import { type DataInput, defineModel, type ModelDefinition, ops } from 'omai-engine/probprog/model'
+import * as d from 'omai-engine/probprog/model/dists'
+import { type Approximation, agree, type MarginalOracle, weightedOracle } from 'omai-engine/probprog/validation'
+import { normal as drawNormal, uniform as drawUniform, foldIn, key } from 'omai-engine/random'
+import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
+import { quantile } from 'omai-engine/stats'
+import { clip, matmul, mul, sqrt, tensor, toFlat, type Value } from 'omai-engine/tensor'
+import { type Config, derived } from 'omai-engine/trace'
 import {
   columnMoments,
   defineExample,
@@ -351,7 +351,7 @@ const memo = new Map<string, GpClassificationProblem>()
  * @returns The problem.
  * @example
  * ```ts
- * import { gpClassificationProblem } from 'omai-engine/bayesian-examples'
+ * import { gpClassificationProblem } from './index.ts'
  * const p = gpClassificationProblem({ dataset: 'sinusoid', rows: 30, flips: 0, dataSeed: 1, kernel: 'rbf', lengthScale: 1, variance: 3, period: 4, hyper: 'fixed', link: 'logistic', priorSpread: 0.6 })
  * [p.x.length, p.dim, p.grid.length] // => [30, 1, 100]
  * ```
@@ -941,7 +941,7 @@ export const gpClassificationExample: Example<GpClassificationProblem> = defineE
  * @index estimator Gaussian process classification method: GP prior on the latent function, Bernoulli link, one inference method.
  * @example
  * ```ts
- * import { gpClassificationMethod, gpClassificationSteps } from 'omai-engine/bayesian-examples'
+ * import { gpClassificationMethod, gpClassificationSteps } from './index.ts'
  * import { defaults } from 'omai-engine/space'
  * import { session } from 'omai-engine/trace'
  * const config = { ...defaults(gpClassificationMethod.config), rows: 20, inference: { method: 'laplace' } }

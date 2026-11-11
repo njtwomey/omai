@@ -1,7 +1,7 @@
-import { type IrtSummary, irtHiddenKnobs, type Recovery } from 'omai-engine/bayesian-examples'
 import type { ChainDiagnostics, PosteriorPairs } from 'omai-engine/exposition'
 import { ChainDiagnosticsView, FigurePanel, NumberField, PosteriorPairsView, useProbe } from 'omai-render/react'
 import { type ReactNode, useState } from 'react'
+import { type IrtSummary, irtHiddenKnobs, type Recovery } from '../../examples/index.ts'
 import {
   ExamplePage,
   type ExampleView,

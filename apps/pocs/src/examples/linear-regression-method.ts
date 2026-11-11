@@ -17,14 +17,14 @@
  * @index estimator Bayesian linear regression with normal, spike-and-slab, ARD or horseshoe priors, one inference method.
  */
 
-import type { InferenceMethod } from '../probprog/inference/method.ts'
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops, type Var } from '../probprog/model/index.ts'
-import type { Posterior } from '../probprog/posterior.ts'
-import { normal as drawNormal, uniform as drawUniform, foldIn, key } from '../random/index.ts'
-import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
-import { toFlat } from '../tensor/index.ts'
-import { type Config, derived } from '../trace/index.ts'
+import type { Posterior } from 'omai-engine/probprog'
+import type { InferenceMethod } from 'omai-engine/probprog/inference'
+import { defineModel, ops, type Var } from 'omai-engine/probprog/model'
+import * as d from 'omai-engine/probprog/model/dists'
+import { normal as drawNormal, uniform as drawUniform, foldIn, key } from 'omai-engine/random'
+import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
+import { toFlat } from 'omai-engine/tensor'
+import { type Config, derived } from 'omai-engine/trace'
 import {
   columnMoments,
   defineExample,
@@ -116,7 +116,7 @@ export interface LinearProblem extends ExampleProblem {
  * @returns The problem.
  * @example
  * ```ts
- * import { linearRegressionProblem } from 'omai-engine/bayesian-examples'
+ * import { linearRegressionProblem } from './index.ts'
  * const p = linearRegressionProblem({ truth: 'line', inputs: 'centred', rows: 20, noise: 0.5, dataSeed: 1, degree: 2, priorScale: 3, noiseModel: 'known', sigmaScale: 1 })
  * [p.x.length, p.names] // => [20, ['intercept', 'slope', 'x^2']]
  * ```
@@ -706,7 +706,7 @@ const linearExample: Example<LinearProblem> = defineExample<LinearProblem>({
  * @index estimator Linear regression method: polynomial or sparse data, sparse priors, one inference method.
  * @example
  * ```ts
- * import { linearRegressionMethod, linearRegressionSteps } from 'omai-engine/bayesian-examples'
+ * import { linearRegressionMethod, linearRegressionSteps } from './index.ts'
  * import { defaults } from 'omai-engine/space'
  * import { session } from 'omai-engine/trace'
  * const config = { ...defaults(linearRegressionMethod.config), rows: 20, inference: { method: 'gaussian' } }

@@ -1,8 +1,8 @@
-import type { GroupEstimates } from 'omai-engine/bayesian-examples'
 import { cartesian, lines, points } from 'omai-render/charts'
 import { figure } from 'omai-render/figure'
 import { Chart, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo } from 'react'
+import type { GroupEstimates } from '../examples/index.ts'
 
 const FIGURE = figure({ width: 520, height: 320 })
 

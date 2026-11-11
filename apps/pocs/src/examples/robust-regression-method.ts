@@ -12,14 +12,14 @@
  * @index estimator Robust regression: outliers in a line, Gaussian, Student-t, Laplace or mixture likelihood, one inference method.
  */
 
-import type { InferenceMethod } from '../probprog/inference/method.ts'
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel } from '../probprog/model/index.ts'
-import type { Posterior } from '../probprog/posterior.ts'
-import { normal as drawNormal, uniform as drawUniform, foldIn, gammaVariates, key } from '../random/index.ts'
-import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
-import { toFlat } from '../tensor/index.ts'
-import { type Config, derived } from '../trace/index.ts'
+import type { Posterior } from 'omai-engine/probprog'
+import type { InferenceMethod } from 'omai-engine/probprog/inference'
+import { defineModel } from 'omai-engine/probprog/model'
+import * as d from 'omai-engine/probprog/model/dists'
+import { normal as drawNormal, uniform as drawUniform, foldIn, gammaVariates, key } from 'omai-engine/random'
+import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
+import { toFlat } from 'omai-engine/tensor'
+import { type Config, derived } from 'omai-engine/trace'
 import {
   columnMoments,
   defineExample,
@@ -88,7 +88,7 @@ export interface RobustProblem extends ExampleProblem {
  * @returns The problem.
  * @example
  * ```ts
- * import { robustRegressionProblem } from 'omai-engine/bayesian-examples'
+ * import { robustRegressionProblem } from './index.ts'
  * const p = robustRegressionProblem({ truth: 'line', inputs: 'centred', rows: 40, noise: 0.5, outliers: 0.2, outlierSize: 8, placement: 'random', dataSeed: 1, degree: 1, priorScale: 3, likelihood: 'studentT', dfModel: 'learned', df: 4, dfPriorMean: 10, contamination: 0.1, outlierScale: 10, noiseModel: 'learned', sigmaScale: 1 })
  * [p.x.length, p.outlier.some(Boolean)] // => [40, true]
  * ```
@@ -593,7 +593,7 @@ const robustExample: Example<RobustProblem> = defineExample<RobustProblem>({
  * @index estimator Robust regression method: outliers in the data, Gaussian, Student-t, Laplace or mixture likelihood, one inference method.
  * @example
  * ```ts
- * import { robustRegressionMethod, robustRegressionSteps } from 'omai-engine/bayesian-examples'
+ * import { robustRegressionMethod, robustRegressionSteps } from './index.ts'
  * import { defaults } from 'omai-engine/space'
  * import { session } from 'omai-engine/trace'
  * const config = { ...defaults(robustRegressionMethod.config), rows: 20, likelihood: 'gaussian', noiseModel: 'known', inference: { method: 'gaussian' } }

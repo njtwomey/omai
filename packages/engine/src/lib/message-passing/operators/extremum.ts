@@ -3,13 +3,15 @@
  * hinge, a rectifier, a best-of-two and a worst-case. The moments of the maximum of two independent Gaussians are
  * Clark's (1961) closed forms; the messages to the arguments, and to the output once it has been told something, are
  * moment matches of a one-dimensional integral whose integrand is a Gaussian times a normal distribution function.
- * Expectation propagation only: a deterministic non-affine factor has no finite mean-field message.
+ * Under variational message passing the output is defined by the inputs (the pushforward, Clark's moments), and the messages to the
+ * inputs are non-conjugate, by quadrature.
  */
 
 import { tiltedGrid } from '../_quadrature.ts'
 import { Phi, phi } from '../_scalar.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult, Port } from '../types.ts'
 import { allProper, etaOf, gaussianMessage, gaussianOf, gaussianSiteMessage, logNormal, massOf } from './args.ts'
+import { definedFunctionMessage } from './variational-numeric.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
@@ -125,8 +127,19 @@ export const maximum: FactorOperator = {
   name: 'max',
   description: 'y = max(a, b) for Gaussians',
   ports,
-  support: { ep: 'numeric' },
+  support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: (to) => to !== 0,
+  // Deterministic: under the mean field `y` is the pushforward (Clark's moments), and the message to an input is the
+  // non-conjugate message of the expected log of the output's cavity over the other input.
+  defines: 0,
+  vmp: (c): OperatorResult => {
+    if (c.to === 0) {
+      const m = clarkMax(gaussianOf(arg(c, 1)), gaussianOf(arg(c, 2)))
+      return { message: gaussianMessage(m.mean, Math.max(m.variance, 1e-300)) }
+    }
+    return { message: definedFunctionMessage(c.args, c.to, (x) => Math.max(x[0] as number, x[1] as number)) }
+  },
+  expectedLog: () => 0,
   ep: maxMessage,
   logEvidence: maxEvidence,
 }
@@ -150,8 +163,19 @@ export const minimum: FactorOperator = {
   name: 'min',
   description: 'y = min(a, b) for Gaussians',
   ports,
-  support: { ep: 'numeric' },
+  support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: (to) => to !== 0,
+  defines: 0,
+  vmp: (c): OperatorResult => {
+    if (c.to === 0) {
+      const a = gaussianOf(arg(c, 1))
+      const b = gaussianOf(arg(c, 2))
+      const m = clarkMax({ mean: -a.mean, variance: a.variance }, { mean: -b.mean, variance: b.variance })
+      return { message: gaussianMessage(-m.mean, Math.max(m.variance, 1e-300)) }
+    }
+    return { message: definedFunctionMessage(c.args, c.to, (x) => Math.min(x[0] as number, x[1] as number)) }
+  },
+  expectedLog: () => 0,
   ep: (c): OperatorResult => {
     const { message } = maxMessage({ ...c, args: c.args.map(negate) })
     return { message: [-(message[0] ?? 0), message[1] ?? 0] }
