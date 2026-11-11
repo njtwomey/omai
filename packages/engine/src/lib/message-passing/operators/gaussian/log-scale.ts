@@ -7,9 +7,9 @@
  * over it; the work does not grow with the number of random arguments.
  */
 
-import { arg, perPower } from '../../core/_messages.ts'
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, logNormal, massOf, scalarOf } from '../../core/args.ts'
-import { param } from '../../core/params.ts'
+import { arg } from '../../core/_messages.ts'
+import { allProper, gaussianOf, logNormal, massOf, scalarOf } from '../../core/args.ts'
+import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { tiltedByQuadrature } from '../../numerics/_tilted.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
@@ -54,7 +54,7 @@ const logScaleDensity = (v: readonly number[]): number =>
  * gaussianScale.ep?.({ mode: 'ep', to: 2, args, params: {}, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.151', '0.341']
  * ```
  */
-export const gaussianScale: FactorOperator = {
+export const gaussianScale: FactorOperator = defineOperator({
   name: 'gaussian-scale',
   description: 'x ~ N(m, exp(2 s)) with a Gaussian mean m and log scale s and an observed x',
   ports: [
@@ -63,37 +63,37 @@ export const gaussianScale: FactorOperator = {
     { name: 'logScale', accepts: ['gaussian'] },
   ],
   params: {},
-  support: { ep: 'numeric', vmp: 'numeric' },
-  readsTarget: (to) => to !== 0,
-  power: true,
-  vmp: (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), c.to, logScaleDensity) }),
-  expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), logScaleDensity),
-  ep: (c): OperatorResult => {
-    const { x, m, s } = read(c)
-    const logf = logLikelihood(x, m, c.power)
-    if (c.to === 2) {
-      const t = tiltedByQuadrature(s, logf)
-      const site = gaussianSiteMessage(etaOf(arg(c, 2)), t.mean, t.variance)
-      return { message: perPower(site, c.power) }
-    }
-    // The mean given the log scale is Gaussian: N(m, v) times N(x; m, exp(2 s)).
-    const post = (s2: number): { mean: number; variance: number } => {
-      const noise = Math.exp(-2 * s2)
-      const variance = 1 / (1 / m.variance + noise)
-      return { mean: variance * (m.mean / m.variance + x * noise), variance }
-    }
-    const t = tiltedByQuadrature(s, logf, undefined, undefined, [
-      (s2) => post(s2).mean,
-      (s2) => post(s2).variance + post(s2).mean ** 2,
-    ])
-    const meanOf = t.extra[0]?.mean ?? 0
-    const second = t.extra[1]?.mean ?? 0
-    const site = gaussianSiteMessage(etaOf(arg(c, 1)), meanOf, Math.max(second - meanOf * meanOf, 1e-300))
-    return { message: perPower(site, c.power) }
+  rules: {
+    ep: siteRule((c) => {
+      const { x, m, s } = read(c)
+      const logf = logLikelihood(x, m, c.power)
+      if (c.to === 2) return tiltedByQuadrature(s, logf)
+      // The mean given the log scale is Gaussian: N(m, v) times N(x; m, exp(2 s)).
+      const post = (s2: number): { mean: number; variance: number } => {
+        const noise = Math.exp(-2 * s2)
+        const variance = 1 / (1 / m.variance + noise)
+        return { mean: variance * (m.mean / m.variance + x * noise), variance }
+      }
+      const t = tiltedByQuadrature(s, logf, undefined, undefined, [
+        (s2) => post(s2).mean,
+        (s2) => post(s2).variance + post(s2).mean ** 2,
+      ])
+      const meanOf = t.extra[0]?.mean ?? 0
+      const second = t.extra[1]?.mean ?? 0
+      return { mean: meanOf, variance: Math.max(second - meanOf * meanOf, 1e-300) }
+    }),
+    vmp: messageRule(
+      (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), c.to, logScaleDensity) }),
+      'numeric',
+    ),
   },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const { x, m, s } = read(c)
-    return massOf(arg(c, 1)) + massOf(arg(c, 2)) + tiltedByQuadrature(s, logLikelihood(x, m, c.power)).logMass
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const { x, m, s } = read(c)
+      return massOf(arg(c, 1)) + massOf(arg(c, 2)) + tiltedByQuadrature(s, logLikelihood(x, m, c.power)).logMass
+    },
+    vmp: (c) => numericExpectedLog(quadraturePorts(c.args), logScaleDensity),
   },
-}
+  traits: { readsTarget: (to) => to !== 0, power: true },
+})
