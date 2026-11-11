@@ -7,12 +7,11 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, massOf, numberParam, scalarOf } from '../../core/args.ts'
 import { beta } from '../../core/families.ts'
 import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
-
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
 const sticksOf = (params: Params): number => {
   const k = Math.trunc(numberParam(params, 'sticks'))

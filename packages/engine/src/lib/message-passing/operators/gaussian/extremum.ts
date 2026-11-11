@@ -7,6 +7,7 @@
  * inputs are non-conjugate, by quadrature.
  */
 
+import { arg } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -20,8 +21,6 @@ import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult, Port } 
 import { tiltedGrid } from '../../numerics/_quadrature.ts'
 import { Phi, phi } from '../../numerics/_scalar.ts'
 import { definedFunctionMessage } from '../kernel/variational-numeric.ts'
-
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
 type Moments = { readonly mean: number; readonly variance: number }
 

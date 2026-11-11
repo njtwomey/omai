@@ -10,6 +10,7 @@
 
 import { OmaiError } from '../../../base/index.ts'
 import { dgemv } from '../../../numerics/linalg/index.ts'
+import { arg } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -24,10 +25,9 @@ import {
   vectorParam,
 } from '../../core/args.ts'
 import { gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
-import type { Arg, FactorOperator, Family, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
+import type { FactorOperator, Family, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
 import { spd } from '../../numerics/_dense.ts'
 
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 const gaussianPort = (name: string): Port => ({ name, accepts: ['gaussian'], constant: true })
 
 /** The EP message of y = d + sum c_i a_i, to the output (port 0) or to an input. */

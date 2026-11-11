@@ -11,6 +11,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { arg } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -26,8 +27,6 @@ import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '
 import { axisOf, integratePair } from '../../numerics/_grid.ts'
 import { digammaOf, lgammaOf, trigammaOf } from '../../numerics/_scalar.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
-
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
 const POINTS = 241
 const SPAN = 14

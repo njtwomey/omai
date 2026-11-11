@@ -17,6 +17,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { arg } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -28,12 +29,10 @@ import {
 } from '../../core/args.ts'
 import { bernoulli, gaussian, gaussianEta } from '../../core/families.ts'
 import { gaussianMv, gaussianMvMoments } from '../../core/families-vector.ts'
-import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { spd } from '../../numerics/_dense.ts'
 import { logistic } from '../links/links.ts'
 import { probit } from '../links/truncation.ts'
-
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
 /** The rows of a plate: the design matrix (row-major, `n x d`) and the outcomes. */
 interface Rows {

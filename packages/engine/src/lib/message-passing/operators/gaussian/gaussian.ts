@@ -6,6 +6,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { arg } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -40,8 +41,6 @@ const ALL: readonly FamilyKind[] = [
   'wishart',
   'normal-wishart',
 ]
-
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
 /**
  * A fixed message on one variable: the factor that is a known density, the prior. Its parameter `eta` is the natural

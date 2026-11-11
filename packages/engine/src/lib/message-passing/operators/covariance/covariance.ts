@@ -9,23 +9,15 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { arg } from '../../core/_messages.ts'
 import { ImproperMessageError, rawSum, siteMessage, vectorOf } from '../../core/args.ts'
 import { normalWishart, wishart, wishartParams } from '../../core/families-matrix.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
-import {
-  BARTLETT_ORDER,
-  choleskyInPlace,
-  choleskyInverse,
-  choleskyLogDet,
-  choleskySolveInPlace,
-  type WishartRule,
-  wishartRule,
-} from '../../numerics/_bartlett.ts'
+import { BARTLETT_ORDER, choleskyInPlace, type WishartRule, wishartRule } from '../../numerics/_bartlett.ts'
 import { type Evaluator, evaluatorOf, type GaussianSide, gaussianSide, NO_ROWS, type Rows, rowsOf } from './_sides.ts'
 
 const LOG_2PI = Math.log(2 * Math.PI)
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 const dimOf = (c: OperatorContext): number => arg(c, 2).family.dim
 
 /** The number of nodes of the Wishart quadrature at dimension `d`: refuse early what it cannot do. */

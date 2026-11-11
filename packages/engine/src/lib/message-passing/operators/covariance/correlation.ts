@@ -10,6 +10,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { arg } from '../../core/_messages.ts'
 import { ImproperMessageError, siteMessage } from '../../core/args.ts'
 import { beta, gamma } from '../../core/families.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
@@ -18,7 +19,6 @@ import { type GridAxis, gammaAxis, pointAxis } from '../../numerics/_grid.ts'
 import { betaAxis, integrateAxes } from '../../numerics/_gridn.ts'
 import { evaluatorOf, gaussianSide, type Rows, rowsOf } from './_sides.ts'
 
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 const softplus = (x: number): number => (x > 0 ? x + Math.log1p(Math.exp(-x)) : Math.log1p(Math.exp(x)))
 
 /** The axis of one of the three parameter ports: a known value is one node, a message its cavity's density. */

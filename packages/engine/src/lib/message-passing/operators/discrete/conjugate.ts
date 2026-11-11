@@ -6,14 +6,13 @@
  * outcome and a moment-matched mixture of two conjugate updates to the probability.
  */
 
+import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, massOf, numberParam, rawSum, scalarOf } from '../../core/args.ts'
 import { bernoulli, beta } from '../../core/families.ts'
 import { dirichlet, discreteEta, discreteProbs } from '../../core/families-vector.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { lgammaOf } from '../../numerics/_scalar.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
-
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
 /** The probability of true of a Bernoulli argument (its message, or its observed 0 or 1). */
 function trueProbability(a: Arg): number {

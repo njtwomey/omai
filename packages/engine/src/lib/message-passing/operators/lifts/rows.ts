@@ -8,6 +8,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, messageArg, vectorParam } from '../../core/args.ts'
 import { gaussian, gaussianEta } from '../../core/families.ts'
 import { gaussianMv, gaussianMvMoments } from '../../core/families-vector.ts'
@@ -15,8 +16,6 @@ import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '
 import { logistic } from '../links/links.ts'
 import { spin } from '../links/spin.ts'
 import { probit } from '../links/truncation.ts'
-
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
 /** The predictor's cavity: the mean and variance of a . w under the weights' Gaussian message (the argument at port `w`). */
 function predictor(c: OperatorContext, a: readonly number[], w: number): { mean: number; variance: number } {

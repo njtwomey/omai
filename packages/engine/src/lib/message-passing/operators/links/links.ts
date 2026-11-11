@@ -5,12 +5,11 @@
  */
 
 import { logAddExp, sigmoidOf } from '../../../base/index.ts'
+import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, scalarOf } from '../../core/args.ts'
 import { bernoulli } from '../../core/families.ts'
-import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import type { Arg, FactorOperator, OperatorResult } from '../../core/types.ts'
 import { gaussianExpectation, tiltedGaussian, tiltedLogGrid } from '../../numerics/_quadrature.ts'
-
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
 function trueProbability(a: Arg): number {
   if (a.value !== undefined) return scalarOf(a) > 0 ? 1 : 0

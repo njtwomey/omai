@@ -14,6 +14,7 @@
  */
 
 import { type Json, logSumExpOf, OmaiError } from '../../../base/index.ts'
+import { arg } from '../../core/_messages.ts'
 import { etaOf, ImproperMessageError, massOf, numberParam, scalarOf, valueArg } from '../../core/args.ts'
 import { gaussian } from '../../core/families.ts'
 import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
@@ -27,8 +28,6 @@ import type {
   Params,
   Port,
 } from '../../core/types.ts'
-
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
 /** One branch as the parameters give it: an inner operator, its arguments (indices into the gate's variables, or constants) and its parameters. */
 interface Branch {

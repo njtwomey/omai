@@ -16,6 +16,7 @@
  */
 
 import { logAddExp, OmaiError, sigmoidOf } from '../../../base/index.ts'
+import { arg } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -32,8 +33,6 @@ import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '
 import { Phi, phi } from '../../numerics/_scalar.ts'
 import { tiltedByQuadrature, type WindowHint } from '../../numerics/_tilted.ts'
 import { definedFunctionMessage, quadraturePort } from '../kernel/variational-numeric.ts'
-
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
 /** A function of the registry: its values, the kinks to split quadrature panels at, and its moments under a Gaussian where it has them in closed form. */
 export interface UnaryFunction {

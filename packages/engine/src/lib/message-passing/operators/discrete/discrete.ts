@@ -7,6 +7,7 @@
 
 import { logSumExpOf, OmaiError } from '../../../base/index.ts'
 import { factor, factorProductAll, logFactor, logTotal, marginalise, reduceFactor } from '../../../pgm/factor.ts'
+import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, ImproperMessageError, massOf, scalarOf, vectorParam } from '../../core/args.ts'
 import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
 import type {
@@ -19,8 +20,6 @@ import type {
   Params,
   Port,
 } from '../../core/types.ts'
-
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
 const statesOf = (params: Params): readonly number[] => vectorParam(params, 'states')
 

@@ -11,14 +11,13 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { arg } from '../../core/_messages.ts'
 import { etaOf, gaussianSiteMessage, ImproperMessageError, siteMessage } from '../../core/args.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
-import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { digammaOf, trigammaOf } from '../../numerics/_scalar.ts'
 import { chainOf, type Step, unaryFunctions } from '../likelihoods/functions.ts'
 import { type VectorScaleTilt, vectorMessageOf, vectorScaleTilt } from './scale.ts'
-
-const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
 /** The functions `u_j` of the parameter `steps`: one chain of steps for each coefficient. */
 function chains(params: Readonly<Record<string, unknown>>): ((x: number) => number)[] {
