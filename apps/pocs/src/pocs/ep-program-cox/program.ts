@@ -29,7 +29,8 @@ export function simulate(seed: number, prior: Prior) {
   const L = toArray(cholesky(covariance(prior))) as number[][]
   const z = toFlat(normal(key(seed), [BINS]))
   const f = L.map((row) => row.reduce((s, v, j) => s + v * (z[j] ?? 0), 0))
-  const counts = f.map((v, i) => toFlat(poisson(key(seed + 1000 + i), BASE * WIDTH * Math.exp(v), [1]))[0] ?? 0)
+  const rate = (v: number): number => BASE * WIDTH * Math.exp(v)
+  const counts = f.map((v, i) => toFlat(poisson(key(seed + 1000 + i), rate(v), [1]))[0] ?? 0)
   return { x, f, counts, prior }
 }
 // endregion
@@ -40,19 +41,20 @@ export const model = (prior: Prior) =>
   defineModel('cox-process', (b) => {
     const bin = b.range('bin')
     const counts = b.data('counts', { dims: [bin], support: 'count' })
-    const f = b.latent('f', d.multivariateNormal(new Array<number>(BINS).fill(0), { covariance: covariance(prior) }), {
-      dims: [bin],
-    })
+    const zeros = new Array<number>(BINS).fill(0)
+    const gp = d.multivariateNormal(zeros, { covariance: covariance(prior) })
+    const f = b.latent('f', gp, { dims: [bin] })
     b.observe('counts', d.poisson(ops.mul(BASE * WIDTH, ops.exp(f))), counts)
   })
 // endregion
 
 // region infer
-/** Expectation propagation on the compiled factor graph; the posterior of f by bin, with 90% intervals. */
+/** Expectation propagation on the factor graph: the posterior of f by bin, with 90% intervals. */
 export function infer(counts: readonly number[], prior: Prior) {
   const bound = model(prior).bind({ counts })
   const ep = epSpecMethod(bound)
-  const run = session(ep, { config: { tol: 1e-9 }, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
+  const config = { tol: 1e-9 }
+  const run = session(ep, { config, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
   const rows =
     ep
       .posterior?.(run.state, run.config)

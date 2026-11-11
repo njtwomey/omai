@@ -16,6 +16,39 @@ export const GROUPS: readonly PocGroup[] = [
     title: 'Expectation propagation',
     summary:
       'The atomic problems a suite of expectation propagation solvers has to get right: one small model each, run by EP, checked against the exact posterior, with the factor it needs named. Problems EP cannot run yet are listed with the reason.',
+    subgroups: [
+      {
+        slug: 'overview',
+        title: 'Overview',
+        summary: 'What runs under EP today and what does not.',
+        match: ['ep-coverage'],
+      },
+      {
+        slug: 'basic',
+        title: 'Basic setups',
+        summary: 'One factor each, with fixed numbers, against the exact answer.',
+        rest: true,
+      },
+      {
+        slug: 'priors',
+        title: 'Priors and hyperpriors',
+        summary: "Priors on a distribution's parameters and priors on those priors, and on the weights of a gate.",
+        match: ['ep-prior-*', 'ep-gate-weight*'],
+      },
+      {
+        slug: 'learned',
+        title: 'Parameters learned',
+        summary:
+          'The basic setups with their parameters unknown: simulated from a truth, recovered, calibrated over many seeds.',
+        match: ['*-learned'],
+      },
+      {
+        slug: 'programs',
+        title: 'Programs',
+        summary: 'Several factors composed in a short program: simulate from a truth, run EP, see what it recovers.',
+        match: ['ep-program-*'],
+      },
+    ],
   },
   {
     slug: 'probabilistic-programming',

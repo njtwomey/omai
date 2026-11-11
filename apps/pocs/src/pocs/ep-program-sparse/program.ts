@@ -26,41 +26,57 @@ export const defaultSetup: SparseSetup = { seed: 3, rows: 60, features: 12, acti
 export function simulate({ seed, rows, features, active, noise, outliers }: SparseSetup) {
   const k = key(seed)
   const draw = (i: number, n: number, scale = 1): number[] => Array.from(toFlat(normal(foldIn(k, i), [n], { scale })))
-  const X = Array.from({ length: rows }, (_, i) => draw(100 + i, features)) // the design
-  const on = Array.from(toFlat(permutation(foldIn(k, 1), features))).slice(0, active) // which coefficients are non-zero
-  const truth = draw(2, features).map((v, j) => (on.includes(j) ? Math.sign(v) * (1.5 + Math.abs(v)) : 0))
+  // The design, and which coefficients are non-zero.
+  const X = Array.from({ length: rows }, (_, i) => draw(100 + i, features))
+  const on = Array.from(toFlat(permutation(foldIn(k, 1), features))).slice(0, active)
+  const size = (v: number): number => Math.sign(v) * (1.5 + Math.abs(v))
+  const truth = draw(2, features).map((v, j) => (on.includes(j) ? size(v) : 0))
   const isOutlier = Array.from(toFlat(uniform(foldIn(k, 3), [rows])), (u) => u < outliers)
   const e = draw(4, rows, noise)
-  const y = X.map((x, i) => ddot(x, truth) + (e[i] ?? 0) + (isOutlier[i] ? (i % 2 ? 10 : -10) * noise : 0))
+  const spike = (i: number): number => (isOutlier[i] ? (i % 2 ? 10 : -10) * noise : 0)
+  const y = X.map((x, i) => ddot(x, truth) + (e[i] ?? 0) + spike(i))
   return { X, y, truth, isOutlier }
 }
 // endregion
 
 // region model
-export const prior = { inclusion: 0.2, slab: 3, spike: 0.05 } // P(slab), and the sd of the slab and of the spike
+// P(slab), and the sd of the slab and of the spike.
+export const prior = { inclusion: 0.2, slab: 3, spike: 0.05 }
 
 export function sparseModel(likelihood: 'gaussian' | 'student-t', noise: number) {
   return defineModel('sparse-regression', (m) => {
-    const [row, feature] = [m.range('row'), m.range('feature')]
+    const row = m.range('row')
+    const feature = m.range('feature')
     const X = m.data('X', { dims: [row, feature] })
-    const z = m.latent('z', d.bernoulli({ probs: prior.inclusion }), { dims: [feature] }) // is the coefficient in the slab?
+    const y = m.data('y', { dims: [row] })
+    // Is the coefficient in the slab?
+    const z = m.latent('z', d.bernoulli({ probs: prior.inclusion }), { dims: [feature] })
     const slab = m.latent('slab', d.normal(0, prior.slab), { dims: [feature] })
     const spike = m.latent('spike', d.normal(0, prior.spike), { dims: [feature] })
-    const mean = X.matmul(ops.where(z, slab, spike)) // the coefficient is whichever component z selects
+    // Each coefficient is whichever component z selects.
+    const mean = X.matmul(ops.where(z, slab, spike))
     if (likelihood === 'gaussian') {
-      const tau = m.latent('tau', d.gamma(2, 0.5)) // the unknown noise precision
-      m.observe('y', d.normal(mean, ops.div(1, ops.sqrt(tau))), m.data('y', { dims: [row] }))
-    } else m.observe('y', d.studentT(3, mean, noise), m.data('y', { dims: [row] })) // heavy tails, known scale
+      // The unknown noise precision.
+      const tau = m.latent('tau', d.gamma(2, 0.5))
+      m.observe('y', d.normal(mean, ops.div(1, ops.sqrt(tau))), y)
+    } else {
+      // Heavy tails with a known scale.
+      m.observe('y', d.studentT(3, mean, noise), y)
+    }
   })
 }
 // endregion
 
 // region infer
-export function infer(model: ReturnType<typeof sparseModel>, data: ReturnType<typeof simulate>, damping = 0.5) {
+type Data = ReturnType<typeof simulate>
+
+export function infer(model: ReturnType<typeof sparseModel>, data: Data, damping = 0.5) {
   const bound = model.bind({ X: data.X, y: data.y })
   const method = epSpecMethod(bound)
-  const run = session(method, { config: { tol: 1e-8, damping }, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
-  const posterior = method.posterior?.(run.state, run.config) // marginals by site: z, slab, spike, tau
+  const config = { tol: 1e-8, damping }
+  const run = session(method, { config, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
+  // The marginals by site: z, slab, spike, tau.
+  const posterior = method.posterior?.(run.state, run.config)
   if (posterior === undefined) throw new Error('EP gave no posterior')
   return { bound, run, posterior }
 }

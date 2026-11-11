@@ -16,7 +16,9 @@ import {
 } from 'omai-render/react'
 import { modelGraph } from 'omai-render/structures'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { CodeBlock } from '../../../site/src/shell/CodeBlock.tsx'
 import { BeliefChart, DataFigure, JointChart, MixtureChart, ProbabilityBars } from './ep/AtomCharts.tsx'
+import { atomSource } from './ep/atomSource.ts'
 import { type AtomState, useAtom } from './ep/useAtom.ts'
 
 const EP_KNOBS = ['schedule', 'damping', 'improper', 'tol', 'maxSweeps']
@@ -106,6 +108,7 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
   const probabilities = qs.filter((q) => q.support === 'probability')
   const mixtures = problem?.mixtures ?? []
   const covered = new Set(mixtures.map((m) => m.quantity))
+  const source = useMemo(() => atomSource(atom, problem), [atom, problem])
   return (
     <div className="flex flex-col gap-5">
       <Banner atom={atom} state={state} />
@@ -245,6 +248,12 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
           <Check atom={atom} state={state} />
         </FigurePanel>
       </section>
+      {source.code === '' ? null : (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold">How it is set up</h2>
+          <CodeBlock code={source.code} title={`${source.file}: ${atom.name}`} className="max-w-4xl" />
+        </section>
+      )}
     </div>
   )
 }

@@ -2,7 +2,8 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link } from '../../site/src/shell/Link.tsx'
 import { currentPath } from '../../site/src/shell/router.ts'
 import { GROUPS } from './groups.ts'
-import { groupPocs, searchPocs } from './poc.ts'
+import { inDisplayOrder } from './order.ts'
+import { groupPocs } from './poc.ts'
 import { POCS } from './registry.ts'
 
 /** One choice of a crumb's menu: where it goes, what it is called. */
@@ -139,10 +140,7 @@ export function Crumbs(props: { readonly group?: string | undefined; readonly sl
   const entry = props.slug === undefined ? undefined : POCS.find((p) => p.slug === props.slug)
   const group = entry?.group ?? props.group
   const sections = groupPocs(POCS, GROUPS)
-  const siblings = searchPocs(
-    POCS.filter((p) => p.group === group),
-    '',
-  )
+  const siblings = inDisplayOrder(group)
   const at = entry === undefined ? -1 : siblings.findIndex((p) => p.slug === entry.slug)
   const previous = at > 0 ? siblings[at - 1] : undefined
   const next = at >= 0 ? siblings[at + 1] : undefined

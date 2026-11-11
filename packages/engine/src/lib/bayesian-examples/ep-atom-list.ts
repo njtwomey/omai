@@ -30,12 +30,37 @@ import {
   spikeSlabMarginalAtom,
 } from './ep-atoms-mixtures.ts'
 import {
+  priorBetaGeometricAtom,
+  priorBetaStrengthGammaAtom,
+  priorBetaStrengthLogNormalAtom,
+  priorBetaTwoShapesAtom,
+  priorDirichletCategoricalAtom,
+  priorDirichletStrengthAtom,
+  priorGammaExponentialAtom,
+  priorGammaPoissonHyperAtom,
+  priorInverseGammaHyperAtom,
+  priorLogitNormalAtom,
+  priorLogNormalPoissonAtom,
+  priorLogNormalPoissonHyperAtom,
+  priorLogNormalScaleAtom,
+  priorNormalHyperAtom,
+  priorNormalInverseGammaAtom,
+  priorNormalWeibullAtom,
+  priorUniformAtom,
+} from './ep-atoms-priors.ts'
+import {
   gammaPrecisionAtom,
   halfCauchyAtom,
   halfNormalAtom,
   scaledPrecisionAtom,
   sharedPrecisionAtom,
 } from './ep-atoms-scales.ts'
+import {
+  gateWeightAtom,
+  gateWeightDirichletAtom,
+  gateWeightHyperAtom,
+  gateWeightSummedOutAtom,
+} from './ep-atoms-weights.ts'
 
 /**
  * Every EP atom, in the order of the coverage page: the gates and mixtures first, then the rest as they are added.
@@ -79,6 +104,27 @@ export const epAtoms: readonly EpAtom[] = [
   gaussianAtom,
   betaBernoulliAtom,
   gammaPoissonAtom,
+  priorNormalInverseGammaAtom,
+  priorNormalHyperAtom,
+  priorInverseGammaHyperAtom,
+  priorGammaPoissonHyperAtom,
+  priorGammaExponentialAtom,
+  priorLogNormalPoissonAtom,
+  priorLogNormalPoissonHyperAtom,
+  priorNormalWeibullAtom,
+  priorBetaGeometricAtom,
+  priorBetaStrengthGammaAtom,
+  priorBetaStrengthLogNormalAtom,
+  priorDirichletCategoricalAtom,
+  priorDirichletStrengthAtom,
+  priorLogitNormalAtom,
+  priorUniformAtom,
+  priorLogNormalScaleAtom,
+  priorBetaTwoShapesAtom,
+  gateWeightAtom,
+  gateWeightSummedOutAtom,
+  gateWeightDirichletAtom,
+  gateWeightHyperAtom,
 ]
 
 /**

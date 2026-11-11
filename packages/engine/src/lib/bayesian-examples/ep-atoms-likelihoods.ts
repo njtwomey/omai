@@ -22,7 +22,8 @@ const HEAVY = [0.2, -0.1, 0.4, 0.0, 4.5]
 function heavyProblem(kind: 'student-t' | 'laplace', k: Config): AtomProblem {
   const s = exampleNumber(k, 'scale')
   const df = 3
-  const definition = defineModel(kind === 'student-t' ? 'student-t-likelihood' : 'laplace-likelihood', (m) => {
+  // region student-t laplace
+  const definition = defineModel(`${kind}-likelihood`, (m) => {
     const mu = m.latent('mu', d.normal(0, 5))
     m.observe(
       'y',
@@ -30,6 +31,7 @@ function heavyProblem(kind: 'student-t' | 'laplace', k: Config): AtomProblem {
       m.data('y', { dims: ['i'], role: 'response' }),
     )
   })
+  // endregion
   return {
     definition,
     data: { y: HEAVY },
@@ -125,6 +127,7 @@ function classesProblem(link: 'probit' | 'logistic', k: Config): AtomProblem {
   const s = exampleNumber(k, 'priorScale')
   const design = POINTS.map(([a, b]) => [1, a, b])
   const y = POINTS.map((p) => p[2])
+  // region probit logistic
   const definition =
     link === 'probit'
       ? probitClassifier(s)
@@ -136,6 +139,7 @@ function classesProblem(link: 'probit' | 'logistic', k: Config): AtomProblem {
           const w = m.latent('w', d.normal(0, s), { dims: [f] })
           m.observe('y', d.bernoulli({ probs: ops.sigmoid(X.matmul(w)) }), yy)
         })
+  // endregion
   const edge = [-LIMIT, LIMIT]
   return {
     definition,
@@ -251,7 +255,9 @@ const TOURNAMENT = {
 }
 
 function skillsProblem(): AtomProblem {
+  // region skill-difference
   const { definition, data } = trueskillModel(TOURNAMENT)
+  // endregion
   const names = TOURNAMENT.players
   const notes = TOURNAMENT.pairs.map(([a, b], g) => {
     const aWon = TOURNAMENT.wins[g] === 1
@@ -337,15 +343,18 @@ function gpProblem(link: 'probit' | 'logistic', k: Config): AtomProblem {
   const n = GP_X.length
   const flat = toFlat(gram(kernel, GP_X, { jitter: 1e-6 }))
   const K = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => flat[i * n + j] ?? 0))
+  // region gp-logistic gp-probit
   const definition = defineModel(`gp-${link}`, (m) => {
     const row = m.range('row')
-    const f = m.latent('f', d.multivariateNormal(new Array<number>(n).fill(0), { covariance: K }), { dims: [row] })
+    const prior = d.multivariateNormal(new Array<number>(n).fill(0), { covariance: K })
+    const f = m.latent('f', prior, { dims: [row] })
     m.observe(
       'y',
       d.bernoulli({ probs: link === 'probit' ? ops.probit(f) : ops.sigmoid(f) }),
       m.data('y', { dims: [row], support: 'binary' }),
     )
   })
+  // endregion
   // The reference is the density written out: a dense Gaussian vector is more coordinates than the program grid takes.
   const inv = invert3(K)
   const logDensity = (f: readonly number[]): number => {
@@ -438,10 +447,12 @@ export const gpProbitAtom: EpAtom = defineAtom({
 
 function poissonLogProblem(k: Config): AtomProblem {
   const y = exampleNumber(k, 'y')
+  // region poisson-log
   const definition = defineModel('poisson-log-link', (m) => {
     const x = m.latent('x', d.normal(0, 1))
     m.observe('y', d.poisson(ops.exp(x)), m.data('y', { support: 'count' }))
   })
+  // endregion
   return {
     definition,
     data: { y },

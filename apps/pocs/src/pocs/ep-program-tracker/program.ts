@@ -10,9 +10,13 @@ export const WIDTH = 8 // an outlier's noise is 8 times as wide as an ordinary o
 
 // region simulate
 type Noise = { sd: number; outliers: number }
-/** The truth: an AR(1) path, seen with noise of sd `sd`, and a fraction `outliers` of the readings wild (8 times as noisy). */
+/**
+ * The truth: an AR(1) path, seen with noise of sd `sd`.
+ * A fraction `outliers` of the readings is wild (8 times as noisy).
+ */
 export function simulate(seed: number, noise: Noise, steps = 100) {
-  const [kx, ku, ke] = split(key(seed), 3) as [ReturnType<typeof key>, ReturnType<typeof key>, ReturnType<typeof key>]
+  type Key = ReturnType<typeof key>
+  const [kx, ku, ke] = split(key(seed), 3) as [Key, Key, Key]
   const w = toFlat(normal(kx, [steps + 1]))
   const x = [PATH.start * (w[0] ?? 0)]
   for (let t = 1; t < steps; t++) x.push(PATH.phi * (x[t - 1] as number) + PATH.sigma * (w[t] ?? 0))
@@ -24,7 +28,10 @@ export function simulate(seed: number, noise: Noise, steps = 100) {
 // endregion
 
 // region model
-/** x_t = phi x_(t-1) + noise, a scan; each reading is the state plus noise, with a fraction `outliers` of them wild (or plain Gaussian). */
+/**
+ * x_t = phi x_(t-1) + noise, a scan; each reading is the state plus noise.
+ * A fraction `outliers` of the readings is wild (or the noise is plain Gaussian).
+ */
 export function model({ sd, outliers }: Noise, robust = true) {
   return defineModel('tracker', (b) => {
     const y = b.data('y', { dims: ['time'] })
@@ -32,19 +39,23 @@ export function model({ sd, outliers }: Noise, robust = true) {
       over: 'time',
       init: d.normal(0, PATH.start),
       step: ({ prev }) => d.normal(prev.mul(PATH.phi), PATH.sigma),
-      emit: ({ state, observe }) =>
-        observe('y', robust ? d.normalOutliers(state, sd, outliers, WIDTH) : d.normal(state, sd), y),
+      emit: ({ state, observe }) => {
+        // A fraction of the readings is wild, or the noise is plain Gaussian.
+        const reading = robust ? d.normalOutliers(state, sd, outliers, WIDTH) : d.normal(state, sd)
+        return observe('y', reading, y)
+      },
     })
   })
 }
 // endregion
 
 // region infer
-/** Expectation propagation on the chain: the posterior of the state at each step, with 90% intervals. */
+/** Expectation propagation on the chain: the state at each step, with 90% intervals. */
 export function infer(y: readonly number[], noise: Noise, robust = true) {
   const bound = model(noise, robust).bind({ y })
   const ep = epSpecMethod(bound)
-  const run = session(ep, { config: { tol: 1e-9 }, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
+  const config = { tol: 1e-9 }
+  const run = session(ep, { config, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
   const rows =
     ep
       .posterior?.(run.state, run.config)

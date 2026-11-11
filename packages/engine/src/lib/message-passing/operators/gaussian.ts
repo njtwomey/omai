@@ -343,42 +343,69 @@ export const gaussianLogScale: FactorOperator = {
 }
 
 /**
- * x ~ N(mu, 1 / lambda) with the mean and the precision one normal-gamma variable (mu, lambda): the observation of a
- * Gaussian with unknown mean and precision, conjugate to the normal-gamma, under variational message passing. The
- * message to the normal-gamma is the expected log density in its sufficient statistics (lambda mu, lambda mu^2, lambda,
- * log lambda): `[E x, -1/2, -E[x^2] / 2, 1/2]`.
+ * x ~ N(mu, 1 / (c lambda)) with the mean and the precision one normal-gamma variable (mu, lambda) and `c` a known
+ * multiple (the parameter `precision`, default 1): the observation of a Gaussian with unknown mean and precision, the
+ * likelihood the normal-gamma prior is conjugate to. For an observed value the factor is itself in the family, so the
+ * message to the normal-gamma is the same under every rule and exact: the coefficients of the sufficient statistics
+ * (lambda mu, lambda mu^2, lambda, log lambda), `[c x, -c/2, -c x^2 / 2, 1/2]` (the posterior of `n` observations is the
+ * normal-gamma with `beta + c n`, `a + n/2` and the usual `b`, and EP reaches it in one sweep). Variational message
+ * passing also takes a Gaussian value that is itself a random variable (the expectation of the statistics); expectation
+ * propagation does not, it needs the value observed.
  *
  * @concept factor-operators
- * @index structure A Gaussian observation of a normal-gamma mean and precision (variational).
+ * @index structure A Gaussian observation of a normal-gamma mean and precision (conjugate, exact for an observed value).
  * @example
  * ```ts
  * import { gaussianNormalGamma, normalGamma, normalGammaEta, valueArg, messageArg } from 'omai-engine/message-passing'
  * import { gaussian } from 'omai-engine/message-passing'
  * const args = [valueArg(gaussian, 2), messageArg(normalGamma, normalGammaEta(0, 1, 2, 1))]
- * gaussianNormalGamma.vmp?.({ mode: 'vmp', to: 1, args, params: {}, power: 1 }).message // => [2, -0.5, -2, 0.5]
+ * gaussianNormalGamma.ep?.({ mode: 'ep', to: 1, args, params: {}, power: 1 }).message // => [2, -0.5, -2, 0.5]
  * ```
  */
 export const gaussianNormalGamma: FactorOperator = {
   name: 'gaussian-normal-gamma',
-  description: 'x ~ N(mu, 1 / lambda) with (mu, lambda) normal-gamma',
+  description: 'x ~ N(mu, 1 / (c lambda)) with (mu, lambda) normal-gamma',
   ports: [
     { name: 'x', accepts: ['gaussian'], constant: true },
     { name: 'theta', accepts: ['normal-gamma'] },
   ],
-  support: { vmp: 'exact' },
+  support: { ep: 'exact', vmp: 'exact' },
+  ep: (c): OperatorResult => {
+    const x = arg(c, 0)
+    if (x.value === undefined)
+      throw new OmaiError('value', 'gaussian-normal-gamma: expectation propagation needs the observation observed')
+    if (c.to !== 1) throw new OmaiError('value', 'gaussian-normal-gamma: the value is observed, nothing is sent to it')
+    const k = numberParam(c.params, 'precision', 1)
+    const v = gaussianOf(x).mean
+    return { message: [k * v, -k / 2, (-k * v * v) / 2, 0.5] }
+  },
   vmp: (c): OperatorResult => {
     const x = gaussianOf(arg(c, 0))
-    if (c.to === 1) return { message: [x.mean, -0.5, -0.5 * (x.variance + x.mean ** 2), 0.5] }
+    const k = numberParam(c.params, 'precision', 1)
+    if (c.to === 1) return { message: [k * x.mean, -k / 2, (-k * (x.variance + x.mean ** 2)) / 2, 0.5] }
     const t = arg(c, 1)
     const mo = t.family.moments(etaOf(t))
     return { message: [mo[0] ?? 0, mo[2] ?? 0] }
   },
+  logEvidence: (c) => {
+    const x = arg(c, 0)
+    const t = arg(c, 1)
+    if (x.value === undefined || !allProper(c.args)) return Number.NaN
+    const k = numberParam(c.params, 'precision', 1)
+    const v = gaussianOf(x).mean
+    // N(x | mu, 1 / (k lambda)) = sqrt(k / 2 pi) exp(message . statistics): the mass of cavity times it is the new log partition.
+    return (
+      0.5 * Math.log(k / (2 * Math.PI)) +
+      t.family.logPartition(rawSum(etaOf(t), [k * v, -k / 2, (-k * v * v) / 2, 0.5]))
+    )
+  },
   expectedLog: (c) => {
     const x = gaussianOf(arg(c, 0))
+    const k = numberParam(c.params, 'precision', 1)
     const t = arg(c, 1)
     const mo = t.family.moments(etaOf(t))
     const quad = (x.variance + x.mean ** 2) * (mo[2] ?? 0) - 2 * x.mean * (mo[0] ?? 0) + (mo[1] ?? 0)
-    return 0.5 * ((mo[3] ?? 0) - Math.log(2 * Math.PI)) - 0.5 * quad
+    return 0.5 * ((mo[3] ?? 0) + Math.log(k) - Math.log(2 * Math.PI)) - 0.5 * k * quad
   },
 }
 

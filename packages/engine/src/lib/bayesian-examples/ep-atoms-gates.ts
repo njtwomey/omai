@@ -15,11 +15,14 @@ import { exampleNumber } from './example-method.ts'
 function orderedProblem(k: Config): AtomProblem {
   const gap = exampleNumber(k, 'gap')
   const [ma, mb, s] = [0, gap, 1]
+  // region ordered-pair
   const definition = defineModel('ordered-pair', (m) => {
     const a = m.latent('a', d.normal(ma, s))
     const b = m.latent('b', d.normal(mb, s))
-    m.observe('ordered', d.bernoulli({ probs: ops.gt(ops.sub(a, b), 0) }), m.data('ordered', { support: 'binary' }))
+    const observed = m.data('ordered', { support: 'binary' })
+    m.observe('ordered', d.bernoulli({ probs: ops.gt(ops.sub(a, b), 0) }), observed)
   })
+  // endregion
   // a > b is observed: the density is the product of the two priors on the half plane a > b.
   const za = 1 - normalCdf((mb - ma) / Math.SQRT2 / s)
   const logA = (x: number): number =>
@@ -85,13 +88,18 @@ function orderedMeansProblem(k: Config): AtomProblem {
   const priorSd = exampleNumber(k, 'priorSd')
   const y1 = [0.8, 1.2]
   const y2 = [0.3, 0.6]
+  // region ordered-means
   const definition = defineModel('ordered-means', (m) => {
     const group = m.range('group', { size: 2 })
     const obs = m.range('obs')
-    const mu = m.latent('mu', d.normal(0, priorSd), { dims: [group], constraint: { kind: 'ordered' } })
+    const mu = m.latent('mu', d.normal(0, priorSd), {
+      dims: [group],
+      constraint: { kind: 'ordered' },
+    })
     const g = m.data('g', { dims: [obs], support: 'index', indexes: group })
     m.observe('y', d.normal(mu.at(g), 1), m.data('y', { dims: [obs], role: 'response' }))
   })
+  // endregion
   const logDensity = (x: readonly number[]): number => {
     const [a, b] = [x[0] ?? 0, x[1] ?? 0]
     if (!(a < b)) return Number.NEGATIVE_INFINITY

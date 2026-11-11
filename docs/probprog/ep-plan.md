@@ -238,7 +238,26 @@ With WP-A alone EP ran on 19 of the 27 benchmark models; with WP-B merged it run
   two-hump mixture, so it sits between the humps. EP runs on 24 of the 30 atoms; the other six (exp, tanh, Poisson with a log link,
   half-Cauchy, half-normal, the product of two Gaussians) show the library's reason on their pages.
 
-## 9. Robustness: what EP reports and what the variants do (2026-11-11, `agent-pp81-robust`)
+## 9. The prior atlas (2026-11-11)
+
+`ep-priors.md` is the table of every distribution we observe, its parameters, the priors and hyperpriors EP carries (exact or numeric),
+how to write them and what is still planned. Built with it: inverse-gamma variances, the normal-inverse-gamma pair as one exact
+normal-gamma variable, exponential and gamma observations with a gamma rate, geometric and negative binomial counts with a beta
+probability, a beta or Dirichlet with a gamma or log-normal concentration (`dirichlet-concentration`), a Bernoulli or categorical switch
+with a beta or Dirichlet probability (a gate with an unknown mixing weight) and its summed-out form (`mixture-weight`, `normalPair`),
+a positive latent (log-normal and the like) as a rate of the log-link likelihoods. 21 atom pages (`family: 'priors'` and
+`'gate weights'`), all with the model code that ran at the bottom.
+
+## 10. The gaps, as tested data
+
+The open items of this plan (what EP cannot run, where it is less good than it should be, the infrastructure and integration tasks)
+are kept as data in `packages/engine/src/lib/bayesian-examples/ep-gaps.ts` and shown at the end of the EP coverage page, each with
+why, how it would be closed, its size and its status. A test (`ep-gaps.test.ts`) holds the list to the coverage table: every setup
+and benchmark model EP refuses is named by a gap, and a gap that names something EP now runs is stale. Where the code lives: the
+rules (`message-passing/operators`), the compiler mappings (`probprog/model/factors.ts`), the model families
+(`probprog/model/dists`) and the methods (`probprog/inference`) are in the library proper; the setups, programs, coverage and
+recovery helpers are still in `bayesian-examples` and are to move to `probprog/ep` (gap `integration`).
+## 11. Robustness: what EP reports and what the variants do (2026-11-11, `agent-pp81-robust`)
 
 **False convergence (found by the sparse regression with outliers).** The engine took "the beliefs moved less than `tol` over a
 sweep" for convergence. An update that cannot be computed (an operator throws for an improper or empty cavity: the proposal is
@@ -317,3 +336,4 @@ because the likelihood of a difference of two skills is smooth and near Gaussian
 (`N-60(precision diag 2, 4, ...)` across the panel). `describeMessage` (`exposition/model-run-tape.ts`) now writes at most the first
 four numbers and the count: `N-60(precision diag 2, 2, 2, 2, ... (60))`, and the same for a long discrete or Dirichlet message and an
 unknown family.
+||||||| 1938cdb9

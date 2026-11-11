@@ -17,6 +17,11 @@
  * `bernoulli` or `categorical` with known probabilities (or a Dirichlet latent for them: the conjugate `discrete` factor),
  * and a `multivariateNormal` with a known mean and covariance (or `scaleTril`): one `gaussian-mv` variable with a dense prior, whose
  * components a likelihood reads (a Gaussian process prior over the inputs of the data).
+ * An `inverseGamma` latent (a variance) is a gamma precision: its site is the reciprocal of the gamma variable, and `sqrt(sigma2)` (or
+ * `sqrt(sigma2 / kappa)`, a known multiple) is the precision idiom. A Gaussian mean whose variance is a multiple of the observed
+ * Gaussian's (`mu ~ N(m, sigma2 / kappa)`, `y ~ N(mu, sigma2)`, nothing else reading either) is the pair of a mean and a precision,
+ * the classic normal-inverse-gamma (or normal-gamma) prior: one `normal-gamma` variable and a `gaussian-normal-gamma` factor per
+ * observation, so expectation propagation is exact (the marginal of the mean a Student t, of the variance an inverse gamma).
  * A Gaussian whose scale is the idiom `1 / sqrt(tau)` (or `tau ** -0.5`) of a gamma or exponential latent `tau` is the
  * `gaussian-gamma-precision` factor, for observations and latents (variational message passing, and expectation propagation when the
  * Gaussian is observed: the linear regression with an unknown noise level), and a scale `exp(s)` with `s` affine in Gaussian latents
@@ -37,7 +42,8 @@
  * observed `normal` with a known scale (`gaussian`, or `linear-regression-row` for a regression row), `bernoulli` with
  * `probit(affine)` (`probit`), `sigmoid(affine)` or `logits` (`logistic`), `gt(affine, c)` (`greater-than`, a hard
  * comparison; expectation propagation only), or `probs` a beta latent (`bernoulli`); `binomial`, `poisson` (with an exposure) and `categorical` on a
- * beta, gamma or Dirichlet latent (the conjugate operators); and a Bernoulli network over scalar nodes, as `table`
+ * beta, gamma or Dirichlet latent, an `exponential` or `gamma` value (known shape) with a gamma rate and a `geometric` or
+ * `negativeBinomial` count (known successes) with a beta probability (the conjugate operators); and a Bernoulli network over scalar nodes, as `table`
  * factors (what belief propagation runs on). Expectation propagation also maps the numeric likelihoods of the registry of
  * `message-passing/operators/likelihoods.ts` (`poisson` with `exposure * exp(affine)`, `binomial` with `sigmoid` or `probit`, a
  * `negativeBinomial` in the NB2 idiom with a known or a random positive dispersion, `weibull` with `scale = exp(affine)`,
@@ -68,8 +74,10 @@ import {
   type Distribution,
   dirichlet,
   gamma,
+  inverseGamma,
   multivariateNormal,
   normal,
+  studentT,
 } from '../../dists/index.ts'
 import {
   bernoulliEta,
@@ -90,6 +98,7 @@ import {
   likelihoods,
   type MpState,
   marginalsOf,
+  normalGammaPrior,
   priorFactor,
   projectedPrior,
   projectionOf,
@@ -104,7 +113,7 @@ import { distributionFamilies } from './dists/families.ts'
 import { auxId, elementId, factorId, siteOfId } from './ids.ts'
 import { defaultOperators, type NamedValue, type OperatorTable } from './operators.ts'
 import { ScanUnrollError, unrollScans } from './scan.ts'
-import { type DistSpec, type ExprSpec, type ModelNode, nodeRefs } from './spec.ts'
+import { type DistSpec, type ExprSpec, exprRefs, type ModelNode, nodeRefs } from './spec.ts'
 
 /** Why a part of a model could not be put on a factor graph: the kind says what to look at. */
 export type FactorIssueKind =
@@ -149,6 +158,16 @@ export interface SiteLayout {
   readonly variables: readonly (string | null)[]
   /** Whether the site is one of a posterior's sites (latents and recorded derived values). */
   readonly posterior: boolean
+  /**
+   * A site that is the reciprocal of the gamma variable that carries it (an inverse-gamma variance whose precision is the
+   * variable): the posterior reads it as an inverse gamma.
+   */
+  readonly reciprocal?: boolean
+  /**
+   * For a site read from a normal-gamma variable shared with another site (the mean and the precision of a Gaussian, the
+   * conjugate pair): which part of the joint it is, `mean` (a Student t marginal) or `precision` (a gamma marginal).
+   */
+  readonly part?: 'mean' | 'precision'
 }
 
 /** What a compilation to a factor graph reports. */
@@ -201,6 +220,9 @@ type Cell =
   // A known multiple of a gamma variable plus a known offset, `scale tau + offset`: the precision of a Gaussian that shares
   // one smoothing parameter or one global scale (it has no other use: it is not a Gaussian value).
   | { readonly kind: 'scaled'; readonly variable: string; readonly scale: number; readonly offset: number }
+  // A known multiple of the reciprocal of a gamma variable, `scale / tau`: an inverse-gamma variance (the variable is its
+  // precision), which is mapped only as the square of the scale of a Gaussian (the precision idiom).
+  | { readonly kind: 'recip'; readonly variable: string; readonly scale: number }
   // A known function of a discrete variable, one number per state (`at(means, z)`, `z * 6 - 3`): a value that is not Gaussian
   // but selects among known ones, which a likelihood or a prior reads through a table or a gate.
   // `items[k]`, when present, is a random Gaussian form that state k takes in place of the known `values[k]` (a mixture of a known
@@ -247,6 +269,11 @@ function affOf(c: Cell): Aff {
     throw new Refusal(
       'operator',
       `arithmetic on the scaled precision of '${c.variable}': only a known multiple plus a known offset of a gamma variable is mapped, and only as the precision of a Gaussian`,
+    )
+  if (c.kind === 'recip')
+    throw new Refusal(
+      'operator',
+      `arithmetic on the inverse-gamma variable behind '${c.variable}': only a known multiple of it is mapped, and only as the squared scale of a Gaussian (the precision idiom)`,
     )
   if (c.kind !== 'aff')
     throw new Refusal('operator', `arithmetic on the ${c.family} variable '${c.variable}': only Gaussian values add up`)
@@ -302,6 +329,26 @@ function lookupArithmetic(op: string, x: Cell, y: Cell, states: (variable: strin
 }
 
 /**
+ * The arithmetic of an inverse-gamma variance `scale / tau`: a known multiple (`mul`, `div` by a known value) stays one; a known
+ * value over it is the precision `value tau / scale`, a scaled gamma variable. Undefined when neither operand is one.
+ */
+function recipArithmetic(op: string, x: Cell, y: Cell): Cell | undefined {
+  if (x.kind !== 'recip' && y.kind !== 'recip') return undefined
+  const other = x.kind === 'recip' ? y : x
+  const r = (x.kind === 'recip' ? x : y) as Cell & { kind: 'recip' }
+  const known = isConstCell(other) ? other.aff.offset : undefined
+  if (known === undefined || (x.kind === 'recip' && y.kind === 'recip') || !(known > 0))
+    throw new Refusal(
+      'operator',
+      `'${op}' of an inverse-gamma variance and a random value (or a non-positive one) has no message rule: only a positive known multiple of it, as the squared scale of a Gaussian`,
+    )
+  if (op === 'mul') return { kind: 'recip', variable: r.variable, scale: r.scale * known }
+  if (op === 'div' && x.kind === 'recip') return { kind: 'recip', variable: r.variable, scale: r.scale / known }
+  if (op === 'div') return { kind: 'scaled', variable: r.variable, scale: known / r.scale, offset: 0 }
+  throw new Refusal('operator', `'${op}' of an inverse-gamma variance has no message rule`)
+}
+
+/**
  * The arithmetic of a precision: a gamma variable (or a scaled one) times, plus, minus or over a known value. Undefined when
  * neither operand is a gamma-based cell, so the ordinary affine rules apply.
  */
@@ -337,6 +384,9 @@ function scaledArithmetic(op: string, x: Cell, y: Cell): Cell | undefined {
 
 const prod = (xs: readonly number[]): number => xs.reduce((a, b) => a * b, 1)
 
+/** The hidden symbol of the log of a positive latent carried on its log (not a node of the spec, so no site can clash with it). */
+const logName = (site: string): string => `${site}#log`
+
 function unflatten(flat: number, shape: readonly number[]): number[] {
   const idx: number[] = new Array<number>(shape.length).fill(0)
   let rest = flat
@@ -353,6 +403,7 @@ const MESSAGE_FAMILY: Readonly<Record<string, FamilyKind>> = {
   normal: 'gaussian',
   normalSpikeSlab: 'gaussian',
   gamma: 'gamma',
+  inverseGamma: 'gamma',
   exponential: 'gamma',
   beta: 'beta',
   dirichlet: 'dirichlet',
@@ -395,6 +446,27 @@ function precisionFactor(
   }
 }
 
+/** A Gaussian mean whose variance is a known multiple of the precision's reciprocal and the observations that read both: one normal-gamma variable. */
+interface NormalGammaPlan {
+  /** The node of the precision (a gamma or inverse-gamma latent) and of the mean (a normal latent). */
+  readonly precision: string
+  readonly mean: string
+  /** The variable (named as the mean's node) and whether the precision's node is an inverse gamma (a variance). */
+  readonly variable: string
+  readonly inverse: boolean
+  /** The known multiple `kappa` of the mean's precision over the shared one: `mu | lambda ~ N(m, 1 / (kappa lambda))`. */
+  readonly kappa: number
+  readonly observed: readonly string[]
+}
+
+/** One component of a random concentration, `weight * alpha + offset`, with the variable of `alpha` (the variable of its log when `log`). */
+interface ConcentrationPart {
+  readonly variable?: string
+  readonly log?: boolean
+  readonly weight: number
+  readonly offset: number
+}
+
 class Compiler {
   readonly variables: VariableSpec[] = []
   readonly factors: FactorSpec[] = []
@@ -416,6 +488,14 @@ class Compiler {
   /** The Gaussian log-scale variable behind a positive scale variable (the value variable `tau` is `exp` of it), by the value variable's name. */
   private readonly logScale = new Map<string, string>()
   private readonly components = new Map<string, string>()
+  /** The normal-gamma pairs (a Gaussian mean and the precision its variance shares), by the name of the precision's node and of the mean's. */
+  private readonly normalGammaOf = new Map<string, NormalGammaPlan>()
+  private readonly normalGammaByMean = new Map<string, NormalGammaPlan>()
+  /** The observed Gaussian nodes of a normal-gamma pair, with the known multiple of the precision each carries. */
+  private readonly normalGammaObserved = new Map<
+    string,
+    { readonly plan: NormalGammaPlan; readonly multiple: number }
+  >()
   private readonly names = new Set<string>()
   private readonly nodes = new Map<string, ModelNode>()
   private readonly families = distributionFamilies()
@@ -700,6 +780,8 @@ class Compiler {
       (v) => (this.variables.find((u) => u.name === v)?.family.size ?? 2) as number,
     )
     if (look !== undefined) return look
+    const inverse = recipArithmetic(op, x, y)
+    if (inverse !== undefined) return inverse
     const left = scaledOf(x)
     const right = scaledOf(y)
     if (op === 'mul' && left !== undefined && right !== undefined && left.offset === 0 && right.offset === 0) {
@@ -1267,8 +1349,24 @@ class Compiler {
     if (e.op === 'sqrt') {
       const inner = this.unwrap((e.args as [ExprSpec])[0])
       if (inner.kind === 'op' && inner.op === 'div' && isOne(inner.args[0] as ExprSpec)) return inner.args[1]
+      // The scale is the square root of an inverse-gamma variance (a known multiple of it): the precision is its reciprocal.
+      if (this.isRecip(inner)) return { kind: 'op', op: 'div', args: [{ kind: 'const', value: 1 }, inner] }
     }
     return undefined
+  }
+
+  /** Whether an expression is an inverse-gamma variance or a known multiple of one (`sigma2`, `sigma2 / kappa`, `2 * sigma2`). */
+  private isRecip(e: ExprSpec): boolean {
+    const u = this.unwrap(e)
+    if (u.kind === 'ref') {
+      const cells = this.syms.get(u.name)?.cells
+      return cells !== undefined && cells.length > 0 && cells.every((c) => c.kind === 'recip')
+    }
+    if (u.kind === 'op' && (u.op === 'mul' || u.op === 'div')) {
+      const [a, b] = u.args as [ExprSpec, ExprSpec]
+      return (this.isRecip(a) && this.isConst(b)) || (u.op === 'mul' && this.isConst(a) && this.isRecip(b))
+    }
+    return false
   }
 
   /**
@@ -1325,6 +1423,7 @@ class Compiler {
     layout: SiteLayout['layout'],
     variables: readonly (string | null)[],
     posterior: boolean,
+    extra: Partial<Pick<SiteLayout, 'reciprocal' | 'part'>> = {},
   ): void {
     this.sites.push({
       site: node.name,
@@ -1335,6 +1434,7 @@ class Compiler {
       layout,
       variables,
       posterior,
+      ...extra,
     })
   }
 
@@ -1350,6 +1450,12 @@ class Compiler {
       this.latentProjected(node)
       return
     }
+    const meanOf = this.normalGammaByMean.get(node.name)
+    if (meanOf !== undefined) {
+      this.layout(node, 'latent', 'normal-gamma', 'scalar', [meanOf.variable], true, { part: 'mean' })
+      return
+    }
+    if ((fam === 'gamma' || fam === 'inverseGamma') && this.latentNormalGamma(node)) return
     const kind = MESSAGE_FAMILY[fam]
     if (kind === undefined)
       throw new Refusal(
@@ -1374,18 +1480,28 @@ class Compiler {
       return
     }
     if (fam === 'dirichlet') {
-      this.latentDirichlet(node)
+      const concentration = node.dist.params['concentration']
+      if (concentration !== undefined && !this.isConst(concentration)) this.latentRandomConcentration(node)
+      else this.latentDirichlet(node)
       return
     }
-    if (fam === 'gamma' && node.dist.params['rate'] !== undefined && !this.isConst(node.dist.params['rate'])) {
+    if (fam === 'beta' && ['a', 'b'].some((k) => !this.isConst(node.dist.params[k] as ExprSpec))) {
+      this.latentRandomConcentration(node)
+      return
+    }
+    // An inverse gamma `x` with scale `b` is the precision `1 / x` ~ Gamma(a, rate b): the variable is that gamma, the site its reciprocal.
+    const inverse = fam === 'inverseGamma'
+    const rateName = inverse ? 'scale' : 'rate'
+    const rateExpr = node.dist.params[rateName]
+    if ((fam === 'gamma' || inverse) && rateExpr !== undefined && !this.isConst(rateExpr)) {
       this.latentGammaRate(node)
       return
     }
     const shape = this.shapeOf(node.dims)
     const n = prod(shape)
     const params =
-      fam === 'gamma'
-        ? [this.constParam(node, 'concentration', 'the shape'), this.constParam(node, 'rate', 'the rate')]
+      fam === 'gamma' || inverse
+        ? [this.constParam(node, 'concentration', 'the shape'), this.constParam(node, rateName, 'the rate')]
         : fam === 'exponential'
           ? [new Array<number>(n).fill(1), this.constParam(node, 'rate', 'the rate')]
           : [this.constParam(node, 'a', 'the shape'), this.constParam(node, 'b', 'the shape')]
@@ -1399,11 +1515,158 @@ class Compiler {
           ? priorFactor(name, betaEta(p[0] as number, p[1] as number))
           : gammaPrior(name, p[0] as number, p[1] as number)
       this.addFactor(f, name)
-      cells.push({ kind: 'rv', variable: name, family: kind })
+      cells.push(inverse ? { kind: 'recip', variable: name, scale: 1 } : { kind: 'rv', variable: name, family: kind })
       vars.push(name)
     }
     this.syms.set(node.name, { dims: node.dims, cells })
-    this.layout(node, 'latent', kind, node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+    this.layout(
+      node,
+      'latent',
+      kind,
+      node.dims.length === 0 ? 'scalar' : 'elements',
+      vars,
+      true,
+      inverse ? { reciprocal: true } : {},
+    )
+  }
+
+  /**
+   * The known multiple `c` of a value in a node: `tau`, `c * tau`, `tau / c` (and nested), 1 for the node itself. Absent when the
+   * expression is anything else.
+   */
+  private multipleOf(e: ExprSpec, name: string): number | undefined {
+    const u = this.unwrap(e)
+    if (u.kind === 'ref') return u.name === name ? 1 : undefined
+    if (u.kind !== 'op' || (u.op !== 'mul' && u.op !== 'div')) return undefined
+    const [a, b] = u.args as [ExprSpec, ExprSpec]
+    const known = (x: ExprSpec): number | undefined => {
+      if (!this.isConst(x)) return undefined
+      const v = toFlat(this.evalNamed(x).value)
+      return v.length === 1 && Number.isFinite(v[0]) ? (v[0] as number) : undefined
+    }
+    const ka = known(a)
+    const kb = known(b)
+    if (u.op === 'mul') {
+      const m = ka !== undefined ? this.multipleOf(b, name) : kb !== undefined ? this.multipleOf(a, name) : undefined
+      const k = ka ?? kb
+      return m === undefined || k === undefined ? undefined : m * k
+    }
+    const m = kb !== undefined ? this.multipleOf(a, name) : undefined
+    return m === undefined || kb === undefined ? undefined : m / kb
+  }
+
+  /**
+   * The known multiple of the precision `tau` that a Gaussian's scale stands for, when it is the idiom of one: `1 / sqrt(c tau)`
+   * (a gamma `tau`), or `sqrt(c sigma2)` with `sigma2` an inverse gamma (so the precision is `tau / c`). Absent otherwise.
+   */
+  private precisionMultiple(scale: ExprSpec, tau: string, inverse: boolean): number | undefined {
+    const e = this.unwrap(scale)
+    if (e.kind !== 'op') return undefined
+    if (inverse) {
+      const c = e.op === 'sqrt' ? this.multipleOf(e.args[0] as ExprSpec, tau) : undefined
+      return c === undefined || !(c > 0) ? undefined : 1 / c
+    }
+    const p = this.precisionExpr(scale)
+    const c = p === undefined ? undefined : this.multipleOf(p, tau)
+    return c === undefined || !(c > 0) ? undefined : c
+  }
+
+  /**
+   * The normal-gamma pair of a gamma (or inverse-gamma) latent `T` (a precision or a variance): a Gaussian latent `M` with a
+   * known mean and the variance `1 / (kappa lambda)` (`mu ~ N(m, sigma2 / kappa)`) and observed Gaussians `y ~ N(M, 1 / (c lambda))`,
+   * with nothing else reading either of them. The pair is one `normal-gamma` variable with a prior of both and a
+   * `gaussian-normal-gamma` factor per observation, so the joint posterior is exactly the conjugate normal-gamma (the classic
+   * normal-inverse-gamma prior on a mean and a variance). Returns false (and changes nothing) when the model is not that shape: the
+   * mean and precision then compile to a Gaussian with a gamma precision each.
+   */
+  private latentNormalGamma(node: ModelNode & { readonly kind: 'latent' }): boolean {
+    if (node.dims.length !== 0) return false
+    const inverse = node.dist.family === 'inverseGamma'
+    const rateName = inverse ? 'scale' : 'rate'
+    if (
+      !this.isConst(node.dist.params['concentration'] as ExprSpec) ||
+      !this.isConst(node.dist.params[rateName] as ExprSpec)
+    )
+      return false
+    const readers = this.bound.spec.nodes.filter((n) => n.name !== node.name && nodeRefs(n).includes(node.name))
+    const means = readers.filter((n) => n.kind === 'latent')
+    const mean = means[0]
+    if (mean?.kind !== 'latent' || means.length !== 1) return false
+    const loc = mean.dist.params['loc']
+    const scale = mean.dist.params['scale']
+    if (mean.dims.length !== 0 || mean.dist.family !== 'normal' || loc === undefined || scale === undefined)
+      return false
+    if (!this.isConst(loc) || mean.constraint !== undefined) return false
+    const kappa = this.precisionMultiple(scale, node.name, inverse)
+    if (kappa === undefined) return false
+    const observed: (ModelNode & { readonly kind: 'observed' })[] = []
+    const multiples = new Map<string, number>()
+    for (const n of this.bound.spec.nodes) {
+      if (n.name === node.name || n.name === mean.name) continue
+      const refs = nodeRefs(n)
+      if (!refs.includes(node.name) && !refs.includes(mean.name)) continue
+      if (n.kind !== 'observed' || n.dist.family !== 'normal') return false
+      const l = n.dist.params['loc']
+      const sc = n.dist.params['scale']
+      if (l === undefined || sc === undefined || this.unwrap(l).kind !== 'ref') return false
+      if ((this.unwrap(l) as { readonly name: string }).name !== mean.name) return false
+      if (exprRefs(n.value).some((r) => r === node.name || r === mean.name)) return false
+      const c = this.precisionMultiple(sc, node.name, inverse)
+      if (c === undefined) return false
+      if (this.bound.batch !== undefined && n.dims.includes(this.bound.batch.dim)) return false
+      observed.push(n)
+      multiples.set(n.name, c)
+    }
+    if (observed.length === 0) return false
+    this.need('gaussian-normal-gamma')
+    const a = this.constParam(node, 'concentration', 'the shape')[0] as number
+    const b = this.constParam(node, rateName, 'the rate')[0] as number
+    const m = this.constParam(mean, 'loc', 'the mean')[0] as number
+    const plan: NormalGammaPlan = {
+      precision: node.name,
+      mean: mean.name,
+      variable: mean.name,
+      inverse,
+      kappa,
+      observed: observed.map((n) => n.name),
+    }
+    this.normalGammaOf.set(node.name, plan)
+    this.normalGammaByMean.set(mean.name, plan)
+    for (const n of observed) this.normalGammaObserved.set(n.name, { plan, multiple: multiples.get(n.name) as number })
+    this.addVariable({ name: plan.variable, family: { kind: 'normal-gamma' } })
+    this.addFactor(normalGammaPrior(plan.variable, m, kappa, a, b), plan.variable)
+    this.layout(node, 'latent', 'normal-gamma', 'scalar', [plan.variable], true, {
+      part: 'precision',
+      ...(inverse ? { reciprocal: true } : {}),
+    })
+    return true
+  }
+
+  /** The observed Gaussian rows of a normal-gamma pair: a `gaussian-normal-gamma` factor on the shared variable per row. */
+  private observedNormalGamma(
+    node: ModelNode & { readonly kind: 'observed' },
+    ng: { readonly plan: NormalGammaPlan; readonly multiple: number },
+    values: readonly number[],
+  ): void {
+    const vars: (string | null)[] = []
+    values.forEach((y, i) => {
+      if (Number.isNaN(y)) {
+        vars.push(null)
+        return
+      }
+      const name = this.elementName(node.name, node.dims, i)
+      this.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
+      this.addFactor(
+        {
+          operator: 'gaussian-normal-gamma',
+          args: [name, ng.plan.variable],
+          ...(ng.multiple === 1 ? {} : { params: { precision: ng.multiple } }),
+        },
+        name,
+      )
+      vars.push(name)
+    })
+    this.layout(node, 'observed', undefined, node.dims.length === 0 ? 'scalar' : 'observed', vars, false)
   }
 
   /**
@@ -1476,6 +1739,7 @@ class Compiler {
     const values = Object.fromEntries((names[fam] ?? []).map((p) => [p, this.constParam(node, p, `the ${p}`)]))
     const cells: Cell[] = []
     const vars: string[] = []
+    const logCells: Cell[] = []
     const site = node.dims.length === 0 ? undefined : (i: number): number => i
     for (let i = 0; i < n; i++) {
       const p = (k: string): number => (values[k] as number[])[i] as number
@@ -1513,6 +1777,7 @@ class Compiler {
         this.need('apply')
         this.addFactor({ operator: 'apply', args: [name, l], params: { fn: 'exp' } }, name)
         this.logScale.set(name, l)
+        logCells.push(this.varAtom(l))
       } else {
         const start = Number.isFinite(low) && Number.isFinite(high) ? (low + high) / 2 : 0
         this.addFactor(projectedPrior(name, density, { support: [low, high], start }), name)
@@ -1521,6 +1786,8 @@ class Compiler {
       vars.push(name)
     }
     this.syms.set(node.name, { dims: node.dims, cells })
+    // A positive value carried on its log (`tau = exp(l)`): the log is addressable, so a log link reads it directly (a rate or a scale).
+    if (logCells.length > 0) this.syms.set(logName(node.name), { dims: node.dims, cells: logCells })
     this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
   }
 
@@ -1850,8 +2117,9 @@ class Compiler {
    * Makalic-Schmidt half-Cauchy, or a Student-t's mixing precision): a `gamma-rate` factor per element, whose shape is known.
    */
   private latentGammaRate(node: ModelNode & { readonly kind: 'latent' }): void {
+    const inverse = node.dist.family === 'inverseGamma'
     const shapes = this.constParam(node, 'concentration', 'the shape')
-    const rate = node.dist.params['rate'] as ExprSpec
+    const rate = node.dist.params[inverse ? 'scale' : 'rate'] as ExprSpec
     const cells = this.over(this.evalSym(rate), node.dims)
     const out: Cell[] = []
     const vars: string[] = []
@@ -1872,11 +2140,19 @@ class Compiler {
         },
         name,
       )
-      out.push({ kind: 'rv', variable: name, family: 'gamma' })
+      out.push(inverse ? { kind: 'recip', variable: name, scale: 1 } : { kind: 'rv', variable: name, family: 'gamma' })
       vars.push(name)
     }
     this.syms.set(node.name, { dims: node.dims, cells: out })
-    this.layout(node, 'latent', 'gamma', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+    this.layout(
+      node,
+      'latent',
+      'gamma',
+      node.dims.length === 0 ? 'scalar' : 'elements',
+      vars,
+      true,
+      inverse ? { reciprocal: true } : {},
+    )
   }
 
   /** A Gaussian latent with a gamma precision: a `gaussian-gamma-precision` factor per element (the mean-field hierarchy of Bishop 2006, 10.2). */
@@ -1950,6 +2226,140 @@ class Compiler {
     }
     this.syms.set(node.name, { dims: node.dims, cells })
     this.layout(node, 'latent', 'dirichlet', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+  }
+
+  /**
+   * A beta or Dirichlet latent whose concentrations are known multiples of one random positive value plus known offsets
+   * (`beta(alpha, alpha)`, `beta(alpha, 2)`, `dirichlet(alpha * ones)`: the strength of the prior learned from the data) with `alpha`
+   * a gamma latent or a log-normal one (carried on its log): a `dirichlet-concentration` factor per element, which is the
+   * prior of the variable (a numeric rule: a grid over `log alpha`).
+   */
+  private latentRandomConcentration(node: ModelNode & { readonly kind: 'latent' }): void {
+    const isBeta = node.dist.family === 'beta'
+    const shape = this.shapeOf(node.dims)
+    const n = prod(shape)
+    // The concentration of each element: one cell per component (a beta has two parameters, a Dirichlet an event axis).
+    let perElement: ConcentrationPart[][]
+    if (isBeta) {
+      const a = this.over(this.evalSym(node.dist.params['a'] as ExprSpec), node.dims)
+      const b = this.over(this.evalSym(node.dist.params['b'] as ExprSpec), node.dims)
+      perElement = Array.from({ length: n }, (_, i) => [
+        this.concentrationOf(node, a[i] as Cell),
+        this.concentrationOf(node, b[i] as Cell),
+      ])
+    } else {
+      // `concentration = S * V + O` with `S` random (a gamma or log-normal latent, a known multiple of one plus a known value) and `V`, `O`
+      // known vectors over the event axis: the cell of each component is `V_k S + O_k`.
+      const parsed = this.concentrationForm(node.dist.params['concentration'] as ExprSpec)
+      if (parsed === undefined)
+        throw new Refusal(
+          'operator',
+          `the concentration of '${node.name}' is not a random value times a known vector plus a known vector`,
+        )
+      const scalar = this.over(this.evalSym(parsed.random), node.dims)
+      perElement = scalar.map((s) => {
+        const base = this.concentrationOf(node, s)
+        return parsed.scale.map(
+          (v, k): ConcentrationPart => ({
+            ...base,
+            weight: v * base.weight,
+            offset: v * base.offset + (parsed.offset[k] as number),
+          }),
+        )
+      })
+    }
+    const cells: Cell[] = []
+    const vars: string[] = []
+    this.need('dirichlet-concentration')
+    for (const [i, parts] of perElement.entries()) {
+      const comps = parts
+      const random = parts.filter((p) => p.variable !== undefined)
+      const variable = random[0]?.variable
+      const log = random[0]?.log === true
+      if (variable === undefined || random.some((p) => p.variable !== variable || (p.log === true) !== log))
+        throw new Refusal(
+          'operator',
+          `the concentration of '${node.name}' must be known multiples of one random positive value (a gamma or log-normal latent) plus known offsets`,
+        )
+      const family: FamilyKind = isBeta ? 'beta' : 'dirichlet'
+      const name = this.addVariable({
+        name: this.elementName(node.name, node.dims, i),
+        family: isBeta ? { kind: 'beta' } : { kind: 'dirichlet', size: comps.length },
+      })
+      this.addFactor(
+        {
+          operator: 'dirichlet-concentration',
+          args: [name, variable],
+          params: {
+            weights: parts.map((p) => p.weight),
+            offsets: parts.map((p) => p.offset),
+            ...(log ? { log: true } : {}),
+          },
+        },
+        name,
+      )
+      cells.push({ kind: 'rv', variable: name, family })
+      vars.push(name)
+    }
+    this.syms.set(node.name, { dims: node.dims, cells })
+    this.layout(
+      node,
+      'latent',
+      isBeta ? 'beta' : 'dirichlet',
+      node.dims.length === 0 ? 'scalar' : 'elements',
+      vars,
+      true,
+    )
+  }
+
+  /** `S * V + O` for known vectors `V` and `O` over an event axis and a random scalar expression `S`: the form of a Dirichlet's random concentration. */
+  private concentrationForm(
+    e: ExprSpec,
+  ): { readonly random: ExprSpec; readonly scale: readonly number[]; readonly offset: readonly number[] } | undefined {
+    const u = this.unwrap(e)
+    const vector = (x: ExprSpec): number[] | undefined => {
+      if (!this.isConst(x)) return undefined
+      const nv = this.evalNamed(x)
+      return nv.value.shape.length > nv.dims.length ? toFlat(nv.value) : undefined
+    }
+    if (u.kind !== 'op') return undefined
+    const [a, b] = u.args as [ExprSpec, ExprSpec]
+    if (u.op === 'mul') {
+      const va = vector(a)
+      const vb = vector(b)
+      if (va !== undefined && vb === undefined) return { random: b, scale: va, offset: va.map(() => 0) }
+      if (vb !== undefined && va === undefined) return { random: a, scale: vb, offset: vb.map(() => 0) }
+      return undefined
+    }
+    if (u.op === 'add') {
+      const va = vector(a)
+      const vb = vector(b)
+      const [inner, o] = va !== undefined ? [b, va] : vb !== undefined ? [a, vb] : [undefined, undefined]
+      if (inner === undefined || o === undefined) return undefined
+      const base = this.concentrationForm(inner)
+      return base === undefined ? undefined : { ...base, offset: base.offset.map((v, k) => v + (o[k] as number)) }
+    }
+    return undefined
+  }
+
+  /**
+   * One component of a concentration as `weight * alpha + offset`: a known value, a gamma variable (or a known multiple of one
+   * plus an offset), or a positive latent carried on its log (`alpha = exp(l)`, the variable returned is `l`, with `log`).
+   */
+  private concentrationOf(node: ModelNode, c: Cell): ConcentrationPart {
+    if (isConstCell(c)) return { weight: 0, offset: c.aff.offset }
+    const g = scaledOf(c)
+    if (g !== undefined) return { variable: g.variable, weight: g.scale, offset: g.offset }
+    if (c.kind === 'aff' && c.aff.terms.size === 1) {
+      const [key, coefficient] = [...c.aff.terms][0] as [string, number]
+      const atom = this.atoms.get(key)
+      const l = atom?.kind === 'var' ? this.logScale.get(atom.name) : undefined
+      if (l !== undefined) return { variable: l, log: true, weight: coefficient, offset: c.aff.offset }
+    }
+    throw new Refusal(
+      'operator',
+      `a concentration of '${node.name}' is not a known multiple of a gamma or log-normal latent plus a known value`,
+    )
   }
 
   /** The variable of a scalar discrete latent. */
@@ -2116,7 +2526,27 @@ class Compiler {
     const n = prod(shape)
     const cells: Cell[] = []
     const vars: string[] = []
-    if (parents.length === 0) {
+    const probsExpr = node.dist.params['probs']
+    if (parents.length === 0 && probsExpr !== undefined && !this.isConst(probsExpr)) {
+      // A Bernoulli whose probability is a beta latent (an unknown mixing weight, a gate's prior): the conjugate `bernoulli` factor,
+      // whose message to the probability is the moment-matched mixture of the two conjugate updates.
+      this.need('bernoulli')
+      const over = this.over(this.evalSym(probsExpr), node.dims)
+      for (const [i, c] of over.entries()) {
+        if (c.kind !== 'rv' || c.family !== 'beta')
+          throw new Refusal(
+            'operator',
+            `the probability of '${node.name}' must be known or a beta latent for the conjugate 'bernoulli' operator`,
+          )
+        const name = this.addVariable({
+          name: this.elementName(node.name, node.dims, i),
+          family: { kind: 'bernoulli' },
+        })
+        this.addFactor({ operator: 'bernoulli', args: [name, c.variable] }, name)
+        cells.push({ kind: 'rv', variable: name, family: 'bernoulli' })
+        vars.push(name)
+      }
+    } else if (parents.length === 0) {
       const probs = this.constParam(
         node,
         node.dist.params['probs'] === undefined ? 'logits' : 'probs',
@@ -2173,10 +2603,10 @@ class Compiler {
         vars.push(c.variable)
         return c
       }
-      if (c.kind === 'scaled' || c.kind === 'lookup')
+      if (c.kind === 'scaled' || c.kind === 'lookup' || c.kind === 'recip')
         throw new Refusal(
           'structure',
-          `'${node.name}' is a ${c.kind === 'scaled' ? 'scaled precision' : 'lookup by a discrete variable'}: it cannot be recorded as a value`,
+          `'${node.name}' is a ${c.kind === 'scaled' ? 'scaled precision' : c.kind === 'recip' ? 'multiple of an inverse-gamma variance' : 'lookup by a discrete variable'}: it cannot be recorded as a value`,
         )
       const name = this.elementName(node.name, node.dims, i)
       const v = this.materialise(c.aff, node.name, node.dims.length === 0 ? undefined : i, name)
@@ -2220,6 +2650,11 @@ class Compiler {
     const values = this.over(this.fromNamed(this.evalNamedValue(node)), node.dims).map(
       (c) => (c as Cell & { kind: 'aff' }).aff.offset,
     )
+    const normalGamma = this.normalGammaObserved.get(node.name)
+    if (normalGamma !== undefined) {
+      this.observedNormalGamma(node, normalGamma, values)
+      return
+    }
     const vars: (string | null)[] = []
     const discreteParents = this.discreteParents(node)
     if (this.vectorise && node.dims.length > 0 && discreteParents.length === 0 && this.plate(node, fam, values)) return
@@ -2327,9 +2762,17 @@ class Compiler {
       }
       case 'categorical':
         return this.observedConjugate(node, fam, name, y, i)
+      case 'normalPair':
+        return this.observedMixtureWeight(node, name, y, i)
+      case 'exponential':
+      case 'gamma':
+        return this.observedGammaRate(node, fam, name, y, i)
+      case 'geometric':
+        return this.observedFailures(node, fam, name, y, i)
       case 'negativeBinomial':
       case 'weibull': {
         const numeric = this.observedNumeric(node, fam, y, i, index)
+        if (numeric === undefined && fam === 'negativeBinomial') return this.observedFailures(node, fam, name, y, i)
         if (numeric === undefined)
           throw new Refusal(
             'operator',
@@ -2340,7 +2783,7 @@ class Compiler {
       default:
         throw new Refusal(
           'family',
-          `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, normalOutliers, bernoulli, binomial, poisson, negativeBinomial, weibull and categorical`,
+          `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, normalOutliers, bernoulli, binomial, poisson, normalPair, exponential, gamma, geometric, negativeBinomial, weibull and categorical`,
         )
     }
   }
@@ -2356,13 +2799,22 @@ class Compiler {
     randomScale = false,
   ): { readonly inner: ExprSpec; readonly scale: ExprSpec | undefined } | undefined {
     const u = this.unwrap(e)
+    // A positive latent carried on its log (a log-normal, half-normal or half-Cauchy rate or scale) is `exp` of that log.
+    const logOf = (x: ExprSpec): ExprSpec | undefined =>
+      x.kind === 'ref' && this.syms.has(logName(x.name)) ? { kind: 'ref', name: logName(x.name) } : undefined
+    const direct = logOf(u)
+    if (direct !== undefined) return { inner: direct, scale: undefined }
     if (u.kind !== 'op') return undefined
     if (u.op === 'exp') return { inner: u.args[0] as ExprSpec, scale: undefined }
     if (u.op === 'mul') {
       const [a, b] = u.args as [ExprSpec, ExprSpec]
       const ea = this.unwrap(a)
       const eb = this.unwrap(b)
+      const la = logOf(ea)
+      const lb = logOf(eb)
       // With `randomScale` the factor may be random too (a known value chosen by a discrete variable: a gate over the rate).
+      if ((randomScale || this.isConst(a)) && lb !== undefined) return { inner: lb, scale: a }
+      if ((randomScale || this.isConst(b)) && la !== undefined) return { inner: la, scale: b }
       if ((randomScale || this.isConst(a)) && eb.kind === 'op' && eb.op === 'exp')
         return { inner: eb.args[0] as ExprSpec, scale: a }
       if ((randomScale || this.isConst(b)) && ea.kind === 'op' && ea.op === 'exp')
@@ -3066,6 +3518,103 @@ class Compiler {
     )
   }
 
+  /**
+   * An observed exponential or gamma value (a known shape) whose rate is a gamma latent or a known multiple of one: the conjugate
+   * `gamma-observed` factor, a gamma message to the rate (a waiting time with a gamma prior on the rate).
+   */
+  private observedGammaRate(
+    node: ModelNode & { readonly kind: 'observed' },
+    fam: string,
+    name: string,
+    y: number,
+    i: number,
+  ): string | null {
+    if (!(y > 0)) throw new Refusal('data', `'${node.name}' is ${fam}: the value ${y} must be positive`)
+    const shape = fam === 'gamma' ? this.constAt(node, node.dist.params['concentration'] as ExprSpec, i) : 1
+    const target = this.paramCell(node, 'rate', i)
+    if (isConstCell(target)) return null
+    const tau = scaledOf(target)
+    if (tau === undefined || tau.offset !== 0 || !(tau.scale > 0))
+      throw new Refusal(
+        'operator',
+        `the rate of '${node.name}' must be a gamma latent or a known multiple of one for the conjugate '${fam}' operator, it is not`,
+      )
+    this.need('gamma-observed')
+    this.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
+    this.addFactor(
+      {
+        operator: 'gamma-observed',
+        args: [name, tau.variable],
+        params: { shape, ...(tau.scale === 1 ? {} : { scale: tau.scale }) },
+      },
+      name,
+    )
+    return name
+  }
+
+  /**
+   * An observed two-component mixture with known means and scale and a beta weight (`normalPair`, the switch summed out): the
+   * `mixture-weight` factor on the weight, with the likelihood of the value under each component.
+   */
+  private observedMixtureWeight(
+    node: ModelNode & { readonly kind: 'observed' },
+    name: string,
+    y: number,
+    i: number,
+  ): string | null {
+    const target = this.paramCell(node, 'weight', i)
+    if (isConstCell(target)) return null
+    if (target.kind !== 'rv' || target.family !== 'beta')
+      throw new Refusal(
+        'operator',
+        `the weight of '${node.name}' must be a beta latent for the 'mixture-weight' operator`,
+      )
+    const [low, high, scale] = ['low', 'high', 'scale'].map((k) =>
+      this.constAt(node, node.dist.params[k] as ExprSpec, i),
+    )
+    const density = (m: number): number =>
+      Math.exp(-0.5 * ((y - m) / (scale as number)) ** 2) / ((scale as number) * Math.sqrt(2 * Math.PI))
+    this.need('mixture-weight')
+    this.addFactor(
+      {
+        operator: 'mixture-weight',
+        args: [target.variable],
+        params: { l1: density(high as number), l0: density(low as number) },
+      },
+      name,
+    )
+    return null
+  }
+
+  /**
+   * An observed geometric (trials up to the first success) or negative binomial (failures before the `n`-th success, `n` known)
+   * count whose success probability is a beta latent: the conjugate `negative-binomial-beta` factor.
+   */
+  private observedFailures(
+    node: ModelNode & { readonly kind: 'observed' },
+    fam: string,
+    name: string,
+    y: number,
+    i: number,
+  ): string | null {
+    const geometric = fam === 'geometric'
+    const failures = geometric ? y - 1 : y
+    if (!(failures >= 0 && Number.isInteger(failures)))
+      throw new Refusal('data', `'${node.name}' is ${fam}: the count ${y} is not on its support`)
+    const successes = geometric ? 1 : this.constAt(node, node.dist.params['n'] as ExprSpec, i)
+    const target = this.paramCell(node, 'probs', i)
+    if (isConstCell(target)) return null
+    if (target.kind !== 'rv' || target.family !== 'beta')
+      throw new Refusal(
+        'operator',
+        `the probs of '${node.name}' must be a beta latent for the conjugate '${fam}' operator, it is not`,
+      )
+    this.need('negative-binomial-beta')
+    this.addVariable({ name, family: { kind: 'gaussian' }, observed: failures })
+    this.addFactor({ operator: 'negative-binomial-beta', args: [name, target.variable], params: { successes } }, name)
+    return name
+  }
+
   private observedConjugate(
     node: ModelNode & { readonly kind: 'observed' },
     fam: string,
@@ -3356,18 +3905,31 @@ export function factorGraphPosterior(
           ),
         )
         break
-      case 'gamma':
-        out[s.site] = gamma(
-          T(
-            vs.map((x) => (x['improper'] === true ? 1 : num(x['shape']))),
-            shape,
-          ),
-          T(
-            vs.map((x) => (x['improper'] === true ? 1e-6 : num(x['rate']))),
-            shape,
-          ),
+      case 'gamma': {
+        const shapes = T(
+          vs.map((x) => (x['improper'] === true ? 1 : num(x['shape']))),
+          shape,
         )
+        const rates = T(
+          vs.map((x) => (x['improper'] === true ? 1e-6 : num(x['rate']))),
+          shape,
+        )
+        out[s.site] = s.reciprocal === true ? inverseGamma(shapes, rates) : gamma(shapes, rates)
         break
+      }
+      case 'normal-gamma': {
+        // The joint of a mean and a precision shares one variable: the mean's marginal is a Student t (2a degrees of freedom around m,
+        // scale sqrt(b / (a beta))), the precision's a gamma (an inverse gamma for a variance).
+        const x = vs[0] ?? {}
+        const proper = x['improper'] !== true
+        const [m, beta, a, b] = [num(x['m']), num(x['beta']), num(x['a']), num(x['b'])]
+        if (s.part === 'mean') out[s.site] = proper ? studentT(2 * a, m, Math.sqrt(b / (a * beta))) : normal(0, 1e6)
+        else {
+          const [sh, rt] = proper ? [a, b] : [1, 1e-6]
+          out[s.site] = s.reciprocal === true ? inverseGamma(sh, rt) : gamma(sh, rt)
+        }
+        break
+      }
       case 'beta':
         out[s.site] = beta(
           T(

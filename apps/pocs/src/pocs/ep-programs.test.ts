@@ -68,7 +68,7 @@ describe('ep-program-changepoint: a Poisson rate that switches between three reg
     // Plain EP, with its default damped restart. Measured against Gibbs: the mean regime-probability gap is 0.2 to 0.3 and the
     // rate sds of the barely visited regimes are 0.05 to 0.3 of the sampler's. Power EP and alpha-divergence (on a gate of
     // Poisson branches, the one form of this model they apply to), damping and the improper-message policies do not restore
-    // them (see docs/probprog/ep-plan.md section 9), so this is held as the limit of plain EP, to be flipped when that changes.
+    // them (see docs/probprog/ep-plan.md section 11), so this is held as the limit of plain EP, to be flipped when that changes.
     for (const seed of [2, 5, 8]) {
       const r = regimeGap(seed)
       expect(r.gap, `seed ${seed}`).toBeGreaterThan(0.1)

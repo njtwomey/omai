@@ -9,14 +9,18 @@ export const RATES = [3, 9, 22] // the truth: the rate of each regime
 export const PRIOR = { shape: [2, 2, 2], rate: [0.5, 1 / 6, 1 / 15] } // the model's: means 4, 12 and 30, each broad (a low, a middle and a high regime)
 
 // region simulate
-/** A sticky chain over the regimes (stay with probability `stay`, else move to either other), and Poisson counts at each regime's rate. */
+/**
+ * A sticky chain over the regimes: stay with probability `stay`, else move to either other.
+ * Poisson counts at each regime's rate.
+ */
 export function simulate(seed: number, stay = 0.95, steps = 80) {
   const [kz, ky] = split(key(seed), 2) as [ReturnType<typeof key>, ReturnType<typeof key>]
   const u = toFlat(uniform(kz, [steps]))
   const z: number[] = [Math.floor(3 * (u[0] ?? 0))]
   for (let t = 1; t < steps; t++) {
     const prev = z[t - 1] as number
-    const move = ((u[t] ?? 0) - stay) / (1 - stay) // in [0, 1) when it moves
+    // In [0, 1) when it moves.
+    const move = ((u[t] ?? 0) - stay) / (1 - stay)
     z.push(move < 0 ? prev : (prev + 1 + Math.floor(2 * move)) % 3)
   }
   const y = z.map((s, t) => toFlat(poisson(foldIn(ky, t), RATES[s] as number, [1]))[0] ?? 0)
@@ -25,7 +29,10 @@ export function simulate(seed: number, stay = 0.95, steps = 80) {
 // endregion
 
 // region model
-/** z: a sticky Markov chain over three regimes; each regime has an unknown rate (gamma prior), the count at t is Poisson(rate[z_t]). */
+/**
+ * z: a sticky Markov chain over three regimes.
+ * Each regime has an unknown rate (gamma prior); the count at t is Poisson(rate[z_t]).
+ */
 export function model(stay: number) {
   return defineModel('poisson-changepoint', (b) => {
     const y = b.data('y', { dims: ['time'], support: 'count' })
@@ -39,9 +46,10 @@ export function model(stay: number) {
       ],
       ['from'],
     )
-    const rate = b.latent('rate', d.gamma(b.const(PRIOR.shape, ['regime']), b.const(PRIOR.rate, ['regime'])), {
-      dims: [regime],
-    })
+    const shape = b.const(PRIOR.shape, ['regime'])
+    const rateScale = b.const(PRIOR.rate, ['regime'])
+    // The unknown rate of each regime.
+    const rate = b.latent('rate', d.gamma(shape, rateScale), { dims: [regime] })
     b.scan('z', {
       over: 'time',
       init: d.categorical({ probs: [1 / 3, 1 / 3, 1 / 3] }),
@@ -57,7 +65,8 @@ export function model(stay: number) {
 export function infer(y: readonly number[], stay: number) {
   const bound = model(stay).bind({ y })
   const ep = epSpecMethod(bound)
-  const run = session(ep, { config: { tol: 1e-9 }, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
+  const config = { tol: 1e-9 }
+  const run = session(ep, { config, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
   const post = ep.posterior?.(run.state, run.config)
   const regimes = Array.from({ length: y.length }, (_, t) =>
     [0, 1, 2].map((k) => toFlat(post?.marginal(`z[${t}]`).prob(k) as never)[0] ?? 0),
