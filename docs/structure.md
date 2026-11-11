@@ -3691,6 +3691,22 @@ dimension order, ids, site names, expressions, the hooks for factor graphs) are 
   compiler (a Gram matrix at a fixed length scale), and one that is affine in a single random vector is read as a matrix (the
   whitened form `f = L(ell) z`); an unnamed event vector (a multivariate normal latent and its observation through a
   diagonal known covariance) is read as a vector over a dimension of its size by `event-dims.ts` (`eventToDims`).
+- `factor-graph/` (an `@inline` folder of `model/`, the pieces of the compiler that `factors.ts` drives; the files that start with `_` are private,
+  not exported). Public: `types.ts` (`FactorIssue`, `SiteLayout`, `FactorGraphCompilation`), `readback.ts` (`factorGraphPosterior`,
+  `graphOnSpec`: a run read back by site name) and `verdict.ts` (`factorGraphVerdict`, `compileFactorGraph`, `operatorsWithout`). Private, in
+  the order a compilation uses them: `_known.ts` (the constants pass: bound data and the derived nodes built from known things only,
+  evaluated by the operator registry before the walk, as `Known`; a derived node that is constant only after its symbolic evaluation, `0 * z`, is
+  declared by the walk into the same `Known` and listed in `Known.semantic`, because that knowledge is order-dependent by nature),
+  `_idioms.ts` (the pure recognisers: the precision idiom of a scale, the known multiple of a gamma variable, an inverse-gamma variance,
+  `dependsOnLatent` and `sharedGamma` as the analysis module's `usesLatent` and `latentsIn`), `_plan.ts` (the `LayoutPlan`, immutable, found from the
+  whole spec before any node is mapped, in a fixed order: `findPacked`, then `findNonCentred` (reads what a `matmul` reads), then `findGroups` (reads the
+  packed vectors; only with `packScalars`), then `findNormalGamma` (reads the constants as of each precision's position)); `_context.ts`
+  (`Context`, the state of one compilation: the graph builder, the issues and site layouts, `Known`, the plan, the symbolic value of each node, and
+  the few operations every mapping needs); `_symbolic/` (the evaluator of expressions: `_dims.ts` the named dimensions, `_affine.ts` `evalSym` and
+  the value algebra, `_gates.ts` values chosen by a discrete variable, `_functions.ts` the `product`, `apply` and `max`/`min` factors that arithmetic on random values
+  makes; `EvalMode` says whether a gate keeps its components as a lookup); `_cells.ts` (the value algebra: pure), `_builder.ts` (the graph builder, `GateBuilder`)
+  and `_refusal.ts` (`Refusal`). A mapping is a function of a `Context` and a node; `factors.ts` is the driver that walks the spec in order and
+  chooses the mapping.
 
 **Inference methods (`inference/`, `omai-engine/probprog/inference`).** The convention and the methods, with no entry point
 that picks one. `method.ts` is the convention: `defineInferenceMethod` makes a `Method` of the trace library (a `Space`
