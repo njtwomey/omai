@@ -1,8 +1,10 @@
 /**
- * The pieces of the model-to-factor-graph compiler (`toFactorGraph`, in `../factors.ts`) that stand on their own: the types
- * the compilation reports (issues, site layouts, the compilation record), and, as private modules (`_` files, not exported),
- * the refusal the mappings throw and the value algebra they compute with (cells: affine forms over the graph's random scalars,
- * lookups, scaled and reciprocal gamma variables). Re-exported flat into `omai-engine/probprog/model`.
+ * The pieces of the model-to-factor-graph compiler (`toFactorGraph`, in `../factors.ts`) that stand on their own. Public: the
+ * types a compilation reports (issues, site layouts, the compilation record), the reading back of a run
+ * (`factorGraphPosterior`, `graphOnSpec`) and the verdict for a message-passing method (`factorGraphVerdict`,
+ * `operatorsWithout`, `compileFactorGraph`). Private (`_` files, not exported): the refusal the mappings throw, the value algebra
+ * they compute with (cells: affine forms over the graph's random scalars, lookups, scaled and reciprocal gamma variables) and
+ * the graph builder (variables, factors, auxiliary names, atoms). Re-exported flat into `omai-engine/probprog/model`.
  *
  * @inline
  */
