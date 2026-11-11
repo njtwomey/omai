@@ -6,7 +6,7 @@ import {
   calibrationTable,
   type EpAtom,
   epAtom,
-} from 'omai-engine/bayesian-examples'
+} from 'omai-engine/probprog/ep'
 import type { Config } from 'omai-engine/trace'
 import { type ReactNode, useMemo } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'

@@ -17,7 +17,7 @@ import { normalCdf } from './ep-atoms-quad.ts'
  * @index function The equal-tailed credible interval of a mixture of Gaussians (a gated coefficient).
  * @example
  * ```ts
- * import { mixtureInterval } from 'omai-engine/bayesian-examples'
+ * import { mixtureInterval } from 'omai-engine/probprog/ep'
  * const [lo, hi] = mixtureInterval([{ weight: 1, mean: 0, sd: 1 }], 0.9)
  * [lo.toFixed(3), hi.toFixed(3)] // => ['-1.645', '1.645']
  * ```
@@ -74,7 +74,7 @@ export interface RecoverySummary {
  * @index function How well a posterior recovered the truth: interval coverage, error, agreement with a reference.
  * @example
  * ```ts
- * import { recoverySummary } from 'omai-engine/bayesian-examples'
+ * import { recoverySummary } from 'omai-engine/probprog/ep'
  * const s = recoverySummary({ truth: [0, 1], mean: [0.1, 0.9], sd: [0.1, 0.1], lower: [-0.1, 0.7], upper: [0.3, 1.1] })
  * [s.coverage, s.rmse.toFixed(2)] // => [1, '0.10']
  * ```
@@ -127,7 +127,7 @@ export interface ActiveSetScore {
  * @index function The score of inclusion probabilities against the true active set: AUC and counts at a threshold.
  * @example
  * ```ts
- * import { activeSetScore } from 'omai-engine/bayesian-examples'
+ * import { activeSetScore } from 'omai-engine/probprog/ep'
  * activeSetScore([0.99, 0.2, 0.7, 0.01], [true, false, false, false]) // => { auc: 1, found: 1, missed: 0, falsePositives: 1 }
  * ```
  */

@@ -8,7 +8,7 @@ import {
   epDirections,
   epGaps,
   verifyAtom,
-} from 'omai-engine/bayesian-examples'
+} from 'omai-engine/probprog/ep'
 import { type ReactNode, useMemo, useState } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { RunProgress } from '../../shared/RunProgress.tsx'

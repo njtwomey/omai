@@ -9,10 +9,11 @@
  * projection of that mixture.
  */
 
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { dict, real } from '../space/index.ts'
-import type { Config } from '../trace/index.ts'
+import { dict, real } from '../../space/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import {
   type AtomProblem,
   type Belief,
@@ -23,7 +24,6 @@ import {
   type MixtureView,
 } from './ep-atoms.ts'
 import { mixtureMarginal, momentMatch, normalPdf, quadratureMarginal, selectedBranch } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 /** A Gaussian: its mean and sd. */
 interface Normal {
@@ -63,7 +63,7 @@ export interface TwoComponentGate {
  * @concept expectation-propagation
  * @example
  * ```ts
- * import { twoComponentGate } from 'omai-engine/bayesian-examples'
+ * import { twoComponentGate } from 'omai-engine/probprog/ep'
  * const g = twoComponentGate(0.5, [{ mean: 0, sd: 1 }, { mean: 0, sd: 1 }], 0.3, 1)
  * g.p1 // => 0.5
  * ```
@@ -179,8 +179,8 @@ function componentView(
 // A switch between two known values.
 
 function knownGateProblem(k: Config): AtomProblem {
-  const pi = exampleNumber(k, 'pi')
-  const y = exampleNumber(k, 'y')
+  const pi = configNumber(k, 'pi')
+  const y = configNumber(k, 'y')
   // region gate
   const definition = defineModel('gate-known', (m) => {
     const z = m.latent('z', d.bernoulli({ probs: pi }))
@@ -229,7 +229,7 @@ function knownGateProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a gate (select) between two known components.
  * @example
  * ```ts
- * import { gateKnownAtom } from 'omai-engine/bayesian-examples'
+ * import { gateKnownAtom } from 'omai-engine/probprog/ep'
  * gateKnownAtom.name // => 'gate'
  * ```
  */
@@ -258,8 +258,8 @@ export const gateKnownAtom: EpAtom = defineAtom({
 // A switch between two random values, as a select and as an index.
 
 function randomGateProblem(k: Config, form: 'select' | 'index'): AtomProblem {
-  const pi = exampleNumber(k, 'pi')
-  const y = exampleNumber(k, 'y')
+  const pi = configNumber(k, 'pi')
+  const y = configNumber(k, 'y')
   const s = 0.5
   const priors: readonly [Normal, Normal] = [
     { mean: -2, sd: 1 },
@@ -353,7 +353,7 @@ const gateTolerance = {
  * @index estimator EP atom: a gate between two random components (select), drawn as its branches.
  * @example
  * ```ts
- * import { gateRandomAtom } from 'omai-engine/bayesian-examples'
+ * import { gateRandomAtom } from 'omai-engine/probprog/ep'
  * gateRandomAtom.family // => 'gates'
  * ```
  */
@@ -376,7 +376,7 @@ export const gateRandomAtom: EpAtom = defineAtom({
  * @index estimator EP atom: a random index into random components (mu[z]), drawn as its branches.
  * @example
  * ```ts
- * import { mixtureComponentsAtom } from 'omai-engine/bayesian-examples'
+ * import { mixtureComponentsAtom } from 'omai-engine/probprog/ep'
  * mixtureComponentsAtom.name // => 'mixture-components'
  * ```
  */
@@ -414,7 +414,7 @@ export const mixtureComponentsAtom: EpAtom = defineAtom({
  * @concept expectation-propagation
  * @example
  * ```ts
- * import { spikeSlabPosterior } from 'omai-engine/bayesian-examples'
+ * import { spikeSlabPosterior } from 'omai-engine/probprog/ep'
  * spikeSlabPosterior(0.5, 2, 0.1, 0, 0.5).p1 < 0.2 // => true
  * ```
  */
@@ -440,10 +440,10 @@ const spikeKnobs = dict({
 })
 
 function spikeSlabGateProblem(k: Config): AtomProblem {
-  const pi = exampleNumber(k, 'pi')
-  const y = exampleNumber(k, 'y')
-  const slab = exampleNumber(k, 'slab')
-  const spike = exampleNumber(k, 'spike')
+  const pi = configNumber(k, 'pi')
+  const y = configNumber(k, 'y')
+  const slab = configNumber(k, 'slab')
+  const spike = configNumber(k, 'spike')
   const s = SPIKE_NOISE
   const priors: readonly [Normal, Normal] = [
     { mean: 0, sd: spike },
@@ -498,7 +498,7 @@ function spikeSlabGateProblem(k: Config): AtomProblem {
  * @index estimator EP atom: spike and slab as a gate between a narrow and a wide Gaussian.
  * @example
  * ```ts
- * import { spikeSlabAtom } from 'omai-engine/bayesian-examples'
+ * import { spikeSlabAtom } from 'omai-engine/probprog/ep'
  * spikeSlabAtom.name // => 'spike-and-slab'
  * ```
  */
@@ -521,10 +521,10 @@ export const spikeSlabAtom: EpAtom = defineAtom({
 })
 
 function spikeSlabMarginalProblem(k: Config): AtomProblem {
-  const pi = exampleNumber(k, 'pi')
-  const y = exampleNumber(k, 'y')
-  const slab = exampleNumber(k, 'slab')
-  const spike = exampleNumber(k, 'spike')
+  const pi = configNumber(k, 'pi')
+  const y = configNumber(k, 'y')
+  const slab = configNumber(k, 'slab')
+  const spike = configNumber(k, 'spike')
   const s = SPIKE_NOISE
   // region spike-and-slab-marginal
   const definition = defineModel('spike-and-slab-marginal', (m) => {
@@ -566,7 +566,7 @@ function spikeSlabMarginalProblem(k: Config): AtomProblem {
  * @index estimator EP atom: spike and slab with the switch summed out (mixture site, no P(slab)).
  * @example
  * ```ts
- * import { spikeSlabMarginalAtom } from 'omai-engine/bayesian-examples'
+ * import { spikeSlabMarginalAtom } from 'omai-engine/probprog/ep'
  * spikeSlabMarginalAtom.name // => 'spike-and-slab-marginal'
  * ```
  */
@@ -597,7 +597,7 @@ const INLIER_SD = 0.5
 const CLUTTER_SD = 5
 
 function clutterGateProblem(k: Config): AtomProblem {
-  const w = exampleNumber(k, 'share')
+  const w = configNumber(k, 'share')
   const priorSd = 5
   // region clutter
   const definition = defineModel('clutter', (m) => {
@@ -682,7 +682,7 @@ function clutterGateProblem(k: Config): AtomProblem {
  * @index estimator EP atom: clutter, a gate per observation between the centre and wide clutter.
  * @example
  * ```ts
- * import { clutterAtom } from 'omai-engine/bayesian-examples'
+ * import { clutterAtom } from 'omai-engine/probprog/ep'
  * clutterAtom.family // => 'gates'
  * ```
  */
@@ -711,7 +711,7 @@ export const clutterAtom: EpAtom = defineAtom({
 })
 
 function clutterMixtureProblem(k: Config): AtomProblem {
-  const share = exampleNumber(k, 'share')
+  const share = configNumber(k, 'share')
   const [s, width, priorSd] = [0.5, 10, 5]
   // region clutter-mixture
   const definition = defineModel('clutter-mixture', (m) => {
@@ -743,7 +743,7 @@ function clutterMixtureProblem(k: Config): AtomProblem {
  * @index estimator EP atom: an inlier and outlier mixture likelihood with the switches summed out (mixture site).
  * @example
  * ```ts
- * import { clutterMixtureAtom } from 'omai-engine/bayesian-examples'
+ * import { clutterMixtureAtom } from 'omai-engine/probprog/ep'
  * clutterMixtureAtom.name // => 'clutter-mixture'
  * ```
  */

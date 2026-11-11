@@ -1,4 +1,4 @@
-import { beliefCredibleInterval } from 'omai-engine/bayesian-examples'
+import { beliefCredibleInterval } from 'omai-engine/probprog/ep'
 import type { Curve, PointSet } from 'omai-render/charts'
 import { ControlPanel, NumberField, SeedInput } from 'omai-render/react'
 import { type ReactNode, useCallback, useMemo, useState } from 'react'

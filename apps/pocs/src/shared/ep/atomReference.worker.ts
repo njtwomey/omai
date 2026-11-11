@@ -1,4 +1,4 @@
-import { type AtomReference, atomReference, epAtom } from 'omai-engine/bayesian-examples'
+import { type AtomReference, atomReference, epAtom } from 'omai-engine/probprog/ep'
 import type { Config } from 'omai-engine/trace'
 import { serveRun } from '../runWorker.ts'
 

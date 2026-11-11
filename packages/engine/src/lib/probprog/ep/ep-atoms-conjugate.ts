@@ -4,13 +4,13 @@
  * rounding, and they show the factor graph at its simplest (one latent, one observation factor).
  */
 
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel } from '../probprog/model/index.ts'
-import { type DictSpace, dict, real } from '../space/index.ts'
-import type { Config } from '../trace/index.ts'
+import { type DictSpace, dict, real } from '../../space/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel } from '../model/index.ts'
 import { type AtomProblem, beliefDensity, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { normalPdf } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 const EXACT = {
   meanZ: 1e-6,
@@ -23,7 +23,7 @@ const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0)
 const GAUSSIAN_Y = [1.2, 0.4, 1.9]
 
 function gaussianProblem(k: Config): AtomProblem {
-  const ps = exampleNumber(k, 'priorSd')
+  const ps = configNumber(k, 'priorSd')
   const s = 1
   // region gaussian
   const definition = defineModel('gaussian', (m) => {
@@ -49,7 +49,7 @@ function gaussianProblem(k: Config): AtomProblem {
  * @index estimator EP atom: Gaussian mean (conjugate, exact).
  * @example
  * ```ts
- * import { gaussianAtom } from 'omai-engine/bayesian-examples'
+ * import { gaussianAtom } from 'omai-engine/probprog/ep'
  * gaussianAtom.name // => 'gaussian'
  * ```
  */
@@ -69,8 +69,8 @@ export const gaussianAtom: EpAtom = defineAtom({
 const FLIPS = [1, 1, 0, 1, 1, 0, 1]
 
 function betaProblem(k: Config): AtomProblem {
-  const a = exampleNumber(k, 'a')
-  const b = exampleNumber(k, 'b')
+  const a = configNumber(k, 'a')
+  const b = configNumber(k, 'b')
   // region beta-bernoulli
   const definition = defineModel('beta-bernoulli', (m) => {
     const p = m.latent('p', d.beta(a, b))
@@ -98,7 +98,7 @@ function betaProblem(k: Config): AtomProblem {
  * @index estimator EP atom: beta and Bernoulli (conjugate, exact).
  * @example
  * ```ts
- * import { betaBernoulliAtom } from 'omai-engine/bayesian-examples'
+ * import { betaBernoulliAtom } from 'omai-engine/probprog/ep'
  * betaBernoulliAtom.family // => 'conjugate'
  * ```
  */
@@ -121,8 +121,8 @@ export const betaBernoulliAtom: EpAtom = defineAtom({
 const COUNTS = [3, 5, 2, 4]
 
 function gammaProblem(k: Config): AtomProblem {
-  const a = exampleNumber(k, 'shape')
-  const b = exampleNumber(k, 'rate')
+  const a = configNumber(k, 'shape')
+  const b = configNumber(k, 'rate')
   // region gamma-poisson
   const definition = defineModel('gamma-poisson', (m) => {
     const rate = m.latent('rate', d.gamma(a, b))
@@ -151,7 +151,7 @@ function gammaProblem(k: Config): AtomProblem {
  * @index estimator EP atom: gamma and Poisson (conjugate, exact).
  * @example
  * ```ts
- * import { gammaPoissonAtom } from 'omai-engine/bayesian-examples'
+ * import { gammaPoissonAtom } from 'omai-engine/probprog/ep'
  * gammaPoissonAtom.reference // => 'exact'
  * ```
  */

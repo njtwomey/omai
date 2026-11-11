@@ -7,18 +7,18 @@
  * function values as the mixture of their Gaussian conditionals, is what EP must reproduce.
  */
 
-import { gram, rbfKernel, scaleKernel } from '../kernels/index.ts'
-import { cholesky } from '../numerics/linalg/index.ts'
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { gpPosteriorGivenLengthScale } from '../probprog/models/index.ts'
-import { foldIn, key, normal, uniform } from '../random/index.ts'
-import { dict, real } from '../space/index.ts'
-import { clip, matmul, reshape, tensor, toFlat, type Value } from '../tensor/index.ts'
-import type { Config } from '../trace/index.ts'
+import { gram, rbfKernel, scaleKernel } from '../../kernels/index.ts'
+import { cholesky } from '../../numerics/linalg/index.ts'
+import { foldIn, key, normal, uniform } from '../../random/index.ts'
+import { dict, real } from '../../space/index.ts'
+import { clip, matmul, reshape, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
+import { gpPosteriorGivenLengthScale } from '../models/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
-import { exampleNumber } from './example-method.ts'
 
 const X6 = [-2.4, -1.5, -0.6, 0.3, 1.2, 2.3]
 const Y6 = [-0.8, -1.1, -0.3, 0.7, 0.9, 0.2]
@@ -145,7 +145,7 @@ function gpLengthScaleProblem(_k: Config): AtomProblem {
  * @index estimator EP atom: Gaussian process regression with a learned length scale (EP inside an evidence-weighted grid).
  * @example
  * ```ts
- * import { gpLengthScaleAtom } from 'omai-engine/bayesian-examples'
+ * import { gpLengthScaleAtom } from 'omai-engine/probprog/ep'
  * gpLengthScaleAtom.name // => 'gp-length-scale'
  * ```
  */
@@ -200,8 +200,8 @@ function erfOf(x: number): number {
 }
 
 function gpClassLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const trueEll = exampleNumber(k, 'trueLengthScale')
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const trueEll = configNumber(k, 'trueLengthScale')
   // the ground truth: a function drawn from the process at the true length scale, labelled through a probit link
   const inputs = Array.from({ length: n }, (_, i) => -2.4 + (4.8 * i) / Math.max(1, n - 1))
   const kk = key(seed)
@@ -264,7 +264,7 @@ function gpClassLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a probit Gaussian process classifier with a learned length scale, recovered from simulated labels.
  * @example
  * ```ts
- * import { gpProbitLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { gpProbitLearnedAtom } from 'omai-engine/probprog/ep'
  * gpProbitLearnedAtom.extends // => 'gp-probit'
  * ```
  */

@@ -5,22 +5,22 @@
  * checks that EP recovers the mean, the precision and the values, and how often its 90% intervals hold them.
  */
 
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { foldIn, key, normal } from '../random/index.ts'
-import { dict, int, real } from '../space/index.ts'
-import { toFlat } from '../tensor/index.ts'
-import type { Config } from '../trace/index.ts'
+import { foldIn, key, normal } from '../../random/index.ts'
+import { dict, int, real } from '../../space/index.ts'
+import { toFlat } from '../../tensor/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 import { type ConditionalMarginal, hyperPosterior, normalPdf } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 function precisionLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const [trueMean, trueSd] = [exampleNumber(k, 'trueMean'), exampleNumber(k, 'trueSd')]
-  const [a, b] = [exampleNumber(k, 'shape'), exampleNumber(k, 'rate')]
-  const priorSd = exampleNumber(k, 'priorSd')
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const [trueMean, trueSd] = [configNumber(k, 'trueMean'), configNumber(k, 'trueSd')]
+  const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
+  const priorSd = configNumber(k, 'priorSd')
   // region gamma-precision-learned
   // the ground truth the data are drawn from: the model does not know it
   const y = Array.from(toFlat(normal(foldIn(key(seed), 0), [n], { loc: trueMean, scale: trueSd })))
@@ -80,7 +80,7 @@ function precisionLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a Gaussian with unknown mean and gamma precision, recovered from simulated data.
  * @example
  * ```ts
- * import { gammaPrecisionLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { gammaPrecisionLearnedAtom } from 'omai-engine/probprog/ep'
  * gammaPrecisionLearnedAtom.extends // => 'gamma-precision'
  * ```
  */
@@ -122,9 +122,9 @@ export const gammaPrecisionLearnedAtom: EpAtom = defineAtom({
 const NOISE = [1, 1.5, 0.7, 2, 1.2, 0.9, 1.8, 1.1]
 
 function populationLearnedProblem(k: Config): AtomProblem {
-  const [seed, groups] = [exampleNumber(k, 'seed'), exampleNumber(k, 'groups')]
-  const [trueMean, trueSpread] = [exampleNumber(k, 'trueMean'), exampleNumber(k, 'trueSpread')]
-  const [a, b, priorSd] = [exampleNumber(k, 'shape'), exampleNumber(k, 'rate'), exampleNumber(k, 'priorSd')]
+  const [seed, groups] = [configNumber(k, 'seed'), configNumber(k, 'groups')]
+  const [trueMean, trueSpread] = [configNumber(k, 'trueMean'), configNumber(k, 'trueSpread')]
+  const [a, b, priorSd] = [configNumber(k, 'shape'), configNumber(k, 'rate'), configNumber(k, 'priorSd')]
   const noise = Array.from({ length: groups }, (_, j) => NOISE[j % NOISE.length] ?? 1)
   // region shared-precision-learned
   // the ground truth: effects drawn around a mean with a spread, then each observed with its own noise
@@ -234,7 +234,7 @@ function populationLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a population with unknown mean and spread, each value observed with known noise, recovered from simulated data.
  * @example
  * ```ts
- * import { sharedPrecisionLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { sharedPrecisionLearnedAtom } from 'omai-engine/probprog/ep'
  * sharedPrecisionLearnedAtom.extends // => 'shared-precision'
  * ```
  */

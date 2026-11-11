@@ -7,7 +7,7 @@ import {
   type MixtureView,
   type RefJoint,
   type RefMarginal,
-} from 'omai-engine/bayesian-examples'
+} from 'omai-engine/probprog/ep'
 import { type Curve, cartesian, contours, type PointSet, points } from 'omai-render/charts'
 import type { Figure } from 'omai-render/figure'
 import { ResponsiveChart, useColourMode } from 'omai-render/react'

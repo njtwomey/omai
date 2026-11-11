@@ -5,14 +5,14 @@
  * coefficients Gaussian given its rows, so every coefficient's posterior is a mixture of Gaussians.
  */
 
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { mixtureOfRegressions } from '../probprog/validation/index.ts'
-import { dict, real } from '../space/index.ts'
-import type { Config } from '../trace/index.ts'
+import { dict, real } from '../../space/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
+import { mixtureOfRegressions } from '../validation/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { mixtureMarginal } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 // Two lines, y = 1 + 2 x and y = -1 - x, eight rows whose classes are not told.
 const XS = [-1.5, -0.5, 0.2, 1.1, -0.9, 0.7, 1.6, -1.2]
@@ -24,8 +24,8 @@ const PRIOR_MEAN = [
 ]
 
 function mixtureRegressionProblem(k: Config): AtomProblem {
-  const noise = exampleNumber(k, 'noise')
-  const priorSd = exampleNumber(k, 'priorSd')
+  const noise = configNumber(k, 'noise')
+  const priorSd = configNumber(k, 'priorSd')
   const design = XS.map((x) => [1, x])
   // region mixture-regression
   const definition = defineModel('mixture-regression', (m) => {
@@ -96,7 +96,7 @@ function mixtureRegressionProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a mixture of two regressions, a class per row picking the line (a gate of Gaussian likelihoods).
  * @example
  * ```ts
- * import { mixtureRegressionAtom } from 'omai-engine/bayesian-examples'
+ * import { mixtureRegressionAtom } from 'omai-engine/probprog/ep'
  * mixtureRegressionAtom.name // => 'mixture-regression'
  * ```
  */

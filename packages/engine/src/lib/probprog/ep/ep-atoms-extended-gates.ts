@@ -8,17 +8,17 @@
  * show what EP recovers of the truth, and where it does not (components that overlap are read as one).
  */
 
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { foldIn, key, normal, uniform } from '../random/index.ts'
-import { dict, int, real } from '../space/index.ts'
-import { toFlat } from '../tensor/index.ts'
-import type { Config } from '../trace/index.ts'
+import { foldIn, key, normal, uniform } from '../../random/index.ts'
+import { dict, int, real } from '../../space/index.ts'
+import { toFlat } from '../../tensor/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import { type AtomProblem, type AtomSupport, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 import { clutterPosterior, mixtureGibbs, outlierMixturePosterior, samplesMarginal } from './ep-atoms-gibbs.ts'
 import { normalPdf } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 /** The knobs every extended atom has (the seed and the number of observations), with this atom's most observations. */
 const learnedKnobs = (n: number, max: number): Record<string, ReturnType<typeof int>> => ({
@@ -42,9 +42,9 @@ const CLUTTER_PRIORS = {
 } as const
 
 function clutterLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const [trueTheta, trueInlierSd] = [exampleNumber(k, 'trueTheta'), exampleNumber(k, 'trueInlierSd')]
-  const [trueClutterSd, trueWeight] = [exampleNumber(k, 'trueClutterSd'), exampleNumber(k, 'trueWeight')]
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const [trueTheta, trueInlierSd] = [configNumber(k, 'trueTheta'), configNumber(k, 'trueInlierSd')]
+  const [trueClutterSd, trueWeight] = [configNumber(k, 'trueClutterSd'), configNumber(k, 'trueWeight')]
   // region clutter-learned
   // the ground truth the data are drawn from: the model does not know it
   const u = Array.from(toFlat(uniform(foldIn(key(seed), 0), [n])))
@@ -152,7 +152,7 @@ function clutterLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: clutter with centre, both precisions and share learned.
  * @example
  * ```ts
- * import { clutterLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { clutterLearnedAtom } from 'omai-engine/probprog/ep'
  * clutterLearnedAtom.extends // => 'clutter'
  * ```
  */
@@ -314,9 +314,9 @@ function fittedMixture(
 }
 
 function mixtureLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const K = exampleNumber(k, 'components')
-  const gap = exampleNumber(k, 'separation')
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const K = configNumber(k, 'components')
+  const gap = configNumber(k, 'separation')
   const truth: TrueMixture =
     K === 2
       ? { weights: [0.6, 0.4], means: [-gap / 2, gap / 2], sds: [0.8, 1.2] }
@@ -389,7 +389,7 @@ function mixtureLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: mixture with unknown means, widths and weights, learned.
  * @example
  * ```ts
- * import { mixtureComponentsLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { mixtureComponentsLearnedAtom } from 'omai-engine/probprog/ep'
  * mixtureComponentsLearnedAtom.extends // => 'mixture-components'
  * ```
  */
@@ -431,8 +431,8 @@ export const mixtureComponentsLearnedAtom: EpAtom = defineAtom({
 })
 
 function gateRandomLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const gap = exampleNumber(k, 'separation')
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const gap = configNumber(k, 'separation')
   const truth: TrueMixture = { weights: [0.65, 0.35], means: [-gap / 2, gap / 2], sds: [0.8, 1.2] }
   const { y, from } = simulateMixture(seed, n, truth)
   // region gate-random-learned
@@ -535,7 +535,7 @@ function gateRandomLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: select gate with unknown means, widths and weight, learned.
  * @example
  * ```ts
- * import { gateRandomLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { gateRandomLearnedAtom } from 'omai-engine/probprog/ep'
  * gateRandomLearnedAtom.extends // => 'gate-random'
  * ```
  */
@@ -586,8 +586,8 @@ const ACTIVE: readonly (readonly [number, number])[] = [
 const SPIKE_SD = 0.1
 
 function spikeSlabLearnedProblem(k: Config): AtomProblem {
-  const [seed, p] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const noise = exampleNumber(k, 'noise')
+  const [seed, p] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const noise = configNumber(k, 'noise')
   // region spike-and-slab-learned
   // the ground truth: three coefficients are active, the rest are zero
   const values = Array.from({ length: p }, (_, j) => ACTIVE.find(([at]) => at === j)?.[1] ?? 0)
@@ -729,7 +729,7 @@ function weightedMarginal(points: readonly number[], weights: readonly number[])
  * @index estimator EP atom: spike and slab with unknown share and slab width, learned.
  * @example
  * ```ts
- * import { spikeSlabLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { spikeSlabLearnedAtom } from 'omai-engine/probprog/ep'
  * spikeSlabLearnedAtom.extends // => 'spike-and-slab'
  * ```
  */
@@ -773,8 +773,8 @@ export const spikeSlabLearnedAtom: EpAtom = defineAtom({
 
 function spikeSlabMarginalLearnedProblem(k: Config): AtomProblem {
   const base = spikeSlabLearnedProblem(k)
-  const [seed, p] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const noise = exampleNumber(k, 'noise')
+  const [seed, p] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const noise = configNumber(k, 'noise')
   // region spike-and-slab-marginal-learned
   // the ground truth: three coefficients are active, the rest are zero
   const coefficients = Array.from({ length: p }, (_, j) => ACTIVE.find(([at]) => at === j)?.[1] ?? 0)
@@ -816,7 +816,7 @@ function spikeSlabMarginalLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom (planned): summed-out spike and slab, learned share and width.
  * @example
  * ```ts
- * import { spikeSlabMarginalLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { spikeSlabMarginalLearnedAtom } from 'omai-engine/probprog/ep'
  * spikeSlabMarginalLearnedAtom.expected // => 'planned'
  * ```
  */
@@ -851,11 +851,11 @@ export const spikeSlabMarginalLearnedAtom: EpAtom = defineAtom({
 })
 
 function clutterMixtureLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueTheta, trueSd, trueWeight] = [
-    exampleNumber(k, 'trueTheta'),
-    exampleNumber(k, 'trueSd'),
-    exampleNumber(k, 'trueWeight'),
+    configNumber(k, 'trueTheta'),
+    configNumber(k, 'trueSd'),
+    configNumber(k, 'trueWeight'),
   ]
   const width = 10
   // region clutter-mixture-learned
@@ -940,7 +940,7 @@ function clutterMixtureLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom (planned): summed-out outlier mixture, learned width and share.
  * @example
  * ```ts
- * import { clutterMixtureLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { clutterMixtureLearnedAtom } from 'omai-engine/probprog/ep'
  * clutterMixtureLearnedAtom.expected // => 'planned'
  * ```
  */

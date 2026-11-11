@@ -186,7 +186,20 @@ export interface AnytimeResult {
   readonly reason: 'ended' | 'budget' | 'cancelled'
 }
 
-const knob = (config: Config, name: string): number => {
+/**
+ * The number in a configuration, or 0 when it is not one (the budget and snapshot knobs of a run, the knobs of a setup).
+ *
+ * @param config - A configuration.
+ * @param name - The knob.
+ * @returns The number.
+ * @example
+ * ```ts
+ * import { configNumber } from 'omai-engine/probprog/inference'
+ * configNumber({ budgetSteps: 5 }, 'budgetSteps') // => 5
+ * configNumber({}, 'budgetSteps') // => 0
+ * ```
+ */
+export function configNumber(config: Config, name: string): number {
   const v = config[name]
   return typeof v === 'number' ? v : 0
 }
@@ -223,11 +236,12 @@ export function runAnytime<S, C extends Config, K extends string = string>(
   options: AnytimeOptions<S> = {},
 ): AnytimeResult {
   const config: Config = s.config
-  const limitSteps = options.budget?.steps ?? knob(config, 'budgetSteps')
-  const limitMs = options.budget?.ms ?? knob(config, 'budgetMs')
+  const limitSteps = options.budget?.steps ?? configNumber(config, 'budgetSteps')
+  const limitMs = options.budget?.ms ?? configNumber(config, 'budgetMs')
   const everyMs =
-    options.snapshot?.everyMs ?? (config['snapshotEveryMs'] === undefined ? 1000 : knob(config, 'snapshotEveryMs'))
-  const everySteps = options.snapshot?.everySteps ?? knob(config, 'snapshotEverySteps')
+    options.snapshot?.everyMs ??
+    (config['snapshotEveryMs'] === undefined ? 1000 : configNumber(config, 'snapshotEveryMs'))
+  const everySteps = options.snapshot?.everySteps ?? configNumber(config, 'snapshotEverySteps')
   const clock = options.clock
   if (limitMs > 0 && clock === undefined)
     throw new OmaiError('value', 'runAnytime: a time budget needs a clock (the library reads none)')
@@ -311,11 +325,12 @@ export async function runAnytimeAsync<S, C extends Config, K extends string = st
   options: AnytimeAsyncOptions<S>,
 ): Promise<AnytimeResult> {
   const config: Config = s.config
-  const limitSteps = options.budget?.steps ?? knob(config, 'budgetSteps')
-  const limitMs = options.budget?.ms ?? knob(config, 'budgetMs')
+  const limitSteps = options.budget?.steps ?? configNumber(config, 'budgetSteps')
+  const limitMs = options.budget?.ms ?? configNumber(config, 'budgetMs')
   const everyMs =
-    options.snapshot?.everyMs ?? (config['snapshotEveryMs'] === undefined ? 1000 : knob(config, 'snapshotEveryMs'))
-  const everySteps = options.snapshot?.everySteps ?? knob(config, 'snapshotEverySteps')
+    options.snapshot?.everyMs ??
+    (config['snapshotEveryMs'] === undefined ? 1000 : configNumber(config, 'snapshotEveryMs'))
+  const everySteps = options.snapshot?.everySteps ?? configNumber(config, 'snapshotEverySteps')
   const clock = options.clock
   const sliceMs = options.sliceMs ?? 40
   if (limitMs > 0 && clock === undefined)

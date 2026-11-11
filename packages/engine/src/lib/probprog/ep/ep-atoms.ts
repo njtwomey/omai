@@ -15,11 +15,15 @@
  * @index structure EP atom scaffold: a bare setup, its reference, a tolerance, the EP verdict and run.
  */
 
-import { OmaiError } from '../base/index.ts'
-import { type ModelRun, modelRunFromTape } from '../exposition/index.ts'
-import { lgamma } from '../numerics/special/index.ts'
-import { type EpGridState, epGridMethod, epSpecMethod, type Verdict } from '../probprog/inference/index.ts'
-import { analysisOf } from '../probprog/inference/model-input.ts'
+import { OmaiError } from '../../base/index.ts'
+import { type ModelRun, modelRunFromTape } from '../../exposition/index.ts'
+import { lgamma } from '../../numerics/special/index.ts'
+import type { DictSpace } from '../../space/index.ts'
+import { defaults } from '../../space/index.ts'
+import { item, toFlat } from '../../tensor/index.ts'
+import { type Config, session } from '../../trace/index.ts'
+import { type EpGridState, epGridMethod, epSpecMethod, type Verdict } from '../inference/index.ts'
+import { analysisOf } from '../inference/model-input.ts'
 import {
   type BindOptions,
   type BoundModel,
@@ -29,12 +33,8 @@ import {
   type ModelDefinition,
   toProgram,
   toStructure,
-} from '../probprog/model/index.ts'
-import { type GridOptions, gridPosterior } from '../probprog/validation/index.ts'
-import type { DictSpace } from '../space/index.ts'
-import { defaults } from '../space/index.ts'
-import { item, toFlat } from '../tensor/index.ts'
-import { type Config, session } from '../trace/index.ts'
+} from '../model/index.ts'
+import { type GridOptions, gridPosterior } from '../validation/index.ts'
 
 /** Where a quantity lives, which fixes the family its belief is drawn in. */
 export type AtomSupport = 'real' | 'positive' | 'unit' | 'probability'
@@ -238,7 +238,7 @@ export interface EpAtom<K extends Config = Config> extends AtomSpec<K> {
  * @concept expectation-propagation
  * @example
  * ```ts
- * import { gaussianAtom } from 'omai-engine/bayesian-examples'
+ * import { gaussianAtom } from 'omai-engine/probprog/ep'
  * [gaussianAtom.name, gaussianAtom.expected] // => ['gaussian', 'runs']
  * ```
  */
@@ -271,7 +271,7 @@ export interface Belief {
  * @index function The density of a belief from its mean and sd on a support.
  * @example
  * ```ts
- * import { beliefDensity } from 'omai-engine/bayesian-examples'
+ * import { beliefDensity } from 'omai-engine/probprog/ep'
  * beliefDensity('real', 0, 1)(0).toFixed(4) // => '0.3989'
  * ```
  */
@@ -344,7 +344,7 @@ function exactCurve(name: string, support: AtomSupport, m: ExactMarginal): RefMa
  * @returns The model with its data bound.
  * @example
  * ```ts
- * import { atomBound, gaussianAtom } from 'omai-engine/bayesian-examples'
+ * import { atomBound, gaussianAtom } from 'omai-engine/probprog/ep'
  * atomBound(gaussianAtom.problem(gaussianAtom.defaults)).sizes // => { i: 3 }
  * ```
  */
@@ -364,7 +364,7 @@ export function atomBound(problem: AtomProblem): BoundModel {
  * @index function The reference of an EP atom: exact or grid marginals as curves, and a joint.
  * @example
  * ```ts
- * import { atomReference, gaussianAtom } from 'omai-engine/bayesian-examples'
+ * import { atomReference, gaussianAtom } from 'omai-engine/probprog/ep'
  * const r = atomReference(gaussianAtom, gaussianAtom.problem(gaussianAtom.defaults))
  * [r.kind, Object.keys(r.marginals)] // => ['exact', ['mu']]
  * ```
@@ -426,7 +426,7 @@ export function atomReference<K extends Config>(atom: EpAtom<K>, problem: AtomPr
  * @index function Whether EP applies to an atom's model, and the library's reason if not.
  * @example
  * ```ts
- * import { atomVerdict, gaussianAtom } from 'omai-engine/bayesian-examples'
+ * import { atomVerdict, gaussianAtom } from 'omai-engine/probprog/ep'
  * atomVerdict(gaussianAtom.problem(gaussianAtom.defaults)).applies // => true
  * ```
  */
@@ -527,7 +527,7 @@ export type AtomRun =
  * @returns The means.
  * @example
  * ```ts
- * import { atomReference, gaussianAtom, marginalMean } from 'omai-engine/bayesian-examples'
+ * import { atomReference, gaussianAtom, marginalMean } from 'omai-engine/probprog/ep'
  * const r = atomReference(gaussianAtom, gaussianAtom.problem(gaussianAtom.defaults))
  * Object.keys(marginalMean(r)) // => ['mu']
  * ```
@@ -567,7 +567,7 @@ function momentsOf(
  * @index function Run EP on an atom's model: beliefs per sweep, a message record, or the refusal.
  * @example
  * ```ts
- * import { atomRun, gaussianAtom } from 'omai-engine/bayesian-examples'
+ * import { atomRun, gaussianAtom } from 'omai-engine/probprog/ep'
  * const r = atomRun(gaussianAtom.problem(gaussianAtom.defaults))
  * r.status // => 'ran'
  * ```
@@ -667,7 +667,7 @@ function ksOf(pdf: (x: number) => number, ref: RefMarginal): number {
  * @index function EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance.
  * @example
  * ```ts
- * import { atomCheck, atomReference, atomRun, gaussianAtom } from 'omai-engine/bayesian-examples'
+ * import { atomCheck, atomReference, atomRun, gaussianAtom } from 'omai-engine/probprog/ep'
  * const p = gaussianAtom.problem(gaussianAtom.defaults)
  * const r = atomRun(p)
  * r.status === 'ran' && atomCheck(p, r.beliefs, atomReference(gaussianAtom, p), gaussianAtom.tolerance).pass // => true
@@ -709,7 +709,7 @@ export function atomCheck(
  * @concept expectation-propagation
  * @example
  * ```ts
- * import { gaussianAtom, verifyAtom } from 'omai-engine/bayesian-examples'
+ * import { gaussianAtom, verifyAtom } from 'omai-engine/probprog/ep'
  * verifyAtom(gaussianAtom).check?.pass // => true
  * ```
  */

@@ -5,18 +5,18 @@
  * precision, and a quadrature over the precision with the effects Gaussian given it.
  */
 
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { dict, real } from '../space/index.ts'
-import type { Config } from '../trace/index.ts'
+import { dict, real } from '../../space/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
-import { exampleNumber } from './example-method.ts'
 
 const Y6 = [1.2, 0.4, 1.9, 1.1, 0.7, 1.5]
 
 function precisionProblem(k: Config): AtomProblem {
-  const a = exampleNumber(k, 'shape')
-  const b = exampleNumber(k, 'rate')
+  const a = configNumber(k, 'shape')
+  const b = configNumber(k, 'rate')
   // region gamma-precision
   const definition = defineModel('gamma-precision', (m) => {
     const tau = m.latent('tau', d.gamma(a, b))
@@ -67,7 +67,7 @@ function precisionProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a Gaussian with an unknown precision (gamma-precision rule, observed value).
  * @example
  * ```ts
- * import { gammaPrecisionAtom } from 'omai-engine/bayesian-examples'
+ * import { gammaPrecisionAtom } from 'omai-engine/probprog/ep'
  * gammaPrecisionAtom.name // => 'gamma-precision'
  * ```
  */
@@ -153,8 +153,8 @@ function scaledExact(
 const Y_POP = [1.4, -0.6, 2.1, 0.3, -1.2, 0.9]
 
 function populationProblem(mult: readonly number[], name: string, k: Config): AtomProblem {
-  const a = exampleNumber(k, 'shape')
-  const b = exampleNumber(k, 'rate')
+  const a = configNumber(k, 'shape')
+  const b = configNumber(k, 'rate')
   const J = Y_POP.length
   const scaled = mult.some((v) => v !== 1)
   // region shared-precision scaled-precision
@@ -213,7 +213,7 @@ const POP_KNOBS = dict({
  * @index estimator EP atom: latent values with a shared unknown precision (gamma-precision rule, latent form).
  * @example
  * ```ts
- * import { sharedPrecisionAtom } from 'omai-engine/bayesian-examples'
+ * import { sharedPrecisionAtom } from 'omai-engine/probprog/ep'
  * sharedPrecisionAtom.family // => 'scales'
  * ```
  */
@@ -247,7 +247,7 @@ export const sharedPrecisionAtom: EpAtom = defineAtom({
  * @index estimator EP atom: latent values whose precisions are a known multiple of one unknown precision (scaled precision).
  * @example
  * ```ts
- * import { scaledPrecisionAtom } from 'omai-engine/bayesian-examples'
+ * import { scaledPrecisionAtom } from 'omai-engine/probprog/ep'
  * scaledPrecisionAtom.name // => 'scaled-precision'
  * ```
  */
@@ -271,7 +271,7 @@ export const scaledPrecisionAtom: EpAtom = defineAtom({
 
 function halfProblem(kind: 'cauchy' | 'normal', k: Config): AtomProblem {
   const y = [0.5, -1.2, 2.0, 0.3]
-  const scale = exampleNumber(k, 'priorScale')
+  const scale = configNumber(k, 'priorScale')
   // region half-cauchy half-normal
   const definition = defineModel(`half-${kind}-scale`, (m) => {
     const sigma = m.latent('sigma', kind === 'cauchy' ? d.halfCauchy(scale) : d.halfNormal(scale))
@@ -296,7 +296,7 @@ function halfProblem(kind: 'cauchy' | 'normal', k: Config): AtomProblem {
  * @index estimator EP atom: a half-Cauchy prior on a scale.
  * @example
  * ```ts
- * import { halfCauchyAtom } from 'omai-engine/bayesian-examples'
+ * import { halfCauchyAtom } from 'omai-engine/probprog/ep'
  * halfCauchyAtom.name // => 'half-cauchy'
  * ```
  */
@@ -324,7 +324,7 @@ export const halfCauchyAtom: EpAtom = defineAtom({
  * @index estimator EP atom: a half-normal prior on a scale.
  * @example
  * ```ts
- * import { halfNormalAtom } from 'omai-engine/bayesian-examples'
+ * import { halfNormalAtom } from 'omai-engine/probprog/ep'
  * halfNormalAtom.name // => 'half-normal'
  * ```
  */

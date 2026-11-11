@@ -6,17 +6,17 @@
  * many seeds, that EP's 90% intervals hold it about nine times in ten).
  */
 
-import { lgamma } from '../numerics/special/index.ts'
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { beta, foldIn, gamma, key, normal, poisson, uniform } from '../random/index.ts'
-import { dict, int, real } from '../space/index.ts'
-import { item, toFlat } from '../tensor/index.ts'
-import type { Config } from '../trace/index.ts'
+import { lgamma } from '../../numerics/special/index.ts'
+import { beta, foldIn, gamma, key, normal, poisson, uniform } from '../../random/index.ts'
+import { dict, int, real } from '../../space/index.ts'
+import { item, toFlat } from '../../tensor/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import { type AtomProblem, type AtomRecoverySpec, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { normalInverseGammaPosterior } from './ep-atoms-priors.ts'
 import { type ConditionalMarginal, hyperPosterior } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 /** The knobs every extended atom has: the seed of the simulation and the number of observations. */
 export const simulationKnobs = (n: number): Record<string, ReturnType<typeof int>> => ({
@@ -33,13 +33,13 @@ const GAUSSIAN_RECOVERY: AtomRecoverySpec = {
 }
 
 function gaussianLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const [trueMean, trueSd] = [exampleNumber(k, 'trueMean'), exampleNumber(k, 'trueSd')]
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const [trueMean, trueSd] = [configNumber(k, 'trueMean'), configNumber(k, 'trueSd')]
   const [m0, kappa, a, b] = [
-    exampleNumber(k, 'priorMean'),
-    exampleNumber(k, 'kappa'),
-    exampleNumber(k, 'shape'),
-    exampleNumber(k, 'scale'),
+    configNumber(k, 'priorMean'),
+    configNumber(k, 'kappa'),
+    configNumber(k, 'shape'),
+    configNumber(k, 'scale'),
   ]
   // region gaussian-learned
   // the ground truth the data are drawn from: the model does not know it
@@ -104,7 +104,7 @@ const sigmaMean = (a: number, b: number): string => (a > 1 ? String(Number((b / 
  * @index estimator EP atom: a Gaussian with unknown mean and variance, recovered from simulated data (exact).
  * @example
  * ```ts
- * import { gaussianLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { gaussianLearnedAtom } from 'omai-engine/probprog/ep'
  * gaussianLearnedAtom.extends // => 'gaussian'
  * ```
  */
@@ -147,9 +147,9 @@ const groupIndex = (groups: number, per: number): number[] =>
 const FIGURE_GROUPS = (groups: number): number[] => Array.from({ length: groups }, (_, j) => j + 1)
 
 function betaLearnedProblem(k: Config): AtomProblem {
-  const [seed, groups, per] = [exampleNumber(k, 'seed'), exampleNumber(k, 'groups'), exampleNumber(k, 'n')]
-  const trueStrength = exampleNumber(k, 'trueStrength')
-  const [a, b] = [exampleNumber(k, 'shape'), exampleNumber(k, 'rate')]
+  const [seed, groups, per] = [configNumber(k, 'seed'), configNumber(k, 'groups'), configNumber(k, 'n')]
+  const trueStrength = configNumber(k, 'trueStrength')
+  const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
   // region beta-bernoulli-learned
   // the ground truth: a probability per group drawn from a symmetric beta, then flips with it
   const kk = key(seed)
@@ -244,7 +244,7 @@ function betaLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: groups of flips with a beta prior of unknown strength, recovered from simulated data.
  * @example
  * ```ts
- * import { betaBernoulliLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { betaBernoulliLearnedAtom } from 'omai-engine/probprog/ep'
  * betaBernoulliLearnedAtom.extends // => 'beta-bernoulli'
  * ```
  */
@@ -286,9 +286,9 @@ export const betaBernoulliLearnedAtom: EpAtom = defineAtom({
 })
 
 function gammaLearnedProblem(k: Config): AtomProblem {
-  const [seed, groups, per] = [exampleNumber(k, 'seed'), exampleNumber(k, 'groups'), exampleNumber(k, 'n')]
-  const [a, trueRate] = [exampleNumber(k, 'shape'), exampleNumber(k, 'trueRate')]
-  const [c, dd] = [exampleNumber(k, 'hyperShape'), exampleNumber(k, 'hyperRate')]
+  const [seed, groups, per] = [configNumber(k, 'seed'), configNumber(k, 'groups'), configNumber(k, 'n')]
+  const [a, trueRate] = [configNumber(k, 'shape'), configNumber(k, 'trueRate')]
+  const [c, dd] = [configNumber(k, 'hyperShape'), configNumber(k, 'hyperRate')]
   // region gamma-poisson-learned
   // the ground truth: a rate per group drawn from a gamma, then counts with it
   const kk = key(seed)
@@ -372,7 +372,7 @@ function gammaLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: groups of counts with a gamma prior of unknown rate, recovered from simulated data.
  * @example
  * ```ts
- * import { gammaPoissonLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { gammaPoissonLearnedAtom } from 'omai-engine/probprog/ep'
  * gammaPoissonLearnedAtom.extends // => 'gamma-poisson'
  * ```
  */

@@ -1,5 +1,5 @@
-import { atomBound, type EpAtom, marginalMean } from 'omai-engine/bayesian-examples'
 import { messagePassingKnobs } from 'omai-engine/message-passing'
+import { atomBound, type EpAtom, marginalMean } from 'omai-engine/probprog/ep'
 import { toStructure } from 'omai-engine/probprog/model'
 import { type DictSpace, defaults, dict } from 'omai-engine/space'
 import type { Config } from 'omai-engine/trace'
