@@ -16,7 +16,7 @@
  */
 
 import { logAddExp, OmaiError, sigmoidOf } from '../../../base/index.ts'
-import { arg, isFlat, perPower } from '../../core/_messages.ts'
+import { arg, errorText, isFlat, perPower } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -324,7 +324,7 @@ export function applyFunction(
         resolve(table, params)
         return undefined
       } catch (e) {
-        return e instanceof Error ? e.message : String(e)
+        return errorText(e)
       }
     },
     ep: (c): OperatorResult => {
@@ -510,7 +510,7 @@ export function applyProduct(
         resolve(table, params)
         return undefined
       } catch (e) {
-        return e instanceof Error ? e.message : String(e)
+        return errorText(e)
       }
     },
     ep: (c): OperatorResult => {

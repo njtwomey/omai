@@ -11,7 +11,7 @@
  */
 
 import { logAddExp, OmaiError } from '../../../base/index.ts'
-import { perPower } from '../../core/_messages.ts'
+import { errorText, perPower } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, vectorParam } from '../../core/args.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
 import { lgammaOf, logPhi } from '../../numerics/_scalar.ts'
@@ -422,7 +422,7 @@ export function likelihoodSite(
         resolve(table, fixed, params)
         return undefined
       } catch (e) {
-        return e instanceof Error ? e.message : String(e)
+        return errorText(e)
       }
     },
     ep: (c): OperatorResult => {

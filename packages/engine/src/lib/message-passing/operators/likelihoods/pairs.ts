@@ -10,6 +10,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { errorText } from '../../core/_messages.ts'
 import { allProper, ImproperMessageError, massOf, numberParam } from '../../core/args.ts'
 import type { FactorOperator, Family, OperatorContext, Params, Port, TiltedMoments } from '../../core/types.ts'
 import { axisOf, integratePair } from '../../numerics/_grid.ts'
@@ -327,7 +328,7 @@ export function pairLikelihoodOperator(
         }
         return undefined
       } catch (e) {
-        return e instanceof Error ? e.message : String(e)
+        return errorText(e)
       }
     },
     tilted: (c) => {

@@ -12,6 +12,7 @@
 
 import { OmaiError } from '../../../base/index.ts'
 import { ndtr } from '../../../numerics/special/_kernels.ts'
+import { errorText } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam } from '../../core/args.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
 import { gaussianNodes } from '../../numerics/_quadrature.ts'
@@ -255,7 +256,7 @@ export const multiclassSite: FactorOperator = {
       classesOf(params)
       return undefined
     } catch (e) {
-      return e instanceof Error ? e.message : String(e)
+      return errorText(e)
     }
   },
   ep: (c): OperatorResult => {

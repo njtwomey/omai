@@ -11,7 +11,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg, evidenceOrNaN } from '../../core/_messages.ts'
+import { arg, errorText, evidenceOrNaN } from '../../core/_messages.ts'
 import { etaOf, gaussianSiteMessage, ImproperMessageError, siteMessage } from '../../core/args.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
 import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
@@ -111,7 +111,7 @@ export const gaussianMvFunctionScale: FactorOperator = {
         ? undefined
         : 'gaussian-mv-function-scale: steps must have one chain for each coefficient of the vector'
     } catch (e) {
-      return e instanceof Error ? e.message : String(e)
+      return errorText(e)
     }
   },
   ep: (c): OperatorResult => {
