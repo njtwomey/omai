@@ -12,7 +12,7 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { type ExactMarginal, gridMarginals, lg, normalPdf } from '../validation/index.ts'
+import { type ExactMarginal, gridMarginals, lg, logWeights, normalPdf } from '../validation/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 // ----- the stick-breaking mixture -----
@@ -197,8 +197,7 @@ function topicModelProblem(k: Config): AtomProblem {
     for (let kk = 0; kk < 2; kk++) logw += logPrior(topic[kk] as number[], beta[kk] as number[])
     assignments.push({ logw, doc, topic })
   }
-  const top = Math.max(...assignments.map((a) => a.logw))
-  const weights = assignments.map((a) => Math.exp(a.logw - top))
+  const { weights } = logWeights(assignments.map((a) => a.logw))
   const exact: Record<string, ExactMarginal> = {}
   for (let dd = 0; dd < DOCS; dd++)
     exact[`theta[${dd * 2}]`] = betaMixture(

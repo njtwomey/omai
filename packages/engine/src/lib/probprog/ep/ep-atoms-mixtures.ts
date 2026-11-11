@@ -16,6 +16,7 @@ import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import {
   type ExactMarginal,
+  logWeights,
   mixtureMarginal,
   momentMatch,
   type NormalComponent,
@@ -526,8 +527,7 @@ function clutterGateProblem(k: Config): AtomProblem {
   const M = 8000
   const ts = Array.from({ length: M }, (_, i) => -20 + ((i + 0.5) * 40) / M)
   const lw = ts.map(logPost)
-  const top = Math.max(...lw)
-  const wt = lw.map((l) => Math.exp(l - top))
+  const { weights: wt } = logWeights(lw)
   const total = wt.reduce((a, b) => a + b, 0)
   const pClutter = CLUTTER_Y.map((v) =>
     ts.reduce((acc, t, j) => {

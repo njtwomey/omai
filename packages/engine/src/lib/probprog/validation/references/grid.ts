@@ -32,8 +32,7 @@ export function quadratureMarginal(
   const h = (hi - lo) / points
   const xs = Array.from({ length: points }, (_, i) => lo + (i + 0.5) * h)
   const logs = xs.map(logDensity)
-  const top = Math.max(...logs)
-  const w = logs.map((l) => Math.exp(l - top))
+  const { weights: w, top } = logWeights(logs)
   const z = w.reduce((a, b) => a + b, 0)
   const mean = xs.reduce((a, x, i) => a + (x * (w[i] ?? 0)) / z, 0)
   const sd = Math.sqrt(xs.reduce((a, x, i) => a + ((x - mean) ** 2 * (w[i] ?? 0)) / z, 0))
@@ -183,8 +182,7 @@ export function hyperPosterior(
   const step = (Math.log(hi) - Math.log(lo)) / points
   const hs = Array.from({ length: points }, (_, i) => Math.exp(Math.log(lo) + (i + 0.5) * step))
   const logs = hs.map((h) => logDensity(h) + Math.log(h))
-  const top = Math.max(...logs)
-  const w0 = logs.map((l) => Math.exp(l - top))
+  const { weights: w0 } = logWeights(logs)
   const z = w0.reduce((a, b) => a + b, 0)
   const w = w0.map((v) => v / z)
   const mean = hs.reduce((a, h, i) => a + h * (w[i] ?? 0), 0)
@@ -212,4 +210,21 @@ export function hyperPosterior(
       )
     },
   }
+}
+
+/**
+ * The weights of points from the log of their unnormalised density, as the exponential of the log minus its largest (so the
+ * largest weight is one and nothing overflows): the first step of every reference on a grid.
+ *
+ * @param logs - The log density at each point.
+ * @returns The weights, and the largest log that was taken off.
+ * @example
+ * ```ts
+ * import { logWeights } from 'omai-engine/probprog/validation'
+ * logWeights([0, Math.log(2)]).weights // => [0.5, 1]
+ * ```
+ */
+export function logWeights(logs: readonly number[]): { readonly weights: number[]; readonly top: number } {
+  const top = Math.max(...logs)
+  return { weights: logs.map((l) => Math.exp(l - top)), top }
 }

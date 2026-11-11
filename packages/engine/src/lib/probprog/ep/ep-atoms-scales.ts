@@ -10,7 +10,7 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { type ExactMarginal, gaussianMixtureMarginal } from '../validation/index.ts'
+import { type ExactMarginal, gaussianMixtureMarginal, logWeights } from '../validation/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 const Y6 = [1.2, 0.4, 1.9, 1.1, 0.7, 1.5]
@@ -113,8 +113,7 @@ function scaledExact(
       return acc - 0.5 * Math.log(var0) - (v * v) / (2 * var0)
     }, 0)
   const logs = taus.map(logPost)
-  const peak = Math.max(...logs)
-  const w = logs.map((l) => Math.exp(l - peak))
+  const { weights: w, top: peak } = logWeights(logs)
   const z = w.reduce((p, q) => p + q, 0)
   const pw = w.map((v) => v / z)
   const tauMean = taus.reduce((acc, t, i) => acc + (pw[i] ?? 0) * t, 0)

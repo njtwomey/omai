@@ -13,7 +13,7 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { type ExactMarginal, probabilityMarginal, weightedMarginal } from '../validation/index.ts'
+import { type ExactMarginal, logWeights, probabilityMarginal, weightedMarginal } from '../validation/index.ts'
 import { type AtomProblem, type AtomTolerance, defineAtom, type EpAtom } from './ep-atoms.ts'
 
 const BASE = [-2.1, 1.9, 0.3, 2.2, -0.4, 1.7, 0.6, -1.8, 0.9, 2.3]
@@ -59,8 +59,7 @@ function twoComponentExact(
   const logs = ps.map(
     (p) => logPrior(p) + x.reduce((a, _, i) => a + Math.log(p * (l1[i] as number) + (1 - p) * (l0[i] as number)), 0),
   )
-  const top = Math.max(...logs)
-  const w = logs.map((v) => Math.exp(v - top))
+  const { weights: w } = logWeights(logs)
   const z = w.reduce((a, b) => a + b, 0)
   return {
     weight: weightedMarginal(ps, w),

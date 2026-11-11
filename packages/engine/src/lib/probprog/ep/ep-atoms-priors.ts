@@ -19,6 +19,7 @@ import {
   gammaMarginal,
   inverseGammaMarginal,
   lg,
+  logWeights,
   normalInverseGammaPosterior,
   normalPdf,
   quadratureMarginal,
@@ -65,8 +66,7 @@ function strengthExact(
     const ll = lg(K * a) - lg(K * a + N) + sum(counts.map((c) => lg(a + c) - lg(a)))
     return logPrior(a) + t + ll
   })
-  const top = Math.max(...logs)
-  const w0 = logs.map((l) => Math.exp(l - top))
+  const { weights: w0 } = logWeights(logs)
   const z = sum(w0)
   const w = w0.map((v) => v / z)
   const alphas = ts.map(Math.exp)

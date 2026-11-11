@@ -14,7 +14,7 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
-import { type CoordinateBox, type ExactMarginal, logWishart2, posterior3 } from '../validation/index.ts'
+import { type CoordinateBox, type ExactMarginal, logWeights, logWishart2, posterior3 } from '../validation/index.ts'
 import { type AtomProblem, type AtomRecoverySpec, defineAtom, type EpAtom, type FigureCurve } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 
@@ -438,8 +438,7 @@ function correlationMarginal(eta: number, n: number, sxx: number, sxy: number, s
   const lw = x.map(
     (rho) => (eta - 1 - n / 2) * Math.log(1 - rho * rho) - (sxx - 2 * rho * sxy + syy) / (2 * (1 - rho * rho)),
   )
-  const top = Math.max(...lw)
-  const w = lw.map((v) => Math.exp(v - top))
+  const { weights: w } = logWeights(lw)
   const total = w.reduce((s, v) => s + v, 0)
   const h = 2 / N
   const mean = w.reduce((s, v, i) => s + (v * (x[i] as number)) / total, 0)
