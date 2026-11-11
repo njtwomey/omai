@@ -1,6 +1,8 @@
 // The graph builder of the model compiler: the gate under assembly and the helpers that emit graph structure.
 import { describe, expect, it } from 'vitest'
-import { discreteRowGate, GateBuilder } from './_builder.ts'
+import { defaultOperators } from '../../../message-passing/index.ts'
+import { defaultOperators as modelOperators } from '../operators.ts'
+import { discreteRowGate, GateBuilder, GraphBuilder } from './_builder.ts'
 
 describe('GateBuilder', () => {
   it('numbers the shared variables by position, adding each once', () => {
@@ -53,5 +55,22 @@ describe('discreteRowGate', () => {
         ],
       },
     })
+  })
+})
+
+describe('GraphBuilder.sizeOf', () => {
+  const builder = (): GraphBuilder => new GraphBuilder(defaultOperators(), modelOperators())
+
+  it('is the declared number of states of a discrete variable', () => {
+    const g = builder()
+    g.addVariable({ name: 'z', family: { kind: 'discrete', size: 5 } })
+    expect(g.sizeOf('z')).toBe(5)
+  })
+
+  it('reads a variable with no declared size, and a name that is not a variable, as 2', () => {
+    const g = builder()
+    g.addVariable({ name: 'b', family: { kind: 'bernoulli' } })
+    expect(g.sizeOf('b')).toBe(2)
+    expect(g.sizeOf('nothing')).toBe(2)
   })
 })

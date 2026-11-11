@@ -589,12 +589,7 @@ class Compiler {
   private special(op: string, x: Cell, y: Cell, index?: number): Cell | undefined {
     const shifted = this.shiftedByState(op, x, y)
     if (shifted !== undefined) return shifted
-    const look = lookupArithmetic(
-      op,
-      x,
-      y,
-      (v) => (this.g.variables.find((u) => u.name === v)?.family.size ?? 2) as number,
-    )
+    const look = lookupArithmetic(op, x, y, (v) => this.g.sizeOf(v))
     if (look !== undefined) return look
     const inverse = recipArithmetic(op, x, y)
     if (inverse !== undefined) return inverse
@@ -624,7 +619,7 @@ class Compiler {
    */
   private shiftedByState(op: string, x: Cell, y: Cell): Cell | undefined {
     if (op !== 'add' && op !== 'sub') return undefined
-    const states = (v: string): number => (this.g.variables.find((u) => u.name === v)?.family.size ?? 2) as number
+    const states = (v: string): number => this.g.sizeOf(v)
     const asLookup = (c: Cell): (Cell & { kind: 'lookup' }) | undefined => {
       if (c.kind === 'lookup') return c.items === undefined ? c : undefined
       if (c.kind === 'rv' && (c.family === 'discrete' || c.family === 'bernoulli'))
@@ -654,12 +649,7 @@ class Compiler {
   /** A comparison of a known function of a discrete variable with a known value: a lookup of 0 and 1 over its states. */
   private compare(op: string, x: Cell, y: Cell): Cell {
     const asLookup = (c: Cell): (Cell & { kind: 'lookup' }) | undefined =>
-      lookupArithmetic(
-        'add',
-        c,
-        constCell(0),
-        (v) => (this.g.variables.find((u) => u.name === v)?.family.size ?? 2) as number,
-      ) as (Cell & { kind: 'lookup' }) | undefined
+      lookupArithmetic('add', c, constCell(0), (v) => this.g.sizeOf(v)) as (Cell & { kind: 'lookup' }) | undefined
     const a = asLookup(x)
     const b = asLookup(y)
     const f = (u: number, v: number): number => Number(op === 'gt' ? u > v : op === 'lt' ? u < v : u === v)
@@ -2757,10 +2747,7 @@ class Compiler {
             'operator',
             `the row of '${node.name}' must be chosen by a discrete latent, not a computed value`,
           )
-        const from =
-          p.family === 'bernoulli'
-            ? 2
-            : ((this.g.variables.find((v) => v.name === p.variable)?.family.size ?? 2) as number)
+        const from = p.family === 'bernoulli' ? 2 : this.g.sizeOf(p.variable)
         const to = matrix.length / from
         if (!Number.isInteger(to) || to < 1)
           throw new Refusal(
@@ -2793,17 +2780,14 @@ class Compiler {
           `the rows of the matrix behind '${node.name}' must be one Dirichlet latent each (a latent over the dimension of the states)`,
         )
       const rowVars = rows.map((r) => (r as { readonly variable: string }).variable)
-      const size = (this.g.variables.find((v) => v.name === rowVars[0])?.family.size ?? 2) as number
+      const size = this.g.sizeOf(rowVars[0] as string)
       for (const [i, p] of parents.entries()) {
         if (p.kind !== 'rv' || (p.family !== 'discrete' && p.family !== 'bernoulli'))
           throw new Refusal(
             'operator',
             `the row of '${node.name}' must be chosen by a discrete latent, not a computed value`,
           )
-        const from =
-          p.family === 'bernoulli'
-            ? 2
-            : ((this.g.variables.find((v) => v.name === p.variable)?.family.size ?? 2) as number)
+        const from = p.family === 'bernoulli' ? 2 : this.g.sizeOf(p.variable)
         if (from !== rowVars.length)
           throw new Refusal('data', `'${node.name}' has ${from} previous states and its matrix ${rowVars.length} rows`)
         const name = this.g.addVariable({
@@ -2844,7 +2828,7 @@ class Compiler {
             'operator',
             `the probabilities of '${node.name}' must be known or a Dirichlet latent for the conjugate 'discrete' operator`,
           )
-        const size = (this.g.variables.find((v) => v.name === c.variable)?.family.size ?? 2) as number
+        const size = this.g.sizeOf(c.variable)
         const name = this.g.addVariable({
           name: this.elementName(node.name, node.dims, i),
           family: { kind: 'discrete', size },
@@ -4592,17 +4576,14 @@ class Compiler {
         `the rows of the matrix behind '${node.name}' must be one Dirichlet latent each (a latent over the dimension of the states)`,
       )
     const rowVars = matrix.cells.map((r) => (r as { readonly variable: string }).variable)
-    const size = (this.g.variables.find((v) => v.name === rowVars[0])?.family.size ?? 2) as number
+    const size = this.g.sizeOf(rowVars[0] as string)
     const parent = this.over(this.evalSym(chosen.index), node.dims)[i] as Cell
     if (parent.kind !== 'rv' || (parent.family !== 'discrete' && parent.family !== 'bernoulli'))
       throw new Refusal(
         'operator',
         `the row of '${node.name}' must be chosen by a discrete latent, not a computed value`,
       )
-    const from =
-      parent.family === 'bernoulli'
-        ? 2
-        : ((this.g.variables.find((v) => v.name === parent.variable)?.family.size ?? 2) as number)
+    const from = parent.family === 'bernoulli' ? 2 : this.g.sizeOf(parent.variable)
     if (from !== rowVars.length)
       throw new Refusal('data', `'${node.name}' has ${from} choices of row and its matrix ${rowVars.length} rows`)
     if (!(Number.isInteger(y) && y >= 0 && y < size))
@@ -4690,7 +4671,7 @@ class Compiler {
       this.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
       this.g.addFactor({ operator: 'binomial', args: [name, target.variable], params: { n: trials } }, name)
     } else {
-      const size = (this.g.variables.find((v) => v.name === target.variable)?.family.size ?? 2) as number
+      const size = this.g.sizeOf(target.variable)
       this.g.addVariable({ name, family: { kind: 'discrete', size }, observed: y })
       this.g.addFactor({ operator: 'discrete', args: [name, target.variable] }, name)
     }

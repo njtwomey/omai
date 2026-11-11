@@ -48,6 +48,14 @@ export class GraphBuilder {
     return v.name
   }
 
+  /**
+   * The number of states of a discrete variable made so far. A variable with no declared size (a Bernoulli variable, or a name that
+   * is not a variable of the graph) reads as 2: the compiler only asks about variables it has made, and a binary one has no size.
+   */
+  sizeOf(name: string): number {
+    return (this.variables.find((u) => u.name === name)?.family.size ?? 2) as number
+  }
+
   addFactor(f: FactorSpec, variable: string): void {
     this.need(f.operator)
     this.factors.push({ ...f, id: factorId(variable) })
