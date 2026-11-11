@@ -148,3 +148,25 @@ describe('a discrete state that chooses a known mean or a known transition row',
     expect(m1.mean).toBeGreaterThan(1.5)
   })
 })
+
+describe('a gate in the mean with a random noise precision', () => {
+  it('a spike and slab switch per coefficient and a gamma precision compile, and EP finds the active coefficient and the noise', () => {
+    const X = [-1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2].map((v, i) => [v, Math.cos(2 * i)])
+    const y = X.map((r, i) => 2 * (r[0] as number) + 0.1 * Math.sin(5 * i))
+    const m = defineModel('gate-precision', (b) => {
+      const row = b.range('row')
+      const feature = b.range('feature')
+      const z = b.latent('z', d.bernoulli({ probs: 0.3 }), { dims: [feature] })
+      const slab = b.latent('slab', d.normal(0, 3), { dims: [feature] })
+      const spike = b.latent('spike', d.normal(0, 0.05), { dims: [feature] })
+      const tau = b.latent('tau', d.gamma(2, 0.1))
+      const mean = b.data('X', { dims: [row, feature] }).matmul(ops.where(z, slab, spike))
+      b.observe('y', d.normal(mean, ops.div(1, ops.sqrt(tau))), b.data('y', { dims: [row] }))
+    })
+    const { marginals } = ep(m.bind({ X, y }), { damping: 0.5 })
+    const p = (name: string): number => (marginals[name] as unknown as { p: number }).p
+    expect(p('z[0]')).toBeGreaterThan(0.95)
+    expect(p('z[1]')).toBeLessThan(0.5)
+    expect((marginals['tau'] as { mean: number }).mean).toBeGreaterThan(20)
+  })
+})

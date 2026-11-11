@@ -2778,6 +2778,9 @@ class Compiler {
       e !== undefined && !this.isConst(e) && this.mentionsDiscrete(e)
     if (!discrete(locExpr) && !discrete(scaleExpr)) return undefined
     const loc = this.paramCell(node, 'loc', i)
+    // A mean that mentions a discrete variable but is a random Gaussian after its gates (a `select`), with a scale that does not
+    // (a precision idiom `1 / sqrt(tau)`), is an ordinary observation: the scale is not evaluated as a lookup.
+    if (loc.kind !== 'lookup' && !discrete(scaleExpr)) return undefined
     const scale = this.paramCell(node, 'scale', i)
     return loc.kind === 'lookup' || scale.kind === 'lookup' ? { loc, scale } : undefined
   }
