@@ -580,11 +580,22 @@ describe('what cannot be mapped is refused with the node and the reason', () => 
     const constrained = defineModel('cons', (b) => {
       b.observe(
         'y',
-        d.normal(b.latent('x', d.normal(0, 1), { constraint: { lower: 0 } }), 1),
+        d.normal(b.latent('x', d.normal(0, 1), { constraint: { kind: 'simplex' } }), 1),
         b.data('y', { dims: ['row'] }),
       )
     })
     expect(issuesOf(constrained, { y: [1] }).issues[0]).toMatchObject({ node: 'x', kind: 'constraint' })
+    // A lower bound on a Gaussian is a truncated Gaussian: a comparison factor with an observed true outcome.
+    const bounded = defineModel('bounded', (b) => {
+      b.observe(
+        'y',
+        d.normal(b.latent('x', d.normal(0, 1), { constraint: { lower: 0 } }), 1),
+        b.data('y', { dims: ['row'] }),
+      )
+    })
+    const compiled = issuesOf(bounded, { y: [1] })
+    expect(compiled.issues).toEqual([])
+    expect(compiled.graph?.factors.some((f) => f.operator === 'greater-than')).toBe(true)
 
     const other = defineModel('other', (b) => {
       b.param('theta', 1)
@@ -1020,7 +1031,10 @@ describe('a categorical gate is the select factor (expectation propagation)', ()
       const z = b.latent('z', d.categorical({ probs: [0.5, 0.5] }))
       b.observe('y', d.normal(ops.at(b.data('c', { dims: ['k'] }), z), 1), b.data('y', { dims: ['row'] }))
     })
-    expect(toFactorGraph(known.bind({ c: [0, 1], y: [0.5] })).issues[0]?.reason).toMatch(/known component|at: /)
+    // Known components are a lookup of the discrete variable (a table over it), not a refusal.
+    const lookup = toFactorGraph(known.bind({ c: [0, 1], y: [0.5] }))
+    expect(lookup.issues).toEqual([])
+    expect(lookup.graph?.factors.map((f) => f.operator)).toEqual(['prior', 'table'])
     const normalGamma = defineModel('ng', (b) => {
       const tau = b.latent('tau', d.gamma(2, 1))
       const mu = b.latent('mu', d.normal(0, ops.div(1, ops.sqrt(ops.mul(tau, 2)))))
