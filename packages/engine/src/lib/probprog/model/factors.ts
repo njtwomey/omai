@@ -2722,7 +2722,10 @@ class Compiler {
 
   private observed(node: ModelNode & { readonly kind: 'observed' }): void {
     const moved = this.valueMovedToMean(node)
-    if (moved !== undefined) return this.observed(moved)
+    if (moved !== undefined) {
+      this.observed(moved)
+      return
+    }
     const fam = node.dist.family
     const shape = this.shapeOf(node.dims)
     const n = prod(shape)
