@@ -22,7 +22,8 @@ export const defaultSetup: SkillsSetup = { seed: 3, players: 8, rounds: 3, sprea
 export function simulate({ seed, players, rounds, spread }: SkillsSetup) {
   const k = key(seed)
   const skills = Array.from(toFlat(normal(foldIn(k, 0), [players], { scale: spread })))
-  const games: [number, number][] = [] // a round robin: every pair meets `rounds` times, taking turns to be listed first
+  // A round robin: every pair meets `rounds` times, taking turns to be listed first.
+  const games: [number, number][] = []
   for (let r = 0; r < rounds; r++)
     for (let i = 0; i < players; i++) for (let j = i + 1; j < players; j++) games.push(r % 2 ? [j, i] : [i, j])
   const u = toFlat(uniform(foldIn(k, 1), [games.length]))
@@ -35,22 +36,30 @@ export function simulate({ seed, players, rounds, spread }: SkillsSetup) {
 
 // region model
 export const tournamentModel = defineModel('tournament', (m) => {
-  const [player, game] = [m.range('player'), m.range('game')]
-  const a = m.data('a', { dims: [game], support: 'index', role: 'index', indexes: player }) // the first player of each game
+  const player = m.range('player')
+  const game = m.range('game')
+  // The first and the second player of each game.
+  const a = m.data('a', { dims: [game], support: 'index', role: 'index', indexes: player })
   const b = m.data('b', { dims: [game], support: 'index', role: 'index', indexes: player })
-  const tau = m.latent('tau', d.gamma(2, 2)) // the precision of the skills: how spread out the players are
+  const win = m.data('win', { dims: [game], support: 'binary' })
+  // The precision of the skills: how spread out the players are.
+  const tau = m.latent('tau', d.gamma(2, 2))
   const skill = m.latent('skill', d.normal(0, ops.div(1, ops.sqrt(tau))), { dims: [player] })
-  const diff = ops.div(skill.at(a).sub(skill.at(b)), Math.SQRT2) // performance noise 1 on each side
-  m.observe('win', d.bernoulli({ probs: ops.probit(diff) }), m.data('win', { dims: [game], support: 'binary' }))
+  // Performance noise of 1 on each side.
+  const diff = ops.div(skill.at(a).sub(skill.at(b)), Math.SQRT2)
+  m.observe('win', d.bernoulli({ probs: ops.probit(diff) }), win)
 })
 // endregion
 
 // region infer
 export function infer(data: ReturnType<typeof simulate>) {
-  const bound = tournamentModel.bind({ a: data.a, b: data.b, win: data.win }, { sizes: { player: data.players } })
+  const games = { a: data.a, b: data.b, win: data.win }
+  const bound = tournamentModel.bind(games, { sizes: { player: data.players } })
   const method = epSpecMethod(bound)
-  const run = session(method, { config: { tol: 1e-8 }, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
-  const posterior = method.posterior?.(run.state, run.config) // marginals by site: skill, tau
+  const config = { tol: 1e-8 }
+  const run = session(method, { config, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
+  // The marginals by site: skill, tau.
+  const posterior = method.posterior?.(run.state, run.config)
   if (posterior === undefined) throw new Error('EP gave no posterior')
   return { bound, run, posterior }
 }

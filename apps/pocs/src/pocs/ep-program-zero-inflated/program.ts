@@ -21,7 +21,8 @@ export const defaultSetup: ZipSetup = { seed: 2, rows: 150, inflation: 0.3, inte
 export function simulate({ seed, rows, inflation, intercept, slope }: ZipSetup) {
   const k = key(seed)
   const x = Array.from(toFlat(normal(foldIn(k, 1), [rows])))
-  const structural = Array.from(toFlat(uniform(foldIn(k, 2), [rows])), (u) => u < inflation) // a structural zero?
+  // Which counts are structural zeros.
+  const structural = Array.from(toFlat(uniform(foldIn(k, 2), [rows])), (u) => u < inflation)
   const y = x.map((xi, i) =>
     structural[i] ? 0 : Number(toFlat(poisson(foldIn(k, 100 + i), Math.exp(intercept + slope * xi), [1]))[0]),
   )
@@ -31,15 +32,21 @@ export function simulate({ seed, rows, inflation, intercept, slope }: ZipSetup) 
 
 // region model
 export const zeroInflatedModel = defineModel('zero-inflated-poisson', (m) => {
-  const [row, state] = [m.range('row'), m.range('state')]
-  const w = m.latent('w', d.dirichlet([1, 1])) // [P(a count), P(a structural zero)]: a uniform prior on the inflation
-  const z = m.latent('z', d.categorical({ probs: w }), { dims: [row] }) // each observation's state
-  const eta = ops.add(
-    m.latent('b0', d.normal(0, 2)),
-    ops.mul(m.latent('b1', d.normal(0, 2)), m.data('x', { dims: [row] })),
-  )
-  const exposure = ops.at(m.data('on', { dims: [state] }), z) // 1 in the count state, 0 in the structural zero
-  m.observe('y', d.poisson(ops.mul(exposure, ops.exp(eta))), m.data('y', { dims: [row] }))
+  const row = m.range('row')
+  const state = m.range('state')
+  const x = m.data('x', { dims: [row] })
+  const on = m.data('on', { dims: [state] })
+  const y = m.data('y', { dims: [row] })
+  // The weights of the two states: P(a count) and P(a structural zero). Uniform on the inflation.
+  const w = m.latent('w', d.dirichlet([1, 1]))
+  // The state of each observation.
+  const z = m.latent('z', d.categorical({ probs: w }), { dims: [row] })
+  const b0 = m.latent('b0', d.normal(0, 2))
+  const b1 = m.latent('b1', d.normal(0, 2))
+  const eta = ops.add(b0, ops.mul(b1, x))
+  // The Poisson is on (1) in the count state and off (0) in the structural-zero state.
+  const exposure = ops.at(on, z)
+  m.observe('y', d.poisson(ops.mul(exposure, ops.exp(eta))), y)
 })
 // endregion
 
@@ -47,8 +54,10 @@ export const zeroInflatedModel = defineModel('zero-inflated-poisson', (m) => {
 export function infer(data: ReturnType<typeof simulate>, damping = 0.5) {
   const bound = zeroInflatedModel.bind({ x: data.x, y: data.y, on: [1, 0] })
   const method = epSpecMethod(bound)
-  const run = session(method, { config: { tol: 1e-8, damping }, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
-  const posterior = method.posterior?.(run.state, run.config) // marginals by site: w, z, b0, b1
+  const config = { tol: 1e-8, damping }
+  const run = session(method, { config, seed: 1, steps: 300, mode: 'eager', logs: 'all' })
+  // The marginals by site: w, z, b0, b1.
+  const posterior = method.posterior?.(run.state, run.config)
   if (posterior === undefined) throw new Error('EP gave no posterior')
   return { bound, run, posterior }
 }
