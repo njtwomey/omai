@@ -1,7 +1,7 @@
 // Scalar special functions for the message algebra: thin wrappers that take and return plain numbers over the tensor
 // special functions of numerics/special (messages are number arrays, so the hot loops stay free of tensors), and the
 // inverse digamma that moment matching onto a gamma, beta or Dirichlet needs.
-import { OmaiError } from '../../base/index.ts'
+import { logAddExp, OmaiError } from '../../base/index.ts'
 import { digamma, lgamma, polygamma } from '../../numerics/special/_kernels.ts'
 import { erfcx, logNdtr, ndtr, normalLogPdf } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
@@ -49,3 +49,9 @@ export function inverseDigamma(y: number): number {
   }
   return x
 }
+
+/** softplus, `log(1 + exp(x))`, on plain numbers without overflow. */
+export const softplusOf = (x: number): number => logAddExp(0, x)
+
+/** The log of the logistic function, `-softplus(-x)`, on plain numbers, accurate for very negative `x`. */
+export const logSigmoidOf = (x: number): number => -logAddExp(0, -x)

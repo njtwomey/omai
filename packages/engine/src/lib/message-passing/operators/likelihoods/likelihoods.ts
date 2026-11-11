@@ -14,7 +14,7 @@ import { logAddExp, OmaiError } from '../../../base/index.ts'
 import { errorText, perPower } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, vectorParam } from '../../core/args.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
-import { lgammaOf, logPhi } from '../../numerics/_scalar.ts'
+import { lgammaOf, logPhi, logSigmoidOf } from '../../numerics/_scalar.ts'
 import { tiltedByQuadrature, type WindowHint } from '../../numerics/_tilted.ts'
 import { gaussHermiteRule } from '../../numerics/numeric-rules.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
@@ -220,8 +220,6 @@ const binomialCheck = (y: number, p: Params): string | undefined => {
     : 'the count must be an integer between 0 and the number of trials n'
 }
 
-const logSigmoid = (x: number): number => -logAddExp(0, -x)
-
 const binomialLogit: Likelihood = {
   name: 'binomial-logit',
   description: 'y | u ~ Binomial(n, sigmoid(u)): successes in n trials with a logistic link',
@@ -230,7 +228,7 @@ const binomialLogit: Likelihood = {
   density: (y, p) => {
     const n = numberParam(p, 'n')
     const c = logChoose(n, y)
-    return (u) => c + y * logSigmoid(u) + (n - y) * logSigmoid(-u)
+    return (u) => c + y * logSigmoidOf(u) + (n - y) * logSigmoidOf(-u)
   },
   locate: (y, p) => {
     const n = numberParam(p, 'n')
@@ -296,8 +294,8 @@ const ordinalProbit: Likelihood = {
 
 /** log (sigmoid(b) - sigmoid(a)) for a < b, stable at both ends: sigmoid(b) sigmoid(-a) (1 - exp(a - b)). */
 const logDiffSigmoid = (a: number, b: number): number =>
-  logSigmoid(b) +
-  logSigmoid(-a) +
+  logSigmoidOf(b) +
+  logSigmoidOf(-a) +
   (a === Number.NEGATIVE_INFINITY || b === Number.POSITIVE_INFINITY ? 0 : Math.log1p(-Math.exp(a - b)))
 
 const ordinalLogit: Likelihood = {

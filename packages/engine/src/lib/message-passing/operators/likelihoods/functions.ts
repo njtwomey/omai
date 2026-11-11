@@ -15,7 +15,7 @@
  * message to it is the gamma with the tilted moments.
  */
 
-import { logAddExp, OmaiError, sigmoidOf } from '../../../base/index.ts'
+import { OmaiError, sigmoidOf } from '../../../base/index.ts'
 import { arg, errorText, isFlat, perPower } from '../../core/_messages.ts'
 import {
   allProper,
@@ -30,7 +30,7 @@ import {
 import { gamma } from '../../core/families.ts'
 import { truncatedNormalMoments } from '../../core/truncated.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
-import { Phi, phi } from '../../numerics/_scalar.ts'
+import { Phi, phi, softplusOf } from '../../numerics/_scalar.ts'
 import { tiltedByQuadrature, type WindowHint } from '../../numerics/_tilted.ts'
 import { definedFunctionMessage, quadraturePort } from '../kernel/variational-numeric.ts'
 
@@ -44,8 +44,6 @@ export interface UnaryFunction {
   /** The mean and variance of `f(x)` for `x ~ N(mean, variance)` in closed form, when the function has one. */
   readonly pushforward?: (mean: number, variance: number) => { readonly mean: number; readonly variance: number }
 }
-
-const softplusOf = (x: number): number => logAddExp(0, x)
 
 const unary = (u: UnaryFunction): UnaryFunction => u
 

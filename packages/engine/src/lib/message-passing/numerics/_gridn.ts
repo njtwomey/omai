@@ -7,7 +7,7 @@ import { OmaiError } from '../../base/index.ts'
 import { gaussLegendre } from '../../numerics/quadrature/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import type { GridAxis } from './_grid.ts'
-import { digammaOf, lgammaOf, trigammaOf } from './_scalar.ts'
+import { digammaOf, lgammaOf, softplusOf, trigammaOf } from './_scalar.ts'
 
 const legendre = new Map<number, { readonly x: Float64Array; readonly w: Float64Array }>()
 
@@ -26,14 +26,13 @@ export function betaAxis(a: number, b: number): GridAxis {
   const centre = digammaOf(a) - digammaOf(b)
   const sd = Math.sqrt(trigammaOf(a) + trigammaOf(b))
   const logNorm = lgammaOf(a) + lgammaOf(b) - lgammaOf(a + b)
-  const softplus = (x: number): number => (x > 0 ? x + Math.log1p(Math.exp(-x)) : Math.log1p(Math.exp(x)))
   return {
     point: false,
     lo: Math.max(centre - 10 * sd, -40),
     hi: Math.min(centre + 10 * sd, 40),
     kinks: [],
     // u = 1 / (1 + e^-s): log u = -softplus(-s), log (1 - u) = -softplus(s)
-    logWeight: (s) => -a * softplus(-s) - b * softplus(s) - logNorm,
+    logWeight: (s) => -a * softplusOf(-s) - b * softplusOf(s) - logNorm,
   }
 }
 

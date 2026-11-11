@@ -10,6 +10,7 @@ import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, scalarOf } f
 import { bernoulli } from '../../core/families.ts'
 import type { Arg, FactorOperator, OperatorResult } from '../../core/types.ts'
 import { gaussianExpectation, tiltedGaussian, tiltedLogGrid } from '../../numerics/_quadrature.ts'
+import { logSigmoidOf } from '../../numerics/_scalar.ts'
 
 function trueProbability(a: Arg): number {
   if (a.value !== undefined) return scalarOf(a) > 0 ? 1 : 0
@@ -28,11 +29,10 @@ const weight =
 const POINTS = 64
 
 /** log sigmoid, stable in both tails. */
-const logSigmoid = (x: number): number => -logAddExp(0, -x)
 
 /** log of the weight the logistic factor to the power p gives x when the outcome is true with probability pi. */
 const logLogisticWeight = (pi: number, x: number, p: number): number =>
-  logAddExp(Math.log(pi) + p * logSigmoid(x), Math.log(1 - pi) + p * logSigmoid(-x))
+  logAddExp(Math.log(pi) + p * logSigmoidOf(x), Math.log(1 - pi) + p * logSigmoidOf(-x))
 
 /**
  * b | x ~ Bernoulli(sigmoid(x)): the logistic link of logistic regression. EP matches the moments of the Gaussian times
@@ -63,8 +63,8 @@ export const logistic: FactorOperator = {
     if (c.power !== 1) {
       const p = c.power
       if (c.to === 0) {
-        const yes = tiltedLogGrid(x.mean, x.variance, (v) => p * logSigmoid(v)).logMass
-        const no = tiltedLogGrid(x.mean, x.variance, (v) => p * logSigmoid(-v)).logMass
+        const yes = tiltedLogGrid(x.mean, x.variance, (v) => p * logSigmoidOf(v)).logMass
+        const no = tiltedLogGrid(x.mean, x.variance, (v) => p * logSigmoidOf(-v)).logMass
         return { message: [(yes - no) / p] }
       }
       const pi = trueProbability(arg(c, 0))

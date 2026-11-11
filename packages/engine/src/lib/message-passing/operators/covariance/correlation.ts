@@ -17,9 +17,8 @@ import { gaussianMvEta } from '../../core/families-vector.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { type GridAxis, gammaAxis, pointAxis } from '../../numerics/_grid.ts'
 import { betaAxis, integrateAxes } from '../../numerics/_gridn.ts'
+import { softplusOf } from '../../numerics/_scalar.ts'
 import { evaluatorOf, gaussianSide, type Rows, rowsOf } from './_sides.ts'
-
-const softplus = (x: number): number => (x > 0 ? x + Math.log1p(Math.exp(-x)) : Math.log1p(Math.exp(x)))
 
 /** The axis of one of the three parameter ports: a known value is one node, a message its cavity's density. */
 function axisOfPort(a: Arg, kind: 'precision' | 'correlation'): GridAxis {
@@ -51,7 +50,7 @@ function axisOfPort(a: Arg, kind: 'precision' | 'correlation'): GridAxis {
 function precisionAt(t: Float64Array, out: Float64Array): number {
   const [l1, l2, s] = [t[0] as number, t[1] as number, t[2] as number]
   // 1 - rho^2 = 4 u (1 - u)
-  const logOneMinusRho2 = Math.LN2 * 2 - softplus(-s) - softplus(s)
+  const logOneMinusRho2 = Math.LN2 * 2 - softplusOf(-s) - softplusOf(s)
   const oneMinusRho2 = Math.exp(logOneMinusRho2)
   const rho = 2 / (1 + Math.exp(-s)) - 1
   const [t1, t2] = [Math.exp(l1), Math.exp(l2)]
@@ -138,8 +137,8 @@ export const mvnSdCorr: FactorOperator = {
       let logU = 0
       let log1mU = 0
       for (let i = 0; i < nodes.length; i++) {
-        logU -= (p[i] as number) * softplus(-(nodes[i] as number))
-        log1mU -= (p[i] as number) * softplus(nodes[i] as number)
+        logU -= (p[i] as number) * softplusOf(-(nodes[i] as number))
+        log1mU -= (p[i] as number) * softplusOf(nodes[i] as number)
       }
       return { message: siteMessage(beta, arg(c, 4).eta as Eta, [logU, log1mU]) }
     }
