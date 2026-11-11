@@ -28,6 +28,56 @@ export interface Advancing {
   advance(budget: SliceBudget): unknown
 }
 
+/** What the budget guard needs of a session: its knobs, and a way to end the run where it stands. */
+export interface Guarded extends Advancing {
+  readonly config: Readonly<Record<string, unknown>>
+  stop?(): void
+}
+
+const knob = (s: Guarded, name: string): number => {
+  const v = s.config[name]
+  return typeof v === 'number' && v > 0 ? v : 0
+}
+
+/**
+ * The steps a run may still take under its `budgetSteps` knob (the step budget every inference method has): the least
+ * over the sessions that have one, `Infinity` when none does.
+ *
+ * @param sessions - The sessions.
+ * @returns The steps left.
+ */
+export function stepsLeft(sessions: readonly Guarded[]): number {
+  let left = Number.POSITIVE_INFINITY
+  for (const s of sessions) {
+    const cap = knob(s, 'budgetSteps')
+    if (cap > 0 && s.status === undefined) left = Math.min(left, Math.max(0, cap - s.t))
+  }
+  return left
+}
+
+/**
+ * The computational guard: end (as `stopped`, so the tape is whole and replays) every run that has used its budget, the
+ * `budgetMs` knob against the milliseconds the producer has spent computing, the `budgetSteps` knob against its steps.
+ * The knobs are those of the inference methods (`anytimeKnobs`); a method without them, or with 0, has no limit.
+ *
+ * @param sessions - The sessions.
+ * @param spentMs - Milliseconds spent computing them so far.
+ * @returns Whether a run was ended now.
+ */
+export function guardBudget(sessions: readonly Guarded[], spentMs: number): boolean {
+  let ended = false
+  for (const s of sessions) {
+    if (s.status !== undefined) continue
+    const ms = knob(s, 'budgetMs')
+    const steps = knob(s, 'budgetSteps')
+    if ((ms > 0 && spentMs >= ms) || (steps > 0 && s.t >= steps)) {
+      s.stop?.()
+      ended = true
+    }
+  }
+  return ended
+}
+
 /** Steps one variant takes before the next furthest behind has its turn, while computing ahead within a time budget. */
 const STRIDE = 8
 

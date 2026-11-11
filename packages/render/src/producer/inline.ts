@@ -9,7 +9,7 @@ import type { Json } from 'omai-engine/base'
 import type { Config, Derived, Method, SessionOptions } from 'omai-engine/trace'
 import { type Made, makeSessions, type Variant } from './make.ts'
 import type { Producer } from './producer.ts'
-import { advanceInStep } from './step.ts'
+import { advanceInStep, guardBudget, stepsLeft } from './step.ts'
 
 /**
  * A producer computing on the main thread.
@@ -33,6 +33,8 @@ export function inlineProducer<S, C extends Config>(
     return held
   }
   const labels = variants.map((v) => v.label)
+  // Milliseconds spent computing, against the methods' time budget (`budgetMs`): the guard that ends a run.
+  let spentMs = 0
   return {
     kind: 'inline',
     ...(fallback === undefined ? {} : { fallback }),
@@ -41,7 +43,14 @@ export function inlineProducer<S, C extends Config>(
     },
     labels,
     background: false,
-    advance: (budget) => advanceInStep(made().sessions, budget),
+    advance: (budget) => {
+      const sessions = made().sessions
+      const t0 = performance.now() // allow: the guard's clock for the methods' time budget; not on the tape
+      const room = stepsLeft(sessions)
+      advanceInStep(sessions, { ...budget, steps: Math.min(budget.steps ?? Number.POSITIVE_INFINITY, room) })
+      spentMs += performance.now() - t0 // allow: as above
+      guardBudget(sessions, spentMs)
+    },
     start: () => undefined,
     stop: () => undefined,
     follow: () => undefined,
@@ -60,6 +69,7 @@ export function inlineProducer<S, C extends Config>(
     subscribe: () => () => undefined,
     dispose: () => {
       held = undefined
+      spentMs = 0
     },
   }
 }
