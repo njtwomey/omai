@@ -634,7 +634,10 @@ against the scan-and-trapezoid of `densityMoments` and against the old one-off p
 such priors: the log evidence against the grid evidence of the same model: uniform 0.09 nats off before, now exact to 1e-6 (a
 Gaussian likelihood makes the posterior a truncated normal); half-normal 0.42 before, 0.004 now; half-Cauchy 0.17 before, 0.015 now. What
 remains is the Gaussian belief of the log scale, not the model. The beliefs moved by up to 0.16 posterior sds (half-normal) and every atom
-check still passes.
+check still passes. One accuracy trade-off, stated: a dispersion with a half-normal prior whose posterior piles up against zero (the negative
+binomial test of `probprog/model/likelihood-factors.test.ts`: mean within 0.06 sds) now has a spread 1.52 of the grid's where the projected
+prior gave 0.87 by being narrower; one Gaussian on the log holds the long right tail of a log-normal. Not a new error source: the exact
+prior shows what the Gaussian-on-the-log belief costs.
 
 **The NaN evidence of `logistic-learned` (explained).** The evidence of a graph is the sum of the factors' parts, each an integral of the
 factor against its cavity. The learned logistic regression compiles to one plated factor for all rows; the scale mixture on the weights
