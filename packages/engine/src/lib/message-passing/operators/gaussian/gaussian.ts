@@ -296,6 +296,7 @@ export const gaussianGammaPrecision: FactorOperator = defineOperator({
     }),
   },
   evidence: {
+    improperIsNaN: true,
     // The integral of the cavities (unnormalised, so their masses are in it) times the factor: the Gaussian cavities' masses and the
     // grid's integral over the precision, in which the gamma cavity's unnormalised density is already part of the weight.
     ep: (c) => {

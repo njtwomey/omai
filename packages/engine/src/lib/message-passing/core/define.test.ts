@@ -43,6 +43,7 @@ describe('defineOperator', () => {
       params: {},
       rules: { ep: siteRule(() => ({ mean: 1, variance: 0.5 })) },
       evidence: {
+        improperIsNaN: true,
         ep: (c) => {
           if (c.power === 3) throw new ImproperMessageError('no density')
           return 7
@@ -94,6 +95,21 @@ describe('defineOperator', () => {
       },
     })
     expect(() => broken.logEvidence?.(ctx())).toThrow(ParameterError)
+  })
+
+  it('lets an improper evidence propagate unless the operator asks for NaN', () => {
+    const plain = defineOperator({
+      name: 'plain',
+      description: 'd',
+      ports: [port],
+      rules: { ep: siteRule(() => ({ mean: 0, variance: 1 })) },
+      evidence: {
+        ep: () => {
+          throw new ImproperMessageError('no density')
+        },
+      },
+    })
+    expect(() => plain.logEvidence?.(ctx())).toThrow(ImproperMessageError)
   })
 
   it('keeps only the members it was given', () => {

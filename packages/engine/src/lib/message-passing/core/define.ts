@@ -30,9 +30,13 @@ import type {
 /**
  * What a `site(tilt)` rule returns: the tilted distribution at the target port, as the expected sufficient statistics of the
  * target's family (`moments`: a `TiltedMoments` is one), or, for a Gaussian port, its mean and variance (the projection of a
- * Gaussian from them is then exact in the form the operators always used, not through the second moment).
+ * Gaussian from them is then exact in the form the operators always used, not through the second moment), or `{ flat: true }` when the
+ * factor says nothing to this port yet (the flat message of the family, whatever the cavity, and not divided by the power).
  */
-export type Tilt = { readonly moments: Eta } | { readonly mean: number; readonly variance: number }
+export type Tilt =
+  | { readonly moments: Eta }
+  | { readonly mean: number; readonly variance: number }
+  | { readonly flat: true }
 
 /** A rule an operator computes itself: the message to the port `c.to`, with what kind of rule it is. */
 export interface MessageRule {
@@ -41,10 +45,11 @@ export interface MessageRule {
   readonly support: Support
 }
 
-/** A rule given as the tilted distribution: the message is made from it here (`projectSite`). Always `numeric`. */
+/** A rule given as the tilted distribution: the message is made from it here (`projectSite`). */
 export interface SiteRule {
   readonly kind: 'site'
   readonly tilt: (c: OperatorContext) => Tilt
+  readonly support: Support
 }
 
 /**
@@ -64,10 +69,12 @@ export function messageRule(message: (c: OperatorContext) => OperatorResult, sup
  * by the power when the operator takes one (`traits.power`).
  *
  * @param tilt - The tilted distribution at port `c.to`, from the cavities in `c.args`.
+ * @param support - `numeric` (default: quadrature, a grid, a sum over samples), or `exact` when the tilted moments are closed form
+ * (a Gaussian mixture times a Gaussian): the projection is still the engine's.
  * @returns The rule.
  */
-export function siteRule(tilt: (c: OperatorContext) => Tilt): SiteRule {
-  return { kind: 'site', tilt }
+export function siteRule(tilt: (c: OperatorContext) => Tilt, support: Support = 'numeric'): SiteRule {
+  return { kind: 'site', tilt, support }
 }
 
 /**
@@ -86,6 +93,7 @@ export function siteRule(tilt: (c: OperatorContext) => Tilt): SiteRule {
  * ```
  */
 export function projectSite(target: Arg, tilt: Tilt, power: number): Eta {
+  if ('flat' in tilt) return [...target.family.flat]
   const cavity = etaOf(target)
   const site =
     'moments' in tilt
@@ -127,11 +135,14 @@ export interface OperatorDeclaration {
   }
   /**
    * What the evidence estimate (`ep`: log of the integral of the factor against the cavities) and the variational bound (`vmp`: the
-   * expected log factor) need. The `ep` rule is wrapped here: while a message has no density yet it is `NaN`, never an error.
+   * expected log factor) need. With `improperIsNaN` the `ep` rule is wrapped here: while a message has no density yet the evidence is
+   * `NaN`, never an error. Operators that never caught it do not set it (an improper cavity then still ends their run, which is what
+   * `model/bayesian-neural-network` of the digest records): making it the default is a change of behaviour, not of structure.
    */
   readonly evidence?: {
     readonly ep?: (c: OperatorContext) => number
     readonly vmp?: (c: OperatorContext) => number
+    readonly improperIsNaN?: true
   }
   readonly traits?: OperatorTraits
   /** Why a rule has no message, in words (see `FactorOperator.noRule`). */
@@ -143,7 +154,7 @@ export interface OperatorDeclaration {
 /**
  * Build a factor operator from its declaration: the members of `FactorOperator` the engine reads, with `support` derived from the
  * kinds of the rules, the `ep` hook derived from a `site` rule (the tilted distribution projected, divided by the cavity and by the
- * power: `projectSite`), and the evidence rule wrapped so that a message with no density yet gives `NaN`. Throws a `ParameterError`
+ * power: `projectSite`), and the evidence rule wrapped, when asked, so that a message with no density yet gives `NaN`. Throws a `ParameterError`
  * when the declaration contradicts itself: no rule at all, a `noRule` for a mode that has a rule, an evidence rule for a mode
  * without one, a `defines` that is not a port.
  *
@@ -191,7 +202,7 @@ export function defineOperator(declaration: OperatorDeclaration): FactorOperator
             message: projectSite(c.args[c.to] as Arg, ep.tilt(c), takesPower ? c.power : 1),
           })
   const support: Partial<Record<Mode, Support>> = {
-    ...(ep === undefined ? {} : { ep: ep.kind === 'site' ? ('numeric' as const) : ep.support }),
+    ...(ep === undefined ? {} : { ep: ep.support }),
     ...(rules.vmp === undefined ? {} : { vmp: rules.vmp.support }),
     ...(rules.bp === undefined ? {} : { bp: rules.bp.support }),
   }
@@ -214,7 +225,12 @@ export function defineOperator(declaration: OperatorDeclaration): FactorOperator
     ...(rules.bp === undefined ? {} : { bp: rules.bp.message }),
     ...(logEvidence === undefined
       ? {}
-      : { logEvidence: (c: OperatorContext): number => evidenceOrNaN(() => logEvidence(c)) }),
+      : {
+          logEvidence:
+            evidence?.improperIsNaN === true
+              ? (c: OperatorContext): number => evidenceOrNaN(() => logEvidence(c))
+              : logEvidence,
+        }),
     ...(evidence?.vmp === undefined ? {} : { expectedLog: evidence.vmp }),
   }
 }

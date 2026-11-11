@@ -16,18 +16,10 @@
  */
 
 import { sigmoidOf } from '../../../base/index.ts'
-import { arg, errorText, isFlat, perPower } from '../../core/_messages.ts'
-import {
-  allProper,
-  etaOf,
-  gaussianMessage,
-  gaussianOf,
-  gaussianSiteMessage,
-  massOf,
-  siteMessage,
-} from '../../core/args.ts'
+import { arg, errorText, isFlat } from '../../core/_messages.ts'
+import { allProper, etaOf, gaussianMessage, gaussianOf, massOf } from '../../core/args.ts'
+import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
-import { gamma } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import { truncatedNormalMoments } from '../../core/truncated.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
@@ -290,7 +282,7 @@ export function applyFunction(
   name: string,
   table: Readonly<Record<string, UnaryFunction>> = unaryFunctions(),
 ): FactorOperator {
-  return {
+  return defineOperator({
     name,
     description: 'y = f(x) for a unary function (or a chain of them) of a Gaussian or gamma variable',
     params: {
@@ -301,25 +293,6 @@ export function applyFunction(
       { name: 'y', accepts: ['gaussian'] },
       { name: 'x', accepts: ['gaussian', 'gamma'] },
     ],
-    support: { ep: 'numeric', vmp: 'numeric' },
-    // The message to x is a match against x's own cavity; the message to y needs none (a flat y is told the pushforward).
-    readsTarget: (to) => to === 1,
-    power: true,
-    // Deterministic: under the mean field `y` is defined by `x` and its belief is the Gaussian with the mean and variance of the
-    // pushforward (closed form where the function has one, else quadrature), which is all a Gaussian reader of `y` sees; the message to
-    // `x` is the non-conjugate message of `E[h f(x) - J f(x)^2 / 2]`, `(h, J)` the cavity of `y`. A reader that needs more than the
-    // two moments of `y` (a gamma, a Poisson) sees a Gaussian approximation of it.
-    defines: 0,
-    vmp: (c): OperatorResult => {
-      const fn = resolve(table, c.params)
-      if (c.to === 0 && fn.pushforward !== undefined && arg(c, 1).family.kind === 'gaussian') {
-        const x = gaussianOf(arg(c, 1))
-        const p = fn.pushforward(x.mean, x.variance)
-        return { message: gaussianMessage(p.mean, Math.max(p.variance, FLOOR)) }
-      }
-      return { message: definedFunctionMessage(c.args, c.to, (x) => fn.f(x[0] as number)) }
-    },
-    expectedLog: () => 0,
     check: (params) => {
       try {
         resolve(table, params)
@@ -328,47 +301,59 @@ export function applyFunction(
         return errorText(e)
       }
     },
-    ep: (c): OperatorResult => {
-      const fn = resolve(table, c.params)
-      const incoming = etaOf(arg(c, 0))
-      if (arg(c, 1).family.kind === 'gamma') {
-        if (c.to === 1) {
-          if (isFlat(incoming)) return { message: [0, 0] }
-          const t = tiltGamma(fn, arg(c, 1), incoming, c.power)
-          const site = siteMessage(gamma, etaOf(arg(c, 1)), t.x)
-          return { message: perPower(site, c.power) }
+    rules: {
+      ep: siteRule((c) => {
+        const fn = resolve(table, c.params)
+        const incoming = etaOf(arg(c, 0))
+        if (arg(c, 1).family.kind === 'gamma') {
+          if (c.to === 1) {
+            if (isFlat(incoming)) return { flat: true }
+            return { moments: tiltGamma(fn, arg(c, 1), incoming, c.power).x }
+          }
+          return tiltGamma(fn, arg(c, 1), incoming, c.power).y
         }
-        const t = tiltGamma(fn, arg(c, 1), incoming, c.power)
-        const site = gaussianSiteMessage(incoming, t.y.mean, t.y.variance)
-        return { message: perPower(site, c.power) }
-      }
-      const x = gaussianOf(arg(c, 1))
-      if (c.to === 1) {
-        // Nothing is known about y: the constraint says nothing about x.
-        if (isFlat(incoming)) return { message: [0, 0] }
-        const t = tilt(fn, x, incoming, c.power)
-        const site = gaussianSiteMessage(etaOf(arg(c, 1)), t.x.mean, t.x.variance)
-        return { message: perPower(site, c.power) }
-      }
-      if (isFlat(incoming) && fn.pushforward !== undefined && c.power === 1) {
-        const p = fn.pushforward(x.mean, x.variance)
-        return { message: gaussianSiteMessage(incoming, p.mean, Math.max(p.variance, FLOOR)) }
-      }
-      const t = tilt(fn, x, incoming, c.power)
-      const site = gaussianSiteMessage(incoming, t.y.mean, t.y.variance)
-      return { message: perPower(site, c.power) }
+        const x = gaussianOf(arg(c, 1))
+        if (c.to === 1) {
+          // Nothing is known about y: the constraint says nothing about x.
+          if (isFlat(incoming)) return { flat: true }
+          return tilt(fn, x, incoming, c.power).x
+        }
+        if (isFlat(incoming) && fn.pushforward !== undefined && c.power === 1) {
+          const p = fn.pushforward(x.mean, x.variance)
+          return { mean: p.mean, variance: Math.max(p.variance, FLOOR) }
+        }
+        return tilt(fn, x, incoming, c.power).y
+      }),
+      // Deterministic: under the mean field `y` is defined by `x` and its belief is the Gaussian with the mean and variance of the
+      // pushforward (closed form where the function has one, else quadrature), which is all a Gaussian reader of `y` sees; the message to
+      // `x` is the non-conjugate message of `E[h f(x) - J f(x)^2 / 2]`, `(h, J)` the cavity of `y`. A reader that needs more than the
+      // two moments of `y` (a gamma, a Poisson) sees a Gaussian approximation of it.
+      vmp: messageRule((c): OperatorResult => {
+        const fn = resolve(table, c.params)
+        if (c.to === 0 && fn.pushforward !== undefined && arg(c, 1).family.kind === 'gaussian') {
+          const x = gaussianOf(arg(c, 1))
+          const p = fn.pushforward(x.mean, x.variance)
+          return { message: gaussianMessage(p.mean, Math.max(p.variance, FLOOR)) }
+        }
+        return { message: definedFunctionMessage(c.args, c.to, (x) => fn.f(x[0] as number)) }
+      }, 'numeric'),
     },
-    logEvidence: (c) => {
-      const incoming = etaOf(arg(c, 0))
-      // An output nothing else reads (a flat cavity) integrates to one: the evidence is the mass of the input's cavity.
-      if (isFlat(incoming)) return allProper([arg(c, 1)]) ? massOf(arg(c, 1)) : Number.NaN
-      if (!allProper(c.args)) return Number.NaN
-      const fn = resolve(table, c.params)
-      if (arg(c, 1).family.kind === 'gamma')
-        return massOf(arg(c, 1)) + tiltGamma(fn, arg(c, 1), incoming, c.power).logMass
-      return massOf(arg(c, 1)) + tilt(fn, gaussianOf(arg(c, 1)), incoming, c.power).logMass
+    evidence: {
+      ep: (c) => {
+        const incoming = etaOf(arg(c, 0))
+        // An output nothing else reads (a flat cavity) integrates to one: the evidence is the mass of the input's cavity.
+        if (isFlat(incoming)) return allProper([arg(c, 1)]) ? massOf(arg(c, 1)) : Number.NaN
+        if (!allProper(c.args)) return Number.NaN
+        const fn = resolve(table, c.params)
+        if (arg(c, 1).family.kind === 'gamma')
+          return massOf(arg(c, 1)) + tiltGamma(fn, arg(c, 1), incoming, c.power).logMass
+        return massOf(arg(c, 1)) + tilt(fn, gaussianOf(arg(c, 1)), incoming, c.power).logMass
+      },
+      vmp: () => 0,
     },
-  }
+    // The message to x is a match against x's own cavity; the message to y needs none (a flat y is told the pushforward).
+    traits: { readsTarget: (to) => to === 1, power: true, defines: 0 },
+  })
 }
 
 /**
@@ -493,7 +478,7 @@ export function applyProduct(
   name: string,
   table: Readonly<Record<string, UnaryFunction>> = unaryFunctions(),
 ): FactorOperator {
-  return {
+  return defineOperator({
     name,
     description: 'y = z f(x) for a Gaussian z and a function of a Gaussian or gamma variable x',
     params: {
@@ -505,11 +490,6 @@ export function applyProduct(
       { name: 'z', accepts: ['gaussian'] },
       { name: 'x', accepts: ['gaussian', 'gamma'] },
     ],
-    // Expectation propagation only: the non-conjugate variational rule of a product with a scale (`z f(x)`, a funnel) is degenerate
-    // (measured on the Bayesian GAM: the noise collapses to a point), so the verdict of variational message passing says so.
-    support: { ep: 'numeric' },
-    readsTarget: (to) => to !== 0,
-    power: true,
     check: (params) => {
       try {
         resolve(table, params)
@@ -518,32 +498,31 @@ export function applyProduct(
         return errorText(e)
       }
     },
-    ep: (c): OperatorResult => {
-      const fn = resolve(table, c.params)
-      const incoming = etaOf(arg(c, 0))
-      if (isFlat(incoming) && c.to !== 0) return { message: [0, 0] }
-      const t = scaledTilt(fn, c)
-      const scaled = (site: Eta): Eta => perPower(site, c.power)
-      if (c.to === 2) {
-        const input = arg(c, 2)
-        return {
-          message: scaled(
-            input.family.kind === 'gamma'
-              ? siteMessage(gamma, etaOf(input), [t.x.logMean, t.x.mean])
-              : gaussianSiteMessage(etaOf(input), t.x.mean, t.x.variance),
-          ),
+    // Expectation propagation only: the non-conjugate variational rule of a product with a scale (`z f(x)`, a funnel) is degenerate
+    // (measured on the Bayesian GAM: the noise collapses to a point), so the verdict of variational message passing says so.
+    rules: {
+      ep: siteRule((c) => {
+        const fn = resolve(table, c.params)
+        const incoming = etaOf(arg(c, 0))
+        if (isFlat(incoming) && c.to !== 0) return { flat: true }
+        const t = scaledTilt(fn, c)
+        if (c.to === 2) {
+          const input = arg(c, 2)
+          return input.family.kind === 'gamma' ? { moments: [t.x.logMean, t.x.mean] } : t.x
         }
-      }
-      const moments = c.to === 1 ? t.z : t.y
-      const variance = Math.max(moments.second - moments.mean * moments.mean, FLOOR)
-      return { message: scaled(gaussianSiteMessage(etaOf(arg(c, c.to)), moments.mean, variance)) }
+        const moments = c.to === 1 ? t.z : t.y
+        return { mean: moments.mean, variance: Math.max(moments.second - moments.mean * moments.mean, FLOOR) }
+      }),
     },
-    logEvidence: (c) => {
-      if (!allProper(c.args)) return Number.NaN
-      const fn = resolve(table, c.params)
-      return massOf(arg(c, 1)) + massOf(arg(c, 2)) + scaledTilt(fn, c).logMass
+    evidence: {
+      ep: (c) => {
+        if (!allProper(c.args)) return Number.NaN
+        const fn = resolve(table, c.params)
+        return massOf(arg(c, 1)) + massOf(arg(c, 2)) + scaledTilt(fn, c).logMass
+      },
     },
-  }
+    traits: { readsTarget: (to) => to !== 0, power: true },
+  })
 }
 
 /**

@@ -11,7 +11,8 @@
  * `y ~ studentT(df, X w, s)` is one rank-one factor per row on the packed weights.
  */
 
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, vectorParam } from '../../core/args.ts'
+import { allProper, gaussianOf, massOf, vectorParam } from '../../core/args.ts'
+import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
@@ -86,24 +87,26 @@ function mixtureTilted(c: OperatorContext): { mean: number; variance: number; lo
  * mixtureSite.ep?.({ mode: 'ep', to: 0, args, params, power: 1 }).message.map((v) => v.toFixed(3)) // => ['-0.365', '1.081']
  * ```
  */
-export const mixtureSite: FactorOperator = {
+export const mixtureSite: FactorOperator = defineOperator({
   name: 'mixture-site',
   description: 'f(x) = sum_i pi_i N(x; mu_i, s_i^2): a mixture of Gaussians in one variable',
   ports: [{ name: 'x', accepts: ['gaussian'] }],
   params: { weights: param.vector(), means: param.vector(), sds: param.vector() },
-  support: { ep: 'exact', vmp: 'numeric' },
-  readsTarget: true,
-  needsDensity: true,
-  ep: (c): OperatorResult => {
-    const t = mixtureTilted(c)
-    return { message: gaussianSiteMessage(etaOf(c.args[0] as never), t.mean, t.variance) }
+  rules: {
+    ep: siteRule(mixtureTilted, 'exact'),
+    // The mean field of the mixture density as one factor (the components summed out): the non-conjugate message. A mixture is not
+    // log-concave, so the precision of the message can be negative (a spike and a slab pull in opposite ways).
+    vmp: messageRule(
+      (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), 0, mixtureLog(c.params)) }),
+      'numeric',
+    ),
   },
-  // The mean field of the mixture density as one factor (the components summed out): the non-conjugate message. A mixture is not
-  // log-concave, so the precision of the message can be negative (a spike and a slab pull in opposite ways).
-  vmp: (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), 0, mixtureLog(c.params)) }),
-  expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), mixtureLog(c.params)),
-  logEvidence: (c) => (allProper(c.args) ? massOf(c.args[0] as never) + mixtureTilted(c).logMass : Number.NaN),
-}
+  evidence: {
+    ep: (c) => (allProper(c.args) ? massOf(c.args[0] as never) + mixtureTilted(c).logMass : Number.NaN),
+    vmp: (c) => numericExpectedLog(quadraturePorts(c.args), mixtureLog(c.params)),
+  },
+  traits: { readsTarget: true, needsDensity: true },
+})
 
 /**
  * A Student-t likelihood of a Gaussian predictor, `y | x ~ t_df(x, scale)` with the outcome `y`, the degrees of freedom `df`
