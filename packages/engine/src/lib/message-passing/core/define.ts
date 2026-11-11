@@ -30,12 +30,15 @@ import type {
 /**
  * What a `site(tilt)` rule returns: the tilted distribution at the target port, as the expected sufficient statistics of the
  * target's family (`moments`: a `TiltedMoments` is one), or, for a Gaussian port, its mean and variance (the projection of a
- * Gaussian from them is then exact in the form the operators always used, not through the second moment), or `{ flat: true }` when the
+ * Gaussian from them is then exact in the form the operators always used, not through the second moment), or `{ natural }`, the
+ * natural parameters of the tilted member when the operator makes the projection itself (a dense Gaussian vector from a Cholesky
+ * factor), or `{ flat: true }` when the
  * factor says nothing to this port yet (the flat message of the family, whatever the cavity, and not divided by the power).
  */
 export type Tilt =
   | { readonly moments: Eta }
   | { readonly mean: number; readonly variance: number }
+  | { readonly natural: Eta }
   | { readonly flat: true }
 
 /** A rule an operator computes itself: the message to the port `c.to`, with what kind of rule it is. */
@@ -98,7 +101,9 @@ export function projectSite(target: Arg, tilt: Tilt, power: number): Eta {
   const site =
     'moments' in tilt
       ? siteMessage(target.family, cavity, tilt.moments)
-      : gaussianSiteMessage(cavity, tilt.mean, tilt.variance)
+      : 'natural' in tilt
+        ? tilt.natural.map((v, i) => v - (cavity[i] ?? 0))
+        : gaussianSiteMessage(cavity, tilt.mean, tilt.variance)
   return perPower(site, power)
 }
 

@@ -60,7 +60,7 @@ The core of message passing: the `Family` algebra and its scalar, vector, discre
 - module `graph.ts` (file): Compile and draw a factor graph: variables, factors, edges, ids. `src/lib/message-passing/core/graph.ts:1` `omai-engine/message-passing`
 
 - function `compileGraph`: Validate and compile a factor graph against a registry of operators. `src/lib/message-passing/core/graph.ts:139` `omai-engine/message-passing`
-- function `defineOperator`: Build a factor operator from its declaration, with support derived. `src/lib/message-passing/core/define.ts:180` `omai-engine/message-passing`
+- function `defineOperator`: Build a factor operator from its declaration, with support derived. `src/lib/message-passing/core/define.ts:185` `omai-engine/message-passing`
 - function `dirichlet`: The Dirichlet message family of a given dimension. `src/lib/message-passing/core/families-vector.ts:191` `omai-engine/message-passing`
 - function `discrete`: The discrete message family on k states: log weights. `src/lib/message-passing/core/families-vector.ts:152` `omai-engine/message-passing`
 - function `gaussianMv`: The multivariate Gaussian message family of a given dimension. `src/lib/message-passing/core/families-vector.ts:56` `omai-engine/message-passing`
@@ -114,9 +114,9 @@ The factor operators: the registry of closed-form and numeric message rules (a p
 
 The operators of covariance matrices and correlation: the multivariate Gaussian with a Wishart precision, its normal- Wishart form, and the bivariate Gaussian with two gamma precisions and a beta correlation; with the shared sides of a matrix message. Part of `omai-engine/message-passing`.
 
-- structure `mvnNormalWishart`: The conjugate update of a Gaussian vector with unknown mean and precision matrix (normal-Wishart). `src/lib/message-passing/operators/covariance/covariance.ts:328` `omai-engine/message-passing`
-- structure `mvnSdCorr`: A bivariate Gaussian with sds and correlation as separate variables (gamma precisions, a beta correlation). `src/lib/message-passing/operators/covariance/correlation.ts:103` `omai-engine/message-passing`
-- structure `mvnWishart`: A multivariate Gaussian with a Wishart precision matrix: a learned covariance. `src/lib/message-passing/operators/covariance/covariance.ts:239` `omai-engine/message-passing`
+- structure `mvnNormalWishart`: The conjugate update of a Gaussian vector with unknown mean and precision matrix (normal-Wishart). `src/lib/message-passing/operators/covariance/covariance.ts:339` `omai-engine/message-passing`
+- structure `mvnSdCorr`: A bivariate Gaussian with sds and correlation as separate variables (gamma precisions, a beta correlation). `src/lib/message-passing/operators/covariance/correlation.ts:104` `omai-engine/message-passing`
+- structure `mvnWishart`: A multivariate Gaussian with a Wishart precision matrix: a learned covariance. `src/lib/message-passing/operators/covariance/covariance.ts:240` `omai-engine/message-passing`
 
 ### message-passing/operators/discrete
 
@@ -221,10 +221,10 @@ The operators that link a Gaussian to an observation: truncation (probit, greate
 
 The operators of scale and concentration hierarchies: the shared smoothing parameter of a Gaussian vector and its function-scale form, the gamma rate and product hierarchies, the random concentration of a beta or Dirichlet, and stick-breaking. Part of `omai-engine/message-passing`.
 
-- structure `betaTwoShapes`: A beta variable with two random shapes (gamma or log-normal each): a 2-d grid EP site. `src/lib/message-passing/operators/scales/concentration.ts:305` `omai-engine/message-passing`
-- structure `dirichletConcentration`: A beta or Dirichlet variable with a random concentration: a hyperprior on the prior's own strength. `src/lib/message-passing/operators/scales/concentration.ts:182` `omai-engine/message-passing`
-- structure `gammaProduct`: The product of two gamma variables p = u tau: a local times a global precision. `src/lib/message-passing/operators/scales/gamma-scale.ts:178` `omai-engine/message-passing`
-- structure `gammaRate`: A gamma variable whose rate is a known multiple of another gamma variable: scale-mixture hierarchies. `src/lib/message-passing/operators/scales/gamma-scale.ts:114` `omai-engine/message-passing`
-- structure `gaussianMvFunctionScale`: A Gaussian vector of coefficients z_j u_j(x) with one Gaussian or gamma variable x: the dense non-centred scale. `src/lib/message-passing/operators/scales/function-scale.ts:99` `omai-engine/message-passing`
-- structure `gaussianMvPrecisionScale`: A Gaussian vector whose precisions share one gamma multiplier (a smoothing parameter). `src/lib/message-passing/operators/scales/scale.ts:254` `omai-engine/message-passing`
+- structure `betaTwoShapes`: A beta variable with two random shapes (gamma or log-normal each): a 2-d grid EP site. `src/lib/message-passing/operators/scales/concentration.ts:300` `omai-engine/message-passing`
+- structure `dirichletConcentration`: A beta or Dirichlet variable with a random concentration: a hyperprior on the prior's own strength. `src/lib/message-passing/operators/scales/concentration.ts:183` `omai-engine/message-passing`
+- structure `gammaProduct`: The product of two gamma variables p = u tau: a local times a global precision. `src/lib/message-passing/operators/scales/gamma-scale.ts:180` `omai-engine/message-passing`
+- structure `gammaRate`: A gamma variable whose rate is a known multiple of another gamma variable: scale-mixture hierarchies. `src/lib/message-passing/operators/scales/gamma-scale.ts:115` `omai-engine/message-passing`
+- structure `gaussianMvFunctionScale`: A Gaussian vector of coefficients z_j u_j(x) with one Gaussian or gamma variable x: the dense non-centred scale. `src/lib/message-passing/operators/scales/function-scale.ts:100` `omai-engine/message-passing`
+- structure `gaussianMvPrecisionScale`: A Gaussian vector whose precisions share one gamma multiplier (a smoothing parameter). `src/lib/message-passing/operators/scales/scale.ts:260` `omai-engine/message-passing`
 - structure `stickBreaking`: Discrete variable with stick-breaking weights of beta breaks (truncated Dirichlet process). `src/lib/message-passing/operators/scales/stick-breaking.ts:81` `omai-engine/message-passing`

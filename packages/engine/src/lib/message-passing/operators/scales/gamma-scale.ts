@@ -7,8 +7,9 @@
  * grid in that one variable and every moment follows in closed form.
  */
 
-import { arg, evidenceOrNaN } from '../../core/_messages.ts'
-import { etaOf, numberParam, siteMessage } from '../../core/args.ts'
+import { arg } from '../../core/_messages.ts'
+import { etaOf, numberParam } from '../../core/args.ts'
+import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
@@ -111,7 +112,7 @@ function rateParams(c: OperatorContext): { readonly shape: number; readonly scal
  * gammaRate.ep?.({ mode: 'ep', to: 1, args, params: { shape: 0.5 }, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.167', '-0.419']
  * ```
  */
-export const gammaRate: FactorOperator = {
+export const gammaRate: FactorOperator = defineOperator({
   name: 'gamma-rate',
   description: 'x ~ Gamma(shape, scale r) with the rate a known multiple of a gamma variable r',
   ports: [
@@ -119,43 +120,44 @@ export const gammaRate: FactorOperator = {
     { name: 'r', accepts: ['gamma'] },
   ],
   params: { shape: param.positive(), scale: param.positive({ optional: true }) },
-  support: { ep: 'numeric', vmp: 'exact' },
-  readsTarget: (to) => to === 1,
-  ep: (c): OperatorResult => {
-    const { shape: a, scale } = rateParams(c)
-    const x = gammaShapeRate(etaOf(arg(c, 0)))
-    if (!(x.shape > 0 && Number.isFinite(x.shape) && x.rate >= 0))
-      throw new ImproperMessageError('gamma-rate: the cavity of x has no shape')
-    const t = pairTilt(etaOf(arg(c, 1)), a, x.rate, scale, x.shape + a - 1)
-    if (c.to === 1) return { message: siteMessage(gamma, etaOf(arg(c, 1)), [t.logG, t.g]) }
-    return { message: siteMessage(gamma, etaOf(arg(c, 0)), [t.logH, t.h]) }
+  rules: {
+    ep: siteRule((c) => {
+      const { shape: a, scale } = rateParams(c)
+      const x = gammaShapeRate(etaOf(arg(c, 0)))
+      if (!(x.shape > 0 && Number.isFinite(x.shape) && x.rate >= 0))
+        throw new ImproperMessageError('gamma-rate: the cavity of x has no shape')
+      const t = pairTilt(etaOf(arg(c, 1)), a, x.rate, scale, x.shape + a - 1)
+      return { moments: c.to === 1 ? [t.logG, t.g] : [t.logH, t.h] }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      const { shape: a, scale } = rateParams(c)
+      const other = arg(c, 1 - c.to)
+      const mo = other.family.moments(etaOf(other))
+      // log f = a log r + (a - 1) log x - c r x + const: linear in (log r, r) and (log x, x).
+      if (c.to === 0) return { message: [a - 1, -scale * (mo[1] ?? 0)] }
+      return { message: [a, -scale * (mo[1] ?? 0)] }
+    }),
   },
-  vmp: (c): OperatorResult => {
-    const { shape: a, scale } = rateParams(c)
-    const other = arg(c, 1 - c.to)
-    const mo = other.family.moments(etaOf(other))
-    // log f = a log r + (a - 1) log x - c r x + const: linear in (log r, r) and (log x, x).
-    if (c.to === 0) return { message: [a - 1, -scale * (mo[1] ?? 0)] }
-    return { message: [a, -scale * (mo[1] ?? 0)] }
-  },
-  expectedLog: (c) => {
-    const { shape: a, scale } = rateParams(c)
-    const x = arg(c, 0).family.moments(etaOf(arg(c, 0)))
-    const r = arg(c, 1).family.moments(etaOf(arg(c, 1)))
-    return (
-      a * Math.log(scale) - lgammaOf(a) + a * (r[0] ?? 0) + (a - 1) * (x[0] ?? 0) - scale * (r[1] ?? 0) * (x[1] ?? 0)
-    )
-  },
-  logEvidence: (c) => {
-    return evidenceOrNaN(() => {
+  evidence: {
+    improperIsNaN: true,
+    ep: (c) => {
       const { shape: a, scale } = rateParams(c)
       const x = gammaShapeRate(etaOf(arg(c, 0)))
       const s = x.shape + a - 1
       // The integral over x is Gamma(s) / (beta_x + c r)^s, and the grid integrates the rest against the (unnormalised) cavity of r.
       return pairTilt(etaOf(arg(c, 1)), a, x.rate, scale, s).logZ + a * Math.log(scale) - lgammaOf(a) + lgammaOf(s)
-    })
+    },
+    vmp: (c) => {
+      const { shape: a, scale } = rateParams(c)
+      const x = arg(c, 0).family.moments(etaOf(arg(c, 0)))
+      const r = arg(c, 1).family.moments(etaOf(arg(c, 1)))
+      return (
+        a * Math.log(scale) - lgammaOf(a) + a * (r[0] ?? 0) + (a - 1) * (x[0] ?? 0) - scale * (r[1] ?? 0) * (x[1] ?? 0)
+      )
+    },
   },
-}
+  traits: { readsTarget: (to) => to === 1 },
+})
 
 /**
  * `p = u tau` for three gamma variables: the precision of a Gaussian that is a product of a local and a global precision (a
@@ -175,7 +177,7 @@ export const gammaRate: FactorOperator = {
  * gammaProduct.ep?.({ mode: 'ep', to: 0, args, params: {}, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.941', '-1.035']
  * ```
  */
-export const gammaProduct: FactorOperator = {
+export const gammaProduct: FactorOperator = defineOperator({
   name: 'gamma-product',
   description: 'p = u tau for gamma variables',
   ports: [
@@ -184,42 +186,44 @@ export const gammaProduct: FactorOperator = {
     { name: 'tau', accepts: ['gamma'] },
   ],
   params: {},
-  support: { ep: 'numeric', vmp: 'exact' },
-  // Deterministic: under the mean field `p` is the pushforward of `u` and `tau`, and the messages to them are those of the
-  // substituted model. `E log p = E log u + E log tau` and `E p = E u E tau` are exact, so the gamma of those two moments serves
-  // every reader of `p` whose log factor is linear in `(log p, p)` (a gamma or Gaussian precision) exactly.
-  defines: 0,
-  vmp: (c): OperatorResult => {
-    const [lu, mu] = arg(c, 1).family.moments(etaOf(arg(c, 1)))
-    const [lt, mt] = arg(c, 2).family.moments(etaOf(arg(c, 2)))
-    if (c.to === 0) return { message: gamma.fromMoments([(lu ?? 0) + (lt ?? 0), (mu ?? 0) * (mt ?? 0)]) }
-    // The readers' message to p, a log p + b p, becomes a log u + b E[tau] u at u (and symmetrically at tau).
-    const cavity = etaOf(arg(c, 0))
-    const other = c.to === 1 ? (mt ?? 0) : (mu ?? 0)
-    return { message: [cavity[0] ?? 0, (cavity[1] ?? 0) * other] }
+  rules: {
+    ep: siteRule((c) => {
+      const p = gammaShapeRate(etaOf(arg(c, 0)))
+      if (!(p.shape > 0 && Number.isFinite(p.shape) && p.rate >= 0))
+        throw new ImproperMessageError('gamma-product: the cavity of p has no shape')
+      const properGamma = (i: number): boolean => gamma.isProper(etaOf(arg(c, i)))
+      // The grid runs over u when its cavity is a density, else over tau (the factor is symmetric in the two).
+      const [gi, hi] = properGamma(1) ? [1, 2] : [2, 1]
+      const h = gammaShapeRate(etaOf(arg(c, hi)))
+      const t = pairTilt(etaOf(arg(c, gi)), p.shape - 1, h.rate, p.rate, h.shape + p.shape - 1)
+      const moments = (port: number): Eta =>
+        port === 0 ? [t.logG + t.logH, t.gh] : port === gi ? [t.logG, t.g] : [t.logH, t.h]
+      return { moments: moments(c.to) }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      const [lu, mu] = arg(c, 1).family.moments(etaOf(arg(c, 1)))
+      const [lt, mt] = arg(c, 2).family.moments(etaOf(arg(c, 2)))
+      if (c.to === 0) return { message: gamma.fromMoments([(lu ?? 0) + (lt ?? 0), (mu ?? 0) * (mt ?? 0)]) }
+      // The readers' message to p, a log p + b p, becomes a log u + b E[tau] u at u (and symmetrically at tau).
+      const cavity = etaOf(arg(c, 0))
+      const other = c.to === 1 ? (mt ?? 0) : (mu ?? 0)
+      return { message: [cavity[0] ?? 0, (cavity[1] ?? 0) * other] }
+    }),
   },
-  expectedLog: () => 0,
-  ep: (c): OperatorResult => {
-    const p = gammaShapeRate(etaOf(arg(c, 0)))
-    if (!(p.shape > 0 && Number.isFinite(p.shape) && p.rate >= 0))
-      throw new ImproperMessageError('gamma-product: the cavity of p has no shape')
-    const properGamma = (i: number): boolean => gamma.isProper(etaOf(arg(c, i)))
-    // The grid runs over u when its cavity is a density, else over tau (the factor is symmetric in the two).
-    const [gi, hi] = properGamma(1) ? [1, 2] : [2, 1]
-    const h = gammaShapeRate(etaOf(arg(c, hi)))
-    const t = pairTilt(etaOf(arg(c, gi)), p.shape - 1, h.rate, p.rate, h.shape + p.shape - 1)
-    const moments = (port: number): Eta =>
-      port === 0 ? [t.logG + t.logH, t.gh] : port === gi ? [t.logG, t.g] : [t.logH, t.h]
-    return { message: siteMessage(gamma, etaOf(arg(c, c.to)), moments(c.to)) }
-  },
-  logEvidence: (c) => {
-    return evidenceOrNaN(() => {
+  evidence: {
+    improperIsNaN: true,
+    ep: (c) => {
       const p = gammaShapeRate(etaOf(arg(c, 0)))
       const properGamma = (i: number): boolean => gamma.isProper(etaOf(arg(c, i)))
       const [gi, hi] = properGamma(1) ? [1, 2] : [2, 1]
       const h = gammaShapeRate(etaOf(arg(c, hi)))
       const t = pairTilt(etaOf(arg(c, gi)), p.shape - 1, h.rate, p.rate, h.shape + p.shape - 1)
       return t.logZ + lgammaOf(h.shape + p.shape - 1)
-    })
+    },
+    vmp: () => 0,
   },
-}
+  // Deterministic: under the mean field `p` is the pushforward of `u` and `tau`, and the messages to them are those of the
+  // substituted model. `E log p = E log u + E log tau` and `E p = E u E tau` are exact, so the gamma of those two moments serves
+  // every reader of `p` whose log factor is linear in `(log p, p)` (a gamma or Gaussian precision) exactly.
+  traits: { defines: 0 },
+})

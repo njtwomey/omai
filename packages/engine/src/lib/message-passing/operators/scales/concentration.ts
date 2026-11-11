@@ -10,8 +10,9 @@
  * `_grid.ts`.
  */
 
-import { arg, evidenceOrNaN } from '../../core/_messages.ts'
+import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, siteMessage, vectorParam } from '../../core/args.ts'
+import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
@@ -179,7 +180,7 @@ function tilt(c: OperatorContext): Tilt {
  * m?.map((v) => v.toFixed(3)) // => ['0.287', '-0.289']
  * ```
  */
-export const dirichletConcentration: FactorOperator = {
+export const dirichletConcentration: FactorOperator = defineOperator({
   name: 'dirichlet-concentration',
   description: 'p ~ Dirichlet(w alpha + o) with the concentration alpha a gamma (or log-normal) variable',
   ports: [
@@ -187,26 +188,6 @@ export const dirichletConcentration: FactorOperator = {
     { name: 'alpha', accepts: ['gamma', 'gaussian'] },
   ],
   params: { weights: param.vector(), offsets: param.vector({ optional: true }), log: param.flag({ optional: true }) },
-  support: { ep: 'numeric', vmp: 'numeric' },
-  readsTarget: () => true,
-  // The mean field: to the probabilities the Dirichlet with the mean concentration (exact), to the concentration the natural
-  // gradient of the expected log of the Dirichlet density, which has `lgamma` of the concentration in it (non-conjugate).
-  vmp: (c): OperatorResult => {
-    const { w, o } = concentrations(c)
-    if (c.to === 0) {
-      const mean = meanShape(arg(c, 1))
-      return { message: w.map((v, k) => v * mean + (o[k] as number) - 1) }
-    }
-    const log = dirichletLog(w, o, logMeansOf(arg(c, 0)))
-    const a = arg(c, 1)
-    return { message: numericMessage(quadraturePorts([a]), 0, (x) => log(shapeOf(a, x[0] as number))) }
-  },
-  expectedLog: (c) => {
-    const { w, o } = concentrations(c)
-    const log = dirichletLog(w, o, logMeansOf(arg(c, 0)))
-    const a = arg(c, 1)
-    return numericExpectedLog(quadraturePorts([a]), (x) => log(shapeOf(a, x[0] as number)))
-  },
   check: (params, families) => {
     const log = params['log'] === true
     const kind = families[1]?.spec.kind
@@ -215,24 +196,38 @@ export const dirichletConcentration: FactorOperator = {
       return 'the concentration is a gamma variable (or a Gaussian on its log with `log: true`)'
     return undefined
   },
-  ep: (c): OperatorResult => {
-    const t = tilt(c)
-    if (c.to === 0) {
-      const p = arg(c, 0)
-      return { message: siteMessage(p.family, etaOf(p), t.logMeans) }
-    }
-    if (c.params['log'] === true) {
-      const variance = t.t2 - t.t * t.t
-      return { message: gaussianSiteMessage(etaOf(arg(c, 1)), t.t, variance) }
-    }
-    return { message: siteMessage(gamma, etaOf(arg(c, 1)) as Eta, [t.t, t.alpha]) }
+  rules: {
+    ep: siteRule((c) => {
+      const t = tilt(c)
+      if (c.to === 0) return { moments: t.logMeans }
+      if (c.params['log'] === true) return { mean: t.t, variance: t.t2 - t.t * t.t }
+      return { moments: [t.t, t.alpha] }
+    }),
+    // The mean field: to the probabilities the Dirichlet with the mean concentration (exact), to the concentration the natural
+    // gradient of the expected log of the Dirichlet density, which has `lgamma` of the concentration in it (non-conjugate).
+    vmp: messageRule((c): OperatorResult => {
+      const { w, o } = concentrations(c)
+      if (c.to === 0) {
+        const mean = meanShape(arg(c, 1))
+        return { message: w.map((v, k) => v * mean + (o[k] as number) - 1) }
+      }
+      const log = dirichletLog(w, o, logMeansOf(arg(c, 0)))
+      const a = arg(c, 1)
+      return { message: numericMessage(quadraturePorts([a]), 0, (x) => log(shapeOf(a, x[0] as number))) }
+    }, 'numeric'),
   },
-  logEvidence: (c) => {
-    return evidenceOrNaN(() => {
-      return tilt(c).logZ
-    })
+  evidence: {
+    improperIsNaN: true,
+    ep: (c) => tilt(c).logZ,
+    vmp: (c) => {
+      const { w, o } = concentrations(c)
+      const log = dirichletLog(w, o, logMeansOf(arg(c, 0)))
+      const a = arg(c, 1)
+      return numericExpectedLog(quadraturePorts([a]), (x) => log(shapeOf(a, x[0] as number)))
+    },
   },
-}
+  traits: { readsTarget: () => true },
+})
 
 /** The tilted statistics of a beta variable with two random shapes: the 2-d integral over (log a, log b) and `E log p`, `E log (1 - p)`. */
 function twoShapes(c: OperatorContext): {
@@ -302,7 +297,7 @@ function betaLog(c: OperatorContext): (x: readonly number[]) => number {
  * betaTwoShapes.ep?.({ mode: 'ep', to: 1, args, params: {}, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.558', '0.361']
  * ```
  */
-export const betaTwoShapes: FactorOperator = {
+export const betaTwoShapes: FactorOperator = defineOperator({
   name: 'beta-two-shapes',
   description: 'p ~ Beta(a, b) with both shapes random positive variables (gamma, or Gaussian on the log)',
   ports: [
@@ -311,31 +306,34 @@ export const betaTwoShapes: FactorOperator = {
     { name: 'b', accepts: ['gamma', 'gaussian'] },
   ],
   params: {},
-  support: { ep: 'numeric', vmp: 'numeric' },
-  readsTarget: () => true,
-  power: true,
-  vmp: (c): OperatorResult => {
-    if (c.to === 0) return { message: [meanShape(arg(c, 1)) - 1, meanShape(arg(c, 2)) - 1] }
-    const log = betaLog(c)
-    return { message: numericMessage(quadraturePorts([arg(c, 1), arg(c, 2)]), c.to - 1, log) }
+  rules: {
+    // Kept as a message rule, not a site rule: it declares a power but does not divide its site by it (the power is only in the
+    // integrand), so the engine's division (`projectSite`) would change what it sends for a power other than 1. Left as it was.
+    ep: messageRule((c): OperatorResult => {
+      const t = twoShapes(c)
+      if (c.to === 0) {
+        const p = arg(c, 0)
+        return { message: siteMessage(p.family, etaOf(p), t.logMeans) }
+      }
+      const k = c.to - 1
+      const target = arg(c, c.to)
+      if (target.family.kind === 'gamma')
+        return { message: siteMessage(gamma, etaOf(target) as Eta, [t.r.mean[k] as number, t.r.meanExp[k] as number]) }
+      return { message: gaussianSiteMessage(etaOf(target), t.r.mean[k] as number, t.r.variance[k] as number) }
+    }, 'numeric'),
+    vmp: messageRule((c): OperatorResult => {
+      if (c.to === 0) return { message: [meanShape(arg(c, 1)) - 1, meanShape(arg(c, 2)) - 1] }
+      const log = betaLog(c)
+      return { message: numericMessage(quadraturePorts([arg(c, 1), arg(c, 2)]), c.to - 1, log) }
+    }, 'numeric'),
   },
-  expectedLog: (c) => numericExpectedLog(quadraturePorts([arg(c, 1), arg(c, 2)]), betaLog(c)),
-  ep: (c): OperatorResult => {
-    const t = twoShapes(c)
-    if (c.to === 0) {
-      const p = arg(c, 0)
-      return { message: siteMessage(p.family, etaOf(p), t.logMeans) }
-    }
-    const k = c.to - 1
-    const target = arg(c, c.to)
-    if (target.family.kind === 'gamma')
-      return { message: siteMessage(gamma, etaOf(target) as Eta, [t.r.mean[k] as number, t.r.meanExp[k] as number]) }
-    return { message: gaussianSiteMessage(etaOf(target), t.r.mean[k] as number, t.r.variance[k] as number) }
-  },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    return evidenceOrNaN(() => {
+  evidence: {
+    improperIsNaN: true,
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
       return twoShapes(c).logMass + massOf(arg(c, 1)) + massOf(arg(c, 2))
-    })
+    },
+    vmp: (c) => numericExpectedLog(quadraturePorts([arg(c, 1), arg(c, 2)]), betaLog(c)),
   },
-}
+  traits: { readsTarget: () => true, power: true },
+})
