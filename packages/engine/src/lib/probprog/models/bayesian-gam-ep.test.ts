@@ -121,19 +121,22 @@ describe('expectation propagation on the Bayesian GAM', () => {
 
   it('agrees with the exact reference on the penalty prior with log-normal hyperpriors: the curve, the band and the smoothing', () => {
     const model = bayesianGam(x, y, { k: 10 })
-    const reference = bayesianGamReference(model, { gridSize: 20, points: 28 })
+    // 60 points on each hyperparameter: the spread of the log noise needs more than the default 28 to be resolved.
+    const reference = bayesianGamReference(model, { gridSize: 20, points: 60 })
     const fit = fitOf('ep', model)
     const a = bayesianGamAgreement(fit, reference, model.standardisation.sd)
     expect(a.meanError).toBeLessThan(0.01)
     // The coefficients are one Gaussian vector (the dense factor), so the band keeps their correlations: within a few percent
     // (the per-coefficient form was 17% too wide).
     expect(a.bandRatio).toBeGreaterThan(0.95)
-    expect(a.bandRatio).toBeLessThan(1.07)
+    expect(a.bandRatio).toBeLessThan(1.06)
     expect(Math.abs(a.logLambdaShift)).toBeLessThan(0.15)
     const lam = fit.hyper.logLambda as readonly [number, number]
     expect(lam[1]).toBeGreaterThan(0.8 * reference.hyper.logLambda[1])
     expect(lam[1]).toBeLessThan(1.25 * reference.hyper.logLambda[1])
     expect(fit.hyper.logSigma[0]).toBeCloseTo(reference.hyper.logSigma[0], 1)
+    expect(fit.hyper.logSigma[1]).toBeGreaterThan(0.8 * reference.hyper.logSigma[1])
+    expect(fit.hyper.logSigma[1]).toBeLessThan(1.3 * reference.hyper.logSigma[1])
   })
 
   it('reaches its fixed point in few sweeps on the dense form', () => {
