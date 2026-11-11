@@ -35,6 +35,7 @@ import {
 import { assertDamping } from '../core/_messages.ts'
 import type { CompiledFactor, CompiledGraph } from '../core/graph.ts'
 import type { Arg, Eta, Family } from '../core/types.ts'
+import { repairImproper } from '../engine/_update.ts'
 import { operatorMessage } from '../engine/dispatch.ts'
 import { momentProjection } from '../engine/projections.ts'
 import type { ImproperCounts, ImproperPolicy, MpSnapshot } from '../engine/state.ts'
@@ -332,26 +333,15 @@ export function stochasticEpAlgorithm(
     }
     const next = site.map((v, i) => v + rate * ((p.eta[i] ?? 0) - v))
     if (family.isProper(beliefOf(l, next))) return next
-    counts.events++
-    if (o.improper === 'error')
-      throw new OmaiError('convergence', `stochastic EP: an update of ${f.id} makes the belief improper`)
-    if (o.improper === 'reset') {
-      counts.reset++
-      return family.flat
-    }
-    if (o.improper === 'damp') {
-      let step = 1
-      for (let k = 0; k < 10; k++) {
-        step /= 2
-        const trial = site.map((v, i) => v + step * ((next[i] ?? 0) - v))
-        if (family.isProper(beliefOf(l, trial))) {
-          counts.damped++
-          return trial
-        }
-      }
-    }
-    counts.skipped++
-    return site
+    return repairImproper(
+      family,
+      site,
+      next,
+      (m) => family.isProper(beliefOf(l, m)),
+      o.improper,
+      counts,
+      () => `stochastic EP: an update of ${f.id} makes the belief improper`,
+    )
   }
 
   return {

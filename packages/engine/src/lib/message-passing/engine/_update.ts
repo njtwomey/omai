@@ -6,12 +6,13 @@
 
 import { OmaiError } from '../../base/index.ts'
 import type { CompiledGraph } from '../core/graph.ts'
+import type { Family } from '../core/types.ts'
 import { type Arg, type Eta, takesPower } from '../core/types.ts'
 import { argsOf } from './_arguments.ts'
 import { beliefWithout, isPulled } from './_cavities.ts'
 import { beliefOf } from './cavity.ts'
 import { type FactorProposal, operatorMessage } from './dispatch.ts'
-import type { EngineSettings } from './state.ts'
+import type { EngineSettings, ImproperPolicy } from './state.ts'
 
 /** The largest number of fixed-point iterations of one alpha update. */
 const ALPHA_ITERATIONS = 200
@@ -73,6 +74,50 @@ export function propose(
   return operatorMessage(f, s.projection, edge.port, argsOf(g, source, edge.factor, s.projection))
 }
 
+/**
+ * The repair of an update that would make a proper belief improper, by the improper policy: `error` throws, `reset` returns the
+ * flat message, `damp` halves the step from the old message toward the new one (up to ten times) until the belief stays proper,
+ * and `skip` (or a `damp` that found no proper step) keeps the old message. Counted in `counts`.
+ *
+ * @param family - The family of the message.
+ * @param old - The message the edge has.
+ * @param next - The message the update would give.
+ * @param proper - Whether the belief with a message in place of the edge's own is proper.
+ * @param policy - What to do.
+ * @param counts - The repair counts, updated in place.
+ * @param failure - The text of the error the `error` policy throws (made only then).
+ * @returns The message to keep.
+ */
+export function repairImproper(
+  family: Family,
+  old: Eta,
+  next: Eta,
+  proper: (message: Eta) => boolean,
+  policy: ImproperPolicy,
+  counts: { events: number; skipped: number; damped: number; reset: number },
+  failure: () => string,
+): Eta {
+  counts.events++
+  if (policy === 'error') throw new OmaiError('convergence', failure())
+  if (policy === 'reset') {
+    counts.reset++
+    return family.flat
+  }
+  if (policy === 'damp') {
+    let step = 1
+    for (let k = 0; k < 10; k++) {
+      step /= 2
+      const trial = old.map((v, i) => v + step * ((next[i] ?? 0) - v))
+      if (proper(trial)) {
+        counts.damped++
+        return trial
+      }
+    }
+  }
+  counts.skipped++
+  return old
+}
+
 /** The new message of an edge from a proposal: damped, and repaired if it would make a proper belief improper. */
 export function resolve(
   g: CompiledGraph,
@@ -96,30 +141,16 @@ export function resolve(
   const next = d === 0 ? raw : family.product(family.power(old, d), family.power(raw, 1 - d))
   const base = beliefWithout(g, current, edge.variable, e)
   if (!family.isProper(family.product(base, old)) || family.isProper(family.product(base, next))) return next
-  counts.events++
-  if (s.improper === 'error') {
-    throw new OmaiError(
-      'convergence',
+  return repairImproper(
+    family,
+    old,
+    next,
+    (m) => family.isProper(family.product(base, m)),
+    s.improper,
+    counts,
+    () =>
       `message passing: an update of ${(g.factors[edge.factor] as CompiledGraph['factors'][number]).id} makes the belief of ${(g.variables[edge.variable] as CompiledGraph['variables'][number]).name} improper`,
-    )
-  }
-  if (s.improper === 'reset') {
-    counts.reset++
-    return family.flat
-  }
-  if (s.improper === 'damp') {
-    let step = 1
-    for (let k = 0; k < 10; k++) {
-      step /= 2
-      const trial = old.map((v, i) => v + step * ((next[i] ?? 0) - v))
-      if (family.isProper(family.product(base, trial))) {
-        counts.damped++
-        return trial
-      }
-    }
-  }
-  counts.skipped++
-  return old
+  )
 }
 
 export function sweepChange(
