@@ -52,7 +52,8 @@ export function useRecord<R>(
 /** What an example's output panels get: the chosen run, the reference run, the viewed step and the panels' state. */
 export interface ExampleView {
   readonly live: Live
-  readonly reference: Live
+  /** The reference run, when the page has one (a check against an exact answer needs none). */
+  readonly reference: Live | undefined
   readonly t: number
   readonly config: Config
   readonly panels: Panels
@@ -80,13 +81,13 @@ export function ExamplePage(props: {
   readonly producer: ProducerFactory
   /** The panels of the page, by name with their titles; the panel named `check` is the reference check. */
   readonly panels: Readonly<Record<string, string>>
-  /** The inference knobs of the reference run, over the defaults of the chosen method. */
-  readonly reference: Config
+  /** The inference knobs of the reference run, over the defaults of the chosen method; none when the check is against an exact answer. */
+  readonly reference?: Config
   readonly referenceSeed?: number
   /** The knob that is the data seed (shown as a seed input, never a button group). Default `dataSeed`. */
   readonly seedKnob?: string
-  /** Knobs to leave out of the data and model panels. */
-  readonly exclude?: readonly string[]
+  /** Knobs to leave out of the data and model panels (a list, or a function of the configuration). */
+  readonly exclude?: readonly string[] | ((config: Config) => readonly string[])
   /** What to observe: the panels of the chosen method's output. */
   readonly observe: (view: ExampleView) => ReactNode
   /** How we know it works: the reference check (usually {@link ReferenceCheck}). */
@@ -135,19 +136,32 @@ export function ExamplePage(props: {
   )
   const problem = JSON.stringify(pick(config, example.problemKnobs))
   // biome-ignore lint/correctness/useExhaustiveDependencies: the reference depends on the problem alone, not on the method
-  const referenceConfig = useMemo(() => example.reference(config, props.reference), [problem])
+  const referenceConfig = useMemo(() => example.reference(config, props.reference ?? {}), [problem])
   // A reference nobody can see is not computed: hiding the check panel spares the run.
   const reference = useSession(
     method,
     { config: referenceConfig, seed: props.referenceSeed ?? 7, steps: example.steps(referenceConfig) },
     [problem],
-    { start: 'end', hold: false, producer, active: live.done && panels.active('check') },
+    {
+      start: 'end',
+      hold: false,
+      producer,
+      active: props.reference !== undefined && live.done && panels.active('check'),
+    },
   )
   const t = Math.max(0, Math.min(at ?? live.head, live.head))
   const status = live.session.status
   const done = status !== undefined
-  const view: ExampleView = { live, reference, t, config, panels, objective, done }
-  const exclude = props.exclude ?? []
+  const view: ExampleView = {
+    live,
+    reference: props.reference === undefined ? undefined : reference,
+    t,
+    config,
+    panels,
+    objective,
+    done,
+  }
+  const exclude = typeof props.exclude === 'function' ? props.exclude(config) : (props.exclude ?? [])
   return (
     <div className="flex flex-col gap-5">
       <section className="flex flex-col gap-2">
@@ -326,14 +340,18 @@ export function ReferenceCheck(props: {
   /** What the reference is and what the check measures. */
   readonly explain: ReactNode
   /** The table of the check's numbers. */
-  readonly rows: (check: Record<string, number>) => readonly (readonly [string, string])[]
+  readonly rows: (check: Record<string, unknown>) => readonly (readonly [string, string])[]
+  /** More under the table (a figure of the check's record). */
+  readonly more?: (check: Record<string, unknown>) => ReactNode
   /** What it says when the reference never finished (its own budget). */
   readonly unfinished?: string
 }): ReactNode {
   const { view, probes, checkPath, explain, rows } = props
-  const { live, reference, t, panels } = view
+  const { live, t, panels } = view
+  // An exact reference is no run: the method's check path reads the truth itself.
+  const reference = view.reference ?? live
   const open = panels.active('check')
-  const ready = reference.done
+  const ready = view.reference === undefined || reference.done
   const rt = reference.head
   const names = Object.keys(probes)
   const slot = (i: number): { path: string | undefined; args: never } => {
@@ -352,7 +370,7 @@ export function ReferenceCheck(props: {
       ? Object.fromEntries(names.map((n, i) => [n, values[i]]))
       : undefined
   const check = useProbe(live, t, args === undefined ? undefined : checkPath, args as never).value as
-    | Record<string, number>
+    | Record<string, unknown>
     | null
     | undefined
   const table = check === null || check === undefined ? [] : rows(check)
@@ -370,6 +388,7 @@ export function ReferenceCheck(props: {
                 : ''}
         </p>
         {table.length > 0 ? <Table rows={table} /> : null}
+        {check === null || check === undefined ? null : props.more?.(check)}
       </div>
     </FigurePanel>
   )

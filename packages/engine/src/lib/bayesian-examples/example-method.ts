@@ -25,7 +25,7 @@ import type { Posterior } from '../probprog/posterior.ts'
 import { key } from '../random/index.ts'
 import { type DictSpace, defaults, dict, int, type RealSpace, type UnionSpace } from '../space/index.ts'
 import { toFlat } from '../tensor/index.ts'
-import type { Config, Contract, DerivedSource } from '../trace/index.ts'
+import { type Config, type Contract, type DerivedSource, session } from '../trace/index.ts'
 
 /**
  * Where the controls of each inference method open (short runs: an answer in a second or two); a method not listed opens
@@ -305,6 +305,11 @@ export interface ExampleContext<P extends ExampleProblem> {
   readonly kind: string
   /** The posterior a state of the run stands for. */
   readonly posterior: (state: State) => Posterior
+  /**
+   * The posterior of another run of the same inference method (its knobs) on the problem of another configuration, run to
+   * its end on the spot: how a derived path shows a fit to a part of the data (the flips seen so far). The seed is fixed.
+   */
+  readonly fit: (config: Config) => Posterior
 }
 
 /** What an example declares: its knobs, its problem and the derived paths that read the posterior. */
@@ -383,20 +388,25 @@ export function defineExample<P extends ExampleProblem>(spec: ExampleSpec<P>): E
     readonly kind: string
   }
   let last: { readonly id: string; readonly built: Built } | undefined
-  const build = (config: Config): Built => {
+  const construct = (config: Config): Built => {
     const { kind, knobs: given } = inferenceOf(config)
-    const id = JSON.stringify([problemKey(config), kind, given])
-    if (last?.id === id) return last.built
     const problem = spec.problem(config)
     const registry = modelRegistry({ [spec.modelName]: { definition: problem.definition, data: problem.data } })
     const inner = inferenceMethodFor(registry, kind, spec.modelName)
     const { steps: _steps, ...rest } = given
-    const innerConfig = {
-      ...(defaults(inner.config) as Config),
-      ...Object.fromEntries(Object.entries(FIXED[kind] ?? {}).filter(([k]) => k in inner.config.spaces)),
-      ...rest,
+    const fixed = Object.entries(FIXED[kind] ?? {}).filter(([k]) => k in inner.config.spaces)
+    return {
+      problem,
+      inner,
+      innerConfig: { ...(defaults(inner.config) as Config), ...Object.fromEntries(fixed), ...rest },
+      kind,
     }
-    const built = { problem, inner, innerConfig, kind }
+  }
+  const build = (config: Config): Built => {
+    const { kind, knobs: given } = inferenceOf(config)
+    const id = JSON.stringify([problemKey(config), kind, given])
+    if (last?.id === id) return last.built
+    const built = construct(config)
     last = { id, built }
     return built
   }
@@ -404,6 +414,17 @@ export function defineExample<P extends ExampleProblem>(spec: ExampleSpec<P>): E
     (b: Built) =>
     (state: State): Posterior =>
       (b.inner as InferenceMethod<State, Config, string>).posterior?.(state, b.innerConfig) as Posterior
+
+  const fitOf = (config: Config): Posterior => {
+    const b = construct(config)
+    const run = session(b.inner as never, {
+      config: b.innerConfig as never,
+      seed: 1,
+      steps: exampleSteps(config),
+      mode: 'eager',
+    })
+    return innerPosterior(b)(run.state)
+  }
 
   const declared: InferenceMethod<State, Config, string> = defineInferenceMethod<State, Config, string>({
     name: spec.name,
@@ -419,7 +440,7 @@ export function defineExample<P extends ExampleProblem>(spec: ExampleSpec<P>): E
       ) as Contract<State, string>
       return {
         ...inner,
-        ...spec.derived({ problem: b.problem, config, kind: b.kind, posterior: innerPosterior(b) }),
+        ...spec.derived({ problem: b.problem, config, kind: b.kind, posterior: innerPosterior(b), fit: fitOf }),
       }
     },
     make: (config, k) => {
