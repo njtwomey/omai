@@ -500,9 +500,10 @@ export const classifierKnobs: DictSpace = classifierExample.knobs
  * @example
  * ```ts
  * import { classifierMethod, classifierSteps } from 'omai-engine/bayesian-examples'
- * import { defaults } from 'omai-engine/space'
+ * import { defaults, type UnionSpace } from 'omai-engine/space'
  * import { session } from 'omai-engine/trace'
- * const config = { ...defaults(classifierMethod.config), rows: 60, inference: { method: 'laplace' } }
+ * const laplace = (classifierMethod.config.spaces['inference'] as UnionSpace).options['laplace']
+ * const config = { ...defaults(classifierMethod.config), rows: 60, inference: { method: 'laplace', ...defaults(laplace) } }
  * const s = session(classifierMethod, { config, steps: classifierSteps(config), mode: 'eager' })
  * const surface = s.probe(s.t, 'classify/surface', { size: 5 }) as { kind: string }
  * surface.kind // => 'decisionSurface'

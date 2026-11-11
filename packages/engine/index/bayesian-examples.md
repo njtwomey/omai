@@ -5,7 +5,9 @@
 The canonical Bayesian examples as methods a page or a worker runs by name and a few knobs: each rebuilds its data and model from the knobs (a model-bound inference method closes over its data, so the configuration is all that crosses a Worker boundary), takes one inference method from a table with its own knobs and a time budget, and reads the posterior at any step of the run through derived paths of its contract. `example-method.ts` is the scaffold they are declared on (`defineExample`); so far Bayesian classification of a two-dimensional data set (probit or logistic, polynomial features) is declared on it.
 
 - estimator `classifier-method.ts` (file): Bayesian probit or logistic classifier on 2-D data: one chosen inference method with its knobs. `src/lib/bayesian-examples/classifier-method.ts:1` `omai-engine/bayesian-examples`
+- estimator `coin-method.ts` (file): Biased coin (Beta-Bernoulli) or counts (Gamma-Poisson): one inference method checked against the exact posterior. `src/lib/bayesian-examples/coin-method.ts:1` `omai-engine/bayesian-examples`
 
 - structure `example-method.ts` (file): Example scaffold: a problem from knobs, one chosen inference method, derived posterior paths. `src/lib/bayesian-examples/example-method.ts:1` `omai-engine/bayesian-examples`
 
-- estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:511` `omai-engine/bayesian-examples`
+- estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:512` `omai-engine/bayesian-examples`
+- estimator `coinMethod`: Biased coin method: Beta-Bernoulli or Gamma-Poisson, one inference method, checked against the exact posterior. `src/lib/bayesian-examples/coin-method.ts:280` `omai-engine/bayesian-examples`

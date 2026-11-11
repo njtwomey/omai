@@ -135,8 +135,20 @@ export type ExampleOffer = MethodSpace
  */
 export function exampleInferenceSpace(problem: ExampleProblem, modelName: string): ExampleOffer {
   const registry = modelRegistry({ [modelName]: { definition: problem.definition, data: problem.data } })
-  const offer = methodSpace(registry.need(modelName), {
-    starting: exampleStarting,
+  const model = registry.need(modelName)
+  const first = methodSpace(model, { omit: ['inferDiscrete'], first: 'nuts' })
+  // Short runs: a sampler that opens with thousands of draws opens with at most a few hundred (the table has its own).
+  const starting: Record<string, Readonly<Record<string, number | string | boolean>>> = {}
+  for (const kind of first.applicable) {
+    const spaces = first.space.options[kind]?.spaces ?? {}
+    const cap = (knob: string, most: number): [string, number][] => {
+      const space = spaces[knob] as { default?: unknown } | undefined
+      return typeof space?.default === 'number' ? [[knob, Math.min(space.default, most)]] : []
+    }
+    starting[kind] = Object.fromEntries([...cap('numChains', 2), ...cap('numWarmup', 100), ...cap('numDraws', 200)])
+  }
+  const offer = methodSpace(model, {
+    starting: Object.fromEntries(first.applicable.map((k) => [k, { ...starting[k], ...exampleStarting[k] }])),
     omit: ['inferDiscrete'],
     first: 'nuts',
   })
