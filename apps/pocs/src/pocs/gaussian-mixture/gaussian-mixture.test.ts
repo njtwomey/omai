@@ -1,8 +1,8 @@
-import { mixtureSteps } from 'omai-engine/bayesian-examples'
 import { defaults } from 'omai-engine/space'
 import type { Config } from 'omai-engine/trace'
 import { inlineProducer } from 'omai-render/producer'
 import { describe, expect, it } from 'vitest'
+import { mixtureSteps } from '../../examples/index.ts'
 import { mixtureMethod } from './method.ts'
 
 const config = { ...(defaults(mixtureMethod.config) as Config), rows: 40, budgetMs: 0 }

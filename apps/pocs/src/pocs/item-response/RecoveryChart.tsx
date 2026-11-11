@@ -1,8 +1,8 @@
-import type { Recovery } from 'omai-engine/bayesian-examples'
 import { cartesian, lines, points } from 'omai-render/charts'
 import { figure } from 'omai-render/figure'
 import { Chart, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo } from 'react'
+import type { Recovery } from '../../examples/index.ts'
 
 const FIG = figure({ width: 480, height: 360 })
 

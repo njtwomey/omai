@@ -25,7 +25,6 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'omai-engine/anomaly': () => import('omai-engine/anomaly'),
   'omai-engine/autodiff': () => import('omai-engine/autodiff'),
   'omai-engine/base': () => import('omai-engine/base'),
-  'omai-engine/bayesian-examples': () => import('omai-engine/bayesian-examples'),
   'omai-engine/causal': () => import('omai-engine/causal'),
   'omai-engine/cluster': () => import('omai-engine/cluster'),
   'omai-engine/context': () => import('omai-engine/context'),

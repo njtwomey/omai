@@ -1,4 +1,3 @@
-import { gpClassificationExample, gpHiddenKnobs } from 'omai-engine/bayesian-examples'
 import type { ChainDiagnostics, PosteriorComparison, PosteriorPairs } from 'omai-engine/exposition'
 import { band, cartesian, contours, heatmap, lines, points } from 'omai-render/charts'
 import type { Figure } from 'omai-render/figure'
@@ -12,6 +11,7 @@ import {
   useProbe,
 } from 'omai-render/react'
 import { type ReactNode, useCallback } from 'react'
+import { gpClassificationExample, gpHiddenKnobs } from '../../examples/index.ts'
 import {
   ExamplePage,
   type ExampleView,

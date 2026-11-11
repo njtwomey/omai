@@ -1,4 +1,3 @@
-import { linearExample, linearHiddenKnobs } from 'omai-engine/bayesian-examples'
 import type { ChainDiagnostics, PosteriorComparison, PosteriorPairs } from 'omai-engine/exposition'
 import { band, bars, cartesian, lines, points } from 'omai-render/charts'
 import { figure } from 'omai-render/figure'
@@ -13,6 +12,7 @@ import {
   useProbe,
 } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
+import { linearExample, linearHiddenKnobs } from '../../examples/index.ts'
 import {
   ExamplePage,
   type ExampleView,

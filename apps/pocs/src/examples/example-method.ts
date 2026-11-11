@@ -12,22 +12,26 @@
  * @index structure Example scaffold: a problem from knobs, one chosen inference method, derived posterior paths.
  */
 
-import { type ChainDiagnostics, chainDiagnostics } from '../exposition/index.ts'
-import { anytimeKnobs, defineInferenceMethod, type InferenceMethod } from '../probprog/inference/method.ts'
-import { type MethodSpace, methodConfig, methodSpace } from '../probprog/inference/method-space.ts'
+import { type ChainDiagnostics, chainDiagnostics } from 'omai-engine/exposition'
+import type { Posterior } from 'omai-engine/probprog'
+import { posteriorChains } from 'omai-engine/probprog'
 import {
   type AnyInferenceMethod,
+  anytimeKnobs,
+  defineInferenceMethod,
+  type InferenceMethod,
   inferenceMethodFor,
+  type MethodSpace,
+  methodConfig,
   methodKinds,
+  methodSpace,
   modelRegistry,
-} from '../probprog/inference/models.ts'
-import type { DataInput, ModelDefinition } from '../probprog/model/index.ts'
-import type { Posterior } from '../probprog/posterior.ts'
-import { posteriorChains } from '../probprog/posterior-chains.ts'
-import { key } from '../random/index.ts'
-import { type DictSpace, defaults, dict, int, type RealSpace, type UnionSpace } from '../space/index.ts'
-import { toFlat } from '../tensor/index.ts'
-import { type Config, type Contract, type DerivedSource, type RunStatus, session } from '../trace/index.ts'
+} from 'omai-engine/probprog/inference'
+import type { DataInput, ModelDefinition } from 'omai-engine/probprog/model'
+import { key } from 'omai-engine/random'
+import { type DictSpace, defaults, dict, int, type RealSpace, type UnionSpace } from 'omai-engine/space'
+import { toFlat } from 'omai-engine/tensor'
+import { type Config, type Contract, type DerivedSource, type RunStatus, session } from 'omai-engine/trace'
 
 /**
  * Where the controls of each inference method open (short runs: an answer in a second or two); a method not listed opens
@@ -63,7 +67,7 @@ const isSampler = (knobs: Config): boolean => 'numDraws' in knobs && 'numWarmup'
  * @returns The number.
  * @example
  * ```ts
- * import { exampleNumber } from 'omai-engine/bayesian-examples'
+ * import { exampleNumber } from './index.ts'
  * exampleNumber({ rows: 5 }, 'rows') // => 5
  * ```
  */
@@ -80,7 +84,7 @@ export function exampleNumber(config: Config, name: string): number {
  * @returns The string.
  * @example
  * ```ts
- * import { exampleString } from 'omai-engine/bayesian-examples'
+ * import { exampleString } from './index.ts'
  * exampleString({ link: 'probit' }, 'link') // => 'probit'
  * ```
  */
@@ -131,7 +135,7 @@ export type ExampleOffer = MethodSpace
  * @returns The union space, the applicable kinds and the reasons for the others.
  * @example
  * ```ts
- * import { exampleInferenceSpace, classifierProblem } from 'omai-engine/bayesian-examples'
+ * import { exampleInferenceSpace, classifierProblem } from './index.ts'
  * const p = classifierProblem({ dataset: 'moons', rows: 60, noise: 0.3, dataSeed: 1, link: 'probit', degree: 1, priorScale: 1 })
  * const offer = exampleInferenceSpace(p, 'classifier')
  * [offer.applicable.includes('nuts'), 'enumeration' in offer.unavailable] // => [true, true]
@@ -198,7 +202,7 @@ export function exampleInferenceSpace(
  * @returns The steps.
  * @example
  * ```ts
- * import { exampleSteps } from 'omai-engine/bayesian-examples'
+ * import { exampleSteps } from './index.ts'
  * exampleSteps({ inference: { method: 'nuts', numWarmup: 100, numDraws: 200 } }) // => 302
  * ```
  */
@@ -226,7 +230,7 @@ export function exampleSteps(config: Config): number {
  * @returns The path and the label.
  * @example
  * ```ts
- * import { exampleObjective } from 'omai-engine/bayesian-examples'
+ * import { exampleObjective } from './index.ts'
  * exampleObjective({ inference: { method: 'svi' } }) // => { path: 'svi/elbo', label: 'ELBO' }
  * ```
  */
@@ -257,7 +261,7 @@ export interface DrawRows {
  * @returns The rows, or `undefined`.
  * @example
  * ```ts
- * import { drawRows } from 'omai-engine/bayesian-examples'
+ * import { drawRows } from './index.ts'
  * drawRows({ sites: [] } as never, ['w'], 3) // => undefined
  * ```
  */
@@ -311,7 +315,7 @@ export function drawRows(post: Posterior, sites: readonly string[], n: number): 
  * @returns The means and the sample standard deviations.
  * @example
  * ```ts
- * import { columnMoments } from 'omai-engine/bayesian-examples'
+ * import { columnMoments } from './index.ts'
  * columnMoments([[1], [3]], 1).mean // => [2]
  * ```
  */
@@ -339,7 +343,7 @@ export function columnMoments(
  * @returns The record, or `null`.
  * @example
  * ```ts
- * import { exampleDiagnostics } from 'omai-engine/bayesian-examples'
+ * import { exampleDiagnostics } from './index.ts'
  * exampleDiagnostics({ chains: undefined } as never, ['w'], (n) => n) // => null
  * ```
  */
@@ -447,7 +451,7 @@ export interface Example<P extends ExampleProblem> {
  * @returns The method and what a page needs around it.
  * @example
  * ```ts
- * import { classifierExample } from 'omai-engine/bayesian-examples'
+ * import { classifierExample } from './index.ts'
  * classifierExample.method.name // => 'classify'
  * ```
  */

@@ -1,7 +1,7 @@
 /** What the page and its worker share: the library's item response example and the producer that runs it in a worker. */
 
-import { irtExample, irtMethod } from 'omai-engine/bayesian-examples'
 import { type WorkerLike, workerProducer } from 'omai-render/producer'
+import { irtExample, irtMethod } from '../../examples/index.ts'
 
 export { irtExample, irtMethod }
 

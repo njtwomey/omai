@@ -1,6 +1,6 @@
+import { type DictSpace, defaults, type UnionSpace } from 'omai-engine/space'
+import { session } from 'omai-engine/trace'
 import { describe, expect, it } from 'vitest'
-import { type DictSpace, defaults, type UnionSpace } from '../space/index.ts'
-import { session } from '../trace/index.ts'
 import {
   linearExample,
   linearRegressionMethod,

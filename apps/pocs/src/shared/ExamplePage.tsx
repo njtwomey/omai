@@ -1,4 +1,3 @@
-import type { Example, ExampleProblem } from 'omai-engine/bayesian-examples'
 import { choice, type DictSpace, defaults, dict } from 'omai-engine/space'
 import { type Config, Log, metricSeries } from 'omai-engine/trace'
 import { cartesian, lines } from 'omai-render/charts'
@@ -21,6 +20,7 @@ import {
   useSession,
 } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
+import type { Example, ExampleProblem } from '../examples/index.ts'
 import { ExampleSource, SOURCE_PANEL } from './ExampleSource.tsx'
 import { exampleCode } from './exampleCode.ts'
 import { StaleVeil } from './StaleVeil.tsx'

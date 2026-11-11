@@ -11,12 +11,12 @@
  * @index estimator Eight schools hierarchical model (centred, non-centred, pooled, unpooled): data, model and inference as knobs.
  */
 
-import type { SchoolsParameterisation } from '../probprog/models/index.ts'
-import { eightSchoolsCentred, eightSchoolsDefinition, generateSchoolGroups } from '../probprog/models/index.ts'
-import type { Posterior } from '../probprog/posterior.ts'
-import { key } from '../random/index.ts'
-import { choice, type DictSpace, dict, int, real, union } from '../space/index.ts'
-import { type Config, derived } from '../trace/index.ts'
+import type { Posterior } from 'omai-engine/probprog'
+import type { SchoolsParameterisation } from 'omai-engine/probprog/models'
+import { eightSchoolsCentred, eightSchoolsDefinition, generateSchoolGroups } from 'omai-engine/probprog/models'
+import { key } from 'omai-engine/random'
+import { choice, type DictSpace, dict, int, real, union } from 'omai-engine/space'
+import { type Config, derived } from 'omai-engine/trace'
 import { defineExample, type Example, type ExampleProblem, exampleNumber, exampleString } from './example-method.ts'
 import {
   chainsRecord,
@@ -126,7 +126,7 @@ const dataSource = (config: Config): { source: string; knobs: Config } => {
  * @returns The problem.
  * @example
  * ```ts
- * import { schoolsProblem } from 'omai-engine/bayesian-examples'
+ * import { schoolsProblem } from './index.ts'
  * const p = schoolsProblem({ dataset: { source: 'generated', groups: 12, tau: 2, se: 8, seSpread: 0.3 }, dataSeed: 3, model: 'non-centred', tauScale: 5 })
  * [p.y.length, p.truth?.tau] // => [12, 2]
  * ```
@@ -293,7 +293,7 @@ const declared: Example<SchoolsProblem> = defineExample<SchoolsProblem>({
  * @concept inference-engines
  * @example
  * ```ts
- * import { schoolsExample } from 'omai-engine/bayesian-examples'
+ * import { schoolsExample } from './index.ts'
  * schoolsExample.reference({ model: 'centred' }, { method: 'nuts' })['model'] // => 'non-centred'
  * ```
  */

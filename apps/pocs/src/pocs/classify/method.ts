@@ -1,7 +1,7 @@
 /** What the page and its worker share: the library's classifier method and the producer that runs it in a worker. */
 
-import { classifierMethod } from 'omai-engine/bayesian-examples'
 import { type WorkerLike, workerProducer } from 'omai-render/producer'
+import { classifierMethod } from '../../examples/index.ts'
 
 export { classifierMethod }
 

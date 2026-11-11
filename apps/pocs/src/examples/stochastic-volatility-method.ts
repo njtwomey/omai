@@ -16,20 +16,20 @@
  * @index estimator Stochastic volatility: returns with an AR(1) log-variance, centred or non-centred, one inference method, checked.
  */
 
-import { generate } from '../data/index.ts'
-import { garchReturns } from '../datasets/index.ts'
-import { posteriorComparison, posteriorPairs } from '../exposition/index.ts'
-import type { InferenceMethod } from '../probprog/inference/method.ts'
-import * as d from '../probprog/model/dists/index.ts'
-import { type DataInput, defineModel, type ModelDefinition, ops } from '../probprog/model/index.ts'
-import { stochasticVolatilityTruth } from '../probprog/models/series.ts'
-import type { Posterior } from '../probprog/posterior.ts'
-import { type Approximation, agree, type MarginalOracle, weightedOracle } from '../probprog/validation/index.ts'
-import { normal as drawNormal, foldIn, key } from '../random/index.ts'
-import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
-import { quantile } from '../stats/index.ts'
-import { tensor, toFlat } from '../tensor/index.ts'
-import { type Config, derived } from '../trace/index.ts'
+import { generate } from 'omai-engine/data'
+import { garchReturns } from 'omai-engine/datasets'
+import { posteriorComparison, posteriorPairs } from 'omai-engine/exposition'
+import type { Posterior } from 'omai-engine/probprog'
+import type { InferenceMethod } from 'omai-engine/probprog/inference'
+import { type DataInput, defineModel, type ModelDefinition, ops } from 'omai-engine/probprog/model'
+import * as d from 'omai-engine/probprog/model/dists'
+import { stochasticVolatilityTruth } from 'omai-engine/probprog/models'
+import { type Approximation, agree, type MarginalOracle, weightedOracle } from 'omai-engine/probprog/validation'
+import { normal as drawNormal, foldIn, key } from 'omai-engine/random'
+import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
+import { quantile } from 'omai-engine/stats'
+import { tensor, toFlat } from 'omai-engine/tensor'
+import { type Config, derived } from 'omai-engine/trace'
 import {
   columnMoments,
   defineExample,
@@ -73,7 +73,7 @@ const TRUTH_POINTS = 400
  * @returns The problem.
  * @example
  * ```ts
- * import { volatilityProblem } from 'omai-engine/bayesian-examples'
+ * import { volatilityProblem } from './index.ts'
  * const p = volatilityProblem({ dataset: 'simulated', length: 50, mu: -1, phi: 0.95, sigmaH: 0.3, dataSeed: 1, parameters: 'inferred', parameterisation: 'non-centred', muScale: 2, sigmaScale: 0.5 })
  * [p.y.length, p.site] // => [50, 'z']
  * ```
@@ -511,7 +511,7 @@ const volatilityExample: Example<VolatilityProblem> = defineExample<VolatilityPr
  * @index estimator Stochastic volatility method: AR(1) log-variance, centred or non-centred, one inference method.
  * @example
  * ```ts
- * import { volatilityMethod, volatilitySteps } from 'omai-engine/bayesian-examples'
+ * import { volatilityMethod, volatilitySteps } from './index.ts'
  * import { defaults } from 'omai-engine/space'
  * import { session } from 'omai-engine/trace'
  * const config = { ...defaults(volatilityMethod.config), length: 40, inference: { method: 'laplace' } }

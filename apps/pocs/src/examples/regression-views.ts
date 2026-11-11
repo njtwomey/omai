@@ -7,17 +7,17 @@
  * add to these paths; this is the part they share.
  */
 
-import { normal as normalDist } from '../dists/index.ts'
-import { type ChainDiagnostics, posteriorComparison, posteriorPairs } from '../exposition/index.ts'
-import { bayesianLinearFit, designOf } from '../linear/index.ts'
-import type { Posterior } from '../probprog/posterior.ts'
+import { normal as normalDist } from 'omai-engine/dists'
+import { type ChainDiagnostics, posteriorComparison, posteriorPairs } from 'omai-engine/exposition'
+import { bayesianLinearFit, designOf } from 'omai-engine/linear'
+import type { Posterior } from 'omai-engine/probprog'
 import {
   agree,
   distributionOracle,
   fromPosterior,
   type MarginalOracle,
   weightedOracle,
-} from '../probprog/validation/index.ts'
+} from 'omai-engine/probprog/validation'
 import { drawRows, exampleDiagnostics } from './example-method.ts'
 
 /** The powers `1, x, ..., x^degree`. */
@@ -34,7 +34,7 @@ export const polynomialAt = (w: readonly number[], x: number): number => w.reduc
  * @returns The quantile.
  * @example
  * ```ts
- * import { sortedQuantile } from 'omai-engine/bayesian-examples'
+ * import { sortedQuantile } from './index.ts'
  * sortedQuantile([1, 2, 3, 4, 5], 0.5) // => 3
  * ```
  */
@@ -63,7 +63,7 @@ export interface ExactNormal {
  * @returns The mean, the standard deviations and the covariance.
  * @example
  * ```ts
- * import { exactNormalPosterior } from 'omai-engine/bayesian-examples'
+ * import { exactNormalPosterior } from './index.ts'
  * const e = exactNormalPosterior([[1], [1]], [2, 2], 1000, 1)
  * Math.round(e.mean[0] * 100) / 100 // => 2
  * ```
@@ -112,7 +112,7 @@ export interface RegressionDraws {
  * @returns The draws, or `undefined` when the posterior has no coefficients or a draw is not finite.
  * @example
  * ```ts
- * import { regressionDraws } from 'omai-engine/bayesian-examples'
+ * import { regressionDraws } from './index.ts'
  * regressionDraws({ sites: [] } as never, { names: ['a'], truth: [1], scalars: [] }, 5) // => undefined
  * ```
  */
@@ -140,7 +140,7 @@ export function regressionDraws(post: Posterior, shape: RegressionShape, n: numb
  * @returns The standard deviation.
  * @example
  * ```ts
- * import { noiseSdOf } from 'omai-engine/bayesian-examples'
+ * import { noiseSdOf } from './index.ts'
  * noiseSdOf(['a', 'tau'], [1, 4], 9) // => 0.5
  * ```
  */
@@ -173,7 +173,7 @@ export interface CurveBands {
  * @returns The bands.
  * @example
  * ```ts
- * import { curveBands } from 'omai-engine/bayesian-examples'
+ * import { curveBands } from './index.ts'
  * curveBands([[1, 2], [1, 2]], 2, [0, 1], () => 0, 1).mean // => [1, 3]
  * ```
  */
@@ -210,7 +210,7 @@ export function curveBands(
  * @returns The record.
  * @example
  * ```ts
- * import { regressionPairs } from 'omai-engine/bayesian-examples'
+ * import { regressionPairs } from './index.ts'
  * const got = { rows: [[0, 1], [1, 2], [2, 0]], names: ['a', 'b'], chain: [0, 0, 0], index: [0, 1, 2], p: 2, truth: [1, null] }
  * (regressionPairs('x', got) as { kind: string }).kind // => 'posteriorPairs'
  * ```
@@ -242,7 +242,7 @@ export function regressionPairs(label: string, got: RegressionDraws, coordinates
  * @returns The record, or `null` for a posterior that is not made of chains.
  * @example
  * ```ts
- * import { regressionDiagnostics } from 'omai-engine/bayesian-examples'
+ * import { regressionDiagnostics } from './index.ts'
  * regressionDiagnostics({ chains: undefined } as never, { names: ['a'], truth: [1], scalars: [] }) // => null
  * ```
  */
@@ -273,7 +273,7 @@ export interface RegressionReference {
  * @returns The reference, or `undefined` without draws.
  * @example
  * ```ts
- * import { regressionReference } from 'omai-engine/bayesian-examples'
+ * import { regressionReference } from './index.ts'
  * regressionReference({ sites: [] } as never, { names: ['a'], truth: [1], scalars: [] }) // => undefined
  * ```
  */
@@ -305,7 +305,7 @@ export function regressionReference(post: Posterior, shape: RegressionShape): Re
  * @returns The check, or `null` when there is nothing to compare with.
  * @example
  * ```ts
- * import { regressionCheck } from 'omai-engine/bayesian-examples'
+ * import { regressionCheck } from './index.ts'
  * regressionCheck('x', { sites: [] } as never, { names: ['a'], truth: [1], scalars: [] }, undefined, undefined) // => null
  * ```
  */

@@ -1,5 +1,9 @@
 // The code shown at the foot of every Bayesian example page: its regions exist in the library's source for every choice of the
 // knobs that picks a different piece, contain the model's `defineModel`, the inference lines, and keep the shown style.
+
+import { defaults } from 'omai-engine/space'
+import type { Config } from 'omai-engine/trace'
+import { describe, expect, it } from 'vitest'
 import {
   classifierExample,
   coinExample,
@@ -10,10 +14,7 @@ import {
   radonExample,
   robustExample,
   schoolsExample,
-} from 'omai-engine/bayesian-examples'
-import { defaults } from 'omai-engine/space'
-import type { Config } from 'omai-engine/trace'
-import { describe, expect, it } from 'vitest'
+} from '../examples/index.ts'
 import { codeOf, exampleCode, sourcesOf } from '../shared/exampleCode.ts'
 import { styleProblems } from '../shared/styleScan.ts'
 import { codeOf as sbcCode } from './calibration-sbc/shown.ts'

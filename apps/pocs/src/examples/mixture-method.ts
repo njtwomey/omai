@@ -13,16 +13,16 @@
  * @index estimator Gaussian mixture example: generated or Old Faithful data, free or ordered means, label-invariant check.
  */
 
-import { oldFaithful } from '../datasets/index.ts'
-import { posteriorPairs } from '../exposition/index.ts'
-import type { InferenceMethod } from '../probprog/inference/method.ts'
-import { gaussianMixtureModel } from '../probprog/models/mixture.ts'
-import type { Posterior } from '../probprog/posterior.ts'
-import { normal as drawNormal, uniform as drawUniform, foldIn, key } from '../random/index.ts'
-import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
-import { quantile } from '../stats/index.ts'
-import { tensor, toFlat } from '../tensor/index.ts'
-import { type Config, derived } from '../trace/index.ts'
+import { oldFaithful } from 'omai-engine/datasets'
+import { posteriorPairs } from 'omai-engine/exposition'
+import type { Posterior } from 'omai-engine/probprog'
+import type { InferenceMethod } from 'omai-engine/probprog/inference'
+import { gaussianMixtureModel } from 'omai-engine/probprog/models'
+import { normal as drawNormal, uniform as drawUniform, foldIn, key } from 'omai-engine/random'
+import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
+import { quantile } from 'omai-engine/stats'
+import { tensor, toFlat } from 'omai-engine/tensor'
+import { type Config, derived } from 'omai-engine/trace'
 import {
   defineExample,
   drawRows,
@@ -77,7 +77,7 @@ function generatingWeights(k: number, unequal: boolean): number[] {
  * @returns The problem.
  * @example
  * ```ts
- * import { mixtureProblem } from 'omai-engine/bayesian-examples'
+ * import { mixtureProblem } from './index.ts'
  * const p = mixtureProblem({ dataset: 'generated', trueComponents: 2, separation: 4, weights: 'equal', rows: 50, dataSeed: 1, components: 2, ordering: 'free', spread: 'shared', concentration: 1 })
  * [p.y.length, p.truth?.means] // => [50, [-2, 2]]
  * ```
@@ -523,7 +523,7 @@ const declared: Example<MixtureProblem> = defineExample<MixtureProblem>({
  * @index estimator Gaussian mixture method: generated or Old Faithful data, free or ordered means, one inference method.
  * @example
  * ```ts
- * import { mixtureMethod, mixtureSteps } from 'omai-engine/bayesian-examples'
+ * import { mixtureMethod, mixtureSteps } from './index.ts'
  * import { defaults } from 'omai-engine/space'
  * import { session } from 'omai-engine/trace'
  * const config = { ...defaults(mixtureMethod.config), rows: 60, budgetMs: 0 }

@@ -1,4 +1,3 @@
-import { mixtureHiddenKnobs } from 'omai-engine/bayesian-examples'
 import type { ChainDiagnostics, PosteriorPairs } from 'omai-engine/exposition'
 import { band, cartesian, histogram, lines } from 'omai-render/charts'
 import { figure } from 'omai-render/figure'
@@ -11,6 +10,7 @@ import {
   useProbe,
 } from 'omai-render/react'
 import { type ReactNode, useMemo } from 'react'
+import { mixtureHiddenKnobs } from '../../examples/index.ts'
 import {
   ExamplePage,
   type ExampleView,

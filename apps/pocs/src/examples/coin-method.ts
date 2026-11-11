@@ -11,11 +11,11 @@
  * @index estimator Biased coin (Beta-Bernoulli) or counts (Gamma-Poisson): one inference method checked against the exact posterior.
  */
 
-import { beta, gamma } from '../dists/index.ts'
-import { posteriorComparison } from '../exposition/index.ts'
-import type { InferenceMethod } from '../probprog/inference/method.ts'
-import { betaBernoulliModel, gammaPoissonModel } from '../probprog/models/conjugate.ts'
-import type { Posterior } from '../probprog/posterior.ts'
+import { beta, gamma } from 'omai-engine/dists'
+import { posteriorComparison } from 'omai-engine/exposition'
+import type { Posterior } from 'omai-engine/probprog'
+import type { InferenceMethod } from 'omai-engine/probprog/inference'
+import { betaBernoulliModel, gammaPoissonModel } from 'omai-engine/probprog/models'
 import {
   agree,
   betaBernoulli as betaBernoulliExact,
@@ -24,11 +24,11 @@ import {
   fromPosterior,
   gammaPoisson as gammaPoissonExact,
   type MarginalOracle,
-} from '../probprog/validation/index.ts'
-import { bernoulli as drawBernoulli, poisson as drawPoisson, foldIn, key } from '../random/index.ts'
-import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
-import { toFlat } from '../tensor/index.ts'
-import { type Config, derived } from '../trace/index.ts'
+} from 'omai-engine/probprog/validation'
+import { bernoulli as drawBernoulli, poisson as drawPoisson, foldIn, key } from 'omai-engine/random'
+import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
+import { toFlat } from 'omai-engine/tensor'
+import { type Config, derived } from 'omai-engine/trace'
 import { defineExample, type Example, type ExampleProblem, exampleNumber, exampleString } from './example-method.ts'
 
 /** What the coin is: flips of a coin (Beta-Bernoulli) or counts of events (Gamma-Poisson). */
@@ -55,7 +55,7 @@ export interface CoinProblem extends ExampleProblem {
  * @returns The problem.
  * @example
  * ```ts
- * import { coinProblem } from 'omai-engine/bayesian-examples'
+ * import { coinProblem } from './index.ts'
  * const p = coinProblem({ kind: 'coin', flips: 8, trueP: 0.5, trueRate: 3, dataSeed: 1, priorA: 2, priorB: 2 })
  * [p.y.length, p.site] // => [8, 'p']
  * ```
@@ -268,7 +268,7 @@ function priorOracle(p: CoinProblem): MarginalOracle {
  * @index estimator Biased coin method: Beta-Bernoulli or Gamma-Poisson, one inference method, checked against the exact posterior.
  * @example
  * ```ts
- * import { coinMethod, coinSteps } from 'omai-engine/bayesian-examples'
+ * import { coinMethod, coinSteps } from './index.ts'
  * import { defaults } from 'omai-engine/space'
  * import { session } from 'omai-engine/trace'
  * const config = { ...defaults(coinMethod.config), inference: { method: 'conjugate' } }

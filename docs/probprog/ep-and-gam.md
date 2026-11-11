@@ -47,11 +47,11 @@ is not Gaussian (it is a scale mixture of Gaussians), so a method has to approxi
    smoothing parameter and the noise are gamma latents, the coefficients are written in the eigenbasis of the penalty). Against the
    exact reference (two-dimensional quadrature over the smoothing parameter and the noise; sine data, 60 rows, 10 coefficients):
 
-   | | mean curve error (response sd) | band width ratio | log smoothing | log noise sd |
-   | --- | --- | --- | --- | --- |
-   | exact reference | | 1 | 2.716 +- 0.524 | -1.688 +- 0.096 |
-   | EP, dense vector (route 1, the default) | 0.004 | 1.015 | 2.664 +- 0.533 | -1.688 +- 0.102 |
-   | EP, one scalar per coefficient (route 2) | 0.005 | 1.19 | 2.828 +- 0.493 | |
+   |                                          | mean curve error (response sd) | band width ratio | log smoothing  | log noise sd    |
+   | ---------------------------------------- | ------------------------------ | ---------------- | -------------- | --------------- |
+   | exact reference                          |                                | 1                | 2.716 +- 0.524 | -1.688 +- 0.096 |
+   | EP, dense vector (route 1, the default)  | 0.004                          | 1.015            | 2.664 +- 0.533 | -1.688 +- 0.102 |
+   | EP, one scalar per coefficient (route 2) | 0.005                          | 1.19             | 2.828 +- 0.493 |                 |
 
    The dense route is accurate to a few percent; the per-coefficient one has the right curve and smoothing parameter and a
    band 19% too wide (the loopy sum over coefficients), and is the form that carries ARD and bases with their own precisions.
@@ -70,13 +70,13 @@ model; it is a missing method, not a missing theory.
 
 ## What the page offers per variant
 
-| prior and hyperpriors | what runs |
-| --- | --- |
-| smoothness penalty, log-normal hyperpriors (default) | the samplers, SVI, Pathfinder, Laplace (poor), importance; no message passing |
-| penalty, gamma smoothing parameter and gamma noise precision (`gammaSmooth`) | the above, plus EP (the dense scale factor), against the exact reference |
-| penalty, Gamma noise precision, smoothing fixed (`gammaNoise`) | the above, plus VMP and EP |
-| penalty, smoothing and noise fixed (`fixed`) | EP, VMP, the exact Gaussian method (all exact), and the rest |
-| spike and slab, ARD | the samplers and variational methods; the posterior is not Gaussian given the hyperparameters |
+| prior and hyperpriors                                                        | what runs                                                                                     |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| smoothness penalty, log-normal hyperpriors (default)                         | the samplers, SVI, Pathfinder, Laplace (poor), importance; no message passing                 |
+| penalty, gamma smoothing parameter and gamma noise precision (`gammaSmooth`) | the above, plus EP (the dense scale factor), against the exact reference                      |
+| penalty, Gamma noise precision, smoothing fixed (`gammaNoise`)               | the above, plus VMP and EP                                                                    |
+| penalty, smoothing and noise fixed (`fixed`)                                 | EP, VMP, the exact Gaussian method (all exact), and the rest                                  |
+| spike and slab, ARD                                                          | the samplers and variational methods; the posterior is not Gaussian given the hyperparameters |
 
 ## Next steps, in order of value
 

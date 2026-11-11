@@ -1,6 +1,6 @@
+import { type DictSpace, defaults, type UnionSpace } from 'omai-engine/space'
+import { session } from 'omai-engine/trace'
 import { describe, expect, it } from 'vitest'
-import { type DictSpace, defaults, type UnionSpace } from '../space/index.ts'
-import { session } from '../trace/index.ts'
 import { coinExample, coinMethod, coinProblem, coinSteps } from './coin-method.ts'
 
 const options = (coinMethod.config.spaces['inference'] as UnionSpace).options

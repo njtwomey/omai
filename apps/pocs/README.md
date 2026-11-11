@@ -4,6 +4,9 @@ Proofs of concept: single live pages of what the library can do, kept out of the
 http://localhost:5310 (the site is `make dev`, port 5300). The shell, colours and controls are the site's own (the app
 imports `apps/site/src/shell`), so a page looks the same as it would on the site.
 
+The Bayesian examples' methods (`defineExample`, the per-example knobs, time budgets and views) are `src/examples/`: they compose
+library models and inference methods for the pages and are not library code.
+
 Inclusion only: a page exists because someone asked for it, not because the library has the feature. To add one, make
 `src/pocs/<slug>/poc.ts` (title, summary, tags, date: this is what the index searches) and `src/pocs/<slug>/Page.tsx`
 (the default export is the page); nothing else needs editing. Use the library's own estimators and slots (an

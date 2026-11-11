@@ -21,8 +21,7 @@ export interface ExampleCode {
 }
 
 /** The scaffold's source: the lines that choose, bind and run the inference method. */
-export const scaffold = (): Promise<string> =>
-  import('../../../../packages/engine/src/lib/bayesian-examples/example-method.ts?raw').then((m) => m.default)
+export const scaffold = (): Promise<string> => import('../examples/example-method.ts?raw').then((m) => m.default)
 
 /** The source files a page's code is cut from, with the scaffold's (by name). */
 export async function sourcesOf(code: ExampleCode): Promise<Readonly<Record<string, string>>> {
@@ -43,14 +42,10 @@ const around = (name: string, ...middle: readonly Piece[]): readonly Piece[] => 
 
 const bayesian = (file: string): (() => Promise<Record<string, string>>) => {
   const loaders: Record<string, () => Promise<{ default: string }>> = {
-    'classifier-method.ts': () =>
-      import('../../../../packages/engine/src/lib/bayesian-examples/classifier-method.ts?raw'),
-    'linear-regression-method.ts': () =>
-      import('../../../../packages/engine/src/lib/bayesian-examples/linear-regression-method.ts?raw'),
-    'robust-regression-method.ts': () =>
-      import('../../../../packages/engine/src/lib/bayesian-examples/robust-regression-method.ts?raw'),
-    'gp-classification-method.ts': () =>
-      import('../../../../packages/engine/src/lib/bayesian-examples/gp-classification-method.ts?raw'),
+    'classifier-method.ts': () => import('../examples/classifier-method.ts?raw'),
+    'linear-regression-method.ts': () => import('../examples/linear-regression-method.ts?raw'),
+    'robust-regression-method.ts': () => import('../examples/robust-regression-method.ts?raw'),
+    'gp-classification-method.ts': () => import('../examples/gp-classification-method.ts?raw'),
     'conjugate.ts': () => import('../../../../packages/engine/src/lib/probprog/models/conjugate.ts?raw'),
     'schools.ts': () => import('../../../../packages/engine/src/lib/probprog/models/schools.ts?raw'),
     'radon-counties.ts': () => import('../../../../packages/engine/src/lib/probprog/models/radon-counties.ts?raw'),

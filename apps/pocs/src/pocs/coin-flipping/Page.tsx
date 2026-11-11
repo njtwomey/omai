@@ -1,9 +1,9 @@
-import { coinExample, coinHiddenKnobs } from 'omai-engine/bayesian-examples'
 import type { PosteriorComparison } from 'omai-engine/exposition'
 import { cartesian, lines } from 'omai-render/charts'
 import { figure } from 'omai-render/figure'
 import { Chart, FigurePanel, NumberField, PosteriorComparisonView, useColourMode, useProbe } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
+import { coinExample, coinHiddenKnobs } from '../../examples/index.ts'
 import { ExamplePage, type ExampleView, fmt, ReferenceCheck, Table, Waiting } from '../../shared/ExamplePage.tsx'
 import { coinProducer } from './method.ts'
 

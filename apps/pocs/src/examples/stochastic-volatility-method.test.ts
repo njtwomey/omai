@@ -1,6 +1,6 @@
+import { defaults } from 'omai-engine/space'
+import { type Config, session } from 'omai-engine/trace'
 import { describe, expect, it } from 'vitest'
-import { defaults } from '../space/index.ts'
-import { type Config, session } from '../trace/index.ts'
 import {
   volatilityExample,
   volatilityMethod,

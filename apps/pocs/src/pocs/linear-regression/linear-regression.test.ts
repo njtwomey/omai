@@ -1,8 +1,8 @@
-import { linearRegressionSteps } from 'omai-engine/bayesian-examples'
 import { defaults } from 'omai-engine/space'
 import type { Config } from 'omai-engine/trace'
 import { inlineProducer } from 'omai-render/producer'
 import { describe, expect, it } from 'vitest'
+import { linearRegressionSteps } from '../../examples/index.ts'
 import { linearRegressionMethod } from './method.ts'
 
 const config = { ...(defaults(linearRegressionMethod.config) as Config), rows: 20 }

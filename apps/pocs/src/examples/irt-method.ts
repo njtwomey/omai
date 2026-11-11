@@ -13,17 +13,12 @@
  * @index estimator Item response theory example: Rasch or 2PL, population priors, known truth.
  */
 
-import type { InferenceMethod } from '../probprog/inference/method.ts'
-import {
-  generateIrt,
-  hierarchicalIrtDefinition,
-  type IrtModelKind,
-  type IrtSpreads,
-} from '../probprog/models/irt-hierarchical.ts'
-import type { Posterior } from '../probprog/posterior.ts'
-import { key } from '../random/index.ts'
-import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
-import { type Config, derived } from '../trace/index.ts'
+import type { Posterior } from 'omai-engine/probprog'
+import type { InferenceMethod } from 'omai-engine/probprog/inference'
+import { generateIrt, hierarchicalIrtDefinition, type IrtModelKind, type IrtSpreads } from 'omai-engine/probprog/models'
+import { key } from 'omai-engine/random'
+import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
+import { type Config, derived } from 'omai-engine/trace'
 import { defineExample, type Example, type ExampleProblem, exampleNumber, exampleString } from './example-method.ts'
 import {
   chainsRecord,
@@ -72,7 +67,7 @@ const VARIED = 0.4
  * @returns The problem.
  * @example
  * ```ts
- * import { irtProblem } from 'omai-engine/bayesian-examples'
+ * import { irtProblem } from './index.ts'
  * const p = irtProblem({ students: 20, questions: 6, abilitySd: 1, difficultySd: 1, meanDifficulty: 0.5, discrimination: 'equal', dataSeed: 1, model: 'rasch', parameterisation: 'non-centred', spreadScale: 1 })
  * [p.students, p.questions, Math.abs(p.truth.theta.reduce((a, t) => a + t, 0)) < 1e-9] // => [20, 6, true]
  * ```
@@ -508,7 +503,7 @@ const irtDeclared: Example<IrtProblem> = defineExample<IrtProblem>({
  * @concept inference-engines
  * @example
  * ```ts
- * import { irtExample } from 'omai-engine/bayesian-examples'
+ * import { irtExample } from './index.ts'
  * irtExample.reference({ parameterisation: 'centred' }, { method: 'nuts' })['parameterisation'] // => 'non-centred'
  * ```
  */
@@ -527,7 +522,7 @@ export const irtExample: Example<IrtProblem> = {
  * @index estimator Item response method: Rasch or 2PL, generated answers, one inference method.
  * @example
  * ```ts
- * import { irtMethod } from 'omai-engine/bayesian-examples'
+ * import { irtMethod } from './index.ts'
  * irtMethod.name // => 'irt'
  * ```
  */
