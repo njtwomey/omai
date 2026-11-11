@@ -6,7 +6,7 @@
  * of an arithmetic chain (`prune`).
  */
 
-import { OmaiError } from '../../../base/index.ts'
+import { type Json, OmaiError } from '../../../base/index.ts'
 import type { FactorOperator, FactorSpec, VariableSpec } from '../../../message-passing/index.ts'
 import { auxId, elementId, factorId } from '../ids.ts'
 import type { OperatorTable } from '../operators.ts'
@@ -163,4 +163,58 @@ export class GraphBuilder {
       this.addFactor({ operator: 'linear', args, params: { coeffs: parts.map(([, c]) => c), offset: aff.offset } }, out)
     return out
   }
+}
+
+/** One branch of a `gate` factor: the factor operator of the state, its arguments and parameters (`{}` for a state with no factor). */
+export type GateBranch = Record<string, Json>
+
+/**
+ * A `gate` factor under assembly: the selector (a discrete or Bernoulli variable), the variables the branches share, and one
+ * branch per state of the selector. The factor's arguments are the selector and then `variables`; a branch refers to a variable
+ * by its position in `variables` (`slot`), so position 0 is the first one, usually the output the gate defines.
+ */
+export class GateBuilder {
+  readonly variables: string[]
+  readonly branches: GateBranch[] = []
+
+  constructor(
+    readonly selector: string,
+    variables: readonly string[] = [],
+  ) {
+    this.variables = [...variables]
+  }
+
+  /** The position of `variable` among the gate's variables, added at the end when it is not there yet. */
+  slot(variable: string): number {
+    let at = this.variables.indexOf(variable)
+    if (at < 0) {
+      at = this.variables.length
+      this.variables.push(variable)
+    }
+    return at
+  }
+
+  /** The branch of the next state of the selector. */
+  add(branch: GateBranch): void {
+    this.branches.push(branch)
+  }
+
+  /** The `gate` factor: arguments the selector and the variables, one branch per state. */
+  factor(): FactorSpec {
+    return {
+      operator: 'gate',
+      args: [this.selector, ...this.variables],
+      params: { arity: this.variables.length, branches: this.branches },
+    }
+  }
+}
+
+/**
+ * The gate of a discrete variable `name` whose state is chosen by `selector` among Dirichlet rows `rowVars`: branch `j` is the
+ * conjugate `discrete` factor of `name` on row `j` (a transition matrix to learn, or the words of a topic model).
+ */
+export function discreteRowGate(selector: string, name: string, rowVars: readonly string[]): FactorSpec {
+  const gate = new GateBuilder(selector, [name, ...rowVars])
+  for (const j of rowVars.keys()) gate.add({ operator: 'discrete', args: [0, 1 + j], params: {} })
+  return gate.factor()
 }

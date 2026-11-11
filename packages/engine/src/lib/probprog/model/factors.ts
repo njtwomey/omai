@@ -55,7 +55,7 @@ import type { SpecAnalysis } from './analysis.ts'
 import type { BoundModel } from './bind.ts'
 import { distributionFamilies } from './dists/families.ts'
 import { eventToDims } from './event-dims.ts'
-import { factorName, GraphBuilder } from './factor-graph/_builder.ts'
+import { discreteRowGate, factorName, type GateBranch, GateBuilder, GraphBuilder } from './factor-graph/_builder.ts'
 import {
   type Aff,
   type Atom,
@@ -2170,25 +2170,15 @@ class Compiler {
         // A mean chosen by a discrete variable (a mixture of components): a gate over one Gaussian prior per state, over the
         // variable and the random means of some states.
         this.g.need('gate')
-        const others: string[] = []
-        const branches = l.values.map((v, k) => {
+        const gate = new GateBuilder(l.variable, [name])
+        for (const [k, v] of l.values.entries()) {
           const item = l.items?.[k]
           let mean: number | { readonly const: number } = { const: v }
-          if (item !== undefined && item.terms.size > 0) {
-            const m = this.g.materialise(item, node.name, node.dims.length === 0 ? undefined : i) as string
-            let at = others.indexOf(m)
-            if (at < 0) {
-              at = others.length
-              others.push(m)
-            }
-            mean = at + 1
-          }
-          return { operator: 'gaussian', args: [0, mean], params: { precision: 1 / variance } }
-        })
-        this.g.addFactor(
-          { operator: 'gate', args: [l.variable, name, ...others], params: { arity: 1 + others.length, branches } },
-          name,
-        )
+          if (item !== undefined && item.terms.size > 0)
+            mean = gate.slot(this.g.materialise(item, node.name, node.dims.length === 0 ? undefined : i) as string)
+          gate.add({ operator: 'gaussian', args: [0, mean], params: { precision: 1 / variance } })
+        }
+        this.g.addFactor(gate.factor(), name)
       } else if (isConstCell(l)) this.g.addFactor(gaussianPrior(name, l.aff.offset, variance), name)
       else {
         const m = this.g.materialise(affOf(l), node.name, node.dims.length === 0 ? undefined : i)
@@ -2326,14 +2316,10 @@ class Compiler {
       const index = node.dims.length === 0 ? undefined : i
       const name = this.g.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'gaussian' } })
       const z = this.hiddenSwitch(node, inclusion[i] as Cell, index)
-      const variables = [name]
-      const branch = (p: { readonly sd: number } | Precision): Record<string, Json> => {
+      const gate = new GateBuilder(z, [name])
+      const branch = (p: { readonly sd: number } | Precision): GateBranch => {
         if ('sd' in p) return { operator: 'gaussian', args: [0, { const: 0 }], params: { precision: 1 / p.sd ** 2 } }
-        let at = variables.indexOf(p.variable)
-        if (at < 0) {
-          at = variables.length
-          variables.push(p.variable)
-        }
+        const at = gate.slot(p.variable)
         this.g.need('gaussian-gamma-precision')
         return {
           operator: 'gaussian-gamma-precision',
@@ -2342,16 +2328,10 @@ class Compiler {
         }
       }
       // State 0 of the switch is the spike, state 1 the slab (the probability of the Bernoulli is the inclusion).
-      const branches = [branch(spike[i] as never), branch(slab[i] as never)]
+      gate.add(branch(spike[i] as never))
+      gate.add(branch(slab[i] as never))
       this.g.need('gate')
-      this.g.addFactor(
-        {
-          operator: 'gate',
-          args: [z, ...variables],
-          params: { arity: variables.length, branches: branches as unknown as Json },
-        },
-        name,
-      )
+      this.g.addFactor(gate.factor(), name)
       cells.push(this.g.varAtom(name))
       vars.push(name)
     }
@@ -2832,11 +2812,7 @@ class Compiler {
         })
         this.g.need('gate')
         this.g.need('discrete')
-        const branches = rowVars.map((_, j) => ({ operator: 'discrete', args: [0, 1 + j], params: {} }))
-        this.g.addFactor(
-          { operator: 'gate', args: [p.variable, name, ...rowVars], params: { arity: 1 + rowVars.length, branches } },
-          name,
-        )
+        this.g.addFactor(discreteRowGate(p.variable, name, rowVars), name)
         cells.push({ kind: 'rv', variable: name, family: 'discrete' })
         vars.push(name)
       }
@@ -3488,10 +3464,14 @@ class Compiler {
         },
         `${id}|support`,
       )
-    const branches = exposures.map((e) =>
-      e === 0 ? {} : { operator: 'likelihood-site', args: [0], params: { likelihood: 'poisson-log', y, exposure: e } },
-    )
-    this.g.addFactor({ operator: 'gate', args: [z, v], params: { arity: 1, branches } }, id)
+    const gate = new GateBuilder(z, [v])
+    for (const e of exposures)
+      gate.add(
+        e === 0
+          ? {}
+          : { operator: 'likelihood-site', args: [0], params: { likelihood: 'poisson-log', y, exposure: e } },
+      )
+    this.g.addFactor(gate.factor(), id)
     return null
   }
 
@@ -4273,41 +4253,29 @@ class Compiler {
       return null
     }
     this.g.need('gate')
-    const variables: string[] = []
-    const branches = Array.from({ length: states }, (_, k) => {
+    const gate = new GateBuilder(z)
+    for (let k = 0; k < states; k++) {
       const m = locAt(k)
       let mean: number | { readonly const: number }
       if (typeof m === 'number' || m.terms.size === 0) mean = { const: value(m) }
-      else {
-        const v = this.g.materialise(m, node.name, index) as string
-        let at = variables.indexOf(v)
-        if (at < 0) {
-          at = variables.length
-          variables.push(v)
-        }
-        mean = at
-      }
+      else mean = gate.slot(this.g.materialise(m, node.name, index) as string)
       const gamma = precisions?.[k]
       if (gamma !== undefined) {
-        let at = variables.indexOf(gamma.variable)
-        if (at < 0) {
-          at = variables.length
-          variables.push(gamma.variable)
-        }
+        const at = gate.slot(gamma.variable)
         this.g.need('gaussian-gamma-precision')
-        return {
+        gate.add({
           operator: 'gaussian-gamma-precision',
           args: [{ const: y }, mean, at],
           params: { scale: gamma.scale, offset: gamma.offset },
-        }
-      }
-      return {
-        operator: 'gaussian',
-        args: [{ const: y }, typeof mean === 'number' ? mean : mean],
-        params: { precision: 1 / sdAt(k) ** 2 },
-      }
-    })
-    this.g.addFactor({ operator: 'gate', args: [z, ...variables], params: { arity: variables.length, branches } }, name)
+        })
+      } else
+        gate.add({
+          operator: 'gaussian',
+          args: [{ const: y }, typeof mean === 'number' ? mean : mean],
+          params: { precision: 1 / sdAt(k) ** 2 },
+        })
+    }
+    this.g.addFactor(gate.factor(), name)
     return null
   }
 
@@ -4355,29 +4323,21 @@ class Compiler {
       if (loc.kind === 'lookup') return loc.items?.[k] ?? (loc.values[k] as number)
       return affOf(loc)
     }
-    const variables: string[] = []
+    const gate = new GateBuilder(z)
     const argOf = (form: Aff | number | undefined, fallback: number): number | { readonly const: number } => {
       if (form === undefined || typeof form === 'number' || form.terms.size === 0)
         return { const: form === undefined ? fallback : typeof form === 'number' ? form : form.offset }
-      const v = this.g.materialise(form, node.name, index) as string
-      let at = variables.indexOf(v)
-      if (at < 0) {
-        at = variables.length
-        variables.push(v)
-      }
-      return at
+      return gate.slot(this.g.materialise(form, node.name, index) as string)
     }
     this.g.need('gate')
     this.g.need('gaussian-scale')
-    const branches = Array.from({ length: states }, (_, k) => ({
-      operator: 'gaussian-scale',
-      args: [{ const: y }, argOf(locAt(k), 0), argOf(logScale.items?.[k], logScale.values[k] as number)],
-      params: {},
-    }))
-    this.g.addFactor(
-      { operator: 'gate', args: [z, ...variables], params: { arity: variables.length, branches } },
-      this.elementName(node.name, node.dims, i),
-    )
+    for (let k = 0; k < states; k++)
+      gate.add({
+        operator: 'gaussian-scale',
+        args: [{ const: y }, argOf(locAt(k), 0), argOf(logScale.items?.[k], logScale.values[k] as number)],
+        params: {},
+      })
+    this.g.addFactor(gate.factor(), this.elementName(node.name, node.dims, i))
     return true
   }
 
@@ -4650,11 +4610,7 @@ class Compiler {
     this.g.addVariable({ name, family: { kind: 'discrete', size }, observed: y })
     this.g.need('gate')
     this.g.need('discrete')
-    const branches = rowVars.map((_, j) => ({ operator: 'discrete', args: [0, 1 + j], params: {} }))
-    this.g.addFactor(
-      { operator: 'gate', args: [parent.variable, name, ...rowVars], params: { arity: 1 + rowVars.length, branches } },
-      name,
-    )
+    this.g.addFactor(discreteRowGate(parent.variable, name, rowVars), name)
     return name
   }
 
