@@ -199,21 +199,22 @@ describe('the message-passing forms of the penalty prior', () => {
     return s.probe(s.t, 'gam/fit') as unknown as ReturnType<typeof bayesianGamFit>
   }
 
-  it('say which methods apply: the log-normal form none of the message passing, the gamma-noise form VMP, the fixed form EP too', () => {
+  it('say which methods apply: the log-normal form none of the message passing, the gamma-noise form VMP and EP, the fixed form too', () => {
     expect(bayesianGamMethods('penalty').unavailable['vmp']).toContain("operator 'exp'")
     const gamma = bayesianGamMethods('penalty', 'gammaNoise')
-    expect(gamma.applicable).toContain('vmp')
-    expect(gamma.unavailable['ep']).toContain('no expectation propagation message rule')
+    expect(gamma.applicable).toEqual(expect.arrayContaining(['vmp', 'ep']))
     const fixed = bayesianGamMethods('penalty', 'fixed')
     expect(fixed.applicable).toEqual(expect.arrayContaining(['ep', 'vmp', 'gaussian']))
   })
 
-  it('give VMP on the gamma-noise form and EP, VMP and exact Gaussian inference on the fixed form the exact posterior', () => {
+  it('give VMP and EP on the gamma-noise form and EP, VMP and exact Gaussian inference on the fixed form the exact posterior', () => {
     const noisy = exact('gammaNoise')
-    const a = bayesianGamAgreement(run('vmp', noisy.g), noisy.reference, noisy.g.standardisation.sd)
-    expect(a.meanError).toBeLessThan(0.03)
-    expect(a.bandRatio).toBeGreaterThan(0.85)
-    expect(a.bandRatio).toBeLessThan(1.15)
+    for (const kind of ['vmp', 'ep']) {
+      const a = bayesianGamAgreement(run(kind, noisy.g), noisy.reference, noisy.g.standardisation.sd)
+      expect(a.meanError, kind).toBeLessThan(0.03)
+      expect(a.bandRatio, kind).toBeGreaterThan(0.85)
+      expect(a.bandRatio, kind).toBeLessThan(1.15)
+    }
     const known = exact('fixed')
     for (const kind of ['ep', 'vmp', 'gaussian']) {
       const b = bayesianGamAgreement(run(kind, known.g), known.reference, known.g.standardisation.sd)
