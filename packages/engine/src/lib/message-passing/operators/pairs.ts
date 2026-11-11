@@ -1,0 +1,233 @@
+/**
+ * The two-variable numeric sites: a likelihood `p(y | x0, x1)` of an outcome over two random scalars at once, the generalisation
+ * of the negative binomial with a random dispersion to a registry of densities. A coordinate is a real value (a location, a
+ * predictor) or a positive one carried either as a Gaussian on its log (a log-normal, half-normal or half-Cauchy parameter,
+ * projected by the compiler) or as a gamma variable, so a Laplace noise whose scale is learned, a Student-t with learned degrees
+ * of freedom, a Weibull with a learned shape and a Beta-distributed outcome with two random shapes are four rows of one table
+ * read by one operator, `likelihood-pair`, and a fifth is a few lines. EP matches the moments of both variables under their
+ * cavities times the density by a panelled Gauss-Legendre grid in the two coordinates (`_grid.ts`), split at the kinks the
+ * density has and zoomed onto where the mass is, so the sites cost a few thousand evaluations of the density each.
+ */
+
+import { OmaiError } from '../../base/index.ts'
+import { axisOf, integratePair } from '../_grid.ts'
+import { lgammaOf } from '../_scalar.ts'
+import type { FactorOperator, Family, OperatorContext, Params, Port, TiltedMoments } from '../types.ts'
+import { allProper, massOf, numberParam } from './args.ts'
+
+/** One coordinate of a pair likelihood: a real value, or a positive one (the coordinate is then its log). */
+export interface PairPort {
+  readonly name: string
+  readonly positive: boolean
+}
+
+/** One density of the registry of pair likelihoods. */
+export interface PairLikelihood {
+  readonly name: string
+  readonly description: string
+  /** The two coordinates: a real port is a Gaussian variable, a positive one a Gaussian on its log or a gamma variable. */
+  readonly ports: readonly [PairPort, PairPort]
+  /** The numeric parameters besides the outcome `y`. */
+  readonly params: readonly string[]
+  /** A reason the outcome or the parameters are not valid, or `undefined`. */
+  check?(y: number, p: Params): string | undefined
+  /** The log density at the coordinates, with the constants of `y` and the parameters precomputed. */
+  density(y: number, p: Params): (x0: number, x1: number) => number
+  /** The coordinates at which the density has a kink, for each port (panels are split there). */
+  kinks?(y: number, p: Params): readonly [readonly number[], readonly number[]]
+}
+
+const positive = (p: Params, name: string): string | undefined =>
+  numberParam(p, name) > 0 ? undefined : `${name} must be positive`
+
+/** Laplace noise with a random scale `b = exp(x1)` around a random location `x0`. */
+const laplaceScale: PairLikelihood = {
+  name: 'laplace-scale',
+  description: 'y | u, s ~ Laplace(u, exp(s)): absolute-error noise whose scale is random too',
+  ports: [
+    { name: 'location', positive: false },
+    { name: 'scale', positive: true },
+  ],
+  params: [],
+  density: (y) => (u, s) => -Math.LN2 - s - Math.abs(y - u) * Math.exp(-s),
+  kinks: (y) => [[y], []],
+}
+
+/** Student-t noise with random degrees of freedom `df = exp(x1)` around a random location, with a known scale. */
+const studentTDf: PairLikelihood = {
+  name: 'student-t-df',
+  description: 'y | u, nu ~ Student t(exp(nu), u, scale): robust noise whose degrees of freedom are random',
+  ports: [
+    { name: 'location', positive: false },
+    { name: 'df', positive: true },
+  ],
+  params: ['scale'],
+  check: (_y, p) => positive(p, 'scale'),
+  density: (y, p) => {
+    const scale = numberParam(p, 'scale')
+    const logScale = Math.log(scale)
+    return (u, t) => {
+      const df = Math.exp(t)
+      const z = (y - u) / scale
+      return (
+        lgammaOf((df + 1) / 2) -
+        lgammaOf(df / 2) -
+        0.5 * Math.log(df * Math.PI) -
+        logScale -
+        ((df + 1) / 2) * Math.log1p((z * z) / df)
+      )
+    }
+  },
+}
+
+/** A Weibull time with random shape `k = exp(x1)` and scale `exp(x0)`; `censored = 1` makes `y` a right-censoring time. */
+const weibullShape: PairLikelihood = {
+  name: 'weibull-shape',
+  description:
+    'y | u, k ~ Weibull(shape exp(k), scale exp(u)): a survival time whose shape is random too; censored = 1 makes y a right-censoring time',
+  ports: [
+    { name: 'log scale', positive: false },
+    { name: 'shape', positive: true },
+  ],
+  params: ['censored'],
+  check: (y) => (y > 0 ? undefined : 'the time must be positive'),
+  density: (y, p) => {
+    const censored = numberParam(p, 'censored', 0) !== 0
+    const logY = Math.log(y)
+    return (u, t) => {
+      const k = Math.exp(t)
+      const tail = Math.exp(k * (logY - u))
+      return censored ? -tail : t + (k - 1) * logY - k * u - tail
+    }
+  },
+}
+
+/** A Beta-distributed outcome in (0, 1) with two random shapes `a = exp(x0)` and `b = exp(x1)`. */
+const betaShapes: PairLikelihood = {
+  name: 'beta-shapes',
+  description: 'y | a, b ~ Beta(exp(a), exp(b)): a proportion whose two shapes are random',
+  ports: [
+    { name: 'first shape', positive: true },
+    { name: 'second shape', positive: true },
+  ],
+  params: [],
+  check: (y) => (y > 0 && y < 1 ? undefined : 'the outcome must be in (0, 1)'),
+  density: (y) => {
+    const logY = Math.log(y)
+    const log1mY = Math.log1p(-y)
+    return (ta, tb) => {
+      const a = Math.exp(ta)
+      const b = Math.exp(tb)
+      return (a - 1) * logY + (b - 1) * log1mY + lgammaOf(a + b) - lgammaOf(a) - lgammaOf(b)
+    }
+  },
+}
+
+/**
+ * The registry of pair likelihoods by name: `laplace-scale`, `student-t-df`, `weibull-shape` and `beta-shapes`. A new object each
+ * call, so a caller may add a row of its own and build the operator with {@link pairLikelihoodOperator}.
+ *
+ * @returns The densities, keyed by name.
+ * @concept factor-operators
+ * @index table The likelihoods over two random scalars (Laplace scale, Student-t degrees of freedom, Weibull shape, beta shapes).
+ * @example
+ * ```ts
+ * import { pairLikelihoods } from 'omai-engine/message-passing'
+ * // Laplace noise, outcome 1, location 0, scale exp(0) = 1: the log density is log(1/2) - 1.
+ * pairLikelihoods()['laplace-scale']?.density(1, {})(0, 0).toFixed(4) // => '-1.6931'
+ * ```
+ */
+export function pairLikelihoods(): Record<string, PairLikelihood> {
+  const all: PairLikelihood[] = [laplaceScale, studentTDf, weibullShape, betaShapes]
+  return Object.fromEntries(all.map((l) => [l.name, l]))
+}
+
+/** The density a factor asks for, and the outcome, checked. */
+function resolve(
+  table: Readonly<Record<string, PairLikelihood>>,
+  params: Params,
+): { readonly likelihood: PairLikelihood; readonly y: number } {
+  const key = params['likelihood']
+  const likelihood = typeof key === 'string' ? table[key] : undefined
+  if (likelihood === undefined)
+    throw new OmaiError(
+      'value',
+      `likelihood-pair: unknown likelihood ${String(key)} (the registry has ${Object.keys(table).join(', ')})`,
+    )
+  const y = numberParam(params, 'y')
+  const why = likelihood.check?.(y, params)
+  if (why !== undefined) throw new OmaiError('value', `${likelihood.name}: ${why}`)
+  return { likelihood, y }
+}
+
+/**
+ * A numeric likelihood site over two random scalars from a registry of densities: the factor `p(y | x0, x1)`, the parameter
+ * `likelihood` naming the row and `y` the outcome. The two ports each take a Gaussian variable (a real value, or the log of a
+ * positive one) or, for a positive coordinate, a gamma variable; the message to each is the moment match of the two cavities
+ * times the density (a Gaussian site, or a gamma site matched on `E log x` and `E x`). The factor supports a power.
+ *
+ * @param table - The densities to choose from (default {@link pairLikelihoods}).
+ * @returns The operator, named `likelihood-pair`.
+ * @concept factor-operators
+ * @index function A two-variable numeric EP site from a registry of densities (a likelihood over a location and a random scale or shape).
+ * @example
+ * ```ts
+ * import { gaussian, gaussianEta, messageArg, pairLikelihoodOperator } from 'omai-engine/message-passing'
+ * const args = [messageArg(gaussian, gaussianEta(0, 1)), messageArg(gaussian, gaussianEta(0, 1))]
+ * const params = { likelihood: 'laplace-scale', y: 1 }
+ * pairLikelihoodOperator().tilted?.({ mode: 'ep', to: 0, args, params, power: 1 }).moments.map((v) => v.toFixed(3)) // => ['0.581', '0.851']
+ * ```
+ */
+export function pairLikelihoodOperator(
+  table: Readonly<Record<string, PairLikelihood>> = pairLikelihoods(),
+): FactorOperator {
+  const ports: Port[] = [0, 1].map((i) => ({ name: `x${i}`, accepts: ['gaussian', 'gamma'], constant: true }))
+  const tilted = (c: OperatorContext): TiltedMoments & { readonly logMass: number } => {
+    const { likelihood, y } = resolve(table, c.params)
+    const density = likelihood.density(y, c.params)
+    const kinks = likelihood.kinks?.(y, c.params) ?? [[], []]
+    const axes = [axisOf(c.args[0] as never, kinks[0]), axisOf(c.args[1] as never, kinks[1])] as const
+    const power = c.power
+    const r = integratePair(axes, power === 1 ? density : (a, b) => power * density(a, b))
+    const k = c.to
+    const target = c.args[k]?.family as Family
+    const moments =
+      target.kind === 'gamma'
+        ? [r.mean[k] as number, r.meanExp[k] as number]
+        : [r.mean[k] as number, (r.variance[k] as number) + (r.mean[k] as number) ** 2]
+    let logZ = r.logMass
+    for (const a of c.args) logZ += massOf(a)
+    return { moments, logZ, logMass: r.logMass }
+  }
+  return {
+    name: 'likelihood-pair',
+    description:
+      'y | x0, x1 ~ a density of the registry over two random scalars (a location and a scale, a shape, a pair of shapes)',
+    ports,
+    support: { ep: 'numeric' },
+    readsTarget: true,
+    power: true,
+    check: (params, families) => {
+      try {
+        const { likelihood } = resolve(table, params)
+        for (const [i, port] of likelihood.ports.entries()) {
+          const kind = families[i]?.spec.kind
+          if (kind === undefined) continue
+          if (kind !== 'gaussian' && !(port.positive && kind === 'gamma'))
+            return `the ${port.name} of ${likelihood.name} is ${port.positive ? 'a Gaussian variable on its log or a gamma variable' : 'a Gaussian variable'}, not a ${kind} variable`
+        }
+        return undefined
+      } catch (e) {
+        return e instanceof Error ? e.message : String(e)
+      }
+    },
+    tilted: (c) => {
+      const t = tilted(c)
+      return { moments: t.moments, logZ: t.logZ }
+    },
+    logEvidence: (c) => (allProper(c.args) ? tilted({ ...c, to: 0 }).logZ : Number.NaN),
+  }
+}
+
+/** The pair likelihood site over the library's registry. */
+export const likelihoodPairOperator: FactorOperator = pairLikelihoodOperator()

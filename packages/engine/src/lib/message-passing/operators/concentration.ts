@@ -6,13 +6,25 @@
  * integral (the ratio of Dirichlet normalisers, a function of `log alpha` against the cavity of `alpha`) that a grid in `log alpha`
  * does, and `p` is the mixture over that grid of the conditional Dirichlets, matched on `E log p_k` (the family's sufficient
  * statistics). The hyperprior of the concentration is the cavity of `alpha`: a gamma, or a Gaussian on `log alpha` (a log-normal).
+ * A beta whose two shapes are separate random values (`beta-two-shapes`) is the same integral in two dimensions, on the grid of
+ * `_grid.ts`.
  */
 
 import { OmaiError } from '../../base/index.ts'
+import { axisOf, integratePair } from '../_grid.ts'
 import { digammaOf, lgammaOf, trigammaOf } from '../_scalar.ts'
 import { gamma, gammaShapeRate } from '../families.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
-import { etaOf, gaussianOf, gaussianSiteMessage, ImproperMessageError, siteMessage, vectorParam } from './args.ts'
+import {
+  allProper,
+  etaOf,
+  gaussianOf,
+  gaussianSiteMessage,
+  ImproperMessageError,
+  massOf,
+  siteMessage,
+  vectorParam,
+} from './args.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
@@ -175,6 +187,94 @@ export const dirichletConcentration: FactorOperator = {
       return tilt(c).logZ
     } catch (e) {
       // At the start of a run the messages have no density yet: no evidence to report.
+      if (e instanceof ImproperMessageError) return Number.NaN
+      throw e
+    }
+  },
+}
+
+/** The tilted statistics of a beta variable with two random shapes: the 2-d integral over (log a, log b) and `E log p`, `E log (1 - p)`. */
+function twoShapes(c: OperatorContext): {
+  readonly logMass: number
+  readonly r: ReturnType<typeof integratePair>
+  readonly logMeans: readonly [number, number]
+} {
+  const eta = etaOf(arg(c, 0))
+  if (!(eta[0] !== undefined && eta[1] !== undefined && eta[0] > -1 && eta[1] > -1))
+    throw new ImproperMessageError('beta-two-shapes: the cavity of the probability has no density')
+  const [e1, e2] = [eta[0], eta[1]]
+  // The cavity of p, p^e1 (1 - p)^e2, against the density Beta(a, b): B(a + e1, b + e2) / B(a, b), a function of the two log shapes.
+  const logf = (ta: number, tb: number): number => {
+    const a = Math.exp(ta)
+    const b = Math.exp(tb)
+    if (!(a + e1 > 0 && b + e2 > 0)) return Number.NEGATIVE_INFINITY
+    return (
+      lgammaOf(a + e1) + lgammaOf(b + e2) - lgammaOf(a + b + e1 + e2) - (lgammaOf(a) + lgammaOf(b) - lgammaOf(a + b))
+    )
+  }
+  const r = integratePair([axisOf(arg(c, 1)), axisOf(arg(c, 2))], (ta, tb) => c.power * logf(ta, tb))
+  let m1 = 0
+  let m2 = 0
+  const n1 = r.nodes[1].length
+  for (let i = 0; i < r.nodes[0].length; i++) {
+    const a = Math.exp(r.nodes[0][i] as number)
+    for (let j = 0; j < n1; j++) {
+      const w = r.weights[i * n1 + j] as number
+      if (!(w > 0)) continue
+      const b = Math.exp(r.nodes[1][j] as number)
+      const psi = digammaOf(a + b + e1 + e2)
+      m1 += w * (digammaOf(a + e1) - psi)
+      m2 += w * (digammaOf(b + e2) - psi)
+    }
+  }
+  return { logMass: r.logMass, r, logMeans: [m1, m2] }
+}
+
+/**
+ * `p ~ Beta(a, b)` for a beta variable `p` whose two shapes are separate random positive values, each a gamma variable or a
+ * Gaussian on its log (a log-normal): the tilted distribution of the two shapes is the integral of `B(a + e1, b + e2) / B(a, b)`
+ * against their two cavities, on a two-dimensional grid in `(log a, log b)` (the one-dimensional integral of
+ * `dirichlet-concentration`, in two variables); `p` is the mixture over the grid of the conditional betas, matched on
+ * `E log p` and `E log (1 - p)`. Variational message passing is not provided.
+ *
+ * @concept factor-operators
+ * @index structure A beta variable with two random shapes (gamma or log-normal each): a 2-d grid EP site.
+ * @example
+ * ```ts
+ * import { beta, betaEta, betaTwoShapes, gaussian, gaussianEta, messageArg } from 'omai-engine/message-passing'
+ * const args = [messageArg(beta, betaEta(3, 2)), messageArg(gaussian, gaussianEta(0.5, 0.5)), messageArg(gaussian, gaussianEta(0.5, 0.5))]
+ * betaTwoShapes.ep?.({ mode: 'ep', to: 1, args, params: {}, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.558', '0.361']
+ * ```
+ */
+export const betaTwoShapes: FactorOperator = {
+  name: 'beta-two-shapes',
+  description: 'p ~ Beta(a, b) with both shapes random positive variables (gamma, or Gaussian on the log)',
+  ports: [
+    { name: 'p', accepts: ['beta'] },
+    { name: 'a', accepts: ['gamma', 'gaussian'] },
+    { name: 'b', accepts: ['gamma', 'gaussian'] },
+  ],
+  support: { ep: 'numeric' },
+  readsTarget: () => true,
+  power: true,
+  noRule: { vmp: 'the expected log of the beta normaliser has no conjugate form in the shapes' },
+  ep: (c): OperatorResult => {
+    const t = twoShapes(c)
+    if (c.to === 0) {
+      const p = arg(c, 0)
+      return { message: siteMessage(p.family, etaOf(p), t.logMeans) }
+    }
+    const k = c.to - 1
+    const target = arg(c, c.to)
+    if (target.family.kind === 'gamma')
+      return { message: siteMessage(gamma, etaOf(target) as Eta, [t.r.mean[k] as number, t.r.meanExp[k] as number]) }
+    return { message: gaussianSiteMessage(etaOf(target), t.r.mean[k] as number, t.r.variance[k] as number) }
+  },
+  logEvidence: (c) => {
+    if (!allProper(c.args)) return Number.NaN
+    try {
+      return twoShapes(c).logMass + massOf(arg(c, 1)) + massOf(arg(c, 2))
+    } catch (e) {
       if (e instanceof ImproperMessageError) return Number.NaN
       throw e
     }
