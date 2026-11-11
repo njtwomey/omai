@@ -7,7 +7,7 @@
  * over it; the work does not grow with the number of random arguments.
  */
 
-import { arg } from '../../core/_messages.ts'
+import { arg, perPower } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, logNormal, massOf, scalarOf } from '../../core/args.ts'
 import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { tiltedByQuadrature } from '../../numerics/_tilted.ts'
@@ -72,7 +72,7 @@ export const gaussianScale: FactorOperator = {
     if (c.to === 2) {
       const t = tiltedByQuadrature(s, logf)
       const site = gaussianSiteMessage(etaOf(arg(c, 2)), t.mean, t.variance)
-      return { message: c.power === 1 ? site : site.map((v) => v / c.power) }
+      return { message: perPower(site, c.power) }
     }
     // The mean given the log scale is Gaussian: N(m, v) times N(x; m, exp(2 s)).
     const post = (s2: number): { mean: number; variance: number } => {
@@ -87,7 +87,7 @@ export const gaussianScale: FactorOperator = {
     const meanOf = t.extra[0]?.mean ?? 0
     const second = t.extra[1]?.mean ?? 0
     const site = gaussianSiteMessage(etaOf(arg(c, 1)), meanOf, Math.max(second - meanOf * meanOf, 1e-300))
-    return { message: c.power === 1 ? site : site.map((v) => v / c.power) }
+    return { message: perPower(site, c.power) }
   },
   logEvidence: (c) => {
     if (!allProper(c.args)) return Number.NaN

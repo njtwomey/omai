@@ -16,7 +16,7 @@
  */
 
 import { logAddExp, OmaiError, sigmoidOf } from '../../../base/index.ts'
-import { arg } from '../../core/_messages.ts'
+import { arg, perPower } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -337,11 +337,11 @@ export function applyFunction(
           if (isFlat(incoming)) return { message: [0, 0] }
           const t = tiltGamma(fn, arg(c, 1), incoming, c.power)
           const site = siteMessage(gamma, etaOf(arg(c, 1)), t.x)
-          return { message: c.power === 1 ? site : site.map((v) => v / c.power) }
+          return { message: perPower(site, c.power) }
         }
         const t = tiltGamma(fn, arg(c, 1), incoming, c.power)
         const site = gaussianSiteMessage(incoming, t.y.mean, t.y.variance)
-        return { message: c.power === 1 ? site : site.map((v) => v / c.power) }
+        return { message: perPower(site, c.power) }
       }
       const x = gaussianOf(arg(c, 1))
       if (c.to === 1) {
@@ -349,7 +349,7 @@ export function applyFunction(
         if (isFlat(incoming)) return { message: [0, 0] }
         const t = tilt(fn, x, incoming, c.power)
         const site = gaussianSiteMessage(etaOf(arg(c, 1)), t.x.mean, t.x.variance)
-        return { message: c.power === 1 ? site : site.map((v) => v / c.power) }
+        return { message: perPower(site, c.power) }
       }
       if (isFlat(incoming) && fn.pushforward !== undefined && c.power === 1) {
         const p = fn.pushforward(x.mean, x.variance)
@@ -357,7 +357,7 @@ export function applyFunction(
       }
       const t = tilt(fn, x, incoming, c.power)
       const site = gaussianSiteMessage(incoming, t.y.mean, t.y.variance)
-      return { message: c.power === 1 ? site : site.map((v) => v / c.power) }
+      return { message: perPower(site, c.power) }
     },
     logEvidence: (c) => {
       const incoming = etaOf(arg(c, 0))
@@ -520,7 +520,7 @@ export function applyProduct(
       const incoming = etaOf(arg(c, 0))
       if (isFlat(incoming) && c.to !== 0) return { message: [0, 0] }
       const t = scaledTilt(fn, c)
-      const scaled = (site: Eta): Eta => (c.power === 1 ? site : site.map((v) => v / c.power))
+      const scaled = (site: Eta): Eta => perPower(site, c.power)
       if (c.to === 2) {
         const input = arg(c, 2)
         return {

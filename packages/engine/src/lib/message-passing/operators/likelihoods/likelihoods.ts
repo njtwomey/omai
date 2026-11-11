@@ -11,6 +11,7 @@
  */
 
 import { logAddExp, OmaiError } from '../../../base/index.ts'
+import { perPower } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, vectorParam } from '../../core/args.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
 import { lgammaOf, logPhi } from '../../numerics/_scalar.ts'
@@ -427,7 +428,7 @@ export function likelihoodSite(
     ep: (c): OperatorResult => {
       const t = tilted(c)
       const site = gaussianSiteMessage(etaOf(c.args[0] as never), t.mean, t.variance)
-      return { message: c.power === 1 ? site : site.map((v) => v / c.power) }
+      return { message: perPower(site, c.power) }
     },
     // The mean field: the non-conjugate message of the density under the belief of the predictor.
     vmp: (c): OperatorResult => {
