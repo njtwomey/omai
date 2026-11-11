@@ -134,6 +134,21 @@ export const gaussianOperator: FactorOperator = {
 
 const TILT_POINTS = 801
 const TILT_SPAN = 20
+/** The variance a flat cavity is read as where a tilt needs a density: wide enough that the other factors decide. */
+const WIDE = 1e6
+
+/**
+ * The moments of a Gaussian cavity where a flat one (no information yet) is read as a very wide normal, so a factor on an
+ * unobserved value can send its first message (a latent value with a learned spread and a likelihood that needs a proper
+ * cavity, as the logistic factor does, would otherwise never start). A cavity with a negative precision is still improper.
+ */
+function cavityOf(a: Arg): { readonly mean: number; readonly variance: number } {
+  if (a.value === undefined) {
+    const eta = etaOf(a)
+    if (Math.abs(eta[1] ?? 0) < 1e-12 && Math.abs(eta[0] ?? 0) < 1e-12) return { mean: 0, variance: WIDE }
+  }
+  return gaussianOf(a)
+}
 
 /**
  * The moments of the tilted distribution of the factor `x ~ N(u, 1 / lambda)` with the two Gaussian cavities `x ~ N(mx, vx)`
@@ -213,10 +228,11 @@ function precisionTilt(
  * mean and of the precision times the factor), computed by quadrature in `log lambda`: `x` and the mean each get a Gaussian
  * site, the precision a gamma site (the projection of `E log lambda` and `E lambda`), for an observed or a latent `x`. This
  * is what the linear regression with an unknown noise level needs, and a population of latent values with an unknown spread
- * (the abilities of an item response model).
+ * (the abilities of an item response model). A Gaussian port whose cavity is still flat is read as very wide, so the first
+ * message to a latent value is the prior predictive and a logistic likelihood on it can start.
  *
  * @concept factor-operators
- * @index structure A Gaussian with a gamma precision (variational message passing; expectation propagation for an observed value).
+ * @index structure A Gaussian with a gamma precision (variational and expectation propagation, observed or latent).
  * @example
  * ```ts
  * import { gamma, gammaEta, gaussian, gaussianEta, gaussianGammaPrecision, messageArg, valueArg } from 'omai-engine/message-passing'
@@ -229,9 +245,10 @@ export const gaussianGammaPrecision: FactorOperator = {
   description: 'x ~ N(mean, 1 / lambda) with lambda a gamma-distributed precision',
   ports: [...gaussianPorts, { name: 'precision', accepts: ['gamma'] }],
   support: { ep: 'numeric', vmp: 'exact' },
-  readsTarget: true,
+  // The precision's own cavity must be a gamma density; a Gaussian port whose cavity is still flat is read as very wide.
+  readsTarget: (to) => to === 2,
   ep: (c): OperatorResult => {
-    const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)))
+    const tilt = precisionTilt(cavityOf(arg(c, 0)), cavityOf(arg(c, 1)), etaOf(arg(c, 2)))
     if (c.to === 0) return { message: gaussianSiteMessage(etaOf(arg(c, 0)), tilt.x.mean, tilt.x.variance) }
     if (c.to === 1) return { message: gaussianSiteMessage(etaOf(arg(c, 1)), tilt.u.mean, tilt.u.variance) }
     return { message: siteMessage(gamma, etaOf(arg(c, 2)), [tilt.logLambda, tilt.lambda]) }

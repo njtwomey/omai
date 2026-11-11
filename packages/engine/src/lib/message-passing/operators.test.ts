@@ -685,6 +685,14 @@ describe('variational operators equal the expected log factor', () => {
     const mo = M.gamma.moments(bl)
     expect(lp).toBeCloseTo(0.5 * ((mo[0] as number) - Math.log(2 * Math.PI)) - 0.5 * lambdaMean * e2, 12)
   })
+  it('gaussian-gamma-precision starts from a flat cavity of a latent value: a proper message, the prior predictive', () => {
+    // x ~ N(0, 1 / lambda), lambda ~ Gamma(2, 2), nothing yet known of x: the message to x is the matched Student-t (variance E[1/lambda] = rate / (shape - 1) = 2).
+    const args = [msg(gaussian, gaussian.flat), M.valueArg(gaussian, 0), msg(M.gamma, M.gammaEta(2, 2))]
+    expect(M.gaussianGammaPrecision.readsTarget).toBeTypeOf('function')
+    const message = M.gaussianGammaPrecision.ep?.(ctx(0, args)).message as M.Eta
+    expect(message[0]).toBeCloseTo(0, 6)
+    expect(1 / (message[1] as number)).toBeCloseTo(2, 2)
+  })
   it('gaussian-normal-gamma and the mixture: messages to the normal-gamma and to the assignment', () => {
     const ng = M.normalGammaEta(0.4, 2, 3, 1.5)
     const x = 1.3
