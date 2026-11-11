@@ -59,7 +59,7 @@ export function randomPrecisions(
 ): { readonly variable: string; readonly scale: number; readonly offset: number }[] {
   const scale = node.dist.params[param]
   const idiom =
-    'write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only)'
+    'write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision of a Gaussian)'
   const tau = scale === undefined ? undefined : precisionExpr(cx.idiom, scale)
   if (tau === undefined) throw scaleNotPrecisionIdiomWithIdiom(param, node.name, idiom)
   let sym: Sym

@@ -493,7 +493,7 @@ export const dependsOnDiscrete = (name: string): Refusal =>
 export const discreteParentsOverPlate = (node: string, dims: Fact): Refusal =>
   new Refusal(
     'structure',
-    `'${node}' is a Bernoulli over [${dims}] with discrete parents: tables over plated nodes are not expanded yet`,
+    `'${node}' is a Bernoulli over [${dims}] with discrete parents: tables over plated nodes are not mapped`,
     { node, dims },
   )
 export const eventAxesInScalar = (): Refusal =>
@@ -637,13 +637,13 @@ export const orderedOverSeveralDims = (node: string, dims: Fact): Refusal =>
 export const familyHasNoMessageFamily = (node: string, fam: string): Refusal =>
   new Refusal(
     'family',
-    `'${node}' is ${fam}: the engine has message families gaussian, gamma, beta, bernoulli, discrete and dirichlet, and none for ${fam}`,
+    `'${node}' is ${fam}: the engine has message families gaussian, gaussian-mv, gamma, beta, bernoulli, discrete, dirichlet, normal-gamma, wishart and normal-wishart, and none for ${fam}`,
     { node, fam },
   )
 export const observedFamilyUnmapped = (node: string, fam: string): Refusal =>
   new Refusal(
     'family',
-    `'${node}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, asymmetricLaplace, orderedProbit, orderedLogistic, categoricalProbit, normalOutliers, bernoulli, binomial, poisson, normalPair, exponential, gamma, geometric, negativeBinomial, weibull and categorical`,
+    `'${node}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, asymmetricLaplace, orderedProbit, orderedLogistic, categoricalProbit, normalOutliers, beta, bernoulli, binomial, poisson, zeroTruncatedPoisson, hurdlePoisson, normalPair, exponential, gamma, geometric, negativeBinomial, weibull and categorical`,
     { node, fam },
   )
 

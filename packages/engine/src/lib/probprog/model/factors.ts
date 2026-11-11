@@ -116,7 +116,7 @@ class Compiler {
  * model: rebind and compile again for new data.
  *
  * Nodes that the engine has no counterpart for are never dropped silently. A `param` node, a `factor` (log-density)
- * term, a family with no message family, a `custom` call, a random scale that is not the precision idiom, a square of a random
+ * term, a family with no message family, a `custom` call, a random scale that is neither the precision idiom nor the exp of a Gaussian form, a square of a random
  * precision, a non-affine operator on a random value (except as a Bernoulli link or one of the unary functions of the
  * registry), a gate over components of different families, a computed random index, a constraint beyond
  * the support of a Gaussian (a simplex, a positive-definite matrix), missing data that is not ignored, a subsampling batch and a plated table over discrete nodes each become an

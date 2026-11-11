@@ -13,7 +13,7 @@ export type FactorIssueKind =
   | 'family'
   /** An operator with no message rule on a random value, or an expression that is not affine. */
   | 'operator'
-  /** A shape of model the first version does not expand (event axes, plated discrete tables). */
+  /** A shape of model the compiler does not map (event axes, plated discrete tables, a batch). */
   | 'structure'
   /** Data that is not bound, a missing size, missing values. */
   | 'data'

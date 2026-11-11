@@ -1,5 +1,7 @@
 // The order of the mapping tables is the meaning of the compiler: a reordering must be a decision, so the order is written here.
 import { describe, expect, it } from 'vitest'
+import type { FamilyKind } from '../../../message-passing/index.ts'
+import { familyHasNoMessageFamily, observedFamilyUnmapped } from './_reasons.ts'
 import { latentMappings, observedElementMappings, observedNodeMappings, observedRowMappings } from './_table.ts'
 
 const names = (table: readonly { readonly name: string }[]): string[] => table.map((e) => e.name)
@@ -64,5 +66,27 @@ describe('the mapping tables', () => {
       for (const e of table) expect(e.maps.length).toBeGreaterThan(10)
       expect(table.at(-1)?.matches).toBeUndefined()
     }
+  })
+
+  it('lists in the reason of an unmapped family exactly the families the tables map', () => {
+    // The sentences name what the compiler maps, so a family added to a table without the sentence fails here.
+    const sentence = observedFamilyUnmapped('y', 'x').message
+    const listed = sentence.slice(sentence.indexOf('mapped are ') + 'mapped are '.length).split(/, | and /)
+    const mapped = new Set(observedElementMappings.flatMap((e) => e.families ?? []))
+    expect(new Set(listed)).toEqual(mapped)
+    const everyFamily: Record<FamilyKind, true> = {
+      gaussian: true,
+      'gaussian-mv': true,
+      gamma: true,
+      beta: true,
+      bernoulli: true,
+      discrete: true,
+      dirichlet: true,
+      'normal-gamma': true,
+      wishart: true,
+      'normal-wishart': true,
+    }
+    const named = familyHasNoMessageFamily('y', 'x').message
+    for (const kind of Object.keys(everyFamily)) expect(named).toContain(kind)
   })
 })
