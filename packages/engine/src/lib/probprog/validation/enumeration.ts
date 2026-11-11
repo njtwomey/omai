@@ -214,7 +214,7 @@ export interface ZeroInflatedPoisson {
   readonly inflation: { readonly a: number; readonly b: number }
   /** The sd of the zero-mean normal priors of the intercept and the slope. */
   readonly coefficientSd: number
-  /** The grid points per axis (default 60). */
+  /** The grid points per axis (default 40). */
   readonly points?: number
 }
 
@@ -234,7 +234,7 @@ export interface ZeroInflatedPosterior {
  * The exact posterior of a zero-inflated Poisson regression: the structural zero of each count is summed out (the likelihood
  * of a zero is `pi + (1 - pi) exp(-rate)`, of a positive count `(1 - pi)` times its Poisson mass), and the inflation
  * probability and the two coefficients are integrated on a grid, coarse over the prior's range and then refined around where
- * the posterior has its mass (its mean plus or minus six sds).
+ * the posterior has its mass (its mean plus or minus five sds), until the cells are fine against its spread.
  *
  * @param problem - The counts, the covariate and the priors.
  * @returns The moments of the three parameters, each count's probability of being a structural zero and the evidence.
@@ -250,7 +250,7 @@ export interface ZeroInflatedPosterior {
 export function zeroInflatedPoisson(problem: ZeroInflatedPoisson): ZeroInflatedPosterior {
   const { x, y, inflation, coefficientSd } = problem
   const n = y.length
-  const points = problem.points ?? 60
+  const points = problem.points ?? 40
   if (n === 0 || x.length !== n) throw new OmaiError('shape', 'zeroInflatedPoisson: need one covariate per count')
   const logFactorial = y.map((v) => {
     let s = 0
@@ -259,7 +259,10 @@ export function zeroInflatedPoisson(problem: ZeroInflatedPoisson): ZeroInflatedP
   })
   const logBeta = item(lgamma(inflation.a)) + item(lgamma(inflation.b)) - item(lgamma(inflation.a + inflation.b))
   type Box = readonly [readonly [number, number], readonly [number, number], readonly [number, number]]
-  const sweep = (box: Box, m: number): { moments: { mean: number; sd: number }[]; structural: number[]; logZ: number } => {
+  const sweep = (
+    box: Box,
+    m: number,
+  ): { moments: { mean: number; sd: number }[]; structural: number[]; logZ: number } => {
     const axis = (k: 0 | 1 | 2, i: number): number => box[k][0] + ((i + 0.5) / m) * (box[k][1] - box[k][0])
     const volume = box.reduce((v, [lo, hi]) => (v * (hi - lo)) / m, 1)
     const logWeights: number[] = []
@@ -269,8 +272,11 @@ export function zeroInflatedPoisson(problem: ZeroInflatedPoisson): ZeroInflatedP
         for (let j = 0; j < m; j++) {
           const [pi, b0, b1] = [axis(0, a), axis(1, i), axis(2, j)]
           let l =
-            (inflation.a - 1) * Math.log(pi) + (inflation.b - 1) * Math.log(1 - pi) - logBeta -
-            ((b0 * b0 + b1 * b1) / (2 * coefficientSd ** 2)) - Math.log(2 * Math.PI * coefficientSd ** 2)
+            (inflation.a - 1) * Math.log(pi) +
+            (inflation.b - 1) * Math.log(1 - pi) -
+            logBeta -
+            (b0 * b0 + b1 * b1) / (2 * coefficientSd ** 2) -
+            Math.log(2 * Math.PI * coefficientSd ** 2)
           for (let r = 0; r < n; r++) {
             const rate = Math.exp(b0 + b1 * (x[r] as number))
             const count = y[r] as number
@@ -301,14 +307,33 @@ export function zeroInflatedPoisson(problem: ZeroInflatedPoisson): ZeroInflatedP
     const moments = sums.map((m1, k) => ({ mean: m1, sd: Math.sqrt(Math.max(0, (squares[k] as number) - m1 * m1)) }))
     return { moments, structural, logZ }
   }
+  // Zoom: a box over the prior's range, then boxes around where the mass was found, until the cells are fine against the spread.
   const reach = Math.max(8, 4 * coefficientSd)
-  const first = sweep([[0.005, 0.995], [-reach, reach], [-reach, reach]], Math.max(24, Math.round(points / 2)))
-  const [p, c0, c1] = first.moments as [{ mean: number; sd: number }, { mean: number; sd: number }, { mean: number; sd: number }]
-  const around = (m: { mean: number; sd: number }, lo: number, hi: number): readonly [number, number] => [
-    Math.max(lo, m.mean - 6 * m.sd),
-    Math.min(hi, m.mean + 6 * m.sd),
+  let box: Box = [
+    [0.005, 0.995],
+    [-reach, reach],
+    [-reach, reach],
   ]
-  const second = sweep([around(p, 1e-4, 1 - 1e-4), around(c0, -Infinity, Infinity), around(c1, -Infinity, Infinity)], points)
-  const [pi, b0, b1] = second.moments as [{ mean: number; sd: number }, { mean: number; sd: number }, { mean: number; sd: number }]
-  return { pi, b0, b1, structural: second.structural, logEvidence: second.logZ }
+  let result = sweep(box, points)
+  for (let round = 0; round < 8; round++) {
+    const fine = result.moments.every(
+      (m, k) => (box[k as 0 | 1 | 2][1] - box[k as 0 | 1 | 2][0]) / points <= 0.35 * m.sd,
+    )
+    if (fine) break
+    const next = result.moments.map((m, k): readonly [number, number] => {
+      const cell = (box[k as 0 | 1 | 2][1] - box[k as 0 | 1 | 2][0]) / points
+      const half = Math.max(5 * m.sd, 2 * cell)
+      return k === 0
+        ? [Math.max(1e-4, m.mean - half), Math.min(1 - 1e-4, m.mean + half)]
+        : [m.mean - half, m.mean + half]
+    })
+    box = next as unknown as Box
+    result = sweep(box, points)
+  }
+  const [pi, b0, b1] = result.moments as [
+    { mean: number; sd: number },
+    { mean: number; sd: number },
+    { mean: number; sd: number },
+  ]
+  return { pi, b0, b1, structural: result.structural, logEvidence: result.logZ }
 }

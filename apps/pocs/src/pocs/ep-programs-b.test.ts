@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import type { ProgramCheck } from '../shared/ep/program-check.ts'
 import { passes } from '../shared/ep/program-check.ts'
 import { checkSparse, defaultSetup, exactSparse, runSparse } from './ep-program-sparse/compute.ts'
+import * as zip from './ep-program-zero-inflated/compute.ts'
 
 interface Program {
   readonly name: string
@@ -19,6 +20,14 @@ const programs: readonly Program[] = [
     check: (seed) => {
       const run = runSparse({ ...defaultSetup, seed })
       return checkSparse(run, exactSparse(run))
+    },
+  },
+  {
+    name: 'counts with excess zeros',
+    seeds: [1, 2, 3],
+    check: (seed) => {
+      const run = zip.runZip({ ...zip.defaultSetup, seed })
+      return zip.checkZip(run, zip.exactZip(run))
     },
   },
 ]

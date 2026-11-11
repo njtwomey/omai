@@ -2531,7 +2531,8 @@ class Compiler {
     if (fam === 'poisson') {
       const m = dist['rate'] === undefined ? undefined : this.scaledExp(dist['rate'], true)
       if (m === undefined) return undefined
-      if (m.scale !== undefined && !this.isConst(m.scale)) return this.observedPoissonGate(node, y, i, index, m.inner, m.scale)
+      if (m.scale !== undefined && !this.isConst(m.scale))
+        return this.observedPoissonGate(node, y, i, index, m.inner, m.scale)
       return emit('poisson-log', m.inner, { exposure: m.scale === undefined ? 1 : this.constAt(node, m.scale, i) })
     }
     if (fam === 'binomial') {

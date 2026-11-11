@@ -160,6 +160,7 @@ export function ProbabilityPlot(props: {
   const n = labels.length
   const x = (i: number): number => PAD.left + ((i + 0.5) / n) * (W - PAD.left - PAD.right)
   const y = (v: number): number => PAD.top + (1 - v) * (H - PAD.top - PAD.bottom)
+  const stride = Math.max(1, Math.ceil(n / 24)) // a label for about every one of 24 bars
   const bar = Math.min(26, 0.6 * ((W - PAD.left - PAD.right) / n))
   return (
     <figure className="m-0 flex flex-col gap-1">
@@ -207,9 +208,11 @@ export function ProbabilityPlot(props: {
               fill="none"
               transform={`translate(0 ${truth[i] ? 8 : -8})`}
             />
-            <text x={x(i)} y={H - PAD.bottom + 14} textAnchor="middle" fontSize={10} fill={colour.muted}>
-              {l}
-            </text>
+            {i % stride === 0 ? (
+              <text x={x(i)} y={H - PAD.bottom + 14} textAnchor="middle" fontSize={10} fill={colour.muted}>
+                {l}
+              </text>
+            ) : null}
           </g>
         ))}
       </svg>

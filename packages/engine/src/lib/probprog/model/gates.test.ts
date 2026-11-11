@@ -13,8 +13,8 @@ import {
 import { toFlat } from '../../tensor/index.ts'
 import { runAlgorithm } from '../../trace/index.ts'
 import { bimodal, clutterProblem, gaussianHmm } from '../models/index.ts'
-import * as d from './dists/index.ts'
 import { zeroInflatedPoisson } from '../validation/index.ts'
+import * as d from './dists/index.ts'
 import { defineModel, factorGraphVerdict, ops, toFactorGraph } from './index.ts'
 
 function ep(bound: Parameters<typeof toFactorGraph>[0], options = {}) {
@@ -180,9 +180,16 @@ describe('a gate over a Poisson likelihood: zero inflation', () => {
     const state = b.range('state')
     const w = b.latent('w', d.dirichlet([1, 1]))
     const z = b.latent('z', d.categorical({ probs: w }), { dims: [row] })
-    const eta = ops.add(b.latent('b0', d.normal(0, 2)), ops.mul(b.latent('b1', d.normal(0, 2)), b.data('x', { dims: [row] })))
+    const eta = ops.add(
+      b.latent('b0', d.normal(0, 2)),
+      ops.mul(b.latent('b1', d.normal(0, 2)), b.data('x', { dims: [row] })),
+    )
     // The rate is the exposure the state gives (1: a Poisson count, 0: a structural zero) times exp(eta).
-    b.observe('y', d.poisson(ops.mul(ops.at(b.data('on', { dims: [state] }), z), ops.exp(eta))), b.data('y', { dims: [row] }))
+    b.observe(
+      'y',
+      d.poisson(ops.mul(ops.at(b.data('on', { dims: [state] }), z), ops.exp(eta))),
+      b.data('y', { dims: [row] }),
+    )
   })
 
   it('compiles to a gate per row and a table that rules out a structural zero for each positive count', () => {
@@ -201,7 +208,8 @@ describe('a gate over a Poisson likelihood: zero inflation', () => {
       (marginals['b0'] as { mean: number }).mean,
       (marginals['b1'] as { mean: number }).mean,
     ]
-    for (const k of [0, 1, 2]) expect(Math.abs((got[k] as number) - (exact[k]?.mean as number))).toBeLessThan(0.2 * (exact[k]?.sd as number))
+    for (const k of [0, 1, 2])
+      expect(Math.abs((got[k] as number) - (exact[k]?.mean as number))).toBeLessThan(0.2 * (exact[k]?.sd as number))
     // A positive count cannot be a structural zero.
     expect((marginals['z[1]'] as unknown as { probs: number[] }).probs[1]).toBeCloseTo(0, 6)
   })

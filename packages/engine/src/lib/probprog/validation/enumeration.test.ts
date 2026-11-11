@@ -76,14 +76,24 @@ describe('spikeSlabRegression', () => {
 
 describe('zeroInflatedPoisson', () => {
   it('with every count positive, the inflation is Beta(a, b + n) whatever the rate and no count is a structural zero', () => {
-    const post = zeroInflatedPoisson({ x: [0, 1, -1, 0.5, 2], y: [1, 3, 1, 2, 9], inflation: { a: 1, b: 1 }, coefficientSd: 2 })
+    const post = zeroInflatedPoisson({
+      x: [0, 1, -1, 0.5, 2],
+      y: [1, 3, 1, 2, 9],
+      inflation: { a: 1, b: 1 },
+      coefficientSd: 2,
+    })
     expect(post.pi.mean).toBeCloseTo(1 / 7, 3)
     expect(post.pi.sd).toBeCloseTo(Math.sqrt((1 * 6) / (49 * 8)), 3)
     expect(post.structural.every((v) => v === 0)).toBe(true)
   })
 
   it('a run of zeros under a rate that is large is a structural zero', () => {
-    const post = zeroInflatedPoisson({ x: [0, 0, 0, 0, 0, 0, 0, 0], y: [0, 0, 0, 12, 9, 11, 10, 8], inflation: { a: 1, b: 1 }, coefficientSd: 2 })
+    const post = zeroInflatedPoisson({
+      x: [0, 0, 0, 0, 0, 0, 0, 0],
+      y: [0, 0, 0, 12, 9, 11, 10, 8],
+      inflation: { a: 1, b: 1 },
+      coefficientSd: 2,
+    })
     expect(post.structural[0]).toBeGreaterThan(0.95)
     expect(post.b0.mean).toBeGreaterThan(2)
   })
