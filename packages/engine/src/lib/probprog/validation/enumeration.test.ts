@@ -1,7 +1,7 @@
 // The enumeration oracle of the spike and slab regression against closed forms and a brute-force grid.
 import { describe, expect, it } from 'vitest'
 import { spikeSlabPosterior } from '../../bayesian-examples/ep-atoms-mixtures.ts'
-import { spikeSlabRegression } from './enumeration.ts'
+import { spikeSlabRegression, zeroInflatedPoisson } from './enumeration.ts'
 
 describe('spikeSlabRegression', () => {
   it('one coefficient over several rows is the two-component closed form on the sufficient statistics', () => {
@@ -71,5 +71,20 @@ describe('spikeSlabRegression', () => {
     const got = spikeSlabRegression({ X, y, inclusion: 0.3, slab: 3, spike: 0.05, noise: { shape: 2, rate: 0.1 } })
     expect(got.inclusion.map((v) => v > 0.5)).toEqual([true, false, true, false])
     expect(got.mean[0]).toBeCloseTo(2, 1)
+  })
+})
+
+describe('zeroInflatedPoisson', () => {
+  it('with every count positive, the inflation is Beta(a, b + n) whatever the rate and no count is a structural zero', () => {
+    const post = zeroInflatedPoisson({ x: [0, 1, -1, 0.5, 2], y: [1, 3, 1, 2, 9], inflation: { a: 1, b: 1 }, coefficientSd: 2 })
+    expect(post.pi.mean).toBeCloseTo(1 / 7, 3)
+    expect(post.pi.sd).toBeCloseTo(Math.sqrt((1 * 6) / (49 * 8)), 3)
+    expect(post.structural.every((v) => v === 0)).toBe(true)
+  })
+
+  it('a run of zeros under a rate that is large is a structural zero', () => {
+    const post = zeroInflatedPoisson({ x: [0, 0, 0, 0, 0, 0, 0, 0], y: [0, 0, 0, 12, 9, 11, 10, 8], inflation: { a: 1, b: 1 }, coefficientSd: 2 })
+    expect(post.structural[0]).toBeGreaterThan(0.95)
+    expect(post.b0.mean).toBeGreaterThan(2)
   })
 })

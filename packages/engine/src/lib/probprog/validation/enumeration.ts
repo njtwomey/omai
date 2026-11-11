@@ -1,9 +1,10 @@
 /**
  * Oracles that sum out a discrete part by enumeration: the exact posterior of a spike and slab linear regression with
  * Gaussian noise, every subset of the coefficients in the slab (2^p of them) weighed by its marginal likelihood, the
- * Gaussian coefficients integrated in closed form and an unknown noise precision integrated on a grid. It is the exact
- * inclusion probability and posterior mean of each coefficient that an approximation (EP, NUTS on the mixture) is checked
- * against, feasible for up to about sixteen coefficients.
+ * Gaussian coefficients integrated in closed form and an unknown noise precision integrated on a grid (feasible for up to
+ * about sixteen coefficients); and of a zero-inflated Poisson regression, the structural zero of each count summed out and
+ * the inflation probability and the two coefficients on a refined grid. They are the exact answers that an approximation
+ * (EP, NUTS on the mixture) is checked against.
  */
 
 import { logSumExpOf, OmaiError } from '../../base/index.ts'
@@ -201,4 +202,113 @@ export function spikeSlabRegression(problem: SpikeSlabRegression): SpikeSlabPost
     logEvidence: logZ,
     subsets,
   }
+}
+
+/** A zero-inflated Poisson regression with one covariate: each count is a structural zero with probability `pi`, else Poisson with rate `exp(b0 + b1 x)`. */
+export interface ZeroInflatedPoisson {
+  /** The covariate of each count. */
+  readonly x: readonly number[]
+  /** The counts. */
+  readonly y: readonly number[]
+  /** The Beta prior of the inflation probability. */
+  readonly inflation: { readonly a: number; readonly b: number }
+  /** The sd of the zero-mean normal priors of the intercept and the slope. */
+  readonly coefficientSd: number
+  /** The grid points per axis (default 60). */
+  readonly points?: number
+}
+
+/** The exact posterior of a zero-inflated Poisson regression. */
+export interface ZeroInflatedPosterior {
+  /** The mean and sd of the inflation probability, the intercept and the slope. */
+  readonly pi: { readonly mean: number; readonly sd: number }
+  readonly b0: { readonly mean: number; readonly sd: number }
+  readonly b1: { readonly mean: number; readonly sd: number }
+  /** For each count, the probability that it is a structural zero (zero for a positive count). */
+  readonly structural: readonly number[]
+  /** log p(y) under the prior. */
+  readonly logEvidence: number
+}
+
+/**
+ * The exact posterior of a zero-inflated Poisson regression: the structural zero of each count is summed out (the likelihood
+ * of a zero is `pi + (1 - pi) exp(-rate)`, of a positive count `(1 - pi)` times its Poisson mass), and the inflation
+ * probability and the two coefficients are integrated on a grid, coarse over the prior's range and then refined around where
+ * the posterior has its mass (its mean plus or minus six sds).
+ *
+ * @param problem - The counts, the covariate and the priors.
+ * @returns The moments of the three parameters, each count's probability of being a structural zero and the evidence.
+ * @concept posterior-validation
+ * @index function Exact zero-inflated Poisson regression posterior on a refined grid, structural zeros summed out.
+ * @example
+ * ```ts
+ * import { zeroInflatedPoisson } from 'omai-engine/probprog/validation'
+ * const post = zeroInflatedPoisson({ x: [0, 1, 2, 0, 1, 2], y: [0, 0, 0, 1, 3, 7], inflation: { a: 1, b: 1 }, coefficientSd: 2 })
+ * [post.structural[0] > 0.2, post.structural[3]] // => [true, 0]
+ * ```
+ */
+export function zeroInflatedPoisson(problem: ZeroInflatedPoisson): ZeroInflatedPosterior {
+  const { x, y, inflation, coefficientSd } = problem
+  const n = y.length
+  const points = problem.points ?? 60
+  if (n === 0 || x.length !== n) throw new OmaiError('shape', 'zeroInflatedPoisson: need one covariate per count')
+  const logFactorial = y.map((v) => {
+    let s = 0
+    for (let k = 2; k <= v; k++) s += Math.log(k)
+    return s
+  })
+  const logBeta = item(lgamma(inflation.a)) + item(lgamma(inflation.b)) - item(lgamma(inflation.a + inflation.b))
+  type Box = readonly [readonly [number, number], readonly [number, number], readonly [number, number]]
+  const sweep = (box: Box, m: number): { moments: { mean: number; sd: number }[]; structural: number[]; logZ: number } => {
+    const axis = (k: 0 | 1 | 2, i: number): number => box[k][0] + ((i + 0.5) / m) * (box[k][1] - box[k][0])
+    const volume = box.reduce((v, [lo, hi]) => (v * (hi - lo)) / m, 1)
+    const logWeights: number[] = []
+    const where: [number, number, number][] = []
+    for (let a = 0; a < m; a++)
+      for (let i = 0; i < m; i++)
+        for (let j = 0; j < m; j++) {
+          const [pi, b0, b1] = [axis(0, a), axis(1, i), axis(2, j)]
+          let l =
+            (inflation.a - 1) * Math.log(pi) + (inflation.b - 1) * Math.log(1 - pi) - logBeta -
+            ((b0 * b0 + b1 * b1) / (2 * coefficientSd ** 2)) - Math.log(2 * Math.PI * coefficientSd ** 2)
+          for (let r = 0; r < n; r++) {
+            const rate = Math.exp(b0 + b1 * (x[r] as number))
+            const count = y[r] as number
+            const poisson = Math.exp(-rate + count * Math.log(rate) - (logFactorial[r] as number))
+            l += Math.log((count === 0 ? pi : 0) + (1 - pi) * poisson)
+          }
+          logWeights.push(l)
+          where.push([pi, b0, b1])
+        }
+    const logZ = logSumExpOf(logWeights) + Math.log(volume)
+    const sums = [0, 0, 0]
+    const squares = [0, 0, 0]
+    const structural = new Array<number>(n).fill(0)
+    logWeights.forEach((lw, g) => {
+      const w = Math.exp(lw - logZ) * volume
+      const point = where[g] as [number, number, number]
+      for (let k = 0; k < 3; k++) {
+        sums[k] = (sums[k] as number) + w * (point[k] as number)
+        squares[k] = (squares[k] as number) + w * (point[k] as number) ** 2
+      }
+      if (w < 1e-12) return
+      for (let r = 0; r < n; r++) {
+        if (y[r] !== 0) continue
+        const rate = Math.exp(point[1] + point[2] * (x[r] as number))
+        structural[r] = (structural[r] as number) + (w * point[0]) / (point[0] + (1 - point[0]) * Math.exp(-rate))
+      }
+    })
+    const moments = sums.map((m1, k) => ({ mean: m1, sd: Math.sqrt(Math.max(0, (squares[k] as number) - m1 * m1)) }))
+    return { moments, structural, logZ }
+  }
+  const reach = Math.max(8, 4 * coefficientSd)
+  const first = sweep([[0.005, 0.995], [-reach, reach], [-reach, reach]], Math.max(24, Math.round(points / 2)))
+  const [p, c0, c1] = first.moments as [{ mean: number; sd: number }, { mean: number; sd: number }, { mean: number; sd: number }]
+  const around = (m: { mean: number; sd: number }, lo: number, hi: number): readonly [number, number] => [
+    Math.max(lo, m.mean - 6 * m.sd),
+    Math.min(hi, m.mean + 6 * m.sd),
+  ]
+  const second = sweep([around(p, 1e-4, 1 - 1e-4), around(c0, -Infinity, Infinity), around(c1, -Infinity, Infinity)], points)
+  const [pi, b0, b1] = second.moments as [{ mean: number; sd: number }, { mean: number; sd: number }, { mean: number; sd: number }]
+  return { pi, b0, b1, structural: second.structural, logEvidence: second.logZ }
 }

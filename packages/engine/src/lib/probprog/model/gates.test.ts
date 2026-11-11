@@ -14,6 +14,7 @@ import { toFlat } from '../../tensor/index.ts'
 import { runAlgorithm } from '../../trace/index.ts'
 import { bimodal, clutterProblem, gaussianHmm } from '../models/index.ts'
 import * as d from './dists/index.ts'
+import { zeroInflatedPoisson } from '../validation/index.ts'
 import { defineModel, factorGraphVerdict, ops, toFactorGraph } from './index.ts'
 
 function ep(bound: Parameters<typeof toFactorGraph>[0], options = {}) {
@@ -168,5 +169,40 @@ describe('a gate in the mean with a random noise precision', () => {
     expect(p('z[0]')).toBeGreaterThan(0.95)
     expect(p('z[1]')).toBeLessThan(0.5)
     expect((marginals['tau'] as { mean: number }).mean).toBeGreaterThan(20)
+  })
+})
+
+describe('a gate over a Poisson likelihood: zero inflation', () => {
+  const x = [-1, -0.5, 0, 0.5, 1, 1.2, -1.2, 0.3, 0.1, -0.3, 0.7, 0.9]
+  const y = [0, 1, 0, 2, 4, 0, 0, 1, 0, 0, 3, 2]
+  const zip = defineModel('zero-inflated', (b) => {
+    const row = b.range('row')
+    const state = b.range('state')
+    const w = b.latent('w', d.dirichlet([1, 1]))
+    const z = b.latent('z', d.categorical({ probs: w }), { dims: [row] })
+    const eta = ops.add(b.latent('b0', d.normal(0, 2)), ops.mul(b.latent('b1', d.normal(0, 2)), b.data('x', { dims: [row] })))
+    // The rate is the exposure the state gives (1: a Poisson count, 0: a structural zero) times exp(eta).
+    b.observe('y', d.poisson(ops.mul(ops.at(b.data('on', { dims: [state] }), z), ops.exp(eta))), b.data('y', { dims: [row] }))
+  })
+
+  it('compiles to a gate per row and a table that rules out a structural zero for each positive count', () => {
+    const c = toFactorGraph(zip.bind({ x, y, on: [1, 0] }))
+    expect(c.issues).toEqual([])
+    expect(c.graph?.factors.filter((f) => f.operator === 'gate')).toHaveLength(y.length)
+    expect(c.graph?.factors.filter((f) => f.operator === 'table')).toHaveLength(y.filter((v) => v > 0).length)
+  })
+
+  it('EP agrees with the exact posterior (the structural zero marginalised, on a grid over the inflation and both coefficients)', () => {
+    const { marginals } = ep(zip.bind({ x, y, on: [1, 0] }), { damping: 0.5 })
+    const post = zeroInflatedPoisson({ x, y, inflation: { a: 1, b: 1 }, coefficientSd: 2 })
+    const exact = [post.pi, post.b0, post.b1]
+    const got = [
+      (marginals['w'] as unknown as { mean: number[] }).mean[1] as number,
+      (marginals['b0'] as { mean: number }).mean,
+      (marginals['b1'] as { mean: number }).mean,
+    ]
+    for (const k of [0, 1, 2]) expect(Math.abs((got[k] as number) - (exact[k]?.mean as number))).toBeLessThan(0.2 * (exact[k]?.sd as number))
+    // A positive count cannot be a structural zero.
+    expect((marginals['z[1]'] as unknown as { probs: number[] }).probs[1]).toBeCloseTo(0, 6)
   })
 })
