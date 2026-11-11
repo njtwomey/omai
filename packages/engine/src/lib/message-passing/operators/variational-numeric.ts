@@ -75,6 +75,14 @@ function gridWeights(
  * @returns The nodes, weights and sufficient statistics.
  * @throws ImproperMessageError when the belief has no density.
  * @throws OmaiError with code `value` for a family that is not Gaussian, gamma or beta.
+ * @concept variational-message-passing
+ * @example
+ * ```ts
+ * import { gaussian, gaussianEta, messageArg, quadraturePort } from 'omai-engine/message-passing'
+ * const port = quadraturePort(messageArg(gaussian, gaussianEta(1, 4)))
+ * const mean = port.coords.reduce((s, x, i) => s + x * (port.weights[i] ?? 0), 0)
+ * mean.toFixed(6) // => '1.000000'
+ * ```
  */
 export function quadraturePort(a: Arg, options: QuadOptions = {}): QuadPort {
   if (a.value !== undefined) return { coords: Float64Array.of(scalarOf(a)), weights: Float64Array.of(1), stats: [] }
@@ -157,6 +165,13 @@ export function quadraturePort(a: Arg, options: QuadOptions = {}): QuadPort {
  * @param options - For each port, whether a gamma belief's coordinate is its log (default: the variable itself), and the kinks of a
  * Gaussian port's log density.
  * @returns One quadrature per port.
+ * @concept variational-message-passing
+ * @example
+ * ```ts
+ * import { gamma, gammaEta, messageArg, quadraturePorts, valueArg, gaussian } from 'omai-engine/message-passing'
+ * const ports = quadraturePorts([valueArg(gaussian, 2), messageArg(gamma, gammaEta(3, 2))])
+ * [ports[0]?.coords.length, ports[1]?.stats.length] // => [1, 161]
+ * ```
  */
 export function quadraturePorts(
   args: readonly Arg[],
@@ -217,6 +232,14 @@ function average(
  * @param ports - The quadratures of the ports.
  * @param logf - The log density, one coordinate per port.
  * @returns The expectation.
+ * @concept variational-message-passing
+ * @example
+ * ```ts
+ * import { gaussian, gaussianEta, messageArg, numericExpectedLog, quadraturePort } from 'omai-engine/message-passing'
+ * // E[-x^2 / 2] under N(0, 3) is -3 / 2.
+ * const port = quadraturePort(messageArg(gaussian, gaussianEta(0, 3)))
+ * numericExpectedLog([port], ([x]) => -0.5 * (x as number) ** 2).toFixed(6) // => '-1.500000'
+ * ```
  */
 export function numericExpectedLog(ports: readonly QuadPort[], logf: (x: readonly number[]) => number): number {
   return average(ports, -1, new Array<number>(ports.length).fill(0), logf)
@@ -232,6 +255,15 @@ export function numericExpectedLog(ports: readonly QuadPort[], logf: (x: readonl
  * @param logf - The log density, one coordinate per port.
  * @returns The message in the natural parameters of the port's family.
  * @throws ImproperMessageError when the density is not finite under the beliefs or the port's statistics are degenerate.
+ * @concept variational-message-passing
+ * @index function The non-conjugate variational message to a port by quadrature: natural gradient of the expected log.
+ * @example
+ * ```ts
+ * import { gaussian, gaussianEta, messageArg, numericMessage, quadraturePort } from 'omai-engine/message-passing'
+ * // log f = -(x - 2)^2 is a Gaussian likelihood of mean 2 and precision 2: the message is [4, 2].
+ * const port = quadraturePort(messageArg(gaussian, gaussianEta(0, 1)))
+ * numericMessage([port], 0, ([x]) => -(((x as number) - 2) ** 2)).map((v) => v.toFixed(6)) // => ['4.000000', '2.000000']
+ * ```
  */
 export function numericMessage(ports: readonly QuadPort[], to: number, logf: (x: readonly number[]) => number): Eta {
   const target = ports[to] as QuadPort
@@ -286,6 +318,14 @@ export function numericMessage(ports: readonly QuadPort[], to: number, logf: (x:
  * @param f - The function of the inputs.
  * @returns The message.
  * @throws OmaiError with code `not-implemented` for an observed output.
+ * @concept variational-message-passing
+ * @example
+ * ```ts
+ * import { definedFunctionMessage, gaussian, gaussianEta, messageArg } from 'omai-engine/message-passing'
+ * // y = x with x ~ N(1, 1/4): the output is told N(1, 1/4).
+ * const args = [messageArg(gaussian, gaussian.flat), messageArg(gaussian, gaussianEta(1, 0.25))]
+ * definedFunctionMessage(args, 0, ([x]) => x as number).map((v) => v.toFixed(4)) // => ['4.0000', '4.0000']
+ * ```
  */
 export function definedFunctionMessage(args: readonly Arg[], to: number, f: (x: readonly number[]) => number): Eta {
   const inputs = args.slice(1)

@@ -4676,7 +4676,7 @@ export function operatorsWithout(g: CompiledGraph, rule: MessageRule): string[] 
   for (const f of g.factors) {
     const op = f.operator
     const has = rule === 'ep' ? op.ep !== undefined || op.tilted !== undefined : op[rule] !== undefined
-    if (!has) out.add(op.name)
+    if (!has || op.unsupported?.(rule, f.params) !== undefined) out.add(op.name)
   }
   return [...out]
 }
@@ -4927,7 +4927,10 @@ export function factorGraphVerdict(
   const lacking = operatorsWithout(g, rule)
   if (lacking.length > 0) {
     const why = lacking.flatMap((name) => {
-      const note = g.factors.find((f) => f.operator.name === name)?.operator.noRule?.[rule]
+      const factors = g.factors.filter((f) => f.operator.name === name)
+      const note =
+        factors[0]?.operator.noRule?.[rule] ??
+        factors.map((f) => f.operator.unsupported?.(rule, f.params)).find((v) => v !== undefined)
       return note === undefined ? [] : [`${name}: ${note}`]
     })
     return {

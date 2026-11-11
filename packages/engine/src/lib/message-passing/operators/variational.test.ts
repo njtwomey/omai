@@ -620,4 +620,11 @@ describe('an operator with no variational message says why, and the engine repor
       expect(op.noRule?.vmp, name).toMatch(/infinite|point masses/)
     }
   })
+
+  it('a row of a registry whose expected log is infinite is refused with its reason, the others of the registry are not', () => {
+    const pair = operators['likelihood-pair'] as M.FactorOperator
+    expect(pair.unsupported?.('vmp', { likelihood: 'weibull-shape', y: 1 })).toMatch(/double exponential/)
+    expect(pair.unsupported?.('vmp', { likelihood: 'laplace-scale', y: 1 })).toBeUndefined()
+    expect(pair.unsupported?.('ep', { likelihood: 'weibull-shape', y: 1 })).toBeUndefined()
+  })
 })

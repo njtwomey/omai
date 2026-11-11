@@ -47,20 +47,21 @@ The expectation-propagation suite of the probabilistic programming stack: the at
 
 - function `activeSetScore`: The score of inclusion probabilities against the true active set: AUC and counts at a threshold. `src/lib/probprog/ep/ep-recovery.ts:134` `omai-engine/probprog/ep`
 - function `atomCalibration`: Calibration of an extended EP atom: interval coverage of the truth over many simulated seeds. `src/lib/probprog/ep/ep-extended.ts:271` `omai-engine/probprog/ep`
-- function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/probprog/ep/ep-atoms.ts:676` `omai-engine/probprog/ep`
+- function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/probprog/ep/ep-atoms.ts:700` `omai-engine/probprog/ep`
 - function `atomRecovery`: EP's belief of each parameter beside the truth it was simulated from: interval and coverage. `src/lib/probprog/ep/ep-extended.ts:97` `omai-engine/probprog/ep`
 - function `atomReference`: The reference of an EP atom: exact or grid marginals as curves, and a joint. `src/lib/probprog/ep/ep-atoms.ts:372` `omai-engine/probprog/ep`
-- function `atomRun`: Run EP on an atom's model: beliefs per sweep, a message record, or the refusal. `src/lib/probprog/ep/ep-atoms.ts:575` `omai-engine/probprog/ep`
+- function `atomRun`: Run EP on an atom's model: beliefs per sweep, a message record, or the refusal. `src/lib/probprog/ep/ep-atoms.ts:606` `omai-engine/probprog/ep`
 - function `atomVerdict`: Whether EP applies to an atom's model, and the library's reason if not. `src/lib/probprog/ep/ep-atoms.ts:433` `omai-engine/probprog/ep`
 - function `beliefCredibleInterval`: The equal-tailed credible interval of an EP belief on its support. `src/lib/probprog/ep/ep-extended.ts:42` `omai-engine/probprog/ep`
 - function `beliefDensity`: The density of a belief from its mean and sd on a support. `src/lib/probprog/ep/ep-atoms.ts:278` `omai-engine/probprog/ep`
 - function `calibrationTable`: The calibration table of an extended EP atom from its seeds: coverage, bias and error per parameter. `src/lib/probprog/ep/ep-extended.ts:208` `omai-engine/probprog/ep`
 - function `clutterPosterior`: Exact clutter posterior with unknown centre, precisions and weight, by quadrature. `src/lib/probprog/ep/ep-atoms-gibbs.ts:269` `omai-engine/probprog/ep`
-- function `epCoverage`: What EP covers today: atoms and benchmark models as runs or planned, with reasons. `src/lib/probprog/ep/ep-coverage.ts:57` `omai-engine/probprog/ep`
+- function `epCoverage`: What EP covers today: atoms and benchmark models as runs or planned, with reasons. `src/lib/probprog/ep/ep-coverage.ts:58` `omai-engine/probprog/ep`
 - function `mixtureGibbs`: Gibbs sampler for a Gaussian mixture, the gate atoms' reference. `src/lib/probprog/ep/ep-atoms-gibbs.ts:119` `omai-engine/probprog/ep`
 - function `mixtureInterval`: The equal-tailed credible interval of a mixture of Gaussians (a gated coefficient). `src/lib/probprog/ep/ep-recovery.ts:25` `omai-engine/probprog/ep`
 - function `outlierMixturePosterior`: Exact outlier-mixture posterior with unknown centre, precision and share. `src/lib/probprog/ep/ep-atoms-gibbs.ts:397` `omai-engine/probprog/ep`
 - function `recoverySummary`: How well a posterior recovered the truth: interval coverage, error, agreement with a reference. `src/lib/probprog/ep/ep-recovery.ts:82` `omai-engine/probprog/ep`
+- function `vmpCoverage`: What variational message passing covers today: atoms as runs or planned, with the operators lacking a rule. `src/lib/probprog/ep/ep-coverage.ts:162` `omai-engine/probprog/ep`
 
 - estimator `betaBernoulliAtom`: EP atom: beta and Bernoulli (conjugate, exact). `src/lib/probprog/ep/ep-atoms-conjugate.ts:105` `omai-engine/probprog/ep`
 - estimator `betaBernoulliLearnedAtom`: EP atom: groups of flips with a beta prior of unknown strength, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-extended-conjugate.ts:251` `omai-engine/probprog/ep`
