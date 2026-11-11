@@ -78,11 +78,15 @@ export interface GaussianMixtureOptions {
   readonly ordered?: boolean
   /** The standard deviation of the normal prior of each mean (default 2). */
   readonly meanScale?: number
+  /** The concentration of the symmetric Dirichlet prior on the weights (default 1, flat; below 1 favours a few heavy components). */
+  readonly concentration?: number
+  /** One spread every component shares (default true), or a spread of its own for each component. */
+  readonly sharedSpread?: boolean
 }
 
 /**
- * A one-dimensional Gaussian mixture of `components` normals with everything unknown: the weights (a flat Dirichlet), the
- * means (`N(0, meanScale^2)`, optionally ordered), one spread the components share (`LogNormal(-1, 0.75)`, a median of 0.37) and a discrete
+ * A one-dimensional Gaussian mixture of `components` normals with everything unknown: the weights (a symmetric Dirichlet, flat by default), the
+ * means (`N(0, meanScale^2)`, optionally ordered), one spread the components share (`LogNormal(-1, 0.75)`, a median of 0.37; or one per component) and a discrete
  * component label per row, which the samplers sum out or sample. It is written for data of about unit scale, so
  * standardise the data first. Left unordered the posterior has `components!` modes that are relabellings of one another:
  * the label switching a chain, a sampler or a guide runs into.
@@ -99,14 +103,16 @@ export interface GaussianMixtureOptions {
  * ```
  */
 export function gaussianMixtureModel(options: GaussianMixtureOptions): ModelDefinition {
-  const { components, ordered = false, meanScale = 2 } = options
+  const { components, ordered = false, meanScale = 2, concentration = 1, sharedSpread = true } = options
   if (!(Number.isInteger(components) && components >= 1))
     throw new OmaiError('value', 'gaussianMixtureModel: components is a whole number from 1')
-  return defineModel(`gaussian-mixture-${components}${ordered ? '-ordered' : ''}`, (m) => {
+  if (!(concentration > 0)) throw new OmaiError('value', 'gaussianMixtureModel: concentration is positive')
+  const tag = `${ordered ? '-ordered' : ''}${sharedSpread ? '' : '-spreads'}${concentration === 1 ? '' : `-c${concentration}`}`
+  return defineModel(`gaussian-mixture-${components}${tag}`, (m) => {
     const row = m.range('row')
     const k = m.range('component', { size: components })
     const y = m.data('y', { dims: [row], role: 'response' })
-    const weights = m.latent('weights', d.dirichlet(Array.from({ length: components }, () => 1)), {
+    const weights = m.latent('weights', d.dirichlet(Array.from({ length: components }, () => concentration)), {
       doc: 'the mixture weights',
     })
     const mu = m.latent('mu', d.normal(0, meanScale), {
@@ -114,9 +120,11 @@ export function gaussianMixtureModel(options: GaussianMixtureOptions): ModelDefi
       ...(ordered ? { constraint: { kind: 'ordered' as const } } : {}),
       doc: 'the component means',
     })
-    const sigma = m.latent('sigma', d.logNormal(-1, 0.75), { doc: 'the spread every component shares' })
+    const sigma = sharedSpread
+      ? m.latent('sigma', d.logNormal(-1, 0.75), { doc: 'the spread every component shares' })
+      : m.latent('sigma', d.logNormal(-1, 0.75), { dims: [k], doc: 'the spread of each component' })
     const z = m.latent('z', d.categorical({ probs: weights }), { dims: [row], doc: 'the component of each row' })
-    m.observe('y', d.normal(mu.at(z), sigma), y)
+    m.observe('y', d.normal(mu.at(z), sharedSpread ? sigma : (sigma as typeof mu).at(z)), y)
   })
 }
 
