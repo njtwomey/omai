@@ -79,11 +79,28 @@ export function hierarchicalIrtDefinition(
 ): ModelDefinition {
   const { spreads = 'half-normal', scale = 1, shape = 2, rate = 2, fixedSd = 1, discrimination = 'log-normal' } = priors
   const centred = parameterisation === 'centred' || spreads === 'fixed'
-  return defineModel(`irt-${model}`, (m) => {
+  // region irt
+  const definition = defineModel(`irt-${model}`, (m) => {
     const student = m.range('student')
     const question = m.range('question')
-    const y = m.data('y', { dims: [student, question], support: 'binary', role: 'response', doc: 'the answers' })
+    const y = m.data('y', {
+      dims: [student, question],
+      support: 'binary',
+      role: 'response',
+      doc: 'the answers',
+    })
     const clip = (x: Value): Value => ops.clip(x, 1e-6, 1e6)
+    // The spread of one population of values: a half-normal sd or a gamma precision, as the priors say.
+    const spread = (label: 't' | 'b' | 'a', doc: string): Value => {
+      if (spreads === 'precision') {
+        const precision = m.latent(`prec_${label}`, d.gamma(shape, rate), {
+          doc: `the precision of ${doc}`,
+        })
+        return ops.div(1, ops.sqrt(precision))
+      }
+      const sd = m.latent(`tau_${label}`, d.halfNormal(scale), { doc: `the sd of ${doc}` })
+      return clip(sd)
+    }
     // One population of values: normal around `mean`, its spread as the priors say, centred or not.
     const population = (
       label: 't' | 'b' | 'a',
@@ -92,35 +109,56 @@ export function hierarchicalIrtDefinition(
       dim: ReturnType<typeof m.range>,
       doc: string,
     ): Value => {
-      const around = (v: Value): Value => (typeof mean === 'number' ? (mean === 0 ? v : v.add(mean)) : v.add(mean))
-      if (spreads === 'fixed') return m.latent(site, d.normal(mean, fixedSd), { dims: [dim], doc })
-      const sd =
-        spreads === 'precision'
-          ? ops.div(1, ops.sqrt(m.latent(`prec_${label}`, d.gamma(shape, rate), { doc: `the precision of ${doc}` })))
-          : clip(m.latent(`tau_${label}`, d.halfNormal(scale), { doc: `the sd of ${doc}` }))
-      if (centred) return m.latent(site, d.normal(mean, sd), { dims: [dim], doc })
-      const z = m.latent(`z_${label}`, d.normal(0, 1), { dims: [dim], doc: `the standardised ${doc}` })
-      return m.derived(site, around(sd.mul(z)), { doc })
+      if (spreads === 'fixed') {
+        const fixed = m.latent(site, d.normal(mean, fixedSd), { dims: [dim], doc })
+        return fixed
+      }
+      const sd = spread(label, doc)
+      if (centred) {
+        const values = m.latent(site, d.normal(mean, sd), { dims: [dim], doc })
+        return values
+      }
+      const z = m.latent(`z_${label}`, d.normal(0, 1), {
+        dims: [dim],
+        doc: `the standardised ${doc}`,
+      })
+      const offset = sd.mul(z)
+      return m.derived(site, mean === 0 ? offset : offset.add(mean), { doc })
     }
     const muB = m.latent('mu_b', d.normal(0, 3), { doc: 'the average difficulty' })
     const difficulty = population('b', 'b', muB, question, 'the difficulties of the questions')
+    // endregion
     if (model === 'rasch') {
+      // region irt:rasch
       const ability = population('t', 'theta', 0, student, 'the abilities of the students')
       m.observe('y', d.bernoulli({ logits: ability.sub(difficulty) }), y)
+      // endregion
       return
     }
-    const ability = m.latent('theta', d.normal(0, 1), { dims: [student], doc: 'the ability of each student (sd 1)' })
+    // region irt:2pl
+    const ability = m.latent('theta', d.normal(0, 1), {
+      dims: [student],
+      doc: 'the ability of each student (sd 1)',
+    })
+    // endregion
     if (discrimination === 'normal') {
+      // region irt:2pl-normal
       const muA = m.latent('mu_a', d.normal(1, 1), { doc: 'the centre of the discriminations' })
       const a = population('a', 'a', muA, question, 'the discriminations of the questions')
       m.observe('y', d.bernoulli({ logits: a.mul(ability.sub(difficulty)) }), y)
+      // endregion
       return
     }
+    // region irt:2pl-log-normal
     const muA = m.latent('mu_a', d.normal(0, 1), { doc: 'the centre of the log-discriminations' })
     const logA = population('a', 'log_a', muA, question, 'the log-discriminations of the questions')
     const a = m.derived('a', logA.exp(), { doc: 'the discrimination of each question' })
     m.observe('y', d.bernoulli({ logits: a.mul(ability.sub(difficulty)) }), y)
+    // endregion
+    // region irt:end
   })
+  // endregion
+  return definition
 }
 
 /** The largest table the generator makes (the data are its leading rows and columns). */

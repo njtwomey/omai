@@ -56,8 +56,9 @@ export function radonCountiesDefinition(
   parameterisation: RadonParameterisation = 'non-centred',
   priors: RadonPriors = {},
 ): ModelDefinition {
+  // region radon
   const { intercept = 5, slope = 2, scale = 1 } = priors
-  return defineModel(`radon-counties-${pooling}`, (m) => {
+  const definition = defineModel(`radon-counties-${pooling}`, (m) => {
     const county = m.range('county')
     const house = m.range('house')
     const code = m.data('county', {
@@ -73,59 +74,93 @@ export function radonCountiesDefinition(
       role: 'covariate',
       doc: '1 for a house measured on the first floor, 0 for a basement',
     })
-    // The number of houses of each county: not in the density, it gives the county range its size (index data do not), so the
-    // model binds to plain data with no options and crosses a worker boundary as a configuration.
+    // The number of houses of each county: not in the density, it gives the county range its size
+    // (index data do not), so the model binds to plain data with no options and crosses a worker
+    // boundary as a configuration.
     m.data('size', { dims: [county], role: 'covariate', doc: 'the number of houses in each county' })
     const y = m.data('y', { dims: [house], role: 'response', doc: 'log radon' })
-    const sigma = m.latent('sigma', d.halfNormal(scale), { doc: 'the sd of a house within its county' })
-    // The scales are clipped to [1e-6, 1e6] where they enter a distribution: a modelling floor, not a guard (the sampler treats
-    // an invalid parameter as a divergence); the centred density is unbounded as tau goes to 0.
+    const sigma = m.latent('sigma', d.halfNormal(scale), {
+      doc: 'the sd of a house within its county',
+    })
+    // The scales are clipped to [1e-6, 1e6] where they enter a distribution: a modelling floor, not a
+    // guard (the sampler treats an invalid parameter as a divergence); the centred density is
+    // unbounded as tau goes to 0.
     const noise = ops.clip(sigma, 1e-6, 1e6)
+    // endregion
     if (pooling === 'pooled') {
+      // region radon:pooled
       const alpha = m.latent('alpha', d.normal(0, intercept), { doc: 'the intercept of every county' })
       const beta = m.latent('beta', d.normal(0, slope), { doc: 'the floor effect' })
       m.observe('y', d.normal(alpha.add(beta.mul(floor)), noise), y)
+      // endregion
       return
     }
     if (pooling === 'unpooled') {
-      const alpha = m.latent('alpha', d.normal(0, intercept), { dims: [county], doc: 'the intercept of each county' })
+      // region radon:unpooled
+      const alpha = m.latent('alpha', d.normal(0, intercept), {
+        dims: [county],
+        doc: 'the intercept of each county',
+      })
       const beta = m.latent('beta', d.normal(0, slope), { doc: 'the floor effect' })
       m.observe('y', d.normal(alpha.at(code).add(beta.mul(floor)), noise), y)
+      // endregion
       return
     }
+    // region radon:hierarchy
     const mu = m.latent('mu', d.normal(0, intercept), { doc: 'the mean county intercept' })
     const tau = m.latent('tau', d.halfNormal(scale), { doc: 'the sd of the county intercepts' })
+    // endregion
     if (pooling === 'partial') {
+      // region radon:partial
       const beta = m.latent('beta', d.normal(0, slope), { doc: 'the floor effect' })
+      // endregion
       if (parameterisation === 'centred') {
+        // region radon:centred
         const alpha = m.latent('alpha', d.normal(mu, ops.clip(tau, 1e-6, 1e6)), {
           dims: [county],
           doc: 'the intercept of each county',
         })
         m.observe('y', d.normal(alpha.at(code).add(beta.mul(floor)), noise), y)
+        // endregion
         return
       }
-      const z = m.latent('z', d.normal(0, 1), { dims: [county], doc: 'the standardised intercept of each county' })
+      // region radon:non-centred
+      const z = m.latent('z', d.normal(0, 1), {
+        dims: [county],
+        doc: 'the standardised intercept of each county',
+      })
       const alpha = m.derived('alpha', mu.add(tau.mul(z)), { doc: 'the intercept of each county' })
       m.observe('y', d.normal(alpha.at(code).add(beta.mul(floor)), noise), y)
+      // endregion
       return
     }
+    // region radon:slopes
     const muB = m.latent('mu_b', d.normal(0, slope), { doc: 'the mean floor effect' })
     const tauB = m.latent('tau_b', d.halfNormal(scale), { doc: 'the sd of the county floor effects' })
-    const rho = m.latent('rho', d.uniform(-1, 1), { doc: 'the correlation of a county intercept and floor effect' })
-    const za = m.latent('z_a', d.normal(0, 1), { dims: [county], doc: 'the standardised intercept of each county' })
+    const rho = m.latent('rho', d.uniform(-1, 1), {
+      doc: 'the correlation of a county intercept and floor effect',
+    })
+    const za = m.latent('z_a', d.normal(0, 1), {
+      dims: [county],
+      doc: 'the standardised intercept of each county',
+    })
     const zb = m.latent('z_b', d.normal(0, 1), {
       dims: [county],
       doc: 'the part of the floor effect independent of it',
     })
     const alpha = m.derived('alpha', mu.add(tau.mul(za)), { doc: 'the intercept of each county' })
-    // The Cholesky factor of the 2 x 2 correlation matrix written out: slope_j = mu_b + tau_b (rho z_a + sqrt(1 - rho^2) z_b).
+    // The Cholesky factor of the 2 x 2 correlation matrix written out:
+    // slope_j = mu_b + tau_b (rho z_a + sqrt(1 - rho^2) z_b).
     const rest = ops.sqrt(ops.clip(ops.sub(1, rho.square()), 1e-12, 1))
     const slopes = m.derived('slope', muB.add(tauB.mul(rho.mul(za).add(rest.mul(zb)))), {
       doc: 'the floor effect of each county',
     })
     m.observe('y', d.normal(alpha.at(code).add(slopes.at(code).mul(floor)), noise), y)
+    // endregion
+    // region radon:end
   })
+  // endregion
+  return definition
 }
 
 /** What {@link generateRadonCounties} generates from. */

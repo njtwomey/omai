@@ -3,6 +3,7 @@ import { epAtoms } from 'omai-engine/bayesian-examples'
 import { describe, expect, it } from 'vitest'
 import { POCS, pageOf } from '../registry.ts'
 import { atomSource } from '../shared/ep/atomSource.ts'
+import { styleProblems } from '../shared/styleScan.ts'
 
 describe('the pages of the EP atoms', () => {
   it.each(epAtoms.map((a) => [a.name, a.title] as const))(
@@ -35,21 +36,10 @@ describe('the code shown on the atom pages', () => {
 })
 
 describe('the style of the code shown on the atom pages', () => {
-  const lines = (code: string): string[] => code.split('\n')
   it.each(epAtoms.map((a) => [a.name, a] as const))(
     '%s: one statement per line, no latent inside a call, no trailing comments, short lines',
     (_, atom) => {
-      const bad: string[] = []
-      for (const line of lines(atomSource(atom, atom.problem(atom.defaults)).code)) {
-        const t = line.trim()
-        if (t.startsWith('//')) continue
-        if ((t.match(/\bm\.(latent|observe)\(/g) ?? []).length > 1) bad.push(`two statements: ${t}`)
-        if (/\bm\.latent\(/.test(t) && !/^(const \w+ = )m\.latent\(/.test(t))
-          bad.push(`latent inside another expression: ${t}`)
-        if (/\S\s+\/\/ /.test(t.replace(/'[^']*'|`[^`]*`|"[^"]*"/g, ''))) bad.push(`trailing comment: ${t}`)
-        if (line.length > 100) bad.push(`long line (${line.length}): ${t}`)
-      }
-      expect(bad).toEqual([])
+      expect(styleProblems(atomSource(atom, atom.problem(atom.defaults)).code)).toEqual([])
     },
   )
 })
