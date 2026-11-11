@@ -8,13 +8,12 @@
  * grid of the model written as a program for the rest. `docs/probprog/ep-priors.md` is the table the atoms illustrate.
  */
 
-import { lgamma } from '../../numerics/special/index.ts'
 import { dict, real } from '../../space/index.ts'
-import { item } from '../../tensor/index.ts'
 import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
+import { lg, sum } from './_util.ts'
 import {
   type AtomProblem,
   type AtomTolerance,
@@ -24,9 +23,6 @@ import {
   type RefJoint,
 } from './ep-atoms.ts'
 import { normalPdf, quadratureMarginal } from './ep-atoms-quad.ts'
-
-const lg = (x: number): number => item(lgamma(x))
-const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0)
 
 const EXACT: AtomTolerance = {
   meanZ: 1e-6,

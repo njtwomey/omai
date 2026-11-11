@@ -6,7 +6,6 @@
  * many seeds, that EP's 90% intervals hold it about nine times in ten).
  */
 
-import { lgamma } from '../../numerics/special/index.ts'
 import { beta, foldIn, gamma, key, normal, poisson, uniform } from '../../random/index.ts'
 import { dict, int, real } from '../../space/index.ts'
 import { item, toFlat } from '../../tensor/index.ts'
@@ -14,6 +13,7 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
+import { lg, sum } from './_util.ts'
 import { type AtomProblem, type AtomRecoverySpec, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { normalInverseGammaPosterior } from './ep-atoms-priors.ts'
 import { type ConditionalMarginal, hyperPosterior } from './ep-atoms-quad.ts'
@@ -136,9 +136,6 @@ export const gaussianLearnedAtom: EpAtom = defineAtom({
   }),
   problem: gaussianLearnedProblem,
 })
-
-const lg = (x: number): number => item(lgamma(x))
-const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0)
 
 /** The group of each of `groups * per` observations, group by group. */
 const groupIndex = (groups: number, per: number): number[] =>

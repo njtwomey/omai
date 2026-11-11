@@ -8,7 +8,6 @@
  * seeds, how often its 90% intervals hold the truth.
  */
 
-import { lgamma } from '../../numerics/special/index.ts'
 import { foldIn, gamma, key, normal, poisson, studentT, uniform } from '../../random/index.ts'
 import { dict, int, real } from '../../space/index.ts'
 import { item, toFlat } from '../../tensor/index.ts'
@@ -16,6 +15,7 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
+import { lg, normalCdfFast, once, sum } from './_util.ts'
 import {
   type AtomFigure,
   type AtomProblem,
@@ -27,23 +27,6 @@ import {
 } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 import { gridMarginals } from './ep-atoms-quad.ts'
-
-const lg = (x: number): number => item(lgamma(x))
-const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0)
-
-/** The standard normal distribution function in plain arithmetic (Abramowitz and Stegun 26.2.17, error under 1e-7): a grid calls it millions of times. */
-function phi(x: number): number {
-  const t = 1 / (1 + 0.2316419 * Math.abs(x))
-  const poly = t * (0.31938153 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))))
-  const tail = Math.exp(-0.5 * x * x) * 0.3989422804014327 * poly
-  return x >= 0 ? 1 - tail : tail
-}
-
-/** A value computed the first time it is asked for: a reference grid that a calibration over many seeds never reads. */
-function once<T>(make: () => T): () => T {
-  let value: T | undefined
-  return () => (value ??= make())
-}
 
 /** The recovery promise most of these share: 40 seeds, 0.75 of the true values inside the 90% intervals, errors under 1.6 sds. */
 const recoveryOf = (reason: string, seeds = 40): AtomRecoverySpec => ({
@@ -125,7 +108,7 @@ function studentLearnedProblem(k: Config): AtomProblem {
     ],
     pair: ['mu', 'tau'],
     get exact() {
-      return { mu: grid().marginals[0] as never, tau: grid().marginals[1] as never }
+      return { mu: grid().marginal(0), tau: grid().marginal(1) }
     },
     get exactJoint() {
       return { a: 'mu', b: 'tau', ...grid().joint(0, 1) }
@@ -249,7 +232,7 @@ function laplaceLearnedProblem(k: Config): AtomProblem {
     ],
     pair: ['mu', 'scale'],
     get exact() {
-      return { mu: grid().marginals[0] as never, scale: grid().marginals[1] as never }
+      return { mu: grid().marginal(0), scale: grid().marginal(1) }
     },
     get exactJoint() {
       return { a: 'mu', b: 'scale', ...grid().joint(0, 1) }
@@ -321,7 +304,7 @@ function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomProb
   const design = Array.from({ length: n }, (_, i) => [1, pts[2 * i] ?? 0, pts[2 * i + 1] ?? 0])
   const u = toFlat(uniform(foldIn(kk, 1), [n]))
   const score = design.map((row) => w0 * (row[0] ?? 0) + w1 * (row[1] ?? 0) + w2 * (row[2] ?? 0))
-  const chance = score.map((z) => (link === 'probit' ? phi(z) : 1 / (1 + Math.exp(-z))))
+  const chance = score.map((z) => (link === 'probit' ? normalCdfFast(z) : 1 / (1 + Math.exp(-z))))
   const y = chance.map((p, i) => ((u[i] ?? 1) < p ? 1 : 0))
   const definition = defineModel(`${link}-learned`, (m) => {
     const row = m.range('row')
@@ -337,7 +320,7 @@ function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomProb
   // endregion
   // The reference: the density written out, on a tensor grid over (tau, w) around the true weights.
   const logLink = (z: number, label: number): number => {
-    const p = link === 'probit' ? phi(z) : 1 / (1 + Math.exp(-z))
+    const p = link === 'probit' ? normalCdfFast(z) : 1 / (1 + Math.exp(-z))
     return Math.log(Math.max(label === 1 ? p : 1 - p, 1e-300))
   }
   const grid = once(() =>
@@ -854,7 +837,7 @@ function studentDfLearnedProblem(k: Config): AtomProblem {
       { name: 'df', label: 'df (degrees of freedom)', support: 'positive', truth: trueDf },
     ],
     get exact() {
-      return { mu: grid().marginals[0] as ExactMarginal, df: positiveFromLog(grid().marginals[1] as ExactMarginal) }
+      return { mu: grid().marginal(0), df: positiveFromLog(grid().marginal(1)) }
     },
     referenceSource: 'the posterior of the location and the log of the degrees of freedom on a 141 by 141 grid',
     figure: {
@@ -972,8 +955,8 @@ function weibullShapeLearnedProblem(k: Config): AtomProblem {
     ],
     get exact() {
       return {
-        logScale: grid().marginals[0] as ExactMarginal,
-        shape: positiveFromLog(grid().marginals[1] as ExactMarginal),
+        logScale: grid().marginal(0),
+        shape: positiveFromLog(grid().marginal(1)),
       }
     },
     referenceSource: 'the posterior of the log scale and the log shape on a 141 by 141 grid',
@@ -1058,7 +1041,7 @@ function skillsLearnedProblem(k: Config): AtomProblem {
   for (let r = 0; r < rounds; r++) for (const [i, j] of pairs) games.push(r % 2 ? [j, i] : [i, j])
   const u = toFlat(uniform(foldIn(kk, 1), [games.length]))
   const gap = games.map(([p, q]) => ((skills[p] ?? 0) - (skills[q] ?? 0)) / Math.SQRT2)
-  const win = gap.map((g, i) => ((u[i] ?? 1) < phi(g) ? 1 : 0))
+  const win = gap.map((g, i) => ((u[i] ?? 1) < normalCdfFast(g) ? 1 : 0))
   const definition = defineModel('skill-difference-learned', (m) => {
     const player = m.range('player')
     const game = m.range('game')

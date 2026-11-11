@@ -9,6 +9,7 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel } from '../model/index.ts'
+import { sum } from './_util.ts'
 import { type AtomProblem, beliefDensity, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { normalPdf } from './ep-atoms-quad.ts'
 
@@ -18,7 +19,6 @@ const EXACT = {
   ks: 1e-4,
   reason: 'a conjugate model: EP is exact, so its belief equals the closed-form posterior up to rounding',
 }
-const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0)
 
 const GAUSSIAN_Y = [1.2, 0.4, 1.9]
 

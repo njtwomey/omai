@@ -13,25 +13,19 @@ import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
+import { once } from './_util.ts'
 import {
   type AtomFigure,
   type AtomProblem,
   type AtomRecoverySpec,
   defineAtom,
   type EpAtom,
-  type ExactMarginal,
   type FigureCurve,
 } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 import { gridMarginals } from './ep-atoms-quad.ts'
 
 const CUTS = [-0.6, 0.5, 1.4]
-/** A value computed the first time it is asked for. */
-function once<T>(make: () => T): () => T {
-  let value: T | undefined
-  return () => (value ??= make())
-}
-
 const CURVE_X = Array.from({ length: 41 }, (_, i) => -2 + i / 10)
 
 /** The standard normal distribution function in plain arithmetic (Abramowitz and Stegun 26.2.17). */
@@ -522,7 +516,7 @@ function drawsProblem(k: Config): AtomProblem {
     ],
     quantities: PLAYERS.map((n, i) => ({ name: `skill[${i}]`, label: `skill_${n}`, support: 'real' as const })),
     get exact() {
-      return Object.fromEntries(PLAYERS.map((_, i) => [`skill[${i}]`, grid().marginals[i] as ExactMarginal]))
+      return Object.fromEntries(PLAYERS.map((_, i) => [`skill[${i}]`, grid().marginal(i)]))
     },
     referenceSource: 'the posterior of the three skills on a 33 by 33 by 33 grid',
     figure: { ...drawsFigure(), notes },
@@ -603,7 +597,7 @@ function drawsLearnedProblem(k: Config): AtomProblem {
       truth: truth[i] as number,
     })),
     get exact() {
-      return Object.fromEntries(PLAYERS.map((_, i) => [`skill[${i}]`, grid().marginals[i] as ExactMarginal]))
+      return Object.fromEntries(PLAYERS.map((_, i) => [`skill[${i}]`, grid().marginal(i)]))
     },
     referenceSource: 'the posterior of the three skills on a 33 by 33 by 33 grid',
     figure: drawsFigure(truth),

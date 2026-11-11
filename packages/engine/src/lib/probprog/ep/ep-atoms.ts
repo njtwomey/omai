@@ -17,10 +17,9 @@
 
 import { OmaiError } from '../../base/index.ts'
 import { type ModelRun, modelRunFromTape } from '../../exposition/index.ts'
-import { lgamma } from '../../numerics/special/index.ts'
 import type { DictSpace } from '../../space/index.ts'
 import { defaults } from '../../space/index.ts'
-import { item, toFlat } from '../../tensor/index.ts'
+import { toFlat } from '../../tensor/index.ts'
 import { type Config, session } from '../../trace/index.ts'
 import { type EpGridState, epGridMethod, epSpecMethod, type Verdict } from '../inference/index.ts'
 import { analysisOf } from '../inference/model-input.ts'
@@ -35,6 +34,7 @@ import {
   toStructure,
 } from '../model/index.ts'
 import { type GridOptions, gridPosterior } from '../validation/index.ts'
+import { lg } from './_util.ts'
 
 /** Where a quantity lives, which fixes the family its belief is drawn in. */
 export type AtomSupport = 'real' | 'positive' | 'unit' | 'probability'
@@ -291,9 +291,6 @@ export function beliefDensity(support: AtomSupport, mean: number, sd: number): (
   }
   return (x) => Math.exp(-0.5 * ((x - mean) / sd) ** 2) / (sd * Math.sqrt(2 * Math.PI))
 }
-
-/** `log Gamma(x)` of a number. */
-const lg = (x: number): number => item(lgamma(x))
 
 /** A marginal as a curve with its moments. */
 export interface RefMarginal {

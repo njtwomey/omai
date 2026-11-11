@@ -129,7 +129,7 @@ function orderedMeansProblem(k: Config): AtomProblem {
       { name: 'mu[1]', label: 'mu_2', support: 'real' },
     ],
     pair: ['mu[0]', 'mu[1]'],
-    exact: { 'mu[0]': g.marginals[0] as never, 'mu[1]': g.marginals[1] as never },
+    exact: { 'mu[0]': g.marginal(0), 'mu[1]': g.marginal(1) },
     exactJoint: { a: 'mu[0]', b: 'mu[1]', ...g.joint(0, 1) },
   }
 }

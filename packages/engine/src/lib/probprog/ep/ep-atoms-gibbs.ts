@@ -9,14 +9,12 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
-import { lgamma } from '../../numerics/special/index.ts'
 import { foldIn, gammaVariates, type Key, key, uniformStream } from '../../random/index.ts'
-import { item } from '../../tensor/index.ts'
+import { lg } from './_util.ts'
 import type { ExactMarginal } from './ep-atoms.ts'
 import { normalPdf } from './ep-atoms-quad.ts'
 
 /** `log Gamma(x)` of a number. */
-const lg = (x: number): number => item(lgamma(x))
 
 /**
  * The marginal of a quantity from posterior draws: the sample mean and sd, and a Gaussian kernel density estimate (Silverman's

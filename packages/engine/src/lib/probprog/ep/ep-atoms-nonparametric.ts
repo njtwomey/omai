@@ -7,17 +7,14 @@
  * Dirichlets integrated out, which makes every posterior a mixture of betas.
  */
 
-import { lgamma } from '../../numerics/special/index.ts'
 import { dict, real } from '../../space/index.ts'
-import { item } from '../../tensor/index.ts'
 import type { Config } from '../../trace/index.ts'
 import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
+import { lg } from './_util.ts'
 import { type AtomProblem, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
 import { gridMarginals, normalPdf } from './ep-atoms-quad.ts'
-
-const lg = (x: number): number => item(lgamma(x))
 
 // ----- the stick-breaking mixture -----
 
@@ -71,7 +68,7 @@ function stickBreakingProblem(k: Config): AtomProblem {
       { name: 'v[1]', label: 'v_2 (the share of the rest taken by the second)', support: 'unit' },
     ],
     pair: ['v[0]', 'v[1]'],
-    exact: { 'v[0]': g.marginals[0] as ExactMarginal, 'v[1]': g.marginals[1] as ExactMarginal },
+    exact: { 'v[0]': g.marginal(0), 'v[1]': g.marginal(1) },
     exactJoint: { a: 'v[0]', b: 'v[1]', ...g.joint(0, 1) },
     referenceSource: 'a grid over the two breaks with the assignments summed out',
   }
