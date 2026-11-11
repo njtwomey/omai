@@ -368,4 +368,3 @@ because the likelihood of a difference of two skills is smooth and near Gaussian
 (`N-60(precision diag 2, 4, ...)` across the panel). `describeMessage` (`exposition/model-run-tape.ts`) now writes at most the first
 four numbers and the count: `N-60(precision diag 2, 2, 2, 2, ... (60))`, and the same for a long discrete or Dirichlet message and an
 unknown family.
-||||||| 1938cdb9
