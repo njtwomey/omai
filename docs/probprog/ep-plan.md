@@ -660,3 +660,10 @@ passed every seed and the stress run unchanged), the other files that use the re
 `rows`, `probit-slice`, `families`) test fixed cases and pass with the adaptive reference. Both counterexamples are pinned as fixed `examples`. The file
 takes `OMAI_FC_SEED` (one fixed seed for every property) and `OMAI_FC_SCALE` (a multiple of the runs): it passes on the seeds 1395539355,
 1817728420, 7, 123456 and 987654321 and with 15 times the runs; the old reference fails the pinned log-scale case.
+
+Done for the GAM's remaining forms (2026-11-11, `agent-pp181-gamep`): EP runs on all twelve (prior, hyperprior) combinations of the
+Bayesian GAM. `apply` takes a chain of steps (`mul`, `add`, `pow` and the registry, now with `sqrt` and `recip`) and a gamma input;
+the compiler collapses arithmetic on an `apply` output into one chain and prunes unread `apply` factors; `z / g(x)` for a chain `g`
+is the new fused factor `apply-product` (`y = z f(x)`, closed form in `z`, one integral over `x`). Penalty with log-normal
+hyperpriors: curve 0.005 response sd from the exact reference, log smoothing 2.78 against 2.53; ARD: 0.011 sd from NUTS. Remaining:
+the posterior of the non-centred coefficients is per-coefficient marginals (band 17% wide), no VMP rule (gap `non-centred-scale`).

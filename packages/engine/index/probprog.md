@@ -250,10 +250,10 @@ The model layer: a model written once as a value. A builder (`defineModel`) with
 - function `bind`: Bind data to a ModelSpec with checks of dims, sizes and supports. `src/lib/probprog/model/bind.ts:324` `omai-engine/probprog/model`
 - function `collapsePlan`: collapsePlan: which sites the collapse handler can integrate out, with cost and gain; user-invoked. `src/lib/probprog/model/collapse-plan.ts:105` `omai-engine/probprog/model`
 - function `defineModel`: Build a model spec with named dimensions, data, latents, observations and derived nodes. `src/lib/probprog/model/builder.ts:741` `omai-engine/probprog/model`
-- function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:4858` `omai-engine/probprog/model`
+- function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:4971` `omai-engine/probprog/model`
 - function `fromProgram`: fromProgram: lift a sample/observe program to a ModelSpec of its site structure; refuses a varying structure. `src/lib/probprog/model/from-program.ts:185` `omai-engine/probprog/model`
 - function `structureReport`: structureReport: what a spec's structure allows, as records and suggestions naming the method to use. `src/lib/probprog/model/analysis.ts:476` `omai-engine/probprog/model`
-- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:4686` `omai-engine/probprog/model`
+- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:4798` `omai-engine/probprog/model`
 - function `toProgram`: Compile a bound ModelSpec to a sample/observe program every engine runs. `src/lib/probprog/model/compile.ts:267` `omai-engine/probprog/model`
 
 ### probprog/model/dists
@@ -271,8 +271,8 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `additionalCampaigns`: The periodic campaigns of the later benchmark models, plus the clutter problem's EP comparison. `src/lib/probprog/models/additional-campaigns.ts:104` `omai-engine/probprog/models`
 - function `bananaDraws`: Exact draws from Haario's banana, for drawing the target. `src/lib/probprog/models/geometry.ts:165` `omai-engine/probprog/models`
 - function `bayesianGam`: Bayesian GAM of one covariate as a model spec: penalty or spike-slab prior. `src/lib/probprog/models/bayesian-gam.ts:169` `omai-engine/probprog/models`
-- function `bayesianGamFit`: Curve, band, sampled curves and weighted bases of a Bayesian GAM posterior. `src/lib/probprog/models/bayesian-gam.ts:551` `omai-engine/probprog/models`
-- function `bayesianGamReference`: Exact posterior curve and band of a Bayesian GAM by quadrature. `src/lib/probprog/models/bayesian-gam.ts:798` `omai-engine/probprog/models`
+- function `bayesianGamFit`: Curve, band, sampled curves and weighted bases of a Bayesian GAM posterior. `src/lib/probprog/models/bayesian-gam.ts:552` `omai-engine/probprog/models`
+- function `bayesianGamReference`: Exact posterior curve and band of a Bayesian GAM by quadrature. `src/lib/probprog/models/bayesian-gam.ts:803` `omai-engine/probprog/models`
 - function `benchmarkAgreement`: Cross-engine agreement of a benchmark model: every planned method against the truth. `src/lib/probprog/models/agreement.ts:132` `omai-engine/probprog/models`
 - function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:103` `omai-engine/probprog/models`
 - function `betaBernoulliModel`: The Beta-Bernoulli coin with a chosen Beta(a, b) prior; bind it to `{ y: flips }`. `src/lib/probprog/models/conjugate.ts:43` `omai-engine/probprog/models`
@@ -288,7 +288,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `structureCampaigns`: The structure of every benchmark model, and collapsed against full NUTS, as periodic campaigns. `src/lib/probprog/models/structure-campaigns.ts:364` `omai-engine/probprog/models`
 - function `sviCampaigns`: Periodic validation campaigns of the variational methods against the benchmark truths. `src/lib/probprog/models/svi-plans.ts:206` `omai-engine/probprog/models`
 
-- estimator `bayesianGamMethod`: A Bayesian GAM under any inference method, with its fit as a tape probe. `src/lib/probprog/models/bayesian-gam.ts:981` `omai-engine/probprog/models`
+- estimator `bayesianGamMethod`: A Bayesian GAM under any inference method, with its fit as a tape probe. `src/lib/probprog/models/bayesian-gam.ts:986` `omai-engine/probprog/models`
 
 - structure `BenchmarkModel`: A benchmark model: a spec with a data generator, the truth, references, tags and method plans. `src/lib/probprog/models/benchmark.ts:98` `omai-engine/probprog/models`
 

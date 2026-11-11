@@ -50,13 +50,15 @@ const MODEL = dict({
         'spike and slab: each B-spline coefficient is in a wide slab (the basis is used) or a narrow spike at zero (it is off)',
     },
   }),
-  hyper: choice(['logNormal', 'gammaNoise', 'fixed'], {
-    default: 'logNormal',
+  hyper: choice(['gammaSmooth', 'logNormal', 'gammaNoise', 'fixed'], {
+    default: 'gammaSmooth',
     label: 'hyperpriors of the penalty prior',
     when: { key: 'prior', in: ['penalty'] },
     descriptions: {
+      gammaSmooth:
+        'gamma on the smoothing parameter and on the noise precision: both inferred, in the precision idiom, so every message-passing method runs (EP against the exact reference to a few percent)',
       logNormal:
-        'log-normal on the log smoothing parameter and the log noise sd: both inferred, built on exp (samplers and variational families, no message passing)',
+        'log-normal on the log smoothing parameter and the log noise sd: both inferred, written non-centred on exp and sqrt (the samplers, the variational families, and EP by the apply-product factor)',
       gammaNoise:
         'smoothing fixed, the noise precision a gamma variable: a normal-gamma model, which variational message passing runs',
       fixed:
@@ -74,8 +76,8 @@ const MODEL = dict({
     },
   }),
   k: int(5, 40, { default: 12, label: 'knots (basis size)' }),
-  degree: int(1, 5, { default: 3, label: 'spline degree', when: { key: 'basis', in: ['ps', 'bs'] } }),
-  order: int(1, 3, { default: 2, label: 'penalty order', when: { key: 'basis', in: ['ps'] } }),
+  degree: int(0, 5, { default: 3, label: 'spline degree', when: { key: 'basis', in: ['ps', 'bs'] } }),
+  order: int(0, 3, { default: 2, label: 'penalty order', when: { key: 'basis', in: ['ps'] } }),
   logLambdaMean: real(-6, 10, {
     default: 0,
     label: 'prior mean of log smoothing parameter',
@@ -86,6 +88,16 @@ const MODEL = dict({
     label: 'prior sd of log smoothing parameter',
     when: { key: 'hyper', in: ['logNormal'] },
   }),
+  lambdaShape: real(0.1, 10, {
+    default: 1,
+    label: 'gamma shape of the smoothing parameter',
+    when: { key: 'hyper', in: ['gammaSmooth'] },
+  }),
+  lambdaRate: real(0.001, 5, {
+    default: 0.05,
+    label: 'gamma rate of the smoothing parameter',
+    when: { key: 'hyper', in: ['gammaSmooth'] },
+  }),
   lambda: real(0.01, 1000, {
     default: 13,
     log: true,
@@ -95,12 +107,12 @@ const MODEL = dict({
   noiseShape: real(0.1, 10, {
     default: 1,
     label: 'gamma shape of the noise precision',
-    when: { key: 'hyper', in: ['gammaNoise'] },
+    when: { key: 'hyper', in: ['gammaNoise', 'gammaSmooth'] },
   }),
   noiseRate: real(0.001, 5, {
     default: 0.05,
     label: 'gamma rate of the noise precision',
-    when: { key: 'hyper', in: ['gammaNoise'] },
+    when: { key: 'hyper', in: ['gammaNoise', 'gammaSmooth'] },
   }),
   noiseSd: real(0.01, 2, {
     default: 0.2,
@@ -132,7 +144,9 @@ const MODEL = dict({
 })
 type Model = {
   prior: 'penalty' | 'spikeSlab' | 'ard'
-  hyper: 'logNormal' | 'gammaNoise' | 'fixed'
+  hyper: 'logNormal' | 'gammaNoise' | 'fixed' | 'gammaSmooth'
+  lambdaShape: number
+  lambdaRate: number
   lambda: number
   noiseShape: number
   noiseRate: number
@@ -163,7 +177,7 @@ type Budget = { budgetMs: number; budgetSteps: number }
 const START = {
   data: undefined,
   model: defaults(MODEL) as unknown as Model,
-  method: defaults(bayesianGamMethods().space) as Record<string, SpaceValue>,
+  method: defaults(bayesianGamMethods('penalty', 'gammaSmooth').space) as Record<string, SpaceValue>,
   budget: defaults(BUDGET) as unknown as Budget,
 }
 
@@ -240,6 +254,8 @@ function Fit(props: {
       prior: model.prior,
       hyper: model.hyper,
       lambda: model.lambda,
+      lambdaShape: model.lambdaShape,
+      lambdaRate: model.lambdaRate,
       noiseShape: model.noiseShape,
       noiseRate: model.noiseRate,
       noiseSd: model.noiseSd,
@@ -398,7 +414,25 @@ function View(props: {
   }, [live.session, live.version, t])
   const fit = (probed.value ?? undefined) as BayesianGamFit | undefined
   const trace = useMemo(() => {
-    const path = kind === 'svi' ? 'svi/elbo' : kind === 'pathfinder' ? 'pathfinder/elbo' : 'mcmc/logDensity'
+    const path =
+      kind === 'svi'
+        ? 'svi/elbo'
+        : kind === 'pathfinder'
+          ? 'pathfinder/elbo'
+          : kind === 'ep'
+            ? 'mp/change'
+            : kind === 'vmp'
+              ? 'mp/elbo'
+              : 'mcmc/logDensity'
+    if (path === 'mp/change') {
+      // Expectation propagation: how far the messages moved in each sweep (it falls to the tolerance at the fixed point).
+      const ev = run.events.filter((e) => e.type === 'metric' && e.name === path) as { step: number; value: number }[]
+      return {
+        label: 'log10 change in the messages',
+        steps: ev.map((e) => e.step),
+        values: ev.map((e) => Math.log10(Math.max(e.value, 1e-12))),
+      }
+    }
     if (path === 'mcmc/logDensity') {
       const ev = tensorSeries(run, path)
       return {

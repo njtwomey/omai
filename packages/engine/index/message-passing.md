@@ -78,7 +78,8 @@ Message passing on factor graphs of exponential families, the Infer.NET way: a m
 
 The factor operators: the registry of closed-form message rules (a prior, Gaussian and linear-Gaussian factors, truncation and the probit link, conjugate probability factors, discrete tables and gates, a logistic link, and a numeric operator for any other density), each a value collected by `defaultOperators()`. Part of `omai-engine/message-passing`.
 
-- function `applyFunction`: The factor y = f(x) of a unary function (exp, square, tanh, relu, softplus, abs, sigmoid) of a Gaussian: EP. `src/lib/message-passing/operators/functions.ts:201` `omai-engine/message-passing`
+- function `applyFunction`: The factor y = f(x) of a unary function (exp, square, tanh, relu, softplus, abs, sigmoid) of a Gaussian: EP. `src/lib/message-passing/operators/functions.ts:295` `omai-engine/message-passing`
+- function `applyProduct`: The factor y = z f(x) of a Gaussian times a function of a Gaussian or gamma variable: a non-centred scale. `src/lib/message-passing/operators/functions.ts:494` `omai-engine/message-passing`
 - function `gateOperator`: The gate of Minka and Winn: a discrete variable selects among branch factors. `src/lib/message-passing/operators/gate.ts:78` `omai-engine/message-passing`
 - function `glmPlate`: Lift a scalar link to a plate of rows: one factor on the weights, vectorised. `src/lib/message-passing/operators/plates.ts:276` `omai-engine/message-passing`
 - function `glmRow`: Lift a scalar link (probit, logistic) to a regression row on weights. `src/lib/message-passing/operators/rows.ts:57` `omai-engine/message-passing`
@@ -88,7 +89,8 @@ The factor operators: the registry of closed-form message rules (a prior, Gaussi
 - function `numericOperator`: An EP operator for any density over Gaussian variables, by quadrature. `src/lib/message-passing/operators/numeric.ts:55` `omai-engine/message-passing`
 - function `pairLikelihoodOperator`: A two-variable numeric EP site from a registry of densities. `src/lib/message-passing/operators/pairs.ts:250` `omai-engine/message-passing`
 
-- structure `apply`: The factor y = f(x) of a unary function of a Gaussian (exp, square, tanh, relu, softplus, abs, sigmoid). `src/lib/message-passing/operators/functions.ts:275` `omai-engine/message-passing`
+- structure `apply`: The factor y = f(x) of a unary function of a Gaussian (exp, square, tanh, relu, softplus, abs, sigmoid). `src/lib/message-passing/operators/functions.ts:382` `omai-engine/message-passing`
+- structure `applyProductOperator`: The factor y = z f(x): a Gaussian times a function of a Gaussian or gamma variable (a non-centred scale). `src/lib/message-passing/operators/functions.ts:553` `omai-engine/message-passing`
 - structure `bernoulliBeta`: A Bernoulli outcome with a beta probability (conjugate). `src/lib/message-passing/operators/conjugate.ts:39` `omai-engine/message-passing`
 - structure `betaTwoShapes`: A beta variable with two random shapes (gamma or log-normal each): a 2-d grid EP site. `src/lib/message-passing/operators/concentration.ts:322` `omai-engine/message-passing`
 - structure `binomial`: An observed binomial count with a beta probability (conjugate). `src/lib/message-passing/operators/conjugate.ts:224` `omai-engine/message-passing`
@@ -149,4 +151,4 @@ The factor operators: the registry of closed-form message rules (a prior, Gaussi
 - table `defaultOperators`: The library's factor operators by name. `src/lib/message-passing/operators/registry.ts:75` `omai-engine/message-passing`
 - table `likelihoods`: The numeric likelihoods of a Gaussian predictor (count, survival, ordinal, quantile, robust) by name. `src/lib/message-passing/operators/likelihoods.ts:330` `omai-engine/message-passing`
 - table `pairLikelihoods`: The likelihoods over two random scalars (Laplace scale, Student-t degrees of freedom, Weibull shape, beta shapes). `src/lib/message-passing/operators/pairs.ts:209` `omai-engine/message-passing`
-- table `unaryFunctions`: The unary functions of a Gaussian variable (exp, square, tanh, relu, softplus, abs, sigmoid) by name. `src/lib/message-passing/operators/functions.ts:58` `omai-engine/message-passing`
+- table `unaryFunctions`: The unary functions of a Gaussian variable (exp, square, tanh, relu, softplus, abs, sigmoid, sqrt, recip) by name. `src/lib/message-passing/operators/functions.ts:66` `omai-engine/message-passing`

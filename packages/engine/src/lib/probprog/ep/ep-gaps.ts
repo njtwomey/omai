@@ -129,6 +129,17 @@ export const epGaps: readonly EpGap[] = [
     refuses: [],
   },
   {
+    id: 'non-centred-scale',
+    title: 'A non-centred scale (z / sqrt(precision)) is read through independent coefficient marginals',
+    kind: 'quality',
+    status: 'open',
+    summary:
+      'A coefficient written `z / sqrt(g(x))` (the non-centred Bayesian GAM, penalty prior with log-normal hyperpriors, and ARD) runs under EP through the `apply-product` factor, one per coefficient, with the curve within 0.005 response sd of the exact reference and the smoothing within 0.4 reference sd, but the posterior hands back each coefficient as its own marginal, so the credible band is 17% too wide (the dense gamma-smoothing form, whose coefficients are one vector, is within 2%). The log-normal form reaches its fixed point in about 80 sweeps without the tolerance ever being met (quadrature noise), and variational message passing has no rule for the factor (the non-conjugate message of a scale collapses the noise to a point).',
+    plan: 'A dense variant: `apply-product` on the whole coefficient vector against a Gaussian log smoothing parameter (the grid of `gaussian-mv-precision-scale` over a Gaussian instead of a gamma cavity), so the posterior keeps the correlations; a tolerance relative to the quadrature accuracy; a variational rule for the factor from the exact conjugate one at a fixed scale.',
+    size: 'medium',
+    refuses: [],
+  },
+  {
     id: 'evidence',
     title: 'The EP log evidence is exact where EP is, and has two known limits',
     kind: 'infrastructure',

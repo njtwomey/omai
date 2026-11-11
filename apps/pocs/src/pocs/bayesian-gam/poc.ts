@@ -14,6 +14,8 @@ export const poc: Poc = {
     'credible band',
     'hmc',
     'nuts',
+    'expectation propagation',
+    'ep',
     'svi',
   ],
   added: '2026-11-11',
