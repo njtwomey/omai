@@ -14,7 +14,11 @@ import { operatorMessage } from './engine.ts'
 import * as M from './index.ts'
 import { momentProjection } from './projections.ts'
 
-const runs = { numRuns: 12 }
+// OMAI_FC_SEED runs every property of this file on one fixed seed: a property that depends on its seed shows on a few of them.
+if (process.env['OMAI_FC_SEED'] !== undefined) fc.configureGlobal({ seed: Number(process.env['OMAI_FC_SEED']) })
+// OMAI_FC_SCALE multiplies every property's number of runs (a stress run, 15 times the runs, found nothing on five seeds).
+const scale = Number(process.env['OMAI_FC_SCALE'] ?? 1)
+const runs = { numRuns: 12 * scale }
 const mean = fc.double({ min: -2, max: 2, noNaN: true })
 const variance = fc.double({ min: 0.3, max: 3, noNaN: true })
 const gaussianArg = fc.tuple(mean, variance).map(([m, v]) => M.gaussianEta(m, v))
@@ -83,7 +87,8 @@ describe('Gaussian operators equal the integral of the exact message', () => {
         near(implied(gaussian, es, m), brute.moments, 1e-4)
         expect(M.gaussianLogScale.logEvidence?.(ctx(1, args, { loc }))).toBeCloseTo(brute.logZ, 4)
       }),
-      runs,
+      // The counterexample of seed 1395539355 (a precise outcome, a sharp peak in the log scale): the reference adapts to it now.
+      { ...runs, examples: [[[-0.3959524544892656, 0.3395338044369565], -2.999999999999082, 0]] },
     )
   })
   it('gaussian with an observed argument is the likelihood of the mean', () => {
@@ -142,7 +147,7 @@ describe('Gaussian operators equal the integral of the exact message', () => {
           }
         }
       }),
-      { numRuns: 4 },
+      { numRuns: 4 * scale },
     )
   })
   it('product: EP to the output and to each factor', () => {
@@ -175,7 +180,7 @@ describe('Gaussian operators equal the integral of the exact message', () => {
       }),
       // The counterexample that 14 panels could not resolve (a precise y against wide a and b: the brute-force error was 2.2e-4).
       {
-        numRuns: 4,
+        numRuns: 4 * scale,
         examples: [
           [
             [0, 3.3333333333333335],
@@ -418,7 +423,7 @@ describe('truncation operators', () => {
           expect(toB[0]).toBeCloseTo(Math.log(inMass) - Math.log(total - inMass), 5)
         }
       }),
-      { numRuns: 6 },
+      { numRuns: 6 * scale },
     )
   })
   it('truncatedNormalMoments agrees with the truncated normal distribution of dists', () => {
@@ -684,7 +689,7 @@ describe('discrete operators', () => {
           expect(M.select.logEvidence?.(ctx(0, args, params))).toBeCloseTo(Math.log(zz), 6)
         },
       ),
-      { numRuns: 5 },
+      { numRuns: 5 * scale },
     )
   })
 })
