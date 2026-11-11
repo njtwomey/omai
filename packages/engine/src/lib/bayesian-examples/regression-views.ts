@@ -118,11 +118,7 @@ export interface RegressionDraws {
  */
 export function regressionDraws(post: Posterior, shape: RegressionShape, n: number): RegressionDraws | undefined {
   const scalars = shape.scalars.filter((s) => post.sites.includes(s.site))
-  const got = drawRows(
-    post,
-    ['w', ...scalars.map((s) => s.site)],
-    n,
-  )
+  const got = drawRows(post, ['w', ...scalars.map((s) => s.site)], n)
   if (got === undefined) return undefined
   return {
     rows: got.rows,
@@ -191,9 +187,7 @@ export function curveBands(
 ): CurveBands {
   const at = grid.map((v) => rows.map((r) => r.slice(0, p).reduce((a, c, j) => a + c * v ** j, 0)))
   const curve = at.map((col) => [...col].sort((a, b) => a - b))
-  const predictive = at.map((col) =>
-    col.map((f, s) => f + noise(rows[s] ?? [], s, z[s] ?? 0)).sort((a, b) => a - b),
-  )
+  const predictive = at.map((col) => col.map((f, s) => f + noise(rows[s] ?? [], s, z[s] ?? 0)).sort((a, b) => a - b))
   const stride = Math.max(1, Math.floor(rows.length / lines))
   return {
     mean: at.map((col) => col.reduce((a, v) => a + v, 0) / col.length),
@@ -201,7 +195,9 @@ export function curveBands(
     hi: curve.map((c) => sortedQuantile(c, 0.975)),
     predictiveLo: predictive.map((c) => sortedQuantile(c, 0.025)),
     predictiveHi: predictive.map((c) => sortedQuantile(c, 0.975)),
-    lines: Array.from({ length: Math.min(lines, rows.length) }, (_, s) => at.map((col) => col[s * stride] ?? Number.NaN)),
+    lines: Array.from({ length: Math.min(lines, rows.length) }, (_, s) =>
+      at.map((col) => col[s * stride] ?? Number.NaN),
+    ),
   }
 }
 
@@ -215,14 +211,13 @@ export function curveBands(
  * @example
  * ```ts
  * import { regressionPairs } from 'omai-engine/bayesian-examples'
- * regressionPairs('x', { rows: [], names: ['a'], chain: [], index: [], p: 1, truth: [1] }).kind // => 'posteriorPairs'
+ * const got = { rows: [[0, 1], [1, 2], [2, 0]], names: ['a', 'b'], chain: [0, 0, 0], index: [0, 1, 2], p: 2, truth: [1, null] }
+ * (regressionPairs('x', got) as { kind: string }).kind // => 'posteriorPairs'
  * ```
  */
 export function regressionPairs(label: string, got: RegressionDraws, coordinates?: readonly string[]): unknown {
   const names = coordinates ?? got.names.slice(0, 5)
-  const columns = Object.fromEntries(
-    names.map((c) => [c, got.rows.map((r) => r[got.names.indexOf(c)] ?? 0)] as const),
-  )
+  const columns = Object.fromEntries(names.map((c) => [c, got.rows.map((r) => r[got.names.indexOf(c)] ?? 0)] as const))
   const truth = Object.fromEntries(
     names.flatMap((c) => {
       const t = got.truth[got.names.indexOf(c)]

@@ -14,12 +14,12 @@
  * and `linreg/check` (the method against the exact posterior or the reference draws, as a comparison record with the
  * distances).
  *
- * @index estimator Bayesian linear regression: polynomial or sparse data with known truth, normal, spike-and-slab, ARD or horseshoe prior, one inference method, checked against the exact posterior.
+ * @index estimator Bayesian linear regression with normal, spike-and-slab, ARD or horseshoe priors, one inference method.
  */
 
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
 import type { InferenceMethod } from '../probprog/inference/method.ts'
+import * as d from '../probprog/model/dists/index.ts'
+import { defineModel, ops, type Var } from '../probprog/model/index.ts'
 import type { Posterior } from '../probprog/posterior.ts'
 import { normal as drawNormal, uniform as drawUniform, foldIn, key } from '../random/index.ts'
 import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
@@ -153,7 +153,9 @@ export function linearRegressionProblem(config: Config): LinearProblem {
   let design: number[][]
   if (sparse) {
     const flat = toFlat(drawNormal(foldIn(seed, 2), [n * features]))
-    design = Array.from({ length: n }, (_, i) => Array.from({ length: features }, (_, j) => flat[i * features + j] ?? 0))
+    design = Array.from({ length: n }, (_, i) =>
+      Array.from({ length: features }, (_, j) => flat[i * features + j] ?? 0),
+    )
     x = design.map((r) => r[0] ?? 0)
   } else {
     const u = toFlat(drawUniform(foldIn(seed, 0), [n]))
@@ -167,7 +169,7 @@ export function linearRegressionProblem(config: Config): LinearProblem {
     const feature = m.range('feature')
     const X = m.data('X', { dims: [row, feature], role: 'covariate' })
     const yy = m.data('y', { dims: [row], role: 'response' })
-    let w
+    let w: Var
     if (prior === 'spikeSlab') {
       w = m.latent('w', d.normalSpikeSlab(settings.inclusion, priorScale, priorScale * settings.spikeRatio), {
         dims: [feature],
@@ -186,7 +188,10 @@ export function linearRegressionProblem(config: Config): LinearProblem {
       )
       w = m.latent('w', d.normal(0, precision.sqrt().pow(-1)), { dims: [feature], doc: 'the coefficients' })
     } else if (prior === 'horseshoe') {
-      const lambda = m.latent('lambda', d.halfCauchy(1), { dims: [feature], doc: 'the local scale of each coefficient' })
+      const lambda = m.latent('lambda', d.halfCauchy(1), {
+        dims: [feature],
+        doc: 'the local scale of each coefficient',
+      })
       const global = m.latent('globalScale', d.halfCauchy(priorScale), { doc: 'the global scale' })
       m.derived('precision', lambda.mul(global).square().pow(-1))
       w = m.latent('w', d.normal(0, lambda.mul(global)), { dims: [feature], doc: 'the coefficients' })
@@ -299,7 +304,7 @@ export const linearModelKnobs: DictSpace = dict({
     default: 1,
     label: 'ARD sparsity',
     description:
-      'how much of each coefficient\'s precision is its own relevance: 0 is a plain normal prior (a smooth fit with every coefficient), 1 is ARD alone; raise it from 0 to see coefficients switch off (a burn-in by hand)',
+      "how much of each coefficient's precision is its own relevance: 0 is a plain normal prior (a smooth fit with every coefficient), 1 is ARD alone; raise it from 0 to see coefficients switch off (a burn-in by hand)",
   }),
   ardRate: real(0.0001, 10, {
     default: 0.001,
@@ -430,6 +435,8 @@ export interface CoefficientRecord {
 
 const linearExample: Example<LinearProblem> = defineExample<LinearProblem>({
   name: 'linreg',
+  // The sparse priors sample a hierarchy (a precision per coefficient): their first draws take a few seconds.
+  budgetMs: 8000,
   description:
     'Bayesian linear regression on polynomial or sparse data with one inference method checked against the exact or a reference posterior',
   modelName: 'linreg',
@@ -540,7 +547,7 @@ const linearExample: Example<LinearProblem> = defineExample<LinearProblem>({
                 .sort((a, b) => a - b)
               return gammas[Math.floor((gammas.length - 1) / 2)] ?? Number.NaN
             })
-            scoreLabel = 'relevance (median of 1 minus shrinkage)'
+            scoreLabel = 'relevance'
           }
           const active = problem.truth.map((v) => v !== 0)
           const chosen = score === null ? [] : score.map((s, j) => (s >= 0.5 ? j : -1)).filter((j) => j >= 0)
@@ -618,7 +625,7 @@ const linearExample: Example<LinearProblem> = defineExample<LinearProblem>({
  * `linreg/draws` and `linreg/check`.
  *
  * @concept inference-engines
- * @index estimator Bayesian linear regression method: polynomial or sparse data, normal, spike-and-slab, ARD or horseshoe prior, one inference method.
+ * @index estimator Linear regression method: polynomial or sparse data, sparse priors, one inference method.
  * @example
  * ```ts
  * import { linearRegressionMethod, linearRegressionSteps } from 'omai-engine/bayesian-examples'

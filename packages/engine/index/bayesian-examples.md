@@ -7,11 +7,13 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `classifier-method.ts` (file): Bayesian probit or logistic classifier on 2-D data: one chosen inference method with its knobs. `src/lib/bayesian-examples/classifier-method.ts:1` `omai-engine/bayesian-examples`
 - estimator `coin-method.ts` (file): Biased coin (Beta-Bernoulli) or counts (Gamma-Poisson): one inference method checked against the exact posterior. `src/lib/bayesian-examples/coin-method.ts:1` `omai-engine/bayesian-examples`
 - estimator `eight-schools-method.ts` (file): Eight schools hierarchical model (centred, non-centred, pooled, unpooled): data, model and inference as knobs. `src/lib/bayesian-examples/eight-schools-method.ts:1` `omai-engine/bayesian-examples`
-- estimator `linear-regression-method.ts` (file): Bayesian linear regression: polynomial data with known truth, one inference method, checked against the exact posterior. `src/lib/bayesian-examples/linear-regression-method.ts:1` `omai-engine/bayesian-examples`
+- estimator `linear-regression-method.ts` (file): Bayesian linear regression with normal, spike-and-slab, ARD or horseshoe priors, one inference method. `src/lib/bayesian-examples/linear-regression-method.ts:1` `omai-engine/bayesian-examples`
 - estimator `radon-method.ts` (file): Hierarchical radon (pooled, unpooled, partial pooling, varying slopes) over counties of unequal size. `src/lib/bayesian-examples/radon-method.ts:1` `omai-engine/bayesian-examples`
+- estimator `robust-regression-method.ts` (file): Robust regression: outliers in a line, Gaussian, Student-t, Laplace or mixture likelihood, one inference method. `src/lib/bayesian-examples/robust-regression-method.ts:1` `omai-engine/bayesian-examples`
 
 - structure `example-method.ts` (file): Example scaffold: a problem from knobs, one chosen inference method, derived posterior paths. `src/lib/bayesian-examples/example-method.ts:1` `omai-engine/bayesian-examples`
 
 - estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:510` `omai-engine/bayesian-examples`
 - estimator `coinMethod`: Biased coin method: Beta-Bernoulli or Gamma-Poisson, one inference method, checked against the exact posterior. `src/lib/bayesian-examples/coin-method.ts:280` `omai-engine/bayesian-examples`
-- estimator `linearRegressionMethod`: Bayesian linear regression method: polynomial data, known or learned noise, one inference method. `src/lib/bayesian-examples/linear-regression-method.ts:447` `omai-engine/bayesian-examples`
+- estimator `linearRegressionMethod`: Linear regression method: polynomial or sparse data, sparse priors, one inference method. `src/lib/bayesian-examples/linear-regression-method.ts:640` `omai-engine/bayesian-examples`
+- estimator `robustRegressionMethod`: Robust regression method: outliers in the data, Gaussian, Student-t, Laplace or mixture likelihood, one inference method. `src/lib/bayesian-examples/robust-regression-method.ts:552` `omai-engine/bayesian-examples`
