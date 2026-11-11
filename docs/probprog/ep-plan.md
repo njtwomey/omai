@@ -608,7 +608,7 @@ quantile 0.07 and 0.02, draws 0.12 (loops), softmax 0.30 (loops).
 
 **What was there.** Of the 60 operators of `defaultOperators()`, 30 had a variational (mean-field) message: the conjugate and affine ones, the probit
 and logistic links (Albert-Chib, Jaakkola-Jordan), the normal-gamma, the gate and the stick-breaking assignment. The other 30 had EP only, so the
-variational comparison was missing for 49 of the 86 atoms (36 ran).
+variational comparison was missing for 50 of the 86 atoms (36 ran).
 
 **The rule that closes most of it: the non-conjugate message (`operators/variational-numeric.ts`).** Knowles and Minka's non-conjugate variational
 message passing: the message of a factor to a port is the natural gradient of `E_q[log f]` in that port's belief, `F^-1 Cov_q(T, log f)` with `T` the
