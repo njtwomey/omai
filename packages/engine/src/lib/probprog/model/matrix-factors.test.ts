@@ -429,7 +429,7 @@ describe('a bivariate normal with standard deviations and a correlation', () => 
     const issues = (build: Parameters<typeof defineModel>[1], data: Record<string, unknown>): string[] =>
       toFactorGraph(defineModel('bad', build).bind(data as never)).issues.map((i) => i.reason)
     const a = issues((m) => {
-      const row = m.range('row')
+      const row = m.range('row', { size: 3 })
       const rho = m.latent('rho', d.correlation(1))
       m.latent('x', d.bivariateNormal([0, 0], { scale1: 1, scale2: 1, rho }), { dims: [row] })
     }, {})
