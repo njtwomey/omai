@@ -53,6 +53,11 @@ export interface AtomQuantity {
   readonly derive?: (beliefs: Readonly<Record<string, Belief>>) => Belief
   /** Checked but not drawn on its own (a component of a gate, which is drawn through the gate's branches). */
   readonly hidden?: boolean
+  /**
+   * A label shared by the members of a group (the skills of the players, the rates of the groups): the calibration table
+   * pools them in one row, so a population of values is one line instead of one per member.
+   */
+  readonly pool?: string
 }
 
 /** One component of a mixture: what it weighs, and its Gaussian. */
@@ -162,6 +167,20 @@ export interface AtomTolerance {
   readonly reason: string
 }
 
+/**
+ * What an extended atom promises about recovering its ground truth: over `seeds` simulated data sets, the share of runs in
+ * which the true value falls inside EP's 90% interval is at least `coverage` for every parameter (it should be near 0.9: the
+ * floor leaves room for the finite number of seeds and for EP's approximation), and the error of the mean is at most `zrms`
+ * posterior sds (root mean square; near 1 for a calibrated posterior).
+ */
+export interface AtomRecoverySpec {
+  readonly seeds: number
+  readonly coverage: number
+  readonly zrms: number
+  /** Why these floors (the number of seeds, what EP approximates, what the prior brings). */
+  readonly reason: string
+}
+
 /** What an atom declares. */
 export interface AtomSpec<K extends Config> {
   /** The slug (`gaussian-mean`), the name of the page `ep-<name>`. */
@@ -177,7 +196,11 @@ export interface AtomSpec<K extends Config> {
   readonly expected: 'runs' | 'planned'
   /** For a `planned` atom, where in `docs/probprog/ep-plan.md` the missing rule is, and what it is. */
   readonly plan?: string
-  readonly reference: 'exact' | 'grid'
+  /**
+   * `exact` (closed form), `grid` (quadrature of the model), or `truth`: no reference posterior exists to compare with (a model with
+   * many latents), and the check is recovery of the true values alone (an extended atom's calibration).
+   */
+  readonly reference: 'exact' | 'grid' | 'truth'
   readonly tolerance: AtomTolerance
   /** The knobs of the problem (sizes, values, the seed). */
   readonly knobs: DictSpace
@@ -185,6 +208,14 @@ export interface AtomSpec<K extends Config> {
   readonly problem: (knobs: K) => AtomProblem
   /** Knobs of EP the atom opens on, over the method's defaults (`{ damping: 0.3 }` for an atom that needs it). */
   readonly ep?: Readonly<Record<string, number | string | boolean>>
+  /**
+   * The name of the basic atom this one extends: the same setup in which the numbers the basic atom fixes are unknown,
+   * with priors, and the data are simulated from a stated truth (knobs: the true values and a `seed`). Set together with
+   * `recovery`; every quantity of the problem carries its `truth`.
+   */
+  readonly extends?: string
+  /** What recovering the truth means for an extended atom (see `atomCalibration`). */
+  readonly recovery?: AtomRecoverySpec
 }
 
 /** A declared atom. */
@@ -198,7 +229,8 @@ export interface EpAtom<K extends Config = Config> extends AtomSpec<K> {
  *
  * @param spec - What the atom declares.
  * @returns The atom, with its default knobs.
- * @throws OmaiError with code `value` for an atom with no name, no factors, or a `planned` atom with no plan.
+ * @throws OmaiError with code `value` for an atom with no name, no factors, a `planned` atom with no plan, or one that
+ * gives `extends` without `recovery` (or the reverse).
  * @concept expectation-propagation
  * @example
  * ```ts
@@ -211,6 +243,8 @@ export function defineAtom<K extends Config>(spec: AtomSpec<K>): EpAtom<K> {
     throw new OmaiError('value', 'defineAtom: an atom has a name and the factors it exercises')
   if (spec.expected === 'planned' && (spec.plan === undefined || spec.plan === ''))
     throw new OmaiError('value', `defineAtom: the planned atom '${spec.name}' says where its rule is planned`)
+  if ((spec.extends === undefined) !== (spec.recovery === undefined))
+    throw new OmaiError('value', `defineAtom: '${spec.name}' gives both 'extends' and 'recovery' or neither`)
   return { ...spec, defaults: defaults(spec.knobs) as K }
 }
 
@@ -277,8 +311,8 @@ export interface RefJoint {
 
 /** The reference answer of an atom. */
 export interface AtomReference {
-  /** `exact` (closed form) or `grid` (quadrature of the posterior density of the model written as a program). */
-  readonly kind: 'exact' | 'grid'
+  /** `exact` (closed form), `grid` (quadrature of the posterior density of the model written as a program) or `truth` (no marginals). */
+  readonly kind: 'exact' | 'grid' | 'truth'
   readonly source: string
   readonly marginals: Readonly<Record<string, RefMarginal>>
   readonly joint?: RefJoint
@@ -332,6 +366,8 @@ export function atomBound(problem: AtomProblem): BoundModel {
  * ```
  */
 export function atomReference<K extends Config>(atom: EpAtom<K>, problem: AtomProblem): AtomReference {
+  if (atom.reference === 'truth')
+    return { kind: 'truth', source: 'the true values the data were simulated from (no reference posterior)', marginals: {} }
   if (atom.reference === 'exact') {
     const marginals: Record<string, RefMarginal> = {}
     for (const q of problem.quantities) {
@@ -489,6 +525,7 @@ function momentsOf(
  *
  * @param problem - The problem.
  * @param ep - The knobs of EP over its defaults (damping, schedule, tolerance, the sweep cap).
+ * @param options - `light` keeps no tape and no per-sweep beliefs (only the final ones): what a calibration over many seeds needs.
  * @returns The run, or the refusal.
  * @concept expectation-propagation
  * @index function Run EP on an atom's model: beliefs per sweep, a message record, or the refusal.
@@ -499,7 +536,7 @@ function momentsOf(
  * r.status // => 'ran'
  * ```
  */
-export function atomRun(problem: AtomProblem, ep: Config = {}): AtomRun {
+export function atomRun(problem: AtomProblem, ep: Config = {}, options: { readonly light?: boolean } = {}): AtomRun {
   // region inference
   const bound = problem.definition.bind(problem.data, problem.bindOptions)
   // compile to a factor graph and run EP on it: a rule for every factor
@@ -518,7 +555,7 @@ export function atomRun(problem: AtomProblem, ep: Config = {}): AtomRun {
       steps: maxSweeps + 2,
       mode: 'eager',
       config,
-      logs: 'all',
+      logs: options.light === true ? 'off' : 'all',
     }) as never
     // endregion
   } catch (e) {
@@ -539,9 +576,9 @@ export function atomRun(problem: AtomProblem, ep: Config = {}): AtomRun {
     return out
   }
   const last = s.t
-  const keep = new Set<number>([0, last])
+  const keep = new Set<number>(options.light === true ? [last] : [0, last])
   const stride = Math.max(1, Math.ceil(last / 60))
-  for (let t = 0; t <= last; t += stride) keep.add(t)
+  if (options.light !== true) for (let t = 0; t <= last; t += stride) keep.add(t)
   const history = [...keep]
     .filter((t) => t >= 0 && t <= last)
     .sort((a, b) => a - b)
@@ -601,9 +638,10 @@ export function atomCheck(
   reference: AtomReference,
   tolerance: AtomTolerance,
 ): AtomCheck {
-  const rows = problem.quantities.map((q): QuantityCheck => {
+  const rows = problem.quantities.flatMap((q): QuantityCheck[] => {
+    const ref = reference.marginals[q.name]
+    if (ref === undefined) return []
     const ep = beliefs[q.name] ?? { mean: Number.NaN, sd: Number.NaN, proper: false }
-    const ref = reference.marginals[q.name] as RefMarginal
     const meanZ = Math.abs(ep.mean - ref.mean) / ref.sd
     // A probability's spread is that of a coin: where it is nearly certain both are about zero and their ratio means nothing.
     const sdRatio = q.support === 'probability' ? (ep.sd + 1e-2) / (ref.sd + 1e-2) : ep.sd / ref.sd
@@ -615,7 +653,7 @@ export function atomCheck(
       sdRatio >= tolerance.sdRatio[0] &&
       sdRatio <= tolerance.sdRatio[1] &&
       ks <= tolerance.ks
-    return { name: q.name, label: q.label, ep, refMean: ref.mean, refSd: ref.sd, meanZ, sdRatio, ks, pass }
+    return [{ name: q.name, label: q.label, ep, refMean: ref.mean, refSd: ref.sd, meanZ, sdRatio, ks, pass }]
   })
   return { pass: rows.every((r) => r.pass), rows, tolerance }
 }

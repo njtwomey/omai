@@ -243,3 +243,76 @@ export function momentMatch(branches: readonly { weight: number; mean: number; s
   const second = branches.reduce((a, c) => a + (c.weight / total) * (c.sd ** 2 + c.mean ** 2), 0)
   return { mean, sd: Math.sqrt(Math.max(second - mean * mean, 0)) }
 }
+
+/** What a hyperparameter's value makes of one quantity: its moments and density given that value. */
+export interface ConditionalMarginal {
+  readonly mean: number
+  readonly variance: number
+  readonly pdf: (x: number) => number
+}
+
+/** The posterior of a positive hyperparameter on a log-spaced grid, and the marginals of what hangs below it. */
+export interface HyperPosterior {
+  /** The hyperparameter's own marginal. */
+  readonly hyper: ExactMarginal
+  /** The marginal of a quantity that is, given the hyperparameter, a known family: the mixture over the posterior of it. */
+  readonly mix: (given: (h: number) => ConditionalMarginal) => ExactMarginal
+}
+
+/**
+ * The posterior of a positive hyperparameter by quadrature on a log-spaced grid, and a way to mix what depends on it: in a
+ * hierarchy whose members are independent given the hyperparameter (a population of probabilities with a shared strength, of
+ * rates with a shared prior rate), each member's exact marginal is the mixture of its conditional distributions over this
+ * posterior.
+ *
+ * @param logDensity - The log of the hyperparameter's unnormalised marginal posterior density (with respect to its own value).
+ * @param lo - The smallest value on the grid (positive).
+ * @param hi - The largest.
+ * @param points - Grid points (default 1500).
+ * @returns The hyperparameter's marginal, and the mixing function.
+ * @example
+ * ```ts
+ * import { hyperPosterior } from 'omai-engine/bayesian-examples'
+ * const post = hyperPosterior((h) => 2 * Math.log(h) - 3 * h, 1e-3, 40)
+ * Math.abs(post.hyper.mean - 3 / 3) < 1e-3 // => true
+ * ```
+ */
+export function hyperPosterior(logDensity: (h: number) => number, lo: number, hi: number, points = 1500): HyperPosterior {
+  const step = (Math.log(hi) - Math.log(lo)) / points
+  const hs = Array.from({ length: points }, (_, i) => Math.exp(Math.log(lo) + (i + 0.5) * step))
+  const logs = hs.map((h) => logDensity(h) + Math.log(h))
+  const top = Math.max(...logs)
+  const w0 = logs.map((l) => Math.exp(l - top))
+  const z = w0.reduce((a, b) => a + b, 0)
+  const w = w0.map((v) => v / z)
+  const mean = hs.reduce((a, h, i) => a + h * (w[i] ?? 0), 0)
+  const sd = Math.sqrt(hs.reduce((a, h, i) => a + (h - mean) ** 2 * (w[i] ?? 0), 0))
+  const keep = w.map((_, i) => i).filter((i) => (w[i] ?? 0) > 1e-9 * Math.max(...w))
+  const kept = keep.map((i) => hs[i] ?? 0)
+  const hyper: ExactMarginal = {
+    mean,
+    sd,
+    pdf: (x) => {
+      if (x <= 0) return 0
+      const i = Math.round((Math.log(x) - Math.log(lo)) / step - 0.5)
+      return i < 0 || i >= points ? 0 : (w[i] ?? 0) / step / x
+    },
+    range: [Math.max(0, Math.min(...kept) * 0.8), Math.max(...kept) * 1.2],
+  }
+  return {
+    hyper,
+    mix: (given) => {
+      const parts = keep.map((i) => ({ weight: w[i] ?? 0, ...given(hs[i] ?? 1) }))
+      const total = parts.reduce((a, p) => a + p.weight, 0)
+      const m1 = parts.reduce((a, p) => a + (p.weight / total) * p.mean, 0)
+      const m2 = parts.reduce((a, p) => a + (p.weight / total) * (p.variance + p.mean ** 2), 0)
+      const sdm = Math.sqrt(Math.max(m2 - m1 * m1, 0))
+      return {
+        mean: m1,
+        sd: sdm,
+        pdf: (x) => parts.reduce((a, p) => a + (p.weight / total) * p.pdf(x), 0),
+        range: [m1 - 6 * sdm, m1 + 8 * sdm],
+      }
+    },
+  }
+}
