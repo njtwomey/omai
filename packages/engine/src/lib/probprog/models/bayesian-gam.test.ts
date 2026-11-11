@@ -62,7 +62,7 @@ describe('bayesianGamMethod', () => {
       expect.arrayContaining(['hmc', 'nuts', 'mclmc', 'mala', 'pathfinder', 'svi', 'laplace']),
     )
     expect(offer.applicable.length).toBeGreaterThan(15)
-    expect(offer.unavailable['ep']).toContain("operator 'exp'")
+    expect(offer.unavailable['ep']).toContain('has no message rule')
     expect(Object.keys(offer.space.options)).toEqual(
       expect.arrayContaining([...offer.applicable, ...Object.keys(offer.unavailable)]),
     )
@@ -200,7 +200,7 @@ describe('the message-passing forms of the penalty prior', () => {
   }
 
   it('say which methods apply: the log-normal form none of the message passing, the gamma-noise form VMP and EP, the fixed form too', () => {
-    expect(bayesianGamMethods('penalty').unavailable['vmp']).toContain("operator 'exp'")
+    expect(bayesianGamMethods('penalty').unavailable['vmp']).toContain('has no message rule')
     const gamma = bayesianGamMethods('penalty', 'gammaNoise')
     expect(gamma.applicable).toEqual(expect.arrayContaining(['vmp', 'ep']))
     const fixed = bayesianGamMethods('penalty', 'fixed')

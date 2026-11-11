@@ -566,14 +566,14 @@ describe('what cannot be mapped is refused with the node and the reason', () => 
     expect(issuesOf(scale, { y: [1, 2] }).issues[0]).toMatchObject({ node: 'y', kind: 'operator' })
     expect(issuesOf(scale, { y: [1, 2] }).issues[0]?.reason).toMatch(/scale of 'y' depends on a random value/)
 
-    const nonlinear = defineModel('exp', (b) => {
+    const nonlinear = defineModel('log', (b) => {
       const w = b.latent('w', d.normal(0, 1))
-      b.observe('y', d.normal(ops.exp(w), 1), b.data('y', { dims: ['row'] }))
+      b.observe('y', d.normal(ops.log(w), 1), b.data('y', { dims: ['row'] }))
     })
-    expect(issuesOf(nonlinear, { y: [1, 2] }).issues[0]?.reason).toMatch(/operator 'exp' applied to a random value/)
+    expect(issuesOf(nonlinear, { y: [1, 2] }).issues[0]?.reason).toMatch(/operator 'log' applied to a random value/)
 
-    const family = defineModel('hn', (b) => {
-      b.observe('y', d.normal(b.latent('s', d.halfNormal(1)), 1), b.data('y', { dims: ['row'] }))
+    const family = defineModel('cauchy', (b) => {
+      b.observe('y', d.normal(b.latent('s', d.cauchy(0, 1)), 1), b.data('y', { dims: ['row'] }))
     })
     expect(issuesOf(family, { y: [1] }).issues[0]).toMatchObject({ node: 's', kind: 'family' })
 
@@ -1067,7 +1067,7 @@ describe('a categorical gate is the select factor (expectation propagation)', ()
 })
 
 describe('the larger and the smaller of two random values are the max and min factors', () => {
-  it('compile, run under EP, and refuse a known operand', () => {
+  it('compile, run under EP, and a known operand makes a rectifier', () => {
     const m = defineModel('hinge', (b) => {
       const a = b.latent('a', d.normal(0, 1))
       const c = b.latent('c', d.normal(1, 1))
@@ -1100,7 +1100,10 @@ describe('the larger and the smaller of two random values are the max and min fa
       const a = b.latent('a', d.normal(0, 1))
       b.observe('y', d.normal(ops.maximum(a, 0), 0.5), b.data('y', { dims: ['row'] }))
     })
-    expect(toFactorGraph(clip.bind({ y: [1] })).issues[0]?.reason).toMatch(/random value and a known one/)
+    // max(a, 0) is a rectifier: the apply factor of the engine, on a new variable.
+    const rectified = toFactorGraph(clip.bind({ y: [1] }))
+    expect(rectified.issues).toEqual([])
+    expect(rectified.graph?.factors.some((f) => f.operator === 'apply')).toBe(true)
   })
 })
 

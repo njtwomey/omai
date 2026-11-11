@@ -466,8 +466,7 @@ export const poissonLogAtom: EpAtom = defineAtom({
   what: 'A Gaussian predictor x and a Poisson count with rate exp(x): the numeric likelihood on a linear predictor (the log link of Poisson regression).',
   factors: ['prior (gaussian)', 'numeric likelihood: poisson with an exp link'],
   family: 'likelihoods',
-  expected: 'planned',
-  plan: 'ep-plan.md section 2, A (a generic numeric 1-D likelihood operator and registry: Poisson and negative binomial with a log link, Weibull, ordinal probit); in progress on another branch.',
+  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.1,

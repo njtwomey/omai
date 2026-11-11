@@ -298,16 +298,22 @@ describe('the factor graph of a Gaussian scan', () => {
     expect(g.graph?.variables.map((v) => v.name).filter((n) => /^x\[\d+\]$/.test(n))).toEqual(
       Y.map((_, t) => `x[${t}]`),
     )
-    const nonlinear = defineModel('nl', (b) => {
-      const y = b.data('y', { dims: ['time'] })
-      b.scan('x', {
-        over: 'time',
-        init: d.normal(0, 1),
-        step: ({ prev }) => d.normal(ops.tanh(prev), 0.5),
-        emit: ({ state, observe: obs }) => obs('y', d.normal(state, 0.4), y),
+    const chain = (f: (x: never) => never): ReturnType<typeof defineModel> =>
+      defineModel('nl', (b) => {
+        const y = b.data('y', { dims: ['time'] })
+        b.scan('x', {
+          over: 'time',
+          init: d.normal(0, 1),
+          step: ({ prev }) => d.normal(f(prev as never), 0.5),
+          emit: ({ state, observe: obs }) => obs('y', d.normal(state, 0.4), y),
+        })
       })
-    })
-    const refused = toFactorGraph(nonlinear.bind({ y: Y }))
+    // A tanh transition is the apply factor of the engine at every step (a nonlinear state space under EP).
+    const smooth = toFactorGraph(chain((x) => ops.tanh(x) as never).bind({ y: Y }))
+    expect(smooth.issues).toEqual([])
+    expect(smooth.graph?.factors.filter((f) => f.operator === 'apply')).toHaveLength(Y.length - 1)
+    // A logarithm of a Gaussian state has no message rule.
+    const refused = toFactorGraph(chain((x) => ops.log(x) as never).bind({ y: Y }))
     expect(refused.graph).toBeUndefined()
     expect(refused.issues.length).toBeGreaterThan(0)
   })

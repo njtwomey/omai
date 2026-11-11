@@ -35,7 +35,8 @@ describe('stochastic volatility', () => {
     expect(known.applicable).toEqual(expect.arrayContaining(['ep', 'particle-filter', 'nuts']))
     const inferred = volatilityExample.offer(base)
     expect(inferred.applicable).not.toContain('ep')
-    expect(inferred.unavailable['ep']).toMatch(/phi/)
+    // With phi and sigma inferred the initial state's scale is a computed random value, which has no message rule (a product with a random slope).
+    expect(inferred.unavailable['ep']).toMatch(/precision|scale/)
   })
 
   it('EP on the known-parameter model is close to the exact point-mass smoother, closer than Laplace', () => {

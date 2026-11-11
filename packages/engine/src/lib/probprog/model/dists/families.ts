@@ -60,7 +60,8 @@ export interface FamilyDef {
   readonly exponentialFamily: boolean
   /**
    * Whether message passing has a factor rule for the family although it has no exponential-family form (a Student t, a
-   * mixture of two normals): the compiler maps it for the cases its rules cover (known scale), so it is not opaque.
+   * mixture of two normals; a half-Cauchy, uniform or truncated normal prior, projected once onto a Gaussian): the compiler maps
+   * it for the cases its rules cover (known scale or bounds), so it is not opaque.
    */
   readonly messagePassing: boolean
   /** Example parameters of a valid member, used by tests and drawings. */
@@ -174,6 +175,7 @@ export function distributionFamilies(): Record<string, FamilyDef> {
           need('truncatedNormal', a, 'high'),
         ),
       { loc: 0, scale: 1, low: -1, high: 2 },
+      { messagePassing: true },
     ),
     family(
       'studentT',
@@ -199,7 +201,7 @@ export function distributionFamilies(): Record<string, FamilyDef> {
       ['scale'],
       (a) => halfCauchy(need('halfCauchy', a, 'scale')),
       { scale: 1 },
-      { defaults: { scale: 1 } },
+      { defaults: { scale: 1 }, messagePassing: true },
     ),
     family(
       'laplace',
@@ -262,6 +264,7 @@ export function distributionFamilies(): Record<string, FamilyDef> {
       { low: 0, high: 1 },
       {
         defaults: { low: 0, high: 1 },
+        messagePassing: true,
       },
     ),
     family(

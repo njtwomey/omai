@@ -5,7 +5,7 @@
  */
 
 import { OmaiError } from '../base/index.ts'
-import { bernoulliEta, betaEta, gammaEta, gaussianEta, normalGammaEta } from './families.ts'
+import { bernoulliEta, betaEta, gamma, gammaEta, gaussianEta, normalGammaEta } from './families.ts'
 import { discreteEta, gaussianMvEta } from './families-vector.ts'
 import type { Eta, FactorSpec } from './types.ts'
 
@@ -156,3 +156,140 @@ export const dirichletPrior = (variable: string, alpha: readonly number[]): Fact
  */
 export const normalGammaPrior = (variable: string, m: number, beta: number, a: number, b: number): FactorSpec =>
   priorFactor(variable, normalGammaEta(m, beta, a, b))
+
+/** What {@link projectedPrior} needs to know of a density: where it may be positive, and where to start looking for its mass. */
+export interface ProjectionOptions {
+  /** The family the density is projected onto (default `gaussian`; `gamma` needs a positive density). */
+  readonly family?: 'gaussian' | 'gamma'
+  /** The support of the density, `[lo, hi]` (default the whole line, or the positive half line for a gamma). */
+  readonly support?: readonly [number, number]
+  /** A point near the bulk of the mass, where the search for it starts (default 0, or 1 for a gamma). */
+  readonly start?: number
+}
+
+/** log density values on a grid of points, in the vectorised form the projection evaluates (one call per scan). */
+export type LogDensity = (x: Float64Array) => Float64Array
+
+const SCAN = 801
+const FINE = 6001
+
+/** The window of the line holding the mass of a log density: widened from `start` until the edges are negligible, then narrowed onto a spike. */
+function massWindow(logDensity: LogDensity, lo: number, hi: number, start: number): readonly [number, number] {
+  let a = Math.max(lo, start - 5)
+  let b = Math.min(hi, start + 5)
+  for (let round = 0; round < 40; round++) {
+    const xs = Float64Array.from({ length: SCAN }, (_, i) => a + ((b - a) * i) / (SCAN - 1))
+    const lp = logDensity(xs)
+    let top = Number.NEGATIVE_INFINITY
+    for (const v of lp) if (v > top) top = v
+    if (!Number.isFinite(top)) {
+      // Nothing finite in the window: look wider.
+      const span = b - a
+      a = Math.max(lo, a - 2 * span)
+      b = Math.min(hi, b + 2 * span)
+      continue
+    }
+    const span = b - a
+    let first = 0
+    let last = SCAN - 1
+    while (first < SCAN - 1 && (lp[first] as number) < top - 40) first++
+    while (last > 0 && (lp[last] as number) < top - 40) last--
+    const wide = (first === 0 && a > lo) || (last === SCAN - 1 && b < hi)
+    if (wide) {
+      if (first === 0 && a > lo) a = Math.max(lo, a - 2 * span)
+      if (last === SCAN - 1 && b < hi) b = Math.min(hi, b + 2 * span)
+      continue
+    }
+    const pad = (2 * span) / (SCAN - 1)
+    const na = Math.max(lo, a + (span * first) / (SCAN - 1) - pad)
+    const nb = Math.min(hi, a + (span * last) / (SCAN - 1) + pad)
+    // A window much wider than the mass is narrowed onto it and scanned again (a spike a grid of this size would miss).
+    if (nb - na < 0.5 * span) {
+      a = na
+      b = nb
+      continue
+    }
+    return [a, b]
+  }
+  return [a, b]
+}
+
+/**
+ * The mean and variance of a density given by its log (up to a constant) on an interval: a scan finds where the mass is,
+ * then a fine trapezoid rule integrates it. The moments the Gaussian projection of a density needs, found once.
+ *
+ * @param logDensity - The log density, on an array of points.
+ * @param lo - The lower end of the support (default -Infinity).
+ * @param hi - The upper end (default Infinity).
+ * @param start - A point near the bulk of the mass (default 0).
+ * @returns The mean and variance.
+ * @example
+ * ```ts
+ * import { densityMoments } from 'omai-engine/message-passing'
+ * // The density proportional to exp(-x^2 / 8): N(0, 4).
+ * const m = densityMoments((x) => x.map((v) => -(v * v) / 8))
+ * [m.mean.toFixed(4), m.variance.toFixed(3)] // => ['0.0000', '4.000']
+ * ```
+ */
+export function densityMoments(
+  logDensity: LogDensity,
+  lo: number = Number.NEGATIVE_INFINITY,
+  hi: number = Number.POSITIVE_INFINITY,
+  start = 0,
+): { readonly mean: number; readonly variance: number; readonly meanLog: number } {
+  const [a, b] = massWindow(logDensity, lo, hi, Math.min(Math.max(start, lo), hi))
+  const xs = Float64Array.from({ length: FINE }, (_, i) => a + ((b - a) * i) / (FINE - 1))
+  const lp = logDensity(xs)
+  let top = Number.NEGATIVE_INFINITY
+  for (const v of lp) if (v > top) top = v
+  let z = 0
+  let m1 = 0
+  let ml = 0
+  for (let i = 0; i < FINE; i++) {
+    const w = Math.exp((lp[i] as number) - top) * (i === 0 || i === FINE - 1 ? 0.5 : 1)
+    z += w
+    m1 += w * (xs[i] as number)
+    ml += w * Math.log(Math.max(xs[i] as number, Number.MIN_VALUE))
+  }
+  const mean = m1 / z
+  let m2 = 0
+  for (let i = 0; i < FINE; i++)
+    m2 += Math.exp((lp[i] as number) - top) * (i === 0 || i === FINE - 1 ? 0.5 : 1) * ((xs[i] as number) - mean) ** 2
+  return { mean, variance: m2 / z, meanLog: ml / z }
+}
+
+/**
+ * The prior factor of a variable whose density has no message family (a half-normal, half-Cauchy, uniform or truncated
+ * normal): the density projected once onto the variable's family by matching moments (the KL projection onto a Gaussian:
+ * its mean and variance; onto a gamma: `E[x]` and `E[log x]`), and put in the graph as an ordinary prior. The model the
+ * graph then holds has the projected prior, not the original: the Gaussian cannot have a bound or a half line, the gamma a
+ * heavy tail, and what the projection loses is the prior's shape, not the posterior's (which EP projects again, site by site).
+ *
+ * @param variable - The variable's name.
+ * @param logDensity - The log density (up to a constant) on an array of points.
+ * @param options - The family, the support and a starting point for the search for the mass.
+ * @returns The prior factor.
+ * @concept factor-operators
+ * @index function A prior factor from any density: projected once onto a Gaussian or gamma by moment matching.
+ * @example
+ * ```ts
+ * import { projectedPrior } from 'omai-engine/message-passing'
+ * // Uniform on [0, 1]: mean 1/2, variance 1/12, a Gaussian with the same two moments (natural parameters h = mean / variance, J = 1 / variance).
+ * const f = projectedPrior('u', (x) => x.map(() => 0), { support: [0, 1], start: 0.5 })
+ * f.params?.['eta']?.map((v) => (v as number).toFixed(3)) // => ['6.000', '12.000']
+ * ```
+ */
+export function projectedPrior(variable: string, logDensity: LogDensity, options: ProjectionOptions = {}): FactorSpec {
+  const family = options.family ?? 'gaussian'
+  const [lo, hi] =
+    options.support ??
+    (family === 'gamma' ? [0, Number.POSITIVE_INFINITY] : [Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY])
+  const m = densityMoments(logDensity, lo, hi, options.start ?? (family === 'gamma' ? 1 : 0))
+  if (family === 'gamma') {
+    if (!(lo >= 0)) throw new OmaiError('value', 'projectedPrior: a gamma needs a density on the positive half line')
+    return priorFactor(variable, gamma.fromMoments([m.meanLog, m.mean]))
+  }
+  if (!(m.variance > 0) || !Number.isFinite(m.variance))
+    throw new OmaiError('value', 'projectedPrior: the density has no finite variance')
+  return gaussianPrior(variable, m.mean, m.variance)
+}

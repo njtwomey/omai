@@ -50,8 +50,7 @@ export const expAtom: EpAtom = defineAtom({
   what: 'A Gaussian x, the value g = exp(x) observed through Gaussian noise: the unary-function factor, whose exact posterior is skewed (log-normal likelihood against a Gaussian prior).',
   factors: ['prior (gaussian)', 'apply: exp of a random value', 'gaussian likelihood'],
   family: 'functions',
-  expected: 'planned',
-  plan: 'ep-plan.md section 2, B (`apply` for unary functions: exp, square, tanh, relu): a message to the input from the tilted moments under the cavity of the output; in progress on another branch.',
+  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.2,
@@ -93,8 +92,7 @@ export const tanhAtom: EpAtom = defineAtom({
   what: 'A Gaussian x, the value g = tanh(x) observed through Gaussian noise: the squashing unit of a Bayesian neural network, saturating at plus and minus one.',
   factors: ['prior (gaussian)', 'apply: tanh of a random value', 'gaussian likelihood'],
   family: 'functions',
-  expected: 'planned',
-  plan: 'ep-plan.md section 2, B (`apply`: tanh, relu): the same rule as exp; in progress on another branch.',
+  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.2,
@@ -194,8 +192,7 @@ export const productAtom: EpAtom = defineAtom({
   what: 'Two Gaussians a and b and an observation of their product a b: the product factor, a banana posterior along a b = y that a belief per variable cannot follow.',
   factors: ['prior (gaussian) x2', 'product (numeric)', 'gaussian likelihood'],
   family: 'functions',
-  expected: 'planned',
-  plan: 'ep-plan.md section 7 (WP-B, proper initial messages): the compiler accepts the product and the first update of the factor sends an improper message that the run cannot recover from (a Gaussian message with no density); it needs proper initial messages in place of the vague-prior workaround.',
+  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.35,

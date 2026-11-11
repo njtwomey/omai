@@ -204,15 +204,29 @@ Done in WP-B (2026-11-11, `agent-pp53-rulesb`), each against an exact or brute-f
 
 Still open, in the order of the work packages that follow:
 
-- WP-A (likelihood and function rules): a generic numeric 1-D likelihood operator and registry (Poisson and negative binomial
-  with a log link, Weibull, ordinal probit, binomial logistic; the Student-t and Laplace sites folded into it), `apply` for unary
-  functions of a random value (`exp`, `square`, `tanh`, `relu`, `softplus`, `abs`: `exp` for log-normal discriminations,
-  Poisson regression, the non-centred funnel; `tanh` and `relu` for the Bayesian neural network), numeric priors (half-normal,
-  half-Cauchy, log-normal, uniform, truncated: eight schools, radon, the GP length scale; a half-Cauchy scale could map to the
-  `gamma-rate` hierarchy), an EP-friendly negative binomial.
+- WP-A (likelihood and function rules): built, see section 8 (the likelihood registry, `apply`, the projected priors, the
+  negative binomial with a random dispersion). Remaining of it: model-layer distributions for the ordinal probit and the
+  asymmetric Laplace (their rules are in the registry), `sqrt` and `log` of a random value, the GP length scale (a kernel
+  matrix that depends on a random value), a half-Cauchy scale through the `gamma-rate` hierarchy instead of its projection.
 - WP-B remainder: Student-t with learned degrees of freedom (a random shape of the mixing gamma has no exponential-family rule),
   a gate over a mix of known values and non-Gaussian random components, nested model-layer `gate` nodes with sub-models in
   branches (the engine's `gate` takes any branch operator; the model layer maps lookups of Gaussian forms only), the engine-level
   replacement of the operators' flat-cavity reads by start messages, the multi-coefficient horseshoe's shrunk-coefficient widths.
 - The atoms suite and the coverage figure (`epCoverage()` as a library function with a test): done by pp51; the atoms `gate`,
   `ordered-means` and `scaled-precision` were flipped to `runs`.
+
+## 8. WP-A, built (2026-11-11)
+
+With WP-A alone EP ran on 19 of the 27 benchmark models; with WP-B merged it runs on 23 (`epCoverage()`; 28 of 28 atoms). Still refused: the two Gaussian process regressions (a kernel Gram matrix that depends on the random length scale, and an opaque Cholesky function), the stick-breaking mixture (an opaque custom function), LDA (the compiler throws on a Dirichlet with no size). Built, each against an exact or brute-force reference:
+- A generic numeric 1-D likelihood registry (`message-passing/operators/likelihoods.ts`: Poisson and negative binomial with a log link,
+  Weibull and log-normal survival (right-censored too), binomial with a logistic or probit link, ordinal probit, asymmetric
+  Laplace, Student t, Laplace) behind `likelihood-site` and `likelihood-row`, integrated by the zooming panelled quadrature of
+  `_tilted.ts`; the compiler maps Poisson (exposure), binomial, negative binomial (known or random dispersion), Weibull, log-normal
+  (exact, on the log). Ordinal probit and asymmetric Laplace are in the registry but have no model-layer distribution yet.
+- `apply` (`functions.ts`): `exp`, `square`, `tanh`, `relu` (closed form), `softplus`, `abs`, `sigmoid`; `max`/`min` with a known
+  operand is a rectifier. Poisson regression, the funnels, the banana and the Bayesian neural network compile.
+- Priors without a message family projected once (`projectedPrior`, `priors.ts`): half-normal, half-Cauchy, log-normal, uniform and
+  truncated normal, a positive scale on its log; a latent with a random scale is written non-centred, an observed value with a
+  random scale is `gaussian-scale`. Eight schools (both forms), the centred funnel and radon compile.
+- `toFactorGraph(bound, { packScalars: true })`: scalar normal latents that share a predictor are one joint vector, so EP keeps
+  their correlation (without it the marginal sds are too small by 2 to 3 times on Poisson and negative binomial regression).
