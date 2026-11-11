@@ -7,11 +7,18 @@
  * Gaussians); the pushforward of a flat output is closed form for `exp`, `square`, `relu` and `abs`; the others are the
  * panelled quadrature of `_tilted.ts`, split at the function's kinks. Under variational message passing the output is defined by the
  * input (a Gaussian with the mean and variance of the pushforward) and the message to the input is non-conjugate, by quadrature.
+ *
+ * The function can be a chain: the parameter `steps` lists unary steps (a registry name, or `mul`, `add`, `pow` with a constant)
+ * applied one after the other, so `1 / sqrt(d exp(x) + n)` is one factor from `x` to the output rather than a chain of Gaussian
+ * approximations (the compiler collapses the arithmetic on a function's output into the chain). The input can be a gamma variable
+ * (a precision `alpha`: `1 / sqrt(alpha)` is the scale of a non-centred coefficient), integrated on a grid in `log alpha`, and the
+ * message to it is the gamma with the tilted moments.
  */
 
 import { logAddExp, OmaiError, sigmoidOf } from '../../base/index.ts'
 import { Phi, phi } from '../_scalar.ts'
 import { tiltedByQuadrature, type WindowHint } from '../_tilted.ts'
+import { gamma } from '../families.ts'
 import { truncatedNormalMoments } from '../truncated.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
 import {
@@ -22,8 +29,9 @@ import {
   gaussianSiteMessage,
   ImproperMessageError,
   massOf,
+  siteMessage,
 } from './args.ts'
-import { definedFunctionMessage } from './variational-numeric.ts'
+import { definedFunctionMessage, quadraturePort } from './variational-numeric.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
@@ -43,11 +51,11 @@ const softplusOf = (x: number): number => logAddExp(0, x)
 const unary = (u: UnaryFunction): UnaryFunction => u
 
 /**
- * The registry of unary functions by name: `exp`, `square`, `tanh`, `relu`, `softplus`, `abs`, `sigmoid`. A new object each call.
+ * The registry of unary functions by name: `exp`, `square`, `tanh`, `relu`, `softplus`, `abs`, `sigmoid`, `sqrt`, `recip`. A new object each call.
  *
  * @returns The functions, keyed by name.
  * @concept factor-operators
- * @index table The unary functions of a Gaussian variable (exp, square, tanh, relu, softplus, abs, sigmoid) by name.
+ * @index table The unary functions of a Gaussian variable (exp, square, tanh, relu, softplus, abs, sigmoid, sqrt, recip) by name.
  * @example
  * ```ts
  * import { unaryFunctions } from 'omai-engine/message-passing'
@@ -96,17 +104,49 @@ export function unaryFunctions(): Record<string, UnaryFunction> {
       },
     }),
     unary({ name: 'sigmoid', description: 'y = 1 / (1 + exp(-x)): the logistic function', f: sigmoidOf }),
+    unary({ name: 'sqrt', description: 'y = sqrt(x): the square root of a positive value', f: Math.sqrt }),
+    unary({ name: 'recip', description: 'y = 1 / x: the reciprocal', f: (x) => 1 / x }),
   ]
   return Object.fromEntries(all.map((u) => [u.name, u]))
 }
 
 const isFlat = (eta: Eta): boolean => (eta[0] ?? 0) === 0 && (eta[1] ?? 0) === 0
 
-/** The function a factor applies, by its parameter `fn`. */
+/** One step of a chain: a registry function by name, or `mul`, `add`, `pow` with its constant. */
+type Step = readonly [string, number?]
+
+/** The function of a chain of steps, applied in order. */
+function chainOf(table: Readonly<Record<string, UnaryFunction>>, steps: readonly Step[]): UnaryFunction {
+  const fs = steps.map(([name, k]): ((x: number) => number) => {
+    const c = k ?? Number.NaN
+    if (name === 'mul') return (x) => x * c
+    if (name === 'add') return (x) => x + c
+    if (name === 'pow') return (x) => x ** c
+    const fn = table[name]
+    if (fn === undefined)
+      throw new OmaiError(
+        'value',
+        `apply: unknown step ${name} (the registry has ${Object.keys(table).join(', ')}, and mul, add, pow with a constant)`,
+      )
+    return fn.f
+  })
+  const first = steps.length === 1 ? table[steps[0]?.[0] ?? ''] : undefined
+  return {
+    name: first?.name ?? 'chain',
+    description: `the composition of ${steps.map(([name, k]) => (k === undefined ? name : `${name} ${k}`)).join(', ')}`,
+    f: (x) => fs.reduce((v, f) => f(v), x),
+    ...(first?.kinks === undefined ? {} : { kinks: first.kinks }),
+    ...(first?.pushforward === undefined ? {} : { pushforward: first.pushforward }),
+  }
+}
+
+/** The function a factor applies: the chain of its parameter `steps`, else the registry function named by `fn`. */
 function resolve(
   table: Readonly<Record<string, UnaryFunction>>,
   params: Readonly<Record<string, unknown>>,
 ): UnaryFunction {
+  const steps = params['steps']
+  if (Array.isArray(steps) && steps.length > 0) return chainOf(table, steps as Step[])
   const key = params['fn']
   const fn = typeof key === 'string' ? table[key] : undefined
   if (fn === undefined)
@@ -168,11 +208,65 @@ function tilt(fn: UnaryFunction, cavity: { mean: number; variance: number }, y: 
     fn.kinks === undefined
       ? undefined
       : { centre: cavity.mean, scale: Math.sqrt(cavity.variance), reach: 9, kinks: fn.kinks }
-  const t = tiltedByQuadrature(cavity, logf, hint, f)
+  // Where the function is not defined (a square root of a negative value) the weight is zero: its value must not poison the moments.
+  const t = tiltedByQuadrature(cavity, logf, hint, (x) => {
+    const v = f(x)
+    return Number.isFinite(v) ? v : 0
+  })
   return {
     logMass: t.logMass,
     x: { mean: t.mean, variance: Math.max(t.variance, FLOOR) },
     y: { mean: t.fnMean, variance: Math.max(t.fnVariance, FLOOR) },
+  }
+}
+
+/** The tilted input and output of `y = f(x)` for a gamma input: a grid in `log x` under the cavity, weighted by the output's message. */
+function tiltGamma(
+  fn: UnaryFunction,
+  cavity: Arg,
+  y: Eta,
+  power: number,
+): {
+  readonly logMass: number
+  readonly x: Eta
+  readonly y: { readonly mean: number; readonly variance: number }
+} {
+  const h = y[0] ?? 0
+  const J = y[1] ?? 0
+  const port = quadraturePort(cavity, { points: 481 })
+  const n = port.coords.length
+  const values = Float64Array.from(port.coords, fn.f)
+  const lw = new Float64Array(n)
+  let top = Number.NEGATIVE_INFINITY
+  for (let i = 0; i < n; i++) {
+    const v = values[i] as number
+    lw[i] = Number.isFinite(v)
+      ? Math.log(port.weights[i] as number) + power * (h * v - 0.5 * J * v * v)
+      : Number.NEGATIVE_INFINITY
+    if ((lw[i] as number) > top) top = lw[i] as number
+  }
+  if (!Number.isFinite(top)) throw new ImproperMessageError('apply: the factor has no mass against this cavity')
+  let m0 = 0
+  let logX = 0
+  let xMean = 0
+  let yMean = 0
+  for (let i = 0; i < n; i++) {
+    const w = Math.exp((lw[i] as number) - top)
+    if (w === 0) continue
+    m0 += w
+    logX += w * (port.stats[i]?.[0] ?? 0)
+    xMean += w * (port.stats[i]?.[1] ?? 0)
+    yMean += w * (values[i] as number)
+  }
+  let yVar = 0
+  for (let i = 0; i < n; i++) {
+    const w = Math.exp((lw[i] as number) - top)
+    if (w > 0) yVar += w * ((values[i] as number) - yMean / m0) ** 2
+  }
+  return {
+    logMass: top + Math.log(m0),
+    x: [logX / m0, xMean / m0],
+    y: { mean: yMean / m0, variance: Math.max(yVar / m0, FLOOR) },
   }
 }
 
@@ -204,10 +298,10 @@ export function applyFunction(
 ): FactorOperator {
   return {
     name,
-    description: 'y = f(x) for a unary function of a Gaussian variable',
+    description: 'y = f(x) for a unary function (or a chain of them) of a Gaussian or gamma variable',
     ports: [
       { name: 'y', accepts: ['gaussian'] },
-      { name: 'x', accepts: ['gaussian'] },
+      { name: 'x', accepts: ['gaussian', 'gamma'] },
     ],
     support: { ep: 'numeric', vmp: 'numeric' },
     // The message to x is a match against x's own cavity; the message to y needs none (a flat y is told the pushforward).
@@ -220,7 +314,7 @@ export function applyFunction(
     defines: 0,
     vmp: (c): OperatorResult => {
       const fn = resolve(table, c.params)
-      if (c.to === 0 && fn.pushforward !== undefined) {
+      if (c.to === 0 && fn.pushforward !== undefined && arg(c, 1).family.kind === 'gaussian') {
         const x = gaussianOf(arg(c, 1))
         const p = fn.pushforward(x.mean, x.variance)
         return { message: gaussianMessage(p.mean, Math.max(p.variance, FLOOR)) }
@@ -239,6 +333,17 @@ export function applyFunction(
     ep: (c): OperatorResult => {
       const fn = resolve(table, c.params)
       const incoming = etaOf(arg(c, 0))
+      if (arg(c, 1).family.kind === 'gamma') {
+        if (c.to === 1) {
+          if (isFlat(incoming)) return { message: [0, 0] }
+          const t = tiltGamma(fn, arg(c, 1), incoming, c.power)
+          const site = siteMessage(gamma, etaOf(arg(c, 1)), t.x)
+          return { message: c.power === 1 ? site : site.map((v) => v / c.power) }
+        }
+        const t = tiltGamma(fn, arg(c, 1), incoming, c.power)
+        const site = gaussianSiteMessage(incoming, t.y.mean, t.y.variance)
+        return { message: c.power === 1 ? site : site.map((v) => v / c.power) }
+      }
       const x = gaussianOf(arg(c, 1))
       if (c.to === 1) {
         // Nothing is known about y: the constraint says nothing about x.
@@ -261,6 +366,8 @@ export function applyFunction(
       if (isFlat(incoming)) return allProper([arg(c, 1)]) ? massOf(arg(c, 1)) : Number.NaN
       if (!allProper(c.args)) return Number.NaN
       const fn = resolve(table, c.params)
+      if (arg(c, 1).family.kind === 'gamma')
+        return massOf(arg(c, 1)) + tiltGamma(fn, arg(c, 1), incoming, c.power).logMass
       return massOf(arg(c, 1)) + tilt(fn, gaussianOf(arg(c, 1)), incoming, c.power).logMass
     },
   }
@@ -273,3 +380,174 @@ export function applyFunction(
  * @index structure The factor y = f(x) of a unary function of a Gaussian (exp, square, tanh, relu, softplus, abs, sigmoid).
  */
 export const apply: FactorOperator = applyFunction('apply')
+
+/** The conditional of `z` given `x` under `y = z f(x)`: the cavity of `z` times the output's message, a Gaussian in `z`, with its log mass. */
+function scaledConditional(
+  z: { readonly mean: number; readonly variance: number },
+  y: Eta,
+  u: number,
+  power: number,
+): { readonly logMass: number; readonly mean: number; readonly variance: number } | undefined {
+  if (!Number.isFinite(u)) return undefined
+  const p0 = 1 / z.variance
+  const h0 = z.mean / z.variance
+  const precision = p0 + power * (y[1] ?? 0) * u * u
+  if (!(precision > 0)) return undefined
+  const linear = h0 + power * (y[0] ?? 0) * u
+  return {
+    logMass: 0.5 * Math.log(p0 / precision) + 0.5 * ((linear * linear) / precision - (h0 * h0) / p0),
+    mean: linear / precision,
+    variance: 1 / precision,
+  }
+}
+
+/** What one integral over `x` gives for `y = z f(x)`: the log mass, the tilted moments of `x` and the expectations that become the moments of `z` and `y`. */
+interface ScaledTilt {
+  readonly logMass: number
+  readonly x: { readonly mean: number; readonly variance: number; readonly logMean: number }
+  readonly z: { readonly mean: number; readonly second: number }
+  readonly y: { readonly mean: number; readonly second: number }
+}
+
+function scaledTilt(fn: UnaryFunction, c: OperatorContext): ScaledTilt {
+  const y = etaOf(arg(c, 0))
+  const z = gaussianOf(arg(c, 1))
+  const input = arg(c, 2)
+  const conditionalAt = (x: number): { conditional: ReturnType<typeof scaledConditional>; u: number } => {
+    const u = fn.f(x)
+    return { conditional: scaledConditional(z, y, u, c.power), u }
+  }
+  const logf = (x: number): number => conditionalAt(x).conditional?.logMass ?? Number.NEGATIVE_INFINITY
+  const expectation =
+    (pick: (mean: number, variance: number, u: number) => number) =>
+    (x: number): number => {
+      const { conditional, u } = conditionalAt(x)
+      return conditional === undefined ? 0 : pick(conditional.mean, conditional.variance, u)
+    }
+  const zMean = expectation((m) => m)
+  const zSecond = expectation((m, v) => v + m * m)
+  const yMean = expectation((m, _v, u) => u * m)
+  const ySecond = expectation((m, v, u) => u * u * (v + m * m))
+  if (input.family.kind === 'gamma') {
+    const port = quadraturePort(input, { points: 481 })
+    const n = port.coords.length
+    const lw = Float64Array.from(port.coords, (x, i) => Math.log(port.weights[i] as number) + logf(x))
+    let top = Number.NEGATIVE_INFINITY
+    for (const v of lw) if (v > top) top = v
+    if (!Number.isFinite(top))
+      throw new ImproperMessageError('apply-product: the factor has no mass against these cavities')
+    let m0 = 0
+    const sums = { logX: 0, x: 0, z1: 0, z2: 0, y1: 0, y2: 0 }
+    for (let i = 0; i < n; i++) {
+      const w = Math.exp((lw[i] as number) - top)
+      if (w === 0) continue
+      const x = port.coords[i] as number
+      m0 += w
+      sums.logX += w * (port.stats[i]?.[0] ?? 0)
+      sums.x += w * (port.stats[i]?.[1] ?? 0)
+      sums.z1 += w * zMean(x)
+      sums.z2 += w * zSecond(x)
+      sums.y1 += w * yMean(x)
+      sums.y2 += w * ySecond(x)
+    }
+    return {
+      logMass: top + Math.log(m0),
+      x: { mean: sums.x / m0, variance: Number.NaN, logMean: sums.logX / m0 },
+      z: { mean: sums.z1 / m0, second: sums.z2 / m0 },
+      y: { mean: sums.y1 / m0, second: sums.y2 / m0 },
+    }
+  }
+  const t = tiltedByQuadrature(gaussianOf(input), logf, undefined, undefined, [zMean, zSecond, yMean, ySecond])
+  const [z1, z2, y1, y2] = t.extra.map((e) => e.mean) as [number, number, number, number]
+  return {
+    logMass: t.logMass,
+    x: { mean: t.mean, variance: Math.max(t.variance, FLOOR), logMean: Number.NaN },
+    z: { mean: z1, second: z2 },
+    y: { mean: y1, second: y2 },
+  }
+}
+
+/**
+ * The factor `y = z f(x)`: a Gaussian `z` times a function of one other variable `x` (a Gaussian, or a gamma variable), the
+ * function a registry function or a chain of steps as in {@link applyFunction}. It is the scale of a non-centred coefficient,
+ * `beta = z / sqrt(precision(x))` with `z` standard normal and the precision a known map of a log smoothing parameter (or of a
+ * gamma relevance): the product of `z` with the output of a unary function, fused so that nothing is approximated by a Gaussian
+ * on the way. Given `x` the factor is linear in `z`, so against the cavity of `z` and the message of `y` the integral over `z`
+ * is closed form and what is left is one one-dimensional integral over `x` (a panelled grid for a Gaussian, a grid in `log x` for a
+ * gamma): the message to `x` is its moment match, the message to `z` is the moment match of the mixture of the conditional
+ * Gaussians over it, and the message to `y` that of `u z` with `u = f(x)`.
+ *
+ * @param name - The operator's name.
+ * @param table - The functions to choose from (default {@link unaryFunctions}).
+ * @returns The operator (expectation propagation only).
+ * @concept factor-operators
+ * @index function The factor y = z f(x) of a Gaussian times a function of a Gaussian or gamma variable: a non-centred scale.
+ * @example
+ * ```ts
+ * import { applyProduct, gaussian, gaussianEta, messageArg } from 'omai-engine/message-passing'
+ * const op = applyProduct('apply-product')
+ * // y = z / sqrt(x) with z ~ N(0, 1) and x ~ N(4, 0.01): told nothing about y, the message to y is about N(0, 1 / 4).
+ * const args = [gaussian.flat, gaussianEta(0, 1), gaussianEta(4, 0.01)].map((eta) => messageArg(gaussian, eta))
+ * op.ep?.({ mode: 'ep', to: 0, args, params: { steps: [['sqrt'], ['recip']] }, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.000', '4.000']
+ * ```
+ */
+export function applyProduct(
+  name: string,
+  table: Readonly<Record<string, UnaryFunction>> = unaryFunctions(),
+): FactorOperator {
+  return {
+    name,
+    description: 'y = z f(x) for a Gaussian z and a function of a Gaussian or gamma variable x',
+    ports: [
+      { name: 'y', accepts: ['gaussian'] },
+      { name: 'z', accepts: ['gaussian'] },
+      { name: 'x', accepts: ['gaussian', 'gamma'] },
+    ],
+    // Expectation propagation only: the non-conjugate variational rule of a product with a scale (`z f(x)`, a funnel) is degenerate
+    // (measured on the Bayesian GAM: the noise collapses to a point), so the verdict of variational message passing says so.
+    support: { ep: 'numeric' },
+    readsTarget: (to) => to !== 0,
+    power: true,
+    check: (params) => {
+      try {
+        resolve(table, params)
+        return undefined
+      } catch (e) {
+        return e instanceof Error ? e.message : String(e)
+      }
+    },
+    ep: (c): OperatorResult => {
+      const fn = resolve(table, c.params)
+      const incoming = etaOf(arg(c, 0))
+      if (isFlat(incoming) && c.to !== 0) return { message: [0, 0] }
+      const t = scaledTilt(fn, c)
+      const scaled = (site: Eta): Eta => (c.power === 1 ? site : site.map((v) => v / c.power))
+      if (c.to === 2) {
+        const input = arg(c, 2)
+        return {
+          message: scaled(
+            input.family.kind === 'gamma'
+              ? siteMessage(gamma, etaOf(input), [t.x.logMean, t.x.mean])
+              : gaussianSiteMessage(etaOf(input), t.x.mean, t.x.variance),
+          ),
+        }
+      }
+      const moments = c.to === 1 ? t.z : t.y
+      const variance = Math.max(moments.second - moments.mean * moments.mean, FLOOR)
+      return { message: scaled(gaussianSiteMessage(etaOf(arg(c, c.to)), moments.mean, variance)) }
+    },
+    logEvidence: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const fn = resolve(table, c.params)
+      return massOf(arg(c, 1)) + massOf(arg(c, 2)) + scaledTilt(fn, c).logMass
+    },
+  }
+}
+
+/**
+ * The factor `y = z f(x)` of a Gaussian times a function of a Gaussian or gamma variable: the operator `apply-product`.
+ *
+ * @concept factor-operators
+ * @index structure The factor y = z f(x): a Gaussian times a function of a Gaussian or gamma variable (a non-centred scale).
+ */
+export const applyProductOperator: FactorOperator = applyProduct('apply-product')

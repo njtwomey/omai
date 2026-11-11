@@ -332,7 +332,6 @@ export function bayesianGam(x: readonly number[], y: readonly number[], options:
       })
       const gamma = m.derived('gamma', z.div(logLam.exp().mul(penalty).add(flat).sqrt()), {
         doc: 'the spline coefficients, with the penalty as the precision of their prior',
-        record: false,
       })
       m.observe('y', d.normal(X.matmul(gamma), logSig.exp()), y)
     })
@@ -438,7 +437,9 @@ function localGam(x: readonly number[], y: readonly number[], options: BayesianG
         doc: 'the coefficients in units of their prior standard deviation',
       })
       const relevance = alpha.mul(sparsity).add(1 - sparsity)
-      const beta = m.derived('beta', z.div(relevance.sqrt()), { record: false })
+      const beta = m.derived('beta', z.div(relevance.sqrt()), {
+        doc: 'the coefficient of each basis function',
+      })
       m.observe('y', d.normal(X.matmul(beta), logSig.exp()), y)
       // endregion
       return
@@ -571,12 +572,16 @@ export function bayesianGamFit(
   const logLam = draws['logLambda']
   const alphaDraws = draws['alpha']
   const tauDraws = draws['tau']
-  const source = draws[centred ? 'gamma' : prior === 'spikeSlab' ? 'beta' : 'z']
+  // The non-centred forms record the coefficients themselves (`gamma`, `beta`): the draws are read as they are when present (message
+  // passing has marginals of each, and the product of independent marginals of `z` and the scale is not their joint); else the
+  // standard normal `z` is divided by the square root of the precision of each draw.
+  const direct = prior === 'penalty' && !centred ? draws['gamma'] : prior === 'ard' ? draws['beta'] : undefined
+  const source = direct ?? draws[centred ? 'gamma' : prior === 'spikeSlab' ? 'beta' : 'z']
   const logSig = fixedNoise ? undefined : centred ? (tauDraws === undefined ? undefined : tauDraws) : draws['logSigma']
   if (
     source === undefined ||
     (logSig === undefined && !fixedNoise) ||
-    (prior === 'penalty' && !centred && logLam === undefined) ||
+    (prior === 'penalty' && !centred && logLam === undefined && direct === undefined) ||
     (prior === 'ard' && alphaDraws === undefined)
   )
     throw new OmaiError(
@@ -605,8 +610,8 @@ export function bayesianGamFit(
   const beta: number[][] = Array.from({ length: n }, (_, i) => {
     const row = Array.from({ length: size }, (_, j) => raw[i * size + j] ?? 0)
     if (prior === 'spikeSlab') return row
-    if (prior === 'ard') return row.map((v, j) => v / Math.sqrt(ardPrecision(i, j)))
-    if (centred) return model.original(row)
+    if (prior === 'ard') return direct === undefined ? row.map((v, j) => v / Math.sqrt(ardPrecision(i, j))) : row
+    if (centred || direct !== undefined) return model.original(row)
     const precision = model.precision(lams[i] ?? 0)
     return model.original(row.map((v, j) => v / Math.sqrt(precision[j] ?? 1)))
   })
@@ -1038,14 +1043,14 @@ export const bayesianGamNotes: Readonly<Record<string, string>> = {
  * each that cannot (see `methodSpace`), with the starting knobs of {@link bayesianGamStarting}, opening on HMC.
  *
  * @param prior - The prior of the model (default the smoothness penalty); the verdicts are those of this model.
- * @param hyper - The hyperprior form of the penalty prior (see `BayesianGamOptions.hyper`): `gammaNoise` makes variational message passing apply, `fixed` also expectation propagation and exact Gaussian inference.
+ * @param hyper - The hyperprior form of the penalty prior (see `BayesianGamOptions.hyper`): expectation propagation applies to every form (the non-centred ones through the `apply-product` factor), `gammaSmooth`, `gammaNoise` and `fixed` open on it, and `fixed` also has exact Gaussian inference.
  * @returns The union (tagged `method`), the applicable kinds and the reasons for the others.
  * @concept inference-engines
  * @example
  * ```ts
  * import { bayesianGamMethods } from 'omai-engine/probprog/models'
  * const m = bayesianGamMethods()
- * [m.applicable.includes('nuts'), 'ep' in m.unavailable] // => [true, true]
+ * [m.applicable.includes('nuts'), m.applicable.includes('ep')] // => [true, true]
  * ```
  */
 export function bayesianGamMethods(
@@ -1058,11 +1063,13 @@ export function bayesianGamMethods(
     { k: 5, prior, hyper },
   )
   // region gam:offer
+  // The forms whose message passing is quick (a second or two) open on expectation propagation, the rest on HMC.
+  const quick = prior === 'penalty' && hyper !== 'logNormal'
   // Every method of the library that can run on the model, and the reason for each that cannot.
   const offer = methodSpace(probe.definition.bind(probe.data), {
     starting: bayesianGamStarting,
     omit: ['inferDiscrete'],
-    first: 'hmc',
+    first: quick ? 'ep' : 'hmc',
   })
   // endregion
   return offer
