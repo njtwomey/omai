@@ -17,6 +17,7 @@
 import { OmaiError } from '../../base/index.ts'
 import {
   bpMethod,
+  type CompiledGraph,
   defaultsOf,
   type EpPath,
   epAlgorithm,
@@ -27,9 +28,12 @@ import {
   mpVerdict,
   projectionOf,
   type ScheduleKind,
+  takesPower,
   type VmpPath,
   vmpMethod,
+  withPowers,
 } from '../../message-passing/index.ts'
+import { dict, real } from '../../space/index.ts'
 import { type Config, type Contract, defineContract, derived, Log, runAlgorithm } from '../../trace/index.ts'
 import { factorGraphPosterior, factorGraphVerdict, type MessageRule } from '../model/factors.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
@@ -123,7 +127,37 @@ function specMethod<P extends string>(
   const name = options.name ?? rule
   const title = TITLE[rule]
   const prepared = prepare(model, options.plates ?? 'vectorise', options.packScalars ?? rule === 'ep')
-  const knobs = messagePassingKnobs(rule)
+  const base = messagePassingKnobs(rule)
+  // Expectation propagation also takes the power of fractional EP, on every factor whose operator supports one (the likelihood
+  // links, the softmax site, the shape and concentration sites, unary functions).
+  const knobs =
+    rule === 'ep'
+      ? {
+          ...base,
+          config: dict({
+            ...base.config.spaces,
+            power: real(0.05, 2, {
+              default: 1,
+              label: 'power',
+              description:
+                'fractional EP: the power of every factor that supports one (1 is EP). Below 1 the spreads of variables that many factors share come out wider: where one Gaussian per variable leaves them too narrow (the class slopes of a softmax classifier), a power near 5 / rows restores the coverage of their intervals',
+            }),
+          }),
+        }
+      : base
+  const powered = new Map<number, CompiledGraph | undefined>()
+  /** The graph at the configuration's power (the prepared one at 1): the factors that take a power get it, the others stay at 1. */
+  const graphAt = (config: Config): CompiledGraph | undefined => {
+    const g = prepared?.graph
+    const p = typeof config['power'] === 'number' ? config['power'] : 1
+    if (g === undefined || p === 1 || rule !== 'ep') return g
+    if (!powered.has(p))
+      powered.set(
+        p,
+        withPowers(g, (f) => (takesPower(f.operator, f.params) ? p : 1)),
+      )
+    return powered.get(p)
+  }
   const check = (a: ModelAnalysis): Verdict => {
     if (prepared === undefined)
       return no(
@@ -190,7 +224,8 @@ function specMethod<P extends string>(
         status: 'failed',
         diagnostics: { reason: why() },
       })
-    const verdict = mpVerdict(prepared.graph, state, {
+    const graph = graphAt(config) ?? prepared.graph
+    const verdict = mpVerdict(graph, state, {
       tol: tol(config),
       maxSweeps: Number.POSITIVE_INFINITY,
       schedule: (typeof config['schedule'] === 'string'
@@ -202,7 +237,7 @@ function specMethod<P extends string>(
     })
     const status = verdict.status === 'converged' ? 'converged' : 'stopped'
     const reason = verdict.reason === undefined ? {} : { reason: verdict.reason }
-    const own = factorGraphPosterior(prepared.compiled, prepared.graph, state, {
+    const own = factorGraphPosterior(prepared.compiled, graph, state, {
       engine: name,
       rule,
       status,
@@ -222,7 +257,7 @@ function specMethod<P extends string>(
     const evidence = evidenceByRows(state, config)
     return evidence === null
       ? own
-      : factorGraphPosterior(prepared.compiled, prepared.graph, state, {
+      : factorGraphPosterior(prepared.compiled, graph, state, {
           engine: name,
           rule,
           status,
@@ -230,15 +265,15 @@ function specMethod<P extends string>(
           evidence,
         })
   }
-  const base = knobs.contract as Contract<MpState, string>
-  const contract = (): Contract<MpState, P> =>
+  const tape = knobs.contract as Contract<MpState, string>
+  const contract = (config: Config): Contract<MpState, P> =>
     defineContract({
-      ...base,
+      ...tape,
       'mp/posterior': derived<MpState>({
         cost: 'dear',
         description:
           'the posterior of the state as JSON: the marginal of every site, in the spec shapes, with the evidence or bound',
-        compute: (s) => posteriorJson(posterior(s, {})),
+        compute: (s) => posteriorJson(posterior(s, config)),
       }),
     } as never) as Contract<MpState, P>
   return defineInferenceMethod<MpState, Config, P, ModelAnalysis>({
@@ -254,7 +289,7 @@ function specMethod<P extends string>(
     contract,
     make: (config, key) => {
       ensure()
-      const g = prepared?.graph
+      const g = graphAt(config)
       if (g === undefined) throw new OmaiError('value', `${name}: ${why()}`)
       const m = rule === 'ep' ? epMethod(g) : rule === 'vmp' ? vmpMethod(g) : bpMethod(g)
       return m.make(config, key) as never
