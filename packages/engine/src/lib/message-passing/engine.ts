@@ -48,6 +48,12 @@ export interface EngineSettings {
   readonly maxSweeps: number
   /** Messages to start from. */
   readonly initial?: readonly InitialMessage[]
+  /**
+   * How many times a run that stalls (or diverges) is restarted from its start messages with a stronger damping before it is
+   * reported as stalled (default 0: report it at once). The damping of the first restart is `max(damping, 0.5)`, and each
+   * further one moves a step of 0.3 toward 0.9.
+   */
+  readonly restarts?: number
 }
 
 /** How often the improper-message repair acted. */
@@ -84,6 +90,16 @@ export interface MpState {
   /** The residual schedule: the message each edge would send, and how far it is from the one it has. */
   readonly candidates: readonly (readonly number[] | null)[]
   readonly residuals: readonly number[]
+  /** The updates of the last completed sweep that could not be computed or were dropped by the improper policy: the messages that did not move because they could not be recomputed. */
+  readonly unresolved: number
+  /** The same count over the sweep in progress. */
+  readonly pending: number
+  /** The damping in force: the setting, raised by each restart. */
+  readonly damping: number
+  /** The automatic restarts so far (see `EngineSettings.restarts`). */
+  readonly restarts: number
+  /** The sweeps completed when the last restart began (0 for a run that never restarted): the sweep cap counts from there. */
+  readonly restartAt: number
 }
 
 /** A picture of a run at one moment: where it is, and what it currently believes of every variable, by variable id. */
@@ -92,6 +108,8 @@ export interface MpSnapshot {
   readonly updates: number
   readonly change: number
   readonly improper: ImproperCounts
+  /** The updates of the last completed sweep that could not be computed (see {@link MpState}); absent from the snapshots of runs that do not count them. */
+  readonly unresolved?: number
   /** The current marginal of every variable by id (see {@link marginalsOf}). */
   readonly marginals: Readonly<Record<string, Readonly<Record<string, Json>>>>
 }
@@ -455,6 +473,7 @@ export function mpSnapshot(g: CompiledGraph, state: MpState): MpSnapshot {
     updates: state.updates,
     change: state.change,
     improper: state.improper,
+    unresolved: state.unresolved,
     marginals: marginalsOf(g, state),
   }
 }
@@ -530,6 +549,76 @@ export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection
   return total
 }
 
+/** The edges whose candidate message could not be computed (a message to a defined variable under the variational rule is never stored, so does not count). */
+function residualUnresolved(g: CompiledGraph, projection: Projection, candidates: MpState['candidates']): number {
+  return candidates.filter((c, e) => c === null && !isPulled(g, e, projection)).length
+}
+
+/** How a run stands: the status it has reached (undefined while it can go on) and, for one that did not converge, why. */
+export interface MpVerdict {
+  readonly status: RunStatus | undefined
+  /** What went wrong (`diverged`, `stalled`, `degenerate`) or ran out (`completed`); undefined for a run that is converged or still going. */
+  readonly reason: string | undefined
+}
+
+/**
+ * The verdict of a state: `converged` when the beliefs have stopped moving (below `tol` over a sweep, or no residual above
+ * it), every update that can be computed reproduces its message, and no belief is without a density. A run whose beliefs
+ * stopped moving while some updates could not be computed (an improper cavity: the old message is kept, so the change is
+ * zero for want of an update, not at a fixed point) is `stopped` with the reason `stalled` (which a damped restart,
+ * `EngineSettings.restarts`, tries to recover from); one that has been restarted and is stuck on the same kind of update
+ * is `converged` with the count in the reason (the stall is not an artifact of its first trajectory: the usual skip of an
+ * update with an improper cavity, which leaves that message as it was). A fixed point with a belief that has no density is
+ * `failed` with the reason `degenerate`; messages that are not finite are `diverged`; a run that reaches the sweep cap (counted from its last restart) is `completed`.
+ *
+ * @param g - The compiled graph.
+ * @param state - A state of a run.
+ * @param s - The slots the verdict depends on: the tolerance, the sweep cap, the schedule and the projection.
+ * @returns The status and the reason.
+ */
+export function mpVerdict(
+  g: CompiledGraph,
+  state: MpState,
+  s: Pick<EngineSettings, 'tol' | 'maxSweeps' | 'schedule' | 'projection'>,
+): MpVerdict {
+  if (state.messages.some((m) => m.some((v) => Number.isNaN(v) || v === Number.POSITIVE_INFINITY)))
+    return { status: 'diverged', reason: 'a message is not finite' }
+  const still =
+    s.schedule === 'residual'
+      ? state.updates > 0 && (state.residuals.length === 0 || Math.max(...state.residuals) < s.tol)
+      : state.sweeps >= 1 && state.cursor === 0 && state.change < s.tol
+  if (still) {
+    const unresolved =
+      s.schedule === 'residual' ? residualUnresolved(g, s.projection, state.candidates) : state.unresolved
+    const many = `${unresolved} message update${unresolved === 1 ? '' : 's'}`
+    if (unresolved > 0 && state.restarts === 0)
+      return {
+        status: 'stopped',
+        reason: `stalled: ${many} could not be computed in the last sweep (an improper cavity, or an update the repair policy dropped), so those messages were not recomputed and the beliefs stopped moving without reaching a fixed point`,
+      }
+    const improper = g.variables.flatMap((v, i) =>
+      v.edges.length > 0 && v.observed === undefined && !v.family.isProper(beliefOf(g, state.messages, i))
+        ? [v.name]
+        : [],
+    )
+    if (improper.length > 0)
+      return {
+        status: 'failed',
+        reason: `degenerate: the beliefs of ${improper.slice(0, 4).join(', ')}${improper.length > 4 ? ` and ${improper.length - 4} more` : ''} have no density at the point where the messages stopped moving`,
+      }
+    return {
+      status: 'converged',
+      reason:
+        unresolved > 0
+          ? `converged after ${state.restarts} damped restart${state.restarts === 1 ? '' : 's'}, but ${many} could not be computed even then (an improper cavity: the skip of such an update leaves its message as it was)`
+          : undefined,
+    }
+  }
+  return state.sweeps - state.restartAt >= s.maxSweeps
+    ? { status: 'completed', reason: 'the sweep budget ran out' }
+    : { status: undefined, reason: undefined }
+}
+
 function configOf(s: EngineSettings): Json {
   return {
     projection: s.projection.name,
@@ -539,6 +628,7 @@ function configOf(s: EngineSettings): Json {
     improper: s.improper,
     tol: s.tol,
     maxSweeps: s.maxSweeps,
+    restarts: s.restarts ?? 0,
   }
 }
 
@@ -629,6 +719,11 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
       sent: [],
       candidates,
       residuals,
+      unresolved: 0,
+      pending: 0,
+      damping: settings.damping,
+      restarts: 0,
+      restartAt: 0,
     }
   }
 
@@ -640,6 +735,7 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
     updates: number,
     candidates: MpState['candidates'],
     residuals: readonly number[],
+    pending: number,
   ): MpState => {
     const { change, beliefs } = sweepChange(g, state.start, messages)
     return {
@@ -654,11 +750,53 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
       sent,
       candidates,
       residuals,
+      unresolved: pending,
+      pending: 0,
+      damping: state.damping,
+      restarts: state.restarts,
+      restartAt: state.restartAt,
     }
   }
 
-  const step = (state: MpState): MpState => {
+  /** The state after a restart: every message back at its start, the damping raised, the sweeps, updates and repair counts carried on. */
+  const restartOf = (state: MpState): MpState => {
+    const k = state.restarts + 1
+    const damping = Math.min(0.9, Math.max(settings.damping, 0.5) + 0.3 * (k - 1))
+    return {
+      ...init(),
+      sweeps: state.sweeps,
+      updates: state.updates,
+      improper: state.improper,
+      restarts: k,
+      damping,
+      restartAt: state.sweeps,
+    }
+  }
+
+  const finite = (messages: readonly (readonly number[])[]): boolean =>
+    !messages.some((m) => m.some((v) => Number.isNaN(v) || v === Number.POSITIVE_INFINITY))
+
+  /** Whether a state that has stopped moving is one that has run out of updates it can compute, and may be restarted. */
+  const stalled = (state: MpState): boolean => {
+    if (state.restarts >= (settings.restarts ?? 0)) return false
+    if (!finite(state.messages)) return true
+    if (residual)
+      return (
+        state.updates > 0 &&
+        Math.max(...state.residuals, 0) < settings.tol &&
+        residualUnresolved(g, settings.projection, state.candidates) > 0
+      )
+    return state.sweeps >= 1 && state.cursor === 0 && state.change < settings.tol && state.unresolved > 0
+  }
+
+  const step = (state0: MpState): MpState => {
+    const next = advance(state0)
+    return stalled(next) ? restartOf(next) : next
+  }
+
+  const advance = (state: MpState): MpState => {
     const counts = { ...state.improper }
+    const s = state.damping === settings.damping ? settings : { ...settings, damping: state.damping }
     if (residual) {
       const messages = state.messages.slice()
       let best = -1
@@ -677,7 +815,7 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
         const c = state.candidates[best]
         messages[best] = resolve(
           g,
-          settings,
+          s,
           messages,
           best,
           c === null || c === undefined ? { kind: 'failed' } : { kind: 'message', eta: c },
@@ -700,19 +838,31 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
       }
       const cursor = state.cursor + 1
       const updates = state.updates + sent.length
-      if (cursor >= plan.size) return endOfSweep(state, messages, counts, sent, updates, candidates, residuals)
+      if (cursor >= plan.size) return endOfSweep(state, messages, counts, sent, updates, candidates, residuals, 0)
       return { ...state, messages, cursor, updates, improper: counts, sent, candidates, residuals }
     }
     const group = plan.groups[state.cursor] ?? []
     const frozen = flooding ? (state.frozen ?? state.messages) : null
     const messages = state.messages.slice()
-    for (const e of group)
-      messages[e] = resolve(g, settings, messages, e, propose(g, settings, frozen ?? messages, e), counts)
+    let unresolved = 0
+    for (const e of group) {
+      const proposal = propose(g, s, frozen ?? messages, e)
+      const dropped = counts.skipped + counts.reset
+      messages[e] = resolve(g, s, messages, e, proposal, counts)
+      // An update that could not be computed, or that the improper policy dropped or reset, leaves the message as it was or as nothing: it has not been recomputed.
+      if (
+        proposal.kind === 'failed' ||
+        (proposal.kind === 'blocked' && !isPulled(g, e, settings.projection)) ||
+        counts.skipped + counts.reset > dropped
+      )
+        unresolved++
+    }
     refreshDefined(g, settings.projection, messages, group)
     const cursor = state.cursor + 1
     const updates = state.updates + group.length
-    if (cursor >= plan.groups.length) return endOfSweep(state, messages, counts, group, updates, [], [])
-    return { ...state, messages, frozen, cursor, updates, improper: counts, sent: group }
+    const pending = state.pending + unresolved
+    if (cursor >= plan.groups.length) return endOfSweep(state, messages, counts, group, updates, [], [], pending)
+    return { ...state, messages, frozen, cursor, updates, improper: counts, sent: group, pending }
   }
 
   const evidenceNow = (state: MpState): number => evidenceOf(g, settings, state)
@@ -730,6 +880,11 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
         skipped: { description: 'updates dropped by the improper policy' },
         damped: { description: 'updates shortened until the belief stayed proper' },
         reset: { description: 'messages reset to flat' },
+        unresolved: {
+          description:
+            'updates of the last completed sweep that could not be computed (those messages were not recomputed)',
+        },
+        restarts: { description: 'automatic restarts from the start messages with a stronger damping' },
         [evidenceName]: {
           description:
             evidenceName === 'elbo' ? 'the variational lower bound' : 'the EP (or Bethe) estimate of the log evidence',
@@ -739,20 +894,15 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
       messages: {
         message: { description: 'a message from a factor to a variable (ids: the factor id and the variable name)' },
         marginals: { description: 'the current marginal of every variable, by variable id' },
+        verdict: {
+          description: 'why a run that has ended did not converge (stalled, degenerate, diverged, completed)',
+        },
       },
       frames: true,
     }),
     init,
     step,
-    done: (state): RunStatus | undefined => {
-      if (state.messages.some((m) => m.some((v) => Number.isNaN(v) || v === Number.POSITIVE_INFINITY)))
-        return 'diverged'
-      if (residual) {
-        if (state.updates > 0 && (state.residuals.length === 0 || Math.max(...state.residuals) < settings.tol))
-          return 'converged'
-      } else if (state.sweeps >= 1 && state.cursor === 0 && state.change < settings.tol) return 'converged'
-      return state.sweeps >= settings.maxSweeps ? 'completed' : undefined
-    },
+    done: (state): RunStatus | undefined => mpVerdict(g, state, settings).status,
     observe: (state) => {
       const ev = evidenceNow(state)
       const metrics: Record<string, number> = {
@@ -762,13 +912,19 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
         skipped: state.improper.skipped,
         damped: state.improper.damped,
         reset: state.improper.reset,
+        unresolved: state.unresolved,
+        restarts: state.restarts,
         ...(Number.isFinite(state.change) ? { change: state.change } : {}),
         ...(Number.isFinite(ev) ? { [evidenceName]: ev } : {}),
       }
       const marginals = marginalsOf(g, state)
+      const verdict = mpVerdict(g, state, settings)
       return {
         metrics,
         messages: [
+          ...(verdict.reason === undefined
+            ? []
+            : [{ kind: 'verdict', payload: { status: verdict.status ?? 'running', reason: verdict.reason } as Json }]),
           ...state.sent.map((e) => {
             const edge = g.edges[e] as CompiledGraph['edges'][number]
             const name = (g.variables[edge.variable] as CompiledGraph['variables'][number]).name
@@ -800,6 +956,17 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
       }
     },
     serialise: (state) => stateToJson(state),
-    deserialise: (json) => stateFromJson(json) as MpState,
+    // A state saved before the run counted its unresolved updates has no such fields: they start at their initial values.
+    deserialise: (json) => {
+      const saved = stateFromJson(json) as unknown as Partial<MpState> & MpState
+      return {
+        ...saved,
+        unresolved: saved.unresolved ?? 0,
+        pending: saved.pending ?? 0,
+        damping: saved.damping ?? settings.damping,
+        restarts: saved.restarts ?? 0,
+        restartAt: saved.restartAt ?? 0,
+      }
+    },
   }
 }

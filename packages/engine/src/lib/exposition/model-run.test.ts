@@ -91,6 +91,20 @@ describe('describeMessage and the marginals', () => {
     expect(describeMessage('discrete', [0, 0])).toBe('[0.5, 0.5]')
     expect(describeMessage('dirichlet', [0, 1])).toBe('Dir(1, 2)')
     expect(describeMessage('gaussian-mv', [0, 0, 2, 0, 0, 4])).toBe('N-2(precision diag 2, 4)')
+  })
+
+  it('shortens the message of a long vector: the first four numbers and how many there are', () => {
+    const d = 60
+    const eta = [
+      ...new Array<number>(d).fill(0),
+      ...Array.from({ length: d * d }, (_, i) => (i % (d + 1) === 0 ? 2 : 0)),
+    ]
+    const text = describeMessage('gaussian-mv', eta)
+    expect(text).toBe('N-60(precision diag 2, 2, 2, 2, … (60))')
+    expect(text.length).toBeLessThan(60)
+    expect(describeMessage('discrete', new Array<number>(6).fill(0))).toBe('[0.167, 0.167, 0.167, 0.167, … (6)]')
+    expect(describeMessage('discrete', [0, 0, 0, 0])).toBe('[0.25, 0.25, 0.25, 0.25]')
+    expect(describeMessage('gaussian-mv', [0, 0, -2, 0, 0, 4])).toBe('improper (precision diag -2, 4)')
     expect(describeMessage('weird', [1, 2])).toBe('η = [1, 2]')
   })
 

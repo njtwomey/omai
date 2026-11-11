@@ -3309,6 +3309,8 @@ export function factorGraphPosterior(
     readonly engine?: string
     readonly rule?: MessageRule
     readonly status?: 'completed' | 'converged' | 'stopped'
+    /** Why the run did not converge, when it did not (see `mpVerdict`): carried in the diagnostics. */
+    readonly reason?: string
   } = {},
 ): Posterior {
   if (c.graph === undefined)
@@ -3427,6 +3429,9 @@ export function factorGraphPosterior(
       improper: improper,
       improperMessages: state.improper.events,
       repaired: { skipped: state.improper.skipped, damped: state.improper.damped, reset: state.improper.reset },
+      unresolved: state.unresolved ?? 0,
+      restarts: state.restarts ?? 0,
+      ...(options.reason === undefined ? {} : { reason: options.reason }),
       variables: g.variables.length,
       factors: g.factors.length,
     },
