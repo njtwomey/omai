@@ -121,7 +121,7 @@ The expectation-propagation suite of the probabilistic programming stack: the at
 - estimator `priorNormalHyperAtom`: EP atom: a normal prior on a mean with a normal hyperprior on its centre (exact). `src/lib/probprog/ep/ep-atoms-priors.ts:361` `omai-engine/probprog/ep`
 - estimator `priorNormalInverseGammaAtom`: EP atom: a normal-inverse-gamma prior on a Gaussian mean and variance (exact). `src/lib/probprog/ep/ep-atoms-priors.ts:260` `omai-engine/probprog/ep`
 - estimator `priorNormalWeibullAtom`: EP atom: a normal prior on a Weibull log scale with a normal hyperprior on its centre. `src/lib/probprog/ep/ep-atoms-priors.ts:700` `omai-engine/probprog/ep`
-- estimator `priorUniformAtom`: EP atom: a uniform prior on a Gaussian mean (projected). `src/lib/probprog/ep/ep-atoms-priors.ts:1078` `omai-engine/probprog/ep`
+- estimator `priorUniformAtom`: EP atom: a uniform prior on a Gaussian mean (exact numeric site). `src/lib/probprog/ep/ep-atoms-priors.ts:1078` `omai-engine/probprog/ep`
 - estimator `probitAtom`: EP atom: a probit link on eight labelled points. `src/lib/probprog/ep/ep-atoms-likelihoods.ts:197` `omai-engine/probprog/ep`
 - estimator `probitLearnedAtom`: EP atom: a probit classifier with a learned weight precision, recovered from simulated labels. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:422` `omai-engine/probprog/ep`
 - estimator `productAtom`: EP atom: the product of two Gaussians (numeric product rule, a banana posterior). `src/lib/probprog/ep/ep-atoms-functions.ts:197` `omai-engine/probprog/ep`
@@ -249,10 +249,10 @@ The model layer: a model written once as a value. A builder (`defineModel`) with
 - function `bind`: Bind data to a ModelSpec with checks of dims, sizes and supports. `src/lib/probprog/model/bind.ts:324` `omai-engine/probprog/model`
 - function `collapsePlan`: collapsePlan: which sites the collapse handler can integrate out, with cost and gain; user-invoked. `src/lib/probprog/model/collapse-plan.ts:105` `omai-engine/probprog/model`
 - function `defineModel`: Build a model spec with named dimensions, data, latents, observations and derived nodes. `src/lib/probprog/model/builder.ts:741` `omai-engine/probprog/model`
-- function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:4872` `omai-engine/probprog/model`
+- function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:4858` `omai-engine/probprog/model`
 - function `fromProgram`: fromProgram: lift a sample/observe program to a ModelSpec of its site structure; refuses a varying structure. `src/lib/probprog/model/from-program.ts:185` `omai-engine/probprog/model`
 - function `structureReport`: structureReport: what a spec's structure allows, as records and suggestions naming the method to use. `src/lib/probprog/model/analysis.ts:476` `omai-engine/probprog/model`
-- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:4700` `omai-engine/probprog/model`
+- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:4686` `omai-engine/probprog/model`
 - function `toProgram`: Compile a bound ModelSpec to a sample/observe program every engine runs. `src/lib/probprog/model/compile.ts:267` `omai-engine/probprog/model`
 
 ### probprog/model/dists

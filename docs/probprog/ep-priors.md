@@ -17,8 +17,9 @@ Three kinds of row, by what EP does with the prior:
 2. **Numeric, projected.** The factor has no closed-form tilted moment (a log link, a random concentration, a scale on the log):
    one or two dimensional quadrature gives the moments, and the message is the moment-matched member of the family. The posterior
    is close, and the tolerance of each atom says how close and why.
-3. **A prior with no family** (half-normal, half-Cauchy, uniform, truncated normal, log-normal) is projected once onto a Gaussian
-   (a positive scale on its log), so the graph holds the projected prior.
+3. **A prior with no family** (half-normal, half-Cauchy, uniform, truncated normal, log-normal) is the exact numeric `prior-site` (a
+   positive scale on its log): its message is the moment match of the cavity times the density, redone at every sweep, so the graph
+   holds the prior itself and the first message (nothing known yet) is the projection of the density alone.
 
 A **hyperprior** is a latent among the parameters of the prior: `mu ~ normal(centre, s)` with `centre ~ normal(0, 3)`, a gamma
 `rate ~ gamma(a, prior)` with `prior ~ gamma(c, d)`. Under EP it is one more variable of the graph with its own beliefs, so

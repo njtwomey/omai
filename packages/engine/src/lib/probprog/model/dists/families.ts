@@ -68,7 +68,7 @@ export interface FamilyDef {
   readonly exponentialFamily: boolean
   /**
    * Whether message passing has a factor rule for the family although it has no exponential-family form (a Student t, a
-   * mixture of two normals; a half-Cauchy, uniform or truncated normal prior, projected once onto a Gaussian): the compiler maps
+   * mixture of two normals; a half-Cauchy, uniform or truncated normal prior, an exact numeric site on a Gaussian): the compiler maps
    * it for the cases its rules cover (known scale or bounds), so it is not opaque.
    */
   readonly messagePassing: boolean

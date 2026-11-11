@@ -53,8 +53,8 @@
  * `studentT`, `laplace`) and, on a log-normal outcome, the exact Gaussian rule on its log; a unary function of a random value
  * (`exp`, `square`, `tanh`, `softplus`, `abs`, `sigmoid`, and `max` or `min` with a known operand as a rectifier) is the `apply`
  * factor on a new variable. A prior with no message family (`halfNormal`, `halfCauchy`, `logNormal`, `uniform`,
- * `truncatedNormal`) is projected once onto a Gaussian: a positive scale on its log (the value `tau` is `exp` of that variable),
- * a bounded real value on itself, so the graph holds the projected prior, not the original. Such a scale (or an `exp` of a
+ * `truncatedNormal`) is the exact numeric `prior-site` on a Gaussian variable: a positive scale on its log (the value `tau` is `exp` of
+ * that variable), a bounded real value on itself, so the graph holds the prior and EP matches it against the cavity every sweep. Such a scale (or an `exp` of a
  * Gaussian) is the scale of a latent normal in its non-centred form (a product with a standard normal), and the scale of an
  * observed normal through the `gaussian-scale` factor (the mean may be random too); a `clip` on a scale is read as a floor
  * that never binds. With `packScalars` the scalar normal latents an observed node reads together are one joint vector.
@@ -2008,13 +2008,12 @@ class Compiler {
   }
 
   /**
-   * A prior with no message family (half-normal, half-Cauchy, log-normal, uniform, truncated normal) projected once onto a
-   * Gaussian. A density on the positive half line is carried on its log: a Gaussian variable `l = log tau` whose prior is the
-   * projection of the density of `l` (exact for a log-normal, the moments of the half-normal's or half-Cauchy's log otherwise),
-   * and the value `tau` is the variable `exp(l)` of an `apply` factor, whose Gaussian belief is the moment match of a
-   * log-normal. A density on a bounded or truncated real range is projected on the value itself. The graph therefore holds
-   * the projected prior in place of the original (its shape, a bound or a half line, is what the Gaussian cannot keep); the
-   * data's evidence then moves the posterior as EP does for any site.
+   * A prior with no message family (half-normal, half-Cauchy, log-normal, uniform, truncated normal), the exact numeric
+   * `prior-site` on a Gaussian variable (a log-normal is the exact Gaussian on its log). A density on the positive half line is
+   * carried on its log: a Gaussian variable `l = log tau` with the density of `l` as its site, and the value `tau` is the variable
+   * `exp(l)` of an `apply` factor, whose Gaussian belief is the moment match of a log-normal. A density on a bounded or truncated
+   * real range is the site on the value itself. The site's message is the moment match against the current cavity at every sweep,
+   * so the graph holds the prior itself; the belief of the variable is still one Gaussian.
    */
   private latentProjected(node: ModelNode & { readonly kind: 'latent' }): void {
     const fam = node.dist.family

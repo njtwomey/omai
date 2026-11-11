@@ -199,7 +199,7 @@ Done in WP-B (2026-11-11, `agent-pp53-rulesb`), each against an exact or brute-f
 - Start messages on a factor spec (`FactorSpec.start`, carried by the compiled graph and read by the engine's `init`) replace the
   vague prior factors the compiler added for spike and slab and random precisions: the factor's own first update replaces the vague
   message, so the model is no longer changed by them. (The operators' own flat-cavity reads, `cavityOf` in
-  `gaussian-gamma-precision` and `widened` in the gate, remain.)
+  `gaussian-gamma-precision` and `widened` in the gate, were replaced by one engine policy, section 17.)
 - The benchmark audit: EP runs on 14 of 27 (10 before: gate-ordered mixture, bimodal, Gaussian HMM, clutter).
 
 Still open, in the order of the work packages that follow:
@@ -225,8 +225,8 @@ With WP-A alone EP ran on 19 of the 27 benchmark models; with WP-B merged it run
   (exact, on the log). Ordinal probit and asymmetric Laplace are in the registry but have no model-layer distribution yet.
 - `apply` (`functions.ts`): `exp`, `square`, `tanh`, `relu` (closed form), `softplus`, `abs`, `sigmoid`; `max`/`min` with a known
   operand is a rectifier. Poisson regression, the funnels, the banana and the Bayesian neural network compile.
-- Priors without a message family projected once (`projectedPrior`, `priors.ts`): half-normal, half-Cauchy, log-normal, uniform and
-  truncated normal, a positive scale on its log; a latent with a random scale is written non-centred, an observed value with a
+- Priors without a message family (first projected once with `projectedPrior`, `priors.ts`, since section 17 the exact numeric
+  `prior-site`): half-normal, half-Cauchy, log-normal, uniform and truncated normal, a positive scale on its log; a latent with a random scale is written non-centred, an observed value with a
   random scale is `gaussian-scale`. Eight schools (both forms), the centred funnel and radon compile.
 - `toFactorGraph(bound, { packScalars: true })`: scalar normal latents that share a predictor are one joint vector, so EP keeps
   their correlation (without it the marginal sds are too small by 2 to 3 times on Poisson and negative binomial regression).
@@ -461,9 +461,10 @@ with a beta weight, the spike and slab, the clutter, the ordered means, a gate o
 concentration within 1e-3 (the gate and the clutter are exact: 0.0000); `exp`, `tanh`, log scale, Student-t within 1e-3, the product (0.006)
 and the max (0.001) of Gaussians, a Gaussian with a gamma precision 0.024 and 0.038 (the gamma projected from a Student-t shaped tilt),
 Laplace 0.04, probit 0.016, logistic 0.019, the skill difference 0.001, a log-normal rate through `exp` 0.003 and 0.004, a Weibull
-0.009, a negative binomial with a learned dispersion 0.2. Three limits: the projected priors (half-normal 0.42, half-Cauchy 0.19, uniform
-0.09 nats: the graph carries the projection, not the prior, gap `projected-priors`); a fixed point with a factor whose cavity is improper
-(the learned logistic regression: NaN, EP skipped that factor's update); an alpha divergence has no EP energy.
+0.009, a negative binomial with a learned dispersion 0.2. Three limits at the time (the first two are
+closed or explained in section 17): the projected priors (half-normal 0.42, half-Cauchy 0.19, uniform 0.09 nats: the graph carried the
+projection, not the prior); a fixed point with a factor whose cavity is improper (the learned logistic regression: NaN); an alpha
+divergence has no EP energy.
 
 **Kernel hyperparameters (`epGridMethod`, kind `ep-grid`).** A Gaussian process with a random length scale has a covariance that is a
 function of a random value, which the graph cannot see through. The method sets the scalar latents a `custom` function reads to each
@@ -603,3 +604,53 @@ Student-t with random df and scale: a third axis of the grid).
 evidence against the grid evidence of the same model on the new atoms: beta two shapes 2e-5, ordinal 0.002, Student-t df 0.006, Weibull shape 0.036,
 quantile 0.07 and 0.02, draws 0.12 (loops), softmax 0.30 (loops).
 
+## 17. Engine quality: summed-out mixtures with random parameters, one flat-cavity policy, exact priors, the NaN evidence explained (2026-11-11, `agent-pp171-quality`)
+
+**Summed-out mixtures with a random share or random precisions (gap `mixture-site-random-parameters`, closed).** `normalOutliers(loc, scale,
+share, width)` with a random scale (the precision idiom of a gamma latent) or a random share (a beta latent), and `normalSpikeSlab(inclusion,
+slab, spike)` with a random inclusion probability or random slab or spike widths, compile to the gate of their two components over a
+hidden Bernoulli switch (one per observation or element, a conjugate `bernoulli` factor on a beta share, a prior on a known one): the same
+graph as the explicit-switch form (`where(z, ...)`), the switch left out of the posterior (`hiddenSwitch`, `observedOutlierSwitch`,
+`latentSpikeSlabSwitch` in `factors.ts`; the observation goes through the existing `observedSwitch`, the branches are the existing
+`gaussian-gamma-precision` and `gaussian`). The grid machinery of `pairs.ts` was not needed. A known share and scale keep the exact
+`mixture-site`; a vector read by a matmul with a random share is refused (one joint covariance), as is a random width. Atoms
+`clutter-mixture-learned` (centre 1.4316 +- 0.0903 against the exact 1.4318 +- 0.0903, precision 3.409 +- 0.830 against 3.419 +- 0.858, share
+0.1497 +- 0.0540 against 0.1504 +- 0.0561; the log evidence within 0.02 nats of the grid) and `spike-and-slab-marginal-learned` (share 0.4200
++- 0.1492 against 0.4209 +- 0.1517, slab precision 0.2011 +- 0.1021 against 0.2014 +- 0.1039; evidence within 0.014 nats) run and pass their
+calibration over 20 and 30 seeds; atoms 86 of 86, and the floor in `ep-coverage.test.ts` is 86. Model tests against two-dimensional grids
+(`probprog/model/mixture-random-factors.test.ts`).
+
+**One policy for a flat cavity (gap `improper-start`, closed).** An operator that integrates over its cavities (`gaussian-gamma-precision`,
+the gate, `mixture-site`, `prior-site`) declares `needsDensity`; the engine (`readable` in `engine.ts`, the one place every operator
+call and every evidence call goes through) shows it a flat Gaussian cavity as a very wide one (`FLAT_CAVITY_PRECISION`, variance 1e6)
+and takes the wide cavity back out of the message it returns, so such a factor speaks first on a variable that nothing else has spoken
+of, and a flat target is not `blocked`. An improper cavity (negative precision) is still handled by the existing engine policy (an
+operator that throws `ImproperMessageError` sends nothing, counted as an improper event). Removed: `cavityOf` (gaussian.ts), `widened`
+and its constant (gate.ts), the compiler's start messages on the gate, the scalar `mixture-site` and the precision latent with a known
+mean. Kept: the start message of a mixture row on a packed vector (a vector family, not a scalar one). Proof of no behaviour change: all
+86 atoms run before and after, beliefs within 1e-9 posterior sds, log evidence within 1e-12 nats, the same number of sweeps
+(`message-passing/flat-cavity.test.ts` holds the policy and the list of operators that declare it).
+
+**Exact priors (gap `projected-priors`, closed).** Half-normal, half-Cauchy, uniform and truncated-normal priors are the numeric
+`prior-site` operator (`operators/prior-sites.ts`, an entry of the likelihood registry's machinery): its message is the moment match
+of the cavity times the density by the panelled quadrature of the likelihood sites, redone at every sweep, on the value or on its log
+(a positive scale, with the Jacobian). The first message (a flat cavity) is the projection of the density alone, as before. Tested
+against the scan-and-trapezoid of `densityMoments` and against the old one-off projection (`prior-sites.test.ts`). Effect on the atoms with
+such priors: the log evidence against the grid evidence of the same model: uniform 0.09 nats off before, now exact to 1e-6 (a
+Gaussian likelihood makes the posterior a truncated normal); half-normal 0.42 before, 0.004 now; half-Cauchy 0.17 before, 0.015 now. What
+remains is the Gaussian belief of the log scale, not the model. The beliefs moved by up to 0.16 posterior sds (half-normal) and every atom
+check still passes.
+
+**The NaN evidence of `logistic-learned` (explained).** The evidence of a graph is the sum of the factors' parts, each an integral of the
+factor against its cavity. The learned logistic regression compiles to one plated factor for all rows; the scale mixture on the weights
+(`gaussian-mv-precision-scale`) sends it a site with a negative precision (the matched Gaussian of a heavy-tailed prior against a sharp
+likelihood is wider than the cavity), so the cavity of the plate is indefinite and its integral against the logistic likelihood
+diverges: the EP energy is undefined at that fixed point, not wrong. The posterior now says so (`diagnostics.evidenceUndefinedAt`, from
+`evidenceDefects`: `factor:y: improper cavity`). With `plates: 'expand'` (a factor per row, each cavity proper) the evidence exists:
+-26.520 against the grid's -26.474 (0.046 nats); the weights' posterior means move by 0.002 to 0.016 (a few hundredths of a posterior sd). The remaining NaN of the same kind is any
+plated factor with a negative-precision neighbour.
+
+**Product property test (item 6).** `operators.test.ts` > `product: EP to the output and to each factor` failed on some seeds: the rule
+was right and the 14-panel brute-force reference was the error (2.2e-4 on the second moment of `b` for a precise `y` against wide `a`, `b`,
+tolerance 1e-4): the reference now uses 30 panels (400 random runs pass), and the counterexample of seed 1817728420 is pinned as a fixed
+example with the same `numRuns`.
