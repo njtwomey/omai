@@ -16,8 +16,8 @@
  * `matmul` reads it, so the posterior keeps its correlations), `gamma`, `exponential`, `beta`, `dirichlet`, and
  * `bernoulli` or `categorical` with known probabilities (or a Dirichlet latent for them: the conjugate `discrete` factor).
  * A Gaussian whose scale is the idiom `1 / sqrt(tau)` (or `tau ** -0.5`) of a gamma or exponential latent `tau` is the
- * `gaussian-gamma-precision` factor, for observations and latents (variational message passing only; the engine has no EP
- * rule for it). Values: expressions that are affine in Gaussian latents (`add`,
+ * `gaussian-gamma-precision` factor, for observations and latents (variational message passing, and expectation propagation when the
+ * Gaussian is observed: the linear regression with an unknown noise level). Values: expressions that are affine in Gaussian latents (`add`,
  * `sub`, `neg`, `mul` and `div` by a known value, `sum`, `mean`, `at` by index data, `matmul` with data) become the
  * affine operators of the engine (`plus`, `difference`, `times-constant`, `sum`, `linear`, `dot-constant`); the product of
  * two random values is the `product` factor on a new variable, and `at(components, z)` with a categorical latent `z` (or

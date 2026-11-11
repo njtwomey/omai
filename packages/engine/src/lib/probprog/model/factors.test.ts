@@ -767,10 +767,113 @@ describe('a random precision is the gaussian-gamma-precision factor (variational
     expect(toFlat(factorGraphPosterior(c, g, r.state as MpState, { rule: 'vmp' }).mean('theta')).length).toBe(3)
   })
 
-  it('has no expectation propagation rule, and a scale that is not the idiom is refused with it named', () => {
+  it('runs under expectation propagation (moments by quadrature in log lambda) close to the exact two-dimensional posterior', () => {
     const c = toFactorGraph(model.bind({ y: ys }))
-    expect(factorGraphVerdict(c, graphOf(c.graph), 'ep')).toMatchObject({ ok: false })
-    expect(factorGraphVerdict(c, graphOf(c.graph), 'ep').reason).toMatch(/gaussian-gamma-precision/)
+    const g = graphOf(c.graph)
+    expect(factorGraphVerdict(c, g, 'ep')).toMatchObject({ ok: true })
+    const r = runAlgorithm(epAlgorithm(g, { tol: 1e-10 }), { maxSteps: 400 })
+    expect(r.status).toBe('converged')
+    const post = factorGraphPosterior(c, g, r.state as MpState, { rule: 'ep' })
+    // The exact posterior of (mu, tau) on a grid: mu ~ N(0, 10^2), tau ~ Gamma(2, 1), y_i ~ N(mu, 1 / tau).
+    let z = 0
+    let eMu = 0
+    let eMu2 = 0
+    let eTau = 0
+    for (let i = 0; i < 400; i++) {
+      const mu = -4 + (8 * (i + 0.5)) / 400
+      for (let j = 0; j < 400; j++) {
+        const tau = (12 * (j + 0.5)) / 400
+        const logp =
+          -0.5 * (mu / 10) ** 2 +
+          Math.log(tau) -
+          tau +
+          ys.reduce((t, v) => t + 0.5 * Math.log(tau) - 0.5 * tau * (v - mu) ** 2, 0)
+        const w = Math.exp(logp)
+        z += w
+        eMu += w * mu
+        eMu2 += w * mu * mu
+        eTau += w * tau
+      }
+    }
+    const mean = eMu / z
+    const sd = Math.sqrt(eMu2 / z - mean * mean)
+    expect(toFlat(post.mean('mu'))[0]).toBeCloseTo(mean, 1)
+    expect(toFlat(post.stddev('mu'))[0] ?? 0).toBeGreaterThan(0.8 * sd)
+    expect(toFlat(post.stddev('mu'))[0] ?? 0).toBeLessThan(1.25 * sd)
+    expect(Math.abs((toFlat(post.mean('tau'))[0] ?? 0) / (eTau / z) - 1)).toBeLessThan(0.1)
+  })
+
+  it('a linear regression with an unknown noise level: expectation propagation finds the coefficients the exact posterior does', () => {
+    const X = [
+      [1, -1],
+      [1, -0.4],
+      [1, 0.1],
+      [1, 0.8],
+      [1, 1.5],
+      [1, 0.3],
+    ]
+    const y = [-1.1, -0.2, 0.3, 1.2, 2.1, 0.6]
+    const regression = defineModel('lr', (b) => {
+      const n = b.range('row')
+      const f = b.range('feature')
+      const Xd = b.data('X', { dims: [n, f] })
+      const w = b.latent('w', d.normal(0, 2), { dims: [f] })
+      const tau = b.latent('tau', d.gamma(2, 1))
+      b.observe('y', d.normal(Xd.matmul(w), ops.div(1, ops.sqrt(tau))), b.data('y', { dims: [n] }))
+    })
+    const c = toFactorGraph(regression.bind({ X, y }))
+    expect(c.issues).toEqual([])
+    const g = graphOf(c.graph)
+    expect(factorGraphVerdict(c, g, 'ep')).toMatchObject({ ok: true })
+    const r = runAlgorithm(epAlgorithm(g, { tol: 1e-10 }), { maxSteps: 600 })
+    expect(r.status).toBe('converged')
+    const post = factorGraphPosterior(c, g, r.state as MpState, { rule: 'ep' })
+    // Exact: given tau the coefficients are Gaussian (precision tau X'X + I / 4, mean tau P^-1 X'y); tau has its own marginal posterior.
+    const sxx = [0, 0, 0, 0]
+    const sxy = [0, 0]
+    let syy = 0
+    for (const [i, row] of X.entries()) {
+      const yi = y[i] as number
+      for (let a = 0; a < 2; a++) {
+        sxy[a] = (sxy[a] as number) + (row[a] as number) * yi
+        for (let b2 = 0; b2 < 2; b2++)
+          sxx[a * 2 + b2] = (sxx[a * 2 + b2] as number) + (row[a] as number) * (row[b2] as number)
+      }
+      syy += yi * yi
+    }
+    let z = 0
+    const eW = [0, 0]
+    let eTau = 0
+    for (let j = 0; j < 4000; j++) {
+      const tau = (20 * (j + 0.5)) / 4000
+      const p00 = tau * (sxx[0] as number) + 0.25
+      const p01 = tau * (sxx[1] as number)
+      const p11 = tau * (sxx[3] as number) + 0.25
+      const det = p00 * p11 - p01 * p01
+      const b0 = tau * (sxy[0] as number)
+      const b1 = tau * (sxy[1] as number)
+      const m0 = (p11 * b0 - p01 * b1) / det
+      const m1 = (p00 * b1 - p01 * b0) / det
+      const logp =
+        Math.log(tau) -
+        tau +
+        (X.length / 2) * Math.log(tau) -
+        0.5 * Math.log(det) -
+        0.5 * tau * syy +
+        0.5 * (b0 * m0 + b1 * m1)
+      const wt = Math.exp(logp)
+      z += wt
+      eW[0] = (eW[0] as number) + wt * m0
+      eW[1] = (eW[1] as number) + wt * m1
+      eTau += wt * tau
+    }
+    const mean = toFlat(post.mean('w'))
+    expect(mean[0]).toBeCloseTo((eW[0] as number) / z, 1)
+    expect(mean[1]).toBeCloseTo((eW[1] as number) / z, 1)
+    expect(Math.abs((toFlat(post.mean('tau'))[0] ?? 0) / (eTau / z) - 1)).toBeLessThan(0.15)
+  })
+
+  it('a scale that is not the idiom is refused with it named', () => {
     const wrong = defineModel('wrong', (b) => {
       const tau = b.latent('tau', d.gamma(2, 1))
       b.observe('y', d.normal(0, ops.exp(tau)), b.data('y', { dims: ['row'] }))
