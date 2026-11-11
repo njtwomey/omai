@@ -925,7 +925,8 @@ function weibullShapeLearnedProblem(k: Config): AtomProblem {
     // the log of the scale and the shape: both unknown
     const logScale = m.latent('logScale', d.normal(0, priorSd))
     const shape = m.latent('shape', d.logNormal(0.4, shapeSd))
-    m.observe('y', d.weibull(shape, ops.exp(logScale)), m.data('y', { dims: ['i'], support: 'positive' }))
+    const times = m.data('y', { dims: ['i'], support: 'positive' })
+    m.observe('y', d.weibull(shape, ops.exp(logScale)), times)
   })
   // endregion
   const u0 = sum(y.map((v) => Math.log(v))) / n
