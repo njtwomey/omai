@@ -8610,7 +8610,10 @@ logic of its own: `useAnytimeRuns` (several sessions at once, each driven by the
 the thread back, within a time budget the user chooses, a snapshot of each about once a second read by the page's `derive`, with
 stop and run again), `RunBar` (the budget as a choice, the progress and a line per run), `CurveChart` (curves and points in
 one box), `useDeferred` (heavy work after the first paint) and `smoke.ts` (`snapshotOf`, a run read as the page would, for the
-smoke test of each page's compute). Not built: the `examples/` programs of the plan (probit on two engines, eight schools,
+smoke test of each page's compute). Every page that computes for more than a moment runs on `run.ts` (a task that reports `done`
+of `total`, with a stage and a line of detail, and hands the thread back or computes in a worker through `runWorker.ts`), `useRun`
+(its state: queued, running, converged, done, stopped, failed, never going backwards) and `RunProgress` (timer, bar, status and
+a Stop that keeps what was computed); an EP program's `infer` takes optional `EpHooks` (`ep/sweeps.ts`). Not built: the `examples/` programs of the plan (probit on two engines, eight schools,
 a calibration check).
 
 `src/docs/` (generated from `omai-meta`'s catalogue of the engine's TSDoc)
