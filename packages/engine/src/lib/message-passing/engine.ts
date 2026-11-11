@@ -51,7 +51,8 @@ export interface EngineSettings {
   /**
    * How many times a run that stalls (or diverges) is restarted from its start messages with a stronger damping before it is
    * reported as stalled (default 0: report it at once). The damping of the first restart is `max(damping, 0.5)`, and each
-   * further one moves a step of 0.3 toward 0.9.
+   * further one moves a step of 0.3 toward 0.9. A run already damped as much as its restart would be (a damping of a half or
+   * more) is not restarted, since the restart would repeat it exactly: it is judged as the restart would be (see `mpVerdict`).
    */
   readonly restarts?: number
 }
@@ -554,6 +555,23 @@ function residualUnresolved(g: CompiledGraph, projection: Projection, candidates
   return candidates.filter((c, e) => c === null && !isPulled(g, e, projection)).length
 }
 
+/**
+ * The damping of the `k`-th automatic restart of a run damped by `damping`: at least a half, then a step of 0.3 more for each
+ * further restart, at most 0.9.
+ */
+function restartDamping(damping: number, k: number): number {
+  return Math.min(0.9, Math.max(damping, 0.5) + 0.3 * (k - 1))
+}
+
+/**
+ * Whether a restart from the start messages could do anything: only when it is damped more than the run it replaces. A run
+ * already damped by a half or more (or by more than 0.9) that restarts would repeat itself to the last digit, so it is not
+ * restarted: whatever stalled it would stall the restart, and its verdict is the one a restart would have reached.
+ */
+function restartDiffers(damping: number, k: number): boolean {
+  return restartDamping(damping, k) > damping
+}
+
 /** How a run stands: the status it has reached (undefined while it can go on) and, for one that did not converge, why. */
 export interface MpVerdict {
   readonly status: RunStatus | undefined
@@ -579,7 +597,7 @@ export interface MpVerdict {
 export function mpVerdict(
   g: CompiledGraph,
   state: MpState,
-  s: Pick<EngineSettings, 'tol' | 'maxSweeps' | 'schedule' | 'projection'>,
+  s: Pick<EngineSettings, 'tol' | 'maxSweeps' | 'schedule' | 'projection'> & Partial<Pick<EngineSettings, 'damping' | 'restarts'>>,
 ): MpVerdict {
   if (state.messages.some((m) => m.some((v) => Number.isNaN(v) || v === Number.POSITIVE_INFINITY)))
     return { status: 'diverged', reason: 'a message is not finite' }
@@ -591,7 +609,9 @@ export function mpVerdict(
     const unresolved =
       s.schedule === 'residual' ? residualUnresolved(g, s.projection, state.candidates) : state.unresolved
     const many = `${unresolved} message update${unresolved === 1 ? '' : 's'}`
-    if (unresolved > 0 && state.restarts === 0)
+    // A run asked to restart but already damped as much as a restart would be is not restarted (see `restartDiffers`): it is judged as the restart would be.
+    const replays = (s.restarts ?? 0) > 0 && !restartDiffers(s.damping ?? 0, 1)
+    if (unresolved > 0 && state.restarts === 0 && !replays)
       return {
         status: 'stopped',
         reason: `stalled: ${many} could not be computed in the last sweep (an improper cavity, or an update the repair policy dropped), so those messages were not recomputed and the beliefs stopped moving without reaching a fixed point`,
@@ -609,9 +629,11 @@ export function mpVerdict(
     return {
       status: 'converged',
       reason:
-        unresolved > 0
-          ? `converged after ${state.restarts} damped restart${state.restarts === 1 ? '' : 's'}, but ${many} could not be computed even then (an improper cavity: the skip of such an update leaves its message as it was)`
-          : undefined,
+        unresolved === 0
+          ? undefined
+          : state.restarts === 0
+            ? `converged, but ${many} could not be computed (an improper cavity: the skip of such an update leaves its message as it was); a restart would repeat the run, which is already damped by ${s.damping ?? 0}, so none was made`
+            : `converged after ${state.restarts} damped restart${state.restarts === 1 ? '' : 's'}, but ${many} could not be computed even then (an improper cavity: the skip of such an update leaves its message as it was)`,
     }
   }
   return state.sweeps - state.restartAt >= s.maxSweeps
@@ -761,7 +783,7 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
   /** The state after a restart: every message back at its start, the damping raised, the sweeps, updates and repair counts carried on. */
   const restartOf = (state: MpState): MpState => {
     const k = state.restarts + 1
-    const damping = Math.min(0.9, Math.max(settings.damping, 0.5) + 0.3 * (k - 1))
+    const damping = restartDamping(settings.damping, k)
     return {
       ...init(),
       sweeps: state.sweeps,
@@ -779,6 +801,7 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
   /** Whether a state that has stopped moving is one that has run out of updates it can compute, and may be restarted. */
   const stalled = (state: MpState): boolean => {
     if (state.restarts >= (settings.restarts ?? 0)) return false
+    if (!restartDiffers(settings.damping, state.restarts + 1)) return false
     if (!finite(state.messages)) return true
     if (residual)
       return (
