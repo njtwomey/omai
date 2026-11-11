@@ -40,35 +40,31 @@ const model = defineModel('tracker-2d', (m) => {
   })
 })
 
-/** The exact smoothed means and covariances by the Kalman filter and the RTS smoother (the first state is the prior N(0, P0)). */
+const at = (m: readonly (readonly number[])[], i: number, j: number): number => m[i]?.[j] as number
+
+/**
+ * The exact smoothed means and covariances by the Kalman filter and the RTS smoother, and the log likelihood of the readings. The
+ * library's filter predicts before every update, so it starts one step before the first state: x_0 = F^-1 0 and the covariance that
+ * the first prediction turns into the prior N(0, P0), `F^-1 (P0 - Q) F^-T`.
+ */
 function smoothed(y: readonly number[]) {
-  const det = F[0][0] * F[1][1] - F[0][1] * F[1][0]
-  const Finv = [
-    [F[1][1] / det, -F[0][1] / det],
-    [-F[1][0] / det, F[0][0] / det],
+  const det = at(F, 0, 0) * at(F, 1, 1) - at(F, 0, 1) * at(F, 1, 0)
+  const inv = [
+    [at(F, 1, 1) / det, -at(F, 0, 1) / det],
+    [-at(F, 1, 0) / det, at(F, 0, 0) / det],
   ]
-  // The library's filter predicts before every update: start one step earlier so that the first prediction is the prior N(0, P0).
-  const P = [
-    [P0[0][0] - Q[0][0], P0[0][1] - Q[0][1]],
-    [P0[1][0] - Q[1][0], P0[1][1] - Q[1][1]],
-  ]
-  const FP = [0, 1].map((i) => [0, 1].map((j) => Finv[i][0] * P[0][j] + Finv[i][1] * P[1][j]))
-  const P0prior = [0, 1].map((i) => [0, 1].map((j) => FP[i][0] * Finv[j][0] + FP[i][1] * Finv[j][1]))
-  const lg = { F, H: [[1, 0]], Q, R: [[READ_SD ** 2]], x0: [0, 0], P0: P0prior }
-  const filtered = filtering.kalmanFilter(
-    lg,
-    y.map((v) => [v]),
-  )
-  const s = filtering.rtsSmoother(lg, filtered)
-  const logLik = Number(
-    toFlat(
-      filtering.kalmanLogLikelihood(
-        lg,
-        y.map((v) => [v]),
-      ),
-    )[0],
-  )
-  return { means: toArray(s.means) as number[][], covariances: toArray(s.covariances) as number[][][], logLik }
+  const gap = [0, 1].map((i) => [0, 1].map((j) => at(P0, i, j) - at(Q, i, j)))
+  const left = [0, 1].map((i) => [0, 1].map((j) => at(inv, i, 0) * at(gap, 0, j) + at(inv, i, 1) * at(gap, 1, j)))
+  const start = [0, 1].map((i) => [0, 1].map((j) => at(left, i, 0) * at(inv, j, 0) + at(left, i, 1) * at(inv, j, 1)))
+  const model = { F, H: [[1, 0]], Q, R: [[READ_SD ** 2]], x0: [0, 0], P0: start }
+  const readings = y.map((v) => [v])
+  const filtered = filtering.kalmanFilter(model, readings)
+  const s = filtering.rtsSmoother(model, filtered)
+  return {
+    means: toArray(s.means) as number[][],
+    covariances: toArray(s.covariances) as number[][][],
+    logLik: Number(toFlat(filtering.kalmanLogLikelihood(model, readings))[0]),
+  }
 }
 
 describe('a vector-state scan under EP, against the Kalman smoother', () => {
@@ -94,9 +90,9 @@ describe('a vector-state scan under EP, against the Kalman smoother', () => {
       const mean = Array.from(toFlat(post.mean(`x[${t}]`)))
       const sds = Array.from(toFlat(post.stddev(`x[${t}]`)))
       for (let k = 0; k < 2; k++) {
-        const sd = Math.sqrt(ref.covariances[t][k][k])
-        expect(Math.abs(mean[k] - ref.means[t][k]) / sd).toBeLessThan(1e-6)
-        expect(Math.abs(sds[k] / sd - 1)).toBeLessThan(1e-6)
+        const sd = Math.sqrt(ref.covariances[t]?.[k]?.[k] as number)
+        expect(Math.abs((mean[k] as number) - (ref.means[t]?.[k] as number)) / sd).toBeLessThan(1e-6)
+        expect(Math.abs((sds[k] as number) / sd - 1)).toBeLessThan(1e-6)
       }
     }
     // The EP log evidence of a chain is exact: the Kalman filter's log likelihood of the readings.
