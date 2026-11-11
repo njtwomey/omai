@@ -4,8 +4,8 @@
  * (a Dirichlet draw is a vector), whether it is discrete or an exponential family, and `make`, which builds the
  * library's own distribution from evaluated parameters. Nothing here is a second distribution: every `make` calls the
  * constructor in `omai-engine/dists`. The table is what turns a JSON `DistSpec` back into a `Distribution`.
- * One family is a composition: `normalSpikeSlab`, the zero-mean two-component scale mixture of the spike and slab prior,
- * built as `mixture` of two normals.
+ * Two families are compositions, each a `mixture` of two normals: `normalSpikeSlab`, the zero-mean two-component scale mixture of
+ * the spike and slab prior, and `normalOutliers`, a normal around `loc` whose noise is a wider normal with probability `outlier`.
  *
  * @index table The distribution families a model spec names, mapped to the library's constructors.
  */
@@ -37,7 +37,7 @@ import {
   uniform,
   weibull,
 } from '../../../dists/index.ts'
-import { stack, sub, type Value } from '../../../tensor/index.ts'
+import { mul, stack, sub, type Value } from '../../../tensor/index.ts'
 
 /** The evaluated parameters of a family, by name. */
 export type FamilyArgs = Readonly<Record<string, Value>>
@@ -58,6 +58,11 @@ export interface FamilyDef {
   readonly finite: boolean
   /** Whether the family has an exponential-family form (so message passing and conjugacy can use it). */
   readonly exponentialFamily: boolean
+  /**
+   * Whether message passing has a factor rule for the family although it has no exponential-family form (a Student t, a
+   * mixture of two normals): the compiler maps it for the cases its rules cover (known scale), so it is not opaque.
+   */
+  readonly messagePassing: boolean
   /** Example parameters of a valid member, used by tests and drawings. */
   readonly example: Readonly<Record<string, number | readonly number[] | readonly (readonly number[])[]>>
   make(args: FamilyArgs): Distribution
@@ -91,6 +96,7 @@ function family(
     readonly discrete?: boolean
     readonly finite?: boolean
     readonly exponentialFamily?: boolean
+    readonly messagePassing?: boolean
   } = {},
 ): FamilyDef {
   return {
@@ -102,6 +108,7 @@ function family(
     discrete: options.discrete ?? false,
     finite: options.finite ?? false,
     exponentialFamily: options.exponentialFamily ?? false,
+    messagePassing: options.messagePassing ?? false,
     example,
     make,
   }
@@ -175,6 +182,7 @@ export function distributionFamilies(): Record<string, FamilyDef> {
       { df: 3, loc: 0, scale: 1 },
       {
         defaults: { loc: 0, scale: 1 },
+        messagePassing: true,
       },
     ),
     family(
@@ -328,6 +336,23 @@ export function distributionFamilies(): Record<string, FamilyDef> {
         return mixture({ probs: stack([inclusion, sub(1, inclusion)], -1) }, [normal(0, slab), normal(0, spike)])
       },
       { inclusion: 0.5, slab: 2, spike: 0.1 },
+      { messagePassing: true },
+    ),
+    family(
+      'normalOutliers',
+      ['loc', 'scale', 'outlier', 'width'],
+      (a) => {
+        const loc = need('normalOutliers', a, 'loc')
+        const scale = need('normalOutliers', a, 'scale')
+        const outlier = need('normalOutliers', a, 'outlier')
+        const width = need('normalOutliers', a, 'width')
+        return mixture({ probs: stack([sub(1, outlier), outlier], -1) }, [
+          normal(loc, scale),
+          normal(loc, mul(scale, width)),
+        ])
+      },
+      { loc: 0, scale: 1, outlier: 0.1, width: 10 },
+      { messagePassing: true },
     ),
     family(
       'multivariateNormal',

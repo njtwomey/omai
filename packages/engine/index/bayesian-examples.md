@@ -15,5 +15,5 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 
 - estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:510` `omai-engine/bayesian-examples`
 - estimator `coinMethod`: Biased coin method: Beta-Bernoulli or Gamma-Poisson, one inference method, checked against the exact posterior. `src/lib/bayesian-examples/coin-method.ts:280` `omai-engine/bayesian-examples`
-- estimator `linearRegressionMethod`: Linear regression method: polynomial or sparse data, sparse priors, one inference method. `src/lib/bayesian-examples/linear-regression-method.ts:640` `omai-engine/bayesian-examples`
-- estimator `robustRegressionMethod`: Robust regression method: outliers in the data, Gaussian, Student-t, Laplace or mixture likelihood, one inference method. `src/lib/bayesian-examples/robust-regression-method.ts:552` `omai-engine/bayesian-examples`
+- estimator `linearRegressionMethod`: Linear regression method: polynomial or sparse data, sparse priors, one inference method. `src/lib/bayesian-examples/linear-regression-method.ts:656` `omai-engine/bayesian-examples`
+- estimator `robustRegressionMethod`: Robust regression method: outliers in the data, Gaussian, Student-t, Laplace or mixture likelihood, one inference method. `src/lib/bayesian-examples/robust-regression-method.ts:542` `omai-engine/bayesian-examples`
