@@ -10,6 +10,7 @@ import { toFlat } from '../../../tensor/index.ts'
 import { type LatentMemo, latentsIn, type NodesByName, nodesByName, usesLatent } from '../analysis-exprs.ts'
 import type { NamedValue } from '../operators.ts'
 import type { ExprSpec, ModelNode, ModelSpec } from '../spec.ts'
+import { type Atom, type Cell, logName } from './_cells.ts'
 
 /** What the recognisers ask of the model they read. */
 export interface IdiomEnv {
@@ -21,6 +22,8 @@ export interface IdiomEnv {
   valueOf(e: ExprSpec): NamedValue
   /** Whether a node is an inverse-gamma variance already compiled (its cells are all reciprocal gamma variables). */
   isRecipNode(name: string): boolean
+  /** Whether a node is a positive latent carried on its log, so that a variable of its log exists (the name is `logName(node)`). */
+  hasLogVariable(name: string): boolean
 }
 
 /** The nodes of a spec an expression can refer to, and the memo that the analysis module's `latentsIn` keeps over them. */
@@ -147,4 +150,118 @@ export function precisionMultiple(env: IdiomEnv, scale: ExprSpec, tau: string, i
   const p = precisionExpr(env, scale)
   const c = p === undefined ? undefined : multipleOf(env, p, tau)
   return c === undefined || !(c > 0) ? undefined : c
+}
+
+/** The argument `L` of `exp(L)`: the log-link idiom of a rate, mean or scale. Absent for any other expression. */
+export function expArgument(e: ExprSpec): ExprSpec | undefined {
+  return e.kind === 'op' && e.op === 'exp' ? (e.args[0] as ExprSpec) : undefined
+}
+
+/** A scale with a modelling floor `clip(tau, lo, hi)` read as the scale itself: the floor never binds for a positive scale variable. */
+export function stripClip(env: IdiomEnv, e: ExprSpec): ExprSpec {
+  let cur = unwrap(env.nodes, e)
+  while (
+    cur.kind === 'op' &&
+    cur.op === 'clip' &&
+    env.isConst(cur.args[1] as ExprSpec) &&
+    env.isConst(cur.args[2] as ExprSpec)
+  )
+    cur = unwrap(env.nodes, cur.args[0] as ExprSpec)
+  return cur
+}
+
+/**
+ * The matrix and the index of `at(A, z)` when it is the probability row of a categorical: `A` known (rows are the states
+ * of the index, columns the outcomes), the index an expression of discrete latents. Absent for any other expression.
+ */
+export function transitionRow(
+  env: IdiomEnv,
+  expr: ExprSpec,
+): { readonly matrix: ExprSpec; readonly index: ExprSpec } | undefined {
+  const e = unwrap(env.nodes, expr)
+  if (e.kind !== 'op' || e.op !== 'at') return undefined
+  const [matrix, index] = e.args as [ExprSpec, ExprSpec]
+  return env.isConst(matrix) && !env.isConst(index) ? { matrix, index } : undefined
+}
+
+/**
+ * The matrix and the index of `at(A, z)` when it is the probability row of a categorical and the matrix is random (its
+ * rows are latents), the index an expression of discrete latents. Absent for any other expression.
+ */
+export function randomTransitionRow(
+  env: IdiomEnv,
+  expr: ExprSpec,
+): { readonly matrix: ExprSpec; readonly index: ExprSpec } | undefined {
+  const e = unwrap(env.nodes, expr)
+  if (e.kind !== 'op' || e.op !== 'at') return undefined
+  const [matrix, index] = e.args as [ExprSpec, ExprSpec]
+  return !env.isConst(matrix) && !env.isConst(index) ? { matrix, index } : undefined
+}
+
+/**
+ * Whether an expression depends, through derived nodes, on a Bernoulli or categorical latent: some latent it reads (the analysis
+ * module's `latentsIn`) has one of those families.
+ */
+export function mentionsDiscrete(scope: LatentScope, e: ExprSpec): boolean {
+  for (const name of latentsIn(e, scope.byName, scope.memo)) {
+    const n = scope.byName.get(name)
+    if (n?.kind === 'latent' && (n.dist.family === 'bernoulli' || n.dist.family === 'categorical')) return true
+  }
+  return false
+}
+
+/** `exp(L)` or `k * exp(L)` (with `k` known), followed through derived nodes: the log-link idiom of a rate, mean or scale. */
+export function scaledExp(
+  env: IdiomEnv,
+  e: ExprSpec,
+  randomScale = false,
+): { readonly inner: ExprSpec; readonly scale: ExprSpec | undefined } | undefined {
+  const u = unwrap(env.nodes, e)
+  // A positive latent carried on its log (a log-normal, half-normal or half-Cauchy rate or scale) is `exp` of that log.
+  const logOf = (x: ExprSpec): ExprSpec | undefined =>
+    x.kind === 'ref' && env.hasLogVariable(x.name) ? { kind: 'ref', name: logName(x.name) } : undefined
+  const direct = logOf(u)
+  if (direct !== undefined) return { inner: direct, scale: undefined }
+  if (u.kind !== 'op') return undefined
+  const exp = expArgument(u)
+  if (exp !== undefined) return { inner: exp, scale: undefined }
+  if (u.op === 'mul') {
+    const [a, b] = u.args as [ExprSpec, ExprSpec]
+    const ea = unwrap(env.nodes, a)
+    const eb = unwrap(env.nodes, b)
+    const la = logOf(ea)
+    const lb = logOf(eb)
+    // With `randomScale` the factor may be random too (a known value chosen by a discrete variable: a gate over the rate).
+    if ((randomScale || env.isConst(a)) && lb !== undefined) return { inner: lb, scale: a }
+    if ((randomScale || env.isConst(b)) && la !== undefined) return { inner: la, scale: b }
+    const expb = expArgument(eb)
+    if ((randomScale || env.isConst(a)) && expb !== undefined) return { inner: expb, scale: a }
+    const expa = expArgument(ea)
+    if ((randomScale || env.isConst(b)) && expa !== undefined) return { inner: expa, scale: b }
+  }
+  return undefined
+}
+
+/**
+ * The Gaussian log variable behind a positive value carried on its log (a log-normal, half-normal or half-Cauchy latent, or a gamma
+ * variable defined as `exp` of one): the variable `l` such that the value variable of the atom `key` is `exp(l)`. Absent for any other atom.
+ */
+export function logVariableOf(
+  atoms: ReadonlyMap<string, Atom>,
+  logScale: ReadonlyMap<string, string>,
+  key: string,
+): string | undefined {
+  const atom = atoms.get(key)
+  return atom?.kind === 'var' ? logScale.get(atom.name) : undefined
+}
+
+/** The log variable behind a cell that is exactly one such value variable (coefficient 1, no offset); absent for any other cell. */
+export function logVariableOfCell(
+  cell: Cell,
+  atoms: ReadonlyMap<string, Atom>,
+  logScale: ReadonlyMap<string, string>,
+): string | undefined {
+  if (cell.kind !== 'aff' || cell.aff.offset !== 0 || cell.aff.terms.size !== 1) return undefined
+  const [key, coefficient] = [...cell.aff.terms][0] as [string, number]
+  return coefficient === 1 ? logVariableOf(atoms, logScale, key) : undefined
 }

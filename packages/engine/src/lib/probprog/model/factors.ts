@@ -78,7 +78,18 @@ import {
   unflatten,
 } from './factor-graph/_cells.ts'
 import { Context } from './factor-graph/_context.ts'
-import { precisionExpr, unwrap } from './factor-graph/_idioms.ts'
+import {
+  expArgument,
+  logVariableOf,
+  logVariableOfCell,
+  mentionsDiscrete,
+  precisionExpr,
+  randomTransitionRow,
+  scaledExp,
+  stripClip,
+  transitionRow,
+  unwrap,
+} from './factor-graph/_idioms.ts'
 import type { NormalGammaPlan } from './factor-graph/_plan.ts'
 import { Refusal } from './factor-graph/_refusal.ts'
 import type { EvalMode } from './factor-graph/_symbolic/_affine.ts'
@@ -1188,19 +1199,6 @@ class Compiler {
     this.cx.finishLatent(node, 'gaussian', cells, vars)
   }
 
-  /** A scale with a modelling floor `clip(tau, lo, hi)` read as the scale itself: the floor never binds for a positive scale variable. */
-  private stripClip(e: ExprSpec): ExprSpec {
-    let cur = unwrap(this.cx.nodes, e)
-    while (
-      cur.kind === 'op' &&
-      cur.op === 'clip' &&
-      this.cx.isConst(cur.args[1] as ExprSpec) &&
-      this.cx.isConst(cur.args[2] as ExprSpec)
-    )
-      cur = unwrap(this.cx.nodes, cur.args[0] as ExprSpec)
-    return cur
-  }
-
   /**
    * A Gaussian latent whose scale is a random positive value (a half-normal or half-Cauchy sd of a hierarchy, `exp` of a
    * Gaussian), written in its non-centred form: `x = loc + scale * z` with a standard normal `z`, the product of two Gaussian
@@ -1214,7 +1212,7 @@ class Compiler {
   ): void {
     let scales: Cell[]
     try {
-      scales = this.cx.over(evalSym(this.cx, this.stripClip(scaleExpr)), node.dims)
+      scales = this.cx.over(evalSym(this.cx, stripClip(this.cx.idiom, scaleExpr)), node.dims)
     } catch (e) {
       if (!(e instanceof Refusal)) throw e
       this.latentRandomPrecision(node, loc)
@@ -1515,8 +1513,7 @@ class Compiler {
     if (g !== undefined) return { variable: g.variable, weight: g.scale, offset: g.offset }
     if (c.kind === 'aff' && c.aff.terms.size === 1) {
       const [key, coefficient] = [...c.aff.terms][0] as [string, number]
-      const atom = this.cx.g.atoms.get(key)
-      const l = atom?.kind === 'var' ? this.cx.logScale.get(atom.name) : undefined
+      const l = logVariableOf(this.cx.g.atoms, this.cx.logScale, key)
       if (l !== undefined) return { variable: l, log: true, weight: coefficient, offset: c.aff.offset }
     }
     throw new Refusal(
@@ -1582,7 +1579,7 @@ class Compiler {
     if (expr === undefined) throw new Refusal('structure', `'${node.name}': give probs or logits`)
     const cells: Cell[] = []
     const vars: string[] = []
-    const chain = logitsExpr === undefined && !this.cx.isConst(expr) ? this.transitionRow(expr) : undefined
+    const chain = logitsExpr === undefined && !this.cx.isConst(expr) ? transitionRow(this.cx.idiom, expr) : undefined
     if (chain !== undefined) {
       // The probabilities are a known row of a matrix chosen by another discrete variable (a Markov chain's transition): a table over the two.
       const parents = this.cx.over(evalSym(this.cx, chain.index), node.dims)
@@ -1612,11 +1609,11 @@ class Compiler {
         cells.push({ kind: 'rv', variable: name, family: 'discrete' })
         vars.push(name)
       }
-    } else if (!this.cx.isConst(expr) && this.randomTransitionRow(expr) !== undefined) {
+    } else if (!this.cx.isConst(expr) && randomTransitionRow(this.cx.idiom, expr) !== undefined) {
       // The rows of the matrix are Dirichlet latents (a transition matrix to learn), chosen by another discrete variable: one
       // `gate` per element, whose state is the previous state and whose branch `j` is the conjugate `discrete` factor of this
       // state on row `j`. Each row then hears only the transitions out of its state, weighted by the belief that the chain was there.
-      const chosen = this.randomTransitionRow(expr) as { readonly matrix: ExprSpec; readonly index: ExprSpec }
+      const chosen = randomTransitionRow(this.cx.idiom, expr) as { readonly matrix: ExprSpec; readonly index: ExprSpec }
       const matrix = evalSym(this.cx, chosen.matrix)
       const rows = matrix.cells
       const parents = this.cx.over(evalSym(this.cx, chosen.index), node.dims)
@@ -1706,28 +1703,6 @@ class Compiler {
       }
     }
     this.cx.finishLatent(node, 'discrete', cells, vars)
-  }
-
-  /**
-   * The matrix and the index of `at(A, z)` when it is the probability row of a categorical: `A` known (rows are the states
-   * of the index, columns the outcomes), the index an expression of discrete latents. Absent for any other expression.
-   */
-  private transitionRow(expr: ExprSpec): { readonly matrix: ExprSpec; readonly index: ExprSpec } | undefined {
-    const e = unwrap(this.cx.nodes, expr)
-    if (e.kind !== 'op' || e.op !== 'at') return undefined
-    const [matrix, index] = e.args as [ExprSpec, ExprSpec]
-    return this.cx.isConst(matrix) && !this.cx.isConst(index) ? { matrix, index } : undefined
-  }
-
-  /**
-   * The matrix and the index of `at(A, z)` when it is the probability row of a categorical and the matrix is random (its
-   * rows are latents), the index an expression of discrete latents. Absent for any other expression.
-   */
-  private randomTransitionRow(expr: ExprSpec): { readonly matrix: ExprSpec; readonly index: ExprSpec } | undefined {
-    const e = unwrap(this.cx.nodes, expr)
-    if (e.kind !== 'op' || e.op !== 'at') return undefined
-    const [matrix, index] = e.args as [ExprSpec, ExprSpec]
-    return !this.cx.isConst(matrix) && !this.cx.isConst(index) ? { matrix, index } : undefined
   }
 
   private latentDiscrete(node: ModelNode & { readonly kind: 'latent' }): void {
@@ -1967,7 +1942,7 @@ class Compiler {
   ): (ModelNode & { readonly kind: 'observed' }) | undefined {
     const loc = node.dist.params['loc']
     if (node.dist.family !== 'normal' || loc === undefined || this.cx.isConst(node.value)) return undefined
-    if (!this.mentionsDiscrete(node.value)) return undefined
+    if (!mentionsDiscrete(this.cx.latents, node.value)) return undefined
     const fused = this.gatedMean(node, loc)
     if (fused !== undefined) return { ...node, value: { kind: 'const', value: 0 } }
     return {
@@ -2135,9 +2110,10 @@ class Compiler {
         const switched = this.switchedCells(node, i)
         if (switched !== undefined) return this.observedSwitch(node, name, y, index, switched.loc, switched.scale)
         if (scaleExpr !== undefined && !this.cx.isConst(scaleExpr)) {
-          const e = unwrap(this.cx.nodes, scaleExpr)
           const logScale =
-            e.kind === 'op' && e.op === 'exp' ? this.observedLogScale(node, name, y, i, index) : undefined
+            expArgument(unwrap(this.cx.nodes, scaleExpr)) !== undefined
+              ? this.observedLogScale(node, name, y, i, index)
+              : undefined
           if (logScale !== undefined) return logScale
           if (precisionExpr(this.cx.idiom, scaleExpr) === undefined)
             return this.observedRandomScale(node, name, y, i, index, scaleExpr)
@@ -2219,36 +2195,6 @@ class Compiler {
   /** The value of a known expression at element `i` of an observed node. */
   private constAt(node: ModelNode, e: ExprSpec, i: number): number {
     return (this.cx.over(this.cx.fromNamed(this.cx.evalNamed(e)), node.dims)[i] as Cell & { kind: 'aff' }).aff.offset
-  }
-
-  /** `exp(L)` or `k * exp(L)` (with `k` known), followed through derived nodes: the log-link idiom of a rate, mean or scale. */
-  private scaledExp(
-    e: ExprSpec,
-    randomScale = false,
-  ): { readonly inner: ExprSpec; readonly scale: ExprSpec | undefined } | undefined {
-    const u = unwrap(this.cx.nodes, e)
-    // A positive latent carried on its log (a log-normal, half-normal or half-Cauchy rate or scale) is `exp` of that log.
-    const logOf = (x: ExprSpec): ExprSpec | undefined =>
-      x.kind === 'ref' && this.cx.syms.has(logName(x.name)) ? { kind: 'ref', name: logName(x.name) } : undefined
-    const direct = logOf(u)
-    if (direct !== undefined) return { inner: direct, scale: undefined }
-    if (u.kind !== 'op') return undefined
-    if (u.op === 'exp') return { inner: u.args[0] as ExprSpec, scale: undefined }
-    if (u.op === 'mul') {
-      const [a, b] = u.args as [ExprSpec, ExprSpec]
-      const ea = unwrap(this.cx.nodes, a)
-      const eb = unwrap(this.cx.nodes, b)
-      const la = logOf(ea)
-      const lb = logOf(eb)
-      // With `randomScale` the factor may be random too (a known value chosen by a discrete variable: a gate over the rate).
-      if ((randomScale || this.cx.isConst(a)) && lb !== undefined) return { inner: lb, scale: a }
-      if ((randomScale || this.cx.isConst(b)) && la !== undefined) return { inner: la, scale: b }
-      if ((randomScale || this.cx.isConst(a)) && eb.kind === 'op' && eb.op === 'exp')
-        return { inner: eb.args[0] as ExprSpec, scale: a }
-      if ((randomScale || this.cx.isConst(b)) && ea.kind === 'op' && ea.op === 'exp')
-        return { inner: ea.args[0] as ExprSpec, scale: b }
-    }
-    return undefined
   }
 
   /**
@@ -2345,13 +2291,10 @@ class Compiler {
     const [m1, m2] = product.args as [ExprSpec, ExprSpec]
     const mean = same(m1, a) ? m2 : same(m2, a) ? m1 : undefined
     if (mean === undefined) return undefined
-    const m = this.scaledExp(mean)
+    const m = scaledExp(this.cx.idiom, mean)
     if (m === undefined) return undefined
     const aCell = this.cellsOf(node, 'dispersion', () => evalSym(this.cx, a))[i] as Cell
-    const only =
-      aCell.kind === 'aff' && aCell.aff.offset === 0 && aCell.aff.terms.size === 1 ? [...aCell.aff.terms] : []
-    const atom = only.length === 1 && only[0]?.[1] === 1 ? this.cx.g.atoms.get(only[0][0]) : undefined
-    const logDispersion = atom?.kind === 'var' ? this.cx.logScale.get(atom.name) : undefined
+    const logDispersion = logVariableOfCell(aCell, this.cx.g.atoms, this.cx.logScale)
     if (logDispersion === undefined)
       throw new Refusal(
         'operator',
@@ -2413,14 +2356,14 @@ class Compiler {
       return this.emitSite(node, cell, i, index, 'likelihood-row', 'likelihood-site', params)
     }
     if (fam === 'zeroTruncatedPoisson' || fam === 'hurdlePoisson') {
-      const m = dist['rate'] === undefined ? undefined : this.scaledExp(dist['rate'])
+      const m = dist['rate'] === undefined ? undefined : scaledExp(this.cx.idiom, dist['rate'])
       if (m === undefined) return undefined
       return emit('poisson-log-truncated', m.inner, {
         exposure: m.scale === undefined ? 1 : this.constAt(node, m.scale, i),
       })
     }
     if (fam === 'poisson') {
-      const m = dist['rate'] === undefined ? undefined : this.scaledExp(dist['rate'], true)
+      const m = dist['rate'] === undefined ? undefined : scaledExp(this.cx.idiom, dist['rate'], true)
       if (m === undefined) return undefined
       if (m.scale !== undefined && !this.cx.isConst(m.scale))
         return this.observedPoissonGate(node, y, i, index, m.inner, m.scale)
@@ -2452,7 +2395,7 @@ class Compiler {
       })
     }
     if (fam === 'weibull') {
-      const m = dist['scale'] === undefined ? undefined : this.scaledExp(dist['scale'])
+      const m = dist['scale'] === undefined ? undefined : scaledExp(this.cx.idiom, dist['scale'])
       if (m === undefined || m.scale !== undefined) return undefined
       if (!isConstCell(this.paramCell(node, 'concentration', i)))
         return this.observedPair(node, 'weibull-shape', y, i, index)
@@ -2473,7 +2416,7 @@ class Compiler {
       if (!this.cx.isConst(one)) return undefined
       const A = this.constAt(node, num, i)
       if (Math.abs(this.constAt(node, one, i) - A) > 1e-12 * Math.abs(A)) return undefined
-      const m = this.scaledExp(rest)
+      const m = scaledExp(this.cx.idiom, rest)
       if (m === undefined) return undefined
       const K = m.scale === undefined ? 1 : this.constAt(node, m.scale, i)
       return emit('negative-binomial-log', m.inner, { dispersion: 1 / r, exposure: (r * K) / A })
@@ -2535,9 +2478,10 @@ class Compiler {
     index: number | undefined,
   ): string | { readonly const: number } {
     const expr = node.dist.params[key]
-    const e = expr === undefined ? undefined : this.stripClip(expr)
-    if (e?.kind === 'op' && e.op === 'exp') {
-      const cell = this.cellsOf(node, `${key}:log`, () => evalSym(this.cx, e.args[0] as ExprSpec))[i] as Cell
+    const stripped = expr === undefined ? undefined : stripClip(this.cx.idiom, expr)
+    const logArgument = stripped === undefined ? undefined : expArgument(stripped)
+    if (logArgument !== undefined) {
+      const cell = this.cellsOf(node, `${key}:log`, () => evalSym(this.cx, logArgument))[i] as Cell
       if (cell.kind === 'aff') {
         const m = this.cx.g.materialise(cell.aff, node.name, index)
         return typeof m === 'string' ? m : { const: m }
@@ -2550,12 +2494,8 @@ class Compiler {
       return { const: Math.log(c.aff.offset) }
     }
     if (c.kind === 'rv' && c.family === 'gamma') return c.variable
-    if (c.kind === 'aff' && c.aff.offset === 0 && c.aff.terms.size === 1) {
-      const only = [...c.aff.terms][0] as [string, number]
-      const atom = only[1] === 1 ? this.cx.g.atoms.get(only[0]) : undefined
-      const logVar = atom?.kind === 'var' ? this.cx.logScale.get(atom.name) : undefined
-      if (logVar !== undefined) return logVar
-    }
+    const logVar = logVariableOfCell(c, this.cx.g.atoms, this.cx.logScale)
+    if (logVar !== undefined) return logVar
     throw new Refusal(
       'operator',
       `the ${key} of '${node.name}' is random but not a gamma or exponential latent, a positive latent carried on its log (a half-normal, half-Cauchy, log-normal or uniform prior) or exp of an affine value: the likelihood-pair factor needs one of those`,
@@ -2596,7 +2536,8 @@ class Compiler {
       extra['scale'] = scale.aff.offset
       args = [predictor(this.paramCell(node, 'loc', i)), this.positivePort(node, 'df', i, index)]
     } else if (likelihood === 'weibull-shape') {
-      const m = node.dist.params['scale'] === undefined ? undefined : this.scaledExp(node.dist.params['scale'])
+      const m =
+        node.dist.params['scale'] === undefined ? undefined : scaledExp(this.cx.idiom, node.dist.params['scale'])
       if (m === undefined || m.scale !== undefined)
         throw new Refusal(
           'operator',
@@ -2957,16 +2898,6 @@ class Compiler {
     return true
   }
 
-  /** Whether an expression depends, through derived nodes, on a Bernoulli or categorical latent. */
-  private mentionsDiscrete(e: ExprSpec): boolean {
-    if (e.kind === 'ref') {
-      const n = this.cx.nodes.get(e.name)
-      if (n?.kind === 'latent') return n.dist.family === 'bernoulli' || n.dist.family === 'categorical'
-      return n?.kind === 'derived' && this.mentionsDiscrete(n.expr)
-    }
-    return (e.kind === 'op' || e.kind === 'custom') && e.args.some((a) => this.mentionsDiscrete(a))
-  }
-
   /** The location and scale cells of an observed normal element when one of them is a lookup by a discrete variable; absent otherwise. */
   private switchedCells(
     node: ModelNode & { readonly kind: 'observed' },
@@ -2975,7 +2906,7 @@ class Compiler {
     const locExpr = node.dist.params['loc']
     const scaleExpr = node.dist.params['scale']
     const discrete = (e: ExprSpec | undefined): boolean =>
-      e !== undefined && !this.cx.isConst(e) && this.mentionsDiscrete(e)
+      e !== undefined && !this.cx.isConst(e) && mentionsDiscrete(this.cx.latents, e)
     if (!discrete(locExpr) && !discrete(scaleExpr)) return undefined
     // A precision chosen by a discrete variable (`1 / sqrt(where(z, tau_b, tau_a))`, `1 / sqrt(at(tau, z))`): the mean and the
     // precision are read as lookups of that variable, so the observation is one gate of `gaussian-gamma-precision` branches.
@@ -3116,15 +3047,13 @@ class Compiler {
   ): boolean {
     const scaleExpr = node.dist.params['scale']
     if (scaleExpr === undefined || this.cx.isConst(scaleExpr)) return false
-    const e = this.stripClip(scaleExpr)
-    if (e.kind !== 'op' || e.op !== 'exp' || !this.mentionsDiscrete(e.args[0] as ExprSpec)) return false
+    const logArgument = expArgument(stripClip(this.cx.idiom, scaleExpr))
+    if (logArgument === undefined || !mentionsDiscrete(this.cx.latents, logArgument)) return false
     let loc: Cell
     let logScale: Cell
     try {
       loc = this.paramCell(node, 'loc', i, 'lookup')
-      logScale = this.cellsOf(node, 'logScaleLookup', () => evalSym(this.cx, e.args[0] as ExprSpec, 'lookup'))[
-        i
-      ] as Cell
+      logScale = this.cellsOf(node, 'logScaleLookup', () => evalSym(this.cx, logArgument, 'lookup'))[i] as Cell
     } catch (err) {
       if (err instanceof Refusal) return false
       throw err
@@ -3203,19 +3132,17 @@ class Compiler {
     index: number | undefined,
     scaleExpr: ExprSpec,
   ): string {
-    const stripped = this.stripClip(scaleExpr)
+    const stripped = stripClip(this.cx.idiom, scaleExpr)
     let logVar: string | undefined
     try {
-      if (stripped.kind === 'op' && stripped.op === 'exp') {
-        const cell = this.cellsOf(node, 'logScale', () => evalSym(this.cx, stripped.args[0] as ExprSpec))[i] as Cell
+      const logArgument = expArgument(stripped)
+      if (logArgument !== undefined) {
+        const cell = this.cellsOf(node, 'logScale', () => evalSym(this.cx, logArgument))[i] as Cell
         if (cell.kind === 'aff' && !isConstCell(cell))
           logVar = this.cx.g.materialise(cell.aff, node.name, index) as string
       } else {
         const cell = this.cellsOf(node, 'scaleValue', () => evalSym(this.cx, stripped))[i] as Cell
-        const only =
-          cell.kind === 'aff' && cell.aff.offset === 0 && cell.aff.terms.size === 1 ? [...cell.aff.terms] : []
-        const atom = only.length === 1 && only[0]?.[1] === 1 ? this.cx.g.atoms.get(only[0][0]) : undefined
-        if (atom?.kind === 'var') logVar = this.cx.logScale.get(atom.name)
+        logVar = logVariableOfCell(cell, this.cx.g.atoms, this.cx.logScale)
       }
     } catch (e) {
       if (!(e instanceof Refusal)) throw e
@@ -3404,7 +3331,7 @@ class Compiler {
     i: number,
     expr: ExprSpec,
   ): string | null {
-    const chosen = this.randomTransitionRow(expr) as { readonly matrix: ExprSpec; readonly index: ExprSpec }
+    const chosen = randomTransitionRow(this.cx.idiom, expr) as { readonly matrix: ExprSpec; readonly index: ExprSpec }
     const matrix = evalSym(this.cx, chosen.matrix)
     if (matrix.dims.length !== 1 || matrix.cells.some((r) => r.kind !== 'rv' || r.family !== 'dirichlet'))
       throw new Refusal(
@@ -3475,7 +3402,7 @@ class Compiler {
     const expr = node.dist.params[param]
     if (expr === undefined) throw new Refusal('structure', `'${node.name}': the ${param} is missing`)
     // A word read through a discrete index of Dirichlet rows (`phi.at(z)`, a topic model): a gate over the index.
-    if (fam === 'categorical' && this.randomTransitionRow(expr) !== undefined)
+    if (fam === 'categorical' && randomTransitionRow(this.cx.idiom, expr) !== undefined)
       return this.observedRowGate(node, name, y, i, expr)
     let exposure = 1
     let target: Cell

@@ -268,6 +268,8 @@ export function findNormalGamma(
         }),
       // The precision idiom of an inverse-gamma variance is never a multiple of the gamma being detected: no pair either way.
       isRecipNode: () => false,
+      // No node has been compiled yet: the detection reads no log variable.
+      hasLogVariable: () => false,
     }
     try {
       found.set(node.name, { pair: detectPair(bound, node, env), customs })

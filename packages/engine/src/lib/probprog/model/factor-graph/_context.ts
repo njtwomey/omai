@@ -14,8 +14,8 @@ import { elementId } from '../ids.ts'
 import type { NamedValue, OperatorTable } from '../operators.ts'
 import type { ExprSpec, ModelNode } from '../spec.ts'
 import { GraphBuilder } from './_builder.ts'
-import type { Cell, Sym } from './_cells.ts'
-import type { IdiomEnv } from './_idioms.ts'
+import { type Cell, logName, type Sym } from './_cells.ts'
+import { type IdiomEnv, type LatentScope, latentScope } from './_idioms.ts'
 import { type EvalEnv, evaluateKnown, isKnownExpr, type Known, knownConstants } from './_known.ts'
 import { type LayoutPlan, layoutPlan, type NormalGammaPlan } from './_plan.ts'
 import { Refusal } from './_refusal.ts'
@@ -85,7 +85,10 @@ export class Context {
       const cells = this.syms.get(name)?.cells
       return cells !== undefined && cells.length > 0 && cells.every((c) => c.kind === 'recip')
     },
+    hasLogVariable: (name) => this.syms.has(logName(name)),
   }
+  /** The scope of the analysis module's latent dependence over the spec. */
+  readonly latents: LatentScope
   readonly families: ReturnType<typeof distributionFamilies> = distributionFamilies()
   /** The node being compiled: the site that auxiliary variables of its expressions are named after (`withSite` borrows it for another node). */
   current = ''
@@ -102,6 +105,7 @@ export class Context {
     options: CompileOptions,
   ) {
     this.vectorise = options.vectorise
+    this.latents = latentScope(bound.spec)
     this.g = new GraphBuilder(ops, modelOps)
     this.unbound = new Set(bound.unbound)
     const pre = knownConstants(bound, modelOps)
