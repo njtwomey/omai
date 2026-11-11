@@ -4,6 +4,7 @@
  * density yet, and the text of a caught error. Internal to message passing.
  */
 
+import { OmaiError } from '../../base/index.ts'
 import { ImproperMessageError } from './args.ts'
 import type { Arg, Eta, OperatorContext } from './types.ts'
 
@@ -28,3 +29,8 @@ export function evidenceOrNaN(compute: () => number): number {
 
 /** The text of a caught value: the message of an error, else the value as a string. */
 export const errorText = (e: unknown): string => (e instanceof Error ? e.message : String(e))
+
+/** Refuse a damping outside [0, 1): the message is `who: damping must be in [0, 1), got ...` (code `value`). */
+export function assertDamping(damping: number, who: string): void {
+  if (!(damping >= 0 && damping < 1)) throw new OmaiError('value', `${who}: damping must be in [0, 1), got ${damping}`)
+}

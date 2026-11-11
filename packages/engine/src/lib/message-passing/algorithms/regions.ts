@@ -48,6 +48,7 @@ import {
   stateFromJson,
   stateToJson,
 } from '../../trace/index.ts'
+import { assertDamping } from '../core/_messages.ts'
 import type { MpSnapshot } from '../engine/state.ts'
 
 /** A region: its variables, the factors inside it, its counting number and its place in the region graph. */
@@ -608,8 +609,7 @@ function marginalsOf(g: RegionGraph, plan: Plan, state: RegionState): Record<str
  */
 export function regionBpAlgorithm(g: RegionGraph, options: RegionBpOptions = {}): Algorithm<RegionState, RegionPath> {
   const o = { ...regionBpDefaults, ...options }
-  if (!(o.damping >= 0 && o.damping < 1))
-    throw new OmaiError('value', `region BP: damping must be in [0, 1), got ${o.damping}`)
+  assertDamping(o.damping, 'region BP')
   const plan = planOf(g)
   const normalised = (values: ArrayLike<number>): number[] => {
     let top = Number.NEGATIVE_INFINITY

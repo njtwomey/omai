@@ -10,6 +10,7 @@
 
 import { type Json, OmaiError } from '../../base/index.ts'
 import { type Algorithm, channels, type RunStatus, stateFromJson, stateToJson } from '../../trace/index.ts'
+import { assertDamping } from '../core/_messages.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import type { Eta } from '../core/types.ts'
 import { advancerOf } from './_advance.ts'
@@ -66,8 +67,7 @@ function configOf(s: EngineSettings): Json {
  * ```
  */
 export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettings): Algorithm<MpState> {
-  if (!(settings.damping >= 0 && settings.damping < 1))
-    throw new OmaiError('value', `message passing: damping must be in [0, 1), got ${settings.damping}`)
+  assertDamping(settings.damping, 'message passing')
   if (g.edges.length === 0) throw new OmaiError('value', 'message passing: the graph has no edge to send a message on')
   const plan: Plan = planOf(g, settings.schedule, settings.granularity, settings.order)
   const residual = settings.schedule === 'residual'

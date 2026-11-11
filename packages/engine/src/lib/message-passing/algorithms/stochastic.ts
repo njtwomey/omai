@@ -32,6 +32,7 @@ import {
   stateFromJson,
   stateToJson,
 } from '../../trace/index.ts'
+import { assertDamping } from '../core/_messages.ts'
 import type { CompiledFactor, CompiledGraph } from '../core/graph.ts'
 import type { Arg, Eta, Family } from '../core/types.ts'
 import { operatorMessage } from '../engine/dispatch.ts'
@@ -295,8 +296,7 @@ export function stochasticEpAlgorithm(
   options: StochasticEpOptions = {},
 ): Algorithm<SepState, SepPath> {
   const o = { ...stochasticEpDefaults, ...options }
-  if (!(o.damping >= 0 && o.damping < 1))
-    throw new OmaiError('value', `stochastic EP: damping must be in [0, 1), got ${o.damping}`)
+  assertDamping(o.damping, 'stochastic EP')
   if (!(Number.isInteger(o.batchSize) && o.batchSize >= 1))
     throw new OmaiError('value', 'stochastic EP: the batch size must be a positive integer')
   const l = layoutOf(g, options)

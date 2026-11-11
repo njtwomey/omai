@@ -35,6 +35,7 @@ import {
   stateFromJson,
   stateToJson,
 } from '../../trace/index.ts'
+import { assertDamping } from '../core/_messages.ts'
 import type { MpSnapshot } from '../engine/state.ts'
 
 /** The prior of every entry of x: a Gaussian of mean zero, or a Bernoulli-Gaussian (zero, or a Gaussian, with a given probability). */
@@ -372,7 +373,7 @@ export function ampAlgorithm(problem: AmpProblem, options: AmpOptions): Algorith
     throw new OmaiError('shape', `AMP: a ${m} by ${n} matrix and ${m} measurements are needed`)
   checkPrior(options.prior)
   const damping = options.damping ?? 0
-  if (!(damping >= 0 && damping < 1)) throw new OmaiError('value', `AMP: damping must be in [0, 1), got ${damping}`)
+  assertDamping(damping, 'AMP')
   const tol = options.tol ?? 1e-8
   const maxIterations = options.maxIterations ?? 200
   const truth = options.truth
