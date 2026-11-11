@@ -17,11 +17,11 @@ import { gamma, gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { axisOf, integratePair } from '../../numerics/_grid.ts'
-import { digammaOf, lgammaOf, trigammaOf } from '../../numerics/_scalar.ts'
+import { digammaOf, lgammaOf } from '../../numerics/_scalar.ts'
+import { gammaLogWindow, gaussianWindow, uniformGrid, type Window, windowProfiles } from '../../numerics/_windows.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 const POINTS = 241
-const SPAN = 14
 
 /** The concentration `kappa_k = w_k e^t + o_k` and its pieces from the parameters. */
 function concentrations(c: OperatorContext): { readonly w: readonly number[]; readonly o: readonly number[] } {
@@ -97,25 +97,21 @@ function tilt(c: OperatorContext): Tilt {
   const K = w.length
   if (eta.length !== K || eta.some((v) => !(v > -1) || !Number.isFinite(v)))
     throw new ImproperMessageError('dirichlet-concentration: the cavity of the probabilities has no density')
-  let centre: number
-  let half: number
+  let window: Window
   let logCavity: (t: number) => number
   if (logMode) {
     const g = gaussianOf(arg(c, 1))
-    centre = g.mean
-    half = SPAN * Math.sqrt(g.variance)
+    window = gaussianWindow(g.mean, g.variance, windowProfiles.concentration)
     logCavity = (t) => (-0.5 * (t - g.mean) ** 2) / g.variance + (g.mean * g.mean) / (2 * g.variance)
   } else {
     const { shape, rate } = gammaShapeRate(cav)
     if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
       throw new ImproperMessageError('dirichlet-concentration: the cavity of the concentration has no density')
-    centre = digammaOf(shape) - Math.log(rate)
-    half = SPAN * Math.sqrt(trigammaOf(shape))
+    window = gammaLogWindow(shape, rate, windowProfiles.concentration)
     logCavity = (t) => shape * t - rate * Math.exp(t)
   }
-  const lo = Math.max(centre - half, -40)
-  const hi = Math.min(centre + half, 40)
-  const step = (hi - lo) / (POINTS - 1)
+  const { lo } = window
+  const { step } = uniformGrid(window, POINTS)
   const logw = new Float64Array(POINTS)
   let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < POINTS; i++) {
