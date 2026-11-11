@@ -314,6 +314,8 @@ export interface ExampleContext<P extends ExampleProblem> {
 
 /** What an example declares: its knobs, its problem and the derived paths that read the posterior. */
 export interface ExampleSpec<P extends ExampleProblem> {
+  /** The default time budget in milliseconds (default 2000): an example whose default run needs longer says so here. */
+  readonly budgetMs?: number
   /** The method's name (`classify`). */
   readonly name: string
   readonly description: string
@@ -455,16 +457,23 @@ export function defineExample<P extends ExampleProblem>(spec: ExampleSpec<P>): E
           }
     },
   }) as never
+  const budgetKnobs: DictSpace =
+    spec.budgetMs === undefined
+      ? exampleBudgetKnobs
+      : dict({
+          ...exampleBudgetKnobs.spaces,
+          budgetMs: { ...(exampleBudgetKnobs.spaces['budgetMs'] as RealSpace), default: spec.budgetMs },
+        })
   const method: InferenceMethod<State, Config, string> = {
     ...declared,
-    config: { ...declared.config, spaces: { ...declared.config.spaces, ...exampleBudgetKnobs.spaces } },
+    config: { ...declared.config, spaces: { ...declared.config.spaces, ...budgetKnobs.spaces } },
   }
   return {
     method,
     dataKnobs: spec.dataKnobs,
     modelKnobs: spec.modelKnobs,
     problemKnobs: spec.problemKnobs,
-    budgetKnobs: exampleBudgetKnobs,
+    budgetKnobs,
     knobs,
     offer: (config) => {
       const id = problemKey(config)

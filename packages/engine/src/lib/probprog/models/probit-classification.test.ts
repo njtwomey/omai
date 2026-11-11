@@ -124,3 +124,23 @@ describe('heldOutScores', () => {
     expect(s.logPredictive).toBeCloseTo((Math.log(0.9) + Math.log(0.8) + Math.log(0.4) + Math.log(0.4)) / 4, 12)
   })
 })
+
+describe('feature scaling', () => {
+  it('"none" leaves the raw monomials (columns of very different size); the default standardises them', () => {
+    const points = Array.from({ length: 30 }, (_, i) => [i / 3, 20 + i * 2])
+    const spread = (m: ReturnType<typeof polynomialFeatureMap>): number => {
+      const rows = m.transform(points).map((r) => r.slice(1))
+      const sds = rows[0]?.map((_, j) => {
+        const v = rows.map((r) => r[j] ?? 0)
+        const mean = v.reduce((a, b) => a + b, 0) / v.length
+        return Math.sqrt(v.reduce((a, b) => a + (b - mean) ** 2, 0) / v.length)
+      })
+      return Math.max(...(sds ?? [0])) / Math.min(...(sds ?? [1]).filter((x) => x > 0))
+    }
+    const standard = polynomialFeatureMap(points, 4)
+    const raw = polynomialFeatureMap(points, 4, { scaling: 'none' })
+    expect(standard.size).toBe(raw.size)
+    expect(spread(standard)).toBeLessThan(1.01)
+    expect(spread(raw)).toBeGreaterThan(1e3)
+  })
+})

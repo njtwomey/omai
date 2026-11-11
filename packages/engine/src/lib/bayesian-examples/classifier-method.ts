@@ -154,7 +154,9 @@ export function classifierProblem(config: Config): ClassifierProblem {
     const pad = 0.12 * (hi - lo || 1)
     return [lo - pad, hi + pad]
   }
-  const map = polynomialFeatureMap(train.x, Math.round(num(config, 'degree')))
+  const map = polynomialFeatureMap(train.x, Math.round(num(config, 'degree')), {
+    scaling: str(config, 'scaling') === 'none' ? 'none' : 'standardise',
+  })
   const design = map.transform(train.x)
   const link = str(config, 'link') === 'logistic' ? 'logistic' : 'probit'
   return {
@@ -243,11 +245,12 @@ export function classifierInferenceSpace(): ReturnType<typeof exampleInferenceSp
 
 const DEFAULTS: Config = {
   dataset: 'moons',
-  rows: 150,
+  rows: 200,
   noise: 0.3,
   dataSeed: 1,
-  link: 'probit',
-  degree: 2,
+  link: 'logistic',
+  degree: 4,
+  scaling: 'standardise',
   priorScale: 1,
 }
 
@@ -264,7 +267,7 @@ export const classifierDataKnobs: DictSpace = dict({
       blobs: 'two Gaussian blobs: linearly separable',
     },
   }),
-  rows: int(40, 600, { default: 150, log: true, label: 'rows' }),
+  rows: int(40, 600, { default: 200, log: true, label: 'rows' }),
   noise: real(0, 1, {
     default: 0.3,
     step: 0.05,
@@ -274,17 +277,26 @@ export const classifierDataKnobs: DictSpace = dict({
   dataSeed: int(0, 9999, { default: 1, label: 'seed' }),
 })
 
-/** The knobs of the model (the link, the degree of the features, the prior scale). */
+/** The knobs of the model (the link, the degree of the features, their scaling, the prior scale). */
 export const classifierModelKnobs: DictSpace = dict({
   link: choice([...classifierLinks], {
-    default: 'probit',
+    default: 'logistic',
     label: 'link',
     descriptions: { probit: 'the normal CDF', logistic: 'the logistic function' },
   }),
   degree: int(1, 8, {
-    default: 2,
+    default: 4,
     label: 'polynomial degree',
     description: 'the features are all monomials of the two inputs up to this degree',
+  }),
+  scaling: choice(['standardise', 'none'], {
+    default: 'standardise',
+    label: 'feature scaling',
+    descriptions: {
+      standardise:
+        'the inputs and then every polynomial column are shifted to mean zero and scaled to unit standard deviation on the training rows, so no feature is enormous and none is tiny',
+      none: 'the raw monomials of the raw inputs: at a high degree the columns differ by orders of magnitude, the prior treats them unequally and the samplers struggle (switch it to see)',
+    },
   }),
   priorScale: real(0.05, 20, {
     default: 1,
@@ -333,6 +345,8 @@ export function classifierObjective(config: Config): { readonly path: string; re
 /** The classifier declared on the example scaffold: its knobs, its problem and the derived paths of `classify/`. */
 export const classifierExample: Example<ClassifierProblem> = defineExample<ClassifierProblem>({
   name: 'classify',
+  // Degree 4 on 200 rows at the defaults is about 180 steps of NUTS: 3 s lets the default run finish.
+  budgetMs: 3000,
   description:
     'Bayesian probit or logistic classification of a 2-D data set with one inference method chosen from a table',
   modelName: 'classifier',

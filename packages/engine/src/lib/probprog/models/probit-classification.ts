@@ -44,6 +44,8 @@ export interface PolynomialFeatureMap {
  *
  * @param points - The training points `[n][2]` the standardisation is fitted on.
  * @param degree - The degree, 1 or more (at degree `k` there are `(k + 1)(k + 2) / 2` columns).
+ * @param options - `scaling`: `'standardise'` (default) as above, or `'none'` for the raw monomials of the raw inputs (the
+ *   columns then differ by orders of magnitude at a high degree: what the standardisation is there to prevent).
  * @returns The map.
  * @throws OmaiError with code `value` for a degree below 1 or an empty point set.
  * @concept feature-engineering
@@ -55,15 +57,23 @@ export interface PolynomialFeatureMap {
  * [map.size, map.names, map.weightScale.toFixed(3)] // => [6, ['1', 'x0', 'x1', 'x0^2', 'x0 x1', 'x1^2'], '4.472']
  * ```
  */
-export function polynomialFeatureMap(points: readonly (readonly number[])[], degree: number): PolynomialFeatureMap {
+export function polynomialFeatureMap(
+  points: readonly (readonly number[])[],
+  degree: number,
+  options: { readonly scaling?: 'standardise' | 'none' } = {},
+): PolynomialFeatureMap {
   if (!(Number.isInteger(degree) && degree >= 1))
     throw new OmaiError('value', 'polynomialFeatureMap: degree is a whole number from 1')
   if (points.length === 0) throw new OmaiError('value', 'polynomialFeatureMap: no points to fit on')
-  const inputs = standardScaler().fit({ x: points as number[][] })
+  const standardise = options.scaling !== 'none'
+  const identity = { transform: <T>(x: T): T => x }
+  const inputs = standardise ? standardScaler().fit({ x: points as number[][] }) : identity
   const monomials = polynomialFeatures({ degree, includeBias: false }).fit({
     x: inputs.transform(points as number[][]),
   })
-  const columns = standardScaler().fit({ x: monomials.transform(inputs.transform(points as number[][])) })
+  const columns = standardise
+    ? standardScaler().fit({ x: monomials.transform(inputs.transform(points as number[][])) })
+    : identity
   const names = ['1', ...monomials.featureNamesOut()]
   const unscaled = (rows: readonly (readonly number[])[]): number[][] => {
     if (rows.length === 0) return []
