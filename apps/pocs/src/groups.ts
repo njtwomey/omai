@@ -12,6 +12,12 @@ export const GROUPS: readonly PocGroup[] = [
       'Canonical Bayesian models, from a coin to hierarchical and latent-variable models. Each page is one experiment: choose the data, the model and one inference method, see what it infers, and check it against a reference.',
   },
   {
+    slug: 'expectation-propagation',
+    title: 'Expectation propagation',
+    summary:
+      'The atomic problems a suite of expectation propagation solvers has to get right: one small model each, run by EP, checked against the exact posterior, with the factor it needs named. Problems EP cannot run yet are listed with the reason.',
+  },
+  {
     slug: 'probabilistic-programming',
     title: 'Probabilistic programming (earlier pages, parked)',
     summary:
