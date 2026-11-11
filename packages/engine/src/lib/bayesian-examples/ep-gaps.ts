@@ -173,6 +173,17 @@ export const epGaps: readonly EpGap[] = [
     refuses: [],
   },
   {
+    id: 'sv-parameters',
+    title: 'Stochastic volatility with an unknown level, persistence and innovation precision is not calibrated',
+    kind: 'quality',
+    status: 'open',
+    summary:
+      "With the three parameters unknown the model compiles and EP runs in seconds, but the truth is inside EP's 90% interval for only 37% of levels, 60% of persistences and 47% of precisions over 30 seeds, with errors of 10 to 40 sds: the level and the persistence are strongly coupled through the whole chain and one Gaussian per parameter cannot hold that.",
+    plan: 'A joint rule over the level and the persistence (a block update on the chain), or EP inside a grid over the persistence weighted by evidence; until then the setup is not offered as a learned-parameters page.',
+    size: 'large',
+    refuses: [],
+  },
+  {
     id: 'improper-start',
     title: 'Improper first messages are patched operator by operator',
     kind: 'quality',
