@@ -8,6 +8,7 @@ import type { FactorOperator } from '../types.ts'
 import { bernoulliBeta, binomial, discreteDirichlet, poisson } from './conjugate.ts'
 import { gaussianMixture, select, table } from './discrete.ts'
 import { maximum, minimum } from './extremum.ts'
+import { apply } from './functions.ts'
 import {
   equal,
   gaussianGammaPrecision,
@@ -41,7 +42,7 @@ import { greaterThan, isBetween, probit } from './truncation.ts'
  * `product`, `max`, `min`, `equal`, `linear`, `plus`, `difference`, `times-constant`, `sum`, `dot-constant`, `matmul-constant`,
  * `linear-regression-row`, `gaussian-joint`, `probit`, `greater-than`, `is-between`, `logistic`, `bernoulli`,
  * `discrete`, `poisson`, `binomial`, `table`, `select`, `gaussian-mixture`, the regression rows `probit-row` and `logistic-row`, the plates of rows `linear-regression-plate`, `probit-plate` and `logistic-plate`, the
- * spin site `spin` and its row `spin-row`, and the robust sites `mixture-site`, `student-t-site` and `laplace-site` with their rows `mixture-row`, `student-t-row` and `laplace-row`, and the generic numeric likelihood `likelihood-site` with its row `likelihood-row` (a registry of count, survival, ordinal, quantile and robust likelihoods). A new object each call, so a caller may
+ * spin site `spin` and its row `spin-row`, and the robust sites `mixture-site`, `student-t-site` and `laplace-site` with their rows `mixture-row`, `student-t-row` and `laplace-row`, the unary function `apply` (`exp`, `square`, `tanh`, `relu`, `softplus`, `abs`, `sigmoid` of a Gaussian variable), and the generic numeric likelihood `likelihood-site` with its row `likelihood-row` (a registry of count, survival, ordinal, quantile and robust likelihoods). A new object each call, so a caller may
  * add its own (`{ ...defaultOperators(), mine }`).
  *
  * @returns The operators, keyed by their names.
@@ -99,6 +100,7 @@ export function defaultOperators(): Record<string, FactorOperator> {
     laplaceRow,
     likelihoodSiteOperator,
     likelihoodRowOperator,
+    apply,
   ]
   return Object.fromEntries(all.map((o) => [o.name, o]))
 }

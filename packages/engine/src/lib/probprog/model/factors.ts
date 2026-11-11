@@ -74,6 +74,7 @@ import {
   marginalsOf,
   priorFactor,
   projectionOf,
+  unaryFunctions,
   type VariableSpec,
 } from '../../message-passing/index.ts'
 import { asTensor, fromStorage, type NestedArray, toFlat, type Value } from '../../tensor/index.ts'
@@ -487,10 +488,17 @@ class Compiler {
         }))
       case 'matmul':
         return this.matmul(a, b)
+      case 'exp':
+      case 'square':
+      case 'tanh':
+      case 'softplus':
+      case 'abs':
+      case 'sigmoid':
+        return { dims: a.dims, cells: a.cells.map((c, i) => ({ kind: 'aff', aff: this.applyAff(op, affOf(c), i) })) }
       default:
         throw new Refusal(
           'operator',
-          `operator '${op}' applied to a random value has no message rule (message passing handles affine maps of Gaussians; a link such as probit or sigmoid is mapped only as the likelihood of a Bernoulli observation)`,
+          `operator '${op}' applied to a random value has no message rule (message passing handles affine maps of Gaussians, exp, square, tanh, softplus, abs, sigmoid and the rectifier of a random value, and a link such as probit only as the likelihood of a Bernoulli observation)`,
         )
     }
   }
@@ -520,13 +528,32 @@ class Compiler {
     return { terms: new Map([[key, 1]]), offset: 0 }
   }
 
+  /**
+   * A unary function of an affine value: a known value is evaluated; a random one becomes a new Gaussian variable defined
+   * by the `apply` factor of the engine (`exp`, `square`, `tanh`, `softplus`, `abs`, `sigmoid`, `relu`: the output matched
+   * by moments under the input's cavity, expectation propagation only).
+   */
+  private applyAff(fn: string, a: Aff, index: number): Aff {
+    if (a.terms.size === 0) return constAff((unaryFunctions()[fn] as { f: (x: number) => number }).f(a.offset))
+    const site = this.current
+    const x = this.materialise(a, site, undefined) as string
+    const out = this.auxName(site, index)
+    this.need('apply')
+    this.addVariable({ name: out, family: { kind: 'gaussian' } })
+    this.addFactor({ operator: 'apply', args: [out, x], params: { fn } }, out)
+    const key = this.atomKey({ kind: 'var', name: out })
+    this.atoms.set(key, { kind: 'var', name: out })
+    return { terms: new Map([[key, 1]]), offset: 0 }
+  }
+
   /** The larger or smaller of two random values: the `max` or `min` factor of the engine on a new variable (expectation propagation, Clark's moments). */
   private extremum(operator: 'max' | 'min', a: Aff, b: Aff, index: number): Aff {
-    if (a.terms.size === 0 || b.terms.size === 0)
-      throw new Refusal(
-        'operator',
-        `${operator === 'max' ? 'maximum' : 'minimum'} of a random value and a known one (a rectifier or clip) has no message rule yet: both operands must be random`,
-      )
+    if (a.terms.size === 0 || b.terms.size === 0) {
+      // max(x, k) = k + relu(x - k) and min(x, k) = x - relu(x - k): a rectifier of an affine value (the `apply` factor).
+      const [k, other] = a.terms.size === 0 ? [a.offset, b] : [b.offset, a]
+      const r = this.applyAff('relu', combine(other, constAff(k), -1), index)
+      return operator === 'max' ? combine(r, constAff(k), 1) : combine(other, r, -1)
+    }
     const site = this.current
     const left = this.materialise(a, site, undefined) as string
     const right = this.materialise(b, site, undefined) as string

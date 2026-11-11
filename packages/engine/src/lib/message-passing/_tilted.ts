@@ -136,11 +136,12 @@ export function tiltedByQuadrature(
   }
   let grid = evaluate(cavity, lo, hi, kinks, logf)
   let r = moments(grid, fn)
-  // An integrand still large at the edge of the cavity's own window does not decay: the tilt has no proper density.
-  const first = grid.lw.length
-  if (hint === undefined && first > 2) {
-    const edge = Math.max(grid.lw[0] as number, grid.lw[first - 1] as number)
-    if (edge > r.top - 25 && (lo === cavityLo || hi === cavityHi))
+  // An integrand that peaks at the edge of the cavity's own window (still growing there) has no proper tilted density.
+  if (hint === undefined && grid.lw.length > 2) {
+    const n = grid.lw.length
+    let at = 0
+    for (let i = 1; i < n; i++) if ((grid.lw[i] as number) > (grid.lw[at] as number)) at = i
+    if ((at < 0.02 * n && lo === cavityLo) || (at > 0.98 * n && hi === cavityHi))
       throw new ImproperMessageError('the tilted density does not decay inside the cavity window (an improper tilt)')
   }
   for (let z = 0; z < (hint?.zoom === false ? 0 : ZOOMS); z++) {

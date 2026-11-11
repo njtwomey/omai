@@ -425,6 +425,8 @@ export const product: FactorOperator = {
     return { message: gaussianSiteMessage(etaOf(arg(c, c.to)), tilted.mean, tilted.variance) }
   },
   logEvidence: (c) => {
+    // A product whose output has no other factor (nothing observed downstream) has a flat cavity at y: no mass to report.
+    if (!allProper(c.args)) return Number.NaN
     const a = gaussianOf(arg(c, 1))
     const b = gaussianOf(arg(c, 2))
     const y = gaussianOf(arg(c, 0))
