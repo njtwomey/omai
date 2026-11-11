@@ -71,17 +71,13 @@ describe('the extended atoms', () => {
     })
 
     if (atom.expected === 'runs') {
-      it(
-        'recovers the truth: the 90% intervals hold it over its seeds at the promised rate',
-        () => {
-          const c = atomCalibration(atom)
-          expect(c.ran).toBe(c.seeds)
-          const bad = c.rows.filter((r) => !r.pass).map((r) => `${r.key}: coverage ${r.coverage}, zrms ${r.zrms}`)
-          expect(bad).toEqual([])
-          expect(c.pass).toBe(true)
-        },
-        120_000,
-      )
+      it('recovers the truth: the 90% intervals hold it over its seeds at the promised rate', () => {
+        const c = atomCalibration(atom)
+        expect(c.ran).toBe(c.seeds)
+        const bad = c.rows.filter((r) => !r.pass).map((r) => `${r.key}: coverage ${r.coverage}, zrms ${r.zrms}`)
+        expect(bad).toEqual([])
+        expect(c.pass).toBe(true)
+      }, 120_000)
       it('is the same run for the same seed (a calibration is reproducible)', () => {
         const a = calibrationSample(atom, 3)
         const b = calibrationSample(atom, 3)

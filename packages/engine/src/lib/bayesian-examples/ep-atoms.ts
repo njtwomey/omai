@@ -151,6 +151,8 @@ export interface AtomProblem {
   readonly exact?: Readonly<Record<string, ExactMarginal>>
   /** The closed-form joint of the atom's pair (for contours), when the reference is `exact`. */
   readonly exactJoint?: RefJoint
+  /** What the `exact` marginals are, when they are not a closed form (`quadrature of the four unknowns`, `a Gibbs sampler`). */
+  readonly referenceSource?: string
   /** Options of the grid (points per axis, an explicit box) when the reference is a grid. */
   readonly grid?: GridOptions
 }
@@ -367,7 +369,11 @@ export function atomBound(problem: AtomProblem): BoundModel {
  */
 export function atomReference<K extends Config>(atom: EpAtom<K>, problem: AtomProblem): AtomReference {
   if (atom.reference === 'truth')
-    return { kind: 'truth', source: 'the true values the data were simulated from (no reference posterior)', marginals: {} }
+    return {
+      kind: 'truth',
+      source: 'the true values the data were simulated from (no reference posterior)',
+      marginals: {},
+    }
   if (atom.reference === 'exact') {
     const marginals: Record<string, RefMarginal> = {}
     for (const q of problem.quantities) {
@@ -378,7 +384,7 @@ export function atomReference<K extends Config>(atom: EpAtom<K>, problem: AtomPr
     }
     return {
       kind: 'exact',
-      source: 'the closed-form posterior',
+      source: problem.referenceSource ?? 'the closed-form posterior',
       marginals,
       ...(problem.exactJoint === undefined ? {} : { joint: problem.exactJoint }),
     }

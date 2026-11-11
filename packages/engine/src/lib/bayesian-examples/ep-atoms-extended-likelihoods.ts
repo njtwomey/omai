@@ -77,19 +77,30 @@ function studentLearnedProblem(k: Config): AtomProblem {
   const half = (10 * s0) / Math.sqrt(n)
   const tau0 = 1 / s0 ** 2
   const logT = (r2: number, tau: number): number =>
-    lg((df + 1) / 2) - lg(df / 2) - 0.5 * Math.log(df * Math.PI) + 0.5 * Math.log(tau) - ((df + 1) / 2) * Math.log(1 + (tau * r2) / df)
-  const grid = once(() => gridMarginals(
-    ([mu, tau]) => {
-      const t = tau as number
-      if (t <= 0) return Number.NEGATIVE_INFINITY
-      return -0.5 * ((mu as number) / 5) ** 2 + (a - 1) * Math.log(t) - b * t + sum(y.map((v) => logT((v - (mu as number)) ** 2, t)))
-    },
-    [
-      [med - half, med + half],
-      [tau0 / 12, tau0 * 6],
-    ],
-    101,
-  ))
+    lg((df + 1) / 2) -
+    lg(df / 2) -
+    0.5 * Math.log(df * Math.PI) +
+    0.5 * Math.log(tau) -
+    ((df + 1) / 2) * Math.log(1 + (tau * r2) / df)
+  const grid = once(() =>
+    gridMarginals(
+      ([mu, tau]) => {
+        const t = tau as number
+        if (t <= 0) return Number.NEGATIVE_INFINITY
+        return (
+          -0.5 * ((mu as number) / 5) ** 2 +
+          (a - 1) * Math.log(t) -
+          b * t +
+          sum(y.map((v) => logT((v - (mu as number)) ** 2, t)))
+        )
+      },
+      [
+        [med - half, med + half],
+        [tau0 / 12, tau0 * 6],
+      ],
+      101,
+    ),
+  )
   const x = [0, n + 1]
   return {
     definition,
@@ -144,7 +155,12 @@ export const studentTLearnedAtom: EpAtom = defineAtom({
     'EP projects the scale-mixture posterior onto a Gaussian for the location and a gamma for the precision; with heavy-tailed noise and a dozen draws the precision is the harder to pin down',
   ),
   what: 'The Student-t noise of the basic atom (three degrees of freedom, fixed) with the location and the scale both unknown, written as a Gaussian scale mixture; the data are simulated from a stated location and scale.',
-  factors: ['prior (gaussian)', 'prior (gamma)', 'gamma-product (mixing precision times noise precision)', 'gaussian with a random scale'],
+  factors: [
+    'prior (gaussian)',
+    'prior (gamma)',
+    'gamma-product (mixing precision times noise precision)',
+    'gaussian with a random scale',
+  ],
   family: 'likelihoods',
   expected: 'runs',
   reference: 'exact',
@@ -257,7 +273,9 @@ export const laplaceLearnedAtom: EpAtom = defineAtom({
   name: 'laplace-learned',
   title: 'Laplace likelihood: parameters learned',
   extends: 'laplace',
-  recovery: recoveryOf('the reference is the posterior of the same model on a grid, what EP will be held to once it takes a random Laplace scale'),
+  recovery: recoveryOf(
+    'the reference is the posterior of the same model on a grid, what EP will be held to once it takes a random Laplace scale',
+  ),
   what: 'The Laplace noise of the basic atom with the location and the scale both unknown, and the data simulated from a stated location and scale.',
   factors: ['prior (gaussian)', 'numeric prior (half-normal)', 'laplace likelihood with a random scale'],
   family: 'likelihoods',
@@ -314,19 +332,21 @@ function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomProb
     const p = link === 'probit' ? phi(z) : 1 / (1 + Math.exp(-z))
     return Math.log(Math.max(label === 1 ? p : 1 - p, 1e-300))
   }
-  const grid = once(() => gridMarginals(
-    ([tau, ...w]) => {
-      const t = tau as number
-      let lp = (a - 1) * Math.log(t) - b * t + 1.5 * Math.log(t) - 0.5 * t * sum((w as number[]).map((v) => v * v))
-      for (let i = 0; i < n; i++) {
-        const row = design[i] as number[]
-        lp += logLink(sum(row.map((v, j) => v * ((w as number[])[j] ?? 0))), y[i] ?? 0)
-      }
-      return lp
-    },
-    [[0.02, (4 * a) / b + 4], ...truth.map((t) => [t - 3.2, t + 3.2] as [number, number])],
-    27,
-  ))
+  const grid = once(() =>
+    gridMarginals(
+      ([tau, ...w]) => {
+        const t = tau as number
+        let lp = (a - 1) * Math.log(t) - b * t + 1.5 * Math.log(t) - 0.5 * t * sum((w as number[]).map((v) => v * v))
+        for (let i = 0; i < n; i++) {
+          const row = design[i] as number[]
+          lp += logLink(sum(row.map((v, j) => v * ((w as number[])[j] ?? 0))), y[i] ?? 0)
+        }
+        return lp
+      },
+      [[0.02, (4 * a) / b + 4], ...truth.map((t) => [t - 3.2, t + 3.2] as [number, number])],
+      27,
+    ),
+  )
   const edge = [-LIMIT, LIMIT]
   const boundary = (c: readonly number[], name: string, colour?: string): FigureCurve => ({
     name,
@@ -372,7 +392,9 @@ function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomProb
       yLimits: [-LIMIT, LIMIT],
       points: [{ name: 'points', x: px, y: py, group: y, groupNames: { 0: 'label 0', 1: 'label 1' } }],
       curves: [boundary(truth, 'true boundary', 'tab2')],
-      answer: (mm) => [boundary([mm['w[0]'] ?? Number.NaN, mm['w[1]'] ?? Number.NaN, mm['w[2]'] ?? Number.NaN], 'boundary')],
+      answer: (mm) => [
+        boundary([mm['w[0]'] ?? Number.NaN, mm['w[1]'] ?? Number.NaN, mm['w[2]'] ?? Number.NaN], 'boundary'),
+      ],
     },
   }
 }
@@ -437,7 +459,12 @@ export const logisticLearnedAtom: EpAtom = defineAtom({
     'the weights are fixed numbers and the learned shrinkage pulls them a little towards zero; a logistic link makes the labels less informative than a probit of the same weights',
   ),
   what: 'The logistic classifier of the basic atom with the prior precision of the weights learned and the labels simulated from stated true weights.',
-  factors: ['prior (gamma)', 'gaussian-gamma-precision (latent vector)', 'matmul (linear predictor)', 'logistic link (numeric quadrature)'],
+  factors: [
+    'prior (gamma)',
+    'gaussian-gamma-precision (latent vector)',
+    'matmul (linear predictor)',
+    'logistic link (numeric quadrature)',
+  ],
   family: 'likelihoods',
   expected: 'runs',
   reference: 'exact',
@@ -445,7 +472,8 @@ export const logisticLearnedAtom: EpAtom = defineAtom({
     meanZ: 0.25,
     sdRatio: [0.7, 1.3],
     ks: 0.15,
-    reason: 'a Gaussian projection of each logistic tilted distribution by quadrature, against a four-dimensional tensor grid',
+    reason:
+      'a Gaussian projection of each logistic tilted distribution by quadrature, against a four-dimensional tensor grid',
   },
   knobs: dict({
     ...simulationKnobs(60),
@@ -631,7 +659,11 @@ export const poissonLogDispersionLearnedAtom: EpAtom = defineAtom({
     25,
   ),
   what: 'The Poisson regression with a log link whose counts are overdispersed: a negative binomial with an unknown dispersion alongside the unknown intercept and slope, simulated from stated true values.',
-  factors: ['prior (gaussian) x2', 'numeric prior (half-normal)', 'negative-binomial-dispersion (a two-variable numeric site)'],
+  factors: [
+    'prior (gaussian) x2',
+    'numeric prior (half-normal)',
+    'negative-binomial-dispersion (a two-variable numeric site)',
+  ],
   family: 'likelihoods',
   expected: 'runs',
   reference: 'grid',
@@ -824,7 +856,8 @@ export const skillDifferenceLearnedAtom: EpAtom = defineAtom({
     meanZ: 1,
     sdRatio: [0, 10],
     ks: 1,
-    reason: 'there is no reference posterior (a gamma precision and eight skills are too many coordinates for a grid): recovery of the truth is the check',
+    reason:
+      'there is no reference posterior (a gamma precision and eight skills are too many coordinates for a grid): recovery of the truth is the check',
   },
   knobs: dict({
     seed: simulationKnobs(2)['seed'] as ReturnType<typeof int>,

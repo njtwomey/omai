@@ -8,7 +8,17 @@
 import { OmaiError } from '../base/index.ts'
 import type { EpAtom } from './ep-atoms.ts'
 import { betaBernoulliAtom, gammaPoissonAtom, gaussianAtom } from './ep-atoms-conjugate.ts'
-import { betaBernoulliLearnedAtom, gammaPoissonLearnedAtom, gaussianLearnedAtom } from './ep-atoms-extended-conjugate.ts'
+import {
+  betaBernoulliLearnedAtom,
+  gammaPoissonLearnedAtom,
+  gaussianLearnedAtom,
+} from './ep-atoms-extended-conjugate.ts'
+import {
+  clutterLearnedAtom,
+  gateRandomLearnedAtom,
+  mixtureComponentsLearnedAtom,
+  spikeSlabLearnedAtom,
+} from './ep-atoms-extended-gates.ts'
 import {
   laplaceLearnedAtom,
   logisticLearnedAtom,
@@ -19,10 +29,7 @@ import {
   studentTLearnedAtom,
   weibullLearnedAtom,
 } from './ep-atoms-extended-likelihoods.ts'
-import {
-  gammaPrecisionLearnedAtom,
-  sharedPrecisionLearnedAtom,
-} from './ep-atoms-extended-scales.ts'
+import { gammaPrecisionLearnedAtom, sharedPrecisionLearnedAtom } from './ep-atoms-extended-scales.ts'
 import { expAtom, logScaleAtom, maxAtom, productAtom, tanhAtom } from './ep-atoms-functions.ts'
 import { orderedMeansAtom, orderedPairAtom } from './ep-atoms-gates.ts'
 import {
@@ -91,10 +98,14 @@ import {
 export const epAtoms: readonly EpAtom[] = [
   gateKnownAtom,
   gateRandomAtom,
+  gateRandomLearnedAtom,
   mixtureComponentsAtom,
+  mixtureComponentsLearnedAtom,
   spikeSlabAtom,
+  spikeSlabLearnedAtom,
   spikeSlabMarginalAtom,
   clutterAtom,
+  clutterLearnedAtom,
   clutterMixtureAtom,
   orderedPairAtom,
   orderedMeansAtom,

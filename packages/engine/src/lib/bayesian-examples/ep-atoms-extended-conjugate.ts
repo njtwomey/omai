@@ -7,15 +7,15 @@
  */
 
 import { lgamma } from '../numerics/special/index.ts'
-import { beta, foldIn, gamma, key, normal, poisson, uniform } from '../random/index.ts'
 import * as d from '../probprog/model/dists/index.ts'
 import { defineModel, ops } from '../probprog/model/index.ts'
+import { beta, foldIn, gamma, key, normal, poisson, uniform } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'
 import { item, toFlat } from '../tensor/index.ts'
 import type { Config } from '../trace/index.ts'
 import { type AtomProblem, type AtomRecoverySpec, defineAtom, type EpAtom } from './ep-atoms.ts'
-import { type ConditionalMarginal, hyperPosterior } from './ep-atoms-quad.ts'
 import { normalInverseGammaPosterior } from './ep-atoms-priors.ts'
+import { type ConditionalMarginal, hyperPosterior } from './ep-atoms-quad.ts'
 import { exampleNumber } from './example-method.ts'
 
 /** The knobs every extended atom has: the seed of the simulation and the number of observations. */
@@ -141,7 +141,8 @@ const lg = (x: number): number => item(lgamma(x))
 const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0)
 
 /** The group of each of `groups * per` observations, group by group. */
-const groupIndex = (groups: number, per: number): number[] => Array.from({ length: groups * per }, (_, i) => Math.floor(i / per))
+const groupIndex = (groups: number, per: number): number[] =>
+  Array.from({ length: groups * per }, (_, i) => Math.floor(i / per))
 
 const FIGURE_GROUPS = (groups: number): number[] => Array.from({ length: groups }, (_, j) => j + 1)
 
@@ -168,11 +169,15 @@ function betaLearnedProblem(k: Config): AtomProblem {
   // endregion
   const counts = p.map((_, j) => sum(y.filter((__, i) => group[i] === j)))
   const logPrior = (s: number): number => (a - 1) * Math.log(s) - b * s
-  const post = hyperPosterior((s) => {
-    let ll = logPrior(s) - groups * (2 * lg(s) - lg(2 * s))
-    for (const c of counts) ll += lg(s + c) + lg(s + per - c) - lg(2 * s + per)
-    return ll
-  }, 1e-3, 80)
+  const post = hyperPosterior(
+    (s) => {
+      let ll = logPrior(s) - groups * (2 * lg(s) - lg(2 * s))
+      for (const c of counts) ll += lg(s + c) + lg(s + per - c) - lg(2 * s + per)
+      return ll
+    },
+    1e-3,
+    80,
+  )
   const exactP = counts.map((c) =>
     post.mix((s): ConditionalMarginal => {
       const [pa, pb] = [s + c, s + per - c]
@@ -180,7 +185,9 @@ function betaLearnedProblem(k: Config): AtomProblem {
         mean: pa / (pa + pb),
         variance: (pa * pb) / ((pa + pb) ** 2 * (pa + pb + 1)),
         pdf: (x) =>
-          x <= 0 || x >= 1 ? 0 : Math.exp(lg(pa + pb) - lg(pa) - lg(pb) + (pa - 1) * Math.log(x) + (pb - 1) * Math.log(1 - x)),
+          x <= 0 || x >= 1
+            ? 0
+            : Math.exp(lg(pa + pb) - lg(pa) - lg(pb) + (pa - 1) * Math.log(x) + (pb - 1) * Math.log(1 - x)),
       }
     }),
   )
@@ -252,7 +259,11 @@ export const betaBernoulliLearnedAtom: EpAtom = defineAtom({
       'the posterior of the strength is skewed and EP carries a gamma for it, and each probability is a beta matched to a mixture over the strength: the intervals hold the truth a little less than nine times in ten',
   },
   what: 'The beta and Bernoulli of the basic atom for a population of groups: each group has its own probability drawn from a symmetric beta whose strength is unknown, so the groups teach each other how spread out the probabilities are.',
-  factors: ['prior (gamma)', 'dirichlet-concentration (a beta with a random concentration)', 'bernoulli likelihood (beta-bernoulli)'],
+  factors: [
+    'prior (gamma)',
+    'dirichlet-concentration (a beta with a random concentration)',
+    'bernoulli likelihood (beta-bernoulli)',
+  ],
   family: 'conjugate',
   expected: 'runs',
   reference: 'exact',
@@ -260,7 +271,8 @@ export const betaBernoulliLearnedAtom: EpAtom = defineAtom({
     meanZ: 0.15,
     sdRatio: [0.75, 1.25],
     ks: 0.1,
-    reason: 'the strength is skewed and EP carries one gamma for it; each probability is the matched beta of a mixture over it',
+    reason:
+      'the strength is skewed and EP carries one gamma for it; each probability is the matched beta of a mixture over it',
   },
   knobs: dict({
     ...simulationKnobs(10),
@@ -295,7 +307,8 @@ function gammaLearnedProblem(k: Config): AtomProblem {
   // endregion
   const totals = rates.map((_, j) => sum(y.filter((__, i) => group[i] === j)))
   const post = hyperPosterior(
-    (b) => (c - 1) * Math.log(b) - dd * b + groups * a * Math.log(b) - sum(totals.map((t) => (a + t) * Math.log(b + per))),
+    (b) =>
+      (c - 1) * Math.log(b) - dd * b + groups * a * Math.log(b) - sum(totals.map((t) => (a + t) * Math.log(b + per))),
     1e-4,
     200,
   )
@@ -382,7 +395,8 @@ export const gammaPoissonLearnedAtom: EpAtom = defineAtom({
     meanZ: 0.15,
     sdRatio: [0.75, 1.25],
     ks: 0.1,
-    reason: 'the prior rate is skewed and EP carries one gamma for it; each rate is the matched gamma of a mixture over it',
+    reason:
+      'the prior rate is skewed and EP carries one gamma for it; each rate is the matched gamma of a mixture over it',
   },
   knobs: dict({
     ...simulationKnobs(4),

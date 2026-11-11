@@ -5,9 +5,9 @@
  * checks that EP recovers the mean, the precision and the values, and how often its 90% intervals hold them.
  */
 
-import { gamma, foldIn, key, normal } from '../random/index.ts'
 import * as d from '../probprog/model/dists/index.ts'
 import { defineModel, ops } from '../probprog/model/index.ts'
+import { foldIn, gamma, key, normal } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import type { Config } from '../trace/index.ts'
@@ -177,7 +177,7 @@ function populationLearnedProblem(k: Config): AtomProblem {
       const s = stats(tau)
       const prec = 1 / (noise[j] ?? 1) ** 2
       const shrink = prec / (tau + prec)
-      return gauss(shrink * (y[j] ?? 0) + (1 - shrink) * s.mean, 1 / (tau + prec) + ((1 - shrink) ** 2) / s.prec)
+      return gauss(shrink * (y[j] ?? 0) + (1 - shrink) * s.mean, 1 / (tau + prec) + (1 - shrink) ** 2 / s.prec)
     }),
   )
   const at = effects.map((_, j) => j + 1)

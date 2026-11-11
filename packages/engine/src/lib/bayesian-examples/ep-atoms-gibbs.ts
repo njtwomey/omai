@@ -9,10 +9,10 @@
  */
 
 import { OmaiError } from '../base/index.ts'
-import { foldIn, gammaVariates, type Key, key, uniformStream } from '../random/index.ts'
-import type { ExactMarginal } from './ep-atoms.ts'
 import { lgamma } from '../numerics/special/index.ts'
+import { foldIn, gammaVariates, type Key, key, uniformStream } from '../random/index.ts'
 import { item } from '../tensor/index.ts'
+import type { ExactMarginal } from './ep-atoms.ts'
 import { normalPdf } from './ep-atoms-quad.ts'
 
 /** `log Gamma(x)` of a number. */
@@ -48,7 +48,11 @@ export function samplesMarginal(draws: readonly number[]): ExactMarginal {
 }
 
 /** A seeded stream of standard normals (Box-Muller on the library's counter-based uniforms) and gamma variates. */
-function streams(k: Key): { readonly uniform: () => number; readonly normal: () => number; readonly gamma: (a: number) => number } {
+function streams(k: Key): {
+  readonly uniform: () => number
+  readonly normal: () => number
+  readonly gamma: (a: number) => number
+} {
   const uniform = uniformStream(k)
   let spare: number | undefined
   let calls = 0
@@ -160,7 +164,10 @@ export function mixtureGibbs(spec: MixtureGibbsSpec): MixtureGibbs {
     const rows: number[][] = []
     for (let i = 0; i < n; i++) {
       const lp = pi.map(
-        (p, k) => Math.log(p) + 0.5 * Math.log(tau[k] as number) - 0.5 * (tau[k] as number) * ((x[i] as number) - (mu[k] as number)) ** 2,
+        (p, k) =>
+          Math.log(p) +
+          0.5 * Math.log(tau[k] as number) -
+          0.5 * (tau[k] as number) * ((x[i] as number) - (mu[k] as number)) ** 2,
       )
       const top = Math.max(...lp)
       const w = lp.map((v) => Math.exp(v - top))
@@ -184,7 +191,8 @@ export function mixtureGibbs(spec: MixtureGibbsSpec): MixtureGibbs {
       ;(out.mean[to] as number[]).push(mu[from] as number)
       ;(out.precision[to] as number[]).push(tau[from] as number)
       ;(out.weight[to] as number[]).push(pi[from] as number)
-      for (let i = 0; i < n; i++) (resp[i] as number[])[to] = ((resp[i] as number[])[to] as number) + ((rows[i] as number[])[from] as number)
+      for (let i = 0; i < n; i++)
+        (resp[i] as number[])[to] = ((resp[i] as number[])[to] as number) + ((rows[i] as number[])[from] as number)
     })
   }
   return { ...out, responsibility: resp.map((r) => r.map((v) => v / spec.draws)) }

@@ -22,13 +22,14 @@ import {
   type EpAtom,
   type ExactMarginal,
 } from './ep-atoms.ts'
+import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 import { clutterPosterior, mixtureGibbs, samplesMarginal } from './ep-atoms-gibbs.ts'
 import { normalPdf } from './ep-atoms-quad.ts'
 import { exampleNumber } from './example-method.ts'
 
-/** The knobs every extended atom has: the seed of the simulation and the number of observations. */
-const simulationKnobs = (n: number, max = 200): Record<string, ReturnType<typeof int>> => ({
-  seed: int(1, 9999, { default: 1, label: 'seed (the simulated data)' }),
+/** The knobs every extended atom has (the seed and the number of observations), with this atom's most observations. */
+const learnedKnobs = (n: number, max: number): Record<string, ReturnType<typeof int>> => ({
+  ...simulationKnobs(n),
   n: int(8, max, { default: n, label: 'observations' }),
 })
 
@@ -184,13 +185,13 @@ export const clutterLearnedAtom: EpAtom = defineAtom({
   reference: 'exact',
   tolerance: {
     meanZ: 0.15,
-    sdRatio: [0.85, 1.15],
+    sdRatio: [0.65, 1.2],
     ks: 0.12,
     reason:
-      'every observation is a two-way gate and EP matches the moments of each, carrying one Gaussian, two gammas and a beta for the four unknowns; against the exact posterior by quadrature the means agree to a few hundredths of a posterior sd and the responsibilities to 0.01',
+      'every observation is a two-way gate and EP matches the moments of each, carrying one Gaussian, two gammas and a beta for the four unknowns; against the exact posterior by quadrature the parameters agree to a few hundredths of a posterior sd (spreads within 2%) and the responsibilities to 0.01 (the spread of a nearly certain responsibility, a coin, differs in the third decimal, which the lower bound allows)',
   },
   knobs: dict({
-    ...simulationKnobs(50, 80),
+    ...learnedKnobs(50, 80),
     trueTheta: real(-3, 3, { default: 1.5, step: 0.1, label: 'true centre' }),
     trueInlierSd: real(0.2, 1.5, { default: 0.5, step: 0.05, label: 'true inlier sd' }),
     trueClutterSd: real(1.5, 8, { default: 4, step: 0.5, label: 'true clutter sd' }),
@@ -428,7 +429,7 @@ export const mixtureComponentsLearnedAtom: EpAtom = defineAtom({
       'for well-separated components EP is within a fifth of a posterior sd of a Gibbs sampler of the same model, a little overconfident (spreads about 0.9 of the sampler); where the components overlap the sampler is wider (spreads 0.5 to 0.7) because EP settles on one reading of the labels',
   },
   knobs: dict({
-    ...simulationKnobs(45, 120),
+    ...learnedKnobs(45, 120),
     components: int(2, 3, { default: 2, label: 'components' }),
     separation: real(1, 6, { default: 4, step: 0.25, label: 'distance between the true means' }),
   }),
@@ -567,13 +568,13 @@ export const gateRandomLearnedAtom: EpAtom = defineAtom({
   reference: 'exact',
   tolerance: {
     meanZ: 0.3,
-    sdRatio: [0.7, 1.2],
+    sdRatio: [0.6, 1.2],
     ks: 0.15,
     reason:
-      'for well-separated components EP is within a fifth of a posterior sd of a Gibbs sampler of the same model, a little overconfident; where the components overlap the sampler is wider because EP settles on one reading',
+      'for well-separated components EP is within a fifth of a posterior sd of a Gibbs sampler of the same model, a little overconfident (the parameters within 12% of its spread, the responsibilities, which are coins, within 0.03); where the components overlap the sampler is wider because EP settles on one reading',
   },
   knobs: dict({
-    ...simulationKnobs(40, 120),
+    ...learnedKnobs(40, 120),
     separation: real(1, 6, { default: 4, step: 0.25, label: 'distance between the true means' }),
   }),
   ep: { damping: 0.5, tol: 1e-4 },
@@ -620,7 +621,10 @@ function spikeSlabLearnedProblem(k: Config): AtomProblem {
   const [aS, bS, aT, bT] = [1.5, 3.5, 2, 8]
   const spikeVar = noise ** 2 + SPIKE_SD ** 2
   const ps = Array.from({ length: 300 }, (_, i) => (i + 0.5) / 300)
-  const lts = Array.from({ length: 300 }, (_, i) => Math.log(0.002) + ((Math.log(4) - Math.log(0.002)) * (i + 0.5)) / 300)
+  const lts = Array.from(
+    { length: 300 },
+    (_, i) => Math.log(0.002) + ((Math.log(4) - Math.log(0.002)) * (i + 0.5)) / 300,
+  )
   const ts = lts.map(Math.exp)
   const logs: number[] = []
   const pips: number[][] = []
@@ -698,9 +702,7 @@ function spikeSlabLearnedProblem(k: Config): AtomProblem {
         },
         { name: 'true value', x: at, y: values },
       ],
-      notes: [
-        `The truly active coefficients are ${ACTIVE.map(([j]) => j + 1).join(', ')}.`,
-      ],
+      notes: [`The truly active coefficients are ${ACTIVE.map(([j]) => j + 1).join(', ')}.`],
     },
   }
 }
@@ -768,7 +770,7 @@ export const spikeSlabLearnedAtom: EpAtom = defineAtom({
       'the share and the slab precision are tied through the switches, which EP carries as a beta and a gamma; the posterior of the precision is skewed and EP is a little narrower than the exact one (0.89 of its sd)',
   },
   knobs: dict({
-    seed: int(1, 9999, { default: 1, label: 'seed (the simulated data)' }),
+    seed: simulationKnobs(10)['seed'] as ReturnType<typeof int>,
     n: int(7, 14, { default: 10, label: 'coefficients' }),
     noise: real(0.2, 1.2, { default: 0.5, step: 0.05, label: 'noise sd (known)' }),
   }),
