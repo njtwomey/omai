@@ -288,6 +288,7 @@ function mvnWishartLearnedProblem(k: Config): AtomProblem {
   const truth = [trueMean1, trueMean2]
   // the matrix prior has mean the identity: nu times the scale
   const scale = matrix2(1 / nu, 0, 1 / nu)
+  const spread = matrix2(priorSd ** 2, 0, priorSd ** 2)
   // region mvn-wishart-learned
   // the ground truth the data are drawn from: the model does not know it
   const rows = simulatePairs(seed, n, truth, sd1, sd2, rho)
@@ -295,9 +296,8 @@ function mvnWishartLearnedProblem(k: Config): AtomProblem {
     const row = m.range('row')
     const coef = m.range('coef', { size: 2 })
     // the mean and the precision matrix: both unknown
-    const mu = m.latent('mu', d.multivariateNormal([0, 0], { covariance: matrix2(priorSd ** 2, 0, priorSd ** 2) }), {
-      dims: [coef],
-    })
+    const vague = d.multivariateNormal([0, 0], { covariance: spread })
+    const mu = m.latent('mu', vague, { dims: [coef] })
     const lambda = m.latent('Lambda', d.wishart(nu, scale))
     const y = m.data('y', { dims: [row], eventRank: 1 })
     m.observe('y', d.multivariateNormal(mu, { precision: lambda }, { over: coef }), y)
@@ -540,6 +540,7 @@ function bivariateCorrelationLearnedProblem(k: Config): AtomProblem {
   const eta = configNumber(k, 'eta')
   const priorSd = configNumber(k, 'priorSd')
   const truth = [trueMean1, trueMean2]
+  const spread = matrix2(priorSd ** 2, 0, priorSd ** 2)
   // region bivariate-correlation-learned
   // the ground truth the data are drawn from: the model does not know it
   const rows = simulatePairs(seed, n, truth, sd1, sd2, rho0)
@@ -550,9 +551,8 @@ function bivariateCorrelationLearnedProblem(k: Config): AtomProblem {
     const tau1 = m.latent('tau1', d.gamma(a, b))
     const tau2 = m.latent('tau2', d.gamma(a, b))
     const rho = m.latent('rho', d.correlation(eta))
-    const mu = m.latent('mu', d.multivariateNormal([0, 0], { covariance: matrix2(priorSd ** 2, 0, priorSd ** 2) }), {
-      dims: [coef],
-    })
+    const vague = d.multivariateNormal([0, 0], { covariance: spread })
+    const mu = m.latent('mu', vague, { dims: [coef] })
     const sd1 = ops.div(1, ops.sqrt(tau1))
     const sd2 = ops.div(1, ops.sqrt(tau2))
     const y = m.data('y', { dims: [row], eventRank: 1 })
@@ -594,12 +594,12 @@ function bivariateCorrelationLearnedProblem(k: Config): AtomProblem {
       0.5 * q
     )
   }
-  const spread = Math.sqrt(a) / b
+  const gammaSd = Math.sqrt(a) / b
   const precisionHat = [n / t11, n / t22] as const
   const grid = posterior3(
     [
-      { lo: 1e-3, hi: 3 * precisionHat[0] + (a / b) * 3 + 8 * spread, min: 1e-9, max: Number.POSITIVE_INFINITY },
-      { lo: 1e-3, hi: 3 * precisionHat[1] + (a / b) * 3 + 8 * spread, min: 1e-9, max: Number.POSITIVE_INFINITY },
+      { lo: 1e-3, hi: 3 * precisionHat[0] + (a / b) * 3 + 8 * gammaSd, min: 1e-9, max: Number.POSITIVE_INFINITY },
+      { lo: 1e-3, hi: 3 * precisionHat[1] + (a / b) * 3 + 8 * gammaSd, min: 1e-9, max: Number.POSITIVE_INFINITY },
       { lo: -0.995, hi: 0.995, min: -0.9999, max: 0.9999 },
     ],
     logDensity,
@@ -993,15 +993,15 @@ function randomEffectsLearnedProblem(k: Config): AtomProblem {
   // the ground truth the data are drawn from: the model does not know it
   const data = simulateGroups(seed, groups, truth, sd1, sd2, rho, noise)
   const design = data.y.flatMap((_, j) => TIMES.map((t) => ({ g: j, t })))
+  const spread = matrix2(priorSd ** 2, 0, priorSd ** 2)
   // region random-intercepts-slopes-learned
   const definition = defineModel('random-intercepts-slopes-learned', (m) => {
     const group = m.range('group', { size: groups })
     const coef = m.range('coef', { size: 2 })
     const obs = m.range('obs')
     // the population mean and the precision matrix of the (intercept, slope) pairs: both unknown
-    const mu = m.latent('mu', d.multivariateNormal([0, 0], { covariance: matrix2(priorSd ** 2, 0, priorSd ** 2) }), {
-      dims: [coef],
-    })
+    const vague = d.multivariateNormal([0, 0], { covariance: spread })
+    const mu = m.latent('mu', vague, { dims: [coef] })
     const lambda = m.latent('Lambda', d.wishart(nu, scale))
     const around = d.multivariateNormal(mu, { precision: lambda }, { over: coef })
     const theta = m.latent('theta', around, { dims: [group, coef] })

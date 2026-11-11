@@ -122,6 +122,8 @@ export function gaussHermite(n: number): QuadratureRule {
  * ```ts
  * import { gaussLaguerre } from 'omai-engine/numerics/quadrature'
  * Math.abs(Array.from(gaussLaguerre(4).weights.data).reduce((a, b) => a + b) - 1) < 1e-13 // => true
+ * // the weights of the generalised rule sum to Gamma(alpha + 1)
+ * Math.abs(Array.from(gaussLaguerre(4, 1.5).weights.data).reduce((a, b) => a + b) - 1.329340388179137) < 1e-12 // => true
  * ```
  */
 export function gaussLaguerre(n: number, alpha = 0): QuadratureRule {
