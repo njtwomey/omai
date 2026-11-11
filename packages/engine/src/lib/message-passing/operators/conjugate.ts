@@ -326,3 +326,47 @@ export const negativeBinomialBeta: FactorOperator = {
     return lgammaOf(k + r) - lgammaOf(k + 1) - lgammaOf(r) + r * (mo[0] ?? 0) + k * (mo[1] ?? 0)
   },
 }
+
+/**
+ * An observation of a two-component mixture with an unknown weight, the switch summed out: `l1 p + l0 (1 - p)` for a beta
+ * probability `p`, where `l1` and `l0` (parameters) are the likelihoods of the observation under the second and the first
+ * component. The cavity of `p` times it is the mixture of the two conjugate updates, weighted by `l1 E[p]` and `l0 E[1 - p]`; EP
+ * matches it with a beta. It is what the explicit gate `z ~ Bernoulli(p)` with an observed pair of likelihoods sends to `p` when
+ * the switch `z` has no other factor, so the two routes agree on `p`.
+ *
+ * @concept factor-operators
+ * @index structure A two-component mixture likelihood with a beta weight: the switch summed out.
+ * @example
+ * ```ts
+ * import { beta, betaEta, messageArg, mixtureWeight } from 'omai-engine/message-passing'
+ * const args = [messageArg(beta, betaEta(2, 2))]
+ * mixtureWeight.ep?.({ mode: 'ep', to: 0, args, params: { l1: 3, l0: 1 }, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.543', '0.082']
+ * ```
+ */
+export const mixtureWeight: FactorOperator = {
+  name: 'mixture-weight',
+  description: 'f(p) = l1 p + l0 (1 - p): an observation of a two-component mixture with a beta weight',
+  ports: [{ name: 'p', accepts: ['beta'] }],
+  support: { ep: 'exact' },
+  readsTarget: () => true,
+  ep: (c): OperatorResult => {
+    const eta = etaOf(arg(c, 0))
+    const a = (eta[0] ?? 0) + 1
+    const b = (eta[1] ?? 0) + 1
+    const l1 = numberParam(c.params, 'l1')
+    const l0 = numberParam(c.params, 'l0')
+    const w1 = (l1 * a) / (a + b)
+    const w0 = (l0 * b) / (a + b)
+    const m1 = beta.moments([a, b - 1])
+    const m0 = beta.moments([a - 1, b])
+    const total = w0 + w1
+    const mixed = m1.map((v, i) => (w1 * v + w0 * (m0[i] ?? 0)) / total)
+    return { message: beta.fromMoments(mixed).map((v, i) => v - (eta[i] ?? 0)) }
+  },
+  logEvidence: (c) => {
+    if (!allProper(c.args)) return Number.NaN
+    const eta = etaOf(arg(c, 0))
+    const mean = ((eta[0] ?? 0) + 1) / ((eta[0] ?? 0) + (eta[1] ?? 0) + 2)
+    return massOf(arg(c, 0)) + Math.log(numberParam(c.params, 'l1') * mean + numberParam(c.params, 'l0') * (1 - mean))
+  },
+}

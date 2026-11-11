@@ -55,6 +55,12 @@ import {
   scaledPrecisionAtom,
   sharedPrecisionAtom,
 } from './ep-atoms-scales.ts'
+import {
+  gateWeightAtom,
+  gateWeightDirichletAtom,
+  gateWeightHyperAtom,
+  gateWeightSummedOutAtom,
+} from './ep-atoms-weights.ts'
 
 /**
  * Every EP atom, in the order of the coverage page: the gates and mixtures first, then the rest as they are added.
@@ -115,6 +121,10 @@ export const epAtoms: readonly EpAtom[] = [
   priorUniformAtom,
   priorLogNormalScaleAtom,
   priorBetaTwoShapesAtom,
+  gateWeightAtom,
+  gateWeightSummedOutAtom,
+  gateWeightDirichletAtom,
+  gateWeightHyperAtom,
 ]
 
 /**

@@ -17,11 +17,14 @@ const Y6 = [1.2, 0.4, 1.9, 1.1, 0.7, 1.5]
 function precisionProblem(k: Config): AtomProblem {
   const a = exampleNumber(k, 'shape')
   const b = exampleNumber(k, 'rate')
+  // region gamma-precision
   const definition = defineModel('gamma-precision', (m) => {
     const tau = m.latent('tau', d.gamma(a, b))
     const mu = m.latent('mu', d.normal(0, 10))
-    m.observe('y', d.normal(mu, ops.div(1, ops.sqrt(tau))), m.data('y', { dims: ['i'], role: 'response' }))
+    const observed = m.data('y', { dims: ['i'], role: 'response' })
+    m.observe('y', d.normal(mu, ops.div(1, ops.sqrt(tau))), observed)
   })
+  // endregion
   return {
     definition,
     data: { y: Y6 },
@@ -154,6 +157,7 @@ function populationProblem(mult: readonly number[], name: string, k: Config): At
   const b = exampleNumber(k, 'rate')
   const J = Y_POP.length
   const scaled = mult.some((v) => v !== 1)
+  // region shared-precision scaled-precision
   const definition = defineModel(name, (m) => {
     const j = m.range('j')
     const tau = m.latent('tau', d.gamma(a, b))
@@ -162,6 +166,7 @@ function populationProblem(mult: readonly number[], name: string, k: Config): At
     const theta = m.latent('theta', d.normal(0, scale), { dims: [j] })
     m.observe('y', d.normal(theta, 1), m.data('y', { dims: [j], role: 'response' }))
   })
+  // endregion
   const exact = scaledExact(Y_POP, mult, 1, a, b)
   const at = Y_POP.map((_, i) => i + 1)
   return {
@@ -267,10 +272,12 @@ export const scaledPrecisionAtom: EpAtom = defineAtom({
 function halfProblem(kind: 'cauchy' | 'normal', k: Config): AtomProblem {
   const y = [0.5, -1.2, 2.0, 0.3]
   const scale = exampleNumber(k, 'priorScale')
+  // region half-cauchy half-normal
   const definition = defineModel(`half-${kind}-scale`, (m) => {
     const sigma = m.latent('sigma', kind === 'cauchy' ? d.halfCauchy(scale) : d.halfNormal(scale))
     m.observe('y', d.normal(0, sigma), m.data('y', { dims: ['i'], role: 'response' }))
   })
+  // endregion
   return {
     definition,
     data: { y },

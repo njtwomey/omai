@@ -191,6 +191,15 @@ export function normalOutliers(loc: Operand, scale: Operand, outlier: Operand, w
   return family('normalOutliers', { loc, scale, outlier, width })
 }
 
+/**
+ * A mixture of two normals of one `scale` around the means `low` and `high`, with probability `weight` of the second: the likelihood
+ * of an observation of a two-component mixture whose weight is unknown (the switch summed out). With a beta `weight` it is the
+ * mixture-weight factor of message passing.
+ */
+export function normalPair(weight: Operand, low: Operand, high: Operand, scale: Operand): DistExpr {
+  return family('normalPair', { weight, low, high, scale })
+}
+
 /** A multivariate normal over the last axis, with a `covariance`, `precision` or `scaleTril`. */
 export function multivariateNormal(
   loc: Operand,

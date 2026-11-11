@@ -146,7 +146,9 @@ function strengthExact(
       pdf: (x) =>
         x <= 0 || x >= 1
           ? 0
-          : sum(comps.map((q) => q.weight * Math.exp(q.logNorm + (q.a - 1) * Math.log(x) + (q.b - 1) * Math.log(1 - x)))),
+          : sum(
+              comps.map((q) => q.weight * Math.exp(q.logNorm + (q.a - 1) * Math.log(x) + (q.b - 1) * Math.log(1 - x))),
+            ),
       range: [0, 1],
     }
   })
@@ -161,12 +163,19 @@ const CATEGORIES = [0, 1, 1, 2, 1, 0, 1]
 // ----- the normal-inverse-gamma prior on a Gaussian mean and variance -----
 
 function nigProblem(k: Config): AtomProblem {
-  const [m0, kappa, a, b] = [exampleNumber(k, 'priorMean'), exampleNumber(k, 'kappa'), exampleNumber(k, 'shape'), exampleNumber(k, 'scale')]
+  const [m0, kappa, a, b] = [
+    exampleNumber(k, 'priorMean'),
+    exampleNumber(k, 'kappa'),
+    exampleNumber(k, 'shape'),
+    exampleNumber(k, 'scale'),
+  ]
+  // region prior-normal-inverse-gamma
   const definition = defineModel('normal-inverse-gamma', (m) => {
     const sigma2 = m.latent('sigma2', d.inverseGamma(a, b))
     const mu = m.latent('mu', d.normal(m0, ops.sqrt(ops.div(sigma2, kappa))))
     m.observe('y', d.normal(mu, ops.sqrt(sigma2)), m.data('y', { dims: ['i'], role: 'response' }))
   })
+  // endregion
   const n = Y6.length
   const ybar = sum(Y6) / n
   const ss = sum(Y6.map((v) => (v - ybar) ** 2))
@@ -247,11 +256,13 @@ export const priorNormalInverseGammaAtom: EpAtom = defineAtom({
 
 function hierarchicalNormalProblem(k: Config): AtomProblem {
   const [s0, s1] = [exampleNumber(k, 'hyperSd'), exampleNumber(k, 'priorSd')]
+  // region prior-normal-hyperprior
   const definition = defineModel('normal-hyperprior', (m) => {
     const centre = m.latent('centre', d.normal(0, s0))
     const mu = m.latent('mu', d.normal(centre, s1))
     m.observe('y', d.normal(mu, 1), m.data('y', { dims: ['i'], role: 'response' }))
   })
+  // endregion
   const n = Y6.length
   // The posterior of (centre, mu) is Gaussian with precision [[1/s0² + 1/s1², -1/s1²], [-1/s1², 1/s1² + n]] and linear term [0, sum y].
   const p11 = 1 / s0 ** 2 + 1 / s1 ** 2
@@ -268,8 +279,14 @@ function hierarchicalNormalProblem(k: Config): AtomProblem {
     const sd = Math.sqrt(cov[i][i])
     return { mean: means[i], sd, pdf: (x) => normalPdf(x, means[i], sd) }
   }
-  const xs = Array.from({ length: 70 }, (_, i) => means[0] - 5 * Math.sqrt(cov[0][0]) + (i * 10 * Math.sqrt(cov[0][0])) / 69)
-  const ys = Array.from({ length: 70 }, (_, i) => means[1] - 5 * Math.sqrt(cov[1][1]) + (i * 10 * Math.sqrt(cov[1][1])) / 69)
+  const xs = Array.from(
+    { length: 70 },
+    (_, i) => means[0] - 5 * Math.sqrt(cov[0][0]) + (i * 10 * Math.sqrt(cov[0][0])) / 69,
+  )
+  const ys = Array.from(
+    { length: 70 },
+    (_, i) => means[1] - 5 * Math.sqrt(cov[1][1]) + (i * 10 * Math.sqrt(cov[1][1])) / 69,
+  )
   return {
     definition,
     data: { y: Y6 },
@@ -332,11 +349,13 @@ export const priorNormalHyperAtom: EpAtom = defineAtom({
 
 function inverseGammaHyperProblem(k: Config): AtomProblem {
   const [a, c, dd] = [exampleNumber(k, 'shape'), exampleNumber(k, 'hyperShape'), exampleNumber(k, 'hyperRate')]
+  // region prior-inverse-gamma-hyperprior
   const definition = defineModel('inverse-gamma-hyperprior', (m) => {
     const scale = m.latent('scale', d.gamma(c, dd))
     const sigma2 = m.latent('sigma2', d.inverseGamma(a, scale))
     m.observe('y', d.normal(1, ops.sqrt(sigma2)), m.data('y', { dims: ['i'], role: 'response' }))
   })
+  // endregion
   return {
     definition,
     data: { y: Y6 },
@@ -393,11 +412,13 @@ export const priorInverseGammaHyperAtom: EpAtom = defineAtom({
 
 function gammaPoissonHyperProblem(k: Config): AtomProblem {
   const [a, c, dd] = [exampleNumber(k, 'shape'), exampleNumber(k, 'hyperShape'), exampleNumber(k, 'hyperRate')]
+  // region prior-gamma-poisson-hyperprior
   const definition = defineModel('gamma-poisson-hyperprior', (m) => {
     const prior = m.latent('priorRate', d.gamma(c, dd))
     const rate = m.latent('rate', d.gamma(a, prior))
     m.observe('y', d.poisson(rate), m.data('y', { dims: ['i'], support: 'count' }))
   })
+  // endregion
   return {
     definition,
     data: { y: COUNTS },
@@ -448,10 +469,12 @@ export const priorGammaPoissonHyperAtom: EpAtom = defineAtom({
 
 function logNormalPoissonProblem(k: Config): AtomProblem {
   const [mu0, s0] = [exampleNumber(k, 'logMean'), exampleNumber(k, 'logSd')]
+  // region prior-lognormal-poisson
   const definition = defineModel('lognormal-poisson', (m) => {
     const rate = m.latent('rate', d.logNormal(mu0, s0))
     m.observe('y', d.poisson(rate), m.data('y', { dims: ['i'], support: 'count' }))
   })
+  // endregion
   return {
     definition,
     data: { y: COUNTS },
@@ -494,11 +517,13 @@ export const priorLogNormalPoissonAtom: EpAtom = defineAtom({
 
 function logNormalPoissonHyperProblem(k: Config): AtomProblem {
   const [s0, s1] = [exampleNumber(k, 'hyperSd'), exampleNumber(k, 'logSd')]
+  // region prior-lognormal-poisson-hyperprior
   const definition = defineModel('lognormal-poisson-hyperprior', (m) => {
     const centre = m.latent('centre', d.normal(1, s0))
     const logRate = m.latent('logRate', d.normal(centre, s1))
     m.observe('y', d.poisson(ops.exp(logRate)), m.data('y', { dims: ['i'], support: 'count' }))
   })
+  // endregion
   return {
     definition,
     data: { y: COUNTS },
@@ -549,10 +574,12 @@ const WAITS = [0.8, 1.9, 0.3, 1.2, 0.6]
 
 function gammaExponentialProblem(k: Config): AtomProblem {
   const [a, b] = [exampleNumber(k, 'shape'), exampleNumber(k, 'rate')]
+  // region prior-gamma-exponential
   const definition = defineModel('gamma-exponential', (m) => {
     const rate = m.latent('rate', d.gamma(a, b))
     m.observe('y', d.exponential(rate), m.data('y', { dims: ['i'], role: 'response' }))
   })
+  // endregion
   return {
     definition,
     data: { y: WAITS },
@@ -585,7 +612,11 @@ export const priorGammaExponentialAtom: EpAtom = defineAtom({
   family: 'priors',
   expected: 'runs',
   reference: 'exact',
-  tolerance: { ...EXACT, ks: 5e-3, reason: `${EXACT.reason} (the curve compared is the matched gamma, the exact posterior)` },
+  tolerance: {
+    ...EXACT,
+    ks: 5e-3,
+    reason: `${EXACT.reason} (the curve compared is the matched gamma, the exact posterior)`,
+  },
   knobs: dict({
     shape: real(0.2, 10, { default: 2, step: 0.1, label: 'prior shape' }),
     rate: real(0.05, 5, { default: 1, step: 0.05, label: 'prior rate' }),
@@ -600,11 +631,14 @@ const LIFETIMES = [2.1, 0.7, 1.4, 3.0, 1.1]
 function weibullProblem(k: Config): AtomProblem {
   const [s0, s1] = [exampleNumber(k, 'hyperSd'), exampleNumber(k, 'logSd')]
   const shape = exampleNumber(k, 'shape')
+  // region prior-normal-weibull-scale
   const definition = defineModel('normal-weibull-scale', (m) => {
     const centre = m.latent('centre', d.normal(0, s0))
     const logScale = m.latent('logScale', d.normal(centre, s1))
-    m.observe('y', d.weibull(shape, ops.exp(logScale)), m.data('y', { dims: ['i'], role: 'response' }))
+    const observed = m.data('y', { dims: ['i'], role: 'response' })
+    m.observe('y', d.weibull(shape, ops.exp(logScale)), observed)
   })
+  // endregion
   return {
     definition,
     data: { y: LIFETIMES },
@@ -657,10 +691,12 @@ const TRIALS = [3, 5, 2, 4]
 
 function betaGeometricProblem(k: Config): AtomProblem {
   const [a, b] = [exampleNumber(k, 'a'), exampleNumber(k, 'b')]
+  // region prior-beta-geometric
   const definition = defineModel('beta-geometric', (m) => {
     const p = m.latent('p', d.beta(a, b))
     m.observe('y', d.geometric(p), m.data('y', { dims: ['i'], support: 'count' }))
   })
+  // endregion
   return {
     definition,
     data: { y: TRIALS },
@@ -692,7 +728,11 @@ export const priorBetaGeometricAtom: EpAtom = defineAtom({
   family: 'priors',
   expected: 'runs',
   reference: 'exact',
-  tolerance: { ...EXACT, ks: 5e-3, reason: `${EXACT.reason} (the curve compared is the matched beta, the exact posterior)` },
+  tolerance: {
+    ...EXACT,
+    ks: 5e-3,
+    reason: `${EXACT.reason} (the curve compared is the matched beta, the exact posterior)`,
+  },
   knobs: dict({
     a: real(0.2, 20, { default: 2, step: 0.1, label: 'prior a' }),
     b: real(0.2, 20, { default: 2, step: 0.1, label: 'prior b' }),
@@ -703,22 +743,29 @@ export const priorBetaGeometricAtom: EpAtom = defineAtom({
 // ----- a beta with a random strength: gamma and log-normal hyperpriors -----
 
 function betaStrengthProblem(kind: 'gamma' | 'lognormal', k: Config): AtomProblem {
-  const [a, b] = [exampleNumber(k, kind === 'gamma' ? 'shape' : 'logMean'), exampleNumber(k, kind === 'gamma' ? 'rate' : 'logSd')]
+  const [a, b] = [
+    exampleNumber(k, kind === 'gamma' ? 'shape' : 'logMean'),
+    exampleNumber(k, kind === 'gamma' ? 'rate' : 'logSd'),
+  ]
+  // region prior-beta-strength-gamma prior-beta-strength-lognormal
   const definition = defineModel(`beta-strength-${kind}`, (m) => {
     const strength = m.latent('strength', kind === 'gamma' ? d.gamma(a, b) : d.logNormal(a, b))
     const p = m.latent('p', d.beta(strength, strength))
     m.observe('y', d.bernoulli({ probs: p }), m.data('y', { dims: ['i'], support: 'binary' }))
   })
+  // endregion
   const logPrior =
     kind === 'gamma'
       ? (x: number): number => (a - 1) * Math.log(x) - b * x
-      : (x: number): number => (-0.5 * ((Math.log(x) - a) / b) ** 2) - Math.log(x)
+      : (x: number): number => -0.5 * ((Math.log(x) - a) / b) ** 2 - Math.log(x)
   const exact = strengthExact([sum(FLIPS), FLIPS.length - sum(FLIPS)], logPrior)
   return {
     definition,
     data: { y: FLIPS },
     equations: [
-      kind === 'gamma' ? `strength ~ Gamma(${a}, ${b})   (the hyperprior)` : `strength ~ LogNormal(${a}, ${b}²)   (the hyperprior)`,
+      kind === 'gamma'
+        ? `strength ~ Gamma(${a}, ${b})   (the hyperprior)`
+        : `strength ~ LogNormal(${a}, ${b}²)   (the hyperprior)`,
       'p ~ Beta(strength, strength)   (a symmetric beta: its strength is random)',
       `y_i ~ Bernoulli(p), i = 1..${FLIPS.length}`,
       `observe y = (${FLIPS.join(', ')})`,
@@ -754,7 +801,11 @@ export const priorBetaStrengthGammaAtom: EpAtom = defineAtom({
   name: 'prior-beta-strength-gamma',
   title: 'Prior: beta on a probability, gamma hyperprior on its strength',
   what: 'A symmetric Beta(strength, strength) prior on a Bernoulli probability with a gamma-distributed strength: the strength says whether the probability sits near one half or near the ends.',
-  factors: ['prior (gamma)', 'dirichlet-concentration (a beta with a random concentration)', 'bernoulli likelihood (beta-bernoulli)'],
+  factors: [
+    'prior (gamma)',
+    'dirichlet-concentration (a beta with a random concentration)',
+    'bernoulli likelihood (beta-bernoulli)',
+  ],
   family: 'priors',
   expected: 'runs',
   reference: 'exact',
@@ -780,7 +831,11 @@ export const priorBetaStrengthLogNormalAtom: EpAtom = defineAtom({
   name: 'prior-beta-strength-lognormal',
   title: 'Prior: beta on a probability, log-normal hyperprior on its strength',
   what: 'A symmetric Beta(strength, strength) prior on a Bernoulli probability with a log-normal strength: the factor takes the log strength as a Gaussian variable.',
-  factors: ['prior (gaussian, on the log strength)', 'dirichlet-concentration (log mode)', 'bernoulli likelihood (beta-bernoulli)'],
+  factors: [
+    'prior (gaussian, on the log strength)',
+    'dirichlet-concentration (log mode)',
+    'bernoulli likelihood (beta-bernoulli)',
+  ],
   family: 'priors',
   expected: 'runs',
   reference: 'exact',
@@ -796,10 +851,12 @@ export const priorBetaStrengthLogNormalAtom: EpAtom = defineAtom({
 
 function dirichletCategoricalProblem(k: Config): AtomProblem {
   const a = exampleNumber(k, 'concentration')
+  // region prior-dirichlet-categorical
   const definition = defineModel('dirichlet-categorical', (m) => {
     const p = m.latent('p', d.dirichlet([a, a, a]))
     m.observe('y', d.categorical({ probs: p }), m.data('y', { dims: ['i'], support: 'count' }))
   })
+  // endregion
   const counts = [0, 1, 2].map((c) => CATEGORIES.filter((v) => v === c).length)
   const N = sum(counts)
   return {
@@ -833,18 +890,24 @@ export const priorDirichletCategoricalAtom: EpAtom = defineAtom({
   family: 'priors',
   expected: 'runs',
   reference: 'exact',
-  tolerance: { ...EXACT, ks: 5e-3, reason: `${EXACT.reason} (the curve compared is the matched beta, the exact marginal)` },
+  tolerance: {
+    ...EXACT,
+    ks: 5e-3,
+    reason: `${EXACT.reason} (the curve compared is the matched beta, the exact marginal)`,
+  },
   knobs: dict({ concentration: real(0.2, 10, { default: 1, step: 0.1, label: 'prior concentration' }) }),
   problem: dirichletCategoricalProblem,
 })
 
 function dirichletStrengthProblem(k: Config): AtomProblem {
   const [a, b] = [exampleNumber(k, 'shape'), exampleNumber(k, 'rate')]
+  // region prior-dirichlet-strength-gamma
   const definition = defineModel('dirichlet-strength-gamma', (m) => {
     const strength = m.latent('strength', d.gamma(a, b))
     const p = m.latent('p', d.dirichlet(ops.mul(strength, m.const([1, 1, 1]))))
     m.observe('y', d.categorical({ probs: p }), m.data('y', { dims: ['i'], support: 'count' }))
   })
+  // endregion
   const counts = [0, 1, 2].map((c) => CATEGORIES.filter((v) => v === c).length)
   const exact = strengthExact(counts, (x) => (a - 1) * Math.log(x) - b * x)
   return {
@@ -879,7 +942,11 @@ export const priorDirichletStrengthAtom: EpAtom = defineAtom({
   name: 'prior-dirichlet-strength-gamma',
   title: 'Prior: Dirichlet on categorical probabilities, gamma hyperprior on its concentration',
   what: 'A symmetric Dirichlet with a gamma-distributed concentration over three categories: the concentration says how even the probabilities are, and the data inform it through the counts.',
-  factors: ['prior (gamma)', 'dirichlet-concentration (a Dirichlet with a random concentration)', 'discrete likelihood (discrete-dirichlet)'],
+  factors: [
+    'prior (gamma)',
+    'dirichlet-concentration (a Dirichlet with a random concentration)',
+    'discrete likelihood (discrete-dirichlet)',
+  ],
   family: 'priors',
   expected: 'runs',
   reference: 'exact',
@@ -895,11 +962,13 @@ export const priorDirichletStrengthAtom: EpAtom = defineAtom({
 
 function logitNormalProblem(k: Config): AtomProblem {
   const [s0, s1] = [exampleNumber(k, 'hyperSd'), exampleNumber(k, 'logitSd')]
+  // region prior-logit-normal-bernoulli
   const definition = defineModel('logit-normal-bernoulli', (m) => {
     const centre = m.latent('centre', d.normal(0, s0))
     const logit = m.latent('logit', d.normal(centre, s1))
     m.observe('y', d.bernoulli({ logits: logit }), m.data('y', { dims: ['i'], support: 'binary' }))
   })
+  // endregion
   return {
     definition,
     data: { y: FLIPS },
@@ -949,20 +1018,18 @@ export const priorLogitNormalAtom: EpAtom = defineAtom({
 
 function uniformProblem(k: Config): AtomProblem {
   const [lo, hi] = [exampleNumber(k, 'low'), exampleNumber(k, 'high')]
+  // region prior-uniform-mean
   const definition = defineModel('uniform-mean', (m) => {
     const mu = m.latent('mu', d.uniform(lo, hi))
     m.observe('y', d.normal(mu, 1), m.data('y', { dims: ['i'], role: 'response' }))
   })
+  // endregion
   const n = Y6.length
   const ybar = sum(Y6) / n
   return {
     definition,
     data: { y: Y6 },
-    equations: [
-      `mu ~ Uniform(${lo}, ${hi})`,
-      'y_i ~ N(mu, 1²), i = 1..6',
-      `observe y = (${Y6.join(', ')})`,
-    ],
+    equations: [`mu ~ Uniform(${lo}, ${hi})`, 'y_i ~ N(mu, 1²), i = 1..6', `observe y = (${Y6.join(', ')})`],
     quantities: [{ name: 'mu', label: 'mu (the mean)', support: 'real' }],
     exact: { mu: quadratureMarginal((x) => -0.5 * n * (x - ybar) ** 2, lo, hi) },
   }
@@ -1007,11 +1074,13 @@ const SMALL = [0.5, -1.2, 2.0, 0.3]
 
 function logNormalScaleProblem(k: Config): AtomProblem {
   const [s0, s1] = [exampleNumber(k, 'hyperSd'), exampleNumber(k, 'logSd')]
+  // region prior-lognormal-scale-hyperprior
   const definition = defineModel('lognormal-scale-hyperprior', (m) => {
     const centre = m.latent('centre', d.normal(0, s0))
     const logScale = m.latent('logScale', d.normal(centre, s1))
     m.observe('y', d.normal(0, ops.exp(logScale)), m.data('y', { dims: ['i'], role: 'response' }))
   })
+  // endregion
   return {
     definition,
     data: { y: SMALL },
@@ -1061,12 +1130,14 @@ export const priorLogNormalScaleAtom: EpAtom = defineAtom({
 
 function betaTwoShapesProblem(k: Config): AtomProblem {
   const s = exampleNumber(k, 'logSd')
+  // region prior-beta-two-shapes
   const definition = defineModel('beta-two-shapes', (m) => {
     const a = m.latent('a', d.logNormal(0.5, s))
     const b = m.latent('b', d.logNormal(0.5, s))
     const p = m.latent('p', d.beta(a, b))
     m.observe('y', d.bernoulli({ probs: p }), m.data('y', { dims: ['i'], support: 'binary' }))
   })
+  // endregion
   return {
     definition,
     data: { y: FLIPS },

@@ -2526,7 +2526,27 @@ class Compiler {
     const n = prod(shape)
     const cells: Cell[] = []
     const vars: string[] = []
-    if (parents.length === 0) {
+    const probsExpr = node.dist.params['probs']
+    if (parents.length === 0 && probsExpr !== undefined && !this.isConst(probsExpr)) {
+      // A Bernoulli whose probability is a beta latent (an unknown mixing weight, a gate's prior): the conjugate `bernoulli` factor,
+      // whose message to the probability is the moment-matched mixture of the two conjugate updates.
+      this.need('bernoulli')
+      const over = this.over(this.evalSym(probsExpr), node.dims)
+      for (const [i, c] of over.entries()) {
+        if (c.kind !== 'rv' || c.family !== 'beta')
+          throw new Refusal(
+            'operator',
+            `the probability of '${node.name}' must be known or a beta latent for the conjugate 'bernoulli' operator`,
+          )
+        const name = this.addVariable({
+          name: this.elementName(node.name, node.dims, i),
+          family: { kind: 'bernoulli' },
+        })
+        this.addFactor({ operator: 'bernoulli', args: [name, c.variable] }, name)
+        cells.push({ kind: 'rv', variable: name, family: 'bernoulli' })
+        vars.push(name)
+      }
+    } else if (parents.length === 0) {
       const probs = this.constParam(
         node,
         node.dist.params['probs'] === undefined ? 'logits' : 'probs',
@@ -2742,6 +2762,8 @@ class Compiler {
       }
       case 'categorical':
         return this.observedConjugate(node, fam, name, y, i)
+      case 'normalPair':
+        return this.observedMixtureWeight(node, name, y, i)
       case 'exponential':
       case 'gamma':
         return this.observedGammaRate(node, fam, name, y, i)
@@ -2761,7 +2783,7 @@ class Compiler {
       default:
         throw new Refusal(
           'family',
-          `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, normalOutliers, bernoulli, binomial, poisson, exponential, gamma, geometric, negativeBinomial, weibull and categorical`,
+          `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, normalOutliers, bernoulli, binomial, poisson, normalPair, exponential, gamma, geometric, negativeBinomial, weibull and categorical`,
         )
     }
   }
@@ -3457,6 +3479,40 @@ class Compiler {
       name,
     )
     return name
+  }
+
+  /**
+   * An observed two-component mixture with known means and scale and a beta weight (`normalPair`, the switch summed out): the
+   * `mixture-weight` factor on the weight, with the likelihood of the value under each component.
+   */
+  private observedMixtureWeight(
+    node: ModelNode & { readonly kind: 'observed' },
+    name: string,
+    y: number,
+    i: number,
+  ): string | null {
+    const target = this.paramCell(node, 'weight', i)
+    if (isConstCell(target)) return null
+    if (target.kind !== 'rv' || target.family !== 'beta')
+      throw new Refusal(
+        'operator',
+        `the weight of '${node.name}' must be a beta latent for the 'mixture-weight' operator`,
+      )
+    const [low, high, scale] = ['low', 'high', 'scale'].map((k) =>
+      this.constAt(node, node.dist.params[k] as ExprSpec, i),
+    )
+    const density = (m: number): number =>
+      Math.exp(-0.5 * ((y - m) / (scale as number)) ** 2) / ((scale as number) * Math.sqrt(2 * Math.PI))
+    this.need('mixture-weight')
+    this.addFactor(
+      {
+        operator: 'mixture-weight',
+        args: [target.variable],
+        params: { l1: density(high as number), l0: density(low as number) },
+      },
+      name,
+    )
+    return null
   }
 
   /**

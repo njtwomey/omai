@@ -16,10 +16,12 @@ const G = 61
 
 function expProblem(k: Config): AtomProblem {
   const y = exampleNumber(k, 'y')
+  // region exp
   const definition = defineModel('exp-of-gaussian', (m) => {
     const x = m.latent('x', d.normal(0, 1))
     m.observe('y', d.normal(ops.exp(x), 0.3), m.data('y'))
   })
+  // endregion
   return {
     definition,
     data: { y },
@@ -64,10 +66,12 @@ export const expAtom: EpAtom = defineAtom({
 
 function tanhProblem(k: Config): AtomProblem {
   const y = exampleNumber(k, 'y')
+  // region tanh
   const definition = defineModel('tanh-of-gaussian', (m) => {
     const x = m.latent('x', d.normal(0, 1))
     m.observe('y', d.normal(ops.tanh(x), 0.2), m.data('y'))
   })
+  // endregion
   return {
     definition,
     data: { y },
@@ -106,10 +110,12 @@ export const tanhAtom: EpAtom = defineAtom({
 
 function logScaleProblem(k: Config): AtomProblem {
   const y = exampleNumber(k, 'y')
+  // region log-scale
   const definition = defineModel('log-scale', (m) => {
     const h = m.latent('h', d.normal(0, 1))
     m.observe('y', d.normal(0, ops.exp(ops.div(h, 2))), m.data('y'))
   })
+  // endregion
   return {
     definition,
     data: { y },
@@ -152,11 +158,13 @@ export const logScaleAtom: EpAtom = defineAtom({
 
 function productProblem(k: Config): AtomProblem {
   const y = exampleNumber(k, 'y')
+  // region product
   const definition = defineModel('product', (m) => {
     const a = m.latent('a', d.normal(2, 1))
     const b = m.latent('b', d.normal(1, 1))
     m.observe('y', d.normal(ops.mul(a, b), 0.3), m.data('y'))
   })
+  // endregion
   return {
     definition,
     data: { y },
@@ -208,11 +216,13 @@ export const productAtom: EpAtom = defineAtom({
 
 function maxProblem(k: Config): AtomProblem {
   const y = exampleNumber(k, 'y')
+  // region max
   const definition = defineModel('max-of-two', (m) => {
     const a = m.latent('a', d.normal(0, 1))
     const b = m.latent('b', d.normal(0.5, 1))
     m.observe('y', d.normal(ops.maximum(a, b), 0.3), m.data('y'))
   })
+  // endregion
   return {
     definition,
     data: { y },

@@ -25,10 +25,12 @@ const GAUSSIAN_Y = [1.2, 0.4, 1.9]
 function gaussianProblem(k: Config): AtomProblem {
   const ps = exampleNumber(k, 'priorSd')
   const s = 1
+  // region gaussian
   const definition = defineModel('gaussian', (m) => {
     const mu = m.latent('mu', d.normal(0, ps))
     m.observe('y', d.normal(mu, s), m.data('y', { dims: ['i'], role: 'response' }))
   })
+  // endregion
   const prec = 1 / ps ** 2 + GAUSSIAN_Y.length / s ** 2
   const mean = sum(GAUSSIAN_Y) / s ** 2 / prec
   const sd = Math.sqrt(1 / prec)
@@ -69,10 +71,13 @@ const FLIPS = [1, 1, 0, 1, 1, 0, 1]
 function betaProblem(k: Config): AtomProblem {
   const a = exampleNumber(k, 'a')
   const b = exampleNumber(k, 'b')
+  // region beta-bernoulli
   const definition = defineModel('beta-bernoulli', (m) => {
     const p = m.latent('p', d.beta(a, b))
-    m.observe('y', d.bernoulli({ probs: p }), m.data('y', { dims: ['i'], support: 'binary', role: 'response' }))
+    const observed = m.data('y', { dims: ['i'], support: 'binary', role: 'response' })
+    m.observe('y', d.bernoulli({ probs: p }), observed)
   })
+  // endregion
   const heads = sum(FLIPS)
   const A = a + heads
   const B = b + FLIPS.length - heads
@@ -118,10 +123,13 @@ const COUNTS = [3, 5, 2, 4]
 function gammaProblem(k: Config): AtomProblem {
   const a = exampleNumber(k, 'shape')
   const b = exampleNumber(k, 'rate')
+  // region gamma-poisson
   const definition = defineModel('gamma-poisson', (m) => {
     const rate = m.latent('rate', d.gamma(a, b))
-    m.observe('y', d.poisson(rate), m.data('y', { dims: ['i'], support: 'count', role: 'response' }))
+    const observed = m.data('y', { dims: ['i'], support: 'count', role: 'response' })
+    m.observe('y', d.poisson(rate), observed)
   })
+  // endregion
   const A = a + sum(COUNTS)
   const B = b + COUNTS.length
   const mean = A / B
