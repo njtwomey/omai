@@ -21,8 +21,13 @@ describe('the covariance atoms', () => {
     it('runs under EP and agrees with its reference', () => {
       const v = verifyAtom(atom)
       expect(v.run.status).toBe('ran')
-      const table = v.check?.rows.map((r) => `${r.name}: z ${r.meanZ.toFixed(3)}, sd ratio ${r.sdRatio.toFixed(3)}, ks ${r.ks.toFixed(3)}`)
-      expect(v.check?.rows.filter((r) => !r.pass), String(table)).toEqual([])
+      const table = v.check?.rows.map(
+        (r) => `${r.name}: z ${r.meanZ.toFixed(3)}, sd ratio ${r.sdRatio.toFixed(3)}, ks ${r.ks.toFixed(3)}`,
+      )
+      expect(
+        v.check?.rows.filter((r) => !r.pass),
+        String(table),
+      ).toEqual([])
     }, 120_000)
   })
 })

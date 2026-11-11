@@ -93,12 +93,19 @@ function wishartMarginals(nu: number, scale: readonly [number, number, number, n
     ],
     logWishart2(nu, scale),
   )
-  const off = grid.marginal(1)
-  return {
-    'Lambda[0]': { ...grid.marginal(0), mean: mean[0], sd: sd[0] },
-    'Lambda[1]': { ...off, mean: mean[1], sd: sd[1] },
-    'Lambda[3]': { ...grid.marginal(2), mean: mean[2], sd: sd[2] },
+  // the moments are the Wishart's own, the densities the grid's
+  const entry = (i: 0 | 1 | 2): ExactMarginal => {
+    const g = grid.marginal(i)
+    return {
+      mean: mean[i],
+      sd: sd[i],
+      pdf: g.pdf,
+      get range() {
+        return g.range ?? [mean[i] - 8 * sd[i], mean[i] + 8 * sd[i]]
+      },
+    }
   }
+  return { 'Lambda[0]': entry(0), 'Lambda[1]': entry(1), 'Lambda[3]': entry(2) }
 }
 
 const PRECISION_BOX = (mean: number, sd: number): CoordinateBox => ({
@@ -256,12 +263,20 @@ export const mvnWishartAtom: EpAtom = defineAtom({
 // The same with the mean unknown, learned from simulated data
 // ---------------------------------------------------------------------------------------------------------------------
 
-const COVARIANCE_RECOVERY: AtomRecoverySpec = {
-  seeds: 24,
-  coverage: 0.7,
-  zrms: 1.8,
+const WISHART_RECOVERY: AtomRecoverySpec = {
+  seeds: 40,
+  coverage: 0.75,
+  zrms: 1.5,
   reason:
-    'the matrix is learned from a few dozen rows: its posterior is skewed (a Wishart) and EP carries it as one; 24 seeds leave a binomial spread of about 0.06 around 0.9',
+    'EP matches the exact posterior here (a Wishart that the prior of 3 degrees of freedom pulls towards the identity), so over seeds drawn from the truth the 90% intervals hold it about 0.85 to 0.95 of the time; 40 seeds leave a binomial spread of about 0.05',
+}
+
+const CORRELATION_RECOVERY: AtomRecoverySpec = {
+  seeds: 40,
+  coverage: 0.75,
+  zrms: 1.6,
+  reason:
+    'one plated factor: EP carries the marginals of the exact posterior (gammas for the precisions, a beta for the correlation, a Gaussian for the mean), whose intervals hold the truth close to nine times in ten; the correlation, bounded and skewed, has errors a third larger than its spread says; 40 seeds leave a binomial spread of about 0.05',
 }
 
 function mvnWishartLearnedProblem(k: Config): AtomProblem {
@@ -382,27 +397,27 @@ export const mvnWishartLearnedAtom: EpAtom = defineAtom({
   name: 'mvn-wishart-learned',
   title: 'Multivariate normal with a Wishart precision: parameters learned',
   extends: 'mvn-wishart',
-  recovery: COVARIANCE_RECOVERY,
+  recovery: WISHART_RECOVERY,
   what: 'The bivariate normal of the basic atom with the mean also unknown (a Gaussian prior) and the data simulated from a stated mean and covariance: the Wishart is no longer conjugate (the mean and the precision are independent in the prior), so EP integrates the mean out and matches the matrix by quadrature.',
   factors: ['prior (gaussian-mv)', 'prior (wishart)', 'mvn-wishart (plate of rows, random mean)'],
   family: 'covariance',
   expected: 'runs',
   reference: 'exact',
   tolerance: {
-    meanZ: 0.2,
-    sdRatio: [0.8, 1.2],
-    ks: 0.12,
+    meanZ: 0.05,
+    sdRatio: [0.95, 1.05],
+    ks: 0.06,
     reason:
-      'the factor is not conjugate with an independent prior on the mean, so EP projects the tilted matrix onto a Wishart and the mean onto a Gaussian: close to the exact posterior, not equal to it',
+      'with one plated factor EP matches the exact posterior of the mean and the matrix by its moments (a Gaussian and a Wishart), so the means are exact and the spreads are the Wishart the matrix is closest to: the posterior is very nearly one at these sizes',
   },
   knobs: dict({
-    ...simulationKnobs(25),
+    ...simulationKnobs(40),
     trueMean1: real(-2, 2, { default: 0.8, step: 0.1, label: 'true mean 1' }),
     trueMean2: real(-2, 2, { default: -0.4, step: 0.1, label: 'true mean 2' }),
     trueSd1: real(0.3, 2.5, { default: 1, step: 0.05, label: 'true sd 1' }),
-    trueSd2: real(0.3, 2.5, { default: 0.7, step: 0.05, label: 'true sd 2' }),
+    trueSd2: real(0.3, 2.5, { default: 0.8, step: 0.05, label: 'true sd 2' }),
     trueRho: real(-0.95, 0.95, { default: 0.6, step: 0.05, label: 'true correlation' }),
-    df: real(2.2, 12, { default: 4, step: 0.2, label: 'prior degrees of freedom' }),
+    df: real(2.2, 12, { default: 3, step: 0.2, label: 'prior degrees of freedom' }),
     priorSd: real(1, 10, { default: 4, step: 0.5, label: 'prior sd of the mean' }),
   }),
   problem: mvnWishartLearnedProblem,
@@ -502,11 +517,11 @@ export const bivariateCorrelationAtom: EpAtom = defineAtom({
   expected: 'runs',
   reference: 'exact',
   tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.8, 1.2],
-    ks: 0.12,
+    meanZ: 0.1,
+    sdRatio: [0.75, 1.25],
+    ks: 0.25,
     reason:
-      'the posterior of the correlation is not a beta; EP carries the beta that matches its two log moments, so the mean and the spread are close, and the curve the page draws is a normal matched to them',
+      'the posterior of a strong correlation from a handful of pairs is skewed against the boundary: EP carries the beta that matches its two log moments, which has the right mean (0.02 sd) and a spread 17% too small here (0.83 of the exact at eight pairs, 0.92 at three; near 0.99 for the learned twin at a moderate correlation); the curve the page draws is a normal matched to the belief, which adds to the distance',
   },
   knobs: dict({
     eta: real(0.5, 8, { default: 1, step: 0.25, label: 'LKJ concentration eta' }),
@@ -657,18 +672,18 @@ export const bivariateCorrelationLearnedAtom: EpAtom = defineAtom({
   name: 'bivariate-correlation-learned',
   title: 'Bivariate normal with an unknown correlation: parameters learned',
   extends: 'bivariate-correlation',
-  recovery: COVARIANCE_RECOVERY,
+  recovery: CORRELATION_RECOVERY,
   what: 'The bivariate normal of the basic atom with the mean and both standard deviations also unknown (a Gaussian prior, gamma precisions) and the data simulated from a stated mean, sds and correlation: three numeric coordinates, matched at once by EP.',
   factors: ['prior (gaussian-mv)', 'prior (gamma)', 'prior (beta)', 'mvn-sd-corr (plate of rows, random mean)'],
   family: 'covariance',
   expected: 'runs',
   reference: 'exact',
   tolerance: {
-    meanZ: 0.2,
-    sdRatio: [0.8, 1.2],
-    ks: 0.12,
+    meanZ: 0.05,
+    sdRatio: [0.9, 1.1],
+    ks: 0.06,
     reason:
-      'EP matches a gamma to each precision, a beta to the correlation and a Gaussian to the mean, so the joint posterior (which is skewed and correlated) is carried by its marginals: close to the exact one, not equal',
+      'one plated factor: EP matches the exact joint posterior of the two precisions, the correlation and the mean by the moments of each marginal (gammas, a beta, a Gaussian), and these are very nearly the exact marginals at 30 pairs; at a strong correlation and few pairs the correlation is skewed and its beta is a little narrower (0.89 of the exact at 10 pairs and rho 0.9)',
   },
   knobs: dict({
     ...simulationKnobs(30),
@@ -950,11 +965,11 @@ export const randomInterceptsSlopesAtom: EpAtom = defineAtom({
   expected: 'runs',
   reference: 'exact',
   tolerance: {
-    meanZ: 0.3,
-    sdRatio: [0.7, 1.3],
-    ks: 0.15,
+    meanZ: 0.1,
+    sdRatio: [0.9, 1.1],
+    ks: 0.06,
     reason:
-      'the effects are Gaussian given the matrix and the matrix a Wishart given the effects, but not together: EP matches a Wishart to the tilted matrix and a Gaussian to each group, a mean-field-like error of a few tenths of a posterior sd when the groups are few',
+      'the effects are Gaussian given the matrix and the matrix a Wishart given the effects, but not together: EP matches a Wishart to the matrix and a Gaussian to each group, and at six groups the spreads are within 1% of the exact (they were never below 0.99 from three to ten groups)',
   },
   knobs: dict({
     groups: int(3, 10, { default: 6, label: 'groups' }),
@@ -1128,9 +1143,9 @@ export const randomInterceptsSlopesLearnedAtom: EpAtom = defineAtom({
   recovery: {
     seeds: 16,
     coverage: 0.7,
-    zrms: 1.8,
+    zrms: 1.6,
     reason:
-      'the covariance of a handful of groups is poorly identified and its posterior skewed; EP carries it as a Wishart, and 16 seeds leave a binomial spread of about 0.08 around 0.9',
+      'ten groups identify the covariance of their (intercept, slope) pairs only loosely and its posterior is skewed; EP carries it as a Wishart within a few percent of the exact spread, and the intervals hold the truth about 0.9 of the time over 30 seeds; 16 seeds leave a binomial spread of about 0.08',
   },
   what: 'The random intercepts and slopes of the basic atom with the population mean also unknown (a Gaussian prior) and the groups simulated from a stated mean, covariance and noise: the Wishart matrix, the mean and every group are learned together.',
   factors: [
@@ -1143,22 +1158,22 @@ export const randomInterceptsSlopesLearnedAtom: EpAtom = defineAtom({
   expected: 'runs',
   reference: 'exact',
   tolerance: {
-    meanZ: 0.35,
-    sdRatio: [0.65, 1.35],
-    ks: 0.15,
+    meanZ: 0.15,
+    sdRatio: [0.85, 1.15],
+    ks: 0.06,
     reason:
-      'the groups are Gaussian given the matrix and the mean and the matrix a Wishart given them, but not jointly: EP matches each by moments, and the error is a few tenths of a posterior sd with few groups',
+      'the groups are Gaussian given the matrix and the mean and the matrix a Wishart given them, but not jointly: EP matches each by moments; the population mean (spread 0.93 of the exact at eight groups, 0.77 to 0.87 at three or five) is the part it carries least well, because it is shared by every group',
   },
   knobs: dict({
-    seed: simulationKnobs(8)['seed'] as ReturnType<typeof int>,
-    n: int(3, 10, { default: 8, label: 'groups' }),
+    seed: simulationKnobs(10)['seed'] as ReturnType<typeof int>,
+    n: int(3, 12, { default: 10, label: 'groups' }),
     trueMean1: real(-2, 2, { default: 0.4, step: 0.1, label: 'true mean intercept' }),
     trueMean2: real(-2, 2, { default: -0.3, step: 0.1, label: 'true mean slope' }),
-    trueSd1: real(0.2, 2, { default: 0.8, step: 0.05, label: 'true sd of the intercepts' }),
-    trueSd2: real(0.2, 2, { default: 0.5, step: 0.05, label: 'true sd of the slopes' }),
+    trueSd1: real(0.2, 2, { default: 1, step: 0.05, label: 'true sd of the intercepts' }),
+    trueSd2: real(0.2, 2, { default: 0.8, step: 0.05, label: 'true sd of the slopes' }),
     trueRho: real(-0.95, 0.95, { default: -0.5, step: 0.05, label: 'true correlation' }),
     noise: real(0.1, 1, { default: 0.3, step: 0.05, label: 'noise sd (known)' }),
-    df: real(2.2, 12, { default: 4, step: 0.2, label: 'prior degrees of freedom' }),
+    df: real(2.2, 12, { default: 3, step: 0.2, label: 'prior degrees of freedom' }),
     priorSd: real(1, 10, { default: 3, step: 0.5, label: 'prior sd of the mean' }),
   }),
   problem: randomEffectsLearnedProblem,

@@ -46,12 +46,95 @@ const GRIDS = [34, 52, 70]
  *
  * @param boxes - The starting box of each coordinate, and its limits.
  * @param logDensity - log of the posterior density up to a constant (`-Infinity` outside the support, for example where a matrix is not positive definite).
- * @returns The posterior.
+ * @returns The posterior (computed when first read from).
  */
 export function posterior3(
   boxes: readonly [CoordinateBox, CoordinateBox, CoordinateBox],
   logDensity: (a: number, b: number, c: number) => number,
 ): Posterior3 {
+  // The grid is computed when something is first read from it, so a problem made for a calibration seed (which never reads its
+  // reference) does not pay for it.
+  let state: Solved | undefined
+  const solved = (): Solved => {
+    state ??= solve(boxes, logDensity)
+    return state
+  }
+  const marginal = (i: 0 | 1 | 2): ExactMarginal => ({
+    get mean() {
+      return solved().marginals[i]?.mean ?? Number.NaN
+    },
+    get sd() {
+      return solved().marginals[i]?.sd ?? Number.NaN
+    },
+    pdf: (x) => solved().density[i]?.(x) ?? 0,
+    get range() {
+      const m = solved().marginals[i] as Solved['marginals'][number]
+      const b = boxes[i] as CoordinateBox
+      return [Math.max(b.min, m.mean - 8 * m.sd), Math.min(b.max, m.mean + 8 * m.sd)] as const
+    },
+  })
+  return {
+    get logEvidence() {
+      return solved().logZ
+    },
+    marginal,
+    expect: (f) => solved().nodes.reduce((acc, n) => acc + n.w * f(n.x[0], n.x[1], n.x[2]), 0),
+    mixture: (given) => {
+      let mix: { mean: number; sd: number; pdf: (x: number) => number } | undefined
+      const built = (): NonNullable<typeof mix> => {
+        if (mix !== undefined) return mix
+        // The nodes are pruned to the mass that matters (the heaviest, to all but 1e-6 of it) before the conditionals are asked for.
+        const sorted = [...solved().nodes].sort((p, q) => q.w - p.w)
+        const kept: Node[] = []
+        let mass = 0
+        for (const node of sorted) {
+          kept.push(node)
+          mass += node.w
+          if (mass > 1 - 1e-6 || kept.length >= 6000) break
+        }
+        const parts = kept.map((node) => ({ w: node.w / mass, ...given(node.x[0], node.x[1], node.x[2]) }))
+        const mean = parts.reduce((acc, p) => acc + p.w * p.mean, 0)
+        const second = parts.reduce((acc, p) => acc + p.w * (p.variance + p.mean * p.mean), 0)
+        mix = {
+          mean,
+          sd: Math.sqrt(second - mean * mean),
+          pdf: (x) =>
+            parts.reduce(
+              (acc, p) =>
+                acc + (p.w * Math.exp((-0.5 * (x - p.mean) ** 2) / p.variance)) / Math.sqrt(2 * Math.PI * p.variance),
+              0,
+            ),
+        }
+        return mix
+      }
+      return {
+        get mean() {
+          return built().mean
+        },
+        get sd() {
+          return built().sd
+        },
+        pdf: (x) => built().pdf(x),
+        get range() {
+          return [built().mean - 8 * built().sd, built().mean + 8 * built().sd] as const
+        },
+      }
+    },
+  }
+}
+
+interface Solved {
+  readonly logZ: number
+  readonly nodes: readonly Node[]
+  readonly marginals: readonly { x: number[]; p: number[]; mean: number; sd: number }[]
+  readonly density: readonly ((x: number) => number)[]
+}
+
+/** Three passes of a midpoint grid, each over the box the pass before it found. */
+function solve(
+  boxes: readonly [CoordinateBox, CoordinateBox, CoordinateBox],
+  logDensity: (a: number, b: number, c: number) => number,
+): Solved {
   let box = boxes.map((b) => [b.lo, b.hi] as [number, number])
   let nodes: Node[] = []
   let logZ = 0
@@ -121,54 +204,17 @@ export function posterior3(
       return [Math.max(b.min, m.mean - 7 * m.sd), Math.min(b.max, m.mean + 7 * m.sd)] as [number, number]
     })
   }
-  const density = (m: { x: number[]; p: number[] }): ((x: number) => number) => {
+  const density = marginals.map((m) => {
     const h = (m.x[1] as number) - (m.x[0] as number)
-    return (x) => {
+    return (x: number): number => {
       const t = (x - (m.x[0] as number)) / h
       const i = Math.floor(t)
       if (i < 0 || i >= m.x.length - 1) return 0
       const f = t - i
       return (m.p[i] as number) * (1 - f) + (m.p[i + 1] as number) * f
     }
-  }
-  return {
-    logEvidence: logZ,
-    marginal: (i) => {
-      const m = marginals[i] as (typeof marginals)[number]
-      const b = boxes[i] as CoordinateBox
-      return {
-        mean: m.mean,
-        sd: m.sd,
-        pdf: density(m),
-        range: [Math.max(b.min, m.mean - 8 * m.sd), Math.min(b.max, m.mean + 8 * m.sd)],
-      }
-    },
-    expect: (f) => nodes.reduce((s, n) => s + n.w * f(n.x[0], n.x[1], n.x[2]), 0),
-    mixture: (given) => {
-      const parts = nodes.map((n) => ({ w: n.w, ...given(n.x[0], n.x[1], n.x[2]) }))
-      const mean = parts.reduce((s, p) => s + p.w * p.mean, 0)
-      const second = parts.reduce((s, p) => s + p.w * (p.variance + p.mean * p.mean), 0)
-      const sd = Math.sqrt(second - mean * mean)
-      // The nodes are pruned to the mass that matters and binned by their mean and spread before the density is evaluated.
-      const kept = parts
-        .filter((p) => p.w > 1e-7 / parts.length)
-        .sort((a, b) => b.w - a.w)
-        .slice(0, 6000)
-      const total = kept.reduce((s, p) => s + p.w, 0)
-      return {
-        mean,
-        sd,
-        pdf: (x) =>
-          kept.reduce(
-            (s, p) =>
-              s +
-              ((p.w / total) * Math.exp((-0.5 * (x - p.mean) ** 2) / p.variance)) / Math.sqrt(2 * Math.PI * p.variance),
-            0,
-          ),
-        range: [mean - 8 * sd, mean + 8 * sd],
-      }
-    },
-  }
+  })
+  return { logZ, nodes, marginals, density }
 }
 
 /** `log` of the Wishart density `W(L; nu, S)` of a 2 by 2 matrix given as its three entries (`-Infinity` outside the positive definite matrices). */
