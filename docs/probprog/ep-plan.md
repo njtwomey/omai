@@ -230,3 +230,10 @@ With WP-A alone EP ran on 19 of the 27 benchmark models; with WP-B merged it run
   random scale is `gaussian-scale`. Eight schools (both forms), the centred funnel and radon compile.
 - `toFactorGraph(bound, { packScalars: true })`: scalar normal latents that share a predictor are one joint vector, so EP keeps
   their correlation (without it the marginal sds are too small by 2 to 3 times on Poisson and negative binomial regression).
+  The mixtures are written as the gates they are (an explicit switch `z`, so EP reports P(z) and the branches): the gate between
+  known values, between random values (select and index), spike and slab (a gate between a narrow and a wide Gaussian, and the
+  switch-summed-out mixture site as a second setup) and clutter (a switch per observation). Checked on 36 combinations of observed
+  value, inclusion probability and widths: EP's P(slab), mean and sd of the coefficient equal the closed form to 1e-4 (moment
+  matching through a gate is exact); the Gaussian EP gives for a spike-plus-slab posterior is the moment-matched projection of a
+  two-hump mixture, so it sits between the humps. EP runs on 24 of the 30 atoms; the other six (exp, tanh, Poisson with a log link,
+  half-Cauchy, half-normal, the product of two Gaussians) show the library's reason on their pages.

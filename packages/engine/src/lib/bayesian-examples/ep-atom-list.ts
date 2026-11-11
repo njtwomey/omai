@@ -9,15 +9,7 @@ import { OmaiError } from '../base/index.ts'
 import type { EpAtom } from './ep-atoms.ts'
 import { betaBernoulliAtom, gammaPoissonAtom, gaussianAtom } from './ep-atoms-conjugate.ts'
 import { expAtom, logScaleAtom, maxAtom, productAtom, tanhAtom } from './ep-atoms-functions.ts'
-import {
-  clutterAtom,
-  gateKnownAtom,
-  gateRandomAtom,
-  mixtureComponentsAtom,
-  orderedMeansAtom,
-  orderedPairAtom,
-  spikeSlabAtom,
-} from './ep-atoms-gates.ts'
+import { orderedMeansAtom, orderedPairAtom } from './ep-atoms-gates.ts'
 import {
   gpLogisticAtom,
   gpProbitAtom,
@@ -28,6 +20,15 @@ import {
   skillDifferenceAtom,
   studentTAtom,
 } from './ep-atoms-likelihoods.ts'
+import {
+  clutterAtom,
+  clutterMixtureAtom,
+  gateKnownAtom,
+  gateRandomAtom,
+  mixtureComponentsAtom,
+  spikeSlabAtom,
+  spikeSlabMarginalAtom,
+} from './ep-atoms-mixtures.ts'
 import {
   gammaPrecisionAtom,
   halfCauchyAtom,
@@ -52,7 +53,9 @@ export const epAtoms: readonly EpAtom[] = [
   gateRandomAtom,
   mixtureComponentsAtom,
   spikeSlabAtom,
+  spikeSlabMarginalAtom,
   clutterAtom,
+  clutterMixtureAtom,
   orderedPairAtom,
   orderedMeansAtom,
   expAtom,

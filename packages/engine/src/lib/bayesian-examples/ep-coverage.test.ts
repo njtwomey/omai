@@ -19,6 +19,6 @@ describe('epCoverage', () => {
 
   it('runs on at least 23 benchmark models (9 of 27 in the audit of 2026-11-11, 10 once stochastic volatility mapped, 23 with the likelihood registry, apply, the projected priors, gates, ordered constraints and the shared precisions), and only goes up', () => {
     expect(c.benchmarksRun).toBeGreaterThanOrEqual(23)
-    expect(c.atomsRun).toBeGreaterThanOrEqual(28)
+    expect(c.atomsRun).toBeGreaterThanOrEqual(30)
   })
 })

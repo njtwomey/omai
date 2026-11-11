@@ -194,3 +194,52 @@ export function gridMarginals(
     },
   }
 }
+
+/**
+ * The branch of a mixture that a switch selects, from the marginal belief of a component that is the selected branch with
+ * probability `p` and its prior otherwise: if `b` is that marginal's mean and sd, the selected branch's moments follow from
+ * the mixture's (`E[x] = p m1 + (1 - p) m0`, `E[x²] = p (s1² + m1²) + (1 - p)(s0² + m0²)`). Exact when `b` has the mixture's
+ * own moments, as an EP message through a gate has.
+ *
+ * @param b - The component's marginal mean and sd.
+ * @param p - The probability that the component is the selected one.
+ * @param prior - The mean and sd the component keeps when it is not selected.
+ * @returns The selected branch's mean and sd, or undefined when `p` is zero or the moments do not make a variance.
+ * @example
+ * ```ts
+ * import { selectedBranch } from 'omai-engine/bayesian-examples'
+ * selectedBranch({ mean: 0.5, sd: 1 }, 0.5, { mean: 0, sd: 1 })?.mean // => 1
+ * ```
+ */
+export function selectedBranch(
+  b: { readonly mean: number; readonly sd: number },
+  p: number,
+  prior: { readonly mean: number; readonly sd: number },
+): { readonly mean: number; readonly sd: number } | undefined {
+  if (!(p > 1e-12)) return undefined
+  const m1 = (b.mean - (1 - p) * prior.mean) / p
+  const second = (b.sd ** 2 + b.mean ** 2 - (1 - p) * (prior.sd ** 2 + prior.mean ** 2)) / p
+  const v = second - m1 * m1
+  return v > 0 ? { mean: m1, sd: Math.sqrt(v) } : undefined
+}
+
+/**
+ * The mean and standard deviation of a mixture of Gaussians: what a single Gaussian that matches its moments has.
+ *
+ * @param branches - The weighted branches (the weights are normalised).
+ * @returns The mean and sd.
+ * @example
+ * ```ts
+ * import { momentMatch } from 'omai-engine/bayesian-examples'
+ * momentMatch([{ weight: 1, mean: -1, sd: 0 }, { weight: 1, mean: 1, sd: 0 }]).sd // => 1
+ * ```
+ */
+export function momentMatch(branches: readonly { weight: number; mean: number; sd: number }[]): {
+  mean: number
+  sd: number
+} {
+  const total = branches.reduce((a, c) => a + c.weight, 0)
+  const mean = branches.reduce((a, c) => a + (c.weight / total) * c.mean, 0)
+  const second = branches.reduce((a, c) => a + (c.weight / total) * (c.sd ** 2 + c.mean ** 2), 0)
+  return { mean, sd: Math.sqrt(Math.max(second - mean * mean, 0)) }
+}
