@@ -699,8 +699,8 @@ describe('a product of two random values is the product factor (expectation prop
       }
     expect(toFlat(post.mean('a'))[0]).toBeCloseTo(ma / z, 1)
     expect(toFlat(post.mean('c'))[0]).toBeCloseTo(mc / z, 1)
-    // The product has no variational rule: the method says so.
-    expect(factorGraphVerdict(c, g, 'vmp')).toMatchObject({ ok: false })
+    // The product defines its output under the mean field, so variational message passing runs it too.
+    expect(factorGraphVerdict(c, g, 'vmp')).toMatchObject({ ok: true })
   })
 
   it('a plated product maps per element', () => {

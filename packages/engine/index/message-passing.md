@@ -84,6 +84,7 @@ The factor operators: the registry of closed-form message rules (a prior, Gaussi
 - function `glmRow`: Lift a scalar link (probit, logistic) to a regression row on weights. `src/lib/message-passing/operators/rows.ts:57` `omai-engine/message-passing`
 - function `likelihoodOperators`: The likelihood-site and likelihood-row operators of a registry of numeric likelihoods. `src/lib/message-passing/operators/likelihoods.ts:461` `omai-engine/message-passing`
 - function `likelihoodSite`: A numeric EP likelihood site from a registry of log densities. `src/lib/message-passing/operators/likelihoods.ts:401` `omai-engine/message-passing`
+- function `numericMessage`: The non-conjugate variational message to a port by quadrature: natural gradient of the expected log. `src/lib/message-passing/operators/variational-numeric.ts:268` `omai-engine/message-passing`
 - function `numericOperator`: An EP operator for any density over Gaussian variables, by quadrature. `src/lib/message-passing/operators/numeric.ts:55` `omai-engine/message-passing`
 - function `pairLikelihoodOperator`: A two-variable numeric EP site from a registry of densities. `src/lib/message-passing/operators/pairs.ts:250` `omai-engine/message-passing`
 

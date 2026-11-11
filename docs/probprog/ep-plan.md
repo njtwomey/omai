@@ -604,3 +604,62 @@ Student-t with random df and scale: a third axis of the grid).
 evidence against the grid evidence of the same model on the new atoms: beta two shapes 2e-5, ordinal 0.002, Student-t df 0.006, Weibull shape 0.036,
 quantile 0.07 and 0.02, draws 0.12 (loops), softmax 0.30 (loops).
 
+## 17. WP-V: the variational message of every operator that can have one (2026-11-11, `agent-pp172-variational`)
+
+**What was there.** Of the 60 operators of `defaultOperators()`, 30 had a variational (mean-field) message: the conjugate and affine ones, the probit
+and logistic links (Albert-Chib, Jaakkola-Jordan), the normal-gamma, the gate and the stick-breaking assignment. The other 30 had EP only, so the
+variational comparison was missing for 49 of the 85 atoms (36 ran).
+
+**The rule that closes most of it: the non-conjugate message (`operators/variational-numeric.ts`).** Knowles and Minka's non-conjugate variational
+message passing: the message of a factor to a port is the natural gradient of `E_q[log f]` in that port's belief, `F^-1 Cov_q(T, log f)` with `T` the
+sufficient statistics of the port's family (Gaussian: `(x, -x^2 / 2)`; gamma: `(log x, x)`; beta: `(log p, log(1 - p))`), found by quadrature under the
+beliefs of the other ports (Gauss-Hermite for a Gaussian, a grid in the log for a gamma, in the logit for a beta, panels cut at the kinks of a density
+such as a Laplace). It needs only the log density of the factor, so any factor with one gets a variational message at once, and the bound's term is the
+same quadrature. Where the density is log-concave the message has a positive precision (the softmax, the Gaussian with a log scale, the Poisson with a log
+link); where it is not (a Student-t, a mixture) the message can have a negative one, which the engine's damping and its `damp` repair for an improper
+belief handle. A fixed point is a stationary point of the bound (the checks below).
+
+**Operators that gained a variational message.** Through the non-conjugate message (support `numeric`): `likelihood-site` and its row (a registry of count,
+survival, ordinal, quantile and robust likelihoods), `student-t-site`, `laplace-site`, `mixture-site` and the three rows, `gaussian-scale`,
+`gaussian-log-scale`, `negative-binomial-dispersion`, `likelihood-pair` (a Gaussian or gamma coordinate read through its log), `multiclass-site` (softmax and
+multinomial probit: a product rule over the free scores, 5 to 12 nodes each), `dirichlet-concentration` and `beta-two-shapes` (exact to the beta or
+Dirichlet, non-conjugate in the concentration: `lgamma` of it), `mixture-weight`, every `numericOperator` (a user's density over Gaussians), and
+`probit-row` and `logistic-row` (the row lifts the link's message through `glmRow`, as `glmPlate` does). *Deterministic* factors define their output under
+the mean field (`FactorOperator.defines`): `product`, `gamma-product` (the gamma of `E log u + E log tau` and `E u E tau`, exact for a gamma or Gaussian
+reader), `matmul-constant`, `select` (the mixture of the components' beliefs, the switch gets the expected log of the output's cavity under each
+component, a component gets the cavity weighted by its probability), `max` and `min` (Clark's moments), and the unary functions of `apply` (the Gaussian of
+the pushforward's mean and variance, which is all a Gaussian reader sees; a reader that needs more sees an approximation). Conjugate, exact:
+`gaussian-transition` (the dynamics of a linear system: the information form from the other's mean; the mean field under-estimates the spread of a chain).
+
+Now 56 of the 60 do. **What cannot have one, and says so.** `greater-than` and `is-between` (a hard step is zero off its region, so KL(q || p) is infinite for every Gaussian
+q: the probit link with noise is the variational form), `spin` and `spin-row` (two point masses). The `likelihood-pair` row `weibull-shape`: its survival
+term `exp(shape (log y - log scale))` is a double exponential in a Gaussian or gamma shape, so its expected log under a mean-field belief is infinite (the
+fixed-shape `weibull-log` has a message); a new hook `FactorOperator.unsupported(mode, params)` carries a reason that depends on the parameters, and the
+compiler's capability check (`operatorsWithout`, `factorGraphVerdict`) reports it with the operator's own `noRule`, so the refusal names the factor and does
+not fail in the run.
+
+**Verification (`operators/variational.test.ts`).** The brute-force reference is the bound itself, computed with a quadrature of its own (composite
+Gauss-Legendre in `testing/message-passing.ts`, `bruteExpectation`, not the library's Gauss-Hermite and grids): for each factor, the fixed point of
+variational message passing must (1) have the engine's reported bound equal the brute-force bound there (1e-5; 1e-4 at a kink), (2) have a zero gradient of
+the brute-force bound in every natural parameter (central differences, 2e-4; 2e-3 at a kink), and (3) be a local maximum (steps of 0.04 in each natural
+parameter lower it). 28 cases: the Poisson, Student-t, Laplace and Weibull likelihoods, `gaussian-scale`, `gaussian-log-scale`, the Laplace pair with a gamma
+scale, the negative binomial dispersion, the Dirichlet concentration, `beta-two-shapes`, the softmax, `mixture-weight`, `mixture-site`, `gamma-product`
+(read by a gamma-precision Gaussian), `product`, `apply` (exp, tanh, softplus, square), `max`, `min`, `select` (with a free discrete switch) and
+`gaussian-transition`; the deterministic ones against the bound of the model with the output substituted. `matmul-constant` is the `dot-constant` rule on a
+one-row matrix; the row operators equal the expanded graph (predictor variable) to 1e-6.
+
+**Coverage (`vmpCoverage` in `ep-coverage.ts`, tested with a floor).** Atoms under variational message passing: **78 of 85 run** (36 before), 77 to a
+fixed point, 6 that EP runs are still planned. Against each atom's reference (closed form or grid), the mean error and the ratio of the standard
+deviations of the 16 atoms of the accuracy test: means within 0.5 sd (most within 0.1), spreads 0.53 to 1.1 of the reference (a mean field
+under-estimates: gamma-precision 0.88, quantile regression 0.81, softmax regression 0.73, Student-t 0.99, Poisson 0.97, Laplace 1.06 (a kinked
+density), Weibull 0.98, the two shapes of a beta 0.81 to 0.91, stick-breaking 0.82). The coverage page has a variational column.
+
+**Remaining (gap `variational-rules`).** (1) The hard comparisons (`ordered-pair`, `ordered-means`, `mixture-components-learned`): no mean-field rule
+exists, the probit form of the model has one. (2) The Weibull shape (`weibull-shape-learned`), as above. (3) A custom function of a random value
+(`gp-length-scale`, `gp-probit-learned`) has no exponential-family graph. (4) The mean field of a mixture finds a local optimum: `clutter`,
+`clutter-learned`, `spike-and-slab` and `spike-and-slab-learned` run and settle, but on the optimum that explains everything as clutter or as the spike
+(means 5 to 17 exact sds off, spreads 0.02 to 60 of the exact); EP, which the atoms were written for, finds the mixture; a start from the data or
+several restarts is the fix (as `epMultiStartMethod` for EP). (5) `product` (a banana posterior a belief per variable cannot follow) does not settle in 1000
+sweeps, as is usual for the mean field of a strongly correlated pair. (6) The non-conjugate message is not guaranteed to raise the bound at every sweep
+(the conjugate ones are): damping 0.3 with the `damp` repair settles every atom that runs but those of (5).
+
