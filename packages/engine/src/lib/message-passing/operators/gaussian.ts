@@ -9,7 +9,7 @@ import { OmaiError } from '../../base/index.ts'
 import { gaussianGrid, tiltedGrid, tiltedLogGrid } from '../_quadrature.ts'
 import { digammaOf, trigammaOf } from '../_scalar.ts'
 import { gamma, gammaShapeRate } from '../families.ts'
-import type { Arg, FactorOperator, FamilyKind, OperatorContext, OperatorResult } from '../types.ts'
+import type { Arg, FactorOperator, FamilyKind, OperatorContext, OperatorResult, Params } from '../types.ts'
 import {
   allProper,
   etaOf,
@@ -157,12 +157,15 @@ function cavityOf(a: Arg): { readonly mean: number; readonly variance: number } 
  * update; integrating both out leaves `Gamma(lambda) N(0; mx - mu, vx + vu + 1 / lambda)`, a Student-t shaped function of
  * the precision whose moments (`E log lambda`, `E lambda`) are computed on a grid in `log lambda`, and the Gaussians' moments
  * are the mixtures of the updates over it. This is what expectation propagation needs of a Gaussian with an unknown
- * noise level or population spread.
+ * noise level or population spread. With a `scale` and an `offset` the precision of the Gaussian is `scale lambda + offset`
+ * (a coefficient of a penalised spline: `lambda d_j + n_j`), the gamma variable `lambda` being the shared one.
  */
 function precisionTilt(
   x: { readonly mean: number; readonly variance: number },
   u: { readonly mean: number; readonly variance: number },
   lambda: readonly number[],
+  scale = 1,
+  offset = 0,
 ): {
   readonly x: { readonly mean: number; readonly variance: number }
   readonly u: { readonly mean: number; readonly variance: number }
@@ -184,7 +187,7 @@ function precisionTilt(
   for (let i = 0; i < TILT_POINTS; i++) {
     const t = lo + i * step
     // The gamma density in t = log lambda is exp(shape t - rate e^t); the difference integrated out is N(0; gap, joint + e^-t).
-    const lw = shape * t - rate * Math.exp(t) + logNormal(0, gap, joint + Math.exp(-t))
+    const lw = shape * t - rate * Math.exp(t) + logNormal(0, gap, joint + 1 / (scale * Math.exp(t) + offset))
     logw[i] = lw
     if (lw > top) top = lw
   }
@@ -198,7 +201,7 @@ function precisionTilt(
   for (let i = 0; i < TILT_POINTS; i++) {
     const t = lo + i * step
     const w = Math.exp((logw[i] ?? 0) - top)
-    const s = joint + Math.exp(-t)
+    const s = joint + 1 / (scale * Math.exp(t) + offset)
     const mx = x.mean - (x.variance * gap) / s
     const vx = x.variance - (x.variance * x.variance) / s
     const mu = u.mean + (u.variance * gap) / s
@@ -229,7 +232,9 @@ function precisionTilt(
  * site, the precision a gamma site (the projection of `E log lambda` and `E lambda`), for an observed or a latent `x`. This
  * is what the linear regression with an unknown noise level needs, and a population of latent values with an unknown spread
  * (the abilities of an item response model). A Gaussian port whose cavity is still flat is read as very wide, so the first
- * message to a latent value is the prior predictive and a logistic likelihood on it can start.
+ * message to a latent value is the prior predictive and a logistic likelihood on it can start. The optional parameters
+ * `scale` and `offset` make the precision `scale lambda + offset` (a coefficient of a penalised spline has the precision
+ * `lambda d_j` of one shared smoothing parameter `lambda`; the variational rule has `scale` only).
  *
  * @concept factor-operators
  * @index structure A Gaussian with a gamma precision (variational and expectation propagation, observed or latent).
@@ -242,30 +247,49 @@ function precisionTilt(
  */
 export const gaussianGammaPrecision: FactorOperator = {
   name: 'gaussian-gamma-precision',
-  description: 'x ~ N(mean, 1 / lambda) with lambda a gamma-distributed precision',
+  description: 'x ~ N(mean, 1 / (scale lambda + offset)) with lambda a gamma-distributed precision',
   ports: [...gaussianPorts, { name: 'precision', accepts: ['gamma'] }],
   support: { ep: 'numeric', vmp: 'exact' },
   // The precision's own cavity must be a gamma density; a Gaussian port whose cavity is still flat is read as very wide.
   readsTarget: (to) => to === 2,
   ep: (c): OperatorResult => {
-    const tilt = precisionTilt(cavityOf(arg(c, 0)), cavityOf(arg(c, 1)), etaOf(arg(c, 2)))
+    const { scale, offset } = precisionParams(c.params)
+    const tilt = precisionTilt(cavityOf(arg(c, 0)), cavityOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset)
     if (c.to === 0) return { message: gaussianSiteMessage(etaOf(arg(c, 0)), tilt.x.mean, tilt.x.variance) }
     if (c.to === 1) return { message: gaussianSiteMessage(etaOf(arg(c, 1)), tilt.u.mean, tilt.u.variance) }
     return { message: siteMessage(gamma, etaOf(arg(c, 2)), [tilt.logLambda, tilt.lambda]) }
   },
   vmp: (c): OperatorResult => {
+    const { scale, offset } = precisionParams(c.params)
+    if (offset !== 0)
+      throw new OmaiError('not-implemented', 'gaussian-gamma-precision: a precision offset has no variational rule')
     const lambda = arg(c, 2)
     const mo = lambda.family.moments(etaOf(lambda))
-    const meanLambda = mo[1] ?? 0
-    if (c.to === 2) return { message: [0.5, -0.5 * expectedSquare(arg(c, 0), arg(c, 1))] }
+    const meanLambda = scale * (mo[1] ?? 0)
+    if (c.to === 2) return { message: [0.5, -0.5 * scale * expectedSquare(arg(c, 0), arg(c, 1))] }
     const o = gaussianOf(arg(c, c.to === 0 ? 1 : 0))
     return { message: [meanLambda * o.mean, meanLambda] }
   },
   expectedLog: (c) => {
+    const { scale, offset } = precisionParams(c.params)
+    if (offset !== 0)
+      throw new OmaiError('not-implemented', 'gaussian-gamma-precision: a precision offset has no variational rule')
     const lambda = arg(c, 2)
     const mo = lambda.family.moments(etaOf(lambda))
-    return 0.5 * ((mo[0] ?? 0) - Math.log(2 * Math.PI)) - 0.5 * (mo[1] ?? 0) * expectedSquare(arg(c, 0), arg(c, 1))
+    return (
+      0.5 * (Math.log(scale) + (mo[0] ?? 0) - Math.log(2 * Math.PI)) -
+      0.5 * scale * (mo[1] ?? 0) * expectedSquare(arg(c, 0), arg(c, 1))
+    )
   },
+}
+
+/** The `scale` (default 1) and `offset` (default 0) of the precision `scale lambda + offset` of a `gaussian-gamma-precision` factor. */
+function precisionParams(params: Params): { readonly scale: number; readonly offset: number } {
+  const scale = numberParam(params, 'scale', 1)
+  const offset = numberParam(params, 'offset', 0)
+  if (!(scale >= 0 && offset >= 0 && scale + offset > 0))
+    throw new OmaiError('value', 'gaussian-gamma-precision: the scale and the offset are non-negative, not both zero')
+  return { scale, offset }
 }
 
 /** log N(y; loc, exp(2 s)) as a function of the log scale s. */

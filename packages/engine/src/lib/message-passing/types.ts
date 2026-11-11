@@ -280,6 +280,13 @@ export interface FactorSpec {
   readonly name?: string
   /** The factor's id on the tape and in a drawing (default `f<index>`); unique within the graph. */
   readonly id?: string
+  /**
+   * The message each port starts with, in the order of `args` (`null`: the flat one; the entries of observed or constant
+   * arguments are ignored). A start message is replaced by the factor's own first update, so it only gives the other factors a
+   * proper cavity to begin from: a vague Gaussian where nothing yet says anything about a variable, in place of a vague
+   * prior factor that would stay in the model.
+   */
+  readonly start?: readonly (readonly number[] | null)[]
 }
 
 /** A factor graph as JSON: variables with their families, factors with their operators by name. */

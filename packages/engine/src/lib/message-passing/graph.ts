@@ -77,6 +77,8 @@ export interface CompiledFactor {
   readonly params: Params
   readonly power: number
   readonly ports: readonly CompiledPort[]
+  /** The message each port starts with (`null`: flat), from `FactorSpec.start`. */
+  readonly start: readonly (readonly number[] | null)[]
 }
 
 /** A directed-capable connection of a factor's port to a variable: the unit messages travel on. */
@@ -206,7 +208,21 @@ export function compileGraph(
       compiled.map((p) => p.family),
     )
     if (reason !== undefined) throw new OmaiError('value', `factor graph: ${id}: ${reason}`)
-    return { id, index: fi, operator: op, params, power, ports: compiled }
+    const start = f.start ?? compiled.map(() => null)
+    if (start.length !== compiled.length)
+      throw new OmaiError(
+        'value',
+        `factor graph: ${id} has ${start.length} start messages for ${compiled.length} arguments`,
+      )
+    for (const [pi, m] of start.entries()) {
+      const port = compiled[pi] as CompiledPort
+      if (m !== null && port.edge >= 0 && m.length !== port.family.size)
+        throw new OmaiError(
+          'value',
+          `factor graph: the start message of port ${pi} of ${id} has ${m.length} numbers, not ${port.family.size}`,
+        )
+    }
+    return { id, index: fi, operator: op, params, power, ports: compiled, start }
   })
   const definer = new Map<number, number>()
   for (const f of factors) {
