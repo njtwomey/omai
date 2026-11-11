@@ -48,7 +48,9 @@ export function RunProgress(props: {
   }, [active])
   const elapsed = elapsedOf(run, now)
   const p = run.progress
-  const share = p === undefined || p.total <= 0 ? 0 : Math.min(1, p.done / p.total)
+  // A run that cannot say how far it is (one library call in a worker) shows a pulsing bar and no percentage.
+  const known = p !== undefined && p.total > 0
+  const share = known ? Math.min(1, p.done / p.total) : 0
   const button =
     'cursor-pointer rounded-md border border-line bg-bg px-3 py-1 text-xs text-fg hover:bg-surface disabled:cursor-default disabled:opacity-50'
   if (run.phase === 'idle')
@@ -94,14 +96,17 @@ export function RunProgress(props: {
         <span className="tabular-nums text-muted">{seconds(elapsed)}</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-bg" aria-hidden="true">
-        <div className="h-full rounded-full bg-(--wb-accent)" style={{ width: `${100 * share}%` }} />
+        <div
+          className={`h-full rounded-full bg-(--wb-accent) ${known ? '' : 'animate-pulse'}`}
+          style={{ width: `${known ? 100 * share : 100}%`, opacity: known ? 1 : 0.35 }}
+        />
       </div>
       <div className="flex items-center justify-between gap-4">
         <span className="tabular-nums text-muted">
-          {p?.detail ?? (run.phase === 'queued' ? 'waiting for the page' : '')}
+          {p?.detail ?? (run.phase === 'queued' ? 'waiting for the page' : 'one step, no count of how far')}
         </span>
         <span className="flex items-center gap-3">
-          <span className="tabular-nums text-muted">{Math.round(100 * share)}%</span>
+          <span className="tabular-nums text-muted">{known ? `${Math.round(100 * share)}%` : ''}</span>
           <button type="button" className={button} onClick={run.stop} title="Stop here and keep what has been computed">
             Stop
           </button>

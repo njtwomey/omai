@@ -1,12 +1,14 @@
 import { logSumExpOf } from 'omai-engine/base'
-import { modelRunFromTape } from 'omai-engine/exposition'
+import { type ModelRun, modelRunFromTape } from 'omai-engine/exposition'
+import type { BoundModel } from 'omai-engine/probprog/model'
 import { toStructure } from 'omai-engine/probprog/model'
 import { foldIn, key, uniform } from 'omai-engine/random'
 import { periodicCopies, threeCopiesBound, wrappedNormalLogPdf } from 'omai-engine/stats'
 import { toFlat } from 'omai-engine/tensor'
 import { type ProgramCheck, sig } from '../../shared/ep/program-check.ts'
 import { type Estimate, recovery } from '../../shared/ep/recovery.ts'
-import { infer, PERIOD, simulate, TRUTHS, type TruthName, type Variant } from './program.ts'
+import type { EpHooks } from '../../shared/ep/sweeps.ts'
+import { dataOf, infer, model, PERIOD, simulate, TRUTHS, type TruthName, type Variant } from './program.ts'
 
 /** What the page changes. */
 export interface CircularSetup {
@@ -58,29 +60,63 @@ export function foundOf(posterior: Awaited<ReturnType<typeof infer>>['posterior'
   return { means, sd, weights }
 }
 
-/** One fit: the clock times, EP's run and what it found. */
+/**
+ * One fit: the clock times, how EP ended and what it found. Plain data, so a worker can send it to the page: the bound model
+ * (for the diagram) is rebuilt on the page with {@link boundOf}, and the messages of the run are the `record`.
+ */
 export interface CircularRun {
   readonly setup: CircularSetup
   readonly hours: readonly number[]
-  readonly fit: ReturnType<typeof infer>
+  /** How EP ended (`converged` or `stopped`; undefined for a run stopped by the page) and the sweeps it took. */
+  readonly fit: { readonly run: { readonly status: string | undefined; readonly t: number } }
   readonly ms: number
   readonly found: Found
   /** For each reading, the probability that it is read as its early or late copy (the reading wrapped round midnight). */
   readonly wrapped: readonly number[]
+  /** The messages of the run as a record for the player. */
+  readonly record: ModelRun | undefined
 }
 
-/** Simulates the setup's clock times and fits its variant by EP. */
-export function runCircular(setup: CircularSetup, hours?: readonly number[]): CircularRun {
+/** The bound model of a run, for its diagram: the same model and data `infer` binds. */
+export const boundOf = (run: CircularRun): BoundModel =>
+  model(run.setup.variant, run.setup.components).bind(dataOf(run.setup.variant, run.setup.components, run.hours))
+
+/**
+ * Simulates the setup's clock times and fits its variant by EP. The hooks report each sweep and can stop the fit, which then
+ * keeps the sweeps done.
+ */
+export async function runCircular(
+  setup: CircularSetup,
+  hours?: readonly number[],
+  hooks: EpHooks = {},
+): Promise<CircularRun> {
   const data = hours ?? simulate(setup.seed, setup.truth, setup.draws)
   const t0 = performance.now()
-  const fit = infer(setup.variant, setup.components, data)
+  const fit = await infer(setup.variant, setup.components, data, hooks)
   const ms = performance.now() - t0
   const found = foundOf(fit.posterior, setup.components)
-  return { setup, hours: data, fit, ms, found, wrapped: wrappedShare(setup, fit.posterior, data.length) }
+  const record = modelRunFromTape(
+    toStructure(fit.bound, { view: 'factor' }),
+    { run: fit.run.run() },
+    { maxSteps: 120, maxMessages: 6 },
+  )
+  return {
+    setup,
+    hours: data,
+    fit: { run: { status: fit.run.status, t: fit.run.t } },
+    ms,
+    found,
+    wrapped: wrappedShare(setup, fit.posterior, data.length),
+    record,
+  }
 }
 
 /** For each reading, the probability that EP reads it as an early or a late copy (a shift of a period), for the two models with copies. */
-function wrappedShare(setup: CircularSetup, posterior: Awaited<ReturnType<typeof infer>>['posterior'], rows: number): number[] {
+function wrappedShare(
+  setup: CircularSetup,
+  posterior: Awaited<ReturnType<typeof infer>>['posterior'],
+  rows: number,
+): number[] {
   if (setup.variant !== 'means' && setup.variant !== 'data') return []
   const marginal = posterior.marginal('copy')
   const share = new Array<number>(rows).fill(0)
@@ -92,14 +128,6 @@ function wrappedShare(setup: CircularSetup, posterior: Awaited<ReturnType<typeof
   }
   return share
 }
-
-/** The messages of the run as a record for the player. */
-export const recordOf = (run: CircularRun) =>
-  modelRunFromTape(
-    toStructure(run.fit.bound, { view: 'factor' }),
-    { run: run.fit.run.run() },
-    { maxSteps: 120, maxMessages: 6 },
-  )
 
 const LOG_SQRT_2PI = 0.5 * Math.log(2 * Math.PI)
 const logNormal = (x: number, mu: number, s: number): number => -0.5 * ((x - mu) / s) ** 2 - Math.log(s) - LOG_SQRT_2PI
@@ -259,12 +287,22 @@ export interface Equivalence {
 }
 
 /** Fits both forms to the same readings and compares them. */
-export function equivalence(setup: CircularSetup, current?: CircularRun): Equivalence {
+export async function equivalence(
+  setup: CircularSetup,
+  current?: CircularRun,
+  hooks: (stage: string) => EpHooks = () => ({}),
+): Promise<Equivalence> {
   const hours = current?.hours
-  const other = (variant: Variant): CircularRun =>
-    current !== undefined && current.setup.variant === variant ? current : runCircular({ ...setup, variant }, hours)
-  const means = other('means')
-  const data = other('data')
+  const other = (variant: Variant): CircularRun | Promise<CircularRun> =>
+    current !== undefined && current.setup.variant === variant
+      ? current
+      : runCircular(
+          { ...setup, variant },
+          hours,
+          hooks(`EP, ${variant === 'means' ? 'shift the means' : 'shift the data'}`),
+        )
+  const means = await other('means')
+  const data = await other('data')
   const meanGap = Math.max(
     ...means.found.means.map((m, k) => circularGap(m.mean, (data.found.means[k] as Estimate).mean)),
   )
@@ -294,7 +332,7 @@ export function checkCircular(run: CircularRun, held: readonly number[], eq?: Eq
   const rows: ProgramCheck['rows'][number][] = []
   rows.push({
     label: 'EP converged',
-    value: `${run.fit.run.status} after ${run.fit.run.t} sweeps`,
+    value: `${run.fit.run.status ?? 'stopped'} after ${run.fit.run.t} sweeps`,
     tolerance: 'converged',
     pass: run.fit.run.status === 'converged',
   })
@@ -393,15 +431,18 @@ export function parameterNames(truth: TruthName): string[] {
 }
 
 /** Many seeds, one setup: the coverage of the truth by EP's 90% intervals, parameter by parameter. */
-export function calibrate(
+export async function calibrate(
   setup: CircularSetup,
   seeds: readonly number[],
   onSeed?: (row: CalibrationRow) => void,
-): CalibrationRow[] {
+  hooks: (seed: number) => EpHooks = () => ({}),
+  stopped: () => boolean = () => false,
+): Promise<CalibrationRow[]> {
   const t = TRUTHS[setup.truth]
   const out: CalibrationRow[] = []
   for (const seed of seeds) {
-    const run = runCircular({ ...setup, seed })
+    const run = await runCircular({ ...setup, seed }, undefined, hooks(seed))
+    if (stopped()) break
     const matched = matchToTruth(setup.truth, run.found)
     const est: Estimate[] = [
       ...t.means.map((_, k) => run.found.means[matched[k] as number] as Estimate),

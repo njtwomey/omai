@@ -4,9 +4,23 @@ import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import { IntervalPlot } from '../../shared/ep/ProgramCharts.tsx'
 import { ProgramPage } from '../../shared/ep/ProgramPage.tsx'
 import { sig } from '../../shared/ep/program-check.ts'
-import { useDeferred } from '../../shared/useDeferred.ts'
-import { checkSkills, defaultSetup, recordOf, referenceSkills, runSkills, type SkillsSetup } from './compute.ts'
+import { epHooks } from '../../shared/ep/sweeps.ts'
+import { RunProgress } from '../../shared/RunProgress.tsx'
+import type { HostBase } from '../../shared/run.ts'
+import { workerTask } from '../../shared/runWorker.ts'
+import { useRun } from '../../shared/useRun.ts'
+import {
+  checkSkills,
+  defaultSetup,
+  recordOf,
+  runSkills,
+  type SkillsReference,
+  type SkillsRun,
+  type SkillsSetup,
+} from './compute.ts'
 import source from './program.ts?raw'
+
+const makeReference = (): Worker => new Worker(new URL('./reference.worker.ts', import.meta.url), { type: 'module' })
 
 const EQUATIONS = [
   'τ ~ Gamma(2, 2)   s_i ~ N(0, 1/τ)   (the skill of each player; τ is how spread out the players are)',
@@ -18,8 +32,14 @@ const EQUATIONS = [
 export default function Page(): ReactNode {
   const [setup, setSetup] = useState<SkillsSetup>(defaultSetup)
   const set = (patch: Partial<SkillsSetup>): void => setSetup((s) => ({ ...s, ...patch }))
-  const run = useDeferred(useCallback(() => runSkills(setup), [setup]))
-  const reference = useDeferred(useCallback(() => (run === undefined ? undefined : referenceSkills(run)), [run]))
+  const fit = useRun<SkillsRun>(useCallback((host: HostBase) => runSkills(setup, epHooks(host, 'EP')), [setup]))
+  const run = fit.value
+  const referenceTask = useMemo(
+    () => (run === undefined ? undefined : workerTask<unknown, SkillsReference>(makeReference, run.data)),
+    [run],
+  )
+  const referenceRun = useRun<SkillsReference>(referenceTask)
+  const reference = referenceRun.value
   const check = useMemo(
     () => (run === undefined || reference === undefined ? undefined : checkSkills(run, reference)),
     [run, reference],
@@ -43,6 +63,12 @@ export default function Page(): ReactNode {
       id="skills"
       equations={EQUATIONS}
       source={source}
+      progress={
+        <>
+          <RunProgress run={fit} label="EP" />
+          <RunProgress run={referenceRun} label="NUTS reference" />
+        </>
+      }
       file="program.ts"
       structure={structure}
       record={record}
@@ -50,7 +76,7 @@ export default function Page(): ReactNode {
       status={
         run === undefined
           ? 'Simulating and running EP...'
-          : `EP ${run.fit.run.status} after ${run.fit.run.t} sweeps (${sig(run.ms, 2)} ms) on ${run.data.win.length} games. ${reference === undefined ? 'Running NUTS for the reference...' : `Reference: NUTS, ${sig(reference.ms / 1000, 2)} s.`}`
+          : `EP ${run.fit.run.status} after ${run.fit.run.t} sweeps (${sig(run.ms, 2)} ms) on ${run.data.win.length} games. ${reference === undefined ? 'Running NUTS for the reference in a worker...' : `Reference: NUTS, ${sig(reference.ms / 1000, 2)} s.`}`
       }
       controls={
         <>

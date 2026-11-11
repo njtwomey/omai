@@ -40,11 +40,13 @@ export function ProgramPage(props: {
   /** How the run ended, in words (or why there is none). */
   readonly status: string
   readonly check: ProgramCheck | undefined
+  /** The bars of the runs behind the page (`RunProgress`), under the status line. */
+  readonly progress?: ReactNode
   readonly source: string
   readonly file: string
   readonly children: ReactNode
 }): ReactNode {
-  const { id, equations, controls, structure, record, status, check, source, file, children } = props
+  const { id, equations, controls, structure, record, status, check, progress, source, file, children } = props
   const panels = usePanels(`ep-program-${id}`, {
     graph: 'The model as a diagram',
     messages: 'EP’s messages, sweep by sweep',
@@ -67,6 +69,7 @@ export function ProgramPage(props: {
           {status}
         </span>
       </div>
+      {progress}
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">The model and the data</h2>
         <pre className="max-w-4xl overflow-x-auto rounded border border-line bg-surface px-3 py-2 font-mono text-xs leading-relaxed">
