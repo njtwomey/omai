@@ -2,7 +2,8 @@
 // special functions of numerics/special (messages are number arrays, so the hot loops stay free of tensors), and the
 // inverse digamma that moment matching onto a gamma, beta or Dirichlet needs.
 import { OmaiError } from '../base/index.ts'
-import { digamma, erfcx, lgamma, logNdtr, ndtr, normalLogPdf, trigamma } from '../numerics/special/index.ts'
+import { digamma, lgamma, polygamma } from '../numerics/special/_kernels.ts'
+import { erfcx, logNdtr, ndtr, normalLogPdf } from '../numerics/special/index.ts'
 import { item } from '../tensor/index.ts'
 
 /** The standard normal distribution function. */
@@ -23,9 +24,11 @@ export const millsRatio = (z: number): number => Math.exp(item(normalLogPdf(z)) 
 /** exp(x^2) erfc(x), without overflow. */
 export const erfcxOf = (x: number): number => item(erfcx(x))
 
-export const digammaOf = (x: number): number => item(digamma(x))
-export const trigammaOf = (x: number): number => item(trigamma(x))
-export const lgammaOf = (x: number): number => item(lgamma(x))
+// The scalar kernels of the tensor functions (the same numbers, without the tensor round trip: a Dirichlet projection calls
+// them in a Newton loop for every message).
+export const digammaOf = (x: number): number => digamma(x)
+export const trigammaOf = (x: number): number => polygamma(1, x)
+export const lgammaOf = (x: number): number => lgamma(x)
 
 /**
  * The inverse of the digamma function: the x > 0 with digamma(x) = y (Minka's starting value, then Newton's method,

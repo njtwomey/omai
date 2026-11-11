@@ -61,12 +61,12 @@ Message passing on factor graphs of exponential families, the Infer.NET way: a m
 - structure `FactorOperator`: A factor operator: the message to each argument of a factor. `src/lib/message-passing/types.ts:225` `omai-engine/message-passing`
 - structure `Family`: A message family: natural parameters, moments, quotient, KL. `src/lib/message-passing/types.ts:77` `omai-engine/message-passing`
 - structure `Projection`: The projection slot: moment matching, expected log, sum-product. `src/lib/message-passing/projections.ts:18` `omai-engine/message-passing`
-- structure `bernoulli`: The Bernoulli message family: the logit of the probability of true. `src/lib/message-passing/families.ts:363` `omai-engine/message-passing`
-- structure `beta`: The beta message family on (0, 1). `src/lib/message-passing/families.ts:297` `omai-engine/message-passing`
-- structure `gamma`: The gamma message family on a positive variable. `src/lib/message-passing/families.ts:203` `omai-engine/message-passing`
-- structure `gaussian`: The Gaussian message family in precision form. `src/lib/message-passing/families.ts:122` `omai-engine/message-passing`
+- structure `bernoulli`: The Bernoulli message family: the logit of the probability of true. `src/lib/message-passing/families.ts:369` `omai-engine/message-passing`
+- structure `beta`: The beta message family on (0, 1). `src/lib/message-passing/families.ts:303` `omai-engine/message-passing`
+- structure `gamma`: The gamma message family on a positive variable. `src/lib/message-passing/families.ts:209` `omai-engine/message-passing`
+- structure `gaussian`: The Gaussian message family in precision form. `src/lib/message-passing/families.ts:128` `omai-engine/message-passing`
 - structure `laplaceRule`: Laplace's mode-and-curvature rule for numeric factors, with its evidence. `src/lib/message-passing/numerical.ts:319` `omai-engine/message-passing`
-- structure `normalGamma`: The normal-gamma message family on a mean and a precision jointly. `src/lib/message-passing/families.ts:416` `omai-engine/message-passing`
+- structure `normalGamma`: The normal-gamma message family on a mean and a precision jointly. `src/lib/message-passing/families.ts:422` `omai-engine/message-passing`
 - structure `quadratureRule`: The panelled Gauss-Legendre rule of the numeric operator, zoomed onto the tilted mass. `src/lib/message-passing/numerical.ts:69` `omai-engine/message-passing`
 
 - table `projections`: The projection slot's options: moment, klqp, sum-product. `src/lib/message-passing/projections.ts:79` `omai-engine/message-passing`

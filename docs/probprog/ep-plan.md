@@ -391,3 +391,47 @@ The extended gate atoms run on it, each against an exact or sampled reference (d
 Planned: the two summed-out forms (`clutter-mixture-learned`, `spike-and-slab-marginal-learned`): `normalOutliers` and
 `normalSpikeSlab` take a known scale, share and slab width; the missing piece is a mixture site with a gamma precision and a beta
 weight (inside the gate it exists). The AR(1) twin has no basic atom (the tracker is a program page).
+
+## 14. The changepoint program with the rates and the transition matrix learned (2026-11-11, `agent-pp111-cpext`)
+
+Page `ep-program-changepoint-extended`: three regimes, Poisson counts at unknown rates (the gamma priors of the basic page) and an
+unknown transition matrix, a Dirichlet per row leaning towards staying (`[4,1,1]` and its rotations, mean stay 0.67). The model
+writes the step as `categorical(probs: at(A, prev))` with `A` a Dirichlet latent over the regimes.
+
+**The mapping.** The compiler took only a known matrix there (a `table`). With Dirichlet rows it now builds, per step, one `gate`
+(`probprog/model/factors.ts`, `latentCategorical`, `randomTransitionRow`): the state is the previous regime, the variables are the new
+regime and the K row variables, and branch `j` is the conjugate `discrete` factor of the new regime on row `j`. The gate's message to
+the new regime and to the previous one is then the exact belief-propagation message of the transition table under the cavities of
+the rows, and a row hears only the transitions out of its own regime, weighted by the belief that the chain was there (a Dirichlet
+moment match of the mixture of conjugate updates). Without this the compiled form was a `select` of Dirichlet variables, which did not
+even compile a graph (`dirichlet needs a size`). Test: `probprog/model/transition-rows.test.ts`, a three-state chain of nine Gaussian
+readings against the exact posterior by enumeration of the 3^9 paths (rows integrate out as Dirichlet-multinomials): row means within
+0.02 and EP's spreads 0.9 to 1.15 of the exact ones, state marginals within 0.05. A matrix with fewer rows than states is refused with its
+reason. Not mapped: a sticky model whose row is a function of one Beta stay probability (the diagonal entries of the Dirichlet rows
+give the same quantity), a Poisson or other emission whose rate is a known lookup by the state (that needs a table of count
+probabilities for a Poisson; the Gaussian lookup has it), and transition rows that are not Dirichlet latents.
+
+**Cost.** Each row variable is shared by every step, so its degree is the number of steps and the engine's belief (a sum of
+all its messages) is recomputed for every port of every gate: 100 steps run in about 2 s. Two cheap changes made that tolerable
+(`message-passing/families.ts` `combine` as a plain loop, `_scalar.ts` calling the scalar special-function kernels instead of the
+tensor ones; same numbers, the Newton loop of the Dirichlet projection is the hot spot). Incremental beliefs per variable would be the
+next step; the kernel `polygamma(n, NaN)` recursed for ever and now returns NaN.
+
+**What was measured** (100 steps, stay probability 0.93, truth rates 3, 9, 22, EP damped by half, Gibbs from a data-ordered start;
+`ep-program-changepoint-extended/calibration.ts`). Seeds 1 to 24: where every regime has at least 6% of the steps (18 seeds), EP's
+regime probabilities are within 0.05 of Gibbs on every one, and the truth is inside EP's 90% interval for the rates in 89%, 89%, 94%
+of seeds (error 0.98, 1.21, 0.85 sds, Gibbs 89%, 94%, 94%), for the three stay probabilities 78%, 89%, 89% (Gibbs 72%, 83%, 89%: the
+prior pulls them towards 0.67, so even the exact posterior covers a little less than 90%) and for the six moves 83% to 100%; the
+error is at most 1.2 sds everywhere. Where a regime is barely visited (6 seeds with fewer than 6 steps in a regime), EP agrees with Gibbs on 1,
+two runs do not converge, the coverage of the stay probabilities falls to 50% to 75% and the rate of the thin regime has an error of 2.6 sds.
+
+**Label switching is not the same failure, and damping fixes it.** The three regimes have alike likelihoods up to the rates, so the
+posterior has permuted modes, of which only the broad priors (means 4, 12, 30) prefer the labelling the data were made with. Undamped
+EP took a swapped labelling on 3 of 30 seeds with all regimes visited (low and middle, or middle and high, exchanged; regime accuracy
+0%) and on two more with a regime of under 15 steps; damping by half (about twice the sweeps) removed every one of them, and the
+reference sampler had the same problem when started from the prior means (seed 1: it sat in the swapped mode while EP was right),
+so it starts from the low, middle and high quantiles of the counts. Flooding also fixes the swaps on the three seeds but swaps seed 1.
+An ordered log-rate form (`constraint: ordered`, `exp` into a Poisson) was tried and does not work: 180 sweeps (9 s) on an easy seed,
+absurd rates on the swapped ones. A hyperprior tying the rates would make the regimes exchangeable and the swap worse. The barely
+visited regimes are untouched by all of this (section 11); they are the case multi-start EP by evidence (`agent-pp101-evidence`)
+is for.

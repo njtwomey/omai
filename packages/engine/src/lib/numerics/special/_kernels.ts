@@ -425,7 +425,7 @@ export function hurwitzZetaDs(s: number, q: number): number {
 }
 
 export function polygamma(n: number, x: number): number {
-  if (!Number.isInteger(n) || n < 0) return Number.NaN
+  if (!Number.isInteger(n) || n < 0 || Number.isNaN(x)) return Number.NaN
   if (n === 0) return digamma(x)
   // At the poles: +Infinity from both sides for odd n; for even n only the limit from the right (x = 0) exists.
   if (x <= 0 && Number.isInteger(x)) return n % 2 === 1 ? Infinity : x === 0 ? -Infinity : Number.NaN
