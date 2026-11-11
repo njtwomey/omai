@@ -157,12 +157,12 @@ export function ClockChart(props: {
     const fitY = xs.map((v) => Math.exp(fitLogDensity(variant, mix, v)))
     return { xs, bars, truthY, fitY, top: 1.05 * Math.max(...bars, ...truthY, ...fitY) }
   }, [hours, truth, variant, mix])
-  const reach = c - inner - 22
-  const at = (hour: number, density: number): [number, number] => {
+  const reach = c - inner - 30
+  const polar = (hour: number, r: number): [number, number] => {
     const angle = (2 * Math.PI * hour) / PERIOD
-    const r = inner + (density / shown.top) * reach
     return [c + r * Math.sin(angle), c - r * Math.cos(angle)]
   }
+  const at = (hour: number, density: number): [number, number] => polar(hour, inner + (density / shown.top) * reach)
   const ring = (ys: readonly number[]): string =>
     `${shown.xs.map((v, i) => `${i === 0 ? 'M' : 'L'}${at(v, ys[i] ?? 0).join(',')}`).join('')}Z`
   const wedge = (i: number, d: number): string => {
@@ -172,14 +172,14 @@ export function ClockChart(props: {
   return (
     <figure className="m-0 flex flex-col items-center gap-1">
       <svg
-        viewBox={`0 0 ${size} ${size}`}
+        viewBox={`-24 0 ${size + 48} ${size}`}
         role="img"
         aria-label="the readings, the truth and the fit on a clock face"
         className="w-full max-w-xs"
       >
         <circle cx={c} cy={c} r={inner} fill="none" stroke={colour.muted} strokeWidth={1} />
         {[0, 6, 12, 18].map((h) => {
-          const [lx, ly] = at(h, shown.top * 1.0 + (22 / reach) * shown.top)
+          const [lx, ly] = polar(h, c - 10)
           return (
             <text key={h} x={lx} y={ly + 3} textAnchor="middle" fontSize={10} fill={colour.muted}>
               {`${String(h).padStart(2, '0')}:00`}

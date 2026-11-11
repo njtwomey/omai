@@ -43,11 +43,12 @@ const TRUTH_LABELS: Record<TruthName, string> = {
 }
 
 const EQUATIONS = [
-  'x_i in [0, 24) hours, period 24.   mu_k ~ N(start_k, 8²) held in [0, 24) (start_k: spread evenly round the day),   tau = 1 / s² ~ Gamma(2, 18),   w ~ Dirichlet(1, ..., 1)',
-  'ignore:  x_i ~ sum_k w_k N(mu_k, s²)      (23:50 and 00:10 are 23 h 40 min apart)',
-  'shift the means:  x_i ~ sum_k w_k (1/3) sum_c N(x_i; mu_k + 24 c, s²),   c in {-1, 0, 1}      (copy index c a discrete latent)',
-  'shift the data:  x_i ~ sum_k w_k (1/3) sum_c N(x_i - 24 c; mu_k, s²)      (the same terms: N(x; mu + k g, s²) = N(x - k g; mu, s²))',
-  'extra rows (wrong):  each of x_i - 24, x_i, x_i + 24 is its own reading of the plain mixture: sum_c log p(x_i - 24 c), not log sum_c p(x_i - 24 c)',
+  'x_i in [0, 24) hours (period 24)      w ~ Dirichlet(1, ..., 1)      tau = 1 / s² ~ Gamma(2, 18)',
+  'mu_k ~ N(start_k, 8²), held in [0, 24)      start_k: spread evenly round the day',
+  'ignore:         x_i ~ sum_k w_k N(mu_k, s²)      (23:50 and 00:10 are 23 h 40 min apart)',
+  'shift means:    x_i ~ sum_k w_k (1/3) sum_c N(x_i; mu_k + 24 c, s²),  c in {-1, 0, 1}',
+  'shift data:     x_i ~ sum_k w_k (1/3) sum_c N(x_i - 24 c; mu_k, s²)    (the same terms)',
+  'extra rows:     x_i - 24, x_i, x_i + 24 are three readings: sum_c log p(.), not log sum_c p(.)',
 ]
 
 const hoursOf = (v: number): string => `${sig(v, 3)} h`

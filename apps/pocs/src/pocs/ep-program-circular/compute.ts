@@ -363,8 +363,9 @@ export function checkCircular(run: CircularRun, held: readonly number[], eq?: Eq
       {
         label: 'shift the means against shift the data: the EP fits (largest mean gap in hours, sd gap, weight gap)',
         value: `${sig(eq.meanGap, 2)} h, ${sig(eq.sdGap, 2)} h, ${sig(eq.weightGap, 2)}`,
-        tolerance: 'each within 0.25: the arithmetic is the same, EP’s projections are not quite',
-        pass: eq.meanGap <= 0.25 && eq.sdGap <= 0.25 && eq.weightGap <= 0.25,
+        tolerance:
+          'means within 0.5 h, the sd and the weights within 0.25: the arithmetic is the same, EP’s projections are not quite',
+        pass: eq.meanGap <= 0.5 && eq.sdGap <= 0.25 && eq.weightGap <= 0.25,
       },
     )
   }

@@ -140,6 +140,17 @@ export const epGaps: readonly EpGap[] = [
     refuses: [],
   },
   {
+    id: 'gate-random-scale',
+    title: 'A discrete variable choosing both a random mean and a random scale',
+    kind: 'missing-mapping',
+    status: 'open',
+    summary:
+      'A mixture whose components each have an unknown mean and an unknown sd (the circular-times program, a Gaussian mixture with its own spreads) compiles the mean and the precision as two separate selects by the component. EP then loses which component both came from: on the circular program a per-component sd ran off to infinity, so the program shares one sd. The gate of likelihoods (exact in the discrete variable) is mapped only with a known scale.',
+    plan: 'Let `observedSwitch` emit branches of the gaussian-gamma-precision or gaussian-scale operator (a random precision or log scale per state, shared variables across the branches) instead of refusing a random scale.',
+    size: 'medium',
+    refuses: [],
+  },
+  {
     id: 'multimodal',
     title: 'One Gaussian per variable cannot show two modes',
     kind: 'quality',
