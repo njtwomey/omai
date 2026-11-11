@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { defaultOperators } from '../../../message-passing/index.ts'
 import { defaultOperators as modelOperators } from '../operators.ts'
-import { discreteRowGate, GateBuilder, GraphBuilder } from './_builder.ts'
+import { discreteRowGate, GateBuilder, GraphBuilder, precisionBranch, precisionFactor } from './_builder.ts'
 import { affOf, combine, constCell } from './_cells.ts'
 import { Refusal } from './_refusal.ts'
 
@@ -105,5 +105,27 @@ describe('GraphBuilder.portOf', () => {
 
   it('refuses a cell that is not an affine form', () => {
     expect(() => builder().portOf({ kind: 'lookup', variable: 'z', values: [1, 2] }, 'y', undefined)).toThrow(Refusal)
+  })
+})
+
+describe('the gaussian-gamma-precision helpers', () => {
+  it('omits the scale and the offset of a factor when they are 1 and 0', () => {
+    expect(precisionFactor('y', { const: 2 }, { variable: 't', scale: 1, offset: 0 })).toEqual({
+      operator: 'gaussian-gamma-precision',
+      args: ['y', { const: 2 }, 't'],
+    })
+    expect(precisionFactor('y', 'mu', { variable: 't', scale: 3, offset: 0.5 })).toEqual({
+      operator: 'gaussian-gamma-precision',
+      args: ['y', 'mu', 't'],
+      params: { scale: 3, offset: 0.5 },
+    })
+  })
+
+  it('always names both parameters of a gate branch, whatever their values', () => {
+    expect(precisionBranch([0, { const: 0 }, 1], { scale: 1, offset: 0 })).toEqual({
+      operator: 'gaussian-gamma-precision',
+      args: [0, { const: 0 }, 1],
+      params: { scale: 1, offset: 0 },
+    })
   })
 })

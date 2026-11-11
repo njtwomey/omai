@@ -55,7 +55,15 @@ import type { SpecAnalysis } from './analysis.ts'
 import type { BoundModel } from './bind.ts'
 import { distributionFamilies } from './dists/families.ts'
 import { eventToDims } from './event-dims.ts'
-import { discreteRowGate, factorName, type GateBranch, GateBuilder, GraphBuilder } from './factor-graph/_builder.ts'
+import {
+  discreteRowGate,
+  factorName,
+  type GateBranch,
+  GateBuilder,
+  GraphBuilder,
+  precisionBranch,
+  precisionFactor,
+} from './factor-graph/_builder.ts'
 import {
   type Aff,
   type Atom,
@@ -114,22 +122,6 @@ const PROJECTED_PRIORS: ReadonlySet<string> = new Set([
   'uniform',
   'truncatedNormal',
 ])
-
-/** The `gaussian-gamma-precision` factor of a Gaussian `name` with a mean and the precision `scale tau + offset`. */
-function precisionFactor(
-  name: string,
-  mean: string | { readonly const: number },
-  tau: { readonly variable: string; readonly scale: number; readonly offset: number },
-): FactorSpec {
-  const params: Record<string, Json> = {}
-  if (tau.scale !== 1) params['scale'] = tau.scale
-  if (tau.offset !== 0) params['offset'] = tau.offset
-  return {
-    operator: 'gaussian-gamma-precision',
-    args: [name, mean, tau.variable],
-    ...(Object.keys(params).length === 0 ? {} : { params }),
-  }
-}
 
 /** A Gaussian mean whose variance is a known multiple of the precision's reciprocal and the observations that read both: one normal-gamma variable. */
 interface NormalGammaPlan {
@@ -2302,11 +2294,7 @@ class Compiler {
         if ('sd' in p) return { operator: 'gaussian', args: [0, { const: 0 }], params: { precision: 1 / p.sd ** 2 } }
         const at = gate.slot(p.variable)
         this.g.need('gaussian-gamma-precision')
-        return {
-          operator: 'gaussian-gamma-precision',
-          args: [0, { const: 0 }, at],
-          params: { scale: p.scale, offset: p.offset },
-        }
+        return precisionBranch([0, { const: 0 }, at], p)
       }
       // State 0 of the switch is the spike, state 1 the slab (the probability of the Bernoulli is the inclusion).
       gate.add(branch(spike[i] as never))
@@ -4202,11 +4190,7 @@ class Compiler {
       if (gamma !== undefined) {
         const at = gate.slot(gamma.variable)
         this.g.need('gaussian-gamma-precision')
-        gate.add({
-          operator: 'gaussian-gamma-precision',
-          args: [{ const: y }, mean, at],
-          params: { scale: gamma.scale, offset: gamma.offset },
-        })
+        gate.add(precisionBranch([{ const: y }, mean, at], gamma))
       } else
         gate.add({
           operator: 'gaussian',

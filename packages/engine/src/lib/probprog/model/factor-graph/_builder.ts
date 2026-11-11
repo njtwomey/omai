@@ -235,3 +235,30 @@ export function discreteRowGate(selector: string, name: string, rowVars: readonl
   for (const j of rowVars.keys()) gate.add({ operator: 'discrete', args: [0, 1 + j], params: {} })
   return gate.factor()
 }
+
+/** The `gaussian-gamma-precision` factor of a Gaussian `name` with a mean and the precision `scale tau + offset`. */
+export function precisionFactor(
+  name: string,
+  mean: string | { readonly const: number },
+  tau: { readonly variable: string; readonly scale: number; readonly offset: number },
+): FactorSpec {
+  const params: Record<string, Json> = {}
+  if (tau.scale !== 1) params['scale'] = tau.scale
+  if (tau.offset !== 0) params['offset'] = tau.offset
+  return {
+    operator: 'gaussian-gamma-precision',
+    args: [name, mean, tau.variable],
+    ...(Object.keys(params).length === 0 ? {} : { params }),
+  }
+}
+
+/**
+ * The `gaussian-gamma-precision` branch of a gate, over argument positions (`args`: the value, the mean and the position of the
+ * gamma variable) and the precision `scale tau + offset`. Unlike the factor of `precisionFactor`, a branch always names both parameters.
+ */
+export function precisionBranch(
+  args: readonly Json[],
+  tau: { readonly scale: number; readonly offset: number },
+): GateBranch {
+  return { operator: 'gaussian-gamma-precision', args, params: { scale: tau.scale, offset: tau.offset } }
+}
