@@ -8,6 +8,8 @@ import { infer as inferChange, simulate as simulateChange } from './ep-program-c
 import { gibbsReference } from './ep-program-changepoint/reference.ts'
 import { infer as inferCox, simulate as simulateCox } from './ep-program-cox/program.ts'
 import { nutsReference } from './ep-program-cox/reference.ts'
+import { infer as inferTrack, simulate as simulateTrack } from './ep-program-tracker/program.ts'
+import { gibbsReference as gibbsTrack } from './ep-program-tracker/reference.ts'
 
 const SEEDS = [1, 2, 3, 4]
 
@@ -57,5 +59,25 @@ describe('ep-program-changepoint: a Poisson rate that switches between three reg
 
   it('is poor, and says so, when a regime is not visited (seeds 2, 5, 8): EP commits to one reading where Gibbs is spread (flip this when EP improves)', () => {
     for (const seed of [2, 5, 8]) expect(regimeGap(seed).gap, `seed ${seed}`).toBeGreaterThan(0.1)
+  }, 60_000)
+})
+
+describe('ep-program-tracker: an AR(1) path seen through Gaussian noise with wild readings', () => {
+  const noise = { sd: 0.5, outliers: 0.1 }
+  it('recovers the path through the outliers, agrees with Gibbs, and does much better than plain Gaussian noise', () => {
+    for (const seed of SEEDS) {
+      const sim = simulateTrack(seed, noise)
+      const robust = inferTrack(sim.y, noise)
+      expect(robust.run.status, `seed ${seed}`).toBe('converged')
+      const r = recovery(robust.rows, sim.x)
+      expect(passes(r), `seed ${seed}: ${JSON.stringify(r)}`).toBe(true)
+      const a = agreement(robust.rows, gibbsTrack(sim.y, noise, { sweeps: 1000, burn: 100 }))
+      expect(a.meanZ, `seed ${seed}`).toBeLessThan(0.3)
+      expect(a.sdRatioRange[0], `seed ${seed}`).toBeGreaterThan(0.8)
+      expect(a.sdRatioRange[1], `seed ${seed}`).toBeLessThan(1.25)
+      // The contrast: believing every reading is overconfident and wrong.
+      if (sim.wild.filter(Boolean).length >= 9)
+        expect(recovery(inferTrack(sim.y, noise, false).rows, sim.x).zrms).toBeGreaterThan(1.8)
+    }
   }, 60_000)
 })
