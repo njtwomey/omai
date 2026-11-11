@@ -247,3 +247,36 @@ probability, a beta or Dirichlet with a gamma or log-normal concentration (`diri
 with a beta or Dirichlet probability (a gate with an unknown mixing weight) and its summed-out form (`mixture-weight`, `normalPair`),
 a positive latent (log-normal and the like) as a rate of the log-link likelihoods. 21 atom pages (`family: 'priors'` and
 `'gate weights'`), all with the model code that ran at the bottom.
+
+## 10. The extended atoms: parameters learned (2026-11-11)
+
+Each basic atom with fixed numbers has a twin `<name>-learned` (`extends: '<basic>'`, `recovery: {...}`) in
+`ep-atoms-extended-{conjugate,scales,likelihoods}.ts`: the numbers the basic atom fixes are latents with stated priors, the data are simulated
+from a stated truth (knobs: the true values, `seed`, `n`), and `atomCalibration` (`ep-extended.ts`) repeats it over the atom's seeds and
+reports per parameter the share of runs whose 90% interval holds the truth. The registry test (`ep-extended.test.ts`) asserts the promised
+floors. Coverage over 40 seeds (25 for the negative binomial) at the default knobs:
+
+| atom | parameter: coverage (error in sds, rms) |
+| --- | --- |
+| gaussian-learned | mean 0.82 (1.10), variance 0.95 (0.79) |
+| gamma-precision-learned | mean 0.82 (1.09), precision 0.97 (0.70) |
+| shared-precision-learned | precision 0.85 (1.01), mean 0.85 (1.21), the 8 values 0.86 (1.18) |
+| beta-bernoulli-learned | strength 1.00 (0.81), the 8 probabilities 0.90 (1.02) |
+| gamma-poisson-learned | prior rate 0.90 (0.89), the 8 rates 0.89 (1.04) |
+| student-t-learned | location 0.88 (1.01), precision 0.97 (0.87) |
+| probit-learned | offset 0.97, slopes 0.93 and 0.88 (0.9 to 1.2) |
+| logistic-learned | offset 0.90, slopes 0.82 and 0.78 (shrinkage of fixed weights, 1.3) |
+| poisson-log-learned | intercept 0.88, slope 0.85 (1.05, 1.11) |
+| poisson-log-dispersion-learned | intercept 0.92, slope 0.96, dispersion 0.96 |
+| weibull-learned | intercept 0.97, slope 0.88 |
+| skill-difference-learned | spread precision 1.00 (0.53, an informative prior), the 8 skills 0.86 (1.14) |
+
+Gaps found. (1) `laplace-learned` is planned: the library takes a Laplace likelihood with a known scale only ("the scale of 'y' is
+random"); the missing rule is a two-variable numeric site over (location, scale) in the pattern of `negative-binomial-dispersion`. The grid
+posterior of the model is the reference. (2) Stochastic volatility with an unknown level, persistence and innovation precision compiles and
+runs, but is not calibrated (30 seeds of 60 returns: the truth inside the 90% interval for 37% of the levels, 60% of the persistences and 47%
+of the precisions, with errors of 10 to 40 posterior sds: the product factor of the persistence and the previous state, with the level as a
+third coupled latent, gives overconfident and sometimes improper beliefs, and a run takes seconds), so it is not an atom; it needs a joint
+Gaussian rule over (level, persistence) or a block update. (3) A Weibull with a random shape and a negative binomial with a gamma
+dispersion are not mapped (the shape and the gamma form of the dispersion have no rule); the dispersion here is the half-normal
+numeric site.

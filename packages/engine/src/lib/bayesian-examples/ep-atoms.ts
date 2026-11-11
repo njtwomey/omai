@@ -367,7 +367,11 @@ export function atomBound(problem: AtomProblem): BoundModel {
  */
 export function atomReference<K extends Config>(atom: EpAtom<K>, problem: AtomProblem): AtomReference {
   if (atom.reference === 'truth')
-    return { kind: 'truth', source: 'the true values the data were simulated from (no reference posterior)', marginals: {} }
+    return {
+      kind: 'truth',
+      source: 'the true values the data were simulated from (no reference posterior)',
+      marginals: {},
+    }
   if (atom.reference === 'exact') {
     const marginals: Record<string, RefMarginal> = {}
     for (const q of problem.quantities) {
@@ -547,6 +551,7 @@ export function atomRun(problem: AtomProblem, ep: Config = {}, options: { readon
   const config: Config = { tol: 1e-9, ...ep }
   const maxSweeps = typeof config['maxSweeps'] === 'number' ? config['maxSweeps'] : 200
   let s: ReturnType<typeof session<never, Config, string>>
+  const logs = options.light === true ? 'off' : 'all'
   try {
     // region inference
     // one step is one sweep of EP over the factors, recorded
@@ -555,7 +560,7 @@ export function atomRun(problem: AtomProblem, ep: Config = {}, options: { readon
       steps: maxSweeps + 2,
       mode: 'eager',
       config,
-      logs: options.light === true ? 'off' : 'all',
+      logs,
     }) as never
     // endregion
   } catch (e) {

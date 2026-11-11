@@ -5,9 +5,9 @@
  * checks that EP recovers the mean, the precision and the values, and how often its 90% intervals hold them.
  */
 
-import { gamma, foldIn, key, normal } from '../random/index.ts'
 import * as d from '../probprog/model/dists/index.ts'
 import { defineModel, ops } from '../probprog/model/index.ts'
+import { foldIn, key, normal } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import type { Config } from '../trace/index.ts'
@@ -129,7 +129,8 @@ function populationLearnedProblem(k: Config): AtomProblem {
   // region shared-precision-learned
   // the ground truth: effects drawn around a mean with a spread, then each observed with its own noise
   const kk = key(seed)
-  const effects = Array.from(toFlat(normal(foldIn(kk, 0), [groups], { loc: trueMean, scale: trueSpread })))
+  const around = { loc: trueMean, scale: trueSpread }
+  const effects = Array.from(toFlat(normal(foldIn(kk, 0), [groups], around)))
   const draw = Array.from(toFlat(normal(foldIn(kk, 1), [groups])))
   const y = effects.map((v, j) => v + (noise[j] ?? 1) * (draw[j] ?? 0))
   const definition = defineModel('shared-precision-learned', (m) => {
@@ -138,7 +139,9 @@ function populationLearnedProblem(k: Config): AtomProblem {
     const tau = m.latent('tau', d.gamma(a, b))
     const mu = m.latent('mu', d.normal(0, priorSd))
     const theta = m.latent('theta', d.normal(mu, ops.div(1, ops.sqrt(tau))), { dims: [j] })
-    m.observe('y', d.normal(theta, m.data('sd', { dims: [j] })), m.data('y', { dims: [j], role: 'response' }))
+    const noise = m.data('sd', { dims: [j] })
+    const observed = m.data('y', { dims: [j], role: 'response' })
+    m.observe('y', d.normal(theta, noise), observed)
   })
   // endregion
   // The exact posterior: the precision by quadrature with the mean integrated out, each of the others Gaussian given it.
@@ -177,7 +180,7 @@ function populationLearnedProblem(k: Config): AtomProblem {
       const s = stats(tau)
       const prec = 1 / (noise[j] ?? 1) ** 2
       const shrink = prec / (tau + prec)
-      return gauss(shrink * (y[j] ?? 0) + (1 - shrink) * s.mean, 1 / (tau + prec) + ((1 - shrink) ** 2) / s.prec)
+      return gauss(shrink * (y[j] ?? 0) + (1 - shrink) * s.mean, 1 / (tau + prec) + (1 - shrink) ** 2 / s.prec)
     }),
   )
   const at = effects.map((_, j) => j + 1)

@@ -19,6 +19,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { CodeBlock } from '../../../site/src/shell/CodeBlock.tsx'
 import { BeliefChart, DataFigure, JointChart, MixtureChart, ProbabilityBars } from './ep/AtomCharts.tsx'
 import { atomSource } from './ep/atomSource.ts'
+import { CalibrationPanel, RecoveryPanel, TwinNote } from './ep/ExtendedParts.tsx'
 import { type AtomState, useAtom } from './ep/useAtom.ts'
 
 const EP_KNOBS = ['schedule', 'damping', 'improper', 'tol', 'maxSweeps']
@@ -65,7 +66,7 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
   const panels = usePanels(`ep-${atom.name}`, {
     graph: 'The model as a diagram',
     messages: 'The messages, step by step',
-    numbers: 'The numbers',
+    numbers: atom.extends === undefined ? 'The numbers' : 'EP against the exact posterior',
   })
   const state = useAtom(atom, knobs, ep)
   const { problem, run, reference, check } = state
@@ -112,6 +113,7 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
   return (
     <div className="flex flex-col gap-5">
       <Banner atom={atom} state={state} />
+      <TwinNote atom={atom} />
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">The setup</h2>
         {problem === undefined ? null : (
@@ -244,6 +246,26 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
       </section>
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">How we know it works</h2>
+        {atom.extends === undefined ? null : (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <h3 className="text-xs font-semibold text-muted">
+                Recovery: the truth against EP&apos;s belief, this seed
+              </h3>
+              {problem === undefined || ran === undefined ? (
+                <p className="text-sm text-muted">EP does not run on this model, so there is nothing to recover yet.</p>
+              ) : (
+                <RecoveryPanel problem={problem} beliefs={ran.beliefs} />
+              )}
+            </div>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-xs font-semibold text-muted">
+                Calibration: the same truth over many seeds, how often EP&apos;s 90% interval holds it
+              </h3>
+              <CalibrationPanel atom={atom} knobs={knobs} runs={ran !== undefined} />
+            </div>
+          </div>
+        )}
         <FigurePanel panels={panels} name="numbers">
           <Check atom={atom} state={state} />
         </FigurePanel>
@@ -319,6 +341,13 @@ function Check(props: { readonly atom: EpAtom; readonly state: AtomState }): Rea
       </p>
     )
   if (check === undefined) return <p className="text-sm text-muted">Computing the reference...</p>
+  if (check.rows.length === 0)
+    return (
+      <p className="text-sm text-muted">
+        There is no reference posterior to compare with ({reference?.source}): the recovery and the calibration above
+        are the check.
+      </p>
+    )
   const t = check.tolerance
   return (
     <div className="flex flex-col gap-2">

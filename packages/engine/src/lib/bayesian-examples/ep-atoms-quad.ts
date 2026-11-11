@@ -277,7 +277,12 @@ export interface HyperPosterior {
  * Math.abs(post.hyper.mean - 3 / 3) < 1e-3 // => true
  * ```
  */
-export function hyperPosterior(logDensity: (h: number) => number, lo: number, hi: number, points = 1500): HyperPosterior {
+export function hyperPosterior(
+  logDensity: (h: number) => number,
+  lo: number,
+  hi: number,
+  points = 1500,
+): HyperPosterior {
   const step = (Math.log(hi) - Math.log(lo)) / points
   const hs = Array.from({ length: points }, (_, i) => Math.exp(Math.log(lo) + (i + 0.5) * step))
   const logs = hs.map((h) => logDensity(h) + Math.log(h))
