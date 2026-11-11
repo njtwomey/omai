@@ -3705,8 +3705,11 @@ dimension order, ids, site names, expressions, the hooks for factor graphs) are 
   the few operations every mapping needs); `_symbolic/` (the evaluator of expressions: `_dims.ts` the named dimensions, `_affine.ts` `evalSym` and
   the value algebra, `_gates.ts` values chosen by a discrete variable, `_functions.ts` the `product`, `apply` and `max`/`min` factors that arithmetic on random values
   makes; `EvalMode` says whether a gate keeps its components as a lookup); `_cells.ts` (the value algebra: pure), `_builder.ts` (the graph builder, `GateBuilder`)
-  and `_refusal.ts` (`Refusal`). A mapping is a function of a `Context` and a node; `factors.ts` is the driver that walks the spec in order and
-  chooses the mapping.
+  and `_refusal.ts` (`Refusal`); `_params.ts` (a node's parameters as the mappings read them: `paramSym`, `constParam`, `cellsOf`, `paramCell`,
+  `discreteParents`); `_mappings/` (one file per concern, the mappings as functions of a `Context` and a node: `latent-gaussian`, `latent-positive`,
+  `latent-discrete`, `matrix`, `derived`, `observed-gaussian`, `observed-numeric`, `observed-conjugate`, `observed-gates`, `plates`; the folder is private
+  so that its functions are not exports). `factors.ts` is the driver: it walks the spec in order and dispatches each node by the chains of `latent`,
+  `observed` and `observedElement`, whose order is part of the meaning (normal-gamma before the family lookup, a value moved to the mean first).
 
 **Inference methods (`inference/`, `omai-engine/probprog/inference`).** The convention and the methods, with no entry point
 that picks one. `method.ts` is the convention: `defineInferenceMethod` makes a `Method` of the trace library (a `Space`

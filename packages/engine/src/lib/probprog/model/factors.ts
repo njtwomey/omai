@@ -12,12 +12,15 @@
  * with their own variables or scales, scalar weights, discrete tables over a plate). `plates: 'expand'` forces the
  * expansion everywhere (the same posterior, a message per row, so finer anytime steps).
  *
- * The mappings are the methods of `Compiler`, one per model idiom: `latent` and `observed` dispatch on the distribution family
- * and on the shape of its parameters (a Gaussian with a known or random scale, a precision that is a gamma variable, a mean chosen
- * by a discrete variable, a summed-out mixture, conjugate pairs, matrices, discrete structure under Dirichlet rows), and `derived`
- * maps the arithmetic of the value algebra (`factor-graph/_cells.ts`) to the engine's affine, product, gate and apply operators.
- * Anything with no mapping is reported with a reason, never silently dropped. The value algebra, the refusal, the issue and
- * layout types, the reading back of a run (`factorGraphPosterior`) and the verdict (`factorGraphVerdict`) live in `factor-graph/`.
+ * `Compiler` is the driver: it walks the spec in order and dispatches each node to a mapping, in the order the chains of `latent`, `observed`
+ * and `observedElement` write down (normal-gamma before the family lookup, a value that moves to the mean before the other observations:
+ * the order is part of the meaning). The mappings are functions of the compilation's `Context` and a node, one file per concern in
+ * `factor-graph/_mappings/` (Gaussian, positive and discrete latents, matrix-valued nodes, derived nodes, observed Gaussians, numeric
+ * likelihoods, conjugate observations, observations chosen by a discrete variable, plates), over the evaluator of expressions
+ * (`factor-graph/_symbolic/`: the value algebra of `_cells.ts` mapped to the engine's affine, product, gate and apply operators),
+ * the constants (`_known.ts`), the layout plan (`_plan.ts`) and the recognisers (`_idioms.ts`). Anything with no mapping is reported with a
+ * reason, never silently dropped. The refusal, the issue and layout types, the reading back of a run (`factorGraphPosterior`) and the
+ * verdict (`factorGraphVerdict`) live in `factor-graph/`.
  *
  * Ids follow `ids.ts`: a variable is its site's name, `<site>[<i>]` for an element of a site over dimensions, and
  * `<site>#<k>[<i>]` for an auxiliary variable; a factor is `factor:` and the id of the variable it defines (an observed
@@ -136,10 +139,6 @@ class Compiler {
   ) {
     this.cx = new Context(bound, modelOps, ops, { vectorise, packScalars, denseScales })
   }
-
-  // ----- sizes and indexing -----
-
-  // ----- values -----
 
   // ----- the nodes -----
 
@@ -287,10 +286,6 @@ class Compiler {
     }
     this.cx.finishLatent(node, kind, cells, vars, inverse ? { reciprocal: true } : {})
   }
-
-  // ----- matrix-valued latents: a Wishart (or inverse-Wishart) precision, and the Gaussian vectors that read it -----
-
-  // ----- Gaussian latents: a transition from the previous state, projected and truncated priors, the normal and its groups -----
 
   private observed(node: ModelNode & { readonly kind: 'observed' }): void {
     if (node.dist.family === 'multivariateNormal' && wishartOf(this.cx, node) !== undefined) {

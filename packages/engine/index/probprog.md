@@ -259,7 +259,7 @@ The model layer: a model written once as a value. A builder (`defineModel`) with
 - function `defineModel`: Build a model spec with named dimensions, data, latents, observations and derived nodes. `src/lib/probprog/model/builder.ts:741` `omai-engine/probprog/model`
 - function `fromProgram`: fromProgram: lift a sample/observe program to a ModelSpec of its site structure; refuses a varying structure. `src/lib/probprog/model/from-program.ts:185` `omai-engine/probprog/model`
 - function `structureReport`: structureReport: what a spec's structure allows, as records and suggestions naming the method to use. `src/lib/probprog/model/analysis.ts:476` `omai-engine/probprog/model`
-- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:511` `omai-engine/probprog/model`
+- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:506` `omai-engine/probprog/model`
 - function `toProgram`: Compile a bound ModelSpec to a sample/observe program every engine runs. `src/lib/probprog/model/compile.ts:267` `omai-engine/probprog/model`
 
 ### probprog/model/dists
@@ -272,7 +272,7 @@ The distribution constructors of the model layer, available as `omai-engine/prob
 
 ### probprog/model/factor-graph
 
-The pieces of the model-to-factor-graph compiler (`toFactorGraph`, in `../factors.ts`) that stand on their own. Public: the types a compilation reports (issues, site layouts, the compilation record), the reading back of a run (`factorGraphPosterior`, `graphOnSpec`) and the verdict for a message-passing method (`factorGraphVerdict`, `operatorsWithout`, `compileFactorGraph`). Private (`_` files, not exported): the refusal the mappings throw, the value algebra they compute with (cells: affine forms over the graph's random scalars, lookups, scaled and reciprocal gamma variables) and the graph builder (variables, factors, auxiliary names, atoms). Re-exported flat into `omai-engine/probprog/model`.
+The pieces of the model-to-factor-graph compiler (`toFactorGraph`, in `../factors.ts`) that stand on their own. Public: the types a compilation reports (issues, site layouts, the compilation record), the reading back of a run (`factorGraphPosterior`, `graphOnSpec`) and the verdict for a message-passing method (`factorGraphVerdict`, `operatorsWithout`, `compileFactorGraph`). Private (`_` files and folders, not exported): the refusal the mappings throw, the value algebra they compute with (cells: affine forms over the graph's random scalars, lookups, scaled and reciprocal gamma variables), the graph builder (variables, factors, auxiliary names, atoms), the constants pass, the recognisers of idioms, the layout plan, the context (the state of one compilation), the evaluator of expressions (`_symbolic/`) and the mappings of nodes (`_mappings/`). Re-exported flat into `omai-engine/probprog/model`.
 
 - function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factor-graph/readback.ts:74` `omai-engine/probprog/model`
 
