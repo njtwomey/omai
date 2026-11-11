@@ -12,7 +12,7 @@
  * coverage table needs. A page of the proofs of concept is a composition of these, and a test generated from the registry
  * asserts every `runs` atom passes its check and every `planned` atom is refused with a reason, so coverage only goes up.
  *
- * @index structure EP atom scaffold: a tiny concrete problem, its reference, a tolerance and the EP verdict and run.
+ * @index structure EP atom scaffold: a bare setup, its reference, a tolerance, the EP verdict and run.
  */
 
 import { OmaiError } from '../base/index.ts'
@@ -166,8 +166,8 @@ export interface EpAtom<K extends Config = Config> extends AtomSpec<K> {
  * @concept expectation-propagation
  * @example
  * ```ts
- * import { gaussianMeanAtom } from 'omai-engine/bayesian-examples'
- * [gaussianMeanAtom.name, gaussianMeanAtom.expected] // => ['gaussian-mean', 'runs']
+ * import { gaussianAtom } from 'omai-engine/bayesian-examples'
+ * [gaussianAtom.name, gaussianAtom.expected] // => ['gaussian', 'runs']
  * ```
  */
 export function defineAtom<K extends Config>(spec: AtomSpec<K>): EpAtom<K> {
@@ -194,7 +194,7 @@ export interface Belief {
  * @param sd - The standard deviation.
  * @returns The density.
  * @concept expectation-propagation
- * @index function The density of a belief from its mean and sd on a support (normal, gamma or beta).
+ * @index function The density of a belief from its mean and sd on a support.
  * @example
  * ```ts
  * import { beliefDensity } from 'omai-engine/bayesian-examples'
@@ -270,8 +270,8 @@ function exactCurve(name: string, support: AtomSupport, m: ExactMarginal): RefMa
  * @returns The model with its data bound.
  * @example
  * ```ts
- * import { atomBound, gaussianMeanAtom } from 'omai-engine/bayesian-examples'
- * atomBound(gaussianMeanAtom.problem(gaussianMeanAtom.defaults)).sizes // => { measurement: 6 }
+ * import { atomBound, gaussianAtom } from 'omai-engine/bayesian-examples'
+ * atomBound(gaussianAtom.problem(gaussianAtom.defaults)).sizes // => { i: 3 }
  * ```
  */
 export function atomBound(problem: AtomProblem): BoundModel {
@@ -287,11 +287,11 @@ export function atomBound(problem: AtomProblem): BoundModel {
  * @returns The reference.
  * @throws OmaiError with code `value` when an `exact` atom gives no closed form for a quantity.
  * @concept posterior-validation
- * @index function The reference of an EP atom: closed-form or grid marginals as curves, and a joint for contours.
+ * @index function The reference of an EP atom: exact or grid marginals as curves, and a joint.
  * @example
  * ```ts
- * import { atomReference, gaussianMeanAtom } from 'omai-engine/bayesian-examples'
- * const r = atomReference(gaussianMeanAtom, gaussianMeanAtom.problem(gaussianMeanAtom.defaults))
+ * import { atomReference, gaussianAtom } from 'omai-engine/bayesian-examples'
+ * const r = atomReference(gaussianAtom, gaussianAtom.problem(gaussianAtom.defaults))
  * [r.kind, Object.keys(r.marginals)] // => ['exact', ['mu']]
  * ```
  */
@@ -343,11 +343,11 @@ export function atomReference<K extends Config>(atom: EpAtom<K>, problem: AtomPr
  * @param problem - The problem.
  * @returns The verdict.
  * @concept expectation-propagation
- * @index function Whether EP applies to an atom's model and the library's reason when it does not.
+ * @index function Whether EP applies to an atom's model, and the library's reason if not.
  * @example
  * ```ts
- * import { atomVerdict, gaussianMeanAtom } from 'omai-engine/bayesian-examples'
- * atomVerdict(gaussianMeanAtom.problem(gaussianMeanAtom.defaults)).applies // => true
+ * import { atomVerdict, gaussianAtom } from 'omai-engine/bayesian-examples'
+ * atomVerdict(gaussianAtom.problem(gaussianAtom.defaults)).applies // => true
  * ```
  */
 export function atomVerdict(problem: AtomProblem): Verdict {
@@ -419,8 +419,8 @@ export type AtomRun =
  * @returns The means.
  * @example
  * ```ts
- * import { atomReference, gaussianMeanAtom, marginalMean } from 'omai-engine/bayesian-examples'
- * const r = atomReference(gaussianMeanAtom, gaussianMeanAtom.problem(gaussianMeanAtom.defaults))
+ * import { atomReference, gaussianAtom, marginalMean } from 'omai-engine/bayesian-examples'
+ * const r = atomReference(gaussianAtom, gaussianAtom.problem(gaussianAtom.defaults))
  * Object.keys(marginalMean(r)) // => ['mu']
  * ```
  */
@@ -455,11 +455,11 @@ function momentsOf(
  * @param ep - The knobs of EP over its defaults (damping, schedule, tolerance, the sweep cap).
  * @returns The run, or the refusal.
  * @concept expectation-propagation
- * @index function Run EP on an atom's model: beliefs at each sweep, messages as a record, or the library's refusal.
+ * @index function Run EP on an atom's model: beliefs per sweep, a message record, or the refusal.
  * @example
  * ```ts
- * import { atomRun, gaussianMeanAtom } from 'omai-engine/bayesian-examples'
- * const r = atomRun(gaussianMeanAtom.problem(gaussianMeanAtom.defaults))
+ * import { atomRun, gaussianAtom } from 'omai-engine/bayesian-examples'
+ * const r = atomRun(gaussianAtom.problem(gaussianAtom.defaults))
  * r.status // => 'ran'
  * ```
  */
@@ -531,13 +531,13 @@ function ksOf(pdf: (x: number) => number, ref: RefMarginal): number {
  * @param tolerance - The tolerance.
  * @returns The check: a row per quantity and whether all pass.
  * @concept posterior-validation
- * @index function EP's beliefs against the reference: mean error in sds, sd ratio and KS, each against a tolerance.
+ * @index function EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance.
  * @example
  * ```ts
- * import { atomCheck, atomReference, atomRun, gaussianMeanAtom } from 'omai-engine/bayesian-examples'
- * const p = gaussianMeanAtom.problem(gaussianMeanAtom.defaults)
+ * import { atomCheck, atomReference, atomRun, gaussianAtom } from 'omai-engine/bayesian-examples'
+ * const p = gaussianAtom.problem(gaussianAtom.defaults)
  * const r = atomRun(p)
- * r.status === 'ran' && atomCheck(p, r.beliefs, atomReference(gaussianMeanAtom, p), gaussianMeanAtom.tolerance).pass // => true
+ * r.status === 'ran' && atomCheck(p, r.beliefs, atomReference(gaussianAtom, p), gaussianAtom.tolerance).pass // => true
  * ```
  */
 export function atomCheck(
@@ -574,8 +574,8 @@ export function atomCheck(
  * @concept expectation-propagation
  * @example
  * ```ts
- * import { gaussianMeanAtom, verifyAtom } from 'omai-engine/bayesian-examples'
- * verifyAtom(gaussianMeanAtom).check?.pass // => true
+ * import { gaussianAtom, verifyAtom } from 'omai-engine/bayesian-examples'
+ * verifyAtom(gaussianAtom).check?.pass // => true
  * ```
  */
 export function verifyAtom<K extends Config>(

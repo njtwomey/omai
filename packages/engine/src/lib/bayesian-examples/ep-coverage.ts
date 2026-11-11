@@ -44,7 +44,7 @@ export interface EpCoverage {
  *
  * @returns The rows and the counts.
  * @concept expectation-propagation
- * @index function What EP covers today: every atom and every benchmark model as runs or planned, with the library's reason.
+ * @index function What EP covers today: atoms and benchmark models as runs or planned, with reasons.
  * @example
  * ```ts
  * import { epCoverage } from 'omai-engine/bayesian-examples'

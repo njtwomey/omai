@@ -215,7 +215,7 @@ The validation kernel for probabilistic programs: oracles (the grid posterior, c
 
 - function `agree`: Compare posterior approximations with an oracle or each other: moments, KS, Wasserstein, KL. `src/lib/probprog/validation/agree.ts:188` `omai-engine/probprog/validation`
 - function `gewekeTest`: Geweke joint-distribution test of a posterior transition operator. `src/lib/probprog/validation/geweke.ts:83` `omai-engine/probprog/validation`
-- function `gridPosterior`: Grid posterior of a small program: evidence, marginals and moments to quadrature accuracy. `src/lib/probprog/validation/grid.ts:162` `omai-engine/probprog/validation`
+- function `gridPosterior`: Grid posterior of a small program: evidence, marginals and moments to quadrature accuracy. `src/lib/probprog/validation/grid.ts:175` `omai-engine/probprog/validation`
 - function `sbc`: Simulation-based calibration of an inference method with the exact rank distribution. `src/lib/probprog/validation/sbc.ts:180` `omai-engine/probprog/validation`
 
 - estimator `sbcMethod`: Simulation-based calibration, one replication per step, with the tests of the ranks so far. `src/lib/probprog/validation/sbc-method.ts:68` `omai-engine/probprog/validation`
