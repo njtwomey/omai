@@ -52,15 +52,15 @@ export const epGaps: readonly EpGap[] = [
     refuses: ['laplace-learned'],
   },
   {
-    id: 'kernel-hyperparameters',
-    title: 'Kernel hyperparameters as random values',
+    id: 'grid-hyperparameters',
+    title: 'Hyperparameters on a grid: a few scalars, one family at a time',
     kind: 'missing-mapping',
-    status: 'queued',
+    status: 'open',
     summary:
-      'A Gaussian process whose length scale or amplitude is a latent builds its Gram matrix from a random value, and the Cholesky of it is an opaque custom function: the graph cannot be compiled. With the kernel fixed (a constant covariance) GP classification already runs.',
-    plan: 'Run EP inside a grid over the hyperparameters (the log evidence of each EP run weights the grid, as the gp domain does for its marginal likelihood), so the compiler sees a constant Gram matrix at each node; later a numeric site over the length scale if one grid axis is not enough. Needs the EP log evidence of the dense prior and the likelihood sites.',
+      'A Gaussian process with a random length scale runs by EP inside a grid over the hyperparameters a custom function reads (`epGridMethod`: each node conditions the model, EP runs, the EP evidence weights the node), exact for a Gaussian likelihood. The grid is a product over the hyperparameters, so it serves one to three scalars; an ARD kernel with a length scale per input, a hyperparameter that is a vector or has a prior that depends on another node, and a custom function that is not known or affine once the hyperparameters are set are refused.',
+    plan: 'A numeric site over the length scale for the one-dimensional case inside one EP run (the hyperparameter as a latent whose message is a grid), a sparse grid or a Laplace step over several hyperparameters, and a model-layer kernel node (a Gram matrix as a first-class operator on a latent length scale) so that the custom function is not needed.',
     size: 'medium',
-    refuses: ['gaussian-process-regression', 'gaussian-process-non-centred'],
+    refuses: [],
   },
   {
     id: 'stick-breaking',
@@ -207,12 +207,12 @@ export const epGaps: readonly EpGap[] = [
   },
   {
     id: 'evidence',
-    title: 'Log evidence for the new numeric rules',
+    title: 'The EP log evidence is exact where EP is, and has three known limits',
     kind: 'infrastructure',
     status: 'open',
     summary:
-      'Several of the new operators (the gamma-precision rule, the likelihood sites, the gates) return moments but not their log evidence, so the evidence of a whole model, hyperparameter learning by maximising it and model comparison are unavailable for them.',
-    plan: 'Add `logEvidence` to each rule (the tilted mass is already computed) and test it against the brute-force integral.',
+      "Every rule of the registry carries a log evidence (each tested against a brute-force integral) and the posterior and the tape (`mp/evidence`) give the model's: against the grid evidence it is within 1e-5 on the conjugate atoms, 1e-3 on the gates, the Student-t, the clutter, and 0.01 to 0.05 on the probit, logistic, Laplace and product atoms. Three limits remain: a projected prior (half-normal, half-Cauchy, uniform) shifts it by 0.1 to 0.5 nats because the model carries the projection; a fixed point with a factor whose cavity is improper gives no evidence for it (the learned logistic regression: NaN); an alpha-divergence run has no EP energy.",
+    plan: 'Keep the exact prior as a numeric site (gap projected-priors), define the energy of a factor with an improper cavity from its last proper cavity or by a damped restart, and give the alpha runs the energy of their own divergence.',
     size: 'medium',
     refuses: [],
   },

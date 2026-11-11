@@ -96,10 +96,11 @@ function prepare(model: MethodModel, plates: 'vectorise' | 'expand', packScalars
 }
 
 /** What the analysis alone says, before the graph is built: the features a message-passing method needs. */
-function staticVerdict(a: ModelAnalysis, rule: MessageRule): Verdict | undefined {
+function staticVerdict(a: ModelAnalysis, rule: MessageRule, compiles: boolean): Verdict | undefined {
   if (isProgramAnalysis(a)) return undefined
   const title = TITLE[rule]
-  if (a.opaque.length > 0)
+  // A custom function of known values, or affine in one random vector, is read by the compiler: a model that compiled has nothing opaque left.
+  if (a.opaque.length > 0 && !compiles)
     return no(
       `${title} needs an exponential-family factor graph: ${a.opaque.map((n) => `'${n}'`).join(', ')} ${a.opaque.length > 1 ? 'are' : 'is'} opaque to message passing (a custom call, or a family with no exponential-family form)`,
       ['exponential-family factors'],
@@ -148,7 +149,7 @@ function specMethod<P extends string>(
         ['a model spec'],
         'write the model with defineModel',
       )
-    const s = staticVerdict(a, rule)
+    const s = staticVerdict(a, rule, prepared.graph !== undefined)
     if (s !== undefined) return s
     if (prepared.failure !== undefined)
       return no(`the factor graph does not compile: ${prepared.failure}`, ['a valid factor graph'], 'see toFactorGraph')

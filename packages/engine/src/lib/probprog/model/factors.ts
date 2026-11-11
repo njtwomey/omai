@@ -110,6 +110,7 @@ import { definePosterior, type Posterior } from '../posterior.ts'
 import type { SpecAnalysis } from './analysis.ts'
 import type { BoundModel } from './bind.ts'
 import { distributionFamilies } from './dists/families.ts'
+import { eventToDims } from './event-dims.ts'
 import { auxId, elementId, factorId, siteOfId } from './ids.ts'
 import { defaultOperators, type NamedValue, type OperatorTable } from './operators.ts'
 import { ScanUnrollError, unrollScans } from './scan.ts'
@@ -497,6 +498,8 @@ class Compiler {
     { readonly plan: NormalGammaPlan; readonly multiple: number }
   >()
   private readonly names = new Set<string>()
+  /** The custom functions the compiler has evaluated or read as a matrix, so a node that calls only these is not opaque. */
+  readonly handledCustoms = new Set<string>()
   private readonly nodes = new Map<string, ModelNode>()
   private readonly families = distributionFamilies()
   /** The node being compiled: the site that auxiliary variables of its expressions are named after. */
@@ -522,7 +525,8 @@ class Compiler {
   private findPacked(): void {
     const walk = (e: ExprSpec): void => {
       if (e.kind !== 'op' && e.kind !== 'custom') return
-      if (e.kind === 'op' && e.op === 'matmul')
+      // A custom function that is a matrix of a normal vector (read as one by the compiler) keeps that vector joint too.
+      if (e.kind === 'op' ? e.op === 'matmul' : this.bound.customs[e.name] !== undefined)
         for (const a of e.args) {
           const target = a.kind === 'ref' ? this.nodes.get(a.name) : undefined
           // A normal with a random scale (ARD: a precision of its own for each coefficient) cannot be one joint Gaussian vector:
@@ -712,7 +716,8 @@ class Compiler {
       case 'op':
         return e.args.every((a) => this.isConst(a))
       case 'custom':
-        return false
+        // A custom function of known values is a known value (the Gram matrix of a kernel whose length scale is fixed).
+        return this.bound.customs[e.name] !== undefined && e.args.every((a) => this.isConst(a))
     }
   }
 
@@ -738,9 +743,71 @@ class Compiler {
           e.params ?? {},
         )
       }
-      case 'custom':
-        throw new Refusal('opaque', `the custom function '${e.name}' is opaque to message passing`)
+      case 'custom': {
+        const fn = this.bound.customs[e.name]
+        if (fn === undefined) throw new Refusal('opaque', `the custom function '${e.name}' was not supplied`)
+        const value = fn(e.args.map((a) => this.evalNamed(a, override)))
+        this.handledCustoms.add(e.name)
+        return { value, dims: e.dims }
+      }
     }
+  }
+
+  /**
+   * A custom function of known values and one random vector that is affine in it, `f(z) = f(0) + A z`: the matrix is read off by
+   * calling the function on `0` and the unit vectors (and checked at two other points, so a function that is not affine is
+   * refused rather than mistaken for one). This is what the whitened Gaussian process `f = L(ell) z` is once the length scale
+   * is known: the Cholesky factor is a matrix the graph can use.
+   */
+  private affineCustom(e: ExprSpec & { readonly kind: 'custom' }): Sym {
+    const fn = this.bound.customs[e.name]
+    if (fn === undefined) throw new Refusal('opaque', `the custom function '${e.name}' was not supplied`)
+    const random = e.args.map((a, i) => (this.isConst(a) ? -1 : i)).filter((i) => i >= 0)
+    if (random.length !== 1 || e.eventRank !== 0 || e.dims.length !== 1)
+      throw new Refusal(
+        'opaque',
+        `the custom function '${e.name}' is opaque to message passing (it is read as a matrix only when it has one random vector argument, known others and a vector result)`,
+      )
+    const at = random[0] as number
+    const z = this.evalSym(e.args[at] as ExprSpec)
+    const n = z.cells.length
+    const m = this.size(e.dims[0] as string)
+    const known = e.args.map((a, i) => (i === at ? undefined : this.evalNamed(a)))
+    const call = (v: readonly number[]): Float64Array => {
+      const input = { value: fromStorage(Float64Array.from(v), [n], 'float64'), dims: z.dims }
+      const out = toFlat(fn(known.map((k, i) => (i === at ? input : (k as NamedValue)))))
+      if (out.length !== m)
+        throw new Refusal('structure', `the custom function '${e.name}' returned ${out.length} values, not ${m}`)
+      return Float64Array.from(out)
+    }
+    const f0 = call(new Array<number>(n).fill(0))
+    const columns: Float64Array[] = []
+    for (let j = 0; j < n; j++) {
+      const unit = new Array<number>(n).fill(0)
+      unit[j] = 1
+      columns.push(call(unit).map((v, i) => v - (f0[i] ?? 0)))
+    }
+    for (const probe of [0.37, -1.21]) {
+      const point = Array.from({ length: n }, (_, j) => probe * Math.cos(1 + 2.3 * j))
+      const got = call(point)
+      for (let i = 0; i < m; i++) {
+        let want = f0[i] ?? 0
+        for (let j = 0; j < n; j++) want += ((columns[j] as Float64Array)[i] ?? 0) * (point[j] ?? 0)
+        if (Math.abs((got[i] ?? 0) - want) > 1e-8 * (1 + Math.abs(want)))
+          throw new Refusal('opaque', `the custom function '${e.name}' is not affine in its random argument`)
+      }
+    }
+    this.handledCustoms.add(e.name)
+    const cells: Cell[] = []
+    for (let i = 0; i < m; i++) {
+      let acc = constAff(f0[i] ?? 0)
+      for (let j = 0; j < n; j++) {
+        const a = (columns[j] as Float64Array)[i] ?? 0
+        if (a !== 0) acc = combine(acc, affOf(z.cells[j] as Cell), a)
+      }
+      cells.push({ kind: 'aff', aff: acc })
+    }
+    return { dims: e.dims, cells }
   }
 
   /** An expression as a tensor of affine forms, by the registry where it is known and symbolically where it is random. */
@@ -759,7 +826,7 @@ class Compiler {
         throw new Refusal('node', `depends on '${e.name}', which could not be compiled`)
       }
       case 'custom':
-        throw new Refusal('opaque', `the custom function '${e.name}' is opaque to message passing`)
+        return this.affineCustom(e)
       case 'const':
         return this.fromNamed(this.evalNamed(e))
       case 'op':
@@ -3723,6 +3790,9 @@ export function toFactorGraph(
     readonly sharedScale?: 'dense' | 'elements'
   } = {},
 ): FactorGraphCompilation {
+  // A vector written as one event (a multivariate normal with no named dimension) is read as a vector over a dimension of its size.
+  const eventless = eventToDims(bound)
+  if (eventless !== bound) return toFactorGraph(eventless, options)
   if (bound.spec.nodes.some((n) => n.kind === 'scan')) {
     // A chain has no plate: the engine reads it written out, one variable and factor per step.
     let unrolled: BoundModel
@@ -3753,7 +3823,13 @@ export function toFactorGraph(
   )
   c.run()
   const graph: FactorGraphSpec = { variables: c.variables, factors: c.factors }
-  const opaque = options.analysis?.opaque ?? opaqueNodes(bound)
+  const opaque = (options.analysis?.opaque ?? opaqueNodes(bound)).filter((name) => {
+    const node = bound.spec.nodes.find((n) => n.name === name && n.kind !== 'data')
+    if (node === undefined) return true
+    const called = customNames(node)
+    // A node whose custom calls were all evaluated (known arguments) or read as a matrix (affine in one random vector) is not opaque.
+    return called.length === 0 || !called.every((n) => c.handledCustoms.has(n))
+  })
   for (const name of opaque)
     if (!c.issues.some((i) => i.node === name))
       c.issues.push({
@@ -3774,6 +3850,20 @@ export function toFactorGraph(
     plated: c.plated,
     expanded: { plates, variables: graph.variables.length, factors: graph.factors.length },
   }
+}
+
+/** The names of the custom functions a node calls. */
+function customNames(node: ModelNode): string[] {
+  const out = new Set<string>()
+  const walk = (e: ExprSpec): void => {
+    if (e.kind === 'custom') out.add(e.name)
+    if (e.kind === 'op' || e.kind === 'custom') for (const a of e.args) walk(a)
+  }
+  if (node.kind === 'latent' || node.kind === 'observed' || node.kind === 'generated') {
+    for (const e of Object.values(node.dist.params)) walk(e)
+    if (node.kind === 'observed') walk(node.value)
+  } else if (node.kind === 'derived' || node.kind === 'factor') walk(node.expr)
+  return [...out]
 }
 
 /** The nodes with a `custom` call, found without the analysis (for a caller that gives none). */

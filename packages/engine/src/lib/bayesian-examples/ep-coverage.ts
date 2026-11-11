@@ -5,7 +5,7 @@
  * the developer: the coverage page lists it, and its test fixes the figure so that coverage only goes up.
  */
 
-import { epSpecMethod } from '../probprog/inference/index.ts'
+import { epGridMethod, epSpecMethod } from '../probprog/inference/index.ts'
 import { analysisOf } from '../probprog/inference/model-input.ts'
 import { benchmarkModels } from '../probprog/models/index.ts'
 import { epAtoms } from './ep-atom-list.ts'
@@ -26,6 +26,8 @@ export interface CoverageRow {
   readonly reason: string
   /** What the library says is missing. */
   readonly missing: readonly string[]
+  /** How EP runs when it does: `ep` (the model as it is) or `ep-grid` (EP inside a grid over the hyperparameters a custom function reads). Absent for an atom. */
+  readonly via?: 'ep' | 'ep-grid'
   /** The factors an atom exercises. */
   readonly factors: readonly string[]
 }
@@ -40,7 +42,7 @@ export interface EpCoverage {
 
 /**
  * What EP covers today: each atom run once at its default knobs, and each benchmark model compiled to a factor graph and
- * asked for the EP verdict. A model the compiler throws on counts as planned with the error as its reason (a gap to report).
+ * asked for the EP verdict (and, when that refuses, the verdict of EP inside a grid over the hyperparameters). A model the compiler throws on counts as planned with the error as its reason (a gap to report).
  *
  * @returns The rows and the counts.
  * @concept expectation-propagation
@@ -79,9 +81,11 @@ export function epCoverage(): EpCoverage {
     try {
       const bound = m.bound()
       const verdict = epSpecMethod(bound).check?.(analysisOf(bound))
-      return verdict?.applies === true
-        ? { ...base, status: 'runs', reason: '', missing: [] }
-        : { ...base, status: 'planned', reason: verdict?.reason ?? 'no verdict', missing: verdict?.missing ?? [] }
+      if (verdict?.applies === true) return { ...base, status: 'runs', via: 'ep', reason: '', missing: [] }
+      // A model whose graph exists once some scalar latents are known runs inside a grid over them.
+      const grid = epGridMethod(bound).check?.(analysisOf(bound))
+      if (grid?.applies === true) return { ...base, status: 'runs', via: 'ep-grid', reason: '', missing: [] }
+      return { ...base, status: 'planned', reason: verdict?.reason ?? 'no verdict', missing: verdict?.missing ?? [] }
     } catch (e) {
       return {
         ...base,
