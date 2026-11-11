@@ -14,10 +14,14 @@
  *
  * What it maps. Latents: `normal` (a Gaussian variable per element, or one `gaussian-mv` vector variable when a
  * `matmul` reads it, so the posterior keeps its correlations), `gamma`, `exponential`, `beta`, `dirichlet`, and
- * `bernoulli` or `categorical` with known probabilities (or a Dirichlet latent for them: the conjugate `discrete` factor).
+ * `bernoulli` or `categorical` with known probabilities (or a Dirichlet latent for them: the conjugate `discrete` factor),
+ * and a `multivariateNormal` with a known mean and covariance (or `scaleTril`): one `gaussian-mv` variable with a dense prior, whose
+ * components a likelihood reads (a Gaussian process prior over the inputs of the data).
  * A Gaussian whose scale is the idiom `1 / sqrt(tau)` (or `tau ** -0.5`) of a gamma or exponential latent `tau` is the
  * `gaussian-gamma-precision` factor, for observations and latents (variational message passing, and expectation propagation when the
- * Gaussian is observed: the linear regression with an unknown noise level). Values: expressions that are affine in Gaussian latents (`add`,
+ * Gaussian is observed: the linear regression with an unknown noise level), and a scale `exp(s)` with `s` affine in Gaussian latents
+ * is the `gaussian-log-scale` factor (expectation propagation, an observed value and a known mean: stochastic volatility, through
+ * the unrolled `scan`). Values: expressions that are affine in Gaussian latents (`add`,
  * `sub`, `neg`, `mul` and `div` by a known value, `sum`, `mean`, `at` by index data, `matmul` with data) become the
  * affine operators of the engine (`plus`, `difference`, `times-constant`, `sum`, `linear`, `dot-constant`); the product of
  * two random values is the `product` factor on a new variable, and `at(components, z)` with a categorical latent `z` (or
@@ -227,6 +231,7 @@ const MESSAGE_FAMILY: Readonly<Record<string, FamilyKind>> = {
   dirichlet: 'dirichlet',
   bernoulli: 'bernoulli',
   categorical: 'discrete',
+  multivariateNormal: 'gaussian-mv',
 }
 
 /** The factor operator a registry name maps to: the model operator's own `factor`, else its name. */
@@ -927,6 +932,10 @@ class Compiler {
       this.latentNormal(node)
       return
     }
+    if (fam === 'multivariateNormal') {
+      this.latentMultivariateNormal(node)
+      return
+    }
     if (fam === 'bernoulli' || fam === 'categorical') {
       this.latentDiscrete(node)
       return
@@ -958,6 +967,54 @@ class Compiler {
     }
     this.syms.set(node.name, { dims: node.dims, cells })
     this.layout(node, 'latent', kind, node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+  }
+
+  /**
+   * A multivariate normal latent with a known mean and covariance (a Gaussian process prior over the inputs of the data: the
+   * covariance a constant Gram matrix, or given by its Cholesky factor `scaleTril`): one `gaussian-mv` variable with a
+   * dense `gaussian-mv` prior, whose components the likelihood reads (`probit(f)`, `logits`, a Gaussian row), so the
+   * correlations between the elements are kept and the engines see a dense Gaussian vector.
+   */
+  private latentMultivariateNormal(node: ModelNode & { readonly kind: 'latent' }): void {
+    const shape = this.shapeOf(node.dims)
+    const n = prod(shape)
+    if (node.dims.length !== 1)
+      throw new Refusal('structure', `'${node.name}' is a multivariateNormal: one vector over one dimension is mapped`)
+    const params = node.dist.params
+    const known = (e: ExprSpec | undefined, what: string): number[] => {
+      if (e === undefined || !this.isConst(e))
+        throw new Refusal(
+          'operator',
+          `the ${what} of '${node.name}' depends on a random value: a known matrix is mapped`,
+        )
+      return Array.from(toFlat(this.evalNamed(e).value))
+    }
+    const loc = known(params['loc'], 'mean')
+    const mean = loc.length === 1 ? new Array<number>(n).fill(loc[0] ?? 0) : loc
+    let cov: number[]
+    if (params['covariance'] !== undefined) cov = known(params['covariance'], 'covariance')
+    else if (params['scaleTril'] !== undefined) {
+      const L = known(params['scaleTril'], 'scale factor')
+      cov = new Array<number>(n * n).fill(0)
+      for (let i = 0; i < n; i++)
+        for (let j = 0; j < n; j++) {
+          let v = 0
+          for (let k = 0; k <= Math.min(i, j); k++) v += (L[i * n + k] ?? 0) * (L[j * n + k] ?? 0)
+          cov[i * n + j] = v
+        }
+    } else
+      throw new Refusal(
+        'structure',
+        `'${node.name}' is a multivariateNormal with a precision: give a covariance or scaleTril`,
+      )
+    if (cov.length !== n * n) throw new Refusal('structure', `the covariance of '${node.name}' is not ${n} by ${n}`)
+    this.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
+    this.addFactor(gaussianMvPrior(node.name, mean, cov), node.name)
+    this.syms.set(node.name, {
+      dims: node.dims,
+      cells: Array.from({ length: n }, (_, j) => this.compAtom(node.name, j, n)),
+    })
+    this.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)
   }
 
   private latentNormal(node: ModelNode & { readonly kind: 'latent' }): void {
