@@ -12,24 +12,15 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
-import { mixture, mixtureSameFamily } from '../../dists/compose/index.ts'
-import {
-  beta as betaDist,
-  bijectors,
-  type Distribution,
-  gamma as gammaDist,
-  multivariateNormal,
-  normal,
-} from '../../dists/index.ts'
+import { bijectors, type Distribution } from '../../dists/index.ts'
 import {
   type CompiledGraph,
   compileGraph,
   epAlgorithm,
   defaultOperators as factorOperators,
 } from '../../message-passing/index.ts'
-import { uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
 import { type DictSpace, dict, int, real } from '../../space/index.ts'
-import { fromStorage, item, type Tensor, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import { item, tensor, type Value } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -51,22 +42,15 @@ import {
 } from '../model/factors.ts'
 import type { ExprSpec, ModelNode, ModelSpec } from '../model/spec.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
+import { recordOf, type SiteRecord, siteMixturePosterior } from './_site-mixture.ts'
 import { isProgramAnalysis, type MethodModel, type ModelAnalysis, no, num, posteriorJson, yes } from './_support.ts'
 import { defineInferenceMethod, type InferenceMethod, type Verdict } from './method.ts'
 
 /** The paths the grid method logs. */
 export type EpGridPath = 'ep-grid/nodes' | 'ep-grid/logEvidence' | 'ep-grid/sweeps' | 'ep-grid/snapshot'
 
-/** What one node keeps of a site's belief: enough to rebuild the marginal and to mix it. */
-export interface GridSiteRecord {
-  /** The family the belief was in (`normal`, `multivariateNormal`, `gamma`, `beta`), or `moments` for any other (read as a moment-matched normal). */
-  readonly kind: 'normal' | 'multivariateNormal' | 'gamma' | 'beta' | 'moments'
-  readonly shape: readonly number[]
-  readonly mean: readonly number[]
-  readonly variance: readonly number[]
-  /** The covariance of a vector site, row-major. */
-  readonly covariance?: readonly number[]
-}
+/** What one node keeps of a site's belief (see `SiteRecord`). */
+export type GridSiteRecord = SiteRecord
 
 /** One run of EP at a value of the hyperparameters. */
 export interface GridNode {
@@ -263,39 +247,6 @@ function firstNodes(axes: readonly GridAxis[]): number[][] {
   })
 }
 
-/** What a node keeps of a distribution of a site. */
-function recordOf(d: Distribution): GridSiteRecord {
-  const mean = Array.from(toFlat(d.mean()))
-  const variance = Array.from(toFlat(d.variance()))
-  const shape = [...d.batchShape, ...d.eventShape]
-  const cov = (d as unknown as { covariance?: () => Tensor }).covariance
-  if (d.name === 'multivariateNormal' && cov !== undefined)
-    return { kind: 'multivariateNormal', shape, mean, variance, covariance: Array.from(toFlat(cov.call(d))) }
-  const kind = d.name === 'normal' || d.name === 'gamma' || d.name === 'beta' ? d.name : 'moments'
-  return { kind, shape, mean, variance }
-}
-
-/** The distribution a record stands for. */
-function distributionOf(r: GridSiteRecord): Distribution {
-  const t = (xs: readonly number[]): Tensor => fromStorage(Float64Array.from(xs), [...r.shape], 'float64')
-  if (r.kind === 'multivariateNormal' && r.covariance !== undefined) {
-    const n = r.mean.length
-    const cov = fromStorage(Float64Array.from(r.covariance), [n, n], 'float64')
-    return multivariateNormal(t(r.mean), { covariance: cov })
-  }
-  const sd = r.variance.map((v) => Math.sqrt(Math.max(v, 1e-300)))
-  if (r.kind === 'gamma')
-    return gammaDist(
-      t(r.mean.map((m, i) => (m * m) / (r.variance[i] ?? 1))),
-      t(r.mean.map((m, i) => m / (r.variance[i] ?? 1))),
-    )
-  if (r.kind === 'beta') {
-    const common = r.mean.map((m, i) => (m * (1 - m)) / (r.variance[i] ?? 1) - 1)
-    return betaDist(t(r.mean.map((m, i) => m * (common[i] ?? 1))), t(r.mean.map((m, i) => (1 - m) * (common[i] ?? 1))))
-  }
-  return normal(t(r.mean), t(sd))
-}
-
 /** The normalised weights of the nodes: the evidence of each EP run times the prior density, with the width of the cell of each node. */
 function nodeWeights(state: EpGridState): { readonly logWeights: Float64Array; readonly logEvidence: number } {
   const nodes = state.nodes
@@ -458,64 +409,24 @@ export function epGridMethod(
         diagnostics: { reason: 'no node run yet' },
       })
     const { logWeights, logEvidence } = nodeWeights(state)
-    const w = Array.from(logWeights, (l) => Math.exp(l))
-    const hyperSites = state.axes.map((a) => a.name)
-    const first = state.nodes[0]
-    const siteNames = Object.keys(first?.sites ?? {})
-    const marginals: Record<string, Distribution> = {}
-    for (const s of siteNames) {
-      const records = state.nodes.map((n) => n.sites[s] as GridSiteRecord)
-      const record = first?.sites[s] as GridSiteRecord
-      marginals[s] =
-        record.kind === 'multivariateNormal'
-          ? mixture({ probs: w }, records.map(distributionOf))
-          : mixtureSameFamily({ probs: w }, stackBatch(records, record.shape))
-    }
-    const draws: Record<string, Tensor> = {}
-    hyperSites.forEach((h, k) => {
-      draws[h] = tensor(state.nodes.map((n) => n.x[k] as number))
-    })
-    const total = state.nodes.length + state.pending.length
     const converged = state.nodes.filter((n) => n.converged).length
-    const sampler = (key: Key, n: number): Record<string, Tensor> => {
-      const picks = chooseNodes(foldIn(key, 0), w, n)
-      const byNode = new Map<number, number[]>()
-      for (const [at, node] of picks.entries()) byNode.set(node, [...(byNode.get(node) ?? []), at])
-      const out: Record<string, Tensor> = {}
-      for (const [si, s] of siteNames.entries()) {
-        const shape = [...(first?.sites[s]?.shape ?? [])]
-        const size = shape.reduce((a, b) => a * b, 1)
-        const flat = new Float64Array(n * size)
-        for (const [node, positions] of byNode) {
-          const d = distributionOf((state.nodes[node] as GridNode).sites[s] as GridSiteRecord)
-          const drawn = toFlat(d.sample(foldIn(key, 1 + si * 100003 + node), [positions.length]))
-          for (const [j, at] of positions.entries()) flat.set(drawn.slice(j * size, (j + 1) * size), at * size)
-        }
-        out[s] = fromStorage(flat, [n, ...shape], 'float64')
-      }
-      for (const [k, h] of hyperSites.entries())
-        out[h] = tensor(picks.map((i) => (state.nodes[i] as GridNode).x[k] as number))
-      return out
-    }
-    return definePosterior({
-      form: 'variational',
+    const values: Record<string, number[]> = {}
+    for (const [k, a] of state.axes.entries()) values[a.name] = state.nodes.map((n) => n.x[k] as number)
+    return siteMixturePosterior({
       engine: name,
-      sites: [...hyperSites, ...siteNames],
       status: state.pending.length === 0 ? (converged === state.nodes.length ? 'converged' : 'completed') : 'stopped',
       logEvidence: { value: logEvidence, method: 'ep-grid' },
       diagnostics: {
         nodes: state.nodes.length,
-        planned: total,
+        planned: state.nodes.length + state.pending.length,
         converged,
         extensions: state.extensions,
-        hyperparameters: hyperSites,
-        effectiveNodes: 1 / w.reduce((a, v) => a + v * v, 0),
+        hyperparameters: state.axes.map((a) => a.name),
         tol: num(config, 'tol'),
       },
-      marginals,
-      draws,
-      logWeights: Array.from(logWeights),
-      sampler,
+      weights: Array.from(logWeights, (l) => Math.exp(l)),
+      runs: state.nodes.map((n) => n.sites),
+      values,
     })
   }
 
@@ -629,52 +540,4 @@ function extend(state: EpGridState, edge: number, maxNodes: number, points: numb
     .filter((t) => !have.has(t.join(',')))
     .slice(0, Math.max(0, maxNodes - state.nodes.length))
   return { ...state, axes, pending: fresh, extensions: state.extensions + 1 }
-}
-
-/** A distribution with the nodes as the last batch axis: the components of a mixture over one batched family (a site of the same shape at every node). */
-function stackBatch(records: readonly GridSiteRecord[], shape: readonly number[]): Distribution {
-  const first = records[0]
-  if (first === undefined) throw new OmaiError('value', 'ep-grid: no nodes')
-  const size = shape.reduce((a, b) => a * b, 1)
-  const stack = (f: (r: GridSiteRecord, i: number) => number): Tensor => {
-    const k = records.length
-    const flat = new Float64Array(size * k)
-    records.forEach((r, j) => {
-      for (let i = 0; i < size; i++) flat[i * k + j] = f(r, i)
-    })
-    return fromStorage(flat, [...shape, k], 'float64')
-  }
-  const m = (r: GridSiteRecord, i: number): number => r.mean[i] ?? 0
-  const v = (r: GridSiteRecord, i: number): number => Math.max(r.variance[i] ?? 0, 1e-300)
-  if (first.kind === 'gamma')
-    return gammaDist(
-      stack((r, i) => (m(r, i) * m(r, i)) / v(r, i)),
-      stack((r, i) => m(r, i) / v(r, i)),
-    )
-  if (first.kind === 'beta') {
-    const common = (r: GridSiteRecord, i: number): number => (m(r, i) * (1 - m(r, i))) / v(r, i) - 1
-    return betaDist(
-      stack((r, i) => m(r, i) * common(r, i)),
-      stack((r, i) => (1 - m(r, i)) * common(r, i)),
-    )
-  }
-  return normal(
-    stack(m),
-    stack((r, i) => Math.sqrt(v(r, i))),
-  )
-}
-
-/** `n` indices drawn by the weights, by inversion of the cumulative sum at uniform points. */
-function chooseNodes(key: Key, weights: readonly number[], n: number): number[] {
-  const cum: number[] = []
-  let total = 0
-  for (const w of weights) {
-    total += w
-    cum.push(total)
-  }
-  const u = toFlat(drawUniform(key, [n]))
-  return Array.from({ length: n }, (_, i) => {
-    const at = cum.findIndex((c) => c >= (u[i] ?? 0) * total)
-    return at < 0 ? weights.length - 1 : at
-  })
 }

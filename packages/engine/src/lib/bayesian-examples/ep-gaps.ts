@@ -176,11 +176,11 @@ export const epGaps: readonly EpGap[] = [
     id: 'multimodal',
     title: 'One Gaussian per variable cannot show two modes',
     kind: 'quality',
-    status: 'open',
+    status: 'investigating',
     summary:
-      'On a bimodal or label-ambiguous posterior (clutter, overlapping mixture components, a regime that is hardly visited) EP commits to one reading and reports a narrow spread: the changepoint program with an unvisited regime gives rate spreads 0.05 to 0.3 of the reference and 70% regime accuracy. Measured: power EP, alpha-divergences (alpha down to 0.3), damping and stochastic EP do not restore calibration (docs/probprog/ep-plan.md section 11): the posterior over which steps belong to a rarely visited regime is multimodal and one message per variable cannot hold that. The relabelling of regimes whose likelihoods are alike is the one multimodal case damping does fix: on the changepoint program with learned transitions (100 steps) undamped EP took the swapped labelling on 3 of 30 seeds with every regime visited (and 2 more with a regime of under 15 steps), damping by half on none, while the seeds with a regime of under 6 steps stay wrong (EP within 0.05 of Gibbs on 1 of 6 such seeds of 24, two did not converge).',
-    plan: 'Several EP runs from different starts weighted by their evidence (needs the log evidence of the rules), or a mixture-of-Gaussians belief per variable; for the label problem a Gibbs or SMC pass as the reference and a warning on the page; the explicit gate already reports the probability of each branch.',
-    size: 'large',
+      "On a bimodal or label-ambiguous posterior (clutter, overlapping mixture components, a regime that is hardly visited) one EP run commits to one reading and reports a narrow spread: the changepoint program with an unvisited regime gives rate spreads 0.05 to 0.3 of the reference. Power EP, alpha-divergences, damping and stochastic EP do not restore calibration (docs/probprog/ep-plan.md section 11). EP from several starts weighted by evidence (`epMultiStartMethod`, section 15) does for the regime that nobody visits: the spread of its rate goes from 0.05 to 0.15 of the sampler's to 0.65 to 0.94 on seeds 2, 5 and 8, the means within 0.2 sampler sds. It also finds the relabelled modes of the visited regimes (the broad priors only weakly prefer one labelling, 1.4 to 8 nats), so on seed 1, where one run is exact, the mixture is wider than the sampler that was started in the data-ordered mode (the truth is inside every interval); the spreads of the other rates, which the sampler also gets from label switching, are not recovered on seeds 2 and 8.",
+    plan: 'Starts that permute the labels of the regimes (the relabellings of a mode have its evidence, so each adds a copy of the mode) and starts from the data (the regimes ordered by the counts they explain); a mixture-of-Gaussians belief per variable so that one run holds several modes; the explicit gate already reports the probability of each branch.',
+    size: 'medium',
     refuses: [],
   },
   {

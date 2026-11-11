@@ -74,7 +74,7 @@ omai-engine/pgm/causal	59	1dc2cc4bcf4f
 omai-engine/pgm/learning	123	a9e76fe66003
 omai-engine/problems	55	af621d373b9a
 omai-engine/probprog	354	5a9b5acf1538
-omai-engine/probprog/inference	180	8bc078fc5f8e
+omai-engine/probprog/inference	186	e8b0bd9b6f98
 omai-engine/probprog/model	163	a61212851326
 omai-engine/probprog/model/dists	30	825f4add107c
 omai-engine/probprog/models	161	0af64dda639a
@@ -126,4 +126,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	303	541cc98902e2
-total	20229	c7b967d42279
+total	20235	b88692a71ae4

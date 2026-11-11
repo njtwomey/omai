@@ -17,13 +17,10 @@
 import { OmaiError } from '../../base/index.ts'
 import {
   bpMethod,
-  type CompiledGraph,
-  compileGraph,
   defaultsOf,
   type EpPath,
   epDefaults,
   epMethod,
-  defaultOperators as factorOperators,
   type MpState,
   messagePassingKnobs,
   mpVerdict,
@@ -33,16 +30,18 @@ import {
   vmpMethod,
 } from '../../message-passing/index.ts'
 import { type Config, type Contract, defineContract, derived, Log } from '../../trace/index.ts'
-import { analyseSpec } from '../model/analysis.ts'
-import {
-  type FactorGraphCompilation,
-  factorGraphPosterior,
-  factorGraphVerdict,
-  type MessageRule,
-  toFactorGraph,
-} from '../model/factors.ts'
+import { factorGraphPosterior, factorGraphVerdict, type MessageRule } from '../model/factors.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
-import { guard, isProgramAnalysis, type MethodModel, type ModelAnalysis, no, posteriorJson, yes } from './_support.ts'
+import {
+  guard,
+  isProgramAnalysis,
+  type MethodModel,
+  type ModelAnalysis,
+  no,
+  posteriorJson,
+  prepare,
+  yes,
+} from './_support.ts'
 import { defineInferenceMethod, type InferenceMethod, type Verdict } from './method.ts'
 
 /** The paths an expectation propagation or belief propagation method logs: the engine's, and the posterior of a state as JSON. */
@@ -55,13 +54,6 @@ const TITLE: Readonly<Record<MessageRule, string>> = {
   ep: 'expectation propagation',
   vmp: 'variational message passing',
   bp: 'belief propagation',
-}
-
-/** What a model compiles to, made once per method: the compilation, its graph, and the reason when it has none. */
-interface Prepared {
-  readonly compiled: FactorGraphCompilation
-  readonly graph: CompiledGraph | undefined
-  readonly failure: string | undefined
 }
 
 /** What the compiler of a spec method is told: whether the rows of a regression become one plated factor or a factor each. */
@@ -82,17 +74,6 @@ export interface MpSpecOptions {
    * kept. Default false for the others (a variational method over a joint vector is not mean-field).
    */
   readonly packScalars?: boolean
-}
-
-function prepare(model: MethodModel, plates: 'vectorise' | 'expand', packScalars: boolean): Prepared | undefined {
-  if (typeof model === 'function') return undefined
-  const compiled = toFactorGraph(model, { analysis: analyseSpec(model), plates, packScalars })
-  if (compiled.graph === undefined) return { compiled, graph: undefined, failure: undefined }
-  try {
-    return { compiled, graph: compileGraph(compiled.graph, factorOperators()), failure: undefined }
-  } catch (e) {
-    return { compiled, graph: undefined, failure: e instanceof Error ? e.message : String(e) }
-  }
 }
 
 /** What the analysis alone says, before the graph is built: the features a message-passing method needs. */
