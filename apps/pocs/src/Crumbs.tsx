@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from '../../site/src/shell/Link.tsx'
 import { navigate } from '../../site/src/shell/router.ts'
 import { GROUPS } from './groups.ts'
-import { groupPocs } from './poc.ts'
+import { groupPocs, searchPocs } from './poc.ts'
 import { POCS } from './registry.ts'
 
 const SWITCH =
@@ -59,9 +59,48 @@ function Crumb(props: {
   )
 }
 
+/** A previous or next arrow: a link to the neighbouring example, or a dimmed arrow at the end of the list. */
+function Step(props: {
+  readonly to: string | undefined
+  readonly label: string
+  readonly title: string | undefined
+  readonly direction: 'previous' | 'next'
+}): ReactNode {
+  const arrow = (
+    <svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      aria-hidden="true"
+    >
+      <path d={props.direction === 'previous' ? 'm15 6-6 6 6 6' : 'm9 6 6 6-6 6'} />
+    </svg>
+  )
+  const base = 'flex size-7 shrink-0 items-center justify-center rounded-md'
+  if (props.to === undefined)
+    return (
+      <span aria-hidden="true" className={`${base} text-muted opacity-30`}>
+        {arrow}
+      </span>
+    )
+  return (
+    <Link
+      to={props.to}
+      title={`${props.label}: ${props.title ?? ''}`}
+      className={`${base} text-muted hover:bg-surface hover:text-fg`}
+    >
+      {arrow}
+      <span className="sr-only">{props.label}</span>
+    </Link>
+  )
+}
+
 /**
  * The trail in the top bar: home, then the group and the example with a drop-down each, so a move between groups or between
- * examples is one choice from anywhere.
+ * examples is one choice from anywhere, and previous and next arrows to go through a group one example after another.
  *
  * @param props - The current group and example slugs, when there are any.
  * @returns The trail.
@@ -70,7 +109,13 @@ export function Crumbs(props: { readonly group?: string | undefined; readonly sl
   const entry = props.slug === undefined ? undefined : POCS.find((p) => p.slug === props.slug)
   const group = entry?.group ?? props.group
   const sections = groupPocs(POCS, GROUPS)
-  const siblings = POCS.filter((p) => p.group === group)
+  const siblings = searchPocs(
+    POCS.filter((p) => p.group === group),
+    '',
+  )
+  const at = entry === undefined ? -1 : siblings.findIndex((p) => p.slug === entry.slug)
+  const previous = at > 0 ? siblings[at - 1] : undefined
+  const next = at >= 0 ? siblings[at + 1] : undefined
   const sep = <span className="text-muted">/</span>
   return (
     <nav aria-label="Where you are" className="flex min-w-0 items-center gap-1 text-sm">
@@ -100,6 +145,18 @@ export function Crumbs(props: { readonly group?: string | undefined; readonly sl
             options={siblings.map((p) => ({ value: p.slug, label: p.title }))}
             onSwitch={(v) => navigate(`/poc/${v}`)}
             current
+          />
+          <Step
+            to={previous === undefined ? undefined : `/poc/${previous.slug}`}
+            label="Previous example"
+            title={previous?.title}
+            direction="previous"
+          />
+          <Step
+            to={next === undefined ? undefined : `/poc/${next.slug}`}
+            label="Next example"
+            title={next?.title}
+            direction="next"
           />
         </>
       )}

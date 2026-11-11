@@ -27,8 +27,10 @@ export function Shell(props: {
   readonly brand?: string
   /** Breadcrumbs shown after the name in the top bar (the proofs of concept app's trail: group and page, each a drop-down). */
   readonly crumbs?: ReactNode
+  /** Whether the top bar links to the source on GitHub (default true; the proofs of concept app leaves it out). */
+  readonly showSource?: boolean
 }): ReactNode {
-  const { path, children, sidebar, sections = SECTIONS, brand = 'omai', crumbs } = props
+  const { path, children, sidebar, sections = SECTIONS, brand = 'omai', crumbs, showSource = true } = props
   // On narrow screens the sidebar is a drawer, closed again by navigating.
   const [drawer, setDrawer] = useState(false)
   // biome-ignore lint/correctness/useExhaustiveDependencies: close on every change of page
@@ -79,25 +81,27 @@ export function Shell(props: {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          <a
-            href="https://github.com/njtwomey/omai"
-            aria-label="Source on GitHub"
-            title="Source on GitHub"
-            className="rounded-md p-1.5 text-muted hover:bg-surface hover:text-fg"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
+          {showSource ? (
+            <a
+              href="https://github.com/njtwomey/omai"
+              aria-label="Source on GitHub"
+              title="Source on GitHub"
+              className="rounded-md p-1.5 text-muted hover:bg-surface hover:text-fg"
             >
-              <path d="m16 18 6-6-6-6M8 6l-6 6 6 6" />
-            </svg>
-            <span className="sr-only">Source on GitHub</span>
-          </a>
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+              >
+                <path d="m16 18 6-6-6-6M8 6l-6 6 6 6" />
+              </svg>
+              <span className="sr-only">Source on GitHub</span>
+            </a>
+          ) : null}
           <ColourToggle />
         </div>
       </header>
