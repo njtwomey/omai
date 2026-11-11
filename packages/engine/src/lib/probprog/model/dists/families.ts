@@ -521,7 +521,7 @@ export function distributionFamilies(): Record<string, FamilyDef> {
         return multivariateNormal(need('bivariateNormal', a, 'loc'), { scaleTril: stack([top, bottom], -2) })
       },
       { loc: [0, 0], scale1: 1, scale2: 1, rho: 0.3 },
-      { eventRank: 1, messagePassing: true },
+      { eventRank: 1, exponentialFamily: true, messagePassing: true },
     ),
   ]
   return Object.fromEntries(defs.map((d) => [d.name, d]))
