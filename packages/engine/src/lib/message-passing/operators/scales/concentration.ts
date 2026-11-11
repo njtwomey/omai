@@ -11,7 +11,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg } from '../../core/_messages.ts'
+import { arg, evidenceOrNaN } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -240,13 +240,9 @@ export const dirichletConcentration: FactorOperator = {
     return { message: siteMessage(gamma, etaOf(arg(c, 1)) as Eta, [t.t, t.alpha]) }
   },
   logEvidence: (c) => {
-    try {
+    return evidenceOrNaN(() => {
       return tilt(c).logZ
-    } catch (e) {
-      // At the start of a run the messages have no density yet: no evidence to report.
-      if (e instanceof ImproperMessageError) return Number.NaN
-      throw e
-    }
+    })
   },
 }
 
@@ -349,11 +345,8 @@ export const betaTwoShapes: FactorOperator = {
   },
   logEvidence: (c) => {
     if (!allProper(c.args)) return Number.NaN
-    try {
+    return evidenceOrNaN(() => {
       return twoShapes(c).logMass + massOf(arg(c, 1)) + massOf(arg(c, 2))
-    } catch (e) {
-      if (e instanceof ImproperMessageError) return Number.NaN
-      throw e
-    }
+    })
   },
 }

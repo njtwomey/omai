@@ -11,7 +11,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg } from '../../core/_messages.ts'
+import { arg, evidenceOrNaN } from '../../core/_messages.ts'
 import { etaOf, gaussianSiteMessage, ImproperMessageError, siteMessage } from '../../core/args.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
 import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
@@ -122,12 +122,6 @@ export const gaussianMvFunctionScale: FactorOperator = {
     return { message: gaussianSiteMessage(etaOf(input), t.logLambda, Math.max(t.sdLogLambda ** 2, 1e-300)) }
   },
   logEvidence: (c) => {
-    try {
-      return functionScaleTilt(c).logZ
-    } catch (err) {
-      // A message with no density yet (the flat start of a run) has no evidence.
-      if (err instanceof ImproperMessageError) return Number.NaN
-      throw err
-    }
+    return evidenceOrNaN(() => functionScaleTilt(c).logZ)
   },
 }

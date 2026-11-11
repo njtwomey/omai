@@ -9,7 +9,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg } from '../../core/_messages.ts'
+import { arg, evidenceOrNaN } from '../../core/_messages.ts'
 import { etaOf, ImproperMessageError, siteMessage, vectorParam } from '../../core/args.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
@@ -297,13 +297,9 @@ export const gaussianMvPrecisionScale: FactorOperator = {
     return { message: [0.5 * active, -0.5 * quad] }
   },
   logEvidence: (c) => {
-    try {
+    return evidenceOrNaN(() => {
       return scaleTilt(c).logZ
-    } catch (err) {
-      // A message with no density yet (the flat start of a run) has no evidence.
-      if (err instanceof ImproperMessageError) return Number.NaN
-      throw err
-    }
+    })
   },
   expectedLog: (c) => {
     const { scale, offset } = precisions(c)

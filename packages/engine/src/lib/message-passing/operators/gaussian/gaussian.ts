@@ -6,7 +6,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg } from '../../core/_messages.ts'
+import { arg, evidenceOrNaN } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -295,14 +295,11 @@ export const gaussianGammaPrecision: FactorOperator = {
   // The integral of the cavities (unnormalised, so their masses are in it) times the factor: the Gaussian cavities' masses and the
   // grid's integral over the precision, in which the gamma cavity's unnormalised density is already part of the weight.
   logEvidence: (c) => {
-    try {
+    return evidenceOrNaN(() => {
       const { scale, offset } = precisionParams(c.params)
       const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset)
       return massOf(arg(c, 0)) + massOf(arg(c, 1)) + tilt.logZ
-    } catch (err) {
-      if (err instanceof ImproperMessageError) return Number.NaN
-      throw err
-    }
+    })
   },
   expectedLog: (c) => {
     const { scale, offset } = precisionParams(c.params)

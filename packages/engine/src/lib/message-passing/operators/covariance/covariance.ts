@@ -9,7 +9,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg } from '../../core/_messages.ts'
+import { arg, evidenceOrNaN } from '../../core/_messages.ts'
 import { ImproperMessageError, rawSum, siteMessage, vectorOf } from '../../core/args.ts'
 import { normalWishart, wishart, wishartParams } from '../../core/families-matrix.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
@@ -291,12 +291,9 @@ export const mvnWishart: FactorOperator = {
       const r = Array.from(x.mean, (v, i) => v - (mean.mean[i] as number))
       return family.logPartition(rawSum(w.eta as Eta, conjugateMessage(r, d, rows))) - 0.5 * rows.count * d * LOG_2PI
     }
-    try {
+    return evidenceOrNaN(() => {
       return tiltOver(w.eta as Eta, evaluatorOf(x, mean, d, rows), x, mean, d, rows).logZ
-    } catch (err) {
-      if (err instanceof ImproperMessageError) return Number.NaN
-      throw err
-    }
+    })
   },
 }
 

@@ -10,7 +10,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg } from '../../core/_messages.ts'
+import { arg, evidenceOrNaN } from '../../core/_messages.ts'
 import { ImproperMessageError, siteMessage } from '../../core/args.ts'
 import { beta, gamma } from '../../core/families.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
@@ -177,7 +177,7 @@ export const mvnSdCorr: FactorOperator = {
   },
   logEvidence: (c) => {
     if (c.args.some((a) => a.eta !== undefined && !a.family.isProper(a.eta))) return Number.NaN
-    try {
+    return evidenceOrNaN(() => {
       const { grid } = tilt(c, rowsOf(c.params, 2))
       let logZ = grid.logMass
       for (const i of [2, 3, 4]) {
@@ -185,9 +185,6 @@ export const mvnSdCorr: FactorOperator = {
         if (a.eta !== undefined) logZ += a.family.logPartition(a.eta)
       }
       return logZ
-    } catch (err) {
-      if (err instanceof ImproperMessageError) return Number.NaN
-      throw err
-    }
+    })
   },
 }

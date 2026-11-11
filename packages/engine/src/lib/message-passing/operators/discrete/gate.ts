@@ -14,7 +14,7 @@
  */
 
 import { type Json, logSumExpOf, OmaiError } from '../../../base/index.ts'
-import { arg } from '../../core/_messages.ts'
+import { arg, evidenceOrNaN } from '../../core/_messages.ts'
 import { etaOf, ImproperMessageError, massOf, numberParam, scalarOf, valueArg } from '../../core/args.ts'
 import { gaussian } from '../../core/families.ts'
 import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
@@ -280,17 +280,14 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
       return { message: out }
     },
     logEvidence: (c) => {
-      try {
+      return evidenceOrNaN(() => {
         const branches = branchesOf(c.params)
         const pz = stateProbabilities(arg(c, 0), branches.length)
         const terms = branches.map((b, i) => Math.log(pz[i] ?? 0) + logBranch(c, b))
         let total = massOf(arg(c, 0))
         for (let i = 1; i < c.args.length; i++) total += massOf(arg(c, i))
         return total + logSumExpOf(terms)
-      } catch (err) {
-        if (err instanceof ImproperMessageError) return Number.NaN
-        throw err
-      }
+      })
     },
     expectedLog: (c) => {
       const branches = branchesOf(c.params)

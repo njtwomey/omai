@@ -8,7 +8,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg } from '../../core/_messages.ts'
+import { arg, evidenceOrNaN } from '../../core/_messages.ts'
 import { etaOf, ImproperMessageError, numberParam, siteMessage } from '../../core/args.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
@@ -148,16 +148,13 @@ export const gammaRate: FactorOperator = {
     )
   },
   logEvidence: (c) => {
-    try {
+    return evidenceOrNaN(() => {
       const { shape: a, scale } = rateParams(c)
       const x = gammaShapeRate(etaOf(arg(c, 0)))
       const s = x.shape + a - 1
       // The integral over x is Gamma(s) / (beta_x + c r)^s, and the grid integrates the rest against the (unnormalised) cavity of r.
       return pairTilt(etaOf(arg(c, 1)), a, x.rate, scale, s).logZ + a * Math.log(scale) - lgammaOf(a) + lgammaOf(s)
-    } catch (err) {
-      if (err instanceof ImproperMessageError) return Number.NaN
-      throw err
-    }
+    })
   },
 }
 
@@ -216,16 +213,13 @@ export const gammaProduct: FactorOperator = {
     return { message: siteMessage(gamma, etaOf(arg(c, c.to)), moments(c.to)) }
   },
   logEvidence: (c) => {
-    try {
+    return evidenceOrNaN(() => {
       const p = gammaShapeRate(etaOf(arg(c, 0)))
       const properGamma = (i: number): boolean => gamma.isProper(etaOf(arg(c, i)))
       const [gi, hi] = properGamma(1) ? [1, 2] : [2, 1]
       const h = gammaShapeRate(etaOf(arg(c, hi)))
       const t = pairTilt(etaOf(arg(c, gi)), p.shape - 1, h.rate, p.rate, h.shape + p.shape - 1)
       return t.logZ + lgammaOf(h.shape + p.shape - 1)
-    } catch (err) {
-      if (err instanceof ImproperMessageError) return Number.NaN
-      throw err
-    }
+    })
   },
 }
