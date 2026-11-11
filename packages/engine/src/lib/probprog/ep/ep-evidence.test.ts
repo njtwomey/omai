@@ -60,9 +60,21 @@ const CASES: readonly (readonly [string, number, string])[] = [
     'the summed-out outlier mixture with a learned scale and share: a hidden switch per observation under a gate (0.02 measured)',
   ],
   ['softmax-regression', 0.5, 'a softmax of three scores shared by every point: loopy, moment matched (0.3 measured)'],
-  ['half-cauchy', 0.3, 'the half-Cauchy prior is projected once on a log scale: the model is not the original one'],
-  ['half-normal', 0.5, 'the half-normal prior is projected once on a log scale: the model is not the original one'],
-  ['prior-uniform-mean', 0.15, 'the uniform prior is projected once on the value: the model is not the original one'],
+  [
+    'half-cauchy',
+    0.03,
+    'the half-Cauchy prior is the exact numeric site on a log scale; the Gaussian belief of the log is the only approximation (0.015 measured, was 0.17 more when the prior was projected once)',
+  ],
+  [
+    'half-normal',
+    0.01,
+    'the half-normal prior is the exact numeric site on a log scale (0.004 measured, was 0.42 more when the prior was projected once)',
+  ],
+  [
+    'prior-uniform-mean',
+    1e-6,
+    'the uniform prior is the exact numeric site on the value, and a Gaussian likelihood makes the posterior a truncated normal: exact (was 0.09 off when projected once)',
+  ],
 ]
 
 describe('the EP log evidence of an atom against its grid evidence', () => {

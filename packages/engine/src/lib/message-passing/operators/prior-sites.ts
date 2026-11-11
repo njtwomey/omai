@@ -59,21 +59,24 @@ function locate(p: Params): WindowHint {
   const kinks = [...(lo > 0 || !log ? finite(lo) : []), ...finite(hi)]
   if (base === 'half-normal' || base === 'half-cauchy') {
     const s = numberParam(p, 'scale')
-    return log ? { centre: Math.log(s), scale: 1, reach: 40, kinks } : { centre: 0, scale: s, reach: 400, kinks }
+    // The left tail of a density of the log is exponential (`e^l`): the whole window is kept, as a zoom onto the mass would cut its variance.
+    return log
+      ? { centre: Math.log(s), scale: 1, reach: 40, kinks, zoom: false }
+      : { centre: 0, scale: s, reach: 400, kinks }
   }
   if (base === 'uniform') {
     if (!log) return { centre: (lo + hi) / 2, scale: (hi - lo) / 2, reach: 1, kinks }
     const top = Math.log(hi)
     return lo > 0
       ? { centre: (Math.log(lo) + top) / 2, scale: (top - Math.log(lo)) / 2, reach: 1, kinks }
-      : { centre: top - 20, scale: 1, reach: 20, kinks }
+      : { centre: top - 20, scale: 1, reach: 20, kinks, zoom: false }
   }
   const s = numberParam(p, 'scale')
   const loc = Math.min(Math.max(numberParam(p, 'loc'), lo), hi)
   if (!log) return { centre: loc, scale: s, reach: 12, kinks }
   // On the log scale a normal near zero (or at most a scale away) looks like a half-normal; one far from zero is narrow in the log.
   return loc <= s
-    ? { centre: Math.log(Math.min(s, hi)), scale: 1, reach: 40, kinks }
+    ? { centre: Math.log(Math.min(s, hi)), scale: 1, reach: 40, kinks, zoom: false }
     : { centre: Math.log(loc), scale: Math.min(1, s / loc), reach: 12, kinks }
 }
 
@@ -122,7 +125,7 @@ const prior: Likelihood = {
  * import { gaussian, gaussianEta, messageArg, priorSite } from 'omai-engine/message-passing'
  * const args = [messageArg(gaussian, gaussianEta(1, 0.25))]
  * const params = { y: 0, base: 'uniform', log: 0, low: 0, high: 2 }
- * priorSite.ep?.({ mode: 'ep', to: 0, args, params, power: 1 }).message.map((v) => v.toFixed(2)) // => ['-0.50', '-3.00']
+ * priorSite.ep?.({ mode: 'ep', to: 0, args, params, power: 1 }).message.map((v) => v.toFixed(2)) // => ['1.17', '1.17']
  * ```
  */
 export const priorSite: FactorOperator = likelihoodSite('prior-site', { prior }, 'prior', { needsDensity: true })

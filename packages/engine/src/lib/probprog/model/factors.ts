@@ -114,7 +114,6 @@ import {
   normalGammaPrior,
   pairLikelihoods,
   priorFactor,
-  projectedPrior,
   projectionOf,
   unaryFunctions,
   type VariableSpec,
@@ -2027,6 +2026,12 @@ class Compiler {
       uniform: ['low', 'high'],
       truncatedNormal: ['loc', 'scale', 'low', 'high'],
     }
+    const bases: Readonly<Record<string, string>> = {
+      halfNormal: 'half-normal',
+      halfCauchy: 'half-cauchy',
+      uniform: 'uniform',
+      truncatedNormal: 'truncated-normal',
+    }
     const values = Object.fromEntries((names[fam] ?? []).map((p) => [p, this.constParam(node, p, `the ${p}`)]))
     const cells: Cell[] = []
     const vars: string[] = []
@@ -2035,44 +2040,36 @@ class Compiler {
     for (let i = 0; i < n; i++) {
       const p = (k: string): number => (values[k] as number[])[i] as number
       const name = this.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'gaussian' } })
-      const density = (x: Float64Array): Float64Array => {
-        const args = Object.fromEntries((names[fam] ?? []).map((k) => [k, asTensor(p(k), 'float64')]))
-        const dist = (this.families[fam] as NonNullable<(typeof this.families)[string]>).make(args)
-        return Float64Array.from(toFlat(dist.logProb(fromStorage(Float64Array.from(x), [x.length], 'float64'))))
-      }
       const low = fam === 'uniform' || fam === 'truncatedNormal' ? p('low') : 0
       const high = fam === 'uniform' || fam === 'truncatedNormal' ? p('high') : Number.POSITIVE_INFINITY
       if (fam === 'logNormal' && !(p('sigma') > 0))
         throw new Refusal('data', `the sigma of '${node.name}' must be positive`)
       const positive = fam === 'halfNormal' || fam === 'halfCauchy' || fam === 'logNormal' || low >= 0
+      // The exact density as a numeric site (`prior-site`): its message is the moment match against the current cavity at every
+      // sweep, so the graph holds the prior itself. Infinite bounds are left out of the parameters (they are JSON).
+      const priorFactor = (variable: string, log: boolean): FactorSpec => ({
+        operator: 'prior-site',
+        args: [variable],
+        params: {
+          y: 0,
+          base: bases[fam] as string,
+          log: log ? 1 : 0,
+          ...(names[fam]?.includes('scale') ? { scale: p('scale') } : {}),
+          ...(fam === 'truncatedNormal' ? { loc: p('loc') } : {}),
+          ...(Number.isFinite(low) && (fam === 'uniform' || fam === 'truncatedNormal') ? { low } : {}),
+          ...(Number.isFinite(high) && (fam === 'uniform' || fam === 'truncatedNormal') ? { high } : {}),
+        },
+      })
       if (positive) {
         const l = this.auxName(node.name, site === undefined ? undefined : site(i))
         this.addVariable({ name: l, family: { kind: 'gaussian' } })
         if (fam === 'logNormal') this.addFactor(gaussianPrior(l, p('mu'), p('sigma') ** 2), l)
-        else {
-          // The density of l = log tau is tau p(tau) at tau = exp(l).
-          const onLog = (x: Float64Array): Float64Array =>
-            density(x.map((v) => Math.exp(v))).map((v, k) => v + (x[k] as number))
-          const scaleGuess = fam === 'uniform' || fam === 'truncatedNormal' ? high : p('scale')
-          this.addFactor(
-            projectedPrior(l, onLog, {
-              support: [
-                low > 0 ? Math.log(low) : Number.NEGATIVE_INFINITY,
-                Number.isFinite(high) ? Math.log(high) : Number.POSITIVE_INFINITY,
-              ],
-              start: Number.isFinite(scaleGuess) && scaleGuess > 0 ? Math.log(scaleGuess) : 0,
-            }),
-            l,
-          )
-        }
+        else this.addFactor(priorFactor(l, true), l)
         this.need('apply')
         this.addFactor({ operator: 'apply', args: [name, l], params: { fn: 'exp' } }, name)
         this.logScale.set(name, l)
         logCells.push(this.varAtom(l))
-      } else {
-        const start = Number.isFinite(low) && Number.isFinite(high) ? (low + high) / 2 : 0
-        this.addFactor(projectedPrior(name, density, { support: [low, high], start }), name)
-      }
+      } else this.addFactor(priorFactor(name, false), name)
       cells.push(this.varAtom(name))
       vars.push(name)
     }
