@@ -18,6 +18,7 @@ import type {
   TiltedRule,
 } from '../types.ts'
 import { allProper, gaussianOf, massOf, scalarOf } from './args.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
 
 /** What {@link numericOperator} builds the operator from. */
 export interface NumericOperatorOptions {
@@ -77,10 +78,15 @@ export function numericOperator(options: NumericOperatorOptions): FactorOperator
     name: options.name,
     description: options.description ?? `a factor given by its log density over ${n} Gaussian variable(s)`,
     ports,
-    support: { ep: 'numeric' },
+    support: { ep: 'numeric', vmp: 'numeric' },
     readsTarget: true,
     power: true,
     tilted,
+    // The mean field of a factor given by its log density: the non-conjugate message (natural gradient of the expected log).
+    vmp: (c) => ({
+      message: numericMessage(quadraturePorts(c.args), c.to, (x) => options.logDensity(x, c.params)),
+    }),
+    expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), (x) => options.logDensity(x, c.params)),
     logEvidence: (c) => (allProper(c.args) ? tilted({ ...c, to: 0 }).logZ : Number.NaN),
   }
 }

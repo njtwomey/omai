@@ -15,6 +15,7 @@ import { ndtr } from '../../numerics/special/_kernels.ts'
 import { gaussianNodes } from '../_quadrature.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../types.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam } from './args.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
 
 /** The nodes per free score for a number of free scores (the grid is their product): the cap keeps a site at some tens of thousands of evaluations. */
 const NODES: Readonly<Record<number, number>> = { 1: 48, 2: 24, 3: 8, 4: 7, 5: 6, 6: 5 }
@@ -209,11 +210,18 @@ function integrate(c: OperatorContext): Tilt {
   return result as Tilt
 }
 
+/** The log probability of the observed class at the scores: the softmax's or the multinomial probit's. */
+function scoreLog(params: Params): (z: readonly number[]) => number {
+  const { y, probit } = classesOf(params)
+  return probit ? (z) => logProbit(z, y) : (z) => logSoftmax(z, y)
+}
+
 /**
  * A categorical outcome with softmax (or multinomial probit) probabilities of Gaussian class scores: one port per class, the
  * parameters `y` (the observed class), `classes` (their number) and `link`. Expectation propagation: the tilted mean and variance of
  * every free score from an adaptive Gauss-Hermite integral over all of them, so the scores of the classes that were not observed
- * hear about each other. It supports a power; variational message passing is not provided.
+ * hear about each other. It supports a power. Variational message passing is non-conjugate (the expected log of a softmax has no
+ * closed form in Gaussian scores): the message to a score is the natural gradient of the expectation by the same product rule.
  *
  * @concept factor-operators
  * @index structure A categorical outcome with softmax or multinomial-probit probabilities of Gaussian class scores (adaptive Gauss-Hermite).
@@ -235,10 +243,13 @@ export const multiclassSite: FactorOperator = {
       accepts: ['gaussian'],
       constant: true,
     })),
-  support: { ep: 'numeric' },
+  support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: true,
   power: true,
-  noRule: { vmp: 'the expected log of a softmax has no conjugate form in Gaussian scores' },
+  // The mean field: the non-conjugate message of log P(y | z) to a score under the beliefs of the others (the grid is a product over
+  // the free scores, with fewer nodes the more there are). The softmax is log-concave in the scores, so the precisions are positive.
+  vmp: (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), c.to, scoreLog(c.params)) }),
+  expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), scoreLog(c.params)),
   check: (params) => {
     try {
       classesOf(params)

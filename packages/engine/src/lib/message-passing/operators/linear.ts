@@ -305,7 +305,7 @@ function dotConstantMessage(c: OperatorContext): OperatorResult {
 /**
  * y = A w for a Gaussian vector w and a constant matrix A (`matrix`, row-major, with as many rows as y has entries): a
  * linear map of a vector. The message to w is exact in natural parameters (`[A' h, A' J A]`); the message to y is the
- * Gaussian pushforward of the moments of w.
+ * Gaussian pushforward of the moments of w. Under variational message passing `y` is defined by `w` (as for `dot-constant`).
  *
  * @concept factor-operators
  * @index structure A Gaussian vector under a constant matrix y = A w.
@@ -325,7 +325,8 @@ export const matmulConstant: FactorOperator = {
     { name: 'y', accepts: ['gaussian-mv'] },
     { name: 'w', accepts: ['gaussian-mv'] },
   ],
-  support: { ep: 'exact' },
+  support: { ep: 'exact', vmp: 'exact' },
+  defines: 0,
   check: (params, families) => {
     const { rows, d } = dimensions(families)
     return vectorParam(params, 'matrix').length === rows * d
@@ -371,6 +372,10 @@ export const matmulConstant: FactorOperator = {
       throw e
     }
   },
+  // The mean field of a deterministic factor: the same function as the EP one, with the cavity of the defined output and the belief
+  // of the input (the message to w is linear in the cavity of y, the pushforward needs the moments of w alone).
+  vmp: (c): OperatorResult => (matmulConstant.ep as NonNullable<FactorOperator['ep']>)(c),
+  expectedLog: () => 0,
   // y = A w is a point mass: the evidence is the masses of the cavities times the density of the cavity of y at the image of w,
   // N(my; A mw, Vy + A Vw A'), a vector normal whose covariance must be positive definite.
   logEvidence: (c) => {

@@ -25,6 +25,7 @@ import {
   siteMessage,
   vectorParam,
 } from './args.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
@@ -46,6 +47,45 @@ function concentrations(c: OperatorContext): { readonly w: readonly number[]; re
       'dirichlet-concentration: weights and offsets are non-negative vectors of one length, never both zero',
     )
   return { w, o }
+}
+
+/** E alpha under the belief of a concentration: a gamma's mean, or the log-normal mean of a Gaussian on its log. */
+function meanShape(a: Arg): number {
+  if (a.family.kind === 'gamma') {
+    const { shape, rate } = gammaShapeRate(etaOf(a))
+    if (!(shape > 0 && rate > 0)) throw new ImproperMessageError('the belief of the concentration has no density')
+    return shape / rate
+  }
+  const g = gaussianOf(a)
+  return Math.exp(g.mean + g.variance / 2)
+}
+
+/** The belief of the probabilities, checked to have a density, and its `E log p_k`. */
+function logMeansOf(a: Arg): readonly number[] {
+  const eta = etaOf(a)
+  if (!a.family.isProper(eta)) throw new ImproperMessageError('the belief of the probabilities has no density')
+  return a.family.moments(eta)
+}
+
+/** The concentration `alpha` a coordinate of the quadrature stands for: a gamma's own value, or the exponential of a Gaussian on the log. */
+const shapeOf = (a: Arg, coord: number): number => (a.family.kind === 'gamma' ? coord : Math.exp(coord))
+
+/** log of the Dirichlet density's `alpha`-dependent part under `E log p`: `lgamma(sum kappa) - sum lgamma(kappa_k) + sum (kappa_k - 1) E log p_k`. */
+function dirichletLog(
+  w: readonly number[],
+  o: readonly number[],
+  logMeans: readonly number[],
+): (alpha: number) => number {
+  return (alpha) => {
+    let total = 0
+    let sum = 0
+    for (let k = 0; k < w.length; k++) {
+      const kappa = (w[k] as number) * alpha + (o[k] as number)
+      total += kappa
+      sum += (kappa - 1) * (logMeans[k] as number) - lgammaOf(kappa)
+    }
+    return lgammaOf(total) + sum
+  }
 }
 
 interface Tilt {
@@ -140,7 +180,8 @@ function tilt(c: OperatorContext): Tilt {
  * or with the parameter `log` a Gaussian variable on `log alpha`: a log-normal concentration); `weights` and `offsets` are the
  * known vectors of the concentration (`[1, 1]` and `[0, 0]` for `Beta(alpha, alpha)`, `[1, 0]` and `[0, 2]` for `Beta(alpha, 2)`).
  * Expectation propagation: a grid in `log alpha` for the tilted moments of the concentration (a gamma or a Gaussian site) and
- * of `E log p` (the Dirichlet or beta site, matched on those). Variational message passing is not provided.
+ * of `E log p` (the Dirichlet or beta site, matched on those). Variational message passing: the message to `p` is the Dirichlet with the
+ * mean concentration; the one to the concentration is non-conjugate (`lgamma` of it), the natural gradient of the expected log density.
  *
  * @concept factor-operators
  * @index structure A beta or Dirichlet variable with a random concentration: a hyperprior on the prior's own strength.
@@ -159,9 +200,26 @@ export const dirichletConcentration: FactorOperator = {
     { name: 'p', accepts: ['beta', 'dirichlet'] },
     { name: 'alpha', accepts: ['gamma', 'gaussian'] },
   ],
-  support: { ep: 'numeric' },
+  support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: () => true,
-  noRule: { vmp: 'the expected log of the Dirichlet normaliser has no conjugate form in the concentration' },
+  // The mean field: to the probabilities the Dirichlet with the mean concentration (exact), to the concentration the natural
+  // gradient of the expected log of the Dirichlet density, which has `lgamma` of the concentration in it (non-conjugate).
+  vmp: (c): OperatorResult => {
+    const { w, o } = concentrations(c)
+    if (c.to === 0) {
+      const mean = meanShape(arg(c, 1))
+      return { message: w.map((v, k) => v * mean + (o[k] as number) - 1) }
+    }
+    const log = dirichletLog(w, o, logMeansOf(arg(c, 0)))
+    const a = arg(c, 1)
+    return { message: numericMessage(quadraturePorts([a]), 0, (x) => log(shapeOf(a, x[0] as number))) }
+  },
+  expectedLog: (c) => {
+    const { w, o } = concentrations(c)
+    const log = dirichletLog(w, o, logMeansOf(arg(c, 0)))
+    const a = arg(c, 1)
+    return numericExpectedLog(quadraturePorts([a]), (x) => log(shapeOf(a, x[0] as number)))
+  },
   check: (params, families) => {
     const log = params['log'] === true
     const kind = families[1]?.spec.kind
@@ -232,12 +290,25 @@ function twoShapes(c: OperatorContext): {
   return { logMass: r.logMass, r, logMeans: [m1, m2] }
 }
 
+/** The expected log of the beta density as a function of the two shapes' coordinates, under the belief of `p`. */
+function betaLog(c: OperatorContext): (x: readonly number[]) => number {
+  const [lp, lq] = logMeansOf(arg(c, 0))
+  const a = arg(c, 1)
+  const b = arg(c, 2)
+  return (x) => {
+    const sa = shapeOf(a, x[0] as number)
+    const sb = shapeOf(b, x[1] as number)
+    return lgammaOf(sa + sb) - lgammaOf(sa) - lgammaOf(sb) + (sa - 1) * (lp as number) + (sb - 1) * (lq as number)
+  }
+}
+
 /**
  * `p ~ Beta(a, b)` for a beta variable `p` whose two shapes are separate random positive values, each a gamma variable or a
  * Gaussian on its log (a log-normal): the tilted distribution of the two shapes is the integral of `B(a + e1, b + e2) / B(a, b)`
  * against their two cavities, on a two-dimensional grid in `(log a, log b)` (the one-dimensional integral of
  * `dirichlet-concentration`, in two variables); `p` is the mixture over the grid of the conditional betas, matched on
- * `E log p` and `E log (1 - p)`. Variational message passing is not provided.
+ * `E log p` and `E log (1 - p)`. Variational message passing: the message to `p` is the beta of the mean shapes (exact), the ones to the
+ * shapes are non-conjugate (`lgamma` of them), the natural gradient of the expected log density by a two-dimensional rule.
  *
  * @concept factor-operators
  * @index structure A beta variable with two random shapes (gamma or log-normal each): a 2-d grid EP site.
@@ -256,10 +327,15 @@ export const betaTwoShapes: FactorOperator = {
     { name: 'a', accepts: ['gamma', 'gaussian'] },
     { name: 'b', accepts: ['gamma', 'gaussian'] },
   ],
-  support: { ep: 'numeric' },
+  support: { ep: 'numeric', vmp: 'numeric' },
   readsTarget: () => true,
   power: true,
-  noRule: { vmp: 'the expected log of the beta normaliser has no conjugate form in the shapes' },
+  vmp: (c): OperatorResult => {
+    if (c.to === 0) return { message: [meanShape(arg(c, 1)) - 1, meanShape(arg(c, 2)) - 1] }
+    const log = betaLog(c)
+    return { message: numericMessage(quadraturePorts([arg(c, 1), arg(c, 2)]), c.to - 1, log) }
+  },
+  expectedLog: (c) => numericExpectedLog(quadraturePorts([arg(c, 1), arg(c, 2)]), betaLog(c)),
   ep: (c): OperatorResult => {
     const t = twoShapes(c)
     if (c.to === 0) {

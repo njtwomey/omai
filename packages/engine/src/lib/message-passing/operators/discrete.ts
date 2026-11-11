@@ -199,7 +199,8 @@ const logOverlap = (f: Family, a: Eta, b: Eta): number => f.logPartition(a.map((
  * variable z (the gate or switch of Infer.NET: a mixture, a regime, a lookup). The EP messages are the moment-matched
  * mixtures: to y the mixture of the cavities' overlaps, to z the overlaps themselves, to c_k the mixture of "y
  * constrains c_k" and "c_k is not selected". Gaussian, gamma, beta or Bernoulli y; the gate z is discrete or Bernoulli
- * (state 0 and 1 select the first and the second component).
+ * (state 0 and 1 select the first and the second component). Variational message passing treats `y` as defined by the components (the mean
+ * field of the model with `y` replaced by the selected one): its belief is their mixture, matched on the family's statistics.
  *
  * @concept factor-operators
  * @index structure The gate y = c_z selecting one of several variables by a discrete index.
@@ -216,8 +217,37 @@ export const select: FactorOperator = {
   name: 'select',
   description: 'y = c_z: select one of several variables by a discrete index',
   ports: selectPorts,
-  support: { ep: 'exact' },
+  support: { ep: 'exact', vmp: 'exact' },
   readsTarget: (to) => to >= 2,
+  // The output is the selected component, so under the mean field it is defined by the others: its belief is the mixture of the
+  // components' beliefs (matched on the family's statistics, which is all a reader of `y` sees), the message to the switch is the
+  // expected log of the output's cavity under each component, and the message to a component is that cavity weighted by the
+  // probability of selecting it: the mean field of the model with `y` replaced by `c_z`.
+  defines: 0,
+  vmp: (c): OperatorResult => {
+    const f = arg(c, 0).family
+    const k = c.args.length - 2
+    const moments = (i: number): Eta => f.moments(etaOf(arg(c, i + 2)))
+    if (c.to === 0) {
+      const weights = selectWeights(arg(c, 1), k)
+      const mixed = new Array<number>(f.size).fill(0)
+      for (let i = 0; i < k; i++) {
+        const m = moments(i)
+        for (let j = 0; j < mixed.length; j++) mixed[j] = (mixed[j] ?? 0) + (weights[i] ?? 0) * (m[j] ?? 0)
+      }
+      return { message: f.fromMoments(mixed) }
+    }
+    const cavity = etaOf(arg(c, 0))
+    if (c.to === 1) {
+      const logs = Array.from({ length: k }, (_, i) => f.pair(cavity, moments(i)))
+      const z = arg(c, 1).family
+      return { message: z.kind === 'bernoulli' ? (z.fromLogProbs?.(logs) as Eta) : logs }
+    }
+    const weights = selectWeights(arg(c, 1), k)
+    const w = weights[c.to - 2] ?? 0
+    return { message: cavity.map((v) => w * v) }
+  },
+  expectedLog: () => 0,
   check: (params, families) => {
     const k = Math.trunc(Number(params['components']))
     const states = families[1]?.kind === 'bernoulli' ? 2 : families[1]?.dim
@@ -303,6 +333,13 @@ export const select: FactorOperator = {
     for (let i = 0; i < k; i++) total += massOf(arg(c, i + 2))
     return total + logSumExpOf(terms)
   },
+}
+
+/** The probabilities of the switch of a select over `k` states, from its belief or its observed state. */
+function selectWeights(a: Arg, k: number): number[] {
+  return a.value !== undefined
+    ? Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(a)) ? 1 : 0))
+    : selectProbs(a)
 }
 
 /** The probabilities of the states of the gate argument of a select: a discrete or a Bernoulli message. */

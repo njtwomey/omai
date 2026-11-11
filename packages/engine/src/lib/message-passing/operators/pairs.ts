@@ -13,7 +13,8 @@ import { OmaiError } from '../../base/index.ts'
 import { axisOf, integratePair } from '../_grid.ts'
 import { lgammaOf } from '../_scalar.ts'
 import type { FactorOperator, Family, OperatorContext, Params, Port, TiltedMoments } from '../types.ts'
-import { allProper, massOf, numberParam } from './args.ts'
+import { allProper, ImproperMessageError, massOf, numberParam } from './args.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
 
 /** One coordinate of a pair likelihood: a real value, or a positive one (the coordinate is then its log). */
 export interface PairPort {
@@ -39,6 +40,8 @@ export interface PairLikelihood {
    * returned function at every node of the first coordinate. Absent: `density` is used.
    */
   column?(y: number, p: Params): (x1: number) => (x0: number) => number
+  /** Why the density has no variational message (an expected log that is infinite under any Gaussian or gamma belief of a coordinate), or absent. */
+  readonly noVmp?: string
   /** The coordinates at which the density has a kink, for each port (panels are split there). */
   kinks?(y: number, p: Params): readonly [readonly number[], readonly number[]]
 }
@@ -128,6 +131,8 @@ const weibullShape: PairLikelihood = {
   name: 'weibull-shape',
   description:
     'y | u, k ~ Weibull(shape exp(k), scale exp(u)): a survival time whose shape is random too; censored = 1 makes y a right-censoring time',
+  noVmp:
+    'the survival term exp(shape (log y - log scale)) is a double exponential in a Gaussian or gamma shape, so its expected log under a mean-field belief is infinite (use expectation propagation, or fix the shape: the weibull-log likelihood)',
   ports: [
     { name: 'log scale', positive: false },
     { name: 'shape', positive: true },
@@ -246,6 +251,18 @@ export function pairLikelihoodOperator(
   table: Readonly<Record<string, PairLikelihood>> = pairLikelihoods(),
 ): FactorOperator {
   const ports: Port[] = [0, 1].map((i) => ({ name: `x${i}`, accepts: ['gaussian', 'gamma'], constant: true }))
+  const variational = (
+    t: Readonly<Record<string, PairLikelihood>>,
+    c: OperatorContext,
+  ): { readonly logf: (x: readonly number[]) => number; readonly ports: ReturnType<typeof quadraturePorts> } => {
+    const { likelihood, y } = resolve(t, c.params)
+    if (likelihood.noVmp !== undefined) throw new ImproperMessageError(`${likelihood.name}: ${likelihood.noVmp}`)
+    const density = likelihood.density(y, c.params)
+    return {
+      logf: (x) => density(x[0] as number, x[1] as number),
+      ports: quadraturePorts(c.args, { log: [true, true], kinks: likelihood.kinks?.(y, c.params) ?? [] }),
+    }
+  }
   const tilted = (c: OperatorContext): TiltedMoments & { readonly logMass: number } => {
     const { likelihood, y } = resolve(table, c.params)
     const density =
@@ -281,9 +298,24 @@ export function pairLikelihoodOperator(
     description:
       'y | x0, x1 ~ a density of the registry over two random scalars (a location and a scale, a shape, a pair of shapes)',
     ports,
-    support: { ep: 'numeric' },
+    support: { ep: 'numeric', vmp: 'numeric' },
     readsTarget: true,
     power: true,
+    unsupported: (mode, params) => {
+      if (mode !== 'vmp') return undefined
+      const key = params['likelihood']
+      return typeof key === 'string' ? table[key]?.noVmp : undefined
+    },
+    // The mean field: the non-conjugate message of the density under the two beliefs (a gamma belief on a positive coordinate is
+    // read through its log, as the grid of EP does).
+    vmp: (c) => {
+      const { logf, ports } = variational(table, c)
+      return { message: numericMessage(ports, c.to, logf) }
+    },
+    expectedLog: (c) => {
+      const { logf, ports } = variational(table, c)
+      return numericExpectedLog(ports, logf)
+    },
     check: (params, families) => {
       try {
         const { likelihood } = resolve(table, params)

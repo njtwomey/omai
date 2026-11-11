@@ -11,6 +11,7 @@ import { bernoulli, beta } from '../families.ts'
 import { dirichlet, discreteEta, discreteProbs } from '../families-vector.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
 import { allProper, etaOf, massOf, numberParam, rawSum, scalarOf } from './args.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
@@ -327,6 +328,12 @@ export const negativeBinomialBeta: FactorOperator = {
   },
 }
 
+/** log(l1 p + l0 (1 - p)) at the coordinate p. */
+const mixtureWeightLog =
+  (c: OperatorContext) =>
+  (x: readonly number[]): number =>
+    Math.log(numberParam(c.params, 'l1') * (x[0] as number) + numberParam(c.params, 'l0') * (1 - (x[0] as number)))
+
 /**
  * An observation of a two-component mixture with an unknown weight, the switch summed out: `l1 p + l0 (1 - p)` for a beta
  * probability `p`, where `l1` and `l0` (parameters) are the likelihoods of the observation under the second and the first
@@ -347,8 +354,12 @@ export const mixtureWeight: FactorOperator = {
   name: 'mixture-weight',
   description: 'f(p) = l1 p + l0 (1 - p): an observation of a two-component mixture with a beta weight',
   ports: [{ name: 'p', accepts: ['beta'] }],
-  support: { ep: 'exact' },
+  support: { ep: 'exact', vmp: 'numeric' },
   readsTarget: () => true,
+  // The mean field of the switch summed out: the expected log of `l1 p + l0 (1 - p)` is not linear in the beta's statistics, so the
+  // message is the non-conjugate one (the explicit switch `z ~ Bernoulli(p)` with a gate has exact messages and a different bound).
+  vmp: (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), 0, mixtureWeightLog(c)) }),
+  expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), mixtureWeightLog(c)),
   ep: (c): OperatorResult => {
     const eta = etaOf(arg(c, 0))
     const a = (eta[0] ?? 0) + 1

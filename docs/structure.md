@@ -3891,6 +3891,9 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   moment matching (the half-normal, half-Cauchy, uniform and truncated normal the compiler carries on a log scale).
   `_dense.ts`, `_quadrature.ts`, `_scalar.ts`: internal (SPD algebra, Gauss-Hermite against a Gaussian message, scalar
   special functions and the inverse digamma).
+- `operators/variational-numeric.ts`: the non-conjugate variational message by quadrature (a numeric operator, a likelihood, a softmax, a
+  deterministic function get a mean-field message from their log density alone); `FactorOperator.unsupported` names a factor with no variational
+  message because of its parameters (the Weibull shape).
 - `operators/`: the 48 factor operators of `defaultOperators()` (`registry.ts`), each with message rules for the
   projections it supports and tested against numerical integration: `prior`, `gaussian`, `gaussian-gamma-precision`,
   `gaussian-normal-gamma`, `product`, `equal` (`gaussian.ts`); `linear`, `plus`, `difference`, `times-constant`, `sum`,

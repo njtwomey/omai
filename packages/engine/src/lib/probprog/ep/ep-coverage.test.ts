@@ -1,7 +1,7 @@
 // The coverage figure is tested so that it only goes up: a rule that lands raises it and the test is moved up with it.
 import { describe, expect, it } from 'vitest'
 import { epAtoms } from './ep-atom-list.ts'
-import { epCoverage } from './ep-coverage.ts'
+import { epCoverage, vmpCoverage } from './ep-coverage.ts'
 
 describe('epCoverage', () => {
   const c = epCoverage()
@@ -21,4 +21,55 @@ describe('epCoverage', () => {
     expect(c.benchmarksRun).toBeGreaterThanOrEqual(27)
     expect(c.atomsRun).toBeGreaterThanOrEqual(84)
   })
+})
+
+describe('vmpCoverage', () => {
+  const c = vmpCoverage()
+
+  it('lists every atom, with the operators that lack a variational rule and their reason for each that does not run', () => {
+    expect(c.atoms.length).toBe(epAtoms.length)
+    for (const r of c.atoms) if (r.status === 'planned') expect(r.reason.length).toBeGreaterThan(10)
+  })
+
+  it('runs on at least 78 of 86 atoms (36 before the numeric likelihoods, scales, shapes, softmax, deterministic functions, gamma products and gates had variational messages), 76 of them to a fixed point, and only goes up', () => {
+    expect(c.atomsRun).toBeGreaterThanOrEqual(78)
+    expect(c.atomsConverged).toBeGreaterThanOrEqual(76)
+    expect(c.behindEp).toBeLessThanOrEqual(6)
+  })
+
+  it('refuses with a reason what has no mean-field message: a hard comparison, the Weibull shape, a custom function', () => {
+    const reasons = Object.fromEntries(c.atoms.filter((r) => r.status === 'planned').map((r) => [r.name, r.reason]))
+    expect(reasons['ordered-pair']).toMatch(/greater-than.*KL\(q \|\| p\) is infinite/)
+    expect(reasons['weibull-shape-learned']).toMatch(/double exponential/)
+    expect(reasons['gp-length-scale']).toMatch(/opaque/)
+  })
+
+  it('agrees with the reference posterior where the mean field can: means within half a standard deviation, spreads not above the reference', () => {
+    const names = [
+      'gaussian',
+      'gamma-precision',
+      'student-t',
+      'laplace',
+      'poisson-log',
+      'exp',
+      'log-scale',
+      'softmax-regression',
+      'ordinal-probit',
+      'quantile-regression',
+      'weibull-learned',
+      'student-t-df-learned',
+      'prior-beta-strength-gamma',
+      'prior-beta-two-shapes',
+      'gate-weight-summed-out',
+      'stick-breaking',
+    ]
+    const accurate = vmpCoverage({ accuracy: true, names })
+    expect(accurate.atoms.length).toBe(names.length)
+    for (const r of accurate.atoms) {
+      expect(r.status, r.name).toBe('runs')
+      expect(r.meanZ, r.name).toBeLessThan(0.5)
+      expect(r.sdRatio?.[1], r.name).toBeLessThan(1.2)
+      expect(r.sdRatio?.[0], r.name).toBeGreaterThan(0.5)
+    }
+  }, 60000)
 })

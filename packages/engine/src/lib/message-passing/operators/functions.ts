@@ -5,8 +5,8 @@
  * input's cavity (the pushforward of the input, weighted by what the output has been told), and the message back to the input
  * is the moment match of the tilted input: one integral over `x` gives both. The rectifier has a closed form (two truncated
  * Gaussians); the pushforward of a flat output is closed form for `exp`, `square`, `relu` and `abs`; the others are the
- * panelled quadrature of `_tilted.ts`, split at the function's kinks. Expectation propagation only: a deterministic
- * non-affine factor has no finite mean-field message.
+ * panelled quadrature of `_tilted.ts`, split at the function's kinks. Under variational message passing the output is defined by the
+ * input (a Gaussian with the mean and variance of the pushforward) and the message to the input is non-conjugate, by quadrature.
  */
 
 import { logAddExp, OmaiError, sigmoidOf } from '../../base/index.ts'
@@ -14,7 +14,16 @@ import { Phi, phi } from '../_scalar.ts'
 import { tiltedByQuadrature, type WindowHint } from '../_tilted.ts'
 import { truncatedNormalMoments } from '../truncated.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, ImproperMessageError, massOf } from './args.ts'
+import {
+  allProper,
+  etaOf,
+  gaussianMessage,
+  gaussianOf,
+  gaussianSiteMessage,
+  ImproperMessageError,
+  massOf,
+} from './args.ts'
+import { definedFunctionMessage } from './variational-numeric.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
@@ -200,13 +209,25 @@ export function applyFunction(
       { name: 'y', accepts: ['gaussian'] },
       { name: 'x', accepts: ['gaussian'] },
     ],
-    support: { ep: 'numeric' },
+    support: { ep: 'numeric', vmp: 'numeric' },
     // The message to x is a match against x's own cavity; the message to y needs none (a flat y is told the pushforward).
     readsTarget: (to) => to === 1,
     power: true,
-    noRule: {
-      vmp: 'a deterministic non-affine function has no finite mean-field message (use expectation propagation)',
+    // Deterministic: under the mean field `y` is defined by `x` and its belief is the Gaussian with the mean and variance of the
+    // pushforward (closed form where the function has one, else quadrature), which is all a Gaussian reader of `y` sees; the message to
+    // `x` is the non-conjugate message of `E[h f(x) - J f(x)^2 / 2]`, `(h, J)` the cavity of `y`. A reader that needs more than the
+    // two moments of `y` (a gamma, a Poisson) sees a Gaussian approximation of it.
+    defines: 0,
+    vmp: (c): OperatorResult => {
+      const fn = resolve(table, c.params)
+      if (c.to === 0 && fn.pushforward !== undefined) {
+        const x = gaussianOf(arg(c, 1))
+        const p = fn.pushforward(x.mean, x.variance)
+        return { message: gaussianMessage(p.mean, Math.max(p.variance, FLOOR)) }
+      }
+      return { message: definedFunctionMessage(c.args, c.to, (x) => fn.f(x[0] as number)) }
     },
+    expectedLog: () => 0,
     check: (params) => {
       try {
         resolve(table, params)

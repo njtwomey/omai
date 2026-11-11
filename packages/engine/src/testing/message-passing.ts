@@ -1,6 +1,7 @@
 // The brute-force reference the message-passing tests share: numerical integration by composite Gauss-Legendre over
 // boxes (the exact message of a factor, by integrating it against the incoming messages), and the tilted moments of a
 // port computed that way. Node only; not published.
+import { lgammaOf, trigammaOf } from '../lib/message-passing/_scalar.ts'
 import { gaussLegendre } from '../lib/numerics/quadrature/index.ts'
 import { toFlat } from '../lib/tensor/index.ts'
 
@@ -145,4 +146,106 @@ export function bruteTilted(
   }
   visit(0, 0, 1)
   return { logZ: Math.log(m0), moments: target.kind === 'gaussian' ? [m1 / m0, m2 / m0] : [m1 / m0] }
+}
+
+/** One independent belief of a brute-force variational check: a Gaussian, gamma or beta message and the coordinate the log density reads. */
+export interface BruteBelief {
+  readonly kind: 'gaussian' | 'gamma' | 'beta' | 'discrete'
+  readonly eta: readonly number[]
+  /** For a gamma belief: the log density reads the log of the variable (default the variable itself). */
+  readonly log?: boolean
+  /** For a Gaussian belief: where the integrand has a kink, so the panels are cut there. */
+  readonly kinks?: readonly number[]
+  /** The panels of the composite rule (default 16 for a Gaussian, 24 for a gamma or a beta): fewer for a product over many beliefs. */
+  readonly panels?: number
+}
+
+const logOnePlusExp = (x: number): number => (x > 30 ? x : Math.log1p(Math.exp(x)))
+
+/** The nodes of one belief by composite Gauss-Legendre (a rule of its own, independent of the library's Gauss-Hermite and grids), with the density folded into the weights. */
+function bruteNodes(b: BruteBelief): { x: number[]; w: number[]; stat: number[][] } {
+  if (b.kind === 'discrete') {
+    const top = Math.max(...b.eta)
+    const total = b.eta.reduce((a, v) => a + Math.exp(v - top), 0)
+    return { x: b.eta.map((_, i) => i), w: b.eta.map((v) => Math.exp(v - top) / total), stat: [] }
+  }
+  if (b.kind === 'gaussian') {
+    const j = b.eta[1] ?? 1
+    const mean = (b.eta[0] ?? 0) / j
+    const [lo, hi] = around(mean, 1 / j, 12)
+    const cuts = [lo, ...(b.kinks ?? []).filter((k) => k > lo && k < hi).sort((p, q) => p - q), hi]
+    const x: number[] = []
+    const w: number[] = []
+    for (let k = 0; k + 1 < cuts.length; k++) {
+      const part = nodesOn(cuts[k] as number, cuts[k + 1] as number, b.panels ?? 16, 16)
+      x.push(...part.x)
+      w.push(...part.w)
+    }
+    return {
+      x,
+      w: x.map((v, i) => (w[i] ?? 0) * Math.exp(-0.5 * j * (v - mean) ** 2) * Math.sqrt(j / (2 * Math.PI))),
+      stat: [],
+    }
+  }
+  if (b.kind === 'gamma') {
+    const shape = (b.eta[0] ?? 0) + 1
+    const rate = -(b.eta[1] ?? 0)
+    const logZ = lgammaOf(shape) - shape * Math.log(rate)
+    const mode = Math.log(shape / rate)
+    const sd = Math.sqrt(trigammaOf(shape))
+    const { x: t, w } = nodesOn(
+      mode - Math.min(Math.max(14 * sd, 30 / shape), 60),
+      mode + Math.min(14 * sd, 10),
+      b.panels ?? 24,
+      12,
+    )
+    return {
+      x: b.log === true ? t : t.map(Math.exp),
+      w: t.map((u, i) => (w[i] ?? 0) * Math.exp(shape * u - rate * Math.exp(u) - logZ)),
+      stat: [],
+    }
+  }
+  const p = (b.eta[0] ?? 0) + 1
+  const q = (b.eta[1] ?? 0) + 1
+  const logB = lgammaOf(p) + lgammaOf(q) - lgammaOf(p + q)
+  const mode = Math.log(p / q)
+  const sd = Math.sqrt(trigammaOf(p) + trigammaOf(q))
+  const { x: u, w } = nodesOn(
+    mode - Math.min(Math.max(14 * sd, 30 / p), 60),
+    mode + Math.min(Math.max(14 * sd, 30 / q), 60),
+    b.panels ?? 24,
+    12,
+  )
+  return {
+    x: u.map((v) => 1 / (1 + Math.exp(-v))),
+    w: u.map((v, i) => (w[i] ?? 0) * Math.exp(-p * logOnePlusExp(-v) - q * logOnePlusExp(v) - logB)),
+    stat: [],
+  }
+}
+
+/**
+ * The expectation of a function of the coordinates under independent Gaussian, gamma, beta and discrete beliefs, by a composite
+ * Gauss-Legendre product rule over each belief's range (not the library's quadrature): the brute-force reference of a variational
+ * expected log.
+ *
+ * @param beliefs - The independent beliefs.
+ * @param g - The function of one coordinate per belief.
+ * @returns `E[g]`.
+ */
+export function bruteExpectation(beliefs: readonly BruteBelief[], g: (x: readonly number[]) => number): number {
+  const grids = beliefs.map(bruteNodes)
+  const x = new Array<number>(beliefs.length).fill(0)
+  const walk = (d: number, weight: number): number => {
+    if (d === grids.length) return weight * g(x)
+    const grid = grids[d] as { x: number[]; w: number[] }
+    let s = 0
+    for (let i = 0; i < grid.x.length; i++) {
+      const wi = grid.w[i] as number
+      if (wi < 1e-13) continue
+      x[d] = grid.x[i] as number
+      s += walk(d + 1, weight * wi)
+    }
+    return s
+  }
+  return walk(0, 1)
 }

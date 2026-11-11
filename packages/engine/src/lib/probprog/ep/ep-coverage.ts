@@ -5,11 +5,12 @@
  * the developer: the coverage page lists it, and its test fixes the figure so that coverage only goes up.
  */
 
-import { epGridMethod, epSpecMethod } from '../inference/index.ts'
+import { type Config, session } from '../../trace/index.ts'
+import { epGridMethod, epSpecMethod, vmpSpecMethod } from '../inference/index.ts'
 import { analysisOf } from '../inference/model-input.ts'
 import { benchmarkModels } from '../models/index.ts'
 import { epAtoms } from './ep-atom-list.ts'
-import { atomRun } from './ep-atoms.ts'
+import { atomBeliefs, atomBound, atomCheck, atomReference, atomRun } from './ep-atoms.ts'
 
 /** One row of the coverage: a setup or a model, whether EP runs on it, and why not. */
 export interface CoverageRow {
@@ -100,5 +101,128 @@ export function epCoverage(): EpCoverage {
     benchmarks,
     atomsRun: atoms.filter((r) => r.status === 'runs').length,
     benchmarksRun: benchmarks.filter((r) => r.status === 'runs').length,
+  }
+}
+
+/** One row of the variational coverage: an atom, whether variational message passing runs it, how well, and why not. */
+export interface VmpCoverageRow {
+  readonly name: string
+  readonly title: string
+  /** The family of the atom. */
+  readonly group: string
+  /** The factors the atom exercises. */
+  readonly factors: readonly string[]
+  /** `runs` when every operator of the atom's graph has a variational message and the run gave proper beliefs; `planned` otherwise. */
+  readonly status: 'runs' | 'planned'
+  /** The library's reason when variational message passing does not run: the operators with no rule, with their own reason. */
+  readonly reason: string
+  readonly missing: readonly string[]
+  /** Whether expectation propagation runs the atom (the variational method is compared where both do). */
+  readonly epRuns: boolean
+  /** For a run: whether it converged and in how many sweeps. */
+  readonly converged?: boolean
+  readonly sweeps?: number
+  /** For a run with the accuracy measured: the largest error of a mean in reference standard deviations, and the range of the ratios of the standard deviations to the reference's (the mean field under-estimates the spread). */
+  readonly meanZ?: number
+  readonly sdRatio?: readonly [number, number]
+}
+
+/** The variational coverage: a row per atom, and the counts. */
+export interface VmpCoverage {
+  readonly atoms: readonly VmpCoverageRow[]
+  readonly atomsRun: number
+  readonly atomsConverged: number
+  /** Atoms expectation propagation runs and variational message passing does not: the rule gaps. */
+  readonly behindEp: number
+}
+
+/** The knobs variational message passing runs the atoms with: the tolerance, the sweep cap and a damping that steadies the non-conjugate messages. */
+const VMP_KNOBS: Config = { tol: 1e-9, maxSweeps: 300, damping: 0.3, improper: 'damp' }
+
+/** The heavier knobs a run that did not settle is tried again with. */
+const VMP_STEADY_KNOBS: Config = { tol: 1e-9, maxSweeps: 1000, damping: 0.7, improper: 'damp' }
+
+/**
+ * What variational message passing covers today: each atom compiled to a factor graph and asked for the variational verdict
+ * (every operator of the graph needs a mean-field message; the ones that have none carry their reason), and, when it applies,
+ * run to its fixed point; with `accuracy` the beliefs are checked against the atom's reference (closed form or grid), as the mean's
+ * error in reference standard deviations and the ratio of the standard deviations (below one for a mean field).
+ *
+ * @param options - `accuracy` also computes each atom's reference (a grid for most: about a minute in all); `names` restricts the atoms.
+ * @returns The rows and the counts.
+ * @concept variational-message-passing
+ * @index function What variational message passing covers today: atoms as runs or planned, with the operators lacking a rule.
+ * @example
+ * ```ts
+ * import { vmpCoverage } from 'omai-engine/probprog/ep'
+ * const c = vmpCoverage()
+ * c.atomsRun > 40 && c.atoms.length > 80 // => true
+ * ```
+ */
+export function vmpCoverage(
+  options: { readonly accuracy?: boolean; readonly names?: readonly string[] } = {},
+): VmpCoverage {
+  const chosen = options.names === undefined ? epAtoms : epAtoms.filter((a) => options.names?.includes(a.name))
+  const atoms = chosen.map((a): VmpCoverageRow => {
+    const base = {
+      name: a.name,
+      title: a.title,
+      group: a.family,
+      factors: a.factors,
+      epRuns: a.expected === 'runs',
+    }
+    const problem = a.problem(a.defaults)
+    try {
+      const bound = atomBound(problem)
+      const method = vmpSpecMethod(bound)
+      const verdict = method.check?.(analysisOf(bound))
+      if (verdict?.applies !== true)
+        return { ...base, status: 'planned', reason: verdict?.reason ?? 'no verdict', missing: verdict?.missing ?? [] }
+      let s = session(method, { seed: 1, steps: 302, mode: 'eager', config: VMP_KNOBS, logs: 'off' })
+      // A run that did not settle is tried again with a heavier damping and more sweeps (the non-conjugate messages overshoot).
+      if (s.status !== 'converged')
+        s = session(method, { seed: 1, steps: 1002, mode: 'eager', config: VMP_STEADY_KNOBS, logs: 'off' })
+      const posterior = method.posterior?.(s.state, s.config)
+      const beliefs = posterior === undefined ? {} : atomBeliefs(problem, posterior as never)
+      // A derived quantity (the value a gate selects, from EP's branch beliefs) is a reading of EP's, not of the mean field's.
+      const direct = problem.quantities.filter((q) => q.derive === undefined)
+      const proper = direct.every((q) => beliefs[q.name]?.proper === true)
+      const row = { ...base, converged: s.status === 'converged', sweeps: s.t }
+      if (!proper)
+        return {
+          ...row,
+          status: 'planned',
+          reason: 'the run ended with a belief that has no density',
+          missing: ['a proper start'],
+        }
+      if (options.accuracy !== true) return { ...row, status: 'runs', reason: '', missing: [] }
+      const names = new Set(direct.map((q) => q.name))
+      const checked = atomCheck(problem, beliefs, atomReference(a, problem), a.tolerance).rows.filter((r) =>
+        names.has(r.name),
+      )
+      const errors = checked.map((r) => r.meanZ).filter((v) => Number.isFinite(v))
+      const ratios = checked.map((r) => r.sdRatio).filter((v) => Number.isFinite(v))
+      return {
+        ...row,
+        status: 'runs',
+        reason: '',
+        missing: [],
+        ...(errors.length === 0 ? {} : { meanZ: Math.max(...errors) }),
+        ...(ratios.length === 0 ? {} : { sdRatio: [Math.min(...ratios), Math.max(...ratios)] as const }),
+      }
+    } catch (e) {
+      return {
+        ...base,
+        status: 'planned',
+        reason: `the run throws: ${e instanceof Error ? e.message : String(e)}`,
+        missing: ['a refusal instead of an error'],
+      }
+    }
+  })
+  return {
+    atoms,
+    atomsRun: atoms.filter((r) => r.status === 'runs').length,
+    atomsConverged: atoms.filter((r) => r.status === 'runs' && r.converged === true).length,
+    behindEp: atoms.filter((r) => r.epRuns && r.status !== 'runs').length,
   }
 }
