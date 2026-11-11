@@ -103,7 +103,7 @@ export function RunProgress(props: {
       </div>
       <div className="flex items-center justify-between gap-4">
         <span className="tabular-nums text-muted">
-          {p?.detail ?? (run.phase === 'queued' ? 'waiting for the page' : 'one step, no count of how far')}
+          {p?.detail ?? (run.phase === 'queued' ? 'waiting for the page' : 'working (it cannot say how far it is)')}
         </span>
         <span className="flex items-center gap-3">
           <span className="tabular-nums text-muted">{known ? `${Math.round(100 * share)}%` : ''}</span>
