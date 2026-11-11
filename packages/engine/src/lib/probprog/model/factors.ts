@@ -227,12 +227,23 @@ type Cell =
   // but selects among known ones, which a likelihood or a prior reads through a table or a gate.
   // `items[k]`, when present, is a random Gaussian form that state k takes in place of the known `values[k]` (a mixture of a known
   // value and a random one: the clutter problem's `where(z, 0, theta)`).
+  // `precisions[k]`, when present, is the gamma precision `scale tau + offset` that state k takes (a precision per component of a
+  // mixture, read by a Gaussian observation as the gate of `gaussian-gamma-precision` branches); `values[k]` is then the known
+  // precision of a state that has none.
   | {
       readonly kind: 'lookup'
       readonly variable: string
       readonly values: readonly number[]
       readonly items?: readonly (Aff | undefined)[]
+      readonly precisions?: readonly (Precision | undefined)[]
     }
+
+/** A gamma variable's multiple plus an offset: the precision `scale tau + offset`. */
+interface Precision {
+  readonly variable: string
+  readonly scale: number
+  readonly offset: number
+}
 
 /** A tensor over named dimensions whose elements are cells, row-major in the order of `dims`. */
 interface Sym {
@@ -501,6 +512,8 @@ class Compiler {
   private readonly families = distributionFamilies()
   /** The node being compiled: the site that auxiliary variables of its expressions are named after. */
   private current = ''
+  /** Set while the mean and the precision of an observation chosen by one discrete variable are read: a gate keeps its components as a lookup. */
+  private lookupMode = false
 
   constructor(
     private readonly bound: BoundModel,
@@ -1061,6 +1074,25 @@ class Compiler {
         values: components.map((c) => (isConstCell(c) ? c.aff.offset : 0)),
         items: components.map((c) => (isConstCell(c) ? undefined : (c as Cell & { kind: 'aff' }).aff)),
       }
+    // Read by an observation whose precision is chosen by the same discrete variable: the components stay states of one lookup, so
+    // the observation is one gate over its branches (random means and gamma precisions of each state), not a select per value.
+    if (this.lookupMode) {
+      if (components.every((c) => c.kind === 'aff'))
+        return {
+          kind: 'lookup',
+          variable: z,
+          values: components.map((c) => (isConstCell(c) ? c.aff.offset : 0)),
+          items: components.map((c) => (isConstCell(c) ? undefined : (c as Cell & { kind: 'aff' }).aff)),
+        }
+      const gammas = components.map((c) => (isConstCell(c) ? undefined : scaledOf(c)))
+      if (components.every((c, k) => isConstCell(c) || gammas[k] !== undefined))
+        return {
+          kind: 'lookup',
+          variable: z,
+          values: components.map((c) => (isConstCell(c) ? c.aff.offset : 0)),
+          precisions: gammas,
+        }
+    }
     const first = components[0] as Cell
     const rv = first.kind === 'rv'
     const kind: FamilyKind = rv ? first.family : 'gaussian'
@@ -3297,6 +3329,19 @@ class Compiler {
     const discrete = (e: ExprSpec | undefined): boolean =>
       e !== undefined && !this.isConst(e) && this.mentionsDiscrete(e)
     if (!discrete(locExpr) && !discrete(scaleExpr)) return undefined
+    // A precision chosen by a discrete variable (`1 / sqrt(where(z, tau_b, tau_a))`, `1 / sqrt(at(tau, z))`): the mean and the
+    // precision are read as lookups of that variable, so the observation is one gate of `gaussian-gamma-precision` branches.
+    const precisionExpr = scaleExpr === undefined ? undefined : this.precisionExpr(scaleExpr)
+    if (precisionExpr !== undefined && discrete(precisionExpr)) {
+      this.lookupMode = true
+      try {
+        const loc = this.paramCell(node, 'loc', i)
+        const precision = this.cellsOf(node, 'precisionLookup', () => this.evalSym(precisionExpr))[i] as Cell
+        if (precision.kind === 'lookup' && precision.precisions !== undefined) return { loc, scale: precision }
+      } finally {
+        this.lookupMode = false
+      }
+    }
     const loc = this.paramCell(node, 'loc', i)
     // A mean that mentions a discrete variable but is a random Gaussian after its gates (a `select`), with a scale that does not
     // (a precision idiom `1 / sqrt(tau)`), is an ordinary observation: the scale is not evaluated as a lookup.
@@ -3329,6 +3374,7 @@ class Compiler {
     const states = (looks[0] as Cell & { kind: 'lookup' }).values.length
     if (looks.some((l) => l.values.length !== states))
       throw new Refusal('operator', `the lookups of '${node.name}' have different numbers of states`)
+    const precisions = scale.kind === 'lookup' ? scale.precisions : undefined
     if (scale.kind === 'lookup' && scale.items !== undefined)
       throw new Refusal(
         'operator',
@@ -3336,17 +3382,32 @@ class Compiler {
       )
     if (scale.kind !== 'lookup' && !isConstCell(scale))
       throw new Refusal('operator', `the scale of '${node.name}' is not known`)
+    // With a precision lookup, `values` are the known precisions of the states that have no gamma variable, not scales.
     const sdAt = (k: number): number =>
-      scale.kind === 'lookup' ? (scale.values[k] as number) : (scale as Cell & { kind: 'aff' }).aff.offset
-    for (let k = 0; k < states; k++)
+      precisions !== undefined
+        ? 1 / Math.sqrt((scale as Cell & { kind: 'lookup' }).values[k] as number)
+        : scale.kind === 'lookup'
+          ? (scale.values[k] as number)
+          : (scale as Cell & { kind: 'aff' }).aff.offset
+    for (let k = 0; k < states; k++) {
+      if (precisions?.[k] !== undefined) {
+        const p = precisions[k] as Precision
+        if (!(p.scale >= 0 && p.offset >= 0 && p.scale + p.offset > 0))
+          throw new Refusal(
+            'data',
+            `the precision of '${node.name}' must be a non-negative multiple of a gamma variable`,
+          )
+        continue
+      }
       if (!(sdAt(k) > 0)) throw new Refusal('data', `the scale of '${node.name}' is ${sdAt(k)}: it must be positive`)
+    }
     const locAt = (k: number): Aff | number => {
       if (loc.kind === 'lookup') return loc.items?.[k] ?? (loc.values[k] as number)
       return affOf(loc)
     }
-    const known = Array.from({ length: states }, (_, k) => locAt(k)).every(
-      (m) => typeof m === 'number' || m.terms.size === 0,
-    )
+    const known =
+      precisions === undefined &&
+      Array.from({ length: states }, (_, k) => locAt(k)).every((m) => typeof m === 'number' || m.terms.size === 0)
     const pdf = (m: number, sd: number): number => Math.exp(-0.5 * ((y - m) / sd) ** 2) / (sd * Math.sqrt(2 * Math.PI))
     const value = (m: Aff | number): number => (typeof m === 'number' ? m : m.offset)
     if (known) {
@@ -3375,6 +3436,20 @@ class Compiler {
           variables.push(v)
         }
         mean = at
+      }
+      const gamma = precisions?.[k]
+      if (gamma !== undefined) {
+        let at = variables.indexOf(gamma.variable)
+        if (at < 0) {
+          at = variables.length
+          variables.push(gamma.variable)
+        }
+        this.need('gaussian-gamma-precision')
+        return {
+          operator: 'gaussian-gamma-precision',
+          args: [{ const: y }, mean, at],
+          params: { scale: gamma.scale, offset: gamma.offset },
+        }
       }
       return {
         operator: 'gaussian',

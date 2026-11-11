@@ -171,6 +171,8 @@ function precisionTilt(
   readonly u: { readonly mean: number; readonly variance: number }
   readonly logLambda: number
   readonly lambda: number
+  /** log of the integral of the (unnormalised) gamma cavity times the normal density of the difference, over `log lambda`. */
+  readonly logZ: number
 } {
   const { shape, rate } = gammaShapeRate(lambda)
   if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
@@ -221,6 +223,7 @@ function precisionTilt(
     u: { mean: meanU, variance: eU2 / z - meanU * meanU },
     logLambda: eLog / z,
     lambda: eLam / z,
+    logZ: top + Math.log(z * step),
   }
 }
 
@@ -269,6 +272,18 @@ export const gaussianGammaPrecision: FactorOperator = {
     if (c.to === 2) return { message: [0.5, -0.5 * scale * expectedSquare(arg(c, 0), arg(c, 1))] }
     const o = gaussianOf(arg(c, c.to === 0 ? 1 : 0))
     return { message: [meanLambda * o.mean, meanLambda] }
+  },
+  // The integral of the cavities (unnormalised, so their masses are in it) times the factor: the Gaussian cavities' masses and the
+  // grid's integral over the precision, in which the gamma cavity's unnormalised density is already part of the weight.
+  logEvidence: (c) => {
+    try {
+      const { scale, offset } = precisionParams(c.params)
+      const tilt = precisionTilt(cavityOf(arg(c, 0)), cavityOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset)
+      return massOf(arg(c, 0)) + massOf(arg(c, 1)) + tilt.logZ
+    } catch (err) {
+      if (err instanceof ImproperMessageError) return Number.NaN
+      throw err
+    }
   },
   expectedLog: (c) => {
     const { scale, offset } = precisionParams(c.params)
