@@ -41,10 +41,16 @@ describe('irtProblem', () => {
 })
 
 describe('irtExample', () => {
-  it('offers many methods and says why Gibbs and expectation propagation do not apply', () => {
+  it('offers many methods, with message passing on the Gamma-precision form, and says why it does not apply elsewhere', () => {
     const offer = irtExample.offer(base)
-    for (const kind of ['nuts', 'svi', 'laplace', 'tempered-smc']) expect(offer.applicable).toContain(kind)
+    for (const kind of ['nuts', 'svi', 'laplace', 'tempered-smc', 'ep', 'vmp']) expect(offer.applicable).toContain(kind)
     expect(offer.unavailable['gibbs']).toBeDefined()
+    // A half-normal sd and the log-normal discriminations have no message family; the product of two random values has no variational rule.
+    expect(irtExample.offer({ ...base, spreads: 'half-normal' }).unavailable['ep']).toMatch(/halfNormal/)
+    const normal2pl = irtExample.offer({ ...base, model: '2pl', discriminationPrior: 'normal' })
+    expect(normal2pl.applicable).toContain('ep')
+    expect(normal2pl.unavailable['vmp']).toMatch(/product/)
+    expect(irtExample.offer({ ...base, model: '2pl' }).unavailable['ep']).toMatch(/exp/)
   })
 
   for (const model of ['rasch', '2pl'])

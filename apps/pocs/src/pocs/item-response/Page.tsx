@@ -1,4 +1,4 @@
-import type { IrtSummary, Recovery } from 'omai-engine/bayesian-examples'
+import { type IrtSummary, irtHiddenKnobs, type Recovery } from 'omai-engine/bayesian-examples'
 import type { ChainDiagnostics, PosteriorPairs } from 'omai-engine/exposition'
 import { ChainDiagnosticsView, FigurePanel, NumberField, PosteriorPairsView, useProbe } from 'omai-render/react'
 import { type ReactNode, useState } from 'react'
@@ -53,6 +53,9 @@ const NAMES: Readonly<Record<string, string>> = {
   tau_b: 'difficulty sd',
   mu_a: 'centre of the log-discriminations',
   tau_a: 'sd of the log-discriminations',
+  prec_t: 'ability precision',
+  prec_b: 'difficulty precision',
+  prec_a: 'precision of the discriminations',
 }
 
 const percent = (v: number | null | undefined): string => (typeof v === 'number' ? `${fmt(100 * v, 0)}%` : '-')
@@ -64,6 +67,7 @@ export default function ItemResponsePage(): ReactNode {
       example={irtExample as never}
       producer={irtProducer}
       panels={PANELS}
+      exclude={irtHiddenKnobs}
       reference={REFERENCE}
       observe={(view) => <Outputs view={view} />}
       check={(view) => <Checks view={view} />}

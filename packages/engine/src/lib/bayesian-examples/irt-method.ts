@@ -14,7 +14,12 @@
  */
 
 import type { InferenceMethod } from '../probprog/inference/method.ts'
-import { generateIrt, hierarchicalIrtDefinition, type IrtModelKind } from '../probprog/models/irt-hierarchical.ts'
+import {
+  generateIrt,
+  hierarchicalIrtDefinition,
+  type IrtModelKind,
+  type IrtSpreads,
+} from '../probprog/models/irt-hierarchical.ts'
 import type { Posterior } from '../probprog/posterior.ts'
 import { key } from '../random/index.ts'
 import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
@@ -37,14 +42,17 @@ export interface IrtTruth {
   readonly b: readonly number[]
   /** The discriminations (the 2PL model's `a`); null for the Rasch model, where they are 1. */
   readonly a: readonly number[] | null
-  /** The truth of the hyperparameters by site (`tau_t`, `mu_b`, `tau_b`, `mu_a`, `tau_a`), where there is one. */
+  /** The truth of the hyperparameters by site (`mu_b`, and per population `tau_*` or `prec_*`), where there is one. */
   readonly hyper: Readonly<Record<string, number>>
 }
 
 /** The problem an item response configuration stands for. */
 export interface IrtProblem extends ExampleProblem {
   readonly model: IrtModelKind
+  /** Whether the populations are written centred (always so with fixed spreads). */
   readonly centred: boolean
+  readonly spreads: IrtSpreads
+  readonly discrimination: 'log-normal' | 'normal'
   readonly students: number
   readonly questions: number
   readonly truth: IrtTruth
@@ -60,7 +68,7 @@ const VARIED = 0.4
  * parameterisation: the abilities and difficulties shifted by the mean ability (the model fixes the mean ability at 0) and,
  * for the 2PL model, divided by the sd of the abilities (the model fixes it at 1) with the discriminations multiplied by it.
  *
- * @param config - The knobs (`students`, `questions`, `abilitySd`, `difficultySd`, `meanDifficulty`, `discrimination`, `dataSeed`, `model`, `parameterisation`, `spreadScale`).
+ * @param config - The knobs (`students`, `questions`, `abilitySd`, `difficultySd`, `meanDifficulty`, `discrimination`, `dataSeed`, `model`, `spreads`, `parameterisation`, `precisionShape`, `precisionRate`, `spreadScale`, `fixedSd`, `discriminationPrior`).
  * @returns The problem.
  * @example
  * ```ts
@@ -77,7 +85,15 @@ export function irtProblem(config: Config): IrtProblem {
   const meanDifficulty = exampleNumber(config, 'meanDifficulty')
   const varied = exampleString(config, 'discrimination') === 'varied'
   const model: IrtModelKind = exampleString(config, 'model') === '2pl' ? '2pl' : 'rasch'
-  const centred = exampleString(config, 'parameterisation') === 'centred'
+  const spreads: IrtSpreads =
+    exampleString(config, 'spreads') === 'half-normal'
+      ? 'half-normal'
+      : exampleString(config, 'spreads') === 'fixed'
+        ? 'fixed'
+        : 'precision'
+  const centred = exampleString(config, 'parameterisation') !== 'non-centred' || spreads === 'fixed'
+  const discrimination =
+    model === '2pl' && exampleString(config, 'discriminationPrior') === 'normal' ? 'normal' : 'log-normal'
   const g = generateIrt(key(exampleNumber(config, 'dataSeed')), {
     students,
     questions,
@@ -92,23 +108,35 @@ export function irtProblem(config: Config): IrtProblem {
   const theta = g.theta.map((t) => (t - centre) / scale)
   const b = g.b.map((v) => (v - centre) / scale)
   const a = model === '2pl' ? g.a.map((v) => v * scale) : null
+  // The truth of the spreads, as the model writes them (an sd, or a precision), where the model has them and the truth is known.
+  const spread = (sd: number): number => (spreads === 'precision' ? 1 / sd ** 2 : sd)
+  const names = spreads === 'precision' ? 'prec' : 'tau'
   const hyper: Record<string, number> =
-    model === '2pl'
-      ? {
-          mu_b: (meanDifficulty - centre) / scale,
-          tau_b: difficultySd / scale,
-          mu_a: Math.log(scale),
-          ...(varied ? { tau_a: VARIED } : {}),
-        }
-      : { tau_t: abilitySd, mu_b: meanDifficulty - centre, tau_b: difficultySd }
+    spreads === 'fixed'
+      ? { mu_b: (meanDifficulty - centre) / scale }
+      : model === '2pl'
+        ? {
+            mu_b: (meanDifficulty - centre) / scale,
+            [`${names}_b`]: spread(difficultySd / scale),
+            ...(discrimination === 'log-normal' ? { mu_a: Math.log(scale) } : {}),
+            ...(varied && discrimination === 'log-normal' ? { [`${names}_a`]: spread(VARIED) } : {}),
+          }
+        : { [`${names}_t`]: spread(abilitySd), mu_b: meanDifficulty - centre, [`${names}_b`]: spread(difficultySd) }
   return {
     model,
     centred,
+    spreads,
+    discrimination,
     students,
     questions,
     truth: { theta, b, a, hyper },
     definition: hierarchicalIrtDefinition(model, centred ? 'centred' : 'non-centred', {
+      spreads,
       scale: exampleNumber(config, 'spreadScale') || 1,
+      shape: exampleNumber(config, 'precisionShape') || 2,
+      rate: exampleNumber(config, 'precisionRate') || 2,
+      fixedSd: exampleNumber(config, 'fixedSd') || 1,
+      discrimination,
     }),
     data: { y: g.y },
   }
@@ -147,13 +175,38 @@ export const irtModelKnobs: DictSpace = dict({
       '2pl': '2PL: each question has a discrimination, learned log-normally; the ability sd is fixed at 1',
     },
   }),
-  parameterisation: choice(['non-centred', 'centred'], {
-    default: 'non-centred',
-    label: 'population priors',
+  spreads: choice(['precision', 'half-normal', 'fixed'], {
+    default: 'precision',
+    label: 'population spreads',
     descriptions: {
-      'non-centred': 'theta = tau z, b = mu + tau z: no funnel',
-      centred: 'theta ~ N(0, tau^2), b ~ N(mu, tau^2): a funnel between each spread and its parameters',
+      precision:
+        'the spread of the abilities, difficulties and discriminations is learned as a Gamma precision: the form expectation propagation and variational message passing read',
+      'half-normal':
+        'the spreads are learned as half-normal standard deviations: samplers and variational methods only',
+      fixed: 'every spread is known: a plain logistic regression with one Gaussian per student and question',
     },
+  }),
+  parameterisation: choice(['centred', 'non-centred'], {
+    default: 'centred',
+    label: 'parameterisation',
+    descriptions: {
+      centred:
+        'theta ~ N(0, 1/precision), b ~ N(mu, 1/precision): a funnel between each spread and its values, but message passing reads it',
+      'non-centred':
+        'theta = z / sqrt(precision), b = mu + z / sqrt(precision): no funnel, samplers and variational methods only',
+    },
+  }),
+  precisionShape: real(0.5, 20, {
+    default: 2,
+    log: true,
+    label: 'precision prior shape',
+    description: 'shape of the Gamma prior on each precision',
+  }),
+  precisionRate: real(0.5, 20, {
+    default: 2,
+    log: true,
+    label: 'precision prior rate',
+    description: 'rate of the Gamma prior on each precision (the mean precision is shape / rate)',
   }),
   spreadScale: real(0.2, 5, {
     default: 1,
@@ -161,6 +214,21 @@ export const irtModelKnobs: DictSpace = dict({
     label: 'spread prior scale',
     description:
       'scale of the half-normal priors on the spreads of the abilities, difficulties and log-discriminations',
+  }),
+  fixedSd: real(0.2, 5, {
+    default: 1,
+    log: true,
+    label: 'known spread',
+    description: 'the standard deviation of the abilities and the difficulties (and discriminations), taken as known',
+  }),
+  discriminationPrior: choice(['log-normal', 'normal'], {
+    default: 'log-normal',
+    label: '2PL discrimination prior',
+    descriptions: {
+      'log-normal': 'a = exp(log a): positive; samplers and variational methods (message passing has no rule for exp)',
+      normal:
+        'a normal around a learned centre near 1 (it can go negative): a product of two random values, which expectation propagation reads and variational message passing does not',
+    },
   }),
 })
 
@@ -174,12 +242,29 @@ export const irtProblemKnobs: readonly string[] = [
   'discrimination',
   'dataSeed',
   'model',
+  'spreads',
   'parameterisation',
+  'precisionShape',
+  'precisionRate',
   'spreadScale',
+  'fixedSd',
+  'discriminationPrior',
 ]
 
+/** The knobs a configuration does not use: the other forms' priors, and the 2PL discrimination for the Rasch model. */
+export function irtHiddenKnobs(config: Config): readonly string[] {
+  const spreads = exampleString(config, 'spreads')
+  return [
+    ...(spreads === 'half-normal' ? [] : ['spreadScale']),
+    ...(spreads === 'precision' || spreads === '' ? [] : ['precisionShape', 'precisionRate']),
+    ...(spreads === 'fixed' ? [] : ['fixedSd']),
+    ...(spreads === 'fixed' ? ['parameterisation'] : []),
+    ...(exampleString(config, 'model') === '2pl' ? [] : ['discriminationPrior']),
+  ]
+}
+
 /** The sites of the hyperparameters a model has. */
-const HYPER = ['tau_t', 'mu_b', 'tau_b', 'mu_a', 'tau_a']
+const HYPER = ['tau_t', 'prec_t', 'mu_b', 'tau_b', 'prec_b', 'mu_a', 'tau_a', 'prec_a']
 
 /** One kind of parameter against its truth: the posterior mean and the 90% interval of each, and how well they agree. */
 export interface Recovery {
@@ -226,16 +311,28 @@ function withItemSites(post: Posterior, problem: IrtProblem): Posterior {
   const at = (v: number[] | undefined, j: number): number => v?.[j] ?? 0
   const q = problem.questions
   const p = problem.students
+  // The sd of a population from the sd or the precision a form has as a latent.
+  const spreadOf = (d: Readonly<Record<string, number[]>>, label: string): number =>
+    d[`tau_${label}`] !== undefined
+      ? at(d[`tau_${label}`], 0)
+      : 1 / Math.sqrt(Math.max(1e-12, at(d[`prec_${label}`], 0)))
+  const population = (
+    d: Readonly<Record<string, number[]>>,
+    site: string,
+    label: string,
+    mean: number,
+    j: number,
+  ): number => (problem.centred ? at(d[site], j) : mean + spreadOf(d, label) * at(d[`z_${label}`], j))
   const items = (d: Readonly<Record<string, number[]>>): Record<string, number[]> => ({
-    b: Array.from({ length: q }, (_, j) =>
-      problem.centred ? at(d['b'], j) : at(d['mu_b'], 0) + at(d['tau_b'], 0) * at(d['z_b'], j),
-    ),
+    b: Array.from({ length: q }, (_, j) => population(d, 'b', 'b', at(d['mu_b'], 0), j)),
     a: Array.from({ length: q }, (_, j) =>
-      Math.exp(problem.centred ? at(d['log_a'], j) : at(d['mu_a'], 0) + at(d['tau_a'], 0) * at(d['z_a'], j)),
+      problem.discrimination === 'normal'
+        ? population(d, 'a', 'a', at(d['mu_a'], 0), j)
+        : Math.exp(population(d, 'log_a', 'a', at(d['mu_a'], 0), j)),
     ),
     theta:
-      problem.model === 'rasch' && !problem.centred
-        ? Array.from({ length: p }, (_, i) => at(d['tau_t'], 0) * at(d['z_t'], i))
+      problem.model === 'rasch'
+        ? Array.from({ length: p }, (_, i) => population(d, 'theta', 't', 0, i))
         : Array.from({ length: p }, (_, i) => at(d['theta'], i)),
   })
   const names = problem.model === '2pl' ? ['theta', 'b', 'a'] : ['theta', 'b']
@@ -296,24 +393,35 @@ const irtDeclared: Example<IrtProblem> = defineExample<IrtProblem>({
       }
     }
     const truth = problem.truth.hyper
+    const kindOf = problem.spreads === 'precision' ? 'precision' : 'sd'
+    const site = (label: string): string => `${problem.spreads === 'precision' ? 'prec' : 'tau'}_${label}`
+    const spreadCoordinates: PairCoordinate[] =
+      problem.spreads === 'fixed'
+        ? []
+        : [
+            { label: `log difficulty ${kindOf}`, from: site('b'), log: true },
+            problem.model === 'rasch'
+              ? { label: `log ability ${kindOf}`, from: site('t'), log: true }
+              : { label: `log discrimination ${kindOf}`, from: site('a'), log: true },
+          ]
     const pairs: readonly PairCoordinate[] = [
       { label: 'ability 1', from: 'theta[0]' },
       { label: 'ability 2', from: 'theta[1]' },
       { label: 'ability 3', from: 'theta[2]' },
       { label: 'average difficulty', from: 'mu_b' },
-      { label: 'log difficulty sd', from: 'tau_b', log: true },
-      problem.model === 'rasch'
-        ? { label: 'log ability sd', from: 'tau_t', log: true }
-        : { label: 'log discrimination sd', from: 'tau_a', log: true },
+      ...spreadCoordinates,
     ]
     const pairTruth: Record<string, number> = {
       'ability 1': problem.truth.theta[0] ?? 0,
       'ability 2': problem.truth.theta[1] ?? 0,
       'ability 3': problem.truth.theta[2] ?? 0,
       ...(truth['mu_b'] === undefined ? {} : { 'average difficulty': truth['mu_b'] }),
-      ...(truth['tau_b'] === undefined ? {} : { 'log difficulty sd': Math.log(truth['tau_b']) }),
-      ...(truth['tau_t'] === undefined ? {} : { 'log ability sd': Math.log(truth['tau_t']) }),
-      ...(truth['tau_a'] === undefined ? {} : { 'log discrimination sd': Math.log(truth['tau_a']) }),
+      ...Object.fromEntries(
+        spreadCoordinates.flatMap((c) => {
+          const t = truth[c.from]
+          return t === undefined ? [] : [[c.label, Math.log(t)] as [string, number]]
+        }),
+      ),
     }
     return {
       'irt/recovery': derived<unknown>({
