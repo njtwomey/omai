@@ -15,6 +15,7 @@ function App() {
     <Shell
       path={path === '/' || slug !== undefined || group !== undefined ? '/' : path}
       sections={[]}
+      showSource={false}
       brand="omai pocs"
       crumbs={<Crumbs group={group} slug={slug} />}
     >

@@ -56,6 +56,19 @@ export interface GridPosterior {
   unconstrained(name: string): { readonly mean: number; readonly sd: number }
   /** E[f(u)] over the posterior for a function of the unconstrained vector. */
   expectation(f: (u: Float64Array) => number): number
+  /**
+   * The marginal density of one coordinate on the constrained scale, at the points of the grid axis (so a curve to draw: `x`
+   * increasing, `p` integrating to one over `x`).
+   */
+  density(name: string): { readonly x: readonly number[]; readonly p: readonly number[] }
+  /**
+   * The joint density of two coordinates on the constrained scale (the others integrated out), on the product of their grid
+   * axes: `p[i][j]` is the density at `(x[i], y[j])`, for contours.
+   */
+  joint(
+    a: string,
+    b: string,
+  ): { readonly x: readonly number[]; readonly y: readonly number[]; readonly p: readonly (readonly number[])[] }
 }
 
 const ELEMENTWISE: ReadonlySet<Support['kind']> = new Set([
@@ -275,6 +288,61 @@ export function gridPosterior<D = void>(model: Model<D>, data: D, options: GridO
       },
     }
   }
+  // The constrained values of an axis and the derivative of the map there (the Jacobian that turns a density in u into one in x).
+  const axisOf = (name: string): { readonly x: number[]; readonly slope: number[]; readonly k: number } => {
+    const k = names.indexOf(name)
+    if (k < 0) throw new OmaiError('value', `gridPosterior: no coordinate ${name}`)
+    const layout = owner(k)
+    if (layout === undefined || !ELEMENTWISE.has(layout.support.kind))
+      throw new OmaiError('not-implemented', `gridPosterior: the support of ${name} has no coordinate-wise density`)
+    const u = final.axes[k] as Float64Array
+    const b = bijectors.bijectorForSupport(layout.support)
+    const x = Array.from(u, (v) => item(b.forward(tensor(v))))
+    const slope = x.map((_, j) => {
+      const a = Math.max(0, j - 1)
+      const c = Math.min(n - 1, j + 1)
+      return Math.abs(((x[c] ?? 0) - (x[a] ?? 0)) / ((u[c] ?? 0) - (u[a] ?? 0)))
+    })
+    return { x, slope, k }
+  }
+  const densityOf = (name: string): { readonly x: readonly number[]; readonly p: readonly number[] } => {
+    const { x, slope, k } = axisOf(name)
+    const p = final.marginals[k] as Float64Array
+    const order = x.map((_, j) => j).sort((i, j) => (x[i] ?? 0) - (x[j] ?? 0))
+    return {
+      x: order.map((j) => x[j] ?? 0),
+      p: order.map((j) => (p[j] ?? 0) / Math.max(slope[j] ?? 1, 1e-300)),
+    }
+  }
+  const jointOf = (
+    a: string,
+    b: string,
+  ): { readonly x: readonly number[]; readonly y: readonly number[]; readonly p: readonly (readonly number[])[] } => {
+    const A = axisOf(a)
+    const B = axisOf(b)
+    if (A.k === B.k) throw new OmaiError('value', 'gridPosterior: joint needs two different coordinates')
+    const acc = Array.from({ length: n }, () => new Float64Array(n))
+    const total = n ** d
+    const peak = final.logf.reduce((m, v) => Math.max(m, v), Number.NEGATIVE_INFINITY)
+    for (let flat = 0; flat < total; flat++) {
+      let r = flat
+      let w = 1
+      let ia = 0
+      let ib = 0
+      for (let q = d - 1; q >= 0; q--) {
+        const j = r % n
+        if (q === A.k) ia = j
+        else if (q === B.k) ib = j
+        else w *= final.weights[q]?.[j] ?? 0
+        r = Math.floor(r / n)
+      }
+      const row = acc[ia] as Float64Array
+      row[ib] = (row[ib] ?? 0) + Math.exp((final.logf[flat] ?? Number.NEGATIVE_INFINITY) - peak) * w
+    }
+    const scale = Math.exp(peak - final.logZ)
+    const p = acc.map((row, i) => Array.from(row, (v, j) => (v * scale) / ((A.slope[i] ?? 1) * (B.slope[j] ?? 1))))
+    return { x: A.x, y: B.x, p }
+  }
   const unconstrainedOf = (name: string): { readonly mean: number; readonly sd: number } => {
     const k = names.indexOf(name)
     if (k < 0) throw new OmaiError('value', `gridPosterior: no coordinate ${name}`)
@@ -301,6 +369,8 @@ export function gridPosterior<D = void>(model: Model<D>, data: D, options: GridO
     marginal: marginalOf,
     marginals: () => names.map(marginalOf),
     unconstrained: unconstrainedOf,
+    density: densityOf,
+    joint: jointOf,
     expectation: (g) => {
       const total = n ** d
       const u = new Float64Array(d)

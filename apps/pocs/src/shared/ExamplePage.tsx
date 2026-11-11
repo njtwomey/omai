@@ -140,7 +140,10 @@ export function ExamplePage(props: {
   )
   const problem = JSON.stringify(pick(config, example.problemKnobs))
   // biome-ignore lint/correctness/useExhaustiveDependencies: the reference depends on the problem alone, not on the method
-  const referenceConfig = useMemo(() => example.reference(config, props.reference ?? {}, props.referenceBudgetMs), [problem])
+  const referenceConfig = useMemo(
+    () => example.reference(config, props.reference ?? {}, props.referenceBudgetMs),
+    [problem],
+  )
   // A reference nobody can see is not computed: hiding the check panel spares the run.
   const reference = useSession(
     method,
