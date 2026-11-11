@@ -88,6 +88,15 @@ describe('epGridMethod on the Gaussian process benchmarks', () => {
     expect(whole.state.nodes[10]?.logEvidence).toBe(half.state.nodes[10]?.logEvidence)
   })
 
+  it('says that it failed, and does not throw, while no node has an EP evidence', () => {
+    const method = epGridMethod(benchmarkModel('gaussian-process-regression').bound())
+    const run = session(method, { steps: 3, mode: 'eager', config: { points: 3 } })
+    const none = { ...run.state, nodes: run.state.nodes.map((n) => ({ ...n, logEvidence: Number.NaN })) }
+    const post = method.posterior?.(none, run.config)
+    expect(post?.status).toBe('failed')
+    expect(post?.diagnostics['reason']).toMatch(/no node has an EP evidence/)
+  })
+
   it('is a kind of methodKinds, and refuses a model with no custom function to see through', () => {
     expect(Object.keys(methodKinds)).toContain('ep-grid')
     const bound = benchmarkModel('beta-bernoulli').bound()

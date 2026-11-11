@@ -409,6 +409,15 @@ export function epGridMethod(
         diagnostics: { reason: 'no node run yet' },
       })
     const { logWeights, logEvidence } = nodeWeights(state)
+    // No node with an evidence yet (every EP run so far failed or has none): nothing to weight, and the posterior says so.
+    if (!logWeights.some((l) => Number.isFinite(l)))
+      return definePosterior({
+        form: 'variational',
+        engine: name,
+        sites: [],
+        status: 'failed',
+        diagnostics: { reason: 'no node has an EP evidence yet', nodes: state.nodes.length },
+      })
     const converged = state.nodes.filter((n) => n.converged).length
     const values: Record<string, number[]> = {}
     for (const [k, a] of state.axes.entries()) values[a.name] = state.nodes.map((n) => n.x[k] as number)
