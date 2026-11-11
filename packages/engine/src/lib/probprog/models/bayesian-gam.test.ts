@@ -184,3 +184,52 @@ describe('the weighted bases of the penalty prior', () => {
       expect(fit.bases.mean.reduce((a, b) => a + (b[i] ?? 0), 0)).toBeCloseTo(fit.mean[i] ?? 0, 8)
   })
 })
+
+describe('the message-passing forms of the penalty prior', () => {
+  const exact = (hyper: 'gammaNoise' | 'fixed') => {
+    const g = bayesianGam(x, y, { k: 10, hyper, lambda: 13, noiseSd: 0.18 })
+    return { g, reference: bayesianGamReference(g, { gridSize: 20, points: 28 }) }
+  }
+  const run = (kind: string, g: ReturnType<typeof bayesianGam>, config = {}) => {
+    const s = session(bayesianGamMethod(kind, g, { fit: { gridSize: 20 } }), {
+      steps: 3000,
+      mode: 'eager',
+      config: config as never,
+    })
+    return s.probe(s.t, 'gam/fit') as unknown as ReturnType<typeof bayesianGamFit>
+  }
+
+  it('say which methods apply: the log-normal form none of the message passing, the gamma-noise form VMP, the fixed form EP too', () => {
+    expect(bayesianGamMethods('penalty').unavailable['vmp']).toContain("operator 'exp'")
+    const gamma = bayesianGamMethods('penalty', 'gammaNoise')
+    expect(gamma.applicable).toContain('vmp')
+    expect(gamma.unavailable['ep']).toContain('no expectation propagation message rule')
+    const fixed = bayesianGamMethods('penalty', 'fixed')
+    expect(fixed.applicable).toEqual(expect.arrayContaining(['ep', 'vmp', 'gaussian']))
+  })
+
+  it('give VMP on the gamma-noise form and EP, VMP and exact Gaussian inference on the fixed form the exact posterior', () => {
+    const noisy = exact('gammaNoise')
+    const a = bayesianGamAgreement(run('vmp', noisy.g), noisy.reference, noisy.g.standardisation.sd)
+    expect(a.meanError).toBeLessThan(0.03)
+    expect(a.bandRatio).toBeGreaterThan(0.85)
+    expect(a.bandRatio).toBeLessThan(1.15)
+    const known = exact('fixed')
+    for (const kind of ['ep', 'vmp', 'gaussian']) {
+      const b = bayesianGamAgreement(run(kind, known.g), known.reference, known.g.standardisation.sd)
+      expect(b.meanError, kind).toBeLessThan(0.03)
+      expect(b.bandRatio, kind).toBeGreaterThan(0.85)
+      expect(b.bandRatio, kind).toBeLessThan(1.15)
+    }
+  })
+
+  it('have an exact reference that agrees with a sampler', () => {
+    const noisy = exact('gammaNoise')
+    const a = bayesianGamAgreement(
+      run('hmc', noisy.g, { numChains: 2, numWarmup: 150, numDraws: 200 }),
+      noisy.reference,
+      noisy.g.standardisation.sd,
+    )
+    expect(a.meanError).toBeLessThan(0.05)
+  })
+})
