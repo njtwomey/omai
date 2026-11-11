@@ -17,8 +17,8 @@ describe('epCoverage', () => {
     expect(c.atoms.filter((r) => r.status !== r.declared).map((r) => r.name)).toEqual([])
   })
 
-  it('runs on at least 23 benchmark models (9 of 27 in the audit of 2026-11-11, 10 once stochastic volatility mapped, 23 with the likelihood registry, apply, the projected priors, gates, ordered constraints and the shared precisions), and only goes up', () => {
+  it('runs on at least 23 benchmark models (9 of 27 in the audit of 2026-11-11, 10 once stochastic volatility mapped, 23 with the likelihood registry, apply, the projected priors, gates, ordered constraints and the shared precisions; 46 of 47 atoms with the prior atlas), and only goes up', () => {
     expect(c.benchmarksRun).toBeGreaterThanOrEqual(23)
-    expect(c.atomsRun).toBeGreaterThanOrEqual(30)
+    expect(c.atomsRun).toBeGreaterThanOrEqual(46)
   })
 })
