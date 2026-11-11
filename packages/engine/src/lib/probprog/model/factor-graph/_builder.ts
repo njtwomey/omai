@@ -10,7 +10,7 @@ import { type Json, OmaiError } from '../../../base/index.ts'
 import type { FactorOperator, FactorSpec, VariableSpec } from '../../../message-passing/index.ts'
 import { auxId, elementId, factorId } from '../ids.ts'
 import type { OperatorTable } from '../operators.ts'
-import type { Aff, Atom, Cell } from './_cells.ts'
+import { type Aff, type Atom, affOf, type Cell, isConstCell } from './_cells.ts'
 import { Refusal } from './_refusal.ts'
 import type { SiteLayout } from './types.ts'
 
@@ -54,6 +54,15 @@ export class GraphBuilder {
    */
   sizeOf(name: string): number {
     return (this.variables.find((u) => u.name === name)?.family.size ?? 2) as number
+  }
+
+  /**
+   * What a Gaussian port of a factor takes for the value of a cell: `{ const }` when the cell is a known number, else the variable
+   * that carries its affine form (made by `materialise` when the form is not one variable already).
+   */
+  portOf(cell: Cell, site: string, index: number | undefined): string | { readonly const: number } {
+    if (isConstCell(cell)) return { const: cell.aff.offset }
+    return this.materialise(affOf(cell), site, index) as string
   }
 
   addFactor(f: FactorSpec, variable: string): void {

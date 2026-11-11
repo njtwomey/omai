@@ -2478,9 +2478,7 @@ class Compiler {
     for (const [i, tau] of taus.entries()) {
       const name = this.g.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'gaussian' } })
       const l = loc[i] as Cell
-      const mean = isConstCell(l)
-        ? { const: l.aff.offset }
-        : (this.g.materialise(affOf(l), node.name, node.dims.length === 0 ? undefined : i) as string)
+      const mean = this.g.portOf(l, node.name, node.dims.length === 0 ? undefined : i)
       this.g.addFactor(precisionFactor(name, mean, tau), name)
       cells.push(this.g.varAtom(name))
       vars.push(name)
@@ -3656,9 +3654,7 @@ class Compiler {
     if (!(Number.isInteger(y) && y >= 0 && y < classes))
       throw new Refusal('data', `'${node.name}': the class ${y} is outside 0 to ${classes - 1}`)
     const args = Array.from({ length: classes }, (_, k) => {
-      const cell = cells?.[i * classes + k] as Cell
-      if (isConstCell(cell)) return { const: cell.aff.offset }
-      return this.g.materialise(affOf(cell), node.name, index) as string
+      return this.g.portOf(cells?.[i * classes + k] as Cell, node.name, index)
     })
     if (args.every((a) => typeof a !== 'string')) return null
     this.g.addFactor(
@@ -3722,10 +3718,7 @@ class Compiler {
     index: number | undefined,
   ): string | null {
     const extra: Record<string, Json> = {}
-    const predictor = (cell: Cell): string | { readonly const: number } => {
-      if (isConstCell(cell)) return { const: cell.aff.offset }
-      return this.g.materialise(affOf(cell), node.name, index) as string
-    }
+    const predictor = (cell: Cell): string | { readonly const: number } => this.g.portOf(cell, node.name, index)
     let args: [string | { readonly const: number }, string | { readonly const: number }]
     if (likelihood === 'laplace-scale' || likelihood === 'asymmetric-laplace-scale') {
       if (likelihood === 'asymmetric-laplace-scale') {
@@ -4385,9 +4378,7 @@ class Compiler {
     }
     if (logVar === undefined) this.randomPrecisions(node)
     const loc = this.paramCell(node, 'loc', i)
-    const mean = isConstCell(loc)
-      ? { const: loc.aff.offset }
-      : (this.g.materialise(affOf(loc), node.name, index) as string)
+    const mean = this.g.portOf(loc, node.name, index)
     this.g.need('gaussian-scale')
     this.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
     this.g.addFactor({ operator: 'gaussian-scale', args: [name, mean, logVar as string] }, name)
@@ -4407,9 +4398,7 @@ class Compiler {
       cells: this.randomPrecisions(node).map((p): Cell => ({ kind: 'scaled', ...p })),
     }))[i] as Cell & { kind: 'scaled' }
     const loc = this.paramCell(node, 'loc', i)
-    const mean = isConstCell(loc)
-      ? { const: loc.aff.offset }
-      : (this.g.materialise(affOf(loc), node.name, index) as string)
+    const mean = this.g.portOf(loc, node.name, index)
     this.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
     this.g.addFactor(precisionFactor(name, mean, tau), name)
     return name

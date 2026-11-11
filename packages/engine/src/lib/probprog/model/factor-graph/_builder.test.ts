@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { defaultOperators } from '../../../message-passing/index.ts'
 import { defaultOperators as modelOperators } from '../operators.ts'
 import { discreteRowGate, GateBuilder, GraphBuilder } from './_builder.ts'
+import { affOf, combine, constCell } from './_cells.ts'
+import { Refusal } from './_refusal.ts'
 
 describe('GateBuilder', () => {
   it('numbers the shared variables by position, adding each once', () => {
@@ -72,5 +74,36 @@ describe('GraphBuilder.sizeOf', () => {
     g.addVariable({ name: 'b', family: { kind: 'bernoulli' } })
     expect(g.sizeOf('b')).toBe(2)
     expect(g.sizeOf('nothing')).toBe(2)
+  })
+})
+
+describe('GraphBuilder.portOf', () => {
+  const builder = (): GraphBuilder => new GraphBuilder(defaultOperators(), modelOperators())
+
+  it('is { const } for a known cell', () => {
+    expect(builder().portOf(constCell(2.5), 'y', undefined)).toEqual({ const: 2.5 })
+  })
+
+  it('is the variable itself for a cell that is one variable', () => {
+    const g = builder()
+    g.addVariable({ name: 'x', family: { kind: 'gaussian' } })
+    expect(g.portOf(g.varAtom('x'), 'y', undefined)).toBe('x')
+    expect(g.variables.map((v) => v.name)).toEqual(['x'])
+  })
+
+  it('makes an auxiliary variable for an affine form of several, named after the site and the index', () => {
+    const g = builder()
+    g.addVariable({ name: 'a', family: { kind: 'gaussian' } })
+    g.addVariable({ name: 'b', family: { kind: 'gaussian' } })
+    const a = affOf(g.varAtom('a'))
+    const b = affOf(g.varAtom('b'))
+    const port = g.portOf({ kind: 'aff', aff: combine(a, b, 1) }, 'y', 3)
+    expect(port).toBe('y#0[3]')
+    expect(g.factors.map((f) => f.operator)).toEqual(['plus'])
+    expect(g.auxiliary).toEqual(['y#0[3]'])
+  })
+
+  it('refuses a cell that is not an affine form', () => {
+    expect(() => builder().portOf({ kind: 'lookup', variable: 'z', values: [1, 2] }, 'y', undefined)).toThrow(Refusal)
   })
 })
