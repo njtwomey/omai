@@ -8,7 +8,15 @@ import type { FactorOperator } from '../types.ts'
 import { bernoulliBeta, binomial, discreteDirichlet, poisson } from './conjugate.ts'
 import { gaussianMixture, select, table } from './discrete.ts'
 import { maximum, minimum } from './extremum.ts'
-import { equal, gaussianGammaPrecision, gaussianNormalGamma, gaussianOperator, prior, product } from './gaussian.ts'
+import {
+  equal,
+  gaussianGammaPrecision,
+  gaussianLogScale,
+  gaussianNormalGamma,
+  gaussianOperator,
+  prior,
+  product,
+} from './gaussian.ts'
 import {
   difference,
   dotConstant,
@@ -27,7 +35,7 @@ import { spin } from './spin.ts'
 import { greaterThan, isBetween, probit } from './truncation.ts'
 
 /**
- * The library's factor operators by name: `prior`, `gaussian`, `gaussian-gamma-precision`, `gaussian-normal-gamma`,
+ * The library's factor operators by name: `prior`, `gaussian`, `gaussian-gamma-precision`, `gaussian-log-scale`, `gaussian-normal-gamma`,
  * `product`, `max`, `min`, `equal`, `linear`, `plus`, `difference`, `times-constant`, `sum`, `dot-constant`, `matmul-constant`,
  * `linear-regression-row`, `gaussian-joint`, `probit`, `greater-than`, `is-between`, `logistic`, `bernoulli`,
  * `discrete`, `poisson`, `binomial`, `table`, `select`, `gaussian-mixture`, the regression rows `probit-row` and `logistic-row`, the plates of rows `linear-regression-plate`, `probit-plate` and `logistic-plate`, the
@@ -48,6 +56,7 @@ export function defaultOperators(): Record<string, FactorOperator> {
     prior,
     gaussianOperator,
     gaussianGammaPrecision,
+    gaussianLogScale,
     gaussianNormalGamma,
     product,
     maximum,

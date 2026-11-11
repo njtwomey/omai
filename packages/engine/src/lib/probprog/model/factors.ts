@@ -1369,8 +1369,13 @@ class Compiler {
     switch (fam) {
       case 'normal': {
         const scaleExpr = node.dist.params['scale']
-        if (scaleExpr !== undefined && !this.isConst(scaleExpr))
+        if (scaleExpr !== undefined && !this.isConst(scaleExpr)) {
+          const e = this.unwrap(scaleExpr)
+          const logScale =
+            e.kind === 'op' && e.op === 'exp' ? this.observedLogScale(node, name, y, i, index) : undefined
+          if (logScale !== undefined) return logScale
           return this.observedRandomPrecision(node, name, y, i, index)
+        }
         const scale = this.paramCell(node, 'scale', i)
         if (!isConstCell(scale)) throw new Refusal('operator', `the scale of '${node.name}' is not known`)
         if (!(scale.aff.offset > 0))
@@ -1550,6 +1555,35 @@ class Compiler {
     if (y.length === 0) return false
     this.addPlated(node, { operator, args: [design.vector], params: { X: x, y } })
     return true
+  }
+
+  /**
+   * An observed Gaussian whose scale is `exp(s)` with `s` an affine form of Gaussian variables (a `gaussian-log-scale`
+   * factor: the observation of a stochastic volatility model); the mean must be known.
+   */
+  private observedLogScale(
+    node: ModelNode & { readonly kind: 'observed' },
+    name: string,
+    y: number,
+    i: number,
+    index: number | undefined,
+  ): string | undefined {
+    const inner = this.unwrap(node.dist.params['scale'] as ExprSpec) as ExprSpec & { readonly kind: 'op' }
+    const loc = this.paramCell(node, 'loc', i)
+    if (!isConstCell(loc)) return undefined
+    let cell: Cell
+    try {
+      cell = this.cellsOf(node, 'logScale', () => this.evalSym(inner.args[0] as ExprSpec))[i] as Cell
+    } catch (e) {
+      // Not an affine form of Gaussian variables (a product of random values, a gamma latent): the precision idiom is tried next.
+      if (e instanceof Refusal) return undefined
+      throw e
+    }
+    if (isConstCell(cell) || cell.kind !== 'aff') return undefined
+    const s = this.materialise(affOf(cell), node.name, index) as string
+    this.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
+    this.addFactor({ operator: 'gaussian-log-scale', args: [name, s], params: { loc: loc.aff.offset } }, name)
+    return name
   }
 
   /** An observed Gaussian with a gamma precision (`gaussian-gamma-precision`): the mean is a variable or a known value. */

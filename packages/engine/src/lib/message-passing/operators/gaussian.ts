@@ -6,7 +6,7 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
-import { gaussianGrid, tiltedGrid } from '../_quadrature.ts'
+import { gaussianGrid, tiltedGrid, tiltedLogGrid } from '../_quadrature.ts'
 import { digammaOf, trigammaOf } from '../_scalar.ts'
 import { gamma, gammaShapeRate } from '../families.ts'
 import type { Arg, FactorOperator, FamilyKind, OperatorContext, OperatorResult } from '../types.ts'
@@ -248,6 +248,56 @@ export const gaussianGammaPrecision: FactorOperator = {
     const lambda = arg(c, 2)
     const mo = lambda.family.moments(etaOf(lambda))
     return 0.5 * ((mo[0] ?? 0) - Math.log(2 * Math.PI)) - 0.5 * (mo[1] ?? 0) * expectedSquare(arg(c, 0), arg(c, 1))
+  },
+}
+
+/** log N(y; loc, exp(2 s)) as a function of the log scale s. */
+const logLikelihoodOfLogScale = (y: number, loc: number, s: number): number =>
+  -0.5 * Math.log(2 * Math.PI) - s - 0.5 * (y - loc) ** 2 * Math.exp(-2 * s)
+
+/**
+ * x ~ N(loc, exp(2 s)) with the log of the scale `s` a Gaussian variable and the value `x` observed: the observation of a
+ * stochastic volatility model (the returns have scale `exp(h / 2)` with `h` a Gaussian log-variance). The log likelihood
+ * `-s - (x - loc)^2 exp(-2 s) / 2` is concave in `s`, so the tilted density (the cavity of `s` times the likelihood) is
+ * unimodal; expectation propagation matches its moments by quadrature on a grid over the cavity and sends the Gaussian
+ * site that turns the cavity into them. There is no variational rule (the expected likelihood has no closed form in a Gaussian
+ * `s`).
+ *
+ * @concept factor-operators
+ * @index structure An observation with a Gaussian log scale, x ~ N(loc, exp(2 s)): quadrature expectation propagation.
+ * @example
+ * ```ts
+ * import { gaussian, gaussianEta, gaussianLogScale, messageArg, valueArg } from 'omai-engine/message-passing'
+ * const args = [valueArg(gaussian, 2), messageArg(gaussian, gaussianEta(0, 1))]
+ * gaussianLogScale.ep?.({ mode: 'ep', to: 1, args, params: { loc: 0 }, power: 1 }).message.map((v) => v.toFixed(3)) // => ['2.348', '2.500']
+ * ```
+ */
+export const gaussianLogScale: FactorOperator = {
+  name: 'gaussian-log-scale',
+  description: 'x ~ N(loc, exp(2 s)) with a Gaussian log scale s and an observed x',
+  ports: [
+    { name: 'x', accepts: ['gaussian'] as const, constant: true },
+    { name: 'logScale', accepts: ['gaussian'] as const },
+  ],
+  support: { ep: 'numeric' },
+  readsTarget: (to) => to === 1,
+  noRule: {
+    vmp: 'the expected Gaussian likelihood of a log scale has no closed form (use expectation propagation or a sampler)',
+  },
+  ep: (c): OperatorResult => {
+    if (c.to !== 1) throw new OmaiError('value', 'gaussian-log-scale: the value x must be observed')
+    const y = gaussianOf(arg(c, 0)).mean
+    const loc = c.params['loc'] === undefined ? 0 : numberParam(c.params, 'loc')
+    const s = gaussianOf(arg(c, 1))
+    const t = tiltedLogGrid(s.mean, s.variance, (v) => logLikelihoodOfLogScale(y, loc, v))
+    return { message: gaussianSiteMessage(etaOf(arg(c, 1)), t.mean, t.variance) }
+  },
+  logEvidence: (c) => {
+    if (!allProper(c.args)) return Number.NaN
+    const y = gaussianOf(arg(c, 0)).mean
+    const loc = c.params['loc'] === undefined ? 0 : numberParam(c.params, 'loc')
+    const s = gaussianOf(arg(c, 1))
+    return massOf(arg(c, 1)) + tiltedLogGrid(s.mean, s.variance, (v) => logLikelihoodOfLogScale(y, loc, v)).logMass
   },
 }
 
