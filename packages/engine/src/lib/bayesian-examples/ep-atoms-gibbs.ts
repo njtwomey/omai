@@ -146,7 +146,7 @@ export function mixtureGibbs(spec: MixtureGibbsSpec): MixtureGibbs {
       count[k] = (count[k] as number) + 1
       total[k] = (total[k] as number) + (x[i] as number)
     }
-    mu = mu.map((m, k) => {
+    mu = mu.map((_, k) => {
       const prior = spec.means[k] as { mean: number; sd: number }
       const precision = 1 / prior.sd ** 2 + (count[k] as number) * (tau[k] as number)
       const centre = (prior.mean / prior.sd ** 2 + (tau[k] as number) * (total[k] as number)) / precision

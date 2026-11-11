@@ -14,14 +14,7 @@ import { foldIn, key, normal, uniform } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import type { Config } from '../trace/index.ts'
-import {
-  type AtomProblem,
-  type AtomRecoverySpec,
-  type AtomSupport,
-  defineAtom,
-  type EpAtom,
-  type ExactMarginal,
-} from './ep-atoms.ts'
+import { type AtomProblem, type AtomSupport, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 import { clutterPosterior, mixtureGibbs, samplesMarginal } from './ep-atoms-gibbs.ts'
 import { normalPdf } from './ep-atoms-quad.ts'
