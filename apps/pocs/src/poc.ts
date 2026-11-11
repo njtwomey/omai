@@ -22,6 +22,59 @@ export interface PocGroup {
   readonly title: string
   /** One or two sentences: what the group is about. */
   readonly summary: string
+  /**
+   * Optional sections of a big group, in the order they are shown (each collapsible on the group's page). A poc goes in the first
+   * subgroup one of whose `match` patterns fits its slug (an exact slug, `prefix*` or `*suffix`); a subgroup with `rest: true`
+   * takes the pocs no other subgroup claims, so a new page needs no entry anywhere. A group without subgroups is a flat list.
+   */
+  readonly subgroups?: readonly PocSubgroup[]
+}
+
+/** A section of a group: its name, what it holds and which pocs go in it. */
+export interface PocSubgroup {
+  readonly slug: string
+  readonly title: string
+  /** One line under the title. */
+  readonly summary?: string
+  /** The slugs it takes: an exact slug, `prefix*` or `*suffix`. */
+  readonly match?: readonly string[]
+  /** Takes every poc of the group that no other subgroup matches. */
+  readonly rest?: boolean
+}
+
+/** One section of a group's page: a subgroup with its pocs in display order (a group without subgroups is one untitled section). */
+export interface SubgroupSection {
+  readonly subgroup: PocSubgroup | undefined
+  readonly entries: readonly PocEntry[]
+}
+
+const fits = (pattern: string, slug: string): boolean =>
+  pattern.endsWith('*')
+    ? slug.startsWith(pattern.slice(0, -1))
+    : pattern.startsWith('*')
+      ? slug.endsWith(pattern.slice(1))
+      : pattern === slug
+
+/**
+ * Split the pocs of one group into the group's subgroups, in the order the subgroups are declared. A poc goes to the first
+ * subgroup with a pattern that fits its slug, else to the `rest` subgroup (else the last one without patterns); a subgroup with
+ * no pocs is left out. The pocs keep the order they came in (hand it the result of {@link searchPocs}). A group with no subgroups
+ * gives one untitled section.
+ *
+ * @param entries - The pocs of one group, in display order.
+ * @param group - The group, with its subgroups if it has any.
+ * @returns The non-empty sections.
+ */
+export function splitSubgroups(entries: readonly PocEntry[], group: PocGroup | undefined): SubgroupSection[] {
+  const subgroups = group?.subgroups
+  if (subgroups === undefined || subgroups.length === 0)
+    return entries.length === 0 ? [] : [{ subgroup: undefined, entries }]
+  const rest = subgroups.find((g) => g.rest === true)
+  const claimed = (e: PocEntry): PocSubgroup | undefined =>
+    subgroups.find((g) => g.match?.some((m) => fits(m, e.slug))) ?? rest
+  return subgroups
+    .map((g) => ({ subgroup: g, entries: entries.filter((e) => claimed(e) === g) }))
+    .filter((s) => s.entries.length > 0)
 }
 
 /** One section of the index: a group (or the ungrouped rest) with its matching pocs in display order. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { GROUPS } from './groups.ts'
-import { groupPocs, type PocEntry, searchPocs } from './poc.ts'
+import { groupPocs, type PocEntry, searchPocs, splitSubgroups } from './poc.ts'
 import { mismatched, POCS, pageOf } from './registry.ts'
 
 const entry = (slug: string, title: string, tags: string[], added: string): PocEntry => ({
@@ -73,5 +73,40 @@ describe('groups', () => {
     const slugs = GROUPS.map((x) => x.slug)
     expect(new Set(slugs).size).toBe(slugs.length)
     for (const p of POCS) if (p.group !== undefined) expect(slugs).toContain(p.group)
+  })
+})
+
+describe('splitSubgroups', () => {
+  const group = {
+    slug: 'g',
+    title: 'G',
+    summary: 's',
+    subgroups: [
+      { slug: 'one', title: 'One', match: ['prior-*', '*-learned'] },
+      { slug: 'basic', title: 'Basic', rest: true },
+      { slug: 'exact', title: 'Exact', match: ['coverage'] },
+    ],
+  }
+  const all = ['prior-a', 'gate', 'gate-learned', 'coverage', 'more'].map((slug) => entry(slug, slug, [], '2026-01-01'))
+  it('puts each poc in the first subgroup whose pattern fits its slug, the rest in the rest subgroup, in declared order', () => {
+    const sections = splitSubgroups(all, group)
+    expect(sections.map((s) => [s.subgroup?.slug, s.entries.map((e) => e.slug)])).toEqual([
+      ['one', ['prior-a', 'gate-learned']],
+      ['basic', ['gate', 'more']],
+      ['exact', ['coverage']],
+    ])
+  })
+  it('leaves out an empty subgroup and gives one untitled section for a group without subgroups', () => {
+    expect(splitSubgroups([entry('gate', 'gate', [], '2026-01-01')], group).map((s) => s.subgroup?.slug)).toEqual([
+      'basic',
+    ])
+    expect(splitSubgroups(all, { slug: 'x', title: 'X', summary: '' }).map((s) => s.subgroup)).toEqual([undefined])
+    expect(splitSubgroups([], group)).toEqual([])
+  })
+  it('the expectation propagation group claims every one of its pocs', () => {
+    const ep = GROUPS.find((g) => g.slug === 'expectation-propagation')
+    const mine = POCS.filter((p) => p.group === 'expectation-propagation')
+    const sections = splitSubgroups(mine, ep)
+    expect(sections.flatMap((s) => s.entries).length).toBe(mine.length)
   })
 })
