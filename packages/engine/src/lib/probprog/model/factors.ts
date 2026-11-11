@@ -66,7 +66,9 @@ import {
   constCell,
   isConstCell,
   logName,
+  lookup,
   lookupArithmetic,
+  lookupOfForms,
   type Precision,
   prod,
   recipArithmetic,
@@ -623,11 +625,10 @@ class Compiler {
     const asLookup = (c: Cell): (Cell & { kind: 'lookup' }) | undefined => {
       if (c.kind === 'lookup') return c.items === undefined ? c : undefined
       if (c.kind === 'rv' && (c.family === 'discrete' || c.family === 'bernoulli'))
-        return {
-          kind: 'lookup',
-          variable: c.variable,
-          values: Array.from({ length: c.family === 'bernoulli' ? 2 : states(c.variable) }, (_, i) => i),
-        }
+        return lookup(
+          c.variable,
+          Array.from({ length: c.family === 'bernoulli' ? 2 : states(c.variable) }, (_, i) => i),
+        )
       return undefined
     }
     const random = (c: Cell): boolean => c.kind === 'aff' && !isConstCell(c)
@@ -654,9 +655,15 @@ class Compiler {
     const b = asLookup(y)
     const f = (u: number, v: number): number => Number(op === 'gt' ? u > v : op === 'lt' ? u < v : u === v)
     if (a !== undefined && isConstCell(y))
-      return { kind: 'lookup', variable: a.variable, values: a.values.map((u) => f(u, y.aff.offset)) }
+      return lookup(
+        a.variable,
+        a.values.map((u) => f(u, y.aff.offset)),
+      )
     if (b !== undefined && isConstCell(x))
-      return { kind: 'lookup', variable: b.variable, values: b.values.map((u) => f(x.aff.offset, u)) }
+      return lookup(
+        b.variable,
+        b.values.map((u) => f(x.aff.offset, u)),
+      )
     if (isConstCell(x) && isConstCell(y)) return constCell(f(x.aff.offset, y.aff.offset))
     throw new Refusal(
       'operator',
@@ -1024,34 +1031,20 @@ class Compiler {
   private gate(components: readonly Cell[], z: string): Cell {
     const site = this.current
     // Known components: the value is a known function of the discrete variable (a lookup), not a random value to select.
-    if (components.every(isConstCell))
-      return { kind: 'lookup', variable: z, values: components.map((c) => (c as Cell & { kind: 'aff' }).aff.offset) }
+    if (components.every(isConstCell)) return lookupOfForms(z, components)
     // A mix of known and random Gaussian forms: a lookup whose random states carry their forms (a gate of Gaussian branches).
-    if (components.every((c) => c.kind === 'aff') && components.some(isConstCell))
-      return {
-        kind: 'lookup',
-        variable: z,
-        values: components.map((c) => (isConstCell(c) ? c.aff.offset : 0)),
-        items: components.map((c) => (isConstCell(c) ? undefined : (c as Cell & { kind: 'aff' }).aff)),
-      }
+    if (components.every((c) => c.kind === 'aff') && components.some(isConstCell)) return lookupOfForms(z, components)
     // Read by an observation whose precision is chosen by the same discrete variable: the components stay states of one lookup, so
     // the observation is one gate over its branches (random means and gamma precisions of each state), not a select per value.
     if (this.lookupMode) {
-      if (components.every((c) => c.kind === 'aff'))
-        return {
-          kind: 'lookup',
-          variable: z,
-          values: components.map((c) => (isConstCell(c) ? c.aff.offset : 0)),
-          items: components.map((c) => (isConstCell(c) ? undefined : (c as Cell & { kind: 'aff' }).aff)),
-        }
+      if (components.every((c) => c.kind === 'aff')) return lookupOfForms(z, components)
       const gammas = components.map((c) => (isConstCell(c) ? undefined : scaledOf(c)))
       if (components.every((c, k) => isConstCell(c) || gammas[k] !== undefined))
-        return {
-          kind: 'lookup',
-          variable: z,
-          values: components.map((c) => (isConstCell(c) ? c.aff.offset : 0)),
-          precisions: gammas,
-        }
+        return lookup(
+          z,
+          components.map((c) => (isConstCell(c) ? c.aff.offset : 0)),
+          { precisions: gammas },
+        )
     }
     const first = components[0] as Cell
     const rv = first.kind === 'rv'
@@ -1090,14 +1083,7 @@ class Compiler {
         'operator',
         'a value chosen by a discrete variable must be known or a Gaussian form in every state',
       )
-    const values = components.map((c) => (isConstCell(c) ? c.aff.offset : 0))
-    if (components.every(isConstCell)) return { kind: 'lookup', variable: z, values }
-    return {
-      kind: 'lookup',
-      variable: z,
-      values,
-      items: components.map((c) => (isConstCell(c) ? undefined : (c as Cell & { kind: 'aff' }).aff)),
-    }
+    return lookupOfForms(z, components)
   }
 
   /** `where(c, a, b)`: a known condition picks a branch; a Bernoulli latent condition is the gate `c ? a : b`. */
@@ -3906,7 +3892,7 @@ class Compiler {
     let scale: Cell
     if (this.paramIsConst(node, 'scale')) {
       const sd = (this.paramCell(node, 'scale', i) as Cell & { kind: 'aff' }).aff.offset
-      scale = { kind: 'lookup', variable: z, values: [sd, sd * width] }
+      scale = lookup(z, [sd, sd * width])
     } else {
       const scaleExpr = node.dist.params['scale'] as ExprSpec
       const precision = this.precisionExpr(scaleExpr)
@@ -3920,12 +3906,7 @@ class Compiler {
           `the scale of '${node.name}' must be the precision idiom 1 / sqrt(tau) of a gamma or exponential latent for the outlier mixture`,
         )
       const w2 = width * width
-      scale = {
-        kind: 'lookup',
-        variable: z,
-        values: [0, 0],
-        precisions: [tau, { ...tau, scale: tau.scale / w2, offset: tau.offset / w2 }],
-      }
+      scale = lookup(z, [0, 0], { precisions: [tau, { ...tau, scale: tau.scale / w2, offset: tau.offset / w2 }] })
     }
     return this.observedSwitch(node, this.elementName(node.name, node.dims, i), y, index, loc, scale)
   }

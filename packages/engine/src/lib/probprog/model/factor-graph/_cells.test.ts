@@ -10,7 +10,9 @@ import {
   constCell,
   isConstCell,
   logName,
+  lookup,
   lookupArithmetic,
+  lookupOfForms,
   prod,
   recipArithmetic,
   scaleAff,
@@ -162,6 +164,22 @@ describe('lookups of a discrete variable', () => {
     expect(refusal(() => lookupArithmetic('add', look([1, 2]), form(aff(0, { x: 1 })), states))?.message).toBe(
       "'add' of a discrete variable and a random value has no message rule",
     )
+  })
+})
+
+describe('lookup constructors', () => {
+  it('builds a lookup with only the parts it is given', () => {
+    expect(lookup('z', [1, 2])).toEqual({ kind: 'lookup', variable: 'z', values: [1, 2] })
+    expect('items' in lookup('z', [1, 2])).toBe(false)
+    const precisions = [{ variable: 't', scale: 1, offset: 0 }, undefined]
+    expect(lookup('z', [0, 5], { precisions })).toEqual({ kind: 'lookup', variable: 'z', values: [0, 5], precisions })
+  })
+
+  it('reads known forms as numbers and keeps the random ones in items', () => {
+    const x = aff(0, { x: 1 })
+    expect(lookupOfForms('z', [constCell(1), constCell(3)])).toEqual({ kind: 'lookup', variable: 'z', values: [1, 3] })
+    const mixed = lookupOfForms('z', [constCell(1), form(x)])
+    expect(mixed).toEqual({ kind: 'lookup', variable: 'z', values: [1, 0], items: [undefined, x] })
   })
 })
 

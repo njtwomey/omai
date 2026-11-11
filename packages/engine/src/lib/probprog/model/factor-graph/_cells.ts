@@ -125,7 +125,10 @@ export function lookupArithmetic(op: string, x: Cell, y: Cell, states: (variable
     if (c.kind === 'lookup') return c
     if (c.kind === 'rv' && (c.family === 'discrete' || c.family === 'bernoulli')) {
       const k = c.family === 'bernoulli' ? 2 : states(c.variable)
-      return { kind: 'lookup', variable: c.variable, values: Array.from({ length: k }, (_, i) => i) }
+      return lookup(
+        c.variable,
+        Array.from({ length: k }, (_, i) => i),
+      )
     }
     return undefined
   }
@@ -147,13 +150,19 @@ export function lookupArithmetic(op: string, x: Cell, y: Cell, states: (variable
         'operator',
         `'${op}' of two different discrete variables ('${a.variable}', '${b.variable}') has no message rule`,
       )
-    return { kind: 'lookup', variable: a.variable, values: a.values.map((u, i) => f(u, b.values[i] as number)) }
+    return lookup(
+      a.variable,
+      a.values.map((u, i) => f(u, b.values[i] as number)),
+    )
   }
   const [look, other, flip] = a !== undefined ? [a, y, false] : [b as Cell & { kind: 'lookup' }, x, true]
   if (!isConstCell(other))
     throw new Refusal('operator', `'${op}' of a discrete variable and a random value has no message rule`)
   const k = other.aff.offset
-  return { kind: 'lookup', variable: look.variable, values: look.values.map((u) => (flip ? f(k, u) : f(u, k))) }
+  return lookup(
+    look.variable,
+    look.values.map((u) => (flip ? f(k, u) : f(u, k))),
+  )
 }
 
 /**
@@ -208,6 +217,30 @@ export function scaledArithmetic(op: string, x: Cell, y: Cell): Cell | undefined
     default:
       return refuse()
   }
+}
+
+/** A known function of a discrete variable, one number per state; `items` and `precisions` are the random forms some states carry (see `Cell`). */
+export function lookup(
+  variable: string,
+  values: readonly number[],
+  extra: {
+    readonly items?: readonly (Aff | undefined)[]
+    readonly precisions?: readonly (Precision | undefined)[]
+  } = {},
+): Cell & { readonly kind: 'lookup' } {
+  return { kind: 'lookup', variable, values, ...extra }
+}
+
+/**
+ * The lookup of Gaussian forms, one per state of the discrete variable: known numbers when every form is a constant, else a
+ * lookup whose random states carry their forms in `items` (a gate of Gaussian branches reads them).
+ */
+export function lookupOfForms(variable: string, components: readonly Cell[]): Cell {
+  const values = components.map((c) => (isConstCell(c) ? c.aff.offset : 0))
+  if (components.every(isConstCell)) return lookup(variable, values)
+  return lookup(variable, values, {
+    items: components.map((c) => (isConstCell(c) ? undefined : (c as Cell & { kind: 'aff' }).aff)),
+  })
 }
 
 export const prod = (xs: readonly number[]): number => xs.reduce((a, b) => a * b, 1)
