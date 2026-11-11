@@ -30,10 +30,7 @@
 
 import type { Json } from '../../base/index.ts'
 import {
-  bernoulliEta,
   betaEta,
-  dirichletPrior,
-  discretePrior,
   type FactorGraphSpec,
   type FactorOperator,
   type FactorSpec,
@@ -45,17 +42,11 @@ import {
   normalGammaPrior,
   priorFactor,
 } from '../../message-passing/index.ts'
-import { asTensor, toFlat } from '../../tensor/index.ts'
+import { toFlat } from '../../tensor/index.ts'
 import type { SpecAnalysis } from './analysis.ts'
 import type { BoundModel } from './bind.ts'
 import { eventToDims } from './event-dims.ts'
-import {
-  discreteRowGate,
-  type GateBranch,
-  GateBuilder,
-  precisionBranch,
-  precisionFactor,
-} from './factor-graph/_builder.ts'
+import { type GateBranch, GateBuilder, precisionBranch, precisionFactor } from './factor-graph/_builder.ts'
 import {
   affOf,
   type Cell,
@@ -65,19 +56,11 @@ import {
   type Precision,
   prod,
   scaledOf,
-  unflatten,
 } from './factor-graph/_cells.ts'
 import { Context } from './factor-graph/_context.ts'
-import {
-  expArgument,
-  logVariableOf,
-  precisionExpr,
-  randomTransitionRow,
-  stripClip,
-  transitionRow,
-  unwrap,
-} from './factor-graph/_idioms.ts'
+import { expArgument, logVariableOf, precisionExpr, stripClip, unwrap } from './factor-graph/_idioms.ts'
 import { derived } from './factor-graph/_mappings/derived.ts'
+import { bernoulliTable, latentDirichlet, latentDiscrete } from './factor-graph/_mappings/latent-discrete.ts'
 import {
   latentCorrelation,
   latentMultivariateNormal,
@@ -120,7 +103,6 @@ import {
   constParam,
   discreteParents,
   evalNamedValue,
-  eventVector,
   paramIsConst,
   paramSym,
   randomPrecisions,
@@ -130,9 +112,9 @@ import { Refusal } from './factor-graph/_refusal.ts'
 import { evalSym } from './factor-graph/_symbolic/_affine.ts'
 import { mulAff } from './factor-graph/_symbolic/_functions.ts'
 import type { FactorGraphCompilation } from './factor-graph/types.ts'
-import { defaultOperators, type NamedValue, type OperatorTable } from './operators.ts'
+import { defaultOperators, type OperatorTable } from './operators.ts'
 import { ScanUnrollError, unrollScans } from './scan.ts'
-import type { DistSpec, ExprSpec, ModelNode } from './spec.ts'
+import type { ExprSpec, ModelNode } from './spec.ts'
 
 /** A factor-graph name for the family of a distribution family, for the families the compiler maps. */
 const MESSAGE_FAMILY: Readonly<Record<string, FamilyKind>> = {
@@ -290,13 +272,13 @@ class Compiler {
       return
     }
     if (fam === 'bernoulli' || fam === 'categorical') {
-      this.latentDiscrete(node)
+      latentDiscrete(this.cx, node)
       return
     }
     if (fam === 'dirichlet') {
       const concentration = node.dist.params['concentration']
       if (concentration !== undefined && !this.cx.isConst(concentration)) this.latentRandomConcentration(node)
-      else this.latentDirichlet(node)
+      else latentDirichlet(this.cx, node)
       return
     }
     if (fam === 'beta' && ['a', 'b'].some((k) => !this.cx.isConst(node.dist.params[k] as ExprSpec))) {
@@ -867,33 +849,6 @@ class Compiler {
     this.cx.finishLatent(node, 'gaussian', cells, vars)
   }
 
-  private latentDirichlet(node: ModelNode & { readonly kind: 'latent' }): void {
-    const e = node.dist.params['concentration']
-    if (e === undefined) throw new Refusal('structure', `'${node.name}': the concentration is missing`)
-    let nv: NamedValue
-    try {
-      nv = this.cx.evalNamed(e)
-    } catch (err) {
-      if (err instanceof Refusal)
-        throw new Refusal('operator', `the concentration of '${node.name}' depends on a random value: it must be known`)
-      throw err
-    }
-    const shape = this.cx.shapeOf(node.dims)
-    const cells: Cell[] = []
-    const vars: string[] = []
-    for (let i = 0; i < prod(shape); i++) {
-      const alpha = eventVector(this.cx, nv, node.dims, unflatten(i, shape))
-      const name = this.cx.g.addVariable({
-        name: this.cx.elementName(node.name, node.dims, i),
-        family: { kind: 'dirichlet', size: alpha.length },
-      })
-      this.cx.g.addFactor(dirichletPrior(name, alpha), name)
-      cells.push({ kind: 'rv', variable: name, family: 'dirichlet' })
-      vars.push(name)
-    }
-    this.cx.finishLatent(node, 'dirichlet', cells, vars)
-  }
-
   /**
    * A beta or Dirichlet latent whose concentrations are known multiples of one random positive value plus known offsets
    * (`beta(alpha, alpha)`, `beta(alpha, 2)`, `dirichlet(alpha * ones)`: the strength of the prior learned from the data) with `alpha`
@@ -1038,238 +993,6 @@ class Compiler {
     )
   }
 
-  /** The probability of 1 of a Bernoulli node as a function of its discrete parents, by enumeration, as a table over (parents..., node). */
-  private bernoulliTable(node: ModelNode & { readonly dist: DistSpec }, parents: readonly string[]): number[] {
-    const e = node.dist.params['probs'] ?? node.dist.params['logits']
-    if (e === undefined) throw new Refusal('structure', `'${node.name}': the probability is missing`)
-    const logits = node.dist.params['probs'] === undefined
-    const values: number[] = []
-    for (let a = 0; a < 2 ** parents.length; a++) {
-      const override = new Map<string, NamedValue>()
-      parents.forEach((p, k) => {
-        const bit = (a >> (parents.length - 1 - k)) & 1
-        override.set(p, { value: asTensor(bit, 'float64'), dims: [] })
-      })
-      const raw = toFlat(this.cx.evalNamed(e, override).value)[0] as number
-      const p1 = logits ? 1 / (1 + Math.exp(-raw)) : raw
-      if (!(p1 >= 0 && p1 <= 1)) throw new Refusal('data', `'${node.name}': a probability of ${p1} is outside [0, 1]`)
-      values.push(1 - p1, p1)
-    }
-    return values
-  }
-
-  /**
-   * A categorical latent: a `discrete` variable per element with a known probability vector (a `prior` factor), or with a
-   * Dirichlet latent as its probabilities (the conjugate `discrete` factor, a mixture weight). Its role in a model is as
-   * the gate of `at(components, z)` or the index of a conjugate observation.
-   */
-  private latentCategorical(node: ModelNode & { readonly kind: 'latent' }): void {
-    const shape = this.cx.shapeOf(node.dims)
-    const n = prod(shape)
-    const probsExpr = node.dist.params['probs']
-    const logitsExpr = node.dist.params['logits']
-    const expr = probsExpr ?? logitsExpr
-    if (expr === undefined) throw new Refusal('structure', `'${node.name}': give probs or logits`)
-    const cells: Cell[] = []
-    const vars: string[] = []
-    const chain = logitsExpr === undefined && !this.cx.isConst(expr) ? transitionRow(this.cx.idiom, expr) : undefined
-    if (chain !== undefined) {
-      // The probabilities are a known row of a matrix chosen by another discrete variable (a Markov chain's transition): a table over the two.
-      const parents = this.cx.over(evalSym(this.cx, chain.index), node.dims)
-      const matrix = toFlat(this.cx.evalNamed(chain.matrix).value)
-      for (const [i, p] of parents.entries()) {
-        if (p.kind !== 'rv' || (p.family !== 'discrete' && p.family !== 'bernoulli'))
-          throw new Refusal(
-            'operator',
-            `the row of '${node.name}' must be chosen by a discrete latent, not a computed value`,
-          )
-        const from = p.family === 'bernoulli' ? 2 : this.cx.g.sizeOf(p.variable)
-        const to = matrix.length / from
-        if (!Number.isInteger(to) || to < 1)
-          throw new Refusal(
-            'data',
-            `the transition matrix of '${node.name}' has ${matrix.length} entries for ${from} states`,
-          )
-        const name = this.cx.g.addVariable({
-          name: this.cx.elementName(node.name, node.dims, i),
-          family: { kind: 'discrete', size: to },
-        })
-        this.cx.g.need('table')
-        this.cx.g.addFactor(
-          { operator: 'table', args: [p.variable, name], params: { states: [from, to], values: Array.from(matrix) } },
-          name,
-        )
-        cells.push({ kind: 'rv', variable: name, family: 'discrete' })
-        vars.push(name)
-      }
-    } else if (!this.cx.isConst(expr) && randomTransitionRow(this.cx.idiom, expr) !== undefined) {
-      // The rows of the matrix are Dirichlet latents (a transition matrix to learn), chosen by another discrete variable: one
-      // `gate` per element, whose state is the previous state and whose branch `j` is the conjugate `discrete` factor of this
-      // state on row `j`. Each row then hears only the transitions out of its state, weighted by the belief that the chain was there.
-      const chosen = randomTransitionRow(this.cx.idiom, expr) as { readonly matrix: ExprSpec; readonly index: ExprSpec }
-      const matrix = evalSym(this.cx, chosen.matrix)
-      const rows = matrix.cells
-      const parents = this.cx.over(evalSym(this.cx, chosen.index), node.dims)
-      if (matrix.dims.length !== 1 || rows.some((r) => r.kind !== 'rv' || r.family !== 'dirichlet'))
-        throw new Refusal(
-          'operator',
-          `the rows of the matrix behind '${node.name}' must be one Dirichlet latent each (a latent over the dimension of the states)`,
-        )
-      const rowVars = rows.map((r) => (r as { readonly variable: string }).variable)
-      const size = this.cx.g.sizeOf(rowVars[0] as string)
-      for (const [i, p] of parents.entries()) {
-        if (p.kind !== 'rv' || (p.family !== 'discrete' && p.family !== 'bernoulli'))
-          throw new Refusal(
-            'operator',
-            `the row of '${node.name}' must be chosen by a discrete latent, not a computed value`,
-          )
-        const from = p.family === 'bernoulli' ? 2 : this.cx.g.sizeOf(p.variable)
-        if (from !== rowVars.length)
-          throw new Refusal('data', `'${node.name}' has ${from} previous states and its matrix ${rowVars.length} rows`)
-        const name = this.cx.g.addVariable({
-          name: this.cx.elementName(node.name, node.dims, i),
-          family: { kind: 'discrete', size },
-        })
-        this.cx.g.need('gate')
-        this.cx.g.need('discrete')
-        this.cx.g.addFactor(discreteRowGate(p.variable, name, rowVars), name)
-        cells.push({ kind: 'rv', variable: name, family: 'discrete' })
-        vars.push(name)
-      }
-    } else if (!this.cx.isConst(expr)) {
-      if (logitsExpr !== undefined)
-        throw new Refusal(
-          'operator',
-          `the logits of '${node.name}' depend on a random value: only probs from a Dirichlet latent map`,
-        )
-      const over = this.cx.over(evalSym(this.cx, expr), node.dims)
-      for (const [i, c] of over.entries()) {
-        if (c.kind === 'sticks') {
-          // The weights are the stick-breaking of beta breaks: a `stick-breaking` factor on the assignment and the breaks.
-          const name = this.cx.g.addVariable({
-            name: this.cx.elementName(node.name, node.dims, i),
-            family: { kind: 'discrete', size: c.variables.length + 1 },
-          })
-          this.cx.g.need('stick-breaking')
-          this.cx.g.addFactor(
-            { operator: 'stick-breaking', args: [name, ...c.variables], params: { sticks: c.variables.length } },
-            name,
-          )
-          cells.push({ kind: 'rv', variable: name, family: 'discrete' })
-          vars.push(name)
-          continue
-        }
-        if (c.kind !== 'rv' || c.family !== 'dirichlet')
-          throw new Refusal(
-            'operator',
-            `the probabilities of '${node.name}' must be known or a Dirichlet latent for the conjugate 'discrete' operator`,
-          )
-        const size = this.cx.g.sizeOf(c.variable)
-        const name = this.cx.g.addVariable({
-          name: this.cx.elementName(node.name, node.dims, i),
-          family: { kind: 'discrete', size },
-        })
-        this.cx.g.addFactor({ operator: 'discrete', args: [name, c.variable] }, name)
-        cells.push({ kind: 'rv', variable: name, family: 'discrete' })
-        vars.push(name)
-      }
-    } else {
-      const nv = this.cx.evalNamed(expr)
-      for (let i = 0; i < n; i++) {
-        const raw = eventVector(this.cx, nv, node.dims, unflatten(i, shape))
-        const probs =
-          logitsExpr === undefined
-            ? raw
-            : (() => {
-                const top = Math.max(...raw)
-                const e = raw.map((v) => Math.exp(v - top))
-                const t = e.reduce((a, b) => a + b, 0)
-                return e.map((v) => v / t)
-              })()
-        const name = this.cx.g.addVariable({
-          name: this.cx.elementName(node.name, node.dims, i),
-          family: { kind: 'discrete', size: probs.length },
-        })
-        this.cx.g.addFactor(discretePrior(name, probs), name)
-        cells.push({ kind: 'rv', variable: name, family: 'discrete' })
-        vars.push(name)
-      }
-    }
-    this.cx.finishLatent(node, 'discrete', cells, vars)
-  }
-
-  private latentDiscrete(node: ModelNode & { readonly kind: 'latent' }): void {
-    if (node.dist.family === 'categorical') {
-      this.latentCategorical(node)
-      return
-    }
-    const parents = discreteParents(this.cx, node)
-    if (node.dims.length > 0 && parents.length > 0)
-      throw new Refusal(
-        'structure',
-        `'${node.name}' is a Bernoulli over [${node.dims}] with discrete parents: tables over plated nodes are not expanded yet`,
-      )
-    const shape = this.cx.shapeOf(node.dims)
-    const n = prod(shape)
-    const cells: Cell[] = []
-    const vars: string[] = []
-    const probsExpr = node.dist.params['probs']
-    if (parents.length === 0 && probsExpr !== undefined && !this.cx.isConst(probsExpr)) {
-      // A Bernoulli whose probability is a beta latent (an unknown mixing weight, a gate's prior): the conjugate `bernoulli` factor,
-      // whose message to the probability is the moment-matched mixture of the two conjugate updates.
-      this.cx.g.need('bernoulli')
-      const over = this.cx.over(evalSym(this.cx, probsExpr), node.dims)
-      for (const [i, c] of over.entries()) {
-        if (c.kind !== 'rv' || c.family !== 'beta')
-          throw new Refusal(
-            'operator',
-            `the probability of '${node.name}' must be known or a beta latent for the conjugate 'bernoulli' operator`,
-          )
-        const name = this.cx.g.addVariable({
-          name: this.cx.elementName(node.name, node.dims, i),
-          family: { kind: 'bernoulli' },
-        })
-        this.cx.g.addFactor({ operator: 'bernoulli', args: [name, c.variable] }, name)
-        cells.push({ kind: 'rv', variable: name, family: 'bernoulli' })
-        vars.push(name)
-      }
-    } else if (parents.length === 0) {
-      const probs = constParam(
-        this.cx,
-        node,
-        node.dist.params['probs'] === undefined ? 'logits' : 'probs',
-        'the probability',
-      )
-      const p = node.dist.params['probs'] === undefined ? probs.map((l) => 1 / (1 + Math.exp(-l))) : probs
-      for (let i = 0; i < n; i++) {
-        const name = this.cx.g.addVariable({
-          name: this.cx.elementName(node.name, node.dims, i),
-          family: { kind: 'bernoulli' },
-        })
-        this.cx.g.addFactor(
-          { operator: 'prior', args: [name], params: { eta: [...bernoulliEta(p[i] as number)] } },
-          name,
-        )
-        cells.push({ kind: 'rv', variable: name, family: 'bernoulli' })
-        vars.push(name)
-      }
-    } else {
-      const name = this.cx.g.addVariable({ name: node.name, family: { kind: 'bernoulli' } })
-      const pv = parents.map((p) => rvName(this.cx, p))
-      this.cx.g.addFactor(
-        {
-          operator: 'table',
-          args: [...pv, name],
-          params: { states: new Array<number>(parents.length + 1).fill(2), values: this.bernoulliTable(node, parents) },
-        },
-        name,
-      )
-      cells.push({ kind: 'rv', variable: name, family: 'bernoulli' })
-      vars.push(name)
-    }
-    this.cx.finishLatent(node, 'bernoulli', cells, vars)
-  }
-
   private observed(node: ModelNode & { readonly kind: 'observed' }): void {
     if (node.dist.family === 'multivariateNormal' && wishartOf(this.cx, node) !== undefined) {
       observedMvnWishart(this.cx, node)
@@ -1327,7 +1050,7 @@ class Compiler {
           args: [...pv, name],
           params: {
             states: new Array<number>(pv.length + 1).fill(2),
-            values: this.bernoulliTable(node, parentsOf),
+            values: bernoulliTable(this.cx, node, parentsOf),
           },
         },
         name,
