@@ -50,7 +50,7 @@ import {
   wishartEta,
 } from '../../message-passing/index.ts'
 import { inv } from '../../numerics/linalg/index.ts'
-import { asTensor, fromStorage, type NestedArray, toFlat } from '../../tensor/index.ts'
+import { asTensor, fromStorage, toFlat } from '../../tensor/index.ts'
 import type { SpecAnalysis } from './analysis.ts'
 import type { BoundModel } from './bind.ts'
 import { distributionFamilies } from './dists/families.ts'
@@ -86,7 +86,18 @@ import {
   scaledOf,
   unflatten,
 } from './factor-graph/_cells.ts'
+import { type EvalEnv, evaluateKnown, isKnownExpr, type Known, knownConstants } from './factor-graph/_known.ts'
 import { Refusal } from './factor-graph/_refusal.ts'
+import {
+  cellAt,
+  fromNamed,
+  joinDims,
+  overDims,
+  shapeOf,
+  sizeOf,
+  toNamed,
+  zipSyms,
+} from './factor-graph/_symbolic/_dims.ts'
 import type { FactorGraphCompilation, FactorIssue, SiteLayout } from './factor-graph/types.ts'
 import { auxId, elementId } from './ids.ts'
 import { defaultOperators, type NamedValue, type OperatorTable } from './operators.ts'
@@ -150,7 +161,10 @@ class Compiler {
   readonly issues: FactorIssue[] = []
   readonly sites: SiteLayout[] = []
   readonly plated: string[] = []
-  private readonly consts = new Map<string, NamedValue>()
+  /** What is known before and while the walk maps the nodes: bound data and constant derived nodes (`factor-graph/_known.ts`). */
+  private readonly known: Known
+  /** The custom functions the evaluation of each known derived node called (replayed into `handledCustoms` when the walk skips the node). */
+  private readonly customsCalled: ReadonlyMap<string, readonly string[]>
   private readonly syms = new Map<string, Sym>()
   private readonly lazy = new Map<string, ExprSpec>()
   private readonly failed = new Set<string>()
@@ -189,6 +203,8 @@ class Compiler {
   private readonly families = distributionFamilies()
   /** The node being compiled: the site that auxiliary variables of its expressions are named after. */
   private current = ''
+  /** The index in the spec of the node being compiled. */
+  private position = 0
   /** Set while the mean and the precision of an observation chosen by one discrete variable are read: a gate keeps its components as a lookup. */
   private lookupMode = false
 
@@ -202,6 +218,9 @@ class Compiler {
   ) {
     this.g = new GraphBuilder(ops, modelOps)
     this.unbound = new Set(bound.unbound)
+    const pre = knownConstants(bound, modelOps)
+    this.known = pre.known
+    this.customsCalled = pre.customsCalled
     for (const n of bound.spec.nodes) if (n.kind !== 'observed') this.nodes.set(n.name, n)
     this.findPacked()
     this.findNonCentred()
@@ -355,118 +374,61 @@ class Compiler {
   // ----- sizes and indexing -----
 
   private size(dim: string): number {
-    const n = this.bound.sizes[dim]
-    if (n === undefined)
-      throw new Refusal('data', `the dimension '${dim}' has no size (bind data for it or fix its size)`)
-    return n
+    return sizeOf(this.bound.sizes, dim)
   }
 
   private shapeOf(dims: readonly string[]): number[] {
-    return dims.map((d) => this.size(d))
+    return shapeOf(this.bound.sizes, dims)
   }
 
   private cellAt(sym: Sym, outDims: readonly string[], idx: readonly number[]): Cell {
-    let flat = 0
-    for (const d of sym.dims) {
-      const at = outDims.indexOf(d)
-      if (at < 0)
-        throw new Refusal('structure', `a value over '${d}' does not fit the dimensions [${outDims.join(', ')}]`)
-      flat = flat * this.size(d) + (idx[at] as number)
-    }
-    return sym.cells[flat] as Cell
+    return cellAt(this.bound.sizes, sym, outDims, idx)
   }
 
   private joinDims(syms: readonly Sym[]): string[] {
-    const dims: string[] = []
-    for (const s of syms) for (const d of s.dims) if (!dims.includes(d)) dims.push(d)
-    return dims
+    return joinDims(syms)
   }
 
   private zip(syms: readonly Sym[], f: (cells: readonly Cell[], index: number) => Cell): Sym {
-    const dims = this.joinDims(syms)
-    const shape = this.shapeOf(dims)
-    const cells: Cell[] = []
-    for (let i = 0; i < prod(shape); i++) {
-      const idx = unflatten(i, shape)
-      cells.push(
-        f(
-          syms.map((s) => this.cellAt(s, dims, idx)),
-          i,
-        ),
-      )
-    }
-    return { dims, cells }
+    return zipSyms(this.bound.sizes, syms, f)
   }
 
   /** The cells of a symbolic value laid out over a node's dimensions (broadcasting what it lacks). */
   private over(sym: Sym, dims: readonly string[]): Cell[] {
-    const shape = this.shapeOf(dims)
-    const out: Cell[] = []
-    for (let i = 0; i < prod(shape); i++) out.push(this.cellAt(sym, dims, unflatten(i, shape)))
-    return out
+    return overDims(this.bound.sizes, sym, dims)
   }
 
   // ----- values -----
 
   private fromNamed(nv: NamedValue): Sym {
-    if (nv.value.shape.length !== nv.dims.length)
-      throw new Refusal('structure', 'a value with event axes cannot stand in a scalar expression')
-    return { dims: nv.dims, cells: toFlat(nv.value).map(constCell) }
+    return fromNamed(nv)
   }
 
   private toNamed(sym: Sym): NamedValue {
-    const shape = this.shapeOf(sym.dims)
-    const values = sym.cells.map((c) => {
-      if (!isConstCell(c)) throw new Refusal('node', 'a random value where a known one is needed')
-      return c.aff.offset
-    })
-    return { value: fromStorage(Float64Array.from(values), shape, 'float64'), dims: sym.dims }
+    return toNamed(this.bound.sizes, sym)
   }
 
   private isConst(e: ExprSpec): boolean {
-    switch (e.kind) {
-      case 'const':
-        return true
-      case 'ref':
-        return this.consts.has(e.name)
-      case 'op':
-        return e.args.every((a) => this.isConst(a))
-      case 'custom':
-        // A custom function of known values is a known value (the Gram matrix of a kernel whose length scale is fixed).
-        return this.bound.customs[e.name] !== undefined && e.args.every((a) => this.isConst(a))
-    }
+    return isKnownExpr(e, this.known, this.bound.customs)
   }
 
   /** The value of an expression that has no random part, by the operator registry's own evaluation. */
   evalNamed(e: ExprSpec, override?: ReadonlyMap<string, NamedValue>): NamedValue {
-    switch (e.kind) {
-      case 'const':
-        return { value: asTensor(e.value as NestedArray, 'float64'), dims: e.dims ?? [] }
-      case 'ref': {
-        const o = override?.get(e.name) ?? this.consts.get(e.name)
+    const env: EvalEnv = {
+      modelOps: this.modelOps,
+      customs: this.bound.customs,
+      ref: (name) => {
+        const o = override?.get(name) ?? this.known.get(name)
         if (o !== undefined) return o
-        const lazy = this.lazy.get(e.name)
-        if (lazy !== undefined) return this.evalNamed(lazy, override)
-        if (this.unbound.has(e.name)) throw new Refusal('data', `data '${e.name}' is not bound`)
-        if (this.failed.has(e.name)) throw new Refusal('node', `depends on '${e.name}', which could not be compiled`)
-        throw new Refusal('node', `'${e.name}' is random where a known value is needed`)
-      }
-      case 'op': {
-        const def = this.modelOps[e.op]
-        if (def === undefined) throw new Refusal('operator', `unknown operator '${e.op}'`)
-        return def.evaluate(
-          e.args.map((a) => this.evalNamed(a, override)),
-          e.params ?? {},
-        )
-      }
-      case 'custom': {
-        const fn = this.bound.customs[e.name]
-        if (fn === undefined) throw new Refusal('opaque', `the custom function '${e.name}' was not supplied`)
-        const value = fn(e.args.map((a) => this.evalNamed(a, override)))
-        this.handledCustoms.add(e.name)
-        return { value, dims: e.dims }
-      }
+        const lazy = this.lazy.get(name)
+        if (lazy !== undefined) return evaluateKnown(lazy, env)
+        if (this.unbound.has(name)) throw new Refusal('data', `data '${name}' is not bound`)
+        if (this.failed.has(name)) throw new Refusal('node', `depends on '${name}', which could not be compiled`)
+        throw new Refusal('node', `'${name}' is random where a known value is needed`)
+      },
+      onCustom: (name) => this.handledCustoms.add(name),
     }
+    return evaluateKnown(e, env)
   }
 
   /**
@@ -1124,8 +1086,9 @@ class Compiler {
   // ----- the nodes -----
 
   run(): void {
-    for (const node of this.bound.spec.nodes) {
+    for (const [position, node] of this.bound.spec.nodes.entries()) {
       this.current = node.name
+      this.position = position
       try {
         this.node(node)
       } catch (e) {
@@ -1138,11 +1101,9 @@ class Compiler {
 
   private node(node: ModelNode): void {
     switch (node.kind) {
-      case 'data': {
-        const t = this.bound.data[node.name]
-        if (t !== undefined) this.consts.set(node.name, { value: t, dims: node.dims })
+      case 'data':
+        // Bound data is known from the start (`knownConstants`): nothing to map.
         return
-      }
       case 'latent':
         // A standard normal vector that a non-centred derived node absorbs is compiled by that node only if the dense factor does not apply.
         if ([...this.nonCentred.values()].includes(node.name)) return
@@ -2923,6 +2884,19 @@ class Compiler {
       this.latent(z)
       this.current = node.name
     }
+    if (this.known.has(node.name)) {
+      // A constant found before the walk: its value is known, and the custom functions its evaluation called count as evaluated.
+      for (const name of this.customsCalled.get(node.name) ?? []) this.handledCustoms.add(name)
+      this.layout(
+        node,
+        'derived',
+        undefined,
+        'constant',
+        new Array<null>(prod(this.shapeOf(node.dims))).fill(null),
+        false,
+      )
+      return
+    }
     if (this.discreteParents(node).length > 0) {
       this.lazy.set(node.name, node.expr)
       return
@@ -2931,7 +2905,9 @@ class Compiler {
     const shape = this.shapeOf(node.dims)
     const cells = this.over(sym, node.dims)
     if (cells.every(isConstCell)) {
-      this.consts.set(node.name, this.toNamed({ dims: node.dims, cells }))
+      // Constant only after the symbolic evaluation (the expression mentions a random value, the cells do not): order-dependent.
+      this.known.declare(node.name, this.toNamed({ dims: node.dims, cells }), this.position)
+      this.known.semantic.push(node.name)
       this.layout(node, 'derived', undefined, 'constant', new Array<null>(prod(shape)).fill(null), false)
       return
     }
