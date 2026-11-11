@@ -27,7 +27,7 @@ import { gamma, gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, FamilyKind, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
 import { gaussianGrid, tiltedGrid, tiltedLogGrid } from '../../numerics/_quadrature.ts'
-import { digammaOf, trigammaOf } from '../../numerics/_scalar.ts'
+import { gammaLogWindow, uniformGrid, windowProfiles } from '../../numerics/_windows.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 const ALL: readonly FamilyKind[] = [
@@ -147,7 +147,6 @@ export const gaussianOperator: FactorOperator = {
 }
 
 const TILT_POINTS = 801
-const TILT_SPAN = 20
 /**
  * The moments of the tilted distribution of the factor `x ~ N(u, 1 / lambda)` with the two Gaussian cavities `x ~ N(mx, vx)`
  * and `u ~ N(mu, vu)` (either may be observed: a variance of zero) and the gamma cavity of `lambda`. The factor depends on
@@ -195,11 +194,8 @@ function precisionTiltGrid(
     throw new ImproperMessageError('a gamma message has no density (its shape and rate are not positive)')
   const gap = x.mean - u.mean
   const joint = x.variance + u.variance
-  const centre = digammaOf(shape) - Math.log(rate)
-  const half = TILT_SPAN * Math.sqrt(trigammaOf(shape))
-  const lo = Math.max(centre - half, -60)
-  const hi = Math.min(centre + half, 60)
-  const step = (hi - lo) / (TILT_POINTS - 1)
+  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.precisionTilt)
+  const { step } = uniformGrid({ lo, hi }, TILT_POINTS)
   const logw = new Float64Array(TILT_POINTS)
   let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < TILT_POINTS; i++) {
