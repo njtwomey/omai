@@ -1383,9 +1383,9 @@ class Compiler {
   /**
    * A spike and slab latent (`normalSpikeSlab`: a mixture of a wide and a narrow zero-mean normal on every element): each
    * element is a Gaussian variable (or a coordinate of one packed Gaussian vector, when a `matmul` reads it) with a
-   * `mixture-site` (`mixture-row`) factor, whose EP message is exact. The variable also gets a very wide Gaussian prior
-   * (a hundred slab standard deviations), so the factors have a proper cavity to start from; it changes the model by
-   * about one part in ten thousand.
+   * `mixture-site` (`mixture-row`) factor, whose EP message is exact. The factor starts with a very wide Gaussian message
+   * (a hundred slab standard deviations), so the other factors have a proper cavity to begin from; its own first update
+   * replaces it, so the model is unchanged.
    */
   private latentSpikeSlab(node: ModelNode & { readonly kind: 'latent' }): void {
     const n = prod(this.shapeOf(node.dims))
@@ -1403,15 +1403,15 @@ class Compiler {
     const wide = (i: number): number => (100 * Math.max(slab[i] as number, spike[i] as number)) ** 2
     if (this.packed.has(node.name)) {
       this.need('mixture-row')
-      const cov = new Array<number>(n * n).fill(0)
-      for (let i = 0; i < n; i++) cov[i * n + i] = wide(i)
       this.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
-      this.addFactor(gaussianMvPrior(node.name, new Array<number>(n).fill(0), cov), node.name)
       for (let i = 0; i < n; i++) {
         const a = new Array<number>(n).fill(0)
         a[i] = 1
+        // The row starts with a vague message in its own coordinate, so the other factors have a proper cavity to begin from.
+        const start = [...new Array<number>(n).fill(0), ...new Array<number>(n * n).fill(0)]
+        start[n + i * n + i] = 1 / wide(i)
         this.addFactor(
-          { operator: 'mixture-row', args: [node.name], params: { a, ...mixture(i) } },
+          { operator: 'mixture-row', args: [node.name], params: { a, ...mixture(i) }, start: [start] },
           this.elementName(node.name, node.dims, i),
         )
       }
@@ -1426,8 +1426,7 @@ class Compiler {
     const vars: string[] = []
     for (let i = 0; i < n; i++) {
       const name = this.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'gaussian' } })
-      this.addFactor(gaussianPrior(name, 0, wide(i)), auxId(node.name, 9, node.dims.length === 0 ? undefined : i))
-      this.addFactor({ operator: 'mixture-site', args: [name], params: mixture(i) }, name)
+      this.addFactor({ operator: 'mixture-site', args: [name], params: mixture(i), start: [[0, 1 / wide(i)]] }, name)
       cells.push(this.varAtom(name))
       vars.push(name)
     }
@@ -1521,14 +1520,16 @@ class Compiler {
       const mean = isConstCell(l)
         ? { const: l.aff.offset }
         : (this.materialise(affOf(l), node.name, node.dims.length === 0 ? undefined : i) as string)
-      this.addFactor(precisionFactor(name, mean, tau), name)
       // A zero-mean (known-mean) Gaussian with an unknown precision sends no proper message to the variable, so the likelihood
-      // would have no cavity to start from: a very wide Gaussian (variance 1e8, about one part in 1e8 of the model) starts it.
-      if (isConstCell(l))
-        this.addFactor(
-          gaussianPrior(name, l.aff.offset, 1e8),
-          auxId(node.name, 9, node.dims.length === 0 ? undefined : i),
-        )
+      // would have no cavity to start from: the factor starts with a very wide Gaussian message (variance 1e8), which its own
+      // first update replaces.
+      this.addFactor(
+        {
+          ...precisionFactor(name, mean, tau),
+          ...(isConstCell(l) ? { start: [[0, 1e-8], null, null] } : {}),
+        },
+        name,
+      )
       cells.push(this.varAtom(name))
       vars.push(name)
     }

@@ -38,12 +38,23 @@ is not Gaussian (it is a scale mixture of Gaussians), so a method has to approxi
    unknown spread: abilities, group effects), checked against the exact posterior on a grid; on the page's `gammaNoise` variant EP agrees with the exact reference
    (mean error under 0.03 response sd, band width within 15%).
 3. **A random smoothing parameter on a vector.** `lambda` scales the precision of every coefficient at once
-   (`beta_j ~ N(0, 1 / (lambda d_j))`). The factor-graph compiler maps a Gaussian vector with one known covariance, and
-   refuses a random scale on a vector ("a joint Gaussian vector has one covariance, so its scale must be known"); the
-   joint normal-gamma (a scaled precision `kappa tau`) is not mapped either. This is the remaining gap. It is not deep: the
-   same trick as in (2) applies (given `lambda` the Gaussian factor integrates out against the coefficients' cavity; in the
-   penalty's eigenbasis the matrices are diagonal, so a quadrature node costs `O(p)`), so it is a new factor rule of the
-   size of the one just added, plus the compiler mapping. Not built; this paragraph is analysis, not a tested result.
+   (`beta_j ~ N(0, 1 / (lambda d_j))`). The compiler refused a random scale on a vector ("a joint Gaussian vector has one
+   covariance, so its scale must be known"). **Built, 2026-11-11** (both routes of `ep-plan.md` section 3): the factor
+   `gaussian-mv-precision-scale` takes the whole coefficient vector (dense, so its correlations are kept) and the one gamma
+   smoothing parameter, integrates the vector out against its Gaussian cavity on a grid in `log lambda` and sends the vector the
+   moment-matched mixture of the Gaussian conditionals; and `gaussian-gamma-precision` takes a `scale` and `offset` (the
+   precision `scale lambda + offset`), the per-coefficient route. The model is `hyper: 'gammaSmooth'` of `bayesianGam` (the
+   smoothing parameter and the noise are gamma latents, the coefficients are written in the eigenbasis of the penalty). Against the
+   exact reference (two-dimensional quadrature over the smoothing parameter and the noise; sine data, 60 rows, 10 coefficients):
+
+   | | mean curve error (response sd) | band width ratio | log smoothing | log noise sd |
+   | --- | --- | --- | --- | --- |
+   | exact reference | | 1 | 2.716 +- 0.524 | -1.688 +- 0.096 |
+   | EP, dense vector (route 1, the default) | 0.004 | 1.015 | 2.664 +- 0.533 | -1.688 +- 0.102 |
+   | EP, one scalar per coefficient (route 2) | 0.005 | 1.19 | 2.828 +- 0.493 | |
+
+   The dense route is accurate to a few percent; the per-coefficient one has the right curve and smoothing parameter and a
+   band 19% too wide (the loopy sum over coefficients), and is the form that carries ARD and bases with their own precisions.
 
 ## Optimising instead
 
@@ -62,14 +73,14 @@ model; it is a missing method, not a missing theory.
 | prior and hyperpriors | what runs |
 | --- | --- |
 | smoothness penalty, log-normal hyperpriors (default) | the samplers, SVI, Pathfinder, Laplace (poor), importance; no message passing |
+| penalty, gamma smoothing parameter and gamma noise precision (`gammaSmooth`) | the above, plus EP (the dense scale factor), against the exact reference |
 | penalty, Gamma noise precision, smoothing fixed (`gammaNoise`) | the above, plus VMP and EP |
 | penalty, smoothing and noise fixed (`fixed`) | EP, VMP, the exact Gaussian method (all exact), and the rest |
 | spike and slab, ARD | the samplers and variational methods; the posterior is not Gaussian given the hyperparameters |
 
 ## Next steps, in order of value
 
-1. The EP rule and compiler mapping for a Gaussian vector with a random precision scale (gap 3): EP then runs the penalty
-   model with the smoothing parameter inferred.
+1. ~~The EP rule and compiler mapping for a Gaussian vector with a random precision scale (gap 3)~~: done, see above.
 2. A method kind that marginalises the Gaussian block (empirical Bayes or Laplace on the hyperparameters).
 3. A Gamma-precision form of the default model so the message-passing methods are not refused for parameterisation reasons.
 

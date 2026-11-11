@@ -596,6 +596,12 @@ export function messagePassingAlgorithm(g: CompiledGraph, settings: EngineSettin
     const messages: number[][] = g.edges.map((edge) => [
       ...(g.variables[edge.variable] as CompiledGraph['variables'][number]).family.flat,
     ])
+    // The start messages the graph carries (a vague proper message where a factor needs a cavity before anything is known), then the run's own.
+    for (const f of g.factors)
+      for (const [pi, m] of f.start.entries()) {
+        const e = f.ports[pi]?.edge
+        if (m !== null && e !== undefined && e >= 0) messages[e] = [...m]
+      }
     for (const m of settings.initial ?? []) {
       const e = g.factors[m.factor]?.ports[m.port]?.edge
       if (e === undefined || e < 0)
