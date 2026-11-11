@@ -14,6 +14,7 @@ import { axisOf, integratePair } from '../_grid.ts'
 import { lgammaOf } from '../_scalar.ts'
 import type { FactorOperator, Family, OperatorContext, Params, Port, TiltedMoments } from '../types.ts'
 import { allProper, massOf, numberParam } from './args.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
 
 /** One coordinate of a pair likelihood: a real value, or a positive one (the coordinate is then its log). */
 export interface PairPort {
@@ -246,6 +247,17 @@ export function pairLikelihoodOperator(
   table: Readonly<Record<string, PairLikelihood>> = pairLikelihoods(),
 ): FactorOperator {
   const ports: Port[] = [0, 1].map((i) => ({ name: `x${i}`, accepts: ['gaussian', 'gamma'], constant: true }))
+  const variational = (
+    t: Readonly<Record<string, PairLikelihood>>,
+    c: OperatorContext,
+  ): { readonly logf: (x: readonly number[]) => number; readonly ports: ReturnType<typeof quadraturePorts> } => {
+    const { likelihood, y } = resolve(t, c.params)
+    const density = likelihood.density(y, c.params)
+    return {
+      logf: (x) => density(x[0] as number, x[1] as number),
+      ports: quadraturePorts(c.args, { log: [true, true], kinks: likelihood.kinks?.(y, c.params) ?? [] }),
+    }
+  }
   const tilted = (c: OperatorContext): TiltedMoments & { readonly logMass: number } => {
     const { likelihood, y } = resolve(table, c.params)
     const density =
@@ -281,9 +293,19 @@ export function pairLikelihoodOperator(
     description:
       'y | x0, x1 ~ a density of the registry over two random scalars (a location and a scale, a shape, a pair of shapes)',
     ports,
-    support: { ep: 'numeric' },
+    support: { ep: 'numeric', vmp: 'numeric' },
     readsTarget: true,
     power: true,
+    // The mean field: the non-conjugate message of the density under the two beliefs (a gamma belief on a positive coordinate is
+    // read through its log, as the grid of EP does).
+    vmp: (c) => {
+      const { logf, ports } = variational(table, c)
+      return { message: numericMessage(ports, c.to, logf) }
+    },
+    expectedLog: (c) => {
+      const { logf, ports } = variational(table, c)
+      return numericExpectedLog(ports, logf)
+    },
     check: (params, families) => {
       try {
         const { likelihood } = resolve(table, params)

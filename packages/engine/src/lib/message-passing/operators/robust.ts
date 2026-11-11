@@ -15,6 +15,7 @@ import type { FactorOperator, OperatorContext, OperatorResult, Params } from '..
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, vectorParam } from './args.ts'
 import { likelihoodSite, likelihoods } from './likelihoods.ts'
 import { glmRow } from './rows.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
 
 /** The mixture's components from the parameters, with the weights normalised. */
 function components(params: Params): {
@@ -27,6 +28,19 @@ function components(params: Params): {
   const sds = vectorParam(params, 'sds')
   const total = weights.reduce((a, b) => a + b, 0)
   return { pi: weights.map((w) => w / total), mu, s2: sds.map((s) => s * s) }
+}
+
+/** The log density of the mixture at a point (the argument is the one coordinate). */
+function mixtureLog(params: Params): (x: readonly number[]) => number {
+  const { pi, mu, s2 } = components(params)
+  return (x) => {
+    const v = x[0] as number
+    const terms = pi.map(
+      (p, i) => Math.log(p) - 0.5 * (Math.log(2 * Math.PI * (s2[i] ?? 1)) + (v - (mu[i] ?? 0)) ** 2 / (s2[i] ?? 1)),
+    )
+    const top = Math.max(...terms)
+    return top + Math.log(terms.reduce((a, l) => a + Math.exp(l - top), 0))
+  }
 }
 
 /** The Gaussian cavity of the variable and the tilted moments and log mass of its product with the mixture. */
@@ -75,12 +89,16 @@ export const mixtureSite: FactorOperator = {
   name: 'mixture-site',
   description: 'f(x) = sum_i pi_i N(x; mu_i, s_i^2): a mixture of Gaussians in one variable',
   ports: [{ name: 'x', accepts: ['gaussian'] }],
-  support: { ep: 'exact' },
+  support: { ep: 'exact', vmp: 'numeric' },
   readsTarget: true,
   ep: (c): OperatorResult => {
     const t = mixtureTilted(c)
     return { message: gaussianSiteMessage(etaOf(c.args[0] as never), t.mean, t.variance) }
   },
+  // The mean field of the mixture density as one factor (the components summed out): the non-conjugate message. A mixture is not
+  // log-concave, so the precision of the message can be negative (a spike and a slab pull in opposite ways).
+  vmp: (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), 0, mixtureLog(c.params)) }),
+  expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), mixtureLog(c.params)),
   logEvidence: (c) => (allProper(c.args) ? massOf(c.args[0] as never) + mixtureTilted(c).logMass : Number.NaN),
 }
 

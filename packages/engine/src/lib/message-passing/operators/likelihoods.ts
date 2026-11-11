@@ -18,6 +18,7 @@ import type { FactorOperator, OperatorContext, OperatorResult, Params } from '..
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, vectorParam } from './args.ts'
 import { numericOperator } from './numeric.ts'
 import { glmRow } from './rows.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from './variational-numeric.ts'
 
 /**
  * One likelihood of the registry: the log density of an outcome given a Gaussian linear predictor `u`, with the parameters it
@@ -409,7 +410,7 @@ export function likelihoodSite(
     description:
       fixed === undefined ? 'y | u ~ a numeric likelihood of the registry' : (table[fixed]?.description ?? name),
     ports: [{ name: 'u', accepts: ['gaussian'] }],
-    support: { ep: 'numeric' },
+    support: { ep: 'numeric', vmp: 'numeric' },
     readsTarget: true,
     power: true,
     check: (params) => {
@@ -424,6 +425,19 @@ export function likelihoodSite(
       const t = tilted(c)
       const site = gaussianSiteMessage(etaOf(c.args[0] as never), t.mean, t.variance)
       return { message: c.power === 1 ? site : site.map((v) => v / c.power) }
+    },
+    // The mean field: the non-conjugate message of the density under the belief of the predictor.
+    vmp: (c): OperatorResult => {
+      const { likelihood, y } = resolve(table, fixed, c.params)
+      const log = likelihood.density(y, c.params)
+      const kinks = [likelihood.locate?.(y, c.params)?.kinks]
+      return { message: numericMessage(quadraturePorts(c.args, { kinks }), 0, (x) => log(x[0] as number)) }
+    },
+    expectedLog: (c) => {
+      const { likelihood, y } = resolve(table, fixed, c.params)
+      const log = likelihood.density(y, c.params)
+      const kinks = [likelihood.locate?.(y, c.params)?.kinks]
+      return numericExpectedLog(quadraturePorts(c.args, { kinks }), (x) => log(x[0] as number))
     },
     logEvidence: (c) => (allProper(c.args) ? massOf(c.args[0] as never) + tilted(c).logMass : Number.NaN),
   }

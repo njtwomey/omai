@@ -73,7 +73,11 @@ export function glmRow(name: string, link: FactorOperator, description: string):
       ...(outcome ? [{ name: 'y', accepts: ['bernoulli' as const], constant: true, observed: true }] : []),
       { name: 'w', accepts: ['gaussian-mv' as const] },
     ],
-    support: { ep: link.support.ep ?? 'numeric' },
+    support: {
+      ep: link.support.ep ?? 'numeric',
+      ...(link.vmp === undefined ? {} : { vmp: link.support.vmp ?? 'exact' }),
+    },
+    ...(link.noRule === undefined ? {} : { noRule: link.noRule }),
     readsTarget: (to) => to === w,
     ...(link.power === true ? { power: true } : {}),
     check: (params, families) =>
@@ -91,6 +95,32 @@ export function glmRow(name: string, link: FactorOperator, description: string):
       ]
       return { message }
     },
+    // The mean field: the link's variational message to the predictor under its belief (the Gaussian of a . w under the belief of
+    // the weights), put back on the weights as a rank-one natural parameter.
+    ...(link.vmp === undefined
+      ? {}
+      : {
+          vmp: (c: OperatorContext): OperatorResult => {
+            if (c.to !== w) throw new OmaiError('value', `${name}: nothing is sent to the observed outcome`)
+            const { z, a } = lift(c)
+            const site = (link.vmp as NonNullable<FactorOperator['vmp']>)({ ...c, to: w, args: linkArgs(c, z) }).message
+            const nu = site[0] ?? 0
+            const lambda = site[1] ?? 0
+            const d = a.length
+            return {
+              message: [
+                ...a.map((x) => nu * x),
+                ...Array.from({ length: d * d }, (_, k) => lambda * (a[Math.floor(k / d)] ?? 0) * (a[k % d] ?? 0)),
+              ],
+            }
+          },
+        }),
+    ...(link.expectedLog === undefined
+      ? {}
+      : {
+          expectedLog: (c: OperatorContext): number =>
+            (link.expectedLog as NonNullable<FactorOperator['expectedLog']>)({ ...c, args: linkArgs(c, lift(c).z) }),
+        }),
     logEvidence: (c) => {
       if (!allProper(c.args) || link.logEvidence === undefined) return Number.NaN
       const { z, a } = lift(c)

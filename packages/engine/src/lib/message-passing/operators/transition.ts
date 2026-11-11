@@ -30,12 +30,23 @@ function parameters(c: OperatorContext): {
   return { F, offset, Q: Float64Array.from(vectorParam(c.params, 'covariance')), rows, cols }
 }
 
+/** The mean and covariance of a Gaussian-vector belief; a belief with no density is an improper message. */
+function momentsOfBelief(a: Arg, d: number): ReturnType<typeof gaussianMvMoments> {
+  try {
+    return gaussianMvMoments(etaOf(a), d)
+  } catch {
+    throw new ImproperMessageError('gaussian-transition: a belief has no density')
+  }
+}
+
 /**
  * x ~ N(F w + c, Q) for Gaussian vectors x (`rows` entries) and w (`cols` entries), the matrix `F` row-major (`matrix`), the optional
  * offset `c` (`offset`) and the covariance `Q` (`covariance`, row-major, positive definite). The message to `x` is the Gaussian
  * pushforward of the cavity of `w` with the noise added (`N(F m + c, Q + F S F')`); the message to `w` is exact in natural
  * parameters whatever the cavity of `x` (a flat or a partly informed one included): `(F' (h - J c'), F' J F)` with the information
- * of `x` passed through the noise by `J' = J - J (J + Q^-1)^-1 J`. EP on a chain of these with linear Gaussian readings is exact.
+ * of `x` passed through the noise by `J' = J - J (J + Q^-1)^-1 J`. EP on a chain of these with linear Gaussian readings is exact. Under
+ * variational message passing the log density is quadratic in both vectors, so the messages are the conjugate ones from the other's mean
+ * (the mean field of a dynamical system: the beliefs of the states are independent, so their spread is under-estimated).
  *
  * @concept factor-operators
  * @index structure Gaussian vector step x ~ N(F w + c, Q), the dynamics of a linear system.
@@ -55,7 +66,7 @@ export const gaussianTransition: FactorOperator = {
     { name: 'x', accepts: ['gaussian-mv'] },
     { name: 'w', accepts: ['gaussian-mv'] },
   ],
-  support: { ep: 'exact' },
+  support: { ep: 'exact', vmp: 'exact' },
   check: (params, families) => {
     const rows = families[0]?.dim ?? 0
     const cols = families[1]?.dim ?? 0
@@ -114,6 +125,50 @@ export const gaussianTransition: FactorOperator = {
     const JF = dgemm(Jm, F, rows, rows, cols)
     const J = dgemm(F, JF, cols, rows, cols, { transposeA: true })
     return { message: [...h, ...J] }
+  },
+  // The mean field of the stochastic step: log N(x; F w + c, Q) is quadratic in both vectors, so the messages are the expected
+  // log under the other's belief, exact and with no cross term (the beliefs are independent): to x the information form of
+  // `N(F E w + c, Q)`, to w that of `F' Q^-1 (E x - c)` with precision `F' Q^-1 F`.
+  vmp: (c): OperatorResult => {
+    const { F, offset, Q, rows, cols } = parameters(c)
+    const factorQ = spd(Q, rows)
+    if (factorQ === undefined)
+      throw new ImproperMessageError('gaussian-transition: the covariance is not positive definite')
+    const QInv = factorQ.inverse()
+    if (c.to === 0) {
+      const mean = momentsOfBelief(arg(c, 1), cols).mean
+      const image = dgemv(F, rows, cols, mean)
+      const mu = Float64Array.from(image, (v, i) => v + (offset[i] ?? 0))
+      return { message: [...dgemv(QInv, rows, rows, mu), ...QInv] }
+    }
+    const mean = momentsOfBelief(arg(c, 0), rows).mean
+    const gap = Float64Array.from(mean, (v, i) => v - (offset[i] ?? 0))
+    const h = dgemv(F, rows, cols, dgemv(QInv, rows, rows, gap), true)
+    const QF = dgemm(QInv, F, rows, rows, cols)
+    const J = dgemm(F, QF, cols, rows, cols, { transposeA: true })
+    return { message: [...h, ...J] }
+  },
+  expectedLog: (c) => {
+    const { F, offset, Q, rows, cols } = parameters(c)
+    const factorQ = spd(Q, rows)
+    if (factorQ === undefined) return Number.NaN
+    const QInv = factorQ.inverse()
+    const x = momentsOfBelief(arg(c, 0), rows)
+    const w = momentsOfBelief(arg(c, 1), cols)
+    const image = dgemv(F, rows, cols, w.mean)
+    const gap = Float64Array.from(x.mean, (v, i) => v - (image[i] ?? 0) - (offset[i] ?? 0))
+    const FS = dgemm(F, w.covariance, rows, cols, cols)
+    const FSF = dgemm(FS, F, rows, cols, rows, { transposeB: true })
+    // E (x - F w - c)' Q^-1 (x - F w - c) = gap' Q^-1 gap + tr(Q^-1 (S_x + F S_w F')).
+    const solved = dgemv(QInv, rows, rows, gap)
+    let quad = 0
+    let trace = 0
+    for (let i = 0; i < rows; i++) {
+      quad += (gap[i] ?? 0) * (solved[i] ?? 0)
+      for (let j = 0; j < rows; j++)
+        trace += (QInv[i * rows + j] ?? 0) * ((x.covariance[j * rows + i] ?? 0) + (FSF[j * rows + i] ?? 0))
+    }
+    return -0.5 * (quad + trace + rows * Math.log(2 * Math.PI) + factorQ.logDet)
   },
   // The evidence of the factor under the cavities as unnormalised densities exp(h x - x J x / 2): the Gaussian integral of the joint of
   // (x, w), in information form so that a cavity that is only partly informative (the readings see the position, not the velocity)

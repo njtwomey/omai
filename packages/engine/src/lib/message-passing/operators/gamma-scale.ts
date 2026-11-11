@@ -168,6 +168,8 @@ export const gammaRate: FactorOperator = {
  * point mass, so against gamma cavities the variables `u`, `tau`, `p` are all functions of one one-dimensional integral over
  * `log u` (given `u`, the tilted `tau` is gamma): the messages to `u` and `tau` are the gammas with those moments, and the
  * message to `p` has `E log p = E log u + E log tau` and `E p = E[u tau]`, so a flat cavity of `p` gives the plain pushforward.
+ * Variational message passing is closed form: `p` is the pushforward (the gamma of those two moments) and the messages to `u` and `tau`
+ * are the readers' message to `p` with the other's mean folded in.
  *
  * @concept factor-operators
  * @index structure The product of two gamma variables p = u tau: a local times a global precision.
@@ -186,10 +188,21 @@ export const gammaProduct: FactorOperator = {
     { name: 'u', accepts: ['gamma'] },
     { name: 'tau', accepts: ['gamma'] },
   ],
-  support: { ep: 'numeric' },
-  noRule: {
-    vmp: 'the product of two gamma variables has no conjugate variational rule here (use expectation propagation)',
+  support: { ep: 'numeric', vmp: 'exact' },
+  // Deterministic: under the mean field `p` is the pushforward of `u` and `tau`, and the messages to them are those of the
+  // substituted model. `E log p = E log u + E log tau` and `E p = E u E tau` are exact, so the gamma of those two moments serves
+  // every reader of `p` whose log factor is linear in `(log p, p)` (a gamma or Gaussian precision) exactly.
+  defines: 0,
+  vmp: (c): OperatorResult => {
+    const [lu, mu] = arg(c, 1).family.moments(etaOf(arg(c, 1)))
+    const [lt, mt] = arg(c, 2).family.moments(etaOf(arg(c, 2)))
+    if (c.to === 0) return { message: gamma.fromMoments([(lu ?? 0) + (lt ?? 0), (mu ?? 0) * (mt ?? 0)]) }
+    // The readers' message to p, a log p + b p, becomes a log u + b E[tau] u at u (and symmetrically at tau).
+    const cavity = etaOf(arg(c, 0))
+    const other = c.to === 1 ? (mt ?? 0) : (mu ?? 0)
+    return { message: [cavity[0] ?? 0, (cavity[1] ?? 0) * other] }
   },
+  expectedLog: () => 0,
   ep: (c): OperatorResult => {
     const p = gammaShapeRate(etaOf(arg(c, 0)))
     if (!(p.shape > 0 && Number.isFinite(p.shape) && p.rate >= 0))
