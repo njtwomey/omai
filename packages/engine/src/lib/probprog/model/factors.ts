@@ -55,7 +55,16 @@
  * a bounded real value on itself, so the graph holds the projected prior, not the original. Such a scale (or an `exp` of a
  * Gaussian) is the scale of a latent normal in its non-centred form (a product with a standard normal), and the scale of an
  * observed normal through the `gaussian-scale` factor (the mean may be random too); a `clip` on a scale is read as a floor
- * that never binds. With `packScalars` the scalar normal latents an observed node reads together are one joint vector. Anything
+ * that never binds. With `packScalars` the scalar normal latents an observed node reads together are one joint vector.
+ * Discrete structure under Dirichlet-type weights and linear dynamics: `ops.stickBreaking(v)` of beta latents (the weights of a truncated
+ * Dirichlet process) is the `stick-breaking` factor on each assignment that reads it; a categorical read through a discrete index of
+ * Dirichlet rows (`categorical({ probs: phi.at(z) })`, the words of a topic model) is one `gate` on the index whose branches are the
+ * conjugate `discrete` factors on the rows; `ops.pick(values, z)` (the prediction of the class `z` picks, a mixture of regressions) is a
+ * lookup of the branches read by the observation as one gate of likelihoods, and a mean and a log spread `exp(at(logSd, z))` chosen by one `z`
+ * are one gate of `gaussian-scale` branches; a `hurdlePoisson` count (a zero, or a zero-truncated Poisson) is a conjugate Bernoulli on its
+ * beta zero probability and a `poisson-log-truncated` site on the log rate; and a multivariate normal whose mean is `ops.matvec(F, previous)`
+ * of another Gaussian vector (the step of a vector-state `scan`) with a known covariance is one Gaussian vector and a dense
+ * `gaussian-transition` to the previous one, its readings `ops.dot(h, state)` being regression rows on it. Anything
  * else is reported with a reason, never silently dropped.
  *
  * Ids follow `ids.ts`: a variable is its site's name, `<site>[<i>]` for an element of a site over dimensions, and
