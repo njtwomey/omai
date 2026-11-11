@@ -218,3 +218,64 @@ describe('power EP: per-factor powers, ids, and the contract', () => {
     expect(second.snapshot.marginals).toEqual(M.mpSnapshot(g, whole.state).marginals)
   })
 })
+
+describe('a gate of closed-form branches takes a power', () => {
+  /** Two counts on a rate that one of two regimes sets: z picks the Poisson branch (rate known to be low or high on a shared gamma rate). */
+  const spec = (branchesOk: boolean): M.FactorGraphSpec => ({
+    variables: [
+      { name: 'z', family: { kind: 'discrete', size: 2 } },
+      { name: 'a', family: { kind: 'gamma' } },
+      { name: 'b', family: { kind: 'gamma' } },
+    ],
+    factors: [
+      M.discretePrior('z', [0.5, 0.5]),
+      M.priorFactor('a', M.gammaEta(2, 0.5)),
+      M.priorFactor('b', M.gammaEta(2, 0.1)),
+      {
+        operator: 'gate',
+        args: ['z', 'a', 'b'],
+        params: {
+          arity: 2,
+          branches: branchesOk
+            ? [
+                { operator: 'poisson', args: [{ const: 3 }, 0], params: { exposure: 1 } },
+                { operator: 'poisson', args: [{ const: 20 }, 1], params: { exposure: 1 } },
+              ]
+            : [
+                { operator: 'gaussian', args: [0, 1], params: { precision: 1 } },
+                { operator: 'poisson', args: [{ const: 20 }, 1], params: { exposure: 1 } },
+              ],
+        },
+      },
+    ],
+  })
+
+  it('power EP and the alpha divergence run on it (at power one they are EP) and give the regime posterior of the exact two-branch mixture', () => {
+    const g = M.compileGraph(spec(true), operators)
+    expect(g.factors[3]?.operator.name).toBe('gate')
+    const ep = runAlgorithm(M.epAlgorithm(g), { maxSteps: 100 })
+    const one = runAlgorithm(M.powerEpAlgorithm(g, { power: 1 }), { maxSteps: 100 })
+    expect(M.marginalsOf(g, one.state)['a']).toEqual(M.marginalsOf(g, ep.state)['a'])
+    for (const r of [
+      runAlgorithm(M.powerEpAlgorithm(g, { power: 0.5 }), { maxSteps: 400 }),
+      runAlgorithm(M.alphaEpAlgorithm(g, { alpha: 0.5 }), { maxSteps: 400 }),
+    ]) {
+      expect(r.status).toBe('converged')
+      const z = (M.marginalsOf(g, r.state)['z'] as { probs: number[] }).probs
+      expect(z[0] as number).toBeGreaterThan(0)
+      expect((z[0] as number) + (z[1] as number)).toBeCloseTo(1, 10)
+    }
+    const powered = M.withPowers(g, (f) => (M.takesPower(f.operator, f.params) ? 0.5 : 1))
+    expect(powered.factors.map((f) => f.power)).toEqual([1, 1, 1, 0.5])
+  })
+
+  it('a gate whose branches have no closed-form message over one variable keeps power 1 under power EP, and refuses one set on it', () => {
+    const g = M.compileGraph(spec(false), operators)
+    const gateFactor = g.factors[3] as M.CompiledFactor
+    expect(M.takesPower(gateFactor.operator, gateFactor.params)).toBe(false)
+    expect(M.withPowers(g, (f) => (M.takesPower(f.operator, f.params) ? 0.5 : 1)).factors.map((f) => f.power)).toEqual([
+      1, 1, 1, 1,
+    ])
+    expect(() => M.withPowers(g, (f) => (f.operator.name === 'gate' ? 0.5 : 1))).toThrow(/does not support a power/)
+  })
+})
