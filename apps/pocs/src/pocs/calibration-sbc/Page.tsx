@@ -1,8 +1,10 @@
 import { Choice, ControlPanel, SbcRunView } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
+import { CodeBlock } from '../../../../site/src/shell/CodeBlock.tsx'
 import { RunBar } from '../../shared/RunBar.tsx'
 import { useAnytimeRuns } from '../../shared/useAnytimeRuns.ts'
 import { calibrationRuns, METHODS, REPLICATIONS } from './compute.ts'
+import { codeOf } from './shown.ts'
 
 type Id = (typeof METHODS)[number]['id']
 
@@ -66,6 +68,7 @@ export default function CalibrationSbc(): ReactNode {
           </p>
         </div>
       </div>
+      <CodeBlock code={codeOf(method?.id)} title="compute.ts: calibration-sbc" className="max-w-4xl" />
     </div>
   )
 }

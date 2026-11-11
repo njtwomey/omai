@@ -16,6 +16,7 @@ import type { Config } from 'omai-engine/trace'
 import { describe, expect, it } from 'vitest'
 import { codeOf, exampleCode, sourcesOf } from '../shared/exampleCode.ts'
 import { styleProblems } from '../shared/styleScan.ts'
+import { codeOf as sbcCode } from './calibration-sbc/shown.ts'
 
 const knobs: Record<string, Config> = {
   classify: defaults(classifierExample.method.config) as Config,
@@ -65,4 +66,14 @@ describe('the code shown on the example pages', () => {
       expect(styleProblems(code)).toEqual([])
     },
   )
+})
+
+describe('the code shown on the calibration page', () => {
+  it.each(['nuts', 'mean-field'])('%s: the model, the fit and the run, in the shown style', (id) => {
+    const code = sbcCode(id)
+    expect(code).toMatch(/defineModel/)
+    expect(code).toMatch(id === 'nuts' ? /nutsMethod/ : /sviMethod/)
+    expect(code).toMatch(/sbcMethod/)
+    expect(styleProblems(code)).toEqual([])
+  })
 })
