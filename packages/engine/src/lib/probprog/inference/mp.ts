@@ -34,7 +34,8 @@ import {
   vmpMethod,
 } from '../../message-passing/index.ts'
 import { type Config, type Contract, defineContract, derived, Log, runAlgorithm } from '../../trace/index.ts'
-import { factorGraphPosterior, factorGraphVerdict, type MessageRule } from '../model/factors.ts'
+import { factorGraphPosterior } from '../model/factor-graph/readback.ts'
+import { factorGraphVerdict, type MessageRule } from '../model/factor-graph/verdict.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
 import {
   guard,
