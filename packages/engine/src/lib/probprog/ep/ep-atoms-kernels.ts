@@ -20,6 +20,7 @@ import { gpPosteriorGivenLengthScale } from '../models/index.ts'
 import { type ExactMarginal, gaussianMixtureMarginal } from '../validation/index.ts'
 import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
+import { recovery, tolerance } from './ep-tolerance.ts'
 
 const X6 = [-2.4, -1.5, -0.6, 0.3, 1.2, 2.3]
 const Y6 = [-0.8, -1.1, -0.3, 0.7, 0.9, 0.2]
@@ -156,13 +157,11 @@ export const gpLengthScaleAtom: EpAtom = defineAtom({
   ],
   family: 'kernels',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.01,
-    sdRatio: [0.98, 1.02],
-    ks: 0.04,
-    reason:
-      'EP is exact at every node (a Gaussian likelihood), so the answer is the quadrature over the length scale of the exact conditionals; the gamma drawn for the length scale is a moment-matched summary of a log-normal-like posterior',
-  },
+  tolerance: tolerance(
+    'measured',
+    'EP is exact at every node (a Gaussian likelihood), so the answer is the quadrature over the length scale of the exact conditionals; the gamma drawn for the length scale is a moment-matched summary of a log-normal-like posterior',
+    { meanZ: 0.01, sdRatio: [0.98, 1.02], ks: 0.04 },
+  ),
   knobs: dict({}),
   parts: gpLengthScaleProblem,
 })
@@ -271,13 +270,10 @@ export const gpProbitLearnedAtom: EpAtom = defineAtom({
   name: 'gp-probit-learned',
   title: 'Gaussian process with a probit likelihood: parameters learned',
   extends: 'gp-probit',
-  recovery: {
-    seeds: 40,
-    coverage: 0.75,
-    zrms: 1.5,
-    reason:
-      "a length scale from eight binary labels is weakly identified, so its posterior stays close to the prior and the interval holds the truth every time (the coverage is 1, not 0.9: the spread is the prior's); the function values are exact up to the probit tilts at each node of the grid, and hold the truth in 83 to 98% of the runs",
-  },
+  recovery: recovery(
+    'calibrated',
+    "a length scale from eight binary labels is weakly identified, so its posterior stays close to the prior and the interval holds the truth every time (the coverage is 1, not 0.9: the spread is the prior's); the function values are exact up to the probit tilts at each node of the grid, and hold the truth in 83 to 98% of the runs",
+  ),
   what: 'The probit Gaussian process classifier of the basic atom with the length scale of its kernel unknown (a log-normal prior, the covariance a custom function of it) and the labels simulated from a function drawn at a stated length scale: EP runs inside a grid over the length scale, each node weighted by its EP evidence.',
   factors: [
     'dense prior (gaussian-mv) at each grid node',
@@ -286,13 +282,10 @@ export const gpProbitLearnedAtom: EpAtom = defineAtom({
   ],
   family: 'kernels',
   reference: 'truth',
-  tolerance: {
-    meanZ: 1,
-    sdRatio: [0, 10],
-    ks: 1,
-    reason:
-      'there is no reference posterior (a nine-dimensional density); the check is the recovery of the true values',
-  },
+  tolerance: tolerance(
+    'truth',
+    'there is no reference posterior (a nine-dimensional density); the check is the recovery of the true values',
+  ),
   knobs: dict({
     ...simulationKnobs(8),
     trueLengthScale: real(0.3, 3, { default: 1, step: 0.1, label: 'true length scale' }),

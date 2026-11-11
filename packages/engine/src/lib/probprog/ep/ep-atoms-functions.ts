@@ -11,6 +11,7 @@ import { configNumber } from '../inference/method.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { tolerance } from './ep-tolerance.ts'
 
 const G = 61
 
@@ -57,12 +58,8 @@ export const expAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'apply: exp of a random value', 'gaussian likelihood'],
   family: 'functions',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.2,
-    sdRatio: [0.7, 1.3],
-    ks: 0.15,
-    reason: 'the posterior is skewed; EP matches its mean and variance with a Gaussian',
-  },
+  tolerance: tolerance('coupled', 'the posterior is skewed; EP matches its mean and variance with a Gaussian'),
+  evidence: { nats: 1e-3, reason: 'the apply rule (exp) by quadrature' },
   knobs: dict({ y: real(0.2, 8, { default: 2.5, step: 0.1, label: 'observed y' }) }),
   parts: expProblem,
 })
@@ -104,12 +101,11 @@ export const tanhAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'apply: tanh of a random value', 'gaussian likelihood'],
   family: 'functions',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.2,
-    sdRatio: [0.7, 1.3],
-    ks: 0.15,
-    reason: 'the posterior is skewed by the saturation; EP matches its mean and variance with a Gaussian',
-  },
+  tolerance: tolerance(
+    'lumpy',
+    'the posterior is skewed by the saturation; EP matches its mean and variance with a Gaussian',
+  ),
+  evidence: { nats: 1e-3, reason: 'the apply rule (tanh) by quadrature' },
   knobs: dict({ y: real(-0.95, 0.95, { default: 0.8, step: 0.05, label: 'observed y' }) }),
   parts: tanhProblem,
 })
@@ -155,12 +151,11 @@ export const logScaleAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'gaussian-log-scale'],
   family: 'functions',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.8, 1.2],
-    ks: 0.1,
-    reason: 'the likelihood of h is a skewed, non-Gaussian bump that EP projects onto a Gaussian',
-  },
+  tolerance: tolerance(
+    'skew-normal',
+    'the likelihood of h is a skewed, non-Gaussian bump that EP projects onto a Gaussian',
+  ),
+  evidence: { nats: 1e-3, reason: 'the Gaussian with a log scale by quadrature' },
   knobs: dict({ y: real(-4, 4, { default: 1.5, step: 0.1, label: 'observed y' }) }),
   parts: logScaleProblem,
 })
@@ -216,13 +211,11 @@ export const productAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian) x2', 'product (numeric)', 'gaussian likelihood'],
   family: 'functions',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.35,
-    sdRatio: [0.6, 1.5],
-    ks: 0.2,
-    reason:
-      'the posterior is curved and EP keeps one Gaussian per variable, so it can match the margins and not the bend',
-  },
+  tolerance: tolerance(
+    'lumpiest',
+    'the posterior is curved and EP keeps one Gaussian per variable, so it can match the margins and not the bend',
+  ),
+  evidence: { nats: 0.02, reason: 'the product of two Gaussians: loopy, moment matched' },
   knobs: dict({ y: real(-3, 4, { default: 2, step: 0.1, label: 'observed y' }) }),
   ep: { damping: 0.5 },
   parts: productProblem,
@@ -279,12 +272,11 @@ export const maxAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian) x2', 'max', 'gaussian likelihood'],
   family: 'functions',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.3,
-    sdRatio: [0.6, 1.5],
-    ks: 0.2,
-    reason: 'the posterior is L-shaped and EP matches the mean and variance of each margin with a Gaussian',
-  },
+  tolerance: tolerance(
+    'lumpy',
+    'the posterior is L-shaped and EP matches the mean and variance of each margin with a Gaussian',
+  ),
+  evidence: { nats: 0.01, reason: 'the max of two Gaussians: moment matched' },
   knobs: dict({ y: real(-2, 3, { default: 1.5, step: 0.1, label: 'observed y' }) }),
   parts: maxProblem,
 })

@@ -15,6 +15,7 @@ import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type ConditionalMarginal, hyperPosterior, lg, normalInverseGammaPosterior, sum } from '../validation/index.ts'
 import { type AtomParts, type AtomRecoverySpec, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { recovery, tolerance } from './ep-tolerance.ts'
 
 /** The knobs every extended atom has: the seed of the simulation and the number of observations. */
 export const simulationKnobs = (n: number): Record<string, ReturnType<typeof int>> => ({
@@ -22,13 +23,10 @@ export const simulationKnobs = (n: number): Record<string, ReturnType<typeof int
   n: int(3, 200, { default: n, label: 'observations' }),
 })
 
-const GAUSSIAN_RECOVERY: AtomRecoverySpec = {
-  seeds: 40,
-  coverage: 0.75,
-  zrms: 1.5,
-  reason:
-    'the posterior is exact (the model is conjugate), so over seeds drawn from the truth the intervals hold it close to nine times in ten; 40 seeds leave a binomial spread of about 0.05, and the prior pulls a little',
-}
+const GAUSSIAN_RECOVERY = recovery(
+  'calibrated',
+  'the posterior is exact (the model is conjugate), so over seeds drawn from the truth the intervals hold it close to nine times in ten; 40 seeds leave a binomial spread of about 0.05, and the prior pulls a little',
+)
 
 function gaussianLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
@@ -121,13 +119,11 @@ export const gaussianLearnedAtom: EpAtom = defineAtom({
   factors: ['prior (normal-gamma)', 'gaussian-normal-gamma (observed value)'],
   family: 'conjugate',
   reference: 'exact',
-  tolerance: {
-    meanZ: 1e-6,
-    sdRatio: [0.999999, 1.000001],
-    ks: 0.1,
-    reason:
-      'the posterior is exactly normal-inverse-gamma and EP carries it exactly; the curves compare the Gaussian and gamma shapes the page draws with the exact Student t and inverse gamma, so the distance is small, not zero',
-  },
+  tolerance: tolerance(
+    'exact-heavy-tail',
+    'the posterior is exactly normal-inverse-gamma and EP carries it exactly; the curves compare the Gaussian and gamma shapes the page draws with the exact Student t and inverse gamma, so the distance is small, not zero',
+  ),
+  evidence: { nats: 1e-5, reason: 'a normal-gamma pair: exact' },
   knobs: dict({
     ...simulationKnobs(12),
     trueMean: real(-3, 3, { default: 1.5, step: 0.1, label: 'true mean' }),
@@ -258,13 +254,10 @@ export const betaBernoulliLearnedAtom: EpAtom = defineAtom({
   name: 'beta-bernoulli-learned',
   title: 'Beta and Bernoulli: parameters learned',
   extends: 'beta-bernoulli',
-  recovery: {
-    seeds: 40,
-    coverage: 0.75,
-    zrms: 1.6,
-    reason:
-      'the posterior of the strength is skewed and EP carries a gamma for it, and each probability is a beta matched to a mixture over the strength: the intervals hold the truth a little less than nine times in ten',
-  },
+  recovery: recovery(
+    'standard',
+    'the posterior of the strength is skewed and EP carries a gamma for it, and each probability is a beta matched to a mixture over the strength: the intervals hold the truth a little less than nine times in ten',
+  ),
   what: 'The beta and Bernoulli of the basic atom for a population of groups: each group has its own probability drawn from a symmetric beta whose strength is unknown, so the groups teach each other how spread out the probabilities are.',
   factors: [
     'prior (gamma)',
@@ -273,13 +266,10 @@ export const betaBernoulliLearnedAtom: EpAtom = defineAtom({
   ],
   family: 'conjugate',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.75, 1.25],
-    ks: 0.1,
-    reason:
-      'the strength is skewed and EP carries one gamma for it; each probability is the matched beta of a mixture over it',
-  },
+  tolerance: tolerance(
+    'skewed',
+    'the strength is skewed and EP carries one gamma for it; each probability is the matched beta of a mixture over it',
+  ),
   knobs: dict({
     ...simulationKnobs(10),
     groups: int(2, 20, { default: 8, label: 'groups' }),
@@ -391,24 +381,18 @@ export const gammaPoissonLearnedAtom: EpAtom = defineAtom({
   name: 'gamma-poisson-learned',
   title: 'Gamma and Poisson: parameters learned',
   extends: 'gamma-poisson',
-  recovery: {
-    seeds: 40,
-    coverage: 0.75,
-    zrms: 1.6,
-    reason:
-      'the posterior of the prior rate is skewed and EP carries a gamma for it; each rate is a gamma matched to a mixture over it',
-  },
+  recovery: recovery(
+    'standard',
+    'the posterior of the prior rate is skewed and EP carries a gamma for it; each rate is a gamma matched to a mixture over it',
+  ),
   what: 'The gamma and Poisson of the basic atom for a population of groups: each group has its own rate drawn from a gamma whose rate is unknown, so the groups teach each other where the rates lie.',
   factors: ['prior (gamma)', 'gamma-rate', 'poisson likelihood (gamma-poisson)'],
   family: 'conjugate',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.75, 1.25],
-    ks: 0.1,
-    reason:
-      'the prior rate is skewed and EP carries one gamma for it; each rate is the matched gamma of a mixture over it',
-  },
+  tolerance: tolerance(
+    'skewed',
+    'the prior rate is skewed and EP carries one gamma for it; each rate is the matched gamma of a mixture over it',
+  ),
   knobs: dict({
     ...simulationKnobs(4),
     groups: int(2, 20, { default: 8, label: 'groups' }),

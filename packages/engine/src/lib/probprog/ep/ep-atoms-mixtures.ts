@@ -36,6 +36,7 @@ import {
   type MixtureBranch,
   type MixtureView,
 } from './ep-atoms.ts'
+import { tolerance } from './ep-tolerance.ts'
 
 /** EP's belief that is not a belief of the model but of a function of its beliefs, proper when the pieces are. */
 const belief = (m: { mean: number; sd: number } | undefined): Belief =>
@@ -182,12 +183,7 @@ export const gateKnownAtom: EpAtom = defineAtom({
   factors: ['prior (bernoulli)', 'select gate (known components)', 'gaussian likelihood'],
   family: 'gates',
   reference: 'exact',
-  tolerance: {
-    meanZ: 1e-6,
-    sdRatio: [0.999999, 1.000001],
-    ks: 1e-4,
-    reason: 'a single discrete switch: the message is exact',
-  },
+  tolerance: tolerance('exact', 'a single discrete switch: the message is exact'),
   knobs: dict({
     pi: real(0.02, 0.98, { default: 0.3, step: 0.01, label: 'P(z = 1) before the observation' }),
     y: real(-3, 6, { default: 2.5, step: 0.1, label: 'observed y' }),
@@ -290,13 +286,8 @@ const gateKnobs = dict({
   pi: real(0.02, 0.98, { default: 0.5, step: 0.01, label: 'P(z = 1) before the observation' }),
   y: real(-4, 4, { default: 0.5, step: 0.1, label: 'observed y' }),
 })
-const gateTolerance = {
-  meanZ: 1e-3,
-  sdRatio: [0.999, 1.001] as const,
-  ks: 0.25,
-  reason:
-    'the means, spreads and the probability of the switch are exact (moment matching through a gate); the Kolmogorov distance is large because each exact marginal is a mixture and EP draws one Gaussian for it',
-}
+const GATE_REASON =
+  'the means, spreads and the probability of the switch are exact (moment matching through a gate); the Kolmogorov distance is large because each exact marginal is a mixture and EP draws one Gaussian for it'
 
 /**
  * A switch that selects one of two random variables, written as a select, `where(z, b, a)`: the selected one is pulled
@@ -316,7 +307,8 @@ export const gateRandomAtom: EpAtom = defineAtom({
   factors: ['prior (bernoulli)', 'prior (gaussian) x2', 'select gate (fresh random components)', 'gaussian likelihood'],
   family: 'gates',
   reference: 'exact',
-  tolerance: gateTolerance,
+  tolerance: tolerance('exact-moments', GATE_REASON),
+  evidence: { nats: 1e-3, reason: 'the gate: a mixture of branch evidences' },
   knobs: gateKnobs,
   parts: (k) => randomGateProblem(k, 'select'),
 })
@@ -343,7 +335,8 @@ export const mixtureComponentsAtom: EpAtom = defineAtom({
   ],
   family: 'gates',
   reference: 'exact',
-  tolerance: gateTolerance,
+  tolerance: tolerance('exact-moments', GATE_REASON),
+  evidence: { nats: 1e-3, reason: 'the gate again, written with components' },
   knobs: gateKnobs,
   parts: (k) => randomGateProblem(k, 'index'),
 })
@@ -441,7 +434,8 @@ export const spikeSlabAtom: EpAtom = defineAtom({
   ],
   family: 'gates',
   reference: 'exact',
-  tolerance: gateTolerance,
+  tolerance: tolerance('exact-moments', GATE_REASON),
+  evidence: { nats: 1e-3, reason: 'a gate between a narrow and a wide Gaussian' },
   knobs: spikeKnobs,
   parts: spikeSlabGateProblem,
 })
@@ -509,13 +503,12 @@ export const spikeSlabMarginalAtom: EpAtom = defineAtom({
   factors: ['mixture-site (two-component prior)', 'gaussian likelihood'],
   family: 'gates',
   reference: 'exact',
-  tolerance: {
-    meanZ: 1e-3,
-    sdRatio: [0.999, 1.001],
-    ks: 0.3,
-    reason:
-      'the mean and variance are exact; the exact posterior is a spike hump and a slab hump and EP draws one Gaussian',
-  },
+  tolerance: tolerance(
+    'measured',
+    'the mean and variance are exact; the exact posterior is a spike hump and a slab hump and EP draws one Gaussian',
+    { meanZ: 0.001, sdRatio: [0.999, 1.001], ks: 0.3 },
+  ),
+  evidence: { nats: 1e-3, reason: 'the mixture site, switch summed out: exact' },
   knobs: spikeKnobs,
   parts: spikeSlabMarginalProblem,
 })
@@ -633,13 +626,11 @@ export const clutterAtom: EpAtom = defineAtom({
   ],
   family: 'gates',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.5,
-    sdRatio: [0.5, 1.6],
-    ks: 0.3,
-    reason:
-      'the exact posterior of the centre is lumpy (a clutter reading can be explained two ways) and EP matches only its mean and variance, observation by observation',
-  },
+  tolerance: tolerance(
+    'lumpiest',
+    'the exact posterior of the centre is lumpy (a clutter reading can be explained two ways) and EP matches only its mean and variance, observation by observation',
+  ),
+  evidence: { nats: 1e-3, reason: 'a switch per observation: exact moment matching' },
   knobs: dict({ share: real(0.02, 0.6, { default: 0.25, step: 0.01, label: 'prior probability of clutter' }) }),
   ep: { damping: 0.5 },
   parts: clutterGateProblem,
@@ -695,12 +686,7 @@ export const clutterMixtureAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'mixture-site (inlier and outlier noise)'],
   family: 'gates',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.3,
-    sdRatio: [0.6, 1.5],
-    ks: 0.2,
-    reason: 'the posterior is lumpy and EP matches only its mean and variance with one Gaussian',
-  },
+  tolerance: tolerance('lumpy', 'the posterior is lumpy and EP matches only its mean and variance with one Gaussian'),
   knobs: dict({ share: real(0.02, 0.6, { default: 0.25, step: 0.01, label: 'outlier share' }) }),
   parts: clutterMixtureProblem,
 })

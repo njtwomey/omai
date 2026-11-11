@@ -12,6 +12,7 @@ import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { mixtureMarginal, mixtureOfRegressions } from '../validation/index.ts'
 import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { tolerance } from './ep-tolerance.ts'
 
 // Two lines, y = 1 + 2 x and y = -1 - x, eight rows whose classes are not told.
 const XS = [-1.5, -0.5, 0.2, 1.1, -0.9, 0.7, 1.6, -1.2]
@@ -116,13 +117,11 @@ export const mixtureRegressionAtom: EpAtom = defineAtom({
   ],
   family: 'gates',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.2,
-    sdRatio: [0.65, 1.2],
-    ks: 0.1,
-    reason:
-      'the coefficients are shared by every row, so the classes of the rows are coupled through them and EP matches one Gaussian per coefficient to a mixture of Gaussians over the assignments: measured within 0.14 reference sds, spreads down to 0.72 of the reference',
-  },
+  tolerance: tolerance(
+    'measured',
+    'the coefficients are shared by every row, so the classes of the rows are coupled through them and EP matches one Gaussian per coefficient to a mixture of Gaussians over the assignments: measured within 0.14 reference sds, spreads down to 0.72 of the reference',
+    { meanZ: 0.2, sdRatio: [0.65, 1.2], ks: 0.1 },
+  ),
   knobs: dict({
     noise: real(0.3, 1.5, { default: 0.6, step: 0.05, label: 'noise sd of each row' }),
     priorSd: real(0.5, 4, { default: 1.5, step: 0.1, label: 'prior sd of each coefficient' }),

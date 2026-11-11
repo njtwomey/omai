@@ -12,6 +12,7 @@ import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { gridMarginals, quadratureMarginal } from '../validation/index.ts'
 import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { tolerance } from './ep-tolerance.ts'
 
 const XS = [-1, -0.6, -0.2, 0.1, 0.5, 0.9, 1.3, -0.8, 0.3, 1.1, -0.4, 0.7]
 const YS = [0, 0, 1, 0, 2, 4, 6, 1, 3, 0, 1, 5]
@@ -123,13 +124,10 @@ export const hurdlePoissonAtom: EpAtom = defineAtom({
   ],
   family: 'counts',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.05,
-    sdRatio: [0.92, 1.08],
-    ks: 0.05,
-    reason:
-      'the zero probability is exact (a Beta of the counts); the coefficients are the truncated-Poisson likelihood matched by one Gaussian each: measured within 0.004 reference sds and 3 percent of the spread',
-  },
+  tolerance: tolerance(
+    'plated',
+    'the zero probability is exact (a Beta of the counts); the coefficients are the truncated-Poisson likelihood matched by one Gaussian each: measured within 0.004 reference sds and 3 percent of the spread',
+  ),
   knobs: dict({ priorSd: real(0.5, 4, { default: 1.5, step: 0.1, label: 'prior sd of the coefficients' }) }),
   parts: hurdleProblem,
 })

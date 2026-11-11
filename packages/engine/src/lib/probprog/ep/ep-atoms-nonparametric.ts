@@ -14,6 +14,7 @@ import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type ExactMarginal, gridMarginals, lg, logWeights, normalPdf } from '../validation/index.ts'
 import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { tolerance } from './ep-tolerance.ts'
 
 // ----- the stick-breaking mixture -----
 
@@ -101,13 +102,10 @@ export const stickBreakingAtom: EpAtom = defineAtom({
   ],
   family: 'nonparametric',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.1,
-    sdRatio: [0.85, 1.15],
-    ks: 0.08,
-    reason:
-      'the assignments are summed out exactly in each factor and the breaks are matched to one Beta each, so what EP approximates is the loop over the breaks that every assignment shares: measured within 0.02 reference sds',
-  },
+  tolerance: tolerance(
+    'gamma-projected',
+    'the assignments are summed out exactly in each factor and the breaks are matched to one Beta each, so what EP approximates is the loop over the breaks that every assignment shares: measured within 0.02 reference sds',
+  ),
   knobs: dict({
     concentration: real(1, 6, { default: 1, step: 0.25, label: 'concentration of the Dirichlet process (alpha)' }),
     noise: real(0.3, 1.5, { default: 1.3, step: 0.05, label: 'spread of each component (large: they overlap)' }),
@@ -270,13 +268,10 @@ export const topicModelAtom: EpAtom = defineAtom({
   ],
   family: 'nonparametric',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.8, 1.2],
-    ks: 0.08,
-    reason:
-      'the exact posteriors are mixtures of betas over the assignments (the label-swapped reading too), which one Dirichlet each cannot be; measured within 0.06 reference sds and 4 percent of the spread',
-  },
+  tolerance: tolerance(
+    'close',
+    'the exact posteriors are mixtures of betas over the assignments (the label-swapped reading too), which one Dirichlet each cannot be; measured within 0.06 reference sds and 4 percent of the spread',
+  ),
   knobs: dict({
     mixture: real(0.3, 3, { default: 1, step: 0.1, label: 'concentration of each document’s topic mixture' }),
     topicPrior: real(1, 5, { default: 2, step: 0.25, label: 'how strongly each topic’s prior leans to its own word' }),

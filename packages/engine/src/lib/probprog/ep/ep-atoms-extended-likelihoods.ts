@@ -26,14 +26,7 @@ import {
   type FigureCurve,
 } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
-
-/** The recovery promise most of these share: 40 seeds, 0.75 of the true values inside the 90% intervals, errors under 1.6 sds. */
-const recoveryOf = (reason: string, seeds = 40): AtomRecoverySpec => ({
-  seeds,
-  coverage: seeds < 40 ? 0.7 : 0.75,
-  zrms: 1.6,
-  reason,
-})
+import { recovery, tolerance } from './ep-tolerance.ts'
 
 // ----- a Student-t likelihood with an unknown location and scale -----
 
@@ -147,7 +140,8 @@ export const studentTLearnedAtom: EpAtom = defineAtom({
   name: 'student-t-learned',
   title: 'Student-t likelihood: parameters learned',
   extends: 'student-t',
-  recovery: recoveryOf(
+  recovery: recovery(
+    'standard',
     'EP projects the scale-mixture posterior onto a Gaussian for the location and a gamma for the precision; with heavy-tailed noise and a dozen draws the precision is the harder to pin down',
   ),
   what: 'The Student-t noise of the basic atom (three degrees of freedom, fixed) with the location and the scale both unknown, written as a Gaussian scale mixture; the data are simulated from a stated location and scale.',
@@ -159,13 +153,10 @@ export const studentTLearnedAtom: EpAtom = defineAtom({
   ],
   family: 'likelihoods',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.2,
-    sdRatio: [0.75, 1.25],
-    ks: 0.12,
-    reason:
-      'the posterior of the location and the precision is skewed and coupled through the mixing precisions, and EP carries a Gaussian and a gamma for them',
-  },
+  tolerance: tolerance(
+    'coupled',
+    'the posterior of the location and the precision is skewed and coupled through the mixing precisions, and EP carries a Gaussian and a gamma for them',
+  ),
   ep: { damping: 0.3 },
   knobs: dict({
     ...simulationKnobs(15),
@@ -275,19 +266,18 @@ export const laplaceLearnedAtom: EpAtom = defineAtom({
   name: 'laplace-learned',
   title: 'Laplace likelihood: parameters learned',
   extends: 'laplace',
-  recovery: recoveryOf(
+  recovery: recovery(
+    'standard',
     'EP carries one Gaussian for the location and one for the log of the scale (the half-normal prior is projected onto the log once), against 15 absolute errors that tell the location well and the scale less so',
   ),
   what: 'The Laplace noise of the basic atom with the location and the scale both unknown, and the data simulated from a stated location and scale.',
   factors: ['prior (gaussian)', 'numeric prior (half-normal)', 'likelihood-pair: laplace with a random scale'],
   family: 'likelihoods',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.2,
-    sdRatio: [0.7, 1.3],
-    ks: 0.12,
-    reason: 'the posterior of a location under Laplace noise has kinks at the observations, and the scale is skewed',
-  },
+  tolerance: tolerance(
+    'coupled',
+    'the posterior of a location under Laplace noise has kinks at the observations, and the scale is skewed',
+  ),
   knobs: dict({
     ...simulationKnobs(15),
     trueLoc: real(-3, 3, { default: 1, step: 0.1, label: 'true location' }),
@@ -421,20 +411,18 @@ export const probitLearnedAtom: EpAtom = defineAtom({
   name: 'probit-learned',
   title: 'Probit: parameters learned',
   extends: 'probit',
-  recovery: recoveryOf(
+  recovery: recovery(
+    'standard',
     'the weights are fixed numbers and the learned shrinkage pulls them a little towards zero, and EP matches a Gaussian to each truncated-Gaussian tilted distribution: the intervals hold the truth a little less than nine times in ten',
   ),
   what: 'The probit classifier of the basic atom with the prior precision of the weights learned (a gamma precision shared by the three weights) and the labels simulated from stated true weights: the weights and the decision boundary are recovered from the data.',
   factors: ['prior (gamma)', 'gaussian-gamma-precision (latent vector)', 'matmul (linear predictor)', 'probit link'],
   family: 'likelihoods',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.25,
-    sdRatio: [0.7, 1.3],
-    ks: 0.15,
-    reason:
-      'the posterior is skewed and coupled with the precision, EP projects each truncated-Gaussian tilted distribution onto a Gaussian, and the reference is a four-dimensional tensor grid of 27 points per axis',
-  },
+  tolerance: tolerance(
+    'coupled',
+    'the posterior is skewed and coupled with the precision, EP projects each truncated-Gaussian tilted distribution onto a Gaussian, and the reference is a four-dimensional tensor grid of 27 points per axis',
+  ),
   knobs: dict({
     ...simulationKnobs(50),
     trueOffset: real(-2, 2, { default: WEIGHTS[0] ?? 0.4, step: 0.1, label: 'true offset w_0' }),
@@ -460,7 +448,8 @@ export const logisticLearnedAtom: EpAtom = defineAtom({
   name: 'logistic-learned',
   title: 'Logistic: parameters learned',
   extends: 'logistic',
-  recovery: recoveryOf(
+  recovery: recovery(
+    'standard',
     'the weights are fixed numbers and the learned shrinkage pulls them a little towards zero; a logistic link makes the labels less informative than a probit of the same weights',
   ),
   what: 'The logistic classifier of the basic atom with the prior precision of the weights learned and the labels simulated from stated true weights.',
@@ -472,13 +461,10 @@ export const logisticLearnedAtom: EpAtom = defineAtom({
   ],
   family: 'likelihoods',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.25,
-    sdRatio: [0.7, 1.3],
-    ks: 0.15,
-    reason:
-      'a Gaussian projection of each logistic tilted distribution by quadrature, against a four-dimensional tensor grid',
-  },
+  tolerance: tolerance(
+    'coupled',
+    'a Gaussian projection of each logistic tilted distribution by quadrature, against a four-dimensional tensor grid',
+  ),
   knobs: dict({
     ...simulationKnobs(60),
     trueOffset: real(-2, 2, { default: WEIGHTS[0] ?? 0.4, step: 0.1, label: 'true offset w_0' }),
@@ -581,19 +567,15 @@ export const poissonLogLearnedAtom: EpAtom = defineAtom({
   name: 'poisson-log-learned',
   title: 'Poisson with a log link: parameters learned',
   extends: 'poisson-log',
-  recovery: recoveryOf(
+  recovery: recovery(
+    'standard',
     'a Gaussian projection of each Poisson tilted distribution by quadrature, with a weakly informative prior on the coefficients: the intervals should hold the truth about nine times in ten',
   ),
   what: 'The Poisson count with a log link of the basic atom, now a regression with an unknown intercept and slope, and the counts simulated from stated true coefficients.',
   factors: ['prior (gaussian) x2', 'matmul (linear predictor)', 'numeric likelihood: poisson with an exp link'],
   family: 'likelihoods',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.8, 1.2],
-    ks: 0.08,
-    reason: 'a Gaussian projection of each tilted distribution, evaluated by quadrature',
-  },
+  tolerance: tolerance('close', 'a Gaussian projection of each tilted distribution, evaluated by quadrature'),
   knobs: dict({
     ...simulationKnobs(30),
     trueIntercept: real(-1, 2, { default: 0.5, step: 0.1, label: 'true intercept' }),
@@ -670,9 +652,10 @@ export const poissonLogDispersionLearnedAtom: EpAtom = defineAtom({
   name: 'poisson-log-dispersion-learned',
   title: 'Poisson with a log link: parameters learned (overdispersed)',
   extends: 'poisson-log',
-  recovery: recoveryOf(
+  recovery: recovery(
+    'measured',
     'the dispersion is the weakest-identified parameter (it needs many counts) and EP carries one Gaussian for the intercept, the slope and the log dispersion at each site; each run costs about a third of a second, so 25 seeds and a floor of 0.7 (a binomial spread of 0.06)',
-    25,
+    { seeds: 25, coverage: 0.7, zrms: 1.6 },
   ),
   what: 'The Poisson regression with a log link whose counts are overdispersed: a negative binomial with an unknown dispersion alongside the unknown intercept and slope, simulated from stated true values.',
   factors: [
@@ -682,13 +665,10 @@ export const poissonLogDispersionLearnedAtom: EpAtom = defineAtom({
   ],
   family: 'likelihoods',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.35,
-    sdRatio: [0.7, 1.3],
-    ks: 0.15,
-    reason:
-      'a Gauss-Hermite product rule over the Gaussian beliefs of the predictor and the log dispersion, against a 27-point grid: close, not exact',
-  },
+  tolerance: tolerance(
+    'lumpiest',
+    'a Gauss-Hermite product rule over the Gaussian beliefs of the predictor and the log dispersion, against a 27-point grid: close, not exact',
+  ),
   ep: { damping: 0.5 },
   knobs: dict({
     ...simulationKnobs(25),
@@ -762,19 +742,15 @@ export const weibullLearnedAtom: EpAtom = defineAtom({
   name: 'weibull-learned',
   title: 'Prior: normal on a Weibull log scale, normal hyperprior on its centre: parameters learned',
   extends: 'prior-normal-weibull-scale',
-  recovery: recoveryOf(
+  recovery: recovery(
+    'standard',
     'a Gaussian projection of each Weibull tilted distribution by quadrature; the times carry less information per observation than a count, so the intervals are wide and the prior pulls a little',
   ),
   what: 'The Weibull time with a normal prior on the log of its scale, as a regression: the intercept and slope of the log scale are unknown (the centre and the effect of a covariate) and the times are simulated from stated true values, with the shape fixed.',
   factors: ['prior (gaussian) x2', 'matmul (linear predictor)', 'numeric likelihood: weibull with a log link'],
   family: 'likelihoods',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.8, 1.2],
-    ks: 0.08,
-    reason: 'a Gaussian projection of each tilted distribution, evaluated by quadrature',
-  },
+  tolerance: tolerance('close', 'a Gaussian projection of each tilted distribution, evaluated by quadrature'),
   knobs: dict({
     ...simulationKnobs(30),
     trueIntercept: real(-1, 2, { default: 0.5, step: 0.1, label: 'true intercept' }),
@@ -903,21 +879,19 @@ export const studentTDfLearnedAtom: EpAtom = defineAtom({
   name: 'student-t-df-learned',
   title: 'Student-t likelihood: parameters learned (the degrees of freedom too)',
   extends: 'student-t',
-  recovery: recoveryOf(
+  recovery: recovery(
+    'quick',
     'the degrees of freedom are weakly identified by a few dozen draws (the posterior is skewed with a long right tail, and EP carries a gamma for it), so the floor leaves room (the exact posterior covers 0.96 of 25 seeds at these defaults, EP the same); each run integrates a grid in the location and the log of the degrees of freedom, so 20 seeds and a floor of 0.7',
-    20,
   ),
   what: 'The Student-t noise of the basic atom (scale one) with the location and the degrees of freedom both unknown, the data simulated from a stated location and a stated number of degrees of freedom.',
   factors: ['prior (gaussian)', 'prior (gamma)', 'likelihood-pair: student-t with random degrees of freedom'],
   family: 'likelihoods',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.25,
-    sdRatio: [0.7, 1.3],
-    ks: 0.12,
-    reason:
-      'the posterior of the degrees of freedom is skewed with a long right tail and EP carries a gamma for it; the location is nearly Gaussian',
-  },
+  tolerance: tolerance(
+    'coupled',
+    'the posterior of the degrees of freedom is skewed with a long right tail and EP carries a gamma for it; the location is nearly Gaussian',
+  ),
+  evidence: { nats: 0.02, reason: 'a Student-t with a gamma df: the pair site (0.006 measured)' },
   ep: { damping: 0.3 },
   knobs: dict({
     ...simulationKnobs(40),
@@ -1038,21 +1012,19 @@ export const weibullShapeLearnedAtom: EpAtom = defineAtom({
   name: 'weibull-shape-learned',
   title: 'Prior: normal on a Weibull log scale, normal hyperprior on its centre: parameters learned (the shape too)',
   extends: 'prior-normal-weibull-scale',
-  recovery: recoveryOf(
+  recovery: recovery(
+    'quick',
     'the shape and the log scale are correlated in the posterior and EP carries one Gaussian for each (the log-normal shape is a Gaussian on its log); each run integrates a grid in both, so 20 seeds and a floor of 0.7',
-    20,
   ),
   what: 'The Weibull time of the basic atom with its log scale and its shape both unknown, the times simulated from a stated scale and shape.',
   factors: ['prior (gaussian)', 'prior (gaussian, on the log shape)', 'likelihood-pair: weibull with a random shape'],
   family: 'likelihoods',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.25,
-    sdRatio: [0.7, 1.3],
-    ks: 0.12,
-    reason:
-      'the scale and the shape are coupled in the posterior (a larger shape moves the scale), and EP carries one Gaussian for each',
-  },
+  tolerance: tolerance(
+    'coupled',
+    'the scale and the shape are coupled in the posterior (a larger shape moves the scale), and EP carries one Gaussian for each',
+  ),
+  evidence: { nats: 0.08, reason: 'a Weibull with a log-normal shape: the pair site (0.036 measured)' },
   ep: { damping: 0.3 },
   knobs: dict({
     ...simulationKnobs(30),
@@ -1151,20 +1123,18 @@ export const skillDifferenceLearnedAtom: EpAtom = defineAtom({
   name: 'skill-difference-learned',
   title: 'Probit on a difference: parameters learned',
   extends: 'skill-difference',
-  recovery: recoveryOf(
+  recovery: recovery(
+    'standard',
     'the spread is learned from a handful of players and a few dozen win/lose results, so it is weakly identified; each result is a truncated-Gaussian tilted distribution projected onto a Gaussian',
   ),
   what: 'The TrueSkill probit factor of the basic atom on a round robin of players whose skills share an unknown precision, with the results simulated from stated true skills: the skills and the spread of the players are recovered from the games alone.',
   factors: ['prior (gamma)', 'gaussian-gamma-precision (latent value)', 'probit link on a difference of two variables'],
   family: 'likelihoods',
   reference: 'truth',
-  tolerance: {
-    meanZ: 1,
-    sdRatio: [0, 10],
-    ks: 1,
-    reason:
-      'there is no reference posterior (a gamma precision and eight skills are too many coordinates for a grid): recovery of the truth is the check',
-  },
+  tolerance: tolerance(
+    'truth',
+    'there is no reference posterior (a gamma precision and eight skills are too many coordinates for a grid): recovery of the truth is the check',
+  ),
   knobs: dict({
     seed: simulationKnobs(2)['seed'] as ReturnType<typeof int>,
     players: int(3, 10, { default: 8, label: 'players' }),

@@ -15,6 +15,7 @@ import { defineModel, ops } from '../model/index.ts'
 import { type ConditionalMarginal, hyperPosterior, normalPdf } from '../validation/index.ts'
 import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
+import { recovery, tolerance } from './ep-tolerance.ts'
 
 function precisionLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
@@ -94,24 +95,19 @@ export const gammaPrecisionLearnedAtom: EpAtom = defineAtom({
   name: 'gamma-precision-learned',
   title: 'Gamma precision: parameters learned',
   extends: 'gamma-precision',
-  recovery: {
-    seeds: 40,
-    coverage: 0.75,
-    zrms: 1.6,
-    reason:
-      'EP projects the skewed joint of the mean and the precision onto a Gaussian and a gamma, so its intervals are close to the exact ones but not equal; 40 seeds leave a binomial spread of about 0.05',
-  },
+  recovery: recovery(
+    'standard',
+    'EP projects the skewed joint of the mean and the precision onto a Gaussian and a gamma, so its intervals are close to the exact ones but not equal; 40 seeds leave a binomial spread of about 0.05',
+  ),
   what: 'The Gaussian with a gamma precision of the basic atom, with the mean and the precision both unknown and the data simulated from a stated mean and sd: the recovery of both, against the grid posterior of the same model.',
   factors: ['prior (gaussian)', 'prior (gamma)', 'gaussian-gamma-precision (observed value)'],
   family: 'scales',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.8, 1.2],
-    ks: 0.08,
-    reason:
-      'the factor is not Gaussian in the mean and the precision together, so EP projects onto a Gaussian and a gamma and the beliefs are close, not exact',
-  },
+  tolerance: tolerance(
+    'close',
+    'the factor is not Gaussian in the mean and the precision together, so EP projects onto a Gaussian and a gamma and the beliefs are close, not exact',
+  ),
+  evidence: { nats: 0.05, reason: 'the same with a learned mean' },
   knobs: dict({
     ...simulationKnobs(12),
     trueMean: real(-3, 3, { default: 1.5, step: 0.1, label: 'true mean' }),
@@ -253,24 +249,18 @@ export const sharedPrecisionLearnedAtom: EpAtom = defineAtom({
   name: 'shared-precision-learned',
   title: 'Shared precision: parameters learned',
   extends: 'shared-precision',
-  recovery: {
-    seeds: 40,
-    coverage: 0.75,
-    zrms: 1.6,
-    reason:
-      'a spread learned from a handful of groups is poorly identified and its posterior is skewed, which EP carries as a gamma; each value is a Gaussian matched to a scale mixture',
-  },
+  recovery: recovery(
+    'standard',
+    'a spread learned from a handful of groups is poorly identified and its posterior is skewed, which EP carries as a gamma; each value is a Gaussian matched to a scale mixture',
+  ),
   what: 'The shared precision of the basic atom with the population mean also unknown and each value observed with its own known noise: a hierarchical model in the shape of the eight schools, simulated from a stated mean and spread.',
   factors: ['prior (gamma)', 'prior (gaussian)', 'gaussian-gamma-precision (latent value)', 'gaussian likelihood'],
   family: 'scales',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.7, 1.2],
-    ks: 0.1,
-    reason:
-      'the posterior of the precision is skewed and EP projects it onto a gamma; each effect is a scale mixture that EP matches with a Gaussian',
-  },
+  tolerance: tolerance(
+    'coupled',
+    'the posterior of the precision is skewed and EP projects it onto a gamma; each effect is a scale mixture that EP matches with a Gaussian',
+  ),
   knobs: dict({
     seed: simulationKnobs(8)['seed'] as ReturnType<typeof int>,
     groups: int(3, 8, { default: 8, label: 'groups' }),

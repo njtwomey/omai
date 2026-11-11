@@ -11,6 +11,7 @@ import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { gridMarginals, normalCdf, normalPdf, quadratureMarginal, type RefJoint } from '../validation/index.ts'
 import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { tolerance } from './ep-tolerance.ts'
 
 function orderedProblem(k: Config): AtomParts {
   const gap = configNumber(k, 'gap')
@@ -78,13 +79,10 @@ export const orderedPairAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian) x2', 'greater-than (truncation)'],
   family: 'gates',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.7, 1.2],
-    ks: 0.12,
-    reason:
-      'the exact beliefs are skew-normal; EP matches their mean and variance with Gaussians, and the joint leans where the two beliefs cannot',
-  },
+  tolerance: tolerance(
+    'skew-normal',
+    'the exact beliefs are skew-normal; EP matches their mean and variance with Gaussians, and the joint leans where the two beliefs cannot',
+  ),
   knobs: dict({ gap: real(-2, 2, { default: 0.5, step: 0.1, label: 'mean of b (a has mean 0)' }) }),
   parts: orderedProblem,
 })
@@ -163,12 +161,11 @@ export const orderedMeansAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian) x2', 'ordered constraint (greater-than between neighbours)', 'gaussian likelihood'],
   family: 'gates',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.7, 1.2],
-    ks: 0.12,
-    reason: 'the truncated posterior is skewed; EP matches the mean and variance of each margin with a Gaussian',
-  },
+  tolerance: tolerance(
+    'skew-normal',
+    'the truncated posterior is skewed; EP matches the mean and variance of each margin with a Gaussian',
+  ),
+  evidence: { nats: 1e-3, reason: 'an ordering constraint on two Gaussians' },
   knobs: dict({ priorSd: real(0.5, 6, { default: 3, step: 0.1, label: 'prior sd of the means' }) }),
   parts: orderedMeansProblem,
 })

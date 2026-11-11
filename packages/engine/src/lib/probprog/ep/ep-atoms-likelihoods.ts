@@ -16,6 +16,7 @@ import { probitClassifier, probitData } from '../models/probit-classification.ts
 import { trueskillModel } from '../models/ranking.ts'
 import { gridMarginals, normalCdf } from '../validation/index.ts'
 import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { tolerance } from './ep-tolerance.ts'
 
 const HEAVY = [0.2, -0.1, 0.4, 0.0, 4.5]
 
@@ -75,13 +76,11 @@ export const studentTAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'student-t-site (quadrature)'],
   family: 'likelihoods',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.75, 1.25],
-    ks: 0.1,
-    reason:
-      'the posterior is bumpy (the outlier may or may not count) and EP matches its mean and variance with one Gaussian',
-  },
+  tolerance: tolerance(
+    'skewed',
+    'the posterior is bumpy (the outlier may or may not count) and EP matches its mean and variance with one Gaussian',
+  ),
+  evidence: { nats: 1e-3, reason: 'the Student-t site by quadrature' },
   knobs: dict({ scale: real(0.1, 2, { default: 0.5, step: 0.05, label: 'noise scale' }) }),
   parts: (k) => heavyProblem('student-t', k),
 })
@@ -103,12 +102,11 @@ export const laplaceAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'laplace-site (quadrature)'],
   family: 'likelihoods',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.75, 1.25],
-    ks: 0.1,
-    reason: 'the posterior has kinks at the observations and EP matches its mean and variance with one Gaussian',
-  },
+  tolerance: tolerance(
+    'skewed',
+    'the posterior has kinks at the observations and EP matches its mean and variance with one Gaussian',
+  ),
+  evidence: { nats: 0.05, reason: 'the Laplace site: a kinked density, moment matched' },
   knobs: dict({ scale: real(0.1, 2, { default: 0.5, step: 0.05, label: 'noise scale' }) }),
   parts: (k) => heavyProblem('laplace', k),
 })
@@ -209,13 +207,11 @@ export const probitAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'matmul (linear predictor)', 'probit link'],
   family: 'likelihoods',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.75, 1.15],
-    ks: 0.1,
-    reason:
-      'EP matches a Gaussian to each truncated-Gaussian tilted distribution; the posterior is skewed, so it is close, not exact',
-  },
+  tolerance: tolerance(
+    'truncated',
+    'EP matches a Gaussian to each truncated-Gaussian tilted distribution; the posterior is skewed, so it is close, not exact',
+  ),
+  evidence: { nats: 0.03, reason: 'a probit link: moment matched truncated Gaussians' },
   knobs: dict({ priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the weights' }) }),
   parts: (k) => classesProblem('probit', k),
 })
@@ -237,12 +233,8 @@ export const logisticAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'matmul (linear predictor)', 'logistic link (numeric quadrature)'],
   family: 'likelihoods',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.1,
-    sdRatio: [0.8, 1.15],
-    ks: 0.06,
-    reason: 'a Gaussian projection of each logistic tilted distribution, evaluated by quadrature',
-  },
+  tolerance: tolerance('tight', 'a Gaussian projection of each logistic tilted distribution, evaluated by quadrature'),
+  evidence: { nats: 0.03, reason: 'a logistic link by quadrature, moment matched' },
   knobs: dict({ priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the weights' }) }),
   parts: (k) => classesProblem('logistic', k),
 })
@@ -321,13 +313,11 @@ export const skillDifferenceAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian) x3', 'probit link on a difference of two variables'],
   family: 'likelihoods',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.75, 1.2],
-    ks: 0.1,
-    reason:
-      'each result is a truncated-Gaussian tilted distribution that EP projects onto a Gaussian: close, not exact',
-  },
+  tolerance: tolerance(
+    'skew-normal',
+    'each result is a truncated-Gaussian tilted distribution that EP projects onto a Gaussian: close, not exact',
+  ),
+  evidence: { nats: 1e-2, reason: 'two skills compared through a probit' },
   knobs: dict({}),
   parts: () => skillsProblem(),
 })
@@ -423,12 +413,10 @@ export const gpLogisticAtom: EpAtom = defineAtom({
   factors: ['dense prior (gaussian-mv)', 'logistic link (numeric quadrature)'],
   family: 'likelihoods',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.1,
-    sdRatio: [0.8, 1.15],
-    ks: 0.06,
-    reason: 'a Gaussian projection of each logistic tilted distribution against a dense Gaussian cavity',
-  },
+  tolerance: tolerance(
+    'tight',
+    'a Gaussian projection of each logistic tilted distribution against a dense Gaussian cavity',
+  ),
   knobs: dict({ lengthScale: real(0.3, 3, { default: 1, step: 0.1, label: 'kernel length scale' }) }),
   parts: (k) => gpProblem('logistic', k),
 })
@@ -450,12 +438,10 @@ export const gpProbitAtom: EpAtom = defineAtom({
   factors: ['dense prior (gaussian-mv)', 'probit link'],
   family: 'likelihoods',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.75, 1.15],
-    ks: 0.1,
-    reason: 'a Gaussian projection of each truncated-Gaussian tilted distribution against a dense Gaussian cavity',
-  },
+  tolerance: tolerance(
+    'truncated',
+    'a Gaussian projection of each truncated-Gaussian tilted distribution against a dense Gaussian cavity',
+  ),
   knobs: dict({ lengthScale: real(0.3, 3, { default: 1, step: 0.1, label: 'kernel length scale' }) }),
   parts: (k) => gpProblem('probit', k),
 })
@@ -497,12 +483,8 @@ export const poissonLogAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'numeric likelihood: poisson with an exp link'],
   family: 'likelihoods',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.1,
-    sdRatio: [0.8, 1.15],
-    ks: 0.06,
-    reason: 'a Gaussian projection of the tilted distribution, evaluated by quadrature',
-  },
+  tolerance: tolerance('tight', 'a Gaussian projection of the tilted distribution, evaluated by quadrature'),
+  evidence: { nats: 1e-3, reason: 'a log-link Poisson by quadrature' },
   knobs: dict({ y: real(0, 20, { default: 5, step: 1, integer: true, label: 'observed count' } as never) }),
   parts: poissonLogProblem,
 })

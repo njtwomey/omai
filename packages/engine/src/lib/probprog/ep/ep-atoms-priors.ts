@@ -27,22 +27,18 @@ import {
   sum,
 } from '../validation/index.ts'
 import { type AtomParts, type AtomTolerance, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { tolerance } from './ep-tolerance.ts'
 
-const EXACT: AtomTolerance = {
-  meanZ: 1e-6,
-  sdRatio: [0.999999, 1.000001],
-  ks: 1e-4,
-  reason: 'a conjugate model: EP is exact, so its belief equals the closed-form posterior up to rounding',
-}
+const EXACT = tolerance(
+  'exact',
+  'a conjugate model: EP is exact, so its belief equals the closed-form posterior up to rounding',
+)
 
 /** The tolerance of a hyperprior setup, where EP projects a skewed posterior of the hyperparameter onto a gamma or a Gaussian. */
-const HYPER: AtomTolerance = {
-  meanZ: 0.15,
-  sdRatio: [0.75, 1.25],
-  ks: 0.1,
-  reason:
-    'the posterior of a hyperparameter is skewed and EP carries one gamma or Gaussian for it: the means are close and the spreads within a quarter',
-}
+const HYPER = tolerance(
+  'skewed',
+  'the posterior of a hyperparameter is skewed and EP carries one gamma or Gaussian for it: the means are close and the spreads within a quarter',
+)
 
 // ----- closed-form marginals -----
 
@@ -176,13 +172,11 @@ export const priorNormalInverseGammaAtom: EpAtom = defineAtom({
   factors: ['prior (normal-gamma)', 'gaussian-normal-gamma (observed value)'],
   family: 'priors',
   reference: 'exact',
-  tolerance: {
-    meanZ: 1e-6,
-    sdRatio: [0.999999, 1.000001],
-    ks: 0.1,
-    reason:
-      'the posterior is exactly normal-inverse-gamma and EP carries it exactly (the moments agree to rounding); the curves compare the Gaussian and gamma shapes the page draws with the exact Student t and inverse gamma, so the distance is small, not zero',
-  },
+  tolerance: tolerance(
+    'exact-heavy-tail',
+    'the posterior is exactly normal-inverse-gamma and EP carries it exactly (the moments agree to rounding); the curves compare the Gaussian and gamma shapes the page draws with the exact Student t and inverse gamma, so the distance is small, not zero',
+  ),
+  evidence: { nats: 1e-5, reason: 'normal-gamma: exact' },
   knobs: dict({
     priorMean: real(-2, 2, { default: 0, step: 0.1, label: 'prior mean m' }),
     kappa: real(0.1, 5, { default: 0.5, step: 0.1, label: 'kappa (prior observations for the mean)' }),
@@ -283,6 +277,7 @@ export const priorNormalHyperAtom: EpAtom = defineAtom({
   family: 'priors',
   reference: 'exact',
   tolerance: EXACT,
+  evidence: { nats: 1e-3, reason: 'a Gaussian centre with a Gaussian hyperprior' },
   knobs: dict({
     hyperSd: real(0.5, 10, { default: 3, step: 0.1, label: 'sd of the hyperprior' }),
     priorSd: real(0.2, 3, { default: 1, step: 0.1, label: 'sd of the prior given its centre' }),
@@ -343,13 +338,12 @@ export const priorInverseGammaHyperAtom: EpAtom = defineAtom({
   factors: ['prior (gamma)', 'gamma-rate (a gamma with a gamma rate)', 'gaussian-gamma-precision (observed value)'],
   family: 'priors',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.75, 1.3],
-    ks: 0.18,
-    reason:
-      'the posterior of the variance is heavy-tailed: EP carries a gamma for its reciprocal, which matches the mean and the scale hyperparameter and leaves the variance an inverse gamma whose spread is about a fifth too wide',
-  },
+  tolerance: tolerance(
+    'measured',
+    'the posterior of the variance is heavy-tailed: EP carries a gamma for its reciprocal, which matches the mean and the scale hyperparameter and leaves the variance an inverse gamma whose spread is about a fifth too wide',
+    { meanZ: 0.15, sdRatio: [0.75, 1.3], ks: 0.18 },
+  ),
+  evidence: { nats: 1e-3, reason: 'the gamma precision rule on a grid in log lambda' },
   knobs: dict({
     shape: real(1, 6, { default: 3, step: 0.1, label: 'shape a of the inverse gamma' }),
     hyperShape: real(0.5, 6, { default: 2, step: 0.1, label: 'shape of the hyperprior' }),
@@ -412,6 +406,7 @@ export const priorGammaPoissonHyperAtom: EpAtom = defineAtom({
   family: 'priors',
   reference: 'grid',
   tolerance: HYPER,
+  evidence: { nats: 1e-3, reason: 'a gamma rate with a gamma hyperprior' },
   knobs: dict({
     shape: real(0.5, 8, { default: 2, step: 0.1, label: 'shape of the rate prior' }),
     hyperShape: real(0.5, 6, { default: 2, step: 0.1, label: 'shape of the hyperprior' }),
@@ -467,7 +462,8 @@ export const priorLogNormalPoissonAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian, on the log rate)', 'numeric likelihood: poisson with an exp link'],
   family: 'priors',
   reference: 'grid',
-  tolerance: { ...HYPER, meanZ: 0.2 },
+  tolerance: tolerance('skewed', HYPER.reason, { meanZ: 0.2 }),
+  evidence: { nats: 0.01, reason: 'a log-normal rate through exp' },
   knobs: dict({
     logMean: real(-1, 3, { default: 1, step: 0.1, label: 'mean of the log rate' }),
     logSd: real(0.2, 2, { default: 0.8, step: 0.1, label: 'sd of the log rate' }),
@@ -525,7 +521,7 @@ export const priorLogNormalPoissonHyperAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'gaussian with a random mean', 'numeric likelihood: poisson with an exp link'],
   family: 'priors',
   reference: 'grid',
-  tolerance: { ...HYPER, meanZ: 0.2 },
+  tolerance: tolerance('skewed', HYPER.reason, { meanZ: 0.2 }),
   knobs: dict({
     hyperSd: real(0.3, 4, { default: 1, step: 0.1, label: 'sd of the hyperprior' }),
     logSd: real(0.2, 2, { default: 0.5, step: 0.1, label: 'sd of the log rate given its centre' }),
@@ -582,11 +578,8 @@ export const priorGammaExponentialAtom: EpAtom = defineAtom({
   factors: ['prior (gamma)', 'gamma-observed (an exponential value with a gamma rate)'],
   family: 'priors',
   reference: 'exact',
-  tolerance: {
-    ...EXACT,
-    ks: 5e-3,
-    reason: `${EXACT.reason} (the curve compared is the matched gamma, the exact posterior)`,
-  },
+  tolerance: tolerance('exact-curve', `${EXACT.reason} (the curve compared is the matched gamma, the exact posterior)`),
+  evidence: { nats: 1e-5, reason: 'conjugate: exact' },
   knobs: dict({
     shape: real(0.2, 10, { default: 2, step: 0.1, label: 'prior shape' }),
     rate: real(0.05, 5, { default: 1, step: 0.05, label: 'prior rate' }),
@@ -651,7 +644,8 @@ export const priorNormalWeibullAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'gaussian with a random mean', 'numeric likelihood: weibull with a log link'],
   family: 'priors',
   reference: 'grid',
-  tolerance: { ...HYPER, meanZ: 0.2 },
+  tolerance: tolerance('skewed', HYPER.reason, { meanZ: 0.2 }),
+  evidence: { nats: 0.02, reason: 'a Weibull with a random scale' },
   knobs: dict({
     shape: real(0.5, 4, { default: 1.5, step: 0.1, label: 'Weibull shape (known)' }),
     hyperSd: real(0.3, 4, { default: 1, step: 0.1, label: 'sd of the hyperprior' }),
@@ -708,11 +702,8 @@ export const priorBetaGeometricAtom: EpAtom = defineAtom({
   factors: ['prior (beta)', 'negative-binomial-beta (a geometric count with a beta probability)'],
   family: 'priors',
   reference: 'exact',
-  tolerance: {
-    ...EXACT,
-    ks: 5e-3,
-    reason: `${EXACT.reason} (the curve compared is the matched beta, the exact posterior)`,
-  },
+  tolerance: tolerance('exact-curve', `${EXACT.reason} (the curve compared is the matched beta, the exact posterior)`),
+  evidence: { nats: 1e-5, reason: 'conjugate: exact' },
   knobs: dict({
     a: real(0.2, 20, { default: 2, step: 0.1, label: 'prior a' }),
     b: real(0.2, 20, { default: 2, step: 0.1, label: 'prior b' }),
@@ -764,13 +755,10 @@ function betaStrengthProblem(kind: 'gamma' | 'lognormal', k: Config): AtomParts 
   }
 }
 
-const STRENGTH_TOLERANCE: AtomTolerance = {
-  meanZ: 0.1,
-  sdRatio: [0.8, 1.2],
-  ks: 0.08,
-  reason:
-    'the posterior of the strength is skewed and EP carries a gamma for it (a Gaussian on its log for the log-normal); the probability is the matched beta of the mixture over the strength',
-}
+const STRENGTH_TOLERANCE = tolerance(
+  'close',
+  'the posterior of the strength is skewed and EP carries a gamma for it (a Gaussian on its log for the log-normal); the probability is the matched beta of the mixture over the strength',
+)
 
 /**
  * A symmetric beta prior on a Bernoulli probability whose strength has a gamma hyperprior: the numeric `dirichlet-concentration`
@@ -795,6 +783,7 @@ export const priorBetaStrengthGammaAtom: EpAtom = defineAtom({
   family: 'priors',
   reference: 'exact',
   tolerance: STRENGTH_TOLERANCE,
+  evidence: { nats: 1e-3, reason: 'a beta with a random concentration' },
   knobs: dict({
     shape: real(0.5, 8, { default: 2, step: 0.1, label: 'shape of the strength prior' }),
     rate: real(0.1, 4, { default: 1, step: 0.1, label: 'rate of the strength prior' }),
@@ -823,7 +812,7 @@ export const priorBetaStrengthLogNormalAtom: EpAtom = defineAtom({
   ],
   family: 'priors',
   reference: 'exact',
-  tolerance: { ...STRENGTH_TOLERANCE, ks: 0.12 },
+  tolerance: tolerance('close', STRENGTH_TOLERANCE.reason, { ks: 0.12 }),
   knobs: dict({
     logMean: real(-1, 3, { default: 0.7, step: 0.1, label: 'mean of the log strength' }),
     logSd: real(0.2, 2, { default: 0.8, step: 0.1, label: 'sd of the log strength' }),
@@ -879,11 +868,8 @@ export const priorDirichletCategoricalAtom: EpAtom = defineAtom({
   factors: ['prior (dirichlet)', 'discrete likelihood (discrete-dirichlet)'],
   family: 'priors',
   reference: 'exact',
-  tolerance: {
-    ...EXACT,
-    ks: 5e-3,
-    reason: `${EXACT.reason} (the curve compared is the matched beta, the exact marginal)`,
-  },
+  tolerance: tolerance('exact-curve', `${EXACT.reason} (the curve compared is the matched beta, the exact marginal)`),
+  evidence: { nats: 1e-5, reason: 'conjugate: exact' },
   knobs: dict({ concentration: real(0.2, 10, { default: 1, step: 0.1, label: 'prior concentration' }) }),
   parts: dirichletCategoricalProblem,
 })
@@ -1005,7 +991,8 @@ export const priorLogitNormalAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'gaussian with a random mean', 'logistic likelihood'],
   family: 'priors',
   reference: 'grid',
-  tolerance: { ...HYPER, meanZ: 0.2 },
+  tolerance: tolerance('skewed', HYPER.reason, { meanZ: 0.2 }),
+  evidence: { nats: 0.01, reason: 'a logistic-normal probability' },
   knobs: dict({
     hyperSd: real(0.3, 4, { default: 1, step: 0.1, label: 'sd of the hyperprior' }),
     logitSd: real(0.2, 3, { default: 1, step: 0.1, label: 'sd of the log odds given the centre' }),
@@ -1058,12 +1045,14 @@ export const priorUniformAtom: EpAtom = defineAtom({
   factors: ['numeric prior site (uniform, exact)', 'gaussian likelihood'],
   family: 'priors',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.25,
-    sdRatio: [0.7, 1.3],
-    ks: 0.15,
+  tolerance: tolerance(
+    'coupled',
+    'the uniform prior is replaced once by the Gaussian with its mean and variance, so a bound that cuts into the posterior is not respected; where the data sit well inside the bounds the two agree',
+  ),
+  evidence: {
+    nats: 1e-6,
     reason:
-      'the uniform prior is replaced once by the Gaussian with its mean and variance, so a bound that cuts into the posterior is not respected; where the data sit well inside the bounds the two agree',
+      'the uniform prior is the exact numeric site on the value, and a Gaussian likelihood makes the posterior a truncated normal: exact (was 0.09 off when projected once)',
   },
   knobs: dict({
     low: real(-6, 1, { default: -3, step: 0.5, label: 'lower bound' }),
@@ -1127,7 +1116,7 @@ export const priorLogNormalScaleAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'gaussian with a random mean', 'gaussian-log-scale'],
   family: 'priors',
   reference: 'grid',
-  tolerance: { ...HYPER, meanZ: 0.2 },
+  tolerance: tolerance('skewed', HYPER.reason, { meanZ: 0.2 }),
   knobs: dict({
     hyperSd: real(0.3, 4, { default: 1, step: 0.1, label: 'sd of the hyperprior' }),
     logSd: real(0.2, 2, { default: 0.5, step: 0.1, label: 'sd of the log scale given its centre' }),
@@ -1194,7 +1183,8 @@ export const priorBetaTwoShapesAtom: EpAtom = defineAtom({
   ],
   family: 'priors',
   reference: 'grid',
-  tolerance: { ...HYPER, meanZ: 0.25 },
+  tolerance: tolerance('skewed', HYPER.reason, { meanZ: 0.25 }),
+  evidence: { nats: 1e-3, reason: 'a beta with two random shapes: the grid in both log shapes (2e-5 measured)' },
   knobs: dict({ logSd: real(0.2, 2, { default: 0.7, step: 0.1, label: 'sd of each log shape' }) }),
   parts: betaTwoShapesProblem,
 })

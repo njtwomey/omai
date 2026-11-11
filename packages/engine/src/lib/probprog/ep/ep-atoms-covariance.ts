@@ -24,6 +24,7 @@ import {
   type FigureCurve,
 } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
+import { recovery, tolerance } from './ep-tolerance.ts'
 
 /** The 2 by 2 matrix `[[a, b], [b, c]]` as a nested array. */
 const matrix2 = (a: number, b: number, c: number): number[][] => [
@@ -249,13 +250,10 @@ export const mvnWishartAtom: EpAtom = defineAtom({
   factors: ['prior (wishart)', 'mvn-wishart (observed vector, known mean)'],
   family: 'covariance',
   reference: 'exact',
-  tolerance: {
-    meanZ: 1e-3,
-    sdRatio: [0.999, 1.001],
-    ks: 0.12,
-    reason:
-      'the posterior is exactly Wishart and EP carries it exactly; the curves compare the gamma and normal shapes the page draws for the entries with the exact marginals (the off-diagonal entry is a little skewed), so the distance is small, not zero',
-  },
+  tolerance: tolerance(
+    'exact-moments',
+    'the posterior is exactly Wishart and EP carries it exactly; the curves compare the gamma and normal shapes the page draws for the entries with the exact marginals (the off-diagonal entry is a little skewed), so the distance is small, not zero',
+  ),
   knobs: dict({
     df: real(2.2, 12, { default: 4, step: 0.2, label: 'prior degrees of freedom' }),
     priorScale: real(0.2, 2, { default: 0.5, step: 0.05, label: 'prior scale (mean precision is df x this)' }),
@@ -268,21 +266,15 @@ export const mvnWishartAtom: EpAtom = defineAtom({
 // The same with the mean unknown, learned from simulated data
 // ---------------------------------------------------------------------------------------------------------------------
 
-const WISHART_RECOVERY: AtomRecoverySpec = {
-  seeds: 40,
-  coverage: 0.75,
-  zrms: 1.5,
-  reason:
-    'EP matches the exact posterior here (a Wishart that the prior of 3 degrees of freedom pulls towards the identity), so over seeds drawn from the truth the 90% intervals hold it about 0.85 to 0.95 of the time; 40 seeds leave a binomial spread of about 0.05',
-}
+const WISHART_RECOVERY = recovery(
+  'calibrated',
+  'EP matches the exact posterior here (a Wishart that the prior of 3 degrees of freedom pulls towards the identity), so over seeds drawn from the truth the 90% intervals hold it about 0.85 to 0.95 of the time; 40 seeds leave a binomial spread of about 0.05',
+)
 
-const CORRELATION_RECOVERY: AtomRecoverySpec = {
-  seeds: 40,
-  coverage: 0.75,
-  zrms: 1.6,
-  reason:
-    'one plated factor: EP carries the marginals of the exact posterior (gammas for the precisions, a beta for the correlation, a Gaussian for the mean), whose intervals hold the truth close to nine times in ten; the correlation, bounded and skewed, has errors a third larger than its spread says; 40 seeds leave a binomial spread of about 0.05',
-}
+const CORRELATION_RECOVERY = recovery(
+  'standard',
+  'one plated factor: EP carries the marginals of the exact posterior (gammas for the precisions, a beta for the correlation, a Gaussian for the mean), whose intervals hold the truth close to nine times in ten; the correlation, bounded and skewed, has errors a third larger than its spread says; 40 seeds leave a binomial spread of about 0.05',
+)
 
 function mvnWishartLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
@@ -416,13 +408,10 @@ export const mvnWishartLearnedAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian-mv)', 'prior (wishart)', 'mvn-wishart (plate of rows, random mean)'],
   family: 'covariance',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.05,
-    sdRatio: [0.95, 1.05],
-    ks: 0.06,
-    reason:
-      'with one plated factor EP matches the exact posterior of the mean and the matrix by its moments (a Gaussian and a Wishart), so the means are exact and the spreads are the Wishart the matrix is closest to: the posterior is very nearly one at these sizes',
-  },
+  tolerance: tolerance(
+    'plated',
+    'with one plated factor EP matches the exact posterior of the mean and the matrix by its moments (a Gaussian and a Wishart), so the means are exact and the spreads are the Wishart the matrix is closest to: the posterior is very nearly one at these sizes',
+  ),
   knobs: dict({
     ...simulationKnobs(40),
     trueMean1: real(-2, 2, { default: 0.8, step: 0.1, label: 'true mean 1' }),
@@ -533,13 +522,11 @@ export const bivariateCorrelationAtom: EpAtom = defineAtom({
   factors: ['prior (beta)', 'mvn-sd-corr (plate of rows, known mean and sds)'],
   family: 'covariance',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.1,
-    sdRatio: [0.75, 1.25],
-    ks: 0.25,
-    reason:
-      'the posterior of a strong correlation from a handful of pairs is skewed against the boundary: EP carries the beta that matches its two log moments, which has the right mean (0.02 sd) and a spread 17% too small here (0.83 of the exact at eight pairs, 0.92 at three; near 0.99 for the learned twin at a moderate correlation); the curve the page draws is a normal matched to the belief, which adds to the distance',
-  },
+  tolerance: tolerance(
+    'measured',
+    'the posterior of a strong correlation from a handful of pairs is skewed against the boundary: EP carries the beta that matches its two log moments, which has the right mean (0.02 sd) and a spread 17% too small here (0.83 of the exact at eight pairs, 0.92 at three; near 0.99 for the learned twin at a moderate correlation); the curve the page draws is a normal matched to the belief, which adds to the distance',
+    { meanZ: 0.1, sdRatio: [0.75, 1.25], ks: 0.25 },
+  ),
   knobs: dict({
     eta: real(0.5, 8, { default: 1, step: 0.25, label: 'LKJ concentration eta' }),
     n: int(2, 8, { default: 8, label: 'observations' }),
@@ -700,13 +687,10 @@ export const bivariateCorrelationLearnedAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian-mv)', 'prior (gamma)', 'prior (beta)', 'mvn-sd-corr (plate of rows, random mean)'],
   family: 'covariance',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.05,
-    sdRatio: [0.9, 1.1],
-    ks: 0.06,
-    reason:
-      'one plated factor: EP matches the exact joint posterior of the two precisions, the correlation and the mean by the moments of each marginal (gammas, a beta, a Gaussian), and these are very nearly the exact marginals at 30 pairs; at a strong correlation and few pairs the correlation is skewed and its beta is a little narrower (0.89 of the exact at 10 pairs and rho 0.9)',
-  },
+  tolerance: tolerance(
+    'close',
+    'one plated factor: EP matches the exact joint posterior of the two precisions, the correlation and the mean by the moments of each marginal (gammas, a beta, a Gaussian), and these are very nearly the exact marginals at 30 pairs; at a strong correlation and few pairs the correlation is skewed and its beta is a little narrower (0.89 of the exact at 10 pairs and rho 0.9)',
+  ),
   knobs: dict({
     ...simulationKnobs(30),
     trueMean1: real(-2, 2, { default: 0.8, step: 0.1, label: 'true mean 1' }),
@@ -991,13 +975,10 @@ export const randomInterceptsSlopesAtom: EpAtom = defineAtom({
   ],
   family: 'covariance',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.1,
-    sdRatio: [0.9, 1.1],
-    ks: 0.06,
-    reason:
-      'the effects are Gaussian given the matrix and the matrix a Wishart given the effects, but not together: EP matches a Wishart to the matrix and a Gaussian to each group, and at six groups the spreads are within 1% of the exact (they were never below 0.99 from three to ten groups)',
-  },
+  tolerance: tolerance(
+    'plated',
+    'the effects are Gaussian given the matrix and the matrix a Wishart given the effects, but not together: EP matches a Wishart to the matrix and a Gaussian to each group, and at six groups the spreads are within 1% of the exact (they were never below 0.99 from three to ten groups)',
+  ),
   knobs: dict({
     groups: int(3, 10, { default: 6, label: 'groups' }),
     noise: real(0.1, 1, { default: 0.3, step: 0.05, label: 'noise sd (known)' }),
@@ -1173,13 +1154,11 @@ export const randomInterceptsSlopesLearnedAtom: EpAtom = defineAtom({
   name: 'random-intercepts-slopes-learned',
   title: 'Correlated random intercepts and slopes: parameters learned',
   extends: 'random-intercepts-slopes',
-  recovery: {
-    seeds: 16,
-    coverage: 0.7,
-    zrms: 1.6,
-    reason:
-      'ten groups identify the covariance of their (intercept, slope) pairs only loosely and its posterior is skewed; EP carries it as a Wishart within a few percent of the exact spread, and the intervals hold the truth about 0.9 of the time over 30 seeds; 16 seeds leave a binomial spread of about 0.08',
-  },
+  recovery: recovery(
+    'measured',
+    'ten groups identify the covariance of their (intercept, slope) pairs only loosely and its posterior is skewed; EP carries it as a Wishart within a few percent of the exact spread, and the intervals hold the truth about 0.9 of the time over 30 seeds; 16 seeds leave a binomial spread of about 0.08',
+    { seeds: 16, coverage: 0.7, zrms: 1.6 },
+  ),
   what: 'The random intercepts and slopes of the basic atom with the population mean also unknown (a Gaussian prior) and the groups simulated from a stated mean, covariance and noise: the Wishart matrix, the mean and every group are learned together.',
   factors: [
     'prior (gaussian-mv)',
@@ -1189,13 +1168,10 @@ export const randomInterceptsSlopesLearnedAtom: EpAtom = defineAtom({
   ],
   family: 'covariance',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.85, 1.15],
-    ks: 0.06,
-    reason:
-      'the groups are Gaussian given the matrix and the mean and the matrix a Wishart given them, but not jointly: EP matches each by moments; the population mean (spread 0.93 of the exact at eight groups, 0.77 to 0.87 at three or five) is the part it carries least well, because it is shared by every group',
-  },
+  tolerance: tolerance(
+    'close',
+    'the groups are Gaussian given the matrix and the mean and the matrix a Wishart given them, but not jointly: EP matches each by moments; the population mean (spread 0.93 of the exact at eight groups, 0.77 to 0.87 at three or five) is the part it carries least well, because it is shared by every group',
+  ),
   knobs: dict({
     seed: simulationKnobs(10)['seed'] as ReturnType<typeof int>,
     n: int(3, 12, { default: 10, label: 'groups' }),

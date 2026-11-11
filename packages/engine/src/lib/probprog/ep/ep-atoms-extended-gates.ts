@@ -27,6 +27,7 @@ import {
 } from '../validation/index.ts'
 import { type AtomParts, type AtomProblem, type AtomSupport, defineAtom, type EpAtom } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
+import { recovery, tolerance } from './ep-tolerance.ts'
 
 /** The knobs every extended atom has (the seed and the number of observations), with this atom's most observations. */
 const learnedKnobs = (n: number, max: number): Record<string, ReturnType<typeof int>> => ({
@@ -172,13 +173,11 @@ export const clutterLearnedAtom: EpAtom = defineAtom({
   name: 'clutter-learned',
   title: 'Clutter: parameters learned',
   extends: 'clutter',
-  recovery: {
-    seeds: 12,
-    coverage: 0.6,
-    zrms: 1.8,
-    reason:
-      'EP matches the exact posterior closely, so over seeds drawn from the truth its intervals hold it about nine times in ten (40 seeds: 0.88 to 1.0 per parameter); 12 seeds, to keep the test quick, leave a binomial spread of about 0.1',
-  },
+  recovery: recovery(
+    'measured',
+    'EP matches the exact posterior closely, so over seeds drawn from the truth its intervals hold it about nine times in ten (40 seeds: 0.88 to 1.0 per parameter); 12 seeds, to keep the test quick, leave a binomial spread of about 0.1',
+    { seeds: 12, coverage: 0.6, zrms: 1.8 },
+  ),
   what: 'The clutter problem of the basic atom with the numbers it fixes made unknown: the width of the inliers, the width of the clutter and the share of clutter all have priors (the clutter kept wider than the inliers), and the data are simulated from a stated truth. EP, through a gate per observation whose branches each have a gamma precision, recovers all four parameters and says which observations are clutter.',
   factors: [
     'prior (gaussian, gamma, beta)',
@@ -187,13 +186,11 @@ export const clutterLearnedAtom: EpAtom = defineAtom({
   ],
   family: 'gates',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.65, 1.2],
-    ks: 0.12,
-    reason:
-      'every observation is a two-way gate and EP matches the moments of each, carrying one Gaussian, two gammas and a beta for the four unknowns; against the exact posterior by quadrature the parameters agree to a few hundredths of a posterior sd (spreads within 2%) and the responsibilities to 0.01 (the spread of a nearly certain responsibility, a coin, differs in the third decimal, which the lower bound allows)',
-  },
+  tolerance: tolerance(
+    'measured',
+    'every observation is a two-way gate and EP matches the moments of each, carrying one Gaussian, two gammas and a beta for the four unknowns; against the exact posterior by quadrature the parameters agree to a few hundredths of a posterior sd (spreads within 2%) and the responsibilities to 0.01 (the spread of a nearly certain responsibility, a coin, differs in the third decimal, which the lower bound allows)',
+    { meanZ: 0.15, sdRatio: [0.65, 1.2], ks: 0.12 },
+  ),
   knobs: dict({
     ...learnedKnobs(50, 80),
     trueTheta: real(-3, 3, { default: 1.5, step: 0.1, label: 'true centre' }),
@@ -414,13 +411,11 @@ export const mixtureComponentsLearnedAtom: EpAtom = defineAtom({
   name: 'mixture-components-learned',
   title: 'Random index into random components: parameters learned',
   extends: 'mixture-components',
-  recovery: {
-    seeds: 10,
-    coverage: 0.6,
-    zrms: 1.8,
-    reason:
-      'at the default separation of 4 the intervals hold the truth 0.75 to 1.0 of the time per parameter (20 seeds); the floor leaves the spread of 10 seeds, and the page says honestly that closer components (a separation of 2.5 or less) are covered less often',
-  },
+  recovery: recovery(
+    'measured',
+    'at the default separation of 4 the intervals hold the truth 0.75 to 1.0 of the time per parameter (20 seeds); the floor leaves the spread of 10 seeds, and the page says honestly that closer components (a separation of 2.5 or less) are covered less often',
+    { seeds: 10, coverage: 0.6, zrms: 1.8 },
+  ),
   what: 'The index gate of the basic atom, mu[z], with the means, the widths (gamma precisions) and the weights (a Dirichlet) all unknown, the means ordered so the components are named, and the data simulated from a stated truth. The separation knob moves the components together: EP recovers them when they are apart, and reports a confident reading of the overlap when they are not.',
   factors: [
     'prior (gaussian, gamma, dirichlet)',
@@ -430,13 +425,10 @@ export const mixtureComponentsLearnedAtom: EpAtom = defineAtom({
   ],
   family: 'gates',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.3,
-    sdRatio: [0.7, 1.2],
-    ks: 0.15,
-    reason:
-      'for well-separated components EP is within a fifth of a posterior sd of a Gibbs sampler of the same model, a little overconfident (spreads about 0.9 of the sampler); where the components overlap the sampler is wider (spreads 0.5 to 0.7) because EP settles on one reading of the labels',
-  },
+  tolerance: tolerance(
+    'lumpy',
+    'for well-separated components EP is within a fifth of a posterior sd of a Gibbs sampler of the same model, a little overconfident (spreads about 0.9 of the sampler); where the components overlap the sampler is wider (spreads 0.5 to 0.7) because EP settles on one reading of the labels',
+  ),
   knobs: dict({
     ...learnedKnobs(45, 120),
     components: int(2, 3, { default: 2, label: 'components' }),
@@ -565,13 +557,11 @@ export const gateRandomLearnedAtom: EpAtom = defineAtom({
   name: 'gate-random-learned',
   title: 'Gate between two random values: parameters learned',
   extends: 'gate-random',
-  recovery: {
-    seeds: 10,
-    coverage: 0.6,
-    zrms: 1.8,
-    reason:
-      'at the default separation of 4 the intervals hold the truth 0.75 to 1.0 of the time per parameter (20 seeds); the floor leaves the spread of 10 seeds, and the page says honestly that closer components are covered less often',
-  },
+  recovery: recovery(
+    'measured',
+    'at the default separation of 4 the intervals hold the truth 0.75 to 1.0 of the time per parameter (20 seeds); the floor leaves the spread of 10 seeds, and the page says honestly that closer components are covered less often',
+    { seeds: 10, coverage: 0.6, zrms: 1.8 },
+  ),
   what: 'The gate between two random values of the basic atom, with the two means, the two widths and the weight of the switch all unknown (a prior on each), and the data simulated from a stated truth: the switch picks the centre and the precision of its component together, and EP also says which component each observation came from.',
   factors: [
     'prior (gaussian, gamma, beta)',
@@ -580,13 +570,11 @@ export const gateRandomLearnedAtom: EpAtom = defineAtom({
   ],
   family: 'gates',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.3,
-    sdRatio: [0.6, 1.2],
-    ks: 0.15,
-    reason:
-      'for well-separated components EP is within a fifth of a posterior sd of a Gibbs sampler of the same model, a little overconfident (the parameters within 12% of its spread, the responsibilities, which are coins, within 0.03); where the components overlap the sampler is wider because EP settles on one reading',
-  },
+  tolerance: tolerance(
+    'measured',
+    'for well-separated components EP is within a fifth of a posterior sd of a Gibbs sampler of the same model, a little overconfident (the parameters within 12% of its spread, the responsibilities, which are coins, within 0.03); where the components overlap the sampler is wider because EP settles on one reading',
+    { meanZ: 0.3, sdRatio: [0.6, 1.2], ks: 0.15 },
+  ),
   knobs: dict({
     ...learnedKnobs(40, 120),
     separation: real(1, 6, { default: 4, step: 0.25, label: 'distance between the true means' }),
@@ -743,13 +731,11 @@ export const spikeSlabLearnedAtom: EpAtom = defineAtom({
   name: 'spike-and-slab-learned',
   title: 'Spike and slab: parameters learned',
   extends: 'spike-and-slab',
-  recovery: {
-    seeds: 30,
-    coverage: 0.7,
-    zrms: 1.6,
-    reason:
-      'with ten coefficients and three active, the share and the slab precision are learned from a handful of values and their posteriors are skewed, which EP carries as a beta and a gamma; 30 seeds leave a spread of about 0.06',
-  },
+  recovery: recovery(
+    'measured',
+    'with ten coefficients and three active, the share and the slab precision are learned from a handful of values and their posteriors are skewed, which EP carries as a beta and a gamma; 30 seeds leave a spread of about 0.06',
+    { seeds: 30, coverage: 0.7, zrms: 1.6 },
+  ),
   what: 'The spike and slab gate of the basic atom on a sequence of coefficients, with the inclusion probability (a beta) and the precision of the slab (a gamma) unknown, and the data simulated from a stated set of active coefficients: EP recovers which are active, how common they are and how wide the slab is.',
   factors: [
     'prior (beta, gamma)',
@@ -760,13 +746,10 @@ export const spikeSlabLearnedAtom: EpAtom = defineAtom({
   ],
   family: 'gates',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.2,
-    sdRatio: [0.8, 1.2],
-    ks: 0.1,
-    reason:
-      'the share and the slab precision are tied through the switches, which EP carries as a beta and a gamma; the posterior of the precision is skewed and EP is a little narrower than the exact one (0.89 of its sd)',
-  },
+  tolerance: tolerance(
+    'wide',
+    'the share and the slab precision are tied through the switches, which EP carries as a beta and a gamma; the posterior of the precision is skewed and EP is a little narrower than the exact one (0.89 of its sd)',
+  ),
   knobs: dict({
     seed: simulationKnobs(10)['seed'] as ReturnType<typeof int>,
     n: int(7, 14, { default: 10, label: 'coefficients' }),
@@ -837,13 +820,11 @@ export const spikeSlabMarginalLearnedAtom: EpAtom = defineAtom({
   name: 'spike-and-slab-marginal-learned',
   title: 'Spike and slab, switch summed out: parameters learned',
   extends: 'spike-and-slab-marginal',
-  recovery: {
-    seeds: 30,
-    coverage: 0.7,
-    zrms: 1.6,
-    reason:
-      'the same posterior and the same floor as the explicit-switch twin (spike and slab: parameters learned): the share and the slab precision are learned from a handful of values',
-  },
+  recovery: recovery(
+    'measured',
+    'the same posterior and the same floor as the explicit-switch twin (spike and slab: parameters learned): the share and the slab precision are learned from a handful of values',
+    { seeds: 30, coverage: 0.7, zrms: 1.6 },
+  ),
   what: 'The spike and slab prior with the switch summed out (the mixture form, no variable for the probability of the slab) on a sequence of coefficients, with the inclusion probability and the slab precision unknown, and the data simulated from a stated set of active coefficients: EP recovers how common the active coefficients are and how wide the slab is.',
   factors: [
     'prior (beta, gamma)',
@@ -853,13 +834,10 @@ export const spikeSlabMarginalLearnedAtom: EpAtom = defineAtom({
   ],
   family: 'gates',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.2,
-    sdRatio: [0.8, 1.2],
-    ks: 0.1,
-    reason:
-      'the same posterior as the explicit-switch twin: EP carries a beta and a gamma (measured: 0.006 and 0.003 posterior sds, spreads 0.98)',
-  },
+  tolerance: tolerance(
+    'wide',
+    'the same posterior as the explicit-switch twin: EP carries a beta and a gamma (measured: 0.006 and 0.003 posterior sds, spreads 0.98)',
+  ),
   knobs: dict({
     seed: simulationKnobs(10)['seed'] as ReturnType<typeof int>,
     n: int(7, 14, { default: 10, label: 'coefficients' }),
@@ -974,12 +952,7 @@ export const clutterMixtureLearnedAtom: EpAtom = defineAtom({
   name: 'clutter-mixture-learned',
   title: 'Inlier and outlier mixture, switches summed out: parameters learned',
   extends: 'clutter-mixture',
-  recovery: {
-    seeds: 20,
-    coverage: 0.7,
-    zrms: 1.6,
-    reason: 'the same floor as the explicit-switch twin (clutter: parameters learned)',
-  },
+  recovery: recovery('quick', 'the same floor as the explicit-switch twin (clutter: parameters learned)'),
   what: 'The inlier and outlier mixture likelihood of the basic atom with the centre, the width of the inliers and the share of outliers all unknown (priors), and the data simulated from a stated truth. The switches are summed out, so EP gives beliefs about the centre, the precision and the share, and no probability that an observation is an outlier.',
   factors: [
     'prior (gaussian, gamma, beta)',
@@ -988,12 +961,14 @@ export const clutterMixtureLearnedAtom: EpAtom = defineAtom({
   ],
   family: 'gates',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.5,
-    sdRatio: [0.5, 1.6],
-    ks: 0.3,
+  tolerance: tolerance(
+    'lumpiest',
+    'the posterior can be lumpy and EP matches only its mean and variance with a Gaussian, a gamma and a beta (measured on the default data: within 0.02 posterior sds, spreads 0.96 to 1.0)',
+  ),
+  evidence: {
+    nats: 0.05,
     reason:
-      'the posterior can be lumpy and EP matches only its mean and variance with a Gaussian, a gamma and a beta (measured on the default data: within 0.02 posterior sds, spreads 0.96 to 1.0)',
+      'the summed-out outlier mixture with a learned scale and share: a hidden switch per observation under a gate (0.02 measured)',
   },
   knobs: dict({
     ...learnedKnobs(50, 80),

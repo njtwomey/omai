@@ -12,6 +12,7 @@ import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type ExactMarginal, gaussianMixtureMarginal, logWeights } from '../validation/index.ts'
 import { type AtomParts, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { tolerance } from './ep-tolerance.ts'
 
 const Y6 = [1.2, 0.4, 1.9, 1.1, 0.7, 1.5]
 
@@ -86,12 +87,13 @@ export const gammaPrecisionAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian)', 'prior (gamma)', 'gaussian-gamma-precision (observed value)'],
   family: 'scales',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.1,
-    sdRatio: [0.85, 1.15],
-    ks: 0.05,
-    reason:
-      'the factor is not Gaussian in mu and tau together, so EP projects onto a Gaussian and a gamma and the beliefs are close, not exact',
+  tolerance: tolerance(
+    'tight',
+    'the factor is not Gaussian in mu and tau together, so EP projects onto a Gaussian and a gamma and the beliefs are close, not exact',
+  ),
+  evidence: {
+    nats: 0.05,
+    reason: 'a Gaussian with a gamma precision: the gamma is projected from a Student-t shaped tilt',
   },
   knobs: dict({
     shape: real(0.5, 10, { default: 2, step: 0.1, label: 'prior shape of tau' }),
@@ -225,13 +227,10 @@ export const sharedPrecisionAtom: EpAtom = defineAtom({
   factors: ['prior (gamma)', 'gaussian-gamma-precision (latent value)', 'gaussian likelihood'],
   family: 'scales',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.1,
-    sdRatio: [0.7, 1.15],
-    ks: 0.1,
-    reason:
-      'the posterior of tau is skewed and EP projects it onto a gamma; each theta is a scale mixture that EP matches with a Gaussian',
-  },
+  tolerance: tolerance(
+    'gamma-projected',
+    'the posterior of tau is skewed and EP projects it onto a gamma; each theta is a scale mixture that EP matches with a Gaussian',
+  ),
   knobs: POP_KNOBS,
   parts: (k) =>
     populationProblem(
@@ -258,12 +257,10 @@ export const scaledPrecisionAtom: EpAtom = defineAtom({
   factors: ['prior (gamma)', 'gaussian-gamma-precision with a known multiplier', 'gaussian likelihood'],
   family: 'scales',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.1,
-    sdRatio: [0.7, 1.15],
-    ks: 0.1,
-    reason: 'as for the shared precision: a gamma projection of tau and a Gaussian for each value',
-  },
+  tolerance: tolerance(
+    'coupled',
+    'as for the shared precision: a gamma projection of tau and a Gaussian for each value',
+  ),
   knobs: POP_KNOBS,
   parts: (k) => populationProblem([1, 2, 4, 8, 16, 32], 'scaled-precision', k),
 })
@@ -310,11 +307,11 @@ export const halfCauchyAtom: EpAtom = defineAtom({
   factors: ['numeric prior (half-Cauchy)', 'gaussian with a random scale'],
   family: 'scales',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.2,
-    sdRatio: [0.6, 1.4],
-    ks: 0.15,
-    reason: 'the posterior of the scale is skewed and heavy-tailed; EP projects it onto a gamma',
+  tolerance: tolerance('lumpy', 'the posterior of the scale is skewed and heavy-tailed; EP projects it onto a gamma'),
+  evidence: {
+    nats: 0.03,
+    reason:
+      'the half-Cauchy prior is the exact numeric site on a log scale; the Gaussian belief of the log is the only approximation (0.015 measured, was 0.17 more when the prior was projected once)',
   },
   knobs: dict({ priorScale: real(0.2, 5, { default: 1, step: 0.1, label: 'prior scale' }) }),
   parts: (k) => halfProblem('cauchy', k),
@@ -337,11 +334,11 @@ export const halfNormalAtom: EpAtom = defineAtom({
   factors: ['numeric prior (half-normal)', 'gaussian with a random scale'],
   family: 'scales',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.2,
-    sdRatio: [0.6, 1.4],
-    ks: 0.15,
-    reason: 'the posterior of the scale is skewed; EP projects it onto a gamma',
+  tolerance: tolerance('lumpy', 'the posterior of the scale is skewed; EP projects it onto a gamma'),
+  evidence: {
+    nats: 0.01,
+    reason:
+      'the half-normal prior is the exact numeric site on a log scale (0.004 measured, was 0.42 more when the prior was projected once)',
   },
   knobs: dict({ priorScale: real(0.2, 5, { default: 1, step: 0.1, label: 'prior scale' }) }),
   parts: (k) => halfProblem('normal', k),

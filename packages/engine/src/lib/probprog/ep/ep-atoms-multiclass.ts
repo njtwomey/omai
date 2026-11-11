@@ -16,6 +16,7 @@ import { gridMarginals } from '../validation/index.ts'
 import { once } from './_util.ts'
 import { type AtomFigure, type AtomParts, defineAtom, type EpAtom, type FigureCurve } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
+import { recovery, tolerance } from './ep-tolerance.ts'
 
 const CLASSES = 3
 const GRID = 37
@@ -153,12 +154,13 @@ export const softmaxRegressionAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian) x3', 'scale (known covariate times a slope)', 'multiclass-site (softmax)'],
   family: 'likelihoods',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.25,
-    sdRatio: [0.8, 1.25],
-    ks: 0.12,
-    reason:
-      'the three slopes share every observation, so one Gaussian each cannot hold their correlations and plain EP is narrow (0.75 of the exact spread, 0.80 coverage of the truth over 80 seeds with ten points); the factors take a power of 0.5 (fractional EP), which gives 0.89 and 0.92 coverage with the means a tenth of an exact sd off',
+  tolerance: tolerance(
+    'lumpiest',
+    'the three slopes share every observation, so one Gaussian each cannot hold their correlations and plain EP is narrow (0.75 of the exact spread, 0.80 coverage of the truth over 80 seeds with ten points); the factors take a power of 0.5 (fractional EP), which gives 0.89 and 0.92 coverage with the means a tenth of an exact sd off',
+  ),
+  evidence: {
+    nats: 0.5,
+    reason: 'a softmax of three scores shared by every point: loopy, moment matched (0.3 measured)',
   },
   ep: { damping: 0.5, tol: 1e-4, power: 0.5 },
   knobs: dict({ priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the slopes' }) }),
@@ -229,24 +231,20 @@ export const softmaxRegressionLearnedAtom: EpAtom = defineAtom({
   name: 'softmax-regression-learned',
   title: 'Softmax: parameters learned',
   extends: 'softmax-regression',
-  recovery: {
-    seeds: 16,
-    coverage: 0.7,
-    zrms: 1.7,
-    reason:
-      'the three slopes are coupled through every observation (the softmax is invariant to a common shift of the scores, which only the prior breaks), EP carries one Gaussian each and the prior pulls a little; each run integrates three class scores per point, so 16 seeds and a floor of 0.7',
-  },
+  recovery: recovery(
+    'measured',
+    'the three slopes are coupled through every observation (the softmax is invariant to a common shift of the scores, which only the prior breaks), EP carries one Gaussian each and the prior pulls a little; each run integrates three class scores per point, so 16 seeds and a floor of 0.7',
+    { seeds: 16, coverage: 0.7, zrms: 1.7 },
+  ),
   what: 'The softmax classifier of the basic atom with the three class slopes unknown, the classes simulated from stated slopes.',
   factors: ['prior (gaussian) x3', 'scale (known covariate times a slope)', 'multiclass-site (softmax)'],
   family: 'likelihoods',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.5,
-    sdRatio: [0.8, 1.25],
-    ks: 0.2,
-    reason:
-      'the slopes are correlated in the posterior (every observation joins the three) and one Gaussian each is too narrow (0.4 to 0.6 of the exact spread with 24 points, and the truth inside its 90% interval only 0.63 of the time over 80 seeds drawn from the prior): the factors take a power of 0.25 (fractional EP), which gives the exact spreads (0.93 coverage) and moves the means by up to half an exact sd',
-  },
+  tolerance: tolerance(
+    'measured',
+    'the slopes are correlated in the posterior (every observation joins the three) and one Gaussian each is too narrow (0.4 to 0.6 of the exact spread with 24 points, and the truth inside its 90% interval only 0.63 of the time over 80 seeds drawn from the prior): the factors take a power of 0.25 (fractional EP), which gives the exact spreads (0.93 coverage) and moves the means by up to half an exact sd',
+    { meanZ: 0.5, sdRatio: [0.8, 1.25], ks: 0.2 },
+  ),
   ep: { damping: 0.5, tol: 1e-4, power: 0.25 },
   knobs: dict({
     ...simulationKnobs(24),

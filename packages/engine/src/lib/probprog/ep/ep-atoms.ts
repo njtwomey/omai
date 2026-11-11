@@ -264,6 +264,11 @@ export interface AtomSpec<K extends Config> {
    */
   readonly reference: 'exact' | 'grid' | 'truth'
   readonly tolerance: AtomTolerance
+  /**
+   * How close EP's log evidence is to the grid evidence of the same model, in nats, where the grid is fast enough to test it, and why
+   * it is not tighter (the tests of `ep-evidence.test.ts` read it).
+   */
+  readonly evidence?: { readonly nats: number; readonly reason: string }
   /** The knobs of the problem (sizes, values, the seed). */
   readonly knobs: DictSpace
   /** What a configuration of the knobs makes: the build, the reference and the presentation. */

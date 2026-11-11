@@ -24,6 +24,7 @@ import {
   type FigureCurve,
 } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
+import { recovery, tolerance } from './ep-tolerance.ts'
 
 const CUTS = [-0.6, 0.5, 1.4]
 const CURVE_X = Array.from({ length: 41 }, (_, i) => -2 + i / 10)
@@ -127,13 +128,11 @@ export const ordinalProbitAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian) x2', 'matmul (linear predictor)', 'numeric likelihood: ordinal probit'],
   family: 'likelihoods',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.8, 1.2],
-    ks: 0.08,
-    reason:
-      'a Gaussian projection of each tilted distribution (a Gaussian times the mass between two cut points), by quadrature',
-  },
+  tolerance: tolerance(
+    'close',
+    'a Gaussian projection of each tilted distribution (a Gaussian times the mass between two cut points), by quadrature',
+  ),
+  evidence: { nats: 0.01, reason: 'the ordinal numeric site by quadrature (0.002 measured)' },
   knobs: dict({ priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }) }),
   parts: ordinalProblem,
 })
@@ -198,19 +197,16 @@ export const ordinalProbitLearnedAtom: EpAtom = defineAtom({
   name: 'ordinal-probit-learned',
   title: 'Ordinal probit: parameters learned',
   extends: 'ordinal-probit',
-  recovery: recoveryOf(
+  recovery: recovery(
+    'quick',
     'a Gaussian projection of each ordinal tilted distribution by quadrature; the categories carry less information per point than a measurement and the prior pulls a little',
   ),
   what: 'The ordinal probit regression of the basic atom with the intercept and the slope unknown, the outcomes simulated from stated values with the same cut points.',
   factors: ['prior (gaussian) x2', 'matmul (linear predictor)', 'numeric likelihood: ordinal probit'],
   family: 'likelihoods',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.8, 1.2],
-    ks: 0.08,
-    reason: 'a Gaussian projection of each tilted distribution, by quadrature',
-  },
+  tolerance: tolerance('close', 'a Gaussian projection of each tilted distribution, by quadrature'),
+  evidence: { nats: 0.01, reason: 'the same on simulated outcomes (0.002 measured)' },
   knobs: dict({
     ...simulationKnobs(30),
     trueIntercept: real(-1.5, 1.5, { default: 0.3, step: 0.1, label: 'true intercept' }),
@@ -314,13 +310,11 @@ export const quantileRegressionAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian) x2', 'matmul (linear predictor)', 'numeric likelihood: asymmetric Laplace'],
   family: 'likelihoods',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.8, 1.2],
-    ks: 0.08,
-    reason:
-      'a Gaussian projection of each tilted distribution, whose density has a kink at the observation, by split quadrature',
-  },
+  tolerance: tolerance(
+    'lumpy',
+    'a Gaussian projection of each tilted distribution, whose density has a kink at the observation, by split quadrature',
+  ),
+  evidence: { nats: 0.15, reason: 'the asymmetric Laplace: a kinked density, moment matched (0.07 measured)' },
   knobs: dict({
     tau: real(0.1, 0.9, { default: 0.8, step: 0.05, label: 'quantile level tau' }),
     scale: real(0.1, 2, { default: 0.5, step: 0.05, label: 'scale of the check loss' }),
@@ -401,23 +395,17 @@ export const quantileRegressionLearnedAtom: EpAtom = defineAtom({
   name: 'quantile-regression-learned',
   title: 'Quantile regression: parameters learned',
   extends: 'quantile-regression',
-  recovery: {
-    seeds: 30,
-    coverage: 0.65,
-    zrms: 1.8,
-    reason:
-      'the model is the data-generating one (asymmetric Laplace noise) but its posterior is a little overconfident for 40 points (the exact posterior covers the slope 0.85 of 150 simulated sets, EP the same to three digits on 20 seeds), and the line sits at a tail quantile, so a floor of 0.65',
-  },
+  recovery: recovery(
+    'measured',
+    'the model is the data-generating one (asymmetric Laplace noise) but its posterior is a little overconfident for 40 points (the exact posterior covers the slope 0.85 of 150 simulated sets, EP the same to three digits on 20 seeds), and the line sits at a tail quantile, so a floor of 0.65',
+    { seeds: 30, coverage: 0.65, zrms: 1.8 },
+  ),
   what: 'The quantile regression of the basic atom with the intercept and the slope unknown, the points simulated from a stated line with asymmetric Laplace noise.',
   factors: ['prior (gaussian) x2', 'matmul (linear predictor)', 'numeric likelihood: asymmetric Laplace'],
   family: 'likelihoods',
   reference: 'grid',
-  tolerance: {
-    meanZ: 0.15,
-    sdRatio: [0.8, 1.2],
-    ks: 0.08,
-    reason: 'a Gaussian projection of each tilted distribution, by split quadrature',
-  },
+  tolerance: tolerance('close', 'a Gaussian projection of each tilted distribution, by split quadrature'),
+  evidence: { nats: 0.08, reason: 'the same on simulated points (0.02 measured)' },
   knobs: dict({
     ...simulationKnobs(40),
     trueIntercept: real(-1.5, 1.5, { default: 0.2, step: 0.1, label: 'true intercept' }),
@@ -568,13 +556,11 @@ export const skillDrawsAtom: EpAtom = defineAtom({
   factors: ['prior (gaussian) x3', 'ordinal probit on a difference of two variables'],
   family: 'likelihoods',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.2,
-    sdRatio: [0.75, 1.2],
-    ks: 0.1,
-    reason:
-      'each result is a Gaussian times the mass between two cut points that EP projects onto a Gaussian, and the skills share the games',
-  },
+  tolerance: tolerance(
+    'wide',
+    'each result is a Gaussian times the mass between two cut points that EP projects onto a Gaussian, and the skills share the games',
+  ),
+  evidence: { nats: 0.25, reason: 'draws as an ordinal probit on two skills: loopy, moment matched (0.12 measured)' },
   knobs: dict({ margin: real(0.1, 2, { default: 0.7, step: 0.05, label: 'draw margin' }) }),
   parts: drawsProblem,
 })
@@ -650,19 +636,15 @@ export const skillDrawsLearnedAtom: EpAtom = defineAtom({
   name: 'skill-draws-learned',
   title: 'Ordinal probit on a difference (draws): parameters learned',
   extends: 'skill-draws',
-  recovery: recoveryOf(
+  recovery: recovery(
+    'quick',
     'the skills share the games (a loop: players who met have correlated posteriors and EP is a little narrow) and only differences are identified, the prior fixing the level; the truth is drawn from the prior scale, so the floor leaves room',
   ),
   what: 'The tournament with draws of the basic atom with the three skills unknown, the games (each pair several times) simulated from stated skills and the same draw margin.',
   factors: ['prior (gaussian) x3', 'ordinal probit on a difference of two variables'],
   family: 'likelihoods',
   reference: 'exact',
-  tolerance: {
-    meanZ: 0.25,
-    sdRatio: [0.7, 1.2],
-    ks: 0.12,
-    reason: 'the skills share every game, so one Gaussian each cannot hold their correlations',
-  },
+  tolerance: tolerance('lumpy', 'the skills share every game, so one Gaussian each cannot hold their correlations'),
   knobs: dict({
     ...simulationKnobs(4),
     margin: real(0.1, 2, { default: 0.7, step: 0.05, label: 'draw margin' }),

@@ -5,77 +5,13 @@ import { session } from '../../trace/index.ts'
 import { epSpecMethod } from '../inference/index.ts'
 import { toProgram } from '../model/index.ts'
 import { gridPosterior } from '../validation/index.ts'
-import { epAtom } from './ep-atom-list.ts'
+import { epAtom, epAtoms } from './ep-atom-list.ts'
 import { atomBound, atomRun } from './ep-atoms.ts'
 
-/** [atom, tolerance in nats, why]. */
-const CASES: readonly (readonly [string, number, string])[] = [
-  ['gaussian', 1e-5, 'conjugate: exact'],
-  ['gaussian-learned', 1e-5, 'a normal-gamma pair: exact'],
-  ['beta-bernoulli', 1e-5, 'conjugate: exact'],
-  ['gamma-poisson', 1e-5, 'conjugate: exact'],
-  ['prior-normal-inverse-gamma', 1e-5, 'normal-gamma: exact'],
-  ['prior-gamma-exponential', 1e-5, 'conjugate: exact'],
-  ['prior-beta-geometric', 1e-5, 'conjugate: exact'],
-  ['prior-dirichlet-categorical', 1e-5, 'conjugate: exact'],
-  ['prior-inverse-gamma-hyperprior', 1e-3, 'the gamma precision rule on a grid in log lambda'],
-  ['prior-gamma-poisson-hyperprior', 1e-3, 'a gamma rate with a gamma hyperprior'],
-  ['prior-normal-hyperprior', 1e-3, 'a Gaussian centre with a Gaussian hyperprior'],
-  ['gate-random', 1e-3, 'the gate: a mixture of branch evidences'],
-  ['mixture-components', 1e-3, 'the gate again, written with components'],
-  ['spike-and-slab', 1e-3, 'a gate between a narrow and a wide Gaussian'],
-  ['spike-and-slab-marginal', 1e-3, 'the mixture site, switch summed out: exact'],
-  ['clutter', 1e-3, 'a switch per observation: exact moment matching'],
-  ['gate-weight', 1e-3, 'a gate with a beta weight'],
-  ['gate-weight-hyperprior', 1e-3, 'a gate with a beta weight and a hyperprior'],
-  ['ordered-means', 1e-3, 'an ordering constraint on two Gaussians'],
-  ['exp', 1e-3, 'the apply rule (exp) by quadrature'],
-  ['tanh', 1e-3, 'the apply rule (tanh) by quadrature'],
-  ['log-scale', 1e-3, 'the Gaussian with a log scale by quadrature'],
-  ['poisson-log', 1e-3, 'a log-link Poisson by quadrature'],
-  ['product', 0.02, 'the product of two Gaussians: loopy, moment matched'],
-  ['max', 0.01, 'the max of two Gaussians: moment matched'],
-  ['gamma-precision', 0.05, 'a Gaussian with a gamma precision: the gamma is projected from a Student-t shaped tilt'],
-  ['gamma-precision-learned', 0.05, 'the same with a learned mean'],
-  ['student-t', 1e-3, 'the Student-t site by quadrature'],
-  ['laplace', 0.05, 'the Laplace site: a kinked density, moment matched'],
-  ['probit', 0.03, 'a probit link: moment matched truncated Gaussians'],
-  ['logistic', 0.03, 'a logistic link by quadrature, moment matched'],
-  ['skill-difference', 1e-2, 'two skills compared through a probit'],
-  ['prior-lognormal-poisson', 0.01, 'a log-normal rate through exp'],
-  ['prior-normal-weibull-scale', 0.02, 'a Weibull with a random scale'],
-  ['prior-logit-normal-bernoulli', 0.01, 'a logistic-normal probability'],
-  ['prior-beta-strength-gamma', 1e-3, 'a beta with a random concentration'],
-  ['prior-beta-two-shapes', 1e-3, 'a beta with two random shapes: the grid in both log shapes (2e-5 measured)'],
-  ['ordinal-probit', 0.01, 'the ordinal numeric site by quadrature (0.002 measured)'],
-  ['ordinal-probit-learned', 0.01, 'the same on simulated outcomes (0.002 measured)'],
-  ['quantile-regression', 0.15, 'the asymmetric Laplace: a kinked density, moment matched (0.07 measured)'],
-  ['quantile-regression-learned', 0.08, 'the same on simulated points (0.02 measured)'],
-  ['student-t-df-learned', 0.02, 'a Student-t with a gamma df: the pair site (0.006 measured)'],
-  ['weibull-shape-learned', 0.08, 'a Weibull with a log-normal shape: the pair site (0.036 measured)'],
-  ['skill-draws', 0.25, 'draws as an ordinal probit on two skills: loopy, moment matched (0.12 measured)'],
-  [
-    'clutter-mixture-learned',
-    0.05,
-    'the summed-out outlier mixture with a learned scale and share: a hidden switch per observation under a gate (0.02 measured)',
-  ],
-  ['softmax-regression', 0.5, 'a softmax of three scores shared by every point: loopy, moment matched (0.3 measured)'],
-  [
-    'half-cauchy',
-    0.03,
-    'the half-Cauchy prior is the exact numeric site on a log scale; the Gaussian belief of the log is the only approximation (0.015 measured, was 0.17 more when the prior was projected once)',
-  ],
-  [
-    'half-normal',
-    0.01,
-    'the half-normal prior is the exact numeric site on a log scale (0.004 measured, was 0.42 more when the prior was projected once)',
-  ],
-  [
-    'prior-uniform-mean',
-    1e-6,
-    'the uniform prior is the exact numeric site on the value, and a Gaussian likelihood makes the posterior a truncated normal: exact (was 0.09 off when projected once)',
-  ],
-]
+/** The atoms that declare an evidence tolerance (`evidence: { nats, reason }`): the ones whose grid is fast. */
+const CASES = epAtoms.flatMap((a) =>
+  a.evidence === undefined ? [] : [[a.name, a.evidence.nats, a.evidence.reason] as const],
+)
 
 describe('the EP log evidence of an atom against its grid evidence', () => {
   it.each(CASES)('%s (within %d nats: %s)', { timeout: 60000 }, (name, tol) => {

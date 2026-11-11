@@ -15,6 +15,7 @@ import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type ExactMarginal, logWeights, probabilityMarginal, weightedMarginal } from '../validation/index.ts'
 import { type AtomParts, type AtomProblem, type AtomTolerance, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { tolerance } from './ep-tolerance.ts'
 
 const BASE = [-2.1, 1.9, 0.3, 2.2, -0.4, 1.7, 0.6, -1.8, 0.9, 2.3]
 const SD = 0.5
@@ -74,13 +75,10 @@ function twoComponentExact(
   }
 }
 
-const GATE_TOLERANCE: AtomTolerance = {
-  meanZ: 0.15,
-  sdRatio: [0.85, 1.15],
-  ks: 0.08,
-  reason:
-    'the exact posterior of the weight is a product of mixtures of two terms each, skewed or two-humped where observations are ambiguous; EP carries one beta for it, matched on its log moments through each switch',
-}
+const GATE_TOLERANCE = tolerance(
+  'close',
+  'the exact posterior of the weight is a product of mixtures of two terms each, skewed or two-humped where observations are ambiguous; EP carries one beta for it, matched on its log moments through each switch',
+)
 
 const priorKnobs = {
   a: real(0.3, 8, { default: 1, step: 0.1, label: 'prior a of the weight' }),
@@ -166,6 +164,7 @@ export const gateWeightAtom: EpAtom = defineAtom({
   family: 'gate weights',
   reference: 'exact',
   tolerance: GATE_TOLERANCE,
+  evidence: { nats: 1e-3, reason: 'a gate with a beta weight' },
   knobs: dict(priorKnobs),
   parts: explicitProblem,
 })
@@ -319,7 +318,7 @@ export const gateWeightDirichletAtom: EpAtom = defineAtom({
   ],
   family: 'gate weights',
   reference: 'exact',
-  tolerance: { ...GATE_TOLERANCE, meanZ: 0.2, sdRatio: [0.8, 1.2], ks: 0.1 },
+  tolerance: tolerance('wide', GATE_TOLERANCE.reason),
   knobs: dict({
     concentration: real(0.3, 6, { default: 1, step: 0.1, label: 'prior concentration of each weight' }),
     spread: real(0.1, 1.2, {
@@ -455,7 +454,8 @@ export const gateWeightHyperAtom: EpAtom = defineAtom({
   ],
   family: 'gate weights',
   reference: 'exact',
-  tolerance: { ...GATE_TOLERANCE, meanZ: 0.2, sdRatio: [0.8, 1.2], ks: 0.1 },
+  tolerance: tolerance('wide', GATE_TOLERANCE.reason),
+  evidence: { nats: 1e-3, reason: 'a gate with a beta weight and a hyperprior' },
   knobs: dict({
     shape: real(0.5, 8, { default: 2, step: 0.1, label: 'shape of the strength prior' }),
     rate: real(0.1, 4, { default: 1, step: 0.1, label: 'rate of the strength prior' }),

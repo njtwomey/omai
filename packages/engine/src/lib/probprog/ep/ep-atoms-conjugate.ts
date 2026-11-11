@@ -11,13 +11,12 @@ import * as d from '../model/dists/index.ts'
 import { defineModel } from '../model/index.ts'
 import { normalPdf, sum } from '../validation/index.ts'
 import { type AtomParts, beliefDensity, defineAtom, type EpAtom } from './ep-atoms.ts'
+import { tolerance } from './ep-tolerance.ts'
 
-const EXACT = {
-  meanZ: 1e-6,
-  sdRatio: [0.999999, 1.000001] as const,
-  ks: 1e-4,
-  reason: 'a conjugate model: EP is exact, so its belief equals the closed-form posterior up to rounding',
-}
+const EXACT = tolerance(
+  'exact',
+  'a conjugate model: EP is exact, so its belief equals the closed-form posterior up to rounding',
+)
 
 const GAUSSIAN_Y = [1.2, 0.4, 1.9]
 
@@ -66,6 +65,7 @@ export const gaussianAtom: EpAtom = defineAtom({
   family: 'conjugate',
   reference: 'exact',
   tolerance: EXACT,
+  evidence: { nats: 1e-5, reason: 'conjugate: exact' },
   knobs: dict({ priorSd: real(0.3, 10, { default: 2, step: 0.1, label: 'prior sd' }) }),
   parts: gaussianProblem,
 })
@@ -120,6 +120,7 @@ export const betaBernoulliAtom: EpAtom = defineAtom({
   family: 'conjugate',
   reference: 'exact',
   tolerance: EXACT,
+  evidence: { nats: 1e-5, reason: 'conjugate: exact' },
   knobs: dict({
     a: real(0.2, 20, { default: 2, step: 0.1, label: 'prior a' }),
     b: real(0.2, 20, { default: 2, step: 0.1, label: 'prior b' }),
@@ -183,6 +184,7 @@ export const gammaPoissonAtom: EpAtom = defineAtom({
   family: 'conjugate',
   reference: 'exact',
   tolerance: EXACT,
+  evidence: { nats: 1e-5, reason: 'conjugate: exact' },
   knobs: dict({
     shape: real(0.2, 20, { default: 2, step: 0.1, label: 'prior shape' }),
     rate: real(0.05, 5, { default: 1, step: 0.05, label: 'prior rate' }),
