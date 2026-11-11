@@ -148,14 +148,16 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
       </section>
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">The inference</h2>
-        <ControlPanel title="expectation propagation: its knobs" columns={4}>
-          <SpaceControls
-            space={epSpace}
-            value={ep}
-            onChange={(v) => setEp((e) => ({ ...e, ...v }))}
-            segmentedUpTo={0}
-          />
-        </ControlPanel>
+        {planned ? null : (
+          <ControlPanel title="expectation propagation: its knobs" columns={4}>
+            <SpaceControls
+              space={epSpace}
+              value={ep}
+              onChange={(v) => setEp((e) => ({ ...e, ...v }))}
+              segmentedUpTo={0}
+            />
+          </ControlPanel>
+        )}
         <p className="text-xs text-muted" role="status">
           {state.error !== undefined
             ? state.error

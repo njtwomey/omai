@@ -63,8 +63,8 @@ export function BeliefChart(props: {
       {
         name: 'exact posterior',
         colour: 'fg',
-        width: 6,
-        opacity: 0.4,
+        width: 3.4,
+        smooth: true,
         x: inside.map((p) => p[0]),
         y: inside.map((p) => p[1]),
       },
@@ -122,8 +122,7 @@ export function DataFigure(props: {
       ...c,
       name: `${c.name} (exact)`,
       colour: 'fg',
-      width: 6,
-      opacity: 0.4,
+      width: 3.4,
     }))
     const epCurves = answers(ep).map((c) => ({
       ...c,
@@ -176,18 +175,28 @@ export function JointChart(props: {
   const { joint, a, b, epA, epB } = props
   const mode = useColourMode()
   const grid = useMemo(() => {
-    const rows = joint.y.map((_, j) => joint.x.map((_, i) => joint.p[i]?.[j] ?? 0))
-    const top = Math.max(...rows.flat())
-    const levels = LEVELS.map((f) => f * top)
+    // Crop to where the posterior has mass (the box of a grid can be many times wider), padded by two cells.
+    const top0 = Math.max(...joint.p.flat())
+    const live = (v: number): boolean => v > 1e-3 * top0
+    const ix = joint.x.map((_, i) => i).filter((i) => (joint.p[i] ?? []).some(live))
+    const iy = joint.y.map((_, j) => j).filter((j) => joint.p.some((row) => live(row[j] ?? 0)))
+    const i0 = Math.max(0, Math.min(...ix) - 2)
+    const i1 = Math.min(joint.x.length - 1, Math.max(...ix) + 2)
+    const j0 = Math.max(0, Math.min(...iy) - 2)
+    const j1 = Math.min(joint.y.length - 1, Math.max(...iy) + 2)
+    const xs = joint.x.slice(i0, i1 + 1)
+    const ys = joint.y.slice(j0, j1 + 1)
+    const rows = ys.map((_, j) => xs.map((_, i) => joint.p[i0 + i]?.[j0 + j] ?? 0))
+    const levels = LEVELS.map((f) => f * top0)
     const ep =
       epA?.proper && epB?.proper
         ? (() => {
             const fa = beliefDensity(a.support, epA.mean, epA.sd)
             const fb = beliefDensity(b.support, epB.mean, epB.sd)
-            return joint.y.map((y) => joint.x.map((x) => fa(x) * fb(y)))
+            return ys.map((y) => xs.map((x) => fa(x) * fb(y)))
           })()
         : undefined
-    return { rows, ep, levels }
+    return { rows, ep, levels, xs, ys }
   }, [joint, a, b, epA, epB])
   const build = useCallback(
     (figure: Figure) => {
@@ -198,8 +207,8 @@ export function JointChart(props: {
       return cartesian(
         [
           contours(grid.rows, {
-            x: [...joint.x],
-            y: [...joint.y],
+            x: grid.xs,
+            y: grid.ys,
             levels: grid.levels,
             colour: 'fg',
             width: 2.4,
@@ -210,8 +219,8 @@ export function JointChart(props: {
             ? []
             : [
                 contours(grid.ep, {
-                  x: [...joint.x],
-                  y: [...joint.y],
+                  x: grid.xs,
+                  y: grid.ys,
                   levels: grid.levels,
                   colour: 'tab0',
                   width: 1.8,
@@ -222,10 +231,15 @@ export function JointChart(props: {
               ]),
           ...(marks.length === 0 ? [] : [points(marks, { mode, colourOffset: 3 })]),
         ],
-        { mode, figure, x: { label: a.label }, y: { label: b.label } },
+        {
+          mode,
+          figure,
+          x: { label: a.label, limits: [grid.xs[0] ?? 0, grid.xs[grid.xs.length - 1] ?? 1] },
+          y: { label: b.label, limits: [grid.ys[0] ?? 0, grid.ys[grid.ys.length - 1] ?? 1] },
+        },
       )
     },
-    [grid, joint, a, b, mode],
+    [grid, a, b, mode],
   )
   return <ResponsiveChart aspect={1.3} narrowAspect={1.1} build={build} />
 }
