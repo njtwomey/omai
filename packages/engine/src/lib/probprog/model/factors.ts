@@ -520,6 +520,8 @@ class Compiler {
   private readonly packed = new Set<string>()
   /** The derived vectors `z / S(x)` of independent standard normals over a scale of one latent (non-centred), by name, with the name of `z`. */
   private readonly nonCentred = new Map<string, string>()
+  /** The nodes a `matmul` reads as a vector: a non-centred vector is kept as one Gaussian vector only when something reads it so. */
+  private readonly matmulRead = new Set<string>()
   /** Scalar normal latents that share a predictor and are compiled as the coordinates of one joint Gaussian vector (`packScalars`), by member name. */
   private readonly groups = new Map<string, { readonly vector: string; readonly members: readonly string[] }>()
   private readonly groupsMade = new Set<string>()
@@ -567,6 +569,8 @@ class Compiler {
   private findPacked(): void {
     const walk = (e: ExprSpec): void => {
       if (e.kind !== 'op' && e.kind !== 'custom') return
+      if (e.kind === 'op' && e.op === 'matmul')
+        for (const a of e.args) if (a.kind === 'ref') this.matmulRead.add(a.name)
       // A custom function that is a matrix of a normal vector (read as one by the compiler) keeps that vector joint too.
       if (e.kind === 'op' ? e.op === 'matmul' : this.bound.customs[e.name] !== undefined)
         for (const a of e.args) {
@@ -608,6 +612,7 @@ class Compiler {
     const is = (e: ExprSpec | undefined, value: number): boolean => e?.kind === 'const' && e.value === value
     for (const n of this.bound.spec.nodes) {
       if (n.kind !== 'derived' || n.expr.kind !== 'op' || n.expr.op !== 'div' || n.dims.length !== 1) continue
+      if (!this.matmulRead.has(n.name)) continue
       const [numerator, divisor] = n.expr.args
       const z = numerator?.kind === 'ref' ? this.nodes.get(numerator.name) : undefined
       if (z?.kind !== 'latent' || z.dist.family !== 'normal' || z.dims.length !== 1 || z.dims[0] !== n.dims[0]) continue
@@ -3151,8 +3156,10 @@ class Compiler {
 
   private derived(node: ModelNode & { readonly kind: 'derived' }): void {
     const absorbed = this.nonCentred.get(node.name)
+    let scalars = false
     if (absorbed !== undefined) {
       if (this.denseNonCentred(node)) return
+      scalars = true
       // The dense factor does not apply to this divisor: the standard normals are compiled as the scalar variables they would have been.
       const z = this.nodes.get(absorbed) as ModelNode & { readonly kind: 'latent' }
       this.nonCentred.delete(node.name)
@@ -3172,6 +3179,7 @@ class Compiler {
       this.layout(node, 'derived', undefined, 'constant', new Array<null>(prod(shape)).fill(null), false)
       return
     }
+    if (scalars && this.tiedToVector(node, cells)) return
     // Stick-breaking weights are not a random variable of the graph (the assignments read the breaks through one factor), so there is
     // nothing to record: the weights are read back from the breaks.
     if (!node.record || cells.some((c) => c.kind === 'sticks')) {
@@ -3252,6 +3260,36 @@ class Compiler {
       },
       node.name,
     )
+    this.syms.set(node.name, {
+      dims: node.dims,
+      cells: Array.from({ length: n }, (_, j) => this.compAtom(node.name, j, n)),
+    })
+    if (node.record) this.layout(node, 'derived', 'gaussian-mv', 'packed', [node.name], true)
+    return true
+  }
+
+  /**
+   * A non-centred vector whose coefficients each have a scale of their own (`z_j / sqrt(alpha_j)`, ARD): the products are scalar
+   * variables (`apply-product`), each a coordinate of one Gaussian vector variable `D` (a `dot-constant` factor), and `D` is what the
+   * rest of the model reads. The scalar factors are as before; the likelihood sees one vector, so its message to the coefficients is
+   * dense and the posterior keeps their correlations. False (and nothing made) when a cell is not one variable.
+   */
+  private tiedToVector(node: ModelNode & { readonly kind: 'derived' }, cells: readonly Cell[]): boolean {
+    const outs: string[] = []
+    for (const cell of cells) {
+      if (cell.kind !== 'aff' || cell.aff.offset !== 0 || cell.aff.terms.size !== 1) return false
+      const [key, coefficient] = [...cell.aff.terms][0] as [string, number]
+      const atom = this.atoms.get(key)
+      if (atom?.kind !== 'var' || coefficient !== 1 || outs.includes(atom.name)) return false
+      outs.push(atom.name)
+    }
+    const n = outs.length
+    this.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
+    for (const [j, out] of outs.entries()) {
+      const a = new Array<number>(n).fill(0)
+      a[j] = 1
+      this.addFactor({ operator: 'dot-constant', args: [out, node.name], params: { a } }, elementId(node.name, j))
+    }
     this.syms.set(node.name, {
       dims: node.dims,
       cells: Array.from({ length: n }, (_, j) => this.compAtom(node.name, j, n)),

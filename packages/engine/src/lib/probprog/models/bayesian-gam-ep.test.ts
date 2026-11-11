@@ -106,6 +106,19 @@ describe('expectation propagation on the Bayesian GAM', () => {
     expect(ownOperators.filter((o) => o === 'apply-product')).toHaveLength(2)
   })
 
+  it('compiles ARD to one apply-product per coefficient on the coordinates of one Gaussian vector the likelihood reads', () => {
+    const g = bayesianGam(x, y, { k: 10, prior: 'ard' })
+    const c = toFactorGraph(g.definition.bind(g.data))
+    expect(c.issues).toEqual([])
+    const operators = (c.graph?.factors ?? []).map((f) => f.operator)
+    expect(operators.filter((o) => o === 'apply-product')).toHaveLength(10)
+    // The rows read the vector (a dot product each), not a sum of scalar variables (a loop of messages).
+    expect(operators).not.toContain('linear')
+    expect(operators).not.toContain('sum')
+    const beta = (c.graph?.variables ?? []).find((v) => v.name === 'beta')
+    expect(beta?.family).toEqual({ kind: 'gaussian-mv', size: 10 })
+  })
+
   it('agrees with the exact reference on the penalty prior with log-normal hyperpriors: the curve, the band and the smoothing', () => {
     const model = bayesianGam(x, y, { k: 10 })
     const reference = bayesianGamReference(model, { gridSize: 20, points: 28 })
@@ -133,12 +146,15 @@ describe('expectation propagation on the Bayesian GAM', () => {
     const model = bayesianGam(x, y, { k: 10, prior: 'ard' })
     const ep = fitOf('ep', model)
     const nuts = fitOf('nuts', model, { numChains: 1, numWarmup: 100, numDraws: 200, maxTreeDepth: 5 })
+    const sweeps = session(bayesianGamMethod('ep', model, { fit: { gridSize: 20 } }), { steps: 3000, mode: 'eager' }).t
+    // The posterior of the coefficients is one Gaussian vector (the likelihood's dense message), which settles in few sweeps (64 as scalars).
+    expect(sweeps).toBeLessThan(40)
     const sd = model.standardisation.sd
     const worst = Math.max(...ep.mean.map((m, i) => Math.abs(m - (nuts.mean[i] ?? 0)) / sd))
-    expect(worst).toBeLessThan(0.06)
+    expect(worst).toBeLessThan(0.04)
     const width = (f: typeof ep): number => f.upper.reduce((a, u, i) => a + u - (f.lower[i] ?? 0), 0)
     expect(width(ep) / width(nuts)).toBeGreaterThan(0.8)
-    expect(width(ep) / width(nuts)).toBeLessThan(1.3)
+    expect(width(ep) / width(nuts)).toBeLessThan(1.2)
     for (const [j, v] of (ep.inclusion ?? []).entries())
       expect(Math.abs(v - (nuts.inclusion?.[j] ?? 0))).toBeLessThan(0.25)
   })
