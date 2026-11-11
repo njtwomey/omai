@@ -192,3 +192,30 @@ describe('gaussian-mv-precision-scale', () => {
     expect(mo.covariance[1]).toBeCloseTo(0, 8)
   })
 })
+
+describe('the evidence of gaussian-gamma-precision (what a gate weighs its branches by)', () => {
+  it('is the masses of the cavities plus the log of the expected density of the observation, against a grid over the precision', () => {
+    const [y, m, v, shape, rate] = [1.3, 0.4, 0.5, 3, 2]
+    const args = [
+      valueArg(gaussian, y),
+      messageArg(gaussian, gaussianEta(m, v)),
+      messageArg(gamma, gammaEta(shape, rate)),
+    ]
+    const got = gaussianGammaPrecision.logEvidence?.({ mode: 'ep', to: 0, args, params: {}, power: 1 }) as number
+    // E over the gamma cavity of N(y; m, v + 1 / lambda), the mean integrated out, on a grid in log lambda.
+    const nt = 20000
+    const lo = -14
+    const hi = 8
+    let z = 0
+    for (let k = 0; k < nt; k++) {
+      const t = lo + ((hi - lo) * (k + 0.5)) / nt
+      const lam = Math.exp(t)
+      const s2 = v + 1 / lam
+      const density = Math.exp(shape * Math.log(rate) - (0.5 * (y - m) ** 2) / s2) / Math.sqrt(2 * Math.PI * s2)
+      // the gamma density in log lambda: lambda^shape exp(-rate lambda) / Gamma(shape) * rate^shape
+      z += (Math.exp(shape * t - rate * lam) * density * ((hi - lo) / nt)) / Math.exp(shape * Math.log(rate))
+    }
+    // The gamma cavity enters unnormalised (its mass is in the grid), the Gaussian cavity's mass is added.
+    expect(got).toBeCloseTo(gaussian.logPartition(gaussianEta(m, v)) + Math.log(z), 6)
+  })
+})
