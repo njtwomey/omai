@@ -31,7 +31,7 @@ if [ -n "$conflicts" ]; then
 fi
 make barrels agent-index api-surface >/dev/null 2>&1
 git add -A
-git diff --cached --quiet && [ "$(git rev-parse HEAD)" = "$before" ] || git commit -q --no-edit 2>/dev/null || true
+if ! git diff --cached --quiet; then git commit -q --no-edit >/dev/null 2>&1 || true; fi
 after="$(git rev-parse HEAD)"
 changed="$(git diff --name-only "$before" "$after")"
 step merge "$(git log --oneline -1)"
