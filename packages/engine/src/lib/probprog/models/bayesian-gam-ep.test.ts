@@ -3,7 +3,8 @@
 // exact reference, and ARD against a sampler.
 import { describe, expect, it } from 'vitest'
 import { session } from '../../trace/index.ts'
-import { toFactorGraph } from '../model/index.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, toFactorGraph } from '../model/index.ts'
 import {
   bayesianGam,
   bayesianGamAgreement,
@@ -44,17 +45,65 @@ describe('expectation propagation on the Bayesian GAM', () => {
     expect(first('ard', 'gammaSmooth')).toBe('hmc')
   })
 
-  it('compiles the non-centred scale to one apply-product factor per smoothed coefficient, with no dead apply factor left', () => {
+  it('compiles the non-centred penalty prior to one dense factor on the coefficient vector, with no standard normal, apply or apply-product left', () => {
     const g = bayesianGam(x, y, { k: 10 })
     const c = toFactorGraph(g.definition.bind(g.data))
     expect(c.issues).toEqual([])
-    const operators = (c.graph?.factors ?? []).map((f) => f.operator)
-    expect(operators.filter((o) => o === 'apply-product')).toHaveLength(g.penalised)
+    const factors = c.graph?.factors ?? []
+    const operators = factors.map((f) => f.operator)
+    expect(operators.filter((o) => o === 'gaussian-mv-function-scale')).toHaveLength(1)
+    expect(operators).not.toContain('apply-product')
     expect(operators).not.toContain('apply')
-    const steps = (c.graph?.factors ?? []).find((f) => f.operator === 'apply-product')?.params?.['steps']
-    // exp, then the eigenvalue times it (plus the fixed precision where there is one), then the square root and the reciprocal.
-    const names = (steps as unknown as [string][]).map((s) => s[0])
-    expect([names[0], names[1], names.at(-2), names.at(-1)]).toEqual(['exp', 'mul', 'sqrt', 'recip'])
+    // The coefficients are one vector variable (read by the likelihood as a vector), and z is not a variable at all.
+    const names = (c.graph?.variables ?? []).map((v) => v.name)
+    expect(names).toContain('gamma')
+    expect(names.some((n) => n.startsWith('z'))).toBe(false)
+    const steps = factors.find((f) => f.operator === 'gaussian-mv-function-scale')?.params?.['steps'] as unknown as [
+      string,
+    ][][]
+    // One chain per coefficient: exp, then the eigenvalue times it (plus the fixed precision where there is one), the square root and
+    // the reciprocal; a coefficient the penalty does not touch is a constant.
+    expect(steps).toHaveLength(10)
+    const smoothed = steps.filter((chain) => chain[0]?.[0] === 'exp')
+    expect(smoothed).toHaveLength(g.penalised)
+    expect([smoothed[0]?.[1]?.[0], smoothed[0]?.at(-2)?.[0], smoothed[0]?.at(-1)?.[0]]).toEqual([
+      'mul',
+      'sqrt',
+      'recip',
+    ])
+  })
+
+  it('keeps one apply-product factor per coefficient when the dense form is switched off or the scales have no one variable', () => {
+    const g = bayesianGam(x, y, { k: 10 })
+    const elements = toFactorGraph(g.definition.bind(g.data), { sharedScale: 'elements' })
+    const operators = (elements.graph?.factors ?? []).map((f) => f.operator)
+    expect(operators.filter((o) => o === 'apply-product')).toHaveLength(g.penalised)
+    expect(operators).not.toContain('gaussian-mv-function-scale')
+    // A scale with one latent for each coefficient (not one shared variable) cannot be one factor on the vector.
+    const model = defineModel('own-scales', (m) => {
+      const row = m.range('row')
+      const coef = m.range('coef')
+      const X = m.data('X', { dims: [row, coef] })
+      const obs = m.data('y', { dims: [row] })
+      const a = m.latent('a', d.normal(0, 1), { dims: [coef] })
+      const z = m.latent('z', d.normal(0, 1), { dims: [coef] })
+      const beta = m.derived('beta', z.div(a.exp().sqrt()))
+      m.observe('y', d.normal(X.matmul(beta), 0.3), obs)
+    })
+    const own = toFactorGraph(
+      model.bind({
+        X: [
+          [1, 0],
+          [0, 1],
+          [1, 1],
+        ],
+        y: [0.1, 0.2, 0.3],
+      }),
+    )
+    expect(own.issues).toEqual([])
+    const ownOperators = (own.graph?.factors ?? []).map((f) => f.operator)
+    expect(ownOperators).not.toContain('gaussian-mv-function-scale')
+    expect(ownOperators.filter((o) => o === 'apply-product')).toHaveLength(2)
   })
 
   it('agrees with the exact reference on the penalty prior with log-normal hyperpriors: the curve, the band and the smoothing', () => {
@@ -62,15 +111,22 @@ describe('expectation propagation on the Bayesian GAM', () => {
     const reference = bayesianGamReference(model, { gridSize: 20, points: 28 })
     const fit = fitOf('ep', model)
     const a = bayesianGamAgreement(fit, reference, model.standardisation.sd)
-    expect(a.meanError).toBeLessThan(0.02)
-    // The posterior is read as independent marginals of the coefficients, which widens the band (as for the per-coefficient route).
+    expect(a.meanError).toBeLessThan(0.01)
+    // The coefficients are one Gaussian vector (the dense factor), so the band keeps their correlations: within a few percent
+    // (the per-coefficient form was 17% too wide).
     expect(a.bandRatio).toBeGreaterThan(0.95)
-    expect(a.bandRatio).toBeLessThan(1.3)
-    expect(Math.abs(a.logLambdaShift)).toBeLessThan(0.5)
+    expect(a.bandRatio).toBeLessThan(1.07)
+    expect(Math.abs(a.logLambdaShift)).toBeLessThan(0.15)
     const lam = fit.hyper.logLambda as readonly [number, number]
     expect(lam[1]).toBeGreaterThan(0.8 * reference.hyper.logLambda[1])
     expect(lam[1]).toBeLessThan(1.25 * reference.hyper.logLambda[1])
     expect(fit.hyper.logSigma[0]).toBeCloseTo(reference.hyper.logSigma[0], 1)
+  })
+
+  it('reaches its fixed point in few sweeps on the dense form', () => {
+    const model = bayesianGam(x, y, { k: 10 })
+    const s = session(bayesianGamMethod('ep', model, { fit: { gridSize: 20 } }), { steps: 3000, mode: 'eager' })
+    expect(s.t).toBeLessThan(40)
   })
 
   it('agrees with a sampler on ARD: the curve, the band and which bases are in use', () => {

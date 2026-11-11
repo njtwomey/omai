@@ -113,10 +113,10 @@ export function unaryFunctions(): Record<string, UnaryFunction> {
 const isFlat = (eta: Eta): boolean => (eta[0] ?? 0) === 0 && (eta[1] ?? 0) === 0
 
 /** One step of a chain: a registry function by name, or `mul`, `add`, `pow` with its constant. */
-type Step = readonly [string, number?]
+export type Step = readonly [string, number?]
 
 /** The function of a chain of steps, applied in order. */
-function chainOf(table: Readonly<Record<string, UnaryFunction>>, steps: readonly Step[]): UnaryFunction {
+export function chainOf(table: Readonly<Record<string, UnaryFunction>>, steps: readonly Step[]): UnaryFunction {
   const fs = steps.map(([name, k]): ((x: number) => number) => {
     const c = k ?? Number.NaN
     if (name === 'mul') return (x) => x * c

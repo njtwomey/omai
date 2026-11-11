@@ -518,6 +518,8 @@ class Compiler {
   private readonly atoms = new Map<string, Atom>()
   private readonly auxCount = new Map<string, number>()
   private readonly packed = new Set<string>()
+  /** The derived vectors `z / S(x)` of independent standard normals over a scale of one latent (non-centred), by name, with the name of `z`. */
+  private readonly nonCentred = new Map<string, string>()
   /** Scalar normal latents that share a predictor and are compiled as the coordinates of one joint Gaussian vector (`packScalars`), by member name. */
   private readonly groups = new Map<string, { readonly vector: string; readonly members: readonly string[] }>()
   private readonly groupsMade = new Set<string>()
@@ -555,6 +557,7 @@ class Compiler {
     this.unbound = new Set(bound.unbound)
     for (const n of bound.spec.nodes) if (n.kind !== 'observed') this.nodes.set(n.name, n)
     this.findPacked()
+    this.findNonCentred()
     if (this.packScalars) this.findGroups()
   }
 
@@ -588,6 +591,30 @@ class Compiler {
       if (n.kind === 'latent' || n.kind === 'observed' || n.kind === 'generated')
         for (const e of Object.values(n.dist.params)) walk(e)
       if (n.kind === 'derived' || n.kind === 'factor') walk(n.expr)
+    }
+  }
+
+  /**
+   * The non-centred vectors: a derived node `D = z / S` whose numerator `z` is a latent vector of independent standard normals
+   * that nothing else reads, and whose divisor depends on a latent (the smoothing parameter of the non-centred penalised spline,
+   * `z / sqrt(exp(x) d + n)`). Compiled as one Gaussian vector with a `gaussian-mv-function-scale` factor when the divisor is a
+   * chain of unary steps from one variable (`denseNonCentred`), so the posterior keeps the correlations of the coefficients; `z` is
+   * then not a variable of the graph (the factor integrates it out).
+   */
+  private findNonCentred(): void {
+    if (!this.denseScales) return
+    const readers = new Map<string, number>()
+    for (const n of this.bound.spec.nodes) for (const r of nodeRefs(n)) readers.set(r, (readers.get(r) ?? 0) + 1)
+    const is = (e: ExprSpec | undefined, value: number): boolean => e?.kind === 'const' && e.value === value
+    for (const n of this.bound.spec.nodes) {
+      if (n.kind !== 'derived' || n.expr.kind !== 'op' || n.expr.op !== 'div' || n.dims.length !== 1) continue
+      const [numerator, divisor] = n.expr.args
+      const z = numerator?.kind === 'ref' ? this.nodes.get(numerator.name) : undefined
+      if (z?.kind !== 'latent' || z.dist.family !== 'normal' || z.dims.length !== 1 || z.dims[0] !== n.dims[0]) continue
+      if (z.constraint !== undefined && z.constraint.kind !== 'real') continue
+      if (!is(z.dist.params['loc'], 0) || !is(z.dist.params['scale'], 1) || readers.get(z.name) !== 1) continue
+      if (divisor === undefined || !this.dependsOnLatent(divisor)) continue
+      this.nonCentred.set(n.name, z.name)
     }
   }
 
@@ -1624,6 +1651,8 @@ class Compiler {
         return
       }
       case 'latent':
+        // A standard normal vector that a non-centred derived node absorbs is compiled by that node only if the dense factor does not apply.
+        if ([...this.nonCentred.values()].includes(node.name)) return
         this.latent(node)
         return
       case 'derived':
@@ -3121,6 +3150,16 @@ class Compiler {
   }
 
   private derived(node: ModelNode & { readonly kind: 'derived' }): void {
+    const absorbed = this.nonCentred.get(node.name)
+    if (absorbed !== undefined) {
+      if (this.denseNonCentred(node)) return
+      // The dense factor does not apply to this divisor: the standard normals are compiled as the scalar variables they would have been.
+      const z = this.nodes.get(absorbed) as ModelNode & { readonly kind: 'latent' }
+      this.nonCentred.delete(node.name)
+      this.current = z.name
+      this.latent(z)
+      this.current = node.name
+    }
     if (this.discreteParents(node).length > 0) {
       this.lazy.set(node.name, node.expr)
       return
@@ -3162,6 +3201,63 @@ class Compiler {
     })
     this.syms.set(node.name, { dims: node.dims, cells: out })
     this.layout(node, 'derived', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+  }
+
+  /**
+   * `D = z / S(x)` as one Gaussian vector variable `D` and a `gaussian-mv-function-scale` factor with the variable `x` the divisor
+   * is a chain of unary steps of (`1 / sqrt(exp(x) d_j + n_j)`: each coefficient's chain, a known divisor a constant). The standard
+   * normals `z` never become variables: given `x` the vector is Gaussian with the diagonal covariance `1 / S_j(x)^2`, which the
+   * factor integrates against the cavity of the whole vector. False (and nothing made) when the divisors are not chains of one variable.
+   */
+  private denseNonCentred(node: ModelNode & { readonly kind: 'derived' }): boolean {
+    const divisor = node.expr.kind === 'op' ? node.expr.args[1] : undefined
+    if (divisor === undefined) return false
+    let cells: Cell[]
+    try {
+      cells = this.over(this.evalSym(divisor), node.dims)
+    } catch (e) {
+      if (e instanceof Refusal) return false
+      throw e
+    }
+    let input: string | undefined
+    const chains: ApplyStep[][] = []
+    for (const cell of cells) {
+      if (isConstCell(cell)) {
+        const s = cell.aff.offset
+        if (!(s > 0 && Number.isFinite(s))) return false
+        chains.push([
+          ['mul', 0],
+          ['add', 1 / s],
+        ])
+        continue
+      }
+      if (cell.kind !== 'aff') return false
+      const terms = [...cell.aff.terms].filter(([, c]) => c !== 0)
+      const atom = terms.length === 1 ? this.atoms.get(terms[0]?.[0] as string) : undefined
+      if (atom?.kind !== 'var' || !this.applied.has(atom.name)) return false
+      const base = this.chainOf(cell.aff)
+      if (input !== undefined && input !== base.input) return false
+      input = base.input
+      chains.push([...base.steps, ['recip']])
+    }
+    if (input === undefined) return false
+    const n = cells.length
+    this.need('gaussian-mv-function-scale')
+    this.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
+    this.addFactor(
+      {
+        operator: 'gaussian-mv-function-scale',
+        args: [node.name, input],
+        params: { steps: chains as unknown as Json },
+      },
+      node.name,
+    )
+    this.syms.set(node.name, {
+      dims: node.dims,
+      cells: Array.from({ length: n }, (_, j) => this.compAtom(node.name, j, n)),
+    })
+    if (node.record) this.layout(node, 'derived', 'gaussian-mv', 'packed', [node.name], true)
+    return true
   }
 
   /** The expression a derived node stands for, followed through references to derived nodes (to see a link applied to it). */
