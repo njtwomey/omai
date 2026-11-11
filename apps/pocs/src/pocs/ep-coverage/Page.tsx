@@ -1,4 +1,12 @@
-import { type CoverageRow, epAtom, epCoverage, verifyAtom } from 'omai-engine/bayesian-examples'
+import {
+  type CoverageRow,
+  type EpGap,
+  type EpGapKind,
+  epAtom,
+  epCoverage,
+  epGaps,
+  verifyAtom,
+} from 'omai-engine/bayesian-examples'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { useDeferred } from '../../shared/useDeferred.ts'
@@ -19,6 +27,103 @@ function Status(props: { readonly row: CoverageRow }): ReactNode {
       {row.status}
       {off ? ` (declared ${row.declared})` : ''}
     </span>
+  )
+}
+
+const KINDS: readonly { readonly kind: EpGapKind; readonly title: string; readonly note: string }[] = [
+  { kind: 'missing-rule', title: 'Missing rules', note: 'A factor EP has no message rule for.' },
+  {
+    kind: 'missing-mapping',
+    title: 'Missing compiler mappings',
+    note: 'The rule or operator exists; the model language cannot reach it yet.',
+  },
+  {
+    kind: 'quality',
+    title: 'Where EP is less good than it should be',
+    note: 'It runs, and the answer is overconfident, one-sided or mislabelled.',
+  },
+  {
+    kind: 'infrastructure',
+    title: 'Infrastructure and integration',
+    note: 'Evidence, variational rules, where the code lives, keeping the docs honest.',
+  },
+]
+
+const STATUS_COLOUR: Readonly<Record<EpGap['status'], string>> = {
+  queued: 'var(--wb-warning)',
+  investigating: 'var(--wb-success)',
+  open: 'var(--wb-muted)',
+}
+
+/** One gap: what is missing, why it matters, how it would be closed, and which refused setups it holds up. */
+function Gap(props: { readonly gap: EpGap; readonly atoms: ReadonlySet<string> }): ReactNode {
+  const { gap } = props
+  return (
+    <div className="flex flex-col gap-1 rounded-lg border border-line p-3">
+      <div className="flex flex-wrap items-baseline gap-2">
+        <h3 className="text-sm font-semibold">{gap.title}</h3>
+        <span className="text-xs" style={{ color: STATUS_COLOUR[gap.status] }}>
+          {gap.status}
+        </span>
+        <span className="text-xs text-muted">{gap.size} piece of work</span>
+      </div>
+      <p className="m-0 text-sm text-muted">{gap.summary}</p>
+      <p className="m-0 text-sm">
+        <span className="text-muted">How: </span>
+        {gap.plan}
+      </p>
+      {gap.refuses.length === 0 ? null : (
+        <p className="m-0 text-xs text-muted">
+          Holds up:{' '}
+          {gap.refuses.map((n, i) => (
+            <span key={n}>
+              {i === 0 ? '' : ', '}
+              {props.atoms.has(n) ? (
+                <Link to={`/poc/ep-${n}`} className="underline">
+                  {n}
+                </Link>
+              ) : (
+                n
+              )}
+            </span>
+          ))}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** The gaps of the suite by kind: nothing EP refuses is without an entry (a test holds the list to the coverage above). */
+function Gaps(props: { readonly atoms: ReadonlySet<string> }): ReactNode {
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-sm font-semibold">Gaps and limitations</h2>
+      <p className="max-w-3xl text-xs text-muted">
+        Nothing EP refuses is abandoned: each refused setup or model above is named by a gap here, with why, how it
+        would be closed and how big that is, and a test fails if one is left out or a closed gap is left in. The order
+        of work is: make what runs honest first (the quality items: overconfidence, one-mode answers, false
+        convergence), then give every rule its log evidence so models can be compared and hyperparameters learned, then
+        close the refused models, then the remaining rules by leverage, and move the suite into the library proper.
+      </p>
+      {KINDS.map((k) => {
+        const gaps = epGaps.filter((g) => g.kind === k.kind)
+        return gaps.length === 0 ? null : (
+          <div key={k.kind} className="flex flex-col gap-2">
+            <h3 className="text-sm font-medium">
+              {k.title}{' '}
+              <span className="font-normal text-muted">
+                ({gaps.length}): {k.note}
+              </span>
+            </h3>
+            <div className="grid gap-2 lg:grid-cols-2">
+              {gaps.map((g) => (
+                <Gap key={g.id} gap={g} atoms={props.atoms} />
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </section>
   )
 }
 
@@ -161,6 +266,7 @@ export default function EpCoverage(): ReactNode {
           </table>
         </div>
       </section>
+      <Gaps atoms={new Set(coverage.atoms.map((r) => r.name))} />
     </div>
   )
 }

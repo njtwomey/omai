@@ -247,3 +247,13 @@ probability, a beta or Dirichlet with a gamma or log-normal concentration (`diri
 with a beta or Dirichlet probability (a gate with an unknown mixing weight) and its summed-out form (`mixture-weight`, `normalPair`),
 a positive latent (log-normal and the like) as a rate of the log-link likelihoods. 21 atom pages (`family: 'priors'` and
 `'gate weights'`), all with the model code that ran at the bottom.
+
+## 10. The gaps, as tested data
+
+The open items of this plan (what EP cannot run, where it is less good than it should be, the infrastructure and integration tasks)
+are kept as data in `packages/engine/src/lib/bayesian-examples/ep-gaps.ts` and shown at the end of the EP coverage page, each with
+why, how it would be closed, its size and its status. A test (`ep-gaps.test.ts`) holds the list to the coverage table: every setup
+and benchmark model EP refuses is named by a gap, and a gap that names something EP now runs is stale. Where the code lives: the
+rules (`message-passing/operators`), the compiler mappings (`probprog/model/factors.ts`), the model families
+(`probprog/model/dists`) and the methods (`probprog/inference`) are in the library proper; the setups, programs, coverage and
+recovery helpers are still in `bayesian-examples` and are to move to `probprog/ep` (gap `integration`).

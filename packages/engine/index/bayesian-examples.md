@@ -18,6 +18,8 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - structure `ep-atoms.ts` (file): EP atom scaffold: a bare setup, its reference, a tolerance, the EP verdict and run. `src/lib/bayesian-examples/ep-atoms.ts:1` `omai-engine/bayesian-examples`
 - structure `example-method.ts` (file): Example scaffold: a problem from knobs, one chosen inference method, derived posterior paths. `src/lib/bayesian-examples/example-method.ts:1` `omai-engine/bayesian-examples`
 
+- module `ep-gaps.ts` (file): The gaps and limits of expectation propagation, each with its plan, size and status, tied to what it refuses. `src/lib/bayesian-examples/ep-gaps.ts:1` `omai-engine/bayesian-examples`
+
 - function `activeSetScore`: The score of inclusion probabilities against the true active set: AUC and counts at a threshold. `src/lib/bayesian-examples/ep-recovery.ts:134` `omai-engine/bayesian-examples`
 - function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/bayesian-examples/ep-atoms.ts:598` `omai-engine/bayesian-examples`
 - function `atomReference`: The reference of an EP atom: exact or grid marginals as curves, and a joint. `src/lib/bayesian-examples/ep-atoms.ts:334` `omai-engine/bayesian-examples`
