@@ -48,6 +48,19 @@ const MODEL = dict({
         'spike and slab: each B-spline coefficient is in a wide slab (the basis is used) or a narrow spike at zero (it is off)',
     },
   }),
+  hyper: choice(['logNormal', 'gammaNoise', 'fixed'], {
+    default: 'logNormal',
+    label: 'hyperpriors of the penalty prior',
+    when: { key: 'prior', in: ['penalty'] },
+    descriptions: {
+      logNormal:
+        'log-normal on the log smoothing parameter and the log noise sd: both inferred, built on exp (samplers and variational families, no message passing)',
+      gammaNoise:
+        'smoothing fixed, the noise precision a gamma variable: a normal-gamma model, which variational message passing runs',
+      fixed:
+        'smoothing and noise both known: a linear-Gaussian model with an exact Gaussian posterior, which EP, VMP and exact Gaussian inference run',
+    },
+  }),
   basis: choice(['ps', 'cr', 'bs', 'tp'], {
     default: 'ps',
     label: 'spline basis',
@@ -64,12 +77,33 @@ const MODEL = dict({
   logLambdaMean: real(-6, 10, {
     default: 0,
     label: 'prior mean of log smoothing parameter',
-    when: { key: 'prior', in: ['penalty'] },
+    when: { key: 'hyper', in: ['logNormal'] },
   }),
   logLambdaSd: real(0.5, 6, {
     default: 3,
     label: 'prior sd of log smoothing parameter',
-    when: { key: 'prior', in: ['penalty'] },
+    when: { key: 'hyper', in: ['logNormal'] },
+  }),
+  lambda: real(0.01, 1000, {
+    default: 13,
+    log: true,
+    label: 'smoothing parameter (known)',
+    when: { key: 'hyper', in: ['gammaNoise', 'fixed'] },
+  }),
+  noiseShape: real(0.1, 10, {
+    default: 1,
+    label: 'gamma shape of the noise precision',
+    when: { key: 'hyper', in: ['gammaNoise'] },
+  }),
+  noiseRate: real(0.001, 5, {
+    default: 0.05,
+    label: 'gamma rate of the noise precision',
+    when: { key: 'hyper', in: ['gammaNoise'] },
+  }),
+  noiseSd: real(0.01, 2, {
+    default: 0.2,
+    label: 'noise sd (known, in sd of y)',
+    when: { key: 'hyper', in: ['fixed'] },
   }),
   inclusion: real(0.02, 0.98, {
     default: 0.5,
@@ -96,6 +130,11 @@ const MODEL = dict({
 })
 type Model = {
   prior: 'penalty' | 'spikeSlab' | 'ard'
+  hyper: 'logNormal' | 'gammaNoise' | 'fixed'
+  lambda: number
+  noiseShape: number
+  noiseRate: number
+  noiseSd: number
   basis: 'ps' | 'cr' | 'bs' | 'tp'
   k: number
   degree: number
@@ -132,7 +171,7 @@ export default function BayesianGamPage(): ReactNode {
   const [method, setMethod] = useState(START.method)
   const [budget, setBudget] = useState<Budget>(START.budget)
   // Every method of the library that runs on the model (the verdicts are of the prior chosen), and why the others do not.
-  const offer = useMemo(() => bayesianGamMethods(model.prior), [model.prior])
+  const offer = useMemo(() => bayesianGamMethods(model.prior, model.hyper), [model.prior, model.hyper])
   const generated = useDataset(DATA, selection)
   const curve = useMemo(() => curveData(generated.data, generated.truth as never), [generated.data, generated.truth])
   return (
@@ -197,6 +236,11 @@ function Fit(props: {
   const options = useMemo(
     () => ({
       prior: model.prior,
+      hyper: model.hyper,
+      lambda: model.lambda,
+      noiseShape: model.noiseShape,
+      noiseRate: model.noiseRate,
+      noiseSd: model.noiseSd,
       basis: model.prior !== 'penalty' && model.basis !== 'bs' ? 'ps' : model.basis,
       k: model.k,
       degree: model.degree,
@@ -370,7 +414,11 @@ function View(props: {
             ...(reference === undefined
               ? {}
               : {
-                  truth: { logLambda: reference.hyper.logLambda[0], logSigma: reference.hyper.logSigma[0] },
+                  // Only the coordinates the plot has: the smoothing is one when it is inferred, the noise unless it is known.
+                  truth: {
+                    ...(fit.draws['logLambda'] === undefined ? {} : { logLambda: reference.hyper.logLambda[0] }),
+                    ...(fit.draws['logSigma'] === undefined ? {} : { logSigma: reference.hyper.logSigma[0] }),
+                  },
                   referenceLabel: 'exact mean',
                 }),
           }),
@@ -425,7 +473,7 @@ function View(props: {
             ? spikeSlab
               ? ''
               : 'Computing the reference…'
-            : `At this step ${kind} is ${agreement.meanError.toFixed(3)} response sd from the exact mean curve, its band is ${agreement.bandRatio.toFixed(2)} times the exact width, and its mean log smoothing parameter is ${agreement.logLambdaShift >= 0 ? '+' : ''}${agreement.logLambdaShift.toFixed(2)} from the exact one.`}
+            : `At this step ${kind} is ${agreement.meanError.toFixed(3)} response sd from the exact mean curve, its band is ${agreement.bandRatio.toFixed(2)} times the exact width${Number.isFinite(agreement.logLambdaShift) ? `, and its mean log smoothing parameter is ${agreement.logLambdaShift >= 0 ? '+' : ''}${agreement.logLambdaShift.toFixed(2)} from the exact one` : ''}.`}
         </div>
       </Panel>
     </div>
