@@ -8,6 +8,21 @@
 import { OmaiError } from '../base/index.ts'
 import type { EpAtom } from './ep-atoms.ts'
 import { betaBernoulliAtom, gammaPoissonAtom, gaussianAtom } from './ep-atoms-conjugate.ts'
+import { betaBernoulliLearnedAtom, gammaPoissonLearnedAtom, gaussianLearnedAtom } from './ep-atoms-extended-conjugate.ts'
+import {
+  laplaceLearnedAtom,
+  logisticLearnedAtom,
+  poissonLogDispersionLearnedAtom,
+  poissonLogLearnedAtom,
+  probitLearnedAtom,
+  skillDifferenceLearnedAtom,
+  studentTLearnedAtom,
+  weibullLearnedAtom,
+} from './ep-atoms-extended-likelihoods.ts'
+import {
+  gammaPrecisionLearnedAtom,
+  sharedPrecisionLearnedAtom,
+} from './ep-atoms-extended-scales.ts'
 import { expAtom, logScaleAtom, maxAtom, productAtom, tanhAtom } from './ep-atoms-functions.ts'
 import { orderedMeansAtom, orderedPairAtom } from './ep-atoms-gates.ts'
 import {
@@ -89,21 +104,33 @@ export const epAtoms: readonly EpAtom[] = [
   productAtom,
   maxAtom,
   gammaPrecisionAtom,
+  gammaPrecisionLearnedAtom,
   sharedPrecisionAtom,
+  sharedPrecisionLearnedAtom,
   scaledPrecisionAtom,
   halfCauchyAtom,
   halfNormalAtom,
   studentTAtom,
+  studentTLearnedAtom,
   laplaceAtom,
+  laplaceLearnedAtom,
   probitAtom,
+  probitLearnedAtom,
   logisticAtom,
+  logisticLearnedAtom,
   skillDifferenceAtom,
+  skillDifferenceLearnedAtom,
   gpProbitAtom,
   gpLogisticAtom,
   poissonLogAtom,
+  poissonLogLearnedAtom,
+  poissonLogDispersionLearnedAtom,
   gaussianAtom,
+  gaussianLearnedAtom,
   betaBernoulliAtom,
+  betaBernoulliLearnedAtom,
   gammaPoissonAtom,
+  gammaPoissonLearnedAtom,
   priorNormalInverseGammaAtom,
   priorNormalHyperAtom,
   priorInverseGammaHyperAtom,
@@ -112,6 +139,7 @@ export const epAtoms: readonly EpAtom[] = [
   priorLogNormalPoissonAtom,
   priorLogNormalPoissonHyperAtom,
   priorNormalWeibullAtom,
+  weibullLearnedAtom,
   priorBetaGeometricAtom,
   priorBetaStrengthGammaAtom,
   priorBetaStrengthLogNormalAtom,
