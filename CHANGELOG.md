@@ -10,6 +10,8 @@ whole probabilistic-programming increment recorded here, under whichever version
 is on `main` so far; the plan is `docs/probprog/PLAN.md` (with its status section), the validation tables are in
 `docs/probprog/results/`.
 
+Expectation propagation for a Gaussian with an unknown noise level (omai-engine, message passing): the `gaussian-gamma-precision` factor now has an EP rule for an observed value and a Gaussian mean (the mean is integrated out, the moments of the precision come from a grid in `log lambda`, the mean gets a Gaussian site and the precision a Gamma site), so linear regression with a gamma-precision noise runs under EP and agrees with the exact posterior; `docs/probprog/ep-and-gam.md` says what is still missing for the penalised additive model (a random smoothing parameter on a coefficient vector).
+
 Chart labels (omai-render): the values on bars and the other series labels are plain token-coloured text with no outline. ECharts gave a label with no colour of its own an automatic contrast colour and a stroke to match, which showed as an embossed, outlined number on a dark page; the theme now sets the colour and no border for the series that carry labels (`echartsTheme`), so every chart is fixed at once, in the page and in SVG export.
 
 Probit classification (omai-engine, `omai-engine/probprog/models`): `probitClassifier(priorScale)` (the probit regression for a design of

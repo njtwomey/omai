@@ -87,4 +87,39 @@ describe('linearRegressionMethod', () => {
     const r = pairs.methods[0]?.frames.correlation.at(-1)?.[0] ?? 0
     expect(Math.abs(r)).toBeGreaterThan(0.5)
   })
+
+  it('the sparse truth with a spike and slab prior finds the non-zero coefficients, and the noise can be a gamma precision that message passing accepts', () => {
+    const over = { truth: 'sparse', rows: 40, features: 8, active: 2, prior: 'spikeSlab' }
+    const s = run(configOf('nuts', { numChains: 2, numWarmup: 100, numDraws: 200 }, over))
+    const c = s.probe(s.t, 'linreg/coefficients') as {
+      names: string[]
+      score: number[]
+      selection: { found: number; falseAlarms: number; trulyActive: number }
+    }
+    expect(c.names.length).toBe(8)
+    expect(c.selection).toMatchObject({ found: 2, falseAlarms: 0, trulyActive: 2 })
+    expect(c.score[0]).toBeGreaterThan(0.9)
+    expect(c.score[5]).toBeLessThan(0.3)
+    expect(s.probe(s.t, 'linreg/fit')).toBeNull()
+    const precision = linearExample.offer({
+      ...(defaults(linearRegressionMethod.config) as Record<string, unknown>),
+      noiseModel: 'precision',
+    } as never)
+    for (const kind of ['ep', 'vmp', 'nuts']) expect(precision.applicable).toContain(kind)
+    const halfNormal = linearExample.offer({
+      ...(defaults(linearRegressionMethod.config) as Record<string, unknown>),
+      noiseModel: 'learned',
+    } as never)
+    expect(halfNormal.applicable).not.toContain('ep')
+  })
+
+  it('EP agrees with a long NUTS run when the noise is a gamma precision', () => {
+    const over = { rows: 30, inputs: 'offset', noiseModel: 'precision' }
+    const ref = run(configOf('nuts', { numChains: 2, numWarmup: 150, numDraws: 300 }, over))
+    const draws = ref.probe(ref.t, 'linreg/draws') as { names: string[] }
+    expect(draws.names.at(-1)).toBe('tau')
+    const ep = run(configOf('ep', {}, over))
+    const c = ep.probe(ep.t, 'linreg/check', { reference: draws } as never) as { maxMeanError: number }
+    expect(c.maxMeanError).toBeLessThan(0.5)
+  })
 })
