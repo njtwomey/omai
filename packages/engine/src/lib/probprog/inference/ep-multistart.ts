@@ -23,7 +23,8 @@ import {
   runAlgorithm,
   scalar,
 } from '../../trace/index.ts'
-import { factorGraphPosterior, factorGraphVerdict } from '../model/factors.ts'
+import { factorGraphPosterior } from '../model/factor-graph/readback.ts'
+import { factorGraphVerdict } from '../model/factor-graph/verdict.ts'
 import type { Posterior } from '../posterior.ts'
 import { definePosterior } from '../posterior.ts'
 import { canonicalSites, moveAxis, orderingSite, permutations } from './_relabel.ts'
