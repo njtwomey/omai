@@ -189,4 +189,14 @@ Still open, in the order of the work packages that follow:
   scale mixture), a heavy-tailed likelihood with an unknown scale (a Gaussian with a gamma precision per row), Student-t with
   learned degrees of freedom, proper initial messages in place of the vague-prior workaround, and stochastic volatility with
   `phi` and `sigma` inferred (a product with a random slope).
-- The atoms suite and the coverage figure (`epCoverage()` as a library function with a test): in progress, port 5350.
+- The atoms suite and the coverage figure: done on 2026-11-11 (`bayesian-examples/ep-atoms*.ts`, `epCoverage()` with its test,
+  the pocs group `expectation-propagation`). 28 bare setups, one factor each, with an exact or grid reference and a tolerance:
+  EP runs on 19 (gate between random values, a random index into random components, spike and slab, clutter, an ordered pair,
+  `exp(h/2)` as a scale, max, gamma precision observed and latent, Student-t, Laplace, probit, logistic, a probit on a
+  difference of skills, a dense GP prior with probit and logistic likelihoods, and the three conjugate pairs) and is planned on
+  9 with the library's reason on each page: the gate with known components (the compiler wants a variable per component), exp,
+  tanh and Poisson with a log link (`apply`), half-Cauchy and half-normal (numeric priors), a scaled precision (the GAM),
+  ordered means (the `ordered` constraint) and the product of two Gaussians (the compiler accepts it and the first update
+  sends an improper message: the run breaks, WP-B proper initial messages). EP runs on 10 of the 27 benchmark models. When a
+  rule lands the registry test of the atom it unblocks goes red until the atom is flipped to `runs`, and the coverage test is
+  moved up.
