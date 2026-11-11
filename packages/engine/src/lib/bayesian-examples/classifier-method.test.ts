@@ -1,16 +1,30 @@
 import { describe, expect, it } from 'vitest'
 import { type DictSpace, defaults, type UnionSpace } from '../space/index.ts'
 import { session } from '../trace/index.ts'
-import { classifierKinds, classifierMethod, classifierProblem, classifierSteps } from './classifier-method.ts'
+import {
+  classifierExample,
+  classifierKinds,
+  classifierMethod,
+  classifierProblem,
+  classifierSteps,
+} from './classifier-method.ts'
 
 const options = (classifierMethod.config.spaces['inference'] as UnionSpace).options
 const small = (kind: string, extra: Record<string, number | string> = {}) => ({
   ...(defaults(classifierMethod.config) as Record<string, unknown>),
   rows: 80,
-  inference: { kind, ...(defaults(options[kind] as DictSpace) as Record<string, number>), ...extra },
+  inference: { method: kind, ...(defaults(options[kind] as DictSpace) as Record<string, number>), ...extra },
 })
 
 describe('classifierMethod', () => {
+  it('offers every method that runs on the model and gives the library reason for each that does not', () => {
+    const offer = classifierExample.offer(defaults(classifierMethod.config) as never)
+    expect(classifierKinds).toEqual(offer.applicable)
+    for (const kind of ['nuts', 'hmc', 'svi', 'laplace', 'pathfinder']) expect(offer.applicable).toContain(kind)
+    expect(offer.unavailable['enumeration']).toMatch(/\w/)
+    expect(Object.keys(offer.space.options)).toEqual(expect.arrayContaining([...offer.applicable, 'enumeration']))
+  })
+
   it('rebuilds the problem from its knobs, the same every time', () => {
     const config = {
       dataset: 'circles',
@@ -28,7 +42,7 @@ describe('classifierMethod', () => {
     expect(a.train.x).toEqual(b.train.x)
   })
 
-  for (const kind of classifierKinds) {
+  for (const kind of ['nuts', 'hmc', 'mala', 'svi', 'laplace', 'ep', 'pathfinder']) {
     it(`${kind}: runs and every probe reads its posterior`, () => {
       const config = small(
         kind,
@@ -73,12 +87,12 @@ describe('classifierMethod', () => {
         mode: 'eager',
       })
     }
-    const reference = run({ kind: 'nuts', numChains: 2, numWarmup: 60, numDraws: 100 })
+    const reference = run(small('nuts', { numChains: 2, numWarmup: 60, numDraws: 100 }).inference)
     const given = {
       scores: reference.probe(reference.t, 'classify/scores'),
       surface: reference.probe(reference.t, 'classify/surface', { size: 9 }),
     }
-    const laplace = run({ kind: 'laplace' })
+    const laplace = run(small('laplace').inference)
     const check = laplace.probe(laplace.t, 'classify/check', given as never) as {
       maxMeanError: number
       maxSurfaceDifference: number

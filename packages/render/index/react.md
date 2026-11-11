@@ -41,7 +41,7 @@ React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneVi
 
 ## react/controls
 
-Form controls for figures and demos, in plain React and Tailwind over the `--wb-*` tokens. Inputs: `NumberField`, `Select`, `Choice`, `Toggle`, `SeedInput`, `ColumnOrder`. Generated from an engine `Space`: `SpaceControls` (options a rule rules out drawn disabled), `SpaceSettings` and `SettingsButton` (a modal applied on confirm), `ModelSelector` (a union's options with a settings popover each) and `SlotVariants` (the options of a slot compared at once). Choosing data: `DatasetPicker` and `DatasetSelector` with `useDataset`, `EnvironmentSelector`. Layout: `ControlPanel` and `ControlLayout` put controls beside a figure. Validity rules read from the option tables' properties, and the rest of the rules behind the controls, are pure modules.
+Form controls for figures and demos, in plain React and Tailwind over the `--wb-*` tokens. Inputs: `NumberField`, `Select`, `Choice`, `Toggle`, `SeedInput`, `ColumnOrder`. Generated from an engine `Space`: `SpaceControls` (options a rule rules out drawn disabled), `SpaceSettings` and `SettingsButton` (a modal applied on confirm), `ModelSelector` (a union's options with a settings popover each) and `SlotVariants` (the options of a slot compared at once). Choosing data: `DatasetPicker` and `DatasetSelector` with `useDataset`, `EnvironmentSelector`. Layout: `ControlPanel` and `ControlLayout` put controls beside a figure; `FigurePanel`, `PanelsStrip` and `usePanels` let a page fold or hide its figures. Validity rules read from the option tables' properties, and the rest of the rules behind the controls, are pure modules.
 
 - function `Choice`: React component: a segmented choice among few options: `<Choice label="mode" value={m} options={modes} onChange={setM} />` `src/react/controls/Choice.tsx:49` `omai-render/react`
 - function `ControlLayout`: React component: put controls beside or above a figure: `<ControlLayout controls={panel} placement="left">` `src/react/controls/ControlPanel.tsx:157` `omai-render/react`
@@ -50,8 +50,10 @@ Form controls for figures and demos, in plain React and Tailwind over the `--wb-
 - function `DatasetPicker`: React component: pick a dataset and its knobs: `<DatasetPicker collection="classification2d" value={sel} onChange={setSel} />` `src/react/controls/DatasetPicker.tsx:89` `omai-render/react`
 - function `DatasetSelector`: React component: search the dataset registry: `<DatasetSelector real={false} value={sel} onChange={setSel} />` `src/react/controls/DatasetSelector.tsx:80` `omai-render/react`
 - function `EnvironmentSelector`: React component: pick an environment from the registry: `<EnvironmentSelector value={sel} onChange={setSel} />` `src/react/controls/EnvironmentSelector.tsx:82` `omai-render/react`
+- function `FigurePanel`: React component: a figure with a title bar that folds or hides it: `<FigurePanel panels={p} name="surface">` `src/react/controls/FigurePanel.tsx:102` `omai-render/react`
 - function `ModelSelector`: React component: choose a union option and its knobs: `<ModelSelector space={union} value={v} onChange={setV} />` `src/react/controls/ModelSelector.tsx:41` `omai-render/react`
 - function `NumberField`: React component: a typed, stepped, slidable number: `<NumberField label="k" value={k} onChange={setK} min={1} />` `src/react/controls/NumberField.tsx:88` `omai-render/react`
+- function `PanelsStrip`: React component: a strip of switches listing the page's panels, to hide or bring them back. `src/react/controls/FigurePanel.tsx:164` `omai-render/react`
 - function `PopoverContainer`: React component: draw popups of the controls inside a given element: `<PopoverContainer container={el}>` `src/react/controls/Popover.tsx:34` `omai-render/react`
 - function `Select`: React component: a dropdown with cycling arrows: `<Select label="loss" value={v} options={names} onChange={setV} />` `src/react/controls/Select.tsx:63` `omai-render/react`
 - function `SettingsButton`: React component: a gear opening a modal applied only on confirm: `<SettingsButton value={v} onApply={setV}>...</SettingsButton>` `src/react/controls/SettingsButton.tsx:58` `omai-render/react`
@@ -59,6 +61,7 @@ Form controls for figures and demos, in plain React and Tailwind over the `--wb-
 - function `SpaceControls`: React component: controls generated from an engine Space: `<SpaceControls space={space} value={v} onChange={setV} />` `src/react/controls/SpaceControls.tsx:51` `omai-render/react`
 - function `SpaceSettings`: React component: gear button editing a Space in a modal: `<SpaceSettings space={s} value={v} onApply={setV} />` `src/react/controls/SettingsButton.tsx:212` `omai-render/react`
 - function `useDataset`: React hook: generate the dataset a picker selected: `useDataset('classification2d', selection)` `src/react/controls/DatasetPicker.tsx:123` `omai-render/react`
+- function `usePanels`: React hook: which panels of a page are open, folded or hidden, remembered per page. `src/react/controls/FigurePanel.tsx:67` `omai-render/react`
 - function `useParams`: React hook: a figure's knobs as one record with set, reset, isDefault: `useParams({ noise: 0.1 })` `src/react/controls/useParams.ts:86` `omai-render/react`
 
 ## react/interaction

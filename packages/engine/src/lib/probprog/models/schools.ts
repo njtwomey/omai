@@ -33,11 +33,58 @@ const CLASSIC: BenchmarkData = { data: { y: SCHOOL_Y, sigma: SCHOOL_SIGMA }, gen
 
 /** Data like the classic ones from known `mu = 4` and `tau = 3`, `size` schools, with the classic standard errors repeated. */
 function generateSchools(key: Key, size = 8): BenchmarkData {
-  const mu = 4
-  const tau = 3
-  const sigma = Array.from({ length: size }, (_, j) => SCHOOL_SIGMA[j % SCHOOL_SIGMA.length] ?? 10)
+  return generateSchoolGroups(key, {
+    groups: size,
+    mu: 4,
+    tau: 3,
+    standardErrors: Array.from({ length: size }, (_, j) => SCHOOL_SIGMA[j % SCHOOL_SIGMA.length] ?? 10),
+  })
+}
+
+/** What {@link generateSchoolGroups} generates from. */
+export interface SchoolGroupsOptions {
+  /** The number of groups (schools). */
+  readonly groups: number
+  /** The mean of the group effects. */
+  readonly mu: number
+  /** The standard deviation of the group effects around it (0: every group has the same effect). */
+  readonly tau: number
+  /** The standard error of each group's estimate, given (the length is the number of groups). */
+  readonly standardErrors?: readonly number[]
+  /** Otherwise the typical standard error (default 10), and how much it varies between groups (the sd of its log, default 0.4). */
+  readonly se?: number
+  readonly seSpread?: number
+}
+
+/**
+ * Data of the eight schools model from known parameters: `groups` effects `theta_j ~ N(mu, tau²)`, each estimated with its
+ * own known standard error `sigma_j` (`y_j ~ N(theta_j, sigma_j²)`). A group with a large standard error is one with
+ * little data behind it, which is how this model expresses groups of unequal sizes: the standard errors are either given
+ * or drawn log-normally around a typical one. The generating parameters (`mu`, `tau`, the true `theta`) come back as
+ * the truth.
+ *
+ * @param key - The random key.
+ * @param options - The number of groups, `mu`, `tau` and the standard errors.
+ * @returns The data (`y`, `sigma`) and what generated them.
+ * @concept posterior-validation
+ * @example
+ * ```ts
+ * import { generateSchoolGroups } from 'omai-engine/probprog/models'
+ * import { key } from 'omai-engine/random'
+ * const d = generateSchoolGroups(key(1), { groups: 12, mu: 2, tau: 0, se: 5, seSpread: 0 })
+ * [(d.data['y'] as number[]).length, d.generating['tau'], (d.data['sigma'] as number[])[3]] // => [12, 0, 5]
+ * ```
+ */
+export function generateSchoolGroups(key: Key, options: SchoolGroupsOptions): BenchmarkData {
+  const size = options.groups
+  const { mu, tau } = options
   const z = toFlat(drawNormal(foldIn(key, 0), [size]))
   const e = toFlat(drawNormal(foldIn(key, 1), [size]))
+  const w = toFlat(drawNormal(foldIn(key, 2), [size]))
+  const sigma =
+    options.standardErrors === undefined
+      ? Array.from({ length: size }, (_, j) => (options.se ?? 10) * Math.exp((options.seSpread ?? 0.4) * (w[j] ?? 0)))
+      : [...options.standardErrors]
   const theta = Array.from(z, (v) => mu + tau * v)
   return {
     data: { y: theta.map((t, j) => t + (sigma[j] ?? 10) * (e[j] ?? 0)), sigma },
@@ -121,6 +168,80 @@ function schoolsTruth(data: BenchmarkData, quality: TruthQuality): BenchmarkTrut
   return truth
 }
 
+/** The ways of writing the eight schools model that {@link eightSchoolsDefinition} offers. */
+export type SchoolsParameterisation = 'centred' | 'non-centred' | 'complete-pooling' | 'no-pooling'
+
+/** The scales of the priors of {@link eightSchoolsDefinition}. */
+export interface SchoolsPriors {
+  /** The sd of the normal prior of the mean effect `mu` (default 5). */
+  readonly muScale?: number
+  /** The scale of the half-Cauchy prior of the spread `tau` (default 5). */
+  readonly tauScale?: number
+  /** The sd of the normal prior of each effect when nothing pools them (`no-pooling`, default 100: nearly flat, so nothing is pooled). */
+  readonly effectScale?: number
+}
+
+/**
+ * The eight schools model as a spec in one of four forms, for any number of groups (the size is the length of the data):
+ * `centred` (`theta_j ~ N(mu, tau²)`), `non-centred` (`theta_j = mu + tau z_j`, the same posterior without the funnel),
+ * `complete-pooling` (every group has the one effect `mu`: no `tau`, no `theta`) and `no-pooling` (every group has its own
+ * effect `theta_j ~ N(0, effectScale²)` and nothing is shared: no `mu`, no `tau`). The two partial-pooling forms are the
+ * models of `eightSchoolsCentred` and `eightSchoolsNonCentred` at the default priors.
+ *
+ * @param parameterisation - The form.
+ * @param priors - The scales of the priors.
+ * @returns The model definition, named `eight-schools-<form>`; data `y` and `sigma` over the `school` range.
+ * @concept posterior-validation
+ * @example
+ * ```ts
+ * import { eightSchoolsDefinition } from 'omai-engine/probprog/models'
+ * const latents = (p: 'centred' | 'non-centred' | 'complete-pooling' | 'no-pooling') =>
+ *   eightSchoolsDefinition(p).spec.nodes.filter((n) => n.kind === 'latent').map((n) => n.name)
+ * [latents('centred'), latents('non-centred'), latents('complete-pooling'), latents('no-pooling')] // => [['mu', 'tau', 'theta'], ['mu', 'tau', 'z'], ['mu'], ['theta']]
+ * ```
+ */
+export function eightSchoolsDefinition(
+  parameterisation: SchoolsParameterisation,
+  priors: SchoolsPriors = {},
+): ModelDefinition {
+  const { muScale = 5, tauScale = 5, effectScale = 100 } = priors
+  return defineModel(`eight-schools-${parameterisation}`, (m) => {
+    const school = m.range('school')
+    const y = m.data('y', { dims: [school], role: 'response', doc: 'the estimated coaching effects' })
+    const sigma = m.data('sigma', {
+      dims: [school],
+      support: 'positive',
+      role: 'covariate',
+      doc: 'their standard errors (known)',
+    })
+    if (parameterisation === 'no-pooling') {
+      const theta = m.latent('theta', d.normal(0, effectScale), { dims: [school], doc: 'the effect of each school' })
+      m.observe('y', d.normal(theta, sigma), y)
+      return
+    }
+    const mu = m.latent('mu', d.normal(0, muScale), { doc: 'the mean effect' })
+    if (parameterisation === 'complete-pooling') {
+      m.observe('y', d.normal(mu, sigma), y)
+      return
+    }
+    const tau = m.latent('tau', d.halfCauchy(tauScale), { doc: 'the spread of the effects' })
+    if (parameterisation === 'centred') {
+      // The scale is clipped to [1e-6, 1e6] where it enters the distribution. This is a modelling floor, not a guard against an
+      // invalid parameter (the sampler treats that as a divergence): the centred density is unbounded as tau goes to 0, and
+      // without the floor the sampler is drawn into that funnel (18 divergences against 8).
+      const theta = m.latent('theta', d.normal(mu, ops.clip(tau, 1e-6, 1e6)), {
+        dims: [school],
+        doc: 'the effect of each school',
+      })
+      m.observe('y', d.normal(theta, sigma), y)
+      return
+    }
+    const z = m.latent('z', d.normal(0, 1), { dims: [school], doc: 'the standardised effect of each school' })
+    const theta = m.derived('theta', mu.add(tau.mul(z)), { doc: 'the effect of each school' })
+    m.observe('y', d.normal(theta, sigma), y)
+  })
+}
+
 /**
  * Eight schools, centred: `theta_j ~ N(mu, tau²)`, `y_j ~ N(theta_j, sigma_j²)` with `mu ~ N(0, 5²)` and `tau ~
  * HalfCauchy(5)` (Rubin's data, the standard errors known). The posterior of `tau` has mass near zero where the effects
@@ -146,26 +267,7 @@ export const eightSchoolsCentred: BenchmarkModel = defineBenchmark({
     'Gelman et al., Bayesian Data Analysis, 3rd ed., section 5.5',
     'Betancourt and Girolami (2015), Hamiltonian Monte Carlo for hierarchical models',
   ],
-  definition: defineModel('eight-schools-centred', (m) => {
-    const school = m.range('school')
-    const y = m.data('y', { dims: [school], role: 'response', doc: 'the estimated coaching effects' })
-    const sigma = m.data('sigma', {
-      dims: [school],
-      support: 'positive',
-      role: 'covariate',
-      doc: 'their standard errors (known)',
-    })
-    const mu = m.latent('mu', d.normal(0, 5), { doc: 'the mean effect' })
-    const tau = m.latent('tau', d.halfCauchy(5), { doc: 'the spread of the effects' })
-    // The scale is clipped to [1e-6, 1e6] where it enters the distribution. This is a modelling floor, not a guard against an
-    // invalid parameter (the sampler treats that as a divergence): the centred density is unbounded as tau goes to 0, and
-    // without the floor the sampler is drawn into that funnel (18 divergences against 8).
-    const theta = m.latent('theta', d.normal(mu, ops.clip(tau, 1e-6, 1e6)), {
-      dims: [school],
-      doc: 'the effect of each school',
-    })
-    m.observe('y', d.normal(theta, sigma), y)
-  }),
+  definition: eightSchoolsDefinition('centred'),
   canonical: CLASSIC,
   generate: generateSchools,
   truth: schoolsTruth,
@@ -215,21 +317,7 @@ export const eightSchoolsNonCentred: BenchmarkModel = defineBenchmark({
     'Gelman et al., Bayesian Data Analysis, 3rd ed., section 5.5',
     'Papaspiliopoulos, Roberts and Skoeld (2007), A general framework for the parametrization of hierarchical models',
   ],
-  definition: defineModel('eight-schools-non-centred', (m) => {
-    const school = m.range('school')
-    const y = m.data('y', { dims: [school], role: 'response', doc: 'the estimated coaching effects' })
-    const sigma = m.data('sigma', {
-      dims: [school],
-      support: 'positive',
-      role: 'covariate',
-      doc: 'their standard errors (known)',
-    })
-    const mu = m.latent('mu', d.normal(0, 5), { doc: 'the mean effect' })
-    const tau = m.latent('tau', d.halfCauchy(5), { doc: 'the spread of the effects' })
-    const z = m.latent('z', d.normal(0, 1), { dims: [school], doc: 'the standardised effect of each school' })
-    const theta = m.derived('theta', mu.add(tau.mul(z)), { doc: 'the effect of each school' })
-    m.observe('y', d.normal(theta, sigma), y)
-  }),
+  definition: eightSchoolsDefinition('non-centred'),
   canonical: CLASSIC,
   generate: generateSchools,
   truth: schoolsTruth,

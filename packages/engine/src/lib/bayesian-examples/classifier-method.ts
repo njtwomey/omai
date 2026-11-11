@@ -14,8 +14,7 @@
 import { type ClassificationData, generate, trainTestSplit } from '../data/index.ts'
 import { blobs, circles, moons, spirals, xor } from '../datasets/index.ts'
 import { chainDiagnostics, decisionSurface, posteriorPairs } from '../exposition/index.ts'
-import { anytimeKnobs, defineInferenceMethod, type InferenceMethod } from '../probprog/inference/method.ts'
-import { type AnyInferenceMethod, inferenceMethodFor, modelRegistry } from '../probprog/inference/models.ts'
+import type { InferenceMethod } from '../probprog/inference/method.ts'
 import * as d from '../probprog/model/dists/index.ts'
 import { type DataInput, defineModel, type ModelDefinition, ops } from '../probprog/model/index.ts'
 import {
@@ -26,12 +25,23 @@ import {
   probitPredictive,
   probitPredictiveGrid,
 } from '../probprog/models/probit-classification.ts'
-import type { Posterior } from '../probprog/posterior.ts'
 import { posteriorChains } from '../probprog/posterior-chains.ts'
 import { foldIn, type Key, key } from '../random/index.ts'
-import { choice, type DictSpace, defaults, dict, int, type RealSpace, real, union } from '../space/index.ts'
+import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
 import { toFlat } from '../tensor/index.ts'
-import { type Config, type Contract, derived } from '../trace/index.ts'
+import { type Config, derived } from '../trace/index.ts'
+import {
+  columnMoments,
+  defineExample,
+  drawRows,
+  type Example,
+  exampleBudgetKnobs,
+  exampleInferenceSpace,
+  exampleNumber,
+  exampleObjective,
+  exampleSteps,
+  exampleString,
+} from './example-method.ts'
 
 /** The two-dimensional data sets on offer. */
 export const classifierDatasets = ['moons', 'circles', 'xor', 'spirals', 'blobs'] as const
@@ -49,69 +59,6 @@ const NOISE: Readonly<Record<ClassifierDataset, readonly [number, number]>> = {
   blobs: [0.1, 3],
 }
 
-/** The inference methods on offer: what each is, the knobs the page shows and the tape path of its objective. */
-interface KindSpec {
-  /** A name of `methodKinds`. */
-  readonly kind: string
-  readonly description: string
-  /** The method's own knobs shown, with the defaults chosen here (short runs: an answer in a second or two). */
-  readonly shown: Readonly<Record<string, number | string | boolean>>
-  /** Whether the method's run has a length of its own to set (`steps`), as variational inference has. */
-  readonly steps?: number
-  /** The tape path of the method's objective curve and what it is. */
-  readonly objective?: { readonly path: string; readonly label: string }
-  /** Knobs of the method fixed for every run. */
-  readonly fixed?: Readonly<Record<string, number | string | boolean>>
-}
-
-const KINDS: Readonly<Record<string, KindSpec>> = {
-  nuts: {
-    kind: 'nuts',
-    description: 'the no-U-turn sampler: draws from the posterior in chains',
-    shown: { numChains: 2, numWarmup: 60, numDraws: 120 },
-    objective: { path: 'mcmc/logDensity', label: 'log density of the chains' },
-  },
-  hmc: {
-    kind: 'hmc',
-    description: 'Hamiltonian Monte Carlo with a fixed number of leapfrog steps',
-    shown: { numChains: 2, numWarmup: 60, numDraws: 120, numSteps: 10 },
-    objective: { path: 'mcmc/logDensity', label: 'log density of the chains' },
-  },
-  mala: {
-    kind: 'mala',
-    description: 'Metropolis-adjusted Langevin: a gradient-guided random walk',
-    shown: { numChains: 2, numWarmup: 100, numDraws: 250 },
-    objective: { path: 'mcmc/logDensity', label: 'log density of the chains' },
-  },
-  svi: {
-    kind: 'svi',
-    description: 'stochastic variational inference: a normal fitted by following the ELBO',
-    shown: { guide: 'autoNormal', learningRate: 0.05 },
-    steps: 600,
-    objective: { path: 'svi/elbo', label: 'ELBO' },
-  },
-  laplace: {
-    kind: 'laplace',
-    description: 'a normal at the mode with the curvature there',
-    shown: {},
-    objective: { path: 'laplace/logDensity', label: 'log density at the iterate' },
-  },
-  ep: {
-    kind: 'ep',
-    description: 'expectation propagation: one normal message per observation, swept to a fixed point',
-    shown: { damping: 0 },
-    fixed: { tol: 1e-6 },
-  },
-  pathfinder: {
-    kind: 'pathfinder',
-    description: 'a normal along the L-BFGS path with the best ELBO',
-    shown: { numDraws: 400 },
-  },
-}
-
-/** The inference methods of {@link classifierMethod}, in the order offered. */
-export const classifierKinds: readonly string[] = Object.keys(KINDS)
-
 /** The problem a configuration stands for: the data, the features and the model. */
 export interface ClassifierProblem {
   readonly train: { readonly x: readonly (readonly number[])[]; readonly y: readonly number[] }
@@ -127,14 +74,8 @@ export interface ClassifierProblem {
   readonly link: 'probit' | 'logistic'
 }
 
-const num = (config: Config, name: string): number => {
-  const v = config[name]
-  return typeof v === 'number' ? v : 0
-}
-const str = (config: Config, name: string): string => {
-  const v = config[name]
-  return typeof v === 'string' ? v : ''
-}
+const num = exampleNumber
+const str = exampleString
 
 function generator(
   id: ClassifierDataset,
@@ -252,47 +193,6 @@ const GRID_DRAWS = 100
 const SCORE_DRAWS = 300
 const PAIR_COORDINATES = 5
 
-/** The weights of a posterior as rows `[n][p]` (at most `n`), with the chain and index of each when it is made of chains. */
-function weightDraws(
-  post: Posterior,
-  n: number,
-): { readonly rows: number[][]; readonly chain: number[]; readonly index: number[] } | undefined {
-  try {
-    if (!post.sites.includes('w')) return undefined
-    const draws = post.draws?.['w']
-    const form = post.form === 'samples' && draws !== undefined
-    const tensor = form ? draws : post.sample(key(1), n)['w']
-    if (tensor === undefined) return undefined
-    const p = tensor.shape[1] ?? 1
-    const flat = toFlat(tensor)
-    const total = Math.floor(flat.length / p)
-    if (total === 0) return undefined
-    const perChain = form && post.chains !== undefined ? post.chains.numDraws : total
-    const keep = Math.min(n, total)
-    const rows: number[][] = []
-    const chain: number[] = []
-    const index: number[] = []
-    for (let k = 0; k < keep; k++) {
-      const i = keep === total ? k : Math.round((k * (total - 1)) / (keep - 1 || 1))
-      rows.push(Array.from({ length: p }, (_, j) => flat[i * p + j] ?? Number.NaN))
-      chain.push(Math.floor(i / perChain))
-      index.push(i % perChain)
-    }
-    return rows.every((r) => r.every(Number.isFinite)) ? { rows, chain, index } : undefined
-  } catch {
-    return undefined
-  }
-}
-
-const meanSd = (rows: readonly (readonly number[])[], p: number): { mean: number[]; sd: number[] } => {
-  const n = rows.length
-  const mean = Array.from({ length: p }, (_, j) => rows.reduce((a, r) => a + (r[j] ?? 0), 0) / n)
-  const sd = Array.from({ length: p }, (_, j) =>
-    Math.sqrt(rows.reduce((a, r) => a + ((r[j] ?? 0) - (mean[j] ?? 0)) ** 2, 0) / Math.max(1, n - 1)),
-  )
-  return { mean, sd }
-}
-
 /**
  * What a check against a reference needs of the reference: the `classify/scores` and the `classify/surface` of a long run
  * of the same problem (the page runs a second session with a long NUTS run and hands over what it probes).
@@ -322,8 +222,6 @@ export const classifierProblemKnobs: readonly string[] = [
   'priorScale',
 ]
 
-const problemKey = (config: Config): string => JSON.stringify(classifierProblemKnobs.map((k) => config[k]))
-
 function surfaceGrid(
   problem: ClassifierProblem,
   rows: readonly (readonly number[])[],
@@ -339,28 +237,8 @@ function surfaceGrid(
 }
 
 /** The union of the inference methods: each option the knobs of that method (the page shows these). */
-export function classifierInferenceSpace(): ReturnType<typeof union> {
-  const probe = classifierProblem(DEFAULTS)
-  const registry = modelRegistry({ classifier: { definition: probe.definition, data: probe.data } })
-  const options: Record<string, DictSpace> = {}
-  for (const [name, spec] of Object.entries(KINDS)) {
-    const inner = inferenceMethodFor(registry, spec.kind, 'classifier')
-    const spaces: Record<string, DictSpace['spaces'][string]> = {}
-    for (const [knob, value] of Object.entries(spec.shown)) {
-      const space = inner.config.spaces[knob]
-      if (space === undefined) continue
-      spaces[knob] = { ...space, default: value } as never
-    }
-    if (spec.steps !== undefined)
-      spaces['steps'] = int(50, 5000, {
-        default: spec.steps,
-        log: true,
-        label: 'steps',
-        description: 'iterations of the optimiser',
-      })
-    options[name] = dict(spaces, { description: spec.description })
-  }
-  return union(options, { default: 'nuts', label: 'inference method' })
+export function classifierInferenceSpace(): ReturnType<typeof exampleInferenceSpace> {
+  return exampleInferenceSpace(classifierProblem(DEFAULTS), 'classifier')
 }
 
 const DEFAULTS: Config = {
@@ -416,30 +294,8 @@ export const classifierModelKnobs: DictSpace = dict({
   }),
 })
 
-const classifierInference = classifierInferenceSpace()
 /** The budget knobs shown with the inference: the time budget (2 s by default) and the step budget. */
-export const classifierBudgetKnobs: DictSpace = dict({
-  budgetMs: { ...(anytimeKnobs.spaces['budgetMs'] as RealSpace), default: 2000, label: 'time budget' },
-  budgetSteps: anytimeKnobs.spaces['budgetSteps'] as DictSpace['spaces'][string],
-})
-
-/** The knobs of {@link classifierMethod} but the budget's: data, model and the inference with its own knobs. */
-export const classifierKnobs: DictSpace = dict({
-  ...classifierDataKnobs.spaces,
-  ...classifierModelKnobs.spaces,
-  inference: classifierInference,
-})
-
-/** The inference kind and the knobs of a configuration. */
-function inferenceOf(config: Config): { readonly kind: string; readonly knobs: Config } {
-  const given = config['inference']
-  const { kind, ...knobs } = (
-    typeof given === 'object' && given !== null && !Array.isArray(given) ? given : { kind: 'nuts' }
-  ) as {
-    kind: string
-  } & Config
-  return { kind: kind in KINDS ? kind : 'nuts', knobs }
-}
+export const classifierBudgetKnobs: DictSpace = exampleBudgetKnobs
 
 /**
  * How many steps a configuration's run is expected to take: what the session's `steps` should be so the run ends
@@ -450,17 +306,11 @@ function inferenceOf(config: Config): { readonly kind: string; readonly knobs: C
  * @example
  * ```ts
  * import { classifierSteps } from 'omai-engine/bayesian-examples'
- * classifierSteps({ inference: { kind: 'nuts', numWarmup: 100, numDraws: 200 } }) // => 302
+ * classifierSteps({ inference: { method: 'nuts', numWarmup: 100, numDraws: 200 } }) // => 302
  * ```
  */
 export function classifierSteps(config: Config): number {
-  const { kind, knobs } = inferenceOf(config)
-  const steps = KINDS[kind]?.steps === undefined ? undefined : num(knobs, 'steps') || KINDS[kind]?.steps
-  const own =
-    steps ??
-    (kind === 'nuts' || kind === 'hmc' || kind === 'mala' ? num(knobs, 'numWarmup') + num(knobs, 'numDraws') + 2 : 400)
-  const cap = num(config, 'budgetSteps')
-  return cap > 0 ? Math.min(own, cap) : own
+  return exampleSteps(config)
 }
 
 /**
@@ -473,74 +323,29 @@ export function classifierSteps(config: Config): number {
  * @example
  * ```ts
  * import { classifierObjective } from 'omai-engine/bayesian-examples'
- * classifierObjective({ inference: { kind: 'svi' } }) // => { path: 'svi/elbo', label: 'ELBO' }
+ * classifierObjective({ inference: { method: 'svi' } }) // => { path: 'svi/elbo', label: 'ELBO' }
  * ```
  */
 export function classifierObjective(config: Config): { readonly path: string; readonly label: string } | undefined {
-  const spec = KINDS[inferenceOf(config).kind]
-  return spec?.objective?.path === undefined || spec.kind === 'nuts' || spec.kind === 'hmc' || spec.kind === 'mala'
-    ? undefined
-    : spec.objective
+  return exampleObjective(config)
 }
 
-/** A built problem with its inner method, kept for the last configuration (the session asks for it several times). */
-interface Built {
-  readonly problem: ClassifierProblem
-  readonly inner: AnyInferenceMethod
-  readonly innerConfig: Config
-  readonly kind: string
-}
-let last: { readonly id: string; readonly built: Built } | undefined
-
-function build(config: Config): Built {
-  const { kind, knobs } = inferenceOf(config)
-  const id = JSON.stringify([problemKey(config), kind, knobs])
-  if (last?.id === id) return last.built
-  const problem = classifierProblem(config)
-  const registry = modelRegistry({ classifier: { definition: problem.definition, data: problem.data } })
-  const spec = KINDS[kind] as KindSpec
-  const inner = inferenceMethodFor(registry, spec.kind, 'classifier')
-  const { steps: _steps, ...own } = knobs
-  const innerConfig = { ...(defaults(inner.config) as Config), ...spec.fixed, ...own }
-  const built = { problem, inner, innerConfig, kind }
-  last = { id, built }
-  return built
-}
-
-/** The state of the method is the inner method's own. */
-type State = unknown
-
-const declared: InferenceMethod<State, Config, string> = defineInferenceMethod<State, Config, string>({
+/** The classifier declared on the example scaffold: its knobs, its problem and the derived paths of `classify/`. */
+export const classifierExample: Example<ClassifierProblem> = defineExample<ClassifierProblem>({
   name: 'classify',
-  family: 'composite',
   description:
     'Bayesian probit or logistic classification of a 2-D data set with one inference method chosen from a table',
-  config: dict(classifierKnobs.spaces),
-  posterior: (state, config) => {
-    const b = build(config)
-    return (b.inner as InferenceMethod<State, Config, string>).posterior?.(state, b.innerConfig) as Posterior
-  },
-  defaults: {},
-  contract: (config, k): Contract<State, string> => {
-    const b = build(config)
-    const inner = (
-      typeof b.inner.contract === 'function' ? b.inner.contract(b.innerConfig, k) : b.inner.contract
-    ) as Contract<State, string>
-    const post = (state: State): Posterior =>
-      (b.inner as InferenceMethod<State, Config, string>).posterior?.(state, b.innerConfig) as Posterior
-    const { problem } = b
+  modelName: 'classifier',
+  dataKnobs: classifierDataKnobs,
+  modelKnobs: classifierModelKnobs,
+  problemKnobs: classifierProblemKnobs,
+  problem: classifierProblem,
+  derived: ({ problem, kind, posterior: post }) => {
     const p = problem.map.size
     const names = problem.map.names.map((n) => `w[${n === '1' ? 'bias' : n}]`)
-    const draws = (state: State, n: number): ReturnType<typeof weightDraws> => {
-      try {
-        return weightDraws(post(state), n)
-      } catch {
-        return undefined
-      }
-    }
+    const draws = (state: unknown, n: number): ReturnType<typeof drawRows> => drawRows(post(state), ['w'], n)
     return {
-      ...inner,
-      'classify/surface': derived<State>({
+      'classify/surface': derived<unknown>({
         cost: 'dear',
         description:
           'the posterior predictive probability over the plane (a decisionSurface record) with the training and held-out rows',
@@ -568,7 +373,7 @@ const declared: InferenceMethod<State, Config, string> = defineInferenceMethod<S
           }) as never
         },
       }),
-      'classify/pairs': derived<State>({
+      'classify/pairs': derived<unknown>({
         cost: 'dear',
         description: `the pair plot of the first ${PAIR_COORDINATES} coefficients (a posteriorPairs record)`,
         compute: (state) => {
@@ -576,7 +381,7 @@ const declared: InferenceMethod<State, Config, string> = defineInferenceMethod<S
           if (w === undefined || w.rows.length < 3) return null
           const coordinates = names.slice(0, PAIR_COORDINATES)
           const columns = Object.fromEntries(coordinates.map((c, j) => [c, w.rows.map((r) => r[j] ?? 0)]))
-          return posteriorPairs([{ name: b.kind, draws: columns, steps: w.index, chain: w.chain }], {
+          return posteriorPairs([{ name: kind, draws: columns, steps: w.index, chain: w.chain }], {
             coordinates,
             maxPoints: 300,
             frames: 2,
@@ -584,7 +389,7 @@ const declared: InferenceMethod<State, Config, string> = defineInferenceMethod<S
           }) as never
         },
       }),
-      'classify/scores': derived<State>({
+      'classify/scores': derived<unknown>({
         cost: 'dear',
         description:
           'held-out accuracy and log predictive, the coefficients, R-hat and ESS where the method has chains',
@@ -594,7 +399,7 @@ const declared: InferenceMethod<State, Config, string> = defineInferenceMethod<S
           if (w === undefined) return null
           const test = heldOutScores(predictive(problem, w.rows, problem.heldOut), problem.test.y)
           const train = heldOutScores(predictive(problem, w.rows, problem.design), problem.train.y)
-          const { mean, sd } = meanSd(w.rows, p)
+          const { mean, sd } = columnMoments(w.rows, p)
           let rhat: number | null = null
           let ess: number | null = null
           if (posterior.form === 'samples' && posterior.chains !== undefined) {
@@ -621,7 +426,7 @@ const declared: InferenceMethod<State, Config, string> = defineInferenceMethod<S
           }
         },
       }),
-      'classify/diagnostics': derived<State>({
+      'classify/diagnostics': derived<unknown>({
         cost: 'dear',
         description:
           'trace, rank, R-hat and ESS of the chains of a sampler (a chainDiagnostics record); null for the others',
@@ -646,7 +451,7 @@ const declared: InferenceMethod<State, Config, string> = defineInferenceMethod<S
           }) as never
         },
       }),
-      'classify/check': derived<State>({
+      'classify/check': derived<unknown>({
         cost: 'dear',
         description:
           'the method against a reference run of the same problem (args: `{ scores, surface }` of the reference): the largest mean error in reference sds, the median sd ratio, the difference of the predictive over the plane, and the reference scores',
@@ -655,7 +460,7 @@ const declared: InferenceMethod<State, Config, string> = defineInferenceMethod<S
           const w = draws(state, GRID_DRAWS)
           const refGrid = ref?.surface.probabilities[1]
           if (ref === undefined || ref === null || w === undefined || refGrid === undefined) return null
-          const { mean, sd } = meanSd(w.rows, p)
+          const { mean, sd } = columnMoments(w.rows, p)
           const error = mean.map(
             (m, j) => Math.abs(m - (ref.scores.mean[j] ?? 0)) / Math.max(1e-9, ref.scores.sd[j] ?? 1),
           )
@@ -676,18 +481,13 @@ const declared: InferenceMethod<State, Config, string> = defineInferenceMethod<S
       }),
     }
   },
-  make: (config, k) => {
-    const b = build(config)
-    const algorithm = b.inner.make(b.innerConfig, k)
-    const steps = KINDS[b.kind]?.steps === undefined ? undefined : classifierSteps(config)
-    return steps === undefined
-      ? algorithm
-      : {
-          ...algorithm,
-          done: (s: State, t: number) => algorithm.done?.(s, t) ?? (t >= steps ? 'converged' : undefined),
-        }
-  },
-}) as never
+})
+
+/** The inference methods that run on the classifier with the default configuration, in the order of `methodKinds`. */
+export const classifierKinds: readonly string[] = classifierExample.offer(DEFAULTS).applicable
+
+/** The knobs of {@link classifierMethod} but the budget's: data, model and the inference with its own knobs. */
+export const classifierKnobs: DictSpace = classifierExample.knobs
 
 /**
  * Bayesian classification of a 2-D data set by one inference method, run by name and knobs (see the file's summary):
@@ -702,13 +502,10 @@ const declared: InferenceMethod<State, Config, string> = defineInferenceMethod<S
  * import { classifierMethod, classifierSteps } from 'omai-engine/bayesian-examples'
  * import { defaults } from 'omai-engine/space'
  * import { session } from 'omai-engine/trace'
- * const config = { ...defaults(classifierMethod.config), rows: 60, inference: { kind: 'laplace' } }
+ * const config = { ...defaults(classifierMethod.config), rows: 60, inference: { method: 'laplace' } }
  * const s = session(classifierMethod, { config, steps: classifierSteps(config), mode: 'eager' })
  * const surface = s.probe(s.t, 'classify/surface', { size: 5 }) as { kind: string }
  * surface.kind // => 'decisionSurface'
  * ```
  */
-export const classifierMethod: InferenceMethod<State, Config, string> = {
-  ...declared,
-  config: { ...declared.config, spaces: { ...declared.config.spaces, ...classifierBudgetKnobs.spaces } },
-}
+export const classifierMethod: InferenceMethod<unknown, Config, string> = classifierExample.method
