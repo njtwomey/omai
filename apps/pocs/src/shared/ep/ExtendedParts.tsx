@@ -3,14 +3,17 @@ import {
   atomRecovery,
   type Belief,
   type CalibrationSample,
-  calibrationSample,
   calibrationTable,
   type EpAtom,
   epAtom,
 } from 'omai-engine/bayesian-examples'
 import type { Config } from 'omai-engine/trace'
-import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
+import { RunProgress } from '../RunProgress.tsx'
+import { workerTask } from '../runWorker.ts'
+import { type UseRun, useRun } from '../useRun.ts'
+import type { AtomCalibrationRequest } from './atomCalibration.worker.ts'
 
 /** A number to three significant digits, a dash when it is not one. */
 const sig = (v: number, digits = 3): string => (Number.isFinite(v) ? String(Number(v.toPrecision(digits))) : '-')
@@ -124,41 +127,27 @@ export function RecoveryPanel(props: {
   )
 }
 
-/** The samples of a calibration, filled seed by seed (a slice of work per tick) so the page stays alive while it runs. */
-function useCalibration(
-  atom: EpAtom,
-  knobs: Config,
-  active: boolean,
-): { samples: readonly CalibrationSample[]; done: boolean } {
-  const [state, setState] = useState<{ samples: readonly CalibrationSample[]; done: boolean }>({
-    samples: [],
-    done: false,
-  })
+const makeCalibrationWorker = (): Worker =>
+  new Worker(new URL('./atomCalibration.worker.ts', import.meta.url), { type: 'module' })
+
+/**
+ * The samples of a calibration, filled seed by seed in a worker (a seed of a heavy atom takes a second or two, which would
+ * freeze the page): the seeds done so far are the run's value, kept when it is stopped.
+ */
+function useCalibration(atom: EpAtom, knobs: Config, active: boolean): UseRun<CalibrationSample[]> {
   const knobKey = JSON.stringify({ ...knobs, seed: 0 })
-  useEffect(() => {
-    if (!active) return
-    const seeds = atom.recovery?.seeds ?? 0
-    const base = JSON.parse(knobKey) as Config
-    const samples: CalibrationSample[] = []
-    let cancelled = false
-    let timer = 0
-    setState({ samples: [], done: false })
-    const tick = (): void => {
-      if (cancelled) return
-      const t0 = performance.now()
-      do {
-        samples.push(calibrationSample(atom, samples.length + 1, base))
-      } while (samples.length < seeds && performance.now() - t0 < 60)
-      setState({ samples: [...samples], done: samples.length >= seeds })
-      if (samples.length < seeds) timer = window.setTimeout(tick, 0)
-    }
-    timer = window.setTimeout(tick, 150)
-    return () => {
-      cancelled = true
-      window.clearTimeout(timer)
-    }
-  }, [atom, knobKey, active])
-  return state
+  const task = useMemo(
+    () =>
+      active
+        ? workerTask<AtomCalibrationRequest, CalibrationSample[]>(makeCalibrationWorker, {
+            name: atom.name,
+            knobs: JSON.parse(knobKey) as Config,
+            seeds: atom.recovery?.seeds ?? 0,
+          })
+        : undefined,
+    [atom, knobKey, active],
+  )
+  return useRun<CalibrationSample[]>(task)
 }
 
 /** A dot per seed: filled green when the truth was inside the interval, red when it was not (amber when some members of a pool were). */
@@ -193,7 +182,9 @@ export function CalibrationPanel(props: {
 }): ReactNode {
   const { atom, knobs, runs } = props
   const spec = atom.recovery
-  const { samples, done } = useCalibration(atom, knobs, runs && spec !== undefined)
+  const run = useCalibration(atom, knobs, runs && spec !== undefined)
+  const samples = run.value ?? []
+  const done = run.phase === 'done' || run.phase === 'converged'
   const table = useMemo(() => (spec === undefined ? undefined : calibrationTable(spec, samples)), [spec, samples])
   if (spec === undefined) return null
   if (!runs)
@@ -215,7 +206,7 @@ export function CalibrationPanel(props: {
           <Badge ok={table.pass}>{table.pass ? 'pass' : 'fail'}</Badge>
         ) : (
           <span className="text-xs text-muted" role="status">
-            running seed {samples.length} of {spec.seeds}...
+            {samples.length} of {spec.seeds} seeds{run.phase === 'stopped' ? ' (stopped: no verdict)' : ''}
           </span>
         )}
         <span className="text-xs text-muted">
@@ -224,6 +215,7 @@ export function CalibrationPanel(props: {
           mean square; near 1 when EP&apos;s spread is honest)
         </span>
       </div>
+      <RunProgress run={run} label="Calibration" onStart={run.start} startText="Run the calibration again" />
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm tabular-nums">
           <thead className="text-xs text-muted">

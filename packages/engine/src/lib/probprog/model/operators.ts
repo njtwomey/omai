@@ -35,10 +35,12 @@ import {
   softplus,
   sqrt,
   square,
+  stack,
   sub,
   sum,
   take,
   tanh,
+  tensor,
   transpose,
   type Value,
   where,
@@ -248,6 +250,108 @@ const atOperator: OperatorDef = {
   },
 }
 
+const pickOperator: OperatorDef = {
+  name: 'pick',
+  arity: 2,
+  description:
+    'along the last dimension of the first operand, the entry that the integer codes of the second name (the prediction of the class each row belongs to)',
+  factor: 'pick',
+  shape: ([a, i]) => {
+    const x = a as NamedShape
+    const idx = i as NamedShape
+    if (x.dims.length === 0 || x.eventRank !== 0 || idx.eventRank !== 0)
+      throw new OmaiError('shape', 'pick: the first operand needs a last dimension to pick along, and no event axes')
+    return joinShapes([{ dims: x.dims.slice(0, -1), eventRank: 0 }, idx])
+  },
+  evaluate: ([a, i]) => {
+    const x = a as NamedValue
+    const idx = i as NamedValue
+    const axis = x.value.shape.length - 1
+    const kept = x.dims.slice(0, -1)
+    const out = joinShapes([{ dims: kept, eventRank: 0 }, shapeOfValue(idx)])
+    const code = alignTo(idx, out.dims, 0)
+    let picked: Value | undefined
+    for (let k = (x.value.shape[axis] as number) - 1; k >= 0; k--) {
+      const entry = alignTo({ value: take(x.value, k, axis), dims: kept }, out.dims, 0)
+      picked = picked === undefined ? entry : where(equal(code, k), entry, picked)
+    }
+    return { value: picked as Value, dims: out.dims }
+  },
+}
+
+const matvecOperator: OperatorDef = {
+  name: 'matvec',
+  arity: 2,
+  description:
+    "a known matrix (two event axes) times a vector (one event axis): the vector one linear step maps it to, x -> A x (a linear dynamical system's transition)",
+  factor: 'gaussian-transition',
+  shape: ([a, x]) => {
+    const m = a as NamedShape
+    const v = x as NamedShape
+    if (m.dims.length > 0 || m.eventRank !== 2 || v.eventRank !== 1)
+      throw new OmaiError(
+        'shape',
+        'matvec: needs a matrix with no named dimension (two event axes) and a vector (one event axis)',
+      )
+    return { dims: v.dims, eventRank: 1 }
+  },
+  evaluate: ([a, x]) => {
+    const m = a as NamedValue
+    const v = x as NamedValue
+    // x [..., c] times A' [c, r]: the leading axes are the vector's own named dimensions.
+    return { value: matmul(v.value, transpose(m.value, [1, 0])), dims: v.dims }
+  },
+}
+
+const dotOperator: OperatorDef = {
+  name: 'dot',
+  arity: 2,
+  description:
+    'a known vector (one event axis) dotted with a vector (one event axis): the scalar a linear reading of it gives',
+  factor: 'dot-constant',
+  shape: ([a, x]) => {
+    const m = a as NamedShape
+    const v = x as NamedShape
+    if (m.dims.length > 0 || m.eventRank !== 1 || v.eventRank !== 1)
+      throw new OmaiError('shape', 'dot: needs a vector with no named dimension and a vector (one event axis each)')
+    // A vector written as one event may stand over a dimension that names its axis (`event#2`): the dot product consumes it.
+    return { dims: v.dims.filter((d) => !d.startsWith('event#')), eventRank: 0 }
+  },
+  evaluate: ([a, x]) => {
+    const m = a as NamedValue
+    const v = x as NamedValue
+    return { value: matmul(v.value, m.value), dims: v.dims.filter((d) => !d.startsWith('event#')) }
+  },
+}
+
+const stickBreakingOperator: OperatorDef = {
+  name: 'stickBreaking',
+  arity: 1,
+  description:
+    'the stick-breaking weights of break fractions along the last dimension: w_k = v_k prod_{j<k} (1 - v_j), the last weight taking what is left (one more weight than breaks, as an event axis)',
+  factor: 'stick-breaking',
+  shape: ([a]) => {
+    const x = a as NamedShape
+    if (x.eventRank !== 0 || x.dims.length === 0)
+      throw new OmaiError('shape', 'stickBreaking: the operand must be a vector of breaks over a named dimension')
+    return { dims: x.dims.slice(0, -1), eventRank: 1 }
+  },
+  evaluate: ([a]) => {
+    const x = a as NamedValue
+    const axis = x.value.shape.length - 1
+    const sticks = x.value.shape[axis] as number
+    const parts: Value[] = []
+    let rest: Value | undefined
+    for (let i = 0; i < sticks; i++) {
+      const v = take(x.value, i, axis)
+      parts.push(rest === undefined ? v : mul(v, rest))
+      rest = mul(rest ?? tensor(1), sub(1, v))
+    }
+    parts.push(rest ?? tensor(1))
+    return { value: stack(parts, axis), dims: x.dims.slice(0, -1) }
+  },
+}
+
 /**
  * The range the `probit` operator keeps its value in. The normal CDF rounds to exactly 1 from about 8.3 and underflows to 0
  * below about -38, where the logit of a Bernoulli on it is infinite and its gradient not a number: a gradient method that
@@ -261,7 +365,7 @@ const PROBIT_CEILING = 1 - Number.EPSILON / 2
  * The registry the model layer ships: arithmetic (`add`, `sub`, `mul`, `div`, `pow`, `maximum`, `minimum`, `neg`),
  * elementwise functions (`exp`, `log`, `sqrt`, `square`, `abs`, `tanh`), links (`sigmoid`, `probit` (the standard normal
  * CDF, the inverse probit link), `softplus`), comparisons (`gt`, `lt`, `eq`), `where` and `clip`, reductions over a named
- * dimension (`sum`, `mean`), `matmul` and the gather `at`. Elementwise operators align operands by dimension name.
+ * dimension (`sum`, `mean`), `matmul`, the gather `at` and `matvec` and `dot` (a known matrix or vector applied to a vector that is one event: a linear dynamical system's step and reading), `pick` (the entry of the last dimension that an index names: the branch a class selects) and `stickBreaking` (the weights of a stick-breaking process from its break fractions). Elementwise operators align operands by dimension name.
  * Message-passing factors for these are keyed by the same names.
  *
  * @returns The operator table (a fresh object each call, so it can be extended without side effects).
@@ -269,7 +373,7 @@ const PROBIT_CEILING = 1 - Number.EPSILON / 2
  * @example
  * ```ts
  * import { defaultOperators } from 'omai-engine/probprog/model'
- * Object.keys(defaultOperators()).length // => 26
+ * Object.keys(defaultOperators()).length // => 30
  * ```
  */
 export function defaultOperators(): Record<string, OperatorDef> {
@@ -309,6 +413,10 @@ export function defaultOperators(): Record<string, OperatorDef> {
     ),
     matmulOperator,
     atOperator,
+    stickBreakingOperator,
+    pickOperator,
+    matvecOperator,
+    dotOperator,
   ]
   return Object.fromEntries(defs.map((d) => [d.name, d]))
 }

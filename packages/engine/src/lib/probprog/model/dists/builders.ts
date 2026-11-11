@@ -183,6 +183,19 @@ export function poisson(rate: Operand): DistExpr {
   return family('poisson', { rate })
 }
 
+/** A Poisson distribution of rate `rate` conditioned on being positive (the positive part of a hurdle model). */
+export function zeroTruncatedPoisson(rate: Operand): DistExpr {
+  return family('zeroTruncatedPoisson', { rate })
+}
+
+/**
+ * A hurdle count: zero with probability `zero`, else a zero-truncated Poisson of rate `rate`. With a beta `zero` and a rate
+ * `exposure * exp(affine)` message passing reads it as a conjugate Bernoulli on the zero part and a truncated-Poisson site on the positive part.
+ */
+export function hurdlePoisson(rate: Operand, zero: Operand): DistExpr {
+  return family('hurdlePoisson', { rate, zero })
+}
+
 /**
  * A categorical distribution over the last axis of `probs` or `logits`. With `over`, the classes are a named dimension of the
  * parameters (the logits `X w` over `row` and `class`, as a multinomial logit classifier writes them): that dimension is the

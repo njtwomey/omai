@@ -55,7 +55,16 @@
  * a bounded real value on itself, so the graph holds the projected prior, not the original. Such a scale (or an `exp` of a
  * Gaussian) is the scale of a latent normal in its non-centred form (a product with a standard normal), and the scale of an
  * observed normal through the `gaussian-scale` factor (the mean may be random too); a `clip` on a scale is read as a floor
- * that never binds. With `packScalars` the scalar normal latents an observed node reads together are one joint vector. Anything
+ * that never binds. With `packScalars` the scalar normal latents an observed node reads together are one joint vector.
+ * Discrete structure under Dirichlet-type weights and linear dynamics: `ops.stickBreaking(v)` of beta latents (the weights of a truncated
+ * Dirichlet process) is the `stick-breaking` factor on each assignment that reads it; a categorical read through a discrete index of
+ * Dirichlet rows (`categorical({ probs: phi.at(z) })`, the words of a topic model) is one `gate` on the index whose branches are the
+ * conjugate `discrete` factors on the rows; `ops.pick(values, z)` (the prediction of the class `z` picks, a mixture of regressions) is a
+ * lookup of the branches read by the observation as one gate of likelihoods, and a mean and a log spread `exp(at(logSd, z))` chosen by one `z`
+ * are one gate of `gaussian-scale` branches; a `hurdlePoisson` count (a zero, or a zero-truncated Poisson) is a conjugate Bernoulli on its
+ * beta zero probability and a `poisson-log-truncated` site on the log rate; and a multivariate normal whose mean is `ops.matvec(F, previous)`
+ * of another Gaussian vector (the step of a vector-state `scan`) with a known covariance is one Gaussian vector and a dense
+ * `gaussian-transition` to the previous one, its readings `ops.dot(h, state)` being regression rows on it. Anything
  * else is reported with a reason, never silently dropped.
  *
  * Ids follow `ids.ts`: a variable is its site's name, `<site>[<i>]` for an element of a site over dimensions, and
@@ -220,6 +229,9 @@ interface Aff {
 type Cell =
   | { readonly kind: 'aff'; readonly aff: Aff }
   | { readonly kind: 'rv'; readonly variable: string; readonly family: FamilyKind }
+  // The stick-breaking weights of beta variables, `v_k prod_{j<k} (1 - v_j)` and the remainder (one more weight than breaks): the
+  // probabilities of a categorical, which reads them through the `stick-breaking` factor (the truncated Dirichlet process).
+  | { readonly kind: 'sticks'; readonly variables: readonly string[] }
   // A known multiple of a gamma variable plus a known offset, `scale tau + offset`: the precision of a Gaussian that shares
   // one smoothing parameter or one global scale (it has no other use: it is not a Gaussian value).
   | { readonly kind: 'scaled'; readonly variable: string; readonly scale: number; readonly offset: number }
@@ -288,6 +300,11 @@ function affOf(c: Cell): Aff {
     throw new Refusal(
       'operator',
       `arithmetic on the inverse-gamma variable behind '${c.variable}': only a known multiple of it is mapped, and only as the squared scale of a Gaussian (the precision idiom)`,
+    )
+  if (c.kind === 'sticks')
+    throw new Refusal(
+      'operator',
+      'arithmetic on stick-breaking weights: they are only the probabilities of a categorical',
     )
   if (c.kind !== 'aff')
     throw new Refusal('operator', `arithmetic on the ${c.family} variable '${c.variable}': only Gaussian values add up`)
@@ -845,12 +862,38 @@ class Compiler {
       case 'const':
         return this.fromNamed(this.evalNamed(e))
       case 'op':
+        if (e.op === 'matvec' || e.op === 'dot') return this.eventLinear(e)
         return this.symOp(
           e.op,
           e.args.map((a) => this.evalSym(a)),
           e.params ?? {},
         )
     }
+  }
+
+  /**
+   * `matvec(A, x)` and `dot(a, x)`: a known matrix or vector applied to a vector `x` (a Gaussian vector variable, its coordinates
+   * the cells of the symbol), as affine forms of its coordinates: the step `A x` of a linear dynamical system (a vector of as many
+   * forms as `A` has rows), and the scalar reading `a . x`.
+   */
+  private eventLinear(e: ExprSpec & { readonly kind: 'op' }): Sym {
+    const known = this.evalNamed(e.args[0] as ExprSpec)
+    const x = this.evalSym(e.args[1] as ExprSpec)
+    const values = Array.from(toFlat(known.value))
+    const n = x.cells.length
+    const rows = e.op === 'dot' ? 1 : values.length / n
+    if (!Number.isInteger(rows) || rows < 1)
+      throw new Refusal('structure', `${e.op}: the matrix has ${values.length} entries for a vector of ${n}`)
+    const cells: Cell[] = []
+    for (let r = 0; r < rows; r++) {
+      let acc = constAff(0)
+      for (let j = 0; j < n; j++) {
+        const a = values[r * n + j] as number
+        if (a !== 0) acc = combine(acc, affOf(x.cells[j] as Cell), a)
+      }
+      cells.push({ kind: 'aff', aff: acc })
+    }
+    return e.op === 'dot' ? { dims: [], cells } : { dims: x.dims, cells }
   }
 
   /** Arithmetic on a discrete variable's lookup or on a gamma variable's precision: undefined when neither operand is one. */
@@ -1008,6 +1051,10 @@ class Compiler {
         }))
       case 'matmul':
         return this.matmul(a, b)
+      case 'stickBreaking':
+        return this.stickBreaking(a)
+      case 'pick':
+        return this.pick(a, b)
       case 'exp':
       case 'square':
       case 'tanh':
@@ -1021,6 +1068,23 @@ class Compiler {
           `operator '${op}' applied to a random value has no message rule (message passing handles affine maps of Gaussians, exp, square, tanh, softplus, abs, sigmoid and the rectifier of a random value, and a link such as probit only as the likelihood of a Bernoulli observation)`,
         )
     }
+  }
+
+  /**
+   * The stick-breaking weights of beta latents along the last dimension: one `sticks` cell for each index of the leading
+   * dimensions, holding the beta variables of its breaks (the categorical that reads it makes the `stick-breaking` factor).
+   */
+  private stickBreaking(a: Sym): Sym {
+    const sticks = a.dims.length === 0 ? 0 : this.size(a.dims[a.dims.length - 1] as string)
+    if (sticks === 0) throw new Refusal('structure', 'stickBreaking needs a vector of breaks over a named dimension')
+    const cells: Cell[] = []
+    for (let i = 0; i < a.cells.length; i += sticks) {
+      const breaks = a.cells.slice(i, i + sticks)
+      if (breaks.some((c) => c.kind !== 'rv' || c.family !== 'beta'))
+        throw new Refusal('operator', 'the breaks of a stick-breaking process must be beta latents')
+      cells.push({ kind: 'sticks', variables: breaks.map((c) => (c as { readonly variable: string }).variable) })
+    }
+    return { dims: a.dims.slice(0, -1), cells }
   }
 
   /**
@@ -1121,42 +1185,68 @@ class Compiler {
     for (let i = 0; i < prod(shape); i++) {
       const at = unflatten(i, shape)
       const code = this.cellAt(idx, dims, at)
-      if (!isConstCell(code)) {
-        if (code.kind === 'lookup' && code.items === undefined) {
-          // The index is a known function of a discrete variable (a change point's `t > tau`): the component per state.
-          let restFlat = 0
-          for (let k = 0; k < rest.length; k++)
-            restFlat = restFlat * (restShape[k] as number) + (at[idx.dims.length + k] as number)
-          const comps = code.values.map((v) => {
-            if (!Number.isInteger(v) || v < 0 || v >= this.size(first))
-              throw new Refusal('data', `at: index ${v} is out of range for '${first}'`)
-            return a.cells[v * prod(restShape) + restFlat] as Cell
-          })
-          cells.push(this.lookupOf(comps, code.variable))
-          continue
-        }
-        if (code.kind !== 'rv' || code.family !== 'discrete')
-          throw new Refusal(
-            'operator',
-            'at: the index must be data or a categorical latent (a gate); a computed random index has no message rule',
-          )
-        let restFlat = 0
-        for (let k = 0; k < rest.length; k++)
-          restFlat = restFlat * (restShape[k] as number) + (at[idx.dims.length + k] as number)
-        cells.push(
-          this.gate(
-            Array.from({ length: this.size(first) }, (_, j) => a.cells[j * prod(restShape) + restFlat] as Cell),
-            code.variable,
-          ),
-        )
-        continue
-      }
+      let restFlat = 0
+      for (let k = 0; k < rest.length; k++)
+        restFlat = restFlat * (restShape[k] as number) + (at[idx.dims.length + k] as number)
+      cells.push(this.choose(code, this.size(first), (j) => a.cells[j * prod(restShape) + restFlat] as Cell, first))
+    }
+    return { dims, cells }
+  }
+
+  /**
+   * The cell chosen by an index cell among `states` components: a known index picks one, an index that is a known function of a
+   * discrete variable (a change point's `t > tau`) is a lookup of the components, and a categorical or Bernoulli latent is the
+   * gate that selects among them.
+   */
+  private choose(code: Cell, states: number, component: (state: number) => Cell, dim: string, asLookup = false): Cell {
+    if (isConstCell(code)) {
       const c = code.aff.offset
-      if (!Number.isInteger(c) || c < 0 || c >= this.size(first))
-        throw new Refusal('data', `at: index ${c} is out of range for '${first}'`)
-      let flat = c
-      for (let k = 0; k < rest.length; k++) flat = flat * (restShape[k] as number) + (at[idx.dims.length + k] as number)
-      cells.push(a.cells[flat] as Cell)
+      if (!Number.isInteger(c) || c < 0 || c >= states)
+        throw new Refusal('data', `at: index ${c} is out of range for '${dim}'`)
+      return component(c)
+    }
+    if (code.kind === 'lookup' && code.items === undefined) {
+      const comps = code.values.map((v) => {
+        if (!Number.isInteger(v) || v < 0 || v >= states)
+          throw new Refusal('data', `at: index ${v} is out of range for '${dim}'`)
+        return component(v)
+      })
+      return this.lookupOf(comps, code.variable)
+    }
+    if (code.kind !== 'rv' || code.family !== 'discrete')
+      throw new Refusal(
+        'operator',
+        'at: the index must be data or a categorical latent (a gate); a computed random index has no message rule',
+      )
+    const comps = Array.from({ length: states }, (_, k) => component(k))
+    // The branches of a `pick` stay the states of one lookup (their random Gaussian forms are the branches of the gate the observation
+    // is), instead of one `select` variable: the observation is a gate of likelihoods, exact in the discrete variable.
+    if (asLookup && comps.every((c) => c.kind === 'aff')) return this.lookupOf(comps, code.variable)
+    return this.gate(comps, code.variable)
+  }
+
+  /**
+   * `pick(values, index)`: along the last dimension of `values`, the entry that `index` names, for every element of the other
+   * dimensions (a different regression per class of a mixture of regressions: `values` the predictions of each class, `index` the
+   * class of each row). A known index selects, a categorical latent is the gate over the branches.
+   */
+  private pick(values: Sym, idx: Sym): Sym {
+    const component = values.dims[values.dims.length - 1]
+    if (component === undefined) throw new Refusal('structure', 'pick: the values need a dimension to pick along')
+    const states = this.size(component)
+    const kept = values.dims.slice(0, -1)
+    const dims = this.joinDims([{ dims: kept, cells: [] }, idx])
+    const shape = this.shapeOf(dims)
+    const cells: Cell[] = []
+    for (let i = 0; i < prod(shape); i++) {
+      const at = unflatten(i, shape)
+      const code = this.cellAt(idx, dims, at)
+      const compAt = (k: number): Cell => {
+        let flat = 0
+        for (const d of kept) flat = flat * this.size(d) + (at[dims.indexOf(d)] as number)
+        return values.cells[flat * states + k] as Cell
+      }
+      cells.push(this.choose(code, states, compAt, component, true))
     }
     return { dims, cells }
   }
@@ -1818,6 +1908,11 @@ class Compiler {
     if (node.dims.length !== 1)
       throw new Refusal('structure', `'${node.name}' is a multivariateNormal: one vector over one dimension is mapped`)
     const params = node.dist.params
+    // A random mean that is a linear map of another Gaussian vector (`matvec(F, previous)`): one dense Gaussian step between the two.
+    if (params['loc'] !== undefined && !this.isConst(params['loc'])) {
+      this.latentTransition(node, params['loc'])
+      return
+    }
     const known = (e: ExprSpec | undefined, what: string): number[] => {
       if (e === undefined || !this.isConst(e))
         throw new Refusal(
@@ -1847,6 +1942,61 @@ class Compiler {
     if (cov.length !== n * n) throw new Refusal('structure', `the covariance of '${node.name}' is not ${n} by ${n}`)
     this.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
     this.addFactor(gaussianMvPrior(node.name, mean, cov), node.name)
+    this.syms.set(node.name, {
+      dims: node.dims,
+      cells: Array.from({ length: n }, (_, j) => this.compAtom(node.name, j, n)),
+    })
+    this.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)
+  }
+
+  /**
+   * A multivariate normal latent whose mean is `F w + c` for a known matrix and another Gaussian vector `w` (the step of a linear
+   * dynamical system, `x_t ~ N(F x_(t-1), Q)`), with a known covariance: one `gaussian-vector` variable and a `gaussian-transition`
+   * factor between it and `w`, so a chain of steps with linear Gaussian readings is the Kalman smoother.
+   */
+  private latentTransition(node: ModelNode & { readonly kind: 'latent' }, locExpr: ExprSpec): void {
+    if (node.dims.length !== 1)
+      throw new Refusal('structure', `'${node.name}' is a multivariateNormal: one vector over one dimension is mapped`)
+    const n = this.size(node.dims[0] as string)
+    const params = node.dist.params
+    const covarianceExpr = params['covariance']
+    if (covarianceExpr === undefined || !this.isConst(covarianceExpr))
+      throw new Refusal('operator', `the covariance of '${node.name}' must be a known matrix when its mean is random`)
+    const covariance = Array.from(toFlat(this.evalNamed(covarianceExpr).value))
+    if (covariance.length !== n * n)
+      throw new Refusal('structure', `the covariance of '${node.name}' is not ${n} by ${n}`)
+    const loc = this.over(this.evalSym(locExpr), node.dims)
+    let vector: string | undefined
+    let columns = 0
+    const forms = loc.map((c) => {
+      if (c.kind !== 'aff')
+        throw new Refusal('operator', `the mean of '${node.name}' must be a linear map of another Gaussian vector`)
+      const terms = [...c.aff.terms].filter(([, k]) => k !== 0)
+      for (const [key] of terms) {
+        const atom = this.atoms.get(key)
+        if (atom?.kind !== 'comp' || (vector !== undefined && atom.vector !== vector))
+          throw new Refusal('operator', `the mean of '${node.name}' must be a linear map of one Gaussian vector`)
+        vector = atom.vector
+        columns = atom.size
+      }
+      return { aff: c.aff, terms }
+    })
+    if (vector === undefined)
+      throw new Refusal('operator', `the mean of '${node.name}' does not depend on a Gaussian vector`)
+    const matrix = new Array<number>(n * columns).fill(0)
+    const offset = forms.map(({ aff, terms }, i) => {
+      for (const [key, k] of terms) matrix[i * columns + (this.atoms.get(key) as Atom & { kind: 'comp' }).index] = k
+      return aff.offset
+    })
+    this.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
+    this.addFactor(
+      {
+        operator: 'gaussian-transition',
+        args: [node.name, vector],
+        params: { matrix, covariance, ...(offset.some((v) => v !== 0) ? { offset } : {}) },
+      },
+      node.name,
+    )
     this.syms.set(node.name, {
       dims: node.dims,
       cells: Array.from({ length: n }, (_, j) => this.compAtom(node.name, j, n)),
@@ -2654,6 +2804,21 @@ class Compiler {
         )
       const over = this.over(this.evalSym(expr), node.dims)
       for (const [i, c] of over.entries()) {
+        if (c.kind === 'sticks') {
+          // The weights are the stick-breaking of beta breaks: a `stick-breaking` factor on the assignment and the breaks.
+          const name = this.addVariable({
+            name: this.elementName(node.name, node.dims, i),
+            family: { kind: 'discrete', size: c.variables.length + 1 },
+          })
+          this.need('stick-breaking')
+          this.addFactor(
+            { operator: 'stick-breaking', args: [name, ...c.variables], params: { sticks: c.variables.length } },
+            name,
+          )
+          cells.push({ kind: 'rv', variable: name, family: 'discrete' })
+          vars.push(name)
+          continue
+        }
         if (c.kind !== 'rv' || c.family !== 'dirichlet')
           throw new Refusal(
             'operator',
@@ -2798,7 +2963,9 @@ class Compiler {
       this.layout(node, 'derived', undefined, 'constant', new Array<null>(prod(shape)).fill(null), false)
       return
     }
-    if (!node.record) {
+    // Stick-breaking weights are not a random variable of the graph (the assignments read the breaks through one factor), so there is
+    // nothing to record: the weights are read back from the breaks.
+    if (!node.record || cells.some((c) => c.kind === 'sticks')) {
       this.syms.set(node.name, { dims: node.dims, cells })
       return
     }
@@ -2808,6 +2975,7 @@ class Compiler {
         vars.push(c.variable)
         return c
       }
+      if (c.kind === 'sticks') throw new Refusal('structure', `'${node.name}' is a stick-breaking weight vector`)
       if (c.kind === 'scaled' || c.kind === 'lookup' || c.kind === 'recip')
         throw new Refusal(
           'structure',
@@ -2993,6 +3161,8 @@ class Compiler {
     switch (fam) {
       case 'normal': {
         const scaleExpr = node.dist.params['scale']
+        // A log scale (and a mean) chosen by one discrete variable, each state with random ones of its own: one gate of `gaussian-scale` branches.
+        if (this.observedSwitchLogScale(node, y, i, index)) return null
         // A mean or a scale chosen by a discrete variable (a lookup): a table or a gate over that variable.
         const switched = this.switchedCells(node, i)
         if (switched !== undefined) return this.observedSwitch(node, name, y, index, switched.loc, switched.scale)
@@ -3041,6 +3211,17 @@ class Compiler {
         return this.observedConjugate(node, fam, name, y, i)
       case 'categoricalProbit':
         return this.observedMulticlass(node, y, i, index, 'scores', 'probit')
+      case 'zeroTruncatedPoisson': {
+        const numeric = this.observedNumeric(node, fam, y, i, index)
+        if (numeric === undefined)
+          throw new Refusal(
+            'operator',
+            `the rate of '${node.name}' must be \`exposure * exp(affine)\` for the zero-truncated Poisson`,
+          )
+        return numeric
+      }
+      case 'hurdlePoisson':
+        return this.observedHurdle(node, y, i, index)
       case 'normalPair':
         return this.observedMixtureWeight(node, name, y, i)
       case 'exponential':
@@ -3258,6 +3439,13 @@ class Compiler {
       if (why !== undefined) throw new Refusal('data', `'${node.name}' (${likelihood}): ${why}`)
       const cell = this.cellsOf(node, 'predictor', () => this.evalSym(expr))[i] as Cell
       return this.emitSite(node, cell, i, index, 'likelihood-row', 'likelihood-site', params)
+    }
+    if (fam === 'zeroTruncatedPoisson' || fam === 'hurdlePoisson') {
+      const m = dist['rate'] === undefined ? undefined : this.scaledExp(dist['rate'])
+      if (m === undefined) return undefined
+      return emit('poisson-log-truncated', m.inner, {
+        exposure: m.scale === undefined ? 1 : this.constAt(node, m.scale, i),
+      })
     }
     if (fam === 'poisson') {
       const m = dist['rate'] === undefined ? undefined : this.scaledExp(dist['rate'], true)
@@ -3878,6 +4066,76 @@ class Compiler {
   }
 
   /**
+   * An observed Gaussian whose scale is `exp(s)` with `s` chosen by a discrete variable `z` among Gaussian forms of its own (a spread
+   * per component of a mixture, `exp(at(logSd, z))`), whose mean may be chosen by the same `z` among random ones: ONE `gate` on `z`
+   * whose branch `k` is the `gaussian-scale` factor of the observation on the mean and the log scale of state `k`, so the
+   * component that explains the reading is the one whose mean and spread both move (a `select` of each would let EP lose which
+   * component the pair came from, and a spread per component run off). False when the scale is not of that form (the other
+   * routes are tried).
+   */
+  private observedSwitchLogScale(
+    node: ModelNode & { readonly kind: 'observed' },
+    y: number,
+    i: number,
+    index: number | undefined,
+  ): boolean {
+    const scaleExpr = node.dist.params['scale']
+    if (scaleExpr === undefined || this.isConst(scaleExpr)) return false
+    const e = this.stripClip(scaleExpr)
+    if (e.kind !== 'op' || e.op !== 'exp' || !this.mentionsDiscrete(e.args[0] as ExprSpec)) return false
+    let loc: Cell
+    let logScale: Cell
+    this.lookupMode = true
+    try {
+      loc = this.paramCell(node, 'loc', i)
+      logScale = this.cellsOf(node, 'logScaleLookup', () => this.evalSym(e.args[0] as ExprSpec))[i] as Cell
+    } catch (err) {
+      if (err instanceof Refusal) return false
+      throw err
+    } finally {
+      this.lookupMode = false
+    }
+    if (logScale.kind !== 'lookup' || logScale.precisions !== undefined) return false
+    const z = logScale.variable
+    const states = logScale.values.length
+    if (loc.kind === 'lookup' && (loc.variable !== z || loc.values.length !== states || loc.precisions !== undefined))
+      throw new Refusal(
+        'operator',
+        `the mean and the spread of '${node.name}' are chosen by different discrete variables`,
+      )
+    if (loc.kind !== 'lookup' && loc.kind !== 'aff')
+      throw new Refusal('operator', `the mean of '${node.name}' is not a Gaussian form or a lookup`)
+    const locAt = (k: number): Aff | number => {
+      if (loc.kind === 'lookup') return loc.items?.[k] ?? (loc.values[k] as number)
+      return affOf(loc)
+    }
+    const variables: string[] = []
+    const argOf = (form: Aff | number | undefined, fallback: number): number | { readonly const: number } => {
+      if (form === undefined || typeof form === 'number' || form.terms.size === 0)
+        return { const: form === undefined ? fallback : typeof form === 'number' ? form : form.offset }
+      const v = this.materialise(form, node.name, index) as string
+      let at = variables.indexOf(v)
+      if (at < 0) {
+        at = variables.length
+        variables.push(v)
+      }
+      return at
+    }
+    this.need('gate')
+    this.need('gaussian-scale')
+    const branches = Array.from({ length: states }, (_, k) => ({
+      operator: 'gaussian-scale',
+      args: [{ const: y }, argOf(locAt(k), 0), argOf(logScale.items?.[k], logScale.values[k] as number)],
+      params: {},
+    }))
+    this.addFactor(
+      { operator: 'gate', args: [z, ...variables], params: { arity: variables.length, branches } },
+      this.elementName(node.name, node.dims, i),
+    )
+    return true
+  }
+
+  /**
    * An observed Gaussian whose scale is `exp(s)` with `s` an affine form of Gaussian variables (a `gaussian-log-scale`
    * factor: the observation of a stochastic volatility model); the mean must be known.
    */
@@ -4106,6 +4364,87 @@ class Compiler {
     return name
   }
 
+  /**
+   * An observed categorical whose probabilities are the row of a matrix of Dirichlet latents chosen by a discrete latent
+   * (`categorical({ probs: phi.at(z) })`, the words of a topic model: `phi_k` the word distribution of topic `k`, `z` the topic of
+   * the token). It is one `gate` on the index whose branch `k` is the conjugate `discrete` factor of the observed outcome on row
+   * `k`: each row hears the tokens, weighted by the belief that the token chose it, and the index hears how well each row
+   * explains the outcome. The same gate as an unknown transition row, with an observed outcome.
+   */
+  private observedRowGate(
+    node: ModelNode & { readonly kind: 'observed' },
+    name: string,
+    y: number,
+    i: number,
+    expr: ExprSpec,
+  ): string | null {
+    const chosen = this.randomTransitionRow(expr) as { readonly matrix: ExprSpec; readonly index: ExprSpec }
+    const matrix = this.evalSym(chosen.matrix)
+    if (matrix.dims.length !== 1 || matrix.cells.some((r) => r.kind !== 'rv' || r.family !== 'dirichlet'))
+      throw new Refusal(
+        'operator',
+        `the rows of the matrix behind '${node.name}' must be one Dirichlet latent each (a latent over the dimension of the states)`,
+      )
+    const rowVars = matrix.cells.map((r) => (r as { readonly variable: string }).variable)
+    const size = (this.variables.find((v) => v.name === rowVars[0])?.family.size ?? 2) as number
+    const parent = this.over(this.evalSym(chosen.index), node.dims)[i] as Cell
+    if (parent.kind !== 'rv' || (parent.family !== 'discrete' && parent.family !== 'bernoulli'))
+      throw new Refusal(
+        'operator',
+        `the row of '${node.name}' must be chosen by a discrete latent, not a computed value`,
+      )
+    const from =
+      parent.family === 'bernoulli'
+        ? 2
+        : ((this.variables.find((v) => v.name === parent.variable)?.family.size ?? 2) as number)
+    if (from !== rowVars.length)
+      throw new Refusal('data', `'${node.name}' has ${from} choices of row and its matrix ${rowVars.length} rows`)
+    if (!(Number.isInteger(y) && y >= 0 && y < size))
+      throw new Refusal('data', `'${node.name}' observes ${y}, outside its ${size} categories`)
+    this.addVariable({ name, family: { kind: 'discrete', size }, observed: y })
+    this.need('gate')
+    this.need('discrete')
+    const branches = rowVars.map((_, j) => ({ operator: 'discrete', args: [0, 1 + j], params: {} }))
+    this.addFactor(
+      { operator: 'gate', args: [parent.variable, name, ...rowVars], params: { arity: 1 + rowVars.length, branches } },
+      name,
+    )
+    return name
+  }
+
+  /**
+   * An observed hurdle count: zero with probability `zero`, else a zero-truncated Poisson of `exposure * exp(affine)`. The state
+   * of the hurdle (a structural zero, or a positive count) is determined by the count and summed out exactly: a zero is an
+   * observation of the Bernoulli `zero`, with a beta probability the conjugate `bernoulli` factor, and a positive count is the same
+   * Bernoulli observed false and the zero-truncated Poisson site on the log rate (the gate of {point mass at zero, truncated
+   * Poisson}, with its switch observed). The positive part and the zero part share no variable, so each is exact.
+   */
+  private observedHurdle(
+    node: ModelNode & { readonly kind: 'observed' },
+    y: number,
+    i: number,
+    index: number | undefined,
+  ): string | null {
+    if (!(Number.isInteger(y) && y >= 0))
+      throw new Refusal('data', `'${node.name}' is a hurdle count: ${y} is not a count`)
+    const zero = this.paramCell(node, 'zero', i)
+    if (!isConstCell(zero)) {
+      if (zero.kind !== 'rv' || zero.family !== 'beta')
+        throw new Refusal('operator', `the zero probability of '${node.name}' must be known or a beta latent`)
+      const crossed = this.auxName(node.name, index)
+      this.addVariable({ name: crossed, family: { kind: 'bernoulli' }, observed: y === 0 ? 1 : 0 })
+      this.addFactor({ operator: 'bernoulli', args: [crossed, zero.variable] }, crossed)
+    }
+    if (y === 0) return null
+    const numeric = this.observedNumeric(node, 'hurdlePoisson', y, i, index)
+    if (numeric === undefined)
+      throw new Refusal(
+        'operator',
+        `the rate of '${node.name}' must be \`exposure * exp(affine)\` for the hurdle Poisson`,
+      )
+    return numeric
+  }
+
   private observedConjugate(
     node: ModelNode & { readonly kind: 'observed' },
     fam: string,
@@ -4116,6 +4455,9 @@ class Compiler {
     const param = fam === 'poisson' ? 'rate' : 'probs'
     const expr = node.dist.params[param]
     if (expr === undefined) throw new Refusal('structure', `'${node.name}': the ${param} is missing`)
+    // A word read through a discrete index of Dirichlet rows (`phi.at(z)`, a topic model): a gate over the index.
+    if (fam === 'categorical' && this.randomTransitionRow(expr) !== undefined)
+      return this.observedRowGate(node, name, y, i, expr)
     let exposure = 1
     let target: Cell
     const e = this.unwrap(expr)

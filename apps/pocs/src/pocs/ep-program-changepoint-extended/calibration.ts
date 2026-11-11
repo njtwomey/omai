@@ -3,6 +3,7 @@
 // against the true value. A run is `agrees` when EP's regime probabilities are within 0.05 of the sampler's on average (it found
 // the same reading of the data); a run is `barely` when some regime occurs in fewer than 6% of the steps.
 import { type AtomQuantity, atomRecovery, type Belief, type CalibrationSample } from 'omai-engine/bayesian-examples'
+import type { EpHooks } from '../../shared/ep/sweeps.ts'
 import { infer, RATES, simulate, transitions } from './program.ts'
 import { gibbsReference, type Reference } from './reference.ts'
 
@@ -72,7 +73,7 @@ export const AGREES = 0.05
 export function assess(
   seed: number,
   sim: ReturnType<typeof simulate>,
-  ep: ReturnType<typeof infer>,
+  ep: Awaited<ReturnType<typeof infer>>,
   gibbs: Reference,
 ): SeedRun {
   const steps = sim.y.length
@@ -116,13 +117,14 @@ export function assess(
  * @param options - The stay probability and the number of steps of the simulation, the sampler's sweeps, EP's damping.
  * @returns What each method recovered.
  */
-export function runSeed(
+export async function runSeed(
   seed: number,
   options: { stay?: number; steps?: number; sweeps?: number; damping?: number } = {},
-): SeedRun {
+  hooks: EpHooks = {},
+): Promise<SeedRun> {
   const { stay = 0.93, steps = 100, sweeps = 1500, damping = 0.5 } = options
   const sim = simulate(seed, stay, steps)
-  const ep = infer(sim.y, damping)
-  const gibbs = gibbsReference(sim.y, { sweeps, burn: Math.round(sweeps / 7) })
+  const ep = await infer(sim.y, damping, hooks)
+  const gibbs = await gibbsReference(sim.y, { sweeps, burn: Math.round(sweeps / 7) }, hooks)
   return assess(seed, sim, ep, gibbs)
 }

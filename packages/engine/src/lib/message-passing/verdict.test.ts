@@ -92,6 +92,29 @@ describe('a run that cannot compute an update does not converge', () => {
     )
   })
 
+  it('a run already damped by a half is not restarted (the restart would repeat it exactly): it is judged as the restart would be, in one pass', () => {
+    const g = graphWith(reluctant(Number.POSITIVE_INFINITY))
+    const once = runAlgorithm(M.epAlgorithm(g, { restarts: 1, damping: 0.5, tol: 1e-10 }), { maxSteps: 200 })
+    expect(once.status).toBe('converged')
+    expect(once.state.restarts).toBe(0)
+    expect(once.state.unresolved).toBe(1)
+    const verdict = M.mpVerdict(g, once.state, {
+      tol: 1e-10,
+      maxSweeps: 200,
+      damping: 0.5,
+      restarts: 1,
+      schedule: 'serial',
+      projection: M.momentProjection,
+    })
+    expect(verdict.status).toBe('converged')
+    expect(verdict.reason).toMatch(/^converged, but 1 message update could not be computed/)
+    // Undamped, the same run is restarted (at a half) and reaches the same verdict after twice the sweeps.
+    const restarted = runAlgorithm(M.epAlgorithm(g, { restarts: 1, damping: 0, tol: 1e-10 }), { maxSteps: 200 })
+    expect(restarted.status).toBe('converged')
+    expect(restarted.state.restarts).toBe(1)
+    expect(restarted.state.sweeps).toBeGreaterThan(once.state.sweeps)
+  })
+
   it('the sweep cap counts from the last restart', () => {
     const g = graphWith(reluctant(Number.POSITIVE_INFINITY))
     const r = runAlgorithm(M.epAlgorithm(g, { restarts: 1, tol: 1e-12, maxSweeps: 3 }), { maxSteps: 200 })

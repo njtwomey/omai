@@ -15,8 +15,9 @@ import { modelGraph } from 'omai-render/structures'
 import { type ReactNode, useCallback, useMemo } from 'react'
 import { CodeBlock } from '../../../../site/src/shell/CodeBlock.tsx'
 import { snippetOf } from '../../../../site/src/shell/snippet.ts'
+import { RunProgress } from '../RunProgress.tsx'
+import type { UseRun } from '../useRun.ts'
 import { type Agreement, passes, type Recovery, TOLERANCE, type Tolerance } from './recovery.ts'
-import type { ReferenceState } from './useReference.ts'
 
 /** A number to three significant digits, a dash when it is not one. */
 export const sig = (v: number, digits = 3): string => (Number.isFinite(v) ? String(Number(v.toPrecision(digits))) : '-')
@@ -221,11 +222,14 @@ export function ProgramFrame(props: {
   readonly intro: ReactNode
   readonly controls: ReactNode
   readonly status: ReactNode
+  /** The bar of the run that makes the figures (a `RunProgress`), shown above them. */
+  readonly progress?: ReactNode
   readonly figures: ReactNode
   readonly check: ReactNode
-  readonly bound: BoundModel
+  /** The bound model and the session of EP's run, undefined while the run has not produced them. */
+  readonly bound: BoundModel | undefined
   // biome-ignore lint/suspicious/noExplicitAny: the session's state and config types are the method's
-  readonly run: Session<any, any, any>
+  readonly run: Session<any, any, any> | undefined
   readonly extra?: ReactNode
   readonly source: string
   readonly file: string
@@ -235,10 +239,10 @@ export function ProgramFrame(props: {
     graph: 'The model as a diagram',
     messages: 'The messages, step by step',
   })
-  const graph = useMemo(() => modelGraph(toStructure(bound)), [bound])
+  const graph = useMemo(() => (bound === undefined ? undefined : modelGraph(toStructure(bound))), [bound])
   const record = useMemo(
     () =>
-      panels.active('messages')
+      panels.active('messages') && bound !== undefined && run !== undefined
         ? modelRunFromTape(
             toStructure(bound, { view: 'factor' }),
             { run: run.run() },
@@ -256,6 +260,7 @@ export function ProgramFrame(props: {
         <p className="text-xs text-muted" role="status">
           {props.status}
         </p>
+        {props.progress}
         {props.figures}
       </section>
       <section className="flex flex-col gap-2">
@@ -264,7 +269,9 @@ export function ProgramFrame(props: {
       </section>
       {props.extra}
       <FigurePanel panels={panels} name="graph">
-        <StructureView structure={graph} frame={{ filename: `ep-program-${id}-model` }} />
+        {graph === undefined ? null : (
+          <StructureView structure={graph} frame={{ filename: `ep-program-${id}-model` }} />
+        )}
       </FigurePanel>
       <FigurePanel panels={panels} name="messages">
         {record === undefined ? null : <ModelRunPlayer record={record} filename={`ep-program-${id}-messages`} />}
@@ -279,43 +286,28 @@ export const endedText = (run: { readonly status?: string | undefined; readonly 
   `${run.status === 'converged' ? 'Converged' : 'Stopped without converging'} after ${run.t} sweeps (${sig(ms, 2)} ms).`
 
 /**
- * The reference run (a long NUTS in a worker): a button to start it, its state, and when it is in, how closely EP's means
- * and spreads agree with it.
+ * The reference run (a long NUTS in a worker): a button to start it, its progress bar with a timer and a Stop button while it
+ * goes, and when it is in, how closely EP's means and spreads agree with it.
  *
- * @param props - The reference's state, how to start and stop it, a name and the agreement (when the result is in).
+ * @param props - The reference's run (`useRun` with `auto: false`), a name and the agreement (when the result is in).
  * @returns The bar.
  */
 export function ReferenceBar(props: {
   readonly name: string
-  readonly state: ReferenceState<unknown>
-  readonly start: () => void
-  readonly stop: () => void
+  readonly run: UseRun<unknown>
   readonly agreement: Agreement | undefined
   readonly note?: ReactNode
 }): ReactNode {
-  const { state, agreement: a } = props
+  const { run, agreement: a } = props
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        {state.status === 'running' ? (
-          <button type="button" className="rounded border border-line px-2 py-1 text-xs" onClick={props.stop}>
-            stop
-          </button>
-        ) : (
-          <button type="button" className="rounded border border-line px-2 py-1 text-xs" onClick={props.start}>
-            run {props.name}
-          </button>
-        )}
-        <span className="text-xs text-muted" role="status">
-          {state.status === 'idle'
-            ? `${props.name} runs in a worker, on request.`
-            : state.status === 'running'
-              ? `${props.name} is running in a worker...`
-              : state.status === 'failed'
-                ? `${props.name} failed: ${state.error}`
-                : `${props.name} done in ${sig(state.ms / 1000, 2)} s.`}
-        </span>
-      </div>
+    <div className="flex flex-col gap-2">
+      <RunProgress
+        run={run}
+        label={props.name}
+        onStart={run.start}
+        startText={`Run ${props.name}`}
+        hint={`${props.name} runs in a worker, on request.`}
+      />
       {a === undefined ? null : (
         <p className="text-sm tabular-nums">
           EP against {props.name}: the means differ by at most {sig(a.meanZ, 2)} reference sds; EP&apos;s sd is{' '}

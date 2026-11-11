@@ -8,6 +8,7 @@
 import { OmaiError } from '../base/index.ts'
 import type { EpAtom } from './ep-atoms.ts'
 import { betaBernoulliAtom, gammaPoissonAtom, gaussianAtom } from './ep-atoms-conjugate.ts'
+import { hurdlePoissonAtom } from './ep-atoms-counts.ts'
 import {
   betaBernoulliLearnedAtom,
   gammaPoissonLearnedAtom,
@@ -65,6 +66,7 @@ import {
   skillDrawsAtom,
   skillDrawsLearnedAtom,
 } from './ep-atoms-ordinal.ts'
+import { stickBreakingAtom, topicModelAtom } from './ep-atoms-nonparametric.ts'
 import {
   priorBetaGeometricAtom,
   priorBetaStrengthGammaAtom,
@@ -84,6 +86,7 @@ import {
   priorNormalWeibullAtom,
   priorUniformAtom,
 } from './ep-atoms-priors.ts'
+import { mixtureRegressionAtom } from './ep-atoms-regression-gates.ts'
 import {
   gammaPrecisionAtom,
   halfCauchyAtom,
@@ -192,6 +195,10 @@ export const epAtoms: readonly EpAtom[] = [
   gateWeightSummedOutAtom,
   gateWeightDirichletAtom,
   gateWeightHyperAtom,
+  stickBreakingAtom,
+  topicModelAtom,
+  mixtureRegressionAtom,
+  hurdlePoissonAtom,
 ]
 
 /**

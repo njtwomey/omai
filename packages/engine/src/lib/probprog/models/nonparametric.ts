@@ -4,13 +4,13 @@
  * row and unit-noise normal components with known means. With the means known the unknowns are the three stick breaks, so
  * the posterior is three-dimensional and the labels sum out: the truth is a grid over the sticks with the labels
  * enumerated, exact to the quadrature, which is the "exact for a fixed number of components" case of the plan. The stick-breaking
- * map is a `custom` function (the operator registry has no cumulative product), so the model is opaque to message passing.
+ * map is the model layer's `stickBreaking` operator, which message passing reads as a `stick-breaking` factor on each label.
  */
 
 import { normal as drawNormal, uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
-import { mul, stack, sub, take, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import { toFlat } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
-import { defineModel } from '../model/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import { type MarginalOracle, weightedOracle } from '../validation/index.ts'
 import { type BenchmarkData, type BenchmarkModel, type BenchmarkTruth, defineBenchmark } from './benchmark.ts'
 import { laplacePlan, nutsPlan, sviPlan } from './plans.ts'
@@ -19,19 +19,6 @@ const MEANS = [-3, -1, 1, 3]
 const STICKS = MEANS.length - 1
 const CONCENTRATION = 1
 const WEIGHTS = [0.5, 0.25, 0.2, 0.05]
-
-/** The stick-breaking weights of break fractions `v` (a vector of one fewer than the number of components). */
-function stickBreaking(v: Value): Value {
-  const parts: Value[] = []
-  let rest: Value = tensor(1)
-  for (let i = 0; i < STICKS; i++) {
-    const vi = take(v, i)
-    parts.push(mul(vi, rest))
-    rest = mul(rest, sub(1, vi))
-  }
-  parts.push(rest)
-  return stack(parts, 0)
-}
 
 function generateMixture(key: Key, size = 30): BenchmarkData {
   const u = toFlat(drawUniform(foldIn(key, 0), [size]))
@@ -138,7 +125,7 @@ export const stickBreakingMixture: BenchmarkModel = defineBenchmark({
   title: 'Stick-breaking mixture (truncated Dirichlet process)',
   description:
     'The weights of a Dirichlet-process mixture truncated at four known normal components: three Beta stick breaks and a label per row, whose posterior is a three-dimensional quadrature with the labels summed out.',
-  tags: ['mixture', 'nonparametric', 'dirichlet-process', 'stick-breaking', 'discrete-latent', 'custom', 'quadrature'],
+  tags: ['mixture', 'nonparametric', 'dirichlet-process', 'stick-breaking', 'discrete-latent', 'quadrature'],
   references: [
     'Sethuraman (1994), A constructive definition of Dirichlet priors',
     'Ishwaran and James (2001), Gibbs sampling methods for stick-breaking priors',
@@ -151,11 +138,7 @@ export const stickBreakingMixture: BenchmarkModel = defineBenchmark({
     const y = b.data('y', { dims: [row], role: 'response' })
     const means = b.const(MEANS, [component])
     const v = b.latent('v', d.beta(1, CONCENTRATION), { dims: [stick], doc: 'the stick-breaking fractions' })
-    const pi = b.derived(
-      'pi',
-      b.custom('stickBreaking', (args) => stickBreaking((args[0] as { value: Value }).value), [v], { eventRank: 1 }),
-      { doc: 'the mixture weights' },
-    )
+    const pi = b.derived('pi', ops.stickBreaking(v), { doc: 'the mixture weights' })
     const z = b.latent('z', d.categorical({ probs: pi }), { dims: [row], doc: 'the component of each row' })
     b.observe('y', d.normal(means.at(z), 1), y)
   }),

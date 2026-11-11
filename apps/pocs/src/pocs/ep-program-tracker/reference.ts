@@ -3,6 +3,7 @@
 // factor graph has no Gibbs method. Not part of the program shown.
 import { keyFromPath, normal, uniform } from 'omai-engine/random'
 import { toFlat } from 'omai-engine/tensor'
+import { type EpHooks, pacer } from '../../shared/ep/sweeps.ts'
 import { PATH, WIDTH } from './program.ts'
 
 /** The reference's posterior of the path (mean, sd and 5% and 95% quantiles at each step) and the chance each reading is wild. */
@@ -19,17 +20,25 @@ const quantile = (sorted: readonly number[], q: number): number =>
   sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] as number
 
 /** Gibbs: indicators given the path, path given the indicators by FFBS (a Kalman filter and a backward sample). */
-export function gibbsReference(
+export async function gibbsReference(
   y: readonly number[],
   noise: { sd: number; outliers: number },
   options: { sweeps?: number; burn?: number; seed?: number } = {},
-): Reference {
+  hooks: EpHooks = {},
+): Promise<Reference> {
   const { sweeps = 2000, burn = 200, seed = 5 } = options
   const T = y.length
   const draws = Array.from({ length: T }, () => [] as number[])
   const wildCount = new Array<number>(T).fill(0)
   let wild = new Array<boolean>(T).fill(false)
+  // The sampler goes on through a stop until it has 100 draws, so that what it returns can be read.
+  const pace = pacer(hooks)
+  let ran = sweeps
   for (let sweep = 0; sweep < sweeps; sweep++) {
+    if ((await pace(sweep, sweeps)) && sweep >= burn + 100) {
+      ran = sweep
+      break
+    }
     // Forward filter with the noise variance each reading has now.
     const m = new Array<number>(T).fill(0)
     const v = new Array<number>(T).fill(0)
@@ -67,7 +76,7 @@ export function gibbsReference(
       })
     }
   }
-  const n = sweeps - burn
+  const n = ran - burn
   const sorted = draws.map((d) => [...d].sort((a, b) => a - b))
   const mean = draws.map((d) => d.reduce((s, v) => s + v, 0) / n)
   return {

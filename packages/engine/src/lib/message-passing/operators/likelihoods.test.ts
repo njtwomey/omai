@@ -41,6 +41,8 @@ function tiltedOf(site: readonly number[], m: number, v: number): { mean: number
 const cases: readonly { name: string; y: number; params: Record<string, number | readonly number[]> }[] = [
   { name: 'poisson-log', y: 4, params: { exposure: 2.5 } },
   { name: 'poisson-log', y: 0, params: { exposure: 1 } },
+  { name: 'poisson-log-truncated', y: 1, params: { exposure: 1 } },
+  { name: 'poisson-log-truncated', y: 5, params: { exposure: 2 } },
   { name: 'negative-binomial-log', y: 7, params: { dispersion: 0.4, exposure: 1.5 } },
   { name: 'negative-binomial-log', y: 0, params: { dispersion: 1.2, exposure: 1 } },
   { name: 'weibull-log', y: 2.2, params: { shape: 1.7 } },
@@ -110,6 +112,7 @@ describe('the registry of numeric likelihoods', () => {
       )
     const counts = Array.from({ length: 400 }, (_, i) => i)
     expect(total('poisson-log', counts, { exposure: 1.7 })).toBeCloseTo(1, 10)
+    expect(total('poisson-log-truncated', counts.slice(1), { exposure: 1.7 })).toBeCloseTo(1, 10)
     expect(total('negative-binomial-log', counts, { dispersion: 0.6, exposure: 1.7 })).toBeCloseTo(1, 8)
     expect(total('binomial-logit', [0, 1, 2, 3, 4, 5, 6, 7], { n: 7 })).toBeCloseTo(1, 12)
     expect(total('binomial-probit', [0, 1, 2, 3, 4, 5, 6, 7], { n: 7 })).toBeCloseTo(1, 12)

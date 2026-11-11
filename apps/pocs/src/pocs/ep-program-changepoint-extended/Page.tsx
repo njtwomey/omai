@@ -1,18 +1,37 @@
 import { beliefCredibleInterval } from 'omai-engine/bayesian-examples'
 import type { Curve, PointSet } from 'omai-render/charts'
 import { ControlPanel, NumberField, SeedInput } from 'omai-render/react'
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { IntervalPlot } from '../../shared/ep/ProgramCharts.tsx'
 import { CheckLines, endedText, ProgramFrame, RecoveryChart, sig } from '../../shared/ep/ProgramParts.tsx'
+import { epHooks } from '../../shared/ep/sweeps.ts'
+import { RunProgress } from '../../shared/RunProgress.tsx'
+import type { HostBase } from '../../shared/run.ts'
+import { workerTask } from '../../shared/runWorker.ts'
+import { useRun } from '../../shared/useRun.ts'
 import { CalibrationPanel } from './Calibration.tsx'
-import { assess, NAMES } from './calibration.ts'
+import { assess, NAMES, type SeedRun } from './calibration.ts'
 import { infer, RATES, simulate, transitions } from './program.ts'
 import source from './program.ts?raw'
 import { gibbsReference } from './reference.ts'
-import { useCalibrationRuns } from './useCalibrationRuns.ts'
+import type { CalibrationRequest } from './reference.worker.ts'
 
 const SEEDS = 24
+
+type Made = Awaited<ReturnType<typeof fit>>
+
+const makeWorker = (): Worker => new Worker(new URL('./reference.worker.ts', import.meta.url), { type: 'module' })
+
+/** Simulates the data, runs EP and then the Gibbs reference, reporting each sweep to the host. */
+async function fit(seed: number, stay: number, steps: number, damping: number, host: HostBase) {
+  const sim = simulate(seed, stay, steps)
+  const t0 = performance.now()
+  const run = await infer(sim.y, damping, epHooks(host, 'EP'))
+  const ms = performance.now() - t0
+  const gibbs = await gibbsReference(sim.y, {}, epHooks(host, 'Gibbs reference'))
+  return { sim, ...run, ms, gibbs, result: assess(seed, sim, run, gibbs) }
+}
 const argmax = (p: readonly number[]): number => p.indexOf(Math.max(...p))
 const CELLS = NAMES.flatMap((a, i) => NAMES.map((b, j) => ({ label: `${a} to ${b}`, i, j })))
 const STAYS = CELLS.filter((m) => m.i === m.j)
@@ -23,18 +42,89 @@ export default function Page(): ReactNode {
   const [stay, setStay] = useState(0.93)
   const [steps, setSteps] = useState(100)
   const [damping, setDamping] = useState(0.5)
-  const made = useMemo(() => {
-    const sim = simulate(seed, stay, steps)
-    const t0 = performance.now()
-    const run = infer(sim.y, damping)
-    const ms = performance.now() - t0
-    const gibbs = gibbsReference(sim.y)
-    return { sim, ...run, ms, gibbs, result: assess(seed, sim, run, gibbs) }
-  }, [seed, stay, steps, damping])
+  const task = useCallback((host: HostBase) => fit(seed, stay, steps, damping, host), [seed, stay, steps, damping])
+  const ep = useRun<Made>(task)
+  const made = ep.value
+  const calibrationTask = useMemo(
+    () => workerTask<CalibrationRequest, SeedRun[]>(makeWorker, { stay, steps, damping, seeds: SEEDS }),
+    [stay, steps, damping],
+  )
+  const calibration = useRun<SeedRun[]>(calibrationTask)
+  return (
+    <ProgramFrame
+      id="changepoint-extended"
+      intro={
+        <>
+          <p>
+            The program of{' '}
+            <Link to="/poc/ep-program-changepoint" className="underline">
+              a Poisson rate that changes
+            </Link>
+            , with both sets of numbers unknown. A count at each of {steps} steps; a hidden regime (low, middle or high)
+            follows a sticky Markov chain and sets the Poisson rate of the count. The three <b>rates</b> are unknown
+            (broad gamma priors, means 4, 12 and 30), and so are the <b>transition probabilities</b>: each row of the
+            transition matrix has a Dirichlet prior that leans towards staying put (mean stay probability 0.67) and is
+            open about where a move goes. EP infers the regime of each step, the rates and the whole matrix, so it
+            recovers how sticky the regimes are as well as how fast each one counts.
+          </p>
+          <p>
+            The transition rows are random, which the compiler maps to one <code>gate</code> per step: the previous
+            regime selects which row the next regime is drawn from, so each row hears only the transitions out of its
+            own regime, weighted by the belief that the chain was there. The rates are tied to the regimes by their
+            priors (a low, a middle and a high mean), which names the regimes; there is no hyperprior and no ordering
+            constraint, and the section on label switching below says why that matters.
+          </p>
+          <p className="text-xs text-muted">
+            The reference is Gibbs sampling of the same model (forward filtering and backward sampling for the regimes,
+            the gamma posterior for the rates, a Dirichlet posterior on the transition counts for each row), 2700
+            sweeps. EP is damped by half; set the damping to 0 to see why.
+          </p>
+        </>
+      }
+      controls={
+        <ControlPanel title="change the data" columns={4}>
+          <SeedInput value={seed} onChange={setSeed} />
+          <NumberField
+            label="stay probability (truth)"
+            value={stay}
+            onChange={setStay}
+            min={0.8}
+            max={0.99}
+            step={0.01}
+          />
+          <NumberField
+            label="steps"
+            value={steps}
+            onChange={(v) => setSteps(Math.round(v))}
+            min={40}
+            max={200}
+            step={10}
+          />
+          <NumberField label="EP damping" value={damping} onChange={setDamping} min={0} max={0.8} step={0.1} />
+        </ControlPanel>
+      }
+      status={
+        made === undefined
+          ? 'Simulating and running EP...'
+          : `${endedText(made.run, made.ms)}${made.run.status === 'converged' ? '' : ' It did not converge: read the check below.'}`
+      }
+      progress={<RunProgress run={ep} label="EP" />}
+      figures={made === undefined ? null : <Figures made={made} stay={stay} />}
+      check={made === undefined ? null : <Check made={made} />}
+      extra={<CalibrationPanel runs={calibration.value ?? []} asked={SEEDS} run={calibration} steps={steps} />}
+      bound={made?.bound}
+      run={made?.run}
+      source={source}
+      file="ep-program-changepoint-extended/program.ts"
+    />
+  )
+}
+
+function Figures(props: { readonly made: Made; readonly stay: number }): ReactNode {
+  const { made, stay } = props
   const { sim, regimes, rates, gibbs, summary, result } = made
   const t = useMemo(() => sim.y.map((_, i) => i), [sim])
   const A = useMemo(() => transitions(stay), [stay])
-  const calibration = useCalibrationRuns({ stay, steps, damping, seeds: SEEDS })
 
   const rateCurve = useMemo(
     () => regimes.map((p) => p.reduce((s, v, k) => s + v * (rates[k]?.mean ?? 0), 0)),
@@ -117,6 +207,67 @@ export default function Page(): ReactNode {
     return { stays: of(STAYS), moves: of(MOVES) }
   }, [summary, gibbs, A])
 
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h3 className="text-xs font-semibold text-muted">
+          The counts, the true rate and the rate EP expects at each step
+        </h3>
+        <RecoveryChart
+          bands={[]}
+          curves={rateCurves}
+          truth={truthRate}
+          dots={counts}
+          steps
+          dotOffset={4}
+          xLabel="step"
+          yLabel="rate"
+          aspect={3}
+        />
+      </div>
+      <div>
+        <h3 className="text-xs font-semibold text-muted">
+          The probability of each regime at each step: EP (solid) and Gibbs (dotted); the dots underneath are the true
+          regime
+        </h3>
+        <RecoveryChart
+          bands={[]}
+          curves={probCurves}
+          dots={strip}
+          dotOffset={0}
+          yLimits={[-0.12, 1.05]}
+          xLabel="step"
+          yLabel="probability"
+          aspect={3}
+        />
+      </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        <div>
+          <h3 className="text-xs font-semibold text-muted">The three rates: truth, EP and Gibbs</h3>
+          <IntervalPlot
+            labels={NAMES}
+            truth={RATES}
+            ep={epRate}
+            reference={gibbsRate}
+            yLabel="rate (counts per step)"
+          />
+        </div>
+        <div>
+          <h3 className="text-xs font-semibold text-muted">The probability of staying in each regime</h3>
+          <IntervalPlot {...matrixSeries.stays} yLabel="probability" />
+        </div>
+        <div>
+          <h3 className="text-xs font-semibold text-muted">The six probabilities of moving to another regime</h3>
+          <IntervalPlot {...matrixSeries.moves} yLabel="probability" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Check(props: { readonly made: Made }): ReactNode {
+  const { made } = props
+  const { sim, regimes, rates, gibbs, summary, result } = made
   const accuracy = result.accuracy
   const gibbsAccuracy = gibbs.regimes.filter((p, i) => argmax(p) === sim.z[i]).length / sim.z.length
   const inside = result.ep.rows.filter((r) => r.covered).length
@@ -128,203 +279,74 @@ export default function Page(): ReactNode {
   const swapped = result.gap > 0.5 && accuracy < 0.2
 
   return (
-    <ProgramFrame
-      id="changepoint-extended"
-      intro={
-        <>
-          <p>
-            The program of{' '}
-            <Link to="/poc/ep-program-changepoint" className="underline">
-              a Poisson rate that changes
-            </Link>
-            , with both sets of numbers unknown. A count at each of {steps} steps; a hidden regime (low, middle or high)
-            follows a sticky Markov chain and sets the Poisson rate of the count. The three <b>rates</b> are unknown
-            (broad gamma priors, means 4, 12 and 30), and so are the <b>transition probabilities</b>: each row of the
-            transition matrix has a Dirichlet prior that leans towards staying put (mean stay probability 0.67) and is
-            open about where a move goes. EP infers the regime of each step, the rates and the whole matrix, so it
-            recovers how sticky the regimes are as well as how fast each one counts.
-          </p>
-          <p>
-            The transition rows are random, which the compiler maps to one <code>gate</code> per step: the previous
-            regime selects which row the next regime is drawn from, so each row hears only the transitions out of its
-            own regime, weighted by the belief that the chain was there. The rates are tied to the regimes by their
-            priors (a low, a middle and a high mean), which names the regimes; there is no hyperprior and no ordering
-            constraint, and the section on label switching below says why that matters.
-          </p>
-          <p className="text-xs text-muted">
-            The reference is Gibbs sampling of the same model (forward filtering and backward sampling for the regimes,
-            the gamma posterior for the rates, a Dirichlet posterior on the transition counts for each row), 2700
-            sweeps. EP is damped by half; set the damping to 0 to see why.
-          </p>
-        </>
-      }
-      controls={
-        <ControlPanel title="change the data" columns={4}>
-          <SeedInput value={seed} onChange={setSeed} />
-          <NumberField
-            label="stay probability (truth)"
-            value={stay}
-            onChange={setStay}
-            min={0.8}
-            max={0.99}
-            step={0.01}
-          />
-          <NumberField
-            label="steps"
-            value={steps}
-            onChange={(v) => setSteps(Math.round(v))}
-            min={40}
-            max={200}
-            step={10}
-          />
-          <NumberField label="EP damping" value={damping} onChange={setDamping} min={0} max={0.8} step={0.1} />
-        </ControlPanel>
-      }
-      status={`${endedText(made.run, made.ms)}${converged ? '' : ' It did not converge: read the check below.'}`}
-      figures={
-        <div className="flex flex-col gap-4">
-          <div>
-            <h3 className="text-xs font-semibold text-muted">
-              The counts, the true rate and the rate EP expects at each step
-            </h3>
-            <RecoveryChart
-              bands={[]}
-              curves={rateCurves}
-              truth={truthRate}
-              dots={counts}
-              steps
-              dotOffset={4}
-              xLabel="step"
-              yLabel="rate"
-              aspect={3}
-            />
-          </div>
-          <div>
-            <h3 className="text-xs font-semibold text-muted">
-              The probability of each regime at each step: EP (solid) and Gibbs (dotted); the dots underneath are the
-              true regime
-            </h3>
-            <RecoveryChart
-              bands={[]}
-              curves={probCurves}
-              dots={strip}
-              dotOffset={0}
-              yLimits={[-0.12, 1.05]}
-              xLabel="step"
-              yLabel="probability"
-              aspect={3}
-            />
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <h3 className="text-xs font-semibold text-muted">The three rates: truth, EP and Gibbs</h3>
-              <IntervalPlot
-                labels={NAMES}
-                truth={RATES}
-                ep={epRate}
-                reference={gibbsRate}
-                yLabel="rate (counts per step)"
-              />
-            </div>
-            <div>
-              <h3 className="text-xs font-semibold text-muted">The probability of staying in each regime</h3>
-              <IntervalPlot {...matrixSeries.stays} yLabel="probability" />
-            </div>
-            <div>
-              <h3 className="text-xs font-semibold text-muted">The six probabilities of moving to another regime</h3>
-              <IntervalPlot {...matrixSeries.moves} yLabel="probability" />
-            </div>
-          </div>
-        </div>
-      }
-      check={
-        <div className="flex flex-col gap-3">
-          <CheckLines
-            lines={[
-              {
-                label: 'EP converged',
-                value: converged ? `yes, ${made.run.t} sweeps` : `no, stopped at ${made.run.t}`,
-                rule: 'converged',
-                ok: converged,
-              },
-              {
-                label: 'the most probable regime is the true one',
-                value: `${sig(100 * accuracy, 3)}% of steps (Gibbs: ${sig(100 * gibbsAccuracy, 3)}%)`,
-                rule: 'at least 90% of steps',
-                ok: accuracy >= 0.9,
-              },
-              {
-                label: 'EP against Gibbs: the gap in regime probabilities',
-                value: `${sig(result.gap, 2)} on average`,
-                rule: 'at most 0.05',
-                ok: result.agrees,
-              },
-              {
-                label: 'the true rates and transition probabilities inside EP’s 90% intervals',
-                value: `${inside} of ${total} inside; largest miss ${sig(worst, 2)} sds`,
-                rule: 'at least 9 of 12 (the sampler itself misses about 1 in 6 here: the prior pulls the transitions)',
-                ok: inside >= 9,
-              },
-              {
-                label: 'spread, EP against Gibbs (sd ratio) over the rates and the stay probabilities',
-                value: `${sig(Math.min(...sdRatio.slice(0, 6)), 2)} to ${sig(Math.max(...sdRatio.slice(0, 6)), 2)}`,
-                rule: 'between 0.7 and 1.4',
-                ok: sdRatio.slice(0, 6).every((r) => r >= 0.7 && r <= 1.4),
-              },
-            ]}
-            note={
-              <>
-                <p>
-                  Rates: EP{' '}
-                  {rates
-                    .map((r, k) => `${NAMES[k]} ${sig(r.mean, 3)} (sd ${sig(r.sd, 2)}, true ${RATES[k]})`)
-                    .join('; ')}
-                  . Gibbs{' '}
-                  {gibbs.rateMean.map((m, k) => `${sig(m, 3)} (sd ${sig(gibbs.rateSd[k] as number, 2)})`).join('; ')}.
-                </p>
-                <p className="mt-1">
-                  Identifiability: ordering the rates (<code>constraint: ordered</code> on log rates, which the compiler
-                  maps to greater-than factors) would remove the labelling problem, but only for Gaussian latents, so
-                  the Poisson rate goes through <code>exp</code> and a numerical site; that form took 180 sweeps and
-                  about 9 s on an easy seed, and returned absurd rates (hundreds) on the two seeds tried where the
-                  labelling was at stake. A hyperprior tying the three rates would make the regimes exchangeable and so
-                  make the labelling worse. The program keeps the gamma priors of the basic page.
-                </p>
-                {barelyNames.length === 0 ? null : (
-                  <p className="mt-1">
-                    The {barelyNames.join(' and ')} regime is barely visited in this data. The posterior over which
-                    steps belong to it is spread over several readings, and EP commits to one, reports a narrow rate for
-                    the regime from a handful of counts and may not converge: the known limit of EP on a mixture, which
-                    the calibration below measures.
-                  </p>
-                )}
-                {swapped ? (
-                  <p className="mt-1">
-                    EP has settled on a relabelling of the regimes: the rates it calls low, middle and high are not in
-                    that order, so its regime probabilities are the sampler&apos;s with the labels permuted. The
-                    likelihood cannot tell the labellings apart, and only the broad priors on the rates prefer the right
-                    one. Damping by half avoids this on every seed tried; undamped EP takes the swapped reading on about
-                    one seed in ten.
-                  </p>
-                ) : null}
-              </>
-            }
-          />
-        </div>
-      }
-      extra={
-        <CalibrationPanel
-          runs={calibration.runs}
-          asked={SEEDS}
-          done={calibration.done}
-          failed={calibration.failed}
-          steps={steps}
-        />
-      }
-      bound={made.bound}
-      run={made.run}
-      source={source}
-      file="ep-program-changepoint-extended/program.ts"
-    />
+    <div className="flex flex-col gap-3">
+      <CheckLines
+        lines={[
+          {
+            label: 'EP converged',
+            value: converged ? `yes, ${made.run.t} sweeps` : `no, stopped at ${made.run.t}`,
+            rule: 'converged',
+            ok: converged,
+          },
+          {
+            label: 'the most probable regime is the true one',
+            value: `${sig(100 * accuracy, 3)}% of steps (Gibbs: ${sig(100 * gibbsAccuracy, 3)}%)`,
+            rule: 'at least 90% of steps',
+            ok: accuracy >= 0.9,
+          },
+          {
+            label: 'EP against Gibbs: the gap in regime probabilities',
+            value: `${sig(result.gap, 2)} on average`,
+            rule: 'at most 0.05',
+            ok: result.agrees,
+          },
+          {
+            label: 'the true rates and transition probabilities inside EP’s 90% intervals',
+            value: `${inside} of ${total} inside; largest miss ${sig(worst, 2)} sds`,
+            rule: 'at least 9 of 12 (the sampler itself misses about 1 in 6 here: the prior pulls the transitions)',
+            ok: inside >= 9,
+          },
+          {
+            label: 'spread, EP against Gibbs (sd ratio) over the rates and the stay probabilities',
+            value: `${sig(Math.min(...sdRatio.slice(0, 6)), 2)} to ${sig(Math.max(...sdRatio.slice(0, 6)), 2)}`,
+            rule: 'between 0.7 and 1.4',
+            ok: sdRatio.slice(0, 6).every((r) => r >= 0.7 && r <= 1.4),
+          },
+        ]}
+        note={
+          <>
+            <p>
+              Rates: EP{' '}
+              {rates.map((r, k) => `${NAMES[k]} ${sig(r.mean, 3)} (sd ${sig(r.sd, 2)}, true ${RATES[k]})`).join('; ')}.
+              Gibbs {gibbs.rateMean.map((m, k) => `${sig(m, 3)} (sd ${sig(gibbs.rateSd[k] as number, 2)})`).join('; ')}.
+            </p>
+            <p className="mt-1">
+              Identifiability: ordering the rates (<code>constraint: ordered</code> on log rates, which the compiler
+              maps to greater-than factors) would remove the labelling problem, but only for Gaussian latents, so the
+              Poisson rate goes through <code>exp</code> and a numerical site; that form took 180 sweeps and about 9 s
+              on an easy seed, and returned absurd rates (hundreds) on the two seeds tried where the labelling was at
+              stake. A hyperprior tying the three rates would make the regimes exchangeable and so make the labelling
+              worse. The program keeps the gamma priors of the basic page.
+            </p>
+            {barelyNames.length === 0 ? null : (
+              <p className="mt-1">
+                The {barelyNames.join(' and ')} regime is barely visited in this data. The posterior over which steps
+                belong to it is spread over several readings, and EP commits to one, reports a narrow rate for the
+                regime from a handful of counts and may not converge: the known limit of EP on a mixture, which the
+                calibration below measures.
+              </p>
+            )}
+            {swapped ? (
+              <p className="mt-1">
+                EP has settled on a relabelling of the regimes: the rates it calls low, middle and high are not in that
+                order, so its regime probabilities are the sampler&apos;s with the labels permuted. The likelihood
+                cannot tell the labellings apart, and only the broad priors on the rates prefer the right one. Damping
+                by half avoids this on every seed tried; undamped EP takes the swapped reading on about one seed in ten.
+              </p>
+            ) : null}
+          </>
+        }
+      />
+    </div>
   )
 }

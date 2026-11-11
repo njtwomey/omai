@@ -6,7 +6,8 @@ import { toStructure } from 'omai-engine/probprog/model'
 import { spearman } from 'omai-engine/stats'
 import { session } from 'omai-engine/trace'
 import { type ProgramCheck, sig } from '../../shared/ep/program-check.ts'
-import { defaultSetup, infer, type SkillsSetup, simulate, skillsOf } from './program.ts'
+import { type EpHooks, stepSession } from '../../shared/ep/sweeps.ts'
+import { defaultSetup, infer, type SkillsSetup, simulate, skillsOf, tournamentModel } from './program.ts'
 
 export type { SkillsSetup }
 export { defaultSetup }
@@ -15,7 +16,7 @@ export { defaultSetup }
 export interface SkillsRun {
   readonly setup: SkillsSetup
   readonly data: ReturnType<typeof simulate>
-  readonly fit: ReturnType<typeof infer>
+  readonly fit: Awaited<ReturnType<typeof infer>>
   readonly ms: number
   readonly found: ReturnType<typeof skillsOf>
   /** The ratings of TrueSkill in one pass over the games (the library's `pgm` update), for comparison. */
@@ -58,26 +59,34 @@ function oneTrueskillPass(data: ReturnType<typeof simulate>, spread: number): nu
 }
 
 /** Simulates a setup and runs EP on the tournament. */
-export function runSkills(setup: SkillsSetup): SkillsRun {
+export async function runSkills(setup: SkillsSetup, hooks: EpHooks = {}): Promise<SkillsRun> {
   const data = simulate(setup)
   const t0 = performance.now()
-  const fit = infer(data)
+  const fit = await infer(data, hooks)
   const ms = performance.now() - t0
   return { setup, data, fit, ms, found: skillsOf(fit.posterior), trueskill: oneTrueskillPass(data, setup.spread) }
 }
 
-/** The long NUTS run of the same model (two chains), as the reference EP is checked against. */
-export function referenceSkills(run: SkillsRun): SkillsReference {
+/**
+ * The long NUTS run of the same model (two chains), as the reference EP is checked against. The hooks report each iteration
+ * and can stop it; a run stopped before it has draws gives undefined.
+ */
+export async function referenceSkills(
+  data: ReturnType<typeof simulate>,
+  hooks: EpHooks = {},
+): Promise<SkillsReference | undefined> {
   const t0 = performance.now()
-  const method = nutsMethod(run.fit.bound)
+  const bound = tournamentModel.bind({ a: data.a, b: data.b, win: data.win }, { sizes: { player: data.players } })
+  const method = nutsMethod(bound)
   const s = session(method, {
     config: { numChains: 2, numWarmup: 300, numDraws: 600 },
     seed: 1,
     steps: 5000,
-    mode: 'eager',
+    mode: 'live',
   })
+  await stepSession(s, 300 + 600 + 2, hooks)
   const posterior = method.posterior?.(s.state, s.config)
-  if (posterior === undefined) throw new Error('NUTS gave no posterior')
+  if (posterior === undefined || (posterior.draws?.['skill']?.shape[0] ?? 0) < 4) return undefined
   const found = skillsOf(posterior)
   return { mean: found.mean, sd: found.sd, tau: found.tau, ms: performance.now() - t0 }
 }
@@ -147,7 +156,7 @@ export function checkSkills(run: SkillsRun, reference: SkillsReference): Program
   return {
     rows,
     notes: [
-      `EP’s skill sds are on average ${sig(100 * meanSd, 3)}% of the NUTS run’s: ${meanSd < 0.95 ? 'EP is a little overconfident here (the skills of players who met are negatively correlated, which one Gaussian per skill does not keep)' : 'EP matches the spread'}. The reference run took ${sig(reference.ms / 1000, 2)} s in the page’s own thread.`,
+      `EP’s skill sds are on average ${sig(100 * meanSd, 3)}% of the NUTS run’s: ${meanSd < 0.95 ? 'EP is a little overconfident here (the skills of players who met are negatively correlated, which one Gaussian per skill does not keep)' : 'EP matches the spread'}. The reference run took ${sig(reference.ms / 1000, 2)} s in a worker.`,
       'The draw margin of TrueSkill (a win, a draw or a loss on the skill difference) is not part of this program: it needs an ordinal likelihood on a difference of skills. The likelihood registry has `ordinal-probit`, but no distribution of the model language compiles to it, so the model is written with wins and losses only.',
       'The skills are identified through their differences and by their prior, centred at zero: a tournament says who is better, and by how much, but the prior sets where zero is.',
     ],

@@ -1,10 +1,11 @@
-import { epSpecMethod } from 'omai-engine/probprog/inference'
+import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { foldIn, key, normal, uniform } from 'omai-engine/random'
 import { periodicCopies, wrapToPeriod } from 'omai-engine/stats'
 import { toFlat } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
+import type { EpHooks } from '../../shared/ep/sweeps.ts'
 
 /** One day, in hours. */
 export const PERIOD = 24
@@ -106,11 +107,19 @@ export function dataOf(variant: Variant, components: number, hours: readonly num
 
 // region infer
 /** Expectation propagation on the factor graph: the means, the sd, the weights and the copy of each reading. */
-export function infer(variant: Variant, components: number, hours: readonly number[]) {
+export async function infer(variant: Variant, components: number, hours: readonly number[], hooks: EpHooks = {}) {
   const bound = model(variant, components).bind(dataOf(variant, components, hours))
   const ep = epSpecMethod(bound)
   const config = { tol: 1e-4, damping: 0.5 }
-  const run = session(ep, { config, seed: 1, steps: 150, mode: 'eager', logs: 'all' })
+  const cap = 150
+  const run = session(ep, { config, seed: 1, steps: cap, mode: 'live', logs: 'all' })
+  // One sweep at a time: the page hears of each (the bar), and may stop the run.
+  await runAnytimeAsync(run, {
+    snapshot: { everySteps: 1 },
+    onSnapshot: ({ t, state }) => hooks.onSweep?.({ sweep: t, cap, change: state.change, tol: config.tol }),
+    shouldStop: () => hooks.stopped?.() === true,
+    yieldToPage: hooks.yieldToPage ?? (() => Promise.resolve()),
+  })
   const posterior = ep.posterior?.(run.state, run.config)
   if (posterior === undefined) throw new Error('EP gave no posterior')
   return { bound, run, posterior }
