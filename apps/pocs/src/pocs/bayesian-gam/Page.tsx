@@ -76,8 +76,8 @@ const MODEL = dict({
     },
   }),
   k: int(5, 40, { default: 12, label: 'knots (basis size)' }),
-  degree: int(1, 5, { default: 3, label: 'spline degree', when: { key: 'basis', in: ['ps', 'bs'] } }),
-  order: int(1, 3, { default: 2, label: 'penalty order', when: { key: 'basis', in: ['ps'] } }),
+  degree: int(0, 5, { default: 3, label: 'spline degree', when: { key: 'basis', in: ['ps', 'bs'] } }),
+  order: int(0, 3, { default: 2, label: 'penalty order', when: { key: 'basis', in: ['ps'] } }),
   logLambdaMean: real(-6, 10, {
     default: 0,
     label: 'prior mean of log smoothing parameter',
