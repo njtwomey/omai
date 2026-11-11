@@ -60,6 +60,7 @@ The core of message passing: the `Family` algebra and its scalar, vector, discre
 - module `graph.ts` (file): Compile and draw a factor graph: variables, factors, edges, ids. `src/lib/message-passing/core/graph.ts:1` `omai-engine/message-passing`
 
 - function `compileGraph`: Validate and compile a factor graph against a registry of operators. `src/lib/message-passing/core/graph.ts:139` `omai-engine/message-passing`
+- function `defineOperator`: Build a factor operator from its declaration, with support derived. `src/lib/message-passing/core/define.ts:169` `omai-engine/message-passing`
 - function `dirichlet`: The Dirichlet message family of a given dimension. `src/lib/message-passing/core/families-vector.ts:191` `omai-engine/message-passing`
 - function `discrete`: The discrete message family on k states: log weights. `src/lib/message-passing/core/families-vector.ts:152` `omai-engine/message-passing`
 - function `gaussianMv`: The multivariate Gaussian message family of a given dimension. `src/lib/message-passing/core/families-vector.ts:56` `omai-engine/message-passing`
