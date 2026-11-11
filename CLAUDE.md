@@ -24,6 +24,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   what the library can do, for development, and exists only because the user asked for it: never add one unasked, and
   never edit one unasked. The docs (`apps/site`, generated from the TSDoc) are where a method is explained. Examples
   (`examples/`) are programs with a figure and a tape, for the front page and the README.
+- **Every proof-of-concept page ends with the code that ran.** A page that shows a model, a program or an inference shows a
+  short code block at the bottom (the site's `CodeBlock` with `snippetOf` over the source file imported with `?raw` and
+  `// region` markers, so the code on screen is the code that runs, never a copy). Style of the shown code: one variable (or
+  one group of the same distribution) per line, never a latent created inside another expression, comments on their own line
+  above the code and never trailing, lines under about 100 characters. Every agent that builds a page is told so in its brief.
 - **Search before building.** Before writing anything, an agent greps the library for it (names and concepts, `docs/structure.md`,
   the agent index) and reuses what exists; a second version of the same thing is never made (OWL-QN, max-flow, QP solvers,
   inference routines, templates and blas kernels all exist). The agent's report says what it searched for and what it reused.
