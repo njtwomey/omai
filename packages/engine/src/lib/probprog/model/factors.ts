@@ -384,6 +384,9 @@ function scaledArithmetic(op: string, x: Cell, y: Cell): Cell | undefined {
 
 const prod = (xs: readonly number[]): number => xs.reduce((a, b) => a * b, 1)
 
+/** The hidden symbol of the log of a positive latent carried on its log (not a node of the spec, so no site can clash with it). */
+const logName = (site: string): string => `${site}#log`
+
 function unflatten(flat: number, shape: readonly number[]): number[] {
   const idx: number[] = new Array<number>(shape.length).fill(0)
   let rest = flat
@@ -454,6 +457,14 @@ interface NormalGammaPlan {
   /** The known multiple `kappa` of the mean's precision over the shared one: `mu | lambda ~ N(m, 1 / (kappa lambda))`. */
   readonly kappa: number
   readonly observed: readonly string[]
+}
+
+/** One component of a random concentration, `weight * alpha + offset`, with the variable of `alpha` (the variable of its log when `log`). */
+interface ConcentrationPart {
+  readonly variable?: string
+  readonly log?: boolean
+  readonly weight: number
+  readonly offset: number
 }
 
 class Compiler {
@@ -1469,7 +1480,13 @@ class Compiler {
       return
     }
     if (fam === 'dirichlet') {
-      this.latentDirichlet(node)
+      const concentration = node.dist.params['concentration']
+      if (concentration !== undefined && !this.isConst(concentration)) this.latentRandomConcentration(node)
+      else this.latentDirichlet(node)
+      return
+    }
+    if (fam === 'beta' && ['a', 'b'].some((k) => !this.isConst(node.dist.params[k] as ExprSpec))) {
+      this.latentRandomConcentration(node)
       return
     }
     // An inverse gamma `x` with scale `b` is the precision `1 / x` ~ Gamma(a, rate b): the variable is that gamma, the site its reciprocal.
@@ -1722,6 +1739,7 @@ class Compiler {
     const values = Object.fromEntries((names[fam] ?? []).map((p) => [p, this.constParam(node, p, `the ${p}`)]))
     const cells: Cell[] = []
     const vars: string[] = []
+    const logCells: Cell[] = []
     const site = node.dims.length === 0 ? undefined : (i: number): number => i
     for (let i = 0; i < n; i++) {
       const p = (k: string): number => (values[k] as number[])[i] as number
@@ -1759,6 +1777,7 @@ class Compiler {
         this.need('apply')
         this.addFactor({ operator: 'apply', args: [name, l], params: { fn: 'exp' } }, name)
         this.logScale.set(name, l)
+        logCells.push(this.varAtom(l))
       } else {
         const start = Number.isFinite(low) && Number.isFinite(high) ? (low + high) / 2 : 0
         this.addFactor(projectedPrior(name, density, { support: [low, high], start }), name)
@@ -1767,6 +1786,8 @@ class Compiler {
       vars.push(name)
     }
     this.syms.set(node.name, { dims: node.dims, cells })
+    // A positive value carried on its log (`tau = exp(l)`): the log is addressable, so a log link reads it directly (a rate or a scale).
+    if (logCells.length > 0) this.syms.set(logName(node.name), { dims: node.dims, cells: logCells })
     this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
   }
 
@@ -2207,6 +2228,140 @@ class Compiler {
     this.layout(node, 'latent', 'dirichlet', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
   }
 
+  /**
+   * A beta or Dirichlet latent whose concentrations are known multiples of one random positive value plus known offsets
+   * (`beta(alpha, alpha)`, `beta(alpha, 2)`, `dirichlet(alpha * ones)`: the strength of the prior learned from the data) with `alpha`
+   * a gamma latent or a log-normal one (carried on its log): a `dirichlet-concentration` factor per element, which is the
+   * prior of the variable (a numeric rule: a grid over `log alpha`).
+   */
+  private latentRandomConcentration(node: ModelNode & { readonly kind: 'latent' }): void {
+    const isBeta = node.dist.family === 'beta'
+    const shape = this.shapeOf(node.dims)
+    const n = prod(shape)
+    // The concentration of each element: one cell per component (a beta has two parameters, a Dirichlet an event axis).
+    let perElement: ConcentrationPart[][]
+    if (isBeta) {
+      const a = this.over(this.evalSym(node.dist.params['a'] as ExprSpec), node.dims)
+      const b = this.over(this.evalSym(node.dist.params['b'] as ExprSpec), node.dims)
+      perElement = Array.from({ length: n }, (_, i) => [
+        this.concentrationOf(node, a[i] as Cell),
+        this.concentrationOf(node, b[i] as Cell),
+      ])
+    } else {
+      // `concentration = S * V + O` with `S` random (a gamma or log-normal latent, a known multiple of one plus a known value) and `V`, `O`
+      // known vectors over the event axis: the cell of each component is `V_k S + O_k`.
+      const parsed = this.concentrationForm(node.dist.params['concentration'] as ExprSpec)
+      if (parsed === undefined)
+        throw new Refusal(
+          'operator',
+          `the concentration of '${node.name}' is not a random value times a known vector plus a known vector`,
+        )
+      const scalar = this.over(this.evalSym(parsed.random), node.dims)
+      perElement = scalar.map((s) => {
+        const base = this.concentrationOf(node, s)
+        return parsed.scale.map(
+          (v, k): ConcentrationPart => ({
+            ...base,
+            weight: v * base.weight,
+            offset: v * base.offset + (parsed.offset[k] as number),
+          }),
+        )
+      })
+    }
+    const cells: Cell[] = []
+    const vars: string[] = []
+    this.need('dirichlet-concentration')
+    for (const [i, parts] of perElement.entries()) {
+      const comps = parts
+      const random = parts.filter((p) => p.variable !== undefined)
+      const variable = random[0]?.variable
+      const log = random[0]?.log === true
+      if (variable === undefined || random.some((p) => p.variable !== variable || (p.log === true) !== log))
+        throw new Refusal(
+          'operator',
+          `the concentration of '${node.name}' must be known multiples of one random positive value (a gamma or log-normal latent) plus known offsets`,
+        )
+      const family: FamilyKind = isBeta ? 'beta' : 'dirichlet'
+      const name = this.addVariable({
+        name: this.elementName(node.name, node.dims, i),
+        family: isBeta ? { kind: 'beta' } : { kind: 'dirichlet', size: comps.length },
+      })
+      this.addFactor(
+        {
+          operator: 'dirichlet-concentration',
+          args: [name, variable],
+          params: {
+            weights: parts.map((p) => p.weight),
+            offsets: parts.map((p) => p.offset),
+            ...(log ? { log: true } : {}),
+          },
+        },
+        name,
+      )
+      cells.push({ kind: 'rv', variable: name, family })
+      vars.push(name)
+    }
+    this.syms.set(node.name, { dims: node.dims, cells })
+    this.layout(
+      node,
+      'latent',
+      isBeta ? 'beta' : 'dirichlet',
+      node.dims.length === 0 ? 'scalar' : 'elements',
+      vars,
+      true,
+    )
+  }
+
+  /** `S * V + O` for known vectors `V` and `O` over an event axis and a random scalar expression `S`: the form of a Dirichlet's random concentration. */
+  private concentrationForm(
+    e: ExprSpec,
+  ): { readonly random: ExprSpec; readonly scale: readonly number[]; readonly offset: readonly number[] } | undefined {
+    const u = this.unwrap(e)
+    const vector = (x: ExprSpec): number[] | undefined => {
+      if (!this.isConst(x)) return undefined
+      const nv = this.evalNamed(x)
+      return nv.value.shape.length > nv.dims.length ? toFlat(nv.value) : undefined
+    }
+    if (u.kind !== 'op') return undefined
+    const [a, b] = u.args as [ExprSpec, ExprSpec]
+    if (u.op === 'mul') {
+      const va = vector(a)
+      const vb = vector(b)
+      if (va !== undefined && vb === undefined) return { random: b, scale: va, offset: va.map(() => 0) }
+      if (vb !== undefined && va === undefined) return { random: a, scale: vb, offset: vb.map(() => 0) }
+      return undefined
+    }
+    if (u.op === 'add') {
+      const va = vector(a)
+      const vb = vector(b)
+      const [inner, o] = va !== undefined ? [b, va] : vb !== undefined ? [a, vb] : [undefined, undefined]
+      if (inner === undefined || o === undefined) return undefined
+      const base = this.concentrationForm(inner)
+      return base === undefined ? undefined : { ...base, offset: base.offset.map((v, k) => v + (o[k] as number)) }
+    }
+    return undefined
+  }
+
+  /**
+   * One component of a concentration as `weight * alpha + offset`: a known value, a gamma variable (or a known multiple of one
+   * plus an offset), or a positive latent carried on its log (`alpha = exp(l)`, the variable returned is `l`, with `log`).
+   */
+  private concentrationOf(node: ModelNode, c: Cell): ConcentrationPart {
+    if (isConstCell(c)) return { weight: 0, offset: c.aff.offset }
+    const g = scaledOf(c)
+    if (g !== undefined) return { variable: g.variable, weight: g.scale, offset: g.offset }
+    if (c.kind === 'aff' && c.aff.terms.size === 1) {
+      const [key, coefficient] = [...c.aff.terms][0] as [string, number]
+      const atom = this.atoms.get(key)
+      const l = atom?.kind === 'var' ? this.logScale.get(atom.name) : undefined
+      if (l !== undefined) return { variable: l, log: true, weight: coefficient, offset: c.aff.offset }
+    }
+    throw new Refusal(
+      'operator',
+      `a concentration of '${node.name}' is not a known multiple of a gamma or log-normal latent plus a known value`,
+    )
+  }
+
   /** The variable of a scalar discrete latent. */
   private rvName(site: string): string {
     const cell = this.syms.get(site)?.cells[0]
@@ -2619,12 +2774,21 @@ class Compiler {
   /** `exp(L)` or `k * exp(L)` (with `k` known), followed through derived nodes: the log-link idiom of a rate, mean or scale. */
   private scaledExp(e: ExprSpec): { readonly inner: ExprSpec; readonly scale: ExprSpec | undefined } | undefined {
     const u = this.unwrap(e)
+    // A positive latent carried on its log (a log-normal, half-normal or half-Cauchy rate or scale) is `exp` of that log.
+    const logOf = (x: ExprSpec): ExprSpec | undefined =>
+      x.kind === 'ref' && this.syms.has(logName(x.name)) ? { kind: 'ref', name: logName(x.name) } : undefined
+    const direct = logOf(u)
+    if (direct !== undefined) return { inner: direct, scale: undefined }
     if (u.kind !== 'op') return undefined
     if (u.op === 'exp') return { inner: u.args[0] as ExprSpec, scale: undefined }
     if (u.op === 'mul') {
       const [a, b] = u.args as [ExprSpec, ExprSpec]
       const ea = this.unwrap(a)
       const eb = this.unwrap(b)
+      const la = logOf(ea)
+      const lb = logOf(eb)
+      if (this.isConst(a) && lb !== undefined) return { inner: lb, scale: a }
+      if (this.isConst(b) && la !== undefined) return { inner: la, scale: b }
       if (this.isConst(a) && eb.kind === 'op' && eb.op === 'exp') return { inner: eb.args[0] as ExprSpec, scale: a }
       if (this.isConst(b) && ea.kind === 'op' && ea.op === 'exp') return { inner: ea.args[0] as ExprSpec, scale: b }
     }
