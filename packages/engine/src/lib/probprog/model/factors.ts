@@ -3915,6 +3915,54 @@ class Compiler {
     return name
   }
 
+  /**
+   * An observed categorical whose probabilities are the row of a matrix of Dirichlet latents chosen by a discrete latent
+   * (`categorical({ probs: phi.at(z) })`, the words of a topic model: `phi_k` the word distribution of topic `k`, `z` the topic of
+   * the token). It is one `gate` on the index whose branch `k` is the conjugate `discrete` factor of the observed outcome on row
+   * `k`: each row hears the tokens, weighted by the belief that the token chose it, and the index hears how well each row
+   * explains the outcome. The same gate as an unknown transition row, with an observed outcome.
+   */
+  private observedRowGate(
+    node: ModelNode & { readonly kind: 'observed' },
+    name: string,
+    y: number,
+    i: number,
+    expr: ExprSpec,
+  ): string | null {
+    const chosen = this.randomTransitionRow(expr) as { readonly matrix: ExprSpec; readonly index: ExprSpec }
+    const matrix = this.evalSym(chosen.matrix)
+    if (matrix.dims.length !== 1 || matrix.cells.some((r) => r.kind !== 'rv' || r.family !== 'dirichlet'))
+      throw new Refusal(
+        'operator',
+        `the rows of the matrix behind '${node.name}' must be one Dirichlet latent each (a latent over the dimension of the states)`,
+      )
+    const rowVars = matrix.cells.map((r) => (r as { readonly variable: string }).variable)
+    const size = (this.variables.find((v) => v.name === rowVars[0])?.family.size ?? 2) as number
+    const parent = this.over(this.evalSym(chosen.index), node.dims)[i] as Cell
+    if (parent.kind !== 'rv' || (parent.family !== 'discrete' && parent.family !== 'bernoulli'))
+      throw new Refusal(
+        'operator',
+        `the row of '${node.name}' must be chosen by a discrete latent, not a computed value`,
+      )
+    const from =
+      parent.family === 'bernoulli'
+        ? 2
+        : ((this.variables.find((v) => v.name === parent.variable)?.family.size ?? 2) as number)
+    if (from !== rowVars.length)
+      throw new Refusal('data', `'${node.name}' has ${from} choices of row and its matrix ${rowVars.length} rows`)
+    if (!(Number.isInteger(y) && y >= 0 && y < size))
+      throw new Refusal('data', `'${node.name}' observes ${y}, outside its ${size} categories`)
+    this.addVariable({ name, family: { kind: 'discrete', size }, observed: y })
+    this.need('gate')
+    this.need('discrete')
+    const branches = rowVars.map((_, j) => ({ operator: 'discrete', args: [0, 1 + j], params: {} }))
+    this.addFactor(
+      { operator: 'gate', args: [parent.variable, name, ...rowVars], params: { arity: 1 + rowVars.length, branches } },
+      name,
+    )
+    return name
+  }
+
   private observedConjugate(
     node: ModelNode & { readonly kind: 'observed' },
     fam: string,
@@ -3925,6 +3973,9 @@ class Compiler {
     const param = fam === 'poisson' ? 'rate' : 'probs'
     const expr = node.dist.params[param]
     if (expr === undefined) throw new Refusal('structure', `'${node.name}': the ${param} is missing`)
+    // A word read through a discrete index of Dirichlet rows (`phi.at(z)`, a topic model): a gate over the index.
+    if (fam === 'categorical' && this.randomTransitionRow(expr) !== undefined)
+      return this.observedRowGate(node, name, y, i, expr)
     let exposure = 1
     let target: Cell
     const e = this.unwrap(expr)
