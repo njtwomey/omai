@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ProgramCheck } from '../shared/ep/program-check.ts'
 import { passes } from '../shared/ep/program-check.ts'
+import * as skills from './ep-program-skills/compute.ts'
 import { checkSparse, defaultSetup, exactSparse, runSparse } from './ep-program-sparse/compute.ts'
 import * as zip from './ep-program-zero-inflated/compute.ts'
 
@@ -30,7 +31,28 @@ const programs: readonly Program[] = [
       return zip.checkZip(run, zip.exactZip(run))
     },
   },
+  {
+    name: 'who is better: a tournament with unknown skills',
+    seeds: [1, 2, 3],
+    check: (seed) => {
+      const run = skills.runSkills({ ...skills.defaultSetup, seed })
+      return skills.checkSkills(run, skills.referenceSkills(run))
+    },
+  },
 ]
+
+describe('the tournament skills, pooled over seeds', () => {
+  it('EP\u2019s 90% intervals cover at least 80% of the true skills', () => {
+    let inside = 0
+    let total = 0
+    for (const seed of [1, 2, 3]) {
+      const run = skills.runSkills({ ...skills.defaultSetup, seed })
+      inside += skills.coverageOf(run.data.skills, run.found) * run.data.skills.length
+      total += run.data.skills.length
+    }
+    expect(inside / total).toBeGreaterThanOrEqual(0.8)
+  }, 120_000)
+})
 
 describe.each(programs)('$name', (program) => {
   it.each(program.seeds)(
