@@ -3880,7 +3880,22 @@ marginals at any time. Imports: `base`, `trace`, `tensor`, `numerics`, `space`, 
 (discrete tables and the factor-graph drawing); `probprog` imports this domain, never the reverse. Everything a run
 reports is addressed by ids, the same as the picture of the model (`types.ts`; for a spec, `probprog/model/ids.ts`): a
 variable is its name, a factor its `id` (`factor:<site>` from the spec compiler) or `f<i>`, an edge `<factor>><variable>`.
-- `types.ts`: the contracts (`Family`, `FactorOperator`, `FactorGraphSpec` as JSON, `OperatorContext`, `OperatorResult`)
+- Layout (by concern, every folder an inlined part of `omai-engine/message-passing`; the file names below are unchanged,
+  only their folders are new). `core/`: `types.ts`, `args.ts`, the internal `_messages.ts` (the conventions operators share: `arg`, `perPower`,
+  `evidenceOrNaN`, `isFlat`, `assertDamping`), `families*.ts`, `graph.ts`, `priors.ts`, `truncated.ts`.
+  `numerics/`: `_scalar.ts`, `_dense.ts`, `_bartlett.ts`, `_quadrature.ts`, `_grid.ts`, `_gridn.ts`, `_tilted.ts` (internal)
+  and `numeric-rules.ts` (the `TiltedRule`s of the engine's `numeric` slot). `engine/`: `state.ts` (settings and
+  state types), `cavity.ts` (beliefs, marginals, snapshot), `dispatch.ts` (`operatorMessage`), `evidence.ts`, `verdict.ts`,
+  `run.ts` (`messagePassingAlgorithm`), the slots `projections.ts` and `schedules.ts`, and the internal `_cavities.ts`,
+  `_arguments.ts`, `_update.ts` (the proposal, damping and `repairImproper`), `_restart.ts`, `_advance.ts`. `algorithms/`: `named.ts`, `power.ts`, `alpha.ts`, `numerical.ts`, `stochastic.ts`, `regions.ts`,
+  `consistent.ts`, `amp.ts`, `anytime.ts`, `clutter.ts`. `operators/`: `registry.ts` and one folder per kind of factor,
+  `gaussian/` (`gaussian`, `linear`, `transition`, `extremum`, `log-scale`), `links/` (`truncation`, `links`, `spin`,
+  `multiclass`), `lifts/` (`rows`, `plates`), `likelihoods/` (`likelihoods`, `pairs`, `robust`, `prior-sites`, `functions`,
+  `numeric`), `scales/` (`scale`, `function-scale`, `gamma-scale`, `concentration`, `stick-breaking`), `covariance/`
+  (`covariance`, `correlation`), `discrete/` (`conjugate`, `discrete`, `gate`) and `kernel/` (`variational-numeric`). The
+  imports run one way: `core` and `numerics` below `engine`, `engine` below `operators` and `algorithms`; the engine
+  imports no operator and no algorithm, and an operator no algorithm.
+- `core/types.ts`: the contracts (`Family`, `FactorOperator`, `FactorGraphSpec` as JSON, `OperatorContext`, `OperatorResult`)
   and the id convention; nothing computes here.
 - `families.ts`, `families-vector.ts`: the message families: scalar Gaussian (precision form), gamma, beta, Bernoulli and
   normal-gamma (`defineFamily`), and the multivariate Gaussian, discrete and Dirichlet, with `familyOf` building any of
@@ -3889,10 +3904,10 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   `truncatedNormalMoments`, the closed form behind every comparison and probit message, accurate in the tails.
   `projectedPrior` and `densityMoments` (`priors.ts`): a prior factor from any density, projected once onto a Gaussian or gamma by
   moment matching (a one-off projection; the compiler's half-normal, half-Cauchy, uniform and truncated normal are the exact
-  numeric `prior-site` of `operators/prior-sites.ts`, on a log scale for a positive one).
+  numeric `prior-site` of `operators/likelihoods/prior-sites.ts`, on a log scale for a positive one).
   `_dense.ts`, `_quadrature.ts`, `_scalar.ts`: internal (SPD algebra, Gauss-Hermite against a Gaussian message, scalar
   special functions and the inverse digamma).
-- `operators/variational-numeric.ts`: the non-conjugate variational message by quadrature (a numeric operator, a likelihood, a softmax, a
+- `operators/kernel/variational-numeric.ts`: the non-conjugate variational message by quadrature (a numeric operator, a likelihood, a softmax, a
   deterministic function get a mean-field message from their log density alone); `FactorOperator.unsupported` names a factor with no variational
   message because of its parameters (the Weibull shape).
 - `operators/`: the 48 factor operators of `defaultOperators()` (`registry.ts`), each with message rules for the
@@ -3929,7 +3944,7 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   is a constructor, not one of the 48: a factor given only by its log density, whose EP messages come from a panelled
   product rule (the fallback for a robust likelihood or the clutter problem). `args.ts`: how operators read their
   arguments. Known limits: VMP has no rule for the hard comparison `greater-than` or for `max` and `min`.
-- `engine.ts`, `projections.ts`, `schedules.ts`, `graph.ts`: the engine (`messagePassingAlgorithm`, `EngineSettings`,
+- `engine/` (`run.ts`, `state.ts`, `cavity.ts`, `evidence.ts`, `verdict.ts`, `projections.ts`, `schedules.ts`) and `core/graph.ts`: the engine (`messagePassingAlgorithm`, `EngineSettings`,
   `MpState`, `marginalsOf`, `evidenceOf`, `beliefOf`, `mpSnapshot`) with its slots: the projection (`momentProjection`
   for EP, `klqpProjection` for VMP, `sumProductProjection` for BP; `projections`, `projectionOf`), the schedule
   (`flooding`, `serial`, `tree`, `residual`, `custom`) and its granularity (`sweep`, `factor`, `message`, which is what

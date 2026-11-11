@@ -4,8 +4,9 @@
  * (the library's, a subset, or the library's with operators of your own added).
  */
 
-import type { FactorOperator } from '../types.ts'
-import { betaTwoShapes, dirichletConcentration } from './concentration.ts'
+import type { FactorOperator } from '../core/types.ts'
+import { mvnSdCorr } from './covariance/correlation.ts'
+import { mvnNormalWishart, mvnWishart } from './covariance/covariance.ts'
 import {
   bernoulliBeta,
   binomial,
@@ -14,15 +15,10 @@ import {
   mixtureWeight,
   negativeBinomialBeta,
   poisson,
-} from './conjugate.ts'
-import { mvnSdCorr } from './correlation.ts'
-import { mvnNormalWishart, mvnWishart } from './covariance.ts'
-import { gaussianMixture, select, table } from './discrete.ts'
-import { maximum, minimum } from './extremum.ts'
-import { gaussianMvFunctionScale } from './function-scale.ts'
-import { apply, applyProductOperator } from './functions.ts'
-import { gammaProduct, gammaRate } from './gamma-scale.ts'
-import { gateOperator } from './gate.ts'
+} from './discrete/conjugate.ts'
+import { gaussianMixture, select, table } from './discrete/discrete.ts'
+import { gateOperator } from './discrete/gate.ts'
+import { maximum, minimum } from './gaussian/extremum.ts'
 import {
   equal,
   gaussianGammaPrecision,
@@ -31,8 +27,7 @@ import {
   gaussianOperator,
   prior,
   product,
-} from './gaussian.ts'
-import { likelihoodRowOperator, likelihoodSiteOperator, negativeBinomialDispersion } from './likelihoods.ts'
+} from './gaussian/gaussian.ts'
 import {
   difference,
   dotConstant,
@@ -43,20 +38,25 @@ import {
   plus,
   sum,
   timesConstant,
-} from './linear.ts'
-import { logistic } from './links.ts'
-import { gaussianScale } from './log-scale.ts'
-import { multiclassSite } from './multiclass.ts'
-import { likelihoodPairOperator } from './pairs.ts'
-import { linearRegressionPlate, logisticPlate, probitPlate } from './plates.ts'
-import { priorSite } from './prior-sites.ts'
-import { laplaceRow, laplaceSite, mixtureRow, mixtureSite, studentTRow, studentTSite } from './robust.ts'
-import { logisticRow, probitRow, spinRow } from './rows.ts'
-import { gaussianMvPrecisionScale } from './scale.ts'
-import { spin } from './spin.ts'
-import { stickBreaking } from './stick-breaking.ts'
-import { gaussianTransition } from './transition.ts'
-import { greaterThan, isBetween, probit } from './truncation.ts'
+} from './gaussian/linear.ts'
+import { gaussianScale } from './gaussian/log-scale.ts'
+import { gaussianTransition } from './gaussian/transition.ts'
+import { linearRegressionPlate, logisticPlate, probitPlate } from './lifts/plates.ts'
+import { logisticRow, probitRow, spinRow } from './lifts/rows.ts'
+import { apply, applyProductOperator } from './likelihoods/functions.ts'
+import { likelihoodRowOperator, likelihoodSiteOperator, negativeBinomialDispersion } from './likelihoods/likelihoods.ts'
+import { likelihoodPairOperator } from './likelihoods/pairs.ts'
+import { priorSite } from './likelihoods/prior-sites.ts'
+import { laplaceRow, laplaceSite, mixtureRow, mixtureSite, studentTRow, studentTSite } from './likelihoods/robust.ts'
+import { logistic } from './links/links.ts'
+import { multiclassSite } from './links/multiclass.ts'
+import { spin } from './links/spin.ts'
+import { greaterThan, isBetween, probit } from './links/truncation.ts'
+import { betaTwoShapes, dirichletConcentration } from './scales/concentration.ts'
+import { gaussianMvFunctionScale } from './scales/function-scale.ts'
+import { gammaProduct, gammaRate } from './scales/gamma-scale.ts'
+import { gaussianMvPrecisionScale } from './scales/scale.ts'
+import { stickBreaking } from './scales/stick-breaking.ts'
 
 /**
  * The library's factor operators by name: `prior`, `gaussian`, `gaussian-gamma-precision`, `gaussian-log-scale`, `gaussian-normal-gamma`,

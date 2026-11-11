@@ -2,7 +2,6 @@
 // freedom, a Weibull with a random shape, a beta outcome with two random shapes) and a beta variable with two random shapes, as
 // models, under EP, each against the exact posterior of the two unknowns on a grid (the second coordinate on its log).
 import { describe, expect, it } from 'vitest'
-import { lgammaOf } from '../../message-passing/_scalar.ts'
 import {
   compileGraph,
   epAlgorithm,
@@ -10,6 +9,7 @@ import {
   type MpState,
   marginalsOf,
 } from '../../message-passing/index.ts'
+import { lgammaOf } from '../../message-passing/numerics/_scalar.ts'
 import { runAlgorithm } from '../../trace/index.ts'
 import * as d from './dists/index.ts'
 import { defineModel, factorGraphVerdict, ops, toFactorGraph } from './index.ts'

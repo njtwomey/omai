@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { lgammaOf } from '../_scalar.ts'
-import { gamma, gammaEta, gaussian, gaussianEta } from '../families.ts'
-import { discrete, discreteEta, gaussianMv, gaussianMvEta } from '../families-vector.ts'
-import type { Arg, FactorOperator, Params } from '../types.ts'
-import { massOf, messageArg, valueArg } from './args.ts'
-import { gammaProduct, gammaRate } from './gamma-scale.ts'
-import { gaussianGammaPrecision } from './gaussian.ts'
+import { massOf, messageArg, valueArg } from '../core/args.ts'
+import { gamma, gammaEta, gaussian, gaussianEta } from '../core/families.ts'
+import { discrete, discreteEta, gaussianMv, gaussianMvEta } from '../core/families-vector.ts'
+import type { Arg, FactorOperator, Params } from '../core/types.ts'
+import { lgammaOf } from '../numerics/_scalar.ts'
+import { gaussianGammaPrecision } from './gaussian/gaussian.ts'
 import { defaultOperators } from './registry.ts'
-import { gaussianMvPrecisionScale } from './scale.ts'
+import { gammaProduct, gammaRate } from './scales/gamma-scale.ts'
+import { gaussianMvPrecisionScale } from './scales/scale.ts'
 
 /*
  * The log evidence of a factor is log of the integral of the factor times the unnormalised messages of its ports, exp(eta . T).
