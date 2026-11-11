@@ -14,7 +14,7 @@ import type { CompiledGraph } from './graph.ts'
 import { ImproperMessageError } from './operators/args.ts'
 import type { Projection } from './projections.ts'
 import { type CustomOrder, type Granularity, type Plan, planOf, type ScheduleKind } from './schedules.ts'
-import type { Arg, Eta, OperatorContext, OperatorResult } from './types.ts'
+import { type Arg, type Eta, type OperatorContext, type OperatorResult, takesPower } from './types.ts'
 
 /** What to do when an update would make a proper belief improper (a negative precision: the usual failure of EP). */
 export type ImproperPolicy = 'skip' | 'damp' | 'reset' | 'error'
@@ -365,7 +365,7 @@ function propose(
   const f = g.factors[edge.factor] as CompiledGraph['factors'][number]
   if (isPulled(g, e, s.projection)) return { kind: 'blocked' }
   const alpha = s.projection.alpha
-  if (alpha !== undefined && alpha !== 1 && f.operator.power === true && f.power === 1)
+  if (alpha !== undefined && alpha !== 1 && takesPower(f.operator, f.params) && f.power === 1)
     return alphaProposal(g, s, source, e, alpha)
   return operatorMessage(f, s.projection, edge.port, argsOf(g, source, edge.factor, s.projection))
 }

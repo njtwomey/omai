@@ -5,6 +5,12 @@
  * over a registry of the inner operators, because a branch is any operator of it. The message to `z` is the evidence of each
  * branch under the cavities of its variables, and the message to a variable is the moment-matched mixture of what its branches
  * (weighted by `z`'s cavity and their evidence) and the branches that do not involve it say.
+ *
+ * A gate takes a power (fractional EP, an alpha-divergence) when its branches are closed-form messages over one variable
+ * (a conjugate likelihood such as a Poisson count on a gamma rate, a Gaussian observation): the factor to the power `p` is
+ * the gate of its branches to the power `p`, each the same exponential family with its natural parameters times `p`. The
+ * message to `z` is then the branch evidences to the power `1 / p`, and to a variable the moment match divided by `p`.
+ * (A gate that selects among variables with a `select` factor, `y = c_z`, cannot: a point-mass constraint has no power.)
  */
 
 import { type Json, logSumExpOf, OmaiError } from '../../base/index.ts'
@@ -101,8 +107,41 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
     power: 1,
     ...(c.rule === undefined ? {} : { rule: c.rule }),
   })
+  /**
+   * The one variable a branch can be raised to a power over: its other arguments are constants and its inner message is
+   * closed form and does not depend on the cavity (a conjugate likelihood, a Gaussian observation), so the branch is
+   * `exp(c + m . T(x))` in the family of its variable and its power `p` is `exp(p c + p m . T(x))`.
+   */
+  const powerable = (b: Branch): { readonly op: FactorOperator; readonly variable: number } | undefined => {
+    const op = innerOf(b)
+    const vars = b.args.filter((a): a is number => typeof a === 'number')
+    const [variable] = vars
+    if (op === undefined || variable === undefined || vars.length !== 1 || op.ep === undefined) return undefined
+    if (op.support.ep !== 'exact' || (typeof op.readsTarget === 'function' ? true : op.readsTarget === true))
+      return undefined
+    return { op, variable }
+  }
+  const unpowerable = (b: Branch): never => {
+    throw new OmaiError(
+      'not-implemented',
+      `gate: a power other than 1 needs branches over one variable with a closed-form message, and ${b.operator ?? 'a constant'} is not one`,
+    )
+  }
   /** The log evidence of a branch under the cavities of its variables, as a normalised expectation (the masses of the cavities removed). */
   const logBranch = (c: OperatorContext, b: Branch): number => {
+    if (c.power !== 1 && innerOf(b) !== undefined) {
+      const q = powerable(b) ?? unpowerable(b)
+      const own = etaOf(arg(c, q.variable + 1))
+      const family = arg(c, q.variable + 1).family
+      const message = q.op.ep?.(context(c, b, b.args.indexOf(q.variable), 'ep')).message ?? []
+      const once = logBranchAt(c, b)
+      const base = family.logPartition(own)
+      const constant = once - (family.logPartition(own.map((v, i) => v + (message[i] ?? 0))) - base)
+      return c.power * constant + family.logPartition(own.map((v, i) => v + c.power * (message[i] ?? 0))) - base
+    }
+    return logBranchAt(c, b)
+  }
+  const logBranchAt = (c: OperatorContext, b: Branch): number => {
     const op = innerOf(b)
     if (op === undefined) return 0
     if (op.logEvidence === undefined) throw new OmaiError('not-implemented', `gate: ${op.name} has no logEvidence`)
@@ -123,6 +162,11 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
     const ctx = context(c, b, local, 'ep')
     const own = etaOf(arg(c, variable + 1))
     let message: Eta
+    if (c.power !== 1) {
+      // The tilted natural parameters of the branch to the power p: the cavity plus p times the message of the closed-form branch.
+      if (powerable(b) === undefined) unpowerable(b)
+      return own.map((v, i) => v + c.power * ((op.ep?.(ctx).message ?? [])[i] ?? 0))
+    }
     if (op.ep !== undefined) message = op.ep(ctx).message
     else if (op.tilted !== undefined) {
       const target = arg(c, variable + 1)
@@ -145,6 +189,8 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
       ),
     ],
     support: { ep: 'numeric', vmp: 'bound' },
+    // A power (fractional EP, an alpha-divergence) is taken of the branches: each is the factor to the power p, and the gate's indicators are disjoint so the factor to the power p is the gate of the branches to the power p.
+    power: (params) => branchesOf(params).every((b) => b.operator === undefined || powerable(b) !== undefined),
     check: (params, families) => {
       const states = families[0]?.kind === 'bernoulli' ? 2 : families[0]?.dim
       const branches = branchesOf(params)
@@ -175,7 +221,8 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
       if (c.to === 0) {
         const top = Math.max(...evidence)
         if (!(top > Number.NEGATIVE_INFINITY)) throw new ImproperMessageError('gate: no branch has evidence')
-        const logs = evidence.map((v) => v - top)
+        // The message that, to the power p, is the branch evidences: their logs divided by p.
+        const logs = evidence.map((v) => (v - top) / c.power)
         return {
           message:
             z.family.kind === 'bernoulli'
@@ -200,7 +247,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
         const mo = family.moments(tilted)
         for (let j = 0; j < mo.length; j++) mixed[j] = (mixed[j] ?? 0) + ((w[i] ?? 0) / norm) * (mo[j] ?? 0)
       }
-      return { message: family.fromMoments(mixed).map((v, i) => v - (own[i] ?? 0)) }
+      return { message: family.fromMoments(mixed).map((v, i) => (v - (own[i] ?? 0)) / c.power) }
     },
     vmp: (c0): OperatorResult => {
       const c = widened(c0)
