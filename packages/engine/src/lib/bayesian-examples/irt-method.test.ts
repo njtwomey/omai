@@ -45,12 +45,15 @@ describe('irtExample', () => {
     const offer = irtExample.offer(base)
     for (const kind of ['nuts', 'svi', 'laplace', 'tempered-smc', 'ep', 'vmp']) expect(offer.applicable).toContain(kind)
     expect(offer.unavailable['gibbs']).toBeDefined()
-    // A half-normal sd and the log-normal discriminations have no message family; the product of two random values has no variational rule.
-    expect(irtExample.offer({ ...base, spreads: 'half-normal' }).unavailable['ep']).toMatch(/halfNormal/)
+    // A half-normal sd is projected once onto a Gaussian on its log and the log-normal discriminations are exp of a Gaussian
+    // (the apply factor), so EP applies to both; the product of two random values has no variational rule.
+    expect(irtExample.offer({ ...base, spreads: 'half-normal' }).applicable).toContain('ep')
     const normal2pl = irtExample.offer({ ...base, model: '2pl', discriminationPrior: 'normal' })
     expect(normal2pl.applicable).toContain('ep')
     expect(normal2pl.unavailable['vmp']).toMatch(/product/)
-    expect(irtExample.offer({ ...base, model: '2pl' }).unavailable['ep']).toMatch(/exp/)
+    const lognormal2pl = irtExample.offer({ ...base, model: '2pl' })
+    expect(lognormal2pl.applicable).toContain('ep')
+    expect(lognormal2pl.unavailable['vmp']).toMatch(/product|exp|apply/)
   })
 
   for (const model of ['rasch', '2pl'])

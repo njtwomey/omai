@@ -300,8 +300,7 @@ export const halfCauchyAtom: EpAtom = defineAtom({
   what: 'A half-Cauchy prior on a standard deviation sigma and four zero-mean Gaussian observations with that scale: a heavy-tailed scale prior that has no message family of its own.',
   factors: ['numeric prior (half-Cauchy)', 'gaussian with a random scale'],
   family: 'scales',
-  expected: 'planned',
-  plan: 'ep-plan.md section 2, D (numeric priors: half-normal, half-Cauchy, log-normal, uniform), with a random scale outside the precision idiom; in progress on another branch.',
+  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.2,
@@ -329,8 +328,7 @@ export const halfNormalAtom: EpAtom = defineAtom({
   what: 'A half-normal prior on a standard deviation sigma and four zero-mean Gaussian observations with that scale.',
   factors: ['numeric prior (half-normal)', 'gaussian with a random scale'],
   family: 'scales',
-  expected: 'planned',
-  plan: 'ep-plan.md section 2, D (numeric priors) with a random scale outside the precision idiom; in progress on another branch.',
+  expected: 'runs',
   reference: 'grid',
   tolerance: {
     meanZ: 0.2,

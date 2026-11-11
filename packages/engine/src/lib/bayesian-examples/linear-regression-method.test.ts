@@ -110,7 +110,17 @@ describe('linearRegressionMethod', () => {
       ...(defaults(linearRegressionMethod.config) as Record<string, unknown>),
       noiseModel: 'learned',
     } as never)
-    expect(halfNormal.applicable).not.toContain('ep')
+    // A half-normal sd is projected once onto a Gaussian on its log (the gaussian-scale rule), so EP applies.
+    expect(halfNormal.applicable).toContain('ep')
+  })
+
+  it('EP agrees with a long NUTS run when the noise sd has a half-normal prior', { timeout: 60_000 }, () => {
+    const over = { rows: 30, inputs: 'offset', noiseModel: 'learned' }
+    const ref = run(configOf('nuts', { numChains: 2, numWarmup: 150, numDraws: 300 }, over))
+    const draws = ref.probe(ref.t, 'linreg/draws') as { names: string[] }
+    const ep = run(configOf('ep', {}, over))
+    const c = ep.probe(ep.t, 'linreg/check', { reference: draws } as never) as { maxMeanError: number }
+    expect(c.maxMeanError).toBeLessThan(0.5)
   })
 
   it('EP agrees with a long NUTS run when the noise is a gamma precision', () => {

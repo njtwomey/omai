@@ -76,7 +76,7 @@ omai-engine/problems	55	af621d373b9a
 omai-engine/probprog	354	5a9b5acf1538
 omai-engine/probprog/inference	172	e46980912eb6
 omai-engine/probprog/model	162	c022e316fb1f
-omai-engine/probprog/model/dists	29	0cdf2e7f9155
+omai-engine/probprog/model/dists	29	3c101930507b
 omai-engine/probprog/models	161	892b9883f20c
 omai-engine/probprog/validation	48	0739b86dd81c
 omai-engine/random	52	07ee37b9bd6f
@@ -126,4 +126,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	303	541cc98902e2
-total	20107	2c8f67d008e8
+total	20107	0ce5312e84c6

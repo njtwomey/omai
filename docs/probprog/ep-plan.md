@@ -200,3 +200,19 @@ Still open, in the order of the work packages that follow:
   sends an improper message: the run breaks, WP-B proper initial messages). EP runs on 10 of the 27 benchmark models. When a
   rule lands the registry test of the atom it unblocks goes red until the atom is flipped to `runs`, and the coverage test is
   moved up.
+
+## 8. WP-A, built (2026-11-11)
+
+EP now runs on 19 of the 27 benchmark models (`epCoverage()`; 25 of 28 atoms). Built, each against an exact or brute-force reference:
+- A generic numeric 1-D likelihood registry (`message-passing/operators/likelihoods.ts`: Poisson and negative binomial with a log link,
+  Weibull and log-normal survival (right-censored too), binomial with a logistic or probit link, ordinal probit, asymmetric
+  Laplace, Student t, Laplace) behind `likelihood-site` and `likelihood-row`, integrated by the zooming panelled quadrature of
+  `_tilted.ts`; the compiler maps Poisson (exposure), binomial, negative binomial (known or random dispersion), Weibull, log-normal
+  (exact, on the log). Ordinal probit and asymmetric Laplace are in the registry but have no model-layer distribution yet.
+- `apply` (`functions.ts`): `exp`, `square`, `tanh`, `relu` (closed form), `softplus`, `abs`, `sigmoid`; `max`/`min` with a known
+  operand is a rectifier. Poisson regression, the funnels, the banana and the Bayesian neural network compile.
+- Priors without a message family projected once (`projectedPrior`, `priors.ts`): half-normal, half-Cauchy, log-normal, uniform and
+  truncated normal, a positive scale on its log; a latent with a random scale is written non-centred, an observed value with a
+  random scale is `gaussian-scale`. Eight schools (both forms), the centred funnel and radon compile.
+- `toFactorGraph(bound, { packScalars: true })`: scalar normal latents that share a predictor are one joint vector, so EP keeps
+  their correlation (without it the marginal sds are too small by 2 to 3 times on Poisson and negative binomial regression).
