@@ -1040,8 +1040,18 @@ describe('a categorical gate is the select factor (expectation propagation)', ()
       const mu = b.latent('mu', d.normal(0, ops.div(1, ops.sqrt(ops.mul(tau, 2)))))
       b.observe('y', d.normal(mu, ops.div(1, ops.sqrt(tau))), b.data('y', { dims: ['row'] }))
     })
-    // A known multiple of the gamma precision is the scale of the factor (the conditional prior of the normal-gamma mean).
-    const scaled = toFactorGraph(normalGamma.bind({ y: [1, 2] }))
+    // The pair of a mean and the precision its variance shares, observed with that precision, is one normal-gamma variable.
+    const pair = toFactorGraph(normalGamma.bind({ y: [1, 2] }))
+    expect(pair.issues).toEqual([])
+    expect(pair.graph?.variables.map((v) => v.family.kind)).toContain('normal-gamma')
+    // A known multiple of the gamma precision is the scale of the factor (the conditional prior of the mean) when something else
+    // reads the mean (here a Gaussian observation with a known scale), so the pair is not one conjugate variable.
+    const loose = defineModel('ng-loose', (b) => {
+      const tau = b.latent('tau', d.gamma(2, 1))
+      const mu = b.latent('mu', d.normal(0, ops.div(1, ops.sqrt(ops.mul(tau, 2)))))
+      b.observe('y', d.normal(mu, 1), b.data('y', { dims: ['row'] }))
+    })
+    const scaled = toFactorGraph(loose.bind({ y: [1, 2] }))
     expect(scaled.issues).toEqual([])
     expect(scaled.graph?.factors.find((f) => f.id === 'factor:mu')?.params).toEqual({ scale: 2 })
     // The product of two gamma precisions is a gamma variable defined by the `gamma-product` factor (a local times a global precision).
