@@ -35,6 +35,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Every agent tests only its own changes.** Its own test files, tsc, barrels, layers, biome and its own examples,
   never the full suite, never `make check`, and never a repo-wide vitest. The main session alone decides when the gate
   runs, and does not run it unless asked.
+- **Light testing for now (2026-11-11, the owner is asleep or nearby and the fan matters).** Agents and the main session run only
+  LOCAL tests for what they change: the test files of the files touched, one worker, niced. No `make ep-check`, no full
+  `make ep-digest-check` (use `ARGS="--only <atom/model/program names or prefixes>"` for the items a change can affect), no folder-wide
+  vitest runs over `message-passing`, `probprog/model`, `probprog/inference` or `probprog/ep`, no `make verify`, no `make check`, no
+  `scripts/integrate.sh` in full mode. The full gate, the full digest and the EP suite run once, when the owner asks.
 - Agents throttle everything that runs tests: `nice -n 15 env OMAI_TEST_WORKERS=1 make verify` (never `make check`,
   never a second test run while one is going, never a full-repo `vitest run`). The main session alone runs the gate at
   normal priority. Several agents verifying at once at full width stalls the machine for the person using it.
