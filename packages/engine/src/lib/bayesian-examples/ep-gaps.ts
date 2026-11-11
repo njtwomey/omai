@@ -167,7 +167,7 @@ export const epGaps: readonly EpGap[] = [
     kind: 'quality',
     status: 'open',
     summary:
-      'On a bimodal or label-ambiguous posterior (clutter, overlapping mixture components, a regime that is hardly visited) EP commits to one reading and reports a narrow spread: the changepoint program with an unvisited regime gives rate spreads 0.05 to 0.3 of the reference and 70% regime accuracy. Measured: power EP, alpha-divergences (alpha down to 0.3), damping and stochastic EP do not restore calibration (docs/probprog/ep-plan.md section 11): the posterior over which steps belong to a rarely visited regime is multimodal and one message per variable cannot hold that.',
+      'On a bimodal or label-ambiguous posterior (clutter, overlapping mixture components, a regime that is hardly visited) EP commits to one reading and reports a narrow spread: the changepoint program with an unvisited regime gives rate spreads 0.05 to 0.3 of the reference and 70% regime accuracy. Measured: power EP, alpha-divergences (alpha down to 0.3), damping and stochastic EP do not restore calibration (docs/probprog/ep-plan.md section 11): the posterior over which steps belong to a rarely visited regime is multimodal and one message per variable cannot hold that. The relabelling of regimes whose likelihoods are alike is the one multimodal case damping does fix: on the changepoint program with learned transitions (100 steps) undamped EP took the swapped labelling on 3 of 30 seeds with every regime visited (and 2 more with a regime of under 15 steps), damping by half on none, while the seeds with a regime of under 6 steps stay wrong (EP within 0.05 of Gibbs on 1 of 6 such seeds of 24, two did not converge).',
     plan: 'Several EP runs from different starts weighted by their evidence (needs the log evidence of the rules), or a mixture-of-Gaussians belief per variable; for the label problem a Gibbs or SMC pass as the reference and a warning on the page; the explicit gate already reports the probability of each branch.',
     size: 'large',
     refuses: [],
@@ -328,9 +328,9 @@ export const epDirections: readonly EpDirection[] = [
     status: 'partial',
     what: 'A hidden regime chain over which the dynamics or the observation model switches: hidden Markov models with continuous emissions, switching Kalman filters, change points.',
     needs:
-      'Discrete chains and Gaussian emissions run exactly; unknown emission parameters shared across time are loopy (the changepoint program is overconfident when a regime is barely visited) and a gate over a whole sub-chain needs the gate node.',
+      'Discrete chains and Gaussian emissions run exactly; unknown emission parameters shared across time are loopy (the changepoint program is overconfident when a regime is barely visited), unknown transition rows (a Dirichlet per row, one gate per step) run and agree with Gibbs when every regime is visited, and a gate over a whole sub-chain needs the gate node.',
     size: 'large',
-    pages: ['ep-program-changepoint'],
+    pages: ['ep-program-changepoint', 'ep-program-changepoint-extended'],
   },
   {
     id: 'volatility',

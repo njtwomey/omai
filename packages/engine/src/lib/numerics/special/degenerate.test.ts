@@ -55,6 +55,8 @@ describe('special functions at infinity, at poles and in the denormal tails', ()
     ['digamma(-1)', () => S.digamma(-1)],
     ['gamma(-inf)', () => S.gamma(-INF)],
     ['polygamma(2, -1)', () => S.polygamma(2, -1)],
+    ['polygamma(1, nan)', () => S.polygamma(1, Number.NaN)],
+    ['trigamma(nan)', () => S.trigamma(Number.NaN)],
     ['chdtr(2, nan)', () => S.chdtr(2, Number.NaN)],
     ['chdtrc(2, nan)', () => S.chdtrc(2, Number.NaN)],
     ['fdtr(2, 3, nan)', () => S.fdtr(2, 3, Number.NaN)],

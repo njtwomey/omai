@@ -56,7 +56,13 @@ export function defineFamily(def: FamilyDefinition): Family {
   const normalise = def.normalise ?? ((eta: Eta) => eta)
   const pair = def.pair ?? dot
   const flat: Eta = Array.from({ length: def.size }, () => 0)
-  const combine = (a: Eta, b: Eta, sign: 1 | -1): Eta => normalise(a.map((v, i) => v + sign * (b[i] ?? 0)))
+  // A plain loop: a belief is the sum of every message of a variable (hundreds of them for a parameter shared across time),
+  // and this is the innermost operation of a sweep.
+  const combine = (a: Eta, b: Eta, sign: 1 | -1): Eta => {
+    const out = new Array<number>(a.length)
+    for (let i = 0; i < a.length; i++) out[i] = (a[i] as number) + sign * (b[i] ?? 0)
+    return normalise(out)
+  }
   const family: Family = {
     kind: def.spec.kind,
     spec: def.spec,

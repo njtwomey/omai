@@ -2,10 +2,13 @@
 // user code, and must recover the truth (the truth inside the 90% intervals at the stated rate, the error in posterior sds
 // under the stated bound) over a few seeds. A program where EP is poor says so in its check and is held here to what it
 // honestly achieves, with the reason.
+
+import { calibrationTable } from 'omai-engine/bayesian-examples'
 import { describe, expect, it } from 'vitest'
 import { agreement, passes, recovery } from '../shared/ep/recovery.ts'
 import { infer as inferChange, simulate as simulateChange } from './ep-program-changepoint/program.ts'
 import { gibbsReference } from './ep-program-changepoint/reference.ts'
+import { runSeed } from './ep-program-changepoint-extended/calibration.ts'
 import { infer as inferCox, simulate as simulateCox } from './ep-program-cox/program.ts'
 import { nutsReference } from './ep-program-cox/reference.ts'
 import { infer as inferTrack, simulate as simulateTrack } from './ep-program-tracker/program.ts'
@@ -78,6 +81,45 @@ describe('ep-program-changepoint: a Poisson rate that switches between three reg
 
   it('does not report a success it did not reach: seed 8 does not converge, and says so', () => {
     expect(regimeGap(8).status).not.toBe('converged')
+  }, 60_000)
+})
+
+describe('ep-program-changepoint-extended: the same program with the rates and the transition matrix both learned', () => {
+  // The seeds of 100 steps at stay probability 0.93 (calibration.ts: EP damped by half, Gibbs from a data-ordered start).
+  const options = { sweeps: 1200 }
+  const floor = { seeds: 0, coverage: 0.7, zrms: 1.6, reason: '' }
+
+  it('when every regime is visited it agrees with Gibbs, and the truth is inside the 90% intervals as often as it should be', () => {
+    // Seeds 14, 18 and 26 are ones on which undamped EP takes the relabelled reading (low and middle swapped).
+    const runs = [1, 3, 5, 14, 18, 26].map((seed) => runSeed(seed, options))
+    for (const r of runs) {
+      expect(r.barely, `seed ${r.seed}`).toBe(false)
+      expect(r.status, `seed ${r.seed}`).toBe('converged')
+      expect(r.gap, `seed ${r.seed}: the gap to Gibbs`).toBeLessThan(0.05)
+    }
+    const ep = calibrationTable(
+      { ...floor, seeds: runs.length },
+      runs.map((r) => r.ep),
+    )
+    for (const row of ep.rows) {
+      expect(row.coverage, row.key).toBeGreaterThanOrEqual(0.7)
+      expect(row.zrms, row.key).toBeLessThan(1.6)
+    }
+  }, 60_000)
+
+  it('is wrong, and says so, when a regime is barely visited (seeds 2, 10, 15, 24, 27): EP commits to one reading where Gibbs is spread', () => {
+    // Measured: the regime probabilities are 0.2 to 0.5 from the sampler's on average; some runs do not converge.
+    for (const seed of [2, 10, 24]) {
+      const r = runSeed(seed, options)
+      expect(r.barely, `seed ${seed}`).toBe(true)
+      expect(r.gap, `seed ${seed}`).toBeGreaterThan(0.1)
+    }
+  }, 60_000)
+
+  it('without damping EP settles on a relabelling of the regimes on seed 14, where Gibbs and the damped run are right', () => {
+    const r = runSeed(14, { ...options, damping: 0 })
+    expect(r.accuracy).toBeLessThan(0.2)
+    expect(r.gap).toBeGreaterThan(0.5)
   }, 60_000)
 })
 
