@@ -6,11 +6,14 @@
  * - With `// region` ... `// endregion` blocks (or `{/* region *\/}` in JSX), only the imports and those blocks are
  *   shown, joined by `// ...`; otherwise the whole file is.
  * - A line ending in `// hide` is dropped.
+ * - With `region`, only the blocks marked `// region <name> [<name> ...]` that list that name are shown (several blocks of one
+ *   name are joined by `// ...`), without the file's imports: the code of one thing in a file of many (an atom's model).
  *
  * @param source - The recipe file.
+ * @param options - `region`: show only the blocks of this name.
  * @returns The snippet.
  */
-export function snippetOf(source: string): string {
+export function snippetOf(source: string, options: { readonly region?: string } = {}): string {
   const lines = source.replace(/\r\n/g, '\n').split('\n')
   const imports: string[] = []
   let i = 0
@@ -36,16 +39,33 @@ export function snippetOf(source: string): string {
   rest = rest.filter((l) => !/\/\/\s*hide\s*$/.test(l))
   const regions: string[][] = []
   let open: string[] | null = null
-  for (const l of rest) {
-    if (marker(l, 'region')) open = []
-    else if (marker(l, 'endregion')) {
+  const named = options.region !== undefined
+  for (const l of named ? lines : rest) {
+    if (marker(l, 'region')) {
+      const names = regionNames(l)
+      open = named && !names.includes(options.region as string) ? null : []
+    } else if (marker(l, 'endregion')) {
       if (open !== null) regions.push(open)
       open = null
     } else open?.push(l)
   }
+  if (named)
+    return tidy(
+      regions
+        .map(dedent)
+        .join('\n\n// ...\n\n')
+        .replace(/^.*\/\/\s*hide\s*$\n?/gm, ''),
+    )
   const body = regions.length > 0 ? regions.map(dedent).join('\n\n// ...\n\n') : rest.join('\n')
   return tidy([imports.join('\n'), body].filter((s) => s.trim() !== '').join('\n\n'))
 }
+
+/** The names listed on a `// region a b` line. */
+const regionNames = (line: string): string[] =>
+  (/region\b(.*?)(\*\/\})?\s*$/.exec(line)?.[1] ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter((n) => n !== '')
 
 const marker = (line: string, word: string): boolean =>
   new RegExp(`^\\s*(//\\s*${word}\\b.*|\\{/\\*\\s*${word}\\b.*\\*/\\})\\s*$`).test(line)

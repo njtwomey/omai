@@ -4,8 +4,10 @@
  * (a Dirichlet draw is a vector), whether it is discrete or an exponential family, and `make`, which builds the
  * library's own distribution from evaluated parameters. Nothing here is a second distribution: every `make` calls the
  * constructor in `omai-engine/dists`. The table is what turns a JSON `DistSpec` back into a `Distribution`.
- * Two families are compositions, each a `mixture` of two normals: `normalSpikeSlab`, the zero-mean two-component scale mixture of
- * the spike and slab prior, and `normalOutliers`, a normal around `loc` whose noise is a wider normal with probability `outlier`.
+ * Three families are compositions, each a `mixture` of two normals: `normalSpikeSlab`, the zero-mean two-component scale mixture of
+ * the spike and slab prior, `normalOutliers`, a normal around `loc` whose noise is a wider normal with probability `outlier`, and
+ * `normalPair`, two normals of one scale around two known means with probability `weight` of the second (a mixture with an
+ * unknown weight, switch summed out).
  *
  * @index table The distribution families a model spec names, mapped to the library's constructors.
  */
@@ -355,6 +357,20 @@ export function distributionFamilies(): Record<string, FamilyDef> {
         ])
       },
       { loc: 0, scale: 1, outlier: 0.1, width: 10 },
+      { messagePassing: true },
+    ),
+    family(
+      'normalPair',
+      ['weight', 'low', 'high', 'scale'],
+      (a) => {
+        const weight = need('normalPair', a, 'weight')
+        const scale = need('normalPair', a, 'scale')
+        return mixture({ probs: stack([sub(1, weight), weight], -1) }, [
+          normal(need('normalPair', a, 'low'), scale),
+          normal(need('normalPair', a, 'high'), scale),
+        ])
+      },
+      { weight: 0.5, low: -2, high: 2, scale: 0.5 },
       { messagePassing: true },
     ),
     family(

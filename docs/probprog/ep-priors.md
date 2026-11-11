@@ -1,0 +1,137 @@
+# Priors and hyperpriors under expectation propagation: the atlas
+
+Written 2026-11-11. For each distribution we observe, each of its parameters, the priors EP can carry, the hyperprior one level
+above, how to write it in the model layer, the factor it compiles to, and whether it runs today. Statuses are the library's own
+verdicts (each `runs` row has an atom page, or a test, that ran it against an exact or brute-force reference; `docs/probprog/ep-plan.md`
+has the history of the rules). The atoms are `packages/engine/src/lib/bayesian-examples/ep-atoms-priors.ts` and
+`ep-atoms-weights.ts`; their pages are in the `expectation-propagation` group of the pocs (`ep-<atom name>`), and each ends with the
+model code that ran.
+
+## How a prior reaches EP
+
+Three kinds of row, by what EP does with the prior:
+
+1. **Conjugate, exact.** The prior is the family of a message (gaussian, gamma, beta, Dirichlet, bernoulli, discrete, normal-gamma)
+   and the likelihood is a message of that family in the parameter. EP is exact, in one or two sweeps: the posterior is the closed
+   form and the evidence is the closed form.
+2. **Numeric, projected.** The factor has no closed-form tilted moment (a log link, a random concentration, a scale on the log):
+   one or two dimensional quadrature gives the moments, and the message is the moment-matched member of the family. The posterior
+   is close, and the tolerance of each atom says how close and why.
+3. **A prior with no family** (half-normal, half-Cauchy, uniform, truncated normal, log-normal) is projected once onto a Gaussian
+   (a positive scale on its log), so the graph holds the projected prior.
+
+A **hyperprior** is a latent among the parameters of the prior: `mu ~ normal(centre, s)` with `centre ~ normal(0, 3)`, a gamma
+`rate ~ gamma(a, prior)` with `prior ~ gamma(c, d)`. Under EP it is one more variable of the graph with its own beliefs, so
+the page shows the posterior of the hyperparameter next to the parameter's. The rule is the same one level up: where the
+hyperprior is a gamma on a gamma's rate, `gamma-rate`; a Gaussian on a Gaussian's mean, the linear-Gaussian factors; a gamma or
+log-normal on a beta's or Dirichlet's concentration, `dirichlet-concentration` (new); an inverse gamma on a variance, a gamma
+precision (new compiler mapping).
+
+## The table
+
+Atom pages are named `ep-<atom>`. "exact" is a closed-form posterior, "grid" is the model written as a program on a grid.
+
+### Gaussian (a mean and a variance, observed y_i)
+
+| parameter | prior | hyperprior | write | factor | status | page, reference |
+| --- | --- | --- | --- | --- | --- | --- |
+| mean | normal | none | `mu ~ normal(m, s)` | `prior`, `gaussian` | runs, exact | `gaussian`, exact |
+| mean | normal | normal on its centre | `centre ~ normal(0, s0)`, `mu ~ normal(centre, s1)` | `gaussian` with a random mean (`difference`) | runs, exact | `prior-normal-hyperprior`, exact |
+| mean | normal | gamma on its precision (population spread) | `tau ~ gamma(a, b)`, `mu ~ normal(0, 1 / sqrt(tau))` | `gaussian-gamma-precision` (latent) | runs | `shared-precision`, `scaled-precision` |
+| mean | normal, spread a known multiple of the noise spread | inverse gamma (or gamma) on the variance | `sigma2 ~ inverseGamma(a, b)`, `mu ~ normal(m, sqrt(sigma2 / kappa))`, `y ~ normal(mu, sqrt(sigma2))` | one `normal-gamma` variable, `gaussian-normal-gamma` per observation | **runs, exact (new)** | `prior-normal-inverse-gamma`, exact (Student t, inverse gamma) |
+| mean | same with `kappa` random | gamma on kappa | `mu ~ normal(m, 1 / sqrt(kappa * tau))`, `kappa ~ gamma(...)` | `gaussian-gamma-precision` with a `gamma-product` precision | runs (probed, no page); the pair is no longer one variable, so the joint is mean-field-like | |
+| mean | uniform, truncated normal | none | `mu ~ uniform(lo, hi)` | numeric prior projected onto a Gaussian | runs, approximate | `prior-uniform-mean`, exact (quadrature); the bounds are not enforced |
+| mean | Student t (heavy tails) | none | write the scale mixture: `u ~ gamma(nu/2, nu/2)`, `mu ~ normal(0, 1 / sqrt(u tau))` | `gamma-product`, `gaussian-gamma-precision` | runs (probed, no page) | |
+| mean | `studentT`, `laplace`, `cauchy` written directly | | `mu ~ studentT(nu, 0, s)` | none: the compiler has no mapping to the scale mixture | **planned** (a mapping to the gamma mixture; Laplace is an exponential mixing of the variance) | |
+| variance | gamma on the precision | none | `tau ~ gamma(a, b)`, `y ~ normal(mu, 1 / sqrt(tau))` | `gaussian-gamma-precision` | runs | `gamma-precision`, grid |
+| variance | inverse gamma | none | `sigma2 ~ inverseGamma(a, b)`, `y ~ normal(mu, sqrt(sigma2))` | the same, with the site read as an inverse gamma | **runs (new)**, exact with a known mean | tests |
+| variance | inverse gamma | gamma on its scale | `scale ~ gamma(c, d)`, `sigma2 ~ inverseGamma(a, scale)` | `gamma-rate` then `gaussian-gamma-precision` | **runs (new)** | `prior-inverse-gamma-hyperprior`, grid |
+| standard deviation | half-normal, half-Cauchy, log-normal, uniform | none | `sigma ~ halfCauchy(s)`, `y ~ normal(mu, sigma)` | projected prior on the log, `gaussian-scale` | runs | `half-cauchy`, `half-normal`, grid |
+| log standard deviation | normal (a log-normal sd) | normal on its centre | `centre ~ normal(0, s0)`, `logScale ~ normal(centre, s1)`, `y ~ normal(0, exp(logScale))` | `gaussian-log-scale` (quadrature) | **runs** | `prior-lognormal-scale-hyperprior`, grid |
+
+### Multivariate normal
+
+| parameter | prior | hyperprior | write | factor | status |
+| --- | --- | --- | --- | --- | --- |
+| mean vector | `multivariateNormal` with a known covariance | none | `f ~ multivariateNormal(0, { covariance: K })` | `gaussian-mv` prior | runs (`gp-probit`, `gp-logistic`) |
+| mean vector | coefficients with a shared random precision (a smoothing parameter) | gamma on the scale | `lambda ~ gamma(a, b)`, `beta ~ normal(0, 1 / sqrt(lambda d_j))` | `gaussian-mv-precision-scale` | runs (`scaled-precision`, the GAM page) |
+| precision matrix | Wishart or inverse Wishart (normal-Wishart for the pair) | | | no matrix message family, no model-layer family | **planned, big**: a `wishart` family of dense matrices (natural parameters `(nu, S^-1)`), the normal-Wishart pair as the vector analogue of the normal-gamma pair (the same exact rule: one variable, one factor per observed vector), and an LKJ or Cholesky parameterisation for correlations |
+
+### Count and rate data
+
+| observation | parameter | prior | hyperprior | write | factor | status | page |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Poisson | rate | gamma | none | `rate ~ gamma(a, b)` | `poisson` (conjugate) | runs, exact | `gamma-poisson` |
+| Poisson | rate | gamma | gamma on the prior's rate | `prior ~ gamma(c, d)`, `rate ~ gamma(a, prior)` | `gamma-rate`, `poisson` | runs | `prior-gamma-poisson-hyperprior`, grid |
+| Poisson | rate | log-normal | none | `rate ~ logNormal(m, s)`, `y ~ poisson(rate)` | projected Gaussian on the log, numeric `poisson` with a log link (**a positive latent now works as a rate**) | runs | `prior-lognormal-poisson`, grid |
+| Poisson | log rate | normal | normal on its centre | `centre ~ normal(1, s0)`, `logRate ~ normal(centre, s1)`, `y ~ poisson(exp(logRate))` | numeric `poisson` with a log link | runs | `prior-lognormal-poisson-hyperprior`, grid |
+| exponential | rate | gamma | (gamma on the prior's rate: as the Poisson row) | `rate ~ gamma(a, b)`, `y ~ exponential(rate)` | `gamma-observed` (**new**) | runs, exact | `prior-gamma-exponential`, exact |
+| gamma, known shape | rate | gamma | | `y ~ gamma(k, rate)` | `gamma-observed` (**new**) | runs, exact | test |
+| Weibull, known shape | log scale | normal | normal on its centre | `centre ~ normal(0, s0)`, `logScale ~ normal(centre, s1)`, `y ~ weibull(k, exp(logScale))` | numeric `weibull-log` | runs | `prior-normal-weibull-scale`, grid |
+| Weibull | shape | gamma, log-normal | | `k ~ gamma(...)`, `y ~ weibull(k, s)` | none (a random shape has no rule) | planned | |
+| geometric, negative binomial (known successes) | success probability | beta | none | `y ~ geometric(p)` | `negative-binomial-beta` (**new**) | runs, exact | `prior-beta-geometric`, exact |
+| negative binomial | dispersion | positive latent (half-normal, gamma, log-normal) | | NB2 idiom | `negative-binomial-dispersion` | runs | `ep-plan.md` section 8 |
+
+### Probabilities and categories
+
+| observation | parameter | prior | hyperprior | write | factor | status | page |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Bernoulli, binomial | probability | beta | none | `p ~ beta(a, b)` | `bernoulli`, `binomial` (conjugate) | runs, exact | `beta-bernoulli` |
+| Bernoulli, binomial | probability | beta, symmetric | gamma on the strength | `s ~ gamma(a, b)`, `p ~ beta(s, s)` | `dirichlet-concentration` (**new**, a grid over `log s`) | **runs** | `prior-beta-strength-gamma`, exact (quadrature over s) |
+| Bernoulli, binomial | probability | beta, symmetric | log-normal on the strength | `s ~ logNormal(m, v)`, `p ~ beta(s, s)` | `dirichlet-concentration`, log mode | **runs** | `prior-beta-strength-lognormal`, exact |
+| Bernoulli, binomial | probability | beta with one shape random (`beta(s, 2)`) | gamma or log-normal on it | | `dirichlet-concentration` with offsets | runs (tested) | |
+| Bernoulli, binomial | probability | beta, both shapes random | one hyperprior each | `a ~ logNormal`, `b ~ logNormal`, `p ~ beta(a, b)` | none: the tilted integral is two-dimensional (a grid over `(log a, log b)`) | **planned** | `prior-beta-two-shapes`, grid (refused today) |
+| Bernoulli | log odds | normal (logit-normal) | normal on its centre | `centre ~ normal(0, s0)`, `logit ~ normal(centre, s1)`, `y ~ bernoulli({ logits: logit })` | `logistic` | runs | `prior-logit-normal-bernoulli`, grid |
+| categorical | probabilities | Dirichlet | none | `p ~ dirichlet([a, a, a])` | `discrete` (conjugate) | runs, exact | `prior-dirichlet-categorical`, exact |
+| categorical | probabilities | Dirichlet, symmetric | gamma on the concentration | `s ~ gamma(a, b)`, `p ~ dirichlet(mul(s, const([1, 1, 1])))` | `dirichlet-concentration` (**new**) | **runs** | `prior-dirichlet-strength-gamma`, exact |
+| categorical | log odds | logistic-normal (softmax of Gaussians) | | | a `(K-1)`-dimensional tilted moment | planned: a delta-method or Laplace rule (`ep-plan.md` G) | |
+| categorical switch of a mixture | mixing weights | beta (two components), Dirichlet (more) | gamma on the beta's strength | `pi ~ beta(a, b)`, `z ~ bernoulli({ probs: pi })`, `x ~ normal(at(means, z), s)` | `bernoulli` or `discrete` conjugate factor tied to the gate (**compiler mapping new**) | **runs** | `gate-weight`, `gate-weight-dirichlet`, `gate-weight-hyperprior`, exact (switches summed out) |
+| two-component mixture, switch summed out | mixing weight | beta | | `x ~ normalPair(pi, low, high, s)` | `mixture-weight` (**new**) | **runs**, the same beta as the explicit switches | `gate-weight-summed-out`, exact |
+
+### Bounded and truncated parameters
+
+A uniform or truncated-normal prior on any real parameter is projected onto a Gaussian once, so it is the least faithful row of the
+atlas: the bounds are not enforced by the posterior. `prior-uniform-mean` shows how far the posterior mean moves when the data sit
+well inside the bounds (0.15 posterior sd with bounds of three prior sds around the data). Truncating the posterior itself is the
+`ordered`, `positive`, `interval` constraints, which are comparison factors on a Gaussian latent (`ordered-pair`, `ordered-means`).
+
+### Von Mises (circular data)
+
+Not in the library as a model-layer family or a message family. Planned: a von Mises prior and likelihood on an angle are
+two-dimensional exponential families in `(cos, sin)`, so a message family of two natural parameters and a quadrature (or a Bessel
+function) for the moments gives the same rows as the Gaussian ones (conjugate prior on the mean direction, a gamma-like prior
+on the concentration).
+
+## What the new rules are, and how accurate
+
+Each is tested against an exact or brute-force reference (tests next to the code); the atom pages show the same numbers for fixed
+data.
+
+| rule | what it does | accuracy |
+| --- | --- | --- |
+| `gaussian-normal-gamma` (EP) | an observed Gaussian value on a normal-gamma mean and precision: the message is the factor itself in the family | exact: posterior parameters to 1e-10, log evidence to 1e-8 against the closed form |
+| compiler: `inverseGamma` | the variance is a gamma precision (`Gamma(a, rate b)`), `sqrt(c sigma2)` is the precision idiom with the multiple `1 / c`; the site is read as an inverse gamma | exact with a known mean |
+| compiler: the normal-gamma pair | `mu ~ normal(m, sqrt(sigma2 / kappa))` with `y ~ normal(mu, sqrt(sigma2))` and nothing else reading either: one `normal-gamma` variable (a precision written as a gamma works the same) | exact; the mean's site is a Student t, the variance an inverse gamma |
+| `gamma-observed` | `x ~ Gamma(shape, c r)` observed, `r` gamma: exponential waiting times | exact |
+| `negative-binomial-beta` | geometric and negative binomial counts with a beta probability | exact |
+| `dirichlet-concentration` | a beta or Dirichlet with concentration `w alpha + o`, `alpha` gamma or log-normal: grid over `log alpha`, `p` the matched Dirichlet of the mixture over the grid | beta strength with a gamma prior: `p` 0.6388 +- 0.1431 against 0.6381 +- 0.1417, strength 2.225 +- 1.408 against 2.225 +- 1.431; Dirichlet over three categories: strength 2.362 +- 1.411 against 2.362 +- 1.445, probabilities within 0.002; log-normal strength: sd 2.665 against 2.729 |
+| `mixture-weight` and the Bernoulli over a beta | a mixture's weight with the switches explicit or summed out | the same message either way (the switches have one factor each): `pi` 0.6770 +- 0.1387 against exact 0.6769 +- 0.1383 |
+| log-normal and other positive latents as a rate | a latent carried on its log is addressable by a log-link likelihood | Poisson with a log-normal rate: 3.423 +- 0.894 against 3.423 +- 0.877 |
+
+Hyperprior setups (the atoms' references): a gamma on the prior's rate of a Poisson rate, 3.382 +- 0.888 against 3.382 +- 0.890 and the
+hyperparameter 0.763 +- 0.400 against 0.763 +- 0.406; a normal on the log-rate's centre, 1.2066 against 1.2064 and the centre 1.165
+against 1.165; a gamma on the scale of an inverse-gamma variance, the variance 0.448 +- 0.360 against 0.440 +- 0.295 (the spread of the
+reciprocal of a gamma belief is a fifth too wide) and the scale 1.421 +- 0.826 against 1.421 +- 0.879; the gate's mixing weight with
+a gamma hyperprior on its prior strength, the weight 0.650 against 0.650 and the strength 2.217 +- 1.401 against 2.218 +- 1.425.
+
+## Gaps, in order of value
+
+1. A direct `studentT` / `laplace` / `cauchy` prior on a latent: map to the gamma scale mixture the compiler already runs (the table
+   above says how to write it by hand).
+2. A beta (or Dirichlet) with several random shapes: the two-dimensional tilted integral (`prior-beta-two-shapes` is the planned page).
+3. Matrix families (Wishart, inverse Wishart, normal-Wishart, LKJ): a new family and the exact normal-Wishart rule (big: the family of
+   dense matrices, its moments, a model-layer distribution, the compiler's pair recognition for vectors).
+4. A random Weibull shape, a random Student-t degree of freedom (no exponential-family rule for the gamma's shape).
+5. Logistic-normal categoricals (softmax): a `(K-1)`-dimensional tilt.
+6. The normal-gamma pair with per-observation known multiples that are data vectors (heteroscedastic known weights): scalar multiples
+   only today; a vector of weights compiles to the mean-field-like hierarchy.

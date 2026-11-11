@@ -237,3 +237,13 @@ With WP-A alone EP ran on 19 of the 27 benchmark models; with WP-B merged it run
   matching through a gate is exact); the Gaussian EP gives for a spike-plus-slab posterior is the moment-matched projection of a
   two-hump mixture, so it sits between the humps. EP runs on 24 of the 30 atoms; the other six (exp, tanh, Poisson with a log link,
   half-Cauchy, half-normal, the product of two Gaussians) show the library's reason on their pages.
+
+## 9. The prior atlas (2026-11-11)
+
+`ep-priors.md` is the table of every distribution we observe, its parameters, the priors and hyperpriors EP carries (exact or numeric),
+how to write them and what is still planned. Built with it: inverse-gamma variances, the normal-inverse-gamma pair as one exact
+normal-gamma variable, exponential and gamma observations with a gamma rate, geometric and negative binomial counts with a beta
+probability, a beta or Dirichlet with a gamma or log-normal concentration (`dirichlet-concentration`), a Bernoulli or categorical switch
+with a beta or Dirichlet probability (a gate with an unknown mixing weight) and its summed-out form (`mixture-weight`, `normalPair`),
+a positive latent (log-normal and the like) as a rate of the log-link likelihoods. 21 atom pages (`family: 'priors'` and
+`'gate weights'`), all with the model code that ran at the bottom.

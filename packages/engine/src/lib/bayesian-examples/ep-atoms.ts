@@ -500,20 +500,35 @@ function momentsOf(
  * ```
  */
 export function atomRun(problem: AtomProblem, ep: Config = {}): AtomRun {
-  const bound = atomBound(problem)
+  // region inference
+  const bound = problem.definition.bind(problem.data, problem.bindOptions)
+  // compile to a factor graph and run EP on it: a rule for every factor
   const method = epSpecMethod(bound)
+  // endregion
   const verdict = atomVerdict(problem)
   if (!verdict.applies) return { status: 'refused', reason: verdict.reason, missing: verdict.missing }
   const config: Config = { tol: 1e-9, ...ep }
   const maxSweeps = typeof config['maxSweeps'] === 'number' ? config['maxSweeps'] : 200
   let s: ReturnType<typeof session<never, Config, string>>
   try {
-    s = session(method, { seed: 1, steps: maxSweeps + 2, mode: 'eager', config, logs: 'all' }) as never
+    // region inference
+    // one step is one sweep of EP over the factors, recorded
+    s = session(method, {
+      seed: 1,
+      steps: maxSweeps + 2,
+      mode: 'eager',
+      config,
+      logs: 'all',
+    }) as never
+    // endregion
   } catch (e) {
     return { status: 'failed', reason: e instanceof Error ? e.message : String(e) }
   }
   const read = (state: never): Record<string, Belief> => {
+    // region inference
+    // the beliefs by site
     const posterior = method.posterior?.(state, s.config as never)
+    // endregion
     if (posterior === undefined) return {}
     const out: Record<string, Belief> = {}
     for (const q of problem.quantities) {

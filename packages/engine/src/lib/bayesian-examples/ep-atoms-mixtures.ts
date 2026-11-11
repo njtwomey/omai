@@ -181,10 +181,12 @@ function componentView(
 function knownGateProblem(k: Config): AtomProblem {
   const pi = exampleNumber(k, 'pi')
   const y = exampleNumber(k, 'y')
+  // region gate
   const definition = defineModel('gate-known', (m) => {
     const z = m.latent('z', d.bernoulli({ probs: pi }))
     m.observe('y', d.normal(ops.where(z, 3, 0), 1), m.data('y'))
   })
+  // endregion
   const w1 = pi * normalPdf(y, 3, 1)
   const w0 = (1 - pi) * normalPdf(y, 0, 1)
   const p = w1 / (w1 + w0)
@@ -264,6 +266,7 @@ function randomGateProblem(k: Config, form: 'select' | 'index'): AtomProblem {
     { mean: 2, sd: 1 },
   ]
   const sites: readonly [string, string] = form === 'select' ? ['a', 'b'] : ['mu[0]', 'mu[1]']
+  // region gate-random mixture-components
   const definition =
     form === 'select'
       ? defineModel('gate-random', (m) => {
@@ -279,6 +282,7 @@ function randomGateProblem(k: Config, form: 'select' | 'index'): AtomProblem {
           const mu = m.latent('mu', d.normal(loc, 1), { dims: [comp] })
           m.observe('y', d.normal(mu.at(z), s), m.data('y'))
         })
+  // endregion
   const gate = twoComponentGate(pi, priors, y, s)
   const names: readonly [string, string] = form === 'select' ? ['a', 'b'] : ['mu_1', 'mu_2']
   const selectedView: MixtureView = {
@@ -445,12 +449,14 @@ function spikeSlabGateProblem(k: Config): AtomProblem {
     { mean: 0, sd: spike },
     { mean: 0, sd: slab },
   ]
+  // region spike-and-slab
   const definition = defineModel('spike-and-slab', (m) => {
     const z = m.latent('z', d.bernoulli({ probs: pi }))
     const narrow = m.latent('spike', d.normal(0, spike))
     const wide = m.latent('slab', d.normal(0, slab))
     m.observe('y', d.normal(ops.where(z, wide, narrow), s), m.data('y'))
   })
+  // endregion
   const gate = spikeSlabPosterior(pi, slab, spike, y, s)
   const sites: readonly [string, string] = ['spike', 'slab']
   return {
@@ -520,10 +526,12 @@ function spikeSlabMarginalProblem(k: Config): AtomProblem {
   const slab = exampleNumber(k, 'slab')
   const spike = exampleNumber(k, 'spike')
   const s = SPIKE_NOISE
+  // region spike-and-slab-marginal
   const definition = defineModel('spike-and-slab-marginal', (m) => {
     const w = m.latent('w', d.normalSpikeSlab(pi, slab, spike))
     m.observe('y', d.normal(w, s), m.data('y'))
   })
+  // endregion
   const gate = spikeSlabPosterior(pi, slab, spike, y, s)
   return {
     definition,
@@ -591,6 +599,7 @@ const CLUTTER_SD = 5
 function clutterGateProblem(k: Config): AtomProblem {
   const w = exampleNumber(k, 'share')
   const priorSd = 5
+  // region clutter
   const definition = defineModel('clutter', (m) => {
     const row = m.range('i')
     const theta = m.latent('theta', d.normal(0, priorSd))
@@ -602,6 +611,7 @@ function clutterGateProblem(k: Config): AtomProblem {
       m.data('y', { dims: [row], role: 'response' }),
     )
   })
+  // endregion
   const logPost = (t: number): number =>
     Math.log(normalPdf(t, 0, priorSd)) +
     CLUTTER_Y.reduce((a, v) => a + Math.log((1 - w) * normalPdf(v, t, INLIER_SD) + w * normalPdf(v, 0, CLUTTER_SD)), 0)
@@ -703,10 +713,13 @@ export const clutterAtom: EpAtom = defineAtom({
 function clutterMixtureProblem(k: Config): AtomProblem {
   const share = exampleNumber(k, 'share')
   const [s, width, priorSd] = [0.5, 10, 5]
+  // region clutter-mixture
   const definition = defineModel('clutter-mixture', (m) => {
     const mu = m.latent('mu', d.normal(0, priorSd))
-    m.observe('y', d.normalOutliers(mu, s, share, width), m.data('y', { dims: ['i'], role: 'response' }))
+    const observed = m.data('y', { dims: ['i'], role: 'response' })
+    m.observe('y', d.normalOutliers(mu, s, share, width), observed)
   })
+  // endregion
   const logPost = (x: number): number =>
     Math.log(normalPdf(x, 0, priorSd)) +
     CLUTTER_Y.reduce((a, v) => a + Math.log((1 - share) * normalPdf(v, x, s) + share * normalPdf(v, x, width * s)), 0)

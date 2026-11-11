@@ -120,7 +120,7 @@ export const STRUCTURE_EXPECTED: Readonly<Record<string, StructureFindings>> = {
     collapsible: ['theta'],
     gaussianBlocks: ['mu,theta | tau'],
     minibatch: ['school'],
-    suggestions: ['conditional', 'collapse', 'gaussian-block', 'reparameterise', 'limit'],
+    suggestions: ['conditional', 'collapse', 'gaussian-block', 'reparameterise'],
   },
   // Non-centred: the effects are not sites of a conjugate pair for the handler (an affine map), but {mu, z} is a Gaussian
   // block given tau, and mu and z are conjugate given the rest through the affine map.
@@ -129,7 +129,7 @@ export const STRUCTURE_EXPECTED: Readonly<Record<string, StructureFindings>> = {
     conjugate: ['mu (affine)', 'z (affine)'],
     gaussianBlocks: ['mu,z | tau'],
     minibatch: ['school'],
-    suggestions: ['conditional', 'conditional', 'gaussian-block', 'limit'],
+    suggestions: ['conditional', 'conditional', 'gaussian-block'],
   },
   // Mixtures: the labels are a finite discrete part with width 0 (independent given the means), summed out by enumeration;
   // the means are conjugate and Gaussian given the labels, except that the ordered one has a constraint, which truncates

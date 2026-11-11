@@ -1,6 +1,7 @@
 /**
  * The conjugate probability operators: a Bernoulli outcome with a beta probability, a discrete variable with a
- * Dirichlet probability vector, a Poisson count with a gamma rate and a binomial count with a beta probability. The
+ * Dirichlet probability vector, a Poisson count with a gamma rate, a binomial, geometric or negative binomial count with a
+ * beta probability and an exponential or gamma value with a gamma rate. The
  * variational messages are the usual expected log densities, exact; the EP messages are exact marginals to the
  * outcome and a moment-matched mixture of two conjugate updates to the probability.
  */
@@ -240,5 +241,132 @@ export const binomial: FactorOperator = {
     const k = scalarOf(arg(c, 0))
     const mo = beta.moments(etaOf(arg(c, 1)))
     return lgammaOf(n + 1) - lgammaOf(k + 1) - lgammaOf(n - k + 1) + k * (mo[0] ?? 0) + (n - k) * (mo[1] ?? 0)
+  },
+}
+
+/**
+ * x ~ Gamma(shape, c r) for an observed positive value x and a gamma-distributed rate r (the `shape` and the multiple `c`, as `scale`, in the
+ * parameters, `c` default 1): the exponential waiting time (`shape` 1) and the gamma observation with a known shape, whose
+ * likelihood `r^shape exp(-c x r)` is a gamma in `r`, so the message is exact under every rule.
+ *
+ * @concept factor-operators
+ * @index structure An observed gamma or exponential value with a gamma rate (conjugate).
+ * @example
+ * ```ts
+ * import { gamma, gammaEta, gammaObserved, gaussian, messageArg, valueArg } from 'omai-engine/message-passing'
+ * const args = [valueArg(gaussian, 0.8), messageArg(gamma, gammaEta(2, 1))]
+ * gammaObserved.ep?.({ mode: 'ep', to: 1, args, params: { shape: 1 }, power: 1 }).message // => [1, -0.8]
+ * ```
+ */
+export const gammaObserved: FactorOperator = {
+  name: 'gamma-observed',
+  description: 'x ~ Gamma(shape, c r), x observed, r ~ Gamma (exponential when shape = 1)',
+  ports: [
+    { name: 'x', accepts: ['gaussian'], constant: true, observed: true },
+    { name: 'r', accepts: ['gamma'] },
+  ],
+  support: { ep: 'exact', vmp: 'exact' },
+  ep: (c) => ({
+    message: [numberParam(c.params, 'shape', 1), -numberParam(c.params, 'scale', 1) * scalarOf(arg(c, 0))],
+  }),
+  vmp: (c) => ({
+    message: [numberParam(c.params, 'shape', 1), -numberParam(c.params, 'scale', 1) * scalarOf(arg(c, 0))],
+  }),
+  logEvidence: (c) => {
+    const k = numberParam(c.params, 'shape', 1)
+    const s = numberParam(c.params, 'scale', 1)
+    const x = scalarOf(arg(c, 0))
+    const constant = k * Math.log(s) + (k - 1) * Math.log(x) - lgammaOf(k)
+    return constant + arg(c, 1).family.logPartition(rawSum(etaOf(arg(c, 1)), [k, -s * x]))
+  },
+  expectedLog: (c) => {
+    const k = numberParam(c.params, 'shape', 1)
+    const s = numberParam(c.params, 'scale', 1)
+    const x = scalarOf(arg(c, 0))
+    const mo = arg(c, 1).family.moments(etaOf(arg(c, 1)))
+    return k * (Math.log(s) + (mo[0] ?? 0)) + (k - 1) * Math.log(x) - s * x * (mo[1] ?? 0) - lgammaOf(k)
+  },
+}
+
+/**
+ * k ~ NegativeBinomial(r, p) for an observed number of failures k before the `r`-th success (`successes` in the parameters,
+ * default 1: the geometric distribution, with `k` the trials minus one) and a beta-distributed success probability p: the
+ * likelihood `p^r (1 - p)^k` is a beta in `p`, so the message is exact under every rule.
+ *
+ * @concept factor-operators
+ * @index structure An observed geometric or negative binomial count with a beta probability (conjugate).
+ * @example
+ * ```ts
+ * import { beta, betaEta, gaussian, messageArg, negativeBinomialBeta, valueArg } from 'omai-engine/message-passing'
+ * const args = [valueArg(gaussian, 4), messageArg(beta, betaEta(1, 1))]
+ * negativeBinomialBeta.ep?.({ mode: 'ep', to: 1, args, params: { successes: 1 }, power: 1 }).message // => [1, 4]
+ * ```
+ */
+export const negativeBinomialBeta: FactorOperator = {
+  name: 'negative-binomial-beta',
+  description:
+    'k ~ NegativeBinomial(r, p) failures before the r-th success, k observed, p ~ Beta (geometric when r = 1)',
+  ports: [
+    { name: 'k', accepts: ['gaussian'], constant: true, observed: true },
+    { name: 'p', accepts: ['beta'] },
+  ],
+  support: { ep: 'exact', vmp: 'exact' },
+  ep: (c) => ({ message: [numberParam(c.params, 'successes', 1), scalarOf(arg(c, 0))] }),
+  vmp: (c) => ({ message: [numberParam(c.params, 'successes', 1), scalarOf(arg(c, 0))] }),
+  logEvidence: (c) => {
+    const r = numberParam(c.params, 'successes', 1)
+    const k = scalarOf(arg(c, 0))
+    const logChoose = lgammaOf(k + r) - lgammaOf(k + 1) - lgammaOf(r)
+    return logChoose + arg(c, 1).family.logPartition(rawSum(etaOf(arg(c, 1)), [r, k]))
+  },
+  expectedLog: (c) => {
+    const r = numberParam(c.params, 'successes', 1)
+    const k = scalarOf(arg(c, 0))
+    const mo = beta.moments(etaOf(arg(c, 1)))
+    return lgammaOf(k + r) - lgammaOf(k + 1) - lgammaOf(r) + r * (mo[0] ?? 0) + k * (mo[1] ?? 0)
+  },
+}
+
+/**
+ * An observation of a two-component mixture with an unknown weight, the switch summed out: `l1 p + l0 (1 - p)` for a beta
+ * probability `p`, where `l1` and `l0` (parameters) are the likelihoods of the observation under the second and the first
+ * component. The cavity of `p` times it is the mixture of the two conjugate updates, weighted by `l1 E[p]` and `l0 E[1 - p]`; EP
+ * matches it with a beta. It is what the explicit gate `z ~ Bernoulli(p)` with an observed pair of likelihoods sends to `p` when
+ * the switch `z` has no other factor, so the two routes agree on `p`.
+ *
+ * @concept factor-operators
+ * @index structure A two-component mixture likelihood with a beta weight: the switch summed out.
+ * @example
+ * ```ts
+ * import { beta, betaEta, messageArg, mixtureWeight } from 'omai-engine/message-passing'
+ * const args = [messageArg(beta, betaEta(2, 2))]
+ * mixtureWeight.ep?.({ mode: 'ep', to: 0, args, params: { l1: 3, l0: 1 }, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.543', '0.082']
+ * ```
+ */
+export const mixtureWeight: FactorOperator = {
+  name: 'mixture-weight',
+  description: 'f(p) = l1 p + l0 (1 - p): an observation of a two-component mixture with a beta weight',
+  ports: [{ name: 'p', accepts: ['beta'] }],
+  support: { ep: 'exact' },
+  readsTarget: () => true,
+  ep: (c): OperatorResult => {
+    const eta = etaOf(arg(c, 0))
+    const a = (eta[0] ?? 0) + 1
+    const b = (eta[1] ?? 0) + 1
+    const l1 = numberParam(c.params, 'l1')
+    const l0 = numberParam(c.params, 'l0')
+    const w1 = (l1 * a) / (a + b)
+    const w0 = (l0 * b) / (a + b)
+    const m1 = beta.moments([a, b - 1])
+    const m0 = beta.moments([a - 1, b])
+    const total = w0 + w1
+    const mixed = m1.map((v, i) => (w1 * v + w0 * (m0[i] ?? 0)) / total)
+    return { message: beta.fromMoments(mixed).map((v, i) => v - (eta[i] ?? 0)) }
+  },
+  logEvidence: (c) => {
+    if (!allProper(c.args)) return Number.NaN
+    const eta = etaOf(arg(c, 0))
+    const mean = ((eta[0] ?? 0) + 1) / ((eta[0] ?? 0) + (eta[1] ?? 0) + 2)
+    return massOf(arg(c, 0)) + Math.log(numberParam(c.params, 'l1') * mean + numberParam(c.params, 'l0') * (1 - mean))
   },
 }
