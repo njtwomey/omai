@@ -17,19 +17,20 @@ import { gibbsReference as gibbsTrack } from './ep-program-tracker/reference.ts'
 const SEEDS = [1, 2, 3, 4]
 
 describe('ep-program-cox: a log-Gaussian Cox process', () => {
-  it('recovers the intensity: the true f inside EP intervals and errors within posterior sds, on every seed', () => {
+  it('recovers the intensity: the true f inside EP intervals and errors within posterior sds, on every seed', async () => {
     for (const seed of SEEDS) {
       const sim = simulateCox(seed, { amplitude: 0.8, lengthScale: 1.5 })
-      const { rows, run } = inferCox(sim.counts, sim.prior)
+      const { rows, run } = await inferCox(sim.counts, sim.prior)
       expect(run.status, `seed ${seed}`).toBe('converged')
       const r = recovery(rows, sim.f)
       expect(passes(r), `seed ${seed}: ${JSON.stringify(r)}`).toBe(true)
     }
   }, 60_000)
-  it('agrees with NUTS on the same model (whitened): means within half a posterior sd, spreads within 15%', () => {
+  it('agrees with NUTS on the same model (whitened): means within half a posterior sd, spreads within 15%', async () => {
     const sim = simulateCox(1, { amplitude: 0.8, lengthScale: 1.5 })
-    const { rows } = inferCox(sim.counts, sim.prior)
-    const a = agreement(rows, nutsReference(sim.counts, sim.prior, { chains: 2, warmup: 150, draws: 400 }))
+    const { rows } = await inferCox(sim.counts, sim.prior)
+    const nuts = await nutsReference(sim.counts, sim.prior, { chains: 2, warmup: 150, draws: 400 })
+    const a = agreement(rows, nuts as NonNullable<typeof nuts>)
     expect(a.meanZ).toBeLessThan(0.5)
     expect(a.sdRatioRange[0]).toBeGreaterThan(0.85)
     expect(a.sdRatioRange[1]).toBeLessThan(1.15)
