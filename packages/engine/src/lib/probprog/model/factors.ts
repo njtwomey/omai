@@ -1309,6 +1309,22 @@ class Compiler {
     })
   }
 
+  /**
+   * The end of a mapping that made one variable per element (`vars`, in row-major order of the node's dimensions): the cells are the
+   * node's symbolic value, and the site is laid out as one scalar variable (no dimensions) or one per element.
+   */
+  private finishLatent(
+    node: ModelNode,
+    family: FamilyKind,
+    cells: readonly Cell[],
+    vars: readonly (string | null)[],
+    extra: Partial<Pick<SiteLayout, 'reciprocal' | 'part' | 'correlation'>> = {},
+    kind: SiteLayout['kind'] = 'latent',
+  ): void {
+    this.syms.set(node.name, { dims: node.dims, cells })
+    this.layout(node, kind, family, node.dims.length === 0 ? 'scalar' : 'elements', vars, true, extra)
+  }
+
   private latent(node: ModelNode & { readonly kind: 'latent' }): void {
     const fam = node.dist.family
     const truncated = node.constraint !== undefined && node.constraint.kind !== 'real' && fam === 'normal'
@@ -1406,16 +1422,7 @@ class Compiler {
       cells.push(inverse ? { kind: 'recip', variable: name, scale: 1 } : { kind: 'rv', variable: name, family: kind })
       vars.push(name)
     }
-    this.syms.set(node.name, { dims: node.dims, cells })
-    this.layout(
-      node,
-      'latent',
-      kind,
-      node.dims.length === 0 ? 'scalar' : 'elements',
-      vars,
-      true,
-      inverse ? { reciprocal: true } : {},
-    )
+    this.finishLatent(node, kind, cells, vars, inverse ? { reciprocal: true } : {})
   }
 
   /**
@@ -2163,8 +2170,7 @@ class Compiler {
       cells.push(this.g.varAtom(name))
       vars.push(name)
     }
-    this.syms.set(node.name, { dims: node.dims, cells })
-    this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+    this.finishLatent(node, 'gaussian', cells, vars)
   }
 
   /**
@@ -2258,8 +2264,7 @@ class Compiler {
       cells.push(this.g.varAtom(name))
       vars.push(name)
     }
-    this.syms.set(node.name, { dims: node.dims, cells })
-    this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+    this.finishLatent(node, 'gaussian', cells, vars)
   }
 
   /**
@@ -2311,8 +2316,7 @@ class Compiler {
       cells.push(this.g.varAtom(name))
       vars.push(name)
     }
-    this.syms.set(node.name, { dims: node.dims, cells })
-    this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+    this.finishLatent(node, 'gaussian', cells, vars)
   }
 
   /** A scale with a modelling floor `clip(tau, lo, hi)` read as the scale itself: the floor never binds for a positive scale variable. */
@@ -2368,8 +2372,7 @@ class Compiler {
       cells.push(this.g.varAtom(name))
       vars.push(name)
     }
-    this.syms.set(node.name, { dims: node.dims, cells })
-    this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+    this.finishLatent(node, 'gaussian', cells, vars)
   }
 
   /**
@@ -2439,16 +2442,7 @@ class Compiler {
       out.push(inverse ? { kind: 'recip', variable: name, scale: 1 } : { kind: 'rv', variable: name, family: 'gamma' })
       vars.push(name)
     }
-    this.syms.set(node.name, { dims: node.dims, cells: out })
-    this.layout(
-      node,
-      'latent',
-      'gamma',
-      node.dims.length === 0 ? 'scalar' : 'elements',
-      vars,
-      true,
-      inverse ? { reciprocal: true } : {},
-    )
+    this.finishLatent(node, 'gamma', out, vars, inverse ? { reciprocal: true } : {})
   }
 
   /** A Gaussian latent with a gamma precision: a `gaussian-gamma-precision` factor per element (the mean-field hierarchy of Bishop 2006, 10.2). */
@@ -2469,8 +2463,7 @@ class Compiler {
       cells.push(this.g.varAtom(name))
       vars.push(name)
     }
-    this.syms.set(node.name, { dims: node.dims, cells })
-    this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+    this.finishLatent(node, 'gaussian', cells, vars)
   }
 
   /** The vector at one element of a const parameter that carries an event axis (a Dirichlet's concentrations). */
@@ -2509,8 +2502,7 @@ class Compiler {
       cells.push({ kind: 'rv', variable: name, family: 'dirichlet' })
       vars.push(name)
     }
-    this.syms.set(node.name, { dims: node.dims, cells })
-    this.layout(node, 'latent', 'dirichlet', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+    this.finishLatent(node, 'dirichlet', cells, vars)
   }
 
   /**
@@ -2602,15 +2594,7 @@ class Compiler {
       cells.push({ kind: 'rv', variable: name, family })
       vars.push(name)
     }
-    this.syms.set(node.name, { dims: node.dims, cells })
-    this.layout(
-      node,
-      'latent',
-      isBeta ? 'beta' : 'dirichlet',
-      node.dims.length === 0 ? 'scalar' : 'elements',
-      vars,
-      true,
-    )
+    this.finishLatent(node, isBeta ? 'beta' : 'dirichlet', cells, vars)
   }
 
   /** `S * V + O` for known vectors `V` and `O` over an event axis and a random scalar expression `S`: the form of a Dirichlet's random concentration. */
@@ -2843,8 +2827,7 @@ class Compiler {
         vars.push(name)
       }
     }
-    this.syms.set(node.name, { dims: node.dims, cells })
-    this.layout(node, 'latent', 'discrete', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+    this.finishLatent(node, 'discrete', cells, vars)
   }
 
   /**
@@ -2934,8 +2917,7 @@ class Compiler {
       cells.push({ kind: 'rv', variable: name, family: 'bernoulli' })
       vars.push(name)
     }
-    this.syms.set(node.name, { dims: node.dims, cells })
-    this.layout(node, 'latent', 'bernoulli', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+    this.finishLatent(node, 'bernoulli', cells, vars)
   }
 
   private derived(node: ModelNode & { readonly kind: 'derived' }): void {
@@ -2991,8 +2973,7 @@ class Compiler {
       vars.push(v)
       return this.g.varAtom(v)
     })
-    this.syms.set(node.name, { dims: node.dims, cells: out })
-    this.layout(node, 'derived', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+    this.finishLatent(node, 'gaussian', out, vars, {}, 'derived')
   }
 
   /**
