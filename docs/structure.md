@@ -3881,10 +3881,13 @@ marginals at any time. Imports: `base`, `trace`, `tensor`, `numerics`, `space`, 
 reports is addressed by ids, the same as the picture of the model (`types.ts`; for a spec, `probprog/model/ids.ts`): a
 variable is its name, a factor its `id` (`factor:<site>` from the spec compiler) or `f<i>`, an edge `<factor>><variable>`.
 - Layout (by concern, every folder an inlined part of `omai-engine/message-passing`; the file names below are unchanged,
-  only their folders are new). `core/`: `types.ts`, `args.ts`, `families*.ts`, `graph.ts`, `priors.ts`, `truncated.ts`.
+  only their folders are new). `core/`: `types.ts`, `args.ts`, the internal `_messages.ts` (the conventions operators share: `arg`, `perPower`,
+  `evidenceOrNaN`, `isFlat`, `assertDamping`), `families*.ts`, `graph.ts`, `priors.ts`, `truncated.ts`.
   `numerics/`: `_scalar.ts`, `_dense.ts`, `_bartlett.ts`, `_quadrature.ts`, `_grid.ts`, `_gridn.ts`, `_tilted.ts` (internal)
-  and `numeric-rules.ts` (the `TiltedRule`s of the engine's `numeric` slot). `engine/`: `engine.ts`, `projections.ts`,
-  `schedules.ts`. `algorithms/`: `named.ts`, `power.ts`, `alpha.ts`, `numerical.ts`, `stochastic.ts`, `regions.ts`,
+  and `numeric-rules.ts` (the `TiltedRule`s of the engine's `numeric` slot). `engine/`: `state.ts` (settings and
+  state types), `cavity.ts` (beliefs, marginals, snapshot), `dispatch.ts` (`operatorMessage`), `evidence.ts`, `verdict.ts`,
+  `run.ts` (`messagePassingAlgorithm`), the slots `projections.ts` and `schedules.ts`, and the internal `_cavities.ts`,
+  `_arguments.ts`, `_update.ts` (the proposal, damping and `repairImproper`), `_restart.ts`, `_advance.ts`. `algorithms/`: `named.ts`, `power.ts`, `alpha.ts`, `numerical.ts`, `stochastic.ts`, `regions.ts`,
   `consistent.ts`, `amp.ts`, `anytime.ts`, `clutter.ts`. `operators/`: `registry.ts` and one folder per kind of factor,
   `gaussian/` (`gaussian`, `linear`, `transition`, `extremum`, `log-scale`), `links/` (`truncation`, `links`, `spin`,
   `multiclass`), `lifts/` (`rows`, `plates`), `likelihoods/` (`likelihoods`, `pairs`, `robust`, `prior-sites`, `functions`,
@@ -3941,7 +3944,7 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   is a constructor, not one of the 48: a factor given only by its log density, whose EP messages come from a panelled
   product rule (the fallback for a robust likelihood or the clutter problem). `args.ts`: how operators read their
   arguments. Known limits: VMP has no rule for the hard comparison `greater-than` or for `max` and `min`.
-- `engine.ts`, `projections.ts`, `schedules.ts`, `graph.ts`: the engine (`messagePassingAlgorithm`, `EngineSettings`,
+- `engine/` (`run.ts`, `state.ts`, `cavity.ts`, `evidence.ts`, `verdict.ts`, `projections.ts`, `schedules.ts`) and `core/graph.ts`: the engine (`messagePassingAlgorithm`, `EngineSettings`,
   `MpState`, `marginalsOf`, `evidenceOf`, `beliefOf`, `mpSnapshot`) with its slots: the projection (`momentProjection`
   for EP, `klqpProjection` for VMP, `sumProductProjection` for BP; `projections`, `projectionOf`), the schedule
   (`flooding`, `serial`, `tree`, `residual`, `custom`) and its granularity (`sweep`, `factor`, `message`, which is what
