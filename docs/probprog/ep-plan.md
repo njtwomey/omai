@@ -435,3 +435,87 @@ An ordered log-rate form (`constraint: ordered`, `exp` into a Poisson) was tried
 absurd rates on the swapped ones. A hyperprior tying the rates would make the regimes exchangeable and the swap worse. The barely
 visited regimes are untouched by all of this (section 11); they are the case multi-start EP by evidence (`agent-pp101-evidence`)
 is for.
+
+## 15. WP-E: the log evidence of every rule, kernel hyperparameters on a grid, EP from several starts (2026-11-11, `agent-pp101-evidence`)
+
+**The log evidence.** Every operator of the registry that has an EP rule now has a `logEvidence` (the audit
+`operators/evidence.test.ts` fails on one that has none): by the time this package started all but the gamma-precision rule
+(`gaussian-gamma-precision`, whose tilt grid in `log lambda` already computed the integral) and `matmul-constant` had one. Each is now
+tested against a brute-force integral of the factor against the unnormalised cavities (`exp(eta . T)`, the engine's convention: the
+masses of the Gaussian cavities and the integral of the rest): the gamma-precision rule (a latent value and a known mean, both latent,
+both known, with a scale and an offset), `gamma-rate`, `gamma-product`, `gaussian-mv-precision-scale`, the mixture, Laplace and Student-t
+sites, the Student-t row, the numeric negative binomial with a random dispersion, the gate and `matmul-constant`; the others
+(`apply`, the likelihood sites, the dispersion, the concentration, the Gaussian and conjugate ones) were tested before. The brute
+forces agree to 1e-5 to 1e-7 (the grid is the limit). What the model-level audit found was not a missing rule but a missing case: a cavity
+that is not proper alone. A defined output that nothing else reads (a flat cavity), or a likelihood's site with a negative precision
+as the mean of a Gaussian, made `gaussian`, `dot-constant` and `apply` return NaN and so the whole model's evidence NaN (the `exp`,
+`product`, `max`, half-Cauchy, half-normal, skill-difference, log-link Poisson regressions). They now integrate the pair (or the vector
+and the output) in natural parameters, which needs only the sum to be proper (`logGaussianIntegral`), and a flat output integrates to one.
+
+**EP's model evidence against the grid evidence of the same model** (`bayesian-examples/ep-evidence.test.ts`, 39 atoms; the posterior
+and the tape `mp/evidence` carry it, nothing new was needed there): conjugate setups (Gaussian with a normal-gamma pair, beta-Bernoulli,
+gamma-Poisson, gamma-exponential, beta-geometric, Dirichlet-categorical, normal-inverse-gamma) within 2e-6; a log-link Poisson, a gate
+with a beta weight, the spike and slab, the clutter, the ordered means, a gate of random components, a beta with a random
+concentration within 1e-3 (the gate and the clutter are exact: 0.0000); `exp`, `tanh`, log scale, Student-t within 1e-3, the product (0.006)
+and the max (0.001) of Gaussians, a Gaussian with a gamma precision 0.024 and 0.038 (the gamma projected from a Student-t shaped tilt),
+Laplace 0.04, probit 0.016, logistic 0.019, the skill difference 0.001, a log-normal rate through `exp` 0.003 and 0.004, a Weibull
+0.009, a negative binomial with a learned dispersion 0.2. Three limits: the projected priors (half-normal 0.42, half-Cauchy 0.19, uniform
+0.09 nats: the graph carries the projection, not the prior, gap `projected-priors`); a fixed point with a factor whose cavity is improper
+(the learned logistic regression: NaN, EP skipped that factor's update); an alpha divergence has no EP energy.
+
+**Kernel hyperparameters (`epGridMethod`, kind `ep-grid`).** A Gaussian process with a random length scale has a covariance that is a
+function of a random value, which the graph cannot see through. The method sets the scalar latents a `custom` function reads to each
+value of a grid (evenly in the unconstrained coordinate, so a positive one is log-spaced, between the tails of the prior; `doSpec`), the
+compiler reads the covariance as a constant matrix, EP runs, and the EP log evidence plus the log prior weights the node; the
+posterior is the evidence-weighted mixture (`_site-mixture.ts`: closed-form moments, joint draws, the hyperparameter as draws), a step
+is one node in a coarse-to-fine order, and the grid extends where an edge still has mass (budget `maxNodes`). Compiler changes (all in
+`probprog/model`): a `custom` function of known values is evaluated, one that is affine in one random vector is read as a matrix by
+probing it on the unit vectors (and checked at two other points), and an event vector (a multivariate normal with no named dimension,
+observed through a diagonal known covariance) is read as a vector over a dimension of its size (`event-dims.ts`); a node whose custom
+calls were all read is no longer reported opaque, so a model that compiled passes `epSpecMethod`'s static check too.
+
+Results on the two benchmarks (`gaussian-process-regression`, event form, and `gaussian-process-non-centred`, `f = L(ell) z`): with a
+Gaussian likelihood EP is exact at every node, so the node's evidence equals the textbook marginal likelihood to 1e-8 and the function's
+mean and sd to 1e-7 (`probprog/inference/ep-grid.test.ts`). Against the benchmark's own truth (quadrature over the length scale, the
+function values the mixture of their exact conditionals) at 31 points on the unconstrained scale (64 ms for the centred form, 400 ms for
+the non-centred, which has a 12-dimensional whitened vector): the evidence differs by 4e-7, the length scale 0.9758 +- 0.2571 against
+0.9758 +- 0.2571, the function means within 1e-4 and the sds within 1e-4 of the truth's; 9 points are within 0.012 nats and 0.012 sds,
+17 points 3e-5. The two benchmark rows flip to `runs` (`epCoverage`: benchmarks 25 of 27, atoms 68 of 72; 23 and 46 at the start of
+the package). New atoms: `gp-length-scale` (six points, exact reference by quadrature, `ep-atoms-kernels.ts`) and its extended twin
+`gp-probit-learned` (a probit classifier on eight inputs, labels drawn from a function at a stated length scale; over 40 seeds the 90%
+interval holds the length scale every time because eight binary labels barely move it from the prior, and the function values in 83 to
+98% of the runs, errors 0.9 to 1.15 sds; 3 s for the 40 seeds). Not done: more than a few hyperparameters (the grid is a product; gap
+`grid-hyperparameters`), a kernel node in the model layer that would make the custom function unnecessary, a numeric site over the length
+scale inside one EP run.
+
+**EP from several starts (`epMultiStartMethod`, kind `ep-multistart`; the gap `multimodal`).** The discrete and Bernoulli messages of the
+graph are started from random log-probabilities (sd 2), and, with `exclusions`, from messages that rule out one category of every
+discrete variable (a regime nobody visits); the first start is plain EP. Runs that reach the same fixed point (every site mean within 5% of
+the larger sd) are one mode, only runs that converged count when any did, the weights are the modes' EP evidence, the posterior is the
+mixture of the modes' beliefs (`_site-mixture.ts`), and the model's evidence the log sum of the modes'. A step is one start, so a snapshot
+is the mixture so far. Test (`ep-multistart.test.ts`): two regimes with Poisson counts of which only one has data, the posterior by
+enumeration of the 2^14 assignments (each assignment's evidence and rates are gamma closed forms): for the empty regime the exact posterior is
+17.7 +- 16.9, one run says 23.0 +- 17.1 (a third of an sd off) and the mixture of 30 starts 17.5 +- 16.9; the visited regime is 3.50 +- 1.01 exactly, 3.45 +- 0.49
+for one run (the exact spread counts the steps that may belong to the other regime) and 3.45 +- 0.57 for the mixture.
+
+On the changepoint program (`ep-program-changepoint`, 80 steps, stay 0.95, rates 3, 9, 22, 24 starts, Gibbs reference of the page; spreads as
+ratios of the sampler's, errors in sampler sds; one run -> the mixture):
+
+| seed | the rarely visited regime | the other rates | modes |
+| --- | --- | --- | --- |
+| 2 | rate[1] 19.5 +- 1.06 -> 18.8 +- 5.8 (Gibbs 17.5 +- 7.0): sd ratio 0.15 -> 0.83, error 0.28 -> 0.18 | rate[0] 0.31 -> 0.31, rate[2] 0.12 -> 1.27 | 4 |
+| 5 | rate[1] 8.4 +- 0.85 -> 12.3 +- 6.8 (Gibbs 13.2 +- 7.2): sd ratio 0.12 -> 0.94, error -0.66 -> -0.12 | rate[0] 0.96, rate[2] 0.09 -> 0.75 | 3 |
+| 8 | rate[1] 2.9 +- 0.45 -> 8.8 +- 6.0 (Gibbs 10.1 +- 9.2): sd ratio 0.05 -> 0.65, error -0.78 -> -0.15 | rate[0] 0.21, rate[2] 0.13 (unchanged) | 1 |
+| 1 (all visited) | one run is exact (sd ratios 1.00, 0.97, 1.01) -> the mixture is 4 to 12 times wider: it contains the relabelled modes | | 6 |
+
+So calibration is restored for the regime nobody visits (the spread to 0.65 to 0.94 of the sampler's, the mean within 0.2 sds) and EP's
+mixture needs 2 to 6 EP runs' worth of time per start (23 to 47 s for 24 starts of a chain of 80 steps; 3 s on the easy seed). It is not
+a fix for everything. (1) The relabellings: the three regimes differ only by their rates and the priors (means 4, 12, 30) prefer one
+labelling by 1.4 to 8 nats, so the permuted fixed points carry weight and the mixture is the posterior of the model as written, whose
+marginal rate of "regime 1" is then not one number; the data-ordered Gibbs reference stays in one labelling, so against it a case where
+one run was exact is worse (seed 1: the truth is inside every interval of the mixture, 3.07 +- 1.92, 10.3 +- 6.0, 19.3 +- 5.8). (2) The
+visited rates under label switching on seeds 2 and 8 (the sampler's spread of 6.9 and 9.1 on rate[2] comes from moving between labellings)
+are not recovered on seed 8, where the 24 starts reach one converged mode only, and the runs that stop at the sweep cap (collapsed rates
+2.5/3.1/13.6 on another seed) are left out. (3) The evidence of a fixed point is a good weight where it is the mass of a mode, and
+a poor one for a mode that is an artefact of loops (it is within 1 to 2 nats of the true mode on seed 2). Starts from the data (regimes
+ordered by the counts) and a start for each relabelling are the next steps (gap `multimodal`).

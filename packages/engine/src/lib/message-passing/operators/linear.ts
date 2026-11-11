@@ -22,6 +22,7 @@ import {
   logNormal,
   massOf,
   numberParam,
+  rawSum,
   scalarOf,
   vectorParam,
 } from './args.ts'
@@ -254,11 +255,18 @@ export const dotConstant: FactorOperator = {
   vmp: (c): OperatorResult => dotConstantMessage(c),
   ep: (c): OperatorResult => dotConstantMessage(c),
   logEvidence: (c) => {
+    const w = arg(c, 1)
+    // A latent output: the integral over the vector of its cavity times the output's cavity at a . w, which is the log
+    // partition of the vector's message plus the (exact) message to it. The output may be flat (nothing else reads it) and
+    // need not be proper on its own, only the sum must be.
+    if (arg(c, 0).value === undefined) {
+      const total = rawSum(etaOf(w), dotConstantMessage({ ...c, to: 1 }).message)
+      return w.family.isProper(total) ? w.family.logPartition(total) : Number.NaN
+    }
     if (!allProper(c.args)) return Number.NaN
     const a = vectorParam(c.params, 'a')
     const d = a.length
-    const w = etaOf(arg(c, 1))
-    const { mean, covariance } = gaussianMvMoments(w, d)
+    const { mean, covariance } = gaussianMvMoments(etaOf(w), d)
     const s = gaussianOf(arg(c, 0))
     let m = 0
     for (let i = 0; i < d; i++) m += (a[i] ?? 0) * (mean[i] ?? 0)
@@ -362,6 +370,33 @@ export const matmulConstant: FactorOperator = {
       if (e instanceof OmaiError) throw new ImproperMessageError('matmul-constant: the image of w is degenerate')
       throw e
     }
+  },
+  // y = A w is a point mass: the evidence is the masses of the cavities times the density of the cavity of y at the image of w,
+  // N(my; A mw, Vy + A Vw A'), a vector normal whose covariance must be positive definite.
+  logEvidence: (c) => {
+    if (!allProper(c.args)) return Number.NaN
+    const m = vectorParam(c.params, 'matrix')
+    const rows = arg(c, 0).family.dim
+    const d = arg(c, 1).family.dim
+    const y = gaussianMvMoments(etaOf(arg(c, 0)), rows)
+    const w = gaussianMvMoments(etaOf(arg(c, 1)), d)
+    const image = dgemv(m, rows, d, w.mean)
+    const spread = new Array<number>(rows * rows)
+    for (let r = 0; r < rows; r++)
+      for (let q = 0; q < rows; q++) {
+        let s = y.covariance[r * rows + q] ?? 0
+        for (let a = 0; a < d; a++)
+          for (let b = 0; b < d; b++) s += (m[r * d + a] ?? 0) * (w.covariance[a * d + b] ?? 0) * (m[q * d + b] ?? 0)
+        spread[r * rows + q] = s
+      }
+    const factor = spd(spread, rows)
+    if (factor === undefined) return Number.NaN
+    const gap = Array.from(y.mean, (v, i) => v - (image[i] ?? 0))
+    const solved = factor.solve(gap)
+    let quad = 0
+    for (let i = 0; i < rows; i++) quad += (gap[i] ?? 0) * (solved[i] ?? 0)
+    const logDensity = -0.5 * (rows * Math.log(2 * Math.PI) + factor.logDet + quad)
+    return massOf(arg(c, 0)) + massOf(arg(c, 1)) + logDensity
   },
 }
 

@@ -5,10 +5,12 @@
  */
 
 import { type Json, OmaiError } from '../../base/index.ts'
+import { type CompiledGraph, compileGraph, defaultOperators as factorOperators } from '../../message-passing/index.ts'
 import type { Key } from '../../random/index.ts'
 import { type Algorithm, stateFromJson, stateToJson } from '../../trace/index.ts'
 import type { InferenceEngine } from '../engines/engine.ts'
-import type { SpecAnalysis } from '../model/analysis.ts'
+import { analyseSpec, type SpecAnalysis } from '../model/analysis.ts'
+import { type FactorGraphCompilation, toFactorGraph } from '../model/factors.ts'
 import type { Posterior } from '../posterior.ts'
 import type { Verdict } from './method.ts'
 import { analysisOf, isProgramAnalysis, type MethodModel, type ModelAnalysis, programOf } from './model-input.ts'
@@ -175,5 +177,27 @@ export function guard(
         missing: [...v.missing],
       })
     checked = true
+  }
+}
+
+/** What a model compiles to, made once per method: the compilation, its graph, and the reason when it has none. */
+export interface Prepared {
+  readonly compiled: FactorGraphCompilation
+  readonly graph: CompiledGraph | undefined
+  readonly failure: string | undefined
+}
+
+export function prepare(
+  model: MethodModel,
+  plates: 'vectorise' | 'expand',
+  packScalars: boolean,
+): Prepared | undefined {
+  if (typeof model === 'function') return undefined
+  const compiled = toFactorGraph(model, { analysis: analyseSpec(model), plates, packScalars })
+  if (compiled.graph === undefined) return { compiled, graph: undefined, failure: undefined }
+  try {
+    return { compiled, graph: compileGraph(compiled.graph, factorOperators()), failure: undefined }
+  } catch (e) {
+    return { compiled, graph: undefined, failure: e instanceof Error ? e.message : String(e) }
   }
 }

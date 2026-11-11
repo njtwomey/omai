@@ -17,13 +17,10 @@
 import { OmaiError } from '../../base/index.ts'
 import {
   bpMethod,
-  type CompiledGraph,
-  compileGraph,
   defaultsOf,
   type EpPath,
   epDefaults,
   epMethod,
-  defaultOperators as factorOperators,
   type MpState,
   messagePassingKnobs,
   mpVerdict,
@@ -33,16 +30,18 @@ import {
   vmpMethod,
 } from '../../message-passing/index.ts'
 import { type Config, type Contract, defineContract, derived, Log } from '../../trace/index.ts'
-import { analyseSpec } from '../model/analysis.ts'
-import {
-  type FactorGraphCompilation,
-  factorGraphPosterior,
-  factorGraphVerdict,
-  type MessageRule,
-  toFactorGraph,
-} from '../model/factors.ts'
+import { factorGraphPosterior, factorGraphVerdict, type MessageRule } from '../model/factors.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
-import { guard, isProgramAnalysis, type MethodModel, type ModelAnalysis, no, posteriorJson, yes } from './_support.ts'
+import {
+  guard,
+  isProgramAnalysis,
+  type MethodModel,
+  type ModelAnalysis,
+  no,
+  posteriorJson,
+  prepare,
+  yes,
+} from './_support.ts'
 import { defineInferenceMethod, type InferenceMethod, type Verdict } from './method.ts'
 
 /** The paths an expectation propagation or belief propagation method logs: the engine's, and the posterior of a state as JSON. */
@@ -55,13 +54,6 @@ const TITLE: Readonly<Record<MessageRule, string>> = {
   ep: 'expectation propagation',
   vmp: 'variational message passing',
   bp: 'belief propagation',
-}
-
-/** What a model compiles to, made once per method: the compilation, its graph, and the reason when it has none. */
-interface Prepared {
-  readonly compiled: FactorGraphCompilation
-  readonly graph: CompiledGraph | undefined
-  readonly failure: string | undefined
 }
 
 /** What the compiler of a spec method is told: whether the rows of a regression become one plated factor or a factor each. */
@@ -84,22 +76,12 @@ export interface MpSpecOptions {
   readonly packScalars?: boolean
 }
 
-function prepare(model: MethodModel, plates: 'vectorise' | 'expand', packScalars: boolean): Prepared | undefined {
-  if (typeof model === 'function') return undefined
-  const compiled = toFactorGraph(model, { analysis: analyseSpec(model), plates, packScalars })
-  if (compiled.graph === undefined) return { compiled, graph: undefined, failure: undefined }
-  try {
-    return { compiled, graph: compileGraph(compiled.graph, factorOperators()), failure: undefined }
-  } catch (e) {
-    return { compiled, graph: undefined, failure: e instanceof Error ? e.message : String(e) }
-  }
-}
-
 /** What the analysis alone says, before the graph is built: the features a message-passing method needs. */
-function staticVerdict(a: ModelAnalysis, rule: MessageRule): Verdict | undefined {
+function staticVerdict(a: ModelAnalysis, rule: MessageRule, compiles: boolean): Verdict | undefined {
   if (isProgramAnalysis(a)) return undefined
   const title = TITLE[rule]
-  if (a.opaque.length > 0)
+  // A custom function of known values, or affine in one random vector, is read by the compiler: a model that compiled has nothing opaque left.
+  if (a.opaque.length > 0 && !compiles)
     return no(
       `${title} needs an exponential-family factor graph: ${a.opaque.map((n) => `'${n}'`).join(', ')} ${a.opaque.length > 1 ? 'are' : 'is'} opaque to message passing (a custom call, or a family with no exponential-family form)`,
       ['exponential-family factors'],
@@ -148,7 +130,7 @@ function specMethod<P extends string>(
         ['a model spec'],
         'write the model with defineModel',
       )
-    const s = staticVerdict(a, rule)
+    const s = staticVerdict(a, rule, prepared.graph !== undefined)
     if (s !== undefined) return s
     if (prepared.failure !== undefined)
       return no(`the factor graph does not compile: ${prepared.failure}`, ['a valid factor graph'], 'see toFactorGraph')

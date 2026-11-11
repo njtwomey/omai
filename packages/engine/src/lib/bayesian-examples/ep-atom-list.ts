@@ -34,6 +34,7 @@ import {
 import { gammaPrecisionLearnedAtom, sharedPrecisionLearnedAtom } from './ep-atoms-extended-scales.ts'
 import { expAtom, logScaleAtom, maxAtom, productAtom, tanhAtom } from './ep-atoms-functions.ts'
 import { orderedMeansAtom, orderedPairAtom } from './ep-atoms-gates.ts'
+import { gpLengthScaleAtom, gpProbitLearnedAtom } from './ep-atoms-kernels.ts'
 import {
   gpLogisticAtom,
   gpProbitAtom,
@@ -137,6 +138,8 @@ export const epAtoms: readonly EpAtom[] = [
   skillDifferenceLearnedAtom,
   gpProbitAtom,
   gpLogisticAtom,
+  gpLengthScaleAtom,
+  gpProbitLearnedAtom,
   poissonLogAtom,
   poissonLogLearnedAtom,
   poissonLogDispersionLearnedAtom,

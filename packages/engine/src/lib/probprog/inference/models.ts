@@ -18,6 +18,8 @@ import { abcRejectionMethod, abcSmcMethod } from './abc-methods.ts'
 import { cheesMethod } from './chees-method.ts'
 import { emMethod } from './em-method.ts'
 import { aiesMethod, ensembleSliceMethod } from './ensemble-methods.ts'
+import { epGridMethod } from './ep-grid.ts'
+import { epMultiStartMethod } from './ep-multistart.ts'
 import { chainMethod, conjugateMethod, enumerationMethod, gaussianMethod } from './exact-methods.ts'
 import { gibbsMethod } from './gibbs-method.ts'
 import { importanceMethod } from './importance-method.ts'
@@ -136,6 +138,8 @@ export const methodKinds: Readonly<Record<string, MethodMaker>> = {
   'ensemble-slice': ensembleSliceMethod,
   svi: sviMethod,
   ep: epSpecMethod,
+  'ep-grid': epGridMethod,
+  'ep-multistart': epMultiStartMethod,
   vmp: vmpSpecMethod,
   bp: bpSpecMethod,
   gibbs: gibbsMethod,
