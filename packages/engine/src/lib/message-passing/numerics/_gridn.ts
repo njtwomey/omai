@@ -3,23 +3,11 @@
 // and a correlation as separate variables integrate with. The two-coordinate version of the likelihood sites is `_grid.ts`; this one
 // takes any number of axes (an observed or known coordinate is a single node), a coordinate being the value of a Gaussian, the log of
 // a gamma variable or the logit of a beta variable, each with the Jacobian in its density.
+
 import { OmaiError } from '../../base/index.ts'
-import { gaussLegendre } from '../../numerics/quadrature/index.ts'
-import { toFlat } from '../../tensor/index.ts'
 import type { GridAxis } from './_grid.ts'
+import { legendreRule } from './_quadrature.ts'
 import { digammaOf, lgammaOf, softplusOf, trigammaOf } from './_scalar.ts'
-
-const legendre = new Map<number, { readonly x: Float64Array; readonly w: Float64Array }>()
-
-function rule(order: number): { readonly x: Float64Array; readonly w: Float64Array } {
-  let r = legendre.get(order)
-  if (r === undefined) {
-    const g = gaussLegendre(order)
-    r = { x: Float64Array.from(toFlat(g.nodes)), w: Float64Array.from(toFlat(g.weights)) }
-    legendre.set(order, r)
-  }
-  return r
-}
 
 /** The axis of a beta cavity `Beta(a, b)` in the coordinate `s = logit(u)`: the density of `s` is `u^a (1 - u)^b` over the beta function. */
 export function betaAxis(a: number, b: number): GridAxis {
@@ -52,7 +40,7 @@ const FINE = { panels: 6, order: 4 }
 const PASSES = 6
 
 function panelNodes(lo: number, hi: number, shape: { panels: number; order: number }): { x: number[]; w: number[] } {
-  const r = rule(shape.order)
+  const r = legendreRule(shape.order)
   const x: number[] = []
   const w: number[] = []
   const h = (hi - lo) / shape.panels

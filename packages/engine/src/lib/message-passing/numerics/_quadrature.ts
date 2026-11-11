@@ -67,6 +67,17 @@ export function tiltedGaussian(
 
 const legendre = new Map<number, { readonly x: Float64Array; readonly w: Float64Array }>()
 
+/** The nodes and weights of the Gauss-Legendre rule of `order` points on [-1, 1], made once. */
+export function legendreRule(order: number): { readonly x: Float64Array; readonly w: Float64Array } {
+  let rule = legendre.get(order)
+  if (rule === undefined) {
+    const g = gaussLegendre(order)
+    rule = { x: Float64Array.from(toFlat(g.nodes)), w: Float64Array.from(toFlat(g.weights)) }
+    legendre.set(order, rule)
+  }
+  return rule
+}
+
 /**
  * Nodes and weights of a composite Gauss-Legendre rule over mean +- 9 standard deviations, with the Gaussian density
  * folded into the weights: for integrands that are not smooth enough for Gauss-Hermite (rational in the variable,
@@ -85,12 +96,7 @@ export function gaussianGrid(
   order = 10,
 ): { readonly x: Float64Array; readonly w: Float64Array } {
   if (variance <= 0) return { x: Float64Array.of(mean), w: Float64Array.of(1) }
-  let rule = legendre.get(order)
-  if (rule === undefined) {
-    const g = gaussLegendre(order)
-    rule = { x: Float64Array.from(toFlat(g.nodes)), w: Float64Array.from(toFlat(g.weights)) }
-    legendre.set(order, rule)
-  }
+  const rule = legendreRule(order)
   const sd = Math.sqrt(variance)
   const lo = mean - 9 * sd
   const h = (18 * sd) / panels
@@ -147,12 +153,7 @@ export function gaussianGridOn(
   panels = 12,
   order = 8,
 ): { readonly x: Float64Array; readonly w: Float64Array } {
-  let rule = legendre.get(order)
-  if (rule === undefined) {
-    const g = gaussLegendre(order)
-    rule = { x: Float64Array.from(toFlat(g.nodes)), w: Float64Array.from(toFlat(g.weights)) }
-    legendre.set(order, rule)
-  }
+  const rule = legendreRule(order)
   const h = (hi - lo) / panels
   const x = new Float64Array(panels * order)
   const w = new Float64Array(panels * order)

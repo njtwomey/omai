@@ -3,10 +3,10 @@
 // scalar, a beta with two random shapes) integrate with. A variable is a Gaussian (its coordinate is the value) or a gamma
 // (its coordinate is the log of the value, the density in that coordinate carrying the Jacobian), and the integrand is a
 // function of the two coordinates.
+
 import { OmaiError } from '../../base/index.ts'
-import { gaussLegendre } from '../../numerics/quadrature/index.ts'
-import { toFlat } from '../../tensor/index.ts'
 import type { Arg } from '../core/types.ts'
+import { legendreRule } from './_quadrature.ts'
 import { digammaOf, lgammaOf, trigammaOf } from './_scalar.ts'
 
 /** One coordinate of the integral: where the cavity lives, its normalised log density, and the kinks the integrand has. */
@@ -31,18 +31,6 @@ export interface GridResult {
   /** The final grid, for a caller that needs another expectation under the same weights: the nodes of each axis and `weights[i * n1 + j]`, summing to one. */
   readonly nodes: readonly [Float64Array, Float64Array]
   readonly weights: Float64Array
-}
-
-const legendre = new Map<number, { readonly x: Float64Array; readonly w: Float64Array }>()
-
-function legendreRule(order: number): { readonly x: Float64Array; readonly w: Float64Array } {
-  let rule = legendre.get(order)
-  if (rule === undefined) {
-    const g = gaussLegendre(order)
-    rule = { x: Float64Array.from(toFlat(g.nodes)), w: Float64Array.from(toFlat(g.weights)) }
-    legendre.set(order, rule)
-  }
-  return rule
 }
 
 /** The offsets 0, 2^-(n-1), ..., 1/4, 1/2 of a stretch of n panels, each half the one after it (the last boundary, 1, is the stretch's end). */
