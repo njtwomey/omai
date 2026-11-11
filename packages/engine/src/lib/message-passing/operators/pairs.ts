@@ -33,6 +33,12 @@ export interface PairLikelihood {
   check?(y: number, p: Params): string | undefined
   /** The log density at the coordinates, with the constants of `y` and the parameters precomputed. */
   density(y: number, p: Params): (x0: number, x1: number) => number
+  /**
+   * The same density as a function of the second coordinate that returns a function of the first, when what depends on the second
+   * coordinate alone (a gamma function of a shape, an exponential) is worth computing once per node of it: the grid evaluates the
+   * returned function at every node of the first coordinate. Absent: `density` is used.
+   */
+  column?(y: number, p: Params): (x1: number) => (x0: number) => number
   /** The coordinates at which the density has a kink, for each port (panels are split there). */
   kinks?(y: number, p: Params): readonly [readonly number[], readonly number[]]
 }
@@ -78,6 +84,19 @@ const studentTDf: PairLikelihood = {
       )
     }
   },
+  column: (y, p) => {
+    const scale = numberParam(p, 'scale')
+    const logScale = Math.log(scale)
+    return (t) => {
+      const df = Math.exp(t)
+      const c = lgammaOf((df + 1) / 2) - lgammaOf(df / 2) - 0.5 * Math.log(df * Math.PI) - logScale
+      const half = (df + 1) / 2
+      return (u) => {
+        const z = (y - u) / scale
+        return c - half * Math.log1p((z * z) / df)
+      }
+    }
+  },
 }
 
 /** A Weibull time with random shape `k = exp(x1)` and scale `exp(x0)`; `censored = 1` makes `y` a right-censoring time. */
@@ -100,6 +119,15 @@ const weibullShape: PairLikelihood = {
       return censored ? -tail : t + (k - 1) * logY - k * u - tail
     }
   },
+  column: (y, p) => {
+    const censored = numberParam(p, 'censored', 0) !== 0
+    const logY = Math.log(y)
+    return (t) => {
+      const k = Math.exp(t)
+      const c = censored ? 0 : t + (k - 1) * logY
+      return (u) => (censored ? -Math.exp(k * (logY - u)) : c - k * u - Math.exp(k * (logY - u)))
+    }
+  },
 }
 
 /** A Beta-distributed outcome in (0, 1) with two random shapes `a = exp(x0)` and `b = exp(x1)`. */
@@ -119,6 +147,18 @@ const betaShapes: PairLikelihood = {
       const a = Math.exp(ta)
       const b = Math.exp(tb)
       return (a - 1) * logY + (b - 1) * log1mY + lgammaOf(a + b) - lgammaOf(a) - lgammaOf(b)
+    }
+  },
+  column: (y) => {
+    const logY = Math.log(y)
+    const log1mY = Math.log1p(-y)
+    return (tb) => {
+      const b = Math.exp(tb)
+      const c = (b - 1) * log1mY - lgammaOf(b)
+      return (ta) => {
+        const a = Math.exp(ta)
+        return (a - 1) * logY + c + lgammaOf(a + b) - lgammaOf(a)
+      }
     }
   },
 }
@@ -184,11 +224,24 @@ export function pairLikelihoodOperator(
   const ports: Port[] = [0, 1].map((i) => ({ name: `x${i}`, accepts: ['gaussian', 'gamma'], constant: true }))
   const tilted = (c: OperatorContext): TiltedMoments & { readonly logMass: number } => {
     const { likelihood, y } = resolve(table, c.params)
-    const density = likelihood.density(y, c.params)
+    const density =
+      likelihood.column?.(y, c.params) ??
+      (() => {
+        const flat = likelihood.density(y, c.params)
+        return (x1: number) => (x0: number) => flat(x0, x1)
+      })()
     const kinks = likelihood.kinks?.(y, c.params) ?? [[], []]
     const axes = [axisOf(c.args[0] as never, kinks[0]), axisOf(c.args[1] as never, kinks[1])] as const
     const power = c.power
-    const r = integratePair(axes, power === 1 ? density : (a, b) => power * density(a, b))
+    const r = integratePair(
+      axes,
+      power === 1
+        ? density
+        : (x1) => {
+            const f = density(x1)
+            return (x0) => power * f(x0)
+          },
+    )
     const k = c.to
     const target = c.args[k]?.family as Family
     const moments =

@@ -41,17 +41,6 @@ export interface EpGap {
  */
 export const epGaps: readonly EpGap[] = [
   {
-    id: 'laplace-random-scale',
-    title: 'A Laplace likelihood with a random scale',
-    kind: 'missing-rule',
-    status: 'queued',
-    summary:
-      'The library takes a Laplace likelihood with a known scale only ("the scale of y is random"); the Laplace is a Gaussian scale mixture with an exponential mixing variance, which is not a gamma precision and has no message family, so a Laplace noise whose scale is learned is refused.',
-    plan: 'A two-variable numeric site over the (location, scale) beliefs, in the pattern of `negative-binomial-dispersion` (a Gauss-Hermite product rule over two Gaussian beliefs, the scale on the log), registered under the Laplace observation with a random scale; the `laplace-learned` atom then runs with no change to its page, and its grid posterior is the reference it is held to.',
-    size: 'small',
-    refuses: ['laplace-learned'],
-  },
-  {
     id: 'grid-hyperparameters',
     title: 'Hyperparameters on a grid: a few scalars, one family at a time',
     kind: 'missing-mapping',
@@ -94,28 +83,6 @@ export const epGaps: readonly EpGap[] = [
     plan: 'Map the summed-out mixture with gamma-precision branches and a Beta weight onto the gate of precision branches the compiler already builds, marginalising the switch inside the rule (the evidence and moments are sums over the branches).',
     size: 'small',
     refuses: ['clutter-mixture-learned', 'spike-and-slab-marginal-learned'],
-  },
-  {
-    id: 'two-random-shapes',
-    title: 'A Beta or Dirichlet with several random shapes',
-    kind: 'missing-rule',
-    status: 'open',
-    summary:
-      'A Beta whose two shapes are separate random variables needs the tilted moments of a two-dimensional integral; only one shared random strength (a gamma or log-normal multiple) is mapped.',
-    plan: 'A two-variable numeric rule on a grid, like the negative-binomial dispersion operator; the same rule serves a random Weibull shape and a Student-t with learned degrees of freedom.',
-    size: 'medium',
-    refuses: ['prior-beta-two-shapes'],
-  },
-  {
-    id: 'learned-df',
-    title: 'Random degrees of freedom, a random Weibull shape',
-    kind: 'missing-rule',
-    status: 'open',
-    summary:
-      'A Student-t with learned degrees of freedom and a Weibull with a learned shape have no rule; the degrees of freedom stay a fixed number under EP.',
-    plan: 'The same two-variable numeric rule as above (the likelihood site gains a second Gaussian or gamma variable).',
-    size: 'medium',
-    refuses: [],
   },
   {
     id: 'matrix-families',
@@ -361,7 +328,7 @@ export const epDirections: readonly EpDirection[] = [
     status: 'partial',
     what: 'Waiting times with censoring: Weibull and log-normal regression, competing risks, the Cox model.',
     needs:
-      'Weibull and log-normal likelihoods with right censoring are in the registry; a random shape, interval censoring and the Cox partial likelihood (a ranking over risk sets) are not.',
+      'Weibull and log-normal likelihoods with right censoring are in the registry and a Weibull with a random shape is a pair site (`weibull-shape-learned`); interval censoring, a censoring flag in the model language and the Cox partial likelihood (a ranking over risk sets) are not.',
     size: 'medium',
     pages: [],
   },

@@ -28,8 +28,10 @@ import {
   poissonLogLearnedAtom,
   probitLearnedAtom,
   skillDifferenceLearnedAtom,
+  studentTDfLearnedAtom,
   studentTLearnedAtom,
   weibullLearnedAtom,
+  weibullShapeLearnedAtom,
 } from './ep-atoms-extended-likelihoods.ts'
 import { gammaPrecisionLearnedAtom, sharedPrecisionLearnedAtom } from './ep-atoms-extended-scales.ts'
 import { expAtom, logScaleAtom, maxAtom, productAtom, tanhAtom } from './ep-atoms-functions.ts'
@@ -158,6 +160,8 @@ export const epAtoms: readonly EpAtom[] = [
   priorLogNormalPoissonHyperAtom,
   priorNormalWeibullAtom,
   weibullLearnedAtom,
+  weibullShapeLearnedAtom,
+  studentTDfLearnedAtom,
   priorBetaGeometricAtom,
   priorBetaStrengthGammaAtom,
   priorBetaStrengthLogNormalAtom,

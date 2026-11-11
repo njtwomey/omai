@@ -110,13 +110,14 @@ const PASSES = 6
  * first sweeps of a run, is integrated as well as a narrow one.
  *
  * @param axes - The two coordinates.
- * @param logf - The log of the integrand at a point of the coordinates.
+ * @param column - The log of the integrand as a function of the second coordinate that returns a function of the first, so what
+ * depends on the second coordinate alone (a gamma function of a shape) is computed once per node of it, not once per point.
  * @returns The log mass and the moments of each coordinate under the normalised integrand.
  * @throws OmaiError with code `value` when the integrand has no mass under the cavities.
  */
 export function integratePair(
   axes: readonly [GridAxis, GridAxis],
-  logf: (x0: number, x1: number) => number,
+  column: (x1: number) => (x0: number) => number,
 ): GridResult {
   let window: [number, number][] = axes.map((a) => [a.lo, a.hi])
   let result: GridResult | undefined
@@ -133,11 +134,11 @@ export function integratePair(
     const n1 = grids[1].x.length
     const lw = new Float64Array(n0 * n1)
     let top = Number.NEGATIVE_INFINITY
-    for (let i = 0; i < n0; i++) {
-      const xi = grids[0].x[i] as number
-      const wi = grids[0].logw[i] as number
-      for (let j = 0; j < n1; j++) {
-        const v = wi + (grids[1].logw[j] as number) + logf(xi, grids[1].x[j] as number)
+    for (let j = 0; j < n1; j++) {
+      const f = column(grids[1].x[j] as number)
+      const wj = grids[1].logw[j] as number
+      for (let i = 0; i < n0; i++) {
+        const v = (grids[0].logw[i] as number) + wj + f(grids[0].x[i] as number)
         lw[i * n1 + j] = v
         if (v > top) top = v
       }
@@ -150,21 +151,31 @@ export function integratePair(
       lw[k] = v
       total += v
     }
-    const m = [0, 0]
-    const m2 = [0, 0]
-    const me = [0, 0]
+    // The marginal weights of the nodes of each axis give every moment without visiting the points again.
+    const p0 = new Float64Array(n0)
+    const p1 = new Float64Array(n1)
     for (let i = 0; i < n0; i++)
       for (let j = 0; j < n1; j++) {
         const w = (lw[i * n1 + j] as number) / total
-        const xs = [grids[0].x[i] as number, grids[1].x[j] as number]
-        for (let k = 0; k < 2; k++) {
-          const x = xs[k] as number
-          m[k] = (m[k] as number) + w * x
-          m2[k] = (m2[k] as number) + w * x * x
-          me[k] = (me[k] as number) + w * Math.exp(x)
-        }
+        lw[i * n1 + j] = w
+        p0[i] = (p0[i] as number) + w
+        p1[j] = (p1[j] as number) + w
       }
-    for (let k = 0; k < lw.length; k++) lw[k] = (lw[k] as number) / total
+    const margins = [p0, p1] as const
+    const m = [0, 0]
+    const m2 = [0, 0]
+    const me = [0, 0]
+    for (let k = 0; k < 2; k++) {
+      const xs = grids[k].x
+      const pk = margins[k] as Float64Array
+      for (let i = 0; i < xs.length; i++) {
+        const x = xs[i] as number
+        const w = pk[i] as number
+        m[k] = (m[k] as number) + w * x
+        m2[k] = (m2[k] as number) + w * x * x
+        me[k] = (me[k] as number) + w * Math.exp(x)
+      }
+    }
     const variance = [
       Math.max((m2[0] as number) - (m[0] as number) ** 2, 0),
       Math.max((m2[1] as number) - (m[1] as number) ** 2, 0),
@@ -183,13 +194,7 @@ export function integratePair(
       const [lo, hi] = window[k] as [number, number]
       if (a.point) return [lo, hi]
       const g = (grids[k] as { x: number[] }).x
-      const marginal = new Float64Array(g.length)
-      for (let i = 0; i < n0; i++)
-        for (let j = 0; j < n1; j++) {
-          const w = lw[i * n1 + j] as number
-          const at = k === 0 ? i : j
-          marginal[at] = (marginal[at] as number) + w
-        }
+      const marginal = margins[k] as Float64Array
       const top = marginal.reduce((p, q) => Math.max(p, q), 0)
       let first = 0
       while (first < g.length && (marginal[first] as number) < 1e-9 * top) first++

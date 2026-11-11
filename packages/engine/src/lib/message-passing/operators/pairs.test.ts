@@ -142,6 +142,25 @@ describe('likelihood-pair: tilted moments and log evidence against a brute-force
     check('beta-shapes', 0.3, {}, [gaussianCavity(0.4, 0.5), gaussianCavity(0.8, 0.4)])
     check('beta-shapes', 0.8, {}, [gammaCavity(2, 1), gammaCavity(3, 1.5)])
   })
+  it('the column form of a density is the density', () => {
+    const cases: [string, number, Record<string, number>][] = [
+      ['student-t-df', 1.3, { scale: 0.7 }],
+      ['weibull-shape', 1.6, { censored: 0 }],
+      ['weibull-shape', 2.2, { censored: 1 }],
+      ['beta-shapes', 0.35, {}],
+    ]
+    for (const [name, y, extra] of cases) {
+      const row = pairLikelihoods()[name]
+      const flat = row?.density(y, { y, ...extra }) as (a: number, b: number) => number
+      const column = row?.column?.(y, { y, ...extra }) as (b: number) => (a: number) => number
+      for (const [a, b] of [
+        [0.3, 0.9],
+        [-1.2, 1.7],
+        [0.8, -0.4],
+      ] as const)
+        expect(column(b)(a), `${name} at ${a}, ${b}`).toBeCloseTo(flat(a, b), 10)
+    }
+  })
   it('an observed second coordinate is a point', () => {
     const params = { likelihood: 'laplace-scale', y: 1 }
     const c = gaussianCavity(0, 1)

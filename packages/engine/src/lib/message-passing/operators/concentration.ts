@@ -204,15 +204,17 @@ function twoShapes(c: OperatorContext): {
     throw new ImproperMessageError('beta-two-shapes: the cavity of the probability has no density')
   const [e1, e2] = [eta[0], eta[1]]
   // The cavity of p, p^e1 (1 - p)^e2, against the density Beta(a, b): B(a + e1, b + e2) / B(a, b), a function of the two log shapes.
-  const logf = (ta: number, tb: number): number => {
-    const a = Math.exp(ta)
+  const column = (tb: number) => {
     const b = Math.exp(tb)
-    if (!(a + e1 > 0 && b + e2 > 0)) return Number.NEGATIVE_INFINITY
-    return (
-      lgammaOf(a + e1) + lgammaOf(b + e2) - lgammaOf(a + b + e1 + e2) - (lgammaOf(a) + lgammaOf(b) - lgammaOf(a + b))
-    )
+    const bad = !(b + e2 > 0)
+    const cb = lgammaOf(b + e2) - lgammaOf(b)
+    return (ta: number): number => {
+      const a = Math.exp(ta)
+      if (bad || !(a + e1 > 0)) return Number.NEGATIVE_INFINITY
+      return c.power * (lgammaOf(a + e1) - lgammaOf(a) + cb - lgammaOf(a + b + e1 + e2) + lgammaOf(a + b))
+    }
   }
-  const r = integratePair([axisOf(arg(c, 1)), axisOf(arg(c, 2))], (ta, tb) => c.power * logf(ta, tb))
+  const r = integratePair([axisOf(arg(c, 1)), axisOf(arg(c, 2))], column)
   let m1 = 0
   let m2 = 0
   const n1 = r.nodes[1].length
