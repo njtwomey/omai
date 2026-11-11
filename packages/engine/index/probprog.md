@@ -259,7 +259,7 @@ The model layer: a model written once as a value. A builder (`defineModel`) with
 - function `defineModel`: Build a model spec with named dimensions, data, latents, observations and derived nodes. `src/lib/probprog/model/builder.ts:741` `omai-engine/probprog/model`
 - function `fromProgram`: fromProgram: lift a sample/observe program to a ModelSpec of its site structure; refuses a varying structure. `src/lib/probprog/model/from-program.ts:185` `omai-engine/probprog/model`
 - function `structureReport`: structureReport: what a spec's structure allows, as records and suggestions naming the method to use. `src/lib/probprog/model/analysis.ts:476` `omai-engine/probprog/model`
-- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:983` `omai-engine/probprog/model`
+- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:511` `omai-engine/probprog/model`
 - function `toProgram`: Compile a bound ModelSpec to a sample/observe program every engine runs. `src/lib/probprog/model/compile.ts:267` `omai-engine/probprog/model`
 
 ### probprog/model/dists
