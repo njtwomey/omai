@@ -58,6 +58,12 @@ import {
 } from './ep-atoms-mixtures.ts'
 import { softmaxRegressionAtom, softmaxRegressionLearnedAtom } from './ep-atoms-multiclass.ts'
 import {
+  ordinalProbitAtom,
+  ordinalProbitLearnedAtom,
+  quantileRegressionAtom,
+  quantileRegressionLearnedAtom,
+} from './ep-atoms-ordinal.ts'
+import {
   priorBetaGeometricAtom,
   priorBetaStrengthGammaAtom,
   priorBetaStrengthLogNormalAtom,
@@ -143,6 +149,10 @@ export const epAtoms: readonly EpAtom[] = [
   gpLogisticAtom,
   softmaxRegressionAtom,
   softmaxRegressionLearnedAtom,
+  ordinalProbitAtom,
+  ordinalProbitLearnedAtom,
+  quantileRegressionAtom,
+  quantileRegressionLearnedAtom,
   gpLengthScaleAtom,
   gpProbitLearnedAtom,
   poissonLogAtom,
