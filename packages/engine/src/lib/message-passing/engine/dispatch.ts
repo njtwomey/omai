@@ -9,7 +9,7 @@ import { isFlat } from '../core/_messages.ts'
 import { FLAT_CAVITY_PRECISION } from '../core/args.ts'
 import { ImproperMessageError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
-import type { Arg, Eta, OperatorContext, OperatorResult } from '../core/types.ts'
+import type { Arg, Eta, Memo, OperatorContext, OperatorResult } from '../core/types.ts'
 import { readable } from './_cavities.ts'
 import type { Projection } from './projections.ts'
 
@@ -32,6 +32,7 @@ export type FactorProposal =
  * @param to - The port to send to.
  * @param args - The arguments of every port: the cavities (or the beliefs) and the observed values.
  * @param power - The exponent of the factor in this call (the factor's own power, or the exponent of an alpha update).
+ * @param memo - The cache the operator may keep integrals in (`OperatorContext.memo`); default: one for this call.
  * @returns The proposal.
  */
 export function operatorMessage(
@@ -40,6 +41,7 @@ export function operatorMessage(
   to: number,
   args: readonly Arg[],
   power: number = f.power,
+  memo: Memo = new Map(),
 ): FactorProposal {
   const op = f.operator
   const target = args[to] as Arg
@@ -54,6 +56,7 @@ export function operatorMessage(
     args: shown.args,
     params: f.params,
     power,
+    memo,
     ...(projection.numeric === undefined ? {} : { rule: projection.numeric }),
   }
   const hook = projection.hook === 'ep' ? op.ep : projection.hook === 'vmp' ? op.vmp : op.bp

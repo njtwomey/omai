@@ -21,10 +21,13 @@ export function advancerOf(
   readonly candidateOf: (messages: readonly (readonly number[])[], e: number) => { eta: number[] | null; r: number }
   readonly advance: (state: MpState) => MpState
 } {
+  // The integrals the operators keep for the messages of one sweep (`OperatorContext.memo`): pure functions of their keys, so clearing
+  // it at the end of a sweep only bounds its size.
+  const memo = new Map<string, unknown>()
   const residual = settings.schedule === 'residual'
   const flooding = settings.schedule === 'flooding'
   const candidateOf = (messages: readonly (readonly number[])[], e: number): { eta: number[] | null; r: number } => {
-    const p = propose(g, settings, messages, e)
+    const p = propose(g, settings, messages, e, memo)
     if (p.kind === 'blocked' || p.kind === 'failed') return { eta: null, r: 0 }
     const edge = g.edges[e] as CompiledGraph['edges'][number]
     const family = (g.variables[edge.variable] as CompiledGraph['variables'][number]).family
@@ -44,6 +47,7 @@ export function advancerOf(
     pending: number,
   ): MpState => {
     const { change, beliefs } = sweepChange(g, state.start, messages)
+    memo.clear()
     return {
       messages,
       start: beliefs,
@@ -116,7 +120,7 @@ export function advancerOf(
     const messages = state.messages.slice()
     let unresolved = 0
     for (const e of group) {
-      const proposal = propose(g, s, frozen ?? messages, e)
+      const proposal = propose(g, s, frozen ?? messages, e, memo)
       const dropped = counts.skipped + counts.reset
       messages[e] = resolve(g, s, messages, e, proposal, counts)
       // An update that could not be computed, or that the improper policy dropped or reset, leaves the message as it was or as nothing: it has not been recomputed.

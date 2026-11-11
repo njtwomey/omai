@@ -196,7 +196,16 @@ export interface OperatorContext {
   readonly power: number
   /** The numeric rule the run asks of operators that integrate numerically (`Projection.numeric`); absent: the operator's own. */
   readonly rule?: TiltedRule
+  /**
+   * A cache the engine owns for a stretch of the run (one call of an operator, and for the messages of one sweep): an operator that
+   * integrates once for every port may keep the integral under a key it builds from its inputs alone (`memoised`), so another port, or
+   * the evidence, of the same cavities reuses it. The key must say everything the value depends on; absent: nothing is kept.
+   */
+  readonly memo?: Memo
 }
+
+/** The cache of `OperatorContext.memo`: values by a key built from everything they were computed from. */
+export type Memo = Map<string, unknown>
 
 /** The message an operator sends to the target port. */
 export interface OperatorResult {

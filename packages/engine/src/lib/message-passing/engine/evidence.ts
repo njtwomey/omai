@@ -48,6 +48,7 @@ export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection
           args,
           params: f.params,
           power: f.power,
+          memo: new Map(),
           ...(s.projection.numeric === undefined ? {} : { rule: s.projection.numeric }),
         }) / f.power
       for (const p of f.ports) {
@@ -111,6 +112,7 @@ export function evidenceDefects(
       args,
       params: f.params,
       power: f.power,
+      memo: new Map(),
       ...(s.projection.numeric === undefined ? {} : { rule: s.projection.numeric }),
     })
     if (!Number.isFinite(value)) out.push({ factor: f.id, reason: 'improper cavity' })

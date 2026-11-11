@@ -11,7 +11,7 @@
  */
 
 import { ndtr } from '../../../numerics/special/_kernels.ts'
-import { errorText } from '../../core/_messages.ts'
+import { errorText, keyOf, memoised } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam } from '../../core/args.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { param } from '../../core/params.ts'
@@ -72,18 +72,13 @@ interface Tilt {
 }
 
 /**
- * The last integral, kept: the cavities of the scores of one factor are the same for every port (each port is a different variable),
- * so the messages to the `K` ports and the evidence of one sweep share one integral.
+ * The tilted mean, covariance and log mass of the free scores against the cavities (the integral over normalised cavities). The
+ * cavities of the scores of one factor are the same for every port (each port is a different variable), so the messages to the `K`
+ * ports and the evidence of one sweep share one integral: the engine's cache keeps it under everything it depends on.
  */
-let last: { readonly key: string; readonly value: Tilt } | undefined
-
-/** The tilted mean, covariance and log mass of the free scores against the cavities (the integral over normalised cavities). */
 function tilt(c: OperatorContext): Tilt {
-  const key = JSON.stringify([c.args.map((a) => (a.value !== undefined ? a.value : a.eta)), c.params, c.power])
-  if (last?.key === key) return last.value
-  const value = integrate(c)
-  last = { key, value }
-  return value
+  const inputs = [c.args.map((a) => (a.value !== undefined ? a.value : a.eta)), c.params, c.power, c.rule?.name]
+  return memoised(c, `multiclass-tilt:${keyOf(inputs)}`, () => integrate(c))
 }
 
 /** The integral itself. */

@@ -6,7 +6,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg, errorText, evidenceOrNaN } from '../../core/_messages.ts'
+import { arg, errorText, evidenceOrNaN, keyOf, memoised } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -162,21 +162,16 @@ function precisionTilt(
   x: { readonly mean: number; readonly variance: number },
   u: { readonly mean: number; readonly variance: number },
   lambda: readonly number[],
-  scale = 1,
-  offset = 0,
+  scale: number,
+  offset: number,
+  c: OperatorContext,
 ): Tilt {
   // A gate asks for the same tilt of a branch several times in a row (its evidence, then the message to each variable), and
-  // each is a grid of hundreds of points: the last few are kept by their inputs.
-  const key = `${x.mean},${x.variance},${u.mean},${u.variance},${lambda.join(',')},${scale},${offset}`
-  const hit = tiltCache.get(key)
-  if (hit !== undefined) return hit
-  const made = precisionTiltGrid(x, u, lambda, scale, offset)
-  if (tiltCache.size >= 64) tiltCache.delete(tiltCache.keys().next().value as string)
-  tiltCache.set(key, made)
-  return made
+  // each is a grid of hundreds of points: the engine's cache for the call keeps it under its inputs.
+  return memoised(c, `precision-tilt:${keyOf([x.mean, x.variance, u.mean, u.variance, lambda, scale, offset])}`, () =>
+    precisionTiltGrid(x, u, lambda, scale, offset),
+  )
 }
-
-const tiltCache = new Map<string, Tilt>()
 
 /** What the grid over the precision gives: the moments of both Gaussians and of the precision, and the integral. */
 interface Tilt {
@@ -288,7 +283,7 @@ export const gaussianGammaPrecision: FactorOperator = {
   needsDensity: true,
   ep: (c): OperatorResult => {
     const { scale, offset } = precisionParams(c.params)
-    const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset)
+    const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset, c)
     if (c.to === 0) return { message: gaussianSiteMessage(etaOf(arg(c, 0)), tilt.x.mean, tilt.x.variance) }
     if (c.to === 1) return { message: gaussianSiteMessage(etaOf(arg(c, 1)), tilt.u.mean, tilt.u.variance) }
     return { message: siteMessage(gamma, etaOf(arg(c, 2)), [tilt.logLambda, tilt.lambda]) }
@@ -309,7 +304,7 @@ export const gaussianGammaPrecision: FactorOperator = {
   logEvidence: (c) => {
     return evidenceOrNaN(() => {
       const { scale, offset } = precisionParams(c.params)
-      const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset)
+      const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset, c)
       return massOf(arg(c, 0)) + massOf(arg(c, 1)) + tilt.logZ
     })
   },

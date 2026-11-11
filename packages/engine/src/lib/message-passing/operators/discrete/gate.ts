@@ -98,6 +98,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
     args: argsOf(c, b),
     params: b.params,
     power: 1,
+    ...(c.memo === undefined ? {} : { memo: c.memo }),
     ...(c.rule === undefined ? {} : { rule: c.rule }),
   })
   /**
