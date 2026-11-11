@@ -106,6 +106,11 @@ export function echartsTheme(
   const tabs = [t.tab0, t.tab1, t.tab2, t.tab3, t.tab4, t.tab5, t.tab6, t.tab7, t.tab8, t.tab9]
   const base = tokens(mode)
   const restyled = tabs.some((c, i) => c !== base[`tab${i}` as 'tab0'])
+  // Series labels are plain token-coloured text. A label with no colour of its own gets ECharts' automatic contrast
+  // colour and a stroke to match (dark text with a white outline), which made the values on bars look embossed in dark
+  // mode; a label that sets a colour of its own keeps it.
+  const label = { color: t.fg, textBorderWidth: 0, textShadowBlur: 0 }
+  const labelled = { label, emphasis: { label } }
   return {
     color: restyled ? tabs : tab10,
     backgroundColor: 'transparent',
@@ -117,8 +122,17 @@ export function echartsTheme(
     valueAxis: axis,
     logAxis: axis,
     timeAxis: axis,
-    line: { symbol: 'none', lineStyle: { width: 2 } },
-    scatter: { symbolSize: 7 },
+    line: { symbol: 'none', lineStyle: { width: 2 }, ...labelled },
+    scatter: { symbolSize: 7, ...labelled },
+    bar: labelled,
+    pie: labelled,
+    heatmap: { label: { textBorderWidth: 0, textShadowBlur: 0 } },
+    funnel: labelled,
+    sankey: labelled,
+    boxplot: labelled,
+    candlestick: labelled,
+    graph: labelled,
+    tree: labelled,
     visualMap: { textStyle: { color: t.muted } },
     dataZoom: {
       textStyle: { color: t.muted },
@@ -126,7 +140,8 @@ export function echartsTheme(
       fillerColor: mode === 'dark' ? 'rgba(47,129,247,0.15)' : 'rgba(9,105,218,0.12)',
       handleStyle: { color: t.surface, borderColor: t.muted },
     },
-    markLine: { lineStyle: { color: t.muted }, label: { color: t.fgSecondary } },
+    markLine: { lineStyle: { color: t.muted }, label: { color: t.fgSecondary, textBorderWidth: 0 } },
+    markPoint: { label: { textBorderWidth: 0 } },
     // ECharts describes a chart to a screen reader from its title, series and axes (a view's `ariaOf` text wins).
     aria: { enabled: true },
     animation: false,

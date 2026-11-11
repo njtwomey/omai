@@ -10,6 +10,8 @@ whole probabilistic-programming increment recorded here, under whichever version
 is on `main` so far; the plan is `docs/probprog/PLAN.md` (with its status section), the validation tables are in
 `docs/probprog/results/`.
 
+Chart labels (omai-render): the values on bars and the other series labels are plain token-coloured text with no outline. ECharts gave a label with no colour of its own an automatic contrast colour and a stroke to match, which showed as an embossed, outlined number on a dark page; the theme now sets the colour and no border for the series that carry labels (`echartsTheme`), so every chart is fixed at once, in the page and in SVG export.
+
 Probit classification (omai-engine, `omai-engine/probprog/models`): `probitClassifier(priorScale)` (the probit regression for a design of
 any width), `polynomialFeatureMap` (the inputs standardised, every monomial up to a degree, each column standardised, an intercept
 first, divided by a `weightScale` so the linear predictor is of order one at the starting weights), `probitPredictive` and

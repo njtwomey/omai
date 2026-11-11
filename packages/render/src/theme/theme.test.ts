@@ -1,5 +1,8 @@
 import { palettes } from 'omai-engine/scene'
 import { describe, expect, it } from 'vitest'
+import { bars, cartesian } from '../charts/index.ts'
+import { figure } from '../figure/index.ts'
+import { chartToSvg } from '../svg/export.ts'
 import { axisStyle, baseOption, echartsTheme, themeName } from './echarts.ts'
 import {
   formatDuration,
@@ -153,6 +156,20 @@ describe('echarts theme', () => {
     expect(baseOption('light').color).toEqual(tab10)
     // ECharts describes every chart to a screen reader unless a view gives its own text.
     expect(echartsTheme('light')['aria']).toEqual({ enabled: true })
+  })
+
+  it('draws the values on bars as plain token-coloured text, with no outline (the embossed labels of dark mode)', () => {
+    for (const mode of ['light', 'dark'] as const) {
+      const option = cartesian([bars(['a', 'b'], [{ name: 'n', values: [0.378, 0.46] }], { labels: true, mode })], {
+        mode,
+        figure: figure({ width: 400, height: 300 }),
+      })
+      const svg = chartToSvg(option as never, { width: 400, height: 300, mode })
+      const labels = (svg.match(/<text[^>]*>[^<]*<\/text>/g) ?? []).filter((x) => x.includes('>0.378<'))
+      expect(labels).toHaveLength(1)
+      expect(labels[0]).toContain(`fill="${tokens(mode).fg}"`)
+      expect(labels[0]).not.toContain('stroke=')
+    }
   })
 })
 
