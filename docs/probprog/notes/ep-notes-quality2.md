@@ -9,7 +9,7 @@ times are only comparative within a table.
 
 **What the existing multi-start did on the basic changepoint program** (`ep-program-changepoint`: 80 steps, stay 0.95, rates 3, 9, 22
 with the broad gamma priors of the page, seeds 1 to 24, so 72 intervals): plain EP covers the true rates in 0.778 of the intervals (the
-root mean square of error over sd is 4.55). The multi-start of section 15 of `ep-plan.md` (24 starts, evidence weights) covers 0.931
+root mean square of error over sd is 4.55). The multi-start of section 15 of `ep-changelog.md` (24 starts, evidence weights) covers 0.931
 (root mean square 1.45) and is right to be wider where a regime is hardly visited, but it is **3.9 times wider than the Gibbs sampler on
 average (median 3.0)** on every seed, including the 12 where every regime has at least 5 steps and plain EP is exact: the 24 starts
 find the relabellings of the same reading (the broad priors prefer one labelling by only 1.4 to 8 nats), and the mixture over labels is
@@ -104,7 +104,7 @@ spreads 0.65 of the exact at power 1, 0.49 at 0.7, 0.40 at 0.5, 0.30 at 0.3 (wor
 the exact spread is between power 1.1 and 1.15 (0.76 to 1.0 of the exact, with the mean of the first shape 0.1 to 0.2 exact sds off), so
 the sign of the correction depends on the model. The learned logistic and probit regressions are already packed into one joint vector
 and are calibrated (spreads 1.03 and 1.00 of the exact ones), and a power changes nothing there. The tournament skills do not respond
-to a power or an alpha (section 11 of `ep-plan.md`). So the default is not changed for any other model, and no linear-response or
+to a power or an alpha (section 11 of `ep-changelog.md`). So the default is not changed for any other model, and no linear-response or
 variance-inflation correction was built: where the loop is a missing correlation (the slopes), the right fix is a joint vector
 over the classes (a vector-valued softmax site, the gap `softmax-many-classes`); power EP is the measured stopgap. The "damping-aware
 variance inflation" was not tried: damping does not change the fixed point, only how it is reached.

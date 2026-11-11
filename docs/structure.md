@@ -612,7 +612,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `losses`          | differentiable training objectives and regularisers                                                                                                                                                                                                                                                                           |
 | `rl`              | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation                                                                                                                                                                                                                                  |
 | `games`           | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms                                                                                                                                                                                                                                  |
-| `message-passing` | message passing on factor graphs of exponential families: EP, VMP and BP as settings of one engine, 46 factor operators, variations (power, alpha, numerical, stochastic, regions, expectation consistent, AMP), anytime runs                                                                                                 |
+| `message-passing` | message passing on factor graphs of exponential families: EP, VMP and BP as settings of one engine, 66 factor operators, variations (power, alpha, numerical, stochastic, regions, expectation consistent, AMP), anytime runs                                                                                                 |
 | `probprog`        | probabilistic programs and model specs, model analysis and structure reports, inference engines and the planner, a method per engine, validation and benchmark models, posteriors                                                                                                                                             |
 | `learn`           | estimator protocol, preprocessing, composition, model selection, calibration, conformal, active learning, privacy                                                                                                                                                                                                             |
 | `nn`              | neural networks: functional layers, modules, blocks, description, training, decoding                                                                                                                                                                                                                                          |
@@ -3744,6 +3744,11 @@ end, never what a run computes.
   kernel's length scale): each node conditions the spec on the values (`doSpec`), EP runs on the graph that is left, and the
   EP log evidence plus the log prior weights the node; the posterior is the evidence-weighted mixture, a step is one node in
   a coarse-to-fine order (any snapshot is a usable posterior), and the grid extends outwards where an edge still has mass.
+- `ep-multistart.ts`: `epMultiStartMethod` (kind `ep-multistart`): EP from several starts of the discrete messages (plain, one excluding
+  each category, random; with `labels` the relabellings of every reading found), the distinct fixed points weighted by their EP evidence.
+- `ep-route.ts`: `epRoute(bound)`, the one place that chooses how EP runs a model (`ep`, `ep-grid` or `none`, with the verdict and the
+  method); `ep-knobs.ts`: the run knobs of the three EP methods declared once (`epRunKnobs(method)` with per-method defaults, `EpKnobs`,
+  `checkKnobKeys`, `atPower`, `epRunSettings`).
 - Variational methods beside `sviMethod`: `svi-extra-methods.ts` (`traceGraphSviMethod`, `traceEnumSviMethod`,
   `stickingTheLandingMethod`, `renyiSviMethod`), `svi-guide-methods.ts` (`structuredSviMethod`, `mixtureSviMethod`,
   `amortisedSviMethod`), `svi-natural-method.ts` (`naturalGradientSviMethod`, `conjugateNaturalSviMethod`),
@@ -3853,17 +3858,22 @@ validation oracles (`gridTruth`, `mixtureOracle`, `samplesOracle`). `plans.ts`: 
   15 to 20 percent small.
 
 **The expectation-propagation suite (`ep/`, `omai-engine/probprog/ep`).** What runs the EP rules of `message-passing` through the
-compiler mappings of `probprog/model` and the methods of `probprog/inference`, and measures it against the exact references of
-`probprog/validation`; it imports those and nothing of the pocs. `ep-atoms.ts` is the scaffold of an atom, a bare setup
-of one factor or family (`defineAtom`, `atomRun`, `atomReference`, `atomCheck`, `verifyAtom`, `atomVerdict`, beliefs and
-densities; the lines of `atomRun` marked `inference` and the regions of the atoms' files marked with an atom's name are what a
-page shows as its code), the atoms are in `ep-atoms-{conjugate,gates,mixtures,functions,scales,likelihoods,kernels,nonparametric,
-regression-gates,counts,priors,weights,ordinal,multiclass}.ts` and the learned-parameter variants in
-`ep-atoms-extended-{conjugate,gates,likelihoods,scales}.ts`, the registry is `ep-atom-list.ts` (`epAtoms`, `epAtom`), the closed
-forms and quadratures the references use are in `ep-atoms-quad.ts` and the samplers in `ep-atoms-gibbs.ts`. `ep-extended.ts` is
-calibration and credible intervals of the learned atoms, `ep-recovery.ts` the recovery summaries (interval, active-set score),
-`ep-coverage.ts` is `epCoverage()`, the tested measurement of what EP runs on, and `ep-gaps.ts` the gaps and directions as data,
-tied to what EP refuses by a test. The tests (`ep-*.test.ts`) sit beside them.
+compiler mappings of `probprog/model` and the methods of `probprog/inference`, and measures it against references; it imports those
+(and `probprog/validation` for `gridPosterior` and `mixtureOfRegressions`) and nothing of the pocs, and none of them imports it. The
+design, the layers and how to add a piece are in `docs/probprog/ep.md`; the counts are in the generated `docs/probprog/ep-status.md`
+(`make ep-report`). `ep-atoms.ts` is the scaffold of an atom, a bare setup of one factor or family (`defineAtom`, `atomRun`,
+`atomReference`, `atomCheck`, `verifyAtom`, `atomVerdict`, beliefs and densities; `atom.ep` is a typed `EpKnobs`; the lines of `atomRun`
+marked `inference` and the regions of the atoms' files marked with an atom's name are what a page shows as its code), the atoms are in
+`ep-atoms-{conjugate,gates,mixtures,functions,scales,likelihoods,kernels,nonparametric,regression-gates,counts,priors,weights,ordinal,
+multiclass,covariance}.ts` and the learned-parameter variants in `ep-atoms-extended-{conjugate,gates,likelihoods,scales}.ts` (the ordinal,
+multiclass, kernel and covariance twins sit beside their basic atom), the registry is `ep-atom-list.ts` (`epAtoms`, `epAtom`). The
+references are not in `probprog/validation`: the closed forms and quadratures are in `ep-atoms-quad.ts` (1-D and tensor-grid marginals,
+`GridMarginals.marginal(k)`) and `ep-atoms-covariance-ref.ts`, the samplers in `ep-atoms-gibbs.ts`, and the shared helpers (`lg`, `sum`,
+`once`, a fast normal distribution function) in the private `_util.ts`. `ep-extended.ts` is calibration and credible intervals of the
+learned atoms, `ep-recovery.ts` the recovery summaries (interval, active-set score), `ep-coverage.ts` is `epCoverage()` and
+`vmpCoverage()`, the measurement of what EP and the variational method run on (tested as invariants, not floors), and `ep-gaps.ts` the gaps
+and directions as data, whose refusals are derived from the verdicts (`epGapsRefusing`, `unclaimedRefusals`). The tests (`ep-*.test.ts`)
+sit beside them.
 
 ### 4.32a `message-passing/`: message passing on factor graphs (Infer.NET, libDAI, Minka's EP)
 
@@ -3895,7 +3905,8 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
 - `operators/variational-numeric.ts`: the non-conjugate variational message by quadrature (a numeric operator, a likelihood, a softmax, a
   deterministic function get a mean-field message from their log density alone); `FactorOperator.unsupported` names a factor with no variational
   message because of its parameters (the Weibull shape).
-- `operators/`: the 48 factor operators of `defaultOperators()` (`registry.ts`), each with message rules for the
+- `operators/`: the factor operators of `defaultOperators()` (`registry.ts`; 66 on 2026-11-11, the count is in the generated
+  `docs/probprog/ep-status.md`), each with message rules for the
   projections it supports and tested against numerical integration: `prior`, `gaussian`, `gaussian-gamma-precision`,
   `gaussian-normal-gamma`, `product`, `equal` (`gaussian.ts`); `linear`, `plus`, `difference`, `times-constant`, `sum`,
   `dot-constant`, `matmul-constant`, `linear-regression-row`, `gaussian-joint` (`linear.ts`; the deterministic ones
@@ -8715,7 +8726,7 @@ library for the same computation. They do not set a higher bar than that library
 
 - `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `docs-catalogue`, `build`, `lint`, `format`, `typecheck`,
   `test`, `test-browser`, `coverage`, `docs`, `concepts`, `barrels`, `layers`, `fixtures`, `fixtures-check`,
-  `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`, `probprog-validate`, `ep-digest`, `ep-digest-check`.
+  `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`, `probprog-validate`, `ep-digest`, `ep-digest-check`, `ep-report`, `ep-report-check`, `ep-check`.
 - Two gates: `make verify` for every commit and merge (whole-repo checks that take seconds, among them the public API
   surface digest `make api-surface-check`, which fails on any export added, removed or retyped until `make api-surface`
   is run on purpose, then only the tests,
@@ -8786,6 +8797,10 @@ library for the same computation. They do not set a higher bar than that library
   digest reads no clock and no random source, and two runs of the same code are byte-identical. Not part of `make verify`
   or `make check`: a step of a refactoring of that code runs it (see `docs/probprog/review-compiler.md`,
   `review-rules.md` and `review-suite.md`, "How a step uses the digest").
+- `scripts/ep-report.ts` (`make ep-report`, `make ep-report-check`; `make ep-check` runs the check after its tests): writes
+  `docs/probprog/ep-status.md` from the code (the operator registry by mode, `epCoverage` and `vmpCoverage`, the atoms by family, the gaps
+  with the refusals they derive, the directions) so the status page cannot go stale, and checks that the atlas `docs/probprog/ep-priors.md`
+  names only atoms that run. About half a minute.
 - `scripts/concepts.ts`: concept-taxonomy coverage report against `docs/concepts.yaml`.
 - `scripts/version.ts`: `base/version.ts` and equal package versions (changesets fixed group).
 - `scripts/pack.ts`: build and pack the three packages; collect release assets with a manifest.

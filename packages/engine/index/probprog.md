@@ -39,7 +39,7 @@ The inference engines, part of `omai-engine/probprog`: exact ones (enumeration, 
 
 ## probprog/ep
 
-The expectation-propagation suite of the probabilistic programming stack: the atoms (bare setups of one factor or one family each, written as programs and run through the compiler mappings and the EP methods of `probprog/inference`, with their exact references, the calibration and recovery helpers and the tested measurement of what EP runs on) and the registry of gaps and directions that says what is still missing. The rules themselves are in `message-passing`, the compiler mappings in `probprog/model` and the exact references in `probprog/validation`; this folder composes them.
+The expectation-propagation suite of the probabilistic programming stack: the atoms (bare setups of one factor or one family each, written as programs and run through the compiler mappings and the EP methods of `probprog/inference`, with the references they are checked against (closed forms, quadratures and samplers, in `ep-atoms-quad.ts`, `ep-atoms-covariance-ref.ts` and `ep-atoms-gibbs.ts`; `gridPosterior` comes from `probprog/validation`), the calibration and recovery helpers and the tested measurement of what EP runs on) and the registry of gaps and directions that says what is still missing. The rules themselves are in `message-passing` and the compiler mappings in `probprog/model`; this folder composes them and nothing in the engine imports it. The design is `docs/probprog/ep.md`.
 
 - structure `ep-atoms.ts` (file): EP atom scaffold: a bare setup, its reference, a tolerance, the EP verdict and run. `src/lib/probprog/ep/ep-atoms.ts:1` `omai-engine/probprog/ep`
 

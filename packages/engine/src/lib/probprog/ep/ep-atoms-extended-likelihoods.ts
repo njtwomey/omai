@@ -4,7 +4,7 @@
  * weights share an unknown prior precision, a Poisson regression with a log link (and its overdispersed negative-binomial form
  * with an unknown dispersion), a Weibull regression with a log link and a tournament in which the spread of the skills is
  * unknown. (Stochastic volatility with an unknown level, persistence and innovation precision runs under EP but is not
- * calibrated: its intervals hold the truth in 4 runs of 10, so it is not an atom; see `docs/probprog/ep-plan.md`.) The data are simulated from stated true values and a seed; the page shows what EP recovered of each and, over many
+ * calibrated: its intervals hold the truth in 4 runs of 10, so it is not an atom; see the gap `sv-parameters` in `ep-gaps.ts`.) The data are simulated from stated true values and a seed; the page shows what EP recovered of each and, over many
  * seeds, how often its 90% intervals hold the truth.
  */
 

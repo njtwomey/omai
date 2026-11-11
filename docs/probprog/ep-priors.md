@@ -1,9 +1,11 @@
 # Priors and hyperpriors under expectation propagation: the atlas
 
-Written 2026-11-11. For each distribution we observe, each of its parameters, the priors EP can carry, the hyperprior one level
-above, how to write it in the model layer, the factor it compiles to, and whether it runs today. Statuses are the library's own
-verdicts (each `runs` row has an atom page, or a test, that ran it against an exact or brute-force reference; `docs/probprog/ep-plan.md`
-has the history of the rules). The atoms are `packages/engine/src/lib/probprog/ep/ep-atoms-priors.ts` and
+Written 2026-11-11, statuses corrected as the rules landed. For each distribution we observe, each of its parameters, the priors EP can
+carry, the hyperprior one level above, how to write it in the model layer, the factor it compiles to, and whether it runs today.
+Statuses are the library's own verdicts (each `runs` row has an atom page, or a test, that ran it against an exact or brute-force
+reference; `ep-changelog.md` has the history of the rules). The atoms this atlas names are checked against the coverage by
+`make ep-report-check` (it fails when one does not run), and `ep-status.md` (generated) has the counts; the status words in the rows
+are still written by hand, so a row that says `planned` is where to look when a rule lands. The atoms are `packages/engine/src/lib/probprog/ep/ep-atoms-priors.ts` and
 `ep-atoms-weights.ts`; their pages are in the `expectation-propagation` group of the pocs (`ep-<atom name>`), and each ends with the
 model code that ran.
 
@@ -55,7 +57,7 @@ Atom pages are named `ep-<atom>`. "exact" is a closed-form posterior, "grid" is 
 | ---------------- | ------------------------------------------------------------------- | ------------------ | ---------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | mean vector      | `multivariateNormal` with a known covariance                        | none               | `f ~ multivariateNormal(0, { covariance: K })`                   | `gaussian-mv` prior                             | runs (`gp-probit`, `gp-logistic`)                                                                                                                                                                                                                                                               |
 | mean vector      | coefficients with a shared random precision (a smoothing parameter) | gamma on the scale | `lambda ~ gamma(a, b)`, `beta ~ normal(0, 1 / sqrt(lambda d_j))` | `gaussian-mv-precision-scale`                   | runs (`scaled-precision`, the GAM page)                                                                                                                                                                                                                                                         |
-| precision matrix | Wishart or inverse Wishart (normal-Wishart for the pair)            |                    |                                                                  | no matrix message family, no model-layer family | **planned, big**: a `wishart` family of dense matrices (natural parameters `(nu, S^-1)`), the normal-Wishart pair as the vector analogue of the normal-gamma pair (the same exact rule: one variable, one factor per observed vector), and an LKJ or Cholesky parameterisation for correlations |
+| precision matrix | Wishart or inverse Wishart (normal-Wishart for the pair)            |                    |                                                                  | `mvn-wishart` (the Wishart and normal-Wishart message families) | runs (`mvn-wishart`, `mvn-wishart-learned`, `random-intercepts-slopes`, `bivariate-correlation`); a non-conjugate Wishart beyond dimension 3 and an LKJ prior beyond a bivariate correlation are the gap `matrix-larger` |
 
 ### Count and rate data
 
@@ -126,12 +128,13 @@ a gamma hyperprior on its prior strength, the weight 0.650 against 0.650 and the
 
 ## Gaps, in order of value
 
+The list of 2026-11-11 had six entries; four are closed (a Weibull shape and a Student-t degree of freedom, `weibull-shape-learned`
+and `student-t-df-learned`; a beta with two random shapes, `prior-beta-two-shapes`; the matrix families, `mvn-wishart` and the
+covariance atoms; the logistic-normal categorical, `softmax-regression`). What is left:
+
 1. A direct `studentT` / `laplace` / `cauchy` prior on a latent: map to the gamma scale mixture the compiler already runs (the table
    above says how to write it by hand).
-2. A beta (or Dirichlet) with several random shapes: the two-dimensional tilted integral (`beta-two-shapes`, page `prior-beta-two-shapes`).
-3. Matrix families (Wishart, inverse Wishart, normal-Wishart, LKJ): a new family and the exact normal-Wishart rule (big: the family of
-   dense matrices, its moments, a model-layer distribution, the compiler's pair recognition for vectors).
-4. A random Weibull shape, a random Student-t degree of freedom (no exponential-family rule for the gamma's shape).
-5. Logistic-normal categoricals (softmax): a `(K-1)`-dimensional tilt.
-6. The normal-gamma pair with per-observation known multiples that are data vectors (heteroscedastic known weights): scalar multiples
+2. The normal-gamma pair with per-observation known multiples that are data vectors (heteroscedastic known weights): scalar multiples
    only today; a vector of weights compiles to the mean-field-like hierarchy.
+3. Larger matrices and the softmax beyond six classes: the gaps `matrix-larger` and `softmax-many-classes` (`ep-gaps.ts`, listed with
+   their plans in `ep-status.md`).
