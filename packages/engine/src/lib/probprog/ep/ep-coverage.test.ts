@@ -31,7 +31,7 @@ describe('vmpCoverage', () => {
     for (const r of c.atoms) if (r.status === 'planned') expect(r.reason.length).toBeGreaterThan(10)
   })
 
-  it('runs on at least 78 of 85 atoms (36 before the numeric likelihoods, scales, shapes, softmax, deterministic functions, gamma products and gates had variational messages), 76 of them to a fixed point, and only goes up', () => {
+  it('runs on at least 78 of 86 atoms (36 before the numeric likelihoods, scales, shapes, softmax, deterministic functions, gamma products and gates had variational messages), 76 of them to a fixed point, and only goes up', () => {
     expect(c.atomsRun).toBeGreaterThanOrEqual(78)
     expect(c.atomsConverged).toBeGreaterThanOrEqual(76)
     expect(c.behindEp).toBeLessThanOrEqual(6)

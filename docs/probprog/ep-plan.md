@@ -608,7 +608,7 @@ quantile 0.07 and 0.02, draws 0.12 (loops), softmax 0.30 (loops).
 
 **What was there.** Of the 60 operators of `defaultOperators()`, 30 had a variational (mean-field) message: the conjugate and affine ones, the probit
 and logistic links (Albert-Chib, Jaakkola-Jordan), the normal-gamma, the gate and the stick-breaking assignment. The other 30 had EP only, so the
-variational comparison was missing for 49 of the 85 atoms (36 ran).
+variational comparison was missing for 49 of the 86 atoms (36 ran).
 
 **The rule that closes most of it: the non-conjugate message (`operators/variational-numeric.ts`).** Knowles and Minka's non-conjugate variational
 message passing: the message of a factor to a port is the natural gradient of `E_q[log f]` in that port's belief, `F^-1 Cov_q(T, log f)` with `T` the
@@ -648,7 +648,7 @@ scale, the negative binomial dispersion, the Dirichlet concentration, `beta-two-
 `gaussian-transition`; the deterministic ones against the bound of the model with the output substituted. `matmul-constant` is the `dot-constant` rule on a
 one-row matrix; the row operators equal the expanded graph (predictor variable) to 1e-6.
 
-**Coverage (`vmpCoverage` in `ep-coverage.ts`, tested with a floor).** Atoms under variational message passing: **78 of 85 run** (36 before), 77 to a
+**Coverage (`vmpCoverage` in `ep-coverage.ts`, tested with a floor).** Atoms under variational message passing: **78 of 86 run** (36 before), 77 to a
 fixed point, 6 that EP runs are still planned. Against each atom's reference (closed form or grid), the mean error and the ratio of the standard
 deviations of the 16 atoms of the accuracy test: means within 0.5 sd (most within 0.1), spreads 0.53 to 1.1 of the reference (a mean field
 under-estimates: gamma-precision 0.88, quantile regression 0.81, softmax regression 0.73, Student-t 0.99, Poisson 0.97, Laplace 1.06 (a kinked
