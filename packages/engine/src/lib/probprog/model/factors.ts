@@ -4978,6 +4978,8 @@ export function factorGraphPosterior(
     readonly status?: 'completed' | 'converged' | 'stopped'
     /** Why the run did not converge, when it did not (see `mpVerdict`): carried in the diagnostics. */
     readonly reason?: string
+    /** An evidence to report where the state's own is undefined (an improper cavity of a plated factor), and the method that gave it. */
+    readonly evidence?: { readonly value: number; readonly method: string }
   } = {},
 ): Posterior {
   if (c.graph === undefined)
@@ -5101,7 +5103,9 @@ export function factorGraphPosterior(
     marginals: out,
     ...(Number.isFinite(evidence)
       ? { logEvidence: { value: evidence, method: rule === 'vmp' ? 'elbo' : rule === 'bp' ? 'bethe' : 'ep-energy' } }
-      : {}),
+      : options.evidence !== undefined && Number.isFinite(options.evidence.value)
+        ? { logEvidence: options.evidence }
+        : {}),
     diagnostics: {
       sweeps: state.sweeps,
       updates: state.updates,
@@ -5114,7 +5118,7 @@ export function factorGraphPosterior(
       ...(options.reason === undefined ? {} : { reason: options.reason }),
       // Why there is no evidence (when there is none): the factors with no part of it. A plated factor whose cavity is improper
       // (a negative-precision site on the weights) is the usual one; `plates: 'expand'` has a proper cavity per row.
-      ...(rule === 'ep' && !Number.isFinite(evidence)
+      ...(rule === 'ep' && !Number.isFinite(evidence) && options.evidence === undefined
         ? {
             evidenceUndefinedAt: evidenceDefects(g, { projection: projectionOf(rule) }, state).map(
               (d) => `${d.factor}: ${d.reason}`,

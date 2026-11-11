@@ -19,6 +19,7 @@ import {
   bpMethod,
   defaultsOf,
   type EpPath,
+  epAlgorithm,
   epDefaults,
   epMethod,
   type MpState,
@@ -29,7 +30,7 @@ import {
   type VmpPath,
   vmpMethod,
 } from '../../message-passing/index.ts'
-import { type Config, type Contract, defineContract, derived, Log } from '../../trace/index.ts'
+import { type Config, type Contract, defineContract, derived, Log, runAlgorithm } from '../../trace/index.ts'
 import { factorGraphPosterior, factorGraphVerdict, type MessageRule } from '../model/factors.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
 import {
@@ -151,6 +152,35 @@ function specMethod<P extends string>(
       ? 'a closure program has no factor graph'
       : (prepared.failure ?? prepared.compiled.issues.map((i) => `${i.node}: ${i.reason}`).join('; '))
   const tol = (config: Config): number => (typeof config['tol'] === 'number' ? config['tol'] : epDefaults.tol)
+  // The evidence of a state whose plated factor has an improper cavity, from the same model with a factor per row, by state.
+  const rowEvidence = new WeakMap<MpState, { readonly value: number; readonly method: string } | null>()
+  const evidenceByRows = (
+    state: MpState,
+    config: Config,
+  ): { readonly value: number; readonly method: string } | null => {
+    const known = rowEvidence.get(state)
+    if (known !== undefined) return known
+    let found: { readonly value: number; readonly method: string } | null = null
+    const rows = prepare(model, 'expand', options.packScalars ?? rule === 'ep')
+    if (rows?.graph !== undefined) {
+      const run = runAlgorithm(
+        epAlgorithm(rows.graph, {
+          tol: tol(config),
+          maxSweeps: 400,
+          damping: typeof config['damping'] === 'number' ? config['damping'] : defaultsOf(rule).damping,
+        }),
+        { maxSteps: 402, seed: 1 },
+      )
+      const v = factorGraphPosterior(rows.compiled, rows.graph, run.state as MpState, {
+        engine: name,
+        rule,
+      }).logEvidence
+      if (v !== undefined && Number.isFinite(v.value) && run.status === 'converged')
+        found = { value: v.value, method: 'ep-energy (rows expanded)' }
+    }
+    rowEvidence.set(state, found)
+    return found
+  }
   const posterior = (state: MpState, config: Config): Posterior => {
     if (prepared?.graph === undefined)
       return definePosterior({
@@ -170,12 +200,35 @@ function specMethod<P extends string>(
       restarts: typeof config['restarts'] === 'number' ? config['restarts'] : defaultsOf(rule).restarts,
       projection: projectionOf(rule),
     })
-    return factorGraphPosterior(prepared.compiled, prepared.graph, state, {
+    const status = verdict.status === 'converged' ? 'converged' : 'stopped'
+    const reason = verdict.reason === undefined ? {} : { reason: verdict.reason }
+    const own = factorGraphPosterior(prepared.compiled, prepared.graph, state, {
       engine: name,
       rule,
-      status: verdict.status === 'converged' ? 'converged' : 'stopped',
-      ...(verdict.reason === undefined ? {} : { reason: verdict.reason }),
+      status,
+      ...reason,
     })
+    // A converged run whose plated factor has an improper cavity has no EP energy of its own: the evidence of the same model with a
+    // factor per row (each cavity proper) stands for it, and the diagnostics say so.
+    if (
+      rule !== 'ep' ||
+      status !== 'converged' ||
+      (options.plates ?? 'vectorise') === 'expand' ||
+      own.logEvidence !== undefined ||
+      !Array.isArray(own.diagnostics['evidenceUndefinedAt']) ||
+      own.diagnostics['evidenceUndefinedAt'].length === 0
+    )
+      return own
+    const evidence = evidenceByRows(state, config)
+    return evidence === null
+      ? own
+      : factorGraphPosterior(prepared.compiled, prepared.graph, state, {
+          engine: name,
+          rule,
+          status,
+          ...reason,
+          evidence,
+        })
   }
   const base = knobs.contract as Contract<MpState, string>
   const contract = (): Contract<MpState, P> =>
