@@ -103,10 +103,19 @@ describe('ep-program-changepoint-extended: the same program with the rates and t
       { ...floor, seeds: runs.length },
       runs.map((r) => r.ep),
     )
+    // Six seeds cannot hold a parameter to a floor of 0.7 (that is five of six): the stay probability of the low regime is covered
+    // on 4 of these 6 (seeds 14 and 18 miss by 0.004 and 0.015 above the 90% interval's upper end; these seeds were chosen for the
+    // label switching, not for coverage), and the same run on every seed of 1 to 30 with all regimes visited and EP converged (22
+    // seeds) covers it 18 times in 22 (0.82; Gibbs 0.72 in the plan's table, the prior pulls the stay probabilities towards 0.67).
+    // The numbers are the same to seven digits on every commit from the program's first to main, so this is the sample, not drift.
+    // So each parameter is held to three of six (0.5), and the pooled coverage of all 12 parameters (72 intervals, nominal 0.9,
+    // sd 0.035) to 0.8, which is the check that can tell a miscalibrated EP from a small sample.
     for (const row of ep.rows) {
-      expect(row.coverage, row.key).toBeGreaterThanOrEqual(0.7)
+      expect(row.coverage, row.key).toBeGreaterThanOrEqual(0.5)
       expect(row.zrms, row.key).toBeLessThan(1.6)
     }
+    const pooled = ep.rows.reduce((a, r) => a + r.coverage, 0) / ep.rows.length
+    expect(pooled, 'pooled coverage of the 90% intervals').toBeGreaterThanOrEqual(0.8)
   }, 60_000)
 
   it('is wrong, and says so, when a regime is barely visited (seeds 2, 10, 15, 24, 27): EP commits to one reading where Gibbs is spread', async () => {
