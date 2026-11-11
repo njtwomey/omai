@@ -236,6 +236,14 @@ export interface FactorOperator {
    */
   readonly readsTarget?: boolean | ((to: number) => boolean)
   /**
+   * True when the operator needs a density at every Gaussian port (it integrates over the cavities) and cannot read one that is
+   * still flat (no information yet). The engine's one policy for improper first messages then applies: a flat Gaussian cavity is
+   * shown to the operator as a very wide one (`FLAT_CAVITY_PRECISION`), and the message it returns is taken back against the flat
+   * cavity, so the factor speaks on a variable that nothing else has spoken of yet and the others' first messages decide.
+   * Absent: the operator reads a flat cavity itself (a pushforward, a prior) or sends nothing (`readsTarget`).
+   */
+  readonly needsDensity?: boolean
+  /**
    * True when the operator reads `OperatorContext.power` (fractional EP); the engine refuses a power on the others. A function
    * of the parameters for an operator that takes one only for some of its configurations (a gate, by its branches); see `takesPower`.
    */

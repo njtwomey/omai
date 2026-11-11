@@ -10,9 +10,15 @@ import {
 import { sigmoidOf } from '../base/index.ts'
 import { truncatedNormal } from '../dists/index.ts'
 import { item } from '../tensor/index.ts'
+import { operatorMessage } from './engine.ts'
 import * as M from './index.ts'
+import { momentProjection } from './projections.ts'
 
-const runs = { numRuns: 12 }
+// OMAI_FC_SEED runs every property of this file on one fixed seed: a property that depends on its seed shows on a few of them.
+if (process.env['OMAI_FC_SEED'] !== undefined) fc.configureGlobal({ seed: Number(process.env['OMAI_FC_SEED']) })
+// OMAI_FC_SCALE multiplies every property's number of runs (a stress run, 15 times the runs, found nothing on five seeds).
+const scale = Number(process.env['OMAI_FC_SCALE'] ?? 1)
+const runs = { numRuns: 12 * scale }
 const mean = fc.double({ min: -2, max: 2, noNaN: true })
 const variance = fc.double({ min: 0.3, max: 3, noNaN: true })
 const gaussianArg = fc.tuple(mean, variance).map(([m, v]) => M.gaussianEta(m, v))
@@ -81,7 +87,8 @@ describe('Gaussian operators equal the integral of the exact message', () => {
         near(implied(gaussian, es, m), brute.moments, 1e-4)
         expect(M.gaussianLogScale.logEvidence?.(ctx(1, args, { loc }))).toBeCloseTo(brute.logZ, 4)
       }),
-      runs,
+      // The counterexample of seed 1395539355 (a precise outcome, a sharp peak in the log scale): the reference adapts to it now.
+      { ...runs, examples: [[[-0.3959524544892656, 0.3395338044369565], -2.999999999999082, 0]] },
     )
   })
   it('gaussian with an observed argument is the likelihood of the mean', () => {
@@ -140,10 +147,12 @@ describe('Gaussian operators equal the integral of the exact message', () => {
           }
         }
       }),
-      { numRuns: 4 },
+      { numRuns: 4 * scale },
     )
   })
   it('product: EP to the output and to each factor', () => {
+    // The product has a ridge along a b = y that the 14-panel grid resolves only to about 2e-4 when y is precise and a, b are wide.
+    const brute = { panels: 30, order: 14 }
     fc.assert(
       fc.property(gaussianArg, gaussianArg, gaussianArg, (ey, ea, eb) => {
         const args = [msg(gaussian, ey), msg(gaussian, ea), msg(gaussian, eb)]
@@ -154,22 +163,32 @@ describe('Gaussian operators equal the integral of the exact message', () => {
         ]
         near(
           implied(gaussian, ey, M.product.ep?.(ctx(0, args)).message as M.Eta),
-          bruteTilted(free, () => 0, 0, { panels: 14, order: 14 }).moments,
+          bruteTilted(free, () => 0, 0, brute).moments,
           3e-4,
         )
         // To a: b is integrated out; y = a b is the derived port of a free (a, b) pair.
         near(
           implied(gaussian, ea, M.product.ep?.(ctx(1, args)).message as M.Eta),
-          bruteTilted(free, () => 0, 1, { panels: 14, order: 14 }).moments,
+          bruteTilted(free, () => 0, 1, brute).moments,
           1e-4,
         )
         near(
           implied(gaussian, eb, M.product.ep?.(ctx(2, args)).message as M.Eta),
-          bruteTilted(free, () => 0, 2, { panels: 14, order: 14 }).moments,
+          bruteTilted(free, () => 0, 2, brute).moments,
           1e-4,
         )
       }),
-      { numRuns: 4 },
+      // The counterexample that 14 panels could not resolve (a precise y against wide a and b: the brute-force error was 2.2e-4).
+      {
+        numRuns: 4 * scale,
+        examples: [
+          [
+            [0, 3.3333333333333335],
+            [-0.11952662893229665, 0.38647342995170597],
+            [0, 0.3333333333340008],
+          ],
+        ],
+      },
     )
   })
   it('product with nothing known about y is the matched pushforward', () => {
@@ -404,7 +423,7 @@ describe('truncation operators', () => {
           expect(toB[0]).toBeCloseTo(Math.log(inMass) - Math.log(total - inMass), 5)
         }
       }),
-      { numRuns: 6 },
+      { numRuns: 6 * scale },
     )
   })
   it('truncatedNormalMoments agrees with the truncated normal distribution of dists', () => {
@@ -670,7 +689,7 @@ describe('discrete operators', () => {
           expect(M.select.logEvidence?.(ctx(0, args, params))).toBeCloseTo(Math.log(zz), 6)
         },
       ),
-      { numRuns: 5 },
+      { numRuns: 5 * scale },
     )
   })
 })
@@ -703,8 +722,15 @@ describe('variational operators equal the expected log factor', () => {
   it('gaussian-gamma-precision starts from a flat cavity of a latent value: a proper message, the prior predictive', () => {
     // x ~ N(0, 1 / lambda), lambda ~ Gamma(2, 2), nothing yet known of x: the message to x is the matched Student-t (variance E[1/lambda] = rate / (shape - 1) = 2).
     const args = [msg(gaussian, gaussian.flat), M.valueArg(gaussian, 0), msg(M.gamma, M.gammaEta(2, 2))]
-    expect(M.gaussianGammaPrecision.readsTarget).toBeTypeOf('function')
-    const message = M.gaussianGammaPrecision.ep?.(ctx(0, args)).message as M.Eta
+    // The operator declares that it needs a density; the engine shows a flat cavity wide (flat-cavity.test.ts).
+    expect(M.gaussianGammaPrecision.needsDensity).toBe(true)
+    const p = operatorMessage(
+      { operator: M.gaussianGammaPrecision, params: {}, power: 1, ports: [] } as never,
+      momentProjection,
+      0,
+      args,
+    )
+    const message = p.kind === 'message' ? p.eta : []
     expect(message[0]).toBeCloseTo(0, 6)
     expect(1 / (message[1] as number)).toBeCloseTo(2, 2)
   })

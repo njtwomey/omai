@@ -11,7 +11,7 @@
 import { type Json, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, type RunStatus, stateFromJson, stateToJson } from '../trace/index.ts'
 import type { CompiledGraph } from './graph.ts'
-import { ImproperMessageError } from './operators/args.ts'
+import { FLAT_CAVITY_PRECISION, ImproperMessageError } from './operators/args.ts'
 import type { Projection } from './projections.ts'
 import { type CustomOrder, type Granularity, type Plan, planOf, type ScheduleKind } from './schedules.ts'
 import { type Arg, type Eta, type OperatorContext, type OperatorResult, takesPower } from './types.ts'
@@ -248,6 +248,35 @@ function rawCavity(g: CompiledGraph, messages: readonly (readonly number[])[], f
   })
 }
 
+export { FLAT_CAVITY_PRECISION }
+
+/**
+ * The arguments an operator that `needsDensity` is shown: every flat Gaussian message replaced by a very wide one. Returns the
+ * arguments unchanged for the others, and for a context in which nothing is flat.
+ *
+ * @param operator - The operator.
+ * @param args - The cavities (or beliefs) and observed values.
+ * @param to - The port the message is for.
+ * @returns The arguments to show, and whether the target port was widened.
+ */
+function readable(
+  operator: CompiledGraph['factors'][number]['operator'],
+  args: readonly Arg[],
+  to: number,
+): { readonly args: readonly Arg[]; readonly widenedTarget: boolean } {
+  if (operator.needsDensity !== true) return { args, widenedTarget: false }
+  const flat = (a: Arg): boolean =>
+    a.eta !== undefined &&
+    a.family.kind === 'gaussian' &&
+    Math.abs(a.eta[0] ?? 0) < 1e-12 &&
+    Math.abs(a.eta[1] ?? 0) < 1e-12
+  if (!args.some(flat)) return { args, widenedTarget: false }
+  return {
+    args: args.map((a): Arg => (flat(a) ? { ...a, eta: [0, FLAT_CAVITY_PRECISION] } : a)),
+    widenedTarget: flat(args[to] as Arg),
+  }
+}
+
 /** What an update proposes: a message, no information (a flat one), nothing (the old message stays), or a failure. */
 export type FactorProposal =
   | { readonly kind: 'message'; readonly eta: Eta }
@@ -279,11 +308,14 @@ export function operatorMessage(
   const op = f.operator
   const target = args[to] as Arg
   const reads = typeof op.readsTarget === 'function' ? op.readsTarget(to) : op.readsTarget === true
-  if (reads && target.eta !== undefined && !target.family.isProper(target.eta)) return { kind: 'blocked' }
+  const shown = readable(op, args, to)
+  // A flat target of an operator that needs a density is shown wide, so it is not blocked; an improper one still is.
+  if (reads && !shown.widenedTarget && target.eta !== undefined && !target.family.isProper(target.eta))
+    return { kind: 'blocked' }
   const ctx: OperatorContext = {
     mode: projection.hook,
     to,
-    args,
+    args: shown.args,
     params: f.params,
     power,
     ...(projection.numeric === undefined ? {} : { rule: projection.numeric }),
@@ -293,6 +325,10 @@ export function operatorMessage(
     let result: OperatorResult
     if (hook !== undefined) {
       result = hook.call(op, ctx)
+      // The message of a moment-matching rule is the projection divided by the cavity it was shown: against the flat cavity
+      // that is the same message plus the wide one.
+      if (shown.widenedTarget && projection.hook === 'ep')
+        result = { ...result, message: result.message.map((v, i) => v + (i === 1 ? FLAT_CAVITY_PRECISION / power : 0)) }
     } else if (projection.hook === 'ep' && op.tilted !== undefined) {
       const t = op.tilted(ctx)
       const own = target.eta as Eta
@@ -509,7 +545,7 @@ export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection
     const inversePowers = new Array<number>(g.variables.length).fill(0)
     for (const [fi, f] of g.factors.entries()) {
       if (f.operator.logEvidence === undefined) return Number.NaN
-      const args = rawCavity(g, state.messages, fi)
+      const args = readable(f.operator, rawCavity(g, state.messages, fi), 0).args
       total +=
         f.operator.logEvidence({
           mode: s.projection.hook,
@@ -548,6 +584,43 @@ export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection
     total += v.family.entropy(b)
   }
   return total
+}
+
+/**
+ * The factors that give no part of the EP evidence at a state, with why: a factor whose cavity has no density (an `improper cavity`: the
+ * integral of the factor against it diverges, which happens when another factor's site has a negative precision, as the site of a
+ * scale mixture on a weight vector does, and the factor is one plate over many rows) or an operator with no evidence rule. The
+ * evidence of the graph is then undefined. A rows-expanded graph (`plates: 'expand'`) has a proper cavity for each row.
+ *
+ * @param g - The compiled graph.
+ * @param s - The projection (the estimate depends on nothing else).
+ * @param state - A state of a run.
+ * @returns The factors' ids and reasons, empty when every factor gives its part.
+ */
+export function evidenceDefects(
+  g: CompiledGraph,
+  s: Pick<EngineSettings, 'projection'>,
+  state: MpState,
+): readonly { readonly factor: string; readonly reason: 'improper cavity' | 'no evidence rule' }[] {
+  const out: { factor: string; reason: 'improper cavity' | 'no evidence rule' }[] = []
+  if (s.projection.evidence !== 'ep-energy') return out
+  for (const [fi, f] of g.factors.entries()) {
+    if (f.operator.logEvidence === undefined) {
+      out.push({ factor: f.id, reason: 'no evidence rule' })
+      continue
+    }
+    const args = readable(f.operator, rawCavity(g, state.messages, fi), 0).args
+    const value = f.operator.logEvidence({
+      mode: s.projection.hook,
+      to: 0,
+      args,
+      params: f.params,
+      power: f.power,
+      ...(s.projection.numeric === undefined ? {} : { rule: s.projection.numeric }),
+    })
+    if (!Number.isFinite(value)) out.push({ factor: f.id, reason: 'improper cavity' })
+  }
+  return out
 }
 
 /** The edges whose candidate message could not be computed (a message to a defined variable under the variational rule is never stored, so does not count). */

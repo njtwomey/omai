@@ -104,48 +104,92 @@ export function bruteTilted(
   options: { readonly panels?: number; readonly order?: number } = {},
 ): { readonly logZ: number; readonly moments: number[] } {
   const free = ports.map((_, i) => i).filter((i) => ports[i]?.derive === undefined && ports[i]?.value === undefined)
-  const intervals = free.map((i) => {
+  const intervals = free.map((i): [number, number] => {
     const p = ports[i] as BrutePort
-    if (p.kind === 'bernoulli') return [0, 1] as const
-    if (p.range !== undefined) return p.range
+    if (p.kind === 'bernoulli') return [0, 1]
+    if (p.range !== undefined) return [p.range[0], p.range[1]]
     const j = p.eta?.[1] ?? 1
     const m = (p.eta?.[0] ?? 0) / j
-    return around(m, 1 / j, 10)
+    return [...around(m, 1 / j, 10)] as [number, number]
   })
-  const grids = free.map((i, d) => {
-    const p = ports[i] as BrutePort
-    if (p.kind === 'bernoulli') return { x: [0, 1], w: [1, 1] }
-    const [a, b] = intervals[d] as readonly [number, number]
-    return nodesOn(a, b, options.panels ?? 10, options.order ?? 12)
-  })
+  const panels = options.panels ?? 10
+  const order = options.order ?? 12
+  const target = ports[to] as BrutePort
   const x = new Array<number>(ports.length).fill(0)
   for (const [i, p] of ports.entries()) if (p.value !== undefined) x[i] = p.value
-  let m0 = 0
-  let m1 = 0
-  let m2 = 0
-  const target = ports[to] as BrutePort
-  const visit = (d: number, logw: number, w: number): void => {
-    if (d === free.length) {
-      for (const [i, p] of ports.entries()) if (p.derive !== undefined) x[i] = p.derive(x)
-      let lw = logw + logf(x)
-      for (const [i, p] of ports.entries())
-        if (p.eta !== undefined && (p.derive !== undefined || true)) lw += logMessage(p.kind, p.eta, x[i] ?? 0)
-      const v = w * Math.exp(lw)
-      const t = x[to] ?? 0
-      m0 += v
-      m1 += v * t
-      m2 += v * t * t
-      return
+  // One pass of the product rule over the current intervals: the sums, and the weight each node of each Gaussian port carries
+  // (summed over the others), which says where the mass is.
+  const pass = (): {
+    m0: number
+    m1: number
+    m2: number
+    marginals: number[][]
+    grids: { x: number[]; w: number[] }[]
+  } => {
+    const grids = free.map((i, d) => {
+      const p = ports[i] as BrutePort
+      if (p.kind === 'bernoulli') return { x: [0, 1], w: [1, 1] }
+      const [a, b] = intervals[d] as [number, number]
+      return nodesOn(a, b, panels, order)
+    })
+    const marginals = grids.map((g) => new Array<number>(g.x.length).fill(0))
+    const at = new Array<number>(free.length).fill(0)
+    let m0 = 0
+    let m1 = 0
+    let m2 = 0
+    const visit = (d: number, w: number): void => {
+      if (d === free.length) {
+        for (const [i, p] of ports.entries()) if (p.derive !== undefined) x[i] = p.derive(x)
+        let lw = logf(x)
+        for (const [i, p] of ports.entries()) if (p.eta !== undefined) lw += logMessage(p.kind, p.eta, x[i] ?? 0)
+        const v = w * Math.exp(lw)
+        const t = x[to] ?? 0
+        m0 += v
+        m1 += v * t
+        m2 += v * t * t
+        for (let k = 0; k < at.length; k++) {
+          const row = marginals[k] as number[]
+          row[at[k] as number] = (row[at[k] as number] ?? 0) + v
+        }
+        return
+      }
+      const g = grids[d] as { x: number[]; w: number[] }
+      const i = free[d] as number
+      for (let k = 0; k < g.x.length; k++) {
+        x[i] = g.x[k] ?? 0
+        at[d] = k
+        visit(d + 1, w * (g.w[k] ?? 0))
+      }
     }
-    const g = grids[d] as { x: number[]; w: number[] }
-    const i = free[d] as number
-    for (let k = 0; k < g.x.length; k++) {
-      x[i] = g.x[k] ?? 0
-      visit(d + 1, logw, w * (g.w[k] ?? 0))
-    }
+    visit(0, 1)
+    return { m0, m1, m2, marginals, grids }
   }
-  visit(0, 0, 1)
-  return { logZ: Math.log(m0), moments: target.kind === 'gaussian' ? [m1 / m0, m2 / m0] : [m1 / m0] }
+  // The reference adapts to the integrand: a likelihood much narrower than a message (a precise outcome against a wide cavity, a
+  // sharp peak in a log scale) leaves a few nodes of a fixed grid on its mass, so each Gaussian port's interval is zoomed onto the
+  // nodes that carry weight (a panel of margin either side) and the rule is run again, until the intervals stop shrinking.
+  let r = pass()
+  for (let round = 0; round < 6; round++) {
+    let shrunk = false
+    free.forEach((i, d) => {
+      const p = ports[i] as BrutePort
+      if (p.kind === 'bernoulli') return
+      const w = r.marginals[d] as number[]
+      const g = r.grids[d] as { x: number[] }
+      const top = Math.max(...w)
+      const live = w.flatMap((v, k) => (v > 1e-13 * top ? [k] : []))
+      const [a, b] = intervals[d] as [number, number]
+      const margin = (b - a) / panels
+      const lo = Math.max(a, (g.x[Math.min(...live)] as number) - margin)
+      const hi = Math.min(b, (g.x[Math.max(...live)] as number) + margin)
+      if (hi - lo < 0.7 * (b - a)) {
+        intervals[d] = [lo, hi]
+        shrunk = true
+      }
+    })
+    if (!shrunk) break
+    r = pass()
+  }
+  return { logZ: Math.log(r.m0), moments: target.kind === 'gaussian' ? [r.m1 / r.m0, r.m2 / r.m0] : [r.m1 / r.m0] }
 }
 
 /** One independent belief of a brute-force variational check: a Gaussian, gamma or beta message and the coordinate the log density reads. */

@@ -52,17 +52,6 @@ export const epGaps: readonly EpGap[] = [
     refuses: [],
   },
   {
-    id: 'mixture-site-random-parameters',
-    title: 'A mixture site with a random precision and a random weight',
-    kind: 'missing-mapping',
-    status: 'queued',
-    summary:
-      'The closed-form mixture sites (the outlier mixture and the spike and slab, with the switch summed out) take a known scale, share and slab width; the explicit-switch (gate) form with gamma precisions and a Beta weight runs, but the summed-out form with those unknown is refused.',
-    plan: 'Map the summed-out mixture with gamma-precision branches and a Beta weight onto the gate of precision branches the compiler already builds, marginalising the switch inside the rule (the evidence and moments are sums over the branches).',
-    size: 'small',
-    refuses: ['clutter-mixture-learned', 'spike-and-slab-marginal-learned'],
-  },
-  {
     id: 'matrix-families',
     title: 'Covariance matrices: Wishart, inverse-Wishart, normal-Wishart, LKJ',
     kind: 'missing-rule',
@@ -140,28 +129,6 @@ export const epGaps: readonly EpGap[] = [
     refuses: [],
   },
   {
-    id: 'improper-start',
-    title: 'Improper first messages are patched operator by operator',
-    kind: 'quality',
-    status: 'open',
-    summary:
-      "A flat cavity (a variable with no information yet) is read as a very wide Gaussian inside several operators (`cavityOf`, `widened`); start messages replace the compiler's vague priors but the per-operator reads remain.",
-    plan: 'One policy in the engine: an operator that cannot read a flat cavity sends nothing and the engine schedules it later, with the start messages as the only initialisation.',
-    size: 'small',
-    refuses: [],
-  },
-  {
-    id: 'projected-priors',
-    title: 'Projected priors are approximations of the prior',
-    kind: 'quality',
-    status: 'open',
-    summary:
-      'Half-normal, half-Cauchy, uniform and truncated priors are carried as a Gaussian on a log scale or on the value, so the graph holds the projected prior, not the original (the spread of a variance with a gamma scale hyperprior comes out about 22% too wide).',
-    plan: 'Keep the exact prior as a numeric site that is re-projected against the current cavity each sweep (a prior is one factor like any other), instead of projecting it once.',
-    size: 'medium',
-    refuses: [],
-  },
-  {
     id: 'non-centred-scale',
     title: 'A non-centred scale (z / sqrt(precision)) is read through independent coefficient marginals',
     kind: 'quality',
@@ -174,12 +141,12 @@ export const epGaps: readonly EpGap[] = [
   },
   {
     id: 'evidence',
-    title: 'The EP log evidence is exact where EP is, and has three known limits',
+    title: 'The EP log evidence is exact where EP is, and has two known limits',
     kind: 'infrastructure',
     status: 'open',
     summary:
-      "Every rule of the registry carries a log evidence (each tested against a brute-force integral) and the posterior and the tape (`mp/evidence`) give the model's: against the grid evidence it is within 1e-5 on the conjugate atoms, 1e-3 on the gates, the Student-t, the clutter, and 0.01 to 0.05 on the probit, logistic, Laplace and product atoms. Three limits remain: a projected prior (half-normal, half-Cauchy, uniform) shifts it by 0.1 to 0.5 nats because the model carries the projection; a fixed point with a factor whose cavity is improper gives no evidence for it (the learned logistic regression: NaN); an alpha-divergence run has no EP energy.",
-    plan: 'Keep the exact prior as a numeric site (gap projected-priors), define the energy of a factor with an improper cavity from its last proper cavity or by a damped restart, and give the alpha runs the energy of their own divergence.',
+      "Every rule of the registry carries a log evidence (each tested against a brute-force integral) and the posterior and the tape (`mp/evidence`) give the model's: against the grid evidence it is within 1e-5 on the conjugate atoms, 1e-3 on the gates, the Student-t, the clutter, the summed-out mixtures, 0.01 to 0.05 on the probit, logistic, Laplace and product atoms, and the numeric priors (half-normal, half-Cauchy, uniform, truncated) are the exact prior, not a projection (uniform exact, half-normal 0.004, half-Cauchy 0.015 nats). Two limits remain: a fixed point with a factor whose cavity is improper has no evidence (the learned logistic regression as one plated factor: the scale mixture's site has a negative precision, so the cavity of the plate is indefinite and its integral diverges; the posterior says which factor in `diagnostics.evidenceUndefinedAt`, and `plates: 'expand'` gives it, 0.05 nats from the grid); an alpha-divergence run has no EP energy.",
+    plan: 'Give the plated factors an evidence from a sequential pass over their rows when their cavity is improper (or compile small plates as rows when the weights have a scale mixture), and give the alpha runs the energy of their own divergence.',
     size: 'medium',
     refuses: [],
   },

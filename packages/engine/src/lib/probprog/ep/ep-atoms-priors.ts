@@ -1065,10 +1065,10 @@ function uniformProblem(k: Config): AtomProblem {
 }
 
 /**
- * A uniform prior on a Gaussian mean: a prior with no message family, projected once onto a Gaussian with its mean and
- * variance, so the posterior is a truncated Gaussian approximated by a Gaussian.
+ * A uniform prior on a Gaussian mean: a prior with no message family, kept as the exact numeric `prior-site` (its message is the
+ * moment match against the current cavity at every sweep), so the posterior is the truncated Gaussian approximated by a Gaussian.
  *
- * @index estimator EP atom: a uniform prior on a Gaussian mean (projected).
+ * @index estimator EP atom: a uniform prior on a Gaussian mean (exact numeric site).
  * @example
  * ```ts
  * import { priorUniformAtom } from 'omai-engine/probprog/ep'
@@ -1078,8 +1078,8 @@ function uniformProblem(k: Config): AtomProblem {
 export const priorUniformAtom: EpAtom = defineAtom({
   name: 'prior-uniform-mean',
   title: 'Prior: uniform on a Gaussian mean',
-  what: 'A uniform prior on a Gaussian mean with six observations: the density has no message family, so it is projected once onto a Gaussian of its own mean and variance.',
-  factors: ['numeric prior (uniform, projected onto a Gaussian)', 'gaussian likelihood'],
+  what: 'A uniform prior on a Gaussian mean with six observations: the density has no message family, so it is carried as an exact numeric site that EP matches against the current cavity at every sweep.',
+  factors: ['numeric prior site (uniform, exact)', 'gaussian likelihood'],
   family: 'priors',
   expected: 'runs',
   reference: 'exact',

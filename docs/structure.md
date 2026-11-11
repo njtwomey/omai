@@ -3888,7 +3888,8 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   `betaPrior`, `bernoulliPrior`, `discretePrior`, `dirichletPrior`, `normalGammaPrior`. `truncated.ts`:
   `truncatedNormalMoments`, the closed form behind every comparison and probit message, accurate in the tails.
   `projectedPrior` and `densityMoments` (`priors.ts`): a prior factor from any density, projected once onto a Gaussian or gamma by
-  moment matching (the half-normal, half-Cauchy, uniform and truncated normal the compiler carries on a log scale).
+  moment matching (a one-off projection; the compiler's half-normal, half-Cauchy, uniform and truncated normal are the exact
+  numeric `prior-site` of `operators/prior-sites.ts`, on a log scale for a positive one).
   `_dense.ts`, `_quadrature.ts`, `_scalar.ts`: internal (SPD algebra, Gauss-Hermite against a Gaussian message, scalar
   special functions and the inverse digamma).
 - `operators/variational-numeric.ts`: the non-conjugate variational message by quadrature (a numeric operator, a likelihood, a softmax, a

@@ -1,5 +1,5 @@
-// Priors with no message family (half-normal, half-Cauchy, log-normal, uniform, truncated normal) projected once onto a Gaussian,
-// positive scales carried on their log, a latent with a random scale in its non-centred form, and an observed value with a random
+// Priors with no message family (half-normal, half-Cauchy, log-normal, uniform, truncated normal) as the exact numeric `prior-site` (with nothing else on the variable its message is the Gaussian projection
+// of the density), positive scales carried on their log, a latent with a random scale in its non-centred form, and an observed value with a random
 // scale (`gaussian-scale`): compiled to factor graphs and run under EP, against the exact posterior on a grid.
 import { describe, expect, it } from 'vitest'
 import {
@@ -38,7 +38,7 @@ function ep(def: ReturnType<typeof defineModel>, data: Record<string, unknown>, 
   return { bound, read, graph: c.graph as FactorGraphSpec }
 }
 
-describe('priors without a message family, projected once', () => {
+describe('priors without a message family, an exact numeric site', () => {
   const prior = (family: () => ReturnType<typeof d.halfNormal>): ReturnType<typeof defineModel> =>
     defineModel('p', (m: Builder) => {
       m.latent('t', family() as never)
@@ -49,7 +49,7 @@ describe('priors without a message family, projected once', () => {
       prior(() => d.halfNormal(2)),
       {},
     )
-    expect(graph.factors.map((f) => f.operator)).toEqual(['prior', 'apply'])
+    expect(graph.factors.map((f) => f.operator)).toEqual(['prior-site', 'apply'])
     // log tau ~ N(log 2 - (gamma + log 2) / 2, pi^2 / 8), so tau has the log-normal moments of that.
     const m = Math.log(2) - (0.5772156649015329 + Math.log(2)) / 2
     const v = Math.PI ** 2 / 8
@@ -80,7 +80,7 @@ describe('priors without a message family, projected once', () => {
       prior(() => d.truncatedNormal(1, 2, 0, 20)),
       {},
     )
-    expect(graph.factors.map((f) => f.operator)).toEqual(['prior', 'apply'])
+    expect(graph.factors.map((f) => f.operator)).toEqual(['prior-site', 'apply'])
   })
 })
 

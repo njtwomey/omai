@@ -17,9 +17,9 @@ describe('epCoverage', () => {
     expect(c.atoms.filter((r) => r.status !== r.declared).map((r) => r.name)).toEqual([])
   })
 
-  it('runs on at least 27 benchmark models (27 once the stick-breaking mixture and LDA-lite map; 25 once EP runs inside a grid over the length scale of the two Gaussian process regressions; 9 of 27 in the audit of 2026-11-11, 10 once stochastic volatility mapped, 23 with the likelihood registry, apply, the projected priors, gates, ordered constraints and the shared precisions; 46 of 47 atoms with the prior atlas), and only goes up; 84 of 86 atoms once the two-variable sites, the multiclass site, ordinal probit, quantile regression and the draw margin landed (72 before)', () => {
+  it('runs on at least 27 benchmark models (27 once the stick-breaking mixture and LDA-lite map; 25 once EP runs inside a grid over the length scale of the two Gaussian process regressions; 9 of 27 in the audit of 2026-11-11, 10 once stochastic volatility mapped, 23 with the likelihood registry, apply, the projected priors, gates, ordered constraints and the shared precisions; 46 of 47 atoms with the prior atlas), and only goes up; 86 of 86 atoms once the summed-out mixtures with a random share and precision map (84 before); 84 of 86 atoms once the two-variable sites, the multiclass site, ordinal probit, quantile regression and the draw margin landed (72 before)', () => {
     expect(c.benchmarksRun).toBeGreaterThanOrEqual(27)
-    expect(c.atomsRun).toBeGreaterThanOrEqual(84)
+    expect(c.atomsRun).toBeGreaterThanOrEqual(86)
   })
 })
 

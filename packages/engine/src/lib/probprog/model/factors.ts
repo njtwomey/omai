@@ -32,7 +32,9 @@
  * two random values is the `product` factor on a new variable, and `at(components, z)` with a categorical latent `z` (or
  * `where(z, a, b)` with a Bernoulli latent) is the gate `select`, on a new variable of the components' family (expectation
  * propagation); a lookup of known values by a discrete latent (`at(means, z)`, `z * 6 - 3`) is the mean of a Gaussian observation (a
- * `table` over `z`) or of a Gaussian latent (a `gate` of one Gaussian prior per state, the gate of Minka and Winn), and
+ * `table` over `z`) or of a Gaussian latent (a `gate` of one Gaussian prior per state, the gate of Minka and Winn); a summed-out
+ * mixture (`normalOutliers`, `normalSpikeSlab`) with a random share (a beta latent) or random precisions (the gamma idiom) is the same
+ * gate over a hidden Bernoulli switch, one per observation or element (the exact mixture site stays for known ones), and
  * `categorical` with probabilities `at(A, z)` (a known matrix `A`, a discrete latent `z`) is a `table` over the two (a Markov
  * chain), and when the rows of `A` are Dirichlet latents (a transition matrix to learn) one `gate` per step whose branch `j` is the
  * conjugate `discrete` factor on row `j`. A Gaussian latent's constraint (`ordered`, `positive`, bounds) is comparison factors with an observed true outcome
@@ -51,8 +53,8 @@
  * `studentT`, `laplace`) and, on a log-normal outcome, the exact Gaussian rule on its log; a unary function of a random value
  * (`exp`, `square`, `tanh`, `softplus`, `abs`, `sigmoid`, and `max` or `min` with a known operand as a rectifier) is the `apply`
  * factor on a new variable. A prior with no message family (`halfNormal`, `halfCauchy`, `logNormal`, `uniform`,
- * `truncatedNormal`) is projected once onto a Gaussian: a positive scale on its log (the value `tau` is `exp` of that variable),
- * a bounded real value on itself, so the graph holds the projected prior, not the original. Such a scale (or an `exp` of a
+ * `truncatedNormal`) is the exact numeric `prior-site` on a Gaussian variable: a positive scale on its log (the value `tau` is `exp` of
+ * that variable), a bounded real value on itself, so the graph holds the prior and EP matches it against the cavity every sweep. Such a scale (or an `exp` of a
  * Gaussian) is the scale of a latent normal in its non-centred form (a product with a standard normal), and the scale of an
  * observed normal through the `gaussian-scale` factor (the mean may be random too); a `clip` on a scale is read as a floor
  * that never binds. With `packScalars` the scalar normal latents an observed node reads together are one joint vector.
@@ -96,6 +98,7 @@ import {
   compileGraph,
   dirichletPrior,
   discretePrior,
+  evidenceDefects,
   evidenceOf,
   type FactorGraphSpec,
   type FactorOperator,
@@ -111,7 +114,6 @@ import {
   normalGammaPrior,
   pairLikelihoods,
   priorFactor,
-  projectedPrior,
   projectionOf,
   unaryFunctions,
   type VariableSpec,
@@ -1714,15 +1716,16 @@ class Compiler {
    */
   private randomPrecisions(
     node: ModelNode & { readonly dist: DistSpec },
+    param = 'scale',
   ): { readonly variable: string; readonly scale: number; readonly offset: number }[] {
-    const scale = node.dist.params['scale']
+    const scale = node.dist.params[param]
     const idiom =
       'write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only)'
     const tau = scale === undefined ? undefined : this.precisionExpr(scale)
     if (tau === undefined)
       throw new Refusal(
         'operator',
-        `the scale of '${node.name}' depends on a random value that is not the precision idiom: ${idiom}`,
+        `the ${param} of '${node.name}' depends on a random value that is not the precision idiom: ${idiom}`,
       )
     let sym: Sym
     try {
@@ -2117,13 +2120,12 @@ class Compiler {
   }
 
   /**
-   * A prior with no message family (half-normal, half-Cauchy, log-normal, uniform, truncated normal) projected once onto a
-   * Gaussian. A density on the positive half line is carried on its log: a Gaussian variable `l = log tau` whose prior is the
-   * projection of the density of `l` (exact for a log-normal, the moments of the half-normal's or half-Cauchy's log otherwise),
-   * and the value `tau` is the variable `exp(l)` of an `apply` factor, whose Gaussian belief is the moment match of a
-   * log-normal. A density on a bounded or truncated real range is projected on the value itself. The graph therefore holds
-   * the projected prior in place of the original (its shape, a bound or a half line, is what the Gaussian cannot keep); the
-   * data's evidence then moves the posterior as EP does for any site.
+   * A prior with no message family (half-normal, half-Cauchy, log-normal, uniform, truncated normal), the exact numeric
+   * `prior-site` on a Gaussian variable (a log-normal is the exact Gaussian on its log). A density on the positive half line is
+   * carried on its log: a Gaussian variable `l = log tau` with the density of `l` as its site, and the value `tau` is the variable
+   * `exp(l)` of an `apply` factor, whose Gaussian belief is the moment match of a log-normal. A density on a bounded or truncated
+   * real range is the site on the value itself. The site's message is the moment match against the current cavity at every sweep,
+   * so the graph holds the prior itself; the belief of the variable is still one Gaussian.
    */
   private latentProjected(node: ModelNode & { readonly kind: 'latent' }): void {
     const fam = node.dist.family
@@ -2135,6 +2137,12 @@ class Compiler {
       uniform: ['low', 'high'],
       truncatedNormal: ['loc', 'scale', 'low', 'high'],
     }
+    const bases: Readonly<Record<string, string>> = {
+      halfNormal: 'half-normal',
+      halfCauchy: 'half-cauchy',
+      uniform: 'uniform',
+      truncatedNormal: 'truncated-normal',
+    }
     const values = Object.fromEntries((names[fam] ?? []).map((p) => [p, this.constParam(node, p, `the ${p}`)]))
     const cells: Cell[] = []
     const vars: string[] = []
@@ -2143,44 +2151,36 @@ class Compiler {
     for (let i = 0; i < n; i++) {
       const p = (k: string): number => (values[k] as number[])[i] as number
       const name = this.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'gaussian' } })
-      const density = (x: Float64Array): Float64Array => {
-        const args = Object.fromEntries((names[fam] ?? []).map((k) => [k, asTensor(p(k), 'float64')]))
-        const dist = (this.families[fam] as NonNullable<(typeof this.families)[string]>).make(args)
-        return Float64Array.from(toFlat(dist.logProb(fromStorage(Float64Array.from(x), [x.length], 'float64'))))
-      }
       const low = fam === 'uniform' || fam === 'truncatedNormal' ? p('low') : 0
       const high = fam === 'uniform' || fam === 'truncatedNormal' ? p('high') : Number.POSITIVE_INFINITY
       if (fam === 'logNormal' && !(p('sigma') > 0))
         throw new Refusal('data', `the sigma of '${node.name}' must be positive`)
       const positive = fam === 'halfNormal' || fam === 'halfCauchy' || fam === 'logNormal' || low >= 0
+      // The exact density as a numeric site (`prior-site`): its message is the moment match against the current cavity at every
+      // sweep, so the graph holds the prior itself. Infinite bounds are left out of the parameters (they are JSON).
+      const priorFactor = (variable: string, log: boolean): FactorSpec => ({
+        operator: 'prior-site',
+        args: [variable],
+        params: {
+          y: 0,
+          base: bases[fam] as string,
+          log: log ? 1 : 0,
+          ...(names[fam]?.includes('scale') ? { scale: p('scale') } : {}),
+          ...(fam === 'truncatedNormal' ? { loc: p('loc') } : {}),
+          ...(Number.isFinite(low) && (fam === 'uniform' || fam === 'truncatedNormal') ? { low } : {}),
+          ...(Number.isFinite(high) && (fam === 'uniform' || fam === 'truncatedNormal') ? { high } : {}),
+        },
+      })
       if (positive) {
         const l = this.auxName(node.name, site === undefined ? undefined : site(i))
         this.addVariable({ name: l, family: { kind: 'gaussian' } })
         if (fam === 'logNormal') this.addFactor(gaussianPrior(l, p('mu'), p('sigma') ** 2), l)
-        else {
-          // The density of l = log tau is tau p(tau) at tau = exp(l).
-          const onLog = (x: Float64Array): Float64Array =>
-            density(x.map((v) => Math.exp(v))).map((v, k) => v + (x[k] as number))
-          const scaleGuess = fam === 'uniform' || fam === 'truncatedNormal' ? high : p('scale')
-          this.addFactor(
-            projectedPrior(l, onLog, {
-              support: [
-                low > 0 ? Math.log(low) : Number.NEGATIVE_INFINITY,
-                Number.isFinite(high) ? Math.log(high) : Number.POSITIVE_INFINITY,
-              ],
-              start: Number.isFinite(scaleGuess) && scaleGuess > 0 ? Math.log(scaleGuess) : 0,
-            }),
-            l,
-          )
-        }
+        else this.addFactor(priorFactor(l, true), l)
         this.need('apply')
         this.addFactor({ operator: 'apply', args: [name, l], params: { fn: 'exp' } }, name)
         this.logScale.set(name, l)
         logCells.push(this.varAtom(l))
-      } else {
-        const start = Number.isFinite(low) && Number.isFinite(high) ? (low + high) / 2 : 0
-        this.addFactor(projectedPrior(name, density, { support: [low, high], start }), name)
-      }
+      } else this.addFactor(priorFactor(name, false), name)
       cells.push(this.varAtom(name))
       vars.push(name)
     }
@@ -2367,12 +2367,16 @@ class Compiler {
   /**
    * A spike and slab latent (`normalSpikeSlab`: a mixture of a wide and a narrow zero-mean normal on every element): each
    * element is a Gaussian variable (or a coordinate of one packed Gaussian vector, when a `matmul` reads it) with a
-   * `mixture-site` (`mixture-row`) factor, whose EP message is exact. The factor starts with a very wide Gaussian message
-   * (a hundred slab standard deviations), so the other factors have a proper cavity to begin from; its own first update
-   * replaces it, so the model is unchanged.
+   * `mixture-site` (`mixture-row`) factor, whose EP message is exact. A scalar site speaks first through the engine's flat-cavity
+   * policy (`needsDensity`); the row on a packed vector starts with a very wide Gaussian message (a hundred slab standard
+   * deviations), so the other factors have a proper cavity to begin from, and its own first update replaces it.
    */
   private latentSpikeSlab(node: ModelNode & { readonly kind: 'latent' }): void {
     const n = prod(this.shapeOf(node.dims))
+    if (['inclusion', 'slab', 'spike'].some((p) => !this.paramIsConst(node, p))) {
+      this.latentSpikeSlabSwitch(node, n)
+      return
+    }
     const inclusion = this.constParam(node, 'inclusion', 'the inclusion probability')
     const slab = this.constParam(node, 'slab', 'the slab scale')
     const spike = this.constParam(node, 'spike', 'the spike scale')
@@ -2410,7 +2414,70 @@ class Compiler {
     const vars: string[] = []
     for (let i = 0; i < n; i++) {
       const name = this.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'gaussian' } })
-      this.addFactor({ operator: 'mixture-site', args: [name], params: mixture(i), start: [[0, 1 / wide(i)]] }, name)
+      this.addFactor({ operator: 'mixture-site', args: [name], params: mixture(i) }, name)
+      cells.push(this.varAtom(name))
+      vars.push(name)
+    }
+    this.syms.set(node.name, { dims: node.dims, cells })
+    this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+  }
+
+  /**
+   * A spike and slab latent with a random inclusion probability (a beta latent) or random slab or spike widths (the precision idiom
+   * of a gamma latent), the switch summed out: each element is a Gaussian variable under the gate of its spike and slab Gaussians
+   * over a hidden Bernoulli switch (`hiddenSwitch`), the same graph as the explicit-switch form with the switch left out of the
+   * posterior. A vector that a `matmul` reads (one joint Gaussian) has one covariance, so it is refused.
+   */
+  private latentSpikeSlabSwitch(node: ModelNode & { readonly kind: 'latent' }, n: number): void {
+    if (this.packed.has(node.name))
+      throw new Refusal(
+        'operator',
+        `'${node.name}' is read as a vector by a matmul and has a random inclusion or scale: a joint Gaussian vector has one covariance, so they must be known`,
+      )
+    const inclusion = this.over(this.paramSym(node.dist, 'inclusion'), node.dims)
+    // The precision of each element's slab and spike: a known one, or the gamma variable's multiple.
+    const precisions = (param: 'slab' | 'spike'): ({ readonly sd: number } | Precision)[] =>
+      this.paramIsConst(node, param)
+        ? this.constParam(node, param, `the ${param} scale`).map((sd) => {
+            if (!(sd > 0))
+              throw new Refusal('data', `the ${param} scale of '${node.name}' is ${sd}: it must be positive`)
+            return { sd }
+          })
+        : this.randomPrecisions(node, param)
+    const slab = precisions('slab')
+    const spike = precisions('spike')
+    const cells: Cell[] = []
+    const vars: string[] = []
+    for (let i = 0; i < n; i++) {
+      const index = node.dims.length === 0 ? undefined : i
+      const name = this.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'gaussian' } })
+      const z = this.hiddenSwitch(node, inclusion[i] as Cell, index)
+      const variables = [name]
+      const branch = (p: { readonly sd: number } | Precision): Record<string, Json> => {
+        if ('sd' in p) return { operator: 'gaussian', args: [0, { const: 0 }], params: { precision: 1 / p.sd ** 2 } }
+        let at = variables.indexOf(p.variable)
+        if (at < 0) {
+          at = variables.length
+          variables.push(p.variable)
+        }
+        this.need('gaussian-gamma-precision')
+        return {
+          operator: 'gaussian-gamma-precision',
+          args: [0, { const: 0 }, at],
+          params: { scale: p.scale, offset: p.offset },
+        }
+      }
+      // State 0 of the switch is the spike, state 1 the slab (the probability of the Bernoulli is the inclusion).
+      const branches = [branch(spike[i] as never), branch(slab[i] as never)]
+      this.need('gate')
+      this.addFactor(
+        {
+          operator: 'gate',
+          args: [z, ...variables],
+          params: { arity: variables.length, branches: branches as unknown as Json },
+        },
+        name,
+      )
       cells.push(this.varAtom(name))
       vars.push(name)
     }
@@ -2570,16 +2637,7 @@ class Compiler {
       const mean = isConstCell(l)
         ? { const: l.aff.offset }
         : (this.materialise(affOf(l), node.name, node.dims.length === 0 ? undefined : i) as string)
-      // A zero-mean (known-mean) Gaussian with an unknown precision sends no proper message to the variable, so the likelihood
-      // would have no cavity to start from: the factor starts with a very wide Gaussian message (variance 1e8), which its own
-      // first update replaces.
-      this.addFactor(
-        {
-          ...precisionFactor(name, mean, tau),
-          ...(isConstCell(l) ? { start: [[0, 1e-8], null, null] } : {}),
-        },
-        name,
-      )
+      this.addFactor(precisionFactor(name, mean, tau), name)
       cells.push(this.varAtom(name))
       vars.push(name)
     }
@@ -3825,6 +3883,8 @@ class Compiler {
       return this.observedPair(node, 'laplace-scale', y, i, index)
     if (fam === 'studentT' && !isConstCell(this.paramCell(node, 'df', i)))
       return this.observedPair(node, 'student-t-df', y, i, index)
+    if (fam === 'normalOutliers' && ['scale', 'outlier'].some((p) => !this.paramIsConst(node, p)))
+      return this.observedOutlierSwitch(node, y, i, index)
     const scale = known('scale')
     if (!(scale > 0)) throw new Refusal('data', `the scale of '${node.name}' is ${scale}: it must be positive`)
     let params: Record<string, Json>
@@ -3845,6 +3905,87 @@ class Compiler {
       site = 'mixture-site'
     }
     return this.emitSite(node, this.paramCell(node, 'loc', i), i, index, row, site, params)
+  }
+
+  /** Whether a parameter of a node's distribution is known (a default counts). */
+  private paramIsConst(node: ModelNode & { readonly dist: DistSpec }, name: string): boolean {
+    const e = node.dist.params[name]
+    return e === undefined || this.isConst(e)
+  }
+
+  /**
+   * A Bernoulli variable no model node names, the switch that a summed-out mixture (`normalOutliers`, `normalSpikeSlab`) with a
+   * random share or random precisions is read through: the mixture is the gate of its components over this switch, which is the
+   * same graph as the explicit-switch form (`z ~ bernoulli(share)`, `where(z, ...)`) with the switch left out of the posterior.
+   * A beta share is the conjugate `bernoulli` factor, a known one a prior on the switch.
+   */
+  private hiddenSwitch(node: ModelNode, probs: Cell, index: number | undefined): string {
+    if (probs.kind === 'rv' && probs.family === 'beta') {
+      const name = this.addVariable({ name: this.auxName(node.name, index), family: { kind: 'bernoulli' } })
+      this.addFactor({ operator: 'bernoulli', args: [name, probs.variable] }, name)
+      return name
+    }
+    if (!isConstCell(probs))
+      throw new Refusal(
+        'operator',
+        `the share of '${node.name}' must be known or a beta latent (the conjugate 'bernoulli' operator on the switch of a mixture)`,
+      )
+    const p = probs.aff.offset
+    if (!(p > 0 && p < 1))
+      throw new Refusal('data', `the share of '${node.name}' is ${p}: it must be strictly between 0 and 1`)
+    const name = this.addVariable({ name: this.auxName(node.name, index), family: { kind: 'bernoulli' } })
+    this.addFactor({ operator: 'prior', args: [name], params: { eta: [...bernoulliEta(p)] } }, name)
+    return name
+  }
+
+  /**
+   * An observation `normalOutliers(loc, scale, share, width)` with a random scale (the precision idiom of a gamma latent) or a
+   * random share (a beta latent), the switch summed out: the gate of an inlier and an outlier branch over a hidden Bernoulli
+   * switch, read through the same route as an observation whose precision is chosen by a discrete variable (`observedSwitch`):
+   * the inlier has the precision `tau`, the outlier `tau / width^2`, both `gaussian-gamma-precision` branches over the centre and
+   * the gamma precision.
+   */
+  private observedOutlierSwitch(
+    node: ModelNode & { readonly kind: 'observed' },
+    y: number,
+    i: number,
+    index: number | undefined,
+  ): string | null {
+    const widthCell = this.paramCell(node, 'width', i)
+    if (!isConstCell(widthCell))
+      throw new Refusal(
+        'operator',
+        `the width of '${node.name}' is random: the outlier mixture has a message rule for a known width`,
+      )
+    const width = widthCell.aff.offset
+    if (!(width > 0)) throw new Refusal('data', `the width of '${node.name}' is ${width}: it must be positive`)
+    const z = this.hiddenSwitch(node, this.paramCell(node, 'outlier', i), index)
+    const loc = this.paramCell(node, 'loc', i)
+    let scale: Cell
+    if (this.paramIsConst(node, 'scale')) {
+      const sd = (this.paramCell(node, 'scale', i) as Cell & { kind: 'aff' }).aff.offset
+      scale = { kind: 'lookup', variable: z, values: [sd, sd * width] }
+    } else {
+      const scaleExpr = node.dist.params['scale'] as ExprSpec
+      const precision = this.precisionExpr(scaleExpr)
+      const tau =
+        precision === undefined
+          ? undefined
+          : scaledOf(this.cellsOf(node, 'precisionProbe', () => this.evalSym(precision))[i] as Cell)
+      if (tau === undefined)
+        throw new Refusal(
+          'operator',
+          `the scale of '${node.name}' must be the precision idiom 1 / sqrt(tau) of a gamma or exponential latent for the outlier mixture`,
+        )
+      const w2 = width * width
+      scale = {
+        kind: 'lookup',
+        variable: z,
+        values: [0, 0],
+        precisions: [tau, { ...tau, scale: tau.scale / w2, offset: tau.offset / w2 }],
+      }
+    }
+    return this.observedSwitch(node, this.elementName(node.name, node.dims, i), y, index, loc, scale)
   }
 
   /**
@@ -4971,6 +5112,15 @@ export function factorGraphPosterior(
       unresolved: state.unresolved ?? 0,
       restarts: state.restarts ?? 0,
       ...(options.reason === undefined ? {} : { reason: options.reason }),
+      // Why there is no evidence (when there is none): the factors with no part of it. A plated factor whose cavity is improper
+      // (a negative-precision site on the weights) is the usual one; `plates: 'expand'` has a proper cavity per row.
+      ...(rule === 'ep' && !Number.isFinite(evidence)
+        ? {
+            evidenceUndefinedAt: evidenceDefects(g, { projection: projectionOf(rule) }, state).map(
+              (d) => `${d.factor}: ${d.reason}`,
+            ),
+          }
+        : {}),
       variables: g.variables.length,
       factors: g.factors.length,
     },

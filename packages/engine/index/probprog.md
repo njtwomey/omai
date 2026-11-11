@@ -68,7 +68,7 @@ The expectation-propagation suite of the probabilistic programming stack: the at
 - estimator `clutterAtom`: EP atom: clutter, a gate per observation between the centre and wide clutter. `src/lib/probprog/ep/ep-atoms-mixtures.ts:689` `omai-engine/probprog/ep`
 - estimator `clutterLearnedAtom`: EP atom: clutter with centre, both precisions and share learned. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:159` `omai-engine/probprog/ep`
 - estimator `clutterMixtureAtom`: EP atom: an inlier and outlier mixture likelihood with the switches summed out (mixture site). `src/lib/probprog/ep/ep-atoms-mixtures.ts:750` `omai-engine/probprog/ep`
-- estimator `clutterMixtureLearnedAtom`: EP atom (planned): summed-out outlier mixture, learned width and share. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:947` `omai-engine/probprog/ep`
+- estimator `clutterMixtureLearnedAtom`: EP atom: summed-out outlier mixture, learned width and share. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:955` `omai-engine/probprog/ep`
 - estimator `expAtom`: EP atom: exp of a Gaussian (unary function of a random value). `src/lib/probprog/ep/ep-atoms-functions.ts:49` `omai-engine/probprog/ep`
 - estimator `gammaPoissonAtom`: EP atom: gamma and Poisson (conjugate, exact). `src/lib/probprog/ep/ep-atoms-conjugate.ts:158` `omai-engine/probprog/ep`
 - estimator `gammaPoissonLearnedAtom`: EP atom: groups of counts with a gamma prior of unknown rate, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-extended-conjugate.ts:379` `omai-engine/probprog/ep`
@@ -122,7 +122,7 @@ The expectation-propagation suite of the probabilistic programming stack: the at
 - estimator `priorNormalHyperAtom`: EP atom: a normal prior on a mean with a normal hyperprior on its centre (exact). `src/lib/probprog/ep/ep-atoms-priors.ts:361` `omai-engine/probprog/ep`
 - estimator `priorNormalInverseGammaAtom`: EP atom: a normal-inverse-gamma prior on a Gaussian mean and variance (exact). `src/lib/probprog/ep/ep-atoms-priors.ts:260` `omai-engine/probprog/ep`
 - estimator `priorNormalWeibullAtom`: EP atom: a normal prior on a Weibull log scale with a normal hyperprior on its centre. `src/lib/probprog/ep/ep-atoms-priors.ts:700` `omai-engine/probprog/ep`
-- estimator `priorUniformAtom`: EP atom: a uniform prior on a Gaussian mean (projected). `src/lib/probprog/ep/ep-atoms-priors.ts:1078` `omai-engine/probprog/ep`
+- estimator `priorUniformAtom`: EP atom: a uniform prior on a Gaussian mean (exact numeric site). `src/lib/probprog/ep/ep-atoms-priors.ts:1078` `omai-engine/probprog/ep`
 - estimator `probitAtom`: EP atom: a probit link on eight labelled points. `src/lib/probprog/ep/ep-atoms-likelihoods.ts:197` `omai-engine/probprog/ep`
 - estimator `probitLearnedAtom`: EP atom: a probit classifier with a learned weight precision, recovered from simulated labels. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:422` `omai-engine/probprog/ep`
 - estimator `productAtom`: EP atom: the product of two Gaussians (numeric product rule, a banana posterior). `src/lib/probprog/ep/ep-atoms-functions.ts:197` `omai-engine/probprog/ep`
@@ -140,7 +140,7 @@ The expectation-propagation suite of the probabilistic programming stack: the at
 - estimator `spikeSlabAtom`: EP atom: spike and slab as a gate between a narrow and a wide Gaussian. `src/lib/probprog/ep/ep-atoms-mixtures.ts:505` `omai-engine/probprog/ep`
 - estimator `spikeSlabLearnedAtom`: EP atom: spike and slab with unknown share and slab width, learned. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:736` `omai-engine/probprog/ep`
 - estimator `spikeSlabMarginalAtom`: EP atom: spike and slab with the switch summed out (mixture site, no P(slab)). `src/lib/probprog/ep/ep-atoms-mixtures.ts:573` `omai-engine/probprog/ep`
-- estimator `spikeSlabMarginalLearnedAtom`: EP atom (planned): summed-out spike and slab, learned share and width. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:823` `omai-engine/probprog/ep`
+- estimator `spikeSlabMarginalLearnedAtom`: EP atom: summed-out spike and slab, learned share and width. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:823` `omai-engine/probprog/ep`
 - estimator `stickBreakingAtom`: EP atom: a stick-breaking mixture (truncated Dirichlet process), the stick-breaking factor on beta breaks. `src/lib/probprog/ep/ep-atoms-nonparametric.ts:91` `omai-engine/probprog/ep`
 - estimator `studentTAtom`: EP atom: a Student-t likelihood on a mean (robust to an outlier). `src/lib/probprog/ep/ep-atoms-likelihoods.ts:67` `omai-engine/probprog/ep`
 - estimator `studentTDfLearnedAtom`: EP atom: a Student-t likelihood with unknown location and degrees of freedom, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:885` `omai-engine/probprog/ep`
@@ -250,10 +250,10 @@ The model layer: a model written once as a value. A builder (`defineModel`) with
 - function `bind`: Bind data to a ModelSpec with checks of dims, sizes and supports. `src/lib/probprog/model/bind.ts:324` `omai-engine/probprog/model`
 - function `collapsePlan`: collapsePlan: which sites the collapse handler can integrate out, with cost and gain; user-invoked. `src/lib/probprog/model/collapse-plan.ts:105` `omai-engine/probprog/model`
 - function `defineModel`: Build a model spec with named dimensions, data, latents, observations and derived nodes. `src/lib/probprog/model/builder.ts:741` `omai-engine/probprog/model`
-- function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:4830` `omai-engine/probprog/model`
+- function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:4971` `omai-engine/probprog/model`
 - function `fromProgram`: fromProgram: lift a sample/observe program to a ModelSpec of its site structure; refuses a varying structure. `src/lib/probprog/model/from-program.ts:185` `omai-engine/probprog/model`
 - function `structureReport`: structureReport: what a spec's structure allows, as records and suggestions naming the method to use. `src/lib/probprog/model/analysis.ts:476` `omai-engine/probprog/model`
-- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:4657` `omai-engine/probprog/model`
+- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:4798` `omai-engine/probprog/model`
 - function `toProgram`: Compile a bound ModelSpec to a sample/observe program every engine runs. `src/lib/probprog/model/compile.ts:267` `omai-engine/probprog/model`
 
 ### probprog/model/dists
