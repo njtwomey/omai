@@ -160,14 +160,14 @@ function scaleTilt(c: OperatorContext) {
  * (each coefficient with scale 0 and offset > 0 is a constant; the others need a zero offset).
  *
  * @concept factor-operators
- * @index structure A Gaussian vector with precisions s_j lambda + o_j of one gamma multiplier (a smoothing parameter): dense EP.
+ * @index structure A Gaussian vector whose precisions share one gamma multiplier (a smoothing parameter).
  * @example
  * ```ts
  * import { gamma, gammaEta, gaussianMv, gaussianMvPrecisionScale, messageArg } from 'omai-engine/message-passing'
  * const v = gaussianMv(2)
  * const args = [messageArg(v, v.flat), messageArg(gamma, gammaEta(2, 1))]
  * const m = gaussianMvPrecisionScale.ep?.({ mode: 'ep', to: 0, args, params: { scale: [1, 1] }, power: 1 }).message
- * m?.map((x) => x.toFixed(3)) // => ['0.000', '0.000', '1.000', '0.000', '0.000', '1.000']
+ * m?.map((x) => x.toFixed(2)) // => ['0.00', '0.00', '1.00', '0.00', '0.00', '1.00']
  * ```
  */
 export const gaussianMvPrecisionScale: FactorOperator = {

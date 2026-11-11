@@ -175,28 +175,44 @@ Done, each with tests against an exact or brute-force reference (details in the 
 - Item response: Rasch, hierarchical, under EP and VMP; 2PL with normal discriminations runs under EP (numeric `product`) but is
   inaccurate (a sign symmetry in the posterior); 2PL with log-normal discriminations needs `exp` of a random value.
 
+Done in WP-B (2026-11-11, `agent-pp53-rulesb`), each against an exact or brute-force reference:
+
+- The gate of Minka and Winn (`operators/gate.ts`, `gate`): a discrete variable selects among branch factors, each any operator of
+  the registry over its own variables; the message to the variable is the ratio of the branches' evidence under their cavities, to a
+  variable the moment-matched mixture over the branches (weighted by the variable's cavity and the evidence); VMP too (expected
+  log per branch, responsibility-weighted messages). Compiler: a lookup of known values by a discrete latent (`at(means, z)`,
+  `z * 6 - 3`, `gt(t, tau)` for a change point, `where(z > 0.5, 0, theta)`) is a table over `z` (a hidden Markov model's emission) or a
+  gate of Gaussian branches over the random variables of its states; a categorical with probabilities `at(A, z)` is a table
+  (Markov transition). The Gaussian HMM is exact (forward-backward), the bimodal target matches the mixture moments, the clutter
+  problem agrees with the numeric clutter EP, a change point's posterior over the change time agrees with the exact one to 0.12.
+- `ordered` (and `positive`, `nonNegative`, `greaterThan`, `lessThan`, `interval` on a Gaussian latent) as comparison factors: the
+  ordered Gaussian mixture benchmark runs and matches its quadrature truth (mu[0] -1.870 +- 0.295 against -1.872 +- 0.301).
+- The smoothing parameter of a penalised spline, both routes (`ep-and-gam.md`): `gaussian-gamma-precision` with `scale` and
+  `offset`, and the dense `gaussian-mv-precision-scale`; the Bayesian GAM `hyper: 'gammaSmooth'` against the exact reference: mean
+  curve error 0.004 response sd, band ratio 1.015, log smoothing 2.664 +- 0.533 (exact 2.716 +- 0.524).
+- The horseshoe (`gamma-rate`, `gamma-product`: half-Cauchy as gamma hierarchies, a local times a global precision): exact on one
+  coefficient (mean 1.8958 against 1.8952), six coefficients within about 0.4 sd of a NUTS run (the shrunk coefficients' sds are about
+  half the sampler's). A Student-t likelihood with an unknown scale (a gamma mixing precision per row times the noise precision):
+  location 0.616 +- 0.271 against the exact 0.635 +- 0.316, precision 2.370 against 2.364.
+- Stochastic volatility with the persistence and the scale inferred needed no new rule (the `product` factor and a gamma precision
+  on the latent): phi 0.937 +- 0.17 against NUTS 0.886 +- 0.125, tau 11.5 against 10.5, states within 0.2 sd.
+- Start messages on a factor spec (`FactorSpec.start`, carried by the compiled graph and read by the engine's `init`) replace the
+  vague prior factors the compiler added for spike and slab and random precisions: the factor's own first update replaces the vague
+  message, so the model is no longer changed by them. (The operators' own flat-cavity reads, `cavityOf` in
+  `gaussian-gamma-precision` and `widened` in the gate, remain.)
+- The benchmark audit: EP runs on 14 of 27 (10 before: gate-ordered mixture, bimodal, Gaussian HMM, clutter).
+
 Still open, in the order of the work packages that follow:
 
 - WP-A (likelihood and function rules): a generic numeric 1-D likelihood operator and registry (Poisson and negative binomial
   with a log link, Weibull, ordinal probit, binomial logistic; the Student-t and Laplace sites folded into it), `apply` for unary
   functions of a random value (`exp`, `square`, `tanh`, `relu`, `softplus`, `abs`: `exp` for log-normal discriminations,
   Poisson regression, the non-centred funnel; `tanh` and `relu` for the Bayesian neural network), numeric priors (half-normal,
-  half-Cauchy, log-normal, uniform, truncated: eight schools, radon, the GP length scale), an EP-friendly negative binomial.
-- WP-B (structure and scales): the model-layer `gate` node with EP and VMP messages (Gaussian HMM, change points,
-  zero-inflation, mixtures with random components), `ordered` as greater-than factors, a constant multiplier on a precision and
-  the penalised spline with a random smoothing parameter (both GAM routes of section 3, with the posterior of the smoothing
-  parameter checked against the exact reference of the Bayesian GAM page), the horseshoe in the precision idiom (inverse-gamma
-  scale mixture), a heavy-tailed likelihood with an unknown scale (a Gaussian with a gamma precision per row), Student-t with
-  learned degrees of freedom, proper initial messages in place of the vague-prior workaround, and stochastic volatility with
-  `phi` and `sigma` inferred (a product with a random slope).
-- The atoms suite and the coverage figure: done on 2026-11-11 (`bayesian-examples/ep-atoms*.ts`, `epCoverage()` with its test,
-  the pocs group `expectation-propagation`). 28 bare setups, one factor each, with an exact or grid reference and a tolerance:
-  EP runs on 19 (gate between random values, a random index into random components, spike and slab, clutter, an ordered pair,
-  `exp(h/2)` as a scale, max, gamma precision observed and latent, Student-t, Laplace, probit, logistic, a probit on a
-  difference of skills, a dense GP prior with probit and logistic likelihoods, and the three conjugate pairs) and is planned on
-  9 with the library's reason on each page: the gate with known components (the compiler wants a variable per component), exp,
-  tanh and Poisson with a log link (`apply`), half-Cauchy and half-normal (numeric priors), a scaled precision (the GAM),
-  ordered means (the `ordered` constraint) and the product of two Gaussians (the compiler accepts it and the first update
-  sends an improper message: the run breaks, WP-B proper initial messages). EP runs on 10 of the 27 benchmark models. When a
-  rule lands the registry test of the atom it unblocks goes red until the atom is flipped to `runs`, and the coverage test is
-  moved up.
+  half-Cauchy, log-normal, uniform, truncated: eight schools, radon, the GP length scale; a half-Cauchy scale could map to the
+  `gamma-rate` hierarchy), an EP-friendly negative binomial.
+- WP-B remainder: Student-t with learned degrees of freedom (a random shape of the mixing gamma has no exponential-family rule),
+  a gate over a mix of known values and non-Gaussian random components, nested model-layer `gate` nodes with sub-models in
+  branches (the engine's `gate` takes any branch operator; the model layer maps lookups of Gaussian forms only), the engine-level
+  replacement of the operators' flat-cavity reads by start messages, the multi-coefficient horseshoe's shrunk-coefficient widths.
+- The atoms suite and the coverage figure (`epCoverage()` as a library function with a test): done by pp51; the atoms `gate`,
+  `ordered-means` and `scaled-precision` were flipped to `runs`.

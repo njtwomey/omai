@@ -79,7 +79,7 @@ describe('a discrete state that chooses a known mean or a known transition row',
     const bound = clutterProblem.bound()
     const truth = clutterProblem.truth()
     const { c, marginals } = ep(bound, { damping: 0.5 })
-    const rows = (bound.data['y'] as { shape: number[] }).shape[0] as number
+    const rows = bound.data['y']?.shape[0] as number
     expect(c.graph?.factors.filter((f) => f.operator === 'gate').length).toBe(rows)
     const m = marginals['theta'] as { mean: number; variance: number }
     // The same EP problem written as one numeric clutter factor per point (`clutterGraph`): the gate and the numeric rule must agree.

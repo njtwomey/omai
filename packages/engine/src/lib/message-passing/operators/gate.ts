@@ -72,7 +72,7 @@ function stateProbabilities(a: Arg, k: number): number[] {
  * @param inner - The inner operators by name.
  * @returns The `gate` operator.
  * @concept factor-operators
- * @index function The gate of Minka and Winn: a discrete variable selects which factor holds, branches with their own variables.
+ * @index function The gate of Minka and Winn: a discrete variable selects among branch factors.
  * @example
  * ```ts
  * import { defaultOperators, discrete, discreteEta, gaussian, gaussianEta, messageArg, valueArg } from 'omai-engine/message-passing'

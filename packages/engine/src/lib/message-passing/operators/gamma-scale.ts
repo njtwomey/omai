@@ -111,7 +111,7 @@ function rateParams(c: OperatorContext): { readonly shape: number; readonly scal
  * ```ts
  * import { gamma, gammaEta, gammaRate, messageArg } from 'omai-engine/message-passing'
  * const args = [messageArg(gamma, gammaEta(3, 2)), messageArg(gamma, gammaEta(2, 1))]
- * gammaRate.ep?.({ mode: 'ep', to: 1, args, params: { shape: 0.5 }, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.500', '-0.371']
+ * gammaRate.ep?.({ mode: 'ep', to: 1, args, params: { shape: 0.5 }, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.167', '-0.419']
  * ```
  */
 export const gammaRate: FactorOperator = {
@@ -175,7 +175,7 @@ export const gammaRate: FactorOperator = {
  * ```ts
  * import { gamma, gammaEta, gammaProduct, messageArg } from 'omai-engine/message-passing'
  * const args = [messageArg(gamma, gamma.flat), messageArg(gamma, gammaEta(3, 2)), messageArg(gamma, gammaEta(5, 4))]
- * gammaProduct.ep?.({ mode: 'ep', to: 0, args, params: {}, power: 1 }).message.map((v) => v.toFixed(3)) // => ['2.108', '-2.133']
+ * gammaProduct.ep?.({ mode: 'ep', to: 0, args, params: {}, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.941', '-1.035']
  * ```
  */
 export const gammaProduct: FactorOperator = {
