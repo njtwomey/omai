@@ -4,7 +4,7 @@ Written 2026-11-11 after an audit of the factor-graph compiler (`probprog/model/
 (`message-passing/operators/`). The aim, from the user: EP in all or at least most of the examples and models, with spike and slab,
 gates and the spline (GAM) case done properly, and a view of the other distributions we are likely to meet. EP is a showcase
 capability and worth real time; a refusal is usually a missing rule or the wrong way of writing the model, not a limit of EP.
-Companion note on the GAM case: `ep-and-gam.md`.
+Companion note on the GAM case: `ep-and-gam.md`. Covariance matrices (Wishart, correlation, correlated random effects): `ep-notes-matrix.md`.
 
 ## 1. Where we are (measured, not remembered)
 

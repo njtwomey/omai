@@ -10,6 +10,14 @@ import type { EpAtom } from './ep-atoms.ts'
 import { betaBernoulliAtom, gammaPoissonAtom, gaussianAtom } from './ep-atoms-conjugate.ts'
 import { hurdlePoissonAtom } from './ep-atoms-counts.ts'
 import {
+  bivariateCorrelationAtom,
+  bivariateCorrelationLearnedAtom,
+  mvnWishartAtom,
+  mvnWishartLearnedAtom,
+  randomInterceptsSlopesAtom,
+  randomInterceptsSlopesLearnedAtom,
+} from './ep-atoms-covariance.ts'
+import {
   betaBernoulliLearnedAtom,
   gammaPoissonLearnedAtom,
   gaussianLearnedAtom,
@@ -199,6 +207,12 @@ export const epAtoms: readonly EpAtom[] = [
   topicModelAtom,
   mixtureRegressionAtom,
   hurdlePoissonAtom,
+  mvnWishartAtom,
+  mvnWishartLearnedAtom,
+  bivariateCorrelationAtom,
+  bivariateCorrelationLearnedAtom,
+  randomInterceptsSlopesAtom,
+  randomInterceptsSlopesLearnedAtom,
 ]
 
 /**

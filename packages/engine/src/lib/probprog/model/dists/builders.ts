@@ -257,10 +257,62 @@ export function normalPair(weight: Operand, low: Operand, high: Operand, scale: 
   return family('normalPair', { weight, low, high, scale })
 }
 
-/** A multivariate normal over the last axis, with a `covariance`, `precision` or `scaleTril`. */
+/**
+ * A multivariate normal over the last axis, with a `covariance`, `precision` or `scaleTril`. With `over`, the vector's axis is a named
+ * dimension of the parameters (the mean `mu` over `coef`, as a population mean of correlated random effects is written): that
+ * dimension is the event axis, so a node of this distribution has one vector per index of its other dimensions. `precision` may be a
+ * Wishart latent and `covariance` an inverse-Wishart one (a learned covariance matrix).
+ */
 export function multivariateNormal(
   loc: Operand,
   params: { readonly covariance: Operand } | { readonly precision: Operand } | { readonly scaleTril: Operand },
+  options: { readonly over?: string | { readonly name: string } } = {},
 ): DistExpr {
-  return family('multivariateNormal', { loc, ...params })
+  const d = family('multivariateNormal', { loc, ...params })
+  if (options.over === undefined) return d
+  const over = typeof options.over === 'string' ? options.over : options.over.name
+  return { ...d, dims: d.dims.filter((x) => x !== over), spec: { ...d.spec, eventDims: [over] } }
+}
+
+/**
+ * A Wishart distribution over `d x d` symmetric positive-definite matrices with `df` degrees of freedom and scale matrix `scale`: the
+ * conjugate prior of the precision matrix of a multivariate normal (`multivariateNormal(loc, { precision: lambda })` with `lambda`
+ * this latent). The value is a matrix (event rank 2), mean `df * scale`. Message passing carries it as the Wishart family.
+ */
+export function wishart(df: Operand, scale: Operand): DistExpr {
+  return family('wishart', { df, scale })
+}
+
+/**
+ * An inverse Wishart distribution over covariance matrices with `df` degrees of freedom and scale matrix `scale` (mean
+ * `scale / (df - d - 1)`): the conjugate prior of the covariance of a multivariate normal
+ * (`multivariateNormal(loc, { covariance: sigma })` with `sigma` this latent). Message passing carries it as the Wishart family of its inverse.
+ */
+export function inverseWishart(df: Operand, scale: Operand): DistExpr {
+  return family('inverseWishart', { df, scale })
+}
+
+/**
+ * The prior of the correlation of a bivariate normal: the marginal of the LKJ distribution on 2 by 2 correlation matrices with
+ * concentration `eta`, `p(rho) = (1 - rho^2)^(eta - 1)` on (-1, 1) (uniform at `eta = 1`, pulled towards zero above it). Message passing
+ * carries `(rho + 1) / 2` as a beta variable `Beta(eta, eta)`.
+ */
+export function correlation(eta: Operand = 1): DistExpr {
+  return family('correlation', { eta })
+}
+
+/**
+ * A bivariate normal from its standard deviations and correlation, `x ~ N(loc, [[s1^2, rho s1 s2], [rho s1 s2, s2^2]])`, a vector over the axis
+ * `over` of `loc`. With gamma precisions `tau` (the sds written `1 / sqrt(tau)`) and a `correlation` latent for `rho`, message passing
+ * integrates the three jointly (`mvn-sd-corr`); the standard deviations and the correlation may be known.
+ */
+export function bivariateNormal(
+  loc: Operand,
+  params: { readonly scale1: Operand; readonly scale2: Operand; readonly rho: Operand },
+  options: { readonly over?: string | { readonly name: string } } = {},
+): DistExpr {
+  const d = family('bivariateNormal', { loc, ...params })
+  if (options.over === undefined) return d
+  const over = typeof options.over === 'string' ? options.over : options.over.name
+  return { ...d, dims: d.dims.filter((x) => x !== over), spec: { ...d.spec, eventDims: [over] } }
 }

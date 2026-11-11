@@ -18,7 +18,7 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import { eigh } from '../linalg/index.ts'
-import { lbeta } from '../special/gamma.ts'
+import { lbeta, lgamma } from '../special/gamma.ts'
 
 /** Nodes and weights of a quadrature rule. */
 export interface QuadratureRule {
@@ -111,22 +111,28 @@ export function gaussHermite(n: number): QuadratureRule {
 }
 
 /**
- * Gauss-Laguerre nodes and weights for the weight exp(-x) on [0, inf) (numpy.polynomial.laguerre.laggauss).
+ * Gauss-Laguerre nodes and weights for the weight x^alpha exp(-x) on [0, inf) (numpy.polynomial.laguerre.laggauss at alpha = 0,
+ * scipy.special.roots_genlaguerre otherwise): the rule that integrates a smooth function against a gamma density exactly up to
+ * degree 2n - 1.
  *
  * @param n - Number of points.
+ * @param alpha - Exponent of x in the weight (default 0, above -1).
  * @returns The rule.
  * @example
  * ```ts
  * import { gaussLaguerre } from 'omai-engine/numerics/quadrature'
  * Math.abs(Array.from(gaussLaguerre(4).weights.data).reduce((a, b) => a + b) - 1) < 1e-13 // => true
+ * // the weights of the generalised rule sum to Gamma(alpha + 1)
+ * Math.abs(Array.from(gaussLaguerre(4, 1.5).weights.data).reduce((a, b) => a + b) - 1.329340388179137) < 1e-12 // => true
  * ```
  */
-export function gaussLaguerre(n: number): QuadratureRule {
+export function gaussLaguerre(n: number, alpha = 0): QuadratureRule {
+  if (!(alpha > -1)) throw new OmaiError('value', 'gaussLaguerre: alpha must exceed -1')
   return golubWelsch(
     n,
-    (k) => 2 * k + 1,
-    (k) => k,
-    1,
+    (k) => 2 * k + alpha + 1,
+    (k) => Math.sqrt(k * (k + alpha)),
+    Math.exp(item(lgamma(alpha + 1))),
   )
 }
 

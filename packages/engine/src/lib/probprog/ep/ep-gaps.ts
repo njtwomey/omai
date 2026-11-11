@@ -52,14 +52,25 @@ export const epGaps: readonly EpGap[] = [
     refuses: [],
   },
   {
-    id: 'matrix-families',
-    title: 'Covariance matrices: Wishart, inverse-Wishart, normal-Wishart, LKJ',
+    id: 'matrix-larger',
+    title: 'Covariance matrices beyond what the Wishart and the bivariate sd-and-correlation sites reach',
     kind: 'missing-rule',
     status: 'open',
     summary:
-      'There is no matrix-valued message family, so a learned covariance (correlated random effects, a multivariate normal with unknown precision) cannot be a latent under EP.',
-    plan: 'A Wishart family with an exact normal-Wishart rule for the conjugate case, a model-layer distribution for it, and the Cholesky-with-correlation parameterisation (sds with gamma precisions and a numeric prior on the correlation) as the practical route for 2 by 2 and 3 by 3.',
-    size: 'large',
+      'Closed 2026-11-11 (`agent-pp191-matrix`): a Wishart family, the exact conjugate and the Bartlett-quadrature EP rule (`mvn-wishart`, dimensions 2 and 3, the exact update in any dimension), the normal-Wishart conjugate form, the sd-and-correlation site for a bivariate normal (`mvn-sd-corr`: gamma precisions, an LKJ correlation as a beta variable), and six atoms. What remains: a non-conjugate Wishart (an unknown mean or a Gaussian vector per group) in dimension 4 and above (the quadrature is a product rule with d (d + 1) / 2 coordinates: 5 nodes per coordinate at d = 3 already costs 12 s for eight groups of three effects), an LKJ prior on a correlation matrix of order 3 and above (three correlations are three coordinates of the numeric site, six with the standard deviations), a latent bivariate vector with standard deviations and a correlation of its own (a three-dimensional grid per group: about a second per sweep per group), and a normal-Wishart variable inside a larger model (the compiler maps the Wishart form only).',
+    plan: 'A sparse-grid or Laplace step for the Wishart tilt beyond dimension 3 (the conjugate part of the factor is already taken out, so the remainder is smooth), the Cholesky-of-correlation (canonical partial correlations) parameterisation with one beta variable per partial correlation for the LKJ prior of order 3, a shared tilt across the ports of one factor so that a group costs one integral per sweep, and the compiler pattern that reads `mu | L ~ N(m, (kappa L)^-1)` as one normal-Wishart variable.',
+    size: 'medium',
+    refuses: [],
+  },
+  {
+    id: 'hierarchical-matrix-few-groups',
+    title: 'A learned covariance with few groups: the shared mean is too narrow, the matrix too wide',
+    kind: 'quality',
+    status: 'open',
+    summary:
+      'Measured against the exact posterior (three-dimensional grid over the precision matrix, effects and mean integrated out) on the correlated random intercepts and slopes: with the population mean known EP is within 1% of the exact spread of the matrix and of every group (three to ten groups, prior degrees of freedom 1.2 to 2.2); with the mean unknown its spread is 0.77 to 0.89 of the exact at three or four groups (0.93 at six and eight) and the precision matrix is 1.05 to 1.25 times too wide (1.5 to 1.7 when the prior has barely more degrees of freedom than the dimension, and slow: 30 to 40 sweeps), the means within 0.5 posterior sd. A bivariate correlation carried as a beta (a plated factor, so the beta matches the exact marginal on its two log moments) has a spread 0.81 to 0.92 of the exact when it is strong (0.9 to 0.99) and the pairs few. A single plated factor (rows with a shared random mean) is exact in every case measured, including two rows and 1.2 degrees of freedom.',
+    plan: 'The hierarchical error is the usual one of EP with one vector variable per group sharing a mean: a joint site over the population mean and the groups (the mean integrated out of the Gaussian chain, as the exact reference does) would remove it; for the correlation, a skew-aware belief (a beta on the Fisher transform, or a Gaussian on it) in place of the beta on (rho + 1) / 2.',
+    size: 'medium',
     refuses: [],
   },
   {

@@ -45,11 +45,13 @@ export type FamilyKind =
   | 'discrete'
   | 'dirichlet'
   | 'normal-gamma'
+  | 'wishart'
+  | 'normal-wishart'
 
 /** A family as plain data, so a factor graph is JSON: its kind and, where it has one, its size. */
 export interface FamilySpec {
   readonly kind: FamilyKind
-  /** The length of a multivariate Gaussian or a Dirichlet, the number of states of a discrete variable. */
+  /** The length of a multivariate Gaussian or a Dirichlet, the number of states of a discrete variable, the order of a Wishart matrix. */
   readonly size?: number
 }
 

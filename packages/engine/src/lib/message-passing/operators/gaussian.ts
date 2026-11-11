@@ -37,6 +37,8 @@ const ALL: readonly FamilyKind[] = [
   'discrete',
   'dirichlet',
   'normal-gamma',
+  'wishart',
+  'normal-wishart',
 ]
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
