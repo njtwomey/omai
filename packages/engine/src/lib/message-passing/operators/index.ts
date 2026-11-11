@@ -10,6 +10,7 @@
 export * from './args.ts'
 export * from './concentration.ts'
 export * from './conjugate.ts'
+export * from './correlation.ts'
 export * from './covariance.ts'
 export * from './discrete.ts'
 export * from './extremum.ts'
