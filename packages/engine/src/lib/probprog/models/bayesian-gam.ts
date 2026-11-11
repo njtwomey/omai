@@ -953,7 +953,7 @@ export const bayesianGamNotes: Readonly<Record<string, string>> = {
  *
  * @param prior - The prior of the model (default the smoothness penalty); the verdicts are those of this model.
  * @param hyper - The hyperprior form of the penalty prior (see `BayesianGamOptions.hyper`): `gammaNoise` makes variational message passing apply, `fixed` also expectation propagation and exact Gaussian inference.
- * @returns The union (tagged `inferenceMethod`), the applicable kinds and the reasons for the others.
+ * @returns The union (tagged `method`), the applicable kinds and the reasons for the others.
  * @concept inference-engines
  * @example
  * ```ts

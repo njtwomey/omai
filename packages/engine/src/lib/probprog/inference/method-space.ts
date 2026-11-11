@@ -15,8 +15,8 @@ import { analysisOf, type MethodModel } from './_support.ts'
 import { anytimeKnobs } from './method.ts'
 import { methodKinds } from './models.ts'
 
-/** The tag of the union: the name of the key that holds the kind (not `method`, which a method's own knobs use). */
-const TAG = 'inferenceMethod'
+/** The tag of the union: the name of the key that holds the kind. A method's own knob of that name (`gaussian` has one) is left out of its option, so it cannot clash with the tag. */
+const TAG = 'method'
 
 /** Options of {@link methodSpace}. */
 export interface MethodSpaceOptions {
@@ -32,7 +32,7 @@ export interface MethodSpaceOptions {
 
 /** What {@link methodSpace} returns. */
 export interface MethodSpace {
-  /** The union of the kinds that apply (tagged `inferenceMethod`), each option the method's own knobs; those that do not apply are in it too, with no knobs, so a control can draw them disabled. */
+  /** The union of the kinds that apply (tagged `method`), each option the method's own knobs; those that do not apply are in it too, with no knobs, so a control can draw them disabled. */
   readonly space: UnionSpace
   /** The kinds that apply, in the order of the table. */
   readonly applicable: readonly string[]
@@ -51,7 +51,7 @@ export function methodConfig(value: Readonly<Record<string, unknown>>): { kind: 
  *
  * @param model - A bound spec or a program.
  * @param options - The kinds to consider, the starting knobs of each, knobs to leave out.
- * @returns The union (tag `inferenceMethod`), the applicable kinds and the reason for each other.
+ * @returns The union (tag `method`), the applicable kinds and the reason for each other.
  * @throws OmaiError with code `value` for a kind that is not in `methodKinds`.
  * @concept inference-engines
  * @index function Every inference method that runs on a model, as one union of knobs.
@@ -68,7 +68,7 @@ export function methodConfig(value: Readonly<Record<string, unknown>>): { kind: 
 export function methodSpace(model: MethodModel, options: MethodSpaceOptions = {}): MethodSpace {
   const kinds = options.kinds ?? Object.keys(methodKinds)
   const analysis = analysisOf(model)
-  const omit = new Set([...(options.omit ?? []), ...Object.keys(anytimeKnobs.spaces)])
+  const omit = new Set([...(options.omit ?? []), ...Object.keys(anytimeKnobs.spaces), TAG])
   const optionsOf: Record<string, DictSpace> = {}
   const applicable: string[] = []
   const unavailable: Record<string, string> = {}
