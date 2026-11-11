@@ -15,6 +15,7 @@ import { ndtr } from '../../../numerics/special/_kernels.ts'
 import { errorText } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam } from '../../core/args.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
+import { choleskyInPlace } from '../../numerics/_bartlett.ts'
 import { gaussianNodes } from '../../numerics/_quadrature.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
@@ -59,21 +60,6 @@ function logProbit(z: ArrayLike<number>, y: number): number {
     total += (E_NODES.w[i] as number) * p
   }
   return Math.log(total)
-}
-
-/** The Cholesky factor of a small symmetric positive-definite matrix (row-major `n x n`), or `undefined`. */
-function chol(a: readonly number[], n: number): number[] | undefined {
-  const l = new Array<number>(n * n).fill(0)
-  for (let i = 0; i < n; i++)
-    for (let j = 0; j <= i; j++) {
-      let s = a[i * n + j] as number
-      for (let k = 0; k < j; k++) s -= (l[i * n + k] as number) * (l[j * n + k] as number)
-      if (i === j) {
-        if (!(s > 0)) return undefined
-        l[i * n + i] = Math.sqrt(s)
-      } else l[i * n + j] = s / (l[j * n + j] as number)
-    }
-  return l
 }
 
 interface Tilt {
@@ -139,8 +125,9 @@ function integrate(c: OperatorContext): Tilt {
   let result: Tilt | undefined
   const total = n ** r
   for (let round = 0; round < ROUNDS; round++) {
-    const l = chol(cov, r)
-    if (l === undefined) throw new OmaiError('value', 'multiclass-site: the tilted covariance is not positive definite')
+    const l = Float64Array.from(cov)
+    if (!choleskyInPlace(l, r))
+      throw new OmaiError('value', 'multiclass-site: the tilted covariance is not positive definite')
     let logDet = 0
     for (let i = 0; i < r; i++) logDet += 2 * Math.log(l[i * r + i] as number)
     const logw = new Float64Array(total)
