@@ -118,6 +118,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'omai-engine/problems': () => import('omai-engine/problems'),
   'omai-engine/probprog': () => import('omai-engine/probprog'),
   'omai-engine/probprog/engines': () => import('omai-engine/probprog/engines'),
+  'omai-engine/probprog/ep': () => import('omai-engine/probprog/ep'),
   'omai-engine/probprog/inference': () => import('omai-engine/probprog/inference'),
   'omai-engine/probprog/model': () => import('omai-engine/probprog/model'),
   'omai-engine/probprog/model/dists': () => import('omai-engine/probprog/model/dists'),

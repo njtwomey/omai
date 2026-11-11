@@ -3,7 +3,7 @@
 Written 2026-11-11. For each distribution we observe, each of its parameters, the priors EP can carry, the hyperprior one level
 above, how to write it in the model layer, the factor it compiles to, and whether it runs today. Statuses are the library's own
 verdicts (each `runs` row has an atom page, or a test, that ran it against an exact or brute-force reference; `docs/probprog/ep-plan.md`
-has the history of the rules). The atoms are `packages/engine/src/lib/bayesian-examples/ep-atoms-priors.ts` and
+has the history of the rules). The atoms are `packages/engine/src/lib/probprog/ep/ep-atoms-priors.ts` and
 `ep-atoms-weights.ts`; their pages are in the `expectation-propagation` group of the pocs (`ep-<atom name>`), and each ends with the
 model code that ran.
 

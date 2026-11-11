@@ -8,10 +8,10 @@
  * is checked against what the atom promises (`recovery`) and is never tuned to hide a poor parameter.
  */
 
-import { OmaiError } from '../base/index.ts'
-import { betaincinv, gammaincinv, ndtri } from '../numerics/special/index.ts'
-import { item } from '../tensor/index.ts'
-import type { Config } from '../trace/index.ts'
+import { OmaiError } from '../../base/index.ts'
+import { betaincinv, gammaincinv, ndtri } from '../../numerics/special/index.ts'
+import { item } from '../../tensor/index.ts'
+import type { Config } from '../../trace/index.ts'
 import {
   type AtomProblem,
   type AtomRecoverySpec,
@@ -34,7 +34,7 @@ import {
  * @index function The equal-tailed credible interval of an EP belief on its support.
  * @example
  * ```ts
- * import { beliefCredibleInterval } from 'omai-engine/bayesian-examples'
+ * import { beliefCredibleInterval } from 'omai-engine/probprog/ep'
  * const [lo, hi] = beliefCredibleInterval('real', 0, 1)
  * [lo.toFixed(3), hi.toFixed(3)] // => ['-1.645', '1.645']
  * ```
@@ -88,7 +88,7 @@ export interface RecoveryRow {
  * @index function EP's belief of each parameter beside the truth it was simulated from: interval and coverage.
  * @example
  * ```ts
- * import { atomRecovery } from 'omai-engine/bayesian-examples'
+ * import { atomRecovery } from 'omai-engine/probprog/ep'
  * const q = { name: 'mu', label: 'mu', support: 'real' as const, truth: 1 }
  * const rows = atomRecovery({ quantities: [q] } as never, { mu: { mean: 1.2, sd: 0.5, proper: true } })
  * [rows[0]?.covered, rows[0]?.z.toFixed(1)] // => [true, '0.4']
@@ -169,7 +169,7 @@ export interface CalibrationSample {
  * @concept expectation-propagation
  * @example
  * ```ts
- * import { calibrationSample, epAtom } from 'omai-engine/bayesian-examples'
+ * import { calibrationSample, epAtom } from 'omai-engine/probprog/ep'
  * calibrationSample(epAtom('gaussian-learned'), 3).rows.map((r) => r.name) // => ['mu', 'sigma2']
  * ```
  */
@@ -199,7 +199,7 @@ export function calibrationSample(atom: EpAtom, seed: number, knobs: Config = {}
  * @index function The calibration table of an extended EP atom from its seeds: coverage, bias and error per parameter.
  * @example
  * ```ts
- * import { calibrationTable } from 'omai-engine/bayesian-examples'
+ * import { calibrationTable } from 'omai-engine/probprog/ep'
  * const row = { name: 'mu', label: 'mu', truth: 1, mean: 1.1, sd: 0.2, lower: 0.7, upper: 1.5, z: 0.5, covered: true }
  * const c = calibrationTable({ seeds: 1, coverage: 0.8, zrms: 1.5, reason: '' }, [{ seed: 1, rows: [row] }])
  * c.rows[0]?.coverage // => 1
@@ -263,7 +263,7 @@ export function calibrationTable(spec: AtomRecoverySpec, samples: readonly Calib
  * @index function Calibration of an extended EP atom: interval coverage of the truth over many simulated seeds.
  * @example
  * ```ts
- * import { atomCalibration, epAtom } from 'omai-engine/bayesian-examples'
+ * import { atomCalibration, epAtom } from 'omai-engine/probprog/ep'
  * const c = atomCalibration(epAtom('gaussian-learned'), { seeds: 10 })
  * c.rows.map((r) => r.key) // => ['mu', 'sigma2']
  * ```

@@ -5,17 +5,17 @@
  * is a one- or two-dimensional quadrature (the model written as a program, which runs whether or not EP applies).
  */
 
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { dict, real } from '../space/index.ts'
-import type { Config } from '../trace/index.ts'
+import { dict, real } from '../../space/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import { type AtomProblem, defineAtom, type EpAtom } from './ep-atoms.ts'
-import { exampleNumber } from './example-method.ts'
 
 const G = 61
 
 function expProblem(k: Config): AtomProblem {
-  const y = exampleNumber(k, 'y')
+  const y = configNumber(k, 'y')
   // region exp
   const definition = defineModel('exp-of-gaussian', (m) => {
     const x = m.latent('x', d.normal(0, 1))
@@ -42,7 +42,7 @@ function expProblem(k: Config): AtomProblem {
  * @index estimator EP atom: exp of a Gaussian (unary function of a random value).
  * @example
  * ```ts
- * import { expAtom } from 'omai-engine/bayesian-examples'
+ * import { expAtom } from 'omai-engine/probprog/ep'
  * expAtom.name // => 'exp'
  * ```
  */
@@ -65,7 +65,7 @@ export const expAtom: EpAtom = defineAtom({
 })
 
 function tanhProblem(k: Config): AtomProblem {
-  const y = exampleNumber(k, 'y')
+  const y = configNumber(k, 'y')
   // region tanh
   const definition = defineModel('tanh-of-gaussian', (m) => {
     const x = m.latent('x', d.normal(0, 1))
@@ -86,7 +86,7 @@ function tanhProblem(k: Config): AtomProblem {
  * @index estimator EP atom: tanh of a Gaussian (a squashing unit).
  * @example
  * ```ts
- * import { tanhAtom } from 'omai-engine/bayesian-examples'
+ * import { tanhAtom } from 'omai-engine/probprog/ep'
  * tanhAtom.family // => 'functions'
  * ```
  */
@@ -109,7 +109,7 @@ export const tanhAtom: EpAtom = defineAtom({
 })
 
 function logScaleProblem(k: Config): AtomProblem {
-  const y = exampleNumber(k, 'y')
+  const y = configNumber(k, 'y')
   // region log-scale
   const definition = defineModel('log-scale', (m) => {
     const h = m.latent('h', d.normal(0, 1))
@@ -134,7 +134,7 @@ function logScaleProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a Gaussian with the exponential of a latent as its scale (stochastic volatility step).
  * @example
  * ```ts
- * import { logScaleAtom } from 'omai-engine/bayesian-examples'
+ * import { logScaleAtom } from 'omai-engine/probprog/ep'
  * logScaleAtom.name // => 'log-scale'
  * ```
  */
@@ -157,7 +157,7 @@ export const logScaleAtom: EpAtom = defineAtom({
 })
 
 function productProblem(k: Config): AtomProblem {
-  const y = exampleNumber(k, 'y')
+  const y = configNumber(k, 'y')
   // region product
   const definition = defineModel('product', (m) => {
     const a = m.latent('a', d.normal(2, 1))
@@ -190,7 +190,7 @@ function productProblem(k: Config): AtomProblem {
  * @index estimator EP atom: the product of two Gaussians (numeric product rule, a banana posterior).
  * @example
  * ```ts
- * import { productAtom } from 'omai-engine/bayesian-examples'
+ * import { productAtom } from 'omai-engine/probprog/ep'
  * productAtom.name // => 'product'
  * ```
  */
@@ -215,7 +215,7 @@ export const productAtom: EpAtom = defineAtom({
 })
 
 function maxProblem(k: Config): AtomProblem {
-  const y = exampleNumber(k, 'y')
+  const y = configNumber(k, 'y')
   // region max
   const definition = defineModel('max-of-two', (m) => {
     const a = m.latent('a', d.normal(0, 1))
@@ -248,7 +248,7 @@ function maxProblem(k: Config): AtomProblem {
  * @index estimator EP atom: the maximum of two Gaussians (max factor, an L-shaped posterior).
  * @example
  * ```ts
- * import { maxAtom } from 'omai-engine/bayesian-examples'
+ * import { maxAtom } from 'omai-engine/probprog/ep'
  * maxAtom.name // => 'max'
  * ```
  */

@@ -8,12 +8,12 @@
  * distribution differs from the exact one.
  */
 
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { dict, real } from '../space/index.ts'
-import type { Config } from '../trace/index.ts'
+import { dict, real } from '../../space/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import { type AtomProblem, type AtomTolerance, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
-import { exampleNumber } from './example-method.ts'
 
 const BASE = [-2.1, 1.9, 0.3, 2.2, -0.4, 1.7, 0.6, -1.8, 0.9, 2.3]
 const SD = 0.5
@@ -40,7 +40,7 @@ const lgammaStirling = (x: number): number => {
 }
 
 /** The observations the knob `spread` makes: the base set scaled towards zero, where the two components overlap. */
-const observations = (k: Config): number[] => BASE.map((v) => v * exampleNumber(k, 'spread'))
+const observations = (k: Config): number[] => BASE.map((v) => v * configNumber(k, 'spread'))
 
 /** A probability quantity: the exact probability that a switch is on, and its spread as a coin. */
 const responsibility = (p: number): ExactMarginal => ({ mean: p, sd: Math.sqrt(p * (1 - p)), pdf: () => 0 })
@@ -134,7 +134,7 @@ const equationsOf = (a: number, b: number, x: readonly number[], summed: boolean
 ]
 
 function explicitProblem(k: Config): AtomProblem {
-  const [a, b] = [exampleNumber(k, 'a'), exampleNumber(k, 'b')]
+  const [a, b] = [configNumber(k, 'a'), configNumber(k, 'b')]
   const x = observations(k)
   // region gate-weight
   const definition = defineModel('gate-weight', (m) => {
@@ -166,7 +166,7 @@ function explicitProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a gate with an unknown mixing weight (a beta prior on the Bernoulli switch probability).
  * @example
  * ```ts
- * import { gateWeightAtom } from 'omai-engine/bayesian-examples'
+ * import { gateWeightAtom } from 'omai-engine/probprog/ep'
  * gateWeightAtom.name // => 'gate-weight'
  * ```
  */
@@ -188,7 +188,7 @@ export const gateWeightAtom: EpAtom = defineAtom({
 })
 
 function summedOutProblem(k: Config): AtomProblem {
-  const [a, b] = [exampleNumber(k, 'a'), exampleNumber(k, 'b')]
+  const [a, b] = [configNumber(k, 'a'), configNumber(k, 'b')]
   const x = observations(k)
   // region gate-weight-summed-out
   const definition = defineModel('gate-weight-summed-out', (m) => {
@@ -216,7 +216,7 @@ function summedOutProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a mixture with an unknown weight, the switches summed out (mixture-weight factor).
  * @example
  * ```ts
- * import { gateWeightSummedOutAtom } from 'omai-engine/bayesian-examples'
+ * import { gateWeightSummedOutAtom } from 'omai-engine/probprog/ep'
  * gateWeightSummedOutAtom.name // => 'gate-weight-summed-out'
  * ```
  */
@@ -239,8 +239,8 @@ const THREE = [-3, 0, 3]
 const BASE3 = [-2.9, 3.1, 0.2, 2.8, -0.3, -3.2, 0.5, 1.4, -1.6, 2.9]
 
 function dirichletWeightProblem(k: Config): AtomProblem {
-  const a = exampleNumber(k, 'concentration')
-  const x = BASE3.map((v) => v * exampleNumber(k, 'spread'))
+  const a = configNumber(k, 'concentration')
+  const x = BASE3.map((v) => v * configNumber(k, 'spread'))
   // region gate-weight-dirichlet
   const definition = defineModel('gate-weight-dirichlet', (m) => {
     const i = m.range('i')
@@ -310,7 +310,7 @@ function dirichletWeightProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a gate with unknown weights of three components (a Dirichlet prior on the switch probabilities).
  * @example
  * ```ts
- * import { gateWeightDirichletAtom } from 'omai-engine/bayesian-examples'
+ * import { gateWeightDirichletAtom } from 'omai-engine/probprog/ep'
  * gateWeightDirichletAtom.name // => 'gate-weight-dirichlet'
  * ```
  */
@@ -341,7 +341,7 @@ export const gateWeightDirichletAtom: EpAtom = defineAtom({
 // ----- a hyperprior on the strength of the prior on the weight -----
 
 function hyperWeightProblem(k: Config): AtomProblem {
-  const [shape, rate] = [exampleNumber(k, 'shape'), exampleNumber(k, 'rate')]
+  const [shape, rate] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
   const x = observations(k)
   // region gate-weight-hyperprior
   const definition = defineModel('gate-weight-hyperprior', (m) => {
@@ -440,7 +440,7 @@ function hyperWeightProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a gate whose weight has a beta prior with a gamma hyperprior on its strength.
  * @example
  * ```ts
- * import { gateWeightHyperAtom } from 'omai-engine/bayesian-examples'
+ * import { gateWeightHyperAtom } from 'omai-engine/probprog/ep'
  * gateWeightHyperAtom.family // => 'gate weights'
  * ```
  */

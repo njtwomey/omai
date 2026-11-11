@@ -5,7 +5,7 @@
  * flipped to `runs`.
  */
 
-import { OmaiError } from '../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { EpAtom } from './ep-atoms.ts'
 import { betaBernoulliAtom, gammaPoissonAtom, gaussianAtom } from './ep-atoms-conjugate.ts'
 import { hurdlePoissonAtom } from './ep-atoms-counts.ts'
@@ -108,7 +108,7 @@ import {
  * @index table The EP atoms: bare setups that each exercise one factor of the message passing suite.
  * @example
  * ```ts
- * import { epAtoms } from 'omai-engine/bayesian-examples'
+ * import { epAtoms } from 'omai-engine/probprog/ep'
  * epAtoms.map((a) => a.name).slice(0, 2) // => ['gate', 'gate-random']
  * ```
  */
@@ -209,7 +209,7 @@ export const epAtoms: readonly EpAtom[] = [
  * @throws OmaiError with code `value` for an unknown name.
  * @example
  * ```ts
- * import { epAtom } from 'omai-engine/bayesian-examples'
+ * import { epAtom } from 'omai-engine/probprog/ep'
  * epAtom('gate').title // => 'Gate'
  * ```
  */

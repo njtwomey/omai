@@ -2,7 +2,7 @@
 // the data are simulated from the truth, EP and the Gibbs sampler are run on them, and the belief about each parameter is held
 // against the true value. A run is `agrees` when EP's regime probabilities are within 0.05 of the sampler's on average (it found
 // the same reading of the data); a run is `barely` when some regime occurs in fewer than 6% of the steps.
-import { type AtomQuantity, atomRecovery, type Belief, type CalibrationSample } from 'omai-engine/bayesian-examples'
+import { type AtomQuantity, atomRecovery, type Belief, type CalibrationSample } from 'omai-engine/probprog/ep'
 import type { EpHooks } from '../../shared/ep/sweeps.ts'
 import { infer, RATES, simulate, transitions } from './program.ts'
 import { gibbsReference, type Reference } from './reference.ts'

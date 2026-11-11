@@ -1,5 +1,5 @@
-import { type MixtureComponent, mixtureInterval, mixtureMarginal, selectedBranch } from 'omai-engine/bayesian-examples'
 import { ddot } from 'omai-engine/numerics/linalg'
+import { type MixtureComponent, mixtureInterval, mixtureMarginal, selectedBranch } from 'omai-engine/probprog/ep'
 import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'

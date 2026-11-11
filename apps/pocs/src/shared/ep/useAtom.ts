@@ -8,7 +8,7 @@ import {
   atomRun,
   atomVerdict,
   type EpAtom,
-} from 'omai-engine/bayesian-examples'
+} from 'omai-engine/probprog/ep'
 import type { Config } from 'omai-engine/trace'
 import { useMemo } from 'react'
 import { workerTask } from '../runWorker.ts'

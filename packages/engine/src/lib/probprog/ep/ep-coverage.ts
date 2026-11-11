@@ -5,9 +5,9 @@
  * the developer: the coverage page lists it, and its test fixes the figure so that coverage only goes up.
  */
 
-import { epGridMethod, epSpecMethod } from '../probprog/inference/index.ts'
-import { analysisOf } from '../probprog/inference/model-input.ts'
-import { benchmarkModels } from '../probprog/models/index.ts'
+import { epGridMethod, epSpecMethod } from '../inference/index.ts'
+import { analysisOf } from '../inference/model-input.ts'
+import { benchmarkModels } from '../models/index.ts'
 import { epAtoms } from './ep-atom-list.ts'
 import { atomRun } from './ep-atoms.ts'
 
@@ -49,7 +49,7 @@ export interface EpCoverage {
  * @index function What EP covers today: atoms and benchmark models as runs or planned, with reasons.
  * @example
  * ```ts
- * import { epCoverage } from 'omai-engine/bayesian-examples'
+ * import { epCoverage } from 'omai-engine/probprog/ep'
  * const c = epCoverage()
  * c.atomsRun > 0 && c.benchmarks.length > 20 // => true
  * ```

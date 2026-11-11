@@ -1,5 +1,5 @@
-import { activeSetScore, recoverySummary } from 'omai-engine/bayesian-examples'
 import { modelRunFromTape } from 'omai-engine/exposition'
+import { activeSetScore, recoverySummary } from 'omai-engine/probprog/ep'
 import { toFactorGraph, toStructure } from 'omai-engine/probprog/model'
 import { type ZeroInflatedPosterior, zeroInflatedPoisson } from 'omai-engine/probprog/validation'
 import { type ProgramCheck, sig } from '../../shared/ep/program-check.ts'

@@ -1,4 +1,4 @@
-import { epDirections } from 'omai-engine/bayesian-examples'
+import { epDirections } from 'omai-engine/probprog/ep'
 import { describe, expect, it } from 'vitest'
 import { GROUPS } from './groups.ts'
 import { groupPocs, type PocEntry, searchPocs, splitSubgroups } from './poc.ts'

@@ -8,13 +8,14 @@
  * seeds, how often its 90% intervals hold the truth.
  */
 
-import { lgamma } from '../numerics/special/index.ts'
-import * as d from '../probprog/model/dists/index.ts'
-import { defineModel, ops } from '../probprog/model/index.ts'
-import { foldIn, gamma, key, normal, poisson, studentT, uniform } from '../random/index.ts'
-import { dict, int, real } from '../space/index.ts'
-import { item, toFlat } from '../tensor/index.ts'
-import type { Config } from '../trace/index.ts'
+import { lgamma } from '../../numerics/special/index.ts'
+import { foldIn, gamma, key, normal, poisson, studentT, uniform } from '../../random/index.ts'
+import { dict, int, real } from '../../space/index.ts'
+import { item, toFlat } from '../../tensor/index.ts'
+import type { Config } from '../../trace/index.ts'
+import { configNumber } from '../inference/method.ts'
+import * as d from '../model/dists/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import {
   type AtomFigure,
   type AtomProblem,
@@ -26,7 +27,6 @@ import {
 } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 import { gridMarginals } from './ep-atoms-quad.ts'
-import { exampleNumber } from './example-method.ts'
 
 const lg = (x: number): number => item(lgamma(x))
 const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0)
@@ -58,9 +58,9 @@ const recoveryOf = (reason: string, seeds = 40): AtomRecoverySpec => ({
 const T_DF = 3
 
 function studentLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const [trueLoc, trueScale] = [exampleNumber(k, 'trueLoc'), exampleNumber(k, 'trueScale')]
-  const [a, b] = [exampleNumber(k, 'shape'), exampleNumber(k, 'rate')]
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const [trueLoc, trueScale] = [configNumber(k, 'trueLoc'), configNumber(k, 'trueScale')]
+  const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
   const df = T_DF
   // region student-t-learned
   // the ground truth the data are drawn from: Student-t noise with three degrees of freedom
@@ -151,7 +151,7 @@ function studentLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a Student-t likelihood with unknown location and scale, recovered from simulated data.
  * @example
  * ```ts
- * import { studentTLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { studentTLearnedAtom } from 'omai-engine/probprog/ep'
  * studentTLearnedAtom.extends // => 'student-t'
  * ```
  */
@@ -193,8 +193,8 @@ export const studentTLearnedAtom: EpAtom = defineAtom({
 // ----- a Laplace likelihood with an unknown location and scale -----
 
 function laplaceLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const [trueLoc, trueScale] = [exampleNumber(k, 'trueLoc'), exampleNumber(k, 'trueScale')]
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const [trueLoc, trueScale] = [configNumber(k, 'trueLoc'), configNumber(k, 'trueScale')]
   // region laplace-learned
   // the ground truth the data are drawn from: Laplace noise (the difference of two exponentials)
   const kk = key(seed)
@@ -274,7 +274,7 @@ function laplaceLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a Laplace likelihood with unknown location and scale, recovered from simulated data.
  * @example
  * ```ts
- * import { laplaceLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { laplaceLearnedAtom } from 'omai-engine/probprog/ep'
  * laplaceLearnedAtom.expected // => 'runs'
  * ```
  */
@@ -310,9 +310,9 @@ const WEIGHTS = [0.4, 1.6, -1.1]
 const LIMIT = 3
 
 function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const [w0, w1, w2] = [exampleNumber(k, 'trueOffset'), exampleNumber(k, 'trueSlope1'), exampleNumber(k, 'trueSlope2')]
-  const [a, b] = [exampleNumber(k, 'shape'), exampleNumber(k, 'rate')]
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const [w0, w1, w2] = [configNumber(k, 'trueOffset'), configNumber(k, 'trueSlope1'), configNumber(k, 'trueSlope2')]
+  const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
   const truth = [w0, w1, w2]
   // region probit-learned logistic-learned
   // the ground truth: random points, labelled through the link by the true weights
@@ -415,7 +415,7 @@ function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomProb
  * @index estimator EP atom: a probit classifier with a learned weight precision, recovered from simulated labels.
  * @example
  * ```ts
- * import { probitLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { probitLearnedAtom } from 'omai-engine/probprog/ep'
  * probitLearnedAtom.extends // => 'probit'
  * ```
  */
@@ -455,7 +455,7 @@ export const probitLearnedAtom: EpAtom = defineAtom({
  * @index estimator EP atom: a logistic classifier with a learned weight precision, recovered from simulated labels.
  * @example
  * ```ts
- * import { logisticLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { logisticLearnedAtom } from 'omai-engine/probprog/ep'
  * logisticLearnedAtom.extends // => 'logistic'
  * ```
  */
@@ -529,9 +529,9 @@ function regressionFigure(
 }
 
 function poissonLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const [trueA, trueB] = [exampleNumber(k, 'trueIntercept'), exampleNumber(k, 'trueSlope')]
-  const priorSd = exampleNumber(k, 'priorSd')
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const [trueA, trueB] = [configNumber(k, 'trueIntercept'), configNumber(k, 'trueSlope')]
+  const priorSd = configNumber(k, 'priorSd')
   // region poisson-log-learned
   // the ground truth: a count at each x with rate exp(intercept + slope x)
   const x = covariate(seed, n)
@@ -571,7 +571,7 @@ function poissonLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a Poisson regression with a log link, intercept and slope recovered from simulated counts.
  * @example
  * ```ts
- * import { poissonLogLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { poissonLogLearnedAtom } from 'omai-engine/probprog/ep'
  * poissonLogLearnedAtom.extends // => 'poisson-log'
  * ```
  */
@@ -603,13 +603,13 @@ export const poissonLogLearnedAtom: EpAtom = defineAtom({
 })
 
 function dispersionLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueA, trueB, trueAlpha] = [
-    exampleNumber(k, 'trueIntercept'),
-    exampleNumber(k, 'trueSlope'),
-    exampleNumber(k, 'trueDispersion'),
+    configNumber(k, 'trueIntercept'),
+    configNumber(k, 'trueSlope'),
+    configNumber(k, 'trueDispersion'),
   ]
-  const priorSd = exampleNumber(k, 'priorSd')
+  const priorSd = configNumber(k, 'priorSd')
   // region poisson-log-dispersion-learned
   // the ground truth: counts whose rate is jittered by a gamma (overdispersion: variance = mean + alpha mean²)
   const kk = key(seed)
@@ -655,7 +655,7 @@ function dispersionLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a negative-binomial regression with unknown dispersion, recovered from simulated counts.
  * @example
  * ```ts
- * import { poissonLogDispersionLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { poissonLogDispersionLearnedAtom } from 'omai-engine/probprog/ep'
  * poissonLogDispersionLearnedAtom.extends // => 'poisson-log'
  * ```
  */
@@ -697,9 +697,9 @@ export const poissonLogDispersionLearnedAtom: EpAtom = defineAtom({
 const WEIBULL_SHAPE = 1.5
 
 function weibullLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const [trueA, trueB] = [exampleNumber(k, 'trueIntercept'), exampleNumber(k, 'trueSlope')]
-  const priorSd = exampleNumber(k, 'priorSd')
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const [trueA, trueB] = [configNumber(k, 'trueIntercept'), configNumber(k, 'trueSlope')]
+  const priorSd = configNumber(k, 'priorSd')
   const shape = WEIBULL_SHAPE
   // region weibull-learned
   // the ground truth: Weibull times with scale exp(intercept + slope x) and a known shape
@@ -742,7 +742,7 @@ function weibullLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a Weibull regression with a log link, coefficients recovered from simulated times.
  * @example
  * ```ts
- * import { weibullLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { weibullLearnedAtom } from 'omai-engine/probprog/ep'
  * weibullLearnedAtom.extends // => 'prior-normal-weibull-scale'
  * ```
  */
@@ -804,9 +804,9 @@ function positiveFromLog(base: ExactMarginal): ExactMarginal {
 }
 
 function studentDfLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const [trueLoc, trueDf] = [exampleNumber(k, 'trueLoc'), exampleNumber(k, 'trueDf')]
-  const [a, b] = [exampleNumber(k, 'shape'), exampleNumber(k, 'rate')]
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const [trueLoc, trueDf] = [configNumber(k, 'trueLoc'), configNumber(k, 'trueDf')]
+  const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
   // region student-t-df-learned
   // the ground truth the data are drawn from: Student-t noise with a stated number of degrees of freedom
   const noise = toFlat(studentT(foldIn(key(seed), 0), [n], trueDf))
@@ -878,7 +878,7 @@ function studentDfLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a Student-t likelihood with unknown location and degrees of freedom, recovered from simulated data.
  * @example
  * ```ts
- * import { studentTDfLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { studentTDfLearnedAtom } from 'omai-engine/probprog/ep'
  * studentTDfLearnedAtom.extends // => 'student-t'
  * ```
  */
@@ -914,9 +914,9 @@ export const studentTDfLearnedAtom: EpAtom = defineAtom({
 })
 
 function weibullShapeLearnedProblem(k: Config): AtomProblem {
-  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
-  const [trueLogScale, trueShape] = [exampleNumber(k, 'trueLogScale'), exampleNumber(k, 'trueShape')]
-  const [priorSd, shapeSd] = [exampleNumber(k, 'priorSd'), exampleNumber(k, 'shapeSd')]
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const [trueLogScale, trueShape] = [configNumber(k, 'trueLogScale'), configNumber(k, 'trueShape')]
+  const [priorSd, shapeSd] = [configNumber(k, 'priorSd'), configNumber(k, 'shapeSd')]
   // region weibull-shape-learned
   // the ground truth: Weibull times with a stated scale and shape
   const u = toFlat(uniform(foldIn(key(seed), 1), [n]))
@@ -1008,7 +1008,7 @@ function weibullShapeLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a Weibull with unknown scale and shape, recovered from simulated times.
  * @example
  * ```ts
- * import { weibullShapeLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { weibullShapeLearnedAtom } from 'omai-engine/probprog/ep'
  * weibullShapeLearnedAtom.extends // => 'prior-normal-weibull-scale'
  * ```
  */
@@ -1046,8 +1046,8 @@ export const weibullShapeLearnedAtom: EpAtom = defineAtom({
 // ----- a tournament in which the spread of the skills is unknown -----
 
 function skillsLearnedProblem(k: Config): AtomProblem {
-  const [seed, players, rounds] = [exampleNumber(k, 'seed'), exampleNumber(k, 'players'), exampleNumber(k, 'n')]
-  const [spread, a, b] = [exampleNumber(k, 'trueSpread'), exampleNumber(k, 'shape'), exampleNumber(k, 'rate')]
+  const [seed, players, rounds] = [configNumber(k, 'seed'), configNumber(k, 'players'), configNumber(k, 'n')]
+  const [spread, a, b] = [configNumber(k, 'trueSpread'), configNumber(k, 'shape'), configNumber(k, 'rate')]
   // region skill-difference-learned
   // the ground truth: skills drawn with a spread, a round robin in which the better player usually wins
   const kk = key(seed)
@@ -1118,7 +1118,7 @@ function skillsLearnedProblem(k: Config): AtomProblem {
  * @index estimator EP atom: a tournament with unknown skill spread, skills and spread recovered from simulated games.
  * @example
  * ```ts
- * import { skillDifferenceLearnedAtom } from 'omai-engine/bayesian-examples'
+ * import { skillDifferenceLearnedAtom } from 'omai-engine/probprog/ep'
  * skillDifferenceLearnedAtom.extends // => 'skill-difference'
  * ```
  */

@@ -1,6 +1,6 @@
-import { recoverySummary } from 'omai-engine/bayesian-examples'
 import { modelRunFromTape } from 'omai-engine/exposition'
 import { trueskillUpdate } from 'omai-engine/pgm'
+import { recoverySummary } from 'omai-engine/probprog/ep'
 import { nutsMethod } from 'omai-engine/probprog/inference'
 import { toStructure } from 'omai-engine/probprog/model'
 import { spearman } from 'omai-engine/stats'
