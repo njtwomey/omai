@@ -58,6 +58,7 @@ import {
   spikeSlabMarginalAtom,
 } from './ep-atoms-mixtures.ts'
 import { softmaxRegressionAtom, softmaxRegressionLearnedAtom } from './ep-atoms-multiclass.ts'
+import { stickBreakingAtom, topicModelAtom } from './ep-atoms-nonparametric.ts'
 import {
   ordinalProbitAtom,
   ordinalProbitLearnedAtom,
@@ -66,7 +67,6 @@ import {
   skillDrawsAtom,
   skillDrawsLearnedAtom,
 } from './ep-atoms-ordinal.ts'
-import { stickBreakingAtom, topicModelAtom } from './ep-atoms-nonparametric.ts'
 import {
   priorBetaGeometricAtom,
   priorBetaStrengthGammaAtom,

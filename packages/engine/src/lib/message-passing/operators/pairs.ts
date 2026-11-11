@@ -3,7 +3,7 @@
  * of the negative binomial with a random dispersion to a registry of densities. A coordinate is a real value (a location, a
  * predictor) or a positive one carried either as a Gaussian on its log (a log-normal, half-normal or half-Cauchy parameter,
  * projected by the compiler) or as a gamma variable, so a Laplace noise whose scale is learned, a Student-t with learned degrees
- * of freedom, a Weibull with a learned shape and a Beta-distributed outcome with two random shapes are four rows of one table
+ * of freedom, an asymmetric Laplace (quantile regression) with a learned scale, a Weibull with a learned shape and a Beta-distributed outcome with two random shapes are four rows of one table
  * read by one operator, `likelihood-pair`, and a fifth is a few lines. EP matches the moments of both variables under their
  * cavities times the density by a panelled Gauss-Legendre grid in the two coordinates (`_grid.ts`), split at the kinks the
  * density has and zoomed onto where the mass is, so the sites cost a few thousand evaluations of the density each.
@@ -56,6 +56,30 @@ const laplaceScale: PairLikelihood = {
   ],
   params: [],
   density: (y) => (u, s) => -Math.LN2 - s - Math.abs(y - u) * Math.exp(-s),
+  kinks: (y) => [[y], []],
+}
+
+/** The asymmetric Laplace of quantile regression at the level `tau` with a random scale `exp(x1)` around a random location `x0`. */
+const asymmetricLaplaceScale: PairLikelihood = {
+  name: 'asymmetric-laplace-scale',
+  description: 'y | u, s ~ asymmetric Laplace(u, exp(s), tau): quantile regression whose scale is random too',
+  ports: [
+    { name: 'location', positive: false },
+    { name: 'scale', positive: true },
+  ],
+  params: ['tau'],
+  check: (_y, p) => {
+    const tau = numberParam(p, 'tau')
+    return tau > 0 && tau < 1 ? undefined : 'tau must be in (0, 1)'
+  },
+  density: (y, p) => {
+    const tau = numberParam(p, 'tau')
+    const c = Math.log(tau * (1 - tau))
+    return (u, s) => {
+      const r = (y - u) * Math.exp(-s)
+      return c - s - r * (tau - (r < 0 ? 1 : 0))
+    }
+  },
   kinks: (y) => [[y], []],
 }
 
@@ -164,7 +188,7 @@ const betaShapes: PairLikelihood = {
 }
 
 /**
- * The registry of pair likelihoods by name: `laplace-scale`, `student-t-df`, `weibull-shape` and `beta-shapes`. A new object each
+ * The registry of pair likelihoods by name: `laplace-scale`, `asymmetric-laplace-scale`, `student-t-df`, `weibull-shape` and `beta-shapes`. A new object each
  * call, so a caller may add a row of its own and build the operator with {@link pairLikelihoodOperator}.
  *
  * @returns The densities, keyed by name.
@@ -178,7 +202,7 @@ const betaShapes: PairLikelihood = {
  * ```
  */
 export function pairLikelihoods(): Record<string, PairLikelihood> {
-  const all: PairLikelihood[] = [laplaceScale, studentTDf, weibullShape, betaShapes]
+  const all: PairLikelihood[] = [laplaceScale, asymmetricLaplaceScale, studentTDf, weibullShape, betaShapes]
   return Object.fromEntries(all.map((l) => [l.name, l]))
 }
 

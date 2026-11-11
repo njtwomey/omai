@@ -3472,6 +3472,8 @@ class Compiler {
       return emit(fam === 'orderedProbit' ? 'ordinal-probit' : 'ordinal-logit', dist['predictor'] as ExprSpec, { cuts })
     }
     if (fam === 'asymmetricLaplace') {
+      if (!isConstCell(this.paramCell(node, 'scale', i)))
+        return this.observedPair(node, 'asymmetric-laplace-scale', y, i, index)
       return emit('asymmetric-laplace', dist['loc'] as ExprSpec, {
         scale: known('scale', 'scale'),
         tau: known('tau', 'quantile level'),
@@ -3609,7 +3611,13 @@ class Compiler {
       return this.materialise(affOf(cell), node.name, index) as string
     }
     let args: [string | { readonly const: number }, string | { readonly const: number }]
-    if (likelihood === 'laplace-scale') {
+    if (likelihood === 'laplace-scale' || likelihood === 'asymmetric-laplace-scale') {
+      if (likelihood === 'asymmetric-laplace-scale') {
+        const tau = this.paramCell(node, 'tau', i)
+        if (!isConstCell(tau))
+          throw new Refusal('operator', `the quantile level of '${node.name}' is random: it must be known`)
+        extra['tau'] = tau.aff.offset
+      }
       args = [predictor(this.paramCell(node, 'loc', i)), this.positivePort(node, 'scale', i, index)]
     } else if (likelihood === 'student-t-df') {
       const scale = this.paramCell(node, 'scale', i)

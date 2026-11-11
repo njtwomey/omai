@@ -1155,7 +1155,7 @@ export const priorLogNormalScaleAtom: EpAtom = defineAtom({
   problem: logNormalScaleProblem,
 })
 
-// ----- planned: a beta with two random shapes -----
+// ----- a beta with two random shapes -----
 
 function betaTwoShapesProblem(k: Config): AtomProblem {
   const s = exampleNumber(k, 'logSd')
@@ -1187,23 +1187,27 @@ function betaTwoShapesProblem(k: Config): AtomProblem {
 
 /**
  * A beta prior with two random shapes, each with its own log-normal hyperprior: the tilted distribution is two-dimensional (a
- * grid over both shapes), which the one-dimensional concentration factor does not cover. Planned.
+ * grid over both shapes), which the one-dimensional concentration factor does not cover; the `beta-two-shapes` factor does, with a
+ * grid in `(log a, log b)` and the conjugate update of `p` at each node.
  *
- * @index estimator EP atom: a beta prior on a probability with two random shapes (planned).
+ * @index estimator EP atom: a beta prior on a probability with two random shapes.
  * @example
  * ```ts
  * import { priorBetaTwoShapesAtom } from 'omai-engine/bayesian-examples'
- * priorBetaTwoShapesAtom.expected // => 'planned'
+ * priorBetaTwoShapesAtom.expected // => 'runs'
  * ```
  */
 export const priorBetaTwoShapesAtom: EpAtom = defineAtom({
   name: 'prior-beta-two-shapes',
   title: 'Prior: beta with two random shapes',
-  what: 'A beta prior on a Bernoulli probability whose two shapes are separate log-normal variables: a three-variable factor with a two-dimensional tilted integral.',
-  factors: ['prior (gaussian, on each log shape)', 'beta with two random shapes (not built)', 'bernoulli likelihood'],
+  what: 'A beta prior on a Bernoulli probability whose two shapes are separate log-normal variables: a three-variable factor with a two-dimensional tilted integral, which a grid in the two log shapes does.',
+  factors: [
+    'prior (gaussian, on each log shape)',
+    'beta-two-shapes (a 2-d grid in the log shapes)',
+    'bernoulli likelihood',
+  ],
   family: 'priors',
-  expected: 'planned',
-  plan: 'docs/probprog/ep-priors.md, the beta row: a factor over (p, a, b) whose tilted distribution of the two shapes is a grid in (log a, log b) with the beta of the probability given them (the one-dimensional rule of dirichlet-concentration, in two variables); the symmetric and the single-strength forms already run.',
+  expected: 'runs',
   reference: 'grid',
   tolerance: { ...HYPER, meanZ: 0.25 },
   knobs: dict({ logSd: real(0.2, 2, { default: 0.7, step: 0.1, label: 'sd of each log shape' }) }),

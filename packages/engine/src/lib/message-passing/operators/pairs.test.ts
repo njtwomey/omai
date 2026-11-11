@@ -128,6 +128,10 @@ describe('likelihood-pair: tilted moments and log evidence against a brute-force
   it('laplace-scale with a gamma scale', () => {
     check('laplace-scale', -0.7, {}, [gaussianCavity(0, 2), gammaCavity(2.5, 3)])
   })
+  it('asymmetric-laplace-scale, a log-normal and a gamma scale', () => {
+    check('asymmetric-laplace-scale', 0.9, { tau: 0.8 }, [gaussianCavity(0.2, 0.7), gaussianCavity(-0.5, 0.4)])
+    check('asymmetric-laplace-scale', -0.6, { tau: 0.25 }, [gaussianCavity(0, 1.5), gammaCavity(2.5, 3)])
+  })
   it('student-t-df, a gaussian log df', () => {
     check('student-t-df', 2.4, { scale: 0.8 }, [gaussianCavity(0.3, 1), gaussianCavity(1.2, 0.5)])
   })

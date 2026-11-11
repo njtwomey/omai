@@ -161,3 +161,37 @@ describe('quantile regression: the asymmetric Laplace with a linear predictor', 
     }
   })
 })
+
+describe('quantile regression with a random scale', () => {
+  const y = [-1.2, -0.9, -0.1, -0.7, 0.2, 0.1, 0.9, 1.4, 0.8, 2.1]
+  const tau = 0.7
+  it('compiles to likelihood-pair factors and agrees with the exact posterior of the quantile and the scale', () => {
+    const model = defineModel('quantile-random-scale', (m) => {
+      const q = m.latent('q', d.normal(0, 2))
+      const scale = m.latent('scale', d.logNormal(-0.5, 0.6))
+      m.observe('y', d.asymmetricLaplace(q, scale, tau), m.data('y', { dims: ['i'], role: 'response' }))
+    })
+    const { c, marginals } = ep(model.bind({ y }))
+    expect(factorsOf(c, 'likelihood-pair')).toBe(y.length)
+    const ref = grid2(
+      (q, l) => {
+        const lp = normalPrior(q, 2) + normalPrior(l + 0.5, 0.6)
+        return (
+          lp +
+          sum(
+            y.map((v) => {
+              const r = (v - q) * Math.exp(-l)
+              return Math.log(tau * (1 - tau)) - l - r * (tau - (r < 0 ? 1 : 0))
+            }),
+          )
+        )
+      },
+      [-1.5, 3],
+      [-3.5, 1.5],
+    )
+    const got = post(marginals, 'q')
+    expect(Math.abs(got.mean - (ref.mean[0] as number)) / (ref.sd[0] as number)).toBeLessThan(0.15)
+    expect(got.sd / (ref.sd[0] as number)).toBeGreaterThan(0.8)
+    expect(got.sd / (ref.sd[0] as number)).toBeLessThan(1.2)
+  })
+})
