@@ -39,7 +39,9 @@ import {
   uniform,
   weibull,
 } from '../../../dists/index.ts'
-import { mul, stack, sub, type Value } from '../../../tensor/index.ts'
+import { gaussHermite } from '../../../numerics/quadrature/index.ts'
+import { ndtr } from '../../../numerics/special/index.ts'
+import { add, concat, mul, split, stack, sub, toFlat, type Value } from '../../../tensor/index.ts'
 
 /** The evaluated parameters of a family, by name. */
 export type FamilyArgs = Readonly<Record<string, Value>>
@@ -69,6 +71,25 @@ export interface FamilyDef {
   /** Example parameters of a valid member, used by tests and drawings. */
   readonly example: Readonly<Record<string, number | readonly number[] | readonly (readonly number[])[]>>
   make(args: FamilyArgs): Distribution
+}
+
+/** The probabilities of the multinomial probit: class `k` wins when `score_k + e_k` is the largest, a one-dimensional integral over the noise of `k` by Gauss-Hermite. */
+function probitProbs(scores: Value): Value {
+  const k = scores.shape[scores.shape.length - 1] ?? 0
+  const rule = gaussHermite(32)
+  const nodes = Array.from(toFlat(rule.nodes), (v) => v * Math.SQRT2)
+  const weights = Array.from(toFlat(rule.weights), (v) => v / Math.sqrt(Math.PI))
+  const parts = split(scores, k, -1)
+  const probs = parts.map((sk, c) => {
+    let total: Value = mul(sk, 0)
+    for (const [i, e] of nodes.entries()) {
+      let prod: Value = add(mul(sk, 0), 1)
+      for (const [j, sj] of parts.entries()) if (j !== c) prod = mul(prod, ndtr(add(sub(sk, sj), e)))
+      total = add(total, mul(prod, weights[i] as number))
+    }
+    return total
+  })
+  return concat(probs, -1)
 }
 
 function need(family: string, args: FamilyArgs, name: string): Value {
@@ -320,6 +341,13 @@ export function distributionFamilies(): Record<string, FamilyDef> {
       },
       { probs: [0.2, 0.3, 0.5] },
       { oneOf: [['probs', 'logits']], discrete: true, finite: true, exponentialFamily: true },
+    ),
+    family(
+      'categoricalProbit',
+      ['scores'],
+      (a) => categorical({ probs: probitProbs(need('categoricalProbit', a, 'scores')) }),
+      { scores: [0.2, 0.5, -0.3] },
+      { discrete: true, finite: true, messagePassing: true },
     ),
     family(
       'dirichlet',

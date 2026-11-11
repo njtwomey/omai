@@ -3025,7 +3025,11 @@ class Compiler {
         return numeric !== undefined ? numeric : this.observedConjugate(node, fam, name, y, i)
       }
       case 'categorical':
+        if (node.dist.params['logits'] !== undefined)
+          return this.observedMulticlass(node, y, i, index, 'logits', 'logit')
         return this.observedConjugate(node, fam, name, y, i)
+      case 'categoricalProbit':
+        return this.observedMulticlass(node, y, i, index, 'scores', 'probit')
       case 'normalPair':
         return this.observedMixtureWeight(node, name, y, i)
       case 'exponential':
@@ -3286,6 +3290,49 @@ class Compiler {
       return emit('negative-binomial-log', m.inner, { dispersion: 1 / r, exposure: (r * K) / A })
     }
     return undefined
+  }
+
+  /**
+   * A categorical outcome whose class scores are affine forms of Gaussian variables over one extra dimension (the classes): a
+   * `logits` expression `X W` with `W` over (feature, class) for the softmax, or `scores` for the multinomial probit. One
+   * `multiclass-site` factor per observation on the `K` scores (each a Gaussian variable, or a known value). The outcome is a
+   * parameter of the factor.
+   */
+  private observedMulticlass(
+    node: ModelNode & { readonly kind: 'observed' },
+    y: number,
+    i: number,
+    index: number | undefined,
+    param: string,
+    link: 'logit' | 'probit',
+  ): string | null {
+    const key = `${node.name}|${param}`
+    let cells = this.cells.get(key)
+    if (cells === undefined) {
+      const sym = this.evalSym(node.dist.params[param] as ExprSpec)
+      const extra = sym.dims.filter((dim) => (node.dist.eventDims ?? []).includes(dim))
+      if (extra.length !== 1)
+        throw new Refusal(
+          'structure',
+          `the ${param} of '${node.name}' must carry the class dimension declared by \`over\` (categorical(..., { over })), it has [${sym.dims}]`,
+        )
+      cells = this.over(sym, [...node.dims, extra[0] as string])
+      this.cells.set(key, cells)
+    }
+    const classes = cells.length / Math.max(1, prod(this.shapeOf(node.dims)))
+    if (!(Number.isInteger(y) && y >= 0 && y < classes))
+      throw new Refusal('data', `'${node.name}': the class ${y} is outside 0 to ${classes - 1}`)
+    const args = Array.from({ length: classes }, (_, k) => {
+      const cell = cells?.[i * classes + k] as Cell
+      if (isConstCell(cell)) return { const: cell.aff.offset }
+      return this.materialise(affOf(cell), node.name, index) as string
+    })
+    if (args.every((a) => typeof a !== 'string')) return null
+    this.addFactor(
+      { operator: 'multiclass-site', args, params: { y, classes, link } },
+      this.elementName(node.name, node.dims, i),
+    )
+    return null
   }
 
   /**

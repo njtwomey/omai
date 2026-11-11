@@ -162,9 +162,32 @@ export function poisson(rate: Operand): DistExpr {
   return family('poisson', { rate })
 }
 
-/** A categorical distribution over the last axis of `probs` or `logits`. */
-export function categorical(params: { readonly probs: Operand } | { readonly logits: Operand }): DistExpr {
-  return family('categorical', params)
+/**
+ * A categorical distribution over the last axis of `probs` or `logits`. With `over`, the classes are a named dimension of the
+ * parameters (the logits `X w` over `row` and `class`, as a multinomial logit classifier writes them): that dimension is the
+ * event axis, so the observation has one entry per row, not per row and class.
+ */
+export function categorical(
+  params: { readonly probs: Operand } | { readonly logits: Operand },
+  options: { readonly over?: string | { readonly name: string } } = {},
+): DistExpr {
+  const d = family('categorical', params)
+  if (options.over === undefined) return d
+  const over = typeof options.over === 'string' ? options.over : options.over.name
+  return { ...d, dims: d.dims.filter((x) => x !== over), spec: { ...d.spec, eventDims: [over] } }
+}
+
+/**
+ * A categorical outcome by the multinomial probit: the class whose utility `score_k + e_k`, with standard normal `e_k`, is the
+ * largest. The `scores` carry the classes as the dimension `over`, as the logits of `categorical` do.
+ */
+export function categoricalProbit(
+  scores: Operand,
+  options: { readonly over: string | { readonly name: string } },
+): DistExpr {
+  const d = family('categoricalProbit', { scores })
+  const over = typeof options.over === 'string' ? options.over : options.over.name
+  return { ...d, dims: d.dims.filter((x) => x !== over), spec: { ...d.spec, eventDims: [over] } }
 }
 
 /** A Dirichlet distribution over the simplex; the last axis of `concentration` is the category axis. */
