@@ -655,7 +655,8 @@ brute-force reference, not rule bugs: the log-scale counterexample (y = -3, loc 
 within 3e-9 of a reference refined to 200 panels of order 24, while the fixed 10-panel reference was 5.0e-5 off, exactly the tolerance;
 the product case is the same (a ridge along a b = y that 14 panels resolve to 2e-4). `bruteTilted` (`testing/message-passing.ts`) now adapts:
 after a pass it zooms every Gaussian port's interval onto the nodes that carry weight (a panel of margin) and runs again until the
-intervals stop shrinking, so a likelihood far narrower than its cavity keeps its nodes. The only other property test of these files is
-the first one, and no other `message-passing` test file uses `fast-check`. Both counterexamples are pinned as fixed `examples`. The file
+intervals stop shrinking, so a likelihood far narrower than its cavity keeps its nodes. The audit: `operators.test.ts` is the only `message-passing` test file that uses `fast-check` (eight properties; the other seven
+passed every seed and the stress run unchanged), the other files that use the reference (`numerical`, `extremum`, `alpha`, `variational`,
+`rows`, `probit-slice`, `families`) test fixed cases and pass with the adaptive reference. Both counterexamples are pinned as fixed `examples`. The file
 takes `OMAI_FC_SEED` (one fixed seed for every property) and `OMAI_FC_SCALE` (a multiple of the runs): it passes on the seeds 1395539355,
 1817728420, 7, 123456 and 987654321 and with 15 times the runs; the old reference fails the pinned log-scale case.
