@@ -257,10 +257,37 @@ export function normalPair(weight: Operand, low: Operand, high: Operand, scale: 
   return family('normalPair', { weight, low, high, scale })
 }
 
-/** A multivariate normal over the last axis, with a `covariance`, `precision` or `scaleTril`. */
+/**
+ * A multivariate normal over the last axis, with a `covariance`, `precision` or `scaleTril`. With `over`, the vector's axis is a named
+ * dimension of the parameters (the mean `mu` over `coef`, as a population mean of correlated random effects is written): that
+ * dimension is the event axis, so a node of this distribution has one vector per index of its other dimensions. `precision` may be a
+ * Wishart latent and `covariance` an inverse-Wishart one (a learned covariance matrix).
+ */
 export function multivariateNormal(
   loc: Operand,
   params: { readonly covariance: Operand } | { readonly precision: Operand } | { readonly scaleTril: Operand },
+  options: { readonly over?: string | { readonly name: string } } = {},
 ): DistExpr {
-  return family('multivariateNormal', { loc, ...params })
+  const d = family('multivariateNormal', { loc, ...params })
+  if (options.over === undefined) return d
+  const over = typeof options.over === 'string' ? options.over : options.over.name
+  return { ...d, dims: d.dims.filter((x) => x !== over), spec: { ...d.spec, eventDims: [over] } }
+}
+
+/**
+ * A Wishart distribution over `d x d` symmetric positive-definite matrices with `df` degrees of freedom and scale matrix `scale`: the
+ * conjugate prior of the precision matrix of a multivariate normal (`multivariateNormal(loc, { precision: lambda })` with `lambda`
+ * this latent). The value is a matrix (event rank 2), mean `df * scale`. Message passing carries it as the Wishart family.
+ */
+export function wishart(df: Operand, scale: Operand): DistExpr {
+  return family('wishart', { df, scale })
+}
+
+/**
+ * An inverse Wishart distribution over covariance matrices with `df` degrees of freedom and scale matrix `scale` (mean
+ * `scale / (df - d - 1)`): the conjugate prior of the covariance of a multivariate normal
+ * (`multivariateNormal(loc, { covariance: sigma })` with `sigma` this latent). Message passing carries it as the Wishart family of its inverse.
+ */
+export function inverseWishart(df: Operand, scale: Operand): DistExpr {
+  return family('inverseWishart', { df, scale })
 }

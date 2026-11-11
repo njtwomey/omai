@@ -29,6 +29,7 @@ import {
   halfCauchy,
   halfNormal,
   inverseGamma,
+  inverseWishart,
   laplace,
   logNormal,
   multivariateNormal,
@@ -41,6 +42,7 @@ import {
   truncatedNormal,
   uniform,
   weibull,
+  wishart,
   zeroInflated,
 } from '../../../dists/index.ts'
 import { gaussHermite } from '../../../numerics/quadrature/index.ts'
@@ -147,7 +149,7 @@ const covariance = ['covariance', 'precision', 'scaleTril'] as const
 /**
  * The table of distribution families: zeroTruncatedPoisson and hurdlePoisson (the positive part of a hurdle model, and the whole count), normal, halfNormal, logNormal, truncatedNormal, studentT, cauchy, halfCauchy,
  * laplace, asymmetricLaplace, exponential, gamma, inverseGamma, weibull, beta, uniform, bernoulli, binomial, geometric, negativeBinomial,
- * poisson, categorical, categoricalProbit, orderedProbit, orderedLogistic, dirichlet and multivariateNormal. Parameter names are those of the constructors in
+ * poisson, categorical, categoricalProbit, orderedProbit, orderedLogistic, dirichlet, multivariateNormal, wishart and inverseWishart (matrix-valued: event rank 2). Parameter names are those of the constructors in
  * `omai-engine/dists`.
  *
  * @returns The families by name (a fresh object each call).
@@ -467,6 +469,32 @@ export function distributionFamilies(): Record<string, FamilyDef> {
         ],
       },
       { oneOf: [covariance], eventRank: 1, exponentialFamily: true },
+    ),
+    family(
+      'wishart',
+      ['df', 'scale'],
+      (a) => wishart(need('wishart', a, 'df'), { covariance: need('wishart', a, 'scale') }),
+      {
+        df: 4,
+        scale: [
+          [1, 0.3],
+          [0.3, 1],
+        ],
+      },
+      { eventRank: 2, messagePassing: true },
+    ),
+    family(
+      'inverseWishart',
+      ['df', 'scale'],
+      (a) => inverseWishart(need('inverseWishart', a, 'df'), need('inverseWishart', a, 'scale')),
+      {
+        df: 4,
+        scale: [
+          [1, 0.3],
+          [0.3, 1],
+        ],
+      },
+      { eventRank: 2, messagePassing: true },
     ),
   ]
   return Object.fromEntries(defs.map((d) => [d.name, d]))
