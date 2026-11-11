@@ -86,7 +86,9 @@ import {
   scaledOf,
   unflatten,
 } from './factor-graph/_cells.ts'
+import { type IdiomEnv, precisionExpr, unwrap } from './factor-graph/_idioms.ts'
 import { type EvalEnv, evaluateKnown, isKnownExpr, type Known, knownConstants } from './factor-graph/_known.ts'
+import { type LayoutPlan, layoutPlan, type NormalGammaPlan } from './factor-graph/_plan.ts'
 import { Refusal } from './factor-graph/_refusal.ts'
 import {
   cellAt,
@@ -99,10 +101,10 @@ import {
   zipSyms,
 } from './factor-graph/_symbolic/_dims.ts'
 import type { FactorGraphCompilation, FactorIssue, SiteLayout } from './factor-graph/types.ts'
-import { auxId, elementId } from './ids.ts'
+import { elementId } from './ids.ts'
 import { defaultOperators, type NamedValue, type OperatorTable } from './operators.ts'
 import { ScanUnrollError, unrollScans } from './scan.ts'
-import { type DistSpec, type ExprSpec, exprRefs, type ModelNode, nodeRefs } from './spec.ts'
+import { type DistSpec, type ExprSpec, type ModelNode, nodeRefs } from './spec.ts'
 
 /** One step of an `apply` chain: a function of the registry by name, or `mul`, `add`, `pow` with its constant. */
 type ApplyStep = readonly [string, number?]
@@ -134,19 +136,6 @@ const PROJECTED_PRIORS: ReadonlySet<string> = new Set([
   'truncatedNormal',
 ])
 
-/** A Gaussian mean whose variance is a known multiple of the precision's reciprocal and the observations that read both: one normal-gamma variable. */
-interface NormalGammaPlan {
-  /** The node of the precision (a gamma or inverse-gamma latent) and of the mean (a normal latent). */
-  readonly precision: string
-  readonly mean: string
-  /** The variable (named as the mean's node) and whether the precision's node is an inverse gamma (a variance). */
-  readonly variable: string
-  readonly inverse: boolean
-  /** The known multiple `kappa` of the mean's precision over the shared one: `mu | lambda ~ N(m, 1 / (kappa lambda))`. */
-  readonly kappa: number
-  readonly observed: readonly string[]
-}
-
 /** One component of a random concentration, `weight * alpha + offset`, with the variable of `alpha` (the variable of its log when `log`). */
 interface ConcentrationPart {
   readonly variable?: string
@@ -169,13 +158,11 @@ class Compiler {
   private readonly lazy = new Map<string, ExprSpec>()
   private readonly failed = new Set<string>()
   private readonly unbound: ReadonlySet<string>
-  private readonly packed = new Set<string>()
-  /** The derived vectors `z / S(x)` of independent standard normals over a scale of one latent (non-centred), by name, with the name of `z`. */
-  private readonly nonCentred = new Map<string, string>()
-  /** The nodes a `matmul` reads as a vector: a non-centred vector is kept as one Gaussian vector only when something reads it so. */
-  private readonly matmulRead = new Set<string>()
-  /** Scalar normal latents that share a predictor and are compiled as the coordinates of one joint Gaussian vector (`packScalars`), by member name. */
-  private readonly groups = new Map<string, { readonly vector: string; readonly members: readonly string[] }>()
+  /** The layout decisions made from the whole spec before the walk (`factor-graph/_plan.ts`). */
+  private readonly plan: LayoutPlan
+  /** The non-centred vectors the dense factor still absorbs (the plan's, less those the walk found it does not apply to), by name, with the name of `z`. */
+  private readonly nonCentred: Map<string, string>
+  /** The scalar groups whose joint vector the walk has made. */
   private readonly groupsMade = new Set<string>()
   /** The Gaussian log-scale variable behind a positive scale variable (the value variable `tau` is `exp` of it), by the value variable's name. */
   private readonly logScale = new Map<string, string>()
@@ -200,6 +187,16 @@ class Compiler {
   /** The custom functions the compiler has evaluated or read as a matrix, so a node that calls only these is not opaque. */
   readonly handledCustoms = new Set<string>()
   private readonly nodes = new Map<string, ModelNode>()
+  /** What the recognisers of `_idioms.ts` ask of this compilation: the nodes, what is known, and which nodes are inverse-gamma variances. */
+  private readonly idiom: IdiomEnv = {
+    nodes: this.nodes,
+    isConst: (e) => this.isConst(e),
+    valueOf: (e) => this.evalNamed(e),
+    isRecipNode: (name) => {
+      const cells = this.syms.get(name)?.cells
+      return cells !== undefined && cells.length > 0 && cells.every((c) => c.kind === 'recip')
+    },
+  }
   private readonly families = distributionFamilies()
   /** The node being compiled: the site that auxiliary variables of its expressions are named after. */
   private current = ''
@@ -213,8 +210,8 @@ class Compiler {
     private readonly modelOps: OperatorTable,
     ops: Readonly<Record<string, FactorOperator>>,
     private readonly vectorise: boolean,
-    private readonly packScalars: boolean,
-    private readonly denseScales: boolean = true,
+    readonly packScalars: boolean,
+    readonly denseScales: boolean = true,
   ) {
     this.g = new GraphBuilder(ops, modelOps)
     this.unbound = new Set(bound.unbound)
@@ -222,153 +219,9 @@ class Compiler {
     this.known = pre.known
     this.customsCalled = pre.customsCalled
     for (const n of bound.spec.nodes) if (n.kind !== 'observed') this.nodes.set(n.name, n)
-    this.findPacked()
-    this.findNonCentred()
-    if (this.packScalars) this.findGroups()
-  }
-
-  // ----- the plan: which vector latents stay one vector variable -----
-
-  /** A latent over one dimension that a `matmul` reads stays a vector variable, so its posterior keeps the correlations. */
-  private findPacked(): void {
-    const walk = (e: ExprSpec): void => {
-      if (e.kind !== 'op' && e.kind !== 'custom') return
-      if (e.kind === 'op' && e.op === 'matmul')
-        for (const a of e.args) if (a.kind === 'ref') this.matmulRead.add(a.name)
-      // A custom function that is a matrix of a normal vector (read as one by the compiler) keeps that vector joint too.
-      if (e.kind === 'op' ? e.op === 'matmul' : this.bound.customs[e.name] !== undefined)
-        for (const a of e.args) {
-          const target = a.kind === 'ref' ? this.nodes.get(a.name) : undefined
-          // A normal with a random scale (ARD: a precision of its own for each coefficient) cannot be one joint Gaussian vector:
-          // its elements stay separate variables, each with its own gaussian-gamma-precision factor.
-          const scale = target?.kind === 'latent' ? target.dist.params['scale'] : undefined
-          const randomScale =
-            scale !== undefined &&
-            this.dependsOnLatent(scale) &&
-            !(this.denseScales && this.sharedGamma(scale) !== undefined)
-          if (
-            target?.kind === 'latent' &&
-            target.dims.length === 1 &&
-            ((target.dist.family === 'normal' && !randomScale) || target.dist.family === 'normalSpikeSlab')
-          )
-            this.packed.add(target.name)
-        }
-      for (const a of e.args) walk(a)
-    }
-    for (const n of this.bound.spec.nodes) {
-      if (n.kind === 'latent' || n.kind === 'observed' || n.kind === 'generated')
-        for (const e of Object.values(n.dist.params)) walk(e)
-      if (n.kind === 'derived' || n.kind === 'factor') walk(n.expr)
-    }
-  }
-
-  /**
-   * The non-centred vectors: a derived node `D = z / S` whose numerator `z` is a latent vector of independent standard normals
-   * that nothing else reads, and whose divisor depends on a latent (the smoothing parameter of the non-centred penalised spline,
-   * `z / sqrt(exp(x) d + n)`). Compiled as one Gaussian vector with a `gaussian-mv-function-scale` factor when the divisor is a
-   * chain of unary steps from one variable (`denseNonCentred`), so the posterior keeps the correlations of the coefficients; `z` is
-   * then not a variable of the graph (the factor integrates it out).
-   */
-  private findNonCentred(): void {
-    if (!this.denseScales) return
-    const readers = new Map<string, number>()
-    for (const n of this.bound.spec.nodes) for (const r of nodeRefs(n)) readers.set(r, (readers.get(r) ?? 0) + 1)
-    const is = (e: ExprSpec | undefined, value: number): boolean => e?.kind === 'const' && e.value === value
-    for (const n of this.bound.spec.nodes) {
-      if (n.kind !== 'derived' || n.expr.kind !== 'op' || n.expr.op !== 'div' || n.dims.length !== 1) continue
-      if (!this.matmulRead.has(n.name)) continue
-      const [numerator, divisor] = n.expr.args
-      const z = numerator?.kind === 'ref' ? this.nodes.get(numerator.name) : undefined
-      if (z?.kind !== 'latent' || z.dist.family !== 'normal' || z.dims.length !== 1 || z.dims[0] !== n.dims[0]) continue
-      if (z.constraint !== undefined && z.constraint.kind !== 'real') continue
-      if (!is(z.dist.params['loc'], 0) || !is(z.dist.params['scale'], 1) || readers.get(z.name) !== 1) continue
-      if (divisor === undefined || !this.dependsOnLatent(divisor)) continue
-      this.nonCentred.set(n.name, z.name)
-    }
-  }
-
-  /**
-   * With `packScalars`: the scalar normal latents (known prior) that an observed node reads together, directly or through
-   * derived nodes, are grouped: each group is one joint Gaussian vector, so a likelihood on `a + b x` sees the correlation of
-   * `a` and `b` instead of a loop of scalar messages (which keeps the means and loses the correlations: marginal sds too small).
-   */
-  private findGroups(): void {
-    const staticExpr = (e: ExprSpec): boolean =>
-      e.kind === 'const' ||
-      (e.kind === 'ref' && this.nodes.get(e.name)?.kind === 'data') ||
-      (e.kind === 'op' && e.args.every(staticExpr))
-    const candidate = (n: ModelNode | undefined): n is ModelNode & { readonly kind: 'latent' } =>
-      n?.kind === 'latent' &&
-      n.dims.length === 0 &&
-      n.dist.family === 'normal' &&
-      !this.packed.has(n.name) &&
-      Object.values(n.dist.params).every(staticExpr)
-    const parent = new Map<string, string>()
-    const find = (x: string): string => {
-      let r = x
-      while ((parent.get(r) ?? r) !== r) r = parent.get(r) as string
-      parent.set(x, r)
-      return r
-    }
-    for (const n of this.bound.spec.nodes) {
-      if (n.kind !== 'observed') continue
-      const found: string[] = []
-      const seen = new Set<string>()
-      const visit = (name: string): void => {
-        if (seen.has(name)) return
-        seen.add(name)
-        const t = this.nodes.get(name)
-        if (candidate(t)) found.push(name)
-        else if (t?.kind === 'derived') for (const r of nodeRefs(t)) visit(r)
-      }
-      for (const r of nodeRefs(n)) visit(r)
-      for (const f of found) {
-        if (!parent.has(f)) parent.set(f, f)
-        if (found[0] !== undefined) parent.set(find(f), find(found[0]))
-      }
-    }
-    const byRoot = new Map<string, string[]>()
-    for (const name of parent.keys()) byRoot.set(find(name), [...(byRoot.get(find(name)) ?? []), name])
-    const order = new Map(this.bound.spec.nodes.map((n, i) => [n.name, i]))
-    for (const members of byRoot.values()) {
-      if (members.length < 2) continue
-      members.sort((a, b) => (order.get(a) as number) - (order.get(b) as number))
-      const vector = auxId(members[0] as string, 8)
-      for (const m of members) this.groups.set(m, { vector, members })
-    }
-  }
-
-  /**
-   * The one scalar gamma (or exponential) latent that an expression depends on, through derived nodes, when it is the only
-   * latent it reads: the shared smoothing parameter or ridge strength of a vector whose coefficients' precisions are
-   * known multiples of it. Absent when there are several latents or the one is not a scalar gamma.
-   */
-  private sharedGamma(e: ExprSpec): string | undefined {
-    const found = new Set<string>()
-    const visit = (x: ExprSpec): void => {
-      if (x.kind === 'ref') {
-        const n = this.nodes.get(x.name)
-        if (n?.kind === 'latent') found.add(n.name)
-        else if (n?.kind === 'derived') visit(n.expr)
-        return
-      }
-      if (x.kind === 'op' || x.kind === 'custom') for (const a of x.args) visit(a)
-    }
-    visit(e)
-    if (found.size !== 1) return undefined
-    const n = this.nodes.get([...found][0] as string)
-    return n?.kind === 'latent' && n.dims.length === 0 && (n.dist.family === 'gamma' || n.dist.family === 'exponential')
-      ? n.name
-      : undefined
-  }
-
-  /** Whether an expression refers (through derived nodes) to a latent: a random value, where data and constants are known. */
-  private dependsOnLatent(e: ExprSpec): boolean {
-    if (e.kind === 'ref') {
-      const n = this.nodes.get(e.name)
-      return n?.kind === 'latent' || (n?.kind === 'derived' && this.dependsOnLatent(n.expr))
-    }
-    return (e.kind === 'op' || e.kind === 'custom') && e.args.some((a) => this.dependsOnLatent(a))
+    // The order of the plan is fixed (packed, non-centred, groups, normal-gamma: each reads the ones before it, see `_plan.ts`).
+    this.plan = layoutPlan(bound, this.known, { modelOps, denseScales, packScalars })
+    this.nonCentred = new Map(this.plan.nonCentred)
   }
 
   // ----- sizes and indexing -----
@@ -1151,49 +1004,6 @@ class Compiler {
   }
 
   /**
-   * The expression a Gaussian's scale takes when it is the idiom of a random precision: `1 / sqrt(tau)`, `tau ** -0.5` or
-   * `sqrt(1 / tau)`, followed through derived nodes. Absent when the scale is not that shape.
-   */
-  private precisionExpr(scale: ExprSpec): ExprSpec | undefined {
-    const e = this.unwrap(scale)
-    if (e.kind !== 'op') return undefined
-    const isOne = (x: ExprSpec): boolean => {
-      if (!this.isConst(x)) return false
-      return toFlat(this.evalNamed(x).value).every((v) => v === 1)
-    }
-    if (e.op === 'div') {
-      const [num, den] = e.args as [ExprSpec, ExprSpec]
-      const d = this.unwrap(den)
-      if (isOne(num) && d.kind === 'op' && d.op === 'sqrt') return (d.args as [ExprSpec])[0]
-    }
-    if (e.op === 'pow') {
-      const [base, power] = e.args as [ExprSpec, ExprSpec]
-      if (this.isConst(power) && toFlat(this.evalNamed(power).value).every((v) => v === -0.5)) return base
-    }
-    if (e.op === 'sqrt') {
-      const inner = this.unwrap((e.args as [ExprSpec])[0])
-      if (inner.kind === 'op' && inner.op === 'div' && isOne(inner.args[0] as ExprSpec)) return inner.args[1]
-      // The scale is the square root of an inverse-gamma variance (a known multiple of it): the precision is its reciprocal.
-      if (this.isRecip(inner)) return { kind: 'op', op: 'div', args: [{ kind: 'const', value: 1 }, inner] }
-    }
-    return undefined
-  }
-
-  /** Whether an expression is an inverse-gamma variance or a known multiple of one (`sigma2`, `sigma2 / kappa`, `2 * sigma2`). */
-  private isRecip(e: ExprSpec): boolean {
-    const u = this.unwrap(e)
-    if (u.kind === 'ref') {
-      const cells = this.syms.get(u.name)?.cells
-      return cells !== undefined && cells.length > 0 && cells.every((c) => c.kind === 'recip')
-    }
-    if (u.kind === 'op' && (u.op === 'mul' || u.op === 'div')) {
-      const [a, b] = u.args as [ExprSpec, ExprSpec]
-      return (this.isRecip(a) && this.isConst(b)) || (u.op === 'mul' && this.isConst(a) && this.isRecip(b))
-    }
-    return false
-  }
-
-  /**
    * The gamma variables that are the precisions of a Gaussian node whose scale is random, element by element: the scale
    * must be the idiom `1 / sqrt(tau)` of a gamma (or exponential) latent. Anything else is refused with the idiom named.
    */
@@ -1204,7 +1014,7 @@ class Compiler {
     const scale = node.dist.params[param]
     const idiom =
       'write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only)'
-    const tau = scale === undefined ? undefined : this.precisionExpr(scale)
+    const tau = scale === undefined ? undefined : precisionExpr(this.idiom, scale)
     if (tau === undefined)
       throw new Refusal(
         'operator',
@@ -1380,109 +1190,32 @@ class Compiler {
   }
 
   /**
-   * The known multiple `c` of a value in a node: `tau`, `c * tau`, `tau / c` (and nested), 1 for the node itself. Absent when the
-   * expression is anything else.
-   */
-  private multipleOf(e: ExprSpec, name: string): number | undefined {
-    const u = this.unwrap(e)
-    if (u.kind === 'ref') return u.name === name ? 1 : undefined
-    if (u.kind !== 'op' || (u.op !== 'mul' && u.op !== 'div')) return undefined
-    const [a, b] = u.args as [ExprSpec, ExprSpec]
-    const known = (x: ExprSpec): number | undefined => {
-      if (!this.isConst(x)) return undefined
-      const v = toFlat(this.evalNamed(x).value)
-      return v.length === 1 && Number.isFinite(v[0]) ? (v[0] as number) : undefined
-    }
-    const ka = known(a)
-    const kb = known(b)
-    if (u.op === 'mul') {
-      const m = ka !== undefined ? this.multipleOf(b, name) : kb !== undefined ? this.multipleOf(a, name) : undefined
-      const k = ka ?? kb
-      return m === undefined || k === undefined ? undefined : m * k
-    }
-    const m = kb !== undefined ? this.multipleOf(a, name) : undefined
-    return m === undefined || kb === undefined ? undefined : m / kb
-  }
-
-  /**
-   * The known multiple of the precision `tau` that a Gaussian's scale stands for, when it is the idiom of one: `1 / sqrt(c tau)`
-   * (a gamma `tau`), or `sqrt(c sigma2)` with `sigma2` an inverse gamma (so the precision is `tau / c`). Absent otherwise.
-   */
-  private precisionMultiple(scale: ExprSpec, tau: string, inverse: boolean): number | undefined {
-    const e = this.unwrap(scale)
-    if (e.kind !== 'op') return undefined
-    if (inverse) {
-      const c = e.op === 'sqrt' ? this.multipleOf(e.args[0] as ExprSpec, tau) : undefined
-      return c === undefined || !(c > 0) ? undefined : 1 / c
-    }
-    const p = this.precisionExpr(scale)
-    const c = p === undefined ? undefined : this.multipleOf(p, tau)
-    return c === undefined || !(c > 0) ? undefined : c
-  }
-
-  /**
-   * The normal-gamma pair of a gamma (or inverse-gamma) latent `T` (a precision or a variance): a Gaussian latent `M` with a
-   * known mean and the variance `1 / (kappa lambda)` (`mu ~ N(m, sigma2 / kappa)`) and observed Gaussians `y ~ N(M, 1 / (c lambda))`,
-   * with nothing else reading either of them. The pair is one `normal-gamma` variable with a prior of both and a
-   * `gaussian-normal-gamma` factor per observation, so the joint posterior is exactly the conjugate normal-gamma (the classic
+   * The normal-gamma pair of a gamma (or inverse-gamma) latent `T` (a precision or a variance), when the plan found one (a Gaussian
+   * latent `M` with a known mean and the variance `1 / (kappa lambda)` and observed Gaussians `y ~ N(M, 1 / (c lambda))`, with
+   * nothing else reading either of them; `_plan.ts` has the detection). The pair is one `normal-gamma` variable with a prior of both
+   * and a `gaussian-normal-gamma` factor per observation, so the joint posterior is exactly the conjugate normal-gamma (the classic
    * normal-inverse-gamma prior on a mean and a variance). Returns false (and changes nothing) when the model is not that shape: the
    * mean and precision then compile to a Gaussian with a gamma precision each.
    */
   private latentNormalGamma(node: ModelNode & { readonly kind: 'latent' }): boolean {
-    if (node.dims.length !== 0) return false
-    const inverse = node.dist.family === 'inverseGamma'
+    const detection = this.plan.normalGamma.get(node.name)
+    if (detection === undefined) return false
+    for (const name of detection.customs) this.handledCustoms.add(name)
+    if (detection.failure !== undefined) throw detection.failure
+    if (detection.pair === undefined) return false
+    const { plan, multiples } = detection.pair
+    const inverse = plan.inverse
     const rateName = inverse ? 'scale' : 'rate'
-    if (
-      !this.isConst(node.dist.params['concentration'] as ExprSpec) ||
-      !this.isConst(node.dist.params[rateName] as ExprSpec)
-    )
-      return false
-    const readers = this.bound.spec.nodes.filter((n) => n.name !== node.name && nodeRefs(n).includes(node.name))
-    const means = readers.filter((n) => n.kind === 'latent')
-    const mean = means[0]
-    if (mean?.kind !== 'latent' || means.length !== 1) return false
-    const loc = mean.dist.params['loc']
-    const scale = mean.dist.params['scale']
-    if (mean.dims.length !== 0 || mean.dist.family !== 'normal' || loc === undefined || scale === undefined)
-      return false
-    if (!this.isConst(loc) || mean.constraint !== undefined) return false
-    const kappa = this.precisionMultiple(scale, node.name, inverse)
-    if (kappa === undefined) return false
-    const observed: (ModelNode & { readonly kind: 'observed' })[] = []
-    const multiples = new Map<string, number>()
-    for (const n of this.bound.spec.nodes) {
-      if (n.name === node.name || n.name === mean.name) continue
-      const refs = nodeRefs(n)
-      if (!refs.includes(node.name) && !refs.includes(mean.name)) continue
-      if (n.kind !== 'observed' || n.dist.family !== 'normal') return false
-      const l = n.dist.params['loc']
-      const sc = n.dist.params['scale']
-      if (l === undefined || sc === undefined || this.unwrap(l).kind !== 'ref') return false
-      if ((this.unwrap(l) as { readonly name: string }).name !== mean.name) return false
-      if (exprRefs(n.value).some((r) => r === node.name || r === mean.name)) return false
-      const c = this.precisionMultiple(sc, node.name, inverse)
-      if (c === undefined) return false
-      if (this.bound.batch !== undefined && n.dims.includes(this.bound.batch.dim)) return false
-      observed.push(n)
-      multiples.set(n.name, c)
-    }
-    if (observed.length === 0) return false
+    const mean = this.nodes.get(plan.mean) as ModelNode & { readonly kind: 'latent' }
     this.g.need('gaussian-normal-gamma')
     const a = this.constParam(node, 'concentration', 'the shape')[0] as number
     const b = this.constParam(node, rateName, 'the rate')[0] as number
     const m = this.constParam(mean, 'loc', 'the mean')[0] as number
-    const plan: NormalGammaPlan = {
-      precision: node.name,
-      mean: mean.name,
-      variable: mean.name,
-      inverse,
-      kappa,
-      observed: observed.map((n) => n.name),
-    }
     this.normalGammaByMean.set(mean.name, plan)
-    for (const n of observed) this.normalGammaObserved.set(n.name, { plan, multiple: multiples.get(n.name) as number })
+    for (const name of plan.observed)
+      this.normalGammaObserved.set(name, { plan, multiple: multiples.get(name) as number })
     this.g.addVariable({ name: plan.variable, family: { kind: 'normal-gamma' } })
-    this.g.addFactor(normalGammaPrior(plan.variable, m, kappa, a, b), plan.variable)
+    this.g.addFactor(normalGammaPrior(plan.variable, m, plan.kappa, a, b), plan.variable)
     this.layout(node, 'latent', 'normal-gamma', 'scalar', [plan.variable], true, {
       part: 'precision',
       ...(inverse ? { reciprocal: true } : {}),
@@ -1581,7 +1314,7 @@ class Compiler {
     for (const key of ['precision', 'covariance'] as const) {
       const e = node.dist.params[key]
       if (e === undefined) continue
-      const u = this.unwrap(e)
+      const u = unwrap(this.nodes, e)
       if (u.kind !== 'ref') continue
       const w = this.wisharts.get(u.name)
       if (w === undefined) continue
@@ -1805,7 +1538,7 @@ class Compiler {
       if (!(v > 0)) throw new Refusal('data', `${param} of '${node.name}' must be positive`)
       return { const: 1 / (v * v) }
     }
-    const tau = this.precisionExpr(e)
+    const tau = precisionExpr(this.idiom, e)
     if (tau === undefined)
       throw new Refusal(
         'operator',
@@ -1836,7 +1569,7 @@ class Compiler {
       if (!(v > -1 && v < 1)) throw new Refusal('data', `rho of '${node.name}' must be in (-1, 1)`)
       return { const: v }
     }
-    const u = this.unwrap(e)
+    const u = unwrap(this.nodes, e)
     const variable = u.kind === 'ref' ? this.correlations.get(u.name) : undefined
     if (variable === undefined)
       throw new Refusal('operator', `the rho of '${node.name}' must be known or a latent with the correlation prior`)
@@ -2065,20 +1798,20 @@ class Compiler {
     const loc = this.over(this.paramSym(node.dist, 'loc'), node.dims)
     const scaleExpr = node.dist.params['scale']
     if (scaleExpr !== undefined && !this.isConst(scaleExpr)) {
-      if (this.packed.has(node.name)) this.latentSharedPrecision(node, loc)
-      else if (this.precisionExpr(scaleExpr) === undefined) this.latentRandomScale(node, loc, scaleExpr)
+      if (this.plan.packed.has(node.name)) this.latentSharedPrecision(node, loc)
+      else if (precisionExpr(this.idiom, scaleExpr) === undefined) this.latentRandomScale(node, loc, scaleExpr)
       else this.latentRandomPrecision(node, loc)
       return
     }
     const scale = this.constParam(node, 'scale', 'the scale')
     for (const s of scale)
       if (!(s > 0)) throw new Refusal('data', `the scale of '${node.name}' is ${s}: it must be positive`)
-    const group = this.groups.get(node.name)
+    const group = this.plan.groups.get(node.name)
     if (group !== undefined) {
       this.latentGrouped(node, group)
       return
     }
-    if (this.packed.has(node.name)) {
+    if (this.plan.packed.has(node.name)) {
       const mean = loc.map((c) => {
         if (!isConstCell(c))
           throw new Refusal(
@@ -2190,7 +1923,7 @@ class Compiler {
       sds: [slab[i] as number, spike[i] as number],
     })
     const wide = (i: number): number => (100 * Math.max(slab[i] as number, spike[i] as number)) ** 2
-    if (this.packed.has(node.name)) {
+    if (this.plan.packed.has(node.name)) {
       this.g.need('mixture-row')
       this.g.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
       for (let i = 0; i < n; i++) {
@@ -2229,7 +1962,7 @@ class Compiler {
    * posterior. A vector that a `matmul` reads (one joint Gaussian) has one covariance, so it is refused.
    */
   private latentSpikeSlabSwitch(node: ModelNode & { readonly kind: 'latent' }, n: number): void {
-    if (this.packed.has(node.name))
+    if (this.plan.packed.has(node.name))
       throw new Refusal(
         'operator',
         `'${node.name}' is read as a vector by a matmul and has a random inclusion or scale: a joint Gaussian vector has one covariance, so they must be known`,
@@ -2272,14 +2005,14 @@ class Compiler {
 
   /** A scale with a modelling floor `clip(tau, lo, hi)` read as the scale itself: the floor never binds for a positive scale variable. */
   private stripClip(e: ExprSpec): ExprSpec {
-    let cur = this.unwrap(e)
+    let cur = unwrap(this.nodes, e)
     while (
       cur.kind === 'op' &&
       cur.op === 'clip' &&
       this.isConst(cur.args[1] as ExprSpec) &&
       this.isConst(cur.args[2] as ExprSpec)
     )
-      cur = this.unwrap(cur.args[0] as ExprSpec)
+      cur = unwrap(this.nodes, cur.args[0] as ExprSpec)
     return cur
   }
 
@@ -2398,7 +2131,7 @@ class Compiler {
 
   /** A Gaussian latent with a gamma precision: a `gaussian-gamma-precision` factor per element (the mean-field hierarchy of Bishop 2006, 10.2). */
   private latentRandomPrecision(node: ModelNode & { readonly kind: 'latent' }, loc: readonly Cell[]): void {
-    if (this.packed.has(node.name))
+    if (this.plan.packed.has(node.name))
       throw new Refusal(
         'operator',
         `'${node.name}' is read as a vector by a matmul and has a random scale: a joint Gaussian vector has one covariance, so its scale must be known`,
@@ -2552,7 +2285,7 @@ class Compiler {
   private concentrationForm(
     e: ExprSpec,
   ): { readonly random: ExprSpec; readonly scale: readonly number[]; readonly offset: readonly number[] } | undefined {
-    const u = this.unwrap(e)
+    const u = unwrap(this.nodes, e)
     const vector = (x: ExprSpec): number[] | undefined => {
       if (!this.isConst(x)) return undefined
       const nv = this.evalNamed(x)
@@ -2786,7 +2519,7 @@ class Compiler {
    * of the index, columns the outcomes), the index an expression of discrete latents. Absent for any other expression.
    */
   private transitionRow(expr: ExprSpec): { readonly matrix: ExprSpec; readonly index: ExprSpec } | undefined {
-    const e = this.unwrap(expr)
+    const e = unwrap(this.nodes, expr)
     if (e.kind !== 'op' || e.op !== 'at') return undefined
     const [matrix, index] = e.args as [ExprSpec, ExprSpec]
     return this.isConst(matrix) && !this.isConst(index) ? { matrix, index } : undefined
@@ -2797,7 +2530,7 @@ class Compiler {
    * rows are latents), the index an expression of discrete latents. Absent for any other expression.
    */
   private randomTransitionRow(expr: ExprSpec): { readonly matrix: ExprSpec; readonly index: ExprSpec } | undefined {
-    const e = this.unwrap(expr)
+    const e = unwrap(this.nodes, expr)
     if (e.kind !== 'op' || e.op !== 'at') return undefined
     const [matrix, index] = e.args as [ExprSpec, ExprSpec]
     return !this.isConst(matrix) && !this.isConst(index) ? { matrix, index } : undefined
@@ -3029,17 +2762,6 @@ class Compiler {
     return true
   }
 
-  /** The expression a derived node stands for, followed through references to derived nodes (to see a link applied to it). */
-  private unwrap(e: ExprSpec): ExprSpec {
-    let cur = e
-    for (let k = 0; k < 64 && cur.kind === 'ref'; k++) {
-      const n = this.nodes.get(cur.name)
-      if (n?.kind !== 'derived') break
-      cur = n.expr
-    }
-    return cur
-  }
-
   /**
    * A Gaussian observation of a value that is a known function of a discrete variable (a reading moved a period early or late by a
    * copy index): `N(v; m, s)` is `N(0; m - v, s)`, so the observed value moves across to the mean, which then is a gate over the
@@ -3067,7 +2789,7 @@ class Compiler {
    * value). Stores the cells of the mean for the observation to read; false when the mean is not of that form.
    */
   private gatedMean(node: ModelNode & { readonly kind: 'observed' }, loc: ExprSpec): boolean {
-    const e = this.unwrap(loc)
+    const e = unwrap(this.nodes, loc)
     if (e.kind !== 'op' || e.op !== 'at') return false
     const [first, index] = e.args as [ExprSpec, ExprSpec]
     const table = this.evalSym(first)
@@ -3208,11 +2930,11 @@ class Compiler {
         const switched = this.switchedCells(node, i)
         if (switched !== undefined) return this.observedSwitch(node, name, y, index, switched.loc, switched.scale)
         if (scaleExpr !== undefined && !this.isConst(scaleExpr)) {
-          const e = this.unwrap(scaleExpr)
+          const e = unwrap(this.nodes, scaleExpr)
           const logScale =
             e.kind === 'op' && e.op === 'exp' ? this.observedLogScale(node, name, y, i, index) : undefined
           if (logScale !== undefined) return logScale
-          if (this.precisionExpr(scaleExpr) === undefined)
+          if (precisionExpr(this.idiom, scaleExpr) === undefined)
             return this.observedRandomScale(node, name, y, i, index, scaleExpr)
           return this.observedRandomPrecision(node, name, y, i, index)
         }
@@ -3299,7 +3021,7 @@ class Compiler {
     e: ExprSpec,
     randomScale = false,
   ): { readonly inner: ExprSpec; readonly scale: ExprSpec | undefined } | undefined {
-    const u = this.unwrap(e)
+    const u = unwrap(this.nodes, e)
     // A positive latent carried on its log (a log-normal, half-normal or half-Cauchy rate or scale) is `exp` of that log.
     const logOf = (x: ExprSpec): ExprSpec | undefined =>
       x.kind === 'ref' && this.syms.has(logName(x.name)) ? { kind: 'ref', name: logName(x.name) } : undefined
@@ -3309,8 +3031,8 @@ class Compiler {
     if (u.op === 'exp') return { inner: u.args[0] as ExprSpec, scale: undefined }
     if (u.op === 'mul') {
       const [a, b] = u.args as [ExprSpec, ExprSpec]
-      const ea = this.unwrap(a)
-      const eb = this.unwrap(b)
+      const ea = unwrap(this.nodes, a)
+      const eb = unwrap(this.nodes, b)
       const la = logOf(ea)
       const lb = logOf(eb)
       // With `randomScale` the factor may be random too (a known value chosen by a discrete variable: a gate over the rate).
@@ -3401,20 +3123,20 @@ class Compiler {
     index: number | undefined,
   ): string | null | undefined {
     const dist = node.dist.params
-    const nExpr = dist['n'] === undefined ? undefined : this.unwrap(dist['n'])
-    const pExpr = dist['probs'] === undefined ? undefined : this.unwrap(dist['probs'])
+    const nExpr = dist['n'] === undefined ? undefined : unwrap(this.nodes, dist['n'])
+    const pExpr = dist['probs'] === undefined ? undefined : unwrap(this.nodes, dist['probs'])
     if (nExpr?.kind !== 'op' || nExpr.op !== 'div' || pExpr?.kind !== 'op' || pExpr.op !== 'div') return undefined
     const isOne = (e: ExprSpec): boolean => this.isConst(e) && this.constAt(node, e, i) === 1
     const [one, a] = nExpr.args as [ExprSpec, ExprSpec]
     if (!isOne(one) || this.isConst(a)) return undefined
     const [num, den] = pExpr.args as [ExprSpec, ExprSpec]
-    const d = this.unwrap(den)
+    const d = unwrap(this.nodes, den)
     if (!isOne(num) || d.kind !== 'op' || d.op !== 'add') return undefined
     const [p, q] = d.args as [ExprSpec, ExprSpec]
-    const [unit, product] = this.isConst(p) ? [p, this.unwrap(q)] : [q, this.unwrap(p)]
+    const [unit, product] = this.isConst(p) ? [p, unwrap(this.nodes, q)] : [q, unwrap(this.nodes, p)]
     if (!isOne(unit) || product.kind !== 'op' || product.op !== 'mul') return undefined
     const same = (x: ExprSpec, z: ExprSpec): boolean =>
-      JSON.stringify(this.unwrap(x)) === JSON.stringify(this.unwrap(z))
+      JSON.stringify(unwrap(this.nodes, x)) === JSON.stringify(unwrap(this.nodes, z))
     const [m1, m2] = product.args as [ExprSpec, ExprSpec]
     const mean = same(m1, a) ? m2 : same(m2, a) ? m1 : undefined
     if (mean === undefined) return undefined
@@ -3500,7 +3222,7 @@ class Compiler {
       return emit('poisson-log', m.inner, { exposure: m.scale === undefined ? 1 : this.constAt(node, m.scale, i) })
     }
     if (fam === 'binomial') {
-      const probs = dist['probs'] === undefined ? undefined : this.unwrap(dist['probs'])
+      const probs = dist['probs'] === undefined ? undefined : unwrap(this.nodes, dist['probs'])
       if (probs?.kind !== 'op' || (probs.op !== 'sigmoid' && probs.op !== 'probit')) return undefined
       return emit(probs.op === 'sigmoid' ? 'binomial-logit' : 'binomial-probit', probs.args[0] as ExprSpec, {
         n: known('n', 'number of trials'),
@@ -3536,10 +3258,10 @@ class Compiler {
       if (random !== undefined) return random
       // The negative binomial with a log link: n = r, probs = r / (r + mean) = A / (A + K exp(L)) with mean = n K exp(L) / A.
       const r = known('n', 'dispersion (the number of successes n = 1 / dispersion)')
-      const probs = dist['probs'] === undefined ? undefined : this.unwrap(dist['probs'])
+      const probs = dist['probs'] === undefined ? undefined : unwrap(this.nodes, dist['probs'])
       if (probs?.kind !== 'op' || probs.op !== 'div') return undefined
       const [num, den] = probs.args as [ExprSpec, ExprSpec]
-      const d = this.unwrap(den)
+      const d = unwrap(this.nodes, den)
       if (!this.isConst(num) || d.kind !== 'op' || d.op !== 'add') return undefined
       const [p, q] = d.args as [ExprSpec, ExprSpec]
       const [one, rest] = this.isConst(p) ? [p, q] : [q, p]
@@ -3840,7 +3562,7 @@ class Compiler {
       scale = lookup(z, [sd, sd * width])
     } else {
       const scaleExpr = node.dist.params['scale'] as ExprSpec
-      const precision = this.precisionExpr(scaleExpr)
+      const precision = precisionExpr(this.idiom, scaleExpr)
       const tau =
         precision === undefined
           ? undefined
@@ -4005,7 +3727,7 @@ class Compiler {
       link = 'sigmoid'
       argument = logits
     } else if (probs !== undefined) {
-      const e = this.unwrap(probs)
+      const e = unwrap(this.nodes, probs)
       if (e.kind === 'op' && (e.op === 'probit' || e.op === 'sigmoid')) {
         link = e.op
         argument = e.args[0] as ExprSpec
@@ -4052,13 +3774,13 @@ class Compiler {
     if (!discrete(locExpr) && !discrete(scaleExpr)) return undefined
     // A precision chosen by a discrete variable (`1 / sqrt(where(z, tau_b, tau_a))`, `1 / sqrt(at(tau, z))`): the mean and the
     // precision are read as lookups of that variable, so the observation is one gate of `gaussian-gamma-precision` branches.
-    const precisionExpr = scaleExpr === undefined ? undefined : this.precisionExpr(scaleExpr)
-    if (precisionExpr !== undefined && discrete(precisionExpr)) {
+    const precision = scaleExpr === undefined ? undefined : precisionExpr(this.idiom, scaleExpr)
+    if (precision !== undefined && discrete(precision)) {
       this.lookupMode = true
       try {
         const loc = this.paramCell(node, 'loc', i)
-        const precision = this.cellsOf(node, 'precisionLookup', () => this.evalSym(precisionExpr))[i] as Cell
-        if (precision.kind === 'lookup' && precision.precisions !== undefined) return { loc, scale: precision }
+        const lookedUp = this.cellsOf(node, 'precisionLookup', () => this.evalSym(precision))[i] as Cell
+        if (lookedUp.kind === 'lookup' && lookedUp.precisions !== undefined) return { loc, scale: lookedUp }
       } finally {
         this.lookupMode = false
       }
@@ -4066,7 +3788,7 @@ class Compiler {
     const loc = this.paramCell(node, 'loc', i)
     // The precision idiom `1 / sqrt(tau)` where `tau` is a gamma variable, or one chosen among gamma variables by a discrete variable.
     const randomPrecision = (): boolean => {
-      const p = scaleExpr === undefined ? undefined : this.precisionExpr(scaleExpr)
+      const p = scaleExpr === undefined ? undefined : precisionExpr(this.idiom, scaleExpr)
       if (p === undefined) return false
       try {
         const c = this.cellsOf(node, 'precisionProbe', () => this.evalSym(p))[i] as Cell
@@ -4251,7 +3973,7 @@ class Compiler {
     i: number,
     index: number | undefined,
   ): string | undefined {
-    const inner = this.unwrap(node.dist.params['scale'] as ExprSpec) as ExprSpec & { readonly kind: 'op' }
+    const inner = unwrap(this.nodes, node.dist.params['scale'] as ExprSpec) as ExprSpec & { readonly kind: 'op' }
     const loc = this.paramCell(node, 'loc', i)
     if (!isConstCell(loc)) return undefined
     let cell: Cell
@@ -4347,7 +4069,7 @@ class Compiler {
     }
     if (logits !== undefined) return link('sigmoid', logits)
     if (probs === undefined) throw new Refusal('structure', `'${node.name}': give probs or logits`)
-    const e = this.unwrap(probs)
+    const e = unwrap(this.nodes, probs)
     if (e.kind === 'op' && e.op === 'probit') return link('probit', e.args[0] as ExprSpec)
     if (e.kind === 'op' && e.op === 'sigmoid') return link('sigmoid', e.args[0] as ExprSpec)
     if (e.kind === 'op' && e.op === 'gt') {
@@ -4554,7 +4276,7 @@ class Compiler {
       return this.observedRowGate(node, name, y, i, expr)
     let exposure = 1
     let target: Cell
-    const e = this.unwrap(expr)
+    const e = unwrap(this.nodes, expr)
     if (fam === 'poisson' && e.kind === 'op' && e.op === 'mul') {
       const [a, b] = e.args as [ExprSpec, ExprSpec]
       const [k, r] = this.isConst(a) ? [a, b] : [b, a]
