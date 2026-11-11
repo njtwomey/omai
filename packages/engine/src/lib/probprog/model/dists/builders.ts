@@ -172,6 +172,16 @@ export function dirichlet(concentration: Operand): DistExpr {
   return family('dirichlet', { concentration })
 }
 
+/**
+ * The spike-and-slab prior with the indicator summed out: a zero-mean scale mixture, `inclusion` of a normal with the wide
+ * `slab` standard deviation and the rest of a normal with the narrow `spike` one. A gradient sampler can use it where the
+ * indicator itself (a discrete latent) cannot be enumerated per element, and the posterior probability that a value came
+ * from the slab is `inclusion N(x; 0, slab) / (inclusion N(x; 0, slab) + (1 - inclusion) N(x; 0, spike))`.
+ */
+export function normalSpikeSlab(inclusion: Operand, slab: Operand, spike: Operand): DistExpr {
+  return family('normalSpikeSlab', { inclusion, slab, spike })
+}
+
 /** A multivariate normal over the last axis, with a `covariance`, `precision` or `scaleTril`. */
 export function multivariateNormal(
   loc: Operand,
