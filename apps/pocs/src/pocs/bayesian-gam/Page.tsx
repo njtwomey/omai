@@ -32,6 +32,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { type CurveData, curveData } from '../../shared/curve-data.ts'
 import { StaleVeil } from '../../shared/StaleVeil.tsx'
 import { fitChart, inclusionChart, NARROW, traceChart, WIDE } from './charts.ts'
+import { Panel } from './panel.tsx'
 import { methodOf, nameOf } from './spec.ts'
 
 const DATA = 'regression1d'
@@ -380,34 +381,46 @@ function View(props: {
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-1 gap-x-4 gap-y-2 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <Chart option={fitted} figure={WIDE} />
-        <Chart option={loss} figure={NARROW} onInit={seek} />
+        <Panel id="fit" title="the fit" heavy>
+          <Chart option={fitted} figure={WIDE} />
+        </Panel>
+        <Panel id="trace" title="convergence">
+          <Chart option={loss} figure={NARROW} onInit={seek} />
+        </Panel>
       </div>
       <Toggle
         label="show the basis functions, weighted by their coefficients"
         value={showBases}
         onChange={setShowBases}
       />
-      {inclusion === undefined ? null : <Chart option={inclusion} figure={NARROW} />}
+      {inclusion === undefined ? null : (
+        <Panel id="bases" title="which bases are in use">
+          <Chart option={inclusion} figure={NARROW} />
+        </Panel>
+      )}
       {pairs === undefined ? (
         <p className="text-sm text-muted">
           No draws yet (step {t}: a sampler warms up first). If the time budget ends before the first draws, give it
           more.
         </p>
       ) : (
-        <PosteriorPairsView record={pairs} controls={false} />
+        <Panel id="pairs" title="the smoothing, the noise and the curve" heavy>
+          <PosteriorPairsView record={pairs} controls={false} />
+        </Panel>
       )}
-      <div className="max-w-3xl text-xs text-muted">
-        <b>How we know it works.</b>{' '}
-        {spikeSlab
-          ? 'With this prior there is no closed form to check against (the indicators make the posterior a sum over subsets of the bases), so there is no reference band: read the bars, which should fall where the data have structure (the sampled curves and the bars agree across methods, and across seeds of one).'
-          : 'Given the smoothing parameter and the noise the coefficients are Gaussian in closed form, so quadrature over those two gives the exact posterior of the curve (dotted band, cross on the pair plot). '}
-        {agreement === undefined
-          ? spikeSlab
-            ? ''
-            : 'Computing the reference…'
-          : `At this step ${kind} is ${agreement.meanError.toFixed(3)} response sd from the exact mean curve, its band is ${agreement.bandRatio.toFixed(2)} times the exact width, and its mean log smoothing parameter is ${agreement.logLambdaShift >= 0 ? '+' : ''}${agreement.logLambdaShift.toFixed(2)} from the exact one.`}
-      </div>
+      <Panel id="reference" title="how we know it works">
+        <div className="max-w-3xl text-xs text-muted">
+          <b>How we know it works.</b>{' '}
+          {spikeSlab
+            ? 'With this prior there is no closed form to check against (the indicators make the posterior a sum over subsets of the bases), so there is no reference band: read the bars, which should fall where the data have structure (the sampled curves and the bars agree across methods, and across seeds of one).'
+            : 'Given the smoothing parameter and the noise the coefficients are Gaussian in closed form, so quadrature over those two gives the exact posterior of the curve (dotted band, cross on the pair plot). '}
+          {agreement === undefined
+            ? spikeSlab
+              ? ''
+              : 'Computing the reference…'
+            : `At this step ${kind} is ${agreement.meanError.toFixed(3)} response sd from the exact mean curve, its band is ${agreement.bandRatio.toFixed(2)} times the exact width, and its mean log smoothing parameter is ${agreement.logLambdaShift >= 0 ? '+' : ''}${agreement.logLambdaShift.toFixed(2)} from the exact one.`}
+        </div>
+      </Panel>
     </div>
   )
 }
