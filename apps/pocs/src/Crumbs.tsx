@@ -5,8 +5,59 @@ import { GROUPS } from './groups.ts'
 import { groupPocs } from './poc.ts'
 import { POCS } from './registry.ts'
 
-const SELECT =
-  'h-7 max-w-[16rem] truncate rounded-md border border-transparent bg-transparent px-1.5 text-sm text-fg hover:border-line focus-visible:outline-2 focus-visible:outline-(--wb-accent)/60'
+const SWITCH =
+  'absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent text-transparent opacity-0 [&>option]:bg-bg [&>option]:text-fg'
+
+/**
+ * A crumb that is a link to its page with a chevron beside it that switches to a sibling: the label goes to the page (also
+ * when it is the page you are on), the chevron offers the others.
+ */
+function Crumb(props: {
+  readonly to: string
+  readonly label: string
+  readonly switchLabel: string
+  readonly value: string
+  readonly options: readonly { readonly value: string; readonly label: string }[]
+  readonly onSwitch: (value: string) => void
+  readonly current?: boolean
+}): ReactNode {
+  return (
+    <span className="flex min-w-0 items-center">
+      <Link
+        to={props.to}
+        {...(props.current === true ? { current: true } : {})}
+        className="min-w-0 max-w-[16rem] truncate rounded-md px-1.5 py-1 text-fg hover:bg-surface"
+      >
+        {props.label}
+      </Link>
+      <span className="relative flex size-6 shrink-0 items-center justify-center rounded-md text-muted hover:bg-surface hover:text-fg">
+        <svg
+          viewBox="0 0 24 24"
+          width="12"
+          height="12"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          aria-hidden="true"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+        <select
+          aria-label={props.switchLabel}
+          className={SWITCH}
+          value={props.value}
+          onChange={(e) => props.onSwitch(e.target.value)}
+        >
+          {props.options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </span>
+    </span>
+  )
+}
 
 /**
  * The trail in the top bar: home, then the group and the example with a drop-down each, so a move between groups or between
@@ -27,34 +78,29 @@ export function Crumbs(props: { readonly group?: string | undefined; readonly sl
         Examples
       </Link>
       {sep}
-      <select
-        aria-label="Group"
-        className={SELECT}
+      <Crumb
+        to={group === undefined ? '/' : `/group/${group}`}
+        label={sections.find((x) => (x.group?.slug ?? '') === (group ?? ''))?.group?.title ?? 'All groups'}
+        switchLabel="Switch group"
         value={group ?? ''}
-        onChange={(e) => navigate(e.target.value === '' ? '/' : `/group/${e.target.value}`)}
-      >
-        <option value="">All groups</option>
-        {sections.map((s) => (
-          <option key={s.group?.slug ?? 'more'} value={s.group?.slug ?? ''}>
-            {s.group?.title ?? 'More'}
-          </option>
-        ))}
-      </select>
+        options={[
+          { value: '', label: 'All groups' },
+          ...sections.map((x) => ({ value: x.group?.slug ?? '', label: x.group?.title ?? 'More' })),
+        ]}
+        onSwitch={(v) => navigate(v === '' ? '/' : `/group/${v}`)}
+      />
       {entry === undefined ? null : (
         <>
           {sep}
-          <select
-            aria-label="Example"
-            className={SELECT}
+          <Crumb
+            to={`/poc/${entry.slug}`}
+            label={entry.title}
+            switchLabel="Switch example"
             value={entry.slug}
-            onChange={(e) => navigate(`/poc/${e.target.value}`)}
-          >
-            {siblings.map((p) => (
-              <option key={p.slug} value={p.slug}>
-                {p.title}
-              </option>
-            ))}
-          </select>
+            options={siblings.map((p) => ({ value: p.slug, label: p.title }))}
+            onSwitch={(v) => navigate(`/poc/${v}`)}
+            current
+          />
         </>
       )}
     </nav>
