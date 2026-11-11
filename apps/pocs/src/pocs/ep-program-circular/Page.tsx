@@ -4,31 +4,32 @@ import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import { IntervalPlot } from '../../shared/ep/ProgramCharts.tsx'
 import { ProgramPage } from '../../shared/ep/ProgramPage.tsx'
 import { sig } from '../../shared/ep/program-check.ts'
-import { useReference } from '../../shared/ep/useReference.ts'
-import { useDeferred } from '../../shared/useDeferred.ts'
+import { RunProgress } from '../../shared/RunProgress.tsx'
+import { workerTask } from '../../shared/runWorker.ts'
+import { type UseRun, useRun } from '../../shared/useRun.ts'
 import { ClockChart, DayChart, ShiftPicture } from './Charts.tsx'
+import type { CircularReply, CircularRequest } from './circular.worker.ts'
 import {
+  boundOf,
   type CalibrationRow,
   type CircularRun,
   type CircularSetup,
   checkCircular,
   copiesError,
   defaultSetup,
-  equivalence,
+  type Equivalence,
   heldOutHours,
   heldOutLoss,
   lossesAt,
   matchToTruth,
   mixtureOf,
   parameterNames,
-  recordOf,
-  runCircular,
   truthScale,
 } from './compute.ts'
 import { TRUTHS, type TruthName, type Variant } from './program.ts'
 import source from './program.ts?raw'
 
-const makeWorker = (): Worker => new Worker(new URL('./calibration.worker.ts', import.meta.url), { type: 'module' })
+const makeWorker = (): Worker => new Worker(new URL('./circular.worker.ts', import.meta.url), { type: 'module' })
 
 const VARIANTS: readonly { value: Variant; label: string }[] = [
   { value: 'ignore', label: 'ignore the circle (a plain Gaussian mixture)' },
@@ -57,24 +58,40 @@ const hoursOf = (v: number): string => `${sig(v, 3)} h`
 export default function Page(): ReactNode {
   const [setup, setSetup] = useState<CircularSetup>(defaultSetup)
   const set = (patch: Partial<CircularSetup>): void => setSetup((s) => ({ ...s, ...patch }))
-  const run = useDeferred(useCallback(() => runCircular(setup), [setup]))
+  // Every sweep of EP takes a fifth of a second to a second, so the fit, the comparison and the calibration compute in a worker
+  // (circular.worker.ts); the page keeps painting, shows how far each is, and Stop keeps the sweeps done.
+  const fitTask = useMemo(() => workerTask<CircularRequest, CircularReply>(makeWorker, { kind: 'fit', setup }), [setup])
+  const fit = useRun<CircularReply>(fitTask)
+  const run = fit.value as CircularRun | undefined
   const held = useMemo(() => heldOutHours(setup.truth, setup.seed), [setup.truth, setup.seed])
   const [compare, setCompare] = useState(false)
-  const eq = useDeferred(
-    useCallback(() => (compare && run !== undefined ? equivalence(setup, run) : undefined), [compare, run, setup]),
+  const eqTask = useMemo(
+    () =>
+      compare && run !== undefined
+        ? workerTask<CircularRequest, CircularReply>(makeWorker, { kind: 'equivalence', setup, current: run })
+        : undefined,
+    [compare, run, setup],
   )
+  const eqRun = useRun<CircularReply>(eqTask)
+  const eq = eqRun.value as Equivalence | undefined
   const check = useMemo(() => (run === undefined ? undefined : checkCircular(run, held, eq)), [run, held, eq])
-  const structure = useCallback(() => (run === undefined ? undefined : toStructure(run.fit.bound)), [run])
-  const record = useCallback(() => (run === undefined ? undefined : recordOf(run)), [run])
-  const calib = useReference<{ setup: CircularSetup; seeds: number[] }, CalibrationRow[]>(makeWorker, {
-    setup: {
-      ...setup,
-      variant: 'means',
-      components: TRUTHS[setup.truth].means.length,
-      draws: Math.min(setup.draws, 200),
-    },
-    seeds: Array.from({ length: 8 }, (_, i) => i + 1),
-  })
+  const structure = useCallback(() => (run === undefined ? undefined : toStructure(boundOf(run))), [run])
+  const record = useCallback(() => run?.record, [run])
+  const calibTask = useMemo(
+    () =>
+      workerTask<CircularRequest, CircularReply>(makeWorker, {
+        kind: 'calibration',
+        setup: {
+          ...setup,
+          variant: 'means',
+          components: TRUTHS[setup.truth].means.length,
+          draws: Math.min(setup.draws, 200),
+        },
+        seeds: Array.from({ length: 8 }, (_, i) => i + 1),
+      }),
+    [setup],
+  )
+  const calib = useRun<CircularReply>(calibTask, { auto: false })
   const sd = run?.found.sd.mean ?? truthScale(setup.truth)
   return (
     <ProgramPage
@@ -88,8 +105,9 @@ export default function Page(): ReactNode {
       status={
         run === undefined
           ? 'Simulating and running EP...'
-          : `EP ${run.fit.run.status} after ${run.fit.run.t} sweeps (${sig(run.ms / 1000, 2)} s) on ${run.fit.bound.data['hours']?.shape[0] ?? run.hours.length} readings.`
+          : `EP ${run.fit.run.status ?? 'stopped'} after ${run.fit.run.t} sweeps (${sig(run.ms / 1000, 2)} s) on ${run.hours.length * (run.setup.variant === 'rows' ? 3 : 1)} readings.`
       }
+      progress={<RunProgress run={fit} label="EP" />}
       controls={
         <>
           <Select
@@ -125,13 +143,21 @@ export default function Page(): ReactNode {
     >
       {run === undefined ? (
         <p className="text-sm text-muted">
-          Computing (a few seconds to half a minute: the discrete latents are a gate per reading)...
+          Computing in a worker (the discrete latents are a gate per reading, so a sweep takes a fraction of a second to
+          a second)...
         </p>
       ) : (
         <Results run={run} held={held} truthName={setup.truth} sd={sd} />
       )}
-      <Equivalence setup={setup} run={run} eq={eq} comparing={compare} onCompare={() => setCompare(true)} />
-      <Calibration setup={setup} state={calib.state} start={calib.start} stop={calib.stop} />
+      <EquivalencePanel
+        setup={setup}
+        run={run}
+        eq={eq}
+        eqRun={eqRun}
+        comparing={compare}
+        onCompare={() => setCompare(true)}
+      />
+      <Calibration setup={setup} run={calib} />
       <Verdict />
     </ProgramPage>
   )
@@ -218,10 +244,11 @@ function Results(props: {
   )
 }
 
-function Equivalence(props: {
+function EquivalencePanel(props: {
   readonly setup: CircularSetup
   readonly run: CircularRun | undefined
-  readonly eq: ReturnType<typeof equivalence> | undefined
+  readonly eq: Equivalence | undefined
+  readonly eqRun: UseRun<CircularReply>
   readonly comparing: boolean
   readonly onCompare: () => void
 }): ReactNode {
@@ -288,10 +315,11 @@ function Equivalence(props: {
           {props.setup.variant === 'ignore' || props.setup.variant === 'rows'
             ? 'Choose “shift the means” or “shift the data” above first.'
             : comparing && eq === undefined
-              ? 'Fitting the other form...'
+              ? 'Fitting the other form in a worker...'
               : ''}
         </span>
       </div>
+      <RunProgress run={props.eqRun} label="Comparison" />
       {eq === undefined ? null : (
         <p className="max-w-4xl text-sm tabular-nums">
           EP on both forms: the log likelihoods differ by {sig(eq.lossGapAtFit, 2)} at the fitted parameters and by at
@@ -306,42 +334,24 @@ function Equivalence(props: {
   )
 }
 
-function Calibration(props: {
-  readonly setup: CircularSetup
-  readonly state: ReturnType<typeof useReference<unknown, CalibrationRow[]>>['state']
-  readonly start: () => void
-  readonly stop: () => void
-}): ReactNode {
-  const { setup, state } = props
+function Calibration(props: { readonly setup: CircularSetup; readonly run: UseRun<CircularReply> }): ReactNode {
+  const { setup, run } = props
   const names = parameterNames(setup.truth)
-  const rows = state.status === 'done' ? state.result : undefined
+  const rows = run.value as CalibrationRow[] | undefined
   return (
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold">Calibration: does EP’s 90% interval cover the truth?</h2>
       <p className="max-w-4xl text-xs text-muted">
         Eight seeds of the same setup (the true number of components, shift the means, at most 200 readings), run in a
-        worker. A calibrated 90% interval covers the truth about 90% of the time.
+        worker. A calibrated 90% interval covers the truth about 90% of the time. The table fills seed by seed.
       </p>
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        {state.status === 'running' ? (
-          <button type="button" className="rounded border border-line px-2 py-1 text-xs" onClick={props.stop}>
-            stop
-          </button>
-        ) : (
-          <button type="button" className="rounded border border-line px-2 py-1 text-xs" onClick={props.start}>
-            run the calibration
-          </button>
-        )}
-        <span className="text-xs text-muted" role="status">
-          {state.status === 'idle'
-            ? 'Runs on request (about a minute or two).'
-            : state.status === 'running'
-              ? 'Fitting eight seeds...'
-              : state.status === 'failed'
-                ? `failed: ${state.error}`
-                : `done in ${sig(state.ms / 1000, 3)} s.`}
-        </span>
-      </div>
+      <RunProgress
+        run={run}
+        label="Calibration"
+        onStart={run.start}
+        startText="Run the calibration"
+        hint="Runs on request (about a minute or two)."
+      />
       {rows === undefined ? null : (
         <div className="overflow-x-auto">
           <table className="w-full max-w-3xl text-left text-sm tabular-nums">

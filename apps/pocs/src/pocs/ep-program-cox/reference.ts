@@ -6,6 +6,7 @@ import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { toArray, toFlat } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
+import { type EpHooks, stepSession } from '../../shared/ep/sweeps.ts'
 import { BASE, BINS, covariance, WIDTH } from './program.ts'
 
 const whitened = defineModel('cox-process-whitened', (b) => {
@@ -25,24 +26,30 @@ export interface Reference {
   readonly rhat: number
 }
 
-/** NUTS on the whitened model: the posterior mean and sd of f by bin (f = L z, from the draws of z). */
-export function nutsReference(
+/**
+ * NUTS on the whitened model: the posterior mean and sd of f by bin (f = L z, from the draws of z). The hooks report each
+ * iteration and can stop it; a run stopped before it has any draws gives undefined.
+ */
+export async function nutsReference(
   counts: readonly number[],
   prior: { amplitude: number; lengthScale: number },
   options: { chains?: number; warmup?: number; draws?: number } = {},
-): Reference {
+  hooks: EpHooks = {},
+): Promise<Reference | undefined> {
   const L = toArray(cholesky(covariance(prior))) as number[][]
   const m = nutsMethod(whitened.bind({ counts, L }))
   const s = session(m, {
     config: { numChains: options.chains ?? 2, numWarmup: options.warmup ?? 150, numDraws: options.draws ?? 300 },
     seed: 7,
     steps: 100000,
-    mode: 'eager',
+    mode: 'live',
   })
+  await stepSession(s, (options.warmup ?? 150) + (options.draws ?? 300) + 2, hooks)
   const post = m.posterior?.(s.state, s.config)
   const z = post?.draws?.['z']
   const zs = post?.summary().filter((r) => r.site === 'z') ?? []
   const n = z === undefined ? 0 : (z.shape[0] ?? 0)
+  if (n < 4) return undefined
   const zz = z === undefined ? new Float64Array(0) : toFlat(z)
   const mean = new Array<number>(BINS).fill(0)
   const sd = new Array<number>(BINS).fill(0)

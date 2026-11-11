@@ -4,6 +4,7 @@
 // Not part of the program shown.
 import { gamma, keyFromPath, uniform } from 'omai-engine/random'
 import { toFlat } from 'omai-engine/tensor'
+import { type EpHooks, pacer } from '../../shared/ep/sweeps.ts'
 import { PRIOR } from './program.ts'
 
 /** What the reference gives back: P(z_t = k), and the posterior mean and sd of each rate and each entry of the matrix. */
@@ -25,10 +26,11 @@ const draw = (seed: number, name: string, index: number, shape: number): number 
   toFlat(gamma(keyFromPath(seed, name, index), [1], shape))[0] ?? 0
 
 /** Gibbs with forward-filtering backward-sampling for the regimes. */
-export function gibbsReference(
+export async function gibbsReference(
   y: readonly number[],
   options: { sweeps?: number; burn?: number; seed?: number } = {},
-): Reference {
+  hooks: EpHooks = {},
+): Promise<Reference> {
   const { sweeps = 3000, burn = 300, seed = 11 } = options
   const T = y.length
   // The start: a rate per regime from the low, middle and high of the counts (not the truth), so that the chain begins in the
@@ -41,7 +43,14 @@ export function gibbsReference(
   const sum2 = new Array<number>(K).fill(0)
   const aSum = Array.from({ length: K }, () => new Array<number>(K).fill(0))
   const aSum2 = Array.from({ length: K }, () => new Array<number>(K).fill(0))
+  // The sampler goes on through a stop until it has 100 draws, so that what it returns can be read.
+  const pace = pacer(hooks)
+  let ran = sweeps
   for (let sweep = 0; sweep < sweeps; sweep++) {
+    if ((await pace(sweep, sweeps)) && sweep >= burn + 100) {
+      ran = sweep
+      break
+    }
     const u = toFlat(uniform(keyFromPath(seed, 'z', sweep), [T]))
     // Forward: filtered probabilities.
     const alpha: number[][] = []
@@ -117,7 +126,7 @@ export function gibbsReference(
         }
     }
   }
-  const n = sweeps - burn
+  const n = ran - burn
   const sd = (s2: number, s1: number): number => Math.sqrt(Math.max(0, s2 / n - (s1 / n) ** 2))
   return {
     regimes: visits.map((v) => v.map((c) => c / n)),

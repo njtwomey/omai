@@ -4,6 +4,7 @@ import { toFactorGraph, toStructure } from 'omai-engine/probprog/model'
 import { type SpikeSlabPosterior, spikeSlabRegression } from 'omai-engine/probprog/validation'
 import { toFlat } from 'omai-engine/tensor'
 import { type ProgramCheck, sig } from '../../shared/ep/program-check.ts'
+import type { EpHooks } from '../../shared/ep/sweeps.ts'
 import {
   coefficients,
   defaultSetup,
@@ -20,8 +21,8 @@ export { defaultSetup }
 
 /** One model run by EP and read against the truth. */
 export interface Fit {
-  readonly bound: ReturnType<typeof infer>['bound']
-  readonly run: ReturnType<typeof infer>['run']
+  readonly bound: Awaited<ReturnType<typeof infer>>['bound']
+  readonly run: Awaited<ReturnType<typeof infer>>['run']
   readonly ms: number
   readonly coef: ReturnType<typeof coefficients>
   /** The posterior mean of the noise precision (Gaussian likelihood only). */
@@ -41,9 +42,13 @@ export interface SparseRun {
   readonly refusal: string | undefined
 }
 
-function fit(model: ReturnType<typeof sparseModel>, data: ReturnType<typeof simulate>): Fit {
+async function fit(
+  model: ReturnType<typeof sparseModel>,
+  data: ReturnType<typeof simulate>,
+  hooks: EpHooks,
+): Promise<Fit> {
   const t0 = performance.now()
-  const { bound, run, posterior } = infer(model, data)
+  const { bound, run, posterior } = await infer(model, data, 0.5, hooks)
   const ms = performance.now() - t0
   const tau = posterior.sites.includes('tau') ? Number(toFlat(posterior.mean('tau'))[0]) : undefined
   return { bound, run, ms, coef: coefficients(posterior), precision: tau }
@@ -54,11 +59,14 @@ export const recordOf = (f: Fit) =>
   modelRunFromTape(toStructure(f.bound, { view: 'factor' }), { run: f.run.run() }, { maxSteps: 120, maxMessages: 6 })
 
 /** Simulates a setup and runs EP on the models. */
-export function runSparse(setup: SparseSetup): SparseRun {
+export async function runSparse(
+  setup: SparseSetup,
+  hooks: (stage: string) => EpHooks = () => ({}),
+): Promise<SparseRun> {
   const data = simulate(setup)
-  const gaussian = fit(sparseModel('gaussian', setup.noise), data)
-  const student = fit(sparseModel('student-t', setup.noise), data)
-  const { posterior } = infer(sparseMixtureModel() as never, data)
+  const gaussian = await fit(sparseModel('gaussian', setup.noise), data, hooks('EP, Gaussian likelihood'))
+  const student = await fit(sparseModel('student-t', setup.noise), data, hooks('EP, Student-t likelihood'))
+  const { posterior } = await infer(sparseMixtureModel() as never, data, 0.5, hooks('EP, closed-form mixture prior'))
   const mixture = {
     mean: Array.from(toFlat(posterior.mean('w'))),
     sd: Array.from(toFlat(posterior.stddev('w'))),
@@ -79,11 +87,15 @@ export function runSparse(setup: SparseSetup): SparseRun {
 export const MAX_EXACT = 14
 
 /** The exact posterior of the Gaussian-likelihood model (all subsets, the precision on a grid), when the coefficients are few enough. */
-export function exactSparse(run: SparseRun): SpikeSlabPosterior | undefined {
-  if (run.setup.features > MAX_EXACT) return undefined
+export function exactSparse(data: {
+  readonly features: number
+  readonly X: readonly (readonly number[])[]
+  readonly y: readonly number[]
+}): SpikeSlabPosterior | undefined {
+  if (data.features > MAX_EXACT) return undefined
   return spikeSlabRegression({
-    X: run.data.X,
-    y: run.data.y,
+    X: data.X,
+    y: data.y,
     inclusion: 0.2,
     slab: 3,
     spike: 0.05,

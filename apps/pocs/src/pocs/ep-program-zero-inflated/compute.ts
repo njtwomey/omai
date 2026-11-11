@@ -3,6 +3,7 @@ import { modelRunFromTape } from 'omai-engine/exposition'
 import { toFactorGraph, toStructure } from 'omai-engine/probprog/model'
 import { type ZeroInflatedPosterior, zeroInflatedPoisson } from 'omai-engine/probprog/validation'
 import { type ProgramCheck, sig } from '../../shared/ep/program-check.ts'
+import type { EpHooks } from '../../shared/ep/sweeps.ts'
 import { defaultSetup, infer, parameters, refusedForms, simulate, type ZipSetup } from './program.ts'
 
 export type { ZipSetup }
@@ -12,7 +13,7 @@ export { defaultSetup }
 export interface ZipRun {
   readonly setup: ZipSetup
   readonly data: ReturnType<typeof simulate>
-  readonly fit: ReturnType<typeof infer>
+  readonly fit: Awaited<ReturnType<typeof infer>>
   readonly ms: number
   readonly found: ReturnType<typeof parameters>
   /** The compiler's reason for each way of writing the model that it refuses. */
@@ -28,10 +29,10 @@ export const recordOf = (run: ZipRun) =>
   )
 
 /** Simulates a setup and runs EP on the zero-inflated model. */
-export function runZip(setup: ZipSetup): ZipRun {
+export async function runZip(setup: ZipSetup, hooks: EpHooks = {}): Promise<ZipRun> {
   const data = simulate(setup)
   const t0 = performance.now()
-  const fit = infer(data)
+  const fit = await infer(data, 0.5, hooks)
   const ms = performance.now() - t0
   const refusals = Object.entries(refusedForms).map(([form, model]) => {
     const issues = toFactorGraph(model.bind({ y: data.y.slice(0, 6) } as never)).issues
@@ -41,8 +42,10 @@ export function runZip(setup: ZipSetup): ZipRun {
 }
 
 /** The exact posterior of the same model (the structural zeros summed out, a refined grid over the three parameters). */
-export const exactZip = (run: ZipRun): ZeroInflatedPosterior =>
-  zeroInflatedPoisson({ x: run.data.x, y: run.data.y, inflation: { a: 1, b: 1 }, coefficientSd: 2 })
+export const exactZip = (data: {
+  readonly x: readonly number[]
+  readonly y: readonly number[]
+}): ZeroInflatedPosterior => zeroInflatedPoisson({ x: data.x, y: data.y, inflation: { a: 1, b: 1 }, coefficientSd: 2 })
 
 /** The indices of the zero counts: the ones a structural zero can explain. */
 export const zeroRows = (run: ZipRun): number[] => run.data.y.flatMap((v, i) => (v === 0 ? [i] : []))

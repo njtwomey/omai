@@ -1,13 +1,20 @@
 import { toStructure } from 'omai-engine/probprog/model'
+import type { ZeroInflatedPosterior } from 'omai-engine/probprog/validation'
 import { NumberField, SeedInput } from 'omai-render/react'
 import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import { CurveChart } from '../../shared/CurveChart.tsx'
 import { IntervalPlot, ProbabilityPlot } from '../../shared/ep/ProgramCharts.tsx'
 import { ProgramPage } from '../../shared/ep/ProgramPage.tsx'
 import { sig } from '../../shared/ep/program-check.ts'
-import { useDeferred } from '../../shared/useDeferred.ts'
-import { checkZip, defaultSetup, exactZip, recordOf, runZip, type ZipSetup, zeroRows } from './compute.ts'
+import { epHooks } from '../../shared/ep/sweeps.ts'
+import { RunProgress } from '../../shared/RunProgress.tsx'
+import type { HostBase } from '../../shared/run.ts'
+import { workerTask } from '../../shared/runWorker.ts'
+import { useRun } from '../../shared/useRun.ts'
+import { checkZip, defaultSetup, recordOf, runZip, type ZipRun, type ZipSetup, zeroRows } from './compute.ts'
 import source from './program.ts?raw'
+
+const makeExact = (): Worker => new Worker(new URL('./exact.worker.ts', import.meta.url), { type: 'module' })
 
 const EQUATIONS = [
   'w ~ Dirichlet(1, 1)   (w[1] = the inflation, with a uniform Beta(1, 1) prior)      b0, b1 ~ N(0, 2²)',
@@ -20,8 +27,17 @@ const EQUATIONS = [
 export default function Page(): ReactNode {
   const [setup, setSetup] = useState<ZipSetup>(defaultSetup)
   const set = (patch: Partial<ZipSetup>): void => setSetup((s) => ({ ...s, ...patch }))
-  const run = useDeferred(useCallback(() => runZip(setup), [setup]))
-  const exact = useDeferred(useCallback(() => (run === undefined ? undefined : exactZip(run)), [run]))
+  const fit = useRun<ZipRun>(useCallback((host: HostBase) => runZip(setup, epHooks(host, 'EP')), [setup]))
+  const run = fit.value
+  const exactTask = useMemo(
+    () =>
+      run === undefined
+        ? undefined
+        : workerTask<unknown, ZeroInflatedPosterior>(makeExact, { x: run.data.x, y: run.data.y }, 0),
+    [run],
+  )
+  const exactRun = useRun<ZeroInflatedPosterior>(exactTask)
+  const exact = exactRun.value
   const check = useMemo(
     () => (run === undefined || exact === undefined ? undefined : checkZip(run, exact)),
     [run, exact],
@@ -80,6 +96,12 @@ export default function Page(): ReactNode {
       id="zero-inflated"
       equations={EQUATIONS}
       source={source}
+      progress={
+        <>
+          <RunProgress run={fit} label="EP" />
+          <RunProgress run={exactRun} label="Exact posterior" />
+        </>
+      }
       file="program.ts"
       structure={structure}
       record={record}

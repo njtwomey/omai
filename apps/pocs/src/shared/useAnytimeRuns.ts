@@ -1,6 +1,7 @@
 import { type AnytimeResult, runAnytimeAsync, type Snapshot } from 'omai-engine/probprog/inference'
 import { type Config, type Method, type Session, type Subscription, session } from 'omai-engine/trace'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { yieldToPage } from './run.ts'
 
 /** One run of an inference method on a page: what to run, and what the page keeps of it at each snapshot. */
 export interface AnytimeRunSpec<T> {
@@ -55,18 +56,6 @@ export interface AnytimeRuns<T> {
 const EARLY_MS = 250
 const SNAPSHOT_MS = 1000
 const SLICE_MS = 40
-
-// A message to ourselves: the page paints and answers clicks before it arrives, and, unlike a timer, a tab in the
-// background does not stretch the wait to a second.
-const yieldToPage = (): Promise<void> =>
-  new Promise((resolve) => {
-    const channel = new MessageChannel()
-    channel.port1.onmessage = () => {
-      channel.port1.close()
-      resolve()
-    }
-    channel.port2.postMessage(null)
-  })
 
 /**
  * Runs inference methods on the page without blocking it: every run is a session driven by the library's

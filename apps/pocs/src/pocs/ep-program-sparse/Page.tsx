@@ -1,12 +1,27 @@
 import { toStructure } from 'omai-engine/probprog/model'
+import type { SpikeSlabPosterior } from 'omai-engine/probprog/validation'
 import { NumberField, SeedInput } from 'omai-render/react'
 import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import { IntervalPlot, ProbabilityPlot } from '../../shared/ep/ProgramCharts.tsx'
 import { ProgramPage } from '../../shared/ep/ProgramPage.tsx'
 import { sig } from '../../shared/ep/program-check.ts'
-import { useDeferred } from '../../shared/useDeferred.ts'
-import { checkSparse, defaultSetup, exactSparse, recordOf, runSparse, type SparseSetup } from './compute.ts'
+import { epHooks } from '../../shared/ep/sweeps.ts'
+import { RunProgress } from '../../shared/RunProgress.tsx'
+import type { HostBase } from '../../shared/run.ts'
+import { workerTask } from '../../shared/runWorker.ts'
+import { useRun } from '../../shared/useRun.ts'
+import {
+  checkSparse,
+  defaultSetup,
+  MAX_EXACT,
+  recordOf,
+  runSparse,
+  type SparseRun,
+  type SparseSetup,
+} from './compute.ts'
 import source from './program.ts?raw'
+
+const makeExact = (): Worker => new Worker(new URL('./exact.worker.ts', import.meta.url), { type: 'module' })
 
 const EQUATIONS = [
   'z_j ~ Bernoulli(0.2)   slab_j ~ N(0, 3²)   spike_j ~ N(0, 0.05²)   w_j = z_j ? slab_j : spike_j   (a gate per coefficient)',
@@ -20,8 +35,23 @@ export default function Page(): ReactNode {
   const [setup, setSetup] = useState<SparseSetup>(defaultSetup)
   const [shown, setShown] = useState<'gaussian' | 'student'>('student')
   const set = (patch: Partial<SparseSetup>): void => setSetup((s) => ({ ...s, ...patch }))
-  const run = useDeferred(useCallback(() => runSparse(setup), [setup]))
-  const exact = useDeferred(useCallback(() => (run === undefined ? undefined : exactSparse(run)), [run]))
+  const epRun = useRun<SparseRun>(
+    useCallback((host: HostBase) => runSparse(setup, (stage) => epHooks(host, stage)), [setup]),
+  )
+  const run = epRun.value
+  const exactTask = useMemo(
+    () =>
+      run === undefined || run.setup.features > MAX_EXACT
+        ? undefined
+        : workerTask<unknown, SpikeSlabPosterior | undefined>(
+            makeExact,
+            { features: run.setup.features, X: run.data.X, y: run.data.y },
+            0,
+          ),
+    [run],
+  )
+  const exactRun = useRun<SpikeSlabPosterior | undefined>(exactTask)
+  const exact = exactRun.value
   const check = useMemo(
     () =>
       run === undefined || (exact === undefined && run.setup.features <= 14) ? undefined : checkSparse(run, exact),
@@ -36,6 +66,12 @@ export default function Page(): ReactNode {
       id="sparse"
       equations={EQUATIONS}
       source={source}
+      progress={
+        <>
+          <RunProgress run={epRun} label="EP" />
+          <RunProgress run={exactRun} label="Exact posterior (all subsets)" />
+        </>
+      }
       file="program.ts"
       structure={structure}
       record={record}

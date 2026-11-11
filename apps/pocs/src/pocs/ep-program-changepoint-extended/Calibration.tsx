@@ -1,6 +1,8 @@
 import { type AtomCalibration, type CalibrationSample, calibrationTable } from 'omai-engine/bayesian-examples'
 import { type ReactNode, useMemo } from 'react'
 import { sig } from '../../shared/ep/ProgramParts.tsx'
+import { RunProgress } from '../../shared/RunProgress.tsx'
+import type { UseRun } from '../../shared/useRun.ts'
 import { BARELY, type SeedRun } from './calibration.ts'
 
 const GOOD = 'var(--wb-success)'
@@ -82,17 +84,18 @@ function Dots(props: { readonly runs: readonly SeedRun[] }): ReactNode {
  * on coverage and error, with a PASS or FAIL) and the seeds on which a regime is barely visited (the known failure, shown
  * with the same numbers and no verdict).
  *
- * @param props - The seeds done, how many were asked, and whether the worker has finished.
+ * @param props - The seeds done so far, how many were asked, and the worker's run (its bar and Stop).
  * @returns The panel.
  */
 export function CalibrationPanel(props: {
   readonly runs: readonly SeedRun[]
   readonly asked: number
-  readonly done: boolean
-  readonly failed: string | undefined
+  /** The worker's run: its bar, its Stop, whether it has finished. */
+  readonly run: UseRun<SeedRun[]>
   readonly steps: number
 }): ReactNode {
-  const { runs, asked, done, failed, steps } = props
+  const { runs, asked, run, steps } = props
+  const done = run.phase === 'done' || run.phase === 'converged'
   const visited = useMemo(() => runs.filter((r) => !r.barely), [runs])
   const barely = useMemo(() => runs.filter((r) => r.barely), [runs])
   const verdict = useMemo(() => tableOf(visited.map((r) => r.ep)), [visited])
@@ -120,7 +123,9 @@ export function CalibrationPanel(props: {
           </span>
         ) : (
           <span className="text-xs text-muted" role="status">
-            {failed === undefined ? `running seed ${runs.length + 1} of ${asked}...` : `the worker failed: ${failed}`}
+            {run.phase === 'failed'
+              ? `the worker failed: ${run.error}`
+              : `${runs.length} of ${asked} seeds${run.phase === 'stopped' ? ' (stopped: no verdict on a part of the seeds)' : ' so far'}`}
           </span>
         )}
         <span className="text-xs text-muted">
@@ -133,6 +138,7 @@ export function CalibrationPanel(props: {
         One dot per seed (green: EP&apos;s regime probabilities are within 0.05 of the sampler&apos;s on average; red:
         they are not; hover for the steps in each regime).
       </p>
+      <RunProgress run={run} label="Calibration" onStart={run.start} startText="Run the calibration again" />
       <Dots runs={runs} />
       <h3 className="text-xs font-semibold text-muted">
         Every regime visited (at least {Math.round(100 * BARELY)}% of the {steps} steps): {visited.length} seeds, EP
