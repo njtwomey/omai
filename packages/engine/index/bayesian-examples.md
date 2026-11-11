@@ -6,8 +6,10 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 
 - estimator `classifier-method.ts` (file): Bayesian probit or logistic classifier on 2-D data: one chosen inference method with its knobs. `src/lib/bayesian-examples/classifier-method.ts:1` `omai-engine/bayesian-examples`
 - estimator `coin-method.ts` (file): Biased coin (Beta-Bernoulli) or counts (Gamma-Poisson): one inference method checked against the exact posterior. `src/lib/bayesian-examples/coin-method.ts:1` `omai-engine/bayesian-examples`
+- estimator `linear-regression-method.ts` (file): Bayesian linear regression: polynomial data with known truth, one inference method, checked against the exact posterior. `src/lib/bayesian-examples/linear-regression-method.ts:1` `omai-engine/bayesian-examples`
 
 - structure `example-method.ts` (file): Example scaffold: a problem from knobs, one chosen inference method, derived posterior paths. `src/lib/bayesian-examples/example-method.ts:1` `omai-engine/bayesian-examples`
 
-- estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:512` `omai-engine/bayesian-examples`
+- estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:496` `omai-engine/bayesian-examples`
 - estimator `coinMethod`: Biased coin method: Beta-Bernoulli or Gamma-Poisson, one inference method, checked against the exact posterior. `src/lib/bayesian-examples/coin-method.ts:280` `omai-engine/bayesian-examples`
+- estimator `linearRegressionMethod`: Bayesian linear regression method: polynomial data, known or learned noise, one inference method. `src/lib/bayesian-examples/linear-regression-method.ts:447` `omai-engine/bayesian-examples`

@@ -10,3 +10,4 @@
 export * from './classifier-method.ts'
 export * from './coin-method.ts'
 export * from './example-method.ts'
+export * from './linear-regression-method.ts'
