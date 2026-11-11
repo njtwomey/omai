@@ -97,6 +97,22 @@ describe('epGridMethod on the Gaussian process benchmarks', () => {
     expect(post?.diagnostics['reason']).toMatch(/no node has an EP evidence/)
   })
 
+  it('weighs only the nodes that settled when some did: a run that cycled does not carry an inflated evidence into the grid', () => {
+    const method = epGridMethod(benchmarkModel('gaussian-process-regression').bound())
+    const run = session(method, { steps: 5, mode: 'eager', config: { points: 5 } })
+    const honest = method.posterior?.(run.state, run.config)
+    const inflated = {
+      ...run.state,
+      nodes: run.state.nodes.map((n, i) => (i === 0 ? { ...n, converged: false, logEvidence: n.logEvidence + 50 } : n)),
+    }
+    const post = method.posterior?.(inflated, run.config)
+    const a = honest?.summary().find((r) => r.site === 'ell')
+    const b = post?.summary().find((r) => r.site === 'ell')
+    // The node that did not settle has no weight, so its evidence (50 nats too high) changes nothing about the others'.
+    expect(Math.abs((b?.mean ?? Number.NaN) - (a?.mean ?? 0))).toBeLessThan(0.5 * (a?.sd ?? 1))
+    expect(post?.logEvidence?.value ?? Number.NaN).toBeLessThan((honest?.logEvidence?.value ?? 0) + 1)
+  })
+
   it('is a kind of methodKinds, and refuses a model with no custom function to see through', () => {
     expect(Object.keys(methodKinds)).toContain('ep-grid')
     const bound = benchmarkModel('beta-bernoulli').bound()

@@ -222,11 +222,11 @@ function posteriorModes(
   return modes
 }
 
-/** The number of components the relabelling permutes: the categories of the discrete messages (two for a Bernoulli switch), 0 for none. */
-function componentCount(ports: readonly StartPort[]): number {
-  const sizes = ports.filter((p) => p.kind === 'discrete').map((p) => p.size)
-  if (sizes.length > 0) return Math.max(...sizes)
-  return ports.length > 0 ? 2 : 0
+/** The category counts the discrete messages of the graph have (two for a Bernoulli switch), the largest first. */
+function categoryCounts(ports: readonly StartPort[]): number[] {
+  const sizes = new Set(ports.filter((p) => p.kind === 'discrete').map((p) => p.size))
+  if (ports.some((p) => p.kind === 'bernoulli')) sizes.add(2)
+  return [...sizes].sort((a, b) => b - a)
 }
 
 /** The most components whose relabellings are all tried: 4 gives 24 labellings of every mode. */
@@ -309,14 +309,20 @@ export function epMultiStartMethod(
     )
   }
 
-  /** The components of the model and the site that sorts them: the category count and the first vector of parameters that long, or undefined when there are none (or too many to permute). */
+  /**
+   * The components of the model and the site that sorts them: the largest category count (at most the number whose relabellings are
+   * all tried) for which some continuous site is a vector of that length (a rate or a location per component), or undefined.
+   */
   const componentsOf = (runs: readonly StartRun[]): { key: string; k: number } | undefined => {
     if (prepared?.graph === undefined) return undefined
-    const k = componentCount(discretePorts(prepared.graph))
     const first = runs.find((r) => r.converged) ?? runs[0]
-    if (k < 2 || k > MAX_RELABELLED || first === undefined) return undefined
-    const key = orderingSite(first.sites, k)
-    return key === undefined ? undefined : { key, k }
+    if (first === undefined) return undefined
+    for (const k of categoryCounts(discretePorts(prepared.graph))) {
+      if (k < 2 || k > MAX_RELABELLED) continue
+      const key = orderingSite(first.sites, k)
+      if (key !== undefined) return { key, k }
+    }
+    return undefined
   }
   const canonicalOf = (runs: readonly StartRun[], labels: string): { key: string; k: number } | undefined =>
     labels === 'sort' ? componentsOf(runs) : undefined
@@ -426,9 +432,9 @@ export function epMultiStartMethod(
       const next = (runs: readonly StartRun[]): StartRun => {
         const g = graph()
         const ports = discretePorts(g)
-        const k = componentCount(ports)
         const canon = labels !== 'keep' ? componentsOf(runs) : undefined
         if (canon !== undefined) {
+          const k = canon.k
           const perms = permutations(k)
           const seen: Readonly<Record<string, SiteRecord>>[] = []
           for (const [i, r] of runs.entries()) {

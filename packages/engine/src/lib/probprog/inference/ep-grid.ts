@@ -262,8 +262,11 @@ function nodeWeights(state: EpGridState): { readonly logWeights: Float64Array; r
     )
   })
   const logw = new Float64Array(nodes.length)
+  // A run that did not settle is not at a fixed point, and the EP energy at a state that cycles or has collapsed (a precision
+  // sent to zero) can be far above the evidence of the nodes that did: when any node settled, only those weigh the grid.
+  const settledOnly = nodes.some((n) => n.converged)
   nodes.forEach((n, i) => {
-    let lw = n.logEvidence + n.logPrior
+    let lw = settledOnly && !n.converged ? Number.NEGATIVE_INFINITY : n.logEvidence + n.logPrior
     n.u.forEach((v, k) => {
       lw += Math.log(widths[k]?.get(v) ?? 1)
     })
