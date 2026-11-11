@@ -12,7 +12,12 @@ import type { Context } from '../_context.ts'
 import { logVariableOf, unwrap } from '../_idioms.ts'
 import { NOT_MINE, type NotMine } from '../_mapping.ts'
 import { constParam } from '../_params.ts'
-import { Refusal } from '../_refusal.ts'
+import {
+  concentrationNotMultipleOfLatent,
+  concentrationNotMultiplesOfOne,
+  concentrationNotRandomTimesKnown,
+  gammaRateNotMultiple,
+} from '../_reasons.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
 
 /** One component of a random concentration, `weight * alpha + offset`, with the variable of `alpha` (the variable of its log when `log`). */
@@ -102,11 +107,7 @@ export function latentGammaRate(cx: Context, node: ModelNode & { readonly kind: 
   const vars: string[] = []
   for (const [i, c] of cells.entries()) {
     const r = scaledOf(c)
-    if (r === undefined || r.offset !== 0 || !(r.scale > 0))
-      throw new Refusal(
-        'operator',
-        `the rate of '${node.name}' must be a known multiple of a gamma latent (the message rule integrates the gamma's rate); it is not`,
-      )
+    if (r === undefined || r.offset !== 0 || !(r.scale > 0)) throw gammaRateNotMultiple(node.name)
     const name = cx.g.addVariable({
       name: cx.elementName(node.name, node.dims, i),
       family: { kind: 'gamma' },
@@ -149,11 +150,7 @@ export function latentRandomConcentration(cx: Context, node: ModelNode & { reado
     // `concentration = S * V + O` with `S` random (a gamma or log-normal latent, a known multiple of one plus a known value) and `V`, `O`
     // known vectors over the event axis: the cell of each component is `V_k S + O_k`.
     const parsed = concentrationForm(cx, node.dist.params['concentration'] as ExprSpec)
-    if (parsed === undefined)
-      throw new Refusal(
-        'operator',
-        `the concentration of '${node.name}' is not a random value times a known vector plus a known vector`,
-      )
+    if (parsed === undefined) throw concentrationNotRandomTimesKnown(node.name)
     const scalar = cx.over(evalSym(cx, parsed.random), node.dims)
     perElement = scalar.map((s) => {
       const base = concentrationOf(cx, node, s)
@@ -194,10 +191,7 @@ export function latentRandomConcentration(cx: Context, node: ModelNode & { reado
       continue
     }
     if (variable === undefined || random.some((p) => p.variable !== variable || (p.log === true) !== log))
-      throw new Refusal(
-        'operator',
-        `the concentration of '${node.name}' must be known multiples of one random positive value (a gamma or log-normal latent) plus known offsets`,
-      )
+      throw concentrationNotMultiplesOfOne(node.name)
     const family: FamilyKind = isBeta ? 'beta' : 'dirichlet'
     const name = cx.g.addVariable({
       name: cx.elementName(node.name, node.dims, i),
@@ -265,8 +259,5 @@ export function concentrationOf(cx: Context, node: ModelNode, c: Cell): Concentr
     const l = logVariableOf(cx.g.atoms, cx.logScale, key)
     if (l !== undefined) return { variable: l, log: true, weight: coefficient, offset: c.aff.offset }
   }
-  throw new Refusal(
-    'operator',
-    `a concentration of '${node.name}' is not a known multiple of a gamma or log-normal latent plus a known value`,
-  )
+  throw concentrationNotMultipleOfLatent(node.name)
 }

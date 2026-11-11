@@ -7,7 +7,20 @@
  */
 
 import type { FamilyKind } from '../../../message-passing/index.ts'
-import { Refusal } from './_refusal.ts'
+import {
+  inverseGammaArithmetic,
+  lookupNotGaussian,
+  nonGaussianArithmetic,
+  opOfDiscrete,
+  opOfDiscreteAndRandom,
+  opOfGammaAndRandom,
+  opOfInverseGamma,
+  opOfInverseGammaAndRandom,
+  opOfPartlyRandomLookup,
+  opOfTwoDiscretes,
+  scaledPrecisionArithmetic,
+  stickBreakingArithmetic,
+} from './_reasons.ts'
 
 /** One random scalar of the graph an affine form is made of: a variable, or a coordinate of a vector variable. */
 export type Atom =
@@ -81,28 +94,11 @@ export function scaleAff(a: Aff, k: number): Aff {
 }
 
 export function affOf(c: Cell): Aff {
-  if (c.kind === 'lookup')
-    throw new Refusal(
-      'operator',
-      `the value looked up by the discrete variable '${c.variable}' is not a Gaussian one: it is mapped as the mean of a Gaussian observation or prior only`,
-    )
-  if (c.kind === 'scaled')
-    throw new Refusal(
-      'operator',
-      `arithmetic on the scaled precision of '${c.variable}': only a known multiple plus a known offset of a gamma variable is mapped, and only as the precision of a Gaussian`,
-    )
-  if (c.kind === 'recip')
-    throw new Refusal(
-      'operator',
-      `arithmetic on the inverse-gamma variable behind '${c.variable}': only a known multiple of it is mapped, and only as the squared scale of a Gaussian (the precision idiom)`,
-    )
-  if (c.kind === 'sticks')
-    throw new Refusal(
-      'operator',
-      'arithmetic on stick-breaking weights: they are only the probabilities of a categorical',
-    )
-  if (c.kind !== 'aff')
-    throw new Refusal('operator', `arithmetic on the ${c.family} variable '${c.variable}': only Gaussian values add up`)
+  if (c.kind === 'lookup') throw lookupNotGaussian(c.variable)
+  if (c.kind === 'scaled') throw scaledPrecisionArithmetic(c.variable)
+  if (c.kind === 'recip') throw inverseGammaArithmetic(c.variable)
+  if (c.kind === 'sticks') throw stickBreakingArithmetic()
+  if (c.kind !== 'aff') throw nonGaussianArithmetic(c.family, c.variable)
   return c.aff
 }
 
@@ -135,29 +131,19 @@ export function lookupArithmetic(op: string, x: Cell, y: Cell, states: (variable
   const a = asLookup(x)
   const b = asLookup(y)
   if (a === undefined && b === undefined) return undefined
-  if ((a?.items ?? b?.items)?.some((v) => v !== undefined))
-    throw new Refusal(
-      'operator',
-      `'${op}' of a value that is random in some states of a discrete variable has no message rule`,
-    )
+  if ((a?.items ?? b?.items)?.some((v) => v !== undefined)) throw opOfPartlyRandomLookup(op)
   const f = (u: number, v: number): number =>
     op === 'add' ? u + v : op === 'sub' ? u - v : op === 'mul' ? u * v : u / v
-  if (!['add', 'sub', 'mul', 'div'].includes(op))
-    throw new Refusal('operator', `'${op}' of a discrete variable has no message rule`)
+  if (!['add', 'sub', 'mul', 'div'].includes(op)) throw opOfDiscrete(op)
   if (a !== undefined && b !== undefined) {
-    if (a.variable !== b.variable)
-      throw new Refusal(
-        'operator',
-        `'${op}' of two different discrete variables ('${a.variable}', '${b.variable}') has no message rule`,
-      )
+    if (a.variable !== b.variable) throw opOfTwoDiscretes(op, a.variable, b.variable)
     return lookup(
       a.variable,
       a.values.map((u, i) => f(u, b.values[i] as number)),
     )
   }
   const [look, other, flip] = a !== undefined ? [a, y, false] : [b as Cell & { kind: 'lookup' }, x, true]
-  if (!isConstCell(other))
-    throw new Refusal('operator', `'${op}' of a discrete variable and a random value has no message rule`)
+  if (!isConstCell(other)) throw opOfDiscreteAndRandom(op)
   const k = other.aff.offset
   return lookup(
     look.variable,
@@ -175,14 +161,11 @@ export function recipArithmetic(op: string, x: Cell, y: Cell): Cell | undefined 
   const r = (x.kind === 'recip' ? x : y) as Cell & { kind: 'recip' }
   const known = isConstCell(other) ? other.aff.offset : undefined
   if (known === undefined || (x.kind === 'recip' && y.kind === 'recip') || !(known > 0))
-    throw new Refusal(
-      'operator',
-      `'${op}' of an inverse-gamma variance and a random value (or a non-positive one) has no message rule: only a positive known multiple of it, as the squared scale of a Gaussian`,
-    )
+    throw opOfInverseGammaAndRandom(op)
   if (op === 'mul') return { kind: 'recip', variable: r.variable, scale: r.scale * known }
   if (op === 'div' && x.kind === 'recip') return { kind: 'recip', variable: r.variable, scale: r.scale / known }
   if (op === 'div') return { kind: 'scaled', variable: r.variable, scale: known / r.scale, offset: 0 }
-  throw new Refusal('operator', `'${op}' of an inverse-gamma variance has no message rule`)
+  throw opOfInverseGamma(op)
 }
 
 /**
@@ -197,10 +180,7 @@ export function scaledArithmetic(op: string, x: Cell, y: Cell): Cell | undefined
   const known = isConstCell(other) ? other.aff.offset : undefined
   const g = (left ?? right) as { variable: string; scale: number; offset: number }
   const refuse = (): never => {
-    throw new Refusal(
-      'operator',
-      `'${op}' of a gamma variable and a random value has no message rule: a precision is a known multiple of one gamma variable plus a known offset`,
-    )
+    throw opOfGammaAndRandom(op)
   }
   if (known === undefined || (left !== undefined && right !== undefined)) return refuse()
   switch (op) {

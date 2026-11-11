@@ -11,7 +11,7 @@ import { type Cell, isConstCell, prod } from '../_cells.ts'
 import type { Context } from '../_context.ts'
 import { attempt, NOT_MINE, type NotMine, probe } from '../_mapping.ts'
 import { discreteParents } from '../_params.ts'
-import { Refusal } from '../_refusal.ts'
+import { cannotBeRecorded, stickBreakingNotRecorded } from '../_reasons.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
 import type { ApplyStep } from '../_symbolic/_functions.ts'
 import { chainOf } from '../_symbolic/_functions.ts'
@@ -64,11 +64,15 @@ export function derived(
       vars.push(c.variable)
       return c
     }
-    if (c.kind === 'sticks') throw new Refusal('structure', `'${node.name}' is a stick-breaking weight vector`)
+    if (c.kind === 'sticks') throw stickBreakingNotRecorded(node.name)
     if (c.kind === 'scaled' || c.kind === 'lookup' || c.kind === 'recip')
-      throw new Refusal(
-        'structure',
-        `'${node.name}' is a ${c.kind === 'scaled' ? 'scaled precision' : c.kind === 'recip' ? 'multiple of an inverse-gamma variance' : 'lookup by a discrete variable'}: it cannot be recorded as a value`,
+      throw cannotBeRecorded(
+        node.name,
+        c.kind === 'scaled'
+          ? 'scaled precision'
+          : c.kind === 'recip'
+            ? 'multiple of an inverse-gamma variance'
+            : 'lookup by a discrete variable',
       )
     const name = cx.elementName(node.name, node.dims, i)
     const v = cx.g.materialise(c.aff, node.name, node.dims.length === 0 ? undefined : i, name)

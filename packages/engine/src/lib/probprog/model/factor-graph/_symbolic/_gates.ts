@@ -25,7 +25,18 @@ import {
   unflatten,
 } from '../_cells.ts'
 import type { Context } from '../_context.ts'
-import { Refusal } from '../_refusal.ts'
+import {
+  atNeedsDimension,
+  comparisonOfRandoms,
+  gateKnownComponent,
+  gateMixedFamilies,
+  gateStateNotKnownOrGaussian,
+  indexNotDataOrCategorical,
+  indexOutOfRange,
+  pickNeedsDimension,
+  squareOfGammaPrecision,
+  whereConditionNotKnown,
+} from '../_reasons.ts'
 import type { EvalMode } from './_affine.ts'
 
 /** Arithmetic on a discrete variable's lookup or on a gamma variable's precision: undefined when neither operand is one. */
@@ -39,11 +50,7 @@ export function special(cx: Context, mode: EvalMode, op: string, x: Cell, y: Cel
   const left = scaledOf(x)
   const right = scaledOf(y)
   if (op === 'mul' && left !== undefined && right !== undefined && left.offset === 0 && right.offset === 0) {
-    if (left.variable === right.variable)
-      throw new Refusal(
-        'operator',
-        `the square of the gamma variable '${left.variable}' as a precision has no message rule`,
-      )
+    if (left.variable === right.variable) throw squareOfGammaPrecision(left.variable)
     // The product of two gamma variables (a local times a global precision): a gamma variable defined by `gamma-product`.
     const site = cx.current
     const out = cx.g.auxName(site, index)
@@ -106,15 +113,12 @@ export function compare(cx: Context, op: string, x: Cell, y: Cell): Cell {
       b.values.map((u) => f(x.aff.offset, u)),
     )
   if (isConstCell(x) && isConstCell(y)) return constCell(f(x.aff.offset, y.aff.offset))
-  throw new Refusal(
-    'operator',
-    `'${op}' of random values has no message rule (only a discrete variable against a known value is mapped, as a gate)`,
-  )
+  throw comparisonOfRandoms(op)
 }
 
 export function gather(cx: Context, mode: EvalMode, a: Sym, idx: Sym): Sym {
   const first = a.dims[0]
-  if (first === undefined) throw new Refusal('structure', 'at: the first operand needs a dimension to index')
+  if (first === undefined) throw atNeedsDimension()
   const rest = a.dims.slice(1)
   const dims = [...idx.dims, ...rest]
   const shape = cx.shapeOf(dims)
@@ -147,23 +151,17 @@ export function choose(
 ): Cell {
   if (isConstCell(code)) {
     const c = code.aff.offset
-    if (!Number.isInteger(c) || c < 0 || c >= states)
-      throw new Refusal('data', `at: index ${c} is out of range for '${dim}'`)
+    if (!Number.isInteger(c) || c < 0 || c >= states) throw indexOutOfRange(c, dim)
     return component(c)
   }
   if (code.kind === 'lookup' && code.items === undefined) {
     const comps = code.values.map((v) => {
-      if (!Number.isInteger(v) || v < 0 || v >= states)
-        throw new Refusal('data', `at: index ${v} is out of range for '${dim}'`)
+      if (!Number.isInteger(v) || v < 0 || v >= states) throw indexOutOfRange(v, dim)
       return component(v)
     })
     return lookupOf(cx, comps, code.variable)
   }
-  if (code.kind !== 'rv' || code.family !== 'discrete')
-    throw new Refusal(
-      'operator',
-      'at: the index must be data or a categorical latent (a gate); a computed random index has no message rule',
-    )
+  if (code.kind !== 'rv' || code.family !== 'discrete') throw indexNotDataOrCategorical()
   const comps = Array.from({ length: states }, (_, k) => component(k))
   // The branches of a `pick` stay the states of one lookup (their random Gaussian forms are the branches of the gate the observation
   // is), instead of one `select` variable: the observation is a gate of likelihoods, exact in the discrete variable.
@@ -178,7 +176,7 @@ export function choose(
  */
 export function pick(cx: Context, mode: EvalMode, values: Sym, idx: Sym): Sym {
   const component = values.dims[values.dims.length - 1]
-  if (component === undefined) throw new Refusal('structure', 'pick: the values need a dimension to pick along')
+  if (component === undefined) throw pickNeedsDimension()
   const states = cx.size(component)
   const kept = values.dims.slice(0, -1)
   const dims = cx.joinDims([{ dims: kept, cells: [] }, idx])
@@ -225,16 +223,11 @@ export function gate(cx: Context, mode: EvalMode, components: readonly Cell[], z
   const kind: FamilyKind = rv ? first.family : 'gaussian'
   const names = components.map((c) => {
     if (rv) {
-      if (c.kind !== 'rv' || c.family !== kind)
-        throw new Refusal('operator', `a gate selects among values of one family: they are not all ${kind}`)
+      if (c.kind !== 'rv' || c.family !== kind) throw gateMixedFamilies(kind)
       return c.variable
     }
     const v = cx.g.materialise(affOf(c), site, undefined)
-    if (typeof v === 'number')
-      throw new Refusal(
-        'operator',
-        'a gate selects among random values: a known component has no variable (give it a prior)',
-      )
+    if (typeof v === 'number') throw gateKnownComponent()
     return v
   })
   const out = cx.g.auxName(site, undefined)
@@ -252,11 +245,7 @@ export function gate(cx: Context, mode: EvalMode, components: readonly Cell[], z
  * that are random in some states (read by a gate of Gaussian branches, over the variables the branches share).
  */
 export function lookupOf(_cx: Context, components: readonly Cell[], z: string): Cell {
-  if (!components.every((c) => c.kind === 'aff'))
-    throw new Refusal(
-      'operator',
-      'a value chosen by a discrete variable must be known or a Gaussian form in every state',
-    )
+  if (!components.every((c) => c.kind === 'aff')) throw gateStateNotKnownOrGaussian()
   return lookupOfForms(z, components)
 }
 
@@ -271,11 +260,7 @@ export function whereGate(cx: Context, mode: EvalMode, [cond, a, b]: [Sym, Sym, 
         chosen.values.map((v) => (v !== 0 ? (x as Cell) : (y as Cell))),
         chosen.variable,
       )
-    if (chosen.kind !== 'rv' || chosen.family !== 'bernoulli')
-      throw new Refusal(
-        'operator',
-        'where: the condition must be known or a Bernoulli latent; a comparison of random values has no message rule',
-      )
+    if (chosen.kind !== 'rv' || chosen.family !== 'bernoulli') throw whereConditionNotKnown()
     return gate(cx, mode, [y as Cell, x as Cell], chosen.variable)
   })
 }

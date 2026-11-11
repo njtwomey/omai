@@ -15,6 +15,7 @@ import { asTensor, type NestedArray } from '../../../tensor/index.ts'
 import type { BoundModel } from '../bind.ts'
 import type { NamedValue, OperatorTable } from '../operators.ts'
 import type { ExprSpec } from '../spec.ts'
+import { customNotSupplied, randomWhereKnown, unknownOperator } from './_reasons.ts'
 import { Refusal } from './_refusal.ts'
 import { fromNamed, overDims, type Sizes, toNamed } from './_symbolic/_dims.ts'
 
@@ -60,7 +61,7 @@ export function evaluateKnown(e: ExprSpec, env: EvalEnv): NamedValue {
       return env.ref(e.name)
     case 'op': {
       const def = env.modelOps[e.op]
-      if (def === undefined) throw new Refusal('operator', `unknown operator '${e.op}'`)
+      if (def === undefined) throw unknownOperator(e.op)
       return def.evaluate(
         e.args.map((a) => evaluateKnown(a, env)),
         e.params ?? {},
@@ -68,7 +69,7 @@ export function evaluateKnown(e: ExprSpec, env: EvalEnv): NamedValue {
     }
     case 'custom': {
       const fn = env.customs[e.name]
-      if (fn === undefined) throw new Refusal('opaque', `the custom function '${e.name}' was not supplied`)
+      if (fn === undefined) throw customNotSupplied(e.name)
       const value = fn(e.args.map((a) => evaluateKnown(a, env)))
       env.onCustom?.(e.name)
       return { value, dims: e.dims }
@@ -128,7 +129,7 @@ export function knownConstants(bound: BoundModel, modelOps: OperatorTable): Know
         customs: bound.customs,
         ref: (name) => {
           const v = known.get(name)
-          if (v === undefined) throw new Refusal('node', `'${name}' is random where a known value is needed`)
+          if (v === undefined) throw randomWhereKnown(name)
           return v
         },
         onCustom: (name) => called.push(name),

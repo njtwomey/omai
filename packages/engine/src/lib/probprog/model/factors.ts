@@ -43,6 +43,7 @@ import type { BoundModel } from './bind.ts'
 import { eventToDims } from './event-dims.ts'
 import { Context } from './factor-graph/_context.ts'
 import { derived } from './factor-graph/_mappings/derived.ts'
+import { logDensityTermHasNoOperator, paramNodeHasNoFactor } from './factor-graph/_reasons.ts'
 import { Refusal } from './factor-graph/_refusal.ts'
 import { mapLatent, mapObserved } from './factor-graph/_table.ts'
 import type { FactorGraphCompilation } from './factor-graph/types.ts'
@@ -75,7 +76,7 @@ class Compiler {
         this.node(node)
       } catch (e) {
         if (!(e instanceof Refusal)) throw e
-        this.cx.issues.push({ node: node.name, kind: e.kind, reason: e.message })
+        this.cx.issues.push({ node: node.name, kind: e.kind, code: e.code, reason: e.message })
         this.cx.failed.add(node.name)
       }
     }
@@ -100,15 +101,9 @@ class Compiler {
       case 'generated':
         return
       case 'param':
-        throw new Refusal(
-          'node',
-          `'${node.name}' is a param (a learnable value, not a random variable): it has no factor`,
-        )
+        throw paramNodeHasNoFactor(node.name)
       case 'factor':
-        throw new Refusal(
-          'node',
-          `'${node.name}' is an arbitrary log-density term: no message operator exists for it (a numeric factor operator could be given)`,
-        )
+        throw logDensityTermHasNoOperator(node.name)
     }
   }
 }
@@ -187,7 +182,7 @@ export function toFactorGraph(
       return {
         name: bound.spec.name,
         graph: undefined,
-        issues: [{ node: e.node, kind: 'structure', reason: e.message }],
+        issues: [{ node: e.node, kind: 'structure', code: 'structure', reason: e.message }],
         opaque: [],
         sites: [],
         auxiliary: [],
@@ -221,6 +216,7 @@ export function toFactorGraph(
       cx.issues.push({
         node: name,
         kind: 'opaque',
+        code: 'opaque',
         reason: `'${name}' is opaque to message passing (a custom call, or a family with no exponential-family form)`,
       })
   const plates = bound.spec.dims

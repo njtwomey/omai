@@ -7,18 +7,32 @@ import { type Cell, prod, unflatten } from '../_cells.ts'
 import type { Context } from '../_context.ts'
 import { randomTransitionRow, transitionRow } from '../_idioms.ts'
 import { constParam, discreteParents, eventVector, rvName } from '../_params.ts'
+import {
+  concentrationMissing,
+  concentrationRandom,
+  discreteParentsOverPlate,
+  logitsRandom,
+  previousStatesVersusRows,
+  probabilitiesNotConjugate,
+  probabilityMissing,
+  probabilityNotConjugate,
+  probabilityOutsideUnit,
+  probsOrLogitsMissing,
+  rowNotChosenByDiscrete,
+  rowsNotDirichlet,
+  transitionMatrixSize,
+} from '../_reasons.ts'
 import { Refusal } from '../_refusal.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
 
 export function latentDirichlet(cx: Context, node: ModelNode & { readonly kind: 'latent' }): void {
   const e = node.dist.params['concentration']
-  if (e === undefined) throw new Refusal('structure', `'${node.name}': the concentration is missing`)
+  if (e === undefined) throw concentrationMissing(node.name)
   let nv: NamedValue
   try {
     nv = cx.evalNamed(e)
   } catch (err) {
-    if (err instanceof Refusal)
-      throw new Refusal('operator', `the concentration of '${node.name}' depends on a random value: it must be known`)
+    if (err instanceof Refusal) throw concentrationRandom(node.name)
     throw err
   }
   const shape = cx.shapeOf(node.dims)
@@ -44,7 +58,7 @@ export function bernoulliTable(
   parents: readonly string[],
 ): number[] {
   const e = node.dist.params['probs'] ?? node.dist.params['logits']
-  if (e === undefined) throw new Refusal('structure', `'${node.name}': the probability is missing`)
+  if (e === undefined) throw probabilityMissing(node.name)
   const logits = node.dist.params['probs'] === undefined
   const values: number[] = []
   for (let a = 0; a < 2 ** parents.length; a++) {
@@ -55,7 +69,7 @@ export function bernoulliTable(
     })
     const raw = toFlat(cx.evalNamed(e, override).value)[0] as number
     const p1 = logits ? 1 / (1 + Math.exp(-raw)) : raw
-    if (!(p1 >= 0 && p1 <= 1)) throw new Refusal('data', `'${node.name}': a probability of ${p1} is outside [0, 1]`)
+    if (!(p1 >= 0 && p1 <= 1)) throw probabilityOutsideUnit(node.name, p1)
     values.push(1 - p1, p1)
   }
   return values
@@ -72,7 +86,7 @@ export function latentCategorical(cx: Context, node: ModelNode & { readonly kind
   const probsExpr = node.dist.params['probs']
   const logitsExpr = node.dist.params['logits']
   const expr = probsExpr ?? logitsExpr
-  if (expr === undefined) throw new Refusal('structure', `'${node.name}': give probs or logits`)
+  if (expr === undefined) throw probsOrLogitsMissing(node.name)
   const cells: Cell[] = []
   const vars: string[] = []
   const chain = logitsExpr === undefined && !cx.isConst(expr) ? transitionRow(cx.idiom, expr) : undefined
@@ -82,17 +96,10 @@ export function latentCategorical(cx: Context, node: ModelNode & { readonly kind
     const matrix = toFlat(cx.evalNamed(chain.matrix).value)
     for (const [i, p] of parents.entries()) {
       if (p.kind !== 'rv' || (p.family !== 'discrete' && p.family !== 'bernoulli'))
-        throw new Refusal(
-          'operator',
-          `the row of '${node.name}' must be chosen by a discrete latent, not a computed value`,
-        )
+        throw rowNotChosenByDiscrete(node.name)
       const from = p.family === 'bernoulli' ? 2 : cx.g.sizeOf(p.variable)
       const to = matrix.length / from
-      if (!Number.isInteger(to) || to < 1)
-        throw new Refusal(
-          'data',
-          `the transition matrix of '${node.name}' has ${matrix.length} entries for ${from} states`,
-        )
+      if (!Number.isInteger(to) || to < 1) throw transitionMatrixSize(node.name, matrix.length, from)
       const name = cx.g.addVariable({
         name: cx.elementName(node.name, node.dims, i),
         family: { kind: 'discrete', size: to },
@@ -114,21 +121,14 @@ export function latentCategorical(cx: Context, node: ModelNode & { readonly kind
     const rows = matrix.cells
     const parents = cx.over(evalSym(cx, chosen.index), node.dims)
     if (matrix.dims.length !== 1 || rows.some((r) => r.kind !== 'rv' || r.family !== 'dirichlet'))
-      throw new Refusal(
-        'operator',
-        `the rows of the matrix behind '${node.name}' must be one Dirichlet latent each (a latent over the dimension of the states)`,
-      )
+      throw rowsNotDirichlet(node.name)
     const rowVars = rows.map((r) => (r as { readonly variable: string }).variable)
     const size = cx.g.sizeOf(rowVars[0] as string)
     for (const [i, p] of parents.entries()) {
       if (p.kind !== 'rv' || (p.family !== 'discrete' && p.family !== 'bernoulli'))
-        throw new Refusal(
-          'operator',
-          `the row of '${node.name}' must be chosen by a discrete latent, not a computed value`,
-        )
+        throw rowNotChosenByDiscrete(node.name)
       const from = p.family === 'bernoulli' ? 2 : cx.g.sizeOf(p.variable)
-      if (from !== rowVars.length)
-        throw new Refusal('data', `'${node.name}' has ${from} previous states and its matrix ${rowVars.length} rows`)
+      if (from !== rowVars.length) throw previousStatesVersusRows(node.name, from, rowVars.length)
       const name = cx.g.addVariable({
         name: cx.elementName(node.name, node.dims, i),
         family: { kind: 'discrete', size },
@@ -140,11 +140,7 @@ export function latentCategorical(cx: Context, node: ModelNode & { readonly kind
       vars.push(name)
     }
   } else if (!cx.isConst(expr)) {
-    if (logitsExpr !== undefined)
-      throw new Refusal(
-        'operator',
-        `the logits of '${node.name}' depend on a random value: only probs from a Dirichlet latent map`,
-      )
+    if (logitsExpr !== undefined) throw logitsRandom(node.name)
     const over = cx.over(evalSym(cx, expr), node.dims)
     for (const [i, c] of over.entries()) {
       if (c.kind === 'sticks') {
@@ -162,11 +158,7 @@ export function latentCategorical(cx: Context, node: ModelNode & { readonly kind
         vars.push(name)
         continue
       }
-      if (c.kind !== 'rv' || c.family !== 'dirichlet')
-        throw new Refusal(
-          'operator',
-          `the probabilities of '${node.name}' must be known or a Dirichlet latent for the conjugate 'discrete' operator`,
-        )
+      if (c.kind !== 'rv' || c.family !== 'dirichlet') throw probabilitiesNotConjugate(node.name)
       const size = cx.g.sizeOf(c.variable)
       const name = cx.g.addVariable({
         name: cx.elementName(node.name, node.dims, i),
@@ -207,11 +199,7 @@ export function latentDiscrete(cx: Context, node: ModelNode & { readonly kind: '
     return
   }
   const parents = discreteParents(cx, node)
-  if (node.dims.length > 0 && parents.length > 0)
-    throw new Refusal(
-      'structure',
-      `'${node.name}' is a Bernoulli over [${node.dims}] with discrete parents: tables over plated nodes are not expanded yet`,
-    )
+  if (node.dims.length > 0 && parents.length > 0) throw discreteParentsOverPlate(node.name, node.dims)
   const shape = cx.shapeOf(node.dims)
   const n = prod(shape)
   const cells: Cell[] = []
@@ -223,11 +211,7 @@ export function latentDiscrete(cx: Context, node: ModelNode & { readonly kind: '
     cx.g.need('bernoulli')
     const over = cx.over(evalSym(cx, probsExpr), node.dims)
     for (const [i, c] of over.entries()) {
-      if (c.kind !== 'rv' || c.family !== 'beta')
-        throw new Refusal(
-          'operator',
-          `the probability of '${node.name}' must be known or a beta latent for the conjugate 'bernoulli' operator`,
-        )
+      if (c.kind !== 'rv' || c.family !== 'beta') throw probabilityNotConjugate(node.name)
       const name = cx.g.addVariable({
         name: cx.elementName(node.name, node.dims, i),
         family: { kind: 'bernoulli' },

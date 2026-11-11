@@ -13,6 +13,24 @@ import type { Context } from '../_context.ts'
 import { expArgument, logVariableOfCell, scaledExp, stripClip, unwrap } from '../_idioms.ts'
 import { NOT_MINE, type NotMine } from '../_mapping.ts'
 import { cellsOf, constAt, paramCell } from '../_params.ts'
+import {
+  classDimensionMissing,
+  classOutsideRange,
+  cutPointsRandom,
+  dispersionNotPositiveLatent,
+  hurdleNotCount,
+  hurdleRateNotExposureExp,
+  keyNotPositive,
+  keyNotPositiveLatent,
+  knownParameterRandom,
+  knownParameterRandomBecause,
+  likelihoodRejects,
+  negativeBinomialOutcome,
+  quantileLevelRandom,
+  shapeAndScaleBothRandom,
+  weibullScaleNotLog,
+  zeroProbabilityNotKnownOrBeta,
+} from '../_reasons.ts'
 import { Refusal } from '../_refusal.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
 import { observedPoissonGate } from './observed-gates.ts'
@@ -52,14 +70,9 @@ export function negBinomialRandomDispersion(
   if (m === undefined) return NOT_MINE
   const aCell = cellsOf(cx, node, 'dispersion', () => evalSym(cx, a))[i] as Cell
   const logDispersion = logVariableOfCell(aCell, cx.g.atoms, cx.logScale)
-  if (logDispersion === undefined)
-    throw new Refusal(
-      'operator',
-      `the dispersion of '${node.name}' is random but not a positive latent (a half-normal, half-Cauchy, log-normal or uniform prior carried on its log): the negative-binomial-dispersion factor needs the log of it`,
-    )
+  if (logDispersion === undefined) throw dispersionNotPositiveLatent(node.name)
   const params: Record<string, Json> = { y, exposure: m.scale === undefined ? 1 : constAt(cx, node, m.scale, i) }
-  if (!(Number.isInteger(y) && y >= 0))
-    throw new Refusal('data', `'${node.name}' (negative binomial): the outcome must be a non-negative integer`)
+  if (!(Number.isInteger(y) && y >= 0)) throw negativeBinomialOutcome(node.name)
   const cell = cellsOf(cx, node, 'predictor', () => evalSym(cx, m.inner))[i] as Cell
   if (isConstCell(cell)) return null
   const u = cx.g.materialise(affOf(cell), node.name, index) as string
@@ -93,23 +106,16 @@ export function observedNumeric(
     } catch (e) {
       // A parameter computed from a random value (1 / alpha with alpha a latent) is random.
       if (e instanceof Refusal && e.kind === 'operator')
-        throw new Refusal(
-          'operator',
-          `the ${what} of '${node.name}' is random (${e.message}): the ${fam} likelihood has a message rule for a known ${what} only`,
-        )
+        throw knownParameterRandomBecause(what, node.name, e.message, fam)
       throw e
     }
-    if (!isConstCell(c))
-      throw new Refusal(
-        'operator',
-        `the ${what} of '${node.name}' is random: the ${fam} likelihood has a message rule for a known ${what} only`,
-      )
+    if (!isConstCell(c)) throw knownParameterRandom(what, node.name, fam)
     return c.aff.offset
   }
   const emit = (likelihood: string, expr: ExprSpec, extra: Record<string, Json>): string | null => {
     const params: Record<string, Json> = { likelihood, y, ...extra }
     const why = likelihoods()[likelihood]?.check?.(y, params)
-    if (why !== undefined) throw new Refusal('data', `'${node.name}' (${likelihood}): ${why}`)
+    if (why !== undefined) throw likelihoodRejects(node.name, likelihood, why)
     const cell = cellsOf(cx, node, 'predictor', () => evalSym(cx, expr))[i] as Cell
     return emitSite(cx, node, cell, i, index, 'likelihood-row', 'likelihood-site', params)
   }
@@ -136,11 +142,7 @@ export function observedNumeric(
   }
   if (fam === 'orderedProbit' || fam === 'orderedLogistic') {
     const cutsExpr = dist['cutpoints'] as ExprSpec
-    if (!cx.isConst(cutsExpr))
-      throw new Refusal(
-        'operator',
-        `the cut points of '${node.name}' are random: the ordinal likelihoods have a message rule for known cut points only`,
-      )
+    if (!cx.isConst(cutsExpr)) throw cutPointsRandom(node.name)
     const cuts = Array.from(toFlat(cx.evalNamed(cutsExpr).value))
     return emit(fam === 'orderedProbit' ? 'ordinal-probit' : 'ordinal-logit', dist['predictor'] as ExprSpec, { cuts })
   }
@@ -202,17 +204,12 @@ export function observedMulticlass(
   if (cells === undefined) {
     const sym = evalSym(cx, node.dist.params[param] as ExprSpec)
     const extra = sym.dims.filter((dim) => (node.dist.eventDims ?? []).includes(dim))
-    if (extra.length !== 1)
-      throw new Refusal(
-        'structure',
-        `the ${param} of '${node.name}' must carry the class dimension declared by \`over\` (categorical(..., { over })), it has [${sym.dims}]`,
-      )
+    if (extra.length !== 1) throw classDimensionMissing(param, node.name, sym.dims)
     cells = cx.over(sym, [...node.dims, extra[0] as string])
     cx.cells.set(key, cells)
   }
   const classes = cells.length / Math.max(1, prod(cx.shapeOf(node.dims)))
-  if (!(Number.isInteger(y) && y >= 0 && y < classes))
-    throw new Refusal('data', `'${node.name}': the class ${y} is outside 0 to ${classes - 1}`)
+  if (!(Number.isInteger(y) && y >= 0 && y < classes)) throw classOutsideRange(node.name, y, classes - 1)
   const args = Array.from({ length: classes }, (_, k) => {
     return cx.g.portOf(cells?.[i * classes + k] as Cell, node.name, index)
   })
@@ -249,17 +246,13 @@ export function positivePort(
   }
   const c = paramCell(cx, node, key, i)
   if (isConstCell(c)) {
-    if (!(c.aff.offset > 0))
-      throw new Refusal('data', `the ${key} of '${node.name}' is ${c.aff.offset}: it must be positive`)
+    if (!(c.aff.offset > 0)) throw keyNotPositive(key, node.name, c.aff.offset)
     return { const: Math.log(c.aff.offset) }
   }
   if (c.kind === 'rv' && c.family === 'gamma') return c.variable
   const logVar = logVariableOfCell(c, cx.g.atoms, cx.logScale)
   if (logVar !== undefined) return logVar
-  throw new Refusal(
-    'operator',
-    `the ${key} of '${node.name}' is random but not a gamma or exponential latent, a positive latent carried on its log (a half-normal, half-Cauchy, log-normal or uniform prior) or exp of an affine value: the likelihood-pair factor needs one of those`,
-  )
+  throw keyNotPositiveLatent(key, node.name)
 }
 
 /**
@@ -282,27 +275,18 @@ export function observedPair(
   if (likelihood === 'laplace-scale' || likelihood === 'asymmetric-laplace-scale') {
     if (likelihood === 'asymmetric-laplace-scale') {
       const tau = paramCell(cx, node, 'tau', i)
-      if (!isConstCell(tau))
-        throw new Refusal('operator', `the quantile level of '${node.name}' is random: it must be known`)
+      if (!isConstCell(tau)) throw quantileLevelRandom(node.name)
       extra['tau'] = tau.aff.offset
     }
     args = [predictor(paramCell(cx, node, 'loc', i)), positivePort(cx, node, 'scale', i, index)]
   } else if (likelihood === 'student-t-df') {
     const scale = paramCell(cx, node, 'scale', i)
-    if (!isConstCell(scale))
-      throw new Refusal(
-        'operator',
-        `the degrees of freedom and the scale of '${node.name}' are both random: the likelihood-pair factor takes one random scale or shape beside the location`,
-      )
+    if (!isConstCell(scale)) throw shapeAndScaleBothRandom(node.name)
     extra['scale'] = scale.aff.offset
     args = [predictor(paramCell(cx, node, 'loc', i)), positivePort(cx, node, 'df', i, index)]
   } else if (likelihood === 'weibull-shape') {
     const m = node.dist.params['scale'] === undefined ? undefined : scaledExp(cx.idiom, node.dist.params['scale'])
-    if (m === undefined || m.scale !== undefined)
-      throw new Refusal(
-        'operator',
-        `the scale of '${node.name}' is not exp of an affine value: the Weibull with a random shape needs the log link`,
-      )
+    if (m === undefined || m.scale !== undefined) throw weibullScaleNotLog(node.name)
     args = [
       predictor(cellsOf(cx, node, 'predictor', () => evalSym(cx, m.inner))[i] as Cell),
       positivePort(cx, node, 'concentration', i, index),
@@ -312,7 +296,7 @@ export function observedPair(
   }
   const params: Record<string, Json> = { likelihood, y, ...extra }
   const why = pairLikelihoods()[likelihood]?.check?.(y, params)
-  if (why !== undefined) throw new Refusal('data', `'${node.name}' (${likelihood}): ${why}`)
+  if (why !== undefined) throw likelihoodRejects(node.name, likelihood, why)
   if (typeof args[0] !== 'string' && typeof args[1] !== 'string') return null
   cx.g.addFactor({ operator: 'likelihood-pair', args, params }, cx.elementName(node.name, node.dims, i))
   return null
@@ -369,22 +353,16 @@ export function observedHurdle(
   i: number,
   index: number | undefined,
 ): string | null {
-  if (!(Number.isInteger(y) && y >= 0))
-    throw new Refusal('data', `'${node.name}' is a hurdle count: ${y} is not a count`)
+  if (!(Number.isInteger(y) && y >= 0)) throw hurdleNotCount(node.name, y)
   const zero = paramCell(cx, node, 'zero', i)
   if (!isConstCell(zero)) {
-    if (zero.kind !== 'rv' || zero.family !== 'beta')
-      throw new Refusal('operator', `the zero probability of '${node.name}' must be known or a beta latent`)
+    if (zero.kind !== 'rv' || zero.family !== 'beta') throw zeroProbabilityNotKnownOrBeta(node.name)
     const crossed = cx.g.auxName(node.name, index)
     cx.g.addVariable({ name: crossed, family: { kind: 'bernoulli' }, observed: y === 0 ? 1 : 0 })
     cx.g.addFactor({ operator: 'bernoulli', args: [crossed, zero.variable] }, crossed)
   }
   if (y === 0) return null
   const numeric = observedNumeric(cx, node, 'hurdlePoisson', y, i, index)
-  if (numeric === NOT_MINE)
-    throw new Refusal(
-      'operator',
-      `the rate of '${node.name}' must be \`exposure * exp(affine)\` for the hurdle Poisson`,
-    )
+  if (numeric === NOT_MINE) throw hurdleRateNotExposureExp(node.name)
   return numeric
 }

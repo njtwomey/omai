@@ -9,7 +9,7 @@ import type { Json } from '../../../../base/index.ts'
 import { unaryFunctions } from '../../../../message-passing/index.ts'
 import { type Aff, type Atom, combine, constAff, type Precision, scaleAff } from '../_cells.ts'
 import type { Context } from '../_context.ts'
-import { Refusal } from '../_refusal.ts'
+import { extremumOfItself, randomTimesItself } from '../_reasons.ts'
 
 /** One step of an `apply` chain: a function of the registry by name, or `mul`, `add`, `pow` with its constant. */
 export type ApplyStep = readonly [string, number?]
@@ -25,11 +25,7 @@ export function mulAff(cx: Context, a: Aff, b: Aff, index: number): Aff {
   const site = cx.current
   const left = cx.g.materialise(a, site, undefined) as string
   const right = cx.g.materialise(b, site, undefined) as string
-  if (left === right)
-    throw new Refusal(
-      'operator',
-      `a random value times itself (a square): the product factor takes two independent variables, and '${left}' is both`,
-    )
+  if (left === right) throw randomTimesItself(left)
   const out = cx.g.auxName(site, index)
   cx.g.need('product')
   cx.g.addVariable({ name: out, family: { kind: 'gaussian' } })
@@ -136,8 +132,7 @@ export function extremum(cx: Context, operator: 'max' | 'min', a: Aff, b: Aff, i
   const site = cx.current
   const left = cx.g.materialise(a, site, undefined) as string
   const right = cx.g.materialise(b, site, undefined) as string
-  if (left === right)
-    throw new Refusal('operator', `the ${operator === 'max' ? 'maximum' : 'minimum'} of a random value with itself`)
+  if (left === right) throw extremumOfItself(operator === 'max' ? 'maximum' : 'minimum')
   const out = cx.g.auxName(site, index)
   cx.g.need(operator)
   cx.g.addVariable({ name: out, family: { kind: 'gaussian' } })

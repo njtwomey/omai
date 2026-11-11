@@ -18,7 +18,7 @@ import { type Cell, logName, type Sym } from './_cells.ts'
 import { type IdiomEnv, type LatentScope, latentScope } from './_idioms.ts'
 import { type EvalEnv, evaluateKnown, isKnownExpr, type Known, knownConstants } from './_known.ts'
 import { type LayoutPlan, layoutPlan, type NormalGammaPlan } from './_plan.ts'
-import { Refusal } from './_refusal.ts'
+import { dataNotBound, dependsOnFailed, randomWhereKnown } from './_reasons.ts'
 import { cellAt, fromNamed, joinDims, overDims, shapeOf, sizeOf, toNamed, zipSyms } from './_symbolic/_dims.ts'
 import type { ApplyStep } from './_symbolic/_functions.ts'
 import type { FactorIssue, SiteLayout } from './types.ts'
@@ -173,9 +173,9 @@ export class Context {
         if (o !== undefined) return o
         const lazy = this.lazy.get(name)
         if (lazy !== undefined) return evaluateKnown(lazy, env)
-        if (this.unbound.has(name)) throw new Refusal('data', `data '${name}' is not bound`)
-        if (this.failed.has(name)) throw new Refusal('node', `depends on '${name}', which could not be compiled`)
-        throw new Refusal('node', `'${name}' is random where a known value is needed`)
+        if (this.unbound.has(name)) throw dataNotBound(name)
+        if (this.failed.has(name)) throw dependsOnFailed(name)
+        throw randomWhereKnown(name)
       },
       onCustom: (name) => this.handledCustoms.add(name),
     }

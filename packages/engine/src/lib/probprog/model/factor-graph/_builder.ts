@@ -11,7 +11,7 @@ import type { FactorOperator, FactorSpec, VariableSpec } from '../../../message-
 import { auxId, elementId, factorId } from '../ids.ts'
 import type { OperatorTable } from '../operators.ts'
 import { type Aff, type Atom, affOf, type Cell, isConstCell } from './_cells.ts'
-import { Refusal } from './_refusal.ts'
+import { noOperator } from './_reasons.ts'
 import type { SiteLayout } from './types.ts'
 
 /** The factor operator a registry name maps to: the model operator's own `factor`, else its name. */
@@ -86,7 +86,7 @@ export class GraphBuilder {
 
   need(name: string): FactorOperator {
     const op = this.ops[name]
-    if (op === undefined) throw new Refusal('operator', `the message-passing registry has no factor operator '${name}'`)
+    if (op === undefined) throw noOperator(name)
     return op
   }
 

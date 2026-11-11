@@ -12,6 +12,17 @@ import { type DistSpec, type ExprSpec, type ModelNode, nodeRefs } from '../spec.
 import { type Cell, isConstCell, type Sym, scaledOf } from './_cells.ts'
 import type { Context } from './_context.ts'
 import { precisionExpr } from './_idioms.ts'
+import {
+  observedValueRandom,
+  parameterMissingIn,
+  precisionNotGammaLatent,
+  precisionNotKnownMultiple,
+  precisionNotNonNegative,
+  priorParameterRandom,
+  scaleNotPrecisionIdiomWithIdiom,
+  siteHasNoDiscrete,
+  valueOverDimDoesNotFit,
+} from './_reasons.ts'
 import { Refusal } from './_refusal.ts'
 import type { EvalMode } from './_symbolic/_affine.ts'
 import { evalSym } from './_symbolic/_affine.ts'
@@ -20,7 +31,7 @@ export function paramSym(cx: Context, dist: DistSpec, name: string, mode: EvalMo
   const e = dist.params[name]
   if (e !== undefined) return evalSym(cx, e, mode)
   const d = cx.families[dist.family]?.defaults[name]
-  if (d === undefined) throw new Refusal('structure', `${dist.family}: the parameter '${name}' is missing`)
+  if (d === undefined) throw parameterMissingIn(dist.family, name)
   return cx.fromNamed({ value: asTensor(d, 'float64'), dims: [] })
 }
 
@@ -32,11 +43,7 @@ export function constParam(
 ): number[] {
   const sym = paramSym(cx, node.dist, name)
   return cx.over(sym, node.dims).map((c) => {
-    if (!isConstCell(c))
-      throw new Refusal(
-        'operator',
-        `the ${name} of '${node.name}' depends on a random value: ${what} must be known for a message-passing prior`,
-      )
+    if (!isConstCell(c)) throw priorParameterRandom(name, node.name, what)
     return c.aff.offset
   })
 }
@@ -54,34 +61,24 @@ export function randomPrecisions(
   const idiom =
     'write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only)'
   const tau = scale === undefined ? undefined : precisionExpr(cx.idiom, scale)
-  if (tau === undefined)
-    throw new Refusal(
-      'operator',
-      `the ${param} of '${node.name}' depends on a random value that is not the precision idiom: ${idiom}`,
-    )
+  if (tau === undefined) throw scaleNotPrecisionIdiomWithIdiom(param, node.name, idiom)
   let sym: Sym
   try {
     sym = evalSym(cx, tau)
   } catch (e) {
-    if (e instanceof Refusal && e.kind === 'operator')
-      throw new Refusal(
-        'operator',
-        `the precision of '${node.name}' must be a known multiple of a gamma or exponential latent plus a known value (${e.message}); ${idiom}`,
-      )
+    if (e instanceof Refusal && e.kind === 'operator') throw precisionNotKnownMultiple(node.name, e.message, idiom)
     throw e
   }
   return cx.over(sym, node.dims).map((c) => {
     const scaled = scaledOf(c)
     if (scaled === undefined)
-      throw new Refusal(
-        'operator',
-        `the precision of '${node.name}' must be a gamma or exponential latent, not a ${c.kind === 'rv' ? `${c.family} variable` : 'value computed from other latents'}: ${idiom}`,
+      throw precisionNotGammaLatent(
+        node.name,
+        c.kind === 'rv' ? `${c.family} variable` : 'value computed from other latents',
+        idiom,
       )
     if (!(scaled.scale >= 0 && scaled.offset >= 0 && scaled.scale + scaled.offset > 0))
-      throw new Refusal(
-        'data',
-        `the precision of '${node.name}' is ${scaled.scale} times a gamma variable plus ${scaled.offset}: both must be non-negative, not both zero`,
-      )
+      throw precisionNotNonNegative(node.name, scaled.scale, scaled.offset)
     return scaled
   })
 }
@@ -92,7 +89,7 @@ export function eventVector(_cx: Context, nv: NamedValue, dims: readonly string[
   let flat = 0
   nv.dims.forEach((d, axis) => {
     const at = dims.indexOf(d)
-    if (at < 0) throw new Refusal('structure', `a parameter over '${d}' does not fit [${dims.join(', ')}]`)
+    if (at < 0) throw valueOverDimDoesNotFit(d, dims.join(', '))
     flat = flat * (nv.value.shape[axis] as number) + (idx[at] as number)
   })
   return toFlat(nv.value).slice(flat * k, (flat + 1) * k)
@@ -101,7 +98,7 @@ export function eventVector(_cx: Context, nv: NamedValue, dims: readonly string[
 /** The variable of a scalar discrete latent. */
 export function rvName(cx: Context, site: string): string {
   const cell = cx.syms.get(site)?.cells[0]
-  if (cell?.kind !== 'rv') throw new Refusal('structure', `'${site}' has no discrete variable`)
+  if (cell?.kind !== 'rv') throw siteHasNoDiscrete(site)
   return cell.variable
 }
 
@@ -125,8 +122,7 @@ export function evalNamedValue(cx: Context, node: ModelNode & { readonly kind: '
   try {
     return cx.evalNamed(node.value)
   } catch (e) {
-    if (e instanceof Refusal && e.kind === 'node')
-      throw new Refusal('node', `the value observed by '${node.name}' is random: ${e.message}`)
+    if (e instanceof Refusal && e.kind === 'node') throw observedValueRandom(node.name, e.message)
     throw e
   }
 }

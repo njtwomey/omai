@@ -26,7 +26,21 @@ import {
   unflatten,
 } from '../_cells.ts'
 import type { Context } from '../_context.ts'
-import { Refusal } from '../_refusal.ts'
+import {
+  breaksNotBeta,
+  customNotAffine,
+  customNotSupplied,
+  customOpaque,
+  customReturnedWrongCount,
+  dataNotBound,
+  dependsOnDiscrete,
+  dependsOnFailed,
+  divisionByRandom,
+  matmulShapes,
+  matrixEntriesVersusVector,
+  operatorOnRandom,
+  stickBreakingNeedsDimension,
+} from '../_reasons.ts'
 import { applyAff, applyGamma, extremum, mulAff, quotientByChain } from './_functions.ts'
 import { compare, gather, pick, special, whereGate } from './_gates.ts'
 
@@ -45,13 +59,9 @@ export type EvalMode = 'plain' | 'lookup'
  */
 export function affineCustom(cx: Context, mode: EvalMode, e: ExprSpec & { readonly kind: 'custom' }): Sym {
   const fn = cx.bound.customs[e.name]
-  if (fn === undefined) throw new Refusal('opaque', `the custom function '${e.name}' was not supplied`)
+  if (fn === undefined) throw customNotSupplied(e.name)
   const random = e.args.map((a, i) => (cx.isConst(a) ? -1 : i)).filter((i) => i >= 0)
-  if (random.length !== 1 || e.eventRank !== 0 || e.dims.length !== 1)
-    throw new Refusal(
-      'opaque',
-      `the custom function '${e.name}' is opaque to message passing (it is read as a matrix only when it has one random vector argument, known others and a vector result)`,
-    )
+  if (random.length !== 1 || e.eventRank !== 0 || e.dims.length !== 1) throw customOpaque(e.name)
   const at = random[0] as number
   const z = evalSym(cx, e.args[at] as ExprSpec, mode)
   const n = z.cells.length
@@ -60,8 +70,7 @@ export function affineCustom(cx: Context, mode: EvalMode, e: ExprSpec & { readon
   const call = (v: readonly number[]): Float64Array => {
     const input = { value: fromStorage(Float64Array.from(v), [n], 'float64'), dims: z.dims }
     const out = toFlat(fn(known.map((k, i) => (i === at ? input : (k as NamedValue)))))
-    if (out.length !== m)
-      throw new Refusal('structure', `the custom function '${e.name}' returned ${out.length} values, not ${m}`)
+    if (out.length !== m) throw customReturnedWrongCount(e.name, out.length, m)
     return Float64Array.from(out)
   }
   const f0 = call(new Array<number>(n).fill(0))
@@ -77,8 +86,7 @@ export function affineCustom(cx: Context, mode: EvalMode, e: ExprSpec & { readon
     for (let i = 0; i < m; i++) {
       let want = f0[i] ?? 0
       for (let j = 0; j < n; j++) want += ((columns[j] as Float64Array)[i] ?? 0) * (point[j] ?? 0)
-      if (Math.abs((got[i] ?? 0) - want) > 1e-8 * (1 + Math.abs(want)))
-        throw new Refusal('opaque', `the custom function '${e.name}' is not affine in its random argument`)
+      if (Math.abs((got[i] ?? 0) - want) > 1e-8 * (1 + Math.abs(want))) throw customNotAffine(e.name)
     }
   }
   cx.handledCustoms.add(e.name)
@@ -101,13 +109,9 @@ export function evalSym(cx: Context, e: ExprSpec, mode: EvalMode = 'plain'): Sym
     case 'ref': {
       const s = cx.syms.get(e.name)
       if (s !== undefined) return s
-      if (cx.lazy.has(e.name))
-        throw new Refusal(
-          'structure',
-          `'${e.name}' depends on a discrete variable: only a table over scalar nodes handles that`,
-        )
-      if (cx.unbound.has(e.name)) throw new Refusal('data', `data '${e.name}' is not bound`)
-      throw new Refusal('node', `depends on '${e.name}', which could not be compiled`)
+      if (cx.lazy.has(e.name)) throw dependsOnDiscrete(e.name)
+      if (cx.unbound.has(e.name)) throw dataNotBound(e.name)
+      throw dependsOnFailed(e.name)
     }
     case 'custom':
       return affineCustom(cx, mode, e)
@@ -136,8 +140,7 @@ export function eventLinear(cx: Context, mode: EvalMode, e: ExprSpec & { readonl
   const values = Array.from(toFlat(known.value))
   const n = x.cells.length
   const rows = e.op === 'dot' ? 1 : values.length / n
-  if (!Number.isInteger(rows) || rows < 1)
-    throw new Refusal('structure', `${e.op}: the matrix has ${values.length} entries for a vector of ${n}`)
+  if (!Number.isInteger(rows) || rows < 1) throw matrixEntriesVersusVector(e.op, values.length, n)
   const cells: Cell[] = []
   for (let r = 0; r < rows; r++) {
     let acc = constAff(0)
@@ -203,8 +206,7 @@ export function symOp(
           // quotient is one `apply-product` factor, the numerator times the reciprocal of the chain behind the divisor.
           const quotient =
             (y as Cell).kind === 'aff' ? quotientByChain(cx, affOf(x as Cell), affOf(y as Cell), i) : undefined
-          if (quotient === undefined)
-            throw new Refusal('operator', 'division by a random value has no Gaussian message')
+          if (quotient === undefined) throw divisionByRandom()
           return { kind: 'aff', aff: quotient }
         }
         const d = (y as Cell & { kind: 'aff' }).aff.offset
@@ -253,10 +255,7 @@ export function symOp(
         }),
       }
     default:
-      throw new Refusal(
-        'operator',
-        `operator '${op}' applied to a random value has no message rule (message passing handles affine maps of Gaussians, exp, square, tanh, softplus, abs, sigmoid and the rectifier of a random value, and a link such as probit only as the likelihood of a Bernoulli observation)`,
-      )
+      throw operatorOnRandom(op)
   }
 }
 
@@ -266,12 +265,11 @@ export function symOp(
  */
 export function stickBreaking(cx: Context, a: Sym): Sym {
   const sticks = a.dims.length === 0 ? 0 : cx.size(a.dims[a.dims.length - 1] as string)
-  if (sticks === 0) throw new Refusal('structure', 'stickBreaking needs a vector of breaks over a named dimension')
+  if (sticks === 0) throw stickBreakingNeedsDimension()
   const cells: Cell[] = []
   for (let i = 0; i < a.cells.length; i += sticks) {
     const breaks = a.cells.slice(i, i + sticks)
-    if (breaks.some((c) => c.kind !== 'rv' || c.family !== 'beta'))
-      throw new Refusal('operator', 'the breaks of a stick-breaking process must be beta latents')
+    if (breaks.some((c) => c.kind !== 'rv' || c.family !== 'beta')) throw breaksNotBeta()
     cells.push({ kind: 'sticks', variables: breaks.map((c) => (c as { readonly variable: string }).variable) })
   }
   return { dims: a.dims.slice(0, -1), cells }
@@ -301,8 +299,7 @@ export function reduce(cx: Context, a: Sym, dim: string | undefined, mean: boole
 
 export function matmul(cx: Context, a: Sym, b: Sym): Sym {
   const inner = a.dims[a.dims.length - 1]
-  if (inner === undefined || inner !== b.dims[0] || b.dims.length > 2)
-    throw new Refusal('structure', `matmul: need [..., d] times [d] or [d, k], got [${a.dims}] and [${b.dims}]`)
+  if (inner === undefined || inner !== b.dims[0] || b.dims.length > 2) throw matmulShapes(a.dims, b.dims)
   const left = a.dims.slice(0, -1)
   const right = b.dims.slice(1)
   const dims = [...left, ...right]

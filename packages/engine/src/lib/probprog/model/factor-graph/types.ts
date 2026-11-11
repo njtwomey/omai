@@ -22,10 +22,45 @@ export type FactorIssueKind =
   /** A kind of node with no counterpart on a factor graph (`param`, a `factor` term) or one that depends on a node that failed. */
   | 'node'
 
-/** One thing a model has that the compiler cannot map, with the node it is on and the reason in words. */
+/**
+ * What a refusal says the model has to change, in a small closed set (the sentence is in `reason`). Each code belongs to one
+ * `FactorIssueKind`.
+ */
+export type RefusalCode =
+  /** An operation on random values that has no message rule (arithmetic that is not affine, a comparison of random values, division by a random value). */
+  | 'no-rule'
+  /** A parameter that must be known but depends on a random value. */
+  | 'random-parameter'
+  /** A parameter or value that is not in the form the mapping takes (an idiom, a latent of a given family, a linear map, a known multiple). */
+  | 'wrong-form'
+  /** The operator registry lacks an operator the compiler needs. */
+  | 'registry'
+  /** The evaluation of an expression that must be known reached a random value. */
+  | 'random-value'
+  /** A node with no factor (a `param`, a log-density term) or one that depends on a node that failed. */
+  | 'node'
+  /** A parameter the family needs is not given. */
+  | 'missing'
+  /** Dimensions or sizes of a value that do not fit. */
+  | 'shape'
+  /** A shape of model the compiler does not map (event axes, plated discrete tables, a batch). */
+  | 'structure'
+  /** A value, a count or a size outside what the model or the family accepts. */
+  | 'support'
+  /** Data that is not bound, a dimension with no size, missing values. */
+  | 'unbound'
+  /** A constraint beyond the family's own support. */
+  | 'constraint'
+  /** A distribution family with no mapping. */
+  | 'family'
+  /** A custom function the graph cannot see through. */
+  | 'opaque'
+
+/** One thing a model has that the compiler cannot map, with the node it is on, what to change (the code) and the reason in words. */
 export interface FactorIssue {
   readonly node: string
   readonly kind: FactorIssueKind
+  readonly code: RefusalCode
   readonly reason: string
 }
 

@@ -56,7 +56,17 @@ import {
 import { observedHurdle, observedMulticlass, observedNumeric, observedPair } from './_mappings/observed-numeric.ts'
 import { plate } from './_mappings/plates.ts'
 import { discreteParents, evalNamedValue } from './_params.ts'
-import { Refusal } from './_refusal.ts'
+import {
+  constraintBeyondSupport,
+  familyHasNoMessageFamily,
+  latentBivariateNormal,
+  logNormalOutcome,
+  missingValuesPolicy,
+  observedFamilyUnmapped,
+  parametersNotInMessageForm,
+  subsampledByBatch,
+  zeroTruncatedRateForm,
+} from './_reasons.ts'
 
 /** A factor-graph name for the family of a distribution family, for the families the compiler maps. */
 export const MESSAGE_FAMILY: Readonly<Record<string, FamilyKind>> = {
@@ -106,10 +116,7 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
     requires: [],
     matches: (_cx, node) => node.constraint !== undefined && node.constraint.kind !== 'real' && !truncatedNormal(node),
     map: (_cx, node) => {
-      throw new Refusal(
-        'constraint',
-        `'${node.name}' has the constraint '${(node.constraint as { readonly kind: string }).kind}': a message family lives on the family's own support, so a constraint beyond it is not expressible`,
-      )
+      throw constraintBeyondSupport(node.name, (node.constraint as { readonly kind: string }).kind)
     },
   },
   {
@@ -144,10 +151,7 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
     requires: [],
     matches: (_cx, node) => node.dist.family === 'bivariateNormal',
     map: (_cx, node) => {
-      throw new Refusal(
-        'structure',
-        `'${node.name}' is a latent bivariateNormal: only observed vectors are mapped (write the vectors with a Wishart precision, or observe them)`,
-      )
+      throw latentBivariateNormal(node.name)
     },
   },
   {
@@ -193,10 +197,7 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
     matches: (_cx, node) => MESSAGE_FAMILY[node.dist.family] === undefined,
     map: (_cx, node) => {
       const fam = node.dist.family
-      throw new Refusal(
-        'family',
-        `'${node.name}' is ${fam}: the engine has message families gaussian, gamma, beta, bernoulli, discrete and dirichlet, and none for ${fam}`,
-      )
+      throw familyHasNoMessageFamily(node.name, fam)
     },
   },
   {
@@ -441,15 +442,8 @@ export const observedRowMappings: MappingTable<[ObservedNode, Rows], void> = [
 function observedRows(cx: Context, node: ObservedNode): void {
   const info = cx.bound.missing[node.name]
   if (info !== undefined && info.count > 0 && info.policy !== 'ignore')
-    throw new Refusal(
-      'data',
-      `'${node.name}' has ${info.count} missing value(s) with the policy '${info.policy}': only 'ignore' is mapped (the entries drop out of the graph)`,
-    )
-  if (cx.bound.batch !== undefined && node.dims.includes(cx.bound.batch.dim))
-    throw new Refusal(
-      'structure',
-      `'${node.name}' is subsampled by the batch option: a factor graph is built over all the rows`,
-    )
+    throw missingValuesPolicy(node.name, info.count, info.policy)
+  if (cx.bound.batch !== undefined && node.dims.includes(cx.bound.batch.dim)) throw subsampledByBatch(node.name)
   const values = cx
     .over(cx.fromNamed(evalNamedValue(cx, node)), node.dims)
     .map((c) => (c as Cell & { kind: 'aff' }).aff.offset)
@@ -477,10 +471,7 @@ const randomScale = (cx: Context, node: ObservedNode): ExprSpec | undefined => {
 
 /** The factor of an unmapped parameter form: the entries that refuse after a numeric mapping that did not take the node. */
 const unmappedParameters = (node: ObservedNode, fam: string, what = ''): never => {
-  throw new Refusal(
-    'operator',
-    `the parameters of '${node.name}' (${fam}) are not in a form with a message rule${what}`,
-  )
+  throw parametersNotInMessageForm(node.name, fam, what)
 }
 
 /**
@@ -603,7 +594,7 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
     families: ['logNormal'],
     requires: ['gaussian', 'linear-regression-row'],
     map: (cx, node, el) => {
-      if (!(el.y > 0)) throw new Refusal('data', `'${node.name}' is log-normal: the outcome ${el.y} must be positive`)
+      if (!(el.y > 0)) throw logNormalOutcome(node.name, el.y)
       return observedGaussian(cx, node, el.name, Math.log(el.y), el.i, el.index, 'mu', 'sigma')
     },
   }),
@@ -666,10 +657,7 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
     families: ['zeroTruncatedPoisson'],
     requires: [],
     map: (_cx, node) => {
-      throw new Refusal(
-        'operator',
-        `the rate of '${node.name}' must be \`exposure * exp(affine)\` for the zero-truncated Poisson`,
-      )
+      throw zeroTruncatedRateForm(node.name)
     },
   }),
   element({
@@ -728,10 +716,7 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
     order: 'last: takes every element that no entry above took',
     requires: [],
     map: (_cx, node, el) => {
-      throw new Refusal(
-        'family',
-        `'${node.name}' is observed as ${el.fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, asymmetricLaplace, orderedProbit, orderedLogistic, categoricalProbit, normalOutliers, bernoulli, binomial, poisson, normalPair, exponential, gamma, geometric, negativeBinomial, weibull and categorical`,
-      )
+      throw observedFamilyUnmapped(node.name, el.fam)
     },
   },
 ]

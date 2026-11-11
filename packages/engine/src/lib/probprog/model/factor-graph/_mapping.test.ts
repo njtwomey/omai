@@ -99,7 +99,7 @@ describe('attempt and probe', () => {
     const before = shape(cx)
     const answer = probe(cx, () => {
       leaveResidue(cx, 'y')
-      throw new Refusal('operator', 'not an affine form')
+      throw new Refusal('no-rule', 'not an affine form')
     })
     expect(answer).toBe(NOT_MINE)
     expect(shape(cx)).toEqual(before)
