@@ -63,28 +63,6 @@ export const epGaps: readonly EpGap[] = [
     refuses: [],
   },
   {
-    id: 'stick-breaking',
-    title: 'Stick-breaking and other opaque custom transforms',
-    kind: 'missing-mapping',
-    status: 'queued',
-    summary:
-      'The stick-breaking weights of a Dirichlet-process mixture are written as a custom function of Beta sticks, which message passing cannot see through.',
-    plan: 'Make the transform first-class in the model layer (a chain of products of Beta sticks and their complements, each a `product`-style factor) or truncate to a Dirichlet; the gate and the discrete operators already take the weights.',
-    size: 'medium',
-    refuses: ['stick-breaking-mixture'],
-  },
-  {
-    id: 'topic-models',
-    title: 'Topic models: Dirichlet arrays and plated categoricals',
-    kind: 'missing-mapping',
-    status: 'queued',
-    summary:
-      'The LDA model has a Dirichlet over topics per document and per topic, with a categorical word under a categorical topic. The compiler reports "dirichlet needs a size" (it now refuses cleanly instead of throwing); the conjugate operators exist but the plates of Dirichlets are not mapped.',
-    plan: 'Map a plate of Dirichlet latents and a categorical read through a discrete index to `discrete-dirichlet` factors per document; a large graph, so run it with stochastic EP (the engine has it) rather than full EP.',
-    size: 'large',
-    refuses: ['lda-lite'],
-  },
-  {
     id: 'mixture-site-random-parameters',
     title: 'A mixture site with a random precision and a random weight',
     kind: 'missing-mapping',
@@ -402,12 +380,12 @@ export const epDirections: readonly EpDirection[] = [
     id: 'mixed-membership',
     title: 'Mixed membership, topic and community models',
     area: 'latent structure',
-    status: 'not yet',
+    status: 'partial',
     what: 'Topic models, stochastic block models, mixed-membership networks: discrete assignments with Dirichlet-distributed proportions at several levels.',
     needs:
-      'The conjugate discrete-Dirichlet operators exist; plates of Dirichlets and discrete indices through a lookup need the compiler (the LDA gap), and a pair of indices (blocks) a two-index gate.',
+      'Topic models run (a plate of Dirichlet mixtures, a word read through its topic as a gate of conjugate discrete factors: LDA-lite agrees with the exact enumeration within 0.3 sds); a pair of indices (blocks) needs a two-index gate, and a large corpus stochastic EP.',
     size: 'large',
-    pages: ['ep-gate-weight-dirichlet'],
+    pages: ['ep-gate-weight-dirichlet', 'ep-topic-model'],
   },
   {
     id: 'mixture-regression',
@@ -468,12 +446,12 @@ export const epDirections: readonly EpDirection[] = [
     id: 'nonparametric',
     title: 'Dirichlet-process and other nonparametric mixtures',
     area: 'spatial and nonparametric',
-    status: 'not yet',
+    status: 'partial',
     what: 'A mixture with an unbounded number of components.',
     needs:
-      'Stick-breaking as a first-class transform (the stick-breaking gap), truncated; the gate and the discrete operators take the weights.',
+      'The truncated stick-breaking mixture runs (`stickBreaking` as a model operator, a `stick-breaking` factor per assignment: the three breaks of the benchmark within 0.02 sds of the quadrature); a random concentration on the Beta breaks, components with unknown means and other nonparametric priors (Pitman-Yor, the Indian buffet process) are not mapped.',
     size: 'medium',
-    pages: [],
+    pages: ['ep-stick-breaking'],
   },
   {
     id: 'measurement-error',

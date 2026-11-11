@@ -2835,6 +2835,7 @@ class Compiler {
         vars.push(c.variable)
         return c
       }
+      if (c.kind === 'sticks') throw new Refusal('structure', `'${node.name}' is a stick-breaking weight vector`)
       if (c.kind === 'scaled' || c.kind === 'lookup' || c.kind === 'recip')
         throw new Refusal(
           'structure',

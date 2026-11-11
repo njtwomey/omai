@@ -112,10 +112,12 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `spikeSlabLearnedAtom`: EP atom: spike and slab with unknown share and slab width, learned. `src/lib/bayesian-examples/ep-atoms-extended-gates.ts:736` `omai-engine/bayesian-examples`
 - estimator `spikeSlabMarginalAtom`: EP atom: spike and slab with the switch summed out (mixture site, no P(slab)). `src/lib/bayesian-examples/ep-atoms-mixtures.ts:573` `omai-engine/bayesian-examples`
 - estimator `spikeSlabMarginalLearnedAtom`: EP atom (planned): summed-out spike and slab, learned share and width. `src/lib/bayesian-examples/ep-atoms-extended-gates.ts:823` `omai-engine/bayesian-examples`
+- estimator `stickBreakingAtom`: EP atom: a stick-breaking mixture (truncated Dirichlet process), the stick-breaking factor on beta breaks. `src/lib/bayesian-examples/ep-atoms-nonparametric.ts:91` `omai-engine/bayesian-examples`
 - estimator `studentTAtom`: EP atom: a Student-t likelihood on a mean (robust to an outlier). `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:67` `omai-engine/bayesian-examples`
 - estimator `studentTLearnedAtom`: EP atom: a Student-t likelihood with unknown location and scale, recovered from simulated data. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:157` `omai-engine/bayesian-examples`
 - estimator `tanhAtom`: EP atom: tanh of a Gaussian (a squashing unit). `src/lib/bayesian-examples/ep-atoms-functions.ts:93` `omai-engine/bayesian-examples`
+- estimator `topicModelAtom`: EP atom: a topic model (Dirichlet mixtures and topics, a word read through its token's topic: a gate of discrete factors). `src/lib/bayesian-examples/ep-atoms-nonparametric.ts:256` `omai-engine/bayesian-examples`
 - estimator `volatilityMethod`: Stochastic volatility method: AR(1) log-variance, centred or non-centred, one inference method. `src/lib/bayesian-examples/stochastic-volatility-method.ts:523` `omai-engine/bayesian-examples`
 - estimator `weibullLearnedAtom`: EP atom: a Weibull regression with a log link, coefficients recovered from simulated times. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:749` `omai-engine/bayesian-examples`
 
-- table `epAtoms`: The EP atoms: bare setups that each exercise one factor of the message passing suite. `src/lib/bayesian-examples/ep-atom-list.ts:101` `omai-engine/bayesian-examples`
+- table `epAtoms`: The EP atoms: bare setups that each exercise one factor of the message passing suite. `src/lib/bayesian-examples/ep-atom-list.ts:102` `omai-engine/bayesian-examples`

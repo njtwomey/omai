@@ -54,6 +54,7 @@ import {
   spikeSlabAtom,
   spikeSlabMarginalAtom,
 } from './ep-atoms-mixtures.ts'
+import { stickBreakingAtom, topicModelAtom } from './ep-atoms-nonparametric.ts'
 import {
   priorBetaGeometricAtom,
   priorBetaStrengthGammaAtom,
@@ -171,6 +172,8 @@ export const epAtoms: readonly EpAtom[] = [
   gateWeightSummedOutAtom,
   gateWeightDirichletAtom,
   gateWeightHyperAtom,
+  stickBreakingAtom,
+  topicModelAtom,
 ]
 
 /**

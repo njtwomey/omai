@@ -133,12 +133,13 @@ The factor operators: the registry of closed-form message rules (a prior, Gaussi
 - structure `select`: The gate y = c_z selecting one of several variables by a discrete index. `src/lib/message-passing/operators/discrete.ts:215` `omai-engine/message-passing`
 - structure `spin`: The spin factor x in {-1, +1} with a field, exact EP. `src/lib/message-passing/operators/spin.ts:35` `omai-engine/message-passing`
 - structure `spinRow`: One spin site on a Gaussian vector, for expectation consistent inference. `src/lib/message-passing/operators/rows.ts:130` `omai-engine/message-passing`
+- structure `stickBreaking`: A discrete variable with stick-breaking weights of beta breaks (a truncated Dirichlet-process mixture). `src/lib/message-passing/operators/stick-breaking.ts:81` `omai-engine/message-passing`
 - structure `studentTRow`: One Student-t regression row on a Gaussian weight vector: quadrature EP. `src/lib/message-passing/operators/robust.ts:134` `omai-engine/message-passing`
 - structure `studentTSite`: A Student-t likelihood of a Gaussian predictor: quadrature EP. `src/lib/message-passing/operators/robust.ts:101` `omai-engine/message-passing`
 - structure `sum`: The sum of n Gaussian variables. `src/lib/message-passing/operators/linear.ts:217` `omai-engine/message-passing`
 - structure `table`: A table over discrete variables: sum-product and mean-field messages. `src/lib/message-passing/operators/discrete.ts:111` `omai-engine/message-passing`
 - structure `timesConstant`: A Gaussian variable scaled by a constant. `src/lib/message-passing/operators/linear.ts:198` `omai-engine/message-passing`
 
-- table `defaultOperators`: The library's factor operators by name. `src/lib/message-passing/operators/registry.ts:70` `omai-engine/message-passing`
+- table `defaultOperators`: The library's factor operators by name. `src/lib/message-passing/operators/registry.ts:71` `omai-engine/message-passing`
 - table `likelihoods`: The numeric likelihoods of a Gaussian predictor (count, survival, ordinal, quantile, robust) by name. `src/lib/message-passing/operators/likelihoods.ts:271` `omai-engine/message-passing`
 - table `unaryFunctions`: The unary functions of a Gaussian variable (exp, square, tanh, relu, softplus, abs, sigmoid) by name. `src/lib/message-passing/operators/functions.ts:49` `omai-engine/message-passing`
