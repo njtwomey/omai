@@ -159,6 +159,23 @@ describe('prior-site against brute force', () => {
     expect((got ?? Number.NaN) - M.gaussian.logPartition(cavity)).toBeCloseTo(Math.log(z), 3)
   })
 
+  it('the mean-field message is the projection of the density alone, whatever the belief (the message the one-off projection gave)', () => {
+    for (const c of cases) {
+      const flat = ep(c.params, M.gaussian.flat)
+      for (const belief of [M.gaussian.flat, M.gaussianEta(c.start, 0.1), M.gaussianEta(c.start + 1, 5)]) {
+        const m = M.priorSite.vmp?.({
+          mode: 'vmp',
+          to: 0,
+          args: [M.messageArg(M.gaussian, belief)],
+          params: c.params,
+          power: 1,
+        })
+        expect(m?.message[0]).toBeCloseTo(flat[0] as number, 6)
+        expect(m?.message[1]).toBeCloseTo(flat[1] as number, 6)
+      }
+    }
+  })
+
   it('refuses parameters it cannot use, with the reason', () => {
     expect(M.priorSite.check?.({ y: 0, base: 'gamma', log: 0 }, [M.gaussian])).toMatch(/base must be one of/)
     expect(M.priorSite.check?.({ y: 0, base: 'uniform', log: 0, low: 2, high: 1 }, [M.gaussian])).toMatch(

@@ -11,7 +11,7 @@
 import { type Json, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, type RunStatus, stateFromJson, stateToJson } from '../trace/index.ts'
 import type { CompiledGraph } from './graph.ts'
-import { ImproperMessageError } from './operators/args.ts'
+import { FLAT_CAVITY_PRECISION, ImproperMessageError } from './operators/args.ts'
 import type { Projection } from './projections.ts'
 import { type CustomOrder, type Granularity, type Plan, planOf, type ScheduleKind } from './schedules.ts'
 import { type Arg, type Eta, type OperatorContext, type OperatorResult, takesPower } from './types.ts'
@@ -248,12 +248,7 @@ function rawCavity(g: CompiledGraph, messages: readonly (readonly number[])[], f
   })
 }
 
-/**
- * The precision a flat Gaussian cavity is shown as to an operator that `needsDensity` (variance 1e6): wide enough that the other
- * factors decide, proper so that the tilted distribution has a density. This is the engine's one policy for a cavity with no
- * information yet at the start of a run; an operator never repairs it itself.
- */
-export const FLAT_CAVITY_PRECISION = 1e-6
+export { FLAT_CAVITY_PRECISION }
 
 /**
  * The arguments an operator that `needsDensity` is shown: every flat Gaussian message replaced by a very wide one. Returns the

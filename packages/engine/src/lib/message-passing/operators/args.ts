@@ -17,6 +17,13 @@ export class ImproperMessageError extends OmaiError {
 }
 
 /**
+ * The precision a flat Gaussian cavity is shown as to an operator that `needsDensity` (variance 1e6): wide enough that the other
+ * factors decide, proper so that the tilted distribution has a density. This is the engine's one policy for a cavity with no
+ * information yet at the start of a run; an operator never repairs it itself.
+ */
+export const FLAT_CAVITY_PRECISION = 1e-6
+
+/**
  * An argument that carries a message.
  *
  * @param family - The family of the variable.

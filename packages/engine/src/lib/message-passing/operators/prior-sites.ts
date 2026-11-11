@@ -10,8 +10,9 @@
 
 import { logPhi } from '../_scalar.ts'
 import type { WindowHint } from '../_tilted.ts'
-import type { FactorOperator, Params } from '../types.ts'
-import { numberParam } from './args.ts'
+import { gaussian } from '../families.ts'
+import type { Eta, FactorOperator, Params } from '../types.ts'
+import { FLAT_CAVITY_PRECISION, messageArg, numberParam } from './args.ts'
 import { type Likelihood, likelihoodSite } from './likelihoods.ts'
 
 /** log Phi(b) - log Phi(a) for a < b, accurate in both tails. */
@@ -128,4 +129,21 @@ const prior: Likelihood = {
  * priorSite.ep?.({ mode: 'ep', to: 0, args, params, power: 1 }).message.map((v) => v.toFixed(2)) // => ['1.17', '1.17']
  * ```
  */
-export const priorSite: FactorOperator = likelihoodSite('prior-site', { prior }, 'prior', { needsDensity: true })
+export const priorSite: FactorOperator = (() => {
+  const site = likelihoodSite('prior-site', { prior }, 'prior', { needsDensity: true })
+  return {
+    ...site,
+    // The mean field has no cavity: the message of a prior that depends on nothing else is the Gaussian projection of the density
+    // alone (the message the one-off projection gave), whatever the belief of the variable is.
+    vmp: (c) => {
+      const wide: Eta = [0, FLAT_CAVITY_PRECISION]
+      const m = (site.ep as NonNullable<FactorOperator['ep']>)({
+        ...c,
+        mode: 'ep',
+        args: [messageArg(gaussian, wide)],
+        power: 1,
+      }).message
+      return { message: m.map((v, i) => v + (wide[i] ?? 0)) }
+    },
+  }
+})()
