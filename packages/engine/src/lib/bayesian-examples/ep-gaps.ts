@@ -85,6 +85,17 @@ export const epGaps: readonly EpGap[] = [
     refuses: ['lda-lite'],
   },
   {
+    id: 'mixture-site-random-parameters',
+    title: 'A mixture site with a random precision and a random weight',
+    kind: 'missing-mapping',
+    status: 'queued',
+    summary:
+      'The closed-form mixture sites (the outlier mixture and the spike and slab, with the switch summed out) take a known scale, share and slab width; the explicit-switch (gate) form with gamma precisions and a Beta weight runs, but the summed-out form with those unknown is refused.',
+    plan: 'Map the summed-out mixture with gamma-precision branches and a Beta weight onto the gate of precision branches the compiler already builds, marginalising the switch inside the rule (the evidence and moments are sums over the branches).',
+    size: 'small',
+    refuses: ['clutter-mixture-learned', 'spike-and-slab-marginal-learned'],
+  },
+  {
     id: 'two-random-shapes',
     title: 'A Beta or Dirichlet with several random shapes',
     kind: 'missing-rule',
@@ -147,6 +158,17 @@ export const epGaps: readonly EpGap[] = [
     summary:
       'The engine gate takes any branch, but the compiler maps lookups and `where` over Gaussian forms only; a gate over a mix of known values and non-Gaussian random components is refused, and there is no explicit `gate` node in the model language.',
     plan: 'A `gate` node with branches that are sub-models, compiled to the engine gate; start with Poisson and Gaussian branches (zero inflation, change points).',
+    size: 'medium',
+    refuses: [],
+  },
+  {
+    id: 'gate-random-scale',
+    title: 'A discrete variable choosing both a random mean and a random scale',
+    kind: 'missing-mapping',
+    status: 'open',
+    summary:
+      'A mixture whose components each have an unknown mean and an unknown sd (the circular-times program, a Gaussian mixture with its own spreads) compiles the mean and the precision as two separate selects by the component. EP then loses which component both came from: on the circular program a per-component sd ran off to infinity, so the program shares one sd. The gate of likelihoods (exact in the discrete variable) is mapped only with a known scale.',
+    plan: 'Let `observedSwitch` emit branches of the gaussian-gamma-precision or gaussian-scale operator (a random precision or log scale per state, shared variables across the branches) instead of refusing a random scale.',
     size: 'medium',
     refuses: [],
   },

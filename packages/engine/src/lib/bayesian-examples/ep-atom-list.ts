@@ -14,6 +14,14 @@ import {
   gaussianLearnedAtom,
 } from './ep-atoms-extended-conjugate.ts'
 import {
+  clutterLearnedAtom,
+  clutterMixtureLearnedAtom,
+  gateRandomLearnedAtom,
+  mixtureComponentsLearnedAtom,
+  spikeSlabLearnedAtom,
+  spikeSlabMarginalLearnedAtom,
+} from './ep-atoms-extended-gates.ts'
+import {
   laplaceLearnedAtom,
   logisticLearnedAtom,
   poissonLogDispersionLearnedAtom,
@@ -93,11 +101,17 @@ import {
 export const epAtoms: readonly EpAtom[] = [
   gateKnownAtom,
   gateRandomAtom,
+  gateRandomLearnedAtom,
   mixtureComponentsAtom,
+  mixtureComponentsLearnedAtom,
   spikeSlabAtom,
+  spikeSlabLearnedAtom,
   spikeSlabMarginalAtom,
+  spikeSlabMarginalLearnedAtom,
   clutterAtom,
+  clutterLearnedAtom,
   clutterMixtureAtom,
+  clutterMixtureLearnedAtom,
   orderedPairAtom,
   orderedMeansAtom,
   expAtom,
