@@ -2,7 +2,7 @@ omai-engine/agents	384	087622c4ecbd
 omai-engine/anomaly	72	400acde8599f
 omai-engine/autodiff	54	5516094c4630
 omai-engine/base	77	fdbd8838ace3
-omai-engine/bayesian-examples	237	8e7c77f5a83b
+omai-engine/bayesian-examples	243	2a4091d764fd
 omai-engine/causal	145	d7654979b881
 omai-engine/cluster	180	d0f79fe16a8a
 omai-engine/context	11	172aca3d0e69
@@ -78,7 +78,7 @@ omai-engine/probprog/inference	172	a76af6a5dfb5
 omai-engine/probprog/model	162	bc8dca6b4468
 omai-engine/probprog/model/dists	29	3c101930507b
 omai-engine/probprog/models	161	0af64dda639a
-omai-engine/probprog/validation	48	0739b86dd81c
+omai-engine/probprog/validation	54	5b982f1bc9d2
 omai-engine/random	52	07ee37b9bd6f
 omai-engine/rl	272	e873cab5f3fa
 omai-engine/rules	78	608fe8846362
@@ -126,4 +126,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	303	541cc98902e2
-total	20120	f2ebe925c66b
+total	20132	dee2fadc1832

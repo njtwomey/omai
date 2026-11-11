@@ -18,12 +18,15 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - structure `ep-atoms.ts` (file): EP atom scaffold: a bare setup, its reference, a tolerance, the EP verdict and run. `src/lib/bayesian-examples/ep-atoms.ts:1` `omai-engine/bayesian-examples`
 - structure `example-method.ts` (file): Example scaffold: a problem from knobs, one chosen inference method, derived posterior paths. `src/lib/bayesian-examples/example-method.ts:1` `omai-engine/bayesian-examples`
 
+- function `activeSetScore`: The score of inclusion probabilities against the true active set: AUC and counts at a threshold. `src/lib/bayesian-examples/ep-recovery.ts:134` `omai-engine/bayesian-examples`
 - function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/bayesian-examples/ep-atoms.ts:583` `omai-engine/bayesian-examples`
 - function `atomReference`: The reference of an EP atom: exact or grid marginals as curves, and a joint. `src/lib/bayesian-examples/ep-atoms.ts:334` `omai-engine/bayesian-examples`
 - function `atomRun`: Run EP on an atom's model: beliefs per sweep, a message record, or the refusal. `src/lib/bayesian-examples/ep-atoms.ts:502` `omai-engine/bayesian-examples`
 - function `atomVerdict`: Whether EP applies to an atom's model, and the library's reason if not. `src/lib/bayesian-examples/ep-atoms.ts:389` `omai-engine/bayesian-examples`
 - function `beliefDensity`: The density of a belief from its mean and sd on a support. `src/lib/bayesian-examples/ep-atoms.ts:240` `omai-engine/bayesian-examples`
 - function `epCoverage`: What EP covers today: atoms and benchmark models as runs or planned, with reasons. `src/lib/bayesian-examples/ep-coverage.ts:55` `omai-engine/bayesian-examples`
+- function `mixtureInterval`: The equal-tailed credible interval of a mixture of Gaussians (a gated coefficient). `src/lib/bayesian-examples/ep-recovery.ts:25` `omai-engine/bayesian-examples`
+- function `recoverySummary`: How well a posterior recovered the truth: interval coverage, error, agreement with a reference. `src/lib/bayesian-examples/ep-recovery.ts:82` `omai-engine/bayesian-examples`
 
 - estimator `betaBernoulliAtom`: EP atom: beta and Bernoulli (conjugate, exact). `src/lib/bayesian-examples/ep-atoms-conjugate.ts:100` `omai-engine/bayesian-examples`
 - estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:510` `omai-engine/bayesian-examples`

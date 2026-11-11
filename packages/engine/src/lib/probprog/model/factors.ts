@@ -2351,7 +2351,10 @@ class Compiler {
   }
 
   /** `exp(L)` or `k * exp(L)` (with `k` known), followed through derived nodes: the log-link idiom of a rate, mean or scale. */
-  private scaledExp(e: ExprSpec): { readonly inner: ExprSpec; readonly scale: ExprSpec | undefined } | undefined {
+  private scaledExp(
+    e: ExprSpec,
+    randomScale = false,
+  ): { readonly inner: ExprSpec; readonly scale: ExprSpec | undefined } | undefined {
     const u = this.unwrap(e)
     if (u.kind !== 'op') return undefined
     if (u.op === 'exp') return { inner: u.args[0] as ExprSpec, scale: undefined }
@@ -2359,10 +2362,73 @@ class Compiler {
       const [a, b] = u.args as [ExprSpec, ExprSpec]
       const ea = this.unwrap(a)
       const eb = this.unwrap(b)
-      if (this.isConst(a) && eb.kind === 'op' && eb.op === 'exp') return { inner: eb.args[0] as ExprSpec, scale: a }
-      if (this.isConst(b) && ea.kind === 'op' && ea.op === 'exp') return { inner: ea.args[0] as ExprSpec, scale: b }
+      // With `randomScale` the factor may be random too (a known value chosen by a discrete variable: a gate over the rate).
+      if ((randomScale || this.isConst(a)) && eb.kind === 'op' && eb.op === 'exp')
+        return { inner: eb.args[0] as ExprSpec, scale: a }
+      if ((randomScale || this.isConst(b)) && ea.kind === 'op' && ea.op === 'exp')
+        return { inner: ea.args[0] as ExprSpec, scale: b }
     }
     return undefined
+  }
+
+  /**
+   * A Poisson count whose rate is `k_z exp(L)`: `L` an affine form of Gaussian variables and `k_z` a known exposure chosen by a
+   * discrete variable `z` (zero for a state that is a structural zero: zero inflation). The state of `z` selects which
+   * likelihood holds, so it is a `gate` whose branches are the Poisson likelihood of `L` (a state with exposure zero is the
+   * constant one, a count of zero) with a `table` that rules out the states in which a positive count has probability zero; when
+   * `L` is known the gate is a table over `z`. The weights of `z` may be known or a Dirichlet latent, as for any discrete variable.
+   */
+  private observedPoissonGate(
+    node: ModelNode & { readonly kind: 'observed' },
+    y: number,
+    i: number,
+    index: number | undefined,
+    inner: ExprSpec,
+    exposure: ExprSpec,
+  ): null {
+    const cell = this.cellsOf(node, 'exposure', () => this.evalSym(exposure))[i] as Cell
+    if (cell.kind !== 'lookup' || cell.items !== undefined)
+      throw new Refusal(
+        'operator',
+        `the exposure of '${node.name}' is random: the poisson likelihood has a message rule for a known exposure, or a known value chosen by a discrete variable (a gate)`,
+      )
+    const z = cell.variable
+    const exposures = cell.values
+    if (!exposures.every((e) => e >= 0 && Number.isFinite(e)))
+      throw new Refusal('data', `the exposure of '${node.name}' must be non-negative`)
+    const why = likelihoods()['poisson-log']?.check?.(y, { likelihood: 'poisson-log', y, exposure: 1 })
+    if (why !== undefined) throw new Refusal('data', `'${node.name}' (poisson-log): ${why}`)
+    const predictor = this.cellsOf(node, 'predictor', () => this.evalSym(inner))[i] as Cell
+    const id = this.elementName(node.name, node.dims, i)
+    const impossible = exposures.map((e) => e === 0 && y > 0)
+    const logFactorial = Array.from({ length: y }, (_, k) => Math.log(k + 1)).reduce((a, b) => a + b, 0)
+    if (isConstCell(predictor)) {
+      // Nothing random but the state: the likelihood of the count under each state.
+      const pmf = (e: number): number => {
+        const rate = e * Math.exp(predictor.aff.offset)
+        return rate === 0 ? (y === 0 ? 1 : 0) : Math.exp(-rate + y * Math.log(rate) - logFactorial)
+      }
+      this.addFactor(
+        { operator: 'table', args: [z], params: { states: [exposures.length], values: exposures.map(pmf) } },
+        id,
+      )
+      return null
+    }
+    const v = this.materialise(affOf(predictor), node.name, index) as string
+    if (impossible.some(Boolean))
+      this.addFactor(
+        {
+          operator: 'table',
+          args: [z],
+          params: { states: [exposures.length], values: impossible.map((bad) => (bad ? 0 : 1)) },
+        },
+        `${id}|support`,
+      )
+    const branches = exposures.map((e) =>
+      e === 0 ? {} : { operator: 'likelihood-site', args: [0], params: { likelihood: 'poisson-log', y, exposure: e } },
+    )
+    this.addFactor({ operator: 'gate', args: [z, v], params: { arity: 1, branches } }, id)
+    return null
   }
 
   /**
@@ -2463,8 +2529,10 @@ class Compiler {
       return this.emitSite(node, cell, i, index, 'likelihood-row', 'likelihood-site', params)
     }
     if (fam === 'poisson') {
-      const m = dist['rate'] === undefined ? undefined : this.scaledExp(dist['rate'])
+      const m = dist['rate'] === undefined ? undefined : this.scaledExp(dist['rate'], true)
       if (m === undefined) return undefined
+      if (m.scale !== undefined && !this.isConst(m.scale))
+        return this.observedPoissonGate(node, y, i, index, m.inner, m.scale)
       return emit('poisson-log', m.inner, { exposure: m.scale === undefined ? 1 : this.constAt(node, m.scale, i) })
     }
     if (fam === 'binomial') {
@@ -2778,6 +2846,9 @@ class Compiler {
       e !== undefined && !this.isConst(e) && this.mentionsDiscrete(e)
     if (!discrete(locExpr) && !discrete(scaleExpr)) return undefined
     const loc = this.paramCell(node, 'loc', i)
+    // A mean that mentions a discrete variable but is a random Gaussian after its gates (a `select`), with a scale that does not
+    // (a precision idiom `1 / sqrt(tau)`), is an ordinary observation: the scale is not evaluated as a lookup.
+    if (loc.kind !== 'lookup' && !discrete(scaleExpr)) return undefined
     const scale = this.paramCell(node, 'scale', i)
     return loc.kind === 'lookup' || scale.kind === 'lookup' ? { loc, scale } : undefined
   }
