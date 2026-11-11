@@ -28,4 +28,22 @@ describe('useProbe', () => {
     expect(probe.mock.calls.map((c) => c[0])).toEqual([1, 2, 9, 8, 9])
     await m.unmount()
   })
+
+  it('asks again when a worker has answered, and shows the answer and not the stand-in kept for the pending one', async () => {
+    let answer: unknown
+    const probe = vi.fn(() => {
+      if (answer === undefined) throw new Error('computing plane at step 3 in the worker')
+      return answer
+    })
+    const view = { probed: 0 }
+    const live = (): never =>
+      ({ session: { t: 5, probe, probeAsync: () => Promise.resolve(null) }, version: 0, probed: view.probed }) as never
+    const m = await mountHook(() => useProbe(live(), 3, 'plane'))
+    expect(m.current.error).toMatch(/in the worker/)
+    answer = { kind: 'plane' }
+    view.probed = 1
+    await m.rerender()
+    expect(m.current.value).toEqual({ kind: 'plane' })
+    await m.unmount()
+  })
 })

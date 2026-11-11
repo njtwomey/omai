@@ -20,7 +20,7 @@ import {
   type TapeDelta,
 } from './protocol.ts'
 import type { MethodRegistry } from './registry.ts'
-import { advanceInStep, sharedHead } from './step.ts'
+import { advanceInStep, guardBudget, sharedHead, stepsLeft } from './step.ts'
 
 /** What the server takes from its surroundings. */
 export interface ServeOptions {
@@ -62,6 +62,8 @@ interface Hosted {
   answering: boolean
   /** Milliseconds of probing owed to the computation: probes yield to slices until it is paid (about half and half). */
   debt: number
+  /** Milliseconds spent computing the sessions: what the methods' `budgetMs` is held against. */
+  spentMs: number
   // Bumped whenever the run loop is restarted or stopped, so a slice scheduled earlier knows it is stale.
   token: number
   readonly lastT: number[]
@@ -177,9 +179,10 @@ export function serveProducer(
 
   // How many steps may be computed now: the ones asked for, else those within the lookahead of the cursor.
   const roomOf = (h: Hosted, head: number): number => {
-    if (h.advanceLeft !== undefined) return h.advanceLeft
-    if (!h.eager && Number.isFinite(h.lookahead)) return h.cursor + h.lookahead - head
-    return Number.POSITIVE_INFINITY
+    const budget = stepsLeft(h.sessions as never)
+    if (h.advanceLeft !== undefined) return Math.min(h.advanceLeft, budget)
+    if (!h.eager && Number.isFinite(h.lookahead)) return Math.min(h.cursor + h.lookahead - head, budget)
+    return budget
   }
 
   const probeKey = (r: { variant: number; path: string; args?: unknown }): string =>
@@ -264,6 +267,8 @@ export function serveProducer(
       const t0 = clock()
       runSlice(h, room)
       h.lastSliceMs = clock() - t0
+      h.spentMs += h.lastSliceMs
+      guardBudget(h.sessions as never, h.spentMs)
       h.debt = Math.max(0, h.debt - h.lastSliceMs)
       if (h.probes.length > 0) answerProbes(h, false)
       if (h.advanceLeft !== undefined) h.advanceLeft = Math.max(0, h.advanceLeft - (headOf(h) - head))
@@ -319,6 +324,7 @@ export function serveProducer(
         probes: [],
         answering: false,
         debt: 0,
+        spentMs: 0,
         token: 0,
         lastT: made.sessions.map(() => -1),
         lastStatus: made.sessions.map(() => null),

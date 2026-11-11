@@ -170,6 +170,12 @@ export interface Session<S, C extends Config = Config, K extends string = string
   /** Compute more: by a budget of steps or milliseconds (default: the rest of the run). */
   advance(budget?: SliceBudget): Slice<S>
   /**
+   * End the run where it stands, as `stopped` (the tape stays whole and replayable); a run that has ended is left as it
+   * is. Present on the sessions `session` makes (a replay or a remote session of a worker has none: the run was ended
+   * where it ran).
+   */
+  stop?(): void
+  /**
    * The state at any recorded step: the nearest earlier checkpoint re-run forward with the original keys. It is exact
    * (the same state an uninterrupted run had at `t`) and a state of its own, whatever the algorithm mutates in place
    * later, because a checkpoint is the serialised state; for the step reached it is the live `state`, and without
@@ -297,6 +303,12 @@ export function session<S, C extends Config, K extends string = string>(
     if (next.status !== undefined) run.end(next.status, next.t)
     return next
   }
+  const stop = (): void => {
+    const from = current()
+    if (from.status !== undefined) return
+    slice = { ...from, status: 'stopped' }
+    run.end('stopped', from.t)
+  }
   const stateAt = (t: number): S => {
     const now = current()
     if (t === now.t) return now.state
@@ -321,6 +333,7 @@ export function session<S, C extends Config, K extends string = string>(
       return current().status
     },
     advance,
+    stop,
     stateAt,
     fork: (t, forkOptions = {}) =>
       // A fork stands at its start until asked to advance, whatever mode its parent ran in.

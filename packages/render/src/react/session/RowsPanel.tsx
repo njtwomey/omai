@@ -9,12 +9,13 @@ import type { Json } from 'omai-engine/base'
 import { maxOf } from 'omai-engine/base'
 import { covarianceEllipse } from 'omai-engine/numerics/geometry'
 import { type Tensor, toFlat } from 'omai-engine/tensor'
-import type { Run, Session } from 'omai-engine/trace'
+import type { Derived, Run, Session } from 'omai-engine/trace'
 import { createContext, type ReactElement, type ReactNode, useContext, useMemo } from 'react'
 import { band, lines } from '../../charts/lines.ts'
 import { cartesian, type Layer } from '../../charts/plot.ts'
 import { points } from '../../charts/points.ts'
 import { type Figure, figure } from '../../figure/index.ts'
+import { canProbeAsync } from '../../producer/remote.ts'
 import { categoricalColour } from '../../theme/index.ts'
 import { useByContent } from '../_content.ts'
 import { Chart } from '../Chart.tsx'
@@ -156,18 +157,22 @@ export function useProbe(
   args?: Json,
 ): Probed {
   const held = useByContent(args)
+  // A session computed in a worker answers a probe later: the answers that have come (`live.probed`) remake the memo, and
+  // its own producer keeps the answers, so nothing here may keep the stand-in a pending probe returns.
+  const remote = canProbeAsync(live.session)
+  const answered = remote ? (live.probed ?? 0) : 0
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `answered` is what a worker's late answer changes
   return useMemo(() => {
     if (path === undefined) return {}
     try {
+      const read = (): Derived => live.session.probe(t, path, held)
       return {
-        value: remembered(live.session, t, `${path}|${t}|${JSON.stringify(held ?? null)}`, () =>
-          live.session.probe(t, path, held),
-        ),
+        value: remote ? read() : remembered(live.session, t, `${path}|${t}|${JSON.stringify(held ?? null)}`, read),
       }
     } catch (e) {
       return { error: e instanceof Error ? e.message : String(e) }
     }
-  }, [live.session, t, path, held])
+  }, [live.session, t, path, held, remote, answered])
 }
 
 /**

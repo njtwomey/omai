@@ -613,6 +613,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `rl`              | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation                                                                                                                                                                                                                                  |
 | `games`           | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms                                                                                                                                                                                                                                  |
 | `message-passing` | message passing on factor graphs of exponential families: EP, VMP and BP as settings of one engine, 35 factor operators, variations (power, alpha, numerical, stochastic, regions, expectation consistent, AMP), anytime runs                                                                                                 |
+| `bayesian-examples` | the canonical Bayesian examples as methods run by name and knobs (data, model, one inference method with its own knobs and a time budget, posterior probes): Bayesian classification of a 2-D data set so far |
 | `probprog`        | probabilistic programs and model specs, model analysis and structure reports, inference engines and the planner, a method per engine, validation and benchmark models, posteriors                                                                                                                                             |
 | `learn`           | estimator protocol, preprocessing, composition, model selection, calibration, conformal, active learning, privacy                                                                                                                                                                                                             |
 | `nn`              | neural networks: functional layers, modules, blocks, description, training, decoding                                                                                                                                                                                                                                          |
@@ -8237,7 +8238,9 @@ Design rules:
 - `serve.ts`: `serveProducer(scope, registry)` / `serveWorker(registry)` (a worker entry is one line): makes sessions in live mode,
   computes in short slices (a pause, a cursor or a probe is heard between slices), stays within the lookahead of the cursor,
   streams deltas of the tape by identity of events (windows that forget are followed), answers probes with a duty cycle so they
-  cannot starve the run.
+  cannot starve the run. The computational guard is here and in `inline.ts` (`step.ts`: `guardBudget`, `stepsLeft`): a session whose
+  config has the inference methods' `budgetMs` (milliseconds spent computing) or `budgetSteps` is ended as `stopped` (`Session.stop`)
+  when it is spent, so the tape is whole and replays; a worker's late probe answers reach `useProbe` through `live.probed`.
 - `client.ts`: `workerProducer({ createWorker, lookahead?, checkpoints?, available? })`: the worker starts when first needed and is
   terminated by `dispose`; Workers unavailable or options that cannot cross make the main-thread producer, with `fallback` saying why.
   `remote.ts`: `RemoteSession`, the `Session` the panels read (tape, step and status as streamed; a probe not answered yet

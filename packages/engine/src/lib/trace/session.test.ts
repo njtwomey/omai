@@ -185,4 +185,17 @@ describe('a state mutated in place', () => {
     expect(s.stateAt(4).open).toEqual([0, 1, 2, 3])
     expect(s.state).toBe(before)
   })
+
+  it('stop ends the run where it stands, as stopped, with the tape whole; a run that has ended is left alone', () => {
+    const s = session(counter, { mode: 'live', steps: 100 })
+    s.advance({ steps: 5 })
+    s.stop?.()
+    expect(s.status).toBe('stopped')
+    expect(s.t).toBe(5)
+    expect(s.advance({ steps: 5 }).t).toBe(5)
+    expect(s.stateAt(3)).toBe(3)
+    const done = session(counter, { mode: 'eager', steps: 4 })
+    done.stop?.()
+    expect(done.status).toBe('completed')
+  })
 })
