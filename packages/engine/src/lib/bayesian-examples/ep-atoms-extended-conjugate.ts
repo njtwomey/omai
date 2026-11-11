@@ -164,7 +164,8 @@ function betaLearnedProblem(k: Config): AtomProblem {
     const strength = m.latent('strength', d.gamma(a, b))
     const prob = m.latent('p', d.beta(strength, strength), { dims: [g] })
     const which = m.data('group', { dims: [r], support: 'index', role: 'index', indexes: g })
-    m.observe('y', d.bernoulli({ probs: prob.at(which) }), m.data('y', { dims: [r], support: 'binary' }))
+    const flips = m.data('y', { dims: [r], support: 'binary' })
+    m.observe('y', d.bernoulli({ probs: prob.at(which) }), flips)
   })
   // endregion
   const counts = p.map((_, j) => sum(y.filter((__, i) => group[i] === j)))

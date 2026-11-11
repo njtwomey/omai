@@ -6,8 +6,8 @@
  * the moment match divided by p. Power 1 is expectation propagation; a power below one makes each update a smaller
  * step, which damps the divergence of EP on difficult models and moves the fixed points toward the covering,
  * mass-seeking end of the alpha-divergence family. The powers are per factor (`powers` by factor id, `power` for the
- * rest), and apply to the factors whose operator supports one (`FactorOperator.power`: the probit and logistic links and
- * `numericOperator`); the others keep power 1. On a model with one Gaussian variable and Gaussian factors every power
+ * rest), and apply to the factors whose operator supports one (`FactorOperator.power`: the probit and logistic links,
+ * `numericOperator`, and a `gate` of closed-form branches over one variable); the others keep power 1. On a model with one Gaussian variable and Gaussian factors every power
  * gives the exact posterior, and the library's `gaussianEp` of `pgm` (Gaussian-latent models, power in (0, 1]) is the
  * reference where the two overlap.
  *
@@ -29,6 +29,7 @@ import {
   messagePassingSpace,
 } from './named.ts'
 import { momentProjection } from './projections.ts'
+import { takesPower } from './types.ts'
 
 /** The knobs of power EP: the common ones and the powers. */
 export interface PowerEpOptions extends MessagePassingOptions {
@@ -74,7 +75,7 @@ export function withPowers(g: CompiledGraph, powerOf: (f: CompiledFactor) => num
       const power = powerOf(f)
       if (!(power > 0 && Number.isFinite(power)))
         throw new OmaiError('value', `power EP: the power of ${f.id} must be positive, got ${power}`)
-      if (power !== 1 && f.operator.power !== true)
+      if (power !== 1 && !takesPower(f.operator, f.params))
         throw new OmaiError('value', `power EP: ${f.id} (${f.operator.name}) does not support a power`)
       return power === f.power ? f : { ...f, power }
     }),
@@ -122,7 +123,7 @@ export function powerEpAlgorithm(g: CompiledGraph, options: PowerEpOptions = {})
   for (const id of Object.keys(named)) {
     if (!ids.has(id)) throw new OmaiError('value', `power EP: there is no factor with the id ${id}`)
   }
-  const powered = withPowers(g, (f) => named[f.id] ?? (f.operator.power === true ? power : 1))
+  const powered = withPowers(g, (f) => named[f.id] ?? (takesPower(f.operator, f.params) ? power : 1))
   const alg = messagePassingAlgorithm(powered, messagePassingSettings(momentProjection, epDefaults, options))
   return { ...alg, name: 'power-ep' } as Algorithm<MpState, EpPath>
 }

@@ -19,12 +19,16 @@ import {
   bpMethod,
   type CompiledGraph,
   compileGraph,
+  defaultsOf,
   type EpPath,
   epDefaults,
   epMethod,
   defaultOperators as factorOperators,
   type MpState,
   messagePassingKnobs,
+  mpVerdict,
+  projectionOf,
+  type ScheduleKind,
   type VmpPath,
   vmpMethod,
 } from '../../message-passing/index.ts'
@@ -174,11 +178,19 @@ function specMethod<P extends string>(
         status: 'failed',
         diagnostics: { reason: why() },
       })
-    const converged = state.sweeps >= 1 && state.cursor === 0 && state.change < tol(config)
+    const verdict = mpVerdict(prepared.graph, state, {
+      tol: tol(config),
+      maxSweeps: Number.POSITIVE_INFINITY,
+      schedule: (typeof config['schedule'] === 'string'
+        ? config['schedule']
+        : defaultsOf(rule).schedule) as ScheduleKind,
+      projection: projectionOf(rule),
+    })
     return factorGraphPosterior(prepared.compiled, prepared.graph, state, {
       engine: name,
       rule,
-      status: converged ? 'converged' : 'stopped',
+      status: verdict.status === 'converged' ? 'converged' : 'stopped',
+      ...(verdict.reason === undefined ? {} : { reason: verdict.reason }),
     })
   }
   const base = knobs.contract as Contract<MpState, string>

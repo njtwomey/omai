@@ -28,6 +28,7 @@ import {
   messagePassingSpace,
 } from './named.ts'
 import type { Projection } from './projections.ts'
+import { takesPower } from './types.ts'
 
 /** The knobs of alpha-divergence message passing: the common ones and `alpha`. */
 export interface AlphaEpOptions extends MessagePassingOptions {
@@ -114,7 +115,7 @@ export function alphaEpAlgorithm(g: CompiledGraph, options: AlphaEpOptions = {})
         `alpha: ${f.id} has a power of its own; alpha-divergence updates take factors of power 1`,
       )
   }
-  if (alpha !== 1 && !g.factors.some((f) => f.operator.power === true))
+  if (alpha !== 1 && !g.factors.some((f) => takesPower(f.operator, f.params)))
     throw new OmaiError(
       'value',
       'alpha: no factor of the graph supports a power, so there is nothing to project by alpha',

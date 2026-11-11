@@ -15,7 +15,14 @@ import { foldIn, gamma, key, normal, poisson, studentT, uniform } from '../rando
 import { dict, int, real } from '../space/index.ts'
 import { item, toFlat } from '../tensor/index.ts'
 import type { Config } from '../trace/index.ts'
-import { type AtomProblem, type AtomRecoverySpec, defineAtom, type EpAtom, type FigureCurve } from './ep-atoms.ts'
+import {
+  type AtomFigure,
+  type AtomProblem,
+  type AtomRecoverySpec,
+  defineAtom,
+  type EpAtom,
+  type FigureCurve,
+} from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
 import { gridMarginals } from './ep-atoms-quad.ts'
 import { exampleNumber } from './example-method.ts'
@@ -191,7 +198,8 @@ function laplaceLearnedProblem(k: Config): AtomProblem {
   // the ground truth the data are drawn from: Laplace noise (the difference of two exponentials)
   const kk = key(seed)
   const u = toFlat(uniform(foldIn(kk, 0), [n]))
-  const y = Array.from(u, (v) => trueLoc - trueScale * Math.sign(v - 0.5) * Math.log(1 - 2 * Math.abs(v - 0.5)))
+  const tail = (v: number): number => Math.log(1 - 2 * Math.abs(v - 0.5))
+  const y = Array.from(u, (v) => trueLoc - trueScale * Math.sign(v - 0.5) * tail(v))
   const definition = defineModel('laplace-learned', (m) => {
     // the location and the scale of the noise: both unknown
     const mu = m.latent('mu', d.normal(0, 5))
@@ -312,7 +320,7 @@ function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomProb
   const pts = toFlat(normal(foldIn(kk, 0), [n, 2]))
   const design = Array.from({ length: n }, (_, i) => [1, pts[2 * i] ?? 0, pts[2 * i + 1] ?? 0])
   const u = toFlat(uniform(foldIn(kk, 1), [n]))
-  const score = design.map((row) => w0 * row[0]! + w1 * row[1]! + w2 * row[2]!)
+  const score = design.map((row) => w0 * (row[0] ?? 0) + w1 * (row[1] ?? 0) + w2 * (row[2] ?? 0))
   const chance = score.map((z) => (link === 'probit' ? phi(z) : 1 / (1 + Math.exp(-z))))
   const y = chance.map((p, i) => ((u[i] ?? 1) < p ? 1 : 0))
   const definition = defineModel(`${link}-learned`, (m) => {
@@ -502,7 +510,7 @@ function regressionFigure(
   y: readonly number[],
   curve: (a: number, b: number) => (v: number) => number,
   truth: readonly [number, number],
-): AtomProblem['figure'] {
+): AtomFigure {
   const line = (a: number, b: number, name: string, colour?: string): FigureCurve => ({
     name,
     ...(colour === undefined ? {} : { colour }),
@@ -608,7 +616,8 @@ function dispersionLearnedProblem(k: Config): AtomProblem {
   const x = covariate(seed, n)
   const jitter = toFlat(gamma(foldIn(kk, 7), [n], 1 / trueAlpha))
   const mean = x.map((v) => Math.exp(trueA + trueB * v))
-  const y = mean.map((mu, i) => item(poisson(foldIn(kk, 100 + i), mu * trueAlpha * (jitter[i] ?? 1), [1])))
+  const rates = mean.map((mu, i) => mu * trueAlpha * (jitter[i] ?? 1))
+  const y = rates.map((r, i) => item(poisson(foldIn(kk, 100 + i), r, [1])))
   const definition = defineModel('poisson-log-dispersion-learned', (m) => {
     const row = m.range('row')
     // the intercept, the slope and the dispersion: all unknown
@@ -696,7 +705,8 @@ function weibullLearnedProblem(k: Config): AtomProblem {
   // the ground truth: Weibull times with scale exp(intercept + slope x) and a known shape
   const x = covariate(seed, n)
   const u = toFlat(uniform(foldIn(key(seed), 1), [n]))
-  const y = x.map((v, i) => Math.exp(trueA + trueB * v) * (-Math.log(1 - (u[i] ?? 0.5))) ** (1 / shape))
+  const wait = (i: number): number => (-Math.log(1 - (u[i] ?? 0.5))) ** (1 / shape)
+  const y = x.map((v, i) => Math.exp(trueA + trueB * v) * wait(i))
   const definition = defineModel('weibull-learned', (m) => {
     const row = m.range('row')
     // the intercept and the slope of the log scale: both unknown
@@ -772,9 +782,10 @@ function skillsLearnedProblem(k: Config): AtomProblem {
   // the ground truth: skills drawn with a spread, a round robin in which the better player usually wins
   const kk = key(seed)
   const skills = Array.from(toFlat(normal(foldIn(kk, 0), [players], { scale: spread })))
+  const pairs: [number, number][] = []
+  for (let i = 0; i < players; i++) for (let j = i + 1; j < players; j++) pairs.push([i, j])
   const games: [number, number][] = []
-  for (let r = 0; r < rounds; r++)
-    for (let i = 0; i < players; i++) for (let j = i + 1; j < players; j++) games.push(r % 2 ? [j, i] : [i, j])
+  for (let r = 0; r < rounds; r++) for (const [i, j] of pairs) games.push(r % 2 ? [j, i] : [i, j])
   const u = toFlat(uniform(foldIn(kk, 1), [games.length]))
   const gap = games.map(([p, q]) => ((skills[p] ?? 0) - (skills[q] ?? 0)) / Math.SQRT2)
   const win = gap.map((g, i) => ((u[i] ?? 1) < phi(g) ? 1 : 0))
@@ -787,7 +798,8 @@ function skillsLearnedProblem(k: Config): AtomProblem {
     const tau = m.latent('tau', d.gamma(a, b))
     const skill = m.latent('skill', d.normal(0, ops.div(1, ops.sqrt(tau))), { dims: [player] })
     const diff = ops.div(skill.at(first).sub(skill.at(second)), Math.SQRT2)
-    m.observe('win', d.bernoulli({ probs: ops.probit(diff) }), m.data('win', { dims: [game], support: 'binary' }))
+    const won = m.data('win', { dims: [game], support: 'binary' })
+    m.observe('win', d.bernoulli({ probs: ops.probit(diff) }), won)
   })
   // endregion
   const at = skills.map((_, i) => i + 1)

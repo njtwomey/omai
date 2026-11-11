@@ -18,24 +18,33 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - structure `ep-atoms.ts` (file): EP atom scaffold: a bare setup, its reference, a tolerance, the EP verdict and run. `src/lib/bayesian-examples/ep-atoms.ts:1` `omai-engine/bayesian-examples`
 - structure `example-method.ts` (file): Example scaffold: a problem from knobs, one chosen inference method, derived posterior paths. `src/lib/bayesian-examples/example-method.ts:1` `omai-engine/bayesian-examples`
 
+- module `ep-gaps.ts` (file): The gaps and limits of expectation propagation, each with its plan, size and status, tied to what it refuses. `src/lib/bayesian-examples/ep-gaps.ts:1` `omai-engine/bayesian-examples`
+
 - function `activeSetScore`: The score of inclusion probabilities against the true active set: AUC and counts at a threshold. `src/lib/bayesian-examples/ep-recovery.ts:134` `omai-engine/bayesian-examples`
-- function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/bayesian-examples/ep-atoms.ts:598` `omai-engine/bayesian-examples`
-- function `atomReference`: The reference of an EP atom: exact or grid marginals as curves, and a joint. `src/lib/bayesian-examples/ep-atoms.ts:334` `omai-engine/bayesian-examples`
-- function `atomRun`: Run EP on an atom's model: beliefs per sweep, a message record, or the refusal. `src/lib/bayesian-examples/ep-atoms.ts:502` `omai-engine/bayesian-examples`
-- function `atomVerdict`: Whether EP applies to an atom's model, and the library's reason if not. `src/lib/bayesian-examples/ep-atoms.ts:389` `omai-engine/bayesian-examples`
-- function `beliefDensity`: The density of a belief from its mean and sd on a support. `src/lib/bayesian-examples/ep-atoms.ts:240` `omai-engine/bayesian-examples`
+- function `atomCalibration`: Calibration of an extended EP atom: interval coverage of the truth over many simulated seeds. `src/lib/bayesian-examples/ep-extended.ts:271` `omai-engine/bayesian-examples`
+- function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/bayesian-examples/ep-atoms.ts:640` `omai-engine/bayesian-examples`
+- function `atomRecovery`: EP's belief of each parameter beside the truth it was simulated from: interval and coverage. `src/lib/bayesian-examples/ep-extended.ts:97` `omai-engine/bayesian-examples`
+- function `atomReference`: The reference of an EP atom: exact or grid marginals as curves, and a joint. `src/lib/bayesian-examples/ep-atoms.ts:368` `omai-engine/bayesian-examples`
+- function `atomRun`: Run EP on an atom's model: beliefs per sweep, a message record, or the refusal. `src/lib/bayesian-examples/ep-atoms.ts:543` `omai-engine/bayesian-examples`
+- function `atomVerdict`: Whether EP applies to an atom's model, and the library's reason if not. `src/lib/bayesian-examples/ep-atoms.ts:429` `omai-engine/bayesian-examples`
+- function `beliefCredibleInterval`: The equal-tailed credible interval of an EP belief on its support. `src/lib/bayesian-examples/ep-extended.ts:42` `omai-engine/bayesian-examples`
+- function `beliefDensity`: The density of a belief from its mean and sd on a support. `src/lib/bayesian-examples/ep-atoms.ts:274` `omai-engine/bayesian-examples`
+- function `calibrationTable`: The calibration table of an extended EP atom from its seeds: coverage, bias and error per parameter. `src/lib/bayesian-examples/ep-extended.ts:208` `omai-engine/bayesian-examples`
 - function `epCoverage`: What EP covers today: atoms and benchmark models as runs or planned, with reasons. `src/lib/bayesian-examples/ep-coverage.ts:55` `omai-engine/bayesian-examples`
 - function `mixtureInterval`: The equal-tailed credible interval of a mixture of Gaussians (a gated coefficient). `src/lib/bayesian-examples/ep-recovery.ts:25` `omai-engine/bayesian-examples`
 - function `recoverySummary`: How well a posterior recovered the truth: interval coverage, error, agreement with a reference. `src/lib/bayesian-examples/ep-recovery.ts:82` `omai-engine/bayesian-examples`
 
 - estimator `betaBernoulliAtom`: EP atom: beta and Bernoulli (conjugate, exact). `src/lib/bayesian-examples/ep-atoms-conjugate.ts:105` `omai-engine/bayesian-examples`
+- estimator `betaBernoulliLearnedAtom`: EP atom: groups of flips with a beta prior of unknown strength, recovered from simulated data. `src/lib/bayesian-examples/ep-atoms-extended-conjugate.ts:251` `omai-engine/bayesian-examples`
 - estimator `classifierMethod`: Bayesian classifier method: data, link, degree, prior, one inference method as knobs. `src/lib/bayesian-examples/classifier-method.ts:510` `omai-engine/bayesian-examples`
 - estimator `clutterAtom`: EP atom: clutter, a gate per observation between the centre and wide clutter. `src/lib/bayesian-examples/ep-atoms-mixtures.ts:689` `omai-engine/bayesian-examples`
 - estimator `clutterMixtureAtom`: EP atom: an inlier and outlier mixture likelihood with the switches summed out (mixture site). `src/lib/bayesian-examples/ep-atoms-mixtures.ts:750` `omai-engine/bayesian-examples`
 - estimator `coinMethod`: Biased coin method: Beta-Bernoulli or Gamma-Poisson, one inference method, checked against the exact posterior. `src/lib/bayesian-examples/coin-method.ts:280` `omai-engine/bayesian-examples`
 - estimator `expAtom`: EP atom: exp of a Gaussian (unary function of a random value). `src/lib/bayesian-examples/ep-atoms-functions.ts:49` `omai-engine/bayesian-examples`
 - estimator `gammaPoissonAtom`: EP atom: gamma and Poisson (conjugate, exact). `src/lib/bayesian-examples/ep-atoms-conjugate.ts:158` `omai-engine/bayesian-examples`
+- estimator `gammaPoissonLearnedAtom`: EP atom: groups of counts with a gamma prior of unknown rate, recovered from simulated data. `src/lib/bayesian-examples/ep-atoms-extended-conjugate.ts:379` `omai-engine/bayesian-examples`
 - estimator `gammaPrecisionAtom`: EP atom: a Gaussian with an unknown precision (gamma-precision rule, observed value). `src/lib/bayesian-examples/ep-atoms-scales.ts:74` `omai-engine/bayesian-examples`
+- estimator `gammaPrecisionLearnedAtom`: EP atom: a Gaussian with unknown mean and gamma precision, recovered from simulated data. `src/lib/bayesian-examples/ep-atoms-extended-scales.ts:87` `omai-engine/bayesian-examples`
 - estimator `gateKnownAtom`: EP atom: a gate (select) between two known components. `src/lib/bayesian-examples/ep-atoms-mixtures.ts:236` `omai-engine/bayesian-examples`
 - estimator `gateRandomAtom`: EP atom: a gate between two random components (select), drawn as its branches. `src/lib/bayesian-examples/ep-atoms-mixtures.ts:360` `omai-engine/bayesian-examples`
 - estimator `gateWeightAtom`: EP atom: a gate with an unknown mixing weight (a beta prior on the Bernoulli switch probability). `src/lib/bayesian-examples/ep-atoms-weights.ts:173` `omai-engine/bayesian-examples`
@@ -43,6 +52,7 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `gateWeightHyperAtom`: EP atom: a gate whose weight has a beta prior with a gamma hyperprior on its strength. `src/lib/bayesian-examples/ep-atoms-weights.ts:447` `omai-engine/bayesian-examples`
 - estimator `gateWeightSummedOutAtom`: EP atom: a mixture with an unknown weight, the switches summed out (mixture-weight factor). `src/lib/bayesian-examples/ep-atoms-weights.ts:223` `omai-engine/bayesian-examples`
 - estimator `gaussianAtom`: EP atom: Gaussian mean (conjugate, exact). `src/lib/bayesian-examples/ep-atoms-conjugate.ts:56` `omai-engine/bayesian-examples`
+- estimator `gaussianLearnedAtom`: EP atom: a Gaussian with unknown mean and variance, recovered from simulated data (exact). `src/lib/bayesian-examples/ep-atoms-extended-conjugate.ts:111` `omai-engine/bayesian-examples`
 - estimator `gpClassificationMethod`: Gaussian process classification method: GP prior on the latent function, Bernoulli link, one inference method. `src/lib/bayesian-examples/gp-classification-method.ts:929` `omai-engine/bayesian-examples`
 - estimator `gpLogisticAtom`: EP atom: a dense Gaussian-process prior with a logistic likelihood (three inputs). `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:402` `omai-engine/bayesian-examples`
 - estimator `gpProbitAtom`: EP atom: a dense Gaussian-process prior with a probit likelihood (three inputs). `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:430` `omai-engine/bayesian-examples`
@@ -50,42 +60,51 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `halfNormalAtom`: EP atom: a half-normal prior on a scale. `src/lib/bayesian-examples/ep-atoms-scales.ts:331` `omai-engine/bayesian-examples`
 - estimator `irtMethod`: Item response method: Rasch or 2PL, generated answers, one inference method. `src/lib/bayesian-examples/irt-method.ts:534` `omai-engine/bayesian-examples`
 - estimator `laplaceAtom`: EP atom: a Laplace likelihood on a mean. `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:96` `omai-engine/bayesian-examples`
+- estimator `laplaceLearnedAtom`: EP atom (planned): a Laplace likelihood with unknown location and scale. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:280` `omai-engine/bayesian-examples`
 - estimator `linearRegressionMethod`: Linear regression method: polynomial or sparse data, sparse priors, one inference method. `src/lib/bayesian-examples/linear-regression-method.ts:656` `omai-engine/bayesian-examples`
 - estimator `logScaleAtom`: EP atom: a Gaussian with the exponential of a latent as its scale (stochastic volatility step). `src/lib/bayesian-examples/ep-atoms-functions.ts:141` `omai-engine/bayesian-examples`
 - estimator `logisticAtom`: EP atom: a logistic link on eight labelled points (numeric tilted moments). `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:226` `omai-engine/bayesian-examples`
+- estimator `logisticLearnedAtom`: EP atom: a logistic classifier with a learned weight precision, recovered from simulated labels. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:462` `omai-engine/bayesian-examples`
 - estimator `maxAtom`: EP atom: the maximum of two Gaussians (max factor, an L-shaped posterior). `src/lib/bayesian-examples/ep-atoms-functions.ts:255` `omai-engine/bayesian-examples`
 - estimator `mixtureComponentsAtom`: EP atom: a random index into random components (mu[z]), drawn as its branches. `src/lib/bayesian-examples/ep-atoms-mixtures.ts:383` `omai-engine/bayesian-examples`
 - estimator `mixtureMethod`: Gaussian mixture method: generated or Old Faithful data, free or ordered means, one inference method. `src/lib/bayesian-examples/mixture-method.ts:535` `omai-engine/bayesian-examples`
 - estimator `orderedMeansAtom`: EP atom: two means with an ordered constraint, against data that disagree. `src/lib/bayesian-examples/ep-atoms-gates.ts:148` `omai-engine/bayesian-examples`
 - estimator `orderedPairAtom`: EP atom: an ordered pair, a hard comparison (greater-than, truncation). `src/lib/bayesian-examples/ep-atoms-gates.ts:68` `omai-engine/bayesian-examples`
 - estimator `poissonLogAtom`: EP atom: a Poisson count with a log link. `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:474` `omai-engine/bayesian-examples`
-- estimator `priorBetaGeometricAtom`: EP atom: a beta prior on a geometric success probability (conjugate, exact). `src/lib/bayesian-examples/ep-atoms-priors.ts:723` `omai-engine/bayesian-examples`
-- estimator `priorBetaStrengthGammaAtom`: EP atom: a beta prior on a probability with a gamma hyperprior on its strength. `src/lib/bayesian-examples/ep-atoms-priors.ts:800` `omai-engine/bayesian-examples`
-- estimator `priorBetaStrengthLogNormalAtom`: EP atom: a beta prior on a probability with a log-normal hyperprior on its strength. `src/lib/bayesian-examples/ep-atoms-priors.ts:830` `omai-engine/bayesian-examples`
-- estimator `priorBetaTwoShapesAtom`: EP atom: a beta prior on a probability with two random shapes (planned). `src/lib/bayesian-examples/ep-atoms-priors.ts:1170` `omai-engine/bayesian-examples`
-- estimator `priorDirichletCategoricalAtom`: EP atom: a Dirichlet prior on categorical probabilities (conjugate, exact). `src/lib/bayesian-examples/ep-atoms-priors.ts:885` `omai-engine/bayesian-examples`
-- estimator `priorDirichletStrengthAtom`: EP atom: a Dirichlet prior on categorical probabilities with a gamma hyperprior on its concentration. `src/lib/bayesian-examples/ep-atoms-priors.ts:941` `omai-engine/bayesian-examples`
-- estimator `priorGammaExponentialAtom`: EP atom: a gamma prior on an exponential rate (conjugate, exact). `src/lib/bayesian-examples/ep-atoms-priors.ts:607` `omai-engine/bayesian-examples`
-- estimator `priorGammaPoissonHyperAtom`: EP atom: a gamma prior on a Poisson rate with a gamma hyperprior on the prior's rate. `src/lib/bayesian-examples/ep-atoms-priors.ts:451` `omai-engine/bayesian-examples`
-- estimator `priorInverseGammaHyperAtom`: EP atom: an inverse-gamma prior on a variance with a gamma hyperprior on its scale. `src/lib/bayesian-examples/ep-atoms-priors.ts:388` `omai-engine/bayesian-examples`
-- estimator `priorLogNormalPoissonAtom`: EP atom: a log-normal prior on a Poisson rate. `src/lib/bayesian-examples/ep-atoms-priors.ts:502` `omai-engine/bayesian-examples`
-- estimator `priorLogNormalPoissonHyperAtom`: EP atom: a log-normal prior on a Poisson rate with a normal hyperprior on its log centre. `src/lib/bayesian-examples/ep-atoms-priors.ts:555` `omai-engine/bayesian-examples`
-- estimator `priorLogNormalScaleAtom`: EP atom: a log-normal prior on a Gaussian scale with a normal hyperprior on its log centre. `src/lib/bayesian-examples/ep-atoms-priors.ts:1113` `omai-engine/bayesian-examples`
-- estimator `priorLogitNormalAtom`: EP atom: a logit-normal prior on a Bernoulli probability with a normal hyperprior on its centre. `src/lib/bayesian-examples/ep-atoms-priors.ts:1001` `omai-engine/bayesian-examples`
-- estimator `priorNormalHyperAtom`: EP atom: a normal prior on a mean with a normal hyperprior on its centre (exact). `src/lib/bayesian-examples/ep-atoms-priors.ts:332` `omai-engine/bayesian-examples`
-- estimator `priorNormalInverseGammaAtom`: EP atom: a normal-inverse-gamma prior on a Gaussian mean and variance (exact). `src/lib/bayesian-examples/ep-atoms-priors.ts:231` `omai-engine/bayesian-examples`
-- estimator `priorNormalWeibullAtom`: EP atom: a normal prior on a Weibull log scale with a normal hyperprior on its centre. `src/lib/bayesian-examples/ep-atoms-priors.ts:671` `omai-engine/bayesian-examples`
-- estimator `priorUniformAtom`: EP atom: a uniform prior on a Gaussian mean (projected). `src/lib/bayesian-examples/ep-atoms-priors.ts:1049` `omai-engine/bayesian-examples`
+- estimator `poissonLogDispersionLearnedAtom`: EP atom: a negative-binomial regression with unknown dispersion, recovered from simulated counts. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:662` `omai-engine/bayesian-examples`
+- estimator `poissonLogLearnedAtom`: EP atom: a Poisson regression with a log link, intercept and slope recovered from simulated counts. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:578` `omai-engine/bayesian-examples`
+- estimator `priorBetaGeometricAtom`: EP atom: a beta prior on a geometric success probability (conjugate, exact). `src/lib/bayesian-examples/ep-atoms-priors.ts:752` `omai-engine/bayesian-examples`
+- estimator `priorBetaStrengthGammaAtom`: EP atom: a beta prior on a probability with a gamma hyperprior on its strength. `src/lib/bayesian-examples/ep-atoms-priors.ts:829` `omai-engine/bayesian-examples`
+- estimator `priorBetaStrengthLogNormalAtom`: EP atom: a beta prior on a probability with a log-normal hyperprior on its strength. `src/lib/bayesian-examples/ep-atoms-priors.ts:859` `omai-engine/bayesian-examples`
+- estimator `priorBetaTwoShapesAtom`: EP atom: a beta prior on a probability with two random shapes (planned). `src/lib/bayesian-examples/ep-atoms-priors.ts:1199` `omai-engine/bayesian-examples`
+- estimator `priorDirichletCategoricalAtom`: EP atom: a Dirichlet prior on categorical probabilities (conjugate, exact). `src/lib/bayesian-examples/ep-atoms-priors.ts:914` `omai-engine/bayesian-examples`
+- estimator `priorDirichletStrengthAtom`: EP atom: a Dirichlet prior on categorical probabilities with a gamma hyperprior on its concentration. `src/lib/bayesian-examples/ep-atoms-priors.ts:970` `omai-engine/bayesian-examples`
+- estimator `priorGammaExponentialAtom`: EP atom: a gamma prior on an exponential rate (conjugate, exact). `src/lib/bayesian-examples/ep-atoms-priors.ts:636` `omai-engine/bayesian-examples`
+- estimator `priorGammaPoissonHyperAtom`: EP atom: a gamma prior on a Poisson rate with a gamma hyperprior on the prior's rate. `src/lib/bayesian-examples/ep-atoms-priors.ts:480` `omai-engine/bayesian-examples`
+- estimator `priorInverseGammaHyperAtom`: EP atom: an inverse-gamma prior on a variance with a gamma hyperprior on its scale. `src/lib/bayesian-examples/ep-atoms-priors.ts:417` `omai-engine/bayesian-examples`
+- estimator `priorLogNormalPoissonAtom`: EP atom: a log-normal prior on a Poisson rate. `src/lib/bayesian-examples/ep-atoms-priors.ts:531` `omai-engine/bayesian-examples`
+- estimator `priorLogNormalPoissonHyperAtom`: EP atom: a log-normal prior on a Poisson rate with a normal hyperprior on its log centre. `src/lib/bayesian-examples/ep-atoms-priors.ts:584` `omai-engine/bayesian-examples`
+- estimator `priorLogNormalScaleAtom`: EP atom: a log-normal prior on a Gaussian scale with a normal hyperprior on its log centre. `src/lib/bayesian-examples/ep-atoms-priors.ts:1142` `omai-engine/bayesian-examples`
+- estimator `priorLogitNormalAtom`: EP atom: a logit-normal prior on a Bernoulli probability with a normal hyperprior on its centre. `src/lib/bayesian-examples/ep-atoms-priors.ts:1030` `omai-engine/bayesian-examples`
+- estimator `priorNormalHyperAtom`: EP atom: a normal prior on a mean with a normal hyperprior on its centre (exact). `src/lib/bayesian-examples/ep-atoms-priors.ts:361` `omai-engine/bayesian-examples`
+- estimator `priorNormalInverseGammaAtom`: EP atom: a normal-inverse-gamma prior on a Gaussian mean and variance (exact). `src/lib/bayesian-examples/ep-atoms-priors.ts:260` `omai-engine/bayesian-examples`
+- estimator `priorNormalWeibullAtom`: EP atom: a normal prior on a Weibull log scale with a normal hyperprior on its centre. `src/lib/bayesian-examples/ep-atoms-priors.ts:700` `omai-engine/bayesian-examples`
+- estimator `priorUniformAtom`: EP atom: a uniform prior on a Gaussian mean (projected). `src/lib/bayesian-examples/ep-atoms-priors.ts:1078` `omai-engine/bayesian-examples`
 - estimator `probitAtom`: EP atom: a probit link on eight labelled points. `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:197` `omai-engine/bayesian-examples`
+- estimator `probitLearnedAtom`: EP atom: a probit classifier with a learned weight precision, recovered from simulated labels. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:422` `omai-engine/bayesian-examples`
 - estimator `productAtom`: EP atom: the product of two Gaussians (numeric product rule, a banana posterior). `src/lib/bayesian-examples/ep-atoms-functions.ts:197` `omai-engine/bayesian-examples`
 - estimator `robustRegressionMethod`: Robust regression method: outliers in the data, Gaussian, Student-t, Laplace or mixture likelihood, one inference method. `src/lib/bayesian-examples/robust-regression-method.ts:542` `omai-engine/bayesian-examples`
 - estimator `scaledPrecisionAtom`: EP atom: latent values whose precisions are a known multiple of one unknown precision (scaled precision). `src/lib/bayesian-examples/ep-atoms-scales.ts:254` `omai-engine/bayesian-examples`
 - estimator `sharedPrecisionAtom`: EP atom: latent values with a shared unknown precision (gamma-precision rule, latent form). `src/lib/bayesian-examples/ep-atoms-scales.ts:220` `omai-engine/bayesian-examples`
+- estimator `sharedPrecisionLearnedAtom`: EP atom: a population with unknown mean and spread, each value observed with known noise, recovered from simulated data. `src/lib/bayesian-examples/ep-atoms-extended-scales.ts:241` `omai-engine/bayesian-examples`
 - estimator `skillDifferenceAtom`: EP atom: a probit factor on a difference of two skills (three players, five matches). `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:305` `omai-engine/bayesian-examples`
+- estimator `skillDifferenceLearnedAtom`: EP atom: a tournament with unknown skill spread, skills and spread recovered from simulated games. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:855` `omai-engine/bayesian-examples`
 - estimator `spikeSlabAtom`: EP atom: spike and slab as a gate between a narrow and a wide Gaussian. `src/lib/bayesian-examples/ep-atoms-mixtures.ts:505` `omai-engine/bayesian-examples`
 - estimator `spikeSlabMarginalAtom`: EP atom: spike and slab with the switch summed out (mixture site, no P(slab)). `src/lib/bayesian-examples/ep-atoms-mixtures.ts:573` `omai-engine/bayesian-examples`
 - estimator `studentTAtom`: EP atom: a Student-t likelihood on a mean (robust to an outlier). `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:67` `omai-engine/bayesian-examples`
+- estimator `studentTLearnedAtom`: EP atom: a Student-t likelihood with unknown location and scale, recovered from simulated data. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:157` `omai-engine/bayesian-examples`
 - estimator `tanhAtom`: EP atom: tanh of a Gaussian (a squashing unit). `src/lib/bayesian-examples/ep-atoms-functions.ts:93` `omai-engine/bayesian-examples`
 - estimator `volatilityMethod`: Stochastic volatility method: AR(1) log-variance, centred or non-centred, one inference method. `src/lib/bayesian-examples/stochastic-volatility-method.ts:523` `omai-engine/bayesian-examples`
+- estimator `weibullLearnedAtom`: EP atom: a Weibull regression with a log link, coefficients recovered from simulated times. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:749` `omai-engine/bayesian-examples`
 
-- table `epAtoms`: The EP atoms: bare setups that each exercise one factor of the message passing suite. `src/lib/bayesian-examples/ep-atom-list.ts:76` `omai-engine/bayesian-examples`
+- table `epAtoms`: The EP atoms: bare setups that each exercise one factor of the message passing suite. `src/lib/bayesian-examples/ep-atom-list.ts:92` `omai-engine/bayesian-examples`
