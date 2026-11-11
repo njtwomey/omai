@@ -21,11 +21,31 @@ import {
 import { normalWishart, wishart, wishartParams } from '../families-matrix.ts'
 import { gaussianMvEta } from '../families-vector.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
-import { FLAT_CAVITY_PRECISION, ImproperMessageError, rawSum, siteMessage, vectorOf } from './args.ts'
+import { FLAT_CAVITY_PRECISION, ImproperMessageError, numberParam, rawSum, siteMessage, vectorOf } from './args.ts'
 
 const LOG_2PI = Math.log(2 * Math.PI)
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 const dimOf = (c: OperatorContext): number => arg(c, 2).family.dim
+
+/**
+ * The rows a factor stands for: `count` i.i.d. vectors whose sample mean is the observed `x` and whose scatter about that mean is `scatter`
+ * (`sum (y_i - ybar)(y_i - ybar)'`, row-major). A factor of one row has the defaults, `count = 1` and no scatter.
+ */
+export interface Rows {
+  readonly count: number
+  readonly scatter: Float64Array
+}
+
+/** The rows of a factor from its parameters. */
+export function rowsOf(params: OperatorContext['params'], d: number): Rows {
+  const count = numberParam(params, 'count', 1)
+  if (!(count >= 1)) throw new OmaiError('value', 'mvn-wishart: count is the number of rows, at least 1')
+  const given = params['scatter']
+  const scatter = given === undefined ? new Float64Array(d * d) : Float64Array.from(given as readonly number[])
+  if (scatter.length !== d * d)
+    throw new OmaiError('shape', `mvn-wishart: scatter has ${scatter.length} entries, expected ${d * d}`)
+  return { count, scatter }
+}
 
 /** One of the two Gaussian arguments, as the integral reads it: a point, or a cavity (a very wide one when it carries no information). */
 export interface GaussianSide {
@@ -85,6 +105,8 @@ function checkNumeric(d: number): void {
     )
 }
 
+const NO_ROWS: Rows = { count: 1, scatter: new Float64Array(0) }
+
 /** What the integral over the unknown Gaussians gives at one precision matrix, and (when asked) the conditional of one of them. */
 export type Evaluator = (
   lambda: Float64Array,
@@ -102,10 +124,12 @@ export type Evaluator = (
  *
  * @param x - The vector's side.
  * @param mean - The mean's side.
+ * @param rows - The rows the vector stands for (its sample mean, their count and scatter); default one row.
  * @param d - The dimension.
  * @returns The evaluator.
  */
-export function evaluatorOf(x: GaussianSide, mean: GaussianSide, d: number): Evaluator {
+export function evaluatorOf(x: GaussianSide, mean: GaussianSide, d: number, rows: Rows = NO_ROWS): Evaluator {
+  const k = rows.count
   const unknown = [x, mean].map((s, i) => ({ s, sign: i === 0 ? 1 : -1, i })).filter((u) => !u.s.point)
   const q = unknown.length * d
   const c = new Float64Array(d)
@@ -124,7 +148,12 @@ export function evaluatorOf(x: GaussianSide, mean: GaussianSide, d: number): Eva
       lc[i] = s
       quad += s * (c[i] as number)
     }
-    const base = 0.5 * logDet - 0.5 * d * LOG_2PI - 0.5 * quad
+    // k rows around the vector: (k / 2) log |L| - (k d / 2) log 2 pi - (k / 2) c' L c - tr(L scatter) / 2
+    let tr = 0
+    if (k > 1)
+      for (let i = 0; i < d; i++)
+        for (let j = 0; j < d; j++) tr += (lambda[offset + i * d + j] as number) * (rows.scatter[j * d + i] as number)
+    const base = 0.5 * k * logDet - 0.5 * k * d * LOG_2PI - 0.5 * k * quad - 0.5 * tr
     if (q === 0) return base
     for (let a = 0; a < unknown.length; a++) {
       const ua = unknown[a] as (typeof unknown)[number]
@@ -133,10 +162,10 @@ export function evaluatorOf(x: GaussianSide, mean: GaussianSide, d: number): Eva
         for (let i = 0; i < d; i++)
           for (let j = 0; j < d; j++)
             p[(a * d + i) * q + b * d + j] =
-              ua.sign * ub.sign * (lambda[offset + i * d + j] as number) +
+              k * ua.sign * ub.sign * (lambda[offset + i * d + j] as number) +
               (a === b ? (ua.s.precision[i * d + j] as number) : 0)
       }
-      for (let i = 0; i < d; i++) h[a * d + i] = (ua.s.h[i] as number) - ua.sign * (lc[i] as number)
+      for (let i = 0; i < d; i++) h[a * d + i] = (ua.s.h[i] as number) - k * ua.sign * (lc[i] as number)
     }
     if (!choleskyInPlace(p, q)) return Number.NEGATIVE_INFINITY
     w.set(h)
@@ -168,9 +197,11 @@ function wishartCavity(eta: Eta, d: number): { readonly nu: number; readonly cho
 }
 
 /** The Gaussian messages of the exact conjugate case: the matrix a fully known Gaussian says to its precision. */
-function conjugateMessage(r: ArrayLike<number>, d: number): Eta {
-  const out: number[] = [0.5]
-  for (let i = 0; i < d; i++) for (let j = 0; j < d; j++) out.push(-0.5 * (r[i] ?? 0) * (r[j] ?? 0))
+function conjugateMessage(r: ArrayLike<number>, d: number, rows: Rows = NO_ROWS): Eta {
+  const out: number[] = [0.5 * rows.count]
+  for (let i = 0; i < d; i++)
+    for (let j = 0; j < d; j++)
+      out.push(-0.5 * (rows.count * (r[i] ?? 0) * (r[j] ?? 0) + (rows.scatter[i * d + j] ?? 0)))
   return out
 }
 
@@ -187,50 +218,68 @@ interface Tilted {
  * `x - mean` has a cavity much narrower than the matrix's own scale, the usual case) the cavity times the exact conjugate part
  * of the factor, which leaves a smooth correction for the quadrature, exact when the vector is known.
  */
-function tiltOver(cavity: Eta, eval1: Evaluator, x: GaussianSide, mean: GaussianSide, d: number): Tilted {
+function tiltOver(
+  cavity: Eta,
+  eval1: Evaluator,
+  x: GaussianSide,
+  mean: GaussianSide,
+  d: number,
+  rows: Rows = NO_ROWS,
+): Tilted {
   checkNumeric(d)
   const family = wishart(d)
-  const cav = wishartParams(cavity, d)
-  if (cav === undefined) throw new ImproperMessageError('a Wishart message has no density')
+  if (wishartParams(cavity, d) === undefined) throw new ImproperMessageError('a Wishart message has no density')
+  const k = rows.count
   const r = new Float64Array(d)
   const v = new Float64Array(d * d)
   for (let i = 0; i < d; i++) {
     r[i] = (x.mean[i] as number) - (mean.mean[i] as number)
     for (let j = 0; j < d; j++) v[i * d + j] = (x.cov[i * d + j] as number) + (mean.cov[i * d + j] as number)
   }
-  // trace(V E[L]) / d: how wide the difference's cavity is against the matrix's own scale
+  // The scatter of the rows about their mean is always conjugate: |L|^((n - 1) / 2) exp(-tr(L scatter) / 2) is a Wishart message.
+  const scatterPart: Eta = [0.5 * (k - 1), ...Array.from({ length: d * d }, (_, e) => -0.5 * (rows.scatter[e] ?? 0))]
+  const base0 = k > 1 ? rawSum(cavity, scatterPart) : cavity
+  const cav = wishartParams(base0, d)
+  if (cav === undefined) throw new ImproperMessageError('a Wishart message has no density')
+  // trace(n V E[L]) / d: how wide the difference's cavity is against the width the rows give it
   let tr = 0
   for (let i = 0; i < d; i++)
     for (let j = 0; j < d; j++) tr += (v[i * d + j] as number) * (cav.mean[j * d + i] as number)
-  const conjugate = tr / d < 0.3 && !x.flat && !mean.flat
-  const eta = conjugate ? rawSum(cavity, conjugateMessage(r, d)) : cavity
+  const differencePart: Eta = [
+    0.5,
+    ...Array.from({ length: d * d }, (_, e) => -0.5 * k * (r[Math.floor(e / d)] as number) * (r[e % d] as number)),
+  ]
+  const conjugate = (k * tr) / d < 0.3 && !x.flat && !mean.flat
+  const eta = conjugate ? rawSum(base0, differencePart) : base0
   const { nu, chol } = wishartCavity(eta, d)
   const rule = wishartRule(nu, chol, d)
   const logw = new Float64Array(rule.count)
   let top = Number.NEGATIVE_INFINITY
-  for (let k = 0; k < rule.count; k++) {
-    let lw = Math.log(rule.weight[k] as number) + eval1(rule.lambda, k * d * d, rule.logDet[k] as number, -1)
-    if (conjugate) {
-      // remove the conjugate part that is already in the base measure: |L|^(1/2) exp(-r' L r / 2)
-      let quad = 0
-      for (let i = 0; i < d; i++)
-        for (let j = 0; j < d; j++)
-          quad += (r[i] as number) * (rule.lambda[k * d * d + i * d + j] as number) * (r[j] as number)
-      lw -= 0.5 * (rule.logDet[k] as number) - 0.5 * quad
-    }
-    logw[k] = lw
+  for (let node = 0; node < rule.count; node++) {
+    const at = node * d * d
+    let lw = Math.log(rule.weight[node] as number) + eval1(rule.lambda, at, rule.logDet[node] as number, -1)
+    // remove what is already in the base measure: |L|^((n - 1) / 2) exp(-tr(L scatter) / 2), and, in the conjugate form, |L|^(1/2) exp(-n r' L r / 2)
+    let quad = 0
+    for (let i = 0; i < d; i++)
+      for (let j = 0; j < d; j++) {
+        const l = rule.lambda[at + i * d + j] as number
+        quad += (rows.scatter[i * d + j] ?? 0) * l
+        if (conjugate) quad += k * (r[i] as number) * (r[j] as number) * l
+      }
+    lw -= 0.5 * (k - 1 + (conjugate ? 1 : 0)) * (rule.logDet[node] as number) - 0.5 * quad
+    logw[node] = lw
     if (lw > top) top = lw
   }
   if (!Number.isFinite(top))
     throw new ImproperMessageError('mvn-wishart: the factor has no mass under the incoming messages')
   const p = new Float64Array(rule.count)
   let total = 0
-  for (let k = 0; k < rule.count; k++) {
-    const e = Math.exp((logw[k] as number) - top)
-    p[k] = e
+  for (let node = 0; node < rule.count; node++) {
+    const e = Math.exp((logw[node] as number) - top)
+    p[node] = e
     total += e
   }
-  for (let k = 0; k < rule.count; k++) p[k] = (p[k] as number) / total
+  for (let node = 0; node < rule.count; node++) p[node] = (p[node] as number) / total
   return { logZ: family.logPartition(eta) + top + Math.log(total), rule, p }
 }
 
@@ -241,11 +290,12 @@ function messageToPrecision(c: OperatorContext): Eta {
   const mean = gaussianSide(arg(c, 1), d)
   const cavity = arg(c, 2).eta as Eta
   const family = wishart(d)
+  const rows = rowsOf(c.params, d)
   if (x.point && mean.point) {
     const r = Array.from(x.mean, (v, i) => v - (mean.mean[i] as number))
-    return conjugateMessage(r, d)
+    return conjugateMessage(r, d, rows)
   }
-  const t = tiltOver(cavity, evaluatorOf(x, mean, d), x, mean, d)
+  const t = tiltOver(cavity, evaluatorOf(x, mean, d, rows), x, mean, d, rows)
   const moments = new Array<number>(1 + d * d).fill(0)
   for (let k = 0; k < t.rule.count; k++) {
     const pk = t.p[k] as number
@@ -261,10 +311,11 @@ function messageToGaussian(c: OperatorContext): Eta {
   const d = dimOf(c)
   const x = gaussianSide(arg(c, 0), d)
   const mean = gaussianSide(arg(c, 1), d)
-  const eval1 = evaluatorOf(x, mean, d)
+  const rows = rowsOf(c.params, d)
+  const eval1 = evaluatorOf(x, mean, d, rows)
   const target = c.to as 0 | 1
   const side = target === 0 ? x : mean
-  const t = tiltOver(arg(c, 2).eta as Eta, eval1, x, mean, d)
+  const t = tiltOver(arg(c, 2).eta as Eta, eval1, x, mean, d, rows)
   const m = new Float64Array(d)
   const s = new Float64Array(d * d)
   const nodeMean = new Float64Array(d)
@@ -328,6 +379,10 @@ function expectedOuter(c: OperatorContext, d: number): { readonly mean: number[]
  * read as a very wide one. The variational rule is closed form (the expected residual outer product for the Wishart, the mean precision
  * for the Gaussians).
  *
+ * The factor may stand for many rows at once (the parameters `count` and `scatter`): `x` is then the sample mean of `count` i.i.d. vectors, and
+ * `scatter` their scatter about it (`sum (y_i - ybar)(y_i - ybar)'`), which is all the likelihood of the rows depends on, so a plate of
+ * rows with a shared mean costs one factor whatever its size.
+ *
  * @concept factor-operators
  * @index structure A multivariate Gaussian with a Wishart precision matrix: a learned covariance.
  * @example
@@ -357,12 +412,13 @@ export const mvnWishart: FactorOperator = {
     const d = dimOf(c)
     const w = arg(c, 2)
     const lambda = w.family.moments(w.eta as Eta)
+    const rows = rowsOf(c.params, d)
     if (c.to === 2) {
       const { outer } = expectedOuter(c, d)
-      return { message: [0.5, ...outer.map((v) => -0.5 * v)] }
+      return { message: [0.5 * rows.count, ...outer.map((v, e) => -0.5 * (rows.count * v + (rows.scatter[e] ?? 0)))] }
     }
     const other = momentsOf(arg(c, 1 - c.to), d)
-    const meanLambda = lambda.slice(1)
+    const meanLambda = lambda.slice(1).map((v) => rows.count * v)
     const hs = Array.from({ length: d }, (_, i) => {
       let s = 0
       for (let j = 0; j < d; j++) s += (meanLambda[i * d + j] as number) * (other.mean[j] as number)
@@ -375,9 +431,11 @@ export const mvnWishart: FactorOperator = {
     const w = arg(c, 2)
     const lambda = w.family.moments(w.eta as Eta)
     const { outer } = expectedOuter(c, d)
+    const rows = rowsOf(c.params, d)
     let tr = 0
-    for (let e = 0; e < d * d; e++) tr += (lambda[1 + e] as number) * (outer[e] as number)
-    return 0.5 * (lambda[0] as number) - 0.5 * d * LOG_2PI - 0.5 * tr
+    for (let e = 0; e < d * d; e++)
+      tr += (lambda[1 + e] as number) * (rows.count * (outer[e] as number) + (rows.scatter[e] ?? 0))
+    return 0.5 * rows.count * (lambda[0] as number) - 0.5 * rows.count * d * LOG_2PI - 0.5 * tr
   },
   logEvidence: (c) => {
     const d = dimOf(c)
@@ -386,12 +444,13 @@ export const mvnWishart: FactorOperator = {
     const x = gaussianSide(arg(c, 0), d)
     const mean = gaussianSide(arg(c, 1), d)
     const family = wishart(d)
+    const rows = rowsOf(c.params, d)
     if (x.point && mean.point) {
       const r = Array.from(x.mean, (v, i) => v - (mean.mean[i] as number))
-      return family.logPartition(rawSum(w.eta as Eta, conjugateMessage(r, d))) - 0.5 * d * LOG_2PI
+      return family.logPartition(rawSum(w.eta as Eta, conjugateMessage(r, d, rows))) - 0.5 * rows.count * d * LOG_2PI
     }
     try {
-      return tiltOver(w.eta as Eta, evaluatorOf(x, mean, d), x, mean, d).logZ
+      return tiltOver(w.eta as Eta, evaluatorOf(x, mean, d, rows), x, mean, d, rows).logZ
     } catch (err) {
       if (err instanceof ImproperMessageError) return Number.NaN
       throw err

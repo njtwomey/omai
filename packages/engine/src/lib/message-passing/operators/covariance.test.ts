@@ -21,13 +21,14 @@ const ctx = (to: number, args: readonly Arg[], mode: 'ep' | 'vmp' = 'ep'): Opera
 function brute(
   cavity: Eta,
   integrand: (l11: number, l12: number, l22: number) => number,
+  window: Eta = cavity,
 ): {
   readonly logZ: number
   readonly logDet: number
   readonly mean: number[]
   readonly weights: (f: (a: number, b: number, c: number) => number) => number
 } {
-  const p = wishartParams(cavity, 2) as NonNullable<ReturnType<typeof wishartParams>>
+  const p = wishartParams(window, 2) as NonNullable<ReturnType<typeof wishartParams>>
   const sd = (i: number, j: number): number =>
     Math.sqrt(
       p.nu * ((p.scale[i * 2 + j] as number) ** 2 + (p.scale[i * 2 + i] as number) * (p.scale[j * 2 + j] as number)),
@@ -288,6 +289,77 @@ describe('mvn-wishart: expectation propagation with Gaussian cavities', () => {
       messageArg(w4, wishartEta(9, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], 4)),
     ]
     expect(() => mvnWishart.ep?.(ctx(2, args))).toThrow(/up to 3/)
+  })
+})
+
+describe('mvn-wishart: a plate of rows (count and scatter) is the product of the row factors', () => {
+  const rows = [
+    [1, 0.5],
+    [-0.3, 0.2],
+    [0.8, -1.1],
+    [0.1, 0.4],
+    [0.6, 0.0],
+  ]
+  const n = rows.length
+  const ybar = [0, 1].map((k) => rows.reduce((s, y) => s + (y[k] as number), 0) / n)
+  const scatter = [0, 0, 0, 0]
+  for (const y of rows)
+    for (let i = 0; i < 2; i++)
+      for (let j = 0; j < 2; j++)
+        scatter[i * 2 + j] =
+          (scatter[i * 2 + j] as number) +
+          ((y[i] as number) - (ybar[i] as number)) * ((y[j] as number) - (ybar[j] as number))
+  const params = { count: n, scatter }
+  const cavity = wishartEta(6, [0.5, 0.1, 0.1, 0.4], 2)
+
+  it('with a known mean it is the sequence of row updates', () => {
+    const mean = [0.2, -0.1]
+    const plate = mvnWishart.ep?.({ ...ctx(2, [valueArg(G, ybar), valueArg(G, mean), messageArg(W, cavity)]), params })
+      .message as number[]
+    let eta: Eta = cavity
+    for (const y of rows)
+      eta = W.product(
+        eta,
+        mvnWishart.ep?.(ctx(2, [valueArg(G, y), valueArg(G, mean), messageArg(W, eta)])).message as number[],
+      )
+    for (const [i, v] of W.product(cavity, plate).entries()) expect(v).toBeCloseTo(eta[i] as number, 10)
+  })
+
+  it('with a Gaussian cavity on the mean the tilted matrix matches the brute-force integral over the matrix', () => {
+    const mc = [0.3, -0.2]
+    const vc = [0.2, 0.05, 0.05, 0.3]
+    const meta = gaussianMvEta(mc, vc)
+    const msg = mvnWishart.ep?.({ ...ctx(2, [valueArg(G, ybar), messageArg(G, meta), messageArg(W, cavity)]), params })
+      .message as number[]
+    const matched = W.moments(W.product(cavity, msg))
+    // prod_i N(y_i; mu, L^-1) integrated against N(mu; mc, Vc) is N(ybar; mc, Vc + L^-1 / n) |L|^((n - 1) / 2) exp(-tr(L scatter) / 2)
+    const b = brute(
+      cavity,
+      (a, bb, c) => {
+        const det = a * c - bb * bb
+        const tr = a * (scatter[0] as number) + 2 * bb * (scatter[1] as number) + c * (scatter[3] as number)
+        const diff = [(ybar[0] as number) - (mc[0] as number), (ybar[1] as number) - (mc[1] as number)]
+        const v2 = [(vc[0] as number) * n, (vc[1] as number) * n, (vc[2] as number) * n, (vc[3] as number) * n]
+        // N(diff; 0, Vc + L^-1 / n) = n N(sqrt(n) diff; 0, n Vc + L^-1) in two dimensions
+        return (
+          n *
+          gaussianAt([Math.sqrt(n) * (diff[0] as number), Math.sqrt(n) * (diff[1] as number)], v2, a, bb, c) *
+          det ** ((n - 1) / 2) *
+          Math.exp(-0.5 * tr)
+        )
+      },
+      W.product(cavity, [0.5 * n, ...scatter.map((v) => -0.5 * v)]),
+    )
+    expect(Math.abs((matched[0] as number) - b.logDet)).toBeLessThan(2e-3)
+    expect(matched[1]).toBeCloseTo(b.mean[0] as number, 2)
+    expect(matched[2]).toBeCloseTo(b.mean[1] as number, 2)
+    expect(matched[4]).toBeCloseTo(b.mean[2] as number, 2)
+    // and the message to the mean is a proper Gaussian that moves it towards the sample mean
+    const toMean = mvnWishart.ep?.({
+      ...ctx(1, [valueArg(G, ybar), messageArg(G, meta), messageArg(W, cavity)]),
+      params,
+    }).message as number[]
+    expect(G.isProper(G.product(meta, toMean))).toBe(true)
   })
 })
 
