@@ -773,6 +773,8 @@ class Compiler {
 
   /** Arithmetic on a discrete variable's lookup or on a gamma variable's precision: undefined when neither operand is one. */
   private special(op: string, x: Cell, y: Cell, index?: number): Cell | undefined {
+    const shifted = this.shiftedByState(op, x, y)
+    if (shifted !== undefined) return shifted
     const look = lookupArithmetic(
       op,
       x,
@@ -799,6 +801,40 @@ class Compiler {
       return { kind: 'scaled', variable: out, scale: left.scale * right.scale, offset: 0 }
     }
     return scaledArithmetic(op, x, y)
+  }
+
+  /**
+   * A Gaussian value shifted by a known function of a discrete variable (`g + offset[c]`, `offset[c] - g`, a wrapped normal's
+   * copies a period apart): a gate that selects among the shifted forms `g + offset[k]` by the variable, the `select` factor on a
+   * new variable. Undefined when the operation is not an addition or subtraction of a lookup and a random Gaussian form.
+   */
+  private shiftedByState(op: string, x: Cell, y: Cell): Cell | undefined {
+    if (op !== 'add' && op !== 'sub') return undefined
+    const states = (v: string): number => (this.variables.find((u) => u.name === v)?.family.size ?? 2) as number
+    const asLookup = (c: Cell): (Cell & { kind: 'lookup' }) | undefined => {
+      if (c.kind === 'lookup') return c.items === undefined ? c : undefined
+      if (c.kind === 'rv' && (c.family === 'discrete' || c.family === 'bernoulli'))
+        return {
+          kind: 'lookup',
+          variable: c.variable,
+          values: Array.from({ length: c.family === 'bernoulli' ? 2 : states(c.variable) }, (_, i) => i),
+        }
+      return undefined
+    }
+    const random = (c: Cell): boolean => c.kind === 'aff' && !isConstCell(c)
+    const [look, other, lookFirst] =
+      asLookup(x) !== undefined && random(y)
+        ? [asLookup(x) as Cell & { kind: 'lookup' }, y, true]
+        : asLookup(y) !== undefined && random(x)
+          ? [asLookup(y) as Cell & { kind: 'lookup' }, x, false]
+          : [undefined, x, false]
+    if (look === undefined) return undefined
+    const sign = op === 'add' ? 1 : -1
+    const components = look.values.map((v): Cell => {
+      const shifted = lookFirst ? combine(constAff(v), affOf(other), sign) : combine(affOf(other), constAff(v), sign)
+      return { kind: 'aff', aff: shifted }
+    })
+    return this.gate(components, look.variable)
   }
 
   /** A comparison of a known function of a discrete variable with a known value: a lookup of 0 and 1 over its states. */
@@ -2632,7 +2668,61 @@ class Compiler {
     return cur
   }
 
+  /**
+   * A Gaussian observation of a value that is a known function of a discrete variable (a reading moved a period early or late by a
+   * copy index): `N(v; m, s)` is `N(0; m - v, s)`, so the observed value moves across to the mean, which then is a gate over the
+   * shifted forms. Undefined when the observed value is known, or the family is not the normal.
+   */
+  private valueMovedToMean(
+    node: ModelNode & { readonly kind: 'observed' },
+  ): (ModelNode & { readonly kind: 'observed' }) | undefined {
+    const loc = node.dist.params['loc']
+    if (node.dist.family !== 'normal' || loc === undefined || this.isConst(node.value)) return undefined
+    if (!this.mentionsDiscrete(node.value)) return undefined
+    const fused = this.gatedMean(node, loc)
+    if (fused !== undefined) return { ...node, value: { kind: 'const', value: 0 } }
+    return {
+      ...node,
+      dist: { ...node.dist, params: { ...node.dist.params, loc: { kind: 'op', op: 'sub', args: [loc, node.value] } } },
+      value: { kind: 'const', value: 0 },
+    }
+  }
+
+  /**
+   * The mean `at(table, z)` of an observation whose value is a known function of the same discrete variable `z`: one gate over the
+   * table's entries each moved by what the value is in that state (`table[k] - value[k]`), so the observed value becomes zero and
+   * the per-state shifts sit in the one gate (a gate of the shifted forms, not a gate of the mean followed by another of the
+   * value). Stores the cells of the mean for the observation to read; false when the mean is not of that form.
+   */
+  private gatedMean(node: ModelNode & { readonly kind: 'observed' }, loc: ExprSpec): boolean {
+    const e = this.unwrap(loc)
+    if (e.kind !== 'op' || e.op !== 'at') return false
+    const [first, index] = e.args as [ExprSpec, ExprSpec]
+    const table = this.evalSym(first)
+    if (table.dims.length !== 1) return false
+    const values = this.over(this.evalSym(node.value), node.dims)
+    const picks = this.over(this.evalSym(index), node.dims)
+    const cells: Cell[] = []
+    for (const [i, v] of values.entries()) {
+      const pick = picks[i] as Cell
+      if (v.kind !== 'lookup' || v.items !== undefined || pick.kind !== 'rv' || pick.variable !== v.variable)
+        return false
+      if (table.cells.length !== v.values.length || !table.cells.every((c) => c.kind === 'aff')) return false
+      const shifted = table.cells.map(
+        (c, k): Cell => ({
+          kind: 'aff',
+          aff: combine(affOf(c), constAff(v.values[k] as number), -1),
+        }),
+      )
+      cells.push(this.gate(shifted, v.variable))
+    }
+    this.cells.set(`${node.name}|loc`, cells)
+    return true
+  }
+
   private observed(node: ModelNode & { readonly kind: 'observed' }): void {
+    const moved = this.valueMovedToMean(node)
+    if (moved !== undefined) return this.observed(moved)
     const fam = node.dist.family
     const shape = this.shapeOf(node.dims)
     const n = prod(shape)
@@ -3298,9 +3388,21 @@ class Compiler {
       e !== undefined && !this.isConst(e) && this.mentionsDiscrete(e)
     if (!discrete(locExpr) && !discrete(scaleExpr)) return undefined
     const loc = this.paramCell(node, 'loc', i)
+    // The precision idiom `1 / sqrt(tau)` where `tau` is a gamma variable, or one chosen among gamma variables by a discrete variable.
+    const randomPrecision = (): boolean => {
+      const p = scaleExpr === undefined ? undefined : this.precisionExpr(scaleExpr)
+      if (p === undefined) return false
+      try {
+        const c = this.cellsOf(node, 'precisionProbe', () => this.evalSym(p))[i] as Cell
+        return c.kind === 'scaled' || (c.kind === 'rv' && c.family === 'gamma')
+      } catch (e) {
+        if (e instanceof Refusal) return false
+        throw e
+      }
+    }
     // A mean that mentions a discrete variable but is a random Gaussian after its gates (a `select`), with a scale that does not
     // (a precision idiom `1 / sqrt(tau)`), is an ordinary observation: the scale is not evaluated as a lookup.
-    if (loc.kind !== 'lookup' && !discrete(scaleExpr)) return undefined
+    if (loc.kind !== 'lookup' && (!discrete(scaleExpr) || randomPrecision())) return undefined
     const scale = this.paramCell(node, 'scale', i)
     return loc.kind === 'lookup' || scale.kind === 'lookup' ? { loc, scale } : undefined
   }
