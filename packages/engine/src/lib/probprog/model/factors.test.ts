@@ -572,8 +572,8 @@ describe('what cannot be mapped is refused with the node and the reason', () => 
     })
     expect(issuesOf(nonlinear, { y: [1, 2] }).issues[0]?.reason).toMatch(/operator 'log' applied to a random value/)
 
-    const family = defineModel('hn', (b) => {
-      b.observe('y', d.normal(b.latent('s', d.halfNormal(1)), 1), b.data('y', { dims: ['row'] }))
+    const family = defineModel('cauchy', (b) => {
+      b.observe('y', d.normal(b.latent('s', d.cauchy(0, 1)), 1), b.data('y', { dims: ['row'] }))
     })
     expect(issuesOf(family, { y: [1] }).issues[0]).toMatchObject({ node: 's', kind: 'family' })
 

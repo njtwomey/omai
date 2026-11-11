@@ -73,6 +73,7 @@ import {
   type MpState,
   marginalsOf,
   priorFactor,
+  projectedPrior,
   projectionOf,
   unaryFunctions,
   type VariableSpec,
@@ -237,6 +238,19 @@ const MESSAGE_FAMILY: Readonly<Record<string, FamilyKind>> = {
   multivariateNormal: 'gaussian-mv',
 }
 
+/**
+ * The families of a prior with no message family that are projected onto a Gaussian once (`latentProjected`): a positive
+ * scale (half-normal, half-Cauchy, log-normal, uniform or truncated normal on the positive half line) as a Gaussian on its
+ * log, any other bounded or truncated value as a Gaussian on the value.
+ */
+const PROJECTED_PRIORS: ReadonlySet<string> = new Set([
+  'halfNormal',
+  'halfCauchy',
+  'logNormal',
+  'uniform',
+  'truncatedNormal',
+])
+
 /** The factor operator a registry name maps to: the model operator's own `factor`, else its name. */
 function factorName(table: OperatorTable, op: string): string {
   return table[op]?.factor ?? op
@@ -257,6 +271,8 @@ class Compiler {
   private readonly atoms = new Map<string, Atom>()
   private readonly auxCount = new Map<string, number>()
   private readonly packed = new Set<string>()
+  /** The Gaussian log-scale variable behind a positive scale variable (the value variable `tau` is `exp` of it), by the value variable's name. */
+  private readonly logScale = new Map<string, string>()
   private readonly components = new Map<string, string>()
   private readonly names = new Set<string>()
   private readonly nodes = new Map<string, ModelNode>()
@@ -968,6 +984,10 @@ class Compiler {
         'constraint',
         `'${node.name}' has the constraint '${node.constraint.kind}': a message family lives on the family's own support, so a constraint beyond it is not expressible`,
       )
+    if (PROJECTED_PRIORS.has(fam)) {
+      this.latentProjected(node)
+      return
+    }
     const kind = MESSAGE_FAMILY[fam]
     if (kind === undefined)
       throw new Refusal(
@@ -1067,13 +1087,85 @@ class Compiler {
     this.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)
   }
 
+  /**
+   * A prior with no message family (half-normal, half-Cauchy, log-normal, uniform, truncated normal) projected once onto a
+   * Gaussian. A density on the positive half line is carried on its log: a Gaussian variable `l = log tau` whose prior is the
+   * projection of the density of `l` (exact for a log-normal, the moments of the half-normal's or half-Cauchy's log otherwise),
+   * and the value `tau` is the variable `exp(l)` of an `apply` factor, whose Gaussian belief is the moment match of a
+   * log-normal. A density on a bounded or truncated real range is projected on the value itself. The graph therefore holds
+   * the projected prior in place of the original (its shape, a bound or a half line, is what the Gaussian cannot keep); the
+   * data's evidence then moves the posterior as EP does for any site.
+   */
+  private latentProjected(node: ModelNode & { readonly kind: 'latent' }): void {
+    const fam = node.dist.family
+    const n = prod(this.shapeOf(node.dims))
+    const names: Readonly<Record<string, readonly string[]>> = {
+      halfNormal: ['scale'],
+      halfCauchy: ['scale'],
+      logNormal: ['mu', 'sigma'],
+      uniform: ['low', 'high'],
+      truncatedNormal: ['loc', 'scale', 'low', 'high'],
+    }
+    const values = Object.fromEntries((names[fam] ?? []).map((p) => [p, this.constParam(node, p, `the ${p}`)]))
+    const cells: Cell[] = []
+    const vars: string[] = []
+    const site = node.dims.length === 0 ? undefined : (i: number): number => i
+    for (let i = 0; i < n; i++) {
+      const p = (k: string): number => (values[k] as number[])[i] as number
+      const name = this.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'gaussian' } })
+      const density = (x: Float64Array): Float64Array => {
+        const args = Object.fromEntries((names[fam] ?? []).map((k) => [k, asTensor(p(k), 'float64')]))
+        const dist = (this.families[fam] as NonNullable<(typeof this.families)[string]>).make(args)
+        return Float64Array.from(toFlat(dist.logProb(fromStorage(Float64Array.from(x), [x.length], 'float64'))))
+      }
+      const low = fam === 'uniform' || fam === 'truncatedNormal' ? p('low') : 0
+      const high = fam === 'uniform' || fam === 'truncatedNormal' ? p('high') : Number.POSITIVE_INFINITY
+      if (fam === 'logNormal' && !(p('sigma') > 0))
+        throw new Refusal('data', `the sigma of '${node.name}' must be positive`)
+      const positive = fam === 'halfNormal' || fam === 'halfCauchy' || fam === 'logNormal' || low >= 0
+      if (positive) {
+        const l = this.auxName(node.name, site === undefined ? undefined : site(i))
+        this.addVariable({ name: l, family: { kind: 'gaussian' } })
+        if (fam === 'logNormal') this.addFactor(gaussianPrior(l, p('mu'), p('sigma') ** 2), l)
+        else {
+          // The density of l = log tau is tau p(tau) at tau = exp(l).
+          const onLog = (x: Float64Array): Float64Array =>
+            density(x.map((v) => Math.exp(v))).map((v, k) => v + (x[k] as number))
+          const scaleGuess = fam === 'uniform' || fam === 'truncatedNormal' ? high : p('scale')
+          this.addFactor(
+            projectedPrior(l, onLog, {
+              support: [
+                low > 0 ? Math.log(low) : Number.NEGATIVE_INFINITY,
+                Number.isFinite(high) ? Math.log(high) : Number.POSITIVE_INFINITY,
+              ],
+              start: Number.isFinite(scaleGuess) && scaleGuess > 0 ? Math.log(scaleGuess) : 0,
+            }),
+            l,
+          )
+        }
+        this.need('apply')
+        this.addFactor({ operator: 'apply', args: [name, l], params: { fn: 'exp' } }, name)
+        this.logScale.set(name, l)
+      } else {
+        const start = Number.isFinite(low) && Number.isFinite(high) ? (low + high) / 2 : 0
+        this.addFactor(projectedPrior(name, density, { support: [low, high], start }), name)
+      }
+      cells.push(this.varAtom(name))
+      vars.push(name)
+    }
+    this.syms.set(node.name, { dims: node.dims, cells })
+    this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+  }
+
   private latentNormal(node: ModelNode & { readonly kind: 'latent' }): void {
     const shape = this.shapeOf(node.dims)
     const n = prod(shape)
     const loc = this.over(this.paramSym(node.dist, 'loc'), node.dims)
     const scaleExpr = node.dist.params['scale']
     if (scaleExpr !== undefined && !this.isConst(scaleExpr)) {
-      this.latentRandomPrecision(node, loc)
+      if (this.precisionExpr(scaleExpr) === undefined && !this.packed.has(node.name))
+        this.latentRandomScale(node, loc, scaleExpr)
+      else this.latentRandomPrecision(node, loc)
       return
     }
     const scale = this.constParam(node, 'scale', 'the scale')
@@ -1165,6 +1257,63 @@ class Compiler {
       const name = this.addVariable({ name: this.elementName(node.name, node.dims, i), family: { kind: 'gaussian' } })
       this.addFactor(gaussianPrior(name, 0, wide(i)), auxId(node.name, 9, node.dims.length === 0 ? undefined : i))
       this.addFactor({ operator: 'mixture-site', args: [name], params: mixture(i) }, name)
+      cells.push(this.varAtom(name))
+      vars.push(name)
+    }
+    this.syms.set(node.name, { dims: node.dims, cells })
+    this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
+  }
+
+  /** A scale with a modelling floor `clip(tau, lo, hi)` read as the scale itself: the floor never binds for a positive scale variable. */
+  private stripClip(e: ExprSpec): ExprSpec {
+    let cur = this.unwrap(e)
+    while (
+      cur.kind === 'op' &&
+      cur.op === 'clip' &&
+      this.isConst(cur.args[1] as ExprSpec) &&
+      this.isConst(cur.args[2] as ExprSpec)
+    )
+      cur = this.unwrap(cur.args[0] as ExprSpec)
+    return cur
+  }
+
+  /**
+   * A Gaussian latent whose scale is a random positive value (a half-normal or half-Cauchy sd of a hierarchy, `exp` of a
+   * Gaussian), written in its non-centred form: `x = loc + scale * z` with a standard normal `z`, the product of two Gaussian
+   * variables (the `product` factor of the engine). A scale that is not an affine Gaussian value is refused with the
+   * precision idiom named.
+   */
+  private latentRandomScale(
+    node: ModelNode & { readonly kind: 'latent' },
+    loc: readonly Cell[],
+    scaleExpr: ExprSpec,
+  ): void {
+    let scales: Cell[]
+    try {
+      scales = this.over(this.evalSym(this.stripClip(scaleExpr)), node.dims)
+    } catch (e) {
+      if (!(e instanceof Refusal)) throw e
+      this.latentRandomPrecision(node, loc)
+      return
+    }
+    if (scales.some((c) => c.kind !== 'aff')) {
+      this.latentRandomPrecision(node, loc)
+      return
+    }
+    this.need('product')
+    const cells: Cell[] = []
+    const vars: string[] = []
+    for (const [i, c] of scales.entries()) {
+      const index = node.dims.length === 0 ? undefined : i
+      const name = this.elementName(node.name, node.dims, i)
+      const z = this.auxName(node.name, index)
+      this.addVariable({ name: z, family: { kind: 'gaussian' } })
+      this.addFactor(gaussianPrior(z, 0, 1), z)
+      const zAtom = this.atomKey({ kind: 'var', name: z })
+      this.atoms.set(zAtom, { kind: 'var', name: z })
+      const scale = affOf(c)
+      const spread = this.mulAff(scale, { terms: new Map([[zAtom, 1]]), offset: 0 }, i)
+      this.materialise(combine(affOf(loc[i] as Cell), spread, 1), node.name, index, name)
       cells.push(this.varAtom(name))
       vars.push(name)
     }
@@ -1543,6 +1692,8 @@ class Compiler {
           const logScale =
             e.kind === 'op' && e.op === 'exp' ? this.observedLogScale(node, name, y, i, index) : undefined
           if (logScale !== undefined) return logScale
+          if (this.precisionExpr(scaleExpr) === undefined)
+            return this.observedRandomScale(node, name, y, i, index, scaleExpr)
           return this.observedRandomPrecision(node, name, y, i, index)
         }
         return this.observedGaussian(node, name, y, i, index, 'loc', 'scale')
@@ -1963,6 +2114,46 @@ class Compiler {
     const s = this.materialise(affOf(cell), node.name, index) as string
     this.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
     this.addFactor({ operator: 'gaussian-log-scale', args: [name, s], params: { loc: loc.aff.offset } }, name)
+    return name
+  }
+
+  /**
+   * An observed Gaussian whose scale is a positive latent (the `exp` of a Gaussian log-scale variable: a half-normal or
+   * half-Cauchy sd projected by `latentProjected`, or `exp(affine)`) and whose mean may be random too: the `gaussian-scale`
+   * factor, a one-dimensional quadrature over the log scale. Anything else is refused with the precision idiom named.
+   */
+  private observedRandomScale(
+    node: ModelNode & { readonly kind: 'observed' },
+    name: string,
+    y: number,
+    i: number,
+    index: number | undefined,
+    scaleExpr: ExprSpec,
+  ): string {
+    const stripped = this.stripClip(scaleExpr)
+    let logVar: string | undefined
+    try {
+      if (stripped.kind === 'op' && stripped.op === 'exp') {
+        const cell = this.cellsOf(node, 'logScale', () => this.evalSym(stripped.args[0] as ExprSpec))[i] as Cell
+        if (cell.kind === 'aff' && !isConstCell(cell)) logVar = this.materialise(cell.aff, node.name, index) as string
+      } else {
+        const cell = this.cellsOf(node, 'scaleValue', () => this.evalSym(stripped))[i] as Cell
+        const only =
+          cell.kind === 'aff' && cell.aff.offset === 0 && cell.aff.terms.size === 1 ? [...cell.aff.terms] : []
+        const atom = only.length === 1 && only[0]?.[1] === 1 ? this.atoms.get(only[0][0]) : undefined
+        if (atom?.kind === 'var') logVar = this.logScale.get(atom.name)
+      }
+    } catch (e) {
+      if (!(e instanceof Refusal)) throw e
+    }
+    if (logVar === undefined) this.randomPrecisions(node)
+    const loc = this.paramCell(node, 'loc', i)
+    const mean = isConstCell(loc)
+      ? { const: loc.aff.offset }
+      : (this.materialise(affOf(loc), node.name, index) as string)
+    this.need('gaussian-scale')
+    this.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
+    this.addFactor({ operator: 'gaussian-scale', args: [name, mean, logVar as string] }, name)
     return name
   }
 

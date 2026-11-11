@@ -25,6 +25,8 @@ export interface Tilted {
   /** The mean and variance of `fn(x)` under the tilted density (equal to `mean` and `variance` without `fn`). */
   readonly fnMean: number
   readonly fnVariance: number
+  /** The mean and variance of each of the extra functions asked for, in order. */
+  readonly extra: readonly { readonly mean: number; readonly variance: number }[]
 }
 
 const PANELS = 80
@@ -65,7 +67,16 @@ function evaluate(
 function moments(
   g: Grid,
   fn: ((x: number) => number) | undefined,
-): { logMass: number; mean: number; variance: number; fnMean: number; fnVariance: number; top: number } {
+  more: readonly ((x: number) => number)[],
+): {
+  logMass: number
+  mean: number
+  variance: number
+  fnMean: number
+  fnVariance: number
+  top: number
+  extra: { mean: number; variance: number }[]
+} {
   let top = Number.NEGATIVE_INFINITY
   for (const v of g.lw) if (v > top) top = v
   if (!Number.isFinite(top)) throw new ImproperMessageError('the factor has no mass against this cavity')
@@ -94,7 +105,16 @@ function moments(
     for (const [i, v] of g.lw.entries()) f2 += Math.exp(v - top) * ((fs[i] as number) - fnMean) ** 2
     fnVariance = f2 / m0
   }
-  return { logMass: top + Math.log(m0), mean, variance, fnMean, fnVariance, top }
+  const extra = more.map((h) => {
+    const hs = g.xs.map((x) => h(x))
+    let a1 = 0
+    for (const [i, v] of g.lw.entries()) a1 += Math.exp(v - top) * (hs[i] as number)
+    const mu = a1 / m0
+    let a2 = 0
+    for (const [i, v] of g.lw.entries()) a2 += Math.exp(v - top) * ((hs[i] as number) - mu) ** 2
+    return { mean: mu, variance: a2 / m0 }
+  })
+  return { logMass: top + Math.log(m0), mean, variance, fnMean, fnVariance, top, extra }
 }
 
 /**
@@ -109,6 +129,7 @@ function moments(
  * @param logf - The log of the (powered) factor.
  * @param hint - Where the factor lives, when that is known.
  * @param fn - A function of the variable whose moments are wanted too.
+ * @param more - Further functions of the variable whose moments are wanted (the conditional moments of another variable).
  * @returns The tilted log mass and moments.
  * @throws ImproperMessageError when the factor has no mass, or the integrand does not decay to the cavity's edge (an improper tilt).
  */
@@ -117,6 +138,7 @@ export function tiltedByQuadrature(
   logf: (x: number) => number,
   hint?: WindowHint,
   fn?: (x: number) => number,
+  more: readonly ((x: number) => number)[] = [],
 ): Tilted {
   const sd = Math.sqrt(cavity.variance)
   const cavityLo = cavity.mean - 9 * sd
@@ -135,7 +157,7 @@ export function tiltedByQuadrature(
     }
   }
   let grid = evaluate(cavity, lo, hi, kinks, logf)
-  let r = moments(grid, fn)
+  let r = moments(grid, fn, more)
   // An integrand that peaks at the edge of the cavity's own window (still growing there) has no proper tilted density.
   if (hint === undefined && grid.lw.length > 2) {
     const n = grid.lw.length
@@ -150,7 +172,14 @@ export function tiltedByQuadrature(
     const nhi = Math.min(grid.hi, r.mean + 10 * sdT)
     if (!(nhi > nlo) || nhi - nlo > 0.6 * (grid.hi - grid.lo)) break
     grid = evaluate(cavity, nlo, nhi, kinks, logf)
-    r = moments(grid, fn)
+    r = moments(grid, fn, more)
   }
-  return { logMass: r.logMass, mean: r.mean, variance: r.variance, fnMean: r.fnMean, fnVariance: r.fnVariance }
+  return {
+    logMass: r.logMass,
+    mean: r.mean,
+    variance: r.variance,
+    fnMean: r.fnMean,
+    fnVariance: r.fnVariance,
+    extra: r.extra,
+  }
 }

@@ -3865,6 +3865,8 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   them from its JSON description. `priors.ts`: `priorFactor`, `gaussianPrior`, `gaussianMvPrior`, `gammaPrior`,
   `betaPrior`, `bernoulliPrior`, `discretePrior`, `dirichletPrior`, `normalGammaPrior`. `truncated.ts`:
   `truncatedNormalMoments`, the closed form behind every comparison and probit message, accurate in the tails.
+  `projectedPrior` and `densityMoments` (`priors.ts`): a prior factor from any density, projected once onto a Gaussian or gamma by
+  moment matching (the half-normal, half-Cauchy, uniform and truncated normal the compiler carries on a log scale).
   `_dense.ts`, `_quadrature.ts`, `_scalar.ts`: internal (SPD algebra, Gauss-Hermite against a Gaussian message, scalar
   special functions and the inverse digamma).
 - `operators/`: the 35 factor operators of `defaultOperators()` (`registry.ts`), each with message rules for the
@@ -3883,7 +3885,7 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   with their rows `mixture-row`, `student-t-row`, `laplace-row` (`robust.ts`; the last two are rows of the registry of numeric likelihoods of
   `likelihoods.ts`, `likelihoods()`: Poisson and negative binomial with a log link, Weibull and log-normal survival, binomial with
   a logistic or probit link, ordinal probit, asymmetric Laplace, Student t, Laplace, behind the generic `likelihood-site` and
-  `likelihood-row`, integrated by the zooming panelled quadrature of `_tilted.ts`), and `apply` (`functions.ts`: `y = f(x)` for `exp`, `square`, `tanh`, `relu` (closed
+  `likelihood-row`, integrated by the zooming panelled quadrature of `_tilted.ts`), `gaussian-scale` (`scale.ts`: an observed value with a Gaussian mean and log scale, one quadrature over the log scale), and `apply` (`functions.ts`: `y = f(x)` for `exp`, `square`, `tanh`, `relu` (closed
   form), `softplus`, `abs`, `sigmoid` of a Gaussian variable, the output matched under the input's cavity: EP only). `numericOperator` (`numeric.ts`)
   is a constructor, not one of the 41: a factor given only by its log density, whose EP messages come from a panelled
   product rule (the fallback for a robust likelihood or the clutter problem). `args.ts`: how operators read their
