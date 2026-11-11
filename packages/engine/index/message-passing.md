@@ -51,7 +51,7 @@ Message passing on factor graphs of exponential families, the Infer.NET way: a m
 - algorithm `bpAlgorithm`: Sum-product belief propagation on a factor graph of discrete variables. `src/lib/message-passing/named.ts:291` `omai-engine/message-passing`
 - algorithm `ecAlgorithm`: Expectation consistent (adaptive TAP) inference: a Gaussian times 1-D sites. `src/lib/message-passing/consistent.ts:139` `omai-engine/message-passing`
 - algorithm `epAlgorithm`: Expectation propagation on a factor graph of exponential families. `src/lib/message-passing/named.ts:227` `omai-engine/message-passing`
-- algorithm `messagePassingAlgorithm`: The message-passing engine on a factor graph: projection, schedule, damping slots. `src/lib/message-passing/engine.ts:665` `omai-engine/message-passing`
+- algorithm `messagePassingAlgorithm`: The message-passing engine on a factor graph: projection, schedule, damping slots. `src/lib/message-passing/engine.ts:687` `omai-engine/message-passing`
 - algorithm `numericEpAlgorithm`: EP with numeric factors projected by quadrature, Laplace, sample or sigma-point rules. `src/lib/message-passing/numerical.ts:490` `omai-engine/message-passing`
 - algorithm `powerEpAlgorithm`: Power and fractional EP: per-factor powers on the message-passing engine. `src/lib/message-passing/power.ts:119` `omai-engine/message-passing`
 - algorithm `regionBpAlgorithm`: Generalised belief propagation on a region graph: Bethe, Kikuchi or junction regions. `src/lib/message-passing/regions.ts:609` `omai-engine/message-passing`
