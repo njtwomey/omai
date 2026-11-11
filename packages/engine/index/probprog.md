@@ -65,6 +65,8 @@ The expectation-propagation suite of the probabilistic programming stack: the at
 
 - estimator `betaBernoulliAtom`: EP atom: beta and Bernoulli (conjugate, exact). `src/lib/probprog/ep/ep-atoms-conjugate.ts:105` `omai-engine/probprog/ep`
 - estimator `betaBernoulliLearnedAtom`: EP atom: groups of flips with a beta prior of unknown strength, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-extended-conjugate.ts:251` `omai-engine/probprog/ep`
+- estimator `bivariateCorrelationAtom`: EP atom: a bivariate normal with an unknown correlation (LKJ prior). `src/lib/probprog/ep/ep-atoms-covariance.ts:513` `omai-engine/probprog/ep`
+- estimator `bivariateCorrelationLearnedAtom`: EP atom: a bivariate normal with unknown mean, standard deviations and correlation, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-covariance.ts:673` `omai-engine/probprog/ep`
 - estimator `clutterAtom`: EP atom: clutter, a gate per observation between the centre and wide clutter. `src/lib/probprog/ep/ep-atoms-mixtures.ts:689` `omai-engine/probprog/ep`
 - estimator `clutterLearnedAtom`: EP atom: clutter with centre, both precisions and share learned. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:159` `omai-engine/probprog/ep`
 - estimator `clutterMixtureAtom`: EP atom: an inlier and outlier mixture likelihood with the switches summed out (mixture site). `src/lib/probprog/ep/ep-atoms-mixtures.ts:750` `omai-engine/probprog/ep`
@@ -99,6 +101,8 @@ The expectation-propagation suite of the probabilistic programming stack: the at
 - estimator `mixtureComponentsAtom`: EP atom: a random index into random components (mu[z]), drawn as its branches. `src/lib/probprog/ep/ep-atoms-mixtures.ts:383` `omai-engine/probprog/ep`
 - estimator `mixtureComponentsLearnedAtom`: EP atom: mixture with unknown means, widths and weights, learned. `src/lib/probprog/ep/ep-atoms-extended-gates.ts:396` `omai-engine/probprog/ep`
 - estimator `mixtureRegressionAtom`: EP atom: a mixture of two regressions, a class per row picking the line (a gate of Gaussian likelihoods). `src/lib/probprog/ep/ep-atoms-regression-gates.ts:103` `omai-engine/probprog/ep`
+- estimator `mvnWishartAtom`: EP atom: a multivariate normal with a Wishart precision matrix and a known mean (exact). `src/lib/probprog/ep/ep-atoms-covariance.ts:239` `omai-engine/probprog/ep`
+- estimator `mvnWishartLearnedAtom`: EP atom: a bivariate normal with unknown mean and Wishart precision matrix, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-covariance.ts:398` `omai-engine/probprog/ep`
 - estimator `orderedMeansAtom`: EP atom: two means with an ordered constraint, against data that disagree. `src/lib/probprog/ep/ep-atoms-gates.ts:148` `omai-engine/probprog/ep`
 - estimator `orderedPairAtom`: EP atom: an ordered pair, a hard comparison (greater-than, truncation). `src/lib/probprog/ep/ep-atoms-gates.ts:68` `omai-engine/probprog/ep`
 - estimator `ordinalProbitAtom`: EP atom: an ordinal probit regression with fixed cut points. `src/lib/probprog/ep/ep-atoms-ordinal.ts:123` `omai-engine/probprog/ep`
@@ -128,6 +132,8 @@ The expectation-propagation suite of the probabilistic programming stack: the at
 - estimator `productAtom`: EP atom: the product of two Gaussians (numeric product rule, a banana posterior). `src/lib/probprog/ep/ep-atoms-functions.ts:197` `omai-engine/probprog/ep`
 - estimator `quantileRegressionAtom`: EP atom: Bayesian quantile regression with the asymmetric Laplace. `src/lib/probprog/ep/ep-atoms-ordinal.ts:300` `omai-engine/probprog/ep`
 - estimator `quantileRegressionLearnedAtom`: EP atom: Bayesian quantile regression with coefficients recovered from simulated points. `src/lib/probprog/ep/ep-atoms-ordinal.ts:385` `omai-engine/probprog/ep`
+- estimator `randomInterceptsSlopesAtom`: EP atom: correlated random intercepts and slopes (a Wishart covariance of the effects). `src/lib/probprog/ep/ep-atoms-covariance.ts:957` `omai-engine/probprog/ep`
+- estimator `randomInterceptsSlopesLearnedAtom`: EP atom: correlated random intercepts and slopes with learned mean and covariance, recovered from simulated groups. `src/lib/probprog/ep/ep-atoms-covariance.ts:1141` `omai-engine/probprog/ep`
 - estimator `scaledPrecisionAtom`: EP atom: latent values whose precisions are a known multiple of one unknown precision (scaled precision). `src/lib/probprog/ep/ep-atoms-scales.ts:254` `omai-engine/probprog/ep`
 - estimator `sharedPrecisionAtom`: EP atom: latent values with a shared unknown precision (gamma-precision rule, latent form). `src/lib/probprog/ep/ep-atoms-scales.ts:220` `omai-engine/probprog/ep`
 - estimator `sharedPrecisionLearnedAtom`: EP atom: a population with unknown mean and spread, each value observed with known noise, recovered from simulated data. `src/lib/probprog/ep/ep-atoms-extended-scales.ts:241` `omai-engine/probprog/ep`
@@ -150,7 +156,7 @@ The expectation-propagation suite of the probabilistic programming stack: the at
 - estimator `weibullLearnedAtom`: EP atom: a Weibull regression with a log link, coefficients recovered from simulated times. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:749` `omai-engine/probprog/ep`
 - estimator `weibullShapeLearnedAtom`: EP atom: a Weibull with unknown scale and shape, recovered from simulated times. `src/lib/probprog/ep/ep-atoms-extended-likelihoods.ts:1015` `omai-engine/probprog/ep`
 
-- table `epAtoms`: The EP atoms: bare setups that each exercise one factor of the message passing suite. `src/lib/probprog/ep/ep-atom-list.ts:115` `omai-engine/probprog/ep`
+- table `epAtoms`: The EP atoms: bare setups that each exercise one factor of the message passing suite. `src/lib/probprog/ep/ep-atom-list.ts:123` `omai-engine/probprog/ep`
 
 ## probprog/inference
 
@@ -250,10 +256,10 @@ The model layer: a model written once as a value. A builder (`defineModel`) with
 - function `bind`: Bind data to a ModelSpec with checks of dims, sizes and supports. `src/lib/probprog/model/bind.ts:324` `omai-engine/probprog/model`
 - function `collapsePlan`: collapsePlan: which sites the collapse handler can integrate out, with cost and gain; user-invoked. `src/lib/probprog/model/collapse-plan.ts:105` `omai-engine/probprog/model`
 - function `defineModel`: Build a model spec with named dimensions, data, latents, observations and derived nodes. `src/lib/probprog/model/builder.ts:741` `omai-engine/probprog/model`
-- function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:5105` `omai-engine/probprog/model`
+- function `factorGraphPosterior`: The Posterior of a message-passing state, by site name, in the spec's shapes. `src/lib/probprog/model/factors.ts:5449` `omai-engine/probprog/model`
 - function `fromProgram`: fromProgram: lift a sample/observe program to a ModelSpec of its site structure; refuses a varying structure. `src/lib/probprog/model/from-program.ts:185` `omai-engine/probprog/model`
 - function `structureReport`: structureReport: what a spec's structure allows, as records and suggestions naming the method to use. `src/lib/probprog/model/analysis.ts:476` `omai-engine/probprog/model`
-- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:4932` `omai-engine/probprog/model`
+- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:5276` `omai-engine/probprog/model`
 - function `toProgram`: Compile a bound ModelSpec to a sample/observe program every engine runs. `src/lib/probprog/model/compile.ts:267` `omai-engine/probprog/model`
 
 ### probprog/model/dists

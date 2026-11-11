@@ -47,7 +47,7 @@ omai-engine/logic	403	ccdc0b881471
 omai-engine/logic/ilp	65	e55805f239eb
 omai-engine/losses	194	7298761fe4d3
 omai-engine/manifold	80	aa598bd29506
-omai-engine/message-passing	309	223c9c6aaba0
+omai-engine/message-passing	322	f1fad9576b76
 omai-engine/metrics	338	1dc3f0837564
 omai-engine/mixture	42	3ac1e9f8cb18
 omai-engine/nn	791	a47294e5f8b1
@@ -61,7 +61,7 @@ omai-engine/numerics/interpolate	47	d0870a91cb2e
 omai-engine/numerics/inverse	22	721ab692c288
 omai-engine/numerics/linalg	156	575702ff9936
 omai-engine/numerics/polynomial	31	6b24d8692a9b
-omai-engine/numerics/quadrature	40	5c04db3298b4
+omai-engine/numerics/quadrature	40	17a43fa0c603
 omai-engine/numerics/roots	55	3d31f879c533
 omai-engine/numerics/sparse	72	bf1f1575c648
 omai-engine/numerics/spatial	45	0979524cbbc7
@@ -73,10 +73,10 @@ omai-engine/pgm/causal	59	1dc2cc4bcf4f
 omai-engine/pgm/learning	123	a9e76fe66003
 omai-engine/problems	55	af621d373b9a
 omai-engine/probprog	354	5a9b5acf1538
-omai-engine/probprog/ep	174	0dc2dfc300df
+omai-engine/probprog/ep	184	9ed8add3d133
 omai-engine/probprog/inference	187	1db8f3fe5a98
-omai-engine/probprog/model	163	516133fba2ab
-omai-engine/probprog/model/dists	36	dde1a7ff780f
+omai-engine/probprog/model	163	c8952c4e3923
+omai-engine/probprog/model/dists	40	bf3eaede35dd
 omai-engine/probprog/models	161	0af64dda639a
 omai-engine/probprog/validation	57	faf83dd9cdfc
 omai-engine/random	52	07ee37b9bd6f
@@ -126,4 +126,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	303	541cc98902e2
-total	20131	bae2a7eec917
+total	20158	04bec8eda73a
