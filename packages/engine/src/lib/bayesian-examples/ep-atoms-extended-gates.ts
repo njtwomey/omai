@@ -16,7 +16,7 @@ import { toFlat } from '../tensor/index.ts'
 import type { Config } from '../trace/index.ts'
 import { type AtomProblem, type AtomSupport, defineAtom, type EpAtom, type ExactMarginal } from './ep-atoms.ts'
 import { simulationKnobs } from './ep-atoms-extended-conjugate.ts'
-import { clutterPosterior, mixtureGibbs, samplesMarginal } from './ep-atoms-gibbs.ts'
+import { clutterPosterior, mixtureGibbs, outlierMixturePosterior, samplesMarginal } from './ep-atoms-gibbs.ts'
 import { normalPdf } from './ep-atoms-quad.ts'
 import { exampleNumber } from './example-method.ts'
 
@@ -149,7 +149,7 @@ function clutterLearnedProblem(k: Config): AtomProblem {
  * observation is a gate between a Gaussian at the centre with the inlier precision and a Gaussian at zero with the clutter
  * precision, so EP reports the probability that each observation is clutter as well as the parameters.
  *
- * @index estimator EP atom: the clutter problem with the centre, both precisions and the clutter share learned from simulated data.
+ * @index estimator EP atom: clutter with centre, both precisions and share learned.
  * @example
  * ```ts
  * import { clutterLearnedAtom } from 'omai-engine/bayesian-examples'
@@ -386,7 +386,7 @@ function mixtureLearnedProblem(k: Config): AtomProblem {
  * the chosen component together. The separation knob shows when EP recovers the components and when it settles on one reading of
  * overlapping ones.
  *
- * @index estimator EP atom: a mixture with unknown means, widths and weights (ordered, gamma, Dirichlet), recovered from simulated data.
+ * @index estimator EP atom: mixture with unknown means, widths and weights, learned.
  * @example
  * ```ts
  * import { mixtureComponentsLearnedAtom } from 'omai-engine/bayesian-examples'
@@ -532,7 +532,7 @@ function gateRandomLearnedProblem(k: Config): AtomProblem {
  * widths (gamma precisions) and the weight of the switch (a beta), learned from data simulated from a stated truth. The twin
  * of the gate between two random values and of the gate-weight atoms, with the components' widths learned too.
  *
- * @index estimator EP atom: a select gate between two random components with unknown means, widths and weight, recovered from simulated data.
+ * @index estimator EP atom: select gate with unknown means, widths and weight, learned.
  * @example
  * ```ts
  * import { gateRandomLearnedAtom } from 'omai-engine/bayesian-examples'
@@ -726,7 +726,7 @@ function weightedMarginal(points: readonly number[], weights: readonly number[])
  * beta) and the precision of the slab (a gamma) unknown, learned from data simulated from a stated set of active coefficients:
  * EP recovers which coefficients are active, how common they are and how large.
  *
- * @index estimator EP atom: spike and slab with unknown inclusion probability and slab width, recovered from simulated data.
+ * @index estimator EP atom: spike and slab with unknown share and slab width, learned.
  * @example
  * ```ts
  * import { spikeSlabLearnedAtom } from 'omai-engine/bayesian-examples'
@@ -769,4 +769,208 @@ export const spikeSlabLearnedAtom: EpAtom = defineAtom({
   }),
   ep: { damping: 0.5, tol: 1e-4 },
   problem: spikeSlabLearnedProblem,
+})
+
+function spikeSlabMarginalLearnedProblem(k: Config): AtomProblem {
+  const base = spikeSlabLearnedProblem(k)
+  const [seed, p] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
+  const noise = exampleNumber(k, 'noise')
+  // region spike-and-slab-marginal-learned
+  // the ground truth: three coefficients are active, the rest are zero
+  const coefficients = Array.from({ length: p }, (_, j) => ACTIVE.find(([at]) => at === j)?.[1] ?? 0)
+  const draw = Array.from(toFlat(normal(foldIn(key(seed), 0), [p])))
+  const observed = coefficients.map((v, j) => v + noise * (draw[j] ?? 0))
+  const definition = defineModel('spike-and-slab-marginal-learned', (m) => {
+    const j = m.range('j')
+    // how often a coefficient is active, and the precision of the active ones
+    const share = m.latent('share', d.beta(1.5, 3.5))
+    const slabPrecision = m.latent('slabPrecision', d.gamma(2, 8))
+    const slabSd = ops.div(1, ops.sqrt(slabPrecision))
+    // each coefficient has the two-component prior, its switch summed out
+    const w = m.latent('w', d.normalSpikeSlab(share, slabSd, 0.1), { dims: [j] })
+    m.observe('y', d.normal(w, noise), m.data('y', { dims: [j] }))
+  })
+  // endregion
+  return {
+    ...base,
+    definition,
+    data: { y: observed },
+    equations: base.equations
+      .map((line) =>
+        line.startsWith('z_j ~')
+          ? 'w_j ~ share N(0, 1 / slabPrecision) + (1 - share) N(0, 0.1²)   (the switch summed out)'
+          : line,
+      )
+      .filter((line) => !line.startsWith('slab_j ~')),
+    quantities: base.quantities.filter((q) => q.support !== 'probability'),
+    exact: Object.fromEntries(Object.entries(base.exact ?? {}).filter(([name]) => !name.startsWith('z['))),
+  }
+}
+
+/**
+ * The same sparse sequence with each coefficient's switch summed out (the library's spike and slab family) and the inclusion
+ * probability and the slab precision unknown. The compiler refuses it today: the mixture site takes known weights and widths. The
+ * page shows the library's reason and the exact posterior of the share and the slab precision that EP will be held to; the
+ * explicit-switch twin (spike and slab: parameters learned) runs.
+ *
+ * @index estimator EP atom (planned): summed-out spike and slab, learned share and width.
+ * @example
+ * ```ts
+ * import { spikeSlabMarginalLearnedAtom } from 'omai-engine/bayesian-examples'
+ * spikeSlabMarginalLearnedAtom.expected // => 'planned'
+ * ```
+ */
+export const spikeSlabMarginalLearnedAtom: EpAtom = defineAtom({
+  name: 'spike-and-slab-marginal-learned',
+  title: 'Spike and slab, switch summed out: parameters learned',
+  extends: 'spike-and-slab-marginal',
+  recovery: {
+    seeds: 30,
+    coverage: 0.7,
+    zrms: 1.6,
+    reason: 'what the explicit-switch twin achieves (spike and slab: parameters learned); this form is planned',
+  },
+  what: 'The spike and slab prior with the switch summed out (the mixture site) on a sequence of coefficients, with the inclusion probability and the slab precision unknown, and the data simulated from a stated set of active coefficients. The compiler refuses it today, and the page says what is missing.',
+  factors: ['prior (beta, gamma)', 'mixture-site with a random weight and a random slab width (planned)'],
+  family: 'gates',
+  expected: 'planned',
+  plan: 'docs/probprog/ep-plan.md section C1 (mixture-site): the mixture site takes a known inclusion probability and known widths. A random inclusion probability needs the beta message through the sum (the rule `mixture-weight` has for a two-component mixture with known components) and a random slab precision needs the slab as a gaussian-gamma-precision branch of the sum; both exist inside the gate, which is why the explicit-switch twin runs',
+  reference: 'exact',
+  tolerance: {
+    meanZ: 0.2,
+    sdRatio: [0.8, 1.2],
+    ks: 0.1,
+    reason: 'the same posterior as the explicit-switch twin: EP carries a beta and a gamma',
+  },
+  knobs: dict({
+    seed: simulationKnobs(10)['seed'] as ReturnType<typeof int>,
+    n: int(7, 14, { default: 10, label: 'coefficients' }),
+    noise: real(0.2, 1.2, { default: 0.5, step: 0.05, label: 'noise sd (known)' }),
+  }),
+  problem: spikeSlabMarginalLearnedProblem,
+})
+
+function clutterMixtureLearnedProblem(k: Config): AtomProblem {
+  const [seed, n] = [exampleNumber(k, 'seed'), exampleNumber(k, 'n')]
+  const [trueTheta, trueSd, trueWeight] = [
+    exampleNumber(k, 'trueTheta'),
+    exampleNumber(k, 'trueSd'),
+    exampleNumber(k, 'trueWeight'),
+  ]
+  const width = 10
+  // region clutter-mixture-learned
+  // the ground truth: outliers are draws around the same centre, ten times wider
+  const u = Array.from(toFlat(uniform(foldIn(key(seed), 0), [n])))
+  const e = Array.from(toFlat(normal(foldIn(key(seed), 1), [n])))
+  const isOutlier = u.map((v) => v < trueWeight)
+  const y = e.map((v, i) => trueTheta + trueSd * v * (isOutlier[i] ? width : 1))
+  const definition = defineModel('clutter-mixture-learned', (m) => {
+    const row = m.range('i')
+    // the centre, the precision of the inliers, the share of outliers
+    const mu = m.latent('mu', d.normal(0, 5))
+    const precision = m.latent('precision', d.gamma(2, 1))
+    const share = m.latent('share', d.beta(2, 5))
+    // each observation is an inlier or, ten times wider, an outlier: the switch summed out
+    const sd = ops.div(1, ops.sqrt(precision))
+    const observed = m.data('y', { dims: [row], role: 'response' })
+    m.observe('y', d.normalOutliers(mu, sd, share, 10), observed)
+  })
+  // endregion
+  const priors = { centre: 5, precision: { shape: 2, rate: 1 }, share: { a: 2, b: 5 }, width } as const
+  const post = outlierMixturePosterior(y, priors)
+  const at = y.map((_, i) => i + 1)
+  const x = [0, n + 1]
+  const band = (c: number, w: number): number[] => [c + w, c + w]
+  return {
+    definition,
+    data: { y },
+    equations: [
+      `truth: centre ${trueTheta}, inlier sd ${trueSd} (precision ${sig(1 / trueSd ** 2)}), outlier share ${trueWeight}, outliers ${width} times wider; ${n} observations, seed ${seed}`,
+      'mu ~ N(0, 5²)   (the centre)',
+      'precision ~ Gamma(2, 1)   (of the inliers)',
+      'share ~ Beta(2, 5)   (the share of outliers)',
+      `y_i ~ (1 - share) N(mu, 1 / precision) + share N(mu, ${width}² / precision)   (the switch summed out)`,
+    ],
+    quantities: [
+      { name: 'mu', label: 'mu (the centre)', support: 'real', truth: trueTheta },
+      { name: 'precision', label: 'inlier precision', support: 'positive', truth: 1 / trueSd ** 2 },
+      { name: 'share', label: 'share of outliers', support: 'unit', truth: trueWeight },
+    ],
+    exact: { mu: post.centre, precision: post.precision, share: post.share },
+    referenceSource: 'quadrature over the centre, the precision and the share, the switches summed out',
+    figure: {
+      caption:
+        'The simulated observations (outliers drawn ten times wider around the same centre, marked) and the centre with the inlier band at two sds: green, the truth; thick and dashed, what EP will believe once the library maps this form.',
+      xLabel: 'observation',
+      yLabel: 'value',
+      xLimits: x as [number, number],
+      points: [
+        {
+          name: 'observations',
+          x: at,
+          y,
+          group: isOutlier.map((o) => (o ? 1 : 0)),
+          groupNames: { 0: 'inlier', 1: 'outlier' },
+        },
+      ],
+      curves: [
+        { name: 'true centre', colour: 'tab2', x, y: band(trueTheta, 0) },
+        { name: 'true inlier band', colour: 'tab2', x, y: band(trueTheta, 2 * trueSd) },
+        { name: 'true inlier band', colour: 'tab2', x, y: band(trueTheta, -2 * trueSd) },
+      ],
+      answer: (m) => {
+        const centre = m['mu'] ?? Number.NaN
+        const w = 2 / Math.sqrt(m['precision'] ?? Number.NaN)
+        return [
+          { name: 'mu', x, y: band(centre, 0) },
+          { name: 'mu + 2 inlier sd', x, y: band(centre, w) },
+          { name: 'mu - 2 inlier sd', x, y: band(centre, -w) },
+        ]
+      },
+    },
+  }
+}
+
+/**
+ * The inlier and outlier mixture with the switches summed out (the library's `normalOutliers`) and the centre, the width of the
+ * inliers and the share of outliers all unknown, learned from data simulated from a stated truth. The compiler refuses it today:
+ * the mixture site takes a known width and a known share. The page shows the library's reason and the exact posterior EP will
+ * be held to; the explicit-switch twin (clutter: parameters learned) runs.
+ *
+ * @index estimator EP atom (planned): summed-out outlier mixture, learned width and share.
+ * @example
+ * ```ts
+ * import { clutterMixtureLearnedAtom } from 'omai-engine/bayesian-examples'
+ * clutterMixtureLearnedAtom.expected // => 'planned'
+ * ```
+ */
+export const clutterMixtureLearnedAtom: EpAtom = defineAtom({
+  name: 'clutter-mixture-learned',
+  title: 'Inlier and outlier mixture, switches summed out: parameters learned',
+  extends: 'clutter-mixture',
+  recovery: {
+    seeds: 20,
+    coverage: 0.7,
+    zrms: 1.6,
+    reason: 'what the explicit-switch twin achieves (clutter: parameters learned); this form is planned',
+  },
+  what: 'The inlier and outlier mixture likelihood of the basic atom with the centre, the width of the inliers and the share of outliers all unknown (priors), and the data simulated from a stated truth. The switches are summed out, so the library needs a mixture site with a random width and a random share; it refuses today and the page says what is missing.',
+  factors: ['prior (gaussian, gamma, beta)', 'mixture-site with a random scale and a random share (planned)'],
+  family: 'gates',
+  expected: 'planned',
+  plan: 'docs/probprog/ep-plan.md section C1 (mixture-site): `normalOutliers` has a message rule for a known scale and a known share (the likelihood mixture of two Gaussians around the random centre). A random scale is a gamma precision shared by both components (the precision idiom inside the sum) and a random share a beta through the sum; the gate maps both (see clutter: parameters learned, which runs), so the missing piece is the summed-out form of the same message: a mixture-site with a gamma precision and a beta weight',
+  reference: 'exact',
+  tolerance: {
+    meanZ: 0.5,
+    sdRatio: [0.5, 1.6],
+    ks: 0.3,
+    reason: 'the posterior is lumpy and EP matches only its mean and variance with a Gaussian, a gamma and a beta',
+  },
+  knobs: dict({
+    ...learnedKnobs(50, 80),
+    trueTheta: real(-3, 3, { default: 1.5, step: 0.1, label: 'true centre' }),
+    trueSd: real(0.2, 1.5, { default: 0.5, step: 0.05, label: 'true inlier sd' }),
+    trueWeight: real(0.05, 0.5, { default: 0.25, step: 0.01, label: 'true share of outliers' }),
+  }),
+  problem: clutterMixtureLearnedProblem,
 })

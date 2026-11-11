@@ -368,3 +368,26 @@ because the likelihood of a difference of two skills is smooth and near Gaussian
 (`N-60(precision diag 2, 4, ...)` across the panel). `describeMessage` (`exposition/model-run-tape.ts`) now writes at most the first
 four numbers and the count: `N-60(precision diag 2, 2, 2, 2, ... (60))`, and the same for a long discrete or Dirichlet message and an
 unknown family.
+
+## 13. Gates whose components have gamma precisions of their own (2026-11-11)
+
+A Gaussian observation whose mean and precision are chosen by the same discrete variable (`where(z, clutter, inlier)` as the
+precision idiom `1 / sqrt(precision)`, `at(tau, z)`, with a switch that is a Bernoulli over a beta or a categorical over a
+Dirichlet) compiles to one `gate` per observation whose branches are `gaussian-gamma-precision` factors over the means and the
+gamma variables of the components (`probprog/model/factors.ts`, `observedSwitch`; the precision cell is a lookup with
+`precisions`, read in a "lookup mode" in which a gate keeps its components as states instead of a `select` each). The operator
+gained `logEvidence` (what the gate weighs its branches by). Tests: `probprog/model/gate-precisions.test.ts` (the clutter problem
+against a four-dimensional grid with the switches summed out; a two-component mixture) and `operators/precision-scale.test.ts`.
+
+The extended gate atoms run on it, each against an exact or sampled reference (default knobs; EP over the reference's sd):
+
+| atom | reference | EP against it | recovery over seeds (coverage of the 90% intervals) |
+| --- | --- | --- | --- |
+| clutter-learned | quadrature over four unknowns, switches summed out | centre 1.412 against 1.412 (+- 0.082 against 0.083), inlier precision 3.96 +- 0.88 against 3.97 +- 0.88, clutter precision 0.0995 against 0.0996, share 0.163 against 0.164; responsibilities within 0.004 | 40 seeds: centre 1.00, inlier 0.93, clutter 0.90, share 0.88 |
+| gate-random-learned | Gibbs sampler | means within 0.12 sd, precisions within 0.05 sd, share 0.406 +- 0.076 against 0.408 +- 0.083 | 20 seeds: 0.75 to 1.00 |
+| mixture-components-learned | Gibbs sampler (means relabelled in order) | means within 0.1 sd, spreads 0.88 to 1.01 of the sampler's | 20 seeds: 0.75 to 1.00; closer components: second mean 0.55 to 0.60, EP's spreads 0.5 to 0.7 of the sampler's (one reading of the labels) |
+| spike-and-slab-learned | exact (share and slab precision on a grid) | share 0.417 +- 0.148 against 0.421 +- 0.152, slab precision 0.201 +- 0.093 against 0.201 +- 0.104 | 20 seeds: 1.00 and 1.00 |
+
+Planned: the two summed-out forms (`clutter-mixture-learned`, `spike-and-slab-marginal-learned`): `normalOutliers` and
+`normalSpikeSlab` take a known scale, share and slab width; the missing piece is a mixture site with a gamma precision and a beta
+weight (inside the gate it exists). The AR(1) twin has no basic atom (the tracker is a program page).

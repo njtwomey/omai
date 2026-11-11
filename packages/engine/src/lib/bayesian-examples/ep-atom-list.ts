@@ -15,9 +15,11 @@ import {
 } from './ep-atoms-extended-conjugate.ts'
 import {
   clutterLearnedAtom,
+  clutterMixtureLearnedAtom,
   gateRandomLearnedAtom,
   mixtureComponentsLearnedAtom,
   spikeSlabLearnedAtom,
+  spikeSlabMarginalLearnedAtom,
 } from './ep-atoms-extended-gates.ts'
 import {
   laplaceLearnedAtom,
@@ -104,9 +106,11 @@ export const epAtoms: readonly EpAtom[] = [
   spikeSlabAtom,
   spikeSlabLearnedAtom,
   spikeSlabMarginalAtom,
+  spikeSlabMarginalLearnedAtom,
   clutterAtom,
   clutterLearnedAtom,
   clutterMixtureAtom,
+  clutterMixtureLearnedAtom,
   orderedPairAtom,
   orderedMeansAtom,
   expAtom,

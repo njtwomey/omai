@@ -106,7 +106,8 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
   const qb = pair === undefined ? undefined : qs.find((q) => q.name === pair[1])
   const planned = run !== undefined && run.status !== 'ran'
   const hasKnobs = Object.keys(atom.knobs.spaces).length > 0
-  const probabilities = qs.filter((q) => q.support === 'probability')
+  // A probability marked hidden (the switch of each of dozens of observations) is drawn in the data figure, not as a bar each.
+  const probabilities = qs.filter((q) => q.support === 'probability' && q.hidden !== true)
   const mixtures = problem?.mixtures ?? []
   const covered = new Set(mixtures.map((m) => m.quantity))
   const source = useMemo(() => atomSource(atom, problem), [atom, problem])
@@ -349,6 +350,12 @@ function Check(props: { readonly atom: EpAtom; readonly state: AtomState }): Rea
       </p>
     )
   const t = check.tolerance
+  const hiddenNames = new Set((state.problem?.quantities ?? []).filter((q) => q.hidden === true).map((q) => q.name))
+  const shown = check.rows.filter((r) => !hiddenNames.has(r.name))
+  const folded = check.rows.filter(
+    (r) =>
+      hiddenNames.has(r.name) && state.problem?.quantities.find((q) => q.name === r.name)?.support === 'probability',
+  )
   return (
     <div className="flex flex-col gap-2">
       <div className="overflow-x-auto">
@@ -367,7 +374,7 @@ function Check(props: { readonly atom: EpAtom; readonly state: AtomState }): Rea
             </tr>
           </thead>
           <tbody>
-            {check.rows.map((r) => (
+            {shown.map((r) => (
               <tr key={r.name} className="border-t border-line">
                 <td className="py-1">{r.label}</td>
                 <td>{sig(r.ep.mean, 4)}</td>
@@ -380,6 +387,20 @@ function Check(props: { readonly atom: EpAtom; readonly state: AtomState }): Rea
                 <td style={{ color: tone(r.pass).color }}>{r.pass ? 'pass' : 'FAIL'}</td>
               </tr>
             ))}
+            {folded.length === 0 ? null : (
+              <tr className="border-t border-line">
+                <td className="py-1" colSpan={3}>
+                  the {folded.length} switches (each observation's probability of its branch)
+                </td>
+                <td colSpan={5}>
+                  largest difference from the exact probability{' '}
+                  {sig(Math.max(...folded.map((r) => Math.abs(r.ep.mean - r.refMean))), 2)}
+                </td>
+                <td style={{ color: tone(folded.every((r) => r.pass)).color }}>
+                  {folded.every((r) => r.pass) ? 'pass' : 'FAIL'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

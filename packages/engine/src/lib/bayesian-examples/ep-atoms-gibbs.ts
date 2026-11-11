@@ -107,7 +107,7 @@ export interface MixtureGibbs {
  * @returns The draws and the responsibilities.
  * @throws OmaiError with code `value` when the priors do not have one entry per component.
  * @concept posterior-validation
- * @index function Gibbs sampler for a Gaussian mixture with unknown means, precisions and weights: the reference of the gate atoms.
+ * @index function Gibbs sampler for a Gaussian mixture, the gate atoms' reference.
  * @example
  * ```ts
  * import { mixtureGibbs } from 'omai-engine/bayesian-examples'
@@ -258,7 +258,7 @@ const logGammaDensity = (t: number, shape: number, rate: number, constant: numbe
  * @param points - Grid points per precision and for the weight (default 20; the centre has 1.4 times as many).
  * @returns The marginals and the probability that each observation is clutter.
  * @concept posterior-validation
- * @index function Exact posterior of the clutter problem with unknown centre, precisions and weight, by quadrature.
+ * @index function Exact clutter posterior with unknown centre, precisions and weight, by quadrature.
  * @example
  * ```ts
  * import { clutterPosterior } from 'omai-engine/bayesian-examples'
@@ -357,5 +357,103 @@ export function clutterPosterior(y: readonly number[], priors: ClutterPriors, po
     clutter: axisMarginal(tOut, margins.clutter),
     weight: axisMarginal(weights, margins.weight),
     clutterProbability: clutter.map((v) => v / norm),
+  }
+}
+
+/** The priors of the inlier and outlier mixture (the switches summed out) with an unknown centre, precision and share. */
+export interface OutlierMixturePriors {
+  readonly centre: number
+  readonly precision: { readonly shape: number; readonly rate: number }
+  readonly share: { readonly a: number; readonly b: number }
+  /** How many times wider than the inliers the outliers are (known). */
+  readonly width: number
+}
+
+/** The marginals of the inlier and outlier mixture's unknowns. */
+export interface OutlierMixturePosterior {
+  readonly centre: ExactMarginal
+  readonly precision: ExactMarginal
+  readonly share: ExactMarginal
+}
+
+/**
+ * The exact posterior of an unknown centre, inlier precision and outlier share of the inlier and outlier mixture (each
+ * observation is `N(mu, 1/tau)` or, with the share, `N(mu, width^2/tau)`; the switches are summed out), by quadrature over the
+ * three unknowns: the centre around the data's median, the precision on a log grid, the share on the unit interval.
+ *
+ * @param y - The observations.
+ * @param priors - The priors.
+ * @param points - Grid points per unknown (default 40).
+ * @returns The three marginals.
+ * @concept posterior-validation
+ * @index function Exact outlier-mixture posterior with unknown centre, precision and share.
+ * @example
+ * ```ts
+ * import { outlierMixturePosterior } from 'omai-engine/bayesian-examples'
+ * const priors = { centre: 5, precision: { shape: 2, rate: 1 }, share: { a: 2, b: 5 }, width: 8 }
+ * Math.abs(outlierMixturePosterior([1.4, 1.6, 1.5, 1.3, 9, 1.5], priors, 12).centre.mean - 1.5) < 0.6 // => true
+ * ```
+ */
+export function outlierMixturePosterior(
+  y: readonly number[],
+  priors: OutlierMixturePriors,
+  points = 40,
+): OutlierMixturePosterior {
+  const n = y.length
+  const median = [...y].sort((a, b) => a - b)[Math.floor(n / 2)] as number
+  const span = (lo: number, hi: number): number[] =>
+    Array.from({ length: points }, (_, i) => lo + ((hi - lo) * (i + 0.5)) / points)
+  const centres = span(median - 1.2, median + 1.2)
+  const logs = span(Math.log(0.4), Math.log(40))
+  const tau = logs.map(Math.exp)
+  const shares = span(0.01, 0.75)
+  const lgConst = lg(priors.precision.shape)
+  const lbeta = lg(priors.share.a + priors.share.b) - lg(priors.share.a) - lg(priors.share.b)
+  const half = 0.5 * Math.log(2 * Math.PI)
+  const lw = Math.log(priors.width)
+  const lp = new Float64Array(points ** 3)
+  let top = Number.NEGATIVE_INFINITY
+  let at = 0
+  for (let a = 0; a < points; a++)
+    for (let b = 0; b < points; b++) {
+      const t = tau[b] as number
+      const inlier = y.map((v) => 0.5 * Math.log(t) - half - 0.5 * t * (v - (centres[a] as number)) ** 2)
+      const outlier = y.map(
+        (v) => 0.5 * Math.log(t) - lw - half - (0.5 * t * (v - (centres[a] as number)) ** 2) / priors.width ** 2,
+      )
+      const prior =
+        -0.5 * ((centres[a] as number) / priors.centre) ** 2 +
+        logGammaDensity(t, priors.precision.shape, priors.precision.rate, lgConst) +
+        (logs[b] as number)
+      for (let e = 0; e < points; e++) {
+        const w = shares[e] as number
+        let v = prior + lbeta + (priors.share.a - 1) * Math.log(w) + (priors.share.b - 1) * Math.log(1 - w)
+        for (let i = 0; i < n; i++) {
+          const p = Math.log(1 - w) + (inlier[i] as number)
+          const q = Math.log(w) + (outlier[i] as number)
+          v += Math.max(p, q) + Math.log1p(Math.exp(-Math.abs(p - q)))
+        }
+        lp[at++] = v
+        if (v > top) top = v
+      }
+    }
+  const margins = [
+    new Array<number>(points).fill(0),
+    new Array<number>(points).fill(0),
+    new Array<number>(points).fill(0),
+  ] as [number[], number[], number[]]
+  at = 0
+  for (let a = 0; a < points; a++)
+    for (let b = 0; b < points; b++)
+      for (let e = 0; e < points; e++) {
+        const w = Math.exp((lp[at++] as number) - top)
+        margins[0][a] = (margins[0][a] as number) + w
+        margins[1][b] = (margins[1][b] as number) + w
+        margins[2][e] = (margins[2][e] as number) + w
+      }
+  return {
+    centre: axisMarginal(centres, margins[0]),
+    precision: axisMarginal(tau, margins[1]),
+    share: axisMarginal(shares, margins[2]),
   }
 }
