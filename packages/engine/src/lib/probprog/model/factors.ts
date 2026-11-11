@@ -12,62 +12,12 @@
  * with their own variables or scales, scalar weights, discrete tables over a plate). `plates: 'expand'` forces the
  * expansion everywhere (the same posterior, a message per row, so finer anytime steps).
  *
- * What it maps. Latents: `normal` (a Gaussian variable per element, or one `gaussian-mv` vector variable when a
- * `matmul` reads it, so the posterior keeps its correlations), `gamma`, `exponential`, `beta`, `dirichlet`, and
- * `bernoulli` or `categorical` with known probabilities (or a Dirichlet latent for them: the conjugate `discrete` factor),
- * and a `multivariateNormal` with a known mean and covariance (or `scaleTril`): one `gaussian-mv` variable with a dense prior, whose
- * components a likelihood reads (a Gaussian process prior over the inputs of the data).
- * An `inverseGamma` latent (a variance) is a gamma precision: its site is the reciprocal of the gamma variable, and `sqrt(sigma2)` (or
- * `sqrt(sigma2 / kappa)`, a known multiple) is the precision idiom. A Gaussian mean whose variance is a multiple of the observed
- * Gaussian's (`mu ~ N(m, sigma2 / kappa)`, `y ~ N(mu, sigma2)`, nothing else reading either) is the pair of a mean and a precision,
- * the classic normal-inverse-gamma (or normal-gamma) prior: one `normal-gamma` variable and a `gaussian-normal-gamma` factor per
- * observation, so expectation propagation is exact (the marginal of the mean a Student t, of the variance an inverse gamma).
- * A Gaussian whose scale is the idiom `1 / sqrt(tau)` (or `tau ** -0.5`) of a gamma or exponential latent `tau` is the
- * `gaussian-gamma-precision` factor, for observations and latents (variational message passing, and expectation propagation when the
- * Gaussian is observed: the linear regression with an unknown noise level), and a scale `exp(s)` with `s` affine in Gaussian latents
- * is the `gaussian-log-scale` factor (expectation propagation, an observed value and a known mean: stochastic volatility, through
- * the unrolled `scan`). Values: expressions that are affine in Gaussian latents (`add`,
- * `sub`, `neg`, `mul` and `div` by a known value, `sum`, `mean`, `at` by index data, `matmul` with data) become the
- * affine operators of the engine (`plus`, `difference`, `times-constant`, `sum`, `linear`, `dot-constant`); the product of
- * two random values is the `product` factor on a new variable, and `at(components, z)` with a categorical latent `z` (or
- * `where(z, a, b)` with a Bernoulli latent) is the gate `select`, on a new variable of the components' family (expectation
- * propagation); a lookup of known values by a discrete latent (`at(means, z)`, `z * 6 - 3`) is the mean of a Gaussian observation (a
- * `table` over `z`) or of a Gaussian latent (a `gate` of one Gaussian prior per state, the gate of Minka and Winn); a summed-out
- * mixture (`normalOutliers`, `normalSpikeSlab`) with a random share (a beta latent) or random precisions (the gamma idiom) is the same
- * gate over a hidden Bernoulli switch, one per observation or element (the exact mixture site stays for known ones), and
- * `categorical` with probabilities `at(A, z)` (a known matrix `A`, a discrete latent `z`) is a `table` over the two (a Markov
- * chain), and when the rows of `A` are Dirichlet latents (a transition matrix to learn) one `gate` per step whose branch `j` is the
- * conjugate `discrete` factor on row `j`. A Gaussian latent's constraint (`ordered`, `positive`, bounds) is comparison factors with an observed true outcome
- * (a truncated Gaussian under moment matching). A Gaussian whose precision is a known multiple of a gamma latent plus a known
- * value (`lambda d_j + n_j`) is the `gaussian-gamma-precision` factor with a `scale` and an `offset`, and when a vector read by a
- * `matmul` has the precisions of one shared gamma latent (a smoothing parameter) it is one `gaussian-mv` variable with a
- * `gaussian-mv-precision-scale` factor (option `sharedScale: 'elements'` for the per-coefficient form). Likelihoods:
- * observed `normal` with a known scale (`gaussian`, or `linear-regression-row` for a regression row), `bernoulli` with
- * `probit(affine)` (`probit`), `sigmoid(affine)` or `logits` (`logistic`), `gt(affine, c)` (`greater-than`, a hard
- * comparison; expectation propagation only), or `probs` a beta latent (`bernoulli`); `binomial`, `poisson` (with an exposure) and `categorical` on a
- * beta, gamma or Dirichlet latent, an `exponential` or `gamma` value (known shape) with a gamma rate and a `geometric` or
- * `negativeBinomial` count (known successes) with a beta probability (the conjugate operators); and a Bernoulli network over scalar nodes, as `table`
- * factors (what belief propagation runs on). Expectation propagation also maps the numeric likelihoods of the registry of
- * `message-passing/operators/likelihoods.ts` (`poisson` with `exposure * exp(affine)`, `binomial` with `sigmoid` or `probit`, a
- * `negativeBinomial` in the NB2 idiom with a known or a random positive dispersion, `weibull` with `scale = exp(affine)`,
- * `studentT`, `laplace`) and, on a log-normal outcome, the exact Gaussian rule on its log; a unary function of a random value
- * (`exp`, `square`, `tanh`, `softplus`, `abs`, `sigmoid`, and `max` or `min` with a known operand as a rectifier) is the `apply`
- * factor on a new variable. A prior with no message family (`halfNormal`, `halfCauchy`, `logNormal`, `uniform`,
- * `truncatedNormal`) is the exact numeric `prior-site` on a Gaussian variable: a positive scale on its log (the value `tau` is `exp` of
- * that variable), a bounded real value on itself, so the graph holds the prior and EP matches it against the cavity every sweep. Such a scale (or an `exp` of a
- * Gaussian) is the scale of a latent normal in its non-centred form (a product with a standard normal), and the scale of an
- * observed normal through the `gaussian-scale` factor (the mean may be random too); a `clip` on a scale is read as a floor
- * that never binds. With `packScalars` the scalar normal latents an observed node reads together are one joint vector.
- * Discrete structure under Dirichlet-type weights and linear dynamics: `ops.stickBreaking(v)` of beta latents (the weights of a truncated
- * Dirichlet process) is the `stick-breaking` factor on each assignment that reads it; a categorical read through a discrete index of
- * Dirichlet rows (`categorical({ probs: phi.at(z) })`, the words of a topic model) is one `gate` on the index whose branches are the
- * conjugate `discrete` factors on the rows; `ops.pick(values, z)` (the prediction of the class `z` picks, a mixture of regressions) is a
- * lookup of the branches read by the observation as one gate of likelihoods, and a mean and a log spread `exp(at(logSd, z))` chosen by one `z`
- * are one gate of `gaussian-scale` branches; a `hurdlePoisson` count (a zero, or a zero-truncated Poisson) is a conjugate Bernoulli on its
- * beta zero probability and a `poisson-log-truncated` site on the log rate; and a multivariate normal whose mean is `ops.matvec(F, previous)`
- * of another Gaussian vector (the step of a vector-state `scan`) with a known covariance is one Gaussian vector and a dense
- * `gaussian-transition` to the previous one, its readings `ops.dot(h, state)` being regression rows on it. Anything
- * else is reported with a reason, never silently dropped.
+ * The mappings are the methods of `Compiler`, one per model idiom: `latent` and `observed` dispatch on the distribution family
+ * and on the shape of its parameters (a Gaussian with a known or random scale, a precision that is a gamma variable, a mean chosen
+ * by a discrete variable, a summed-out mixture, conjugate pairs, matrices, discrete structure under Dirichlet rows), and `derived`
+ * maps the arithmetic of the value algebra (`factor-graph/_cells.ts`) to the engine's affine, product, gate and apply operators.
+ * Anything with no mapping is reported with a reason, never silently dropped. The value algebra, the refusal and the issue and
+ * layout types live in `factor-graph/`.
  *
  * Ids follow `ids.ts`: a variable is its site's name, `<site>[<i>]` for an element of a site over dimensions, and
  * `<site>#<k>[<i>]` for an auxiliary variable; a factor is `factor:` and the id of the variable it defines (an observed
@@ -130,319 +80,37 @@ import type { SpecAnalysis } from './analysis.ts'
 import type { BoundModel } from './bind.ts'
 import { distributionFamilies } from './dists/families.ts'
 import { eventToDims } from './event-dims.ts'
+import {
+  type Aff,
+  type Atom,
+  affOf,
+  type Cell,
+  combine,
+  constAff,
+  constCell,
+  isConstCell,
+  logName,
+  lookupArithmetic,
+  type Precision,
+  prod,
+  recipArithmetic,
+  type Sym,
+  scaleAff,
+  scaledArithmetic,
+  scaledOf,
+  unflatten,
+} from './factor-graph/_cells.ts'
+import { Refusal } from './factor-graph/_refusal.ts'
+import type { FactorGraphCompilation, FactorIssue, SiteLayout } from './factor-graph/types.ts'
 import { auxId, elementId, factorId, siteOfId } from './ids.ts'
 import { defaultOperators, type NamedValue, type OperatorTable } from './operators.ts'
 import { ScanUnrollError, unrollScans } from './scan.ts'
 import { type DistSpec, type ExprSpec, exprRefs, type ModelNode, nodeRefs } from './spec.ts'
 
-/** Why a part of a model could not be put on a factor graph: the kind says what to look at. */
-export type FactorIssueKind =
-  /** A `custom` call: a function the graph cannot see through. */
-  | 'opaque'
-  /** A distribution family with no message family in the engine. */
-  | 'family'
-  /** An operator with no message rule on a random value, or an expression that is not affine. */
-  | 'operator'
-  /** A shape of model the first version does not expand (event axes, plated discrete tables). */
-  | 'structure'
-  /** Data that is not bound, a missing size, missing values. */
-  | 'data'
-  /** A constraint beyond the family's own support. */
-  | 'constraint'
-  /** A kind of node with no counterpart on a factor graph (`param`, a `factor` term) or one that depends on a node that failed. */
-  | 'node'
-
-/** One thing a model has that the compiler cannot map, with the node it is on and the reason in words. */
-export interface FactorIssue {
-  readonly node: string
-  readonly kind: FactorIssueKind
-  readonly reason: string
-}
-
-/** How a site of the spec is laid out in the graph, so results can be read back in the spec's shapes. */
-export interface SiteLayout {
-  readonly site: string
-  readonly kind: 'latent' | 'observed' | 'derived'
-  readonly dims: readonly string[]
-  /** The sizes of `dims`. */
-  readonly shape: readonly number[]
-  /** The engine family of the site's variables. */
-  readonly family: FamilyKind | undefined
-  /**
-   * `scalar`: one variable named `site`. `elements`: a variable per element, `site[i]`, in row-major order of `dims`.
-   * `packed`: one vector variable named `site` over the elements. `observed`: the variables hold the data (no marginal).
-   * `constant`: a derived value with no random part, so no variable.
-   */
-  readonly layout: 'scalar' | 'elements' | 'packed' | 'observed' | 'constant'
-  /** The variable of each element in row-major order (`null` where an element has none: a constant or a missing value). */
-  readonly variables: readonly (string | null)[]
-  /** Whether the site is one of a posterior's sites (latents and recorded derived values). */
-  readonly posterior: boolean
-  /**
-   * A site that is the reciprocal of the gamma variable that carries it (an inverse-gamma variance whose precision is the
-   * variable): the posterior reads it as an inverse gamma.
-   */
-  readonly reciprocal?: boolean
-  /**
-   * For a site read from a normal-gamma variable shared with another site (the mean and the precision of a Gaussian, the
-   * conjugate pair): which part of the joint it is, `mean` (a Student t marginal) or `precision` (a gamma marginal).
-   */
-  readonly part?: 'mean' | 'precision'
-  /** For a beta variable that carries a correlation `rho = 2 u - 1`: the posterior is read as the correlation, not as `u`. */
-  readonly correlation?: boolean
-}
-
-/** What a compilation to a factor graph reports. */
-export interface FactorGraphCompilation {
-  readonly name: string
-  /** The graph, or `undefined` when something could not be mapped (see `issues`). */
-  readonly graph: FactorGraphSpec | undefined
-  readonly issues: readonly FactorIssue[]
-  /** The nodes message passing cannot see through (`analyseSpec`'s `opaque`: a `custom` call or a family with no exponential-family form). */
-  readonly opaque: readonly string[]
-  readonly sites: readonly SiteLayout[]
-  /** The auxiliary variables the expansion introduced (`y#0[3]`). */
-  readonly auxiliary: readonly string[]
-  /** The observed sites compiled as one plated factor over all their rows (no variable or factor per row), by site name. */
-  readonly plated: readonly string[]
-  /** What the expansion made: the plates that were unrolled and the sizes of the result. */
-  readonly expanded: {
-    readonly plates: readonly { readonly dim: string; readonly size: number }[]
-    readonly variables: number
-    readonly factors: number
-  }
-}
-
-class Refusal extends Error {
-  constructor(
-    readonly kind: FactorIssueKind,
-    reason: string,
-  ) {
-    super(reason)
-  }
-}
-
-// ----- symbolic values: tensors of affine forms over the graph's variables -----
-
-/** One random scalar of the graph an affine form is made of: a variable, or a coordinate of a vector variable. */
-type Atom =
-  | { readonly kind: 'var'; readonly name: string }
-  | { readonly kind: 'comp'; readonly vector: string; readonly index: number; readonly size: number }
-
-/** An affine form `offset + sum of coefficient times atom`; a constant has no terms. */
-interface Aff {
-  readonly terms: ReadonlyMap<string, number>
-  readonly offset: number
-}
-
-/** An element of a symbolic tensor: an affine form of Gaussian atoms, or a variable of another family (not arithmetic). */
-type Cell =
-  | { readonly kind: 'aff'; readonly aff: Aff }
-  | { readonly kind: 'rv'; readonly variable: string; readonly family: FamilyKind }
-  // The stick-breaking weights of beta variables, `v_k prod_{j<k} (1 - v_j)` and the remainder (one more weight than breaks): the
-  // probabilities of a categorical, which reads them through the `stick-breaking` factor (the truncated Dirichlet process).
-  | { readonly kind: 'sticks'; readonly variables: readonly string[] }
-  // A known multiple of a gamma variable plus a known offset, `scale tau + offset`: the precision of a Gaussian that shares
-  // one smoothing parameter or one global scale (it has no other use: it is not a Gaussian value).
-  | { readonly kind: 'scaled'; readonly variable: string; readonly scale: number; readonly offset: number }
-  // A known multiple of the reciprocal of a gamma variable, `scale / tau`: an inverse-gamma variance (the variable is its
-  // precision), which is mapped only as the square of the scale of a Gaussian (the precision idiom).
-  | { readonly kind: 'recip'; readonly variable: string; readonly scale: number }
-  // A known function of a discrete variable, one number per state (`at(means, z)`, `z * 6 - 3`): a value that is not Gaussian
-  // but selects among known ones, which a likelihood or a prior reads through a table or a gate.
-  // `items[k]`, when present, is a random Gaussian form that state k takes in place of the known `values[k]` (a mixture of a known
-  // value and a random one: the clutter problem's `where(z, 0, theta)`).
-  // `precisions[k]`, when present, is the gamma precision `scale tau + offset` that state k takes (a precision per component of a
-  // mixture, read by a Gaussian observation as the gate of `gaussian-gamma-precision` branches); `values[k]` is then the known
-  // precision of a state that has none.
-  | {
-      readonly kind: 'lookup'
-      readonly variable: string
-      readonly values: readonly number[]
-      readonly items?: readonly (Aff | undefined)[]
-      readonly precisions?: readonly (Precision | undefined)[]
-    }
-
 /** One step of an `apply` chain: a function of the registry by name, or `mul`, `add`, `pow` with its constant. */
 type ApplyStep = readonly [string, number?]
 
-/** A gamma variable's multiple plus an offset: the precision `scale tau + offset`. */
-interface Precision {
-  readonly variable: string
-  readonly scale: number
-  readonly offset: number
-}
-
-/** A tensor over named dimensions whose elements are cells, row-major in the order of `dims`. */
-interface Sym {
-  readonly dims: readonly string[]
-  readonly cells: readonly Cell[]
-}
-
-const constAff = (offset: number): Aff => ({ terms: new Map(), offset })
-const constCell = (v: number): Cell => ({ kind: 'aff', aff: constAff(v) })
-const isConstCell = (c: Cell): c is Cell & { kind: 'aff' } => c.kind === 'aff' && c.aff.terms.size === 0
-
-function combine(a: Aff, b: Aff, kb: number): Aff {
-  const terms = new Map(a.terms)
-  for (const [k, c] of b.terms) {
-    const v = (terms.get(k) ?? 0) + kb * c
-    if (v === 0) terms.delete(k)
-    else terms.set(k, v)
-  }
-  return { terms, offset: a.offset + kb * b.offset }
-}
-
-function scaleAff(a: Aff, k: number): Aff {
-  if (k === 0) return constAff(0)
-  return { terms: new Map([...a.terms].map(([key, c]) => [key, c * k])), offset: a.offset * k }
-}
-
-function affOf(c: Cell): Aff {
-  if (c.kind === 'lookup')
-    throw new Refusal(
-      'operator',
-      `the value looked up by the discrete variable '${c.variable}' is not a Gaussian one: it is mapped as the mean of a Gaussian observation or prior only`,
-    )
-  if (c.kind === 'scaled')
-    throw new Refusal(
-      'operator',
-      `arithmetic on the scaled precision of '${c.variable}': only a known multiple plus a known offset of a gamma variable is mapped, and only as the precision of a Gaussian`,
-    )
-  if (c.kind === 'recip')
-    throw new Refusal(
-      'operator',
-      `arithmetic on the inverse-gamma variable behind '${c.variable}': only a known multiple of it is mapped, and only as the squared scale of a Gaussian (the precision idiom)`,
-    )
-  if (c.kind === 'sticks')
-    throw new Refusal(
-      'operator',
-      'arithmetic on stick-breaking weights: they are only the probabilities of a categorical',
-    )
-  if (c.kind !== 'aff')
-    throw new Refusal('operator', `arithmetic on the ${c.family} variable '${c.variable}': only Gaussian values add up`)
-  return c.aff
-}
-
-/** A gamma variable or a known multiple of one plus an offset, as `scale tau + offset`; undefined for any other cell. */
-function scaledOf(c: Cell): { readonly variable: string; readonly scale: number; readonly offset: number } | undefined {
-  if (c.kind === 'scaled') return c
-  if (c.kind === 'rv' && c.family === 'gamma') return { variable: c.variable, scale: 1, offset: 0 }
-  return undefined
-}
-
-/**
- * The arithmetic of a known function of a discrete variable: a discrete or Bernoulli variable (its states as numbers) or a
- * lookup, combined with a known value or with another lookup of the same variable, state by state. Undefined when neither
- * operand is one, so the other rules apply.
- */
-function lookupArithmetic(op: string, x: Cell, y: Cell, states: (variable: string) => number): Cell | undefined {
-  const asLookup = (c: Cell): (Cell & { kind: 'lookup' }) | undefined => {
-    if (c.kind === 'lookup') return c
-    if (c.kind === 'rv' && (c.family === 'discrete' || c.family === 'bernoulli')) {
-      const k = c.family === 'bernoulli' ? 2 : states(c.variable)
-      return { kind: 'lookup', variable: c.variable, values: Array.from({ length: k }, (_, i) => i) }
-    }
-    return undefined
-  }
-  const a = asLookup(x)
-  const b = asLookup(y)
-  if (a === undefined && b === undefined) return undefined
-  if ((a?.items ?? b?.items)?.some((v) => v !== undefined))
-    throw new Refusal(
-      'operator',
-      `'${op}' of a value that is random in some states of a discrete variable has no message rule`,
-    )
-  const f = (u: number, v: number): number =>
-    op === 'add' ? u + v : op === 'sub' ? u - v : op === 'mul' ? u * v : u / v
-  if (!['add', 'sub', 'mul', 'div'].includes(op))
-    throw new Refusal('operator', `'${op}' of a discrete variable has no message rule`)
-  if (a !== undefined && b !== undefined) {
-    if (a.variable !== b.variable)
-      throw new Refusal(
-        'operator',
-        `'${op}' of two different discrete variables ('${a.variable}', '${b.variable}') has no message rule`,
-      )
-    return { kind: 'lookup', variable: a.variable, values: a.values.map((u, i) => f(u, b.values[i] as number)) }
-  }
-  const [look, other, flip] = a !== undefined ? [a, y, false] : [b as Cell & { kind: 'lookup' }, x, true]
-  if (!isConstCell(other))
-    throw new Refusal('operator', `'${op}' of a discrete variable and a random value has no message rule`)
-  const k = other.aff.offset
-  return { kind: 'lookup', variable: look.variable, values: look.values.map((u) => (flip ? f(k, u) : f(u, k))) }
-}
-
-/**
- * The arithmetic of an inverse-gamma variance `scale / tau`: a known multiple (`mul`, `div` by a known value) stays one; a known
- * value over it is the precision `value tau / scale`, a scaled gamma variable. Undefined when neither operand is one.
- */
-function recipArithmetic(op: string, x: Cell, y: Cell): Cell | undefined {
-  if (x.kind !== 'recip' && y.kind !== 'recip') return undefined
-  const other = x.kind === 'recip' ? y : x
-  const r = (x.kind === 'recip' ? x : y) as Cell & { kind: 'recip' }
-  const known = isConstCell(other) ? other.aff.offset : undefined
-  if (known === undefined || (x.kind === 'recip' && y.kind === 'recip') || !(known > 0))
-    throw new Refusal(
-      'operator',
-      `'${op}' of an inverse-gamma variance and a random value (or a non-positive one) has no message rule: only a positive known multiple of it, as the squared scale of a Gaussian`,
-    )
-  if (op === 'mul') return { kind: 'recip', variable: r.variable, scale: r.scale * known }
-  if (op === 'div' && x.kind === 'recip') return { kind: 'recip', variable: r.variable, scale: r.scale / known }
-  if (op === 'div') return { kind: 'scaled', variable: r.variable, scale: known / r.scale, offset: 0 }
-  throw new Refusal('operator', `'${op}' of an inverse-gamma variance has no message rule`)
-}
-
-/**
- * The arithmetic of a precision: a gamma variable (or a scaled one) times, plus, minus or over a known value. Undefined when
- * neither operand is a gamma-based cell, so the ordinary affine rules apply.
- */
-function scaledArithmetic(op: string, x: Cell, y: Cell): Cell | undefined {
-  const left = scaledOf(x)
-  const right = scaledOf(y)
-  if (left === undefined && right === undefined) return undefined
-  const other = left === undefined ? x : y
-  const known = isConstCell(other) ? other.aff.offset : undefined
-  const g = (left ?? right) as { variable: string; scale: number; offset: number }
-  const refuse = (): never => {
-    throw new Refusal(
-      'operator',
-      `'${op}' of a gamma variable and a random value has no message rule: a precision is a known multiple of one gamma variable plus a known offset`,
-    )
-  }
-  if (known === undefined || (left !== undefined && right !== undefined)) return refuse()
-  switch (op) {
-    case 'mul':
-      return { kind: 'scaled', variable: g.variable, scale: g.scale * known, offset: g.offset * known }
-    case 'div':
-      if (left === undefined) return refuse()
-      return { kind: 'scaled', variable: g.variable, scale: g.scale / known, offset: g.offset / known }
-    case 'add':
-      return { kind: 'scaled', variable: g.variable, scale: g.scale, offset: g.offset + known }
-    case 'sub':
-      if (left === undefined) return refuse()
-      return { kind: 'scaled', variable: g.variable, scale: g.scale, offset: g.offset - known }
-    default:
-      return refuse()
-  }
-}
-
-const prod = (xs: readonly number[]): number => xs.reduce((a, b) => a * b, 1)
-
-/** The hidden symbol of the log of a positive latent carried on its log (not a node of the spec, so no site can clash with it). */
-const logName = (site: string): string => `${site}#log`
-
-function unflatten(flat: number, shape: readonly number[]): number[] {
-  const idx: number[] = new Array<number>(shape.length).fill(0)
-  let rest = flat
-  for (let i = shape.length - 1; i >= 0; i--) {
-    const n = shape[i] as number
-    idx[i] = rest % n
-    rest = Math.floor(rest / n)
-  }
-  return idx
-}
-
-/** A factor-graph name for the family of a distribution family, for the families the first version maps. */
+/** A factor-graph name for the family of a distribution family, for the families the compiler maps. */
 const MESSAGE_FAMILY: Readonly<Record<string, FamilyKind>> = {
   normal: 'gaussian',
   normalSpikeSlab: 'gaussian',

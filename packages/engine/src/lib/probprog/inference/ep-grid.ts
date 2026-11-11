@@ -34,12 +34,8 @@ import {
 import { type BoundModel, bind } from '../model/bind.ts'
 import { doSpec } from '../model/compose.ts'
 import { distributionFamilies } from '../model/dists/families.ts'
-import {
-  type FactorGraphCompilation,
-  factorGraphPosterior,
-  factorGraphVerdict,
-  toFactorGraph,
-} from '../model/factors.ts'
+import type { FactorGraphCompilation } from '../model/factor-graph/types.ts'
+import { factorGraphPosterior, factorGraphVerdict, toFactorGraph } from '../model/factors.ts'
 import type { ExprSpec, ModelNode, ModelSpec } from '../model/spec.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
 import { recordOf, type SiteRecord, siteMixturePosterior } from './_site-mixture.ts'
