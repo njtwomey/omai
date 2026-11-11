@@ -177,6 +177,9 @@ interface Aff {
 type Cell =
   | { readonly kind: 'aff'; readonly aff: Aff }
   | { readonly kind: 'rv'; readonly variable: string; readonly family: FamilyKind }
+  // A known multiple of a gamma variable plus a known offset, `scale tau + offset`: the precision of a Gaussian that shares
+  // one smoothing parameter or one global scale (it has no other use: it is not a Gaussian value).
+  | { readonly kind: 'scaled'; readonly variable: string; readonly scale: number; readonly offset: number }
 
 /** A tensor over named dimensions whose elements are cells, row-major in the order of `dims`. */
 interface Sym {
@@ -204,9 +207,55 @@ function scaleAff(a: Aff, k: number): Aff {
 }
 
 function affOf(c: Cell): Aff {
+  if (c.kind === 'scaled')
+    throw new Refusal(
+      'operator',
+      `arithmetic on the scaled precision of '${c.variable}': only a known multiple plus a known offset of a gamma variable is mapped, and only as the precision of a Gaussian`,
+    )
   if (c.kind !== 'aff')
     throw new Refusal('operator', `arithmetic on the ${c.family} variable '${c.variable}': only Gaussian values add up`)
   return c.aff
+}
+
+/** A gamma variable or a known multiple of one plus an offset, as `scale tau + offset`; undefined for any other cell. */
+function scaledOf(c: Cell): { readonly variable: string; readonly scale: number; readonly offset: number } | undefined {
+  if (c.kind === 'scaled') return c
+  if (c.kind === 'rv' && c.family === 'gamma') return { variable: c.variable, scale: 1, offset: 0 }
+  return undefined
+}
+
+/**
+ * The arithmetic of a precision: a gamma variable (or a scaled one) times, plus, minus or over a known value. Undefined when
+ * neither operand is a gamma-based cell, so the ordinary affine rules apply.
+ */
+function scaledArithmetic(op: string, x: Cell, y: Cell): Cell | undefined {
+  const left = scaledOf(x)
+  const right = scaledOf(y)
+  if (left === undefined && right === undefined) return undefined
+  const other = left === undefined ? x : y
+  const known = isConstCell(other) ? other.aff.offset : undefined
+  const g = (left ?? right) as { variable: string; scale: number; offset: number }
+  const refuse = (): never => {
+    throw new Refusal(
+      'operator',
+      `'${op}' of a gamma variable and a random value has no message rule: a precision is a known multiple of one gamma variable plus a known offset`,
+    )
+  }
+  if (known === undefined || (left !== undefined && right !== undefined)) return refuse()
+  switch (op) {
+    case 'mul':
+      return { kind: 'scaled', variable: g.variable, scale: g.scale * known, offset: g.offset * known }
+    case 'div':
+      if (left === undefined) return refuse()
+      return { kind: 'scaled', variable: g.variable, scale: g.scale / known, offset: g.offset / known }
+    case 'add':
+      return { kind: 'scaled', variable: g.variable, scale: g.scale, offset: g.offset + known }
+    case 'sub':
+      if (left === undefined) return refuse()
+      return { kind: 'scaled', variable: g.variable, scale: g.scale, offset: g.offset - known }
+    default:
+      return refuse()
+  }
 }
 
 const prod = (xs: readonly number[]): number => xs.reduce((a, b) => a * b, 1)
@@ -240,6 +289,22 @@ function factorName(table: OperatorTable, op: string): string {
   return table[op]?.factor ?? op
 }
 
+/** The `gaussian-gamma-precision` factor of a Gaussian `name` with a mean and the precision `scale tau + offset`. */
+function precisionFactor(
+  name: string,
+  mean: string | { readonly const: number },
+  tau: { readonly variable: string; readonly scale: number; readonly offset: number },
+): FactorSpec {
+  const params: Record<string, Json> = {}
+  if (tau.scale !== 1) params['scale'] = tau.scale
+  if (tau.offset !== 0) params['offset'] = tau.offset
+  return {
+    operator: 'gaussian-gamma-precision',
+    args: [name, mean, tau.variable],
+    ...(Object.keys(params).length === 0 ? {} : { params }),
+  }
+}
+
 class Compiler {
   readonly variables: VariableSpec[] = []
   readonly factors: FactorSpec[] = []
@@ -267,6 +332,7 @@ class Compiler {
     private readonly modelOps: OperatorTable,
     private readonly ops: Readonly<Record<string, FactorOperator>>,
     private readonly vectorise: boolean,
+    private readonly denseScales: boolean = true,
   ) {
     this.unbound = new Set(bound.unbound)
     for (const n of bound.spec.nodes) if (n.kind !== 'observed') this.nodes.set(n.name, n)
@@ -285,7 +351,10 @@ class Compiler {
           // A normal with a random scale (ARD: a precision of its own for each coefficient) cannot be one joint Gaussian vector:
           // its elements stay separate variables, each with its own gaussian-gamma-precision factor.
           const scale = target?.kind === 'latent' ? target.dist.params['scale'] : undefined
-          const randomScale = scale !== undefined && this.dependsOnLatent(scale)
+          const randomScale =
+            scale !== undefined &&
+            this.dependsOnLatent(scale) &&
+            !(this.denseScales && this.sharedGamma(scale) !== undefined)
           if (
             target?.kind === 'latent' &&
             target.dims.length === 1 &&
@@ -300,6 +369,30 @@ class Compiler {
         for (const e of Object.values(n.dist.params)) walk(e)
       if (n.kind === 'derived' || n.kind === 'factor') walk(n.expr)
     }
+  }
+
+  /**
+   * The one scalar gamma (or exponential) latent that an expression depends on, through derived nodes, when it is the only
+   * latent it reads: the shared smoothing parameter or ridge strength of a vector whose coefficients' precisions are
+   * known multiples of it. Absent when there are several latents or the one is not a scalar gamma.
+   */
+  private sharedGamma(e: ExprSpec): string | undefined {
+    const found = new Set<string>()
+    const visit = (x: ExprSpec): void => {
+      if (x.kind === 'ref') {
+        const n = this.nodes.get(x.name)
+        if (n?.kind === 'latent') found.add(n.name)
+        else if (n?.kind === 'derived') visit(n.expr)
+        return
+      }
+      if (x.kind === 'op' || x.kind === 'custom') for (const a of x.args) visit(a)
+    }
+    visit(e)
+    if (found.size !== 1) return undefined
+    const n = this.nodes.get([...found][0] as string)
+    return n?.kind === 'latent' && n.dims.length === 0 && (n.dist.family === 'gamma' || n.dist.family === 'exponential')
+      ? n.name
+      : undefined
   }
 
   /** Whether an expression refers (through derived nodes) to a latent: a random value, where data and constants are known. */
@@ -454,18 +547,38 @@ class Compiler {
     const [a, b] = args as [Sym, Sym]
     switch (op) {
       case 'add':
-        return this.zip([a, b], ([x, y]) => ({ kind: 'aff', aff: combine(affOf(x as Cell), affOf(y as Cell), 1) }))
+        return this.zip(
+          [a, b],
+          ([x, y]) =>
+            scaledArithmetic(op, x as Cell, y as Cell) ?? {
+              kind: 'aff',
+              aff: combine(affOf(x as Cell), affOf(y as Cell), 1),
+            },
+        )
       case 'sub':
-        return this.zip([a, b], ([x, y]) => ({ kind: 'aff', aff: combine(affOf(x as Cell), affOf(y as Cell), -1) }))
+        return this.zip(
+          [a, b],
+          ([x, y]) =>
+            scaledArithmetic(op, x as Cell, y as Cell) ?? {
+              kind: 'aff',
+              aff: combine(affOf(x as Cell), affOf(y as Cell), -1),
+            },
+        )
       case 'neg':
         return { dims: a.dims, cells: a.cells.map((x) => ({ kind: 'aff', aff: scaleAff(affOf(x), -1) })) }
       case 'mul':
-        return this.zip([a, b], ([x, y], i) => ({
-          kind: 'aff',
-          aff: this.mulAff(affOf(x as Cell), affOf(y as Cell), i),
-        }))
+        return this.zip(
+          [a, b],
+          ([x, y], i) =>
+            scaledArithmetic(op, x as Cell, y as Cell) ?? {
+              kind: 'aff',
+              aff: this.mulAff(affOf(x as Cell), affOf(y as Cell), i),
+            },
+        )
       case 'div':
         return this.zip([a, b], ([x, y]) => {
+          const scaled = scaledArithmetic(op, x as Cell, y as Cell)
+          if (scaled !== undefined) return scaled
           if (!isConstCell(y as Cell))
             throw new Refusal('operator', 'division by a random value has no Gaussian message')
           const d = (y as Cell & { kind: 'aff' }).aff.offset
@@ -878,7 +991,9 @@ class Compiler {
    * The gamma variables that are the precisions of a Gaussian node whose scale is random, element by element: the scale
    * must be the idiom `1 / sqrt(tau)` of a gamma (or exponential) latent. Anything else is refused with the idiom named.
    */
-  private randomPrecisions(node: ModelNode & { readonly dist: DistSpec }): string[] {
+  private randomPrecisions(
+    node: ModelNode & { readonly dist: DistSpec },
+  ): { readonly variable: string; readonly scale: number; readonly offset: number }[] {
     const scale = node.dist.params['scale']
     const idiom =
       'write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only)'
@@ -895,17 +1010,23 @@ class Compiler {
       if (e instanceof Refusal && e.kind === 'operator')
         throw new Refusal(
           'operator',
-          `the precision of '${node.name}' must be a gamma or exponential latent itself: a scaled or computed precision (kappa * tau, the normal-gamma prior, which would be the 'gaussian-normal-gamma' joint variable) is not mapped; ${idiom}`,
+          `the precision of '${node.name}' must be a known multiple of a gamma or exponential latent plus a known value (${e.message}); ${idiom}`,
         )
       throw e
     }
     return this.over(sym, node.dims).map((c) => {
-      if (c.kind !== 'rv' || c.family !== 'gamma')
+      const scaled = scaledOf(c)
+      if (scaled === undefined)
         throw new Refusal(
           'operator',
           `the precision of '${node.name}' must be a gamma or exponential latent, not a ${c.kind === 'rv' ? `${c.family} variable` : 'value computed from other latents'}: ${idiom}`,
         )
-      return c.variable
+      if (!(scaled.scale >= 0 && scaled.offset >= 0 && scaled.scale + scaled.offset > 0))
+        throw new Refusal(
+          'data',
+          `the precision of '${node.name}' is ${scaled.scale} times a gamma variable plus ${scaled.offset}: both must be non-negative, not both zero`,
+        )
+      return scaled
     })
   }
 
@@ -1045,7 +1166,8 @@ class Compiler {
     const loc = this.over(this.paramSym(node.dist, 'loc'), node.dims)
     const scaleExpr = node.dist.params['scale']
     if (scaleExpr !== undefined && !this.isConst(scaleExpr)) {
-      this.latentRandomPrecision(node, loc)
+      if (this.packed.has(node.name)) this.latentSharedPrecision(node, loc)
+      else this.latentRandomPrecision(node, loc)
       return
     }
     const scale = this.constParam(node, 'scale', 'the scale')
@@ -1144,6 +1266,42 @@ class Compiler {
     this.layout(node, 'latent', 'gaussian', node.dims.length === 0 ? 'scalar' : 'elements', vars, true)
   }
 
+  /**
+   * A Gaussian vector (read as a vector by a matmul) whose coefficients have the precisions `s_j lambda + o_j` of one shared
+   * gamma variable (a smoothing parameter): one `gaussian-mv` variable with one `gaussian-mv-precision-scale` factor, so the
+   * posterior keeps the dense correlations of the coefficients and the multiplier is inferred from them.
+   */
+  private latentSharedPrecision(node: ModelNode & { readonly kind: 'latent' }, loc: readonly Cell[]): void {
+    if (!loc.every((c) => isConstCell(c) && c.aff.offset === 0))
+      throw new Refusal(
+        'operator',
+        `'${node.name}' has a shared random precision and a mean: the vector with a smoothing parameter must have a zero known mean`,
+      )
+    const taus = this.randomPrecisions(node)
+    const shared = taus[0]?.variable
+    if (shared === undefined || taus.some((t) => t.variable !== shared))
+      throw new Refusal(
+        'operator',
+        `the precisions of '${node.name}' must be multiples of one gamma variable plus constants (a vector with several random precisions is the ARD form, one variable per coefficient)`,
+      )
+    this.need('gaussian-mv-precision-scale')
+    const n = taus.length
+    this.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
+    this.addFactor(
+      {
+        operator: 'gaussian-mv-precision-scale',
+        args: [node.name, shared],
+        params: { scale: taus.map((t) => t.scale), offset: taus.map((t) => t.offset) },
+      },
+      node.name,
+    )
+    this.syms.set(node.name, {
+      dims: node.dims,
+      cells: Array.from({ length: n }, (_, j) => this.compAtom(node.name, j, n)),
+    })
+    this.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)
+  }
+
   /** A Gaussian latent with a gamma precision: a `gaussian-gamma-precision` factor per element (the mean-field hierarchy of Bishop 2006, 10.2). */
   private latentRandomPrecision(node: ModelNode & { readonly kind: 'latent' }, loc: readonly Cell[]): void {
     if (this.packed.has(node.name))
@@ -1160,7 +1318,7 @@ class Compiler {
       const mean = isConstCell(l)
         ? { const: l.aff.offset }
         : (this.materialise(affOf(l), node.name, node.dims.length === 0 ? undefined : i) as string)
-      this.addFactor({ operator: 'gaussian-gamma-precision', args: [name, mean, tau] }, name)
+      this.addFactor(precisionFactor(name, mean, tau), name)
       // A zero-mean (known-mean) Gaussian with an unknown precision sends no proper message to the variable, so the likelihood
       // would have no cavity to start from: a very wide Gaussian (variance 1e8, about one part in 1e8 of the model) starts it.
       if (isConstCell(l))
@@ -1392,6 +1550,8 @@ class Compiler {
         vars.push(c.variable)
         return c
       }
+      if (c.kind === 'scaled')
+        throw new Refusal('structure', `'${node.name}' is a scaled precision: it cannot be recorded as a value`)
       const name = this.elementName(node.name, node.dims, i)
       const v = this.materialise(c.aff, node.name, node.dims.length === 0 ? undefined : i, name)
       if (typeof v === 'number') {
@@ -1805,14 +1965,14 @@ class Compiler {
   ): string {
     const tau = this.cellsOf(node, 'precision', () => ({
       dims: node.dims,
-      cells: this.randomPrecisions(node).map((v): Cell => ({ kind: 'rv', variable: v, family: 'gamma' })),
-    }))[i] as Cell & { kind: 'rv' }
+      cells: this.randomPrecisions(node).map((p): Cell => ({ kind: 'scaled', ...p })),
+    }))[i] as Cell & { kind: 'scaled' }
     const loc = this.paramCell(node, 'loc', i)
     const mean = isConstCell(loc)
       ? { const: loc.aff.offset }
       : (this.materialise(affOf(loc), node.name, index) as string)
     this.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
-    this.addFactor({ operator: 'gaussian-gamma-precision', args: [name, mean, tau.variable] }, name)
+    this.addFactor(precisionFactor(name, mean, tau), name)
     return name
   }
 
@@ -1952,6 +2112,12 @@ export function toFactorGraph(
     readonly analysis?: SpecAnalysis
     /** `vectorise` (default): an observed node whose rows are one regression on a weight vector is one plated factor; `expand`: a factor and a variable per row. */
     readonly plates?: 'vectorise' | 'expand'
+    /**
+     * A vector whose coefficients have the precisions of one shared gamma variable (a smoothing parameter): `dense` (default)
+     * is one Gaussian vector with a `gaussian-mv-precision-scale` factor (the posterior keeps its correlations), `elements` a
+     * scalar variable and a `gaussian-gamma-precision` factor per coefficient (the same prior, a mean-field-like posterior).
+     */
+    readonly sharedScale?: 'dense' | 'elements'
   } = {},
 ): FactorGraphCompilation {
   if (bound.spec.nodes.some((n) => n.kind === 'scan')) {
@@ -1979,6 +2145,7 @@ export function toFactorGraph(
     options.modelOperators ?? defaultOperators(),
     options.operators ?? factorOperators(),
     options.plates !== 'expand',
+    options.sharedScale !== 'elements',
   )
   c.run()
   const graph: FactorGraphSpec = { variables: c.variables, factors: c.factors }

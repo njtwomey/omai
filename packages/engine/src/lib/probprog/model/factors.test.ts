@@ -1026,7 +1026,18 @@ describe('a categorical gate is the select factor (expectation propagation)', ()
       const mu = b.latent('mu', d.normal(0, ops.div(1, ops.sqrt(ops.mul(tau, 2)))))
       b.observe('y', d.normal(mu, ops.div(1, ops.sqrt(tau))), b.data('y', { dims: ['row'] }))
     })
-    const issue = toFactorGraph(normalGamma.bind({ y: [1, 2] })).issues[0]
+    // A known multiple of the gamma precision is the scale of the factor (the conditional prior of the normal-gamma mean).
+    const scaled = toFactorGraph(normalGamma.bind({ y: [1, 2] }))
+    expect(scaled.issues).toEqual([])
+    expect(scaled.graph?.factors.find((f) => f.id === 'factor:mu')?.params).toEqual({ scale: 2 })
+    // The product of two random precisions is not an affine function of one gamma variable: refused with the idiom named.
+    const product = defineModel('product', (b) => {
+      const tau = b.latent('tau', d.gamma(2, 1))
+      const kappa = b.latent('kappa', d.gamma(2, 1))
+      const mu = b.latent('mu', d.normal(0, ops.div(1, ops.sqrt(ops.mul(tau, kappa)))))
+      b.observe('y', d.normal(mu, 1), b.data('y', { dims: ['row'] }))
+    })
+    const issue = toFactorGraph(product.bind({ y: [1, 2] })).issues[0]
     expect(issue?.node).toBe('mu')
     expect(issue?.reason).toMatch(/1 \/ sqrt\(tau\)/)
   })
