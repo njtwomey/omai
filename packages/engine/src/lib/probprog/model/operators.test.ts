@@ -21,9 +21,9 @@ const run = (op: string, args: NamedValue[], params = {}): NamedValue =>
 const num = (x: NamedValue): unknown => toArray(x.value)
 
 describe('the registry', () => {
-  it('is a closed, documented set of 28 operators', () => {
+  it('is a closed, documented set of 30 operators', () => {
     const names = Object.keys(table)
-    expect(names).toHaveLength(28)
+    expect(names).toHaveLength(30)
     for (const n of names) expect(table[n]?.description.length).toBeGreaterThan(3)
     expect(Object.keys(defaultOperators())).toEqual(names)
     expect(defaultOperators()).not.toBe(table)

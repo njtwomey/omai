@@ -279,6 +279,51 @@ const pickOperator: OperatorDef = {
   },
 }
 
+const matvecOperator: OperatorDef = {
+  name: 'matvec',
+  arity: 2,
+  description:
+    "a known matrix (two event axes) times a vector (one event axis): the vector one linear step maps it to, x -> A x (a linear dynamical system's transition)",
+  factor: 'gaussian-transition',
+  shape: ([a, x]) => {
+    const m = a as NamedShape
+    const v = x as NamedShape
+    if (m.dims.length > 0 || m.eventRank !== 2 || v.eventRank !== 1)
+      throw new OmaiError(
+        'shape',
+        'matvec: needs a matrix with no named dimension (two event axes) and a vector (one event axis)',
+      )
+    return { dims: v.dims, eventRank: 1 }
+  },
+  evaluate: ([a, x]) => {
+    const m = a as NamedValue
+    const v = x as NamedValue
+    // x [..., c] times A' [c, r]: the leading axes are the vector's own named dimensions.
+    return { value: matmul(v.value, transpose(m.value, [1, 0])), dims: v.dims }
+  },
+}
+
+const dotOperator: OperatorDef = {
+  name: 'dot',
+  arity: 2,
+  description:
+    'a known vector (one event axis) dotted with a vector (one event axis): the scalar a linear reading of it gives',
+  factor: 'dot-constant',
+  shape: ([a, x]) => {
+    const m = a as NamedShape
+    const v = x as NamedShape
+    if (m.dims.length > 0 || m.eventRank !== 1 || v.eventRank !== 1)
+      throw new OmaiError('shape', 'dot: needs a vector with no named dimension and a vector (one event axis each)')
+    // A vector written as one event may stand over a dimension that names its axis (`event#2`): the dot product consumes it.
+    return { dims: v.dims.filter((d) => !d.startsWith('event#')), eventRank: 0 }
+  },
+  evaluate: ([a, x]) => {
+    const m = a as NamedValue
+    const v = x as NamedValue
+    return { value: matmul(v.value, m.value), dims: v.dims.filter((d) => !d.startsWith('event#')) }
+  },
+}
+
 const stickBreakingOperator: OperatorDef = {
   name: 'stickBreaking',
   arity: 1,
@@ -320,7 +365,7 @@ const PROBIT_CEILING = 1 - Number.EPSILON / 2
  * The registry the model layer ships: arithmetic (`add`, `sub`, `mul`, `div`, `pow`, `maximum`, `minimum`, `neg`),
  * elementwise functions (`exp`, `log`, `sqrt`, `square`, `abs`, `tanh`), links (`sigmoid`, `probit` (the standard normal
  * CDF, the inverse probit link), `softplus`), comparisons (`gt`, `lt`, `eq`), `where` and `clip`, reductions over a named
- * dimension (`sum`, `mean`), `matmul`, the gather `at` and `pick` (the entry of the last dimension that an index names: the branch a class selects) and `stickBreaking` (the weights of a stick-breaking process from its break fractions). Elementwise operators align operands by dimension name.
+ * dimension (`sum`, `mean`), `matmul`, the gather `at` and `matvec` and `dot` (a known matrix or vector applied to a vector that is one event: a linear dynamical system's step and reading), `pick` (the entry of the last dimension that an index names: the branch a class selects) and `stickBreaking` (the weights of a stick-breaking process from its break fractions). Elementwise operators align operands by dimension name.
  * Message-passing factors for these are keyed by the same names.
  *
  * @returns The operator table (a fresh object each call, so it can be extended without side effects).
@@ -328,7 +373,7 @@ const PROBIT_CEILING = 1 - Number.EPSILON / 2
  * @example
  * ```ts
  * import { defaultOperators } from 'omai-engine/probprog/model'
- * Object.keys(defaultOperators()).length // => 28
+ * Object.keys(defaultOperators()).length // => 30
  * ```
  */
 export function defaultOperators(): Record<string, OperatorDef> {
@@ -370,6 +415,8 @@ export function defaultOperators(): Record<string, OperatorDef> {
     atOperator,
     stickBreakingOperator,
     pickOperator,
+    matvecOperator,
+    dotOperator,
   ]
   return Object.fromEntries(defs.map((d) => [d.name, d]))
 }

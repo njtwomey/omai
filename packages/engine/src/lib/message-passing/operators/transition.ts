@@ -10,7 +10,7 @@ import { dgemm, dgemv } from '../../numerics/linalg/index.ts'
 import { spd } from '../_dense.ts'
 import { gaussianMvEta, gaussianMvMoments } from '../families-vector.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../types.ts'
-import { allProper, etaOf, ImproperMessageError, massOf, vectorParam } from './args.ts'
+import { etaOf, ImproperMessageError, vectorParam } from './args.ts'
 
 const arg = (c: OperatorContext, i: number): Arg => c.args[i] as Arg
 
@@ -115,22 +115,44 @@ export const gaussianTransition: FactorOperator = {
     const J = dgemm(F, JF, cols, rows, cols, { transposeA: true })
     return { message: [...h, ...J] }
   },
-  // The evidence of the factor under the cavities: N(m_x; F m_w + c, Q + S_x + F S_w F') times the masses of the cavities.
+  // The evidence of the factor under the cavities as unnormalised densities exp(h x - x J x / 2): the Gaussian integral of the joint of
+  // (x, w), in information form so that a cavity that is only partly informative (the readings see the position, not the velocity)
+  // still has one. Not a number when even the joint has no density.
   logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
     const { F, offset, Q, rows, cols } = parameters(c)
-    const x = gaussianMvMoments(etaOf(arg(c, 0)), rows)
-    const w = gaussianMvMoments(etaOf(arg(c, 1)), cols)
-    const FS = dgemm(F, w.covariance, rows, cols, cols)
-    const FSF = dgemm(FS, F, rows, cols, rows, { transposeB: true })
-    const spread = Array.from(FSF, (v, i) => v + (Q[i] ?? 0) + (x.covariance[i] ?? 0))
-    const factor = spd(spread, rows)
-    if (factor === undefined) return Number.NaN
-    const image = dgemv(F, rows, cols, w.mean)
-    const gap = Array.from(x.mean, (v, i) => v - (image[i] ?? 0) - (offset[i] ?? 0))
-    const solved = factor.solve(gap)
-    let quad = 0
-    for (let i = 0; i < rows; i++) quad += (gap[i] ?? 0) * (solved[i] ?? 0)
-    return massOf(arg(c, 0)) + massOf(arg(c, 1)) - 0.5 * (rows * Math.log(2 * Math.PI) + factor.logDet + quad)
+    const ex = arg(c, 0).eta
+    const ew = arg(c, 1).eta
+    if (ex === undefined || ew === undefined) return Number.NaN
+    const factorQ = spd(Q, rows)
+    if (factorQ === undefined) return Number.NaN
+    const QInv = factorQ.inverse()
+    const n = rows + cols
+    const J = new Float64Array(n * n)
+    const h = new Float64Array(n)
+    const QInvF = dgemm(QInv, F, rows, rows, cols)
+    const FQF = dgemm(F, QInvF, cols, rows, cols, { transposeA: true })
+    const QInvC = dgemv(QInv, rows, rows, offset)
+    const FQc = dgemv(F, rows, cols, QInvC, true)
+    for (let i = 0; i < rows; i++) {
+      h[i] = (ex[i] ?? 0) + (QInvC[i] ?? 0)
+      for (let j = 0; j < rows; j++) J[i * n + j] = (ex[rows + i * rows + j] ?? 0) + (QInv[i * rows + j] ?? 0)
+      for (let j = 0; j < cols; j++) {
+        J[i * n + rows + j] = -(QInvF[i * cols + j] ?? 0)
+        J[(rows + j) * n + i] = -(QInvF[i * cols + j] ?? 0)
+      }
+    }
+    for (let i = 0; i < cols; i++) {
+      h[rows + i] = (ew[i] ?? 0) - (FQc[i] ?? 0)
+      for (let j = 0; j < cols; j++)
+        J[(rows + i) * n + rows + j] = (ew[cols + i * cols + j] ?? 0) + (FQF[i * cols + j] ?? 0)
+    }
+    const joint = spd(J, n)
+    if (joint === undefined) return Number.NaN
+    const solved = joint.solve(h)
+    let hJh = 0
+    for (let i = 0; i < n; i++) hJh += (h[i] ?? 0) * (solved[i] ?? 0)
+    let cQc = 0
+    for (let i = 0; i < rows; i++) cQc += (offset[i] ?? 0) * (QInvC[i] ?? 0)
+    return 0.5 * hJh - 0.5 * joint.logDet + 0.5 * cols * Math.log(2 * Math.PI) - 0.5 * factorQ.logDet - 0.5 * cQc
   },
 }

@@ -852,12 +852,38 @@ class Compiler {
       case 'const':
         return this.fromNamed(this.evalNamed(e))
       case 'op':
+        if (e.op === 'matvec' || e.op === 'dot') return this.eventLinear(e)
         return this.symOp(
           e.op,
           e.args.map((a) => this.evalSym(a)),
           e.params ?? {},
         )
     }
+  }
+
+  /**
+   * `matvec(A, x)` and `dot(a, x)`: a known matrix or vector applied to a vector `x` (a Gaussian vector variable, its coordinates
+   * the cells of the symbol), as affine forms of its coordinates: the step `A x` of a linear dynamical system (a vector of as many
+   * forms as `A` has rows), and the scalar reading `a . x`.
+   */
+  private eventLinear(e: ExprSpec & { readonly kind: 'op' }): Sym {
+    const known = this.evalNamed(e.args[0] as ExprSpec)
+    const x = this.evalSym(e.args[1] as ExprSpec)
+    const values = Array.from(toFlat(known.value))
+    const n = x.cells.length
+    const rows = e.op === 'dot' ? 1 : values.length / n
+    if (!Number.isInteger(rows) || rows < 1)
+      throw new Refusal('structure', `${e.op}: the matrix has ${values.length} entries for a vector of ${n}`)
+    const cells: Cell[] = []
+    for (let r = 0; r < rows; r++) {
+      let acc = constAff(0)
+      for (let j = 0; j < n; j++) {
+        const a = values[r * n + j] as number
+        if (a !== 0) acc = combine(acc, affOf(x.cells[j] as Cell), a)
+      }
+      cells.push({ kind: 'aff', aff: acc })
+    }
+    return e.op === 'dot' ? { dims: [], cells } : { dims: x.dims, cells }
   }
 
   /** Arithmetic on a discrete variable's lookup or on a gamma variable's precision: undefined when neither operand is one. */
@@ -1872,6 +1898,11 @@ class Compiler {
     if (node.dims.length !== 1)
       throw new Refusal('structure', `'${node.name}' is a multivariateNormal: one vector over one dimension is mapped`)
     const params = node.dist.params
+    // A random mean that is a linear map of another Gaussian vector (`matvec(F, previous)`): one dense Gaussian step between the two.
+    if (params['loc'] !== undefined && !this.isConst(params['loc'])) {
+      this.latentTransition(node, params['loc'])
+      return
+    }
     const known = (e: ExprSpec | undefined, what: string): number[] => {
       if (e === undefined || !this.isConst(e))
         throw new Refusal(
@@ -1901,6 +1932,61 @@ class Compiler {
     if (cov.length !== n * n) throw new Refusal('structure', `the covariance of '${node.name}' is not ${n} by ${n}`)
     this.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
     this.addFactor(gaussianMvPrior(node.name, mean, cov), node.name)
+    this.syms.set(node.name, {
+      dims: node.dims,
+      cells: Array.from({ length: n }, (_, j) => this.compAtom(node.name, j, n)),
+    })
+    this.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)
+  }
+
+  /**
+   * A multivariate normal latent whose mean is `F w + c` for a known matrix and another Gaussian vector `w` (the step of a linear
+   * dynamical system, `x_t ~ N(F x_(t-1), Q)`), with a known covariance: one `gaussian-vector` variable and a `gaussian-transition`
+   * factor between it and `w`, so a chain of steps with linear Gaussian readings is the Kalman smoother.
+   */
+  private latentTransition(node: ModelNode & { readonly kind: 'latent' }, locExpr: ExprSpec): void {
+    if (node.dims.length !== 1)
+      throw new Refusal('structure', `'${node.name}' is a multivariateNormal: one vector over one dimension is mapped`)
+    const n = this.size(node.dims[0] as string)
+    const params = node.dist.params
+    const covarianceExpr = params['covariance']
+    if (covarianceExpr === undefined || !this.isConst(covarianceExpr))
+      throw new Refusal('operator', `the covariance of '${node.name}' must be a known matrix when its mean is random`)
+    const covariance = Array.from(toFlat(this.evalNamed(covarianceExpr).value))
+    if (covariance.length !== n * n)
+      throw new Refusal('structure', `the covariance of '${node.name}' is not ${n} by ${n}`)
+    const loc = this.over(this.evalSym(locExpr), node.dims)
+    let vector: string | undefined
+    let columns = 0
+    const forms = loc.map((c) => {
+      if (c.kind !== 'aff')
+        throw new Refusal('operator', `the mean of '${node.name}' must be a linear map of another Gaussian vector`)
+      const terms = [...c.aff.terms].filter(([, k]) => k !== 0)
+      for (const [key] of terms) {
+        const atom = this.atoms.get(key)
+        if (atom?.kind !== 'comp' || (vector !== undefined && atom.vector !== vector))
+          throw new Refusal('operator', `the mean of '${node.name}' must be a linear map of one Gaussian vector`)
+        vector = atom.vector
+        columns = atom.size
+      }
+      return { aff: c.aff, terms }
+    })
+    if (vector === undefined)
+      throw new Refusal('operator', `the mean of '${node.name}' does not depend on a Gaussian vector`)
+    const matrix = new Array<number>(n * columns).fill(0)
+    const offset = forms.map(({ aff, terms }, i) => {
+      for (const [key, k] of terms) matrix[i * columns + (this.atoms.get(key) as Atom & { kind: 'comp' }).index] = k
+      return aff.offset
+    })
+    this.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
+    this.addFactor(
+      {
+        operator: 'gaussian-transition',
+        args: [node.name, vector],
+        params: { matrix, covariance, ...(offset.some((v) => v !== 0) ? { offset } : {}) },
+      },
+      node.name,
+    )
     this.syms.set(node.name, {
       dims: node.dims,
       cells: Array.from({ length: n }, (_, j) => this.compAtom(node.name, j, n)),
