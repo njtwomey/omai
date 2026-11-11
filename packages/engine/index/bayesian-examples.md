@@ -66,6 +66,7 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `gpProbitLearnedAtom`: EP atom: a probit Gaussian process classifier with a learned length scale, recovered from simulated labels. `src/lib/bayesian-examples/ep-atoms-kernels.ts:271` `omai-engine/bayesian-examples`
 - estimator `halfCauchyAtom`: EP atom: a half-Cauchy prior on a scale. `src/lib/bayesian-examples/ep-atoms-scales.ts:303` `omai-engine/bayesian-examples`
 - estimator `halfNormalAtom`: EP atom: a half-normal prior on a scale. `src/lib/bayesian-examples/ep-atoms-scales.ts:331` `omai-engine/bayesian-examples`
+- estimator `hurdlePoissonAtom`: EP atom: a hurdle count (a Beta zero probability, a zero-truncated Poisson on a log-linear rate). `src/lib/bayesian-examples/ep-atoms-counts.ts:109` `omai-engine/bayesian-examples`
 - estimator `irtMethod`: Item response method: Rasch or 2PL, generated answers, one inference method. `src/lib/bayesian-examples/irt-method.ts:534` `omai-engine/bayesian-examples`
 - estimator `laplaceAtom`: EP atom: a Laplace likelihood on a mean. `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:96` `omai-engine/bayesian-examples`
 - estimator `laplaceLearnedAtom`: EP atom (planned): a Laplace likelihood with unknown location and scale. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:280` `omai-engine/bayesian-examples`
@@ -77,6 +78,7 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `mixtureComponentsAtom`: EP atom: a random index into random components (mu[z]), drawn as its branches. `src/lib/bayesian-examples/ep-atoms-mixtures.ts:383` `omai-engine/bayesian-examples`
 - estimator `mixtureComponentsLearnedAtom`: EP atom: mixture with unknown means, widths and weights, learned. `src/lib/bayesian-examples/ep-atoms-extended-gates.ts:396` `omai-engine/bayesian-examples`
 - estimator `mixtureMethod`: Gaussian mixture method: generated or Old Faithful data, free or ordered means, one inference method. `src/lib/bayesian-examples/mixture-method.ts:535` `omai-engine/bayesian-examples`
+- estimator `mixtureRegressionAtom`: EP atom: a mixture of two regressions, a class per row picking the line (a gate of Gaussian likelihoods). `src/lib/bayesian-examples/ep-atoms-regression-gates.ts:103` `omai-engine/bayesian-examples`
 - estimator `orderedMeansAtom`: EP atom: two means with an ordered constraint, against data that disagree. `src/lib/bayesian-examples/ep-atoms-gates.ts:148` `omai-engine/bayesian-examples`
 - estimator `orderedPairAtom`: EP atom: an ordered pair, a hard comparison (greater-than, truncation). `src/lib/bayesian-examples/ep-atoms-gates.ts:68` `omai-engine/bayesian-examples`
 - estimator `poissonLogAtom`: EP atom: a Poisson count with a log link. `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:474` `omai-engine/bayesian-examples`
@@ -112,10 +114,12 @@ The canonical Bayesian examples as methods a page or a worker runs by name and a
 - estimator `spikeSlabLearnedAtom`: EP atom: spike and slab with unknown share and slab width, learned. `src/lib/bayesian-examples/ep-atoms-extended-gates.ts:736` `omai-engine/bayesian-examples`
 - estimator `spikeSlabMarginalAtom`: EP atom: spike and slab with the switch summed out (mixture site, no P(slab)). `src/lib/bayesian-examples/ep-atoms-mixtures.ts:573` `omai-engine/bayesian-examples`
 - estimator `spikeSlabMarginalLearnedAtom`: EP atom (planned): summed-out spike and slab, learned share and width. `src/lib/bayesian-examples/ep-atoms-extended-gates.ts:823` `omai-engine/bayesian-examples`
+- estimator `stickBreakingAtom`: EP atom: a stick-breaking mixture (truncated Dirichlet process), the stick-breaking factor on beta breaks. `src/lib/bayesian-examples/ep-atoms-nonparametric.ts:91` `omai-engine/bayesian-examples`
 - estimator `studentTAtom`: EP atom: a Student-t likelihood on a mean (robust to an outlier). `src/lib/bayesian-examples/ep-atoms-likelihoods.ts:67` `omai-engine/bayesian-examples`
 - estimator `studentTLearnedAtom`: EP atom: a Student-t likelihood with unknown location and scale, recovered from simulated data. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:157` `omai-engine/bayesian-examples`
 - estimator `tanhAtom`: EP atom: tanh of a Gaussian (a squashing unit). `src/lib/bayesian-examples/ep-atoms-functions.ts:93` `omai-engine/bayesian-examples`
+- estimator `topicModelAtom`: EP atom: a topic model (Dirichlet mixtures and topics, a word read through its token's topic: a gate of discrete factors). `src/lib/bayesian-examples/ep-atoms-nonparametric.ts:256` `omai-engine/bayesian-examples`
 - estimator `volatilityMethod`: Stochastic volatility method: AR(1) log-variance, centred or non-centred, one inference method. `src/lib/bayesian-examples/stochastic-volatility-method.ts:523` `omai-engine/bayesian-examples`
 - estimator `weibullLearnedAtom`: EP atom: a Weibull regression with a log link, coefficients recovered from simulated times. `src/lib/bayesian-examples/ep-atoms-extended-likelihoods.ts:749` `omai-engine/bayesian-examples`
 
-- table `epAtoms`: The EP atoms: bare setups that each exercise one factor of the message passing suite. `src/lib/bayesian-examples/ep-atom-list.ts:101` `omai-engine/bayesian-examples`
+- table `epAtoms`: The EP atoms: bare setups that each exercise one factor of the message passing suite. `src/lib/bayesian-examples/ep-atom-list.ts:104` `omai-engine/bayesian-examples`

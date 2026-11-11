@@ -2,7 +2,7 @@
  * Oracles that sum out a discrete part by enumeration: the exact posterior of a spike and slab linear regression with
  * Gaussian noise, every subset of the coefficients in the slab (2^p of them) weighed by its marginal likelihood, the
  * Gaussian coefficients integrated in closed form and an unknown noise precision integrated on a grid (feasible for up to
- * about sixteen coefficients); and of a zero-inflated Poisson regression, the structural zero of each count summed out and
+ * about sixteen coefficients); of a mixture of linear regressions, every assignment of the rows to classes weighed by its marginal likelihood, each class's coefficients Gaussian given its rows; and of a zero-inflated Poisson regression, the structural zero of each count summed out and
  * the inflation probability and the two coefficients on a refined grid. They are the exact answers that an approximation
  * (EP, NUTS on the mixture) is checked against.
  */
@@ -336,4 +336,147 @@ export function zeroInflatedPoisson(problem: ZeroInflatedPoisson): ZeroInflatedP
     { mean: number; sd: number },
   ]
   return { pi, b0, b1, structural: result.structural, logEvidence: result.logZ }
+}
+
+/** The prior and data of a mixture of linear regressions on a shared design: a class per row, a coefficient vector per class. */
+export interface MixtureOfRegressions {
+  /** The design, one row per observation. */
+  readonly X: readonly (readonly number[])[]
+  /** The responses. */
+  readonly y: readonly number[]
+  /** The prior mean of each class's coefficients, `priorMean[class][feature]`. */
+  readonly priorMean: readonly (readonly number[])[]
+  /** The prior sd of every coefficient. */
+  readonly priorSd: number
+  /** The known noise sd. */
+  readonly noiseSd: number
+  /** The probability of each class a priori (default equal). */
+  readonly weights?: readonly number[]
+}
+
+/** The exact posterior of a mixture of regressions. */
+export interface MixtureOfRegressionsPosterior {
+  /** For each class and feature, the mixture over assignments of the Gaussian posterior of the coefficient (`coefficients[class][feature]`). */
+  readonly coefficients: readonly (readonly {
+    readonly mean: number
+    readonly sd: number
+    readonly components: readonly { readonly weight: number; readonly mean: number; readonly sd: number }[]
+  }[])[]
+  /** P(row i is in class k | data), `membership[i][k]`. */
+  readonly membership: readonly (readonly number[])[]
+  /** log p(y) under the prior. */
+  readonly logEvidence: number
+  /** How many assignments were summed. */
+  readonly assignments: number
+}
+
+/**
+ * The exact posterior of a mixture of linear regressions with a known noise: every assignment of the rows to classes
+ * (`K^n` of them) is weighed by the marginal likelihood of its rows under each class's Gaussian prior (closed form) and the
+ * class probabilities; given an assignment each class's coefficients are Gaussian, so the posterior of a coefficient is a mixture of
+ * Gaussians over the assignments. The exact answer that EP on the model layer's `pick` gate is checked against.
+ *
+ * @param problem - The design, responses, prior and noise.
+ * @returns The mixture of each coefficient, each row's class probabilities and the evidence.
+ * @concept posterior-validation
+ * @index function Exact mixture-of-regressions posterior by enumerating the assignments of rows to classes.
+ * @example
+ * ```ts
+ * import { mixtureOfRegressions } from 'omai-engine/probprog/validation'
+ * const post = mixtureOfRegressions({ X: [[1], [1]], y: [3, -3], priorMean: [[3], [-3]], priorSd: 1, noiseSd: 0.5 })
+ * [post.assignments, post.membership[0]![0]! > 0.99] // => [4, true]
+ * ```
+ */
+export function mixtureOfRegressions(problem: MixtureOfRegressions): MixtureOfRegressionsPosterior {
+  const { X, y, priorMean, priorSd, noiseSd } = problem
+  const n = y.length
+  const classes = priorMean.length
+  const p = X[0]?.length ?? 0
+  if (n === 0 || p === 0 || classes === 0) throw new OmaiError('shape', 'mixtureOfRegressions: the design is empty')
+  const assignments = classes ** n
+  if (assignments > 2 ** 20) throw new OmaiError('value', 'mixtureOfRegressions: too many assignments to enumerate')
+  const weights = problem.weights ?? new Array<number>(classes).fill(1 / classes)
+  const tau = 1 / noiseSd ** 2
+  const prior = 1 / priorSd ** 2
+  type Part = { mean: Float64Array; variance: Float64Array }
+  const logw = new Float64Array(assignments)
+  const parts: Part[][] = []
+  for (let a = 0; a < assignments; a++) {
+    const rows: number[][] = Array.from({ length: classes }, () => [])
+    for (let i = 0, r = a; i < n; i++, r = Math.floor(r / classes)) (rows[r % classes] as number[]).push(i)
+    let lw = 0
+    const here: Part[] = []
+    for (let k = 0; k < classes; k++) {
+      const m0 = priorMean[k] as readonly number[]
+      const members = rows[k] as number[]
+      lw += members.length * Math.log(weights[k] as number)
+      const A = new Float64Array(p * p)
+      const b = new Float64Array(p)
+      let yty = 0
+      for (let j = 0; j < p; j++) {
+        A[j * p + j] = prior
+        b[j] = prior * (m0[j] as number)
+      }
+      for (const i of members) {
+        const row = X[i] as readonly number[]
+        yty += (y[i] as number) ** 2
+        for (let j = 0; j < p; j++) {
+          b[j] = (b[j] as number) + tau * (row[j] as number) * (y[i] as number)
+          for (let l = 0; l < p; l++)
+            A[j * p + l] = (A[j * p + l] as number) + tau * (row[j] as number) * (row[l] as number)
+        }
+      }
+      const { factor } = dpotrf(A, p)
+      let logDetA = 0
+      for (let j = 0; j < p; j++) logDetA += 2 * Math.log(factor[j * p + j] as number)
+      const mean = dpotrs(factor, b, p)
+      let bAb = 0
+      let m0m0 = 0
+      for (let j = 0; j < p; j++) {
+        bAb += (b[j] as number) * (mean[j] as number)
+        m0m0 += (m0[j] as number) ** 2
+      }
+      lw +=
+        -0.5 * members.length * Math.log(2 * Math.PI * noiseSd ** 2) -
+        0.5 * p * Math.log(priorSd ** 2) -
+        0.5 * logDetA -
+        0.5 * (tau * yty + prior * m0m0 - bAb)
+      const variance = new Float64Array(p)
+      const unit = new Float64Array(p)
+      for (let j = 0; j < p; j++) {
+        unit.fill(0)
+        unit[j] = 1
+        variance[j] = dpotrs(factor, unit, p)[j] as number
+      }
+      here.push({ mean, variance })
+    }
+    logw[a] = lw
+    parts.push(here)
+  }
+  const logEvidence = logSumExpOf(Array.from(logw))
+  const membership = Array.from({ length: n }, () => new Array<number>(classes).fill(0))
+  const coefficients = Array.from({ length: classes }, (_, k) =>
+    Array.from({ length: p }, (_, j) => {
+      const components: { weight: number; mean: number; sd: number }[] = []
+      let m1 = 0
+      let m2 = 0
+      for (let a = 0; a < assignments; a++) {
+        const w = Math.exp((logw[a] as number) - logEvidence)
+        const part = (parts[a] as Part[])[k] as Part
+        if (w > 1e-12)
+          components.push({ weight: w, mean: part.mean[j] as number, sd: Math.sqrt(part.variance[j] as number) })
+        m1 += w * (part.mean[j] as number)
+        m2 += w * ((part.variance[j] as number) + (part.mean[j] as number) ** 2)
+      }
+      return { mean: m1, sd: Math.sqrt(Math.max(m2 - m1 * m1, 0)), components }
+    }),
+  )
+  for (let a = 0; a < assignments; a++) {
+    const w = Math.exp((logw[a] as number) - logEvidence)
+    for (let i = 0, r = a; i < n; i++, r = Math.floor(r / classes)) {
+      const row = membership[i] as number[]
+      row[r % classes] = (row[r % classes] as number) + w
+    }
+  }
+  return { coefficients, membership, logEvidence, assignments }
 }

@@ -1,7 +1,7 @@
 /**
  * The generic numeric likelihood of a Gaussian linear predictor: a registry of log densities `log p(y | u)` of an outcome `y`
  * given the predictor `u` (the inverse link already inside), and the operators built from it. One implementation serves
- * many likelihoods: a rule is a row of the table (`poisson-log`, `negative-binomial-log`, `weibull-log`, `log-normal`,
+ * many likelihoods: a rule is a row of the table (`poisson-log`, `poisson-log-truncated`, `negative-binomial-log`, `weibull-log`, `log-normal`,
  * `binomial-logit`, `binomial-probit`, `ordinal-probit`, `asymmetric-laplace`, `student-t`, `laplace`), and the operator
  * `likelihood-site` (a scalar predictor) or `likelihood-row` (one row of a regression on a weight vector) reads which one
  * from its parameters. EP matches the moments of the Gaussian cavity of the predictor times the density by the panelled
@@ -114,6 +114,34 @@ const poissonLog: Likelihood = {
     scale: 1 / Math.sqrt(y + 1),
     reach: 40,
   }),
+}
+
+const poissonLogTruncated: Likelihood = {
+  name: 'poisson-log-truncated',
+  description:
+    'y | u ~ Poisson(exposure exp(u)) given y > 0: a zero-truncated count with a log link (the positive part of a hurdle model)',
+  params: ['exposure'],
+  check: (y, p) =>
+    (Number.isInteger(y) && y >= 1 ? undefined : 'the outcome must be a positive integer') ?? positive(p, 'exposure'),
+  density: (y, p) => {
+    const E = numberParam(p, 'exposure', 1)
+    const c = y * Math.log(E) - lgammaOf(y + 1)
+    // log p = log Poisson(y) - log(1 - exp(-mu)) with mu = exposure exp(u): log(-expm1(-mu)) is exact for a small mean.
+    return (u) => {
+      const mu = E * Math.exp(u)
+      return c + y * u - mu - Math.log(-Math.expm1(-mu))
+    }
+  },
+  // A count of one has a likelihood that tends to a constant as the rate goes to zero, so its mass is not near where the count is: the
+  // cavity's own window then.
+  locate: (y, p) =>
+    y === 1
+      ? undefined
+      : {
+          centre: Math.log((y + 0.5) / numberParam(p, 'exposure', 1)),
+          scale: 1 / Math.sqrt(y + 1),
+          reach: 40,
+        },
 }
 
 const negativeBinomialLog: Likelihood = {
@@ -271,6 +299,7 @@ const ordinalProbit: Likelihood = {
 export function likelihoods(): Record<string, Likelihood> {
   const all: Likelihood[] = [
     poissonLog,
+    poissonLogTruncated,
     negativeBinomialLog,
     weibullLog,
     logNormal,

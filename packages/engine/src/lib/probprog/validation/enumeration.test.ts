@@ -1,7 +1,7 @@
 // The enumeration oracle of the spike and slab regression against closed forms and a brute-force grid.
 import { describe, expect, it } from 'vitest'
 import { spikeSlabPosterior } from '../../bayesian-examples/ep-atoms-mixtures.ts'
-import { spikeSlabRegression, zeroInflatedPoisson } from './enumeration.ts'
+import { mixtureOfRegressions, spikeSlabRegression, zeroInflatedPoisson } from './enumeration.ts'
 
 describe('spikeSlabRegression', () => {
   it('one coefficient over several rows is the two-component closed form on the sufficient statistics', () => {
@@ -96,5 +96,40 @@ describe('zeroInflatedPoisson', () => {
     })
     expect(post.structural[0]).toBeGreaterThan(0.95)
     expect(post.b0.mean).toBeGreaterThan(2)
+  })
+})
+
+describe('mixtureOfRegressions', () => {
+  const norm = (y: number, m: number, v: number): number =>
+    Math.exp((-0.5 * (y - m) ** 2) / v) / Math.sqrt(2 * Math.PI * v)
+
+  it('one row: each class has the weight of its marginal density at the response, and the class posterior is the conjugate one', () => {
+    const [x, y, s0, s] = [1.5, 2, 1.2, 0.7]
+    const post = mixtureOfRegressions({
+      X: [[x]],
+      y: [y],
+      priorMean: [[0.5], [-2]],
+      priorSd: s0,
+      noiseSd: s,
+      weights: [0.3, 0.7],
+    })
+    const w = [0.3 * norm(y, x * 0.5, x * x * s0 * s0 + s * s), 0.7 * norm(y, x * -2, x * x * s0 * s0 + s * s)]
+    expect(post.assignments).toBe(2)
+    expect(post.membership[0]?.[0]).toBeCloseTo((w[0] as number) / ((w[0] as number) + (w[1] as number)), 10)
+    expect(post.logEvidence).toBeCloseTo(Math.log((w[0] as number) + (w[1] as number)), 10)
+    // Given class 0 the coefficient is the conjugate posterior of a normal prior and one observation.
+    const precision = 1 / (s0 * s0) + (x * x) / (s * s)
+    const first = post.coefficients[0]?.[0]?.components.find((c) => c.weight > 0.01)
+    expect(first?.mean).toBeCloseTo((0.5 / (s0 * s0) + (x * y) / (s * s)) / precision, 10)
+    expect(first?.sd).toBeCloseTo(Math.sqrt(1 / precision), 10)
+  })
+
+  it('a single class is a Bayesian linear regression: the evidence of two rows is the Gaussian marginal', () => {
+    const post = mixtureOfRegressions({ X: [[1], [1]], y: [1, 2], priorMean: [[0]], priorSd: 1, noiseSd: 1 })
+    // y ~ N(0, [[2, 1], [1, 2]]): the density at (1, 2) is exp(-0.5 * 14/3 ... ) by the 2 x 2 inverse.
+    const det = 3
+    const quad = (2 * 1 - 2 * 1 * 2 + 2 * 4) / det
+    expect(post.logEvidence).toBeCloseTo(-Math.log(2 * Math.PI) - 0.5 * Math.log(det) - 0.5 * quad, 10)
+    expect(post.membership.every((r) => r[0] === 1 || Math.abs((r[0] as number) - 1) < 1e-12)).toBe(true)
   })
 })

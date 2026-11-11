@@ -204,7 +204,7 @@ export const STRUCTURE_EXPECTED: Readonly<Record<string, StructureFindings>> = {
     ...none,
     discrete: 'z: width 0',
     minibatch: ['row'],
-    suggestions: ['enumerate', 'limit'],
+    suggestions: ['enumerate'],
   },
   'clutter-problem': { ...none, discrete: 'z: width 0, 2 states', minibatch: ['row'], suggestions: ['enumerate'] },
 }

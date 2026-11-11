@@ -613,7 +613,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `rl`              | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation                                                                                                                                                                                                                                  |
 | `games`           | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms                                                                                                                                                                                                                                  |
 | `message-passing` | message passing on factor graphs of exponential families: EP, VMP and BP as settings of one engine, 46 factor operators, variations (power, alpha, numerical, stochastic, regions, expectation consistent, AMP), anytime runs                                                                                                 |
-| `bayesian-examples` | the canonical Bayesian examples as methods run by name and knobs (data, model, one inference method with its own knobs and a time budget, posterior probes): `example-method.ts` is the scaffold every example is declared on (`defineExample`: a problem from knobs, every applicable inference method from `methodSpace`, derived paths), and `classifier-method.ts` is Bayesian classification of a 2-D data set; the EP atoms are bare setups of one factor each (`ep-atoms.ts`: `defineAtom`, `atomRun`, `atomReference`, `atomCheck`; the atoms in `ep-atoms-{conjugate,gates,functions,scales,likelihoods,kernels}.ts`, the registry `ep-atom-list.ts`, closed forms in `ep-atoms-quad.ts`) and `ep-coverage.ts` is `epCoverage()`, the tested measurement of what EP runs on |
+| `bayesian-examples` | the canonical Bayesian examples as methods run by name and knobs (data, model, one inference method with its own knobs and a time budget, posterior probes): `example-method.ts` is the scaffold every example is declared on (`defineExample`: a problem from knobs, every applicable inference method from `methodSpace`, derived paths), and `classifier-method.ts` is Bayesian classification of a 2-D data set; the EP atoms are bare setups of one factor each (`ep-atoms.ts`: `defineAtom`, `atomRun`, `atomReference`, `atomCheck`; the atoms in `ep-atoms-{conjugate,gates,functions,scales,likelihoods,kernels,nonparametric,regression-gates,counts}.ts`, the registry `ep-atom-list.ts`, closed forms in `ep-atoms-quad.ts`) and `ep-coverage.ts` is `epCoverage()`, the tested measurement of what EP runs on |
 | `probprog`        | probabilistic programs and model specs, model analysis and structure reports, inference engines and the planner, a method per engine, validation and benchmark models, posteriors                                                                                                                                             |
 | `learn`           | estimator protocol, preprocessing, composition, model selection, calibration, conformal, active learning, privacy                                                                                                                                                                                                             |
 | `nn`              | neural networks: functional layers, modules, blocks, description, training, decoding                                                                                                                                                                                                                                          |
@@ -3628,14 +3628,14 @@ dimension order, ids, site names, expressions, the hooks for factor graphs) are 
   the current step and every expression has no dimension left, so one scan is one series), `custom` and `include` (a
   sub-model under a prefix); `Var`, a checked expression handle with named dimensions (`X.matmul(w).add(b)`), and `ops`, the operators as
   functions. Each verb checks names, references, dimensions and parameters as it is called.
-- `operators.ts`: `defaultOperators()`, the closed registry of 26 operators over named dimensions (`add`, `sub`, `mul`,
+- `operators.ts`: `defaultOperators()`, the closed registry of 30 operators over named dimensions (`add`, `sub`, `mul`,
   `div`, `pow`, `maximum`, `minimum`, `neg`, `exp`, `log`, `sqrt`, `square`, `abs`, `tanh`, `sigmoid`, `probit`,
-  `softplus`, `gt`, `lt`, `eq`, `where`, `clip`, `sum`, `mean`, `matmul`, `at`), each with a shape rule and an evaluation
+  `softplus`, `gt`, `lt`, `eq`, `where`, `clip`, `sum`, `mean`, `matmul`, `at`, `stickBreaking`, `pick`, `matvec`, `dot`: the stick-breaking weights of break fractions, the entry of the last dimension an index names (the gate over branches), and a known matrix or vector applied to a vector that is one event), each with a shape rule and an evaluation
   on the library's tensor ops; elementwise operators align operands by dimension name. `NamedValue`, `alignTo`.
-- `dists/` (`builders.ts`, `families.ts`): the 22 distribution families as data (`normal`, `halfNormal`, `logNormal`,
+- `dists/` (`builders.ts`, `families.ts`): the 24 distribution families as data (`normal`, `halfNormal`, `logNormal`,
   `truncatedNormal`, `studentT`, `cauchy`, `halfCauchy`, `laplace`, `exponential`, `gamma`, `inverseGamma`, `weibull`,
   `beta`, `uniform`, `bernoulli`, `binomial`, `geometric`, `negativeBinomial`, `poisson`, `categorical`, `dirichlet`,
-  `multivariateNormal`) as constructors taking numbers or `Var`s, and `distributionFamilies`, the table that maps each
+  `multivariateNormal`, and the hurdle count `zeroTruncatedPoisson` and `hurdlePoisson`) as constructors taking numbers or `Var`s, and `distributionFamilies`, the table that maps each
   name to the library's own constructor from `dists` (no second distribution).
 - `bind.ts`: `bind` (check the arrays against what the spec declares: required nodes, ranks, one size per dimension,
   supports, integer codes in range) to a `BoundModel`, `withData` (rebind some nodes, `null` unbinds a response),
@@ -3879,7 +3879,7 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   moment matching (the half-normal, half-Cauchy, uniform and truncated normal the compiler carries on a log scale).
   `_dense.ts`, `_quadrature.ts`, `_scalar.ts`: internal (SPD algebra, Gauss-Hermite against a Gaussian message, scalar
   special functions and the inverse digamma).
-- `operators/`: the 46 factor operators of `defaultOperators()` (`registry.ts`), each with message rules for the
+- `operators/`: the 48 factor operators of `defaultOperators()` (`registry.ts`), each with message rules for the
   projections it supports and tested against numerical integration: `prior`, `gaussian`, `gaussian-gamma-precision`,
   `gaussian-normal-gamma`, `product`, `equal` (`gaussian.ts`); `linear`, `plus`, `difference`, `times-constant`, `sum`,
   `dot-constant`, `matmul-constant`, `linear-regression-row`, `gaussian-joint` (`linear.ts`; the deterministic ones
@@ -3897,16 +3897,20 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   penalised spline: a grid in `log lambda` and a dense Gaussian message); `gamma-rate` and `gamma-product` (`gamma-scale.ts`: a gamma
   variable whose rate is a multiple of another, and the product of two gamma variables, the half-Cauchy and Student-t scale
   mixtures and a local times a global precision); and `gate` (`gate.ts`: the gate of Minka and Winn, a discrete variable selecting
-  among branches that are operators of the registry, each over its own variables, EP and VMP). `gaussian-gamma-precision`
+  among branches that are operators of the registry, each over its own variables, EP and VMP); `stick-breaking` (`stick-breaking.ts`: a
+  discrete variable with the stick-breaking weights of beta breaks, the truncated Dirichlet-process assignment: exact to the variable,
+  a moment-matched beta mixture to each break, EP and VMP) and `gaussian-transition` (`transition.ts`: `x ~ N(F w + c, Q)` between two
+  Gaussian vectors, the dense step of a linear dynamical system, exact messages in information form: EP on a chain is the Kalman
+  smoother). `gaussian-gamma-precision`
   takes a `scale` and an `offset` for the precision `scale lambda + offset`. A factor spec may carry `start` messages (a vague
-  Gaussian on a port, replaced by the factor's own first update) so the other factors have a proper cavity to begin from. The registry of numeric likelihoods of `likelihoods.ts` (`likelihoods()`: Poisson and negative binomial with a log link, Weibull and
+  Gaussian on a port, replaced by the factor's own first update) so the other factors have a proper cavity to begin from. The registry of numeric likelihoods of `likelihoods.ts` (`likelihoods()`: Poisson, zero-truncated Poisson and negative binomial with a log link, Weibull and
   log-normal survival, binomial with a logistic or probit link, ordinal probit, asymmetric Laplace, Student t, Laplace) is behind the
   generic `likelihood-site` and `likelihood-row`, integrated by the zooming panelled quadrature of `_tilted.ts`; with it
   `negative-binomial-dispersion` (a count with a log link and a random log dispersion, a 24-point Gauss-Hermite product rule),
   `gaussian-scale` (`log-scale.ts`: an observed value with a Gaussian mean and log scale, one quadrature over the log scale) and
   `apply` (`functions.ts`: `y = f(x)` for `exp`, `square`, `tanh`, `relu` (closed form), `softplus`, `abs`, `sigmoid` of a Gaussian
   variable, the output matched under the input's cavity: EP only). `numericOperator` (`numeric.ts`)
-  is a constructor, not one of the 46: a factor given only by its log density, whose EP messages come from a panelled
+  is a constructor, not one of the 48: a factor given only by its log density, whose EP messages come from a panelled
   product rule (the fallback for a robust likelihood or the clutter problem). `args.ts`: how operators read their
   arguments. Known limits: VMP has no rule for the hard comparison `greater-than` or for `max` and `min`.
 - `engine.ts`, `projections.ts`, `schedules.ts`, `graph.ts`: the engine (`messagePassingAlgorithm`, `EngineSettings`,

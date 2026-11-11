@@ -13,7 +13,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { mixture } from '../../../dists/compose/index.ts'
+import { mixture, truncated } from '../../../dists/compose/index.ts'
 import {
   bernoulli,
   beta,
@@ -38,6 +38,7 @@ import {
   truncatedNormal,
   uniform,
   weibull,
+  zeroInflated,
 } from '../../../dists/index.ts'
 import { mul, stack, sub, type Value } from '../../../tensor/index.ts'
 
@@ -120,7 +121,7 @@ function family(
 const covariance = ['covariance', 'precision', 'scaleTril'] as const
 
 /**
- * The table of distribution families: normal, halfNormal, logNormal, truncatedNormal, studentT, cauchy, halfCauchy,
+ * The table of distribution families: zeroTruncatedPoisson and hurdlePoisson (the positive part of a hurdle model, and the whole count), normal, halfNormal, logNormal, truncatedNormal, studentT, cauchy, halfCauchy,
  * laplace, exponential, gamma, inverseGamma, weibull, beta, uniform, bernoulli, binomial, geometric, negativeBinomial,
  * poisson, categorical, dirichlet and multivariateNormal. Parameter names are those of the constructors in
  * `omai-engine/dists`.
@@ -310,6 +311,24 @@ export function distributionFamilies(): Record<string, FamilyDef> {
       (a) => poisson(need('poisson', a, 'rate')),
       { rate: 3 },
       { discrete: true, exponentialFamily: true },
+    ),
+    family(
+      'zeroTruncatedPoisson',
+      ['rate'],
+      (a) => truncated(poisson(need('zeroTruncatedPoisson', a, 'rate')), { low: 1 }),
+      { rate: 3 },
+      { discrete: true, messagePassing: true },
+    ),
+    // The hurdle model's count: zero with probability `zero`, else a zero-truncated Poisson (a zero-inflated truncated Poisson).
+    family(
+      'hurdlePoisson',
+      ['rate', 'zero'],
+      (a) =>
+        zeroInflated(truncated(poisson(need('hurdlePoisson', a, 'rate')), { low: 1 }), {
+          probs: need('hurdlePoisson', a, 'zero'),
+        }),
+      { rate: 3, zero: 0.3 },
+      { discrete: true, messagePassing: true },
     ),
     family(
       'categorical',
