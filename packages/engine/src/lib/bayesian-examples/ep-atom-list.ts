@@ -7,31 +7,75 @@
 
 import { OmaiError } from '../base/index.ts'
 import type { EpAtom } from './ep-atoms.ts'
+import { betaBernoulliAtom, gammaPoissonAtom, gaussianAtom } from './ep-atoms-conjugate.ts'
+import { expAtom, logScaleAtom, maxAtom, productAtom, tanhAtom } from './ep-atoms-functions.ts'
 import {
-  callsPerHourAtom,
-  coinBiasAtom,
-  gaussianMeanAtom,
-  germinationAtom,
-  potholesAtom,
-} from './ep-atoms-conjugate.ts'
+  clutterAtom,
+  gateKnownAtom,
+  gateRandomAtom,
+  mixtureComponentsAtom,
+  orderedMeansAtom,
+  orderedPairAtom,
+  spikeSlabAtom,
+} from './ep-atoms-gates.ts'
+import {
+  gpLogisticAtom,
+  gpProbitAtom,
+  laplaceAtom,
+  logisticAtom,
+  poissonLogAtom,
+  probitAtom,
+  skillDifferenceAtom,
+  studentTAtom,
+} from './ep-atoms-likelihoods.ts'
+import {
+  gammaPrecisionAtom,
+  halfCauchyAtom,
+  halfNormalAtom,
+  scaledPrecisionAtom,
+  sharedPrecisionAtom,
+} from './ep-atoms-scales.ts'
 
 /**
- * Every EP atom, grouped by family in the order of the coverage page.
+ * Every EP atom, in the order of the coverage page: the gates and mixtures first, then the rest as they are added.
  *
  * @concept expectation-propagation
- * @index table The EP atoms: tiny concrete problems that each prove one factor of the message passing suite.
+ * @index table The EP atoms: bare setups that each exercise one factor of the message passing suite.
  * @example
  * ```ts
  * import { epAtoms } from 'omai-engine/bayesian-examples'
- * epAtoms.map((a) => a.name).slice(0, 2) // => ['gaussian-mean', 'coin-bias']
+ * epAtoms.map((a) => a.name).slice(0, 2) // => ['gate', 'gate-random']
  * ```
  */
 export const epAtoms: readonly EpAtom[] = [
-  gaussianMeanAtom,
-  coinBiasAtom,
-  callsPerHourAtom,
-  potholesAtom,
-  germinationAtom,
+  gateKnownAtom,
+  gateRandomAtom,
+  mixtureComponentsAtom,
+  spikeSlabAtom,
+  clutterAtom,
+  orderedPairAtom,
+  orderedMeansAtom,
+  expAtom,
+  tanhAtom,
+  logScaleAtom,
+  productAtom,
+  maxAtom,
+  gammaPrecisionAtom,
+  sharedPrecisionAtom,
+  scaledPrecisionAtom,
+  halfCauchyAtom,
+  halfNormalAtom,
+  studentTAtom,
+  laplaceAtom,
+  probitAtom,
+  logisticAtom,
+  skillDifferenceAtom,
+  gpProbitAtom,
+  gpLogisticAtom,
+  poissonLogAtom,
+  gaussianAtom,
+  betaBernoulliAtom,
+  gammaPoissonAtom,
 ]
 
 /**
@@ -43,7 +87,7 @@ export const epAtoms: readonly EpAtom[] = [
  * @example
  * ```ts
  * import { epAtom } from 'omai-engine/bayesian-examples'
- * epAtom('coin-bias').title // => 'A coin flipped a dozen times'
+ * epAtom('gate').title // => 'Gate'
  * ```
  */
 export function epAtom(name: string): EpAtom {

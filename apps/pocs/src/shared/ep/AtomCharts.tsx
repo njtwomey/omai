@@ -136,7 +136,11 @@ export function DataFigure(props: {
       name: p.name,
       x: [...p.x],
       y: [...p.y],
-      ...(p.group === undefined ? {} : { groups: [...p.group] }),
+      ...(p.groupFrom !== undefined && ep !== undefined
+        ? { groups: [...p.groupFrom(ep)] }
+        : p.group === undefined
+          ? {}
+          : { groups: [...p.group] }),
       ...(p.groupNames === undefined ? {} : { groupNames: p.groupNames as unknown as Record<string, string> }),
       size: 9,
     }))
@@ -229,3 +233,44 @@ export function JointChart(props: {
 /** The reference of an atom's quantities by name, for the page. */
 export const marginalOf = (reference: AtomReference | undefined, name: string): RefMarginal | undefined =>
   reference?.marginals[name]
+
+/** The belief about each discrete quantity (the probability that a switch is on): the exact one and EP's as two bars. */
+export function ProbabilityBars(props: {
+  readonly quantities: readonly AtomQuantity[]
+  readonly exact: Readonly<Record<string, RefMarginal>> | undefined
+  readonly ep: Readonly<Record<string, Belief>> | undefined
+}): ReactNode {
+  const { quantities, exact, ep } = props
+  const bar = (value: number | undefined, colour: string): ReactNode => (
+    <div className="flex items-center gap-2">
+      <div className="h-3 w-48 rounded-sm border border-line">
+        <div
+          className="h-full rounded-sm"
+          style={{ width: `${Math.max(0, Math.min(1, value ?? 0)) * 100}%`, background: colour }}
+        />
+      </div>
+      <span className="text-xs tabular-nums">
+        {value === undefined || !Number.isFinite(value) ? '-' : value.toFixed(4)}
+      </span>
+    </div>
+  )
+  return (
+    <div className="flex flex-col gap-2">
+      {quantities.map((q) => (
+        <div key={q.name} className="flex flex-wrap items-center gap-x-6 gap-y-1">
+          <span className="w-40 text-xs font-semibold text-muted">{q.label}</span>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 text-xs text-muted">
+              <span className="w-12">exact</span>
+              {bar(exact?.[q.name]?.mean, 'var(--wb-fg)')}
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted">
+              <span className="w-12">EP</span>
+              {bar(ep?.[q.name]?.mean, 'var(--wb-tab0, #4c78a8)')}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}

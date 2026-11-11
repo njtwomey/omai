@@ -35,7 +35,7 @@ import { item, toFlat } from '../tensor/index.ts'
 import { type Config, session } from '../trace/index.ts'
 
 /** Where a quantity lives, which fixes the family its belief is drawn in. */
-export type AtomSupport = 'real' | 'positive' | 'unit'
+export type AtomSupport = 'real' | 'positive' | 'unit' | 'probability'
 
 /** One number the atom asks about: its name in the model, what a person calls it, and the value that made the data. */
 export interface AtomQuantity {
@@ -56,6 +56,8 @@ export interface FigurePoints {
   /** A group per point (a class, an outlier flag), with the name of each group. */
   readonly group?: readonly number[]
   readonly groupNames?: Readonly<Record<number, string>>
+  /** The groups from the means of the quantities (a gate's assignment from its probabilities), instead of `group`, when there are means to draw. */
+  readonly groupFrom?: (means: Readonly<Record<string, number>>) => readonly number[]
 }
 
 /** A curve of the data figure. */
@@ -100,9 +102,14 @@ export interface AtomProblem {
   readonly quantities: readonly AtomQuantity[]
   /** Two quantities whose joint posterior is drawn as contours, when it is worth seeing. */
   readonly pair?: readonly [string, string]
-  readonly figure: AtomFigure
+  /** The model written out, one line each, with its numbers (`x ~ N(0, 1)`, `g = exp(x)`, `y ~ N(g, 0.3²)`, `observe y = 2.5`). */
+  readonly equations: readonly string[]
+  /** A picture of the data, when there is data worth a picture (points in the plane); most setups have none. */
+  readonly figure?: AtomFigure
   /** The closed-form marginals, by quantity name (when the atom's reference is `exact`). */
   readonly exact?: Readonly<Record<string, ExactMarginal>>
+  /** The closed-form joint of the atom's pair (for contours), when the reference is `exact`. */
+  readonly exactJoint?: RefJoint
   /** Options of the grid (points per axis, an explicit box) when the reference is a grid. */
   readonly grid?: GridOptions
 }
@@ -124,8 +131,8 @@ export interface AtomSpec<K extends Config> {
   /** The slug (`gaussian-mean`), the name of the page `ep-<name>`. */
   readonly name: string
   readonly title: string
-  /** One sentence of what the problem is, in everyday words. */
-  readonly story: string
+  /** One sentence of what the setup is, in the factor's own terms (no story). */
+  readonly what: string
   /** The factors or rules it exercises, by the library's names (`gaussian-gamma-precision`, `probit`). */
   readonly factors: readonly string[]
   /** The family of the atom, for the coverage table's grouping. */
@@ -247,6 +254,7 @@ const CURVE_POINTS = 400
 
 /** A marginal from a closed form: the density sampled on its interval. */
 function exactCurve(name: string, support: AtomSupport, m: ExactMarginal): RefMarginal {
+  if (support === 'probability') return { name, mean: m.mean, sd: m.sd, x: [], p: [] }
   const lo0 = m.range?.[0] ?? m.mean - 8 * m.sd
   const hi0 = m.range?.[1] ?? m.mean + 8 * m.sd
   const lo = support === 'real' ? lo0 : Math.max(lo0, support === 'unit' ? 0 : 0)
@@ -296,11 +304,23 @@ export function atomReference<K extends Config>(atom: EpAtom<K>, problem: AtomPr
         throw new OmaiError('value', `atomReference: '${atom.name}' has no closed form for '${q.name}'`)
       marginals[q.name] = exactCurve(q.name, q.support, m)
     }
-    return { kind: 'exact', source: 'the closed-form posterior', marginals }
+    return {
+      kind: 'exact',
+      source: 'the closed-form posterior',
+      marginals,
+      ...(problem.exactJoint === undefined ? {} : { joint: problem.exactJoint }),
+    }
   }
   const grid = gridPosterior(toProgram(atomBound(problem)), undefined, { maxRefinements: 0, ...problem.grid })
   const marginals: Record<string, RefMarginal> = {}
   for (const q of problem.quantities) {
+    if (q.support === 'probability') {
+      const m = problem.exact?.[q.name]
+      if (m === undefined)
+        throw new OmaiError('value', `atomReference: '${atom.name}' has no closed form for '${q.name}'`)
+      marginals[q.name] = exactCurve(q.name, q.support, m)
+      continue
+    }
     const o = grid.marginal(q.name)
     const d = grid.density(q.name)
     marginals[q.name] = { name: q.name, mean: o.mean, sd: o.sd, x: d.x, p: d.p }
@@ -375,6 +395,11 @@ export type AtomRun =
       readonly missing: readonly string[]
     }
   | {
+      /** EP applies (the compiler accepts the model) but the run broke: the error, which is a gap of the library to report. */
+      readonly status: 'failed'
+      readonly reason: string
+    }
+  | {
       readonly status: 'ran'
       readonly converged: boolean
       readonly sweeps: number
@@ -407,6 +432,7 @@ export function marginalMean(reference: AtomReference): Record<string, number> {
 function momentsOf(
   posterior: { mean: (s: string) => never; stddev: (s: string) => never; sites: readonly string[] },
   name: string,
+  support: AtomSupport,
 ): Belief {
   const m = /^(.*)\[(\d+)\]$/.exec(name)
   const site = m?.[1] ?? name
@@ -414,7 +440,11 @@ function momentsOf(
   if (!posterior.sites.includes(site)) return { mean: Number.NaN, sd: Number.NaN, proper: false }
   const mean = toFlat(posterior.mean(site))[i] ?? Number.NaN
   const sd = toFlat(posterior.stddev(site))[i] ?? Number.NaN
-  return { mean, sd, proper: Number.isFinite(mean) && Number.isFinite(sd) && sd < 1e5 && sd > 0 }
+  return {
+    mean,
+    sd,
+    proper: Number.isFinite(mean) && Number.isFinite(sd) && sd < 1e5 && (sd > 0 || support === 'probability'),
+  }
 }
 
 /**
@@ -440,11 +470,18 @@ export function atomRun(problem: AtomProblem, ep: Config = {}): AtomRun {
   if (!verdict.applies) return { status: 'refused', reason: verdict.reason, missing: verdict.missing }
   const config: Config = { tol: 1e-9, ...ep }
   const maxSweeps = typeof config['maxSweeps'] === 'number' ? config['maxSweeps'] : 200
-  const s = session(method, { seed: 1, steps: maxSweeps + 2, mode: 'eager', config, logs: 'all' })
+  let s: ReturnType<typeof session<never, Config, string>>
+  try {
+    s = session(method, { seed: 1, steps: maxSweeps + 2, mode: 'eager', config, logs: 'all' }) as never
+  } catch (e) {
+    return { status: 'failed', reason: e instanceof Error ? e.message : String(e) }
+  }
   const read = (state: never): Record<string, Belief> => {
     const posterior = method.posterior?.(state, s.config as never)
     if (posterior === undefined) return {}
-    return Object.fromEntries(problem.quantities.map((q) => [q.name, momentsOf(posterior as never, q.name)] as const))
+    return Object.fromEntries(
+      problem.quantities.map((q) => [q.name, momentsOf(posterior as never, q.name, q.support)] as const),
+    )
   }
   const last = s.t
   const keep = new Set<number>([0, last])
@@ -514,7 +551,8 @@ export function atomCheck(
     const ref = reference.marginals[q.name] as RefMarginal
     const meanZ = Math.abs(ep.mean - ref.mean) / ref.sd
     const sdRatio = ep.sd / ref.sd
-    const ks = ep.proper ? ksOf(beliefDensity(q.support, ep.mean, ep.sd), ref) : Number.NaN
+    const ks =
+      q.support === 'probability' ? 0 : ep.proper ? ksOf(beliefDensity(q.support, ep.mean, ep.sd), ref) : Number.NaN
     const pass =
       ep.proper &&
       meanZ <= tolerance.meanZ &&

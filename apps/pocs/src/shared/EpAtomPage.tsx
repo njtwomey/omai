@@ -16,7 +16,7 @@ import {
 } from 'omai-render/react'
 import { modelGraph } from 'omai-render/structures'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import { BeliefChart, DataFigure, JointChart } from './ep/AtomCharts.tsx'
+import { BeliefChart, DataFigure, JointChart, ProbabilityBars } from './ep/AtomCharts.tsx'
 import { type AtomState, useAtom } from './ep/useAtom.ts'
 
 const EP_KNOBS = ['schedule', 'damping', 'improper', 'tol', 'maxSweeps']
@@ -101,46 +101,44 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
   const pair = problem?.pair
   const qa = pair === undefined ? undefined : qs.find((q) => q.name === pair[0])
   const qb = pair === undefined ? undefined : qs.find((q) => q.name === pair[1])
-  const planned = run?.status === 'refused'
+  const planned = run !== undefined && run.status !== 'ran'
+  const hasKnobs = Object.keys(atom.knobs.spaces).length > 0
+  const probabilities = qs.filter((q) => q.support === 'probability')
   return (
     <div className="flex flex-col gap-5">
       <Banner atom={atom} state={state} />
       <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold">The problem</h2>
-        <p className="max-w-3xl text-sm text-muted">{atom.story}</p>
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-          <ControlPanel title="the data and the model" columns={1}>
-            <SpaceControls
-              space={atom.knobs}
-              value={knobs}
-              onChange={(v) => setKnobs((k) => ({ ...k, ...v }))}
-              exclude={['dataSeed']}
-              segmentedUpTo={1}
-            />
-            {'dataSeed' in atom.knobs.spaces ? (
-              <SeedInput value={Number(knobs['dataSeed'])} onChange={(v) => setKnobs((k) => ({ ...k, dataSeed: v }))} />
-            ) : null}
-          </ControlPanel>
-          <div className="flex min-w-0 flex-col gap-1">
-            {problem === undefined ? null : (
-              <>
-                <DataFigure figure={problem.figure} exact={exactMeans} ep={epMeans} />
-                <p className="text-xs text-muted">
-                  {problem.figure.caption}
-                  {planned
-                    ? ' The thick line is the exact answer: EP does not run on this model yet.'
-                    : ' Thick: the exact answer. Dashed: what EP believes at the sweep shown below.'}
-                </p>
-                {problem.figure.notes === undefined ? null : (
-                  <ul className="list-inside list-disc text-xs text-muted">
-                    {problem.figure.notes.map((n) => (
-                      <li key={n}>{n}</li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
-          </div>
+        <h2 className="text-sm font-semibold">The setup</h2>
+        <p className="max-w-3xl text-sm text-muted">{atom.what}</p>
+        {problem === undefined ? null : (
+          <pre className="max-w-3xl overflow-x-auto rounded border border-line bg-surface px-3 py-2 font-mono text-xs leading-relaxed">
+            {problem.equations.join('\n')}
+          </pre>
+        )}
+        <div
+          className={`grid grid-cols-1 items-start gap-4 ${hasKnobs && problem?.figure !== undefined ? 'lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]' : ''}`}
+        >
+          {hasKnobs ? (
+            <ControlPanel title="change the setup" columns={1}>
+              <SpaceControls
+                space={atom.knobs}
+                value={knobs}
+                onChange={(v) => setKnobs((k) => ({ ...k, ...v }))}
+                segmentedUpTo={1}
+              />
+            </ControlPanel>
+          ) : null}
+          {problem?.figure === undefined ? null : (
+            <div className="flex min-w-0 flex-col gap-1">
+              <DataFigure figure={problem.figure} exact={exactMeans} ep={epMeans} />
+              <p className="text-xs text-muted">
+                {problem.figure.caption}
+                {planned
+                  ? ' Thick: the exact answer (EP does not run on this model yet).'
+                  : ' Thick: the exact answer. Dashed: what EP believes at the sweep shown below.'}
+              </p>
+            </div>
+          )}
         </div>
         <FigurePanel panels={panels} name="graph">
           {graph === undefined ? null : (
@@ -164,28 +162,30 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
             ? state.error
             : run === undefined
               ? ''
-              : run.status === 'refused'
-                ? 'Expectation propagation does not apply to this model (the library says why, above).'
+              : run.status !== 'ran'
+                ? 'Expectation propagation does not run on this model (the library says why, above).'
                 : `${run.converged ? 'Converged' : 'Stopped without converging'} after ${run.sweeps} sweeps (${sig(state.runMs, 2)} ms).`}
         </p>
       </section>
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold">What to observe</h2>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {qs.map((q) => (
-            <div key={q.name} className="flex min-w-0 flex-col gap-1">
-              <h3 className="text-xs font-semibold text-muted">
-                {q.label}
-                {planned ? ': the exact posterior' : ': EP over the exact posterior'}
-              </h3>
-              <BeliefChart
-                quantity={q}
-                reference={reference?.marginals[q.name]}
-                belief={at?.[q.name]}
-                earlier={earlier.map((f) => f.beliefs[q.name])}
-              />
-            </div>
-          ))}
+          {qs
+            .filter((q) => q.support !== 'probability')
+            .map((q) => (
+              <div key={q.name} className="flex min-w-0 flex-col gap-1">
+                <h3 className="text-xs font-semibold text-muted">
+                  {q.label}
+                  {planned ? ': the exact posterior' : ': EP over the exact posterior'}
+                </h3>
+                <BeliefChart
+                  quantity={q}
+                  reference={reference?.marginals[q.name]}
+                  belief={at?.[q.name]}
+                  earlier={earlier.map((f) => f.beliefs[q.name])}
+                />
+              </div>
+            ))}
           {reference?.joint !== undefined && qa !== undefined && qb !== undefined ? (
             <div className="flex min-w-0 flex-col gap-1">
               <h3 className="text-xs font-semibold text-muted">
@@ -199,12 +199,17 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
             </div>
           ) : null}
         </div>
+        {probabilities.length === 0 ? null : (
+          <ProbabilityBars quantities={probabilities} exact={reference?.marginals} ep={at} />
+        )}
         {ran === undefined || frames.length < 2 ? null : (
           <Player controller={playback} stamp={(f) => `sweep ${frames[f]?.sweep ?? f}`} />
         )}
         <FigurePanel panels={panels} name="messages">
           {record === undefined ? (
-            <p className="text-sm text-muted">{planned ? 'There are no messages: EP is refused.' : 'Computing...'}</p>
+            <p className="text-sm text-muted">
+              {planned ? 'There are no messages: EP does not run on this model.' : 'Computing...'}
+            </p>
           ) : (
             <ModelRunPlayer record={record} filename={`ep-${atom.name}-messages`} />
           )}
@@ -224,7 +229,7 @@ export function EpAtomPage(props: { readonly atom: EpAtom }): ReactNode {
 function Banner(props: { readonly atom: EpAtom; readonly state: AtomState }): ReactNode {
   const { atom, state } = props
   const { run, check } = state
-  const refused = run?.status === 'refused'
+  const refused = run !== undefined && run.status !== 'ran'
   return (
     <div className="flex flex-col gap-1 rounded border border-line bg-surface px-3 py-2">
       <div className="flex flex-wrap items-center gap-2">
@@ -238,12 +243,19 @@ function Banner(props: { readonly atom: EpAtom; readonly state: AtomState }): Re
         {atom.expected === 'runs' && refused ? (
           <Badge color="var(--wb-danger)">declared runs, now refused</Badge>
         ) : null}
-        <span className="text-xs text-muted">{atom.factors.join('; ')}</span>
+        <span className="text-xs text-muted">
+          {atom.family}: {atom.factors.join('; ')}
+        </span>
       </div>
-      {refused && run?.status === 'refused' ? (
+      {refused && run !== undefined ? (
         <div className="flex flex-col gap-1 text-sm">
           <p>
-            <b>The library's verdict:</b> {run.reason}
+            <b>
+              {run.status === 'failed'
+                ? 'EP is accepted by the compiler and the run breaks:'
+                : "The library's verdict:"}
+            </b>{' '}
+            {run.reason}
           </p>
           {atom.plan === undefined ? null : (
             <p className="text-muted">
@@ -251,8 +263,8 @@ function Banner(props: { readonly atom: EpAtom; readonly state: AtomState }): Re
             </p>
           )}
           <p className="text-xs text-muted">
-            The reference below (the exact posterior of the same model, by quadrature) is what EP will be compared
-            against; when the rule lands this page starts to run with no change.
+            The reference below (the exact posterior of the same model) is what EP will be compared against; when the
+            rule lands this page starts to run with no change.
           </p>
         </div>
       ) : null}
@@ -264,7 +276,7 @@ function Banner(props: { readonly atom: EpAtom; readonly state: AtomState }): Re
 function Check(props: { readonly atom: EpAtom; readonly state: AtomState }): ReactNode {
   const { atom, state } = props
   const { check, reference, run } = state
-  if (run?.status === 'refused')
+  if (run !== undefined && run.status !== 'ran')
     return (
       <p className="text-sm text-muted">
         There is nothing to check yet. The reference is {reference === undefined ? 'being computed' : reference.source}
