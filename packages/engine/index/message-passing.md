@@ -106,7 +106,8 @@ The factor operators: the registry of closed-form message rules (a prior, Gaussi
 - structure `gaussianJoint`: A joint Gaussian potential over scalar variables in information form. `src/lib/message-passing/operators/linear.ts:519` `omai-engine/message-passing`
 - structure `gaussianLogScale`: An observation with a Gaussian log scale, x ~ N(loc, exp(2 s)): quadrature expectation propagation. `src/lib/message-passing/operators/gaussian.ts:356` `omai-engine/message-passing`
 - structure `gaussianMixture`: A Gaussian mixture observation with normal-gamma components (variational). `src/lib/message-passing/operators/discrete.ts:374` `omai-engine/message-passing`
-- structure `gaussianMvPrecisionScale`: A Gaussian vector whose precisions share one gamma multiplier (a smoothing parameter). `src/lib/message-passing/operators/scale.ts:173` `omai-engine/message-passing`
+- structure `gaussianMvFunctionScale`: A Gaussian vector of coefficients z_j u_j(x) with one Gaussian or gamma variable x: the dense non-centred scale. `src/lib/message-passing/operators/function-scale.ts:100` `omai-engine/message-passing`
+- structure `gaussianMvPrecisionScale`: A Gaussian vector whose precisions share one gamma multiplier (a smoothing parameter). `src/lib/message-passing/operators/scale.ts:255` `omai-engine/message-passing`
 - structure `gaussianNormalGamma`: A Gaussian observation of a normal-gamma mean and precision (conjugate, exact for an observed value). `src/lib/message-passing/operators/gaussian.ts:405` `omai-engine/message-passing`
 - structure `gaussianOperator`: A Gaussian with a fixed precision: likelihood or prior of a mean. `src/lib/message-passing/operators/gaussian.ts:108` `omai-engine/message-passing`
 - structure `gaussianScale`: An observation with a Gaussian mean and a Gaussian log scale, x ~ N(m, exp(2 s)): EP by one quadrature. `src/lib/message-passing/operators/log-scale.ts:57` `omai-engine/message-passing`
@@ -148,7 +149,7 @@ The factor operators: the registry of closed-form message rules (a prior, Gaussi
 - structure `table`: A table over discrete variables: sum-product and mean-field messages. `src/lib/message-passing/operators/discrete.ts:111` `omai-engine/message-passing`
 - structure `timesConstant`: A Gaussian variable scaled by a constant. `src/lib/message-passing/operators/linear.ts:198` `omai-engine/message-passing`
 
-- table `defaultOperators`: The library's factor operators by name. `src/lib/message-passing/operators/registry.ts:75` `omai-engine/message-passing`
+- table `defaultOperators`: The library's factor operators by name. `src/lib/message-passing/operators/registry.ts:76` `omai-engine/message-passing`
 - table `likelihoods`: The numeric likelihoods of a Gaussian predictor (count, survival, ordinal, quantile, robust) by name. `src/lib/message-passing/operators/likelihoods.ts:330` `omai-engine/message-passing`
 - table `pairLikelihoods`: The likelihoods over two random scalars (Laplace scale, Student-t degrees of freedom, Weibull shape, beta shapes). `src/lib/message-passing/operators/pairs.ts:209` `omai-engine/message-passing`
 - table `unaryFunctions`: The unary functions of a Gaussian variable (exp, square, tanh, relu, softplus, abs, sigmoid, sqrt, recip) by name. `src/lib/message-passing/operators/functions.ts:66` `omai-engine/message-passing`

@@ -45,37 +45,62 @@ interface Node {
   readonly cov?: Float64Array
 }
 
-/** The log of the cavity of the vector integrated against the factor at `log lambda = t`, plus the gamma cavity in t, and (if asked) the Gaussian conditional. */
+/**
+ * What a dense scale factor needs of its one mixing variable, written in `t` (the log of a gamma variable, or a Gaussian variable
+ * itself): the precision of each coefficient at `t` (undefined where it is not finite), the log of the mixing variable's
+ * cavity as a density in `t`, and the range to search.
+ */
+export interface VectorScaleModel {
+  readonly precisions: (t: number) => readonly number[] | undefined
+  readonly logCavity: (t: number) => number
+  readonly lo: number
+  readonly hi: number
+  /** The first grid is over the whole range; `points` is the size of each grid (default 81 coarse, 121 fine). */
+  readonly coarsePoints?: number
+  readonly finePoints?: number
+}
+
+/** The log of the cavity of the vector integrated against the factor at `t`, plus the mixing variable's cavity, and (if asked) the Gaussian conditional. */
 function nodeAt(
   t: number,
   h: readonly number[],
   jmat: readonly number[],
-  shape: number,
-  rate: number,
-  scale: readonly number[],
-  offset: readonly number[],
+  model: VectorScaleModel,
   conditional: boolean,
 ): Node | undefined {
   const d = h.length
-  const lam = Math.exp(t)
+  const p = model.precisions(t)
+  if (p === undefined) return undefined
   const m = Float64Array.from(jmat)
   let logPrec = 0
   for (let j = 0; j < d; j++) {
-    const p = (scale[j] ?? 0) * lam + (offset[j] ?? 0)
-    m[j * d + j] = (m[j * d + j] ?? 0) + p
-    logPrec += Math.log(p)
+    const pj = p[j] ?? 0
+    m[j * d + j] = (m[j * d + j] ?? 0) + pj
+    logPrec += Math.log(pj)
   }
   const factor = spd(m, d)
   if (factor === undefined) return undefined
   const mu = factor.solve(h)
   let quad = 0
   for (let j = 0; j < d; j++) quad += (h[j] ?? 0) * (mu[j] ?? 0)
-  const logWeight = shape * t - rate * lam + 0.5 * logPrec - 0.5 * factor.logDet + 0.5 * quad
+  const logWeight = model.logCavity(t) + 0.5 * logPrec - 0.5 * factor.logDet + 0.5 * quad
   return conditional ? { t, logWeight, mean: mu, cov: factor.inverse() } : { t, logWeight }
 }
 
-/** The weighted moments of the grid: the log mass, E[log lambda], E[lambda] and (when the nodes carry them) the mean and covariance of the vector. */
-function summarise(nodes: readonly Node[], step: number, d: number) {
+/** What a grid over the mixing variable gives: the log mass, `E t`, the sd of `t`, `E exp(t)`, and the mean and second moment of the vector. */
+export interface VectorScaleTilt {
+  readonly logZ: number
+  /** `E t` (for a gamma multiplier, the expected log). */
+  readonly logLambda: number
+  readonly sdLogLambda: number
+  /** `E exp(t)` (for a gamma multiplier, its mean). */
+  readonly lambda: number
+  readonly mean: Float64Array
+  readonly second: Float64Array
+}
+
+/** The weighted moments of the grid: the log mass, E[t], sd of t, E[exp t] and (when the nodes carry them) the mean and covariance of the vector. */
+function summarise(nodes: readonly Node[], step: number, d: number): VectorScaleTilt {
   let top = Number.NEGATIVE_INFINITY
   for (const n of nodes) if (n.logWeight > top) top = n.logWeight
   let z = 0
@@ -111,11 +136,60 @@ function summarise(nodes: readonly Node[], step: number, d: number) {
 }
 
 /**
- * The tilted distribution of the vector and the precision multiplier: a coarse grid in `log lambda` over the gamma cavity's
- * range finds where the mass is, a finer grid around it gives the moments. The cavity of the vector may be improper (no
- * information yet): `J + diag(s lambda + o)` only has to be positive definite where the weight is taken.
+ * The tilted distribution of a Gaussian vector (cavity `exp(h . beta - beta' J beta / 2)`) and one mixing variable `t` under a
+ * prior `beta_j | t ~ N(0, 1 / p_j(t))`, on a grid in `t`: a coarse grid over the model's range finds where the mass is (and
+ * zooms in again while the mass is narrower than a few grid steps), a finer grid around it gives the moments. The cavity of
+ * the vector may be improper (no information yet): `J + diag(p)` only has to be positive definite where the weight is taken.
+ * Shared by the gamma multiplier ({@link gaussianMvPrecisionScale}) and the Gaussian or gamma input of a chain of functions
+ * (`gaussian-mv-function-scale`); returns the log mass, the moments of `t`, `E exp(t)` and the mean and second moment of the vector.
+ *
+ * @param h - The cavity's linear natural parameter.
+ * @param jmat - The cavity's precision, row-major.
+ * @param model - The mixing variable.
+ * @returns The tilted moments.
  */
-function scaleTilt(c: OperatorContext) {
+export function vectorScaleTilt(
+  h: readonly number[],
+  jmat: readonly number[],
+  model: VectorScaleModel,
+): VectorScaleTilt & { readonly d: number } {
+  const d = h.length
+  const coarsePoints = model.coarsePoints ?? COARSE_POINTS
+  const finePoints = model.finePoints ?? FINE_POINTS
+  const grid = (lo: number, hi: number, points: number, conditional: boolean) => {
+    const step = (hi - lo) / (points - 1)
+    const nodes: Node[] = []
+    for (let i = 0; i < points; i++) {
+      const n = nodeAt(lo + step * i, h, jmat, model, conditional)
+      if (n !== undefined) nodes.push(n)
+    }
+    return { nodes, step }
+  }
+  let lo = model.lo
+  let hi = model.hi
+  let coarse = grid(lo, hi, coarsePoints, false)
+  if (coarse.nodes.length === 0)
+    throw new ImproperMessageError('gaussian-mv-precision-scale: no precision makes the vector proper')
+  let first = summarise(coarse.nodes, coarse.step, d)
+  // A mass narrower than a few steps of the grid is not resolved: look again, over the window that holds it.
+  for (let round = 0; round < 3 && first.sdLogLambda < 2 * coarse.step; round++) {
+    const half = Math.max(8 * first.sdLogLambda, 4 * coarse.step)
+    lo = Math.max(lo, first.logLambda - half)
+    hi = Math.min(hi, first.logLambda + half)
+    coarse = grid(lo, hi, coarsePoints, false)
+    if (coarse.nodes.length === 0) break
+    first = summarise(coarse.nodes, coarse.step, d)
+  }
+  const flo = Math.max(lo, first.logLambda - 8 * first.sdLogLambda - 0.5)
+  const fhi = Math.min(hi, first.logLambda + 8 * first.sdLogLambda + 0.5)
+  const fine = grid(flo, fhi, finePoints, true)
+  if (fine.nodes.length === 0)
+    throw new ImproperMessageError('gaussian-mv-precision-scale: no precision makes the vector proper')
+  return { ...summarise(fine.nodes, fine.step, d), d }
+}
+
+/** The tilted distribution of the vector and the precision multiplier of a gamma cavity (`t` is `log lambda`). */
+function scaleTilt(c: OperatorContext): VectorScaleTilt & { readonly d: number } {
   const { scale, offset } = precisions(c)
   const d = scale.length
   const vec = etaOf(arg(c, 0))
@@ -126,27 +200,35 @@ function scaleTilt(c: OperatorContext) {
     throw new ImproperMessageError('a gamma message has no density (its shape and rate are not positive)')
   const centre = digammaOf(shape) - Math.log(rate)
   const half = 15 * Math.sqrt(trigammaOf(shape))
-  const lo = Math.max(centre - half, -60)
-  const hi = Math.min(centre + half, 60)
-  const coarse: Node[] = []
-  for (let i = 0; i < COARSE_POINTS; i++) {
-    const n = nodeAt(lo + ((hi - lo) * i) / (COARSE_POINTS - 1), h, jmat, shape, rate, scale, offset, false)
-    if (n !== undefined) coarse.push(n)
-  }
-  if (coarse.length === 0)
-    throw new ImproperMessageError('gaussian-mv-precision-scale: no precision makes the vector proper')
-  const first = summarise(coarse, (hi - lo) / (COARSE_POINTS - 1), d)
-  const flo = Math.max(lo, first.logLambda - 8 * first.sdLogLambda - 0.5)
-  const fhi = Math.min(hi, first.logLambda + 8 * first.sdLogLambda + 0.5)
-  const step = (fhi - flo) / (FINE_POINTS - 1)
-  const fine: Node[] = []
-  for (let i = 0; i < FINE_POINTS; i++) {
-    const n = nodeAt(flo + step * i, h, jmat, shape, rate, scale, offset, true)
-    if (n !== undefined) fine.push(n)
-  }
-  if (fine.length === 0)
-    throw new ImproperMessageError('gaussian-mv-precision-scale: no precision makes the vector proper')
-  return { ...summarise(fine, step, d), d, h, jmat }
+  return vectorScaleTilt(h, jmat, {
+    precisions: (t) => {
+      const lam = Math.exp(t)
+      return scale.map((s, j) => s * lam + (offset[j] ?? 0))
+    },
+    logCavity: (t) => shape * t - rate * Math.exp(t),
+    lo: Math.max(centre - half, -60),
+    hi: Math.min(centre + half, 60),
+  })
+}
+
+/**
+ * The message to the vector from a tilted mixture (`vectorScaleTilt`): the dense Gaussian with the mixture's mean and covariance
+ * divided by the cavity.
+ */
+export function vectorMessageOf(t: VectorScaleTilt & { readonly d: number }, cavity: Eta, what: string): Eta {
+  const d = t.d
+  const cov = Float64Array.from(t.second)
+  for (let i = 0; i < d; i++)
+    for (let k = 0; k < d; k++) cov[i * d + k] = (cov[i * d + k] ?? 0) - (t.mean[i] ?? 0) * (t.mean[k] ?? 0)
+  const factor = spd(cov, d)
+  if (factor === undefined) throw new ImproperMessageError(`${what}: the tilted covariance is not positive definite`)
+  const jNew = factor.inverse()
+  const hNew = Array.from({ length: d }, (_, i) => {
+    let s = 0
+    for (let k = 0; k < d; k++) s += (jNew[i * d + k] ?? 0) * (t.mean[k] ?? 0)
+    return s
+  })
+  return [...hNew, ...Array.from(jNew)].map((v, i) => v - (cavity[i] ?? 0))
 }
 
 /**
@@ -186,21 +268,7 @@ export const gaussianMvPrecisionScale: FactorOperator = {
   ep: (c): OperatorResult => {
     const t = scaleTilt(c)
     if (c.to === 1) return { message: siteMessage(gamma, etaOf(arg(c, 1)), [t.logLambda, t.lambda]) }
-    const d = t.d
-    const cov = Float64Array.from(t.second)
-    for (let i = 0; i < d; i++)
-      for (let k = 0; k < d; k++) cov[i * d + k] = (cov[i * d + k] ?? 0) - (t.mean[i] ?? 0) * (t.mean[k] ?? 0)
-    const factor = spd(cov, d)
-    if (factor === undefined)
-      throw new ImproperMessageError('gaussian-mv-precision-scale: the tilted covariance is not positive definite')
-    const jNew = factor.inverse()
-    const hNew = Array.from({ length: d }, (_, i) => {
-      let s = 0
-      for (let k = 0; k < d; k++) s += (jNew[i * d + k] ?? 0) * (t.mean[k] ?? 0)
-      return s
-    })
-    const cavity: Eta = etaOf(arg(c, 0))
-    return { message: [...hNew, ...Array.from(jNew)].map((v, i) => v - (cavity[i] ?? 0)) }
+    return { message: vectorMessageOf(t, etaOf(arg(c, 0)), 'gaussian-mv-precision-scale') }
   },
   vmp: (c): OperatorResult => {
     const { scale, offset } = precisions(c)

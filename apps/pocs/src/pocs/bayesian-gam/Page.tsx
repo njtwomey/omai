@@ -58,7 +58,7 @@ const MODEL = dict({
       gammaSmooth:
         'gamma on the smoothing parameter and on the noise precision: both inferred, in the precision idiom, so every message-passing method runs (EP against the exact reference to a few percent)',
       logNormal:
-        'log-normal on the log smoothing parameter and the log noise sd: both inferred, written non-centred on exp and sqrt (the samplers, the variational families, and EP by the apply-product factor)',
+        'log-normal on the log smoothing parameter and the log noise sd: both inferred, written non-centred on exp and sqrt (the samplers, the variational families, and EP, which keeps the coefficients as one vector against the Gaussian log smoothing parameter, to a few percent of the exact reference)',
       gammaNoise:
         'smoothing fixed, the noise precision a gamma variable: a normal-gamma model, which variational message passing runs',
       fixed:
