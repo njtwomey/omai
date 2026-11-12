@@ -677,3 +677,79 @@ observation). Their reports say what exists; the work packages above absorb it r
   atom machinery and `grid3` reference, `posterior3`, the library's `gamma` and `normal` samplers and `spd` for the importance-sampling reference (`testing/covariance-group.ts`).
   Digest: `atom/random-intercepts-slopes-learned` (graph 52 to 43 factors, 14 to 3 sweeps, evidence and beliefs moved toward the reference),
   `vmp/random-intercepts-slopes-learned` (28 sweeps for 25, beliefs within 1e-10) and the registry line (one more operator) re-accepted; `atom/random-intercepts-slopes` gains the reference's evidence only.
+||||||| d5a9e92e
+## 2026-11-12 Variational message passing for the dense non-centred scale (`agent-a40-vmp`, gap `non-centred-scale` narrowed)
+
+- `gaussian-mv-function-scale` has a variational rule (support `numeric`) and an expected log: with the standard normals integrated
+  out the factor is the Gaussian density of the vector given `x`, so the message to the vector is `E[1 / u_j(x)^2]` on the diagonal
+  (no linear part) and the message to `x` is the non-conjugate message (`numericMessage`) of `sum_j -log |u_j(x)| - E[beta_j^2] /
+  (2 u_j(x)^2)`, on `quadraturePorts` (Gauss-Hermite for a Gaussian `x`, a grid in the log for a gamma one): the quadrature of the
+  variational kernel, no second one. Tested against `bruteExpectation` (one coefficient: the fixed point maximises the brute-force bound,
+  for a Gaussian and for a gamma `x`; two coefficients: the diagonal message, the natural gradient of the expected log and the bound
+  against brute force). On the Bayesian GAM (penalty prior, log-normal hyperpriors, 60 points): curve 0.004 response sd from the exact
+  reference, band 0.996, log smoothing 2.58 +- 0.57 against 2.53 +- 0.62, 46 sweeps; the offer lists `vmp` for it.
+- Not done: ARD. A VMP rule for `apply-product` as a deterministic factor (`defines` its output; the product of the two beliefs'
+  quadratures; it matches the brute-force bound on a scale read by a Gaussian) was written and left out: the compiler ties the scalar
+  outputs of ARD to one Gaussian vector with `dot-constant` factors that define each output from the vector, and a variable with two
+  definers does not compile, EP included. The gap says what the compiler would have to emit.
+- The `evidence.improperIsNaN` flag is gone from the nine operators that set it (`gaussian-gamma-precision`, `gamma-rate`, `gamma-product`,
+  `dirichlet-concentration`, `beta-two-shapes`, `gate`, `mvn-sd-corr`, `gaussian-mv-precision-scale`, `gaussian-mv-function-scale`): the
+  engine catches an improper cavity for every operator (`factorEvidence`). The option stays in `defineOperator` for a caller of
+  `logEvidence` outside the engine; a direct call of those operators on a flat cavity now throws `ImproperMessageError` where it gave `NaN`
+  (`evidence.test.ts` says so). 109 digest items around gates, mixtures, gamma precisions, priors and covariances are BITS identical; the
+  one item that moves (`atom/gate-random-learned`, evidence by 2.8e-12) moves the same on the commit before, so it is not this change.
+
+## 2026-11-12 Loops: tied groups pack hierarchies and tournaments (`agent-a22fa5-packing`, gap `loopy-overconfidence` narrowed)
+
+- `findGroups` (`_plan.ts`) now groups normal latents that are vectors over one dimension or have a prior of their own, when an
+  observed node reads them linearly (sums, differences, known multiples, indexing, and a link such as `probit` at the top of a
+  parameter; a product of two random values is not linear, so the non-centred `mu + tau z` reads nothing). A group with a scalar beside
+  the vectors, or one vector that a row reads at two places, is joined (200 coordinates at most). Known priors keep the old design (the
+  prior is on the vector, `latentGrouped` now takes vector members); the others are a tied group: the member is made as it is and each
+  element is tied to its coordinate of the vector by an exact `difference` constraint (`tieToGroup`; two definers of one variable are not
+  allowed, so the constraint is an observed zero difference), and the vector starts with a vague message in each coordinate (variance
+  100, replaced by the factor's first update; without it nothing can speak first). Where a tied graph has no EP energy (the cavity of a
+  tie is improper), the evidence is that of the same model compiled without groups (`mp.ts`, method `ep-energy (rows expanded, unpacked)`).
+- Against references (`model/factor-graph/tied-groups.test.ts`): radon (exact quadrature) floor effect sd 0.71 -> 0.91 of the exact, county
+  intercepts 0.82 to 0.98 -> 0.92 to 0.99, mean of the hierarchy 0.85 -> 0.88, means within 0.11 sd (177 sweeps, was 180); the radon counties
+  of the pocs (centred, 12 counties, 4 x 600 NUTS draws): floor effect 0.83 -> 0.96, 24 counties 0.68 -> 0.86; tournament of three players
+  (exact grid) 0.74, 0.76, 0.85 -> 0.99, 1.00, 1.00 in 3 sweeps (28), draws tournament 0.91 -> 1.00 and with the games simulated 0.82 to
+  0.95 -> 1.01 to 1.06, their evidence 0.12 and 0.23 nats from the grid -> 0.0001 and 0.006; the tournament program with a learned spread
+  (8 players, 3 rounds) 0.78 -> 0.97 of NUTS and the truth of `skill-difference-learned` inside the 90% interval 0.87 -> 0.94 (24 seeds).
+- Not packed, and why: the multiclass class slopes and the two shapes of a beta outcome (their sites send one message per port, so a joint
+  vector would receive no off-diagonal term: both need an operator with a vector port, which belongs to the message-passing operators);
+  the 2PL item response model (the logit `a (theta - b)` is a product, bilinear in the latents: 0.04 to 0.7 of the NUTS spread of the
+  discriminations, 30 students, 8 questions, unchanged); the non-centred hierarchy (no linear read; the floor effect 0.86 of NUTS, unchanged).
+- Digest items moved deliberately: `model/radon`, `model/trueskill-three-players`, `atom/skill-draws`, `atom/skill-draws-learned`,
+  `atom/skill-difference-learned`, `program/skills` (spreads move towards the reference; the means within 0.02 sd except the learned
+  tournaments' skills, 0.05 sd). The two draws atoms moved to the `plated` rung with evidence within 0.02 nats.
+## 2026-11-12 Stochastic volatility with learned parameters: a walk and warm starts in `epGridMethod` (`agent-a3da95-sv`)
+
+Gap `sv-parameters` narrowed (summary rewritten in `ep-gaps.ts`, still open). No second grid method: `epGridMethod` got two knobs and a
+rule for nodes that cycle (`inference/ep-grid.ts`).
+- `order: 'walk'` (one hyperparameter): the first node is the middle of the range, then one step outwards on the side whose edge node
+  weighs more, until both edges are `window` (default 10) nats of log evidence plus log prior below the best, so the tail nodes (a
+  persistence of -0.3 or 1.9, the most expensive ones: they need 140 to 200 sweeps) are never run. `warm: true` starts each node from the
+  final messages of the nearest settled node (a `messages` field on the node; the start is skipped when the graph has another shape). Both
+  default off (`order: 'bisect'`, `warm: false`), so no other grid changes.
+- A node that did not settle used to weigh nothing once any node had settled. It now weighs the grid where its evidence plus log prior does
+  not exceed the best settled node's (a cycling state in the tail is a fair estimate; one that collapsed overshoots, and still has no weight).
+- The settings that matter for this model: damping 0.2 (0.5 settled half as fast and 0.7 collapses the precision to zero), 120 sweeps a node.
+  Schedules were tried (`tree` settles a node the serial order does not, but not reliably) and `tol: 1e-3` (faster, but one seed collapses).
+- Calibration over 30 seeds of 60 returns (truth -1, 0.9, 11.1), 90% intervals, before (21 nodes, damping 0.5, 22 s a fit) and after
+  (walk, warm, damping 0.2, 7 s, 11 nodes of which 8 settled on average): level 0.97 and 0.97, persistence 0.70 and 0.97, precision 1.00 and
+  1.00, pooled 0.89 and 0.98. Against a brute-force posterior (a point-mass filter for the likelihood of each (level, persistence, precision)
+  on a 26 by 30 by 24 grid with the prior, scratch script; its seed-1 numbers agree with the NUTS run to 0.2 sd): the mean of the persistence
+  was off by up to 2.2 sds before and by up to 1.1 after (rms 0.59 and 0.26), the sd ratio of the persistence 0.76 and 0.85 at the median,
+  the level's means within 0.35 sd (rms 0.08), the level's sd 1.6 times the reference's, the precision's 1.0.
+- What did not work: a grid over the level and the persistence together (earlier, 70 points for the level), power EP (the `power` knob does
+  nothing here: no factor of the model takes one), a coarser grid (15 points and a window of 8: persistence coverage 0.77).
+- Not fixed, and the reason the gap stays open: (1) EP at a fixed persistence overstates the level's spread (0.50 against the exact
+  conditional 0.27 at a persistence of 0.69; the mixture over the persistence makes it 1.6 times the posterior's); (2) EP at low
+  persistence, and on a few seeds everywhere, cycles (a persistent oscillation of the shared precision's message at every damping, schedule
+  and improper policy tried), so the lower tail of the persistence is cut (seed 27, almost no node settles: the sd is 0.2 of the reference's
+  and the persistence is missed). Both are in the message passing of the chain (`message-passing/{numerics,operators}`, out of this work's
+  scope), not in the grid.
+- Tests: `ep-grid-sv.test.ts` (seed 1 against the brute-force numbers, in a dozen nodes), `ep-grid.test.ts` (warm start and walk on the
+  Gaussian process benchmarks, where every node is exact; the weight of a node that did not settle). The EP digest: no item moves because
+  of the change (`atom/gp-length-scale` differs from the committed baseline in the last digits, on the unchanged HEAD as well).

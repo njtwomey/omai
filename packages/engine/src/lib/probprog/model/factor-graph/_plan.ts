@@ -49,11 +49,22 @@ export interface NormalGammaDetection {
   readonly failure?: unknown
 }
 
-/** A group of scalar normals compiled as the coordinates of one joint Gaussian vector. */
+/**
+ * A group of normal latents compiled as the coordinates of one joint Gaussian vector. A group of scalars with known priors puts
+ * its (diagonal) prior on the vector. A `tied` group has members whose priors are their own (a hierarchical mean, a vector of
+ * county intercepts, a coefficient beside them): each member is made as it is without the group, and every element is tied to
+ * its coordinate of the vector by an exact `dot-constant`, which only carries what the observations say jointly about them
+ * (`sizes` is the number of elements of each member, in the order of `members`).
+ */
 export interface ScalarGroup {
   readonly vector: string
   readonly members: readonly string[]
+  readonly tied?: true
+  readonly sizes?: readonly number[]
 }
+
+/** The most coordinates of a tied group: its covariance is dense, and each row of a likelihood costs the square of it. */
+export const TIED_GROUP_LIMIT = 200
 
 /** The layout decisions of a model, found before its nodes are mapped. */
 export interface LayoutPlan {
@@ -172,10 +183,12 @@ export function findNonCentred(
 }
 
 /**
- * With `packScalars`: the scalar normal latents (known prior) that an observed node reads together, directly or through
- * derived nodes, are grouped: each group is one joint Gaussian vector, so a likelihood on `a + b x` sees the correlation of
- * `a` and `b` instead of a loop of scalar messages (which keeps the means and loses the correlations: marginal sds too small).
- * Reads `packed` of `findPacked`.
+ * With `packScalars`: the normal latents that an observed node reads together, directly or through derived nodes, are grouped:
+ * each group is one joint Gaussian vector, so a likelihood on `a + b x` sees the correlation of `a` and `b` instead of a loop of
+ * scalar messages (which keeps the means and loses the correlations: marginal sds too small). The scalar normals with known
+ * priors form the plain group (the prior is on the vector); when the group also has a normal that is a vector over one dimension
+ * or has a prior of its own that depends on other latents (the county intercepts of a hierarchy and the floor effect beside
+ * them), it is a `tied` group, the members made as they are and tied to the vector. Reads `packed` of `findPacked`.
  */
 export function findGroups(
   bound: BoundModel,
@@ -187,12 +200,19 @@ export function findGroups(
     e.kind === 'const' ||
     (e.kind === 'ref' && nodes.get(e.name)?.kind === 'data') ||
     (e.kind === 'op' && e.args.every(staticExpr))
+  /** A normal whose prior is known: constants and data only. */
+  const isStatic = (n: ModelNode & { readonly kind: 'latent' }): boolean =>
+    Object.values(n.dist.params).every(staticExpr)
+  const isStaticScalar = (n: ModelNode & { readonly kind: 'latent' }): boolean => n.dims.length === 0 && isStatic(n)
   const candidate = (n: ModelNode | undefined): n is ModelNode & { readonly kind: 'latent' } =>
     n?.kind === 'latent' &&
-    n.dims.length === 0 &&
+    n.dims.length <= 1 &&
     n.dist.family === 'normal' &&
+    n.constraint === undefined &&
     !packed.has(n.name) &&
-    Object.values(n.dist.params).every(staticExpr)
+    (n.dims[0] === undefined || (bound.sizes[n.dims[0]] ?? 0) > 0)
+  // The vectors that one observed node reads at two places (`skill[a] - skill[b]`: the players of a game).
+  const crossing = new Set<string>()
   const parent = new Map<string, string>()
   const find = (x: string): string => {
     let r = x
@@ -204,14 +224,45 @@ export function findGroups(
     if (n.kind !== 'observed') continue
     const found: string[] = []
     const seen = new Set<string>()
-    const visit = (name: string): void => {
-      if (seen.has(name)) return
-      seen.add(name)
+    const reads = new Map<string, number>()
+    // A name read by the observed node, directly or through derived nodes, and whether every read on the way is linear (a sum,
+    // a difference, a known multiple, an index): only a linear read can use the coordinate of a vector.
+    const visit = (name: string, linear: boolean): void => {
       const t = nodes.get(name)
-      if (candidate(t)) found.push(name)
-      else if (t?.kind === 'derived') for (const r of nodeRefs(t)) visit(r)
+      const asLinear = linear && !seen.has(`${name}|linear`)
+      if (seen.has(name) && !asLinear) return
+      seen.add(name)
+      if (linear) seen.add(`${name}|linear`)
+      if (candidate(t)) {
+        if ((linear || isStaticScalar(t)) && !found.includes(name)) found.push(name)
+      } else if (t?.kind === 'derived') walk(t.expr, linear)
     }
-    for (const r of nodeRefs(n)) visit(r)
+    const walk = (e: ExprSpec, linear: boolean): void => {
+      if (e.kind === 'ref') {
+        visit(e.name, linear)
+        if (linear && candidate(nodes.get(e.name))) {
+          reads.set(e.name, (reads.get(e.name) ?? 0) + 1)
+          if ((reads.get(e.name) ?? 0) > 1) crossing.add(e.name)
+        }
+      } else if (e.kind === 'custom') for (const a of e.args) walk(a, false)
+      else if (e.kind === 'op') {
+        const open = e.args.filter((a) => !staticExpr(a))
+        const keeps =
+          e.op === 'add' || e.op === 'sub' || e.op === 'neg' || e.op === 'at' || e.op === 'sum' || e.op === 'mean'
+            ? () => true
+            : e.op === 'mul'
+              ? () => open.length <= 1
+              : e.op === 'div'
+                ? (a: ExprSpec) => a === e.args[0]
+                : () => false
+        for (const a of e.args) walk(a, linear && keeps(a))
+      }
+    }
+    // A link at the top of a parameter (`probit(x)`, `sigmoid(x)`, `exp(x)`) is the likelihood's, not a step of the predictor.
+    const LINKS = ['probit', 'sigmoid', 'exp']
+    for (const e of Object.values(n.dist.params))
+      walk(e.kind === 'op' && LINKS.includes(e.op) && e.args.length === 1 ? (e.args[0] as ExprSpec) : e, true)
+    walk(n.value, false)
     for (const f of found) {
       if (!parent.has(f)) parent.set(f, f)
       if (found[0] !== undefined) parent.set(find(f), find(found[0]))
@@ -220,11 +271,36 @@ export function findGroups(
   const byRoot = new Map<string, string[]>()
   for (const name of parent.keys()) byRoot.set(find(name), [...(byRoot.get(find(name)) ?? []), name])
   const order = new Map(bound.spec.nodes.map((n, i) => [n.name, i]))
+  const latent = (name: string): ModelNode & { readonly kind: 'latent' } =>
+    nodes.get(name) as ModelNode & { readonly kind: 'latent' }
   for (const members of byRoot.values()) {
-    if (members.length < 2) continue
+    // One member is a group only when it is a vector that a row reads at two places.
+    if (members.length < 2 && !(latent(members[0] as string).dims.length === 1 && crossing.has(members[0] as string)))
+      continue
     members.sort((a, b) => (order.get(a) as number) - (order.get(b) as number))
     const vector = auxId(members[0] as string, 8)
-    for (const m of members) groups.set(m, { vector, members })
+    const plain = members.every((m) => isStatic(latent(m)))
+    const vectors = members.some((m) => latent(m).dims.length > 0)
+    if (plain && !vectors) {
+      for (const m of members) groups.set(m, { vector, members })
+      continue
+    }
+    // A group with a vector needs a scalar beside it (something that every row shares) or a vector that a row reads twice, and a
+    // joint covariance of a size to afford.
+    const sizes = members.map((m) => {
+      const dim = latent(m).dims[0]
+      return dim === undefined ? 1 : (bound.sizes[dim] as number)
+    })
+    const total = sizes.reduce((a, b) => a + b, 0)
+    const shared = members.some((m) => latent(m).dims.length === 0 || crossing.has(m))
+    if (shared && total <= TIED_GROUP_LIMIT) {
+      for (const m of members)
+        groups.set(m, plain ? { vector, members, sizes } : { vector, members, tied: true, sizes })
+      continue
+    }
+    // Too large, or nothing shared: the scalars with known priors are still the plain group.
+    const statics = members.filter((m) => isStaticScalar(latent(m)))
+    if (statics.length >= 2) for (const m of statics) groups.set(m, { vector, members: statics })
   }
   return groups
 }

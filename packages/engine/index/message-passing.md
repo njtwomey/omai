@@ -60,7 +60,7 @@ The core of message passing: the `Family` algebra and its scalar, vector, discre
 - module `graph.ts` (file): Compile and draw a factor graph: variables, factors, edges, ids. `src/lib/message-passing/core/graph.ts:1` `omai-engine/message-passing`
 
 - function `compileGraph`: Validate and compile a factor graph against a registry of operators. `src/lib/message-passing/core/graph.ts:137` `omai-engine/message-passing`
-- function `defineOperator`: Build a factor operator from its declaration, with support derived. `src/lib/message-passing/core/define.ts:205` `omai-engine/message-passing`
+- function `defineOperator`: Build a factor operator from its declaration, with support derived. `src/lib/message-passing/core/define.ts:206` `omai-engine/message-passing`
 - function `dirichlet`: The Dirichlet message family of a given dimension. `src/lib/message-passing/core/families-vector.ts:191` `omai-engine/message-passing`
 - function `discrete`: The discrete message family on k states: log weights. `src/lib/message-passing/core/families-vector.ts:152` `omai-engine/message-passing`
 - function `gaussianMv`: The multivariate Gaussian message family of a given dimension. `src/lib/message-passing/core/families-vector.ts:56` `omai-engine/message-passing`
@@ -117,6 +117,7 @@ The operators of covariance matrices and correlation: the multivariate Gaussian 
 - structure `mvnNormalWishart`: The conjugate update of a Gaussian vector with unknown mean and precision matrix (normal-Wishart). `src/lib/message-passing/operators/covariance/covariance.ts:332` `omai-engine/message-passing`
 - structure `mvnSdCorr`: A bivariate Gaussian with sds and correlation as separate variables (gamma precisions, a beta correlation). `src/lib/message-passing/operators/covariance/correlation.ts:104` `omai-engine/message-passing`
 - structure `mvnWishart`: A multivariate Gaussian with a Wishart precision matrix: a learned covariance. `src/lib/message-passing/operators/covariance/covariance.ts:233` `omai-engine/message-passing`
+- structure `mvnWishartGroup`: A group of Gaussian vectors sharing a Gaussian mean and a Wishart precision matrix: one joint site. `src/lib/message-passing/operators/covariance/hierarchy.ts:344` `omai-engine/message-passing`
 
 ### message-passing/operators/discrete
 
@@ -141,11 +142,11 @@ The Gaussian operators: the prior, the Gaussian factor, the product, equality, t
 
 - structure `difference`: The difference of two Gaussian variables. `src/lib/message-passing/operators/gaussian/linear.ts:188` `omai-engine/message-passing`
 - structure `dotConstant`: A Gaussian vector projected on a constant direction s = a . w. `src/lib/message-passing/operators/gaussian/linear.ts:254` `omai-engine/message-passing`
-- structure `equal`: Equality of two variables of one family: a copy. `src/lib/message-passing/operators/gaussian/gaussian.ts:609` `omai-engine/message-passing`
+- structure `equal`: Equality of two variables of one family: a copy. `src/lib/message-passing/operators/gaussian/gaussian.ts:608` `omai-engine/message-passing`
 - structure `gaussianGammaPrecision`: A Gaussian with a gamma precision (variational and expectation propagation, observed or latent). `src/lib/message-passing/operators/gaussian/gaussian.ts:271` `omai-engine/message-passing`
 - structure `gaussianJoint`: A joint Gaussian potential over scalar variables in information form. `src/lib/message-passing/operators/gaussian/linear.ts:543` `omai-engine/message-passing`
-- structure `gaussianLogScale`: An observation with a Gaussian log scale, x ~ N(loc, exp(2 s)): quadrature expectation propagation. `src/lib/message-passing/operators/gaussian/gaussian.ts:368` `omai-engine/message-passing`
-- structure `gaussianNormalGamma`: A Gaussian observation of a normal-gamma mean and precision (conjugate, exact for an observed value). `src/lib/message-passing/operators/gaussian/gaussian.ts:424` `omai-engine/message-passing`
+- structure `gaussianLogScale`: An observation with a Gaussian log scale, x ~ N(loc, exp(2 s)): quadrature expectation propagation. `src/lib/message-passing/operators/gaussian/gaussian.ts:367` `omai-engine/message-passing`
+- structure `gaussianNormalGamma`: A Gaussian observation of a normal-gamma mean and precision (conjugate, exact for an observed value). `src/lib/message-passing/operators/gaussian/gaussian.ts:423` `omai-engine/message-passing`
 - structure `gaussianOperator`: A Gaussian with a fixed precision: likelihood or prior of a mean. `src/lib/message-passing/operators/gaussian/gaussian.ts:115` `omai-engine/message-passing`
 - structure `gaussianScale`: An observation with a Gaussian mean and a Gaussian log scale, x ~ N(m, exp(2 s)): EP by one quadrature. `src/lib/message-passing/operators/gaussian/log-scale.ts:58` `omai-engine/message-passing`
 - structure `gaussianTransition`: Gaussian vector step x ~ N(F w + c, Q), the dynamics of a linear system. `src/lib/message-passing/operators/gaussian/transition.ts:64` `omai-engine/message-passing`
@@ -156,7 +157,7 @@ The Gaussian operators: the prior, the Gaussian factor, the product, equality, t
 - structure `minimum`: The minimum of two Gaussian variables: the maximum of the negatives. `src/lib/message-passing/operators/gaussian/extremum.ts:171` `omai-engine/message-passing`
 - structure `plus`: The sum of two Gaussian variables. `src/lib/message-passing/operators/gaussian/linear.ts:168` `omai-engine/message-passing`
 - structure `prior`: The prior: a fixed message on a variable, in any family. `src/lib/message-passing/operators/gaussian/gaussian.ts:61` `omai-engine/message-passing`
-- structure `product`: The product of two Gaussian variables (moment matching). `src/lib/message-passing/operators/gaussian/gaussian.ts:491` `omai-engine/message-passing`
+- structure `product`: The product of two Gaussian variables (moment matching). `src/lib/message-passing/operators/gaussian/gaussian.ts:490` `omai-engine/message-passing`
 - structure `sum`: The sum of n Gaussian variables. `src/lib/message-passing/operators/gaussian/linear.ts:228` `omai-engine/message-passing`
 - structure `timesConstant`: A Gaussian variable scaled by a constant. `src/lib/message-passing/operators/gaussian/linear.ts:208` `omai-engine/message-passing`
 
@@ -221,10 +222,10 @@ The operators that link a Gaussian to an observation: truncation (probit, greate
 
 The operators of scale and concentration hierarchies: the shared smoothing parameter of a Gaussian vector and its function-scale form, the gamma rate and product hierarchies, the random concentration of a beta or Dirichlet, and stick-breaking. Part of `omai-engine/message-passing`.
 
-- structure `betaTwoShapes`: A beta variable with two random shapes (gamma or log-normal each): a 2-d grid EP site. `src/lib/message-passing/operators/scales/concentration.ts:309` `omai-engine/message-passing`
+- structure `betaTwoShapes`: A beta variable with two random shapes (gamma or log-normal each): a 2-d grid EP site. `src/lib/message-passing/operators/scales/concentration.ts:308` `omai-engine/message-passing`
 - structure `dirichletConcentration`: A beta or Dirichlet variable with a random concentration: a hyperprior on the prior's own strength. `src/lib/message-passing/operators/scales/concentration.ts:178` `omai-engine/message-passing`
-- structure `gammaProduct`: The product of two gamma variables p = u tau: a local times a global precision. `src/lib/message-passing/operators/scales/gamma-scale.ts:177` `omai-engine/message-passing`
+- structure `gammaProduct`: The product of two gamma variables p = u tau: a local times a global precision. `src/lib/message-passing/operators/scales/gamma-scale.ts:176` `omai-engine/message-passing`
 - structure `gammaRate`: A gamma variable whose rate is a known multiple of another gamma variable: scale-mixture hierarchies. `src/lib/message-passing/operators/scales/gamma-scale.ts:112` `omai-engine/message-passing`
-- structure `gaussianMvFunctionScale`: A Gaussian vector of coefficients z_j u_j(x) with one Gaussian or gamma variable x: the dense non-centred scale. `src/lib/message-passing/operators/scales/function-scale.ts:101` `omai-engine/message-passing`
+- structure `gaussianMvFunctionScale`: A Gaussian vector of coefficients z_j u_j(x) with one Gaussian or gamma variable x: the dense non-centred scale. `src/lib/message-passing/operators/scales/function-scale.ts:127` `omai-engine/message-passing`
 - structure `gaussianMvPrecisionScale`: A Gaussian vector whose precisions share one gamma multiplier (a smoothing parameter). `src/lib/message-passing/operators/scales/scale.ts:263` `omai-engine/message-passing`
 - structure `stickBreaking`: Discrete variable with stick-breaking weights of beta breaks (truncated Dirichlet process). `src/lib/message-passing/operators/scales/stick-breaking.ts:82` `omai-engine/message-passing`

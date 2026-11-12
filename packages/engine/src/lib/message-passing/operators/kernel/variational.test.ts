@@ -274,6 +274,86 @@ describe('the Gaussian with a random log scale', () => {
   })
 })
 
+describe('the dense non-centred scale: beta_j = z_j u_j(x) with the standard normals integrated out', () => {
+  /** The precision chain `1 / sqrt(d exp(x) + n)` of a Gaussian x, `1 / sqrt(d x + n)` of a gamma one. */
+  const chain = (d: number, n: number, gamma: boolean): unknown =>
+    gamma ? [['mul', d], ['add', n], ['sqrt'], ['recip']] : [['exp'], ['mul', d], ['add', n], ['sqrt'], ['recip']]
+  const logDensity = (beta: number, p: number): number =>
+    -0.5 * Math.log(2 * Math.PI) + 0.5 * Math.log(p) - 0.5 * p * beta * beta
+
+  it('a Gaussian x (a log smoothing parameter): the fixed point maximises the brute-force bound', () => {
+    const [d, n] = [1.3, 0.4]
+    expectStationary({
+      free: [
+        { name: 'b', kind: 'gaussian-mv', size: 1, prior: g(0.5, 0.8) },
+        { name: 'x', kind: 'gaussian', prior: g(0.3, 0.6) },
+      ],
+      operator: 'gaussian-mv-function-scale',
+      args: ['b', 'x'],
+      params: { steps: [chain(d, n, false)] } as M.Params,
+      logf: ([b, x]) => logDensity(b as number, d * Math.exp(x as number) + n),
+    })
+  })
+
+  it('a gamma x (a relevance): the fixed point maximises the brute-force bound', () => {
+    const [d, n] = [0.9, 0.3]
+    expectStationary({
+      free: [
+        { name: 'b', kind: 'gaussian-mv', size: 1, prior: g(-0.4, 1.1) },
+        { name: 'x', kind: 'gamma', prior: lgam(3, 2) },
+      ],
+      operator: 'gaussian-mv-function-scale',
+      args: ['b', 'x'],
+      params: { steps: [chain(d, n, true)] } as M.Params,
+      logf: ([b, x]) => logDensity(b as number, d * (x as number) + n),
+    })
+  })
+
+  it('two coefficients: the message to the vector is E[1 / u_j^2] on the diagonal, the message to x the natural gradient of the expected log, the bound the brute one', () => {
+    const op = operators['gaussian-mv-function-scale'] as M.FactorOperator
+    const [d, n] = [
+      [1.3, 0.2],
+      [0.4, 0.7],
+    ] as [number[], number[]]
+    const steps = [0, 1].map((j) => chain(d[j] as number, n[j] as number, false))
+    const vec = M.gaussianMv(2)
+    const mu = [0.4, -0.9]
+    const cov = [0.5, 0.1, 0.1, 0.8]
+    const beta = M.messageArg(vec, M.gaussianMvEta(mu, cov))
+    const second = (i: number, j: number): number => (cov[i * 2 + j] as number) + (mu[i] as number) * (mu[j] as number)
+    const [mx, vx] = [0.2, 0.5]
+    const x = M.messageArg(M.gaussian, M.gaussianEta(mx, vx))
+    const params = { steps } as M.Params
+    const prec = (j: number, t: number): number => (d[j] as number) * Math.exp(t) + (n[j] as number)
+    // E[beta_j^2] = second(j, j): the expected log of the factor at x.
+    const logf = (t: number): number =>
+      [0, 1].reduce(
+        (a, j) => a - 0.5 * Math.log(2 * Math.PI) + 0.5 * Math.log(prec(j, t)) - 0.5 * prec(j, t) * second(j, j),
+        0,
+      )
+    const belief = (m: number, v: number): BruteBelief => ({ kind: 'gaussian', eta: g(m, v) })
+    const expected = (m: number, v: number): number => bruteExpectation([belief(m, v)], ([t]) => logf(t as number))
+    const toBeta = op.vmp?.({ mode: 'vmp', to: 0, args: [beta, x], params, power: 1 })?.message as number[]
+    for (let j = 0; j < 2; j++) {
+      expect(toBeta[j]).toBe(0)
+      expect(toBeta[2 + j * 2 + j]).toBeCloseTo(
+        bruteExpectation([belief(mx, vx)], ([t]) => prec(j, t as number)),
+        8,
+      )
+    }
+    expect(toBeta[3]).toBe(0)
+    expect(toBeta[4]).toBe(0)
+    // The natural gradient of L(m, v) = E[g] in the mean parameters (m, -(m^2 + v) / 2): L_m - 2 m L_v and -2 L_v.
+    const h = 1e-4
+    const lm = (expected(mx + h, vx) - expected(mx - h, vx)) / (2 * h)
+    const lv = (expected(mx, vx + h) - expected(mx, vx - h)) / (2 * h)
+    const toX = op.vmp?.({ mode: 'vmp', to: 1, args: [beta, x], params, power: 1 })?.message as number[]
+    expect(toX[0]).toBeCloseTo(lm - 2 * mx * lv, 5)
+    expect(toX[1]).toBeCloseTo(-2 * lv, 5)
+    expect(op.expectedLog?.({ mode: 'vmp', to: 0, args: [beta, x], params, power: 1 })).toBeCloseTo(expected(mx, vx), 8)
+  })
+})
+
 describe('two random scalars and the shapes of a beta', () => {
   it('likelihood-pair: Laplace noise with a Gaussian location and a gamma scale (a gamma port read through its log)', () => {
     const y = 0.7

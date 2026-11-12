@@ -45,8 +45,8 @@ export interface BayesianGamOptions {
   readonly nullScale?: number
   /**
    * The form of the hyperpriors of the penalty prior. `logNormal` (default): the log smoothing parameter and the log noise
-   * standard deviation are normal latents, and the coefficients are non-centred (built on `exp`, so only the samplers and
-   * variational families run on it). `gammaNoise`: the smoothing parameter is a knob (`lambda`) and the noise precision
+   * standard deviation are normal latents, and the coefficients are non-centred (built on `exp`: the samplers, the variational
+   * families, expectation propagation and, for the penalty prior, variational message passing run on it). `gammaNoise`: the smoothing parameter is a knob (`lambda`) and the noise precision
    * `tau = 1 / sigma^2` is a gamma latent (`noiseShape`, `noiseRate`), the coefficients centred with known scales: a
    * normal-gamma model that variational message passing runs. `fixed`: the smoothing and the noise (`noiseSd`) are both knobs,
    * a linear-Gaussian model with an exact Gaussian posterior that expectation propagation and exact Gaussian inference run.
