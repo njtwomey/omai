@@ -27,6 +27,8 @@ export type EpRoute =
  * the verdict of plain EP.
  *
  * @param bound - The model with its data bound.
+ * @param options - `gridOver`: the scalar latents to put on a grid whatever plain EP would say (a model whose parameter multiplies
+ * a state is accepted by plain EP, one run that is too narrow, and is better run inside a grid over that parameter).
  * @returns The route: `via`, the verdict and the method.
  * @concept expectation-propagation
  * @index function How EP runs a bound model: plain, inside a grid over hyperparameters, or refused.
@@ -38,8 +40,20 @@ export type EpRoute =
  * epRoute(atomBound(gaussianAtom.problem(gaussianAtom.defaults))).via // => 'ep'
  * ```
  */
-export function epRoute(bound: BoundModel): EpRoute {
+export function epRoute(
+  bound: BoundModel,
+  options: { readonly gridOver?: readonly string[] | undefined } = {},
+): EpRoute {
   const analysis = analysisOf(bound)
+  if (options.gridOver !== undefined) {
+    const chosen = epGridMethod(bound, { over: options.gridOver })
+    const asked = chosen.check?.(analysis) ?? {
+      applies: false,
+      reason: 'the method has no check',
+      missing: [] as string[],
+    }
+    return asked.applies ? { via: 'ep-grid', verdict: asked, method: chosen } : { via: 'none', verdict: asked }
+  }
   const plain = epSpecMethod(bound)
   const verdict = plain.check?.(analysis) ?? {
     applies: false,

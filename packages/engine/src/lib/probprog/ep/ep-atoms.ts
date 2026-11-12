@@ -169,7 +169,8 @@ export function atomReference<K extends Config>(atom: EpAtom<K>, problem: AtomPr
  * ```
  */
 export function atomVerdict(problem: AtomBuild): Verdict {
-  return epRoute(atomBound(problem)).verdict
+  return epRoute(atomBound(problem), problem.hyperGrid === undefined ? {} : { gridOver: problem.hyperGrid.over })
+    .verdict
 }
 /**
  * The means of the reference's quantities, by name (what a data figure draws the exact answer from).
@@ -303,6 +304,7 @@ export function atomRun(problem: AtomBuild, ep: Config = {}, options: { readonly
   return runEp(atomBound(problem), {
     quantities: problem.quantities,
     ep,
+    ...(problem.hyperGrid === undefined ? {} : { hyperGrid: problem.hyperGrid }),
     ...(options.light === undefined ? {} : { light: options.light }),
   })
 }

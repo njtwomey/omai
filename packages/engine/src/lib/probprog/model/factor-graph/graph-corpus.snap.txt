@@ -194,6 +194,8 @@ atom/softmax-choice vectorise: 99 variables, 111 factors, 0 issues; dot-constant
 atom/softmax-choice expand: 99 variables, 111 factors, 0 issues; dot-constant x98 multiclass-site x12 prior x1
 atom/softmax-choice-learned vectorise: 99 variables, 111 factors, 0 issues; dot-constant x98 multiclass-site x12 prior x1
 atom/softmax-choice-learned expand: 99 variables, 111 factors, 0 issues; dot-constant x98 multiclass-site x12 prior x1
+atom/chain-persistence-grid vectorise: 300 variables, 300 factors, 0 issues; difference x49 gaussian-gamma-precision x49 gaussian-log-scale x50 plus x49 prior x4 product x49 times-constant x50
+atom/chain-persistence-grid expand: 300 variables, 300 factors, 0 issues; difference x49 gaussian-gamma-precision x49 gaussian-log-scale x50 plus x49 prior x4 product x49 times-constant x50
 model/beta-bernoulli vectorise: 21 variables, 21 factors, 0 issues; bernoulli x20 prior x1
 model/beta-bernoulli expand: 21 variables, 21 factors, 0 issues; bernoulli x20 prior x1
 model/normal-normal vectorise: 13 variables, 13 factors, 0 issues; gaussian x12 prior x1

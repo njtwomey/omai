@@ -6,11 +6,12 @@ import { atomSource } from '../shared/ep/atomSource.ts'
 import { styleProblems } from '../shared/styleScan.ts'
 
 describe('the pages of the EP atoms', () => {
-  it.each(epAtoms.map((a) => [a.name, a.title] as const))(
+  it.each(epAtoms.map((a) => [a.name, a.title, a.family] as const))(
     '%s has a page in the group, titled as the atom',
-    (name, title) => {
+    (name, title, family) => {
       const entry = POCS.find((p) => p.slug === `ep-${name}`)
-      expect(entry?.group).toBe('expectation-propagation')
+      // the composed atoms have a group of their own
+      expect(entry?.group).toBe(family === 'composed' ? 'composed-atoms' : 'expectation-propagation')
       expect(entry?.title).toBe(title)
       expect(pageOf(`ep-${name}`)).toBeDefined()
     },
@@ -28,7 +29,7 @@ describe('the code shown on the atom pages', () => {
       const { code, file } = atomSource(atom, atom.problem(atom.defaults))
       expect(file).toMatch(/^[a-z-]+\.ts$/)
       expect(code).toMatch(/defineModel|trueskillModel/)
-      expect(code).toMatch(/epRoute\(bound\)/)
+      expect(code).toMatch(/epRoute\(bound/)
       expect(code).toMatch(/session\(method/)
       expect(code.split('\n').length).toBeLessThan(60)
     },

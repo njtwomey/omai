@@ -98,6 +98,12 @@ export interface AtomBuild {
   readonly definition: ModelDefinition
   readonly data: DataInput
   readonly bindOptions?: BindOptions
+  /**
+   * Run EP inside a grid over these scalar latents (`over`, with the grid method's knobs) instead of the route plain EP would take: a
+   * model that plain EP accepts but whose answer for a parameter is a single narrow Gaussian (a persistence that multiplies a chain's
+   * state) is run on a grid of that parameter, each node weighted by its EP evidence.
+   */
+  readonly hyperGrid?: { readonly over: readonly string[]; readonly knobs?: Config }
   /** The quantities checked and drawn, in order (at most three coordinates when the reference is a grid). */
   readonly quantities: readonly AtomQuantity[]
 }
@@ -174,6 +180,7 @@ export type AtomFamily =
   | 'covariance'
   | 'nonparametric'
   | 'counts'
+  | 'composed'
 /** The belief of a coordinate: its mean and standard deviation, and whether it is a proper belief (not an unset message). */
 export interface Belief {
   readonly mean: number

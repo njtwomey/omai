@@ -295,7 +295,12 @@ const verdictJson = (v: {
 })
 
 /** Whether EP runs on the model as it is (`ep`) or inside a grid (`ep-grid`), and the verdict of whichever applies (as `atomVerdict`). */
-export function routeOf(bound: BoundModel): { readonly route: string; readonly verdict: J } {
+export function routeOf(
+  bound: BoundModel,
+  gridOver?: readonly string[],
+): { readonly route: string; readonly verdict: J } {
+  const asked = gridOver === undefined ? undefined : epGridMethod(bound, { over: gridOver }).check?.(analysisOf(bound))
+  if (asked !== undefined) return { route: asked.applies ? 'ep-grid' : 'none', verdict: verdictJson(asked) }
   const ep = epSpecMethod(bound).check?.(analysisOf(bound))
   if (ep?.applies === true) return { route: 'ep', verdict: verdictJson(ep) }
   const grid = epGridMethod(bound).check?.(analysisOf(bound))
@@ -379,7 +384,7 @@ export function atomItems(a: EpAtom, cov: Coverage, store: GraphStore): { readon
   const problem = a.problem(a.defaults)
   const bound = atomBound(problem)
   const graphs = graphsOf(key, bound, store)
-  const { route, verdict } = routeOf(bound)
+  const { route, verdict } = routeOf(bound, problem.hyperGrid?.over)
   const v = verifyAtom(a)
   const run = v.run
   const maxSweeps = typeof a.ep?.['maxSweeps'] === 'number' ? a.ep['maxSweeps'] : 200
@@ -398,8 +403,15 @@ export function atomItems(a: EpAtom, cov: Coverage, store: GraphStore): { readon
     num['beliefs'] = plain(run.beliefs)
     if (run.evidence !== undefined) num['evidence'] = run.evidence
     // The engine's own account of the run (sweeps, restarts, improper counts, status), from a second session with the same settings.
-    const method = route === 'ep' ? epSpecMethod(bound) : epGridMethod(bound)
-    const post = runPosterior(method, route === 'ep' ? maxSweeps + 2 : 1000, { tol: 1e-9, ...(a.ep ?? {}) })
+    const method =
+      route === 'ep'
+        ? epSpecMethod(bound)
+        : epGridMethod(bound, problem.hyperGrid === undefined ? {} : { over: problem.hyperGrid.over })
+    const post = runPosterior(method, route === 'ep' ? maxSweeps + 2 : 1000, {
+      tol: 1e-9,
+      ...(problem.hyperGrid?.knobs ?? {}),
+      ...(a.ep ?? {}),
+    })
     exact['posterior'] = post.exact
     num['posterior'] = post.num
   } else exact['reason'] = run.reason
