@@ -8,7 +8,7 @@ function brute(m: number, v: number, shape: number, rate: number, scale: number,
   const nx = 1600
   const nt = 1600
   const sd = Math.sqrt(v)
-  const xs = Array.from({ length: nx }, (_, i) => m - 10 * sd + (20 * sd * i) / (nx - 1))
+  const xs = toFlat(add(m - 10 * sd, div(mul(arange(nx), 20 * sd), nx - 1)))
   const dx = (20 * sd) / (nx - 1)
   const lo = -12
   const hi = 8
@@ -79,6 +79,7 @@ describe('gaussian-gamma-precision with a scale and an offset', () => {
   })
 })
 
+import { add, arange, div, mul, toFlat } from '../../../tensor/index.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import { gaussianMv, gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
 import { gaussianMvPrecisionScale } from './scale.ts'

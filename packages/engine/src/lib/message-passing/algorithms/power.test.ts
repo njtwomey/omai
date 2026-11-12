@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { expectResumable, probitRows } from '../../../testing/mp-variants.ts'
 import { gaussianEp } from '../../pgm/index.ts'
+import { eye, mul, toFlat } from '../../tensor/index.ts'
 import { runAlgorithm } from '../../trace/index.ts'
 import * as M from '../index.ts'
+import { zeroArray } from '../numerics/_arrays.ts'
 import { gaussianNodes } from '../numerics/_quadrature.ts'
 import { millsRatio } from '../numerics/_scalar.ts'
 
@@ -21,11 +23,7 @@ function probitGraph(x: number[][], y: number[], priorVariance = 4): M.CompiledG
       ...x.map((_, i): M.VariableSpec => ({ name: `y${i}`, family: { kind: 'bernoulli' }, observed: y[i] as number })),
     ],
     factors: [
-      M.gaussianMvPrior(
-        'w',
-        new Array<number>(d).fill(0),
-        Array.from({ length: d * d }, (_, k) => (k % (d + 1) === 0 ? priorVariance : 0)),
-      ),
+      M.gaussianMvPrior('w', zeroArray(d), toFlat(mul(eye(d), priorVariance))),
       ...x.flatMap((row, i): M.FactorSpec[] => [
         { operator: 'dot-constant', args: [`s${i}`, 'w'], params: { a: row } },
         { operator: 'probit', args: [`y${i}`, `s${i}`] },

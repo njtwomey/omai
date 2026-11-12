@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { add, arange, div, mul, toFlat } from '../../../tensor/index.ts'
 import { messageArg } from '../../core/args.ts'
 import { gamma, gammaEta } from '../../core/families.ts'
 import { lgammaOf } from '../../numerics/_scalar.ts'
 import { gammaProduct, gammaRate } from './gamma-scale.ts'
 
 const N = 900
-const grid = (m: number, sd: number): number[] =>
-  Array.from({ length: N }, (_, i) => m - 9 * sd + (18 * sd * i) / (N - 1))
+const grid = (m: number, sd: number): number[] => toFlat(add(m - 9 * sd, div(mul(arange(N), 18 * sd), N - 1)))
 const logq = (t: number, shape: number, rate: number): number => shape * t - rate * Math.exp(t)
 
 /** The tilted E log and E of each variable under a weight on a grid of (log x, log y). */
