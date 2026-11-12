@@ -16,15 +16,19 @@ import { ndtr } from '../../numerics/special/index.ts'
 import {
   abs,
   add,
+  all,
   arange,
   clip,
   cos,
   div,
   equal,
   exp,
+  floor,
   greater,
+  greaterEqual,
   less,
   log,
+  logicalAnd,
   matmul,
   maximum,
   mean,
@@ -292,11 +296,23 @@ const pickOperator: OperatorDef = {
   evaluate: ([a, i]) => {
     const x = a as NamedValue
     const idx = i as NamedValue
-    pickDimension(x.dims, idx.dims)
+    const along = pickDimension(x.dims, idx.dims)
     const axis = x.value.shape.length - 1
     const kept = x.dims.slice(0, -1)
     const out = joinShapes([{ dims: kept, eventRank: 0 }, shapeOfValue(idx)])
     const code = alignTo(idx, out.dims, 0)
+    // The nested where would answer the last entry for a code outside the table; refuse it, as `at` (take) and the factor-graph
+    // compiler do. A code is valid when it is an integer in 0..K-1 (NaN is neither).
+    const size = x.value.shape[axis] as number
+    const inRange = logicalAnd(greaterEqual(idx.value, 0), less(idx.value, size))
+    if (toFlat(all(logicalAnd(inRange, equal(floor(idx.value), idx.value))))[0] === 0) {
+      const bad = toFlat(idx.value).find((c) => !Number.isInteger(c) || c < 0 || c >= size)
+      throw new OmaiError(
+        'value',
+        `pick: the index ${bad} is not one of the ${size} entries (0 to ${size - 1}) along '${along}'`,
+        { index: bad, size, dim: along },
+      )
+    }
     let picked: Value | undefined
     for (let k = (x.value.shape[axis] as number) - 1; k >= 0; k--) {
       const entry = alignTo({ value: take(x.value, k, axis), dims: kept }, out.dims, 0)
