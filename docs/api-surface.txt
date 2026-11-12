@@ -103,7 +103,7 @@ omai-engine/text	359	ca80c4da3faf
 omai-engine/text/subword	32	544e2a9ad3ce
 omai-engine/timeseries	304	80098329574f
 omai-engine/trace	154	1d6c5457a45a
-omai-engine/trees	92	b31797072f4f
+omai-engine/trees	179	a3649eb63c6e
 omai-engine/tune	141	0b821c7e910d
 omai-engine/vision	331	7251e6487677
 omai-engine/worlds	145	26964194356a
@@ -126,4 +126,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	303	541cc98902e2
-total	20187	0214b0f8f992
+total	20274	ad628b0266ba

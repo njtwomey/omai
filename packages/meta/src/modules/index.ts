@@ -170,6 +170,7 @@ export const moduleLoaders: Readonly<Record<string, ModuleLoader>> = {
   'omai-engine/timeseries': () => import('omai-engine/timeseries'),
   'omai-engine/trace': () => import('omai-engine/trace'),
   'omai-engine/trees': () => import('omai-engine/trees'),
+  'omai-engine/trees/bayesian': () => import('omai-engine/trees/bayesian'),
   'omai-engine/tune': () => import('omai-engine/tune'),
   'omai-engine/vision': () => import('omai-engine/vision'),
   'omai-engine/worlds': () => import('omai-engine/worlds'),
