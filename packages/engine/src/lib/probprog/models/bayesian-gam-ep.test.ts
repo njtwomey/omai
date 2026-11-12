@@ -106,12 +106,18 @@ describe('expectation propagation on the Bayesian GAM', () => {
     expect(ownOperators.filter((o) => o === 'apply-product')).toHaveLength(2)
   })
 
-  it('compiles ARD to one apply-product per coefficient on the coordinates of one Gaussian vector the likelihood reads', () => {
+  it('compiles ARD to one apply-product per coefficient, assembled into one Gaussian vector (gaussian-mv-stack) the likelihood reads', () => {
     const g = bayesianGam(x, y, { k: 10, prior: 'ard' })
     const c = toFactorGraph(g.definition.bind(g.data))
     expect(c.issues).toEqual([])
     const operators = (c.graph?.factors ?? []).map((f) => f.operator)
     expect(operators.filter((o) => o === 'apply-product')).toHaveLength(10)
+    expect(operators.filter((o) => o === 'gaussian-mv-stack')).toHaveLength(1)
+    // No scalar product is tied to a coordinate of the vector one by one (the rows' dot products read the vector).
+    const ties = (c.graph?.factors ?? []).filter(
+      (f) => f.operator === 'dot-constant' && String(f.args[0]).startsWith('beta#'),
+    )
+    expect(ties).toEqual([])
     // The rows read the vector (a dot product each), not a sum of scalar variables (a loop of messages).
     expect(operators).not.toContain('linear')
     expect(operators).not.toContain('sum')
@@ -181,7 +187,20 @@ describe('variational message passing on the non-centred Bayesian GAM', () => {
     expect(lam[1]).toBeGreaterThan(0.7 * reference.hyper.logLambda[1])
   })
 
-  it('does not run ARD (each coefficient a scalar apply-product tied to a vector): the offer says why', () => {
-    expect(bayesianGamMethods('ard').unavailable['vmp']).toBeDefined()
+  it('runs ARD (each coefficient an apply-product, assembled into one vector): the curve of EP, a band a fifth wider, the noise of EP', () => {
+    // k = 6 keeps the quadrature of the scalar products quick, and 60 sweeps are at the fixed point (the curve moves less than 1e-3 after 50).
+    const model = bayesianGam(x, y, { k: 6, prior: 'ard' })
+    expect(bayesianGamMethods('ard').applicable).toContain('vmp')
+    expect(bayesianGamMethods('ard').unavailable['vmp']).toBeUndefined()
+    const ep = fitOf('ep', model)
+    const vmp = fitOf('vmp', model, { damping: 0.3, tol: 1e-9, maxSweeps: 60 })
+    const sd = model.standardisation.sd
+    const worst = Math.max(...vmp.mean.map((m, i) => Math.abs(m - (ep.mean[i] ?? 0)) / sd))
+    // The mean field is a little off the moment match of EP (a tenth of the response sd at worst here, 0.03 against the sampler at k = 10).
+    expect(worst).toBeLessThan(0.1)
+    const width = (f: typeof ep): number => f.upper.reduce((a, u, i) => a + u - (f.lower[i] ?? 0), 0)
+    expect(width(vmp) / width(ep)).toBeGreaterThan(1)
+    expect(width(vmp) / width(ep)).toBeLessThan(1.4)
+    expect(Math.abs(vmp.hyper.logSigma[0] - ep.hyper.logSigma[0])).toBeLessThan(0.1)
   })
 })

@@ -6,12 +6,12 @@ in [`ep.md`](ep.md), what happened when in [`ep-changelog.md`](ep-changelog.md).
 
 ## Message-passing operators
 
-The registry (`defaultOperators()`) holds **66** factor operators. Rules by message mode:
+The registry (`defaultOperators()`) holds **67** factor operators. Rules by message mode:
 
 | mode | operators with a rule | exact | bound | numeric |
 | --- | --- | --- | --- | --- |
-| ep | 65 | 35 | 0 | 30 |
-| vmp | 60 | 35 | 4 | 21 |
+| ep | 66 | 36 | 0 | 30 |
+| vmp | 62 | 36 | 4 | 22 |
 | bp | 4 | 4 | 0 | 0 |
 
 19 operators take a power (fractional EP).
@@ -82,7 +82,6 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | multimodal: One Gaussian per variable cannot show two modes | quality | open | medium | - |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
 | sv-parameters: Stochastic volatility with an unknown level, persistence and innovation precision is not calibrated | quality | open | medium | - |
-| non-centred-scale: ARD (a scale of its own for each coefficient) has no variational message passing rule | quality | open | medium | - |
 | evidence: The EP log evidence is exact where EP is, and has two known limits | infrastructure | open | medium | - |
 | variational-rules: Variational message passing: what it cannot run and where the mean field is poor | infrastructure | open | small | - |
 

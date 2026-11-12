@@ -685,3 +685,31 @@ observation). Their reports say what exists; the work packages above absorb it r
 - Digest items moved deliberately: `model/radon`, `model/trueskill-three-players`, `atom/skill-draws`, `atom/skill-draws-learned`,
   `atom/skill-difference-learned`, `program/skills` (spreads move towards the reference; the means within 0.02 sd except the learned
   tournaments' skills, 0.05 sd). The two draws atoms moved to the `plated` rung with evidence within 0.02 nats.
+
+## 2026-11-12 ARD under variational message passing: the scalar products assembled into one vector (`agent-a6a2ec-ard`, gap `non-centred-scale` closed)
+
+- The compiler assembles a non-centred vector with a scale of its own for each coefficient (`z_j / sqrt(alpha_j)`, ARD) with one new
+  operator, `gaussian-mv-stack` (`D = (y_0, ..., y_n-1)`, in `linear.ts`), instead of a `dot-constant` tie per coordinate:
+  `tiedToVector` (`_mappings/derived.ts`) emits it over the `apply-product` outputs, and the derived mapping declares it in `requires`
+  (`operator-contract.test.ts` checks it exists and that what the corpus emits is declared). The stack defines the vector from its
+  coordinates, as each `apply-product` defines its scalar, so every variable has one definer and the graph compiles under both rules.
+  Under EP the message to the vector is the diagonal of the scalars' cavities and the message to a scalar the marginal, at its
+  coordinate, of the vector's cavity with the other scalars' cavities (the `n` unit ties in one factor; exact on a linear Gaussian
+  model, tested against the closed-form posterior); the evidence is the log partition of the vector's cavity plus that message. Under
+  the mean field the belief of the vector is the diagonal Gaussian of the scalars' beliefs, and the message to a scalar is the expected
+  log of the vector's cavity with the other coordinates at their means.
+- `apply-product` has its variational rule (the one of the earlier prototype, `definedFunctionMessage`: it defines its output, the
+  mean and variance of the pushforward of `z f(x)` to `y`, the non-conjugate messages of the readers' expected log to `z` and `x` on the
+  product of the two quadratures; no second quadrature), tested against the brute-force bound for a Gaussian and for a gamma `x`.
+- Bayesian GAM, ARD, `bayesianGamMethods('ard')` now offers `vmp`: at k = 10 the curve is 0.029 response sd from EP and 0.027 from a
+  sampler (EP is 0.032 from it), the log noise -1.60 +- 0.10 (EP -1.67 +- 0.12, sampler -1.67 +- 0.10), the band 1.39 times the
+  sampler's (EP 1.005), 627 sweeps to a change of 1e-5 at damping 0.3 (the default of no damping stalls, status `stopped` with the
+  reason). Against the exact posterior of a two-coefficient ARD regression (`models/ard-exact.test.ts`, a grid over the two log
+  relevances): EP means within 2e-5 and spreads 1.00001 of exact (the model is a tree of exact factors but for the Gaussian
+  projection of the data-dominated posterior), the mean field 0.08 off in a mean of 1.9, the large coefficient's spread 1.28 times
+  the exact one and the small one's 1.04.
+- EP on the ARD GAM is unchanged in kind (24 sweeps, the sampler test passes within its bounds); no digest item contains an
+  `apply-product` or an ARD model, so the items are as before (the 1e-11 drifts of `atom/gamma-precision` and
+  `atom/prior-beta-strength-lognormal` are not this change: neither compiles a stack or a product). The registry section of the digest
+  has the new operator (67) and `apply-product` with `defines` 0 and a `vmp` rule (support `numeric`), nothing else. The graph corpus
+  is unchanged (no ARD model in it).

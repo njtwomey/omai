@@ -202,10 +202,9 @@ describe('the message-passing forms of the penalty prior', () => {
     return s.probe(s.t, 'gam/fit') as unknown as ReturnType<typeof bayesianGamFit>
   }
 
-  it('say which methods apply: the log-normal form EP and VMP, the gamma-noise form VMP and EP, the fixed form too, ARD EP only', () => {
+  it('say which methods apply: the log-normal form EP and VMP, the gamma-noise form VMP and EP, the fixed form too, ARD EP and VMP', () => {
     expect(bayesianGamMethods('penalty').applicable).toEqual(expect.arrayContaining(['ep', 'vmp']))
-    expect(bayesianGamMethods('ard').applicable).toContain('ep')
-    expect(bayesianGamMethods('ard').unavailable['vmp']).toBeDefined()
+    expect(bayesianGamMethods('ard').applicable).toEqual(expect.arrayContaining(['ep', 'vmp']))
     const gamma = bayesianGamMethods('penalty', 'gammaNoise')
     expect(gamma.applicable).toEqual(expect.arrayContaining(['vmp', 'ep']))
     const fixed = bayesianGamMethods('penalty', 'fixed')

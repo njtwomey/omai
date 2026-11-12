@@ -464,11 +464,13 @@ function scaledTilt(fn: UnaryFunction, c: OperatorContext): ScaledTilt {
  * on the way. Given `x` the factor is linear in `z`, so against the cavity of `z` and the message of `y` the integral over `z`
  * is closed form and what is left is one one-dimensional integral over `x` (a panelled grid for a Gaussian, a grid in `log x` for a
  * gamma): the message to `x` is its moment match, the message to `z` is the moment match of the mixture of the conditional
- * Gaussians over it, and the message to `y` that of `u z` with `u = f(x)`.
+ * Gaussians over it, and the message to `y` that of `u z` with `u = f(x)`. Under variational message passing the factor is deterministic
+ * as {@link applyFunction} is: `y` is defined by `z` and `x` (a Gaussian with the mean and variance of the pushforward of `z f(x)`) and the
+ * messages to `z` and `x` are the non-conjugate ones of the expected log of the output's readers, by the quadrature of both beliefs.
  *
  * @param name - The operator's name.
  * @param table - The functions to choose from (default {@link unaryFunctions}).
- * @returns The operator (expectation propagation only).
+ * @returns The operator.
  * @concept factor-operators
  * @index function The factor y = z f(x) of a Gaussian times a function of a Gaussian or gamma variable: a non-centred scale.
  * @example
@@ -504,8 +506,6 @@ export function applyProduct(
         return errorText(e)
       }
     },
-    // Expectation propagation only: the non-conjugate variational rule of a product with a scale (`z f(x)`, a funnel) is degenerate
-    // (measured on the Bayesian GAM: the noise collapses to a point), so the verdict of variational message passing says so.
     rules: {
       ep: siteRule((c) => {
         const fn = resolve(table, c.params)
@@ -519,6 +519,13 @@ export function applyProduct(
         const moments = c.to === 1 ? t.z : t.y
         return { mean: moments.mean, variance: resolvedVariance(moments.variance, 'apply-product') }
       }),
+      // Deterministic, as `apply`: under the mean field `y` is defined by `z` and `x` and its belief is the Gaussian with the mean and
+      // variance of the pushforward of `z f(x)`; the messages to `z` and to `x` are the non-conjugate ones of `E[h z f(x) - J z^2 f(x)^2 / 2]`,
+      // `(h, J)` the cavity of `y`, on the product of the two beliefs' quadratures.
+      vmp: messageRule((c): OperatorResult => {
+        const fn = resolve(table, c.params)
+        return { message: definedFunctionMessage(c.args, c.to, (v) => (v[0] as number) * fn.f(v[1] as number)) }
+      }, 'numeric'),
     },
     evidence: {
       ep: (c) => {
@@ -526,8 +533,9 @@ export function applyProduct(
         const fn = resolve(table, c.params)
         return massOf(arg(c, 1)) + massOf(arg(c, 2)) + scaledTilt(fn, c).logMass
       },
+      vmp: () => 0,
     },
-    traits: { readsTarget: (to) => to !== 0, power: true },
+    traits: { readsTarget: (to) => to !== 0, power: true, defines: 0 },
   })
 }
 

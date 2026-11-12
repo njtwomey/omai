@@ -131,8 +131,8 @@ export const nodeMappings: MappingTable<[ModelNode], void> = [
   },
   {
     name: 'derived',
-    maps: 'a derived node: its expression evaluated in the value algebra (a known constant, a symbolic value, a recorded variable), or a non-centred vector z / S(x) as one Gaussian vector with a gaussian-mv-function-scale factor',
-    requires: ['gaussian-mv-function-scale'],
+    maps: 'a derived node: its expression evaluated in the value algebra (a known constant, a symbolic value, a recorded variable), or a non-centred vector z / S(x) as one Gaussian vector with a gaussian-mv-function-scale factor (one shared scale) or assembled from its scalar products by a gaussian-mv-stack factor (a scale each)',
+    requires: ['gaussian-mv-function-scale', 'gaussian-mv-stack'],
     matches: (_cx, node) => node.kind === 'derived',
     map: (cx, node) => derived(cx, node as DerivedNode, (z) => mapLatent(cx, z)),
   },
