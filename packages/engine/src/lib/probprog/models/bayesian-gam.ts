@@ -23,17 +23,26 @@ import { bs, ps } from '../../stats/smoothing/index.ts'
 import {
   add,
   arange,
+  argmax,
+  asTensor,
   concat,
   div,
+  exp,
   floor,
   fromStorage,
   full,
   item,
   log,
   matmul,
+  maximum,
   mul,
   reshape,
   slice,
+  square,
+  sum,
+  type Tensor,
+  type TensorLike,
+  take,
   tensor,
   toArray,
   toFlat,
@@ -660,27 +669,29 @@ export function bayesianGamFit(
   // response in the constant (the penalty prior's first column) or spread over a partition of unity.
   const basisValues = transpose(slice(rowsTensor, [0], [G]))
   const offset = model.local ? mul(basisValues, ym) : concat([full([1, G], ym), zeros([size - 1, G])], 0)
-  const partsOf = (b: readonly number[]): number[][] =>
-    toArray(add(mul(mul(basisValues, ys), reshape(tensor(Array.from(b)), [size, 1])), offset)) as number[][]
-  const meanBeta = Array.from({ length: size }, (_, j) => beta.reduce((a, b) => a + (b[j] ?? 0), 0) / Math.max(1, n))
-  const centres = Array.from({ length: size }, (_, j) => {
-    let best = 0
-    for (let g = 1; g < G; g++) if ((rows[g]?.[j] ?? 0) > (rows[best]?.[j] ?? 0)) best = g
-    return grid[best] ?? lo
-  })
-  // The posterior probability of the slab for each coefficient, averaged over the draws.
-  const { inclusion: pi, slab, spike: narrow } = model.slab
-  const slabShare = (v: number): number => {
-    const a = (pi * Math.exp(-0.5 * (v / slab) ** 2)) / slab
-    const c = ((1 - pi) * Math.exp(-0.5 * (v / narrow) ** 2)) / narrow
-    return a / (a + c)
-  }
+  const partsOf = (b: TensorLike): number[][] =>
+    toArray(add(mul(mul(basisValues, ys), reshape(asTensor(b), [size, 1])), offset)) as number[][]
+  // The draws of the coefficients, one row per draw.
+  const betaDraws = n === 0 ? zeros([0, size]) : (tensor(beta) as Tensor)
+  const meanBeta = div(sum(betaDraws, 0), Math.max(1, n))
+  // The grid point where each basis function peaks.
+  const centres = toFlat(G === 0 ? full([size], lo) : take(tensor(grid), argmax(slice(rowsTensor, [0], [G]), 0)))
   const ll = lams.length === 0 ? [] : Array.from(lams).slice(0, n)
-  // How much each basis function is in use in a draw: the posterior probability of the slab, or under ARD the share of the unit
-  // ridge's width its precision leaves (1 for a precision of the ridge or less, towards 0 as the basis is pruned).
-  const inUse = (i: number, j: number): number =>
-    prior === 'ard' ? 1 / Math.max(1, ardPrecision(i, j)) : slabShare(beta[i]?.[j] ?? 0)
-  const active = beta.map((_, i) => Array.from({ length: size }, (_, j) => inUse(i, j)).reduce((a, b) => a + b, 0))
+  // How much each basis function is in use in each draw (a matrix of draws by basis functions): the posterior probability
+  // of the slab, or under ARD the share of the unit ridge's width its precision leaves (1 for a precision of the ridge or
+  // less, towards 0 as the basis is pruned).
+  const inUse = (): Tensor => {
+    if (prior === 'ard') {
+      const alphaRows = reshape(slice(reshape(asTensor(alphaDraws as Tensor), [-1]), [0], [n * size]), [n, size])
+      return div(1, maximum(1, add(mul(alphaRows, sparsity), 1 - sparsity))) as Tensor
+    }
+    const { inclusion: pi, slab, spike: narrow } = model.slab
+    const density = (scale: number, weight: number): Value =>
+      div(mul(exp(mul(square(div(betaDraws, scale)), -0.5)), weight), scale)
+    const inSlab = density(slab, pi)
+    return div(inSlab, add(inSlab, density(narrow, 1 - pi))) as Tensor
+  }
+  const used = spike ? inUse() : undefined
   return {
     grid,
     mean: at((v) => v.reduce((a, b) => a + b, 0) / v.length),
@@ -689,7 +700,7 @@ export function bayesianGamFit(
     level,
     curves: picks.map((i) => all[i]?.slice(0, G) ?? []),
     draws: spike
-      ? { logSigma: lsig, 'f(25%)': column(G), 'f(75%)': column(G + 1), 'active bases': active }
+      ? { logSigma: lsig, 'f(25%)': column(G), 'f(75%)': column(G + 1), 'active bases': toFlat(sum(used as Tensor, 1)) }
       : centred
         ? {
             ...(smooth && ll.length > 0 ? { logLambda: ll } : {}),
@@ -701,14 +712,7 @@ export function bayesianGamFit(
         : { logLambda: ll, logSigma: lsig, 'f(25%)': column(G), 'f(75%)': column(G + 1) },
     hyper: { logLambda: spike || (centred && !(smooth && ll.length > 0)) ? null : stat(ll), logSigma: stat(lsig) },
     bases: { mean: partsOf(meanBeta), curves: picks.map((i) => partsOf(beta[i] ?? [])), centres, local: model.local },
-    ...(spike
-      ? {
-          inclusion: Array.from(
-            { length: size },
-            (_, j) => beta.reduce((a, _b, i) => a + inUse(i, j), 0) / Math.max(1, n),
-          ),
-        }
-      : {}),
+    ...(spike ? { inclusion: toFlat(div(sum(used as Tensor, 0), Math.max(1, n))) } : {}),
     count: n,
   }
 }
