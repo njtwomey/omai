@@ -304,7 +304,6 @@ export function reduce(cx: Context, a: Sym, dim: string | undefined, mean: boole
   const outDims = dim === undefined ? [] : a.dims.filter((d) => d !== dim)
   const shape = cx.shapeOf(a.dims)
   const outShape = cx.shapeOf(outDims)
-  // banned-ok: non-numeric: one symbolic affine form per output cell
   const groups: Aff[] = Array.from({ length: prod(outShape) }, () => constAff(0))
   const flats = a.cells.map((_, i) => {
     const idx = unflatten(i, shape)

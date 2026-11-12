@@ -225,7 +225,6 @@ const declared: Example<RadonProblem> = defineExample<RadonProblem>({
           ? rows
           : {
               ...rows,
-              // banned-ok: non-numeric: one result row (an object) per county
               rows: [...rows.rows, ...Array.from({ length: counties }, (_, j) => ({ ...one, name: `alpha[${j}]` }))],
             }
       } catch {
@@ -268,14 +267,12 @@ const declared: Example<RadonProblem> = defineExample<RadonProblem>({
         compute: (state) => {
           const r = rowsOf(state)
           if (r === undefined) return null
-          // banned-ok: non-numeric: one result row (an object) per county
           const alpha = Array.from({ length: counties }, (_, j) => r.rows.find((x) => x.name === `alpha[${j}]`))
           if (!alpha.every((x) => x !== undefined)) return null
           const population = r.rows.find((x) => x.name === 'mu') ?? r.rows.find((x) => x.name === 'alpha')
           return groupEstimates({
             xLabel: 'houses in the county',
             yLabel: 'county intercept (log radon in a basement)',
-            // banned-ok: non-numeric: the labels of the counties
             labels: Array.from({ length: counties }, (_, j) => `county ${j + 1}`),
             x: problem.sizes,
             raw: problem.raw,

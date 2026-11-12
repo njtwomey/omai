@@ -28,6 +28,7 @@ import {
   logistic,
   multinomial,
   normal,
+  normalEach,
   permutation,
   philox4x32,
   poisson,
@@ -100,6 +101,15 @@ describe('samplers have the right moments', () => {
     expect(minOf(Array.from(t.slice(0, 1000)))).toBeGreaterThanOrEqual(2)
     // E[Z | Z > 2] = phi(2) / (1 - Phi(2)) = 2.373215
     expect(mean(t)).toBeCloseTo(2.3732, 1)
+  })
+
+  it('normalEach draws each row from its own key, the same values as one draw per key', () => {
+    const rows = normalEach(4, [3], (i) => foldIn(key(21), 100 + i), { loc: 1, scale: 2 })
+    expect(rows.shape).toEqual([4, 3])
+    for (let i = 0; i < 4; i++)
+      expect(Array.from(rows.data.slice(3 * i, 3 * i + 3))).toEqual(
+        Array.from(normal(foldIn(key(21), 100 + i), [3], { loc: 1, scale: 2 }).data),
+      )
   })
 
   it('poissonEach draws each count from its own key', () => {

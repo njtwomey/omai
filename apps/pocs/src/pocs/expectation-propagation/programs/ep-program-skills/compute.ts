@@ -42,7 +42,6 @@ export const recordOf = (run: SkillsRun) =>
 
 /** TrueSkill by one pass over the games in order (the prior is the spread of the truth, the performance noise 1, no draws, no drift). */
 function oneTrueskillPass(data: ReturnType<typeof simulate>, spread: number): number[] {
-  // banned-ok: non-numeric: one rating record per player
   const ratings = Array.from({ length: data.players }, () => ({ mu: 0, sigma: spread }))
   const env = { mu: 0, sigma: spread, beta: 1, tau: 0, drawProbability: 1e-9 }
   data.a.forEach((a, g) => {

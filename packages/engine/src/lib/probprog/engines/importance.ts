@@ -90,7 +90,6 @@ export function importanceInference<D = void>(
   const n = options.numSamples ?? 2000
   if (!(Number.isInteger(n) && n >= 2)) throw new OmaiError('value', 'importance: numSamples must be at least 2')
   const traces: ProgramTrace[] = []
-  // banned-ok: kernel: the log-weights, filled by the loop below
   const lw = new Float64Array(n)
   for (let i = 0; i < n; i++) {
     const d = importanceDraw(model, data, options, i)

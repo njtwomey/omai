@@ -130,7 +130,6 @@ export function dregElbo(options: DregElboOptions = {}): ElboEstimator<null> {
     name: 'dregElbo',
     init: () => null,
     estimate: (key, model, guide, data, params): ElboEstimate<null> => {
-      // banned-ok: non-numeric: one log-weight tensor per particle, each from a key of its own
       const logw = Array.from({ length: k }, (_, i) => {
         const p = stoppedParticle(foldIn(key, i), model, guide, data, params, 'dregElbo')
         return sub(p.logP, p.logQ)

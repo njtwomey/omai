@@ -86,7 +86,6 @@ export function spikeSlabRegression(problem: SpikeSlabRegression): SpikeSlabPost
   if (!(inclusion > 0 && inclusion < 1 && slab > 0 && spike > 0))
     throw new OmaiError('value', 'spikeSlabRegression: the inclusion probability is in (0, 1), the scales are positive')
   // The normal equations are kernel buffers: dpotrf and dpotrs take and return Float64Arrays, once per (subset, precision) cell.
-  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const gram = new Float64Array(p * p)
   const xty = new Float64Array(p)
   let yty = 0
@@ -133,7 +132,6 @@ export function spikeSlabRegression(problem: SpikeSlabRegression): SpikeSlabPost
   const log1Pi = Math.log(1 - inclusion)
   const variances = [spike ** 2, slab ** 2]
   const cells: Cell[] = []
-  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const a = new Float64Array(p * p)
   const subsets = 2 ** p
   for (let subset = 0; subset < subsets; subset++) {
@@ -186,10 +184,8 @@ export function spikeSlabRegression(problem: SpikeSlabRegression): SpikeSlabPost
           tau * (gram[i * p + j] as number) + (i === j ? 1 / (variances[(c.subset >> i) & 1] as number) : 0)
     const { factor } = dpotrf(a, p)
     const m = dpotrs(factor, xty, p)
-    // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
     const unit = new Float64Array(p)
     for (let j = 0; j < p; j++) {
-      // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
       unit.fill(0)
       unit[j] = 1
       const column = dpotrs(factor, unit, p)
@@ -407,7 +403,6 @@ export function mixtureOfRegressions(problem: MixtureOfRegressions): MixtureOfRe
   const logw = toFlat(zeros([assignments]))
   const parts: Part[][] = []
   for (let a = 0; a < assignments; a++) {
-    // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
     const rows: number[][] = Array.from({ length: classes }, () => [])
     for (let i = 0, r = a; i < n; i++, r = Math.floor(r / classes)) (rows[r % classes] as number[]).push(i)
     let lw = 0
@@ -417,7 +412,6 @@ export function mixtureOfRegressions(problem: MixtureOfRegressions): MixtureOfRe
       const members = rows[k] as number[]
       lw += members.length * Math.log(weights[k] as number)
       // kernel buffers of dpotrf and dpotrs (Float64Arrays), one set per class of every assignment
-      // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
       const A = new Float64Array(p * p)
       const b = new Float64Array(p)
       let yty = 0
@@ -449,11 +443,9 @@ export function mixtureOfRegressions(problem: MixtureOfRegressions): MixtureOfRe
         0.5 * p * Math.log(priorSd ** 2) -
         0.5 * logDetA -
         0.5 * (tau * yty + prior * m0m0 - bAb)
-      // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
       const variance = new Float64Array(p)
       const unit = new Float64Array(p)
       for (let j = 0; j < p; j++) {
-        // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
         unit.fill(0)
         unit[j] = 1
         variance[j] = dpotrs(factor, unit, p)[j] as number
@@ -465,7 +457,6 @@ export function mixtureOfRegressions(problem: MixtureOfRegressions): MixtureOfRe
   }
   const logEvidence = logSumExpOf(logw)
   const membership = toArray(zeros([n, classes])) as number[][]
-  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const coefficients = Array.from({ length: classes }, (_, k) =>
     Array.from({ length: p }, (_, j) => {
       const components: { weight: number; mean: number; sd: number }[] = []

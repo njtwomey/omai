@@ -60,7 +60,6 @@ export async function gibbsReference(
     // Forward filter with the noise variance each reading has now, and backward sample: scalar recursions over the steps,
     // each needing the step before, on working buffers (a tensor op per step per sweep makes a reference many times slower).
     const isWild = toFlat(wild)
-    // banned-ok: reference: the Gibbs reference written out in plain arithmetic (a Kalman filter and backward sampling)
     const m = new Float64Array(T)
     const v = new Float64Array(T)
     for (let t = 0; t < T; t++) {
@@ -72,7 +71,6 @@ export async function gibbsReference(
       v[t] = (1 - gain) * pv
     }
     const z = toFlat(normal(keyFromPath(seed, 'x', sweep), [T]))
-    // banned-ok: reference: the Gibbs reference written out in plain arithmetic (a Kalman filter and backward sampling)
     const x = new Float64Array(T)
     x[T - 1] = (m[T - 1] as number) + Math.sqrt(v[T - 1] as number) * (z[T - 1] as number)
     for (let t = T - 2; t >= 0; t--) {

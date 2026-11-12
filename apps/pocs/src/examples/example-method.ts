@@ -304,7 +304,6 @@ export function drawRows(post: Posterior, sites: readonly string[], n: number): 
       if (drawsOfSite === undefined) return undefined
       const width = drawsOfSite.shape.length <= 1 ? 1 : drawsOfSite.shape.slice(1).reduce((a, b) => a * b, 1)
       columns.push({
-        // banned-ok: non-numeric: the names of the sites of a vector
         names: drawsOfSite.shape.length <= 1 ? [site] : Array.from({ length: width }, (_, j) => `${site}[${j}]`),
         block: reshape(drawsOfSite, [-1, width]),
       })

@@ -59,7 +59,6 @@ export function defineFamily(def: FamilyDefinition): Family {
   // variable (hundreds of them for a parameter shared across time) and this is the innermost operation of a sweep, where a
   // tensor per message would allocate on every product.
   const combine = (a: Eta, b: Eta, sign: 1 | -1): Eta => {
-    // banned-ok: kernel: the innermost operation of a sweep, a tensor per message would allocate (see the comment above)
     const out = new Array<number>(a.length)
     for (let i = 0; i < a.length; i++) out[i] = (a[i] as number) + sign * (b[i] ?? 0)
     return normalise(out)

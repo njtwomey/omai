@@ -234,7 +234,6 @@ function integrateGrid(
     const logw0 = (grids[0] as { logw: number[] }).logw
     const slowest = profile.layout === 'first-slowest'
     const at = (a: number, b: number, c: number): number => (slowest ? a * n1 + b : a + n0 * (b + n1 * c))
-    // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
     const logw = new Float64Array(n0 * n1 * n2)
     const rest = zeroArray(k - 1)
     // A density given by the index of the nodes reads tables made once per pass from the nodes of each axis.
@@ -257,7 +256,6 @@ function integrateGrid(
     if (!Number.isFinite(top))
       throw new ImproperMessageError('numeric rule: the factor has no mass under the incoming messages')
     // Normalise the weights, and add each to the marginal of every axis it lies on.
-    // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
     const marginals = sizes.map((n) => new Float64Array(n))
     const m0 = marginals[0] as Float64Array
     const m1 = marginals[1]
@@ -321,7 +319,6 @@ const ZOOM_SHRINK = 0.7
  * @throws ImproperMessageError when the integrand has no mass under the cavities.
  */
 export function integrateAxes(axes: readonly GridAxis[], logf: (t: Float64Array) => number): GridNResult {
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const t = new Float64Array(axes.length)
   return integrateGrid(
     axes,

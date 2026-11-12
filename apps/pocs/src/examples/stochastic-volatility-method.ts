@@ -284,7 +284,6 @@ interface Draws {
 
 /** The sites of a run: the three numbers (when inferred) and the state at each step (a scan's states are the scalar sites `h[t]` or `z[t]`). */
 function sitesOf(problem: VolatilityProblem): string[] {
-  // banned-ok: non-numeric: the names of the sites
   const states = Array.from({ length: problem.y.length }, (_, t) => `${problem.site}[${t}]`)
   return problem.known ? states : ['mu', 'phi', 'sigma', ...states]
 }
@@ -307,7 +306,6 @@ function drawsOf(problem: VolatilityProblem, post: Posterior, most: number): Dra
   return { count, mu, phi, sigma, h, chain: got.chain, index: got.index }
 }
 
-// banned-ok: non-numeric: the names of the sites
 const names = (n: number): string[] => Array.from({ length: n }, (_, t) => `h[${t}]`)
 
 /** The names and columns of draws as a check or a reference sees them. */
@@ -348,7 +346,6 @@ const volatilityExample: Example<VolatilityProblem> = defineExample<VolatilityPr
           const dr = drawsOf(problem, post(state), FIT_DRAWS)
           if (dr === undefined) return null
           const levels = tensor([0.025, 0.975])
-          // banned-ok: non-numeric: one quantile tensor per step, stacked
           const q = stack(Array.from({ length: n }, (_, t) => quantile(take(dr.h, t, 1), levels)))
           const lo = take(q, 0, 1)
           const hi = take(q, 1, 1)
@@ -400,7 +397,6 @@ const volatilityExample: Example<VolatilityProblem> = defineExample<VolatilityPr
           const dr = drawsOf(problem, posterior, FIT_DRAWS)
           if (dr === undefined) return null
           const levels = tensor([0.025, 0.975])
-          // banned-ok: non-numeric: one quantile tensor per step, stacked
           const q = stack(Array.from({ length: n }, (_, t) => quantile(take(dr.h, t, 1), levels)))
           const lo = take(q, 0, 1)
           const hi = take(q, 1, 1)

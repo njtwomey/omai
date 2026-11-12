@@ -270,7 +270,6 @@ export function atomCalibration(
   if (spec === undefined) throw new OmaiError('value', `atomCalibration: '${atom.name}' is not an extended atom`)
   const seeds = options.seeds ?? spec.seeds
   const first = options.firstSeed ?? 1
-  // banned-ok: non-numeric: one calibration record per seed
   const samples = Array.from({ length: seeds }, (_, s) => calibrationSample(atom, first + s, options.knobs ?? {}))
   return calibrationTable(spec, samples)
 }

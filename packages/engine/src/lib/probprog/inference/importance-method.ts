@@ -159,7 +159,6 @@ export function importanceMethod(
         },
         step: (s, ctx) => {
           const b = Math.min(batch, total - s.n)
-          // banned-ok: non-numeric: one draw record per key
           const drawn = Array.from({ length: b }, (_, i) =>
             importanceDraw(
               program,

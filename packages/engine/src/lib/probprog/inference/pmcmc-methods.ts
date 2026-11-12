@@ -179,7 +179,6 @@ export const particleGibbsKnobs: DictSpace = dict({
 })
 
 const namesOf = (family: StateSpaceFamily): string[] =>
-  // banned-ok: non-numeric: the names of the coordinates
   Array.from({ length: family.dim }, (_, i) => family.names?.[i] ?? (family.dim === 1 ? 'theta' : `theta[${i}]`))
 
 /** The posterior over the parameters from a chain `[n, dim]`, after discarding the burn-in fraction. */
@@ -337,7 +336,6 @@ export function pmmhMethod(
             position: s.position,
             logLikelihood: s.logLikelihood,
             logDensity: s.logDensity,
-            // banned-ok: sentinel: an empty initial array (no draws yet)
             draws: new Float64Array(0),
             logLiks: new Float64Array(0),
             accepted: 0,
@@ -506,7 +504,6 @@ export function particleGibbsMethod(
             path: s.path,
             logDensity: s.logDensity,
             refresh: s.refresh,
-            // banned-ok: sentinel: an empty initial array (no draws yet)
             draws: new Float64Array(0),
             logJoints: new Float64Array(0),
             accepted: 0,

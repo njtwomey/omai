@@ -74,7 +74,6 @@ function chainMarginals(y: readonly number[]): Record<string, ExactMarginal> {
   const width = 2 * Math.ceil(6 / (dh * Math.sqrt(1.5))) + 1
   // The five buffers of the filter below are the working memory of its triple loop (15840 triples, each a sweep of a banded
   // kernel over every observation), rewritten in place; a tensor op per step would allocate in the innermost loop.
-  // banned-ok: reference: the forward-backward pass of the atom written out in plain arithmetic
   const kernel = new Float64Array(STATES * width)
   const first = new Int32Array(STATES)
   const last = new Int32Array(STATES)
@@ -99,7 +98,6 @@ function chainMarginals(y: readonly number[]): Record<string, ExactMarginal> {
       const likelihood = read[t] as number[]
       if (t === 0) next.set(start)
       else {
-        // banned-ok: reference: the forward-backward pass of the atom written out in plain arithmetic
         next.fill(0)
         for (let i = 0; i < STATES; i++) {
           const a = alpha[i] as number

@@ -216,7 +216,6 @@ function precisionTiltGrid(
   // Given the precision, each Gaussian has its Kalman update: the tilted Gaussian is the mixture of the updates over the grid, with
   // the mean and variance of the mixture (the mean of the variances plus the variance of the means, centred).
   // Exempt from the tensor rule, on purpose: the accumulators of the tilt loop over the grid nodes.
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const mx = new Float64Array(TILT_POINTS)
   const vx = new Float64Array(TILT_POINTS)
   const mu = new Float64Array(TILT_POINTS)
@@ -517,7 +516,6 @@ export const product: FactorOperator = defineOperator({
         // message of y, and the tilted y of that node a product of two Gaussians, in closed form.
         const na = gaussianGrid(a.mean, a.variance)
         const n = na.x.length
-        // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
         const w = new Float64Array(n)
         const mp = new Float64Array(n)
         const post = new Float64Array(n)

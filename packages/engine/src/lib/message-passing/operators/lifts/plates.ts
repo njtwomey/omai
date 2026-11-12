@@ -126,7 +126,6 @@ function startSites(cavity: Eta, r: Rows, lam: Float64Array): void {
     )
       continue
     // Exempt: the sites buffer of the plate is filled in place, as it is in the sweeps below.
-    // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
     lam.fill(s)
     return
   }
@@ -140,7 +139,6 @@ function startSites(cavity: Eta, r: Rows, lam: Float64Array): void {
 function plateEp(link: FactorOperator, c: OperatorContext, r: Rows): Plate {
   const d = r.d
   const cavity = etaOf(arg(c, 0))
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const nu = new Float64Array(r.n)
   const lam = new Float64Array(r.n)
   const sa = new Float64Array(d)
@@ -212,7 +210,6 @@ function plateEvidence(link: FactorOperator, c: OperatorContext, r: Rows): numbe
     if (e instanceof ImproperMessageError) return Number.NaN
     throw e
   }
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const sa = new Float64Array(d)
   let total = gaussianMv(d).logPartition(post.eta)
   for (let i = 0; i < r.n; i++) {
@@ -238,7 +235,6 @@ function plateEvidence(link: FactorOperator, c: OperatorContext, r: Rows): numbe
 function plateVariational(link: FactorOperator, c: OperatorContext, r: Rows): Eta {
   const d = r.d
   const { mean, covariance } = momentsOf(etaOf(arg(c, 0)), d)
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const sa = new Float64Array(d)
   const nu = new Float64Array(r.n)
   const lam = new Float64Array(r.n)
@@ -263,7 +259,6 @@ function plateVariational(link: FactorOperator, c: OperatorContext, r: Rows): Et
 function plateExpectedLog(link: FactorOperator, c: OperatorContext, r: Rows): number {
   const d = r.d
   const { mean, covariance } = momentsOf(etaOf(arg(c, 0)), d)
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const sa = new Float64Array(d)
   let total = 0
   for (let i = 0; i < r.n; i++) {

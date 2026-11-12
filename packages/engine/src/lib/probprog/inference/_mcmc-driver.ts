@@ -342,7 +342,6 @@ export function mcmcMethodOf<T, K extends string = never>(
     })
     return {
       ...base,
-      // banned-ok: non-numeric: one summary record per chain
       parameters: Array.from({ length: numChains }, (_, ci) => {
         const ch = state.chains[Math.floor(ci / walkers)]
         return ch?.tuned === null || ch === undefined ? {} : (plan.tunedSummary(ch.tuned as T) as Json)

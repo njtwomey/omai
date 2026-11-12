@@ -122,7 +122,6 @@ function evaluate(
   const total = n ** d
   // The density table and the point handed to the callback are the working buffers of the grid sweep (the callback takes a
   // Float64Array and is called points^dim times), written in place.
-  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const logf = new Float64Array(total)
   const u = new Float64Array(d)
   let max = Number.NEGATIVE_INFINITY
@@ -143,7 +142,6 @@ function evaluate(
   for (let flat = 0; flat < total; flat++) {
     let w = 1
     let r = flat
-    // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
     const idx = new Array<number>(d)
     for (let k = d - 1; k >= 0; k--) {
       idx[k] = r % n
@@ -389,7 +387,6 @@ export function gridPosterior<D = void>(model: Model<D>, data: D, options: GridO
     joint: jointOf,
     expectation: (g) => {
       const total = n ** d
-      // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
       const u = new Float64Array(d)
       let acc = 0
       for (let flat = 0; flat < total; flat++) {

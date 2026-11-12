@@ -252,7 +252,6 @@ export function numericMessage(ports: readonly QuadPort[], to: number, logf: (x:
   if (target.stats.length === 0) throw new ParameterError('a variational message is not sent to an observed port')
   const n = target.coords.length
   const x = zeroArray(ports.length)
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const g = new Float64Array(n)
   for (let i = 0; i < n; i++) {
     x[to] = target.coords[i] as number

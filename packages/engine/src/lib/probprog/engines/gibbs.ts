@@ -110,7 +110,6 @@ function close(a: Value, b: Value): boolean {
 /** The group (flat index into the collapsed site's batch) of each element of a child, for an identity mapping. */
 function identityGroups(childBatch: readonly number[], groupShape: readonly number[]): Int32Array {
   const n = product(childBatch)
-  // banned-ok: kernel: the group index of each element, filled by the loop below
   const out = new Int32Array(n)
   const off = childBatch.length - groupShape.length
   for (let i = 0; i < n; i++) {
@@ -501,14 +500,12 @@ function updateDiscrete<D = void>(
     return Math.log(Math.max(v ?? 0, 0))
   }
   if (relevant.length === 0) {
-    // banned-ok: per-key draw: one draw from a key of its own per element, no vectorised form
     const out = new Float64Array(n)
     for (let i = 0; i < n; i++)
       out[i] =
         low +
         draw(
           foldIn(key, i),
-          // banned-ok: per-key draw: one draw from a key of its own per element, no vectorised form
           Array.from({ length: K }, (_, k) => base(i, k)),
         )
     return fromStorage(out, shape, 'float64')
@@ -518,7 +515,6 @@ function updateDiscrete<D = void>(
   const states = Int32Array.from(toFlat(primalOf(current ?? full([n], low))), (v) => v - low)
   const info = relevant.map((c) => ({ c, ...collapsedCounts(c, t0) }))
   for (let i = 0; i < n; i++) {
-    // banned-ok: kernel: the logits of one site, built by the loop around it
     const logits = Array.from({ length: K }, (_, k) => base(i, k))
     for (const { c, counts, members } of info) {
       c.children.forEach((ch, j) => {

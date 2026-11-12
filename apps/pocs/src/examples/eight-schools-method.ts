@@ -233,13 +233,11 @@ const declared: Example<SchoolsProblem> = defineExample<SchoolsProblem>({
         compute: (state) => {
           const r = rowsOf(state)
           if (r === undefined) return null
-          // banned-ok: non-numeric: one result row (an object) per school
           const theta = Array.from({ length: groups }, (_, j) => r.rows.find((x) => x.name === `theta[${j}]`))
           if (!theta.every((x) => x !== undefined)) return null
           return groupEstimates({
             xLabel: 'standard error of the estimate',
             yLabel: 'effect of coaching',
-            // banned-ok: non-numeric: the labels of the schools
             labels: Array.from({ length: groups }, (_, j) => `school ${j + 1}`),
             x: problem.sigma,
             raw: problem.y,

@@ -135,7 +135,6 @@ function linkTable(
   cuts: Float64Array,
   sign: 1 | -1,
 ): Float64Array {
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const table = new Float64Array(predictor.length * cuts.length)
   for (let j = 0; j < cuts.length; j++)
     for (let i = 0; i < predictor.length; i++)
@@ -215,7 +214,6 @@ function probitIntegrate(y: number, p: Params, args: readonly Arg[]): GridTriple
   const n = t.length
   // The conditional mean and variance of each coordinate at each score.
   const gain = u.variance / (u.variance + 1)
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const means = [new Float64Array(n), new Float64Array(n), new Float64Array(n)] as const
   const variances = [new Float64Array(n), new Float64Array(n), new Float64Array(n)] as const
   for (let i = 0; i < n; i++) {

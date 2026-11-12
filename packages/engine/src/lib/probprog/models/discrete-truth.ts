@@ -90,7 +90,6 @@ export function hmmSmoothing(
   const alpha: number[][] = []
   const scale: number[] = []
   for (let t = 0; t < T; t++) {
-    // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
     const a = Array.from({ length: K }, (_, k) => {
       const prior =
         t === 0
@@ -111,7 +110,6 @@ export function hmmSmoothing(
     )
   const marginals = alpha.map((a, t) => a.map((v, k) => v * ((beta[t] as number[])[k] as number)))
   // The count of visits to each state: f[k'][c] after step t is the scaled probability of (state k', c visits to the target).
-  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const visits = Array.from({ length: K }, (_, target) => {
     let f = toArray(zeros([K, T + 1])) as number[][]
     for (let t = 0; t < T; t++) {

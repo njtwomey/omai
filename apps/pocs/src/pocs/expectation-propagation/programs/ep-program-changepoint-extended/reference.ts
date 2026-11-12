@@ -91,7 +91,6 @@ export async function gibbsReference(
     const a = toFlat(A)
     // Forward filter and backward sample: scalar recursions over the steps, each needing the step before, on working
     // buffers (a tensor op per step per sweep makes a reference many times slower).
-    // banned-ok: reference: the Gibbs reference written out in plain arithmetic (forward filtering, backward sampling)
     const alpha = new Float64Array(T * K)
     for (let t = 0; t < T; t++) {
       let n = 0
@@ -107,7 +106,6 @@ export async function gibbsReference(
       }
       for (let k = 0; k < K; k++) alpha[t * K + k] = (alpha[t * K + k] as number) / n
     }
-    // banned-ok: reference: the Gibbs reference written out in plain arithmetic (forward filtering, backward sampling)
     const z = new Float64Array(T)
     const w = new Float64Array(K)
     for (let t = T - 1; t >= 0; t--) {

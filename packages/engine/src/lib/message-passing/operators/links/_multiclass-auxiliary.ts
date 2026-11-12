@@ -111,7 +111,6 @@ export function logTransform(g: ScoreGrid, t: number): number {
 /** The mean and the centred variance of a score under its cavity times `exp(-t exp(z))`. */
 function conditionalMoments(g: ScoreGrid, t: number): { readonly mean: number; readonly variance: number } {
   const n = g.z.length
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const v = new Float64Array(n)
   for (let i = 0; i < n; i++) v[i] = (g.logw[i] as number) - t * (g.e[i] as number)
   let top = Number.NEGATIVE_INFINITY

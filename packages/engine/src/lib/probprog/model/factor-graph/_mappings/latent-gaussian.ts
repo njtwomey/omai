@@ -229,7 +229,6 @@ function latentNormalAlone(cx: Context, node: ModelNode & { readonly kind: 'late
     cx.g.addLibraryFactor(gaussianMvPrior(node.name, mean, cov), node.name)
     cx.syms.set(node.name, {
       dims: node.dims,
-      // banned-ok: non-numeric: one factor-graph atom (or element name) per cell
       cells: Array.from({ length: n }, (_, j) => cx.g.compAtom(node.name, j, n)),
     })
     cx.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)
@@ -315,7 +314,6 @@ export function latentGrouped(cx: Context, node: ModelNode & { readonly kind: 'l
   if (node.dims.length === 0) cx.layout(node, 'latent', 'gaussian', 'scalar', [node.name], true)
   else {
     const n = sizes[group.members.indexOf(node.name)] as number
-    // banned-ok: non-numeric: one factor-graph atom (or element name) per cell
     const vars = Array.from({ length: n }, (_, i) => cx.elementName(node.name, node.dims, i))
     cx.layout(node, 'latent', 'gaussian', 'elements', vars, true)
   }
@@ -360,7 +358,6 @@ export function latentSpikeSlab(cx: Context, node: ModelNode & { readonly kind: 
     }
     cx.syms.set(node.name, {
       dims: node.dims,
-      // banned-ok: non-numeric: one factor-graph atom (or element name) per cell
       cells: Array.from({ length: n }, (_, j) => cx.g.compAtom(node.name, j, n)),
     })
     cx.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)
@@ -491,7 +488,6 @@ export function latentSharedPrecision(
   )
   cx.syms.set(node.name, {
     dims: node.dims,
-    // banned-ok: non-numeric: one factor-graph atom (or element name) per cell
     cells: Array.from({ length: n }, (_, j) => cx.g.compAtom(node.name, j, n)),
   })
   cx.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)

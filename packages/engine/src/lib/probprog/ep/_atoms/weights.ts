@@ -95,7 +95,6 @@ const priorKnobs = {
 function weightQuantities(n: number): AtomProblem['quantities'] {
   return [
     { name: 'pi', label: 'pi (the mixing weight of the + component)', support: 'unit' },
-    // banned-ok: non-numeric: one quantity spec per weight
     ...Array.from({ length: n }, (_, i) => ({
       name: `z[${i}]`,
       label: `P(observation ${i + 1} is from the + component)`,

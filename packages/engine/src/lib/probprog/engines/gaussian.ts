@@ -93,7 +93,6 @@ function noiseOf(site: SampleSite): Tensor {
   const count = product(batch)
   const full = primalOf(broadcastTo(cov, [...batch, d, d]))
   const flat = toFlat(full)
-  // banned-ok: kernel: a matrix assembled by loops and wrapped with fromStorage
   const out = new Float64Array(n * n)
   for (let c = 0; c < count; c++)
     for (let i = 0; i < d; i++)
@@ -103,7 +102,6 @@ function noiseOf(site: SampleSite): Tensor {
 
 function blockDiagonal(blocks: readonly Tensor[]): Tensor {
   const n = blocks.reduce((s, b) => s + (b.shape[0] ?? 0), 0)
-  // banned-ok: kernel: a matrix assembled by loops and wrapped with fromStorage
   const out = new Float64Array(n * n)
   let at = 0
   for (const b of blocks) {
@@ -492,7 +490,6 @@ export function gaussianInference<D = void>(
     })
     const sampler = (key: Key, n: number): Record<string, Tensor> => {
       const T = k.steps.length
-      // banned-ok: non-numeric: one tensor per step, filled backwards
       const xs: Tensor[] = new Array<Tensor>(T)
       xs[T - 1] = mvnDraws(
         foldIn(key, T - 1),

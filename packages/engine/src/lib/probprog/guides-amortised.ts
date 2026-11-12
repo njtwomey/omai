@@ -74,7 +74,6 @@ interface Encoder {
   readonly init: readonly Value[]
 }
 
-// banned-ok: non-numeric: the names of the encoder sites
 const names = (site: string, n: number): string[] => Array.from({ length: n }, (_, i) => `${site}_enc_${i}`)
 
 /**

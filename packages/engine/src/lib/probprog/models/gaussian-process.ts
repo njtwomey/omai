@@ -114,7 +114,6 @@ export function gpPosteriorGivenLengthScale(
   const { factor } = dpotrf(C, n)
   const alpha = dpotrs(factor, y, n)
   const mean = Array.from(dgemv(K, n, n, alpha))
-  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const sd = Array.from({ length: n }, (_, i) => {
     const row = K.slice(i * n, (i + 1) * n)
     const solved = dpotrs(factor, row, n)
@@ -165,7 +164,6 @@ export function gpPosteriorGivenHyperparameters(
   const n = x.length
   const k = x[0]?.length ?? 0
   const scales = typeof h.lengthScale === 'number' ? toFlat(full([k], h.lengthScale)) : h.lengthScale
-  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const K = new Float64Array(n * n)
   for (let i = 0; i < n; i++)
     for (let j = 0; j < n; j++) {
@@ -178,7 +176,6 @@ export function gpPosteriorGivenHyperparameters(
   const { factor } = dpotrf(C, n)
   const alpha = dpotrs(factor, y, n)
   const mean = Array.from(dgemv(K, n, n, alpha))
-  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const sd = Array.from({ length: n }, (_, i) => {
     const row = K.slice(i * n, (i + 1) * n)
     const solved = dpotrs(factor, row, n)
@@ -328,7 +325,6 @@ function functionDraws(draws: Readonly<Record<string, ArrayLike<number>>>): Reco
   const ell = draws['ell']
   if (ell === undefined) return {}
   const x = tensor(generateGp(makeKey(0)).data['x'] as number[])
-  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const out = Array.from({ length: POINTS }, () => new Float64Array(ell.length))
   for (let i = 0; i < ell.length; i++) {
     const L = toFlat(cholesky(kernelMatrix(x, tensor(ell[i] as number))))

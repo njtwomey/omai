@@ -224,7 +224,6 @@ function tiltGamma(
   const port = quadraturePort(cavity, { points: 481 })
   const n = port.coords.length
   const values = Float64Array.from(port.coords, fn.f)
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const lw = new Float64Array(n)
   for (let i = 0; i < n; i++) {
     const v = values[i] as number
@@ -423,7 +422,6 @@ function scaledTilt(fn: UnaryFunction, c: OperatorContext): ScaledTilt {
       throw new ImproperMessageError('apply-product: the factor has no mass against these cavities')
     const sums = { logX: 0, x: 0 }
     // The conditional mean and variance of z and of y at each node that carries weight.
-    // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
     const nodes = { zm: new Float64Array(n), zv: new Float64Array(n), ym: new Float64Array(n), yv: new Float64Array(n) }
     for (let i = 0; i < n; i++) {
       const w = weights[i] as number

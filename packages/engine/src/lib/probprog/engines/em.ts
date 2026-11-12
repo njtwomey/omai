@@ -347,7 +347,6 @@ function sigmaPoints(
   const c = toFlat(cov)
   const m = toFlat(mean)
   // Connected groups of coordinates with non-zero posterior covariance.
-  // banned-ok: kernel: the group of each coordinate, a work array of the grouping loop
   const group = new Int32Array(n).fill(-1)
   const groups: number[][] = []
   for (let i = 0; i < n; i++) {

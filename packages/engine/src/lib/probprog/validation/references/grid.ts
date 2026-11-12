@@ -97,7 +97,6 @@ export function gridMarginals(
   const total = n ** d
   // The density table and the point handed to the callback are the working buffers of the grid sweep (points^dim steps),
   // written in place.
-  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const logs = new Float64Array(total)
   const x = toFlat(zeros([d]))
   let top = Number.NEGATIVE_INFINITY
@@ -114,7 +113,6 @@ export function gridMarginals(
   const index = (flat: number, k: number): number => Math.floor(flat / n ** (d - 1 - k)) % n
   const h = box.map(([lo, hi]) => (hi - lo) / (n - 1))
   // the normalised mass of every cell, a table of points^dim entries filled in place with the running total
-  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const mass = new Float64Array(total)
   let z = 0
   for (let flat = 0; flat < total; flat++) {

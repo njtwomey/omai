@@ -79,7 +79,6 @@ function tiltOver(
   const family = wishart(d)
   if (wishartParams(cavity, d) === undefined) throw new ImproperMessageError('a Wishart message has no density')
   const k = rows.count
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const r = new Float64Array(d)
   const v = new Float64Array(d * d)
   for (let i = 0; i < d; i++) {
@@ -100,7 +99,6 @@ function tiltOver(
   const eta = conjugate ? rawSum(base0, differencePart) : base0
   const { nu, chol } = wishartCavity(eta, d)
   const rule = wishartRule(nu, chol, d)
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const logw = new Float64Array(rule.count)
   for (let node = 0; node < rule.count; node++) {
     const at = node * d * d
@@ -156,7 +154,6 @@ function messageToGaussian(c: OperatorContext): Eta {
   const target = c.to as 0 | 1
   const side = target === 0 ? x : mean
   const t = tiltOver(arg(c, 2).eta as Eta, eval1, x, mean, d, rows)
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const m = new Float64Array(d)
   const s = new Float64Array(d * d)
   const nodeMean = new Float64Array(d)

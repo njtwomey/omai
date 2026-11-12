@@ -124,7 +124,6 @@ export function softmaxScoreExpectation(
     for (let i = 0; i < n; i++) rest[i] = (rest[i] as number) + (a[i] as number)
   }
   const constant = to === y ? Number.NaN : (beliefs[y] as Cavity).mean
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const out = new Float64Array(z.length)
   let base = 0
   for (let i = 0; i < n; i++) base -= Math.exp(-(table.t[i] as number))
@@ -179,7 +178,6 @@ function logIntegral(
   scale = 1,
 ): number {
   const n = bound.c.length
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const logw = new Float64Array(n)
   let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < n; i++) {
@@ -228,7 +226,6 @@ export function probitBound(beliefs: ScoreBeliefs, y: number): ProbitBound {
     return total
   })
   const nodes = gaussianNodes(observed.mean, observed.variance, OBSERVED_NODES)
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const weights = new Float64Array(count)
   let value = 0
   for (let n = 0; n < nodes.x.length; n++)

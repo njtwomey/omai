@@ -118,7 +118,6 @@ function inverseHessian(s: readonly Float64Array[], y: readonly Float64Array[], 
       ? 1
       : dotted(s[newest] as Float64Array, y[newest] as Float64Array) /
         dotted(y[newest] as Float64Array, y[newest] as Float64Array)
-  // banned-ok: kernel: the inverse Hessian of the L-BFGS history, updated in place
   let h: Float64Array = new Float64Array(n * n)
   for (let i = 0; i < n; i++) h[i * n + i] = gamma
   for (let i = 0; i < s.length; i++) h = bfgsInverseUpdate(h, s[i] as Float64Array, y[i] as Float64Array)
@@ -189,7 +188,6 @@ export function pathfinderAlgorithm<D = void>(
     if (cached !== undefined) return cached
     const um = isolated(() => potentialEnergy(model, data))
     const objective = (u: Value): Value => neg(um.fn(u))
-    // banned-ok: kernel: the starting point handed to the optimiser kernel
     const stepper = lbfgsAlgorithm(objective, new Float64Array(um.dim), {
       memory,
       ftol: options.ftol ?? 1e-9,
@@ -320,7 +318,6 @@ export function pathfinderAlgorithm<D = void>(
           )
           return (Number.isFinite(v) ? v : Number.NEGATIVE_INFINITY) - (lq[i] ?? 0)
         })
-        // banned-ok: kernel: the log-weights, filled by the loop below
         let logWeights = new Float64Array(total)
         let paretoK = Number.NaN
         if (mode !== 'none' && total >= 25 && ratios.every((r) => Number.isFinite(r))) {
@@ -334,7 +331,6 @@ export function pathfinderAlgorithm<D = void>(
         if (mode === 'resample' && !Number.isNaN(paretoK)) {
           const idx = choice(foldIn(ctx.key, 1 << 20), total, total, { weights: Array.from(normaliseExp(logWeights)) })
           finalDraws = Float64Array.from(toFlat(primalOf(take(reshape(draws, [total, D]), idx, 0))))
-          // banned-ok: kernel: the log-weights, filled by the loop below
           logWeights = new Float64Array(total)
         }
         return { ...s, stage: 'done', draws: finalDraws, logWeights, paretoK, ess: importanceEss(logWeights) }

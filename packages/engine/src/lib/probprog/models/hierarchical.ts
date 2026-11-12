@@ -105,13 +105,11 @@ export function varyingInterceptTruth(
     const s2 = sigma * sigma
     // A'A / sigma² + D^-1 over (mu, beta, e_1..e_J), with A = [1, floor, tau Z]; and A'y / sigma².
     // lambda, rhs, e and the covariance are the kernel buffers of dpotrf and dpotrs (Float64Arrays), rebuilt per grid point
-    // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
     const lambda = new Float64Array(p * p)
     lambda[0] = precisionMu + n / s2
     lambda[1] = sumFloor / s2
     lambda[p] = sumFloor / s2
     lambda[p + 1] = precisionBeta + sumFloorSq / s2
-    // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
     const rhs = new Float64Array(p)
     rhs[0] = sumY / s2
     rhs[1] = sumFloorY / s2
@@ -128,7 +126,6 @@ export function varyingInterceptTruth(
     }
     const { factor, info } = dpotrf(lambda, p)
     if (info !== 0)
-      // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
       return { logPost: Number.NEGATIVE_INFINITY, mean: new Float64Array(p), cov: new Float64Array(p * p) }
     let logDetLambda = 0
     for (let i = 0; i < p; i++) logDetLambda += 2 * Math.log(factor[i * p + i] ?? 1)
@@ -141,10 +138,8 @@ export function varyingInterceptTruth(
     const halfNormal = (x: number, scale: number): number =>
       Math.log(2 / (scale * Math.sqrt(2 * Math.PI))) - (x * x) / (2 * scale * scale)
     const logPost = logLik + halfNormal(tau, problem.priorTau) + halfNormal(sigma, problem.priorSigma) + u + v
-    // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
     const cov = new Float64Array(p * p)
     for (let c = 0; c < p; c++) {
-      // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
       const e = new Float64Array(p)
       e[c] = 1
       const col = dpotrs(factor, e, p)

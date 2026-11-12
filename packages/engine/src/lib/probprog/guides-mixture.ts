@@ -58,7 +58,6 @@ export function autoMixtureNormal<D = void>(model: Model<D>, options: AutoMixtur
         const logits = param('auto_logits', zeros([K]))
         const locs = param('auto_locs', (k) => {
           const u = stack(
-            // banned-ok: non-numeric: one initial tensor per component, each from a key of its own, stacked
             Array.from({ length: K }, (_, i) => primalOf(uniform(foldIn(k, i), [D], { low: -1, high: 1 }))),
           )
           // Centred on the components' mean, so that they start apart, on opposite sides of their centre.

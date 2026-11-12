@@ -136,7 +136,6 @@ export function inferDiscreteAlgorithm<D = void>(
       const flat = toFlat(probs)
       const support = next.fn.support
       const low = support.kind === 'integerInterval' ? support.low : 0
-      // banned-ok: per-key draw: one draw from a key of its own per element, no vectorised form
       const out = new Float64Array(count)
       for (let i = 0; i < count; i++) {
         const w = flat.slice(i * k, (i + 1) * k).map((p) => Math.max(p, 0))
@@ -246,7 +245,6 @@ const perChainMean = (t: Tensor | undefined, numChains: number): number[] => {
   if (t === undefined) return toFlat(full([numChains], Number.NaN))
   const flat = toFlat(t)
   const n = Math.floor(flat.length / numChains)
-  // banned-ok: TODO tensor: the mean of each chain, as a reshape and a mean (the summation order must be kept)
   return Array.from({ length: numChains }, (_, c) => {
     let sum = 0
     for (let i = 0; i < n; i++) sum += flat[c * n + i] ?? 0

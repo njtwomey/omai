@@ -25,7 +25,6 @@ const sticksOf = (params: Params): number => {
 function ports(params: Params): readonly Port[] {
   return [
     { name: 'z', accepts: ['discrete'], constant: true },
-    // banned-ok: non-numeric: the ports of the operator
     ...Array.from({ length: sticksOf(params) }, (_, j): Port => ({ name: `v${j}`, accepts: ['beta'] })),
   ]
 }

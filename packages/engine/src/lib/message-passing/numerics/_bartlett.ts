@@ -55,11 +55,9 @@ export function choleskySolveInPlace(l: Float64Array, n: number, b: Float64Array
 
 /** The inverse of a matrix from its Cholesky factor, row-major. */
 export function choleskyInverse(l: Float64Array, n: number): Float64Array {
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const out = new Float64Array(n * n)
   const col = new Float64Array(n)
   for (let j = 0; j < n; j++) {
-    // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
     col.fill(0)
     col[j] = 1
     choleskySolveInPlace(l, n, col)
@@ -141,19 +139,16 @@ export function wishartRule(nu: number, scaleChol: Float64Array, d: number, orde
   const n = order ?? BARTLETT_ORDER[d]
   if (n === undefined)
     throw new OmaiError('not-implemented', `the Wishart quadrature is built for dimensions up to 4, got ${d}`)
-  // banned-ok: non-numeric: one quadrature rule per diagonal entry
   const diag = Array.from({ length: d }, (_, i) => gammaRule(n, (nu - i) / 2))
   const normal = normalRule(n)
   const off = (d * (d - 1)) / 2
   const dims = d + off
   const count = n ** dims
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const weight = new Float64Array(count)
   const logDet = new Float64Array(count)
   const lambda = new Float64Array(count * d * d)
   let logC = 0
   for (let i = 0; i < d; i++) logC += Math.log(scaleChol[i * d + i] as number)
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const index = new Int32Array(dims)
   const a = new Float64Array(d * d)
   const t = new Float64Array(d * d)
@@ -165,7 +160,6 @@ export function wishartRule(nu: number, scaleChol: Float64Array, d: number, orde
     }
     let w = 1
     let ld = 0
-    // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
     a.fill(0)
     for (let i = 0; i < d; i++) {
       const r = diag[i] as { x: Float64Array; w: Float64Array }

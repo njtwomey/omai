@@ -30,7 +30,6 @@ export function nodeEvaluator(
   const count = groups.length
   // Exempt from the tensor rule, on purpose: the scratch buffers of the per-node closure below, which the tilt loop calls for every
   // node of the quadrature; a tensor op per node would allocate on each call.
-  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const t = new Float64Array(count * dd)
   const a = new Float64Array(count * dd)
   const u = new Float64Array(count * d)
@@ -67,7 +66,6 @@ export function nodeEvaluator(
       const logDetM = choleskyLogDet(m, d)
       const at = j * dd
       for (let k = 0; k < d; k++) {
-        // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
         col.fill(0)
         col[k] = 1
         choleskySolveInPlace(m, d, col)
@@ -110,7 +108,6 @@ export function nodeEvaluator(
       // the conditionals given the matrix: the mean N(q, P^-1) in the last slot, vector j N(u_j + A_j q, T_j + A_j P^-1 A_j')
       const mu = count * (d + dd)
       for (let k = 0; k < d; k++) {
-        // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
         col.fill(0)
         col[k] = 1
         choleskySolveInPlace(la, d, col)

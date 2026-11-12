@@ -171,7 +171,6 @@ function solve(
     const values = axes.map((zs, c) => zs.map((z) => (maps[c] as Warp).from(z)))
     const jac = axes.map((zs, c) => zs.map((z) => (maps[c] as Warp).logJacobian(z)))
     // the table of n^3 log densities, then masses, filled in place by the sweep below
-    // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
     const raw = new Float64Array(n * n * n)
     let top = Number.NEGATIVE_INFINITY
     for (let i = 0; i < n; i++)

@@ -61,7 +61,6 @@ export function productTilt(
       throw new ImproperMessageError('product grid: the tilted covariance is not positive definite')
     let logDet = 0
     for (let i = 0; i < r; i++) logDet += 2 * Math.log(l[i * r + i] as number)
-    // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
     const logw = new Float64Array(total)
     const xs = new Float64Array(total * r)
     const t = zeroArray(r)

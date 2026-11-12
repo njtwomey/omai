@@ -8,9 +8,8 @@
  *
  * Tests, scripts and apps are exempt. A line may opt out with a trailing `// allow: <reason>` comment.
  *
- * A second check (`scripts/banned-arrays.ts`) fails on hand-built numeric arrays (`new Array`, `.fill(`, `Array.from({`,
- * typed arrays) in the EP code paths and on hand loops in the code that pages show; a marker
- * `// banned-ok: <category>: <reason>` on the line above allows an occurrence that is not numeric data.
+ * A second check (`scripts/banned-arrays.ts`) fails on hand-built arrays and hand loops in the code that pages show (a `// region`
+ * block): shown code reads as tensor code. It has no allow-list; the general rule is in CLAUDE.md.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'

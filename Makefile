@@ -56,7 +56,7 @@ layers: ## Check layering: no import cycles between domains, the tiers of the co
 	$(NODE) scripts/layers.ts
 
 .PHONY: lint
-lint: ## Lint TypeScript (Biome), banned globals and hand-built arrays, restated types, and Python (ruff)
+lint: ## Lint TypeScript (Biome), banned globals and hand-built arrays in shown code, restated types, and Python (ruff)
 	$(PNPM) exec biome check .
 	$(NODE) scripts/banned.ts
 	$(NODE) scripts/type-definitions.ts --check

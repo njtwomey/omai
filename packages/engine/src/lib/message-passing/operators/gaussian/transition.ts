@@ -165,7 +165,6 @@ export const gaussianTransition: FactorOperator = defineOperator({
       if (factorQ === undefined) return Number.NaN
       const QInv = factorQ.inverse()
       const n = rows + cols
-      // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
       const J = new Float64Array(n * n)
       const h = new Float64Array(n)
       const QInvF = dgemm(QInv, F, rows, rows, cols)

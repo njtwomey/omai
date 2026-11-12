@@ -3,7 +3,7 @@ import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { type MixtureComponent, mixtureMarginal, selectedBranch } from 'omai-engine/probprog/validation'
-import { foldIn, key, normal, permutation, uniform } from 'omai-engine/random'
+import { foldIn, key, normal, normalEach, permutation, uniform } from 'omai-engine/random'
 import {
   abs,
   add,
@@ -17,7 +17,6 @@ import {
   reshape,
   sign,
   sliceAxis,
-  stack,
   toArray,
   toFlat,
   type Value,
@@ -45,8 +44,7 @@ export const defaultSetup: SparseSetup = { seed: 3, rows: 60, features: 12, acti
 export function simulate({ seed, rows, features, active, noise, outliers }: SparseSetup) {
   const k = key(seed)
   // The design: a row of standard normals for each reading, and which coefficients are non-zero.
-  // banned-ok: per-key draw: one row of the design per reading, each from its own key // hide
-  const X = stack(Array.from({ length: rows }, (_, i) => normal(foldIn(k, 100 + i), [features])))
+  const X = normalEach(rows, [features], (i) => foldIn(k, 100 + i))
   const on = sliceAxis(permutation(foldIn(k, 1), features), 0, 0, active)
   const isOn = any(equal(reshape(arange(features), [features, 1]), reshape(on, [1, active])), 1)
   const size = (v: Value): Value => mul(sign(v), add(abs(v), 1.5))

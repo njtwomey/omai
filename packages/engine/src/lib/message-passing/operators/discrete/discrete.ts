@@ -178,7 +178,6 @@ export function logicTable(
   const values: number[] = []
   for (let out = 0; out < 2; out++) {
     for (let mask = 0; mask < 2 ** n; mask++) {
-      // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
       const bits = Array.from({ length: n }, (_, i) => (mask >> (n - 1 - i)) & 1)
       const result =
         kind === 'and'
@@ -259,7 +258,6 @@ export const select: FactorOperator = defineOperator({
       const total = (eta: Eta, other: Eta): Eta => eta.map((v, i) => v + (other[i] ?? 0))
       if (c.to === 0 || c.to === 1) {
         const y = etaY ?? f.flat
-        // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
         const joint = Array.from({ length: k }, (_, i) => total(y, component(i)))
         const overlap = joint.map((e, i) =>
           f.isProper(e) ? f.logPartition(e) - f.logPartition(component(i)) : Number.NEGATIVE_INFINITY,
@@ -320,7 +318,6 @@ export const select: FactorOperator = defineOperator({
       }
       const cavity = etaOf(arg(c, 0))
       if (c.to === 1) {
-        // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
         const logs = Array.from({ length: k }, (_, i) => f.pair(cavity, moments(i)))
         const z = arg(c, 1).family
         return { message: z.kind === 'bernoulli' ? (z.fromLogProbs?.(logs) as Eta) : logs }
@@ -337,7 +334,6 @@ export const select: FactorOperator = defineOperator({
       const weights =
         arg(c, 1).value !== undefined ? unitArray(k, Math.trunc(scalarOf(arg(c, 1)))) : selectProbs(arg(c, 1))
       const y = etaOf(arg(c, 0))
-      // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
       const terms = Array.from({ length: k }, (_, i) => {
         const own = etaOf(arg(c, i + 2))
         return Math.log(weights[i] ?? 0) + logOverlap(f, y, own) - f.logPartition(own)
@@ -370,7 +366,6 @@ const mixturePorts = (params: Params): readonly Port[] => {
   return [
     { name: 'x', accepts: ['gaussian'], constant: true },
     { name: 'z', accepts: ['discrete'] },
-    // banned-ok: non-numeric: the ports of the mixture
     ...Array.from({ length: k }, (_, i): Port => ({ name: `theta${i}`, accepts: ['normal-gamma'] })),
   ]
 }
@@ -412,7 +407,6 @@ export const gaussianMixture: FactorOperator = defineOperator({
         const w = r[c.to - 2] ?? 0
         return { message: [w * mean, -0.5 * w, -0.5 * w * second, 0.5 * w] }
       }
-      // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
       const logs = Array.from({ length: k }, (_, i) => {
         const t = arg(c, i + 2)
         const mo = t.family.moments(etaOf(t))
