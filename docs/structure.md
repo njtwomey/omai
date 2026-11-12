@@ -5784,6 +5784,11 @@ statistics, the Hoeffding bound, prequential accuracy). `decision-tree.ts` holds
 `.session(data)` beside `.fit`, `fittedAt(t)` the tree after t nodes, logging `tree/split`, `tree/candidates`,
 `tree/leaves`, `tree/depth`, `tree/impurity` and `eval/accuracy` (or `eval/r2`), probes `model/structure` and
 `model/importances`. `surrogateTree` in `explain` is the depth-first grower on a model's predictions.
+`bayesian/` (flat in `omai-engine/trees`; design in `docs/probprog/bayesian-trees.md`) is the Bayesian tree: conjugate leaf models (`leaf.ts`: Normal-Gamma and
+Dirichlet, with exact evidence, summaries and each leaf's precision and step size), the structure prior (`prior.ts`), the tree as nested nodes and routing
+(`tree.ts`), the all-threshold split search by `argsort` and `cumsum` (`search.ts`), the myopic grower by posterior odds as an algorithm (`grow.ts`), the
+streaming tree (`stream.ts`), the space of trees over a finite rule set with cached regions (`space.ts`), the exact posterior over all trees of depth two
+(`enumerate.ts`) and the Metropolis-Hastings sampler over structures (`sampler.ts`).
 
 oracle: scikit-learn trees (`trees/grow` fixture): the arrays of the grown tree (features, thresholds, children,
 impurities, counts, values, missing-value directions), the pruning path and the pruned tree, importances, for Gini and

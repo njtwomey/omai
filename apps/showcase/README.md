@@ -6,8 +6,11 @@ site's colours, code block and router (imported from `apps/site/src/shell`) and 
 
 A story is not a comparison, not a cockpit of capabilities, and has no pass/fail table. It is one idea, with a figure that earns its place.
 
-The prose is plain and in order: what happens in the order it happens, short sentences, common words, a technical word explained once
-where it first appears. No jokes, asides, metaphors, rhetorical questions or cute titles.
+The prose is plain and in order: what happens in the order it happens. Sentences average under about 18 words. A paragraph holds
+one idea and at most one new technical word, explained where it first appears. Common words, digits for numbers, one-sentence
+captions, short plain titles, and nothing said twice. No jokes, asides, metaphors, rhetorical questions, cute titles or filler
+('in other words', 'essentially', 'notably', 'simply'). The same goes for the worker's status sentences, which are plain
+('Running the sampler').
 
 ## How a story behaves
 
@@ -15,7 +18,7 @@ where it first appears. No jokes, asides, metaphors, rhetorical questions or cut
   (`<Play>`); only then is the story's worker made (a module worker, fetched at that moment) and asked to run. There is no autoplay and
   no prefetch compute.
 - **The computation runs in a Web Worker**, so the page stays responsive. The worker can say what it is doing in a sentence
-  (`say('Warming the sampler up')`); the play button shows the last one with a calm animated indicator. There are no percentage bars.
+  (`say('Running the sampler')`); the play button shows the last one with a calm animated indicator. There are no percentage bars.
 - **The pictures come afterwards, not live.** The result is plain data; the figures and the prose that reads numbers out of it appear
   when it exists. _Run again_ re-rolls the seed (the old result stays on screen until the new one arrives).
 - **The page reads straight down.** Pressing play changes nothing above the button. Above it is only what exists before the run: the
@@ -34,7 +37,7 @@ A story is a folder `src/stories/<slug>/` (the slug is the folder's name and the
 
 | File                                   | What it is                                                                                                                                                                                                                                                                                                                    |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `story.ts`                             | `export const story: StoryMeta = { title, standfirst, section, tags, date, hook?, first? }`. `section` is an id of `src/sections.ts`, the one small file that holds the order of the splash's sections.                                                                                                                  |
+| `story.ts`                             | `export const story: StoryMeta = { title, standfirst, section, tags, date, hook?, first? }`. `section` is an id of `src/sections.ts`, the one small file that holds the order of the splash's sections.                                                                                                                       |
 | `compute.ts`                           | `export const run = (seed: number, say?: Say): Result`: a pure function of the seed that returns serialisable data (it crosses the worker boundary by structured clone). The heavy imports (the engine) live here and in the worker only. The code the page shows is marked with `// region` ... `// endregion` in this file. |
 | `worker.ts`                            | Always `serveStory(self, run)`.                                                                                                                                                                                                                                                                                               |
 | `Story.tsx`                            | The narrative: the default export, a component. `useStoryRun` makes the run, `<Play>` is where the computation starts, and `<Results run={run}>` right after it holds everything the result makes (figures, result-reading prose, closing prose, code).                                                                       |
@@ -47,7 +50,7 @@ The kit (`src/kit/`):
 - `useStoryRun<Result>(createWorker)` and `<Play run label estimate />`: the run, and the button (idle with a label and an estimate; running
   with the status sentence; done with the time taken and _Run again_; error with _Try again_).
 - `<Results run={run}>{(result) => ...}</Results>`: place it right after `<Play>`. While there is no result it shows one muted line
-  ('Nothing has been computed yet. The result will appear here.') and builds nothing; when the result exists it calls the function
+  ('Press play. The result will appear here.') and builds nothing; when the result exists it calls the function
   with it and shows the content with the kit's fade (figures and `<Reveal>` inside it do not fade again). Put the closing prose and
   the `<Code>` blocks inside it too: with nothing below the block, nothing the reader is looking at can move when the result
   arrives. When the result arrives and the block's top is below the fold, the page scrolls it into view (smoothly, instantly under

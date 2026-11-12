@@ -60,7 +60,7 @@ export default function Story(): ReactNode {
     <StoryPage>
       <p>
         Five players play each other. Every pair meets {ROUNDS} times, so there are{' '}
-        <span className="num">{GAMES.a.length}</span> games, and each game ends in a win, a loss or a draw (
+        <span className="num">{GAMES.a.length}</span> games. Each game ends in a win, a loss or a draw (
         <span className="num">{DRAWS}</span> of them are draws). Nobody has said how good any player is. All we have is
         the results.
       </p>
@@ -69,46 +69,45 @@ export default function Story(): ReactNode {
 
       <p>
         We can count. {mostWins?.name} won the most games (<span className="num">{mostWins?.wins}</span>) and{' '}
-        {fewestWins?.name} the fewest (<span className="num">{fewestWins?.wins}</span>). A count leaves two things out.
-        It does not say how much better one player is than another. It also does not say how sure we can be, when each
-        player has played only <span className="num">{(PLAYERS.length - 1) * ROUNDS}</span> games. A rating can say
-        both.
+        {fewestWins?.name} the fewest (<span className="num">{fewestWins?.wins}</span>). A count does not say how much
+        better one player is than another, or how sure we can be when each player has played only{' '}
+        <span className="num">{(PLAYERS.length - 1) * ROUNDS}</span> games. A rating can say both.
       </p>
 
       <h2>What a rating is</h2>
 
       <p>
-        We give every player a skill. It is a number that we cannot see, and a bigger number means a better player. We
-        also say how sure we are about it, by describing it as a bell curve. The centre of the bell curve is the best
-        guess, which is called the mean. How wide it is says how unsure we are, and that width is called the spread.
-        Before any game we know nothing, so every player starts with the same bell curve: a mean of 0 and a spread of 1.
+        We give every player a skill: a number we cannot see, where bigger means better. We describe it as a bell curve.
+        The centre of the curve is the best guess, called the mean. Its width says how unsure we are, and is called the
+        spread. Before any game we know nothing, so every player starts with the same curve: a mean of 0 and a spread of
+        1.
       </p>
 
       <Aside>
-        A bell curve is a normal distribution. It is fully described by its mean and its spread (the standard
-        deviation), which is why a message in this story is just two numbers.
+        A bell curve is a normal distribution. Its mean and spread (the standard deviation) describe it fully, so a
+        message here is just two numbers.
       </Aside>
 
       <p>
         Next we say how a game is played. In each game, each player performs a little better or worse than their skill,
         by chance. The better performance wins. If the two performances are within {DRAW_MARGIN} of each other, the game
-        is a draw. So the result of a game tells us only about the difference between the two skills.
+        is a draw. So a result tells us only about the difference between two skills.
       </p>
 
       <h2>How the messages work</h2>
 
       <p>
-        The method is called expectation propagation. The model is a graph. Each player is a node, and each game is a
-        factor that joins the two players of that game. The method sends messages along the graph. A message is a bell
-        curve, with a mean and a spread, sent from one part of the model to another. It runs in these steps.
+        The method is expectation propagation. The model is a graph. Each player is a node, and each game is a factor
+        that joins its two players. A message is a bell curve, with a mean and a spread, sent from one part of the model
+        to another. The steps are these.
       </p>
 
       <ol className="mb-5 list-decimal">
         <li>Every player starts with the bell curve for their skill: mean 0, spread 1.</li>
         <li>
           A game takes the current bell curves of its two players and looks at its result. If the first player won, the
-          first skill is probably higher than the second. The game sends each of its two players a message: a new bell
-          curve for that player, which says what this one result suggests.
+          first skill is probably higher than the second. The game sends each player a new bell curve that says what
+          this one result suggests.
         </li>
         <li>
           Every player multiplies the messages from all their games with their starting bell curve. The product is the
@@ -119,15 +118,15 @@ export default function Story(): ReactNode {
           curve first, so that a result is not counted twice.
         </li>
         <li>
-          One pass over all the games, and then all the players, is a sweep. The sweeps repeat until no message changes.
+          One pass over all the games, then all the players, is a sweep. The sweeps repeat until no message changes.
         </li>
       </ol>
 
       <p>
         There is one approximation. The exact effect of a win is not a bell curve. It cuts off the part of the picture
-        where the winner has the lower skill. Each game therefore sends the bell curve that has the same mean and the
-        same spread as that cut-off shape. This is the step that gives the method its name: it matches the expected
-        values, the mean and the spread, and passes them on.
+        where the winner has the lower skill. So each game sends the bell curve with the same mean and spread as that
+        cut-off shape. This step gives the method its name: it matches the expected values, the mean and the spread, and
+        passes them on.
       </p>
 
       <Play run={run} label="Rate the players" estimate="about 6 seconds, in the background" />
@@ -141,12 +140,12 @@ export default function Story(): ReactNode {
 
               <p>
                 The messages stopped changing after <span className="num">{result.sweeps}</span> sweeps. The figure
-                shows the bell curve of every player, the best at the top. The diamond under each bell is the skill that
-                player was given when the games were made up. The method never saw it.
+                shows the bell curve of every player, the best at the top. The diamond under each curve is the skill the
+                player was given when the games were made up, which the method never saw.
               </p>
 
               <Figure
-                caption="The rating of each player after all the games: a bell curve with the best guess at its peak. The width is how unsure the rating is. The diamond is the skill the games were made from."
+                caption="The rating of each player after all the games. The peak is the best guess, the width is the doubt and the diamond is the skill the games were made from."
                 wide
               >
                 <LadderFigure result={result} />
@@ -156,8 +155,8 @@ export default function Story(): ReactNode {
                 {r.ladder[0]?.name} has the highest rating, <span className="num">{fixed(r.ladder[0]?.mean ?? 0)}</span>
                 , and {r.ladder.at(-1)?.name} the lowest,{' '}
                 <span className="num">{fixed(r.ladder.at(-1)?.mean ?? 0)}</span>. Every spread is about{' '}
-                <span className="num">{fixed(r.ladder[0]?.sd ?? 0)}</span>, which is what we expect, because every
-                player played the same number of games.{' '}
+                <span className="num">{fixed(r.ladder[0]?.sd ?? 0)}</span>, as we expect, because every player played
+                the same number of games.{' '}
                 {r.inTrueOrder
                   ? 'The order of the ratings is the order of the true skills. '
                   : 'The order of the ratings is not quite the order of the true skills. '}
@@ -172,7 +171,7 @@ export default function Story(): ReactNode {
                 </p>
               ) : (
                 <p>
-                  The 90% ranges of {names(r.overlapping.map(([a, b]) => `${a} and ${b}`))} overlap. For each of those
+                  The 90% ranges of {names(r.overlapping.map(([a, b]) => `(${a}, ${b})`))} overlap. For each of those
                   pairs, the games so far leave some doubt about which player is better.
                 </p>
               )}
@@ -182,11 +181,11 @@ export default function Story(): ReactNode {
               <p>
                 The run also rated the players after the first game, after the second, and so on up to game {EARLY}, and
                 then after every five games. The games arrive in a random order, which changes each time you press{' '}
-                <em>Run again</em>; the final ratings do not change.
+                <em>Run again</em>. The final ratings do not change.
               </p>
 
               <Figure
-                caption="The rating of each player after each number of games. The line is the mean and the band is one spread on each side. At zero games every player has the same bell curve."
+                caption="The rating of each player after each number of games: the mean (line) and one spread either side (band)."
                 wide
               >
                 <TrajectoryFigure result={result} />
@@ -195,8 +194,8 @@ export default function Story(): ReactNode {
               <p>
                 At zero games every spread is <span className="num">1.00</span>. After 10 games the average spread is{' '}
                 <span className="num">{fixed(r.spreadAfter(10) ?? 0)}</span>, and after {r.games} games it is{' '}
-                <span className="num">{fixed(r.spreadAfter(r.games) ?? 0)}</span>. Each game makes the two players it
-                involves a little more certain, and it moves their means.
+                <span className="num">{fixed(r.spreadAfter(r.games) ?? 0)}</span>. Each game makes its two players a
+                little more certain, and it moves their means.
               </p>
 
               {r.upset === undefined || r.expected === undefined || r.upset.game === r.expected.game ? null : (
@@ -215,8 +214,8 @@ export default function Story(): ReactNode {
                   </p>
                   <p>
                     {r.upsetMovedMore
-                      ? 'In these two games, the win over the higher-rated player moved the rating more than the win over the lower-rated one. This is what we expect. A result that the ratings had already predicted carries little news, and a result that they had not predicted carries more.'
-                      : 'In these two games the win over the higher-rated player did not move the rating more. The early ratings are still wide, and the means move by different amounts for several reasons, so two games do not settle it.'}
+                      ? 'The win over the higher-rated player moved the rating more than the win over the lower-rated one. This is what we expect: a result the ratings had already predicted carries little news.'
+                      : 'Here the win over the higher-rated player did not move the rating more. The early ratings are still wide, so two games do not settle it.'}
                   </p>
                 </>
               )}
@@ -225,15 +224,15 @@ export default function Story(): ReactNode {
 
               <p>
                 The same problem appears whenever results come in pairs: chess ratings, matching players in an online
-                game, comparing two models on a set of tests. The messages are what make it scale. A game only talks to
-                its two players, so a new result needs one more message and not a new calculation from the start.
+                game, comparing two models on a set of tests. The messages make it scale. A game only talks to its two
+                players, so a new result needs one more message, not a new calculation from the start.
               </p>
 
               <p>
                 The ratings are approximate, because each message is a bell curve fitted to a cut-off shape. Two other
                 stories use the same messages on other problems:{' '}
                 <Link to={storyHref('two-humps')} className="underline underline-offset-2">
-                  Two humps
+                  Two kinds of wait at Old Faithful
                 </Link>{' '}
                 and{' '}
                 <Link to={storyHref('when-did-the-rate-change')} className="underline underline-offset-2">

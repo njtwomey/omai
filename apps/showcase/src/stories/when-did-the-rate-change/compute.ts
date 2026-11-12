@@ -121,7 +121,7 @@ export function detect(counts: readonly number[]): Detection {
   // the switch happened in year t when the rate had switched by t but not by the year before
   const yearBefore = concat([zeros([1]), sliceAxis(switched, 0, 0, years - 1)])
   const wobbly = sub(switched, yearBefore)
-  // a hair of numerical wobble can leave a tiny negative chance: clip it, and let the chances add up to one
+  // rounding can leave a tiny negative chance: clip it, and make the chances add up to one
   const when = div(maximum(wobbly, 0), sum(maximum(wobbly, 0)))
   const [old, fresh] = rows.filter((r) => r.site === 'rate')
   // endregion
@@ -160,11 +160,11 @@ function simulate(
  */
 export function run(seed: number, say: Say = () => {}): Result {
   const real = coalCounts()
-  say('Passing messages along the years of coal-mining counts')
+  say('Passing messages along the years')
   const coal = detect(real)
-  say('Drawing two made-up series, one with an abrupt change and one with a gentle one')
+  say('Making two made-up series')
   const abrupt = detect(simulate(seed, 0, real.length, SIMULATED.abrupt))
-  say('Finding the switch in the made-up series')
+  say('Finding the switch in them')
   const gentle = detect(simulate(seed, 1, real.length, SIMULATED.gentle))
   return { coal, abrupt, gentle, truth: SIMULATED.at }
 }

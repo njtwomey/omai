@@ -70,11 +70,11 @@ export const DEFAULT_SIZE: Size = { chains: 4, warmup: 250, draws: 300 }
  * @returns The result.
  */
 export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE): Result {
-  say('Writing the model: eight schools drawn from one population')
+  say('Setting up the model')
   // region model
   const schools = eightSchoolsDefinition('non-centred')
   // endregion
-  say('Warming the sampler up, then drawing from the posterior')
+  say('Running the sampler')
   // region infer
   const posterior = mcmc(toProgram(schools.bind({ y: EFFECTS, sigma: ERRORS })), undefined, {
     key: key(seed),
@@ -84,7 +84,7 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
     targetAcceptance: 0.9,
   })
   // endregion
-  say('Reading off what each school looks like now')
+  say('Reading off each school')
   const mus = posterior.draws?.['mu']
   const taus = posterior.draws?.['tau']
   const thetas = posterior.draws?.['theta']

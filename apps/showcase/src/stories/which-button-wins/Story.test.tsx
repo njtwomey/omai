@@ -32,7 +32,7 @@ describe('the which-button-wins page', () => {
     expect(html).toContain('data-phase="idle"')
     expect(html).toContain('Run the test')
     expect(html).toContain('visitors clicked')
-    expect(html).toContain('Nothing has been computed yet')
+    expect(html).toContain('The result will appear here')
     expect(html.indexOf('data-testid="results"')).toBeGreaterThan(html.indexOf('data-testid="play"'))
     expect(html).toContain('data-state="empty"')
     expect(html).not.toContain('The two rates, and the gap between them')

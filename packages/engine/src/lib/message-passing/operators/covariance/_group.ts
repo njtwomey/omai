@@ -140,17 +140,24 @@ export function nodeEvaluator(
   }
 }
 
+/** The relative size of a rounding step of {@link tiltKey}, in units of the largest entry of an argument. */
+export const TILT_KEY_QUANTUM = 1e-13
+
 /**
- * The key of a tilt: the arguments to ten digits of the largest entry of each. The cavity of a port is its belief divided by its own message, so
- * when the message of another port of the factor has just been sent the cavities are the same numbers to rounding, not to the last bit (and an
- * entry that is zero comes back as 1e-17); a key that said every bit would miss for each of the group's ports and integrate once per port
- * instead of once per sweep.
+ * The key of a tilt: what it depends on (the power, and for each argument its family, whether it is a value or a message, and its
+ * numbers), the numbers rounded to `TILT_KEY_QUANTUM` of the largest entry of their argument. The cavity of a port is its belief
+ * divided by its own message, so when the message of another port of the factor has just been sent the cavities are the same numbers to
+ * rounding (about 1e-16 of the belief's size), not to the last bit, and an entry that is zero comes back as 1e-17; a key that said
+ * every bit would miss for each of the group's ports and integrate once per port instead of once per sweep. The step is a thousand
+ * times the rounding and a thousand times finer than the 1e-10 it replaces, which let two cavities that differ only in entries below
+ * that share a key (and so a tilt). Two cavities that differ by less than a step of the scale of their arguments are the same key.
  */
 export const tiltKey = (prefix: string, c: OperatorContext): string =>
-  `${prefix}:${c.args
+  `${prefix}:${c.power}:${c.args
     .map((a) => {
       const v = Array.from((a.value ?? a.eta ?? []) as ArrayLike<number> | number[])
-      const unit = Math.max(...v.map((x) => Math.abs(x)), 1e-300) * 1e-10
-      return v.map((x) => Math.round(x / unit)).join(',')
+      const unit = Math.max(...v.map((x) => (Number.isFinite(x) ? Math.abs(x) : 0)), 1e-300) * TILT_KEY_QUANTUM
+      const numbers = v.map((x) => (Number.isFinite(x) ? Math.round(x / unit) : String(x)))
+      return `${a.family.kind}${a.value === undefined ? 'e' : 'v'}${numbers.join(',')}`
     })
     .join(';')}`

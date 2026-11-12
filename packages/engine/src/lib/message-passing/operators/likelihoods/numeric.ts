@@ -110,7 +110,7 @@ export function numericOperator(options: NumericOperatorOptions): FactorOperator
     }
     let logZ = t.logMass
     for (const a of c.args) logZ += massOf(a)
-    return { moments: [t.mean, t.variance + t.mean * t.mean], logZ }
+    return { moments: [t.mean, t.variance + t.mean * t.mean], centred: { mean: t.mean, variance: t.variance }, logZ }
   }
   return defineOperator({
     name: options.name,

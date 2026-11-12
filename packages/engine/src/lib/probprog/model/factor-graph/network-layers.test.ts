@@ -3,7 +3,9 @@
 // taken for one (a hierarchy's `exp` of a scale, a nonlinear regression, a nonlinear state space).
 import { describe, expect, it } from 'vitest'
 import { compileGraph, defaultOperators as factorOperators } from '../../../message-passing/index.ts'
+import { key, normal } from '../../../random/index.ts'
 import { epRoute } from '../../inference/ep-route.ts'
+import { fourierFeatures, gplvmFourierModel } from '../../models/gplvm.ts'
 import { benchmarkModel } from '../../models/suite.ts'
 import * as d from '../dists/index.ts'
 import { defineModel, factorGraphVerdict, networkLayerUnits, ops, toFactorGraph } from '../index.ts'
@@ -63,6 +65,17 @@ describe('networkLayerUnits', () => {
       m.observe('y', d.normal(ops.tanh(x.mul(b).add(a)) as never, 0.2), m.data('y', { dims: [row] }))
     })
     expect(networkLayerUnits(graphOf(curve))).toBe(0)
+  })
+})
+
+describe('networkLayerUnits and the latent coordinates of a feature model', () => {
+  it('does not take the features of a GPLVM for a layer: the units that read one coordinate multiply weights of their own', () => {
+    const options = { features: 4, coords: 1, outputs: 3 }
+    const { frequencies, phases } = fourierFeatures(key(0), options)
+    const bound = gplvmFourierModel(options).bind({ omega: frequencies, phase: phases, y: normal(key(1), [5, 3]) })
+    const g = compileGraph(toFactorGraph(bound, { packScalars: true }).graph as never, factorOperators())
+    expect(g.factors.filter((f) => f.operator.name === 'apply').length).toBe(5 * 4)
+    expect(networkLayerUnits(g)).toBe(0)
   })
 })
 

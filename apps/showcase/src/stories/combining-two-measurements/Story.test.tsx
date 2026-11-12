@@ -31,7 +31,7 @@ describe('the combining-two-measurements page', () => {
     )
     expect(html).toContain('data-phase="idle"')
     expect(html).toContain('Measure the room twice')
-    expect(html).toContain('Nothing has been computed yet')
+    expect(html).toContain('The result will appear here')
     expect(html).not.toContain('The product of the messages')
     expect(html).not.toContain('Play the replay')
     expect(made).toEqual([])

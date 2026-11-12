@@ -32,7 +32,7 @@ describe('the how-expectation-propagation-works page', () => {
     expect(html).toContain('data-phase="idle"')
     expect(html).toContain('The factor graph of the model')
     expect(html).toContain('One update, step by step')
-    expect(html).toContain('Nothing has been computed yet')
+    expect(html).toContain('The rest of the post appears here')
     expect(html).not.toContain('The same run from start to finish')
     expect(made).toEqual([])
   }, 60_000)

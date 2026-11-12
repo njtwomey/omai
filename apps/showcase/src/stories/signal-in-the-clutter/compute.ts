@@ -69,7 +69,7 @@ export const DEFAULT_SIZE: Size = { record: true, grid: 241 }
  * @returns What the model concludes.
  */
 export function solve(readings: readonly number[], say: Say = () => {}, size: Size = DEFAULT_SIZE): Case {
-  say('Sending bell curves between the value and the readings')
+  say('Passing messages')
   // region infer
   // the library's clutter problem, with these readings as the data
   const bound = clutterProblem.bound({ data: { y: [...readings] }, generating: {} })
@@ -87,7 +87,7 @@ export function solve(readings: readonly number[], say: Say = () => {}, size: Si
   const beliefs = route.method.posterior?.(run.state, run.config)
   // endregion
   if (beliefs === undefined) throw new Error('the method returned no beliefs')
-  say('Working out the exact curve, to see what the bell curve left out')
+  say('Working out the exact curve')
   // region exact
   // the exact posterior of the value: the library sums it over a fine grid of values
   const truth = clutterTruth([...readings], 4001)
@@ -119,7 +119,7 @@ export function solve(readings: readonly number[], say: Say = () => {}, size: Si
  * @returns The result.
  */
 export function run(seed: number, say: Say = () => {}): Result {
-  say('Taking the readings')
+  say('Taking the twelve readings')
   const clear = solve(clearReadings().values, say)
   say('Adding a second group of readings')
   const ambiguous = solve(withDecoys(seed).values, say)

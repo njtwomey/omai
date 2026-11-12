@@ -10,6 +10,11 @@ whole probabilistic-programming increment recorded here, under whichever version
 is on `main` so far; the plan is `docs/probprog/PLAN.md` (with its status section), the validation tables are in
 `docs/probprog/results/`.
 
+Bayesian trees (omai-engine, `trees`, new `bayesian/` folder; design in `docs/probprog/bayesian-trees.md`): one tree with a conjugate posterior in every
+leaf (Normal-Gamma, Dirichlet), the exact evidence and prior of a tree, a myopic grower that takes the split with the largest posterior odds one at a time
+(`growBayesTree`), a streaming tree whose leaves add rows to their statistics (precision up, step size 1/precision down), the exact posterior over all trees of
+depth two (`enumerateTrees`) and a Metropolis-Hastings sampler over structures (`sampleTrees`), checked against each other.
+
 Expectation propagation, from a few rules to a suite (omai-engine, `message-passing`, `probprog/model`, `probprog/inference`,
 `probprog/ep`; the numbers are those of 2026-11-11, and `docs/probprog/ep-status.md` is generated from the code and says what they are
 today). EP stopped being a handful of models that happened to compile and became a capability with a design (`docs/probprog/ep.md`),

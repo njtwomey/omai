@@ -21,9 +21,9 @@ const run = (op: string, args: NamedValue[], params = {}): NamedValue =>
 const num = (x: NamedValue): unknown => toArray(x.value)
 
 describe('the registry', () => {
-  it('is a closed, documented set of 30 operators', () => {
+  it('is a closed, documented set of 31 operators', () => {
     const names = Object.keys(table)
-    expect(names).toHaveLength(30)
+    expect(names).toHaveLength(31)
     for (const n of names) expect(table[n]?.description.length).toBeGreaterThan(3)
     expect(Object.keys(defaultOperators())).toEqual(names)
     expect(defaultOperators()).not.toBe(table)
@@ -39,6 +39,7 @@ describe('the registry', () => {
       square: x * x,
       abs: x,
       tanh: Math.tanh(x),
+      cos: Math.cos(x),
       sigmoid: 1 / (1 + Math.exp(-x)),
       softplus: Math.log1p(Math.exp(x)),
     }

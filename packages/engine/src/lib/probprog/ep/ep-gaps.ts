@@ -128,6 +128,17 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
       markers: [],
     },
     {
+      id: 'gplvm-features',
+      title: 'A GPLVM runs only through random Fourier features: loopy, not always found, spreads not the posterior',
+      kind: 'quality',
+      status: 'open',
+      summary:
+        'A Gaussian process latent variable model written as the direct formulation (a Gaussian process prior whose covariance is a custom function of the random coordinates) is refused: the function values are opaque to message passing, because a Gram matrix of random inputs is not a dense prior the compiler can emit. Written with random Fourier features (`gplvmFourierModel`: `f_d(x) = sum_m W_dm cos(omega_m . x + b_m)` with frequencies and phases drawn once from a key, normal weights, a coordinate vector per point) it is a graph of the registry (a linear map, the `cos` unary function, a product of two random values per output, a sum, a Gaussian observation), and `epRoute` runs it by plain EP once the verdict stops taking its features for a network layer (the units that read one coordinate multiply weights of their own, and their known frequencies tell them apart, so they cannot be permuted). What it gives: with twenty points, five outputs of a known smooth map of one coordinate, six features and damping 0.7, 70 sweeps (about 6 s) recover the coordinate up to reflection and scale (aligned correlation 0.95 to 0.99 in 7 of 12 seeds, 0.89 in one, and a poor coordinate, 0.05 to 0.66, in 4; the features and the data drawn from different keys); two coordinates need more points and features (24 points, 6 outputs, 10 features, 15 s: one seed of two). The run does not settle in the sweeps (status stopped), where it works the stated spreads (0.19 to 0.35 of a coordinate) are wider than the miss that is left (0.13 to 0.18), and where it lands in a poor solution they are small (0.05 against a miss of 0.8), and a long NUTS run of the same posterior (12 points) has chains in different modes (R-hat 1.8), so there is no reference to hold the spreads to. The coordinates are found only up to a rotation or reflection, and a monotone reparametrisation: a score is taken after an orthogonal Procrustes fit (`alignLatents`).',
+      plan: 'A numeric row factor for the bilinear-in-features likelihood, one per point: the coordinates of the point on a small grid (reusing `numerics/_grid.ts`), the weights one dense Gaussian vector, the mixture over the grid nodes of the Gaussian conditionals moment-matched into one message on the weight vector (as `likelihood-triple` and `mvn-wishart-group` do for their ports; the graph is then a star of rows around one weight vector and EP converges without the loops), with a compiler mapping that reads a sum over features of cosines of an affine map of coordinates times weights as that row; and `epMultiStartMethod` over the coordinate symmetry (a start of the continuous coordinates, as the gap `multimodal` names) so that a seed that lands in a poor mode is found and weighed.',
+      size: 'medium',
+      markers: [],
+    },
+    {
       id: 'sv-parameters',
       title: 'Stochastic volatility with an unknown persistence: one EP run is too narrow, the grid is the route',
       kind: 'quality',
@@ -329,7 +340,7 @@ export const epDirections: readonly EpDirection[] = [
     status: 'not yet',
     what: 'Ratings or measurements as a product of latent user and item vectors (probabilistic matrix factorisation), factor analysis, probabilistic PCA with ARD.',
     needs:
-      'The numeric `product` factor exists for scalars; a bilinear factor on whole vectors with packed beliefs, and an ARD precision per factor (the gamma precision rule); many loops, so structured or stochastic EP.',
+      'The numeric `product` factor exists for scalars; a bilinear factor on whole vectors with packed beliefs, and an ARD precision per factor (the gamma precision rule); many loops, so structured or stochastic EP. A latent-variable model of smooth functions (a GPLVM written with random Fourier features, `gplvmFourierModel`) runs through the scalar product factor, with the limits of the gap `gplvm-features`.',
     size: 'large',
     pages: [],
   },

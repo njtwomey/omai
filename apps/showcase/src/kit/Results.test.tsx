@@ -26,7 +26,7 @@ describe('the results block', () => {
     )
     expect(built).toBe(0)
     expect(html).toContain('data-state="empty"')
-    expect(html).toContain('Nothing has been computed yet')
+    expect(html).toContain('The result will appear here')
     expect(html).not.toContain('the answer')
   })
 
@@ -34,6 +34,6 @@ describe('the results block', () => {
     const html = renderToString(<Results run={runOf(42)}>{(n) => <p>the answer is {n}</p>}</Results>)
     expect(html).toContain('data-state="filled"')
     expect(html).toContain('the answer is <!-- -->42')
-    expect(html).not.toContain('Nothing has been computed yet')
+    expect(html).not.toContain('The result will appear here')
   })
 })

@@ -55,8 +55,11 @@ function readersOf(g: CompiledGraph, variable: number, operator: string): number
 /**
  * The units of a network layer in a compiled graph: the `apply` factors (`tanh`, `relu`, ...) whose input is an affine map of
  * random weights that other rows share (the first layer) and whose output is multiplied by a random weight that other rows
- * share (the next layer). A hidden unit of a Bayesian neural network is one per unit and row; a hierarchy's `exp` of a scale
- * read by many products is not one (its other factor is per row), nor is a nonlinear link of a single regression.
+ * share (the next layer), and where the units that read one input weight multiply the same output weight (copies of one hidden
+ * unit, which can be permuted). A hidden unit of a Bayesian neural network is one per unit and row; a hierarchy's `exp` of a scale
+ * read by many products is not one (its other factor is per row), nor is a nonlinear link of a single regression, nor are the
+ * random Fourier features of a latent-variable model (the features that read one latent coordinate multiply weights of their
+ * own, and their known frequencies tell them apart).
  *
  * @param g - The compiled graph.
  * @returns The number of such units (0 when the graph has no network layer).
@@ -69,36 +72,57 @@ function readersOf(g: CompiledGraph, variable: number, operator: string): number
  * ```
  */
 export function networkLayerUnits(g: CompiledGraph): number {
-  let units = 0
+  // Per unit (an `apply` factor): the output weights it is multiplied by and the input weights its affine map reads.
+  const units: { readonly outputWeights: ReadonlySet<number>; readonly inputWeights: ReadonlySet<number> }[] = []
   for (const f of g.factors) {
     if (f.operator.name !== 'apply') continue
     const out = f.ports[0]?.variable
     const input = f.ports[1]?.variable
     if (out === undefined || input === undefined) continue
     // The output is multiplied by a random value that other rows multiply as well (the output weight of the unit).
-    const outputWeight = g.variables[out]?.edges.some((e) => {
+    const outputWeights = new Set<number>()
+    for (const e of g.variables[out]?.edges ?? []) {
       const edge = g.edges[e]
       const p = edge === undefined ? undefined : g.factors[edge.factor]
-      if (edge === undefined || p === undefined || p.operator.name !== 'product' || edge.port === 0) return false
-      return p.ports.some(
-        (q, k) => k > 0 && q.variable !== undefined && q.variable !== out && readersOf(g, q.variable, 'product') >= 2,
-      )
-    })
-    if (outputWeight !== true) continue
+      if (edge === undefined || p === undefined || p.operator.name !== 'product' || edge.port === 0) continue
+      p.ports.forEach((q, k) => {
+        if (k > 0 && q.variable !== undefined && q.variable !== out && readersOf(g, q.variable, 'product') >= 2)
+          outputWeights.add(q.variable)
+      })
+    }
     // The input is an affine map that reads a random weight other rows read as well (the input weight of the unit).
     const definer = g.variables[input]?.definer
     const d = definer === undefined ? undefined : g.edges[definer]
     const affine = d === undefined ? undefined : g.factors[d.factor]
-    const inputWeight = affine?.ports.some(
-      (q, k) =>
+    const inputWeights = new Set<number>()
+    affine?.ports.forEach((q, k) => {
+      if (
         k > 0 &&
         q.variable !== undefined &&
         q.value === undefined &&
-        readersOf(g, q.variable, affine.operator.name) >= 2,
-    )
-    if (inputWeight === true) units++
+        readersOf(g, q.variable, affine.operator.name) >= 2
+      )
+        inputWeights.add(q.variable)
+    })
+    if (outputWeights.size > 0 && inputWeights.size > 0) units.push({ outputWeights, inputWeights })
   }
-  return units
+  // The weights of a hidden unit are copies of one another across rows only when the units that read an input weight also
+  // multiply the same output weight: units that read one input value (the latent coordinates of a row, read by a feature each)
+  // and multiply their own output weights are different features, told apart by their known constants, not copies of one unit.
+  const readers = new Map<number, number[]>()
+  units.forEach((u, i) => {
+    for (const q of u.inputWeights) readers.set(q, [...(readers.get(q) ?? []), i])
+  })
+  let count = 0
+  units.forEach((u, i) => {
+    const copies = [...u.inputWeights].some((q) =>
+      (readers.get(q) ?? []).some(
+        (j) => j !== i && [...(units[j]?.outputWeights ?? [])].some((w) => u.outputWeights.has(w)),
+      ),
+    )
+    if (copies) count++
+  })
+  return count
 }
 
 /**
