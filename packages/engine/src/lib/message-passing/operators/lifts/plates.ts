@@ -24,6 +24,7 @@ import { bernoulli, gaussian, gaussianEta } from '../../core/families.ts'
 import { gaussianMv, gaussianMvMoments } from '../../core/families-vector.ts'
 import { mergeParams, param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { ruleMessage } from '../../engine/dispatch.ts'
 import { spd } from '../../numerics/_dense.ts'
 import { logistic } from '../links/links.ts'
 import { probit } from '../links/truncation.ts'
@@ -138,9 +139,7 @@ function plateEp(link: FactorOperator, c: OperatorContext, r: Rows): Plate {
       if (!(v > 0 && precision > 0)) continue
       let site: Eta
       try {
-        site = (link.ep as NonNullable<FactorOperator['ep']>)(
-          siteContext(r.y[i] as number, m / v - (nu[i] ?? 0), precision),
-        ).message
+        site = ruleMessage(link, siteContext(r.y[i] as number, m / v - (nu[i] ?? 0), precision)).message
       } catch (e) {
         if (e instanceof OmaiError && e.code === 'value') continue
         throw e
@@ -213,7 +212,7 @@ function plateVariational(link: FactorOperator, c: OperatorContext, r: Rows): Et
     const a = rowAt(r, i)
     const v = quadratic(covariance, a, sa)
     const m = dot(a, mean)
-    const site = (link.vmp as NonNullable<FactorOperator['vmp']>)({
+    const site = ruleMessage(link, {
       mode: 'vmp',
       to: 1,
       args: [valueArg(bernoulli, r.y[i] as number), messageArg(gaussian, gaussianEta(m, v))],

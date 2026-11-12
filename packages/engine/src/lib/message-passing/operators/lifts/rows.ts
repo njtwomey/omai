@@ -14,6 +14,7 @@ import { gaussian, gaussianEta } from '../../core/families.ts'
 import { gaussianMv, gaussianMvMoments } from '../../core/families-vector.ts'
 import { mergeParams, param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { ruleMessage } from '../../engine/dispatch.ts'
 import { logistic } from '../links/links.ts'
 import { spin } from '../links/spin.ts'
 import { probit } from '../links/truncation.ts'
@@ -87,7 +88,7 @@ export function glmRow(name: string, link: FactorOperator, description: string):
     ep: (c): OperatorResult => {
       if (c.to !== w) throw new ParameterError(`${name}: nothing is sent to the observed outcome`)
       const { z, a } = lift(c)
-      const site = (link.ep as NonNullable<FactorOperator['ep']>)({ ...c, to: w, args: linkArgs(c, z) }).message
+      const site = ruleMessage(link, { ...c, to: w, args: linkArgs(c, z) }).message
       const nu = site[0] ?? 0
       const lambda = site[1] ?? 0
       const d = a.length
@@ -105,7 +106,7 @@ export function glmRow(name: string, link: FactorOperator, description: string):
           vmp: (c: OperatorContext): OperatorResult => {
             if (c.to !== w) throw new ParameterError(`${name}: nothing is sent to the observed outcome`)
             const { z, a } = lift(c)
-            const site = (link.vmp as NonNullable<FactorOperator['vmp']>)({ ...c, to: w, args: linkArgs(c, z) }).message
+            const site = ruleMessage(link, { ...c, to: w, args: linkArgs(c, z) }).message
             const nu = site[0] ?? 0
             const lambda = site[1] ?? 0
             const d = a.length
