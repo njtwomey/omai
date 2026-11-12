@@ -12,13 +12,14 @@
 
 import { arg, errorText } from '../../core/_messages.ts'
 import { etaOf } from '../../core/args.ts'
-import { defineOperator, siteRule } from '../../core/define.ts'
+import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
-import type { FactorOperator, OperatorContext } from '../../core/types.ts'
+import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { resolvedVariance } from '../../numerics/_moments.ts'
 import { gammaLogWindow, windowProfiles } from '../../numerics/_windows.ts'
+import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 import { chainOf, type Step, unaryFunctions } from '../likelihoods/functions.ts'
 import { tiltedVectorOf, type VectorScaleTilt, vectorScaleTilt } from './scale.ts'
 
@@ -78,12 +79,37 @@ function functionScaleTilt(c: OperatorContext): VectorScaleTilt & { readonly d: 
 }
 
 /**
+ * The log density of the vector given `x` as a function of `x`, under the second moments of the vector: `sum_j -log |u_j(x)| - E[beta_j^2]
+ * / (2 u_j(x)^2)` (the constant `-d log(2 pi) / 2` apart), what the variational messages and the bound need of the factor.
+ */
+function expectedLogGiven(c: OperatorContext): { logf: (x: readonly number[]) => number; constant: number } {
+  const us = chains(c.params)
+  const d = us.length
+  const vec = arg(c, 0)
+  const second = vec.family.moments(etaOf(vec)).slice(d)
+  const logf = (x: readonly number[]): number => {
+    let total = 0
+    for (let j = 0; j < d; j++) {
+      const u = (us[j] as (x: number) => number)(x[0] as number)
+      if (!(u !== 0 && Number.isFinite(u))) return Number.NEGATIVE_INFINITY
+      total -= Math.log(Math.abs(u)) + (0.5 * (second[j * d + j] ?? 0)) / (u * u)
+    }
+    return total
+  }
+  return { logf, constant: -0.5 * d * Math.log(2 * Math.PI) }
+}
+
+/**
  * `beta_j = z_j u_j(x)` for a Gaussian vector `beta`, independent standard normals `z_j` (integrated out) and one Gaussian or
  * gamma variable `x`, the `u_j` chains of unary steps (`steps`, one chain for each coefficient, as for `apply`): the
  * non-centred penalised spline `beta_j = z_j / sqrt(exp(x) d_j + n_j)` with a log-normal smoothing parameter. Expectation
  * propagation integrates the vector out against its Gaussian cavity (a function of `x` only, on a grid), sends the vector the
  * dense Gaussian with the moments of the mixture of conditionals over that grid, and `x` the Gaussian (or the gamma) with the
- * tilted moments. Expectation propagation only.
+ * tilted moments. Variational message passing keeps the vector as its own variable (the standard normals are integrated out, so the
+ * factor is the Gaussian density of `beta` given `x`, as for `gaussian-mv-precision-scale`): the message to the vector is the
+ * diagonal precision `E[1 / u_j(x)^2]` under the belief of `x`, and the message to `x` is the non-conjugate one of the expected log
+ * density `sum_j -log |u_j(x)| - E[beta_j^2] / (2 u_j(x)^2)`, both by the quadrature of the variational kernel (Gauss-Hermite for a
+ * Gaussian `x`, a grid in the log for a gamma one).
  *
  * @concept factor-operators
  * @index structure A Gaussian vector of coefficients z_j u_j(x) with one Gaussian or gamma variable x: the dense non-centred scale.
@@ -123,7 +149,35 @@ export const gaussianMvFunctionScale: FactorOperator = defineOperator({
       if (input.family.kind === 'gamma') return { moments: [t.logLambda, t.lambda] }
       return { mean: t.logLambda, variance: resolvedVariance(t.sdLogLambda ** 2, 'gaussian-mv-function-scale') }
     }),
+    vmp: messageRule((c): OperatorResult => {
+      const ports = quadraturePorts([arg(c, 1)])
+      if (c.to === 1) return { message: numericMessage(ports, 0, expectedLogGiven(c).logf) }
+      const us = chains(c.params)
+      const d = us.length
+      const port = ports[0] as (typeof ports)[number]
+      const j = new Array<number>(d * d).fill(0)
+      for (let k = 0; k < d; k++) {
+        let mean = 0
+        for (let i = 0; i < port.coords.length; i++) {
+          const u = (us[k] as (x: number) => number)(port.coords[i] as number)
+          if (!(u !== 0 && Number.isFinite(u)))
+            throw new ImproperMessageError(
+              'gaussian-mv-function-scale: the scale is zero or not finite under the belief',
+            )
+          mean += (port.weights[i] as number) / (u * u)
+        }
+        j[k * d + k] = mean
+      }
+      return { message: [...new Array<number>(d).fill(0), ...j] }
+    }, 'numeric'),
   },
-  evidence: { improperIsNaN: true, ep: (c) => functionScaleTilt(c).logZ },
+  evidence: {
+    improperIsNaN: true,
+    ep: (c) => functionScaleTilt(c).logZ,
+    vmp: (c) => {
+      const { logf, constant } = expectedLogGiven(c)
+      return constant + numericExpectedLog(quadraturePorts([arg(c, 1)]), logf)
+    },
+  },
   traits: { readsTarget: (to) => to === 1 },
 })

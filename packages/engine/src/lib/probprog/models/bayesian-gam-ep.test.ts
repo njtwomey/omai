@@ -162,3 +162,26 @@ describe('expectation propagation on the Bayesian GAM', () => {
       expect(Math.abs(v - (nuts.inclusion?.[j] ?? 0))).toBeLessThan(0.25)
   })
 })
+
+describe('variational message passing on the non-centred Bayesian GAM', () => {
+  it('runs the penalty prior with log-normal hyperpriors (the dense function-scale factor) and keeps the curve of the exact reference', () => {
+    const model = bayesianGam(x, y, { k: 10 })
+    expect(bayesianGamMethods('penalty').applicable).toContain('vmp')
+    const reference = bayesianGamReference(model, { gridSize: 20, points: 60 })
+    const fit = fitOf('vmp', model, { damping: 0.3, tol: 1e-9 })
+    const a = bayesianGamAgreement(fit, reference, model.standardisation.sd)
+    expect(a.meanError).toBeLessThan(0.01)
+    // The mean field keeps the correlations of the coefficients in the likelihood's dense message: the band is the reference's within a few percent.
+    expect(a.bandRatio).toBeGreaterThan(0.93)
+    expect(a.bandRatio).toBeLessThan(1.06)
+    expect(fit.hyper.logSigma[0]).toBeCloseTo(reference.hyper.logSigma[0], 1)
+    // The mean field is narrower than the exact posterior of the log smoothing parameter, never wider.
+    const lam = fit.hyper.logLambda as readonly [number, number]
+    expect(lam[1]).toBeLessThan(1.05 * reference.hyper.logLambda[1])
+    expect(lam[1]).toBeGreaterThan(0.7 * reference.hyper.logLambda[1])
+  })
+
+  it('does not run ARD (each coefficient a scalar apply-product tied to a vector): the offer says why', () => {
+    expect(bayesianGamMethods('ard').unavailable['vmp']).toBeDefined()
+  })
+})

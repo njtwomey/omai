@@ -639,3 +639,18 @@ observation). Their reports say what exists; the work packages above absorb it r
 - What remains: a gate whose branch maps to several factors (a hurdle) or to a gate or table of its own, nested gates, a computed
   random index (a function of a latent that is not a discrete variable), and vector-event branches. Gap `gate-node` removed;
   `mixture-regression` (direction) says what is mapped.
+
+## 2026-11-12 Variational message passing for the dense non-centred scale (`agent-a40-vmp`, gap `non-centred-scale` narrowed)
+
+- `gaussian-mv-function-scale` has a variational rule (support `numeric`) and an expected log: with the standard normals integrated
+  out the factor is the Gaussian density of the vector given `x`, so the message to the vector is `E[1 / u_j(x)^2]` on the diagonal
+  (no linear part) and the message to `x` is the non-conjugate message (`numericMessage`) of `sum_j -log |u_j(x)| - E[beta_j^2] /
+  (2 u_j(x)^2)`, on `quadraturePorts` (Gauss-Hermite for a Gaussian `x`, a grid in the log for a gamma one): the quadrature of the
+  variational kernel, no second one. Tested against `bruteExpectation` (one coefficient: the fixed point maximises the brute-force bound,
+  for a Gaussian and for a gamma `x`; two coefficients: the diagonal message, the natural gradient of the expected log and the bound
+  against brute force). On the Bayesian GAM (penalty prior, log-normal hyperpriors, 60 points): curve 0.004 response sd from the exact
+  reference, band 0.996, log smoothing 2.58 +- 0.57 against 2.53 +- 0.62, 46 sweeps; the offer lists `vmp` for it.
+- Not done: ARD. A VMP rule for `apply-product` as a deterministic factor (`defines` its output; the product of the two beliefs'
+  quadratures; it matches the brute-force bound on a scale read by a Gaussian) was written and left out: the compiler ties the scalar
+  outputs of ARD to one Gaussian vector with `dot-constant` factors that define each output from the vector, and a variable with two
+  definers does not compile, EP included. The gap says what the compiler would have to emit.

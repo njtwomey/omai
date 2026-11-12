@@ -11,7 +11,7 @@ The registry (`defaultOperators()`) holds **66** factor operators. Rules by mess
 | mode | operators with a rule | exact | bound | numeric |
 | --- | --- | --- | --- | --- |
 | ep | 65 | 35 | 0 | 30 |
-| vmp | 59 | 35 | 4 | 20 |
+| vmp | 60 | 35 | 4 | 21 |
 | bp | 4 | 4 | 0 | 0 |
 
 19 operators take a power (fractional EP).
@@ -82,7 +82,7 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | multimodal: One Gaussian per variable cannot show two modes | quality | open | medium | - |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
 | sv-parameters: Stochastic volatility with an unknown level, persistence and innovation precision is not calibrated | quality | open | medium | - |
-| non-centred-scale: A non-centred scale (z / sqrt(precision)) has no variational message passing rule | quality | open | small | - |
+| non-centred-scale: ARD (a scale of its own for each coefficient) has no variational message passing rule | quality | open | medium | - |
 | evidence: The EP log evidence is exact where EP is, and has two known limits | infrastructure | open | medium | - |
 | variational-rules: Variational message passing: what it cannot run and where the mean field is poor | infrastructure | open | small | - |
 
