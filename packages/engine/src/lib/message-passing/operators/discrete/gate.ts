@@ -14,7 +14,7 @@
  */
 
 import { type Json, logSumExpOf, OmaiError } from '../../../base/index.ts'
-import { arg, errorText } from '../../core/_messages.ts'
+import { arg, errorText, isFlat } from '../../core/_messages.ts'
 import { etaOf, massOf, numberParam, scalarOf, valueArg } from '../../core/args.ts'
 import { defineOperator, messageRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
@@ -163,6 +163,34 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
     if (Number.isNaN(total)) throw new ImproperMessageError('gate: a branch has no evidence yet')
     return total
   }
+  /**
+   * The evidence of the gate when some cavity has no density, in natural parameters: the sum over the branches of the mass of its
+   * factor against the cavities of the variables it uses (finite when they are proper together, as the branch's own rule says) times
+   * the mass of the cavities of the variables it does not use, which is where a cavity must be proper (the integral of a branch over a
+   * variable it does not read is that variable's mass). A variable every branch reads needs no mass of its own.
+   */
+  const evidenceNatural = (c: OperatorContext, branches: readonly Branch[], pz: readonly number[]): number => {
+    const arity = c.args.length - 1
+    const terms = branches.map((b, k) => {
+      const op = innerOf(b)
+      let raw = 0
+      if (op !== undefined) {
+        if (op.logEvidence === undefined) throw new OmaiError('not-implemented', `gate: ${op.name} has no logEvidence`)
+        raw = op.logEvidence(context(c, b, 0, 'ep'))
+        if (Number.isNaN(raw)) throw new ImproperMessageError('gate: a branch has no evidence at these cavities')
+      }
+      const used = new Set(b.args.filter((a): a is number => typeof a === 'number'))
+      let outside = 0
+      for (let i = 0; i < arity; i++) {
+        const a = arg(c, i + 1)
+        if (used.has(i) || a.eta === undefined) continue
+        if (!a.family.isProper(a.eta)) throw new ImproperMessageError('gate: a cavity no branch reads has no density')
+        outside += massOf(a)
+      }
+      return Math.log(pz[k] ?? 0) + raw + outside
+    })
+    return massOf(arg(c, 0)) + logSumExpOf(terms)
+  }
   /** What a branch sends to one of the gate's variables, as the tilted natural parameters (the cavity plus the message): undefined when the branch does not involve it. */
   const sent = (c: OperatorContext, b: Branch, variable: number): Eta | undefined => {
     const op = innerOf(b)
@@ -297,6 +325,9 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
       ep: (c) => {
         const branches = branchesOf(c.params)
         const pz = stateProbabilities(arg(c, 0), branches.length)
+        // A cavity without a density (indefinite, not flat): the branches' masses in natural parameters, as far as they exist.
+        if (c.power === 1 && c.args.some((a) => a.eta !== undefined && !a.family.isProper(a.eta) && !isFlat(a.eta)))
+          return evidenceNatural(c, branches, pz)
         const terms = branches.map((b, i) => Math.log(pz[i] ?? 0) + logBranch(c, b))
         let total = massOf(arg(c, 0))
         for (let i = 1; i < c.args.length; i++) total += massOf(arg(c, i))

@@ -78,8 +78,10 @@ export function alphaProjection(alpha: number): Projection {
  * matching, with the cavity and the other arguments mixed in as `cavity^alpha q^(1 - alpha)`; the other factors (priors,
  * linear Gaussian factors, tables) keep their closed-form rules. At `alpha = 1` the run is `epAlgorithm`. Smaller alpha
  * gives narrower, mode-seeking beliefs (at alpha -> 0 the variational ones), larger alpha wider, mass-covering ones.
- * The tape is EP's, without the evidence (the free energy of an alpha-divergence is not the EP one and is not
- * reported); an update that fails to converge in 200 fixed-point steps keeps its last iterate. The state is the
+ * The tape is EP's, with the evidence: the fixed points of the alpha updates are those of power EP with every factor that
+ * takes a power at the power alpha (Minka 2004), so the energy reported is the power EP energy at them (`evidenceOf`; at
+ * alpha 1 the EP evidence, and for the clutter problem within 0.004 nats of the quadrature from alpha 1 down to 0.1); an
+ * update that fails to converge in 200 fixed-point steps keeps its last iterate. The state is the
  * messages, so a run serialises, resumes and has anytime snapshots as every engine run does.
  *
  * @param g - The compiled graph; its factors must all have power 1.

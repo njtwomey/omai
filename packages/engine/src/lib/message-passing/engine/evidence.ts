@@ -6,10 +6,24 @@
 import { evidenceOrNaN } from '../core/_messages.ts'
 import { ImproperMessageError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
+import { takesPower } from '../core/types.ts'
 import { argsOf } from './_arguments.ts'
 import { rawBelief, rawCavity, readable } from './_cavities.ts'
 import { beliefOf } from './cavity.ts'
 import type { EngineSettings, MpState } from './state.ts'
+
+/**
+ * The power a factor is taken to at a fixed point: its own, or, under an alpha-divergence projection, `alpha` for a factor that takes a
+ * power and has none of its own (the update `alphaProposal` makes of it: the fixed points of D_alpha updates are those of power EP with
+ * every such factor at the power `alpha`, Minka 2004, 2005), so the energy of an alpha run is the power EP energy at those powers.
+ */
+function powerOfFactor(
+  f: CompiledGraph['factors'][number],
+  projection: Pick<EngineSettings['projection'], 'alpha'>,
+): number {
+  const alpha = projection.alpha
+  return alpha !== undefined && alpha !== 1 && f.power === 1 && takesPower(f.operator, f.params) ? alpha : f.power
+}
 
 /**
  * The EP evidence of one factor against its cavity. The one place an improper cavity (a message with no density, which makes the
@@ -18,7 +32,8 @@ import type { EngineSettings, MpState } from './state.ts'
  */
 function factorEvidence(g: CompiledGraph, s: Pick<EngineSettings, 'projection'>, state: MpState, fi: number): number {
   const f = g.factors[fi] as CompiledGraph['factors'][number]
-  const args = readable(f.operator, rawCavity(g, state.messages, fi), 0).args
+  const power = powerOfFactor(f, s.projection)
+  const args = readable(f.operator, rawCavity(g, state.messages, fi, power), 0).args
   return evidenceOrNaN(
     () =>
       f.operator.logEvidence?.({
@@ -26,7 +41,7 @@ function factorEvidence(g: CompiledGraph, s: Pick<EngineSettings, 'projection'>,
         to: 0,
         args,
         params: f.params,
-        power: f.power,
+        power,
         memo: new Map(),
         ...(s.projection.numeric === undefined ? {} : { rule: s.projection.numeric }),
       }) ?? Number.NaN,
@@ -38,13 +53,15 @@ function factorEvidence(g: CompiledGraph, s: Pick<EngineSettings, 'projection'>,
  * (`sum_f log Z_f + sum_v (1 - degree_v) A(belief_v)`, which on a tree is the log evidence and for loopy BP the
  * Bethe approximation), for the expected-log rule the variational lower bound (`sum_f E_q[log f] + sum_v H(q_v)`).
  *
- * Factors with a power p contribute `log Z_a / p` and the variable terms use the sum of the inverse powers (power EP).
+ * Factors with a power p contribute `log Z_a / p` and the variable terms use the sum of the inverse powers (power EP). An
+ * alpha-divergence run has the energy of its own fixed points, which are those of power EP with every factor that takes a power at
+ * the power alpha: so those factors count at alpha.
  *
  * @param g - The compiled graph.
  * @param s - What fixes the estimate: the engine settings of a run, or just `{ projection }` (the estimate depends on nothing else).
  * @param state - A state of a run.
- * @returns The estimate, or NaN when some factor has no way to give its part, a belief has no density yet (a state with flat
- * messages, under any projection), or the projection is an alpha-divergence one.
+ * @returns The estimate, or NaN when some factor has no way to give its part or a belief has no density yet (a state with flat
+ * messages, under any projection).
  * @example
  * ```ts
  * import { compileGraph, defaultOperators, evidenceOf, gaussianPrior, klqpProjection, vmpAlgorithm } from 'omai-engine/message-passing'
@@ -55,17 +72,16 @@ function factorEvidence(g: CompiledGraph, s: Pick<EngineSettings, 'projection'>,
  */
 export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection'>, state: MpState): number {
   let total = 0
-  // An alpha-divergence projection has no evidence estimate here (its free energy is not the EP one).
-  if (s.projection.alpha !== undefined && s.projection.alpha !== 1) return Number.NaN
   if (s.projection.evidence === 'ep-energy') {
     // The power EP energy: sum_a (1 / p_a) log Z_a + sum_v (1 - sum_{a at v} 1 / p_a) A(belief_v), with Z_a the mass of
     // the factor to the power p_a against its cavity (the usual EP energy when every power is 1).
     const inversePowers = new Array<number>(g.variables.length).fill(0)
     for (const [fi, f] of g.factors.entries()) {
       if (f.operator.logEvidence === undefined) return Number.NaN
-      total += factorEvidence(g, s, state, fi) / f.power
+      const power = powerOfFactor(f, s.projection)
+      total += factorEvidence(g, s, state, fi) / power
       for (const p of f.ports) {
-        if (p.edge >= 0) inversePowers[p.variable as number] = (inversePowers[p.variable as number] ?? 0) + 1 / f.power
+        if (p.edge >= 0) inversePowers[p.variable as number] = (inversePowers[p.variable as number] ?? 0) + 1 / power
       }
     }
     for (const [i, v] of g.variables.entries()) {

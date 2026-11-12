@@ -81,7 +81,7 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | multimodal: One Gaussian per variable cannot show two modes: what the multi-start does not reach | quality | open | medium | - |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
 | sv-parameters: Stochastic volatility with an unknown level, persistence and innovation precision: the level is too wide, hard fits do not settle | quality | open | small | - |
-| evidence: The EP log evidence is exact where EP is, and has two known limits | infrastructure | open | medium | - |
+| evidence: The EP log evidence is exact where EP is, and undefined where a factor's integral against its cavities diverges | infrastructure | open | small | - |
 | variational-rules: Variational message passing: what it cannot run and where the mean field is poor | infrastructure | open | small | - |
 
 **18** directions for the suite to grow into:
