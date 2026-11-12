@@ -71,15 +71,16 @@ export const REAL = 0.05
 export const CLEAR = 0.9
 
 /**
- * The choices expectation propagation runs: the one it settles on in under about ten seconds. On the others it takes much longer
- * (a diagonal pair of groups: 10 to 32 sweeps of nearly a second each, depending on the machine) or does not settle in 200
- * sweeps (full groups), so the sampler runs them.
+ * Which method runs a choice: expectation propagation where it settles in a few seconds and is quicker than the sampler, else
+ * Gibbs sampling. Diagonal groups run under it for a fixed number of groups: each group's centre and spread are one conjugate
+ * pair, so the messages of a group are exact (about a second for two groups, three seconds for three). With room for 6 or 8 groups
+ * it takes 4 to 6 seconds, longer than the sampler's 3, so the sampler runs those. Round groups run under it for two groups (one
+ * spread shared by the groups is not a pair). Full groups do not: they need a pair of a centre and a covariance matrix, which the
+ * model language cannot write yet.
  */
-const EP_BUILDS: readonly Build[] = [{ shape: 'round', groups: 'two' }]
-
-/** Which method runs a choice: expectation propagation where it settles in a few seconds, else Gibbs sampling. */
 export function engineOf(build: Build): 'ep' | 'gibbs' {
-  return EP_BUILDS.some((b) => b.shape === build.shape && b.groups === build.groups) ? 'ep' : 'gibbs'
+  const fixed = build.groups === 'two' || build.groups === 'three'
+  return (build.shape === 'diagonal' && fixed) || (build.shape === 'round' && build.groups === 'two') ? 'ep' : 'gibbs'
 }
 
 /** One group of the fit, in the data's own units (minutes). */
@@ -139,9 +140,10 @@ export function sizeOf(build: Build): Size {
 /**
  * The model of a choice: each eruption belongs to one group, and its length and wait fall
  * around that group's centre. A spread is written as a precision with a gamma prior, which is
- * the form expectation propagation reads.
+ * the form expectation propagation reads. A diagonal group's centre is as uncertain as its
+ * spread is wide, which makes the pair of them a conjugate pair.
  */
-export function mixtureModel(build: Build): ReturnType<typeof defineModel> {
+export function mixtureModel(build: Build, method: 'ep' | 'gibbs' = engineOf(build)): ReturnType<typeof defineModel> {
   const pieces = piecesOf(build.groups)
   return defineModel(`mixture-${build.shape}-${build.groups}`, (m) => {
     const row = m.range('row')
@@ -158,14 +160,16 @@ export function mixtureModel(build: Build): ReturnType<typeof defineModel> {
     } else {
       shares = m.latent('shares', d.dirichlet(full([pieces], 1)))
     }
-    // centres in the length direction; for a fixed number of groups they are in order
-    const inOrder = isOpen(build.groups) ? {} : { constraint: { kind: 'ordered' as const } }
-    const centreL = m.latent('centreL', d.normal(0, 1.5), { dims: [group], ...inOrder })
+    // for a fixed number of groups the sampler keeps the centres in order, so that the groups keep their names; the diagonal
+    // groups of expectation propagation do not need it, they start apart
+    const loose = isOpen(build.groups) || (method === 'ep' && build.shape === 'diagonal')
+    const inOrder = loose ? {} : { constraint: { kind: 'ordered' as const } }
     const which = m.latent('which', d.categorical({ probs: shares }), { dims: [row] })
     if (build.shape === 'round') {
       // one spread, for both directions and every group
       const precision = m.latent('precision', d.gamma(2, 0.5))
       const sd = ops.div(1, ops.sqrt(precision))
+      const centreL = m.latent('centreL', d.normal(0, 1.5), { dims: [group], ...inOrder })
       const centreW = m.latent('centreW', d.normal(0, 1.5), { dims: [group] })
       m.observe('length', d.normal(centreL.at(which), sd), length)
       m.observe('wait', d.normal(centreW.at(which), sd), wait)
@@ -175,7 +179,16 @@ export function mixtureModel(build: Build): ReturnType<typeof defineModel> {
       const precisionW = m.latent('precisionW', d.gamma(2, 0.5), { dims: [group] })
       const sdL = ops.div(1, ops.sqrt(precisionL.at(which)))
       const sdW = ops.div(1, ops.sqrt(precisionW.at(which)))
-      const centreW = m.latent('centreW', d.normal(0, 1.5), { dims: [group] })
+      // where each centre is expected to start: spread out, so that the groups can tell themselves apart
+      const start = m.data('start', { dims: [group] })
+      // a centre is as uncertain as its group is wide: its precision is a fifth of the group's
+      const centreL = m.latent('centreL', d.normal(start, ops.div(1, ops.sqrt(ops.mul(precisionL, 0.2)))), {
+        dims: [group],
+        ...inOrder,
+      })
+      const centreW = m.latent('centreW', d.normal(start, ops.div(1, ops.sqrt(ops.mul(precisionW, 0.2)))), {
+        dims: [group],
+      })
       m.observe('length', d.normal(centreL.at(which), sdL), length)
       m.observe('wait', d.normal(centreW.at(which), sdW), wait)
     } else {
@@ -184,6 +197,7 @@ export function mixtureModel(build: Build): ReturnType<typeof defineModel> {
       const precisionW = m.latent('precisionW', d.gamma(2, 0.5), { dims: [group] })
       const sdL = ops.div(1, ops.sqrt(precisionL.at(which)))
       const sdW = ops.div(1, ops.sqrt(precisionW.at(which)))
+      const centreL = m.latent('centreL', d.normal(0, 1.5), { dims: [group], ...inOrder })
       const lean = m.latent('lean', d.normal(0, 1.5), { dims: [group] })
       const offset = m.latent('offset', d.normal(0, 1.5), { dims: [group] })
       const line = ops.add(ops.mul(length, lean), offset)
@@ -263,6 +277,7 @@ const perGroup = (fitted: Fitted, name: string, pieces: number): Value =>
  * @param say - Says what is happening, for the play button.
  * @param build - The reader's choice of shape and number of groups.
  * @param size - How much to run.
+ * @param engine - Which method runs it (default: the one `engineOf` names for the choice).
  * @returns The result.
  */
 export function fit(
@@ -270,8 +285,8 @@ export function fit(
   say: Say = () => {},
   build: Build = DEFAULT_BUILD,
   size: Size = sizeOf(build),
+  engine: 'ep' | 'gibbs' = engineOf(build),
 ): Result {
-  const engine = engineOf(build)
   const pieces = piecesOf(build.groups)
   say('Writing the model')
   const data = columns()
@@ -283,13 +298,16 @@ export function fit(
   const order = argsort(uniform(foldIn(key(seed), 0), [size.rows]), 0)
   const length = take(div(sub(rawL, centreL), scaleL), order, 0)
   const wait = take(div(sub(rawW, centreW), scaleW), order, 0)
-  const model = mixtureModel(build)
+  const model = mixtureModel(build, engine)
+  // the diagonal model also takes the places where the groups' centres start, spread over the scaled data
+  const start = build.shape === 'diagonal' ? { start: linspace(-1, 1, pieces) } : {}
   say(
     engine === 'ep'
       ? 'Passing messages between the eruptions and the groups'
       : 'Sampling the groups and their eruptions',
   )
-  const fitted = engine === 'ep' ? runEp(model, { length, wait }) : runGibbs(model, { length, wait }, seed, size)
+  const fitted =
+    engine === 'ep' ? runEp(model, { length, wait, ...start }) : runGibbs(model, { length, wait, ...start }, seed, size)
   say('Reading off the groups')
   // how likely each eruption is to be in each group, back in the order of the data
   const chance = take(responsibilities(fitted, pieces, size.rows), argsort(order, 0), 0)

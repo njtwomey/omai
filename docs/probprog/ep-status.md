@@ -18,11 +18,11 @@ The registry (`defaultOperators()`) holds **73** factor operators. Rules by mess
 
 ## Atoms
 
-**101** atoms (69 basic, 32 with unknown parameters learned from simulated data). Expectation propagation runs **101** of them. Variational message passing runs **91** (89 to a fixed point); **10** run under EP and not under VMP.
+**102** atoms (70 basic, 32 with unknown parameters learned from simulated data). Expectation propagation runs **102** of them. Variational message passing runs **92** (90 to a fixed point); **10** run under EP and not under VMP.
 
 | family | atoms | learned twins | EP runs | VMP runs |
 | --- | --- | --- | --- | --- |
-| composed | 2 | 0 | 2 | 2 |
+| composed | 3 | 0 | 3 | 3 |
 | conjugate | 6 | 3 | 6 | 6 |
 | counts | 1 | 0 | 1 | 1 |
 | covariance | 6 | 3 | 6 | 4 |
@@ -79,6 +79,7 @@ EP refuses 1 item(s): `bayesian-neural-network`.
 | matrix-larger: Covariance matrices beyond what the Wishart and the bivariate sd-and-correlation sites reach | missing-rule | open | medium | - |
 | correlation-strong-few-pairs: A strong bivariate correlation from few pairs: the belief has its spread, not its shape | quality | open | small | - |
 | softmax-many-classes: Softmax beyond six classes: the probit with a power, correlated classes | missing-rule | open | small | - |
+| mixture-vector-components: Mixtures of Gaussian vectors with a covariance matrix per group, and the cost of a mixture over many rows | missing-mapping | open | medium | - |
 | multimodal: One Gaussian per variable cannot show two modes: what the multi-start does not reach | quality | open | medium | - |
 | network-layer-modes: A network layer: hidden units whose weights have symmetric modes are refused | quality | open | large | bayesian-neural-network |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |

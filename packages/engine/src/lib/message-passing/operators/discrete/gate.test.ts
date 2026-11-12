@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { foldIn, gamma as gammaVariates, key, normal } from '../../../random/index.ts'
 import { add, arange, div, mul, toFlat } from '../../../tensor/index.ts'
 import { messageArg, valueArg } from '../../core/args.ts'
 import { gamma, gammaEta, gaussian, gaussianEta } from '../../core/families.ts'
+import { normalWishart, normalWishartEta } from '../../core/families-matrix.ts'
 import { discrete, discreteEta, discreteProbs } from '../../core/families-vector.ts'
 import { lgammaOf } from '../../numerics/_scalar.ts'
 import { defaultOperators } from '../registry.ts'
@@ -216,5 +218,127 @@ describe('the gate', () => {
     expect(toA[1]).toBeCloseTo(0.25 * 2 + 0.75 * 8, 10)
     expect(toA[0]).toBeCloseTo(0.25 * 2 * 1 + 0.75 * 8 * 1, 10)
     expect(valueArg(gaussian, 1).value).toBe(1)
+  })
+
+  it('a branch whose argument is a vector constant: a mixture of two-dimensional normals with normal-Wishart parameters (z by the Student t, the parameters by sampling)', () => {
+    const x = [-0.5, 0.2]
+    const pz = [0.4, 0.6]
+    // (m, beta, nu, scale S with E[L] = nu S) of the cavities of the two components' parameters
+    const priors = [
+      { m: [-1, 0], beta: 2, nu: 5, scale: [0.5, 0.1, 0.1, 0.4] },
+      { m: [1, 0.5], beta: 3, nu: 6, scale: [0.3, 0, 0, 0.3] },
+    ] as const
+    const family = normalWishart(2)
+    const etas = priors.map((q) => normalWishartEta([...q.m], q.beta, q.nu, [...q.scale]))
+    const branch = (k: number) => ({ operator: 'mvn-normal-wishart', args: [{ const: x }, k], params: {} })
+    const params = { arity: 2, branches: [branch(0), branch(1)] }
+    const args = [
+      messageArg(discrete(2), discreteEta(pz)),
+      messageArg(family, etas[0] as number[]),
+      messageArg(family, etas[1] as number[]),
+    ]
+    // The checks of the gate know the constant is a vector of the dimension of the parameters, and refuse another.
+    expect(gate?.check?.(params, [discrete(2), family, family])).toBeUndefined()
+    const wrong = { arity: 2, branches: [branch(0), { ...branch(1), args: [{ const: [1, 2, 3] }, 1] }] }
+    expect(gate?.check?.(wrong, [discrete(2), family, family])).toMatch(/one dimension/)
+    // The evidence of a component: the multivariate Student t, x ~ t(nu + 1 - d; m, (beta + 1) / (beta (nu + 1 - d)) S^-1).
+    const logT = (q: (typeof priors)[number]): number => {
+      const [a, b, c, e] = q.scale as unknown as [number, number, number, number]
+      const det = a * e - b * c
+      const inverse = [e / det, -b / det, -c / det, a / det]
+      const df = q.nu + 1 - 2
+      const factor = (q.beta + 1) / (q.beta * df)
+      const sigma = inverse.map((v) => v * factor)
+      const sdet = (sigma[0] as number) * (sigma[3] as number) - (sigma[1] as number) * (sigma[2] as number)
+      const r = [(x[0] as number) - (q.m[0] as number), (x[1] as number) - (q.m[1] as number)]
+      const sInv = [
+        (sigma[3] as number) / sdet,
+        -(sigma[1] as number) / sdet,
+        -(sigma[2] as number) / sdet,
+        (sigma[0] as number) / sdet,
+      ]
+      const quad =
+        (r[0] as number) * ((sInv[0] as number) * (r[0] as number) + (sInv[1] as number) * (r[1] as number)) +
+        (r[1] as number) * ((sInv[2] as number) * (r[0] as number) + (sInv[3] as number) * (r[1] as number))
+      return (
+        lgammaOf((df + 2) / 2) -
+        lgammaOf(df / 2) -
+        Math.log(df * Math.PI) -
+        0.5 * Math.log(sdet) -
+        ((df + 2) / 2) * Math.log(1 + quad / df)
+      )
+    }
+    const evidence = priors.map(logT)
+    const toZ = gate?.ep?.({ mode: 'ep', to: 0, args, params, power: 1 }).message ?? []
+    const odds = Math.exp((toZ[1] as number) - (toZ[0] as number))
+    expect(Math.log(odds)).toBeCloseTo((evidence[1] as number) - (evidence[0] as number), 9)
+    // The message to the first component's parameters: its tilted distribution is the cavity weighted by pz0 f(x | theta) + pz1 Z1. Sampled:
+    // L from the Wishart of the cavity (Bartlett), the mean given L, weights the density of x given both.
+    const n = 400_000
+    const [q] = priors
+    const root = key(3)
+    const chi = (k: number, df: number): Float64Array =>
+      Float64Array.from(toFlat(gammaVariates(foldIn(root, k), [n], df / 2)), (v) => 2 * v)
+    const c1 = chi(0, q.nu)
+    const c2 = chi(1, q.nu - 1)
+    const z1 = toFlat(normal(foldIn(root, 2), [n]))
+    const z2 = toFlat(normal(foldIn(root, 3), [n]))
+    const z3 = toFlat(normal(foldIn(root, 4), [n]))
+    const chol = [
+      Math.sqrt(q.scale[0]),
+      0,
+      q.scale[1] / Math.sqrt(q.scale[0]),
+      Math.sqrt(q.scale[3] - q.scale[1] ** 2 / q.scale[0]),
+    ]
+    let mass = 0
+    const sums = { l: [0, 0, 0, 0], lm: [0, 0] }
+    const other = Math.exp(evidence[1] as number)
+    for (let i = 0; i < n; i++) {
+      // L = C A A' C' with A = [[sqrt(chi2_nu), 0], [z, sqrt(chi2_{nu-1})]]
+      const a = [Math.sqrt(c1[i] as number), 0, z1[i] as number, Math.sqrt(c2[i] as number)]
+      const t = [
+        (chol[0] as number) * (a[0] as number),
+        0,
+        (chol[2] as number) * (a[0] as number) + (chol[3] as number) * (a[2] as number),
+        (chol[3] as number) * (a[3] as number),
+      ]
+      const l = [
+        (t[0] as number) ** 2,
+        (t[0] as number) * (t[2] as number),
+        (t[0] as number) * (t[2] as number),
+        (t[2] as number) ** 2 + (t[3] as number) ** 2,
+      ]
+      // mu | L ~ N(m, (beta L)^-1): mu = m + chol(L)^-T e / sqrt(beta)
+      const l11 = Math.sqrt(l[0] as number)
+      const l21 = (l[2] as number) / l11
+      const l22 = Math.sqrt((l[3] as number) - l21 ** 2)
+      const e1 = z2[i] as number
+      const e2 = z3[i] as number
+      const w2 = e2 / l22
+      const w1 = (e1 - l21 * w2) / l11
+      const mu = [q.m[0] + w1 / Math.sqrt(q.beta), q.m[1] + w2 / Math.sqrt(q.beta)]
+      const r = [(x[0] as number) - (mu[0] as number), (x[1] as number) - (mu[1] as number)]
+      const quad =
+        (l[0] as number) * (r[0] as number) ** 2 +
+        2 * (l[1] as number) * (r[0] as number) * (r[1] as number) +
+        (l[3] as number) * (r[1] as number) ** 2
+      const det = (l[0] as number) * (l[3] as number) - (l[1] as number) ** 2
+      const density = (Math.sqrt(det) / (2 * Math.PI)) * Math.exp(-0.5 * quad)
+      const w = (pz[0] as number) * density + (pz[1] as number) * other
+      mass += w
+      for (let j = 0; j < 4; j++) sums.l[j] = (sums.l[j] as number) + w * (l[j] as number)
+      sums.lm[0] =
+        (sums.lm[0] as number) + w * ((l[0] as number) * (mu[0] as number) + (l[1] as number) * (mu[1] as number))
+      sums.lm[1] =
+        (sums.lm[1] as number) + w * ((l[2] as number) * (mu[0] as number) + (l[3] as number) * (mu[1] as number))
+    }
+    const toA = gate?.ep?.({ mode: 'ep', to: 1, args, params, power: 1 }).message ?? []
+    const belief = (etas[0] as number[]).map((v, i) => v + (toA[i] as number))
+    const mo = family.moments(belief)
+    // the moments of the family are (E log|L|, E L (4), E L mu (2), E mu' L mu): the matrix and L mu against the weighted samples
+    for (let j = 0; j < 4; j++)
+      expect(Math.abs((mo[1 + j] as number) / ((sums.l[j] as number) / mass) - 1)).toBeLessThan(0.02)
+    for (let j = 0; j < 2; j++)
+      expect(Math.abs((mo[5 + j] as number) - (sums.lm[j] as number) / mass)).toBeLessThan(0.03)
   })
 })

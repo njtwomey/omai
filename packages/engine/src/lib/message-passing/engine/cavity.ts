@@ -8,12 +8,23 @@ import { FLAT_CAVITY_PRECISION } from '../core/args.ts'
 import { ParameterError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import type { Eta } from '../core/types.ts'
+import { zeroArray } from '../numerics/_arrays.ts'
 import type { MpSnapshot, MpState } from './state.ts'
 
 /** The belief of a variable: the product of the messages of its edges (flat for none). */
 export function beliefOf(g: CompiledGraph, messages: readonly (readonly number[])[], variable: number): Eta {
   const v = g.variables[variable]
   if (v === undefined) throw new ParameterError(`no variable ${variable}`)
+  if (v.family.additive === true) {
+    // The same additions in the same order as the fold of `product` below, in one array instead of one per message: the belief of a
+    // variable with hundreds of edges is the innermost operation of a sweep.
+    const acc = zeroArray(v.family.size)
+    for (const e of v.edges) {
+      const m = messages[e] as Eta
+      for (let i = 0; i < acc.length; i++) acc[i] = (acc[i] as number) + (m[i] ?? 0)
+    }
+    return acc
+  }
   let acc: Eta = v.family.flat
   for (const e of v.edges) acc = v.family.product(acc, messages[e] as Eta)
   return acc

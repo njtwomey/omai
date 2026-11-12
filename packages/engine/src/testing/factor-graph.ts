@@ -33,6 +33,8 @@ export interface RunEpOptions {
   readonly algorithm?: Readonly<Record<string, unknown>>
   /** Compile with the scalar normals that an observation reads together packed (`toFactorGraph`'s `packScalars`; default: not). */
   readonly packScalars?: boolean
+  /** Compile with each component's mean and precision fused into one normal-gamma variable where the model writes the conjugate pair (`conjugatePairs`; default: not). */
+  readonly conjugatePairs?: boolean
 }
 
 /** The compiled model and the state EP reached. */
@@ -47,7 +49,10 @@ export interface EpRun {
  * propagation on it. The checks every compiler test makes first are here: no issues, and with `verdict` that EP can run the graph.
  */
 export function runEp(bound: BoundModel, options: RunEpOptions = {}): EpRun {
-  const c = toFactorGraph(bound, options.packScalars === undefined ? {} : { packScalars: options.packScalars })
+  const c = toFactorGraph(bound, {
+    ...(options.packScalars === undefined ? {} : { packScalars: options.packScalars }),
+    ...(options.conjugatePairs === undefined ? {} : { conjugatePairs: options.conjugatePairs }),
+  })
   expect(c.issues).toEqual([])
   const g = compileGraph(c.graph as never, factorOperators())
   if (options.verdict === true) expect(factorGraphVerdict(c, g, 'ep').ok).toBe(true)
