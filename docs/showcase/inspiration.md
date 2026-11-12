@@ -255,7 +255,7 @@ dropdowns); the showcases are not to copy them.
 - Rats, Challenger and Mauna Loa CO2 as data (Old Faithful is in the catalogue).
 - Bayesian survival with censoring in the probprog layer; only frequentist `lib/survival` and EP Weibull atoms.
 - An A/B test page, a Simpson's-paradox page, a Monty Hall page (the latter is trivial with `enumeration`).
-- EP on the BNN (no message rule for `tanh`; refused honestly in `ep-status.md`), and on a hidden-unit layer generally.
+- EP on the BNN. Several hidden units have symmetric modes (swapping two units gives the same function), so EP refuses it and `ep-status.md` says why; one sigmoid unit does run.
 - A switchpoint model with a discrete latent time in `probprog/models` (the EP changepoint is a three-regime Markov chain).
 - Interactive posterior predictive checks of Pyro's kind, topic word lists for a realistic corpus, and an arbitrary-size LDA inside the probprog layer.
 
@@ -318,7 +318,7 @@ Playground, Seeing Theory, Distill), and to be followed by the builders:
 
 The owner has asked for the showcase to be built around expectation propagation (EP) where it fits. This addendum re-ranks the
 shortlist of section 5 for EP. It adds to sections 1 to 6 and does not replace them. The EP facts come from `docs/probprog/ep-status.md`
-(101 atoms, 26 of 27 benchmark models run, one refused) and `docs/probprog/ep-changelog.md`. In each EP story the prose says what a
+(the atoms and benchmark models that run are counted in `ep-status.md`) and `docs/probprog/ep-changelog.md`. In each EP story the prose says what a
 message is (a bell curve, with a mean and a spread, sent from one part of the model to another) and what each step does, in order.
 
 ### What EP does well, and the omai piece that runs it
