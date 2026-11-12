@@ -120,67 +120,73 @@ describe('beta-two-shapes: the tilted moments of the shapes and E log p against 
   const NB = 500
   const NP = 1500
   const [tLo, tHi, uLo, uHi] = [ma - 9 * Math.sqrt(va), ma + 9 * Math.sqrt(va), -12, 5]
-  let z = 0
-  let ea = 0
-  let eb = 0
-  let ea2 = 0
-  let elogA = 0
-  let elogB = 0
-  let elogP = 0
-  let elogQ = 0
-  for (let i = 0; i < NA; i++) {
-    const ta = tLo + ((i + 0.5) * (tHi - tLo)) / NA
-    const a = Math.exp(ta)
-    const wa = Math.exp((-0.5 * (ta - ma) ** 2) / va) / Math.sqrt(2 * Math.PI * va)
-    for (let j = 0; j < NB; j++) {
-      const tb = uLo + ((j + 0.5) * (uHi - uLo)) / NB
-      const b = Math.exp(tb)
-      const wb = Math.exp(shapeB * tb - rateB * b - lgammaOf(shapeB) + shapeB * Math.log(rateB))
-      const norm = lgammaOf(a + b) - lgammaOf(a) - lgammaOf(b)
-      let sp = 0
-      let l0 = 0
-      let l1 = 0
-      for (let k = 0; k < NP; k++) {
-        const p = (k + 0.5) / NP
-        const dens = Math.exp(
-          norm + (a - 1 + (pEta[0] as number)) * Math.log(p) + (b - 1 + (pEta[1] as number)) * Math.log(1 - p),
-        )
-        sp += dens
-        l0 += dens * Math.log(p)
-        l1 += dens * Math.log(1 - p)
+  /** The reference at the power `alpha` of the factor: the cavities times `Beta(p; a, b)^alpha`, integrated on three grids. */
+  const brute = (alpha: number) => {
+    let z = 0
+    let ea = 0
+    let eb = 0
+    let ea2 = 0
+    let elogP = 0
+    let elogQ = 0
+    for (let i = 0; i < NA; i++) {
+      const ta = tLo + ((i + 0.5) * (tHi - tLo)) / NA
+      const a = Math.exp(ta)
+      const wa = Math.exp((-0.5 * (ta - ma) ** 2) / va) / Math.sqrt(2 * Math.PI * va)
+      for (let j = 0; j < NB; j++) {
+        const tb = uLo + ((j + 0.5) * (uHi - uLo)) / NB
+        const b = Math.exp(tb)
+        const wb = Math.exp(shapeB * tb - rateB * b - lgammaOf(shapeB) + shapeB * Math.log(rateB))
+        const norm = alpha * (lgammaOf(a + b) - lgammaOf(a) - lgammaOf(b))
+        let sp = 0
+        let l0 = 0
+        let l1 = 0
+        for (let k = 0; k < NP; k++) {
+          const p = (k + 0.5) / NP
+          const dens = Math.exp(
+            norm +
+              (alpha * (a - 1) + (pEta[0] as number)) * Math.log(p) +
+              (alpha * (b - 1) + (pEta[1] as number)) * Math.log(1 - p),
+          )
+          sp += dens
+          l0 += dens * Math.log(p)
+          l1 += dens * Math.log(1 - p)
+        }
+        const w = (wa * wb * sp) / NP
+        z += w
+        ea += w * ta
+        ea2 += w * ta * ta
+        eb += w * tb
+        elogP += (wa * wb * l0) / NP
+        elogQ += (wa * wb * l1) / NP
       }
-      const w = (wa * wb * sp) / NP
-      z += w
-      ea += w * ta
-      ea2 += w * ta * ta
-      eb += w * tb
-      elogA += w * a
-      elogB += w * b
-      elogP += (wa * wb * l0) / NP
-      elogQ += (wa * wb * l1) / NP
     }
+    return { z, ea, ea2, eb, elogP, elogQ }
   }
-  const run = (to: number): readonly number[] =>
-    betaTwoShapes.ep?.({ mode: 'ep', to, args, params: {}, power: 1 }).message as readonly number[]
-  it('the message to a is the Gaussian site that matches the tilted mean and variance of log a', () => {
-    const mean = ea / z
-    const variance = ea2 / z - mean * mean
-    const want = [mean / variance - ma / va, 1 / variance - 1 / va]
-    const got = run(1)
-    expect(got[0]).toBeCloseTo(want[0] as number, 2)
-    expect(got[1]).toBeCloseTo(want[1] as number, 2)
-  })
-  it('the message to p matches E log p and E log (1 - p): the Beta with those statistics, divided by the cavity', () => {
-    const projected = beta.fromMoments([elogP / z, elogQ / z])
-    const got = run(0)
-    expect(got[0]).toBeCloseTo((projected[0] as number) - (pEta[0] as number), 2)
-    expect(got[1]).toBeCloseTo((projected[1] as number) - (pEta[1] as number), 2)
-  })
-  it('the log evidence is the log of the integral plus the masses of the shapes', () => {
-    const want =
-      Math.log(z * (((tHi - tLo) / NA) * ((uHi - uLo) / NB))) + massOf(args[1] as Arg) + massOf(args[2] as Arg)
-    expect(betaTwoShapes.logEvidence?.({ mode: 'ep', to: 0, args, params: {}, power: 1 })).toBeCloseTo(want, 3)
-    expect(eb).toBeDefined()
-    expect(elogA + elogB).toBeGreaterThan(0)
-  })
+  const run = (to: number, power: number): readonly number[] =>
+    betaTwoShapes.ep?.({ mode: 'ep', to, args, params: {}, power }).message as readonly number[]
+  // Power 1 is plain EP; 0.5 is fractional EP: the factor enters the tilt to the power and its site is divided by it.
+  for (const power of [1, 0.5]) {
+    const ref = brute(power)
+    describe(`power ${power}`, () => {
+      it('the message to a is the Gaussian site that matches the tilted mean and variance of log a, over the power', () => {
+        const mean = ref.ea / ref.z
+        const variance = ref.ea2 / ref.z - mean * mean
+        const want = [(mean / variance - ma / va) / power, (1 / variance - 1 / va) / power]
+        const got = run(1, power)
+        expect(got[0]).toBeCloseTo(want[0] as number, 2)
+        expect(got[1]).toBeCloseTo(want[1] as number, 2)
+      })
+      it('the message to p matches E log p and E log (1 - p): the Beta with those statistics, divided by the cavity and the power', () => {
+        const projected = beta.fromMoments([ref.elogP / ref.z, ref.elogQ / ref.z])
+        const got = run(0, power)
+        expect(got[0]).toBeCloseTo(((projected[0] as number) - (pEta[0] as number)) / power, 2)
+        expect(got[1]).toBeCloseTo(((projected[1] as number) - (pEta[1] as number)) / power, 2)
+      })
+      it('the log evidence is the log of the integral of the powered factor plus the masses of the shapes', () => {
+        const want =
+          Math.log(ref.z * (((tHi - tLo) / NA) * ((uHi - uLo) / NB))) + massOf(args[1] as Arg) + massOf(args[2] as Arg)
+        expect(betaTwoShapes.logEvidence?.({ mode: 'ep', to: 0, args, params: {}, power })).toBeCloseTo(want, 3)
+      })
+    })
+  }
 })

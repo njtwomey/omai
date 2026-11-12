@@ -3,12 +3,35 @@
  * the factors that give no part of the EP evidence at a state, with why.
  */
 
+import { evidenceOrNaN } from '../core/_messages.ts'
 import { ImproperMessageError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import { argsOf } from './_arguments.ts'
 import { rawBelief, rawCavity, readable } from './_cavities.ts'
 import { beliefOf } from './cavity.ts'
 import type { EngineSettings, MpState } from './state.ts'
+
+/**
+ * The EP evidence of one factor against its cavity. The one place an improper cavity (a message with no density, which makes the
+ * integral of the factor diverge) is caught, for every operator whether or not it asks for it (`evidence.improperIsNaN`): the
+ * factor then has no evidence, `NaN`, and the run goes on (`evidenceOf` is `NaN`, `evidenceDefects` names the factor).
+ */
+function factorEvidence(g: CompiledGraph, s: Pick<EngineSettings, 'projection'>, state: MpState, fi: number): number {
+  const f = g.factors[fi] as CompiledGraph['factors'][number]
+  const args = readable(f.operator, rawCavity(g, state.messages, fi), 0).args
+  return evidenceOrNaN(
+    () =>
+      f.operator.logEvidence?.({
+        mode: s.projection.hook,
+        to: 0,
+        args,
+        params: f.params,
+        power: f.power,
+        memo: new Map(),
+        ...(s.projection.numeric === undefined ? {} : { rule: s.projection.numeric }),
+      }) ?? Number.NaN,
+  )
+}
 
 /**
  * The evidence estimate or variational bound of a state: for moment matching and sum-product the EP free energy
@@ -40,17 +63,7 @@ export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection
     const inversePowers = new Array<number>(g.variables.length).fill(0)
     for (const [fi, f] of g.factors.entries()) {
       if (f.operator.logEvidence === undefined) return Number.NaN
-      const args = readable(f.operator, rawCavity(g, state.messages, fi), 0).args
-      total +=
-        f.operator.logEvidence({
-          mode: s.projection.hook,
-          to: 0,
-          args,
-          params: f.params,
-          power: f.power,
-          memo: new Map(),
-          ...(s.projection.numeric === undefined ? {} : { rule: s.projection.numeric }),
-        }) / f.power
+      total += factorEvidence(g, s, state, fi) / f.power
       for (const p of f.ports) {
         if (p.edge >= 0) inversePowers[p.variable as number] = (inversePowers[p.variable as number] ?? 0) + 1 / f.power
       }
@@ -105,17 +118,7 @@ export function evidenceDefects(
       out.push({ factor: f.id, reason: 'no evidence rule' })
       continue
     }
-    const args = readable(f.operator, rawCavity(g, state.messages, fi), 0).args
-    const value = f.operator.logEvidence({
-      mode: s.projection.hook,
-      to: 0,
-      args,
-      params: f.params,
-      power: f.power,
-      memo: new Map(),
-      ...(s.projection.numeric === undefined ? {} : { rule: s.projection.numeric }),
-    })
-    if (!Number.isFinite(value)) out.push({ factor: f.id, reason: 'improper cavity' })
+    if (!Number.isFinite(factorEvidence(g, s, state, fi))) out.push({ factor: f.id, reason: 'improper cavity' })
   }
   return out
 }
