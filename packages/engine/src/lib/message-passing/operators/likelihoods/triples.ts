@@ -4,18 +4,29 @@
  * logit) whose predictor and cut points are random, are rows of one table read by one operator, `likelihood-triple`. As in the pairs a
  * coordinate is a real value or a positive one (carried as a Gaussian on its log, projected by the compiler, or as a gamma variable), and
  * any port may be a known value (a single node of the grid). EP matches the moments of the three variables under their cavities times
- * the density on the zooming grid of `integrateTriple` (`_grid.ts`, the grid the covariance sites use), a few thousand evaluations of
- * the density each.
+ * the density on the zooming grid of `integrateTriple` (`_grid.ts`: panels per axis, a finer grid along the heavy-tailed coordinate,
+ * the ordinal rows from tables of pairs of nodes, so a pass costs the pairs and not the triples), or, where a row has a closed form
+ * conditional on one more variable, by a one-dimensional integral over it: the ordinal probit with Gaussian cavities is exact given its
+ * latent score (`probitIntegrate`), which is also what keeps the order of the cut points. One integral is shared by the messages and the
+ * evidence of a sweep.
  */
 
 import { errorText, keyOf, memoised } from '../../core/_messages.ts'
-import { allProper, massOf, numberParam } from '../../core/args.ts'
+import { allProper, gaussianOf, massOf, numberParam } from '../../core/args.ts'
 import { defineOperator, messageRule, tiltedRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { namedParams, param } from '../../core/params.ts'
-import type { FactorOperator, Family, OperatorContext, Params, Port, TiltedMoments } from '../../core/types.ts'
-import { axisOf, type GridAxis, type GridIndexed, integrateTriple } from '../../numerics/_grid.ts'
-import { lgammaOf, logDiffPhi, logDiffSigmoid, logPhi, logSigmoidOf } from '../../numerics/_scalar.ts'
+import type { Arg, FactorOperator, Family, OperatorContext, Params, Port, TiltedMoments } from '../../core/types.ts'
+import {
+  axisOf,
+  type GridAxis,
+  type GridIndexed,
+  type GridTripleResult,
+  integrateTriple,
+} from '../../numerics/_grid.ts'
+import { centredMoments } from '../../numerics/_moments.ts'
+import { lgammaOf, logDiffPhi, logDiffSigmoid, logPhi, logSigmoidOf, millsRatio } from '../../numerics/_scalar.ts'
+import { tiltGrid } from '../../numerics/_windows.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 import type { PairPort } from './pairs.ts'
 
@@ -36,6 +47,13 @@ export interface TripleLikelihood {
    * those two alone (a gamma function of a shape, a log scale) is worth computing once per pair of nodes of them. Absent: `density`.
    */
   column?(y: number, p: Params): (x1: number, x2: number) => (x0: number) => number
+  /**
+   * The integral by another route than the grid, for the cavities it can take (`undefined` for the others, and then the grid is used):
+   * the log mass and the moments of each coordinate under the cavities times the density, at power one. A density that has a closed
+   * form conditional on one more variable (the ordinal probit given its latent score) is a one-dimensional integral over that variable
+   * and exact, not a cube of nodes.
+   */
+  integrate?(y: number, p: Params, args: readonly Arg[]): GridTripleResult | undefined
   /**
    * The same density by the index of the nodes of the grid, for a density made of functions of pairs of coordinates: the tables of the
    * terms are made once per pass from the nodes of each axis, so the cost of a pass is that of the pairs and not of the triples (the
@@ -146,6 +164,89 @@ function probitIndexed(y: number, p: Params): GridIndexed {
   }
 }
 
+/** The nodes of the grid over the latent score of the ordinal probit's exact route (the zoom finds the mass inside the first window). */
+const SCORE_POINTS = 121
+
+/**
+ * The ordinal probit with Gaussian cavities for the predictor and the cut points that bound the category, by the latent score. The
+ * outcome is the event `lower < u + e < upper` of the predictor plus standard normal noise `e`; given the score `z = u + e`, the
+ * predictor, the lower cut and the upper cut are independent: the predictor is Gaussian with the Kalman update of `z`, the lower cut its
+ * Gaussian cavity truncated below `z` and the upper cut its cavity truncated above it. So the mass is the one-dimensional integral over
+ * `z` of `N(z; m_u, v_u + 1) Phi((z - m_lo) / s_lo) Phi((m_hi - z) / s_hi)` and each moment is the mixture over `z` of the conditional
+ * moments, exact up to the quadrature of one smooth log-concave integrand, and the order of the cuts is enforced by the event itself.
+ * `undefined` when a port that the category uses is not a Gaussian message with a density (a known value or a gamma variable), and
+ * then the grid is used.
+ */
+function probitIntegrate(y: number, p: Params, args: readonly Arg[]): GridTripleResult | undefined {
+  const { first, last } = ordinalSides(y, p)
+  const used = [true, !first, !last]
+  const belief = (i: number): { readonly mean: number; readonly variance: number } | undefined => {
+    const a = args[i] as Arg
+    if (a.value !== undefined || a.family.kind !== 'gaussian') return undefined
+    return gaussianOf(a)
+  }
+  const [u, lo, hi] = [belief(0), used[1] ? belief(1) : undefined, used[2] ? belief(2) : undefined]
+  if (u === undefined || (used[1] && lo === undefined) || (used[2] && hi === undefined)) return undefined
+  const ignored = (i: number): { readonly mean: number; readonly variance: number } | undefined =>
+    used[i] ? undefined : args[i]?.value !== undefined ? gaussianOf(args[i] as Arg) : belief(i)
+  const unused = [undefined, ignored(1), ignored(2)]
+  if ((!used[1] && unused[1] === undefined) || (!used[2] && unused[2] === undefined)) return undefined
+  const sdz = Math.sqrt(u.variance + 1)
+  let [wlo, whi] = [u.mean - 9 * sdz, u.mean + 9 * sdz]
+  for (const c of [lo, hi]) {
+    if (c === undefined) continue
+    wlo = Math.min(wlo, c.mean - 9 * Math.sqrt(c.variance))
+    whi = Math.max(whi, c.mean + 9 * Math.sqrt(c.variance))
+  }
+  const logw = (z: number): number => {
+    let v = -0.5 * (Math.log(2 * Math.PI * sdz * sdz) + ((z - u.mean) / sdz) ** 2)
+    if (lo !== undefined) v += logPhi((z - lo.mean) / Math.sqrt(lo.variance))
+    if (hi !== undefined) v += logPhi((hi.mean - z) / Math.sqrt(hi.variance))
+    return v
+  }
+  const { t, step, top, weights, total } = tiltGrid({ lo: wlo, hi: whi }, SCORE_POINTS, logw)
+  const n = t.length
+  // The conditional mean and variance of each coordinate at each score.
+  const gain = u.variance / (u.variance + 1)
+  const means = [new Float64Array(n), new Float64Array(n), new Float64Array(n)] as const
+  const variances = [new Float64Array(n), new Float64Array(n), new Float64Array(n)] as const
+  for (let i = 0; i < n; i++) {
+    const z = t[i] as number
+    means[0][i] = u.mean + gain * (z - u.mean)
+    variances[0][i] = u.variance - gain * u.variance
+    if (lo !== undefined) {
+      const s = Math.sqrt(lo.variance)
+      const a = (z - lo.mean) / s
+      const m = millsRatio(a)
+      means[1][i] = lo.mean - s * m
+      variances[1][i] = Math.max(lo.variance * (1 - a * m - m * m), 0)
+    }
+    if (hi !== undefined) {
+      const s = Math.sqrt(hi.variance)
+      const b = (hi.mean - z) / s
+      const m = millsRatio(b)
+      means[2][i] = hi.mean + s * m
+      variances[2][i] = Math.max(hi.variance * (1 - b * m - m * m), 0)
+    }
+  }
+  const mixture = (k: number): { mean: number; variance: number } => {
+    const own = [u, lo ?? unused[1], hi ?? unused[2]][k]
+    if (own === undefined) return { mean: Number.NaN, variance: Number.NaN }
+    if (k > 0 && !used[k]) return own
+    const m = centredMoments(weights, total, means[k] as Float64Array)
+    let within = 0
+    for (let i = 0; i < n; i++) within += (weights[i] as number) * ((variances[k] as Float64Array)[i] as number)
+    return { mean: m.mean, variance: within / total + m.variance }
+  }
+  const parts = [mixture(0), mixture(1), mixture(2)] as const
+  return {
+    logMass: top + Math.log(total * step),
+    mean: [parts[0].mean, parts[1].mean, parts[2].mean],
+    variance: [parts[0].variance, parts[1].variance, parts[2].variance],
+    meanExp: [Number.NaN, Number.NaN, Number.NaN],
+  }
+}
+
 /**
  * The cumulative logit outcome by the index of the nodes: `log sigmoid(hi - u) + log sigmoid(u - lo) + log(1 - exp(lo - hi))`, the
  * first two from tables of a cut and the predictor, the last from a table of the two cuts.
@@ -187,6 +288,7 @@ function ordinalCuts(
   what: string,
   logDiff: (a: number, b: number) => number,
   indexed: (y: number, p: Params) => GridIndexed,
+  integrate?: TripleLikelihood['integrate'],
 ): TripleLikelihood {
   return {
     name,
@@ -208,6 +310,7 @@ function ordinalCuts(
       }
     },
     indexed,
+    ...(integrate === undefined ? {} : { integrate }),
   }
 }
 
@@ -228,7 +331,7 @@ function ordinalCuts(
 export function tripleLikelihoods(): Record<string, TripleLikelihood> {
   const all: TripleLikelihood[] = [
     studentTFull,
-    ordinalCuts('ordinal-probit-cuts', 'probit', logDiffPhi, probitIndexed),
+    ordinalCuts('ordinal-probit-cuts', 'probit', logDiffPhi, probitIndexed, probitIntegrate),
     ordinalCuts('ordinal-logit-cuts', 'logit', logDiffSigmoid, logitIndexed),
   ]
   return Object.fromEntries(all.map((l) => [l.name, l]))
@@ -304,8 +407,10 @@ export function tripleLikelihoodOperator(
     // sweep share one integral: the engine's cache keeps it under everything it depends on.
     const inputs = [c.args.map((a) => (a.value !== undefined ? a.value : a.eta)), c.params, power]
     const indexed = likelihood.indexed?.(y, c.params)
-    const r = memoised(c, `likelihood-triple:${keyOf(inputs)}`, () =>
-      integrateTriple(
+    const r = memoised(c, `likelihood-triple:${keyOf(inputs)}`, () => {
+      const exact = power === 1 ? likelihood.integrate?.(y, c.params, c.args) : undefined
+      if (exact !== undefined) return exact
+      return integrateTriple(
         axes,
         power === 1
           ? density
@@ -319,8 +424,8 @@ export function tripleLikelihoodOperator(
               const f = indexed(nodes)
               return (a, b, cc) => power * f(a, b, cc)
             },
-      ),
-    )
+      )
+    })
     const k = c.to
     const target = c.args[k]?.family as Family
     const moments =

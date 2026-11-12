@@ -6,19 +6,19 @@ in [`ep.md`](ep.md), what happened when in [`ep-changelog.md`](ep-changelog.md).
 
 ## Message-passing operators
 
-The registry (`defaultOperators()`) holds **66** factor operators. Rules by message mode:
+The registry (`defaultOperators()`) holds **67** factor operators. Rules by message mode:
 
 | mode | operators with a rule | exact | bound | numeric |
 | --- | --- | --- | --- | --- |
-| ep | 65 | 35 | 0 | 30 |
-| vmp | 59 | 35 | 4 | 20 |
+| ep | 66 | 35 | 0 | 31 |
+| vmp | 60 | 35 | 4 | 21 |
 | bp | 4 | 4 | 0 | 0 |
 
-19 operators take a power (fractional EP).
+20 operators take a power (fractional EP).
 
 ## Atoms
 
-**92** atoms (63 basic, 29 with unknown parameters learned from simulated data). Expectation propagation runs **92** of them. Variational message passing runs **84** (83 to a fixed point); **8** run under EP and not under VMP.
+**94** atoms (63 basic, 31 with unknown parameters learned from simulated data). Expectation propagation runs **94** of them. Variational message passing runs **85** (84 to a fixed point); **9** run under EP and not under VMP.
 
 | family | atoms | learned twins | EP runs | VMP runs |
 | --- | --- | --- | --- | --- |
@@ -29,7 +29,7 @@ The registry (`defaultOperators()`) holds **66** factor operators. Rules by mess
 | gate weights | 4 | 0 | 4 | 4 |
 | gates | 16 | 6 | 16 | 13 |
 | kernels | 2 | 1 | 2 | 0 |
-| likelihoods | 26 | 14 | 26 | 25 |
+| likelihoods | 28 | 16 | 28 | 26 |
 | nonparametric | 2 | 0 | 2 | 2 |
 | priors | 17 | 0 | 17 | 17 |
 | scales | 7 | 2 | 7 | 7 |
@@ -78,7 +78,6 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | matrix-larger: Covariance matrices beyond what the Wishart and the bivariate sd-and-correlation sites reach | missing-rule | open | medium | - |
 | hierarchical-matrix-few-groups: A learned covariance with few groups: the shared mean is too narrow, the matrix too wide | quality | open | medium | - |
 | softmax-many-classes: Softmax beyond six classes, and a multiclass Gaussian process | missing-rule | open | medium | - |
-| ordinal-random-cuts: Ordinal cut points that are random, and a Student-t with random degrees of freedom and scale | missing-rule | open | medium | - |
 | multimodal: One Gaussian per variable cannot show two modes | quality | open | medium | - |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
 | sv-parameters: Stochastic volatility with an unknown level, persistence and innovation precision is not calibrated | quality | open | medium | - |

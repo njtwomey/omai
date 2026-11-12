@@ -3971,7 +3971,7 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   Gauss-Hermite for EP and Jaakkola-Jordan's bound for VMP, the spin site of expectation consistent inference, the multiclass site),
   `lifts/` (a scalar link as a regression row on a weight vector, `rows.ts`, or a plate of rows, `plates.ts`), `likelihoods/` (the
   registry of numeric likelihoods of `likelihoods.ts`, `likelihoods()`, behind the generic `likelihood-site` and `likelihood-row`; the
-  robust sites; the numeric `prior-site`; the unary functions `apply` and `apply-product`; the two-variable `pairs.ts`; `numericOperator`
+  robust sites; the numeric `prior-site`; the unary functions `apply` and `apply-product`; the two-variable `pairs.ts` and the three-variable `triples.ts` (`likelihood-triple`: a Student-t with random location, scale and degrees of freedom, an ordinal outcome with random cut points); `numericOperator`
   in `numeric.ts` is a constructor, not an operator: a factor given only by its log density), `scales/` (the shared smoothing
   parameters of a Gaussian vector, the gamma scale hierarchies, the random concentration of a beta or Dirichlet, the stick-breaking
   assignment), `covariance/` (the Wishart precision, its normal-Wishart conjugate form, the bivariate standard-deviation-and-correlation

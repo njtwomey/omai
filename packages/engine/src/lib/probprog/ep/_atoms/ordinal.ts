@@ -192,6 +192,136 @@ const ordinalProbitLearnedAtom: EpAtom = defineAtom({
   parts: ordinalLearnedProblem,
 })
 
+function ordinalCutsLearnedProblem(k: Config): AtomParts {
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const trueSlope = configNumber(k, 'trueSlope')
+  const trueCuts = [configNumber(k, 'trueCut1'), configNumber(k, 'trueCut2')]
+  const s = configNumber(k, 'priorScale')
+  // region ordinal-probit-cuts-learned
+  // the ground truth: a latent score with standard normal noise, cut at the true cut points
+  const kk = key(seed)
+  const x = Array.from(toFlat(uniform(foldIn(kk, 0), [n])), (v) => 4 * v - 2)
+  const noise = toFlat(normal(foldIn(kk, 1), [n]))
+  const y = x.map((xi, i) => trueCuts.filter((c) => c < trueSlope * xi + (noise[i] ?? 0)).length)
+  const definition = defineModel('ordinal-probit-cuts-learned', (m) => {
+    const row = m.range('row')
+    const cut = m.range('cut', { size: 2 })
+    // the slope of the predictor and the two cut points between the three categories: all unknown
+    const slope = m.latent('slope', d.normal(0, s))
+    const cuts = m.latent('cuts', d.normal(0, s), { dims: [cut], constraint: { kind: 'ordered' } })
+    const xx = m.data('x', { dims: [row], role: 'covariate' })
+    const yy = m.data('y', { dims: [row], support: 'count' })
+    const predictor = slope.mul(xx)
+    m.observe('y', d.orderedProbit(predictor, cuts, { over: cut }), yy)
+  })
+  // endregion
+  // The exact posterior on a grid around the truth (the cut points ordered: the density is zero where they are not).
+  const half = 10 / Math.sqrt(n) + 0.7
+  const grid = once(() =>
+    gridMarginals(
+      ([b, c1, c2]) => {
+        if (!((c1 as number) < (c2 as number))) return Number.NEGATIVE_INFINITY
+        let lp = (-0.5 * ((b as number) ** 2 + (c1 as number) ** 2 + (c2 as number) ** 2)) / s ** 2
+        for (const [i, xi] of x.entries()) {
+          const u = (b as number) * xi
+          const r = y[i] as number
+          lp += logBetween(
+            r === 0 ? Number.NEGATIVE_INFINITY : (r === 1 ? (c1 as number) : (c2 as number)) - u,
+            r === 2 ? Number.POSITIVE_INFINITY : (r === 0 ? (c1 as number) : (c2 as number)) - u,
+          )
+        }
+        return lp
+      },
+      [
+        [trueSlope - half, trueSlope + half],
+        [(trueCuts[0] as number) - half, (trueCuts[0] as number) + half],
+        [(trueCuts[1] as number) - half, (trueCuts[1] as number) + half],
+      ],
+      49,
+    ),
+  )
+  const curve = (b: number, c1: number, c2: number, name: string, colour?: string): FigureCurve => ({
+    name,
+    ...(colour === undefined ? {} : { colour }),
+    x: CURVE_X,
+    y: CURVE_X.map((v) => phi(b * v - c1) + phi(b * v - c2)),
+  })
+  return {
+    build: {
+      definition,
+      data: { x, y },
+      quantities: [
+        { name: 'slope', label: 'slope', support: 'real', truth: trueSlope },
+        { name: 'cuts[0]', label: 'first cut point', support: 'real', truth: trueCuts[0] as number },
+        { name: 'cuts[1]', label: 'second cut point', support: 'real', truth: trueCuts[1] as number },
+      ],
+    },
+    reference: {
+      get exact() {
+        return { slope: grid().marginal(0), 'cuts[0]': grid().marginal(1), 'cuts[1]': grid().marginal(2) }
+      },
+      referenceSource: `the posterior of the slope and the two ordered cut points on a 49 by 49 by 49 grid`,
+    },
+    present: {
+      equations: [
+        `truth: score ${trueSlope} x + N(0, 1) noise cut at (${trueCuts.join(', ')}); ${n} points, seed ${seed}`,
+        `slope ~ N(0, ${s}²), cuts ~ N(0, ${s}²) each, ordered   (the unknown slope and cut points)`,
+        `y_i ~ OrderedProbit(slope x_i, cuts), i = 1..${n}   (three ordered categories)`,
+      ],
+      pair: ['cuts[0]', 'cuts[1]'],
+      figure: {
+        caption:
+          'The ordered outcomes (0 to 2) at each covariate value, the expected category at the true slope and cut points (green) and at the mean of the belief.',
+        xLabel: 'x',
+        yLabel: 'category',
+        xLimits: [-2, 2],
+        yLimits: [-0.3, 2.3],
+        points: [{ name: 'observations', x: [...x], y: [...y] }],
+        curves: [curve(trueSlope, trueCuts[0] as number, trueCuts[1] as number, 'true curve', 'tab2')],
+        answer: (m) => [
+          curve(m['slope'] ?? Number.NaN, m['cuts[0]'] ?? Number.NaN, m['cuts[1]'] ?? Number.NaN, 'fitted curve'),
+        ],
+      },
+    },
+  }
+}
+
+/**
+ * The ordinal probit regression with the cut points unknown too: a slope and two ordered thresholds (an ordered Gaussian latent
+ * vector, the order a pair of comparison factors) learned from outcomes simulated from stated values, over many seeds how often EP's
+ * 90% intervals hold them. Each row is a `likelihood-triple` factor on the predictor and the two cuts that bound its category.
+ */
+const ordinalProbitCutsLearnedAtom: EpAtom = defineAtom({
+  name: 'ordinal-probit-cuts-learned',
+  title: 'Ordinal probit: random cut points learned',
+  extends: 'ordinal-probit',
+  recovery: recovery(
+    'quick',
+    'the slope and the cut points share every row (a loop: EP is 0.7 to 0.95 of the exact spread) and a few dozen ordinal outcomes carry little information about thresholds, so the floor leaves room',
+  ),
+  what: 'The ordinal probit regression with a slope and two ordered cut points all unknown (Gaussian priors, the order enforced), the outcomes simulated from stated values: the likelihood-triple site on the predictor and the two cuts of each outcome.',
+  factors: [
+    'prior (gaussian) x3',
+    'ordered constraint (comparison factors on neighbouring cuts)',
+    'matmul (linear predictor)',
+    'numeric likelihood: ordinal probit with random cut points (three variables)',
+  ],
+  family: 'likelihoods',
+  reference: 'exact',
+  tolerance: tolerance(
+    'coupled',
+    'the slope and the two cut points are coupled through every outcome (a loop) and the cuts are ordered, so one Gaussian each is a summary of a curved posterior',
+  ),
+  knobs: dict({
+    ...simulationKnobs(40),
+    trueSlope: real(-2, 3, { default: 1.2, step: 0.1, label: 'true slope' }),
+    trueCut1: real(-2, 1, { default: -0.6, step: 0.1, label: 'true first cut point' }),
+    trueCut2: real(-0.5, 2.5, { default: 0.9, step: 0.1, label: 'true second cut point' }),
+    priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the slope and the cut points' }),
+  }),
+  parts: ordinalCutsLearnedProblem,
+})
+
 // ----- quantile regression -----
 
 const QX = [-1.8, -1.4, -1, -0.6, -0.2, 0.2, 0.6, 1, 1.4, 1.8]
@@ -829,6 +959,7 @@ const softmaxRegressionLearnedAtom: EpAtom = defineAtom({
 export const ordinalAtoms: readonly EpAtom[] = [
   ordinalProbitAtom,
   ordinalProbitLearnedAtom,
+  ordinalProbitCutsLearnedAtom,
   quantileRegressionAtom,
   quantileRegressionLearnedAtom,
   skillDrawsAtom,

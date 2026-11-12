@@ -169,6 +169,36 @@ describe('an ordinal outcome with random cut points', () => {
     const { c, marginals } = ep(model.bind({ x, y, sign: [-0.5, 0.5] }))
     expect(c.issues).toEqual([])
     expect(factorsOf(c, 'likelihood-triple')).toBe(x.length)
-    expect(post(marginals, 'margin').sd).toBeGreaterThan(0)
+    // the exact posterior of the slope and the margin on a grid (the cuts are -margin / 2 and margin / 2)
+    const n = 180
+    const [s0, s1, m0, m1] = [-0.5, 5.5, -0.5, 3]
+    let total = 0
+    const mean = [0, 0]
+    const second = [0, 0]
+    for (let i = 0; i < n; i++) {
+      const slope = s0 + ((i + 0.5) * (s1 - s0)) / n
+      for (let j = 0; j < n; j++) {
+        const margin = m0 + ((j + 0.5) * (m1 - m0)) / n
+        let lp = normalLog(slope, 0, 2) + normalLog(margin, 1, 0.7)
+        for (const [r, xi] of x.entries()) {
+          const u = slope * xi
+          const k = y[r] as number
+          const upper = k === 2 ? 1 : Math.exp(logPhi((k === 0 ? -margin / 2 : margin / 2) - u))
+          const lower = k === 0 ? 0 : Math.exp(logPhi((k === 1 ? -margin / 2 : margin / 2) - u))
+          lp += Math.log(Math.max(upper - lower, 1e-300))
+        }
+        const w = Math.exp(lp)
+        total += w
+        mean[0] = (mean[0] as number) + w * slope
+        mean[1] = (mean[1] as number) + w * margin
+        second[0] = (second[0] as number) + w * slope * slope
+        second[1] = (second[1] as number) + w * margin * margin
+      }
+    }
+    for (const [q, name] of ['slope', 'margin'].entries()) {
+      const m = (mean[q] as number) / total
+      const sd = Math.sqrt((second[q] as number) / total - m * m)
+      agree(post(marginals, name), m, sd, 0.3, 0.4, name)
+    }
   })
 })

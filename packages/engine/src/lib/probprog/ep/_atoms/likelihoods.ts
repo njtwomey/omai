@@ -1252,6 +1252,131 @@ const studentTDfLearnedAtom: EpAtom = defineAtom({
   parts: studentDfLearnedProblem,
 })
 
+function studentFullLearnedProblem(k: Config): AtomParts {
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const [trueLoc, trueScale, trueDf] = [
+    configNumber(k, 'trueLoc'),
+    configNumber(k, 'trueScale'),
+    configNumber(k, 'trueDf'),
+  ]
+  const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
+  // region student-t-full-learned
+  // the ground truth the data are drawn from: Student-t noise of a stated scale and number of degrees of freedom
+  const noise = toFlat(studentT(foldIn(key(seed), 0), [n], trueDf))
+  const y = Array.from(noise, (e) => trueLoc + trueScale * e)
+  const definition = defineModel('student-t-full-learned', (m) => {
+    // the location, the scale and the degrees of freedom of the noise: all unknown
+    const mu = m.latent('mu', d.normal(0, 5))
+    const scale = m.latent('scale', d.logNormal(0, 0.7))
+    const df = m.latent('df', d.gamma(a, b))
+    m.observe('y', d.studentT(df, mu, scale), m.data('y', { dims: ['i'], role: 'response' }))
+  })
+  // endregion
+  // The exact posterior of (mu, log scale, log df) on a grid: the log-normal prior of the scale in log scale is a normal, the gamma
+  // prior of df in log df is df^a exp(-b df).
+  const sorted = [...y].sort((p, q) => p - q)
+  const med = sorted[Math.floor(n / 2)] ?? 0
+  const half = (8 * trueScale) / Math.sqrt(n) + 0.5
+  const grid = once(() =>
+    gridMarginals(
+      ([mu, s, t]) => {
+        const df = Math.exp(t as number)
+        const inv = Math.exp(-(s as number))
+        const c = lg((df + 1) / 2) - lg(df / 2) - 0.5 * Math.log(df * Math.PI) - (s as number)
+        let lp = -0.5 * ((mu as number) / 5) ** 2 - 0.5 * ((s as number) / 0.7) ** 2 + a * (t as number) - b * df
+        for (const v of y) lp += c - ((df + 1) / 2) * Math.log1p(((v - (mu as number)) * inv) ** 2 / df)
+        return lp
+      },
+      [
+        [med - half, med + half],
+        [Math.log(trueScale) - 1.5, Math.log(trueScale) + 1.5],
+        [Math.log(0.4), Math.log(250)],
+      ],
+      61,
+    ),
+  )
+  const x = [0, n + 1]
+  return {
+    build: {
+      definition,
+      data: { y },
+      quantities: [
+        { name: 'mu', label: 'mu (the location)', support: 'real', truth: trueLoc },
+        { name: 'scale', label: 'scale', support: 'positive', truth: trueScale },
+        { name: 'df', label: 'df (degrees of freedom)', support: 'positive', truth: trueDf },
+      ],
+    },
+    reference: {
+      get exact() {
+        return {
+          mu: grid().marginal(0),
+          scale: positiveFromLog(grid().marginal(1)),
+          df: positiveFromLog(grid().marginal(2)),
+        }
+      },
+      referenceSource:
+        'the posterior of the location, the log of the scale and the log of the degrees of freedom on a 61 by 61 by 61 grid',
+    },
+    present: {
+      equations: [
+        `truth: location ${trueLoc}, scale ${trueScale}, Student-t noise with ${trueDf} degrees of freedom; ${n} draws with seed ${seed}`,
+        'mu ~ N(0, 5²)   (the unknown location)',
+        'scale ~ LogNormal(0, 0.7²)   (the unknown scale)',
+        `df ~ Gamma(${a}, ${b})   (the unknown degrees of freedom)`,
+        `y_i ~ Student-t(df, mu, scale), i = 1..${n}`,
+      ],
+      figure: {
+        caption:
+          'The simulated observations (heavy tails: a few lie far from the rest). Green: the true location; thick and dashed: the fitted one.',
+        xLabel: 'observation',
+        yLabel: 'y',
+        xLimits: x as [number, number],
+        points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
+        curves: [{ name: 'true location', colour: 'tab2', x, y: [trueLoc, trueLoc] }],
+        answer: (mm) => [{ name: 'mu', x, y: [mm['mu'] ?? Number.NaN, mm['mu'] ?? Number.NaN] }],
+      },
+    },
+  }
+}
+
+/**
+ * A location observed through Student-t noise whose scale and degrees of freedom are both unknown (a log-normal prior on the scale, a
+ * gamma prior on the degrees of freedom), learned from data simulated from a stated truth: the `likelihood-triple` factor reads the
+ * location, the log of the scale and the degrees of freedom (a gamma variable, integrated in its log) together, against the exact
+ * posterior of all three on a grid. How wide the noise is and how heavy its tails are are learned beside the mean.
+ */
+const studentTFullLearnedAtom: EpAtom = defineAtom({
+  name: 'student-t-full-learned',
+  title: 'Student-t likelihood: parameters learned (the scale and the degrees of freedom too)',
+  extends: 'student-t',
+  recovery: recovery(
+    'quick',
+    'the scale and the degrees of freedom are weakly separated by a few dozen draws (the posterior of the degrees of freedom is skewed with a long right tail, and EP carries a gamma for it), so the floor leaves room; each run integrates a three-dimensional grid for its reference, so 20 seeds and a floor of 0.7',
+  ),
+  what: 'The Student-t noise of the basic atom with the location, the scale and the degrees of freedom all unknown, the data simulated from stated values of the three.',
+  factors: [
+    'prior (gaussian)',
+    'prior (log-normal)',
+    'prior (gamma)',
+    'likelihood-triple: student-t with random location, scale and degrees of freedom',
+  ],
+  family: 'likelihoods',
+  reference: 'exact',
+  tolerance: tolerance(
+    'tight',
+    'a Gaussian projection of each tilted distribution by quadrature on a three-dimensional grid; the degrees of freedom are skewed and EP carries one gamma for them (spreads 0.95 to 1.0 of the exact ones measured)',
+  ),
+  knobs: dict({
+    ...simulationKnobs(30),
+    trueLoc: real(-3, 3, { default: 1, step: 0.1, label: 'true location' }),
+    trueScale: real(0.3, 3, { default: 0.8, step: 0.1, label: 'true scale' }),
+    trueDf: real(1.5, 20, { default: 5, step: 0.5, label: 'true degrees of freedom' }),
+    shape: real(0.5, 8, { default: 3, step: 0.1, label: 'prior shape of df' }),
+    rate: real(0.02, 2, { default: 0.4, step: 0.02, label: 'prior rate of df' }),
+  }),
+  parts: studentFullLearnedProblem,
+})
+
 function weibullShapeLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const [trueLogScale, trueShape] = [configNumber(k, 'trueLogScale'), configNumber(k, 'trueShape')]
@@ -1499,6 +1624,7 @@ export const likelihoodsAtoms: readonly EpAtom[] = [
   poissonLogDispersionLearnedAtom,
   weibullLearnedAtom,
   studentTDfLearnedAtom,
+  studentTFullLearnedAtom,
   weibullShapeLearnedAtom,
   skillDifferenceLearnedAtom,
 ]

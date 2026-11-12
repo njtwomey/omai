@@ -166,6 +166,34 @@ describe('likelihood-triple: tilted moments and log evidence against a brute-for
     expect(Math.abs((df?.moments[0] as number) - (base.moments[0] as number))).toBeLessThan(5e-3)
     expect(Math.abs((df?.moments[1] as number) - Math.exp(weighted.logZ - base.logZ))).toBeLessThan(5e-3)
   })
+  it('the ordinal probit by the latent score is the grid of the same density, in every category, with an ordering that is not certain', () => {
+    const row = tripleLikelihoods()['ordinal-probit-cuts'] as TripleLikelihood
+    const { integrate: _exact, ...gridRow } = row
+    const byGrid = tripleLikelihoodOperator({ 'ordinal-probit-cuts': gridRow })
+    for (const [y, cavities] of [
+      [0, [cavity(0.3, 1), cavity(0, 1), cavity(-0.4, 0.5)]],
+      [1, [cavity(0.3, 1), cavity(0.2, 1.5), cavity(0.1, 1.5)]],
+      [1, [cavity(-0.5, 0.6), cavity(-1, 0.3), cavity(0.8, 0.4)]],
+      [2, [cavity(0.3, 1), cavity(0.6, 0.7), cavity(0, 1)]],
+    ] as const) {
+      const params = { likelihood: 'ordinal-probit-cuts', y, categories: 3 }
+      for (const to of [0, 1, 2]) {
+        if (y === 0 && to === 1) continue
+        if (y === 2 && to === 2) continue
+        const exact = op.tilted?.({ mode: 'ep', to, args: [...cavities], params, power: 1 })
+        const grid = byGrid.tilted?.({ mode: 'ep', to, args: [...cavities], params, power: 1 })
+        for (const i of [0, 1]) {
+          expect(
+            Math.abs((exact?.moments[i] as number) - (grid?.moments[i] as number)),
+            `y=${y} port ${to} moment ${i}`,
+          ).toBeLessThan(3e-3 * (1 + Math.abs(grid?.moments[i] as number)))
+        }
+        expect(Math.abs((exact?.logZ as number) - (grid?.logZ as number)), `y=${y} port ${to} evidence`).toBeLessThan(
+          1e-2,
+        )
+      }
+    }
+  })
   it('the column form of the Student-t density is the density', () => {
     const row = tripleLikelihoods()['student-t-full']
     const flat = row?.density(1.3, { y: 1.3 }) as (a: number, b: number, c: number) => number
