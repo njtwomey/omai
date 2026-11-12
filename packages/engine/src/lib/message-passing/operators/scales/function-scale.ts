@@ -172,7 +172,6 @@ export const gaussianMvFunctionScale: FactorOperator = defineOperator({
     }, 'numeric'),
   },
   evidence: {
-    improperIsNaN: true,
     ep: (c) => functionScaleTilt(c).logZ,
     vmp: (c) => {
       const { logf, constant } = expectedLogGiven(c)

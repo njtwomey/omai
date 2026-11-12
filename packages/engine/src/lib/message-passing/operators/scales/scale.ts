@@ -307,7 +307,6 @@ export const gaussianMvPrecisionScale: FactorOperator = defineOperator({
     }),
   },
   evidence: {
-    improperIsNaN: true,
     ep: (c) => scaleTilt(c).logZ,
     vmp: (c) => {
       const { scale, offset } = precisions(c)

@@ -178,7 +178,6 @@ export const mvnSdCorr: FactorOperator = defineOperator({
     }, 'numeric'),
   },
   evidence: {
-    improperIsNaN: true,
     ep: (c) => {
       if (c.args.some((a) => a.eta !== undefined && !a.family.isProper(a.eta))) return Number.NaN
       const { grid } = tilt(c, rowsOf(c.params, 2))

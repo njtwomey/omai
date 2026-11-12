@@ -212,7 +212,6 @@ export const dirichletConcentration: FactorOperator = defineOperator({
     }, 'numeric'),
   },
   evidence: {
-    improperIsNaN: true,
     ep: (c) => tilt(c).logZ,
     vmp: (c) => {
       const { w, o } = concentrations(c)
@@ -331,7 +330,6 @@ export const betaTwoShapes: FactorOperator = defineOperator({
     }, 'numeric'),
   },
   evidence: {
-    improperIsNaN: true,
     ep: (c) => {
       if (!allProper(c.args)) return Number.NaN
       return twoShapes(c).logMass + massOf(arg(c, 1)) + massOf(arg(c, 2))

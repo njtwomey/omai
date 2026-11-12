@@ -160,9 +160,10 @@ export interface OperatorDeclaration {
   }
   /**
    * What the evidence estimate (`ep`: log of the integral of the factor against the cavities) and the variational bound (`vmp`: the
-   * expected log factor) need. With `improperIsNaN` the `ep` rule is wrapped here: while a message has no density yet the evidence is
-   * `NaN`, never an error. The engine catches an improper cavity for every operator when it reads the evidence of a state
-   * (`evidenceOf`, `evidenceDefects`), so the flag only matters to a caller of `logEvidence` that is not the engine.
+   * expected log factor) need. The engine catches an improper cavity for every operator when it reads the evidence of a state
+   * (`evidenceOf`, `evidenceDefects`: the factor then has no evidence, `NaN`, never an error), so no operator needs to ask for it. With
+   * `improperIsNaN` the `ep` rule is also wrapped here, for an operator whose `logEvidence` is called outside the engine (a direct
+   * call then gives `NaN` where it would throw `ImproperMessageError`); no operator of the library sets it.
    */
   readonly evidence?: {
     readonly ep?: (c: OperatorContext) => number

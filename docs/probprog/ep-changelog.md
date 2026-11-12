@@ -654,3 +654,10 @@ observation). Their reports say what exists; the work packages above absorb it r
   quadratures; it matches the brute-force bound on a scale read by a Gaussian) was written and left out: the compiler ties the scalar
   outputs of ARD to one Gaussian vector with `dot-constant` factors that define each output from the vector, and a variable with two
   definers does not compile, EP included. The gap says what the compiler would have to emit.
+- The `evidence.improperIsNaN` flag is gone from the nine operators that set it (`gaussian-gamma-precision`, `gamma-rate`, `gamma-product`,
+  `dirichlet-concentration`, `beta-two-shapes`, `gate`, `mvn-sd-corr`, `gaussian-mv-precision-scale`, `gaussian-mv-function-scale`): the
+  engine catches an improper cavity for every operator (`factorEvidence`). The option stays in `defineOperator` for a caller of
+  `logEvidence` outside the engine; a direct call of those operators on a flat cavity now throws `ImproperMessageError` where it gave `NaN`
+  (`evidence.test.ts` says so). 109 digest items around gates, mixtures, gamma precisions, priors and covariances are BITS identical; the
+  one item that moves (`atom/gate-random-learned`, evidence by 2.8e-12) moves the same on the commit before, so it is not this change.
+
