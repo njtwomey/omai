@@ -1,0 +1,238 @@
+atom/gate vectorise: 1 variables, 2 factors, 0 issues; prior x1 table x1
+atom/gate expand: 1 variables, 2 factors, 0 issues; prior x1 table x1
+atom/gate-random vectorise: 8 variables, 8 factors, 0 issues; dot-constant x4 gaussian x1 prior x2 select x1
+atom/gate-random expand: 8 variables, 8 factors, 0 issues; dot-constant x4 gaussian x1 prior x2 select x1
+atom/gate-random-learned vectorise: 48 variables, 88 factors, 0 issues; bernoulli x40 dot-constant x4 gate x40 prior x4
+atom/gate-random-learned expand: 48 variables, 88 factors, 0 issues; bernoulli x40 dot-constant x4 gate x40 prior x4
+atom/mixture-components vectorise: 5 variables, 5 factors, 0 issues; gaussian x1 prior x3 select x1
+atom/mixture-components expand: 5 variables, 5 factors, 0 issues; gaussian x1 prior x3 select x1
+atom/mixture-components-learned vectorise: 52 variables, 97 factors, 0 issues; difference x1 discrete x45 gate x45 greater-than x1 prior x5
+atom/mixture-components-learned expand: 52 variables, 97 factors, 0 issues; difference x1 discrete x45 gate x45 greater-than x1 prior x5
+atom/spike-and-slab vectorise: 8 variables, 8 factors, 0 issues; dot-constant x4 gaussian x1 prior x2 select x1
+atom/spike-and-slab expand: 8 variables, 8 factors, 0 issues; dot-constant x4 gaussian x1 prior x2 select x1
+atom/spike-and-slab-learned vectorise: 52 variables, 52 factors, 0 issues; bernoulli x10 gaussian x10 gaussian-gamma-precision x10 prior x12 select x10
+atom/spike-and-slab-learned expand: 52 variables, 52 factors, 0 issues; bernoulli x10 gaussian x10 gaussian-gamma-precision x10 prior x12 select x10
+atom/spike-and-slab-marginal vectorise: 2 variables, 2 factors, 0 issues; gaussian x1 mixture-site x1
+atom/spike-and-slab-marginal expand: 2 variables, 2 factors, 0 issues; gaussian x1 mixture-site x1
+atom/spike-and-slab-marginal-learned vectorise: 32 variables, 32 factors, 0 issues; bernoulli x10 gate x10 gaussian x10 prior x2
+atom/spike-and-slab-marginal-learned expand: 32 variables, 32 factors, 0 issues; bernoulli x10 gate x10 gaussian x10 prior x2
+atom/clutter vectorise: 9 variables, 17 factors, 0 issues; gate x8 prior x9
+atom/clutter expand: 9 variables, 17 factors, 0 issues; gate x8 prior x9
+atom/clutter-learned vectorise: 54 variables, 104 factors, 0 issues; bernoulli x50 gate x50 prior x4
+atom/clutter-learned expand: 54 variables, 104 factors, 0 issues; bernoulli x50 gate x50 prior x4
+atom/clutter-mixture vectorise: 1 variables, 9 factors, 0 issues; mixture-site x8 prior x1
+atom/clutter-mixture expand: 1 variables, 9 factors, 0 issues; mixture-site x8 prior x1
+atom/clutter-mixture-learned vectorise: 53 variables, 103 factors, 0 issues; bernoulli x50 gate x50 prior x3
+atom/clutter-mixture-learned expand: 53 variables, 103 factors, 0 issues; bernoulli x50 gate x50 prior x3
+atom/ordered-pair vectorise: 5 variables, 5 factors, 0 issues; dot-constant x3 greater-than x1 prior x1
+atom/ordered-pair expand: 5 variables, 5 factors, 0 issues; dot-constant x3 greater-than x1 prior x1
+atom/ordered-means vectorise: 8 variables, 8 factors, 0 issues; difference x1 gaussian x4 greater-than x1 prior x2
+atom/ordered-means expand: 8 variables, 8 factors, 0 issues; difference x1 gaussian x4 greater-than x1 prior x2
+atom/exp vectorise: 3 variables, 3 factors, 0 issues; apply x1 gaussian x1 prior x1
+atom/exp expand: 3 variables, 3 factors, 0 issues; apply x1 gaussian x1 prior x1
+atom/tanh vectorise: 3 variables, 3 factors, 0 issues; apply x1 gaussian x1 prior x1
+atom/tanh expand: 3 variables, 3 factors, 0 issues; apply x1 gaussian x1 prior x1
+atom/log-scale vectorise: 3 variables, 3 factors, 0 issues; gaussian-log-scale x1 prior x1 times-constant x1
+atom/log-scale expand: 3 variables, 3 factors, 0 issues; gaussian-log-scale x1 prior x1 times-constant x1
+atom/product vectorise: 7 variables, 7 factors, 0 issues; dot-constant x4 gaussian x1 prior x1 product x1
+atom/product expand: 7 variables, 7 factors, 0 issues; dot-constant x4 gaussian x1 prior x1 product x1
+atom/max vectorise: 7 variables, 7 factors, 0 issues; dot-constant x4 gaussian x1 max x1 prior x1
+atom/max expand: 7 variables, 7 factors, 0 issues; dot-constant x4 gaussian x1 max x1 prior x1
+atom/gamma-precision vectorise: 8 variables, 8 factors, 0 issues; gaussian-gamma-precision x6 prior x2
+atom/gamma-precision expand: 8 variables, 8 factors, 0 issues; gaussian-gamma-precision x6 prior x2
+atom/gamma-precision-learned vectorise: 14 variables, 14 factors, 0 issues; gaussian-gamma-precision x12 prior x2
+atom/gamma-precision-learned expand: 14 variables, 14 factors, 0 issues; gaussian-gamma-precision x12 prior x2
+atom/shared-precision vectorise: 13 variables, 13 factors, 0 issues; gaussian x6 gaussian-gamma-precision x6 prior x1
+atom/shared-precision expand: 13 variables, 13 factors, 0 issues; gaussian x6 gaussian-gamma-precision x6 prior x1
+atom/shared-precision-learned vectorise: 18 variables, 18 factors, 0 issues; gaussian x8 gaussian-gamma-precision x8 prior x2
+atom/shared-precision-learned expand: 18 variables, 18 factors, 0 issues; gaussian x8 gaussian-gamma-precision x8 prior x2
+atom/scaled-precision vectorise: 13 variables, 13 factors, 0 issues; gaussian x6 gaussian-gamma-precision x6 prior x1
+atom/scaled-precision expand: 13 variables, 13 factors, 0 issues; gaussian x6 gaussian-gamma-precision x6 prior x1
+atom/half-cauchy vectorise: 6 variables, 6 factors, 0 issues; apply x1 gaussian-scale x4 prior-site x1
+atom/half-cauchy expand: 6 variables, 6 factors, 0 issues; apply x1 gaussian-scale x4 prior-site x1
+atom/half-normal vectorise: 6 variables, 6 factors, 0 issues; apply x1 gaussian-scale x4 prior-site x1
+atom/half-normal expand: 6 variables, 6 factors, 0 issues; apply x1 gaussian-scale x4 prior-site x1
+atom/student-t vectorise: 1 variables, 6 factors, 0 issues; prior x1 student-t-site x5
+atom/student-t expand: 1 variables, 6 factors, 0 issues; prior x1 student-t-site x5
+atom/student-t-learned vectorise: 47 variables, 47 factors, 0 issues; gamma-product x15 gaussian-gamma-precision x15 prior x17
+atom/student-t-learned expand: 47 variables, 47 factors, 0 issues; gamma-product x15 gaussian-gamma-precision x15 prior x17
+atom/laplace vectorise: 1 variables, 6 factors, 0 issues; laplace-site x5 prior x1
+atom/laplace expand: 1 variables, 6 factors, 0 issues; laplace-site x5 prior x1
+atom/laplace-learned vectorise: 3 variables, 18 factors, 0 issues; apply x1 likelihood-pair x15 prior x1 prior-site x1
+atom/laplace-learned expand: 3 variables, 18 factors, 0 issues; apply x1 likelihood-pair x15 prior x1 prior-site x1
+atom/probit vectorise: 1 variables, 2 factors, 0 issues; prior x1 probit-plate x1
+atom/probit expand: 17 variables, 17 factors, 0 issues; dot-constant x8 prior x1 probit x8
+atom/probit-learned vectorise: 2 variables, 3 factors, 0 issues; gaussian-mv-precision-scale x1 prior x1 probit-plate x1
+atom/probit-learned expand: 102 variables, 102 factors, 0 issues; dot-constant x50 gaussian-mv-precision-scale x1 prior x1 probit x50
+atom/logistic vectorise: 1 variables, 2 factors, 0 issues; logistic-plate x1 prior x1
+atom/logistic expand: 17 variables, 17 factors, 0 issues; dot-constant x8 logistic x8 prior x1
+atom/logistic-learned vectorise: 2 variables, 3 factors, 0 issues; gaussian-mv-precision-scale x1 logistic-plate x1 prior x1
+atom/logistic-learned expand: 122 variables, 122 factors, 0 issues; dot-constant x60 gaussian-mv-precision-scale x1 logistic x60 prior x1
+atom/skill-difference vectorise: 14 variables, 14 factors, 0 issues; dot-constant x8 prior x1 probit x5
+atom/skill-difference expand: 14 variables, 14 factors, 0 issues; dot-constant x8 prior x1 probit x5
+atom/skill-difference-learned vectorise: 121 variables, 121 factors, 0 issues; gaussian-gamma-precision x8 linear x56 prior x1 probit x56
+atom/skill-difference-learned expand: 121 variables, 121 factors, 0 issues; gaussian-gamma-precision x8 linear x56 prior x1 probit x56
+atom/gp-probit vectorise: 1 variables, 2 factors, 0 issues; prior x1 probit-plate x1
+atom/gp-probit expand: 7 variables, 7 factors, 0 issues; dot-constant x3 prior x1 probit x3
+atom/gp-logistic vectorise: 1 variables, 2 factors, 0 issues; logistic-plate x1 prior x1
+atom/gp-logistic expand: 7 variables, 7 factors, 0 issues; dot-constant x3 logistic x3 prior x1
+atom/softmax-regression vectorise: 30 variables, 40 factors, 0 issues; multiclass-site x10 prior x3 times-constant x27
+atom/softmax-regression expand: 30 variables, 40 factors, 0 issues; multiclass-site x10 prior x3 times-constant x27
+atom/softmax-regression-learned vectorise: 75 variables, 99 factors, 0 issues; multiclass-site x24 prior x3 times-constant x72
+atom/softmax-regression-learned expand: 75 variables, 99 factors, 0 issues; multiclass-site x24 prior x3 times-constant x72
+atom/ordinal-probit vectorise: 3 variables, 15 factors, 0 issues; dot-constant x2 likelihood-row x12 prior x1
+atom/ordinal-probit expand: 3 variables, 15 factors, 0 issues; dot-constant x2 likelihood-row x12 prior x1
+atom/ordinal-probit-learned vectorise: 3 variables, 33 factors, 0 issues; dot-constant x2 likelihood-row x30 prior x1
+atom/ordinal-probit-learned expand: 3 variables, 33 factors, 0 issues; dot-constant x2 likelihood-row x30 prior x1
+atom/quantile-regression vectorise: 3 variables, 13 factors, 0 issues; dot-constant x2 likelihood-row x10 prior x1
+atom/quantile-regression expand: 3 variables, 13 factors, 0 issues; dot-constant x2 likelihood-row x10 prior x1
+atom/quantile-regression-learned vectorise: 3 variables, 43 factors, 0 issues; dot-constant x2 likelihood-row x40 prior x1
+atom/quantile-regression-learned expand: 3 variables, 43 factors, 0 issues; dot-constant x2 likelihood-row x40 prior x1
+atom/skill-draws vectorise: 9 variables, 15 factors, 0 issues; likelihood-site x6 linear x6 prior x3
+atom/skill-draws expand: 9 variables, 15 factors, 0 issues; likelihood-site x6 linear x6 prior x3
+atom/skill-draws-learned vectorise: 15 variables, 27 factors, 0 issues; likelihood-site x12 linear x12 prior x3
+atom/skill-draws-learned expand: 15 variables, 27 factors, 0 issues; likelihood-site x12 linear x12 prior x3
+atom/gp-length-scale vectorise: - variables, - factors, 2 issues (random-parameter,node); 
+atom/gp-length-scale expand: - variables, - factors, 2 issues (random-parameter,node); 
+atom/gp-probit-learned vectorise: - variables, - factors, 2 issues (random-parameter,node); 
+atom/gp-probit-learned expand: - variables, - factors, 2 issues (random-parameter,node); 
+atom/poisson-log vectorise: 1 variables, 2 factors, 0 issues; likelihood-site x1 prior x1
+atom/poisson-log expand: 1 variables, 2 factors, 0 issues; likelihood-site x1 prior x1
+atom/poisson-log-learned vectorise: 3 variables, 33 factors, 0 issues; dot-constant x2 likelihood-row x30 prior x1
+atom/poisson-log-learned expand: 3 variables, 33 factors, 0 issues; dot-constant x2 likelihood-row x30 prior x1
+atom/poisson-log-dispersion-learned vectorise: 30 variables, 55 factors, 0 issues; apply x1 dot-constant x27 negative-binomial-dispersion x25 prior x1 prior-site x1
+atom/poisson-log-dispersion-learned expand: 30 variables, 55 factors, 0 issues; apply x1 dot-constant x27 negative-binomial-dispersion x25 prior x1 prior-site x1
+atom/gaussian vectorise: 4 variables, 4 factors, 0 issues; gaussian x3 prior x1
+atom/gaussian expand: 4 variables, 4 factors, 0 issues; gaussian x3 prior x1
+atom/gaussian-learned vectorise: 13 variables, 13 factors, 0 issues; gaussian-normal-gamma x12 prior x1
+atom/gaussian-learned expand: 13 variables, 13 factors, 0 issues; gaussian-normal-gamma x12 prior x1
+atom/beta-bernoulli vectorise: 8 variables, 8 factors, 0 issues; bernoulli x7 prior x1
+atom/beta-bernoulli expand: 8 variables, 8 factors, 0 issues; bernoulli x7 prior x1
+atom/beta-bernoulli-learned vectorise: 89 variables, 89 factors, 0 issues; bernoulli x80 dirichlet-concentration x8 prior x1
+atom/beta-bernoulli-learned expand: 89 variables, 89 factors, 0 issues; bernoulli x80 dirichlet-concentration x8 prior x1
+atom/gamma-poisson vectorise: 5 variables, 5 factors, 0 issues; poisson x4 prior x1
+atom/gamma-poisson expand: 5 variables, 5 factors, 0 issues; poisson x4 prior x1
+atom/gamma-poisson-learned vectorise: 41 variables, 41 factors, 0 issues; gamma-rate x8 poisson x32 prior x1
+atom/gamma-poisson-learned expand: 41 variables, 41 factors, 0 issues; gamma-rate x8 poisson x32 prior x1
+atom/prior-normal-inverse-gamma vectorise: 7 variables, 7 factors, 0 issues; gaussian-normal-gamma x6 prior x1
+atom/prior-normal-inverse-gamma expand: 7 variables, 7 factors, 0 issues; gaussian-normal-gamma x6 prior x1
+atom/prior-normal-hyperprior vectorise: 8 variables, 8 factors, 0 issues; gaussian x7 prior x1
+atom/prior-normal-hyperprior expand: 8 variables, 8 factors, 0 issues; gaussian x7 prior x1
+atom/prior-inverse-gamma-hyperprior vectorise: 8 variables, 8 factors, 0 issues; gamma-rate x1 gaussian-gamma-precision x6 prior x1
+atom/prior-inverse-gamma-hyperprior expand: 8 variables, 8 factors, 0 issues; gamma-rate x1 gaussian-gamma-precision x6 prior x1
+atom/prior-gamma-poisson-hyperprior vectorise: 6 variables, 6 factors, 0 issues; gamma-rate x1 poisson x4 prior x1
+atom/prior-gamma-poisson-hyperprior expand: 6 variables, 6 factors, 0 issues; gamma-rate x1 poisson x4 prior x1
+atom/prior-gamma-exponential vectorise: 6 variables, 6 factors, 0 issues; gamma-observed x5 prior x1
+atom/prior-gamma-exponential expand: 6 variables, 6 factors, 0 issues; gamma-observed x5 prior x1
+atom/prior-lognormal-poisson vectorise: 2 variables, 6 factors, 0 issues; apply x1 likelihood-site x4 prior x1
+atom/prior-lognormal-poisson expand: 2 variables, 6 factors, 0 issues; apply x1 likelihood-site x4 prior x1
+atom/prior-lognormal-poisson-hyperprior vectorise: 2 variables, 6 factors, 0 issues; gaussian x1 likelihood-site x4 prior x1
+atom/prior-lognormal-poisson-hyperprior expand: 2 variables, 6 factors, 0 issues; gaussian x1 likelihood-site x4 prior x1
+atom/prior-normal-weibull-scale vectorise: 2 variables, 7 factors, 0 issues; gaussian x1 likelihood-site x5 prior x1
+atom/prior-normal-weibull-scale expand: 2 variables, 7 factors, 0 issues; gaussian x1 likelihood-site x5 prior x1
+atom/weibull-learned vectorise: 3 variables, 33 factors, 0 issues; dot-constant x2 likelihood-row x30 prior x1
+atom/weibull-learned expand: 3 variables, 33 factors, 0 issues; dot-constant x2 likelihood-row x30 prior x1
+atom/weibull-shape-learned vectorise: 3 variables, 33 factors, 0 issues; apply x1 likelihood-pair x30 prior x2
+atom/weibull-shape-learned expand: 3 variables, 33 factors, 0 issues; apply x1 likelihood-pair x30 prior x2
+atom/student-t-df-learned vectorise: 2 variables, 42 factors, 0 issues; likelihood-pair x40 prior x2
+atom/student-t-df-learned expand: 2 variables, 42 factors, 0 issues; likelihood-pair x40 prior x2
+atom/prior-beta-geometric vectorise: 5 variables, 5 factors, 0 issues; negative-binomial-beta x4 prior x1
+atom/prior-beta-geometric expand: 5 variables, 5 factors, 0 issues; negative-binomial-beta x4 prior x1
+atom/prior-beta-strength-gamma vectorise: 9 variables, 9 factors, 0 issues; bernoulli x7 dirichlet-concentration x1 prior x1
+atom/prior-beta-strength-gamma expand: 9 variables, 9 factors, 0 issues; bernoulli x7 dirichlet-concentration x1 prior x1
+atom/prior-beta-strength-lognormal vectorise: 10 variables, 10 factors, 0 issues; apply x1 bernoulli x7 dirichlet-concentration x1 prior x1
+atom/prior-beta-strength-lognormal expand: 10 variables, 10 factors, 0 issues; apply x1 bernoulli x7 dirichlet-concentration x1 prior x1
+atom/prior-dirichlet-categorical vectorise: 8 variables, 8 factors, 0 issues; discrete x7 prior x1
+atom/prior-dirichlet-categorical expand: 8 variables, 8 factors, 0 issues; discrete x7 prior x1
+atom/prior-dirichlet-strength-gamma vectorise: 9 variables, 9 factors, 0 issues; dirichlet-concentration x1 discrete x7 prior x1
+atom/prior-dirichlet-strength-gamma expand: 9 variables, 9 factors, 0 issues; dirichlet-concentration x1 discrete x7 prior x1
+atom/prior-logit-normal-bernoulli vectorise: 9 variables, 9 factors, 0 issues; gaussian x1 logistic x7 prior x1
+atom/prior-logit-normal-bernoulli expand: 9 variables, 9 factors, 0 issues; gaussian x1 logistic x7 prior x1
+atom/prior-uniform-mean vectorise: 7 variables, 7 factors, 0 issues; gaussian x6 prior-site x1
+atom/prior-uniform-mean expand: 7 variables, 7 factors, 0 issues; gaussian x6 prior-site x1
+atom/prior-lognormal-scale-hyperprior vectorise: 6 variables, 6 factors, 0 issues; gaussian x1 gaussian-log-scale x4 prior x1
+atom/prior-lognormal-scale-hyperprior expand: 6 variables, 6 factors, 0 issues; gaussian x1 gaussian-log-scale x4 prior x1
+atom/prior-beta-two-shapes vectorise: 12 variables, 12 factors, 0 issues; apply x2 bernoulli x7 beta-two-shapes x1 prior x2
+atom/prior-beta-two-shapes expand: 12 variables, 12 factors, 0 issues; apply x2 bernoulli x7 beta-two-shapes x1 prior x2
+atom/gate-weight vectorise: 11 variables, 21 factors, 0 issues; bernoulli x10 prior x1 table x10
+atom/gate-weight expand: 11 variables, 21 factors, 0 issues; bernoulli x10 prior x1 table x10
+atom/gate-weight-summed-out vectorise: 1 variables, 11 factors, 0 issues; mixture-weight x10 prior x1
+atom/gate-weight-summed-out expand: 1 variables, 11 factors, 0 issues; mixture-weight x10 prior x1
+atom/gate-weight-dirichlet vectorise: 11 variables, 21 factors, 0 issues; discrete x10 prior x1 table x10
+atom/gate-weight-dirichlet expand: 11 variables, 21 factors, 0 issues; discrete x10 prior x1 table x10
+atom/gate-weight-hyperprior vectorise: 12 variables, 22 factors, 0 issues; bernoulli x10 dirichlet-concentration x1 prior x1 table x10
+atom/gate-weight-hyperprior expand: 12 variables, 22 factors, 0 issues; bernoulli x10 dirichlet-concentration x1 prior x1 table x10
+atom/stick-breaking vectorise: 12 variables, 22 factors, 0 issues; prior x2 stick-breaking x10 table x10
+atom/stick-breaking expand: 12 variables, 22 factors, 0 issues; prior x2 stick-breaking x10 table x10
+atom/topic-model vectorise: 20 variables, 20 factors, 0 issues; discrete x8 gate x8 prior x4
+atom/topic-model expand: 20 variables, 20 factors, 0 issues; discrete x8 gate x8 prior x4
+atom/mixture-regression vectorise: 28 variables, 36 factors, 0 issues; gate x8 linear x16 prior x12
+atom/mixture-regression expand: 28 variables, 36 factors, 0 issues; gate x8 linear x16 prior x12
+atom/hurdle-poisson vectorise: 16 variables, 24 factors, 0 issues; bernoulli x12 dot-constant x2 likelihood-row x8 prior x2
+atom/hurdle-poisson expand: 16 variables, 24 factors, 0 issues; bernoulli x12 dot-constant x2 likelihood-row x8 prior x2
+atom/mvn-wishart vectorise: 1 variables, 2 factors, 0 issues; mvn-wishart x1 prior x1
+atom/mvn-wishart expand: 7 variables, 7 factors, 0 issues; mvn-wishart x6 prior x1
+atom/mvn-wishart-learned vectorise: 2 variables, 3 factors, 0 issues; mvn-wishart x1 prior x2
+atom/mvn-wishart-learned expand: 42 variables, 42 factors, 0 issues; mvn-wishart x40 prior x2
+atom/bivariate-correlation vectorise: 1 variables, 2 factors, 0 issues; mvn-sd-corr x1 prior x1
+atom/bivariate-correlation expand: 9 variables, 9 factors, 0 issues; mvn-sd-corr x8 prior x1
+atom/bivariate-correlation-learned vectorise: 4 variables, 5 factors, 0 issues; mvn-sd-corr x1 prior x4
+atom/bivariate-correlation-learned expand: 34 variables, 34 factors, 0 issues; mvn-sd-corr x30 prior x4
+atom/random-intercepts-slopes vectorise: 31 variables, 31 factors, 0 issues; linear-regression-row x24 mvn-wishart x6 prior x1
+atom/random-intercepts-slopes expand: 31 variables, 31 factors, 0 issues; linear-regression-row x24 mvn-wishart x6 prior x1
+atom/random-intercepts-slopes-learned vectorise: 52 variables, 52 factors, 0 issues; linear-regression-row x40 mvn-wishart x10 prior x2
+atom/random-intercepts-slopes-learned expand: 52 variables, 52 factors, 0 issues; linear-regression-row x40 mvn-wishart x10 prior x2
+model/beta-bernoulli vectorise: 21 variables, 21 factors, 0 issues; bernoulli x20 prior x1
+model/beta-bernoulli expand: 21 variables, 21 factors, 0 issues; bernoulli x20 prior x1
+model/normal-normal vectorise: 13 variables, 13 factors, 0 issues; gaussian x12 prior x1
+model/normal-normal expand: 13 variables, 13 factors, 0 issues; gaussian x12 prior x1
+model/gamma-poisson vectorise: 16 variables, 16 factors, 0 issues; poisson x15 prior x1
+model/gamma-poisson expand: 16 variables, 16 factors, 0 issues; poisson x15 prior x1
+model/logistic-regression vectorise: 1 variables, 2 factors, 0 issues; logistic-plate x1 prior x1
+model/logistic-regression expand: 101 variables, 101 factors, 0 issues; dot-constant x50 logistic x50 prior x1
+model/probit-regression vectorise: 1 variables, 2 factors, 0 issues; prior x1 probit-plate x1
+model/probit-regression expand: 101 variables, 101 factors, 0 issues; dot-constant x50 prior x1 probit x50
+model/poisson-regression vectorise: 3 variables, 83 factors, 0 issues; dot-constant x2 likelihood-row x80 prior x1
+model/poisson-regression expand: 3 variables, 83 factors, 0 issues; dot-constant x2 likelihood-row x80 prior x1
+model/negative-binomial-regression vectorise: 105 variables, 205 factors, 0 issues; apply x1 dot-constant x102 negative-binomial-dispersion x100 prior x1 prior-site x1
+model/negative-binomial-regression expand: 105 variables, 205 factors, 0 issues; apply x1 dot-constant x102 negative-binomial-dispersion x100 prior x1 prior-site x1
+model/eight-schools-centred vectorise: 35 variables, 35 factors, 0 issues; apply x1 gaussian x8 plus x8 prior x9 prior-site x1 product x8
+model/eight-schools-centred expand: 35 variables, 35 factors, 0 issues; apply x1 gaussian x8 plus x8 prior x9 prior-site x1 product x8
+model/eight-schools-non-centred vectorise: 35 variables, 35 factors, 0 issues; apply x1 gaussian x8 plus x8 prior x9 prior-site x1 product x8
+model/eight-schools-non-centred expand: 35 variables, 35 factors, 0 issues; apply x1 gaussian x8 plus x8 prior x9 prior-site x1 product x8
+model/gaussian-mixture-ordered vectorise: 124 variables, 124 factors, 0 issues; difference x1 gaussian x40 greater-than x1 prior x42 select x40
+model/gaussian-mixture-ordered expand: 124 variables, 124 factors, 0 issues; difference x1 gaussian x40 greater-than x1 prior x42 select x40
+model/gaussian-mixture vectorise: 122 variables, 122 factors, 0 issues; gaussian x40 prior x42 select x40
+model/gaussian-mixture expand: 122 variables, 122 factors, 0 issues; gaussian x40 prior x42 select x40
+model/funnel-centred vectorise: 30 variables, 30 factors, 0 issues; apply x1 equal x9 prior x10 product x9 times-constant x1
+model/funnel-centred expand: 30 variables, 30 factors, 0 issues; apply x1 equal x9 prior x10 product x9 times-constant x1
+model/funnel-non-centred vectorise: 30 variables, 30 factors, 0 issues; apply x1 equal x9 prior x10 product x9 times-constant x1
+model/funnel-non-centred expand: 30 variables, 30 factors, 0 issues; apply x1 equal x9 prior x10 product x9 times-constant x1
+model/banana vectorise: 4 variables, 4 factors, 0 issues; apply x1 gaussian x1 linear x1 prior x1
+model/banana expand: 4 variables, 4 factors, 0 issues; apply x1 gaussian x1 linear x1 prior x1
+model/bimodal vectorise: 3 variables, 3 factors, 0 issues; gate x2 prior x1
+model/bimodal expand: 3 variables, 3 factors, 0 issues; gate x2 prior x1
+model/radon vectorise: 94 variables, 94 factors, 0 issues; apply x2 gaussian-scale x48 plus x28 prior x8 prior-site x2 product x6
+model/radon expand: 94 variables, 94 factors, 0 issues; apply x2 gaussian-scale x48 plus x28 prior x8 prior-site x2 product x6
+model/trueskill-three-players vectorise: 51 variables, 51 factors, 0 issues; linear x24 prior x3 probit x24
+model/trueskill-three-players expand: 51 variables, 51 factors, 0 issues; linear x24 prior x3 probit x24
+model/ar1-state-space vectorise: 35 variables, 35 factors, 0 issues; gaussian x23 prior x1 times-constant x11
+model/ar1-state-space expand: 35 variables, 35 factors, 0 issues; gaussian x23 prior x1 times-constant x11
+model/stochastic-volatility vectorise: 119 variables, 119 factors, 0 issues; gaussian x29 gaussian-log-scale x30 linear x29 prior x1 times-constant x30
+model/stochastic-volatility expand: 119 variables, 119 factors, 0 issues; gaussian x29 gaussian-log-scale x30 linear x29 prior x1 times-constant x30
+model/gaussian-hmm vectorise: 16 variables, 32 factors, 0 issues; prior x1 table x31
+model/gaussian-hmm expand: 16 variables, 32 factors, 0 issues; prior x1 table x31
+model/gaussian-process-regression vectorise: - variables, - factors, 2 issues (random-parameter,node); 
+model/gaussian-process-regression expand: - variables, - factors, 2 issues (random-parameter,node); 
+model/gaussian-process-non-centred vectorise: - variables, - factors, 2 issues (opaque,node); 
+model/gaussian-process-non-centred expand: - variables, - factors, 2 issues (opaque,node); 
+model/lda-lite vectorise: 35 variables, 35 factors, 0 issues; discrete x15 gate x15 prior x5
+model/lda-lite expand: 35 variables, 35 factors, 0 issues; discrete x15 gate x15 prior x5
+model/bayesian-neural-network vectorise: 233 variables, 233 factors, 0 issues; apply x63 gaussian x16 linear x60 prior x10 product x63 sum x21
+model/bayesian-neural-network expand: 233 variables, 233 factors, 0 issues; apply x63 gaussian x16 linear x60 prior x10 product x63 sum x21
+model/item-response-scoring vectorise: 204 variables, 204 factors, 0 issues; linear x84 logistic x96 prior x12 times-constant x12
+model/item-response-scoring expand: 204 variables, 204 factors, 0 issues; linear x84 logistic x96 prior x12 times-constant x12
+model/stick-breaking-mixture vectorise: 33 variables, 63 factors, 0 issues; prior x3 stick-breaking x30 table x30
+model/stick-breaking-mixture expand: 33 variables, 63 factors, 0 issues; prior x3 stick-breaking x30 table x30
+model/clutter-problem vectorise: 13 variables, 25 factors, 0 issues; gate x12 prior x13
+model/clutter-problem expand: 13 variables, 25 factors, 0 issues; gate x12 prior x13
