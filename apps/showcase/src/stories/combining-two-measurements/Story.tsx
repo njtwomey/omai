@@ -55,7 +55,7 @@ function describeStep(step: number, record: ModelRun): ReactNode {
         {belief?.mean === undefined || belief.sd === undefined
           ? 'The temperature has no belief yet.'
           : `The belief about the temperature is now mean ${sig3(belief.mean)}, standard deviation ${sig3(belief.sd)}.`}
-        {same ? ' These are the same messages as in the sweep before, so the belief did not change and EP stops.' : ''}
+        {same ? ' The messages are the same as in the sweep before, so the belief did not change. EP stops.' : ''}
       </p>
     </>
   )
@@ -68,48 +68,44 @@ export default function Story(): ReactNode {
   return (
     <StoryPage>
       <p>
-        A room has a temperature, and we want to know it. Before we measure anything, we believe it is about{' '}
-        {PRIOR.mean} degrees Celsius, with a spread of {PRIOR.sd} degrees. Then we measure it twice. The first reading
-        comes from a digital thermometer whose error has a spread of {DIGITAL_SD} degrees. The second comes from an old
-        dial thermometer whose error has a spread of {DIAL_SD} degrees. Each reading is near the real temperature, and
-        neither is exactly on it.
+        A room has a temperature, and we want to know it. Before we measure, we believe it is about {PRIOR.mean} degrees
+        Celsius, with a spread of {PRIOR.sd} degrees. Then we measure it twice. A digital thermometer has an error with
+        a spread of {DIGITAL_SD} degrees. An old dial thermometer has an error with a spread of {DIAL_SD} degrees.
+        Neither reading is exactly right.
       </p>
 
-      <Figure caption="The belief before any reading: a bell curve centred on 20 degrees. Most of it lies between 12 and 28 degrees.">
+      <Figure caption="The belief before any reading: a bell curve centred on 20 degrees, mostly between 12 and 28.">
         <PriorFigure />
       </Figure>
 
       <p>
-        We now have three pieces of information about one number: the belief before measuring, the digital reading and
-        the dial reading. Each of them can be written as a bell curve over the temperature. The belief after both
-        readings is the product of the three curves, rescaled so that its area is 1.
+        Now we have three pieces of information about one number: the belief before measuring, the digital reading and
+        the dial reading. Each is a bell curve over the temperature. The belief after both readings is the product of
+        the three curves, rescaled so that its area is 1.
       </p>
 
       <Aside>
-        A bell curve (a normal distribution) is described by its <em>mean</em>, where its peak is, and its{' '}
-        <em>variance</em>, which measures how wide it is. Its <em>precision</em> is 1 divided by the variance, so a
-        narrow curve has a high precision.
+        A bell curve (a normal distribution) has a <em>mean</em>, where its peak is, and a <em>variance</em>, which says
+        how wide it is. Its <em>precision</em> is 1 divided by the variance, so a narrow curve has a high precision.
       </Aside>
 
       <h2>Doing the product with messages</h2>
 
       <p>
-        Expectation propagation, or EP, computes beliefs by passing messages on a graph. For this model the graph has
-        one node, the temperature, and three factors attached to it: the prior, the digital reading and the dial
-        reading. A message is a bell curve that a factor sends to the temperature. It states what that factor alone says
-        about the temperature.
+        Expectation propagation, or EP, computes beliefs by passing messages on a graph. Here the graph has one node,
+        the temperature, with three factors attached: the prior, the digital reading and the dial reading. A message is
+        a bell curve that a factor sends to the temperature. It says what that factor alone knows.
       </p>
 
       <p>
-        EP works in sweeps. In one sweep, each factor sends its message to the temperature. The temperature then
-        multiplies the messages it received to get its belief. When the messages are bell curves, the product is also a
-        bell curve. Its precision is the sum of the three precisions, and its mean is the average of the three means,
-        each weighted by its precision.
+        EP works in sweeps. In one sweep, each factor sends its message to the temperature. The temperature multiplies
+        the messages to get its belief. A product of bell curves is a bell curve. Its precision is the sum of the three
+        precisions, and its mean is the average of the three means, each weighted by its precision.
       </p>
 
       <p>
-        EP stops when a sweep changes no belief. When you press play, a worker makes the room and the two readings from
-        a seed, writes the model, and runs EP on it. After it finishes, the page shows what was sent.
+        EP stops when a sweep changes no belief. When you press play, a worker makes a room and two readings from a
+        seed, writes the model and runs EP on it. Then the page shows what was sent.
       </p>
 
       <Play run={run} label="Measure the room twice" estimate="about a second" />
@@ -137,16 +133,15 @@ export default function Story(): ReactNode {
                 describe={describeStep}
                 direction="right"
                 rankSep={150}
-                caption="The graph of the model. The circle in the middle is the temperature. The small squares are the factors: one for the prior, and one for each reading, joined to the circle of that reading. A message that is sent appears on the line it travels along. Press the button to step through the sweeps, or move the scrubber to any of them. The text under the graph says what was sent."
+                caption="The graph of the model: the circle is the temperature and the squares are the factors. Step through the sweeps with the button or the scrubber."
               />
 
               <p>
                 In the replay, <code>{`N(μ = ${PRIOR.mean}, σ² = ${PRIOR.sd ** 2})`}</code> means a bell curve with mean{' '}
-                {PRIOR.mean} and variance {PRIOR.sd ** 2}. The replay starts before any message. In the first sweep the
-                three factors send these messages. The prior sends a bell curve with mean{' '}
+                {PRIOR.mean} and variance {PRIOR.sd ** 2}. In the first sweep, the prior sends mean{' '}
                 <span className="num">{sig3(r.prior.mean)}</span> and variance{' '}
-                <span className="num">{sig3(r.prior.variance)}</span>, which is the belief we started with. The digital
-                factor sends mean <span className="num">{sig3(r.digital.mean)}</span> and variance{' '}
+                <span className="num">{sig3(r.prior.variance)}</span>, the belief we started with. The digital factor
+                sends mean <span className="num">{sig3(r.digital.mean)}</span> and variance{' '}
                 <span className="num">{sig3(r.digital.variance)}</span>: the reading, with the variance of that
                 instrument&apos;s error. The dial factor sends mean <span className="num">{sig3(r.dial.mean)}</span> and
                 variance <span className="num">{sig3(r.dial.variance)}</span>.
@@ -155,14 +150,14 @@ export default function Story(): ReactNode {
               <h2>The product of the messages</h2>
 
               <p>
-                The temperature multiplies the three messages. The precisions are{' '}
+                The temperature multiplies the three messages. Their precisions are{' '}
                 <span className="num">{sig3(r.prior.precision)}</span>,{' '}
                 <span className="num">{sig3(r.digital.precision)}</span> and{' '}
-                <span className="num">{sig3(r.dial.precision)}</span>. They add up to{' '}
-                <span className="num">{sig3(r.total)}</span>, so the belief has a variance of{' '}
+                <span className="num">{sig3(r.dial.precision)}</span>, and they add up to{' '}
+                <span className="num">{sig3(r.total)}</span>. So the belief has a variance of{' '}
                 <span className="num">{sig3(1 / r.total)}</span> and a standard deviation of{' '}
-                <span className="num">{sig3(r.product.sd)}</span>. Its mean is the average of the three means weighted
-                by their precisions, which is <span className="num">{sig3(r.product.mean)}</span>.
+                <span className="num">{sig3(r.product.sd)}</span>. Its mean is the average of the three means, weighted
+                by precision: <span className="num">{sig3(r.product.mean)}</span>.
               </p>
 
               <p>
@@ -173,35 +168,34 @@ export default function Story(): ReactNode {
                   : 'This differs from the product worked out by hand, which the exact answer should not.'}
               </p>
 
-              <Figure caption="The three messages of the first sweep, each as a bell curve, and the belief, which is their product. The curves are drawn at their true heights, so the narrowest curve is the tallest.">
+              <Figure caption="The three messages of the first sweep and their product, the belief. The narrowest curve is the tallest.">
                 <MessagesFigure result={result} />
               </Figure>
 
               <p>
                 The digital reading supplies <span className="num">{pct(r.share.digital)}</span> of the total precision.
                 The dial supplies <span className="num">{pct(r.share.dial)}</span> and the prior{' '}
-                <span className="num">{pct(r.share.prior)}</span>. So the belief&apos;s mean is{' '}
+                <span className="num">{pct(r.share.prior)}</span>. The belief&apos;s mean is therefore{' '}
                 <span className="num">{fixed(r.gapToDigital)}</span> degrees from the digital reading and{' '}
                 <span className="num">{fixed(r.gapToDial)}</span> degrees from the dial reading. Its standard deviation,{' '}
                 <span className="num">{sig3(result.belief.sd)}</span>, is smaller than the {DIGITAL_SD} of the digital
-                thermometer alone. Every message adds precision, so combining the readings never leaves us less certain
-                than the best one on its own.
+                thermometer alone. Every message adds precision, so combining readings never leaves us less sure than
+                the best one alone.
               </p>
 
               <p>
-                In the first sweep the temperature went from having no belief to the belief above.{' '}
+                In the first sweep the temperature went from no belief to the belief above.{' '}
                 {result.settled
                   ? `In sweep ${result.sweeps} the largest change of any belief was ${r.lastChange === undefined ? 'not recorded' : sig3(r.lastChange)}, and EP stopped.`
                   : 'EP did not settle within its sweep limit.'}{' '}
-                Here, the message of a factor depends only on that factor, so the messages do not change after the first
-                sweep. In a graph with loops the messages depend on each other, and EP needs several sweeps before they
-                stop changing.
+                Here each message depends only on its own factor, so nothing changes after the first sweep. In a graph
+                with loops the messages depend on each other, and EP needs several sweeps before they stop changing.
               </p>
 
               <p>
-                Press <em>Run again</em> for another room. The readings change, the messages change with them, and the
-                precisions still add. The story <Link to={storyHref('two-humps')}>Two humps</Link> uses the same kind of
-                messages on a model with many more factors.
+                Press <em>Run again</em> for another room. The readings and the messages change, and the precisions
+                still add. <Link to={storyHref('two-humps')}>Two kinds of wait at Old Faithful</Link> uses the same kind
+                of messages on a model with many more factors.
               </p>
               <Code source={source} title="compute.ts" />
             </>

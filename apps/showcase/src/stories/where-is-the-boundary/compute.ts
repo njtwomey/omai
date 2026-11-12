@@ -67,7 +67,7 @@ function kernelValues(kernel: Kernel): [number, number] {
 export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE): Result {
   say('Setting out the points')
   const points = shuffled(drawPoints(size.points), seed)
-  say('Passing messages between the points until their sites stop changing')
+  say('Passing messages')
   // region infer
   // a smooth function: points close together get similar scores, and the length scale says how close
   const smooth = scaleKernel(rbfKernel({ lengthScale: 1 }), 4)
@@ -84,7 +84,7 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
   run.advance()
   const fitted = run.fittedAt(run.t)
   // endregion
-  say('Reading the probability over the plane')
+  say('Drawing the map')
   // region map
   // a grid over the plane, one row per cell
   const xs = linspace(EXTENT.x[0], EXTENT.x[1], size.grid)

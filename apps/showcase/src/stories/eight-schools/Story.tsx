@@ -26,39 +26,46 @@ export default function Story(): ReactNode {
   return (
     <StoryPage>
       <p>
-        Eight schools tried the same coaching programme for the SAT. Each school reported how much the programme helped
-        its students, in points. School A reports 28 points. School C reports −3, which means the programme did harm.
-        The other schools lie in between. Every report is a noisy estimate, so the figure shows each one with a bar of
-        one standard error on each side.
+        Eight schools tried the same coaching programme for the SAT. Each reported how many points the programme helped
+        its students. School A reports 28 points. School C reports −3, so the programme did harm. The other schools lie
+        in between.
+      </p>
+
+      <p>
+        Every report is a noisy estimate. The figure shows each one with a bar of one standard error on each side. The
+        standard error says how noisy the estimate is.
       </p>
 
       <Figure
-        caption="The estimated effect of the programme at each of eight schools (dot), with one standard error either side (bar). Six of the eight bars reach zero."
+        caption="The estimated effect at each school (dot), with one standard error either side (bar). Six of the eight bars reach zero."
         wide
       >
         <SchoolsFigure result={undefined} />
       </Figure>
 
       <p>
-        School A reads 28, but its standard error is 15. So the data do not show that A&rsquo;s programme worked three
-        times better than B&rsquo;s. Part of the spread between the dots is real difference between the schools. Part is
-        chance in each school&rsquo;s estimate. The question is how much of each.
+        School A reads 28, but its standard error is 15. The data do not show that A&rsquo;s programme worked three
+        times better than B&rsquo;s. Part of the spread between the dots is real difference between schools. Part is
+        chance. The question is how much of each.
       </p>
 
       <h2>Two simple answers</h2>
 
       <p>
         One answer is to take each estimate as it is. Then A is a success and C is a failure, and each conclusion rests
-        on one noisy number. The other answer is to average all eight and give the same value to every school. That
-        ignores any real difference between the schools.
+        on one noisy number. The other is to average all eight and give that value to every school. That ignores any
+        real difference between the schools.
       </p>
 
       <p>
         A model in between works like this. Each school has its own true effect. The true effects come from one
-        population of schools, with an unknown mean and an unknown spread. The spread is called <em>tau</em>. If tau is
-        large, the schools really differ, and each estimate should be left mostly alone. If tau is near zero, the
-        schools are the same, and each estimate is the common mean plus noise. The data estimate tau along with
-        everything else. Its value decides how far each school is pulled towards the others.
+        population of schools, with an unknown mean and an unknown spread. The spread is called <em>tau</em>.
+      </p>
+
+      <p>
+        If tau is large, the schools really differ, and each estimate should be left mostly alone. If tau is near zero,
+        the schools are the same, and each estimate is the common mean plus noise. The data estimate tau along with
+        everything else, and tau decides how far each school is pulled towards the others.
       </p>
 
       <p>
@@ -69,12 +76,12 @@ export default function Story(): ReactNode {
       <Aside>
         The model writes each school&rsquo;s effect as the common mean plus tau times a standard normal. This is the
         same distribution as a normal centred on the mean with spread tau. The direct form makes a narrow funnel when
-        tau is small, which is hard for a sampler to enter. The form used here does not.
+        tau is small, which a sampler struggles to enter. This form avoids it.
       </Aside>
 
       <p>
-        We condition the model on the eight estimates with NUTS. It draws samples of all ten unknowns together: the
-        eight true effects, their mean and tau. Press play to run it.
+        We condition the model on the eight estimates with NUTS. It draws all ten unknowns together: the eight true
+        effects, their mean and tau. Press play to run it.
       </p>
 
       <Play run={run} label="Pool the schools" estimate="about five seconds" />
@@ -86,17 +93,17 @@ export default function Story(): ReactNode {
             <>
               <h2>Pulled towards the middle</h2>
 
-              <p>The figure shows each school&rsquo;s estimate again, and its effect after pooling.</p>
+              <p>The figure shows each school&rsquo;s estimate again, with its effect after pooling.</p>
 
               <Figure
-                caption="The estimates (orange, with one standard error either side) and, after pooling, each school's effect (blue: its average and the range holding 90% of it). The grey line joins each school's estimate to its pooled one. The dashed line is the average effect over all schools."
+                caption="Estimates (orange, with one standard error) and pooled effects (blue: average and middle 90%), joined by grey lines. The dashed line is the average effect."
                 wide
               >
                 <SchoolsFigure result={result} />
               </Figure>
 
               <p>
-                Every estimate has moved towards the dashed line, which is the average effect over the schools,{' '}
+                Every estimate has moved towards the dashed line, the average effect over the schools,{' '}
                 <span className="num">{fixed(result.mu.mean)}</span> points. School {r.mover.name} moved furthest, from{' '}
                 <span className="num">{fixed(r.mover.estimate, 0)}</span> to{' '}
                 <span className="num">{fixed(r.mover.pooled.mean)}</span>, a shift of{' '}
@@ -116,7 +123,7 @@ export default function Story(): ReactNode {
               </p>
 
               <p>
-                Each pooled effect has a blue band that holds 90% of its draws. The band includes zero for{' '}
+                Each blue band holds 90% of a school&rsquo;s draws. The band includes zero for{' '}
                 <span className="num">{r.containZero === 8 ? 'all eight' : `${r.containZero} of the eight`}</span>{' '}
                 schools.
                 {r.containZero === 8 ? ' The data do not show that any single school was helped.' : ''}
@@ -124,10 +131,10 @@ export default function Story(): ReactNode {
 
               <h2>What the data cannot say</h2>
 
-              <p>All of this depends on tau. The next figure shows the draws of tau.</p>
+              <p>All of this depends on tau. The next figure shows its draws.</p>
 
               <Figure
-                caption={`Draws of tau, the spread of the true effects between schools. The prior on tau is a half-Cauchy with scale 5, which peaks at zero.${r.beyond > 0 ? ` ${r.beyond} ${r.beyond === 1 ? 'draw' : 'draws'} above ${SPREAD_LIMIT} ${r.beyond === 1 ? 'is' : 'are'} off the right edge.` : ''}`}
+                caption={`Draws of tau, the spread of the true effects. Its prior is a half-Cauchy with scale 5, which peaks at zero.${r.beyond > 0 ? ` ${r.beyond} ${r.beyond === 1 ? 'draw' : 'draws'} above ${SPREAD_LIMIT} ${r.beyond === 1 ? 'is' : 'are'} off the right edge.` : ''}`}
               >
                 <SpreadFigure result={result} limit={SPREAD_LIMIT} />
               </Figure>
@@ -137,25 +144,24 @@ export default function Story(): ReactNode {
                 draws lie between <span className="num">{fixed(result.tau.lo)}</span> and{' '}
                 <span className="num">{fixed(result.tau.hi)}</span>. That range holds two cases: schools that are nearly
                 identical, and schools whose true effects spread by about{' '}
-                <span className="num">{fixed(result.tau.hi, 0)}</span> points. About{' '}
-                <span className="num">{percent(r.smallTau)}</span> of the draws are under 5. Eight estimates this noisy
-                cannot tell these cases apart. The prior also leans towards small values, because a half-Cauchy has its
-                peak at zero. A different prior would give a different amount of pooling.
+                <span className="num">{fixed(result.tau.hi, 0)}</span> points. Eight estimates this noisy cannot tell
+                them apart.
               </p>
 
               <p>
-                The sampler kept <span className="num">{result.draws.toLocaleString('en-GB')}</span> draws and flagged{' '}
-                <span className="num">{result.divergences}</span> as divergent.
+                About <span className="num">{percent(r.smallTau)}</span> of the draws are under 5. The prior leans that
+                way too, because a half-Cauchy peaks at zero. A different prior would give a different amount of
+                pooling. The sampler kept <span className="num">{result.draws.toLocaleString('en-GB')}</span> draws and
+                flagged <span className="num">{result.divergences}</span> as divergent.
               </p>
 
               <h2>What to take from it</h2>
 
               <p>
-                Averaging all eight would give one number to every school. Reading the eight separately would give eight
-                numbers that differ mostly by chance. The pooled answer lies between the two. The data, through tau,
-                decide how much the schools may differ. The same structure appears wherever groups have different
-                amounts of data, such as the batting averages of players or the radon levels in the houses of different
-                counties.
+                Averaging all eight gives one number to every school. Reading them separately gives eight numbers that
+                differ mostly by chance. The pooled answer lies between the two, and the data, through tau, decide how
+                much the schools may differ. The same structure appears wherever groups have different amounts of data,
+                such as batting averages or radon levels in different counties.
               </p>
 
               <p>

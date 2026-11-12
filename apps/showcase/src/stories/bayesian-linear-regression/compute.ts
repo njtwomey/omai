@@ -82,7 +82,7 @@ const spread = (draws: Value, kept: number): Value => {
  */
 export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE): Result {
   const data = simulate()
-  say('Writing the model: a line, and noise around it')
+  say('Setting up the model')
   // region model
   const regression = defineModel('line', (m) => {
     const row = m.range('row')
@@ -97,7 +97,7 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
     m.observe('y', d.normal(intercept.add(slope.mul(x)), noise), y)
   })
   // endregion
-  say('Warming the sampler up, then drawing lines from the posterior')
+  say('Running the sampler')
   // region infer
   const posterior = mcmc(toProgram(regression.bind(data)), undefined, {
     key: key(seed),

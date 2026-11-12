@@ -94,7 +94,7 @@ export function lastPassStart(restartAt: number, steps: number): number {
  * @returns The result.
  */
 export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE): Result {
-  say('Writing the model: two bell curves and a hidden label for each eruption')
+  say('Setting up the model')
   const raw = sliceAxis(waitingTimes(), 0, 0, size.rows)
   // region model
   // two bell curves with unknown centres, one shared width and unknown shares of the eruptions;
@@ -108,7 +108,7 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
   const order = argsort(uniform(foldIn(key(seed), 0), [size.rows]), 0)
   const shuffled = take(standard, order, 0)
   // endregion
-  say('Passing notes between the eruptions and the two curves')
+  say('Passing messages')
   // region infer
   const bound = mixture.bind({ y: shuffled })
   // ask the library how expectation propagation runs this model

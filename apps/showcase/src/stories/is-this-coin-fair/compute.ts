@@ -54,7 +54,7 @@ export interface Result {
  * @returns The result.
  */
 export function flipCoin(seed: number, say: Say = () => {}, stages: readonly number[] = STAGES): Result {
-  say('Making a coin and flipping it a hundred times')
+  say('Making a coin and flipping it 100 times')
   // region flips
   const base = key(seed)
   // the coin's secret bias: somewhere between 0.35 and 0.8
@@ -62,12 +62,12 @@ export function flipCoin(seed: number, say: Say = () => {}, stages: readonly num
   // one hundred flips of it, 1 for heads and 0 for tails
   const flips = bernoulli(foldIn(base, 1), bias, [100])
   // endregion
-  say('Writing the model: one unknown bias, every flip a Bernoulli draw from it')
+  say('Setting up the model')
   // region model
   // a Beta(1, 1) prior is flat: before any flip, every bias is as likely as any other
   const coin = betaBernoulliModel({ a: 1, b: 1 })
   // endregion
-  say('Reading the belief after each stage')
+  say('Reading the belief at each stage')
   // region posterior
   const grid = linspace(0, 1, 101)
   // for each stage: 0, 1, 3, 10, 30 and 100 flips

@@ -47,10 +47,10 @@ export function Play<R>(props: {
   readonly label: string
   /** How long it takes, in the reader's terms ('about three seconds'). */
   readonly estimate: string
-  /** What it does behind the page (default 'runs in the background; the page stays free'). */
+  /** What it does behind the page (default 'It runs in the background.'). */
   readonly note?: string
 }): ReactNode {
-  const { run, label, estimate, note = 'runs in a background worker, so the page stays free' } = props
+  const { run, label, estimate, note = 'It runs in the background.' } = props
   const { phase } = run
   const seconds = run.elapsedMs === undefined ? '' : `${(run.elapsedMs / 1000).toFixed(run.elapsedMs < 9500 ? 1 : 0)} s`
   return (
@@ -68,7 +68,7 @@ export function Play<R>(props: {
             {label}
           </button>
           <p className="m-0 text-sm text-muted">
-            Takes {estimate}; {note}.
+            Takes {estimate}. {note}
           </p>
         </div>
       ) : null}
@@ -91,7 +91,7 @@ export function Play<R>(props: {
             Run again
           </button>
           <p className="m-0 text-sm text-muted">
-            Done in {seconds}. Running again draws a fresh seed, so the numbers below move a little.
+            Done in {seconds}. Running again uses a new seed, so the numbers below change a little.
           </p>
         </div>
       ) : null}

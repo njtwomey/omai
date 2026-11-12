@@ -84,7 +84,7 @@ function messageOf(from: Message['from'], event: MessageEvent | undefined): Mess
  * @returns The result.
  */
 export function combine(seed: number, say: Say = () => {}): Result {
-  say('Making a room and reading its temperature twice')
+  say('Making a room and two readings')
   // region readings
   const base = key(seed)
   // the room's temperature, drawn from what we believed beforehand
@@ -93,7 +93,7 @@ export function combine(seed: number, say: Say = () => {}): Result {
   const digital = item(normal(foldIn(base, 1), [], { loc: truth, scale: DIGITAL_SD }))
   const dial = item(normal(foldIn(base, 2), [], { loc: truth, scale: DIAL_SD }))
   // endregion
-  say('Writing the model: one temperature, a prior on it and two readings of it')
+  say('Setting up the model')
   // region model
   const model = defineModel('two-measurements', (m) => {
     // a bell curve for what we believed before measuring
@@ -103,7 +103,7 @@ export function combine(seed: number, say: Say = () => {}): Result {
     m.observe('dial', d.normal(temperature, DIAL_SD), m.data('dial', { role: 'response' }))
   })
   // endregion
-  say('Passing messages between the three factors and the temperature')
+  say('Passing messages')
   // region infer
   const bound = model.bind({ digital, dial })
   // ask the library how expectation propagation runs this model

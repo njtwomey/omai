@@ -115,44 +115,50 @@ export default function Story(): ReactNode {
   return (
     <StoryPage>
       <p>
-        Expectation propagation, or EP, is a way to approximate the posterior of a model when the posterior cannot be
-        written down. This post follows one run of omai&rsquo;s EP on one small model, from the model to the answer, in
-        the order things happen. After the play button, every number comes from that run. When you have read it you
-        should be able to say what EP does to each factor of a model, and to read an EP run in omai: its messages, its
-        sweeps and the point where it stops.
+        Expectation propagation, or EP, approximates the posterior of a model when the posterior cannot be written down.
+        This post follows one run of omai&rsquo;s EP on one small model, in the order things happen. After the play
+        button, every number comes from that run.
+      </p>
+
+      <p>
+        At the end you should be able to say what EP does to each factor of a model. You should also be able to read an
+        EP run in omai: its messages, its sweeps and the point where it stops.
       </p>
 
       <h2>1. The problem</h2>
 
       <p>
-        We start with a model and some data. The model says how the data could have come from some unknown numbers. What
-        we want is the posterior: what we believe about the unknowns once the data are taken into account. By
-        Bayes&rsquo; rule, the posterior is the prior (what we believed before) times the likelihood of each data point,
-        divided by one constant that makes the total probability equal one.
+        We start with a model and some data. The model says how the data could have come from some unknown numbers. We
+        want the posterior: what we believe about the unknowns once we have seen the data. By Bayes&rsquo; rule, the
+        posterior is the prior (what we believed before) times the likelihood of each data point, divided by one
+        constant that makes the total probability 1.
       </p>
 
       <p>
-        That product is the difficulty. For a few models the product of the factors has a known shape, and the posterior
-        is a formula. For most models it does not. The factors have different shapes, their product has no name, and the
-        constant is an integral with no closed form. With one unknown we can still compute the posterior numerically,
-        and we will, to check the result. With tens or thousands of unknowns we cannot.
+        That product is the difficulty. For a few models it has a known shape, and the posterior is a formula. For most
+        it does not. The factors have different shapes, their product has no name, and the constant is an integral with
+        no closed form. With one unknown we can still compute the posterior numerically, and we will, to check the
+        result. With thousands of unknowns we cannot.
       </p>
 
       <p>
-        So we settle for an approximation of a form we can handle. EP uses the Gaussian, the bell curve. A bell is
-        described by two numbers: its mean, where it is centred, and its variance, how wide it is. The standard
-        deviation, written sd, is the square root of the variance. EP&rsquo;s answer is one bell for each unknown: its
-        mean and its spread are the belief.
+        So we settle for an approximation we can handle. EP uses the Gaussian, or bell curve. A bell has two numbers:
+        its mean, where it is centred, and its variance, how wide it is. The standard deviation, written sd, is the
+        square root of the variance. EP&rsquo;s answer is one bell for each unknown, and its mean and spread are the
+        belief.
       </p>
 
       <p>
-        The model used from here to the end is Minka&rsquo;s clutter problem, the example in the paper that introduced
-        EP (2001). There is one unknown, a location, written <code>θ</code>. We have {ROWS} measurements. With
-        probability {fixed(1 - CLUTTER_CHANCE, 1)}, a measurement is a reading of the location: a draw from a bell of sd
-        1 around <code>θ</code>. With probability {fixed(CLUTTER_CHANCE, 1)} it is clutter: a draw from a much wider
-        bell, with sd {fixed(CLUTTER_SD, 1)}, centred on zero and unrelated to <code>θ</code>. We are not told which
-        measurements are clutter. Before seeing them we believe <code>θ</code> is within about {PRIOR_SD} of zero: a
-        bell with mean 0 and sd {PRIOR_SD}.
+        The model for the rest of the post is Minka&rsquo;s clutter problem, from the paper that introduced EP (2001).
+        There is one unknown, a location, written <code>θ</code>. We have {ROWS} measurements. With probability{' '}
+        {fixed(1 - CLUTTER_CHANCE, 1)}, a measurement is a reading of the location: a draw from a bell with sd 1 around{' '}
+        <code>θ</code>. With probability {fixed(CLUTTER_CHANCE, 1)} it is clutter: a draw from a much wider bell, with
+        sd {fixed(CLUTTER_SD, 1)}, centred on zero and unrelated to <code>θ</code>.
+      </p>
+
+      <p>
+        We are not told which measurements are clutter. Before seeing them we believe <code>θ</code> is within about{' '}
+        {PRIOR_SD} of zero: a bell with mean 0 and sd {PRIOR_SD}.
       </p>
 
       <Formula>
@@ -160,11 +166,11 @@ export default function Story(): ReactNode {
       </Formula>
 
       <p>
-        Each of the {ROWS} brackets is a sum of two bells, so multiplying them out gives up to 2<sup>{ROWS}</sup> ={' '}
+        Each of the {ROWS} brackets is a sum of two bells. Multiplying them out gives up to 2<sup>{ROWS}</sup> ={' '}
         {2 ** ROWS} bell-shaped terms, one for each way of deciding which measurements are clutter. With one unknown we
         can evaluate the whole product on a fine grid of values of <code>θ</code> and get the exact posterior. We do
-        that at the end. EP does not use the grid, and its work grows with the number of factors, not with the{' '}
-        {2 ** ROWS}.
+        that at the end. EP does not use a grid, and its work grows with the number of factors, not with the {2 ** ROWS}
+        .
       </p>
 
       <h2>2. The model as a graph of factors</h2>
@@ -175,62 +181,68 @@ export default function Story(): ReactNode {
         each unknown, a square for each factor, and a line from each factor to the unknowns it mentions.
       </p>
 
-      <Figure caption="The factor graph of the model. One unknown, and one factor for the prior and for each of the six measurements. The factor f0 is the prior; f1 to f6 are the measurements.">
+      <Figure
+        caption={`The factor graph of the model: one unknown, the prior factor f0 and the measurement factors f1 to f${ROWS}.`}
+      >
         <GraphArt />
       </Figure>
 
       <p>
         Here there is one unknown, so every factor joins the same circle. In a larger model a factor joins only the few
-        unknowns it mentions, and each unknown only hears from the factors around it. That is what keeps EP cheap on big
-        models. The one-unknown case shows every step of the method except the passing of messages between different
-        unknowns.
+        unknowns it mentions, and each unknown hears only from the factors around it. That keeps EP cheap on big models.
+        One unknown shows every step of the method except passing messages between different unknowns.
       </p>
 
       <h2>3. The idea: a stand-in for each factor</h2>
 
       <p>
-        The product of the factors is hard because the factors are not bells. EP replaces each factor by a bell, a
-        stand-in, so that the product of the stand-ins is easy. A product of bells is again a bell, so the approximation
-        of the posterior is the product of all the stand-ins. Call that product <code>q</code>.
+        The product of the factors is hard because the factors are not bells. EP replaces each factor by a bell, called
+        a stand-in, so the product of the stand-ins is easy. A product of bells is a bell, so the approximation of the
+        posterior is the product of all the stand-ins. Call it <code>q</code>.
       </p>
 
       <p>
         A stand-in sent from a factor to an unknown is called a message. A message is a bell, up to a constant that is
-        never tracked. There are two ways to write a bell. One is the mean and the variance. The one the engine uses is
-        the precision, which is one over the variance, and the precision times the mean. Call them <code>J</code> and{' '}
-        <code>h</code>; together they are the natural parameters of the bell.
+        never tracked. A bell can be written in two ways. One is the mean and the variance. The engine uses the other:
+        the precision <code>J</code>, which is one over the variance, and <code>h</code>, the precision times the mean.
+        Together they are the natural parameters of the bell.
       </p>
 
       <p>
-        They are used because multiplying two bells then means adding. If two messages have <code>(h₁, J₁)</code> and{' '}
+        Natural parameters turn multiplying two bells into adding. If two messages have <code>(h₁, J₁)</code> and{' '}
         <code>(h₂, J₂)</code>, their product has <code>(h₁ + h₂, J₁ + J₂)</code>. Dividing one bell by another means
-        subtracting. The mean of a message is <code>h / J</code> and its variance is <code>1 / J</code>. For example,
-        the prior has mean 0 and sd {PRIOR_SD}, so <code>J = {1 / PRIOR_SD ** 2}</code> and <code>h = 0</code>. A bell
-        with mean 2 and sd 1 has <code>J = 1</code> and <code>h = 2</code>. Their product has <code>J = 1.01</code> and{' '}
-        <code>h = 2</code>, which is a bell with mean 1.98 and sd 0.995.
+        subtracting. A message has mean <code>h / J</code> and variance <code>1 / J</code>.
       </p>
 
       <p>
-        Two more facts about messages. A message that says nothing has <code>J = 0</code> and <code>h = 0</code>; call
-        it flat. And a message may have a negative <code>J</code>. It is then not a bell, only a pair of numbers that
-        still add and subtract correctly. That is allowed as long as the sum of all the messages, the approximation{' '}
-        <code>q</code> itself, has a positive <code>J</code>.
+        For example, the prior has mean 0 and sd {PRIOR_SD}, so <code>J = {1 / PRIOR_SD ** 2}</code> and{' '}
+        <code>h = 0</code>. A bell with mean 2 and sd 1 has <code>J = 1</code> and <code>h = 2</code>. Their product has{' '}
+        <code>J = 1.01</code> and <code>h = 2</code>, which is a bell with mean 1.98 and sd 0.995.
+      </p>
+
+      <p>
+        Two more facts. A message that says nothing has <code>J = 0</code> and <code>h = 0</code>. We call it flat. A
+        message may also have a negative <code>J</code>. It is then not a bell, only a pair of numbers that still add
+        and subtract correctly. That is allowed as long as the sum of all the messages, the approximation <code>q</code>{' '}
+        itself, has a positive <code>J</code>.
       </p>
 
       <p>
         EP starts with every stand-in flat, except the prior&rsquo;s, which is already a bell and is used as it is. The
-        task is to choose the other {ROWS} stand-ins. A good stand-in does not have to match its factor everywhere. It
-        has to match where the posterior has its mass, and that depends on the other factors. So EP cannot choose each
-        stand-in alone. It chooses one at a time, with the others held fixed, and repeats. One such choice is called an
-        update.
+        task is to choose the other {ROWS} stand-ins. A good stand-in need not match its factor everywhere. It has to
+        match where the posterior has its mass, and that depends on the other factors.
+      </p>
+
+      <p>
+        So EP cannot choose each stand-in alone. It chooses one at a time, with the others held fixed, and repeats. One
+        such choice is called an update.
       </p>
 
       <h2>4. One update, step by step</h2>
 
       <p>
-        An update has five steps. They are written here for a factor <code>k</code> with real factor <code>f_k</code>{' '}
-        and current stand-in <code>g_k</code>. The current approximation is <code>q</code>, the product of all the
-        stand-ins.
+        An update has five steps. We write them for a factor <code>k</code> with real factor <code>f_k</code> and
+        current stand-in <code>g_k</code>. The current approximation <code>q</code> is the product of all the stand-ins.
       </p>
 
       <ol className="list-decimal space-y-4 pl-6">
@@ -242,17 +254,16 @@ export default function Story(): ReactNode {
         </li>
         <li>
           Multiply the cavity by the real factor, not its stand-in. The result is the tilted distribution: what we would
-          believe if factor <code>k</code> were exact and the others still approximate. In general it is not a bell,
+          believe if factor <code>k</code> were exact and the others still approximate. It is usually not a bell,
           because <code>f_k</code> is not one.
           <Formula>tilted(θ) ∝ cavity(θ) × f_k(θ)</Formula>
         </li>
         <li>
           Find the bell with the same mean and variance as the tilted distribution. This is moment matching. Of all
-          bells, it is the one closest to the tilted distribution in the sense of the Kullback&ndash;Leibler divergence
-          from the tilted distribution to the bell. It needs two integrals, the mean and the variance of the tilted
-          distribution. This is the only step that uses the real factor, and the only one that can be hard. The library
-          has closed forms for the factors that allow them and numerical integration for the rest; the clutter factor
-          here is a numerical one.
+          bells, it is the one with the smallest Kullback&ndash;Leibler divergence from the tilted distribution to the
+          bell. It needs two integrals, the mean and the variance of the tilted distribution. This is the only step that
+          uses the real factor, and the only one that can be hard. The library has closed forms for the factors that
+          allow them and numerical integration for the rest. The clutter factor here uses numerical integration.
           <Formula>{'m = ∫ θ · tilted(θ) dθ\nv = ∫ (θ − m)² · tilted(θ) dθ\nJ = 1 / v,  h = m / v'}</Formula>
         </li>
         <li>
@@ -261,25 +272,22 @@ export default function Story(): ReactNode {
           <Formula>{'g_k(new) = matched(θ) / cavity(θ)\n(h, J) = (h_m − h_cavity, J_m − J_cavity)'}</Formula>
         </li>
         <li>
-          Replace the old stand-in by the new one. The approximation is now the cavity times the new stand-in, which is
-          the matched bell. After the update, <code>q</code> has the same mean and variance as the tilted distribution
-          of factor <code>k</code>.
+          Put the new stand-in in place of the old one. The approximation is now the cavity times the new stand-in,
+          which is the matched bell. After the update, <code>q</code> has the same mean and variance as the tilted
+          distribution of factor <code>k</code>.
         </li>
       </ol>
 
       <p style={{ marginTop: '1.25em' }}>
-        To see these steps with real numbers we need a run. Press play once. In a background worker the page draws{' '}
-        {ROWS} measurements from the seed, runs omai&rsquo;s EP on the model above one factor at a time until it
-        settles, then takes one update apart with tensor operations and compares it with the message the engine itself
-        sent. Everything below is read from that one run.
+        To see these steps with real numbers we need a run. Press play once. In a background worker, the page draws{' '}
+        {ROWS} measurements from the seed and runs omai&rsquo;s EP on the model above, one factor at a time, until it
+        settles. It then takes one update apart with tensor operations and compares it with the message the engine sent.
+        Everything below is read from that one run.
       </p>
 
       <Play run={run} label="Run expectation propagation" estimate="about a second" />
 
-      <Results
-        run={run}
-        placeholder="Nothing has been computed yet. When you press play, the measurements, one update with its numbers, the sweeps, the worked example and the comparison with the exact answer appear below, in the order of the post."
-      >
+      <Results run={run} placeholder="Press play. The rest of the post appears here, with the numbers of one run.">
         {(result) => (
           <>
             <RunStory result={result} />
@@ -337,20 +345,20 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
       {taken === undefined ? (
         <p>
           In this run no factor had a usable cavity in sweep {SHOWN_SWEEP}, so there is no update to take apart here.
-          Press <em>Run again</em> for another set of measurements.
+          Press <em>Run again</em> for other measurements.
         </p>
       ) : (
         <>
           <p>
-            We look at the update of sweep {taken.sweep}, because by then every factor has a stand-in of its own and
-            step 1 has something to take out. We take the measurement whose tilted curve is furthest from a bell, so
-            that the difference can be seen. That is measurement <span className="num">{taken.factor}</span>, with value{' '}
+            We look at the update of sweep {taken.sweep}, because by then every factor has its own stand-in and step 1
+            has something to take out. We take the measurement whose tilted curve is furthest from a bell, so the
+            difference can be seen. That is measurement <span className="num">{taken.factor}</span>, with value{' '}
             <span className="num">{fixed(taken.point)}</span>.
           </p>
 
           <Figure
             wide
-            caption={`One update, sweep ${taken.sweep}. Blue: the cavity. Dotted: the real factor of this measurement as a function of the location, scaled to fit. Orange: the tilted curve, the product of the two. Dashed: the bell with the same mean and variance as the orange curve, which becomes the new approximation. Where the orange curve and the dashed bell differ is what this step gives up.`}
+            caption={`One update in sweep ${taken.sweep}: the cavity (blue), the real factor scaled to fit (dotted), the tilted curve (orange) and the bell with the same mean and variance (dashed). The gap between orange and dashed is what this step gives up.`}
           >
             <UpdateFigure taken={taken} />
           </Figure>
@@ -375,20 +383,24 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
           </p>
 
           <p>
-            Step 3 is the dashed bell. It has the mean and sd of the orange curve, so{' '}
+            Step 3 is the dashed bell. It has the mean and sd of the orange curve,{' '}
             <span className="num">{fixed(taken.tilted.mean)}</span> and{' '}
-            <span className="num">{fixed(taken.tilted.sd)}</span>, which in natural parameters is{' '}
+            <span className="num">{fixed(taken.tilted.sd)}</span>. In natural parameters that is{' '}
             <code>h = {fixed(taken.matched.shift)}</code> and <code>J = {fixed(taken.matched.precision)}</code>. The
             divergence from the orange curve to this bell is <span className="num">{fixed(taken.divergence, 3)}</span>{' '}
-            nats; it is zero only if the tilted curve is a bell. Step 4 subtracts the cavity from it: the new stand-in
-            has <code>h = {fixed(taken.standIn.shift)}</code> and <code>J = {fixed(taken.standIn.precision)}</code>
+            nats. It is zero only if the tilted curve is a bell.
+          </p>
+
+          <p>
+            Step 4 subtracts the cavity from the matched bell. The new stand-in has{' '}
+            <code>h = {fixed(taken.standIn.shift)}</code> and <code>J = {fixed(taken.standIn.precision)}</code>
             {taken.standIn.precision > 0
               ? '.'
-              : ', a negative precision. The matched bell is wider than the cavity, so the new stand-in has to widen it. It is not a bell, only a correction, and it is allowed because its sum with the cavity is a bell.'}{' '}
+              : ', a negative precision. The matched bell is wider than the cavity, so the new stand-in has to widen it. It is not a bell, only a correction, and that is allowed because its sum with the cavity is a bell.'}{' '}
             Step 5 puts it in place of the old one. The approximation after the update is the dashed bell.
           </p>
 
-          <Figure caption="The same update as numbers. Precision is J, one over the variance. For the tilted curve only the mean and sd are listed, because it is not a bell.">
+          <Figure caption="The same update as numbers, where J is the precision and the tilted curve has only a mean and sd because it is not a bell.">
             <Table
               head={['', 'mean', 'sd', 'precision J', 'h']}
               rows={[
@@ -435,7 +447,7 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
           <p>
             The page worked this out itself, with tensor operations on a grid of 401 values of the location (the code is
             at the end). The engine does the same update with its own numerical integration and sends a message. The two
-            stand-ins agree: the largest difference between their two numbers is within{' '}
+            stand-ins agree: the largest difference between their numbers is within{' '}
             <span className="num">{sci(Math.max(taken.engineGap, 1e-12))}</span>.
           </p>
         </>
@@ -444,16 +456,20 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
       <h2>5. The sweep</h2>
 
       <p>
-        EP does this update for every factor in turn: the prior first, then measurements 1 to {ROWS}. Going once through
+        EP does this update for every factor in turn: the prior first, then measurements 1 to {ROWS}. One pass through
         all {ROWS + 1} is a sweep. After a sweep every stand-in has changed, so the cavities the early factors used are
-        out of date. EP sweeps again, and again. In omai this is the engine behind <code>numericEpMethod</code>; the
-        setting <code>granularity: &apos;factor&apos;</code> makes each step of the run one update, so a sweep is{' '}
-        {ROWS + 1} steps.
+        out of date. EP sweeps again, and again.
+      </p>
+
+      <p>
+        In omai this is the engine behind <code>numericEpMethod</code>. The setting{' '}
+        <code>granularity: &apos;factor&apos;</code> makes each step of the run one update, so a sweep is {ROWS + 1}{' '}
+        steps.
       </p>
 
       <Figure
         wide
-        caption="The belief about the location after each sweep: the mean as a line and one sd either side as a band. The dashed line is the exact mean from the grid."
+        caption="The belief about the location after each sweep: the mean (line) and one sd either side (band), with the exact mean dashed."
       >
         <SweepsFigure result={result} />
       </Figure>
@@ -470,11 +486,11 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
 
       <p>
         EP needs a rule for when to stop. After each sweep the engine measures the largest change of any belief, in
-        units of its sd. It stops when that is below a tolerance, here {sci(TOLERANCE)}, or after a fixed number of
-        sweeps, the most it may make, here {MAX_SWEEPS}.
+        units of its sd. It stops when that is below a tolerance, here {sci(TOLERANCE)}, or after the most sweeps it may
+        make, here {MAX_SWEEPS}.
       </p>
 
-      <Figure caption="The largest change of the belief over each sweep, on a logarithmic axis. The dashed line is the tolerance.">
+      <Figure caption="The largest change of the belief in each sweep, on a log axis, with the tolerance dashed.">
         <ChangeFigure result={result} />
       </Figure>
 
@@ -488,19 +504,23 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
       ) : (
         <p>
           This run did not settle. It made <span className="num">{result.sweeps}</span> sweeps, the most it was allowed,
-          and the largest change over the last one was <span className="num">{sci(sweeps.lastChange)}</span>, above the
+          and the largest change in the last one was <span className="num">{sci(sweeps.lastChange)}</span>, above the
           tolerance of {sci(TOLERANCE)}. EP is not guaranteed to converge. Part 7 says what the library can do about it.
-          Press <em>Run again</em> for other measurements; most draws settle.
+          Press <em>Run again</em> for other measurements. Most draws settle.
         </p>
       )}
 
       <h2>6. The same run from start to finish</h2>
 
       <p>
-        Now the run from the beginning, with the same measurements. At the start every stand-in is flat, so the
+        Here is the run from the beginning, with the same measurements. At the start every stand-in is flat, so the
         approximation says nothing. The engine updates the prior first. Nothing has been heard yet, so the cavity is
-        flat and the tilted distribution is the prior itself, which is a bell. The matched bell is the prior and so is
-        the new stand-in. The first row of the table shows it: a bell with precision{' '}
+        flat and the tilted distribution is the prior itself, which is a bell. The matched bell and the new stand-in are
+        the prior too.
+      </p>
+
+      <p>
+        The first row of the table shows it: a bell with precision{' '}
         <span className="num">{fixed(firstUpdates[0]?.standIn.precision ?? Number.NaN, 2)}</span>, which is sd{' '}
         {PRIOR_SD}, and mean{' '}
         <span className="num">
@@ -511,7 +531,7 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
         .
       </p>
 
-      <Figure caption="The first sweep, update by update. Cavity: what the other factors say. New stand-in: mean, with the precision in brackets. After: the approximation once the stand-in is in place. The factors are the prior and the measurements y1 to y6. A stand-in with a precision near zero has a mean that means little, because the mean is h divided by a number close to zero.">
+      <Figure caption="The first sweep, update by update, with the new stand-in shown as mean (precision). A precision near zero makes the mean meaningless.">
         <Table
           head={['update', 'factor', 'cavity', 'new stand-in', 'approximation after']}
           rows={firstUpdates.map((s, i) => [
@@ -530,7 +550,7 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
           All the other stand-ins are still flat, so its cavity is the approximation so far, the prior: mean{' '}
           <span className="num">{second.cavity === null ? '—' : fixed(second.cavity.mean)}</span>, sd{' '}
           <span className="num">{second.cavity === null ? '—' : fixed(second.cavity.sd)}</span>. Steps 2 and 3 give a
-          matched bell and step 4 turns it into a stand-in with mean{' '}
+          matched bell, and step 4 turns it into a stand-in with mean{' '}
           <span className="num">
             {second.standIn.precision > 0 ? fixed(second.standIn.shift / second.standIn.precision) : '—'}
           </span>{' '}
@@ -551,12 +571,12 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
       )}
 
       <p>
-        The second sweep is different, because now each factor has a stand-in of its own to take out in step 1. The
-        table below follows every stand-in over the sweeps. Each cell is the stand-in&rsquo;s mean and, in brackets, its
-        precision. The last row is the approximation, the product of the column.
+        The second sweep differs, because each factor now has its own stand-in to take out in step 1. The next table
+        follows every stand-in over the sweeps. Each cell is the stand-in&rsquo;s mean and, in brackets, its precision.
+        The last row is the approximation, the product of the column.
       </p>
 
-      <Figure caption="The stand-in of every factor after some of the sweeps: mean, with the precision in brackets. A negative precision means the stand-in is not a bell. A precision near zero means the stand-in says almost nothing. The last row is the approximation after that sweep.">
+      <Figure caption="The stand-in of every factor after some sweeps. A negative precision means it is not a bell, and a precision near zero means it says almost nothing.">
         <Table
           head={['factor', ...sweepTable.map((s) => `after sweep ${s.sweep}`)]}
           rows={[
@@ -571,7 +591,7 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
 
       <p>
         {result.settled
-          ? 'The stand-ins change a lot in the first sweeps and by the last sweep they no longer change.'
+          ? 'The stand-ins change a lot in the first sweeps, and by the last sweep they no longer change.'
           : `In this run the stand-ins had still not stopped changing by sweep ${result.sweeps}.`}
         {sweeps.notBells === 0 ? (
           <> At the end every measurement&rsquo;s stand-in is a proper bell, with positive precision.</>
@@ -594,41 +614,44 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
             {weakAreClutter ? 'did' : 'did not'} make {weak.length === 1 ? 'it' : 'them'} {weakAreClutter ? '' : 'all '}
             clutter.
           </>
-        )}{' '}
+        )}
+      </p>
+
+      <p>
         What EP reports is the last row: a bell with mean <span className="num">{fixed(result.ep.mean)}</span> and sd{' '}
         <span className="num">{fixed(result.ep.sd)}</span>.
       </p>
 
       <p>
-        The same run can also be watched on the factor graph from part 2. In the replay below, each step is one update.
-        The factor that was updated sends its new stand-in along its line to the unknown, and the unknown&rsquo;s belief
-        is the product of all the stand-ins it holds. Press the button to step through the run, or move the scrubber.
-        The text under the graph says what was sent. A message written <code>N(μ = 2.07, σ² = 88.2)</code> is a bell
-        with mean 2.07 and variance 88.2.
+        The same run can be watched on the factor graph from part 2. In the replay, each step is one update. The factor
+        that was updated sends its new stand-in along its line to the unknown, and the unknown&rsquo;s belief is the
+        product of all the stand-ins it holds. Step through the run with the button or the scrubber. The text under the
+        graph says what was sent. A message written <code>N(μ = 2.07, σ² = 88.2)</code> is a bell with mean 2.07 and
+        variance 88.2.
       </p>
 
       <MessageReplay
         record={result.record}
         label="The updates of the run, one factor at a time"
         describe={describe}
-        caption="The factor graph of the run. The circle is the unknown location, x. The squares are the factors: the prior, then one clutter factor for each measurement, in order. The message on a line is the stand-in that factor sent at this step; the belief in the circle is the approximation. The replay keeps the first and last step and the steps where the belief moved most."
+        caption="The factor graph of the run: the circle is the unknown, the squares are the factors, and a message on a line is the stand-in that factor just sent. The replay keeps the first and last step and the steps where the belief moved most."
       />
 
       <p>
-        Now the exact answer. The model has one unknown, so the library can compute the posterior on a fine grid of
+        Next, the exact answer. The model has one unknown, so the library can compute the posterior on a fine grid of
         values of the location: the product of the prior and the {result.rows} brackets, divided by its total. Here it
         is, with EP&rsquo;s bell on top, the measurements as dots, and the location the data were made around.
       </p>
 
       <Figure
         wide
-        caption="The exact posterior of the location (orange) and EP's bell (dashed). The dots are the measurements: blue dots were readings of the location, green dots were clutter, which EP was not told. The dotted line is the location the generator used."
+        caption="The exact posterior (orange), EP's bell (dashed), the true location (dotted) and the measurements: blue dots are readings and green dots are clutter."
       >
         <AnswerFigure result={result} />
       </Figure>
 
       <p>
-        In this run EP&rsquo;s bell has mean <span className="num">{fixed(result.ep.mean)}</span> and sd{' '}
+        EP&rsquo;s bell has mean <span className="num">{fixed(result.ep.mean)}</span> and sd{' '}
         <span className="num">{fixed(result.ep.sd)}</span>. The exact posterior has mean{' '}
         <span className="num">{fixed(result.exact.mean)}</span> and sd{' '}
         <span className="num">{fixed(result.exact.sd)}</span>. The means are {fixed(exact.meanGap, 2)} exact sd apart.
@@ -637,7 +660,10 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
           ? ', so EP reports more certainty than the exact posterior has.'
           : exact.spreadRatio > 1.05
             ? ', so EP reports less certainty than the exact posterior has.'
-            : '.'}{' '}
+            : '.'}
+      </p>
+
+      <p>
         {exact.close
           ? 'The two agree closely. Here one bell is a good description of the posterior.'
           : exact.humps > 1
@@ -648,11 +674,10 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
 
       {result.logEvidence === undefined ? null : (
         <p>
-          EP also gives an estimate of the evidence, the total that the posterior is divided by: how probable the model
-          thought the measurements were. It is built from the sizes of the tilted curves met along the way, and it comes
-          with no extra computation. The run&rsquo;s estimate of the log evidence is{' '}
-          <span className="num">{fixed(result.logEvidence, 3)}</span>. The grid gives{' '}
-          <span className="num">{fixed(result.exact.logEvidence, 3)}</span>, a difference of{' '}
+          EP also estimates the evidence, the total that the posterior is divided by: how probable the model found the
+          measurements. It is built from the sizes of the tilted curves met along the way, with no extra computation.
+          The run&rsquo;s estimate of the log evidence is <span className="num">{fixed(result.logEvidence, 3)}</span>.
+          The grid gives <span className="num">{fixed(result.exact.logEvidence, 3)}</span>, a difference of{' '}
           <span className="num">{fixed(Math.abs(result.logEvidence - result.exact.logEvidence), 3)}</span>.
         </p>
       )}
@@ -660,18 +685,18 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
       <h2>7. What EP gives, and where it goes wrong</h2>
 
       <p>
-        EP gives a bell for each unknown, which is a mean and a spread, and an estimate of the model evidence. It does
-        so in a number of updates that grows with the number of factors. It also has known weaknesses, and the library
-        has a setting for each.
+        EP gives a bell for each unknown, which is a mean and a spread, and an estimate of the model evidence. It needs
+        a number of updates that grows with the number of factors. It also has known weaknesses, and the library has a
+        setting for each.
       </p>
 
       <ul>
         <li>
           <strong>Spreads that are too narrow.</strong> When unknowns are linked in loops, each factor sees a cavity
-          that treats them as independent, and the spreads come out too small. In the library, the compiler packs
-          unknowns that one observation reads together into one joint Gaussian vector (<code>packScalars</code>), which
-          keeps their correlation. In its test cases the same models as separate scalars gave spreads two to three times
-          too small. This run has one unknown and so no loops; the spread of EP&rsquo;s bell was{' '}
+          that treats them as independent, and the spreads come out too small. The library&rsquo;s compiler packs the
+          unknowns that one observation reads into one joint Gaussian vector (<code>packScalars</code>), which keeps
+          their correlation. In its test cases, the same models as separate scalars gave spreads two to three times too
+          small. This run has one unknown and so no loops. The spread of EP&rsquo;s bell was{' '}
           <span className="num">{fixed(exact.spreadRatio, 2)}</span> times the exact one
           {exact.spreadRatio < 0.95
             ? ', so the spread can come out too small for other reasons too: here, from matching one bell to a curve that is not one.'
@@ -679,29 +704,28 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
         </li>
         <li>
           <strong>No convergence, and improper messages.</strong> The sweeps can swing instead of settling, and an
-          update can produce an approximation with a negative variance, which is not a bell. The engine&rsquo;s{' '}
+          update can give an approximation with a negative variance, which is not a bell. The engine&rsquo;s{' '}
           <code>damping</code> keeps a share of the old message in each update. Its <code>improper</code> policy says
           what to do with an update that has no bell (<code>skip</code>, <code>damp</code>, <code>reset</code> or{' '}
-          <code>error</code>). <code>restarts</code> runs again from the start with stronger damping when a run stalls,
-          and <code>warmup</code> damps the first three sweeps, which helps models with hidden labels.
+          <code>error</code>). <code>restarts</code> runs again from the start with stronger damping when a run stalls.{' '}
+          <code>warmup</code> damps the first three sweeps, which helps models with hidden labels.
         </li>
         <li>
           <strong>One bell for a posterior with two humps.</strong> EP commits to one bell. If the exact posterior has
-          two humps, EP covers one of them or both badly, and which one can depend on the start. In this run the exact
+          two humps, EP covers one of them, or both badly, and which one can depend on the start. In this run the exact
           posterior had <span className="num">{exact.humps}</span> {exact.humps === 1 ? 'hump' : 'humps'}. The
           library&rsquo;s <code>epMultiStartMethod</code> runs EP from several starting points and weights the answers
-          it finds by their evidence.
+          by their evidence.
         </li>
         <li>
-          <strong>Fractional EP.</strong> The <code>power</code> setting uses each factor raised to a power between 0
-          and 1 in steps 1 and 2. A power of 1 is the EP described here. Smaller powers make each update less eager to
-          follow a single factor.
+          <strong>Fractional EP.</strong> The <code>power</code> setting raises each factor to a power between 0 and 1
+          in steps 1 and 2. A power of 1 is the EP described here. Smaller powers make each update less eager to follow
+          a single factor.
         </li>
       </ul>
 
       <p>
-        The design of EP in omai, what each layer promises and the settings above, is written up in{' '}
-        <code>docs/probprog/ep.md</code> in the repository.
+        The design of EP in omai is written up in <code>docs/probprog/ep.md</code> in the repository.
       </p>
 
       <h2>8. Where to go next</h2>
@@ -709,10 +733,9 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
       <p>
         The next stories run the same engine on larger models.{' '}
         <Link to={storyHref('two-humps')} className={linkClass}>
-          Two humps
+          Two kinds of wait at Old Faithful
         </Link>{' '}
-        fits a mixture of two bell curves to the waits between Old Faithful eruptions, with a hidden label for each
-        eruption.{' '}
+        fits a mixture of two bell curves to the waits between eruptions, with a hidden label for each eruption.{' '}
         <Link to={storyHref('when-did-the-rate-change')} className={linkClass}>
           When did the rate change?
         </Link>{' '}

@@ -42,32 +42,38 @@ export default function Story(): ReactNode {
       <p>
         The counts form two humps with a dip between them. The average wait is{' '}
         <span className="num">{fixed(DATA.average)}</span> minutes, which is in the dip. Only{' '}
-        <span className="num">{DATA.nearAverage}</span> of the {DATA.rows} waits fall within {NEAR} minutes of it. So
-        there are two ways to read the data. Either there is one kind of eruption with an uneven spread of waits, or
-        there are two kinds, a short wait and a long wait, mixed together.
+        <span className="num">{DATA.nearAverage}</span> of the {DATA.rows} waits fall within {NEAR} minutes of it.
+      </p>
+
+      <p>
+        There are two ways to read this. There may be one kind of eruption with an uneven spread of waits. Or there may
+        be two kinds, a short wait and a long wait, mixed together.
       </p>
 
       <h2>Two bell curves and a hidden label</h2>
 
       <p>
         To test the second reading, we build a model of it. There are two kinds of wait. Each kind spreads out as a bell
-        curve around its own centre. The two curves share one width. Some fraction of the eruptions belong to the first
-        kind, and the rest belong to the second. Nobody recorded which eruption is which. That is the hidden part: a
-        label for each of the {DATA.rows} eruptions, first kind or second kind. The model has to work out the labels
-        from the waits alone.
+        curve around its own centre, and the two curves share one width. Some fraction of the eruptions belong to the
+        first kind and the rest to the second.
+      </p>
+
+      <p>
+        Nobody recorded which eruption is which. That is the hidden part: a label for each of the {DATA.rows} eruptions.
+        The model has to work out the labels from the waits alone.
       </p>
 
       <Aside>
         Two bell curves with unknown centres can swap places without changing the fit. To stop the names swapping from
-        one run to the next, the model keeps the centres in order. Curve one is always the one with the lower centre.
+        run to run, the model keeps the centres in order. Curve one always has the lower centre.
       </Aside>
 
       <h2>Expectation propagation</h2>
 
       <p>
-        The method is called expectation propagation. The parts of the model pass messages to each other. A message is a
-        short summary of what one part believes: a centre and a width, not a whole distribution. The method starts with
-        both curves at the average of all the waits. Then it repeats three steps.
+        The method is expectation propagation. The parts of the model pass messages to each other. A message is a short
+        summary of what one part believes: a centre and a width. The method starts with both curves at the average of
+        all the waits. Then it repeats three steps.
       </p>
 
       <ol>
@@ -80,9 +86,9 @@ export default function Story(): ReactNode {
       </ol>
 
       <p>
-        One round of these steps is called a sweep. The first sweep gives a rough answer. Each later sweep corrects the
-        one before. The method stops when a new sweep changes nothing. No random numbers are used. The one arbitrary
-        choice is the order in which the eruptions are handled, and the answer should not depend on it.
+        One round is a sweep. The first sweep gives a rough answer, and each later sweep corrects the one before. The
+        method stops when a sweep changes nothing. No random numbers are used. The one arbitrary choice is the order in
+        which the eruptions are handled, and the answer should not depend on it.
       </p>
 
       <p>Press play to run the sweeps.</p>
@@ -102,7 +108,7 @@ export default function Story(): ReactNode {
               </p>
 
               <Figure
-                caption="The same waits, with the two fitted curves (blue and orange), their sum (dark line), and each eruption coloured by the group it most likely belongs to. Grey dots could be either."
+                caption="The two fitted curves (blue and orange), their sum (dark line), and each eruption coloured by its likely group. Grey dots could be either."
                 wide
               >
                 <HumpsFigure waits={WAITS} result={result} />
@@ -120,8 +126,8 @@ export default function Story(): ReactNode {
 
               <p>
                 These are fitted values and nothing more. There is no shaded margin of error. Expectation propagation is
-                quick, but the uncertainty it reports tends to be too small, so bands around these curves would claim
-                more than the method supports.
+                quick, but the uncertainty it reports tends to be too small, so bands would claim more than the method
+                supports.
               </p>
 
               <p>
@@ -149,12 +155,12 @@ export default function Story(): ReactNode {
 
               <p>The next figure shows the two centres after each sweep.</p>
 
-              <Figure caption="The two centres after each sweep. At sweep 0, before any message is passed, both curves sit at the average of all the waits.">
+              <Figure caption="The two centres after each sweep. At sweep 0 both sit at the average of all the waits.">
                 <SettlingFigure result={result} />
               </Figure>
 
               <p>
-                Before the first sweep both centres are at the average. After one sweep they have split, to{' '}
+                After one sweep the centres have split, to{' '}
                 <span className="num">{r.afterFirst === undefined ? '' : fixed(r.afterFirst[0])}</span> and{' '}
                 <span className="num">{r.afterFirst === undefined ? '' : fixed(r.afterFirst[1])}</span> minutes. That is
                 already within{' '}
@@ -181,14 +187,14 @@ export default function Story(): ReactNode {
               <p>
                 A mixture model is a common first choice when measurements may hide several kinds: customers, galaxies,
                 heartbeats, geyser eruptions. The model is the small part. The messages show how it was solved. Each
-                piece of the problem talks only to the pieces it touches. The same scheme works for problems that are
-                too big to write down in one piece.
+                piece of the problem talks only to the pieces it touches, so the same scheme works for problems too big
+                to write down in one piece.
               </p>
 
               <p>
                 Press <em>Run again</em> to hand the eruptions over in a new order. The first sweeps look different.
-                When this was tried with other orders, the two centres stayed within a quarter of a minute of each
-                other. For a story where the uncertainty is the point, read{' '}
+                With other orders, the two centres stayed within a quarter of a minute of each other. For a story where
+                the uncertainty is the point, read{' '}
                 <Link to={storyHref('bayesian-linear-regression')} className="underline underline-offset-2">
                   A line, and how sure we are
                 </Link>

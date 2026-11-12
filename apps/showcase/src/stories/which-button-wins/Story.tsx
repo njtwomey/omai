@@ -27,47 +27,47 @@ export default function Story(): ReactNode {
       <p>
         You changed a button. Version A says one thing and version B says another. You showed each version to{' '}
         {first.visitors.toLocaleString('en-GB')} visitors, and some of them clicked. A got {first.clicksA} clicks and B
-        got {first.clicksB}. You want to know whether the difference comes from the buttons or from which visitors
-        happened to arrive.
+        got {first.clicksB}. Did the buttons make the difference, or did the visitors who happened to arrive?
       </p>
 
-      <Figure caption="The raw counts. This is all the data: how many of each version's visitors clicked.">
+      <Figure caption="The raw counts: how many of each version's visitors clicked.">
         <TallyBars visitors={first.visitors} clicksA={first.clicksA} clicksB={first.clicksB} />
       </Figure>
 
       <p>
         Each version has a true click rate: the share of all possible visitors who would click. We never see it. We see{' '}
-        {first.visitors.toLocaleString('en-GB')} visitors and what they did. That is enough for a rough idea of the rate
-        and not enough to be sure of it. So each rate gets a <em>belief</em>: a curve over every possible rate. The
-        curve is flat before the test. As the clicks come in, it narrows toward the rates that the clicks support. This
-        is the same calculation as the coin in <Link to={storyHref('is-this-coin-fair')}>Is this coin fair?</Link>, done
-        for two buttons.
+        {first.visitors.toLocaleString('en-GB')} visitors and what they did. That gives a rough idea of the rate, and
+        not enough to be sure of it.
+      </p>
+
+      <p>
+        So each rate gets a <em>belief</em>: a curve over every possible rate. The curve is flat before the test. As the
+        clicks come in, it narrows toward the rates the clicks support. This is the same calculation as the coin in{' '}
+        <Link to={storyHref('is-this-coin-fair')}>Is this coin fair?</Link>, done for two buttons.
       </p>
 
       <h2>Asking the question directly</h2>
 
       <p>
         With a curve for each button, the question about the difference is easy to ask. Pick a rate from A&rsquo;s curve
-        and a rate from B&rsquo;s curve, each in proportion to how plausible it is. Check which rate is higher. Repeat
-        this twenty thousand times. The share of pairs in which B is higher is the probability that B really is the
-        better button. This is what people mean when they ask who won.
+        and a rate from B&rsquo;s curve, each in proportion to how plausible it is. Check which is higher. Repeat this
+        20,000 times. The share of pairs in which B is higher is the probability that B really is the better button.
       </p>
 
       <p>
-        Test dashboards update as visitors arrive, and it is tempting to stop as soon as the number looks good. So the
-        same calculation is also run after the first 20 visitors of each version, then 40, 60 and so on up to all of
-        them, and drawn as a line.
+        Test dashboards update as visitors arrive, and it is tempting to stop as soon as the number looks good. So we
+        also run the same calculation after the first 20 visitors of each version, then 40, 60 and so on up to all of
+        them, and draw it as a line.
       </p>
 
       <p>
-        The two beliefs are exact. Each is a Beta curve that the library works out from the counts. The probability that
-        B is better is sampled, by comparing draws from the two curves. The code at the bottom of the page shows which
-        is which.
+        The two beliefs are exact: each is a Beta curve that the library works out from the counts. The probability that
+        B is better is sampled, by comparing draws from the two curves. The code at the bottom shows which is which.
       </p>
 
       <Aside>
         A significance test asks a different question: how surprising would these counts be if the two buttons were
-        identical? Many people read it as the question above. Here the question is asked directly.
+        identical? Many people read it as the question above. Here we ask that question directly.
       </Aside>
 
       <p>Press play to run the test.</p>
@@ -82,8 +82,8 @@ export default function Story(): ReactNode {
             <>
               {newCrowd ? (
                 <p>
-                  This run has a new pair of buttons and a new set of visitors. A got {result.tally.clicksA} clicks out
-                  of {result.tally.visitors.toLocaleString('en-GB')} and B got {result.tally.clicksB}.
+                  This run has a new pair of buttons and new visitors. A got {result.tally.clicksA} clicks out of{' '}
+                  {result.tally.visitors.toLocaleString('en-GB')} and B got {result.tally.clicksB}.
                 </p>
               ) : null}
 
@@ -92,7 +92,7 @@ export default function Story(): ReactNode {
               <p>The first figure shows the belief about each button&rsquo;s click rate.</p>
 
               <Figure
-                caption="What the visitors make plausible for each button's true click rate. The darker part holds the middle 90% of the belief. The dashed lines are the rates the visitors were really drawn with, which the model never saw."
+                caption="The belief about each button's true click rate, with the middle 90% darker. The dashed lines are the rates the visitors were really drawn with."
                 wide
               >
                 <RatesFigure result={result} />
@@ -112,7 +112,7 @@ export default function Story(): ReactNode {
 
               <p>The second figure shows the difference between the two rates.</p>
 
-              <Figure caption="B's rate minus A's rate, for each pair of draws. Bars to the right of the line are the cases in which B is the better button. Bars to the left are the cases in which A is. The dashed line is the real difference.">
+              <Figure caption="B's rate minus A's rate, for each pair of draws. Bars right of the line are pairs where B is better, and bars left of it are pairs where A is. The dashed line is the real difference.">
                 <DifferenceFigure result={result} />
               </Figure>
 
@@ -121,23 +121,21 @@ export default function Story(): ReactNode {
                 higher in <span className="num">{pct(r.better)}</span>.{' '}
                 {r.leader === 'B'
                   ? 'This share is the chance that B beats A.'
-                  : `So B is the better button only about that often. Put the other way, A is the better one with a probability of ${pct(1 - r.better)}.`}{' '}
-                The typical difference is <span className="num">{points(result.difference.mean)}</span> percentage
-                points. Nine in ten of the plausible differences lie between{' '}
-                <span className="num">{points(result.difference.lo)}</span> and{' '}
-                <span className="num">{points(result.difference.hi)}</span>, a range that{' '}
-                {r.excludesZero ? 'does not include zero' : 'includes zero'}.
-              </p>
-
-              <p>
-                Taking every way the buttons could really be, and weighing each by how well it explains the clicks,{' '}
-                {r.leader} is the better button in <span className="num">{pct(r.leaderChance)}</span> of them.{' '}
+                  : `Put the other way, A is the better button with a probability of ${pct(1 - r.better)}.`}{' '}
                 {r.call === 'clear'
                   ? `This is above the ${callPct}% that many teams ask for before they act.`
                   : r.call === 'leaning'
                     ? `This is a lean, not a verdict. It is below the ${callPct}% that many teams ask for before they act.`
                     : 'This is barely better than a coin toss. The test does not say yet.'}{' '}
                 It is a statement about the buttons, not about how unusual this sample was.
+              </p>
+
+              <p>
+                The typical difference is <span className="num">{points(result.difference.mean)}</span> percentage
+                points. Nine in ten of the plausible differences lie between{' '}
+                <span className="num">{points(result.difference.lo)}</span> and{' '}
+                <span className="num">{points(result.difference.hi)}</span>, a range that{' '}
+                {r.excludesZero ? 'does not include zero' : 'includes zero'}.
               </p>
 
               <p>
@@ -157,15 +155,15 @@ export default function Story(): ReactNode {
               </p>
 
               <Figure
-                caption={`The chance that B is better, recomputed after more and more visitors of each version. The shaded bands are the ${callPct}% lines on either side, where most teams would stop and call it.`}
+                caption={`The chance that B is better, recomputed after more and more visitors. The shaded bands are the ${callPct}% lines, where most teams would stop.`}
                 wide
               >
                 <StripFigure result={result} />
               </Figure>
 
               <p>
-                Look at the left end first. Among the first hundred visitors of each version, the chance that B is
-                better ranged from <span className="num">{pct(r.earlyLow)}</span> to{' '}
+                Look at the left end first. Among the first 100 visitors of each version, the chance that B is better
+                ranged from <span className="num">{pct(r.earlyLow)}</span> to{' '}
                 <span className="num">{pct(r.earlyHigh)}</span>. The buttons did not change between those points. A few
                 dozen clicks are a small sample, and early on the line says more about the visitors than about the
                 buttons.
@@ -206,14 +204,13 @@ export default function Story(): ReactNode {
               <p>
                 Looking at the line is harmless. Stopping at the first good-looking number is the problem. If every test
                 stops the first time its line passes {callPct}%, some of the buttons you ship will have done nothing.
-                The simple remedy is to decide before the test how many visitors you need, and to read the line before
-                then as a guide and not as a result.
+                The remedy is to decide before the test how many visitors you need, and to read the line before then as
+                a guide, not a result.
               </p>
 
               <p>
-                Press <em>Run again</em> for a new pair of buttons and a new set of visitors. Some runs end with a clear
-                winner. Some stay in the middle of the figure. That is also a result: it means these visitors cannot
-                tell yet.
+                Press <em>Run again</em> for a new pair of buttons and new visitors. Some runs end with a clear winner.
+                Some stay in the middle of the figure. That is also a result: these visitors cannot tell yet.
               </p>
 
               <Code source={source} title="compute.ts" />
