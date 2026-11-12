@@ -3,7 +3,8 @@
 A note on why EP did not run on the Bayesian additive model (the `bayesian-gam` page) or on linear regression with a learned
 noise level, whether that is a limit of EP or of the setup, and what has changed. Written 2026-11-11 (a note, kept as it was found
 out; both gaps it names are closed, see below); the checks quoted are the library's own verdicts (`factorGraphVerdict`) and the tests
-named at the end.
+named at the end. Paths and test names were brought up to date on 2026-11-12 (the operators moved into folders, the compiler tests into
+`model/factor-graph/`); the design is in [`ep.md`](ep.md) and the rule catalogue in [`ep-plan.md`](ep-plan.md).
 
 ## Short answer
 
@@ -61,7 +62,7 @@ is not Gaussian (it is a scale mixture of Gaussians), so a method has to approxi
 
 The default model (log-normal hyperpriors) and ARD write the coefficient non-centred, `z / sqrt(precision)` with `z` standard
 normal and the precision a known map of a latent (`exp(log lambda) d_j + n_j` of a Gaussian, or `s alpha_j + 1 - s` of a gamma
-relevance). That is not a refusal of EP any more: `operators/functions.ts` has two additions. The unary `apply` factor takes a
+relevance). That is not a refusal of EP any more: `operators/likelihoods/functions.ts` has two additions. The unary `apply` factor takes a
 chain of steps (`exp`, then `mul`, `add`, `sqrt`, the reciprocal) and a gamma input, and the compiler collapses the arithmetic on
 the output of an `apply` into one chain from the latent (no Gaussian approximation of the intermediate values; the factors left
 unread are pruned). The quotient of a variable by such a chain is the `apply-product` factor `y = z f(x)`: given `x` the factor is
@@ -75,7 +76,7 @@ posterior of the coefficients came back as a marginal for each (the likelihood's
 the credible band was 17% too wide and the log-normal form needed about 200 sweeps. Now the compiler detects the pattern `D = z / S`
 (a latent vector of independent standard normals that nothing else reads, divided by a scale that is a chain of unary steps
 from one variable, `D` read by a `matmul`) and makes `D` one Gaussian vector with the factor `gaussian-mv-function-scale`
-(`operators/function-scale.ts`): given the log smoothing parameter `x` the coefficients are Gaussian with the diagonal
+(`operators/scales/function-scale.ts`): given the log smoothing parameter `x` the coefficients are Gaussian with the diagonal
 covariance `1 / (exp(x) d_j + n_j)`, so against the Gaussian cavity of the whole vector they integrate out in closed form and
 what is left is one scalar integral over `x` on the grid that `gaussian-mv-precision-scale` already uses (it is the same factor for
 a gamma multiplier, and the two share the grid and the mixture of conditionals); the message to the vector is the dense Gaussian
@@ -143,8 +144,9 @@ model; it is a missing method, not a missing theory.
 2. A method kind that marginalises the Gaussian block (empirical Bayes or Laplace on the hyperparameters).
 3. ~~A Gamma-precision form of the default model~~: done (`gammaSmooth`, now the page's default); and the non-centred form runs under EP anyway.
 
-Tests: `probprog/model/factors.test.ts` ("runs under expectation propagation ...", "a linear regression with an unknown noise
-level ..."), `probprog/models/bayesian-gam.test.ts` (the verdicts and the agreement with the exact reference per variant).
+Tests: `probprog/model/factor-graph/observed-precision.test.ts` ("runs under expectation propagation ...", "a linear regression with an
+unknown noise level ..."), `probprog/models/bayesian-gam.test.ts` and `bayesian-gam-ep.test.ts` (the verdicts and the agreement with the
+exact reference per variant).
 
 ## Item response and other hierarchies
 
