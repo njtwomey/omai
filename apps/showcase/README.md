@@ -53,6 +53,12 @@ The kit (`src/kit/`):
   arrives. When the result arrives and the block's top is below the fold, the page scrolls it into view (smoothly, instantly under
   `prefers-reduced-motion`); otherwise it never scrolls. The registry test checks every story: a play button, then a results block,
   empty on the first render, and no code before it.
+- `<Choice label options value onChange />`: a small radio group (a label, and for each choice a name with a one-line description under
+  it; arrow keys move between the choices; the choices stack at a narrow width) for the rare story whose reader decides how
+  something is built before pressing play. The value lives in the story's own `useState`; to clear the result when a choice
+  changes, render the play button and the results in a child with `key={choice}` (its `useStoryRun` then starts afresh), and send
+  the choice to the worker with a first `postMessage` in `createWorker` (see `gaussian-mixtures`). It is the one exception to
+  "no controls", made at the owner's request.
 - `<Figure caption wide?>`: a figure with a caption and a short fade in; `<Reveal>`: the same fade for prose that appears after the result.
 - `<Aside>`: a margin note (in the right margin on wide screens, an inset note below).
 - `<Code source region? title />`: _How it is written_, from the regions of a source file imported with `?raw` (the site's `CodeBlock`
