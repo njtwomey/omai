@@ -49,7 +49,11 @@ starting message on the vector (`findGroups`, `tieToGroup`). Where an observatio
 message on the vector instead of one per score: a categorical's class scores (the class slopes of up to six classes, the coefficients that
 the alternatives of a choice share) are one `multiclass-row` per observation, and the two log shapes of a beta outcome one stacked vector
 with a `likelihood-pair-row` per outcome (`numerics/_vector-site.ts`), so the correlation between the scores reaches the vector and the
-spreads are the exact ones where one message per score gave 0.4 to 0.85 of them. `factorGraphVerdict(compiled, graph, rule)` asks whether every operator of the graph has a rule under `ep`, `vmp` or
+spreads are the exact ones where one message per score gave 0.4 to 0.85 of them. A latent variable model with random Fourier features
+(`gplvmFourierModel`: one or two latent coordinates per point, outputs that are weighted sums of `cos(omega . x + b)`) is one `gplvm-row` per point on
+the point's coordinates and the weights of each output (`_gplvm.ts`, `numerics/_node-grid.ts`): the weights are integrated out at each node of a grid over
+the coordinates, so the graph is a star around the weights and the loop through the features of a point is gone (docs/probprog/ep-changelog.md, the entry
+of `agent-aec1c3-gplvmrow`). `factorGraphVerdict(compiled, graph, rule)` asks whether every operator of the graph has a rule under `ep`, `vmp` or
 `bp`; `factorGraphPosterior` reads a message state back as a `Posterior` keyed by site name, in the spec's shapes. **Target**
 (`review-compiler.md` section 5): a folder `probprog/model/factor-graph/` with the pure leaves (types, refusal, cells), a builder, the
 passes made explicit (constants, layout plan, node walk, prune, opaque filter), the idioms as pure functions, an ordered list of

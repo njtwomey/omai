@@ -14,8 +14,8 @@ export const POINTS = 20
 export const OUTPUTS = 5
 export const FEATURES = 6
 export const NOISE = 0.1
-export const SWEEPS = 70
-export const DAMPING = 0.7
+export const SWEEPS = 40
+export const DAMPING = 0.5
 
 /** The seed of the first run. Its data are drawn before play and it is a run in which the method finds the coordinate. */
 export const FIRST_SEED = 2
@@ -25,3 +25,10 @@ export function measurements(seed: number, points = POINTS, outputs = OUTPUTS): 
   const data = simulateGplvm(key(seed), { points, coords: 1, outputs, noise: NOISE })
   return toArray(data.y) as number[][]
 }
+
+/**
+ * What a check of the same computation found when this page was written: the number of runs, on different points and different
+ * random waves (seeds 1 to `runs`), and how many of them found a poor solution (a correlation with the true coordinate below 0.9).
+ * The page quotes these numbers; they are a measurement made once, not something the run reads.
+ */
+export const CHECKED = { runs: 24, poor: 2 } as const

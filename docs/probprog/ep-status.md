@@ -6,11 +6,11 @@ in [`ep.md`](ep.md), what happened when in [`ep-changelog.md`](ep-changelog.md).
 
 ## Message-passing operators
 
-The registry (`defaultOperators()`) holds **73** factor operators. Rules by message mode:
+The registry (`defaultOperators()`) holds **74** factor operators. Rules by message mode:
 
 | mode | operators with a rule | exact | bound | numeric |
 | --- | --- | --- | --- | --- |
-| ep | 72 | 36 | 0 | 36 |
+| ep | 73 | 36 | 0 | 37 |
 | vmp | 64 | 37 | 4 | 23 |
 | bp | 4 | 4 | 0 | 0 |
 
@@ -82,7 +82,7 @@ EP refuses 1 item(s): `bayesian-neural-network`.
 | multimodal: One Gaussian per variable cannot show two modes: what the multi-start does not reach | quality | open | medium | - |
 | network-layer-modes: A network layer: hidden units whose weights have symmetric modes are refused | quality | open | large | bayesian-neural-network |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
-| gplvm-features: A GPLVM runs only through random Fourier features: loopy, not always found, spreads not the posterior | quality | open | medium | - |
+| gplvm-features: A GPLVM through random Fourier features: one factor per point runs one coordinate, but a draw of features can still land in a poor solution and no run settles | quality | open | medium | - |
 | sv-parameters: Stochastic volatility with an unknown persistence: one EP run is too narrow, the grid is the route | quality | open | small | - |
 | evidence: The EP log evidence is exact where EP is, and undefined where a factor's integral against its cavities diverges | infrastructure | open | small | - |
 | variational-rules: Variational message passing: what it cannot run and where the mean field is poor | infrastructure | open | small | - |

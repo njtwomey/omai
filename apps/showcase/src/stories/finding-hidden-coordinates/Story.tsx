@@ -9,7 +9,7 @@ import { useStoryRun } from '../../kit/useStoryRun.ts'
 import { storyHref } from '../../story.ts'
 import type { Result } from './compute.ts'
 import source from './compute.ts?raw'
-import { DAMPING, FEATURES, FIRST_SEED, measurements, NOISE, OUTPUTS, POINTS, SWEEPS } from './data.ts'
+import { CHECKED, DAMPING, FEATURES, FIRST_SEED, measurements, NOISE, OUTPUTS, POINTS, SWEEPS } from './data.ts'
 import { CurvesFigure, PairFigure, RecoveryFigure } from './Figures.tsx'
 import { readResult } from './reading.ts'
 
@@ -90,27 +90,30 @@ export default function Story(): ReactNode {
       <h2>What the method does</h2>
 
       <p>
-        The method is expectation propagation. The model is a graph. Each coordinate is a node and each weight is a
-        node. A factor joins them. For every point and every wave, one factor takes the cosine of the point&rsquo;s
-        coordinate, after the wave&rsquo;s frequency and phase are applied. For every point, measurement and wave,
-        another factor multiplies that cosine by the weight. For every point and measurement, a last factor adds up the
-        products of the {FEATURES} waves and compares the sum with the measured number. A message is a bell curve, with
-        a mean and a spread, sent from a factor to a node. The method runs in these steps.
+        The method is expectation propagation. The model is a graph. Each point has a node for its coordinate. Each
+        measurement has a node for its {FEATURES} weights. For every point there is one factor. It joins the
+        point&rsquo;s coordinate to the {OUTPUTS} nodes of weights. A message is a bell curve, sent from a factor to a
+        node. A bell curve has a mean and a spread. The method runs in these steps.
       </p>
 
       <ol className="mb-5 list-decimal">
-        <li>Every coordinate and every weight starts with its bell curve.</li>
+        <li>Every node starts with its bell curve.</li>
+        <li>A factor takes the bell curves of the nodes it joins. It removes its own earlier messages from them.</li>
         <li>
-          A factor takes the current bell curves of the nodes it joins and removes its own earlier message from them. It
-          then asks what its part of the model says about each node. The answer is not a bell curve, so the factor sends
-          the bell curve with the same mean and the same spread as the answer. Matching the mean and the spread is the
-          step that gives the method its name.
+          The factor lays a fine grid of possible coordinates for its point. At each value on the grid, the {OUTPUTS}{' '}
+          measurements are a plain weighted sum of waves. With the bell curves of the weights, the factor can work out
+          how well that value explains them, and what the weights would then be.
         </li>
-        <li>Every node multiplies the messages that it receives. The product is the node&rsquo;s new bell curve.</li>
+        <li>
+          The factor sends back bell curves with the same mean and spread as what it found. The curve for the coordinate
+          counts each grid value by how well it explains the measurements. The curve for each node of weights mixes the
+          weights found at all the grid values. Matching the mean and the spread gives the method its name.
+        </li>
+        <li>Every node multiplies the messages it receives. The product is its new bell curve.</li>
         <li>
           One pass over all the factors is a sweep. Each new message is mixed with the old one, {OLD_PERCENT}% old and{' '}
-          {100 - OLD_PERCENT}% new, because the graph has loops and a full step can overshoot. The run stops after{' '}
-          {SWEEPS} sweeps, or sooner if no message changes.
+          {100 - OLD_PERCENT}% new, so a step cannot overshoot. The run stops after {SWEEPS} sweeps, or sooner if no
+          message changes.
         </li>
       </ol>
 
@@ -119,7 +122,7 @@ export default function Story(): ReactNode {
         line the coordinates up with the true ones, and draw the function that each measurement has become.
       </p>
 
-      <Play run={run} label="Look for the coordinates" estimate="about 6 seconds" />
+      <Play run={run} label="Look for the coordinates" estimate="about 4 seconds" />
 
       <Results run={run}>
         {(result) => {
@@ -132,7 +135,7 @@ export default function Story(): ReactNode {
                 The run took <span className="num">{r.sweeps}</span> sweeps.{' '}
                 {r.settled
                   ? 'The messages stopped changing before the sweeps ran out.'
-                  : 'The messages were still changing a little when the sweeps ran out, so what follows is where the method was at that point, not a settled answer.'}{' '}
+                  : 'The messages were still changing when the sweeps ran out, so what follows is where the method was at that point, not a settled answer.'}{' '}
                 The figure compares the coordinate that the method found for each point with the true one, which the
                 data were made from and the method never saw. The model cannot say which way a coordinate points, or how
                 long it is, so before the comparison the found coordinates are turned over if that helps, stretched and
@@ -193,17 +196,17 @@ export default function Story(): ReactNode {
                     ? 'The learned functions pass about as close to the measurements as the noise allows, but they are functions of the wrong coordinate, so they do not follow the dashed lines.'
                     : 'The learned functions miss the measurements by more than the noise, which is what a poor solution looks like.'}{' '}
                 Only the best guess is drawn. A band around each line would need the method&rsquo;s spreads for the
-                functions, and in a graph with loops those are the least reliable part of the answer.
+                functions, and the messages to the weights are the least reliable part of the answer.
               </p>
 
               <h2>What to be careful about</h2>
 
               <ul className="mb-5 list-disc">
                 <li>
-                  <strong>The graph has loops.</strong> Every coordinate is joined to every weight through the cosines.
-                  A message that goes round a loop repeats what has already been said, so the spreads can come out
-                  narrower than they should be. The mixing of old and new messages makes the run steadier. It does not
-                  fix the spreads.
+                  <strong>The messages are bell curves.</strong> The best coordinate for a point can have two likely
+                  places. A bell curve holds one place, or a wide spread that covers both. The weights of different
+                  measurements are also treated one measurement at a time, so the messages leave out how they move
+                  together.
                 </li>
                 <li>
                   <strong>The coordinate is only found up to its direction, length and position.</strong> Turn a
@@ -211,9 +214,10 @@ export default function Story(): ReactNode {
                   needed the alignment.
                 </li>
                 <li>
-                  <strong>Some runs find a poor solution.</strong> The method can land on coordinates that explain the
-                  measurements badly, and it may state small spreads for them. The curves figure is the check that needs
-                  no true coordinates: a poor solution usually misses the measurements by more than the noise.
+                  <strong>Some runs find a poor solution.</strong> In a check of {CHECKED.runs} runs on different
+                  points, {CHECKED.poor} found one. With only {FEATURES} waves, some random waves cannot follow the
+                  measurements. Even so, a poor solution can pass close to the measurements, and one of the two stated
+                  small spreads. Only the true coordinates show that a run failed.
                 </li>
               </ul>
 

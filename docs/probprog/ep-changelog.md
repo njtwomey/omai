@@ -1410,3 +1410,67 @@ smooth function of them) run under EP? Answer: not as a Gaussian process prior, 
   unchanged (the graph corpus is untouched); the operator registry gains no operator.
 - Gap `gplvm-features` with the plan: a numeric row factor per point (the coordinates of a point on a small grid, the weights one dense Gaussian vector, the mixture over the grid
   nodes of the Gaussian conditionals moment-matched onto the weights), a compiler mapping for it, and a multi-start over the coordinate symmetry.
+
+## 2026-11-12 A GPLVM under EP, the real route: one `gplvm-row` factor per point (`agent-aec1c3-gplvmrow`)
+
+The earlier piece (`agent-a8cd08-gplvm`, above) ran a GPLVM with random Fourier features through the scalar operators and left the gap `gplvm-features`
+with a plan: a numeric row factor per point. This is that factor, its compiler mapping and the measurements.
+- The operator `gplvm-row` (`operators/likelihoods/gplvm-row.ts`, with the grid in `numerics/_node-grid.ts`). One factor per point `n`, over the point's
+  coordinates (one or two scalar Gaussian ports `x`) and the weights of each output (one Gaussian vector port `w_d` of `M` weights per output `d`: `D`
+  vector ports, not one dense vector of `D M`, which the first version had; the same results to the digit, and the engine's cost per sweep with a dense
+  96-vector made a run of 40 points, 8 outputs and 12 features take over 3 s a sweep). Given `x` the row is `y_d = w_d . phi(x) + e` with
+  `phi_m(x) = cos(omega_m . x + b_m)`, linear and Gaussian in `w_d`, so the weights are integrated out in closed form at each node of a zoomed
+  grid over `x` (a window of 8 cavity sds, 241 nodes for one coordinate, 6 sds and 61 x 61 nodes for two, a second grid of the same size over the box
+  that holds the mass: `zoomNodeGrid`). At a node the cavity of `w_d` (mean `m`, covariance `V`) gives the predictive `N(y_d; phi . m, phi' V phi + noise^2)`
+  and the Gaussian posterior `N(m + g r, V - g g' / s)` (`g = V phi`, `s = phi' V phi + noise^2`, `r = (y_d - phi . m) / s`). The message to a coordinate is
+  the moment match of the weighted nodes (the marginal mean and variance), the message to `w_d` the moment match of the mixture over the nodes of its
+  conditional (mean `m + sum p g r`, covariance `V + sum p (r^2 - 1/s) g g' - u u'`), the evidence the log of the node-averaged likelihood
+  (`logMass` of the grid plus the masses of the cavities, as `multiclass-row` does). Declared `params` (`coords`, `features`, `outputs`, `omega`, `phase`,
+  `noise`, `y`), `check` (one or two coordinates, the sizes agree, at most 1024 weights), no power, no VMP rule (`noRule.vmp` says why).
+  What it drops, stated: the correlation between the weights of two different outputs that the shared coordinate induces (each output's message carries its
+  own marginal), and for two coordinates their joint (two scalar ports: the two marginals).
+- Against brute force (`gplvm-row.test.ts`, no code of the rule shared): the exact tilted distribution of (coordinate, two weights) for one output on a dense grid
+  of all three (801 x 61 x 61): the message to the coordinate, to the weights and the evidence within 7e-8 relative for the coordinate, 4e-7 for the weights and 1.3e-8 nats for the evidence; a dense grid of the coordinates with an explicit
+  matrix solve for the weights at each node (three outputs of three weights with a multimodal tilt, five outputs with a small noise whose tilt is 20 times
+  narrower than its cavity, two coordinates with two outputs): messages within 3e-4 to 8e-4 relative (the multimodal case), 3e-7 to 7e-6 (the narrow one) and 6e-5 to 3e-4 (two coordinates) and evidence within 1.8e-4, 2e-7 and 1.8e-5 nats. `_node-grid.test.ts` holds the grid
+  against closed-form integrals (a narrow Gaussian against a wide cavity, two coordinates, two separated peaks).
+- The compiler (`_gplvm.ts`, `_mappings/observed-gplvm.ts`, the weights in `_mappings/latent-gaussian.ts`): the layout plan has a fifth detection, `findGplvm`,
+  that reads the form `gplvmFourierModel` writes (an observed normal `y[point, output]` whose `loc` is `sum(cos(matmul(x, omega) + phase) * W, feature)`, written
+  inline, either order of the product and the sum, the phase optional, the point and the output in either order; `x[point, coord]` a latent normal; `omega`, `phase` known; `W[output, feature]` a
+  latent normal with a known prior that nothing else reads; a known uniform noise; no missing values; with `packScalars`). The mapping `gplvm-weights` (before
+  `normal`) makes `W` one Gaussian vector per output with a scalar readout per element (as the grouped scalars do), and `gplvm-rows` (an observed
+  whole-node mapping before `rows`) one `gplvm-row` per point. A model outside the limits (two or more coordinates per point (see below), more than 1024 weights, a missing
+  observation, a noise that differs between entries, a weight matrix something else reads, another function than `cos`, a derived node inside the form,
+  no `packScalars`) is not detected and compiles by the scalar operators as before: no refusal, because the scalar route accepts every one of those and
+  a refusal would break a model that runs. Their `epRoute` verdicts are those of the scalar route (`observed-gplvm.test.ts`).
+- Measured (`scratch` scripts of the agent, not kept; the numbers are here), the aligned correlation of the posterior-mean coordinate with the truth over seeds, a run is "good" at a
+  correlation of 0.9 or more, damping 0.5, `tol` 1e-6:
+  - The story's setting (20 points, 5 outputs, 6 features, one coordinate, noise 0.1; the data and the features from different keys). New route, 40 sweeps: seeds 1 to 12: 11
+    good (0.971 to 0.998), one poor (seed 9: 0.70), 2.7 to 4.7 s a run (mean 3.2 s); seeds 13 to 24: 11 good (0.990 to 0.996), one poor (seed 14: 0.50), 2.9 s. So 22 of 24, two poor.
+    The scalar route (`packScalars` off: `apply`, `product`, `sum`; 70 sweeps at damping 0.7, the setting the story had) on seeds 1 to 12: 7 good, five poor (correlations 0.05 to 0.66, with
+    spreads of 0.05 to 0.29), 5.7 to 8.2 s (mean 6.5 s). 70 sweeps at damping 0.7 on the new route: 11 of 12, 6.8 s, the same poor seed.
+  - Spreads: the 90% intervals of the coordinates cover the truth for 0.90 of the points over seeds 1 to 12 (0.83 over 13 to 24; per run 0.0 to 1.0, the poor run of seed 14 states a mean
+    spread of 0.045 against a miss of 0.87 and covers none; the poor run of seed 9 states 0.63 and covers 0.60); the scalar route covers 0.66 (its failures cover 0.0 to 0.15).
+  - Settling: no run reaches `converged` at `tol` 1e-6 (nor 1e-4 in 150 sweeps at damping 0): the change per sweep falls from 0.17 to 0.021 over 100 sweeps at damping 0.5 (0.22 to 0.011
+    at damping 0). The coordinates stop moving much before that: the largest move of any coordinate mean from its value at 200 sweeps, in the sds it states, is 0.06 to 7.7 at sweep 40 (median
+    2.2, eight seeds), 0.03 to 3.1 at 100 and 0.01 to 1.2 at 150, while the correlation with the truth is the same to 0.003. Damping 0 is faster but unsafe: seed 6 `converged` at sweep 25 in a
+    poor fixed point (correlation 0.08) that damping 0.5 does not fall into (0.982).
+  - A larger instance (40 points, 8 outputs, 12 features, one coordinate, 30 sweeps, seeds 1 to 12): 12 good (0.984 to 0.998), 25 s a run, the intervals cover 0.82; the scalar route
+    (70 sweeps at damping 0.7, seeds 1 to 4): 3 good, one at 0.69, 41 s, covers 0.60.
+  - Two coordinates (24 points, 6 outputs, 10 features, seeds 1 to 6, 40 sweeps): both coordinates found in 3 of 6 (0.99/0.52, 0.50/0.93, 0.85/0.89, then 0.96 to 0.98), 52 to 72 s a run,
+    the intervals cover 0.44 to 0.94 (0.69 over seeds 3 to 6); the scalar route (70 sweeps at damping 0.7): 2 of 6, 13.7 s, covers 0.90 with spreads of 0.5 to 0.65. 40 points, 8 outputs,
+    12 features, one seed: 0.93/0.89 in 170 s against 0.81/0.80 in 33 s. Not better and four to five times slower, so the compiler gives one coordinate per point to the factor
+    (`GPLVM_COMPILED_COORDS`) and a model with two coordinates compiles by the scalar operators as before; the factor itself takes two (the grid over two coordinates is held to brute force).
+  - Where the poor runs come from. The same data with another draw of the random features finds the coordinate: seed 9 (draws 1, 3, 4, 5 of 6 at 0.99, draws 0 and 2 at 0.70 and 0.65) and
+    seed 14 (draws 2, 3, 4 at 0.996, draws 0 and 1 at 0.50 and 0.47); with 10 features instead of 6 seeds 9 and 14 give 0.965 and 0.996 (8 features: 0.74 for seed 9). The order of the points does not
+    matter (seed 9 in eight orders of the points: 0.33 to 0.74). So a poor run is mostly a draw of the features that cannot follow the function, not an update order EP falls into. The
+    residual of the learned functions at the points flags seed 9 (0.315 against the noise 0.1) but not seed 14 (0.076): a poor solution can fit as well as a good one.
+  - A multi-start over the draws of the features, chosen by the EP evidence (4 draws a seed, 12 seeds, 40 sweeps): the story's setting 12 of 12 against 11 of 12 from the first draw (the
+    first draw's poor seed is 9; some draw is good in 12 of 12); 4 outputs and 4 features 12 of 12 against 11 of 12. Choosing by the residual: 11 of 12 and 12 of 12 (it ties a poor draw of
+    seed 9 with a good one). The evidence is not a clean ranking (a good draw can have -15.8, a poor one -3.2) but the best of four was good every time. The cost is the four runs, so the
+    story keeps one. A multi-start over the starting messages of the coordinates has nothing to start: the cavity of a coordinate is its prior (only its own row reads it), so a start on
+    its port is divided out by the factor's own first update. `epMultiStartMethod` starts discrete messages and does not apply to continuous coordinates.
+- Bookkeeping: the registry has 74 operators (`gplvm-row` after `multiclass-row`), the compiler tables one more latent entry (`gplvm-weights`) and one more
+  whole-node observed entry (`gplvm-rows`); the graph corpus is unchanged (no atom or benchmark model has the form); no atom: there is no reference the EP
+  fixed point can be held to beyond the single-point brute force of the operator test (the posterior of the coordinates is multimodal and the weights have
+  as many dimensions as the grid cannot take), so no digest item. The gap `gplvm-features` is narrowed to what is left.
