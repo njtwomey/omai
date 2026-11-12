@@ -4,6 +4,16 @@ import { allocate, type DType, type Storage } from '../dtype.ts'
 import { broadcastShapes, sizeOf } from '../shape.ts'
 import type { Tensor } from '../tensor.ts'
 import { assertSameDtype, broadcastIndex, wrap } from './_util.ts'
+import {
+  arithmeticRows,
+  compareRows,
+  planBroadcast,
+  powKernel,
+  runFn2,
+  runRows2,
+  runRows3,
+  whereRow,
+} from './broadcast.ts'
 
 /** The unary kernels with a loop of their own below: the most used ones. */
 type LoopKernel = 'neg' | 'abs' | 'exp' | 'log' | 'sqrt' | 'log1p' | 'tanh' | 'sigmoid'
@@ -52,13 +62,14 @@ function floorDivide(a: number, b: number): number {
   return div - floor > 0.5 ? floor + 1 : floor
 }
 
-const binaryKernels: Record<BinaryKernel, (a: number, b: number) => number> = {
+/** The scalar function of each binary kernel: the reference the loops of `broadcast.ts` are tested against. */
+export const binaryKernels: Record<BinaryKernel, (a: number, b: number) => number> = {
   add: (a, b) => a + b,
   sub: (a, b) => a - b,
   mul: (a, b) => a * b,
   div: (a, b) => a / b,
   // C99 and numpy: 1 ** y and x ** 0 are 1 even for NaN and Infinity (JavaScript's `**` gives NaN).
-  pow: (a, b) => (a === 1 || b === 0 || (a === -1 && Math.abs(b) === Infinity) ? 1 : a ** b),
+  pow: powKernel,
   max: (a, b) => (Number.isNaN(a) || Number.isNaN(b) ? Number.NaN : Math.max(a, b)),
   min: (a, b) => (Number.isNaN(a) || Number.isNaN(b) ? Number.NaN : Math.min(a, b)),
   atan2: Math.atan2,
@@ -67,7 +78,8 @@ const binaryKernels: Record<BinaryKernel, (a: number, b: number) => number> = {
   mod: pyMod,
 }
 
-const compareKernels: Record<CompareKernel, (a: number, b: number) => number> = {
+/** The scalar function of each comparison: the reference the loops of `broadcast.ts` are tested against. */
+export const compareKernels: Record<CompareKernel, (a: number, b: number) => number> = {
   eq: (a, b) => (a === b ? 1 : 0),
   ne: (a, b) => (a !== b ? 1 : 0),
   lt: (a, b) => (a < b ? 1 : 0),
@@ -154,7 +166,27 @@ function readStride(data: ArrayLike<number>, size: number): 0 | 1 | null {
   return data.length === size ? 1 : data.length === 1 ? 0 : null
 }
 
+/**
+ * `fn` over two broadcast operands. The common layouts (see `broadcast.ts`) run as strided row loops with no index maps;
+ * any other broadcast keeps the general path, {@link map2Indexed}.
+ */
 export function map2<D extends DType>(a: Tensor, b: Tensor, fn: (x: number, y: number) => number, dtype: D): Tensor<D> {
+  const shape = broadcastShapes(a.shape, b.shape)
+  const size = sizeOf(shape)
+  const plan = size === 0 ? null : planBroadcast(shape, [a.shape, b.shape])
+  if (plan === null) return map2Indexed(a, b, fn, dtype)
+  const out = allocate(dtype, size)
+  runFn2(fn, out, a.data, b.data, plan)
+  return wrap(dtype, shape, out)
+}
+
+/** The general broadcast kernel: an output-sized index map per operand (used when {@link map2} has no layout for the shapes). */
+export function map2Indexed<D extends DType>(
+  a: Tensor,
+  b: Tensor,
+  fn: (x: number, y: number) => number,
+  dtype: D,
+): Tensor<D> {
   const shape = broadcastShapes(a.shape, b.shape)
   const size = sizeOf(shape)
   const out = allocate(dtype, size)
@@ -219,17 +251,42 @@ export function binary<D extends DType>(op: BinaryKernel, a: Tensor<D>, b: Tenso
   const shape = broadcastShapes(a.shape, b.shape)
   const size = sizeOf(shape)
   const layout = layoutOf(a, b, size)
-  if (loop === undefined || layout === null) return map2(a, b, binaryKernels[op], a.dtype)
+  if (loop !== undefined && layout !== null) {
+    const out = allocate(a.dtype, size)
+    loop(out, a.data, b.data, layout)
+    return wrap(a.dtype, shape, out)
+  }
+  const row = Object.hasOwn(arithmeticRows, op) ? arithmeticRows[op as keyof typeof arithmeticRows] : undefined
+  const plan = row === undefined || size === 0 ? null : planBroadcast(shape, [a.shape, b.shape])
+  if (row === undefined || plan === null) return map2(a, b, binaryKernels[op], a.dtype)
   const out = allocate(a.dtype, size)
-  loop(out, a.data, b.data, layout)
+  runRows2(row, out, a.data, b.data, plan)
   return wrap(a.dtype, shape, out)
 }
 
 export function compare(op: CompareKernel, a: Tensor, b: Tensor): Tensor<'bool'> {
-  return map2(a, b, compareKernels[op], 'bool')
+  const shape = broadcastShapes(a.shape, b.shape)
+  const size = sizeOf(shape)
+  const plan = size === 0 ? null : planBroadcast(shape, [a.shape, b.shape])
+  if (plan === null) return map2(a, b, compareKernels[op], 'bool')
+  const out = new Uint8Array(size)
+  runRows2(compareRows[op], out, a.data, b.data, plan)
+  return wrap('bool', shape, out)
 }
 
 export function where<D extends DType>(condition: Tensor<'bool'>, a: Tensor<D>, b: Tensor<D>): Tensor<D> {
+  assertSameDtype(a, b, 'where')
+  const shape = broadcastShapes(condition.shape, broadcastShapes(a.shape, b.shape))
+  const size = sizeOf(shape)
+  const plan = size === 0 ? null : planBroadcast(shape, [condition.shape, a.shape, b.shape])
+  if (plan === null) return whereIndexed(condition, a, b)
+  const out = allocate(a.dtype, size)
+  runRows3(whereRow, out, condition.data, a.data, b.data, plan)
+  return wrap(a.dtype, shape, out)
+}
+
+/** The general `where`: an output-sized index map per operand (used when {@link where} has no layout for the shapes). */
+export function whereIndexed<D extends DType>(condition: Tensor<'bool'>, a: Tensor<D>, b: Tensor<D>): Tensor<D> {
   assertSameDtype(a, b, 'where')
   const shape = broadcastShapes(condition.shape, broadcastShapes(a.shape, b.shape))
   const size = sizeOf(shape)
