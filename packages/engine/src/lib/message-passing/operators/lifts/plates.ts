@@ -18,8 +18,7 @@
 
 import { OmaiError } from '../../../base/index.ts'
 import { ddot } from '../../../numerics/linalg/index.ts'
-import { ones } from '../../../tensor/index.ts'
-import { arg, isFlat } from '../../core/_messages.ts'
+import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, messageArg, numberParam, valueArg, vectorParam } from '../../core/args.ts'
 import { defineOperator, messageRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
@@ -28,7 +27,7 @@ import { gaussianMv, gaussianMvMoments } from '../../core/families-vector.ts'
 import { mergeParams, param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { ruleMessage } from '../../engine/dispatch.ts'
-import { float64Of, zeroArray, zeroFloat64 } from '../../numerics/_arrays.ts'
+import { zeroArray } from '../../numerics/_arrays.ts'
 import { spd } from '../../numerics/_dense.ts'
 import { logistic } from '../links/links.ts'
 import { probit } from '../links/truncation.ts'
@@ -108,30 +107,6 @@ interface Plate {
 }
 
 /**
- * The sites the inner propagation starts from. A cavity with a proper precision starts from no sites, as it always did. A cavity with
- * none (the site of a scale mixture on the weights has a negative precision in some direction, so the plate's cavity is indefinite
- * while its posterior, with the rows, is proper) starts from the same positive precision on every row, the least that makes the
- * posterior proper (found by doubling): the sweeps then take each row's site from its own cavity, which is proper in the posterior.
- */
-function startSites(cavity: Eta, r: Rows, lam: Float64Array): void {
-  const d = r.d
-  if (spd(cavity.slice(d), d) !== undefined) return
-  const unit = sitesMessage(r, zeroFloat64(r.n), float64Of(ones([r.n])))
-  for (let s = 1e-3; s < 1e6; s *= 2) {
-    if (
-      spd(
-        cavity.slice(d).map((v, i) => v + s * (unit[d + i] ?? 0)),
-        d,
-      ) === undefined
-    )
-      continue
-    // Exempt: the sites buffer of the plate is filled in place, as it is in the sweeps below.
-    lam.fill(s)
-    return
-  }
-}
-
-/**
  * Expectation propagation over the rows of a plate against a cavity of the weights: the sites of the rows on the
  * predictors `a_i . w`, swept in order until none moves, each from the cavity of its row (the posterior with its own site
  * taken out by a rank-one downdate) and the scalar link's moment match.
@@ -142,7 +117,6 @@ function plateEp(link: FactorOperator, c: OperatorContext, r: Rows): Plate {
   const nu = new Float64Array(r.n)
   const lam = new Float64Array(r.n)
   const sa = new Float64Array(d)
-  startSites(cavity, r, lam)
   const siteContext = (y: number, h: number, p: number): OperatorContext => ({
     mode: 'ep',
     to: 1,
@@ -193,16 +167,9 @@ function plateEp(link: FactorOperator, c: OperatorContext, r: Rows): Plate {
 
 /** The log mass of the plate against the raw cavity, from converged sites (the EP energy of the rows, see the module). */
 function plateEvidence(link: FactorOperator, c: OperatorContext, r: Rows): number {
-  if (isFlat(etaOf(arg(c, 0))) || link.logEvidence === undefined) return Number.NaN
+  if (!allProper(c.args) || link.logEvidence === undefined) return Number.NaN
   const d = r.d
-  let plate: Plate
-  try {
-    plate = plateEp(link, c, r)
-  } catch (e) {
-    if (e instanceof ImproperMessageError) return Number.NaN
-    throw e
-  }
-  const { nu, lam, message } = plate
+  const { nu, lam, message } = plateEp(link, c, r)
   let post: ReturnType<typeof posteriorOf>
   try {
     post = posteriorOf(etaOf(arg(c, 0)), message, d)
@@ -341,7 +308,7 @@ export function glmPlate(name: string, link: FactorOperator, description: string
         ? {}
         : { vmp: (c: OperatorContext) => plateExpectedLog(link, c, rowsOf(c.params, arg(c, 0).family.dim)) }),
     },
-    traits: { readsTarget: true, improperTarget: true },
+    traits: { readsTarget: true },
   })
 }
 
