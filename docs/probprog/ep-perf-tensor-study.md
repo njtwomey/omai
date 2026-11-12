@@ -10,6 +10,11 @@ ops pays one pass and one allocation each where a hand loop fuses them. The verd
 it into a GO"), which is work in the tensor library, not in message passing. The criteria and their numbers are in the table below; the
 baseline the numbers sit against is `ep-perf.md`.
 
+> **Addendum, 2026-11-12: the verdict above is superseded.** The slow paths named below were fixed in the tensor library (broadcast, reductions,
+> gather; section "Addendum 2026-11-12: after the fast paths"). The same study, rerun, gives tensor / scalar of 1.49, 1.2 and 1.15 at one, two and
+> four times the nodes (was 4.1, 4.0 and 3.95), bit-identical: GO on the owner's rule, marginally at the current node counts. The text between
+> here and the addendum is the original study, kept as it was written.
+
 ## The criteria and what was measured against each
 
 The owner's rule: figure out whether it is worth it, and if it is, do it. The criteria are the four the owner gave; one measurement was added
@@ -195,11 +200,206 @@ If those are met, the plan, so it can be executed without further design (each s
 7. The dense-algebra operators last and only if a batched small-matrix tensor kernel exists: `gaussian-chain`, `-transition`, the `mvn-*` family.
 8. Full digest at EXACT (BITS where the order of sums is kept), `make ep-perf` for a new baseline, and the ratios of the table in this document.
 
+## Addendum 2026-11-12: after the fast paths
+
+The owner decided to fix the slow paths with spot patches that keep the old generic code as the fallback (no new tensor type, no new API: the fast
+kernels sit beside the generic ones and are chosen by layout or shape inside the existing ops) and to rerun the study. Done on the branch
+`agent-a5ab09-tensorfast`, one commit per item, each with a property test that compares the fast kernel with the generic path bit for bit.
+
+### What was changed
+
+| slow path (section "What would turn it into a GO") | change | where |
+| --- | --- | --- |
+| 1. broadcast binary ops, 6 to 8x a raw loop (two output-sized index maps, a closure per element) | `planBroadcast` describes a broadcast as at most four merged axes with a 0 or 1 stride per operand (outer product, row or column against a matrix, trailing and leading axis, rank-2 and rank-3 grids, any mix); written-out row loops per op run it (`add sub mul div max min pow`, the six comparisons, `where`); `map2` and `broadcastTo` run through the plan too. More than four axes after merging keeps the index-map path (`map2Indexed`, `whereIndexed`, `broadcastToIndexed`, unchanged) | `tensor/_cpu/broadcast.ts`, `elementwise.ts`, `structure.ts` |
+| 2. `max`, `min`, `argmax`, `logsumexp`, 7 to 15x | plain loops per operation over a block of adjacent reduced axes (no combine closure; `max` and `min` with four running values, which is order-free; sums and products keep the ascending storage order from the identity); `argmax` over the last axis as a direct loop; a fused `logsumexp` kernel (maximum pass, `exp(x - shift)` summed in storage order, `log(sum) + shift`) taken for concrete float64 values over adjacent axes through an optional `Backend.logsumexp`, the composition of operations kept for traced values, other dtypes, gapped axes and empty reductions | `tensor/_cpu/reduce.ts`, `backend.ts`, `ops/reduce.ts` |
+| 3. `take`, 30x | the cost was mostly `wrapIndices`, which built its `Int32Array` with `Int32Array.from` and a callback (40 ns an index): a loop now that returns the indices untouched when they are in range; `take`, `takeAlongAxis`, `takeScatter`, `putAlongAxisAdd` get a loop of their own along the last axis; `oneHot` of concrete labels writes its ones directly | `tensor/ops/indexing.ts`, `_cpu/structure.ts` |
+| 4. chains: fewer passes and allocations | **not done**: no elementwise op has an output buffer or an in-place form, and the design forbids one (every kernel allocates a fresh output and never mutates its inputs; reverse mode keeps inputs and outputs alive for the vjp, so an in-place op on a value a trace holds would corrupt gradients). Measured instead what it could buy (last three rows of the table) | none |
+
+Results are bit-identical to the generic paths by construction (the same IEEE operation per element in the same order; every sum keeps its order) and by test: `broadcast.property.test.ts`,
+`reduce.property.test.ts`, `gather.property.test.ts` (in `_cpu/`) and `logsumexp-fused.property.test.ts`, `onehot-fast.property.test.ts` (in `ops/`) compare every fast path with the generic
+one (or with a reference written from the definition) with `Object.is` on random shapes, axes and values including NaN, infinities and signed zeros, over the shapes each path claims and
+shapes it must hand back (one test builds a seven-axis alternating broadcast that has no plan). The existing tensor, autodiff, losses and linalg tests pass unchanged (tensor 595 tests,
+autodiff 89, losses and `numerics/linalg` 753).
+
+### The tensor ops against raw loops, after
+
+Tensor microseconds before, then after, then the raw loop, with the ratio after in brackets. Every cell is the minimum over three runs of the median of seven timings (`scripts/perf/tensor-ops-floor.ts`;
+"before" was measured with the same harness on the unmodified base `b8d3c8e9`). Load average 5 to 12 from another agent's tests, calibration workload 19.6 to 21.7 ms (20.0 in the baseline); the
+ratios at 1e3 elements carry the 0.5 microsecond per-op floor and are noisy. The raw loops close over constant arrays, which the compiler specialises on.
+
+| op | 1e3 elements | 1e4 | 1e5 |
+| --- | ---: | ---: | ---: |
+| add broadcast ([s,1] + [1,s]) | 9.0 to 2.7 / 2.4 (1.1) | 180 to 23 / 20 (1.2) | 1728 to 194 / 173 (1.1) |
+| sub broadcast ([s,1] - [1,s]) | 18 to 3.0 / 2.3 (1.3) | 187 to 22 / 20 (1.1) | 1724 to 191 / 174 (1.1) |
+| mul broadcast ([s,1] * [1,s]) | 18 to 2.8 / 2.3 (1.2) | 175 to 22 / 19 (1.1) | 1728 to 193 / 174 (1.1) |
+| div broadcast ([s,1] / [1,s]) | 18 to 2.8 / 2.4 (1.2) | 180 to 23 / 20 (1.1) | 1763 to 197 / 174 (1.1) |
+| maximum broadcast ([s,1], [1,s]) | 19 to 2.9 / 2.3 (1.2) | 195 to 22 / 21 (1.0) | 1825 to 197 / 173 (1.1) |
+| minimum broadcast ([s,1], [1,s]) | 20 to 2.7 / 2.4 (1.1) | 186 to 23 / 20 (1.1) | 1783 to 191 / 172 (1.1) |
+| pow broadcast ([s,1] ** [1,s]) | 35 to 13 / 13 (1.1) | 334 to 130 / 123 (1.1) | 3380 to 1228 / 1163 (1.1) |
+| add row against matrix ([s,s] + [1,s]) | 18 to 3.1 / 2.1 (1.5) | 167 to 26 / 22 (1.2) | 1634 to 225 / 188 (1.2) |
+| add column against matrix ([s,s] + [s,1]) | 17 to 2.8 / 1.9 (1.5) | 172 to 23 / 20 (1.1) | 1611 to 194 / 171 (1.1) |
+| add trailing axis ([c,c,c] + [c]) | 18 to 3.6 / 2.2 (1.7) | 156 to 27 / 22 (1.2) | 1588 to 222 / 191 (1.2) |
+| add leading axis ([c,c,c] + [c,1,1]) | 18 to 2.6 / 1.6 (1.6) | 165 to 21 / 18 (1.2) | 1553 to 183 / 163 (1.1) |
+| add rank-3 grid ([c,1,1] + [1,1,c]) | 3.1 to 0.8 / 0.4 (2.0) | 8.7 to 1.9 / 1.1 (1.7) | 37 to 5.2 / 4.4 (1.2) |
+| add rank-3 grid ([c,1,c] + [1,c,1]) | 20 to 3.3 / 2.2 (1.5) | 175 to 24 / 21 (1.1) | 1678 to 196 / 186 (1.1) |
+| add rank-3 grid ([c,c,1] + [1,1,c]) | 22 to 4.9 / 2.0 (2.5) | 175 to 29 / 20 (1.5) | 1706 to 218 / 167 (1.3) |
+| less broadcast ([s,1] < [1,s]) | 17 to 2.0 / 1.1 (1.8) | 168 to 16 / 14 (1.2) | 1563 to 145 / 127 (1.1) |
+| where (cond [s,s], [s,1], [1,s]) | 12 to 4.4 / 2.9 (1.5) | 106 to 36 / 32 (1.1) | 983 to 319 / 306 (1.0) |
+| sum over axis 1 of [s,s] | 2.0 to 1.8 / 0.7 (2.4) | 12 to 10 / 8.8 (1.2) | 100 to 97 / 93 (1.0) |
+| sum over axis 0 of [s,s] | 2.0 to 2.0 / 1.0 (2.0) | 12 to 12 / 10 (1.2) | 111 to 103 / 100 (1.0) |
+| sum over axis 1 of [c,c,c] | 9.3 to 2.5 / 1.3 (2.0) | 150 to 14 / 12 (1.1) | 1535 to 129 / 122 (1.1) |
+| max | 6.0 to 1.0 / 0.7 (1.5) | 118 to 6.5 / 8.3 (0.8) | 1171 to 61 / 81 (0.8) |
+| max over axis 1 of [s,s] | 6.3 to 1.6 / 0.7 (2.2) | 121 to 7.3 / 8.8 (0.8) | 1182 to 64 / 85 (0.7) |
+| max over axis 0 of [s,s] | 3.5 to 2.1 / 1.0 (2.1) | 31 to 14 / 10 (1.3) | 296 to 117 / 100 (1.2) |
+| min over axis 1 of [s,s] | 13 to 1.6 / 0.9 (1.7) | 121 to 7.4 / 11 (0.7) | 1158 to 63 / 101 (0.6) |
+| max over axis 1 of [c,c,c] | 19 to 2.6 / 1.3 (2.0) | 163 to 14 / 12 (1.2) | 1628 to 130 / 116 (1.1) |
+| argmax over axis 1 of [s,s] | 2.3 to 1.3 / 0.8 (1.5) | 20 to 9.1 / 10 (0.9) | 190 to 84 / 100 (0.8) |
+| exp | 9.9 to 7.7 / 6.7 (1.1) | 68 to 68 / 69 (1.0) | 641 to 659 / 672 (1.0) |
+| log | 6.8 to 6.9 / 6.7 (1.0) | 66 to 66 / 65 (1.0) | 620 to 637 / 634 (1.0) |
+| add | 2.2 to 2.6 / 1.9 (1.4) | 18 to 20 / 18 (1.1) | 163 to 174 / 175 (1.0) |
+| mul | 2.3 to 2.2 / 1.7 (1.3) | 19 to 20 / 19 (1.0) | 172 to 176 / 169 (1.0) |
+| sum | 1.3 to 1.4 / 1.0 (1.5) | 9.8 to 10 / 9.8 (1.0) | 98 to 98 / 97 (1.0) |
+| logsumexp | 20 to 5.8 / 4.9 (1.2) | 191 to 49 / 50 (1.0) | 1890 to 476 / 492 (1.0) |
+| logsumexp over axis 1 of [s,s] | 40 to 6.1 / 5.9 (1.0) | 364 to 46 / 51 (0.9) | 3480 to 435 / 486 (0.9) |
+| softmax over axis 1 of [s,s] | 63 to 16 / 14 (1.2) | 601 to 138 / 126 (1.1) | 5809 to 1278 / 1195 (1.1) |
+| take (gather) | 49 to 4.4 / 1.6 (2.7) | 493 to 41 / 20 (2.0) | 5166 to 376 / 170 (2.2) |
+| take rows of [s,s] (axis 0, s indices) | 4.1 to 2.6 / 2.2 (1.2) | 25 to 20 / 21 (1.0) | 180 to 182 / 189 (1.0) |
+| take columns of [s,s] (axis 1, s indices) | 9.0 to 2.9 / 2.2 (1.3) | 61 to 23 / 23 (1.0) | 608 to 213 / 204 (1.0) |
+| takeAlongAxis of [s,s] (axis 1) | 6.5 to 4.9 / 2.2 (2.3) | 49 to 36 / 23 (1.6) | 511 to 338 / 200 (1.7) |
+| scatterAdd (n updates into [s]) | 48 to 2.7 / 1.0 (2.8) | 496 to 23 / 17 (1.4) | 5538 to 224 / 164 (1.4) |
+| segmentSum (n values, s segments) | 50 to 2.5 / 1.0 (2.6) | 506 to 24 / 17 (1.4) | 5283 to 228 / 161 (1.4) |
+| oneHot (s labels, s classes) | 24 to 1.4 / 1.2 (1.1) | 199 to 10 / 10 (1.0) | 1836 to 82 / 87 (0.9) |
+| chain sub,mul,mul,exp vs one fused loop | 12 to 12 / 5.3 (2.3) | 103 to 107 / 53 (2.0) | 929 to 979 / 506 (1.9) |
+| chain sub,mul,mul,exp vs 4 allocating passes | 12 to 12 / 12 (1.1) | 99 to 108 / 103 (1.0) | 953 to 953 / 934 (1.0) |
+| chain sub,mul,mul,exp vs 4 passes, buffers reused | 12 to 13 / 4.8 (2.6) | 100 to 107 / 68 (1.6) | 916 to 1000 / 675 (1.5) |
+| exp(-0.5 (a-b)^2) (4 ops vs 1 loop) | 19 to 20 / 5.2 (3.8) | 152 to 163 / 52 (3.2) | 1419 to 1475 / 516 (2.9) |
+
+The last three rows bound item 4: for a chain of four elementwise ops (`sub`, square, scale, `exp`) at 1e4 elements the tensor library takes 107 us; one fused loop 53 us; four raw passes that each
+allocate a fresh output 103 us (the tensor chain is as fast as that, which is the design cost of one allocation per op); four raw passes into buffers allocated once 68 us. An `out=` form would
+save at most 37% of a chain, and fusion about half; neither is a spot patch (fusion is an expression compiler).
+
+Acceptance targets at 1e4 elements, tensor against the raw loop:
+
+| target (within 1.5x) | before | after | met |
+| --- | ---: | ---: | --- |
+| broadcast binary ops (add, sub, mul, div, max, min, pow, `[s,1]` against `[1,s]`) | 9.4 to 10.5 (pow 2.9, its raw loop is slow) | 1.0 to 1.2 | yes |
+| the other broadcast layouts (row, column, trailing, leading, rank-3 grids), compare, `where` | 7.7 to 13 (`where` 3.5) | 1.1 to 1.5 | yes |
+| `max` (flat, and along either axis of a square, and `min`) | 15 (flat), 14 (axis 1) | 0.8 | yes (faster than the raw compare loop, which does not propagate NaN) |
+| `logsumexp`, `softmax` | 4.0, 4.9 | 1.0, 1.1 | yes |
+| `take` (gather by an int32 index) | 26 | 2.0 (the kernel alone 1.6) | **no** |
+| `takeAlongAxis` | 2.4 | 1.6 | no (just) |
+
+`take` went from 493 to 41 us, a factor of 12, and `scatterAdd` and `segmentSum` from 500 to 23 us (22x); the 1.5x target was not reached for the gather itself. The kernel is a plain loop
+(33 us of the 41; the rest is the op layer: the index scan, the dispatch and the shape checks) and the raw loop in the harness is 20 us. Micro-experiments with the same loop written as a function of
+its arrays gave 17 to 57 us in separate processes, which points at alignment or compilation-mode noise and at the compiler specialising the harness's closure on its constant arrays, not at
+anything in the kernel that a further patch would change. I could not find a formulation that got below 33 us for the kernel.
+
+### The study, rerun
+
+`scripts/perf/tensor-grid-study.ts`, unchanged, on the unmodified base and on the branch, the same afternoon, load 5 to 28 (the calibration workload stayed at 19.6 to 20.0 ms, so the process kept its core;
+the single timings spread 5 to 20%):
+
+| panels | final nodes | scalar | tensor, base | tensor, now | tensor / scalar, base | tensor / scalar, now (five runs) | difference |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| as the library (1x) | 4320 | 167 to 174 us | 666 us | 247 to 266 us | 4.08 | 1.48, 1.49, 1.49, 1.53, 1.48 (median 1.49) | 0, bit-identical |
+| 2x | 14400 | 442 to 488 us | 1775 us | 539 to 680 us | 4.00 | 1.21, 1.22, 1.24, 1.39, 1.39 (median 1.24) | 0, bit-identical |
+| 4x | 57600 | 1697 to 1742 us | 6711 us | 1967 to 2060 us | 3.95 | 1.14, 1.16, 1.16, 1.17, 1.18 (median 1.16) | 0, bit-identical |
+
+The tensor time at 1x splits into about 65 us to build the nodes and the cavity densities (some tens of small ops at 0.5 to 1 us each), 170 us for the grid expression and reductions of both passes (355 before; one pass is
+now 108 us against 93 us for the raw loops) and 13 us for the zoom. Memory per call (a rough figure: heap plus typed arrays growth over twenty calls, no collection) at 1x: scalar 0.42 MB, tensor 0.93 MB, 2.2 times; at 2x 1.2 and
+2.0 MB; the 4x figures are not usable (the numbers are noisier than the effect).
+
+### The verdict, re-evaluated against the owner's rule
+
+The rule: GO if the tensorised integrator is no more than 1.5x slower, results are within the TOLERANT level, and the scope is bounded.
+
+- Speed: 1.49 at the current node counts (five runs from 1.48 to 1.53, so on the line, not safely under it), 1.24 at 2x and 1.16 at 4x, against 4.0 before. **Pass, marginally at 1x.**
+- Correctness: maximum absolute difference 0 in the log mass, both means and both variances at all three sizes, `Object.is` on every number: **bit-identical, pass.**
+- Scope: unchanged by the fast paths, 8 to 12 agent-days with the digest at every step (about 95 closures, about 60 of them mechanical): **bounded, pass.**
+
+**Verdict: GO, with one qualification: the 1.5 criterion is met at the current node counts only on the median.** What is left of the gap is no longer in the tensor kernels but in the per-op overhead of building the
+nodes (65 of the 250 us at 1x, about a quarter) and in the fixed 0.5 us of every small op; the grid part is at the raw loops. Cheaper node building (item 5 of "What would turn it into a GO": cache the panel rule
+and the edge vectors per window, or build the panels with one outer op) is the first step of a conversion and would move 1x to about 1.3. Two things the GO does not say: the tensor version is still not faster than the
+scalar code at any size (the ratio is 1.15 to 1.5, never below one), so the benefit remains the validation of the tensor library at grid sizes and expression trees a future backend could run, not speed; and chains of
+elementwise ops still cost twice a fused loop (2.0 at 1e4), which is what separates 1.16 from 1.0 at 4x.
+
+The earlier extrapolation (2.5 to 3 times slower EP runs if every grid kernel were converted) becomes about 1.15 to 1.5 times on the kernel-dominated runs (`softmax-two-groups`, `circular-rows`), by the same arithmetic, still
+an extrapolation from the pair profile.
+
+### End to end, and the digest
+
+`make ep-perf-check` on five items that are mostly array-built code, base against branch on the same afternoon, load 5 to 6, calibration 20.0 ms: `atom/gp-hyperparameters` 2.16 s to 2.04 s, `atom/chain-persistence-grid`
+6.19 to 5.95 s, `atom/gate-poisson-negative-binomial` 3.47 to 3.54 s, `model/radon` 2.24 to 2.26 s, `atom/ordinal-probit-cuts-learned` 1.19 to 1.18 s. No effect beyond noise (the message-passing kernels do not use tensors, which
+is the premise of the study); `gp-hyperparameters` and `chain-persistence-grid` are 4 to 6% faster, about the size of their spreads.
+
+`make ep-digest-check ARGS="--only gp-,gate-poisson,chain-persistence,softmax-two-groups,radon,ordinal --bits"` (25 items): 22 identical at BITS. Three items (`gp-length-scale`, `ordinal-probit`, `ordinal-probit-learned`) differ from the committed
+baseline in the last digits (1e-14, within TOLERANT), and they differ by exactly the same numbers on the unmodified base `b8d3c8e9`, so the drift is in the committed baseline, not in this change; the branch and the base are bit-identical on all of them.
+
+## Alternatives to hand-written JS loops
+
+The owner asked about the machine-code route, WebAssembly (WASM), and about a "halfway house", a specialised tensor type. An assessment for this library, written after the JS fast paths above, with their numbers as the evidence.
+Nothing here is built.
+
+### WebAssembly: what it could give
+
+- **SIMD is two lanes for float64.** WASM SIMD is 128 bits wide: `f64x2`. On float64 arithmetic that is a 2x ceiling on a compute-bound loop, and the loops that matter here are not compute-bound. After the patches the
+  same-shape and broadcast ops run at 1.0 to 1.2 times a scalar JS loop and are limited by memory traffic and allocation (an `add` of 1e4 elements is 20 us, of which about 9 is zeroing the output); `exp` and `log` cost 6.5 ns an element in
+  libm, with no SIMD path in WASM. My estimate, not a measurement: a SIMD `add` might reach 1.3 to 1.5x on elements already in cache; nothing like the 6 to 30x the generic paths lost.
+- **Data crosses the boundary by copy.** A WASM module reads its own linear memory; a JS `Float64Array` on the JS heap is not visible to it. Copying 1e4 doubles (80 KB) in and 80 KB out is about 10 us, as much as the whole `add`. So a
+  kernel call per tensor op loses; WASM only pays if tensors live in WASM memory (a backend whose `data` is a view of the module's memory, with its own allocator and explicit lifetimes: the `Backend` interface allows a second backend, but
+  `Tensor.data` is read as a plain typed array in about 5000 places in about 1100 files of `lib/`, and a memory that can grow invalidates every view), or the kernel is coarse enough to amortise the copy (a whole quadrature: 4320 nodes in, a few
+  moments out).
+- **No libm.** WASM has `sqrt`, `floor`, `abs`, `min`, `max` and the four operations (all exactly rounded, so bit-identical to JS), but no `exp`, `log`, `pow`, `sin`, `lgamma`. Either they are imported from JS (a call across the boundary per node costs
+  20 to 50 ns, more than the `Math.exp` itself, which wipes out the gain) or they are compiled in. A compiled-in `exp` is not the engine's: The `exp` of AssemblyScript or of a musl-based C build can differ from `Math.exp` in the last bit for some inputs. V8's
+  `Math.exp` and `Math.log` are ports of fdlibm, so a port of the same source, built without fused multiply-add, may match V8 bit for bit (to be proved by an exhaustive test on random doubles, not assumed), but not SpiderMonkey or JavaScriptCore, which use their own;
+  and `lgamma`, `digamma` and the library's other special functions are written in TypeScript, so they would be ported too. Any difference moves digest items off BITS: the digest is recorded in one engine (V8), and a WASM libm would add a second thing the bits depend on.
+- **Where it runs.** The library runs in Node, in browsers and workers (the pocs run EP in the browser) and in the test runner. WASM runs in all of them (with an asynchronous instantiation to arrange, which does not fit a synchronous
+  `import`). A native addon (N-API) is Node only: it would not serve the browser and needs a prebuilt binary per platform. WebGPU is browser-side (Node only through experimental builds), its shading language has no float64, a dispatch and
+  read-back costs on the order of 100 us, so a pair grid of 4000 nodes would be all overhead; it suits large batched work in float32, and can never be bit-identical.
+
+### What it would cost
+
+A second toolchain in a TypeScript monorepo: Rust, C or AssemblyScript (the last is TypeScript-like, with its own standard library and its own numerics), installed by `make setup` through mise, built in CI on every platform, with a binary
+checked in or built on install, a loader that works in Node, the browsers and vitest, source maps and debugging that stop at the boundary, a bundle-size line for the pocs, lint and format rules for a language Biome does not cover, and the
+fixtures and digest (a golden check that the module equals the JS kernel bit for bit on random inputs, on every platform that runs it). The repository's rules (no hand-built arrays in EP code, tensor ops validated by `checkPrimitive`, banned
+globals) would need a counterpart for the module. It is a standing maintenance cost for a gain that, on the evidence above, is bounded for the tensor ops and uncertain for the integrators.
+
+### Recommendation
+
+Do the JS fast paths first, which is done: the tensor kernels are at 1.0 to 1.5 times a raw JS loop (except the gather, 2.0), the integrator is at 1.5 times the scalar one, and nothing about those kernels is limited by the language. Spike WASM only if,
+after the first converted kernels (cheaper node building and a fused chain, the next steps of the plan), the integrator is still slower than the owner accepts. The most promising candidate is not a tensor op but a coarse scalar kernel whose cost is the
+integrand: the Bartlett quadrature of the `mvn-*` family or `integratePair` with a fixed integrand, where one call crosses the boundary once and the loop inside is arithmetic plus `exp`/`log`.
+
+Spike plan, one afternoon to two days, one kernel (`integratePair` with the Laplace-by-gamma integrand of `scripts/perf/grid-cases.ts`, 4320 nodes), in a throwaway directory outside `packages/`:
+
+1. Build it in C or Rust to WASM with the fdlibm `exp` and `log` taken from the V8 sources, no fused multiply-add, no fast-math; load it from Node 22 and from the pocs build.
+2. **Gate A, bit-identity:** `exp` and `log` equal `Math.exp` and `Math.log` bit for bit on 1e7 random doubles and the edge values (subnormals, overflow, 0, infinities, NaN); the integrator's log mass, means and variances equal the JS ones by `Object.is`
+   on the three scales of the study and on the digest items that call it at BITS. If Gate A fails, stop: a WASM libm is not acceptable.
+3. **Gate B, speed:** the kernel, including copying the inputs in and the moments out, at most half the time of the JS `integratePair` at 1x nodes (167 us, so at most 85 us), and at most 0.4 at 4x. A copy-free variant (inputs already in module memory) is
+   measured separately to show the ceiling. If Gate B fails, stop.
+4. **Gate C, cost:** the clean-machine setup time added to `make setup`, the CI minutes, the binary size (at most 50 KB), the loader working unchanged in Node, Chrome and vitest. Only then a design for a second backend or a kernel registry.
+
+### The halfway house: a specialised tensor type
+
+Would a contiguous 1-D or 2-D tensor type, or a stride and broadcast-view representation, give more than the layout-dispatched fast paths? On the numbers, not much, and at a high price.
+
+- *What the fast paths already reach.* With no new type, every broadcast layout (outer product, row, column, trailing, leading, rank-3 grids) runs at 1.0 to 1.2 times the raw loop at 1e4 elements, comparisons and `where` at 1.1 to 1.2, the reductions at 0.8 to 1.3
+  and `logsumexp` at 1.0. A dedicated low-rank type would buy the same loops with simpler dispatch (no plan, no four-axis merge); the plan costs 0.07 us a call, against an op floor of 0.5 us, so the dispatch is not where time goes.
+- *What is left over the raw loop is not about rank.* The remaining excess in the integrator is the per-op overhead (coercion, `bind`, shape checks, one allocation: about 0.5 us an op, 65 of the 250 us at 1x) and the chains (2.0 times a fused loop, of which half is the
+  allocation: four allocating raw passes take as long as the library does, buffers reused would save 37%). A 1-D or 2-D type has the same dispatch and the same allocation per op; it would shave perhaps 0.1 to 0.2 us an op, not the chains.
+- *A view representation* (`broadcastTo` and `transpose` returning a view with strides, materialised on demand) would remove the materialised copies of explicit `broadcastTo`, `transpose` and `slice`, and would allow lazy expressions to be fused at the boundary. That is a
+  real gain for code that broadcasts explicitly or fuses chains, and the only way in this list to attack the chain cost; inside the ops the plan already does the equivalent without copies. But it changes the contract `Tensor.data` is a flat row-major
+  typed array (read in about 5000 places across about 1100 files, not all of them tensors), so every kernel (reduce, scan, matmul, take, sort, cast, the format and `toArray` functions, the backend interface, the autodiff rules that hold inputs) must accept strided input
+  or call a `contiguous()` first, and every operation that is validated today (`checkPrimitive` for each primitive, the golden fixtures, the property tests, the digest) is rerun and several of its rules rewritten. That is weeks of work to touch the whole
+  tensor layer, against the days the spot patches took.
+- *Verdict on the halfway house:* not worth it now. If the integrator needs the chain cost removed after the first conversions, the cheaper experiment is an expression fusion for elementwise chains inside the existing types (a compiled loop for a chain recorded
+  between two reductions), which the view representation would only make easier, not replace.
+
 ## Reproduce
 
 ```sh
 nice -n 15 node --conditions=source --experimental-transform-types --no-warnings scripts/perf/tensor-grid-study.ts [--json out.json]
-nice -n 15 node --conditions=source --experimental-transform-types --no-warnings scripts/perf/tensor-ops-floor.ts [--json out.json]
+nice -n 15 node --conditions=source --experimental-transform-types --no-warnings scripts/perf/tensor-ops-floor.ts [--only <substring>[,<substring>...]] [--json out.json]
 ```
 
 Both are experiments outside the library (`scripts/perf/`); they are not wired into any check. The typed-array loops they time against are the
