@@ -20,6 +20,16 @@ export function beliefWithout(
   edge: number,
 ): Eta {
   const v = g.variables[variable] as CompiledGraph['variables'][number]
+  if (v.family.additive === true) {
+    // The same additions in the same order as the fold of `product`, in one array.
+    const acc = zeroArray(v.family.size)
+    for (const e of v.edges) {
+      if (e === edge) continue
+      const m = messages[e] as Eta
+      for (let i = 0; i < acc.length; i++) acc[i] = (acc[i] as number) + (m[i] ?? 0)
+    }
+    return acc
+  }
   let acc: Eta = v.family.flat
   for (const e of v.edges) if (e !== edge) acc = v.family.product(acc, messages[e] as Eta)
   return acc

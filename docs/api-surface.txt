@@ -47,7 +47,7 @@ omai-engine/logic	403	ccdc0b881471
 omai-engine/logic/ilp	65	e55805f239eb
 omai-engine/losses	194	7298761fe4d3
 omai-engine/manifold	80	aa598bd29506
-omai-engine/message-passing	386	687889ac69ec
+omai-engine/message-passing	386	a1d461ed075a
 omai-engine/metrics	338	1dc3f0837564
 omai-engine/mixture	42	3ac1e9f8cb18
 omai-engine/nn	791	a47294e5f8b1
@@ -74,8 +74,8 @@ omai-engine/pgm/learning	123	a9e76fe66003
 omai-engine/problems	55	af621d373b9a
 omai-engine/probprog	354	5a9b5acf1538
 omai-engine/probprog/ep	68	c46f377a7cdd
-omai-engine/probprog/inference	201	0c334c359afc
-omai-engine/probprog/model	165	d7ad0a607060
+omai-engine/probprog/inference	202	4605e0b74216
+omai-engine/probprog/model	166	3fa8e69f6299
 omai-engine/probprog/model/dists	43	104c99efc22b
 omai-engine/probprog/models	171	d8da49db38db
 omai-engine/probprog/validation	105	c885db18377e
@@ -103,7 +103,7 @@ omai-engine/text	359	ca80c4da3faf
 omai-engine/text/subword	32	544e2a9ad3ce
 omai-engine/timeseries	304	80098329574f
 omai-engine/trace	154	1d6c5457a45a
-omai-engine/trees	179	a3649eb63c6e
+omai-engine/trees	181	cdb64fbfdc78
 omai-engine/tune	141	0b821c7e910d
 omai-engine/vision	331	7251e6487677
 omai-engine/worlds	145	26964194356a
@@ -126,4 +126,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	304	2e6c4409f9d2
-total	20278	8da220b0442a
+total	20282	d1ec6d72d94c

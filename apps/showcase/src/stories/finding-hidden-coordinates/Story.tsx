@@ -122,6 +122,11 @@ export default function Story(): ReactNode {
         line the coordinates up with the true ones, and draw the function that each measurement has become.
       </p>
 
+      <p>
+        The points at the top of the page are the points of the first run. If you press <em>Run again</em>, new points
+        are drawn, and the figures below show the points that run used.
+      </p>
+
       <Play run={run} label="Look for the coordinates" estimate="about 4 seconds" />
 
       <Results run={run}>

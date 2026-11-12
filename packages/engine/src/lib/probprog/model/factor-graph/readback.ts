@@ -170,14 +170,41 @@ export function factorGraphPosterior(
       }
       case 'normal-gamma': {
         // The joint of a mean and a precision shares one variable: the mean's marginal is a Student t (2a degrees of freedom around m,
-        // scale sqrt(b / (a beta))), the precision's a gamma (an inverse gamma for a variance).
-        const x = vs[0] ?? {}
-        const proper = x['improper'] !== true
-        const [m, beta, a, b] = [num(x['m']), num(x['beta']), num(x['a']), num(x['b'])]
-        if (s.part === 'mean') out[s.site] = proper ? studentT(2 * a, m, Math.sqrt(b / (a * beta))) : normal(0, 1e6)
+        // scale sqrt(b / (a beta))), the precision's a gamma (an inverse gamma for a variance). A site over several components has one
+        // variable each.
+        const proper = (x: Record<string, Json>): boolean => x['improper'] !== true
+        const parts = vs.map((x) => ({
+          ok: proper(x),
+          m: num(x['m']),
+          beta: num(x['beta']),
+          a: num(x['a']),
+          b: num(x['b']),
+        }))
+        if (s.part === 'mean')
+          out[s.site] = studentT(
+            T(
+              parts.map((p) => (p.ok ? 2 * p.a : 2)),
+              shape,
+            ),
+            T(
+              parts.map((p) => (p.ok ? p.m : 0)),
+              shape,
+            ),
+            T(
+              parts.map((p) => (p.ok ? Math.sqrt(p.b / (p.a * p.beta)) : 1e6)),
+              shape,
+            ),
+          )
         else {
-          const [sh, rt] = proper ? [a, b] : [1, 1e-6]
-          out[s.site] = s.reciprocal === true ? inverseGamma(sh, rt) : gamma(sh, rt)
+          const shapes = T(
+            parts.map((p) => (p.ok ? p.a : 1)),
+            shape,
+          )
+          const rates = T(
+            parts.map((p) => (p.ok ? p.b : 1e-6)),
+            shape,
+          )
+          out[s.site] = s.reciprocal === true ? inverseGamma(shapes, rates) : gamma(shapes, rates)
         }
         break
       }

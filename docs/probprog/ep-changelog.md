@@ -1411,6 +1411,74 @@ smooth function of them) run under EP? Answer: not as a Gaussian process prior, 
 - Gap `gplvm-features` with the plan: a numeric row factor per point (the coordinates of a point on a small grid, the weights one dense Gaussian vector, the mixture over the grid
   nodes of the Gaussian conditionals moment-matched onto the weights), a compiler mapping for it, and a multi-start over the coordinate symmetry.
 
+## 2026-11-12 Second code review: EP fixes (`agent-af7262-review2`)
+
+Seven findings of a read-only review, each read, reproduced where it was a defect and fixed with a test that failed before; items of the digest that the code can
+reach (grid, Gaussian process, mixtures, gates, the network, the changepoint program) were checked with `--only` and are listed at the end.
+- **`ep-grid` tail cache (confirmed).** `hypersFor(tail)` kept one set of ranges for the life of the method, so `check()` (which asks at the tail 1e-4) fixed the
+  ranges of every later run: a page that then ran the method with `tail: 1e-8` got the 1e-4 ranges, a truncated grid, with no error. The ranges are now cached per
+  tail (`ep-grid.test.ts`: after `check()` the axes of a run with tail 0.2 equal those of a fresh method's).
+- **Component axes of a relabelling (confirmed).** `componentAxesOf` found the component dimension of a table only through `at`, so a mixture of regressions with a
+  slope per class read by `ops.pick(ops.mul(x, slope), z)` had no component axis: the weights were relabelled and the slopes were not, and `labels: 'sort'` found no
+  key and did nothing. It now reads the last dimension of the first operand of a `pick` (and the first of an `at` table, by the expression's shape), and when the model
+  has a discrete latent and no lookup it can read (a mixture written with `where`: the components are separate nodes) a site that is not the class probabilities is
+  unknown (`undefined`, every axis of length `k` as before the first review), not "no component axes". `where` has no component dimension to find, so it is not
+  recognised. Tests in `_relabel.test.ts`.
+- **Rows-expanded evidence (confirmed by reading, dead in the catalogue).** `evidenceByRows` cached per state whatever the configuration and reran the model with a
+  factor per row at power 1, the default schedule, improper policy and restarts, labelled `ep-energy (rows expanded)`. It is now cached per state and per `epRunKey` (power,
+  schedule, damping, improper policy, tolerance, restarts, warm-up) and reruns with those settings (and the power on the factors that take one), and the label names a
+  power other than 1. No atom, benchmark model or program reaches this fallback now (a scan of every atom, at power 1, 0.5 and 0.2, and of the 27 benchmark models found no
+  converged state with an undefined energy and a plated graph: the learned logistic and the tied groups no longer need it), so the test is on `epRunKey`
+  (`ep-knobs.test.ts`), not on a number.
+- **`ep-grid` nodes without an evidence (confirmed, reported, no fallback).** A node whose EP run has no evidence (an improper cavity of a plated or tied factor) got
+  `-Infinity` and zero weight, and the grid said `converged`. The posterior now counts them (`diagnostics.nodesWithoutEvidence`, with a `note`) and is `completed`, not
+  `converged`, while there are some. The rows-expanded fallback of the single run was not added: no grid node of the catalogue reaches it, so it could not be tested.
+- **Network-layer refusal (partly).** Measured against a NUTS run of 4 chains of 1500 draws (12 points, noise 0.2): the dose-response curve `Emax sigmoid(a + b x)` (all
+  three random) converges in 149 sweeps to the NUTS means (emax 1.97 against 2.00, a -0.43 against -0.44, b 1.62 against 1.60 within 0.25 sd) with spreads 0.7, 0.9 and 0.75
+  of the sampler's. One `tanh` unit converges to one of its two modes (w1 -1.79 +- 0.41, w2 -1.17, where NUTS has both signs: w1 -0.88 +- 1.6), one `cos` unit does not
+  converge in 400 sweeps, one rectifier unit (`max(u, 0)`) does not converge in 400 sweeps (the ridge between the output weight and the input weights). So the refusal
+  stays for two or more distinct hidden units (permutation) and for one unit of any activation but the sigmoid, with reasons that name the cause; one sigmoid unit runs.
+  `networkLayerUnits` still counts units; `networkLayerShape` gives the distinct hidden units and the activations; the verdict reads that. Tests: `network-layers.test.ts`
+  (the dose-response model through `epRoute` against the NUTS numbers).
+- **`ops.pick` (confirmed, model layer).** The evaluation answered the last entry for a code outside `0..K-1` where the factor-graph compiler refuses it and `at` takes it
+  as an error; it now refuses a concrete code that is negative, fractional, NaN or K or more (a traced value with no concrete numbers is not checked).
+- **Chain kinks (not a defect).** `chainOf` keeps no kinks beyond one registry step, but the panelled quadrature is fine enough: `clip(x, -0.5, 0.5)` of a Gaussian
+  with both bounds in the mass is within 1e-4 sd in the moments and 2e-5 nats in the evidence of a grid of two million points over six cases; documented in
+  `chainOf` and pinned in `functions.test.ts`; no pullback of kinks through the chain.
+- **Digest** (`--only` on the 16 items the code can reach: the six grid items, the network, the mixtures, the HMM, the stick-breaking mixture, the changepoint program, two gates and the
+  mixture regression; 24 compared): the only item moved by these changes is `atom/chain-persistence-grid`, whose posterior diagnostics gain `nodesWithoutEvidence` (2 of 17 nodes, at
+  the persistence 1.25 and 1.36 where the chain is explosive and the evidence is `-Infinity`) and `note`; the status stays `completed` (16 of 17 nodes converged). `model/gaussian-mixture`
+  and `model/gaussian-mixture-ordered` also differ from the baseline (the components' labels swap, 16 -> 14 sweeps; improper messages 16 -> 8), and they differ in the same way with the
+  source of `2519305a` checked out, so the baseline `ep-digest.json` is already stale for them at that commit (not caused by this work, not accepted).
+## 2026-11-12 Gaussian mixtures with diagonal groups under EP: conjugate pairs fused inside gates, vector constants in the gate (`agent-a1d68e-mixep`, gap `mixture-vector-components`)
+
+The showcase story `gaussian-mixtures` (272 eruptions of Old Faithful, two coordinates, round / diagonal / full groups, 2 and 3 groups or 6 and 8 by stick-breaking) ran only round groups of two under EP.
+Measured first, on the story's own model (rows in the order of the seed, `tol` 1e-2, 80 sweeps, node 24, the machine shared with a running gate so times are 1.5 to 2 times a quiet machine):
+what the compiler accepts is everything (all twelve choices route to `ep`; the gap is time and settling, not a refusal); round 2 groups 26 sweeps 9 s, 3 groups 80 sweeps not settled 31 s, 6 pieces 80 not settled 49 s,
+8 pieces 70 sweeps 60 s; diagonal 2 groups 10 sweeps 7.6 s, 3 groups 19 sweeps 36 s, 6 pieces 22 sweeps 91 s, 8 pieces 20 sweeps 138 s; full (the story's regression form of the tilt) 80 sweeps not settled at
+111, 124, 213 and 310 s. A normal-Wishart (or any Wishart) variable inside a mixture is not compilable: `d.gate` refuses a branch with an event axis, and there is no per-group matrix gathered by a label.
+
+- **The node and the browser sweeps (10 against 32 for two diagonal groups).** Not the platform, not a clock: nothing in the EP run path reads one (`budgetMs` belongs to the anytime runner, which a `session` does not use; the run is a pure
+  function of the graph and the knobs, and the browser's worker gave the same centres). It is the order of the rows. The story hands the rows to the method in the order of the seed, and on the quadrature route the sweeps depend on it:
+  seeds 1, 2, 3, 6, 7 take 9 to 10 sweeps, seeds 4 and 5 take 32 (26 s), the same fixed point to the third digit; a re-rolled seed ("Run again") explains a different count in the page. On the conjugate route below every seed takes 4 sweeps.
+- **Why it was slow.** Each branch of a gate of `gaussian-gamma-precision` factors is a two-dimensional quadrature (mean by precision) for every message of every row of every sweep: 37% of a run in `tiltGrid`, 0.75 s a sweep for two groups.
+- **The pass `fuseConjugatePairs`** (`factor-graph/_fuse.ts`, `toFactorGraph(model, { conjugatePairs: true })`, on for `ep`, `ep-multistart` and the multi-start's evidence graph, off for VMP and the grid; `MpSpecOptions.conjugatePairs`). A group's centre `M ~ N(m, 1 / (kappa T))` with its precision `T ~ Gamma(a, b)` and the group's observations as `gaussian-gamma-precision` branches of
+  gates on the label is the normal-gamma pair; the pass reads the finished graph and rewrites each such pair, where the mean's conditional prior and the precision's gamma prior are their only factors outside the gates and every branch reading them is the observation `N(y; M, 1 / (c T))` (no offset),
+  as one `normal-gamma` variable with a `prior` and a `gaussian-normal-gamma` branch per observation (closed form, exact). Left alone: a precision shared by several means (the round shape), a centre with another factor on it (the order constraint of the sampler), a gate that reads only one of the two, a precision with an offset, an independent prior on the centre (each checked in `_fuse.test.ts`).
+  The sites read the pair (`part` `mean`: a Student t, `precision`: a gamma, now batched over the elements of a site in `readback.ts`).
+- **Against the exact posterior** (`_fuse.test.ts`: six points in two clusters in two coordinates, known weights, the 64 assignments enumerated, each a conjugate update): the centres within 0.02 and the precisions within 5% of the exact means, the log evidence within 0.05 nats; against the
+  quadrature route of the same model the centres within 0.05. The atom `gate-normal-gamma-pairs` (family `composed`; ten rows, 1024 assignments enumerated; eight seeds): the centres and the precisions within 0.2 reference sds, the spreads of the beliefs 0.7 to 1.0 of the exact ones, the probability that a row is in the second group within 0.2 sds but too sure for ambiguous rows (spread 0.3 to 1.0 of the exact one).
+- **On the story** (Old Faithful, seed 1, node; browser worker in brackets): diagonal 2 groups 4 sweeps 0.3 s (1.2 s with the module load; the quadrature route 7.6 s), 3 groups 33 sweeps 2.5 s (2.5 s), 6 pieces 20 sweeps 4.2 s in the browser, 8 pieces 18 sweeps 5.9 s;
+  against the Gibbs sampler of the page (140 sweeps for two groups: 2.7 s): weights within 0.01, centres within 0.05 minutes of length and 0.2 of wait, spreads within 3%. For three groups one seed of the sampler (even with 300 + 600 sweeps) stays in two groups and another finds the third of 6% in the middle that EP finds
+  (EP 0.61 / 0.33 / 0.05 against 0.61 / 0.33 / 0.06, centres within 0.03 and 0.6 minutes, spreads within 2%); with room for 6 or 8 pieces the sampler's 70 sweeps split the big clump into overlapping pieces (0.33 / 0.16 / 0.10 ...) where EP gives two groups and one of 5%, but EP takes 4 to 6 s against the sampler's 3 s, so the story runs those on the sampler.
+  The story's model for the diagonal shape writes the centre as wide as its precision allows and spreads the centres' start over the scaled data (`start`, data of the model): that is the conjugate pair, and it breaks the symmetry that the order constraint broke (EP's diagonal groups carry no order constraint; the sampler's still do).
+- **The gate takes a vector constant** (`{ const: [..] }`, the observed row of a mixture of Gaussian vectors): the message to the label and to each component's `(mu, Lambda)` through `mvn-normal-wishart` branches, brute-forced at d = 2 (`gate.test.ts`: the label's odds are the multivariate Student t to nine digits, the tilted `E L` and `E L mu` of the component against a 400000-draw importance sample to 2% and 0.03). Hand-built, a gate of those branches runs two groups of the 272 eruptions in 1.7 s
+  (the symmetric fixed point without distinct prior means, as for any mixture); three groups take 36 s: the normal-Wishart family's algebra goes through the tensor library for every small matrix. Not wired into the compiler: gap `mixture-vector-components` names what the full shape needs.
+- **One engine change, bit-identical**: the belief of a variable is accumulated in one array where the family's product is the plain sum (`Family.additive`, not the discrete families that renormalise), the same additions in the same order. A variable with a message from each of 272 rows had its belief re-summed for every cavity, allocating one array per message:
+  eight stick-breaking pieces 10.8 s -> 7.3 s -> 5.5 s; results to the digit, 33 and 18 sweeps as before. Searched and reused: the gate and its branch machinery, `mvn-normal-wishart`, `gaussian-normal-gamma`, `normalGammaEta`, the normal-gamma and normal-Wishart families, `epRoute`/`prepare`, the atom registry and `verifyAtom`, the library's gamma and normal samplers for the reference.
+- Tests and digest: `_fuse.test.ts`, `composed-pairs.test.ts`, the new case of `gate.test.ts`, the story's smoke and agreement tests; the graph corpus has the two lines of the new atom (additions only); the digest has the atom's and its VMP line and the registry line (one more atom's knobs), and the 35 neighbouring items (gates, mixtures, clutter, spike, stick, topic, softmax, the mixture benchmarks, radon, eight schools, lda) stay at their level except `model/gaussian-mixture` and `model/gaussian-mixture-ordered`,
+  which differ from the committed digest on the unchanged base too (improper messages 80 -> 36, 16 -> 8, one sweep fewer for the ordered one: not caused by this change; to be re-accepted by whoever owns it).
+- Not done: the full shape (a covariance matrix per group) under EP, the stick-breaking pieces under EP (correct, slower than the sampler), a belief updated incrementally (the cost of a sweep is now the sum over the edges, 38% of the run at eight pieces), faster small-matrix kernels for the normal-Wishart family.
 ## 2026-11-12 A GPLVM under EP, the real route: one `gplvm-row` factor per point (`agent-aec1c3-gplvmrow`)
 
 The earlier piece (`agent-a8cd08-gplvm`, above) ran a GPLVM with random Fourier features through the scalar operators and left the gap `gplvm-features`
@@ -1474,3 +1542,4 @@ with a plan: a numeric row factor per point. This is that factor, its compiler m
   whole-node observed entry (`gplvm-rows`); the graph corpus is unchanged (no atom or benchmark model has the form); no atom: there is no reference the EP
   fixed point can be held to beyond the single-point brute force of the operator test (the posterior of the coordinates is multimodal and the weights have
   as many dimensions as the grid cannot take), so no digest item. The gap `gplvm-features` is narrowed to what is left.
+||||||| 2519305a

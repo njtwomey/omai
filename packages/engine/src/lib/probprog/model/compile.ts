@@ -26,7 +26,7 @@ import {
   type Value,
   where,
 } from '../../tensor/index.ts'
-import { mask as maskHandler } from '../handlers.ts'
+import { isFiniteDiscrete, mask as maskHandler } from '../handlers.ts'
 import { deterministic, factor, type Model, markov, observe, param, plate, sample } from '../primitives.ts'
 import type { BoundModel } from './bind.ts'
 import { distributionFamilies, type FamilyDef } from './dists/families.ts'
@@ -72,6 +72,8 @@ interface Context {
   readonly operators: OperatorTable
   readonly families: Readonly<Record<string, FamilyDef>>
   readonly env: Map<string, NamedValue>
+  /** The batch dimension of each enumeration axis in the values of `env` (see {@link bindLatent}). */
+  readonly enums: Map<string, number>
   readonly batch: { readonly dim: string; readonly indices: Value } | undefined
 }
 
@@ -136,14 +138,55 @@ function distArgs(spec: DistSpec, ctx: Context, dims: readonly string[]): Record
   const events = spec.eventDims ?? []
   for (const [name, e] of Object.entries(spec.params)) {
     const x = evaluate(e, ctx)
-    out[name] = aligned(x, [...dims, ...events.filter((d) => x.dims.includes(d))])
+    out[name] = aligned(x, [...dims, ...events.filter((d) => x.dims.includes(d))], ctx, dims.length)
   }
   return out
 }
 
-/** A parameter laid out for a node's dimensions (a scalar needs none). */
-function aligned(x: NamedValue, dims: readonly string[]): Value {
-  return x.dims.length === 0 ? x.value : alignTo(x, dims)
+/** The prefix of the name of an enumeration axis, which an enumerated latent carries as a dimension of its own. */
+const ENUM = 'enum:'
+
+/**
+ * The value of a latent as the expressions see it. A discrete latent that the enumeration handler gave all its states
+ * comes back with an axis of its states at a batch dimension left of every plate (`[K, 1, ..., 1]`), which the named
+ * layout (dimensions first, event axes after) would read as event axes and misalign against a plated operand. So the axis
+ * becomes a dimension named `enum:<site>` that broadcasts like any other, and {@link aligned} puts it back at its batch
+ * dimension where a distribution or a factor takes the value.
+ */
+function bindLatent(node: ModelNode, value: Value, support: Support, ctx: Context): NamedValue {
+  const rank = value.shape.length
+  const own = node.dims.length
+  const rest = value.shape.slice(1)
+  const plain = rank > own && node.eventRank === 0 && isFiniteDiscrete(support)
+  if (!plain || rest.length < own || rest.slice(0, rest.length - own).some((n) => n !== 1))
+    return { value, dims: node.dims }
+  const name = `${ENUM}${node.name}`
+  ctx.enums.set(name, -rank)
+  return {
+    value: reshape(value, [value.shape[0] as number, ...rest.slice(rest.length - own)]),
+    dims: [name, ...node.dims],
+  }
+}
+
+/**
+ * A value laid out for a node's dimensions (a scalar needs none). The first `batch` of `dims` are the node's plates, the
+ * rest event dimensions; the enumeration axes of the value go to the batch dimensions they were given, left of the plates.
+ */
+function aligned(x: NamedValue, dims: readonly string[], ctx: Context, batch: number = dims.length): Value {
+  const lead = x.dims
+    .filter((d) => d.startsWith(ENUM))
+    .map((name) => ({ name, dim: ctx.enums.get(name) as number }))
+    .sort((a, b) => a.dim - b.dim)
+  if (lead.length === 0) return x.dims.length === 0 ? x.value : alignTo(x, dims)
+  const v = alignTo(x, [...lead.map((e) => e.name), ...dims])
+  const rank = Math.max(batch, -(lead[0] as { dim: number }).dim)
+  const shape: number[] = []
+  for (let i = 0; i < rank; i++) {
+    const dim = i - rank
+    const at = lead.findIndex((e) => e.dim === dim)
+    shape.push(dim >= -batch ? (v.shape[lead.length + batch + dim] as number) : at < 0 ? 1 : (v.shape[at] as number))
+  }
+  return reshape(v, [...shape, ...v.shape.slice(lead.length + batch)])
 }
 
 function buildDist(spec: DistSpec, ctx: Context, dims: readonly string[]): Distribution {
@@ -270,7 +313,7 @@ export function toProgram(bound: BoundModel, options: CompileOptions = {}): Mode
   return () => {
     const env = new Map<string, NamedValue>()
     const batch = bound.batch
-    const base: Context = { bound, operators, families, env, batch: undefined }
+    const base: Context = { bound, operators, families, env, enums: new Map<string, number>(), batch: undefined }
     const indices =
       batch === undefined
         ? undefined
@@ -298,7 +341,7 @@ export function toProgram(bound: BoundModel, options: CompileOptions = {}): Mode
             })
           const dist = withConstraint(buildDist(node.dist, ctx, node.dims), node.constraint)
           const value = inPlates(ctx, node.dims, () => sample(node.name, dist))
-          env.set(node.name, { value, dims: node.dims })
+          env.set(node.name, bindLatent(node, value, dist.support, ctx))
           break
         }
         case 'observed': {
@@ -312,6 +355,13 @@ export function toProgram(bound: BoundModel, options: CompileOptions = {}): Mode
             break
           }
           const v = evaluate(node.expr, ctx)
+          if (v.dims.some((d) => d.startsWith(ENUM))) {
+            // An enumerated value is recorded as the sites see it, its states along their own batch dimension.
+            const own = v.dims.filter((d) => !d.startsWith(ENUM))
+            if (node.record) deterministic(node.name, aligned(v, own, ctx))
+            env.set(node.name, v)
+            break
+          }
           const value = node.record ? deterministic(node.name, v.value) : v.value
           env.set(node.name, { value, dims: v.dims })
           break
@@ -328,7 +378,7 @@ export function toProgram(bound: BoundModel, options: CompileOptions = {}): Mode
         case 'factor': {
           if (dependsOnUnbound(node, skipped) !== undefined) break
           const v = evaluate(node.expr, ctx)
-          inPlates(ctx, node.dims, () => factor(node.name, aligned(v, node.dims)))
+          inPlates(ctx, node.dims, () => factor(node.name, aligned(v, node.dims, ctx)))
           break
         }
         case 'scan':

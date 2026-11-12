@@ -5,16 +5,9 @@
  */
 
 import type { Result } from './compute.ts'
+import { NEAR } from './data.ts'
 
-/** The chance that a cut lies within `half` of `at`, from the posterior over cut positions. */
-export function chanceNear(result: Result, at: number, half: number): number {
-  return result.posterior.thresholds.reduce(
-    (a, t, i) => a + (Math.abs(t - at) <= half ? (result.posterior.usage[i] as number) : 0),
-    0,
-  )
-}
-
-/** The range of candidate cuts with at least `floor` chance of being used, between `lo` and `hi`. */
+/** The range of candidate cuts with at least `floor` chance of being in the tree, between `lo` and `hi`. */
 export function spanOf(
   result: Result,
   lo: number,
@@ -22,7 +15,7 @@ export function spanOf(
   floor: number,
 ): { from: number; to: number } | undefined {
   const inside = result.posterior.thresholds.filter(
-    (t, i) => t >= lo && t <= hi && (result.posterior.usage[i] as number) >= floor,
+    (t, i) => t >= lo && t <= hi && (result.posterior.cutChance[i] as number) >= floor,
   )
   return inside.length === 0 ? undefined : { from: Math.min(...inside), to: Math.max(...inside) }
 }
@@ -36,11 +29,12 @@ export interface Reading {
   /** The leaves of the final greedy tree: the fewest points in one, and its step size. */
   readonly smallLeaf: { readonly n: number; readonly stepSize: number }
   readonly largeLeaf: { readonly n: number; readonly stepSize: number }
-  /** The chance that the posterior puts on one, two and three splits. */
+  /** The chance that the posterior puts on no cut, one, two and three cuts: they add to one. */
+  readonly none: number
   readonly one: number
   readonly two: number
   readonly three: number
-  /** The chance of a cut within 0.3 of the greedy tree's first and second cut. */
+  /** The chance that some cut of the tree lies within `NEAR` of the greedy tree's first and second cut. */
   readonly nearFirst: number
   readonly nearSecond: number
   /** The range of positions where the second cut has at least 5% chance, from the first cut onward. */
@@ -62,7 +56,8 @@ export interface Reading {
  */
 export function readResult(result: Result): Reading {
   const last = result.greedy.stages.at(-1) as Result['greedy']['stages'][number]
-  const cuts = result.greedy.cuts.map((c) => c.threshold).sort((a, b) => a - b)
+  const byPosition = [...result.greedy.cuts].sort((a, b) => a.threshold - b.threshold)
+  const cuts = byPosition.map((c) => c.threshold)
   const leaves = [...last.leaves].sort((a, b) => a.n - b.n)
   const gaps = result.posterior.mean.map((m, i) => Math.abs(m - (last.mean[i] as number)))
   const widest = { index: gaps.indexOf(Math.max(...gaps)) }
@@ -76,12 +71,13 @@ export function readResult(result: Result): Reading {
     cuts: cuts.length,
     smallLeaf: { n: small.n, stepSize: small.stepSize },
     largeLeaf: { n: large.n, stepSize: large.stepSize },
+    none: result.posterior.splits[0] as number,
     one: result.posterior.splits[1] as number,
     two: result.posterior.splits[2] as number,
     three: result.posterior.splits[3] as number,
-    nearFirst: chanceNear(result, first, 0.3),
-    nearSecond: chanceNear(result, second, 0.3),
-    secondSpan: spanOf(result, first + 0.3, Number.POSITIVE_INFINITY, 0.05),
+    nearFirst: byPosition[0]?.chanceNear ?? 0,
+    nearSecond: byPosition[1]?.chanceNear ?? 0,
+    secondSpan: spanOf(result, first + NEAR, Number.POSITIVE_INFINITY, 0.05),
     top: result.posterior.top[0] as Result['posterior']['top'][number],
     widestAt: result.grid[widest.index] as number,
     widestDifference: Math.max(...result.posterior.mean.map((m, i) => Math.abs(m - (last.mean[i] as number)))),

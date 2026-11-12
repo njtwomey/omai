@@ -6,7 +6,7 @@ import { defaults } from '../../space/index.ts'
 import { session } from '../../trace/index.ts'
 import { benchmarkModel } from '../models/suite.ts'
 import { epGridKnobs, epGridMethod } from './ep-grid.ts'
-import { checkKnobKeys, epRunKnobs } from './ep-knobs.ts'
+import { checkKnobKeys, epRunKey, epRunKnobs } from './ep-knobs.ts'
 import { epMultiStartKnobs } from './ep-multistart.ts'
 import { epSpecMethod } from './mp.ts'
 
@@ -40,6 +40,23 @@ describe('epRunKnobs', () => {
       expect(epGridKnobs.spaces[k]).toEqual(epRunKnobs('ep-grid').spaces[k])
       expect(epMultiStartKnobs.spaces[k]).toEqual(epRunKnobs('ep-multistart').spaces[k])
     }
+  })
+})
+
+describe('epRunKey', () => {
+  it('tells the configurations apart that settle a run differently, and not the ones that do not (the sweep cap)', () => {
+    const plain = epRunKey({})
+    expect(epRunKey({ power: 1, maxSweeps: 50 })).toBe(plain)
+    for (const other of [
+      { power: 0.2 },
+      { schedule: 'parallel' },
+      { improper: 'skip' },
+      { damping: 0.3 },
+      { tol: 1e-4 },
+      { restarts: 3 },
+      { warmup: 'auto' },
+    ])
+      expect(epRunKey(other), JSON.stringify(other)).not.toBe(plain)
   })
 })
 

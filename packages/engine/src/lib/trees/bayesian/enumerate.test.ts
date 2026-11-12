@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { toFlat } from '../../tensor/index.ts'
-import { enumerateTrees, predictEnumerated, topTrees } from './enumerate.ts'
+import { enumerateTrees, predictEnumerated, probabilityOfCutIn, topTrees } from './enumerate.ts'
 import { dirichletLeaf, normalGammaLeaf, regressionPrior } from './leaf.ts'
 import { treePrior } from './prior.ts'
 import { quantileRules, scoreTree, treeSpace } from './space.ts'
@@ -61,6 +61,33 @@ describe('enumerateTrees', () => {
     const best = e.root.indexOf(Math.max(...e.root))
     expect([2.25, 3.25, 4.75].some((cut) => Math.abs((space.rules.thresholds[best] ?? 0) - cut) < 0.3)).toBe(true)
     expect(e.usage.reduce((a, b) => a + b, 0)).toBeGreaterThan(1)
+  })
+
+  it('gives the probability that a cut lies in a window, the weight of the trees that have one, as brute force does', () => {
+    const space = setup()
+    const e = enumerateTrees(space)
+    const trees = allTrees(space.rules.features.length, space.rules)
+    const weights = trees.map((t) => Math.exp(scoreTree(space, t).logPosterior - e.logEvidence))
+    const cutsOf = (t: BayesTree): number[] =>
+      t.kind === 'leaf' ? [] : [t.threshold, ...cutsOf(t.left), ...cutsOf(t.right)]
+    for (const [lo, hi] of [
+      [2.0, 2.6],
+      [0, 6],
+      [4.4, 5.0],
+      [3.3, 3.3],
+      [10, 11],
+    ] as const) {
+      const brute = trees.reduce(
+        (a, t, i) => a + (cutsOf(t).some((c) => c >= lo && c <= hi) ? (weights[i] ?? 0) : 0),
+        0,
+      )
+      expect(probabilityOfCutIn(e, lo, hi), `${lo} to ${hi}`).toBeCloseTo(brute, 10)
+    }
+    // the whole range is every tree but the stump; the sum of the rules' usage over it counts a tree once for each cut
+    expect(probabilityOfCutIn(e, -1, 7)).toBeCloseTo(1 - e.stump, 10)
+    expect(e.usage.reduce((a, b) => a + b, 0)).toBeGreaterThan(probabilityOfCutIn(e, -1, 7))
+    // a window on a feature the data do not have holds no cut
+    expect(probabilityOfCutIn(e, -1, 7, 3)).toBe(0)
   })
 
   it('predicts the weighted average of every tree, exactly', () => {

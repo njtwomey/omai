@@ -7,7 +7,7 @@ import { StoryPage } from '../../kit/StoryPage.tsx'
 import { useStoryRun } from '../../kit/useStoryRun.ts'
 import type { Result } from './compute.ts'
 import source from './compute.ts?raw'
-import { simulate } from './data.ts'
+import { NEAR, simulate } from './data.ts'
 import { AverageFigure, CutsFigure, DataFigure, GreedyPanels } from './Figures.tsx'
 import { readResult } from './reading.ts'
 
@@ -47,9 +47,10 @@ export default function Story(): ReactNode {
       </p>
 
       <p>
-        The second method does not pick one tree. It gives every tree of up to two cuts a weight, from how likely the
-        data are under that tree. These weights are the <em>posterior</em>: the probability of each tree, given the
-        data. Then it draws trees from the weights, and averages their predictions.
+        The second method does not pick one tree. It gives a weight to every tree up to two levels deep: a first cut,
+        then at most one more cut in each of the two leaves it made. That is up to three cuts. The weight comes from how
+        likely the data are under that tree. These weights are the <em>posterior</em>: the probability of each tree,
+        given the data. Then it draws trees from the weights, and averages their predictions.
       </p>
 
       <Play run={run} label="Grow the trees" estimate="about a second" />
@@ -111,8 +112,9 @@ export default function Story(): ReactNode {
 
               <p>
                 The posterior covers <span className="num">{result.posterior.trees.toLocaleString('en-GB')}</span>{' '}
-                trees. Each uses at most two of <span className="num">{result.posterior.thresholds.length}</span>{' '}
-                candidate cuts. The weights are exact. They come from formulas, with no sampling. The posterior gives{' '}
+                trees. Their cuts are chosen from <span className="num">{result.posterior.thresholds.length}</span>{' '}
+                candidate positions. The weights are exact. They come from formulas, with no sampling. The posterior
+                gives <span className="num">{percent(r.none)}</span> to the tree with no cut,{' '}
                 <span className="num">{percent(r.one)}</span> to trees with one cut,{' '}
                 <span className="num">{percent(r.two)}</span> to two cuts and{' '}
                 <span className="num">{percent(r.three)}</span> to three.
@@ -149,12 +151,12 @@ export default function Story(): ReactNode {
               </Figure>
 
               <p>
-                The first cut is settled. A cut lies within 0.3 of <Tex>{tex`x = ${fixed(r.firstCut)}`}</Tex> with a
-                chance of <span className="num">{percent(Math.min(1, r.nearFirst))}</span>. The second is not. Positions
-                from <span className="num">{fixed(r.secondSpan?.from ?? 0, 1)}</span> to{' '}
-                <span className="num">{fixed(r.secondSpan?.to ?? 0, 1)}</span> each have a chance of at least 5%, and
-                the greedy position has <span className="num">{percent(Math.min(1, r.nearSecond))}</span>. The single
-                most probable tree has cuts at{' '}
+                The first cut is settled. A cut lies within {NEAR} of <Tex>{tex`x = ${fixed(r.firstCut)}`}</Tex> with a
+                chance of <span className="num">{percent(r.nearFirst)}</span>. The second is not. Positions from{' '}
+                <span className="num">{fixed(r.secondSpan?.from ?? 0, 1)}</span> to{' '}
+                <span className="num">{fixed(r.secondSpan?.to ?? 0, 1)}</span> each have a chance of at least 5%, and a
+                cut lies within {NEAR} of the greedy second cut with a chance of{' '}
+                <span className="num">{percent(r.nearSecond)}</span>. The single most probable tree has cuts at{' '}
                 <span className="num">{r.top.cuts.map((c) => fixed(c)).join(' and ')}</span>, and it holds only{' '}
                 <span className="num">{percent(r.top.probability)}</span> of the posterior.
               </p>

@@ -44,6 +44,7 @@ import type { BoundModel } from './bind.ts'
 import { eventToDims } from './event-dims.ts'
 import { finishChains } from './factor-graph/_chains.ts'
 import { Context } from './factor-graph/_context.ts'
+import { fuseConjugatePairs } from './factor-graph/_fuse.ts'
 import { Refusal } from './factor-graph/_refusal.ts'
 import { mapNode } from './factor-graph/_table.ts'
 import type { FactorGraphCompilation } from './factor-graph/types.ts'
@@ -142,6 +143,13 @@ export function toFactorGraph(
      * scalar variable and a `gaussian-gamma-precision` factor per coefficient (the same prior, a mean-field-like posterior).
      */
     readonly sharedScale?: 'dense' | 'elements'
+    /**
+     * Fuse the mean and the precision of each component of a mixture into one normal-gamma variable where the model writes them as
+     * the conjugate pair (a mean whose variance is a multiple of the precision's reciprocal, read together with the precision by the
+     * branches of a gate): the messages are then closed form (default false; expectation propagation asks for it, a variational rule
+     * has no expected log for the gate over the fused branches).
+     */
+    readonly conjugatePairs?: boolean
   } = {},
 ): FactorGraphCompilation {
   // A vector written as one event (a multivariate normal with no named dimension) is read as a vector over a dimension of its size.
@@ -184,6 +192,7 @@ export function toFactorGraph(
     cx.issues.push({ node: cx.current, kind: e.kind, code: e.code, reason: e.message })
   }
   cx.g.prune(cx.sites)
+  if (options.conjugatePairs === true && cx.issues.length === 0) fuseConjugatePairs(cx)
   const graph: FactorGraphSpec = { variables: cx.g.variables, factors: cx.g.factors }
   const opaque = (options.analysis?.opaque ?? opaqueNodes(bound)).filter((name) => {
     const node = bound.spec.nodes.find((n) => n.name === name && n.kind !== 'data')

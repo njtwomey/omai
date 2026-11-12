@@ -9,7 +9,7 @@ import { useStoryRun } from '../../kit/useStoryRun.ts'
 import { storyHref } from '../../story.ts'
 import type { Result } from './compute.ts'
 import source from './compute.ts?raw'
-import { drawPoints, GAP_ROWS } from './data.ts'
+import { drawPoints, GAP_ROWS, NUTS_CHECK } from './data.ts'
 import { CurvesFigure, DoubtFigure, FieldFigure, JointFigure, PointsFigure } from './Figures.tsx'
 import { type OddsReading, readData, readResult } from './reading.ts'
 
@@ -121,10 +121,19 @@ export default function Story(): ReactNode {
               <h2>The chance of yes</h2>
 
               <p>
-                The method settled after <span className="num">{result.sweeps}</span> sweeps. Its belief is one bell
-                curve over the offset and the two weights. At each place the score is the offset plus the weights times
-                the measurements, so the score also has a bell curve. Its mean and spread come from the belief&rsquo;s
-                mean and covariance, including how the offset and the weights vary together.
+                {result.settled ? (
+                  <>
+                    The method settled after <span className="num">{result.sweeps}</span> sweeps.
+                  </>
+                ) : (
+                  <>
+                    The method did not settle. It stopped after <span className="num">{result.sweeps}</span> sweeps, the
+                    most it was allowed. Read its belief, the weights and the spreads below as where it stopped.
+                  </>
+                )}{' '}
+                Its belief is one bell curve over the offset and the two weights. At each place the score is the offset
+                plus the weights times the measurements, so the score also has a bell curve. Its mean and spread come
+                from the belief&rsquo;s mean and covariance, including how the offset and the weights vary together.
               </p>
 
               <p>
@@ -241,10 +250,12 @@ export default function Story(): ReactNode {
               <p>
                 Expectation propagation fits one bell curve to the belief about the three numbers. The exact belief in
                 logistic regression is slightly skewed, so the bell curve is a little too narrow. We checked this
-                against a sampler (NUTS) on eight data sets like this one. The means agreed closely. The spreads from
-                expectation propagation were smaller, by up to about 13 percent. So the densities and ranges above are a
-                little narrower than they should be. The expected chance suffers less: at six places it matched an
-                average over the sampler&rsquo;s draws to within 0.003.
+                against a sampler (NUTS) on <span className="num">{NUTS_CHECK.dataSets}</span> data sets like this one.
+                The means agreed closely. The spreads from expectation propagation were smaller, by up to about{' '}
+                <span className="num">{Math.round(100 * NUTS_CHECK.narrower)}</span> percent. So the densities and
+                ranges above are a little narrower than they should be. The expected chance suffers less: at{' '}
+                <span className="num">{NUTS_CHECK.places}</span> places it matched an average over the sampler&rsquo;s
+                draws to within <span className="num">{NUTS_CHECK.chanceWithin}</span>.
               </p>
 
               <p>

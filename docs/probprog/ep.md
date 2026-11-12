@@ -159,6 +159,8 @@ evidence and are set aside. A real weighing of the readings of a mixture needs t
 an EP rule for the observation of a row that accepts a cavity of negative precision (tried in natural parameters for `gaussian-scale`:
 the run diverges, 1e135 in 200 sweeps; the gap `multimodal`).
 
+**Conjugate pairs in a mixture.** A component with a mean and a precision of its own, the mean as wide as its precision allows (`mu ~ N(m, 1 / (kappa tau))`, `tau ~ Gamma`) and its rows the branches of a gate on the label, is the normal-gamma pair, and the compiler (`conjugatePairs`, on for `ep` and `ep-multistart`: `factor-graph/_fuse.ts`) makes it one `normal-gamma` variable with a `gaussian-normal-gamma` branch per row: the messages are closed form instead of a quadrature over the precision (two diagonal groups of 272 rows: 4 sweeps and 0.3 s instead of 10 to 32 sweeps and 7 to 26 s that depended on the order of the rows). Distinct prior centres (`start`) break the symmetry of the labels there, as the warm-up does for a `select`. A precision shared by the components, a centre with another factor on it, or a pair with an independent prior is not fused and runs the quadrature. The gate also takes a vector constant, so a mixture of Gaussian vectors with `mvn-normal-wishart` branches runs when hand-built; the model language and compiler for it are the gap `mixture-vector-components`.
+
 A method that runs several EP runs (a grid node, a start) shares the compile step with plain EP through `prepare` (`_support.ts`) and
 the run knobs below.
 

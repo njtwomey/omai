@@ -45,8 +45,8 @@ const ESTIMATE: Record<string, string> = {
   'round-three': 'about 3 seconds',
   'round-open6': 'about 3 seconds',
   'round-open8': 'about 4 seconds',
-  'diagonal-two': 'about 4 seconds',
-  'diagonal-three': 'about 5 seconds',
+  'diagonal-two': 'about 1 second',
+  'diagonal-three': 'about 3 seconds',
   'diagonal-open6': 'about 5 seconds',
   'diagonal-open8': 'about 5 seconds',
   'full-two': 'about 5 seconds',
@@ -143,7 +143,11 @@ export default function Story(): ReactNode {
         {engine === 'ep' ? (
           <>
             Expectation propagation runs this choice. The eruptions and the groups pass messages to each other until
-            nothing changes. The story{' '}
+            nothing changes.{' '}
+            {build.shape === 'diagonal'
+              ? 'A diagonal group has a closed-form message, which is why this is quick. '
+              : ''}
+            The story{' '}
             <Link to={storyHref('how-expectation-propagation-works')} className="underline underline-offset-2">
               How expectation propagation works
             </Link>{' '}
@@ -152,8 +156,11 @@ export default function Story(): ReactNode {
         ) : (
           <>
             This choice is run by sampling. Gibbs sampling guesses the group of every eruption, then updates the groups,
-            and repeats. Expectation propagation is too slow on it, or does not settle. The answer is the average of the
-            sweeps the sampler kept.
+            and repeats.{' '}
+            {build.shape === 'full'
+              ? 'Expectation propagation cannot run full groups yet.'
+              : 'Expectation propagation is slower than sampling on this choice, or does not settle.'}{' '}
+            The answer is the average of the sweeps the sampler kept.
           </>
         )}
       </p>

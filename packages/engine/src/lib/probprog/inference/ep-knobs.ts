@@ -18,6 +18,7 @@ import {
   messagePassingOptions,
   messagePassingSpace,
   takesPower,
+  warmupOf,
   withPowers,
 } from '../../message-passing/index.ts'
 import { choice, type DictSpace, dict, real } from '../../space/index.ts'
@@ -155,4 +156,22 @@ export function epRunSettings(config: Config): EpRunSettings {
     maxSweeps: o.maxSweeps ?? epDefaults.maxSweeps,
     restarts: o.restarts ?? epDefaults.restarts,
   }
+}
+
+/**
+ * What identifies an EP run of a configuration: the settings that change where a run settles (the power, the schedule, the
+ * damping, the improper policy, the tolerance, the restarts and the warm-up). A result that is derived from a state by running EP
+ * again (the evidence of the model with a factor per row) is kept per state and per this key.
+ *
+ * @param config - The configuration of the method.
+ * @returns A string that is equal for two configurations exactly when those settings are.
+ * @example
+ * ```ts
+ * import { epRunKey } from 'omai-engine/probprog/inference'
+ * [epRunKey({}) === epRunKey({ power: 1 }), epRunKey({ power: 0.2 }) === epRunKey({})] // => [true, false]
+ * ```
+ */
+export function epRunKey(config: Config): string {
+  const { maxSweeps: _cap, ...settings } = epRunSettings(config)
+  return JSON.stringify({ ...settings, power: powerOf(config), ...warmupOf(config) })
 }

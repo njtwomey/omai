@@ -19,9 +19,13 @@ describe('the data', () => {
 })
 
 describe('which method runs a choice', () => {
-  it('is expectation propagation for the one choice it settles on in about ten seconds, and sampling for the rest', () => {
+  it('is expectation propagation where it settles quickly (round pairs, diagonal fixed numbers of groups), and sampling for the rest', () => {
     const ep = BUILDS.filter((b) => engineOf(b) === 'ep')
-    expect(ep).toEqual([{ shape: 'round', groups: 'two' }])
+    expect(ep).toEqual([
+      { shape: 'round', groups: 'two' },
+      { shape: 'diagonal', groups: 'two' },
+      { shape: 'diagonal', groups: 'three' },
+    ])
   })
 })
 
@@ -57,6 +61,32 @@ describe('the mixture computation, for every choice', () => {
       expect(structuredClone(r)).toEqual(r)
     }, 120_000)
   }
+})
+
+describe('expectation propagation and the sampler on diagonal groups', () => {
+  it('find the same two groups: weights within 0.05, centres within 0.15 minutes of length and 1 of wait, spreads within 15%', () => {
+    const build: Build = { shape: 'diagonal', groups: 'two' }
+    const size: Size = { rows: 272, warmup: 60, draws: 80, ellipse: 12 }
+    const ep = fit(1, undefined, build, size, 'ep')
+    const gibbs = fit(1, undefined, build, size, 'gibbs')
+    expect([ep.engine, gibbs.engine]).toEqual(['ep', 'gibbs'])
+    expect(ep.settled).toBe(true)
+    for (const i of [0, 1]) {
+      const [a, b] = [ep.groups[i], gibbs.groups[i]] as [(typeof ep.groups)[number], (typeof ep.groups)[number]]
+      expect(Math.abs(a.weight - b.weight)).toBeLessThan(0.05)
+      expect(Math.abs(a.centre[0] - b.centre[0])).toBeLessThan(0.15)
+      expect(Math.abs(a.centre[1] - b.centre[1])).toBeLessThan(1)
+      for (const j of [0, 1]) expect(Math.abs((a.spread[j] as number) / (b.spread[j] as number) - 1)).toBeLessThan(0.15)
+    }
+  }, 120_000)
+
+  it('settle in a handful of sweeps whatever the order of the eruptions (the sweeps did not depend on the seed)', () => {
+    const build: Build = { shape: 'diagonal', groups: 'two' }
+    const sweeps = [1, 4, 5].map(
+      (seed) => fit(seed, undefined, build, { rows: 272, warmup: 6, draws: 8, ellipse: 12 }, 'ep').sweeps,
+    )
+    expect(Math.max(...sweeps)).toBeLessThanOrEqual(6)
+  }, 120_000)
 })
 
 describe('reading a result', () => {
