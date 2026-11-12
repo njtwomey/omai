@@ -12,7 +12,7 @@ import { batchedAxis } from '../batching.ts'
 import { arg, type BatchDim, type BatchResult, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import { normaliseAxes, normaliseAxis, sizeOf } from '../shape.ts'
 import type { TensorLike } from '../tensor.ts'
-import type { Value } from '../traced.ts'
+import { isTraced, type Value } from '../traced.ts'
 import { floatify, val } from './_coerce.ts'
 import { abs, add, cast, div, mul, pow, square, stopGradient, sub } from './arithmetic.ts'
 import { equal, isfinite, where } from './compare.ts'
@@ -434,6 +434,11 @@ export function cumprod(x: TensorLike, axis?: number, reverse = false): Value {
 export function logsumexp(x: TensorLike, axis?: number | readonly number[], keepDims = false): Value {
   const v = floatify(x)
   const axes = normaliseAxes(axis, v.shape.length)
+  // A concrete value on a backend with a fused kernel: the same arithmetic in two passes (nothing is differentiated here).
+  if (!isTraced(v) && axes.length > 0) {
+    const fused = v.backend.logsumexp?.(v, axes, keepDims)
+    if (fused !== undefined) return fused
+  }
   // Rows that are entirely -Infinity (or contain +Infinity) are shifted by 0 so the result stays exact, and so are
   // empty reductions (no maximum exists; the result is log(0) = -Infinity, as in scipy).
   const empty = axes.some((a) => v.shape[a] === 0)

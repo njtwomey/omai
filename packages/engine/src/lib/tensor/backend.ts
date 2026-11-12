@@ -66,6 +66,12 @@ export interface Backend {
   map2<D extends DType>(a: Tensor, b: Tensor, fn: (x: number, y: number) => number, dtype: D): Tensor<D>
   reduce<D extends DType>(op: ReduceKernel, x: Tensor<D>, axes: readonly number[], keepDims: boolean): Tensor<D>
   argReduce(op: 'max' | 'min', x: Tensor, axis: number, keepDims: boolean): Tensor<'int32'>
+  /**
+   * A fused `logsumexp` of a concrete tensor over the given axes (optional: a backend without it gets the composition of
+   * `max`, `exp`, `sum` and `log`). Returns `undefined` for the cases it does not take; where it returns, it must equal the
+   * composition bit for bit.
+   */
+  logsumexp?(x: Tensor, axes: readonly number[], keepDims: boolean): Tensor | undefined
   scan<D extends DType>(op: 'sum' | 'prod', x: Tensor<D>, axis: number, reverse: boolean): Tensor<D>
   matmul<D extends DType>(a: Tensor<D>, b: Tensor<D>): Tensor<D>
   transpose<D extends DType>(x: Tensor<D>, perm: readonly number[]): Tensor<D>

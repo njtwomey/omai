@@ -6,7 +6,7 @@
  * reductions (flat, along an axis, `logsumexp`, `softmax`, `argmax`) and the gather and scatter family. Part of the tensorisation
  * study (`docs/probprog/ep-perf-tensor-study.md`); an experiment, not wired into the library.
  *
- *   nice -n 15 node --conditions=source --experimental-transform-types --no-warnings scripts/perf/tensor-ops-floor.ts [--only <substring>] [--json <file>]
+ *   nice -n 15 node --conditions=source --experimental-transform-types --no-warnings scripts/perf/tensor-ops-floor.ts [--only <substring>[,<substring>...]] [--json <file>]
  */
 import { writeFileSync } from 'node:fs'
 import {
@@ -539,7 +539,7 @@ function rows(only: string | undefined): Row[] {
   const out: Row[] = []
   for (const n of SIZES) {
     for (const c of cases(n)) {
-      if (only !== undefined && !c.op.includes(only)) continue
+      if (only !== undefined && !only.split(',').some((f) => c.op.includes(f))) continue
       const t = summarise(bench(c.tensor, 7, 15))
       const r = summarise(bench(c.raw, 7, 15))
       out.push({

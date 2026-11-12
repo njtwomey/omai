@@ -5,7 +5,7 @@
 
 import { wrap } from './_cpu/_util.ts'
 import { binary, cast, compare, map, map2, predicate, unary, where } from './_cpu/elementwise.ts'
-import { argReduce, reduce, scan } from './_cpu/reduce.ts'
+import { argReduce, logsumexp, reduce, scan } from './_cpu/reduce.ts'
 import { argsort } from './_cpu/sort.ts'
 import {
   broadcastTo,
@@ -44,6 +44,7 @@ export const cpu: Backend = {
   map,
   map2,
   reduce,
+  logsumexp,
   argReduce,
   scan,
   matmul,
