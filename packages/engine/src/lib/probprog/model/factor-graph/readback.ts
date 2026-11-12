@@ -32,7 +32,7 @@ import {
   projectionOf,
 } from '../../../message-passing/index.ts'
 import { inv } from '../../../numerics/linalg/index.ts'
-import { asTensor, fromStorage, type Value } from '../../../tensor/index.ts'
+import { asTensor, eye, fromStorage, full, mul, toFlat, type Value, zeros } from '../../../tensor/index.ts'
 import { definePosterior, type Posterior } from '../../posterior.ts'
 import { siteOfId } from '../ids.ts'
 import type { FactorGraphCompilation } from './types.ts'
@@ -106,9 +106,7 @@ export function factorGraphPosterior(
       if (mean.length === 0) {
         improper.push(s.site)
         const d = s.variables.length > 0 ? (g.variables[g.index.get(s.site) as number]?.family.dim ?? 1) : 1
-        out[s.site] = multivariateNormal(new Array<number>(d).fill(0), {
-          covariance: Array.from({ length: d }, (_, i) => Array.from({ length: d }, (_, j) => (i === j ? 1e12 : 0))),
-        })
+        out[s.site] = multivariateNormal(zeros([d]), { covariance: mul(eye(d), 1e12) })
       } else out[s.site] = multivariateNormal(mean, { covariance: cov })
       continue
     }
@@ -142,13 +140,8 @@ export function factorGraphPosterior(
             ? scale.length
             : (g.variables[g.index.get(s.variables[0] as string) as number]?.family.dim ?? 1)
         const nu = proper ? num(x['nu']) : d + 1
-        const matrix = proper
-          ? scale
-          : Array.from({ length: d }, (_, i) => Array.from({ length: d }, (_, j) => (i === j ? 1e6 : 0)))
-        out[s.site] =
-          s.reciprocal === true
-            ? inverseWishart(nu, inv(asTensor(matrix, 'float64')))
-            : wishart(nu, { covariance: asTensor(matrix, 'float64') })
+        const matrix = proper ? asTensor(scale, 'float64') : mul(eye(d), 1e6)
+        out[s.site] = s.reciprocal === true ? inverseWishart(nu, inv(matrix)) : wishart(nu, { covariance: matrix })
         break
       }
       case 'gaussian':
@@ -218,7 +211,7 @@ export function factorGraphPosterior(
         const k = nums(vs[0]?.['probs']).length
         out[s.site] = categorical({
           probs: T(
-            vs.flatMap((x) => (nums(x['probs']).length === k ? nums(x['probs']) : new Array<number>(k).fill(1 / k))),
+            vs.flatMap((x) => (nums(x['probs']).length === k ? nums(x['probs']) : toFlat(full([k], 1 / k)))),
             [...shape, k],
           ),
         })

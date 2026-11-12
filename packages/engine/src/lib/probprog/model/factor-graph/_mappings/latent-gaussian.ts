@@ -6,8 +6,9 @@
 
 import type { Json } from '../../../../base/index.ts'
 import { type FactorSpec, type GateBranch, gaussianMvPrior, gaussianPrior } from '../../../../message-passing/index.ts'
+import { diag, oneHot, square, tensor, toFlat } from '../../../../tensor/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
-import { GateBuilder, precisionBranch, precisionFactor } from '../_builder.ts'
+import { GateBuilder, precisionBranch, precisionFactor, vagueMessage } from '../_builder.ts'
 import { affOf, type Cell, combine, isConstCell, logName, type Precision, prod } from '../_cells.ts'
 import { takeChainStep } from '../_chains.ts'
 import type { Context } from '../_context.ts'
@@ -223,8 +224,7 @@ function latentNormalAlone(cx: Context, node: ModelNode & { readonly kind: 'late
       if (!isConstCell(c)) throw priorMeanOfVectorRandom(node.name)
       return c.aff.offset
     })
-    const cov = new Array<number>(n * n).fill(0)
-    for (let i = 0; i < n; i++) cov[i * n + i] = (scale[i] as number) ** 2
+    const cov = toFlat(diag(square(tensor(scale))))
     cx.g.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
     cx.g.addLibraryFactor(gaussianMvPrior(node.name, mean, cov), node.name)
     cx.syms.set(node.name, {
@@ -279,7 +279,7 @@ export function latentGrouped(cx: Context, node: ModelNode & { readonly kind: 'l
     cx.groupsMade.add(group.vector)
     const size = sizes.reduce((a, b) => a + b, 0)
     const mean: number[] = []
-    const cov = new Array<number>(size * size).fill(0)
+    const sdAll: number[] = []
     const member = (m: string): ModelNode & { readonly kind: 'latent' } =>
       cx.nodes.get(m) as ModelNode & { readonly kind: 'latent' }
     for (const m of group.members) {
@@ -287,10 +287,11 @@ export function latentGrouped(cx: Context, node: ModelNode & { readonly kind: 'l
       const sds = constParam(cx, member(m), 'scale', 'the scale')
       for (const [i, sd] of sds.entries()) {
         if (!(sd > 0)) throw scaleNotPositive(m, sd)
-        cov[mean.length * size + mean.length] = sd * sd
+        sdAll.push(sd)
         mean.push(locs[i] as number)
       }
     }
+    const cov = toFlat(diag(square(tensor(sdAll))))
     cx.g.addVariable({ name: group.vector, family: { kind: 'gaussian-mv', size } })
     cx.g.auxiliary.push(group.vector)
     cx.g.addLibraryFactor(gaussianMvPrior(group.vector, mean, cov), group.vector)
@@ -302,8 +303,7 @@ export function latentGrouped(cx: Context, node: ModelNode & { readonly kind: 'l
       for (let i = 0; i < n; i++) {
         const name = dims.length === 0 ? m : cx.elementName(m, dims, i)
         cx.g.addVariable({ name, family: { kind: 'gaussian' } })
-        const a = new Array<number>(size).fill(0)
-        a[offset + i] = 1
+        const a = toFlat(oneHot(offset + i, size))
         cx.g.addFactor({ operator: 'dot-constant', args: [name, group.vector], params: { a } }, name)
         cells.push(cx.g.compAtom(group.vector, offset + i, size))
       }
@@ -348,11 +348,9 @@ export function latentSpikeSlab(cx: Context, node: ModelNode & { readonly kind: 
     cx.g.need('mixture-row')
     cx.g.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
     for (let i = 0; i < n; i++) {
-      const a = new Array<number>(n).fill(0)
-      a[i] = 1
+      const a = toFlat(oneHot(i, n))
       // The row starts with a vague message in its own coordinate, so the other factors have a proper cavity to begin from.
-      const start = [...new Array<number>(n).fill(0), ...new Array<number>(n * n).fill(0)]
-      start[n + i * n + i] = 1 / wide(i)
+      const start = vagueMessage(n, i, wide(i))
       cx.g.addFactor(
         { operator: 'mixture-row', args: [node.name], params: { a, ...mixture(i) }, start: [start] },
         cx.elementName(node.name, node.dims, i),

@@ -1,4 +1,18 @@
 import { bernoulliEta, likelihoods } from '../../../../message-passing/index.ts'
+import {
+  arange,
+  div,
+  exp,
+  full,
+  log,
+  mul,
+  square,
+  sub,
+  sum,
+  type Tensor,
+  tensor,
+  toFlat,
+} from '../../../../tensor/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
 import { discreteRowGate, GateBuilder, precisionBranch } from '../_builder.ts'
 import { type Aff, affOf, type Cell, combine, constAff, isConstCell, type Precision } from '../_cells.ts'
@@ -108,7 +122,7 @@ export function observedPoissonGate(
   const predictor = cellsOf(cx, node, 'predictor', () => evalSym(cx, inner))[i] as Cell
   const id = cx.elementName(node.name, node.dims, i)
   const impossible = exposures.map((e) => e === 0 && y > 0)
-  const logFactorial = Array.from({ length: y }, (_, k) => Math.log(k + 1)).reduce((a, b) => a + b, 0)
+  const logFactorial = toFlat(sum(log(arange(1, y + 1))))[0] as number
   if (isConstCell(predictor)) {
     // Nothing random but the state: the likelihood of the count under each state.
     const pmf = (e: number): number => {
@@ -236,10 +250,12 @@ export function observedSwitch(
     if (loc.kind === 'lookup') return loc.items?.[k] ?? (loc.values[k] as number)
     return affOf(loc)
   }
+  const stateIndex = toFlat(arange(states))
   const known =
-    precisions === undefined &&
-    Array.from({ length: states }, (_, k) => locAt(k)).every((m) => typeof m === 'number' || m.terms.size === 0)
-  const pdf = (m: number, sd: number): number => Math.exp(-0.5 * ((y - m) / sd) ** 2) / (sd * Math.sqrt(2 * Math.PI))
+    precisions === undefined && stateIndex.map(locAt).every((m) => typeof m === 'number' || m.terms.size === 0)
+  // The normal density of the observation under each state's mean and scale.
+  const pdf = (m: Tensor, sd: Tensor): Tensor =>
+    div(exp(mul(-0.5, square(div(sub(y, m), sd)))), mul(sd, Math.sqrt(2 * Math.PI))) as Tensor
   const value = (m: Aff | number): number => (typeof m === 'number' ? m : m.offset)
   if (known) {
     cx.g.need('table')
@@ -247,7 +263,10 @@ export function observedSwitch(
       {
         operator: 'table',
         args: [z],
-        params: { states: [states], values: Array.from({ length: states }, (_, k) => pdf(value(locAt(k)), sdAt(k))) },
+        params: {
+          states: [states],
+          values: toFlat(pdf(tensor(stateIndex.map((k) => value(locAt(k)))), tensor(stateIndex.map(sdAt)))),
+        },
       },
       name,
     )
@@ -381,7 +400,7 @@ export function observedBernoulliTable(
     {
       operator: 'table',
       args: [...pv, name],
-      params: { states: new Array<number>(pv.length + 1).fill(2), values: bernoulliTable(cx, node, parents) },
+      params: { states: toFlat(full([pv.length + 1], 2)), values: bernoulliTable(cx, node, parents) },
     },
     name,
   )
