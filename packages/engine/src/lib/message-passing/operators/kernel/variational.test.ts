@@ -445,6 +445,28 @@ describe('the softmax over class scores', () => {
   })
 })
 
+describe('the softmax beyond six classes (the auxiliary rule: no product grid)', () => {
+  it('multiclass-site: eight classes, two random scores and six known, the observed class a random one', () => {
+    const known = { k2: 1.2, k3: -0.7, k4: 0.4, k5: 0, k6: 0.9, k7: -1.5 }
+    const z = (a: number, b: number): number[] => [a, b, ...Object.values(known)]
+    expectStationary({
+      free: [
+        { name: 'z0', kind: 'gaussian', prior: g(0.3, 1.2) },
+        { name: 'z1', kind: 'gaussian', prior: g(-0.2, 0.8) },
+      ],
+      observed: known,
+      operator: 'multiclass-site',
+      args: ['z0', 'z1', ...Object.keys(known)],
+      params: { y: 1, classes: 8 },
+      logf: ([a, b]) => {
+        const all = z(a as number, b as number)
+        const top = Math.max(...all)
+        return (all[1] as number) - top - Math.log(all.reduce((acc, v) => acc + Math.exp(v - top), 0))
+      },
+    })
+  })
+})
+
 describe('a beta with two random shapes', () => {
   it('beta-two-shapes: gamma shapes, non-conjugate in both', () => {
     expectStationary({

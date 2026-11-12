@@ -845,3 +845,28 @@ rule for nodes that cycle (`inference/ep-grid.ts`).
   (every ordinal atom with three categories), and its ordering comes from `greater-than`, a hard step the mean field cannot hold either.
   What would run them: cut points that are ordered by construction (a first cut and positive gaps, `exp` of a Gaussian, so the density is
   smooth over unconstrained beliefs), which needs a compiler pattern for it; not done.
+
+- The softmax and the multinomial probit beyond six classes under VMP (`operators/links/_multiclass-variational.ts`; `multiclass-site` loses its
+  `unsupported('vmp')`). Under a mean field the scores' beliefs are independent, so the expected log of the softmax needs no product grid:
+  `-log S = int (exp(-t S) - exp(-t)) dt / t` (Frullani, the auxiliary variable of the EP rule) and `E exp(-t S) = exp(-t K) prod_k A_k(t)` with
+  `A_k(t) = E_k exp(-t exp(z_k))`, so `E log P = E z_y + int (E exp(-t S) - exp(-t)) ds` in `s = log t`, exact up to a trapezoid rule over
+  `s` (step 0.4: the integrand is analytic, decays as `exp(s)` on the left and as a Gaussian tail on the right). The message to a score is
+  the same integral with that class's `A_k` replaced by `exp(-t exp(z))` at each of its quadrature nodes, through the new
+  `naturalGradientMessage` (the part of `numericMessage` after the average over the other ports, now shared), from one table of the `A_k(t_s)`
+  per factor and sweep (`memoised`). Nothing is bounded: the expected log is the product grid's to 1e-8 (3 free scores, and 8 classes with
+  6 known, against `bruteExpectation`), the messages are the product grid's to 2e-5 (`integration: 'product'` against `'auxiliary'`, three
+  and eight classes, any observed class), and the cost is the number of classes. `integration` picks the rule as for EP; `auto` is the product
+  grid up to six free scores and the auxiliary rule beyond (`integration: 'auxiliary'` forces it).
+- The multinomial probit is `P(y | z) = int N(c; z_y, 1) prod_j Phi(c - z_j) dc`, the expectation of a product: its log has no separable
+  form, so VMP takes a bound. `log int N(c; z_y, 1) exp(G(c)) dc` is convex in `G`, so by Jensen over the scores of the other classes (not the
+  observed one's) `E log P >= E_(z_y) log int N(c; z_y, 1) exp(H(c)) dc`, `H(c) = sum_j E log Phi(c - z_j)` (a Gauss-Hermite sum per class at each
+  node of a grid of `c`). The gap is the spread of the other scores and is zero when they are known (checked to 1e-6); with one other score
+  random it is 0.004 to 0.02 nats (a first version with a Gaussian `q(e)` over the noise, the usual bound, was 0.5 nats off for an improbable
+  outcome and was dropped). The messages are exact gradients of the bound (to the observed class's score the bound at each node, to another
+  score the expected `log Phi(c - z)` under the optimal density of `c`): they equal central differences of the reported bound to 2e-4. The
+  rule is `numeric` in the registry's accounting; for the probit it is a lower bound, not the exact expected log.
+- Tests: `multiclass.test.ts` (expected log against `bruteExpectation`, messages against the product grid, messages against finite differences
+  of the bound for the softmax and the probit, the probit bound against the brute-force expected log), `variational.test.ts` (eight classes,
+  two random scores: the fixed point is a stationary maximum of the brute-force bound). Atoms: `softmax-choice` and `-learned` run under VMP
+  (41 and 46 sweeps; against the grid of the two coefficients the means are within 0.17 and 0.19 sds, the spreads 0.71 to 0.77 and 0.65 to 0.88
+  of the grid's, the usual mean-field shortfall: plain EP has 0.77 to 0.83), `vmpCoverage` counts 88 of 97.

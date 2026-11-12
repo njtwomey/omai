@@ -23,8 +23,23 @@ import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port
 import { choleskyInPlace } from '../../numerics/_bartlett.ts'
 import { shiftedSum } from '../../numerics/_moments.ts'
 import { gaussianNodes } from '../../numerics/_quadrature.ts'
-import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
+import {
+  naturalGradientMessage,
+  numericExpectedLog,
+  numericMessage,
+  quadraturePort,
+  quadraturePorts,
+} from '../kernel/variational-numeric.ts'
 import { probitAuxiliary, softmaxAuxiliary } from './_multiclass-auxiliary.ts'
+import {
+  type ProbitBound,
+  probitBound,
+  probitScoreExpectation,
+  type SoftmaxTable,
+  softmaxExpectedLog,
+  softmaxScoreExpectation,
+  softmaxTable,
+} from './_multiclass-variational.ts'
 
 /** The nodes per free score for a number of free scores (the grid is their product): the cap keeps a site at some tens of thousands of evaluations. */
 const NODES: Readonly<Record<number, number>> = { 1: 48, 2: 24, 3: 8, 4: 7, 5: 6, 6: 5 }
@@ -223,6 +238,44 @@ function integrate(c: OperatorContext): Tilt {
   return result as Tilt
 }
 
+/** Whether the mean field uses the one-coordinate rule of `_multiclass-variational.ts` (more scores than the product grid reaches, or `integration: "auxiliary"`). */
+function variationalAuxiliary(params: Params): boolean {
+  const way = params['integration'] ?? 'auto'
+  return way === 'auxiliary' || (way !== 'product' && numberParam(params, 'classes', 2) > MOST_PRODUCT)
+}
+
+/**
+ * The mean-field message and expected log by the auxiliary rule: the beliefs of the scores (a known score has variance zero), the
+ * table of the softmax's transforms or the probit's bound, shared by the messages and the bound of one sweep.
+ */
+function auxiliaryMean(c: OperatorContext): {
+  readonly message: (to: number) => readonly number[]
+  readonly expectedLog: () => number
+} {
+  const { y, probit } = classesOf(c.params)
+  const beliefs = c.args.map((a) => gaussianOf(a))
+  const inputs = [c.args.map((a) => (a.value !== undefined ? a.value : a.eta)), c.params]
+  const shared = memoised<{ readonly bound?: ProbitBound; readonly table?: SoftmaxTable }>(
+    c,
+    `multiclass-vmp:${keyOf(inputs)}`,
+    () => (probit ? { bound: probitBound(beliefs, y) } : { table: softmaxTable(beliefs) }),
+  )
+  return {
+    message: (to) => {
+      const arg = c.args[to] as Arg
+      if (arg.value !== undefined) return [0, 0]
+      const port = quadraturePort(arg, { points: 48 })
+      const g =
+        shared.bound !== undefined
+          ? probitScoreExpectation(shared.bound, y, to, port.coords)
+          : softmaxScoreExpectation(shared.table as SoftmaxTable, beliefs, y, to, port.coords)
+      return naturalGradientMessage(port, g)
+    },
+    expectedLog: () =>
+      shared.bound !== undefined ? shared.bound.value : softmaxExpectedLog(shared.table as SoftmaxTable, beliefs, y),
+  }
+}
+
 /** The log probability of the observed class at the scores: the softmax's or the multinomial probit's. */
 function scoreLog(params: Params): (z: readonly number[]) => number {
   const { y, probit } = classesOf(params)
@@ -236,7 +289,10 @@ function scoreLog(params: Params): (z: readonly number[]) => number {
  * hear about each other (the product grid up to six free scores, the auxiliary-variable rule of `_multiclass-auxiliary.ts` for any
  * number; `integration` picks one, `auto` is the product grid while it reaches). It supports a power (the probit's auxiliary rule
  * takes the factor whole). Variational message passing is non-conjugate (the expected log of a softmax has no
- * closed form in Gaussian scores): the message to a score is the natural gradient of the expectation by the same product rule.
+ * closed form in Gaussian scores): the message to a score is the natural gradient of the expected log, by the product grid up to
+ * six free scores and for any number by the auxiliary rule of `_multiclass-variational.ts` (the softmax's expected log is exact, an
+ * integral over one auxiliary variable of a product of the classes' transforms; the multinomial probit's is a Jensen bound over the
+ * other classes' scores, exact when they are known, `support` `numeric` for the softmax and a bound for the probit).
  *
  * @concept factor-operators
  * @index structure A categorical outcome with softmax or multinomial-probit probabilities of Gaussian class scores (adaptive Gauss-Hermite).
@@ -264,10 +320,6 @@ export const multiclassSite: FactorOperator = defineOperator({
     link: param.text({ optional: true, choices: ['logit', 'probit'] }),
     integration: param.text({ optional: true, choices: ['auto', 'product', 'auxiliary'] }),
   },
-  unsupported: (mode, params) =>
-    mode === 'vmp' && numberParam(params, 'classes', 2) > MOST_PRODUCT
-      ? `variational message passing integrates the expected log over a product grid, up to ${MOST_PRODUCT} classes (the auxiliary-variable rule is an EP rule)`
-      : undefined,
   check: (params) => {
     try {
       classesOf(params)
@@ -287,7 +339,11 @@ export const multiclassSite: FactorOperator = defineOperator({
     // The mean field: the non-conjugate message of log P(y | z) to a score under the beliefs of the others (the grid is a product over
     // the free scores, with fewer nodes the more there are). The softmax is log-concave in the scores, so the precisions are positive.
     vmp: messageRule(
-      (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), c.to, scoreLog(c.params)) }),
+      (c): OperatorResult => ({
+        message: variationalAuxiliary(c.params)
+          ? [...auxiliaryMean(c).message(c.to)]
+          : numericMessage(quadraturePorts(c.args), c.to, scoreLog(c.params)),
+      }),
       'numeric',
     ),
   },
@@ -298,7 +354,10 @@ export const multiclassSite: FactorOperator = defineOperator({
       for (const a of c.args) z += massOf(a)
       return z
     },
-    vmp: (c) => numericExpectedLog(quadraturePorts(c.args), scoreLog(c.params)),
+    vmp: (c) =>
+      variationalAuxiliary(c.params)
+        ? auxiliaryMean(c).expectedLog()
+        : numericExpectedLog(quadraturePorts(c.args), scoreLog(c.params)),
   },
   traits: { readsTarget: true, power: true },
 })
