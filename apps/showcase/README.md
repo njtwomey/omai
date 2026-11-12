@@ -6,6 +6,9 @@ site's colours, code block and router (imported from `apps/site/src/shell`) and 
 
 A story is not a comparison, not a cockpit of capabilities, and has no pass/fail table. It is one idea, with a figure that earns its place.
 
+The prose is plain and in order: what happens in the order it happens, short sentences, common words, a technical word explained once
+where it first appears. No jokes, asides, metaphors, rhetorical questions or cute titles.
+
 ## How a story behaves
 
 - **Nothing happens by default.** The page loads with prose and whatever is cheap to show (the data). The reader presses a play button
@@ -15,6 +18,13 @@ A story is not a comparison, not a cockpit of capabilities, and has no pass/fail
   (`say('Warming the sampler up')`); the play button shows the last one with a calm animated indicator. There are no percentage bars.
 - **The pictures come afterwards, not live.** The result is plain data; the figures and the prose that reads numbers out of it appear
   when it exists. _Run again_ re-rolls the seed (the old result stays on screen until the new one arrives).
+- **The page reads straight down.** Pressing play changes nothing above the button. Above it is only what exists before the run: the
+  text, the data, the question (a chart of the data alone is fine). Everything the run produces (the result figures, the prose that
+  quotes numbers, the closing paragraphs and the code) is inside `<Results>`, placed right after `<Play>`, so it appears below the
+  button in reading order and the reader never scrolls back up. A chart shown before and after (the data, then the data with the
+  fitted result) is drawn twice: data alone above the button, and the result chart (which includes the data) inside `<Results>`.
+  Put the button at the point in the text where the story needs the result; with two runs, use two buttons, each followed by its
+  own `<Results>`.
 - The worker is terminated when the run ends, when another starts and when the reader leaves the page.
 
 ## The contract (what an author writes)
@@ -27,7 +37,7 @@ A story is a folder `src/stories/<slug>/` (the slug is the folder's name and the
 | `story.ts`                             | `export const story: StoryMeta = { title, standfirst, section, tags, date, hook? , thumbnail? }`. `section` is an id of `src/sections.ts`, the one small file that holds the order of the splash's sections.                                                                                                                  |
 | `compute.ts`                           | `export const run = (seed: number, say?: Say): Result`: a pure function of the seed that returns serialisable data (it crosses the worker boundary by structured clone). The heavy imports (the engine) live here and in the worker only. The code the page shows is marked with `// region` ... `// endregion` in this file. |
 | `worker.ts`                            | Always `serveStory(self, run)`.                                                                                                                                                                                                                                                                                               |
-| `Story.tsx`                            | The narrative: the default export, a component. `useStoryRun` makes the run, `<Play>` is where the computation starts, figures and result-reading prose appear when `run.result` exists.                                                                                                                                      |
+| `Story.tsx`                            | The narrative: the default export, a component. `useStoryRun` makes the run, `<Play>` is where the computation starts, and `<Results run={run}>` right after it holds everything the result makes (figures, result-reading prose, closing prose, code).                                                                       |
 | `data.ts`, `Figures.tsx`, `reading.ts` | Optional: cheap data the page shows before play, the charts, and pure functions that read numbers off the result for the prose. Keep them light: they are in the page's bundle.                                                                                                                                               |
 | `compute.test.ts`                      | A smoke test: the computation on a small run returns the right shapes, and the result survives `structuredClone`.                                                                                                                                                                                                             |
 
@@ -36,6 +46,13 @@ The kit (`src/kit/`):
   `<ul>`, `<em>` and `<code>` inside it are styled; write elements, not class names. `<span className="num">` marks a number read from the result.
 - `useStoryRun<Result>(createWorker)` and `<Play run label estimate />`: the run, and the button (idle with a label and an estimate; running
   with the status sentence; done with the time taken and _Run again_; error with _Try again_).
+- `<Results run={run}>{(result) => ...}</Results>`: place it right after `<Play>`. While there is no result it shows one muted line
+  ('Nothing has been computed yet. The result will appear here.') and builds nothing; when the result exists it calls the function
+  with it and shows the content with the kit's fade (figures and `<Reveal>` inside it do not fade again). Put the closing prose and
+  the `<Code>` blocks inside it too: with nothing below the block, nothing the reader is looking at can move when the result
+  arrives. When the result arrives and the block's top is below the fold, the page scrolls it into view (smoothly, instantly under
+  `prefers-reduced-motion`); otherwise it never scrolls. The registry test checks every story: a play button, then a results block,
+  empty on the first render, and no code before it.
 - `<Figure caption wide?>`: a figure with a caption and a short fade in; `<Reveal>`: the same fade for prose that appears after the result.
 - `<Aside>`: a margin note (in the right margin on wide screens, an inset note below).
 - `<Code source region? title />`: _How it is written_, from the regions of a source file imported with `?raw` (the site's `CodeBlock`
@@ -97,8 +114,9 @@ serveStory(self, run)
 
 ```tsx
 import type { ReactNode } from 'react'
-import { Code, Figure, Reveal } from '../../kit/Blocks.tsx'
+import { Code, Figure } from '../../kit/Blocks.tsx'
 import { Play } from '../../kit/Play.tsx'
+import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
 import { useStoryRun } from '../../kit/useStoryRun.ts'
 import type { Result } from './compute.ts'
@@ -110,13 +128,16 @@ export default function Story(): ReactNode {
     <StoryPage>
       <p>The set-up, in prose.</p>
       <Play run={run} label="Run it" estimate="a few seconds" />
-      {run.result === undefined ? null : (
-        <Reveal>
-          <Figure caption="What it shows.">{/* a chart of run.result */}</Figure>
-          <p>What to notice, with numbers read from the result.</p>
-        </Reveal>
-      )}
-      <Code source={source} title="compute.ts" />
+      <Results run={run}>
+        {(result) => (
+          <>
+            <Figure caption="What it shows.">{/* a chart of result */}</Figure>
+            <p>What to notice, with numbers read from the result.</p>
+            <p>How it ends, and what to read next.</p>
+            <Code source={source} title="compute.ts" />
+          </>
+        )}
+      </Results>
     </StoryPage>
   )
 }
