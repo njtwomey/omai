@@ -70,8 +70,8 @@ atom/logistic-learned vectorise: 2 variables, 3 factors, 0 issues; gaussian-mv-p
 atom/logistic-learned expand: 122 variables, 122 factors, 0 issues; dot-constant x60 gaussian-mv-precision-scale x1 logistic x60 prior x1
 atom/skill-difference vectorise: 14 variables, 14 factors, 0 issues; dot-constant x8 prior x1 probit x5
 atom/skill-difference expand: 14 variables, 14 factors, 0 issues; dot-constant x8 prior x1 probit x5
-atom/skill-difference-learned vectorise: 121 variables, 121 factors, 0 issues; gaussian-gamma-precision x8 linear x56 prior x1 probit x56
-atom/skill-difference-learned expand: 121 variables, 121 factors, 0 issues; gaussian-gamma-precision x8 linear x56 prior x1 probit x56
+atom/skill-difference-learned vectorise: 26 variables, 26 factors, 0 issues; difference x8 dot-constant x8 gaussian-gamma-precision x8 prior x1 probit-plate x1
+atom/skill-difference-learned expand: 138 variables, 137 factors, 0 issues; difference x8 dot-constant x64 gaussian-gamma-precision x8 prior x1 probit x56
 atom/gp-probit vectorise: 1 variables, 2 factors, 0 issues; prior x1 probit-plate x1
 atom/gp-probit expand: 7 variables, 7 factors, 0 issues; dot-constant x3 prior x1 probit x3
 atom/gp-logistic vectorise: 1 variables, 2 factors, 0 issues; logistic-plate x1 prior x1
@@ -88,10 +88,10 @@ atom/quantile-regression vectorise: 3 variables, 13 factors, 0 issues; dot-const
 atom/quantile-regression expand: 3 variables, 13 factors, 0 issues; dot-constant x2 likelihood-row x10 prior x1
 atom/quantile-regression-learned vectorise: 3 variables, 43 factors, 0 issues; dot-constant x2 likelihood-row x40 prior x1
 atom/quantile-regression-learned expand: 3 variables, 43 factors, 0 issues; dot-constant x2 likelihood-row x40 prior x1
-atom/skill-draws vectorise: 9 variables, 15 factors, 0 issues; likelihood-site x6 linear x6 prior x3
-atom/skill-draws expand: 9 variables, 15 factors, 0 issues; likelihood-site x6 linear x6 prior x3
-atom/skill-draws-learned vectorise: 15 variables, 27 factors, 0 issues; likelihood-site x12 linear x12 prior x3
-atom/skill-draws-learned expand: 15 variables, 27 factors, 0 issues; likelihood-site x12 linear x12 prior x3
+atom/skill-draws vectorise: 4 variables, 10 factors, 0 issues; dot-constant x3 likelihood-row x6 prior x1
+atom/skill-draws expand: 4 variables, 10 factors, 0 issues; dot-constant x3 likelihood-row x6 prior x1
+atom/skill-draws-learned vectorise: 4 variables, 16 factors, 0 issues; dot-constant x3 likelihood-row x12 prior x1
+atom/skill-draws-learned expand: 4 variables, 16 factors, 0 issues; dot-constant x3 likelihood-row x12 prior x1
 atom/gp-length-scale vectorise: - variables, - factors, 2 issues (random-parameter,node); 
 atom/gp-length-scale expand: - variables, - factors, 2 issues (random-parameter,node); 
 atom/gp-probit-learned vectorise: - variables, - factors, 2 issues (random-parameter,node); 
@@ -212,10 +212,10 @@ model/banana vectorise: 4 variables, 4 factors, 0 issues; apply x1 gaussian x1 l
 model/banana expand: 4 variables, 4 factors, 0 issues; apply x1 gaussian x1 linear x1 prior x1
 model/bimodal vectorise: 3 variables, 3 factors, 0 issues; gate x2 prior x1
 model/bimodal expand: 3 variables, 3 factors, 0 issues; gate x2 prior x1
-model/radon vectorise: 94 variables, 94 factors, 0 issues; apply x2 gaussian-scale x48 plus x28 prior x8 prior-site x2 product x6
-model/radon expand: 94 variables, 94 factors, 0 issues; apply x2 gaussian-scale x48 plus x28 prior x8 prior-site x2 product x6
-model/trueskill-three-players vectorise: 51 variables, 51 factors, 0 issues; linear x24 prior x3 probit x24
-model/trueskill-three-players expand: 51 variables, 51 factors, 0 issues; linear x24 prior x3 probit x24
+model/radon vectorise: 109 variables, 108 factors, 0 issues; apply x2 difference x7 dot-constant x29 gaussian-scale x48 plus x6 prior x8 prior-site x2 product x6
+model/radon expand: 109 variables, 108 factors, 0 issues; apply x2 difference x7 dot-constant x29 gaussian-scale x48 plus x6 prior x8 prior-site x2 product x6
+model/trueskill-three-players vectorise: 4 variables, 5 factors, 0 issues; dot-constant x3 prior x1 probit-plate x1
+model/trueskill-three-players expand: 52 variables, 52 factors, 0 issues; dot-constant x27 prior x1 probit x24
 model/ar1-state-space vectorise: 35 variables, 35 factors, 0 issues; gaussian x23 prior x1 times-constant x11
 model/ar1-state-space expand: 35 variables, 35 factors, 0 issues; gaussian x23 prior x1 times-constant x11
 model/stochastic-volatility vectorise: 119 variables, 119 factors, 0 issues; gaussian x29 gaussian-log-scale x30 linear x29 prior x1 times-constant x30

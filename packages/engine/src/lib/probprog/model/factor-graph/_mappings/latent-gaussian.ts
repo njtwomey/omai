@@ -13,6 +13,7 @@ import type { Context } from '../_context.ts'
 import { precisionExpr, stripClip } from '../_idioms.ts'
 import { NOT_MINE, probe } from '../_mapping.ts'
 import { constParam, paramIsConst, paramSym, randomPrecisions } from '../_params.ts'
+import type { ScalarGroup } from '../_plan.ts'
 import {
   boundNotOneNumber,
   constraintNotMapped,
@@ -151,6 +152,54 @@ export function truncate(cx: Context, node: ModelNode & { readonly kind: 'latent
 }
 
 export function latentNormal(cx: Context, node: ModelNode & { readonly kind: 'latent' }): void {
+  const group = cx.plan.groups.get(node.name)
+  if (group?.tied === true) {
+    latentNormalAlone(cx, node)
+    tieToGroup(cx, node, group)
+    return
+  }
+  latentNormalAlone(cx, node)
+}
+
+/**
+ * A member of a tied group (`findGroups`), after it was made as it is: the first member made creates the joint Gaussian vector of
+ * the group (no prior of its own: the members' priors are theirs), every element is tied to its coordinate by an exact
+ * `dot-constant`, and the member's cells become those coordinates, so a predictor over several members is one dot product on the
+ * vector and the likelihood sees how they move together. The member keeps its own variables for the posterior to read.
+ */
+export function tieToGroup(cx: Context, node: ModelNode & { readonly kind: 'latent' }, group: ScalarGroup): void {
+  const size = (group.sizes ?? []).reduce((a, b) => a + b, 0)
+  if (!cx.groupsMade.has(group.vector)) {
+    cx.groupsMade.add(group.vector)
+    cx.g.addVariable({ name: group.vector, family: { kind: 'gaussian-mv', size } })
+    cx.g.auxiliary.push(group.vector)
+  }
+  let offset = 0
+  for (const [k, m] of group.members.entries()) {
+    if (m === node.name) break
+    offset += group.sizes?.[k] ?? 1
+  }
+  const own = cx.syms.get(node.name)?.cells ?? []
+  const cells = own.map((cell, i) => {
+    const key = [...affOf(cell).terms.keys()][0] as string
+    const atom = cx.g.atoms.get(key)
+    if (atom?.kind !== 'var') return cell
+    // The member's variable and the coordinate are both defined (by its own prior and by the vector), so they are made one by
+    // an exact constraint: their difference is observed to be zero.
+    const coordinate = cx.g.component(group.vector, offset + i, size, TIED_VAGUE_VARIANCE)
+    const zero = cx.g.auxName(node.name, node.dims.length === 0 ? undefined : i)
+    cx.g.addVariable({ name: zero, family: { kind: 'gaussian' }, observed: 0 })
+    cx.g.need('difference')
+    cx.g.addFactor({ operator: 'difference', args: [zero, coordinate, atom.name] }, zero)
+    return cx.g.compAtom(group.vector, offset + i, size)
+  })
+  cx.syms.set(node.name, { dims: node.dims, cells })
+}
+
+/** The variance of the message a tied vector begins with in each coordinate (its first update replaces it). */
+const TIED_VAGUE_VARIANCE = 1e2
+
+function latentNormalAlone(cx: Context, node: ModelNode & { readonly kind: 'latent' }): void {
   const shape = cx.shapeOf(node.dims)
   const n = prod(shape)
   const loc = cx.over(paramSym(cx, node.dist, 'loc'), node.dims)
@@ -164,7 +213,7 @@ export function latentNormal(cx: Context, node: ModelNode & { readonly kind: 'la
   const scale = constParam(cx, node, 'scale', 'the scale')
   for (const s of scale) if (!(s > 0)) throw scaleNotPositive(node.name, s)
   const group = cx.plan.groups.get(node.name)
-  if (group !== undefined) {
+  if (group !== undefined && group.tied !== true) {
     latentGrouped(cx, node, group)
     return
   }
@@ -223,36 +272,50 @@ export function latentNormal(cx: Context, node: ModelNode & { readonly kind: 'la
  * what the posterior reads), and the members' cells are coordinates of the vector, so a predictor over several of them is
  * one dot product on it.
  */
-export function latentGrouped(
-  cx: Context,
-  node: ModelNode & { readonly kind: 'latent' },
-  group: { readonly vector: string; readonly members: readonly string[] },
-): void {
+export function latentGrouped(cx: Context, node: ModelNode & { readonly kind: 'latent' }, group: ScalarGroup): void {
+  const sizes = group.sizes ?? group.members.map(() => 1)
   if (!cx.groupsMade.has(group.vector)) {
     cx.groupsMade.add(group.vector)
-    const size = group.members.length
+    const size = sizes.reduce((a, b) => a + b, 0)
     const mean: number[] = []
     const cov = new Array<number>(size * size).fill(0)
-    group.members.forEach((m, k) => {
-      const member = cx.nodes.get(m) as ModelNode & { readonly kind: 'latent' }
-      const loc = constParam(cx, member, 'loc', 'the mean')[0] as number
-      const sd = constParam(cx, member, 'scale', 'the scale')[0] as number
-      if (!(sd > 0)) throw scaleNotPositive(m, sd)
-      mean.push(loc)
-      cov[k * size + k] = sd * sd
-    })
+    const member = (m: string): ModelNode & { readonly kind: 'latent' } =>
+      cx.nodes.get(m) as ModelNode & { readonly kind: 'latent' }
+    for (const m of group.members) {
+      const locs = constParam(cx, member(m), 'loc', 'the mean')
+      const sds = constParam(cx, member(m), 'scale', 'the scale')
+      for (const [i, sd] of sds.entries()) {
+        if (!(sd > 0)) throw scaleNotPositive(m, sd)
+        cov[mean.length * size + mean.length] = sd * sd
+        mean.push(locs[i] as number)
+      }
+    }
     cx.g.addVariable({ name: group.vector, family: { kind: 'gaussian-mv', size } })
     cx.g.auxiliary.push(group.vector)
     cx.g.addLibraryFactor(gaussianMvPrior(group.vector, mean, cov), group.vector)
-    group.members.forEach((m, k) => {
-      cx.g.addVariable({ name: m, family: { kind: 'gaussian' } })
-      const a = new Array<number>(size).fill(0)
-      a[k] = 1
-      cx.g.addFactor({ operator: 'dot-constant', args: [m, group.vector], params: { a } }, m)
-      cx.syms.set(m, { dims: [], cells: [cx.g.compAtom(group.vector, k, size)] })
-    })
+    let offset = 0
+    for (const [k, m] of group.members.entries()) {
+      const dims = member(m).dims
+      const n = sizes[k] as number
+      const cells: Cell[] = []
+      for (let i = 0; i < n; i++) {
+        const name = dims.length === 0 ? m : cx.elementName(m, dims, i)
+        cx.g.addVariable({ name, family: { kind: 'gaussian' } })
+        const a = new Array<number>(size).fill(0)
+        a[offset + i] = 1
+        cx.g.addFactor({ operator: 'dot-constant', args: [name, group.vector], params: { a } }, name)
+        cells.push(cx.g.compAtom(group.vector, offset + i, size))
+      }
+      cx.syms.set(m, { dims, cells })
+      offset += n
+    }
   }
-  cx.layout(node, 'latent', 'gaussian', 'scalar', [node.name], true)
+  if (node.dims.length === 0) cx.layout(node, 'latent', 'gaussian', 'scalar', [node.name], true)
+  else {
+    const n = sizes[group.members.indexOf(node.name)] as number
+    const vars = Array.from({ length: n }, (_, i) => cx.elementName(node.name, node.dims, i))
+    cx.layout(node, 'latent', 'gaussian', 'elements', vars, true)
+  }
 }
 
 /**
