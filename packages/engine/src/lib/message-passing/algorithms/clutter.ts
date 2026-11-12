@@ -14,6 +14,7 @@ import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { type CompiledGraph, compileGraph } from '../core/graph.ts'
 import { gaussianPrior } from '../core/priors.ts'
+import { shiftedSum } from '../numerics/_moments.ts'
 import { numericOperator } from '../operators/likelihoods/numeric.ts'
 import { defaultOperators } from '../operators/registry.ts'
 
@@ -162,8 +163,8 @@ export function clutterPosterior(problem: ClutterProblem): ClutterPosterior {
       Math.log(density(v, 0, problem.priorVariance)) +
       problem.ys.reduce((s, y) => s + logLikelihood(y, v, problem.weight, problem.clutterVariance), 0),
   )
-  const top = Math.max(...logp)
-  const raw = logp.map((l) => Math.exp(l - top))
+  const { top, weights } = shiftedSum(logp)
+  const raw = Array.from(weights)
   const trapezoid = (f: (i: number) => number): number => {
     let s = 0
     for (let i = 0; i < points; i++) s += f(i) * (i === 0 || i === points - 1 ? 0.5 : 1)

@@ -18,6 +18,7 @@ import { gamma, gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { axisOf, integratePair } from '../../numerics/_grid.ts'
+import { shiftedSum } from '../../numerics/_moments.ts'
 import { digammaOf, lgammaOf } from '../../numerics/_scalar.ts'
 import { gammaLogWindow, gaussianWindow, uniformGrid, type Window, windowProfiles } from '../../numerics/_windows.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
@@ -114,7 +115,6 @@ function tilt(c: OperatorContext): Tilt {
   const { lo } = window
   const { step } = uniformGrid(window, POINTS)
   const logw = new Float64Array(POINTS)
-  let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < POINTS; i++) {
     const t = lo + i * step
     const a = Math.exp(t)
@@ -128,11 +128,9 @@ function tilt(c: OperatorContext): Tilt {
       totalPosterior += post
       sumLog += lgammaOf(post) - lgammaOf(kappa)
     }
-    const lw = logCavity(t) + lgammaOf(total) + sumLog - lgammaOf(totalPosterior)
-    logw[i] = lw
-    if (lw > top) top = lw
+    logw[i] = logCavity(t) + lgammaOf(total) + sumLog - lgammaOf(totalPosterior)
   }
-  let z = 0
+  const { top, weights, total: z } = shiftedSum(logw)
   let m1 = 0
   let m2 = 0
   let ea = 0
@@ -140,8 +138,7 @@ function tilt(c: OperatorContext): Tilt {
   for (let i = 0; i < POINTS; i++) {
     const t = lo + i * step
     const a = Math.exp(t)
-    const weight = Math.exp((logw[i] as number) - top)
-    z += weight
+    const weight = weights[i] as number
     m1 += weight * t
     m2 += weight * t * t
     ea += weight * a

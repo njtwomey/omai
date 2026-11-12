@@ -26,6 +26,7 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, FamilyKind, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
+import { shiftedSum } from '../../numerics/_moments.ts'
 import { gaussianGrid, tiltedGrid, tiltedLogGrid } from '../../numerics/_quadrature.ts'
 import { gammaLogWindow, uniformGrid, windowProfiles } from '../../numerics/_windows.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
@@ -203,15 +204,12 @@ function precisionTiltGrid(
   const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.precisionTilt)
   const { step } = uniformGrid({ lo, hi }, TILT_POINTS)
   const logw = new Float64Array(TILT_POINTS)
-  let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < TILT_POINTS; i++) {
     const t = lo + i * step
     // The gamma density in t = log lambda is exp(shape t - rate e^t); the difference integrated out is N(0; gap, joint + e^-t).
-    const lw = shape * t - rate * Math.exp(t) + logNormal(0, gap, joint + 1 / (scale * Math.exp(t) + offset))
-    logw[i] = lw
-    if (lw > top) top = lw
+    logw[i] = shape * t - rate * Math.exp(t) + logNormal(0, gap, joint + 1 / (scale * Math.exp(t) + offset))
   }
-  let z = 0
+  const { top, weights, total: z } = shiftedSum(logw)
   let eLog = 0
   let eLam = 0
   let eX = 0
@@ -220,13 +218,12 @@ function precisionTiltGrid(
   let eU2 = 0
   for (let i = 0; i < TILT_POINTS; i++) {
     const t = lo + i * step
-    const w = Math.exp((logw[i] ?? 0) - top)
+    const w = weights[i] as number
     const s = joint + 1 / (scale * Math.exp(t) + offset)
     const mx = x.mean - (x.variance * gap) / s
     const vx = x.variance - (x.variance * x.variance) / s
     const mu = u.mean + (u.variance * gap) / s
     const vu = u.variance - (u.variance * u.variance) / s
-    z += w
     eLog += w * t
     eLam += w * Math.exp(t)
     eX += w * mx

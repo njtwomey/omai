@@ -4,6 +4,7 @@
  * think in (a mean and a variance, a shape and a rate). Each returns the factor to put in a graph's `factors`.
  */
 
+import { shiftedSum } from '../numerics/_moments.ts'
 import { ParameterError } from './errors.ts'
 import { bernoulliEta, betaEta, gamma, gammaEta, gaussianEta, normalGammaEta } from './families.ts'
 import { discreteEta, gaussianMvEta } from './families-vector.ts'
@@ -240,13 +241,12 @@ export function densityMoments(
   const [a, b] = massWindow(logDensity, lo, hi, Math.min(Math.max(start, lo), hi))
   const xs = Float64Array.from({ length: FINE }, (_, i) => a + ((b - a) * i) / (FINE - 1))
   const lp = logDensity(xs)
-  let top = Number.NEGATIVE_INFINITY
-  for (const v of lp) if (v > top) top = v
+  const { weights } = shiftedSum(lp)
   let z = 0
   let m1 = 0
   let ml = 0
   for (let i = 0; i < FINE; i++) {
-    const w = Math.exp((lp[i] as number) - top) * (i === 0 || i === FINE - 1 ? 0.5 : 1)
+    const w = (weights[i] as number) * (i === 0 || i === FINE - 1 ? 0.5 : 1)
     z += w
     m1 += w * (xs[i] as number)
     ml += w * Math.log(Math.max(xs[i] as number, Number.MIN_VALUE))
@@ -254,7 +254,7 @@ export function densityMoments(
   const mean = m1 / z
   let m2 = 0
   for (let i = 0; i < FINE; i++)
-    m2 += Math.exp((lp[i] as number) - top) * (i === 0 || i === FINE - 1 ? 0.5 : 1) * ((xs[i] as number) - mean) ** 2
+    m2 += (weights[i] as number) * (i === 0 || i === FINE - 1 ? 0.5 : 1) * ((xs[i] as number) - mean) ** 2
   return { mean, variance: m2 / z, meanLog: ml / z }
 }
 

@@ -11,6 +11,7 @@
  * `y ~ studentT(df, X w, s)` is one rank-one factor per row on the packed weights.
  */
 
+import { logSumExpOf } from '../../../base/index.ts'
 import { allProper, gaussianOf, massOf, vectorParam } from '../../core/args.ts'
 import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { param } from '../../core/params.ts'
@@ -40,8 +41,7 @@ function mixtureLog(params: Params): (x: readonly number[]) => number {
     const terms = pi.map(
       (p, i) => Math.log(p) - 0.5 * (Math.log(2 * Math.PI * (s2[i] ?? 1)) + (v - (mu[i] ?? 0)) ** 2 / (s2[i] ?? 1)),
     )
-    const top = Math.max(...terms)
-    return top + Math.log(terms.reduce((a, l) => a + Math.exp(l - top), 0))
+    return logSumExpOf(terms)
   }
 }
 
@@ -56,8 +56,7 @@ function mixtureTilted(c: OperatorContext): { mean: number; variance: number; lo
         (Math.log(2 * Math.PI * (x.variance + (s2[i] ?? 0))) +
           (x.mean - (mu[i] ?? 0)) ** 2 / (x.variance + (s2[i] ?? 0))),
   )
-  const top = Math.max(...logZ)
-  const logMass = top + Math.log(logZ.reduce((a, l) => a + Math.exp(l - top), 0))
+  const logMass = logSumExpOf(logZ)
   let mean = 0
   let second = 0
   for (const [i, l] of logZ.entries()) {

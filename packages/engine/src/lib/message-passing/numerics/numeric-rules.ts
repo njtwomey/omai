@@ -16,6 +16,7 @@ import { toFlat } from '../../tensor/index.ts'
 import { ImproperMessageError, ParameterError } from '../core/errors.ts'
 import type { GaussianBase, TiltedProblem, TiltedRule } from '../core/types.ts'
 import { spd } from './_dense.ts'
+import { shiftedSum } from './_moments.ts'
 import { gaussianGrid, gaussianGridOn, gaussianNodes } from './_quadrature.ts'
 
 const isPoint = (b: GaussianBase): boolean => !(b.variance > 0)
@@ -26,22 +27,15 @@ function weightedMoments(
   logWeights: readonly number[],
   to: number,
 ): { readonly logMass: number; readonly mean: number; readonly variance: number } {
-  let top = Number.NEGATIVE_INFINITY
-  for (const v of logWeights) if (v > top) top = v
+  const { top, weights, total: m0, logTotal } = shiftedSum(logWeights)
   if (!Number.isFinite(top))
     throw new ImproperMessageError('numeric rule: the factor has no mass under the incoming messages')
-  let m0 = 0
   let m1 = 0
-  for (const [i, p] of points.entries()) {
-    const w = Math.exp((logWeights[i] ?? Number.NEGATIVE_INFINITY) - top)
-    m0 += w
-    m1 += w * (p[to] ?? 0)
-  }
+  for (const [i, p] of points.entries()) m1 += (weights[i] as number) * (p[to] ?? 0)
   const mean = m1 / m0
   let m2 = 0
-  for (const [i, p] of points.entries())
-    m2 += Math.exp((logWeights[i] ?? Number.NEGATIVE_INFINITY) - top) * ((p[to] ?? 0) - mean) ** 2
-  return { logMass: top + Math.log(m0), mean, variance: m2 / m0 }
+  for (const [i, p] of points.entries()) m2 += (weights[i] as number) * ((p[to] ?? 0) - mean) ** 2
+  return { logMass: logTotal, mean, variance: m2 / m0 }
 }
 
 /**

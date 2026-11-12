@@ -4,6 +4,7 @@
 // a run) and one much narrower both resolve. What the likelihood sites, the unary functions and the numeric priors share.
 
 import { ImproperMessageError } from '../core/errors.ts'
+import { shiftedSum } from './_moments.ts'
 import { gaussianGridOn } from './_quadrature.ts'
 
 /** Where a factor, as a function of the variable, lives: a centre and a scale, how far (in scales) to look, and the kinks to split panels at. */
@@ -78,22 +79,16 @@ function moments(
   top: number
   extra: { mean: number; variance: number }[]
 } {
-  let top = Number.NEGATIVE_INFINITY
-  for (const v of g.lw) if (v > top) top = v
+  const { top, weights, total: m0, logTotal } = shiftedSum(g.lw)
   if (!Number.isFinite(top)) throw new ImproperMessageError('the factor has no mass against this cavity')
-  let m0 = 0
   let m1 = 0
-  for (const [i, v] of g.lw.entries()) {
-    const e = Math.exp(v - top)
-    m0 += e
-    m1 += e * (g.xs[i] as number)
-  }
+  for (let i = 0; i < weights.length; i++) m1 += (weights[i] as number) * (g.xs[i] as number)
   const mean = m1 / m0
   let m2 = 0
   let f1 = 0
   const fs = fn === undefined ? undefined : g.xs.map((x) => fn(x))
-  for (const [i, v] of g.lw.entries()) {
-    const e = Math.exp(v - top)
+  for (let i = 0; i < weights.length; i++) {
+    const e = weights[i] as number
     m2 += e * ((g.xs[i] as number) - mean) ** 2
     if (fs !== undefined) f1 += e * (fs[i] as number)
   }
@@ -103,19 +98,19 @@ function moments(
   if (fs !== undefined) {
     fnMean = f1 / m0
     let f2 = 0
-    for (const [i, v] of g.lw.entries()) f2 += Math.exp(v - top) * ((fs[i] as number) - fnMean) ** 2
+    for (let i = 0; i < weights.length; i++) f2 += (weights[i] as number) * ((fs[i] as number) - fnMean) ** 2
     fnVariance = f2 / m0
   }
   const extra = more.map((h) => {
     const hs = g.xs.map((x) => h(x))
     let a1 = 0
-    for (const [i, v] of g.lw.entries()) a1 += Math.exp(v - top) * (hs[i] as number)
+    for (let i = 0; i < weights.length; i++) a1 += (weights[i] as number) * (hs[i] as number)
     const mu = a1 / m0
     let a2 = 0
-    for (const [i, v] of g.lw.entries()) a2 += Math.exp(v - top) * ((hs[i] as number) - mu) ** 2
+    for (let i = 0; i < weights.length; i++) a2 += (weights[i] as number) * ((hs[i] as number) - mu) ** 2
     return { mean: mu, variance: a2 / m0 }
   })
-  return { logMass: top + Math.log(m0), mean, variance, fnMean, fnVariance, top, extra }
+  return { logMass: logTotal, mean, variance, fnMean, fnVariance, top, extra }
 }
 
 /**

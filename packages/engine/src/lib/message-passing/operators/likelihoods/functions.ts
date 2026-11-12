@@ -23,6 +23,7 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { param } from '../../core/params.ts'
 import { truncatedNormalMoments } from '../../core/truncated.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { shiftedSum } from '../../numerics/_moments.ts'
 import { Phi, phi, softplusOf } from '../../numerics/_scalar.ts'
 import { tiltedByQuadrature, type WindowHint } from '../../numerics/_tilted.ts'
 import { definedFunctionMessage, quadraturePort } from '../kernel/variational-numeric.ts'
@@ -164,16 +165,15 @@ function reluTilt(m: number, v: number, h: number, J: number): Tilt {
   const above = truncatedNormalMoments(m2, v2, 0, Number.POSITIVE_INFINITY)
   const logA = below.logMass
   const logB = 0.5 * Math.log(v2 / v) + 0.5 * ((m2 * m2) / v2 - (m * m) / v) + above.logMass
-  const top = Math.max(logA, logB)
-  const total = Math.exp(logA - top) + Math.exp(logB - top)
-  const wA = Math.exp(logA - top) / total
+  const { weights, total, logTotal } = shiftedSum([logA, logB])
+  const wA = (weights[0] as number) / total
   const wB = 1 - wA
   const xMean = wA * below.mean + wB * above.mean
   const xSecond = wA * (below.variance + below.mean ** 2) + wB * (above.variance + above.mean ** 2)
   const yMean = wB * above.mean
   const ySecond = wB * (above.variance + above.mean ** 2)
   return {
-    logMass: top + Math.log(total),
+    logMass: logTotal,
     x: { mean: xMean, variance: Math.max(xSecond - xMean * xMean, FLOOR) },
     y: { mean: yMean, variance: Math.max(ySecond - yMean * yMean, FLOOR) },
   }
@@ -223,30 +223,27 @@ function tiltGamma(
   const n = port.coords.length
   const values = Float64Array.from(port.coords, fn.f)
   const lw = new Float64Array(n)
-  let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < n; i++) {
     const v = values[i] as number
     lw[i] = Number.isFinite(v)
       ? Math.log(port.weights[i] as number) + power * (h * v - 0.5 * J * v * v)
       : Number.NEGATIVE_INFINITY
-    if ((lw[i] as number) > top) top = lw[i] as number
   }
+  const { top, weights, total: m0 } = shiftedSum(lw)
   if (!Number.isFinite(top)) throw new ImproperMessageError('apply: the factor has no mass against this cavity')
-  let m0 = 0
   let logX = 0
   let xMean = 0
   let yMean = 0
   for (let i = 0; i < n; i++) {
-    const w = Math.exp((lw[i] as number) - top)
+    const w = weights[i] as number
     if (w === 0) continue
-    m0 += w
     logX += w * (port.stats[i]?.[0] ?? 0)
     xMean += w * (port.stats[i]?.[1] ?? 0)
     yMean += w * (values[i] as number)
   }
   let yVar = 0
   for (let i = 0; i < n; i++) {
-    const w = Math.exp((lw[i] as number) - top)
+    const w = weights[i] as number
     if (w > 0) yVar += w * ((values[i] as number) - yMean / m0) ** 2
   }
   return {
@@ -415,17 +412,14 @@ function scaledTilt(fn: UnaryFunction, c: OperatorContext): ScaledTilt {
     const port = quadraturePort(input, { points: 481 })
     const n = port.coords.length
     const lw = Float64Array.from(port.coords, (x, i) => Math.log(port.weights[i] as number) + logf(x))
-    let top = Number.NEGATIVE_INFINITY
-    for (const v of lw) if (v > top) top = v
+    const { top, weights, total: m0 } = shiftedSum(lw)
     if (!Number.isFinite(top))
       throw new ImproperMessageError('apply-product: the factor has no mass against these cavities')
-    let m0 = 0
     const sums = { logX: 0, x: 0, z1: 0, z2: 0, y1: 0, y2: 0 }
     for (let i = 0; i < n; i++) {
-      const w = Math.exp((lw[i] as number) - top)
+      const w = weights[i] as number
       if (w === 0) continue
       const x = port.coords[i] as number
-      m0 += w
       sums.logX += w * (port.stats[i]?.[0] ?? 0)
       sums.x += w * (port.stats[i]?.[1] ?? 0)
       sums.z1 += w * zMean(x)

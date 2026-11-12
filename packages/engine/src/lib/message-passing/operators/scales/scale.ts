@@ -17,6 +17,7 @@ import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { spd } from '../../numerics/_dense.ts'
+import { shiftedSum } from '../../numerics/_moments.ts'
 import { gammaLogWindow, windowProfiles } from '../../numerics/_windows.ts'
 
 const COARSE_POINTS = 81
@@ -102,17 +103,14 @@ export interface VectorScaleTilt {
 
 /** The weighted moments of the grid: the log mass, E[t], sd of t, E[exp t] and (when the nodes carry them) the mean and covariance of the vector. */
 function summarise(nodes: readonly Node[], step: number, d: number): VectorScaleTilt {
-  let top = Number.NEGATIVE_INFINITY
-  for (const n of nodes) if (n.logWeight > top) top = n.logWeight
-  let z = 0
+  const { top, weights, total: z } = shiftedSum(nodes.map((n) => n.logWeight))
   let eLog = 0
   let eLam = 0
   let eLog2 = 0
   const mean = new Float64Array(d)
   const second = new Float64Array(d * d)
-  for (const n of nodes) {
-    const w = Math.exp(n.logWeight - top)
-    z += w
+  for (const [k, n] of nodes.entries()) {
+    const w = weights[k] as number
     eLog += w * n.t
     eLog2 += w * n.t * n.t
     eLam += w * Math.exp(n.t)

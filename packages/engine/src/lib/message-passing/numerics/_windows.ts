@@ -176,16 +176,3 @@ export function uniformGrid(window: { readonly lo: number; readonly hi: number }
 export function uniformNodes(window: { readonly lo: number; readonly hi: number }, points: number): Float64Array {
   return Float64Array.from({ length: points }, (_, i) => window.lo + ((window.hi - window.lo) * i) / (points - 1))
 }
-
-/**
- * The log weights shifted by their maximum and exponentiated, so the weights of a grid never underflow: `weights[i] = exp(logw[i] -
- * top)` with `top` the largest log weight (`-Infinity` when every weight is zero: the caller decides what that means).
- *
- * @param logw - The log weights.
- * @returns The shift `top` and the shifted weights.
- */
-export function shiftedWeights(logw: ArrayLike<number>): { readonly top: number; readonly weights: Float64Array } {
-  let top = Number.NEGATIVE_INFINITY
-  for (let i = 0; i < logw.length; i++) if ((logw[i] as number) > top) top = logw[i] as number
-  return { top, weights: Float64Array.from({ length: logw.length }, (_, i) => Math.exp((logw[i] as number) - top)) }
-}

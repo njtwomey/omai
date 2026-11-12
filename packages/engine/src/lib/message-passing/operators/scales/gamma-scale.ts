@@ -14,6 +14,7 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { shiftedSum } from '../../numerics/_moments.ts'
 import { digammaOf, lgammaOf } from '../../numerics/_scalar.ts'
 import { gammaLogWindow, uniformGrid, windowProfiles } from '../../numerics/_windows.ts'
 
@@ -48,18 +49,15 @@ function pairTilt(
   const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.gammaScale)
   const { step } = uniformGrid({ lo, hi }, POINTS)
   const logw = new Float64Array(POINTS)
-  let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < POINTS; i++) {
     const t = lo + i * step
     const rateH = beta0 + c * Math.exp(t)
     if (!(rateH > 0)) throw new ImproperMessageError('gamma-scale: the conditional rate is not positive')
     // The cavity in t = log g has density exp(shape t - rate e^t); the other factors give g^kappa (beta0 + c g)^-s.
-    const lw = shape * t - rate * Math.exp(t) + kappa * t - s * Math.log(rateH)
-    logw[i] = lw
-    if (lw > top) top = lw
+    logw[i] = shape * t - rate * Math.exp(t) + kappa * t - s * Math.log(rateH)
   }
+  const { top, weights, total: z } = shiftedSum(logw)
   const psi = digammaOf(s)
-  let z = 0
   let eLogG = 0
   let eG = 0
   let eLogH = 0
@@ -67,10 +65,9 @@ function pairTilt(
   let eGH = 0
   for (let i = 0; i < POINTS; i++) {
     const t = lo + i * step
-    const w = Math.exp((logw[i] ?? 0) - top)
+    const w = weights[i] as number
     const g = Math.exp(t)
     const rateH = beta0 + c * g
-    z += w
     eLogG += w * t
     eG += w * g
     eLogH += w * (psi - Math.log(rateH))

@@ -51,6 +51,7 @@ import {
 import { assertDamping } from '../core/_messages.ts'
 import { ParameterError } from '../core/errors.ts'
 import type { MpSnapshot } from '../engine/state.ts'
+import { shiftedSum } from '../numerics/_moments.ts'
 
 /** A region: its variables, the factors inside it, its counting number and its place in the region graph. */
 export interface Region {
@@ -611,11 +612,7 @@ export function regionBpAlgorithm(g: RegionGraph, options: RegionBpOptions = {})
   assertDamping(o.damping, 'region BP')
   const plan = planOf(g)
   const normalised = (values: ArrayLike<number>): number[] => {
-    let top = Number.NEGATIVE_INFINITY
-    for (let i = 0; i < values.length; i++) top = Math.max(top, values[i] ?? Number.NEGATIVE_INFINITY)
-    let s = 0
-    for (let i = 0; i < values.length; i++) s += Math.exp((values[i] ?? Number.NEGATIVE_INFINITY) - top)
-    const lse = top + Math.log(s)
+    const lse = shiftedSum(values).logTotal
     return Array.from({ length: values.length }, (_, i) => (values[i] ?? 0) - lse)
   }
   /** The new message of an edge from the beliefs of its two regions under `source`. */

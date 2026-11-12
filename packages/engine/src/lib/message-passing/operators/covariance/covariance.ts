@@ -18,6 +18,7 @@ import { gaussianMvEta } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { BARTLETT_ORDER, choleskyInPlace, type WishartRule, wishartRule } from '../../numerics/_bartlett.ts'
+import { shiftedSum } from '../../numerics/_moments.ts'
 import { type Evaluator, evaluatorOf, type GaussianSide, gaussianSide, NO_ROWS, type Rows, rowsOf } from './_sides.ts'
 
 const LOG_2PI = Math.log(2 * Math.PI)
@@ -99,7 +100,6 @@ function tiltOver(
   const { nu, chol } = wishartCavity(eta, d)
   const rule = wishartRule(nu, chol, d)
   const logw = new Float64Array(rule.count)
-  let top = Number.NEGATIVE_INFINITY
   for (let node = 0; node < rule.count; node++) {
     const at = node * d * d
     let lw = Math.log(rule.weight[node] as number) + eval1(rule.lambda, at, rule.logDet[node] as number, -1)
@@ -113,18 +113,11 @@ function tiltOver(
       }
     lw -= 0.5 * (k - 1 + (conjugate ? 1 : 0)) * (rule.logDet[node] as number) - 0.5 * quad
     logw[node] = lw
-    if (lw > top) top = lw
   }
+  const { top, weights, total } = shiftedSum(logw)
   if (!Number.isFinite(top))
     throw new ImproperMessageError('mvn-wishart: the factor has no mass under the incoming messages')
-  const p = new Float64Array(rule.count)
-  let total = 0
-  for (let node = 0; node < rule.count; node++) {
-    const e = Math.exp((logw[node] as number) - top)
-    p[node] = e
-    total += e
-  }
-  for (let node = 0; node < rule.count; node++) p[node] = (p[node] as number) / total
+  const p = Float64Array.from(weights, (e) => e / total)
   return { logZ: family.logPartition(eta) + top + Math.log(total), rule, p }
 }
 

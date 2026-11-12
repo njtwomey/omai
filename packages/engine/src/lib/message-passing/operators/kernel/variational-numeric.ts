@@ -16,8 +16,9 @@ import { gaussianMessage, gaussianOf, scalarOf } from '../../core/args.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import type { Arg, Eta } from '../../core/types.ts'
+import { shiftedSum } from '../../numerics/_moments.ts'
 import { gaussianGridOn, gaussianNodes } from '../../numerics/_quadrature.ts'
-import { betaModeWindow, gammaModeWindow, shiftedWeights, uniformNodes } from '../../numerics/_windows.ts'
+import { betaModeWindow, gammaModeWindow, uniformNodes } from '../../numerics/_windows.ts'
 
 /** The quadrature of one port under its belief: the nodes (the coordinate the log density reads), their weights and the statistics. */
 export interface QuadPort {
@@ -48,9 +49,7 @@ function gridWeights(
   logDensity: (t: number) => number,
 ): { t: Float64Array; w: Float64Array } {
   const t = uniformNodes(window, points)
-  const { weights: w } = shiftedWeights(Float64Array.from(t, logDensity))
-  let total = 0
-  for (let i = 0; i < points; i++) total += w[i] as number
+  const { weights: w, total } = shiftedSum(Float64Array.from(t, logDensity))
   for (let i = 0; i < points; i++) w[i] = (w[i] as number) / total
   return { t, w }
 }
