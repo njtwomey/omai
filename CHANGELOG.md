@@ -327,6 +327,14 @@ Fixes (omai-engine, `probprog`), from the author of the Gaussian-mixtures showca
   refuses it when the last dimension of the first operand is also a dimension of the index, with the order that works
   (`ops.mul(x, slope)`), and the TSDoc of `pick` states the rule with an example. Models that put the picked dimension last
   (every one in the library) are unchanged.
+- Model layer (2026-11-12): a scalar discrete latent used by a plated observation (a switch time `s` in
+  `ops.where(ops.lt(year, s), a, b)` over a `year` dimension) failed under NUTS (and every engine that enumerates) with "batch dimension -3
+  ... belongs to no enumerated site". The enumeration handler gives such a latent an axis of its states left of the plates
+  (`[K, 1]`), which the compiler's named layout (dimensions first, event axes after) read as event axes, so the rate came out
+  as `[year, K, 1]` instead of `[K, year]`. An enumerated latent now carries its states as a dimension of its own
+  (`enum:<site>`) that broadcasts like any other, and goes back to its batch dimension where a distribution, a factor or a
+  recorded derived value takes it. The marginal posterior of the switch year of the coal-mining counts from NUTS with the
+  year summed out agrees with direct summation over it (mode 1892, regression test `engines/enumerated-plate.test.ts`).
 
 ## 0.1.12
 
