@@ -59,7 +59,7 @@ const bayesian = (file: string): (() => Promise<Record<string, string>>) => {
 /** The GAM page's files: its model, and the page itself (it runs the session on its own). */
 const gamFiles = async (): Promise<Record<string, string>> => ({
   ...(await bayesian('bayesian-gam.ts')()),
-  'Page.tsx': (await import('../pocs/bayesian-gam/Page.tsx?raw')).default,
+  'Page.tsx': (await import('../pocs/bayesian-examples/bayesian-gam/Page.tsx?raw')).default,
 })
 
 /** The regions of the scaffold that choose, bind and run the inference method, in the order they are shown. */

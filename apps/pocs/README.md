@@ -8,16 +8,25 @@ The Bayesian examples' methods (`defineExample`, the per-example knobs, time bud
 library models and inference methods for the pages and are not library code.
 
 Inclusion only: a page exists because someone asked for it, not because the library has the feature. To add one, make
-`src/pocs/<slug>/poc.ts` (title, summary, tags, date: this is what the index searches) and `src/pocs/<slug>/Page.tsx`
+`src/pocs/<dir>/<slug>/poc.ts` (title, summary, tags, date: this is what the index searches) and `src/pocs/<dir>/<slug>/Page.tsx`
 (the default export is the page); nothing else needs editing. Use the library's own estimators and slots (an
 estimator's `.method(data)` run with `useSession`, its config as `SpaceControls`, panels from `SessionPanels`) so a
 page stays a composition; anything with substance belongs in `packages/engine/src/lib`. A page that proves its worth can
 be promoted to the site's gallery by moving its recipe there.
 
-Groups: pocs that belong together are listed together. Declare a group in `src/groups.ts` (slug, title, summary) and join
-it with `group: '<slug>'` in the poc's `poc.ts`; the index shows one section per group (a group's own page is
-`/group/<slug>`), a search lists matches flat with the group on each card, and a poc with no group is listed under "More".
-A group with no pocs is not shown.
+Directories: the pages are organised as a tree of real directories under `src/pocs/`, and the app works like a file
+browser. A poc is a folder `src/pocs/<dir>/<subdir>/.../<slug>/` with `poc.ts` and `Page.tsx`; the slug is the poc's own
+folder name, unique across the whole tree, and its address stays `/poc/<slug>` wherever it sits. A directory has a `dir.ts`
+(`export const dir: PocDir = { title, summary, order }`: `order` sorts the directories of a level, ascending) and may hold
+subdirectories and pocs to any depth; an empty directory with a `dir.ts` is shown (as a place for pages still to come).
+The front page `/` is the root: its directories as tiles (title, summary, how many examples below it, how many folders)
+and then its examples; `/dir/<a>/<b>` is a directory (`/group/<slug>` still opens a top-level one); the trail in the top bar
+shows the path, each directory a link. A search is global and flat, each result with its directory path. The tree is built by
+`buildTree` in `src/poc.ts` from the files `registry.ts` finds (`import.meta.glob('./pocs/**/poc.ts')`), with the pure
+functions for listing, the trail and search, all tested in `src/poc.test.ts`. A page left directly under `src/pocs/<slug>/`
+with a `group: '<dir>'` in its `poc.ts` (the old way) is still listed, in the top-level directory that names, and a note in
+the registry test names it; such pages are moved into the tree with a move script (a history-keeping `mv`, the relative
+imports rewritten) that is not part of the repository.
 
 Pages that run several methods at once within a time budget the user chooses (the probabilistic-programming group) share
 their plumbing in `src/shared/`: `useAnytimeRuns` drives each run as a session through the library's `runAnytimeAsync`
