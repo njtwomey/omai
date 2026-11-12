@@ -49,8 +49,8 @@ const nuts: Fit = (y) => {
     config: { numChains: 1, numWarmup: 100, numDraws: 190 },
   })
   const p = method.posterior?.(s.state, s.config)
-  const a = Array.from(toFlat(p?.draws?.['a'] as never))
-  const b = Array.from(toFlat(p?.draws?.['b'] as never))
+  const a = toFlat(p?.draws?.['a'] as never)
+  const b = toFlat(p?.draws?.['b'] as never)
   return { a, b }
 }
 // endregion
@@ -68,8 +68,8 @@ const guide =
       config: { guide: 'autoNormal', learningRate: 0.05, numParticles: 2 },
     })
     const drawn = method.posterior?.(s.state, s.config).sample(k, RANKS) ?? {}
-    const a = Array.from(toFlat(drawn['a'] as never))
-    const b = Array.from(toFlat(drawn['b'] as never))
+    const a = toFlat(drawn['a'] as never)
+    const b = toFlat(drawn['b'] as never)
     return { a, b }
   }
 // endregion
