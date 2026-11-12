@@ -26,9 +26,9 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, FamilyKind, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
-import { centredMoments, shiftedSum } from '../../numerics/_moments.ts'
+import { centredMoments } from '../../numerics/_moments.ts'
 import { gaussianGrid, tiltedGrid, tiltedLogGrid } from '../../numerics/_quadrature.ts'
-import { gammaLogWindow, uniformGrid, windowProfiles } from '../../numerics/_windows.ts'
+import { gammaLogWindow, tiltGrid, windowProfiles } from '../../numerics/_windows.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 const ALL: readonly FamilyKind[] = [
@@ -201,16 +201,18 @@ function precisionTiltGrid(
     throw new ImproperMessageError('a gamma message has no density (its shape and rate are not positive)')
   const gap = x.mean - u.mean
   const joint = x.variance + u.variance
-  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.precisionTilt)
-  const { step } = uniformGrid({ lo, hi }, TILT_POINTS)
-  const logw = new Float64Array(TILT_POINTS)
-  for (let i = 0; i < TILT_POINTS; i++) {
-    const t = lo + i * step
-    // The gamma density in t = log lambda is exp(shape t - rate e^t); the difference integrated out is N(0; gap, joint + e^-t).
-    logw[i] = shape * t - rate * Math.exp(t) + logNormal(0, gap, joint + 1 / (scale * Math.exp(t) + offset))
-  }
-  const { top, weights, total: z } = shiftedSum(logw)
-  const ts = Float64Array.from({ length: TILT_POINTS }, (_, i) => lo + i * step)
+  // The gamma density in t = log lambda is exp(shape t - rate e^t); the difference integrated out is N(0; gap, joint + e^-t).
+  const {
+    t: ts,
+    step,
+    top,
+    weights,
+    total: z,
+  } = tiltGrid(
+    gammaLogWindow(shape, rate, windowProfiles.logTilt),
+    TILT_POINTS,
+    (t) => shape * t - rate * Math.exp(t) + logNormal(0, gap, joint + 1 / (scale * Math.exp(t) + offset)),
+  )
   // Given the precision, each Gaussian has its Kalman update: the tilted Gaussian is the mixture of the updates over the grid, with
   // the mean and variance of the mixture (the mean of the variances plus the variance of the means, centred).
   const mx = new Float64Array(TILT_POINTS)

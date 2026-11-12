@@ -14,9 +14,8 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma, gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
-import { shiftedSum } from '../../numerics/_moments.ts'
 import { digammaOf, lgammaOf } from '../../numerics/_scalar.ts'
-import { gammaLogWindow, uniformGrid, windowProfiles } from '../../numerics/_windows.ts'
+import { gammaLogWindow, tiltGrid, windowProfiles } from '../../numerics/_windows.ts'
 
 const POINTS = 241
 
@@ -46,17 +45,18 @@ function pairTilt(
     throw new ImproperMessageError(
       'the integral over the dependent gamma variable diverges (its shape is not positive)',
     )
-  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.gammaScale)
-  const { step } = uniformGrid({ lo, hi }, POINTS)
-  const logw = new Float64Array(POINTS)
-  for (let i = 0; i < POINTS; i++) {
-    const t = lo + i * step
+  // The cavity in t = log g has density exp(shape t - rate e^t); the other factors give g^kappa (beta0 + c g)^-s.
+  const {
+    t: ts,
+    step,
+    top,
+    weights,
+    total: z,
+  } = tiltGrid(gammaLogWindow(shape, rate, windowProfiles.logTilt), POINTS, (t) => {
     const rateH = beta0 + c * Math.exp(t)
     if (!(rateH > 0)) throw new ImproperMessageError('gamma-scale: the conditional rate is not positive')
-    // The cavity in t = log g has density exp(shape t - rate e^t); the other factors give g^kappa (beta0 + c g)^-s.
-    logw[i] = shape * t - rate * Math.exp(t) + kappa * t - s * Math.log(rateH)
-  }
-  const { top, weights, total: z } = shiftedSum(logw)
+    return shape * t - rate * Math.exp(t) + kappa * t - s * Math.log(rateH)
+  })
   const psi = digammaOf(s)
   let eLogG = 0
   let eG = 0
@@ -64,7 +64,7 @@ function pairTilt(
   let eH = 0
   let eGH = 0
   for (let i = 0; i < POINTS; i++) {
-    const t = lo + i * step
+    const t = ts[i] as number
     const w = weights[i] as number
     const g = Math.exp(t)
     const rateH = beta0 + c * g

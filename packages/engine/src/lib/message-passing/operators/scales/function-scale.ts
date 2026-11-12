@@ -54,7 +54,7 @@ function functionScaleTilt(c: OperatorContext): VectorScaleTilt & { readonly d: 
     const { shape, rate } = gammaShapeRate(eta)
     if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
       throw new ImproperMessageError('a gamma message has no density (its shape and rate are not positive)')
-    const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.vectorScale)
+    const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.logTilt)
     return vectorScaleTilt(h, jmat, {
       precisions: (t) => precisionsAt(Math.exp(t)),
       logCavity: (t) => shape * t - rate * Math.exp(t),

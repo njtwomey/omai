@@ -20,7 +20,7 @@ import { spd } from '../../numerics/_dense.ts'
 import { centredMoments, shiftedSum } from '../../numerics/_moments.ts'
 import { gammaLogWindow, windowProfiles } from '../../numerics/_windows.ts'
 
-const COARSE_POINTS = 81
+const COARSE_POINTS = 109
 const FINE_POINTS = 121
 
 /** The scales and offsets of the precisions `s_j lambda + o_j`, checked. */
@@ -204,7 +204,7 @@ function scaleTilt(c: OperatorContext): VectorScaleTilt & { readonly d: number }
   const { shape, rate } = gammaShapeRate(etaOf(arg(c, 1)))
   if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
     throw new ImproperMessageError('a gamma message has no density (its shape and rate are not positive)')
-  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.vectorScale)
+  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.logTilt)
   return vectorScaleTilt(h, jmat, {
     precisions: (t) => {
       const lam = Math.exp(t)

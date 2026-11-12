@@ -2,8 +2,11 @@
 // reaches and where it is cut. A gamma variable is integrated in its log, a beta in its logit, a Gaussian in its value, and every
 // integral of the numeric sites starts from the window of the cavity in that coordinate, then looks again where the mass is found.
 // The reach (in standard deviations of the coordinate) and the clamp (the coordinate beyond which a value is not a number worth
-// integrating over) belong to the integral, so they are named profiles here, never constants in the operator that integrates.
+// integrating over) belong to the integral, so they are named profiles here, never constants in the operator that integrates. The
+// uniform grid of the tilts that integrate over one such coordinate (`tiltGrid`) is here too, with the zoom that finds the mass inside
+// a window that is far wider than a likelihood leaves it.
 
+import { shiftedSum } from './_moments.ts'
 import { digammaOf, trigammaOf } from './_scalar.ts'
 
 /** How far a window reaches either side of its centre (in standard deviations of the coordinate) and where it is cut (the coordinate is clamped to `[-clamp, clamp]`). */
@@ -14,29 +17,30 @@ export interface WindowProfile {
 }
 
 /**
- * The windows of the library's integrals, by the integral that uses them. The numbers are the ones each integral has always
- * used; making them agree is a change of accuracy, not of structure, and is decided here and nowhere else.
+ * The windows of the library's integrals over a positive variable in its log (a gamma cavity, a concentration, a precision), over a
+ * probability in its logit (a beta cavity) and over a Gaussian on a log, in two kinds of integral.
+ *
+ * A uniform grid with a zoom (`tiltGrid`: the precision, gamma-scale, concentration and vector-scale tilts) has one window, the same
+ * for all of them: twenty standard deviations of the coordinate either side of the centre reach far into the exponential left tail of
+ * a log gamma density and past the super-exponential right one, the clamp keeps a value inside `exp(+-60)`, and the zoom finds the
+ * mass inside it, so the window does not have to be tuned to the likelihood.
+ *
+ * The panelled grid of two or three coordinates (`_grid.ts`) has a few nodes on each axis (sixteen to sixty) and zooms by a node at a
+ * time, so its first window must not be wider than the mass can be found in: a gamma axis reaches 12 standard deviations below and 8
+ * above, a beta axis 10 either side. Widened to the tilts' twenty, the evidence of `bivariate-correlation` (three axes) moves by
+ * 1.3e-3 nats.
  */
 export const windowProfiles: {
-  /** The panelled grid of two or three coordinates (`grid.ts`): a gamma cavity in its log. */
-  readonly pairGrid: WindowProfile
-  /** The beta cavity in its logit, in the panelled grid. */
-  readonly betaGrid: WindowProfile
-  /** The Gaussian precision `gaussian-gamma-precision` integrates the difference over. */
-  readonly precisionTilt: WindowProfile
-  /** The gamma-scale hierarchies (`gamma-rate`, `gamma-product`). */
-  readonly gammaScale: WindowProfile
-  /** The random concentration of a beta or Dirichlet. */
-  readonly concentration: WindowProfile
-  /** The one multiplier of a vector of precisions and the gamma input of a chain of functions. */
-  readonly vectorScale: WindowProfile
+  /** The zoomed uniform grids over a gamma, a beta or a Gaussian on a log: the one profile of every tilt. */
+  readonly logTilt: WindowProfile
+  /** A gamma axis of the panelled grid, in its log. */
+  readonly gridGamma: WindowProfile
+  /** A beta axis of the panelled grid, in its logit. */
+  readonly gridBeta: WindowProfile
 } = {
-  pairGrid: { below: 12, above: 8, clamp: 45 },
-  betaGrid: { below: 10, above: 10, clamp: 40 },
-  precisionTilt: { below: 20, above: 20, clamp: 60 },
-  gammaScale: { below: 18, above: 18, clamp: 60 },
-  concentration: { below: 14, above: 14, clamp: 40 },
-  vectorScale: { below: 15, above: 15, clamp: 60 },
+  logTilt: { below: 20, above: 20, clamp: 60 },
+  gridGamma: { below: 12, above: 8, clamp: 45 },
+  gridBeta: { below: 10, above: 10, clamp: 40 },
 }
 
 /** A window `[lo, hi]` of a coordinate and the centre of the cavity in it. */
@@ -175,4 +179,58 @@ export function uniformGrid(window: { readonly lo: number; readonly hi: number }
  */
 export function uniformNodes(window: { readonly lo: number; readonly hi: number }, points: number): Float64Array {
   return Float64Array.from({ length: points }, (_, i) => window.lo + ((window.hi - window.lo) * i) / (points - 1))
+}
+
+/** The weights of a grid, relative to the largest, below which a node is outside the mass: the zoom cuts there. */
+const LIVE = 1e-13
+/** A window that shrinks to less than this fraction of itself when zoomed is worth another grid. */
+const SHRINK = 0.6
+/** The most grids one tilt lays: the first over the cavity's window, then up to two over the window the mass was found in. */
+const GRIDS = 3
+
+/** What a one-dimensional grid over a window gives: its nodes, their spacing, and the log weights shifted and exponentiated. */
+export interface TiltGrid {
+  readonly t: Float64Array
+  readonly step: number
+  /** The largest log weight. */
+  readonly top: number
+  /** `exp(logw - top)`: at most one, the largest exactly one. */
+  readonly weights: Float64Array
+  /** The sum of the weights. */
+  readonly total: number
+}
+
+/**
+ * A uniform grid over the window of a cavity, zoomed onto where the mass is: the log weights are laid on `points` nodes of the window,
+ * and when the nodes that carry weight (more than `1e-13` of the largest) are less than six tenths of the window, the same number of
+ * nodes is laid over them (a node of margin either side), up to three grids in all. The window of a cavity is far wider than the
+ * tilted mass that a likelihood leaves, and one fixed grid over it loses resolution exactly when the mass is narrow; the zoom is what
+ * lets the profile of the window be one wide number for every integral.
+ *
+ * @param window - The window of the cavity in the coordinate (`gammaLogWindow` and the like).
+ * @param points - The nodes of each grid (at least 3).
+ * @param logw - The log of the integrand (the cavity's density included) at a coordinate.
+ * @returns The nodes of the last grid, its spacing, its largest log weight and its shifted weights with their sum.
+ * @throws ImproperMessageError when no node of the first grid has a finite weight.
+ */
+export function tiltGrid(
+  window: { readonly lo: number; readonly hi: number },
+  points: number,
+  logw: (t: number) => number,
+): TiltGrid {
+  let w = window
+  for (let grid = 1; ; grid++) {
+    const t = uniformNodes(w, points)
+    const { top, weights, total } = shiftedSum(Float64Array.from(t, logw))
+    const step = (w.hi - w.lo) / (points - 1)
+    if (grid === GRIDS || !Number.isFinite(top)) return { t, step, top, weights, total }
+    let from = 0
+    while (from < points - 1 && (weights[from] as number) < LIVE) from++
+    let to = points - 1
+    while (to > from && (weights[to] as number) < LIVE) to--
+    const lo = t[Math.max(from - 1, 0)] as number
+    const hi = t[Math.min(to + 1, points - 1)] as number
+    if (!(hi - lo < SHRINK * (w.hi - w.lo))) return { t, step, top, weights, total }
+    w = { lo, hi }
+  }
 }

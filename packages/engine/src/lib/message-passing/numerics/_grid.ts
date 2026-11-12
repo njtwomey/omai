@@ -356,14 +356,14 @@ export function pointAxis(x: number): GridAxis {
  * `value^shape exp(-rate value)` over the gamma normaliser, the Jacobian included.
  */
 export function gammaAxis(shape: number, rate: number, kinks: readonly number[] = []): GridAxis {
-  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.pairGrid)
+  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.gridGamma)
   const logNorm = lgammaOf(shape) - shape * Math.log(rate)
   return { point: false, lo, hi, kinks, logWeight: (t) => shape * t - rate * Math.exp(t) - logNorm }
 }
 
 /** The axis of a beta cavity `Beta(a, b)` in the coordinate `s = logit(u)`: the density of `s` is `u^a (1 - u)^b` over the beta function. */
 export function betaAxis(a: number, b: number): GridAxis {
-  const { lo, hi } = betaLogitWindow(a, b, windowProfiles.betaGrid)
+  const { lo, hi } = betaLogitWindow(a, b, windowProfiles.gridBeta)
   const logNorm = lgammaOf(a) + lgammaOf(b) - lgammaOf(a + b)
   return {
     point: false,
