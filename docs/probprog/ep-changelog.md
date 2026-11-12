@@ -828,3 +828,20 @@ rule for nodes that cycle (`inference/ep-grid.ts`).
 - Tests: `ep-grid-sv.test.ts` (seed 1 against the brute-force numbers, in a dozen nodes), `ep-grid.test.ts` (warm start and walk on the
   Gaussian process benchmarks, where every node is exact; the weight of a node that did not settle). The EP digest: no item moves because
   of the change (`atom/gp-length-scale` differs from the committed baseline in the last digits, on the unchanged HEAD as well).
+
+## 2026-11-12 Variational message passing: the Student-t rows checked, the ordinal rows split (`agent-acc004-vmprules`, gap `variational-rules` narrowed)
+
+- `student-t-full` (`likelihood-triple`) and `student-t-scale` (`likelihood-pair`) already had a mean-field message (the numeric rule: the density
+  is smooth everywhere); what they lacked was a reference. `variational.test.ts` now checks that the fixed point of each is a stationary maximum
+  of the brute-force bound (a Gaussian and a gamma scale, three random parameters): the engine's bound is within 5e-4 nats of the brute force
+  with two random ports, 3.5e-3 with three (the heavy tails against 24 and 12 Gauss-Hermite nodes), the gradient at the fixed point under 1e-3
+  and 6e-3.
+- Ordinal rows: what is sound. The density of a category between two cut points is zero where they are out of order, and a Gaussian belief of
+  them has mass there, so `E_q[log f]` is minus infinity for every Gaussian `q` (and no lower bound can be finite: it would have to be below
+  minus infinity); the family has to change (a truncated or order-by-construction belief) for a bound to exist, so those rows stay refused,
+  with the reason. The first and the last category have one cut and a density that is smooth (`log Phi(c - u)`, `log Phi(u - c)`): `noVmp` of a
+  triple row is now a function of the outcome and those two run under VMP (`ordinal-probit-cuts`, `ordinal-logit-cuts`, the cut that is not
+  there ignored), each checked as a stationary maximum of the brute-force bound. A model with a middle category still has no VMP message
+  (every ordinal atom with three categories), and its ordering comes from `greater-than`, a hard step the mean field cannot hold either.
+  What would run them: cut points that are ordered by construction (a first cut and positive gaps, `exp` of a Gaussian, so the density is
+  smooth over unconstrained beliefs), which needs a compiler pattern for it; not done.
