@@ -6,6 +6,7 @@
  */
 
 import type { Json } from '../../../../base/index.ts'
+import type { OperatorName } from '../../../../message-passing/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
 import { precisionFactor } from '../_builder.ts'
 import { type Atom, affOf, type Cell, isConstCell, lookup, scaledOf } from '../_cells.ts'
@@ -119,8 +120,8 @@ export function observedHeavy(
   const scale = known('scale')
   if (!(scale > 0)) throw scaleNotPositive(node.name, scale)
   let params: Record<string, Json>
-  let row: string
-  let site: string
+  let row: OperatorName
+  let site: OperatorName
   if (fam === 'studentT') {
     params = { y, scale, df: known('df') }
     row = 'student-t-row'

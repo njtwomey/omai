@@ -2,11 +2,31 @@
 import { describe, expect, it } from 'vitest'
 import type { FamilyKind } from '../../../message-passing/index.ts'
 import { familyHasNoMessageFamily, observedFamilyUnmapped } from './_reasons.ts'
-import { latentMappings, observedElementMappings, observedNodeMappings, observedRowMappings } from './_table.ts'
+import {
+  latentMappings,
+  nodeMappings,
+  observedElementMappings,
+  observedNodeMappings,
+  observedRowMappings,
+} from './_table.ts'
 
 const names = (table: readonly { readonly name: string }[]): string[] => table.map((e) => e.name)
 
 describe('the mapping tables', () => {
+  it('asks the node mappings in this order', () => {
+    expect(names(nodeMappings)).toEqual([
+      'data',
+      'non-centred-absorbed',
+      'latent',
+      'derived',
+      'observed',
+      'generated',
+      'scan',
+      'param-refused',
+      'factor-refused',
+    ])
+  })
+
   it('asks the latent mappings in this order', () => {
     expect(names(latentMappings)).toEqual([
       'constraint-refused',
@@ -61,7 +81,13 @@ describe('the mapping tables', () => {
   })
 
   it('names every entry once, says what it maps, and ends each table with an entry that takes every node', () => {
-    for (const table of [latentMappings, observedNodeMappings, observedRowMappings, observedElementMappings]) {
+    for (const table of [
+      nodeMappings,
+      latentMappings,
+      observedNodeMappings,
+      observedRowMappings,
+      observedElementMappings,
+    ]) {
       expect(new Set(names(table)).size).toBe(table.length)
       for (const e of table) expect(e.maps.length).toBeGreaterThan(10)
       expect(table.at(-1)?.matches).toBeUndefined()

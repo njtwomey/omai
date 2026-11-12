@@ -9,11 +9,12 @@
  */
 
 import type { FamilyKind } from '../../../message-passing/index.ts'
-import type { ExprSpec } from '../spec.ts'
+import type { DerivedNode, ExprSpec, LatentNode, ModelNode, ObservedNode } from '../spec.ts'
 import { type Cell, prod } from './_cells.ts'
 import type { Context } from './_context.ts'
 import { expArgument, precisionExpr, unwrap } from './_idioms.ts'
-import { type LatentNode, type Mapping, type MappingTable, mapFirst, NOT_MINE, type ObservedNode } from './_mapping.ts'
+import { type Mapping, type MappingTable, mapFirst, NOT_MINE } from './_mapping.ts'
+import { derived } from './_mappings/derived.ts'
 import { latentDirichlet, latentDiscrete } from './_mappings/latent-discrete.ts'
 import { latentNormal, latentProjected, latentSpikeSlab, truncate } from './_mappings/latent-gaussian.ts'
 import {
@@ -60,10 +61,12 @@ import {
   constraintBeyondSupport,
   familyHasNoMessageFamily,
   latentBivariateNormal,
+  logDensityTermHasNoOperator,
   logNormalOutcome,
   missingValuesPolicy,
   observedFamilyUnmapped,
   parametersNotInMessageForm,
+  paramNodeHasNoFactor,
   subsampledByBatch,
   zeroTruncatedRateForm,
 } from './_reasons.ts'
@@ -95,6 +98,88 @@ export const PROJECTED_PRIORS: ReadonlySet<string> = new Set([
   'truncatedNormal',
 ])
 
+// ----- nodes -----
+
+/**
+ * The mappings of a node by its kind, in priority order: what the walk does with each kind of node of the spec. The latents and the
+ * observed nodes go to their own tables below.
+ */
+export const nodeMappings: MappingTable<[ModelNode], void> = [
+  {
+    name: 'data',
+    maps: 'bound data is known from the start (the constants pass): nothing to map',
+    requires: [],
+    matches: (_cx, node) => node.kind === 'data',
+    map: () => undefined,
+  },
+  {
+    name: 'non-centred-absorbed',
+    maps: 'a standard normal vector that a non-centred derived node absorbs: the derived node compiles it, only if the dense factor does not apply',
+    order: 'before the latent mappings: the vector has no mapping of its own',
+    requires: [],
+    matches: (cx, node) => node.kind === 'latent' && [...cx.nonCentred.values()].includes(node.name),
+    map: () => undefined,
+  },
+  {
+    name: 'latent',
+    maps: 'a latent node: the first mapping of the latent table that takes it',
+    requires: [],
+    matches: (_cx, node) => node.kind === 'latent',
+    map: (cx, node) => mapLatent(cx, node as LatentNode),
+  },
+  {
+    name: 'derived',
+    maps: 'a derived node: its expression evaluated in the value algebra (a known constant, a symbolic value, a recorded variable), or a non-centred vector z / S(x) as one Gaussian vector with a gaussian-mv-function-scale factor',
+    requires: ['gaussian-mv-function-scale'],
+    matches: (_cx, node) => node.kind === 'derived',
+    map: (cx, node) => derived(cx, node as DerivedNode, (z) => mapLatent(cx, z)),
+  },
+  {
+    name: 'observed',
+    maps: 'an observed node: the first mapping of the observed tables that takes it',
+    requires: [],
+    matches: (_cx, node) => node.kind === 'observed',
+    map: (cx, node) => mapObserved(cx, node as ObservedNode),
+  },
+  {
+    name: 'generated',
+    maps: 'a generated node (a prediction that is not part of the model): nothing to map',
+    requires: [],
+    matches: (_cx, node) => node.kind === 'generated',
+    map: () => undefined,
+  },
+  {
+    name: 'scan',
+    maps: 'a scan, which the driver has unrolled into one variable and factor per step before the walk: nothing to map',
+    requires: [],
+    matches: (_cx, node) => node.kind === 'scan',
+    map: () => undefined,
+  },
+  {
+    name: 'param-refused',
+    maps: 'a param (a learnable value, not a random variable) has no factor: refused',
+    requires: [],
+    matches: (_cx, node) => node.kind === 'param',
+    map: (_cx, node) => {
+      throw paramNodeHasNoFactor(node.name)
+    },
+  },
+  {
+    name: 'factor-refused',
+    maps: 'an arbitrary log-density term has no message operator: refused',
+    order: 'last: takes every kind of node that is left',
+    requires: [],
+    map: (_cx, node) => {
+      throw logDensityTermHasNoOperator(node.name)
+    },
+  },
+]
+
+/** Map a node of the spec with the first mapping of `nodeMappings` that takes it. */
+export function mapNode(cx: Context, node: ModelNode): void {
+  mapFirst(nodeMappings, cx, 'node', node)
+}
+
 // ----- latent nodes -----
 
 /** Whether a latent's constraint is a truncation of a normal (the one constraint beyond the family's support that is mapped). */
@@ -124,7 +209,7 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
     maps: 'a half-normal, half-Cauchy, log-normal, uniform or truncated normal prior, projected onto a Gaussian (on the log of a positive scale)',
     order: 'before the family lookup: these families have no message family of their own',
     families: [...PROJECTED_PRIORS],
-    requires: ['prior'],
+    requires: ['prior', 'prior-site'],
     matches: (_cx, node) => PROJECTED_PRIORS.has(node.dist.family),
     map: (cx, node) => latentProjected(cx, node),
   },
@@ -159,7 +244,7 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
     maps: 'a multivariate normal whose precision (or covariance) is a Wishart latent: the normal-Wishart pair with an mvn-normal-wishart factor',
     order: 'before the plain multivariate normal below',
     families: ['multivariateNormal'],
-    requires: ['mvn-normal-wishart', 'prior'],
+    requires: ['mvn-wishart', 'prior'],
     matches: (cx, node) => node.dist.family === 'multivariateNormal' && wishartOf(cx, node) !== undefined,
     map: (cx, node) => latentMvnWishart(cx, node),
   },
@@ -204,17 +289,7 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
     name: 'normal',
     maps: 'a normal: a Gaussian variable per element, with a known or random mean and scale (a precision, a random scale, a switch), grouped or packed where the plan says; a truncation constrains it',
     families: ['normal'],
-    requires: [
-      'apply',
-      'dot-constant',
-      'gate',
-      'gaussian',
-      'gaussian-gamma-precision',
-      'gaussian-mv-precision-scale',
-      'greater-than',
-      'product',
-      'prior',
-    ],
+    requires: ['gate', 'gaussian', 'gaussian-gamma-precision', 'gaussian-mv-precision-scale', 'greater-than', 'prior'],
     matches: (_cx, node) => node.dist.family === 'normal',
     map: (cx, node) => {
       latentNormal(cx, node)
@@ -225,7 +300,7 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
     name: 'multivariate-normal',
     maps: 'a multivariate normal with a known or a random mean vector: one Gaussian vector variable',
     families: ['multivariateNormal'],
-    requires: ['gaussian-transition', 'mvn-wishart', 'prior'],
+    requires: ['gaussian-transition', 'prior'],
     matches: (_cx, node) => node.dist.family === 'multivariateNormal',
     map: (cx, node) => latentMultivariateNormal(cx, node),
   },
@@ -233,7 +308,7 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
     name: 'spike-and-slab',
     maps: 'a spike-and-slab normal: a Gaussian that a Bernoulli inclusion switches between a narrow and a wide component',
     families: ['normalSpikeSlab'],
-    requires: ['gate', 'gaussian-gamma-precision', 'mixture-row', 'mixture-site', 'prior-site', 'prior'],
+    requires: ['bernoulli', 'gate', 'gaussian-gamma-precision', 'mixture-row', 'mixture-site', 'prior'],
     matches: (_cx, node) => node.dist.family === 'normalSpikeSlab',
     map: (cx, node) => latentSpikeSlab(cx, node),
   },
@@ -270,7 +345,7 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
     maps: 'a beta with a random shape (a log-normal or gamma strength): a beta-two-shapes factor',
     order: 'before the beta with known shapes in the closed-form entry at the end',
     families: ['beta'],
-    requires: ['beta-two-shapes', 'prior'],
+    requires: ['beta-two-shapes', 'dirichlet-concentration', 'prior'],
     matches: (cx, node) =>
       node.dist.family === 'beta' && ['a', 'b'].some((k) => !cx.isConst(node.dist.params[k] as ExprSpec)),
     map: (cx, node) => latentRandomConcentration(cx, node),
@@ -345,7 +420,7 @@ export const observedNodeMappings: MappingTable<[ObservedNode], void> = [
     maps: 'a Gaussian observation of a value that is a known function of a discrete variable: the value moves to the mean, a gate over the shifted forms',
     order: 'before every other observation: the node is rewritten and mapped again from the top of this table',
     families: ['normal'],
-    requires: ['gate', 'gaussian-scale', 'gaussian'],
+    requires: [],
     map: (cx, node) => {
       const moved = valueMovedToMean(cx, node)
       if (moved === undefined) return NOT_MINE
@@ -493,17 +568,7 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
     maps: 'a Gaussian whose mean or scale is a lookup by a discrete variable: a table over it (known means) or a gate of Gaussian likelihoods',
     order: 'before the random-scale forms: a scale chosen by a discrete variable is not a random scale',
     families: ['normal'],
-    requires: [
-      'bernoulli',
-      'discrete',
-      'gate',
-      'gaussian',
-      'gaussian-gamma-precision',
-      'gaussian-scale',
-      'likelihood-site',
-      'prior',
-      'table',
-    ],
+    requires: ['gate', 'gaussian', 'gaussian-gamma-precision', 'table'],
     map: (cx, node, el) => {
       const switched = switchedCells(cx, node, el.i)
       if (switched === undefined) return NOT_MINE
@@ -557,13 +622,18 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
     maps: 'a Student-t, Laplace or outlier-mixture observation: the scale-mixture factors of the engine on the mean',
     families: ['studentT', 'laplace', 'normalOutliers'],
     requires: [
+      'bernoulli',
       'gate',
       'gaussian',
       'gaussian-gamma-precision',
-      'gaussian-scale',
-      'likelihood-site',
-      'linear-regression-row',
+      'laplace-row',
+      'laplace-site',
+      'likelihood-pair',
+      'mixture-row',
+      'mixture-site',
       'prior',
+      'student-t-row',
+      'student-t-site',
     ],
     map: (cx, node, el) => observedHeavy(cx, node, el.fam, el.y, el.i, el.index),
   }),
@@ -578,7 +648,7 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
     name: 'ordered-numeric',
     maps: 'an ordered probit or logistic, or an asymmetric Laplace (quantile regression): a likelihood-site factor on the predictor',
     families: ['orderedProbit', 'orderedLogistic', 'asymmetricLaplace'],
-    requires: ['likelihood-pair', 'likelihood-site', 'likelihood-row'],
+    requires: ['likelihood-pair', 'likelihood-row', 'likelihood-site'],
     map: (cx, node, el) => observedNumeric(cx, node, el.fam, el.y, el.i, el.index),
   }),
   element({
@@ -602,7 +672,7 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
     name: 'bernoulli',
     maps: 'a Bernoulli observation: a probit or logistic link of an affine form, or a beta probability',
     families: ['bernoulli'],
-    requires: ['bernoulli', 'logistic', 'probit'],
+    requires: ['bernoulli', 'greater-than', 'logistic', 'probit'],
     map: (cx, node, el) => observedBernoulli(cx, node, el.name, el.y, el.i, el.index),
   }),
   element({
@@ -611,14 +681,14 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
     order:
       'before the conjugate rule: the numeric form is tried first, NOT_MINE when the rate or probability is a conjugate latent',
     families: ['binomial', 'poisson'],
-    requires: ['gate', 'likelihood-row', 'likelihood-site'],
+    requires: ['gate', 'likelihood-row', 'likelihood-site', 'table'],
     map: (cx, node, el) => observedNumeric(cx, node, el.fam, el.y, el.i, el.index),
   }),
   element({
     name: 'binomial-poisson-conjugate',
     maps: 'a Poisson with a gamma rate, a binomial with a beta probability: the conjugate observation',
     families: ['binomial', 'poisson'],
-    requires: ['binomial', 'gate', 'poisson'],
+    requires: ['binomial', 'poisson'],
     map: (cx, node, el) => observedConjugate(cx, node, el.fam, el.name, el.y, el.i),
   }),
   element({
@@ -664,7 +734,7 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
     name: 'hurdle-poisson',
     maps: 'a hurdle Poisson: a Bernoulli for zero and a zero-truncated Poisson for the rest',
     families: ['hurdlePoisson'],
-    requires: ['bernoulli', 'likelihood-site', 'likelihood-row', 'prior'],
+    requires: ['bernoulli', 'likelihood-row', 'likelihood-site'],
     map: (cx, node, el) => observedHurdle(cx, node, el.y, el.i, el.index),
   }),
   element({

@@ -7,16 +7,61 @@
  */
 
 import { type Json, OmaiError } from '../../../base/index.ts'
-import type { FactorOperator, FactorSpec, VariableSpec } from '../../../message-passing/index.ts'
+import {
+  compileGraph,
+  type FactorOperator,
+  type FactorSpec,
+  type GateBranch,
+  type OperatorName,
+  operatorNames,
+  ParameterError,
+  type VariableSpec,
+} from '../../../message-passing/index.ts'
 import { auxId, elementId, factorId } from '../ids.ts'
 import type { OperatorTable } from '../operators.ts'
 import { type Aff, type Atom, affOf, type Cell, isConstCell } from './_cells.ts'
-import { noOperator } from './_reasons.ts'
+import { factorRejected, noOperator } from './_reasons.ts'
 import type { SiteLayout } from './types.ts'
 
-/** The factor operator a registry name maps to: the model operator's own `factor`, else its name. */
-export function factorName(table: OperatorTable, op: string): string {
-  return table[op]?.factor ?? op
+/** A factor the compiler adds: the engine's `FactorSpec` with the operator named by `OperatorName`, so a typo or a rename fails `tsc`. */
+export type CompilerFactor = Omit<FactorSpec, 'operator'> & { readonly operator: OperatorName }
+
+/**
+ * The operators the value algebra emits itself, whatever mapping asks for a value: turning an affine form into a variable (`materialise`
+ * and the components of a vector: `plus`, `difference`, `sum`, `times-constant`, `equal`, `linear`, `dot-constant`), the arithmetic of random
+ * values (`product`, `gamma-product`, the extremum `max` and `min`, `select`) and the chains of unary functions (`apply`, `apply-product`).
+ * A mapping's own `requires` leaves them out.
+ */
+export const VALUE_ALGEBRA_OPERATORS: readonly OperatorName[] = [
+  'apply',
+  'apply-product',
+  'difference',
+  'dot-constant',
+  'equal',
+  'gamma-product',
+  'linear',
+  'max',
+  'min',
+  'plus',
+  'product',
+  'select',
+  'sum',
+  'times-constant',
+]
+
+/** Whether a name is one of the engine's factor operators (`operatorNames`, the registry's names in order). */
+export function isOperatorName(name: string): name is OperatorName {
+  return (operatorNames as readonly string[]).includes(name)
+}
+
+/**
+ * The factor operator a model operator maps to: the model operator's own `factor`, else its name (which must then be a factor operator
+ * too: a refusal names it when it is not).
+ */
+export function factorName(table: OperatorTable, op: string): OperatorName {
+  const named = table[op]?.factor ?? op
+  if (!isOperatorName(named)) throw noOperator(named)
+  return named
 }
 
 /** How much a graph under construction held when `checkpoint` was taken (what `restore` cuts back to). */
@@ -40,6 +85,7 @@ export class GraphBuilder {
   private readonly auxLog: string[] = []
   private readonly components = new Map<string, string>()
   private readonly names = new Set<string>()
+  private readonly byName = new Map<string, VariableSpec>()
 
   constructor(
     readonly ops: Readonly<Record<string, FactorOperator>>,
@@ -74,6 +120,7 @@ export class GraphBuilder {
   restore(cp: BuilderCheckpoint): void {
     for (const v of this.variables.slice(cp.variables)) {
       this.names.delete(v.name)
+      this.byName.delete(v.name)
       this.components.delete(v.name)
     }
     this.variables.length = cp.variables
@@ -84,7 +131,7 @@ export class GraphBuilder {
     for (const key of [...this.atoms.keys()]) if (k++ >= cp.atoms) this.atoms.delete(key)
   }
 
-  need(name: string): FactorOperator {
+  need(name: OperatorName): FactorOperator {
     const op = this.ops[name]
     if (op === undefined) throw noOperator(name)
     return op
@@ -93,6 +140,7 @@ export class GraphBuilder {
   addVariable(v: VariableSpec): string {
     if (this.names.has(v.name)) throw new OmaiError('value', `factor graph: the variable '${v.name}' is made twice`)
     this.names.add(v.name)
+    this.byName.set(v.name, v)
     this.variables.push(v)
     return v.name
   }
@@ -114,9 +162,42 @@ export class GraphBuilder {
     return this.materialise(affOf(cell), site, index) as string
   }
 
-  addFactor(f: FactorSpec, variable: string): void {
+  /**
+   * Add a factor defined by `variable`. The factor is checked in the way the engine will check the finished graph (`compileGraph`: the
+   * parameters against the operator's declared ones, the arity, the families the ports take, the operator's own `check`), on the factor and the
+   * variables it names, so a mapping that builds a factor the engine would refuse is refused where it is built.
+   */
+  addFactor(f: CompilerFactor, variable: string): void {
     this.need(f.operator)
-    this.factors.push({ ...f, id: factorId(variable) })
+    const factor = { ...f, id: factorId(variable) }
+    const reason = this.rejection(factor)
+    if (reason !== undefined) throw factorRejected(factor.id, reason)
+    this.factors.push(factor)
+  }
+
+  /** What the engine says against a factor made of the variables it names (`compileGraph` on that part), or `undefined` when it takes it. */
+  private rejection(factor: FactorSpec): string | undefined {
+    const named: VariableSpec[] = []
+    for (const a of factor.args) {
+      const v = typeof a === 'string' ? this.byName.get(a) : undefined
+      if (v !== undefined && !named.includes(v)) named.push(v)
+    }
+    try {
+      compileGraph({ variables: named, factors: [factor] }, this.ops)
+      return undefined
+    } catch (e) {
+      if (e instanceof ParameterError) return e.message
+      throw e
+    }
+  }
+
+  /**
+   * Add a factor that one of the engine's constructors made (`gaussianPrior`, `priorFactor`, `dirichletPrior`, ...: they return the engine's
+   * `FactorSpec`, whose operator is a plain string): the operator is checked against the names of the registry when it is added.
+   */
+  addLibraryFactor(f: FactorSpec, variable: string): void {
+    if (!isOperatorName(f.operator)) throw noOperator(f.operator)
+    this.addFactor({ ...f, operator: f.operator }, variable)
   }
 
   /**
@@ -232,8 +313,8 @@ export class GraphBuilder {
   }
 }
 
-/** One branch of a `gate` factor: the factor operator of the state, its arguments and parameters (`{}` for a state with no factor). */
-export type GateBranch = Record<string, Json>
+/** The branch of a state that has no factor (`{}`: the constant 1 on the gate's variables). */
+export type NoFactor = Readonly<Record<string, never>>
 
 /**
  * A `gate` factor under assembly: the selector (a discrete or Bernoulli variable), the variables the branches share, and one
@@ -242,7 +323,7 @@ export type GateBranch = Record<string, Json>
  */
 export class GateBuilder {
   readonly variables: string[]
-  readonly branches: GateBranch[] = []
+  readonly branches: (GateBranch | NoFactor)[] = []
 
   constructor(
     readonly selector: string,
@@ -262,16 +343,16 @@ export class GateBuilder {
   }
 
   /** The branch of the next state of the selector. */
-  add(branch: GateBranch): void {
+  add(branch: GateBranch | NoFactor): void {
     this.branches.push(branch)
   }
 
   /** The `gate` factor: arguments the selector and the variables, one branch per state. */
-  factor(): FactorSpec {
+  factor(): CompilerFactor {
     return {
       operator: 'gate',
       args: [this.selector, ...this.variables],
-      params: { arity: this.variables.length, branches: this.branches },
+      params: { arity: this.variables.length, branches: this.branches as unknown as Json },
     }
   }
 }
@@ -280,7 +361,7 @@ export class GateBuilder {
  * The gate of a discrete variable `name` whose state is chosen by `selector` among Dirichlet rows `rowVars`: branch `j` is the
  * conjugate `discrete` factor of `name` on row `j` (a transition matrix to learn, or the words of a topic model).
  */
-export function discreteRowGate(selector: string, name: string, rowVars: readonly string[]): FactorSpec {
+export function discreteRowGate(selector: string, name: string, rowVars: readonly string[]): CompilerFactor {
   const gate = new GateBuilder(selector, [name, ...rowVars])
   for (const j of rowVars.keys()) gate.add({ operator: 'discrete', args: [0, 1 + j], params: {} })
   return gate.factor()
@@ -291,7 +372,7 @@ export function precisionFactor(
   name: string,
   mean: string | { readonly const: number },
   tau: { readonly variable: string; readonly scale: number; readonly offset: number },
-): FactorSpec {
+): CompilerFactor {
   const params: Record<string, Json> = {}
   if (tau.scale !== 1) params['scale'] = tau.scale
   if (tau.offset !== 0) params['offset'] = tau.offset
@@ -307,7 +388,7 @@ export function precisionFactor(
  * gamma variable) and the precision `scale tau + offset`. Unlike the factor of `precisionFactor`, a branch always names both parameters.
  */
 export function precisionBranch(
-  args: readonly Json[],
+  args: GateBranch['args'],
   tau: { readonly scale: number; readonly offset: number },
 ): GateBranch {
   return { operator: 'gaussian-gamma-precision', args, params: { scale: tau.scale, offset: tau.offset } }

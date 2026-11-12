@@ -23,9 +23,10 @@
  *   entry of the operator registry in `operators.ts`) and `custom` calls. Distribution parameters are expressions; the
  *   `family` names an entry of the family table in `families.ts`, whose parameter names are those of the library's
  *   constructors (`normal`: `loc`, `scale`; `bernoulli`: `probs` or `logits`).
- * - **Factor graph hooks** (for `probprog/model/factors.ts`): a node's distribution `family` and an operator's `op` are
- *   the names a message-passing factor registry is keyed by; an `OperatorDef.factor` may name a different factor
- *   operator when the two differ. A node whose expression holds a `custom` call, or a family with no
+ * - **Factor graph hooks** (for `probprog/model/factors.ts`): the compiler maps a node's distribution `family` and an
+ *   operator's `op` to message-passing factors by its own tables (`factor-graph/_table.ts`); an `OperatorDef.factor` names the
+ *   factor operator (an `OperatorName`, checked by `tsc` and by a test) that implements an operator whose factor has another name
+ *   (`add` is the factor `plus`). A node whose expression holds a `custom` call, or a family with no
  *   exponential-family form, is opaque to message passing. `analyseSpec` reports these.
  *
  * @index structure ModelSpec: a JSON-able graph of data, latent, observed, derived and scan nodes with named dims.

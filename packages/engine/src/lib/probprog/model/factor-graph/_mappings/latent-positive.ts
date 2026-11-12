@@ -53,7 +53,7 @@ export function latentNormalGamma(cx: Context, node: ModelNode & { readonly kind
   cx.normalGammaByMean.set(mean.name, plan)
   for (const name of plan.observed) cx.normalGammaObserved.set(name, { plan, multiple: multiples.get(name) as number })
   cx.g.addVariable({ name: plan.variable, family: { kind: 'normal-gamma' } })
-  cx.g.addFactor(normalGammaPrior(plan.variable, m, plan.kappa, a, b), plan.variable)
+  cx.g.addLibraryFactor(normalGammaPrior(plan.variable, m, plan.kappa, a, b), plan.variable)
   cx.layout(node, 'latent', 'normal-gamma', 'scalar', [plan.variable], true, {
     part: 'precision',
     ...(inverse ? { reciprocal: true } : {}),
@@ -87,7 +87,7 @@ export function latentKnownPrior(cx: Context, node: ModelNode & { readonly kind:
       fam === 'beta'
         ? priorFactor(name, betaEta(p[0] as number, p[1] as number))
         : gammaPrior(name, p[0] as number, p[1] as number)
-    cx.g.addFactor(f, name)
+    cx.g.addLibraryFactor(f, name)
     cells.push(inverse ? { kind: 'recip', variable: name, scale: 1 } : { kind: 'rv', variable: name, family: kind })
     vars.push(name)
   }

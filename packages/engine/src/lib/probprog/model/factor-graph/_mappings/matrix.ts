@@ -78,7 +78,7 @@ export function latentMultivariateNormal(cx: Context, node: ModelNode & { readon
   } else throw precisionGivenForNormal(node.name)
   if (cov.length !== n * n) throw covarianceNotSquare(node.name, n)
   cx.g.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
-  cx.g.addFactor(gaussianMvPrior(node.name, mean, cov), node.name)
+  cx.g.addLibraryFactor(gaussianMvPrior(node.name, mean, cov), node.name)
   cx.syms.set(node.name, {
     dims: node.dims,
     cells: Array.from({ length: n }, (_, j) => cx.g.compAtom(node.name, j, n)),

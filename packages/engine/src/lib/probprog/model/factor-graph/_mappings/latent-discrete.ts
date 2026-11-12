@@ -44,7 +44,7 @@ export function latentDirichlet(cx: Context, node: ModelNode & { readonly kind: 
       name: cx.elementName(node.name, node.dims, i),
       family: { kind: 'dirichlet', size: alpha.length },
     })
-    cx.g.addFactor(dirichletPrior(name, alpha), name)
+    cx.g.addLibraryFactor(dirichletPrior(name, alpha), name)
     cells.push({ kind: 'rv', variable: name, family: 'dirichlet' })
     vars.push(name)
   }
@@ -185,7 +185,7 @@ export function latentCategorical(cx: Context, node: ModelNode & { readonly kind
         name: cx.elementName(node.name, node.dims, i),
         family: { kind: 'discrete', size: probs.length },
       })
-      cx.g.addFactor(discretePrior(name, probs), name)
+      cx.g.addLibraryFactor(discretePrior(name, probs), name)
       cells.push({ kind: 'rv', variable: name, family: 'discrete' })
       vars.push(name)
     }

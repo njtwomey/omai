@@ -33,7 +33,7 @@ export type RefusalCode =
   | 'random-parameter'
   /** A parameter or value that is not in the form the mapping takes (an idiom, a latent of a given family, a linear map, a known multiple). */
   | 'wrong-form'
-  /** The operator registry lacks an operator the compiler needs. */
+  /** The operator registry lacks an operator the compiler needs, or the engine refuses a factor the compiler built (an invalid parameter). */
   | 'registry'
   /** The evaluation of an expression that must be known reached a random value. */
   | 'random-value'

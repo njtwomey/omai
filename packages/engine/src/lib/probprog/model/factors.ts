@@ -42,10 +42,8 @@ import type { SpecAnalysis } from './analysis.ts'
 import type { BoundModel } from './bind.ts'
 import { eventToDims } from './event-dims.ts'
 import { Context } from './factor-graph/_context.ts'
-import { derived } from './factor-graph/_mappings/derived.ts'
-import { logDensityTermHasNoOperator, paramNodeHasNoFactor } from './factor-graph/_reasons.ts'
 import { Refusal } from './factor-graph/_refusal.ts'
-import { mapLatent, mapObserved } from './factor-graph/_table.ts'
+import { mapNode } from './factor-graph/_table.ts'
 import type { FactorGraphCompilation } from './factor-graph/types.ts'
 import { defaultOperators, type OperatorTable } from './operators.ts'
 import { ScanUnrollError, unrollScans } from './scan.ts'
@@ -73,37 +71,12 @@ class Compiler {
       this.cx.current = node.name
       this.cx.position = position
       try {
-        this.node(node)
+        mapNode(this.cx, node)
       } catch (e) {
         if (!(e instanceof Refusal)) throw e
         this.cx.issues.push({ node: node.name, kind: e.kind, code: e.code, reason: e.message })
         this.cx.failed.add(node.name)
       }
-    }
-  }
-
-  private node(node: ModelNode): void {
-    switch (node.kind) {
-      case 'data':
-        // Bound data is known from the start (`knownConstants`): nothing to map.
-        return
-      case 'latent':
-        // A standard normal vector that a non-centred derived node absorbs is compiled by that node only if the dense factor does not apply.
-        if ([...this.cx.nonCentred.values()].includes(node.name)) return
-        mapLatent(this.cx, node)
-        return
-      case 'derived':
-        derived(this.cx, node, (z) => mapLatent(this.cx, z))
-        return
-      case 'observed':
-        mapObserved(this.cx, node)
-        return
-      case 'generated':
-        return
-      case 'param':
-        throw paramNodeHasNoFactor(node.name)
-      case 'factor':
-        throw logDensityTermHasNoOperator(node.name)
     }
   }
 }

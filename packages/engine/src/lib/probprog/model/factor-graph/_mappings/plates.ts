@@ -68,7 +68,7 @@ export function plate(
 }
 
 export function addPlated(cx: Context, node: ModelNode & { readonly kind: 'observed' }, f: FactorSpec): void {
-  cx.g.addFactor(f, node.name)
+  cx.g.addLibraryFactor(f, node.name)
   cx.plated.push(node.name)
   cx.layout(node, 'observed', undefined, 'observed', new Array<null>(prod(cx.shapeOf(node.dims))).fill(null), false)
 }

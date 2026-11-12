@@ -9,16 +9,9 @@
 
 import { OmaiError } from '../../../base/index.ts'
 import type { OperatorName } from '../../../message-passing/index.ts'
-import type { ModelNode } from '../spec.ts'
 import type { BuilderCheckpoint } from './_builder.ts'
 import type { Context } from './_context.ts'
 import { Refusal } from './_refusal.ts'
-
-/** A latent node of the spec. */
-export type LatentNode = ModelNode & { readonly kind: 'latent' }
-
-/** An observed node of the spec. */
-export type ObservedNode = ModelNode & { readonly kind: 'observed' }
 
 /** The answer of an entry that tried a node and found it is not its pattern. */
 export const NOT_MINE: unique symbol = Symbol('not-mine')

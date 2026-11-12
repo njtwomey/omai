@@ -402,9 +402,13 @@ export const zeroTruncatedRateForm = (node: string): Refusal =>
     node,
   })
 
-// ----- registry: The operator registry lacks an operator the compiler needs. -----
+// ----- registry: The operator registry lacks an operator the compiler needs, or the engine refuses a factor the compiler built. -----
 export const noOperator = (name: string): Refusal =>
   new Refusal('registry', `the message-passing registry has no factor operator '${name}'`, { name })
+
+/** The engine refuses a factor the compiler built: the message is what `compileGraph` says of it (a parameter, an arity, a family a port does not take, the operator's own check). */
+export const factorRejected = (factor: string, message: string): Refusal =>
+  new Refusal('registry', `the factor '${factor}' is not one the engine takes: ${message}`, { factor, message })
 
 // ----- random-value: The evaluation of a known expression reached a random value. -----
 export const observedValueRandom = (node: string, message: string): Refusal =>

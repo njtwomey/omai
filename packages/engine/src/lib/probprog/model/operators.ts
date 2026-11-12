@@ -11,6 +11,7 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
+import type { OperatorName } from '../../message-passing/index.ts'
 import { ndtr } from '../../numerics/special/index.ts'
 import {
   abs,
@@ -70,8 +71,12 @@ export interface OperatorDef {
   /** The number of arguments: exactly `arity`. */
   readonly arity: number
   readonly description: string
-  /** The name of the message-passing factor operator that implements this one, when it differs from `name`. */
-  readonly factor?: string
+  /**
+   * The message-passing factor operator that implements this one, when it differs from `name` (an `OperatorName` of the engine's registry,
+   * so a name that is not one fails `tsc`). Absent: the operator has the factor of its own name, or is mapped by the compiler's own rules
+   * (a product, a gate, a matrix product), which `factors.ts` does not read from here.
+   */
+  readonly factor?: OperatorName
   /** The dimensions of the result for arguments of these dimensions; throws `OmaiError('shape')` when they do not fit. */
   shape(args: readonly NamedShape[], params: OpParams): NamedShape
   /** The value of the operator on tensors, by the library's tensor ops. */
@@ -142,7 +147,7 @@ function elementwise(
   arity: number,
   description: string,
   fn: (...xs: Value[]) => Value,
-  extra: { readonly factor?: string } = {},
+  extra: { readonly factor?: OperatorName } = {},
 ): OperatorDef {
   return {
     name,
@@ -198,7 +203,6 @@ const matmulOperator: OperatorDef = {
   name: 'matmul',
   arity: 2,
   description: 'matrix product contracting the last dimension of the left operand with the first of the right',
-  factor: 'matmul',
   shape: ([a, b]) => {
     const x = a as NamedShape
     const y = b as NamedShape
@@ -233,7 +237,6 @@ const atOperator: OperatorDef = {
   arity: 2,
   description:
     'gather: the entries of the first operand (along its first dimension) at the integer codes of the second',
-  factor: 'at',
   shape: ([a, i]) => {
     const x = a as NamedShape
     const idx = i as NamedShape
@@ -255,7 +258,6 @@ const pickOperator: OperatorDef = {
   arity: 2,
   description:
     'along the last dimension of the first operand, the entry that the integer codes of the second name (the prediction of the class each row belongs to)',
-  factor: 'pick',
   shape: ([a, i]) => {
     const x = a as NamedShape
     const idx = i as NamedShape
@@ -366,7 +368,8 @@ const PROBIT_CEILING = 1 - Number.EPSILON / 2
  * elementwise functions (`exp`, `log`, `sqrt`, `square`, `abs`, `tanh`), links (`sigmoid`, `probit` (the standard normal
  * CDF, the inverse probit link), `softplus`), comparisons (`gt`, `lt`, `eq`), `where` and `clip`, reductions over a named
  * dimension (`sum`, `mean`), `matmul`, the gather `at` and `matvec` and `dot` (a known matrix or vector applied to a vector that is one event: a linear dynamical system's step and reading), `pick` (the entry of the last dimension that an index names: the branch a class selects) and `stickBreaking` (the weights of a stick-breaking process from its break fractions). Elementwise operators align operands by dimension name.
- * Message-passing factors for these are keyed by the same names.
+ * The factor operator that implements an operator is `OperatorDef.factor` where it differs from the name (`add` is `plus`, `sub` is
+ * `difference`, `sigmoid` is `logistic`, `gt` is `greater-than`); the arithmetic that has none (`mul`, `matmul`, `at`, `pick`) the compiler maps itself.
  *
  * @returns The operator table (a fresh object each call, so it can be extended without side effects).
  * @concept model-spec
@@ -380,7 +383,7 @@ export function defaultOperators(): Record<string, OperatorDef> {
   const defs: OperatorDef[] = [
     elementwise('add', 2, 'a + b', (a, b) => add(a, b), { factor: 'plus' }),
     elementwise('sub', 2, 'a - b', (a, b) => sub(a, b), { factor: 'difference' }),
-    elementwise('mul', 2, 'a * b', (a, b) => mul(a, b), { factor: 'times' }),
+    elementwise('mul', 2, 'a * b', (a, b) => mul(a, b)),
     elementwise('div', 2, 'a / b', (a, b) => div(a, b)),
     elementwise('pow', 2, 'a to the power b', (a, b) => pow(a, b)),
     elementwise('maximum', 2, 'the larger of a and b', (a, b) => maximum(a, b), { factor: 'max' }),

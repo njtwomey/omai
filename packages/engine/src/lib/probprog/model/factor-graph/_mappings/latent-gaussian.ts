@@ -5,9 +5,9 @@
  */
 
 import type { Json } from '../../../../base/index.ts'
-import { type FactorSpec, gaussianMvPrior, gaussianPrior } from '../../../../message-passing/index.ts'
+import { type FactorSpec, type GateBranch, gaussianMvPrior, gaussianPrior } from '../../../../message-passing/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
-import { type GateBranch, GateBuilder, precisionBranch, precisionFactor } from '../_builder.ts'
+import { GateBuilder, precisionBranch, precisionFactor } from '../_builder.ts'
 import { affOf, type Cell, combine, isConstCell, logName, type Precision, prod } from '../_cells.ts'
 import type { Context } from '../_context.ts'
 import { precisionExpr, stripClip } from '../_idioms.ts'
@@ -88,13 +88,13 @@ export function latentProjected(cx: Context, node: ModelNode & { readonly kind: 
     if (positive) {
       const l = cx.g.auxName(node.name, site === undefined ? undefined : site(i))
       cx.g.addVariable({ name: l, family: { kind: 'gaussian' } })
-      if (fam === 'logNormal') cx.g.addFactor(gaussianPrior(l, p('mu'), p('sigma') ** 2), l)
-      else cx.g.addFactor(priorFactor(l, true), l)
+      if (fam === 'logNormal') cx.g.addLibraryFactor(gaussianPrior(l, p('mu'), p('sigma') ** 2), l)
+      else cx.g.addLibraryFactor(priorFactor(l, true), l)
       cx.g.need('apply')
       cx.g.addFactor({ operator: 'apply', args: [name, l], params: { fn: 'exp' } }, name)
       cx.logScale.set(name, l)
       logCells.push(cx.g.varAtom(l))
-    } else cx.g.addFactor(priorFactor(name, false), name)
+    } else cx.g.addLibraryFactor(priorFactor(name, false), name)
     cells.push(cx.g.varAtom(name))
     vars.push(name)
   }
@@ -176,7 +176,7 @@ export function latentNormal(cx: Context, node: ModelNode & { readonly kind: 'la
     const cov = new Array<number>(n * n).fill(0)
     for (let i = 0; i < n; i++) cov[i * n + i] = (scale[i] as number) ** 2
     cx.g.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
-    cx.g.addFactor(gaussianMvPrior(node.name, mean, cov), node.name)
+    cx.g.addLibraryFactor(gaussianMvPrior(node.name, mean, cov), node.name)
     cx.syms.set(node.name, {
       dims: node.dims,
       cells: Array.from({ length: n }, (_, j) => cx.g.compAtom(node.name, j, n)),
@@ -206,7 +206,7 @@ export function latentNormal(cx: Context, node: ModelNode & { readonly kind: 'la
         gate.add({ operator: 'gaussian', args: [0, mean], params: { precision: 1 / variance } })
       }
       cx.g.addFactor(gate.factor(), name)
-    } else if (isConstCell(l)) cx.g.addFactor(gaussianPrior(name, l.aff.offset, variance), name)
+    } else if (isConstCell(l)) cx.g.addLibraryFactor(gaussianPrior(name, l.aff.offset, variance), name)
     else {
       const m = cx.g.materialise(affOf(l), node.name, node.dims.length === 0 ? undefined : i)
       cx.g.addFactor({ operator: 'gaussian', args: [name, m as string], params: { precision: 1 / variance } }, name)
@@ -243,7 +243,7 @@ export function latentGrouped(
     })
     cx.g.addVariable({ name: group.vector, family: { kind: 'gaussian-mv', size } })
     cx.g.auxiliary.push(group.vector)
-    cx.g.addFactor(gaussianMvPrior(group.vector, mean, cov), group.vector)
+    cx.g.addLibraryFactor(gaussianMvPrior(group.vector, mean, cov), group.vector)
     group.members.forEach((m, k) => {
       cx.g.addVariable({ name: m, family: { kind: 'gaussian' } })
       const a = new Array<number>(size).fill(0)
@@ -387,7 +387,7 @@ export function latentRandomScale(
     const name = cx.elementName(node.name, node.dims, i)
     const z = cx.g.auxName(node.name, index)
     cx.g.addVariable({ name: z, family: { kind: 'gaussian' } })
-    cx.g.addFactor(gaussianPrior(z, 0, 1), z)
+    cx.g.addLibraryFactor(gaussianPrior(z, 0, 1), z)
     const zAtom = cx.g.atomKey({ kind: 'var', name: z })
     cx.g.atoms.set(zAtom, { kind: 'var', name: z })
     const scale = affOf(c)

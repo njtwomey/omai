@@ -5,7 +5,7 @@
  */
 
 import type { Json } from '../../../../base/index.ts'
-import { likelihoods, pairLikelihoods } from '../../../../message-passing/index.ts'
+import { likelihoods, type OperatorName, pairLikelihoods } from '../../../../message-passing/index.ts'
 import { toFlat } from '../../../../tensor/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
 import { type Atom, affOf, type Cell, isConstCell, prod } from '../_cells.ts'
@@ -313,8 +313,8 @@ export function emitSite(
   predictor: Cell,
   i: number,
   index: number | undefined,
-  row: string,
-  site: string,
+  row: OperatorName,
+  site: OperatorName,
   params: Record<string, Json>,
 ): string | null {
   if (isConstCell(predictor)) return null

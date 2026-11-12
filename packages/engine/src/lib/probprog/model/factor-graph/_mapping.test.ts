@@ -35,7 +35,7 @@ const shape = (cx: Context): unknown => ({
 const leaveResidue = (cx: Context, site: string): string => {
   const name = cx.g.auxName(site, undefined)
   cx.g.addVariable({ name, family: { kind: 'gaussian' } })
-  cx.g.addFactor({ operator: 'dot-constant', args: [name, 'x'], params: { a: [1] } }, name)
+  cx.g.addFactor({ operator: 'prior', args: [name], params: { eta: [0, 1] } }, name)
   cx.g.varAtom(name)
   cx.applied.set(name, { input: 'x', steps: [] })
   cx.cells.set(`${site}|probe`, [])
@@ -45,7 +45,7 @@ const leaveResidue = (cx: Context, site: string): string => {
 describe('GraphBuilder checkpoint and restore', () => {
   it('cuts the graph back to what it held, with the names, the components and the counters of auxiliary names', () => {
     const cx = cxOf()
-    cx.g.addVariable({ name: 'x', family: { kind: 'gaussian' } })
+    cx.g.addVariable({ name: 'x', family: { kind: 'gaussian-mv', size: 2 } })
     const first = cx.g.auxName('y', undefined)
     const before = cx.g.checkpoint()
     const snapshot = shape(cx)
