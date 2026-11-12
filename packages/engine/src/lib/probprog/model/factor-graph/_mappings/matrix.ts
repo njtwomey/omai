@@ -273,7 +273,7 @@ export function plateVectors(
   cx: Context,
   node: ModelNode & { readonly kind: 'observed' },
   nv: NamedValue,
-  d: number,
+  _d: number,
   mean: { readonly at: (row: number) => string | { readonly const: readonly number[] }; readonly shared: boolean },
   operator: string,
   tail: readonly (string | { readonly const: number })[],
