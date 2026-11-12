@@ -91,7 +91,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `ensembleSliceMethod`: Ensemble slice sampling with a tuned direction scale as a steppable method. `src/lib/probprog/inference/ensemble-methods.ts:125` `omai-engine/probprog/inference`
 - estimator `enumerationMethod`: Exact enumeration of discrete models by a junction tree, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:134` `omai-engine/probprog/inference`
 - estimator `epGridMethod`: Expectation propagation inside an evidence-weighted grid over the hyperparameters of a model. `src/lib/probprog/inference/ep-grid.ts:447` `omai-engine/probprog/inference`
-- estimator `epMultiStartMethod`: Expectation propagation from several starts, the fixed points weighted by their evidence. `src/lib/probprog/inference/ep-multistart.ts:288` `omai-engine/probprog/inference`
+- estimator `epMultiStartMethod`: Expectation propagation from several starts, the fixed points weighted by their evidence. `src/lib/probprog/inference/ep-multistart.ts:345` `omai-engine/probprog/inference`
 - estimator `epSpecMethod`: Expectation propagation on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:318` `omai-engine/probprog/inference`
 - estimator `gaussianMethod`: Exact linear-Gaussian conditioning, Kalman and Gaussian BP, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:85` `omai-engine/probprog/inference`
 - estimator `gibbsMethod`: Gibbs sampling, one sweep per step, resumable, with anytime draws. `src/lib/probprog/inference/gibbs-method.ts:89` `omai-engine/probprog/inference`
@@ -163,7 +163,7 @@ The model layer: a model written once as a value. A builder (`defineModel`) with
 - function `defineModel`: Build a model spec with named dimensions, data, latents, observations and derived nodes. `src/lib/probprog/model/builder.ts:741` `omai-engine/probprog/model`
 - function `fromProgram`: fromProgram: lift a sample/observe program to a ModelSpec of its site structure; refuses a varying structure. `src/lib/probprog/model/from-program.ts:185` `omai-engine/probprog/model`
 - function `structureReport`: structureReport: what a spec's structure allows, as records and suggestions naming the method to use. `src/lib/probprog/model/analysis.ts:476` `omai-engine/probprog/model`
-- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:124` `omai-engine/probprog/model`
+- function `toFactorGraph`: Compile a bound ModelSpec to a message-passing factor graph, plates expanded. `src/lib/probprog/model/factors.ts:125` `omai-engine/probprog/model`
 - function `toProgram`: Compile a bound ModelSpec to a sample/observe program every engine runs. `src/lib/probprog/model/compile.ts:267` `omai-engine/probprog/model`
 
 ### probprog/model/dists

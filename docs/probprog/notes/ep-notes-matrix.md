@@ -83,3 +83,25 @@ the `plate` and `addPlated` machinery, `eventVector`, the atom scaffold (`define
 Sections 3's two limits moved: with a random population mean the group vectors, the mean and the matrix are now one factor (`mvn-wishart-group`), which removes the loop that made the mean too narrow and the
 matrix too wide with few groups (the changelog has the numbers), and dimension 4 is allowed (three nodes per coordinate). The gap `hierarchical-matrix-few-groups` became `correlation-strong-few-pairs` (the beta
 belief of a strong correlation); `matrix-larger` lists what stays out (dimension 5, LKJ of order 3, a latent bivariate vector with its own sds and correlation, a normal-Wishart variable in a larger model).
+
+## 6. Update (2026-11-12, `agent-a6b87c-corr`)
+
+**The correlation's belief.** Section 3's strong-correlation limit is fixed for the spread: `mvn-sd-corr` matches the beta on `(rho + 1) / 2` to the tilted mean and variance of the
+correlation (`match: 'moments'`, the default), not to `E log u` and `E log (1 - u)` (the KL projection, `match: 'log-moments'`). Measured against the exact grid posterior (known sds,
+unit variances, 4 seeds each, 2 to 10 pairs): the KL beta had a sd ratio (mean over seeds) 0.54 to 0.98 at rho 0.7 to 0.99 (0.91 to 0.99 at 0.3 and 0.5; single seeds down to 0.45), the new one 1.000 everywhere, mean z 0.00 (0.02 to 0.03
+before), evidence within 0.001 nats, two sweeps. The belief's curve is the cost: at rho 0.99 from five pairs the 5% and 95% points of the beta with the right spread are 0.4 of an exact
+sd off, and its own Kolmogorov distance 0.4 (0.15 for the KL beta). A Gaussian on the Fisher transform (the logit of `u`) with the beta prior as a numeric site was built and measured, and dropped: its
+curve is the best (0.04 to 0.19), but the two-site fixed point is off 1% to 8% in spread, 0.005 to 0.08 nats in evidence, and slow at rho 0.99 from two to ten pairs (10 to 60 sweeps).
+
+**The learned atom's reference was wrong for a strong correlation.** The atom `bivariate-correlation-learned` is checked against a three-pass grid with equal steps in the precisions and in rho,
+and the grid's spread of a correlation of 0.95 from eight pairs was 0.033 where an independent grid in the logs and the Fisher transform (100 to 200 nodes a side, stable to five figures) has 0.0429 (EP:
+0.0417); its mean mixture kept the heaviest 6000 nodes and was 3% to 5% off. `posterior3` takes a `warp` per coordinate (`log`, `correlation`: equal steps in `2 atanh(rho)`) and a
+`mixtureNodes` limit; the learned bivariate atom uses them, no other atom does (their digest lines are identical to the bit). The 0.89 of the exact spread this atom showed at rho 0.9 was against this reference; the KL beta's true ratio there was about 0.83.
+
+**The group form.** `mvn-sd-corr-group` is the joint site of `J` bivariate vectors with a shared Gaussian mean and the two gamma precisions and the beta correlation of one covariance: the closed-form
+integral over the vectors and the mean at a node (the evaluator of `mvn-wishart-group`, moved to `_group.ts`), a panelled grid over the three parameters (`mvn-sd-corr`'s, `_sdcorr.ts`), each vector and
+the mean matched to the mixture of their conditionals over the nodes, one tilt for all ports of a sweep. The compiler maps a latent `bivariateNormal` over `dims: [group, coef]` to it when the mean is
+one Gaussian vector variable (a known mean: a factor per vector). Tested against a dense joint-Gaussian grid (the operator, two and three vectors; `J = 1` is `mvn-sd-corr` to 1e-9) and, as a model of
+four groups with readings, against a grid over the parameters with the vectors and the mean integrated out densely: the mean, the correlation, each precision and a vector within 3% of the exact spread
+and 0.06 sd of the exact mean, 20 sweeps, under a second. What stays out: an LKJ prior of order 3 (the correlations of a larger matrix), vectors of more than two coordinates with their own sds and
+correlation, and a second factor on the same precisions or correlation (a loop, as everywhere in EP).

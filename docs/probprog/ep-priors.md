@@ -140,6 +140,6 @@ covariance atoms; the logistic-normal categorical, `softmax-regression`). What i
    above says how to write it by hand).
 2. The normal-gamma pair with per-observation known multiples that are data vectors (heteroscedastic known weights): scalar multiples
    only today; a vector of weights compiles to the mean-field-like hierarchy.
-3. Larger matrices and what is left of the softmax (the variational rule beyond six classes, the probit with a power, a joint message
+3. Larger matrices and what is left of the softmax (the probit with a power, a joint message
    over the classes of an observation): the gaps `matrix-larger` and `softmax-many-classes` (`ep-gaps.ts`, listed with their plans in
    `ep-status.md`).

@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { type BruteBelief, bruteExpectation } from '../../../../testing/message-passing.ts'
+import { logNdtr } from '../../../numerics/special/_kernels.ts'
 import * as M from '../../index.ts'
 import { lgammaOf } from '../../numerics/_scalar.ts'
 
@@ -127,7 +128,10 @@ function perturbed(etas: readonly (readonly number[])[], at: [number, number], b
  * every natural parameter is zero (a central difference), and the bound does not rise under perturbations of the beliefs. Also that the
  * engine's bound is the brute-force one there.
  */
-function expectStationary(s: Setup, options: { damping?: number; gradient?: number; bound?: number } = {}): void {
+function expectStationary(
+  s: Setup,
+  options: { damping?: number; gradient?: number; bound?: number; ascent?: number } = {},
+): void {
   const { etas, bound } = fit(s, options.damping ?? 0)
   const here = bruteBound(s, etas)
   expect(bound).toBeCloseTo(here, Math.round(-Math.log10(options.bound ?? 1e-5)))
@@ -144,7 +148,7 @@ function expectStationary(s: Setup, options: { damping?: number; gradient?: numb
       for (const by of [0.04, -0.04]) {
         const moved = perturbed(etas, [i, j], by)
         const proper = moved.every((m, k) => familyOf(s.free[k] as Var).isProper(m))
-        if (proper) expect(bruteBound(s, moved)).toBeLessThan(here + 1e-9)
+        if (proper) expect(bruteBound(s, moved)).toBeLessThan(here + (options.ascent ?? 1e-9))
       }
 }
 
@@ -436,6 +440,28 @@ describe('the softmax over class scores', () => {
       logf: (z) => {
         const top = Math.max(...z)
         return (z[1] as number) - top - Math.log(z.reduce((a, v) => a + Math.exp(v - top), 0))
+      },
+    })
+  })
+})
+
+describe('the softmax beyond six classes (the auxiliary rule: no product grid)', () => {
+  it('multiclass-site: eight classes, two random scores and six known, the observed class a random one', () => {
+    const known = { k2: 1.2, k3: -0.7, k4: 0.4, k5: 0, k6: 0.9, k7: -1.5 }
+    const z = (a: number, b: number): number[] => [a, b, ...Object.values(known)]
+    expectStationary({
+      free: [
+        { name: 'z0', kind: 'gaussian', prior: g(0.3, 1.2) },
+        { name: 'z1', kind: 'gaussian', prior: g(-0.2, 0.8) },
+      ],
+      observed: known,
+      operator: 'multiclass-site',
+      args: ['z0', 'z1', ...Object.keys(known)],
+      params: { y: 1, classes: 8 },
+      logf: ([a, b]) => {
+        const all = z(a as number, b as number)
+        const top = Math.max(...all)
+        return (all[1] as number) - top - Math.log(all.reduce((acc, v) => acc + Math.exp(v - top), 0))
       },
     })
   })
@@ -773,6 +799,126 @@ describe('a mixture density as one factor, and a regression row', () => {
       const expanded = run(expandedGraph)
       for (const [i, v] of row.entries()) expect(v, `${c.row} entry ${i}`).toBeCloseTo(expanded[i] as number, 6)
     }
+  })
+})
+
+describe('the Student-t with a random scale and degrees of freedom, and the ordinal with random cut points', () => {
+  const studentT = (y: number, df: number) => (u: number, logScale: number) => {
+    const z = (y - u) * Math.exp(-logScale)
+    return (
+      lgammaOf((df + 1) / 2) -
+      lgammaOf(df / 2) -
+      0.5 * Math.log(df * Math.PI) -
+      logScale -
+      ((df + 1) / 2) * Math.log1p((z * z) / df)
+    )
+  }
+  // The engine's quadrature for two free ports is 24 Gauss-Hermite nodes each and 12 for three: against the brute-force rule the heavy
+  // tails cost 5e-4 nats of the bound (two ports) and 3.5e-3 (three), which the tolerances below allow.
+  it('student-t-scale: a random location and a random log scale (heavy tails: damped)', () => {
+    const y = 1.3
+    const density = studentT(y, 3)
+    expectStationary(
+      {
+        free: [
+          { name: 'u', kind: 'gaussian', prior: g(0.4, 1.5) },
+          { name: 's', kind: 'gaussian', prior: g(-0.2, 0.6) },
+        ],
+        operator: 'likelihood-pair',
+        args: ['u', 's'],
+        params: { likelihood: 'student-t-scale', y, df: 3 },
+        logf: ([u, s]) => density(u as number, s as number),
+      },
+      { damping: 0.3, bound: 5e-3, gradient: 1e-3 },
+    )
+  })
+  it('student-t-scale: a gamma scale (the log density reads its log)', () => {
+    const y = -0.8
+    const density = studentT(y, 5.5)
+    expectStationary(
+      {
+        free: [
+          { name: 'u', kind: 'gaussian', prior: g(0, 1.2) },
+          { name: 's', kind: 'gamma', prior: lgam(4, 5), log: true, panels: 12 },
+        ],
+        operator: 'likelihood-pair',
+        args: ['u', 's'],
+        params: { likelihood: 'student-t-scale', y, df: 5.5 },
+        logf: ([u, s]) => density(u as number, s as number),
+      },
+      { damping: 0.3, bound: 5e-4, gradient: 1e-3 },
+    )
+  })
+  it('student-t-full: a random location, log scale and log degrees of freedom', () => {
+    const y = 1.2
+    expectStationary(
+      {
+        free: [
+          { name: 'u', kind: 'gaussian', prior: g(0.3, 0.8), panels: 8 },
+          { name: 's', kind: 'gaussian', prior: g(-0.6, 0.4), panels: 8 },
+          { name: 'nu', kind: 'gaussian', prior: g(0.8, 0.5), panels: 8 },
+        ],
+        operator: 'likelihood-triple',
+        args: ['u', 's', 'nu'],
+        params: { likelihood: 'student-t-full', y },
+        logf: ([u, s, nu]) => studentT(y, Math.exp(nu as number))(u as number, s as number),
+      },
+      { damping: 0.3, bound: 1e-2, gradient: 6e-3, ascent: 1e-4 },
+    )
+  })
+  // The first and the last category have one cut: a smooth density. A category between two cuts is refused (zero out of order).
+  it('ordinal-probit-cuts: the first category (the upper cut random, the lower one ignored)', () => {
+    expectStationary({
+      free: [
+        { name: 'u', kind: 'gaussian', prior: g(0.2, 1.4) },
+        { name: 'hi', kind: 'gaussian', prior: g(0.5, 1) },
+      ],
+      observed: { lo: 0 },
+      operator: 'likelihood-triple',
+      args: ['u', 'lo', 'hi'],
+      params: { likelihood: 'ordinal-probit-cuts', y: 0, categories: 3 },
+      logf: ([u, hi]) => logNdtr((hi as number) - (u as number)),
+    })
+  })
+  it('ordinal-probit-cuts: the last category (the lower cut random, the upper one ignored)', () => {
+    expectStationary({
+      free: [
+        { name: 'u', kind: 'gaussian', prior: g(0.2, 1.4) },
+        { name: 'lo', kind: 'gaussian', prior: g(-0.4, 0.9) },
+      ],
+      observed: { hi: 0 },
+      operator: 'likelihood-triple',
+      args: ['u', 'lo', 'hi'],
+      params: { likelihood: 'ordinal-probit-cuts', y: 2, categories: 3 },
+      logf: ([u, lo]) => logNdtr((u as number) - (lo as number)),
+    })
+  })
+  it('ordinal-logit-cuts: the last category', () => {
+    const logSigmoid = (x: number): number => -Math.log1p(Math.exp(-x))
+    expectStationary({
+      free: [
+        { name: 'u', kind: 'gaussian', prior: g(0.2, 1.4) },
+        { name: 'lo', kind: 'gaussian', prior: g(-0.4, 0.9) },
+      ],
+      observed: { hi: 0 },
+      operator: 'likelihood-triple',
+      args: ['u', 'lo', 'hi'],
+      params: { likelihood: 'ordinal-logit-cuts', y: 2, categories: 3 },
+      logf: ([u, lo]) => logSigmoid((u as number) - (lo as number)),
+    })
+  })
+  it('a category between two cuts has no mean-field message and says why; the rest of the registry does', () => {
+    const triple = operators['likelihood-triple'] as M.FactorOperator
+    expect(triple.unsupported?.('vmp', { likelihood: 'ordinal-probit-cuts', y: 1, categories: 3 })).toMatch(
+      /zero where they are out of order/,
+    )
+    expect(triple.unsupported?.('vmp', { likelihood: 'ordinal-logit-cuts', y: 1, categories: 4 })).toMatch(
+      /out of order/,
+    )
+    for (const y of [0, 2])
+      expect(triple.unsupported?.('vmp', { likelihood: 'ordinal-logit-cuts', y, categories: 3 })).toBeUndefined()
+    expect(triple.unsupported?.('vmp', { likelihood: 'student-t-full', y: 1 })).toBeUndefined()
+    expect(triple.unsupported?.('ep', { likelihood: 'ordinal-probit-cuts', y: 1, categories: 3 })).toBeUndefined()
   })
 })
 

@@ -6,7 +6,7 @@
 ## Packages
 
 - [omai-engine](packages/engine/llms.txt): omai compute: tensors, autodiff, numerics, probability, learning, neural networks, RL and datasets, all traced.
-  Imports as `omai-engine/<domain>`; 1071 entries in 68 domains; the index files are in `packages/engine/index/`.
+  Imports as `omai-engine/<domain>`; 1073 entries in 68 domains; the index files are in `packages/engine/index/`.
 - [omai-render](packages/render/llms.txt): omai figures: ECharts options, layouts, scene and structure drawing, SVG and animation export; React bindings.
   Imports as `omai-render/<domain>`; 216 entries in 13 domains; the index files are in `packages/render/index/`.
 - omai-meta: omai documentation metadata: schema, docstring extractor, example runner, worker and concepts. Not indexed.

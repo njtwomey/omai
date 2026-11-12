@@ -255,6 +255,30 @@ export function numericMessage(ports: readonly QuadPort[], to: number, logf: (x:
     x[to] = target.coords[i] as number
     g[i] = average(ports, to, x, logf)
   }
+  return naturalGradientMessage(target, g)
+}
+
+/**
+ * The message of a port from the expected log density as a function of its own coordinate, `g(x_to) = E_{q of the others}[log f]` at
+ * each node of the port's quadrature: the natural gradient of `E_q[log f]` in the port's belief, `F^-1 Cov(T, g)`. The part of
+ * {@link numericMessage} after the average over the other ports, for a factor that finds `g` another way (an integral over an
+ * auxiliary variable that keeps the other ports apart, as the softmax's does).
+ *
+ * @param target - The quadrature of the port (a free port).
+ * @param g - The expected log density at each node of `target`.
+ * @returns The message in the natural parameters of the port's family.
+ * @throws ImproperMessageError when the port's statistics are degenerate.
+ * @concept variational-message-passing
+ * @example
+ * ```ts
+ * import { gaussian, gaussianEta, messageArg, naturalGradientMessage, quadraturePort } from 'omai-engine/message-passing'
+ * // g(x) = -(x - 2)^2 is a Gaussian likelihood of mean 2 and precision 2: the message is [4, 2].
+ * const port = quadraturePort(messageArg(gaussian, gaussianEta(0, 1)))
+ * naturalGradientMessage(port, Float64Array.from(port.coords, (x) => -((x - 2) ** 2))).map((v) => v.toFixed(6)) // => ['4.000000', '2.000000']
+ * ```
+ */
+export function naturalGradientMessage(target: QuadPort, g: Float64Array): Eta {
+  const n = target.coords.length
   let g0 = 0
   let t0 = 0
   let t1 = 0
