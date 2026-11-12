@@ -7,9 +7,14 @@
  *   node scripts/banned.ts
  *
  * Tests, scripts and apps are exempt. A line may opt out with a trailing `// allow: <reason>` comment.
+ *
+ * A second check (`scripts/banned-arrays.ts`) fails on hand-built numeric arrays (`new Array`, `.fill(`, `Array.from({`,
+ * typed arrays) in the EP code paths and on hand loops in the code that pages show; a marker
+ * `// banned-ok: <category>: <reason>` on the line above allows an occurrence that is not numeric data.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { arrayProblems, SHOWN_ROOTS } from './banned-arrays.ts'
 
 const ROOT = join(import.meta.dirname, '..')
 const RULES: readonly { readonly pattern: RegExp; readonly message: string; readonly engineOnly?: true }[] = [
@@ -53,6 +58,23 @@ for (const pkg of ['engine', 'render', 'meta']) {
           if (rule.pattern.test(line)) problems.push(`${relative(ROOT, file)}:${i + 1}: ${rule.message}`)
         }
       })
+  }
+}
+// Hand-built numeric arrays: the files of the EP code paths and of the code pages show (tests included in the walk, skipped by the rule).
+const sourcesUnder = (dir: string, out: string[] = []): string[] => {
+  if (!existsSync(dir)) return out
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name)
+    if (name === 'node_modules' || name.startsWith('.')) continue
+    if (statSync(path).isDirectory()) sourcesUnder(path, out)
+    else if (/\.tsx?$/.test(name)) out.push(path)
+  }
+  return out
+}
+for (const root of SHOWN_ROOTS) {
+  for (const file of sourcesUnder(join(ROOT, root))) {
+    const path = relative(ROOT, file)
+    for (const p of arrayProblems(path, readFileSync(file, 'utf8'))) problems.push(`${path}:${p.line}: ${p.message}`)
   }
 }
 if (problems.length > 0) {
