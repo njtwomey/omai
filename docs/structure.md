@@ -8676,6 +8676,15 @@ and a thumbnail of one recipe of each gallery section (`Thumbnail`, from `public
   `fairness/` and `trust/` sections and the RL episodes) moved to the hub, which was removed on 2026-10-28. The
   `animation/` section shows the session player on a toy method.
 
+`apps/showcase/` (a third private app, `make showcase`, http://localhost:5320: the splash screen for people who would import omai for research; see its
+README). Short illustrated stories, each one small thing the library does, told as a blog post: nothing runs until the reader presses
+play, the computation then runs in a Web Worker, and the figures and the prose that reads the result arrive afterwards. It shares the
+site's colours, `CodeBlock`, `snippetOf` and router and imports nothing from `apps/pocs`. A story is a folder `src/stories/<slug>/` with
+`story.ts` (metadata), `compute.ts` (`run(seed, say?)`, a pure function returning serialisable data, with the `// region`s the page shows),
+`worker.ts` (`serveStory(self, run)`) and `Story.tsx` (the narrative); the kit in `src/kit/` (`StoryPage`, `Play`, `useStoryRun`, `Figure`,
+`Aside`, `Code`, the worker wire) and `src/sections.ts` (the order of the splash's sections) are shared. Its shown code is under
+`scripts/banned-arrays.ts` like the pocs'. The first story is `bayesian-linear-regression`.
+
 `apps/pocs/` (a second private app, `make pocs`, http://localhost:5310: proofs of concept, single live pages on the site's own
 shell, added only on request; see its README). The pocs are a tree of real directories under `src/pocs/` and the app is a file browser: a poc is a folder `<dir>/<subdir>/.../<slug>/` with `poc.ts` and `Page.tsx` (its address stays `/poc/<slug>`, the slug unique across the tree), a directory has a `dir.ts` (`PocDir`: title, summary, order) and the page of a directory lists its subdirectories (tiles with the number of examples below) and then its examples; `/` is the root, `/dir/<a>/<b>` a directory, the top bar shows the trail, a search is global and flat with the path on each result (`buildTree` and the other pure functions are in `src/poc.ts`, the registry globs `./pocs/**/poc.ts`; a page left flat under `pocs/` with a legacy `group:` is listed in the directory of that name until it is moved). The top-level directories are `bayesian-examples`, `expectation-propagation` (with `overview`, `basic`, `priors`, `learned` and `programs`), `composed-atoms`, `probabilistic-programming` (eleven pocs: `bayes-linear`,
 `bocpd` and the showcase set of the probabilistic-programming plan below), `structured-prediction`, `models` and

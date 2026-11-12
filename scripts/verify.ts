@@ -125,6 +125,11 @@ function plan(files: readonly string[]): Step[] {
     label: 'tsc apps/site',
     command: ['pnpm', '--dir', 'apps/site', 'exec', 'tsc', '-p', 'tsconfig.json', '--noEmit'],
   })
+  if (files.some((f) => /^(apps\/showcase|apps\/site|packages)\//.test(f)))
+    steps.push({
+      label: 'tsc apps/showcase',
+      command: ['pnpm', '--dir', 'apps/showcase', 'exec', 'tsc', '-p', 'tsconfig.json', '--noEmit'],
+    })
   steps.push({ label: 'tsc scripts and config', command: ['pnpm', 'exec', 'tsc', '-p', 'tsconfig.json'] })
 
   const python = files.filter((f) => f.startsWith('oracle/') && f.endsWith('.py') && existsSync(join(ROOT, f)))
