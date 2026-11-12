@@ -127,10 +127,15 @@ describe('ep-program-changepoint-extended: the same program with the rates and t
     }
   }, 60_000)
 
-  it('without damping EP settles on a relabelling of the regimes on seed 14, where Gibbs and the damped run are right', async () => {
+  it('without damping the warm-up keeps EP out of the relabelled reading it used to settle on (seed 14)', async () => {
+    // Undamped EP from flat messages swapped the low and middle regimes on seed 14 (accuracy 0.00, gap to Gibbs 0.95, the low
+    // rate 9.4 where Gibbs has 3.5). The engine's `warmup: auto` (three damped sweeps, since the regimes are chosen by a
+    // `select`) reaches the reading of Gibbs and of the damped run: accuracy 1.00, gap 0.008, rates within 0.1 of Gibbs's.
+    // Over seeds 1 to 30 undamped, 26 runs have accuracy 0.9 or more with the warm-up and 22 without it.
     const r = await runSeed(14, { ...options, damping: 0 })
-    expect(r.accuracy).toBeLessThan(0.2)
-    expect(r.gap).toBeGreaterThan(0.5)
+    expect(r.status).toBe('converged')
+    expect(r.accuracy).toBeGreaterThan(0.9)
+    expect(r.gap).toBeLessThan(0.05)
   }, 60_000)
 })
 

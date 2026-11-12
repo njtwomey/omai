@@ -74,12 +74,13 @@ describe.each(programs)('$name', (program) => {
 })
 
 describe('the sparse regression with outliers: a run that does not move because it cannot update is not a success', () => {
-  // Noise sd 1, seed 3: undamped EP collapses at the first sweeps (the gamma noise precision goes to 2e-5), twenty of the sixty
-  // row factors then have an improper cavity for the precision and are skipped for ever, every inclusion probability stays at
-  // the prior 0.2, and the beliefs stop moving. It used to be reported `converged`.
-  const data = simulateSparse({ ...defaultSetup, noise: 1, seed: 3 })
-  const run = (restarts: number) => {
-    const method = epSpecMethod(sparseModel('gaussian', 1).bind({ X: data.X, y: data.y }))
+  // Noise sd 1.25, seed 17: undamped EP collapses at the first sweeps (the gamma noise precision goes to 6e-6), some row factors
+  // then have an improper cavity for the precision and are skipped for ever, every inclusion probability stays at the prior 0.2,
+  // and the beliefs stop moving. It used to be reported `converged`. (Noise sd 1, seed 3, where this was first seen, no longer
+  // collapses: the shared window and zoomed grid of the gamma tilt keep the precision from going to zero, see below.)
+  const fit = (noise: number, seed: number, restarts: number) => {
+    const data = simulateSparse({ ...defaultSetup, noise, seed })
+    const method = epSpecMethod(sparseModel('gaussian', noise).bind({ X: data.X, y: data.y }))
     const s = session(method, {
       config: { tol: 1e-8, damping: 0, restarts },
       seed: 1,
@@ -89,11 +90,13 @@ describe('the sparse regression with outliers: a run that does not move because 
     })
     const posterior = method.posterior?.(s.state, s.config)
     if (posterior === undefined) throw new Error('EP gave no posterior')
-    return { s, posterior, pip: Array.from(toFlat(posterior.mean('z'))), tau: Number(toFlat(posterior.mean('tau'))[0]) }
+    const pip = Array.from(toFlat(posterior.mean('z')))
+    const active = data.truth.map((v) => v !== 0)
+    return { s, posterior, pip, active, tau: Number(toFlat(posterior.mean('tau'))[0]) }
   }
 
   it('without a restart it is stopped as stalled, with the reason, and the degenerate fixed point is visible', () => {
-    const r = run(0)
+    const r = fit(1.25, 17, 0)
     expect(r.s.status).toBe('stopped')
     expect(r.posterior.status).toBe('stopped')
     expect(String(r.posterior.diagnostics['reason'])).toMatch(/^stalled: \d+ message updates could not be computed/)
@@ -102,12 +105,25 @@ describe('the sparse regression with outliers: a run that does not move because 
   })
 
   it('with the default damped restart it recovers: the four active coefficients are found and the noise precision is sane', () => {
-    const r = run(1)
+    // Seed 20 stalls without a restart too (13 updates dropped, the inclusions spread), and the restart reaches a fixed point.
+    const r = fit(1.25, 20, 1)
     expect(r.s.status).toBe('converged')
     expect(r.s.state.restarts).toBe(1)
+    expect(r.tau).toBeGreaterThan(0.04)
+    for (const [j, on] of r.active.entries())
+      if (on) expect(r.pip[j], `active coefficient ${j}`).toBeGreaterThan(0.8)
+      else expect(r.pip[j], `inactive coefficient ${j}`).toBeLessThan(0.25)
+  }, 60_000)
+
+  it('noise sd 1, seed 3 no longer collapses: undamped EP converges at once, with no restart, to the right coefficients', () => {
+    // Before the gamma tilt used one window and zoomed grid (agent-a9fac1-numerics) this run stopped as stalled, the noise precision
+    // at 2e-5 and every inclusion at 0.2, and needed the restart. Now: 23 sweeps, precision 0.099 (the outliers inflate the noise
+    // of a Gaussian likelihood), the four active inclusions 1.00, 0.95, 1.00 and 1.00, the eight others at most 0.05.
+    const r = fit(1, 3, 0)
+    expect(r.s.status).toBe('converged')
+    expect(r.s.state.restarts).toBe(0)
     expect(r.tau).toBeGreaterThan(0.05)
-    const active = data.truth.map((v) => v !== 0)
-    for (const [j, on] of active.entries())
+    for (const [j, on] of r.active.entries())
       expect(on ? r.pip[j] : 1 - (r.pip[j] as number), `coefficient ${j}`).toBeGreaterThan(0.8)
   }, 60_000)
 })
