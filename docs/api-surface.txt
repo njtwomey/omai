@@ -98,7 +98,7 @@ omai-engine/survival	59	29b83c65ab7f
 omai-engine/svm	44	b0496fde3e93
 omai-engine/symbolic	171	ea1b7caa7ab7
 omai-engine/systems	123	554bc10ec83e
-omai-engine/tensor	240	82713e7c43fa
+omai-engine/tensor	240	c54a2542df3c
 omai-engine/text	359	ca80c4da3faf
 omai-engine/text/subword	32	544e2a9ad3ce
 omai-engine/timeseries	304	80098329574f
@@ -126,4 +126,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	303	541cc98902e2
-total	20175	4be66cc28d71
+total	20175	58e6854b7be7
