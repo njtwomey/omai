@@ -640,6 +640,44 @@ observation). Their reports say what exists; the work packages above absorb it r
   random index (a function of a latent that is not a discrete variable), and vector-event branches. Gap `gate-node` removed;
   `mixture-regression` (direction) says what is mapped.
 
+## 2026-11-12 A learned covariance with few groups, and Wishart matrices of dimension four (`agent-a3e7a0-matrix`)
+
+- Cause of the gap `hierarchical-matrix-few-groups` (mean too narrow, matrix too wide with three or four groups): a factor per group vector
+  (`mvn-wishart`) shares the population mean and the Wishart matrix with every other group, so the graph has loops through the mean and the matrix and
+  EP's product-form beliefs lose the dependence of each vector on the mean. Not the family projection (the matrix alone was exact with a plated
+  factor or a known mean) and not damping. Measured before the fix against the atom's grid reference (`random-intercepts-slopes-learned`, three to ten
+  groups): the mean's spread 0.78 to 0.95 of the reference, the evidence 0.1 nats low at three groups, 12 to 14 sweeps.
+- New operator `mvn-wishart-group` (`message-passing/operators/covariance/hierarchy.ts`): the vectors of all the groups, their shared Gaussian mean
+  and the Wishart matrix are the ports of ONE factor. Given the matrix everything is Gaussian, so the vectors and the mean integrate out together
+  in closed form (`N(m_j; mean, V_j + L^-1)` per cavity, then the mean against its cavity: `c_j`, `P = W_0 + sum (L - L T_j L)`, `g = h_0 + sum L T_j h_j`),
+  the Wishart is matched on the Bartlett quadrature whose base measure is the cavity times the conjugate part the vectors' cavity means give it
+  (`|L|^((J - 1) / 2)` and their scatter; the remainder is smooth), and each vector and the mean are matched to the mixture of their conditionals over
+  the nodes. One tilt serves every port and the evidence of a sweep (the cache key is the cavities to ten digits of their largest entry: cavities that
+  are the same to rounding must hit). The variational rule is the sum of the per-vector rules, so the VMP digest items agree to 1e-10. The compiler
+  maps a multivariate normal with a Wishart precision and a Gaussian-vector mean as this one factor (`_mappings/matrix.ts`; a known mean stays one
+  `mvn-wishart` per vector, exact on its own); `_table.ts` names the operator, the graph corpus has the two lines of the changed atom, the compiler
+  page is regenerated.
+- Measured after (same atom, three to ten groups, prior degrees of freedom 2.2 to 3, 3 sweeps): the mean's spread 0.96 to 1.00 of the grid
+  reference, the matrix 0.99 to 1.00, every group 1.00, means within 0.05 reference sd, the log evidence within 0.002 nats of the exact (a new lazy
+  `exactLogEvidence` of the reference, every constant of the model in it). The grid reference itself is a few percent high for the mean's spread at
+  three groups: seed 10 of three groups, a graded polar Gauss-Legendre integration of the same model gives 0.6887, EP 0.6877, the atom's three-pass
+  midpoint grid 0.7068 (0.7274 on a finer grid: it does not converge there). The atom's tolerance is now measured (`sdRatio` 0.93 to 1.06, not the
+  `close` rung). Operator tests against a brute-force reference that does not use its algebra (a grid over the three entries of a 2 by 2 matrix, the
+  joint Gaussian of the readings conditioned densely), the exact conjugate limits in dimensions 2 to 4 and importance sampling in dimensions 3 and 4.
+- `matrix-larger`: dimension 4 is now allowed (`BARTLETT_ORDER[4] = 3`: 59049 nodes), for `mvn-wishart` and `mvn-wishart-group`. Against importance sampling
+  (eight groups of four effects, ESS above 13000): means within 0.03 reference sd, spreads 0.97 to 1.01 of the sampled ones for the mean and the matrix,
+  with a random mean (14 s, 3 sweeps) and a known one (15 s, 7 sweeps, one `mvn-wishart` per vector). Dimension 3 with eight groups: 2 s, 3 sweeps (it was 12 s,
+  30). Dimension 5 with two nodes per coordinate leaves the matrix's spread 0.85 to 0.99 of the sampled one (5% to 15% short): it stays refused, as does
+  three nodes (fourteen million). Not done, and why: an LKJ prior of order 3 and above needs a new site over the partial correlations (three betas whose
+  product loses their dependence; six coordinates with the standard deviations), and a model-language form for a covariance made of sds and a correlation
+  matrix; a latent bivariate vector with its own sds and correlation would be a group form of `mvn-sd-corr`; the normal-Wishart variable inside a larger model is a
+  compiler pattern with its own readback. The gap `hierarchical-matrix-few-groups` is replaced by `correlation-strong-few-pairs`, the beta belief of a
+  strong correlation (spread 0.81 to 0.92 of the exact), which this change does not touch; `matrix-larger` lists what remains.
+- Searched and reused: Wishart family, `wishartRule` and the Bartlett helpers, `gaussianSide`, `mvn-wishart`'s variational rule (called per vector), the
+  atom machinery and `grid3` reference, `posterior3`, the library's `gamma` and `normal` samplers and `spd` for the importance-sampling reference (`testing/covariance-group.ts`).
+  Digest: `atom/random-intercepts-slopes-learned` (graph 52 to 43 factors, 14 to 3 sweeps, evidence and beliefs moved toward the reference),
+  `vmp/random-intercepts-slopes-learned` (28 sweeps for 25, beliefs within 1e-10) and the registry line (one more operator) re-accepted; `atom/random-intercepts-slopes` gains the reference's evidence only.
+||||||| d5a9e92e
 ## 2026-11-12 Variational message passing for the dense non-centred scale (`agent-a40-vmp`, gap `non-centred-scale` narrowed)
 
 - `gaussian-mv-function-scale` has a variational rule (support `numeric`) and an expected log: with the standard normals integrated

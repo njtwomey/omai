@@ -117,6 +117,7 @@ The operators of covariance matrices and correlation: the multivariate Gaussian 
 - structure `mvnNormalWishart`: The conjugate update of a Gaussian vector with unknown mean and precision matrix (normal-Wishart). `src/lib/message-passing/operators/covariance/covariance.ts:332` `omai-engine/message-passing`
 - structure `mvnSdCorr`: A bivariate Gaussian with sds and correlation as separate variables (gamma precisions, a beta correlation). `src/lib/message-passing/operators/covariance/correlation.ts:104` `omai-engine/message-passing`
 - structure `mvnWishart`: A multivariate Gaussian with a Wishart precision matrix: a learned covariance. `src/lib/message-passing/operators/covariance/covariance.ts:233` `omai-engine/message-passing`
+- structure `mvnWishartGroup`: A group of Gaussian vectors sharing a Gaussian mean and a Wishart precision matrix: one joint site. `src/lib/message-passing/operators/covariance/hierarchy.ts:344` `omai-engine/message-passing`
 
 ### message-passing/operators/discrete
 

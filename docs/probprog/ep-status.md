@@ -6,12 +6,12 @@ in [`ep.md`](ep.md), what happened when in [`ep-changelog.md`](ep-changelog.md).
 
 ## Message-passing operators
 
-The registry (`defaultOperators()`) holds **66** factor operators. Rules by message mode:
+The registry (`defaultOperators()`) holds **67** factor operators. Rules by message mode:
 
 | mode | operators with a rule | exact | bound | numeric |
 | --- | --- | --- | --- | --- |
-| ep | 65 | 35 | 0 | 30 |
-| vmp | 60 | 35 | 4 | 21 |
+| ep | 66 | 35 | 0 | 31 |
+| vmp | 61 | 36 | 4 | 21 |
 | bp | 4 | 4 | 0 | 0 |
 
 19 operators take a power (fractional EP).
@@ -76,7 +76,7 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | --- | --- | --- | --- | --- |
 | grid-hyperparameters: Hyperparameters on a grid: a few scalars, one family at a time | missing-mapping | open | medium | - |
 | matrix-larger: Covariance matrices beyond what the Wishart and the bivariate sd-and-correlation sites reach | missing-rule | open | medium | - |
-| hierarchical-matrix-few-groups: A learned covariance with few groups: the shared mean is too narrow, the matrix too wide | quality | open | medium | - |
+| correlation-strong-few-pairs: A strong bivariate correlation from few pairs: the beta belief is too narrow | quality | open | medium | - |
 | softmax-many-classes: Softmax beyond six classes, and a multiclass Gaussian process | missing-rule | open | medium | - |
 | ordinal-random-cuts: Ordinal cut points that are random, and a Student-t with random degrees of freedom and scale | missing-rule | open | medium | - |
 | multimodal: One Gaussian per variable cannot show two modes | quality | open | medium | - |

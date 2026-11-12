@@ -180,8 +180,8 @@ atom/bivariate-correlation-learned vectorise: 4 variables, 5 factors, 0 issues; 
 atom/bivariate-correlation-learned expand: 34 variables, 34 factors, 0 issues; mvn-sd-corr x30 prior x4
 atom/random-intercepts-slopes vectorise: 31 variables, 31 factors, 0 issues; linear-regression-row x24 mvn-wishart x6 prior x1
 atom/random-intercepts-slopes expand: 31 variables, 31 factors, 0 issues; linear-regression-row x24 mvn-wishart x6 prior x1
-atom/random-intercepts-slopes-learned vectorise: 52 variables, 52 factors, 0 issues; linear-regression-row x40 mvn-wishart x10 prior x2
-atom/random-intercepts-slopes-learned expand: 52 variables, 52 factors, 0 issues; linear-regression-row x40 mvn-wishart x10 prior x2
+atom/random-intercepts-slopes-learned vectorise: 52 variables, 43 factors, 0 issues; linear-regression-row x40 mvn-wishart-group x1 prior x2
+atom/random-intercepts-slopes-learned expand: 52 variables, 43 factors, 0 issues; linear-regression-row x40 mvn-wishart-group x1 prior x2
 model/beta-bernoulli vectorise: 21 variables, 21 factors, 0 issues; bernoulli x20 prior x1
 model/beta-bernoulli expand: 21 variables, 21 factors, 0 issues; bernoulli x20 prior x1
 model/normal-normal vectorise: 13 variables, 13 factors, 0 issues; gaussian x12 prior x1
