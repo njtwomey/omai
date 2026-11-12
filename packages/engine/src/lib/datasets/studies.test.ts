@@ -323,4 +323,16 @@ describe('predictions', () => {
     const events = toFlat(censored.data.y).filter((_, i) => i % 2 === 1)
     expect(mean(events)).toBeLessThan(0.9)
   })
+  it('survival with no covariates is one Weibull population with its true survival function', () => {
+    const { data, truth } = generate(survivalData, {
+      key: key(17),
+      knobs: { n: 20000, features: 0, shape: 1.5, scale: 0.1, censoring: 0 },
+    })
+    expect(data.x.shape).toEqual([20000, 0])
+    const times = toFlat(data.y).filter((_, i) => i % 2 === 0)
+    const surv = truth.extra?.['survival'] as (t: number, row: ArrayLike<number>) => number
+    expect(surv(3, [])).toBeCloseTo(Math.exp(-0.1 * 3 ** 1.5), 12)
+    // the share of lifetimes beyond 5 is the survival function at 5
+    expect(Math.abs(mean(times.map((t) => (t > 5 ? 1 : 0))) - surv(5, []))).toBeLessThan(0.01)
+  })
 })

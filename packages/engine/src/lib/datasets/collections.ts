@@ -191,6 +191,7 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
         dispersion: 0.1,
       }),
       g('tweedieResponses', 'Zeros and positive amounts (Tweedie)', 'glmCurve', { family: 'tweedie' }),
+      g('zeroInflatedCounts', 'Counts with structural zeros (zero-inflated Poisson)'),
     ],
   },
   regressionTabular: {

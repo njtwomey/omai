@@ -5,11 +5,12 @@
 import { describe, expect, it } from 'vitest'
 import { expectCancelAndContinue, expectResumeEqual, expectSnapshotCadence } from '../../../testing/methods.ts'
 import { DISCRETE } from '../../../testing/probprog.ts'
+import type { Json } from '../../base/index.ts'
 import { gamma, normal } from '../../dists/index.ts'
 import { normal as drawNormal, foldIn, key } from '../../random/index.ts'
 import { sliceSampler } from '../../sampling/index.ts'
-import { tensor } from '../../tensor/index.ts'
-import { session } from '../../trace/index.ts'
+import { type Tensor, tensor, toFlat } from '../../tensor/index.ts'
+import { session, stateFromJson, stateToJson } from '../../trace/index.ts'
 import { type Model, observe, plate, sample } from '../primitives.ts'
 import { agree, agreementWithin, fromPosterior, gridPosterior } from '../validation/index.ts'
 import {
@@ -279,6 +280,24 @@ describe('the plan and the method convention', () => {
       everyMs: 1000,
       tick: 100,
     })
+  })
+
+  it('loads a state saved with the kept draws as a typed array, before they were tensors', () => {
+    const m = hybridMethod(chain, { blocks })
+    const s = session(m, { config: small, steps: 500, mode: 'eager' })
+    const algorithm = m.make(s.config, key(0))
+    const saved = JSON.parse(JSON.stringify(algorithm.serialise?.(s.state))) as { chains: Record<string, Json>[] }
+    const older = {
+      ...saved,
+      chains: saved.chains.map((ch) => {
+        const flat = Float64Array.from(toFlat(stateFromJson(ch['kept'] as Json) as Tensor))
+        return { ...ch, kept: stateToJson(flat) }
+      }),
+    }
+    const back = algorithm.deserialise?.(older as never)
+    expect(back?.chains.map((ch) => ch.kept.map((r) => toFlat(r)))).toEqual(
+      s.state.chains.map((ch) => ch.kept.map((r) => toFlat(r))),
+    )
   })
 
   it('visits the blocks in a random order when asked', () => {

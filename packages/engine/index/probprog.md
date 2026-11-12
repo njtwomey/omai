@@ -28,7 +28,7 @@ Probabilistic programming, NumPyro style: programs written with `sample` and `ob
 
 The inference engines, part of `omai-engine/probprog`: exact ones (enumeration, conjugate updates, linear-Gaussian conditioning, chain forward-backward), MCMC (NUTS, Gibbs), weighting (importance sampling, SMC, ABC) and approximations (SVI, Laplace, EM), each with the contract that lets the planner choose between them.
 
-- function `mcmc`: Run MCMC on a program and return a posterior. `src/lib/probprog/engines/nuts.ts:480` `omai-engine/probprog`
+- function `mcmc`: Run MCMC on a program and return a posterior. `src/lib/probprog/engines/nuts.ts:497` `omai-engine/probprog`
 - function `svi`: Stochastic variational inference for a model and a guide. `src/lib/probprog/engines/svi.ts:221` `omai-engine/probprog`
 
 - algorithm `conjugateNaturalGradientAlgorithm`: Natural-gradient SVI on conjugate models: minibatch conjugate updates with a Robbins-Monro rate. `src/lib/probprog/engines/svi-natural.ts:122` `omai-engine/probprog`
@@ -75,7 +75,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - function `modelRegistry`: Models by name for a worker: `modelRegistry({ radon: { definition, data } })`. `src/lib/probprog/inference/models.ts:85` `omai-engine/probprog/inference`
 - function `runAnytimeAsync`: runAnytime in slices that hand the page the thread: budget, snapshots, cancellable. `src/lib/probprog/inference/method.ts:323` `omai-engine/probprog/inference`
 
-- estimator `abcRejectionMethod`: Rejection ABC with summary statistics, as a one-step method. `src/lib/probprog/inference/abc-methods.ts:237` `omai-engine/probprog/inference`
+- estimator `abcRejectionMethod`: Rejection ABC with summary statistics, as a one-step method. `src/lib/probprog/inference/abc-methods.ts:242` `omai-engine/probprog/inference`
 - estimator `abcSmcMethod`: ABC-SMC, one generation per step, with the tolerance shrinking on the tape. `src/lib/probprog/inference/abc-methods.ts:109` `omai-engine/probprog/inference`
 - estimator `aiesMethod`: Affine-invariant ensemble sampler (stretch and differential moves) as a steppable method. `src/lib/probprog/inference/ensemble-methods.ts:67` `omai-engine/probprog/inference`
 - estimator `amortisedSviMethod`: Variational inference with a neural encoder for the local latents (amortised inference). `src/lib/probprog/inference/svi-guide-methods.ts:158` `omai-engine/probprog/inference`
@@ -96,7 +96,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `gaussianMethod`: Exact linear-Gaussian conditioning, Kalman and Gaussian BP, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:85` `omai-engine/probprog/inference`
 - estimator `gibbsMethod`: Gibbs sampling, one sweep per step, resumable, with anytime draws. `src/lib/probprog/inference/gibbs-method.ts:89` `omai-engine/probprog/inference`
 - estimator `hmcMethod`: HMC with a fixed trajectory and window adaptation as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:271` `omai-engine/probprog/inference`
-- estimator `hybridMethod`: The user's plan of blocks, each with its own kernel, run as one sampler. `src/lib/probprog/inference/hybrid.ts:289` `omai-engine/probprog/inference`
+- estimator `hybridMethod`: The user's plan of blocks, each with its own kernel, run as one sampler. `src/lib/probprog/inference/hybrid.ts:291` `omai-engine/probprog/inference`
 - estimator `importanceEvidenceMethod`: Importance-sampling evidence with a pilot-fitted Gaussian proposal and Pareto k-hat. `src/lib/probprog/inference/evidence-methods.ts:613` `omai-engine/probprog/inference`
 - estimator `importanceMethod`: Importance sampling in batches, with evidence, ESS and Pareto k-hat as it goes. `src/lib/probprog/inference/importance-method.ts:96` `omai-engine/probprog/inference`
 - estimator `laplaceMethod`: The Laplace approximation, optimiser iterations then the Hessian, as a steppable method. `src/lib/probprog/inference/laplace-method.ts:129` `omai-engine/probprog/inference`
@@ -127,7 +127,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `traceGraphSviMethod`: Variational inference with a Rao-Blackwellised score-function ELBO and baselines (TraceGraph). `src/lib/probprog/inference/svi-extra-methods.ts:71` `omai-engine/probprog/inference`
 - estimator `vmpSpecMethod`: Variational message passing on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:358` `omai-engine/probprog/inference`
 
-- table `blockKernels`: Kernels a hybrid block can have: hmc, nuts, mala, barker, rwm, slice, gibbs, custom. `src/lib/probprog/inference/hybrid.ts:118` `omai-engine/probprog/inference`
+- table `blockKernels`: Kernels a hybrid block can have: hmc, nuts, mala, barker, rwm, slice, gibbs, custom. `src/lib/probprog/inference/hybrid.ts:120` `omai-engine/probprog/inference`
 - table `evidenceEstimators`: Evidence estimators by name: bridge, stepping stone, thermodynamic, importance, nested, tempered SMC. `src/lib/probprog/inference/evidence-methods.ts:777` `omai-engine/probprog/inference`
 
 ## probprog/model
@@ -186,9 +186,9 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 
 - function `additionalCampaigns`: The periodic campaigns of the later benchmark models, plus the clutter problem's EP comparison. `src/lib/probprog/models/additional-campaigns.ts:104` `omai-engine/probprog/models`
 - function `bananaDraws`: Exact draws from Haario's banana, for drawing the target. `src/lib/probprog/models/geometry.ts:165` `omai-engine/probprog/models`
-- function `bayesianGam`: Bayesian GAM of one covariate as a model spec: penalty or spike-slab prior. `src/lib/probprog/models/bayesian-gam.ts:191` `omai-engine/probprog/models`
-- function `bayesianGamFit`: Curve, band, sampled curves and weighted bases of a Bayesian GAM posterior. `src/lib/probprog/models/bayesian-gam.ts:569` `omai-engine/probprog/models`
-- function `bayesianGamReference`: Exact posterior curve and band of a Bayesian GAM by quadrature. `src/lib/probprog/models/bayesian-gam.ts:815` `omai-engine/probprog/models`
+- function `bayesianGam`: Bayesian GAM of one covariate as a model spec: penalty or spike-slab prior. `src/lib/probprog/models/bayesian-gam.ts:200` `omai-engine/probprog/models`
+- function `bayesianGamFit`: Curve, band, sampled curves and weighted bases of a Bayesian GAM posterior. `src/lib/probprog/models/bayesian-gam.ts:578` `omai-engine/probprog/models`
+- function `bayesianGamReference`: Exact posterior curve and band of a Bayesian GAM by quadrature. `src/lib/probprog/models/bayesian-gam.ts:819` `omai-engine/probprog/models`
 - function `benchmarkAgreement`: Cross-engine agreement of a benchmark model: every planned method against the truth. `src/lib/probprog/models/agreement.ts:132` `omai-engine/probprog/models`
 - function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:103` `omai-engine/probprog/models`
 - function `betaBernoulliModel`: The Beta-Bernoulli coin with a chosen Beta(a, b) prior; bind it to `{ y: flips }`. `src/lib/probprog/models/conjugate.ts:43` `omai-engine/probprog/models`
@@ -205,7 +205,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `structureCampaigns`: The structure of every benchmark model, and collapsed against full NUTS, as periodic campaigns. `src/lib/probprog/models/structure-campaigns.ts:364` `omai-engine/probprog/models`
 - function `sviCampaigns`: Periodic validation campaigns of the variational methods against the benchmark truths. `src/lib/probprog/models/svi-plans.ts:206` `omai-engine/probprog/models`
 
-- estimator `bayesianGamMethod`: A Bayesian GAM under any inference method, with its fit as a tape probe. `src/lib/probprog/models/bayesian-gam.ts:999` `omai-engine/probprog/models`
+- estimator `bayesianGamMethod`: A Bayesian GAM under any inference method, with its fit as a tape probe. `src/lib/probprog/models/bayesian-gam.ts:1003` `omai-engine/probprog/models`
 
 - structure `BenchmarkModel`: A benchmark model: a spec with a data generator, the truth, references, tags and method plans. `src/lib/probprog/models/benchmark.ts:98` `omai-engine/probprog/models`
 

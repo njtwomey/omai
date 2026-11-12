@@ -141,7 +141,11 @@ export const survivalData: DatasetGenerator<RegressionData> = {
   description: 'Right-censored event times from a known proportional-hazards or AFT model.',
   knobs: dict({
     n: int(1, 10_000_000, { label: 'samples', description: 'The number of subjects.', default: 500 }),
-    features: int(1, 100, { label: 'covariates', description: 'The number of covariates.', default: 3 }),
+    features: int(0, 100, {
+      label: 'covariates',
+      description: 'The number of covariates (0: one population with no covariates).',
+      default: 3,
+    }),
     model: choice(['weibull', 'exponential', 'lognormal'], {
       label: 'model',
       description: 'The baseline event-time distribution: Weibull, exponential or log-normal (AFT).',

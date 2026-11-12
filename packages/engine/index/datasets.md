@@ -16,7 +16,7 @@ Ready-made datasets: generators with exact truths, vendored real datasets (iris,
 
 - structure `Density`: A 2-D target with exact log density and sampler, for samplers and flows. `src/lib/datasets/densities.ts:51` `omai-engine/datasets`
 
-- table `datasetRegistry`: Tagged registry of every generator, vendored and remote dataset. `src/lib/datasets/catalogue.ts:357` `omai-engine/datasets`
+- table `datasetRegistry`: Tagged registry of every generator, vendored and remote dataset. `src/lib/datasets/catalogue.ts:358` `omai-engine/datasets`
 
 - dataset `airPassengers`: Vendored monthly airline passenger series. `src/lib/datasets/timeseries.ts:404` `omai-engine/datasets`
 - dataset `bananaDensity`: Haario's banana: a curved, correlated target for MCMC. `src/lib/datasets/densities.ts:313` `omai-engine/datasets`
@@ -44,3 +44,4 @@ Ready-made datasets: generators with exact truths, vendored real datasets (iris,
 - dataset `spirals`: Interleaved spiral arms. `src/lib/datasets/classification.ts:460` `omai-engine/datasets`
 - dataset `swissRoll`: The Swiss roll in 3-D (sklearn make_swiss_roll), optionally with a hole. `src/lib/datasets/manifolds.ts:123` `omai-engine/datasets`
 - dataset `xor`: The XOR problem as four Gaussian blobs. `src/lib/datasets/classification.ts:393` `omai-engine/datasets`
+- dataset `zeroInflatedCounts`: Zero-inflated Poisson counts; the truth keeps each row's switch. `src/lib/datasets/glm-curves.ts:153` `omai-engine/datasets`

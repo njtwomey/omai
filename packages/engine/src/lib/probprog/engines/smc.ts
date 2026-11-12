@@ -4,15 +4,31 @@
  * posterior, for programs without markov structure. Also the engine for the planner.
  */
 
-import { type Json, logSumExpOf, OmaiError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { bijectors } from '../../dists/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { type ChainProposal, proposal, type ResamplingScheme, resample, smcSampler } from '../../sampling/index.ts'
-import { fromStorage, item, mul, primalOf, reshape, sliceAxis, sum, toFlat } from '../../tensor/index.ts'
+import {
+  add,
+  exp,
+  fromStorage,
+  full,
+  item,
+  logsumexp,
+  mul,
+  primalOf,
+  reshape,
+  sliceAxis,
+  sub,
+  sum,
+  type Tensor,
+  tensor,
+  toFlat,
+} from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
 import { maskedLogProb, observedLogProb } from '../_contract.ts'
 import type { ProgramAnalysis } from '../analysis.ts'
-import { constrainDraws, latentLayout, potentialEnergy, type UnconstrainedModel } from '../density.ts'
+import { constrainDraws, latentLayout, packLatents, potentialEnergy, type UnconstrainedModel } from '../density.ts'
 import { handle, type ProgramTrace, seed, traceOf } from '../handlers.ts'
 import { type Posterior, samplePosterior, weightedPosterior } from '../posterior.ts'
 import type { Message, Model } from '../primitives.ts'
@@ -23,8 +39,8 @@ import { stackSiteValues } from './importance.ts'
 export interface ParticleFilterState {
   readonly t: number
   readonly carries: readonly unknown[]
-  /** Normalised log weights. */
-  readonly logWeights: Float64Array
+  /** Normalised log weights, a vector of one per particle. */
+  readonly logWeights: Tensor
   readonly logEvidence: number
   /** Each particle's ancestral path: one trace per step. */
   readonly paths: readonly (readonly ProgramTrace[])[]
@@ -71,9 +87,8 @@ function discover<D = void>(model: Model<D>, data: D): Loop {
   return { ...found, before: observedLogProb(t) }
 }
 
-function normalise(lw: Float64Array): Float64Array {
-  const z = logSumExpOf(lw)
-  return Float64Array.from(lw, (v) => v - z)
+function normalise(lw: Tensor): Tensor {
+  return sub(lw, item(logsumexp(lw))) as Tensor
 }
 
 /**
@@ -122,7 +137,7 @@ export function particleFilterAlgorithm<D = void>(
     init: () => ({
       t: 0,
       carries: new Array<unknown>(P).fill(loop.init),
-      logWeights: new Float64Array(P).fill(-Math.log(P)),
+      logWeights: full([P], -Math.log(P)),
       logEvidence: loop.before,
       paths: Array.from({ length: P }, () => []),
       ess: P,
@@ -131,32 +146,32 @@ export function particleFilterAlgorithm<D = void>(
     }),
     step: (s, ctx) => {
       const t = s.t
-      const traces: ProgramTrace[] = []
-      const incr = new Float64Array(P)
-      for (let p = 0; p < P; p++) {
-        const carry = s.carries[p]
+      const traces = s.carries.map((carry, p) => {
         const stepModel = (): unknown => loop.body(t, carry)
-        const tr = traceOf(seed(stepModel, foldIn(ctx.key, p)), undefined)
-        traces.push(tr)
-        const v = observedLogProb(tr)
-        incr[p] = Number.isNaN(v) ? Number.NEGATIVE_INFINITY : v
-      }
-      const joint = Float64Array.from(s.logWeights, (w, p) => w + (incr[p] ?? 0))
-      const step = logSumExpOf(joint)
+        return traceOf(seed(stepModel, foldIn(ctx.key, p)), undefined)
+      })
+      const incr = tensor(
+        traces.map((tr) => {
+          const v = observedLogProb(tr)
+          return Number.isNaN(v) ? Number.NEGATIVE_INFINITY : v
+        }),
+      )
+      const joint = add(s.logWeights, incr) as Tensor
+      const step = item(logsumexp(joint))
       const logEvidence = s.logEvidence + step
       if (!Number.isFinite(step)) return { ...s, t: t + 1, logEvidence, logWeights: joint, ess: 0, resampled: false }
       let logWeights = normalise(joint)
       let carries = traces.map((tr) => tr.returnValue)
       let paths = s.paths.map((path, p) => [...path, traces[p] as ProgramTrace])
-      const ess = Math.exp(-logSumExpOf(logWeights.map((v) => 2 * v)))
+      const ess = Math.exp(-item(logsumexp(mul(logWeights, 2))))
       let resampled = false
       if (ess < threshold * P) {
-        const idx = resample(foldIn(ctx.key, P), Array.from(logWeights, Math.exp), {
+        const idx = resample(foldIn(ctx.key, P), exp(logWeights), {
           scheme: options.scheme ?? 'systematic',
         })
         carries = Array.from(idx, (i) => carries[i])
         paths = Array.from(idx, (i) => paths[i] ?? [])
-        logWeights = new Float64Array(P).fill(-Math.log(P))
+        logWeights = full([P], -Math.log(P))
         resampled = true
       }
       return {
@@ -361,13 +376,11 @@ export function temperedProblem<D = void>(model: Model<D>, data: D, key: Key): T
     dim,
     sample: (k: Key) => {
       const t = traceOf(seed(model, k), data)
-      const out = new Float64Array(dim)
-      for (const l of layout) {
+      const unconstrained = layout.flatMap((l) => {
         const s = t.sites.get(l.name)
-        if (s?.type !== 'sample') continue
-        out.set(toFlat(primalOf(l.bijector.inverse(s.value))), l.offset)
-      }
-      return out
+        return s?.type === 'sample' ? [[l.name, l.bijector.inverse(s.value)] as const] : []
+      })
+      return primalOf(packLatents(layout, Object.fromEntries(unconstrained))).data
     },
     logProb: (x) => split(x).prior,
   })
