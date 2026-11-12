@@ -1355,3 +1355,31 @@ history, each test run alone:
     digest item `program/changepoint` returns to its line from before the warm-up (20 sweeps, evidence -197.12944278808607; BITS-identical to it).
 - Not done: narrowing `hasExchangeableLabels` to selects whose components share a prior (the extended changepoint, whose components have different priors, gains from the
   warm-up, so the trigger is better left wide).
+
+## 2026-11-12 Engine fixes from the static review of the EP stretch (`agent-adc445-enginefix`)
+
+Eight findings of a review that read the code and ran nothing; each was checked in the code first and fixed with a regression test that fails
+before and passes after (one commit each). Ordinary cases are unchanged: the digest items that use the code have the same bits as before.
+- Numeric tilts (`likelihood-pair`, `likelihood-triple`, `numericOperator`): `TiltedMoments` carries the centred mean and variance of a Gaussian target
+  (`centred`), and `projectSite` projects through them when `mean^2` exceeds a million times the variance, where `E x^2 - (E x)^2` has lost the variance
+  (a narrow mass at 1e6: the variance 1e-6 came back as 0 and the message was improper). Below that ratio the projection is through the moments as it was, so
+  every ordinary case is bit-identical (always projecting through the centred variance moved `model/negative-binomial-regression` by 1.9e-11 in its evidence).
+- `findWindow` throws an `ImproperMessageError` (naming the last window and the reason) when nothing is finite on the whole bounded support, after 40
+  widenings with nothing finite, or when the mass has not settled in 40 rounds; it used to return the last window (about 1e19 wide after the widenings).
+- `ep-grid` walk (`_ep-grid-walk.ts`, moved out of `ep-grid.ts` to be tested on synthetic evidence): once some node has evidence, a failed node is expanded only
+  within two lattice steps of a node within the window of the best, and after every node that has evidence; before, a failed node ranked +Infinity and a failing
+  tail flooded the lattice until `maxNodes` before the peak was covered. While no node has evidence a failed node is still expanded first.
+- `ep-grid` warm starts (`_ep-grid-warm.ts`): a node keeps its messages only when it converged with a finite evidence and finite messages, `warmStart` and
+  `nearestSettled` reject any entry that is not a finite number (a `null` from the JSON of a serialised state), so the node starts cold. The per-step copy of the
+  node list (`[...s.nodes, node]`, about 8M pointer copies over 4000 nodes) is left as it is.
+- `ep-multistart` relabelling: `componentAxesOf(spec)` says which axes of a site are the components (the first dimension of a table a discrete latent looks up,
+  the category axis of what its distribution reads); `relabelRecord`, `orderingSite` and `canonicalSites` move and sort by those only. A model that names none keeps
+  the old reading (every axis of length k). A categorical site over another number of categories than `k` is no longer reshaped by `k`.
+  Limit: a matrix with a component axis twice (a transition matrix over two differently named dimensions) moves only the axis whose dimension a latent looks up.
+- `_bartlett.ts`: the gamma rules are kept in an LRU of 256 (the Wishart's `nu` changes at every update, so the shapes rarely repeat); a dropped rule is made again
+  with the same bits.
+- `tiltKey` (`mvn-wishart-group`, `mvn-sd-corr-group`): the rounding step is 1e-13 of the largest entry of an argument (it was 1e-10, below which two cavities
+  shared a key and a tilt), and the key holds the power, each argument's family and whether it is a value or a message. The other memo keys (`keyOf` of the
+  inputs in the pair, triple, row, multiclass and precision tilts) say every bit and were checked: none omits an input.
+- `memoised` keeps an `ImproperMessageError` under its key and throws it again, so a tilt that fails runs once for the ports of the factor and its evidence (a
+  chain of 60 states ran up to 61 failed grid passes per sweep); any other error is not kept.
