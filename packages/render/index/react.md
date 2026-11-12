@@ -120,7 +120,7 @@ React components for exposition records: `ExpositionView` picks the standard vie
 - function `ExpositionView`: React component: the standard view of any exposition record: `<ExpositionView record={record} />` `src/react/views/ExpositionView.tsx:82` `omai-render/react`
 - function `GroupReportView`: React component: per-group rates, gaps and ROC curves: `<GroupReportView record={report} />` `src/react/views/fairness.tsx:136` `omai-render/react`
 - function `ModelRunPlayer`: React component: a model's plate diagram with live inference state: `<ModelRunPlayer record={r} />` `src/react/views/model-run.tsx:35` `omai-render/react`
-- function `ModelRunReplay`: React component: a compact replay of a model run's messages and beliefs: `<ModelRunReplay record={r} />` `src/react/views/model-run-replay.tsx:112` `omai-render/react`
+- function `ModelRunReplay`: React component: a compact replay of a model run's messages and beliefs: `<ModelRunReplay record={r} />` `src/react/views/model-run-replay.tsx:138` `omai-render/react`
 - function `PathView`: React component: coefficients along a regularisation path: `<PathView record={path} />` `src/react/views/paths.tsx:29` `omai-render/react`
 - function `PosteriorComparisonView`: React component: methods' posteriors over the oracle's, and the agreement table. `src/react/views/posterior-comparison.tsx:27` `omai-render/react`
 - function `PosteriorPairsPlayer`: React component: the posterior corner plot with a player, optionally driven by a page's cursor. `src/react/views/posterior-pairs.tsx:248` `omai-render/react`

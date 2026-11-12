@@ -1,3 +1,4 @@
+import { clutterTruth } from 'omai-engine/probprog/models'
 import { describe, expect, it } from 'vitest'
 import { run, solve } from './compute.ts'
 import { clearReadings, DECOY, DECOY_READINGS, withDecoys } from './data.ts'
@@ -53,6 +54,23 @@ describe('the signal-in-the-clutter computation', () => {
       expect(Number.isFinite(r.ambiguous.bell.mean)).toBe(true)
     }
   }, 60000)
+
+  it('draws the exact curve at the resolution of the figure, so a narrow hump is not blurred', () => {
+    // thirty readings that agree: a narrow hump (spread near 0.2), which a window of a quarter of a unit would flatten
+    const readings = Array.from({ length: 30 }, (_, i) => 2 + 0.01 * (i - 15))
+    const c = solve(readings, undefined, { record: false, grid: 241 })
+    // the reference: the same exact posterior on a grid fifty times finer, read over a window of 0.006
+    const fine = clutterTruth(readings, 40001).marginals['theta']
+    if (fine === undefined) throw new Error('no exact posterior')
+    const reference = c.exact.curve.x.map((x) => (fine.cdf(x + 0.003) - fine.cdf(x - 0.003)) / 0.006)
+    const top = Math.max(...reference)
+    expect(top).toBeGreaterThan(1.5)
+    expect(Math.max(...c.exact.curve.density) / top).toBeGreaterThan(0.99)
+    expect(Math.max(...c.exact.curve.density) / top).toBeLessThan(1.01)
+    // and the mass is still one
+    const step = (c.exact.curve.x[1] as number) - (c.exact.curve.x[0] as number)
+    expect(c.exact.curve.density.reduce((a, b) => a + b, 0) * step).toBeCloseTo(1, 2)
+  })
 
   it('counts the humps of a curve and the share each holds', () => {
     const x = Array.from({ length: 101 }, (_, i) => i / 10)

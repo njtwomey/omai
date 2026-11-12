@@ -3,7 +3,7 @@ import { structure } from 'omai-engine/scene'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { MessageReplay } from './MessageReplay.tsx'
-import { MAX_REPLAY_STEPS, replayRecord } from './replay.ts'
+import { MAX_REPLAY_MESSAGES, MAX_REPLAY_STEPS, replayOf, replayRecord } from './replay.ts'
 
 const graph = structure(
   'factor-graph',
@@ -53,6 +53,28 @@ describe('replayRecord', () => {
   it('makes a record that survives a structured clone', () => {
     const cut = replayRecord(longRun(100))
     expect(structuredClone(cut)).toEqual(cut)
+  })
+})
+
+describe('replayOf', () => {
+  // a tape with one step of ten messages from the factor to x, and the marginal of x
+  const events = [
+    ...Array.from({ length: 10 }, (_, k) => ({
+      type: 'message',
+      step: 1,
+      kind: 'mp/message',
+      from: 'factor:x',
+      to: 'x',
+      payload: { family: 'gaussian', operator: 'prior', eta: [k, 1] },
+    })),
+    { type: 'message', step: 1, kind: 'mp/marginals', payload: { x: { family: 'gaussian', mean: 0.5, variance: 1 } } },
+  ]
+
+  it('reads a tape as a run on the graph and keeps at most the cap of messages for a step', () => {
+    const record = replayOf(graph, { events })
+    expect(record.kind).toBe('modelRun')
+    expect(record.steps[0]?.nodes['x']?.text).toBe('0.5 ± 1')
+    expect(record.steps[0]?.messages).toHaveLength(MAX_REPLAY_MESSAGES)
   })
 })
 

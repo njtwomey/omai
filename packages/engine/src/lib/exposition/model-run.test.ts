@@ -99,6 +99,35 @@ describe('modelRun', () => {
     expect(() => thinModelRun(r, 1)).toThrow(/at least 2/)
     expect(structuredClone(thin)).toEqual(thin)
   })
+
+  it('ranks the steps of one factor with the end of a sweep on one scale, so the sweeps that moved most survive', () => {
+    // Twelve sweeps of four single-factor steps (steps 0 to 48). A factor step nudges one node a little and has no change of
+    // its own; the end of a sweep (every fourth step) reports the sweep's change: 3 for the first, then 0.9 down to 0.1.
+    const sweepChange = [3, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.15, 0.12, 0.1]
+    const steps = Array.from({ length: 49 }, (_, t) => ({
+      step: t,
+      nodes: { [t % 2 === 0 ? 'a' : 'b']: { mean: 0.01 * t, sd: 1, text: String(t) } },
+    }))
+    const ends = sweepChange.map((_, k) => 4 * (k + 1))
+    const change = { name: 'change', label: 'change', steps: ends, values: sweepChange }
+    const r = modelRun({ structure: s, status: 'completed', series: [change], steps })
+    const thin = thinModelRun(r, 40)
+    expect(thin.steps).toHaveLength(40)
+    const kept = new Set(thin.steps.map((x) => x.step))
+    // every sweep end survives, the first and the last step too; what is dropped is only factor steps
+    for (const t of [0, ...ends]) expect(kept.has(t)).toBe(true)
+    expect(thin.series[0]?.steps).toEqual(ends)
+    for (const k of thin.steps) expect(modelRunAt(thin, k.step)?.nodes).toEqual(modelRunAt(r, k.step)?.nodes)
+  })
+
+  it('counts a belief that jumped as a bigger move than a nudge when the run reports no change', () => {
+    const steps = Array.from({ length: 10 }, (_, t) => ({
+      step: t,
+      nodes: { a: { mean: t === 4 ? 50 : t > 4 ? 50 + 0.01 * t : 0.01 * t, sd: 1, text: String(t) } },
+    }))
+    const r = modelRun({ structure: s, status: 'completed', series: [], steps })
+    expect(thinModelRun(r, 3).steps.map((x) => x.step)).toEqual([0, 4, 9])
+  })
 })
 
 describe('describeMessage and the marginals', () => {

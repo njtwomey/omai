@@ -54,6 +54,33 @@ describe('hand-built arrays in shown code', () => {
     expect(problems(SRC, shown('const a = new Array<number>(n).fill(0) // hide'))).toEqual([])
   })
 
+  describe('the length of a shown line in the showcase', () => {
+    const STORY = 'apps/showcase/src/stories/example/compute.ts'
+    const wide = (n: number): string => `const total = ${'a'.repeat(n - 'const total = '.length - '()'.length)}()`
+
+    it('fails a line over 110 characters, comments included, and says its length', () => {
+      expect(wide(111)).toHaveLength(111)
+      const found = arrayProblems(STORY, shown(wide(111), `// ${'x'.repeat(120)}`))
+      expect(found.map((p) => p.line)).toEqual([2, 3])
+      expect(found[0]?.message).toContain('111 characters')
+    })
+
+    it('passes a line of exactly 110 characters, a hidden long line and a long line outside a region', () => {
+      expect(arrayProblems(STORY, shown(wide(110)))).toEqual([])
+      expect(arrayProblems(STORY, shown(`${wide(150)} // hide`))).toEqual([])
+      expect(arrayProblems(STORY, wide(150))).toEqual([])
+    })
+
+    it('leaves an import line to the formatter, which would join it again', () => {
+      const names = `${'a'.repeat(100)}, b`
+      expect(arrayProblems(STORY, shown(`import { ${names} } from 'omai-engine/tensor'`))).toEqual([])
+    })
+
+    it('is checked in the showcase only', () => {
+      expect(arrayProblems(SRC, shown(wide(150)))).toEqual([])
+    })
+  })
+
   it('reports the line a page would show', () => {
     expect(problems(SRC, shown('const ok = zeros([n])', 'const bad = new Array(n)'))).toEqual(['3: new'])
   })
