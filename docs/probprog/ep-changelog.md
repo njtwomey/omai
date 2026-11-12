@@ -1332,3 +1332,26 @@ of the chain (20 to 120), true persistence, true precision of the steps; the dat
   the best node).
 - Digest: the two items (`atom/chain-persistence-grid`, `vmp/chain-persistence-grid`) and the registry line merged into the baseline by hand
   (`--accept` refuses `--only`); the graph corpus snapshot gained its two lines.
+## 2026-11-12 Four pocs program tests that pinned pathologies the engine no longer has, or a start it changed (`agent-a19e21-progtests`)
+
+Four tests of the pocs EP programs failed on main (`ep-programs-b.test.ts`: the sparse regression's `stalled` and `damped restart`;
+`ep-programs.test.ts`: the changepoint program on seed 3 `converged`, the extended changepoint on seed 14 `accuracy < 0.2`). Bisected on the first-parent
+history, each test run alone:
+- Sparse (both): first fails at `b4c87b01` (S5c, `agent-a9fac1-numerics`: one window and one zoomed grid for the gamma, beta and log-Gaussian tilts); passes at its
+  parent `daa50def`. The gamma tilt of the noise precision no longer collapses at the first undamped sweeps, so noise sd 1, seed 3 converges in 23 sweeps with no restart
+  (precision 0.099, the four active inclusions 1.00, 0.95, 1.00, 1.00, the others at most 0.05) where it stopped as stalled (precision 2e-5, every inclusion 0.2). An
+  improvement, not a regression. The stall report is still right and still reachable: noise sd 1.25, seed 17 stops as stalled with the precision at 6e-6 and every
+  inclusion at 0.20, and a restart converges; noise sd 1.25, seed 20 stalls with 13 dropped updates and the restart recovers the four active coefficients.
+  The tests use those, and a third test holds the new behaviour of noise 1, seed 3.
+- Changepoint seed 3 and extended seed 14: both first fail at `38d70274` (the `warmup` merge); `65c34bd2` before it passes. With `warmup: off` all pass.
+  - Extended, undamped: the warm-up is better. Seed 14: accuracy 0.00 and gap to Gibbs 0.95 (low and middle regimes swapped) -> 1.00 and 0.008. Over data seeds 1 to 30:
+    22 runs with accuracy 0.9 or more without the warm-up, 26 with it (8, 14, 18, 23, 26, 29 fixed; none lost). The test now holds the new reading (converged,
+    accuracy above 0.9, gap below 0.05).
+  - Changepoint (plain), default config: the warm-up is not better. Over seeds 1 to 24: converged and within 0.05 of Gibbs 13 without it, 12 with it; runs that hit the
+    sweep cap 4 without (8, 14, 18, 19), 7 with (those and 3, 5, 11; seed 3 goes from 17 sweeps, accuracy 1.00, gap 0.0003 to the cap, accuracy 0.46, gap 0.54;
+    seed 23 from 17 sweeps, accuracy 1.00 to a converged wrong reading, accuracy 0.43; seed 15 the other way, 0.24 to 1.00).
+    Its three regimes have different priors (rate means 4, 12, 30), so there is no symmetric start for the warm-up to avoid, and `warmup: auto` (any `select` with a latent
+    index) triggers on it all the same. The program's own config (`ep-program-changepoint/program.ts`) now says `warmup: 'off'`; the engine's trigger is unchanged. The
+    digest item `program/changepoint` returns to its line from before the warm-up (20 sweeps, evidence -197.12944278808607; BITS-identical to it).
+- Not done: narrowing `hasExchangeableLabels` to selects whose components share a prior (the extended changepoint, whose components have different priors, gains from the
+  warm-up, so the trigger is better left wide).

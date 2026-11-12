@@ -81,7 +81,8 @@ export function model(stay: number) {
 export async function infer(y: readonly number[], stay: number, hooks: EpHooks = {}) {
   const bound = model(stay).bind({ y })
   const ep = epSpecMethod(bound)
-  const config = { tol: 1e-9 }
+  // No damped first sweeps: the regimes have different priors, so there is no symmetric start to avoid.
+  const config = { tol: 1e-9, warmup: 'off' as const }
   const cap = 300
   const run = session(ep, { config, seed: 1, steps: cap, mode: 'live', logs: 'all' })
   // One sweep at a time: the page hears of each (the bar), and may stop the run.
