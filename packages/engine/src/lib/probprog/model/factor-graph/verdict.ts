@@ -42,10 +42,70 @@ export function operatorsWithout(g: CompiledGraph, rule: MessageRule): string[] 
   return [...out]
 }
 
+/** The number of distinct factors of one operator that read a variable as an input (any port but the first). */
+function readersOf(g: CompiledGraph, variable: number, operator: string): number {
+  const seen = new Set<number>()
+  for (const e of g.variables[variable]?.edges ?? []) {
+    const edge = g.edges[e]
+    if (edge !== undefined && edge.port > 0 && g.factors[edge.factor]?.operator.name === operator) seen.add(edge.factor)
+  }
+  return seen.size
+}
+
+/**
+ * The units of a network layer in a compiled graph: the `apply` factors (`tanh`, `relu`, ...) whose input is an affine map of
+ * random weights that other rows share (the first layer) and whose output is multiplied by a random weight that other rows
+ * share (the next layer). A hidden unit of a Bayesian neural network is one per unit and row; a hierarchy's `exp` of a scale
+ * read by many products is not one (its other factor is per row), nor is a nonlinear link of a single regression.
+ *
+ * @param g - The compiled graph.
+ * @returns The number of such units (0 when the graph has no network layer).
+ * @example
+ * ```ts
+ * import { compileGraph, defaultOperators } from 'omai-engine/message-passing'
+ * import { networkLayerUnits } from 'omai-engine/probprog/model'
+ * const g = compileGraph({ variables: [{ name: 'x', family: { kind: 'gaussian' } }, { name: 'y', family: { kind: 'gaussian' } }], factors: [{ operator: 'apply', args: ['y', 'x'], params: { fn: 'tanh' } }] }, defaultOperators())
+ * networkLayerUnits(g) // => 0
+ * ```
+ */
+export function networkLayerUnits(g: CompiledGraph): number {
+  let units = 0
+  for (const f of g.factors) {
+    if (f.operator.name !== 'apply') continue
+    const out = f.ports[0]?.variable
+    const input = f.ports[1]?.variable
+    if (out === undefined || input === undefined) continue
+    // The output is multiplied by a random value that other rows multiply as well (the output weight of the unit).
+    const outputWeight = g.variables[out]?.edges.some((e) => {
+      const edge = g.edges[e]
+      const p = edge === undefined ? undefined : g.factors[edge.factor]
+      if (edge === undefined || p === undefined || p.operator.name !== 'product' || edge.port === 0) return false
+      return p.ports.some(
+        (q, k) => k > 0 && q.variable !== undefined && q.variable !== out && readersOf(g, q.variable, 'product') >= 2,
+      )
+    })
+    if (outputWeight !== true) continue
+    // The input is an affine map that reads a random weight other rows read as well (the input weight of the unit).
+    const definer = g.variables[input]?.definer
+    const d = definer === undefined ? undefined : g.edges[definer]
+    const affine = d === undefined ? undefined : g.factors[d.factor]
+    const inputWeight = affine?.ports.some(
+      (q, k) =>
+        k > 0 &&
+        q.variable !== undefined &&
+        q.value === undefined &&
+        readersOf(g, q.variable, affine.operator.name) >= 2,
+    )
+    if (inputWeight === true) units++
+  }
+  return units
+}
+
 /**
  * Whether a bound model has a factor graph a message-passing method can run, and exactly why not: the static check behind
  * `ep`, `vmp` and `bp` as inference methods. It reads the compilation (the issues, with node and reason) and, for a rule, the
- * operators of the compiled graph that lack it.
+ * operators of the compiled graph that lack it; for `ep` it also refuses a graph with the units of a network layer
+ * (`networkLayerUnits`), whose weights have symmetric modes that one Gaussian per weight does not hold.
  *
  * @param c - The compilation.
  * @param g - The compiled graph, when the compilation has a graph.
@@ -92,6 +152,13 @@ export function factorGraphVerdict(
       missing: [`${rule} message rules`],
     }
   }
+  const units = rule === 'ep' ? networkLayerUnits(g) : 0
+  if (units > 0)
+    return {
+      ok: false,
+      reason: `the graph has the units of a neural-network layer (an \`apply\` of an affine map of weights that rows share, multiplied by a weight that rows share): the weights are not identified (sign and permutation symmetries), so a Gaussian per weight averages the modes or keeps one and drops the other units, and the run does not converge to a posterior`,
+      missing: ['beliefs that hold the symmetric modes of a hidden layer'],
+    }
   return {
     ok: true,
     reason: `a factor graph of ${g.variables.length} variables and ${g.factors.length} factors`,

@@ -36,7 +36,7 @@ The registry (`defaultOperators()`) holds **71** factor operators. Rules by mess
 
 ## Benchmark models
 
-**27** benchmark models; EP runs **27** (25 as they are, 2 inside a grid over hyperparameters).
+**27** benchmark models; EP runs **26** (24 as they are, 2 inside a grid over hyperparameters).
 
 | model | EP |
 | --- | --- |
@@ -63,14 +63,14 @@ The registry (`defaultOperators()`) holds **71** factor operators. Rules by mess
 | gaussian-process-regression | runs (ep-grid) |
 | gaussian-process-non-centred | runs (ep-grid) |
 | lda-lite | runs (ep) |
-| bayesian-neural-network | runs (ep) |
+| bayesian-neural-network | refused: the graph has the units of a neural-network layer (an `apply` of an affine map of weights that rows share, multiplied by a weight that rows share): the weights are not identified (sign and permutation symmetries), so a Gaussian per weight averages the modes or keeps one and drops the other units, and the run does not converge to a posterior |
 | item-response-scoring | runs (ep) |
 | stick-breaking-mixture | runs (ep) |
 | clutter-problem | runs (ep) |
 
 ## Refusals, gaps and directions
 
-EP refuses nothing in the suite today: every atom and every benchmark model runs. The gaps below are shortfalls of quality or reach, not refusals.
+EP refuses 1 item(s): `bayesian-neural-network`.
 
 | gap | kind | status | size | refuses |
 | --- | --- | --- | --- | --- |
@@ -79,6 +79,7 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | correlation-strong-few-pairs: A strong bivariate correlation from few pairs: the belief has its spread, not its shape | quality | open | small | - |
 | softmax-many-classes: Softmax beyond six classes: the probit with a power, correlated classes | missing-rule | open | small | - |
 | multimodal: One Gaussian per variable cannot show two modes: what the multi-start does not reach | quality | open | medium | - |
+| network-layer-modes: A network layer: hidden units whose weights have symmetric modes are refused | quality | open | large | bayesian-neural-network |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
 | sv-parameters: Stochastic volatility with an unknown persistence: one EP run is too narrow, the grid is the route | quality | open | small | - |
 | evidence: The EP log evidence is exact where EP is, and undefined where a factor's integral against its cavities diverges | infrastructure | open | small | - |

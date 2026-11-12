@@ -106,6 +106,17 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
       markers: [],
     },
     {
+      id: 'network-layer-modes',
+      title: 'A network layer: hidden units whose weights have symmetric modes are refused',
+      kind: 'quality',
+      status: 'open',
+      summary:
+        "The Bayesian neural network benchmark (three tanh units, sixteen points, five test inputs) is refused by EP, with the reason on the verdict, because a run of it is not a posterior. The weights are not identified (flip the signs of a unit's weights, or permute the units, and the function is the same), so the posterior has many symmetric modes and one Gaussian per weight has no fixed point that means anything. What the run did when it was allowed, each measured against the stored long NUTS run of the function values: at the default knobs 200 sweeps without converging (the beliefs moving by hundreds, thousands of updates dropped as improper, no log evidence, function values that run monotonically away from the data); at damping 0.3 to 0.9, the `reset` policy, the flooding and tree schedules or a power below one it either settled on a fixed point with no information (every weight with mean 0 and the function value 0, with a spread of 1 at damping 0.8 and 0.9, of 0.04 with a power below one: converged, and meaningless) or went on moving with one live unit (an input weight near 2 and an output weight near 0.85) and two collapsed ones, whose function values at the data (-0.9 and 0.8) agree with the long run but whose spreads are 2 to 5 times its spread beside the data and whose extrapolation at the two far inputs is 1.6 to 1.9 spreads off; a start that breaks the symmetry changes which unit lives, not whether the run settles. One unit alone settles. The cause is two things together: the symmetry (the fixed points that exist are the symmetric one and the ones with dead units) and the fine-grained graph (about half of the messages of the `tanh` factors to their inputs had no positive precision at the damped end state, so the affine factor beside such a unit had no cavity and a sixth of the messages of the affine factors were not computable).",
+      plan: 'A fixed point per mode and the mixture of them by evidence (the multi-start over the continuous weights named under `multimodal`: a start that gives each unit its own sign and place, the permutation modes related by relabelling), which needs a run per start that settles; for that the whole forward pass of a row as one factor with the weights as the only variables (probabilistic backpropagation: the moments pushed through the layers, one projection per row, so that no hidden variable carries a negative-precision message), or an affine rule that accepts a cavity of negative precision (tried: the messages become computable at damping 0.5 but the sweeps keep moving, so it is not enough alone). The refusal goes when a layer settles on a start of each mode and the mixture is checked against the long NUTS run of the function values.',
+      size: 'large',
+      markers: ['neural-network layer'],
+    },
+    {
       id: 'loopy-overconfidence',
       title: 'Loops make the spreads too small',
       kind: 'quality',
@@ -362,7 +373,7 @@ export const epDirections: readonly EpDirection[] = [
     status: 'partial',
     what: 'Weights as Gaussian beliefs, moments pushed through the units.',
     needs:
-      '`tanh`, `relu` and the rest compile; a hidden unit can collapse and the posterior is multimodal (sign and permutation symmetries): symmetry breaking in the initial messages and a layer-wise packed form.',
+      '`tanh`, `relu` and the rest run as a unit of a regression (the unary rule); a network layer (units of weights that rows share, multiplied by weights that rows share) is refused, because the posterior is multimodal (sign and permutation symmetries) and the run either settles on the uninformative symmetric fixed point or does not settle (the gap `network-layer-modes`): a fixed point per mode weighted by evidence, and the forward pass of a row as one factor (probabilistic backpropagation) so that no hidden variable carries an improper message.',
     size: 'large',
     pages: ['ep-tanh'],
   },
