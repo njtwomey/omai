@@ -87,15 +87,21 @@ describe('the EP evidence of the learned logistic regression (the weights share 
     return method.posterior?.(s.state, s.config as never)
   }
 
-  it('reports the evidence of the rows-expanded model when the plated factor has an improper cavity, and says so', () => {
+  it('has the evidence of the plated factor itself, though its cavity has no density: the rows-expanded model has the same', () => {
     // The scale mixture on the weights sends a site with a negative precision, so the cavity of the plate (all rows, one factor)
-    // is indefinite and its integral against the logistic likelihood diverges: the plate has no EP energy of its own. The method
-    // gives the energy of the same model with a factor per row, whose cavities are proper, and names it.
-    const post = posteriorOf('vectorise')
-    expect(post?.logEvidence?.method).toBe('ep-energy (rows expanded)')
+    // is indefinite at the fixed point and the integral of the plate against it diverges. The plate reads its cavity only through the
+    // posterior it makes with its rows (proper), so it runs there (`improperTarget`) and its energy is taken in natural parameters:
+    // the same fixed point and the same evidence as the model with a factor per row, to rounding.
+    const plated = posteriorOf('vectorise')
+    const rows = posteriorOf('expand')
+    expect(plated?.logEvidence?.method).toBe('ep-energy')
+    expect(plated?.diagnostics['evidenceUndefinedAt']).toBeUndefined()
+    expect(plated?.diagnostics['unresolved']).toBe(0)
+    expect(
+      Math.abs((plated?.logEvidence?.value ?? Number.NaN) - (rows?.logEvidence?.value ?? Number.NaN)),
+    ).toBeLessThan(1e-8)
     const grid = gridPosterior(toProgram(bound), undefined, { maxRefinements: 0, ...problem.grid })
-    expect(Math.abs((post?.logEvidence?.value ?? Number.NaN) - grid.logEvidence)).toBeLessThan(0.1)
-    expect(post?.diagnostics['evidenceUndefinedAt']).toBeUndefined()
+    expect(Math.abs((plated?.logEvidence?.value ?? Number.NaN) - grid.logEvidence)).toBeLessThan(0.1)
   })
 
   it('has the evidence with a factor per row (a proper cavity for each), within 0.1 nats of the grid (0.046 measured)', () => {

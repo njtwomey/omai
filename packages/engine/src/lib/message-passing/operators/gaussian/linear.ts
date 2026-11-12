@@ -16,6 +16,7 @@ import {
   etaOf,
   gaussianMessage,
   gaussianOf,
+  logGaussianIntegral,
   logNormal,
   massOf,
   numberParam,
@@ -58,9 +59,71 @@ function affineMessage(c: OperatorContext, coeffs: readonly number[], offset: nu
   return { message: gaussianMessage(mean / k, variance / (k * k)) }
 }
 
+/**
+ * log of the mass of y = d + sum c_i a_i under the incoming messages of every port, in natural parameters: the integral of the
+ * messages over the inputs with the output substituted (or, for an observed output, with one input eliminated by the constraint and
+ * the Jacobian `1 / |c_j|`), a Gaussian integral that is finite whenever the joint precision is positive definite, though no cavity
+ * need be proper by itself (the site of a scale mixture or a mixture can have a negative precision, and a flat one says nothing and
+ * integrates as 1). NaN when it is not.
+ */
+function affineEvidenceNatural(c: OperatorContext, coeffs: readonly number[], offset: number): number {
+  let shift = offset
+  const free: number[] = []
+  for (const [i, k] of coeffs.entries()) {
+    const a = arg(c, i + 1)
+    if (a.value !== undefined) shift += k * scalarOf(a)
+    else free.push(i)
+  }
+  const y = arg(c, 0)
+  const h = free.map((i) => etaOf(arg(c, i + 1))[0] ?? 0)
+  const j = free.map((i) => etaOf(arg(c, i + 1))[1] ?? 0)
+  const k = free.map((i) => coeffs[i] ?? 0)
+  const m = free.length
+  const precision = (cross: readonly number[], scale: number): number[] => {
+    const p = new Array<number>(m * m)
+    for (let r = 0; r < m; r++)
+      for (let q = 0; q < m; q++) p[r * m + q] = (r === q ? (j[r] ?? 0) : 0) + scale * (cross[r] ?? 0) * (cross[q] ?? 0)
+    return p
+  }
+  if (y.value === undefined) {
+    const [hy, jy] = [etaOf(y)[0] ?? 0, etaOf(y)[1] ?? 0]
+    const constant = hy * shift - 0.5 * jy * shift * shift
+    if (m === 0) return constant
+    return (
+      constant +
+      logGaussianIntegral(
+        h.map((v, r) => v + (k[r] ?? 0) * (hy - jy * shift)),
+        precision(k, jy),
+        m,
+      )
+    )
+  }
+  // An observed output: the hyperplane `sum c_i a_i = y - shift`, parameterised by the others once the input of the largest
+  // coefficient is solved for.
+  let pivot = -1
+  for (let r = 0; r < m; r++) if (pivot < 0 || Math.abs(k[r] ?? 0) > Math.abs(k[pivot] ?? 0)) pivot = r
+  if (pivot < 0 || (k[pivot] ?? 0) === 0) return Number.NaN
+  const kp = k[pivot] as number
+  const u0 = (scalarOf(y) - shift) / kp
+  const rest = [...Array(m).keys()].filter((r) => r !== pivot)
+  // a_pivot = u0 + sum_r B_r a_r, B_r = -c_r / c_pivot; the exponent in the remaining inputs a_r.
+  const b = rest.map((r) => -(k[r] ?? 0) / kp)
+  const hp = h[pivot] ?? 0
+  const jp = j[pivot] ?? 0
+  const constant = hp * u0 - 0.5 * jp * u0 * u0 - Math.log(Math.abs(kp))
+  const n = rest.length
+  if (n === 0) return constant
+  const hh = rest.map((r, t) => (h[r] ?? 0) + (b[t] ?? 0) * (hp - jp * u0))
+  const p = new Array<number>(n * n)
+  for (let r = 0; r < n; r++)
+    for (let q = 0; q < n; q++)
+      p[r * n + q] = (r === q ? (j[rest[r] as number] ?? 0) : 0) + jp * (b[r] ?? 0) * (b[q] ?? 0)
+  return constant + logGaussianIntegral(hh, p, n)
+}
+
 /** log of the mass of y = d + sum c_i a_i under the incoming messages of every port. */
 function affineEvidence(c: OperatorContext, coeffs: readonly number[], offset: number): number {
-  if (!allProper(c.args)) return Number.NaN
+  if (!allProper(c.args)) return affineEvidenceNatural(c, coeffs, offset)
   const y = gaussianOf(arg(c, 0))
   let mean = offset
   let variance = 0
@@ -681,7 +744,8 @@ export const gaussianJoint: FactorOperator = defineOperator({
   },
   evidence: {
     ep: (c) => {
-      if (!allProper(c.args)) return Number.NaN
+      // The messages need only be proper together (the joint's precision plus theirs positive definite, which `spd` below tests): a
+      // cavity that is the site of a scale mixture or a mixture can have a negative precision.
       const { Jr, hr, ports, n, g } = reduceJoint(c)
       const jm = Float64Array.from(Jr)
       const hm = Array.from(hr)

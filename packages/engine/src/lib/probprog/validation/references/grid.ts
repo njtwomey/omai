@@ -50,6 +50,20 @@ export interface GridMarginals {
   readonly marginals: readonly ExactMarginal[]
   /** The marginal of coordinate `k`. */
   readonly marginal: (k: number) => ExactMarginal
+  /** The log of the integral of the density over the box (the sum over the grid times the cell's volume). */
+  readonly logEvidence: number
+  /** The posterior expectation of a function of the coordinates (the sum over the grid, weighted by the normalised density). */
+  readonly expect: (f: (x: readonly number[]) => number) => number
+  /** The points of each coordinate's axis and the normalised mass of the marginal at each (a sum of the grid's cells, so a weight, not a density). */
+  readonly axes: readonly (readonly number[])[]
+  readonly mass: (k: number) => readonly number[]
+  /**
+   * The marginal of a quantity that is Gaussian given the coordinates (the function values of a Gaussian process given its
+   * hyperparameters): the mixture of the conditional normals over the grid, cells with under 1e-6 of the top mass left out.
+   */
+  readonly mixture: (
+    given: (x: readonly number[]) => { readonly mean: number; readonly variance: number },
+  ) => ExactMarginal
   /** The joint of coordinates `a` and `b`, on their axes. */
   readonly joint: (
     a: number,
@@ -64,7 +78,7 @@ export interface GridMarginals {
  * @param logDensity - The log of the unnormalised density of the coordinates.
  * @param box - The interval of each coordinate.
  * @param n - Points per coordinate (default 41).
- * @returns The marginals (piecewise-linear densities) and the joint.
+ * @returns The marginals (piecewise-linear densities), the joint, the log of the integral and the expectation of a function.
  * @example
  * ```ts
  * import { gridMarginals } from 'omai-engine/probprog/validation'
@@ -120,8 +134,40 @@ export function gridMarginals(
       range: [axis[0] ?? 0, axis[n - 1] ?? 0],
     }
   })
+  const cell = h.reduce((a, v) => a * v, 1)
   return {
     marginals,
+    axes,
+    mass: (k) => {
+      const m = new Array<number>(n).fill(0)
+      for (let flat = 0; flat < total; flat++) m[index(flat, k)] = (m[index(flat, k)] ?? 0) + (mass[flat] ?? 0) / z
+      return m
+    },
+    mixture: (given) => {
+      const point = new Array<number>(d).fill(0)
+      const parts: { weight: number; mean: number; variance: number }[] = []
+      for (let flat = 0; flat < total; flat++) {
+        if (!((mass[flat] ?? 0) > 1e-6)) continue
+        for (let k = 0; k < d; k++) point[k] = axes[k]?.[index(flat, k)] ?? 0
+        parts.push({ weight: (mass[flat] ?? 0) / z, ...given(point) })
+      }
+      const kept = parts.reduce((a, p) => a + p.weight, 0)
+      return gaussianMixtureMarginal(
+        parts.map((p) => ({ ...p, weight: p.weight / kept })),
+        (m, sd) => [m - 6 * sd, m + 6 * sd],
+      )
+    },
+    logEvidence: top + Math.log(z * cell),
+    expect: (f) => {
+      const point = new Array<number>(d).fill(0)
+      let sum = 0
+      for (let flat = 0; flat < total; flat++) {
+        if (!((mass[flat] ?? 0) > 0)) continue
+        for (let k = 0; k < d; k++) point[k] = axes[k]?.[index(flat, k)] ?? 0
+        sum += ((mass[flat] ?? 0) / z) * f(point)
+      }
+      return sum
+    },
     marginal: (k) => {
       const m = marginals[k]
       if (m === undefined) throw new OmaiError('value', `gridMarginals: there is no coordinate ${k}`)

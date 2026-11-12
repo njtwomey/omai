@@ -129,6 +129,72 @@ export function gpPosteriorGivenLengthScale(
   return { mean, sd, logMarginalLikelihood: -0.5 * (n * Math.log(2 * Math.PI) + logDet + quad) }
 }
 
+/** The hyperparameters of a Gaussian process regression on inputs of any dimension: an ARD squared-exponential kernel, its variance and the noise. */
+export interface GpHyperparameters {
+  /** The length scale: one number for every input, or one per input (an ARD kernel). */
+  readonly lengthScale: number | readonly number[]
+  /** The kernel variance (the amplitude squared). */
+  readonly variance: number
+  /** The sd of the observation noise. */
+  readonly noise: number
+}
+
+/**
+ * The posterior of the function values of a Gaussian process regression given every hyperparameter, in plain arithmetic: the
+ * kernel `variance exp(-sum_k (x_k - x'_k)^2 / (2 ell_k^2))` (one length scale per input when `lengthScale` is an array, an ARD
+ * kernel), a little jitter, the noise `sigma^2 I`; the textbook mean `K (K + sigma^2 I)^-1 y`, the marginal sds of
+ * `K - K (K + sigma^2 I)^-1 K` and the log marginal likelihood `log N(y; 0, K + sigma^2 I)`. It reads nothing from the
+ * library's kernels, so it is the reference of the grid over several hyperparameters (`epGridMethod`).
+ *
+ * @param x - The inputs, one row per point (`[[0], [1]]` for one input).
+ * @param y - The observations.
+ * @param h - The length scale (or one per input), the kernel variance and the noise sd.
+ * @returns The mean and sd of each function value and the log marginal likelihood.
+ * @concept gaussian-processes
+ * @example
+ * ```ts
+ * import { gpPosteriorGivenHyperparameters } from 'omai-engine/probprog/models'
+ * const p = gpPosteriorGivenHyperparameters([[0], [1], [2]], [0, 1, 0], { lengthScale: 1, variance: 2, noise: 0.3 })
+ * [p.mean.length, p.sd.every((s) => s > 0 && s < 1.5)] // => [3, true]
+ * ```
+ */
+export function gpPosteriorGivenHyperparameters(
+  x: readonly (readonly number[])[],
+  y: readonly number[],
+  h: GpHyperparameters,
+): { readonly mean: number[]; readonly sd: number[]; readonly logMarginalLikelihood: number } {
+  const n = x.length
+  const k = x[0]?.length ?? 0
+  const scales = typeof h.lengthScale === 'number' ? new Array<number>(k).fill(h.lengthScale) : h.lengthScale
+  const K = new Float64Array(n * n)
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++) {
+      let q = 0
+      for (let c = 0; c < k; c++) q += (((x[i]?.[c] ?? 0) - (x[j]?.[c] ?? 0)) / (scales[c] ?? 1)) ** 2
+      K[i * n + j] = h.variance * Math.exp(-0.5 * q) + (i === j ? JITTER : 0)
+    }
+  const C = Float64Array.from(K)
+  for (let i = 0; i < n; i++) C[i * n + i] = (C[i * n + i] ?? 0) + h.noise * h.noise
+  const { factor } = dpotrf(C, n)
+  const alpha = dpotrs(factor, y, n)
+  const mean = Array.from({ length: n }, (_, i) => {
+    let s = 0
+    for (let j = 0; j < n; j++) s += (K[i * n + j] ?? 0) * (alpha[j] ?? 0)
+    return s
+  })
+  const sd = Array.from({ length: n }, (_, i) => {
+    const row = Float64Array.from({ length: n }, (_, j) => K[i * n + j] ?? 0)
+    const solved = dpotrs(factor, row, n)
+    let reduction = 0
+    for (let j = 0; j < n; j++) reduction += (row[j] ?? 0) * (solved[j] ?? 0)
+    return Math.sqrt(Math.max((K[i * n + i] ?? 0) - reduction, 1e-14))
+  })
+  let logDet = 0
+  for (let i = 0; i < n; i++) logDet += 2 * Math.log(factor[i * n + i] ?? 1)
+  const quad = y.reduce((a, v, i) => a + v * (alpha[i] ?? 0), 0)
+  return { mean, sd, logMarginalLikelihood: -0.5 * (n * Math.log(2 * Math.PI) + logDet + quad) }
+}
+
 function kernelMatrixOf(x: readonly number[], ell: number): Value {
   return kernelMatrix(tensor(x), tensor(ell))
 }

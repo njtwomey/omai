@@ -19,10 +19,17 @@ describe('epCoverage', () => {
     expect(c.atoms.filter((r) => r.status !== r.declared).map((r) => r.name)).toEqual([])
   })
 
-  it('runs every atom and every benchmark model, and says by which route a benchmark model runs', () => {
+  it('runs every atom and every benchmark model but the neural network, and says by which route a benchmark model runs', () => {
     expect(c.atomsRun).toBe(epAtoms.length)
-    expect(c.benchmarksRun).toBe(c.benchmarks.length)
-    for (const r of c.benchmarks) expect(['ep', 'ep-grid'], r.name).toContain(r.via)
+    expect(c.benchmarks.filter((r) => r.status !== 'runs').map((r) => r.name)).toEqual(['bayesian-neural-network'])
+    for (const r of c.benchmarks.filter((b) => b.status === 'runs')) expect(['ep', 'ep-grid'], r.name).toContain(r.via)
+  })
+
+  it('refuses the Bayesian neural network with the reason, not a run that does not converge', () => {
+    const net = c.benchmarks.find((r) => r.name === 'bayesian-neural-network')
+    expect(net?.status).toBe('planned')
+    expect(net?.reason).toMatch(/neural-network layer.*not identified.*does not converge/)
+    expect(net?.missing).toEqual(['beliefs that hold the symmetric modes of a hidden layer'])
   })
 })
 

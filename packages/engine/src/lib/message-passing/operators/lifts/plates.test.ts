@@ -99,6 +99,46 @@ describe('a plate of probit or logistic rows is the expanded graph in one factor
   })
 })
 
+describe('a plate against a cavity with no density (an indefinite precision), whose posterior with the rows is proper', () => {
+  // The site of a scale mixture on the weights can have a negative precision in a direction, so the cavity of the plate is indefinite
+  // there while the plate's own rows make the posterior proper. The plate runs (the engine shows it such a cavity, `improperTarget`), and
+  // its energy is taken in natural parameters. No brute-force integral exists for it (the integral against the cavity diverges), so the
+  // test is that nothing happens at the boundary: the message and the energy are smooth in the precision as it goes through zero.
+  const { x, y } = probitRows(30)
+  const d = 3
+  const cavity = (t: number): M.Arg => {
+    const precision = Array.from({ length: d * d }, (_, k) => (k % (d + 1) === 0 ? (k === d * d - 1 ? t : 1) : 0))
+    return M.messageArg(M.gaussianMv(d), [0.1, 0.1, 0.1, ...precision])
+  }
+  const context = (t: number): M.OperatorContext => ({
+    mode: 'ep',
+    to: 0,
+    args: [cavity(t)],
+    params: { X: x.flat(), y },
+    power: 1,
+  })
+  for (const plate of ['probit-plate', 'logistic-plate']) {
+    it(`${plate}: the message and the energy go through a precision of zero without a jump`, () => {
+      const op = operators[plate] as M.FactorOperator
+      const energy = (t: number): number => op.logEvidence?.(context(t)) as number
+      const message = (t: number): readonly number[] => op.ep?.(context(t)).message as readonly number[]
+      for (const t of [0.2, 0.01, -0.01, -0.2, -0.5]) {
+        expect(Number.isFinite(energy(t))).toBe(true)
+        // The posterior (cavity plus message) has a proper precision.
+        const posterior = (cavity(t).eta as readonly number[]).map((v, i) => v + (message(t)[i] ?? 0))
+        expect(M.gaussianMv(d).isProper(posterior)).toBe(true)
+      }
+      // The slope across zero is the slope on either side of it, and the message moves by what the slope says.
+      const across = (energy(0.01) - energy(-0.01)) / 0.02
+      const before = (energy(0.2) - energy(0.05)) / 0.15
+      const after = (energy(-0.05) - energy(-0.2)) / 0.15
+      expect(Math.abs(across - before)).toBeLessThan(0.02)
+      expect(Math.abs(across - after)).toBeLessThan(0.02)
+      for (const i of [0, 1, 2]) expect(Math.abs((message(0.01)[i] ?? 0) - (message(-0.01)[i] ?? 0))).toBeLessThan(0.01)
+    })
+  }
+})
+
 describe('the plate under variational message passing', () => {
   it('probit: the fixed point is the Albert-Chib mean field with a full-covariance block over the weights', () => {
     const { x, y } = probitRows(25)

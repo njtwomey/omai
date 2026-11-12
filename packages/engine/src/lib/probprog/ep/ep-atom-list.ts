@@ -88,6 +88,7 @@ const ADDED_ORDER: readonly string[] = [
   'skill-draws-learned',
   'gp-length-scale',
   'gp-probit-learned',
+  'gp-hyperparameters',
   'poisson-log',
   'poisson-log-learned',
   'poisson-log-dispersion-learned',

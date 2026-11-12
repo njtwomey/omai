@@ -57,10 +57,10 @@ What a user of expectation propagation on a model needs, and the suite that test
 - function `epCoverage`: What EP covers today: atoms and benchmark models as runs or planned, with reasons. `src/lib/probprog/ep/ep-coverage.ts:59` `omai-engine/probprog/ep`
 - function `mixtureInterval`: The equal-tailed credible interval of a mixture of Gaussians (a gated coefficient). `src/lib/probprog/ep/ep-recovery.ts:24` `omai-engine/probprog/ep`
 - function `recoverySummary`: How well a posterior recovered the truth: interval coverage, error, agreement with a reference. `src/lib/probprog/ep/ep-recovery.ts:81` `omai-engine/probprog/ep`
-- function `runEp`: Run EP on a bound model: beliefs per sweep, a record, or the refusal. `src/lib/probprog/ep/run.ts:135` `omai-engine/probprog/ep`
+- function `runEp`: Run EP on a bound model: beliefs per sweep, a record, or the refusal. `src/lib/probprog/ep/run.ts:136` `omai-engine/probprog/ep`
 - function `vmpCoverage`: What variational message passing covers today: atoms as runs or planned, with the operators lacking a rule. `src/lib/probprog/ep/ep-coverage.ts:160` `omai-engine/probprog/ep`
 
-- table `epAtoms`: The EP atoms: bare setups of one factor each, with a reference and a tolerance (look one up by name). `src/lib/probprog/ep/ep-atom-list.ts:153` `omai-engine/probprog/ep`
+- table `epAtoms`: The EP atoms: bare setups of one factor each, with a reference and a tolerance (look one up by name). `src/lib/probprog/ep/ep-atom-list.ts:154` `omai-engine/probprog/ep`
 
 ## probprog/inference
 
@@ -90,7 +90,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `emMethod`: Expectation maximisation, one iteration per step, with exact E-steps. `src/lib/probprog/inference/em-method.ts:101` `omai-engine/probprog/inference`
 - estimator `ensembleSliceMethod`: Ensemble slice sampling with a tuned direction scale as a steppable method. `src/lib/probprog/inference/ensemble-methods.ts:125` `omai-engine/probprog/inference`
 - estimator `enumerationMethod`: Exact enumeration of discrete models by a junction tree, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:134` `omai-engine/probprog/inference`
-- estimator `epGridMethod`: Expectation propagation inside an evidence-weighted grid over the hyperparameters of a model. `src/lib/probprog/inference/ep-grid.ts:372` `omai-engine/probprog/inference`
+- estimator `epGridMethod`: Expectation propagation inside an evidence-weighted grid over the hyperparameters of a model. `src/lib/probprog/inference/ep-grid.ts:447` `omai-engine/probprog/inference`
 - estimator `epMultiStartMethod`: Expectation propagation from several starts, the fixed points weighted by their evidence. `src/lib/probprog/inference/ep-multistart.ts:345` `omai-engine/probprog/inference`
 - estimator `epSpecMethod`: Expectation propagation on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:318` `omai-engine/probprog/inference`
 - estimator `gaussianMethod`: Exact linear-Gaussian conditioning, Kalman and Gaussian BP, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:85` `omai-engine/probprog/inference`
@@ -186,9 +186,9 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 
 - function `additionalCampaigns`: The periodic campaigns of the later benchmark models, plus the clutter problem's EP comparison. `src/lib/probprog/models/additional-campaigns.ts:104` `omai-engine/probprog/models`
 - function `bananaDraws`: Exact draws from Haario's banana, for drawing the target. `src/lib/probprog/models/geometry.ts:165` `omai-engine/probprog/models`
-- function `bayesianGam`: Bayesian GAM of one covariate as a model spec: penalty or spike-slab prior. `src/lib/probprog/models/bayesian-gam.ts:169` `omai-engine/probprog/models`
-- function `bayesianGamFit`: Curve, band, sampled curves and weighted bases of a Bayesian GAM posterior. `src/lib/probprog/models/bayesian-gam.ts:552` `omai-engine/probprog/models`
-- function `bayesianGamReference`: Exact posterior curve and band of a Bayesian GAM by quadrature. `src/lib/probprog/models/bayesian-gam.ts:803` `omai-engine/probprog/models`
+- function `bayesianGam`: Bayesian GAM of one covariate as a model spec: penalty or spike-slab prior. `src/lib/probprog/models/bayesian-gam.ts:170` `omai-engine/probprog/models`
+- function `bayesianGamFit`: Curve, band, sampled curves and weighted bases of a Bayesian GAM posterior. `src/lib/probprog/models/bayesian-gam.ts:553` `omai-engine/probprog/models`
+- function `bayesianGamReference`: Exact posterior curve and band of a Bayesian GAM by quadrature. `src/lib/probprog/models/bayesian-gam.ts:804` `omai-engine/probprog/models`
 - function `benchmarkAgreement`: Cross-engine agreement of a benchmark model: every planned method against the truth. `src/lib/probprog/models/agreement.ts:132` `omai-engine/probprog/models`
 - function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:103` `omai-engine/probprog/models`
 - function `betaBernoulliModel`: The Beta-Bernoulli coin with a chosen Beta(a, b) prior; bind it to `{ y: flips }`. `src/lib/probprog/models/conjugate.ts:43` `omai-engine/probprog/models`
@@ -204,7 +204,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `structureCampaigns`: The structure of every benchmark model, and collapsed against full NUTS, as periodic campaigns. `src/lib/probprog/models/structure-campaigns.ts:364` `omai-engine/probprog/models`
 - function `sviCampaigns`: Periodic validation campaigns of the variational methods against the benchmark truths. `src/lib/probprog/models/svi-plans.ts:206` `omai-engine/probprog/models`
 
-- estimator `bayesianGamMethod`: A Bayesian GAM under any inference method, with its fit as a tape probe. `src/lib/probprog/models/bayesian-gam.ts:986` `omai-engine/probprog/models`
+- estimator `bayesianGamMethod`: A Bayesian GAM under any inference method, with its fit as a tape probe. `src/lib/probprog/models/bayesian-gam.ts:987` `omai-engine/probprog/models`
 
 - structure `BenchmarkModel`: A benchmark model: a spec with a data generator, the truth, references, tags and method plans. `src/lib/probprog/models/benchmark.ts:98` `omai-engine/probprog/models`
 
@@ -226,8 +226,8 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - dataset `gaussianHmm`: Three-state Gaussian HMM as a scan, parameters known; exact forward-backward truth with visit counts. `src/lib/probprog/models/series.ts:280` `omai-engine/probprog/models`
 - dataset `gaussianMixture`: Two-component Gaussian mixture with label switching; the truth is the even two-mode mixture; sorted summaries. `src/lib/probprog/models/mixture.ts:263` `omai-engine/probprog/models`
 - dataset `gaussianMixtureOrdered`: Two-component Gaussian mixture, means ordered; discrete labels summed out; the truth is a 2-D grid. `src/lib/probprog/models/mixture.ts:217` `omai-engine/probprog/models`
-- dataset `gaussianProcessNonCentred`: Gaussian process regression, non-centred (f = L z); the same quadrature truth as the centred form. `src/lib/probprog/models/gaussian-process.ts:295` `omai-engine/probprog/models`
-- dataset `gaussianProcessRegression`: Gaussian process regression with an unknown length scale; closed-form function posterior, quadrature over the length scale. `src/lib/probprog/models/gaussian-process.ts:207` `omai-engine/probprog/models`
+- dataset `gaussianProcessNonCentred`: Gaussian process regression, non-centred (f = L z); the same quadrature truth as the centred form. `src/lib/probprog/models/gaussian-process.ts:361` `omai-engine/probprog/models`
+- dataset `gaussianProcessRegression`: Gaussian process regression with an unknown length scale; closed-form function posterior, quadrature over the length scale. `src/lib/probprog/models/gaussian-process.ts:273` `omai-engine/probprog/models`
 - dataset `generateIrt`: Item response answers from known abilities, difficulties and discriminations. `src/lib/probprog/models/irt-hierarchical.ts:212` `omai-engine/probprog/models`
 - dataset `itemResponseScoring`: 2PL item response scoring with known items; one-dimensional quadrature truth for each respondent. `src/lib/probprog/models/irt.ts:101` `omai-engine/probprog/models`
 - dataset `ldaLite`: LDA-lite: three documents, two topics, four words; the exact posterior by enumeration of the assignments. `src/lib/probprog/models/topics.ts:260` `omai-engine/probprog/models`

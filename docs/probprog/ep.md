@@ -91,7 +91,7 @@ one file per family) and from the references.
 | method | what it does | when |
 | --- | --- | --- |
 | `epSpecMethod(bound)` (`ep`) | plain EP on the compiled graph; a step is a sweep, a factor or a message by `granularity`; also fractional EP by `power` | the model compiles and every operator has an EP rule |
-| `epGridMethod(bound)` (`ep-grid`) | EP inside a grid over scalar hyperparameters that a custom function reads (a Gaussian process length scale): each node conditions the model, EP runs, the EP evidence weights the node | plain EP refuses because a custom function reads a random scalar |
+| `epGridMethod(bound)` (`ep-grid`) | EP inside a grid over the hyperparameters that a custom function reads (a Gaussian process length scale, kernel variance and noise sd; the length scale per input of an ARD kernel): each node conditions the model, EP runs, the EP evidence weights the node; over several axes a walk over the region where the posterior has mass | plain EP refuses because a custom function reads a random scalar (or, for an ARD kernel, a plated vector) |
 | `epMultiStartMethod(bound)` (`ep-multistart`) | EP from several starts of the discrete messages (random, one excluded category each, relabellings; set on the port of each label's prior and held for three damped sweeps), the distinct fixed points weighted by their evidence (`diagnostics.modeWeights`) | a model with discrete latents whose posterior has several readings; chosen by the person |
 | `vmpSpecMethod`, `bpSpecMethod` | the variational and the sum-product settings of the same engine | likewise |
 
@@ -147,7 +147,7 @@ rejects a key the space does not have, `atPower` puts the power of fractional EP
 | `restarts` | restarts with stronger damping when a run stalls | 1 | 1 | 1 |
 | `power` | fractional EP (1 is EP) | 1 | 1 | 1 |
 
-The method-specific knobs (`points`, `tail`, `maxNodes`, `edge`, `order` (`bisect`, or `walk` from the middle of the range outwards, one hyperparameter), `window` (the nats at which a walk stops) and `warm` (each node started from the nearest settled node's messages) for the grid; `starts`, `jitter`, `exclusions`, `labels`, `merge` for
+The method-specific knobs (`points`, `tail`, `maxNodes`, `edge`, `order` (`bisect`, or `walk` from the middle of the range outwards, best first, over any number of axes), `window` (the nats at which a walk stops) and `warm` (each node started from the nearest settled node's messages) for the grid (a method over several axes opens on `walk`, `warm`, 15 points, a window of 7 and a budget of 4000 nodes: `epGridKnobsFor(axes)`); `starts`, `jitter`, `exclusions`, `labels`, `merge` for
 multi-start) sit beside these. `granularity` is absent from the grid and multi-start methods because their step is a whole EP run.
 `atom.ep` is an `EpKnobs`: a key that is not a knob is a type error where the atom is written, an `OmaiError` in `defineAtom` and in
 `atomRun`: a misspelled knob used to run on the defaults and report success.

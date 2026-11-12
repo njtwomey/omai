@@ -169,6 +169,43 @@ describe('the alpha sweep on a clutter problem interpolates between EP and the v
   })
 })
 
+describe('alpha-divergence message passing: the energy of the fixed point', () => {
+  const g = clutterGraph()
+  // The log evidence of the clutter problem by quadrature: the prior N(0, 100) times the eight rows.
+  const exact = Math.log(
+    integrate(
+      (x) => {
+        let lp = Math.log(density(x, 0, 100))
+        for (const y of ys) lp += Math.log(0.5 * density(y, x, 1) + 0.5 * density(y, 0, 10))
+        return Math.exp(lp)
+      },
+      -30,
+      30,
+      60,
+    ),
+  )
+  const alphaEnergy = (alpha: number): number =>
+    M.evidenceOf(
+      g,
+      { projection: M.alphaProjection(alpha) },
+      runAlgorithm(M.alphaEpAlgorithm(g, { alpha, tol: 1e-12 }), { maxSteps: 3000 }).state,
+    )
+  it.each([1, 0.8, 0.5, 0.3, 0.1])(
+    'alpha %d: the energy is the power EP energy at that power for the factors that take one, to 1e-9',
+    (alpha) => {
+      // The fixed points of the alpha updates are those of power EP with every factor that takes a power at alpha (Minka 2004).
+      const powered = M.withPowers(g, (f) => (f.operator.power === true ? alpha : 1))
+      const state = runAlgorithm(M.epAlgorithm(powered, { tol: 1e-12 }), { maxSteps: 3000 }).state
+      const want = M.evidenceOf(powered, { projection: M.momentProjection }, state)
+      expect(Number.isFinite(want)).toBe(true)
+      expect(Math.abs(alphaEnergy(alpha) - want)).toBeLessThan(1e-9)
+    },
+  )
+  it('is the EP evidence at alpha 1, and stays within 0.004 nats of the quadrature from 1 down to 0.1 (0.0017 at 1)', () => {
+    for (const alpha of [1, 0.8, 0.5, 0.3, 0.1]) expect(Math.abs(alphaEnergy(alpha) - exact)).toBeLessThan(0.004)
+  })
+})
+
 describe('alpha-divergence message passing: the contract', () => {
   const g = clutterGraph()
   it('refuses an alpha outside (0, 1], factors with powers, and graphs with nothing to project', () => {
@@ -181,7 +218,7 @@ describe('alpha-divergence message passing: the contract', () => {
     )
     expect(() => M.alphaEpAlgorithm(plain, { alpha: 0.5 })).toThrow(/nothing to project/)
   })
-  it('is a method with an alpha knob, a typed tape, and no evidence below alpha 1', () => {
+  it('is a method with an alpha knob and a typed tape, which carries the evidence at every alpha', () => {
     const method = M.alphaEpMethod(g)
     expect(method.name).toBe('alpha-ep')
     expect(Object.keys(method.config.spaces)).toContain('alpha')
@@ -189,7 +226,7 @@ describe('alpha-divergence message passing: the contract', () => {
     runAlgorithm(M.alphaEpAlgorithm(g, { alpha: 0.5 }), { maxSteps: 100, tracer: rec })
     const names = new Set(rec.run().events.flatMap((e) => (e.type === 'metric' ? [e.name] : [])))
     expect(names.has('change')).toBe(true)
-    expect(names.has('evidence')).toBe(false)
+    expect(names.has('evidence')).toBe(true)
     const ep = recorder()
     runAlgorithm(M.alphaEpAlgorithm(g, { alpha: 1 }), { maxSteps: 100, tracer: ep })
     expect(ep.run().events.some((e) => e.type === 'metric' && e.name === 'evidence')).toBe(true)
