@@ -1,5 +1,5 @@
 // A likelihood over a predictor and a second random scalar (a Laplace with a random scale, a Student-t with random degrees of
-// freedom, a Weibull with a random shape, a beta outcome with two random shapes) and a beta variable with two random shapes, as
+// freedom or a random scale, a Weibull with a random shape, a beta outcome with two random shapes) and a beta variable with two random shapes, as
 // models, under EP, each against the exact posterior of the two unknowns on a grid (the second coordinate on its log).
 import { describe, expect, it } from 'vitest'
 import { runEp } from '../../../../testing/factor-graph.ts'
@@ -117,6 +117,34 @@ describe('a Student-t likelihood with random degrees of freedom', () => {
     )
     agree(post(marginals, 'mu'), ref.mean[0], ref.sd[0])
     agree(post(marginals, 'df'), ref.value[1], ref.valueSd[1], 0.25, 0.3)
+  })
+})
+
+describe('a Student-t likelihood with a random scale', () => {
+  const y = [0.3, -0.4, 0.1, 0.8, -0.2, 4.2, 0.5, -3.1, 0.2, -0.6]
+  const model = defineModel('student-t-scale', (b) => {
+    const mu = b.latent('mu', d.normal(0, 2))
+    const scale = b.latent('scale', d.logNormal(-0.2, 0.6))
+    b.observe('y', d.studentT(4, mu, scale), b.data('y', { dims: ['i'], role: 'response' }))
+  })
+  it('a log-normal scale is a port of likelihood-pair; EP agrees with the exact posterior of the location and the scale', () => {
+    const { c, marginals } = ep(model.bind({ y }))
+    expect(c.issues).toEqual([])
+    expect(factorsOf(c, 'likelihood-pair')).toBe(y.length)
+    const df = 4
+    const logT = (v: number, mu: number, s: number): number =>
+      lgammaOf((df + 1) / 2) -
+      lgammaOf(df / 2) -
+      0.5 * Math.log(df * Math.PI) -
+      s -
+      ((df + 1) / 2) * Math.log1p(((v - mu) * Math.exp(-s)) ** 2 / df)
+    const ref = grid2(
+      (mu, s) => logNormalPdf(mu, 0, 2) + logNormalPdf(s, -0.2, 0.6) + sum(y.map((v) => logT(v, mu, s))),
+      [-1.5, 1.5],
+      [-2, 1.5],
+    )
+    agree(post(marginals, 'mu'), ref.mean[0], ref.sd[0])
+    agree(post(marginals, 'scale'), ref.value[1], ref.valueSd[1], 0.2, 0.25)
   })
 })
 

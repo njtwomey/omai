@@ -5,7 +5,12 @@
  */
 
 import type { Json } from '../../../../base/index.ts'
-import { likelihoods, type OperatorName, pairLikelihoods } from '../../../../message-passing/index.ts'
+import {
+  likelihoods,
+  type OperatorName,
+  pairLikelihoods,
+  tripleLikelihoods,
+} from '../../../../message-passing/index.ts'
 import { toFlat } from '../../../../tensor/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
 import { type Atom, affOf, type Cell, isConstCell, prod } from '../_cells.ts'
@@ -16,7 +21,7 @@ import { cellsOf, constAt, paramCell } from '../_params.ts'
 import {
   classDimensionMissing,
   classOutsideRange,
-  cutPointsRandom,
+  cutPointsShape,
   dispersionNotPositiveLatent,
   hurdleNotCount,
   hurdleRateNotExposureExp,
@@ -27,7 +32,6 @@ import {
   likelihoodRejects,
   negativeBinomialOutcome,
   quantileLevelRandom,
-  shapeAndScaleBothRandom,
   weibullScaleNotLog,
   zeroProbabilityNotKnownOrBeta,
 } from '../_reasons.ts'
@@ -142,7 +146,7 @@ export function observedNumeric(
   }
   if (fam === 'orderedProbit' || fam === 'orderedLogistic') {
     const cutsExpr = dist['cutpoints'] as ExprSpec
-    if (!cx.isConst(cutsExpr)) throw cutPointsRandom(node.name)
+    if (!cx.isConst(cutsExpr)) return observedOrdinalCuts(cx, node, fam, y, i, index)
     const cuts = Array.from(toFlat(cx.evalNamed(cutsExpr).value))
     return emit(fam === 'orderedProbit' ? 'ordinal-probit' : 'ordinal-logit', dist['predictor'] as ExprSpec, { cuts })
   }
@@ -257,7 +261,7 @@ export function positivePort(
 
 /**
  * A numeric likelihood over two random scalars (`likelihood-pair`): a Laplace with a random scale, a Student-t with random
- * degrees of freedom (known scale), a Weibull with a random shape (`scale = exp(affine)`) and a beta outcome with two random
+ * degrees of freedom (known scale) or a random scale (known degrees of freedom), a Weibull with a random shape (`scale = exp(affine)`) and a beta outcome with two random
  * shapes. The outcome is a parameter of the factor. A parameter that is known is a constant coordinate; nothing random at
  * all says nothing.
  */
@@ -279,11 +283,16 @@ export function observedPair(
       extra['tau'] = tau.aff.offset
     }
     args = [predictor(paramCell(cx, node, 'loc', i)), positivePort(cx, node, 'scale', i, index)]
-  } else if (likelihood === 'student-t-df') {
-    const scale = paramCell(cx, node, 'scale', i)
-    if (!isConstCell(scale)) throw shapeAndScaleBothRandom(node.name)
-    extra['scale'] = scale.aff.offset
-    args = [predictor(paramCell(cx, node, 'loc', i)), positivePort(cx, node, 'df', i, index)]
+  } else if (likelihood === 'student-t-df' || likelihood === 'student-t-scale') {
+    // the other parameter is known (both random is the triple `student-t-full`, `observedTriple`)
+    const knownKey = likelihood === 'student-t-df' ? 'scale' : 'df'
+    const known = paramCell(cx, node, knownKey, i)
+    if (!isConstCell(known)) throw knownParameterRandom(knownKey, node.name, 'studentT')
+    extra[knownKey] = known.aff.offset
+    args = [
+      predictor(paramCell(cx, node, 'loc', i)),
+      positivePort(cx, node, likelihood === 'student-t-df' ? 'df' : 'scale', i, index),
+    ]
   } else if (likelihood === 'weibull-shape') {
     const m = node.dist.params['scale'] === undefined ? undefined : scaledExp(cx.idiom, node.dist.params['scale'])
     if (m === undefined || m.scale !== undefined) throw weibullScaleNotLog(node.name)
@@ -299,6 +308,78 @@ export function observedPair(
   if (why !== undefined) throw likelihoodRejects(node.name, likelihood, why)
   if (typeof args[0] !== 'string' && typeof args[1] !== 'string') return null
   cx.g.addFactor({ operator: 'likelihood-pair', args, params }, cx.elementName(node.name, node.dims, i))
+  return null
+}
+
+/**
+ * An ordered probit or logistic outcome whose cut points are random (a prior on increasing thresholds, a learned draw margin: any
+ * affine form of Gaussian variables, element by element of the vector): one `likelihood-triple` factor on the predictor and the two cut
+ * points that bound the observed category. The first and the last category have one cut, and the other port is a known value the
+ * rule ignores. The cut points are a vector over one dimension of their own (or a single value for two categories), and may vary over
+ * the observation's dimensions. A known cut is a known port, so cuts that are partly known are served too.
+ */
+export function observedOrdinalCuts(
+  cx: Context,
+  node: ModelNode & { readonly kind: 'observed' },
+  fam: string,
+  y: number,
+  i: number,
+  index: number | undefined,
+): string | null {
+  const key = `${node.name}|cutpoints`
+  let cells = cx.cells.get(key)
+  const rows = Math.max(1, prod(cx.shapeOf(node.dims)))
+  if (cells === undefined) {
+    const sym = evalSym(cx, node.dist.params['cutpoints'] as ExprSpec)
+    const extra = sym.dims.filter((dim) => !node.dims.includes(dim))
+    if (extra.length > 1) throw cutPointsShape(node.name, sym.dims)
+    cells = cx.over(sym, extra.length === 0 ? node.dims : [...node.dims, extra[0] as string])
+    cx.cells.set(key, cells)
+  }
+  const cuts = cells.length / rows
+  if (!(Number.isInteger(cuts) && cuts >= 1)) throw cutPointsShape(node.name, String(cells.length))
+  if (!(Number.isInteger(y) && y >= 0 && y <= cuts)) throw classOutsideRange(node.name, y, cuts)
+  const cut = (k: number): Cell => cells?.[i * cuts + k] as Cell
+  const predictor = cellsOf(cx, node, 'predictor', () => evalSym(cx, node.dist.params['predictor'] as ExprSpec))[
+    i
+  ] as Cell
+  const unused = { const: 0 }
+  const args = [
+    cx.g.portOf(predictor, node.name, index),
+    y === 0 ? unused : cx.g.portOf(cut(y - 1), node.name, index),
+    y === cuts ? unused : cx.g.portOf(cut(y), node.name, index),
+  ]
+  const likelihood = fam === 'orderedProbit' ? 'ordinal-probit-cuts' : 'ordinal-logit-cuts'
+  const params: Record<string, Json> = { likelihood, y, categories: cuts + 1 }
+  if (args.every((a) => typeof a !== 'string')) return null
+  cx.g.addFactor({ operator: 'likelihood-triple', args, params }, cx.elementName(node.name, node.dims, i))
+  return null
+}
+
+/**
+ * A Student-t observation whose scale and degrees of freedom are both random (`likelihood-triple`, `student-t-full`): the location
+ * (a predictor, an affine form of Gaussian variables, or known), the scale and the degrees of freedom, each a positive random value
+ * carried on its log (or a gamma variable) as `positivePort` reads it. A known parameter is a constant coordinate. The outcome is a
+ * parameter of the factor.
+ */
+export function observedTriple(
+  cx: Context,
+  node: ModelNode & { readonly kind: 'observed' },
+  likelihood: string,
+  y: number,
+  i: number,
+  index: number | undefined,
+): string | null {
+  const args = [
+    cx.g.portOf(paramCell(cx, node, 'loc', i), node.name, index),
+    positivePort(cx, node, 'scale', i, index),
+    positivePort(cx, node, 'df', i, index),
+  ]
+  const params: Record<string, Json> = { likelihood, y }
+  const why = tripleLikelihoods()[likelihood]?.check?.(y, params)
+  if (why !== undefined) throw likelihoodRejects(node.name, likelihood, why)
+  if (args.every((a) => typeof a !== 'string')) return null
+  cx.g.addFactor({ operator: 'likelihood-triple', args, params }, cx.elementName(node.name, node.dims, i))
   return null
 }
 

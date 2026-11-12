@@ -3,8 +3,8 @@
  * of the negative binomial with a random dispersion to a registry of densities. A coordinate is a real value (a location, a
  * predictor) or a positive one carried either as a Gaussian on its log (a log-normal, half-normal or half-Cauchy parameter,
  * projected by the compiler) or as a gamma variable, so a Laplace noise whose scale is learned, a Student-t with learned degrees
- * of freedom, an asymmetric Laplace (quantile regression) with a learned scale, a Weibull with a learned shape and a Beta-distributed outcome with two random shapes are four rows of one table
- * read by one operator, `likelihood-pair`, and a fifth is a few lines. EP matches the moments of both variables under their
+ * of freedom or a learned scale, an asymmetric Laplace (quantile regression) with a learned scale, a Weibull with a learned shape and a Beta-distributed outcome with two random shapes are six rows of one table
+ * read by one operator, `likelihood-pair`, and another is a few lines. EP matches the moments of both variables under their
  * cavities times the density by a panelled Gauss-Legendre grid in the two coordinates (`_grid.ts`), split at the kinks the
  * density has and zoomed onto where the mass is, so the sites cost a few thousand evaluations of the density each.
  */
@@ -129,6 +129,38 @@ const studentTDf: PairLikelihood = {
   },
 }
 
+/** Student-t noise with a known number of degrees of freedom around a random location, whose scale `exp(x1)` is random. */
+const studentTScale: PairLikelihood = {
+  name: 'student-t-scale',
+  description: 'y | u, s ~ Student t(df, u, exp(s)): robust noise whose scale is random',
+  ports: [
+    { name: 'location', positive: false },
+    { name: 'scale', positive: true },
+  ],
+  params: ['df'],
+  check: (_y, p) => positive(p, 'df'),
+  density: (y, p) => {
+    const df = numberParam(p, 'df')
+    const c = lgammaOf((df + 1) / 2) - lgammaOf(df / 2) - 0.5 * Math.log(df * Math.PI)
+    return (u, s) => {
+      const z = (y - u) * Math.exp(-s)
+      return c - s - ((df + 1) / 2) * Math.log1p((z * z) / df)
+    }
+  },
+  column: (y, p) => {
+    const df = numberParam(p, 'df')
+    const c = lgammaOf((df + 1) / 2) - lgammaOf(df / 2) - 0.5 * Math.log(df * Math.PI)
+    const half = (df + 1) / 2
+    return (s) => {
+      const inverse = Math.exp(-s)
+      return (u) => {
+        const z = (y - u) * inverse
+        return c - s - half * Math.log1p((z * z) / df)
+      }
+    }
+  },
+}
+
 /** A Weibull time with random shape `k = exp(x1)` and scale `exp(x0)`; `censored = 1` makes `y` a right-censoring time. */
 const weibullShape: PairLikelihood = {
   name: 'weibull-shape',
@@ -196,12 +228,12 @@ const betaShapes: PairLikelihood = {
 }
 
 /**
- * The registry of pair likelihoods by name: `laplace-scale`, `asymmetric-laplace-scale`, `student-t-df`, `weibull-shape` and `beta-shapes`. A new object each
+ * The registry of pair likelihoods by name: `laplace-scale`, `asymmetric-laplace-scale`, `student-t-df`, `student-t-scale`, `weibull-shape` and `beta-shapes`. A new object each
  * call, so a caller may add a row of its own and build the operator with {@link pairLikelihoodOperator}.
  *
  * @returns The densities, keyed by name.
  * @concept factor-operators
- * @index table The likelihoods over two random scalars (Laplace scale, Student-t degrees of freedom, Weibull shape, beta shapes).
+ * @index table The likelihoods over two random scalars (Laplace scale, Student-t degrees of freedom or scale, Weibull shape, beta shapes).
  * @example
  * ```ts
  * import { pairLikelihoods } from 'omai-engine/message-passing'
@@ -210,7 +242,14 @@ const betaShapes: PairLikelihood = {
  * ```
  */
 export function pairLikelihoods(): Record<string, PairLikelihood> {
-  const all: PairLikelihood[] = [laplaceScale, asymmetricLaplaceScale, studentTDf, weibullShape, betaShapes]
+  const all: PairLikelihood[] = [
+    laplaceScale,
+    asymmetricLaplaceScale,
+    studentTDf,
+    studentTScale,
+    weibullShape,
+    betaShapes,
+  ]
   return Object.fromEntries(all.map((l) => [l.name, l]))
 }
 

@@ -103,7 +103,7 @@ describe('an ordinal regression with fixed cut points', () => {
       }
     })
   }
-  it('refuses random cut points with the reason', () => {
+  it('cut points written as an unnamed vector are refused with the reason, the named dimension with `over` is the form served', () => {
     const model = defineModel('random-cuts', (m) => {
       const row = m.range('row')
       const a = m.latent('a', d.normal(0, 2))
@@ -112,7 +112,23 @@ describe('an ordinal regression with fixed cut points', () => {
       m.observe('y', d.orderedProbit(a, cuts2), m.data('y', { dims: [row], support: 'count' }))
     })
     const c = toFactorGraph(model.bind({ y: [0, 1, 2] }))
-    expect(c.issues.map((i) => i.reason).join(' ')).toMatch(/cut points .* random/)
+    expect(c.issues.map((i) => i.reason).join(' ')).toMatch(/event axes/)
+  })
+  it('random cut points over a named dimension compile to likelihood-triple factors (the posterior is in observed-triples.test.ts)', () => {
+    const model = defineModel('random-cuts-over', (m) => {
+      const row = m.range('row')
+      const cut = m.range('cut', { size: 3 })
+      const b = m.latent('b', d.normal(0, 2))
+      const cuts = m.latent('cuts', d.normal(0, 2), { dims: [cut], constraint: { kind: 'ordered' } })
+      const predictor = b.mul(m.data('x', { dims: [row], role: 'covariate' }))
+      m.observe('y', d.orderedLogistic(predictor, cuts, { over: cut }), m.data('y', { dims: [row], support: 'count' }))
+    })
+    const c = toFactorGraph(model.bind({ x, y: [0, 0, 1, 0, 1, 1, 2, 3, 2, 3] }))
+    expect(c.issues).toEqual([])
+    expect(factorsOf(c, 'likelihood-triple')).toBe(x.length)
+    // an outcome outside the categories the cut points make is refused
+    const outside = toFactorGraph(model.bind({ x, y: [0, 0, 1, 0, 1, 1, 2, 3, 2, 4] }))
+    expect(outside.issues.map((i) => i.reason).join(' ')).toMatch(/class 4 is outside 0 to 3/)
   })
 })
 

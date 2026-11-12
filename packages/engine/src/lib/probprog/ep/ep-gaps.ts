@@ -95,17 +95,6 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
       markers: ['more than six scores takes a power of one', 'over a product grid, up to 6 classes'],
     },
     {
-      id: 'ordinal-random-cuts',
-      title: 'Ordinal cut points that are random, and a Student-t with random degrees of freedom and scale',
-      kind: 'missing-rule',
-      status: 'open',
-      summary:
-        'The ordinal probit and logit and the asymmetric Laplace are model-layer distributions mapped to the registry (`orderedProbit`, `orderedLogistic`, `asymmetricLaplace`, the draw margin of a tournament among them) with the cut points known; random cut points (a prior on increasing thresholds, a learned draw margin) are refused with the reason. The two-variable site takes one random scale or shape beside the location, so a Student-t whose degrees of freedom and scale are both random (three variables) is refused too.',
-      plan: 'The three-axis grid exists (`_gridn.ts`, what the covariance sites integrate with); a likelihood-pair site over it would serve a Student-t with random df and scale; the cut points as a numeric site over the predictor and the cut points on their log gaps (one gap for a draw margin).',
-      size: 'medium',
-      markers: [],
-    },
-    {
       id: 'multimodal',
       title: 'One Gaussian per variable cannot show two modes',
       kind: 'quality',
@@ -167,7 +156,7 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
       kind: 'infrastructure',
       status: 'open',
       summary:
-        'Variational message passing runs most of the atoms (`vmpCoverage` counts them): the numeric likelihoods, scales, shapes, softmax, products, maxima, unary functions, gamma products and selects all have a mean-field message, each checked against the brute-force bound. What is left: the hard comparisons (`greater-than`, `is-between`, `spin`: KL(q || p) is infinite for a Gaussian q, the probit link is their variational form), the Weibull with a random shape (its expected log is infinite under a Gaussian or gamma belief), the custom functions of a random value, and the mixtures, where the mean field settles on the optimum that explains everything as clutter or as the spike (clutter and spike-and-slab) and the banana posterior of a product that a belief per variable cannot follow.',
+        'Variational message passing runs most of the atoms (`vmpCoverage` counts them): the numeric likelihoods, scales, shapes, softmax, products, maxima, unary functions, gamma products and selects all have a mean-field message, each checked against the brute-force bound. What is left: the hard comparisons (`greater-than`, `is-between`, `spin`: KL(q || p) is infinite for a Gaussian q, the probit link is their variational form), the Weibull with a random shape (its expected log is infinite under a Gaussian or gamma belief), an ordinal outcome with random cut points (its density is zero where the cuts are out of order, so its expected log is infinite under Gaussian beliefs of them), the custom functions of a random value, and the mixtures, where the mean field settles on the optimum that explains everything as clutter or as the spike (clutter and spike-and-slab) and the banana posterior of a product that a belief per variable cannot follow.',
       plan: 'Start the mean field of a mixture from the data or from several restarts (as `epMultiStartMethod` does for EP), give the hard comparisons their probit form in the model compiler, and keep `vmpCoverage` and the committed digest honest as the count goes up.',
       size: 'small',
       markers: [],

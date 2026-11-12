@@ -640,6 +640,44 @@ observation). Their reports say what exists; the work packages above absorb it r
   random index (a function of a latent that is not a discrete variable), and vector-event branches. Gap `gate-node` removed;
   `mixture-regression` (direction) says what is mapped.
 
+## 2026-11-12 Random cut points and a Student-t with a random scale and degrees of freedom (`agent-a5524e-cuts`, gap `ordinal-random-cuts` closed)
+
+- A three-variable numeric site, `likelihood-triple` (`operators/likelihoods/triples.ts`), a registry of densities `p(y | x0, x1, x2)` read by
+  one operator as `likelihood-pair` reads its pairs: `student-t-full` (a random location, log scale and degrees of freedom: a Gaussian or
+  gamma port each), `ordinal-probit-cuts` and `ordinal-logit-cuts` (a random predictor and the two cut points that bound the observed
+  category; the first and the last category have one cut and ignore the other port). Any port may be a known value. The grid is the one
+  the covariance sites use, with a profile of its own (`gridProfiles.triple`), a finer grid along the heavy-tailed coordinate of the
+  Student-t (`fineness`), the ordinal rows read from tables of pairs of nodes (`GridIndexed`: a pass costs the pairs, not the triples) and
+  one integral per sweep for the messages and the evidence (`memoised`). The ordinal probit with Gaussian cavities does not use the
+  grid: given its latent score the predictor and the two cuts are independent (a Kalman update and two truncated Gaussians), so the
+  tilted moments are one smooth integral over the score, exact, and the order of the cuts is the event itself. The same rows have no
+  variational message where the density is zero out of order (the ordinal ones), and a mean-field message for the Student-t.
+- `likelihood-pair` has a row `student-t-scale` (a random scale, known degrees of freedom: a Student-t regression with an unknown scale,
+  which was refused). `logDiffPhi` and `logDiffSigmoid` moved to `numerics/_scalar.ts` (three copies, one place).
+- Compiler: `d.orderedProbit(predictor, cuts, { over })` and `d.orderedLogistic` take the cut dimension as `categorical` takes its class
+  dimension, so the cut points are a latent vector over a dimension of its own (`constraint: { kind: 'ordered' }` makes the prior an ordered
+  Gaussian) or any affine form of Gaussian variables over it (a learned draw margin is `margin * sign` with `sign` known data over the
+  dimension); one `likelihood-triple` factor per outcome on the predictor and the two cuts around its category, a known cut a known port.
+  A Student-t with a random scale and random degrees of freedom is `student-t-full`, a random scale alone `student-t-scale`. Refusals
+  removed: `cutPointsRandom`, `shapeAndScaleBothRandom`; added `cutPointsShape` (cut points over more than one dimension). The table
+  entries `heavy-tailed` and `ordered-numeric` list the new operator.
+- Against references. Operator tests (`triples.test.ts`) against a brute-force product rule: moments and evidence within 3e-3 relative
+  for the ordinal and Student-t rows (a wide outlier case against a refined grid within 0.05, the limit of a grid where the scale is
+  small and the location a spike); `accuracy.test.ts` row `likelihood-triple` (15 cases): mean 7.9e-4 sds, sd 4.8e-4 (the probit rows
+  1e-4 or better, the Student-t 4e-5, the logit on the grid 7.9e-4). Models (`observed-triples.test.ts`): a Student-t with three
+  random parameters against a 90-cell grid (the mean of the location within 0.2 sds, spreads 0.75 to 1.25 of the exact for the location
+  and scale, the degrees of freedom 0.5 to 1.5: a long right tail), an ordered latent vector of cuts and a slope against a 70-cell grid
+  (means within 0.3 sds, spreads 0.75 to 0.95: the slope and the cuts share every row), a learned draw margin against a 180-cell grid.
+  Atoms: `ordinal-probit-cuts-learned` (three categories, slope and two ordered cuts; means within 0.03 exact sds, spreads 0.83 to 0.94,
+  Kolmogorov distance 0.05; recovery over 20 seeds: coverage 0.80, 0.85, 1.00, rms error 1.25 sds at most; 3 s) and
+  `student-t-full-learned` (location, scale and degrees of freedom; means within 0.02 exact sds, spreads 0.95 to 1.01, Kolmogorov distance
+  0.03; recovery over 20 seeds: coverage 0.80, 0.95, 0.95, rms error 1.2 sds at most; 6 s, 128 s for the 20 seeds).
+- What is not done: the ordinal logit with random cuts runs on the grid (about 25 ms per outcome and sweep against 1 ms for the probit), the
+  ordinal rows have no variational message, and the Student-t grid is the limit of its resolution where a small scale makes the location
+  a spike against a wide cavity (an error of 0.05 sds in the first sweeps; it settles with the cavities). Gap `ordinal-random-cuts` removed;
+  the variational limit is added to `variational-rules`. The digest has two atoms and two variational items more and the registry one
+  operator; the 8 existing items checked (ordinal, skill draws, Student-t, quantile, the uniform prior, the gates) are as at the baseline.
+
 ## 2026-11-12 A learned covariance with few groups, and Wishart matrices of dimension four (`agent-a3e7a0-matrix`)
 
 - Cause of the gap `hierarchical-matrix-few-groups` (mean too narrow, matrix too wide with three or four groups): a factor per group vector
@@ -677,7 +715,6 @@ observation). Their reports say what exists; the work packages above absorb it r
   atom machinery and `grid3` reference, `posterior3`, the library's `gamma` and `normal` samplers and `spd` for the importance-sampling reference (`testing/covariance-group.ts`).
   Digest: `atom/random-intercepts-slopes-learned` (graph 52 to 43 factors, 14 to 3 sweeps, evidence and beliefs moved toward the reference),
   `vmp/random-intercepts-slopes-learned` (28 sweeps for 25, beliefs within 1e-10) and the registry line (one more operator) re-accepted; `atom/random-intercepts-slopes` gains the reference's evidence only.
-||||||| d5a9e92e
 ## 2026-11-12 Variational message passing for the dense non-centred scale (`agent-a40-vmp`, gap `non-centred-scale` narrowed)
 
 - `gaussian-mv-function-scale` has a variational rule (support `numeric`) and an expected log: with the standard normals integrated

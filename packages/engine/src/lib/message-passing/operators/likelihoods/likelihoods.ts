@@ -17,7 +17,7 @@ import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { ParameterError } from '../../core/errors.ts'
 import { namedParams, type ParamSpec, param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
-import { lgammaOf, logPhi, logSigmoidOf } from '../../numerics/_scalar.ts'
+import { lgammaOf, logDiffPhi, logDiffSigmoid, logPhi, logSigmoidOf } from '../../numerics/_scalar.ts'
 import { type TiltHint, tiltedByQuadrature } from '../../numerics/_tilted.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 import { glmRow } from '../lifts/rows.ts'
@@ -57,15 +57,6 @@ const likelihoodParams = (l: Likelihood): ParamSpec => ({
 
 const countCheck = (y: number): string | undefined =>
   Number.isInteger(y) && y >= 0 ? undefined : 'the outcome must be a non-negative integer'
-
-/** log Phi(b) - log Phi(a) for a < b, accurate in both tails (the upper tail is reflected into the lower one). */
-function logDiffPhi(a: number, b: number): number {
-  if (a === Number.NEGATIVE_INFINITY) return logPhi(b)
-  if (b === Number.POSITIVE_INFINITY) return logPhi(-a)
-  if (a > 0) return logDiffPhi(-b, -a)
-  const hi = logPhi(b)
-  return hi + Math.log1p(-Math.exp(logPhi(a) - hi))
-}
 
 /** log of the Student-t density with `df` degrees of freedom, scale `s`, centred at `u`, at the outcome `y`. */
 const studentT: Likelihood = {
@@ -267,12 +258,6 @@ const ordinalProbit: Likelihood = {
   },
   locate: () => ({}),
 }
-
-/** log (sigmoid(b) - sigmoid(a)) for a < b, stable at both ends: sigmoid(b) sigmoid(-a) (1 - exp(a - b)). */
-const logDiffSigmoid = (a: number, b: number): number =>
-  logSigmoidOf(b) +
-  logSigmoidOf(-a) +
-  (a === Number.NEGATIVE_INFINITY || b === Number.POSITIVE_INFINITY ? 0 : Math.log1p(-Math.exp(a - b)))
 
 const ordinalLogit: Likelihood = {
   name: 'ordinal-logit',
