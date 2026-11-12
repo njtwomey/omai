@@ -101,6 +101,11 @@ function expect1(logw: (t: number) => number, lo: number, hi: number, kinks: rea
   return {
     logZ: top + Math.log(z),
     of: (f: (t: number) => number): number => w.reduce((s, v, i) => s + v * f(g.x[i] as number), 0) / z,
+    /** The mean and the centred variance of `f` under the density. */
+    gauss: (f: (t: number) => number): { mean: number; variance: number } => {
+      const mean = w.reduce((s, v, i) => s + v * f(g.x[i] as number), 0) / z
+      return { mean, variance: w.reduce((s, v, i) => s + v * (f(g.x[i] as number) - mean) ** 2, 0) / z }
+    },
   }
 }
 
@@ -167,18 +172,29 @@ function expect2(
           s += Math.exp((lw[i * g1.x.length + j] as number) - top) * f(g0.x[i] as number, g1.x[j] as number)
       return s / total
     },
+    /** The mean and the centred variance of `f` under the density. */
+    gauss: (f: (t0: number, t1: number) => number): { mean: number; variance: number } => {
+      let m = 0
+      for (let i = 0; i < g0.x.length; i++)
+        for (let j = 0; j < g1.x.length; j++)
+          m += Math.exp((lw[i * g1.x.length + j] as number) - top) * f(g0.x[i] as number, g1.x[j] as number)
+      const mean = m / total
+      let v = 0
+      for (let i = 0; i < g0.x.length; i++)
+        for (let j = 0; j < g1.x.length; j++)
+          v +=
+            Math.exp((lw[i * g1.x.length + j] as number) - top) * (f(g0.x[i] as number, g1.x[j] as number) - mean) ** 2
+      return { mean, variance: v / total }
+    },
   }
 }
 
 // ----- comparing a message with the reference -----
 
-/** The mean and sd of the member of a family with these moments (a Gaussian, a gamma or a beta). */
-function meanSd(family: Family, moments: readonly number[]): { mean: number; sd: number } {
-  if (family.kind === 'gaussian') {
-    const m = moments[0] as number
-    return { mean: m, sd: Math.sqrt((moments[1] as number) - m * m) }
-  }
-  const eta = family.fromMoments(moments)
+/** The mean and sd of the member of a family with these natural parameters. */
+function memberMeanSd(family: Family, eta: readonly number[]): { mean: number; sd: number } {
+  if (family.kind === 'gaussian')
+    return { mean: (eta[0] as number) / (eta[1] as number), sd: 1 / Math.sqrt(eta[1] as number) }
   if (family.kind === 'gamma') {
     const shape = (eta[0] as number) + 1
     const rate = -(eta[1] as number)
@@ -189,14 +205,27 @@ function meanSd(family: Family, moments: readonly number[]): { mean: number; sd:
   return { mean: a / (a + b), sd: Math.sqrt((a * b) / ((a + b) ** 2 * (a + b + 1))) }
 }
 
-/** The moments of the target's tilted distribution that the operator's message implies. */
-function implied(op: FactorOperator, args: readonly Arg[], to: number, params: Params): number[] {
+/** What a reference gives: the moments of the target's tilted distribution, or for a Gaussian its mean and (centred) variance. */
+type Reference = readonly number[] | { readonly mean: number; readonly variance: number }
+
+function referenceMeanSd(family: Family, reference: Reference): { mean: number; sd: number } {
+  if ('variance' in reference) return { mean: reference.mean, sd: Math.sqrt(reference.variance) }
+  if (family.kind === 'gaussian')
+    return { mean: reference[0] as number, sd: Math.sqrt((reference[1] as number) - (reference[0] as number) ** 2) }
+  return memberMeanSd(family, family.fromMoments(reference))
+}
+
+/** The mean and sd of the target's tilted distribution that the operator's message implies (its tilted moments for an operator that has only those). */
+function implied(op: FactorOperator, args: readonly Arg[], to: number, params: Params): { mean: number; sd: number } {
   const c = { mode: 'ep' as const, to, args: [...args], params, power: 1 }
-  if (op.tilted !== undefined) return [...op.tilted(c).moments]
   const target = args[to] as Arg
+  if (op.tilted !== undefined) return referenceMeanSd(target.family, [...op.tilted(c).moments])
   const message = (op.ep as NonNullable<FactorOperator['ep']>)(c).message
   const cavity = target.eta as Eta
-  return [...target.family.moments(cavity.map((v, i) => v + (message[i] ?? 0)))]
+  return memberMeanSd(
+    target.family,
+    cavity.map((v, i) => v + (message[i] ?? 0)),
+  )
 }
 
 interface Row {
@@ -215,17 +244,17 @@ function compare(
   args: readonly Arg[],
   to: number,
   params: Params,
-  reference: readonly number[],
+  reference: Reference,
 ): { z: number; sd: number } {
   const family = (args[to] as Arg).family
-  const got = meanSd(family, implied(op, args, to, params))
-  const want = meanSd(family, reference)
+  const got = implied(op, args, to, params)
+  const want = referenceMeanSd(family, reference)
   const z = Math.abs(got.mean - want.mean) / want.sd
   const sd = Math.abs(got.sd / want.sd - 1)
   const row = table.get(name) ?? { z: 0, sd: 0, n: 0 }
   table.set(name, { z: Math.max(row.z, z), sd: Math.max(row.sd, sd), n: row.n + 1 })
   detail.push(
-    `${name} ${label} to=${to}: z ${z.toExponential(2)} sd ${sd.toExponential(2)}${Number.isFinite(z + sd) ? '' : ` (reference ${JSON.stringify(reference)} operator ${JSON.stringify(implied(op, args, to, params))})`}`,
+    `${name} ${label} to=${to}: z ${z.toExponential(2)} sd ${sd.toExponential(2)}${Number.isFinite(z + sd) ? '' : ` (reference ${JSON.stringify(want)} operator ${JSON.stringify(got)})`}`,
   )
   return { z, sd }
 }
@@ -268,16 +297,36 @@ describe('the error of the numeric rules against a high-order reference', () => 
       }
       const params = { scale: 1, offset: 0 }
       const label = `x~N(${mx},${vx}) u~N(${mu},${vu}) lambda~G(${shape},${rate})`
-      const mean = r.of((t) => cond(t).m)
-      compare('gaussian-gamma-precision', label, gaussianGammaPrecision, args, 0, params, [
-        mean,
-        r.of((t) => cond(t).v + cond(t).m ** 2),
-      ])
+      // The mixture of the conditional updates: the mean of the variances plus the variance of the means, centred.
+      const mix = (m: (t: number) => number, v: (t: number) => number) => {
+        const mean = r.of(m)
+        return { mean, variance: r.of(v) + r.of((t) => (m(t) - mean) ** 2) }
+      }
+      compare(
+        'gaussian-gamma-precision',
+        label,
+        gaussianGammaPrecision,
+        args,
+        0,
+        params,
+        mix(
+          (t) => cond(t).m,
+          (t) => cond(t).v,
+        ),
+      )
       if (vu > 0) {
-        compare('gaussian-gamma-precision', label, gaussianGammaPrecision, args, 1, params, [
-          r.of((t) => cond(t).mu),
-          r.of((t) => cond(t).vu + cond(t).mu ** 2),
-        ])
+        compare(
+          'gaussian-gamma-precision',
+          label,
+          gaussianGammaPrecision,
+          args,
+          1,
+          params,
+          mix(
+            (t) => cond(t).mu,
+            (t) => cond(t).vu,
+          ),
+        )
       }
       compare('gaussian-gamma-precision', label, gaussianGammaPrecision, args, 2, params, [
         r.of((t) => t),
@@ -439,7 +488,7 @@ describe('the error of the numeric rules against a high-order reference', () => 
         }
       }
       const mean0 = r.of((t) => cond(t).mean)
-      const second0 = r.of((t) => cond(t).variance + cond(t).mean ** 2)
+      const variance0 = r.of((t) => cond(t).variance) + r.of((t) => (cond(t).mean - mean0) ** 2)
       const vec = (op: FactorOperator, a: readonly Arg[], par: Params): { mean: number; sd: number } => {
         const c = { mode: 'ep' as const, to: 0, args: [...a], params: par, power: 1 }
         const m = (op.ep as NonNullable<FactorOperator['ep']>)(c).message.map((x, i) => x + (eta[i] ?? 0))
@@ -452,7 +501,7 @@ describe('the error of the numeric rules against a high-order reference', () => 
         }
       }
       const got = vec(gaussianMvPrecisionScale, args, params)
-      const want = { mean: mean0, sd: Math.sqrt(second0 - mean0 * mean0) }
+      const want = { mean: mean0, sd: Math.sqrt(variance0) }
       const row = table.get('gaussian-mv-precision-scale') as Row
       const z = Math.abs(got.mean - want.mean) / want.sd
       const sd = Math.abs(got.sd / want.sd - 1)
@@ -493,10 +542,15 @@ describe('the error of the numeric rules against a high-order reference', () => 
         )
       }
       const r = expect1(logw, mx - 14 * Math.sqrt(vx), mx + 14 * Math.sqrt(vx))
-      compare('gaussian-mv-function-scale', `x~N(${mx},${vx})`, gaussianMvFunctionScale, args, 1, { steps }, [
-        r.of((x) => x),
-        r.of((x) => x * x),
-      ])
+      compare(
+        'gaussian-mv-function-scale',
+        `x~N(${mx},${vx})`,
+        gaussianMvFunctionScale,
+        args,
+        1,
+        { steps },
+        r.gauss((x) => x),
+      )
     }
   })
 
@@ -521,11 +575,24 @@ describe('the error of the numeric rules against a high-order reference', () => 
       )
       const params = { likelihood: 'laplace-scale', y }
       const label = `y=${y} u~N(${mu},${vu}) s~N(${ms},${vs})`
-      compare('likelihood-pair', label, likelihoodPairOperator, args, 0, params, [r.of((u) => u), r.of((u) => u * u)])
-      compare('likelihood-pair', label, likelihoodPairOperator, args, 1, params, [
-        r.of((_u, s) => s),
-        r.of((_u, s) => s * s),
-      ])
+      compare(
+        'likelihood-pair',
+        label,
+        likelihoodPairOperator,
+        args,
+        0,
+        params,
+        r.gauss((u) => u),
+      )
+      compare(
+        'likelihood-pair',
+        label,
+        likelihoodPairOperator,
+        args,
+        1,
+        params,
+        r.gauss((_u, s) => s),
+      )
     }
     // student-t-df with a gamma degrees of freedom: y | u, df ~ t(df, u, 1).
     for (const [y, mu, vu, shape, rate] of [
@@ -547,7 +614,15 @@ describe('the error of the numeric rules against a high-order reference', () => 
       const r = expect2(logw, [[mu - 10 * Math.sqrt(vu), mu + 10 * Math.sqrt(vu)], gammaBox(shape, rate)])
       const params = { likelihood: 'student-t-df', y, scale: 1 }
       const label = `y=${y} u~N(${mu},${vu}) df~G(${shape},${rate})`
-      compare('likelihood-pair', label, likelihoodPairOperator, args, 0, params, [r.of((u) => u), r.of((u) => u * u)])
+      compare(
+        'likelihood-pair',
+        label,
+        likelihoodPairOperator,
+        args,
+        0,
+        params,
+        r.gauss((u) => u),
+      )
       compare('likelihood-pair', label, likelihoodPairOperator, args, 1, params, [
         r.of((_u, t) => t),
         r.of((_u, t) => Math.exp(t)),
@@ -613,14 +688,24 @@ describe('the error of the numeric rules against a high-order reference', () => 
       ])
       const params = { y, exposure: 1 }
       const label = `y=${y} u~N(${mu},${vu}) s~N(${ms},${vs})`
-      compare('negative-binomial-dispersion', label, negativeBinomialDispersion, args, 0, params, [
-        r.of((u) => u),
-        r.of((u) => u * u),
-      ])
-      compare('negative-binomial-dispersion', label, negativeBinomialDispersion, args, 1, params, [
-        r.of((_u, s) => s),
-        r.of((_u, s) => s * s),
-      ])
+      compare(
+        'negative-binomial-dispersion',
+        label,
+        negativeBinomialDispersion,
+        args,
+        0,
+        params,
+        r.gauss((u) => u),
+      )
+      compare(
+        'negative-binomial-dispersion',
+        label,
+        negativeBinomialDispersion,
+        args,
+        1,
+        params,
+        r.gauss((_u, s) => s),
+      )
     }
   })
 
@@ -639,11 +724,19 @@ describe('the error of the numeric rules against a high-order reference', () => 
         return { mean: variance * (mm / vm + x * noise), variance }
       }
       const label = `x=${x} m~N(${mm},${vm}) s~N(${ms},${vs})`
-      compare('gaussian-scale', label, gaussianScale, args, 2, {}, [r.of((s) => s), r.of((s) => s * s)])
+      compare(
+        'gaussian-scale',
+        label,
+        gaussianScale,
+        args,
+        2,
+        {},
+        r.gauss((s) => s),
+      )
       // The mean: a mixture of conditional Gaussians; its second moment as the centred pair (mean, variance).
       const mean = r.of((s) => post(s).mean)
       const variance = r.of((s) => post(s).variance) + r.of((s) => (post(s).mean - mean) ** 2)
-      compare('gaussian-scale', label, gaussianScale, args, 1, {}, [mean, variance + mean * mean])
+      compare('gaussian-scale', label, gaussianScale, args, 1, {}, { mean, variance })
     }
   })
 
@@ -666,10 +759,7 @@ describe('the error of the numeric rules against a high-order reference', () => 
       }
       const mean = r.of((a) => cond(a).mp)
       const variance = r.of((a) => cond(a).post) + r.of((a) => (cond(a).mp - mean) ** 2)
-      compare('product', `a~N(${ma},${va}) b~N(${mb},${vb}) y~N(${my},${vy})`, product, args, 0, {}, [
-        mean,
-        variance + mean * mean,
-      ])
+      compare('product', `a~N(${ma},${va}) b~N(${mb},${vb}) y~N(${my},${vy})`, product, args, 0, {}, { mean, variance })
     }
   })
 
@@ -690,7 +780,7 @@ describe('the error of the numeric rules against a high-order reference', () => 
           args,
           0,
           { likelihood, y, ...extra },
-          [r.of((u) => u), r.of((u) => u * u)],
+          r.gauss((u) => u),
         )
       }
     }
@@ -721,7 +811,7 @@ describe('the error of the numeric rules against a high-order reference', () => 
         [gaussianArg(m, v)],
         0,
         { y: 0, base: 'half-normal', log: 1, scale: s },
-        [r.of((l) => l), r.of((l) => l * l)],
+        r.gauss((l) => l),
       )
     }
     for (const [m, v] of [
@@ -738,7 +828,7 @@ describe('the error of the numeric rules against a high-order reference', () => 
         [gaussianArg(m, v)],
         0,
         { y: 0, base: 'uniform', log: 0, low: 0, high: 2 },
-        [r.of((x) => x), r.of((x) => x * x)],
+        r.gauss((x) => x),
       )
     }
     // apply: y = |x| (a kink at the origin), the message to x against the output message exp(h y - J y^2 / 2).
@@ -749,10 +839,15 @@ describe('the error of the numeric rules against a high-order reference', () => 
       const args = [messageArg(gaussian, [h, J]), gaussianArg(m, v)]
       const logw = (x: number): number => normalLog(x, m, v) + h * Math.abs(x) - 0.5 * J * x * x
       const r = expect1(logw, m - 12 * Math.sqrt(v), m + 12 * Math.sqrt(v), [0])
-      compare('apply abs', `x~N(${m},${v}) h=${h} J=${J}`, apply, args, 1, { fn: 'abs' }, [
-        r.of((x) => x),
-        r.of((x) => x * x),
-      ])
+      compare(
+        'apply abs',
+        `x~N(${m},${v}) h=${h} J=${J}`,
+        apply,
+        args,
+        1,
+        { fn: 'abs' },
+        r.gauss((x) => x),
+      )
     }
   })
 
@@ -766,11 +861,15 @@ describe('the error of the numeric rules against a high-order reference', () => 
         normalLog(x, m, v) +
         Math.log(pi * Math.exp(normalLog(x, m - 0.05, s1 * s1)) + (1 - pi) * Math.exp(normalLog(x, m + 0.02, s2 * s2)))
       const r = expect1(logw, m - 12 * Math.sqrt(v), m + 12 * Math.sqrt(v))
-      const mean = r.of((x) => x)
-      compare('mixture-site', `x~N(${m},${v})`, mixtureSite, [gaussianArg(m, v)], 0, params, [
-        mean,
-        r.of((x) => (x - mean) ** 2) + mean * mean,
-      ])
+      compare(
+        'mixture-site',
+        `x~N(${m},${v})`,
+        mixtureSite,
+        [gaussianArg(m, v)],
+        0,
+        params,
+        r.gauss((x) => x),
+      )
     }
     // The step factor [x > 0] with a Bernoulli outcome message: the truncated normal.
     for (const [m, v] of [
@@ -781,10 +880,15 @@ describe('the error of the numeric rules against a high-order reference', () => 
       const logw = (x: number): number => normalLog(x, m, v) + Math.log(x > 0 ? 0.7 : 0.3)
       const r = expect1(logw, m - 12 * Math.sqrt(v), m + 12 * Math.sqrt(v), [0])
       const bern = messageArg(bernoulli, bernoulliEta(0.7))
-      compare('greater-than', `x~N(${m},${v})`, greaterThan, [bern, gaussianArg(m, v)], 1, { threshold: 0 }, [
-        r.of((x) => x),
-        r.of((x) => x * x),
-      ])
+      compare(
+        'greater-than',
+        `x~N(${m},${v})`,
+        greaterThan,
+        [bern, gaussianArg(m, v)],
+        1,
+        { threshold: 0 },
+        r.gauss((x) => x),
+      )
     }
   })
 
