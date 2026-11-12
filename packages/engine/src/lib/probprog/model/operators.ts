@@ -257,21 +257,42 @@ const atOperator: OperatorDef = {
   },
 }
 
+/**
+ * The dimension `pick` goes along: the last of the first operand's, which must not be a dimension of the index (the index
+ * names the entry along the dimension, so it cannot also run over it). The silent alternative, picking along an axis the
+ * index spans, gives the wrong numbers, so it is refused with the order that works.
+ */
+function pickDimension(x: readonly string[], idx: readonly string[]): string {
+  const last = x[x.length - 1]
+  if (last === undefined) throw new OmaiError('shape', 'pick: the first operand needs a last dimension to pick along')
+  if (idx.includes(last))
+    throw new OmaiError(
+      'shape',
+      `pick: the last dimension '${last}' of the first operand [${x.join(', ')}] is also a dimension of the index ` +
+        `[${idx.join(', ')}], and pick goes along the last dimension. Put the dimension to pick along last: ` +
+        `ops.mul(a, b) has the dimensions of a first, so write ops.mul(b, a) when b is the one over the ${last}.`,
+      { dim: last, dims: [...x], index: [...idx] },
+    )
+  return last
+}
+
 const pickOperator: OperatorDef = {
   name: 'pick',
   arity: 2,
   description:
-    'along the last dimension of the first operand, the entry that the integer codes of the second name (the prediction of the class each row belongs to)',
+    'along the last dimension of the first operand (which the index must not run over), the entry that the integer codes of the second name (the prediction of the class each row belongs to)',
   shape: ([a, i]) => {
     const x = a as NamedShape
     const idx = i as NamedShape
-    if (x.dims.length === 0 || x.eventRank !== 0 || idx.eventRank !== 0)
-      throw new OmaiError('shape', 'pick: the first operand needs a last dimension to pick along, and no event axes')
+    if (x.eventRank !== 0 || idx.eventRank !== 0)
+      throw new OmaiError('shape', 'pick: the operands must have no event axes')
+    pickDimension(x.dims, idx.dims)
     return joinShapes([{ dims: x.dims.slice(0, -1), eventRank: 0 }, idx])
   },
   evaluate: ([a, i]) => {
     const x = a as NamedValue
     const idx = i as NamedValue
+    pickDimension(x.dims, idx.dims)
     const axis = x.value.shape.length - 1
     const kept = x.dims.slice(0, -1)
     const out = joinShapes([{ dims: kept, eventRank: 0 }, shapeOfValue(idx)])

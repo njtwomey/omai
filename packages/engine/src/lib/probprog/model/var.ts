@@ -251,7 +251,37 @@ export interface Ops {
   matvec(a: Operand, x: Operand): Var
   /** A known vector (one event axis) dotted with a vector (one event axis): a scalar linear reading of it. */
   dot(a: Operand, x: Operand): Var
-  /** Along the last dimension of the first operand, the entry the integer codes of the second name (the prediction of each row's class). */
+  /**
+   * Along the LAST dimension of the first operand, the entry the integer codes of the second name (the prediction of each
+   * row's class). The dimension picked along is the last one the first operand names, so the order of its dimensions
+   * matters: an elementwise operator lists the dimensions of its first operand first, so `ops.mul(x, slope)` is
+   * `[row, group]` and picks along `group`, while `ops.mul(slope, x)` is `[group, row]` and would pick along `row`, the
+   * dimension the index itself runs over. That would give wrong numbers without a word, so it is an error that says which
+   * order to write.
+   *
+   * @example
+   * ```ts
+   * import { defineModel, ops } from 'omai-engine/probprog/model'
+   * const model = (order: 'slopeLast' | 'slopeFirst') =>
+   *   defineModel('lines', (m) => {
+   *     const row = m.range('row')
+   *     const group = m.range('group', { size: 2 })
+   *     const x = m.data('x', { dims: [row] })
+   *     const slope = m.data('slope', { dims: [group] })
+   *     const z = m.data('z', { dims: [row], support: 'index' })
+   *     m.derived('mean', ops.pick(order === 'slopeLast' ? ops.mul(x, slope) : ops.mul(slope, x), z))
+   *   })
+   * const fails = (order: 'slopeLast' | 'slopeFirst'): boolean => {
+   *   try {
+   *     model(order)
+   *     return false
+   *   } catch {
+   *     return true
+   *   }
+   * }
+   * [fails('slopeLast'), fails('slopeFirst')] // => [false, true]
+   * ```
+   */
   pick(a: Operand, index: Operand): Var
   /** The stick-breaking weights of break fractions over the last dimension (one more weight than breaks, as an event axis). */
   stickBreaking(a: Operand): Var

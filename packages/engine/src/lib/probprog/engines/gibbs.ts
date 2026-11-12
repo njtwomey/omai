@@ -20,12 +20,17 @@ import {
   broadcastTo,
   cast,
   concat,
+  equal,
   fromStorage,
   full,
   item,
+  moveaxis,
   mul,
+  nonzero,
   primalOf,
   reshape,
+  shapesEqual,
+  sizeOf,
   stack,
   sum,
   type Tensor,
@@ -40,7 +45,7 @@ import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
 import { enumeratedMarginals, traceFactors } from '../_contract.ts'
 import { unravel } from '../_discrete.ts'
 import { unexpanded } from '../_expand.ts'
-import { analyse, type ConjugateStructure, type ProgramAnalysis, pairParameter } from '../analysis.ts'
+import { analyse, type ConjugateStructure, fixedParameters, type ProgramAnalysis, pairParameter } from '../analysis.ts'
 import { initToUniform, logJoint } from '../density.ts'
 import { condition, enumerate, type ProgramTrace, type SampleSite, seed, traceOf } from '../handlers.ts'
 import { type Posterior, samplePosterior } from '../posterior.ts'
@@ -67,6 +72,8 @@ type Block =
       readonly kind: 'grouped'
       readonly site: string
       readonly pair: ConjugatePair
+      /** The axis of the site that holds the components: the one the discrete sites' codes look up. */
+      readonly axis: number
       readonly children: readonly { readonly site: string; readonly gather: string }[]
     }
   | { readonly kind: 'collapsed'; readonly site: string; readonly collapsed: Collapsed }
@@ -167,7 +174,8 @@ function plan<D = void>(model: Model<D>, data: D, a: ProgramAnalysis, collapse: 
           const gs = siteOf(proto, g)
           if (gs === undefined || g === c || !parentsOfChild.includes(g)) return false
           if (gs.value.shape.join() !== cs.value.shape.join()) return false
-          return (s.value.shape[0] ?? -1) > 0 && close(probs, take(s.value, cast(gs.value, 'int32'), 0))
+          const looked = lookup(s.value, gs.value, 0)
+          return looked !== undefined && close(probs, looked)
         })
         if (gather === undefined) {
           ok = false
@@ -223,6 +231,29 @@ function plan<D = void>(model: Model<D>, data: D, a: ProgramAnalysis, collapse: 
   return [...blocks.filter((b) => b.kind !== 'collapsed'), ...blocks.filter((b) => b.kind === 'collapsed')]
 }
 
+/** `value` looked up along `axis` by integer codes, or undefined when a code is outside the axis. */
+function lookup(value: Value, codes: Value, axis: number): Value | undefined {
+  const n = value.shape[axis] ?? 0
+  if (toFlat(primalOf(codes)).some((c) => c < 0 || c >= n)) return undefined
+  return take(value, cast(codes, 'int32'), axis)
+}
+
+/**
+ * The axis of a latent along which a discrete site picks its components, as the model uses it: the axis whose lookup by
+ * the site's codes is the likelihood parameter `v` of an observed child (`mu.at(z)` looks a `[group, ...]` table up along
+ * axis 0, `ops.pick(mu, z)` a `[feature, group]` one along axis 1). The lookup must lie in the child's batch dimensions, so
+ * that the child's values can be split by group.
+ */
+function componentAxis(latent: Value, codes: Value, v: Value, child: SampleSite): number | undefined {
+  const batch = child.value.shape.slice(0, child.value.shape.length - child.fn.eventShape.length)
+  for (let axis = 0; axis < latent.shape.length; axis++) {
+    const looked = lookup(latent, codes, axis)
+    if (looked === undefined || !shapesEqual(looked.shape, v.shape) || !close(v, looked)) continue
+    if (axis + codes.shape.length <= batch.length && shapesEqual(v.shape.slice(0, batch.length), batch)) return axis
+  }
+  return undefined
+}
+
 /** A conjugate site whose children use one component each, chosen by a discrete site (mixture components). */
 function groupedConjugacy(proto: ProgramTrace, name: string, a: ProgramAnalysis): Block | undefined {
   const s = siteOf(proto, name)
@@ -231,32 +262,92 @@ function groupedConjugacy(proto: ProgramTrace, name: string, a: ProgramAnalysis)
   if (kids.length === 0) return undefined
   const priorFamily = unexpanded(s.fn).name
   let pair: ConjugatePair | undefined
+  let axis: number | undefined
   const children: { site: string; gather: string }[] = []
   for (const c of kids) {
     const cs = siteOf(proto, c)
     if (cs === undefined || !cs.isObserved) return undefined
     const family = unexpanded(cs.fn).name
     const parentsOfChild = a.sites.find((x) => x.name === c)?.parents ?? []
-    const found = CONJUGATES.filter((p) => p.likelihood === family && p.prior === priorFamily).find((p) => {
+    let found: { pair: ConjugatePair; gather: string; axis: number } | undefined
+    for (const p of CONJUGATES.filter((q) => q.likelihood === family && q.prior === priorFamily)) {
       const v = pairParameter(unexpanded(cs.fn), p)
-      if (v === undefined) return false
-      return a.discrete.sites.some((g) => {
-        if (!parentsOfChild.includes(g)) return false
+      if (v === undefined) continue
+      for (const g of a.discrete.sites) {
         const gs = siteOf(proto, g)
-        return gs !== undefined && close(v, take(s.value, cast(gs.value, 'int32'), 0))
-      })
-    })
-    if (found === undefined || (pair !== undefined && found !== pair)) return undefined
-    pair = found
-    const v = pairParameter(unexpanded(cs.fn), found) as Value
-    const gather = a.discrete.sites.find((g) => {
-      const gs = siteOf(proto, g)
-      return parentsOfChild.includes(g) && gs !== undefined && close(v, take(s.value, cast(gs.value, 'int32'), 0))
-    })
-    if (gather === undefined) return undefined
-    children.push({ site: c, gather })
+        if (!parentsOfChild.includes(g) || gs === undefined) continue
+        const at = componentAxis(s.value, gs.value, v, cs)
+        if (at !== undefined) found = { pair: p, gather: g, axis: at }
+        if (found !== undefined) break
+      }
+      if (found !== undefined) break
+    }
+    if (
+      found === undefined ||
+      (pair !== undefined && found.pair !== pair) ||
+      (axis !== undefined && found.axis !== axis)
+    )
+      return undefined
+    pair = found.pair
+    axis = found.axis
+    children.push({ site: c, gather: found.gather })
   }
-  return pair === undefined ? undefined : { kind: 'grouped', site: name, pair, children }
+  return pair === undefined || axis === undefined ? undefined : { kind: 'grouped', site: name, pair, axis, children }
+}
+
+/**
+ * The entries of `value` whose code is `j`, for a value laid out as `[...pre, ...codes, ...post]` (the codes' dimensions
+ * at `axis`): `[n, ...pre, 1, ...post]`, with the entries of group `j` along the first axis and a unit axis where the
+ * components are, so that it lines up with a prior over every component.
+ */
+function ofGroup(value: Value, codes: Value, axis: number, j: number): Value {
+  const pre = value.shape.slice(0, axis)
+  const post = value.shape.slice(axis + codes.shape.length)
+  const rows = nonzero(equal(reshape(codes, [-1]), j))[0] as Tensor<'int32'>
+  const cube = reshape(value, [sizeOf(pre), sizeOf(codes.shape), sizeOf(post)])
+  return reshape(moveaxis(take(cube, rows, 1), 1, 0), [rows.shape[0] ?? 0, ...pre, 1, ...post])
+}
+
+/**
+ * The data and the known parameters of the children of one component, or undefined when the parameters differ between the
+ * observations of the group (a spread that varies inside it), which no closed form covers. A known parameter that is a
+ * value per observation (a spread `sd.at(z)` per row) is taken for the group; a shared one is passed on.
+ */
+function groupData(
+  t: ProgramTrace,
+  b: Extract<Block, { kind: 'grouped' }>,
+  j: number,
+): { readonly data: Value; readonly fixed: Record<string, Value> } | undefined {
+  const rows: Value[] = []
+  const fixed: Record<string, Value> = {}
+  for (const ch of b.children) {
+    const cs = siteOf(t, ch.site)
+    const g = siteOf(t, ch.gather)
+    if (cs === undefined || g === undefined) continue
+    const y = primalOf(cs.value)
+    const codes = primalOf(g.value)
+    rows.push(ofGroup(y, codes, b.axis, j))
+    for (const [name, pv] of Object.entries(fixedParameters(unexpanded(cs.fn), b.pair) ?? {})) {
+      const p = primalOf(pv)
+      let known: Value = p
+      if (sizeOf(p.shape) > 1 && shapesEqual(p.shape, y.shape)) {
+        const own = ofGroup(p, codes, b.axis, j)
+        const n = own.shape[0] ?? 0
+        if (n === 0) {
+          // an empty group has no observations to differ: any entry stands in
+          known = reshape(take(reshape(p, [-1]), [0], 0), [])
+        } else {
+          const first = take(own, [0], 0)
+          if (!close(own, first)) return undefined
+          known = reshape(first, first.shape.slice(1))
+        }
+      }
+      const before = fixed[name]
+      if (before !== undefined && !(shapesEqual(before.shape, known.shape) && close(before, known))) return undefined
+      fixed[name] = known
+    }
+  }
+  return { data: concat(rows), fixed }
 }
 
 /**
@@ -400,41 +491,23 @@ export function gibbsAlgorithm<D = void>(model: Model<D>, data: D, options: Gibb
           const t = runAt(values)
           const prior = siteOf(t, b.site)
           if (prior === undefined) return
-          const k = prior.value.shape[0] ?? 0
+          const k = prior.value.shape[b.axis] ?? 0
           const parts: Value[] = []
           let narrowed = false
           for (let j = 0; j < k; j++) {
-            const rows: Value[] = []
-            let fixed: Record<string, Value> = {}
-            for (const ch of b.children) {
-              const cs = siteOf(t, ch.site)
-              const g = siteOf(t, ch.gather)
-              if (cs === undefined || g === undefined) continue
-              const gv = toFlat(primalOf(g.value))
-              const yv = toFlat(primalOf(cs.value))
-              const pick = gv.flatMap((z, i) => (z === j ? [yv[i] ?? 0] : []))
-              rows.push(fromStorage(Float64Array.from(pick), [pick.length], 'float64'))
-              const f: Record<string, Value> = {}
-              for (const name of b.pair.fixed) {
-                const pv = unexpanded(cs.fn).params[name]
-                if (pv !== undefined) f[name] = primalOf(pv)
-              }
-              fixed = f
-            }
-            const post = b.pair.posterior(prior.fn, concat(rows), fixed)
-            if (!honours(prior.fn, post)) {
+            const group = groupData(t, b, j)
+            const post = group === undefined ? undefined : b.pair.posterior(prior.fn, group.data, group.fixed)
+            if (post === undefined || !honours(prior.fn, post)) {
               narrowed = true
               break
             }
             // Component j's posterior uses its own data; parameters shared by the components broadcast.
             const drawn = primalOf(broadcastTo(post.sample(foldIn(key, j), []), prior.value.shape))
-            parts.push(reshape(take(drawn, [j], 0), prior.value.shape.slice(1)))
+            parts.push(take(drawn, [j], b.axis))
           }
           values = {
             ...values,
-            [b.site]: narrowed
-              ? sliceUpdate(b.site, values, key)
-              : primalOf(reshape(concat(parts.map((p) => reshape(p, [1, ...p.shape]))), prior.value.shape)),
+            [b.site]: narrowed ? sliceUpdate(b.site, values, key) : primalOf(concat(parts, b.axis)),
           }
         } else if (b.kind === 'slice') {
           values = { ...values, [b.site]: sliceUpdate(b.site, values, key) }
