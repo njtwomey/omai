@@ -1,7 +1,9 @@
 // Stochastic volatility with the level, the persistence and the innovation precision all unknown: one Gaussian per parameter is
 // far too narrow for the level and the persistence (they are coupled through the whole chain), and EP inside a grid over the
-// persistence (the level and the precision inside each EP run) is not. The reference is a NUTS run of the same model on the
-// same data (two chains, 400 warm-up and 400 draws).
+// persistence (the level and the precision inside each EP run) is not, run as a walk outwards from the middle of the range with
+// each node started from its neighbour's messages. The references are a NUTS run of the same model on the same data (two chains,
+// 400 warm-up and 400 draws) and a brute-force posterior: a point-mass filter for the likelihood of each (level, persistence,
+// precision) on a 26 by 30 by 24 grid, with the prior (120 states over -6.5 to 4.5, a few minutes in a scratch script).
 import { describe, expect, it } from 'vitest'
 import { session } from '../../trace/index.ts'
 import * as d from '../model/dists/index.ts'
@@ -48,6 +50,9 @@ const model = defineModel('sv-learned', (b) => {
 /** The posterior of the three parameters in a NUTS run of the same data. */
 const NUTS = { mu: { mean: -0.918, sd: 0.425 }, phi: { mean: 0.731, sd: 0.199 }, tau: { mean: 11.511, sd: 6.077 } }
 
+/** The brute-force posterior of the same data (seed 1): the NUTS run agrees with it to a fifth of a sd. */
+const GRID = { mu: { mean: -0.913, sd: 0.402 }, phi: { mean: 0.74, sd: 0.192 }, tau: { mean: 10.921, sd: 5.661 } }
+
 describe('stochastic volatility with unknown level, persistence and precision', () => {
   const bound = model.bind({ y: simulate(1) })
 
@@ -61,21 +66,42 @@ describe('stochastic volatility with unknown level, persistence and precision', 
     expect(level?.sd ?? Number.POSITIVE_INFINITY).toBeLessThan(0.4 * NUTS.mu.sd)
   }, 60_000)
 
-  it('EP inside a grid over the persistence has the sampler means and spreads of the three parameters (spreads 0.7 to 1.8)', () => {
+  it('EP in a walk over the persistence has the brute-force means and the spread of the persistence and the precision, in a dozen nodes', () => {
     const grid = epGridMethod(bound, { over: ['phi'] })
     const run = session(grid, {
-      config: { points: 21, tol: 1e-4, damping: 0.5, maxNodes: 60 },
+      config: {
+        points: 21,
+        tol: 1e-4,
+        damping: 0.2,
+        maxSweeps: 120,
+        order: 'walk',
+        window: 10,
+        warm: true,
+        maxNodes: 40,
+      },
       seed: 1,
-      steps: 60,
+      steps: 40,
       mode: 'eager',
     })
+    expect(run.state.nodes.length).toBeLessThan(16)
     const post = grid.posterior?.(run.state, run.config)
+    const row = (name: string) => post?.summary().find((r) => r.site === name)
     for (const name of ['mu', 'phi', 'tau'] as const) {
-      const row = post?.summary().find((r) => r.site === name)
-      const ref = NUTS[name]
-      expect(Math.abs((row?.mean ?? Number.NaN) - ref.mean), `${name} mean`).toBeLessThan(0.5 * ref.sd)
-      expect((row?.sd ?? Number.NaN) / ref.sd, `${name} spread`).toBeGreaterThan(0.7)
-      expect((row?.sd ?? Number.NaN) / ref.sd, `${name} spread`).toBeLessThan(1.8)
+      const ref = GRID[name]
+      expect(Math.abs((row(name)?.mean ?? Number.NaN) - ref.mean), `${name} mean`).toBeLessThan(0.15 * ref.sd)
     }
-  }, 120_000)
+    // The persistence and the precision are as wide as the truth (within a fifth and a tenth); the level is wider (about 1.5 times:
+    // the EP belief of the level inside a node is wider than the exact one), never narrower.
+    expect((row('phi')?.sd ?? Number.NaN) / GRID.phi.sd).toBeGreaterThan(0.75)
+    expect((row('phi')?.sd ?? Number.NaN) / GRID.phi.sd).toBeLessThan(1.15)
+    expect(Math.abs((row('tau')?.sd ?? Number.NaN) / GRID.tau.sd - 1)).toBeLessThan(0.1)
+    expect((row('mu')?.sd ?? Number.NaN) / GRID.mu.sd).toBeGreaterThan(1)
+    expect((row('mu')?.sd ?? Number.NaN) / GRID.mu.sd).toBeLessThan(2)
+    // and the truth is inside each 90% interval
+    for (const name of ['mu', 'phi', 'tau'] as const) {
+      const r = row(name)
+      expect(r?.lower ?? Number.NaN, `${name} lower`).toBeLessThan(TRUTH[name])
+      expect(r?.upper ?? Number.NaN, `${name} upper`).toBeGreaterThan(TRUTH[name])
+    }
+  }, 60_000)
 })
