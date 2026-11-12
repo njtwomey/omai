@@ -25,7 +25,10 @@ export interface ModelRunReplayProps {
   readonly fps?: number
   /** Where the replay opens: the first step (default) or the last. */
   readonly startAt?: 'first' | 'last'
-  /** The line under the picture for a step, in place of the one made from the record. */
+  /**
+   * The line under the picture for a step, in place of the one made from the record. The lines of every step are made again
+   * whenever this function changes, so pass a stable one (a module-level function, or one made with `useCallback`).
+   */
   readonly describe?: (step: number, record: ModelRun) => ReactNode
   /** The width of the picture in pixels (default its own, at most the container's). */
   readonly width?: number
@@ -160,7 +163,6 @@ export function ModelRunReplay(props: ModelRunReplayProps): ReactElement {
   const frames = useMemo(() => modelRunFrames(drawn), [drawn])
   const overlay = useMemo(() => modelRunOverlay(drawn, step), [drawn, step])
   const decorate = useMemo(() => modelRunDecorate(drawn, step), [drawn, step])
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `describe` is expected to be stable or to be a pure function of the record
   const words = useMemo(
     () =>
       record.steps.map((s): ReactNode => {
@@ -180,7 +182,7 @@ export function ModelRunReplay(props: ModelRunReplayProps): ReactElement {
           </>
         )
       }),
-    [record],
+    [record, describe],
   )
   const id = useId()
   return (

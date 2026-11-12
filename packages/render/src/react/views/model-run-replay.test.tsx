@@ -1,8 +1,10 @@
 import { type ModelRun, modelRun, modelRunAt } from 'omai-engine/exposition'
 import { structure } from 'omai-engine/scene'
+import { type ReactElement, useCallback, useState } from 'react'
 import { renderToString } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { modelRunOverlay } from '../../views/model-run.ts'
+import { inAct, mountElement, resetGlobals } from '../_harness.tsx'
 import { ModelRunReplay, replayDrawing, replayLines } from './model-run-replay.tsx'
 
 const graph = structure(
@@ -96,5 +98,25 @@ describe('ModelRunReplay on the server', () => {
     const html = renderToString(<ModelRunReplay record={one} describe={(step) => `custom words for step ${step}`} />)
     expect(html).not.toContain('type="range"')
     expect(html).toContain('custom words for step 1')
+  })
+})
+
+const host: { swap: (words: string) => void } = { swap: () => undefined }
+function Host(): ReactElement {
+  const [words, setWords] = useState('first words')
+  host.swap = setWords
+  const describe = useCallback((step: number) => `${words} for step ${step}`, [words])
+  return <ModelRunReplay record={run} describe={describe} />
+}
+
+describe('ModelRunReplay when its description changes', () => {
+  afterEach(() => resetGlobals())
+
+  it('writes the new words, not the ones made for the first function', async () => {
+    const tree = await mountElement(<Host />)
+    expect(tree.text()).toContain('first words for step 0')
+    await inAct(() => host.swap('second words'))
+    expect(tree.text()).toContain('second words for step 0')
+    expect(tree.text()).not.toContain('first words')
   })
 })
