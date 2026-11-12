@@ -8771,7 +8771,7 @@ library for the same computation. They do not set a higher bar than that library
 
 - `Makefile` and `mk/*.mk`: `help`, `setup`, `dev`, `dev-docs`, `docs-catalogue`, `build`, `lint`, `format`, `typecheck`,
   `test`, `test-browser`, `coverage`, `docs`, `concepts`, `barrels`, `layers`, `fixtures`, `fixtures-check`,
-  `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`, `probprog-validate`, `ep-digest`, `ep-digest-check`, `ep-report`, `ep-report-check`, `ep-check`.
+  `manifest`, `datasets`, `pack`, `smoke`, `verify`, `check`, `clean`, `release`, `probprog-validate`, `ep-digest`, `ep-digest-check`, `ep-perf`, `ep-perf-check`, `ep-report`, `ep-report-check`, `ep-check`.
 - Two gates: `make verify` for every commit and merge (whole-repo checks that take seconds, among them the public API
   surface digest `make api-surface-check`, which fails on any export added, removed or retyped until `make api-surface`
   is run on purpose, then only the tests,
@@ -8842,6 +8842,19 @@ library for the same computation. They do not set a higher bar than that library
   digest reads no clock and no random source, and two runs of the same code are byte-identical. Not part of `make verify`
   or `make check`: a step of a refactoring of that code runs it (see `docs/probprog/review-compiler.md`,
   `review-rules.md` and `review-suite.md`, "How a step uses the digest").
+- `scripts/ep-perf.ts` (with `ep-perf-stats.ts`, the pure median, spread, calibration and comparison helpers with their test, and
+  `scripts/perf/`: `timing.ts` the clock and `bench`, `grid-cases.ts` the typical integrands per grid profile; `make ep-perf`,
+  `make ep-perf-check`, niced): the performance harness of the EP code. It measures, with a fixed seed, a warm-up and the median of
+  several runs with the spread, the shared grid integrator per profile and the kernels under it, one message call per operator and
+  call signature (the typical calls are recorded from real runs of the atoms, models and programs by timing the registry's rules from the
+  harness, never editing the library, and replayed), the EP wall time, sweeps, updates and updates per second of a fixed set of about
+  26 items (reusing the digest's atoms, models and `programCases`), the share of the time per operator, and a calibration workload timed
+  before and after so baselines compare by ratio across machines and loads. The baseline is `docs/probprog/ep-perf.json` and its
+  generated tables `ep-perf.md`; `make ep-perf-check` fails when an item is slower than the baseline by more than 1.5x after the
+  calibration (`ARGS="--only <keys>"`, `--ratio`). Heavy and periodic, not part of `make verify` or `make check`. `scripts/perf/` also
+  holds the experiment of `docs/probprog/ep-perf-tensor-study.md` (`tensor-grid-study.ts`, the pair integrator in tensor operations
+  against the library's; `tensor-ops-floor.ts`, the per-op overhead of the tensor library at grid sizes): measurement code, not wired into
+  the library.
 - `scripts/ep-report.ts` (`make ep-report`, `make ep-report-check`; `make ep-check` runs the check after its tests): writes
   `docs/probprog/ep-status.md` from the code (the operator registry by mode, `epCoverage` and `vmpCoverage`, the atoms by family, the gaps
   with the refusals they derive, the directions) so the status page cannot go stale, and reads the atlas `docs/probprog/ep-priors.md`
