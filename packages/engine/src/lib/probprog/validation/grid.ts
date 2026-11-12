@@ -11,7 +11,7 @@
 import { OmaiError } from '../../base/index.ts'
 import { bijectors, type Support } from '../../dists/index.ts'
 import { type Key, key as makeKey } from '../../random/index.ts'
-import { item, tensor } from '../../tensor/index.ts'
+import { add, arange, concat, div, full, item, mul, tensor, toArray, toFlat, zeros } from '../../tensor/index.ts'
 import { findInitialParams, type LatentLayout, potentialEnergy } from '../density.ts'
 import { laplaceFit } from '../engines/laplace.ts'
 import type { Model } from '../primitives.ts'
@@ -81,21 +81,17 @@ const ELEMENTWISE: ReadonlySet<Support['kind']> = new Set([
   'lessThan',
 ])
 
-const trapezoid = (n: number, h: number): Float64Array => {
-  const w = new Float64Array(n).fill(h)
-  w[0] = h / 2
-  w[n - 1] = h / 2
-  return w
-}
+const trapezoid = (n: number, h: number): number[] =>
+  toFlat(concat([tensor([h / 2]), full([n - 2], h), tensor([h / 2])]))
 
 interface Evaluated {
   readonly logZ: number
   /** The normalised density marginal per axis on the axis points (integrates to one with the trapezoid weights). */
-  readonly marginals: Float64Array[]
+  readonly marginals: number[][]
   readonly edge: readonly (readonly [number, number])[]
   readonly logf: Float64Array
-  readonly axes: Float64Array[]
-  readonly weights: Float64Array[]
+  readonly axes: number[][]
+  readonly weights: number[][]
 }
 
 function evaluate(
@@ -104,9 +100,11 @@ function evaluate(
   n: number,
 ): Evaluated {
   const d = box.length
-  const axes = box.map(([lo, hi]) => Float64Array.from({ length: n }, (_, j) => lo + ((hi - lo) * j) / (n - 1)))
+  const axes = box.map(([lo, hi]) => toFlat(add(div(mul(arange(n), hi - lo), n - 1), lo)))
   const weights = box.map(([lo, hi]) => trapezoid(n, (hi - lo) / (n - 1)))
   const total = n ** d
+  // The density table and the point handed to the callback are the working buffers of the grid sweep (the callback takes a
+  // Float64Array and is called points^dim times), written in place.
   const logf = new Float64Array(total)
   const u = new Float64Array(d)
   let max = Number.NEGATIVE_INFINITY
@@ -122,7 +120,7 @@ function evaluate(
   }
   if (!Number.isFinite(max))
     throw new OmaiError('value', 'gridPosterior: the density is not finite anywhere on the grid')
-  const marg = axes.map(() => new Float64Array(n))
+  const marg = axes.map(() => toFlat(zeros([n])))
   let z = 0
   for (let flat = 0; flat < total; flat++) {
     let w = 1
@@ -137,7 +135,7 @@ function evaluate(
     z += f * w
     // The marginal on axis k holds f times the weights of the other axes.
     for (let k = 0; k < d; k++) {
-      const m = marg[k] as Float64Array
+      const m = marg[k] as number[]
       m[idx[k] ?? 0] = (m[idx[k] ?? 0] ?? 0) + (f * w) / (weights[k]?.[idx[k] ?? 0] ?? 1)
     }
   }
@@ -236,9 +234,9 @@ export function gridPosterior<D = void>(model: Model<D>, data: D, options: GridO
     const layout = owner(k)
     if (layout === undefined || !ELEMENTWISE.has(layout.support.kind))
       throw new OmaiError('not-implemented', `gridPosterior: the support of ${name} has no coordinate-wise marginal`)
-    const u = final.axes[k] as Float64Array
-    const p = final.marginals[k] as Float64Array
-    const w = final.weights[k] as Float64Array
+    const u = final.axes[k] as number[]
+    const p = final.marginals[k] as number[]
+    const w = final.weights[k] as number[]
     const b = bijectors.bijectorForSupport(layout.support)
     const x = Float64Array.from(u, (v) => item(b.forward(tensor(v))))
     const increasing = (x[n - 1] ?? 0) >= (x[0] ?? 0)
@@ -295,7 +293,7 @@ export function gridPosterior<D = void>(model: Model<D>, data: D, options: GridO
     const layout = owner(k)
     if (layout === undefined || !ELEMENTWISE.has(layout.support.kind))
       throw new OmaiError('not-implemented', `gridPosterior: the support of ${name} has no coordinate-wise density`)
-    const u = final.axes[k] as Float64Array
+    const u = final.axes[k] as number[]
     const b = bijectors.bijectorForSupport(layout.support)
     const x = Array.from(u, (v) => item(b.forward(tensor(v))))
     const slope = x.map((_, j) => {
@@ -307,7 +305,7 @@ export function gridPosterior<D = void>(model: Model<D>, data: D, options: GridO
   }
   const densityOf = (name: string): { readonly x: readonly number[]; readonly p: readonly number[] } => {
     const { x, slope, k } = axisOf(name)
-    const p = final.marginals[k] as Float64Array
+    const p = final.marginals[k] as number[]
     const order = x.map((_, j) => j).sort((i, j) => (x[i] ?? 0) - (x[j] ?? 0))
     return {
       x: order.map((j) => x[j] ?? 0),
@@ -321,7 +319,7 @@ export function gridPosterior<D = void>(model: Model<D>, data: D, options: GridO
     const A = axisOf(a)
     const B = axisOf(b)
     if (A.k === B.k) throw new OmaiError('value', 'gridPosterior: joint needs two different coordinates')
-    const acc = Array.from({ length: n }, () => new Float64Array(n))
+    const acc = toArray(zeros([n, n])) as number[][]
     const total = n ** d
     const peak = final.logf.reduce((m, v) => Math.max(m, v), Number.NEGATIVE_INFINITY)
     for (let flat = 0; flat < total; flat++) {
@@ -336,19 +334,19 @@ export function gridPosterior<D = void>(model: Model<D>, data: D, options: GridO
         else w *= final.weights[q]?.[j] ?? 0
         r = Math.floor(r / n)
       }
-      const row = acc[ia] as Float64Array
+      const row = acc[ia] as number[]
       row[ib] = (row[ib] ?? 0) + Math.exp((final.logf[flat] ?? Number.NEGATIVE_INFINITY) - peak) * w
     }
     const scale = Math.exp(peak - final.logZ)
-    const p = acc.map((row, i) => Array.from(row, (v, j) => (v * scale) / ((A.slope[i] ?? 1) * (B.slope[j] ?? 1))))
+    const p = acc.map((row, i) => row.map((v, j) => (v * scale) / ((A.slope[i] ?? 1) * (B.slope[j] ?? 1))))
     return { x: A.x, y: B.x, p }
   }
   const unconstrainedOf = (name: string): { readonly mean: number; readonly sd: number } => {
     const k = names.indexOf(name)
     if (k < 0) throw new OmaiError('value', `gridPosterior: no coordinate ${name}`)
-    const u = final.axes[k] as Float64Array
-    const p = final.marginals[k] as Float64Array
-    const w = final.weights[k] as Float64Array
+    const u = final.axes[k] as number[]
+    const p = final.marginals[k] as number[]
+    const w = final.weights[k] as number[]
     let mean = 0
     let second = 0
     for (let j = 0; j < n; j++) {

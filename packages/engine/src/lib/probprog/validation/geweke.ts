@@ -11,7 +11,7 @@ import { OmaiError } from '../../base/index.ts'
 import { ndtr } from '../../numerics/special/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { ess } from '../../sampling/index.ts'
-import { item, tensor } from '../../tensor/index.ts'
+import { item, tensor, toFlat, zeros } from '../../tensor/index.ts'
 
 /** Options of {@link gewekeTest}. */
 export interface GewekeOptions<S, D> {
@@ -84,16 +84,17 @@ export function gewekeTest<S, D>(options: GewekeOptions<S, D>, alpha = 0.01): Ge
   if (options.numSamples < 100 || options.numIterations < 100)
     throw new OmaiError('value', 'gewekeTest: at least 100 samples and iterations are needed')
   const names = Object.keys(options.statistics)
-  const marginal = names.map(() => new Float64Array(options.numSamples))
+  // the statistics of each name, written in place as the simulators run
+  const marginal = names.map(() => toFlat(zeros([options.numSamples])))
   for (let i = 0; i < options.numSamples; i++) {
     const { state, data } = options.simulate(foldIn(foldIn(options.key, 0), i))
     names.forEach((n, j) => {
-      ;(marginal[j] as Float64Array)[i] = (options.statistics[n] as (s: S, d: D) => number)(state, data)
+      ;(marginal[j] as number[])[i] = (options.statistics[n] as (s: S, d: D) => number)(state, data)
     })
   }
   const total = options.numIterations
   const burn = options.burnIn ?? 100
-  const chain = names.map(() => new Float64Array(total))
+  const chain = names.map(() => toFlat(zeros([total])))
   const start = options.simulate(foldIn(foldIn(options.key, 1), 0))
   let state = start.state
   let data = start.data
@@ -103,17 +104,17 @@ export function gewekeTest<S, D>(options: GewekeOptions<S, D>, alpha = 0.01): Ge
     data = options.resimulateData(state, foldIn(k, 1))
     if (t < 0) continue
     names.forEach((n, j) => {
-      ;(chain[j] as Float64Array)[t] = (options.statistics[n] as (s: S, d: D) => number)(state, data)
+      ;(chain[j] as number[])[t] = (options.statistics[n] as (s: S, d: D) => number)(state, data)
     })
   }
   const stats = names.map((name, j): GewekeStatistic => {
-    const a = marginal[j] as Float64Array
-    const b = chain[j] as Float64Array
-    const mean = (x: Float64Array): number => x.reduce((s, v) => s + v, 0) / x.length
-    const variance = (x: Float64Array, m: number): number => x.reduce((s, v) => s + (v - m) ** 2, 0) / (x.length - 1)
+    const a = marginal[j] as number[]
+    const b = chain[j] as number[]
+    const mean = (x: number[]): number => x.reduce((s, v) => s + v, 0) / x.length
+    const variance = (x: number[], m: number): number => x.reduce((s, v) => s + (v - m) ** 2, 0) / (x.length - 1)
     const ma = mean(a)
     const mb = mean(b)
-    const raw = ess(tensor([Array.from(b)]))
+    const raw = ess(tensor([b]))
     const e = Number.isFinite(raw) ? Math.max(1, Math.min(total, raw)) : 1
     const se = Math.sqrt(variance(a, ma) / a.length + variance(b, mb) / e)
     const z = se === 0 ? 0 : (mb - ma) / se

@@ -7,7 +7,7 @@
  */
 
 import { lgamma } from '../../../numerics/special/index.ts'
-import { item } from '../../../tensor/index.ts'
+import { add, arange, item, mul, toFlat, zeros } from '../../../tensor/index.ts'
 import { type ExactMarginal, gaussianMixtureMarginal } from './marginal.ts'
 
 /**
@@ -167,9 +167,10 @@ function solve(
   let marginals: { x: number[]; z: number[]; p: number[]; mean: number; sd: number }[] = []
   for (const n of GRIDS) {
     const steps = box.map(([lo, hi]) => (hi - lo) / n)
-    const axes = box.map(([lo], k) => Array.from({ length: n }, (_, i) => lo + (i + 0.5) * (steps[k] as number)))
+    const axes = box.map(([lo], k) => toFlat(add(mul(add(arange(n), 0.5), steps[k] as number), lo)))
     const values = axes.map((zs, c) => zs.map((z) => (maps[c] as Warp).from(z)))
     const jac = axes.map((zs, c) => zs.map((z) => (maps[c] as Warp).logJacobian(z)))
+    // the table of n^3 log densities, then masses, filled in place by the sweep below
     const raw = new Float64Array(n * n * n)
     let top = Number.NEGATIVE_INFINITY
     for (let i = 0; i < n; i++)
@@ -196,7 +197,7 @@ function solve(
     const cell = (steps[0] as number) * (steps[1] as number) * (steps[2] as number)
     logZ = top + Math.log(total * cell)
     const next: Node[] = []
-    const mass = [new Float64Array(n), new Float64Array(n), new Float64Array(n)] as const
+    const mass = [toFlat(zeros([n])), toFlat(zeros([n])), toFlat(zeros([n]))] as const
     for (let i = 0; i < n; i++)
       for (let j = 0; j < n; j++)
         for (let k = 0; k < n; k++) {
@@ -228,7 +229,7 @@ function solve(
       return {
         x,
         z,
-        p: Array.from(m, (v) => v / (steps[c] as number)),
+        p: m.map((v) => v / (steps[c] as number)),
         mean,
         sd: Math.sqrt(Math.max(second - mean * mean, 1e-300)),
       }
@@ -241,7 +242,7 @@ function solve(
         return [Math.max(b.min, m.mean - 7 * m.sd), Math.min(b.max, m.mean + 7 * m.sd)] as [number, number]
       }
       let zMean = 0
-      const mc = mass[c] as Float64Array
+      const mc = mass[c] as number[]
       for (let i = 0; i < n; i++) zMean += (mc[i] as number) * (m.z[i] as number)
       let zVar = 0
       for (let i = 0; i < n; i++) zVar += (mc[i] as number) * ((m.z[i] as number) - zMean) ** 2

@@ -11,7 +11,7 @@
 import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, randint } from '../../random/index.ts'
 import { chisquare } from '../../stats/tests/index.ts'
-import { tensor } from '../../tensor/index.ts'
+import { arange, div, floor, full, mul, take, tensor, toFlat, zeros } from '../../tensor/index.ts'
 
 /** One simulated dataset: its data and the true values of the quantities to rank. */
 export interface SbcSimulation<D> {
@@ -79,7 +79,7 @@ export interface SbcResult {
  * ```
  */
 export function rankDistribution(numRanks: number): number[] {
-  return new Array<number>(numRanks + 1).fill(1 / (numRanks + 1))
+  return toFlat(full([numRanks + 1], 1 / (numRanks + 1)))
 }
 
 /**
@@ -109,7 +109,7 @@ export function rankOf(truth: number, draws: ArrayLike<number>): number {
 function thinTo(draws: ArrayLike<number>, n: number, name: string): number[] {
   if (draws.length < n)
     throw new OmaiError('value', `sbc: ${name} has ${draws.length} draws, fewer than numRanks = ${n}`)
-  return Array.from({ length: n }, (_, j) => draws[Math.floor((j * draws.length) / n)] ?? Number.NaN)
+  return toFlat(take(tensor(Array.from(draws)), floor(div(mul(arange(n), draws.length), n))))
 }
 
 function defaultBins(values: number): number {
@@ -119,7 +119,7 @@ function defaultBins(values: number): number {
 
 /** The maximum |ECDF - uniform CDF| of ranks on 0..L. */
 function ecdfStatistic(ranks: readonly number[], numRanks: number): number {
-  const counts = new Array<number>(numRanks + 1).fill(0)
+  const counts = toFlat(zeros([numRanks + 1]))
   for (const r of ranks) counts[r] = (counts[r] ?? 0) + 1
   let acc = 0
   let d = 0
@@ -256,7 +256,7 @@ export function sbcSummary(
   const bins = options.bins ?? defaultBins(numRanks + 1)
   const quantities = names.map((name): SbcQuantity => {
     const rs = [...(ranks[name] ?? [])]
-    const histogram = new Array<number>(bins).fill(0)
+    const histogram = toFlat(zeros([bins]))
     const width = (numRanks + 1) / bins
     for (const r of rs)
       histogram[Math.min(bins - 1, Math.floor(r / width))] =
