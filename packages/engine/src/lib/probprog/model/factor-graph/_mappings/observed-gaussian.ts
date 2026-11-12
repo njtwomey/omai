@@ -25,7 +25,7 @@ import {
 } from '../_reasons.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
 import { hiddenSwitch, observedSwitch } from './observed-gates.ts'
-import { emitSite, observedPair } from './observed-numeric.ts'
+import { emitSite, observedPair, observedTriple } from './observed-numeric.ts'
 
 /** The observed Gaussian rows of a normal-gamma pair: a `gaussian-normal-gamma` factor on the shared variable per row. */
 export function observedNormalGamma(
@@ -113,8 +113,13 @@ export function observedHeavy(
   }
   if (fam === 'laplace' && !isConstCell(paramCell(cx, node, 'scale', i)))
     return observedPair(cx, node, 'laplace-scale', y, i, index)
-  if (fam === 'studentT' && !isConstCell(paramCell(cx, node, 'df', i)))
-    return observedPair(cx, node, 'student-t-df', y, i, index)
+  if (fam === 'studentT') {
+    const dfRandom = !isConstCell(paramCell(cx, node, 'df', i))
+    const scaleRandom = !isConstCell(paramCell(cx, node, 'scale', i))
+    if (dfRandom && scaleRandom) return observedTriple(cx, node, 'student-t-full', y, i, index)
+    if (dfRandom) return observedPair(cx, node, 'student-t-df', y, i, index)
+    if (scaleRandom) return observedPair(cx, node, 'student-t-scale', y, i, index)
+  }
   if (fam === 'normalOutliers' && ['scale', 'outlier'].some((p) => !paramIsConst(cx, node, p)))
     return observedOutlierSwitch(cx, node, y, i, index)
   const scale = known('scale')

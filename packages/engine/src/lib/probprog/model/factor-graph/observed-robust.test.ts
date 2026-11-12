@@ -187,7 +187,7 @@ describe('robust likelihoods and the spike and slab prior under expectation prop
     }
   })
 
-  it('an unknown scale of a heavy-tailed likelihood is refused with the reason', () => {
+  it('an unknown scale of a Student-t regression is a likelihood-pair factor on the predictor and the log scale; a normal-outlier mixture with a random scale or share is still refused with the reason', () => {
     const def = defineModel('t-random', (m) => {
       const row = m.range('row')
       const feature = m.range('feature')
@@ -197,6 +197,7 @@ describe('robust likelihoods and the spike and slab prior under expectation prop
       m.observe('y', d.studentT(3, Xd.matmul(w), s), m.data('y', { dims: [row] }))
     })
     const c = toFactorGraph(def.bind({ X, y: Y }))
-    expect(c.issues.map((i) => i.reason).join(' ')).toMatch(/known/)
+    expect(c.issues).toEqual([])
+    expect(c.graph?.factors.filter((f) => f.operator === 'likelihood-pair').length).toBe(Y.length)
   })
 })

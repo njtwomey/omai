@@ -192,6 +192,136 @@ const ordinalProbitLearnedAtom: EpAtom = defineAtom({
   parts: ordinalLearnedProblem,
 })
 
+function ordinalCutsLearnedProblem(k: Config): AtomParts {
+  const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
+  const trueSlope = configNumber(k, 'trueSlope')
+  const trueCuts = [configNumber(k, 'trueCut1'), configNumber(k, 'trueCut2')]
+  const s = configNumber(k, 'priorScale')
+  // region ordinal-probit-cuts-learned
+  // the ground truth: a latent score with standard normal noise, cut at the true cut points
+  const kk = key(seed)
+  const x = Array.from(toFlat(uniform(foldIn(kk, 0), [n])), (v) => 4 * v - 2)
+  const noise = toFlat(normal(foldIn(kk, 1), [n]))
+  const y = x.map((xi, i) => trueCuts.filter((c) => c < trueSlope * xi + (noise[i] ?? 0)).length)
+  const definition = defineModel('ordinal-probit-cuts-learned', (m) => {
+    const row = m.range('row')
+    const cut = m.range('cut', { size: 2 })
+    // the slope of the predictor and the two cut points between the three categories: all unknown
+    const slope = m.latent('slope', d.normal(0, s))
+    const cuts = m.latent('cuts', d.normal(0, s), { dims: [cut], constraint: { kind: 'ordered' } })
+    const xx = m.data('x', { dims: [row], role: 'covariate' })
+    const yy = m.data('y', { dims: [row], support: 'count' })
+    const predictor = slope.mul(xx)
+    m.observe('y', d.orderedProbit(predictor, cuts, { over: cut }), yy)
+  })
+  // endregion
+  // The exact posterior on a grid around the truth (the cut points ordered: the density is zero where they are not).
+  const half = 10 / Math.sqrt(n) + 0.7
+  const grid = once(() =>
+    gridMarginals(
+      ([b, c1, c2]) => {
+        if (!((c1 as number) < (c2 as number))) return Number.NEGATIVE_INFINITY
+        let lp = (-0.5 * ((b as number) ** 2 + (c1 as number) ** 2 + (c2 as number) ** 2)) / s ** 2
+        for (const [i, xi] of x.entries()) {
+          const u = (b as number) * xi
+          const r = y[i] as number
+          lp += logBetween(
+            r === 0 ? Number.NEGATIVE_INFINITY : (r === 1 ? (c1 as number) : (c2 as number)) - u,
+            r === 2 ? Number.POSITIVE_INFINITY : (r === 0 ? (c1 as number) : (c2 as number)) - u,
+          )
+        }
+        return lp
+      },
+      [
+        [trueSlope - half, trueSlope + half],
+        [(trueCuts[0] as number) - half, (trueCuts[0] as number) + half],
+        [(trueCuts[1] as number) - half, (trueCuts[1] as number) + half],
+      ],
+      49,
+    ),
+  )
+  const curve = (b: number, c1: number, c2: number, name: string, colour?: string): FigureCurve => ({
+    name,
+    ...(colour === undefined ? {} : { colour }),
+    x: CURVE_X,
+    y: CURVE_X.map((v) => phi(b * v - c1) + phi(b * v - c2)),
+  })
+  return {
+    build: {
+      definition,
+      data: { x, y },
+      quantities: [
+        { name: 'slope', label: 'slope', support: 'real', truth: trueSlope },
+        { name: 'cuts[0]', label: 'first cut point', support: 'real', truth: trueCuts[0] as number },
+        { name: 'cuts[1]', label: 'second cut point', support: 'real', truth: trueCuts[1] as number },
+      ],
+    },
+    reference: {
+      get exact() {
+        return { slope: grid().marginal(0), 'cuts[0]': grid().marginal(1), 'cuts[1]': grid().marginal(2) }
+      },
+      referenceSource: `the posterior of the slope and the two ordered cut points on a 49 by 49 by 49 grid`,
+    },
+    present: {
+      equations: [
+        `truth: score ${trueSlope} x + N(0, 1) noise cut at (${trueCuts.join(', ')}); ${n} points, seed ${seed}`,
+        `slope ~ N(0, ${s}²), cuts ~ N(0, ${s}²) each, ordered   (the unknown slope and cut points)`,
+        `y_i ~ OrderedProbit(slope x_i, cuts), i = 1..${n}   (three ordered categories)`,
+      ],
+      pair: ['cuts[0]', 'cuts[1]'],
+      figure: {
+        caption:
+          'The ordered outcomes (0 to 2) at each covariate value, the expected category at the true slope and cut points (green) and at the mean of the belief.',
+        xLabel: 'x',
+        yLabel: 'category',
+        xLimits: [-2, 2],
+        yLimits: [-0.3, 2.3],
+        points: [{ name: 'observations', x: [...x], y: [...y] }],
+        curves: [curve(trueSlope, trueCuts[0] as number, trueCuts[1] as number, 'true curve', 'tab2')],
+        answer: (m) => [
+          curve(m['slope'] ?? Number.NaN, m['cuts[0]'] ?? Number.NaN, m['cuts[1]'] ?? Number.NaN, 'fitted curve'),
+        ],
+      },
+    },
+  }
+}
+
+/**
+ * The ordinal probit regression with the cut points unknown too: a slope and two ordered thresholds (an ordered Gaussian latent
+ * vector, the order a pair of comparison factors) learned from outcomes simulated from stated values, over many seeds how often EP's
+ * 90% intervals hold them. Each row is a `likelihood-triple` factor on the predictor and the two cuts that bound its category.
+ */
+const ordinalProbitCutsLearnedAtom: EpAtom = defineAtom({
+  name: 'ordinal-probit-cuts-learned',
+  title: 'Ordinal probit: random cut points learned',
+  extends: 'ordinal-probit',
+  recovery: recovery(
+    'quick',
+    'the slope and the cut points share every row (a loop: EP is 0.7 to 0.95 of the exact spread) and a few dozen ordinal outcomes carry little information about thresholds, so the floor leaves room',
+  ),
+  what: 'The ordinal probit regression with a slope and two ordered cut points all unknown (Gaussian priors, the order enforced), the outcomes simulated from stated values: the likelihood-triple site on the predictor and the two cuts of each outcome.',
+  factors: [
+    'prior (gaussian) x3',
+    'ordered constraint (comparison factors on neighbouring cuts)',
+    'matmul (linear predictor)',
+    'numeric likelihood: ordinal probit with random cut points (three variables)',
+  ],
+  family: 'likelihoods',
+  reference: 'exact',
+  tolerance: tolerance(
+    'coupled',
+    'the slope and the two cut points are coupled through every outcome (a loop) and the cuts are ordered, so one Gaussian each is a summary of a curved posterior',
+  ),
+  knobs: dict({
+    ...simulationKnobs(40),
+    trueSlope: real(-2, 3, { default: 1.2, step: 0.1, label: 'true slope' }),
+    trueCut1: real(-2, 1, { default: -0.6, step: 0.1, label: 'true first cut point' }),
+    trueCut2: real(-0.5, 2.5, { default: 0.9, step: 0.1, label: 'true second cut point' }),
+    priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the slope and the cut points' }),
+  }),
+  parts: ordinalCutsLearnedProblem,
+})
+
 // ----- quantile regression -----
 
 const QX = [-1.8, -1.4, -1, -0.6, -0.2, 0.2, 0.6, 1, 1.4, 1.8]
@@ -832,14 +962,183 @@ const softmaxRegressionLearnedAtom: EpAtom = defineAtom({
   parts: softmaxLearnedProblem,
 })
 
+const ALTERNATIVES = 8
+
+/** The log of the probability of the chosen alternative under the softmax of the utilities `price * b0 + quality * b1`. */
+function choiceLogProb(
+  price: readonly number[],
+  quality: readonly number[],
+  chosen: number,
+  b: readonly number[],
+): number {
+  const u = price.map((p, k) => p * (b[0] as number) + (quality[k] as number) * (b[1] as number))
+  const top = Math.max(...u)
+  return (u[chosen] as number) - top - Math.log(u.reduce((s, v) => s + Math.exp(v - top), 0))
+}
+
+/** The choices of a simulated shopper: attributes on [-1.5, 1.5] for each alternative and the alternative chosen by the softmax of the true utilities. */
+function simulateChoices(seed: number, n: number, truth: readonly number[]) {
+  const kk = key(seed)
+  const attribute = (salt: number): number[][] => {
+    const flat = toFlat(uniform(foldIn(kk, salt), [n * ALTERNATIVES]))
+    return Array.from({ length: n }, (_, i) =>
+      Array.from({ length: ALTERNATIVES }, (_, k) => 3 * (flat[i * ALTERNATIVES + k] ?? 0.5) - 1.5),
+    )
+  }
+  const price = attribute(0)
+  const quality = attribute(1)
+  const u = toFlat(uniform(foldIn(kk, 2), [n]))
+  const chosen = price.map((p, i) => {
+    const q = quality[i] as number[]
+    const lp = p.map((_, k) => Math.exp(choiceLogProb(p, q, k, truth)))
+    let acc = 0
+    const draw = u[i] ?? 0.5
+    for (let k = 0; k < ALTERNATIVES; k++) {
+      acc += lp[k] as number
+      if (draw < acc) return k
+    }
+    return ALTERNATIVES - 1
+  })
+  return { price, quality, chosen }
+}
+
+/** The model of both choice atoms: two coefficients shared by eight alternatives and a categorical outcome with softmax probabilities. */
+function choiceModel(name: string, priorSd: number): ModelDefinition {
+  // region softmax-choice softmax-choice-learned
+  const definition = defineModel(name, (m) => {
+    const choice = m.range('choice')
+    const alternative = m.range('alternative', { size: ALTERNATIVES })
+    // one coefficient for each attribute, shared by every alternative
+    const betaPrice = m.latent('beta_price', d.normal(0, priorSd))
+    const betaQuality = m.latent('beta_quality', d.normal(0, priorSd))
+    const price = m.data('price', { dims: [choice, alternative], role: 'covariate' })
+    const quality = m.data('quality', { dims: [choice, alternative], role: 'covariate' })
+    const chosen = m.data('chosen', { dims: [choice], support: 'count' })
+    // the utility of an alternative is linear in its attributes, the choice a softmax of the utilities of the eight
+    const utility = price.mul(betaPrice).add(quality.mul(betaQuality))
+    m.observe('chosen', d.categorical({ logits: utility }, { over: alternative }), chosen)
+  })
+  // endregion
+  return definition
+}
+
+function choiceProblem(k: Config, learned: boolean): AtomParts {
+  const s = configNumber(k, 'priorScale')
+  const truth = learned ? [configNumber(k, 'truePrice'), configNumber(k, 'trueQuality')] : [-1, 1.2]
+  const [seed, n] = learned ? [configNumber(k, 'seed'), configNumber(k, 'n')] : [3, 12]
+  const data = simulateChoices(seed, n, truth)
+  const name = learned ? 'softmax-choice-learned' : 'softmax-choice'
+  return {
+    build: {
+      definition: choiceModel(name, s),
+      data,
+      quantities: [
+        {
+          name: 'beta_price',
+          label: 'price coefficient',
+          support: 'real',
+          ...(learned ? { truth: truth[0] as number } : {}),
+        },
+        {
+          name: 'beta_quality',
+          label: 'quality coefficient',
+          support: 'real',
+          ...(learned ? { truth: truth[1] as number } : {}),
+        },
+      ],
+    },
+    reference: { grid: { points: 61, maxRefinements: 0 } },
+    present: {
+      equations: [
+        ...(learned
+          ? [`truth: coefficients (${truth.join(', ')}); ${n} choices among ${ALTERNATIVES}, seed ${seed}`]
+          : []),
+        `beta_price, beta_quality ~ N(0, ${s}²)   (shared by the ${ALTERNATIVES} alternatives)`,
+        `chosen_i ~ Categorical(softmax(utility_i1, ..., utility_i${ALTERNATIVES})),  utility_ik = price_ik beta_price + quality_ik beta_quality`,
+        `observe the attributes of the ${ALTERNATIVES} alternatives and the one chosen, i = 1..${n}`,
+      ],
+      pair: ['beta_price', 'beta_quality'],
+    },
+  }
+}
+
+/**
+ * Twelve choices among eight alternatives that differ in a price and a quality, two coefficients shared by the alternatives and a
+ * softmax: the `multiclass-site` factor with eight free scores per choice, past what its product grid integrates (the auxiliary-variable
+ * rule of the site), against the posterior of the two coefficients on a grid.
+ */
+const softmaxChoiceAtom: EpAtom = defineAtom({
+  name: 'softmax-choice',
+  title: 'Softmax over eight alternatives',
+  what: 'Two coefficients with Gaussian priors and twelve choices among eight alternatives with a price and a quality each, through a softmax: the multiclass site with eight class scores per choice (an auxiliary-variable integral, not the product grid that stops at six).',
+  factors: [
+    'prior (gaussian) x2',
+    'scale (known attribute times a coefficient)',
+    'multiclass-site (softmax, eight classes)',
+  ],
+  family: 'likelihoods',
+  reference: 'grid',
+  tolerance: tolerance(
+    'measured',
+    'the two coefficients are shared by the eight scores of every choice, so one Gaussian each cannot hold their correlations and plain EP is narrow (0.77 to 0.83 of the exact spread, the means 0.15 exact sds off)',
+    { meanZ: 0.25, sdRatio: [0.7, 1.2], ks: 0.15 },
+  ),
+  evidence: {
+    nats: 0.6,
+    reason: 'eight scores per choice that share two coefficients: loopy, moment matched (0.46 measured)',
+  },
+  ep: { damping: 0.5, tol: 1e-4 },
+  knobs: dict({ priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }) }),
+  parts: (k) => choiceProblem(k, false),
+})
+
+/**
+ * The same choice model with the coefficients learned from choices simulated from stated coefficients: over many seeds, how often
+ * EP's 90% intervals hold the true ones.
+ */
+const softmaxChoiceLearnedAtom: EpAtom = defineAtom({
+  name: 'softmax-choice-learned',
+  title: 'Softmax over eight alternatives: parameters learned',
+  extends: 'softmax-choice',
+  recovery: recovery(
+    'measured',
+    'the coefficients are shared by the eight scores of every choice and one Gaussian each is a little narrow; each run integrates eight class scores per choice, so 16 seeds and a floor of 0.7',
+    { seeds: 16, coverage: 0.7, zrms: 1.7 },
+  ),
+  what: 'The eight-alternative choice model of the basic atom with the two coefficients unknown, the choices simulated from stated coefficients.',
+  factors: [
+    'prior (gaussian) x2',
+    'scale (known attribute times a coefficient)',
+    'multiclass-site (softmax, eight classes)',
+  ],
+  family: 'likelihoods',
+  reference: 'grid',
+  tolerance: tolerance(
+    'measured',
+    'the coefficients are shared by the eight scores of every choice, so one Gaussian each cannot hold their correlations and plain EP is narrow (0.70 to 0.96 of the exact spread, the means 0.17 exact sds off)',
+    { meanZ: 0.25, sdRatio: [0.6, 1.2], ks: 0.2 },
+  ),
+  ep: { damping: 0.5, tol: 1e-4 },
+  knobs: dict({
+    ...simulationKnobs(12),
+    truePrice: real(-3, 3, { default: -1, step: 0.1, label: 'true price coefficient' }),
+    trueQuality: real(-3, 3, { default: 1.2, step: 0.1, label: 'true quality coefficient' }),
+    priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }),
+  }),
+  parts: (k) => choiceProblem(k, true),
+})
+
 /** The atoms of the `ordinal` file, basic and learned twins together. */
 export const ordinalAtoms: readonly EpAtom[] = [
   ordinalProbitAtom,
   ordinalProbitLearnedAtom,
+  ordinalProbitCutsLearnedAtom,
   quantileRegressionAtom,
   quantileRegressionLearnedAtom,
   skillDrawsAtom,
   skillDrawsLearnedAtom,
   softmaxRegressionAtom,
   softmaxRegressionLearnedAtom,
+  softmaxChoiceAtom,
+  softmaxChoiceLearnedAtom,
 ]

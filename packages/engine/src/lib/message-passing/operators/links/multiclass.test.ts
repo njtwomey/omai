@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { type BrutePort, bruteTilted } from '../../../../testing/message-passing.ts'
 import { ndtr } from '../../../numerics/special/_kernels.ts'
 import { massOf, messageArg, valueArg } from '../../core/args.ts'
 import { gaussian, gaussianEta } from '../../core/families.ts'
-import type { Arg } from '../../core/types.ts'
+import type { Arg, Params } from '../../core/types.ts'
 import { defaultOperators } from '../registry.ts'
 import { multiclassSite } from './multiclass.ts'
 
@@ -76,13 +77,21 @@ function brute(
   return { logMass: Math.log(mass), mean, variance: m2.map((v, i) => v / mass - (mean[i] as number) ** 2) }
 }
 
-function check(link: 'logit' | 'probit', y: number, cavities: readonly Cavity[], tolerance = 2e-3): void {
+function check(
+  link: 'logit' | 'probit',
+  y: number,
+  cavities: readonly Cavity[],
+  tolerance = 2e-3,
+  extra: Params = {},
+  power = 1,
+): void {
   const args: Arg[] = cavities.map((c) => messageArg(gaussian, gaussianEta(c.m, c.v)))
-  const params = { y, classes: cavities.length, link }
-  const logf = link === 'logit' ? (z: readonly number[]) => logSoftmax(z, y) : (z: readonly number[]) => logProbit(z, y)
+  const params = { y, classes: cavities.length, link, ...extra }
+  const log = link === 'logit' ? (z: readonly number[]) => logSoftmax(z, y) : (z: readonly number[]) => logProbit(z, y)
+  const logf = (z: readonly number[]): number => power * log(z)
   const b = brute(cavities, logf, cavities.length === 3 ? (link === 'probit' ? 26 : 60) : 200)
   for (let k = 0; k < cavities.length; k++) {
-    const got = multiclassSite.ep?.({ mode: 'ep', to: k, args, params, power: 1 }).message as readonly number[]
+    const got = multiclassSite.ep?.({ mode: 'ep', to: k, args, params, power }).message as readonly number[]
     const c = cavities[k] as Cavity
     // The site is the tilted Gaussian over the cavity in natural parameters.
     const wantPrecision = 1 / (b.variance[k] as number) - 1 / c.v
@@ -95,7 +104,7 @@ function check(link: 'logit' | 'probit', y: number, cavities: readonly Cavity[],
     )
   }
   const want = b.logMass + args.reduce((s, a) => s + massOf(a), 0)
-  const got = multiclassSite.logEvidence?.({ mode: 'ep', to: 0, args, params, power: 1 }) as number
+  const got = multiclassSite.logEvidence?.({ mode: 'ep', to: 0, args, params, power }) as number
   expect(Math.abs(got - want), `${link} evidence ${got} against ${want}`).toBeLessThan(tolerance)
 }
 
@@ -171,5 +180,230 @@ describe('multiclass-site: tilted moments and log evidence against a brute-force
     expect(defaultOperators()['multiclass-site']?.logEvidence).toBeDefined()
     expect(multiclassSite.check?.({ y: 3, classes: 3 }, [])).toMatch(/class must be/)
     expect(multiclassSite.check?.({ y: 1, classes: 3, link: 'cloglog' }, [])).toMatch(/link/)
+  })
+})
+
+describe('multiclass-site: the auxiliary-variable rule (any number of classes)', () => {
+  const aux = { integration: 'auxiliary' }
+  const three: Cavity[] = [
+    { m: 0.3, v: 1 },
+    { m: -0.2, v: 0.8 },
+    { m: 0.1, v: 1.5 },
+  ]
+  const wide: Cavity[] = [
+    { m: 0, v: 9 },
+    { m: 0, v: 9 },
+    { m: 0, v: 9 },
+  ]
+
+  it('softmax, two and three classes: the same moments and evidence as the brute-force integral', () => {
+    check('logit', 1, three, 2e-3, aux)
+    check('logit', 2, wide, 8e-3, aux)
+    check(
+      'logit',
+      0,
+      [
+        { m: 0.4, v: 1.2 },
+        { m: -0.3, v: 0.6 },
+      ],
+      2e-3,
+      aux,
+    )
+  })
+  it('softmax with a power (fractional EP): the factor to the power is integrated', () => {
+    check('logit', 0, three, 2e-3, aux, 0.5)
+    check('logit', 2, three, 2e-3, aux, 0.25)
+    check('logit', 1, three, 2e-3, aux, 1.7)
+  })
+  it('multinomial probit, two and three classes', () => {
+    const two = [
+      { m: 0.5, v: 1 },
+      { m: -0.2, v: 0.8 },
+    ]
+    const tri = [
+      { m: 0.2, v: 1 },
+      { m: -0.1, v: 0.7 },
+      { m: 0.4, v: 1.1 },
+    ]
+    check('probit', 0, two, 4e-3, aux)
+    check('probit', 0, tri, 1.5e-2, aux)
+    check('probit', 2, tri, 1.5e-2, aux)
+  }, 30_000)
+
+  /** The precisions, mean terms and evidence of the softmax rule against the shared brute force (a product Gauss-Legendre rule zoomed onto the mass). */
+  function againstBrute(
+    y: number,
+    cavities: readonly Cavity[],
+    panels: number,
+    order: number,
+    tolerance: number,
+  ): void {
+    const args: Arg[] = cavities.map((c) => messageArg(gaussian, gaussianEta(c.m, c.v)))
+    const ports: BrutePort[] = args.map((a) => ({ kind: 'gaussian', eta: a.eta as readonly number[] }))
+    const params = { y, classes: cavities.length, link: 'logit', integration: 'auxiliary' }
+    for (let k = 0; k < cavities.length; k++) {
+      const ref = bruteTilted(ports, (z) => logSoftmax(z, y), k, { panels, order })
+      const mean = ref.moments[0] as number
+      const variance = (ref.moments[1] as number) - mean * mean
+      const c = cavities[k] as Cavity
+      const got = multiclassSite.ep?.({ mode: 'ep', to: k, args, params, power: 1 }).message as readonly number[]
+      expect(Math.abs((got[1] as number) - (1 / variance - 1 / c.v)), `class ${k} precision`).toBeLessThan(tolerance)
+      expect(Math.abs((got[0] as number) - (mean / variance - c.m / c.v)), `class ${k} mean term`).toBeLessThan(
+        tolerance,
+      )
+      if (k === 0) {
+        const evidence = multiclassSite.logEvidence?.({ mode: 'ep', to: 0, args, params, power: 1 }) as number
+        expect(Math.abs(evidence - ref.logZ), 'evidence').toBeLessThan(tolerance)
+      }
+    }
+  }
+  it('softmax, four classes: against the brute force', () => {
+    againstBrute(
+      2,
+      [
+        { m: 0.3, v: 1 },
+        { m: -0.5, v: 0.6 },
+        { m: 0.8, v: 1.2 },
+        { m: 0, v: 2 },
+      ],
+      6,
+      8,
+      1e-3,
+    )
+  }, 120_000)
+
+  /**
+   * Two exact identities of any categorical likelihood against any cavities, whatever the number of classes: the masses of the
+   * classes add up to one, and the tilted means (second moments) weighted by them add up to the cavity's, as `sum_y P(y | z) = 1`.
+   */
+  function identities(
+    link: 'logit' | 'probit',
+    cavities: readonly Cavity[],
+  ): { readonly mass: number; readonly mean: number; readonly second: number } {
+    const args: Arg[] = cavities.map((c) => messageArg(gaussian, gaussianEta(c.m, c.v)))
+    const k = cavities.length
+    const base = args.reduce((s, a) => s + massOf(a), 0)
+    let mass = 0
+    const first = new Array<number>(k).fill(0)
+    const second = new Array<number>(k).fill(0)
+    for (let y = 0; y < k; y++) {
+      const params = { y, classes: k, link }
+      const w = Math.exp((multiclassSite.logEvidence?.({ mode: 'ep', to: 0, args, params, power: 1 }) as number) - base)
+      mass += w
+      for (let j = 0; j < k; j++) {
+        const c = cavities[j] as Cavity
+        const message = multiclassSite.ep?.({ mode: 'ep', to: j, args, params, power: 1 }).message as readonly number[]
+        const precision = 1 / c.v + (message[1] as number)
+        const mean = (c.m / c.v + (message[0] as number)) / precision
+        first[j] = (first[j] as number) + w * mean
+        second[j] = (second[j] as number) + w * (1 / precision + mean * mean)
+      }
+    }
+    let dm = 0
+    let ds = 0
+    for (let j = 0; j < k; j++) {
+      const c = cavities[j] as Cavity
+      dm = Math.max(dm, Math.abs((first[j] as number) - c.m))
+      ds = Math.max(ds, Math.abs((second[j] as number) - (c.m * c.m + c.v)))
+    }
+    return { mass: Math.abs(mass - 1), mean: dm, second: ds }
+  }
+  const spread = (k: number, scale: number, variance: number): Cavity[] =>
+    Array.from({ length: k }, (_, j) => ({ m: scale * Math.sin(1.7 * j), v: variance * (1 + 0.2 * (j % 4)) }))
+
+  it('softmax of 7, 10 and 16 classes (the default rule): the classes add up to one and the moments to the cavity', () => {
+    for (const [k, scale, variance] of [
+      [7, 1, 0.5],
+      [10, 3, 9],
+      [16, 1.5, 2],
+    ] as const) {
+      const r = identities('logit', spread(k, scale, variance))
+      expect(r.mass, `${k} classes: the masses`).toBeLessThan(1e-6)
+      expect(r.mean, `${k} classes: the means`).toBeLessThan(1e-6)
+      expect(r.second, `${k} classes: the second moments`).toBeLessThan(1e-5)
+    }
+  }, 60_000)
+  it('multinomial probit of 7 and 12 classes (the default rule): the same identities', () => {
+    for (const [k, scale, variance] of [
+      [7, 1, 0.5],
+      [12, 3, 9],
+    ] as const) {
+      const r = identities('probit', spread(k, scale, variance))
+      expect(r.mass, `${k} classes: the masses`).toBeLessThan(1e-8)
+      expect(r.mean, `${k} classes: the means`).toBeLessThan(1e-8)
+      expect(r.second, `${k} classes: the second moments`).toBeLessThan(1e-7)
+    }
+  }, 60_000)
+  it('identical cavities: every class has the mass 1 / K', () => {
+    for (const k of [8, 20]) {
+      const args: Arg[] = Array.from({ length: k }, () => messageArg(gaussian, gaussianEta(0.7, 3)))
+      const base = args.reduce((s, a) => s + massOf(a), 0)
+      for (const link of ['logit', 'probit']) {
+        const params = { y: 3, classes: k, link }
+        const ev = multiclassSite.logEvidence?.({ mode: 'ep', to: 0, args, params, power: 1 }) as number
+        expect(Math.abs(ev - base + Math.log(k)), `${link} ${k}`).toBeLessThan(1e-8)
+      }
+    }
+  })
+  it('agrees with the product grid where that reaches (six classes)', () => {
+    const cavities = spread(6, 1, 0.6)
+    const args: Arg[] = cavities.map((c) => messageArg(gaussian, gaussianEta(c.m, c.v)))
+    const run = (integration: string): number[][] =>
+      cavities.map(
+        (_, k) =>
+          multiclassSite.ep?.({ mode: 'ep', to: k, args, params: { y: 2, classes: 6, integration }, power: 1 })
+            .message as number[],
+      )
+    const a = run('product')
+    const b = run('auxiliary')
+    for (let k = 0; k < 6; k++) {
+      expect(Math.abs((a[k]?.[0] as number) - (b[k]?.[0] as number)), `mean term ${k}`).toBeLessThan(3e-3)
+      expect(Math.abs((a[k]?.[1] as number) - (b[k]?.[1] as number)), `precision ${k}`).toBeLessThan(3e-3)
+    }
+  }, 30_000)
+  it('known scores are constants: seven classes, three of them known, against the brute force over the other four', () => {
+    const cavities: Cavity[] = [
+      { m: 0.2, v: 0.5 },
+      { m: -0.4, v: 0.7 },
+      { m: 0.9, v: 0.4 },
+      { m: 0, v: 1 },
+    ]
+    const known = [0.5, -1, 0.3]
+    const free = [0, 1, 3, 5]
+    const place = (z: readonly number[]): number[] => {
+      const out = [0, 0, known[0] as number, 0, known[1] as number, 0, known[2] as number]
+      free.forEach((i, j) => {
+        out[i] = z[j] as number
+      })
+      return out
+    }
+    const args: Arg[] = place([]).map((v, i) => {
+      const j = free.indexOf(i)
+      return j < 0
+        ? valueArg(gaussian, v)
+        : messageArg(gaussian, gaussianEta((cavities[j] as Cavity).m, (cavities[j] as Cavity).v))
+    })
+    const ports: BrutePort[] = cavities.map((_, j) => ({
+      kind: 'gaussian',
+      eta: (args[free[j] as number] as Arg).eta as readonly number[],
+    }))
+    for (const y of [1, 4]) {
+      const params = { y, classes: 7, link: 'logit' }
+      const evidence = multiclassSite.logEvidence?.({ mode: 'ep', to: 0, args, params, power: 1 }) as number
+      const ref = bruteTilted(ports, (z) => logSoftmax(place(z), y), 0, { panels: 3, order: 8 })
+      expect(Math.abs(evidence - ref.logZ), `evidence with y = ${y}`).toBeLessThan(2e-3)
+    }
+  }, 60_000)
+  it('says what it does not do: the product grid stops at six, the probit takes no power, variational passing stops at six', () => {
+    const args: Arg[] = spread(8, 1, 1).map((c) => messageArg(gaussian, gaussianEta(c.m, c.v)))
+    expect(() =>
+      multiclassSite.ep?.({ mode: 'ep', to: 0, args, params: { y: 0, classes: 8, integration: 'product' }, power: 1 }),
+    ).toThrow(/more than the six/)
+    expect(() =>
+      multiclassSite.ep?.({ mode: 'ep', to: 0, args, params: { y: 0, classes: 8, link: 'probit' }, power: 0.5 }),
+    ).toThrow(/power of one/)
+    expect(multiclassSite.unsupported?.('vmp', { y: 0, classes: 8 })).toMatch(/up to 6 classes/)
+    expect(multiclassSite.unsupported?.('vmp', { y: 0, classes: 6 })).toBeUndefined()
+    expect(multiclassSite.unsupported?.('ep', { y: 0, classes: 8 })).toBeUndefined()
   })
 })

@@ -131,8 +131,8 @@ export const nodeMappings: MappingTable<[ModelNode], void> = [
   },
   {
     name: 'derived',
-    maps: 'a derived node: its expression evaluated in the value algebra (a known constant, a symbolic value, a recorded variable), or a non-centred vector z / S(x) as one Gaussian vector with a gaussian-mv-function-scale factor',
-    requires: ['gaussian-mv-function-scale'],
+    maps: 'a derived node: its expression evaluated in the value algebra (a known constant, a symbolic value, a recorded variable), or a non-centred vector z / S(x) as one Gaussian vector with a gaussian-mv-function-scale factor (one shared scale) or assembled from its scalar products by a gaussian-mv-stack factor (a scale each)',
+    requires: ['gaussian-mv-function-scale', 'gaussian-mv-stack'],
     matches: (_cx, node) => node.kind === 'derived',
     map: (cx, node) => derived(cx, node as DerivedNode, (z) => mapLatent(cx, z)),
   },
@@ -243,10 +243,10 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
   },
   {
     name: 'mvn-wishart',
-    maps: 'a multivariate normal whose precision (or covariance) is a Wishart latent: the normal-Wishart pair with an mvn-normal-wishart factor',
+    maps: 'a multivariate normal whose precision (or covariance) is a Wishart latent: an mvn-wishart factor per vector for a known mean, one mvn-wishart-group factor for all the vectors when the mean is a Gaussian vector variable',
     order: 'before the plain multivariate normal below',
     families: ['multivariateNormal'],
-    requires: ['mvn-wishart', 'prior'],
+    requires: ['mvn-wishart', 'mvn-wishart-group', 'prior'],
     matches: (cx, node) => node.dist.family === 'multivariateNormal' && wishartOf(cx, node) !== undefined,
     map: (cx, node) => latentMvnWishart(cx, node),
   },
@@ -629,7 +629,7 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
   }),
   element({
     name: 'heavy-tailed',
-    maps: 'a Student-t, Laplace or outlier-mixture observation: the scale-mixture factors of the engine on the mean',
+    maps: 'a Student-t, Laplace or outlier-mixture observation: the scale-mixture factors of the engine on the mean; a random scale, random degrees of freedom or both: a likelihood-pair or likelihood-triple factor',
     families: ['studentT', 'laplace', 'normalOutliers'],
     requires: [
       'bernoulli',
@@ -639,6 +639,7 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
       'laplace-row',
       'laplace-site',
       'likelihood-pair',
+      'likelihood-triple',
       'mixture-row',
       'mixture-site',
       'prior',
@@ -656,9 +657,9 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
   }),
   element({
     name: 'ordered-numeric',
-    maps: 'an ordered probit or logistic, or an asymmetric Laplace (quantile regression): a likelihood-site factor on the predictor',
+    maps: 'an ordered probit or logistic, or an asymmetric Laplace (quantile regression): a likelihood-site factor on the predictor, and for random cut points a likelihood-triple factor on the predictor and the two cuts of the observed category',
     families: ['orderedProbit', 'orderedLogistic', 'asymmetricLaplace'],
-    requires: ['likelihood-pair', 'likelihood-row', 'likelihood-site'],
+    requires: ['likelihood-pair', 'likelihood-row', 'likelihood-site', 'likelihood-triple'],
     map: (cx, node, el) => observedNumeric(cx, node, el.fam, el.y, el.i, el.index),
   }),
   element({

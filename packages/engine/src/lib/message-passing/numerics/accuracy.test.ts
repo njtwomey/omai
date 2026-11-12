@@ -20,6 +20,7 @@ import { likelihoodSiteOperator, negativeBinomialDispersion } from '../operators
 import { likelihoodPairOperator } from '../operators/likelihoods/pairs.ts'
 import { priorSite } from '../operators/likelihoods/prior-sites.ts'
 import { mixtureSite } from '../operators/likelihoods/robust.ts'
+import { likelihoodTripleOperator, tripleLikelihoods } from '../operators/likelihoods/triples.ts'
 import { greaterThan } from '../operators/links/truncation.ts'
 import { betaTwoShapes, dirichletConcentration } from '../operators/scales/concentration.ts'
 import { gaussianMvFunctionScale } from '../operators/scales/function-scale.ts'
@@ -187,6 +188,81 @@ function expect2(
       return { mean, variance: v / total }
     },
   }
+}
+
+/** The same in three coordinates: a product rule (panels of 8 points) on a window found by zooming onto the marginals of coarser passes. */
+function expect3(
+  logw: (t0: number, t1: number, t2: number) => number,
+  box: readonly [readonly [number, number], readonly [number, number], readonly [number, number]],
+) {
+  const win: [number, number][] = box.map(([a, b]) => [a, b])
+  const pass = (panels: number) => {
+    const g = [0, 1, 2].map((d) => nodes(win[d]?.[0] as number, win[d]?.[1] as number, panels, 8))
+    const [g0, g1, g2] = g as [{ x: number[]; w: number[] }, { x: number[]; w: number[] }, { x: number[]; w: number[] }]
+    const lw = new Float64Array(g0.x.length * g1.x.length * g2.x.length)
+    let top = Number.NEGATIVE_INFINITY
+    let at = 0
+    for (let i = 0; i < g0.x.length; i++)
+      for (let j = 0; j < g1.x.length; j++)
+        for (let k = 0; k < g2.x.length; k++) {
+          const v =
+            Math.log((g0.w[i] as number) * (g1.w[j] as number) * (g2.w[k] as number)) +
+            logw(g0.x[i] as number, g1.x[j] as number, g2.x[k] as number)
+          lw[at++] = v
+          if (v > top) top = v
+        }
+    return { g0, g1, g2, lw, top }
+  }
+  for (let round = 0; round < 5; round++) {
+    const { g0, g1, g2, lw, top } = pass(10)
+    const m = [g0, g1, g2].map((g) => new Array<number>(g.x.length).fill(0))
+    let at = 0
+    for (let i = 0; i < g0.x.length; i++)
+      for (let j = 0; j < g1.x.length; j++)
+        for (let k = 0; k < g2.x.length; k++) {
+          const e = Math.exp((lw[at++] as number) - top)
+          ;(m[0] as number[])[i] = ((m[0] as number[])[i] as number) + e
+          ;(m[1] as number[])[j] = ((m[1] as number[])[j] as number) + e
+          ;(m[2] as number[])[k] = ((m[2] as number[])[k] as number) + e
+        }
+    let shrunk = false
+    for (const [d, g] of [g0, g1, g2].entries()) {
+      const marginal = m[d] as number[]
+      const peak = Math.max(...marginal)
+      const live = marginal.flatMap((v, q) => (v > 1e-13 * peak ? [q] : []))
+      const [a, b] = win[d] as [number, number]
+      const margin = (b - a) / 10
+      const na = Math.max(a, (g.x[Math.min(...live)] as number) - margin)
+      const nb = Math.min(b, (g.x[Math.max(...live)] as number) + margin)
+      if (nb - na < 0.7 * (b - a)) {
+        win[d] = [na, nb]
+        shrunk = true
+      }
+    }
+    if (!shrunk) break
+  }
+  const { g0, g1, g2, lw, top } = pass(16)
+  let total = 0
+  for (const v of lw) total += Math.exp(v - top)
+  const moments = (f: (t0: number, t1: number, t2: number) => number): { mean: number; variance: number } => {
+    let m1 = 0
+    let at = 0
+    for (let i = 0; i < g0.x.length; i++)
+      for (let j = 0; j < g1.x.length; j++)
+        for (let k = 0; k < g2.x.length; k++)
+          m1 += Math.exp((lw[at++] as number) - top) * f(g0.x[i] as number, g1.x[j] as number, g2.x[k] as number)
+    const mean = m1 / total
+    let v = 0
+    at = 0
+    for (let i = 0; i < g0.x.length; i++)
+      for (let j = 0; j < g1.x.length; j++)
+        for (let k = 0; k < g2.x.length; k++)
+          v +=
+            Math.exp((lw[at++] as number) - top) *
+            (f(g0.x[i] as number, g1.x[j] as number, g2.x[k] as number) - mean) ** 2
+    return { mean, variance: v / total }
+  }
+  return { logZ: top + Math.log(total), gauss: moments }
 }
 
 // ----- comparing a message with the reference -----
@@ -664,6 +740,90 @@ describe('the error of the numeric rules against a high-order reference', () => 
     }
   })
 
+  it('likelihood-triple: a Student-t with a random location, scale and degrees of freedom, an ordinal outcome with random cut points', () => {
+    const cases: [string, number, Record<string, number>, [number, number][]][] = [
+      [
+        'student-t-full',
+        2.4,
+        {},
+        [
+          [0.3, 1],
+          [-0.2, 0.4],
+          [1.2, 0.5],
+        ],
+      ],
+      [
+        'student-t-full',
+        -0.5,
+        {},
+        [
+          [0.5, 0.3],
+          [0, 0.2],
+          [1.8, 0.3],
+        ],
+      ],
+      [
+        'ordinal-probit-cuts',
+        1,
+        { categories: 4 },
+        [
+          [0.4, 1],
+          [-0.8, 0.5],
+          [0.7, 0.6],
+        ],
+      ],
+      [
+        'ordinal-logit-cuts',
+        2,
+        { categories: 4 },
+        [
+          [-0.5, 1.5],
+          [0.2, 0.8],
+          [1.1, 0.4],
+        ],
+      ],
+      [
+        'ordinal-probit-cuts',
+        1,
+        { categories: 3 },
+        [
+          [0, 4],
+          [-1, 3],
+          [1, 3],
+        ],
+      ],
+    ]
+    for (const [likelihood, y, extra, cavities] of cases) {
+      const params = { likelihood, y, ...extra }
+      const density = tripleLikelihoods()[likelihood]?.density(y, params) as (a: number, b: number, c: number) => number
+      const args = cavities.map(([m, v]) => gaussianArg(m, v))
+      const logw = (a: number, b: number, c: number): number =>
+        normalLog(a, cavities[0]?.[0] as number, cavities[0]?.[1] as number) +
+        normalLog(b, cavities[1]?.[0] as number, cavities[1]?.[1] as number) +
+        normalLog(c, cavities[2]?.[0] as number, cavities[2]?.[1] as number) +
+        density(a, b, c)
+      const r = expect3(
+        logw,
+        cavities.map(([m, v]) => [m - 9 * Math.sqrt(v), m + 9 * Math.sqrt(v)]) as [
+          [number, number],
+          [number, number],
+          [number, number],
+        ],
+      )
+      const label = `${likelihood} y=${y} ${cavities.map(([m, v]) => `N(${m},${v})`).join(' ')}`
+      for (const to of [0, 1, 2])
+        compare(
+          'likelihood-triple',
+          label,
+          likelihoodTripleOperator,
+          args,
+          to,
+          params,
+          r.gauss((a, b, c) => [a, b, c][to] as number),
+        )
+    }
+  })
+
   it('negative-binomial-dispersion', () => {
     for (const [y, mu, vu, ms, vs] of [
       [3, 1, 0.5, -1, 0.5],
@@ -929,6 +1089,7 @@ const bounds: Readonly<Record<string, number>> = {
   'likelihood-site laplace': 1e-4,
   'likelihood-site ordinal-probit': 1e-9,
   'likelihood-site student-t': 1e-2,
+  'likelihood-triple': 1e-2,
   'mixture-site': 1e-8,
   'negative-binomial-dispersion': 1e-3,
   'prior-site half-normal (log)': 1e-9,

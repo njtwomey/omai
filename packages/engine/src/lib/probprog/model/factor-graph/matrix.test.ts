@@ -1,6 +1,7 @@
 // A Wishart (or inverse-Wishart) latent and the multivariate normals that read it, as models under EP: the conjugate case against the
 // closed-form posterior of the matrix, the refusals that name the form that is mapped, and the shapes of the posterior.
 import { describe, expect, it } from 'vitest'
+import { importanceOfGroup } from '../../../../testing/covariance-group.ts'
 import { runEp } from '../../../../testing/factor-graph.ts'
 import {
   compileGraph,
@@ -8,8 +9,10 @@ import {
   defaultOperators as factorOperators,
   type MpState,
   marginalsOf,
+  wishartEta,
 } from '../../../message-passing/index.ts'
-import { toArray } from '../../../tensor/index.ts'
+import { inv } from '../../../numerics/linalg/index.ts'
+import { fromStorage, toArray } from '../../../tensor/index.ts'
 import { runAlgorithm } from '../../../trace/index.ts'
 import * as d from '../dists/index.ts'
 import { defineModel, factorGraphPosterior, ops, toFactorGraph } from '../index.ts'
@@ -229,7 +232,7 @@ describe('correlated random effects: a vector per group with a Wishart precision
   })
   const bound = model.bind({ X: design.map((o) => [1, o.t]), g: design.map((o) => o.g), y: design.map((o) => o.y) })
 
-  it('compiles to a vector variable per group and a factor per vector, and runs', () => {
+  it('compiles to a vector variable per group and one group factor for them (the mean is random), and runs', () => {
     const { c, g, state, marginals } = run(bound)
     expect(c.graph?.variables.filter((v) => v.family.kind === 'gaussian-mv').map((v) => v.name)).toEqual([
       'mu',
@@ -238,7 +241,12 @@ describe('correlated random effects: a vector per group with a Wishart precision
       'theta[2]',
       'theta[3]',
     ])
-    expect(c.graph?.factors.filter((f) => f.operator === 'mvn-wishart')).toHaveLength(groups)
+    // the shared Gaussian mean makes the vectors one factor: a factor per vector would loop through the mean and the matrix
+    expect(c.graph?.factors.filter((f) => f.operator === 'mvn-wishart')).toHaveLength(0)
+    const group = c.graph?.factors.filter((f) => f.operator === 'mvn-wishart-group') ?? []
+    expect(group).toHaveLength(1)
+    expect(group[0]?.args).toEqual(['theta[0]', 'theta[1]', 'theta[2]', 'theta[3]', 'mu', 'Lambda'])
+    expect(group[0]?.params).toEqual({ groups })
     const p = factorGraphPosterior(c, g, state)
     expect(p.sites).toEqual(['Lambda', 'mu', 'theta'])
     expect(p.mean('theta').shape).toEqual([groups, 2])
@@ -446,4 +454,117 @@ describe('a bivariate normal with standard deviations and a correlation', () => 
     )
     expect(b.join(' ')).toMatch(/precision idiom/)
   })
+})
+
+describe('a hierarchical covariance in dimensions three and four: one group factor, against importance sampling', () => {
+  // effects theta_j (dimension D) around a random mean with a Wishart precision, each read through 6 noisy linear readings; the readings of one group
+  // say theta_j exactly as a Gaussian (the cavity the group factor sees), so the reference is the sampled posterior of the matrix with everything else integrated out
+  const noise = 0.4
+  const spread = 9
+  const build = (dimension: number, groups: number) => {
+    const times = [-1.5, -0.9, -0.3, 0.3, 0.9, 1.5]
+    const design = (t: number, i: number): number[] => [
+      1,
+      t,
+      ...Array.from({ length: dimension - 2 }, (_, k) => Math.cos((k + 1) * (i + 1) * 1.3) + 0.2 * t),
+    ]
+    const X: number[][] = []
+    const g: number[] = []
+    const y: number[] = []
+    for (let j = 0; j < groups; j++)
+      for (const [i, t] of times.entries()) {
+        const row = design(t, i)
+        X.push(row)
+        g.push(j)
+        y.push(
+          row.reduce(
+            (acc, v, k) => acc + v * (0.4 * Math.sin(1 + j * (k + 2)) + 0.2 * k + 0.3 * Math.cos(j * 2.1 + k)),
+            0,
+          ) +
+            noise * Math.sin(3.7 * (j * times.length + i)),
+        )
+      }
+    return { X, g, y }
+  }
+  const model = (dimension: number, groups: number) =>
+    defineModel(`hierarchy${dimension}`, (m) => {
+      const group = m.range('group', { size: groups })
+      const coef = m.range('coef', { size: dimension })
+      const obs = m.range('obs')
+      const identity = Array.from({ length: dimension }, (_, i) =>
+        Array.from({ length: dimension }, (_, k) => (i === k ? 1 / (dimension + 2) : 0)),
+      )
+      const wide = Array.from({ length: dimension }, (_, i) =>
+        Array.from({ length: dimension }, (_, k) => (i === k ? spread : 0)),
+      )
+      const mu = m.latent('mu', d.multivariateNormal(Array(dimension).fill(0), { covariance: wide }), { dims: [coef] })
+      const lambda = m.latent('Lambda', d.wishart(dimension + 2, identity))
+      const theta = m.latent('theta', d.multivariateNormal(mu, { precision: lambda }, { over: coef }), {
+        dims: [group, coef],
+      })
+      const x = m.data('X', { dims: [obs, coef] })
+      const gi = m.data('g', { dims: [obs], indexes: 'group' })
+      m.observe('y', d.normal(ops.sum(ops.mul(theta.at(gi), x), coef), noise), m.data('y', { dims: [obs] }))
+    })
+
+  it.each([
+    [3, 5],
+    [4, 3],
+  ])(
+    'dimension %d with %d groups: the matrix and the mean agree with the sampled posterior',
+    (dimension, groups) => {
+      const { X, g, y } = build(dimension, groups)
+      const { c, marginals } = run(model(dimension, groups).bind({ X, g, y }))
+      expect(c.graph?.factors.filter((f) => f.operator === 'mvn-wishart-group')).toHaveLength(1)
+      // the cavity of each group's vector: its readings' least-squares Gaussian
+      const cavities = Array.from({ length: groups }, (_, j) => {
+        const rows = g.flatMap((gj, i) => (gj === j ? [i] : []))
+        const xtx = new Array<number>(dimension * dimension).fill(0)
+        const xty = new Array<number>(dimension).fill(0)
+        for (const i of rows)
+          for (let a = 0; a < dimension; a++) {
+            xty[a] = (xty[a] as number) + ((X[i] as number[])[a] as number) * (y[i] as number)
+            for (let b = 0; b < dimension; b++)
+              xtx[a * dimension + b] =
+                (xtx[a * dimension + b] as number) +
+                ((X[i] as number[])[a] as number) * ((X[i] as number[])[b] as number)
+          }
+        const inverse = toArray(
+          inv(fromStorage(Float64Array.from(xtx), [dimension, dimension], 'float64')),
+        ) as number[][]
+        const covariance = inverse.flatMap((row) => row.map((v) => v * noise * noise))
+        const mean = inverse.map((row) => row.reduce((acc, v, k) => acc + v * (xty[k] as number), 0))
+        return { m: mean, v: covariance }
+      })
+      const population = {
+        m: Array(dimension).fill(0) as number[],
+        v: Array.from({ length: dimension * dimension }, (_, e) =>
+          e % dimension === Math.floor(e / dimension) ? spread : 0,
+        ),
+      }
+      const scale = Array.from({ length: dimension * dimension }, (_, e) =>
+        e % dimension === Math.floor(e / dimension) ? 1 / (dimension + 2) : 0,
+      )
+      const reference = importanceOfGroup(
+        dimension,
+        cavities,
+        population,
+        wishartEta(dimension + 2, scale, dimension),
+        4000,
+      )
+      expect(reference.ess).toBeGreaterThan(300)
+      const lambda = marginals['Lambda'] as { mean: number[][] }
+      for (let i = 0; i < dimension; i++)
+        for (let k = 0; k < dimension; k++)
+          expect(
+            Math.abs((lambda.mean[i]?.[k] as number) - (reference.lambda[i * dimension + k] as number)),
+          ).toBeLessThan(0.06 * (0.5 + Math.abs(reference.lambda[i * dimension + k] as number)))
+      const mu = marginals['mu'] as { mean: number[] }
+      for (let k = 0; k < dimension; k++) {
+        const sdRef = Math.sqrt(reference.meanCov[k * dimension + k] as number)
+        expect(Math.abs((mu.mean[k] as number) - (reference.meanOfMean[k] as number)) / sdRef).toBeLessThan(0.08)
+      }
+    },
+    120_000,
+  )
 })

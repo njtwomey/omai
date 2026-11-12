@@ -13,7 +13,7 @@ describe('the gaps of the EP suite', () => {
   it('derive what a gap refuses from the verdicts: a synthetic refusal is named by the gap whose marker its reason carries, and only by it', () => {
     const six = {
       name: 'ten-classes',
-      reason: 'multiclass-site: 8 free scores are more than the six this rule integrates',
+      reason: 'multiclass-site: the multinomial probit of more than six scores takes a power of one',
       missing: [],
     }
     const gaps = epGapsRefusing([six])

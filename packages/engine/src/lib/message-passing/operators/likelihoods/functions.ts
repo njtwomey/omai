@@ -8,7 +8,7 @@
  * panelled quadrature of `_tilted.ts`, split at the function's kinks. Under variational message passing the output is defined by the
  * input (a Gaussian with the mean and variance of the pushforward) and the message to the input is non-conjugate, by quadrature.
  *
- * The function can be a chain: the parameter `steps` lists unary steps (a registry name, or `mul`, `add`, `pow` with a constant)
+ * The function can be a chain: the parameter `steps` lists unary steps (a registry name, or `mul`, `add`, `pow`, `min`, `max` with a constant)
  * applied one after the other, so `1 / sqrt(d exp(x) + n)` is one factor from `x` to the output rather than a chain of Gaussian
  * approximations (the compiler collapses the arithmetic on a function's output into the chain). The input can be a gamma variable
  * (a precision `alpha`: `1 / sqrt(alpha)` is the scale of a non-centred coefficient), integrated on a grid in `log alpha`, and the
@@ -101,7 +101,7 @@ export function unaryFunctions(): Record<string, UnaryFunction> {
   return Object.fromEntries(all.map((u) => [u.name, u]))
 }
 
-/** One step of a chain: a registry function by name, or `mul`, `add`, `pow` with its constant. */
+/** One step of a chain: a registry function by name, or `mul`, `add`, `pow`, `min`, `max` with its constant. */
 export type Step = readonly [string, number?]
 
 /** The function of a chain of steps, applied in order. */
@@ -111,10 +111,12 @@ export function chainOf(table: Readonly<Record<string, UnaryFunction>>, steps: r
     if (name === 'mul') return (x) => x * c
     if (name === 'add') return (x) => x + c
     if (name === 'pow') return (x) => x ** c
+    if (name === 'min') return (x) => Math.min(x, c)
+    if (name === 'max') return (x) => Math.max(x, c)
     const fn = table[name]
     if (fn === undefined)
       throw new ParameterError(
-        `apply: unknown step ${name} (the registry has ${Object.keys(table).join(', ')}, and mul, add, pow with a constant)`,
+        `apply: unknown step ${name} (the registry has ${Object.keys(table).join(', ')}, and mul, add, pow, min, max with a constant)`,
       )
     return fn.f
   })
@@ -464,11 +466,13 @@ function scaledTilt(fn: UnaryFunction, c: OperatorContext): ScaledTilt {
  * on the way. Given `x` the factor is linear in `z`, so against the cavity of `z` and the message of `y` the integral over `z`
  * is closed form and what is left is one one-dimensional integral over `x` (a panelled grid for a Gaussian, a grid in `log x` for a
  * gamma): the message to `x` is its moment match, the message to `z` is the moment match of the mixture of the conditional
- * Gaussians over it, and the message to `y` that of `u z` with `u = f(x)`.
+ * Gaussians over it, and the message to `y` that of `u z` with `u = f(x)`. Under variational message passing the factor is deterministic
+ * as {@link applyFunction} is: `y` is defined by `z` and `x` (a Gaussian with the mean and variance of the pushforward of `z f(x)`) and the
+ * messages to `z` and `x` are the non-conjugate ones of the expected log of the output's readers, by the quadrature of both beliefs.
  *
  * @param name - The operator's name.
  * @param table - The functions to choose from (default {@link unaryFunctions}).
- * @returns The operator (expectation propagation only).
+ * @returns The operator.
  * @concept factor-operators
  * @index function The factor y = z f(x) of a Gaussian times a function of a Gaussian or gamma variable: a non-centred scale.
  * @example
@@ -504,8 +508,6 @@ export function applyProduct(
         return errorText(e)
       }
     },
-    // Expectation propagation only: the non-conjugate variational rule of a product with a scale (`z f(x)`, a funnel) is degenerate
-    // (measured on the Bayesian GAM: the noise collapses to a point), so the verdict of variational message passing says so.
     rules: {
       ep: siteRule((c) => {
         const fn = resolve(table, c.params)
@@ -519,6 +521,13 @@ export function applyProduct(
         const moments = c.to === 1 ? t.z : t.y
         return { mean: moments.mean, variance: resolvedVariance(moments.variance, 'apply-product') }
       }),
+      // Deterministic, as `apply`: under the mean field `y` is defined by `z` and `x` and its belief is the Gaussian with the mean and
+      // variance of the pushforward of `z f(x)`; the messages to `z` and to `x` are the non-conjugate ones of `E[h z f(x) - J z^2 f(x)^2 / 2]`,
+      // `(h, J)` the cavity of `y`, on the product of the two beliefs' quadratures.
+      vmp: messageRule((c): OperatorResult => {
+        const fn = resolve(table, c.params)
+        return { message: definedFunctionMessage(c.args, c.to, (v) => (v[0] as number) * fn.f(v[1] as number)) }
+      }, 'numeric'),
     },
     evidence: {
       ep: (c) => {
@@ -526,8 +535,9 @@ export function applyProduct(
         const fn = resolve(table, c.params)
         return massOf(arg(c, 1)) + massOf(arg(c, 2)) + scaledTilt(fn, c).logMass
       },
+      vmp: () => 0,
     },
-    traits: { readsTarget: (to) => to !== 0, power: true },
+    traits: { readsTarget: (to) => to !== 0, power: true, defines: 0 },
   })
 }
 

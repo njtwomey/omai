@@ -126,6 +126,7 @@ export function atomReference<K extends Config>(atom: EpAtom<K>, problem: AtomPr
       source: problem.referenceSource ?? 'the closed-form posterior',
       marginals,
       ...(problem.exactJoint === undefined ? {} : { joint: problem.exactJoint }),
+      ...(problem.exactLogEvidence === undefined ? {} : { logEvidence: problem.exactLogEvidence }),
     }
   }
   const grid = gridPosterior(toProgram(atomBound(problem)), undefined, { maxRefinements: 0, ...problem.grid })

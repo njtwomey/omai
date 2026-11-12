@@ -5,6 +5,7 @@
 import { OmaiError } from '../../../base/index.ts'
 import { FLAT_CAVITY_PRECISION, numberParam } from '../../core/args.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
+import { wishartParams } from '../../core/families-matrix.ts'
 import type { Arg, Eta, OperatorContext } from '../../core/types.ts'
 import { choleskyInPlace, choleskyInverse, choleskyLogDet, choleskySolveInPlace } from '../../numerics/_bartlett.ts'
 
@@ -159,4 +160,13 @@ export function evaluatorOf(x: GaussianSide, mean: GaussianSide, d: number, rows
     }
     return logI
   }
+}
+
+/** The matrix of a Wishart cavity (degrees of freedom, Cholesky factor of its scale) or an error. */
+export function wishartCavity(eta: Eta, d: number): { readonly nu: number; readonly chol: Float64Array } {
+  const p = wishartParams(eta, d)
+  if (p === undefined) throw new ImproperMessageError('a Wishart message has no density')
+  const chol = Float64Array.from(p.scale)
+  if (!choleskyInPlace(chol, d)) throw new ImproperMessageError('a Wishart message has no density')
+  return { nu: p.nu, chol }
 }

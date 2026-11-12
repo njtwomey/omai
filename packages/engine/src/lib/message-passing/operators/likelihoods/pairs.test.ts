@@ -135,6 +135,13 @@ describe('likelihood-pair: tilted moments and log evidence against a brute-force
   it('student-t-df, a gaussian log df', () => {
     check('student-t-df', 2.4, { scale: 0.8 }, [gaussianCavity(0.3, 1), gaussianCavity(1.2, 0.5)])
   })
+  it('student-t-scale, a gaussian log scale and a gamma scale', () => {
+    check('student-t-scale', 2.4, { df: 3 }, [gaussianCavity(0.3, 1), gaussianCavity(-0.2, 0.4)], {
+      moments: 3e-3,
+      evidence: 3e-3,
+    })
+    check('student-t-scale', -1.1, { df: 5.5 }, [gaussianCavity(0, 1.5), gammaCavity(6, 5)])
+  })
   it('student-t-df, a gamma df', () => {
     check('student-t-df', -1.1, { scale: 1 }, [gaussianCavity(0, 1.5), gammaCavity(3, 0.4)])
   })
@@ -149,6 +156,7 @@ describe('likelihood-pair: tilted moments and log evidence against a brute-force
   it('the column form of a density is the density', () => {
     const cases: [string, number, Record<string, number>][] = [
       ['student-t-df', 1.3, { scale: 0.7 }],
+      ['student-t-scale', 1.3, { df: 4 }],
       ['weibull-shape', 1.6, { censored: 0 }],
       ['weibull-shape', 2.2, { censored: 1 }],
       ['beta-shapes', 0.35, {}],

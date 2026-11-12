@@ -906,6 +906,10 @@ function randomEffectsProblem(k: Config): AtomParts {
       exact,
       referenceSource:
         'quadrature of the three entries of the precision matrix, the effects integrated out in closed form (each is a Gaussian mixture over it)',
+      // the grid's constants are the matrix's own; the Gaussian readings carry -N/2 log 2 pi
+      get exactLogEvidence() {
+        return grid.logEvidence - 0.5 * groups * TIMES.length * Math.log(2 * Math.PI)
+      },
     },
     present: {
       equations: [
@@ -1085,6 +1089,10 @@ function randomEffectsLearnedProblem(k: Config): AtomParts {
       exact,
       referenceSource:
         'quadrature of the three entries of the precision matrix, the mean and the effects integrated out in closed form',
+      // the readings carry -N/2 log 2 pi, the mean's Gaussian prior (and its integral) the factor 1 / priorSd^2
+      get exactLogEvidence() {
+        return grid.logEvidence - 0.5 * groups * TIMES.length * Math.log(2 * Math.PI) - 2 * Math.log(priorSd)
+      },
     },
     present: {
       equations: [
@@ -1115,14 +1123,15 @@ const randomInterceptsSlopesLearnedAtom: EpAtom = defineAtom({
   factors: [
     'prior (gaussian-mv)',
     'prior (wishart)',
-    'mvn-wishart (a Gaussian vector per group, random mean)',
+    'mvn-wishart-group (the Gaussian vectors of every group and a random mean, one factor)',
     'linear-regression-row',
   ],
   family: 'covariance',
   reference: 'exact',
   tolerance: tolerance(
-    'close',
-    'the groups are Gaussian given the matrix and the mean and the matrix a Wishart given them, but not jointly: EP matches each by moments; the population mean (spread 0.93 of the exact at eight groups, 0.77 to 0.87 at three or five) is the part it carries least well, because it is shared by every group',
+    'measured',
+    'the groups are Gaussian given the matrix and the mean and the matrix a Wishart given them, but not jointly: the group vectors, the population mean and the matrix are one factor, so EP matches each marginal to the moments of the exact tilt (3 sweeps); what remains is the Gaussian and Wishart shape of the projections and the reference grid, whose own spread for the mean is a few percent high at three groups',
+    { meanZ: 0.05, sdRatio: [0.93, 1.06], ks: 0.08 },
   ),
   knobs: dict({
     seed: simulationKnobs(10)['seed'] as ReturnType<typeof int>,
