@@ -18,6 +18,7 @@ import {
   add,
   arange,
   clip,
+  cos,
   div,
   equal,
   exp,
@@ -379,7 +380,7 @@ const PROBIT_CEILING = 1 - Number.EPSILON / 2
  * @example
  * ```ts
  * import { defaultOperators } from 'omai-engine/probprog/model'
- * Object.keys(defaultOperators()).length // => 30
+ * Object.keys(defaultOperators()).length // => 31
  * ```
  */
 export function defaultOperators(): Record<string, OperatorDef> {
@@ -398,6 +399,7 @@ export function defaultOperators(): Record<string, OperatorDef> {
     elementwise('square', 1, 'a squared', (a) => square(a)),
     elementwise('abs', 1, 'absolute value of a', (a) => abs(a)),
     elementwise('tanh', 1, 'hyperbolic tangent of a', (a) => tanh(a)),
+    elementwise('cos', 1, 'cosine of a (radians)', (a) => cos(a)),
     elementwise('sigmoid', 1, 'the logistic function 1 / (1 + exp(-a))', (a) => sigmoid(a), { factor: 'logistic' }),
     elementwise(
       'probit',

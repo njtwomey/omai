@@ -1355,3 +1355,31 @@ history, each test run alone:
     digest item `program/changepoint` returns to its line from before the warm-up (20 sweeps, evidence -197.12944278808607; BITS-identical to it).
 - Not done: narrowing `hasExchangeableLabels` to selects whose components share a prior (the extended changepoint, whose components have different priors, gains from the
   warm-up, so the trigger is better left wide).
+
+## 2026-11-12 A GPLVM under EP: random Fourier features, a `cos` function, and a narrower network-layer refusal (`agent-a8cd08-gplvm`)
+
+The question: can a Gaussian process latent variable model (observations `y`, N points by D dimensions, one or two hidden coordinates `x` per point, each output a
+smooth function of them) run under EP? Answer: not as a Gaussian process prior, yes as a finite-feature model, with limits.
+- The direct formulation is refused. `f ~ MVN(0, K(x))` with `K` a `m.custom` of the random coordinates: `epRoute(bound)` is `none`, reason "'f' is opaque to message
+  passing (a custom call, or a family with no exponential-family form)", missing `exponential-family factors`. A custom function of a random value is opaque, and the
+  grid route (`ep-grid`) only takes scalar hyperparameters, not a vector of coordinates (a Gram matrix of random inputs is not a dense prior the compiler can emit).
+- With random Fourier features (`gplvmFourierModel`, `probprog/models/gplvm.ts`): `f_d(x) = sum_m W_dm cos(omega_m . x + b_m)`, the frequencies from a seeded key
+  (normal with sd 1 / length scale) and the phases uniform, `x_n ~ N(0, I)`, `W ~ N(0, 2 / M)`, a Gaussian observation. Every factor is in the registry (the linear map,
+  `apply`, the numeric `product`, `sum`). Two library changes were needed. (1) `cos` joins the unary functions (`apply`: a closed-form pushforward for a flat output, the
+  panelled quadrature otherwise; the model operator `ops.cos` and `Var.cos`; the generic function tests cover it). (2) The verdict refused the model as a "neural-network
+  layer" (`networkLayerUnits`): an `apply` of an affine map of a random value that several factors read, multiplied by a weight that several rows multiply. The units of a
+  hidden layer are copies of one another (permutable); the features of this model are not, because the units that read one coordinate multiply weights of their own and
+  their known frequencies tell them apart. `networkLayerUnits` now counts a unit only when another unit that reads one of its input weights also multiplies one of its
+  output weights; the benchmark network is still refused (its test), the GPLVM graph has zero units.
+- Measured (`gplvm.test.ts`, the showcase story): 20 points, 5 outputs of a known smooth map of one coordinate (`simulateGplvm`), 6 features, damping 0.7, `restarts: 0`, 70
+  sweeps: about 6 s a run. Over seeds 1 to 12 (the data and the features from different keys) the aligned correlation of the posterior-mean coordinate with the true one is
+  0.95 to 0.99 in 7 seeds, 0.89 in one and 0.05 to 0.66 in four (a poor solution; more sweeps at damping 0.7 recovered 3 of 4 of the failures in an earlier set, at 20 s). The
+  run does not settle in the sweeps (status stopped). Where it works the stated spreads (0.19 to 0.35) are wider than the miss (0.13 to 0.18); where it fails they are small (0.05
+  against a miss of 0.8). The residual of the learned functions at the points flags a failure without the truth (0.075 to 0.095 where it works, noise 0.1; 0.15 to 0.7 where not). Two
+  coordinates (24 points, 6 outputs, 10 features, 15 s): one seed of two found. Smaller problems are worse (4 outputs, 6 features: 5 of 10), and more outputs are not better per sweep.
+  A long NUTS run of a 12-point instance has chains in different modes (R-hat 1.8): no reference for the spreads.
+- Coordinates are identified only up to a rotation or reflection and a stretch: `alignLatents` (orthogonal Procrustes, `numerics/geometry`) fits them to the truth for a score.
+- Not an atom: there is no reference answer (the coordinates have no marginal to hold EP to, the spreads are not the posterior's), so no digest item. The compiler's counts are
+  unchanged (the graph corpus is untouched); the operator registry gains no operator.
+- Gap `gplvm-features` with the plan: a numeric row factor per point (the coordinates of a point on a small grid, the weights one dense Gaussian vector, the mixture over the grid
+  nodes of the Gaussian conditionals moment-matched onto the weights), a compiler mapping for it, and a multi-start over the coordinate symmetry.

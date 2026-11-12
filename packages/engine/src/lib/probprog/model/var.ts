@@ -104,6 +104,9 @@ export class Var {
   abs(): Var {
     return apply('abs', [this])
   }
+  cos(): Var {
+    return apply('cos', [this])
+  }
   sigmoid(): Var {
     return apply('sigmoid', [this])
   }
@@ -230,6 +233,7 @@ export interface Ops {
   square(a: Operand): Var
   abs(a: Operand): Var
   tanh(a: Operand): Var
+  cos(a: Operand): Var
   sigmoid(a: Operand): Var
   /** The standard normal CDF (the inverse probit link). */
   probit(a: Operand): Var
@@ -278,6 +282,7 @@ export const ops: Ops = {
   square: (a) => apply('square', [a]),
   abs: (a) => apply('abs', [a]),
   tanh: (a) => apply('tanh', [a]),
+  cos: (a) => apply('cos', [a]),
   sigmoid: (a) => apply('sigmoid', [a]),
   probit: (a) => apply('probit', [a]),
   softplus: (a) => apply('softplus', [a]),
