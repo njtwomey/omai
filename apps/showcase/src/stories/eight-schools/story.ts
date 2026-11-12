@@ -1,11 +1,10 @@
 import type { StoryMeta } from '../../story.ts'
 
 export const story: StoryMeta = {
-  title: 'Eight schools, and why the average is not enough',
-  standfirst:
-    'Eight noisy estimates can be read separately or pooled. The better answer is in between, and the data pick where.',
+  title: 'Eight schools and partial pooling',
+  standfirst: 'Eight noisy estimates can be read separately or pooled. The data decide how much to pool.',
   section: 'structure',
   tags: ['bayesian', 'hierarchical', 'partial pooling', 'NUTS'],
   date: '2026-11-12',
-  hook: 'Eight estimates, each pulled towards the group by exactly as much as it is noisy.',
+  hook: 'Eight estimates, each pulled towards the group by an amount that depends on how noisy it is.',
 }

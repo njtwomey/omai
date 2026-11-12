@@ -2,7 +2,7 @@ import type { StoryMeta } from '../../story.ts'
 
 export const story: StoryMeta = {
   title: 'Functions drawn from a Gaussian process',
-  standfirst: 'Instead of choosing a curve, describe a whole population of curves, then let five points thin it out.',
+  standfirst: 'A Gaussian process puts a probability on whole curves. Five points then rule most of them out.',
   section: 'models',
   tags: ['gaussian process', 'regression', 'kernel', 'uncertainty'],
   date: '2026-11-12',

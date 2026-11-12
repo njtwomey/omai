@@ -141,3 +141,7 @@
   }
 }
 
+/* Inside the results block the block fades in once; its figures and prose do not fade again on top of it. */
+.story-results .story-reveal {
+  animation: none;
+}

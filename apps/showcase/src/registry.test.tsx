@@ -1,8 +1,11 @@
+import type { ComponentType } from 'react'
 import { renderToString } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StoryContext } from './kit/StoryPage.tsx'
 import { mismatched, pageOf, STORIES, storyOf } from './registry.ts'
 import { SECTIONS } from './sections.ts'
+
+const PAGES = import.meta.glob<{ readonly default: ComponentType }>('./stories/*/Story.tsx')
 
 // A story must not start a worker, or compute anything, by being imported or rendered: only the play button does.
 const made: unknown[] = []
@@ -51,10 +54,37 @@ describe('the registry of stories', () => {
       </StoryContext.Provider>,
     )
     expect(html).toContain('data-phase="idle"')
-    expect(html).toContain('Draw the crowd')
+    expect(html).toContain('Draw the lines')
+    // The page reads straight down: the results block comes right after the play button, holds only its placeholder, and nothing
+    // follows it (no code, no closing prose) until a result exists.
+    const play = html.indexOf('data-testid="play"')
+    const results = html.indexOf('data-testid="results"')
+    expect(play).toBeGreaterThan(0)
+    expect(results).toBeGreaterThan(play)
+    expect(html).toContain('data-state="empty"')
     expect(html).toContain('Nothing has been computed yet')
-    expect(html).not.toContain('What came back')
+    expect(html).not.toContain('What to take from it')
+    expect(html).not.toContain('How it is written')
     expect(made).toEqual([])
     // The first import of the story pulls in the chart library and the engine's tensors.
   }, 60_000)
+  it('lays every story out to read straight down: the results block follows the play button, empty before the run', async () => {
+    for (const entry of STORIES) {
+      const load = PAGES[`./stories/${entry.slug}/Story.tsx`]
+      if (load === undefined) throw new Error(`${entry.slug} has no page`)
+      const { default: Story } = await load()
+      const html = renderToString(
+        <StoryContext.Provider value={{ entry, prev: undefined, next: undefined }}>
+          <Story />
+        </StoryContext.Provider>,
+      )
+      const play = html.indexOf('data-testid="play"')
+      const results = html.indexOf('data-testid="results"')
+      expect(play, `${entry.slug}: a play button`).toBeGreaterThan(0)
+      expect(results, `${entry.slug}: a results block after the play button`).toBeGreaterThan(play)
+      expect(html, `${entry.slug}: nothing drawn before the run`).toContain('data-state="empty"')
+      expect(html, `${entry.slug}: code only after the result`).not.toContain('How it is written')
+    }
+    expect(made).toEqual([])
+  }, 120_000)
 })
