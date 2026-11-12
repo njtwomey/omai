@@ -431,7 +431,8 @@ function gpSoftmaxProblem(k: Config): AtomParts {
     const at = m.data('index', { dims: [row, cls], support: 'count' })
     // the scores of an input are the entries of the vector at its classes, the label a softmax of them
     const logits = ops.at(f, at)
-    m.observe('y', d.categorical({ logits }, { over: cls }), m.data('y', { dims: [row], support: 'count' }))
+    const y = m.data('y', { dims: [row], support: 'count' })
+    m.observe('y', d.categorical({ logits }, { over: cls }), y)
   })
   // endregion
   // The reference: the posterior mean and spread of every value by Gauss-Hermite quadrature of the whitened prior (a product rule over
