@@ -1,7 +1,7 @@
 /**
  * The linear-Gaussian operators: an affine combination of Gaussians (and its special cases, the sum, the difference
  * and the scaling by a constant), a Gaussian projection of a Gaussian vector (a dot product and a matrix product with
- * constants), a regression row, and a joint Gaussian potential over scalar variables. All are closed forms under
+ * constants), a vector assembled from scalar variables, a regression row, and a joint Gaussian potential over scalar variables. All are closed forms under
  * expectation propagation, so EP is exact on a tree of them. The affine ones (`linear`, `plus`, `difference`,
  * `times-constant`, `sum`, `dot-constant`) are deterministic: they define their output (`FactorOperator.defines`), and
  * under variational message passing the output is the pushforward of the inputs' beliefs while the messages to the
@@ -317,6 +317,94 @@ function dotConstantMessage(c: OperatorContext): OperatorResult {
   }
   return { message: gaussianMessage(m, v) }
 }
+
+/**
+ * The message of `D = (y_0, ..., y_{n-1})`: to the vector the diagonal Gaussian of the scalars' messages (their natural parameters
+ * on the diagonal: the cavities under EP, the beliefs under the mean field, whose pushforward is that), to a scalar under EP the
+ * marginal at its coordinate of the vector's cavity and the other scalars' cavities, and under the mean field the expected log of the vector's cavity `N(h, J)` as a
+ * function of that coordinate with the others at their means, `[h_j - sum_{i != j} J_ji E[y_i], J_jj]`.
+ */
+function stackMessage(c: OperatorContext, variational: boolean): OperatorResult {
+  const d = arg(c, 0).family.dim
+  if (c.to === 0) {
+    const h = new Array<number>(d)
+    const j = new Array<number>(d * d).fill(0)
+    for (let i = 0; i < d; i++) {
+      const eta = etaOf(arg(c, i + 1))
+      h[i] = eta[0] ?? 0
+      j[i * d + i] = eta[1] ?? 0
+    }
+    return { message: [...h, ...j] }
+  }
+  const k = c.to - 1
+  const w = etaOf(arg(c, 0))
+  if (variational) {
+    let h = w[k] ?? 0
+    for (let i = 0; i < d; i++) if (i !== k) h -= (w[d + k * d + i] ?? 0) * gaussianOf(arg(c, i + 1)).mean
+    return { message: [h, w[d + k * d + k] ?? 0] }
+  }
+  // The vector's cavity times the cavities of the other scalars, which the delta carries through to it, and its marginal at `k`.
+  const h = w.slice(0, d)
+  const j = w.slice(d)
+  for (let i = 0; i < d; i++) {
+    if (i === k) continue
+    const eta = etaOf(arg(c, i + 1))
+    h[i] = (h[i] ?? 0) + (eta[0] ?? 0)
+    j[i * d + i] = (j[i * d + i] ?? 0) + (eta[1] ?? 0)
+  }
+  const factor = spd(j, d)
+  if (factor === undefined)
+    throw new ImproperMessageError('gaussian-mv-stack: the precision of the vector is not positive definite')
+  const e = new Array<number>(d).fill(0)
+  e[k] = 1
+  return { message: gaussianMessage(factor.solve(h)[k] ?? 0, factor.solve(e)[k] ?? 0) }
+}
+
+/**
+ * `D = (y_0, ..., y_{n-1})`: a Gaussian vector assembled from `n` scalar Gaussian variables (`n` in the parameters), the vector being
+ * the variable the factor defines. It ties the scalar variables of a vector whose coordinates are each a factor of their own (the
+ * non-centred coefficients with a scale each, `y_j = z_j f(x_j)`) to one Gaussian vector variable that the likelihood reads as a
+ * vector, so its message to the coefficients is dense. Under EP the message to the vector is the diagonal Gaussian of the scalars'
+ * cavities and the message to a scalar the marginal at its coordinate of the vector's cavity with the other scalars' cavities (the `n` unit
+ * `dot-constant` ties in one factor). Under variational message passing the vector is defined by the scalars, its belief the diagonal Gaussian of their beliefs,
+ * and the message to a scalar the expected log of the vector's cavity with the other coordinates at their means.
+ *
+ * @concept factor-operators
+ * @index structure A Gaussian vector assembled from scalar Gaussian variables D = (y_0, ..., y_n-1).
+ * @example
+ * ```ts
+ * import { gaussian, gaussianEta, gaussianMv, gaussianMvStack, messageArg } from 'omai-engine/message-passing'
+ * const v = gaussianMv(2)
+ * const args = [messageArg(v, v.flat), messageArg(gaussian, gaussianEta(1, 2)), messageArg(gaussian, gaussianEta(3, 4))]
+ * gaussianMvStack.ep?.({ mode: 'ep', to: 0, args, params: { n: 2 }, power: 1 }).message // => [0.5, 0.75, 0.5, 0, 0, 0.25]
+ * ```
+ */
+export const gaussianMvStack: FactorOperator = defineOperator({
+  name: 'gaussian-mv-stack',
+  description: 'D = (y_0, ..., y_n-1): a Gaussian vector assembled from scalar Gaussian variables',
+  ports: (params) => [
+    { name: 'd', accepts: ['gaussian-mv'] },
+    ...Array.from({ length: numberParam(params, 'n') }, (_, i): Port => ({ name: `y${i}`, accepts: ['gaussian'] })),
+  ],
+  params: { n: param.integer({ min: 1 }) },
+  check: (params, families) =>
+    numberParam(params, 'n') === families[0]?.dim ? undefined : 'gaussian-mv-stack: n must be the length of the vector',
+  rules: {
+    ep: messageRule((c): OperatorResult => stackMessage(c, false)),
+    vmp: messageRule((c): OperatorResult => stackMessage(c, true)),
+  },
+  evidence: {
+    // As the unit ties: the integral over the vector of its cavity times the scalars' cavities at its coordinates, which is the log
+    // partition of the vector's cavity plus the (exact) diagonal message to it.
+    ep: (c) => {
+      const d = arg(c, 0)
+      const total = rawSum(etaOf(d), stackMessage({ ...c, to: 0 }, false).message)
+      return d.family.isProper(total) ? d.family.logPartition(total) : Number.NaN
+    },
+    vmp: () => 0,
+  },
+  traits: { defines: 0 },
+})
 
 /**
  * y = A w for a Gaussian vector w and a constant matrix A (`matrix`, row-major, with as many rows as y has entries): a

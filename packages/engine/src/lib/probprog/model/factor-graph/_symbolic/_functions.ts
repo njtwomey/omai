@@ -48,6 +48,23 @@ export function applyAff(cx: Context, fn: string, a: Aff, index: number): Aff {
 }
 
 /**
+ * `clip(a, lo, hi)` of a random value for known bounds: a function of the one variable behind `a`, so the chain of its `apply` factor
+ * gets a `min` and a `max` step (a known value is clipped on the spot). No second Gaussian approximation: the clip is inside the chain.
+ */
+export function clipAff(cx: Context, a: Aff, lo: number, hi: number, index: number): Aff {
+  if (a.terms.size === 0) return constAff(Math.min(Math.max(a.offset, lo), hi))
+  return applyChain(
+    cx,
+    chainOf(cx, a),
+    [
+      ['min', hi],
+      ['max', lo],
+    ],
+    index,
+  )
+}
+
+/**
  * `numerator / divisor` for a divisor that is a known affine map of the output of an `apply` (a function of a latent): the
  * `apply-product` factor of the numerator and the divisor's chain with the reciprocal appended. Undefined for any other divisor.
  */

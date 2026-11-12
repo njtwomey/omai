@@ -41,7 +41,7 @@ interface Setup extends Factor {
   /** Observed variables of the factor, by name and value. */
   readonly observed?: Readonly<Record<string, number>>
   /** Variables a deterministic factor defines (they are not part of the bound: the mean field of the model with them substituted). */
-  readonly defined?: readonly { readonly name: string; readonly kind: Kind }[]
+  readonly defined?: readonly { readonly name: string; readonly kind: Kind; readonly size?: number }[]
   /** The other factors of the graph (the readers of a defined variable). */
   readonly extra?: readonly Factor[]
   /** The log density of the factor at one coordinate per free variable (the order of `free`). */
@@ -63,7 +63,7 @@ function fit(s: Setup, damping = 0): { etas: number[][]; bound: number; sweeps: 
   const spec: M.FactorGraphSpec = {
     variables: [
       ...s.free.map((v) => ({ name: v.name, family: specOf(v) })),
-      ...(s.defined ?? []).map((v) => ({ name: v.name, family: { kind: v.kind } as M.FamilySpec })),
+      ...(s.defined ?? []).map((v) => ({ name: v.name, family: specOf(v) })),
       ...Object.entries(s.observed ?? {}).map(([name, value]) => ({
         name,
         family: { kind: 'gaussian' } as M.FamilySpec,
@@ -95,7 +95,7 @@ function fit(s: Setup, damping = 0): { etas: number[][]; bound: number; sweeps: 
   return { etas, bound: M.evidenceOf(g, settings, state), sweeps: used }
 }
 
-const specOf = (v: Var): M.FamilySpec =>
+const specOf = (v: { readonly kind: Kind; readonly size?: number }): M.FamilySpec =>
   (v.size === undefined ? { kind: v.kind } : { kind: v.kind, size: v.size }) as M.FamilySpec
 const familyOf = (v: Var): M.Family => M.familyOf(specOf(v))
 
@@ -547,6 +547,89 @@ describe('deterministic factors define their output: the fixed point is the mean
       })
     })
   }
+
+  it('apply-product, a Gaussian x: y = z exp(x) read by a Gaussian (z and x are free, y is defined by them)', () => {
+    const o = 0.8
+    expectStationary({
+      free: [
+        { name: 'z', kind: 'gaussian', prior: g(0.9, 0.6) },
+        { name: 'x', kind: 'gaussian', prior: g(-0.2, 0.3) },
+      ],
+      defined: [{ name: 'y', kind: 'gaussian' }],
+      observed: { o },
+      operator: 'apply-product',
+      args: ['y', 'z', 'x'],
+      params: { fn: 'exp' },
+      extra: [reading()],
+      logf: ([z, x]) => logReading(o, (z as number) * Math.exp(x as number)),
+    })
+  })
+
+  it('apply-product, a gamma x: y = z / sqrt(a x + c) read by a Gaussian (the scale of a coefficient with a relevance of its own)', () => {
+    const o = 0.6
+    expectStationary({
+      free: [
+        { name: 'z', kind: 'gaussian', prior: g(0.7, 0.8) },
+        { name: 'x', kind: 'gamma', prior: lgam(3, 2) },
+      ],
+      defined: [{ name: 'y', kind: 'gaussian' }],
+      observed: { o },
+      operator: 'apply-product',
+      args: ['y', 'z', 'x'],
+      params: { steps: [['mul', 0.8], ['add', 0.3], ['sqrt'], ['recip']] } as M.Params,
+      extra: [reading()],
+      logf: ([z, x]) => logReading(o, (z as number) / Math.sqrt(0.8 * (x as number) + 0.3)),
+    })
+  })
+
+  it('apply-product: the message to y is the pushforward of z f(x) under the two beliefs, a brute-force mean and variance', () => {
+    const op = operators['apply-product'] as M.FactorOperator
+    const z = M.messageArg(M.gaussian, M.gaussianEta(0.7, 0.4))
+    const x = M.messageArg(M.gaussian, M.gaussianEta(0.2, 0.3))
+    const y = M.messageArg(M.gaussian, M.gaussianEta(0, 1))
+    const belief = (m: number, v: number): BruteBelief => ({ kind: 'gaussian', eta: g(m, v) })
+    const moment = (k: number): number =>
+      bruteExpectation([belief(0.7, 0.4), belief(0.2, 0.3)], ([a, b]) => ((a as number) * Math.exp(b as number)) ** k)
+    const m = moment(1)
+    const v = moment(2) - m * m
+    const message = op.vmp?.({ mode: 'vmp', to: 0, args: [y, z, x], params: { fn: 'exp' }, power: 1 })
+      ?.message as number[]
+    expect(message[0]).toBeCloseTo(m / v, 6)
+    expect(message[1]).toBeCloseTo(1 / v, 6)
+  })
+
+  it('gaussian-mv-stack: a vector defined by two scalars and read by dense rows, the fixed point maximises the brute-force bound', () => {
+    const rows = [
+      { a: [1, 0.6], o: 0.9 },
+      { a: [0.3, -1], o: -0.4 },
+      { a: [0.8, 0.9], o: 0.5 },
+    ]
+    const precision = 2.5
+    expectStationary({
+      free: [
+        { name: 'y0', kind: 'gaussian', prior: g(0.2, 0.9) },
+        { name: 'y1', kind: 'gaussian', prior: g(-0.3, 0.7) },
+      ],
+      defined: [{ name: 'd', kind: 'gaussian-mv', size: 2 }],
+      observed: { o0: rows[0]?.o as number, o1: rows[1]?.o as number, o2: rows[2]?.o as number },
+      operator: 'gaussian-mv-stack',
+      args: ['d', 'y0', 'y1'],
+      params: { n: 2 },
+      extra: rows.map((r, i) => ({
+        operator: 'linear-regression-row',
+        args: [`o${i}`, 'd'],
+        params: { a: r.a, precision } as M.Params,
+      })),
+      logf: ([y0, y1]) =>
+        rows.reduce(
+          (t, r) =>
+            t +
+            0.5 * Math.log(precision / (2 * Math.PI)) -
+            0.5 * precision * (r.o - (r.a[0] as number) * (y0 as number) - (r.a[1] as number) * (y1 as number)) ** 2,
+          0,
+        ),
+    })
+  })
 
   for (const [name, f] of [
     ['max', Math.max],

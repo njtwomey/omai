@@ -44,4 +44,5 @@ single scalar, so the apply-product stays per coefficient.
 - The evidence of the new operator is the log mass against the unnormalised messages (tested against a grid); the posterior's
   evidence diagnostics read it like the other operators'.
 - Variational message passing has a rule for the dense factor since 2026-11-12 (the mean field of the vector given `x`, no standard
-  normals); ARD has none (gap `non-centred-scale`, now only that).
+  normals); ARD has one too since the compiler assembles the scalar products into the vector with `gaussian-mv-stack` (a vector defined
+  by its coordinates), so `apply-product` is the deterministic factor `y = z f(x)` of the mean field and has one definer per variable.

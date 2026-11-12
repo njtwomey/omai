@@ -178,6 +178,24 @@ describe('a chain of steps and a gamma input', () => {
     expect(t.mean).toBeCloseTo(f(1), 2)
   })
 
+  it('min and max steps clip the chain, and the message matches a fine grid with the clip binding on one side', () => {
+    // x ~ N(0.9, 0.09) through max(min(1 - x^2, 1), 0.05) with a reader N(h, J): the lower bound binds for |x| near 1 and above.
+    const steps = [['square'], ['mul', -1], ['add', 1], ['min', 1], ['max', 0.05]] as const
+    const clipped = (x: number): number => Math.max(Math.min(1 - x * x, 1), 0.05)
+    expect(apply.check?.({ steps }, [])).toBeUndefined()
+    const [m, v, h, J] = [0.9, 0.09, 1.1, 4]
+    const ref = brute(m, v, h, J, clipped)
+    const args = [messageArg(gaussian, [h, J]), messageArg(gaussian, gaussianEta(m, v))]
+    const toY = apply.ep?.({ mode: 'ep', to: 0, args, params: { steps }, power: 1 })
+    const ty = implied((toY as { message: number[] }).message, [h, J])
+    expect(Math.abs(ty.mean - ref.y.mean) / Math.sqrt(ref.y.variance)).toBeLessThan(0.02)
+    const toX = apply.ep?.({ mode: 'ep', to: 1, args, params: { steps }, power: 1 })
+    const tx = implied((toX as { message: number[] }).message, gaussianEta(m, v))
+    expect(Math.abs(tx.mean - ref.x.mean) / Math.sqrt(ref.x.variance)).toBeLessThan(0.02)
+    expect(tx.variance / ref.x.variance).toBeGreaterThan(0.9)
+    expect(tx.variance / ref.x.variance).toBeLessThan(1.1)
+  })
+
   it('a chain on a Gaussian input matches a fine grid, to the output and to the input', () => {
     // The chain is defined for 3 x + 0.5 > 0: the cavity stays well inside it.
     const [m, v, h, J] = [1.2, 0.0025, 0.9, 3]

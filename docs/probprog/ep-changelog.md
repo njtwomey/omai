@@ -798,6 +798,45 @@ classes is about 3 ms (wide cavities 6 ms) a tilted moment, the probit about 4 m
 - Digest items moved deliberately: `model/radon`, `model/trueskill-three-players`, `atom/skill-draws`, `atom/skill-draws-learned`,
   `atom/skill-difference-learned`, `program/skills` (spreads move towards the reference; the means within 0.02 sd except the learned
   tournaments' skills, 0.05 sd). The two draws atoms moved to the `plated` rung with evidence within 0.02 nats.
+
+## 2026-11-12 ARD under variational message passing: the scalar products assembled into one vector (`agent-a6a2ec-ard`, gap `non-centred-scale` closed)
+
+- The compiler assembles a non-centred vector with a scale of its own for each coefficient (`z_j / sqrt(alpha_j)`, ARD) with one new
+  operator, `gaussian-mv-stack` (`D = (y_0, ..., y_n-1)`, in `linear.ts`), instead of a `dot-constant` tie per coordinate:
+  `tiedToVector` (`_mappings/derived.ts`) emits it over the `apply-product` outputs, and the derived mapping declares it in `requires`
+  (`operator-contract.test.ts` checks it exists and that what the corpus emits is declared). The stack defines the vector from its
+  coordinates, as each `apply-product` defines its scalar, so every variable has one definer and the graph compiles under both rules.
+  Under EP the message to the vector is the diagonal of the scalars' cavities and the message to a scalar the marginal, at its
+  coordinate, of the vector's cavity with the other scalars' cavities (the `n` unit ties in one factor; exact on a linear Gaussian
+  model, tested against the closed-form posterior); the evidence is the log partition of the vector's cavity plus that message. Under
+  the mean field the belief of the vector is the diagonal Gaussian of the scalars' beliefs, and the message to a scalar is the expected
+  log of the vector's cavity with the other coordinates at their means.
+- `apply-product` has its variational rule (the one of the earlier prototype, `definedFunctionMessage`: it defines its output, the
+  mean and variance of the pushforward of `z f(x)` to `y`, the non-conjugate messages of the readers' expected log to `z` and `x` on the
+  product of the two quadratures; no second quadrature), tested against the brute-force bound for a Gaussian and for a gamma `x`.
+- Bayesian GAM, ARD, `bayesianGamMethods('ard')` now offers `vmp`: at k = 10 the curve is 0.029 response sd from EP and 0.027 from a
+  sampler (EP is 0.032 from it), the log noise -1.60 +- 0.10 (EP -1.67 +- 0.12, sampler -1.67 +- 0.10), the band 1.39 times the
+  sampler's (EP 1.005), 627 sweeps to a change of 1e-5 at damping 0.3 (the default of no damping stalls, status `stopped` with the
+  reason). Against the exact posterior of a two-coefficient ARD regression (`models/ard-exact.test.ts`, a grid over the two log
+  relevances): EP means within 2e-5 and spreads 1.00001 of exact (the model is a tree of exact factors but for the Gaussian
+  projection of the data-dominated posterior), the mean field 0.08 off in a mean of 1.9, the large coefficient's spread 1.28 times
+  the exact one and the small one's 1.04.
+- EP on the ARD GAM is unchanged in kind (24 sweeps, the sampler test passes within its bounds); no digest item contains an
+  `apply-product` or an ARD model, so the items are as before (the 1e-11 drifts of `atom/gamma-precision` and
+  `atom/prior-beta-strength-lognormal` are not this change: neither compiles a stack or a product). The registry section of the digest
+  has the new operator (67) and `apply-product` with `defines` 0 and a `vmp` rule (support `numeric`), nothing else. The graph corpus
+  is unchanged (no ARD model in it).
+- The varying-slopes radon model (`radonCountiesDefinition('slopes')`) was refused at compile time: `slope = mu_b + tau_b (rho z_a +
+  sqrt(clip(1 - rho^2, 1e-12, 1)) z_b)` has a `clip` of a random value. A clip by known bounds is now a `min` and a `max` step in the
+  chain of the value's `apply` factor (`clipAff` in `_symbolic/_functions.ts`; `chainOf` of the `apply` operator knows both steps), the
+  same way a rectifier of a known operand is, so `sqrt(clip(1 - rho^2))` is one `apply` from `rho` with no second Gaussian
+  approximation (a clip with a random bound is still refused, with the reason). Against the exact grid posterior a clipped curve
+  agrees as the rectifier does (`symbolic-functions.test.ts`), the message of a chain with the clip binding matches a fine grid
+  (`functions.test.ts`), and EP on the slopes model settles (71 sweeps, 10 counties, one seed) with `mu` and `mu_b` within 0.06 of a
+  NUTS sd of the sampler's and their spreads 0.76 to 0.8 times its, the scales `tau` and `tau_b` 0.4 sd low (spreads 0.96 and 0.69) and
+  `rho`, barely identified (sd 0.57 against 0.55), -0.06 against -0.35. No digest item moved (no benchmark model clips a random value).
+||||||| 91d45803
+
 ## 2026-11-12 Stochastic volatility with learned parameters: a walk and warm starts in `epGridMethod` (`agent-a3da95-sv`)
 
 Gap `sv-parameters` narrowed (summary rewritten in `ep-gaps.ts`, still open). No second grid method: `epGridMethod` got two knobs and a
@@ -870,3 +909,36 @@ rule for nodes that cycle (`inference/ep-grid.ts`).
   two random scores: the fixed point is a stationary maximum of the brute-force bound). Atoms: `softmax-choice` and `-learned` run under VMP
   (41 and 46 sweeps; against the grid of the two coefficients the means are within 0.17 and 0.19 sds, the spreads 0.71 to 0.77 and 0.65 to 0.88
   of the grid's, the usual mean-field shortfall: plain EP has 0.77 to 0.83), `vmpCoverage` counts 88 of 97.
+||||||| aec194a8
+
+## 2026-11-12 The multi-start finds the other mode of a mixture: starts on the labels' priors, and mode weights held to references (`agent-a11610-modes`, gap `multimodal` narrowed)
+
+Gap `multimodal` rewritten in `ep-gaps.ts` (still open). No second multi-start: `epMultiStartMethod` (`inference/ep-multistart.ts`) changed in two places.
+- **The defect.** A start was set on the discrete ports of the factors that are not priors. In a model whose labels are independent given the
+  parameters (a mixture, the clutter problem) each label has one other neighbour besides its row's likelihood, the prior, so the label's cavity
+  for the likelihood is the prior's message and the start on the likelihood's own port is divided out: every random, exclusion and relabelling
+  start reached the same fixed point (a two-cluster mean: one mode, a relabelled start returning to the first labelling; the clutter problem
+  at 7.8 +- 0.7 where the posterior is 6.4 +- 2.3). In a chain (the changepoint program) the neighbours carry the start, which is why the earlier
+  measurements found several modes there.
+- **The fix.** `discretePorts` now includes the ports of a prior; a start is a message on those (a relabelled start: the relabelled belief of
+  the label), and the start is carried through three damped sweeps (damping 0.5) before the run goes on at its own settings, because with
+  the default damping of 0 the prior sends its own message again at its first update. `diagnostics.modeWeights` is new (the weights, summing
+  to one).
+- **References** (`ep-multistart-modes.test.ts`): the clutter problem's location against its quadrature on six data sets, one run -> the
+  multi-start: the evidence 0.0 to 3.6 nats off -> within 0.006 nats, the mean 0.0 to 5.5 sd off (the other mode missed: data 2, one run
+  at 1.6 where the posterior is 9.0 +- 1.4) -> within 0.03 sd, the sd 0.26 to 0.49 of the truth's (0.95 on data 1, where one mode has all the mass) -> within 4%; the second mode weighs 0.28, 0.001, 0.027,
+  0.17, 0.23, 0.026 on the six. A two-cluster mean with unequal priors (12 points, the enumeration of the 4096 assignments gives the mass of
+  the labelling with the first mean below the second): 0.559, 0.186 and 0.980 exact, and 1.0 (one mode) before, 0.559, 0.186 and 0.980 now, the
+  evidence within 1e-4 nats, the labelled means within 0.02 sd and the sds within 1% of the exact ones. The benchmark mixture with symmetric priors (3 data sets of 40
+  points): two modes of equal weight, the sorted means within 0.05 sd and the sds within 4% of the grid (-1.889 +- 0.308 against -1.887 +- 0.313 on the first), the
+  evidence of one mode within 0.04 nats of the grid's. Overlapping clusters (ten points between -2 and 2) stay one fixed point (the evidence -19.07 against
+  the exact -18.75): the weights are only as good as the fixed points found.
+- **The changepoint program** (8 seeds, 12 starts, a Gibbs reference, the truth inside the 90% interval, spreads over the sampler's): the
+  `sort` read-out is unchanged to the digit (0.917, 0.72), `keep` finds more labellings (0.958, spread 2.7 -> 3.2 times the sampler's), `permute`
+  0.958 and 3.6, times 60, 75 and 57 s for the eight seeds.
+- **Labels default, for the owner** (`keep`, `permute`, `sort`; docs/probprog/ep.md section 4 has the table and the recommendation): `keep` gives
+  the exact marginals of the model as written; `sort` is the read-out of a data-ordered sampler; `permute` is the one that finds a labelling
+  of 2% weight reliably (12 random starts missed it). The default is not changed.
+- Not done: continuous symmetries (the sign of a loading: no discrete message to start from), a regime visited by a handful of steps, the
+  circular mixture's evidence, the forward-algorithm site (all in the gap's plan).
+- Digest: no item runs the multi-start (`ep-digest` items are the route's atoms, models and programs), so none moves.

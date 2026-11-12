@@ -9,7 +9,13 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
-import { type CompiledGraph, epAlgorithm, type InitialMessage, type MpState } from '../../message-passing/index.ts'
+import {
+  beliefOf,
+  type CompiledGraph,
+  epAlgorithm,
+  type InitialMessage,
+  type MpState,
+} from '../../message-passing/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import { bool, choice, type DictSpace, dict, int, real } from '../../space/index.ts'
 import { toFlat } from '../../tensor/index.ts'
@@ -61,7 +67,10 @@ export interface StartRun {
   /** For a relabelled start: the run whose discrete messages were moved, and the permutation (entry `q` goes to `perm[q]`). */
   readonly of?: number
   readonly perm?: readonly number[]
-  /** The discrete messages of the fixed point, one array per start port, in the order of the graph's discrete ports. */
+  /**
+   * The discrete messages of the fixed point, one array per start port, in the order of the graph's discrete ports: the message on
+   * the port, and for the port of a prior the belief of its label (what the relabelled start of that reading sets there).
+   */
   readonly discrete: readonly (readonly number[])[]
   /** The EP estimate of log p(data) at the fixed point it reached (negative infinity when it has none). */
   readonly logEvidence: number
@@ -128,16 +137,31 @@ interface StartPort {
   readonly size: number
   readonly edge: number
   readonly kind: string
+  /** The variable the port is on. */
+  readonly variable: number
+  /** Whether the factor is the prior of the variable (the only message a label with no neighbour in the graph but its row's likelihood is cavity-free on). */
+  readonly prior: boolean
 }
 
-/** The ports of the graph that carry a discrete or Bernoulli message of a factor that is not a fixed prior: where a start is set. */
+/**
+ * The ports of the graph that carry a discrete or Bernoulli message: where a start is set. A prior's port is one: the cavity of the
+ * likelihood of a row on its label is the prior's message and nothing else (the label has no other neighbour), so a start that
+ * would not be set there changes nothing in a mixture whose labels are independent given the parameters.
+ */
 function discretePorts(g: CompiledGraph): StartPort[] {
   const out: StartPort[] = []
   g.factors.forEach((f, factor) => {
-    if (f.operator.name === 'prior') return
     f.ports.forEach((p, port) => {
       if (p.edge >= 0 && (p.family.kind === 'discrete' || p.family.kind === 'bernoulli'))
-        out.push({ factor, port, size: p.family.size, edge: p.edge, kind: p.family.kind })
+        out.push({
+          factor,
+          port,
+          size: p.family.size,
+          edge: p.edge,
+          kind: p.family.kind,
+          variable: g.edges[p.edge]?.variable ?? -1,
+          prior: f.operator.name === 'prior',
+        })
     })
   })
   return out
@@ -230,6 +254,32 @@ function categoryCounts(ports: readonly StartPort[]): number[] {
   return [...sizes].sort((a, b) => b - a)
 }
 
+/** The damped sweeps a start is held for before the run is let go (see {@link warmed}). */
+const WARM_SWEEPS = 3
+
+/**
+ * The start messages carried through a few damped sweeps, as the messages the run starts from. A start set on the port of a label's
+ * prior is a bias of the label before any row has been read, and the prior sends its own message again at its first update, so a run
+ * with no damping would never see it; held by damping for `WARM_SWEEPS` sweeps the bias reaches the messages the rows send to the
+ * parameters (which are not reset), and the run goes on from those at its own settings. The messages of every edge are returned.
+ */
+function warmed(g: CompiledGraph, initial: readonly InitialMessage[]): InitialMessage[] {
+  const r = runAlgorithm(
+    epAlgorithm(g, {
+      schedule: 'serial',
+      damping: 0.5,
+      improper: 'damp',
+      tol: 0,
+      maxSweeps: WARM_SWEEPS,
+      restarts: 0,
+      initial,
+    }),
+    { maxSteps: WARM_SWEEPS, seed: 1 },
+  )
+  const messages = (r.state as MpState).messages
+  return g.edges.map((e, i) => ({ factor: e.factor, port: e.port, eta: messages[i] ?? [] }))
+}
+
 /** The most components whose relabellings are all tried: 4 gives 24 labellings of every mode. */
 const MAX_RELABELLED = 4
 
@@ -261,7 +311,14 @@ function relabelMessages(
  * the log sum of the modes' (the modes found: a mode that no start reaches is not in it). With `labels: 'permute'` every reading found is
  * also started from each relabelling of its discrete messages, and with `labels: 'sort'` the posterior is read with the components
  * sorted by the mean of the first vector of parameters of their number (the relabellings of a reading become one reading, as wide as
- * the sampler's where every component is visited). The runs are weighted by their EP evidence, so a model with none at its fixed
+ * the sampler's where every component is visited). A start is set on the port of each label's prior and held for a few damped
+ * sweeps before the run goes on at its own settings: in a mixture or a clutter model whose labels are independent given the
+ * parameters the likelihood of a row reads its label's cavity, which is the prior's message and nothing else, so a start set
+ * anywhere else is divided out and every start would reach the same reading. The weights are the EP evidence of the fixed points,
+ * which for well separated modes is their share of the mass (`diagnostics.modeWeights`: against the enumeration of a two-cluster
+ * mixture with unequal priors, 0.559 against 0.559 exactly; against the quadrature of the clutter problem, the evidence within 0.006
+ * nats and the mean and sd of the location within 0.03 sd); modes that overlap (the means of two clusters that are not apart) are
+ * one fixed point, and its evidence is the single Gaussian's. The runs are weighted by their EP evidence, so a model with none at its fixed
  * point (a factor whose cavity is improper) gives no posterior.
  *
  * @param model - A bound spec.
@@ -352,7 +409,8 @@ export function epMultiStartMethod(
       })
     const top = Math.max(...modes.map((m) => m.logEvidence))
     const weights = modes.map((m) => Math.exp(m.logEvidence - top))
-    const logEvidence = top + Math.log(weights.reduce((a, b) => a + b, 0))
+    const total = weights.reduce((a, b) => a + b, 0)
+    const logEvidence = top + Math.log(total)
     return siteMixturePosterior({
       engine: name,
       status: state.runs.length >= num(config, 'starts') ? 'completed' : 'stopped',
@@ -362,6 +420,8 @@ export function epMultiStartMethod(
         modes: modes.length,
         convergedStarts: state.runs.filter((r) => r.converged).length,
         modeEvidence: modes.map((m) => m.logEvidence),
+        // Each mode's share of the posterior mass: its evidence over the evidence of the model (the weights of the mixture, summing to one).
+        modeWeights: weights.map((w) => w / total),
       },
       weights,
       runs: modes.map((m) => m.sites),
@@ -410,10 +470,13 @@ export function epMultiStartMethod(
         extra: { of?: number; perm?: readonly number[] } = {},
       ): StartRun => {
         const g = graph()
-        const r = runAlgorithm(epAlgorithm(g, { ...settings, ...(initial.length === 0 ? {} : { initial }) }), {
-          maxSteps: maxSweeps + 2,
-          seed: 1,
-        })
+        const r = runAlgorithm(
+          epAlgorithm(g, { ...settings, ...(initial.length === 0 ? {} : { initial: warmed(g, initial) }) }),
+          {
+            maxSteps: maxSweeps + 2,
+            seed: 1,
+          },
+        )
         const final = r.state as MpState
         const post = factorGraphPosterior((prepared as Prepared).compiled, g, final, { engine: name })
         const sites: Record<string, SiteRecord> = {}
@@ -423,7 +486,10 @@ export function epMultiStartMethod(
           start: index,
           origin,
           ...extra,
-          discrete: discretePorts(g).map((p) => final.messages[p.edge] ?? []),
+          // The message of a port; for the port of a prior, the belief of the label (the prior's own message is the model's, the belief is the reading).
+          discrete: discretePorts(g).map(
+            (p) => (p.prior ? beliefOf(g, final.messages, p.variable) : final.messages[p.edge]) ?? [],
+          ),
           logEvidence: ev === undefined || !Number.isFinite(ev) ? Number.NEGATIVE_INFINITY : ev,
           converged: r.status === 'converged',
           sweeps: r.steps,

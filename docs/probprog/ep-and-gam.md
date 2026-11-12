@@ -102,14 +102,18 @@ Measured on the page's data (sine, 60 rows, 10 coefficients), the forms of the p
 | penalty, `gammaSmooth` (dense vector)  | yes          | 0.004                          | 1.02             | 2.664 +- 0.533 (2.716) | 21 sweeps, 0.7 s                         |
 | penalty, `logNormal` (non-centred, dense vector) | yes | 0.004                         | 1.025            | 2.566 +- 0.694 (2.533 +- 0.619) | 23 sweeps, 1.2 s                |
 | penalty, `gammaNoise`, `fixed`         | yes          | under 0.03                     | 0.85 to 1.15     |                        | (tests of the earlier forms)             |
-| ARD (the four hyper settings are one model) | yes     | 0.009 against NUTS             | 0.99             |                        | 24 sweeps, 1.0 s; bases in use within 0.05 of NUTS |
+| ARD (the four hyper settings are one model) | yes     | 0.009 against NUTS             | 0.99             |                        | 24 sweeps, 1.0 s; bases in use within 0.05 of NUTS (`vmp` runs it too: 0.027 against NUTS, band 1.39) |
 | spike and slab, all four               | yes          |                                |                  |                        | (earlier work)                           |
 
 Variational message passing runs the dense penalty form with log-normal hyperpriors (the `gaussian-mv-function-scale` factor has
 a variational rule: the Gaussian density of the vector given `x`, the quadrature of the variational kernel for `x`): curve 0.004
-response sd from the exact reference, band 0.996, log smoothing 2.58 +- 0.57 (exact 2.53 +- 0.62), 46 sweeps. It still refuses ARD
-(each coefficient a scalar `apply-product` tied to the vector by factors that define the scalars from it): gap `non-centred-scale`
-in `ep-gaps.ts`, now only that and the 12% spreads. Notes: `notes/ep-notes-densegam.md`.
+response sd from the exact reference, band 0.996, log smoothing 2.58 +- 0.57 (exact 2.53 +- 0.62), 46 sweeps. It runs ARD too (each
+coefficient an `apply-product`, a variational rule of its own, assembled into the one vector the rows read by a `gaussian-mv-stack`
+factor that defines the vector from its coordinates): at k = 10 the curve is 0.029 response sd from EP's and 0.027 from a sampler's
+(EP's is 0.032 from it), the log noise -1.60 +- 0.10 (EP -1.67 +- 0.12, sampler -1.67 +- 0.10), the band 1.39 times the sampler's (EP's
+1.005), 627 sweeps to a change of 1e-5 at damping 0.3; without damping the run stalls (status `stopped`, with the reason). Against the
+exact posterior of a two-coefficient ARD regression EP is exact to 1e-5 and the mean field 0.08 off in a mean of 1.9 with the large
+coefficient's spread 1.28 times the exact one. Notes: `notes/ep-notes-densegam.md`.
 
 ## Optimising instead
 
