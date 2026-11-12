@@ -114,7 +114,13 @@ export function unaryFunctions(): Record<string, UnaryFunction> {
 /** One step of a chain: a registry function by name, or `mul`, `add`, `pow`, `min`, `max` with its constant. */
 export type Step = readonly [string, number?]
 
-/** The function of a chain of steps, applied in order. */
+/**
+ * The function of a chain of steps, applied in order. A chain of one registry step keeps that step's kinks and closed-form
+ * pushforward; a longer chain has neither (its kinks would be the steps' kinks pulled back through the steps before them, which
+ * only affine steps invert simply). That costs little: the panelled quadrature (80 panels of order 8) does not need the split, and
+ * a `clip` (min then max) with both bounds inside the mass of a Gaussian is within 1e-4 sd in the moments and 2e-5 nats in the
+ * evidence of a grid of two million points (`functions.test.ts`).
+ */
 export function chainOf(table: Readonly<Record<string, UnaryFunction>>, steps: readonly Step[]): UnaryFunction {
   const fs = steps.map(([name, k]): ((x: number) => number) => {
     const c = k ?? Number.NaN
