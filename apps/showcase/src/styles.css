@@ -25,7 +25,8 @@
   margin: 0;
   text-wrap: pretty;
 }
-.story-prose p + p {
+.story-prose p + p,
+.story-prose aside + p {
   margin-top: 1.25em;
 }
 .story-prose-flow > * + * {
