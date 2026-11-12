@@ -39,8 +39,8 @@ export function restartDiffers(damping: number, k: number): boolean {
  * The largest of the values and `floor` (NaN if any is NaN, as `Math.max` is), by a loop: `Math.max(...values)` with one value per
  * edge overflows the call stack at about 120 000 of them.
  */
-export function largestOf(values: ArrayLike<number>, floor = Number.NEGATIVE_INFINITY): number {
-  let top = floor
+export function largestOf(values: ArrayLike<number>, floor?: number): number {
+  let top = floor ?? Number.NEGATIVE_INFINITY
   for (let i = 0; i < values.length; i++) {
     const v = values[i] as number
     if (Number.isNaN(v)) return Number.NaN
