@@ -1,7 +1,7 @@
 /**
  * The computation of 'Trees, one split at a time, and all trees at once': a staircase with noise is fitted by one tree grown
- * greedily, one split at a time, and by the posterior over all trees (exactly, for trees two splits deep over thirty
- * candidate cuts, and by a sampler that draws whole trees). The results are turned into plain numbers for the figures: the
+ * greedily, one split at a time, and by the posterior over all trees (exactly, for trees up to two levels deep, which have
+ * up to three cuts, over thirty candidate cuts, and by a sampler that draws whole trees). The results are turned into plain numbers for the figures: the
  * tree after each split, the average over all trees, the chance of a cut at each position, and how closely the sampler
  * agrees with the exact answer. It is a pure function of the seed, and it runs in the story's worker. The regions are the
  * code the page shows.
@@ -18,6 +18,7 @@ import {
   normalGammaLeaf,
   predictEnumerated,
   predictSampled,
+  probabilityOfCutIn,
   quantileRules,
   regressionPrior,
   rulePosterior,
@@ -38,7 +39,7 @@ import {
   treeSummary,
 } from 'omai-engine/trees'
 import type { Say } from '../../kit/protocol.ts'
-import { simulate, X_RANGE } from './data.ts'
+import { NEAR, simulate, X_RANGE } from './data.ts'
 
 /** A leaf of a tree: where it reaches, how many points it holds, its posterior mean and the step size 1/precision. */
 export interface Leaf {
@@ -72,6 +73,8 @@ export interface Cut {
   readonly n: number
   readonly nLeft: number
   readonly nRight: number
+  /** The chance, under the posterior over all trees, that some cut lies within `NEAR` of this one. */
+  readonly chanceNear: number
 }
 
 /** What the figures and the prose read. All of it is plain numbers. */
@@ -87,11 +90,13 @@ export interface Result {
   readonly posterior: {
     /** The candidate cuts. */
     readonly thresholds: readonly number[]
-    /** The chance that a cut is at each candidate, anywhere in the tree. */
+    /** The expected number of times a cut is at each candidate, anywhere in the tree (what the figure draws). */
     readonly usage: readonly number[]
+    /** The chance that some cut of the tree is at each candidate. */
+    readonly cutChance: readonly number[]
     /** The chance that the root cut is at each candidate. */
     readonly root: readonly number[]
-    /** The chance of no split, one, two and three splits. */
+    /** The chance of no cut, one cut, two cuts and three cuts: they add to one. */
     readonly splits: readonly number[]
     readonly trees: number
     readonly mean: readonly number[]
@@ -189,12 +194,12 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
   // Take the split with the best odds, again and again, until none pays for itself.
   const grown = growBayesTree(data, { prior })
   // endregion
-  say('Weighing every tree of two splits')
+  say('Weighing every tree up to two levels deep')
   // region exact
   // Thirty cuts, spread over the data, that a tree may use.
   const rules = quantileRules(points.x, size.cuts)
   const space = treeSpace(data, prior, rules)
-  // Every tree of up to two splits, each weighted by its prior and the exact evidence.
+  // Every tree up to two levels deep (up to three cuts), each weighted by its prior and the exact evidence.
   const exact = enumerateTrees(space)
   // The prediction of the average over all of those trees.
   const grid = linspace(X_RANGE[0], X_RANGE[1], size.grid)
@@ -228,12 +233,14 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
         n: s.n,
         nLeft: s.nLeft,
         nRight: s.nRight,
+        chanceNear: probabilityOfCutIn(exact, s.threshold - NEAR, s.threshold + NEAR),
       })),
       next: stopped(grown.state),
     },
     posterior: {
       thresholds: rules.thresholds,
       usage: exact.usage,
+      cutChance: rules.thresholds.map((t) => probabilityOfCutIn(exact, t, t)),
       root: exact.root,
       splits: exact.splits,
       trees: exact.trees,

@@ -33,6 +33,7 @@ import {
   neg,
   ones,
   pow,
+  primalOf,
   reshape,
   shapesEqual,
   sigmoid,
@@ -292,11 +293,29 @@ const pickOperator: OperatorDef = {
   evaluate: ([a, i]) => {
     const x = a as NamedValue
     const idx = i as NamedValue
-    pickDimension(x.dims, idx.dims)
+    const along = pickDimension(x.dims, idx.dims)
     const axis = x.value.shape.length - 1
     const kept = x.dims.slice(0, -1)
     const out = joinShapes([{ dims: kept, eventRank: 0 }, shapeOfValue(idx)])
     const code = alignTo(idx, out.dims, 0)
+    // The nested where would answer the last entry for a code outside the table; refuse it, as `at` (take) and the factor-graph
+    // compiler do. A code is valid when it is an integer in 0..K-1 (NaN is neither). A value that holds no concrete numbers (a
+    // symbolic trace) is not checked: there is nothing to read.
+    const size = x.value.shape[axis] as number
+    const codes = ((): readonly number[] | undefined => {
+      try {
+        return toFlat(primalOf(idx.value))
+      } catch {
+        return undefined
+      }
+    })()
+    const bad = codes?.find((c) => !Number.isInteger(c) || c < 0 || c >= size)
+    if (bad !== undefined)
+      throw new OmaiError(
+        'value',
+        `pick: the index ${bad} is not one of the ${size} entries (0 to ${size - 1}) along '${along}'`,
+        { index: bad, size, dim: along },
+      )
     let picked: Value | undefined
     for (let k = (x.value.shape[axis] as number) - 1; k >= 0; k--) {
       const entry = alignTo({ value: take(x.value, k, axis), dims: kept }, out.dims, 0)

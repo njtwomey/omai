@@ -22,7 +22,7 @@ import {
   zeros,
 } from '../../tensor/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
-import { splitLogOdds } from './grow.ts'
+import { childRules, splitLogOdds } from './grow.ts'
 import type { LeafModel, LeafPosterior } from './leaf.ts'
 import type { TreePrior } from './prior.ts'
 import { treePrior } from './prior.ts'
@@ -164,7 +164,14 @@ function advance(state: StreamState, model: LeafModel, xm: Value, rows: Value, o
     const best = found.best
     const checked: StreamLeaf = { ...leaf, since: 0 }
     if (best === undefined) return { kind: 'leaf', leaf: checked }
-    const logOdds = splitLogOdds(prior, leaf.depth, found.available, best.gain)
+    const here = { x: leaf.x, rows: leaf.rows, model, n: leaf.n, d }
+    const logOdds = splitLogOdds(
+      prior,
+      leaf.depth,
+      found.available,
+      best.gain,
+      childRules(here, undefined, best.feature, best.threshold, prior.minLeaf),
+    )
     if (!(logOdds > 0)) return { kind: 'leaf', leaf: checked }
     const { feature, threshold, gain } = best
     splits.push({ seen, feature, threshold, depth: leaf.depth, n: leaf.n, gain, logOdds })

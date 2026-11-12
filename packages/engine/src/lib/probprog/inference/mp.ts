@@ -48,7 +48,7 @@ import {
   prepare,
   yes,
 } from './_support.ts'
-import { atPower, epRunKnobs, powerOf } from './ep-knobs.ts'
+import { atPower, epRunKey, epRunKnobs, epRunSettings, powerOf } from './ep-knobs.ts'
 import { defineInferenceMethod, type InferenceMethod, type Verdict } from './method.ts'
 
 /** The paths an expectation propagation or belief propagation method logs: the engine's, and the posterior of a state as JSON. */
@@ -84,6 +84,12 @@ export interface MpSpecOptions {
    * kept. Default false for the others (a variational method over a joint vector is not mean-field).
    */
   readonly packScalars?: boolean
+  /**
+   * Whether the mean and the precision of each component of a mixture are one normal-gamma variable where the model writes them as the
+   * conjugate pair (see `toFactorGraph`): the messages of a component are then closed form. Default true for expectation propagation,
+   * false for the others (a variational rule has no expected log for the fused gate).
+   */
+  readonly conjugatePairs?: boolean
 }
 
 /** What the analysis alone says, before the graph is built: the features a message-passing method needs. */
@@ -131,7 +137,8 @@ function specMethod<P extends string>(
 ): InferenceMethod<MpState, Config, P, ModelAnalysis> {
   const name = options.name ?? rule
   const title = TITLE[rule]
-  const prepared = prepare(model, options.plates ?? 'vectorise', options.packScalars ?? rule === 'ep')
+  const conjugatePairs = options.conjugatePairs ?? rule === 'ep'
+  const prepared = prepare(model, options.plates ?? 'vectorise', options.packScalars ?? rule === 'ep', conjugatePairs)
   const base = messagePassingKnobs(rule)
   // Expectation propagation also takes the power of fractional EP, on every factor whose operator supports one (the likelihood
   // links, the softmax site, the shape and concentration sites, unary functions): the knobs are the shared declaration.
@@ -173,47 +180,46 @@ function specMethod<P extends string>(
       ? 'a closure program has no factor graph'
       : (prepared.failure ?? prepared.compiled.issues.map((i) => `${i.node}: ${i.reason}`).join('; '))
   const tol = (config: Config): number => (typeof config['tol'] === 'number' ? config['tol'] : epDefaults.tol)
-  // The evidence of a state whose plated factor has an improper cavity, from the same model with a factor per row, by state.
-  const rowEvidence = new WeakMap<MpState, { readonly value: number; readonly method: string } | null>()
-  const evidenceByRows = (
-    state: MpState,
-    config: Config,
-  ): { readonly value: number; readonly method: string } | null => {
-    const known = rowEvidence.get(state)
+  // The evidence of a state whose plated factor has an improper cavity, from the same model with a factor per row, by state and by
+  // the settings of the run (the power, schedule, improper policy, tolerance, damping, restarts and warm-up: the rerun is made
+  // with the configuration's own, so it is another number for another configuration).
+  type RowsEvidence = { readonly value: number; readonly method: string } | null
+  const rowEvidence = new WeakMap<MpState, Map<string, RowsEvidence>>()
+  const evidenceByRows = (state: MpState, config: Config): RowsEvidence => {
+    const key = epRunKey(config)
+    const cache = rowEvidence.get(state) ?? new Map<string, RowsEvidence>()
+    rowEvidence.set(state, cache)
+    const known = cache.get(key)
     if (known !== undefined) return known
-    let found: { readonly value: number; readonly method: string } | null = null
+    let found: RowsEvidence = null
     const packing = options.packScalars ?? rule === 'ep'
+    const power = powerOf(config)
+    const at = power === 1 ? '' : `, power ${power}`
     // The same model with a factor per row; failing that without the groups of tied latents (their ties have no proper cavity, so
     // the energy of a packed graph is undefined there), which is the energy of the model as it was before it was packed.
     const attempts: readonly (readonly [boolean, string])[] = packing
       ? [
-          [true, 'ep-energy (rows expanded)'],
-          [false, 'ep-energy (rows expanded, unpacked)'],
+          [true, `ep-energy (rows expanded${at})`],
+          [false, `ep-energy (rows expanded, unpacked${at})`],
         ]
-      : [[false, 'ep-energy (rows expanded)']]
+      : [[false, `ep-energy (rows expanded${at})`]]
     for (const [pack, method] of attempts) {
       if (found !== null) break
-      const rows = prepare(model, 'expand', pack)
+      const rows = prepare(model, 'expand', pack, conjugatePairs)
       if (rows?.graph === undefined) continue
       // The same graph again (nothing is plated) is the same run: from the flat start it can reach another fixed point than the state's
       // (a mixture's symmetric one), and its evidence would be that one's, not the state's.
       if (rows.graph.factors.length === prepared?.graph?.factors.length) continue
-      const run = runAlgorithm(
-        epAlgorithm(rows.graph, {
-          tol: tol(config),
-          maxSweeps: 400,
-          damping: typeof config['damping'] === 'number' ? config['damping'] : defaultsOf(rule).damping,
-          ...warmupOf(config),
-        }),
-        { maxSteps: 402, seed: 1 },
-      )
-      const v = factorGraphPosterior(rows.compiled, rows.graph, run.state as MpState, {
-        engine: name,
-        rule,
-      }).logEvidence
+      // The run of the state's own configuration: the same power, schedule, improper policy, damping and restarts.
+      const graph = rule === 'ep' ? atPower(rows.graph, power) : rows.graph
+      const run = runAlgorithm(epAlgorithm(graph, { ...epRunSettings(config), maxSweeps: 400, ...warmupOf(config) }), {
+        maxSteps: 402,
+        seed: 1,
+      })
+      const v = factorGraphPosterior(rows.compiled, graph, run.state as MpState, { engine: name, rule }).logEvidence
       if (v !== undefined && Number.isFinite(v.value) && run.status === 'converged') found = { value: v.value, method }
     }
-    rowEvidence.set(state, found)
+    cache.set(key, found)
     return found
   }
   const posterior = (state: MpState, config: Config): Posterior => {

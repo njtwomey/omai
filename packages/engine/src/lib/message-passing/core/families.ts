@@ -69,6 +69,7 @@ export function defineFamily(def: FamilyDefinition): Family {
     dim: def.dim,
     size: def.size,
     flat,
+    additive: def.normalise === undefined,
     isProper: def.isProper,
     product: (a, b) => combine(a, b, 1),
     quotient: (a, b): Quotient => {

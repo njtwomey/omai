@@ -11,6 +11,9 @@ import { add, mul, toFlat } from 'omai-engine/tensor'
 /** What the data were drawn from. */
 export const TRUTH = { cuts: [1.4, 2.8], levels: [0, 1.1, 2], noise: 0.5 } as const
 
+/** How close a cut has to be to a cut of the greedy tree to count as the same cut. */
+export const NEAR = 0.3
+
 /** How many points there are, and the range of x they fall in. */
 export const ROWS = 60
 export const X_RANGE = [0, 4] as const

@@ -2,8 +2,8 @@
 
 Generated from the mapping tables of `packages/engine/src/lib/probprog/model/factor-graph/_table.ts` by `make ep-compiler-doc` (a test checks that it is
 current): edit the tables, not this page. A compilation runs in passes: the events and scans are unrolled, the constants are found (`_known.ts`),
-the layout plan is made (`_plan.ts`), the nodes are walked in spec order through the tables below, the dead `apply` factors are pruned, and the
-opaque nodes are reported. In a table the first entry whose pattern the node is maps it; an entry that can only tell by trying answers `NOT_MINE`,
+the layout plan is made (`_plan.ts`), the nodes are walked in spec order through the tables below, the dead `apply` factors are pruned, the conjugate pairs inside gates are fused when asked (`conjugatePairs`, `_fuse.ts`: the mean and the precision of a mixture component
+that are a normal-gamma pair become one variable), and the opaque nodes are reported. In a table the first entry whose pattern the node is maps it; an entry that can only tell by trying answers `NOT_MINE`,
 and the graph is then restored to what it was (`_mapping.ts`). The operators of an entry are the ones it emits itself; every mapping can also
 cause the operators of the value algebra (`apply`, `apply-product`, `difference`, `dot-constant`, `equal`, `gamma-product`, `linear`, `max`, `min`, `plus`, `product`, `select`, `sum`, `times-constant`).
 

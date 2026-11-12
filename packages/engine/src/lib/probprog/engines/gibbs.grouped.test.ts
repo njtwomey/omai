@@ -130,3 +130,52 @@ describe('Gibbs sampling of a latent with a feature axis and a group axis', { ti
     })
   }
 })
+
+describe('Gibbs sampling of a latent with a feature axis and a spread for each row', { timeout: 60_000 }, () => {
+  // two features and two groups of three rows; the spread is a value for each row, so it has the row axis only (not y's shape)
+  const y = [
+    [-2.4, -1.7, -2.1, 1.8, 2.5, 2.2],
+    [0.1, 0.3, -0.2, 3.1, 2.8, 3.3],
+  ]
+  const build = (spread: number[]): Model =>
+    toProgram(
+      defineModel('feature-by-group-row-spread', (m) => {
+        const row = m.range('row')
+        const feature = m.range('feature', { size: 2 })
+        const group = m.range('group', { size: 2 })
+        const obs = m.data('y', { dims: [feature, row] })
+        const sd = m.data('sd', { dims: [row] })
+        const mu = m.latent('mu', d.normal(0, 3), { dims: [feature, group] })
+        const z = m.latent('z', d.categorical({ probs: [0.5, 0.5] }), { dims: [row] })
+        m.observe('y', d.normal(ops.pick(mu, z), sd), obs)
+      }).bind({ y, sd: spread }, { sizes: { group: 2, feature: 2 } }),
+    )
+  const init = {
+    mu: [
+      [-2, 2],
+      [0, 3],
+    ],
+    z: [0, 0, 0, 1, 1, 1],
+  }
+  const check = (spread: number[]): void => {
+    const post = gibbs(build(spread), undefined, { key: key(6), numDraws: 2500, numWarmup: 100, init })
+    for (let f = 0; f < 2; f++)
+      for (let g = 0; g < 2; g++) {
+        const rows = [0, 1, 2].map((i) => 3 * g + i)
+        const w = rows.map((i) => 1 / (spread[i] ?? 1) ** 2)
+        const precision = 1 / 9 + w.reduce((a, b) => a + b, 0)
+        const mean = rows.reduce((a, i, k) => a + ((y[f] ?? [])[i] ?? 0) * (w[k] ?? 0), 0) / precision
+        expectPosteriorMoments(post, 'mu', { mean, sd: Math.sqrt(1 / precision) }, { index: f * 2 + g, z: 5 })
+      }
+  }
+
+  it('takes a spread that is one value for each group of rows as a parameter of the group: a closed form for each group', () => {
+    const spread = [0.5, 0.5, 0.5, 1, 1, 1]
+    check(spread)
+    expect(runsPerSweep(build(spread), init, 20)).toBeLessThan(12)
+  })
+
+  it('weighs each row by its own spread when the spreads differ inside a group, as the conjugate posterior does', () => {
+    check([0.5, 1, 0.5, 1, 0.5, 1])
+  })
+})

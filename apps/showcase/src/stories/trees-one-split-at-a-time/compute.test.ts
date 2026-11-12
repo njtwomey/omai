@@ -26,6 +26,19 @@ describe('the trees-one-split-at-a-time computation', () => {
     expect(r.posterior.thresholds).toHaveLength(12)
     expect(r.posterior.usage).toHaveLength(12)
     expect(r.posterior.mean).toHaveLength(20)
+    // the chances are probabilities: a cut at a candidate, and a cut near a greedy cut (not a sum of expected uses)
+    expect(r.posterior.cutChance).toHaveLength(12)
+    for (const p of [...r.posterior.cutChance, ...r.greedy.cuts.map((c) => c.chanceNear)]) {
+      expect(p).toBeGreaterThanOrEqual(0)
+      expect(p).toBeLessThanOrEqual(1)
+    }
+    for (const c of r.greedy.cuts) {
+      const window = r.posterior.thresholds.reduce(
+        (a, t, i) => a + (Math.abs(t - c.threshold) <= 0.3 ? (r.posterior.usage[i] as number) : 0),
+        0,
+      )
+      expect(c.chanceNear).toBeLessThanOrEqual(window + 1e-12)
+    }
     expect(r.posterior.splits.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 10)
     expect(r.sampled.curves).toHaveLength(6)
     expect(r.sampled.curves.every((c) => c.length === 20)).toBe(true)

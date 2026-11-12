@@ -253,7 +253,17 @@ export function dirichletLeaf(classes: number, concentration = 1): LeafModel {
     size: classes,
     outputs: classes,
     prior: { classes, concentration },
-    statistics: (y) => oneHot(y, classes),
+    statistics: (y) => {
+      // A label outside 0..K-1 would be a row of zeros: dropped from the counts, the evidence and the minimum leaf size.
+      const bad = toFlat(asTensor(y)).find((c) => !Number.isInteger(c) || c < 0 || c >= classes)
+      if (bad !== undefined)
+        throw new OmaiError(
+          'value',
+          `dirichletLeaf: label ${bad} is not a class: the labels are the integers 0 to ${classes - 1} (for ${classes} classes)`,
+          { label: bad, classes },
+        )
+      return oneHot(y, classes)
+    },
     count: (stats) => sum(stats, -1),
     logEvidence: (stats) => {
       const n = sum(stats, -1)

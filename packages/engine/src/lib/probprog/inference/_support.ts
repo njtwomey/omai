@@ -205,9 +205,10 @@ export function prepare(
   model: MethodModel,
   plates: 'vectorise' | 'expand',
   packScalars: boolean,
+  conjugatePairs = false,
 ): Prepared | undefined {
   if (typeof model === 'function') return undefined
-  const compiled = toFactorGraph(model, { analysis: analyseSpec(model), plates, packScalars })
+  const compiled = toFactorGraph(model, { analysis: analyseSpec(model), plates, packScalars, conjugatePairs })
   if (compiled.graph === undefined) return { compiled, graph: undefined, failure: undefined }
   try {
     return { compiled, graph: compileGraph(compiled.graph, factorOperators()), failure: undefined }

@@ -370,7 +370,9 @@ export function epMultiStartMethod(
 ): InferenceMethod<EpMultiStartState, Config, EpMultiStartPath, ModelAnalysis> {
   const name = options.name ?? 'ep-multistart'
   const prepared: Prepared | undefined =
-    typeof model === 'function' ? undefined : prepare(model, options.plates ?? 'vectorise', options.packScalars ?? true)
+    typeof model === 'function'
+      ? undefined
+      : prepare(model, options.plates ?? 'vectorise', options.packScalars ?? true, true)
   const check = (a: ModelAnalysis): Verdict => {
     if (prepared === undefined || isProgramAnalysis(a))
       return no(

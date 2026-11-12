@@ -4,11 +4,13 @@
 import { describe, expect, it } from 'vitest'
 import { compileGraph, defaultOperators as factorOperators } from '../../../message-passing/index.ts'
 import { key, normal } from '../../../random/index.ts'
+import { toFlat } from '../../../tensor/index.ts'
+import { session } from '../../../trace/index.ts'
 import { epRoute } from '../../inference/ep-route.ts'
 import { fourierFeatures, gplvmFourierModel } from '../../models/gplvm.ts'
 import { benchmarkModel } from '../../models/suite.ts'
 import * as d from '../dists/index.ts'
-import { defineModel, factorGraphVerdict, networkLayerUnits, ops, toFactorGraph } from '../index.ts'
+import { defineModel, factorGraphVerdict, networkLayerShape, networkLayerUnits, ops, toFactorGraph } from '../index.ts'
 
 type Builder = Parameters<Parameters<typeof defineModel>[1]>[0]
 
@@ -107,5 +109,72 @@ describe('the verdict of EP on a network layer', () => {
       m.observe('y', d.normal(ops.tanh(x.mul(b).add(a)) as never, 0.2), m.data('y', { dims: [row] }))
     })
     expect(epRoute(curve.bind(DATA)).via).toBe('ep')
+  })
+})
+
+describe('the units of a layer that EP can and cannot hold', () => {
+  const verdictOf = (model: ReturnType<typeof defineModel>): ReturnType<typeof factorGraphVerdict> => {
+    const c = toFactorGraph(model.bind(DATA), { packScalars: true })
+    return factorGraphVerdict(c, compileGraph(c.graph as never, factorOperators()), 'ep')
+  }
+
+  it('counts the distinct hidden units and names the activations', () => {
+    expect(networkLayerShape(graphOf(network(3, (u) => ops.tanh(u) as never)))).toEqual({
+      hidden: 3,
+      activations: ['tanh'],
+    })
+    expect(networkLayerShape(graphOf(network(1, (u) => ops.sigmoid(u) as never)))).toEqual({
+      hidden: 1,
+      activations: ['sigmoid'],
+    })
+  })
+
+  it('refuses two or more hidden units whatever the activation (they can be permuted)', () => {
+    for (const unit of [(u: never) => ops.tanh(u), (u: never) => ops.sigmoid(u)]) {
+      const v = verdictOf(network(2, (u) => unit(u) as never))
+      expect(v.ok).toBe(false)
+      expect(v.reason).toMatch(/neural-network layer.*sign and permutation symmetries/)
+    }
+  })
+
+  it('refuses one hidden unit with an odd activation, and says why (the two modes that flip the signs)', () => {
+    const v = verdictOf(network(1, (u) => ops.tanh(u) as never))
+    expect(v.ok).toBe(false)
+    expect(v.reason).toMatch(/one hidden unit with the activation tanh.*odd or even activation has two modes/)
+  })
+
+  it('runs one hidden unit with a sigmoid: a saturating dose-response curve, with the maximum a random weight too', () => {
+    const doseResponse = defineModel('dose-response', (m: Builder) => {
+      const row = m.range('row')
+      const x = m.data('x', { dims: [row] })
+      const emax = m.latent('emax', d.normal(1.5, 1))
+      const a = m.latent('a', d.normal(0, 1))
+      const b = m.latent('b', d.normal(0, 2))
+      const unit = ops.sigmoid(x.mul(b).add(a)) as never as typeof x
+      m.observe('y', d.normal(unit.mul(emax), 0.2), m.data('y', { dims: [row] }))
+    })
+    const x = [-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5]
+    const noise = [0.1, -0.2, 0.15, 0.05, -0.1, 0.2, -0.15, 0, 0.1, -0.05, 0.12, -0.08]
+    const y = x.map((v, i) => 2 / (1 + Math.exp(-(-0.5 + 1.5 * v))) + (noise[i] ?? 0))
+    const bound = doseResponse.bind({ x, y })
+    const route = epRoute(bound)
+    expect(route.via).toBe('ep')
+    const run = session(route.method as never, { steps: 400, mode: 'eager', config: { tol: 1e-8 } }) as never as {
+      status: string
+      state: unknown
+      config: never
+    }
+    expect(run.status).toBe('converged')
+    const post = (
+      route.method as never as { posterior: (s: unknown, c: unknown) => import('../../posterior.ts').Posterior }
+    ).posterior(run.state, run.config)
+    // The posterior of a NUTS run (4 chains of 1500 draws, 2026-11-12): the means within 0.5 sd, the spreads 0.6 to 1.1 of its own
+    const nuts = { emax: [2.0, 0.13], a: [-0.44, 0.27], b: [1.6, 0.39] } as const
+    for (const [site, [mean, sd]] of Object.entries(nuts)) {
+      expect(Math.abs((toFlat(post.mean(site))[0] ?? Number.NaN) - mean), site).toBeLessThan(0.5 * sd)
+      const ratio = (toFlat(post.stddev(site))[0] ?? Number.NaN) / sd
+      expect(ratio, site).toBeGreaterThan(0.6)
+      expect(ratio, site).toBeLessThan(1.1)
+    }
   })
 })

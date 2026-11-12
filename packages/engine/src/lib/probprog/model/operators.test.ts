@@ -73,6 +73,21 @@ describe('the registry', () => {
     expect(num(run('clip', [val(['i'], [-2, 0.5, 9]), val([], 0), val([], 1)]))).toEqual([0, 0.5, 1])
   })
 
+  it('picks along the last dimension, and refuses a code that names no entry (the compiler refuses it too)', () => {
+    const table3 = val(
+      ['row', 'class'],
+      [
+        [1, 2, 3],
+        [4, 5, 6],
+      ],
+    )
+    expect(num(run('pick', [table3, val(['row'], [2, 0])]))).toEqual([3, 4])
+    for (const bad of [-1, 3, 2.5, Number.NaN])
+      expect(() => run('pick', [table3, val(['row'], [0, bad])])).toThrow(
+        /pick: the index .* is not one of the 3 entries/,
+      )
+  })
+
   it('reduces over a named dimension, or over all of them', () => {
     const m = val(
       ['row', 'col'],

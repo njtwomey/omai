@@ -2,41 +2,41 @@
 
 The structure report of every benchmark model against the findings written down for it.
 
-Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (models 27), 0.0 s.
+Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (models 27), 0.0 s.
 
 **Passed**: 27 models: every finding as expected
 
 What `structureReport` finds in each benchmark model. The columns are the findings the campaign checks (`STRUCTURE_EXPECTED` in `probprog/models/structure-campaigns.ts`): the conjugate latents (a hierarchy or an affine map is marked), what the `collapse` handler can integrate out, the Gaussian blocks (`sites | given`), the discrete part, the exchangeable plate axes and the number of independent sub-problems. Below, the full report of each model as `explain()` prints it. The report is advice: nothing is applied.
 
-| model                        | target    | conjugate latents                                        | collapsible by the handler | Gaussian blocks            | discrete part        | minibatch axes | components |
-| ---------------------------- | --------- | -------------------------------------------------------- | -------------------------- | -------------------------- | -------------------- | -------------- | ---------- |
-| beta-bernoulli               | posterior | p                                                        | p                          | -                          | none                 | flip           | 1          |
-| normal-normal                | posterior | mu                                                       | mu                         | mu \| nothing              | none                 | obs            | 1          |
-| gamma-poisson                | posterior | rate                                                     | rate                       | -                          | none                 | obs            | 1          |
-| logistic-regression          | posterior | -                                                        | -                          | -                          | none                 | row            | 1          |
-| probit-regression            | posterior | -                                                        | -                          | -                          | none                 | row            | 1          |
-| poisson-regression           | posterior | -                                                        | -                          | -                          | none                 | row            | 1          |
-| negative-binomial-regression | posterior | -                                                        | -                          | -                          | none                 | row            | 1          |
-| eight-schools-centred        | posterior | mu (hierarchical, direct); theta                         | theta                      | mu,theta \| tau            | none                 | school         | 1          |
-| eight-schools-non-centred    | posterior | mu (affine); z (affine)                                  | -                          | mu,z \| tau                | none                 | school         | 1          |
-| gaussian-mixture-ordered     | posterior | mu (index) not exact                                     | -                          | -                          | z: width 0, 2 states | row            | 1          |
-| gaussian-mixture             | posterior | mu (index)                                               | -                          | mu \| z                    | z: width 0, 2 states | row            | 1          |
-| funnel-centred               | density   | -                                                        | -                          | -                          | none                 | -              | 1          |
-| funnel-non-centred           | density   | -                                                        | -                          | -                          | none                 | -              | 2          |
-| banana                       | density   | -                                                        | -                          | -                          | none                 | -              | 1          |
-| bimodal                      | density   | -                                                        | -                          | -                          | z: width 0, 2 states | -              | 1          |
-| radon                        | posterior | mu (hierarchical, direct); beta (affine); alpha (affine) | -                          | mu,beta,alpha \| tau,sigma | none                 | county; house  | 1          |
-| trueskill-three-players      | posterior | -                                                        | -                          | -                          | none                 | game           | 1          |
-| ar1-state-space              | posterior | -                                                        | -                          | x \| nothing               | none                 | -              | 1          |
-| stochastic-volatility        | posterior | -                                                        | -                          | -                          | none                 | -              | 1          |
-| gaussian-hmm                 | posterior | -                                                        | -                          | -                          | none                 | -              | 1          |
-| gaussian-process-regression  | posterior | f                                                        | f                          | f \| ell                   | none                 | -              | 1          |
-| gaussian-process-non-centred | posterior | -                                                        | -                          | -                          | none                 | -              | 1          |
-| lda-lite                     | posterior | theta (hierarchical, direct); phi (index)                | -                          | -                          | z: width 0           | doc; token     | 1          |
-| bayesian-neural-network      | posterior | w2 (affine); b2 (affine)                                 | -                          | w2,b2 \| w1,b1             | none                 | point          | 1          |
-| item-response-scoring        | posterior | -                                                        | -                          | -                          | none                 | person; item   | 1          |
-| stick-breaking-mixture       | posterior | -                                                        | -                          | -                          | z: width 0           | row            | 1          |
-| clutter-problem              | posterior | -                                                        | -                          | -                          | z: width 0, 2 states | row            | 1          |
+| model | target | conjugate latents | collapsible by the handler | Gaussian blocks | discrete part | minibatch axes | components |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| beta-bernoulli | posterior | p | p | - | none | flip | 1 |
+| normal-normal | posterior | mu | mu | mu \| nothing | none | obs | 1 |
+| gamma-poisson | posterior | rate | rate | - | none | obs | 1 |
+| logistic-regression | posterior | - | - | - | none | row | 1 |
+| probit-regression | posterior | - | - | - | none | row | 1 |
+| poisson-regression | posterior | - | - | - | none | row | 1 |
+| negative-binomial-regression | posterior | - | - | - | none | row | 1 |
+| eight-schools-centred | posterior | mu (hierarchical, direct); theta | theta | mu,theta \| tau | none | school | 1 |
+| eight-schools-non-centred | posterior | mu (affine); z (affine) | - | mu,z \| tau | none | school | 1 |
+| gaussian-mixture-ordered | posterior | mu (index) not exact | - | - | z: width 0, 2 states | row | 1 |
+| gaussian-mixture | posterior | mu (index) | - | mu \| z | z: width 0, 2 states | row | 1 |
+| funnel-centred | density | - | - | - | none | - | 1 |
+| funnel-non-centred | density | - | - | - | none | - | 2 |
+| banana | density | - | - | - | none | - | 1 |
+| bimodal | density | - | - | - | z: width 0, 2 states | - | 1 |
+| radon | posterior | mu (hierarchical, direct); beta (affine); alpha (affine) | - | mu,beta,alpha \| tau,sigma | none | county; house | 1 |
+| trueskill-three-players | posterior | - | - | - | none | game | 1 |
+| ar1-state-space | posterior | - | - | x \| nothing | none | - | 1 |
+| stochastic-volatility | posterior | - | - | - | none | - | 1 |
+| gaussian-hmm | posterior | - | - | - | none | - | 1 |
+| gaussian-process-regression | posterior | f | f | f \| ell | none | - | 1 |
+| gaussian-process-non-centred | posterior | - | - | - | none | - | 1 |
+| lda-lite | posterior | theta (hierarchical, direct); phi (index) | - | - | z: width 0 | doc; token | 1 |
+| bayesian-neural-network | posterior | w2 (affine); b2 (affine) | - | w2,b2 \| w1,b1 | none | point | 1 |
+| item-response-scoring | posterior | - | - | - | none | person; item | 1 |
+| stick-breaking-mixture | posterior | - | - | - | z: width 0 | row | 1 |
+| clutter-problem | posterior | - | - | - | z: width 0, 2 states | row | 1 |
 
 ### Beta-Bernoulli coin (beta-bernoulli)
 
@@ -172,9 +172,6 @@ Suggestions (advice, nothing is applied):
   - site `theta` is centred (its scale is the latent `tau`): the funnel geometry slows NUTS when the data for each element are weak; sampling the standardised value avoids it.
       why: theta is normal over school with scale depending on tau
       use handler `reparam` {"theta":"locScale(0)"}: reparam(program, { theta: locScale(0) }) makes the program sample a standard value and transform it
-  - nodes `tau` are opaque (a custom function or a family with no exponential-family form): message passing and the closed-form methods do not apply, the sampling methods do.
-      why: message passing needs every factor to be a registered operator and an exponential-family distribution
-      use method `nuts`: sampling methods run on any differentiable density
 ```
 
 ### Eight schools, non-centred (eight-schools-non-centred)
@@ -199,9 +196,6 @@ Suggestions (advice, nothing is applied):
   - sites {mu, z} form a Gaussian block conditional on {tau} (9 variables): given those, the block's posterior is Gaussian and its marginal likelihood closed form.
       why: given tau, every node that touches mu, z is Gaussian with a mean affine in them and a scale and coefficients free of them: jointly Gaussian, exactly marginalisable
       use method `nuts`: run NUTS on {tau} alone with the block marginalised: no handler integrates a multi-site Gaussian block today (collapse takes one conjugate site at a time), so this is a gap the report names
-  - nodes `tau` are opaque (a custom function or a family with no exponential-family form): message passing and the closed-form methods do not apply, the sampling methods do.
-      why: message passing needs every factor to be a registered operator and an exponential-family distribution
-      use method `nuts`: sampling methods run on any differentiable density
 ```
 
 ### Gaussian mixture, ordered means (gaussian-mixture-ordered)
@@ -482,9 +476,6 @@ Suggestions (advice, nothing is applied):
   - site `z` (finite discrete over row) can be summed out: NUTS and VI can enumerate it (a number of states that is not known from the spec, 30 independent elements; width 0).
       why: the discrete part has 1 site in this component, elimination order {z} gives induced width 0
       use method `nuts` {"inferDiscrete":true}: NUTS sums the discrete sites out of the density; `inferDiscrete: true` draws them back for each draw
-  - nodes `pi` are opaque (a custom function or a family with no exponential-family form): message passing and the closed-form methods do not apply, the sampling methods do.
-      why: message passing needs every factor to be a registered operator and an exponential-family distribution
-      use method `nuts`: sampling methods run on any differentiable density
 ```
 
 ### The clutter problem (clutter-problem)
@@ -501,3 +492,4 @@ Suggestions (advice, nothing is applied):
       why: the discrete part has 1 site in this component, elimination order {z} gives induced width 0
       use method `nuts` {"inferDiscrete":true}: NUTS sums the discrete sites out of the density; `inferDiscrete: true` draws them back for each draw
 ```
+
