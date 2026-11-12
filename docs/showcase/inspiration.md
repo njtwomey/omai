@@ -324,3 +324,49 @@ Playground, Seeing Theory, Distill), and to be followed by the builders:
 - **The code that ran, at the bottom.** Per the repo convention: a short block from the source with `// region` markers, one variable per line, comments above, lines under about 100 characters.
 - **Say what is not known.** Be honest about the weak spot (the BNN's weights are not identified; Laplace and SVI are overconfident there), in one sentence, not a table.
 - **Use a recognisable dataset or story.** Old Faithful, coal mining disasters, eight schools, radon, a tournament: readers from other libraries will recognise them, which is half the point of a splash page.
+
+## 7. EP-first revision (2026-11-12)
+
+The owner has asked for the showcase to be built around expectation propagation (EP) where it fits. This addendum re-ranks the
+shortlist of section 5 for EP. It adds to sections 1 to 6 and does not replace them. The EP facts come from `docs/probprog/ep-status.md`
+(101 atoms, 26 of 27 benchmark models run, one refused) and `docs/probprog/ep-changelog.md`. In each EP story the prose says what a
+message is (a bell curve, with a mean and a spread, sent from one part of the model to another) and what each step does, in order.
+
+### What EP does well, and the omai piece that runs it
+
+| Example (title) | What EP does | Atom, model or program that runs it | How good the result is |
+|---|---|---|---|
+| Who is better? (TrueSkill) | Each game is a factor on two skills. Messages go from the games to the players and back. This is the problem EP was made for. | atoms `skill-difference`, `skill-draws`; benchmark `trueskill-three-players`; model `orderedProbit` on a gap of two skills; poc program `ep-program-skills` | After the loop fix (changelog 2026-11-12) the spreads are 0.99 to 1.06 of the exact ones and the means are within 0.02 sd. |
+| A signal in the clutter | Minka's own example. Some readings measure a value and some are garbage from a wide background. | atoms `clutter`, `clutter-mixture`; benchmark `clutter-problem` (`probprog/models/clutter.ts`); exact curve `clutterTruth` | EP fits one bell curve. When the exact posterior has two humps, the bell curve is a poor summary and can fail to settle. The page says so. |
+| Where is the boundary? (GP classifier, probit regression) | The classic EP example (Minka; Kuss and Rasmussen). Each label is a probit factor on the latent function. | atoms `gp-probit`, `gp-logistic`, `probit`, `logistic`; `lib/gp/classification.ts` (EP with one site per point); poc `gp-classification` | Agrees with the gp domain's own EP to 5e-3. |
+| Where is it going? (Kalman tracking) | A chain of Gaussian states. EP on a Gaussian chain is exact. | program `ep-program-kalman`; benchmarks `ar1-state-space`, `gaussian-hmm`; direction `kalman` in the changelog | Means and sds equal the Kalman smoother to 1e-6, so the band can be trusted. With outliers (`ep-program-tracker`) it is approximate. |
+| Ordinal ratings | A score from one to five as an ordered probit of a latent quality, with cut points. | atoms `ordinal-probit`, `ordinal-probit-learned` | Close to exact, with a few learned parameters. |
+| Too many zeros (zero-inflated and hurdle counts) | A gate for the structural zeros and a Poisson for the rest. | atoms `hurdle-poisson`, `gate-poisson-negative-binomial`; poc `ep-program-zero-inflated` | The switch probability is exact to 1e-6 and the coefficients are within 0.004 sd. |
+| Two humps, When did the rate change? (already built) | A mixture by a gate; a change point as a chain with a gate. | benchmark `gaussian-mixture`; poc program `ep-program-changepoint` | Mixture centres are right; the change-time posterior agrees with the exact one to 0.12. |
+| What is this document about? (topic model) | One factor per word and a gate on its topic. | atom `topic-model`, benchmark `lda-lite` | Runs in about 2 s but on three documents of five words. Fine for a story about how the messages settle, too small for word lists. A realistic corpus uses `lib/decomposition/lda.ts` (variational, not EP). |
+| Eight schools / partial pooling | A hierarchy as factors on group means. | benchmarks `eight-schools-*`, atom `random-intercepts-slopes` | Good for the means. The spreads are somewhat narrow with few groups. |
+
+### What only a sampler does honestly
+
+- **The Bayesian neural network** (shortlist item 4, already built with NUTS). EP refuses it on purpose: the hidden-layer weights are not
+  identified (sign and permutation symmetries), so a bell curve over them means nothing (`ep-status.md`). It stays the sampler's story and
+  must not be turned into an EP story.
+- Funnels, the banana, calibration and any "why did the sampler fail" story.
+- The 2PL item response model, whose logit is a product of latents (0.04 to 0.7 of the sampler's spread for the discriminations).
+- Loopy models with few groups, where EP is known to be too narrow. Say so in the prose or choose another example.
+
+### Proposed EP-native order
+
+1. **Who is better?** TrueSkill with draws. The factors are easy to see and the result is a ranked ladder.
+2. **A signal in the clutter.** Minka's example, and the plainest honest case of EP giving one bell curve for an uneven posterior.
+3. **Where is the boundary?** A GP classifier on two classes in the plane: probability map, boundary, and doubt away from the data.
+4. **Where is it going?** Kalman tracking. EP is exact here, so the band can be trusted.
+5. **Ordinal ratings.** A short story beside the skills one: a scale with cut points.
+6. **Too many zeros.** Hurdle or zero-inflated counts with a gate.
+7. **What is this document about?** A topic model, only if it stays tiny and is told as how the messages settle.
+8. **Eight schools**, with the narrow-spread caveat said once.
+9. **Where is the pattern hiding?** The motif finder, as a future story. It needs a new model first (a categorical position per sequence
+   and a Dirichlet position matrix). EP could run it as a gate per sequence, but nobody has tried.
+
+The existing sampler stories (coin, A/B, linear regression, functions from a process, the Bayesian neural network) stay as they are.
+Where EP is known to be too narrow, the prose says so and does not draw bands that claim more certainty than the result supports.
