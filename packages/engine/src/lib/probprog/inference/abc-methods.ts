@@ -9,7 +9,7 @@
 import type { Json } from '../../base/index.ts'
 import { foldIn, key as makeKey } from '../../random/index.ts'
 import { type DictSpace, dict, int, real } from '../../space/index.ts'
-import type { Tensor } from '../../tensor/index.ts'
+import { asTensor, exp, item, mul, sum, type Tensor } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -177,9 +177,7 @@ export function abcSmcMethod(
           ctx.log('abc/generation', smc.generation)
           if (Number.isFinite(smc.epsilon)) ctx.log('abc/epsilon', smc.epsilon)
           ctx.log('abc/acceptance', smc.acceptance)
-          let z = 0
-          for (const lw of smc.logWeights) z += Math.exp(2 * lw)
-          ctx.log('abc/ess', 1 / z)
+          ctx.log('abc/ess', 1 / item(sum(exp(mul(smc.logWeights, 2)))))
           if (ctx.wants('abc/particles')) ctx.log('abc/particles', smc.particles)
           return { smc, draws }
         },
@@ -191,7 +189,14 @@ export function abcSmcMethod(
           const o = stateFromJson(j) as Omit<AbcSmcState, 'traces'> & { traces: number; draws: Record<string, Tensor> }
           base.prime()
           const { draws, traces, ...rest } = o
-          return { smc: { ...rest, traces: Array.from({ length: traces }, () => emptyTrace) }, draws }
+          // A state saved before the population was held as tensors has typed arrays in these fields.
+          const population = {
+            ...rest,
+            particles: asTensor(rest.particles) as Tensor,
+            logWeights: asTensor(rest.logWeights) as Tensor,
+            distances: asTensor(rest.distances) as Tensor,
+          }
+          return { smc: { ...population, traces: Array.from({ length: traces }, () => emptyTrace) }, draws }
         },
       }
     },

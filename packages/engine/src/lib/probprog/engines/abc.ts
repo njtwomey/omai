@@ -5,33 +5,49 @@
  * the engine that offers them to the planner.
  */
 
-import { type Json, logSumExpOf, OmaiError, quantileOf } from '../../base/index.ts'
+import { type Json, OmaiError, quantileOf } from '../../base/index.ts'
 import { bijectors, type Distribution, defineDistribution, multivariateNormal, unavailable } from '../../dists/index.ts'
 import { cholesky } from '../../numerics/linalg/index.ts'
 import { choice, foldIn, type Key, normal as normalDraws } from '../../random/index.ts'
 import {
+  abs,
   add,
+  any,
   asTensor,
   broadcastTo,
+  cast,
+  div,
+  exp,
   eye,
-  fromStorage,
+  full,
+  greater,
+  isnan,
   item,
+  logsumexp,
   matmul,
   mul,
   primalOf,
   reshape,
   sliceAxis,
+  sort,
+  sqrt,
+  square,
   stack,
+  sub,
   sum,
   type Tensor,
+  type TensorLike,
+  tensor,
   toFlat,
   transpose,
   type Value,
+  where,
+  zeros,
 } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
 import { maskedLogProb } from '../_contract.ts'
 import type { ProgramAnalysis } from '../analysis.ts'
-import { type LatentLayout, latentLayout } from '../density.ts'
+import { type LatentLayout, latentLayout, packLatents } from '../density.ts'
 import { handle, type ProgramTrace, seed, traceOf, uncondition } from '../handlers.ts'
 import { type Posterior, samplePosterior, weightedPosterior } from '../posterior.ts'
 import type { Message, Model } from '../primitives.ts'
@@ -81,7 +97,7 @@ export function simulator(
 }
 
 /** Summary statistics: numbers describing the observed sites of a run. */
-export type SummaryStatistics = (observed: Readonly<Record<string, Value>>) => readonly number[]
+export type SummaryStatistics = (observed: Readonly<Record<string, Value>>) => TensorLike
 
 /**
  * Default summary statistics: for each observed site, the mean, standard deviation and quartiles of its values.
@@ -117,28 +133,37 @@ function observedValues(t: ProgramTrace, names: readonly string[]): Record<strin
   return out
 }
 
-function scaledDistance(a: readonly number[], b: readonly number[], scale: readonly number[]): number {
-  let s = 0
-  for (let i = 0; i < a.length; i++) s += (((a[i] ?? 0) - (b[i] ?? 0)) / (scale[i] ?? 1)) ** 2
-  return Math.sqrt(s)
+/** One summary vector as a rank-1 tensor (a summary function may return a list of numbers or a tensor). */
+function summaryRow(x: TensorLike): Tensor {
+  return reshape(asTensor(x), [-1]) as Tensor
 }
 
-function madScale(rows: readonly (readonly number[])[]): number[] {
-  const d = rows[0]?.length ?? 0
-  return Array.from({ length: d }, (_, j) => {
-    const col = rows.map((r) => r[j] ?? 0)
-    const med = quantileOf(col, 0.5)
-    const mad = quantileOf(
-      col.map((v) => Math.abs(v - med)),
-      0.5,
-    )
-    return mad > 0 ? mad : 1
-  })
+/** The distance from each row of an `[n, d]` summary matrix to the target, each summary divided by its scale. */
+function scaledDistances(rows: Tensor, target: Tensor, scale: Tensor): Tensor {
+  return sqrt(sum(square(div(sub(rows, target), scale)), 1)) as Tensor
+}
+
+/** The median of each column of an `[n, d]` tensor with the interpolation of `quantileOf` (a NaN in a column gives NaN). */
+function columnMedians(x: Tensor): Tensor {
+  const n = x.shape[0] ?? 0
+  const h = (n - 1) * 0.5
+  const lo = Math.floor(h)
+  const sorted = sort(x, 0)
+  const at = (i: number): Value => reshape(sliceAxis(sorted, 0, i, i + 1), [-1])
+  const below = at(lo)
+  const middle = add(below, mul(sub(at(Math.min(n - 1, lo + 1)), below), h - lo))
+  return where(any(isnan(x), 0), Number.NaN, middle) as Tensor
+}
+
+/** The median absolute deviation of each column of an `[n, d]` summary matrix (1 where it is 0), the scale of the distance. */
+function madScale(rows: Tensor): Tensor {
+  const mad = columnMedians(abs(sub(rows, columnMedians(rows))) as Tensor)
+  return where(greater(mad, 0), mad, 1) as Tensor
 }
 
 interface Setting<D> {
   readonly observed: readonly string[]
-  readonly target: readonly number[]
+  readonly target: Tensor
   readonly summary: SummaryStatistics
   readonly simulate: (key: Key, values?: Readonly<Record<string, Value>>) => ProgramTrace
   readonly latent: readonly string[]
@@ -155,7 +180,7 @@ function setting<D = void>(model: Model<D>, data: D, summary: SummaryStatistics 
     .filter((s) => (s.type === 'sample' && !s.isObserved) || s.type === 'deterministic')
     .map((s) => s.name)
   const stats = summary ?? defaultSummaries
-  const target = stats(observedValues(proto, observed))
+  const target = summaryRow(stats(observedValues(proto, observed)))
   const simulate = (k: Key, values?: Readonly<Record<string, Value>>): ProgramTrace => {
     let m = uncondition(model)
     if (values !== undefined) {
@@ -207,14 +232,14 @@ export function abcRejection<D = void>(model: Model<D>, data: D, options: AbcOpt
   const n = options.numSamples ?? 2000
   const s = setting(model, data, options.summary, foldIn(options.key, 0))
   const traces: ProgramTrace[] = []
-  const summaries: number[][] = []
+  const rows: Tensor[] = []
   for (let i = 0; i < n; i++) {
     const t = s.simulate(foldIn(foldIn(options.key, 1), i))
     traces.push(t)
-    summaries.push([...s.summary(observedValues(t, s.observed))])
+    rows.push(summaryRow(s.summary(observedValues(t, s.observed))))
   }
-  const scale = madScale(summaries)
-  const distances = summaries.map((x) => scaledDistance(x, s.target, scale))
+  const summaries = n === 0 ? zeros([0]) : (stack(rows) as Tensor)
+  const distances = n === 0 ? [] : toFlat(scaledDistances(summaries, s.target, madScale(summaries)))
   const eps = options.epsilon ?? quantileOf(distances, options.quantile ?? 0.05)
   const kept = traces.filter((_, i) => (distances[i] ?? Number.POSITIVE_INFINITY) <= eps)
   if (kept.length === 0)
@@ -232,15 +257,11 @@ export function abcRejection<D = void>(model: Model<D>, data: D, options: AbcOpt
 function stack1(traces: readonly ProgramTrace[], names: readonly string[]): Record<string, Tensor> {
   const out: Record<string, Tensor> = {}
   for (const name of names) {
-    const rows: number[] = []
-    let shape: readonly number[] = []
-    for (const t of traces) {
+    const values = traces.flatMap((t) => {
       const site = t.sites.get(name)
-      if (site === undefined || site.type === 'plate' || site.type === 'markov') continue
-      shape = site.value.shape
-      rows.push(...toFlat(primalOf(site.value)))
-    }
-    out[name] = fromStorage(Float64Array.from(rows), [traces.length, ...shape], 'float64')
+      return site === undefined || site.type === 'plate' || site.type === 'markov' ? [] : [primalOf(site.value)]
+    })
+    out[name] = values.length === 0 ? zeros([0]) : (cast(stack(values), 'float64') as Tensor)
   }
   return out
 }
@@ -249,9 +270,11 @@ function stack1(traces: readonly ProgramTrace[], names: readonly string[]): Reco
 export interface AbcSmcState {
   readonly generation: number
   /** Particles on the unconstrained scale, row-major `[n, dim]`. */
-  readonly particles: Float64Array
-  readonly logWeights: Float64Array
-  readonly distances: Float64Array
+  readonly particles: Tensor
+  /** Normalised log weights, a vector of one per particle. */
+  readonly logWeights: Tensor
+  /** The distance of each particle's simulation to the observed summaries, a vector of one per particle. */
+  readonly distances: Tensor
   readonly epsilon: number
   readonly simulations: number
   readonly acceptance: number
@@ -307,32 +330,30 @@ export function abcSmcAlgorithm<D = void>(
   let s: Setting<D> | undefined
   let layout: LatentLayout[] = []
   let dim = 0
-  let scale: number[] = []
-  const unconstrain = (t: ProgramTrace): Float64Array => {
-    const out = new Float64Array(dim)
-    for (const l of layout) {
+  let scale: Tensor = zeros([0])
+  const unconstrain = (t: ProgramTrace): Tensor => {
+    if (dim === 0) return zeros([0])
+    const points = layout.flatMap((l) => {
       const site = t.sites.get(l.name)
-      if (site?.type === 'sample') out.set(toFlat(primalOf(l.bijector.inverse(site.value))), l.offset)
-    }
-    return out
+      return site?.type === 'sample' ? [[l.name, l.bijector.inverse(site.value)] as const] : []
+    })
+    return primalOf(packLatents(layout, Object.fromEntries(points))) as Tensor
   }
-  const constrain = (u: Float64Array): Record<string, Value> => {
+  const constrain = (u: Tensor): Record<string, Value> => {
     const out: Record<string, Value> = {}
-    const v = fromStorage(u, [dim], 'float64')
     for (const l of layout)
       out[l.name] = primalOf(
-        l.bijector.forward(reshape(sliceAxis(v, 0, l.offset, l.offset + l.size), l.unconstrainedShape)),
+        l.bijector.forward(reshape(sliceAxis(u, 0, l.offset, l.offset + l.size), l.unconstrainedShape)),
       )
     return out
   }
-  const logPrior = (t: ProgramTrace, u: Float64Array): number => {
+  const logPrior = (t: ProgramTrace, u: Tensor): number => {
     let lp = 0
-    const v = fromStorage(u, [dim], 'float64')
     for (const l of layout) {
       const site = t.sites.get(l.name)
       if (site?.type !== 'sample') continue
       lp += item(primalOf(mul(sum(maskedLogProb(site)), site.scale)))
-      const piece = reshape(sliceAxis(v, 0, l.offset, l.offset + l.size), l.unconstrainedShape)
+      const piece = reshape(sliceAxis(u, 0, l.offset, l.offset + l.size), l.unconstrainedShape)
       lp += item(primalOf(sum(bijectors.bijectorForSupport(site.fn.support).forwardLogDetJacobian(piece))))
     }
     return lp
@@ -357,23 +378,19 @@ export function abcSmcAlgorithm<D = void>(
       layout = lay.layout
       dim = layout.reduce((a, l) => a + l.size, 0)
       const traces: ProgramTrace[] = []
-      const summaries: number[][] = []
+      const rows: Tensor[] = []
       for (let i = 0; i < P; i++) {
         const t = st.simulate(foldIn(foldIn(key, 1), i))
         traces.push(t)
-        summaries.push([...st.summary(observedValues(t, st.observed))])
+        rows.push(summaryRow(st.summary(observedValues(t, st.observed))))
       }
+      const summaries = stack(rows) as Tensor
       scale = madScale(summaries)
-      const particles = new Float64Array(P * dim)
-      traces.forEach((t, i) => {
-        particles.set(unconstrain(t), i * dim)
-      })
-      const distances = Float64Array.from(summaries, (x) => scaledDistance(x, st.target, scale))
       return {
         generation: 0,
-        particles,
-        logWeights: new Float64Array(P).fill(-Math.log(P)),
-        distances,
+        particles: stack(traces.map(unconstrain)) as Tensor,
+        logWeights: full([P], -Math.log(P)),
+        distances: scaledDistances(summaries, st.target, scale),
         epsilon: Number.POSITIVE_INFINITY,
         simulations: P,
         acceptance: 1,
@@ -383,28 +400,19 @@ export function abcSmcAlgorithm<D = void>(
     step: (state, ctx) => {
       const st = s
       if (st === undefined) throw new OmaiError('value', 'abcSmc: not initialised')
-      const eps = quantileOf(state.distances, q)
-      const w = Array.from(state.logWeights, (v) => Math.exp(v))
+      const eps = quantileOf(toFlat(state.distances), q)
+      const w = exp(state.logWeights) as Tensor
       // Twice the weighted covariance of the population.
-      const mean = new Float64Array(dim)
-      for (let i = 0; i < P; i++)
-        for (let j = 0; j < dim; j++) mean[j] = (mean[j] ?? 0) + (w[i] ?? 0) * (state.particles[i * dim + j] ?? 0)
-      const cov = new Float64Array(dim * dim)
-      for (let i = 0; i < P; i++)
-        for (let a = 0; a < dim; a++)
-          for (let b = 0; b < dim; b++)
-            cov[a * dim + b] =
-              (cov[a * dim + b] ?? 0) +
-              2 *
-                (w[i] ?? 0) *
-                ((state.particles[i * dim + a] ?? 0) - (mean[a] ?? 0)) *
-                ((state.particles[i * dim + b] ?? 0) - (mean[b] ?? 0))
-      const kernelCov = primalOf(add(fromStorage(cov, [dim, dim], 'float64'), mul(eye(dim), 1e-10)))
+      const mean = sum(mul(reshape(w, [P, 1]), state.particles), 0)
+      const centred = sub(state.particles, mean)
+      const weighted = mul(reshape(mul(w, 2), [P, 1]), centred)
+      const cov = sum(mul(reshape(weighted, [P, dim, 1]), reshape(centred, [P, 1, dim])), 0)
+      const kernelCov = primalOf(add(cov, mul(eye(dim), 1e-10)))
       const chol = primalOf(cholesky(kernelCov))
-      const mixture = multivariateNormal(fromStorage(state.particles, [P, dim], 'float64'), { scaleTril: chol })
-      const particles = new Float64Array(P * dim)
-      const distances = new Float64Array(P)
-      const logWeights = new Float64Array(P)
+      const mixture = multivariateNormal(state.particles, { scaleTril: chol })
+      const points: Tensor[] = []
+      const distances: number[] = []
+      const logWeights: number[] = []
       const traces: ProgramTrace[] = []
       let accepted = 0
       let sims = 0
@@ -412,19 +420,19 @@ export function abcSmcAlgorithm<D = void>(
         const k = foldIn(ctx.key, sims)
         sims += 1
         const pick = toFlat(choice(foldIn(k, 0), P, 1, { weights: w }))[0] ?? 0
-        const centre = state.particles.subarray(pick * dim, (pick + 1) * dim)
-        const noise = toFlat(primalOf(matmul(normalDraws(foldIn(k, 1), [dim]), transpose(chol))))
-        const u = Float64Array.from(centre, (c, j) => c + (noise[j] ?? 0))
+        const centre = reshape(sliceAxis(state.particles, 0, pick, pick + 1), [dim])
+        const u = add(centre, matmul(normalDraws(foldIn(k, 1), [dim]), transpose(chol))) as Tensor
         const t = st.simulate(foldIn(k, 2), constrain(u))
-        const d = scaledDistance([...st.summary(observedValues(t, st.observed))], st.target, scale)
+        const summary = reshape(summaryRow(st.summary(observedValues(t, st.observed))), [1, -1]) as Tensor
+        const d = item(scaledDistances(summary, st.target, scale))
         if (!(d <= eps)) continue
         const lp = logPrior(t, u)
         if (!Number.isFinite(lp)) continue
-        const lk = toFlat(primalOf(mixture.logProb(fromStorage(u, [dim], 'float64'))))
-        const denom = logSumExpOf(lk.map((v, i) => v + (state.logWeights[i] ?? 0)))
-        particles.set(u, accepted * dim)
-        distances[accepted] = d
-        logWeights[accepted] = lp - denom
+        const lk = primalOf(mixture.logProb(u))
+        const denom = item(logsumexp(add(lk, state.logWeights)))
+        points.push(u)
+        distances.push(d)
+        logWeights.push(lp - denom)
         traces.push(t)
         accepted += 1
       }
@@ -436,12 +444,12 @@ export function abcSmcAlgorithm<D = void>(
           simulations: sims,
           acceptance: accepted / sims,
         }
-      const z = logSumExpOf(logWeights)
+      const raw = tensor(logWeights)
       return {
         generation: state.generation + 1,
-        particles,
-        logWeights: Float64Array.from(logWeights, (v) => v - z),
-        distances,
+        particles: stack(points) as Tensor,
+        logWeights: sub(raw, item(logsumexp(raw))) as Tensor,
+        distances: tensor(distances),
         epsilon: eps,
         simulations: sims,
         acceptance: accepted / sims,
@@ -458,7 +466,7 @@ export function abcSmcAlgorithm<D = void>(
       metrics: {
         epsilon: Number.isFinite(state.epsilon) ? state.epsilon : -1,
         acceptance: state.acceptance,
-        ess: Math.exp(-logSumExpOf(Array.from(state.logWeights, (v) => 2 * v))),
+        ess: Math.exp(-item(logsumexp(mul(state.logWeights, 2)))),
       },
     }),
   }
@@ -543,7 +551,7 @@ export function abcSmcDraws(traces: readonly ProgramTrace[]): Record<string, Ten
  */
 export function abcSmcPosterior(
   draws: Readonly<Record<string, Tensor>>,
-  state: Pick<AbcSmcState, 'logWeights' | 'generation' | 'epsilon' | 'acceptance'>,
+  state: Pick<AbcSmcState, 'generation' | 'epsilon' | 'acceptance'> & { readonly logWeights: TensorLike },
   status: Posterior['status'],
 ): Posterior {
   return weightedPosterior(draws, state.logWeights, {
