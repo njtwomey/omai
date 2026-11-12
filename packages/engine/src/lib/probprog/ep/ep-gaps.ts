@@ -129,17 +129,6 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
       markers: [],
     },
     {
-      id: 'non-centred-scale',
-      title: 'ARD (a scale of its own for each coefficient) has no variational message passing rule',
-      kind: 'quality',
-      status: 'open',
-      summary:
-        'A coefficient vector written `z / sqrt(g(x))` runs under EP and, with one latent `x` behind every coefficient (the non-centred Bayesian GAM, penalty prior with log-normal hyperpriors), under variational message passing too: the compiler makes it one Gaussian vector with a `gaussian-mv-function-scale` factor whose variational rule is the Gaussian density of the vector given `x` (the standard normals integrated out, as `gaussian-mv-precision-scale` is for a gamma multiplier), so the message to the vector is `E[1 / u_j(x)^2]` on the diagonal and the message to `x` the non-conjugate one of the expected log, both on the variational quadrature. Against the exact reference the curve is 0.004 response sd off, the band 0.996 of it, the log smoothing 2.58 +- 0.57 (2.53 +- 0.62) in 46 sweeps. With a latent of its own for each coefficient (ARD) each coefficient is an `apply-product` factor, and the compiler ties the scalar outputs to one Gaussian vector with `dot-constant` factors that define each output from the vector; under variational message passing a variable has one definer, so `apply-product` (a deterministic `y = z f(x)`, whose rule by quadrature works where it defines its output: it matches the brute-force bound on a scale read by a Gaussian) would define the same output twice and the graph would not compile, and as a non-definer its message to the scalar coefficients is the degenerate one (the noise collapses to a point). The spreads of the log smoothing and the log noise under EP are about 12% wide against the exact reference (a moment match of a skewed marginal).',
-      plan: "Compile ARD so that the vector is assembled from the scalar outputs (a factor that defines the vector from its coordinates, as the scalar `apply-product` defines each of them), then give `apply-product` its deterministic variational rule (the mean and variance of the pushforward to `y`, the non-conjugate messages of the readers' expected log to `z` and `x`, by the product of the two quadratures); or one factor on the vector with a latent for each coefficient.",
-      size: 'medium',
-      markers: [],
-    },
-    {
       id: 'evidence',
       title: 'The EP log evidence is exact where EP is, and has two known limits',
       kind: 'infrastructure',

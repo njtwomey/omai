@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { key } from '../../random/index.ts'
+import { toFlat } from '../../tensor/index.ts'
+import { session } from '../../trace/index.ts'
 import { analysisOf } from '../inference/model-input.ts'
+import { epSpecMethod } from '../inference/mp.ts'
 import { nutsMethod } from '../inference/nuts-method.ts'
 import { generateRadonCounties, radonCountiesDefinition } from './radon-counties.ts'
 
@@ -40,5 +43,24 @@ describe('radonCountiesDefinition', () => {
         .map((n) => n.kind)
     expect(kinds('centred')).toEqual(['latent'])
     expect(kinds('non-centred')).toEqual(['derived'])
+  })
+
+  it('slopes: the Cholesky factor of the correlation, sqrt(clip(1 - rho^2)), compiles, and EP settles with the truth within three sds', () => {
+    const bound = radonCountiesDefinition('slopes').bind(data.data)
+    const m = epSpecMethod(bound)
+    expect(m.check?.(analysisOf(bound)).applies).toBe(true)
+    const s = session(m, { steps: 600, mode: 'eager', config: { damping: 0.3, tol: 1e-6 } as never })
+    const post = m.posterior?.(s.state, s.config)
+    expect(post?.status).toBe('converged')
+    const truth = data.generating as Record<string, number>
+    for (const site of ['mu', 'mu_b']) {
+      const mean = toFlat(post?.mean(site) as never)[0] as number
+      const sd = toFlat(post?.stddev(site) as never)[0] as number
+      expect(sd, site).toBeGreaterThan(0)
+      expect(Math.abs(mean - (truth[site === 'mu' ? 'mu' : 'beta'] as number)) / sd, site).toBeLessThan(3)
+    }
+    // The correlation is the only latent the data say little of: its posterior stays on the interval it is uniform on.
+    const rho = toFlat(post?.mean('rho') as never)[0] as number
+    expect(Math.abs(rho)).toBeLessThan(1)
   })
 })
