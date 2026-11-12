@@ -128,6 +128,28 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
       markers: [],
     },
     {
+      id: 'positive-scale-belief',
+      title: 'The belief of a positive scale parameter is a Gaussian: its range runs below zero',
+      kind: 'quality',
+      status: 'open',
+      summary:
+        "The belief EP reports for a positive scale parameter such as the between-group sd `tau` of a hierarchy is a Gaussian, so its summary is a Gaussian's: on eight schools the 90% range of `tau` is -1.6 to 8.7 and 13.5% of its mass lies below 0.1, where NUTS puts 1.3% (the posterior of `tau` is a curve piled against zero with a long right tail, which a Gaussian can neither bound nor skew). The mean and the spread are usable; the quantiles, the range and the mass near zero are not, and the shrinkage of every group, which depends on how much mass `tau` has near zero, is read from the wrong curve. Where the prior is a half-normal or half-Cauchy the numeric prior site works on the log of the scale (`log: 1`) and projects the prior onto a Gaussian there once; the belief that the summary and the samples read is still one Gaussian.",
+      plan: 'A belief family for a positive variable that the message algebra can carry: a Gaussian on the log (the half-normal prior site already projects onto the log once; the hierarchy would then keep the belief of `tau` there, with the factors that read the scale as a quadrature over it), or a gamma or inverse-gamma family (the natural parameters are the sufficient statistics x and log x) for the scales that enter as precisions, with the compiler choosing it for a latent with a positive constraint that only scale slots read; the ranges and quantiles of a summary then come from the family and are positive. Held to the NUTS run of eight schools (the mass below 0.1, the 90% range, the means of the school effects).',
+      size: 'medium',
+      markers: [],
+    },
+    {
+      id: 'posterior-sample-correlation',
+      title: 'Posterior samples draw each scalar site on its own: the correlations between scalar sites are lost',
+      kind: 'quality',
+      status: 'open',
+      summary:
+        'The posterior of an EP run holds one belief per variable site, and `posterior.sample` draws every scalar site from its own belief, independently of the others, so a joint draw has the marginals right and no correlation: the intercept and the slope of a regression are sampled with a correlation of -0.02 where NUTS has -0.905, and any quantity that combines them (a prediction at a point away from the mean of the inputs, a contrast) gets the wrong spread from the draws. The correlation is in the run when the model is written with a vector site (one coefficient vector with a joint Gaussian belief, or a tied group the sites pack into one vector), whose draws are joint; the scalar sites of a model written one by one are not, even when the loops of the graph tied them.',
+      plan: 'A joint sample from the packed vector sites: where the sites of a model are coordinates of a vector the engine packs for the run (the tied groups of `loopy-overconfidence`), draw the vector from its joint belief and unpack it, so the scalar sites of a regression share their covariance; or, failing that, document the requirement (write correlated coefficients as a vector site) on the posterior and in the EP notes and have `sample` say so when scalar sites share a factor.',
+      size: 'small',
+      markers: [],
+    },
+    {
       id: 'gplvm-features',
       title: 'A GPLVM runs only through random Fourier features: loopy, not always found, spreads not the posterior',
       kind: 'quality',
