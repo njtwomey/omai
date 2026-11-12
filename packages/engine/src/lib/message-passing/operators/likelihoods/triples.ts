@@ -66,8 +66,12 @@ export interface TripleLikelihood {
    * from its core, and needs a finer grid than the scale and the degrees of freedom, which are smooth.
    */
   readonly fineness?: readonly [number, number, number]
-  /** Why the density has no variational message, or absent. */
-  readonly noVmp?: string
+  /**
+   * Why the density has no variational message for this outcome (an expected log that is infinite under any Gaussian belief of the
+   * coordinates), or `undefined` when it has one. A function of the outcome: the ordinal rows have a message for the first and the last
+   * category (one cut, a smooth density) and none for the others (two cuts, zero where they are out of order).
+   */
+  noVmp?(y: number, p: Params): string | undefined
 }
 
 /**
@@ -299,8 +303,12 @@ function ordinalCuts(
       { name: 'upper cut', positive: false },
     ],
     params: ['categories'],
-    noVmp:
-      'the density is zero where the cut points are out of order, so its expected log under a Gaussian belief of the cuts is minus infinity (use expectation propagation, which cuts the cavities at the order)',
+    noVmp: (y, p) => {
+      const { first, last } = ordinalSides(y, p)
+      return first || last
+        ? undefined
+        : 'a category between two random cut points has a density that is zero where they are out of order, so its expected log under a Gaussian belief of the cuts is minus infinity (use expectation propagation, which cuts the cavities at the order; the first and the last category have one cut and run)'
+    },
     check: ordinalCheck,
     density: (y, p) => {
       const { first, last } = ordinalSides(y, p)
@@ -382,7 +390,8 @@ export function tripleLikelihoodOperator(
     c: OperatorContext,
   ): { readonly logf: (x: readonly number[]) => number; readonly ports: ReturnType<typeof quadraturePorts> } => {
     const { likelihood, y } = resolve(t, c.params)
-    if (likelihood.noVmp !== undefined) throw new ImproperMessageError(`${likelihood.name}: ${likelihood.noVmp}`)
+    const why = likelihood.noVmp?.(y, c.params)
+    if (why !== undefined) throw new ImproperMessageError(`${likelihood.name}: ${why}`)
     const density = likelihood.density(y, c.params)
     return {
       logf: (x) => density(x[0] as number, x[1] as number, x[2] as number),
@@ -453,7 +462,14 @@ export function tripleLikelihoodOperator(
     unsupported: (mode, params) => {
       if (mode !== 'vmp') return undefined
       const key = params['likelihood']
-      return typeof key === 'string' ? table[key]?.noVmp : undefined
+      const y = params['y']
+      if (typeof key !== 'string' || typeof y !== 'number') return undefined
+      try {
+        return table[key]?.noVmp?.(y, params)
+      } catch {
+        // an outcome or a parameter the check refuses is its own error
+        return undefined
+      }
     },
     check: (params, families) => {
       try {

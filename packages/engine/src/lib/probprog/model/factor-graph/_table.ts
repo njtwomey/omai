@@ -25,6 +25,7 @@ import {
   latentRandomConcentration,
 } from './_mappings/latent-positive.ts'
 import {
+  latentBivariateVectors,
   latentCorrelation,
   latentMultivariateNormal,
   latentMvnWishart,
@@ -62,7 +63,6 @@ import { discreteParents, evalNamedValue } from './_params.ts'
 import {
   constraintBeyondSupport,
   familyHasNoMessageFamily,
-  latentBivariateNormal,
   logDensityTermHasNoOperator,
   logNormalOutcome,
   missingValuesPolicy,
@@ -232,14 +232,12 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
     map: (cx, node) => latentCorrelation(cx, node),
   },
   {
-    name: 'bivariate-normal-refused',
-    maps: 'a latent bivariate normal is refused: only observed vectors are mapped',
+    name: 'bivariate-normal-latent',
+    maps: 'latent bivariate normal vectors (standard deviations known or gamma precisions, the correlation known or a latent): an mvn-sd-corr factor per vector for a known mean, one mvn-sd-corr-group factor for all the vectors when the mean is a Gaussian vector variable',
     families: ['bivariateNormal'],
-    requires: [],
+    requires: ['mvn-sd-corr', 'mvn-sd-corr-group'],
     matches: (_cx, node) => node.dist.family === 'bivariateNormal',
-    map: (_cx, node) => {
-      throw latentBivariateNormal(node.name)
-    },
+    map: (cx, node) => latentBivariateVectors(cx, node),
   },
   {
     name: 'mvn-wishart',
@@ -289,9 +287,17 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
   },
   {
     name: 'normal',
-    maps: 'a normal: a Gaussian variable per element, with a known or random mean and scale (a precision, a random scale, a switch), grouped or packed where the plan says; a truncation constrains it',
+    maps: 'a normal: a Gaussian variable per element, with a known or random mean and scale (a precision, a random scale, a switch), grouped or packed where the plan says; the steps of an unrolled scan with known coefficients and one gamma precision are the links of one gaussian-chain factor (with packScalars); a truncation constrains it',
     families: ['normal'],
-    requires: ['gate', 'gaussian', 'gaussian-gamma-precision', 'gaussian-mv-precision-scale', 'greater-than', 'prior'],
+    requires: [
+      'gate',
+      'gaussian',
+      'gaussian-chain',
+      'gaussian-gamma-precision',
+      'gaussian-mv-precision-scale',
+      'greater-than',
+      'prior',
+    ],
     matches: (_cx, node) => node.dist.family === 'normal',
     map: (cx, node) => {
       latentNormal(cx, node)

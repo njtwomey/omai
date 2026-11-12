@@ -515,11 +515,20 @@ export const discreteParentsOverPlate = (node: string, dims: Fact): Refusal =>
   )
 export const eventAxesInScalar = (): Refusal =>
   new Refusal('structure', 'a value with event axes cannot stand in a scalar expression', {})
-export const latentBivariateNormal = (node: string): Refusal =>
+export const bivariateVectorNeedsAxis = (node: string): Refusal =>
   new Refusal(
     'structure',
-    `'${node}' is a latent bivariateNormal: only observed vectors are mapped (write the vectors with a Wishart precision, or observe them)`,
+    `'${node}' is a latent bivariateNormal without an axis for the vector: write dims: [group, coef] (or [coef] for one vector)`,
     { node },
+  )
+export const bivariateVectorSize = (node: string, size: number): Refusal =>
+  new Refusal(
+    'structure',
+    `'${node}' is a bivariateNormal over an axis of ${size} entries: a bivariate vector has two`,
+    {
+      node,
+      size,
+    },
   )
 export const oneCorrelationOverDims = (node: string, dims: Fact): Refusal =>
   new Refusal('structure', `'${node}' is a correlation over [${dims}]: one correlation is mapped`, { node, dims })

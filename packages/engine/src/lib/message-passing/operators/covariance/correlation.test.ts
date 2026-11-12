@@ -26,11 +26,11 @@ for (const y of ROWS)
         (scatter[i * 2 + j] as number) +
         ((y[i] as number) - (ybar[i] as number)) * ((y[j] as number) - (ybar[j] as number))
 
-const ctx = (to: number, args: readonly Arg[]): OperatorContext => ({
+const ctx = (to: number, args: readonly Arg[], match?: 'moments' | 'log-moments'): OperatorContext => ({
   mode: 'ep',
   to,
   args,
-  params: { count: n, scatter },
+  params: { count: n, scatter, ...(match === undefined ? {} : { match }) },
   power: 1,
 })
 
@@ -63,7 +63,7 @@ function brute(
   const N = 70
   const steps = box.map((b) => (b[1] - b[0]) / N)
   let total = 0
-  const acc = { lt1: 0, t1: 0, lt2: 0, t2: 0, lu: 0, l1u: 0 }
+  const acc = { lt1: 0, t1: 0, lt2: 0, t2: 0, lu: 0, l1u: 0, u: 0, u2: 0 }
   const logGamma = (x: number, a: number, b: number): number =>
     a * Math.log(b) - lgammaOf(a) + (a - 1) * Math.log(x) - b * x
   const logBeta = (u: number, p: number, q: number): number =>
@@ -91,6 +91,8 @@ function brute(
         acc.t2 += w * t2
         acc.lu += w * Math.log(u)
         acc.l1u += w * Math.log(1 - u)
+        acc.u += w * u
+        acc.u2 += w * u * u
       }
   const cell = (steps[0] as number) * (steps[1] as number) * (steps[2] as number)
   return {
@@ -101,6 +103,8 @@ function brute(
     t2: acc.t2 / total,
     lu: acc.lu / total,
     l1u: acc.l1u / total,
+    u: acc.u / total,
+    uVar: acc.u2 / total - (acc.u / total) ** 2,
   }
 }
 
@@ -114,7 +118,7 @@ describe('mvn-sd-corr', () => {
     messageArg(beta, betaEta(cav.p, cav.q)),
   ]
 
-  it('a known mean: the messages to both precisions and the correlation match the brute-force three-dimensional integral', () => {
+  it('a known mean: the messages to both precisions and the correlation (log moments) match the brute-force three-dimensional integral', () => {
     const a = args(valueArg(G, [0.1, 0.2]))
     const b = brute(cav, { m: [0.1, 0.2], v: [1e-12, 0, 0, 1e-12] }, [
       [0.02, 9],
@@ -123,7 +127,9 @@ describe('mvn-sd-corr', () => {
     ])
     const t1 = gamma.moments(gamma.product(gammaEta(cav.a1, cav.b1), mvnSdCorr.ep?.(ctx(2, a)).message as number[]))
     const t2 = gamma.moments(gamma.product(gammaEta(cav.a2, cav.b2), mvnSdCorr.ep?.(ctx(3, a)).message as number[]))
-    const u = beta.moments(beta.product(betaEta(cav.p, cav.q), mvnSdCorr.ep?.(ctx(4, a)).message as number[]))
+    const u = beta.moments(
+      beta.product(betaEta(cav.p, cav.q), mvnSdCorr.ep?.(ctx(4, a, 'log-moments')).message as number[]),
+    )
     // the gamma that matches (E log t, E t) has exactly those moments
     expect(t1[0]).toBeCloseTo(b.lt1, 2)
     expect(t1[1]).toBeCloseTo(b.t1, 2)
@@ -148,7 +154,9 @@ describe('mvn-sd-corr', () => {
       [0.02, 9],
       [0.002, 0.998],
     ])
-    const u = beta.moments(beta.product(betaEta(cav.p, cav.q), mvnSdCorr.ep?.(ctx(4, a)).message as number[]))
+    const u = beta.moments(
+      beta.product(betaEta(cav.p, cav.q), mvnSdCorr.ep?.(ctx(4, a, 'log-moments')).message as number[]),
+    )
     const t1 = gamma.moments(gamma.product(gammaEta(cav.a1, cav.b1), mvnSdCorr.ep?.(ctx(2, a)).message as number[]))
     expect(u[0]).toBeCloseTo(b.lu, 2)
     expect(u[1]).toBeCloseTo(b.l1u, 2)
@@ -167,7 +175,7 @@ describe('mvn-sd-corr', () => {
       valueArg(gamma, 1),
       messageArg(beta, betaEta(1, 1)),
     ]
-    const msg = mvnSdCorr.ep?.(ctx(4, a)).message as number[]
+    const msg = mvnSdCorr.ep?.(ctx(4, a, 'log-moments')).message as number[]
     // the posterior of rho under the uniform prior is proportional to (1 - rho^2)^(-n / 2) exp(-(s11 - 2 rho s12 + s22 + n ybar...) / (2 (1 - rho^2)))
     const sxx = ROWS.reduce((s, y) => s + (y[0] as number) ** 2, 0)
     const syy = ROWS.reduce((s, y) => s + (y[1] as number) ** 2, 0)
@@ -183,6 +191,85 @@ describe('mvn-sd-corr', () => {
       lu += w * Math.log((1 + rho) / 2)
     }
     expect(beta.moments(beta.product(betaEta(1, 1), msg))[0]).toBeCloseTo(lu / z, 3)
+  })
+
+  /** The mean and standard deviation of `u` under a beta given by its natural parameters. */
+  const betaMeanSd = (eta: readonly number[]): [number, number] => {
+    const [p, q] = [(eta[0] as number) + 1, (eta[1] as number) + 1]
+    return [p / (p + q), Math.sqrt((p * q) / ((p + q) ** 2 * (p + q + 1)))]
+  }
+
+  it('by default the belief has the mean and variance of u: against the three-dimensional brute-force integral, known and random mean', () => {
+    const boxes = [
+      [0.02, 9],
+      [0.02, 9],
+      [0.002, 0.998],
+    ] as const
+    for (const mean of [
+      { arg: valueArg(G, [0.1, 0.2]), m: [0.1, 0.2], v: [1e-12, 0, 0, 1e-12] },
+      {
+        arg: messageArg(G, gaussianMvEta([0.1, 0.2], [0.15, 0.04, 0.04, 0.2])),
+        m: [0.1, 0.2],
+        v: [0.15, 0.04, 0.04, 0.2],
+      },
+    ]) {
+      const a = args(mean.arg)
+      const b = brute(cav, mean, boxes)
+      const [m, sd] = betaMeanSd(beta.product(betaEta(cav.p, cav.q), mvnSdCorr.ep?.(ctx(4, a)).message as number[]))
+      expect(m).toBeCloseTo(b.u, 3)
+      expect(sd).toBeCloseTo(Math.sqrt(b.uVar), 3)
+    }
+  })
+
+  it('known standard deviations and a strong correlation from few pairs: the spread is the exact one, the log moments are narrow', () => {
+    // four pairs from a correlation near 0.97 (unit variances), under the uniform prior: p(rho | y) is known up to a constant
+    const rows = [
+      [1.0, 0.9],
+      [-0.8, -0.85],
+      [0.3, 0.4],
+      [1.4, 1.25],
+    ]
+    const k = rows.length
+    const yb = [0, 1].map((j) => rows.reduce((t, y) => t + (y[j] as number), 0) / k)
+    const sc = [0, 0, 0, 0]
+    for (const y of rows)
+      for (let i = 0; i < 2; i++)
+        for (let j = 0; j < 2; j++)
+          sc[i * 2 + j] =
+            (sc[i * 2 + j] as number) + ((y[i] as number) - (yb[i] as number)) * ((y[j] as number) - (yb[j] as number))
+    const sxx = rows.reduce((t, y) => t + (y[0] as number) ** 2, 0)
+    const syy = rows.reduce((t, y) => t + (y[1] as number) ** 2, 0)
+    const sxy = rows.reduce((t, y) => t + (y[0] as number) * (y[1] as number), 0)
+    let z = 0
+    let m1 = 0
+    let m2 = 0
+    const N = 20000
+    for (let i = 0; i < N; i++) {
+      const rho = -1 + (2 * (i + 0.5)) / N
+      const w = Math.exp(-(k / 2) * Math.log(1 - rho * rho) - (sxx - 2 * rho * sxy + syy) / (2 * (1 - rho * rho)))
+      z += w
+      m1 += w * rho
+      m2 += w * rho * rho
+    }
+    const exact = { mean: m1 / z, sd: Math.sqrt(m2 / z - (m1 / z) ** 2) }
+    const a: Arg[] = [
+      valueArg(G, yb),
+      valueArg(G, [0, 0]),
+      valueArg(gamma, 1),
+      valueArg(gamma, 1),
+      messageArg(beta, betaEta(1, 1)),
+    ]
+    const spread = (match: 'moments' | 'log-moments'): { mean: number; ratio: number } => {
+      const c = { ...ctx(4, a, match), params: { count: k, scatter: sc, match } }
+      const [m, sd] = betaMeanSd(beta.product(betaEta(1, 1), mvnSdCorr.ep?.(c).message as number[]))
+      return { mean: 2 * m - 1, ratio: (2 * sd) / exact.sd }
+    }
+    expect(spread('moments').mean).toBeCloseTo(exact.mean, 4)
+    // (the integral is a panelled grid: the spread is the exact one to 1e-3)
+    expect(Math.abs(spread('moments').ratio - 1)).toBeLessThan(2e-3)
+    // the beta of the log moments is the KL projection: right mean, a spread a fifth too small here
+    expect(spread('log-moments').ratio).toBeLessThan(0.9)
+    expect(Math.abs(spread('log-moments').mean - exact.mean)).toBeLessThan(0.05 * exact.sd * 4)
   })
 
   it('is refused at a variational rule, and the check names the dimension', () => {
