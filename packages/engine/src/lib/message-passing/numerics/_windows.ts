@@ -234,3 +234,66 @@ export function tiltGrid(
     w = { lo, hi }
   }
 }
+
+/** The nodes of the scan the window finder lays over its current window. */
+const SCAN = 801
+
+/**
+ * The window of the line holding the mass of a log density: scanned on a grid of `scan` points from `start`, widened while the
+ * edges of the window are not negligible (more than 40 nats below the top), then narrowed onto the nodes within 40 nats of the top
+ * and scanned again until the mass fills the window (a spike a grid of this size would miss is narrowed onto round by round). The one
+ * way the library finds where a density lives, for the density of a prior and for the factor times the cavity of a tilted integral, so
+ * a likelihood does not describe its own window.
+ *
+ * @param logDensity - The log density (up to a constant) on an array of points.
+ * @param lo - The lower end of the support (`-Infinity` for none).
+ * @param hi - The upper end (`Infinity` for none).
+ * @param start - A point near the bulk of the mass, inside `[lo, hi]`, where the search starts.
+ * @param scan - The nodes of each scan (default 801).
+ * @returns The window `[a, b]`.
+ */
+export function findWindow(
+  logDensity: (x: Float64Array) => Float64Array,
+  lo: number,
+  hi: number,
+  start: number,
+  scan: number = SCAN,
+): readonly [number, number] {
+  let a = Math.max(lo, start - 5)
+  let b = Math.min(hi, start + 5)
+  for (let round = 0; round < 40; round++) {
+    const xs = Float64Array.from({ length: scan }, (_, i) => a + ((b - a) * i) / (scan - 1))
+    const lp = logDensity(xs)
+    let top = Number.NEGATIVE_INFINITY
+    for (const v of lp) if (v > top) top = v
+    if (!Number.isFinite(top)) {
+      // Nothing finite in the window: look wider.
+      const span = b - a
+      a = Math.max(lo, a - 2 * span)
+      b = Math.min(hi, b + 2 * span)
+      continue
+    }
+    const span = b - a
+    let first = 0
+    let last = scan - 1
+    while (first < scan - 1 && (lp[first] as number) < top - 40) first++
+    while (last > 0 && (lp[last] as number) < top - 40) last--
+    const wide = (first === 0 && a > lo) || (last === scan - 1 && b < hi)
+    if (wide) {
+      if (first === 0 && a > lo) a = Math.max(lo, a - 2 * span)
+      if (last === scan - 1 && b < hi) b = Math.min(hi, b + 2 * span)
+      continue
+    }
+    const pad = (2 * span) / (scan - 1)
+    const na = Math.max(lo, a + (span * first) / (scan - 1) - pad)
+    const nb = Math.min(hi, a + (span * last) / (scan - 1) + pad)
+    // A window much wider than the mass is narrowed onto it and scanned again (a spike a grid of this size would miss).
+    if (nb - na < 0.5 * span) {
+      a = na
+      b = nb
+      continue
+    }
+    return [a, b]
+  }
+  return [a, b]
+}

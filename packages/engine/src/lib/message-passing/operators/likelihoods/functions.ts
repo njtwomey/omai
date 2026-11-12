@@ -25,7 +25,7 @@ import { truncatedNormalMoments } from '../../core/truncated.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { centredMoments, resolvedVariance, shiftedSum } from '../../numerics/_moments.ts'
 import { Phi, phi, softplusOf } from '../../numerics/_scalar.ts'
-import { tiltedByQuadrature, type WindowHint } from '../../numerics/_tilted.ts'
+import { type TiltHint, tiltedByQuadrature } from '../../numerics/_tilted.ts'
 import { definedFunctionMessage, quadraturePort } from '../kernel/variational-numeric.ts'
 
 /** A function of the registry: its values, the kinks to split quadrature panels at, and its moments under a Gaussian where it has them in closed form. */
@@ -193,10 +193,7 @@ function tilt(fn: UnaryFunction, cavity: { mean: number; variance: number }, y: 
     if (!Number.isFinite(v)) return Number.NEGATIVE_INFINITY
     return power * (h * v - 0.5 * J * v * v)
   }
-  const hint: WindowHint | undefined =
-    fn.kinks === undefined
-      ? undefined
-      : { centre: cavity.mean, scale: Math.sqrt(cavity.variance), reach: 9, kinks: fn.kinks }
+  const hint: TiltHint | undefined = fn.kinks === undefined ? undefined : { kinks: fn.kinks }
   // Where the function is not defined (a square root of a negative value) the weight is zero: its value must not poison the moments.
   const t = tiltedByQuadrature(cavity, logf, hint, (x) => {
     const v = f(x)

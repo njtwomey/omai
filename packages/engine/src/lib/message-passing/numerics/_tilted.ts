@@ -1,21 +1,29 @@
 // The one-dimensional tilted integral of the numeric sites: the mass and moments of a Gaussian cavity times a factor of the
-// variable, on a panelled Gauss-Legendre grid laid where the factor lives (a window from the factor's own hint, split at its
+// variable, on a panelled Gauss-Legendre grid laid where the mass is (a window the shared finder scans for, split at the factor's
 // kinks) and then zoomed onto where the mass is found to be, so a cavity much wider than the likelihood (the first sweeps of
 // a run) and one much narrower both resolve. What the likelihood sites, the unary functions and the numeric priors share.
 
 import { ImproperMessageError } from '../core/errors.ts'
 import { shiftedSum } from './_moments.ts'
 import { gaussianGridOn } from './_quadrature.ts'
+import { findWindow } from './_windows.ts'
 
-/** Where a factor, as a function of the variable, lives: a centre and a scale, how far (in scales) to look, and the kinks to split panels at. */
-export interface WindowHint {
-  readonly centre: number
-  readonly scale: number
-  /** How many scales either side of the centre the factor is integrated over (default 120, for heavy tails). */
-  readonly reach?: number
+/**
+ * What a factor says about its integral beyond its density. Giving one (even an empty one) says the factor is narrower than a cavity
+ * may be, or has support of its own, so the window the integral is laid over is found by scanning for the mass of the factor times
+ * the cavity (`findWindow`) and a peak at the edge of the cavity's window is not an improper tilt; the factor does not describe where
+ * it lives.
+ */
+export interface TiltHint {
+  /**
+   * For a heavy-tailed factor whose core is far narrower than the window a scan finds (a Student-t against a wide cavity: its tail
+   * keeps the mass within 40 nats of the top out to hundreds of scales, and a grid over that cannot resolve the core): the window to
+   * integrate over, `reach` scales (default 120) either side of `centre`, within the cavity's. It replaces the scan.
+   */
+  readonly window?: { readonly centre: number; readonly scale: number; readonly reach?: number }
   /** Points where the log factor has a kink or a jump (the outcome of an absolute-value likelihood, the origin of a rectifier). */
   readonly kinks?: readonly number[]
-  /** Whether to zoom onto the mass found (default true); a heavy-tailed factor keeps its whole window, as the tails carry variance. */
+  /** Whether to zoom onto the mass found (default true); a heavy-tailed factor keeps the whole window the finder found, as the tails carry variance. */
   readonly zoom?: boolean
 }
 
@@ -31,6 +39,8 @@ export interface Tilted {
   readonly extra: readonly { readonly mean: number; readonly variance: number }[]
 }
 
+/** The nodes of each scan for the window of a hinted factor. */
+const WINDOW_SCAN = 201
 const PANELS = 80
 const ORDER = 8
 const ZOOMS = 6
@@ -115,15 +125,15 @@ function moments(
 
 /**
  * The log mass and the mean and variance of the density proportional to N(mean, variance) exp(logf(x)), by a panelled
- * Gauss-Legendre rule. The window starts at the cavity's mean plus or minus nine standard deviations, narrowed to the
- * factor's own window when a hint is given (a heavy-tailed likelihood far narrower than its cavity), split at the hint's
+ * Gauss-Legendre rule. The window starts at the cavity's mean plus or minus nine standard deviations, narrowed by a scan for the
+ * mass of the cavity times the factor when a hint is given (a likelihood far narrower than its cavity), split at the hint's
  * kinks; it is then zoomed onto the mass found, up to six times, so the rule resolves a factor much narrower than the
  * cavity as well as one much wider. With `fn` the mean and variance of `fn(x)` under the same density come back too (the
  * output of a unary function). The log weights are shifted by their maximum, so nothing underflows.
  *
  * @param cavity - The Gaussian message the factor is integrated against.
  * @param logf - The log of the (powered) factor.
- * @param hint - Where the factor lives, when that is known.
+ * @param hint - The kinks of the factor and whether to zoom, when it has any to say (this also finds its window by a scan).
  * @param fn - A function of the variable whose moments are wanted too.
  * @param more - Further functions of the variable whose moments are wanted (the conditional moments of another variable).
  * @returns The tilted log mass and moments.
@@ -132,7 +142,7 @@ function moments(
 export function tiltedByQuadrature(
   cavity: { readonly mean: number; readonly variance: number },
   logf: (x: number) => number,
-  hint?: WindowHint,
+  hint?: TiltHint,
   fn?: (x: number) => number,
   more: readonly ((x: number) => number)[] = [],
 ): Tilted {
@@ -142,15 +152,25 @@ export function tiltedByQuadrature(
   let lo = cavityLo
   let hi = cavityHi
   const kinks = hint?.kinks ?? []
-  if (hint !== undefined) {
-    const reach = hint.reach ?? 120
-    const a = Math.max(lo, hint.centre - reach * hint.scale)
-    const b = Math.min(hi, hint.centre + reach * hint.scale)
+  if (hint?.window !== undefined) {
+    const reach = hint.window.reach ?? 120
+    const a = Math.max(lo, hint.window.centre - reach * hint.window.scale)
+    const b = Math.min(hi, hint.window.centre + reach * hint.window.scale)
     // A cavity far from where the factor lives keeps its own window (the part of it nearest the factor).
     if (b > a) {
       lo = a
       hi = b
     }
+  } else if (hint !== undefined) {
+    // The window holding the mass of the cavity times the factor, found by scanning the cavity's own window.
+    const logCavity = (x: number): number => -0.5 * ((x - cavity.mean) / sd) ** 2
+    ;[lo, hi] = findWindow(
+      (xs) => Float64Array.from(xs, (x) => logCavity(x) + logf(x)),
+      cavityLo,
+      cavityHi,
+      cavity.mean,
+      WINDOW_SCAN,
+    )
   }
   let grid = evaluate(cavity, lo, hi, kinks, logf)
   let r = moments(grid, fn, more)

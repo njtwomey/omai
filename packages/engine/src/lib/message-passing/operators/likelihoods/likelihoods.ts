@@ -18,7 +18,7 @@ import { ParameterError } from '../../core/errors.ts'
 import { namedParams, type ParamSpec, param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
 import { lgammaOf, logPhi, logSigmoidOf } from '../../numerics/_scalar.ts'
-import { tiltedByQuadrature, type WindowHint } from '../../numerics/_tilted.ts'
+import { type TiltHint, tiltedByQuadrature } from '../../numerics/_tilted.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 import { glmRow } from '../lifts/rows.ts'
 import { numericOperator } from './numeric.ts'
@@ -38,8 +38,12 @@ export interface Likelihood {
   check?(y: number, p: Params): string | undefined
   /** The log density of the outcome as a function of the predictor, with the constants of `y` and the parameters precomputed. */
   density(y: number, p: Params): (u: number) => number
-  /** Where the density lives as a function of `u`, when it is narrower than a cavity may be (none: the cavity's own window). */
-  locate?(y: number, p: Params): WindowHint | undefined
+  /**
+   * What the integral needs to know of the density when it is narrower than a cavity may be: a hint, even an empty one, has the window
+   * found by scanning for the mass (none: the cavity's own window, and a peak at its edge is an improper tilt); its kinks, and
+   * whether its tails carry variance that a zoom would cut.
+   */
+  locate?(y: number, p: Params): TiltHint | undefined
 }
 
 const positive = (p: Params, name: string): string | undefined =>
@@ -75,7 +79,7 @@ const studentT: Likelihood = {
     const c = lgammaOf((df + 1) / 2) - lgammaOf(df / 2) - 0.5 * Math.log(df * Math.PI) - Math.log(scale)
     return (u) => c - ((df + 1) / 2) * Math.log(1 + ((y - u) / scale) ** 2 / df)
   },
-  locate: (y, p) => ({ centre: y, scale: numberParam(p, 'scale'), zoom: false }),
+  locate: (y, p) => ({ window: { centre: y, scale: numberParam(p, 'scale') }, zoom: false }),
 }
 
 const laplace: Likelihood = {
@@ -87,7 +91,7 @@ const laplace: Likelihood = {
     const scale = numberParam(p, 'scale')
     return (u) => -Math.log(2 * scale) - Math.abs(y - u) / scale
   },
-  locate: (y, p) => ({ centre: y, scale: numberParam(p, 'scale'), kinks: [y], zoom: false }),
+  locate: (y) => ({ kinks: [y], zoom: false }),
 }
 
 const asymmetricLaplace: Likelihood = {
@@ -107,7 +111,7 @@ const asymmetricLaplace: Likelihood = {
       return c - r * (tau - (r < 0 ? 1 : 0))
     }
   },
-  locate: (y, p) => ({ centre: y, scale: numberParam(p, 'scale'), kinks: [y], zoom: false }),
+  locate: (y) => ({ kinks: [y], zoom: false }),
 }
 
 const poissonLog: Likelihood = {
@@ -121,11 +125,7 @@ const poissonLog: Likelihood = {
     const c = y * logE - lgammaOf(y + 1)
     return (u) => c + y * u - E * Math.exp(u)
   },
-  locate: (y, p) => ({
-    centre: Math.log((y + 0.5) / numberParam(p, 'exposure', 1)),
-    scale: 1 / Math.sqrt(y + 1),
-    reach: 40,
-  }),
+  locate: () => ({}),
 }
 
 const poissonLogTruncated: Likelihood = {
@@ -145,15 +145,8 @@ const poissonLogTruncated: Likelihood = {
     }
   },
   // A count of one has a likelihood that tends to a constant as the rate goes to zero, so its mass is not near where the count is: the
-  // cavity's own window then.
-  locate: (y, p) =>
-    y === 1
-      ? undefined
-      : {
-          centre: Math.log((y + 0.5) / numberParam(p, 'exposure', 1)),
-          scale: 1 / Math.sqrt(y + 1),
-          reach: 40,
-        },
+  // cavity's own window then (and a peak at its edge is an improper tilt).
+  locate: (y) => (y === 1 ? undefined : {}),
 }
 
 const negativeBinomialLog: Likelihood = {
@@ -174,11 +167,7 @@ const negativeBinomialLog: Likelihood = {
       return c - (r + y) * logDen + y * logMu
     }
   },
-  locate: (y, p) => ({
-    centre: Math.log((y + 0.5) / numberParam(p, 'exposure', 1)),
-    scale: 1 / Math.sqrt(y + 1),
-    reach: 40,
-  }),
+  locate: () => ({}),
 }
 
 const weibullLog: Likelihood = {
@@ -195,10 +184,7 @@ const weibullLog: Likelihood = {
     const c = censored ? 0 : Math.log(k) + (k - 1) * logY
     return (u) => c - (censored ? 0 : k * u) - yk * Math.exp(-k * u)
   },
-  locate: (y, p) =>
-    numberParam(p, 'censored', 0) !== 0
-      ? undefined
-      : { centre: Math.log(y), scale: 1 / numberParam(p, 'shape'), reach: 40 },
+  locate: (_y, p) => (numberParam(p, 'censored', 0) !== 0 ? undefined : {}),
 }
 
 const logNormal: Likelihood = {
@@ -214,10 +200,7 @@ const logNormal: Likelihood = {
     const c = -logY - Math.log(sigma) - 0.5 * Math.log(2 * Math.PI)
     return (u) => (censored ? logPhi((u - logY) / sigma) : c - ((logY - u) / sigma) ** 2 / 2)
   },
-  locate: (y, p) =>
-    numberParam(p, 'censored', 0) !== 0
-      ? undefined
-      : { centre: Math.log(y), scale: numberParam(p, 'sigma'), reach: 30 },
+  locate: (_y, p) => (numberParam(p, 'censored', 0) !== 0 ? undefined : {}),
 }
 
 /** log of the binomial coefficient. */
@@ -240,14 +223,7 @@ const binomialLogit: Likelihood = {
     const c = logChoose(n, y)
     return (u) => c + y * logSigmoidOf(u) + (n - y) * logSigmoidOf(-u)
   },
-  locate: (y, p) => {
-    const n = numberParam(p, 'n')
-    return {
-      centre: Math.log((y + 0.5) / (n - y + 0.5)),
-      scale: Math.sqrt(1 / (y + 0.5) + 1 / (n - y + 0.5)),
-      reach: 100,
-    }
-  },
+  locate: () => ({}),
 }
 
 const binomialProbit: Likelihood = {
@@ -260,10 +236,7 @@ const binomialProbit: Likelihood = {
     const c = logChoose(n, y)
     return (u) => c + y * logPhi(u) + (n - y) * logPhi(-u)
   },
-  locate: (y, p) => {
-    const n = numberParam(p, 'n')
-    return { centre: 0.6 * Math.log((y + 0.5) / (n - y + 0.5)), scale: 1, reach: 100 }
-  },
+  locate: () => ({}),
 }
 
 /** The cut points around category `y` from the parameters, with the checks: the lower and upper cut (infinite at the ends). */
@@ -282,13 +255,6 @@ const ordinalCheck = (y: number, p: Params): string | undefined => {
   return cuts.every((c, i) => i === 0 || c > (cuts[i - 1] as number)) ? undefined : 'the cut points must increase'
 }
 
-const ordinalLocate = (y: number, p: Params): WindowHint => {
-  const cuts = vectorParam(p, 'cuts')
-  const lower = y === 0 ? (cuts[0] as number) - 1 : (cuts[y - 1] as number)
-  const upper = y === cuts.length ? (cuts[cuts.length - 1] as number) + 1 : (cuts[y] as number)
-  return { centre: (lower + upper) / 2, scale: 1 + (upper - lower) / 2, reach: 100 }
-}
-
 const ordinalProbit: Likelihood = {
   name: 'ordinal-probit',
   description:
@@ -299,7 +265,7 @@ const ordinalProbit: Likelihood = {
     const { lower, upper } = ordinalCuts(y, p)
     return (u) => logDiffPhi(lower - u, upper - u)
   },
-  locate: ordinalLocate,
+  locate: () => ({}),
 }
 
 /** log (sigmoid(b) - sigmoid(a)) for a < b, stable at both ends: sigmoid(b) sigmoid(-a) (1 - exp(a - b)). */
@@ -318,7 +284,7 @@ const ordinalLogit: Likelihood = {
     const { lower, upper } = ordinalCuts(y, p)
     return (u) => logDiffSigmoid(lower - u, upper - u)
   },
-  locate: ordinalLocate,
+  locate: () => ({}),
 }
 
 /**
