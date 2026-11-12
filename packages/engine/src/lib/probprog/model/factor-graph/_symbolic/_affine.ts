@@ -41,7 +41,7 @@ import {
   operatorOnRandom,
   stickBreakingNeedsDimension,
 } from '../_reasons.ts'
-import { applyAff, applyGamma, extremum, mulAff, quotientByChain } from './_functions.ts'
+import { applyAff, applyGamma, clipAff, extremum, mulAff, quotientByChain } from './_functions.ts'
 import { compare, gather, pick, special, whereGate } from './_gates.ts'
 
 /**
@@ -254,6 +254,13 @@ export function symOp(
           }
         }),
       }
+    case 'clip':
+      // Known bounds: one more step in the chain of the value's `apply` factor (the Cholesky factor of a random correlation, `sqrt(clip(1 - rho^2, ...))`).
+      return cx.zip([a, b, args[2] as Sym], ([x, lo, hi], i) => {
+        if (!isConstCell(lo as Cell) || !isConstCell(hi as Cell)) throw operatorOnRandom(op)
+        const bound = (c: unknown): number => (c as Cell & { kind: 'aff' }).aff.offset
+        return { kind: 'aff', aff: clipAff(cx, affOf(x as Cell), bound(lo), bound(hi), i) }
+      })
     default:
       throw operatorOnRandom(op)
   }
