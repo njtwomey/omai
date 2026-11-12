@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -49,6 +50,17 @@ export default function Story(): ReactNode {
         piece takes whatever is left.
       </p>
 
+      <Equation
+        label={
+          <>
+            Each break <Tex>b_k</Tex> is a share of what is left, and the weight <Tex>w_k</Tex> is the piece it cuts off
+          </>
+        }
+        reading="Each break b k is uniform between 0 and 1. The weight w k is b k times the product, over the earlier pieces j, of one minus b j."
+      >
+        {String.raw`b_k \sim \Beta(1, 1), \qquad w_k = b_k \prod_{j < k} (1 - b_j)`}
+      </Equation>
+
       <h2>What we fit</h2>
 
       <p>
@@ -56,6 +68,18 @@ export default function Story(): ReactNode {
         the model how many. We tell it only that each group is a bell curve of width{' '}
         <span className="num">{WIDTH}</span>. The model has to find a centre and a weight for each piece.
       </p>
+
+      <Equation
+        label={
+          <>
+            The model: <Tex>\mu_k</Tex> is the centre of piece <Tex>k</Tex>, and <Tex>z_i</Tex> is the piece that number{' '}
+            <Tex>i</Tex> belongs to
+          </>
+        }
+        reading={`Each centre mu k is normal with mean 0 and spread 4. Each number belongs to a piece z i chosen with chances w. The number y i is normal around the centre of its piece with spread ${WIDTH}.`}
+      >
+        {String.raw`\mu_k \sim \Gauss(0, 4^2), \qquad z_i \sim \Cat(w), \qquad y_i \sim \Gauss(\mu_{z_i},\, ${WIDTH}^2)`}
+      </Equation>
 
       <p>
         We use expectation propagation. Each number sends a message to the pieces. A message is a bell curve that says

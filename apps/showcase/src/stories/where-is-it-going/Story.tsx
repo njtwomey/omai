@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -49,11 +50,32 @@ export default function Story(): ReactNode {
         The velocity changes by a small random push, of size <span className="num">{PUSH}</span>.
       </p>
 
+      <Equation
+        label={
+          <>
+            The motion: the state <Tex>{String.raw`\xvec_t`}</Tex> holds the position <Tex>p_t</Tex> and the velocity{' '}
+            <Tex>v_t</Tex>, and <Tex>\Qmat</Tex> is the covariance of the push
+          </>
+        }
+        reading="The next state is normal around the matrix A times the current state, with covariance Q. The matrix A adds the time step times the velocity to the position and leaves the velocity as it is."
+      >
+        {String.raw`\xvec_t = \begin{pmatrix} p_t \\ v_t \end{pmatrix}, \qquad
+          \xvec_{t+1} \sim \Gauss(\Amat\, \xvec_t,\; \Qmat), \qquad
+          \Amat = \begin{pmatrix} 1 & ${DT} \\ 0 & 1 \end{pmatrix}`}
+      </Equation>
+
       <p>
         We also say how a reading is made: it is the position plus an error with a spread of{' '}
         <span className="num">{READING_SD}</span>. Before any reading, we only know that the first position is near 0
         and the first velocity is near 1.
       </p>
+
+      <Equation
+        label="A reading sees the position only"
+        reading={`A reading y t is normal around the position p t, with spread ${READING_SD}.`}
+      >
+        {String.raw`y_t \sim \Gauss(p_t,\; ${READING_SD}^2)`}
+      </Equation>
 
       <h2>Messages along a chain</h2>
 

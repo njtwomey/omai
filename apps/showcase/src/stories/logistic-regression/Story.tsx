@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -60,14 +61,22 @@ export default function Story(): ReactNode {
       <h2>A chance that rises across a line</h2>
 
       <p>
-        Logistic regression gives each point a score. The score is an offset, plus a weight times measurement 1, plus a
-        weight times measurement 2. A higher score makes yes more likely. An S-shaped curve turns the score into a
-        chance. The chance is near 0 for a very low score, near 1 for a very high score and one half at a score of 0.
+        Logistic regression gives each point a score <Tex>s</Tex>. The score is an offset <Tex>w_0</Tex>, plus a weight{' '}
+        <Tex>w_1</Tex> times measurement 1 (<Tex>x_1</Tex>), plus a weight <Tex>w_2</Tex> times measurement 2 (
+        <Tex>x_2</Tex>). A higher score makes yes more likely. An S-shaped curve turns the score into a chance. The
+        chance is near 0 for a very low score, near 1 for a very high score and one half at a score of 0.
       </p>
 
+      <Equation
+        label="The score, and the chance of yes"
+        reading="The score s is w zero plus w one times x one plus w two times x two. The chance of yes is the sigmoid of s, which is one over one plus e to the minus s."
+      >
+        {String.raw`s = w_0 + w_1 x_1 + w_2 x_2, \qquad p(\text{yes}) = \sigmoid(s) = \frac{1}{1 + e^{-s}}`}
+      </Equation>
+
       <p>
-        The places where the score is 0 form a straight line across the plane. This is the boundary. The chance of yes
-        rises smoothly as a point moves away from the boundary on the yes side.
+        The places where the score is 0, <Tex>s = 0</Tex>, form a straight line across the plane. This is the boundary.
+        The chance of yes rises smoothly as a point moves away from the boundary on the yes side.
       </p>
 
       <p>
@@ -79,8 +88,8 @@ export default function Story(): ReactNode {
 
       <p>
         The Bayesian way keeps every set of the three numbers, each with a degree of belief. We start with a bell curve
-        for each number, centred on 0 with a spread of 2. Each marked point then narrows the belief. The result is
-        called the posterior: a belief about the three numbers together.
+        for each number, centred on 0 with a spread of 2: <Tex>\Gauss(0, 2^2)</Tex>. Each marked point then narrows the
+        belief. The result is called the posterior: a belief about the three numbers together.
       </p>
 
       <p>
@@ -138,10 +147,10 @@ export default function Story(): ReactNode {
 
               <p>
                 The 0.5 line is straight. The other lines spread apart where the model has seen little data. That is the
-                extra doubt from averaging over all the weights. Along the row where measurement 2 ={' '}
-                <span className="num">{GAP_ROWS[0]}</span>, in the middle of the points, the 0.2 and 0.8 lines are{' '}
-                <span className="num">{fixed(result.gaps.centre, 1)}</span> apart. Along the row where measurement 2 ={' '}
-                <span className="num">{GAP_ROWS[1]}</span>, near the top of the figure, they are{' '}
+                extra doubt from averaging over all the weights. Along the row where <Tex>{`x_2 = ${GAP_ROWS[0]}`}</Tex>
+                , in the middle of the points, the 0.2 and 0.8 lines are{' '}
+                <span className="num">{fixed(result.gaps.centre, 1)}</span> apart. Along the row where{' '}
+                <Tex>{`x_2 = ${GAP_ROWS[1]}`}</Tex>, near the top of the figure, they are{' '}
                 <span className="num">{fixed(result.gaps.edge, 1)}</span> apart.
               </p>
 
@@ -208,9 +217,16 @@ export default function Story(): ReactNode {
               <h2>What a weight means</h2>
 
               <p>
-                Adding one unit to a measurement adds its weight to the score. That multiplies the odds of yes by e to
-                the power of the weight, where e is about 2.72.
+                Adding one unit to a measurement adds its weight to the score. That multiplies the odds of yes by{' '}
+                <Tex>{'e^{w}'}</Tex>, where <Tex>w</Tex> is the weight and <Tex>e</Tex> is about 2.72.
               </p>
+
+              <Equation
+                label="The odds of yes"
+                reading="The chance of yes over the chance of no is e to the s, which is e to the w zero, times e to the w one x one, times e to the w two x two."
+              >
+                {String.raw`\frac{p}{1 - p} = e^{s} = e^{w_0}\, e^{w_1 x_1}\, e^{w_2 x_2}`}
+              </Equation>
 
               <Aside>
                 The odds of yes are the chance of yes divided by the chance of no. A chance of 0.8 is odds of 4 to 1.

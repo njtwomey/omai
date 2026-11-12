@@ -1,6 +1,7 @@
 import { type ReactNode, useMemo } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -54,6 +55,17 @@ export default function Story(): ReactNode {
         20,000 times. The share of pairs in which B is higher is the probability that B really is the better button.
       </p>
 
+      <Equation
+        label={
+          <>
+            The chance that B is better, with <Tex>\theta_A</Tex> and <Tex>\theta_B</Tex> the two click rates
+          </>
+        }
+        reading="The probability that B is better is the probability that the rate of B is greater than the rate of A."
+      >
+        {String.raw`P(\text{B is better}) = P(\theta_B > \theta_A)`}
+      </Equation>
+
       <p>
         Test dashboards update as visitors arrive, and it is tempting to stop as soon as the number looks good. So we
         also run the same calculation after the first 20 visitors of each version, then 40, 60 and so on up to all of
@@ -64,6 +76,17 @@ export default function Story(): ReactNode {
         The two beliefs are exact: each is a Beta curve that the library works out from the counts. The probability that
         B is better is sampled, by comparing draws from the two curves.
       </p>
+
+      <Equation
+        label={
+          <>
+            The belief about each rate, from <Tex>c</Tex> clicks among <Tex>n</Tex> visitors
+          </>
+        }
+        reading="The rate theta of a button, after c clicks among n visitors, has a Beta distribution with one plus c and one plus n minus c."
+      >
+        {String.raw`\theta \mid c \sim \Beta(1 + c,\; 1 + n - c)`}
+      </Equation>
 
       <Aside>
         A significance test asks a different question: how surprising would these counts be if the buttons were

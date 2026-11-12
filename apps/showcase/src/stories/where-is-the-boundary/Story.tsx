@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -51,11 +52,30 @@ export default function Story(): ReactNode {
         curve: near 0 for large negative scores, near 1 for large positive scores and one half at 0.
       </p>
 
+      <Equation
+        label={
+          <>
+            The chance of class 2 at a place <Tex>{String.raw`\xvec`}</Tex> is the S-shaped curve <Tex>\Phi</Tex> of its
+            score <Tex>f</Tex>
+          </>
+        }
+        reading="The chance of class 2 at the place x is Phi of f of x, where Phi is the S-shaped curve of the normal distribution and f is the hidden score."
+      >
+        {String.raw`p(\text{class 2} \mid \xvec) = \Phi\big(f(\xvec)\big)`}
+      </Equation>
+
       <p>
         We do not know the score at any place, but we say it is smooth: two places that are close have similar scores.
         How close is close is the <em>length scale</em>, and it is found from the data. A smooth hidden function with a
         bell curve at every place is a Gaussian process, so this model is a Gaussian process classifier.
       </p>
+
+      <Equation
+        label={<>The score is smooth: places with a small distance have scores that move together</>}
+        reading="The score f is a Gaussian process with mean zero and a kernel k that is large for places close together."
+      >
+        {String.raw`f \sim \GP\big(0,\; k(\xvec, \xvec')\big)`}
+      </Equation>
 
       <Aside>
         A bell curve is a normal distribution with a mean (its centre) and a spread (its width). A Gaussian process

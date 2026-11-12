@@ -42,6 +42,8 @@ export interface ModelRunReplayProps {
   readonly narrowBelow?: number
   /** The gap between the rows (or columns) of the layout, in pixels. */
   readonly rankSep?: number
+  /** Write the messages on the edges as TeX (`\\Gauss(\\mu = 1, \\sigma^2 = 4)`) where the engine's words have a TeX form (default false). */
+  readonly tex?: boolean
   readonly className?: string
 }
 
@@ -137,7 +139,7 @@ export function replayLines(
  */
 export function ModelRunReplay(props: ModelRunReplayProps): ReactElement {
   const { record, label = 'The messages of the run', fps = 1, startAt = 'first', describe, width, className } = props
-  const { rankSep, narrowBelow = 480 } = props
+  const { rankSep, narrowBelow = 480, tex = false } = props
   const root = useRef<HTMLElement | null>(null)
   const [narrow, setNarrow] = useState(false)
   useEffect(() => {
@@ -160,8 +162,8 @@ export function ModelRunReplay(props: ModelRunReplayProps): ReactElement {
   const index = Math.min(playback.frame, Math.max(0, count - 1))
   const step = record.steps[index]?.step ?? 0
   const drawn = useMemo(() => replayDrawing(record), [record])
-  const frames = useMemo(() => modelRunFrames(drawn), [drawn])
-  const overlay = useMemo(() => modelRunOverlay(drawn, step), [drawn, step])
+  const frames = useMemo(() => modelRunFrames(drawn, { tex }), [drawn, tex])
+  const overlay = useMemo(() => modelRunOverlay(drawn, step, { tex }), [drawn, step, tex])
   const decorate = useMemo(() => modelRunDecorate(drawn, step), [drawn, step])
   const words = useMemo(
     () =>

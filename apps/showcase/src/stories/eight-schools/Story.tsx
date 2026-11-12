@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import schoolsSource from '../../../../../packages/engine/src/lib/probprog/models/schools.ts?raw'
 import { snippetOf } from '../../../../site/src/shell/snippet.ts'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -54,25 +55,40 @@ export default function Story(): ReactNode {
 
       <p>
         A model in between works like this. Each school has its own true effect. The true effects come from one
-        population of schools, with an unknown mean and an unknown spread called <em>tau</em>.
+        population of schools, with an unknown mean <Tex>\mu</Tex> and an unknown spread <Tex>\tau</Tex>.
       </p>
 
       <p>
-        If tau is large, the schools really differ, and each estimate stays mostly alone. If tau is near zero, the
-        schools are the same. The data estimate tau with everything else, and tau decides how far each school is pulled
-        towards the others. A school with a noisy estimate has little to say for itself, so it relies more on the
-        others. This is called <em>borrowing strength</em>.
+        If <Tex>\tau</Tex> is large, the schools really differ, and each estimate stays mostly alone. If <Tex>\tau</Tex>{' '}
+        is near zero, the schools are the same. The data estimate <Tex>\tau</Tex> with everything else, and{' '}
+        <Tex>\tau</Tex> decides how far each school is pulled towards the others. A school with a noisy estimate has
+        little to say for itself, so it relies more on the others. This is called <em>borrowing strength</em>.
       </p>
 
+      <Equation
+        label={
+          <>
+            The model, with <Tex>\sigma_j</Tex> the standard error of school <Tex>j</Tex>
+          </>
+        }
+        reading="The mean mu is normal with mean 0 and spread 5. The spread tau is half-Cauchy with scale 5. The effect theta j of school j is mu plus tau times a standard normal z j. The estimate y j is normal around theta j with spread sigma j."
+      >
+        {String.raw`\begin{aligned}
+          \mu &\sim \Gauss(0, 5^2), \qquad \tau \sim \HalfCauchy(5) \\
+          \theta_j &= \mu + \tau\, z_j, \qquad z_j \sim \Gauss(0, 1) \\
+          y_j &\sim \Gauss(\theta_j, \sigma_j^2)
+        \end{aligned}`}
+      </Equation>
+
       <Aside>
-        The model writes each school&rsquo;s effect as the common mean plus tau times a standard normal. That is the
-        same distribution as a normal with spread tau, and it avoids a narrow funnel at small tau that samplers struggle
-        to enter.
+        The model writes each school&rsquo;s effect as the common mean plus <Tex>\tau</Tex> times a standard normal.
+        That is the same distribution as a normal with spread <Tex>\tau</Tex>, and it avoids a narrow funnel at small{' '}
+        <Tex>\tau</Tex> that samplers struggle to enter.
       </Aside>
 
       <p>
         We condition the model on the eight estimates with NUTS. It draws all ten unknowns together: the eight true
-        effects, their mean and tau. Press play to run it.
+        effects, their mean and <Tex>\tau</Tex>. Press play to run it.
       </p>
 
       <Play run={run} label="Pool the schools" estimate="about five seconds" />
@@ -120,17 +136,27 @@ export default function Story(): ReactNode {
 
               <h2>What the data cannot say</h2>
 
-              <p>All of this depends on tau. Here are its draws.</p>
+              <p>
+                All of this depends on <Tex>\tau</Tex>. Here are its draws.
+              </p>
 
               <Figure
-                caption={`Draws of tau, the spread of the true effects. Its prior is a half-Cauchy with scale 5, which peaks at zero.${r.beyond > 0 ? ` ${r.beyond} ${r.beyond === 1 ? 'draw' : 'draws'} above ${SPREAD_LIMIT} ${r.beyond === 1 ? 'is' : 'are'} off the right edge.` : ''}`}
+                caption={
+                  <>
+                    Draws of <Tex>\tau</Tex>, the spread of the true effects. Its prior is a half-Cauchy with scale 5,
+                    which peaks at zero.
+                    {r.beyond > 0
+                      ? ` ${r.beyond} ${r.beyond === 1 ? 'draw' : 'draws'} above ${SPREAD_LIMIT} ${r.beyond === 1 ? 'is' : 'are'} off the right edge.`
+                      : ''}
+                  </>
+                }
               >
                 <SpreadFigure result={result} limit={SPREAD_LIMIT} />
               </Figure>
 
               <p>
-                The middle of tau is about <span className="num">{fixed(result.tau.median)}</span>. Nine in ten of its
-                draws lie between <span className="num">{fixed(result.tau.lo)}</span> and{' '}
+                The middle of <Tex>\tau</Tex> is about <span className="num">{fixed(result.tau.median)}</span>. Nine in
+                ten of its draws lie between <span className="num">{fixed(result.tau.lo)}</span> and{' '}
                 <span className="num">{fixed(result.tau.hi)}</span>. That range holds two cases: schools that are nearly
                 identical, and schools whose true effects spread by about{' '}
                 <span className="num">{fixed(result.tau.hi, 0)}</span> points. Eight estimates this noisy cannot tell
@@ -148,13 +174,14 @@ export default function Story(): ReactNode {
 
               <p>
                 Averaging all eight gives one number to every school. Reading them separately gives eight numbers that
-                differ mostly by chance. The pooled answer lies between the two, and the data, through tau, decide how
-                much the schools may differ. The same structure appears wherever groups have different amounts of data.
+                differ mostly by chance. The pooled answer lies between the two, and the data, through <Tex>\tau</Tex>,
+                decide how much the schools may differ. The same structure appears wherever groups have different
+                amounts of data.
               </p>
 
               <p>
                 Press <em>Run again</em> to use a new seed. The data stay the same, and the picture changes little,
-                except in the tail of tau, which is the hardest part to pin down.
+                except in the tail of <Tex>\tau</Tex>, which is the hardest part to pin down.
               </p>
 
               <Code source={MODEL} title="schools.ts, in omai-engine/probprog/models" heading="The model" />

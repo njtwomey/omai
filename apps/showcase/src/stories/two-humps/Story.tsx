@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -57,6 +58,18 @@ export default function Story(): ReactNode {
         curve around its own centre, and the two curves share one width. Some fraction of the eruptions belong to the
         first kind and the rest to the second.
       </p>
+
+      <Equation
+        label={
+          <>
+            The model: <Tex>z_i</Tex> is the kind of eruption <Tex>i</Tex>, <Tex>\pi_k</Tex> the share of kind{' '}
+            <Tex>k</Tex>
+          </>
+        }
+        reading="Each eruption has a kind z i, chosen with shares pi. The wait y i is normal around the centre mu of its kind, and both kinds share the width sigma."
+      >
+        {String.raw`z_i \sim \Cat(\pi), \qquad y_i \mid z_i = k \;\sim\; \Gauss(\mu_k, \sigma^2), \qquad \mu_1 < \mu_2`}
+      </Equation>
 
       <p>
         Nobody recorded which eruption is which. That is the hidden part: a label for each of the {DATA.rows} eruptions.

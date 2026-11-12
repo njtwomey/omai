@@ -12,6 +12,17 @@ describe('maths', () => {
     expect(more['\\R']).toBe('\\mathbb{R}')
     expect(macros['\\R']).toBeUndefined()
   })
+  it('has the macros the stories write: functions, the differential and the half distributions', () => {
+    for (const tex of [
+      '\\sigmoid(\\xvec^\\top\\betavec) = \\frac{1}{1 + e^{-z}}',
+      '\\logit(p) = \\log\\frac{p}{1-p}',
+      'm = \\int \\theta\\, q(\\theta) \\dd\\theta',
+      '\\tau \\sim \\HalfCauchy(5), \\; \\sigma \\sim \\HalfNormal(2)',
+      '\\KL(q \\| p), \\; \\expect[\\theta], \\; \\Gauss(\\mu, \\sigma^2)',
+    ])
+      expect(texError(tex), tex).toBeUndefined()
+    expect(texToHtml('\\dd x', { output: 'html' })).toContain('mathrm')
+  })
   it('typesets with macros in every output, never throwing', () => {
     expect(texToHtml('\\norm{\\xvec}', { output: 'html' })).toContain('katex')
     expect(texToHtml('\\frac{1}', { display: true })).toContain('KaTeX parse error')

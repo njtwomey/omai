@@ -13,7 +13,8 @@ Headless views of exposition records (`omai-engine/exposition`): for each kind o
 - function `elboRunView`: ELBO, gradient, guide parameters and beliefs of a variational run: `elboRunView(record)`. `src/views/elbo-run.ts:281` `omai-render/views`
 - function `energyView`: Energy and energy-transition distributions with E-BFMI per chain: `energyView(chainDiagnostics(draws, { energy }))`. `src/views/chain-charts.ts:262` `omai-render/views`
 - function `essView`: Effective sample size by quantile or as the draws accumulate: `essView(chainDiagnostics(draws, { essCurves }))`. `src/views/chain-charts.ts:198` `omai-render/views`
-- function `modelRunScene`: A model run at a step: beliefs in the plate diagram's nodes, messages on its edges. `src/views/model-run.ts:206` `omai-render/views`
+- function `messageTex`: A message in words (`N(μ = 2, σ² = 4)`) as TeX: `messageTex(text)`. `src/views/model-run.ts:65` `omai-render/views`
+- function `modelRunScene`: A model run at a step: beliefs in the plate diagram's nodes, messages on its edges. `src/views/model-run.ts:263` `omai-render/views`
 - function `pairView`: Pair plot of a few quantities with the divergent transitions marked: `pairView(chainDiagnostics(draws, { divergent }))`. `src/views/chain-charts.ts:316` `omai-render/views`
 - function `posteriorComparisonView`: Methods' posteriors over the oracle's as densities, ECDFs or ECDF differences: `posteriorComparisonView(posteriorComparison(methods, { truth }))`. `src/views/posterior-comparison.ts:99` `omai-render/views`
 - function `posteriorPairsView`: Corner plot of methods' posterior draws at a step: `posteriorPairsView(r)`. `src/views/posterior-pairs.ts:123` `omai-render/views`

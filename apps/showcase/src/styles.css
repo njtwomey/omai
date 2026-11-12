@@ -79,6 +79,44 @@
   font-weight: 600;
 }
 
+/* Maths (omai-render's TeX through KaTeX; the stylesheet and fonts come with its React module). The colour is the text's own, so
+   it follows the theme. Inline maths is a touch smaller than KaTeX's default, which sits large beside a serif. */
+.story-tex {
+  /* a formula stays on one line, so "h = 0.59" never breaks after the sign */
+  display: inline-block;
+  vertical-align: baseline;
+}
+.story-tex .katex {
+  font-size: 1.05em;
+}
+/* A value read from the result, set in a formula, looks like a number in the prose. */
+.story-prose .wb-slot {
+  color: inherit;
+  font-weight: 600;
+}
+/* A display equation: centred in its box, which scrolls sideways when the line is wider than the column. */
+.story-equation-box {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.15rem;
+}
+.story-equation-box .katex-display {
+  margin: 0.5em 0;
+}
+.story-equation-box .katex-display > .katex {
+  width: max-content;
+  max-width: none;
+  margin-inline: auto;
+}
+.story-prose li > .story-equation {
+  margin-block: 0.7em 0.2em;
+}
+/* In a table of sans-serif figures a formula is a little larger, so its subscripts stay legible. */
+.story-prose td .story-tex .katex,
+.story-prose th .story-tex .katex {
+  font-size: 1.15em;
+}
+
 /* What comes in once the result exists: a short fade and rise, none when motion is reduced. */
 @keyframes story-reveal {
   from {

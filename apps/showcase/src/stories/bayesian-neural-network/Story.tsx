@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -20,7 +21,7 @@ export default function Story(): ReactNode {
   return (
     <StoryPage>
       <p>
-        Here are sixteen measurements. For each one, we set a value <em>x</em> and read off a value <em>y</em>. The
+        Here are sixteen measurements. For each one, we set a value <Tex>x</Tex> and read off a value <Tex>y</Tex>. The
         points follow a gentle wave with a little noise, in two clumps. Nothing was measured in the gap between them or
         beyond the two ends.
       </p>
@@ -30,10 +31,17 @@ export default function Story(): ReactNode {
       </Figure>
 
       <p>
-        Fit a small neural network to these points. It has one input, <em>x</em>, and three hidden units. Each unit
-        multiplies <em>x</em> by a weight, adds a bias and applies <code>tanh</code>. The output is a weighted sum of
+        Fit a small neural network to these points. It has one input, <Tex>x</Tex>, and three hidden units. Each unit
+        multiplies <Tex>x</Tex> by a weight, adds a bias and applies <code>tanh</code>. The output is a weighted sum of
         the three units plus a bias. That makes ten numbers.
       </p>
+
+      <Equation
+        label="The network"
+        reading="The output f of x is a bias b zero plus the sum over three hidden units j of an output weight v j times the hyperbolic tangent of w j times x plus a bias b j."
+      >
+        {String.raw`f(x) = b_0 + \sum_{j=1}^{3} v_j \tanh(w_j\, x + b_j)`}
+      </Equation>
 
       <p>
         The usual way is to train it: change the ten numbers until the curve passes close to the points, then keep that
@@ -45,9 +53,9 @@ export default function Story(): ReactNode {
 
       <p>
         The Bayesian version keeps every setting of the ten numbers that fits. A weight is probably not large, so each
-        gets a normal distribution with a spread of 1. The data then make networks that pass close to the sixteen points
-        more likely, and networks that miss them less likely. The result is a distribution over networks, called the{' '}
-        <em>posterior</em>. One draw from it is one complete network.
+        gets a normal distribution with a spread of 1, <Tex>\Gauss(0, 1^2)</Tex>. The data then make networks that pass
+        close to the sixteen points more likely, and networks that miss them less likely. The result is a distribution
+        over networks, called the <em>posterior</em>. One draw from it is one complete network.
       </p>
 
       <p>
@@ -77,7 +85,7 @@ export default function Story(): ReactNode {
               <p>
                 The sampler kept {result.draws.toLocaleString('en-GB')} networks. The figure shows {result.fan.length}{' '}
                 of them as thin curves, with one picked out in green. The grey line is the average of all of them, and
-                the band holds the middle 90% at each <em>x</em>.
+                the band holds the middle 90% at each <Tex>x</Tex>.
               </p>
 
               <Figure
@@ -89,10 +97,10 @@ export default function Story(): ReactNode {
 
               <p>
                 Each network fits the points. Over the points, the band is about{' '}
-                <span className="num">{fixed(r.dataWidth)}</span> wide on average. At <em>x</em> = 0, in the middle of
+                <span className="num">{fixed(r.dataWidth)}</span> wide on average. At <Tex>x = 0</Tex>, in the middle of
                 the gap, it is <span className="num">{fixed(r.gapWidth)}</span> wide, which is{' '}
-                <span className="num">{fixed(r.gapRatio, 1)}</span> times as much. At <em>x</em> = −3 it is{' '}
-                <span className="num">{fixed(r.leftWidth)}</span> wide, and at <em>x</em> = 3 it is{' '}
+                <span className="num">{fixed(r.gapRatio, 1)}</span> times as much. At <Tex>x = -3</Tex> it is{' '}
+                <span className="num">{fixed(r.leftWidth)}</span> wide, and at <Tex>x = 3</Tex> it is{' '}
                 <span className="num">{fixed(r.rightWidth)}</span> wide. That is{' '}
                 <span className="num">{fixed(r.leftRatio, 1)}</span> and{' '}
                 <span className="num">{fixed(r.rightRatio, 1)}</span> times the width over the points.{' '}

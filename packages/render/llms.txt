@@ -165,7 +165,7 @@ below are the folders of `src`; `react` is large and its index is nested by its 
 - [svg](index/svg.md): Headless SVG and PNG output: `chartToSvg` and `sceneToSvg` give SVG text, `composeSvg` puts charts and labels in one document, `svgToPng` and `svgToPixels` rasterise it in a browser, `encodePng` writes PNG bytes with no dependency ... (7 entries)
 - [theme](index/theme.md): The look of every figure: light and dark design tokens (`tokens`, `cssText`), categorical, sequential and diverging palettes with colour-blindness checks (`sequentialRamp`, `colourBlindCheck`), the registered ECharts themes (`echartsTheme`, `baseOption`) ... (5 entries)
 - [trace](index/trace.md): The standard figures of traced runs (`Run` from `omai-engine/trace`): `metricChart` and `runsChart` for metric curves with smoothing and overlaid runs, `parameterTrajectories`, `histogramsOverTime` and `normHeatmap` for tensors ... (8 entries)
-- [views](index/views.md): Headless views of exposition records (`omai-engine/exposition`): for each kind of record a method returns (decision surfaces, regularisation paths, trees, clustering steps, attributions and many more), the chart option, scene or player frames that explain it. (21 entries)
+- [views](index/views.md): Headless views of exposition records (`omai-engine/exposition`): for each kind of record a method returns (decision surfaces, regularisation paths, trees, clustering steps, attributions and many more), the chart option, scene or player frames that explain it. (22 entries)
 
 ## For tools
 

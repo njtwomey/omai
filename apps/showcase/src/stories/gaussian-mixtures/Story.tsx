@@ -2,6 +2,7 @@ import { type ReactNode, useState } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
 import { Choice, type ChoiceOption } from '../../kit/Choice.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -79,6 +80,18 @@ export default function Story(): ReactNode {
         and a spread. The model has to find the groups from the dots alone.
       </p>
 
+      <Equation
+        label={
+          <>
+            A mixture: group <Tex>k</Tex> has weight <Tex>w_k</Tex>, centre <Tex>{String.raw`\muvec_k`}</Tex> and spread{' '}
+            <Tex>{String.raw`\Sigmamat_k`}</Tex>
+          </>
+        }
+        reading="The density of a point x is the sum over the groups k of the weight w k times a normal density with centre mu k and covariance Sigma k."
+      >
+        {String.raw`p(\xvec) = \sum_{k} w_k\, \Gauss(\xvec;\, \muvec_k,\, \Sigmamat_k)`}
+      </Equation>
+
       <h2>Build the mixture</h2>
 
       <p>
@@ -107,6 +120,17 @@ export default function Story(): ReactNode {
         for 6 or 8 groups, and their weights come from stick-breaking. The first group takes a part of a stick of length
         1. The next takes a part of what is left, and so on. A group the data do not need ends up with almost nothing.
       </p>
+
+      <Equation
+        label={
+          <>
+            The weights by stick-breaking: <Tex>b_k</Tex> is the part of what is left that group <Tex>k</Tex> takes
+          </>
+        }
+        reading="Each part b k is uniform between 0 and 1. The weight w k is b k times the product, over the earlier groups j, of one minus b j."
+      >
+        {String.raw`b_k \sim \Beta(1, 1), \qquad w_k = b_k \prod_{j < k} (1 - b_j)`}
+      </Equation>
 
       <Choice
         label="Number of groups"

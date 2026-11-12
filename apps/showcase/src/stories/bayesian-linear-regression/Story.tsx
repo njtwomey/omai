@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex, tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -22,26 +23,43 @@ export default function Story(): ReactNode {
   return (
     <StoryPage>
       <p>
-        Here are twelve measurements. For each one, we set a value <em>x</em> and read off a value <em>y</em>. The
+        Here are twelve measurements. For each one, we set a value <Tex>x</Tex> and read off a value <Tex>y</Tex>. The
         points rise from left to right, but none lies exactly on a line.
       </p>
 
-      <Figure caption="The twelve points, between x = 0.3 and x = 4.3." wide>
+      <Figure
+        caption={
+          <>
+            The twelve points, between <Tex>x = 0.3</Tex> and <Tex>x = 4.3</Tex>.
+          </>
+        }
+        wide
+      >
         <LinesFigure data={DATA} result={undefined} />
       </Figure>
 
       <p>
-        The usual step is to fit one line: the intercept and slope that pass closest to the points. One line does not
-        say how far to trust it. Many other lines fit almost as well.
+        The usual step is to fit one line, <Tex>y = a + b\,x</Tex>: the intercept <Tex>a</Tex> and slope <Tex>b</Tex>{' '}
+        that pass closest to the points. One line does not say how far to trust it. Many other lines fit almost as well.
       </p>
 
       <h2>Many lines instead of one</h2>
 
       <p>
         Bayesian regression keeps every line that fits. It starts from a belief about each number. The intercept and
-        slope each get a normal distribution with mean 0 and spread 5. The noise is how far the points scatter around
-        the line. It cannot be negative, so it gets a half-normal distribution with spread 2.
+        slope each get a normal distribution with mean 0 and spread 5. The noise <Tex>\sigma</Tex> is how far the points
+        scatter around the line. It cannot be negative, so it gets a half-normal distribution with spread 2.
       </p>
+
+      <Equation
+        label="The model"
+        reading="The intercept a and the slope b each have a normal prior with mean 0 and spread 5. The noise sigma has a half-normal prior with spread 2. Each y is normal around a plus b times x, with spread sigma."
+      >
+        {String.raw`\begin{aligned}
+          a, b &\sim \Gauss(0, 5^2) \qquad \sigma \sim \HalfNormal(2) \\
+          y_i &\sim \Gauss(a + b\,x_i,\; \sigma^2)
+        \end{aligned}`}
+      </Equation>
 
       <p>
         Then it uses the data. A line close to many points becomes more likely, and a line that misses them less likely.
@@ -70,7 +88,7 @@ export default function Story(): ReactNode {
               <p>
                 The sampler kept {result.draws.toLocaleString('en-GB')} draws, each one a line. The figure shows{' '}
                 {result.fan.length} of them. The solid line is their average, and the band holds the middle 90% at each{' '}
-                <em>x</em>.
+                <Tex>x</Tex>.
               </p>
 
               <Figure
@@ -81,10 +99,9 @@ export default function Story(): ReactNode {
               </Figure>
 
               <p>
-                Where the lines are close together, the data fix them. Near <em>x</em> ={' '}
-                <span className="num">{fixed(r.centre, 1)}</span>, in the middle of the points, the band is{' '}
-                <span className="num">{fixed(r.centreWidth)}</span> wide. At <em>x</em> ={' '}
-                <span className="num">{fixed(r.edge, 0)}</span>, far right of the last point, it is{' '}
+                Where the lines are close together, the data fix them. Near <Tex>{tex`x = ${fixed(r.centre, 1)}`}</Tex>,
+                in the middle of the points, the band is <span className="num">{fixed(r.centreWidth)}</span> wide. At{' '}
+                <Tex>{tex`x = ${fixed(r.edge, 0)}`}</Tex>, far right of the last point, it is{' '}
                 <span className="num">{fixed(r.edgeWidth)}</span> wide, about{' '}
                 <span className="num">{fixed(r.ratio, 1)}</span> times as wide. There are no measurements there, so the
                 lines disagree.

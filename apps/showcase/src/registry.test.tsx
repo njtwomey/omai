@@ -84,6 +84,7 @@ describe('the registry of stories', () => {
       expect(results, `${entry.slug}: a results block after the play button`).toBeGreaterThan(play)
       expect(html, `${entry.slug}: nothing drawn before the run`).toContain('data-state="empty"')
       expect(html, `${entry.slug}: code only after the result`).not.toContain('How it is written')
+      expect(html, `${entry.slug}: every formula parses`).not.toContain('wb-tex-error')
     }
     expect(made).toEqual([])
   }, 120_000)

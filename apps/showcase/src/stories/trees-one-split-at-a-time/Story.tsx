@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Tex, tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -23,8 +24,8 @@ export default function Story(): ReactNode {
   return (
     <StoryPage>
       <p>
-        Here are sixty measurements. For each one, we set a value <em>x</em> and read off a value <em>y</em>. The points
-        rise from left to right. The noise is large, so it is hard to say where the level changes.
+        Here are sixty measurements. For each one, we set a value <Tex>x</Tex> and read off a value <Tex>y</Tex>. The
+        points rise from left to right. The noise is large, so it is hard to say where the level changes.
       </p>
 
       <Figure caption="The sixty points. Look for the places where the level changes." wide>
@@ -32,9 +33,9 @@ export default function Story(): ReactNode {
       </Figure>
 
       <p>
-        A decision tree describes data like this with cuts. A cut at one value of <em>x</em> splits the points into two
-        groups, and each group is a <em>leaf</em>. Each leaf keeps an estimate of the average <em>y</em> of its points,
-        and how sure it is of that estimate. A leaf with more points is more sure.
+        A decision tree describes data like this with cuts. A cut at one value of <Tex>x</Tex> splits the points into
+        two groups, and each group is a <em>leaf</em>. Each leaf keeps an estimate of the average <Tex>y</Tex> of its
+        points, and how sure it is of that estimate. A leaf with more points is more sure.
       </p>
 
       <h2>Which cuts to make</h2>
@@ -65,14 +66,14 @@ export default function Story(): ReactNode {
               <h2>One tree, one split at a time</h2>
 
               <p>
-                The first cut is at <em>x</em> = <span className="num">{fixed(r.firstCut)}</span>. Its score is{' '}
+                The first cut is at <Tex>{tex`x = ${fixed(r.firstCut)}`}</Tex>. Its score is{' '}
                 <span className="num">{fixed(first?.gain ?? 0, 1)}</span>, the log of how much more likely the data are
                 with the cut than without. It splits the <span className="num">{first?.n}</span> points into{' '}
                 <span className="num">{first?.nLeft}</span> and <span className="num">{first?.nRight}</span>.
                 {second === undefined ? null : (
                   <>
                     {' '}
-                    The second cut is at <em>x</em> = <span className="num">{fixed(r.secondCut)}</span>. Its score is{' '}
+                    The second cut is at <Tex>{tex`x = ${fixed(r.secondCut)}`}</Tex>. Its score is{' '}
                     <span className="num">{fixed(second.gain, 1)}</span>. After the cost of the extra cut, its odds are{' '}
                     <span className="num">{fixed(second.logOdds, 1)}</span> on a log scale. That is above zero, so the
                     cut is made.
@@ -92,14 +93,15 @@ export default function Story(): ReactNode {
                   'No cut was left to try.'
                 ) : (
                   <>
-                    The best cut left is at <em>x</em> = <span className="num">{fixed(next.threshold)}</span>. Its score
-                    is <span className="num">{fixed(next.gain, 1)}</span>, and its odds are{' '}
+                    The best cut left is at <Tex>{tex`x = ${fixed(next.threshold)}`}</Tex>. Its score is{' '}
+                    <span className="num">{fixed(next.gain, 1)}</span>, and its odds are{' '}
                     <span className="num">{fixed(next.logOdds, 1)}</span>. It does not pay, so the tree stops.
                   </>
                 )}{' '}
-                Each leaf also has a step size, one over its count plus one. It is how far one new point would move the
-                leaf's mean. After the first cut, a leaf of <span className="num">{afterOne[0]?.n}</span> points has a
-                step of <span className="num">{fixed(afterOne[0]?.stepSize ?? 0, 3)}</span>, and a leaf of{' '}
+                Each leaf also has a step size, one over its count plus one: <Tex>1 / (n + 1)</Tex>. It is how far one
+                new point would move the leaf's mean. After the first cut, a leaf of{' '}
+                <span className="num">{afterOne[0]?.n}</span> points has a step of{' '}
+                <span className="num">{fixed(afterOne[0]?.stepSize ?? 0, 3)}</span>, and a leaf of{' '}
                 <span className="num">{afterOne[1]?.n}</span> points has{' '}
                 <span className="num">{fixed(afterOne[1]?.stepSize ?? 0, 3)}</span>. A leaf with few points keeps a
                 large step, and a leaf with many points takes small ones.
@@ -124,8 +126,7 @@ export default function Story(): ReactNode {
               </Figure>
 
               <p>
-                The average and the greedy tree differ most near <em>x</em> ={' '}
-                <span className="num">{fixed(r.widestAt, 1)}</span>, by{' '}
+                The average and the greedy tree differ most near <Tex>{tex`x = ${fixed(r.widestAt, 1)}`}</Tex>, by{' '}
                 <span className="num">{fixed(r.widestDifference)}</span>. The greedy tree jumps at one place. The
                 average rises over a stretch, because the trees disagree about where the cuts are.
               </p>
@@ -148,10 +149,9 @@ export default function Story(): ReactNode {
               </Figure>
 
               <p>
-                The first cut is settled. A cut lies within 0.3 of <em>x</em> ={' '}
-                <span className="num">{fixed(r.firstCut)}</span> with a chance of{' '}
-                <span className="num">{percent(Math.min(1, r.nearFirst))}</span>. The second is not. Positions from{' '}
-                <span className="num">{fixed(r.secondSpan?.from ?? 0, 1)}</span> to{' '}
+                The first cut is settled. A cut lies within 0.3 of <Tex>{tex`x = ${fixed(r.firstCut)}`}</Tex> with a
+                chance of <span className="num">{percent(Math.min(1, r.nearFirst))}</span>. The second is not. Positions
+                from <span className="num">{fixed(r.secondSpan?.from ?? 0, 1)}</span> to{' '}
                 <span className="num">{fixed(r.secondSpan?.to ?? 0, 1)}</span> each have a chance of at least 5%, and
                 the greedy position has <span className="num">{percent(Math.min(1, r.nearSecond))}</span>. The single
                 most probable tree has cuts at{' '}
