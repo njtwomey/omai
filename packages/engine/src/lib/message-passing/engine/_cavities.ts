@@ -44,14 +44,23 @@ export function rawBelief(g: CompiledGraph, messages: readonly (readonly number[
   return acc
 }
 
-/** The cavity as a raw difference of raw sums, without the renormalisation of a discrete family: what the evidence's masses are taken of. */
-export function rawCavity(g: CompiledGraph, messages: readonly (readonly number[])[], factor: number): Arg[] {
+/**
+ * The cavity as a raw difference of raw sums, without the renormalisation of a discrete family: what the evidence's masses are taken of
+ * (the factor's own message taken out to its power, or to `power` when given: an alpha-divergence run's).
+ */
+export function rawCavity(
+  g: CompiledGraph,
+  messages: readonly (readonly number[])[],
+  factor: number,
+  power?: number,
+): Arg[] {
   const f = g.factors[factor] as CompiledGraph['factors'][number]
+  const exponent = power ?? f.power
   return f.ports.map((p): Arg => {
     if (p.edge < 0) return { family: p.family, eta: undefined, value: p.value }
     const b = rawBelief(g, messages, p.variable as number)
     const own = messages[p.edge] as Eta
-    return { family: p.family, eta: b.map((v, i) => v - f.power * (own[i] ?? 0)), value: undefined }
+    return { family: p.family, eta: b.map((v, i) => v - exponent * (own[i] ?? 0)), value: undefined }
   })
 }
 

@@ -76,7 +76,13 @@ export function operatorMessage(
   const reads = readsTargetOf(op, to)
   const shown = readable(op, args, to)
   // A flat target of an operator that needs a density is shown wide, so it is not blocked; an improper one still is.
-  if (reads && !shown.widenedTarget && target.eta !== undefined && !target.family.isProper(target.eta))
+  if (
+    reads &&
+    !shown.widenedTarget &&
+    target.eta !== undefined &&
+    !target.family.isProper(target.eta) &&
+    !(op.improperTarget === true && !isFlat(target.eta))
+  )
     return { kind: 'blocked' }
   const ctx: OperatorContext = {
     mode: projection.hook,
