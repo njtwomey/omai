@@ -1,3 +1,18 @@
+import {
+  abs,
+  argmax,
+  cast,
+  equal,
+  item,
+  matmul,
+  max,
+  reshape,
+  sub,
+  sum,
+  takeAlongAxis,
+  tensor,
+  toFlat,
+} from 'omai-engine/tensor'
 import type { Curve, PointSet } from 'omai-render/charts'
 import { ControlPanel, NumberField, SeedInput } from 'omai-render/react'
 import { type ReactNode, useCallback, useMemo, useState } from 'react'
@@ -23,7 +38,6 @@ async function fit(seed: number, stay: number, steps: number, host: HostBase) {
 }
 
 const NAMES = ['low', 'middle', 'high']
-const argmax = (p: readonly number[]): number => p.indexOf(Math.max(...p))
 
 export default function Page(): ReactNode {
   const [seed, setSeed] = useState(1)
@@ -93,7 +107,7 @@ function Figures(props: { readonly made: Made }): ReactNode {
   const t = useMemo(() => sim.y.map((_, i) => i), [sim])
 
   const rateCurve = useMemo(
-    () => regimes.map((p) => p.reduce((s, v, k) => s + v * (rates[k]?.mean ?? 0), 0)),
+    () => toFlat(matmul(tensor(regimes), tensor([0, 1, 2].map((k) => rates[k]?.mean ?? 0)))),
     [regimes, rates],
   )
   const counts = useMemo(() => [{ x: t, y: sim.y, name: 'counts' } satisfies PointSet], [t, sim])
@@ -180,14 +194,12 @@ function Check(props: { readonly made: Made }): ReactNode {
   const { made } = props
   const { sim, regimes, rates, gibbs } = made
   const visited = useMemo(() => [0, 1, 2].map((k) => sim.z.includes(k)), [sim])
-  const accuracy = regimes.filter((p, i) => argmax(p) === sim.z[i]).length / regimes.length
-  const onTruth = regimes.reduce((s, p, i) => s + (p[sim.z[i] as number] as number), 0) / regimes.length
-  const gibbsAccuracy = gibbs.regimes.filter((p, i) => argmax(p) === sim.z[i]).length / regimes.length
-  const gap =
-    regimes.reduce(
-      (s, p, i) => s + Math.max(...p.map((v, k) => Math.abs(v - ((gibbs.regimes[i] as number[])[k] as number)))),
-      0,
-    ) / regimes.length
+  const probs = tensor(regimes)
+  const truthIndex = cast(tensor(sim.z), 'int32')
+  const accuracy = item(sum(equal(argmax(probs, 1), truthIndex))) / regimes.length
+  const onTruth = item(sum(takeAlongAxis(probs, reshape(truthIndex, [-1, 1]), 1))) / regimes.length
+  const gibbsAccuracy = item(sum(equal(argmax(tensor(gibbs.regimes), 1), truthIndex))) / regimes.length
+  const gap = item(sum(max(abs(sub(probs, tensor(gibbs.regimes))), 1))) / regimes.length
   const sdRatio = rates.map((r, k) => r.sd / (gibbs.rateSd[k] as number))
   const misses = rates.map((r, k) => Math.abs(r.mean - (RATES[k] as number)) / r.sd)
   const inside = rates.filter((r, k) => (RATES[k] as number) >= r.lower && (RATES[k] as number) <= r.upper).length

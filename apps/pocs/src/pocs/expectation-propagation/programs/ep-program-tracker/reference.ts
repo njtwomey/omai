@@ -2,7 +2,25 @@
 // them, by forward filtering and backward sampling of the linear-Gaussian chain), written out here because the compiled
 // factor graph has no Gibbs method. Not part of the program shown.
 import { keyFromPath, normal, uniform } from 'omai-engine/random'
-import { toFlat } from 'omai-engine/tensor'
+import {
+  add,
+  div,
+  exp,
+  fromVector,
+  less,
+  mul,
+  sort,
+  sqrt,
+  square,
+  stack,
+  sub,
+  sum,
+  take,
+  tensor,
+  toFlat,
+  type Value,
+  zeros,
+} from 'omai-engine/tensor'
 import { type EpHooks, pacer } from '../../../../shared/ep/sweeps.ts'
 import { PATH, WIDTH } from './program.ts'
 
@@ -16,9 +34,6 @@ export interface Reference {
   readonly sweeps: number
 }
 
-const quantile = (sorted: readonly number[], q: number): number =>
-  sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] as number
-
 /** Gibbs: indicators given the path, path given the indicators by FFBS (a Kalman filter and a backward sample). */
 export async function gibbsReference(
   y: readonly number[],
@@ -28,9 +43,12 @@ export async function gibbsReference(
 ): Promise<Reference> {
   const { sweeps = 2000, burn = 200, seed = 5 } = options
   const T = y.length
-  const draws = Array.from({ length: T }, () => [] as number[])
-  const wildCount = new Array<number>(T).fill(0)
-  let wild = new Array<boolean>(T).fill(false)
+  const readings = tensor(y)
+  const wide = WIDTH * noise.sd
+  let wild: Value = zeros([T])
+  let wildCount: Value = zeros([T])
+  // The paths drawn after the burn-in, one tensor per sweep.
+  const draws: Value[] = []
   // The sampler goes on through a stop until it has 100 draws, so that what it returns can be read.
   const pace = pacer(hooks)
   let ran = sweeps
@@ -39,20 +57,21 @@ export async function gibbsReference(
       ran = sweep
       break
     }
-    // Forward filter with the noise variance each reading has now.
-    const m = new Array<number>(T).fill(0)
-    const v = new Array<number>(T).fill(0)
+    // Forward filter with the noise variance each reading has now, and backward sample: scalar recursions over the steps,
+    // each needing the step before, on working buffers (a tensor op per step per sweep makes a reference many times slower).
+    const isWild = toFlat(wild)
+    const m = new Float64Array(T)
+    const v = new Float64Array(T)
     for (let t = 0; t < T; t++) {
       const pm = t === 0 ? 0 : PATH.phi * (m[t - 1] as number)
       const pv = t === 0 ? PATH.start ** 2 : PATH.phi ** 2 * (v[t - 1] as number) + PATH.sigma ** 2
-      const r = (noise.sd * (wild[t] ? WIDTH : 1)) ** 2
+      const r = (noise.sd * (isWild[t] ? WIDTH : 1)) ** 2
       const gain = pv / (pv + r)
       m[t] = pm + gain * ((y[t] as number) - pm)
       v[t] = (1 - gain) * pv
     }
-    // Backward sample.
     const z = toFlat(normal(keyFromPath(seed, 'x', sweep), [T]))
-    const x = new Array<number>(T).fill(0)
+    const x = new Float64Array(T)
     x[T - 1] = (m[T - 1] as number) + Math.sqrt(v[T - 1] as number) * (z[T - 1] as number)
     for (let t = T - 2; t >= 0; t--) {
       const pv = PATH.phi ** 2 * (v[t] as number) + PATH.sigma ** 2
@@ -62,29 +81,28 @@ export async function gibbsReference(
       x[t] = mean + Math.sqrt(Math.max(variance, 0)) * (z[t] as number)
     }
     // Which readings are wild, given the path.
-    const u = toFlat(uniform(keyFromPath(seed, 'wild', sweep), [T]))
-    wild = x.map((xt, t) => {
-      const r = (y[t] as number) - xt
-      const inlier = ((1 - noise.outliers) * Math.exp(-0.5 * (r / noise.sd) ** 2)) / noise.sd
-      const outlier = (noise.outliers * Math.exp(-0.5 * (r / (WIDTH * noise.sd)) ** 2)) / (WIDTH * noise.sd)
-      return (u[t] as number) < outlier / (inlier + outlier)
-    })
+    const path = fromVector(x)
+    const off = sub(readings, path)
+    const inlier = div(mul(1 - noise.outliers, exp(mul(-0.5, square(div(off, noise.sd))))), noise.sd)
+    const outlier = div(mul(noise.outliers, exp(mul(-0.5, square(div(off, wide))))), wide)
+    wild = less(uniform(keyFromPath(seed, 'wild', sweep), [T]), div(outlier, add(inlier, outlier)))
     if (sweep >= burn) {
-      for (const [t, xt] of x.entries()) (draws[t] as number[]).push(xt)
-      wild.forEach((w, t) => {
-        if (w) wildCount[t] = (wildCount[t] as number) + 1
-      })
+      draws.push(path)
+      wildCount = add(wildCount, wild)
     }
   }
   const n = ran - burn
-  const sorted = draws.map((d) => [...d].sort((a, b) => a - b))
-  const mean = draws.map((d) => d.reduce((s, v) => s + v, 0) / n)
+  const paths = stack(draws)
+  const mean = div(sum(paths, 0), n)
+  // The 5% and 95% points of the sorted draws at each step.
+  const sorted = sort(paths, 0)
+  const at = (q: number): Value => take(sorted, Math.min(n - 1, Math.floor(q * n)), 0)
   return {
-    mean,
-    sd: draws.map((d, t) => Math.sqrt(d.reduce((s, v) => s + (v - (mean[t] as number)) ** 2, 0) / (n - 1))),
-    lower: sorted.map((s) => quantile(s, 0.05)),
-    upper: sorted.map((s) => quantile(s, 0.95)),
-    wild: wildCount.map((c) => c / n),
+    mean: toFlat(mean),
+    sd: toFlat(sqrt(div(sum(square(sub(paths, mean)), 0), n - 1))),
+    lower: toFlat(at(0.05)),
+    upper: toFlat(at(0.95)),
+    wild: toFlat(div(wildCount, n)),
     sweeps: n,
   }
 }

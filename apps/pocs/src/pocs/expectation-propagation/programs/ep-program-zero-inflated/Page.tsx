@@ -1,5 +1,6 @@
 import { toStructure } from 'omai-engine/probprog/model'
 import type { ZeroInflatedPosterior } from 'omai-engine/probprog/validation'
+import { add, arange, div, mul, toFlat } from 'omai-engine/tensor'
 import { NumberField, SeedInput } from 'omai-render/react'
 import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import { CurveChart } from '../../../../shared/CurveChart.tsx'
@@ -46,7 +47,7 @@ export default function Page(): ReactNode {
   const record = useCallback(() => (run === undefined ? undefined : recordOf(run)), [run])
   const curves = useMemo(() => {
     if (run === undefined) return undefined
-    const xs = Array.from({ length: 60 }, (_, i) => -2.6 + (5.2 * i) / 59)
+    const xs = toFlat(add(div(mul(arange(60), 5.2), 59), -2.6))
     const { intercept, slope } = run.found
     return {
       curves: [
@@ -197,7 +198,7 @@ export default function Page(): ReactNode {
             <ProbabilityPlot
               labels={zeros.map((i) => String(i + 1))}
               ep={zeros.map((i) => run.found.structural[i] ?? 0)}
-              truth={zeros.map((i) => run.data.structural[i] === true)}
+              truth={zeros.map((i) => run.data.structural[i] === 1)}
               {...(exact === undefined ? {} : { exact: zeros.map((i) => exact.structural[i] ?? 0) })}
               epName="EP: P(structural zero)"
               exactName="exact: structural zeros summed over the grid posterior"

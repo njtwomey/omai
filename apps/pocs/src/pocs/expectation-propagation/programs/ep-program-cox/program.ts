@@ -4,35 +4,34 @@ import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { key, normal, poisson } from 'omai-engine/random'
-import { toArray, toFlat } from 'omai-engine/tensor'
+import { add, arange, matmul, mul, reshape, toFlat, type Value, zeros } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
 import type { EpHooks } from '../../../../shared/ep/sweeps.ts'
 
 export const BINS = 40
 export const WIDTH = 0.25 // the interval is [0, 10], in 40 bins
 export const BASE = 20 // intensity = BASE * exp(f(x)): about 5 events a bin
-const x = Array.from({ length: BINS }, (_, i) => (i + 0.5) * WIDTH)
+const x = mul(add(arange(BINS), 0.5), WIDTH)
 
 // region simulate
 type Prior = { amplitude: number; lengthScale: number }
 /** The kernel matrix of the GP prior over the bin centres. */
-export const covariance = ({ amplitude, lengthScale }: Prior) =>
-  toArray(
-    gram(
-      scaleKernel(rbfKernel({ lengthScale }), amplitude ** 2),
-      x.map((v) => [v]),
-      { jitter: 1e-6 },
-    ),
-  ) as number[][]
+export const covariance = ({ amplitude, lengthScale }: Prior): Value => {
+  const kernel = scaleKernel(rbfKernel({ lengthScale }), amplitude ** 2)
+  return gram(kernel, reshape(x, [BINS, 1]), { jitter: 1e-6 })
+}
 
 /** The truth: f drawn from the GP, and the Poisson counts it makes. */
 export function simulate(seed: number, prior: Prior) {
-  const L = toArray(cholesky(covariance(prior))) as number[][]
-  const z = toFlat(normal(key(seed), [BINS]))
-  const f = L.map((row) => row.reduce((s, v, j) => s + v * (z[j] ?? 0), 0))
+  const L = cholesky(covariance(prior))
+  const z = normal(key(seed), [BINS])
+  const f = matmul(L, z)
   const rate = (v: number): number => BASE * WIDTH * Math.exp(v)
-  const counts = f.map((v, i) => toFlat(poisson(key(seed + 1000 + i), rate(v), [1]))[0] ?? 0)
-  return { x, f, counts, prior }
+  const counts = toFlat(f).map((v, i) => {
+    const draw = poisson(key(seed + 1000 + i), rate(v), [1])
+    return toFlat(draw)[0] ?? 0
+  })
+  return { x: toFlat(x), f: toFlat(f), counts, prior }
 }
 // endregion
 
@@ -42,8 +41,7 @@ export const model = (prior: Prior) =>
   defineModel('cox-process', (b) => {
     const bin = b.range('bin')
     const counts = b.data('counts', { dims: [bin], support: 'count' })
-    const zeros = new Array<number>(BINS).fill(0)
-    const gp = d.multivariateNormal(zeros, { covariance: covariance(prior) })
+    const gp = d.multivariateNormal(zeros([BINS]), { covariance: covariance(prior) })
     const f = b.latent('f', gp, { dims: [bin] })
     b.observe('counts', d.poisson(ops.mul(BASE * WIDTH, ops.exp(f))), counts)
   })

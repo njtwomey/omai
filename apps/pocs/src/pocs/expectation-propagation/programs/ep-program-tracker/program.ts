@@ -1,8 +1,9 @@
+import { scan } from 'omai-engine/nn'
 import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { key, normal, split, uniform } from 'omai-engine/random'
-import { toFlat } from 'omai-engine/tensor'
+import { add, concat, less, mul, reshape, sliceAxis, take, toFlat, where } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
 import type { EpHooks } from '../../../../shared/ep/sweeps.ts'
 
@@ -18,13 +19,22 @@ type Noise = { sd: number; outliers: number }
 export function simulate(seed: number, noise: Noise, steps = 100) {
   type Key = ReturnType<typeof key>
   const [kx, ku, ke] = split(key(seed), 3) as [Key, Key, Key]
-  const w = toFlat(normal(kx, [steps + 1]))
-  const x = [PATH.start * (w[0] ?? 0)]
-  for (let t = 1; t < steps; t++) x.push(PATH.phi * (x[t - 1] as number) + PATH.sigma * (w[t] ?? 0))
-  const wild = toFlat(uniform(ku, [steps])).map((u) => u < noise.outliers)
-  const e = toFlat(normal(ke, [steps]))
-  const y = x.map((v, t) => v + (e[t] ?? 0) * noise.sd * (wild[t] ? WIDTH : 1))
-  return { x, y, wild, noise }
+  const w = normal(kx, [steps + 1])
+  const start = mul(take(w, 0), PATH.start)
+  // Each state follows the one before it.
+  const path = scan(
+    (prev, noise) => {
+      const next = add(mul(prev, PATH.phi), mul(noise, PATH.sigma))
+      return [next, next]
+    },
+    start,
+    sliceAxis(w, 0, 1, steps),
+  )
+  const x = concat([reshape(start, [1]), path.ys])
+  const wild = less(uniform(ku, [steps]), noise.outliers)
+  const e = normal(ke, [steps])
+  const y = add(x, mul(mul(e, noise.sd), where(wild, WIDTH, 1)))
+  return { x: toFlat(x), y: toFlat(y), wild: toFlat(wild), noise }
 }
 // endregion
 

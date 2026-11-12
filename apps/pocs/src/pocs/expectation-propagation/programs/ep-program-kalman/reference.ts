@@ -2,7 +2,7 @@
 // engine's dynamics domain. A chain of linear Gaussian factors is a tree, so EP is exact there and must agree with it to rounding.
 // Not part of the program shown.
 import { filtering } from 'omai-engine/dynamics'
-import { toArray } from 'omai-engine/tensor'
+import { add, div, matmul, mul, reshape, sqrt, sub, take, tensor, toArray, toFlat, transpose } from 'omai-engine/tensor'
 import { DT, type Setup, START, stepCovariance } from './program.ts'
 
 /** The smoothed position and velocity at each step: mean, sd and the 5% and 95% quantiles. */
@@ -37,21 +37,16 @@ export function kalmanReference(y: readonly number[], { readingSd, push }: Setup
   const before = backOneStep(F, P0, Q, START.mean)
   const smoothed = filtering.rtsSmoother(
     { ...model, x0: before.mean, P0: before.covariance },
-    filtering.kalmanFilter(
-      { ...model, x0: before.mean, P0: before.covariance },
-      y.map((v) => [v]),
-    ),
+    filtering.kalmanFilter({ ...model, x0: before.mean, P0: before.covariance }, reshape(tensor(y), [-1, 1])),
   )
-  const means = toArray(smoothed.means) as number[][]
-  const covariances = toArray(smoothed.covariances) as number[][][]
-  const pick = (k: 0 | 1) => {
-    const mean = means.map((m) => m[k] as number)
-    const sd = covariances.map((c) => Math.sqrt((c[k] as number[])[k] as number))
+  const pick = (k: number) => {
+    const mean = take(smoothed.means, k, 1)
+    const sd = sqrt(take(take(smoothed.covariances, k, 1), k, 1))
     return {
-      mean,
-      sd,
-      lower: mean.map((m, t) => m - 1.645 * (sd[t] as number)),
-      upper: mean.map((m, t) => m + 1.645 * (sd[t] as number)),
+      mean: toFlat(mean),
+      sd: toFlat(sd),
+      lower: toFlat(sub(mean, mul(sd, 1.645))),
+      upper: toFlat(add(mean, mul(sd, 1.645))),
     }
   }
   return { position: pick(0), velocity: pick(1) }
@@ -60,22 +55,13 @@ export function kalmanReference(y: readonly number[], { readingSd, push }: Setup
 /** The mean and covariance one step before the start: `F^-1 mean` and `F^-1 (P0 - Q) F^-T`, so that predicting from them gives the start. */
 function backOneStep(F: number[][], P0: number[][], Q: number[][], mean: readonly number[]) {
   const [a, b, c, e] = [F[0]?.[0] as number, F[0]?.[1] as number, F[1]?.[0] as number, F[1]?.[1] as number]
-  const det = a * e - b * c
-  const inv = [
-    [e / det, -b / det],
-    [-c / det, a / det],
-  ]
-  const at = (m: number[][], i: number, j: number): number => (m[i] as number[])[j] as number
-  const gap = [0, 1].map((i) => [0, 1].map((j) => at(P0, i, j) - at(Q, i, j)))
-  const left = [0, 1].map((i) => [0, 1].map((j) => at(inv, i, 0) * at(gap, 0, j) + at(inv, i, 1) * at(gap, 1, j)))
-  const covariance = [0, 1].map((i) =>
-    [0, 1].map((j) => at(left, i, 0) * at(inv, j, 0) + at(left, i, 1) * at(inv, j, 1)),
+  const inv = div(
+    tensor([
+      [e, -b],
+      [-c, a],
+    ]),
+    a * e - b * c,
   )
-  return {
-    mean: [
-      at(inv, 0, 0) * (mean[0] as number) + at(inv, 0, 1) * (mean[1] as number),
-      at(inv, 1, 0) * (mean[0] as number) + at(inv, 1, 1) * (mean[1] as number),
-    ],
-    covariance,
-  }
+  const left = matmul(inv, sub(tensor(P0), tensor(Q)))
+  return { mean: toFlat(matmul(inv, tensor(mean))), covariance: toArray(matmul(left, transpose(inv))) as number[][] }
 }

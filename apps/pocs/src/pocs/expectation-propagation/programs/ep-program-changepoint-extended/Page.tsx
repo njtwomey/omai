@@ -1,4 +1,5 @@
 import { beliefCredibleInterval } from 'omai-engine/probprog/ep'
+import { matmul, tensor, toFlat } from 'omai-engine/tensor'
 import type { Curve, PointSet } from 'omai-render/charts'
 import { ControlPanel, NumberField, SeedInput } from 'omai-render/react'
 import { type ReactNode, useCallback, useMemo, useState } from 'react'
@@ -127,7 +128,7 @@ function Figures(props: { readonly made: Made; readonly stay: number }): ReactNo
   const A = useMemo(() => transitions(stay), [stay])
 
   const rateCurve = useMemo(
-    () => regimes.map((p) => p.reduce((s, v, k) => s + v * (rates[k]?.mean ?? 0), 0)),
+    () => toFlat(matmul(tensor(regimes), tensor([0, 1, 2].map((k) => rates[k]?.mean ?? 0)))),
     [regimes, rates],
   )
   const counts = useMemo(() => [{ x: t, y: sim.y, name: 'counts' } satisfies PointSet], [t, sim])

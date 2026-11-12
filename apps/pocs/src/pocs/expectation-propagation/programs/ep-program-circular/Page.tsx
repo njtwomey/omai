@@ -1,4 +1,5 @@
 import { toStructure } from 'omai-engine/probprog/model'
+import { arange, toFlat } from 'omai-engine/tensor'
 import { Choice, NumberField, SeedInput, Select } from 'omai-render/react'
 import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import { IntervalPlot } from '../../../../shared/ep/ProgramCharts.tsx'
@@ -87,7 +88,7 @@ export default function Page(): ReactNode {
           components: TRUTHS[setup.truth].means.length,
           draws: Math.min(setup.draws, 200),
         },
-        seeds: Array.from({ length: 8 }, (_, i) => i + 1),
+        seeds: toFlat(arange(1, 9)),
       }),
     [setup],
   )

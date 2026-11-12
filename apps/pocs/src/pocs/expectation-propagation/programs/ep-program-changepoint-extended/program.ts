@@ -1,8 +1,29 @@
+import { scan } from 'omai-engine/nn'
 import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { foldIn, key, poisson, split, uniform } from 'omai-engine/random'
-import { toFlat } from 'omai-engine/tensor'
+import {
+  arange,
+  cast,
+  concat,
+  cumsum,
+  equal,
+  floor,
+  lessEqual,
+  minimum,
+  mul,
+  reshape,
+  sliceAxis,
+  stack,
+  sum,
+  take,
+  tensor,
+  toArray,
+  toFlat,
+  type Value,
+  where,
+} from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
 import type { EpHooks } from '../../../../shared/ep/sweeps.ts'
 
@@ -26,8 +47,11 @@ export const PRIOR = {
 }
 
 /** The transition matrix the data are simulated from: stay with probability `stay`, else move by `SPLIT`. */
-export const transitions = (stay: number): number[][] =>
-  SPLIT.map((row, i) => row.map((s, j) => (i === j ? stay : (1 - stay) * s)))
+export const transitions = (stay: number): number[][] => toArray(transitionMatrix(stay)) as number[][]
+
+/** The same matrix as a tensor. */
+const transitionMatrix = (stay: number): Value =>
+  where(equal(reshape(arange(3), [3, 1]), reshape(arange(3), [1, 3])), stay, mul(tensor(SPLIT), 1 - stay))
 
 // region simulate
 /**
@@ -35,24 +59,22 @@ export const transitions = (stay: number): number[][] =>
  */
 export function simulate(seed: number, stay = 0.93, steps = 150) {
   const [kz, ky] = split(key(seed), 2) as [ReturnType<typeof key>, ReturnType<typeof key>]
-  const A = transitions(stay)
-  const u = toFlat(uniform(kz, [steps]))
-  const z: number[] = [Math.floor(3 * (u[0] ?? 0))]
-  for (let t = 1; t < steps; t++) {
-    const row = A[z[t - 1] as number] as number[]
-    let c = 0
-    let next = 2
-    for (let k = 0; k < 3; k++) {
-      c += row[k] as number
-      if ((u[t] as number) < c) {
-        next = k
-        break
-      }
-    }
-    z.push(next)
-  }
+  const A = transitionMatrix(stay)
+  const u = uniform(kz, [steps])
+  const start = cast(floor(mul(take(u, 0), 3)), 'int32')
+  // The next regime: the first whose running probability, from this one, passes the draw.
+  const path = scan(
+    (prev, draw) => {
+      const passed = lessEqual(cumsum(take(A, prev)), draw)
+      const next = cast(minimum(sum(passed), 2), 'int32')
+      return [next, next]
+    },
+    start,
+    sliceAxis(u, 0, 1, steps),
+  )
+  const z = toFlat(concat([reshape(start, [1]), path.ys]))
   const y = z.map((s, t) => toFlat(poisson(foldIn(ky, t), RATES[s] as number, [1]))[0] ?? 0)
-  return { z, y, stay, A }
+  return { z, y, stay, A: toArray(A) as number[][] }
 }
 // endregion
 
@@ -101,10 +123,11 @@ export async function infer(y: readonly number[], damping = 0.5, hooks: EpHooks 
     yieldToPage: hooks.yieldToPage ?? (() => Promise.resolve()),
   })
   const post = ep.posterior?.(run.state, run.config)
-  const regimes = Array.from({ length: y.length }, (_, t) =>
-    [0, 1, 2].map((k) => toFlat(post?.marginal(`z[${t}]`).prob(k) as never)[0] ?? 0),
-  )
-  const summary = post?.summary({ prob: 0.9 }) ?? []
+  if (post === undefined) throw new Error('EP gave no posterior')
+  // The probability of each regime at each step: one row per step.
+  const steps = Array.from({ length: y.length }, (_, t) => post.marginal(`z[${t}]`).prob(arange(3)))
+  const regimes = toArray(stack(steps)) as number[][]
+  const summary = post.summary({ prob: 0.9 })
   const rates = summary.filter((r) => r.site === 'rate')
   return { bound, run, regimes, rates, summary }
 }
