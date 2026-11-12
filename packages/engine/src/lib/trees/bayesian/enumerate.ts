@@ -12,11 +12,14 @@ import {
   argsort,
   cast,
   concat,
+  equal,
   exp,
   expandDims,
   full,
+  greaterEqual,
   isfinite,
   lessEqual,
+  logicalAnd,
   logsumexp,
   mul,
   oneHot,
@@ -27,6 +30,7 @@ import {
   sum,
   type TensorLike,
   take,
+  tensor,
   toFlat,
   type Value,
   where,
@@ -135,6 +139,49 @@ export function enumerateTrees(space: TreeSpace): TreeEnumeration {
     usage: rootProbability.map((v, i) => v + (usageLeft[i + 1] ?? 0) + (usageRight[i + 1] ?? 0)),
     splits: [Math.exp(logStump - logEvidence), none, onlyLeft + onlyRight, both],
   }
+}
+
+/**
+ * The posterior probability that at least one cut of the tree lies in a window of one feature: the summed weight of the trees
+ * that have a cut with a threshold in `[lo, hi]`. It is not the sum of the rules' `usage` over the window, which counts a
+ * tree once for each of its cuts in it (that sum can pass one).
+ *
+ * @param e - The enumeration.
+ * @param lo - The lower end of the window.
+ * @param hi - The upper end.
+ * @param feature - The feature (default 0).
+ * @returns The probability, between 0 and 1.
+ * @concept bayesian-trees
+ * @example
+ * ```ts
+ * import { enumerateTrees, normalGammaLeaf, probabilityOfCutIn, quantileRules, bayesData, treePrior, treeSpace } from 'omai-engine/trees'
+ * const xs = [[0], [1], [2], [3], [4], [5]]
+ * const model = normalGammaLeaf({ m0: 2.5, kappa0: 1, alpha0: 2, beta0: 2 })
+ * const data = bayesData(xs, [0, 0.1, 0, 5, 5.1, 5], model)
+ * const posterior = enumerateTrees(treeSpace(data, treePrior({ maxDepth: 2 }), quantileRules(xs, 5)))
+ * probabilityOfCutIn(posterior, 2, 3) > 0.5 // => true
+ * ```
+ */
+export function probabilityOfCutIn(e: TreeEnumeration, lo: number, hi: number, feature = 0): number {
+  const { rules } = e.space
+  const inside = cast(
+    logicalAnd(
+      equal(tensor(rules.features as number[]), feature),
+      logicalAnd(
+        greaterEqual(tensor(rules.thresholds as number[]), lo),
+        lessEqual(tensor(rules.thresholds as number[]), hi),
+      ),
+    ),
+    'float64',
+  )
+  const c = rules.features.length
+  // A child's option 0 is a leaf (no cut), option 1 + c is the rule c.
+  const child = concat([full([1], 0), inside], 0)
+  const none = mul(
+    mul(reshape(sub(1, inside), [c, 1, 1]), reshape(sub(1, child), [1, c + 1, 1])),
+    reshape(sub(1, child), [1, 1, c + 1]),
+  )
+  return toFlat(sum(mul(exp(sub(e.logWeights, e.logEvidence)), sub(1, none))))[0] ?? 0
 }
 
 /** A tree and its posterior probability. */
