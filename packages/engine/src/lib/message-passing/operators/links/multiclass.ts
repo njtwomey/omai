@@ -110,6 +110,16 @@ function integrate(c: OperatorContext): Tilt {
   return { logMass: t.logMass, mean: t.mean, variance: t.mean.map((_, i) => t.covariance[i * r + i] as number), free }
 }
 
+/**
+ * Whether a factor with these parameters takes a power: not the multinomial probit that the auxiliary rule integrates (more than six
+ * classes, or `integration: "auxiliary"`, as `variationalAuxiliary` reads it), which takes the factor whole. A refusal up front
+ * (`withPowers`, `powerEpAlgorithm`) instead of an error thrown mid-sweep. (The softmax's auxiliary rule takes any power of at
+ * least 0.03, which is a limit of the value, not of the parameters.)
+ */
+function takesPowerOf(params: Params): boolean {
+  return !(params['link'] === 'probit' && variationalAuxiliary(params))
+}
+
 /** Whether the mean field uses the one-coordinate rule of `_multiclass-variational.ts` (more scores than the product grid reaches, or `integration: "auxiliary"`). */
 function variationalAuxiliary(params: Params): boolean {
   const way = params['integration'] ?? 'auto'
@@ -153,9 +163,9 @@ function auxiliaryMean(c: OperatorContext): {
  * parameters `y` (the observed class), `classes` (their number) and `link`. Expectation propagation: the tilted mean and variance of
  * every free score from an adaptive Gauss-Hermite integral over all of them, so the scores of the classes that were not observed
  * hear about each other (the product grid up to six free scores, the auxiliary-variable rule of `_multiclass-auxiliary.ts` for any
- * number; `integration` picks one, `auto` is the product grid while it reaches). It supports a power (the probit's auxiliary rule
- * takes the factor whole). Variational message passing is non-conjugate (the expected log of a softmax has no
- * closed form in Gaussian scores): the message to a score is the natural gradient of the expected log, by the product grid up to
+ * number; `integration` picks one, `auto` is the product grid while it reaches). It supports a power (fractional EP), except
+ * the probit's auxiliary rule, which takes the factor whole: `power` is false for it, so a power run refuses it up front.
+ * Variational message passing is non-conjugate (the expected log of a softmax has no closed form in Gaussian scores): the message to a score is the natural gradient of the expected log, by the product grid up to
  * six free scores and for any number by the auxiliary rule of `_multiclass-variational.ts` (the softmax's expected log is exact, an
  * integral over one auxiliary variable of a product of the classes' transforms; the multinomial probit's is a Jensen bound over the
  * other classes' scores, exact when they are known, `support` `numeric` for the softmax and a bound for the probit).
@@ -226,5 +236,5 @@ export const multiclassSite: FactorOperator = defineOperator({
         ? auxiliaryMean(c).expectedLog()
         : numericExpectedLog(quadraturePorts(c.args), scoreLog(c.params)),
   },
-  traits: { readsTarget: true, power: true },
+  traits: { readsTarget: true, power: takesPowerOf },
 })

@@ -3,6 +3,7 @@ import { messageArg, siteMessage } from './args.ts'
 import { defineOperator, messageRule, projectSite, siteRule, tiltedRule } from './define.ts'
 import { ImproperMessageError, ParameterError } from './errors.ts'
 import { gamma, gammaEta, gaussian, gaussianEta } from './families.ts'
+import { param } from './params.ts'
 import type { OperatorContext } from './types.ts'
 
 const port = { name: 'x', accepts: ['gaussian' as const] }
@@ -90,6 +91,19 @@ describe('defineOperator', () => {
     expect(declared(true).ep?.(ctx(1)).message).toEqual([2, 1])
     expect(declared(true).ep?.(ctx(2)).message).toEqual([1, 0.5])
     expect(declared(false).ep?.(ctx(2)).message).toEqual([2, 1])
+  })
+
+  it('a power declared as a function of the parameters divides a site rule only where it is true', () => {
+    const byParams = defineOperator({
+      name: 'by-params',
+      description: 'a toy site whose power depends on the parameters',
+      ports: [port],
+      params: { on: param.integer({ optional: true }) },
+      rules: { ep: siteRule(() => ({ mean: 1, variance: 0.5 })) },
+      traits: { readsTarget: true, power: (params) => params['on'] === 1 },
+    })
+    expect(byParams.ep?.({ ...ctx(2), params: { on: 1 } }).message).toEqual([1, 0.5])
+    expect(byParams.ep?.({ ...ctx(2), params: { on: 0 } }).message).toEqual([2, 1])
   })
 
   it('gives NaN, not an error, for the evidence while a message has no density yet; other errors propagate', () => {

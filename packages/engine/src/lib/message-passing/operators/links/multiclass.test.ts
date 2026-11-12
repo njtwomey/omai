@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { type BruteBelief, type BrutePort, bruteExpectation, bruteTilted } from '../../../../testing/message-passing.ts'
 import { ndtr } from '../../../numerics/special/_kernels.ts'
 import { add, arange, div, mul, toFlat } from '../../../tensor/index.ts'
+import { runAlgorithm } from '../../../trace/index.ts'
+import { powerEpAlgorithm, withPowers } from '../../algorithms/power.ts'
 import { massOf, messageArg, valueArg } from '../../core/args.ts'
 import { gaussian, gaussianEta } from '../../core/families.ts'
-import type { Arg, Params } from '../../core/types.ts'
+import { type CompiledGraph, compileGraph } from '../../core/graph.ts'
+import { gaussianPrior } from '../../core/priors.ts'
+import { type Arg, type Params, takesPower } from '../../core/types.ts'
 import { zeroArray } from '../../numerics/_arrays.ts'
 import { defaultOperators } from '../registry.ts'
 import { multiclassSite } from './multiclass.ts'
@@ -416,6 +420,42 @@ describe('multiclass-site: the auxiliary-variable rule (any number of classes)',
     ).toThrow(/power of one/)
     expect(multiclassSite.unsupported?.('vmp', { y: 0, classes: 8 })).toBeUndefined()
     expect(multiclassSite.unsupported?.('ep', { y: 0, classes: 8 })).toBeUndefined()
+  })
+})
+
+describe('multiclass-site: the power it takes depends on its parameters', () => {
+  const graphOf = (params: Params): CompiledGraph => {
+    const names = Array.from({ length: params['classes'] as number }, (_, k) => `z${k}`)
+    return compileGraph(
+      {
+        variables: names.map((name) => ({ name, family: { kind: 'gaussian' as const } })),
+        factors: [
+          ...names.map((name) => gaussianPrior(name, 0, 1)),
+          { operator: 'multiclass-site', args: names, params },
+        ],
+      },
+      defaultOperators(),
+    )
+  }
+  it('takes a power unless it is the multinomial probit the auxiliary rule integrates', () => {
+    expect(takesPower(multiclassSite, { y: 0, classes: 8, link: 'logit' })).toBe(true)
+    expect(takesPower(multiclassSite, { y: 0, classes: 3, link: 'probit' })).toBe(true)
+    expect(takesPower(multiclassSite, { y: 0, classes: 8, link: 'probit' })).toBe(false)
+    expect(takesPower(multiclassSite, { y: 0, classes: 3, link: 'probit', integration: 'auxiliary' })).toBe(false)
+    expect(takesPower(multiclassSite, { y: 0, classes: 8, link: 'probit', integration: 'product' })).toBe(true)
+  })
+  it('withPowers refuses a power of the probit of eight classes up front, with a reason, and takes it for the softmax', () => {
+    const probit = graphOf({ y: 0, classes: 8, link: 'probit' })
+    expect(() => withPowers(probit, (f) => (f.operator.name === 'multiclass-site' ? 0.5 : 1))).toThrow(
+      /multiclass-site\) does not support a power/,
+    )
+    const softmax = graphOf({ y: 0, classes: 8, link: 'logit' })
+    const powered = withPowers(softmax, (f) => (f.operator.name === 'multiclass-site' ? 0.5 : 1))
+    expect(powered.factors.find((f) => f.operator.name === 'multiclass-site')?.power).toBe(0.5)
+  })
+  it('power EP at its default power runs the probit of eight classes at power one instead of throwing mid-sweep', () => {
+    const run = runAlgorithm(powerEpAlgorithm(graphOf({ y: 0, classes: 8, link: 'probit' })), { maxSteps: 3 })
+    expect(run.state).toBeDefined()
   })
 })
 
