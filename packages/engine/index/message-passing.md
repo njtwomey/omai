@@ -60,7 +60,7 @@ The core of message passing: the `Family` algebra and its scalar, vector, discre
 - module `graph.ts` (file): Compile and draw a factor graph: variables, factors, edges, ids. `src/lib/message-passing/core/graph.ts:1` `omai-engine/message-passing`
 
 - function `compileGraph`: Validate and compile a factor graph against a registry of operators. `src/lib/message-passing/core/graph.ts:137` `omai-engine/message-passing`
-- function `defineOperator`: Build a factor operator from its declaration, with support derived. `src/lib/message-passing/core/define.ts:208` `omai-engine/message-passing`
+- function `defineOperator`: Build a factor operator from its declaration, with support derived. `src/lib/message-passing/core/define.ts:228` `omai-engine/message-passing`
 - function `dirichlet`: The Dirichlet message family of a given dimension. `src/lib/message-passing/core/families-vector.ts:190` `omai-engine/message-passing`
 - function `discrete`: The discrete message family on k states: log weights. `src/lib/message-passing/core/families-vector.ts:151` `omai-engine/message-passing`
 - function `gaussianMv`: The multivariate Gaussian message family of a given dimension. `src/lib/message-passing/core/families-vector.ts:57` `omai-engine/message-passing`
@@ -69,7 +69,7 @@ The core of message passing: the `Family` algebra and its scalar, vector, discre
 - function `truncatedNormalMoments`: Mass, mean and variance of a Gaussian truncated to an interval. `src/lib/message-passing/core/truncated.ts:40` `omai-engine/message-passing`
 - function `wishart`: The Wishart message family of a given dimension: the precision matrix of a Gaussian. `src/lib/message-passing/core/families-matrix.ts:150` `omai-engine/message-passing`
 
-- structure `FactorOperator`: A factor operator: the message to each argument of a factor. `src/lib/message-passing/core/types.ts:260` `omai-engine/message-passing`
+- structure `FactorOperator`: A factor operator: the message to each argument of a factor. `src/lib/message-passing/core/types.ts:266` `omai-engine/message-passing`
 - structure `Family`: A message family: natural parameters, moments, quotient, KL. `src/lib/message-passing/core/types.ts:80` `omai-engine/message-passing`
 - structure `ImproperMessageError`: The error of a numerical failure the engine repairs (an improper message), not of a misconfiguration. `src/lib/message-passing/core/errors.ts:20` `omai-engine/message-passing`
 - structure `ParameterError`: The error of a misconfigured graph or setting, never swallowed by the engine. `src/lib/message-passing/core/errors.ts:34` `omai-engine/message-passing`
@@ -194,7 +194,7 @@ The numeric likelihood operators: the generic numeric operator for any density, 
 - function `likelihoodSite`: A numeric EP likelihood site from a registry of log densities. `src/lib/message-passing/operators/likelihoods/likelihoods.ts:361` `omai-engine/message-passing`
 - function `numericOperator`: An EP operator for any density over Gaussian variables, by quadrature. `src/lib/message-passing/operators/likelihoods/numeric.ts:90` `omai-engine/message-passing`
 - function `pairLikelihoodOperator`: A two-variable numeric EP site from a registry of densities. `src/lib/message-passing/operators/likelihoods/pairs.ts:292` `omai-engine/message-passing`
-- function `pairRowOperator`: A pair likelihood site on one Gaussian vector: a joint message for two coordinates that are linear forms of it. `src/lib/message-passing/operators/likelihoods/pairs.ts:420` `omai-engine/message-passing`
+- function `pairRowOperator`: A pair likelihood site on one Gaussian vector: a joint message for two coordinates that are linear forms of it. `src/lib/message-passing/operators/likelihoods/pairs.ts:422` `omai-engine/message-passing`
 - function `tripleLikelihoodOperator`: A three-variable numeric EP site from a registry of densities. `src/lib/message-passing/operators/likelihoods/triples.ts:387` `omai-engine/message-passing`
 
 - structure `apply`: The factor y = f(x) of a unary function of a Gaussian (exp, square, tanh, relu, softplus, abs, sigmoid). `src/lib/message-passing/operators/likelihoods/functions.ts:364` `omai-engine/message-passing`
