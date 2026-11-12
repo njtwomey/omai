@@ -38,7 +38,7 @@ export interface Message {
 
 /** One update of the run: a factor, the bell it was given (its cavity), the stand-in it sent and the approximation afterwards. */
 export interface Step {
-  /** 0 for the prior, 1 to 8 for the measurements. */
+  /** 0 for the prior, 1 to `rows` for the measurements. */
   readonly factor: number
   readonly cavity: Bell | null
   readonly standIn: Message
@@ -48,7 +48,7 @@ export interface Step {
 /** One update taken apart. All the curves are on one grid of values of the location. */
 export interface Taken {
   readonly sweep: number
-  /** The factor (1 to 8) and the measurement it holds. */
+  /** The factor (1 to `rows`) and the measurement it holds. */
   readonly factor: number
   readonly point: number
   /** The approximation just before the update, and this factor's own stand-in then. */
@@ -72,7 +72,7 @@ export interface Taken {
 /** What the figures and the prose read. All of it is plain data. */
 export interface Result {
   readonly rows: number
-  /** The eight values, which of them the generator made clutter, and the location it drew the others around. */
+  /** The `rows` values, which of them the generator made clutter, and the location it drew the others around. */
   readonly points: readonly number[]
   readonly clutter: readonly boolean[]
   readonly truth: number
@@ -107,7 +107,7 @@ export interface Result {
   }
 }
 
-/** How much to use: the run uses eight measurements. */
+/** How much to use: the run uses `ROWS` measurements. */
 export interface Size {
   readonly rows: number
 }
