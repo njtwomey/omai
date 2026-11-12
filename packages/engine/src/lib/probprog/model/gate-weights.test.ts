@@ -2,24 +2,15 @@
 // by the switch), a categorical switch with a Dirichlet, and the same mixture with the switch summed out. Against the exact posterior of
 // the weight (the switches summed out analytically, a quadrature).
 import { describe, expect, it } from 'vitest'
-import {
-  compileGraph,
-  epAlgorithm,
-  defaultOperators as factorOperators,
-  type MpState,
-  marginalsOf,
-} from '../../message-passing/index.ts'
-import { runAlgorithm } from '../../trace/index.ts'
+import { runEp } from '../../../testing/factor-graph.ts'
+import { type MpState, marginalsOf } from '../../message-passing/index.ts'
 import * as d from './dists/index.ts'
 import { defineModel, ops, toFactorGraph } from './index.ts'
 
 const X = [-1.9, 2.1, 0.3, 1.8, -0.2, 0.4, 2.2, -2.1]
 
 function run(bound: Parameters<typeof toFactorGraph>[0]) {
-  const c = toFactorGraph(bound)
-  expect(c.issues).toEqual([])
-  const g = compileGraph(c.graph as never, factorOperators())
-  const r = runAlgorithm(epAlgorithm(g, { tol: 1e-12 }), { maxSteps: 200 })
+  const { c, g, r } = runEp(bound, { tol: 1e-12, maxSteps: 200 })
   return { c, marginals: marginalsOf(g, r.state as MpState) }
 }
 

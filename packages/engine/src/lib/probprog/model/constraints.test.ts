@@ -1,24 +1,14 @@
 // Constraints on Gaussian latents (ordered, positive, bounds) compiled to comparison factors and run under EP, against the
 // exact posterior on a grid and the benchmark truth of the ordered Gaussian mixture.
 import { describe, expect, it } from 'vitest'
-import {
-  compileGraph,
-  epAlgorithm,
-  defaultOperators as factorOperators,
-  type MpState,
-  marginalsOf,
-} from '../../message-passing/index.ts'
-import { runAlgorithm } from '../../trace/index.ts'
+import { runEp } from '../../../testing/factor-graph.ts'
+import { type MpState, marginalsOf } from '../../message-passing/index.ts'
 import { gaussianMixtureOrdered } from '../models/index.ts'
 import * as d from './dists/index.ts'
-import { defineModel, factorGraphVerdict, toFactorGraph } from './index.ts'
+import { defineModel, type toFactorGraph } from './index.ts'
 
 function run(bound: Parameters<typeof toFactorGraph>[0], tol = 1e-9) {
-  const c = toFactorGraph(bound)
-  expect(c.issues).toEqual([])
-  const g = compileGraph(c.graph as never, factorOperators())
-  expect(factorGraphVerdict(c, g, 'ep').ok).toBe(true)
-  const r = runAlgorithm(epAlgorithm(g, { tol, damping: 0.3 }), { maxSteps: 600 })
+  const { g, r } = runEp(bound, { tol: tol, damping: 0.3, maxSteps: 600, verdict: true })
   return marginalsOf(g, r.state as MpState)
 }
 

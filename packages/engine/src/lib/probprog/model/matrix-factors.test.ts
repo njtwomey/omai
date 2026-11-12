@@ -1,6 +1,7 @@
 // A Wishart (or inverse-Wishart) latent and the multivariate normals that read it, as models under EP: the conjugate case against the
 // closed-form posterior of the matrix, the refusals that name the form that is mapped, and the shapes of the posterior.
 import { describe, expect, it } from 'vitest'
+import { runEp } from '../../../testing/factor-graph.ts'
 import {
   compileGraph,
   epAlgorithm,
@@ -22,11 +23,7 @@ const ROWS = [
 ]
 
 function run(bound: Parameters<typeof toFactorGraph>[0]) {
-  const c = toFactorGraph(bound)
-  expect(c.issues).toEqual([])
-  const g = compileGraph(c.graph as never, factorOperators())
-  const r = runAlgorithm(epAlgorithm(g, { tol: 1e-10, damping: 0.4 }), { maxSteps: 300 })
-  expect(['converged', 'completed']).toContain(r.status)
+  const { c, g, r } = runEp(bound, { tol: 1e-10, damping: 0.4, maxSteps: 300, converged: true })
   return {
     c,
     g,

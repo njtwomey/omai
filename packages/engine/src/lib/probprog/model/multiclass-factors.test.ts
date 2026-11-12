@@ -1,23 +1,13 @@
 // A categorical outcome with softmax probabilities of Gaussian class scores (a multinomial logit classifier), as a model, under EP,
 // against the exact posterior of the three class slopes on a grid.
 import { describe, expect, it } from 'vitest'
-import {
-  compileGraph,
-  epAlgorithm,
-  defaultOperators as factorOperators,
-  type MpState,
-  marginalsOf,
-} from '../../message-passing/index.ts'
-import { runAlgorithm } from '../../trace/index.ts'
+import { runEp } from '../../../testing/factor-graph.ts'
+import { type MpState, marginalsOf } from '../../message-passing/index.ts'
 import * as d from './dists/index.ts'
-import { defineModel, factorGraphVerdict, toFactorGraph } from './index.ts'
+import { defineModel, type toFactorGraph } from './index.ts'
 
 function ep(bound: Parameters<typeof toFactorGraph>[0]) {
-  const c = toFactorGraph(bound)
-  expect(c.issues).toEqual([])
-  const g = compileGraph(c.graph as never, factorOperators())
-  expect(factorGraphVerdict(c, g, 'ep').ok).toBe(true)
-  const r = runAlgorithm(epAlgorithm(g, { tol: 1e-7, damping: 0.3 }), { maxSteps: 400 })
+  const { c, g, r } = runEp(bound, { tol: 1e-7, damping: 0.3, maxSteps: 400, verdict: true })
   return {
     c,
     status: r.status,

@@ -1,6 +1,7 @@
 // Gates in the factor-graph compiler: a discrete latent that chooses a known mean or a known transition row, against the exact
 // answers of the benchmark models (forward-backward for the Gaussian HMM, the closed-form mixture for the bimodal target).
 import { describe, expect, it } from 'vitest'
+import { runEp } from '../../../testing/factor-graph.ts'
 import {
   clutterGraph,
   compileGraph,
@@ -18,11 +19,7 @@ import * as d from './dists/index.ts'
 import { defineModel, factorGraphVerdict, ops, toFactorGraph } from './index.ts'
 
 function ep(bound: Parameters<typeof toFactorGraph>[0], options = {}) {
-  const c = toFactorGraph(bound)
-  expect(c.issues).toEqual([])
-  const g = compileGraph(c.graph as never, factorOperators())
-  expect(factorGraphVerdict(c, g, 'ep').ok).toBe(true)
-  const r = runAlgorithm(epAlgorithm(g, { tol: 1e-10, ...options }), { maxSteps: 400 })
+  const { c, g, r } = runEp(bound, { tol: 1e-10, maxSteps: 400, verdict: true, algorithm: options })
   return { c, g, r, marginals: marginalsOf(g, r.state as MpState) }
 }
 

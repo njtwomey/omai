@@ -1,24 +1,14 @@
 // A beta or Dirichlet variable whose concentration is random (a gamma or log-normal hyperprior on the strength of the prior), under
 // EP, against the exact posterior by quadrature over the concentration (given it the variable is conjugate).
 import { describe, expect, it } from 'vitest'
-import {
-  compileGraph,
-  epAlgorithm,
-  defaultOperators as factorOperators,
-  type MpState,
-  marginalsOf,
-} from '../../message-passing/index.ts'
+import { runEp } from '../../../testing/factor-graph.ts'
+import { type MpState, marginalsOf } from '../../message-passing/index.ts'
 import { lgammaOf } from '../../message-passing/numerics/_scalar.ts'
-import { runAlgorithm } from '../../trace/index.ts'
 import * as d from './dists/index.ts'
-import { defineModel, factorGraphVerdict, ops, toFactorGraph } from './index.ts'
+import { defineModel, ops, toFactorGraph } from './index.ts'
 
 function run(bound: Parameters<typeof toFactorGraph>[0]) {
-  const c = toFactorGraph(bound)
-  expect(c.issues).toEqual([])
-  const g = compileGraph(c.graph as never, factorOperators())
-  expect(factorGraphVerdict(c, g, 'ep').ok).toBe(true)
-  const r = runAlgorithm(epAlgorithm(g, { tol: 1e-10 }), { maxSteps: 300 })
+  const { c, g, r } = runEp(bound, { tol: 1e-10, maxSteps: 300, verdict: true })
   return { c, marginals: marginalsOf(g, r.state as MpState) }
 }
 

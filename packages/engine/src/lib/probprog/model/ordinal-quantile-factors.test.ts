@@ -1,24 +1,13 @@
 // Ordinal regression (ordered probit and ordered logistic, the cut points fixed) and quantile regression (the asymmetric Laplace) as
 // models, under EP, each against the exact posterior of the intercept and slope on a grid.
 import { describe, expect, it } from 'vitest'
-import {
-  compileGraph,
-  epAlgorithm,
-  defaultOperators as factorOperators,
-  type MpState,
-  marginalsOf,
-} from '../../message-passing/index.ts'
-import { runAlgorithm } from '../../trace/index.ts'
+import { runEp } from '../../../testing/factor-graph.ts'
+import { type MpState, marginalsOf } from '../../message-passing/index.ts'
 import * as d from './dists/index.ts'
-import { defineModel, factorGraphVerdict, toFactorGraph } from './index.ts'
+import { defineModel, toFactorGraph } from './index.ts'
 
 function ep(bound: Parameters<typeof toFactorGraph>[0]) {
-  const c = toFactorGraph(bound)
-  expect(c.issues).toEqual([])
-  const g = compileGraph(c.graph as never, factorOperators())
-  expect(factorGraphVerdict(c, g, 'ep').ok).toBe(true)
-  const r = runAlgorithm(epAlgorithm(g, { tol: 1e-7, damping: 0.3 }), { maxSteps: 400 })
-  expect(['converged', 'completed']).toContain(r.status)
+  const { c, g, r } = runEp(bound, { tol: 1e-7, damping: 0.3, maxSteps: 400, verdict: true, converged: true })
   return { c, marginals: marginalsOf(g, r.state as MpState) as Record<string, Record<string, unknown>> }
 }
 

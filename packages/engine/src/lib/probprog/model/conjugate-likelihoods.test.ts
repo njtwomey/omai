@@ -1,24 +1,13 @@
 // The conjugate observations added with the prior atlas: an exponential or gamma value with a gamma rate, a geometric or negative
 // binomial count with a beta probability. EP is exact (the posterior's parameters and the log evidence against a quadrature).
 import { describe, expect, it } from 'vitest'
-import {
-  compileGraph,
-  epAlgorithm,
-  evidenceOf,
-  defaultOperators as factorOperators,
-  type MpState,
-  marginalsOf,
-  projectionOf,
-} from '../../message-passing/index.ts'
-import { runAlgorithm } from '../../trace/index.ts'
+import { runEp } from '../../../testing/factor-graph.ts'
+import { evidenceOf, type MpState, marginalsOf, projectionOf } from '../../message-passing/index.ts'
 import * as d from './dists/index.ts'
-import { defineModel, ops, toFactorGraph } from './index.ts'
+import { defineModel, ops, type toFactorGraph } from './index.ts'
 
 function run(bound: Parameters<typeof toFactorGraph>[0]) {
-  const c = toFactorGraph(bound)
-  expect(c.issues).toEqual([])
-  const g = compileGraph(c.graph as never, factorOperators())
-  const r = runAlgorithm(epAlgorithm(g, { tol: 1e-12 }), { maxSteps: 100 })
+  const { c, g, r } = runEp(bound, { tol: 1e-12, maxSteps: 100 })
   return {
     c,
     marginals: marginalsOf(g, r.state as MpState),

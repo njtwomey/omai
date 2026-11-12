@@ -2,22 +2,13 @@
 // Bernoulli variable under a gate of the components, the graph of the explicit-switch form, and EP is close to the exact
 // posterior (a brute-force grid over the continuous unknowns, the switches summed out).
 import { describe, expect, it } from 'vitest'
-import {
-  compileGraph,
-  epAlgorithm,
-  defaultOperators as factorOperators,
-  type MpState,
-  marginalsOf,
-} from '../../message-passing/index.ts'
-import { runAlgorithm } from '../../trace/index.ts'
+import { runEp } from '../../../testing/factor-graph.ts'
+import { type MpState, marginalsOf } from '../../message-passing/index.ts'
 import * as d from './dists/index.ts'
 import { defineModel, ops, toFactorGraph } from './index.ts'
 
 function run(bound: Parameters<typeof toFactorGraph>[0]) {
-  const c = toFactorGraph(bound)
-  expect(c.issues).toEqual([])
-  const g = compileGraph(c.graph as never, factorOperators())
-  const r = runAlgorithm(epAlgorithm(g, { tol: 1e-8, damping: 0.5 }), { maxSteps: 400 })
+  const { c, g, r } = runEp(bound, { tol: 1e-8, damping: 0.5, maxSteps: 400 })
   return { c, marginals: marginalsOf(g, r.state as MpState) }
 }
 

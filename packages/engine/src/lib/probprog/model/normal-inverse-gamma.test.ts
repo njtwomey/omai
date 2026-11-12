@@ -1,19 +1,11 @@
 // The normal-inverse-gamma prior on a Gaussian's mean and variance under EP: an inverse-gamma variance is a gamma precision, and the
 // mean with the variance `sigma2 / kappa` shares it, so the pair is one normal-gamma variable and EP is exact (against the closed form).
 import { describe, expect, it } from 'vitest'
-import {
-  compileGraph,
-  epAlgorithm,
-  evidenceOf,
-  defaultOperators as factorOperators,
-  type MpState,
-  marginalsOf,
-  projectionOf,
-} from '../../message-passing/index.ts'
+import { runEp } from '../../../testing/factor-graph.ts'
+import { evidenceOf, type MpState, marginalsOf, projectionOf } from '../../message-passing/index.ts'
 import { item } from '../../tensor/index.ts'
-import { runAlgorithm } from '../../trace/index.ts'
 import * as d from './dists/index.ts'
-import { defineModel, factorGraphPosterior, factorGraphVerdict, ops, toFactorGraph } from './index.ts'
+import { defineModel, factorGraphPosterior, ops, toFactorGraph } from './index.ts'
 
 const Y = [1.2, 0.4, 1.9, 1.1, 0.7, 1.5]
 const lg = (x: number): number => {
@@ -36,11 +28,7 @@ const lg = (x: number): number => {
 }
 
 function run(bound: Parameters<typeof toFactorGraph>[0]) {
-  const c = toFactorGraph(bound)
-  expect(c.issues).toEqual([])
-  const g = compileGraph(c.graph as never, factorOperators())
-  expect(factorGraphVerdict(c, g, 'ep').ok).toBe(true)
-  const r = runAlgorithm(epAlgorithm(g, { tol: 1e-12 }), { maxSteps: 100 })
+  const { c, g, r } = runEp(bound, { tol: 1e-12, maxSteps: 100, verdict: true })
   return { c, g, r, marginals: marginalsOf(g, r.state as MpState) }
 }
 

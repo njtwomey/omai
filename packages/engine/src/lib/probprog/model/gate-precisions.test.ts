@@ -3,22 +3,13 @@
 // means and precisions) compiles to one gate of `gaussian-gamma-precision` branches over the means and the gamma variables, and
 // EP is close to the exact posterior (the switches summed out, a brute-force grid over the continuous unknowns).
 import { describe, expect, it } from 'vitest'
-import {
-  compileGraph,
-  epAlgorithm,
-  defaultOperators as factorOperators,
-  type MpState,
-  marginalsOf,
-} from '../../message-passing/index.ts'
-import { runAlgorithm } from '../../trace/index.ts'
+import { runEp } from '../../../testing/factor-graph.ts'
+import { type MpState, marginalsOf } from '../../message-passing/index.ts'
 import * as d from './dists/index.ts'
-import { defineModel, ops, toFactorGraph } from './index.ts'
+import { defineModel, ops, type toFactorGraph } from './index.ts'
 
 function run(bound: Parameters<typeof toFactorGraph>[0], damping = 0.5) {
-  const c = toFactorGraph(bound)
-  expect(c.issues).toEqual([])
-  const g = compileGraph(c.graph as never, factorOperators())
-  const r = runAlgorithm(epAlgorithm(g, { tol: 1e-8, damping }), { maxSteps: 400 })
+  const { c, g, r } = runEp(bound, { tol: 1e-8, damping: damping, maxSteps: 400 })
   return { c, r, marginals: marginalsOf(g, r.state as MpState) }
 }
 

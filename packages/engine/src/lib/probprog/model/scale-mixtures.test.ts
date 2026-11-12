@@ -2,23 +2,13 @@
 // the noise precision) and a horseshoe coefficient (half-Cauchy local and global scales as gamma hierarchies), each against
 // the exact posterior on a grid.
 import { describe, expect, it } from 'vitest'
-import {
-  compileGraph,
-  epAlgorithm,
-  defaultOperators as factorOperators,
-  type MpState,
-  marginalsOf,
-} from '../../message-passing/index.ts'
-import { runAlgorithm } from '../../trace/index.ts'
+import { runEp } from '../../../testing/factor-graph.ts'
+import { type MpState, marginalsOf } from '../../message-passing/index.ts'
 import * as d from './dists/index.ts'
-import { defineModel, factorGraphVerdict, toFactorGraph } from './index.ts'
+import { defineModel, type toFactorGraph } from './index.ts'
 
 function ep(bound: Parameters<typeof toFactorGraph>[0], damping = 0.3) {
-  const c = toFactorGraph(bound)
-  expect(c.issues).toEqual([])
-  const g = compileGraph(c.graph as never, factorOperators())
-  expect(factorGraphVerdict(c, g, 'ep').ok).toBe(true)
-  const r = runAlgorithm(epAlgorithm(g, { tol: 1e-9, damping }), { maxSteps: 800 })
+  const { c, g, r } = runEp(bound, { tol: 1e-9, damping: damping, maxSteps: 800, verdict: true })
   return { c, r, marginals: marginalsOf(g, r.state as MpState) }
 }
 
