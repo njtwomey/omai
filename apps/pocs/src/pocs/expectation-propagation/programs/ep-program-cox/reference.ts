@@ -4,10 +4,10 @@ import { cholesky } from 'omai-engine/numerics/linalg'
 import { nutsMethod } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
-import { toArray, toFlat } from 'omai-engine/tensor'
+import { div, matmul, sqrt, square, sub, sum, type Tensor, toFlat, transpose } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
 import { type EpHooks, stepSession } from '../../../../shared/ep/sweeps.ts'
-import { BASE, BINS, covariance, WIDTH } from './program.ts'
+import { BASE, covariance, WIDTH } from './program.ts'
 
 const whitened = defineModel('cox-process-whitened', (b) => {
   const bin = b.range('bin')
@@ -36,7 +36,7 @@ export async function nutsReference(
   options: { chains?: number; warmup?: number; draws?: number } = {},
   hooks: EpHooks = {},
 ): Promise<Reference | undefined> {
-  const L = toArray(cholesky(covariance(prior))) as number[][]
+  const L = cholesky(covariance(prior))
   const m = nutsMethod(whitened.bind({ counts, L }))
   const s = session(m, {
     config: { numChains: options.chains ?? 2, numWarmup: options.warmup ?? 150, numDraws: options.draws ?? 300 },
@@ -50,15 +50,9 @@ export async function nutsReference(
   const zs = post?.summary().filter((r) => r.site === 'z') ?? []
   const n = z === undefined ? 0 : (z.shape[0] ?? 0)
   if (n < 4) return undefined
-  const zz = z === undefined ? new Float64Array(0) : toFlat(z)
-  const mean = new Array<number>(BINS).fill(0)
-  const sd = new Array<number>(BINS).fill(0)
-  for (let i = 0; i < BINS; i++) {
-    const row = L[i] as number[]
-    const f = Array.from({ length: n }, (_, k) => row.reduce((acc, v, j) => acc + v * (zz[k * BINS + j] ?? 0), 0))
-    const mu = f.reduce((a, v) => a + v, 0) / n
-    mean[i] = mu
-    sd[i] = Math.sqrt(f.reduce((a, v) => a + (v - mu) ** 2, 0) / (n - 1))
-  }
-  return { mean, sd, draws: n, rhat: Math.max(...zs.map((r) => r.rhat ?? 1)) }
+  // f = L z for each draw: a row per draw, a column per bin.
+  const f = matmul(z as Tensor, transpose(L))
+  const mean = div(sum(f, 0), n)
+  const sd = sqrt(div(sum(square(sub(f, mean)), 0), n - 1))
+  return { mean: toFlat(mean), sd: toFlat(sd), draws: n, rhat: Math.max(...zs.map((r) => r.rhat ?? 1)) }
 }

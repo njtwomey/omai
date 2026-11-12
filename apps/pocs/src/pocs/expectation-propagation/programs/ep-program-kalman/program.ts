@@ -1,8 +1,9 @@
+import { scan } from 'omai-engine/nn'
 import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { key, normal, split } from 'omai-engine/random'
-import { toFlat } from 'omai-engine/tensor'
+import { add, concat, expandDims, mul, sliceAxis, stack, take, tensor, toFlat, type Value } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
 import type { EpHooks } from '../../../../shared/ep/sweeps.ts'
 
@@ -33,22 +34,30 @@ export const stepCovariance = (push: number): number[][] => [
 export function simulate({ seed, steps, readingSd, push }: Setup) {
   type Key = ReturnType<typeof key>
   const [kx, kw, ke] = split(key(seed), 3) as [Key, Key, Key]
-  const start = toFlat(normal(kx, [2]))
-  const w = toFlat(normal(kw, [steps, 2]))
+  const start = normal(kx, [2])
+  const w = normal(kw, [steps, 2])
   // The push is correlated between the position and the velocity: its Cholesky factor mixes two standard normals.
   const q = stepCovariance(push)
   const l00 = Math.sqrt(q[0]?.[0] as number)
   const l10 = (q[1]?.[0] as number) / l00
   const l11 = Math.sqrt((q[1]?.[1] as number) - l10 ** 2)
-  const path = [[START.mean[0] + START.sd[0] * (start[0] ?? 0), START.mean[1] + START.sd[1] * (start[1] ?? 0)]]
-  for (let t = 1; t < steps; t++) {
-    const [p, v] = path[t - 1] as [number, number]
-    const [a, b] = [w[2 * t] ?? 0, w[2 * t + 1] ?? 0]
-    path.push([p + DT * v + l00 * a, v + l10 * a + l11 * b])
-  }
-  const e = toFlat(normal(ke, [steps]))
-  const y = path.map(([p], t) => (p as number) + readingSd * (e[t] ?? 0))
-  return { position: path.map(([p]) => p as number), velocity: path.map(([, v]) => v as number), y }
+  const first = add(tensor(START.mean), mul(tensor(START.sd), start))
+  // The position moves by the velocity and the push; the velocity by the push.
+  const path = scan(
+    ([p, v], shock) => {
+      const a = take(shock, 0)
+      const b = take(shock, 1)
+      const position = add(add(p, mul(v, DT)), mul(a, l00))
+      const velocity = add(add(v, mul(a, l10)), mul(b, l11))
+      return [[position, velocity] as [Value, Value], stack([position, velocity])]
+    },
+    [take(first, 0), take(first, 1)] as [Value, Value],
+    sliceAxis(w, 0, 1, steps),
+  )
+  const states = concat([expandDims(first, 0), path.ys], 0)
+  const position = take(states, 0, 1)
+  const y = add(position, mul(normal(ke, [steps]), readingSd))
+  return { position: toFlat(position), velocity: toFlat(take(states, 1, 1)), y: toFlat(y) }
 }
 // endregion
 

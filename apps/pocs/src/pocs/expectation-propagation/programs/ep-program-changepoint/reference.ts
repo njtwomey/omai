@@ -2,7 +2,27 @@
 // the rates: forward filtering, backward sampling), written out here because the compiled factor graph has no Gibbs method.
 // Not part of the program shown.
 import { gamma, keyFromPath, uniform } from 'omai-engine/random'
-import { toFlat } from 'omai-engine/tensor'
+import {
+  add,
+  arange,
+  cast,
+  concat,
+  div,
+  equal,
+  fromVector,
+  maximum,
+  mul,
+  reshape,
+  sqrt,
+  square,
+  sub,
+  sum,
+  tensor,
+  toArray,
+  toFlat,
+  type Value,
+  zeros,
+} from 'omai-engine/tensor'
 import { type EpHooks, pacer } from '../../../../shared/ep/sweeps.ts'
 import { PRIOR } from './program.ts'
 
@@ -28,10 +48,15 @@ export async function gibbsReference(
   const K = 3
   const move = (1 - stay) / 2
   const trans = (i: number, j: number): number => (i === j ? stay : move)
-  let rate = PRIOR.shape.map((s, k) => s / (PRIOR.rate[k] as number))
-  const visits = Array.from({ length: T }, () => new Array<number>(K).fill(0))
-  const sum = new Array<number>(K).fill(0)
-  const sum2 = new Array<number>(K).fill(0)
+  const counts = tensor(y)
+  const regimeIds = reshape(arange(K), [1, K])
+  const priorShape = tensor(PRIOR.shape)
+  const priorRate = tensor(PRIOR.rate)
+  let rate: Value = div(priorShape, priorRate)
+  // The tallies over the sweeps are tensors: the regime counts of each step, and the sums of the rates and their squares.
+  let visits: Value = zeros([T, K])
+  let rateSum: Value = zeros([K])
+  let rateSum2: Value = zeros([K])
   // The sampler goes on through a stop until it has 100 draws, so that what it returns can be read.
   const pace = pacer(hooks)
   let ran = sweeps
@@ -41,21 +66,33 @@ export async function gibbsReference(
       break
     }
     const u = toFlat(uniform(keyFromPath(seed, 'z', sweep), [T]))
-    // Forward: filtered probabilities.
-    const alpha: number[][] = []
+    const r = toFlat(rate)
+    // Forward filter and backward sample: scalar recursions over the steps, each needing the step before, on working
+    // buffers (a tensor op per step per sweep made this reference 17 times slower, measured).
+    const alpha = new Float64Array(T * K)
     for (let t = 0; t < T; t++) {
-      const a = Array.from({ length: K }, (_, k) => {
-        const prior = t === 0 ? 1 / K : (alpha[t - 1] as number[]).reduce((s, p, i) => s + p * trans(i, k), 0)
-        return prior * Math.exp(logPmf(y[t] as number, rate[k] as number))
-      })
-      const n = a.reduce((s, v) => s + v, 0)
-      alpha.push(a.map((v) => v / n))
+      let n = 0
+      for (let k = 0; k < K; k++) {
+        let prior = 1 / K
+        if (t > 0) {
+          prior = 0
+          for (let i = 0; i < K; i++) prior += (alpha[(t - 1) * K + i] as number) * trans(i, k)
+        }
+        const a = prior * Math.exp(logPmf(y[t] as number, r[k] as number))
+        alpha[t * K + k] = a
+        n += a
+      }
+      for (let k = 0; k < K; k++) alpha[t * K + k] = (alpha[t * K + k] as number) / n
     }
-    // Backward: sample z_T, then z_t given z_{t+1}.
-    const z = new Array<number>(T).fill(0)
+    const z = new Float64Array(T)
+    const w = new Float64Array(K)
     for (let t = T - 1; t >= 0; t--) {
-      const w = (alpha[t] as number[]).map((p, k) => (t === T - 1 ? p : p * trans(k, z[t + 1] as number)))
-      const n = w.reduce((s, v) => s + v, 0)
+      let n = 0
+      for (let k = 0; k < K; k++) {
+        const p = alpha[t * K + k] as number
+        w[k] = t === T - 1 ? p : p * trans(k, z[t + 1] as number)
+        n += w[k] as number
+      }
       let c = 0
       let pick = K - 1
       for (let k = 0; k < K; k++) {
@@ -68,34 +105,25 @@ export async function gibbsReference(
       z[t] = pick
     }
     // Rates given the regimes.
-    rate = rate.map((_, k) => {
-      let n = 0
-      let tot = 0
-      for (let t = 0; t < T; t++)
-        if (z[t] === k) {
-          n++
-          tot += y[t] as number
-        }
-      const shape = (PRIOR.shape[k] as number) + tot
-      const r = (PRIOR.rate[k] as number) + n
-      return (toFlat(gamma(keyFromPath(seed, 'rate', sweep * K + k), [1], shape))[0] ?? 0) / r
-    })
+    const member = cast(equal(reshape(fromVector(z), [T, 1]), regimeIds), 'float64')
+    const total = sum(mul(member, reshape(counts, [T, 1])), 0)
+    const shapes = toFlat(add(priorShape, total))
+    const draws = Array.from({ length: K }, (_, k) =>
+      gamma(keyFromPath(seed, 'rate', sweep * K + k), [1], shapes[k] as number),
+    )
+    rate = div(concat(draws, 0), add(priorRate, sum(member, 0)))
     if (sweep >= burn) {
-      z.forEach((k, t) => {
-        ;(visits[t] as number[])[k] = ((visits[t] as number[])[k] as number) + 1
-      })
-      rate.forEach((r, k) => {
-        sum[k] = (sum[k] as number) + r
-        sum2[k] = (sum2[k] as number) + r * r
-      })
+      visits = add(visits, member)
+      rateSum = add(rateSum, rate)
+      rateSum2 = add(rateSum2, mul(rate, rate))
     }
   }
   const n = ran - burn
-  const rateMean = sum.map((s) => s / n)
+  const rateMean = div(rateSum, n)
   return {
-    regimes: visits.map((v) => v.map((c) => c / n)),
-    rateMean,
-    rateSd: sum2.map((s, k) => Math.sqrt(Math.max(0, s / n - (rateMean[k] as number) ** 2))),
+    regimes: toArray(div(visits, n)) as number[][],
+    rateMean: toFlat(rateMean),
+    rateSd: toFlat(sqrt(maximum(sub(div(rateSum2, n), square(rateMean)), 0))),
     sweeps: n,
   }
 }

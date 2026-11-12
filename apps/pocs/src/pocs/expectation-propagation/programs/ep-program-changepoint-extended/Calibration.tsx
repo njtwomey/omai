@@ -1,4 +1,5 @@
 import { type AtomCalibration, type CalibrationSample, calibrationTable } from 'omai-engine/probprog/ep'
+import { item, sum, tensor } from 'omai-engine/tensor'
 import { type ReactNode, useMemo } from 'react'
 import { sig } from '../../../../shared/ep/ProgramParts.tsx'
 import { RunProgress } from '../../../../shared/RunProgress.tsx'
@@ -101,7 +102,7 @@ export function CalibrationPanel(props: {
   const verdict = useMemo(() => tableOf(visited.map((r) => r.ep)), [visited])
   const agreeing = visited.filter((r) => r.agrees).length
   const ok = done && visited.length > 0 && verdict.pass && agreeing === visited.length
-  const gapBarely = barely.length === 0 ? Number.NaN : barely.reduce((s, r) => s + r.gap, 0) / barely.length
+  const gapBarely = barely.length === 0 ? Number.NaN : item(sum(tensor(barely.map((r) => r.gap)))) / barely.length
   const widths = barely.map(narrowest).filter(Number.isFinite)
   return (
     <section className="flex flex-col gap-3">

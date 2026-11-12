@@ -1,3 +1,4 @@
+import { arange, toFlat } from 'omai-engine/tensor'
 import type { Config, Method, Session, Subscription } from 'omai-engine/trace'
 import {
   type LiveSession,
@@ -72,7 +73,7 @@ export function BakedSession<F>(props: {
   const gated = live.head >= 1 && !ready
   const run = useRun(live)
   const t = Math.max(0, Math.min(at ?? live.head, live.head))
-  const stepsAxis = useMemo(() => Array.from({ length: live.head + 1 }, (_, i) => i), [live.head])
+  const stepsAxis = useMemo(() => toFlat(arange(live.head + 1)), [live.head])
   const seek = useScrubClick(stepsAxis, live.head, setAt)
   return (
     <div className="flex flex-col gap-3">

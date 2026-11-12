@@ -4,6 +4,7 @@ import { recoverySummary } from 'omai-engine/probprog/ep'
 import { nutsMethod } from 'omai-engine/probprog/inference'
 import { toStructure } from 'omai-engine/probprog/model'
 import { spearman } from 'omai-engine/stats'
+import { item, sum, tensor } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
 import { type ProgramCheck, sig } from '../../../../shared/ep/program-check.ts'
 import { type EpHooks, stepSession } from '../../../../shared/ep/sweeps.ts'
@@ -113,7 +114,7 @@ export function checkSkills(run: SkillsRun, reference: SkillsReference): Program
   const epRho = rho(found.mean, data.skills)
   const nutsRho = rho(reference.mean, data.skills)
   const sdRatio = found.sd.map((s, i) => s / (reference.sd[i] ?? 1))
-  const meanSd = sdRatio.reduce((a, b) => a + b, 0) / sdRatio.length
+  const meanSd = item(sum(tensor(sdRatio))) / sdRatio.length
   const rows: ProgramCheck['rows'][number][] = [
     {
       label: 'the true skills against EP\u2019s 90% intervals',

@@ -1,3 +1,4 @@
+import { arange, mul, toFlat } from 'omai-engine/tensor'
 import { useEffect, useRef, useState } from 'react'
 
 /** The part of a live session the bake needs: whether the run has ended, and which run it is. */
@@ -51,8 +52,8 @@ export function useBake<T>(live: Bakeable, frames: number, view: (t: number) => 
     setBaking(false)
     if (!live.done || live.head < 1) return
     const stride = Math.max(1, Math.ceil(live.head / frames))
-    const list = Array.from({ length: Math.floor(live.head / stride) + 1 }, (_, i) => i * stride)
-    if (list[list.length - 1] !== live.head) list.push(live.head)
+    const marks = toFlat(mul(arange(Math.floor(live.head / stride) + 1), stride))
+    const list = marks[marks.length - 1] === live.head ? marks : [...marks, live.head]
     let next = 0
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | undefined

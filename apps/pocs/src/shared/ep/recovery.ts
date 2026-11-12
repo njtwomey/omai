@@ -1,4 +1,18 @@
 /** The recovery check of an EP program: the truth against EP's credible intervals, and what the posterior spread says. */
+import {
+  abs,
+  div,
+  greaterEqual,
+  item,
+  lessEqual,
+  logicalAnd,
+  max,
+  min,
+  square,
+  sub,
+  sum,
+  tensor,
+} from 'omai-engine/tensor'
 
 /** One coordinate EP inferred: its posterior mean and spread and its equal-tailed interval. */
 export interface Estimate {
@@ -29,18 +43,15 @@ export interface Recovery {
  */
 export function recovery(estimates: readonly Estimate[], truth: readonly number[]): Recovery {
   const n = Math.min(estimates.length, truth.length)
-  let hit = 0
-  let se = 0
-  let sv = 0
-  let sz = 0
-  for (let i = 0; i < n; i++) {
-    const e = estimates[i] as Estimate
-    const t = truth[i] as number
-    if (t >= e.lower && t <= e.upper) hit++
-    se += (e.mean - t) ** 2
-    sv += e.sd ** 2
-    sz += ((e.mean - t) / e.sd) ** 2
-  }
+  const kept = estimates.slice(0, n)
+  const [mean, sd, lower, upper] = (['mean', 'sd', 'lower', 'upper'] as const).map((field) =>
+    tensor(kept.map((e) => e[field])),
+  )
+  const t = tensor(truth.slice(0, n) as number[])
+  const hit = item(sum(logicalAnd(greaterEqual(t, lower as never), lessEqual(t, upper as never))))
+  const se = item(sum(square(sub(mean as never, t))))
+  const sv = item(sum(square(sd as never)))
+  const sz = item(sum(square(div(sub(mean as never, t), sd as never))))
   return { coverage: hit / n, rmse: Math.sqrt(se / n), meanSd: Math.sqrt(sv / n), zrms: Math.sqrt(sz / n) }
 }
 
@@ -85,19 +96,17 @@ export function agreement(
   ep: readonly Estimate[],
   reference: { readonly mean: readonly number[]; readonly sd: readonly number[] },
 ): Agreement {
-  let meanZ = 0
-  let sum = 0
-  let lo = Number.POSITIVE_INFINITY
-  let hi = 0
   const n = Math.min(ep.length, reference.mean.length)
-  for (let i = 0; i < n; i++) {
-    const e = ep[i] as Estimate
-    const sd = reference.sd[i] as number
-    meanZ = Math.max(meanZ, Math.abs(e.mean - (reference.mean[i] as number)) / sd)
-    const r = e.sd / sd
-    sum += r
-    lo = Math.min(lo, r)
-    hi = Math.max(hi, r)
+  if (n === 0) return { meanZ: 0, sdRatio: Number.NaN, sdRatioRange: [Number.POSITIVE_INFINITY, 0] }
+  const kept = ep.slice(0, n)
+  const sd = tensor(reference.sd.slice(0, n) as number[])
+  const meanZ = item(
+    max(div(abs(sub(tensor(kept.map((e) => e.mean)), tensor(reference.mean.slice(0, n) as number[]))), sd)),
+  )
+  const ratio = div(tensor(kept.map((e) => e.sd)), sd)
+  return {
+    meanZ: Math.max(0, meanZ),
+    sdRatio: item(sum(ratio)) / n,
+    sdRatioRange: [Math.min(Number.POSITIVE_INFINITY, item(min(ratio))), Math.max(0, item(max(ratio)))],
   }
-  return { meanZ, sdRatio: sum / n, sdRatioRange: [lo, hi] }
 }

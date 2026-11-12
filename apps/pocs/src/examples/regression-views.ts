@@ -18,31 +18,62 @@ import {
   type MarginalOracle,
   weightedOracle,
 } from 'omai-engine/probprog/validation'
+import {
+  add,
+  arange,
+  asTensor,
+  cast,
+  diagonal,
+  div,
+  item,
+  matmul,
+  mul,
+  pow,
+  reshape,
+  sliceAxis,
+  sort,
+  sqrt,
+  sub,
+  sum,
+  type TensorLike,
+  take,
+  tensor,
+  toArray,
+  toFlat,
+  transpose,
+  type Value,
+} from 'omai-engine/tensor'
 import { drawRows, exampleDiagnostics } from './example-method.ts'
 
-/** The powers `1, x, ..., x^degree`. */
-export const monomials = (x: number, degree: number): number[] => Array.from({ length: degree + 1 }, (_, j) => x ** j)
+/** The powers `1, x, ..., x^degree` of each input: a row per input `[n, degree + 1]`. */
+export const monomials = (x: TensorLike, degree: number): Value =>
+  pow(reshape(x, [-1, 1]), reshape(arange(degree + 1), [1, degree + 1]))
 
-/** The polynomial with coefficients `w` (of `1, x, x^2, ...`) at `x`. */
-export const polynomialAt = (w: readonly number[], x: number): number => w.reduce((a, c, j) => a + c * x ** j, 0)
+/** The polynomial with coefficients `w` (of `1, x, x^2, ...`) at each input `x`. */
+export const polynomialAt = (w: TensorLike, x: TensorLike): Value =>
+  matmul(monomials(x, (asTensor(w).shape[0] ?? 1) - 1), w)
 
 /**
- * The quantile of an ascending list at probability `p`, by linear interpolation.
+ * The quantile at probability `p` of ascending values, by linear interpolation, along the last axis (one quantile for a
+ * list, one per row for a matrix).
  *
- * @param sorted - The values, ascending.
+ * @param sorted - The values, ascending along the last axis.
  * @param p - The probability.
  * @returns The quantile.
  * @example
  * ```ts
+ * import { item } from 'omai-engine/tensor'
  * import { sortedQuantile } from './index.ts'
- * sortedQuantile([1, 2, 3, 4, 5], 0.5) // => 3
+ * item(sortedQuantile([1, 2, 3, 4, 5], 0.5)) // => 3
  * ```
  */
-export function sortedQuantile(sorted: readonly number[], p: number): number {
-  const i = (sorted.length - 1) * p
+export function sortedQuantile(sorted: TensorLike, p: number): Value {
+  const values = asTensor(sorted)
+  const axis = values.shape.length - 1
+  const i = ((values.shape[axis] ?? 1) - 1) * p
   const lo = Math.floor(i)
-  const hi = Math.ceil(i)
-  return (sorted[lo] ?? 0) + ((sorted[hi] ?? 0) - (sorted[lo] ?? 0)) * (i - lo)
+  const low = take(values, lo, axis)
+  return add(low, mul(sub(take(values, Math.ceil(i), axis), low), i - lo))
 }
 
 /** The exact normal posterior of the coefficients of a Gaussian prior and a Gaussian likelihood with a known noise. */
@@ -56,7 +87,7 @@ export interface ExactNormal {
  * The exact posterior of the coefficients of `y = X w + e` with a normal prior on `w` (standard deviation `priorScale`) and
  * normal noise of known standard deviation: a normal with precision `I / priorScale^2 + X'X / noiseSd^2`.
  *
- * @param design - The design rows `[n][p]`.
+ * @param design - The design rows `[n, p]`.
  * @param y - The responses.
  * @param priorScale - The prior standard deviation of each coefficient.
  * @param noiseSd - The noise standard deviation.
@@ -69,14 +100,14 @@ export interface ExactNormal {
  * ```
  */
 export function exactNormalPosterior(
-  design: readonly (readonly number[])[],
-  y: readonly number[],
+  design: TensorLike,
+  y: TensorLike,
   priorScale: number,
   noiseSd: number,
 ): ExactNormal {
-  const d = designOf({ x: design as number[][], y: y as number[] }, 'linreg')
+  const d = designOf({ x: toArray(asTensor(design)) as number[][], y: toFlat(asTensor(y)) }, 'linreg')
   const fit = bayesianLinearFit(d, { alpha: 1 / priorScale ** 2, beta: 1 / noiseSd ** 2 })
-  return { mean: fit.mean, sd: fit.covariance.map((r, i) => Math.sqrt(r[i] ?? 0)), cov: fit.covariance }
+  return { mean: fit.mean, sd: toFlat(sqrt(diagonal(tensor(fit.covariance)))), cov: fit.covariance }
 }
 
 /** How a regression's posterior is read: the coefficients and the scalar sites beside them, with their true values. */
@@ -185,19 +216,21 @@ export function curveBands(
   lines: number,
   z: ArrayLike<number> = [],
 ): CurveBands {
-  const at = grid.map((v) => rows.map((r) => r.slice(0, p).reduce((a, c, j) => a + c * v ** j, 0)))
-  const curve = at.map((col) => [...col].sort((a, b) => a - b))
-  const predictive = at.map((col) => col.map((f, s) => f + noise(rows[s] ?? [], s, z[s] ?? 0)).sort((a, b) => a - b))
+  // The curve of each draw at each input: a row per input, a column per draw.
+  const draws = tensor(rows as number[][])
+  const at = matmul(monomials(tensor(grid as number[]), p - 1), transpose(sliceAxis(draws, 1, 0, p)))
+  const curve = sort(at, 1)
+  const newObservation = tensor(rows.map((r, s) => noise(r, s, z[s] ?? 0)))
+  const predictive = sort(add(at, newObservation), 1)
   const stride = Math.max(1, Math.floor(rows.length / lines))
+  const kept = mul(arange(Math.min(lines, rows.length)), stride)
   return {
-    mean: at.map((col) => col.reduce((a, v) => a + v, 0) / col.length),
-    lo: curve.map((c) => sortedQuantile(c, 0.025)),
-    hi: curve.map((c) => sortedQuantile(c, 0.975)),
-    predictiveLo: predictive.map((c) => sortedQuantile(c, 0.025)),
-    predictiveHi: predictive.map((c) => sortedQuantile(c, 0.975)),
-    lines: Array.from({ length: Math.min(lines, rows.length) }, (_, s) =>
-      at.map((col) => col[s * stride] ?? Number.NaN),
-    ),
+    mean: toFlat(div(sum(at, 1), rows.length)),
+    lo: toFlat(sortedQuantile(curve, 0.025)),
+    hi: toFlat(sortedQuantile(curve, 0.975)),
+    predictiveLo: toFlat(sortedQuantile(predictive, 0.025)),
+    predictiveHi: toFlat(sortedQuantile(predictive, 0.975)),
+    lines: toArray(transpose(take(at, cast(kept, 'int32'), 1))) as number[][],
   }
 }
 
@@ -217,7 +250,8 @@ export function curveBands(
  */
 export function regressionPairs(label: string, got: RegressionDraws, coordinates?: readonly string[]): unknown {
   const names = coordinates ?? got.names.slice(0, 5)
-  const columns = Object.fromEntries(names.map((c) => [c, got.rows.map((r) => r[got.names.indexOf(c)] ?? 0)] as const))
+  const rows = tensor(got.rows)
+  const columns = Object.fromEntries(names.map((c) => [c, toFlat(take(rows, got.names.indexOf(c), 1))] as const))
   const truth = Object.fromEntries(
     names.flatMap((c) => {
       const t = got.truth[got.names.indexOf(c)]
@@ -287,7 +321,7 @@ export function regressionReference(post: Posterior, shape: RegressionShape): Re
     .filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
   return {
     names: got.names,
-    columns: got.names.map((_, j) => got.rows.map((r) => r[j] ?? 0)),
+    columns: toArray(transpose(tensor(got.rows))) as number[][],
     maxRhat: rhats.length === 0 ? null : Math.max(...rhats),
   }
 }
@@ -357,7 +391,7 @@ export function regressionCheck(
     }),
     rows,
     maxMeanError: Math.max(...rows.map((r) => Math.abs(r.meanError))),
-    medianSdRatio: [...rows.map((r) => r.sdRatio)].sort((a, b) => a - b)[Math.floor(rows.length / 2)] ?? Number.NaN,
+    medianSdRatio: item(take(sort(tensor(rows.map((r) => r.sdRatio))), Math.floor(rows.length / 2))),
     maxWasserstein: Math.max(...rows.map((r) => r.wasserstein)),
     maxKl: Math.max(...rows.map((r) => r.kl)),
     against: exact === undefined ? 'reference' : 'exact',

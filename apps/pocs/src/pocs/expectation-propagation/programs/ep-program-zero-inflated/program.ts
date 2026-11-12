@@ -2,7 +2,7 @@ import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { foldIn, key, normal, poisson, uniform } from 'omai-engine/random'
-import { toFlat } from 'omai-engine/tensor'
+import { add, exp, less, mul, tensor, toFlat, where } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
 import type { EpHooks } from '../../../../shared/ep/sweeps.ts'
 
@@ -21,13 +21,14 @@ export const defaultSetup: ZipSetup = { seed: 2, rows: 150, inflation: 0.3, inte
 // region simulate
 export function simulate({ seed, rows, inflation, intercept, slope }: ZipSetup) {
   const k = key(seed)
-  const x = Array.from(toFlat(normal(foldIn(k, 1), [rows])))
+  const x = normal(foldIn(k, 1), [rows])
   // Which counts are structural zeros.
-  const structural = Array.from(toFlat(uniform(foldIn(k, 2), [rows])), (u) => u < inflation)
-  const y = x.map((xi, i) =>
-    structural[i] ? 0 : Number(toFlat(poisson(foldIn(k, 100 + i), Math.exp(intercept + slope * xi), [1]))[0]),
-  )
-  return { x, y, structural }
+  const structural = less(uniform(foldIn(k, 2), [rows]), inflation)
+  const rate = exp(add(mul(x, slope), intercept))
+  // A count is drawn for each row from its own key, and is zero where the state is structural.
+  const draws = toFlat(rate).map((r, i) => toFlat(poisson(foldIn(k, 100 + i), r, [1]))[0] ?? 0)
+  const y = where(structural, 0, tensor(draws))
+  return { x: toFlat(x), y: toFlat(y), structural: toFlat(structural) }
 }
 // endregion
 
