@@ -89,9 +89,10 @@ export function solve(readings: readonly number[], say: Say = () => {}, size: Si
   const oracle = truth.marginals['theta']
   // endregion
   if (oracle === undefined) throw new Error('the library gave no exact posterior')
-  // the density is the slope of the cumulative distribution
+  // The density at a point is the exact probability of the cell around it, divided by its width: the slope of the cumulative
+  // distribution across half a grid step on each side. A fixed wider window would blur the narrow humps the figure is about.
   const xs = toFlat(linspace(RANGE[0], RANGE[1], size.grid))
-  const h = 0.12
+  const h = (RANGE[1] - RANGE[0]) / (size.grid - 1) / 2
   const density = xs.map((x) => Math.max(0, (oracle.cdf(x + h) - oracle.cdf(x - h)) / (2 * h)))
   const peak = xs[density.indexOf(Math.max(...density))] as number
   return {
