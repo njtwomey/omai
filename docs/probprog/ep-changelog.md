@@ -598,3 +598,15 @@ observation). Their reports say what exists; the work packages above absorb it r
   `model/bayesian-neural-network` no longer records a thrown error: the EP run completes its 200 sweeps without converging
   (status `stopped`), with no log evidence and the improper factors listed in `diagnostics.evidenceUndefinedAt`. Gap
   `evidence-catch-uneven` removed.
+
+## 2026-11-12 The atlas is read against the code (`agent-a5ac69-atlas`)
+
+- Every row of `ep-priors.md` has a machine-readable `ran by` column (`atom:<name>`, `test:<path>#<text>`, or `not yet`), a `status`
+  column that `make ep-report` writes from the coverage (`runs`, `planned`, `broken`) and a prose `note`. `make ep-report-check` fails
+  when a status word is stale, an atom does not exist or does not run, a test file or its text is gone, or a row names nothing
+  (`scripts/ep-atlas.ts`, `scripts/ep-atlas.test.ts`; `ep-status.md` counts the rows). Gap `docs-drift` removed.
+- First reading: 37 rows, 36 run, one `not yet` (the direct `studentT` / `laplace` / `cauchy` prior). Six rows had no atom (they said
+  "probed", "tests", "test", "tested", or pointed at `ep-plan.md`): each now names a test file and a text it holds. The row of a mean
+  whose spread is a random multiple of the noise precision (`kappa` random) has no test that runs it under EP, only the compiler mapping
+  (`gates-categorical.test.ts`) and the gamma-product rule it uses (`observed-scale-mixtures.test.ts`); a probe confirmed it converges,
+  and its note says so.

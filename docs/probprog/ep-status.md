@@ -86,7 +86,6 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | non-centred-scale: A non-centred scale (z / sqrt(precision)) has no variational message passing rule | quality | open | small | - |
 | evidence: The EP log evidence is exact where EP is, and has two known limits | infrastructure | open | medium | - |
 | variational-rules: Variational message passing: what it cannot run and where the mean field is poor | infrastructure | open | small | - |
-| docs-drift: The prior atlas can drift from the code | infrastructure | open | small | - |
 
 **18** directions for the suite to grow into:
 
@@ -113,4 +112,6 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 
 ## The prior atlas
 
-[`ep-priors.md`](ep-priors.md) names 42 atoms; every one of them runs under EP.
+[`ep-priors.md`](ep-priors.md) has **37** rows, each with the atom or test that runs it (`ran by`) and a status word set from the code: **36** run, **1** marked `not yet`, **0** have a reference that does not hold. The rows name **37** atoms and **7** tests.
+
+Atoms named in its prose: 11; every one of them runs under EP.

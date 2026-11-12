@@ -182,17 +182,6 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
       size: 'small',
       markers: [],
     },
-    {
-      id: 'docs-drift',
-      title: 'The prior atlas can drift from the code',
-      kind: 'infrastructure',
-      status: 'open',
-      summary:
-        'The atlas (`docs/probprog/ep-priors.md`) names atoms and says per row whether it runs. `make ep-report-check` fails when an atom it names does not run, and `docs/probprog/ep-status.md` is generated from the coverage; the status words of the rows, and the rows that name no atom, are still written by hand.',
-      plan: 'Give each atlas row a machine-readable column (the atom or test that ran it) and generate the status word from the coverage.',
-      size: 'small',
-      markers: [],
-    },
   ]
 }
 
