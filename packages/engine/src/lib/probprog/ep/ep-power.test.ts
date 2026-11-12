@@ -15,10 +15,7 @@ const problem = atom.problem({ ...atom.defaults, seed: 3, n: 24 })
 const exact = problem.exact ?? {}
 
 /** The mean ratio of EP's sd to the exact sd over the three slopes, the largest mean error in exact sds, and whether the run settled. */
-function against(
-  power: number,
-  packScalars = false,
-): { sdRatio: number; meanError: number; converged: boolean } {
+function against(power: number, packScalars = false): { sdRatio: number; meanError: number; converged: boolean } {
   const method = epSpecMethod(atomBound(problem), { packScalars })
   const run = session(method, {
     seed: 1,

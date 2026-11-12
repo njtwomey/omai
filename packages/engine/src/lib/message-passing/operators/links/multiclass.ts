@@ -18,6 +18,7 @@ import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam 
 import { defineOperator, messageRule } from '../../core/define.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
+import { MOST_PRODUCT, productTilt } from '../../numerics/_product.ts'
 import {
   naturalGradientMessage,
   numericExpectedLog,
@@ -26,15 +27,7 @@ import {
   quadraturePorts,
 } from '../kernel/variational-numeric.ts'
 import { probitAuxiliary, softmaxAuxiliary } from './_multiclass-auxiliary.ts'
-import {
-  classesOf,
-  logProbit,
-  logSoftmax,
-  logSumExp,
-  MOST_PRODUCT,
-  productTilt,
-  scoreLog,
-} from './_multiclass-product.ts'
+import { classesOf, logProbit, logSoftmax, logSumExp, scoreLog } from './_multiclass-scores.ts'
 import {
   type ProbitBound,
   probitBound,

@@ -361,8 +361,52 @@ export function observedPair(
   const why = pairLikelihoods()[likelihood]?.check?.(y, params)
   if (why !== undefined) throw likelihoodRejects(node.name, likelihood, why)
   if (typeof args[0] !== 'string' && typeof args[1] !== 'string') return null
+  if (
+    cx.packScalars &&
+    likelihood === 'beta-shapes' &&
+    typeof args[0] === 'string' &&
+    typeof args[1] === 'string' &&
+    pairOnVector(cx, node, [args[0], args[1]], params, i)
+  )
+    return null
   cx.g.addFactor({ operator: 'likelihood-pair', args, params }, cx.elementName(node.name, node.dims, i))
   return null
+}
+
+/**
+ * The beta outcome's two shapes (Gaussian variables on their logs) as one site on the vector they are the coordinates of: the two variables are assembled
+ * into one Gaussian vector by a `gaussian-mv-stack` factor (made once for the pair, whatever the number of rows), and each row is a
+ * `likelihood-pair-row` on it, whose message carries the correlation the density puts between them (the two shapes of a beta outcome),
+ * which two scalar messages cannot. False (nothing made) when a coordinate is not a Gaussian variable (a gamma variable), the two are
+ * one variable, or the operator does not take the density (one with a kink).
+ */
+function pairOnVector(
+  cx: Context,
+  node: ModelNode & { readonly kind: 'observed' },
+  args: readonly [string, string],
+  params: Readonly<Record<string, Json>>,
+  i: number,
+): boolean {
+  const [a, b] = args
+  const gaussian = (name: string): boolean =>
+    cx.g.variables.some((v) => v.name === name && v.family.kind === 'gaussian')
+  if (a === b || !gaussian(a) || !gaussian(b)) return false
+  const row = { ...params, matrix: [1, 0, 0, 1] }
+  if (cx.g.need('likelihood-pair-row').check?.(row, [gaussianMv(2)]) !== undefined) return false
+  const key = `${a}|${b}`
+  let vector = cx.stacked.get(key)
+  if (vector === undefined || !cx.g.variables.some((v) => v.name === vector)) {
+    vector = cx.g.auxName(node.name, undefined)
+    cx.g.need('gaussian-mv-stack')
+    cx.g.addVariable({ name: vector, family: { kind: 'gaussian-mv', size: 2 } })
+    cx.g.addFactor({ operator: 'gaussian-mv-stack', args: [vector, a, b], params: { n: 2 } }, vector)
+    cx.stacked.set(key, vector)
+  }
+  cx.g.addFactor(
+    { operator: 'likelihood-pair-row', args: [vector], params: row },
+    cx.elementName(node.name, node.dims, i),
+  )
+  return true
 }
 
 /**

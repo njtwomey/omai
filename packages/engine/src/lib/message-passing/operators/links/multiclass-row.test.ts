@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { bruteVectorSite } from '../../../../testing/vector-site.ts'
 import { ndtr } from '../../../numerics/special/_kernels.ts'
 import { massOf, messageArg } from '../../core/args.ts'
 import { gaussian, gaussianEta } from '../../core/families.ts'
 import { gaussianMv, gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
 import type { Arg, Params } from '../../core/types.ts'
-import { spd } from '../../numerics/_dense.ts'
 import { defaultOperators } from '../registry.ts'
 import { multiclassSite } from './multiclass.ts'
 import { multiclassRow } from './multiclass-row.ts'
@@ -30,69 +30,6 @@ const logProbit = (z: readonly number[], y: number): number => {
     total += (p * 16) / n
   }
   return Math.log(total)
-}
-
-/** The tilted natural parameters of w (and the log mass) by a grid over the coordinates of w's cavity. */
-function brute(
-  m: readonly number[],
-  v: readonly number[],
-  matrix: readonly number[],
-  offset: readonly number[],
-  logf: (z: readonly number[]) => number,
-  n: number,
-): { logMass: number; mean: number[]; covariance: number[] } {
-  const d = m.length
-  const k = offset.length
-  const l = cholesky(v, d)
-  const span = 6
-  const h = (2 * span) / n
-  const u = new Array<number>(d).fill(0)
-  let mass = 0
-  const m1 = new Array<number>(d).fill(0)
-  const m2 = new Array<number>(d * d).fill(0)
-  const w = new Array<number>(d).fill(0)
-  const z = new Array<number>(k).fill(0)
-  const walk = (i: number, logw: number): void => {
-    if (i === d) {
-      for (let a = 0; a < d; a++) {
-        let s = m[a] as number
-        for (let b = 0; b <= a; b++) s += (l[a * d + b] as number) * (u[b] as number)
-        w[a] = s
-      }
-      for (let a = 0; a < k; a++) {
-        let s = offset[a] as number
-        for (let b = 0; b < d; b++) s += (matrix[a * d + b] as number) * (w[b] as number)
-        z[a] = s
-      }
-      const p = Math.exp(logw + logf(z))
-      mass += p
-      for (let a = 0; a < d; a++) {
-        m1[a] = (m1[a] as number) + p * (w[a] as number)
-        for (let b = 0; b < d; b++) m2[a * d + b] = (m2[a * d + b] as number) + p * (w[a] as number) * (w[b] as number)
-      }
-      return
-    }
-    for (let j = 0; j < n; j++) {
-      u[i] = -span + (j + 0.5) * h
-      walk(i + 1, logw - 0.5 * (u[i] as number) ** 2 - 0.5 * Math.log(2 * Math.PI) + Math.log(h))
-    }
-  }
-  walk(0, 0)
-  const mean = m1.map((x) => x / mass)
-  const covariance = m2.map((x, i) => x / mass - (mean[Math.floor(i / d)] as number) * (mean[i % d] as number))
-  return { logMass: Math.log(mass), mean, covariance }
-}
-
-/** Lower Cholesky factor, row-major. */
-function cholesky(a: readonly number[], n: number): number[] {
-  const l = new Array<number>(n * n).fill(0)
-  for (let i = 0; i < n; i++)
-    for (let j = 0; j <= i; j++) {
-      let s = a[i * n + j] as number
-      for (let k = 0; k < j; k++) s -= (l[i * n + k] as number) * (l[j * n + k] as number)
-      l[i * n + j] = i === j ? Math.sqrt(s) : s / (l[j * n + j] as number)
-    }
-  return l
 }
 
 interface Case {
@@ -123,24 +60,15 @@ function check(c: Case): void {
   }
   const log =
     c.link === 'logit' ? (z: readonly number[]) => logSoftmax(z, c.y) : (z: readonly number[]) => logProbit(z, c.y)
-  const b = brute(
-    c.mean,
-    c.covariance,
+  const brute = bruteVectorSite(
+    { mean: c.mean, covariance: c.covariance, eta: args[0]?.eta as number[] },
     c.matrix,
     offset,
-    (z) => power * log(z),
+    log,
+    power,
     c.grid ?? (d === 3 ? 44 : d === 2 ? 150 : 600),
   )
-  const cavity = args[0]?.eta as number[]
-  // The tilted natural parameters of w, and the site as their quotient by the cavity, over the power.
-  const precision = spd(b.covariance, d)?.inverse() as Float64Array
-  const hTilt: number[] = []
-  for (let i = 0; i < d; i++) {
-    let s = 0
-    for (let j = 0; j < d; j++) s += (precision[i * d + j] as number) * (b.mean[j] as number)
-    hTilt.push(s)
-  }
-  const want = [...hTilt, ...precision].map((x, i) => (x - (cavity[i] as number)) / power)
+  const want = brute.message
   const got = multiclassRow.ep?.({ mode: 'ep', to: 0, args, params, power }).message as readonly number[]
   const tolerance = c.tolerance ?? 3e-3
   for (let i = 0; i < want.length; i++)
@@ -149,7 +77,7 @@ function check(c: Case): void {
       `message entry ${i}: ${got[i]} against ${want[i]}`,
     ).toBeLessThan(tolerance * (1 + Math.abs(want[i] as number)))
   const evidence = multiclassRow.logEvidence?.({ mode: 'ep', to: 0, args, params, power }) as number
-  const wantEvidence = b.logMass + massOf(args[0] as Arg)
+  const wantEvidence = brute.logMass + massOf(args[0] as Arg)
   expect(Math.abs(evidence - wantEvidence), `evidence ${evidence} against ${wantEvidence}`).toBeLessThan(tolerance)
 }
 

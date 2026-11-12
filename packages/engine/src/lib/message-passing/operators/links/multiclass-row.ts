@@ -8,26 +8,19 @@
  * correlated in the posterior), so the loop through the shared vector is too confident; this message carries the correlations.
  *
  * The integral runs over the standardised coordinates of the scores' cavity, whose number is its rank (at most the smaller of `K` and
- * the dimension of `w`, found by a pivoted Cholesky factor of `A V A'`), so a choice among eight alternatives with two shared
- * coefficients is a two-dimensional integral, and the rank is at most six (the product grid of `_multiclass-product.ts`).
+ * the dimension of `w`), so a choice among eight alternatives with two shared coefficients is a two-dimensional integral, and the rank
+ * is at most six (the product grid of `numerics/_product.ts`); the integration and the message are `numerics/_vector-site.ts`.
  */
 
 import { arg, errorText, keyOf, memoised } from '../../core/_messages.ts'
 import { allProper, etaOf, massOf, vectorParam } from '../../core/args.ts'
 import { defineOperator, siteRule } from '../../core/define.ts'
-import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
-import { gaussianMvMoments } from '../../core/families-vector.ts'
+import { ParameterError } from '../../core/errors.ts'
 import { param } from '../../core/params.ts'
-import type { Eta, FactorOperator, OperatorContext, Params } from '../../core/types.ts'
-import { spd } from '../../numerics/_dense.ts'
-import { classesOf, MOST_PRODUCT, productTilt, scoreLog } from './_multiclass-product.ts'
-
-/** The joint cavity of the scores in the standardised coordinates, and what the integral found there. */
-interface RowTilt {
-  readonly logMass: number
-  /** The message to `w`, `[h, J]` in natural parameters, for the power-adjusted factor (before the division by the power). */
-  readonly site: Eta
-}
+import type { FactorOperator, OperatorContext, Params } from '../../core/types.ts'
+import { MOST_PRODUCT } from '../../numerics/_product.ts'
+import { type VectorSiteTilt, vectorSiteTilt } from '../../numerics/_vector-site.ts'
+import { classesOf, scoreLog } from './_multiclass-scores.ts'
 
 /** The matrix and the offset from the parameters, checked against the number of classes and the dimension of `w`. */
 function scoresOf(
@@ -43,151 +36,22 @@ function scoresOf(
   return { a, b }
 }
 
-/**
- * A factor `S = B B'` of a symmetric positive semi-definite matrix by pivoted Cholesky: the columns of `B` (`n x rank`, row-major) one
- * at a time, always on the largest remaining diagonal, until what is left is below `tol`. The rank is what the scores' cavity has.
- */
-function pivotedFactor(s: readonly number[], n: number, tol: number): { readonly rank: number; readonly b: number[] } {
-  const rest = Array.from({ length: n }, (_, i) => s[i * n + i] as number)
-  const columns: number[][] = []
-  for (let step = 0; step < n; step++) {
-    let at = 0
-    for (let i = 1; i < n; i++) if ((rest[i] as number) > (rest[at] as number)) at = i
-    if (!((rest[at] as number) > tol)) break
-    const column = Array.from({ length: n }, (_, i) => s[i * n + at] as number)
-    for (const done of columns)
-      for (let i = 0; i < n; i++) column[i] = (column[i] as number) - (done[i] as number) * (done[at] as number)
-    const root = Math.sqrt(rest[at] as number)
-    for (let i = 0; i < n; i++) {
-      column[i] = (column[i] as number) / root
-      rest[i] = (rest[i] as number) - (column[i] as number) ** 2
-    }
-    rest[at] = 0
-    columns.push(column)
-  }
-  const rank = columns.length
-  const b = new Array<number>(n * rank)
-  for (const [j, column] of columns.entries()) for (let i = 0; i < n; i++) b[i * rank + j] = column[i] as number
-  return { rank, b }
-}
-
 /** The tilted message for the cavity of `w` in the context, memoised under everything it depends on. */
-function tilt(c: OperatorContext): RowTilt {
+function tilt(c: OperatorContext): VectorSiteTilt {
   const inputs = [c.args.map((a) => a.eta), c.params, c.power]
-  return memoised(c, `multiclass-row:${keyOf(inputs)}`, () => integrate(c))
-}
-
-/** The integral: the scores' cavity, its standardised coordinates, the tilted moments there and the message to `w` they make. */
-function integrate(c: OperatorContext): RowTilt {
-  const { classes } = classesOf(c.params)
-  const w = arg(c, 0)
-  const d = w.family.dim
-  const { a, b } = scoresOf(c.params, classes, d)
-  const { mean: m, covariance: v } = gaussianMvMoments(etaOf(w), d)
-  // The scores' cavity: mean A m + b, covariance A V A'.
-  const mu = Array.from({ length: classes }, (_, k) => {
-    let s = b[k] as number
-    for (let e = 0; e < d; e++) s += (a[k * d + e] as number) * (m[e] as number)
-    return s
+  return memoised(c, `multiclass-row:${keyOf(inputs)}`, () => {
+    const { classes } = classesOf(c.params)
+    const w = arg(c, 0)
+    const { a, b } = scoresOf(c.params, classes, w.family.dim)
+    const log = scoreLog(c.params)
+    return vectorSiteTilt(w, {
+      coordinates: classes,
+      matrix: a,
+      offset: b,
+      logf: (z) => c.power * log(z),
+      name: 'multiclass-row',
+    })
   })
-  const av = new Array<number>(classes * d).fill(0)
-  for (let k = 0; k < classes; k++)
-    for (let e = 0; e < d; e++) {
-      let s = 0
-      for (let f = 0; f < d; f++) s += (a[k * d + f] as number) * (v[f * d + e] as number)
-      av[k * d + e] = s
-    }
-  const cov = new Array<number>(classes * classes).fill(0)
-  for (let k = 0; k < classes; k++)
-    for (let l = 0; l <= k; l++) {
-      let s = 0
-      for (let e = 0; e < d; e++) s += (av[k * d + e] as number) * (a[l * d + e] as number)
-      cov[k * classes + l] = s
-      cov[l * classes + k] = s
-    }
-  let scale = 0
-  for (let k = 0; k < classes; k++) scale = Math.max(scale, cov[k * classes + k] as number)
-  const { rank: r, b: factor } = pivotedFactor(cov, classes, 1e-10 * scale)
-  const logf = scoreLog(c.params)
-  const zeros = new Array<number>(d + d * d).fill(0)
-  if (r === 0) return { logMass: c.power * logf(mu), site: zeros }
-  if (r > MOST_PRODUCT)
-    throw new ParameterError(`multiclass-row: the scores' cavity has rank ${r}, past the six the product grid reaches`)
-  // The scores are mu + B xi with xi standard normal under the cavity: the grid is over xi.
-  const z = mu.slice()
-  const t = productTilt(
-    r,
-    {
-      mean: new Array<number>(r).fill(0),
-      covariance: Array.from({ length: r * r }, (_, i) => (i % (r + 1) === 0 ? 1 : 0)),
-    },
-    (x) => {
-      let s = -0.5 * r * Math.log(2 * Math.PI)
-      for (let i = 0; i < r; i++) s -= 0.5 * (x[i] as number) ** 2
-      return s
-    },
-    (x) => {
-      for (let k = 0; k < classes; k++) {
-        let s = mu[k] as number
-        for (let i = 0; i < r; i++) s += (factor[k * r + i] as number) * (x[i] as number)
-        z[k] = s
-      }
-      return c.power * logf(z)
-    },
-  )
-  // The site in the standardised coordinates: the tilted Gaussian over the standard cavity, (S^-1 a, S^-1 - I).
-  const tiltedPrecision = spd(t.covariance, r)
-  if (tiltedPrecision === undefined)
-    throw new ImproperMessageError('multiclass-row: the tilted covariance of the scores is not positive definite')
-  const precision = tiltedPrecision.inverse()
-  const linear = Array.from(tiltedPrecision.solve(t.mean))
-  const lambda = Array.from(precision)
-  for (let i = 0; i < r; i++) lambda[i * r + i] = (lambda[i * r + i] as number) - 1
-  // xi = G (w - m) with G = (B'B)^-1 B' A: the site as a function of w is exp(linear' G (w - m) - (w - m)' G' lambda G (w - m) / 2).
-  const btb = new Array<number>(r * r).fill(0)
-  for (let i = 0; i < r; i++)
-    for (let j = 0; j < r; j++) {
-      let s = 0
-      for (let k = 0; k < classes; k++) s += (factor[k * r + i] as number) * (factor[k * r + j] as number)
-      btb[i * r + j] = s
-    }
-  const gram = spd(btb, r)
-  if (gram === undefined) throw new ImproperMessageError('multiclass-row: the scores have no full-rank factor')
-  const g = new Array<number>(r * d)
-  for (let e = 0; e < d; e++) {
-    const column = new Array<number>(r)
-    for (let i = 0; i < r; i++) {
-      let s = 0
-      for (let k = 0; k < classes; k++) s += (factor[k * r + i] as number) * (a[k * d + e] as number)
-      column[i] = s
-    }
-    const solved = gram.solve(column)
-    for (let i = 0; i < r; i++) g[i * d + e] = solved[i] as number
-  }
-  // J = G' lambda G, h = J m + G' linear.
-  const lg = new Array<number>(r * d).fill(0)
-  for (let i = 0; i < r; i++)
-    for (let e = 0; e < d; e++) {
-      let s = 0
-      for (let j = 0; j < r; j++) s += (lambda[i * r + j] as number) * (g[j * d + e] as number)
-      lg[i * d + e] = s
-    }
-  const j = new Array<number>(d * d).fill(0)
-  for (let e = 0; e < d; e++)
-    for (let f = 0; f <= e; f++) {
-      let s = 0
-      for (let i = 0; i < r; i++) s += (g[i * d + e] as number) * (lg[i * d + f] as number)
-      j[e * d + f] = s
-      j[f * d + e] = s
-    }
-  const h = new Array<number>(d).fill(0)
-  for (let e = 0; e < d; e++) {
-    let s = 0
-    for (let f = 0; f < d; f++) s += (j[e * d + f] as number) * (m[f] as number)
-    for (let i = 0; i < r; i++) s += (g[i * d + e] as number) * (linear[i] as number)
-    h[e] = s
-  }
-  return { logMass: t.logMass, site: [...h, ...j] }
 }
 
 /**

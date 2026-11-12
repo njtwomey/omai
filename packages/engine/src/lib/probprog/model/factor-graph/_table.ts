@@ -650,9 +650,9 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
   }),
   element({
     name: 'beta',
-    maps: 'a beta observation with random shapes: a likelihood-pair factor',
+    maps: 'a beta observation with random shapes: a likelihood-pair factor, or (with packScalars, both shapes Gaussian on their logs) one gaussian-mv-stack vector of the two and a likelihood-pair-row factor on it per observation',
     families: ['beta'],
-    requires: ['likelihood-pair'],
+    requires: ['gaussian-mv-stack', 'likelihood-pair', 'likelihood-pair-row'],
     map: (cx, node, el) => observedPair(cx, node, 'beta-shapes', el.y, el.i, el.index),
   }),
   element({
