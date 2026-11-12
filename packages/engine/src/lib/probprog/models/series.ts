@@ -63,6 +63,7 @@ export function stochasticVolatilityTruth(
   // Transition: T[a][b] = N(h_b; mu + phi (h_a - mu), sigma) * step.
   // The transition table, the filter's rows and the backward weights are the working buffers of the filter and the smoother
   // (G x G steps for each observation), rewritten in place: a tensor op per step would allocate in the innermost loop.
+  // banned-ok: reference: the exact filter of the stochastic-volatility truth, in plain arithmetic
   const T = new Float64Array(G * G)
   const c = step / (SV.sigma * Math.sqrt(2 * Math.PI))
   for (let a = 0; a < G; a++) {
@@ -76,6 +77,7 @@ export function stochasticVolatilityTruth(
   const alpha: Float64Array[] = []
   const scale: number[] = []
   for (let t = 0; t < y.length; t++) {
+    // banned-ok: reference: the exact filter of the stochastic-volatility truth, in plain arithmetic
     const a = new Float64Array(G)
     if (t === 0)
       for (let g = 0; g < G; g++)
@@ -94,6 +96,7 @@ export function stochasticVolatilityTruth(
     scale[t] = z
     alpha[t] = a.map((v) => v / z)
   }
+  // banned-ok: reference: the exact filter of the stochastic-volatility truth, in plain arithmetic
   const beta: Float64Array[] = Array.from({ length: y.length }, () => new Float64Array(G).fill(1))
   for (let t = y.length - 2; t >= 0; t--) {
     const next = beta[t + 1] as Float64Array
@@ -298,6 +301,7 @@ export const gaussianHmm: BenchmarkModel = defineBenchmark({
   summarise: visitsOfLastState,
   truth: (data) => gaussianHmmTruth(data.data['y'] as number[]),
   plans: (scale) => {
+    // banned-ok: non-numeric: the names of the sites
     const marginalsOnly = Array.from({ length: 16 }, (_, t) => `z[${t}]`)
     return [
       exactPlan('chain', {

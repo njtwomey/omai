@@ -299,6 +299,7 @@ export function enumerationHandler(firstAvailableDim: number): Messenger {
       }
       live.push({ dim, loop: frame?.name, step: frame?.step ?? 0 })
       const k = high - low + 1
+      // banned-ok: non-numeric: a shape (a list of sizes), not data
       const shape = [k, ...new Array<number>(-dim - 1).fill(1)]
       msg.value = reshape(add(arange(k), low), shape)
       msg.enumDim = dim

@@ -11,6 +11,7 @@ import { lbfgs } from '../../optim/index.ts'
 import { foldIn, type Key, key as makeKey } from '../../random/index.ts'
 import {
   add,
+  arange,
   asTensor,
   broadcastTo,
   cast,
@@ -346,6 +347,7 @@ function sigmaPoints(
   const c = toFlat(cov)
   const m = toFlat(mean)
   // Connected groups of coordinates with non-zero posterior covariance.
+  // banned-ok: kernel: the group of each coordinate, a work array of the grouping loop
   const group = new Int32Array(n).fill(-1)
   const groups: number[][] = []
   for (let i = 0; i < n; i++) {
@@ -366,7 +368,7 @@ function sigmaPoints(
     groups.push(members.sort((x, y) => x - y))
   }
   const sizes = new Set(groups.map((g) => g.length))
-  const parts = sizes.size === 1 ? groups : [Array.from({ length: n }, (_, i) => i)]
+  const parts = sizes.size === 1 ? groups : [toFlat(arange(n))]
   const k = parts[0]?.length ?? 0
   const factors = parts.map((g) => {
     const sub = fromStorage(

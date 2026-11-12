@@ -522,6 +522,7 @@ function gpSoftmaxProblem(k: Config): AtomParts {
     build: {
       definition,
       data: { index, y: GPS_Y },
+      // banned-ok: non-numeric: one quantity spec per cell
       quantities: Array.from({ length: cells }, (_, c) => ({
         name: `f[${c}]`,
         label: `f_${c % GPS_CLASSES}(x_${Math.floor(c / GPS_CLASSES) + 1})`,
@@ -530,6 +531,7 @@ function gpSoftmaxProblem(k: Config): AtomParts {
     },
     reference: {
       get exact() {
+        // banned-ok: non-numeric: one marginal per cell
         return Object.fromEntries(Array.from({ length: cells }, (_, c) => [`f[${c}]`, marginal(c)]))
       },
       referenceSource:

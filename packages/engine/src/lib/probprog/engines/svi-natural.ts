@@ -304,6 +304,7 @@ export function naturalStepDiagonal(
   floor = 0.05,
 ): GaussianStep {
   const n = loc.length
+  // banned-ok: kernel: the new parameters of one natural-gradient step, filled by the loop below
   const newLoc = new Float64Array(n)
   const newScale = new Float64Array(n)
   let norm2 = 0

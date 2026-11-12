@@ -33,6 +33,7 @@ export function derived(
   if (cx.known.has(node.name)) {
     // A constant found before the walk: its value is known, and the custom functions its evaluation called count as evaluated.
     for (const name of cx.customsCalled.get(node.name) ?? []) cx.handledCustoms.add(name)
+    // banned-ok: non-numeric: a layout of nulls (the cells of a derived node carry no variable)
     cx.layout(node, 'derived', undefined, 'constant', new Array<null>(prod(cx.shapeOf(node.dims))).fill(null), false)
     return
   }
@@ -47,6 +48,7 @@ export function derived(
     // Constant only after the symbolic evaluation (the expression mentions a random value, the cells do not): order-dependent.
     cx.known.declare(node.name, cx.toNamed({ dims: node.dims, cells }), cx.position)
     cx.known.semantic.push(node.name)
+    // banned-ok: non-numeric: a layout of nulls (the cells of a derived node carry no variable)
     cx.layout(node, 'derived', undefined, 'constant', new Array<null>(prod(shape)).fill(null), false)
     return
   }
@@ -131,6 +133,7 @@ export function denseNonCentred(cx: Context, node: ModelNode & { readonly kind: 
   )
   cx.syms.set(node.name, {
     dims: node.dims,
+    // banned-ok: non-numeric: one factor-graph atom per cell
     cells: Array.from({ length: n }, (_, j) => cx.g.compAtom(node.name, j, n)),
   })
   if (node.record) cx.layout(node, 'derived', 'gaussian-mv', 'packed', [node.name], true)
@@ -163,6 +166,7 @@ export function tiedToVector(
   cx.g.addFactor({ operator: 'gaussian-mv-stack', args: [node.name, ...outs], params: { n } }, node.name)
   cx.syms.set(node.name, {
     dims: node.dims,
+    // banned-ok: non-numeric: one factor-graph atom per cell
     cells: Array.from({ length: n }, (_, j) => cx.g.compAtom(node.name, j, n)),
   })
   if (node.record) cx.layout(node, 'derived', 'gaussian-mv', 'packed', [node.name], true)

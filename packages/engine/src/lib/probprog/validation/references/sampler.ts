@@ -93,6 +93,7 @@ export function mixtureGibbs(spec: MixtureGibbsSpec): MixtureGibbs {
   let tau = toFlat(full([K], spec.precision.shape / spec.precision.rate))
   let pi = toFlat(full([K], 1 / K))
   const out = {
+    // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
     mean: Array.from({ length: K }, () => [] as number[]),
     precision: Array.from({ length: K }, () => [] as number[]),
     weight: Array.from({ length: K }, () => [] as number[]),

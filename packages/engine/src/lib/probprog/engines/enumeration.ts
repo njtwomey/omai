@@ -25,6 +25,7 @@ import { categorical as drawCategorical, foldIn, type Key } from '../../random/i
 import {
   asTensor,
   fromStorage,
+  full,
   primalOf,
   sliceAxis,
   squeeze,
@@ -110,6 +111,7 @@ export function groundDiscrete<D = void>(model: Model<D>, data: D): GroundedProg
       if (n > 1) axes.push({ plate: site.plates.find((f) => f.dim === a - batch.length)?.name ?? '', axis: a })
     })
     const count = batch.reduce((x, y) => x * y, 1)
+    // banned-ok: non-numeric: the names of the enumerated variables
     const names = Array.from({ length: count }, (_, i) => {
       if (axes.length === 0) return site.name
       const idx = unravel(i, batch)
@@ -118,6 +120,7 @@ export function groundDiscrete<D = void>(model: Model<D>, data: D): GroundedProg
     const g: GroundedSite = { name: site.name, batchShape: [...batch], low, states, variables: names }
     sites.push(g)
     byName.set(site.name, { site: g, axes })
+    // banned-ok: non-numeric: the labels of the states
     const labels = Array.from({ length: states }, (_, k) => String(low + k))
     for (const n of new Set(names)) variables.push({ name: n, states: labels })
   }
@@ -244,7 +247,7 @@ export function enumerationPosterior<D = void>(model: Model<D>, data: D, options
   for (const s of g.sites) map[s.name] = s.variables.map((v) => s.low + (mpe.indices[v] ?? 0))
   const marginalOf = (v: string, states: number): number[] => {
     const home = calibrated.tree.cliques.findIndex((c) => c.includes(v))
-    if (home < 0) return new Array<number>(states).fill(1 / states)
+    if (home < 0) return toFlat(full([states], 1 / states))
     return Array.from(
       normaliseFactor(factorMarginal(calibrated.cliqueBeliefs[home] as Factor, [v])).logValues,
       Math.exp,
@@ -256,10 +259,12 @@ export function enumerationPosterior<D = void>(model: Model<D>, data: D, options
     marginals[s.name] = shiftedCategorical(probabilityTensor(rows, s.batchShape, s.states), s.low)
   }
   const sampler = (key: Key, n: number): Record<string, Tensor> => {
+    // banned-ok: non-numeric: one tree draw per key
     const draws = Array.from({ length: n }, (_, i) => sampleTree(calibrated, foldIn(key, i)))
     const out: Record<string, Tensor> = {}
     for (const s of g.sites) {
       const size = s.variables.length
+      // banned-ok: kernel: the draws are written into a buffer that fromStorage wraps
       const data = new Float64Array(n * size)
       draws.forEach((d, i) => {
         s.variables.forEach((v, j) => {

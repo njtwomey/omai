@@ -1140,18 +1140,21 @@ function mixtureQuantities(
 ): AtomProblem['quantities'] {
   const K = truth.weights.length
   return [
+    // banned-ok: non-numeric: one quantity spec per component
     ...Array.from({ length: K }, (_, k) => ({
       name: meanName(k),
       label: `mean of ${label(k)}`,
       support: 'real' as AtomSupport,
       truth: truth.means[k] as number,
     })),
+    // banned-ok: non-numeric: one quantity spec per component
     ...Array.from({ length: K }, (_, k) => ({
       name: precisionName(k),
       label: `precision of ${label(k)}`,
       support: 'positive' as AtomSupport,
       truth: 1 / (truth.sds[k] as number) ** 2,
     })),
+    // banned-ok: non-numeric: one quantity spec per component
     ...Array.from({ length: K }, (_, k) => ({
       name: weightName(k),
       label: `weight of ${label(k)}`,
@@ -1203,6 +1206,7 @@ function mixtureLearnedProblem(k: Config): AtomParts {
   // endregion
   const gibbs = mixtureGibbs({
     x: y,
+    // banned-ok: non-numeric: one prior record per component
     means: Array.from({ length: K }, () => ({ mean: 0, sd: 4 })),
     precision: { shape: 2, rate: 2 },
     weights: alpha,
@@ -1244,6 +1248,7 @@ function mixtureLearnedProblem(k: Config): AtomParts {
         from,
         truth,
         (m) => fittedMixture(m, K, wn, mn, pn),
+        // banned-ok: non-numeric: the names of the components, by index
         Object.fromEntries(Array.from({ length: K }, (_, c) => [c, names(c)])),
       ),
     },

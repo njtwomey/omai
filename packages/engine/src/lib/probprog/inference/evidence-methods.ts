@@ -470,8 +470,10 @@ export function bridgeSamplingMethod(
             t: 0,
             position: x,
             logDensity: logTarget(x),
+            // banned-ok: sentinel: an empty initial array (no draws yet)
             draws: new Float64Array(0),
             fit: undefined,
+            // banned-ok: sentinel: an empty initial array (no draws yet)
             l1: new Float64Array(0),
             l2: new Float64Array(0),
           }
@@ -694,6 +696,7 @@ export function importanceEvidenceMethod(
           return {
             t: 0,
             fit: undefined,
+            // banned-ok: sentinel: an empty initial array (no draws yet)
             pilotDraws: new Float64Array(0),
             pilotLogWeights: new Float64Array(0),
             draws: new Float64Array(0),
@@ -706,6 +709,7 @@ export function importanceEvidenceMethod(
           const q = proposalOf(config, s.fit)
           const xs = q.sampleMany(foldIn(key, s.t), batch)
           const lq = q.logProbMany(xs)
+          // banned-ok: kernel: the log-weights of a batch, filled by the loop below
           const lw = new Float64Array(batch)
           for (let i = 0; i < batch; i++) {
             const x = xs.subarray(i * dim, (i + 1) * dim)

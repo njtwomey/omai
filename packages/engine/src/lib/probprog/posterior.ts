@@ -281,6 +281,7 @@ export function definePosterior(spec: PosteriorSpec): Posterior {
         let diag = {}
         if (chained !== undefined && spec.chainShape !== undefined) {
           const [c, n] = spec.chainShape
+          // banned-ok: sentinel: an empty column
           const col = columns(chained).cols[j] ?? new Float64Array(0)
           const grid = reshape(fromStorage(col, [c * n], 'float64'), [c, n])
           diag = { ess: ess(grid), rhat: rhat(grid) }

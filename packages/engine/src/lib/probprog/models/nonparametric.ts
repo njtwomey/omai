@@ -56,11 +56,13 @@ export function stickBreakingTruth(y: readonly number[], n = 60): BenchmarkTruth
   const nodes = toFlat(div(add(arange(n), 0.5), n))
   const total = n ** 3
   // The tables of the n^3 grid (mass, coordinates, component weights, log density) are filled in place by the sweep below.
+  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const mass = new Float64Array(total)
   const coords = [new Float64Array(total), new Float64Array(total), new Float64Array(total)]
   const weights = Array.from({ length: MEANS.length }, () => new Float64Array(total))
   const normal = (v: number, m: number): number => Math.exp(-0.5 * (v - m) ** 2) / Math.sqrt(2 * Math.PI)
   let max = Number.NEGATIVE_INFINITY
+  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const logs = new Float64Array(total)
   let at = 0
   for (const v0 of nodes)
@@ -89,6 +91,7 @@ export function stickBreakingTruth(y: readonly number[], n = 60): BenchmarkTruth
   const marginals: Record<string, MarginalOracle> = {}
   // A break takes `n` values: the mass of each, summed over the other two breaks.
   coords.forEach((c, k) => {
+    // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
     const byNode = new Float64Array(n)
     for (let i = 0; i < total; i++) {
       const node = Math.min(n - 1, Math.floor((c[i] as number) * n))

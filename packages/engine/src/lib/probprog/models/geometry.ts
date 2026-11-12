@@ -134,6 +134,7 @@ function funnelTruth(): BenchmarkTruth {
     marginals: {
       v: mixtureOracle('v', [{ weight: 1, mean: 0, sd: FUNNEL_SCALE }]),
       ...Object.fromEntries(
+        // banned-ok: non-numeric: one oracle record per coordinate
         Array.from({ length: FUNNEL_COORDS }, (_, i) => [
           `x[${i}]`,
           samplesOracle(`x[${i}]`, x, { mean: 0, sd: exactSd }),

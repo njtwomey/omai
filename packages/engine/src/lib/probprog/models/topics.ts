@@ -191,6 +191,7 @@ export function ldaLiteTruth(w: readonly (readonly number[])[]): BenchmarkTruth 
   // Marginal of each assignment, and the distribution of each document's count of topic-1 tokens.
   const p1 = toFlat(zeros([T]))
   const docPmf = toArray(zeros([DOCS, TOKENS + 1])) as number[][]
+  // banned-ok: non-numeric: one map of terms per cell
   const phiParts = Array.from({ length: TOPICS * WORDS }, () => new Map<string, number>())
   for (let c = 0; c < configs; c++) {
     const q = (weights[c] as number) / total
@@ -288,6 +289,7 @@ export const ldaLite: BenchmarkModel = defineBenchmark({
   generate: (key) => generateCorpus(key),
   truth: (data) => ldaLiteTruth(data.data['w'] as number[][]),
   plans: (scale) => {
+    // banned-ok: non-numeric: the names of the sites
     const mixtures = Array.from({ length: DOCS }, (_, dd) => `theta[${dd * TOPICS + 1}]`)
     const topics = Array.from({ length: TOPICS * WORDS }, (_, i) => `phi[${i}]`)
     return [

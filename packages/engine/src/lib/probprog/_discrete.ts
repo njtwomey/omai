@@ -32,6 +32,7 @@ export function shiftedCategorical(probs: Value, low: number): Distribution {
 
 /** The multi-index of flat position `i` in a row-major shape. */
 export function unravel(i: number, shape: readonly number[]): number[] {
+  // banned-ok: non-numeric: a multi-index into a shape, filled by the loop below
   const out = new Array<number>(shape.length).fill(0)
   let r = i
   for (let a = shape.length - 1; a >= 0; a--) {

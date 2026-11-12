@@ -288,6 +288,7 @@ export function renyiElbo(options: RenyiElboOptions = {}): ElboEstimator<null> {
     init: () => null,
     estimate: (key, model, guide, data, params) => {
       const w = stack(
+        // banned-ok: non-numeric: one log-weight tensor per particle, each from a key of its own, stacked
         Array.from({ length: k }, (_, i) => {
           const p = particle(foldIn(key, i), model, guide, data, params)
           return sub(p.logP, p.logQ)

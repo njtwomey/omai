@@ -86,6 +86,7 @@ const sviFit =
 const scaledGuide =
   (factor: number) =>
   (y: number, k: Key): Record<string, number[]> => ({
+    // banned-ok: per-key draw: one draw from a key of its own per element, no vectorised form
     m: Array.from({ length: 19 }, (_, i) => y / 2 + factor * Math.SQRT1_2 * z(foldIn(k, i))),
   })
 
@@ -171,6 +172,7 @@ export function validationCampaigns(): Campaign[] {
           simulate: (k) => {
             const mu = z(foldIn(k, 0))
             const tau = Math.abs(z(foldIn(k, 1)))
+            // banned-ok: per-key draw: one draw from a key of its own per element, no vectorised form
             const theta = Array.from({ length: GROUPS }, (_, g) => mu + tau * z(foldIn(k, 2 + g)))
             const y = theta.map((t, g) => t + 0.5 * z(foldIn(k, 10 + g)))
             return { data: y, truth: { mu, tau, 'theta[0]': theta[0] ?? 0 } }
