@@ -8,6 +8,7 @@
 
 import { OmaiError } from '../../base/index.ts'
 import { composedAtoms } from './_atoms/composed.ts'
+import { composedGatesAtoms } from './_atoms/composed-gates.ts'
 import { conjugateAtoms } from './_atoms/conjugate.ts'
 import { countsAtoms } from './_atoms/counts.ts'
 import { covarianceAtoms } from './_atoms/covariance.ts'
@@ -37,6 +38,7 @@ const BY_FILE: readonly (readonly EpAtom[])[] = [
   nonparametricAtoms,
   countsAtoms,
   composedAtoms,
+  composedGatesAtoms,
 ]
 
 /** The order the atoms were added in, which the coverage table and the pages keep until a family order replaces it; an atom not listed follows, in its file's order. */

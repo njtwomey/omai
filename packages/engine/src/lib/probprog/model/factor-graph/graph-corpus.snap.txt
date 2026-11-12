@@ -196,6 +196,8 @@ atom/softmax-choice-learned vectorise: 3 variables, 15 factors, 0 issues; dot-co
 atom/softmax-choice-learned expand: 3 variables, 15 factors, 0 issues; dot-constant x2 multiclass-row x12 prior x1
 atom/softmax-two-groups vectorise: 196 variables, 220 factors, 0 issues; gaussian-gamma-precision x2 multiclass-site x24 prior x2 times-constant x192
 atom/softmax-two-groups expand: 196 variables, 220 factors, 0 issues; gaussian-gamma-precision x2 multiclass-site x24 prior x2 times-constant x192
+atom/gate-poisson-negative-binomial vectorise: 66 variables, 96 factors, 0 issues; apply x1 bernoulli x30 dot-constant x32 gate x30 prior x2 prior-site x1
+atom/gate-poisson-negative-binomial expand: 66 variables, 96 factors, 0 issues; apply x1 bernoulli x30 dot-constant x32 gate x30 prior x2 prior-site x1
 model/beta-bernoulli vectorise: 21 variables, 21 factors, 0 issues; bernoulli x20 prior x1
 model/beta-bernoulli expand: 21 variables, 21 factors, 0 issues; bernoulli x20 prior x1
 model/normal-normal vectorise: 13 variables, 13 factors, 0 issues; gaussian x12 prior x1

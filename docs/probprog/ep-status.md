@@ -18,7 +18,7 @@ The registry (`defaultOperators()`) holds **73** factor operators. Rules by mess
 
 ## Atoms
 
-**99** atoms (67 basic, 32 with unknown parameters learned from simulated data). Expectation propagation runs **99** of them. Variational message passing runs **89** (88 to a fixed point); **10** run under EP and not under VMP.
+**100** atoms (68 basic, 32 with unknown parameters learned from simulated data). Expectation propagation runs **100** of them. Variational message passing runs **90** (89 to a fixed point); **10** run under EP and not under VMP.
 
 | family | atoms | learned twins | EP runs | VMP runs |
 | --- | --- | --- | --- | --- |
@@ -28,7 +28,7 @@ The registry (`defaultOperators()`) holds **73** factor operators. Rules by mess
 | covariance | 6 | 3 | 6 | 4 |
 | functions | 5 | 0 | 5 | 5 |
 | gate weights | 4 | 0 | 4 | 4 |
-| gates | 16 | 6 | 16 | 13 |
+| gates | 17 | 6 | 17 | 14 |
 | kernels | 3 | 1 | 3 | 0 |
 | likelihoods | 31 | 17 | 31 | 29 |
 | nonparametric | 2 | 0 | 2 | 2 |
