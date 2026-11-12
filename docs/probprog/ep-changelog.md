@@ -1164,3 +1164,20 @@ config in `bayesianGamMethod` (so a session with no config runs damped too).
   Other forms keep the method's defaults (`penalty` VMP runs at damping 0.3 in its test, 0 by default, unchanged).
 - Tests (`bayesian-gam-ep.test.ts`): the union's defaults for ARD (0.5, 60) and for the penalty form (0, 200); a session with no config on ARD
   stops within 60 sweeps with the curve within 0.1 sd of EP's and the log noise within 0.1, and the undamped run's log noise below -10.
+
+## 2026-11-12 A composed atom: a softmax over eight classes under a Gaussian-gamma hierarchy (`agent-afdba9-pgchoice`)
+
+- `atom/softmax-two-groups` (`_atoms/composed.ts`, family `composed`, page `ep-softmax-two-groups` in the group `composed-atoms`): a softmax over
+  eight classes with scores linear in a covariate (the multiclass site with eight free scores per row, the auxiliary-variable rule), one coefficient for
+  each of two groups drawn around a shared mean (`mu ~ N(0, 2²)`) with a gamma precision (`tau ~ Gamma(2, 1)`), so the group coefficients are the
+  children of the gaussian-gamma-precision rule and the scores of the scale rule. Data simulated from stated coefficients; knobs: seed, rows in each
+  group, classes (4 to 12), the true difference between the groups. The compiler accepts and packs it as written (196 variables, 220 factors at 12 rows).
+- Reference: a three-dimensional grid over the two coefficients and the precision (`posterior3`, the precision on a log scale) with the shared mean
+  integrated out in closed form, and the mean's marginal as the Gaussian mixture over the grid. The grid takes about 0.1 s.
+- Measured at the defaults and over seeds 2 and 3, 4 and 12 classes, no difference and a difference of 2, 30 rows: the means within 0.2 reference sds, the
+  precision and the shared mean at 0.9 to 1.2 of the exact spread, the coefficients narrow (0.46 to 0.9, the one with the larger posterior spread the
+  narrower), as with any softmax that shares a coefficient over the scores of many rows. A run takes 10 s at 12 rows in a group (134 sweeps; each sweep is
+  a tilted moment per row, about 3 ms at eight classes); at 12 classes or a difference of 2 it stops at the 200-sweep cap, not converged, with beliefs
+  close to the converged ones. Variational message passing runs it too (82 sweeps).
+- Not done: a second covariate (the grid would have more than three coordinates), a plate of groups (the groups are two scalar latents), a joint message
+  over the scores of a row (another agent's work: the coefficients' spread may tighten when it merges).

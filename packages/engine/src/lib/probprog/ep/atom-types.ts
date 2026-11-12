@@ -174,6 +174,7 @@ export type AtomFamily =
   | 'covariance'
   | 'nonparametric'
   | 'counts'
+  | 'composed'
 /** The belief of a coordinate: its mean and standard deviation, and whether it is a proper belief (not an unset message). */
 export interface Belief {
   readonly mean: number
