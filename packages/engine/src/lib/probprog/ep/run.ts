@@ -7,6 +7,7 @@
  */
 
 import { type ModelRun, modelRunFromTape } from '../../exposition/index.ts'
+import { type DictSpace, defaults } from '../../space/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { type Config, type Session, session } from '../../trace/index.ts'
 import {
@@ -152,10 +153,16 @@ export function runEp(bound: BoundModel, options: EpRunOptions = {}): EpRun {
         record: () =>
           modelRunFromTape(toStructure(bound, { view: 'factor' }), { run: s.run() }, { maxSteps: 120, maxMessages: 6 }),
       }))
-    : runRoute<EpGridState>(run, route.method, 1000, (s, posterior) => ({
+    : runRoute<EpGridState>(run, route.method, gridSteps(route.method.config, config), (s, posterior) => ({
         converged: posterior?.status === 'converged',
         record: () => gridRecord(bound, s.state),
       }))
+}
+
+/** The steps of a grid run: one per node, so the node budget (the configuration's, else the method's default), and at least a thousand. */
+function gridSteps(space: DictSpace, config: Config): number {
+  const budget = config['maxNodes'] ?? (defaults(space) as Record<string, unknown>)['maxNodes']
+  return Math.max(1000, typeof budget === 'number' ? budget + 2 : 0)
 }
 
 /** How a run of one route is read: whether it converged and the messages as a model-run record. */

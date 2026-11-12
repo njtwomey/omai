@@ -18,6 +18,12 @@ describe('the grid kernels', () => {
       61,
     )
     expect(g.marginal(1).sd).toBeCloseTo(2, 4)
+    // the integral of the density (2 pi times the product of the sds) and the expectation of a function of the coordinates
+    expect(g.logEvidence).toBeCloseTo(Math.log(2 * Math.PI * 1 * 2), 6)
+    expect(g.expect((x) => (x[1] ?? 0) ** 2)).toBeCloseTo(4, 4)
+    // the mass on each axis sums to one, and a quantity that is N(x0 + x1, 1) given the coordinates has variance 1 + 1 + 4
+    expect(g.mass(0).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 12)
+    expect(g.mixture((x) => ({ mean: (x[0] ?? 0) + (x[1] ?? 0), variance: 1 })).sd).toBeCloseTo(Math.sqrt(6), 4)
   })
 
   it('hyperPosterior recovers a gamma and mixes conditionals', () => {
