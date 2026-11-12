@@ -171,9 +171,10 @@ lines of `runEp` (`run.ts`)).
 and every EP program, the compiled graphs (hashes), verdicts, beliefs, evidence and check rows, plus the operator registry and the knob
 spaces, and compares them to the committed `ep-digest.json`. A refactoring step must report at least EXACT (graphs and counts identical,
 numbers to 12 digits; BITS when nothing at all changed). A deliberate change gets `--accept` in a commit of its own, with the reason, so
-the baseline's history is the list of intended changes (`docs/structure.md` section 10). `make ep-report` writes `ep-status.md` and
-`make ep-report-check` fails when it is stale or when `ep-priors.md` names an atom that does not run; `make ep-check` runs it after the
-tests. Neither is part of `make verify`.
+the baseline's history is the list of intended changes (`docs/structure.md` section 10). `make ep-report` writes `ep-status.md` and the
+`status` column of the atlas `ep-priors.md` (each row's `ran by` column names the atom or test that runs it, or says `not yet`;
+`scripts/ep-atlas.ts`); `make ep-report-check` fails when `ep-status.md` is stale, when a status word or a reference of the atlas has
+drifted from the code, or when the atlas names an atom in prose that does not run; `make ep-check` runs it after the tests. Neither is part of `make verify`.
 
 ## 9. How to add a piece
 

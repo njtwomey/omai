@@ -1,11 +1,14 @@
 /**
  * The EP status report: what expectation propagation covers, measured from the code, so the page cannot go stale. It writes
  * `docs/probprog/ep-status.md` from the library's own measurements (the operator registry, `epCoverage`, `vmpCoverage`, the
- * atoms, the gaps with the refusals they derive, the directions) and checks that the atlas `docs/probprog/ep-priors.md` only
- * names atoms that exist and run.
+ * atoms, the gaps with the refusals they derive, the directions) and reads the atlas `docs/probprog/ep-priors.md` against the code
+ * (`scripts/ep-atlas.ts`): every atlas row says in its `ran by` column which atom or test runs it, its `status` word is the one the
+ * code gives, and an atom it names must exist and run.
  *
- *   make ep-report         write docs/probprog/ep-status.md
- *   make ep-report-check   fail (exit 1) when the file is out of date or the atlas names an atom that does not run
+ *   make ep-report         write docs/probprog/ep-status.md and the status cells of the atlas
+ *   make ep-report-check   fail (exit 1) when the status file is out of date, a status word or a reference of the atlas has drifted
+ *                          from the code (an atom that does not run, a test that is gone, a row that names neither), or the atlas
+ *                          names an atom in prose that does not run
  *
  * The report holds counts and tables only, no clocks and no random source, so two runs of the same code give the same text.
  */
@@ -21,6 +24,7 @@ import {
   unclaimedRefusals,
   vmpCoverage,
 } from '../packages/engine/src/lib/probprog/ep/index.ts'
+import { type AtlasReading, readAtlas } from './ep-atlas.ts'
 
 const ROOT = join(import.meta.dirname, '..')
 const STATUS = join(ROOT, 'docs/probprog/ep-status.md')
@@ -125,10 +129,29 @@ function atlasCheck(c: ReturnType<typeof epCoverage>): {
   return { named, notRunning: named.filter((n) => !runs.has(n)) }
 }
 
-function report(): { readonly text: string; readonly problems: readonly string[] } {
+/** The atlas read against the code: the atoms that run, and the test files with the texts they hold. */
+function atlasReading(c: ReturnType<typeof epCoverage>): AtlasReading {
+  const atoms = new Map(epAtoms.map((a) => [a.name, c.atoms.some((r) => r.name === a.name && r.status === 'runs')]))
+  const fileHas = (path: string, needle: string | undefined): boolean => {
+    const file = join(ROOT, path)
+    return existsSync(file) && (needle === undefined || readFileSync(file, 'utf8').includes(needle))
+  }
+  return readAtlas(existsSync(PRIORS) ? readFileSync(PRIORS, 'utf8') : '', { atoms, fileHas })
+}
+
+function report(): {
+  readonly text: string
+  readonly atlasText: string
+  readonly problems: readonly string[]
+  readonly unfixable: readonly string[]
+} {
   const c = epCoverage()
   const v = vmpCoverage()
   const atlas = atlasCheck(c)
+  const rows = atlasReading(c)
+  const byStatus = (s: string): number => count(rows.rows, (r) => r.status === s)
+  const refAtoms = new Set(rows.rows.flatMap((r) => r.atoms))
+  const refTests = new Set(rows.rows.flatMap((r) => r.tests))
   const text = [
     '# EP status',
     '',
@@ -154,16 +177,21 @@ function report(): { readonly text: string; readonly problems: readonly string[]
     '',
     '## The prior atlas',
     '',
-    `[\`ep-priors.md\`](ep-priors.md) names ${atlas.named.length} atoms; ${atlas.notRunning.length === 0 ? 'every one of them runs under EP' : `these do not run: ${atlas.notRunning.join(', ')}`}.`,
+    `[\`ep-priors.md\`](ep-priors.md) has **${rows.rows.length}** rows, each with the atom or test that runs it (\`ran by\`) and a status word set from the code: **${byStatus('runs')}** run, **${byStatus('planned')}** marked \`not yet\`, **${byStatus('broken')}** have a reference that does not hold. The rows name **${refAtoms.size}** atoms and **${refTests.size}** tests.`,
+    '',
+    `Atoms named in its prose: ${atlas.named.length}; ${atlas.notRunning.length === 0 ? 'every one of them runs under EP' : `these do not run: ${atlas.notRunning.join(', ')}`}.`,
     '',
   ].join('\n')
+  const prose = atlas.notRunning.map((n) => `ep-priors.md names the atom '${n}', which does not run under EP`)
   return {
     text,
-    problems: atlas.notRunning.map((n) => `ep-priors.md names the atom '${n}', which does not run under EP`),
+    atlasText: rows.text,
+    problems: [...rows.problems, ...prose],
+    unfixable: [...rows.unfixable, ...prose],
   }
 }
 
-const { text, problems } = report()
+const { text, problems, unfixable, atlasText } = report()
 if (process.argv.includes('--check')) {
   const current = existsSync(STATUS) ? readFileSync(STATUS, 'utf8') : ''
   const stale = current !== text
@@ -171,11 +199,13 @@ if (process.argv.includes('--check')) {
   if (stale) process.stdout.write('ep-report-check: docs/probprog/ep-status.md is out of date (run `make ep-report`)\n')
   if (stale || problems.length > 0) process.exit(1)
   process.stdout.write(
-    'ep-report-check: docs/probprog/ep-status.md is current and the atlas agrees with the coverage\n',
+    'ep-report-check: docs/probprog/ep-status.md is current and every row of the atlas agrees with the code\n',
   )
 } else {
   writeFileSync(STATUS, text)
-  for (const p of problems) process.stdout.write(`ep-report: ${p}\n`)
-  process.stdout.write(`ep-report: wrote ${STATUS}\n`)
-  if (problems.length > 0) process.exit(1)
+  if (existsSync(PRIORS) && readFileSync(PRIORS, 'utf8') !== atlasText) writeFileSync(PRIORS, atlasText)
+  // A stale status word is what writing settles; a reference that does not hold needs a person.
+  for (const p of unfixable) process.stdout.write(`ep-report: ${p}\n`)
+  process.stdout.write(`ep-report: wrote ${STATUS} and the status cells of ${PRIORS}\n`)
+  if (unfixable.length > 0) process.exit(1)
 }

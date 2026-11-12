@@ -8846,8 +8846,10 @@ library for the same computation. They do not set a higher bar than that library
   `review-rules.md` and `review-suite.md`, "How a step uses the digest").
 - `scripts/ep-report.ts` (`make ep-report`, `make ep-report-check`; `make ep-check` runs the check after its tests): writes
   `docs/probprog/ep-status.md` from the code (the operator registry by mode, `epCoverage` and `vmpCoverage`, the atoms by family, the gaps
-  with the refusals they derive, the directions) so the status page cannot go stale, and checks that the atlas `docs/probprog/ep-priors.md`
-  names only atoms that run. About half a minute.
+  with the refusals they derive, the directions) so the status page cannot go stale, and reads the atlas `docs/probprog/ep-priors.md`
+  against the code (`scripts/ep-atlas.ts`, with its test): each row's `ran by` column names the atom or test that runs it (or says
+  `not yet`), the `status` column is written from the code, and the check fails on a status word or a reference that has drifted.
+  About half a minute.
 - `scripts/concepts.ts`: concept-taxonomy coverage report against `docs/concepts.yaml`.
 - `scripts/version.ts`: `base/version.ts` and equal package versions (changesets fixed group).
 - `scripts/pack.ts`: build and pack the three packages; collect release assets with a manifest.
