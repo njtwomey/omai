@@ -18,6 +18,7 @@ import { defineOperator, siteRule } from '../../core/define.ts'
 import { ParameterError } from '../../core/errors.ts'
 import { param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, Params } from '../../core/types.ts'
+import { zeroArray } from '../../numerics/_arrays.ts'
 import { MOST_PRODUCT } from '../../numerics/_product.ts'
 import { type VectorSiteTilt, vectorSiteTilt } from '../../numerics/_vector-site.ts'
 import { classesOf, scoreLog } from './_multiclass-scores.ts'
@@ -31,7 +32,7 @@ function scoresOf(
   const a = vectorParam(params, 'matrix')
   if (a.length !== classes * d)
     throw new ParameterError(`multiclass-row: matrix must have ${classes} x ${d} entries (a row per class)`)
-  const b = params['offset'] === undefined ? new Array<number>(classes).fill(0) : vectorParam(params, 'offset')
+  const b = params['offset'] === undefined ? zeroArray(classes) : vectorParam(params, 'offset')
   if (b.length !== classes) throw new ParameterError(`multiclass-row: offset must have ${classes} entries`)
   return { a, b }
 }

@@ -7,6 +7,7 @@
  * stochastic and averaged EP of `stochastic.ts` runs on, and what the compiler of a model with a plate will emit.
  */
 
+import { mul, outer, toFlat } from '../../../tensor/index.ts'
 import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, messageArg, vectorParam } from '../../core/args.ts'
 import { defineOperator, messageRule } from '../../core/define.ts'
@@ -74,10 +75,7 @@ export function glmRow(name: string, link: FactorOperator, description: string):
     const nu = site[0] ?? 0
     const lambda = site[1] ?? 0
     const d = a.length
-    return [
-      ...a.map((x) => nu * x),
-      ...Array.from({ length: d * d }, (_, k) => lambda * (a[Math.floor(k / d)] ?? 0) * (a[k % d] ?? 0)),
-    ]
+    return [...a.map((x) => nu * x), ...toFlat(outer(mul(a, lambda), a))]
   }
   return defineOperator({
     name,

@@ -26,6 +26,7 @@ import { betaTwoShapes, dirichletConcentration } from '../operators/scales/conce
 import { gaussianMvFunctionScale } from '../operators/scales/function-scale.ts'
 import { gammaProduct, gammaRate } from '../operators/scales/gamma-scale.ts'
 import { gaussianMvPrecisionScale } from '../operators/scales/scale.ts'
+import { zeroArray } from './_arrays.ts'
 import { digammaOf, lgammaOf, Phi } from './_scalar.ts'
 
 // ----- the high-order reference -----
@@ -136,8 +137,8 @@ function expect2(
   }
   for (let round = 0; round < 5; round++) {
     const { g0, g1, lw, top } = pass(24, 8)
-    const m0 = new Array<number>(g0.x.length).fill(0)
-    const m1 = new Array<number>(g1.x.length).fill(0)
+    const m0 = zeroArray(g0.x.length)
+    const m1 = zeroArray(g1.x.length)
     for (let i = 0; i < g0.x.length; i++)
       for (let j = 0; j < g1.x.length; j++) {
         const e = Math.exp((lw[i * g1.x.length + j] as number) - top)
@@ -215,7 +216,7 @@ function expect3(
   }
   for (let round = 0; round < 5; round++) {
     const { g0, g1, g2, lw, top } = pass(10)
-    const m = [g0, g1, g2].map((g) => new Array<number>(g.x.length).fill(0))
+    const m = [g0, g1, g2].map((g) => zeroArray(g.x.length))
     let at = 0
     for (let i = 0; i < g0.x.length; i++)
       for (let j = 0; j < g1.x.length; j++)

@@ -7,10 +7,13 @@
 // carries it to `w`: precision `G' (S^-1 - I) G` and linear term `J m + G' S^-1 a`. The sites of the multiclass row (`links/`) and of the
 // pair row (`likelihoods/`) are this with their own `f`.
 
+import { dgemm } from '../../numerics/linalg/index.ts'
+import { diagonal, eye, reshape, stack, sub, take, toFlat, transpose } from '../../tensor/index.ts'
 import { etaOf } from '../core/args.ts'
 import { ImproperMessageError, ParameterError } from '../core/errors.ts'
 import { gaussianMvMoments } from '../core/families-vector.ts'
 import type { Arg, Eta } from '../core/types.ts'
+import { identityArray, zeroArray } from './_arrays.ts'
 import { spd } from './_dense.ts'
 import { MOST_PRODUCT, productTilt } from './_product.ts'
 
@@ -39,13 +42,14 @@ export interface VectorSiteTilt {
  * at a time, always on the largest remaining diagonal, until what is left is below `tol`. The rank is what the coordinates' cavity has.
  */
 function pivotedFactor(s: readonly number[], n: number, tol: number): { readonly rank: number; readonly b: number[] } {
-  const rest = Array.from({ length: n }, (_, i) => s[i * n + i] as number)
+  const matrix = reshape(s, [n, n])
+  const rest = toFlat(diagonal(matrix))
   const columns: number[][] = []
   for (let step = 0; step < n; step++) {
     let at = 0
     for (let i = 1; i < n; i++) if ((rest[i] as number) > (rest[at] as number)) at = i
     if (!((rest[at] as number) > tol)) break
-    const column = Array.from({ length: n }, (_, i) => s[i * n + at] as number)
+    const column = toFlat(take(matrix, at, 1))
     for (const done of columns)
       for (let i = 0; i < n; i++) column[i] = (column[i] as number) - (done[i] as number) * (done[at] as number)
     const root = Math.sqrt(rest[at] as number)
@@ -57,9 +61,8 @@ function pivotedFactor(s: readonly number[], n: number, tol: number): { readonly
     columns.push(column)
   }
   const rank = columns.length
-  const b = new Array<number>(n * rank)
-  for (const [j, column] of columns.entries()) for (let i = 0; i < n; i++) b[i * rank + j] = column[i] as number
-  return { rank, b }
+  // The columns side by side: `b[i * rank + j]` is entry `i` of column `j`.
+  return { rank, b: rank === 0 ? [] : toFlat(transpose(stack(columns))) }
 }
 
 /**
@@ -81,14 +84,8 @@ export function vectorSiteTilt(w: Arg, site: VectorSite): VectorSiteTilt {
     for (let e = 0; e < d; e++) s += (a[i * d + e] as number) * (m[e] as number)
     return s
   })
-  const av = new Array<number>(k * d).fill(0)
-  for (let i = 0; i < k; i++)
-    for (let e = 0; e < d; e++) {
-      let s = 0
-      for (let f = 0; f < d; f++) s += (a[i * d + f] as number) * (v[f * d + e] as number)
-      av[i * d + e] = s
-    }
-  const cov = new Array<number>(k * k).fill(0)
+  const av = dgemm(a, v, k, d, d)
+  const cov = zeroArray(k * k)
   for (let i = 0; i < k; i++)
     for (let l = 0; l <= i; l++) {
       let s = 0
@@ -99,7 +96,7 @@ export function vectorSiteTilt(w: Arg, site: VectorSite): VectorSiteTilt {
   let scale = 0
   for (let i = 0; i < k; i++) scale = Math.max(scale, cov[i * k + i] as number)
   const { rank: r, b: factor } = pivotedFactor(cov, k, 1e-10 * scale)
-  const zeros = new Array<number>(d + d * d).fill(0)
+  const zeros = zeroArray(d + d * d)
   if (r === 0) return { logMass: logf(mu), site: zeros }
   if (r > MOST_PRODUCT)
     throw new ParameterError(
@@ -110,8 +107,8 @@ export function vectorSiteTilt(w: Arg, site: VectorSite): VectorSiteTilt {
   const t = productTilt(
     r,
     {
-      mean: new Array<number>(r).fill(0),
-      covariance: Array.from({ length: r * r }, (_, i) => (i % (r + 1) === 0 ? 1 : 0)),
+      mean: zeroArray(r),
+      covariance: identityArray(r),
     },
     (x) => {
       let s = -0.5 * r * Math.log(2 * Math.PI)
@@ -133,38 +130,18 @@ export function vectorSiteTilt(w: Arg, site: VectorSite): VectorSiteTilt {
     throw new ImproperMessageError(`${name}: the tilted covariance of the coordinates is not positive definite`)
   const precision = tiltedPrecision.inverse()
   const linear = Array.from(tiltedPrecision.solve(t.mean))
-  const lambda = Array.from(precision)
-  for (let i = 0; i < r; i++) lambda[i * r + i] = (lambda[i * r + i] as number) - 1
+  const lambda = toFlat(sub(reshape(precision, [r, r]), eye(r)))
   // xi = G (w - m) with G = (B'B)^-1 B' A: the site as a function of w is exp(linear' G (w - m) - (w - m)' G' lambda G (w - m) / 2).
-  const btb = new Array<number>(r * r).fill(0)
-  for (let i = 0; i < r; i++)
-    for (let j = 0; j < r; j++) {
-      let s = 0
-      for (let c = 0; c < k; c++) s += (factor[c * r + i] as number) * (factor[c * r + j] as number)
-      btb[i * r + j] = s
-    }
+  const btb = dgemm(factor, factor, r, k, r, { transposeA: true })
   const gram = spd(btb, r)
   if (gram === undefined) throw new ImproperMessageError(`${name}: the coordinates have no full-rank factor`)
-  const g = new Array<number>(r * d)
-  for (let e = 0; e < d; e++) {
-    const column = new Array<number>(r)
-    for (let i = 0; i < r; i++) {
-      let s = 0
-      for (let c = 0; c < k; c++) s += (factor[c * r + i] as number) * (a[c * d + e] as number)
-      column[i] = s
-    }
-    const solved = gram.solve(column)
-    for (let i = 0; i < r; i++) g[i * d + e] = solved[i] as number
-  }
+  const fa = reshape(dgemm(factor, a, r, k, d, { transposeA: true }), [r, d])
+  const solved: Float64Array[] = []
+  for (let e = 0; e < d; e++) solved.push(gram.solve(toFlat(take(fa, e, 1))))
+  const g = toFlat(transpose(stack(solved)))
   // J = G' lambda G, h = J m + G' linear.
-  const lg = new Array<number>(r * d).fill(0)
-  for (let i = 0; i < r; i++)
-    for (let e = 0; e < d; e++) {
-      let s = 0
-      for (let j = 0; j < r; j++) s += (lambda[i * r + j] as number) * (g[j * d + e] as number)
-      lg[i * d + e] = s
-    }
-  const j = new Array<number>(d * d).fill(0)
+  const lg = dgemm(lambda, g, r, r, d)
+  const j = zeroArray(d * d)
   for (let e = 0; e < d; e++)
     for (let f = 0; f <= e; f++) {
       let s = 0
@@ -172,7 +149,7 @@ export function vectorSiteTilt(w: Arg, site: VectorSite): VectorSiteTilt {
       j[e * d + f] = s
       j[f * d + e] = s
     }
-  const h = new Array<number>(d).fill(0)
+  const h = zeroArray(d)
   for (let e = 0; e < d; e++) {
     let s = 0
     for (let f = 0; f < d; f++) s += (j[e * d + f] as number) * (m[f] as number)

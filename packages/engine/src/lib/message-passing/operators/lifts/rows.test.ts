@@ -3,8 +3,10 @@ import { integrateBox } from '../../../../testing/message-passing.ts'
 import { probitRows } from '../../../../testing/mp-variants.ts'
 import { sigmoidOf } from '../../../base/index.ts'
 import { gaussianEp } from '../../../pgm/index.ts'
+import { eye, mul, toFlat } from '../../../tensor/index.ts'
 import { runAlgorithm } from '../../../trace/index.ts'
 import * as M from '../../index.ts'
+import { zeroArray } from '../../numerics/_arrays.ts'
 import { millsRatio } from '../../numerics/_scalar.ts'
 
 const operators = M.defaultOperators()
@@ -23,11 +25,7 @@ function rowsGraph(rows: number[][], labels: number[], op: string): M.CompiledGr
         ...labels.map((l, i): M.VariableSpec => ({ name: `y${i}`, family: { kind: 'bernoulli' }, observed: l })),
       ],
       factors: [
-        M.gaussianMvPrior(
-          'w',
-          new Array<number>(d).fill(0),
-          Array.from({ length: d * d }, (_, k) => (k % (d + 1) === 0 ? 4 : 0)),
-        ),
+        M.gaussianMvPrior('w', zeroArray(d), toFlat(mul(eye(d), 4))),
         ...rows.map((a, i): M.FactorSpec => ({ operator: op, args: [`y${i}`, 'w'], params: { a } })),
       ],
     },

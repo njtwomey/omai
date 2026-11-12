@@ -12,10 +12,12 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { add, div, exp, item, neg, sum } from '../../../tensor/index.ts'
 import { gaussianMessage, gaussianOf, scalarOf } from '../../core/args.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import type { Arg, Eta } from '../../core/types.ts'
+import { float64Of, zeroArray } from '../../numerics/_arrays.ts'
 import { resolvedVariance, shiftedSum } from '../../numerics/_moments.ts'
 import { gaussianGridOn, gaussianNodes } from '../../numerics/_quadrature.ts'
 import { betaModeWindow, gammaModeWindow, uniformNodes } from '../../numerics/_windows.ts'
@@ -96,9 +98,9 @@ export function quadraturePort(a: Arg, options: QuadOptions = {}): QuadPort {
         xs.push(...grid.x)
         ws.push(...grid.w)
       }
-      const total = ws.reduce((p, q) => p + q, 0)
+      const total = item(sum(ws))
       const x = Float64Array.from(xs)
-      return { coords: x, weights: Float64Array.from(ws, (v) => v / total), stats: stats(x) }
+      return { coords: x, weights: float64Of(div(ws, total)), stats: stats(x) }
     }
     const { x, w } = gaussianNodes(mean, variance, options.points ?? 24)
     return { coords: x, weights: w, stats: stats(x) }
@@ -114,7 +116,7 @@ export function quadraturePort(a: Arg, options: QuadOptions = {}): QuadPort {
       (u) => shape * u - rate * Math.exp(u),
     )
     return {
-      coords: options.log === true ? t : Float64Array.from(t, Math.exp),
+      coords: options.log === true ? t : float64Of(exp(t)),
       weights: w,
       stats: Array.from(t, (u): [number, number] => [u, Math.exp(u)]),
     }
@@ -127,7 +129,7 @@ export function quadraturePort(a: Arg, options: QuadOptions = {}): QuadPort {
     // In u = logit(x) the density is x^p (1 - x)^q.
     const logOf = (u: number): number => -p * log1pExp(-u) - q * log1pExp(u)
     const { t, w } = gridWeights(betaModeWindow(p, q), options.points ?? 161, logOf)
-    const probs = Float64Array.from(t, (u) => 1 / (1 + Math.exp(-u)))
+    const probs = float64Of(div(1, add(1, exp(neg(t)))))
     return {
       coords: probs,
       weights: w,
@@ -181,7 +183,7 @@ function average(
 ): number {
   const others: number[] = []
   for (let i = 0; i < ports.length; i++) if (i !== skip) others.push(i)
-  const counter = new Array<number>(others.length).fill(0)
+  const counter = zeroArray(others.length)
   let total = 0
   for (;;) {
     let weight = 1
@@ -222,7 +224,7 @@ function average(
  * ```
  */
 export function numericExpectedLog(ports: readonly QuadPort[], logf: (x: readonly number[]) => number): number {
-  return average(ports, -1, new Array<number>(ports.length).fill(0), logf)
+  return average(ports, -1, zeroArray(ports.length), logf)
 }
 
 /**
@@ -249,7 +251,7 @@ export function numericMessage(ports: readonly QuadPort[], to: number, logf: (x:
   const target = ports[to] as QuadPort
   if (target.stats.length === 0) throw new ParameterError('a variational message is not sent to an observed port')
   const n = target.coords.length
-  const x = new Array<number>(ports.length).fill(0)
+  const x = zeroArray(ports.length)
   const g = new Float64Array(n)
   for (let i = 0; i < n; i++) {
     x[to] = target.coords[i] as number
@@ -335,7 +337,7 @@ export function definedFunctionMessage(args: readonly Arg[], to: number, f: (x: 
   const inputs = args.slice(1)
   const ports = quadraturePorts(inputs)
   if (to === 0) {
-    const coords = new Array<number>(inputs.length).fill(0)
+    const coords = zeroArray(inputs.length)
     const mean = average(ports, -1, coords, f)
     const variance = average(ports, -1, coords, (x) => (f(x) - mean) ** 2)
     return gaussianMessage(mean, resolvedVariance(variance, 'a deterministic factor'))

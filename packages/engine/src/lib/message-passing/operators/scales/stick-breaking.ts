@@ -14,6 +14,7 @@ import { beta } from '../../core/families.ts'
 import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
+import { unitArray } from '../../numerics/_arrays.ts'
 
 const sticksOf = (params: Params): number => {
   const k = Math.trunc(numberParam(params, 'sticks'))
@@ -31,9 +32,7 @@ function ports(params: Params): readonly Port[] {
 /** The state probabilities of the assignment argument: its message, or the indicator of its observed state. */
 function stateProbabilities(a: Arg, k: number): number[] {
   if (a.value !== undefined) {
-    const out = new Array<number>(k).fill(0)
-    out[Math.trunc(scalarOf(a))] = 1
-    return out
+    return unitArray(k, Math.trunc(scalarOf(a)))
   }
   return discreteProbs(etaOf(a))
 }
