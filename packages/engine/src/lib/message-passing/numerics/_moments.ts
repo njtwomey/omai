@@ -31,6 +31,7 @@ export interface ShiftedSum {
 export function shiftedSum(logw: ArrayLike<number>): ShiftedSum {
   let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < logw.length; i++) if ((logw[i] as number) > top) top = logw[i] as number
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const weights = new Float64Array(logw.length)
   let total = 0
   for (let i = 0; i < logw.length; i++) {

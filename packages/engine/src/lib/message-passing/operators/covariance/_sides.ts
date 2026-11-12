@@ -79,6 +79,7 @@ export function gaussianSide(a: Arg, d: number): GaussianSide {
   return { point: false, flat: false, mean, h, precision, cov }
 }
 
+// banned-ok: sentinel: no rows (an empty scatter)
 export const NO_ROWS: Rows = { count: 1, scatter: new Float64Array(0) }
 
 /** What the integral over the unknown Gaussians gives at one precision matrix, and (when asked) the conditional of one of them. */
@@ -106,8 +107,10 @@ export function evaluatorOf(x: GaussianSide, mean: GaussianSide, d: number, rows
   const k = rows.count
   const unknown = [x, mean].map((s, i) => ({ s, sign: i === 0 ? 1 : -1, i })).filter((u) => !u.s.point)
   const q = unknown.length * d
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const c = new Float64Array(d)
   for (let i = 0; i < d; i++) c[i] = (x.point ? (x.mean[i] as number) : 0) - (mean.point ? (mean.mean[i] as number) : 0)
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const p = new Float64Array(q * q)
   const h = new Float64Array(q)
   const w = new Float64Array(q)
@@ -151,6 +154,7 @@ export function evaluatorOf(x: GaussianSide, mean: GaussianSide, d: number, rows
       const slot = unknown.findIndex((u) => u.i === target)
       for (let i = 0; i < d; i++) outMean[i] = w[slot * d + i] as number
       for (let j = 0; j < d; j++) {
+        // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
         col.fill(0)
         col[slot * d + j] = 1
         choleskySolveInPlace(p, q, col)

@@ -58,6 +58,7 @@ function tiltOf(c: OperatorContext): Tilt {
       'value',
       'mvn-sd-corr-group: the mean is a Gaussian variable (a known mean is one mvn-sd-corr factor per vector)',
     )
+  // banned-ok: non-numeric: one side record per group
   const groups = Array.from({ length: count }, (_, j) => gaussianSide(arg(c, j), D))
   const sides: Sides = { d: D, groups, mean }
   const evaluate = nodeEvaluator(sides)
@@ -66,10 +67,12 @@ function tiltOf(c: OperatorContext): Tilt {
     axisOfPort(arg(c, count + 2), 'precision'),
     axisOfPort(arg(c, count + 3), 'correlation'),
   ] as const
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const lambda = new Float64Array(D * D)
   const grid = integrateAxes(axes, (t) => evaluate(lambda, 0, precisionAt(t, lambda), undefined))
   const [n0, n1, n2] = [grid.nodes[0]?.length ?? 1, grid.nodes[1]?.length ?? 1, grid.nodes[2]?.length ?? 1]
   const dd = D * D
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const means = Array.from({ length: count + 1 }, () => new Float64Array(D))
   const second = Array.from({ length: count + 1 }, () => new Float64Array(dd))
   const conditionals = new Float64Array((count + 1) * (D + dd))

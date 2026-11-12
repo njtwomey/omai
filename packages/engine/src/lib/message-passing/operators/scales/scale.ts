@@ -112,6 +112,7 @@ function summarise(nodes: readonly Node[], step: number, d: number): VectorScale
   const { mean: mt, variance: varLog } = centredMoments(weights, z, ts)
   let eLam = 0
   for (const [k, n] of nodes.entries()) eLam += (weights[k] as number) * Math.exp(n.t)
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const mean = new Float64Array(d)
   const covariance = new Float64Array(d * d)
   const carriers = nodes.flatMap((n, k) =>

@@ -36,6 +36,7 @@ function tilt(c: OperatorContext, rows: Rows) {
     axisOfPort(arg(c, 3), 'precision'),
     axisOfPort(arg(c, 4), 'correlation'),
   ] as const
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const lambda = new Float64Array(4)
   const grid = integrateAxes(axes, (t) => evalAt(eval1, lambda, t))
   return { x, mean, eval1, axes, grid }
@@ -106,6 +107,7 @@ export const mvnSdCorr: FactorOperator = defineOperator({
       // a Gaussian port: the mixture of the conditionals over the grid
       const target = c.to as 0 | 1
       const side = target === 0 ? x : mean
+      // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
       const m = new Float64Array(2)
       const s = new Float64Array(4)
       const nodeMean = new Float64Array(2)

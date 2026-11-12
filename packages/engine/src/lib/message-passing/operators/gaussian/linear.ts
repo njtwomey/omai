@@ -293,6 +293,7 @@ export const timesConstant: FactorOperator = affineOperator(
 export const sum: FactorOperator = affineOperator(
   'sum',
   'y = a_1 + ... + a_n for Gaussians',
+  // banned-ok: non-numeric: the ports of the sum
   (params) => [gaussianPort('y'), ...Array.from({ length: numberParam(params, 'n') }, (_, i) => gaussianPort(`a${i}`))],
   { n: param.integer({ min: 1 }) },
   (params) => ({ coeffs: constantArray(numberParam(params, 'n'), 1), offset: 0 }),
@@ -441,6 +442,7 @@ export const gaussianMvStack: FactorOperator = defineOperator({
   description: 'D = (y_0, ..., y_n-1): a Gaussian vector assembled from scalar Gaussian variables',
   ports: (params) => [
     { name: 'd', accepts: ['gaussian-mv'] },
+    // banned-ok: non-numeric: the ports of the stack
     ...Array.from({ length: numberParam(params, 'n') }, (_, i): Port => ({ name: `y${i}`, accepts: ['gaussian'] })),
   ],
   params: { n: param.integer({ min: 1 }) },
@@ -515,6 +517,7 @@ export const matmulConstant: FactorOperator = defineOperator({
       const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, 1)), d)
       const my = dgemv(m, rows, d, mean)
       const cov = zeroArray(rows * rows)
+      // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
       const ac = new Float64Array(rows * d)
       for (let r = 0; r < rows; r++) {
         const row = dgemv(covariance, d, d, m.slice(r * d, (r + 1) * d))
@@ -710,6 +713,7 @@ export const gaussianJoint: FactorOperator = defineOperator({
       }
       if (rest.length === 0) return { message: [hm[t] ?? 0, jm[t * n + t] ?? 0] }
       const idx = ports.map((p, k) => (p === c.to ? -1 : k)).filter((k) => k >= 0)
+      // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
       const jrr = new Float64Array(idx.length * idx.length)
       for (const [a, ka] of idx.entries())
         for (const [b, kb] of idx.entries()) jrr[a * idx.length + b] = jm[ka * n + kb] ?? 0
@@ -786,6 +790,7 @@ function reduceJoint(c: OperatorContext): {
   const known: number[] = []
   for (let i = 0; i < total; i++) (arg(c, i).value === undefined ? ports : known).push(i)
   const n = ports.length
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const Jr = new Float64Array(n * n)
   const hr = ports.map((p) => h[p] ?? 0)
   let g = numberParam(c.params, 'g', 0)

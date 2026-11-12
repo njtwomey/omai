@@ -79,6 +79,7 @@ export function vectorSiteTilt(w: Arg, site: VectorSite): VectorSiteTilt {
   const d = w.family.dim
   const { mean: m, covariance: v } = gaussianMvMoments(etaOf(w), d)
   // The coordinates' cavity: mean A m + b, covariance A V A'.
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const mu = Array.from({ length: k }, (_, i) => {
     let s = b[i] as number
     for (let e = 0; e < d; e++) s += (a[i * d + e] as number) * (m[e] as number)
