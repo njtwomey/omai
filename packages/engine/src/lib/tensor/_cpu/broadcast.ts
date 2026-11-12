@@ -135,6 +135,21 @@ export function runRows3(row: Row3, out: Data, c: Data, a: Data, b: Data, plan: 
       }
 }
 
+/** Copy one operand to the output through its plan: rows that repeat an element are filled, the others copied. */
+export function runCopy(out: Data, x: Data, plan: BroadcastPlan): void {
+  const [e0, e1, e2, n] = plan.extents
+  const [s0, s1, s2, sn] = plan.strides[0] as Axes4
+  let o = 0
+  for (let i0 = 0; i0 < e0; i0++)
+    for (let i1 = 0; i1 < e1; i1++)
+      for (let i2 = 0; i2 < e2; i2++) {
+        const from = i0 * s0 + i1 * s1 + i2 * s2
+        if (sn === 0) out.fill(x[from] as number, o, o + n)
+        else for (let j = 0; j < n; j++) out[o + j] = x[from + j] as number
+        o += n
+      }
+}
+
 /** Run an arbitrary function over the plan of two operands (no index maps, but one call per element). */
 export function runFn2(fn: (x: number, y: number) => number, out: Data, a: Data, b: Data, plan: BroadcastPlan): void {
   const [e0, e1, e2, n] = plan.extents

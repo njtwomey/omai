@@ -118,6 +118,7 @@ function cases(n: number): Case[] {
   const AC = data(a3c3)
   const rowMask = greater(grid, 2.7)
   const M = (rowMask as Tensor).data as Uint8Array
+  const segIdx = mod(idx, side)
   const rowIdx = cast(mod(mul(arange(side), 37), side), 'int32')
   const RI = (rowIdx as Tensor).data as Int32Array
   const alongIdx = cast(mod(mul(arange(side * side), 7), side), 'int32')
@@ -487,7 +488,7 @@ function cases(n: number): Case[] {
     },
     {
       op: 'scatterAdd (n updates into [s])',
-      tensor: () => scatterAdd([side], mod(idx, side), a, 0),
+      tensor: () => scatterAdd([side], segIdx, a, 0),
       raw: () => {
         const o = new Float64Array(side)
         for (let i = 0; i < n; i++) {
@@ -499,7 +500,7 @@ function cases(n: number): Case[] {
     },
     {
       op: 'segmentSum (n values, s segments)',
-      tensor: () => segmentSum(a, mod(idx, side), side),
+      tensor: () => segmentSum(a, segIdx, side),
       raw: () => {
         const o = new Float64Array(side)
         for (let i = 0; i < n; i++) {
