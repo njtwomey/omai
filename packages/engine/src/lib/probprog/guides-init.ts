@@ -10,7 +10,28 @@ import { OmaiError } from '../base/index.ts'
 import { cholesky, eigh } from '../numerics/linalg/index.ts'
 import { lbfgs } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
-import { fromStorage, neg, primalOf, type Tensor, toFlat, type Value } from '../tensor/index.ts'
+import {
+  arange,
+  diagonal,
+  eye,
+  fromStorage,
+  full,
+  maximum,
+  mul,
+  neg,
+  primalOf,
+  reshape,
+  sliceAxis,
+  sqrt,
+  square,
+  sub,
+  sum,
+  type Tensor,
+  take,
+  toFlat,
+  type Value,
+  zeros,
+} from '../tensor/index.ts'
 import { isolated } from './_stack.ts'
 import { findInitialParams, initToMedian, potentialEnergy, type UnconstrainedModel } from './density.ts'
 import { type LaplaceFit, laplaceFit } from './engines/laplace.ts'
@@ -114,72 +135,43 @@ export function laplaceInitialParams<D = void>(
   const D = um.dim
   const covariance = fit?.covariance
   const modeFlat = asArray(mode)
-  const covFlat = covariance === undefined ? undefined : asArray(covariance)
-  const variance = (i: number): number =>
-    covFlat === undefined ? fallback ** 2 : (covFlat[i * D + i] ?? fallback ** 2)
+  // The variance of each coordinate: the covariance's diagonal, or the fallback's square where there is no covariance.
+  const variances: Value = covariance === undefined ? full([D], fallback ** 2) : diagonal(covariance)
   const sites = isolated(() => cachedGuideSites(model)(data))
   const params: Record<string, Tensor> = {}
-  const slice = (offset: number, size: number, shape: readonly number[], values: (i: number) => number): Tensor =>
-    fromStorage(
-      Float64Array.from({ length: size }, (_, k) => values(offset + k)),
-      [...shape],
-      'float64',
-    )
+  const slice = (offset: number, size: number, shape: readonly number[], values: Value): Tensor =>
+    reshape(sliceAxis(values, 0, offset, offset + size), [...shape]) as Tensor
   if (kind === 'autoNormal' || kind === 'autoDelta') {
     for (const s of sites) {
       params[`${s.name}_auto_loc`] =
         kind === 'autoNormal'
-          ? slice(s.offset, s.size, s.unconstrainedShape, (i) => modeFlat[i] ?? 0)
-          : primalOf(s.bijector.forward(slice(s.offset, s.size, s.unconstrainedShape, (i) => modeFlat[i] ?? 0)))
+          ? slice(s.offset, s.size, s.unconstrainedShape, mode)
+          : primalOf(s.bijector.forward(slice(s.offset, s.size, s.unconstrainedShape, mode)))
       if (kind === 'autoNormal')
-        params[`${s.name}_auto_scale`] = slice(s.offset, s.size, s.unconstrainedShape, (i) =>
-          Math.sqrt(Math.max(variance(i), 1e-12)),
-        )
+        params[`${s.name}_auto_scale`] = slice(s.offset, s.size, s.unconstrainedShape, sqrt(maximum(variances, 1e-12)))
     }
   } else if (kind === 'autoMultivariateNormal') {
     params['auto_loc'] = mode
     params['auto_scale_tril'] =
-      covariance === undefined
-        ? fromStorage(
-            Float64Array.from({ length: D * D }, (_, k) => (Math.floor(k / D) === k % D ? fallback : 0)),
-            [D, D],
-            'float64',
-          )
-        : primalOf(cholesky(covariance))
+      covariance === undefined ? (mul(eye(D), fallback) as Tensor) : primalOf(cholesky(covariance))
   } else if (kind === 'autoLowRankMultivariateNormal') {
     const r = Math.min(options.rank ?? Math.ceil(Math.sqrt(D)), D)
     params['auto_loc'] = mode
     if (covariance === undefined) {
-      params['auto_cov_factor'] = fromStorage(new Float64Array(D * r), [D, r], 'float64')
-      params['auto_scale'] = fromStorage(new Float64Array(D).fill(fallback), [D], 'float64')
+      params['auto_cov_factor'] = zeros([D, r])
+      params['auto_scale'] = full([D], fallback)
     } else {
       const { eigenvalues, eigenvectors } = eigh(covariance)
-      const lam = asArray(primalOf(eigenvalues))
-      const vec = asArray(primalOf(eigenvectors))
-      // The r largest eigenpairs make the factor; the diagonal takes what they leave of each variance.
-      const factor = new Float64Array(D * r)
-      for (let c = 0; c < r; c++) {
-        const col = D - 1 - c
-        const sd = Math.sqrt(Math.max(lam[col] ?? 0, 0))
-        for (let i = 0; i < D; i++) factor[i * r + c] = (vec[i * D + col] ?? 0) * sd
-      }
-      const scale = new Float64Array(D)
-      for (let i = 0; i < D; i++) {
-        let used = 0
-        for (let c = 0; c < r; c++) used += (factor[i * r + c] ?? 0) ** 2
-        scale[i] = Math.sqrt(Math.max(variance(i) - used, 1e-8))
-      }
-      params['auto_cov_factor'] = fromStorage(factor, [D, r], 'float64')
-      params['auto_scale'] = fromStorage(scale, [D], 'float64')
+      // The r largest eigenpairs (the last columns, largest first) make the factor; the diagonal takes what they leave of each variance.
+      const largest = arange(D - 1, D - 1 - r, -1)
+      const sd = sqrt(maximum(take(primalOf(eigenvalues), largest, 0), 0))
+      const factor = mul(take(primalOf(eigenvectors), largest, 1), sd)
+      const scale = sqrt(maximum(sub(variances, sum(square(factor), 1)), 1e-8))
+      params['auto_cov_factor'] = factor as Tensor
+      params['auto_scale'] = scale as Tensor
     }
   } else if (kind === 'autoStructured') {
-    const cov =
-      covariance ??
-      fromStorage(
-        Float64Array.from({ length: D * D }, (_, k) => (Math.floor(k / D) === k % D ? fallback ** 2 : 0)),
-        [D, D],
-        'float64',
-      )
+    const cov = covariance ?? (mul(eye(D), fallback ** 2) as Tensor)
     Object.assign(
       params,
       structuredInitialParams(model, data, { mean: modeFlat, covariance: cov }, options.structured ?? {}),
@@ -187,11 +179,7 @@ export function laplaceInitialParams<D = void>(
   } else {
     // The flows start at the identity: the mean and the scales are the Gaussian's, the correlations are left to the flows.
     params['auto_loc'] = mode
-    params['auto_scale'] = fromStorage(
-      Float64Array.from({ length: D }, (_, i) => Math.sqrt(Math.max(variance(i), 1e-12))),
-      [D],
-      'float64',
-    )
+    params['auto_scale'] = sqrt(maximum(variances, 1e-12)) as Tensor
   }
   return { params, mode, covariance, reason, fit }
 }

@@ -7,6 +7,7 @@
 
 import type { Json } from '../../../../base/index.ts'
 import type { OperatorName } from '../../../../message-passing/index.ts'
+import { scatterAdd, toFlat } from '../../../../tensor/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
 import { precisionFactor } from '../_builder.ts'
 import { type Atom, affOf, type Cell, isConstCell, lookup, scaledOf } from '../_cells.ts'
@@ -82,8 +83,14 @@ export function observedGaussian(
   cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
   if (oneVector) {
     const first = comps[0] as Atom & { kind: 'comp' }
-    const a = new Array<number>(first.size).fill(0)
-    for (const [k, c] of terms) a[(cx.g.atoms.get(k) as Atom & { kind: 'comp' }).index] = c
+    const a = toFlat(
+      scatterAdd(
+        [first.size],
+        terms.map(([k]) => (cx.g.atoms.get(k) as Atom & { kind: 'comp' }).index),
+        terms.map(([, c]) => c),
+        0,
+      ),
+    )
     cx.g.addFactor({ operator: 'linear-regression-row', args: [name, first.vector], params: { a, precision } }, name)
   } else {
     const m = cx.g.materialise(aff, node.name, index)

@@ -21,7 +21,7 @@ import {
   windowAdaptationResult,
 } from '../../sampling/index.ts'
 import { bool, type DictSpace, dict, int, real } from '../../space/index.ts'
-import { fromStorage, type Tensor } from '../../tensor/index.ts'
+import { asTensor, diagonal, fromStorage, reshape, type Tensor, toFlat, zeros } from '../../tensor/index.ts'
 import type { Config } from '../../trace/index.ts'
 import { stateFromJson, stateToJson } from '../../trace/index.ts'
 import type { McmcBuild, McmcPlan, Warmer } from './_mcmc-driver.ts'
@@ -37,7 +37,7 @@ export function massOf(p: HamiltonianParameters, dim: number): Float64Array | Te
 /** The diagonal of an inverse mass matrix (the diagonal of a dense one). */
 export function massDiagonal(p: HamiltonianParameters, dim: number): Float64Array {
   if (p.inverseMassMatrix.length !== dim * dim || dim === 1) return p.inverseMassMatrix
-  return Float64Array.from({ length: dim }, (_, i) => p.inverseMassMatrix[i * dim + i] ?? 1)
+  return Float64Array.from(toFlat(diagonal(reshape(asTensor(p.inverseMassMatrix), [dim, dim]))))
 }
 
 /** The knobs of window adaptation a family exposes: the acceptance rate it aims for and, optionally, the dense mass matrix. */
@@ -70,7 +70,7 @@ export function windowWarmer(
   },
 ): Warmer<HamiltonianParameters> {
   // Stepping and serialising a warm-up state do not depend on the starting position, so one algorithm serves every chain.
-  const shared = windowAdaptationAlgorithm(dim, kernelFor, new Float64Array(dim), options)
+  const shared = windowAdaptationAlgorithm(dim, kernelFor, Float64Array.from(toFlat(zeros([dim]))), options)
   return {
     init: (start, key) => windowAdaptationAlgorithm(dim, kernelFor, start, options).init(key),
     step: (w, ctx) => shared.step(w as WarmupState<MCMCState>, ctx),

@@ -32,7 +32,7 @@ import {
   type MpState,
 } from '../../message-passing/index.ts'
 import { bool, choice, type DictSpace, dict, int, real } from '../../space/index.ts'
-import { item, tensor, type Value } from '../../tensor/index.ts'
+import { add, arange, exp, item, log, max, sub, sum, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -310,7 +310,7 @@ function logPriorAt(h: Hyper, u: number): number {
 
 /** The order the points of one axis are run in: the two ends, then the midpoints of the gaps, level by level. */
 function bisectionOrder(n: number): number[] {
-  if (n <= 2) return Array.from({ length: n }, (_, i) => i)
+  if (n <= 2) return toFlat(arange(n))
   const order = [0, n - 1]
   let gaps: [number, number][] = [[0, n - 1]]
   while (gaps.length > 0) {
@@ -351,7 +351,7 @@ function firstNodes(axes: readonly GridAxis[]): number[][] {
 }
 
 /** The normalised weights of the nodes: the evidence of each EP run times the prior density, with the width of the cell of each node. */
-function nodeWeights(state: EpGridState): { readonly logWeights: Float64Array; readonly logEvidence: number } {
+function nodeWeights(state: EpGridState): { readonly logWeights: readonly number[]; readonly logEvidence: number } {
   const nodes = state.nodes
   const widths = state.axes.map((_, k) => {
     const values = [...new Set(nodes.map((n) => n.u[k] ?? 0))].sort((a, b) => a - b)
@@ -364,7 +364,6 @@ function nodeWeights(state: EpGridState): { readonly logWeights: Float64Array; r
       }),
     )
   })
-  const logw = new Float64Array(nodes.length)
   // A run that did not settle is not at a fixed point, and the EP energy at a state that cycles or has collapsed (a precision
   // sent to zero) can be far above the evidence of the nodes that did: when any node settled, a node that did not weighs the grid
   // only where its evidence does not exceed the best settled node's (a cycling state in the tail of the posterior is still a
@@ -373,21 +372,20 @@ function nodeWeights(state: EpGridState): { readonly logWeights: Float64Array; r
   for (const n of nodes)
     if (n.converged && n.logEvidence + n.logPrior > bestSettled) bestSettled = n.logEvidence + n.logPrior
   const settledOnly = nodes.some((n) => n.converged)
-  nodes.forEach((n, i) => {
+  const scores = nodes.map((n) => {
     const score = n.logEvidence + n.logPrior
     const trusted = !settledOnly || n.converged || score <= bestSettled
     let lw = trusted ? score : Number.NEGATIVE_INFINITY
     n.u.forEach((v, k) => {
       lw += Math.log(widths[k]?.get(v) ?? 1)
     })
-    logw[i] = Number.isNaN(lw) ? Number.NEGATIVE_INFINITY : lw
+    return Number.isNaN(lw) ? Number.NEGATIVE_INFINITY : lw
   })
-  let top = Number.NEGATIVE_INFINITY
-  for (const v of logw) if (v > top) top = v
-  let z = 0
-  for (const v of logw) z += Math.exp(v - top)
-  const logZ = top + Math.log(z)
-  return { logWeights: logw.map((v) => v - logZ), logEvidence: logZ }
+  if (scores.length === 0) return { logWeights: [], logEvidence: Number.NEGATIVE_INFINITY }
+  const logw = tensor(scores)
+  const top = max(logw)
+  const logZ = add(top, log(sum(exp(sub(logw, top)))))
+  return { logWeights: toFlat(sub(logw, logZ)), logEvidence: item(logZ) }
 }
 
 /** Where the grid should grow: the axes and the side whose edge nodes still carry mass. */

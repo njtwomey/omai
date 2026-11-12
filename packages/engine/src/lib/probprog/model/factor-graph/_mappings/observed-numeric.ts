@@ -12,7 +12,7 @@ import {
   pairLikelihoods,
   tripleLikelihoods,
 } from '../../../../message-passing/index.ts'
-import { toFlat } from '../../../../tensor/index.ts'
+import { scatterAdd, toFlat } from '../../../../tensor/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
 import { type Atom, affOf, type Cell, isConstCell, prod } from '../_cells.ts'
 import type { Context } from '../_context.ts'
@@ -218,8 +218,15 @@ function vectorScores(
     offset.push(cell.aff.offset)
   }
   if (vector === undefined) return undefined
-  const matrix = new Array<number>(cells.length * size).fill(0)
-  for (const [k, row] of coordinates.entries()) for (const t of row) matrix[k * size + t.index] = t.coefficient
+  const entries = coordinates.flatMap((row, k) => row.map((t) => ({ at: k * size + t.index, value: t.coefficient })))
+  const matrix = toFlat(
+    scatterAdd(
+      [cells.length * size],
+      entries.map((e) => e.at),
+      entries.map((e) => e.value),
+      0,
+    ),
+  )
   return { vector, size, matrix, offset }
 }
 
@@ -507,8 +514,14 @@ export function emitSite(
   const id = cx.elementName(node.name, node.dims, i)
   if (oneVector) {
     const first = comps[0] as Atom & { kind: 'comp' }
-    const a = new Array<number>(first.size).fill(0)
-    for (const [k, c] of terms) a[(cx.g.atoms.get(k) as Atom & { kind: 'comp' }).index] = c
+    const a = toFlat(
+      scatterAdd(
+        [first.size],
+        terms.map(([k]) => (cx.g.atoms.get(k) as Atom & { kind: 'comp' }).index),
+        terms.map(([, c]) => c),
+        0,
+      ),
+    )
     cx.g.addFactor({ operator: row, args: [first.vector], params: { a, ...params } }, id)
   } else {
     const m = cx.g.materialise(aff, node.name, index)

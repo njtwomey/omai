@@ -17,11 +17,24 @@ import {
   ParameterError,
   type VariableSpec,
 } from '../../../message-passing/index.ts'
+import { oneHot, scatterAdd, toFlat, zeros } from '../../../tensor/index.ts'
 import { auxId, elementId, factorId } from '../ids.ts'
 import type { OperatorTable } from '../operators.ts'
 import { type Aff, type Atom, affOf, type Cell, isConstCell } from './_cells.ts'
 import { factorRejected, noOperator } from './_reasons.ts'
 import type { SiteLayout } from './types.ts'
+
+/**
+ * The natural parameters `[eta, Lambda]` (flat) of a Gaussian message on a vector of `size` coordinates that is vague except for
+ * the precision `1 / variance` in coordinate `index`; wholly vague (zero) without a variance.
+ */
+export function vagueMessage(size: number, index: number, variance?: number): number[] {
+  return toFlat(
+    variance === undefined
+      ? zeros([size + size * size])
+      : scatterAdd([size + size * size], [size + index * size + index], [1 / variance], 0),
+  )
+}
 
 /** A factor the compiler adds: the engine's `FactorSpec` with the operator named by `OperatorName`, so a typo or a rename fails `tsc`. */
 export type CompilerFactor = Omit<FactorSpec, 'operator'> & { readonly operator: OperatorName }
@@ -267,12 +280,10 @@ export class GraphBuilder {
     if (!this.components.has(name)) {
       this.components.set(name, name)
       this.addVariable({ name, family: { kind: 'gaussian' } })
-      const a = new Array<number>(size).fill(0)
-      a[index] = 1
+      const a = toFlat(oneHot(index, size))
       // A vector with no prior of its own begins with a vague message in each coordinate (the factor's first update replaces it),
       // so the other factors on it have a proper cavity to start from.
-      const vague = [...new Array<number>(size).fill(0), ...new Array<number>(size * size).fill(0)]
-      if (vagueVariance !== undefined) vague[size + index * size + index] = 1 / vagueVariance
+      const vague = vagueMessage(size, index, vagueVariance)
       this.addFactor(
         {
           operator: 'dot-constant',
@@ -299,13 +310,14 @@ export class GraphBuilder {
       return atom.kind === 'var' ? atom.name : this.component(atom.vector, atom.index, atom.size)
     }
     const parts: [string, number][] = []
-    const groups = new Map<string, { size: number; a: number[] }>()
+    const groups = new Map<string, { size: number; indices: number[]; coefficients: number[] }>()
     for (const [key, c] of terms) {
       const atom = this.atoms.get(key) as Atom
       if (atom.kind === 'var') parts.push([atom.name, c])
       else {
-        const g = groups.get(atom.vector) ?? { size: atom.size, a: new Array<number>(atom.size).fill(0) }
-        g.a[atom.index] = c
+        const g = groups.get(atom.vector) ?? { size: atom.size, indices: [], coefficients: [] }
+        g.indices.push(atom.index)
+        g.coefficients.push(c)
         groups.set(atom.vector, g)
       }
     }
@@ -313,7 +325,14 @@ export class GraphBuilder {
     for (const [vector, g] of groups) {
       const name = onlyVector && as !== undefined ? as : this.auxName(site, index)
       this.addVariable({ name, family: { kind: 'gaussian' } })
-      this.addFactor({ operator: 'dot-constant', args: [name, vector], params: { a: g.a } }, name)
+      this.addFactor(
+        {
+          operator: 'dot-constant',
+          args: [name, vector],
+          params: { a: toFlat(scatterAdd([g.size], g.indices, g.coefficients, 0)) },
+        },
+        name,
+      )
       if (onlyVector) return name
       parts.push([name, 1])
     }

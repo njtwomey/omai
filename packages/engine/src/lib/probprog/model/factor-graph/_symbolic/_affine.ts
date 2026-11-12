@@ -8,7 +8,24 @@
  */
 
 import type { Json } from '../../../../base/index.ts'
-import { fromStorage, toFlat } from '../../../../tensor/index.ts'
+import {
+  abs,
+  add,
+  arange,
+  bincount,
+  cos,
+  eye,
+  greater,
+  matmul as matmulValue,
+  mul,
+  stack,
+  sub,
+  take,
+  toArray,
+  toFlat,
+  type Value,
+  zeros,
+} from '../../../../tensor/index.ts'
 import type { NamedValue } from '../../operators.ts'
 import type { ExprSpec } from '../../spec.ts'
 import {
@@ -67,34 +84,35 @@ export function affineCustom(cx: Context, mode: EvalMode, e: ExprSpec & { readon
   const n = z.cells.length
   const m = cx.size(e.dims[0] as string)
   const known = e.args.map((a, i) => (i === at ? undefined : cx.evalNamed(a)))
-  const call = (v: readonly number[]): Float64Array => {
-    const input = { value: fromStorage(Float64Array.from(v), [n], 'float64'), dims: z.dims }
-    const out = toFlat(fn(known.map((k, i) => (i === at ? input : (k as NamedValue)))))
-    if (out.length !== m) throw customReturnedWrongCount(e.name, out.length, m)
-    return Float64Array.from(out)
+  const call = (v: Value): Value => {
+    const input = { value: v, dims: z.dims }
+    const out = fn(known.map((k, i) => (i === at ? input : (k as NamedValue))))
+    const count = toFlat(out).length
+    if (count !== m) throw customReturnedWrongCount(e.name, count, m)
+    return out
   }
-  const f0 = call(new Array<number>(n).fill(0))
-  const columns: Float64Array[] = []
-  for (let j = 0; j < n; j++) {
-    const unit = new Array<number>(n).fill(0)
-    unit[j] = 1
-    columns.push(call(unit).map((v, i) => v - (f0[i] ?? 0)))
-  }
+  const f0 = call(zeros([n]))
+  // The columns of the matrix: the function at each unit vector, less its value at zero (one row per unit vector).
+  const units = eye(n)
+  const rows: Value[] = []
+  for (let j = 0; j < n; j++) rows.push(sub(call(take(units, j)), f0))
+  const jacobian = rows.length === 0 ? zeros([0, m]) : stack(rows)
   for (const probe of [0.37, -1.21]) {
-    const point = Array.from({ length: n }, (_, j) => probe * Math.cos(1 + 2.3 * j))
+    const point = mul(cos(add(1, mul(2.3, arange(n)))), probe)
     const got = call(point)
-    for (let i = 0; i < m; i++) {
-      let want = f0[i] ?? 0
-      for (let j = 0; j < n; j++) want += ((columns[j] as Float64Array)[i] ?? 0) * (point[j] ?? 0)
-      if (Math.abs((got[i] ?? 0) - want) > 1e-8 * (1 + Math.abs(want))) throw customNotAffine(e.name)
-    }
+    const want = add(f0, matmulValue(point, jacobian))
+    const off = sub(got, want)
+    const bound = mul(1e-8, add(1, abs(want)))
+    if (toFlat(greater(abs(off), bound)).some((flag) => flag !== 0)) throw customNotAffine(e.name)
   }
   cx.handledCustoms.add(e.name)
+  const offsets = toFlat(f0)
+  const columns = toArray(jacobian) as number[][]
   const cells: Cell[] = []
   for (let i = 0; i < m; i++) {
-    let acc = constAff(f0[i] ?? 0)
+    let acc = constAff(offsets[i] ?? 0)
     for (let j = 0; j < n; j++) {
-      const a = (columns[j] as Float64Array)[i] ?? 0
+      const a = columns[j]?.[i] ?? 0
       if (a !== 0) acc = combine(acc, affOf(z.cells[j] as Cell), a)
     }
     cells.push({ kind: 'aff', aff: acc })
@@ -286,18 +304,20 @@ export function reduce(cx: Context, a: Sym, dim: string | undefined, mean: boole
   const outDims = dim === undefined ? [] : a.dims.filter((d) => d !== dim)
   const shape = cx.shapeOf(a.dims)
   const outShape = cx.shapeOf(outDims)
-  const groups: Aff[] = new Array<Aff>(prod(outShape)).fill(constAff(0))
-  const counts: number[] = new Array<number>(prod(outShape)).fill(0)
-  for (let i = 0; i < a.cells.length; i++) {
+  const groups: Aff[] = Array.from({ length: prod(outShape) }, () => constAff(0))
+  const flats = a.cells.map((_, i) => {
     const idx = unflatten(i, shape)
     const out = outDims.map((d) => idx[a.dims.indexOf(d)] as number)
     let flat = 0
     outDims.forEach((_, k) => {
       flat = flat * (outShape[k] as number) + (out[k] as number)
     })
+    return flat
+  })
+  const counts = toFlat(bincount(flats, prod(outShape)))
+  flats.forEach((flat, i) => {
     groups[flat] = combine(groups[flat] as Aff, affOf(a.cells[i] as Cell), 1)
-    counts[flat] = (counts[flat] ?? 0) + 1
-  }
+  })
   return {
     dims: outDims,
     cells: groups.map((g, k) => ({ kind: 'aff', aff: mean ? scaleAff(g, 1 / (counts[k] as number)) : g })),

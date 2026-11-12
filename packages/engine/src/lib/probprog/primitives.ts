@@ -10,7 +10,17 @@
 import { OmaiError } from '../base/index.ts'
 import { type Distribution, defineDistribution, type Support } from '../dists/index.ts'
 import type { Key } from '../random/index.ts'
-import { asTensor, broadcastShapes, type Tensor, type TensorLike, take, type Value, zeros } from '../tensor/index.ts'
+import {
+  asTensor,
+  broadcastShapes,
+  ones,
+  type Tensor,
+  type TensorLike,
+  take,
+  toFlat,
+  type Value,
+  zeros,
+} from '../tensor/index.ts'
 import { expandDistribution } from './_expand.ts'
 import { applyStack, withHandler } from './_stack.ts'
 
@@ -383,7 +393,7 @@ export interface PlateOptions {
 
 function batchShapeOf(plates: readonly PlateFrame[]): number[] {
   const depth = plates.reduce((m, f) => Math.max(m, -f.dim), 0)
-  const shape = new Array<number>(depth).fill(1)
+  const shape = toFlat(ones([depth]))
   for (const f of plates) shape[depth + f.dim] = f.subsampleSize
   return shape
 }

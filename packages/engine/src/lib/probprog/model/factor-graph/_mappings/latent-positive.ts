@@ -5,7 +5,7 @@ import {
   normalGammaPrior,
   priorFactor,
 } from '../../../../message-passing/index.ts'
-import { toFlat } from '../../../../tensor/index.ts'
+import { ones, toFlat } from '../../../../tensor/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
 import { type Cell, isConstCell, prod, scaledOf } from '../_cells.ts'
 import type { Context } from '../_context.ts'
@@ -76,7 +76,7 @@ export function latentKnownPrior(cx: Context, node: ModelNode & { readonly kind:
     fam === 'gamma' || inverse
       ? [constParam(cx, node, 'concentration', 'the shape'), constParam(cx, node, rateName, 'the rate')]
       : fam === 'exponential'
-        ? [new Array<number>(n).fill(1), constParam(cx, node, 'rate', 'the rate')]
+        ? [toFlat(ones([n])), constParam(cx, node, 'rate', 'the rate')]
         : [constParam(cx, node, 'a', 'the shape'), constParam(cx, node, 'b', 'the shape')]
   const cells: Cell[] = []
   const vars: string[] = []

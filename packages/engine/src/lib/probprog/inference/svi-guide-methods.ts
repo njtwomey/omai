@@ -6,7 +6,7 @@
  */
 
 import { choice, dict, int } from '../../space/index.ts'
-import type { TensorLike } from '../../tensor/index.ts'
+import { full, type TensorLike, toFlat } from '../../tensor/index.ts'
 import type { Config } from '../../trace/index.ts'
 import { traceElbo, traceMeanFieldElbo } from '../elbo.ts'
 import { traceEnumElbo } from '../elbo-enum.ts'
@@ -183,7 +183,7 @@ export function amortisedSviMethod(model: MethodModel, options: AmortisedMethodO
         amortisedGuide(program, {
           sites: options.sites,
           input: options.input,
-          hidden: Array.from({ length: num(c, 'hiddenLayers') }, () => num(c, 'hiddenWidth')),
+          hidden: toFlat(full([num(c, 'hiddenLayers')], num(c, 'hiddenWidth'))),
           activation: pick(c, 'activation') as 'tanh' | 'relu',
         }),
     },
