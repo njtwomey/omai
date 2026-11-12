@@ -12,23 +12,23 @@ Decision trees: the fitted tree as arrays (prediction, decision paths, node regi
 Bayesian decision trees with conjugate leaves: the leaf models (Normal-Gamma, Dirichlet), the prior over structures, the exact evidence of a tree, the myopic grower (one split at a time by posterior odds), the streaming tree (conjugate leaf updates as rows arrive), the exact posterior over all trees of depth two, and a Metropolis-Hastings sampler over tree structures. Each leaf's precision and its step size, one over the precision, are read off its statistics.
 
 - function `dirichletLeaf`: Dirichlet leaf model (Beta-Bernoulli for two classes): exact evidence for a classification leaf. `src/lib/trees/bayesian/leaf.ts:245` `omai-engine/trees`
-- function `enumerateTrees`: Exact posterior over all depth-two trees over a rule set. `src/lib/trees/bayesian/enumerate.ts:94` `omai-engine/trees`
-- function `growBayesTree`: Grow a Bayesian tree greedily; returns the tree, leaf posteriors and decisions. `src/lib/trees/bayesian/grow.ts:261` `omai-engine/trees`
+- function `enumerateTrees`: Exact posterior over all depth-two trees over a rule set. `src/lib/trees/bayesian/enumerate.ts:98` `omai-engine/trees`
+- function `growBayesTree`: Grow a Bayesian tree greedily; returns the tree, leaf posteriors and decisions. `src/lib/trees/bayesian/grow.ts:310` `omai-engine/trees`
 - function `normalGammaLeaf`: Normal-Gamma leaf model: exact evidence and predictive for a regression leaf. `src/lib/trees/bayesian/leaf.ts:125` `omai-engine/trees`
-- function `predictEnumerated`: Exact posterior-predictive average over all trees of an enumeration. `src/lib/trees/bayesian/enumerate.ts:208` `omai-engine/trees`
+- function `predictEnumerated`: Exact posterior-predictive average over all trees of an enumeration. `src/lib/trees/bayesian/enumerate.ts:255` `omai-engine/trees`
 - function `predictSampled`: Posterior-predictive average over drawn trees. `src/lib/trees/bayesian/sampler.ts:324` `omai-engine/trees`
 - function `quantileRules`: Candidate split rules: midpoints of the distinct values of each feature, thinned to quantile positions. `src/lib/trees/bayesian/space.ts:54` `omai-engine/trees`
 - function `sampleTrees`: Posterior draws of whole trees by Metropolis-Hastings, with acceptance rates, R-hat and ESS. `src/lib/trees/bayesian/sampler.ts:237` `omai-engine/trees`
 - function `scoreTree`: Exact log prior and log evidence of a tree over a candidate rule set. `src/lib/trees/bayesian/space.ts:255` `omai-engine/trees`
 - function `searchBayesSplits`: Best split of a node over every feature and threshold at once, by exact Bayes factor. `src/lib/trees/bayesian/search.ts:75` `omai-engine/trees`
 - function `streamInit`: Streaming Bayesian tree: start empty, update leaves conjugately as rows arrive. `src/lib/trees/bayesian/stream.ts:109` `omai-engine/trees`
-- function `streamLeaves`: Leaves of a streaming tree: posterior, precision and the adaptive step size 1/precision. `src/lib/trees/bayesian/stream.ts:249` `omai-engine/trees`
+- function `streamLeaves`: Leaves of a streaming tree: posterior, precision and the adaptive step size 1/precision. `src/lib/trees/bayesian/stream.ts:256` `omai-engine/trees`
 - function `treeLogEvidence`: Exact log marginal likelihood of a tree: the sum of its leaves' evidences. `src/lib/trees/bayesian/tree.ts:218` `omai-engine/trees`
 - function `treePrior`: Tree-structure prior: split probability decaying with depth, minimum leaf size, depth limit. `src/lib/trees/bayesian/prior.ts:35` `omai-engine/trees`
 - function `treeSpace`: Space of trees over a finite rule set: exact prior and evidence. `src/lib/trees/bayesian/space.ts:129` `omai-engine/trees`
 
-- algorithm `bayesGrowAlgorithm`: Myopic Bayesian tree: grow one split at a time by posterior odds, stop when none pays. `src/lib/trees/bayesian/grow.ts:152` `omai-engine/trees`
-- algorithm `streamAlgorithm`: Streaming Bayesian tree: conjugate leaf updates, splits by posterior odds. `src/lib/trees/bayesian/stream.ts:289` `omai-engine/trees`
+- algorithm `bayesGrowAlgorithm`: Myopic Bayesian tree: grow one split at a time by posterior odds, stop when none pays. `src/lib/trees/bayesian/grow.ts:201` `omai-engine/trees`
+- algorithm `streamAlgorithm`: Streaming Bayesian tree: conjugate leaf updates, splits by posterior odds. `src/lib/trees/bayesian/stream.ts:296` `omai-engine/trees`
 - algorithm `treeSampler`: Metropolis-Hastings over tree structures: grow, prune and change, leaf parameters integrated out. `src/lib/trees/bayesian/sampler.ts:165` `omai-engine/trees`
 
 - structure `BayesTree`: A Bayesian decision tree: nested leaves and splits, no parameters. `src/lib/trees/bayesian/tree.ts:46` `omai-engine/trees`

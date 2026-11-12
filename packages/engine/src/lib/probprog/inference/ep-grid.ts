@@ -502,10 +502,15 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
     return compilesWith(wide) ? wide : scalars
   })()
   const names = targets.map((t) => t.label)
-  let hypers: Hyper[] | undefined
+  // The ranges of the hyperparameters, one set per tail (check() asks for 1e-4; a run takes the `tail` of its own config).
+  const hypersByTail = new Map<number, Hyper[]>()
   const hypersFor = (tail: number): Hyper[] => {
     if (bound === undefined) throw new OmaiError('value', `${name}: needs a model spec`)
-    if (hypers === undefined || hypers.length === 0 || names.length === 0) hypers = priorsOf(targets, tail)
+    let hypers = hypersByTail.get(tail)
+    if (hypers === undefined) {
+      hypers = priorsOf(targets, tail)
+      hypersByTail.set(tail, hypers)
+    }
     return hypers
   }
   const compileAt = (x: readonly number[]): ReturnType<typeof compileWith> => compileWith(targets, x)
@@ -564,6 +569,9 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
         diagnostics: { reason: 'no node has an EP evidence yet', nodes: state.nodes.length },
       })
     const converged = state.nodes.filter((n) => n.converged).length
+    // A node whose EP run has no evidence (an improper cavity of a plated or tied factor) weighs nothing: the posterior is the mix of
+    // the others, and says so (the single-run method falls back on the model with a factor per row; a grid node does not).
+    const withoutEvidence = state.nodes.filter((n) => !Number.isFinite(n.logEvidence)).length
     const values: Record<string, number[]> = {}
     for (const [k, a] of state.axes.entries()) values[a.name] = state.nodes.map((n) => n.x[k] as number)
     // A walk that the budget cut short (the region still has an open edge) is not a finished grid, whatever the pending list says.
@@ -574,13 +582,23 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
     return siteMixturePosterior({
       engine: name,
       status:
-        state.pending.length === 0 && !cut ? (converged === state.nodes.length ? 'converged' : 'completed') : 'stopped',
+        state.pending.length === 0 && !cut
+          ? converged === state.nodes.length && withoutEvidence === 0
+            ? 'converged'
+            : 'completed'
+          : 'stopped',
       logEvidence: { value: logEvidence, method: 'ep-grid' },
       diagnostics: {
         nodes: state.nodes.length,
         planned: state.nodes.length + state.pending.length,
         converged,
         extensions: state.extensions,
+        ...(withoutEvidence === 0
+          ? {}
+          : {
+              nodesWithoutEvidence: withoutEvidence,
+              note: `${withoutEvidence} of ${state.nodes.length} nodes have no EP evidence and carry no weight: the posterior mixes the others`,
+            }),
         ...(cut ? { budgetReached: true } : {}),
         hyperparameters: state.axes.map((a) => a.name),
         tol: num(config, 'tol'),

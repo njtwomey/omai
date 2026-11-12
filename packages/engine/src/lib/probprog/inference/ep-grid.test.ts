@@ -160,6 +160,20 @@ describe('epGridMethod on the Gaussian process benchmarks', () => {
     expect(Math.abs(mean(best + 50) - mean(undefined))).toBeLessThan(1e-9)
   })
 
+  it('the tail knob is honoured after check() has used the default tail: the grid spans the tail asked for', () => {
+    const bound = benchmarkModel('gaussian-process-regression').bound()
+    const fresh = epGridMethod(bound)
+    const used = epGridMethod(bound)
+    // check() builds its ranges at the tail 1e-4; a later run with another tail must not inherit them.
+    expect(used.check?.(analysisOf(bound)).applies).toBe(true)
+    const config = { points: 5, tail: 0.2 }
+    const a = session(fresh, { steps: 1, mode: 'eager', config })
+    const b = session(used, { steps: 1, mode: 'eager', config })
+    expect(b.state.axes).toEqual(a.state.axes)
+    const wide = session(used, { steps: 1, mode: 'eager', config: { points: 5, tail: 1e-8 } })
+    expect((wide.state.axes[0]?.du ?? 0) * 4).toBeGreaterThan((b.state.axes[0]?.du ?? 0) * 4)
+  })
+
   it('says that it failed, and does not throw, while no node has an EP evidence', () => {
     const method = epGridMethod(benchmarkModel('gaussian-process-regression').bound())
     const run = session(method, { steps: 3, mode: 'eager', config: { points: 3 } })
@@ -167,6 +181,22 @@ describe('epGridMethod on the Gaussian process benchmarks', () => {
     const post = method.posterior?.(none, run.config)
     expect(post?.status).toBe('failed')
     expect(post?.diagnostics['reason']).toMatch(/no node has an EP evidence/)
+  })
+
+  it('counts the nodes that have no EP evidence, says so in the notes and is not "converged" while some node has none', () => {
+    const method = epGridMethod(benchmarkModel('gaussian-process-regression').bound())
+    const run = session(method, { steps: 5, mode: 'eager', config: { points: 5 } })
+    const whole = method.posterior?.(run.state, run.config)
+    expect(whole?.status).toBe('converged')
+    expect(whole?.diagnostics['nodesWithoutEvidence']).toBeUndefined()
+    const holed = {
+      ...run.state,
+      nodes: run.state.nodes.map((n, i) => (i === 1 ? { ...n, logEvidence: Number.NEGATIVE_INFINITY } : n)),
+    }
+    const post = method.posterior?.(holed, run.config)
+    expect(post?.diagnostics['nodesWithoutEvidence']).toBe(1)
+    expect(String(post?.diagnostics['note'])).toMatch(/1 of 5 nodes have no EP evidence/)
+    expect(post?.status).toBe('completed')
   })
 
   it('weighs only the nodes that settled when some did: a run that cycled does not carry an inflated evidence into the grid', () => {

@@ -9,7 +9,7 @@ import { useStoryRun } from '../../kit/useStoryRun.ts'
 import { storyHref } from '../../story.ts'
 import type { Result } from './compute.ts'
 import source from './compute.ts?raw'
-import { CENTRES, drawNumbers, PIECES, ROWS, SHARES, WIDTH } from './data.ts'
+import { CENTRES, drawNumbers, ORDER_CHECK, PIECES, ROWS, SHARES, WIDTH } from './data.ts'
 import { NumbersFigure, PriorFigure, WeightsFigure } from './Figures.tsx'
 import { REAL, readPrior, readResult, readTruth } from './reading.ts'
 
@@ -132,9 +132,18 @@ export default function Story(): ReactNode {
               <h2>The weights the model finds</h2>
 
               <p>
-                The method settled after <span className="num">{result.sweeps}</span> sweeps. Each piece now has a mean
-                weight, read from the belief. The bars show it. The thin line on each bar is one standard deviation of
-                the belief about that weight.
+                {result.settled ? (
+                  <>
+                    The method settled after <span className="num">{result.sweeps}</span> sweeps.
+                  </>
+                ) : (
+                  <>
+                    The method did not settle. It stopped after <span className="num">{result.sweeps}</span> sweeps, the
+                    most it was allowed. Read the weights and spreads below as where it stopped.
+                  </>
+                )}{' '}
+                Each piece now has a mean weight, read from the belief. The bars show it. The thin line on each bar is
+                one standard deviation of the belief about that weight.
               </p>
 
               <Figure caption="Blue: the mean weight of each piece, with one standard deviation. Grey: the true share of the group that piece found.">
@@ -190,9 +199,11 @@ export default function Story(): ReactNode {
               <p>
                 Expectation propagation keeps one bell curve for each break and each centre, so the spreads above may be
                 a little narrow. We did not check them against a sampler. The method also depends on the order the
-                numbers are handed over in. We tried 14 orders. In 11 of them the model found exactly 4 pieces with real
-                weight. In the other 3 it found 5 or 6, with a small piece between two groups. Which piece takes which
-                group also changes from run to run.
+                numbers are handed over in. We tried <span className="num">{ORDER_CHECK.tried}</span> orders. In{' '}
+                <span className="num">{ORDER_CHECK.exact}</span> of them the model found exactly{' '}
+                <span className="num">{CENTRES.length}</span> pieces with real weight. In the other{' '}
+                <span className="num">{ORDER_CHECK.tried - ORDER_CHECK.exact}</span> it found 5 or 6, with a small piece
+                between two groups. Which piece takes which group also changes from run to run.
               </p>
 
               <p>

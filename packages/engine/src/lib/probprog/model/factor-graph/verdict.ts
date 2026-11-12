@@ -52,33 +52,22 @@ function readersOf(g: CompiledGraph, variable: number, operator: string): number
   return seen.size
 }
 
-/**
- * The units of a network layer in a compiled graph: the `apply` factors (`tanh`, `relu`, ...) whose input is an affine map of
- * random weights that other rows share (the first layer) and whose output is multiplied by a random weight that other rows
- * share (the next layer), and where the units that read one input weight multiply the same output weight (copies of one hidden
- * unit, which can be permuted). A hidden unit of a Bayesian neural network is one per unit and row; a hierarchy's `exp` of a scale
- * read by many products is not one (its other factor is per row), nor is a nonlinear link of a single regression, nor are the
- * random Fourier features of a latent-variable model (the features that read one latent coordinate multiply weights of their
- * own, and their known frequencies tell them apart).
- *
- * @param g - The compiled graph.
- * @returns The number of such units (0 when the graph has no network layer).
- * @example
- * ```ts
- * import { compileGraph, defaultOperators } from 'omai-engine/message-passing'
- * import { networkLayerUnits } from 'omai-engine/probprog/model'
- * const g = compileGraph({ variables: [{ name: 'x', family: { kind: 'gaussian' } }, { name: 'y', family: { kind: 'gaussian' } }], factors: [{ operator: 'apply', args: ['y', 'x'], params: { fn: 'tanh' } }] }, defaultOperators())
- * networkLayerUnits(g) // => 0
- * ```
- */
-export function networkLayerUnits(g: CompiledGraph): number {
+/** A unit of a network layer: its `apply` factor, the output weights it is multiplied by and the input weights its affine map reads. */
+interface LayerUnit {
+  readonly factor: number
+  readonly outputWeights: ReadonlySet<number>
+  readonly inputWeights: ReadonlySet<number>
+}
+
+/** The units of a layer: the `apply` factors with a copy (another unit that shares an input weight and an output weight) in the graph. */
+function layerUnits(g: CompiledGraph): LayerUnit[] {
   // Per unit (an `apply` factor): the output weights it is multiplied by and the input weights its affine map reads.
-  const units: { readonly outputWeights: ReadonlySet<number>; readonly inputWeights: ReadonlySet<number> }[] = []
-  for (const f of g.factors) {
-    if (f.operator.name !== 'apply') continue
+  const units: LayerUnit[] = []
+  g.factors.forEach((f, factor) => {
+    if (f.operator.name !== 'apply') return
     const out = f.ports[0]?.variable
     const input = f.ports[1]?.variable
-    if (out === undefined || input === undefined) continue
+    if (out === undefined || input === undefined) return
     // The output is multiplied by a random value that other rows multiply as well (the output weight of the unit).
     const outputWeights = new Set<number>()
     for (const e of g.variables[out]?.edges ?? []) {
@@ -104,8 +93,8 @@ export function networkLayerUnits(g: CompiledGraph): number {
       )
         inputWeights.add(q.variable)
     })
-    if (outputWeights.size > 0 && inputWeights.size > 0) units.push({ outputWeights, inputWeights })
-  }
+    if (outputWeights.size > 0 && inputWeights.size > 0) units.push({ factor, outputWeights, inputWeights })
+  })
   // The weights of a hidden unit are copies of one another across rows only when the units that read an input weight also
   // multiply the same output weight: units that read one input value (the latent coordinates of a row, read by a feature each)
   // and multiply their own output weights are different features, told apart by their known constants, not copies of one unit.
@@ -113,23 +102,80 @@ export function networkLayerUnits(g: CompiledGraph): number {
   units.forEach((u, i) => {
     for (const q of u.inputWeights) readers.set(q, [...(readers.get(q) ?? []), i])
   })
-  let count = 0
-  units.forEach((u, i) => {
-    const copies = [...u.inputWeights].some((q) =>
+  return units.filter((u, i) =>
+    [...u.inputWeights].some((q) =>
       (readers.get(q) ?? []).some(
         (j) => j !== i && [...(units[j]?.outputWeights ?? [])].some((w) => u.outputWeights.has(w)),
       ),
-    )
-    if (copies) count++
-  })
-  return count
+    ),
+  )
+}
+
+/**
+ * The units of a network layer in a compiled graph: the `apply` factors (`tanh`, `relu`, ...) whose input is an affine map of
+ * random weights that other rows share (the first layer) and whose output is multiplied by a random weight that other rows share
+ * (the next layer), and where the units that read one input weight multiply the same output weight (copies of one hidden
+ * unit, which can be permuted). A hidden unit of a Bayesian neural network is one per unit and row; a hierarchy's `exp` of a scale
+ * read by many products is not one (its other factor is per row), nor is a nonlinear link of a single regression, nor are the
+ * random Fourier features of a latent-variable model (the features that read one latent coordinate multiply weights of their
+ * own, and their known frequencies tell them apart). One hidden unit with any activation is counted too (a dose-response curve
+ * `Emax sigmoid(a + b x)`): whether EP can hold its weights is {@link networkLayerShape}'s question.
+ *
+ * @param g - The compiled graph.
+ * @returns The number of such units (0 when the graph has no network layer).
+ * @example
+ * ```ts
+ * import { compileGraph, defaultOperators } from 'omai-engine/message-passing'
+ * import { networkLayerUnits } from 'omai-engine/probprog/model'
+ * const g = compileGraph({ variables: [{ name: 'x', family: { kind: 'gaussian' } }, { name: 'y', family: { kind: 'gaussian' } }], factors: [{ operator: 'apply', args: ['y', 'x'], params: { fn: 'tanh' } }] }, defaultOperators())
+ * networkLayerUnits(g) // => 0
+ * ```
+ */
+export function networkLayerUnits(g: CompiledGraph): number {
+  return layerUnits(g).length
+}
+
+/**
+ * What the units of a network layer are, which decides whether EP can hold their weights: the number of distinct hidden units
+ * (units with different weights, which can be permuted) and the activations they use (`sigmoid`, `tanh`, ...; `chain` for a chain
+ * of steps). Two or more hidden units have permutation symmetry. One hidden unit has none, and EP runs it when its activation is the
+ * sigmoid (a dose-response curve `Emax sigmoid(a + b x)`: measured to converge to the posterior of a NUTS run); not otherwise: an
+ * odd or even activation (`tanh`, `cos`) has two modes that flip the signs of the weights (EP converged to one of them, or did not
+ * converge), and the rectifier and `exp` have a ridge, since the output weight can be traded for the input weights (EP did not
+ * converge).
+ *
+ * @param g - The compiled graph.
+ * @returns The number of distinct hidden units (0 without a layer) and the distinct activations of the units.
+ * @example
+ * ```ts
+ * import { compileGraph, defaultOperators } from 'omai-engine/message-passing'
+ * import { networkLayerShape } from 'omai-engine/probprog/model'
+ * const g = compileGraph({ variables: [{ name: 'x', family: { kind: 'gaussian' } }, { name: 'y', family: { kind: 'gaussian' } }], factors: [{ operator: 'apply', args: ['y', 'x'], params: { fn: 'tanh' } }] }, defaultOperators())
+ * networkLayerShape(g).hidden // => 0
+ * ```
+ */
+export function networkLayerShape(g: CompiledGraph): {
+  readonly hidden: number
+  readonly activations: readonly string[]
+} {
+  const units = layerUnits(g)
+  const signature = (u: LayerUnit): string =>
+    `${[...u.inputWeights].sort().join(',')}|${[...u.outputWeights].sort().join(',')}`
+  const activation = (u: LayerUnit): string => {
+    const params = g.factors[u.factor]?.params ?? {}
+    const steps = params['steps']
+    if (Array.isArray(steps) && steps.length > 0) return 'chain'
+    return typeof params['fn'] === 'string' ? params['fn'] : 'unknown'
+  }
+  return { hidden: new Set(units.map(signature)).size, activations: [...new Set(units.map(activation))].sort() }
 }
 
 /**
  * Whether a bound model has a factor graph a message-passing method can run, and exactly why not: the static check behind
  * `ep`, `vmp` and `bp` as inference methods. It reads the compilation (the issues, with node and reason) and, for a rule, the
  * operators of the compiled graph that lack it; for `ep` it also refuses a graph with the units of a network layer
- * (`networkLayerUnits`), whose weights have symmetric modes that one Gaussian per weight does not hold.
+ * (`networkLayerUnits`, `networkLayerShape`: two or more distinct hidden units, or one whose activation is not the sigmoid), whose weights
+ * have symmetric modes or a ridge that one Gaussian per weight does not hold.
  *
  * @param c - The compilation.
  * @param g - The compiled graph, when the compilation has a graph.
@@ -176,13 +222,23 @@ export function factorGraphVerdict(
       missing: [`${rule} message rules`],
     }
   }
-  const units = rule === 'ep' ? networkLayerUnits(g) : 0
-  if (units > 0)
-    return {
-      ok: false,
-      reason: `the graph has the units of a neural-network layer (an \`apply\` of an affine map of weights that rows share, multiplied by a weight that rows share): the weights are not identified (sign and permutation symmetries), so a Gaussian per weight averages the modes or keeps one and drops the other units, and the run does not converge to a posterior`,
-      missing: ['beliefs that hold the symmetric modes of a hidden layer'],
-    }
+  if (rule === 'ep' && networkLayerUnits(g) > 0) {
+    const { hidden, activations } = networkLayerShape(g)
+    if (hidden >= 2)
+      return {
+        ok: false,
+        reason: `the graph has the units of a neural-network layer (an \`apply\` of an affine map of weights that rows share, multiplied by a weight that rows share): the weights are not identified (sign and permutation symmetries), so a Gaussian per weight averages the modes or keeps one and drops the other units, and the run does not converge to a posterior`,
+        missing: ['beliefs that hold the symmetric modes of a hidden layer'],
+      }
+    // One hidden unit has no permutation: the sigmoid has no sign symmetry or ridge either, and runs (a dose-response curve).
+    const other = activations.filter((a) => a !== 'sigmoid')
+    if (other.length > 0)
+      return {
+        ok: false,
+        reason: `the graph has one hidden unit with the activation ${other.join(', ')} (an \`apply\` of an affine map of weights that rows share, multiplied by a weight that rows share): its weights are not identified (an odd or even activation has two modes that flip the signs of the weights, the rectifier and exp have a ridge between the output weight and the input weights), so a Gaussian per weight holds one mode or the run does not converge. A saturating sigmoid unit, as in a dose-response curve, runs`,
+        missing: ['beliefs that hold the symmetric modes of a hidden unit'],
+      }
+  }
   return {
     ok: true,
     reason: `a factor graph of ${g.variables.length} variables and ${g.factors.length} factors`,
