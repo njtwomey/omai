@@ -197,6 +197,28 @@ export function poisson(k: Key, lambda: number, shape: Shape): Tensor<'int32'> {
 }
 
 /**
+ * One Poisson count per rate, each drawn from a key of its own (`keyOf(i)` for the i-th rate), so a count does not change
+ * when the others do: the count of row `i` is `poisson(keyOf(i), rates[i], [1])`.
+ *
+ * @param rates - The rate of each count (a vector, non-negative).
+ * @param keyOf - The key of the i-th count.
+ * @returns An int32 vector with a count per rate.
+ * @throws OmaiError with code `value` for a negative or non-finite rate, or a draw beyond the int32 range, and with code
+ *   `shape` unless the rates are a vector.
+ * @example
+ * ```ts
+ * import { foldIn, key, poisson, poissonEach } from 'omai-engine/random'
+ * const counts = poissonEach([2, 40, 0], (i) => foldIn(key(1), i))
+ * counts.data[1] === poisson(foldIn(key(1), 1), 40, [1]).data[0] // => true
+ * counts.data[2] // => 0
+ * ```
+ */
+export function poissonEach(rates: TensorLike, keyOf: (i: number) => Key): Tensor<'int32'> {
+  const lambda = toVector(rates, 'poissonEach')
+  return ints('poissonEach', [lambda.length], (i) => poisson(keyOf(i), lambda[i] as number, [1]).data[0] as number)
+}
+
+/**
  * Binomial samples, exact for any `n`: geometric waiting times between successes when `n min(p, 1 - p) < 30`, and
  * Kachitvichyanukul and Schmeiser's BTPE otherwise (as numpy), so the cost stays bounded for large `n`.
  *
