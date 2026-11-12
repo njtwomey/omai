@@ -62,11 +62,11 @@ export default function Story(): ReactNode {
 
       <p>
         The two beliefs are exact: each is a Beta curve that the library works out from the counts. The probability that
-        B is better is sampled, by comparing draws from the two curves. The code at the bottom shows which is which.
+        B is better is sampled, by comparing draws from the two curves.
       </p>
 
       <Aside>
-        A significance test asks a different question: how surprising would these counts be if the two buttons were
+        A significance test asks a different question: how surprising would these counts be if the buttons were
         identical? Many people read it as the question above. Here we ask that question directly.
       </Aside>
 
@@ -89,8 +89,6 @@ export default function Story(): ReactNode {
 
               <h2>The two rates and the gap between them</h2>
 
-              <p>The first figure shows the belief about each button&rsquo;s click rate.</p>
-
               <Figure
                 caption="The belief about each button's true click rate, with the middle 90% darker. The dashed lines are the rates the visitors were really drawn with."
                 wide
@@ -109,8 +107,6 @@ export default function Story(): ReactNode {
                   ? 'The two ranges overlap. Some rates fit both buttons, so this is still a question and not yet an answer.'
                   : 'The two ranges do not touch, so there is little to argue about.'}
               </p>
-
-              <p>The second figure shows the difference between the two rates.</p>
 
               <Figure caption="B's rate minus A's rate, for each pair of draws. Bars right of the line are pairs where B is better, and bars left of it are pairs where A is. The dashed line is the real difference.">
                 <DifferenceFigure result={result} />
@@ -151,7 +147,7 @@ export default function Story(): ReactNode {
 
               <p>
                 That answer used all {result.tally.visitors.toLocaleString('en-GB')} visitors of each version. The next
-                figure shows the same probability after fewer visitors.
+                figure shows the same probability after fewer.
               </p>
 
               <Figure
@@ -175,8 +171,8 @@ export default function Story(): ReactNode {
                   <span className="num">{r.dip.peakVisitors}</span> visitors of each version the chance for {r.leader}{' '}
                   was <span className="num">{pct(r.dip.peak)}</span>. By{' '}
                   <span className="num">{r.dip.lowVisitors}</span> it had fallen to{' '}
-                  <span className="num">{pct(r.dip.low)}</span>. Anyone watching a dashboard would have seen a promising
-                  number and then a less convincing one, from the same two buttons.
+                  <span className="num">{pct(r.dip.low)}</span>. A dashboard would have shown a promising number and
+                  then a weaker one, from the same two buttons.
                 </p>
               )}
 

@@ -121,7 +121,7 @@ export function detect(counts: readonly number[]): Detection {
   // the switch happened in year t when the rate had switched by t but not by the year before
   const yearBefore = concat([zeros([1]), sliceAxis(switched, 0, 0, years - 1)])
   const wobbly = sub(switched, yearBefore)
-  // a hair of numerical wobble can leave a tiny negative chance: clip it, and let the chances add up to one
+  // rounding can leave a tiny negative chance: clip it, and make the chances add up to one
   const when = div(maximum(wobbly, 0), sum(maximum(wobbly, 0)))
   const [old, fresh] = rows.filter((r) => r.site === 'rate')
   // endregion

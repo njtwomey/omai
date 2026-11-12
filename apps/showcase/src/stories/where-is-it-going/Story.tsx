@@ -38,8 +38,7 @@ export default function Story(): ReactNode {
       <p>
         The first reading is <span className="num">{fixed(DATA.first)}</span> and the last is{' '}
         <span className="num">{fixed(DATA.last)}</span>. The dots jump around a smooth path, and the path is what we
-        want. We have three questions. Where was the object at each moment? How fast was it going? Where will it be
-        next?
+        want. Where was the object at each moment? How fast was it going? Where will it be next?
       </p>
 
       <h2>A model of the motion</h2>
@@ -68,14 +67,11 @@ export default function Story(): ReactNode {
         <li>At the start every message is empty. It says nothing.</li>
         <li>Each reading sends its state a message: a bell curve for the position, centred on the reading.</li>
         <li>
-          Each state combines the messages it has and sends one forward to the next state. To make it, the state applies
-          the motion rule: the position moves by the velocity, and the spread grows because of the random push. The
-          forward message says what the readings so far imply about the next state.
+          Each state combines its messages and sends one forward to the next state. It applies the motion rule: the
+          position moves by the velocity, and the spread grows because of the random push. The forward message says what
+          the readings so far imply about the next state.
         </li>
-        <li>
-          Each state also sends a message backward to the previous state. It says what the later readings imply about
-          the earlier state.
-        </li>
+        <li>Each state also sends a message backward, saying what the later readings imply about the earlier state.</li>
         <li>
           Every state multiplies the messages from the left, from the right and from its own reading. The product is its
           bell curve, for position and velocity together.
@@ -161,17 +157,15 @@ export default function Story(): ReactNode {
               </p>
 
               <Aside>
-                The steps after the last reading were made up for this page, so we can compare the prediction with what
-                happened. Press <em>Run again</em> to draw them again. The readings and the estimate stay the same, and
-                the true path ahead changes.
+                The steps after the last reading were made up, so we can compare the prediction with what happened.
+                Press <em>Run again</em> to draw them again. The readings and the estimate stay the same.
               </Aside>
 
               <h2>Why this is useful</h2>
 
               <p>
-                Tracking is the standard use: a phone following its position, a robot following a wall, a rocket
-                following its course. The messages make it cheap. A new reading adds one message to the chain, and we do
-                not start again from the first reading.
+                Tracking is the standard use: a phone, a robot or a rocket following its course. The messages make it
+                cheap. A new reading adds one message to the chain, with no need to start again.
               </p>
 
               <p>

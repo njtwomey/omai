@@ -38,8 +38,7 @@ export default function Story(): ReactNode {
 
       <p>
         It is tempting to point at a year. But a rate is not a count. Even at a steady rate, some years have none and
-        some have five. A quiet year in a bad stretch proves nothing, and neither does a bad year in a quiet stretch. We
-        never see the rate itself, only the counts, and the counts vary.
+        some have five. We never see the rate itself, only the counts, and the counts vary.
       </p>
 
       <Aside>
@@ -51,9 +50,9 @@ export default function Story(): ReactNode {
 
       <p>
         So we ask the question another way. Suppose there are two rates, an old one and a new one, both unknown. Each
-        year is in one of two phases, before or after, and its count comes from the rate of its phase. The phase is
-        hidden. It can change from before to after, never back. Any given year has a small, steady chance, about one in{' '}
-        {DATA.years}, of being the year it changes. That is the whole model.
+        year is in one of two hidden phases, before or after, and its count comes from the rate of its phase. The phase
+        can change from before to after, never back. Any year has a small, steady chance, about one in {DATA.years}, of
+        being the year it changes. That is the whole model.
       </p>
 
       <p>
@@ -74,8 +73,6 @@ export default function Story(): ReactNode {
             <>
               <h2>The expected rate</h2>
 
-              <p>The model gives a rate for each year. The figure draws it over the counts.</p>
-
               <Figure
                 caption="The counts again, with the rate the model expects in each year (line): the old rate, a short blend, then the new rate."
                 wide
@@ -84,8 +81,6 @@ export default function Story(): ReactNode {
               </Figure>
 
               <h2>Not a date, a distribution</h2>
-
-              <p>The model also gives the chance that the switch happened in each year.</p>
 
               <Figure caption="The chance that the switch happened in each year, on the same years as the counts above.">
                 <WhenFigure detection={result.coal} />
@@ -107,8 +102,7 @@ export default function Story(): ReactNode {
                 <span className="num">{fixed(result.coal.after.mean, 2)}</span>, between{' '}
                 <span className="num">{fixed(result.coal.after.lo, 2)}</span> and{' '}
                 <span className="num">{fixed(result.coal.after.hi, 2)}</span>. That is a fall by a factor of about{' '}
-                <span className="num">{fixed(r.coal.drop)}</span>. The data do not say why it fell, only that it did,
-                and roughly when.
+                <span className="num">{fixed(r.coal.drop)}</span>. The data do not say why it fell.
               </p>
 
               <h2>The sharper the change, the sharper the date</h2>

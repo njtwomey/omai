@@ -79,9 +79,9 @@ export default function Story(): ReactNode {
       </Figure>
 
       <p>
-        Now we have three pieces of information about one number: the belief before measuring, the digital reading and
+        We now have three pieces of information about one number: the belief before measuring, the digital reading and
         the dial reading. Each is a bell curve over the temperature. The belief after both readings is the product of
-        the three curves, rescaled so that its area is 1.
+        the three curves, rescaled to have area 1.
       </p>
 
       <Aside>
@@ -93,19 +93,20 @@ export default function Story(): ReactNode {
 
       <p>
         Expectation propagation, or EP, computes beliefs by passing messages on a graph. Here the graph has one node,
-        the temperature, with three factors attached: the prior, the digital reading and the dial reading. A message is
-        a bell curve that a factor sends to the temperature. It says what that factor alone knows.
+        the temperature, and three factors: the prior, the digital reading and the dial reading. A message is a bell
+        curve that a factor sends to the temperature. It says what that factor alone knows.
       </p>
 
       <p>
-        EP works in sweeps. In one sweep, each factor sends its message to the temperature. The temperature multiplies
-        the messages to get its belief. A product of bell curves is a bell curve. Its precision is the sum of the three
-        precisions, and its mean is the average of the three means, each weighted by its precision.
+        EP works in sweeps. In a sweep, each factor sends its message to the temperature, and the temperature multiplies
+        them to get its belief. A product of bell curves is a bell curve. Its precision is the sum of the three
+        precisions, and its mean is the average of the three means, weighted by precision. EP stops when a sweep changes
+        no belief.
       </p>
 
       <p>
-        EP stops when a sweep changes no belief. When you press play, a worker makes a room and two readings from a
-        seed, writes the model and runs EP on it. Then the page shows what was sent.
+        When you press play, a worker makes a room and two readings from a seed, and runs EP on them. Then the page
+        shows what was sent.
       </p>
 
       <Play run={run} label="Measure the room twice" estimate="about a second" />
@@ -137,14 +138,14 @@ export default function Story(): ReactNode {
               />
 
               <p>
-                In the replay, <code>{`N(μ = ${PRIOR.mean}, σ² = ${PRIOR.sd ** 2})`}</code> means a bell curve with mean{' '}
+                In the replay, <code>{`N(μ = ${PRIOR.mean}, σ² = ${PRIOR.sd ** 2})`}</code> is a bell curve with mean{' '}
                 {PRIOR.mean} and variance {PRIOR.sd ** 2}. In the first sweep, the prior sends mean{' '}
                 <span className="num">{sig3(r.prior.mean)}</span> and variance{' '}
                 <span className="num">{sig3(r.prior.variance)}</span>, the belief we started with. The digital factor
                 sends mean <span className="num">{sig3(r.digital.mean)}</span> and variance{' '}
-                <span className="num">{sig3(r.digital.variance)}</span>: the reading, with the variance of that
-                instrument&apos;s error. The dial factor sends mean <span className="num">{sig3(r.dial.mean)}</span> and
-                variance <span className="num">{sig3(r.dial.variance)}</span>.
+                <span className="num">{sig3(r.digital.variance)}</span>, the reading with the variance of its error. The
+                dial factor sends mean <span className="num">{sig3(r.dial.mean)}</span> and variance{' '}
+                <span className="num">{sig3(r.dial.variance)}</span>.
               </p>
 
               <h2>The product of the messages</h2>
@@ -156,15 +157,15 @@ export default function Story(): ReactNode {
                 <span className="num">{sig3(r.dial.precision)}</span>, and they add up to{' '}
                 <span className="num">{sig3(r.total)}</span>. So the belief has a variance of{' '}
                 <span className="num">{sig3(1 / r.total)}</span> and a standard deviation of{' '}
-                <span className="num">{sig3(r.product.sd)}</span>. Its mean is the average of the three means, weighted
-                by precision: <span className="num">{sig3(r.product.mean)}</span>.
+                <span className="num">{sig3(r.product.sd)}</span>. Its mean, weighted by precision, is{' '}
+                <span className="num">{sig3(r.product.mean)}</span>.
               </p>
 
               <p>
                 EP reports a belief with mean <span className="num">{sig3(result.belief.mean)}</span> and standard
                 deviation <span className="num">{sig3(result.belief.sd)}</span>.{' '}
                 {r.agrees
-                  ? 'This is the same as the product worked out by hand. The graph has no loops, so one sweep of EP gives the exact answer.'
+                  ? 'This matches the product worked out by hand. The graph has no loops, so one sweep gives the exact answer.'
                   : 'This differs from the product worked out by hand, which the exact answer should not.'}
               </p>
 
@@ -180,16 +181,15 @@ export default function Story(): ReactNode {
                 <span className="num">{fixed(r.gapToDial)}</span> degrees from the dial reading. Its standard deviation,{' '}
                 <span className="num">{sig3(result.belief.sd)}</span>, is smaller than the {DIGITAL_SD} of the digital
                 thermometer alone. Every message adds precision, so combining readings never leaves us less sure than
-                the best one alone.
+                the best one.
               </p>
 
               <p>
-                In the first sweep the temperature went from no belief to the belief above.{' '}
                 {result.settled
                   ? `In sweep ${result.sweeps} the largest change of any belief was ${r.lastChange === undefined ? 'not recorded' : sig3(r.lastChange)}, and EP stopped.`
                   : 'EP did not settle within its sweep limit.'}{' '}
                 Here each message depends only on its own factor, so nothing changes after the first sweep. In a graph
-                with loops the messages depend on each other, and EP needs several sweeps before they stop changing.
+                with loops the messages depend on each other, and EP needs several sweeps.
               </p>
 
               <p>

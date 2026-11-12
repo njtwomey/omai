@@ -51,9 +51,8 @@ export default function Story(): ReactNode {
       </p>
 
       <p>
-        Each flip then changes the curve. It raises the biases that would have made that flip likely and lowers the
-        others. Heads move the curve to the right and tails move it to the left. Every flip adds evidence, so the curve
-        gets narrower.
+        Each flip raises the biases that would have made it likely and lowers the others. Heads move the curve to the
+        right and tails to the left. Every flip adds evidence, so the curve gets narrower.
       </p>
 
       <Aside>
@@ -62,16 +61,11 @@ export default function Story(): ReactNode {
       </Aside>
 
       <p>
-        The model is as simple as they come: one unknown, the bias, and every flip a draw from it. A Beta prior and coin
-        flips fit together exactly. The posterior is another Beta curve, with the heads added to one of its numbers and
-        the tails to the other. omai has an engine for this case that gives the answer in closed form, with no sampling
-        and no approximation.
+        The model has one unknown, the bias, and every flip is a draw from it. A Beta prior and coin flips fit together
+        exactly: the posterior is another Beta curve, with the heads added to one of its numbers and the tails to the
+        other. omai has an engine for this case that gives the answer in closed form, with no sampling and no
+        approximation.
       </p>
-
-      <Aside>
-        omai also has samplers and variational engines that approximate curves like this one. The <code>engine</code>{' '}
-        option in the code at the bottom asks for the exact one.
-      </Aside>
 
       <p>
         We look at the belief at six moments: before any flip, then after 1, 3, 10, 30 and 100 flips. Press play to flip
@@ -87,13 +81,9 @@ export default function Story(): ReactNode {
             <>
               <h2>What the flips said</h2>
 
-              <p>Here are the 100 flips in the order they came.</p>
-
               <Figure caption="The 100 flips. Filled marks are heads. The ringed ones are the flips after which the belief is read.">
                 <FlipTape flips={result.flips} />
               </Figure>
-
-              <p>Here is the belief about the coin&rsquo;s bias at the six moments.</p>
 
               <Figure
                 caption={
@@ -108,9 +98,8 @@ export default function Story(): ReactNode {
               </Figure>
 
               <p>
-                The first panel is the starting point. With a flat belief, the chance that the bias is inside the fair
-                stripe is the width of the stripe, <span className="num">{pct(r.start.fair)}</span>. This is the
-                baseline for what follows.
+                In the first panel the belief is flat, so the chance that the bias is inside the fair stripe is the
+                stripe&rsquo;s width, <span className="num">{pct(r.start.fair)}</span>.
               </p>
 
               <p>
@@ -119,8 +108,7 @@ export default function Story(): ReactNode {
                 <span className="num">{fixed(r.one.lo)}</span> to <span className="num">{fixed(r.one.hi)}</span>. After
                 three flips, with <span className="num">{heads(r.three.heads)}</span> among them, it runs from{' '}
                 <span className="num">{fixed(r.three.lo)}</span> to <span className="num">{fixed(r.three.hi)}</span>, a
-                width of <span className="num">{fixed(widthOf(r.three))}</span> on a scale that only goes to 1. Three
-                flips tell very little, and the curve shows how little.
+                width of <span className="num">{fixed(widthOf(r.three))}</span> on a scale that only goes to 1.
               </p>
 
               <p>
@@ -158,12 +146,12 @@ export default function Story(): ReactNode {
                 Going from 10 flips to 100 narrowed the interval by a factor of{' '}
                 <span className="num">{fixed(r.narrowing, 1)}</span>, not 10. The doubt shrinks roughly with the square
                 root of the number of flips, so each gain costs more than the last. How many flips are enough depends on
-                how sure you need to be, and the curve shows whether you are there.
+                how sure you need to be.
               </p>
 
               <p>
-                Press <em>Run again</em> for another coin and another 100 flips. The early panels differ from run to run
-                because of the first few flips. The last panels differ because the coins differ.
+                Press <em>Run again</em> for another coin. The early panels differ because of the first few flips, and
+                the last panels because the coins differ.
               </p>
 
               <p>

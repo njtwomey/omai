@@ -38,26 +38,23 @@ export default function Story(): ReactNode {
       <h2>Many lines instead of one</h2>
 
       <p>
-        Bayesian regression keeps every line that fits. It first states what we believe before we see the data. The
-        intercept and the slope each get a normal distribution centred on 0 with a spread of 5. The noise is how far the
-        points scatter around the line. It cannot be negative, so it gets a half-normal distribution with a spread of 2.
+        Bayesian regression keeps every line that fits. It starts from a belief about each number. The intercept and
+        slope each get a normal distribution with mean 0 and spread 5. The noise is how far the points scatter around
+        the line. It cannot be negative, so it gets a half-normal distribution with spread 2.
       </p>
 
       <p>
-        Then it uses the data. A line that passes close to many points becomes more likely. A line that misses them
-        becomes less likely. The result is a distribution over the intercept, slope and noise, called the{' '}
-        <em>posterior</em>. One draw from it is one line.
+        Then it uses the data. A line close to many points becomes more likely, and a line that misses them less likely.
+        The result is a distribution over the intercept, slope and noise, called the <em>posterior</em>. One draw from
+        it is one line.
       </p>
 
       <p>
-        We cannot write the posterior as a formula, so we draw samples from it. The sampler is NUTS. It takes steps
-        through the intercept, slope and noise, guided by the gradient of the log probability. Each point it visits is
-        one line.
+        We cannot write the posterior as a formula, so we sample it with NUTS. NUTS takes steps through the intercept,
+        slope and noise, guided by the gradient of the log probability. Each point it visits is one line.
       </p>
 
-      <Aside>
-        NUTS needs a gradient. omai computes it by automatic differentiation, so the model does not supply one.
-      </Aside>
+      <Aside>omai computes that gradient by automatic differentiation, so the model does not supply one.</Aside>
 
       <p>Press play to draw the lines.</p>
 
@@ -71,9 +68,9 @@ export default function Story(): ReactNode {
               <h2>The lines</h2>
 
               <p>
-                The sampler kept {result.draws.toLocaleString('en-GB')} draws. Each draw is one line, and the figure
-                shows {result.fan.length} of them. The solid line is their average. The shaded band holds the middle 90%
-                of the lines at each <em>x</em>.
+                The sampler kept {result.draws.toLocaleString('en-GB')} draws, each one a line. The figure shows{' '}
+                {result.fan.length} of them. The solid line is their average, and the band holds the middle 90% at each{' '}
+                <em>x</em>.
               </p>
 
               <Figure
@@ -87,22 +84,20 @@ export default function Story(): ReactNode {
                 Where the lines are close together, the data fix them. Near <em>x</em> ={' '}
                 <span className="num">{fixed(r.centre, 1)}</span>, in the middle of the points, the band is{' '}
                 <span className="num">{fixed(r.centreWidth)}</span> wide. At <em>x</em> ={' '}
-                <span className="num">{fixed(r.edge, 0)}</span>, far to the right of the last point, it is{' '}
+                <span className="num">{fixed(r.edge, 0)}</span>, far right of the last point, it is{' '}
                 <span className="num">{fixed(r.edgeWidth)}</span> wide, about{' '}
-                <span className="num">{fixed(r.ratio, 1)}</span> times as wide. There are no measurements out there, so
-                the lines disagree.
+                <span className="num">{fixed(r.ratio, 1)}</span> times as wide. There are no measurements there, so the
+                lines disagree.
               </p>
 
-              <p>The next figure plots each line as one dot, by its intercept and slope.</p>
-
-              <Figure caption="Each dot is one sampled line. The marked dot is the line the data came from.">
+              <Figure caption="Each dot is one sampled line, placed by its intercept and slope. The marked dot is the true line.">
                 <CloudFigure result={result} />
               </Figure>
 
               <p>
-                The dots form a tilted cloud. A steeper line needs a lower intercept to stay near the points, so the two
-                move in opposite directions. This is why the lines pivot about the middle of the data. There, a change
-                of slope moves a line a little. Far from the middle, it moves a line a lot.
+                The dots form a tilted cloud. A steeper line needs a lower intercept to stay near the points. This is
+                why the lines pivot about the middle of the data: there, a change of slope moves a line little, and far
+                away it moves a line a lot.
               </p>
 
               <h2>What to take from it</h2>
@@ -117,8 +112,8 @@ export default function Story(): ReactNode {
               <p>
                 The noise has a mean of <span className="num">{fixed(r.noise.mean)}</span>, and nine in ten draws lie
                 between <span className="num">{fixed(r.noise.lo)}</span> and{' '}
-                <span className="num">{fixed(r.noise.hi)}</span>. The true value is {TRUTH.noise}. With only twelve
-                points these ranges are wide, and the posterior shows that.
+                <span className="num">{fixed(r.noise.hi)}</span>. The true value is {TRUTH.noise}. Twelve points leave
+                these ranges wide, and the posterior shows that.
               </p>
 
               <p>

@@ -21,8 +21,8 @@ export default function Story(): ReactNode {
     <StoryPage>
       <p>
         Here are sixteen measurements. For each one, we set a value <em>x</em> and read off a value <em>y</em>. The
-        points follow a gentle wave with a little noise. They come in two clumps. Nothing was measured in the gap
-        between them, or beyond the two ends.
+        points follow a gentle wave with a little noise, in two clumps. Nothing was measured in the gap between them or
+        beyond the two ends.
       </p>
 
       <Figure caption="Sixteen points in two clumps, with a gap between them." wide>
@@ -32,33 +32,29 @@ export default function Story(): ReactNode {
       <p>
         Fit a small neural network to these points. It has one input, <em>x</em>, and three hidden units. Each unit
         multiplies <em>x</em> by a weight, adds a bias and applies <code>tanh</code>. The output is a weighted sum of
-        the three units plus a bias. That makes ten numbers in all.
+        the three units plus a bias. That makes ten numbers.
       </p>
 
       <p>
-        The usual way to fit it is to train it. We change the ten numbers until the curve passes close to the points,
-        then keep that one setting. The curve fits well inside the clumps. In the gap and beyond the ends it is just as
-        smooth, but the data say nothing there. One trained network shows no sign of that.
+        The usual way is to train it: change the ten numbers until the curve passes close to the points, then keep that
+        one setting. The curve fits well inside the clumps. In the gap and beyond the ends it is just as smooth, though
+        the data say nothing there. One trained network shows no sign of that.
       </p>
 
       <h2>Many networks instead of one</h2>
 
       <p>
-        The Bayesian version keeps every setting of the ten numbers that fits. It first states a belief about the
-        weights. A weight is probably not large, so each gets a normal distribution with a spread of 1.
+        The Bayesian version keeps every setting of the ten numbers that fits. A weight is probably not large, so each
+        gets a normal distribution with a spread of 1. The data then make networks that pass close to the sixteen points
+        more likely, and networks that miss them less likely. The result is a distribution over networks, called the{' '}
+        <em>posterior</em>. One draw from it is one complete network.
       </p>
 
       <p>
-        Then it uses the data. A network whose curve passes close to the sixteen points becomes more likely. A network
-        that misses them becomes less likely. The result is a distribution over networks, called the <em>posterior</em>.
-        One draw from it is one complete network.
-      </p>
-
-      <p>
-        We cannot write the posterior as a formula, so we draw samples from it. The sampler is NUTS, the one that drew
-        the lines in <Link to="/story/bayesian-linear-regression">A line, and how sure we are</Link>. It needs the
-        gradient of the log probability, which omai computes by automatic differentiation. We then run each draw over
-        inputs that reach well past the data on both sides. Each draw gives one curve.
+        We sample it with NUTS, the sampler from{' '}
+        <Link to="/story/bayesian-linear-regression">A line, and how sure we are</Link>. omai gets the gradient through
+        the network by automatic differentiation. We run each draw over inputs that reach well past the data on both
+        sides. Each draw gives one curve.
       </p>
 
       <Aside>
@@ -80,8 +76,8 @@ export default function Story(): ReactNode {
 
               <p>
                 The sampler kept {result.draws.toLocaleString('en-GB')} networks. The figure shows {result.fan.length}{' '}
-                of them as thin curves, with one picked out in green. The grey line is the average of all of them. The
-                shaded band holds the middle 90% of them at each <em>x</em>.
+                of them as thin curves, with one picked out in green. The grey line is the average of all of them, and
+                the band holds the middle 90% at each <em>x</em>.
               </p>
 
               <Figure
@@ -92,7 +88,7 @@ export default function Story(): ReactNode {
               </Figure>
 
               <p>
-                Each network on its own fits the points. Over the points, the band is about{' '}
+                Each network fits the points. Over the points, the band is about{' '}
                 <span className="num">{fixed(r.dataWidth)}</span> wide on average. At <em>x</em> = 0, in the middle of
                 the gap, it is <span className="num">{fixed(r.gapWidth)}</span> wide, which is{' '}
                 <span className="num">{fixed(r.gapRatio, 1)}</span> times as much. At <em>x</em> = −3 it is{' '}
@@ -106,24 +102,21 @@ export default function Story(): ReactNode {
               </p>
 
               <p>
-                The model never says to be cautious away from the data. It says only that the curve should pass near the
-                sixteen points and the weights should be modest. Many curves do that, and they differ where the points
-                give no guidance. The caution follows from that.
+                The model never says to be cautious away from the data. It says the curve should pass near the points
+                and the weights should be modest. Many curves do that, and they differ where the points give no
+                guidance.
               </p>
 
               <h2>What to take from it</h2>
 
               <p>
-                One trained network gives a curve like the green one, and nothing more. The posterior gives the curve
-                and the doubt about it. A prediction inside a clump has a band about{' '}
-                <span className="num">{fixed(r.dataWidth)}</span> wide. A prediction in the middle of the gap has a band
-                about <span className="num">{fixed(r.gapWidth)}</span> wide.
+                One trained network gives a curve like the green one. The posterior also gives the doubt about the
+                curve, as the width of the band. The band does not include the scatter of single new measurements around
+                the curve.
               </p>
 
               <p>
-                The band is the doubt about the curve under the data. It does not include the scatter of single new
-                measurements around that curve. Press <em>Run again</em> to use a new seed. Every network changes, and
-                the picture changes little.
+                Press <em>Run again</em> to use a new seed. Every network changes, and the picture changes little.
               </p>
 
               <Code source={source} title="compute.ts" />

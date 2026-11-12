@@ -86,9 +86,8 @@ export default function Story(): ReactNode {
       </ol>
 
       <p>
-        One round is a sweep. The first sweep gives a rough answer, and each later sweep corrects the one before. The
-        method stops when a sweep changes nothing. No random numbers are used. The one arbitrary choice is the order in
-        which the eruptions are handled, and the answer should not depend on it.
+        One round is a sweep. The method stops when a sweep changes nothing. No random numbers are used. The one
+        arbitrary choice is the order in which the eruptions are handled, and the answer should not depend on it.
       </p>
 
       <p>Press play to run the sweeps.</p>
@@ -125,9 +124,8 @@ export default function Story(): ReactNode {
               </p>
 
               <p>
-                These are fitted values and nothing more. There is no shaded margin of error. Expectation propagation is
-                quick, but the uncertainty it reports tends to be too small, so bands would claim more than the method
-                supports.
+                These are fitted values, with no margin of error drawn. The uncertainty EP reports tends to be too
+                small, so a band would claim more than the method supports.
               </p>
 
               <p>
@@ -152,8 +150,6 @@ export default function Story(): ReactNode {
               </p>
 
               <h2>How the sweeps settled</h2>
-
-              <p>The next figure shows the two centres after each sweep.</p>
 
               <Figure caption="The two centres after each sweep. At sweep 0 both sit at the average of all the waits.">
                 <SettlingFigure result={result} />
@@ -186,15 +182,15 @@ export default function Story(): ReactNode {
 
               <p>
                 A mixture model is a common first choice when measurements may hide several kinds: customers, galaxies,
-                heartbeats, geyser eruptions. The model is the small part. The messages show how it was solved. Each
-                piece of the problem talks only to the pieces it touches, so the same scheme works for problems too big
-                to write down in one piece.
+                heartbeats, geyser eruptions. The model is the small part. The messages show how it was solved: each
+                piece talks only to the pieces it touches, so the same scheme works on problems too big to write down at
+                once.
               </p>
 
               <p>
-                Press <em>Run again</em> to hand the eruptions over in a new order. The first sweeps look different.
-                With other orders, the two centres stayed within a quarter of a minute of each other. For a story where
-                the uncertainty is the point, read{' '}
+                Press <em>Run again</em> to hand the eruptions over in a new order. The first sweeps look different, but
+                with other orders the two centres stayed within a quarter of a minute. For a story where the uncertainty
+                is the point, read{' '}
                 <Link to={storyHref('bayesian-linear-regression')} className="underline underline-offset-2">
                   A line, and how sure we are
                 </Link>

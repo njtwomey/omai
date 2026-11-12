@@ -69,26 +69,23 @@ export default function Story(): ReactNode {
 
       <p>
         We can count. {mostWins?.name} won the most games (<span className="num">{mostWins?.wins}</span>) and{' '}
-        {fewestWins?.name} the fewest (<span className="num">{fewestWins?.wins}</span>). A count leaves two things out.
-        It does not say how much better one player is than another. It does not say how sure we can be, when each player
-        has played only <span className="num">{(PLAYERS.length - 1) * ROUNDS}</span> games. A rating can say both.
+        {fewestWins?.name} the fewest (<span className="num">{fewestWins?.wins}</span>). A count does not say how much
+        better one player is than another, or how sure we can be when each player has played only{' '}
+        <span className="num">{(PLAYERS.length - 1) * ROUNDS}</span> games. A rating can say both.
       </p>
 
       <h2>What a rating is</h2>
 
       <p>
-        We give every player a skill. It is a number we cannot see, and a bigger number means a better player. We also
-        say how sure we are about it, by describing it as a bell curve. The centre of the curve is the best guess,
-        called the mean. Its width says how unsure we are, and is called the spread.
-      </p>
-
-      <p>
-        Before any game we know nothing, so every player starts with the same bell curve: a mean of 0 and a spread of 1.
+        We give every player a skill: a number we cannot see, where bigger means better. We describe it as a bell curve.
+        The centre of the curve is the best guess, called the mean. Its width says how unsure we are, and is called the
+        spread. Before any game we know nothing, so every player starts with the same curve: a mean of 0 and a spread of
+        1.
       </p>
 
       <Aside>
-        A bell curve is a normal distribution. It is fully described by its mean and its spread (the standard
-        deviation), so a message in this story is just two numbers.
+        A bell curve is a normal distribution. Its mean and spread (the standard deviation) describe it fully, so a
+        message here is just two numbers.
       </Aside>
 
       <p>
@@ -143,8 +140,8 @@ export default function Story(): ReactNode {
 
               <p>
                 The messages stopped changing after <span className="num">{result.sweeps}</span> sweeps. The figure
-                shows the bell curve of every player, the best at the top. The diamond under each curve is the skill
-                that player was given when the games were made up. The method never saw it.
+                shows the bell curve of every player, the best at the top. The diamond under each curve is the skill the
+                player was given when the games were made up, which the method never saw.
               </p>
 
               <Figure
@@ -174,7 +171,7 @@ export default function Story(): ReactNode {
                 </p>
               ) : (
                 <p>
-                  The 90% ranges of {names(r.overlapping.map(([a, b]) => `${a} and ${b}`))} overlap. For each of those
+                  The 90% ranges of {names(r.overlapping.map(([a, b]) => `(${a}, ${b})`))} overlap. For each of those
                   pairs, the games so far leave some doubt about which player is better.
                 </p>
               )}
@@ -217,8 +214,8 @@ export default function Story(): ReactNode {
                   </p>
                   <p>
                     {r.upsetMovedMore
-                      ? 'In these two games, the win over the higher-rated player moved the rating more than the win over the lower-rated one. This is what we expect: a result the ratings had already predicted carries little news.'
-                      : 'In these two games the win over the higher-rated player did not move the rating more. The early ratings are still wide, and the means move by different amounts for several reasons, so two games do not settle it.'}
+                      ? 'The win over the higher-rated player moved the rating more than the win over the lower-rated one. This is what we expect: a result the ratings had already predicted carries little news.'
+                      : 'Here the win over the higher-rated player did not move the rating more. The early ratings are still wide, so two games do not settle it.'}
                   </p>
                 </>
               )}

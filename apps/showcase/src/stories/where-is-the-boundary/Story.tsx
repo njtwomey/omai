@@ -39,12 +39,8 @@ export default function Story(): ReactNode {
       <p>
         A new point arrives, and we want to know its class. A yes or no is not enough. We want the chance that it
         belongs to class 2, at any place in the plane. Near the middle of a band the chance should be close to 0 or 1.
-        Where the bands meet it should be near one half.
-      </p>
-
-      <p>
-        Far from every point we have seen nothing, so it should be near one half there as well, for a different reason.
-        A picture of the chance over the whole plane shows all of this.
+        Where the bands meet it should be near one half. Far from every point we have seen nothing, so it should be near
+        one half there too, for a different reason.
       </p>
 
       <h2>A smooth hidden score</h2>
@@ -62,8 +58,8 @@ export default function Story(): ReactNode {
       </p>
 
       <Aside>
-        A bell curve is a normal distribution, described by its mean (the centre) and its spread (the width). A Gaussian
-        process gives every place its own bell curve for the score, and links them so that nearby places move together.
+        A bell curve is a normal distribution with a mean (its centre) and a spread (its width). A Gaussian process
+        gives every place its own bell curve for the score and links them so that nearby places move together.
       </Aside>
 
       <h2>How the messages work</h2>
@@ -86,9 +82,9 @@ export default function Story(): ReactNode {
         </li>
         <li>
           Use the point&rsquo;s class. If it is class 2, the score should be positive, and the S-shaped curve says how
-          strongly. Combining that with the bell curve from step 3 gives a shape that is not a bell curve. Replace it by
-          the bell curve with the same mean and spread. The difference between this bell curve and the one from step 3
-          is the point&rsquo;s new site.
+          strongly. Combining that with the bell curve from step 3 gives a shape that is not a bell curve, so replace it
+          by the bell curve with the same mean and spread. Its difference from the step 3 curve is the point&rsquo;s new
+          site.
         </li>
         <li>Do this for every point. One pass over all the points is a sweep. Sweep again until no site changes.</li>
         <li>
@@ -98,8 +94,8 @@ export default function Story(): ReactNode {
       </ol>
 
       <p>
-        Before the sweeps start, the length scale is chosen: the method tries several values and keeps the one that
-        makes the observed classes most probable.
+        Before the sweeps, the method tries several length scales and keeps the one that makes the observed classes most
+        probable.
       </p>
 
       <Play run={run} label="Find the boundary" estimate="about a second, in the background" />
@@ -167,12 +163,8 @@ export default function Story(): ReactNode {
                 <span className="num">{fixed(r.doubtNear)}</span>. Far from every point (farther than {FAR}) it is{' '}
                 <span className="num">{fixed(r.doubtFar)}</span>. The model is surer of the score where it has seen
                 points. Along the boundary the chance is one half because the classes overlap there. Far from the points
-                it is one half because the model has seen nothing there. The second map tells the two cases apart.
-              </p>
-
-              <p>
-                The spread is that of a single bell curve for each place, which is all the messages carry. It summarises
-                how sure the method is. It is not a guarantee.
+                it is one half because the model has seen nothing there. The second map tells the two cases apart. The
+                spread is a summary of how sure the method is, not a guarantee.
               </p>
 
               <h2>Why this is useful</h2>

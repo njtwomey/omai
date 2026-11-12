@@ -28,12 +28,8 @@ export default function Story(): ReactNode {
       <p>
         Eight schools tried the same coaching programme for the SAT. Each reported how many points the programme helped
         its students. School A reports 28 points. School C reports −3, so the programme did harm. The other schools lie
-        in between.
-      </p>
-
-      <p>
-        Every report is a noisy estimate. The figure shows each one with a bar of one standard error on each side. The
-        standard error says how noisy the estimate is.
+        in between. Every report is a noisy estimate, so the figure shows each with a bar of one standard error (a
+        measure of its noise) on each side.
       </p>
 
       <Figure
@@ -44,39 +40,34 @@ export default function Story(): ReactNode {
       </Figure>
 
       <p>
-        School A reads 28, but its standard error is 15. The data do not show that A&rsquo;s programme worked three
-        times better than B&rsquo;s. Part of the spread between the dots is real difference between schools. Part is
+        School A reads 28, but its standard error is 15, so the data do not show that A&rsquo;s programme worked three
+        times better than B&rsquo;s. Part of the spread between the dots is real difference between schools, and part is
         chance. The question is how much of each.
       </p>
 
       <h2>Two simple answers</h2>
 
       <p>
-        One answer is to take each estimate as it is. Then A is a success and C is a failure, and each conclusion rests
-        on one noisy number. The other is to average all eight and give that value to every school. That ignores any
-        real difference between the schools.
+        One answer is to take each estimate as it is. Then A is a success and C is a failure, each on one noisy number.
+        The other is to average all eight and give that value to every school, which ignores any real difference.
       </p>
 
       <p>
         A model in between works like this. Each school has its own true effect. The true effects come from one
-        population of schools, with an unknown mean and an unknown spread. The spread is called <em>tau</em>.
+        population of schools, with an unknown mean and an unknown spread called <em>tau</em>.
       </p>
 
       <p>
-        If tau is large, the schools really differ, and each estimate should be left mostly alone. If tau is near zero,
-        the schools are the same, and each estimate is the common mean plus noise. The data estimate tau along with
-        everything else, and tau decides how far each school is pulled towards the others.
-      </p>
-
-      <p>
-        A school with a noisy estimate has little to say for itself, so it relies more on the others. This is called{' '}
-        <em>borrowing strength</em>.
+        If tau is large, the schools really differ, and each estimate stays mostly alone. If tau is near zero, the
+        schools are the same. The data estimate tau with everything else, and tau decides how far each school is pulled
+        towards the others. A school with a noisy estimate has little to say for itself, so it relies more on the
+        others. This is called <em>borrowing strength</em>.
       </p>
 
       <Aside>
-        The model writes each school&rsquo;s effect as the common mean plus tau times a standard normal. This is the
-        same distribution as a normal centred on the mean with spread tau. The direct form makes a narrow funnel when
-        tau is small, which a sampler struggles to enter. This form avoids it.
+        The model writes each school&rsquo;s effect as the common mean plus tau times a standard normal. That is the
+        same distribution as a normal with spread tau, and it avoids a narrow funnel at small tau that samplers struggle
+        to enter.
       </Aside>
 
       <p>
@@ -92,8 +83,6 @@ export default function Story(): ReactNode {
           return (
             <>
               <h2>Pulled towards the middle</h2>
-
-              <p>The figure shows each school&rsquo;s estimate again, with its effect after pooling.</p>
 
               <Figure
                 caption="Estimates (orange, with one standard error) and pooled effects (blue: average and middle 90%), joined by grey lines. The dashed line is the average effect."
@@ -131,7 +120,7 @@ export default function Story(): ReactNode {
 
               <h2>What the data cannot say</h2>
 
-              <p>All of this depends on tau. The next figure shows its draws.</p>
+              <p>All of this depends on tau. Here are its draws.</p>
 
               <Figure
                 caption={`Draws of tau, the spread of the true effects. Its prior is a half-Cauchy with scale 5, which peaks at zero.${r.beyond > 0 ? ` ${r.beyond} ${r.beyond === 1 ? 'draw' : 'draws'} above ${SPREAD_LIMIT} ${r.beyond === 1 ? 'is' : 'are'} off the right edge.` : ''}`}
@@ -160,8 +149,7 @@ export default function Story(): ReactNode {
               <p>
                 Averaging all eight gives one number to every school. Reading them separately gives eight numbers that
                 differ mostly by chance. The pooled answer lies between the two, and the data, through tau, decide how
-                much the schools may differ. The same structure appears wherever groups have different amounts of data,
-                such as batting averages or radon levels in different counties.
+                much the schools may differ. The same structure appears wherever groups have different amounts of data.
               </p>
 
               <p>

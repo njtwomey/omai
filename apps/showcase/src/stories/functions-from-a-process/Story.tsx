@@ -21,7 +21,7 @@ export default function Story(): ReactNode {
     <StoryPage>
       <p>
         To fit a curve to data, we usually choose a form first: a line, a polynomial or a spline. The data then set the
-        few numbers inside that form. The form is chosen before the first point arrives.
+        few numbers inside that form.
       </p>
 
       <p>
@@ -33,11 +33,10 @@ export default function Story(): ReactNode {
       <h2>A probability on whole functions</h2>
 
       <p>
-        A function has a value at every <em>x</em>, which is too many numbers to give a probability. So we look at a
-        function in a finite number of places. Here the places are a grid of 121 points from <em>x</em> = −3 to{' '}
-        <em>x</em> = 3. A Gaussian process says the values at these places are jointly normal. Two things set that
-        distribution: the average value, which is zero here, and how strongly the value at one <em>x</em> goes with the
-        value at another.
+        A function has a value at every <em>x</em>, which is too many numbers to give a probability. So we look at it in
+        a finite number of places: here a grid of 121 points from <em>x</em> = −3 to <em>x</em> = 3. A Gaussian process
+        says the values at these places are jointly normal. Two things set that distribution: the average value, zero
+        here, and how strongly the value at one <em>x</em> goes with the value at another.
       </p>
 
       <p>
@@ -124,10 +123,9 @@ export default function Story(): ReactNode {
               <h2>What to take from it</h2>
 
               <p>
-                The thick line is the posterior mean, the best single guess. It is also the average of many functions
-                that disagree in places. The band is not an error bar added afterwards. It comes from the same
-                calculation as the mean, because conditioning on data changes the whole distribution of functions, not
-                just its middle.
+                The thick line is the posterior mean, the best single guess. The band is not an error bar added
+                afterwards. It comes from the same calculation as the mean, because conditioning on data changes the
+                whole distribution of functions, not just its middle.
               </p>
 
               <p>
