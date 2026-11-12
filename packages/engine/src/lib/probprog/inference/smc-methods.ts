@@ -11,7 +11,7 @@ import type { Json } from '../../base/index.ts'
 import { type Key, key as makeKey } from '../../random/index.ts'
 import { type SMCState, smcAlgorithm } from '../../sampling/index.ts'
 import { choice, type DictSpace, dict, int, real } from '../../space/index.ts'
-import { primalOf, type Tensor } from '../../tensor/index.ts'
+import { asTensor, primalOf, type Tensor } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -348,7 +348,12 @@ export function particleFilterMethod(
           }),
         deserialise: (j: Json) => {
           const o = stateFromJson(j) as Omit<ParticleFilterState, 'paths'> & { paths: PathRecord[][] }
-          return { ...o, paths: o.paths.map((path) => path.map(traceOfRecord)) }
+          // A state saved before the weights were a tensor has a typed array here.
+          return {
+            ...o,
+            logWeights: asTensor(o.logWeights) as Tensor,
+            paths: o.paths.map((path) => path.map(traceOfRecord)),
+          }
         },
       }
     },

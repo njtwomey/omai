@@ -7,7 +7,26 @@
 import { type Json, OmaiError } from '../../base/index.ts'
 import { categorical as drawCategorical, foldIn, type Key } from '../../random/index.ts'
 import { type Chains, diagnose, hmc, nuts } from '../../sampling/index.ts'
-import { fromStorage, full, primalOf, type Tensor, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
+import {
+  add,
+  cast,
+  concat,
+  div,
+  fromStorage,
+  full,
+  maximum,
+  mul,
+  primalOf,
+  reshape,
+  slice,
+  sliceAxis,
+  sum,
+  type Tensor,
+  type TensorLike,
+  toFlat,
+  type Value,
+  zeros,
+} from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -133,19 +152,23 @@ export function inferDiscreteAlgorithm<D = void>(
       const k = probs.shape[probs.shape.length - 1] ?? 1
       const batch = probs.shape.slice(0, -1)
       const count = batch.reduce((a, b) => a * b, 1)
-      const flat = toFlat(probs)
+      const weights = maximum(reshape(probs, [count, k]), 0)
       const support = next.fn.support
       const low = support.kind === 'integerInterval' ? support.low : 0
-      const out = new Float64Array(count)
-      for (let i = 0; i < count; i++) {
-        const w = flat.slice(i * k, (i + 1) * k).map((p) => Math.max(p, 0))
-        out[i] = low + (toFlat(drawCategorical(foldIn(foldIn(key, step), i), w, [1]))[0] ?? 0)
-      }
+      const drawn =
+        count === 0
+          ? zeros([0])
+          : concat(
+              Array.from({ length: count }, (_, i) =>
+                drawCategorical(foldIn(foldIn(key, step), i), reshape(sliceAxis(weights, 0, i, i + 1), [k]), [1]),
+              ),
+            )
+      const out = add(cast(drawn, 'float64'), low)
       // The site's own batch shape: plates of the marginal, padded with the singleton plate axes of its batch.
       const own = next.fn.batchShape.slice(
         next.fn.batchShape.length - next.plates.reduce((a, f) => Math.max(a, -f.dim), 0),
       )
-      fixed[next.name] = fromStorage(out, own.reduce((a, b) => a * b, 1) === count ? own : batch, 'float64')
+      fixed[next.name] = reshape(out, own.reduce((a, b) => a * b, 1) === count ? own : batch)
       ctx.log('mcmc/site', step)
       return { fixed, step: step + 1, finished: false }
     },
@@ -241,15 +264,12 @@ export interface McmcState {
   readonly failure: { readonly reason: string; readonly extra: Record<string, Json> } | null
 }
 
-const perChainMean = (t: Tensor | undefined, numChains: number): number[] => {
-  if (t === undefined) return toFlat(full([numChains], Number.NaN))
-  const flat = toFlat(t)
-  const n = Math.floor(flat.length / numChains)
-  return Array.from({ length: numChains }, (_, c) => {
-    let sum = 0
-    for (let i = 0; i < n; i++) sum += flat[c * n + i] ?? 0
-    return sum / Math.max(1, n)
-  })
+const perChainMean = (t: Tensor | undefined, numChains: number): Value => {
+  if (t === undefined) return full([numChains], Number.NaN)
+  const flat = reshape(t, [-1])
+  const n = Math.floor((flat.shape[0] ?? 0) / numChains)
+  const perChain = reshape(slice(flat, [0], [numChains * n]), [numChains, n])
+  return div(sum(perChain, 1), Math.max(1, n))
 }
 
 /**
@@ -357,10 +377,7 @@ export function mcmcAlgorithm<D = void>(
               })
         ctx.log('mcmc/stepSize', perChainMean(chains.stats.stepSize, numChains))
         ctx.log('mcmc/accept', perChainMean(chains.stats.acceptanceRate, numChains))
-        ctx.log(
-          'mcmc/divergent',
-          perChainMean(chains.stats.divergent, numChains).map((v) => v * chains.numDraws),
-        )
+        ctx.log('mcmc/divergent', mul(perChainMean(chains.stats.divergent, numChains), chains.numDraws))
         ctx.log('mcmc/energy', perChainMean(chains.stats.energy, numChains))
         return base({ chains, stage: discreteWanted() ? 'discrete' : 'done' }, s)
       }

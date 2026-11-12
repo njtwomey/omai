@@ -23,8 +23,10 @@ import {
   primalOf,
   reshape,
   sliceAxis,
+  split,
   stack,
   type Tensor,
+  type TensorLike,
   toFlat,
   type Value,
   zeros,
@@ -177,8 +179,8 @@ export interface HybridChainState {
   readonly values: Readonly<Record<string, Value>>
   readonly blocks: readonly HybridBlockSlot[]
   readonly logJoint: number
-  /** The draws kept so far: the flat values of every latent site in the order of the sites. */
-  readonly kept: readonly Float64Array[]
+  /** The draws kept so far: one vector per draw, the flat values of every latent site in the order of the sites. */
+  readonly kept: readonly Tensor[]
 }
 
 /** The state of a hybrid sampler. */
@@ -311,9 +313,9 @@ export function hybridMethod(
   const offsets = sizes.map((_, i) => sizes.slice(0, i).reduce((a, b) => a + b, 0))
   const total = sizes.reduce((a, b) => a + b, 0)
 
-  const rowOf = (values: Readonly<Record<string, Value>>): Float64Array => {
+  const rowOf = (values: Readonly<Record<string, Value>>): Tensor => {
     const parts = siteNames.map((n, i) => reshape(primalOf(values[n] as Value), [sizes[i] ?? 0]))
-    return Float64Array.from(toFlat(concat([zeros([0]), ...parts])))
+    return concat([zeros([0]), ...parts]) as Tensor
   }
 
   // ---- the blocks at run time: a target with a cell for the conditioned values, or a Gibbs updater ----
@@ -417,7 +419,7 @@ export function hybridMethod(
     const numChains = state.chains.length
     const draws: Record<string, Tensor> = {}
     // One row per kept draw (chain by chain), one column per coordinate of every site.
-    const kept = stack(state.chains.flatMap((c) => c.kept.slice(0, n).map((r) => asTensor(r))))
+    const kept = stack(state.chains.flatMap((c) => c.kept.slice(0, n)))
     siteNames.forEach((site, j) => {
       const at = offsets[j] ?? 0
       draws[site] = reshape(sliceAxis(kept, 1, at, at + (sizes[j] ?? 1)), [
@@ -726,11 +728,7 @@ export function hybridMethod(
               accept: stateToJson(b.accept),
               stepSize: stateToJson(b.stepSize),
             })),
-            kept: stateToJson(
-              ch.kept.length === 0
-                ? new Float64Array(0)
-                : Float64Array.from(toFlat(concat(ch.kept.map((r) => asTensor(r))))),
-            ),
+            kept: stateToJson(ch.kept.length === 0 ? zeros([0]) : concat(ch.kept)),
             rows: ch.kept.length,
           })),
         }),
@@ -746,7 +744,8 @@ export function hybridMethod(
             iteration: o.iteration,
             failure: o.failure,
             chains: o.chains.map((ch): HybridChainState => {
-              const flat = stateFromJson(ch['kept'] as Json) as Float64Array
+              // A state saved before the draws were tensors has a typed array here.
+              const flat = asTensor(stateFromJson(ch['kept'] as Json) as TensorLike)
               const rows = ch['rows'] as number
               return {
                 values: stateFromJson(ch['values'] as Json) as Record<string, Value>,
@@ -759,7 +758,8 @@ export function hybridMethod(
                     stepSize: stateFromJson(b['stepSize'] as Json) as number,
                   }),
                 ),
-                kept: Array.from({ length: rows }, (_, r) => flat.slice(r * total, (r + 1) * total)),
+                kept:
+                  rows === 0 ? [] : split(reshape(flat, [rows, total]), rows).map((r) => reshape(r, [total]) as Tensor),
               }
             }),
           }
