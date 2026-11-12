@@ -63,6 +63,7 @@ export const operatorNames = [
   'likelihood-pair',
   'likelihood-triple',
   'multiclass-site',
+  'multiclass-row',
   'gaussian-mv-precision-scale',
   'gaussian-mv-function-scale',
   'gamma-rate',

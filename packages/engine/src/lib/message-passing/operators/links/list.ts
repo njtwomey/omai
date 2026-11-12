@@ -6,6 +6,7 @@
 import type { FactorOperator } from '../../core/types.ts'
 import { logistic } from './links.ts'
 import { multiclassSite } from './multiclass.ts'
+import { multiclassRow } from './multiclass-row.ts'
 import { spin } from './spin.ts'
 import { greaterThan, isBetween, probit } from './truncation.ts'
 
@@ -14,6 +15,7 @@ export const linkOperatorList: readonly FactorOperator[] = [
   greaterThan,
   isBetween,
   logistic,
+  multiclassRow,
   multiclassSite,
   probit,
   spin,

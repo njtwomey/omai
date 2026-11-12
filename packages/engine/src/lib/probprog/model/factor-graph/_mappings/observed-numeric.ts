@@ -6,6 +6,7 @@
 
 import type { Json } from '../../../../base/index.ts'
 import {
+  gaussianMv,
   likelihoods,
   type OperatorName,
   pairLikelihoods,
@@ -189,6 +190,40 @@ export function observedNumeric(
 }
 
 /**
+ * The scores of one observation as a constant matrix and offset of one Gaussian vector: every cell is an affine form of coordinates of the
+ * same vector variable (or a known number), so the scores are `matrix * w + offset`. `undefined` when a score reads a scalar variable, two
+ * vectors, or no score is random.
+ */
+function vectorScores(
+  cx: Context,
+  cells: readonly Cell[],
+):
+  | { readonly vector: string; readonly size: number; readonly matrix: number[]; readonly offset: number[] }
+  | undefined {
+  let vector: string | undefined
+  let size = 0
+  const coordinates: { readonly index: number; readonly coefficient: number }[][] = []
+  const offset: number[] = []
+  for (const cell of cells) {
+    if (cell.kind !== 'aff') return undefined
+    const row: { index: number; coefficient: number }[] = []
+    for (const [key, coefficient] of cell.aff.terms) {
+      const atom = cx.g.atoms.get(key) as Atom
+      if (atom.kind !== 'comp' || (vector !== undefined && atom.vector !== vector)) return undefined
+      vector = atom.vector
+      size = atom.size
+      row.push({ index: atom.index, coefficient })
+    }
+    coordinates.push(row)
+    offset.push(cell.aff.offset)
+  }
+  if (vector === undefined) return undefined
+  const matrix = new Array<number>(cells.length * size).fill(0)
+  for (const [k, row] of coordinates.entries()) for (const t of row) matrix[k * size + t.index] = t.coefficient
+  return { vector, size, matrix, offset }
+}
+
+/**
  * A categorical outcome whose class scores are affine forms of Gaussian variables over one extra dimension (the classes): a
  * `logits` expression `X W` with `W` over (feature, class) for the softmax, or `scores` for the multinomial probit. One
  * `multiclass-site` factor per observation on the `K` scores (each a Gaussian variable, or a known value). The outcome is a
@@ -214,6 +249,25 @@ export function observedMulticlass(
   }
   const classes = cells.length / Math.max(1, prod(cx.shapeOf(node.dims)))
   if (!(Number.isInteger(y) && y >= 0 && y < classes)) throw classOutsideRange(node.name, y, classes - 1)
+  // The scores are affine in the coordinates of one Gaussian vector (the class slopes of a group, the coefficients every alternative of a
+  // choice shares): one joint site on the vector, whose message carries the correlation of the scores, instead of a message per score.
+  const row = cx.packScalars ? vectorScores(cx, cells.slice(i * classes, (i + 1) * classes)) : undefined
+  if (row !== undefined) {
+    const params = {
+      y,
+      classes,
+      link,
+      matrix: row.matrix,
+      ...(row.offset.some((v) => v !== 0) ? { offset: row.offset } : {}),
+    }
+    if (cx.g.need('multiclass-row').check?.(params, [gaussianMv(row.size)]) === undefined) {
+      cx.g.addFactor(
+        { operator: 'multiclass-row', args: [row.vector], params },
+        cx.elementName(node.name, node.dims, i),
+      )
+      return null
+    }
+  }
   const args = Array.from({ length: classes }, (_, k) => {
     return cx.g.portOf(cells?.[i * classes + k] as Cell, node.name, index)
   })

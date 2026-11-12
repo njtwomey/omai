@@ -3940,7 +3940,8 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   `_arguments.ts`, `_update.ts` (the proposal, damping and `repairImproper`), `_restart.ts`, `_advance.ts`. `algorithms/`: `named.ts`, `power.ts`, `alpha.ts`, `numerical.ts`, `stochastic.ts`, `regions.ts`,
   `consistent.ts`, `amp.ts`, `anytime.ts`, `clutter.ts`. `operators/`: `registry.ts` (`defaultOperators`, `collectOperators`), `names.ts` (`operatorNames`, the one place the registry's order is declared, and the type `OperatorName`; `GateBranch` in `discrete/gate.ts` types a gate's branch) and one folder per kind of factor, each with a `list.ts` of its operators,
   `gaussian/` (`gaussian`, `linear`, `transition`, `extremum`, `log-scale`), `links/` (`truncation`, `links`, `spin`,
-  `multiclass` and its auxiliary-variable rule `_multiclass-auxiliary`), `lifts/` (`rows`, `plates`), `likelihoods/` (`likelihoods`, `pairs`, `robust`, `prior-sites`, `functions`,
+  `multiclass` with its auxiliary-variable rule `_multiclass-auxiliary` and the product grid and scores it shares with `multiclass-row`, `_multiclass-product`;
+  `multiclass-row` is the joint site of the scores that are a matrix times one Gaussian vector), `lifts/` (`rows`, `plates`), `likelihoods/` (`likelihoods`, `pairs`, `robust`, `prior-sites`, `functions`,
   `numeric`), `scales/` (`scale`, `function-scale`, `gamma-scale`, `concentration`, `stick-breaking`), `covariance/`
   (`covariance`, `correlation`), `discrete/` (`conjugate`, `discrete`, `gate`) and `kernel/` (`variational-numeric`). The
   imports run one way: `core` and `numerics` below `engine`, `engine` below `operators` and `algorithms`; the engine

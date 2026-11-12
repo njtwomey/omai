@@ -31,6 +31,8 @@ export interface RunEpOptions {
   readonly converged?: boolean
   /** More options of `epAlgorithm`. */
   readonly algorithm?: Readonly<Record<string, unknown>>
+  /** Compile with the scalar normals that an observation reads together packed (`toFactorGraph`'s `packScalars`; default: not). */
+  readonly packScalars?: boolean
 }
 
 /** The compiled model and the state EP reached. */
@@ -45,7 +47,7 @@ export interface EpRun {
  * propagation on it. The checks every compiler test makes first are here: no issues, and with `verdict` that EP can run the graph.
  */
 export function runEp(bound: BoundModel, options: RunEpOptions = {}): EpRun {
-  const c = toFactorGraph(bound)
+  const c = toFactorGraph(bound, options.packScalars === undefined ? {} : { packScalars: options.packScalars })
   expect(c.issues).toEqual([])
   const g = compileGraph(c.graph as never, factorOperators())
   if (options.verdict === true) expect(factorGraphVerdict(c, g, 'ep').ok).toBe(true)

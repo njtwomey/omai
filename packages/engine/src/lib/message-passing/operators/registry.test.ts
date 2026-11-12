@@ -15,8 +15,8 @@ describe('defaultOperators', () => {
   const ops = defaultOperators()
   const names = Object.keys(ops)
 
-  it('registers the 70 operators, the gate last', () => {
-    expect(names).toHaveLength(70)
+  it('registers the 71 operators, the gate last', () => {
+    expect(names).toHaveLength(71)
     expect(names.at(-1)).toBe('gate')
     expect(new Set(names).size).toBe(names.length)
     expect(names.slice(0, 3)).toEqual(['prior', 'gaussian', 'gaussian-gamma-precision'])

@@ -704,10 +704,10 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
   }),
   element({
     name: 'multiclass-logits',
-    maps: 'a categorical with logits: a multiclass-site factor on the predictors of the classes',
+    maps: 'a categorical with logits: a multiclass-site factor on the predictors of the classes, or (with packScalars) a multiclass-row factor on the one Gaussian vector the scores are a matrix times',
     order: 'before the conjugate categorical: logits are the multiclass form',
     families: ['categorical'],
-    requires: ['multiclass-site'],
+    requires: ['multiclass-row', 'multiclass-site'],
     matches: (_cx, node) => node.dist.params['logits'] !== undefined,
     map: (cx, node, el) => observedMulticlass(cx, node, el.y, el.i, el.index, 'logits', 'logit'),
   }),
@@ -720,9 +720,9 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
   }),
   element({
     name: 'categorical-probit',
-    maps: 'a categorical with probit scores: a multiclass-site factor',
+    maps: 'a categorical with probit scores: a multiclass-site factor, or (with packScalars) a multiclass-row factor on the one Gaussian vector the scores are a matrix times',
     families: ['categoricalProbit'],
-    requires: ['multiclass-site'],
+    requires: ['multiclass-row', 'multiclass-site'],
     map: (cx, node, el) => observedMulticlass(cx, node, el.y, el.i, el.index, 'scores', 'probit'),
   }),
   element({
