@@ -109,6 +109,8 @@ export interface AtomReferenceData {
   readonly exactJoint?: RefJoint
   /** What the `exact` marginals are, when they are not a closed form (`quadrature of the four unknowns`, `a Gibbs sampler`). */
   readonly referenceSource?: string
+  /** log p(data) of the exact reference with every constant of the model in it, when the reference knows it (a lazy field: read only by what compares evidence). */
+  readonly exactLogEvidence?: number
   /** Options of the grid (points per axis, an explicit box) when the reference is a grid. */
   readonly grid?: GridOptions
 }

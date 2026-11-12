@@ -229,7 +229,7 @@ describe('correlated random effects: a vector per group with a Wishart precision
   })
   const bound = model.bind({ X: design.map((o) => [1, o.t]), g: design.map((o) => o.g), y: design.map((o) => o.y) })
 
-  it('compiles to a vector variable per group and a factor per vector, and runs', () => {
+  it('compiles to a vector variable per group and one group factor for them (the mean is random), and runs', () => {
     const { c, g, state, marginals } = run(bound)
     expect(c.graph?.variables.filter((v) => v.family.kind === 'gaussian-mv').map((v) => v.name)).toEqual([
       'mu',
@@ -238,7 +238,12 @@ describe('correlated random effects: a vector per group with a Wishart precision
       'theta[2]',
       'theta[3]',
     ])
-    expect(c.graph?.factors.filter((f) => f.operator === 'mvn-wishart')).toHaveLength(groups)
+    // the shared Gaussian mean makes the vectors one factor: a factor per vector would loop through the mean and the matrix
+    expect(c.graph?.factors.filter((f) => f.operator === 'mvn-wishart')).toHaveLength(0)
+    const group = c.graph?.factors.filter((f) => f.operator === 'mvn-wishart-group') ?? []
+    expect(group).toHaveLength(1)
+    expect(group[0]?.args).toEqual(['theta[0]', 'theta[1]', 'theta[2]', 'theta[3]', 'mu', 'Lambda'])
+    expect(group[0]?.params).toEqual({ groups })
     const p = factorGraphPosterior(c, g, state)
     expect(p.sites).toEqual(['Lambda', 'mu', 'theta'])
     expect(p.mean('theta').shape).toEqual([groups, 2])

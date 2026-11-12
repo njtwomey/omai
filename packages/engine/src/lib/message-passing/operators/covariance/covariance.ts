@@ -17,9 +17,18 @@ import { normalWishart, wishart, wishartParams } from '../../core/families-matri
 import { gaussianMvEta } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
-import { BARTLETT_ORDER, choleskyInPlace, type WishartRule, wishartRule } from '../../numerics/_bartlett.ts'
+import { BARTLETT_ORDER, type WishartRule, wishartRule } from '../../numerics/_bartlett.ts'
 import { shiftedSum } from '../../numerics/_moments.ts'
-import { type Evaluator, evaluatorOf, type GaussianSide, gaussianSide, NO_ROWS, type Rows, rowsOf } from './_sides.ts'
+import {
+  type Evaluator,
+  evaluatorOf,
+  type GaussianSide,
+  gaussianSide,
+  NO_ROWS,
+  type Rows,
+  rowsOf,
+  wishartCavity,
+} from './_sides.ts'
 
 const LOG_2PI = Math.log(2 * Math.PI)
 const dimOf = (c: OperatorContext): number => arg(c, 2).family.dim
@@ -31,15 +40,6 @@ function checkNumeric(d: number): void {
       'not-implemented',
       `mvn-wishart: a Gaussian cavity on the vector or the mean makes the tilted precision a ${d} by ${d} integral; the quadrature is built for dimensions up to 3 (an observed vector and a known mean are exact in any dimension)`,
     )
-}
-
-/** The matrix of a Wishart cavity (degrees of freedom, Cholesky factor of its scale) or an error. */
-function wishartCavity(eta: Eta, d: number): { readonly nu: number; readonly chol: Float64Array } {
-  const p = wishartParams(eta, d)
-  if (p === undefined) throw new ImproperMessageError('a Wishart message has no density')
-  const chol = Float64Array.from(p.scale)
-  if (!choleskyInPlace(chol, d)) throw new ImproperMessageError('a Wishart message has no density')
-  return { nu: p.nu, chol }
 }
 
 /** The Gaussian messages of the exact conjugate case: the matrix a fully known Gaussian says to its precision. */
