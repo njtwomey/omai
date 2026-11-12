@@ -18,7 +18,7 @@ The registry (`defaultOperators()`) holds **67** factor operators. Rules by mess
 
 ## Atoms
 
-**92** atoms (63 basic, 29 with unknown parameters learned from simulated data). Expectation propagation runs **92** of them. Variational message passing runs **84** (83 to a fixed point); **8** run under EP and not under VMP.
+**95** atoms (65 basic, 30 with unknown parameters learned from simulated data). Expectation propagation runs **95** of them. Variational message passing runs **85** (84 to a fixed point); **10** run under EP and not under VMP.
 
 | family | atoms | learned twins | EP runs | VMP runs |
 | --- | --- | --- | --- | --- |
@@ -29,7 +29,7 @@ The registry (`defaultOperators()`) holds **67** factor operators. Rules by mess
 | gate weights | 4 | 0 | 4 | 4 |
 | gates | 16 | 6 | 16 | 13 |
 | kernels | 2 | 1 | 2 | 0 |
-| likelihoods | 26 | 14 | 26 | 25 |
+| likelihoods | 29 | 15 | 29 | 26 |
 | nonparametric | 2 | 0 | 2 | 2 |
 | priors | 17 | 0 | 17 | 17 |
 | scales | 7 | 2 | 7 | 7 |
@@ -77,7 +77,7 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | grid-hyperparameters: Hyperparameters on a grid: a few scalars, one family at a time | missing-mapping | open | medium | - |
 | matrix-larger: Covariance matrices beyond what the Wishart and the bivariate sd-and-correlation sites reach | missing-rule | open | medium | - |
 | correlation-strong-few-pairs: A strong bivariate correlation from few pairs: the beta belief is too narrow | quality | open | medium | - |
-| softmax-many-classes: Softmax beyond six classes, and a multiclass Gaussian process | missing-rule | open | medium | - |
+| softmax-many-classes: Softmax beyond six classes: the variational rule, the probit with a power, correlated classes | missing-rule | open | small | - |
 | ordinal-random-cuts: Ordinal cut points that are random, and a Student-t with random degrees of freedom and scale | missing-rule | open | medium | - |
 | multimodal: One Gaussian per variable cannot show two modes | quality | open | medium | - |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
@@ -100,7 +100,7 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | Matrix factorisation, factor analysis and recommenders | latent structure | not yet | large |
 | Mixed membership, topic and community models | latent structure | partial | large |
 | Mixtures of regressions and experts | regression and classification | covered | medium |
-| Multiclass classification | regression and classification | partial | medium |
+| Multiclass classification | regression and classification | partial | small |
 | Bayesian neural networks by probabilistic backpropagation | regression and classification | partial | large |
 | Sparse recovery and compressed sensing | regression and classification | partial | small |
 | Spatial and temporal Gaussian processes | spatial and nonparametric | partial | large |
@@ -111,6 +111,6 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 
 ## The prior atlas
 
-[`ep-priors.md`](ep-priors.md) has **37** rows, each with the atom or test that runs it (`ran by`) and a status word set from the code: **36** run, **1** marked `not yet`, **0** have a reference that does not hold. The rows name **37** atoms and **7** tests.
+[`ep-priors.md`](ep-priors.md) has **37** rows, each with the atom or test that runs it (`ran by`) and a status word set from the code: **36** run, **1** marked `not yet`, **0** have a reference that does not hold. The rows name **39** atoms and **7** tests.
 
 Atoms named in its prose: 11; every one of them runs under EP.

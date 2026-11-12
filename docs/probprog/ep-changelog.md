@@ -699,6 +699,44 @@ observation). Their reports say what exists; the work packages above absorb it r
   (`evidence.test.ts` says so). 109 digest items around gates, mixtures, gamma precisions, priors and covariances are BITS identical; the
   one item that moves (`atom/gate-random-learned`, evidence by 2.8e-12) moves the same on the commit before, so it is not this change.
 
+
+## 2026-11-12 The softmax beyond six classes, and a multiclass Gaussian process (`agent-a3ff91-softmax`, gap `softmax-many-classes` narrowed)
+
+`multiclass-site` integrated up to six free scores on a product grid (a node for every combination). It now takes any number of classes
+under EP, with the product grid kept up to six (the digest items of the existing softmax atoms are bit-identical) and a new rule beyond
+(`operators/links/_multiclass-auxiliary.ts`, chosen by the parameter `integration`: `auto` is the product grid while it reaches, `product`,
+`auxiliary`):
+- **Softmax**: `S^-p = int t^(p-1) exp(-t S) dt / Gamma(p)` with `S = sum_k exp(z_k)` and `p` the power of the factor. Given the auxiliary `t`
+  the factor is a product over the classes, so the mass is one integral over `log t` of the product of `A_k(t) = E_cavity[exp(-t exp(z_k))]`
+  (the numerator `exp(p z_y)` shifts the observed class's cavity to `N(m + p v, v)`), and every score's tilted mean and variance are the
+  mixture over `t` of its conditional moments (law of total variance, centred). The outer integral is the existing panelled grid (`integrateLine`,
+  a new profile `gridProfiles.line` of `numerics/_grid.ts`: 12 panels of 8 nodes after a coarse search of the window, shrunk onto the mass),
+  the inner ones a trapezoid rule over the cavity (spectrally accurate for a Gaussian times a smooth step), so the only approximation is the
+  quadrature. A known score is a constant (`log S` of the known scores), the power is the shape of the gamma (fractional EP works, down to 0.03).
+- **Multinomial probit**: `c = z_y + e` is Gaussian under the observed score's cavity (variance plus one), so the mass is
+  `int N(c) prod_j Phi((c - m_j) / sqrt(1 + v_j)) dc` and every other score's moments given `c` are the truncated-Gaussian closed forms; one
+  coordinate on the same line grid. The power must be one beyond six scores (a power of the integral is not an integral).
+- Variational message passing stays on its product grid: `unsupported('vmp')` says so for more than six classes (it was an unbounded cost).
+
+Checked against: the brute-force integral (`bruteTilted`) for two to four classes (precision and mean term within 1e-3 to 2e-3, the brute force
+being the coarser of the two), the product grid at six classes (3e-3, which is the grid's own error: at three wide cavities the exact evidence
+of identical scores is `-log 3`, which the new rule gives to 1e-8 and the grid to 1.5e-4), and for any number the identities that hold
+for every categorical likelihood against any cavities: the classes' masses add up to one and their tilted means and second moments, weighted by
+the masses, add up to the cavities' (softmax of 8, 12, 20 classes: 1e-9, 1e-8, 1e-8; probit of 8, 12, 20: 1e-10 to 1e-9). A softmax of 20
+classes is about 3 ms (wide cavities 6 ms) a tilted moment, the probit about 4 ms; the product grid at five classes was 80 to 140 ms.
+- `atom/softmax-choice` and `-learned`: twelve choices among eight alternatives with a price and a quality (two shared coefficients), against
+  the grid of the two coefficients: plain EP is 0.77 to 0.83 of the exact spread (the means 0.15 exact sds off, the evidence 0.46 nats below the
+  grid, as with three classes), and the learned twin recovers its coefficients over 16 seeds.
+- `atom/gp-softmax`: a multiclass Gaussian process works without a compiler change: one dense Gaussian vector over the (input, class) pairs
+  (`covariance` the kernel between the inputs where the classes agree and zero elsewhere), the scores of an input gathered with `ops.at`, the
+  label a categorical over the class dimension: the compiler reads the gather as the scores of the multiclass site. Two inputs and three classes
+  against quadrature of the six values: the means within 1e-3 and the spreads within 0.2% of it.
+- Not done: variational message passing beyond six classes; a joint site message over the classes of one observation (the site sends each
+  score its own Gaussian, so a prior correlation between classes is carried by the dense prior only); a compiler pattern for a plate of dense
+  vectors (one process per class) so that the cells need not be written out; the probit with a power beyond six; a reference for the multiclass GP
+  at more than two inputs (the posterior has as many dimensions as values).
+||||||| bac59ff5
+
 ## 2026-11-12 Loops: tied groups pack hierarchies and tournaments (`agent-a22fa5-packing`, gap `loopy-overconfidence` narrowed)
 
 - `findGroups` (`_plan.ts`) now groups normal latents that are vectors over one dimension or have a prior of their own, when an

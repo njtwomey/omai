@@ -3,6 +3,7 @@
  */
 
 import { gram, rbfKernel, scaleKernel } from '../../../kernels/index.ts'
+import { gaussHermite } from '../../../numerics/quadrature/index.ts'
 import { foldIn, gamma, key, normal, poisson, studentT, uniform } from '../../../random/index.ts'
 import { dict, int, real } from '../../../space/index.ts'
 import { item, toFlat } from '../../../tensor/index.ts'
@@ -396,6 +397,147 @@ const gpProbitAtom: EpAtom = defineAtom({
   ),
   knobs: dict({ lengthScale: real(0.3, 3, { default: 1, step: 0.1, label: 'kernel length scale' }) }),
   parts: (k) => gpProblem('probit', k),
+})
+
+const GPS_X = [[-0.6], [0.9]]
+const GPS_Y = [0, 2]
+const GPS_CLASSES = 3
+
+function gpSoftmaxProblem(k: Config): AtomParts {
+  const ls = configNumber(k, 'lengthScale')
+  const kernel = scaleKernel(rbfKernel({ lengthScale: ls }), 1.5)
+  const n = GPS_X.length
+  const flat = toFlat(gram(kernel, GPS_X, { jitter: 1e-6 }))
+  const kx = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => flat[i * n + j] ?? 0))
+  // the function is one dense Gaussian vector over the inputs and the classes (cell = input * classes + class): an independent process
+  // per class, so the covariance is the kernel matrix between the inputs where the classes agree and zero where they do not
+  const cells = n * GPS_CLASSES
+  const covariance = Array.from({ length: cells }, (_, a) =>
+    Array.from({ length: cells }, (_, b) =>
+      a % GPS_CLASSES === b % GPS_CLASSES
+        ? ((kx[Math.floor(a / GPS_CLASSES)] ?? [])[Math.floor(b / GPS_CLASSES)] ?? 0) + (a === b ? 1e-6 : 0)
+        : 0,
+    ),
+  )
+  const index = Array.from({ length: n }, (_, i) => Array.from({ length: GPS_CLASSES }, (_, c) => i * GPS_CLASSES + c))
+  // region gp-softmax
+  const definition = defineModel('gp-softmax', (m) => {
+    const cell = m.range('cell', { size: cells })
+    const row = m.range('row')
+    const cls = m.range('class', { size: GPS_CLASSES })
+    // one dense Gaussian vector over every (input, class) pair
+    const prior = d.multivariateNormal(new Array<number>(cells).fill(0), { covariance })
+    const f = m.latent('f', prior, { dims: [cell] })
+    const at = m.data('index', { dims: [row, cls], support: 'count' })
+    // the scores of an input are the entries of the vector at its classes, the label a softmax of them
+    const logits = ops.at(f, at)
+    m.observe('y', d.categorical({ logits }, { over: cls }), m.data('y', { dims: [row], support: 'count' }))
+  })
+  // endregion
+  // The reference: the posterior mean and spread of every value by Gauss-Hermite quadrature of the whitened prior (a product rule over
+  // the six standard normals the values are made of), the likelihood a product of softmax terms. The density drawn is the Gaussian of those moments.
+  const moments = once(() => {
+    const L = [
+      [Math.sqrt(kx[0]?.[0] ?? 1), 0],
+      [
+        (kx[1]?.[0] ?? 0) / Math.sqrt(kx[0]?.[0] ?? 1),
+        Math.sqrt((kx[1]?.[1] ?? 1) - (kx[1]?.[0] ?? 0) ** 2 / (kx[0]?.[0] ?? 1)),
+      ],
+    ] as const
+    const rule = gaussHermite(9)
+    const xs = toFlat(rule.nodes).map((v) => Math.SQRT2 * v)
+    const ws = toFlat(rule.weights).map((v) => v / Math.sqrt(Math.PI))
+    const t = new Array<number>(cells).fill(0)
+    const f = new Array<number>(cells).fill(0)
+    const first = new Array<number>(cells).fill(0)
+    const second = new Array<number>(cells).fill(0)
+    let mass = 0
+    const total = xs.length ** cells
+    for (let idx = 0; idx < total; idx++) {
+      let rest = idx
+      let w = 1
+      for (let c = 0; c < cells; c++) {
+        const j = rest % xs.length
+        rest = (rest - j) / xs.length
+        t[c] = xs[j] as number
+        w *= ws[j] as number
+      }
+      // f at input i, class c is the sum over the inputs j <= i of L[i][j] times the standard normal of (j, c)
+      for (let i = 0; i < n; i++)
+        for (let c = 0; c < GPS_CLASSES; c++) {
+          let v = 0
+          for (let j = 0; j <= i; j++) v += (L[i]?.[j] as number) * (t[j * GPS_CLASSES + c] as number)
+          f[i * GPS_CLASSES + c] = v
+        }
+      for (let i = 0; i < n; i++) {
+        const z = f.slice(i * GPS_CLASSES, (i + 1) * GPS_CLASSES)
+        const top = Math.max(...z)
+        const norm = z.reduce((s, v) => s + Math.exp(v - top), 0)
+        w *= Math.exp((z[GPS_Y[i] as number] as number) - top) / norm
+      }
+      mass += w
+      for (let c = 0; c < cells; c++) {
+        first[c] = (first[c] as number) + w * (f[c] as number)
+        second[c] = (second[c] as number) + w * (f[c] as number) ** 2
+      }
+    }
+    return first.map((v, c) => {
+      const mean = v / mass
+      return { mean, sd: Math.sqrt((second[c] as number) / mass - mean * mean) }
+    })
+  })
+  const marginal = (c: number): ExactMarginal => {
+    const { mean, sd } = (moments()[c] ?? { mean: 0, sd: 1 }) as { mean: number; sd: number }
+    return { mean, sd, pdf: (x) => Math.exp(-0.5 * ((x - mean) / sd) ** 2) / (sd * Math.sqrt(2 * Math.PI)) }
+  }
+  return {
+    build: {
+      definition,
+      data: { index, y: GPS_Y },
+      quantities: Array.from({ length: cells }, (_, c) => ({
+        name: `f[${c}]`,
+        label: `f_${c % GPS_CLASSES}(x_${Math.floor(c / GPS_CLASSES) + 1})`,
+        support: 'real' as const,
+      })),
+    },
+    reference: {
+      get exact() {
+        return Object.fromEntries(Array.from({ length: cells }, (_, c) => [`f[${c}]`, marginal(c)]))
+      },
+      referenceSource:
+        'the mean and spread of each value by nine-point Gauss-Hermite quadrature over the six standard normals of the whitened prior (the density drawn is the Gaussian of those moments)',
+    },
+    present: {
+      equations: [
+        `f_c ~ GP(0, K) independently for the ${GPS_CLASSES} classes, K = 1.5 exp(-(x - x')² / (2 · ${ls}²)) at x = (${GPS_X.map((r) => r[0]).join(', ')})   (one dense Gaussian vector of ${cells} values)`,
+        `y_i ~ Categorical(softmax(f_0(x_i), f_1(x_i), f_2(x_i)))`,
+        `observe y = (${GPS_Y.join(', ')})`,
+      ],
+      pair: ['f[0]', 'f[1]'],
+    },
+  }
+}
+
+/**
+ * A multiclass Gaussian process over two inputs and three classes: one dense Gaussian vector over every (input, class) pair, the
+ * scores of an input gathered from it, and a softmax of them for each label (the `multiclass-site` factor on the cells of the dense
+ * vector), against quadrature of the six values.
+ */
+const gpSoftmaxAtom: EpAtom = defineAtom({
+  name: 'gp-softmax',
+  title: 'Multiclass Gaussian process',
+  what: 'A Gaussian process per class over two inputs, written as one dense Gaussian vector over the six (input, class) values, and a softmax of the three scores of each input: the multiclass site on the cells of a dense vector.',
+  factors: ['dense prior (gaussian-mv)', 'gather of the scores of an input', 'multiclass-site (softmax)'],
+  family: 'likelihoods',
+  reference: 'exact',
+  tolerance: tolerance(
+    'measured',
+    'the posterior of the values is not Gaussian and EP gives each its mean and spread: with two inputs the only coupling between the two softmax terms is the pairwise kernel of one class, and the moments agree with the quadrature to 1e-3 (the reference density is the Gaussian of its moments, so the Kolmogorov distance only checks them)',
+    { meanZ: 0.02, sdRatio: [0.97, 1.03], ks: 0.02 },
+  ),
+  ep: { damping: 0.5, tol: 1e-6 },
+  knobs: dict({ lengthScale: real(0.3, 3, { default: 1, step: 0.1, label: 'kernel length scale' }) }),
+  parts: gpSoftmaxProblem,
 })
 
 function poissonLogProblem(k: Config): AtomParts {
@@ -1490,6 +1632,7 @@ export const likelihoodsAtoms: readonly EpAtom[] = [
   skillDifferenceAtom,
   gpLogisticAtom,
   gpProbitAtom,
+  gpSoftmaxAtom,
   poissonLogAtom,
   studentTLearnedAtom,
   laplaceLearnedAtom,

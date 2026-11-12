@@ -85,14 +85,14 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
     },
     {
       id: 'softmax-many-classes',
-      title: 'Softmax beyond six classes, and a multiclass Gaussian process',
+      title: 'Softmax beyond six classes: the variational rule, the probit with a power, correlated classes',
       kind: 'missing-rule',
       status: 'open',
       summary:
-        'The multiclass site (`multiclass-site`: a softmax or multinomial probit of Gaussian class scores, adaptive Gauss-Hermite over all the free scores) integrates up to six classes, and the classifier atoms use one slope per class on a scalar covariate. More classes, and a Gaussian process whose latent function is a vector over the classes (a joint Gaussian across them), are not mapped.',
-      plan: 'A delta-method or Laplace-based site (Knowles and Minka) beyond six classes, where the product grid is too large; a vector-valued belief per observation (one Gaussian over the K scores) for the multiclass GP.',
-      size: 'medium',
-      markers: ['more than the six this rule integrates'],
+        'Done: the multiclass site (`multiclass-site`) integrates any number of classes under EP. Up to six free scores it keeps the adaptive Gauss-Hermite product grid; beyond that (or with `integration: "auxiliary"`) it writes the integral so that the scores do not meet: the softmax normaliser is a gamma integral over one auxiliary variable (`S^-p = int t^(p-1) exp(-t S) dt / Gamma(p)`, so given it the factor is a product over the classes, and the power of fractional EP is the shape), the multinomial probit one integral over the observed score plus its noise with the other scores in closed form. Both cost the number of classes, not its power (a softmax of 20 classes takes a few milliseconds a tilted moment), and agree with a brute-force integral up to four classes, the product grid at six, and, for any number, with the exact identities that the classes\' masses add up to one and their tilted moments to the cavities\' (1e-8 and better). Eight alternatives with two shared coefficients (`softmax-choice`) run, with a grid reference; a multiclass Gaussian process is one dense Gaussian vector over the (input, class) pairs gathered with `ops.at` (`gp-softmax`, two inputs and three classes against quadrature), independent processes per class or any covariance across them. What remains: variational message passing integrates the expected log over a product grid and stops at six classes (the verdict says so); the multinomial probit of more than six scores takes the factor whole (power one); the softmax power may not be below 0.03 (the window of the auxiliary variable); the site sends each score its own Gaussian message, so the correlations the labels put between the classes of one input, and the loop through shared coefficients (the two coefficients of `softmax-choice` have 0.70 to 0.96 of the exact spread, as the class slopes of three classes do), are not carried; and the compiler maps one dense vector over one dimension, so a Gaussian process per class is written as one vector of inputs times classes cells, not as a plate of vectors.',
+      plan: 'A variational rule beyond six classes (the expected log of the softmax by the same auxiliary variable, or a bound), a joint site message over the K scores of one observation (one Gaussian over the classes: a vector-valued message, which the dense GP prior would then correlate), and a compiler pattern that reads a plate of dense Gaussian vectors (one per class) as one vector so that the cells need not be written out.',
+      size: 'small',
+      markers: ['more than six scores takes a power of one', 'over a product grid, up to 6 classes'],
     },
     {
       id: 'ordinal-random-cuts',
@@ -195,7 +195,7 @@ const claims = (g: Omit<EpGap, 'refuses'>, r: RefusedItem): boolean =>
  * @example
  * ```ts
  * import { epGapsRefusing } from 'omai-engine/probprog/ep'
- * const gaps = epGapsRefusing([{ name: 'many-classes', reason: 'multiclass-site: 8 free scores are more than the six this rule integrates', missing: [] }])
+ * const gaps = epGapsRefusing([{ name: 'many-classes', reason: 'multiclass-site: the multinomial probit of more than six scores takes a power of one', missing: [] }])
  * gaps.filter((g) => g.refuses.length > 0).map((g) => g.id) // => ['softmax-many-classes']
  * ```
  */
@@ -373,8 +373,8 @@ export const epDirections: readonly EpDirection[] = [
     status: 'partial',
     what: 'More than two classes: multinomial probit and logit, multiclass GP classification.',
     needs:
-      'The multinomial logit (softmax) and probit of up to six classes run (`multiclass-site`, a linear classifier atom with its calibration over seeds); more classes need a delta-method site and a multiclass GP a vector-valued belief over the classes.',
-    size: 'medium',
+      'The multinomial logit (softmax) and probit run for any number of classes (`multiclass-site`: the product grid up to six, an auxiliary-variable integral beyond, a linear classifier atom with its calibration over seeds and one of eight alternatives), and a multiclass GP as one dense Gaussian vector over inputs and classes (`gp-softmax`); variational message passing stops at six classes, and a joint belief over the classes of an observation is not built.',
+    size: 'small',
     pages: ['ep-softmax-regression', 'ep-softmax-regression-learned'],
   },
   {

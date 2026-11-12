@@ -832,6 +832,172 @@ const softmaxRegressionLearnedAtom: EpAtom = defineAtom({
   parts: softmaxLearnedProblem,
 })
 
+const ALTERNATIVES = 8
+
+/** The log of the probability of the chosen alternative under the softmax of the utilities `price * b0 + quality * b1`. */
+function choiceLogProb(
+  price: readonly number[],
+  quality: readonly number[],
+  chosen: number,
+  b: readonly number[],
+): number {
+  const u = price.map((p, k) => p * (b[0] as number) + (quality[k] as number) * (b[1] as number))
+  const top = Math.max(...u)
+  return (u[chosen] as number) - top - Math.log(u.reduce((s, v) => s + Math.exp(v - top), 0))
+}
+
+/** The choices of a simulated shopper: attributes on [-1.5, 1.5] for each alternative and the alternative chosen by the softmax of the true utilities. */
+function simulateChoices(seed: number, n: number, truth: readonly number[]) {
+  const kk = key(seed)
+  const attribute = (salt: number): number[][] => {
+    const flat = toFlat(uniform(foldIn(kk, salt), [n * ALTERNATIVES]))
+    return Array.from({ length: n }, (_, i) =>
+      Array.from({ length: ALTERNATIVES }, (_, k) => 3 * (flat[i * ALTERNATIVES + k] ?? 0.5) - 1.5),
+    )
+  }
+  const price = attribute(0)
+  const quality = attribute(1)
+  const u = toFlat(uniform(foldIn(kk, 2), [n]))
+  const chosen = price.map((p, i) => {
+    const q = quality[i] as number[]
+    const lp = p.map((_, k) => Math.exp(choiceLogProb(p, q, k, truth)))
+    let acc = 0
+    const draw = u[i] ?? 0.5
+    for (let k = 0; k < ALTERNATIVES; k++) {
+      acc += lp[k] as number
+      if (draw < acc) return k
+    }
+    return ALTERNATIVES - 1
+  })
+  return { price, quality, chosen }
+}
+
+/** The model of both choice atoms: two coefficients shared by eight alternatives and a categorical outcome with softmax probabilities. */
+function choiceModel(name: string, priorSd: number): ModelDefinition {
+  // region softmax-choice softmax-choice-learned
+  const definition = defineModel(name, (m) => {
+    const choice = m.range('choice')
+    const alternative = m.range('alternative', { size: ALTERNATIVES })
+    // one coefficient for each attribute, shared by every alternative
+    const betaPrice = m.latent('beta_price', d.normal(0, priorSd))
+    const betaQuality = m.latent('beta_quality', d.normal(0, priorSd))
+    const price = m.data('price', { dims: [choice, alternative], role: 'covariate' })
+    const quality = m.data('quality', { dims: [choice, alternative], role: 'covariate' })
+    const chosen = m.data('chosen', { dims: [choice], support: 'count' })
+    // the utility of an alternative is linear in its attributes, the choice a softmax of the utilities of the eight
+    const utility = price.mul(betaPrice).add(quality.mul(betaQuality))
+    m.observe('chosen', d.categorical({ logits: utility }, { over: alternative }), chosen)
+  })
+  // endregion
+  return definition
+}
+
+function choiceProblem(k: Config, learned: boolean): AtomParts {
+  const s = configNumber(k, 'priorScale')
+  const truth = learned ? [configNumber(k, 'truePrice'), configNumber(k, 'trueQuality')] : [-1, 1.2]
+  const [seed, n] = learned ? [configNumber(k, 'seed'), configNumber(k, 'n')] : [3, 12]
+  const data = simulateChoices(seed, n, truth)
+  const name = learned ? 'softmax-choice-learned' : 'softmax-choice'
+  return {
+    build: {
+      definition: choiceModel(name, s),
+      data,
+      quantities: [
+        {
+          name: 'beta_price',
+          label: 'price coefficient',
+          support: 'real',
+          ...(learned ? { truth: truth[0] as number } : {}),
+        },
+        {
+          name: 'beta_quality',
+          label: 'quality coefficient',
+          support: 'real',
+          ...(learned ? { truth: truth[1] as number } : {}),
+        },
+      ],
+    },
+    reference: { grid: { points: 61, maxRefinements: 0 } },
+    present: {
+      equations: [
+        ...(learned
+          ? [`truth: coefficients (${truth.join(', ')}); ${n} choices among ${ALTERNATIVES}, seed ${seed}`]
+          : []),
+        `beta_price, beta_quality ~ N(0, ${s}²)   (shared by the ${ALTERNATIVES} alternatives)`,
+        `chosen_i ~ Categorical(softmax(utility_i1, ..., utility_i${ALTERNATIVES})),  utility_ik = price_ik beta_price + quality_ik beta_quality`,
+        `observe the attributes of the ${ALTERNATIVES} alternatives and the one chosen, i = 1..${n}`,
+      ],
+      pair: ['beta_price', 'beta_quality'],
+    },
+  }
+}
+
+/**
+ * Twelve choices among eight alternatives that differ in a price and a quality, two coefficients shared by the alternatives and a
+ * softmax: the `multiclass-site` factor with eight free scores per choice, past what its product grid integrates (the auxiliary-variable
+ * rule of the site), against the posterior of the two coefficients on a grid.
+ */
+const softmaxChoiceAtom: EpAtom = defineAtom({
+  name: 'softmax-choice',
+  title: 'Softmax over eight alternatives',
+  what: 'Two coefficients with Gaussian priors and twelve choices among eight alternatives with a price and a quality each, through a softmax: the multiclass site with eight class scores per choice (an auxiliary-variable integral, not the product grid that stops at six).',
+  factors: [
+    'prior (gaussian) x2',
+    'scale (known attribute times a coefficient)',
+    'multiclass-site (softmax, eight classes)',
+  ],
+  family: 'likelihoods',
+  reference: 'grid',
+  tolerance: tolerance(
+    'measured',
+    'the two coefficients are shared by the eight scores of every choice, so one Gaussian each cannot hold their correlations and plain EP is narrow (0.77 to 0.83 of the exact spread, the means 0.15 exact sds off)',
+    { meanZ: 0.25, sdRatio: [0.7, 1.2], ks: 0.15 },
+  ),
+  evidence: {
+    nats: 0.6,
+    reason: 'eight scores per choice that share two coefficients: loopy, moment matched (0.46 measured)',
+  },
+  ep: { damping: 0.5, tol: 1e-4 },
+  knobs: dict({ priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }) }),
+  parts: (k) => choiceProblem(k, false),
+})
+
+/**
+ * The same choice model with the coefficients learned from choices simulated from stated coefficients: over many seeds, how often
+ * EP's 90% intervals hold the true ones.
+ */
+const softmaxChoiceLearnedAtom: EpAtom = defineAtom({
+  name: 'softmax-choice-learned',
+  title: 'Softmax over eight alternatives: parameters learned',
+  extends: 'softmax-choice',
+  recovery: recovery(
+    'measured',
+    'the coefficients are shared by the eight scores of every choice and one Gaussian each is a little narrow; each run integrates eight class scores per choice, so 16 seeds and a floor of 0.7',
+    { seeds: 16, coverage: 0.7, zrms: 1.7 },
+  ),
+  what: 'The eight-alternative choice model of the basic atom with the two coefficients unknown, the choices simulated from stated coefficients.',
+  factors: [
+    'prior (gaussian) x2',
+    'scale (known attribute times a coefficient)',
+    'multiclass-site (softmax, eight classes)',
+  ],
+  family: 'likelihoods',
+  reference: 'grid',
+  tolerance: tolerance(
+    'measured',
+    'the coefficients are shared by the eight scores of every choice, so one Gaussian each cannot hold their correlations and plain EP is narrow (0.70 to 0.96 of the exact spread, the means 0.17 exact sds off)',
+    { meanZ: 0.25, sdRatio: [0.6, 1.2], ks: 0.2 },
+  ),
+  ep: { damping: 0.5, tol: 1e-4 },
+  knobs: dict({
+    ...simulationKnobs(12),
+    truePrice: real(-3, 3, { default: -1, step: 0.1, label: 'true price coefficient' }),
+    trueQuality: real(-3, 3, { default: 1.2, step: 0.1, label: 'true quality coefficient' }),
+    priorScale: real(0.5, 6, { default: 2, step: 0.1, label: 'prior sd of the coefficients' }),
+  }),
+  parts: (k) => choiceProblem(k, true),
+})
+
 /** The atoms of the `ordinal` file, basic and learned twins together. */
 export const ordinalAtoms: readonly EpAtom[] = [
   ordinalProbitAtom,
@@ -842,4 +1008,6 @@ export const ordinalAtoms: readonly EpAtom[] = [
   skillDrawsLearnedAtom,
   softmaxRegressionAtom,
   softmaxRegressionLearnedAtom,
+  softmaxChoiceAtom,
+  softmaxChoiceLearnedAtom,
 ]

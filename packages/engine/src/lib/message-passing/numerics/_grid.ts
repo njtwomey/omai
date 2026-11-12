@@ -51,8 +51,12 @@ export interface GridProfile {
   readonly layout: 'first-fastest' | 'first-slowest'
 }
 
-/** The profiles of the library's grids: `pair` (the likelihood sites of two scalars, with kinks) and `axes` (the covariance sites of up to three). */
-export const gridProfiles: { readonly pair: GridProfile; readonly axes: GridProfile } = {
+/**
+ * The profiles of the library's grids: `pair` (the likelihood sites of two scalars, with kinks), `axes` (the covariance sites of up
+ * to three) and `line` (one smooth coordinate whose integrand is expensive and whose window starts far wider than the mass: the
+ * auxiliary variable of the softmax site).
+ */
+export const gridProfiles: { readonly pair: GridProfile; readonly axes: GridProfile; readonly line: GridProfile } = {
   pair: {
     coarse: { panels: 8, order: 5 },
     fine: { panels: 10, order: 6 },
@@ -63,6 +67,13 @@ export const gridProfiles: { readonly pair: GridProfile; readonly axes: GridProf
   axes: {
     coarse: { panels: 4, order: 4 },
     fine: { panels: 6, order: 4 },
+    passes: 6,
+    panelling: 'uniform',
+    layout: 'first-fastest',
+  },
+  line: {
+    coarse: { panels: 12, order: 5 },
+    fine: { panels: 12, order: 8 },
     passes: 6,
     panelling: 'uniform',
     layout: 'first-fastest',
@@ -287,6 +298,19 @@ export function integrateAxes(axes: readonly GridAxis[], logf: (t: Float64Array)
     },
     gridProfiles.axes,
   )
+}
+
+/**
+ * The integral of `exp(logf(x))` over one coordinate in the profile `line` (equal panels, a coarse search for the window that is
+ * shrunk onto the mass, then eight nodes a panel): the grid of an integral whose integrand costs a sum over many classes.
+ *
+ * @param axis - The coordinate (its `logWeight` is part of the integrand; give a flat one when `logf` holds everything).
+ * @param logf - The log of the integrand at the coordinate (the axis's density is separate).
+ * @returns The log mass, and the nodes and normalised weights of the final grid (`weights[i]` belongs to `nodes[0][i]`).
+ * @throws ImproperMessageError when the integrand has no mass in the window.
+ */
+export function integrateLine(axis: GridAxis, logf: (x: number) => number): GridNResult {
+  return integrateGrid([axis], () => logf, gridProfiles.line)
 }
 
 /** The result of a two-coordinate integral: the log mass, and per coordinate the mean, the variance and the mean of `exp(x)`. */
