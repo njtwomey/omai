@@ -995,6 +995,7 @@ start left were both in the message passing of the chain, and neither was the pr
   near zero that is not improper (the ridge is a heuristic), a chain with a fixed scale and a random level (the scalar steps are used; the same
   loop), a dense vector with a cheaper belief sum in the engine.
 
+
 ## 2026-11-12 A strong correlation from few pairs, and the group form of the sd-and-correlation site (`agent-a6b87c-corr`, gaps `correlation-strong-few-pairs` and `matrix-larger` narrowed)
 
 Searched first: the correlation family and its mapping (`d.correlation`, `latentCorrelation`, the readback of the beta as a transformed beta), `mvn-sd-corr` and its beta projection, the
@@ -1073,6 +1074,43 @@ Gap `evidence` rewritten in `ep-gaps.ts` (still open, now small). One evidence s
   plates, gates, affine factors, `linear-regression-row`) has the same numbers, but `model/bayesian-neural-network`, `program/circular-data`, `-means` (beliefs, damped and skipped counts) and
   four program evidences (3e-11 to 4e-12: `circular-rows`, `cox`, `sparse-gaussian`, `sparse-mixture`) already differed from the baseline on the commit this work started from
   (checked in a second worktree), so their lines are left; their `evidenceUndefinedAt` lists changed here as said above.
+
+## 2026-11-12 The Bayesian neural network is refused by EP, with the reason, instead of run to a state that is not a posterior (`agent-ab3358-bnn`, gap `network-layer-modes`)
+
+No sound fix was found in the effort, so the benchmark's recorded state is made honest: `model/bayesian-neural-network` was an EP run of 200 sweeps
+that never converged (digest on this commit's parent: change 347, 8369 improper updates of which 8354 skipped, 71 factors with an improper cavity,
+no log evidence, function values -0.55, -1.07, -1.59, -2.41, -3.83 with sds 0.06 to 0.12 against the long NUTS run's -0.21, -0.90, 0.30, 0.83, 0.14
+with sds 0.45, 0.066, 0.26, 0.084, 0.38; 3 s a run) and was listed as `runs (ep)`.
+- Diagnosis. The weights of a layer are not identified (sign flip of a unit, permutation of units), so the posterior is multimodal and one Gaussian
+  per weight has only two kinds of fixed point: the symmetric one (all weight means 0, which is a converged and uninformative state: the function
+  value 0 +- 1 at damping 0.8 and 0.9, 0 +- 0.04 with a power below one) and ones with dead units. From the symmetric start the first sweeps keep
+  the three units identical to two decimals (weights 0, the spreads shrinking together) and the first dropped updates (from the fifth sweep) are where
+  they part; after that one unit lives (input weight near 2, bias 0.4, output weight 0.85) and the other two collapse (input weight 0, output weight with a
+  spread of 1). Besides that, about half of the messages of the `tanh` factors to their inputs have no positive precision at the damped end state,
+  so the affine factor beside such a unit has no cavity: 32 of the 180 messages of the `linear` factors were not computable.
+- Tried, one at a time and combined, each 200 to 600 sweeps (3 to 20 s) on the canonical data (function values at -3, -1.25, 0, 1.25, 3; the
+  reference -0.21 +- 0.45, -0.90 +- 0.066, 0.30 +- 0.26, 0.83 +- 0.084, 0.14 +- 0.38): damping 0.3 (not converged: -0.98, -0.89, 0.19, 0.82, 0.84, sds
+  0.45, 0.30, 0.32, 0.31, 0.46), 0.5 (-0.91, -0.87, 0.16, 0.80, 0.81, change 3e-3 after 200 sweeps and 1.7e-6 after 400 with `reset`, but 32 updates
+  never computable: sds 0.44, 0.36, 0.37, 0.36, 0.44), 0.8 and 0.9 (converged at the symmetric fixed point, no information), the `reset` policy,
+  flooding and tree schedules (tree at 0.7: 6.5e-8 after 400 sweeps, 25587 improper updates), power 0.1 to 0.5 on the `apply` factors (degenerate: the
+  function 0 +- 0.04, or not settling), a start that breaks the symmetry (messages on the weights' ports of the first row, damped so that they
+  survive: one unit lives, not settling, change 0.1 to 0.7), and an affine rule that accepts a cavity of negative precision (a scratch edit of
+  `affineMessage`, reverted: damping 0.5 then has no unresolved update and 21 improper events, but the change stays at 0.8; damping 0.7 at 0.14
+  after 300 sweeps). Within the data the function values of the best of these agree with the long run (-0.88 to -0.93 at -1.25, 0.80 to 0.87 at 1.25,
+  0.16 to 0.28 at 0), the spreads do not (0.2 to 0.45 against 0.066 and 0.084 beside the data), and the far inputs are 1.6 to 1.9 spreads off. One
+  hidden unit alone settles (undamped, change 1e-8, 8 updates not computable); two do not.
+- The code: `networkLayerUnits` (`model/factor-graph/verdict.ts`: the `apply` factors whose input is an affine map of a random weight that other rows
+  read and whose output is multiplied by a random weight that other rows read) and the EP verdict of `factorGraphVerdict` refuses a graph that has
+  any, with the reason and the missing feature `beliefs that hold the symmetric modes of a hidden layer`; `epRoute` is then `none` for the benchmark
+  network (the grid route does not apply either), the coverage row is `planned`, and gap `network-layer-modes` (new, quality, large) claims it
+  through its marker `neural-network layer`; the direction `bnn` is rewritten. Only the benchmark network has units: the funnels, the schools, the
+  radon model, the banana, the negative binomial regression, a `tanh` regression of two weights and a nonlinear state space have none, and the
+  variational rule is not asked. Tests: `factor-graph/network-layers.test.ts`, `ep-coverage.test.ts`, `ep-gaps.test.ts`.
+- What a sound fix needs (in the gap's plan): a fixed point per mode weighted by evidence (the continuous multi-start named under `multimodal`) with a
+  run per start that settles, and for that the forward pass of a row as one factor with the weights as the only variables (probabilistic
+  backpropagation), so that no hidden variable carries a negative-precision message; the refusal goes when that is checked against the long NUTS run.
+- Digest: `model/bayesian-neural-network` moves deliberately (route `ep` to `none`, the verdict, no posterior); no other item is affected (the
+  verdict changes only for graphs with a layer); the registry is untouched.
 
 ## 2026-11-12 Several hyperparameters on the grid: a walk over the lattice, ARD length scales, a noise sd (`agent-a6eb2d-gridhyp`, gap `grid-hyperparameters` narrowed)
 
