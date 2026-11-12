@@ -108,7 +108,8 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
   if (beliefs === undefined) throw new Error('the method returned no beliefs')
   say('Lining the coordinates up with the true ones')
   // region reading
-  // the model cannot say which way a coordinate points or how long it is, so turn, stretch and shift it onto the true one
+  // the model cannot say which way a coordinate points or how long it is,
+  // so turn, stretch and shift it onto the true one
   const aligned = alignLatents(beliefs.mean('x'), data.latent)
   const spread = mul(beliefs.stddev('x'), aligned.scale)
   // a function of a coordinate is a weighted sum of the waves

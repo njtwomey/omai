@@ -114,7 +114,7 @@ omai-meta/react	4	00bbae450856
 omai-meta/runner	30	c08ed41c7c29
 omai-meta/schema	23	13ecddd780a9
 omai-render/animation	24	6fe8aea56c92
-omai-render/charts	160	dc554daa0225
+omai-render/charts	160	d05910c8f47d
 omai-render/figure	39	d5f3cf56a2ab
 omai-render/gym	6	32b6352a0038
 omai-render/layout	37	9aaaf0fb6fd0
@@ -126,4 +126,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	303	541cc98902e2
-total	20187	8f2a0a7bc143
+total	20187	0214b0f8f992
