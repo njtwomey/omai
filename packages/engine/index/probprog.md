@@ -186,9 +186,9 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 
 - function `additionalCampaigns`: The periodic campaigns of the later benchmark models, plus the clutter problem's EP comparison. `src/lib/probprog/models/additional-campaigns.ts:104` `omai-engine/probprog/models`
 - function `bananaDraws`: Exact draws from Haario's banana, for drawing the target. `src/lib/probprog/models/geometry.ts:165` `omai-engine/probprog/models`
-- function `bayesianGam`: Bayesian GAM of one covariate as a model spec: penalty or spike-slab prior. `src/lib/probprog/models/bayesian-gam.ts:169` `omai-engine/probprog/models`
-- function `bayesianGamFit`: Curve, band, sampled curves and weighted bases of a Bayesian GAM posterior. `src/lib/probprog/models/bayesian-gam.ts:552` `omai-engine/probprog/models`
-- function `bayesianGamReference`: Exact posterior curve and band of a Bayesian GAM by quadrature. `src/lib/probprog/models/bayesian-gam.ts:803` `omai-engine/probprog/models`
+- function `bayesianGam`: Bayesian GAM of one covariate as a model spec: penalty or spike-slab prior. `src/lib/probprog/models/bayesian-gam.ts:170` `omai-engine/probprog/models`
+- function `bayesianGamFit`: Curve, band, sampled curves and weighted bases of a Bayesian GAM posterior. `src/lib/probprog/models/bayesian-gam.ts:553` `omai-engine/probprog/models`
+- function `bayesianGamReference`: Exact posterior curve and band of a Bayesian GAM by quadrature. `src/lib/probprog/models/bayesian-gam.ts:804` `omai-engine/probprog/models`
 - function `benchmarkAgreement`: Cross-engine agreement of a benchmark model: every planned method against the truth. `src/lib/probprog/models/agreement.ts:132` `omai-engine/probprog/models`
 - function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:103` `omai-engine/probprog/models`
 - function `betaBernoulliModel`: The Beta-Bernoulli coin with a chosen Beta(a, b) prior; bind it to `{ y: flips }`. `src/lib/probprog/models/conjugate.ts:43` `omai-engine/probprog/models`
@@ -204,7 +204,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `structureCampaigns`: The structure of every benchmark model, and collapsed against full NUTS, as periodic campaigns. `src/lib/probprog/models/structure-campaigns.ts:364` `omai-engine/probprog/models`
 - function `sviCampaigns`: Periodic validation campaigns of the variational methods against the benchmark truths. `src/lib/probprog/models/svi-plans.ts:206` `omai-engine/probprog/models`
 
-- estimator `bayesianGamMethod`: A Bayesian GAM under any inference method, with its fit as a tape probe. `src/lib/probprog/models/bayesian-gam.ts:986` `omai-engine/probprog/models`
+- estimator `bayesianGamMethod`: A Bayesian GAM under any inference method, with its fit as a tape probe. `src/lib/probprog/models/bayesian-gam.ts:987` `omai-engine/probprog/models`
 
 - structure `BenchmarkModel`: A benchmark model: a spec with a data generator, the truth, references, tags and method plans. `src/lib/probprog/models/benchmark.ts:98` `omai-engine/probprog/models`
 

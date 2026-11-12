@@ -900,3 +900,23 @@ No second grid method: `epGridMethod` (`inference/ep-grid.ts`) gained what the p
 - Not done: five or more axes (the nodes grow with the volume; a sparse design or a Laplace step is the plan), diagonal neighbours (a ridge
   thin against the lattice's spacing and diagonal to it can be cut; the window of 7 nats makes it unlikely for the Gaussian processes tried),
   hierarchical priors on the grid, a reference at several axes with a non-Gaussian likelihood (each node's evidence is then approximate).
+
+## 2026-11-12 ARD under variational message passing opens damped (`agent-a6eb2d-gridhyp`)
+
+The ARD Bayesian GAM under VMP stalled without damping and the offer listed `vmp` regardless. VMP on this form does run once damped, so the
+fix is a default, on the engine side only (`models/bayesian-gam.ts`; the pocs page is untouched and reads the offer):
+`bayesianGamFormStarting(prior)` gives the starting knobs a form needs (`ard`: `vmp` at `damping: 0.5`, `maxSweeps: 60`), merged over
+`bayesianGamStarting` in `bayesianGamMethods` (so the union's defaults, which a page opens its controls on) and applied to the method's own
+config in `bayesianGamMethod` (so a session with no config runs damped too).
+- Measured on 60 rows (scratch script, EP as the reference, the same data as the tests): undamped k = 6 stops at sweep 74 with the log noise
+  at -46 (collapsed) and k = 10 ends at +0.90 with a spread of 2e-8 (curve 0.42 sd and band 75 times EP's); damping 0.3, 0.4, 0.5 and 0.7
+  all reach the same point (k = 6: log noise -1.585, curve 0.083 response sd from EP's, band 1.22 times; k = 10 at 0.5: -1.597, 0.029, 1.39),
+  0.1 and 0.2 settle elsewhere (band 1.7 to 2.0 times). The change in the messages is far above any tolerance at 200 sweeps (tol 1e-3 to 1e-6
+  stop nowhere; 627 sweeps to 1e-5 at 0.3, as measured earlier), while the log noise is within 0.015 of its 200-sweep value and the curve's distance to EP's within 0.02 sds of it from 30 sweeps, so
+  the cap opens at 60 (5.6 s at k = 6, 11 s at k = 10, against 18 and 36 s at 200). The run ends at the cap, status `completed`, never
+  `converged`: honest, and the offer keeps `vmp` (it runs, with a band 1.2 to 1.4 times EP's, the mean field of the precisions and the
+  coefficients).
+- Not made `unavailable`: the verdict of the method is about the model (it compiles and has rules), and now the run is sound by default.
+  Other forms keep the method's defaults (`penalty` VMP runs at damping 0.3 in its test, 0 by default, unchanged).
+- Tests (`bayesian-gam-ep.test.ts`): the union's defaults for ARD (0.5, 60) and for the penalty form (0, 200); a session with no config on ARD
+  stops within 60 sweeps with the curve within 0.1 sd of EP's and the log noise within 0.1, and the undamped run's log noise below -10.

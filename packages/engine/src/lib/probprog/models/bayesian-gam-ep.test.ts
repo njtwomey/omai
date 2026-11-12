@@ -9,6 +9,7 @@ import {
   bayesianGam,
   bayesianGamAgreement,
   type bayesianGamFit,
+  bayesianGamFormStarting,
   bayesianGamMethod,
   bayesianGamMethods,
   bayesianGamReference,
@@ -202,5 +203,33 @@ describe('variational message passing on the non-centred Bayesian GAM', () => {
     expect(width(vmp) / width(ep)).toBeGreaterThan(1)
     expect(width(vmp) / width(ep)).toBeLessThan(1.4)
     expect(Math.abs(vmp.hyper.logSigma[0] - ep.hyper.logSigma[0])).toBeLessThan(0.1)
+  })
+
+  it("opens ARD under VMP damped (0.5, 60 sweeps), because undamped it stalls with a collapsed noise; the other forms keep the method's own defaults", () => {
+    const knobs = (prior: 'penalty' | 'ard'): Record<string, { default?: unknown }> =>
+      (
+        bayesianGamMethods(prior).space as unknown as {
+          options: Record<string, { spaces: Record<string, { default?: unknown }> }>
+        }
+      ).options['vmp']?.spaces ?? {}
+    expect([knobs('ard')['damping']?.default, knobs('ard')['maxSweeps']?.default]).toEqual([0.5, 60])
+    expect([knobs('penalty')['damping']?.default, knobs('penalty')['maxSweeps']?.default]).toEqual([0, 200])
+    expect(bayesianGamFormStarting('penalty')).toEqual({})
+    expect(bayesianGamFormStarting('ard')['vmp']).toEqual({ damping: 0.5, maxSweeps: 60 })
+  })
+
+  it('runs ARD under VMP with no knobs given to the curve of EP and a finite noise, where the undamped run collapses the noise', () => {
+    const model = bayesianGam(x, y, { k: 6, prior: 'ard' })
+    const ep = fitOf('ep', model)
+    // no config: the form's starting knobs are the method's defaults
+    const damped = session(bayesianGamMethod('vmp', model, { fit: { gridSize: 20 } }), { steps: 3000, mode: 'eager' })
+    expect(damped.t).toBeLessThanOrEqual(60)
+    const fit = damped.probe(damped.t, 'gam/fit') as unknown as ReturnType<typeof bayesianGamFit>
+    const sd = model.standardisation.sd
+    expect(Math.max(...fit.mean.map((m, i) => Math.abs(m - (ep.mean[i] ?? 0)) / sd))).toBeLessThan(0.1)
+    expect(Math.abs(fit.hyper.logSigma[0] - ep.hyper.logSigma[0])).toBeLessThan(0.1)
+    // the same run with the damping taken off: the log noise runs off to its lower limit and the run stops
+    const bare = fitOf('vmp', model, { damping: 0, maxSweeps: 100 })
+    expect(bare.hyper.logSigma[0]).toBeLessThan(-10)
   })
 })
