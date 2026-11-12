@@ -33,7 +33,7 @@ describe('the mapping tables', () => {
       'projected-prior',
       'wishart',
       'correlation',
-      'bivariate-normal-refused',
+      'bivariate-normal-latent',
       'mvn-wishart',
       'normal-gamma-mean',
       'normal-gamma-precision',

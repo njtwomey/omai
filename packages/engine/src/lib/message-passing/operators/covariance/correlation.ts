@@ -7,60 +7,22 @@
  * coordinates (`_grid.ts`: the log of each precision, the logit of `u`), and the Gaussians to the mixture of their conditionals over
  * it. A known precision or correlation is a single node of its axis, so a Gaussian with known standard deviations and an unknown
  * correlation is a one-dimensional integral.
+ *
+ * The beta is matched to the tilted mean and variance of `u` by default (`match: 'moments'`), not to `E log u` and `E log (1 - u)` (the KL
+ * projection, `match: 'log-moments'`): a strong correlation from few pairs piles against its bound with a long tail toward the interior,
+ * which the log moments weigh by the ratio to the bound and not by the distance, so the beta that matches them came out 0.45 to 0.95 of the
+ * exact spread (at rho 0.99 from five pairs about half). With a single factor on the correlation (a plated likelihood and its beta prior)
+ * the cavity is the prior itself, the tilted distribution is the exact posterior, and the belief has its mean and spread exactly.
  */
 
 import { arg } from '../../core/_messages.ts'
-import { siteMessage } from '../../core/args.ts'
 import { defineOperator, messageRule } from '../../core/define.ts'
-import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
-import { beta, gamma } from '../../core/families.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
-import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
-import { betaAxis, type GridAxis, gammaAxis, integrateAxes, pointAxis } from '../../numerics/_grid.ts'
-import { softplusOf } from '../../numerics/_scalar.ts'
+import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { integrateAxes } from '../../numerics/_grid.ts'
+import { axisOfPort, parameterMessage, precisionAt } from './_sdcorr.ts'
 import { evaluatorOf, gaussianSide, type Rows, rowsOf } from './_sides.ts'
-
-/** The axis of one of the three parameter ports: a known value is one node, a message its cavity's density. */
-function axisOfPort(a: Arg, kind: 'precision' | 'correlation'): GridAxis {
-  if (a.value !== undefined) {
-    const v = typeof a.value === 'number' ? a.value : Number.NaN
-    if (kind === 'precision') {
-      if (!(v > 0)) throw new ParameterError('mvn-sd-corr: a known precision is positive')
-      return pointAxis(Math.log(v))
-    }
-    if (!(v > -1 && v < 1)) throw new ParameterError('mvn-sd-corr: a known correlation is in (-1, 1)')
-    const u = (v + 1) / 2
-    return pointAxis(Math.log(u / (1 - u)))
-  }
-  const eta = a.eta as Eta
-  if (kind === 'precision') {
-    const shape = (eta[0] ?? 0) + 1
-    const rate = -(eta[1] ?? 0)
-    if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
-      throw new ImproperMessageError('a gamma message has no density')
-    return gammaAxis(shape, rate)
-  }
-  const [p, q] = [(eta[0] ?? 0) + 1, (eta[1] ?? 0) + 1]
-  if (!(p > 0 && q > 0 && Number.isFinite(p) && Number.isFinite(q)))
-    throw new ImproperMessageError('a beta message has no density')
-  return betaAxis(p, q)
-}
-
-/** The precision matrix at the coordinates `(log t1, log t2, logit u)`, written into `out`, and its log determinant. */
-function precisionAt(t: Float64Array, out: Float64Array): number {
-  const [l1, l2, s] = [t[0] as number, t[1] as number, t[2] as number]
-  // 1 - rho^2 = 4 u (1 - u)
-  const logOneMinusRho2 = Math.LN2 * 2 - softplusOf(-s) - softplusOf(s)
-  const oneMinusRho2 = Math.exp(logOneMinusRho2)
-  const rho = 2 / (1 + Math.exp(-s)) - 1
-  const [t1, t2] = [Math.exp(l1), Math.exp(l2)]
-  out[0] = t1 / oneMinusRho2
-  out[3] = t2 / oneMinusRho2
-  out[1] = (-rho * Math.sqrt(t1 * t2)) / oneMinusRho2
-  out[2] = out[1] as number
-  return l1 + l2 - logOneMinusRho2
-}
 
 /** The integral over the three coordinates for the current arguments, and what the messages read from it. */
 function tilt(c: OperatorContext, rows: Rows) {
@@ -89,7 +51,8 @@ function evalAt(eval1: ReturnType<typeof evaluatorOf>, lambda: Float64Array, t: 
  * normal with unknown standard deviations and correlation. The five ports are the vector, its mean, the two precisions and the beta; each of
  * the last three may be known. Like `mvn-wishart` it may stand for `count` i.i.d. rows (the parameters `count` and `scatter`, `x` their sample
  * mean). Expectation propagation integrates the three coordinates on a zooming grid and sends gammas, a beta, and Gaussians matched to the
- * moments; there is no variational message (the expected log density has no closed form in the beta).
+ * moments (the parameter `match` chooses the beta's: its mean and variance, or its log moments); there is no variational message (the expected
+ * log density has no closed form in the beta).
  *
  * @concept factor-operators
  * @index structure A bivariate Gaussian with sds and correlation as separate variables (gamma precisions, a beta correlation).
@@ -98,7 +61,7 @@ function evalAt(eval1: ReturnType<typeof evaluatorOf>, lambda: Float64Array, t: 
  * import { beta, betaEta, gamma, gammaEta, gaussianMv, messageArg, mvnSdCorr, valueArg } from 'omai-engine/message-passing'
  * const g2 = gaussianMv(2)
  * const args = [valueArg(g2, [1, 1]), valueArg(g2, [0, 0]), valueArg(gamma, 1), valueArg(gamma, 1), messageArg(beta, betaEta(1, 1))]
- * mvnSdCorr.ep?.({ mode: 'ep', to: 4, args, params: {}, power: 1 }).message.map((v) => v.toFixed(2)) // => ['0.87', '-0.44']
+ * mvnSdCorr.ep?.({ mode: 'ep', to: 4, args, params: {}, power: 1 }).message.map((v) => v.toFixed(2)) // => ['0.98', '-0.38']
  * ```
  */
 export const mvnSdCorr: FactorOperator = defineOperator({
@@ -111,7 +74,11 @@ export const mvnSdCorr: FactorOperator = defineOperator({
     { name: 'precision 2', accepts: ['gamma'], constant: true },
     { name: 'correlation', accepts: ['beta'], constant: true },
   ],
-  params: { count: param.number({ min: 1, optional: true }), scatter: param.vector({ optional: true }) },
+  params: {
+    count: param.number({ min: 1, optional: true }),
+    scatter: param.vector({ optional: true }),
+    match: param.text({ choices: ['moments', 'log-moments'], optional: true }),
+  },
   check: (_params, families) =>
     families[0]?.dim === 2 && families[1]?.dim === 2
       ? undefined
@@ -125,24 +92,15 @@ export const mvnSdCorr: FactorOperator = defineOperator({
       const [n0, n1] = [grid.nodes[0]?.length ?? 1, grid.nodes[1]?.length ?? 1]
       if (c.to >= 2) {
         const axis = c.to - 2
-        const nodes = grid.nodes[axis] as Float64Array
-        const p = grid.marginals[axis] as Float64Array
-        if (c.to < 4) {
-          let logMean = 0
-          let valueMean = 0
-          for (let i = 0; i < nodes.length; i++) {
-            logMean += (p[i] as number) * (nodes[i] as number)
-            valueMean += (p[i] as number) * Math.exp(nodes[i] as number)
-          }
-          return { message: siteMessage(gamma, arg(c, c.to).eta as Eta, [logMean, valueMean]) }
+        return {
+          message: parameterMessage(
+            c,
+            c.to,
+            c.to < 4 ? 'precision' : 'correlation',
+            grid.nodes[axis] as Float64Array,
+            grid.marginals[axis] as Float64Array,
+          ),
         }
-        let logU = 0
-        let log1mU = 0
-        for (let i = 0; i < nodes.length; i++) {
-          logU -= (p[i] as number) * softplusOf(-(nodes[i] as number))
-          log1mU -= (p[i] as number) * softplusOf(nodes[i] as number)
-        }
-        return { message: siteMessage(beta, arg(c, 4).eta as Eta, [logU, log1mU]) }
       }
       // a Gaussian port: the mixture of the conditionals over the grid
       const target = c.to as 0 | 1

@@ -497,8 +497,8 @@ const bivariateCorrelationAtom: EpAtom = defineAtom({
   reference: 'exact',
   tolerance: tolerance(
     'measured',
-    'the posterior of a strong correlation from a handful of pairs is skewed against the boundary: EP carries the beta that matches its two log moments, which has the right mean (0.02 sd) and a spread 17% too small here (0.83 of the exact at eight pairs, 0.92 at three; near 0.99 for the learned twin at a moderate correlation); the curve the page draws is a normal matched to the belief, which adds to the distance',
-    { meanZ: 0.1, sdRatio: [0.75, 1.25], ks: 0.25 },
+    "the posterior of a strong correlation from a handful of pairs is skewed against the boundary, and the beta EP carries is matched to its mean and variance (not to its log moments, the KL projection, which had a spread 0.45 to 0.9 of the exact at a strong correlation from few pairs): with one factor on the correlation its cavity is the prior itself, so the mean and the spread are the exact ones (z 0.00, ratio 1.000 from 2 to 10 pairs and rho 0.3 to 0.99) and the evidence is exact; the curve the page draws and the KS compare a normal with the belief's moments, which for a skewed posterior is the distance a normal has (0.22 here, up to 0.3 at rho 0.99), so the KS is the only loose bound",
+    { meanZ: 0.02, sdRatio: [0.97, 1.03], ks: 0.25 },
   ),
   knobs: dict({
     eta: real(0.5, 8, { default: 1, step: 0.25, label: 'LKJ concentration eta' }),
@@ -573,11 +573,26 @@ function bivariateCorrelationLearnedProblem(k: Config): AtomParts {
   const precisionHat = [n / t11, n / t22] as const
   const grid = posterior3(
     [
-      { lo: 1e-3, hi: 3 * precisionHat[0] + (a / b) * 3 + 8 * gammaSd, min: 1e-9, max: Number.POSITIVE_INFINITY },
-      { lo: 1e-3, hi: 3 * precisionHat[1] + (a / b) * 3 + 8 * gammaSd, min: 1e-9, max: Number.POSITIVE_INFINITY },
-      { lo: -0.995, hi: 0.995, min: -0.9999, max: 0.9999 },
+      {
+        lo: 1e-3,
+        hi: 3 * precisionHat[0] + (a / b) * 3 + 8 * gammaSd,
+        min: 1e-9,
+        max: Number.POSITIVE_INFINITY,
+        warp: 'log',
+      },
+      {
+        lo: 1e-3,
+        hi: 3 * precisionHat[1] + (a / b) * 3 + 8 * gammaSd,
+        min: 1e-9,
+        max: Number.POSITIVE_INFINITY,
+        warp: 'log',
+      },
+      // equal steps in the Fisher transform: a correlation near its bound is a long tail on one side that equal steps in rho cut
+      { lo: -0.995, hi: 0.995, min: -0.9999999, max: 0.9999999, warp: 'correlation' },
     ],
     logDensity,
+    // the mean's spread is the mixture over the whole grid: the heaviest 6000 nodes leave it 3% to 5% off
+    { mixtureNodes: 60_000 },
   )
   const meanMix = (c: 0 | 1): ExactMarginal =>
     grid.mixture((tau1, tau2, rho) => {
@@ -655,7 +670,7 @@ const bivariateCorrelationLearnedAtom: EpAtom = defineAtom({
   reference: 'exact',
   tolerance: tolerance(
     'close',
-    'one plated factor: EP matches the exact joint posterior of the two precisions, the correlation and the mean by the moments of each marginal (gammas, a beta, a Gaussian), and these are very nearly the exact marginals at 30 pairs; at a strong correlation and few pairs the correlation is skewed and its beta is a little narrower (0.89 of the exact at 10 pairs and rho 0.9)',
+    'one plated factor: EP matches the exact joint posterior of the two precisions, the correlation and the mean by the moments of each marginal (gammas, a beta matched to the mean and variance of the correlation, a Gaussian), and these are the exact marginals at 30 pairs and nearly so at 6 to 10 (the correlation, the mean and the precisions within 1% to 3% of the exact spread, the means of the precisions within 0.1 sd); the reference grid runs in the logs of the precisions and the Fisher transform of the correlation, as a grid with equal steps in rho is a quarter short of the spread of a strong one',
   ),
   knobs: dict({
     ...simulationKnobs(30),
