@@ -892,7 +892,7 @@ describe('the error of the numeric rules against a high-order reference', () => 
     }
   })
 
-  it('prints the table', () => {
+  it('stays under the bound of each operator and prints the table', () => {
     const lines = ['operator'.padEnd(38) + 'z (max)'.padStart(12) + 'sd (max)'.padStart(12) + 'cases'.padStart(7)]
     for (const [name, r] of [...table].sort((a, b) => a[0].localeCompare(b[0])))
       lines.push(
@@ -902,10 +902,36 @@ describe('the error of the numeric rules against a high-order reference', () => 
           String(r.n).padStart(7),
       )
     if (process.env['OMAI_ACCURACY_PRINT'] === '1') process.stdout.write(`${lines.join('\n')}\n${detail.join('\n')}\n`)
-    expect(table.size).toBeGreaterThan(0)
+    expect(table.size).toBe(Object.keys(bounds).length)
+    // Each bound is about ten times the error the rule has now (the table of docs/probprog/review-rules-numerics.md): a rule that
+    // gets worse than that has changed what it computes, and the change is a decision, not an accident.
     for (const [name, r] of table) {
-      expect(r.z, `${name}: error of the mean in sd`).toBeLessThan(0.05)
-      expect(r.sd, `${name}: relative error of the sd`).toBeLessThan(0.05)
+      const bound = bounds[name] as number
+      expect(r.z, `${name}: error of the mean in sd`).toBeLessThan(bound)
+      expect(r.sd, `${name}: relative error of the sd`).toBeLessThan(bound)
     }
   })
 })
+
+/** The most the error of the mean (in standard deviations) and of the sd (relative) of each operator may be, over its scenarios. */
+const bounds: Readonly<Record<string, number>> = {
+  'apply abs': 1e-12,
+  'beta-two-shapes': 1e-2,
+  'dirichlet-concentration': 1e-9,
+  'gamma-product': 1e-9,
+  'gamma-rate': 1e-7,
+  'gaussian-gamma-precision': 1e-8,
+  'gaussian-mv-function-scale': 1e-9,
+  'gaussian-mv-precision-scale': 1e-5,
+  'gaussian-scale': 1e-5,
+  'greater-than': 1e-6,
+  'likelihood-pair': 1e-3,
+  'likelihood-site laplace': 1e-4,
+  'likelihood-site ordinal-probit': 1e-9,
+  'likelihood-site student-t': 1e-2,
+  'mixture-site': 1e-8,
+  'negative-binomial-dispersion': 1e-3,
+  'prior-site half-normal (log)': 1e-9,
+  'prior-site uniform': 1e-9,
+  product: 1e-8,
+}
