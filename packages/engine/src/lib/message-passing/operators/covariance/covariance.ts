@@ -9,6 +9,8 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { dgemv } from '../../../numerics/linalg/index.ts'
+import { add, div, mul, outer, reshape, sub, toFlat } from '../../../tensor/index.ts'
 import { arg, evidenceOrNaN } from '../../core/_messages.ts'
 import { rawSum, siteMessage, vectorOf } from '../../core/args.ts'
 import { defineOperator, messageRule } from '../../core/define.ts'
@@ -17,6 +19,7 @@ import { normalWishart, wishart, wishartParams } from '../../core/families-matri
 import { gaussianMvEta } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { float64Of, zeroArray } from '../../numerics/_arrays.ts'
 import { BARTLETT_ORDER, type WishartRule, wishartRule } from '../../numerics/_bartlett.ts'
 import { shiftedSum } from '../../numerics/_moments.ts'
 import {
@@ -83,7 +86,7 @@ function tiltOver(
     for (let j = 0; j < d; j++) v[i * d + j] = (x.cov[i * d + j] as number) + (mean.cov[i * d + j] as number)
   }
   // The scatter of the rows about their mean is always conjugate: |L|^((n - 1) / 2) exp(-tr(L scatter) / 2) is a Wishart message.
-  const scatterPart: Eta = [0.5 * (k - 1), ...Array.from({ length: d * d }, (_, e) => -0.5 * (rows.scatter[e] ?? 0))]
+  const scatterPart: Eta = [0.5 * (k - 1), ...toFlat(mul(rows.scatter, -0.5))]
   const base0 = k > 1 ? rawSum(cavity, scatterPart) : cavity
   const cav = wishartParams(base0, d)
   if (cav === undefined) throw new ImproperMessageError('a Wishart message has no density')
@@ -91,10 +94,7 @@ function tiltOver(
   let tr = 0
   for (let i = 0; i < d; i++)
     for (let j = 0; j < d; j++) tr += (v[i * d + j] as number) * (cav.mean[j * d + i] as number)
-  const differencePart: Eta = [
-    0.5,
-    ...Array.from({ length: d * d }, (_, e) => -0.5 * k * (r[Math.floor(e / d)] as number) * (r[e % d] as number)),
-  ]
+  const differencePart: Eta = [0.5, ...toFlat(outer(mul(r, -0.5 * k), r))]
   const conjugate = (k * tr) / d < 0.3 && !x.flat && !mean.flat
   const eta = conjugate ? rawSum(base0, differencePart) : base0
   const { nu, chol } = wishartCavity(eta, d)
@@ -117,7 +117,7 @@ function tiltOver(
   const { top, weights, total } = shiftedSum(logw)
   if (!Number.isFinite(top))
     throw new ImproperMessageError('mvn-wishart: the factor has no mass under the incoming messages')
-  const p = Float64Array.from(weights, (e) => e / total)
+  const p = float64Of(div(weights, total))
   return { logZ: family.logPartition(eta) + top + Math.log(total), rule, p }
 }
 
@@ -134,7 +134,7 @@ function messageToPrecision(c: OperatorContext): Eta {
     return conjugateMessage(r, d, rows)
   }
   const t = tiltOver(cavity, evaluatorOf(x, mean, d, rows), x, mean, d, rows)
-  const moments = new Array<number>(1 + d * d).fill(0)
+  const moments = zeroArray(1 + d * d)
   for (let k = 0; k < t.rule.count; k++) {
     const pk = t.p[k] as number
     moments[0] = (moments[0] as number) + pk * ((t.rule.logDet[k] as number) - t.rule.logDetBias)
@@ -171,7 +171,7 @@ function messageToGaussian(c: OperatorContext): Eta {
           pk * ((nodeCov[i * d + j] as number) + (nodeMean[i] as number) * (nodeMean[j] as number))
     }
   }
-  const cov = Array.from(s, (v, e) => v - (m[Math.floor(e / d)] as number) * (m[e % d] as number))
+  const cov = toFlat(sub(reshape(s, [d, d]), outer(m, m)))
   const proj = gaussianMvEta(Array.from(m), cov)
   const out = proj.map((v, i) => v - (side.flat ? 0 : ((arg(c, target).eta as Eta)[i] ?? 0)))
   return out
@@ -183,7 +183,7 @@ function momentsOf(a: Arg, d: number): { readonly mean: number[]; readonly secon
     const v = vectorOf(a)
     return {
       mean: Array.from(v),
-      second: Array.from({ length: d * d }, (_, e) => (v[Math.floor(e / d)] as number) * (v[e % d] as number)),
+      second: toFlat(outer(v, v)),
     }
   }
   const mo = a.family.moments(a.eta as Eta)
@@ -194,17 +194,10 @@ function momentsOf(a: Arg, d: number): { readonly mean: number[]; readonly secon
 function expectedOuter(c: OperatorContext, d: number): { readonly mean: number[]; readonly outer: number[] } {
   const x = momentsOf(arg(c, 0), d)
   const m = momentsOf(arg(c, 1), d)
-  const outer = Array.from({ length: d * d }, (_, e) => {
-    const i = Math.floor(e / d)
-    const j = e % d
-    return (
-      (x.second[e] as number) -
-      (x.mean[i] as number) * (m.mean[j] as number) -
-      (m.mean[i] as number) * (x.mean[j] as number) +
-      (m.second[e] as number)
-    )
-  })
-  return { mean: x.mean.map((v, i) => v - (m.mean[i] as number)), outer }
+  const outerMoment = toFlat(
+    add(sub(sub(reshape(x.second, [d, d]), outer(x.mean, m.mean)), outer(m.mean, x.mean)), reshape(m.second, [d, d])),
+  )
+  return { mean: x.mean.map((v, i) => v - (m.mean[i] as number)), outer: outerMoment }
 }
 
 /**
@@ -264,12 +257,7 @@ export const mvnWishart: FactorOperator = defineOperator({
       }
       const other = momentsOf(arg(c, 1 - c.to), d)
       const meanLambda = lambda.slice(1).map((v) => rows.count * v)
-      const hs = Array.from({ length: d }, (_, i) => {
-        let s = 0
-        for (let j = 0; j < d; j++) s += (meanLambda[i * d + j] as number) * (other.mean[j] as number)
-        return s
-      })
-      return { message: [...hs, ...meanLambda] }
+      return { message: [...dgemv(meanLambda, d, d, other.mean), ...meanLambda] }
     }),
   },
   evidence: {

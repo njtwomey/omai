@@ -4,6 +4,7 @@
  * think in (a mean and a variance, a shape and a rate). Each returns the factor to put in a graph's `factors`.
  */
 
+import { gridArray } from '../numerics/_arrays.ts'
 import { shiftedSum } from '../numerics/_moments.ts'
 import { findWindow } from '../numerics/_windows.ts'
 import { ParameterError } from './errors.ts'
@@ -198,7 +199,7 @@ export function densityMoments(
   start = 0,
 ): { readonly mean: number; readonly variance: number; readonly meanLog: number } {
   const [a, b] = findWindow(logDensity, lo, hi, Math.min(Math.max(start, lo), hi))
-  const xs = Float64Array.from({ length: FINE }, (_, i) => a + ((b - a) * i) / (FINE - 1))
+  const xs = gridArray(a, b, FINE)
   const lp = logDensity(xs)
   const { weights } = shiftedSum(lp)
   let z = 0

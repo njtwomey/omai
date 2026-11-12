@@ -215,6 +215,7 @@ function precisionTiltGrid(
   )
   // Given the precision, each Gaussian has its Kalman update: the tilted Gaussian is the mixture of the updates over the grid, with
   // the mean and variance of the mixture (the mean of the variances plus the variance of the means, centred).
+  // Exempt from the tensor rule, on purpose: the accumulators of the tilt loop over the grid nodes.
   const mx = new Float64Array(TILT_POINTS)
   const vx = new Float64Array(TILT_POINTS)
   const mu = new Float64Array(TILT_POINTS)

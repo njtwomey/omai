@@ -17,6 +17,8 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { ddot } from '../../../numerics/linalg/index.ts'
+import { ones } from '../../../tensor/index.ts'
 import { arg, isFlat } from '../../core/_messages.ts'
 import { allProper, etaOf, messageArg, numberParam, valueArg, vectorParam } from '../../core/args.ts'
 import { defineOperator, messageRule } from '../../core/define.ts'
@@ -26,6 +28,7 @@ import { gaussianMv, gaussianMvMoments } from '../../core/families-vector.ts'
 import { mergeParams, param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { ruleMessage } from '../../engine/dispatch.ts'
+import { float64Of, zeroArray, zeroFloat64 } from '../../numerics/_arrays.ts'
 import { spd } from '../../numerics/_dense.ts'
 import { logistic } from '../links/links.ts'
 import { probit } from '../links/truncation.ts'
@@ -68,16 +71,10 @@ function quadratic(sigma: Float64Array, a: readonly number[], out: Float64Array)
   return v
 }
 
-const dot = (a: readonly number[], b: ArrayLike<number>): number => {
-  let s = 0
-  for (let k = 0; k < a.length; k++) s += (a[k] ?? 0) * (b[k] ?? 0)
-  return s
-}
-
 /** The message `[sum nu_i a_i, sum lambda_i a_i a_i']` of the sites of the rows. */
 function sitesMessage(r: Rows, nu: ArrayLike<number>, lam: ArrayLike<number>): Eta {
   const { d } = r
-  const out = new Array<number>(d + d * d).fill(0)
+  const out = zeroArray(d + d * d)
   for (let i = 0; i < r.n; i++) {
     const n = nu[i] ?? 0
     const l = lam[i] ?? 0
@@ -119,7 +116,7 @@ interface Plate {
 function startSites(cavity: Eta, r: Rows, lam: Float64Array): void {
   const d = r.d
   if (spd(cavity.slice(d), d) !== undefined) return
-  const unit = sitesMessage(r, new Float64Array(r.n), new Float64Array(r.n).fill(1))
+  const unit = sitesMessage(r, zeroFloat64(r.n), float64Of(ones([r.n])))
   for (let s = 1e-3; s < 1e6; s *= 2) {
     if (
       spd(
@@ -128,6 +125,7 @@ function startSites(cavity: Eta, r: Rows, lam: Float64Array): void {
       ) === undefined
     )
       continue
+    // Exempt: the sites buffer of the plate is filled in place, as it is in the sweeps below.
     lam.fill(s)
     return
   }
@@ -159,7 +157,7 @@ function plateEp(link: FactorOperator, c: OperatorContext, r: Rows): Plate {
     for (let i = 0; i < r.n; i++) {
       const a = rowAt(r, i)
       const v = quadratic(covariance, a, sa)
-      const m = dot(a, mean)
+      const m = ddot(a, mean)
       const precision = 1 / v - (lam[i] ?? 0)
       if (!(v > 0 && precision > 0)) continue
       let site: Eta
@@ -217,7 +215,7 @@ function plateEvidence(link: FactorOperator, c: OperatorContext, r: Rows): numbe
   for (let i = 0; i < r.n; i++) {
     const a = rowAt(r, i)
     const v = quadratic(post.covariance, a, sa)
-    const m = dot(a, post.mean)
+    const m = ddot(a, post.mean)
     const precision = 1 / v - (lam[i] ?? 0)
     if (!(v > 0 && precision > 0)) return Number.NaN
     const cavityZ: Eta = [m / v - (nu[i] ?? 0), precision]
@@ -243,7 +241,7 @@ function plateVariational(link: FactorOperator, c: OperatorContext, r: Rows): Et
   for (let i = 0; i < r.n; i++) {
     const a = rowAt(r, i)
     const v = quadratic(covariance, a, sa)
-    const m = dot(a, mean)
+    const m = ddot(a, mean)
     const site = ruleMessage(link, {
       mode: 'vmp',
       to: 1,
@@ -266,7 +264,7 @@ function plateExpectedLog(link: FactorOperator, c: OperatorContext, r: Rows): nu
   for (let i = 0; i < r.n; i++) {
     const a = rowAt(r, i)
     const v = quadratic(covariance, a, sa)
-    const m = dot(a, mean)
+    const m = ddot(a, mean)
     total += (link.expectedLog as NonNullable<FactorOperator['expectedLog']>)({
       mode: 'vmp',
       to: 1,

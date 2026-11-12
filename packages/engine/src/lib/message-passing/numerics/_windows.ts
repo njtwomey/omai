@@ -6,6 +6,7 @@
 // uniform grid of the tilts that integrate over one such coordinate (`tiltGrid`) is here too, with the zoom that finds the mass inside
 // a window that is far wider than a likelihood leaves it.
 
+import { gridArray } from './_arrays.ts'
 import { shiftedSum } from './_moments.ts'
 import { digammaOf, trigammaOf } from './_scalar.ts'
 
@@ -178,7 +179,7 @@ export function uniformGrid(window: { readonly lo: number; readonly hi: number }
  * @returns The nodes.
  */
 export function uniformNodes(window: { readonly lo: number; readonly hi: number }, points: number): Float64Array {
-  return Float64Array.from({ length: points }, (_, i) => window.lo + ((window.hi - window.lo) * i) / (points - 1))
+  return gridArray(window.lo, window.hi, points)
 }
 
 /** The weights of a grid, relative to the largest, below which a node is outside the mass: the zoom cuts there. */
@@ -262,7 +263,7 @@ export function findWindow(
   let a = Math.max(lo, start - 5)
   let b = Math.min(hi, start + 5)
   for (let round = 0; round < 40; round++) {
-    const xs = Float64Array.from({ length: scan }, (_, i) => a + ((b - a) * i) / (scan - 1))
+    const xs = gridArray(a, b, scan)
     const lp = logDensity(xs)
     let top = Number.NEGATIVE_INFINITY
     for (const v of lp) if (v > top) top = v

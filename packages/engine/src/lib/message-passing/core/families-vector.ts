@@ -8,6 +8,7 @@
 
 import { type Json, logSumExpOf } from '../../base/index.ts'
 import { dgemv } from '../../numerics/linalg/index.ts'
+import { add, diagonal, outer, reshape, toArray, toFlat } from '../../tensor/index.ts'
 import { spd } from '../numerics/_dense.ts'
 import { digammaOf, lgammaOf } from '../numerics/_scalar.ts'
 import { ImproperMessageError, ParameterError } from './errors.ts'
@@ -63,9 +64,7 @@ export function gaussianMv(d: number): Family {
     isProper: (eta) => spd(eta.slice(d), d) !== undefined && eta.slice(0, d).every(Number.isFinite),
     moments: (eta) => {
       const { mean, covariance } = gaussianMvMoments(eta, d)
-      const second = Array.from(covariance)
-      for (let i = 0; i < d; i++)
-        for (let j = 0; j < d; j++) second[i * d + j] = (second[i * d + j] ?? 0) + (mean[i] ?? 0) * (mean[j] ?? 0)
+      const second = toFlat(add(reshape(covariance, [d, d]), outer(mean, mean)))
       return [...mean, ...second]
     },
     fromMoments: (m) => {
@@ -107,11 +106,11 @@ export function gaussianMv(d: number): Family {
       const factor = spd(eta.slice(d), d)
       if (factor === undefined) return { h: eta.slice(0, d), precision: eta.slice(d) }
       const covariance = factor.inverse()
-      const rows: number[][] = Array.from({ length: d }, (_, i) => Array.from(covariance.subarray(i * d, (i + 1) * d)))
+      const matrix = reshape(covariance, [d, d])
       return {
         mean: Array.from(factor.solve(eta.slice(0, d))),
-        covariance: rows,
-        variance: Array.from({ length: d }, (_, i) => covariance[i * d + i] ?? 0),
+        covariance: toArray(matrix) as number[][],
+        variance: toFlat(diagonal(matrix)),
       }
     },
   })

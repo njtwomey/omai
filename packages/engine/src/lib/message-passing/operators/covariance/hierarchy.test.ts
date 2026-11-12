@@ -4,10 +4,12 @@
 import { describe, expect, it } from 'vitest'
 import { importanceOfGroup, type Reading } from '../../../../testing/covariance-group.ts'
 import { nodesOn } from '../../../../testing/message-passing.ts'
+import { eye, mul, toFlat } from '../../../tensor/index.ts'
 import { messageArg, valueArg } from '../../core/args.ts'
 import { wishart, wishartEta, wishartParams } from '../../core/families-matrix.ts'
 import { gaussianMv, gaussianMvEta } from '../../core/families-vector.ts'
 import type { Arg, Eta, Memo, OperatorContext } from '../../core/types.ts'
+import { constantArray, zeroArray } from '../../numerics/_arrays.ts'
 import { spd } from '../../numerics/_dense.ts'
 import { mvnWishart } from './covariance.ts'
 import { mvnWishartGroup } from './hierarchy.ts'
@@ -259,8 +261,7 @@ describe('mvn-wishart-group: one site for a group sharing a mean and a precision
         [0.5, 0.2, 0.8, -0.7],
         [-0.2, 0.7, -0.3, 0.1],
       ].map((r) => r.slice(0, d))
-      const identity = (v: number): number[] =>
-        Array.from({ length: d * d }, (_, e) => (e % d === Math.floor(e / d) ? v : 0))
+      const identity = (v: number): number[] => toFlat(mul(eye(d), v))
       const prior = wishartEta(d + 2, identity(0.5), d)
       const exactVectors = rows.map((r) => messageArg(gaussianMv(d), gaussianMvEta(r, identity(1e-9))))
       // a mean that is known (a tight cavity): the rows about it, all of their df; a mean that is flat: the rows about their own mean, one df fewer
@@ -273,11 +274,11 @@ describe('mvn-wishart-group: one site for a group sharing a mean and a precision
         )
         const args = [
           ...exactVectors,
-          messageArg(gaussianMv(d), gaussianMvEta(Array(d).fill(0.1), identity(variance))),
+          messageArg(gaussianMv(d), gaussianMvEta(constantArray(d, 0.1), identity(variance))),
           messageArg(Wd, prior),
         ]
         const message = mvnWishartGroup.ep?.({ ...ctx(rows.length + 1, args, rows.length) }).message as number[]
-        const scatter = new Array<number>(d * d).fill(0)
+        const scatter = zeroArray(d * d)
         for (const r of rows)
           for (let a = 0; a < d; a++)
             for (let b = 0; b < d; b++)
@@ -301,8 +302,7 @@ describe('mvn-wishart-group: one site for a group sharing a mean and a precision
     'in dimension %d the matrix and the mean match an importance-sampling reference',
     (d) => {
       const Wd = wishart(d)
-      const identity = (v: number): number[] =>
-        Array.from({ length: d * d }, (_, e) => (e % d === Math.floor(e / d) ? v : 0))
+      const identity = (v: number): number[] => toFlat(mul(eye(d), v))
       const base = [
         [0.9, -0.4, 0.3, 0.5],
         [-0.6, 0.5, 0.1, -0.2],
@@ -310,7 +310,7 @@ describe('mvn-wishart-group: one site for a group sharing a mean and a precision
         [0.5, 0.2, 0.8, -0.7],
       ]
       const vs: Reading[] = base.map((r, j) => ({ m: r.slice(0, d), v: identity(0.05 + 0.02 * j) }))
-      const population: Reading = { m: Array(d).fill(0.1) as number[], v: identity(4) }
+      const population: Reading = { m: constantArray(d, 0.1) as number[], v: identity(4) }
       const cavity = wishartEta(d + 2, identity(0.5), d)
       const g = gaussianMv(d)
       const args = [
@@ -365,8 +365,7 @@ describe('mvn-wishart-group: one site for a group sharing a mean and a precision
 
   it('with one vector in dimension 4 it is the per-vector factor (which has the same three-node rule there)', () => {
     const d = 4
-    const identity = (v: number): number[] =>
-      Array.from({ length: d * d }, (_, e) => (e % d === Math.floor(e / d) ? v : 0))
+    const identity = (v: number): number[] => toFlat(mul(eye(d), v))
     const g = gaussianMv(d)
     const one = [
       messageArg(g, gaussianMvEta([0.9, -0.4, 0.3, 0.5], identity(0.1))),
