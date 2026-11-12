@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { massOf, messageArg, valueArg } from '../../core/args.ts'
+import { projectSite } from '../../core/define.ts'
 import { gamma, gammaEta, gaussian, gaussianEta } from '../../core/families.ts'
 import type { Arg, Eta, FactorOperator, Family } from '../../core/types.ts'
 import { digammaOf, lgammaOf } from '../../numerics/_scalar.ts'
@@ -141,6 +142,19 @@ describe('likelihood-pair: tilted moments and log evidence against a brute-force
       evidence: 3e-3,
     })
     check('student-t-scale', -1.1, { df: 5.5 }, [gaussianCavity(0, 1.5), gammaCavity(6, 5)])
+  })
+  it('laplace-scale at a large location: the message to the location keeps the narrow variance (no second-moment cancellation)', () => {
+    // y = 1e6 with a log scale near log 1e-3 under a wide location cavity centred on it: the tilted sd of the location is about 1e-3, so
+    // its variance (about 2e-6) is lost when handed on as `E x^2 - (E x)^2` with E x^2 about 1e12
+    const params = { likelihood: 'laplace-scale', y: 1e6 }
+    const args = [messageArg(gaussian, gaussianEta(1e6, 1)), messageArg(gaussian, gaussianEta(Math.log(1e-3), 0.01))]
+    const tilt = op.tilted?.({ mode: 'ep', to: 0, args, params, power: 1 })
+    expect(tilt?.centred?.variance).toBeGreaterThan(1e-7)
+    expect(tilt?.centred?.variance).toBeLessThan(1e-5)
+    const message = projectSite(args[0] as Arg, tilt as never, 1)
+    // the tilted precision is 1 + the site's, which is about 1 / variance: the message is proper and of that size
+    expect(message[1]).toBeGreaterThan(1e4)
+    expect((message[1] as number) + 1).toBeCloseTo(1 / (tilt?.centred?.variance as number), -3)
   })
   it('student-t-df, a gamma df', () => {
     check('student-t-df', -1.1, { scale: 1 }, [gaussianCavity(0, 1.5), gammaCavity(3, 0.4)])

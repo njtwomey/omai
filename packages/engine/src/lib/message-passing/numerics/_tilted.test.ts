@@ -19,6 +19,36 @@ describe('findWindow', () => {
     expect(b).toBeGreaterThan(250)
     expect(a).toBeGreaterThanOrEqual(-1000)
   })
+
+  it('throws when nothing finite is found on the whole bounded support, at once', () => {
+    let calls = 0
+    const none = (xs: Float64Array): Float64Array => {
+      calls++
+      return Float64Array.from(xs, () => Number.NEGATIVE_INFINITY)
+    }
+    expect(() => findWindow(none, -3, 3, 0)).toThrow(ImproperMessageError)
+    expect(() => findWindow(none, -3, 3, 0)).toThrow('not finite anywhere on [-3, 3]')
+    // the first window already reaches the ends of the support after one widening: not 40 identical scans
+    expect(calls).toBeLessThan(2 * 4)
+  })
+
+  it('throws, with the window it ended on, when an unbounded line has no finite density in 40 widenings', () => {
+    const none = (xs: Float64Array): Float64Array => Float64Array.from(xs, () => Number.NEGATIVE_INFINITY)
+    expect(() => findWindow(none, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY, 0)).toThrow(
+      /not finite on any window searched \(last window \[/,
+    )
+  })
+
+  it('throws when the mass does not settle within the rounds (a needle the scan keeps missing the width of)', () => {
+    // One node carries the mass in every scan, wherever the scan is: each round narrows onto it and the window never fills
+    const needle = (xs: Float64Array): Float64Array => {
+      let best = 0
+      for (let i = 1; i < xs.length; i++)
+        if (Math.abs((xs[i] as number) - 0.1) < Math.abs((xs[best] as number) - 0.1)) best = i
+      return Float64Array.from(xs, (_, i) => (i === best ? 0 : -100))
+    }
+    expect(() => findWindow(needle, -1, 1, 0, 51)).toThrow(/did not settle within 40 rounds/)
+  })
 })
 
 describe('tiltedByQuadrature with a hint', () => {
