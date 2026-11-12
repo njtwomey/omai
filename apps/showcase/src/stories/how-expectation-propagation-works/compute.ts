@@ -1,11 +1,11 @@
 /**
  * The computation of 'How expectation propagation works': Minka's clutter problem, the example expectation propagation (EP) was
- * first explained with. One unknown location has a wide prior, and eight measurements each come from the location (a bell curve of
- * width one around it) or, with probability 0.3, are clutter (a much wider bell curve around zero). The library's own EP, in
+ * first explained with. One unknown location has a wide prior, and six measurements each come from the location (a bell curve of
+ * width one around it) or, with probability 0.4, are clutter (a much wider bell curve around zero). The library's own EP, in
  * `omai-engine/message-passing`, runs on the factor graph of that model one factor at a time, and the run is read three ways:
  * every update of the first sweep, the whole of one update taken apart (the cavity, the tilted curve, the bell that matches it and
  * the new stand-in, worked out here with tensor operations and checked against the engine's own message), and the beliefs and
- * stand-ins after every sweep. The exact posterior (a grid) is beside it. The result is plain data; the seed decides the eight values.
+ * stand-ins after every sweep. The exact posterior (a grid) is beside it. The result is plain data; the seed decides the six values.
  * It runs in the story's worker, so the engine is bundled there and not in the page. The regions are the code shown.
  */
 
@@ -17,6 +17,8 @@ import { add, div, item, linspace, log, mul, square, sub, sum, take, tensor, toF
 import { metricSeries, session } from 'omai-engine/trace'
 // endregion
 
+import type { EpPath, MpState } from 'omai-engine/message-passing'
+import type { Config, Session } from 'omai-engine/trace'
 import type { Say } from '../../kit/protocol.ts'
 import { CLUTTER_CHANCE, CLUTTER_SD, MAX_SWEEPS, ROWS, SHOWN_SWEEP, TOLERANCE } from './data.ts'
 
@@ -115,14 +117,30 @@ const bellOf = (m: readonly number[]): Bell | null =>
 
 const messageOf = (m: readonly number[]): Message => ({ shift: m[0] ?? 0, precision: m[1] ?? 0 })
 
-type EpSession = ReturnType<typeof epSession>
+/** A session of the library's EP on the clutter graph. */
+type EpSession = Session<MpState, Config, EpPath>
 
-/** A session of the library's EP on the graph, one factor per step. */
-function epSession(graph: ReturnType<typeof clutterGraph>) {
+/**
+ * The run of the story: make the problem from the seed, run EP on it factor by factor, take one update apart and read the beliefs
+ * and stand-ins of every sweep.
+ *
+ * @param seed - Decides the measurements.
+ * @param say - Says what is happening, for the play button.
+ * @param size - How many measurements.
+ * @returns The result.
+ */
+export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE): Result {
+  say('Making six measurements, some of them clutter')
+  // region model
+  // the model as a factor graph: one unknown, a prior factor and one clutter factor for each measurement
+  const problem = clutterProblem(key(seed), { n: size.rows, weight: CLUTTER_CHANCE })
+  const graph = clutterGraph(problem)
+  // endregion
+  say('Passing messages, one factor at a time')
   // region infer
-  // numeric EP: the clutter factors have no closed form, so the engine finds their moments by quadrature
+  // numeric EP: the clutter factors have no closed form, so the engine integrates them
   const method = numericEpMethod(graph)
-  // one step is one factor's update; a sweep is every factor once
+  // one step is one factor's update, and a sweep is every factor once
   const run = session(method, {
     steps: MAX_SWEEPS * graph.factors.length + 2,
     mode: 'eager',
@@ -130,96 +148,6 @@ function epSession(graph: ReturnType<typeof clutterGraph>) {
     config: { granularity: 'factor', tol: TOLERANCE, restarts: 0, maxSweeps: MAX_SWEEPS },
   })
   // endregion
-  return run
-}
-
-/**
- * One update of EP, worked out step by step from the stand-ins before it: (a) the cavity, (b) the tilted curve on a grid, (c) the
- * bell with its mean and variance, (d) the new stand-in. The engine's own message for the same update is read for comparison.
- *
- * @param run - The session.
- * @param points - The measurements.
- * @param sweep - The sweep (1 is the first).
- * @param factor - The factor: 1 to rows for a measurement.
- * @returns The update taken apart, or undefined when the cavity has no bell.
- */
-function takeApart(run: EpSession, points: readonly number[], sweep: number, factor: number): Taken | undefined {
-  const factors = points.length + 1
-  const before = (sweep - 1) * factors + factor
-  const point = points[factor - 1] as number
-  // region update
-  // the stand-ins of all the factors before this update, one row each: (precision times mean, precision)
-  const standIns = tensor(run.stateAt(before).messages)
-  // the approximation is the product of the stand-ins, which in natural parameters is their sum
-  const belief = sum(standIns, 0)
-  const own = take(standIns, factor, 0)
-  // (a) the cavity: the approximation with this factor's own stand-in taken out
-  const cavity = sub(belief, own)
-  const [shift, precision] = toFlat(cavity) as [number, number]
-  // a cavity with no precision is not a bell, and this update cannot be worked out
-  if (!(precision > 0)) return undefined
-  const cavityMean = shift / precision
-  const cavitySd = 1 / Math.sqrt(precision)
-  // (b) the tilted curve: the cavity times the real factor, on a grid of values of the location
-  const grid = linspace(cavityMean - 6 * cavitySd, cavityMean + 6 * cavitySd, 401)
-  const spacing = (12 * cavitySd) / 400
-  const cavityDensity = normal(cavityMean, cavitySd).prob(grid)
-  // the real factor: the point is a measurement of the location, or it is clutter
-  const asMeasurement = mul(1 - CLUTTER_CHANCE, normal(grid, 1).prob(point))
-  const asClutter = mul(CLUTTER_CHANCE, normal(0, CLUTTER_SD).prob(point))
-  const factorValues = add(asMeasurement, asClutter)
-  const tilted = mul(cavityDensity, factorValues)
-  const density = div(tilted, mul(sum(tilted), spacing))
-  // (c) the bell with the same mean and variance as the tilted curve
-  const tiltedMean = item(mul(sum(mul(grid, density)), spacing))
-  const tiltedVariance = item(mul(sum(mul(square(sub(grid, tiltedMean)), density)), spacing))
-  const matched = tensor([tiltedMean / tiltedVariance, 1 / tiltedVariance])
-  // (d) the new stand-in: the matched bell divided by the cavity
-  const standIn = sub(matched, cavity)
-  // endregion
-  const bell = normal(tiltedMean, Math.sqrt(tiltedVariance)).prob(grid)
-  const floor = 1e-300
-  const divergence = item(mul(sum(mul(density, sub(log(add(density, floor)), log(add(bell, floor))))), spacing))
-  const engine = run.stateAt(before + 1).messages[factor] as readonly number[]
-  const sent = toFlat(standIn)
-  return {
-    sweep,
-    factor,
-    point,
-    before: messageOf(toFlat(belief)),
-    own: messageOf(toFlat(own)),
-    cavity: messageOf(toFlat(cavity)),
-    tilted: { mean: tiltedMean, sd: Math.sqrt(tiltedVariance) },
-    matched: messageOf(toFlat(matched)),
-    standIn: messageOf(sent),
-    engineGap: Math.max(Math.abs((engine[0] ?? 0) - (sent[0] ?? 0)), Math.abs((engine[1] ?? 0) - (sent[1] ?? 0))),
-    divergence,
-    grid: toFlat(grid),
-    cavityDensity: toFlat(cavityDensity),
-    factorValues: toFlat(factorValues),
-    tiltedDensity: toFlat(density),
-    matchedDensity: toFlat(bell),
-  }
-}
-
-/**
- * The run of the story: make the problem from the seed, run EP on it factor by factor, take one update apart and read the beliefs
- * and stand-ins of every sweep.
- *
- * @param seed - Decides the eight values.
- * @param say - Says what is happening, for the play button.
- * @param size - How many measurements.
- * @returns The result.
- */
-export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE): Result {
-  say('Making eight measurements, some of them clutter')
-  // region model
-  // the model as a factor graph: one unknown, a prior factor and one clutter factor for each measurement
-  const problem = clutterProblem(key(seed), { n: size.rows, weight: CLUTTER_CHANCE })
-  const graph = clutterGraph(problem)
-  // endregion
-  say('Passing messages, one factor at a time')
-  const run = epSession(graph)
   const factors = graph.factors.length
   const sweeps = Math.floor(run.t / factors)
   say('Reading the first sweep and one update in detail')
@@ -298,8 +226,77 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
 /**
  * The run of the story.
  *
- * @param seed - Decides the eight values.
+ * @param seed - Decides the measurements.
  * @param say - Says what is happening.
  * @returns The result.
  */
 export const run = (seed: number, say?: Say): Result => fit(seed, say, DEFAULT_SIZE)
+
+/**
+ * One update of EP, worked out step by step from the stand-ins before it: (a) the cavity, (b) the tilted curve on a grid, (c) the
+ * bell with its mean and variance, (d) the new stand-in. The engine's own message for the same update is read for comparison.
+ *
+ * @param run - The session.
+ * @param points - The measurements.
+ * @param sweep - The sweep (1 is the first).
+ * @param factor - The factor: 1 to rows for a measurement.
+ * @returns The update taken apart, or undefined when the cavity has no bell.
+ */
+function takeApart(run: EpSession, points: readonly number[], sweep: number, factor: number): Taken | undefined {
+  const factors = points.length + 1
+  const before = (sweep - 1) * factors + factor
+  const point = points[factor - 1] as number
+  // region update
+  // every factor's stand-in before this update, one row each: (precision times mean, precision)
+  const standIns = tensor(run.stateAt(before).messages)
+  // the approximation is the product of the stand-ins: in natural parameters, their sum
+  const belief = sum(standIns, 0)
+  const own = take(standIns, factor, 0)
+  // (a) the cavity: the approximation without this factor's own stand-in
+  const cavity = sub(belief, own)
+  const [shift, precision] = toFlat(cavity) as [number, number]
+  // a cavity with no positive precision is not a bell: this update cannot be worked out
+  if (!(precision > 0)) return undefined
+  const cavityMean = shift / precision
+  const cavitySd = 1 / Math.sqrt(precision)
+  // (b) the tilted curve: the cavity times the real factor, on a grid of locations
+  const grid = linspace(cavityMean - 6 * cavitySd, cavityMean + 6 * cavitySd, 401)
+  const spacing = (12 * cavitySd) / 400
+  const cavityDensity = normal(cavityMean, cavitySd).prob(grid)
+  // the real factor: the point is a measurement of the location, or it is clutter
+  const asMeasurement = mul(1 - CLUTTER_CHANCE, normal(grid, 1).prob(point))
+  const asClutter = mul(CLUTTER_CHANCE, normal(0, CLUTTER_SD).prob(point))
+  const factorValues = add(asMeasurement, asClutter)
+  const tilted = mul(cavityDensity, factorValues)
+  const density = div(tilted, mul(sum(tilted), spacing))
+  // (c) the bell with the same mean and variance as the tilted curve
+  const tiltedMean = item(mul(sum(mul(grid, density)), spacing))
+  const tiltedVariance = item(mul(sum(mul(square(sub(grid, tiltedMean)), density)), spacing))
+  const matched = tensor([tiltedMean / tiltedVariance, 1 / tiltedVariance])
+  // (d) the new stand-in: the matched bell divided by the cavity
+  const standIn = sub(matched, cavity)
+  // endregion
+  const bell = normal(tiltedMean, Math.sqrt(tiltedVariance)).prob(grid)
+  const floor = 1e-300
+  const divergence = item(mul(sum(mul(density, sub(log(add(density, floor)), log(add(bell, floor))))), spacing))
+  const engine = run.stateAt(before + 1).messages[factor] as readonly number[]
+  const sent = toFlat(standIn)
+  return {
+    sweep,
+    factor,
+    point,
+    before: messageOf(toFlat(belief)),
+    own: messageOf(toFlat(own)),
+    cavity: messageOf(toFlat(cavity)),
+    tilted: { mean: tiltedMean, sd: Math.sqrt(tiltedVariance) },
+    matched: messageOf(toFlat(matched)),
+    standIn: messageOf(sent),
+    engineGap: Math.max(Math.abs((engine[0] ?? 0) - (sent[0] ?? 0)), Math.abs((engine[1] ?? 0) - (sent[1] ?? 0))),
+    divergence,
+    grid: toFlat(grid),
+    cavityDensity: toFlat(cavityDensity),
+    factorValues: toFlat(factorValues),
+    tiltedDensity: toFlat(density),
+    matchedDensity: toFlat(bell),
+  }
+}

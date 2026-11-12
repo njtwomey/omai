@@ -9,7 +9,17 @@ import type { Result } from './compute.ts'
 import source from './compute.ts?raw'
 import { CLUTTER_CHANCE, CLUTTER_SD, MAX_SWEEPS, PRIOR_SD, ROWS, SHOWN_SWEEP, TOLERANCE } from './data.ts'
 import { AnswerFigure, ChangeFigure, GraphArt, SweepsFigure, UpdateFigure } from './Figures.tsx'
-import { bellText, clutterPositions, fixed, listOf, messageText, readExact, readSweeps, sci } from './reading.ts'
+import {
+  bellText,
+  clutterPositions,
+  fixed,
+  listOf,
+  messageText,
+  readExact,
+  readSweeps,
+  sci,
+  weakOnes,
+} from './reading.ts'
 
 const FIRST_SEED = 37
 
@@ -35,7 +45,10 @@ function Table(props: {
         <thead>
           <tr>
             {props.head.map((h) => (
-              <th key={h} className="border-b border-line px-2.5 py-1.5 text-left font-semibold text-muted">
+              <th
+                key={h}
+                className="whitespace-nowrap border-b border-line px-2.5 py-1.5 text-left font-semibold text-muted"
+              >
                 {h}
               </th>
             ))}
@@ -47,7 +60,7 @@ function Table(props: {
             <tr key={i} className="border-b border-line last:border-0">
               {row.map((cell, j) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: the cells are a fixed list, never reordered
-                <td key={j} className="px-2.5 py-1.5 align-top">
+                <td key={j} className="whitespace-nowrap px-2.5 py-1.5 align-top">
                   {cell}
                 </td>
               ))}
@@ -111,8 +124,7 @@ export default function Story(): ReactNode {
       </p>
 
       <Formula>
-        posterior(θ) ∝ N(θ; 0, {PRIOR_SD}²) × ∏ᵢ [ {fixed(1 - CLUTTER_CHANCE, 1)} · N(yᵢ; θ, 1²) +{' '}
-        {fixed(CLUTTER_CHANCE, 1)} · N(yᵢ; 0, {fixed(CLUTTER_SD, 1)}²) ]
+        {`posterior(θ) ∝ N(θ; 0, ${PRIOR_SD}²)\n               × ∏ᵢ [ ${fixed(1 - CLUTTER_CHANCE, 1)} · N(yᵢ; θ, 1²)\n                      + ${fixed(CLUTTER_CHANCE, 1)} · N(yᵢ; 0, ${fixed(CLUTTER_SD, 1)}²) ]`}
       </Formula>
 
       <p>
@@ -189,12 +201,12 @@ export default function Story(): ReactNode {
         stand-ins.
       </p>
 
-      <ol>
+      <ol className="list-decimal space-y-4 pl-6">
         <li>
           Take the factor&rsquo;s own stand-in out. Divide <code>q</code> by <code>g_k</code>. The result is the cavity:
           what we believe about <code>θ</code> from everything except factor <code>k</code>. In natural parameters,
           subtract the message.
-          <Formula>{'cavity(θ) = q(θ) / g_k(θ)        (h, J) = (h_q − h_k, J_q − J_k)'}</Formula>
+          <Formula>{'cavity(θ) = q(θ) / g_k(θ)\n(h, J) = (h_q − h_k, J_q − J_k)'}</Formula>
         </li>
         <li>
           Multiply the cavity by the real factor, not its stand-in. The result is the tilted distribution: what we would
@@ -209,14 +221,12 @@ export default function Story(): ReactNode {
           distribution. This is the only step that uses the real factor, and the only one that can be hard. The library
           has closed forms for the factors that allow them and numerical integration for the rest; the clutter factor
           here is a numerical one.
-          <Formula>
-            {'m = ∫ θ · tilted(θ) dθ        v = ∫ (θ − m)² · tilted(θ) dθ        J = 1 / v,  h = m / v'}
-          </Formula>
+          <Formula>{'m = ∫ θ · tilted(θ) dθ\nv = ∫ (θ − m)² · tilted(θ) dθ\nJ = 1 / v,  h = m / v'}</Formula>
         </li>
         <li>
           Divide the matched bell by the cavity. The result is the new stand-in. In natural parameters, subtract the
           cavity from the matched bell.
-          <Formula>{'g_k(new) = matched(θ) / cavity(θ)        (h, J) = (h_m − h_cavity, J_m − J_cavity)'}</Formula>
+          <Formula>{'g_k(new) = matched(θ) / cavity(θ)\n(h, J) = (h_m − h_cavity, J_m − J_cavity)'}</Formula>
         </li>
         <li>
           Replace the old stand-in by the new one. The approximation is now the cavity times the new stand-in, which is
@@ -225,7 +235,7 @@ export default function Story(): ReactNode {
         </li>
       </ol>
 
-      <p>
+      <p style={{ marginTop: '1.25em' }}>
         To see these steps with real numbers we need a run. Press play once. In a background worker the page draws{' '}
         {ROWS} measurements from the seed, runs omai&rsquo;s EP on the model above one factor at a time until it
         settles, then takes one update apart with tensor operations and compares it with the message the engine itself
@@ -257,6 +267,8 @@ function RunStory(props: { readonly result: Result }): ReactNode {
   const sweeps = readSweeps(result)
   const exact = readExact(result)
   const clutter = clutterPositions(result)
+  const weak = weakOnes(result)
+  const weakAreClutter = weak.every((j) => result.clutter[j - 1] === true)
   const cavityMean = taken === undefined ? Number.NaN : taken.cavity.shift / taken.cavity.precision
   const cavitySd = taken === undefined ? Number.NaN : 1 / Math.sqrt(taken.cavity.precision)
   const beforeBell =
@@ -433,8 +445,9 @@ function RunStory(props: { readonly result: Result }): ReactNode {
       {result.settled ? (
         <p>
           This run stopped after <span className="num">{result.sweeps}</span> sweeps, when the largest change was{' '}
-          <span className="num">{sci(sweeps.lastChange)}</span>, below the tolerance. Nothing more would change: the
-          stand-ins are a fixed point of the updates, each one the answer to the others.
+          <span className="num">{sci(sweeps.lastChange)}</span>, below the tolerance. Another sweep would move the
+          belief by less than that. The stand-ins have reached a fixed point of the updates: each one is the right
+          answer given the others.
         </p>
       ) : (
         <p>
@@ -462,12 +475,12 @@ function RunStory(props: { readonly result: Result }): ReactNode {
         .
       </p>
 
-      <Figure caption="The first sweep, update by update. Cavity: what the other factors say. New stand-in: mean, with the precision in brackets. After: the approximation once the stand-in is in place.">
+      <Figure caption="The first sweep, update by update. Cavity: what the other factors say. New stand-in: mean, with the precision in brackets. After: the approximation once the stand-in is in place. The factors are the prior and the measurements y1 to y6. A stand-in with a precision near zero has a mean that means little, because the mean is h divided by a number close to zero.">
         <Table
           head={['update', 'factor', 'cavity', 'new stand-in', 'approximation after']}
           rows={firstUpdates.map((s, i) => [
             i + 1,
-            s.factor === 0 ? 'prior' : `measurement ${s.factor} (y = ${fixed(result.points[s.factor - 1] as number)})`,
+            s.factor === 0 ? 'prior' : `y${s.factor} = ${fixed(result.points[s.factor - 1] as number)}`,
             s.cavity === null ? 'flat' : bellText(s.cavity),
             messageText(s.standIn),
             bellText(s.belief),
@@ -507,12 +520,12 @@ function RunStory(props: { readonly result: Result }): ReactNode {
         precision. The last row is the approximation, the product of the column.
       </p>
 
-      <Figure caption="The stand-in of every factor after some of the sweeps: mean, with the precision in brackets. A negative precision means the stand-in is not a bell. The last row is the approximation after that sweep.">
+      <Figure caption="The stand-in of every factor after some of the sweeps: mean, with the precision in brackets. A negative precision means the stand-in is not a bell. A precision near zero means the stand-in says almost nothing. The last row is the approximation after that sweep.">
         <Table
           head={['factor', ...sweepTable.map((s) => `after sweep ${s.sweep}`)]}
           rows={[
             ...Array.from({ length: result.rows + 1 }, (_, j) => [
-              j === 0 ? 'prior' : `measurement ${j} (y = ${fixed(result.points[j - 1] as number)})`,
+              j === 0 ? 'prior' : `y${j} = ${fixed(result.points[j - 1] as number)}`,
               ...sweepTable.map((s) => messageText(s.messages[j] ?? { shift: 0, precision: 0 })),
             ]),
             ['approximation', ...sweepTable.map((s) => beliefAfter(s.sweep))],
@@ -531,8 +544,19 @@ function RunStory(props: { readonly result: Result }): ReactNode {
             {' '}
             At the end <span className="num">{sweeps.notBells}</span> of the {result.rows} measurement stand-ins{' '}
             {sweeps.notBells === 1 ? 'has' : 'have'} a precision that is not positive.{' '}
-            {sweeps.notBells === 1 ? 'It is' : 'They are'} not bells, and that is fine because their sum with the others
-            is.
+            {sweeps.notBells === 1 ? 'It is not a bell' : 'They are not bells'}, and that is fine because the sum with
+            the others is.
+          </>
+        )}{' '}
+        {weak.length === 0 ? null : (
+          <>
+            {' '}
+            {weak.length === 1 ? 'The stand-in of' : 'The stand-ins of'} {listOf(weak.map((j) => `y${j}`))}{' '}
+            {weak.length === 1 ? 'has' : 'have'} a precision near zero or below, so{' '}
+            {weak.length === 1 ? 'it says' : 'they say'} almost nothing about the location: the other measurements agree
+            with each other, and EP has given {weak.length === 1 ? 'this one' : 'these'} little weight. The generator{' '}
+            {weakAreClutter ? 'did' : 'did not'} make {weak.length === 1 ? 'it' : 'them'} {weakAreClutter ? '' : 'all '}
+            clutter.
           </>
         )}{' '}
         What EP reports is the last row: a bell with mean <span className="num">{fixed(result.ep.mean)}</span> and sd{' '}
@@ -552,38 +576,33 @@ function RunStory(props: { readonly result: Result }): ReactNode {
         <AnswerFigure result={result} />
       </Figure>
 
-      {exact.close ? (
-        <p>
-          In this run EP&rsquo;s bell has mean <span className="num">{fixed(result.ep.mean)}</span> and sd{' '}
-          <span className="num">{fixed(result.ep.sd)}</span>. The exact posterior has mean{' '}
-          <span className="num">{fixed(result.exact.mean)}</span> and sd{' '}
-          <span className="num">{fixed(result.exact.sd)}</span>. The two agree closely: the means are{' '}
-          {fixed(exact.meanGap, 2)} exact sd apart, and the spread of EP&rsquo;s bell is {fixed(exact.spreadRatio, 2)}{' '}
-          times the exact one. Here a single bell is a good description of the posterior.
-        </p>
-      ) : (
-        <p>
-          In this run EP&rsquo;s bell has mean <span className="num">{fixed(result.ep.mean)}</span> and sd{' '}
-          <span className="num">{fixed(result.ep.sd)}</span>. The exact posterior has mean{' '}
-          <span className="num">{fixed(result.exact.mean)}</span> and sd{' '}
-          <span className="num">{fixed(result.exact.sd)}</span>. They differ: the means are {fixed(exact.meanGap, 2)}{' '}
-          exact sd apart, and the spread of EP&rsquo;s bell is {fixed(exact.spreadRatio, 2)} times the exact one.{' '}
-          {exact.humps > 1
+      <p>
+        In this run EP&rsquo;s bell has mean <span className="num">{fixed(result.ep.mean)}</span> and sd{' '}
+        <span className="num">{fixed(result.ep.sd)}</span>. The exact posterior has mean{' '}
+        <span className="num">{fixed(result.exact.mean)}</span> and sd{' '}
+        <span className="num">{fixed(result.exact.sd)}</span>. The means are {fixed(exact.meanGap, 2)} exact sd apart.
+        The spread of EP&rsquo;s bell is {fixed(exact.spreadRatio, 2)} times the exact one
+        {exact.spreadRatio < 0.95
+          ? ', so EP reports more certainty than the exact posterior has.'
+          : exact.spreadRatio > 1.05
+            ? ', so EP reports less certainty than the exact posterior has.'
+            : '.'}{' '}
+        {exact.close
+          ? 'The two agree closely. Here one bell is a good description of the posterior.'
+          : exact.humps > 1
             ? `The exact posterior has ${exact.humps} humps, because the data can be explained in more than one way, and one bell cannot cover them.`
-            : 'The exact posterior is not a bell, and one bell cannot match it everywhere.'}{' '}
-          {result.settled ? '' : 'This run also did not settle, so the bell shown is where it stopped.'} This is where
-          EP is an approximation and not the answer.
-        </p>
-      )}
+            : 'The exact posterior is not a bell, so no single bell matches it everywhere. This is where EP is an approximation and not the answer.'}{' '}
+        {result.settled ? '' : 'This run also did not settle, so the bell shown is where it stopped.'}
+      </p>
 
       {result.logEvidence === undefined ? null : (
         <p>
           EP also gives an estimate of the evidence, the total that the posterior is divided by: how probable the model
           thought the measurements were. It is built from the sizes of the tilted curves met along the way, and it comes
           with no extra computation. The run&rsquo;s estimate of the log evidence is{' '}
-          <span className="num">{fixed(result.logEvidence, 2)}</span>. The grid gives{' '}
-          <span className="num">{fixed(result.exact.logEvidence, 2)}</span>, a difference of{' '}
-          <span className="num">{fixed(Math.abs(result.logEvidence - result.exact.logEvidence), 2)}</span>.
+          <span className="num">{fixed(result.logEvidence, 3)}</span>. The grid gives{' '}
+          <span className="num">{fixed(result.exact.logEvidence, 3)}</span>, a difference of{' '}
+          <span className="num">{fixed(Math.abs(result.logEvidence - result.exact.logEvidence), 3)}</span>.
         </p>
       )}
 
@@ -601,8 +620,11 @@ function RunStory(props: { readonly result: Result }): ReactNode {
           that treats them as independent, and the spreads come out too small. In the library, the compiler packs
           unknowns that one observation reads together into one joint Gaussian vector (<code>packScalars</code>), which
           keeps their correlation. In its test cases the same models as separate scalars gave spreads two to three times
-          too small. In this run, with one unknown, the spread of EP&rsquo;s bell was{' '}
-          <span className="num">{fixed(exact.spreadRatio, 2)}</span> times the exact one.
+          too small. This run has one unknown and so no loops; the spread of EP&rsquo;s bell was{' '}
+          <span className="num">{fixed(exact.spreadRatio, 2)}</span> times the exact one
+          {exact.spreadRatio < 0.95
+            ? ', so the spread can come out too small for other reasons too: here, from matching one bell to a curve that is not one.'
+            : '.'}
         </li>
         <li>
           <strong>No convergence, and improper messages.</strong> The sweeps can swing instead of settling, and an

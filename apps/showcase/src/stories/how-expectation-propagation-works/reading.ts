@@ -10,10 +10,23 @@ import type { Bell, Message, Result } from './compute.ts'
 /** A number to a fixed number of decimals (a minus sign, not a hyphen). */
 export const fixed = (v: number, digits = 2): string => v.toFixed(digits).replace('-', '−')
 
-/** A number in scientific form for very small values, such as `3e-7`. */
+/** A number in scientific form for very small values, such as `3 \u00d7 10\u207b\u2077`. */
 export const sci = (v: number): string => {
   const [m, e] = v.toExponential(0).split('e')
-  return `${m} × 10^${(e as string).replace('+', '').replace('-', '−')}`
+  const sup: Record<string, string> = {
+    '-': '\u207b',
+    '0': '\u2070',
+    '1': '\u00b9',
+    '2': '\u00b2',
+    '3': '\u00b3',
+    '4': '\u2074',
+    '5': '\u2075',
+    '6': '\u2076',
+    '7': '\u2077',
+    '8': '\u2078',
+    '9': '\u2079',
+  }
+  return `${m} \u00d7 10${[...(e as string).replace('+', '')].map((c) => sup[c] ?? c).join('')}`
 }
 
 /** A bell as `mean ± sd`, or a dash for a message that is not a bell. */
@@ -26,7 +39,8 @@ export const meanOf = (m: Message): number | undefined => (m.precision > 0 ? m.s
 export function messageText(m: Message): string {
   if (m.precision === 0 && m.shift === 0) return 'flat'
   const mean = m.precision === 0 ? undefined : m.shift / m.precision
-  return `${mean === undefined ? '—' : fixed(mean)} (${fixed(m.precision)})`
+  const digits = Math.abs(m.precision) < 0.1 ? 3 : 2
+  return `${mean === undefined ? '—' : fixed(mean)} (${fixed(m.precision, digits)})`
 }
 
 /** The numbers about the exact posterior. */
@@ -102,4 +116,22 @@ export const clutterPositions = (result: Result): number[] => result.clutter.fla
 export function listOf(items: readonly (string | number)[]): string {
   if (items.length <= 1) return items.join('')
   return `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`
+}
+
+/**
+ * The measurements (1 to rows) whose stand-in ends with a precision far below the others': near zero or negative, so they say
+ * almost nothing about the location. "Far below" is a quarter of the median precision of the measurements' stand-ins. Nothing
+ * is said of a run that did not settle.
+ *
+ * @param result - The result.
+ * @returns The positions of the weak ones, in order.
+ */
+export function weakOnes(result: Result): number[] {
+  const last = result.standIns.at(-1)
+  if (last === undefined || !result.settled) return []
+  const measured = last.messages.slice(1).map((m) => m.precision)
+  const sorted = measured.filter((p) => p > 0).sort((a, b) => a - b)
+  const median = sorted[Math.floor(sorted.length / 2)]
+  if (median === undefined) return []
+  return measured.flatMap((p, i) => (p < 0.25 * median ? [i + 1] : []))
 }

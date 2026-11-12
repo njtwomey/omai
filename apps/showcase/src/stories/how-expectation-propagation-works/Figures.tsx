@@ -7,6 +7,9 @@ import { ROWS, TOLERANCE } from './data.ts'
 
 const finite = (v: number): boolean => Number.isFinite(v)
 
+/** A tick label for whole numbers only. */
+const whole = (v: number): string => (Number.isInteger(v) ? String(v) : '')
+
 /**
  * The factor graph of the model, drawn before anything runs: one circle for the unknown, one square for the prior and one for each
  * of the measurements, and a line from each factor to the unknown it mentions. It shows no values, so it does not change when the
@@ -16,15 +19,14 @@ const finite = (v: number): boolean => Number.isFinite(v)
  */
 export function GraphArt(): ReactNode {
   const width = 560
-  const height = 300
+  const height = 290
   const cx = width / 2
-  const cy = 150
+  const cy = 118
   const factors = ['prior', ...Array.from({ length: ROWS }, (_, i) => `y${i + 1}`)]
-  // the prior at the top, the measurements spread along an arc below and to both sides
+  // the prior at the top, the measurements in a row below
   const spot = (i: number): readonly [number, number] => {
-    if (i === 0) return [cx, 38]
-    const angle = Math.PI * (0.1 + (0.8 * (i - 1)) / (ROWS - 1))
-    return [cx - 225 * Math.cos(angle), cy + 10 + 78 * Math.sin(angle)]
+    if (i === 0) return [cx, 30]
+    return [60 + (440 * (i - 1)) / (ROWS - 1), 232]
   }
   return (
     <svg
@@ -58,8 +60,13 @@ export function GraphArt(): ReactNode {
               <text x={x} y={y + 4} fontSize="12">
                 {i === 0 ? 'f0' : `f${i}`}
               </text>
-              <text x={x} y={i === 0 ? y - 20 : y + 30} fill="var(--wb-muted)">
-                {i === 0 ? 'prior' : `measurement ${i}`}
+              <text
+                x={i === 0 ? x + 20 : x}
+                y={i === 0 ? y + 4 : y + 30}
+                fill="var(--wb-muted)"
+                textAnchor={i === 0 ? 'start' : 'middle'}
+              >
+                {i === 0 ? 'the prior' : `measurement ${i}`}
               </text>
             </g>
           )
@@ -68,7 +75,7 @@ export function GraphArt(): ReactNode {
         <text x={cx} y={cy + 6} fontSize="20" fontFamily="Georgia, serif" fontStyle="italic">
           {'θ'}
         </text>
-        <text x={cx} y={cy + 46} fill="var(--wb-muted)">
+        <text x={cx + 40} y={cy + 5} fill="var(--wb-muted)" textAnchor="start">
           the unknown location
         </text>
       </g>
@@ -94,6 +101,8 @@ export function UpdateFigure(props: { readonly taken: Taken }): ReactNode {
       const top = Math.max(...taken.cavityDensity, ...taken.tiltedDensity)
       const scale = top / Math.max(...taken.factorValues)
       const x = taken.grid
+      const centre = taken.cavity.shift / taken.cavity.precision
+      const reach = 1 / Math.sqrt(taken.cavity.precision)
       return cartesian(
         [
           lines(
@@ -123,7 +132,7 @@ export function UpdateFigure(props: { readonly taken: Taken }): ReactNode {
         {
           mode,
           figure,
-          x: { ...THETA, limits: [x[0] as number, x.at(-1) as number] },
+          x: { ...THETA, limits: [centre - 3.8 * reach, centre + 3.8 * reach] },
           y: { label: 'density (the factor: scaled)', limits: [0, top * 1.15], show: false, splitLine: false },
           legend: true,
           tooltip: false,
@@ -187,7 +196,7 @@ export function SweepsFigure(props: { readonly result: Result }): ReactNode {
         {
           mode,
           figure,
-          x: { label: 'sweeps', limits: [1, Math.max(2, last)] },
+          x: { label: 'sweeps', limits: [1, Math.max(2, last)], format: whole },
           y: { label: 'belief about θ (mean ± one sd)', limits: [lo, hi] },
           legend: false,
           tooltip: false,
@@ -235,7 +244,7 @@ export function ChangeFigure(props: { readonly result: Result }): ReactNode {
         {
           mode,
           figure,
-          x: { label: 'sweeps', limits: [1, Math.max(2, last)] },
+          x: { label: 'sweeps', limits: [1, Math.max(2, last)], format: whole },
           y: { label: 'largest change of a belief (in standard deviations)', scale: 'log' },
           legend: false,
           tooltip: false,
