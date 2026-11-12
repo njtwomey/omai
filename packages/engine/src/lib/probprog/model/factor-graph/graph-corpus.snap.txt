@@ -96,6 +96,8 @@ atom/gp-length-scale vectorise: - variables, - factors, 2 issues (random-paramet
 atom/gp-length-scale expand: - variables, - factors, 2 issues (random-parameter,node); 
 atom/gp-probit-learned vectorise: - variables, - factors, 2 issues (random-parameter,node); 
 atom/gp-probit-learned expand: - variables, - factors, 2 issues (random-parameter,node); 
+atom/gp-hyperparameters vectorise: - variables, - factors, 2 issues (random-parameter,wrong-form); 
+atom/gp-hyperparameters expand: - variables, - factors, 2 issues (random-parameter,wrong-form); 
 atom/poisson-log vectorise: 1 variables, 2 factors, 0 issues; likelihood-site x1 prior x1
 atom/poisson-log expand: 1 variables, 2 factors, 0 issues; likelihood-site x1 prior x1
 atom/poisson-log-learned vectorise: 3 variables, 33 factors, 0 issues; dot-constant x2 likelihood-row x30 prior x1

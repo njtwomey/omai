@@ -430,7 +430,7 @@ describe('a bivariate normal with standard deviations and a correlation', () => 
     expect(Math.abs(betaMean(expanded) - mean) / sd).toBeLessThan(1)
   })
 
-  it('refusals: a latent bivariate normal, a scale that is not the precision idiom', () => {
+  it('refusals: a latent bivariate normal over an axis that is not two long, a scale that is not the precision idiom', () => {
     const issues = (build: Parameters<typeof defineModel>[1], data: Record<string, unknown>): string[] =>
       toFactorGraph(defineModel('bad', build).bind(data as never)).issues.map((i) => i.reason)
     const a = issues((m) => {
@@ -438,7 +438,7 @@ describe('a bivariate normal with standard deviations and a correlation', () => 
       const rho = m.latent('rho', d.correlation(1))
       m.latent('x', d.bivariateNormal([0, 0], { scale1: 1, scale2: 1, rho }), { dims: [row] })
     }, {})
-    expect(a.join(' ')).toMatch(/only observed vectors are mapped/)
+    expect(a.join(' ')).toMatch(/a bivariate vector has two/)
     const b = issues(
       (m) => {
         const row = m.range('row')

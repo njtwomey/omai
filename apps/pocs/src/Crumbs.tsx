@@ -1,10 +1,8 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { Fragment, type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link } from '../../site/src/shell/Link.tsx'
 import { currentPath } from '../../site/src/shell/router.ts'
-import { GROUPS } from './groups.ts'
-import { inDisplayOrder } from './order.ts'
-import { groupPocs } from './poc.ts'
-import { POCS } from './registry.ts'
+import { breadcrumbs, findDir, pocHref } from './poc.ts'
+import { POCS, TREE } from './registry.ts'
 
 /** One choice of a crumb's menu: where it goes, what it is called. */
 interface Choice {
@@ -129,57 +127,58 @@ function Step(props: {
 }
 
 /**
- * The trail in the top bar: home, then the group and the example, each one button that opens the whole list (one click, no
- * separate chevron to find), so a move between groups or between examples is one choice from anywhere; choosing where you
- * already are refreshes the page. Previous and next arrows go through a group one example after another.
+ * The trail in the top bar, after the brand (the root): each directory down to where you are is a link to its page, then
+ * the example when there is one, which is a button that opens the list of its neighbours in the same directory (choosing the
+ * page you are already on refreshes it). Previous and next arrows go through that directory one example after another.
  *
- * @param props - The current group and example slugs, when there are any.
+ * @param props - The current directory path and example slug, when there are any.
  * @returns The trail.
  */
-export function Crumbs(props: { readonly group?: string | undefined; readonly slug?: string | undefined }): ReactNode {
+export function Crumbs(props: { readonly path?: readonly string[]; readonly slug?: string | undefined }): ReactNode {
   const entry = props.slug === undefined ? undefined : POCS.find((p) => p.slug === props.slug)
-  const group = entry?.group ?? props.group
-  const sections = groupPocs(POCS, GROUPS)
-  const siblings = inDisplayOrder(group)
+  const path = entry?.dir ?? props.path ?? []
+  const crumbs = breadcrumbs(TREE, path, entry)
+  const siblings = findDir(TREE, path)?.pocs ?? []
   const at = entry === undefined ? -1 : siblings.findIndex((p) => p.slug === entry.slug)
   const previous = at > 0 ? siblings[at - 1] : undefined
   const next = at >= 0 ? siblings[at + 1] : undefined
   const sep = <span className="text-muted">/</span>
-  const groupChoices: Choice[] = [
-    { to: '/', label: 'All groups', current: group === undefined },
-    ...sections.map((s) => ({
-      to: s.group === undefined ? '/' : `/group/${s.group.slug}`,
-      label: s.group?.title ?? 'More',
-      current: (s.group?.slug ?? '') === (group ?? '-'),
-    })),
-  ]
+  if (crumbs.length === 0 && props.slug === undefined) return null
   return (
     <nav aria-label="Where you are" className="flex min-w-0 items-center gap-1 text-sm">
-      <Link to="/" className="rounded-md px-1.5 py-1 text-muted hover:bg-surface hover:text-fg">
-        Examples
-      </Link>
-      {sep}
-      <CrumbMenu
-        label={sections.find((x) => (x.group?.slug ?? '') === (group ?? ''))?.group?.title ?? 'All groups'}
-        title="Choose a group"
-        choices={groupChoices}
-      />
+      {crumbs.map((c, i) => (
+        <Fragment key={c.label}>
+          {sep}
+          {entry !== undefined && i === crumbs.length - 1 ? (
+            <CrumbMenu
+              label={entry.title}
+              title="Choose an example in this directory"
+              choices={siblings.map((p) => ({ to: pocHref(p.slug), label: p.title, current: p.slug === entry.slug }))}
+            />
+          ) : c.to === undefined ? (
+            <span aria-current="page" className="min-w-0 truncate px-1.5 py-1 text-fg">
+              {c.label}
+            </span>
+          ) : (
+            <Link
+              to={c.to}
+              className="min-w-0 max-w-[18rem] truncate rounded-md px-1.5 py-1 text-muted hover:bg-surface hover:text-fg"
+            >
+              {c.label}
+            </Link>
+          )}
+        </Fragment>
+      ))}
       {entry === undefined ? null : (
         <>
-          {sep}
-          <CrumbMenu
-            label={entry.title}
-            title="Choose an example"
-            choices={siblings.map((p) => ({ to: `/poc/${p.slug}`, label: p.title, current: p.slug === entry.slug }))}
-          />
           <Step
-            to={previous === undefined ? undefined : `/poc/${previous.slug}`}
+            to={previous === undefined ? undefined : pocHref(previous.slug)}
             label="Previous example"
             title={previous?.title}
             direction="previous"
           />
           <Step
-            to={next === undefined ? undefined : `/poc/${next.slug}`}
+            to={next === undefined ? undefined : pocHref(next.slug)}
             label="Next example"
             title={next?.title}
             direction="next"

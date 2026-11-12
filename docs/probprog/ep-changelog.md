@@ -772,7 +772,6 @@ classes is about 3 ms (wide cavities 6 ms) a tilted moment, the probit about 4 m
   score its own Gaussian, so a prior correlation between classes is carried by the dense prior only); a compiler pattern for a plate of dense
   vectors (one process per class) so that the cells need not be written out; the probit with a power beyond six; a reference for the multiclass GP
   at more than two inputs (the posterior has as many dimensions as values).
-||||||| bac59ff5
 
 ## 2026-11-12 Loops: tied groups pack hierarchies and tournaments (`agent-a22fa5-packing`, gap `loopy-overconfidence` narrowed)
 
@@ -896,7 +895,6 @@ vector as their one port and send a full natural-parameter message back.
   (`functions.test.ts`), and EP on the slopes model settles (71 sweeps, 10 counties, one seed) with `mu` and `mu_b` within 0.06 of a
   NUTS sd of the sampler's and their spreads 0.76 to 0.8 times its, the scales `tau` and `tau_b` 0.4 sd low (spreads 0.96 and 0.69) and
   `rho`, barely identified (sd 0.57 against 0.55), -0.06 against -0.35. No digest item moved (no benchmark model clips a random value).
-||||||| 91d45803
 
 ## 2026-11-12 Stochastic volatility with learned parameters: a walk and warm starts in `epGridMethod` (`agent-a3da95-sv`)
 
@@ -970,7 +968,6 @@ rule for nodes that cycle (`inference/ep-grid.ts`).
   two random scores: the fixed point is a stationary maximum of the brute-force bound). Atoms: `softmax-choice` and `-learned` run under VMP
   (41 and 46 sweeps; against the grid of the two coefficients the means are within 0.17 and 0.19 sds, the spreads 0.71 to 0.77 and 0.65 to 0.88
   of the grid's, the usual mean-field shortfall: plain EP has 0.77 to 0.83), `vmpCoverage` counts 88 of 97.
-||||||| aec194a8
 
 ## 2026-11-12 The multi-start finds the other mode of a mixture: starts on the labels' priors, and mode weights held to references (`agent-a11610-modes`, gap `multimodal` narrowed)
 
@@ -1058,3 +1055,173 @@ start left were both in the message passing of the chain, and neither was the pr
 - Not done: the single run with the persistence random (the product factor; the persistence as a port of the chain), a likelihood for a return
   near zero that is not improper (the ridge is a heuristic), a chain with a fixed scale and a random level (the scalar steps are used; the same
   loop), a dense vector with a cheaper belief sum in the engine.
+
+
+## 2026-11-12 A strong correlation from few pairs, and the group form of the sd-and-correlation site (`agent-a6b87c-corr`, gaps `correlation-strong-few-pairs` and `matrix-larger` narrowed)
+
+Searched first: the correlation family and its mapping (`d.correlation`, `latentCorrelation`, the readback of the beta as a transformed beta), `mvn-sd-corr` and its beta projection, the
+numeric prior site and the likelihood sites (for a Gaussian belief on the Fisher transform), the grid (`_grid.ts`: `betaAxis`, `gaussianAxis`), `mvn-wishart-group` and its closed-form evaluator
+(reused, moved to `_group.ts`), `posterior3`. Nothing is a second family system: the beliefs are the library's beta and Gaussian.
+- `mvn-sd-corr` (`operators/covariance/correlation.ts`, shared parts in `_sdcorr.ts`): the message to the correlation is the beta with the tilted mean and variance of `u = (rho + 1) / 2`
+  (`match: 'moments'`, new default) instead of the one with its log moments (`match: 'log-moments'` keeps the KL projection; a point mass falls back to it). With one factor on the
+  correlation (a plated likelihood and its beta prior) the cavity is the prior itself and the belief has the exact mean and spread.
+  Measured against the exact grid posterior of the correlation (known sds, mean zero, 4 seeds, 2 to 10 pairs; sd ratio / mean z; before, then after): rho 0.3 and 0.5: 0.91 to 0.99 / 0.005 to 0.017
+  -> 1.000 / 0.000; rho 0.7: 0.89 to 0.98 / 0.006 to 0.019 -> 1.000 / 0.000; rho 0.9: 0.81 to 0.95 / 0.009 to 0.022 -> 1.000 / 0.000; rho 0.99: 0.54 to 0.92 (a seed at 0.45) / 0.003 to 0.033 -> 0.999 to
+  1.000 / at most 0.002; eta 3, 3 to 10 pairs: 0.65 to 1.006 -> 1.000. The evidence is the exact one before and after (within 0.0012 nats; a single factor), two sweeps. The default atom (eight pairs, rho
+  about 0.8): sd ratio 0.829 -> 1.000, z 0.022 -> 0.000, evidence unchanged. Not better: the curve. The Kolmogorov distance of the belief's own density from the exact one (oracle fit, 3 seeds) is 0.01 to 0.07 at
+  rho 0.7 and below as for the KL beta, 0.05 to 0.14 at 0.9 (KL: 0.05 to 0.09), and 0.14 to 0.4 at 0.99 where the KL beta had 0.12 to 0.15; the 5% and 95% points are 0.1 to 0.2 exact sds off at rho 0.9 and
+  above (0.4 at 0.99 from five pairs). The harness KS compares a normal with the belief's moments, so it cannot see it (0.22 at the default, 0.15 to 0.33 at rho 0.9 to 0.99, unchanged by the fix).
+- Tried and dropped: a Gaussian on the Fisher transform (`s = logit u = 2 atanh rho`) as the correlation's belief, with a numeric `prior-site` base `logit-beta` for the LKJ prior, matched to the
+  KL moments of `s` and to the moments of the correlation. Its curve is the best of the three (distance 0.04 to 0.19), but with the KL moments the spread is no better than the beta's (it is
+  the exact spread of `s`, which `tanh` then compresses: 0.56 to 0.99), and with the moments of the correlation the two-site fixed point (prior site and likelihood site, each a Gaussian
+  approximation) is off by 1% to 8% in spread, 0.005 to 0.08 nats in evidence, and needs 10 to 60 sweeps at rho 0.99 (some seeds do not settle). Kept in the gap's plan.
+- The reference of `bivariate-correlation-learned` (`validation/references/grid3.ts`, `ep/_atoms/covariance.ts`): the atom's grid was a quarter short on the spread of a correlation of 0.95 from eight
+  pairs (0.0330 against 0.0429 by an independent grid in the logs and the Fisher transform, stable to five figures from 100 to 200 nodes; EP 0.0417) and its mean mixture 3% to 5% off (the
+  heaviest 6000 nodes). `posterior3` has `warp` (`log`, `correlation`) per coordinate and `mixtureNodes`; the learned bivariate atom runs the precisions in their logs and the correlation in
+  `2 atanh(rho)` with 60000 mixture nodes (the reference costs 2 s instead of 0.6 s, lazily). Now EP against the reference: rho sd ratio 0.84 to 0.92 -> 0.997 to 1.002 at rho 0.9 from 6 to 10 pairs and 0.84 -> 0.972
+  at 0.95 from eight pairs (where EP's own three-dimensional grid is 3% short), the mean's spread 0.98 to 1.007 -> 0.999 to 1.02 (against the wrong reference before). No other atom's digest line moves (identical to the bit).
+- New operator `mvn-sd-corr-group` (`operators/covariance/correlation-group.ts`; the evaluator and the tilt key of the Wishart group moved to `_group.ts`, `mvn-wishart-group` unchanged): `x_j ~ N(mean,
+  Sigma)` for `J` bivariate vectors sharing a Gaussian mean and the covariance of two gamma precisions and a beta correlation, as ONE factor. Given the three parameters the vectors and the mean integrate
+  out in closed form; the grid over the parameters is the one of `mvn-sd-corr`; each vector and the mean are matched to the mixture of their conditionals over the nodes; one tilt per sweep serves all ports (the
+  cache key as the Wishart group's). A known mean is one `mvn-sd-corr` per vector. EP only. The compiler maps a latent `bivariateNormal` over `dims: [group, coef]` (`_mappings/matrix.ts`
+  `latentBivariateVectors`; the entry `bivariate-normal-refused` of the table is now `bivariate-normal-latent`, the refusal that names the form is for an axis that is not two long or missing), the
+  compiler page is regenerated. Four groups of four readings (`bivariate-group.test.ts`): 20 sweeps, 0.9 s, against a grid over the parameters with the vectors and the mean integrated out densely
+  (nothing of the factor's algebra): the correlation's spread 0.999 of the exact, the mean's and a vector's 1.000, means within 0.005 sd (the test allows 0.06), each precision's spread 0.98 to 0.99
+  (a gamma matched to its log moments). The operator: `J = 1` is `mvn-sd-corr` to 1e-9 (messages and evidence), two and three vectors against a dense joint-Gaussian grid
+  (messages to the parameters, the vectors and the mean to 1% and 0.01, the evidence to 0.01 nats).
+- Not done: an LKJ prior of order 3 and above and vectors of more than two coordinates with their own sds and correlation (as `matrix-larger` says), a normal-Wishart variable inside a larger model, an
+  accuracy row (no operator of the covariance folder has one), an atom for the group form (the compiler test is the check), a VMP rule (the expected log of a beta correlation has no closed form).
+- EP digest (`--only` items): `atom/bivariate-correlation` and `atom/bivariate-correlation-learned` moved toward the reference and were merged by line (the `vmp/` lines and every other
+  atom are identical to the bit, the registry line gained the operator): rho mean 0.794981 -> 0.798515, sd 0.132244 -> 0.159559, sd ratio 0.828826 -> 1.000022, z 0.021859 -> 0.000294, KS 0.2135 ->
+  0.2220 (basic); rho mean 0.373943 -> 0.374300, sd 0.163614 -> 0.165082, sd ratio 1.000818 -> 1.000037 (learned, against the corrected reference). The registry and params tests counted 67 operators on a main that had 68; they count
+  71 now (with `gaussian-chain` and this operator).
+## 2026-11-12 The evidence of cavities with no density: plates, affine factors, gates, and the alpha-divergence energy (`agent-ab33f2-evidence`, gap `evidence` narrowed)
+
+Gap `evidence` rewritten in `ep-gaps.ts` (still open, now small). One evidence system: `factorEvidence` / `evidenceOf` (`engine/evidence.ts`) and the operators' `logEvidence`; no second one.
+- **Measured first.** The learned logistic regression as one plated factor had no EP energy of its own: its plate's cavity (the weights' scale mixture sends a site with
+  a negative precision) is indefinite at the fixed point, the engine did not even call the plate there (`readsTarget` blocks a target cavity with no density), so the
+  run "converged" with one update that could not be computed (35 sweeps, one damped restart, `unresolved: 1`) and the evidence came from the rows-expanded model
+  (-26.5201 against the grid's -26.4738). Eleven digest items had `evidenceUndefinedAt`; by operator: `linear`, `plus`, `times-constant` (the affine ones), the
+  gate's inner rows, `product`, `apply`, `sum` and `gaussian-gamma-precision`. The circular mixture's "row gates" are not gates in the compiled graph: they are
+  `select` + `linear` (the copy of a period) + `gaussian-gamma-precision` rows.
+- **The plate** (`operators/lifts/plates.ts`, `engine/dispatch.ts`, `core/types.ts`): a new trait `improperTarget` says the operator reads its target's cavity only
+  through a posterior it makes with its own parts, so a cavity that has no density but is not flat is shown to it (a flat one still blocks). The plate sets it; its inner
+  propagation starts, for such a cavity, from the least uniform positive precision on every row that makes the posterior proper (doubling), and the energy no longer asks the
+  cavity to be proper (the energy was already written in natural parameters: the posterior's partition plus the rows' terms). A proper cavity starts from no sites as before.
+  Against the references: the plated `logistic-learned` now converges in 8 sweeps (was 35 with a restart), its evidence is -26.520135736411973 against the rows-expanded
+  model's -26.520135736412023 (5e-14; error to the grid 0.046 as before), `evidenceMethod` is `ep-energy` (not `ep-energy (rows expanded)`), `probit-learned` is unchanged
+  to 1e-13. The beliefs of `logistic-learned` moved to the true fixed point (the rows-expanded model's): means 0.005, 0.026, 0.019 sd for the weights, spreads 1.7% to 3.1% narrower, tau mean 0.7133 -> 0.7063.
+  This is not toward the grid marginals (`sdRatio` 0.98, 1.01, 0.99, 0.98 -> 0.96, 0.99, 0.96, 0.95; ks 0.006 to 0.027 -> 0.010 to 0.037), and the atom still passes.
+  The evidence moved by 6e-13.
+- **The affine operators and the Gaussian joint** (`operators/gaussian/linear.ts`): `linear`, `plus`, `difference`, `times-constant`, `sum` and `gaussian-joint` take the integral
+  in natural parameters when the cavities are not all proper (the output substituted, or one input eliminated with the Jacobian `1 / |c|` when the output is observed): finite
+  whenever the joint precision is positive definite, NaN when it is not. Proper cavities take the old path (bits identical). Tests (`operators/evidence.test.ts`)
+  against two-dimensional and one-dimensional integrals with an indefinite cavity: plus (output precision -0.5), linear with an offset and an indefinite input, difference
+  and times-constant with an observed output, a joint that is not positive definite (NaN), and the proper case unchanged. Model-level: `banana` has an evidence (0, the exact one of a model without data), `radon` -61.6636 (`plus`), the mixture regression
+  -14.0258 (grid -13.6441, 0.38 nats low; its run has 12 updates that could not be computed, so it is not a fixed point), `sparse-student-t` -98.8674; the circular mixture
+  went from 229 to 23 factors without an evidence in the data form and 139 to 7 in the means form.
+- **The gate** (`operators/discrete/gate.ts`): with a cavity that has no density but is not flat the evidence is the log sum over the branches of the mass of the branch against its
+  variables' cavities (its own rule, in natural parameters) times the mass of the cavities it does not read, which must be proper (a variable every branch reads needs none). Test against a
+  one-dimensional integral (both branches read an indefinite cavity) and an `ImproperMessageError` when a branch does not read it.
+- **The alpha runs** (`engine/evidence.ts`, `engine/_cavities.ts`): the energy of an alpha-divergence run is the power EP energy at power alpha for the factors that take a power
+  (the fixed points of the alpha updates are those of power EP with those factors at alpha: tilted `f^a cavity q^(1 - a)`). `alphaEpAlgorithm` now carries `mp/evidence`. On the clutter
+  problem (one variable, eight robust rows, quadrature -18.3231): alpha 1, 0.8, 0.5, 0.3, 0.1 give errors +0.0017, +0.0006, -0.0009, -0.0018, -0.0028 nats, and equal a power EP
+  run's energy at the same powers to 3e-14 (`alpha.test.ts`, the contract test no longer says "no evidence below alpha 1").
+- **Not done.** The `gaussian-gamma-precision` rows (23, 7 and 3 of 50 in the circular forms) and the `product` / `apply` factors of the funnels and the Bayesian neural
+  network still have none: against an indefinite cavity their integral truly diverges or is numeric. The circular mixture cannot be multi-started yet. The tied-group fallback in `mp.ts` stays.
+- **Digest** (merged lines only, `make ep-digest ARGS="--only ..."`): `atom/logistic-learned`, `atom/mixture-regression` (evidence null -> -14.025781793658), `model/banana`
+  (null -> 1.6e-15), `model/radon` (null -> -61.663554203010), `model/funnel-centred` and `model/funnel-non-centred` (undefined factors 10 -> 9), `program/sparse-student-t` (null ->
+  -98.867411158437), and the registry line (the `improperTarget` trait of the two plates). 56 items compared in all: every other item (the atoms, models and programs with
+  plates, gates, affine factors, `linear-regression-row`) has the same numbers, but `model/bayesian-neural-network`, `program/circular-data`, `-means` (beliefs, damped and skipped counts) and
+  four program evidences (3e-11 to 4e-12: `circular-rows`, `cox`, `sparse-gaussian`, `sparse-mixture`) already differed from the baseline on the commit this work started from
+  (checked in a second worktree), so their lines are left; their `evidenceUndefinedAt` lists changed here as said above.
+
+## 2026-11-12 The Bayesian neural network is refused by EP, with the reason, instead of run to a state that is not a posterior (`agent-ab3358-bnn`, gap `network-layer-modes`)
+
+No sound fix was found in the effort, so the benchmark's recorded state is made honest: `model/bayesian-neural-network` was an EP run of 200 sweeps
+that never converged (digest on this commit's parent: change 347, 8369 improper updates of which 8354 skipped, 71 factors with an improper cavity,
+no log evidence, function values -0.55, -1.07, -1.59, -2.41, -3.83 with sds 0.06 to 0.12 against the long NUTS run's -0.21, -0.90, 0.30, 0.83, 0.14
+with sds 0.45, 0.066, 0.26, 0.084, 0.38; 3 s a run) and was listed as `runs (ep)`.
+- Diagnosis. The weights of a layer are not identified (sign flip of a unit, permutation of units), so the posterior is multimodal and one Gaussian
+  per weight has only two kinds of fixed point: the symmetric one (all weight means 0, which is a converged and uninformative state: the function
+  value 0 +- 1 at damping 0.8 and 0.9, 0 +- 0.04 with a power below one) and ones with dead units. From the symmetric start the first sweeps keep
+  the three units identical to two decimals (weights 0, the spreads shrinking together) and the first dropped updates (from the fifth sweep) are where
+  they part; after that one unit lives (input weight near 2, bias 0.4, output weight 0.85) and the other two collapse (input weight 0, output weight with a
+  spread of 1). Besides that, about half of the messages of the `tanh` factors to their inputs have no positive precision at the damped end state,
+  so the affine factor beside such a unit has no cavity: 32 of the 180 messages of the `linear` factors were not computable.
+- Tried, one at a time and combined, each 200 to 600 sweeps (3 to 20 s) on the canonical data (function values at -3, -1.25, 0, 1.25, 3; the
+  reference -0.21 +- 0.45, -0.90 +- 0.066, 0.30 +- 0.26, 0.83 +- 0.084, 0.14 +- 0.38): damping 0.3 (not converged: -0.98, -0.89, 0.19, 0.82, 0.84, sds
+  0.45, 0.30, 0.32, 0.31, 0.46), 0.5 (-0.91, -0.87, 0.16, 0.80, 0.81, change 3e-3 after 200 sweeps and 1.7e-6 after 400 with `reset`, but 32 updates
+  never computable: sds 0.44, 0.36, 0.37, 0.36, 0.44), 0.8 and 0.9 (converged at the symmetric fixed point, no information), the `reset` policy,
+  flooding and tree schedules (tree at 0.7: 6.5e-8 after 400 sweeps, 25587 improper updates), power 0.1 to 0.5 on the `apply` factors (degenerate: the
+  function 0 +- 0.04, or not settling), a start that breaks the symmetry (messages on the weights' ports of the first row, damped so that they
+  survive: one unit lives, not settling, change 0.1 to 0.7), and an affine rule that accepts a cavity of negative precision (a scratch edit of
+  `affineMessage`, reverted: damping 0.5 then has no unresolved update and 21 improper events, but the change stays at 0.8; damping 0.7 at 0.14
+  after 300 sweeps). Within the data the function values of the best of these agree with the long run (-0.88 to -0.93 at -1.25, 0.80 to 0.87 at 1.25,
+  0.16 to 0.28 at 0), the spreads do not (0.2 to 0.45 against 0.066 and 0.084 beside the data), and the far inputs are 1.6 to 1.9 spreads off. One
+  hidden unit alone settles (undamped, change 1e-8, 8 updates not computable); two do not.
+- The code: `networkLayerUnits` (`model/factor-graph/verdict.ts`: the `apply` factors whose input is an affine map of a random weight that other rows
+  read and whose output is multiplied by a random weight that other rows read) and the EP verdict of `factorGraphVerdict` refuses a graph that has
+  any, with the reason and the missing feature `beliefs that hold the symmetric modes of a hidden layer`; `epRoute` is then `none` for the benchmark
+  network (the grid route does not apply either), the coverage row is `planned`, and gap `network-layer-modes` (new, quality, large) claims it
+  through its marker `neural-network layer`; the direction `bnn` is rewritten. Only the benchmark network has units: the funnels, the schools, the
+  radon model, the banana, the negative binomial regression, a `tanh` regression of two weights and a nonlinear state space have none, and the
+  variational rule is not asked. Tests: `factor-graph/network-layers.test.ts`, `ep-coverage.test.ts`, `ep-gaps.test.ts`.
+- What a sound fix needs (in the gap's plan): a fixed point per mode weighted by evidence (the continuous multi-start named under `multimodal`) with a
+  run per start that settles, and for that the forward pass of a row as one factor with the weights as the only variables (probabilistic
+  backpropagation), so that no hidden variable carries a negative-precision message; the refusal goes when that is checked against the long NUTS run.
+- Digest: `model/bayesian-neural-network` moves deliberately (route `ep` to `none`, the verdict, no posterior); no other item is affected (the
+  verdict changes only for graphs with a layer); the registry is untouched.
+
+## 2026-11-12 Several hyperparameters on the grid: a walk over the lattice, ARD length scales, a noise sd (`agent-a6eb2d-gridhyp`, gap `grid-hyperparameters` narrowed)
+
+No second grid method: `epGridMethod` (`inference/ep-grid.ts`) gained what the plan asked for, and the gap's summary and plan were rewritten
+(`ep-gaps.ts`; still open: five or more axes, hierarchical or non-identical priors, a likelihood that is not Gaussian at several axes).
+- `order: 'walk'` over any number of axes: from the middle of the lattice, always the unvisited lattice neighbour of the heaviest node that is
+  within `window` nats of the best (a best-first flood fill; with one hyperparameter it is the interval walk of the stochastic volatility work,
+  node for node), so the cost follows the volume of the posterior and not the product of the axes. The range still grows where an edge has
+  mass (`extend` takes only the wider range in a walk). A walk that the budget cut short while its region has an open edge reports status
+  `stopped` and `diagnostics.budgetReached` (a finished-looking `converged` on 4000 nodes was wrong).
+- Defaults by number of axes (`epGridKnobsFor(axes)`; the method's own `config`): one axis as before (bisect, 31 points, window 10, 400 nodes,
+  no warm start), several axes `walk`, `warm`, 15 points, window 7, 4000 nodes. `runEp` gives a grid run as many steps as its node budget.
+- The hyperparameters: the scalar latents a custom function reads (as before) and, only when the model has no EP graph without them, the plated
+  vectors it reads, one axis per component (`ell[0]`, `ell[1]`: an ARD kernel with one prior for all its inputs); the order is the model's.
+  A vector the function is affine in (the whitened `z` of the non-centred Gaussian process) stays a random vector for EP. A noise sd joins
+  the grid by being read by a custom function too (`m.custom('noiseSd', ([s]) => s.value, [noise], {})`; with it inside the EP run instead,
+  one axis fewer, a node costs 20 times more, 57 ms, and the evidence is 0.05 nats off and the noise's spread 0.91 of the exact).
+- Against a brute-force tensor grid of `N(y; 0, K + sigma^2 I)` in plain arithmetic (`gpPosteriorGivenHyperparameters`, the new reference,
+  with `gridMarginals` extended by `logEvidence`, `expect`, `mass` and `mixture`): the atom `gp-hyperparameters` (length scale, variance and
+  noise sd on eight points; 948 nodes, 1 to 2 s) is 3e-4 nats from the grid in evidence with means within 0.004 reference sds and spreads
+  0.992 to 1.000; an ARD kernel of two inputs with its variance (three axes, 1163 nodes, 1.7 s) 1e-4 nats, means within 0.006 sds, spreads
+  0.996, 1.017, 0.995; with a noise sd (four axes, 11 points, window 7, about 2500 nodes, 5 s; measured against a 25-point-per-axis reference in
+  a scratch script, and in `ep-grid-hyper.test.ts` against a 21-point one with wider tolerances) 4e-4 nats, means within 0.03 sds, spreads
+  0.99 to 1.02. At 15 points and window 7 the three-scalar case is 800 nodes and 0.9 s; the lattice, not the window, sets the error (9
+  points: 0.03 nats; 11: 0.005; 13: 0.002; 15: 3e-4). Warm starts do not help where each node is exact (cold was faster: the messages are
+  part of the state the session serialises every step, which is quadratic in the nodes).
+- New: atom `gp-hyperparameters` (family `kernels`), `epGridKnobsFor`, `gpPosteriorGivenHyperparameters` (`models/gaussian-process.ts`), the
+  tests of `inference/ep-grid-hyper.test.ts`. EP digest: two items added (`atom/gp-hyperparameters`, `vmp/gp-hyperparameters`) and the
+  registry line (one atom's knobs); the other grid items (`atom/gp-length-scale`, `atom/gp-probit-learned`, `model/gaussian-process-*`,
+  `model/stochastic-volatility`) are unchanged at the exact level (`atom/gp-length-scale` differs in the last digits on the unchanged HEAD too).
+- Not done: five or more axes (the nodes grow with the volume; a sparse design or a Laplace step is the plan), diagonal neighbours (a ridge
+  thin against the lattice's spacing and diagonal to it can be cut; the window of 7 nats makes it unlikely for the Gaussian processes tried),
+  hierarchical priors on the grid, a reference at several axes with a non-Gaussian likelihood (each node's evidence is then approximate).
+
+## 2026-11-12 ARD under variational message passing opens damped (`agent-a6eb2d-gridhyp`)
+
+The ARD Bayesian GAM under VMP stalled without damping and the offer listed `vmp` regardless. VMP on this form does run once damped, so the
+fix is a default, on the engine side only (`models/bayesian-gam.ts`; the pocs page is untouched and reads the offer):
+`bayesianGamFormStarting(prior)` gives the starting knobs a form needs (`ard`: `vmp` at `damping: 0.5`, `maxSweeps: 60`), merged over
+`bayesianGamStarting` in `bayesianGamMethods` (so the union's defaults, which a page opens its controls on) and applied to the method's own
+config in `bayesianGamMethod` (so a session with no config runs damped too).
+- Measured on 60 rows (scratch script, EP as the reference, the same data as the tests): undamped k = 6 stops at sweep 74 with the log noise
+  at -46 (collapsed) and k = 10 ends at +0.90 with a spread of 2e-8 (curve 0.42 sd and band 75 times EP's); damping 0.3, 0.4, 0.5 and 0.7
+  all reach the same point (k = 6: log noise -1.585, curve 0.083 response sd from EP's, band 1.22 times; k = 10 at 0.5: -1.597, 0.029, 1.39),
+  0.1 and 0.2 settle elsewhere (band 1.7 to 2.0 times). The change in the messages is far above any tolerance at 200 sweeps (tol 1e-3 to 1e-6
+  stop nowhere; 627 sweeps to 1e-5 at 0.3, as measured earlier), while the log noise is within 0.015 of its 200-sweep value and the curve's distance to EP's within 0.02 sds of it from 30 sweeps, so
+  the cap opens at 60 (5.6 s at k = 6, 11 s at k = 10, against 18 and 36 s at 200). The run ends at the cap, status `completed`, never
+  `converged`: honest, and the offer keeps `vmp` (it runs, with a band 1.2 to 1.4 times EP's, the mean field of the precisions and the
+  coefficients).
+- Not made `unavailable`: the verdict of the method is about the model (it compiles and has rules), and now the run is sound by default.
+  Other forms keep the method's defaults (`penalty` VMP runs at damping 0.3 in its test, 0 by default, unchanged).
+- Tests (`bayesian-gam-ep.test.ts`): the union's defaults for ARD (0.5, 60) and for the penalty form (0, 200); a session with no config on ARD
+  stops within 60 sweeps with the curve within 0.1 sd of EP's and the log noise within 0.1, and the undamped run's log noise below -10.

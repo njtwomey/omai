@@ -1,5 +1,5 @@
 /**
- * The EP programs in the digest: the programs of the pocs (`apps/pocs/src/pocs/ep-program-*`), each run once on its default
+ * The EP programs in the digest: the programs of the pocs (`apps/pocs/src/pocs/expectation-propagation/programs/ep-program-*`), each run once on its default
  * simulated data as the page runs it (`infer` returns the bound model and the finished session), digested as an atom is: the
  * compiled graphs, the verdict, the beliefs and evidence. They live in the pocs, so this module imports them from there: it is
  * the one place that knows where they are, and the digest says `unavailable` for a program whose module cannot be imported
@@ -33,7 +33,7 @@ interface Case {
   readonly load: () => Promise<Inferred>
 }
 
-const pocs = (dir: string): string => `../apps/pocs/src/pocs/${dir}/program.ts`
+const pocs = (dir: string): string => `../apps/pocs/src/pocs/expectation-propagation/programs/${dir}/program.ts`
 
 // A dynamic import takes a path built at run time: it keeps a missing module an `unavailable` item instead of a crash.
 // The modules are the pocs' own, untyped here on purpose: the digest reads only `simulate`, `infer` and the defaults.

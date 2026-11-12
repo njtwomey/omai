@@ -8,6 +8,8 @@ import type { Context } from '../_context.ts'
 import { precisionExpr, unwrap } from '../_idioms.ts'
 import { evalNamedValue, eventVector } from '../_params.ts'
 import {
+  bivariateVectorNeedsAxis,
+  bivariateVectorSize,
   correlationConcentrationNotKnown,
   covarianceNotSquare,
   covarianceRandomWithRandomMean,
@@ -346,6 +348,45 @@ export function correlationPort(
   const variable = u.kind === 'ref' ? cx.correlations.get(u.name) : undefined
   if (variable === undefined) throw rhoNotKnownOrCorrelation(node.name)
   return variable
+}
+
+/**
+ * Latent bivariate vectors `theta ~ bivariateNormal(loc, scale1, scale2, rho)` with the two standard deviations known or `1 / sqrt(tau)` of gamma
+ * latents and the correlation known or a `correlation` latent, one vector per index of the plate dimensions before the last, which names the vector's
+ * axis (`dims: [group, coef]`; `dims: [coef]` is one vector): a Gaussian vector variable per vector and an `mvn-sd-corr` factor per vector for a known
+ * mean, or, when the mean is one Gaussian vector variable (a population mean), a single `mvn-sd-corr-group` factor for all of them (the integral over
+ * the three parameters is one grid per sweep, not one per vector). The vectors are the correlated random effects of a hierarchical model, and a
+ * likelihood reads their coordinates as `theta.at(group)` summed against a design over the axis.
+ */
+export function latentBivariateVectors(cx: Context, node: ModelNode & { readonly kind: 'latent' }): void {
+  if (node.dims.length === 0) throw bivariateVectorNeedsAxis(node.name)
+  const vectorDim = node.dims[node.dims.length - 1] as string
+  const plateDims = node.dims.slice(0, -1)
+  const d = cx.size(vectorDim)
+  if (d !== 2) throw bivariateVectorSize(node.name, d)
+  const rows = prod(cx.shapeOf(plateDims))
+  const mean = vectorMean(cx, node, 2, plateDims, vectorDim)
+  const tail = [precisionPort(cx, node, 'scale1'), precisionPort(cx, node, 'scale2'), correlationPort(cx, node)]
+  const shared = mean.at(0)
+  const grouped = typeof shared === 'string' && 'mvn-sd-corr-group' in cx.g.ops
+  const cells: Cell[] = []
+  const vars: string[] = []
+  for (let r = 0; r < rows; r++) {
+    const name = cx.g.addVariable({
+      name: cx.elementName(node.name, plateDims, r),
+      family: { kind: 'gaussian-mv', size: 2 },
+    })
+    if (!grouped) cx.g.addFactor({ operator: 'mvn-sd-corr', args: [name, mean.at(r), ...tail] }, name)
+    for (let k = 0; k < 2; k++) cells.push(cx.g.compAtom(name, k, 2))
+    vars.push(name)
+  }
+  if (grouped)
+    cx.g.addFactor(
+      { operator: 'mvn-sd-corr-group', args: [...vars, shared, ...tail], params: { groups: rows } },
+      node.name,
+    )
+  cx.syms.set(node.name, { dims: node.dims, cells })
+  cx.layout(node, 'latent', 'gaussian-mv', plateDims.length === 0 ? 'packed' : 'elements', vars, true)
 }
 
 /**

@@ -25,6 +25,12 @@ describe('the gaps of the EP suite', () => {
     expect(epGapsRefusing([tagged]).find((g) => g.id === 'grid-hyperparameters')?.refuses).toEqual(['big-gp'])
   })
 
+  it('name the neural network among what the gap of the network layers refuses, from the verdict and only from it', () => {
+    const gap = epGapsRefusing(refused).find((g) => g.id === 'network-layer-modes')
+    expect(gap?.refuses).toEqual(['bayesian-neural-network'])
+    expect(epGaps.find((g) => g.id === 'network-layer-modes')?.refuses).toEqual([])
+  })
+
   it('see a refusal nobody has written down: an item whose reason no gap carries is unclaimed', () => {
     expect(
       unclaimedRefusals([{ name: 'new-model', reason: 'a reason no gap carries', missing: ['something'] }]),

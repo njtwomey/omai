@@ -6,11 +6,11 @@ in [`ep.md`](ep.md), what happened when in [`ep-changelog.md`](ep-changelog.md).
 
 ## Message-passing operators
 
-The registry (`defaultOperators()`) holds **72** factor operators. Rules by message mode:
+The registry (`defaultOperators()`) holds **73** factor operators. Rules by message mode:
 
 | mode | operators with a rule | exact | bound | numeric |
 | --- | --- | --- | --- | --- |
-| ep | 71 | 36 | 0 | 35 |
+| ep | 72 | 36 | 0 | 36 |
 | vmp | 64 | 37 | 4 | 23 |
 | bp | 4 | 4 | 0 | 0 |
 
@@ -18,7 +18,7 @@ The registry (`defaultOperators()`) holds **72** factor operators. Rules by mess
 
 ## Atoms
 
-**97** atoms (65 basic, 32 with unknown parameters learned from simulated data). Expectation propagation runs **97** of them. Variational message passing runs **88** (87 to a fixed point); **9** run under EP and not under VMP.
+**98** atoms (66 basic, 32 with unknown parameters learned from simulated data). Expectation propagation runs **98** of them. Variational message passing runs **88** (87 to a fixed point); **10** run under EP and not under VMP.
 
 | family | atoms | learned twins | EP runs | VMP runs |
 | --- | --- | --- | --- | --- |
@@ -28,7 +28,7 @@ The registry (`defaultOperators()`) holds **72** factor operators. Rules by mess
 | functions | 5 | 0 | 5 | 5 |
 | gate weights | 4 | 0 | 4 | 4 |
 | gates | 16 | 6 | 16 | 13 |
-| kernels | 2 | 1 | 2 | 0 |
+| kernels | 3 | 1 | 3 | 0 |
 | likelihoods | 31 | 17 | 31 | 29 |
 | nonparametric | 2 | 0 | 2 | 2 |
 | priors | 17 | 0 | 17 | 17 |
@@ -36,7 +36,7 @@ The registry (`defaultOperators()`) holds **72** factor operators. Rules by mess
 
 ## Benchmark models
 
-**27** benchmark models; EP runs **27** (25 as they are, 2 inside a grid over hyperparameters).
+**27** benchmark models; EP runs **26** (24 as they are, 2 inside a grid over hyperparameters).
 
 | model | EP |
 | --- | --- |
@@ -63,25 +63,26 @@ The registry (`defaultOperators()`) holds **72** factor operators. Rules by mess
 | gaussian-process-regression | runs (ep-grid) |
 | gaussian-process-non-centred | runs (ep-grid) |
 | lda-lite | runs (ep) |
-| bayesian-neural-network | runs (ep) |
+| bayesian-neural-network | refused: the graph has the units of a neural-network layer (an `apply` of an affine map of weights that rows share, multiplied by a weight that rows share): the weights are not identified (sign and permutation symmetries), so a Gaussian per weight averages the modes or keeps one and drops the other units, and the run does not converge to a posterior |
 | item-response-scoring | runs (ep) |
 | stick-breaking-mixture | runs (ep) |
 | clutter-problem | runs (ep) |
 
 ## Refusals, gaps and directions
 
-EP refuses nothing in the suite today: every atom and every benchmark model runs. The gaps below are shortfalls of quality or reach, not refusals.
+EP refuses 1 item(s): `bayesian-neural-network`.
 
 | gap | kind | status | size | refuses |
 | --- | --- | --- | --- | --- |
-| grid-hyperparameters: Hyperparameters on a grid: a few scalars, one family at a time | missing-mapping | open | medium | - |
+| grid-hyperparameters: Hyperparameters on a grid: up to about four axes, independent priors | missing-mapping | open | medium | - |
 | matrix-larger: Covariance matrices beyond what the Wishart and the bivariate sd-and-correlation sites reach | missing-rule | open | medium | - |
-| correlation-strong-few-pairs: A strong bivariate correlation from few pairs: the beta belief is too narrow | quality | open | medium | - |
+| correlation-strong-few-pairs: A strong bivariate correlation from few pairs: the belief has its spread, not its shape | quality | open | small | - |
 | softmax-many-classes: Softmax beyond six classes: the probit with a power, correlated classes | missing-rule | open | small | - |
 | multimodal: One Gaussian per variable cannot show two modes: what the multi-start does not reach | quality | open | medium | - |
+| network-layer-modes: A network layer: hidden units whose weights have symmetric modes are refused | quality | open | large | bayesian-neural-network |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
 | sv-parameters: Stochastic volatility with an unknown persistence: one EP run is too narrow, the grid is the route | quality | open | small | - |
-| evidence: The EP log evidence is exact where EP is, and has two known limits | infrastructure | open | medium | - |
+| evidence: The EP log evidence is exact where EP is, and undefined where a factor's integral against its cavities diverges | infrastructure | open | small | - |
 | variational-rules: Variational message passing: what it cannot run and where the mean field is poor | infrastructure | open | small | - |
 
 **18** directions for the suite to grow into:
