@@ -6,6 +6,7 @@
 // uniform grid of the tilts that integrate over one such coordinate (`tiltGrid`) is here too, with the zoom that finds the mass inside
 // a window that is far wider than a likelihood leaves it.
 
+import { ImproperMessageError } from '../core/errors.ts'
 import { gridArray } from './_arrays.ts'
 import { shiftedSum } from './_moments.ts'
 import { digammaOf, trigammaOf } from './_scalar.ts'
@@ -239,6 +240,9 @@ export function tiltGrid(
 /** The nodes of the scan the window finder lays over its current window. */
 const SCAN = 801
 
+/** The rounds of widening and narrowing `findWindow` makes before it gives up (each widening triples the window). */
+const WINDOW_ROUNDS = 40
+
 /**
  * The window of the line holding the mass of a log density: scanned on a grid of `scan` points from `start`, widened while the
  * edges of the window are not negligible (more than 40 nats below the top), then narrowed onto the nodes within 40 nats of the top
@@ -252,6 +256,8 @@ const SCAN = 801
  * @param start - A point near the bulk of the mass, inside `[lo, hi]`, where the search starts.
  * @param scan - The nodes of each scan (default 801).
  * @returns The window `[a, b]`.
+ * @throws ImproperMessageError when no point of the whole support (or of the window widened over `WINDOW_ROUNDS` rounds) has a finite
+ * log density, or when the rounds are used up before the window settles: a window that was not found is never returned.
  */
 export function findWindow(
   logDensity: (x: Float64Array) => Float64Array,
@@ -262,18 +268,22 @@ export function findWindow(
 ): readonly [number, number] {
   let a = Math.max(lo, start - 5)
   let b = Math.min(hi, start + 5)
-  for (let round = 0; round < 40; round++) {
+  let seenFinite = false
+  for (let round = 0; round < WINDOW_ROUNDS; round++) {
     const xs = gridArray(a, b, scan)
     const lp = logDensity(xs)
     let top = Number.NEGATIVE_INFINITY
     for (const v of lp) if (v > top) top = v
     if (!Number.isFinite(top)) {
-      // Nothing finite in the window: look wider.
+      // Nothing finite in the window: look wider, unless the window is already the whole support.
+      if (a <= lo && b >= hi)
+        throw new ImproperMessageError(`no window: the log density is not finite anywhere on [${lo}, ${hi}]`)
       const span = b - a
       a = Math.max(lo, a - 2 * span)
       b = Math.min(hi, b + 2 * span)
       continue
     }
+    seenFinite = true
     const span = b - a
     let first = 0
     let last = scan - 1
@@ -296,5 +306,9 @@ export function findWindow(
     }
     return [a, b]
   }
-  return [a, b]
+  throw new ImproperMessageError(
+    seenFinite
+      ? `no window: the mass did not settle within ${WINDOW_ROUNDS} rounds (last window [${a}, ${b}])`
+      : `no window: the log density was not finite on any window searched (last window [${a}, ${b}])`,
+  )
 }

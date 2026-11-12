@@ -34,7 +34,14 @@ import { factorGraphPosterior } from '../model/factor-graph/readback.ts'
 import { factorGraphVerdict } from '../model/factor-graph/verdict.ts'
 import type { Posterior } from '../posterior.ts'
 import { definePosterior } from '../posterior.ts'
-import { canonicalSites, moveAxis, orderingSite, permutations } from './_relabel.ts'
+import {
+  type ComponentAxes,
+  canonicalSites,
+  componentAxesOf,
+  moveAxis,
+  orderingSite,
+  permutations,
+} from './_relabel.ts'
 import { recordOf, type SiteRecord, siteMixturePosterior } from './_site-mixture.ts'
 import {
   flag,
@@ -227,6 +234,13 @@ function modesOf(runs: readonly StartRun[], merge: number): StartRun[] {
   return modes
 }
 
+/** The components of a model: the site that sorts them, their number, and which axes of each site they index (when the model says). */
+interface Components {
+  readonly key: string
+  readonly k: number
+  readonly axesOf?: ComponentAxes
+}
+
 /** One component of the posterior: what it believes of every site, and its log weight (its EP evidence). */
 interface Mode {
   readonly sites: Readonly<Record<string, SiteRecord>>
@@ -244,14 +258,10 @@ function logSumExp(xs: readonly number[]): number {
  * canonical form first (the components sorted by the mean of the first vector of parameters, `key`): the labellings of a reading
  * are different fixed points under asymmetric priors, each with its evidence, and read in one order they are one set of components.
  */
-function posteriorModes(
-  runs: readonly StartRun[],
-  merge: number,
-  canonical: { key: string; k: number } | undefined,
-): Mode[] {
+function posteriorModes(runs: readonly StartRun[], merge: number, canonical: Components | undefined): Mode[] {
   const raw = modesOf(runs, merge)
   const modes = raw.map((r) => ({
-    sites: canonical === undefined ? r.sites : canonicalSites(r.sites, canonical.key, canonical.k),
+    sites: canonical === undefined ? r.sites : canonicalSites(r.sites, canonical.key, canonical.k, canonical.axesOf),
     logEvidence: r.logEvidence,
   }))
   return modes
@@ -383,22 +393,24 @@ export function epMultiStartMethod(
     )
   }
 
+  // which axes of a site are indexed by the components, from how the spec uses its discrete latents (absent: every axis of length k)
+  const axesOf: ComponentAxes | undefined = typeof model === 'function' ? undefined : componentAxesOf(model.spec)
   /**
    * The components of the model and the site that sorts them: the largest category count (at most the number whose relabellings are
    * all tried) for which some continuous site is a vector of that length (a rate or a location per component), or undefined.
    */
-  const componentsOf = (runs: readonly StartRun[]): { key: string; k: number } | undefined => {
+  const componentsOf = (runs: readonly StartRun[]): Components | undefined => {
     if (prepared?.graph === undefined) return undefined
     const first = runs.find((r) => r.converged) ?? runs[0]
     if (first === undefined) return undefined
     for (const k of categoryCounts(discretePorts(prepared.graph))) {
       if (k < 2 || k > MAX_RELABELLED) continue
-      const key = orderingSite(first.sites, k)
-      if (key !== undefined) return { key, k }
+      const key = orderingSite(first.sites, k, axesOf)
+      if (key !== undefined) return { key, k, ...(axesOf === undefined ? {} : { axesOf }) }
     }
     return undefined
   }
-  const canonicalOf = (runs: readonly StartRun[], labels: string): { key: string; k: number } | undefined =>
+  const canonicalOf = (runs: readonly StartRun[], labels: string): Components | undefined =>
     labels === 'sort' ? componentsOf(runs) : undefined
 
   const posterior = (state: EpMultiStartState, config: Config): Posterior => {
@@ -534,7 +546,7 @@ export function epMultiStartMethod(
           const seen: Readonly<Record<string, SiteRecord>>[] = []
           for (const [i, r] of runs.entries()) {
             if (!r.converged || (!Number.isFinite(r.logEvidence) && !unweighed(runs))) continue
-            const sites = canonicalSites(r.sites, canon.key, canon.k)
+            const sites = canonicalSites(r.sites, canon.key, canon.k, canon.axesOf)
             if (seen.some((q) => sameSites(q, sites, merge))) continue
             seen.push(sites)
             if (r.origin === 'relabel') continue

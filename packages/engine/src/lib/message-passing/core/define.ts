@@ -28,6 +28,9 @@ import type {
   TiltedMoments,
 } from './types.ts'
 
+/** The mean and the variance about the mean of a tilted Gaussian target. */
+type Centred = { readonly mean: number; readonly variance: number }
+
 /**
  * What a `site(tilt)` rule returns: the tilted distribution at the target port, as the expected sufficient statistics of the
  * target's family (`moments`: a `TiltedMoments` is one), or, for a Gaussian port, its mean and variance (the projection of a
@@ -37,7 +40,7 @@ import type {
  * factor says nothing to this port yet (the flat message of the family, whatever the cavity, and not divided by the power).
  */
 export type Tilt =
-  | { readonly moments: Eta }
+  | { readonly moments: Eta; readonly centred?: Centred }
   | { readonly mean: number; readonly variance: number }
   | { readonly natural: Eta }
   | { readonly flat: true }
@@ -118,14 +121,31 @@ export function siteRule(tilt: (c: OperatorContext) => Tilt, support: Support = 
 export function projectSite(target: Arg, tilt: Tilt, power: number): Eta {
   if ('flat' in tilt) return [...target.family.flat]
   const cavity = etaOf(target)
+  const centred = 'moments' in tilt ? cancelling(tilt, target.family) : undefined
   const site =
-    'moments' in tilt
-      ? siteMessage(target.family, cavity, tilt.moments)
-      : 'natural' in tilt
-        ? tilt.natural.map((v, i) => v - (cavity[i] ?? 0))
-        : gaussianSiteMessage(cavity, tilt.mean, tilt.variance)
+    centred !== undefined
+      ? gaussianSiteMessage(cavity, centred.mean, centred.variance)
+      : 'moments' in tilt
+        ? siteMessage(target.family, cavity, tilt.moments)
+        : 'natural' in tilt
+          ? tilt.natural.map((v, i) => v - (cavity[i] ?? 0))
+          : gaussianSiteMessage(cavity, tilt.mean, tilt.variance)
   return perPower(site, power)
 }
+
+/**
+ * The centred mean and variance of a tilt for a Gaussian target when the second moment cannot carry the variance: `mean^2` more than
+ * `CANCELLATION` times the variance, where `E x^2 - (E x)^2` keeps fewer than about ten digits. Below that ratio (every ordinary
+ * case) the projection stays through the moments, so the results are the same bits as before the centred variance existed.
+ */
+function cancelling(tilt: { readonly centred?: Centred }, family: Family): Centred | undefined {
+  const c = tilt.centred
+  if (c === undefined || family.kind !== 'gaussian') return undefined
+  return c.mean * c.mean > CANCELLATION * c.variance ? c : undefined
+}
+
+/** The ratio of `mean^2` to the variance above which a tilt's projection uses its centred variance (see `cancelling`). */
+const CANCELLATION = 1e6
 
 /** The traits of an operator that are not rules: what the engine needs to know to call them. */
 export interface OperatorTraits {

@@ -70,6 +70,21 @@ export function choleskyInverse(l: Float64Array, n: number): Float64Array {
 const rules = new Map<string, { readonly x: Float64Array; readonly w: Float64Array }>()
 
 /**
+ * The most gamma rules kept. The shape of a Wishart's rule is `(nu - i) / 2` and `nu` changes at every update of a message, so the
+ * shapes of a long run rarely repeat; the least recently used rule is dropped past this many (a rule is a pure function of its order
+ * and shape, so what is dropped is made again, the same bits).
+ */
+export const GAMMA_RULES_KEPT = 256
+
+/** The gamma rules by (order, shape), least recently used first. */
+const gammaRules = new Map<string, { readonly x: Float64Array; readonly w: Float64Array }>()
+
+/** How many gamma rules are held (at most {@link GAMMA_RULES_KEPT}). */
+export function gammaRulesHeld(): number {
+  return gammaRules.size
+}
+
+/**
  * The nodes and weights of order `order` for `E f(g)`, `g ~ Gamma(shape, 1)` (weights sum to one).
  *
  * @param order - Number of nodes.
@@ -78,12 +93,20 @@ const rules = new Map<string, { readonly x: Float64Array; readonly w: Float64Arr
  */
 function gammaRule(order: number, shape: number): { readonly x: Float64Array; readonly w: Float64Array } {
   const key = `g${order}:${shape}`
-  let rule = rules.get(key)
-  if (rule === undefined) {
-    const r = gaussLaguerre(order, shape - 1)
-    const w = r.weights
-    rule = { x: float64Of(r.nodes), w: float64Of(div(w, sum(w))) }
-    rules.set(key, rule)
+  let rule = gammaRules.get(key)
+  if (rule !== undefined) {
+    // used now: last in the order of use
+    gammaRules.delete(key)
+    gammaRules.set(key, rule)
+    return rule
+  }
+  const r = gaussLaguerre(order, shape - 1)
+  const w = r.weights
+  rule = { x: float64Of(r.nodes), w: float64Of(div(w, sum(w))) }
+  gammaRules.set(key, rule)
+  if (gammaRules.size > GAMMA_RULES_KEPT) {
+    const oldest = gammaRules.keys().next().value
+    if (oldest !== undefined) gammaRules.delete(oldest)
   }
   return rule
 }
