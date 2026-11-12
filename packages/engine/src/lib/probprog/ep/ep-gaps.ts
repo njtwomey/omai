@@ -95,6 +95,18 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
       markers: ['more than six scores takes a power of one'],
     },
     {
+      id: 'mixture-vector-components',
+      title:
+        'Mixtures of Gaussian vectors with a covariance matrix per group, and the cost of a mixture over many rows',
+      kind: 'missing-mapping',
+      status: 'open',
+      summary:
+        "Done: a mixture whose groups have a mean and a precision of their own, with the mean as wide as its precision allows (the conjugate normal-gamma pair), is closed form: the compiler fuses each pair inside the gates into one `normal-gamma` variable (`conjugatePairs`, on for EP) and every observation is a `gaussian-normal-gamma` branch of a gate on the label. Two diagonal groups of the 272 eruptions of Old Faithful take 4 sweeps and 0.3 s (the quadrature route took 10 to 32 sweeps and 7 to 11 s, and the number of sweeps depended on the order of the rows), three groups 33 sweeps and 2.5 s, six and eight stick-breaking pieces 20 and 18 sweeps and 4 to 7 s; centres are within 1% and spreads within 3% of a Gibbs run, and for three groups EP gives the reading with 6% of the eruptions in a middle group that one seed of the sampler finds and another misses (it stays in two groups). The engine also runs a mixture of two-dimensional Gaussians with normal-Wishart components (a gate whose branches are `mvn-normal-wishart` with the observed vector as a vector constant, brute-force tested at d = 2: the message to the label is the multivariate Student t, the messages to the parameters the tilted moments), hand-built, in 1.7 s for two groups of the same rows. What remains: the model language has no gate over vector-valued branches (`d.gate` takes scalar-event branches), no per-group Wishart matrix or per-group vector gathered by a label, and no conjugate pair of a mean vector and a precision matrix to fuse; the normal-Wishart family's algebra runs on the tensor library, so three groups of 272 rows take 36 s (the matrix operations of a message dominate) and six groups more than two minutes; and every EP run recomputes the belief of a variable from its edges, which is the cost of a sweep (40 to 50% of it) when a parameter has a message from every one of hundreds of rows.",
+      plan: 'A model-language form for a mixture of Gaussian vectors (a gate over `multivariateNormal` branches, or a normal-Wishart latent per group read by a label), its mapping to a gate of `mvn-normal-wishart` branches, the fusion of the pairs the way the scalar pairs are fused, plain-array kernels for the small matrices of the normal-Wishart family (the `spd` of the message algebra over `dpotrf` and `dpotrs`), and a belief per variable that is updated as its messages change instead of summed again for each cavity.',
+      size: 'medium',
+      markers: [],
+    },
+    {
       id: 'multimodal',
       title: 'One Gaussian per variable cannot show two modes: what the multi-start does not reach',
       kind: 'quality',

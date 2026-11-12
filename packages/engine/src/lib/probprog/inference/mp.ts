@@ -84,6 +84,12 @@ export interface MpSpecOptions {
    * kept. Default false for the others (a variational method over a joint vector is not mean-field).
    */
   readonly packScalars?: boolean
+  /**
+   * Whether the mean and the precision of each component of a mixture are one normal-gamma variable where the model writes them as the
+   * conjugate pair (see `toFactorGraph`): the messages of a component are then closed form. Default true for expectation propagation,
+   * false for the others (a variational rule has no expected log for the fused gate).
+   */
+  readonly conjugatePairs?: boolean
 }
 
 /** What the analysis alone says, before the graph is built: the features a message-passing method needs. */
@@ -131,7 +137,8 @@ function specMethod<P extends string>(
 ): InferenceMethod<MpState, Config, P, ModelAnalysis> {
   const name = options.name ?? rule
   const title = TITLE[rule]
-  const prepared = prepare(model, options.plates ?? 'vectorise', options.packScalars ?? rule === 'ep')
+  const conjugatePairs = options.conjugatePairs ?? rule === 'ep'
+  const prepared = prepare(model, options.plates ?? 'vectorise', options.packScalars ?? rule === 'ep', conjugatePairs)
   const base = messagePassingKnobs(rule)
   // Expectation propagation also takes the power of fractional EP, on every factor whose operator supports one (the likelihood
   // links, the softmax site, the shape and concentration sites, unary functions): the knobs are the shared declaration.
@@ -193,7 +200,7 @@ function specMethod<P extends string>(
       : [[false, 'ep-energy (rows expanded)']]
     for (const [pack, method] of attempts) {
       if (found !== null) break
-      const rows = prepare(model, 'expand', pack)
+      const rows = prepare(model, 'expand', pack, conjugatePairs)
       if (rows?.graph === undefined) continue
       // The same graph again (nothing is plated) is the same run: from the flat start it can reach another fixed point than the state's
       // (a mixture's symmetric one), and its evidence would be that one's, not the state's.

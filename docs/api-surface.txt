@@ -47,7 +47,7 @@ omai-engine/logic	403	ccdc0b881471
 omai-engine/logic/ilp	65	e55805f239eb
 omai-engine/losses	194	7298761fe4d3
 omai-engine/manifold	80	aa598bd29506
-omai-engine/message-passing	383	4f9aeba546da
+omai-engine/message-passing	383	b5e8cdf22026
 omai-engine/metrics	338	1dc3f0837564
 omai-engine/mixture	42	3ac1e9f8cb18
 omai-engine/nn	791	a47294e5f8b1
@@ -74,8 +74,8 @@ omai-engine/pgm/learning	123	a9e76fe66003
 omai-engine/problems	55	af621d373b9a
 omai-engine/probprog	354	5a9b5acf1538
 omai-engine/probprog/ep	68	c46f377a7cdd
-omai-engine/probprog/inference	201	0c334c359afc
-omai-engine/probprog/model	165	d7ad0a607060
+omai-engine/probprog/inference	201	9dd2e9d4157d
+omai-engine/probprog/model	165	e4b593aa9d98
 omai-engine/probprog/model/dists	43	104c99efc22b
 omai-engine/probprog/models	171	d8da49db38db
 omai-engine/probprog/validation	105	c885db18377e
@@ -126,4 +126,4 @@ omai-render/svg	19	20401a88229e
 omai-render/theme	54	3ef6982b717d
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	304	2e6c4409f9d2
-total	20275	9c810353093b
+total	20275	41804f3974cb

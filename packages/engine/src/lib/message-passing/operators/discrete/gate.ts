@@ -19,7 +19,7 @@ import { etaOf, massOf, numberParam, scalarOf, valueArg } from '../../core/args.
 import { defineOperator, messageRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gaussian } from '../../core/families.ts'
-import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
+import { discreteEta, discreteProbs, gaussianMv } from '../../core/families-vector.ts'
 import { param, validateParams } from '../../core/params.ts'
 import type {
   Arg,
@@ -39,18 +39,19 @@ import type { OperatorName } from '../names.ts'
 
 /**
  * One branch of a gate as its JSON parameter `branches` gives it: the inner operator by name (absent: the constant 1), its arguments
- * (an index into the gate's variables, or a `{ const }` number) in the inner operator's own port order, and its parameters.
+ * (an index into the gate's variables, or a `{ const }` number or vector, the observed row of a mixture of Gaussian vectors) in the
+ * inner operator's own port order, and its parameters.
  */
 export interface GateBranch {
   readonly operator?: OperatorName
-  readonly args: readonly (number | { readonly const: number })[]
+  readonly args: readonly (number | { readonly const: number | readonly number[] })[]
   readonly params?: Params
 }
 
 /** One branch as the parameters give it: an inner operator, its arguments (indices into the gate's variables, or constants) and its parameters. */
 interface Branch {
   readonly operator: string | undefined
-  readonly args: readonly (number | { readonly const: number })[]
+  readonly args: readonly (number | { readonly const: number | readonly number[] })[]
   readonly params: Params
 }
 
@@ -64,13 +65,23 @@ function branchesOf(params: Params): readonly Branch[] {
       operator: typeof r.operator === 'string' ? r.operator : undefined,
       args: args.map((a) => {
         if (typeof a === 'number') return a
-        if (a !== null && typeof a === 'object' && !Array.isArray(a) && typeof a['const'] === 'number')
-          return { const: a['const'] }
-        throw new ParameterError(`gate: branch ${k} has an argument that is neither a variable index nor a constant`)
+        if (a !== null && typeof a === 'object' && !Array.isArray(a)) {
+          const c = a['const']
+          if (typeof c === 'number') return { const: c }
+          if (Array.isArray(c) && c.length > 0 && c.every((v) => typeof v === 'number')) return { const: c as number[] }
+        }
+        throw new ParameterError(
+          `gate: branch ${k} has an argument that is neither a variable index nor a constant (a number or a vector)`,
+        )
       }),
       params: (r.params ?? {}) as Params,
     }
   })
+}
+
+/** A constant of a branch as an argument: a number is a point of the scalar Gaussian, a vector a point of the Gaussian vector of its length. */
+function constantArg(value: number | readonly number[]): Arg {
+  return typeof value === 'number' ? valueArg(gaussian, value) : valueArg(gaussianMv(value.length), value)
 }
 
 /** The probabilities of the states of z (an observed one is a point mass). */
@@ -82,7 +93,7 @@ function stateProbabilities(a: Arg, k: number): number[] {
 /**
  * The gate over a registry of operators: `z` (discrete, or Bernoulli for two branches) and `arity` variables, whose
  * parameter `branches` lists one entry per state of `z`, each a `GateBranch` `{ operator, args, params }` with `args` indices into the
- * variables (or `{ const }` numbers) in the inner operator's own port order; a branch without an operator is the constant 1.
+ * variables (or `{ const }` numbers or vectors) in the inner operator's own port order; a branch without an operator is the constant 1.
  *
  * @param inner - The inner operators by name.
  * @returns The `gate` operator.
@@ -107,7 +118,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
   }
   /** The arguments a branch is shown: the gate's cavities (or beliefs) of its variables and its constants. */
   const argsOf = (c: OperatorContext, b: Branch): Arg[] =>
-    b.args.map((a) => (typeof a === 'number' ? arg(c, a + 1) : valueArg(gaussian, a.const)))
+    b.args.map((a) => (typeof a === 'number' ? arg(c, a + 1) : constantArg(a.const)))
   const context = (c: OperatorContext, b: Branch, to: number, mode: 'ep' | 'vmp'): OperatorContext => ({
     mode,
     to,
@@ -254,7 +265,14 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
           const ports = portsOf(op, b.params)
           if (ports.length !== b.args.length)
             return `gate: branch ${k}: ${op.name} has ${ports.length} ports, ${b.args.length} given`
-          const fams = b.args.map((a): Family => (typeof a === 'number' ? (families[a + 1] as Family) : gaussian))
+          const fams = b.args.map(
+            (a): Family =>
+              typeof a === 'number'
+                ? (families[a + 1] as Family)
+                : typeof a.const === 'number'
+                  ? gaussian
+                  : gaussianMv(a.const.length),
+          )
           const why = op.check?.(b.params, fams)
           if (why !== undefined) return `gate: branch ${k}: ${why}`
         }

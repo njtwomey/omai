@@ -69,15 +69,15 @@ The core of message passing: the `Family` algebra and its scalar, vector, discre
 - function `truncatedNormalMoments`: Mass, mean and variance of a Gaussian truncated to an interval. `src/lib/message-passing/core/truncated.ts:40` `omai-engine/message-passing`
 - function `wishart`: The Wishart message family of a given dimension: the precision matrix of a Gaussian. `src/lib/message-passing/core/families-matrix.ts:150` `omai-engine/message-passing`
 
-- structure `FactorOperator`: A factor operator: the message to each argument of a factor. `src/lib/message-passing/core/types.ts:266` `omai-engine/message-passing`
+- structure `FactorOperator`: A factor operator: the message to each argument of a factor. `src/lib/message-passing/core/types.ts:271` `omai-engine/message-passing`
 - structure `Family`: A message family: natural parameters, moments, quotient, KL. `src/lib/message-passing/core/types.ts:80` `omai-engine/message-passing`
 - structure `ImproperMessageError`: The error of a numerical failure the engine repairs (an improper message), not of a misconfiguration. `src/lib/message-passing/core/errors.ts:20` `omai-engine/message-passing`
 - structure `ParameterError`: The error of a misconfigured graph or setting, never swallowed by the engine. `src/lib/message-passing/core/errors.ts:34` `omai-engine/message-passing`
-- structure `bernoulli`: The Bernoulli message family: the logit of the probability of true. `src/lib/message-passing/core/families.ts:368` `omai-engine/message-passing`
-- structure `beta`: The beta message family on (0, 1). `src/lib/message-passing/core/families.ts:302` `omai-engine/message-passing`
-- structure `gamma`: The gamma message family on a positive variable. `src/lib/message-passing/core/families.ts:210` `omai-engine/message-passing`
-- structure `gaussian`: The Gaussian message family in precision form. `src/lib/message-passing/core/families.ts:128` `omai-engine/message-passing`
-- structure `normalGamma`: The normal-gamma message family on a mean and a precision jointly. `src/lib/message-passing/core/families.ts:421` `omai-engine/message-passing`
+- structure `bernoulli`: The Bernoulli message family: the logit of the probability of true. `src/lib/message-passing/core/families.ts:369` `omai-engine/message-passing`
+- structure `beta`: The beta message family on (0, 1). `src/lib/message-passing/core/families.ts:303` `omai-engine/message-passing`
+- structure `gamma`: The gamma message family on a positive variable. `src/lib/message-passing/core/families.ts:211` `omai-engine/message-passing`
+- structure `gaussian`: The Gaussian message family in precision form. `src/lib/message-passing/core/families.ts:129` `omai-engine/message-passing`
+- structure `normalGamma`: The normal-gamma message family on a mean and a precision jointly. `src/lib/message-passing/core/families.ts:422` `omai-engine/message-passing`
 
 ## message-passing/engine
 
@@ -124,7 +124,7 @@ The operators of covariance matrices and correlation: the multivariate Gaussian 
 
 The operators of discrete variables: the conjugate probability factors (Bernoulli, discrete, Poisson, binomial, gamma- observed, negative binomial, mixture weight), tables, selects and the Gaussian mixture, and the gate of Minka and Winn. Part of `omai-engine/message-passing`.
 
-- function `gateOperator`: The gate of Minka and Winn: a discrete variable selects among branch factors. `src/lib/message-passing/operators/discrete/gate.ts:101` `omai-engine/message-passing`
+- function `gateOperator`: The gate of Minka and Winn: a discrete variable selects among branch factors. `src/lib/message-passing/operators/discrete/gate.ts:112` `omai-engine/message-passing`
 
 - structure `bernoulliBeta`: A Bernoulli outcome with a beta probability (conjugate). `src/lib/message-passing/operators/discrete/conjugate.ts:41` `omai-engine/message-passing`
 - structure `binomial`: An observed binomial count with a beta probability (conjugate). `src/lib/message-passing/operators/discrete/conjugate.ts:234` `omai-engine/message-passing`

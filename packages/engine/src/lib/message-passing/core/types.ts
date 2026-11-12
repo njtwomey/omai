@@ -88,6 +88,11 @@ export interface Family {
   readonly flat: Eta
   /** Whether a message has a density: a positive precision, positive shape and rate, a positive definite matrix. */
   isProper(eta: Eta): boolean
+  /**
+   * Whether the product of messages is the plain sum of their entries, in any number of steps (no family-specific renormalisation): the
+   * belief of a variable is then accumulated in one array, with the same additions in the same order as the fold of `product`.
+   */
+  readonly additive?: boolean
   /** The message a - the message b added: the product of the two densities, up to a constant. */
   product(a: Eta, b: Eta): Eta
   /** The message a divided by b, with the flag that it is improper. */

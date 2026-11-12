@@ -200,6 +200,8 @@ atom/gate-poisson-negative-binomial vectorise: 66 variables, 96 factors, 0 issue
 atom/gate-poisson-negative-binomial expand: 66 variables, 96 factors, 0 issues; apply x1 bernoulli x30 dot-constant x32 gate x30 prior x2 prior-site x1
 atom/chain-persistence-grid vectorise: 300 variables, 300 factors, 0 issues; difference x49 gaussian-gamma-precision x49 gaussian-log-scale x50 plus x49 prior x4 product x49 times-constant x50
 atom/chain-persistence-grid expand: 300 variables, 300 factors, 0 issues; difference x49 gaussian-gamma-precision x49 gaussian-log-scale x50 plus x49 prior x4 product x49 times-constant x50
+atom/gate-normal-gamma-pairs vectorise: 18 variables, 38 factors, 0 issues; gate x20 gaussian-gamma-precision x4 prior x14
+atom/gate-normal-gamma-pairs expand: 18 variables, 38 factors, 0 issues; gate x20 gaussian-gamma-precision x4 prior x14
 model/beta-bernoulli vectorise: 21 variables, 21 factors, 0 issues; bernoulli x20 prior x1
 model/beta-bernoulli expand: 21 variables, 21 factors, 0 issues; bernoulli x20 prior x1
 model/normal-normal vectorise: 13 variables, 13 factors, 0 issues; gaussian x12 prior x1
