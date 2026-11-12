@@ -318,6 +318,10 @@ Fixes (omai-engine, `probprog`), from the author of the Gaussian-mixtures showca
   spread was a value for each row (`sd.at(z)`, a spread for each group): the known parameter was taken for every row and not
   for the group. It is now taken for the group; when it differs between the rows of one group the site is updated by slice
   steps, which are correct, and not by a closed form.
+- Gibbs: a latent with a feature axis and a group axis (`dims: [feature, group]`, looked up along the group axis with
+  `ops.pick(mu, z)`) failed with "take: index 2 out of range" once there were three groups (and, with two, was silently
+  updated by slice steps): the analysis looked every site up along axis 0. The component axis is now the axis along which the
+  discrete site's codes reproduce the likelihood's parameter, and the closed-form update works along it.
 
 ## 0.1.12
 

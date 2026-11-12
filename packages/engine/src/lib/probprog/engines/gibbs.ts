@@ -174,7 +174,8 @@ function plan<D = void>(model: Model<D>, data: D, a: ProgramAnalysis, collapse: 
           const gs = siteOf(proto, g)
           if (gs === undefined || g === c || !parentsOfChild.includes(g)) return false
           if (gs.value.shape.join() !== cs.value.shape.join()) return false
-          return (s.value.shape[0] ?? -1) > 0 && close(probs, take(s.value, cast(gs.value, 'int32'), 0))
+          const looked = lookup(s.value, gs.value, 0)
+          return looked !== undefined && close(probs, looked)
         })
         if (gather === undefined) {
           ok = false
@@ -245,7 +246,7 @@ function lookup(value: Value, codes: Value, axis: number): Value | undefined {
  */
 function componentAxis(latent: Value, codes: Value, v: Value, child: SampleSite): number | undefined {
   const batch = child.value.shape.slice(0, child.value.shape.length - child.fn.eventShape.length)
-  for (const axis of [0]) {
+  for (let axis = 0; axis < latent.shape.length; axis++) {
     const looked = lookup(latent, codes, axis)
     if (looked === undefined || !shapesEqual(looked.shape, v.shape) || !close(v, looked)) continue
     if (axis + codes.shape.length <= batch.length && shapesEqual(v.shape.slice(0, batch.length), batch)) return axis

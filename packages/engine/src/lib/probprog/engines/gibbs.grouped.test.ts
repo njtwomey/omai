@@ -3,7 +3,7 @@ import { expectPosteriorMoments } from '../../../testing/probprog.ts'
 import { key } from '../../random/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
-import { defineModel, toProgram } from '../model/index.ts'
+import { defineModel, ops, toProgram } from '../model/index.ts'
 import type { Model } from '../primitives.ts'
 import { gibbs } from './gibbs.ts'
 
@@ -81,4 +81,52 @@ describe('Gibbs sampling of mixture components with a spread per group', { timeo
       expectPosteriorMoments(post, 'mu', { mean, sd: Math.sqrt(1 / precision) }, { index: g, z: 5 })
     }
   })
+})
+
+describe('Gibbs sampling of a latent with a feature axis and a group axis', { timeout: 60_000 }, () => {
+  // two features, rows in three clusters (labels 0, 1, 2); a row's centre is the entry of its group in each feature
+  const y = [
+    [-2.4, -1.7, -2.1, 1.8, 2.5, 2.2, 6.1, 5.7, 6.4],
+    [0.1, 0.3, -0.2, 3.1, 2.8, 3.3, -1.9, -2.2, -2.0],
+  ]
+  const build = (groups: number): Model => {
+    const rows = 3 * groups
+    return toProgram(
+      defineModel('feature-by-group', (m) => {
+        const row = m.range('row')
+        const feature = m.range('feature', { size: 2 })
+        const group = m.range('group', { size: groups })
+        const obs = m.data('y', { dims: [feature, row] })
+        // the centres: one for each feature and group, picked along the group axis by the row's group
+        const mu = m.latent('mu', d.normal(0, 3), { dims: [feature, group] })
+        const z = m.latent('z', d.categorical({ probs: Array.from({ length: groups }, () => 1 / groups) }), {
+          dims: [row],
+        })
+        m.observe('y', d.normal(ops.pick(mu, z), 0.5), obs)
+      }).bind({ y: y.map((r) => r.slice(0, rows)) }, { sizes: { group: groups, feature: 2 } }),
+    )
+  }
+
+  for (const groups of [2, 3]) {
+    it(`draws the centres of ${groups} groups from their conjugate posterior`, () => {
+      const model = build(groups)
+      const start = Array.from({ length: 2 }, (_, f) =>
+        Array.from({ length: groups }, (_, g) => {
+          const c = (y[f] ?? []).slice(3 * g, 3 * g + 3)
+          return c.reduce((a, b) => a + b, 0) / 3
+        }),
+      )
+      // each group starts at its cluster (rows 3g to 3g + 2), so that the groups keep their order
+      const init = { mu: start, z: Array.from({ length: 3 * groups }, (_, i) => Math.floor(i / 3)) }
+      const post = gibbs(model, undefined, { key: key(5), numDraws: 1500, numWarmup: 50, init })
+      expect(post.draws?.['mu']?.shape).toEqual([1500, 2, groups])
+      for (let f = 0; f < 2; f++)
+        for (let g = 0; g < groups; g++)
+          expectPosteriorMoments(post, 'mu', centre((y[f] ?? []).slice(3 * g, 3 * g + 3), 0.5), {
+            index: f * groups + g,
+            z: 5,
+          })
+      expect(runsPerSweep(model, init, 20)).toBeLessThan(12)
+    })
+  }
 })
