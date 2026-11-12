@@ -639,3 +639,28 @@ observation). Their reports say what exists; the work packages above absorb it r
 - What remains: a gate whose branch maps to several factors (a hurdle) or to a gate or table of its own, nested gates, a computed
   random index (a function of a latent that is not a discrete variable), and vector-event branches. Gap `gate-node` removed;
   `mixture-regression` (direction) says what is mapped.
+
+## 2026-11-12 Loops: tied groups pack hierarchies and tournaments (`agent-a22fa5-packing`, gap `loopy-overconfidence` narrowed)
+
+- `findGroups` (`_plan.ts`) now groups normal latents that are vectors over one dimension or have a prior of their own, when an
+  observed node reads them linearly (sums, differences, known multiples, indexing, and a link such as `probit` at the top of a
+  parameter; a product of two random values is not linear, so the non-centred `mu + tau z` reads nothing). A group with a scalar beside
+  the vectors, or one vector that a row reads at two places, is joined (200 coordinates at most). Known priors keep the old design (the
+  prior is on the vector, `latentGrouped` now takes vector members); the others are a tied group: the member is made as it is and each
+  element is tied to its coordinate of the vector by an exact `difference` constraint (`tieToGroup`; two definers of one variable are not
+  allowed, so the constraint is an observed zero difference), and the vector starts with a vague message in each coordinate (variance
+  100, replaced by the factor's first update; without it nothing can speak first). Where a tied graph has no EP energy (the cavity of a
+  tie is improper), the evidence is that of the same model compiled without groups (`mp.ts`, method `ep-energy (rows expanded, unpacked)`).
+- Against references (`model/factor-graph/tied-groups.test.ts`): radon (exact quadrature) floor effect sd 0.71 -> 0.91 of the exact, county
+  intercepts 0.82 to 0.98 -> 0.92 to 0.99, mean of the hierarchy 0.85 -> 0.88, means within 0.11 sd (177 sweeps, was 180); the radon counties
+  of the pocs (centred, 12 counties, 4 x 600 NUTS draws): floor effect 0.83 -> 0.96, 24 counties 0.68 -> 0.86; tournament of three players
+  (exact grid) 0.74, 0.76, 0.85 -> 0.99, 1.00, 1.00 in 3 sweeps (28), draws tournament 0.91 -> 1.00 and with the games simulated 0.82 to
+  0.95 -> 1.01 to 1.06, their evidence 0.12 and 0.23 nats from the grid -> 0.0001 and 0.006; the tournament program with a learned spread
+  (8 players, 3 rounds) 0.78 -> 0.97 of NUTS and the truth of `skill-difference-learned` inside the 90% interval 0.87 -> 0.94 (24 seeds).
+- Not packed, and why: the multiclass class slopes and the two shapes of a beta outcome (their sites send one message per port, so a joint
+  vector would receive no off-diagonal term: both need an operator with a vector port, which belongs to the message-passing operators);
+  the 2PL item response model (the logit `a (theta - b)` is a product, bilinear in the latents: 0.04 to 0.7 of the NUTS spread of the
+  discriminations, 30 students, 8 questions, unchanged); the non-centred hierarchy (no linear read; the floor effect 0.86 of NUTS, unchanged).
+- Digest items moved deliberately: `model/radon`, `model/trueskill-three-players`, `atom/skill-draws`, `atom/skill-draws-learned`,
+  `atom/skill-difference-learned`, `program/skills` (spreads move towards the reference; the means within 0.02 sd except the learned
+  tournaments' skills, 0.05 sd). The two draws atoms moved to the `plated` rung with evidence within 0.02 nats.
