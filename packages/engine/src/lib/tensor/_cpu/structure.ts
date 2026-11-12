@@ -3,6 +3,7 @@ import { allocate, type DType } from '../dtype.ts'
 import { broadcastShapes, formatShape, type Shape, sizeOf, stridesOf } from '../shape.ts'
 import type { Tensor } from '../tensor.ts'
 import { assertSameDtype, broadcastIndex, lanes, walkStrided, wrap } from './_util.ts'
+import { planBroadcast, runCopy } from './broadcast.ts'
 
 export function matmul<D extends DType>(a: Tensor<D>, b: Tensor<D>): Tensor<D> {
   assertSameDtype(a, b, 'matmul')
@@ -62,6 +63,15 @@ export function broadcastTo<D extends DType>(x: Tensor<D>, shape: Shape): Tensor
   if (target.length !== shape.length || target.some((n, i) => n !== shape[i])) {
     throw new OmaiError('shape', `cannot broadcast ${formatShape(x.shape)} to ${formatShape(shape)}`)
   }
+  const plan = sizeOf(shape) === 0 ? null : planBroadcast(shape, [x.shape])
+  if (plan === null) return broadcastToIndexed(x, shape)
+  const out = allocate(x.dtype, sizeOf(shape))
+  runCopy(out, x.data, plan)
+  return wrap(x.dtype, shape, out)
+}
+
+/** The general `broadcastTo`: an output-sized index map (used when {@link broadcastTo} has no layout for the shapes). */
+export function broadcastToIndexed<D extends DType>(x: Tensor<D>, shape: Shape): Tensor<D> {
   const index = broadcastIndex(shape, x.shape)
   const out = allocate(x.dtype, index.length)
   for (let i = 0; i < out.length; i++) out[i] = x.data[index[i] ?? 0] ?? 0
@@ -161,6 +171,29 @@ export function pad<D extends DType>(
 export function take<D extends DType>(x: Tensor<D>, indices: Int32Array, axis: number): Tensor<D> {
   const { outer, n, inner } = lanes(x.shape, axis)
   const out = allocate(x.dtype, outer * indices.length * inner)
+  if (inner === 1 && outer > 0) {
+    // Gathering along the last axis (or a vector): the bounds are checked once over the indices (a negative index is a huge
+    // unsigned one, so one comparison covers both ends; every row reads the same indices, so the first failing index is the
+    // one reported, as in the general loop), then each row is a plain copy.
+    const m = indices.length
+    for (let t = 0; t < m; t++) {
+      const index = indices[t] as number
+      if (index >>> 0 >= n) throw new OmaiError('value', `take: index ${index} out of range for length ${n}`)
+    }
+    const data = x.data
+    if (outer === 1) for (let t = 0; t < m; t++) out[t] = data[indices[t] as number] as number
+    else
+      for (let o = 0; o < outer; o++) {
+        const from = o * n
+        const to = o * m
+        for (let t = 0; t < m; t++) out[to + t] = data[from + (indices[t] as number)] as number
+      }
+    return wrap(
+      x.dtype,
+      x.shape.map((s, a) => (a === axis ? m : s)),
+      out,
+    )
+  }
   for (let o = 0; o < outer; o++) {
     for (let t = 0; t < indices.length; t++) {
       const index = indices[t] ?? 0
@@ -186,6 +219,20 @@ export function takeScatter<D extends DType>(
   const shape = updates.shape.map((s, a) => (a === axis ? size : s))
   const { outer, inner } = lanes(shape, axis)
   const out = allocate(updates.dtype, sizeOf(shape))
+  if (inner === 1) {
+    // Scattering along the last axis (segment sums of a vector): the accumulation order is that of the loop below.
+    const m = indices.length
+    const data = updates.data
+    for (let o = 0; o < outer; o++) {
+      const from = o * m
+      const to = o * size
+      for (let t = 0; t < m; t++) {
+        const dst = to + (indices[t] as number)
+        out[dst] = (out[dst] as number) + (data[from + t] as number)
+      }
+    }
+    return wrap(updates.dtype, shape, out)
+  }
   for (let o = 0; o < outer; o++) {
     for (let t = 0; t < indices.length; t++) {
       const src = (o * indices.length + t) * inner
@@ -200,6 +247,23 @@ export function takeAlongAxis<D extends DType>(x: Tensor<D>, indices: Tensor<'in
   const { outer, n, inner } = lanes(x.shape, axis)
   const m = indices.shape[axis] ?? 0
   const out = allocate(x.dtype, outer * m * inner)
+  if (inner === 1) {
+    // Picking along the last axis: a running offset per row, the bounds check per index as below.
+    const data = x.data
+    const picks = indices.data
+    for (let o = 0; o < outer; o++) {
+      const from = o * n
+      const to = o * m
+      for (let t = 0; t < m; t++) {
+        const index = picks[to + t] as number
+        if (index < 0 || index >= n) {
+          throw new OmaiError('value', `takeAlongAxis: index ${index} out of range for length ${n}`)
+        }
+        out[to + t] = data[from + index] as number
+      }
+    }
+    return wrap(x.dtype, indices.shape, out)
+  }
   for (let o = 0; o < outer; o++) {
     for (let t = 0; t < m; t++) {
       for (let k = 0; k < inner; k++) {
@@ -224,6 +288,19 @@ export function putAlongAxisAdd<D extends DType>(
   const { outer, n, inner } = lanes(shape, axis)
   const m = indices.shape[axis] ?? 0
   const out = allocate(updates.dtype, sizeOf(shape))
+  if (inner === 1) {
+    const data = updates.data
+    const picks = indices.data
+    for (let o = 0; o < outer; o++) {
+      const from = o * m
+      const to = o * n
+      for (let t = 0; t < m; t++) {
+        const dst = to + (picks[from + t] as number)
+        out[dst] = (out[dst] as number) + (data[from + t] as number)
+      }
+    }
+    return wrap(updates.dtype, shape, out)
+  }
   for (let o = 0; o < outer; o++) {
     for (let t = 0; t < m; t++) {
       for (let k = 0; k < inner; k++) {

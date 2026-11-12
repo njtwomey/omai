@@ -274,12 +274,20 @@ function normaliseSlice(
  */
 function wrapIndices(idx: Value, n: number, op?: string): Value {
   if (!isTensor(idx)) return idx
-  const wrapped = Int32Array.from(idx.data as Int32Array, (i) => {
+  const source = idx.data as Int32Array
+  const length = source.length
+  // The common case first: indices already in range are used as they are (tensors are immutable, nothing is copied).
+  let t = 0
+  if (op === undefined) while (t < length && (source[t] as number) >= 0) t++
+  else while (t < length && (source[t] as number) >>> 0 < n) t++
+  if (t === length) return idx
+  const wrapped = new Int32Array(length)
+  for (let k = 0; k < length; k++) {
+    const i = source[k] as number
     const j = i < 0 ? i + n : i
-    if (op !== undefined && (j < 0 || j >= n))
-      throw new OmaiError('value', `${op}: index ${i} out of range for length ${n}`)
-    return j
-  })
+    if (op !== undefined && j >>> 0 >= n) throw new OmaiError('value', `${op}: index ${i} out of range for length ${n}`)
+    wrapped[k] = j
+  }
   return cpu.wrap('int32', idx.shape, wrapped)
 }
 
@@ -504,6 +512,16 @@ export function topk(
  */
 export function oneHot(labels: TensorLike, n: number): Value {
   const l = indexTensor(labels)
+  if (isTensor(l)) {
+    // Concrete labels: a zero array with a one at each label (a label outside [0, n) gives a row of zeros, as the comparison below does).
+    const ids = l.data as Int32Array
+    const out = new Float64Array(ids.length * n)
+    for (let i = 0; i < ids.length; i++) {
+      const c = ids[i] as number
+      if (c >= 0 && c < n) out[i * n + c] = 1
+    }
+    return cpu.wrap('float64', [...l.shape, n], out)
+  }
   const classes = cpu.wrap(
     'int32',
     [n],
