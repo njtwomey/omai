@@ -9,6 +9,7 @@ import { type FactorSpec, type GateBranch, gaussianMvPrior, gaussianPrior } from
 import type { ExprSpec, ModelNode } from '../../spec.ts'
 import { GateBuilder, precisionBranch, precisionFactor } from '../_builder.ts'
 import { affOf, type Cell, combine, isConstCell, logName, type Precision, prod } from '../_cells.ts'
+import { takeChainStep } from '../_chains.ts'
 import type { Context } from '../_context.ts'
 import { precisionExpr, stripClip } from '../_idioms.ts'
 import { NOT_MINE, probe } from '../_mapping.ts'
@@ -510,8 +511,11 @@ export function latentRandomPrecision(
       family: { kind: 'gaussian' },
     })
     const l = loc[i] as Cell
-    const mean = cx.g.portOf(l, node.name, node.dims.length === 0 ? undefined : i)
-    cx.g.addFactor(precisionFactor(name, mean, tau), name)
+    // A step of an unrolled scan with known coefficients is a link of the series' chain factor (`_chains.ts`), written after the nodes.
+    if (!(node.dims.length === 0 && takeChainStep(cx, node.name, l, tau))) {
+      const mean = cx.g.portOf(l, node.name, node.dims.length === 0 ? undefined : i)
+      cx.g.addFactor(precisionFactor(name, mean, tau), name)
+    }
     cells.push(cx.g.varAtom(name))
     vars.push(name)
   }

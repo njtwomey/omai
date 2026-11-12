@@ -287,9 +287,17 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
   },
   {
     name: 'normal',
-    maps: 'a normal: a Gaussian variable per element, with a known or random mean and scale (a precision, a random scale, a switch), grouped or packed where the plan says; a truncation constrains it',
+    maps: 'a normal: a Gaussian variable per element, with a known or random mean and scale (a precision, a random scale, a switch), grouped or packed where the plan says; the steps of an unrolled scan with known coefficients and one gamma precision are the links of one gaussian-chain factor (with packScalars); a truncation constrains it',
     families: ['normal'],
-    requires: ['gate', 'gaussian', 'gaussian-gamma-precision', 'gaussian-mv-precision-scale', 'greater-than', 'prior'],
+    requires: [
+      'gate',
+      'gaussian',
+      'gaussian-chain',
+      'gaussian-gamma-precision',
+      'gaussian-mv-precision-scale',
+      'greater-than',
+      'prior',
+    ],
     matches: (_cx, node) => node.dist.family === 'normal',
     map: (cx, node) => {
       latentNormal(cx, node)

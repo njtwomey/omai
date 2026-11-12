@@ -42,6 +42,7 @@ import {
 import type { SpecAnalysis } from './analysis.ts'
 import type { BoundModel } from './bind.ts'
 import { eventToDims } from './event-dims.ts'
+import { finishChains } from './factor-graph/_chains.ts'
 import { Context } from './factor-graph/_context.ts'
 import { Refusal } from './factor-graph/_refusal.ts'
 import { mapNode } from './factor-graph/_table.ts'
@@ -176,6 +177,12 @@ export function toFactorGraph(
   )
   c.run()
   const cx = c.cx
+  try {
+    finishChains(cx)
+  } catch (e) {
+    if (!(e instanceof Refusal)) throw e
+    cx.issues.push({ node: cx.current, kind: e.kind, code: e.code, reason: e.message })
+  }
   cx.g.prune(cx.sites)
   const graph: FactorGraphSpec = { variables: cx.g.variables, factors: cx.g.factors }
   const opaque = (options.analysis?.opaque ?? opaqueNodes(bound)).filter((name) => {
