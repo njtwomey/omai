@@ -77,3 +77,9 @@ model against closed forms; a hierarchical model with eight groups of three effe
 Searched for Wishart, LKJ, normal-Wishart, `gaussian-mv`, `eigh`, Gauss-Laguerre, `transformed`, `affine`, the pair and likelihood grids. Reused: the library's `wishart`, `inverseWishart`, `lkj` distributions and their fixtures
 (no new fixtures: no new library distribution), `gaussianMv`, `defineFamily`, `gammaAxis` (`_grid.ts`), `gaussLegendre`/`gaussHermite`/`gaussLaguerre`, `transformed` and `bijectors.affine` for the correlation,
 the `plate` and `addPlated` machinery, `eventVector`, the atom scaffold (`defineAtom`, `atomCalibration`, `hyperPosterior`-style exact marginals), `linear-regression-row` for the readings.
+
+## 5. Update (2026-11-12, `agent-a3e7a0-matrix`)
+
+Sections 3's two limits moved: with a random population mean the group vectors, the mean and the matrix are now one factor (`mvn-wishart-group`), which removes the loop that made the mean too narrow and the
+matrix too wide with few groups (the changelog has the numbers), and dimension 4 is allowed (three nodes per coordinate). The gap `hierarchical-matrix-few-groups` became `correlation-strong-few-pairs` (the beta
+belief of a strong correlation); `matrix-larger` lists what stays out (dimension 5, LKJ of order 3, a latent bivariate vector with its own sds and correlation, a normal-Wishart variable in a larger model).

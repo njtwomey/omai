@@ -243,10 +243,10 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
   },
   {
     name: 'mvn-wishart',
-    maps: 'a multivariate normal whose precision (or covariance) is a Wishart latent: the normal-Wishart pair with an mvn-normal-wishart factor',
+    maps: 'a multivariate normal whose precision (or covariance) is a Wishart latent: an mvn-wishart factor per vector for a known mean, one mvn-wishart-group factor for all the vectors when the mean is a Gaussian vector variable',
     order: 'before the plain multivariate normal below',
     families: ['multivariateNormal'],
-    requires: ['mvn-wishart', 'prior'],
+    requires: ['mvn-wishart', 'mvn-wishart-group', 'prior'],
     matches: (cx, node) => node.dist.family === 'multivariateNormal' && wishartOf(cx, node) !== undefined,
     map: (cx, node) => latentMvnWishart(cx, node),
   },

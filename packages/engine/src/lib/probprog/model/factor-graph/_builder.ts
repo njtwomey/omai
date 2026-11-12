@@ -231,6 +231,18 @@ export class GraphBuilder {
     return name
   }
 
+  /**
+   * The name of an auxiliary factor that defines no variable of its own (a tie of a variable to a coordinate of a vector): the next
+   * `<site>#<k>[<flat index>]`, the id the factor is added under, kept in step with `auxName` so the two never collide.
+   */
+  auxFactorName(site: string, index: number | undefined): string {
+    const key = `${site}|${index ?? ''}`
+    const k = this.auxCount.get(key) ?? 0
+    this.auxCount.set(key, k + 1)
+    this.auxLog.push(key)
+    return auxId(site, k, index)
+  }
+
   atomKey(a: Atom): string {
     return a.kind === 'var' ? `v:${a.name}` : `c:${a.vector}:${a.index}`
   }
@@ -250,14 +262,26 @@ export class GraphBuilder {
   }
 
   /** The scalar variable that stands for coordinate `index` of a vector variable (made on first use, a unit `dot-constant`). */
-  component(vector: string, index: number, size: number): string {
+  component(vector: string, index: number, size: number, vagueVariance?: number): string {
     const name = elementId(vector, index)
     if (!this.components.has(name)) {
       this.components.set(name, name)
       this.addVariable({ name, family: { kind: 'gaussian' } })
       const a = new Array<number>(size).fill(0)
       a[index] = 1
-      this.addFactor({ operator: 'dot-constant', args: [name, vector], params: { a } }, name)
+      // A vector with no prior of its own begins with a vague message in each coordinate (the factor's first update replaces it),
+      // so the other factors on it have a proper cavity to start from.
+      const vague = [...new Array<number>(size).fill(0), ...new Array<number>(size * size).fill(0)]
+      if (vagueVariance !== undefined) vague[size + index * size + index] = 1 / vagueVariance
+      this.addFactor(
+        {
+          operator: 'dot-constant',
+          args: [name, vector],
+          params: { a },
+          ...(vagueVariance === undefined ? {} : { start: [[0, 1 / vagueVariance], vague] }),
+        },
+        name,
+      )
     }
     return name
   }

@@ -642,10 +642,14 @@ const skillDrawsAtom: EpAtom = defineAtom({
   family: 'likelihoods',
   reference: 'exact',
   tolerance: tolerance(
-    'wide',
-    'each result is a Gaussian times the mass between two cut points that EP projects onto a Gaussian, and the skills share the games',
+    'plated',
+    'the skills are one joint Gaussian vector (every game reads two of them), so the loop between players who met is carried and what is left is the projection of each result onto a Gaussian: 1.00 of the exact spread (0.91 when the skills were separate variables), the means within 0.01 sd',
   ),
-  evidence: { nats: 0.25, reason: 'draws as an ordinal probit on two skills: loopy, moment matched (0.12 measured)' },
+  evidence: {
+    nats: 0.02,
+    reason:
+      'draws as an ordinal probit on two skills of one joint vector: the loop is carried, what is left is the moment matching of each result (0.0001 measured, 0.12 when the skills were separate variables; the learned twin 0.006, was 0.23)',
+  },
   knobs: dict({ margin: real(0.1, 2, { default: 0.7, step: 0.05, label: 'draw margin' }) }),
   parts: drawsProblem,
 })
@@ -716,13 +720,16 @@ const skillDrawsLearnedAtom: EpAtom = defineAtom({
   extends: 'skill-draws',
   recovery: recovery(
     'quick',
-    'the skills share the games (a loop: players who met have correlated posteriors and EP is a little narrow) and only differences are identified, the prior fixing the level; the truth is drawn from the prior scale, so the floor leaves room',
+    'the skills share the games (players who met have correlated posteriors; they are one joint vector, so EP carries that) and only differences are identified, the prior fixing the level; the truth is drawn from the prior scale, so the floor leaves room',
   ),
   what: 'The tournament with draws of the basic atom with the three skills unknown, the games (each pair several times) simulated from stated skills and the same draw margin.',
   factors: ['prior (gaussian) x3', 'ordinal probit on a difference of two variables'],
   family: 'likelihoods',
   reference: 'exact',
-  tolerance: tolerance('lumpy', 'the skills share every game, so one Gaussian each cannot hold their correlations'),
+  tolerance: tolerance(
+    'plated',
+    'the skills are one joint Gaussian vector (every game reads two of them), so their correlations are carried: 1.01 to 1.06 of the exact spreads (0.82 to 0.95 when they were separate variables), the means within 0.06 sd',
+  ),
   knobs: dict({
     ...simulationKnobs(4),
     margin: real(0.1, 2, { default: 0.7, step: 0.05, label: 'draw margin' }),

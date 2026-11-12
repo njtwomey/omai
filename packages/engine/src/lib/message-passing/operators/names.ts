@@ -71,6 +71,7 @@ export const operatorNames = [
   'stick-breaking',
   'gaussian-transition',
   'mvn-wishart',
+  'mvn-wishart-group',
   'mvn-normal-wishart',
   'mvn-sd-corr',
   'gate',

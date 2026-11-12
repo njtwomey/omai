@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { massOf, messageArg, valueArg } from '../core/args.ts'
+import { ImproperMessageError } from '../core/errors.ts'
 import { gamma, gammaEta, gaussian, gaussianEta } from '../core/families.ts'
 import { discrete, discreteEta, gaussianMv, gaussianMvEta } from '../core/families-vector.ts'
 import type { Arg, FactorOperator, Params } from '../core/types.ts'
@@ -129,9 +130,9 @@ describe('gaussian-gamma-precision: the log evidence', () => {
     expect(evidence(gaussianGammaPrecision, args, {})).toBeCloseTo(brute, 7)
   })
 
-  it('a flat cavity of the value has no evidence yet', () => {
+  it('a flat cavity of the value has no evidence yet: the rule says so as an improper message (the engine reads it as NaN)', () => {
     const args = [messageArg(gaussian, gaussian.flat), valueArg(gaussian, 0), messageArg(gamma, gammaEta(2, 1))]
-    expect(Number.isNaN(evidence(gaussianGammaPrecision, args, {}))).toBe(true)
+    expect(() => evidence(gaussianGammaPrecision, args, {})).toThrow(ImproperMessageError)
   })
 })
 

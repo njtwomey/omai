@@ -181,8 +181,19 @@ function specMethod<P extends string>(
     const known = rowEvidence.get(state)
     if (known !== undefined) return known
     let found: { readonly value: number; readonly method: string } | null = null
-    const rows = prepare(model, 'expand', options.packScalars ?? rule === 'ep')
-    if (rows?.graph !== undefined) {
+    const packing = options.packScalars ?? rule === 'ep'
+    // The same model with a factor per row; failing that without the groups of tied latents (their ties have no proper cavity, so
+    // the energy of a packed graph is undefined there), which is the energy of the model as it was before it was packed.
+    const attempts: readonly (readonly [boolean, string])[] = packing
+      ? [
+          [true, 'ep-energy (rows expanded)'],
+          [false, 'ep-energy (rows expanded, unpacked)'],
+        ]
+      : [[false, 'ep-energy (rows expanded)']]
+    for (const [pack, method] of attempts) {
+      if (found !== null) break
+      const rows = prepare(model, 'expand', pack)
+      if (rows?.graph === undefined) continue
       const run = runAlgorithm(
         epAlgorithm(rows.graph, {
           tol: tol(config),
@@ -195,8 +206,7 @@ function specMethod<P extends string>(
         engine: name,
         rule,
       }).logEvidence
-      if (v !== undefined && Number.isFinite(v.value) && run.status === 'converged')
-        found = { value: v.value, method: 'ep-energy (rows expanded)' }
+      if (v !== undefined && Number.isFinite(v.value) && run.status === 'converged') found = { value: v.value, method }
     }
     rowEvidence.set(state, found)
     return found

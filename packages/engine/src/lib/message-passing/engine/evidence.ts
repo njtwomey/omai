@@ -13,7 +13,7 @@ import type { EngineSettings, MpState } from './state.ts'
 
 /**
  * The EP evidence of one factor against its cavity. The one place an improper cavity (a message with no density, which makes the
- * integral of the factor diverge) is caught, for every operator whether or not it asks for it (`evidence.improperIsNaN`): the
+ * integral of the factor diverge) is caught, for every operator, whether or not it wraps its own rule (`evidence.improperIsNaN`): the
  * factor then has no evidence, `NaN`, and the run goes on (`evidenceOf` is `NaN`, `evidenceDefects` names the factor).
  */
 function factorEvidence(g: CompiledGraph, s: Pick<EngineSettings, 'projection'>, state: MpState, fi: number): number {

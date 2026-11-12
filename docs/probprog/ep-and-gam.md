@@ -105,8 +105,11 @@ Measured on the page's data (sine, 60 rows, 10 coefficients), the forms of the p
 | ARD (the four hyper settings are one model) | yes     | 0.009 against NUTS             | 0.99             |                        | 24 sweeps, 1.0 s; bases in use within 0.05 of NUTS |
 | spike and slab, all four               | yes          |                                |                  |                        | (earlier work)                           |
 
-Variational message passing still refuses these forms (its non-conjugate message for a scale is degenerate): gap
-`non-centred-scale` in `ep-gaps.ts`, now only that and the 12% spreads. Notes: `notes/ep-notes-densegam.md`.
+Variational message passing runs the dense penalty form with log-normal hyperpriors (the `gaussian-mv-function-scale` factor has
+a variational rule: the Gaussian density of the vector given `x`, the quadrature of the variational kernel for `x`): curve 0.004
+response sd from the exact reference, band 0.996, log smoothing 2.58 +- 0.57 (exact 2.53 +- 0.62), 46 sweeps. It still refuses ARD
+(each coefficient a scalar `apply-product` tied to the vector by factors that define the scalars from it): gap `non-centred-scale`
+in `ep-gaps.ts`, now only that and the 12% spreads. Notes: `notes/ep-notes-densegam.md`.
 
 ## Optimising instead
 

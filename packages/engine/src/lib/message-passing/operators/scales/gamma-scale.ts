@@ -136,7 +136,6 @@ export const gammaRate: FactorOperator = defineOperator({
     }),
   },
   evidence: {
-    improperIsNaN: true,
     ep: (c) => {
       const { shape: a, scale } = rateParams(c)
       const x = gammaShapeRate(etaOf(arg(c, 0)))
@@ -208,7 +207,6 @@ export const gammaProduct: FactorOperator = defineOperator({
     }),
   },
   evidence: {
-    improperIsNaN: true,
     ep: (c) => {
       const p = gammaShapeRate(etaOf(arg(c, 0)))
       const properGamma = (i: number): boolean => gamma.isProper(etaOf(arg(c, i)))

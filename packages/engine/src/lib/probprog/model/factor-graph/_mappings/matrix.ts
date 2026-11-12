@@ -186,9 +186,9 @@ export function vectorMean(
 /**
  * Gaussian vectors `x ~ N(loc, L^-1)` with `L` a Wishart latent (or `N(loc, Sigma)` with `Sigma` an inverse-Wishart one), one vector
  * per index of the plate dimensions before the last, which names the vector's axis (`dims: [group, coef]`; `dims: [coef]` is one
- * vector): a Gaussian vector variable and an `mvn-wishart` factor per vector. The mean is known or one Gaussian vector variable
- * (a population mean), so the vectors are the correlated random effects of a hierarchical model, and a likelihood reads their
- * coordinates as `theta.at(group)` summed against a design over the axis.
+ * vector): a Gaussian vector variable per vector and an `mvn-wishart` factor per vector for a known mean, or, when the mean is one Gaussian vector
+ * variable (a population mean), a single `mvn-wishart-group` factor for all of them. The vectors are the correlated random effects of a
+ * hierarchical model, and a likelihood reads their coordinates as `theta.at(group)` summed against a design over the axis.
  */
 export function latentMvnWishart(cx: Context, node: ModelNode & { readonly kind: 'latent' }): void {
   const w = wishartOf(cx, node) as NonNullable<ReturnType<typeof wishartOf>>
@@ -202,15 +202,24 @@ export function latentMvnWishart(cx: Context, node: ModelNode & { readonly kind:
   const mean = vectorMean(cx, node, d, plateDims, vectorDim)
   const cells: Cell[] = []
   const vars: string[] = []
+  const shared = mean.at(0)
+  // A Gaussian population mean shared by the vectors: ONE factor for the group (`mvn-wishart-group`), which integrates the vectors and the mean out
+  // together; a factor per vector would form a loop through the mean and the matrix and leave the mean too narrow with few groups.
+  const grouped = typeof shared === 'string' && 'mvn-wishart-group' in cx.g.ops
   for (let r = 0; r < rows; r++) {
     const name = cx.g.addVariable({
       name: cx.elementName(node.name, plateDims, r),
       family: { kind: 'gaussian-mv', size: d },
     })
-    cx.g.addFactor({ operator: 'mvn-wishart', args: [name, mean.at(r), w.variable] }, name)
+    if (!grouped) cx.g.addFactor({ operator: 'mvn-wishart', args: [name, mean.at(r), w.variable] }, name)
     for (let k = 0; k < d; k++) cells.push(cx.g.compAtom(name, k, d))
     vars.push(name)
   }
+  if (grouped)
+    cx.g.addFactor(
+      { operator: 'mvn-wishart-group', args: [...vars, shared, w.variable], params: { groups: rows } },
+      node.name,
+    )
   cx.syms.set(node.name, { dims: node.dims, cells })
   cx.layout(node, 'latent', 'gaussian-mv', plateDims.length === 0 ? 'packed' : 'elements', vars, true)
 }

@@ -294,7 +294,6 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
       }, 'bound'),
     },
     evidence: {
-      improperIsNaN: true,
       ep: (c) => {
         const branches = branchesOf(c.params)
         const pz = stateProbabilities(arg(c, 0), branches.length)

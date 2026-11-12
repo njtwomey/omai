@@ -475,9 +475,9 @@ function scaledTilt(fn: UnaryFunction, c: OperatorContext): ScaledTilt {
  * ```ts
  * import { applyProduct, gaussian, gaussianEta, messageArg } from 'omai-engine/message-passing'
  * const op = applyProduct('apply-product')
- * // y = z / sqrt(x) with z ~ N(0, 1) and x ~ N(4, 0.01): told nothing about y, the message to y is about N(0, 1 / 4).
+ * // y = z / sqrt(x) with z ~ N(0, 1) and x ~ N(4, 0.01): told nothing about y, the message to y is N(0, E[1 / x]), precision 1 / E[1 / x] = 3.997.
  * const args = [gaussian.flat, gaussianEta(0, 1), gaussianEta(4, 0.01)].map((eta) => messageArg(gaussian, eta))
- * op.ep?.({ mode: 'ep', to: 0, args, params: { steps: [['sqrt'], ['recip']] }, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.000', '4.000']
+ * op.ep?.({ mode: 'ep', to: 0, args, params: { steps: [['sqrt'], ['recip']] }, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.000', '3.997']
  * ```
  */
 export function applyProduct(
