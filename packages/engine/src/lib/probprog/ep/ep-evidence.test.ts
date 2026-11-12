@@ -1,6 +1,7 @@
 // EP's log evidence against the grid evidence of the same model, on the atoms whose grid is fast: every rule that carries an evidence
 // is checked at model level, not only per operator (operators/evidence.test.ts). The tolerances are in nats and say why they are not tight.
 import { describe, expect, it } from 'vitest'
+import { type Value, toFlat } from '../../tensor/index.ts'
 import { session } from '../../trace/index.ts'
 import { epSpecMethod } from '../inference/index.ts'
 import { toProgram } from '../model/index.ts'
@@ -35,7 +36,8 @@ describe('the EP log evidence of the summed-out spike and slab with a learned sh
     const run = atomRun(problem, atom.ep ?? {}, { light: true })
     expect(run.status).toBe('ran')
     if (run.status !== 'ran') return
-    const y = (problem.data as { y: number[] }).y
+    // the simulated values are a tensor (the atom builds them with tensor ops)
+    const y = toFlat((problem.data as { y: Value }).y)
     const noise = atom.defaults['noise'] as number
     const normal = (v: number, sd: number): number => -0.5 * Math.log(2 * Math.PI * sd * sd) - (v * v) / (2 * sd * sd)
     const logBeta = (p: number, a: number, b: number): number =>
