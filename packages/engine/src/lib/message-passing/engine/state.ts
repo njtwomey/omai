@@ -50,9 +50,9 @@ export interface EngineSettings {
   readonly warmup?: number
   /**
    * How many times a run that stalls (or diverges) is restarted from its start messages with a stronger damping before it is
-   * reported as stalled (default 0: report it at once). The damping of the first restart is `max(damping, 0.5)`, and each
-   * further one moves a step of 0.3 toward 0.9. A run already damped as much as its restart would be (a damping of a half or
-   * more) is not restarted, since the restart would repeat it exactly: it is judged as the restart would be (see `mpVerdict`).
+   * reported as stalled (default 0: report it at once). The restarts are damped 0.5, 0.8 and 0.9, those stronger than the run's own (a
+   * run damped by 0.5 restarts at 0.8, then 0.9). A run already damped by 0.9 or more is not restarted, since a restart would repeat it
+   * exactly: it is judged as the restart would be (see `mpVerdict`).
    */
   readonly restarts?: number
 }
