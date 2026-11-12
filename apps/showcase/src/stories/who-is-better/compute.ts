@@ -15,11 +15,10 @@ import * as d from 'omai-engine/probprog/model/dists'
 import { session } from 'omai-engine/trace'
 // endregion
 
-import { type ModelRun, modelRunFromTape } from 'omai-engine/exposition'
-import { toStructure } from 'omai-engine/probprog/model'
+import type { ModelRun } from 'omai-engine/exposition'
 import { arange, sliceAxis, toFlat } from 'omai-engine/tensor'
 import type { Say } from '../../kit/protocol.ts'
-import { replayRecord } from '../../kit/replay.ts'
+import { replayOfModel } from '../../kit/replay.ts'
 import { DRAW_MARGIN, EARLY, type Games, PLAYERS, playGames, ROUNDS, shuffled, tournament } from './data.ts'
 
 /** A rating: the mean and the standard deviation of a player's skill. */
@@ -98,9 +97,7 @@ export function rate(
     ratings: PLAYERS.map((_, i) => ({ mean: mean[i] as number, sd: sd[i] as number })),
     sweeps: run.t,
     settled: run.status === 'converged',
-    record: keepRecord
-      ? replayRecord(modelRunFromTape(toStructure(bound, { view: 'factor' }), { run: run.run() }, { maxMessages: 6 }))
-      : undefined,
+    record: keepRecord ? replayOfModel(bound, run.run()) : undefined,
   }
 }
 

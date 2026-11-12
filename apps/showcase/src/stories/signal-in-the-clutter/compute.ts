@@ -15,11 +15,10 @@ import { clutterProblem, clutterTruth } from 'omai-engine/probprog/models'
 import { session } from 'omai-engine/trace'
 // endregion
 
-import { type ModelRun, modelRunFromTape } from 'omai-engine/exposition'
-import { toStructure } from 'omai-engine/probprog/model'
+import type { ModelRun } from 'omai-engine/exposition'
 import { linspace, toFlat } from 'omai-engine/tensor'
 import type { Say } from '../../kit/protocol.ts'
-import { replayRecord } from '../../kit/replay.ts'
+import { replayOfModel } from '../../kit/replay.ts'
 import { clearReadings, RANGE, withDecoys } from './data.ts'
 
 /** The curve the exact posterior is drawn on: values of the hidden value, and the density at each. */
@@ -102,9 +101,7 @@ export function solve(readings: readonly number[], say: Say = () => {}, size: Si
     exact: { mean: oracle.mean, sd: oracle.sd, curve: { x: xs, density }, peak },
     sweeps: run.t,
     settled: run.status === 'converged',
-    record: size.record
-      ? replayRecord(modelRunFromTape(toStructure(bound, { view: 'factor' }), { run: run.run() }, { maxMessages: 6 }))
-      : undefined,
+    record: size.record ? replayOfModel(bound, run.run()) : undefined,
   }
 }
 

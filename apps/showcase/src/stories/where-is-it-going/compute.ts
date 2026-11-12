@@ -15,11 +15,10 @@ import * as d from 'omai-engine/probprog/model/dists'
 import { session } from 'omai-engine/trace'
 // endregion
 
-import { type ModelRun, modelRunFromTape } from 'omai-engine/exposition'
-import { toStructure } from 'omai-engine/probprog/model'
+import type { ModelRun } from 'omai-engine/exposition'
 import { concat, full, tensor, zeros } from 'omai-engine/tensor'
 import type { Say } from '../../kit/protocol.ts'
-import { replayRecord } from '../../kit/replay.ts'
+import { replayOfModel } from '../../kit/replay.ts'
 import { AHEAD, DT, READING_SD, READINGS, START, simulate, stepCovariance } from './data.ts'
 
 /** A belief about the position at one step: its mean and the ends of a 90 percent interval. */
@@ -126,9 +125,7 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
     },
     sweeps: run.t,
     settled: run.status === 'converged',
-    record: size.record
-      ? replayRecord(modelRunFromTape(toStructure(bound, { view: 'factor' }), { run: run.run() }, { maxMessages: 6 }))
-      : undefined,
+    record: size.record ? replayOfModel(bound, run.run()) : undefined,
   }
 }
 

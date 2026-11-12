@@ -17,11 +17,11 @@ import { add, div, item, linspace, log, mul, square, sub, sum, take, tensor, toF
 import { metricSeries, session } from 'omai-engine/trace'
 // endregion
 
-import { type ModelRun, modelRunFromTape } from 'omai-engine/exposition'
+import type { ModelRun } from 'omai-engine/exposition'
 import { type EpPath, graphStructure, type MpState } from 'omai-engine/message-passing'
 import type { Config, Session } from 'omai-engine/trace'
 import type { Say } from '../../kit/protocol.ts'
-import { replayRecord } from '../../kit/replay.ts'
+import { replayOf } from '../../kit/replay.ts'
 import { CLUTTER_CHANCE, CLUTTER_SD, MAX_SWEEPS, ROWS, SHOWN_SWEEP, TOLERANCE } from './data.ts'
 
 /** A bell curve: its centre and its standard deviation, or `null` where the message has no bell (a flat or negative precision). */
@@ -214,7 +214,7 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
     },
     standIns: shown.map((sweep) => ({ sweep, messages: messagesAt(sweep * factors).map(messageOf) })),
     taken,
-    record: replayRecord(modelRunFromTape(graphStructure(graph.spec), { run: run.run() }, { maxMessages: 6 })),
+    record: replayOf(graphStructure(graph.spec), run.run()),
     ep: final,
     logEvidence: evidence,
     exact: {
