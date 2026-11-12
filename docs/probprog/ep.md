@@ -247,7 +247,7 @@ that order inside the if-chains is semantics. **Target**: add an entry to the or
 shows the code that ran; `defineAtom` with `name`, `title`, `what`, `factors`, `family`, `reference`, `tolerance` (with the reason),
 `knobs` and `parts` (the build, the reference and the presentation); `ep:` only for knobs of EP the atom needs (`damping`, `tol`, `power`); a learned twin adds `extends` and
 `recovery` and carries the `truth` on every quantity. Add it to the array at the end of the family file (the registry concatenates them). A page needs two files in
-`apps/pocs/src/pocs/ep-<atom>/` (the owner's call: pocs are added on request). Then `make barrels agent-index api-surface`, the atom's
+`apps/pocs/src/pocs/expectation-propagation/<section>/ep-<atom>/` (`basic`, `priors` or `learned`: the directory is the section; the owner's call: pocs are added on request). Then `make barrels agent-index api-surface`, the atom's
 test through the registry (`ep-atoms.test.ts` runs every atom), and the digest: a new atom adds its item (`--accept` in its own commit).
 
 **A reference.** A closed form from `validation/exact.ts` (`normalNormal`, `betaBernoulli`, `gammaPoisson`, `dirichletCategorical`)
@@ -268,5 +268,5 @@ the atom page take it from there.
 | the methods, route, knobs | `packages/engine/src/lib/probprog/inference/{mp,ep-grid,ep-multistart,ep-route,ep-knobs}.ts` |
 | the suite | `packages/engine/src/lib/probprog/ep/` |
 | the digest and the report | `scripts/ep-digest*.ts`, `scripts/ep-report.ts`; `docs/probprog/ep-digest.json`, `ep-status.md` |
-| the pages | `apps/pocs/src/pocs/ep-*`, `apps/pocs/src/shared/EpAtomPage.tsx` |
+| the pages | `apps/pocs/src/pocs/expectation-propagation/**/ep-*`, `apps/pocs/src/shared/EpAtomPage.tsx` |
 | the reviews with the target structure | `docs/probprog/review-{compiler,rules,suite}.md` |
