@@ -3,10 +3,12 @@
 // Wishart site (`covariance.ts`) and the standard-deviation-and-correlation site (`correlation.ts`).
 
 import { OmaiError } from '../../../base/index.ts'
+import { div, eye, mul } from '../../../tensor/index.ts'
 import { FLAT_CAVITY_PRECISION, numberParam } from '../../core/args.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { wishartParams } from '../../core/families-matrix.ts'
 import type { Arg, Eta, OperatorContext } from '../../core/types.ts'
+import { float64Of, zeroFloat64 } from '../../numerics/_arrays.ts'
 import { choleskyInPlace, choleskyInverse, choleskyLogDet, choleskySolveInPlace } from '../../numerics/_bartlett.ts'
 
 const LOG_2PI = Math.log(2 * Math.PI)
@@ -25,7 +27,7 @@ export function rowsOf(params: OperatorContext['params'], d: number): Rows {
   const count = numberParam(params, 'count', 1)
   if (!(count >= 1)) throw new ParameterError('mvn-wishart: count is the number of rows, at least 1')
   const given = params['scatter']
-  const scatter = given === undefined ? new Float64Array(d * d) : Float64Array.from(given as readonly number[])
+  const scatter = given === undefined ? zeroFloat64(d * d) : Float64Array.from(given as readonly number[])
   if (scatter.length !== d * d)
     throw new OmaiError('shape', `mvn-wishart: scatter has ${scatter.length} entries, expected ${d * d}`)
   return { count, scatter }
@@ -55,20 +57,17 @@ export function gaussianSide(a: Arg, d: number): GaussianSide {
       point: true,
       flat: false,
       mean: Float64Array.from(v),
-      h: new Float64Array(d),
-      precision: new Float64Array(d * d),
-      cov: new Float64Array(d * d),
+      h: zeroFloat64(d),
+      precision: zeroFloat64(d * d),
+      cov: zeroFloat64(d * d),
     }
   }
   const eta = a.eta as Eta
   if (eta.every((v) => Math.abs(v) < 1e-12)) {
-    const precision = new Float64Array(d * d)
-    const cov = new Float64Array(d * d)
-    for (let i = 0; i < d; i++) {
-      precision[i * d + i] = FLAT_CAVITY_PRECISION
-      cov[i * d + i] = 1 / FLAT_CAVITY_PRECISION
-    }
-    return { point: false, flat: true, mean: new Float64Array(d), h: new Float64Array(d), precision, cov }
+    // A wide cavity: the identity times the flat precision, and times its inverse.
+    const precision = float64Of(mul(eye(d), FLAT_CAVITY_PRECISION))
+    const cov = float64Of(div(eye(d), FLAT_CAVITY_PRECISION))
+    return { point: false, flat: true, mean: zeroFloat64(d), h: zeroFloat64(d), precision, cov }
   }
   const precision = Float64Array.from(eta.slice(d))
   const l = Float64Array.from(precision)

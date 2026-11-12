@@ -10,7 +10,7 @@
 import { arange, pow, toFlat } from '../../tensor/index.ts'
 import { ImproperMessageError, ParameterError } from '../core/errors.ts'
 import type { Arg } from '../core/types.ts'
-import { gridArray } from './_arrays.ts'
+import { gridArray, zeroArray } from './_arrays.ts'
 import { centredMoments, shiftedSum } from './_moments.ts'
 import { legendreRule } from './_quadrature.ts'
 import { lgammaOf, softplusOf } from './_scalar.ts'
@@ -235,7 +235,7 @@ function integrateGrid(
     const slowest = profile.layout === 'first-slowest'
     const at = (a: number, b: number, c: number): number => (slowest ? a * n1 + b : a + n0 * (b + n1 * c))
     const logw = new Float64Array(n0 * n1 * n2)
-    const rest = new Array<number>(k - 1)
+    const rest = zeroArray(k - 1)
     // A density given by the index of the nodes reads tables made once per pass from the nodes of each axis.
     const byIndex = indexed?.(grids.map((g) => Float64Array.from(g.x)))
     for (let c = 0; c < n2; c++)

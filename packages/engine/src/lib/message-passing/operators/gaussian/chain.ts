@@ -35,6 +35,7 @@ interface Small {
 
 /** The Cholesky factor of a small row-major matrix, or `undefined` when it is not positive definite. */
 function small(a: Float64Array, k: number): Small | undefined {
+  // Exempt from the tensor rule, on purpose: a small Cholesky on typed buffers, called for every node of the log-precision grid.
   const l = new Float64Array(k * k)
   let logDet = 0
   for (let i = 0; i < k; i++) {

@@ -6,7 +6,7 @@
  * creation, read out here, mutate the result as a plain accumulator. Internal to message passing.
  */
 
-import { add, arange, div, eye, full, mul, oneHot, toFlat, type Value } from '../../tensor/index.ts'
+import { add, arange, div, eye, full, log, mul, oneHot, toFlat, type Value } from '../../tensor/index.ts'
 
 /**
  * `n` zeros, as a fresh mutable array (a message or accumulator to fill).
@@ -92,4 +92,25 @@ export function float64Of(t: Value): Float64Array {
  */
 export function gridArray(lo: number, hi: number, n: number): Float64Array {
   return float64Of(add(lo, div(mul(arange(n), hi - lo), n - 1)))
+}
+
+/**
+ * The log of the indicator of one index: 0 at `at`, `-Infinity` elsewhere (a point mass in the log scale).
+ *
+ * @param n - The length.
+ * @param at - The index of the zero.
+ * @returns The log probabilities of a point mass.
+ */
+export function logUnitArray(n: number, at: number): number[] {
+  return toFlat(log(oneHot(at, n)))
+}
+
+/**
+ * `n` zeros as a `Float64Array`, for the sides and sites that hand typed arrays to the Gaussian-vector kernels.
+ *
+ * @param n - The length.
+ * @returns The zeros.
+ */
+export function zeroFloat64(n: number): Float64Array {
+  return float64Of(full([n], 0))
 }

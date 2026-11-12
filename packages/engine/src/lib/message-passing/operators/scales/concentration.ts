@@ -17,6 +17,7 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { zeroArray } from '../../numerics/_arrays.ts'
 import { axisOf, integratePair } from '../../numerics/_grid.ts'
 import { centredMoments } from '../../numerics/_moments.ts'
 import { digammaOf, lgammaOf } from '../../numerics/_scalar.ts'
@@ -134,7 +135,7 @@ function tilt(c: OperatorContext): Tilt {
   })
   const tMoments = centredMoments(weights, z, ts)
   let ea = 0
-  const logMeans = new Array<number>(K).fill(0)
+  const logMeans = zeroArray(K)
   for (let i = 0; i < POINTS; i++) {
     const t = ts[i] as number
     const a = Math.exp(t)

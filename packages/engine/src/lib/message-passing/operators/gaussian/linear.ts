@@ -9,7 +9,8 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { dgemv } from '../../../numerics/linalg/index.ts'
+import { ddot, dgemv } from '../../../numerics/linalg/index.ts'
+import { mul, outer, toFlat } from '../../../tensor/index.ts'
 import { arg } from '../../core/_messages.ts'
 import {
   allProper,
@@ -29,6 +30,7 @@ import { ImproperMessageError } from '../../core/errors.ts'
 import { gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
 import { type ParamSpec, param } from '../../core/params.ts'
 import type { FactorOperator, Family, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
+import { constantArray, rangeArray, unitArray, zeroArray } from '../../numerics/_arrays.ts'
 import { spd } from '../../numerics/_dense.ts'
 
 const gaussianPort = (name: string): Port => ({ name, accepts: ['gaussian'], constant: true })
@@ -80,7 +82,7 @@ function affineEvidenceNatural(c: OperatorContext, coeffs: readonly number[], of
   const k = free.map((i) => coeffs[i] ?? 0)
   const m = free.length
   const precision = (cross: readonly number[], scale: number): number[] => {
-    const p = new Array<number>(m * m)
+    const p = zeroArray(m * m)
     for (let r = 0; r < m; r++)
       for (let q = 0; q < m; q++) p[r * m + q] = (r === q ? (j[r] ?? 0) : 0) + scale * (cross[r] ?? 0) * (cross[q] ?? 0)
     return p
@@ -105,7 +107,7 @@ function affineEvidenceNatural(c: OperatorContext, coeffs: readonly number[], of
   if (pivot < 0 || (k[pivot] ?? 0) === 0) return Number.NaN
   const kp = k[pivot] as number
   const u0 = (scalarOf(y) - shift) / kp
-  const rest = [...Array(m).keys()].filter((r) => r !== pivot)
+  const rest = rangeArray(m).filter((r) => r !== pivot)
   // a_pivot = u0 + sum_r B_r a_r, B_r = -c_r / c_pivot; the exponent in the remaining inputs a_r.
   const b = rest.map((r) => -(k[r] ?? 0) / kp)
   const hp = h[pivot] ?? 0
@@ -114,7 +116,7 @@ function affineEvidenceNatural(c: OperatorContext, coeffs: readonly number[], of
   const n = rest.length
   if (n === 0) return constant
   const hh = rest.map((r, t) => (h[r] ?? 0) + (b[t] ?? 0) * (hp - jp * u0))
-  const p = new Array<number>(n * n)
+  const p = zeroArray(n * n)
   for (let r = 0; r < n; r++)
     for (let q = 0; q < n; q++)
       p[r * n + q] = (r === q ? (j[rest[r] as number] ?? 0) : 0) + jp * (b[r] ?? 0) * (b[q] ?? 0)
@@ -293,7 +295,7 @@ export const sum: FactorOperator = affineOperator(
   'y = a_1 + ... + a_n for Gaussians',
   (params) => [gaussianPort('y'), ...Array.from({ length: numberParam(params, 'n') }, (_, i) => gaussianPort(`a${i}`))],
   { n: param.integer({ min: 1 }) },
-  (params) => ({ coeffs: Array.from({ length: numberParam(params, 'n') }, () => 1), offset: 0 }),
+  (params) => ({ coeffs: constantArray(numberParam(params, 'n'), 1), offset: 0 }),
 )
 
 function dimensions(families: readonly Family[]): { readonly rows: number; readonly d: number } {
@@ -363,8 +365,7 @@ function dotConstantMessage(c: OperatorContext): OperatorResult {
   const d = a.length
   if (c.to === 1) {
     const s = etaOf(arg(c, 0))
-    const j = new Array<number>(d * d)
-    for (let i = 0; i < d; i++) for (let k = 0; k < d; k++) j[i * d + k] = (s[1] ?? 0) * (a[i] ?? 0) * (a[k] ?? 0)
+    const j = toFlat(outer(mul(a, s[1] ?? 0), a))
     return { message: [...a.map((v) => (s[0] ?? 0) * v), ...j] }
   }
   const w = etaOf(arg(c, 1))
@@ -372,13 +373,7 @@ function dotConstantMessage(c: OperatorContext): OperatorResult {
   if (factor === undefined) throw new ImproperMessageError('dot-constant: the precision of w is not positive definite')
   const mean = factor.solve(w.slice(0, d))
   const z = factor.solve(a)
-  let m = 0
-  let v = 0
-  for (let i = 0; i < d; i++) {
-    m += (a[i] ?? 0) * (mean[i] ?? 0)
-    v += (a[i] ?? 0) * (z[i] ?? 0)
-  }
-  return { message: gaussianMessage(m, v) }
+  return { message: gaussianMessage(ddot(a, mean), ddot(a, z)) }
 }
 
 /**
@@ -390,8 +385,8 @@ function dotConstantMessage(c: OperatorContext): OperatorResult {
 function stackMessage(c: OperatorContext, variational: boolean): OperatorResult {
   const d = arg(c, 0).family.dim
   if (c.to === 0) {
-    const h = new Array<number>(d)
-    const j = new Array<number>(d * d).fill(0)
+    const h = zeroArray(d)
+    const j = zeroArray(d * d)
     for (let i = 0; i < d; i++) {
       const eta = etaOf(arg(c, i + 1))
       h[i] = eta[0] ?? 0
@@ -418,8 +413,7 @@ function stackMessage(c: OperatorContext, variational: boolean): OperatorResult 
   const factor = spd(j, d)
   if (factor === undefined)
     throw new ImproperMessageError('gaussian-mv-stack: the precision of the vector is not positive definite')
-  const e = new Array<number>(d).fill(0)
-  e[k] = 1
+  const e = unitArray(d, k)
   return { message: gaussianMessage(factor.solve(h)[k] ?? 0, factor.solve(e)[k] ?? 0) }
 }
 
@@ -507,7 +501,7 @@ export const matmulConstant: FactorOperator = defineOperator({
       if (c.to === 1) {
         const y = etaOf(arg(c, 0))
         const h = dgemv(m, rows, d, y.slice(0, rows), true)
-        const j = new Array<number>(d * d).fill(0)
+        const j = zeroArray(d * d)
         for (let a = 0; a < d; a++)
           for (let b = 0; b < d; b++) {
             let s = 0
@@ -520,7 +514,7 @@ export const matmulConstant: FactorOperator = defineOperator({
       }
       const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, 1)), d)
       const my = dgemv(m, rows, d, mean)
-      const cov = new Array<number>(rows * rows).fill(0)
+      const cov = zeroArray(rows * rows)
       const ac = new Float64Array(rows * d)
       for (let r = 0; r < rows; r++) {
         const row = dgemv(covariance, d, d, m.slice(r * d, (r + 1) * d))
@@ -554,7 +548,7 @@ export const matmulConstant: FactorOperator = defineOperator({
       const y = gaussianMvMoments(etaOf(arg(c, 0)), rows)
       const w = gaussianMvMoments(etaOf(arg(c, 1)), d)
       const image = dgemv(m, rows, d, w.mean)
-      const spread = new Array<number>(rows * rows)
+      const spread = zeroArray(rows * rows)
       for (let r = 0; r < rows; r++)
         for (let q = 0; q < rows; q++) {
           let s = y.covariance[r * rows + q] ?? 0
