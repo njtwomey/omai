@@ -55,7 +55,9 @@ export function Play<R>(props: {
   const seconds = run.elapsedMs === undefined ? '' : `${(run.elapsedMs / 1000).toFixed(run.elapsedMs < 9500 ? 1 : 0)} s`
   return (
     <div
-      className="story-block rounded-xl border border-line bg-surface px-5 py-4 font-sans"
+      className="story-block flex flex-col justify-center rounded-xl border border-line bg-surface px-5 py-4 font-sans"
+      // the block keeps one height in every phase, so nothing around it moves when the phase changes
+      style={{ minHeight: '6.9rem' }}
       data-phase={phase}
       data-testid="play"
     >

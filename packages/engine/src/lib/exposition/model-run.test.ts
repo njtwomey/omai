@@ -18,7 +18,7 @@ import { defineModel, toStructure } from '../probprog/model/index.ts'
 import { structure } from '../scene/index.ts'
 import { Log, session } from '../trace/index.ts'
 import { chainDiagnostics, chainsFromTape, chainTable, rankCounts } from './chain-diagnostics.ts'
-import { modelRun, modelRunAt } from './model-run.ts'
+import { modelRun, modelRunAt, thinModelRun } from './model-run.ts'
 import { describeMessage, modelRunFromTape, nodeStateOf, nodeStatesOfRows } from './model-run-tape.ts'
 
 const graph = compileGraph(
@@ -78,6 +78,26 @@ describe('modelRun', () => {
     expect(modelRunAt(r, 3)?.messages).toEqual([])
     expect(modelRunAt(r)?.step).toBe(3)
     expect(modelRunAt(modelRun({ structure: s, status: 'running', series: [], steps: [] }))).toBeUndefined()
+  })
+
+  it('thins a long record: first, last and the steps that moved most, with what dropped steps said carried on', () => {
+    const steps = [0, 1, 2, 3, 4, 5, 6].map((t) => ({
+      step: t,
+      nodes: t % 2 === 0 ? { a: { mean: t, text: String(t) } } : { b: { mean: t, text: String(t) } },
+    }))
+    const change = { name: 'change', label: 'change', steps: [1, 2, 3, 4, 5, 6], values: [0.1, 0.2, 7, 0.3, 5, 0.01] }
+    const r = modelRun({ structure: s, status: 'converged', series: [change], steps, method: 'ep' })
+    const thin = thinModelRun(r, 4)
+    expect(thin.steps.map((x) => x.step)).toEqual([0, 3, 5, 6])
+    expect(thin.series[0]?.steps).toEqual([3, 5, 6])
+    expect(thin.series[0]?.values).toEqual([7, 5, 0.01])
+    expect(thin.status).toBe('converged')
+    expect(thin.method).toBe('ep')
+    // the state at every kept step is what the full record says there
+    for (const kept of thin.steps) expect(modelRunAt(thin, kept.step)?.nodes).toEqual(modelRunAt(r, kept.step)?.nodes)
+    expect(thinModelRun(r, 7)).toBe(r)
+    expect(() => thinModelRun(r, 1)).toThrow(/at least 2/)
+    expect(structuredClone(thin)).toEqual(thin)
   })
 })
 

@@ -168,3 +168,65 @@ export function modelRunAt(
     ...(last.caption === undefined ? {} : { caption: last.caption }),
   }
 }
+
+/** How much a step moved the run: the largest change of a belief it reports, else how many beliefs it names. */
+function movement(record: ModelRun, step: ModelRunStep): number {
+  const change = record.series.find((s) => s.name === 'change')
+  const at = change?.steps.indexOf(step.step) ?? -1
+  const value = at < 0 ? undefined : change?.values[at]
+  return value !== undefined && Number.isFinite(value) ? value : Object.keys(step.nodes).length
+}
+
+/**
+ * A model run cut down to at most `maxSteps` steps, for a record that has to cross a worker boundary or sit in a page:
+ * the first and the last step are always kept, and of the steps between them the ones where the beliefs moved most (the
+ * largest change the run reported at the step), in their original order. What a dropped step said about a node is carried
+ * into the next kept step, so the state at any kept step is the state it had in the full record; the series are cut to
+ * the kept steps. A record with no more steps than the cap is returned as it is.
+ *
+ * @param record - The record.
+ * @param maxSteps - The most steps to keep (at least 2).
+ * @returns The thinned record.
+ * @throws OmaiError `value` when `maxSteps` is below 2.
+ * @example
+ * ```ts
+ * import { modelRun, thinModelRun } from 'omai-engine/exposition'
+ * import { structure } from 'omai-engine/scene'
+ * const s = structure('model-graph', [{ id: 'a', label: 'a', role: 'latent' }], [])
+ * const steps = [0, 1, 2, 3, 4, 5].map((t) => ({ step: t, nodes: { a: { mean: t, text: String(t) } } }))
+ * const change = { name: 'change', label: 'change', steps: [1, 2, 3, 4, 5], values: [9, 1, 5, 2, 0] }
+ * const r = modelRun({ structure: s, status: 'completed', series: [change], steps })
+ * thinModelRun(r, 4).steps.map((x) => x.step) // => [0, 1, 3, 5]
+ * ```
+ */
+export function thinModelRun(record: ModelRun, maxSteps: number): ModelRun {
+  if (maxSteps < 2) throw new OmaiError('value', `thinModelRun: maxSteps must be at least 2, got ${maxSteps}`)
+  const n = record.steps.length
+  if (n <= maxSteps) return record
+  const ranked = record.steps
+    .slice(1, n - 1)
+    .map((step, i) => ({ i: i + 1, move: movement(record, step) }))
+    .sort((a, b) => b.move - a.move || a.i - b.i)
+    .slice(0, maxSteps - 2)
+  const keep = new Set([0, n - 1, ...ranked.map((r) => r.i)])
+  const steps: ModelRunStep[] = []
+  let carried: Record<string, NodeState> = {}
+  for (const [i, step] of record.steps.entries()) {
+    carried = { ...carried, ...step.nodes }
+    if (!keep.has(i)) continue
+    steps.push({ ...step, nodes: carried })
+    carried = {}
+  }
+  const kept = new Set(steps.map((s) => s.step))
+  const series = record.series.map((s) => {
+    const idx = s.steps.flatMap((t, i) => (kept.has(t) ? [i] : []))
+    return { ...s, steps: idx.map((i) => s.steps[i] as number), values: idx.map((i) => s.values[i] as number) }
+  })
+  return modelRun({
+    structure: record.structure,
+    steps,
+    series,
+    status: record.status,
+    ...(record.method === undefined ? {} : { method: record.method }),
+  })
+}

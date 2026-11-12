@@ -141,10 +141,7 @@
   }
 }
 
-/* The splash card's tinted placeholder for a thumbnail. */
-.story-thumb {
-  background:
-    radial-gradient(120% 90% at 15% 0%, hsl(var(--tint) 70% 55% / 0.35), transparent 60%),
-    radial-gradient(100% 80% at 100% 100%, hsl(calc(var(--tint) + 40) 70% 55% / 0.22), transparent 60%),
-    var(--wb-surface);
+/* Inside the results block the block fades in once; its figures and prose do not fade again on top of it. */
+.story-results .story-reveal {
+  animation: none;
 }

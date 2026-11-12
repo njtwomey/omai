@@ -9,7 +9,11 @@ export const SECTIONS = [
     blurb: 'Posteriors, bands and intervals: an answer with its doubt attached.',
   },
   { id: 'models', title: 'Models that learn', blurb: 'Fitting a function to data, from lines to networks.' },
-  { id: 'inference', title: 'Inference at work', blurb: 'Samplers and message passing, one idea at a time.' },
+  {
+    id: 'inference',
+    title: 'Expectation propagation',
+    blurb: 'Message passing: how it works, and what it is used for.',
+  },
   { id: 'structure', title: 'Structure', blurb: 'Sequences, graphs and hierarchies.' },
   { id: 'worlds', title: 'Small worlds', blurb: 'Simulations, games and agents.' },
 ] as const

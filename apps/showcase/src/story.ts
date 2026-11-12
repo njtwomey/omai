@@ -18,10 +18,10 @@ export interface StoryMeta {
   readonly tags: readonly string[]
   /** When it was written, `YYYY-MM-DD`; the newest story of a section comes first. */
   readonly date: string
-  /** A shorter line for the card, when the standfirst is too long for it. */
+  /** The line shown after the title in the list (the standfirst when there is none). */
   readonly hook?: string
-  /** A thumbnail in `public/` (`/thumbs/<slug>.png`); without one the card shows a tinted placeholder. */
-  readonly thumbnail?: string
+  /** A story that opens its section: it is listed before the others, whatever their dates. */
+  readonly first?: boolean
 }
 
 /** A story as the app knows it: its metadata and its slug (the name of its folder). */
@@ -58,7 +58,12 @@ export function bySection(stories: readonly StoryEntry[]): SectionGroup[] {
     ...s,
     stories: stories
       .filter((e) => e.section === s.id)
-      .sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title)),
+      .sort(
+        (a, b) =>
+          Number(b.first === true) - Number(a.first === true) ||
+          b.date.localeCompare(a.date) ||
+          a.title.localeCompare(b.title),
+      ),
   })).filter((g) => g.stories.length > 0)
 }
 
