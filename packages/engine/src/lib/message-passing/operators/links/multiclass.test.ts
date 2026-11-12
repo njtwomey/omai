@@ -24,8 +24,7 @@ const logSoftmax = (z: readonly number[], y: number): number => {
 }
 
 /** The multinomial probit probability by a fine one-dimensional integral over the noise of the chosen class. */
-const logProbit = (z: readonly number[], y: number): number => {
-  const n = 160
+const logProbit = (z: readonly number[], y: number, n = 160): number => {
   let total = 0
   for (let i = 0; i < n; i++) {
     const e = -8 + ((i + 0.5) * 16) / n
@@ -468,12 +467,12 @@ describe('variational message passing beyond six classes', () => {
   const expectedLog = (args: readonly Arg[], params: Params): number =>
     multiclassSite.expectedLog?.({ mode: 'vmp', to: 0, args, params, power: 1 }) as number
   /** The reference of the expected log: a composite Gauss-Legendre rule over the free scores, the known ones fixed. */
-  const reference = (args: readonly Arg[], log: (z: readonly number[]) => number): number => {
+  const reference = (args: readonly Arg[], log: (z: readonly number[]) => number, panels?: number): number => {
     const free = args.flatMap((a, i) => (a.value === undefined ? [i] : []))
     const brutes: BruteBelief[] = free.map((i) => ({
       kind: 'gaussian',
       eta: (args[i] as Arg).eta as readonly number[],
-      panels: free.length > 2 ? 8 : 24,
+      panels: panels ?? (free.length > 2 ? 8 : 24),
     }))
     const z = args.map((a) => (a.value === undefined ? 0 : (a.value as number)))
     return bruteExpectation(brutes, (x) => {
@@ -572,7 +571,9 @@ describe('variational message passing beyond six classes', () => {
     ] as const) {
       const args = beliefs(list)
       const bound = expectedLog(args, { y, classes: 8, link: 'probit' })
-      const ref = reference(args, (z) => logProbit(z, y))
+      // Two random scores: the default 24 panels of the product rule and 160 nodes of the noise integral take 25 s a reference; 8 panels and
+      // 64 nodes take 1 s and agree to 6e-12 (the bound is compared to it to 1e-9 above and to 0.03 nats below).
+      const ref = reference(args, (z) => logProbit(z, y, 64), 8)
       expect(bound).toBeLessThanOrEqual(ref + 1e-9)
       expect(ref - bound, `y = ${y}`).toBeLessThan(0.03)
     }

@@ -1,6 +1,7 @@
 // EP's log evidence against the grid evidence of the same model, on the atoms whose grid is fast: every rule that carries an evidence
 // is checked at model level, not only per operator (operators/evidence.test.ts). The tolerances are in nats and say why they are not tight.
 import { describe, expect, it } from 'vitest'
+import { toFlat, type Value } from '../../tensor/index.ts'
 import { session } from '../../trace/index.ts'
 import { epSpecMethod } from '../inference/index.ts'
 import { toProgram } from '../model/index.ts'
@@ -35,7 +36,8 @@ describe('the EP log evidence of the summed-out spike and slab with a learned sh
     const run = atomRun(problem, atom.ep ?? {}, { light: true })
     expect(run.status).toBe('ran')
     if (run.status !== 'ran') return
-    const y = (problem.data as { y: number[] }).y
+    // the simulated values are a tensor (the atom builds them with tensor ops)
+    const y = toFlat((problem.data as { y: Value }).y)
     const noise = atom.defaults['noise'] as number
     const normal = (v: number, sd: number): number => -0.5 * Math.log(2 * Math.PI * sd * sd) - (v * v) / (2 * sd * sd)
     const logBeta = (p: number, a: number, b: number): number =>
@@ -87,21 +89,15 @@ describe('the EP evidence of the learned logistic regression (the weights share 
     return method.posterior?.(s.state, s.config as never)
   }
 
-  it('has the evidence of the plated factor itself, though its cavity has no density: the rows-expanded model has the same', () => {
+  it('reports the evidence of the rows-expanded model when the plated factor has an improper cavity, and says so', () => {
     // The scale mixture on the weights sends a site with a negative precision, so the cavity of the plate (all rows, one factor)
-    // is indefinite at the fixed point and the integral of the plate against it diverges. The plate reads its cavity only through the
-    // posterior it makes with its rows (proper), so it runs there (`improperTarget`) and its energy is taken in natural parameters:
-    // the same fixed point and the same evidence as the model with a factor per row, to rounding.
-    const plated = posteriorOf('vectorise')
-    const rows = posteriorOf('expand')
-    expect(plated?.logEvidence?.method).toBe('ep-energy')
-    expect(plated?.diagnostics['evidenceUndefinedAt']).toBeUndefined()
-    expect(plated?.diagnostics['unresolved']).toBe(0)
-    expect(
-      Math.abs((plated?.logEvidence?.value ?? Number.NaN) - (rows?.logEvidence?.value ?? Number.NaN)),
-    ).toBeLessThan(1e-8)
+    // is indefinite and its integral against the logistic likelihood diverges: the plate has no EP energy of its own. The method
+    // gives the energy of the same model with a factor per row, whose cavities are proper, and names it.
+    const post = posteriorOf('vectorise')
+    expect(post?.logEvidence?.method).toBe('ep-energy (rows expanded)')
     const grid = gridPosterior(toProgram(bound), undefined, { maxRefinements: 0, ...problem.grid })
-    expect(Math.abs((plated?.logEvidence?.value ?? Number.NaN) - grid.logEvidence)).toBeLessThan(0.1)
+    expect(Math.abs((post?.logEvidence?.value ?? Number.NaN) - grid.logEvidence)).toBeLessThan(0.1)
+    expect(post?.diagnostics['evidenceUndefinedAt']).toBeUndefined()
   })
 
   it('has the evidence with a factor per row (a proper cavity for each), within 0.1 nats of the grid (0.046 measured)', () => {

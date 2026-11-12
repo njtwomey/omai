@@ -172,8 +172,10 @@ function problem(k: Config): AtomParts {
     const centreLength = m.latent('centreLength', d.normal(start, spreadLength), { dims: [group] })
     const centreWait = m.latent('centreWait', d.normal(start, spreadWait), { dims: [group] })
     // each row is in one group, whose centre and precision it follows
-    m.observe('length', d.normal(centreLength.at(which), ops.div(1, ops.sqrt(precisionLength.at(which)))), length)
-    m.observe('wait', d.normal(centreWait.at(which), ops.div(1, ops.sqrt(precisionWait.at(which)))), wait)
+    const sdLength = ops.div(1, ops.sqrt(precisionLength.at(which)))
+    const sdWait = ops.div(1, ops.sqrt(precisionWait.at(which)))
+    m.observe('length', d.normal(centreLength.at(which), sdLength), length)
+    m.observe('wait', d.normal(centreWait.at(which), sdWait), wait)
   })
   // endregion
   const ref = referenceOf(data)

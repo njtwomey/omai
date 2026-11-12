@@ -135,15 +135,19 @@ describe('robust likelihoods and the spike and slab prior under expectation prop
     const def = regression(
       'outliers',
       (m) => m.latent('w', d.normal(0, 3), { dims: ['feature'] }),
-      (mean, y, m) => m.observe('y', d.normalOutliers(mean, 0.4, 0.15, 12), y),
+      (mean, y, m) => m.observe('y', d.normalOutliers(mean, 0.6, 0.15, 12), y),
     )
-    // The mixture is not log-concave, so EP may keep making small changes after it has settled near the answer.
-    const got = ep(def, false)
-    const ref = grid((w) => -0.5 * (w / 3) ** 2, logMix(0.4, 0.15, 12))
+    // Inlier scale 0.6, where EP converges (12 sweeps). At 0.4 with these seven rows the iteration never settles, damped or not (the
+    // sweep budget runs out, the change between sweeps stays near 1 undamped and 0.09 at a damping of 0.7): the state after 200 sweeps is
+    // a phase of an oscillation (the slope's mean off the exact posterior's by 0.04 before S5c and 1.55 after, its spread 1.3 and 4.7 times
+    // the exact one, and other phases in between), so a bound on it pinned the rounding noise of the variance formula (the test passed until the grid and
+    // mixture variances were computed centred, S5c) and not the agreement.
+    const got = ep(def)
+    const ref = grid((w) => -0.5 * (w / 3) ** 2, logMix(0.6, 0.15, 12))
     for (const k of [0, 1]) {
-      expect(Math.abs((got.mean[k] as number) - (ref.mean[k] as number))).toBeLessThan(0.12)
-      expect((got.sd[k] as number) / (ref.sd[k] as number)).toBeGreaterThan(0.75)
-      expect((got.sd[k] as number) / (ref.sd[k] as number)).toBeLessThan(1.3)
+      expect(Math.abs((got.mean[k] as number) - (ref.mean[k] as number))).toBeLessThan(0.01)
+      expect((got.sd[k] as number) / (ref.sd[k] as number)).toBeGreaterThan(0.95)
+      expect((got.sd[k] as number) / (ref.sd[k] as number)).toBeLessThan(1.15)
     }
   })
 

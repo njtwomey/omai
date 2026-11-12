@@ -72,13 +72,15 @@ describe('the extended atoms', () => {
     })
 
     if (atom.expected === 'runs') {
+      // A calibration is every seed's EP run: student-t-full-learned takes 95 s alone (20 seeds of a three-dimensional numeric site)
+      // and 140 s at the gate's load, so the allowance is generous: it bounds a hang, not the speed.
       it('recovers the truth: the 90% intervals hold it over its seeds at the promised rate', () => {
         const c = atomCalibration(atom)
         expect(c.ran).toBe(c.seeds)
         const bad = c.rows.filter((r) => !r.pass).map((r) => `${r.key}: coverage ${r.coverage}, zrms ${r.zrms}`)
         expect(bad).toEqual([])
         expect(c.pass).toBe(true)
-      }, 120_000)
+      }, 300_000)
       it('is the same run for the same seed (a calibration is reproducible)', () => {
         const a = calibrationSample(atom, 3)
         const b = calibrationSample(atom, 3)
