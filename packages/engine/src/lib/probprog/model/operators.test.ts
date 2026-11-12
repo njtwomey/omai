@@ -271,4 +271,17 @@ describe('Var', () => {
     expect(() => constant(Number.NaN)).toThrow(/finite/)
     expect(apply('add', [1, 2]).dims).toEqual([])
   })
+
+  it('takes a tensor as a constant: read once as the nested array it holds, its leading axes named', () => {
+    const v = constant(
+      tensor([
+        [1, 2],
+        [3, 4],
+      ]),
+      ['row'],
+    )
+    expect([v.dims, v.eventRank]).toEqual([['row'], 1])
+    expect(constant(tensor([1, 2, 3])).expr).toEqual({ kind: 'const', value: [1, 2, 3] })
+    expect(apply('add', [1, tensor([1, 2])]).eventRank).toBe(1)
+  })
 })
