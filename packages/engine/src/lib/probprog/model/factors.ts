@@ -12,14 +12,17 @@
  * with their own variables or scales, scalar weights, discrete tables over a plate). `plates: 'expand'` forces the
  * expansion everywhere (the same posterior, a message per row, so finer anytime steps).
  *
- * `Compiler` is the driver: it walks the spec in order and dispatches each node to a mapping, in the order the chains of `latent`, `observed`
- * and `observedElement` write down (normal-gamma before the family lookup, a value that moves to the mean before the other observations:
- * the order is part of the meaning). The mappings are functions of the compilation's `Context` and a node, one file per concern in
- * `factor-graph/_mappings/` (Gaussian, positive and discrete latents, matrix-valued nodes, derived nodes, observed Gaussians, numeric
- * likelihoods, conjugate observations, observations chosen by a discrete variable, plates), over the evaluator of expressions
- * (`factor-graph/_symbolic/`: the value algebra of `_cells.ts` mapped to the engine's affine, product, gate and apply operators),
- * the constants (`_known.ts`), the layout plan (`_plan.ts`) and the recognisers (`_idioms.ts`). Anything with no mapping is reported with a
- * reason, never silently dropped. The refusal, the issue and layout types, the reading back of a run (`factorGraphPosterior`) and the
+ * `Compiler` is the driver: it walks the spec in order and gives each node to the first mapping of an ordered table that takes it
+ * (`factor-graph/_table.ts`: `latentMappings`, `observedNodeMappings`, `observedRowMappings`, `observedElementMappings`; each entry names
+ * what it maps, the factor operators it can emit and why it sits where it does: normal-gamma before the family lookup, a value that moves to
+ * the mean before the other observations). The order is part of the meaning, and a mapping that recognises a node only by trying it answers
+ * `NOT_MINE`, which takes whatever it made out of the graph again (`factor-graph/_mapping.ts`). The mappings are functions of the compilation's
+ * `Context` and a node, one file per concern in `factor-graph/_mappings/` (Gaussian, positive and discrete latents, matrix-valued nodes, derived
+ * nodes, observed Gaussians, numeric likelihoods, conjugate observations, observations chosen by a discrete variable, plates), over the
+ * evaluator of expressions (`factor-graph/_symbolic/`: the value algebra of `_cells.ts` mapped to the engine's affine, product, gate and apply
+ * operators), the constants (`_known.ts`), the layout plan (`_plan.ts`) and the recognisers (`_idioms.ts`). Anything with no mapping is reported
+ * with a reason, never silently dropped. `docs/probprog/compiler-mappings.md` lists every entry of the tables (written from them by
+ * `make ep-compiler-doc`). The refusal, the issue and layout types, the reading back of a run (`factorGraphPosterior`) and the
  * verdict (`factorGraphVerdict`) live in `factor-graph/`.
  *
  * Ids follow `ids.ts`: a variable is its site's name, `<site>[<i>]` for an element of a site over dimensions, and
@@ -32,98 +35,20 @@
  */
 
 import {
-  betaEta,
   type FactorGraphSpec,
   type FactorOperator,
-  type FamilyKind,
   defaultOperators as factorOperators,
-  gammaPrior,
-  priorFactor,
 } from '../../message-passing/index.ts'
 import type { SpecAnalysis } from './analysis.ts'
 import type { BoundModel } from './bind.ts'
 import { eventToDims } from './event-dims.ts'
-import { type Cell, prod } from './factor-graph/_cells.ts'
 import { Context } from './factor-graph/_context.ts'
-import { expArgument, precisionExpr, unwrap } from './factor-graph/_idioms.ts'
-import { derived } from './factor-graph/_mappings/derived.ts'
-import { bernoulliTable, latentDirichlet, latentDiscrete } from './factor-graph/_mappings/latent-discrete.ts'
-import { latentNormal, latentProjected, latentSpikeSlab, truncate } from './factor-graph/_mappings/latent-gaussian.ts'
-import {
-  latentGammaRate,
-  latentNormalGamma,
-  latentRandomConcentration,
-} from './factor-graph/_mappings/latent-positive.ts'
-import {
-  latentCorrelation,
-  latentMultivariateNormal,
-  latentMvnWishart,
-  latentWishart,
-  observedBivariateNormal,
-  observedMvnWishart,
-  wishartOf,
-} from './factor-graph/_mappings/matrix.ts'
-import {
-  observedBernoulli,
-  observedConjugate,
-  observedFailures,
-  observedGammaRate,
-  observedMixtureWeight,
-} from './factor-graph/_mappings/observed-conjugate.ts'
-import {
-  observedSwitch,
-  observedSwitchLogScale,
-  switchedCells,
-  valueMovedToMean,
-} from './factor-graph/_mappings/observed-gates.ts'
-import {
-  observedGaussian,
-  observedHeavy,
-  observedLogScale,
-  observedNormalGamma,
-  observedRandomPrecision,
-  observedRandomScale,
-} from './factor-graph/_mappings/observed-gaussian.ts'
-import {
-  observedHurdle,
-  observedMulticlass,
-  observedNumeric,
-  observedPair,
-} from './factor-graph/_mappings/observed-numeric.ts'
-import { plate } from './factor-graph/_mappings/plates.ts'
-import { constParam, discreteParents, evalNamedValue, rvName } from './factor-graph/_params.ts'
 import { Refusal } from './factor-graph/_refusal.ts'
+import { mapNode } from './factor-graph/_table.ts'
 import type { FactorGraphCompilation } from './factor-graph/types.ts'
 import { defaultOperators, type OperatorTable } from './operators.ts'
 import { ScanUnrollError, unrollScans } from './scan.ts'
 import type { ExprSpec, ModelNode } from './spec.ts'
-
-/** A factor-graph name for the family of a distribution family, for the families the compiler maps. */
-const MESSAGE_FAMILY: Readonly<Record<string, FamilyKind>> = {
-  normal: 'gaussian',
-  normalSpikeSlab: 'gaussian',
-  gamma: 'gamma',
-  inverseGamma: 'gamma',
-  exponential: 'gamma',
-  beta: 'beta',
-  dirichlet: 'dirichlet',
-  bernoulli: 'bernoulli',
-  categorical: 'discrete',
-  multivariateNormal: 'gaussian-mv',
-}
-
-/**
- * The families of a prior with no message family that are projected onto a Gaussian once (`latentProjected`): a positive
- * scale (half-normal, half-Cauchy, log-normal, uniform or truncated normal on the positive half line) as a Gaussian on its
- * log, any other bounded or truncated value as a Gaussian on the value.
- */
-const PROJECTED_PRIORS: ReadonlySet<string> = new Set([
-  'halfNormal',
-  'halfCauchy',
-  'logNormal',
-  'uniform',
-  'truncatedNormal',
-])
 
 class Compiler {
   /** The state of the compilation, which the evaluator and the mappings work on. */
@@ -147,319 +72,12 @@ class Compiler {
       this.cx.current = node.name
       this.cx.position = position
       try {
-        this.node(node)
+        mapNode(this.cx, node)
       } catch (e) {
         if (!(e instanceof Refusal)) throw e
-        this.cx.issues.push({ node: node.name, kind: e.kind, reason: e.message })
+        this.cx.issues.push({ node: node.name, kind: e.kind, code: e.code, reason: e.message })
         this.cx.failed.add(node.name)
       }
-    }
-  }
-
-  private node(node: ModelNode): void {
-    switch (node.kind) {
-      case 'data':
-        // Bound data is known from the start (`knownConstants`): nothing to map.
-        return
-      case 'latent':
-        // A standard normal vector that a non-centred derived node absorbs is compiled by that node only if the dense factor does not apply.
-        if ([...this.cx.nonCentred.values()].includes(node.name)) return
-        this.latent(node)
-        return
-      case 'derived':
-        derived(this.cx, node, (z) => this.latent(z))
-        return
-      case 'observed':
-        this.observed(node)
-        return
-      case 'generated':
-        return
-      case 'param':
-        throw new Refusal(
-          'node',
-          `'${node.name}' is a param (a learnable value, not a random variable): it has no factor`,
-        )
-      case 'factor':
-        throw new Refusal(
-          'node',
-          `'${node.name}' is an arbitrary log-density term: no message operator exists for it (a numeric factor operator could be given)`,
-        )
-    }
-  }
-
-  private latent(node: ModelNode & { readonly kind: 'latent' }): void {
-    const fam = node.dist.family
-    const truncated = node.constraint !== undefined && node.constraint.kind !== 'real' && fam === 'normal'
-    if (node.constraint !== undefined && node.constraint.kind !== 'real' && !truncated)
-      throw new Refusal(
-        'constraint',
-        `'${node.name}' has the constraint '${node.constraint.kind}': a message family lives on the family's own support, so a constraint beyond it is not expressible`,
-      )
-    if (PROJECTED_PRIORS.has(fam)) {
-      latentProjected(this.cx, node)
-      return
-    }
-    if (fam === 'wishart' || fam === 'inverseWishart') {
-      latentWishart(this.cx, node)
-      return
-    }
-    if (fam === 'correlation') {
-      latentCorrelation(this.cx, node)
-      return
-    }
-    if (fam === 'bivariateNormal')
-      throw new Refusal(
-        'structure',
-        `'${node.name}' is a latent bivariateNormal: only observed vectors are mapped (write the vectors with a Wishart precision, or observe them)`,
-      )
-    if (fam === 'multivariateNormal' && wishartOf(this.cx, node) !== undefined) {
-      latentMvnWishart(this.cx, node)
-      return
-    }
-    const meanOf = this.cx.normalGammaByMean.get(node.name)
-    if (meanOf !== undefined) {
-      this.cx.layout(node, 'latent', 'normal-gamma', 'scalar', [meanOf.variable], true, { part: 'mean' })
-      return
-    }
-    if ((fam === 'gamma' || fam === 'inverseGamma') && latentNormalGamma(this.cx, node)) return
-    const kind = MESSAGE_FAMILY[fam]
-    if (kind === undefined)
-      throw new Refusal(
-        'family',
-        `'${node.name}' is ${fam}: the engine has message families gaussian, gamma, beta, bernoulli, discrete and dirichlet, and none for ${fam}`,
-      )
-    if (fam === 'normal') {
-      latentNormal(this.cx, node)
-      if (truncated) truncate(this.cx, node)
-      return
-    }
-    if (fam === 'multivariateNormal') {
-      latentMultivariateNormal(this.cx, node)
-      return
-    }
-    if (fam === 'normalSpikeSlab') {
-      latentSpikeSlab(this.cx, node)
-      return
-    }
-    if (fam === 'bernoulli' || fam === 'categorical') {
-      latentDiscrete(this.cx, node)
-      return
-    }
-    if (fam === 'dirichlet') {
-      const concentration = node.dist.params['concentration']
-      if (concentration !== undefined && !this.cx.isConst(concentration)) latentRandomConcentration(this.cx, node)
-      else latentDirichlet(this.cx, node)
-      return
-    }
-    if (fam === 'beta' && ['a', 'b'].some((k) => !this.cx.isConst(node.dist.params[k] as ExprSpec))) {
-      latentRandomConcentration(this.cx, node)
-      return
-    }
-    // An inverse gamma `x` with scale `b` is the precision `1 / x` ~ Gamma(a, rate b): the variable is that gamma, the site its reciprocal.
-    const inverse = fam === 'inverseGamma'
-    const rateName = inverse ? 'scale' : 'rate'
-    const rateExpr = node.dist.params[rateName]
-    if ((fam === 'gamma' || inverse) && rateExpr !== undefined && !this.cx.isConst(rateExpr)) {
-      latentGammaRate(this.cx, node)
-      return
-    }
-    const shape = this.cx.shapeOf(node.dims)
-    const n = prod(shape)
-    const params =
-      fam === 'gamma' || inverse
-        ? [constParam(this.cx, node, 'concentration', 'the shape'), constParam(this.cx, node, rateName, 'the rate')]
-        : fam === 'exponential'
-          ? [new Array<number>(n).fill(1), constParam(this.cx, node, 'rate', 'the rate')]
-          : [constParam(this.cx, node, 'a', 'the shape'), constParam(this.cx, node, 'b', 'the shape')]
-    const cells: Cell[] = []
-    const vars: string[] = []
-    for (let i = 0; i < n; i++) {
-      const name = this.cx.g.addVariable({ name: this.cx.elementName(node.name, node.dims, i), family: { kind } })
-      const p = [params[0]?.[i] as number, params[1]?.[i] as number]
-      const f =
-        fam === 'beta'
-          ? priorFactor(name, betaEta(p[0] as number, p[1] as number))
-          : gammaPrior(name, p[0] as number, p[1] as number)
-      this.cx.g.addFactor(f, name)
-      cells.push(inverse ? { kind: 'recip', variable: name, scale: 1 } : { kind: 'rv', variable: name, family: kind })
-      vars.push(name)
-    }
-    this.cx.finishLatent(node, kind, cells, vars, inverse ? { reciprocal: true } : {})
-  }
-
-  private observed(node: ModelNode & { readonly kind: 'observed' }): void {
-    if (node.dist.family === 'multivariateNormal' && wishartOf(this.cx, node) !== undefined) {
-      observedMvnWishart(this.cx, node)
-      return
-    }
-    if (node.dist.family === 'bivariateNormal') {
-      observedBivariateNormal(this.cx, node)
-      return
-    }
-    const moved = valueMovedToMean(this.cx, node)
-    if (moved !== undefined) {
-      this.observed(moved)
-      return
-    }
-    const fam = node.dist.family
-    const shape = this.cx.shapeOf(node.dims)
-    const n = prod(shape)
-    const info = this.cx.bound.missing[node.name]
-    if (info !== undefined && info.count > 0 && info.policy !== 'ignore')
-      throw new Refusal(
-        'data',
-        `'${node.name}' has ${info.count} missing value(s) with the policy '${info.policy}': only 'ignore' is mapped (the entries drop out of the graph)`,
-      )
-    if (this.cx.bound.batch !== undefined && node.dims.includes(this.cx.bound.batch.dim))
-      throw new Refusal(
-        'structure',
-        `'${node.name}' is subsampled by the batch option: a factor graph is built over all the rows`,
-      )
-    const values = this.cx
-      .over(this.cx.fromNamed(evalNamedValue(this.cx, node)), node.dims)
-      .map((c) => (c as Cell & { kind: 'aff' }).aff.offset)
-    const normalGamma = this.cx.normalGammaObserved.get(node.name)
-    if (normalGamma !== undefined) {
-      observedNormalGamma(this.cx, node, normalGamma, values)
-      return
-    }
-    const vars: (string | null)[] = []
-    const parentsOf = discreteParents(this.cx, node)
-    if (this.cx.vectorise && node.dims.length > 0 && parentsOf.length === 0 && plate(this.cx, node, fam, values)) return
-    if (fam === 'bernoulli' && parentsOf.length > 0) {
-      if (node.dims.length > 0)
-        throw new Refusal(
-          'structure',
-          `'${node.name}' is a Bernoulli over [${node.dims}] with discrete parents: tables over plated nodes are not expanded yet`,
-        )
-      const name = this.cx.g.addVariable({
-        name: node.name,
-        family: { kind: 'bernoulli' },
-        observed: values[0] as number,
-      })
-      const pv = parentsOf.map((p) => rvName(this.cx, p))
-      this.cx.g.addFactor(
-        {
-          operator: 'table',
-          args: [...pv, name],
-          params: {
-            states: new Array<number>(pv.length + 1).fill(2),
-            values: bernoulliTable(this.cx, node, parentsOf),
-          },
-        },
-        name,
-      )
-      this.cx.layout(node, 'observed', 'bernoulli', 'scalar', [name], false)
-      return
-    }
-    for (let i = 0; i < n; i++) {
-      const y = values[i] as number
-      if (Number.isNaN(y)) {
-        vars.push(null)
-        continue
-      }
-      const name = this.cx.elementName(node.name, node.dims, i)
-      vars.push(this.observedElement(node, fam, name, y, i))
-    }
-    this.cx.layout(node, 'observed', undefined, node.dims.length === 0 ? 'scalar' : 'observed', vars, false)
-  }
-
-  private observedElement(
-    node: ModelNode & { readonly kind: 'observed' },
-    fam: string,
-    name: string,
-    y: number,
-    i: number,
-  ): string | null {
-    const index = node.dims.length === 0 ? undefined : i
-    switch (fam) {
-      case 'normal': {
-        const scaleExpr = node.dist.params['scale']
-        // A log scale (and a mean) chosen by one discrete variable, each state with random ones of its own: one gate of `gaussian-scale` branches.
-        if (observedSwitchLogScale(this.cx, node, y, i, index)) return null
-        // A mean or a scale chosen by a discrete variable (a lookup): a table or a gate over that variable.
-        const switched = switchedCells(this.cx, node, i)
-        if (switched !== undefined) return observedSwitch(this.cx, node, name, y, index, switched.loc, switched.scale)
-        if (scaleExpr !== undefined && !this.cx.isConst(scaleExpr)) {
-          const logScale =
-            expArgument(unwrap(this.cx.nodes, scaleExpr)) !== undefined
-              ? observedLogScale(this.cx, node, name, y, i, index)
-              : undefined
-          if (logScale !== undefined) return logScale
-          if (precisionExpr(this.cx.idiom, scaleExpr) === undefined)
-            return observedRandomScale(this.cx, node, name, y, i, index, scaleExpr)
-          return observedRandomPrecision(this.cx, node, name, y, i, index)
-        }
-        return observedGaussian(this.cx, node, name, y, i, index, 'loc', 'scale')
-      }
-      case 'studentT':
-      case 'laplace':
-      case 'normalOutliers':
-        return observedHeavy(this.cx, node, fam, y, i, index)
-      case 'beta':
-        return observedPair(this.cx, node, 'beta-shapes', y, i, index)
-      case 'orderedProbit':
-      case 'orderedLogistic':
-      case 'asymmetricLaplace': {
-        const numeric = observedNumeric(this.cx, node, fam, y, i, index)
-        if (numeric === undefined)
-          throw new Refusal(
-            'operator',
-            `the parameters of '${node.name}' (${fam}) are not in a form with a message rule`,
-          )
-        return numeric
-      }
-      case 'logNormal':
-        // log y is Gaussian around the predictor: the exact Gaussian rule on the log of the outcome.
-        if (!(y > 0)) throw new Refusal('data', `'${node.name}' is log-normal: the outcome ${y} must be positive`)
-        return observedGaussian(this.cx, node, name, Math.log(y), i, index, 'mu', 'sigma')
-      case 'bernoulli':
-        return observedBernoulli(this.cx, node, name, y, i, index)
-      case 'binomial':
-      case 'poisson': {
-        const numeric = observedNumeric(this.cx, node, fam, y, i, index)
-        return numeric !== undefined ? numeric : observedConjugate(this.cx, node, fam, name, y, i)
-      }
-      case 'categorical':
-        if (node.dist.params['logits'] !== undefined)
-          return observedMulticlass(this.cx, node, y, i, index, 'logits', 'logit')
-        return observedConjugate(this.cx, node, fam, name, y, i)
-      case 'categoricalProbit':
-        return observedMulticlass(this.cx, node, y, i, index, 'scores', 'probit')
-      case 'zeroTruncatedPoisson': {
-        const numeric = observedNumeric(this.cx, node, fam, y, i, index)
-        if (numeric === undefined)
-          throw new Refusal(
-            'operator',
-            `the rate of '${node.name}' must be \`exposure * exp(affine)\` for the zero-truncated Poisson`,
-          )
-        return numeric
-      }
-      case 'hurdlePoisson':
-        return observedHurdle(this.cx, node, y, i, index)
-      case 'normalPair':
-        return observedMixtureWeight(this.cx, node, name, y, i)
-      case 'exponential':
-      case 'gamma':
-        return observedGammaRate(this.cx, node, fam, name, y, i)
-      case 'geometric':
-        return observedFailures(this.cx, node, fam, name, y, i)
-      case 'negativeBinomial':
-      case 'weibull': {
-        const numeric = observedNumeric(this.cx, node, fam, y, i, index)
-        if (numeric === undefined && fam === 'negativeBinomial') return observedFailures(this.cx, node, fam, name, y, i)
-        if (numeric === undefined)
-          throw new Refusal(
-            'operator',
-            `the parameters of '${node.name}' (${fam}) are not in a form with a message rule (see the log-link idioms of its observedNumeric)`,
-          )
-        return numeric
-      }
-      default:
-        throw new Refusal(
-          'family',
-          `'${node.name}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, asymmetricLaplace, orderedProbit, orderedLogistic, categoricalProbit, normalOutliers, bernoulli, binomial, poisson, normalPair, exponential, gamma, geometric, negativeBinomial, weibull and categorical`,
-        )
     }
   }
 }
@@ -472,7 +90,7 @@ class Compiler {
  * model: rebind and compile again for new data.
  *
  * Nodes that the engine has no counterpart for are never dropped silently. A `param` node, a `factor` (log-density)
- * term, a family with no message family, a `custom` call, a random scale that is not the precision idiom, a square of a random
+ * term, a family with no message family, a `custom` call, a random scale that is neither the precision idiom nor the exp of a Gaussian form, a square of a random
  * precision, a non-affine operator on a random value (except as a Bernoulli link or one of the unary functions of the
  * registry), a gate over components of different families, a computed random index, a constraint beyond
  * the support of a Gaussian (a simplex, a positive-definite matrix), missing data that is not ignored, a subsampling batch and a plated table over discrete nodes each become an
@@ -538,7 +156,7 @@ export function toFactorGraph(
       return {
         name: bound.spec.name,
         graph: undefined,
-        issues: [{ node: e.node, kind: 'structure', reason: e.message }],
+        issues: [{ node: e.node, kind: 'structure', code: 'structure', reason: e.message }],
         opaque: [],
         sites: [],
         auxiliary: [],
@@ -572,6 +190,7 @@ export function toFactorGraph(
       cx.issues.push({
         node: name,
         kind: 'opaque',
+        code: 'opaque',
         reason: `'${name}' is opaque to message passing (a custom call, or a family with no exponential-family form)`,
       })
   const plates = bound.spec.dims

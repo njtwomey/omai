@@ -8,7 +8,7 @@
 import { fromStorage, toFlat } from '../../../../tensor/index.ts'
 import type { NamedValue } from '../../operators.ts'
 import { type Cell, constCell, isConstCell, prod, type Sym, unflatten } from '../_cells.ts'
-import { Refusal } from '../_refusal.ts'
+import { dimensionHasNoSize, eventAxesInScalar, randomValueWhereKnown, valueDoesNotFitDims } from '../_reasons.ts'
 
 /** The sizes the model was bound with, by dimension name. */
 export type Sizes = Readonly<Record<string, number>>
@@ -16,8 +16,7 @@ export type Sizes = Readonly<Record<string, number>>
 /** The size of a dimension; a `Refusal` when the model has no size for it. */
 export function sizeOf(sizes: Sizes, dim: string): number {
   const n = sizes[dim]
-  if (n === undefined)
-    throw new Refusal('data', `the dimension '${dim}' has no size (bind data for it or fix its size)`)
+  if (n === undefined) throw dimensionHasNoSize(dim)
   return n
 }
 
@@ -31,8 +30,7 @@ export function cellAt(sizes: Sizes, sym: Sym, outDims: readonly string[], idx: 
   let flat = 0
   for (const d of sym.dims) {
     const at = outDims.indexOf(d)
-    if (at < 0)
-      throw new Refusal('structure', `a value over '${d}' does not fit the dimensions [${outDims.join(', ')}]`)
+    if (at < 0) throw valueDoesNotFitDims(d, outDims.join(', '))
     flat = flat * sizeOf(sizes, d) + (idx[at] as number)
   }
   return sym.cells[flat] as Cell
@@ -72,8 +70,7 @@ export function overDims(sizes: Sizes, sym: Sym, dims: readonly string[]): Cell[
 
 /** A known value of the registry as a symbolic value of constant cells. */
 export function fromNamed(nv: NamedValue): Sym {
-  if (nv.value.shape.length !== nv.dims.length)
-    throw new Refusal('structure', 'a value with event axes cannot stand in a scalar expression')
+  if (nv.value.shape.length !== nv.dims.length) throw eventAxesInScalar()
   return { dims: nv.dims, cells: toFlat(nv.value).map(constCell) }
 }
 
@@ -81,7 +78,7 @@ export function fromNamed(nv: NamedValue): Sym {
 export function toNamed(sizes: Sizes, sym: Sym): NamedValue {
   const shape = shapeOf(sizes, sym.dims)
   const values = sym.cells.map((c) => {
-    if (!isConstCell(c)) throw new Refusal('node', 'a random value where a known one is needed')
+    if (!isConstCell(c)) throw randomValueWhereKnown()
     return c.aff.offset
   })
   return { value: fromStorage(Float64Array.from(values), shape, 'float64'), dims: sym.dims }

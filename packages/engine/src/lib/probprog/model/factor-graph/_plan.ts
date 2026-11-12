@@ -24,7 +24,7 @@ import {
   unwrap,
 } from './_idioms.ts'
 import { evaluateKnown, isKnownExpr, type Known } from './_known.ts'
-import { Refusal } from './_refusal.ts'
+import { randomWhereKnown } from './_reasons.ts'
 
 /** A Gaussian mean whose variance is a known multiple of the precision's reciprocal and the observations that read both: one normal-gamma variable. */
 export interface NormalGammaPlan {
@@ -261,7 +261,7 @@ export function findNormalGamma(
           customs: bound.customs,
           ref: (name) => {
             const v = known.get(name)
-            if (v === undefined) throw new Refusal('node', `'${name}' is random where a known value is needed`)
+            if (v === undefined) throw randomWhereKnown(name)
             return v
           },
           onCustom: (name) => customs.push(name),

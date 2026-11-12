@@ -1,11 +1,23 @@
-import { type FamilyKind, normalGammaPrior } from '../../../../message-passing/index.ts'
+import {
+  betaEta,
+  type FamilyKind,
+  gammaPrior,
+  normalGammaPrior,
+  priorFactor,
+} from '../../../../message-passing/index.ts'
 import { toFlat } from '../../../../tensor/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
 import { type Cell, isConstCell, prod, scaledOf } from '../_cells.ts'
 import type { Context } from '../_context.ts'
 import { logVariableOf, unwrap } from '../_idioms.ts'
+import { NOT_MINE, type NotMine } from '../_mapping.ts'
 import { constParam } from '../_params.ts'
-import { Refusal } from '../_refusal.ts'
+import {
+  concentrationNotMultipleOfLatent,
+  concentrationNotMultiplesOfOne,
+  concentrationNotRandomTimesKnown,
+  gammaRateNotMultiple,
+} from '../_reasons.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
 
 /** One component of a random concentration, `weight * alpha + offset`, with the variable of `alpha` (the variable of its log when `log`). */
@@ -21,15 +33,15 @@ export interface ConcentrationPart {
  * latent `M` with a known mean and the variance `1 / (kappa lambda)` and observed Gaussians `y ~ N(M, 1 / (c lambda))`, with
  * nothing else reading either of them; `_plan.ts` has the detection). The pair is one `normal-gamma` variable with a prior of both
  * and a `gaussian-normal-gamma` factor per observation, so the joint posterior is exactly the conjugate normal-gamma (the classic
- * normal-inverse-gamma prior on a mean and a variance). Returns false (and changes nothing) when the model is not that shape: the
+ * normal-inverse-gamma prior on a mean and a variance). Returns `NOT_MINE` (and changes nothing) when the model is not that shape: the
  * mean and precision then compile to a Gaussian with a gamma precision each.
  */
-export function latentNormalGamma(cx: Context, node: ModelNode & { readonly kind: 'latent' }): boolean {
+export function latentNormalGamma(cx: Context, node: ModelNode & { readonly kind: 'latent' }): true | NotMine {
   const detection = cx.plan.normalGamma.get(node.name)
-  if (detection === undefined) return false
+  if (detection === undefined) return NOT_MINE
   for (const name of detection.customs) cx.handledCustoms.add(name)
   if (detection.failure !== undefined) throw detection.failure
-  if (detection.pair === undefined) return false
+  if (detection.pair === undefined) return NOT_MINE
   const { plan, multiples } = detection.pair
   const inverse = plan.inverse
   const rateName = inverse ? 'scale' : 'rate'
@@ -41,12 +53,45 @@ export function latentNormalGamma(cx: Context, node: ModelNode & { readonly kind
   cx.normalGammaByMean.set(mean.name, plan)
   for (const name of plan.observed) cx.normalGammaObserved.set(name, { plan, multiple: multiples.get(name) as number })
   cx.g.addVariable({ name: plan.variable, family: { kind: 'normal-gamma' } })
-  cx.g.addFactor(normalGammaPrior(plan.variable, m, plan.kappa, a, b), plan.variable)
+  cx.g.addLibraryFactor(normalGammaPrior(plan.variable, m, plan.kappa, a, b), plan.variable)
   cx.layout(node, 'latent', 'normal-gamma', 'scalar', [plan.variable], true, {
     part: 'precision',
     ...(inverse ? { reciprocal: true } : {}),
   })
   return true
+}
+
+/**
+ * A beta, gamma, inverse-gamma or exponential latent whose parameters are all known: one variable per element of the message family
+ * `kind` and its prior factor (`beta-eta`, or `gamma-prior`). An inverse gamma `x` with scale `b` is the precision `1 / x` ~ Gamma(a,
+ * rate b): the variable is that gamma and the site its reciprocal.
+ */
+export function latentKnownPrior(cx: Context, node: ModelNode & { readonly kind: 'latent' }, kind: FamilyKind): void {
+  const fam = node.dist.family
+  const inverse = fam === 'inverseGamma'
+  const rateName = inverse ? 'scale' : 'rate'
+  const shape = cx.shapeOf(node.dims)
+  const n = prod(shape)
+  const params =
+    fam === 'gamma' || inverse
+      ? [constParam(cx, node, 'concentration', 'the shape'), constParam(cx, node, rateName, 'the rate')]
+      : fam === 'exponential'
+        ? [new Array<number>(n).fill(1), constParam(cx, node, 'rate', 'the rate')]
+        : [constParam(cx, node, 'a', 'the shape'), constParam(cx, node, 'b', 'the shape')]
+  const cells: Cell[] = []
+  const vars: string[] = []
+  for (let i = 0; i < n; i++) {
+    const name = cx.g.addVariable({ name: cx.elementName(node.name, node.dims, i), family: { kind } })
+    const p = [params[0]?.[i] as number, params[1]?.[i] as number]
+    const f =
+      fam === 'beta'
+        ? priorFactor(name, betaEta(p[0] as number, p[1] as number))
+        : gammaPrior(name, p[0] as number, p[1] as number)
+    cx.g.addLibraryFactor(f, name)
+    cells.push(inverse ? { kind: 'recip', variable: name, scale: 1 } : { kind: 'rv', variable: name, family: kind })
+    vars.push(name)
+  }
+  cx.finishLatent(node, kind, cells, vars, inverse ? { reciprocal: true } : {})
 }
 
 /**
@@ -62,11 +107,7 @@ export function latentGammaRate(cx: Context, node: ModelNode & { readonly kind: 
   const vars: string[] = []
   for (const [i, c] of cells.entries()) {
     const r = scaledOf(c)
-    if (r === undefined || r.offset !== 0 || !(r.scale > 0))
-      throw new Refusal(
-        'operator',
-        `the rate of '${node.name}' must be a known multiple of a gamma latent (the message rule integrates the gamma's rate); it is not`,
-      )
+    if (r === undefined || r.offset !== 0 || !(r.scale > 0)) throw gammaRateNotMultiple(node.name)
     const name = cx.g.addVariable({
       name: cx.elementName(node.name, node.dims, i),
       family: { kind: 'gamma' },
@@ -109,11 +150,7 @@ export function latentRandomConcentration(cx: Context, node: ModelNode & { reado
     // `concentration = S * V + O` with `S` random (a gamma or log-normal latent, a known multiple of one plus a known value) and `V`, `O`
     // known vectors over the event axis: the cell of each component is `V_k S + O_k`.
     const parsed = concentrationForm(cx, node.dist.params['concentration'] as ExprSpec)
-    if (parsed === undefined)
-      throw new Refusal(
-        'operator',
-        `the concentration of '${node.name}' is not a random value times a known vector plus a known vector`,
-      )
+    if (parsed === undefined) throw concentrationNotRandomTimesKnown(node.name)
     const scalar = cx.over(evalSym(cx, parsed.random), node.dims)
     perElement = scalar.map((s) => {
       const base = concentrationOf(cx, node, s)
@@ -154,10 +191,7 @@ export function latentRandomConcentration(cx: Context, node: ModelNode & { reado
       continue
     }
     if (variable === undefined || random.some((p) => p.variable !== variable || (p.log === true) !== log))
-      throw new Refusal(
-        'operator',
-        `the concentration of '${node.name}' must be known multiples of one random positive value (a gamma or log-normal latent) plus known offsets`,
-      )
+      throw concentrationNotMultiplesOfOne(node.name)
     const family: FamilyKind = isBeta ? 'beta' : 'dirichlet'
     const name = cx.g.addVariable({
       name: cx.elementName(node.name, node.dims, i),
@@ -225,8 +259,5 @@ export function concentrationOf(cx: Context, node: ModelNode, c: Cell): Concentr
     const l = logVariableOf(cx.g.atoms, cx.logScale, key)
     if (l !== undefined) return { variable: l, log: true, weight: coefficient, offset: c.aff.offset }
   }
-  throw new Refusal(
-    'operator',
-    `a concentration of '${node.name}' is not a known multiple of a gamma or log-normal latent plus a known value`,
-  )
+  throw concentrationNotMultipleOfLatent(node.name)
 }

@@ -12,7 +12,18 @@ import { affOf, type Cell, isConstCell, scaledOf } from '../_cells.ts'
 import type { Context } from '../_context.ts'
 import { randomTransitionRow, unwrap } from '../_idioms.ts'
 import { cellsOf, constAt, paramCell } from '../_params.ts'
-import { Refusal } from '../_refusal.ts'
+import {
+  countNotOnSupport,
+  parameterMissingFor,
+  parameterNotLatentOf,
+  probabilityNotLinkOrBeta,
+  probsNotBeta,
+  probsOrLogitsMissing,
+  rateNotConjugate,
+  rateProductOfRandoms,
+  valueNotPositive,
+  weightNotBeta,
+} from '../_reasons.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
 import { observedRowGate } from './observed-gates.ts'
 
@@ -37,7 +48,7 @@ export function observedBernoulli(
     return name
   }
   if (logits !== undefined) return link('sigmoid', logits)
-  if (probs === undefined) throw new Refusal('structure', `'${node.name}': give probs or logits`)
+  if (probs === undefined) throw probsOrLogitsMissing(node.name)
   const e = unwrap(cx.nodes, probs)
   if (e.kind === 'op' && e.op === 'probit') return link('probit', e.args[0] as ExprSpec)
   if (e.kind === 'op' && e.op === 'sigmoid') return link('sigmoid', e.args[0] as ExprSpec)
@@ -53,10 +64,7 @@ export function observedBernoulli(
     cx.g.addFactor({ operator: 'bernoulli', args: [name, p.variable] }, name)
     return name
   }
-  throw new Refusal(
-    'operator',
-    `the probability of '${node.name}' is not a link of an affine value (probit, sigmoid, a comparison) or a beta latent: no message rule`,
-  )
+  throw probabilityNotLinkOrBeta(node.name)
 }
 
 /**
@@ -71,16 +79,12 @@ export function observedGammaRate(
   y: number,
   i: number,
 ): string | null {
-  if (!(y > 0)) throw new Refusal('data', `'${node.name}' is ${fam}: the value ${y} must be positive`)
+  if (!(y > 0)) throw valueNotPositive(node.name, fam, y)
   const shape = fam === 'gamma' ? constAt(cx, node, node.dist.params['concentration'] as ExprSpec, i) : 1
   const target = paramCell(cx, node, 'rate', i)
   if (isConstCell(target)) return null
   const tau = scaledOf(target)
-  if (tau === undefined || tau.offset !== 0 || !(tau.scale > 0))
-    throw new Refusal(
-      'operator',
-      `the rate of '${node.name}' must be a gamma latent or a known multiple of one for the conjugate '${fam}' operator, it is not`,
-    )
+  if (tau === undefined || tau.offset !== 0 || !(tau.scale > 0)) throw rateNotConjugate(node.name, fam)
   cx.g.need('gamma-observed')
   cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
   cx.g.addFactor(
@@ -107,11 +111,7 @@ export function observedMixtureWeight(
 ): string | null {
   const target = paramCell(cx, node, 'weight', i)
   if (isConstCell(target)) return null
-  if (target.kind !== 'rv' || target.family !== 'beta')
-    throw new Refusal(
-      'operator',
-      `the weight of '${node.name}' must be a beta latent for the 'mixture-weight' operator`,
-    )
+  if (target.kind !== 'rv' || target.family !== 'beta') throw weightNotBeta(node.name)
   const [low, high, scale] = ['low', 'high', 'scale'].map((k) => constAt(cx, node, node.dist.params[k] as ExprSpec, i))
   const density = (m: number): number =>
     Math.exp(-0.5 * ((y - m) / (scale as number)) ** 2) / ((scale as number) * Math.sqrt(2 * Math.PI))
@@ -141,16 +141,11 @@ export function observedFailures(
 ): string | null {
   const geometric = fam === 'geometric'
   const failures = geometric ? y - 1 : y
-  if (!(failures >= 0 && Number.isInteger(failures)))
-    throw new Refusal('data', `'${node.name}' is ${fam}: the count ${y} is not on its support`)
+  if (!(failures >= 0 && Number.isInteger(failures))) throw countNotOnSupport(node.name, fam, y)
   const successes = geometric ? 1 : constAt(cx, node, node.dist.params['n'] as ExprSpec, i)
   const target = paramCell(cx, node, 'probs', i)
   if (isConstCell(target)) return null
-  if (target.kind !== 'rv' || target.family !== 'beta')
-    throw new Refusal(
-      'operator',
-      `the probs of '${node.name}' must be a beta latent for the conjugate '${fam}' operator, it is not`,
-    )
+  if (target.kind !== 'rv' || target.family !== 'beta') throw probsNotBeta(node.name, fam)
   cx.g.need('negative-binomial-beta')
   cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: failures })
   cx.g.addFactor({ operator: 'negative-binomial-beta', args: [name, target.variable], params: { successes } }, name)
@@ -167,7 +162,7 @@ export function observedConjugate(
 ): string | null {
   const param = fam === 'poisson' ? 'rate' : 'probs'
   const expr = node.dist.params[param]
-  if (expr === undefined) throw new Refusal('structure', `'${node.name}': the ${param} is missing`)
+  if (expr === undefined) throw parameterMissingFor(node.name, param)
   // A word read through a discrete index of Dirichlet rows (`phi.at(z)`, a topic model): a gate over the index.
   if (fam === 'categorical' && randomTransitionRow(cx.idiom, expr) !== undefined)
     return observedRowGate(cx, node, name, y, i, expr)
@@ -177,17 +172,13 @@ export function observedConjugate(
   if (fam === 'poisson' && e.kind === 'op' && e.op === 'mul') {
     const [a, b] = e.args as [ExprSpec, ExprSpec]
     const [k, r] = cx.isConst(a) ? [a, b] : [b, a]
-    if (!cx.isConst(k)) throw new Refusal('operator', `the rate of '${node.name}' is a product of two random values`)
+    if (!cx.isConst(k)) throw rateProductOfRandoms(node.name)
     exposure = (cx.over(cx.fromNamed(cx.evalNamed(k)), node.dims)[i] as Cell & { kind: 'aff' }).aff.offset
     target = cx.over(evalSym(cx, r), node.dims)[i] as Cell
   } else target = paramCell(cx, node, param, i)
   if (isConstCell(target)) return null
   const want: FamilyKind = fam === 'poisson' ? 'gamma' : fam === 'binomial' ? 'beta' : 'dirichlet'
-  if (target.kind !== 'rv' || target.family !== want)
-    throw new Refusal(
-      'operator',
-      `the ${param} of '${node.name}' must be a ${want} latent for the conjugate '${fam}' operator, it is not`,
-    )
+  if (target.kind !== 'rv' || target.family !== want) throw parameterNotLatentOf(param, node.name, want, fam)
   if (fam === 'poisson') {
     cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
     cx.g.addFactor({ operator: 'poisson', args: [name, target.variable], params: { exposure } }, name)

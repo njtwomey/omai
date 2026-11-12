@@ -5,14 +5,28 @@
  */
 
 import type { Json } from '../../../../base/index.ts'
-import { type FactorSpec, gaussianMvPrior, gaussianPrior } from '../../../../message-passing/index.ts'
+import { type FactorSpec, type GateBranch, gaussianMvPrior, gaussianPrior } from '../../../../message-passing/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
-import { type GateBranch, GateBuilder, precisionBranch, precisionFactor } from '../_builder.ts'
+import { GateBuilder, precisionBranch, precisionFactor } from '../_builder.ts'
 import { affOf, type Cell, combine, isConstCell, logName, type Precision, prod } from '../_cells.ts'
 import type { Context } from '../_context.ts'
 import { precisionExpr, stripClip } from '../_idioms.ts'
+import { NOT_MINE, probe } from '../_mapping.ts'
 import { constParam, paramIsConst, paramSym, randomPrecisions } from '../_params.ts'
-import { Refusal } from '../_refusal.ts'
+import {
+  boundNotOneNumber,
+  constraintNotMapped,
+  jointVectorInclusionRandom,
+  jointVectorScaleRandom,
+  orderedOverSeveralDims,
+  priorMeanOfVectorRandom,
+  scaleNotPositive,
+  scalesNotPositive,
+  sharedPrecisionNotOneGamma,
+  sharedPrecisionWithMean,
+  sideScaleNotPositive,
+  sigmaNotPositive,
+} from '../_reasons.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
 import { mulAff } from '../_symbolic/_functions.ts'
 import { hiddenSwitch } from './observed-gates.ts'
@@ -54,8 +68,7 @@ export function latentProjected(cx: Context, node: ModelNode & { readonly kind: 
     })
     const low = fam === 'uniform' || fam === 'truncatedNormal' ? p('low') : 0
     const high = fam === 'uniform' || fam === 'truncatedNormal' ? p('high') : Number.POSITIVE_INFINITY
-    if (fam === 'logNormal' && !(p('sigma') > 0))
-      throw new Refusal('data', `the sigma of '${node.name}' must be positive`)
+    if (fam === 'logNormal' && !(p('sigma') > 0)) throw sigmaNotPositive(node.name)
     const positive = fam === 'halfNormal' || fam === 'halfCauchy' || fam === 'logNormal' || low >= 0
     // The exact density as a numeric site (`prior-site`): its message is the moment match against the current cavity at every
     // sweep, so the graph holds the prior itself. Infinite bounds are left out of the parameters (they are JSON).
@@ -75,13 +88,13 @@ export function latentProjected(cx: Context, node: ModelNode & { readonly kind: 
     if (positive) {
       const l = cx.g.auxName(node.name, site === undefined ? undefined : site(i))
       cx.g.addVariable({ name: l, family: { kind: 'gaussian' } })
-      if (fam === 'logNormal') cx.g.addFactor(gaussianPrior(l, p('mu'), p('sigma') ** 2), l)
-      else cx.g.addFactor(priorFactor(l, true), l)
+      if (fam === 'logNormal') cx.g.addLibraryFactor(gaussianPrior(l, p('mu'), p('sigma') ** 2), l)
+      else cx.g.addLibraryFactor(priorFactor(l, true), l)
       cx.g.need('apply')
       cx.g.addFactor({ operator: 'apply', args: [name, l], params: { fn: 'exp' } }, name)
       cx.logScale.set(name, l)
       logCells.push(cx.g.varAtom(l))
-    } else cx.g.addFactor(priorFactor(name, false), name)
+    } else cx.g.addLibraryFactor(priorFactor(name, false), name)
     cells.push(cx.g.varAtom(name))
     vars.push(name)
   }
@@ -108,13 +121,11 @@ export function truncate(cx: Context, node: ModelNode & { readonly kind: 'latent
     cx.g.addFactor({ operator, args: [name, x], params }, name)
   }
   const number = (v: Json): number => {
-    if (typeof v !== 'number')
-      throw new Refusal('constraint', `the bound of the constraint of '${node.name}' must be one known number`)
+    if (typeof v !== 'number') throw boundNotOneNumber(node.name)
     return v
   }
   if (c.kind === 'ordered') {
-    if (node.dims.length !== 1)
-      throw new Refusal('constraint', `'${node.name}' is ordered over [${node.dims}]: one dimension is mapped`)
+    if (node.dims.length !== 1) throw orderedOverSeveralDims(node.name, node.dims)
     for (let i = 0; i + 1 < cells.length; i++) {
       const gap = combine(affOf(cells[i + 1] as Cell), affOf(cells[i] as Cell), -1)
       flag(cx.g.materialise(gap, node.name, i) as string, 'greater-than', { threshold: 0 }, i)
@@ -131,11 +142,7 @@ export function truncate(cx: Context, node: ModelNode & { readonly kind: 'latent
           : c.kind === 'interval'
             ? { lower: number(c.low), upper: number(c.high) }
             : undefined
-  if (bounds === undefined)
-    throw new Refusal(
-      'constraint',
-      `'${node.name}' has the constraint '${c.kind}': only ordered and bounds on a Gaussian are mapped`,
-    )
+  if (bounds === undefined) throw constraintNotMapped(node.name, c.kind)
   for (const [i, cell] of cells.entries()) {
     const x = cx.g.materialise(affOf(cell), node.name, node.dims.length === 0 ? undefined : i) as string
     if (bounds.upper === Number.POSITIVE_INFINITY) flag(x, 'greater-than', { threshold: bounds.lower }, i)
@@ -155,8 +162,7 @@ export function latentNormal(cx: Context, node: ModelNode & { readonly kind: 'la
     return
   }
   const scale = constParam(cx, node, 'scale', 'the scale')
-  for (const s of scale)
-    if (!(s > 0)) throw new Refusal('data', `the scale of '${node.name}' is ${s}: it must be positive`)
+  for (const s of scale) if (!(s > 0)) throw scaleNotPositive(node.name, s)
   const group = cx.plan.groups.get(node.name)
   if (group !== undefined) {
     latentGrouped(cx, node, group)
@@ -164,14 +170,13 @@ export function latentNormal(cx: Context, node: ModelNode & { readonly kind: 'la
   }
   if (cx.plan.packed.has(node.name)) {
     const mean = loc.map((c) => {
-      if (!isConstCell(c))
-        throw new Refusal('operator', `'${node.name}' is read as a vector by a matmul, so its prior mean must be known`)
+      if (!isConstCell(c)) throw priorMeanOfVectorRandom(node.name)
       return c.aff.offset
     })
     const cov = new Array<number>(n * n).fill(0)
     for (let i = 0; i < n; i++) cov[i * n + i] = (scale[i] as number) ** 2
     cx.g.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
-    cx.g.addFactor(gaussianMvPrior(node.name, mean, cov), node.name)
+    cx.g.addLibraryFactor(gaussianMvPrior(node.name, mean, cov), node.name)
     cx.syms.set(node.name, {
       dims: node.dims,
       cells: Array.from({ length: n }, (_, j) => cx.g.compAtom(node.name, j, n)),
@@ -201,7 +206,7 @@ export function latentNormal(cx: Context, node: ModelNode & { readonly kind: 'la
         gate.add({ operator: 'gaussian', args: [0, mean], params: { precision: 1 / variance } })
       }
       cx.g.addFactor(gate.factor(), name)
-    } else if (isConstCell(l)) cx.g.addFactor(gaussianPrior(name, l.aff.offset, variance), name)
+    } else if (isConstCell(l)) cx.g.addLibraryFactor(gaussianPrior(name, l.aff.offset, variance), name)
     else {
       const m = cx.g.materialise(affOf(l), node.name, node.dims.length === 0 ? undefined : i)
       cx.g.addFactor({ operator: 'gaussian', args: [name, m as string], params: { precision: 1 / variance } }, name)
@@ -232,13 +237,13 @@ export function latentGrouped(
       const member = cx.nodes.get(m) as ModelNode & { readonly kind: 'latent' }
       const loc = constParam(cx, member, 'loc', 'the mean')[0] as number
       const sd = constParam(cx, member, 'scale', 'the scale')[0] as number
-      if (!(sd > 0)) throw new Refusal('data', `the scale of '${m}' is ${sd}: it must be positive`)
+      if (!(sd > 0)) throw scaleNotPositive(m, sd)
       mean.push(loc)
       cov[k * size + k] = sd * sd
     })
     cx.g.addVariable({ name: group.vector, family: { kind: 'gaussian-mv', size } })
     cx.g.auxiliary.push(group.vector)
-    cx.g.addFactor(gaussianMvPrior(group.vector, mean, cov), group.vector)
+    cx.g.addLibraryFactor(gaussianMvPrior(group.vector, mean, cov), group.vector)
     group.members.forEach((m, k) => {
       cx.g.addVariable({ name: m, family: { kind: 'gaussian' } })
       const a = new Array<number>(size).fill(0)
@@ -268,7 +273,7 @@ export function latentSpikeSlab(cx: Context, node: ModelNode & { readonly kind: 
   const spike = constParam(cx, node, 'spike', 'the spike scale')
   for (let i = 0; i < n; i++)
     if (!(slab[i] !== undefined && spike[i] !== undefined && (slab[i] as number) > 0 && (spike[i] as number) > 0))
-      throw new Refusal('data', `the scales of '${node.name}' must be positive`)
+      throw scalesNotPositive(node.name)
   const mixture = (i: number): Record<string, Json> => ({
     weights: [inclusion[i] as number, 1 - (inclusion[i] as number)],
     means: [0, 0],
@@ -317,17 +322,13 @@ export function latentSpikeSlab(cx: Context, node: ModelNode & { readonly kind: 
  * posterior. A vector that a `matmul` reads (one joint Gaussian) has one covariance, so it is refused.
  */
 export function latentSpikeSlabSwitch(cx: Context, node: ModelNode & { readonly kind: 'latent' }, n: number): void {
-  if (cx.plan.packed.has(node.name))
-    throw new Refusal(
-      'operator',
-      `'${node.name}' is read as a vector by a matmul and has a random inclusion or scale: a joint Gaussian vector has one covariance, so they must be known`,
-    )
+  if (cx.plan.packed.has(node.name)) throw jointVectorInclusionRandom(node.name)
   const inclusion = cx.over(paramSym(cx, node.dist, 'inclusion'), node.dims)
   // The precision of each element's slab and spike: a known one, or the gamma variable's multiple.
   const precisions = (param: 'slab' | 'spike'): ({ readonly sd: number } | Precision)[] =>
     paramIsConst(cx, node, param)
       ? constParam(cx, node, param, `the ${param} scale`).map((sd) => {
-          if (!(sd > 0)) throw new Refusal('data', `the ${param} scale of '${node.name}' is ${sd}: it must be positive`)
+          if (!(sd > 0)) throw sideScaleNotPositive(param, node.name, sd)
           return { sd }
         })
       : randomPrecisions(cx, node, param)
@@ -372,15 +373,9 @@ export function latentRandomScale(
   loc: readonly Cell[],
   scaleExpr: ExprSpec,
 ): void {
-  let scales: Cell[]
-  try {
-    scales = cx.over(evalSym(cx, stripClip(cx.idiom, scaleExpr)), node.dims)
-  } catch (e) {
-    if (!(e instanceof Refusal)) throw e
-    latentRandomPrecision(cx, node, loc)
-    return
-  }
-  if (scales.some((c) => c.kind !== 'aff')) {
+  // Not an affine form of Gaussian variables (a gamma latent, a product of random values): the precision idiom is the route.
+  const scales = probe(cx, () => cx.over(evalSym(cx, stripClip(cx.idiom, scaleExpr)), node.dims))
+  if (scales === NOT_MINE || scales.some((c) => c.kind !== 'aff')) {
     latentRandomPrecision(cx, node, loc)
     return
   }
@@ -392,7 +387,7 @@ export function latentRandomScale(
     const name = cx.elementName(node.name, node.dims, i)
     const z = cx.g.auxName(node.name, index)
     cx.g.addVariable({ name: z, family: { kind: 'gaussian' } })
-    cx.g.addFactor(gaussianPrior(z, 0, 1), z)
+    cx.g.addLibraryFactor(gaussianPrior(z, 0, 1), z)
     const zAtom = cx.g.atomKey({ kind: 'var', name: z })
     cx.g.atoms.set(zAtom, { kind: 'var', name: z })
     const scale = affOf(c)
@@ -414,18 +409,10 @@ export function latentSharedPrecision(
   node: ModelNode & { readonly kind: 'latent' },
   loc: readonly Cell[],
 ): void {
-  if (!loc.every((c) => isConstCell(c) && c.aff.offset === 0))
-    throw new Refusal(
-      'operator',
-      `'${node.name}' has a shared random precision and a mean: the vector with a smoothing parameter must have a zero known mean`,
-    )
+  if (!loc.every((c) => isConstCell(c) && c.aff.offset === 0)) throw sharedPrecisionWithMean(node.name)
   const taus = randomPrecisions(cx, node)
   const shared = taus[0]?.variable
-  if (shared === undefined || taus.some((t) => t.variable !== shared))
-    throw new Refusal(
-      'operator',
-      `the precisions of '${node.name}' must be multiples of one gamma variable plus constants (a vector with several random precisions is the ARD form, one variable per coefficient)`,
-    )
+  if (shared === undefined || taus.some((t) => t.variable !== shared)) throw sharedPrecisionNotOneGamma(node.name)
   cx.g.need('gaussian-mv-precision-scale')
   const n = taus.length
   cx.g.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
@@ -450,11 +437,7 @@ export function latentRandomPrecision(
   node: ModelNode & { readonly kind: 'latent' },
   loc: readonly Cell[],
 ): void {
-  if (cx.plan.packed.has(node.name))
-    throw new Refusal(
-      'operator',
-      `'${node.name}' is read as a vector by a matmul and has a random scale: a joint Gaussian vector has one covariance, so its scale must be known`,
-    )
+  if (cx.plan.packed.has(node.name)) throw jointVectorScaleRandom(node.name)
   const taus = randomPrecisions(cx, node)
   const cells: Cell[] = []
   const vars: string[] = []

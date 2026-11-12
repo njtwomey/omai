@@ -109,6 +109,14 @@ ep-check: ## The expectation propagation suite in one command (setups, coverage,
 	OMAI_TEST_TIMEOUT=60000 $(PNPM) exec vitest run ep- message-passing probprog/model probprog/inference apps/pocs/src/registry
 	$(MAKE) ep-report-check
 
+.PHONY: ep-compiler-doc
+ep-compiler-doc: ## Write docs/probprog/compiler-mappings.md (what the model-to-factor-graph compiler maps) from its mapping tables
+	$(NODE) --conditions=source --experimental-transform-types --no-warnings scripts/ep-compiler-doc.ts
+
+.PHONY: ep-compiler-doc-check
+ep-compiler-doc-check: ## Fail when docs/probprog/compiler-mappings.md is out of date
+	$(NODE) --conditions=source --experimental-transform-types --no-warnings scripts/ep-compiler-doc.ts --check
+
 .PHONY: ep-report
 ep-report: ## Write docs/probprog/ep-status.md from the code (operators, coverage, gaps, atoms); about 1 minute
 	nice -n 15 $(NODE) --conditions=source --experimental-transform-types --no-warnings scripts/ep-report.ts

@@ -6,14 +6,23 @@
  */
 
 import type { Json } from '../../../../base/index.ts'
+import type { OperatorName } from '../../../../message-passing/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
 import { precisionFactor } from '../_builder.ts'
 import { type Atom, affOf, type Cell, isConstCell, lookup, scaledOf } from '../_cells.ts'
 import type { Context } from '../_context.ts'
 import { expArgument, logVariableOfCell, precisionExpr, stripClip, unwrap } from '../_idioms.ts'
+import { NOT_MINE, type NotMine, probe } from '../_mapping.ts'
 import { cellsOf, paramCell, paramIsConst, randomPrecisions } from '../_params.ts'
 import type { NormalGammaPlan } from '../_plan.ts'
-import { Refusal } from '../_refusal.ts'
+import {
+  parameterRandomForLikelihood,
+  scaleNotKnown,
+  scaleNotPositive,
+  scaleNotPrecisionIdiomForOutliers,
+  widthNotPositive,
+  widthRandom,
+} from '../_reasons.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
 import { hiddenSwitch, observedSwitch } from './observed-gates.ts'
 import { emitSite, observedPair } from './observed-numeric.ts'
@@ -58,9 +67,8 @@ export function observedGaussian(
   scaleName: string,
 ): string | null {
   const scale = paramCell(cx, node, scaleName, i)
-  if (!isConstCell(scale)) throw new Refusal('operator', `the scale of '${node.name}' is not known`)
-  if (!(scale.aff.offset > 0))
-    throw new Refusal('data', `the scale of '${node.name}' is ${scale.aff.offset}: it must be positive`)
+  if (!isConstCell(scale)) throw scaleNotKnown(node.name)
+  if (!(scale.aff.offset > 0)) throw scaleNotPositive(node.name, scale.aff.offset)
   const precision = 1 / scale.aff.offset ** 2
   const loc = paramCell(cx, node, locName, i)
   if (isConstCell(loc)) return null
@@ -100,11 +108,7 @@ export function observedHeavy(
 ): string | null {
   const known = (p: string): number => {
     const c = paramCell(cx, node, p, i)
-    if (!isConstCell(c))
-      throw new Refusal(
-        'operator',
-        `the ${p} of '${node.name}' is random: the ${fam} likelihood has a message rule for a known ${p} only`,
-      )
+    if (!isConstCell(c)) throw parameterRandomForLikelihood(p, node.name, fam)
     return c.aff.offset
   }
   if (fam === 'laplace' && !isConstCell(paramCell(cx, node, 'scale', i)))
@@ -114,10 +118,10 @@ export function observedHeavy(
   if (fam === 'normalOutliers' && ['scale', 'outlier'].some((p) => !paramIsConst(cx, node, p)))
     return observedOutlierSwitch(cx, node, y, i, index)
   const scale = known('scale')
-  if (!(scale > 0)) throw new Refusal('data', `the scale of '${node.name}' is ${scale}: it must be positive`)
+  if (!(scale > 0)) throw scaleNotPositive(node.name, scale)
   let params: Record<string, Json>
-  let row: string
-  let site: string
+  let row: OperatorName
+  let site: OperatorName
   if (fam === 'studentT') {
     params = { y, scale, df: known('df') }
     row = 'student-t-row'
@@ -150,13 +154,9 @@ export function observedOutlierSwitch(
   index: number | undefined,
 ): string | null {
   const widthCell = paramCell(cx, node, 'width', i)
-  if (!isConstCell(widthCell))
-    throw new Refusal(
-      'operator',
-      `the width of '${node.name}' is random: the outlier mixture has a message rule for a known width`,
-    )
+  if (!isConstCell(widthCell)) throw widthRandom(node.name)
   const width = widthCell.aff.offset
-  if (!(width > 0)) throw new Refusal('data', `the width of '${node.name}' is ${width}: it must be positive`)
+  if (!(width > 0)) throw widthNotPositive(node.name, width)
   const z = hiddenSwitch(cx, node, paramCell(cx, node, 'outlier', i), index)
   const loc = paramCell(cx, node, 'loc', i)
   let scale: Cell
@@ -170,11 +170,7 @@ export function observedOutlierSwitch(
       precision === undefined
         ? undefined
         : scaledOf(cellsOf(cx, node, 'precisionProbe', () => evalSym(cx, precision))[i] as Cell)
-    if (tau === undefined)
-      throw new Refusal(
-        'operator',
-        `the scale of '${node.name}' must be the precision idiom 1 / sqrt(tau) of a gamma or exponential latent for the outlier mixture`,
-      )
+    if (tau === undefined) throw scaleNotPrecisionIdiomForOutliers(node.name)
     const w2 = width * width
     scale = lookup(z, [0, 0], { precisions: [tau, { ...tau, scale: tau.scale / w2, offset: tau.offset / w2 }] })
   }
@@ -183,7 +179,8 @@ export function observedOutlierSwitch(
 
 /**
  * An observed Gaussian whose scale is `exp(s)` with `s` an affine form of Gaussian variables (a `gaussian-log-scale`
- * factor: the observation of a stochastic volatility model); the mean must be known.
+ * factor: the observation of a stochastic volatility model); the mean must be known. `NOT_MINE` when the mean is random or the scale's
+ * argument is not such a form (the precision idiom is tried next).
  */
 export function observedLogScale(
   cx: Context,
@@ -192,19 +189,13 @@ export function observedLogScale(
   y: number,
   i: number,
   index: number | undefined,
-): string | undefined {
+): string | NotMine {
   const inner = unwrap(cx.nodes, node.dist.params['scale'] as ExprSpec) as ExprSpec & { readonly kind: 'op' }
   const loc = paramCell(cx, node, 'loc', i)
-  if (!isConstCell(loc)) return undefined
-  let cell: Cell
-  try {
-    cell = cellsOf(cx, node, 'logScale', () => evalSym(cx, inner.args[0] as ExprSpec))[i] as Cell
-  } catch (e) {
-    // Not an affine form of Gaussian variables (a product of random values, a gamma latent): the precision idiom is tried next.
-    if (e instanceof Refusal) return undefined
-    throw e
-  }
-  if (isConstCell(cell) || cell.kind !== 'aff') return undefined
+  if (!isConstCell(loc)) return NOT_MINE
+  // Not an affine form of Gaussian variables (a product of random values, a gamma latent): not this mapping.
+  const cell = probe(cx, () => cellsOf(cx, node, 'logScale', () => evalSym(cx, inner.args[0] as ExprSpec))[i] as Cell)
+  if (cell === NOT_MINE || isConstCell(cell) || cell.kind !== 'aff') return NOT_MINE
   const s = cx.g.materialise(affOf(cell), node.name, index) as string
   cx.g.addVariable({ name, family: { kind: 'gaussian' }, observed: y })
   cx.g.addFactor({ operator: 'gaussian-log-scale', args: [name, s], params: { loc: loc.aff.offset } }, name)
@@ -226,19 +217,20 @@ export function observedRandomScale(
   scaleExpr: ExprSpec,
 ): string {
   const stripped = stripClip(cx.idiom, scaleExpr)
-  let logVar: string | undefined
-  try {
+  // The log variable behind the scale, or none (the scale is not an exp of a Gaussian form, nor a value with a log variable): then the
+  // scale must be the precision idiom, and `randomPrecisions` refuses with it named.
+  const found = probe(cx, () => {
     const logArgument = expArgument(stripped)
     if (logArgument !== undefined) {
       const cell = cellsOf(cx, node, 'logScale', () => evalSym(cx, logArgument))[i] as Cell
-      if (cell.kind === 'aff' && !isConstCell(cell)) logVar = cx.g.materialise(cell.aff, node.name, index) as string
-    } else {
-      const cell = cellsOf(cx, node, 'scaleValue', () => evalSym(cx, stripped))[i] as Cell
-      logVar = logVariableOfCell(cell, cx.g.atoms, cx.logScale)
+      return cell.kind === 'aff' && !isConstCell(cell)
+        ? (cx.g.materialise(cell.aff, node.name, index) as string)
+        : undefined
     }
-  } catch (e) {
-    if (!(e instanceof Refusal)) throw e
-  }
+    const cell = cellsOf(cx, node, 'scaleValue', () => evalSym(cx, stripped))[i] as Cell
+    return logVariableOfCell(cell, cx.g.atoms, cx.logScale)
+  })
+  const logVar = found === NOT_MINE ? undefined : found
   if (logVar === undefined) randomPrecisions(cx, node)
   const loc = paramCell(cx, node, 'loc', i)
   const mean = cx.g.portOf(loc, node.name, index)

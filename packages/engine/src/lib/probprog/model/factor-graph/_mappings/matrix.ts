@@ -7,7 +7,38 @@ import { type Atom, type Cell, prod, scaledOf, unflatten } from '../_cells.ts'
 import type { Context } from '../_context.ts'
 import { precisionExpr, unwrap } from '../_idioms.ts'
 import { evalNamedValue, eventVector } from '../_params.ts'
-import { Refusal } from '../_refusal.ts'
+import {
+  correlationConcentrationNotKnown,
+  covarianceNotSquare,
+  covarianceRandomWithRandomMean,
+  matrixRandom,
+  meanIndependentOfVector,
+  meanMissing,
+  meanNotKnownOrWholeVector,
+  meanNotLinearMapOfOneVector,
+  meanNotLinearMapOfVector,
+  meanNotOneGaussianVector,
+  meanNotVectorOf,
+  observedPairsSize,
+  observedVectorsSize,
+  oneCorrelationOverDims,
+  oneMatrixOverDims,
+  oneVectorOverOneDimension,
+  parameterMissing,
+  parameterNotPositive,
+  precisionGivenForNormal,
+  rhoMissing,
+  rhoNotKnownOrCorrelation,
+  rhoOutsideUnit,
+  scaleNotBareGamma,
+  scaleNotPrecisionIdiom,
+  vectorSizeVersusMatrix,
+  wishartDegreesOfFreedom,
+  wishartParametersRandom,
+  wishartReadAsWrongKind,
+  wishartScaleNotSquare,
+  wishartVectorNeedsAxis,
+} from '../_reasons.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
 import { addPlated } from './plates.ts'
 
@@ -20,8 +51,7 @@ import { addPlated } from './plates.ts'
 export function latentMultivariateNormal(cx: Context, node: ModelNode & { readonly kind: 'latent' }): void {
   const shape = cx.shapeOf(node.dims)
   const n = prod(shape)
-  if (node.dims.length !== 1)
-    throw new Refusal('structure', `'${node.name}' is a multivariateNormal: one vector over one dimension is mapped`)
+  if (node.dims.length !== 1) throw oneVectorOverOneDimension(node.name)
   const params = node.dist.params
   // A random mean that is a linear map of another Gaussian vector (`matvec(F, previous)`): one dense Gaussian step between the two.
   if (params['loc'] !== undefined && !cx.isConst(params['loc'])) {
@@ -29,8 +59,7 @@ export function latentMultivariateNormal(cx: Context, node: ModelNode & { readon
     return
   }
   const known = (e: ExprSpec | undefined, what: string): number[] => {
-    if (e === undefined || !cx.isConst(e))
-      throw new Refusal('operator', `the ${what} of '${node.name}' depends on a random value: a known matrix is mapped`)
+    if (e === undefined || !cx.isConst(e)) throw matrixRandom(what, node.name)
     return Array.from(toFlat(cx.evalNamed(e).value))
   }
   const loc = known(params['loc'], 'mean')
@@ -46,14 +75,10 @@ export function latentMultivariateNormal(cx: Context, node: ModelNode & { readon
         for (let k = 0; k <= Math.min(i, j); k++) v += (L[i * n + k] ?? 0) * (L[j * n + k] ?? 0)
         cov[i * n + j] = v
       }
-  } else
-    throw new Refusal(
-      'structure',
-      `'${node.name}' is a multivariateNormal with a precision: give a covariance or scaleTril`,
-    )
-  if (cov.length !== n * n) throw new Refusal('structure', `the covariance of '${node.name}' is not ${n} by ${n}`)
+  } else throw precisionGivenForNormal(node.name)
+  if (cov.length !== n * n) throw covarianceNotSquare(node.name, n)
   cx.g.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
-  cx.g.addFactor(gaussianMvPrior(node.name, mean, cov), node.name)
+  cx.g.addLibraryFactor(gaussianMvPrior(node.name, mean, cov), node.name)
   cx.syms.set(node.name, {
     dims: node.dims,
     cells: Array.from({ length: n }, (_, j) => cx.g.compAtom(node.name, j, n)),
@@ -74,9 +99,13 @@ export function wishartOf(
     const w = cx.wisharts.get(u.name)
     if (w === undefined) continue
     if ((key === 'covariance') !== w.covariance)
-      throw new Refusal(
-        'structure',
-        `'${node.name}' reads '${u.name}' as its ${key}, but '${u.name}' is ${w.covariance ? 'an inverse Wishart (a covariance): write { covariance: ... }' : 'a Wishart (a precision matrix): write { precision: ... }'}`,
+      throw wishartReadAsWrongKind(
+        node.name,
+        u.name,
+        key,
+        w.covariance
+          ? 'an inverse Wishart (a covariance): write { covariance: ... }'
+          : 'a Wishart (a precision matrix): write { precision: ... }',
       )
     return { name: u.name, ...w }
   }
@@ -90,19 +119,16 @@ export function wishartOf(
  */
 export function latentWishart(cx: Context, node: ModelNode & { readonly kind: 'latent' }): void {
   const covariance = node.dist.family === 'inverseWishart'
-  if (node.dims.length > 0)
-    throw new Refusal('structure', `'${node.name}' is a ${node.dist.family} over [${node.dims}]: one matrix is mapped`)
+  if (node.dims.length > 0) throw oneMatrixOverDims(node.name, node.dist.family, node.dims)
   const dfExpr = node.dist.params['df']
   const scaleExpr = node.dist.params['scale']
   if (dfExpr === undefined || scaleExpr === undefined || !cx.isConst(dfExpr) || !cx.isConst(scaleExpr))
-    throw new Refusal('operator', `the degrees of freedom and the scale of '${node.name}' must be known values`)
+    throw wishartParametersRandom(node.name)
   const df = toFlat(cx.evalNamed(dfExpr).value)[0] as number
   const scale = cx.evalNamed(scaleExpr).value
   const d = scale.shape[0] as number
-  if (scale.shape.length !== 2 || scale.shape[1] !== d)
-    throw new Refusal('structure', `the scale of '${node.name}' must be a square matrix`)
-  if (!(df > d - 1))
-    throw new Refusal('data', `'${node.name}' has ${df} degrees of freedom: more than ${d - 1} are needed`)
+  if (scale.shape.length !== 2 || scale.shape[1] !== d) throw wishartScaleNotSquare(node.name)
+  if (!(df > d - 1)) throw wishartDegreesOfFreedom(node.name, df, d - 1)
   // W(df, S) on the precision; the inverse Wishart Psi on the covariance is W(df, Psi^-1) on the precision
   const matrix = covariance ? Array.from(toFlat(inv(scale))) : Array.from(toFlat(scale))
   const eta = wishartEta(df, matrix, d)
@@ -124,13 +150,13 @@ export function vectorMean(
   vectorDim: string | undefined,
 ): { readonly at: (row: number) => string | { readonly const: readonly number[] }; readonly shared: boolean } {
   const e = node.dist.params['loc']
-  if (e === undefined) throw new Refusal('structure', `'${node.name}': the mean is missing`)
+  if (e === undefined) throw meanMissing(node.name)
   if (cx.isConst(e)) {
     const nv = cx.evalNamed(e)
     const kept = nv.dims.filter((x) => x !== vectorDim)
     const shape = cx.shapeOf(plateDims)
     if (nv.value.shape.length - kept.length !== 1 || nv.value.shape[nv.value.shape.length - 1] !== d)
-      throw new Refusal('structure', `the mean of '${node.name}' must be a vector of ${d} (per row, when it varies)`)
+      throw meanNotVectorOf(node.name, d)
     return {
       shared: kept.length === 0,
       at: (row) => ({
@@ -141,8 +167,7 @@ export function vectorMean(
   const sym = evalSym(cx, e)
   let vector: string | undefined
   const cells = sym.cells
-  if (cells.length !== d)
-    throw new Refusal('operator', `the mean of '${node.name}' must be one Gaussian vector of ${d} entries (or known)`)
+  if (cells.length !== d) throw meanNotOneGaussianVector(node.name, d)
   for (const [k, c] of cells.entries()) {
     const terms = c.kind === 'aff' ? [...c.aff.terms].filter(([, v]) => v !== 0) : []
     const atom = terms.length === 1 && terms[0]?.[1] === 1 ? cx.g.atoms.get(terms[0][0]) : undefined
@@ -152,10 +177,7 @@ export function vectorMean(
       atom.size !== d ||
       (vector !== undefined && atom.vector !== vector)
     )
-      throw new Refusal(
-        'operator',
-        `the mean of '${node.name}' must be a known vector or one whole Gaussian vector variable`,
-      )
+      throw meanNotKnownOrWholeVector(node.name)
     vector = atom.vector
   }
   return { shared: true, at: () => vector as string }
@@ -170,19 +192,11 @@ export function vectorMean(
  */
 export function latentMvnWishart(cx: Context, node: ModelNode & { readonly kind: 'latent' }): void {
   const w = wishartOf(cx, node) as NonNullable<ReturnType<typeof wishartOf>>
-  if (node.dims.length === 0)
-    throw new Refusal(
-      'structure',
-      `'${node.name}' is a multivariate normal with a Wishart precision: give the vector's axis a named dimension (dims: [..., axis])`,
-    )
+  if (node.dims.length === 0) throw wishartVectorNeedsAxis(node.name)
   const vectorDim = node.dims[node.dims.length - 1] as string
   const plateDims = node.dims.slice(0, -1)
   const d = cx.size(vectorDim)
-  if (d !== w.d)
-    throw new Refusal(
-      'structure',
-      `'${node.name}' has ${d} entries per vector, the matrix '${w.name}' is ${w.d} by ${w.d}`,
-    )
+  if (d !== w.d) throw vectorSizeVersusMatrix(node.name, d, w.name, w.d)
   const shape = cx.shapeOf(plateDims)
   const rows = prod(shape)
   const mean = vectorMean(cx, node, d, plateDims, vectorDim)
@@ -210,7 +224,7 @@ export function observedMvnWishart(cx: Context, node: ModelNode & { readonly kin
   const d = w.d
   const nv = evalNamedValue(cx, node)
   if (nv.value.shape[nv.value.shape.length - 1] !== d || nv.value.shape.length !== node.dims.length + 1)
-    throw new Refusal('structure', `'${node.name}' is observed as vectors of ${d} entries over [${node.dims}]`)
+    throw observedVectorsSize(node.name, d, node.dims)
   const shape = cx.shapeOf(node.dims)
   const mean = vectorMean(cx, node, d, node.dims, undefined)
   if (plateVectors(cx, node, nv, d, mean, 'mvn-wishart', [w.variable])) return
@@ -269,11 +283,10 @@ export function plateVectors(
 
 /** A correlation latent: `rho = 2 u - 1` with `u ~ Beta(eta, eta)` (the LKJ prior of a 2 by 2 matrix), one beta variable with that prior. */
 export function latentCorrelation(cx: Context, node: ModelNode & { readonly kind: 'latent' }): void {
-  if (node.dims.length > 0)
-    throw new Refusal('structure', `'${node.name}' is a correlation over [${node.dims}]: one correlation is mapped`)
+  if (node.dims.length > 0) throw oneCorrelationOverDims(node.name, node.dims)
   const e = node.dist.params['eta']
   const eta = e === undefined ? 1 : cx.isConst(e) ? (toFlat(cx.evalNamed(e).value)[0] as number) : Number.NaN
-  if (!(eta > 0)) throw new Refusal('operator', `the concentration of '${node.name}' must be a known positive value`)
+  if (!(eta > 0)) throw correlationConcentrationNotKnown(node.name)
   const name = cx.g.addVariable({ name: node.name, family: { kind: 'beta' } })
   cx.g.addFactor({ operator: 'prior', args: [name], params: { eta: betaEta(eta, eta) } }, name)
   cx.correlations.set(node.name, name)
@@ -287,18 +300,14 @@ export function precisionPort(
   param: string,
 ): string | { readonly const: number } {
   const e = node.dist.params[param]
-  if (e === undefined) throw new Refusal('structure', `'${node.name}': ${param} is missing`)
+  if (e === undefined) throw parameterMissing(node.name, param)
   if (cx.isConst(e)) {
     const v = toFlat(cx.evalNamed(e).value)[0] as number
-    if (!(v > 0)) throw new Refusal('data', `${param} of '${node.name}' must be positive`)
+    if (!(v > 0)) throw parameterNotPositive(param, node.name)
     return { const: 1 / (v * v) }
   }
   const tau = precisionExpr(cx.idiom, e)
-  if (tau === undefined)
-    throw new Refusal(
-      'operator',
-      `the ${param} of '${node.name}' depends on a random value that is not the precision idiom: write it as 1 / sqrt(tau) with tau a gamma latent`,
-    )
+  if (tau === undefined) throw scaleNotPrecisionIdiom(param, node.name)
   const cell = evalSym(cx, tau).cells[0] as Cell
   const scaled = scaledOf(cell)
   if (
@@ -308,10 +317,7 @@ export function precisionPort(
     cell.kind !== 'rv' ||
     cell.family !== 'gamma'
   )
-    throw new Refusal(
-      'operator',
-      `the ${param} of '${node.name}' must be 1 / sqrt(tau) with tau a gamma latent (a known multiple or offset of it is not mapped)`,
-    )
+    throw scaleNotBareGamma(param, node.name)
   return scaled.variable
 }
 
@@ -321,16 +327,15 @@ export function correlationPort(
   node: ModelNode & { readonly dist: DistSpec },
 ): string | { readonly const: number } {
   const e = node.dist.params['rho']
-  if (e === undefined) throw new Refusal('structure', `'${node.name}': rho is missing`)
+  if (e === undefined) throw rhoMissing(node.name)
   if (cx.isConst(e)) {
     const v = toFlat(cx.evalNamed(e).value)[0] as number
-    if (!(v > -1 && v < 1)) throw new Refusal('data', `rho of '${node.name}' must be in (-1, 1)`)
+    if (!(v > -1 && v < 1)) throw rhoOutsideUnit(node.name)
     return { const: v }
   }
   const u = unwrap(cx.nodes, e)
   const variable = u.kind === 'ref' ? cx.correlations.get(u.name) : undefined
-  if (variable === undefined)
-    throw new Refusal('operator', `the rho of '${node.name}' must be known or a latent with the correlation prior`)
+  if (variable === undefined) throw rhoNotKnownOrCorrelation(node.name)
   return variable
 }
 
@@ -341,7 +346,7 @@ export function correlationPort(
 export function observedBivariateNormal(cx: Context, node: ModelNode & { readonly kind: 'observed' }): void {
   const nv = evalNamedValue(cx, node)
   if (nv.value.shape[nv.value.shape.length - 1] !== 2 || nv.value.shape.length !== node.dims.length + 1)
-    throw new Refusal('structure', `'${node.name}' is observed as vectors of 2 entries over [${node.dims}]`)
+    throw observedPairsSize(node.name, node.dims)
   const vectorDim = node.dist.eventDims?.[0]
   const mean = vectorMean(cx, node, 2, node.dims, vectorDim)
   const tail = [precisionPort(cx, node, 'scale1'), precisionPort(cx, node, 'scale2'), correlationPort(cx, node)]
@@ -371,34 +376,29 @@ export function observedBivariateNormal(cx: Context, node: ModelNode & { readonl
  * factor between it and `w`, so a chain of steps with linear Gaussian readings is the Kalman smoother.
  */
 export function latentTransition(cx: Context, node: ModelNode & { readonly kind: 'latent' }, locExpr: ExprSpec): void {
-  if (node.dims.length !== 1)
-    throw new Refusal('structure', `'${node.name}' is a multivariateNormal: one vector over one dimension is mapped`)
+  if (node.dims.length !== 1) throw oneVectorOverOneDimension(node.name)
   const n = cx.size(node.dims[0] as string)
   const params = node.dist.params
   const covarianceExpr = params['covariance']
-  if (covarianceExpr === undefined || !cx.isConst(covarianceExpr))
-    throw new Refusal('operator', `the covariance of '${node.name}' must be a known matrix when its mean is random`)
+  if (covarianceExpr === undefined || !cx.isConst(covarianceExpr)) throw covarianceRandomWithRandomMean(node.name)
   const covariance = Array.from(toFlat(cx.evalNamed(covarianceExpr).value))
-  if (covariance.length !== n * n)
-    throw new Refusal('structure', `the covariance of '${node.name}' is not ${n} by ${n}`)
+  if (covariance.length !== n * n) throw covarianceNotSquare(node.name, n)
   const loc = cx.over(evalSym(cx, locExpr), node.dims)
   let vector: string | undefined
   let columns = 0
   const forms = loc.map((c) => {
-    if (c.kind !== 'aff')
-      throw new Refusal('operator', `the mean of '${node.name}' must be a linear map of another Gaussian vector`)
+    if (c.kind !== 'aff') throw meanNotLinearMapOfVector(node.name)
     const terms = [...c.aff.terms].filter(([, k]) => k !== 0)
     for (const [key] of terms) {
       const atom = cx.g.atoms.get(key)
       if (atom?.kind !== 'comp' || (vector !== undefined && atom.vector !== vector))
-        throw new Refusal('operator', `the mean of '${node.name}' must be a linear map of one Gaussian vector`)
+        throw meanNotLinearMapOfOneVector(node.name)
       vector = atom.vector
       columns = atom.size
     }
     return { aff: c.aff, terms }
   })
-  if (vector === undefined)
-    throw new Refusal('operator', `the mean of '${node.name}' does not depend on a Gaussian vector`)
+  if (vector === undefined) throw meanIndependentOfVector(node.name)
   const matrix = new Array<number>(n * columns).fill(0)
   const offset = forms.map(({ aff, terms }, i) => {
     for (const [key, k] of terms) matrix[i * columns + (cx.g.atoms.get(key) as Atom & { kind: 'comp' }).index] = k

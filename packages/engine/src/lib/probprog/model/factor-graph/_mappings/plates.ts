@@ -3,6 +3,7 @@ import type { ExprSpec, ModelNode } from '../../spec.ts'
 import { type Atom, type Cell, prod } from '../_cells.ts'
 import type { Context } from '../_context.ts'
 import { unwrap } from '../_idioms.ts'
+import { NOT_MINE, type NotMine } from '../_mapping.ts'
 import { cellsOf, paramSym } from '../_params.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
 
@@ -53,21 +54,21 @@ export function designRows(
  * regression on a packed vector `w`: a Gaussian likelihood with one known scale (the exact `linear-regression-plate`, by
  * the sufficient statistics of the rows) or a Bernoulli with a probit or logistic link of `a . w` (`probit-plate`,
  * `logistic-plate`, the design matrix and outcomes as parameters). Anything else, or an engine registry without the
- * plate operators, is not handled here and falls to the expansion. Returns whether the node was compiled.
+ * plate operators, is not handled here and falls to the expansion (`NOT_MINE`).
  */
 export function plate(
   cx: Context,
   node: ModelNode & { readonly kind: 'observed' },
   fam: string,
   values: readonly number[],
-): boolean {
+): true | NotMine {
   if (fam === 'normal') return plateNormal(cx, node, values)
   if (fam === 'bernoulli') return plateBernoulli(cx, node, values)
-  return false
+  return NOT_MINE
 }
 
 export function addPlated(cx: Context, node: ModelNode & { readonly kind: 'observed' }, f: FactorSpec): void {
-  cx.g.addFactor(f, node.name)
+  cx.g.addLibraryFactor(f, node.name)
   cx.plated.push(node.name)
   cx.layout(node, 'observed', undefined, 'observed', new Array<null>(prod(cx.shapeOf(node.dims))).fill(null), false)
 }
@@ -76,18 +77,18 @@ export function plateNormal(
   cx: Context,
   node: ModelNode & { readonly kind: 'observed' },
   values: readonly number[],
-): boolean {
-  if (!('linear-regression-plate' in cx.g.ops)) return false
+): true | NotMine {
+  if (!('linear-regression-plate' in cx.g.ops)) return NOT_MINE
   const scaleExpr = node.dist.params['scale']
-  if (scaleExpr !== undefined && !cx.isConst(scaleExpr)) return false
+  if (scaleExpr !== undefined && !cx.isConst(scaleExpr)) return NOT_MINE
   const scales = cx
     .over(paramSym(cx, node.dist, 'scale'), node.dims)
     .map((c) => (c as Cell & { kind: 'aff' }).aff.offset)
   const scale = scales[0] as number
-  if (!(scale > 0) || scales.some((v) => v !== scale)) return false
+  if (!(scale > 0) || scales.some((v) => v !== scale)) return NOT_MINE
   const locs = cellsOf(cx, node, 'loc', () => paramSym(cx, node.dist, 'loc'))
   const design = designRows(cx, locs, true)
-  if (design === undefined) return false
+  if (design === undefined) return NOT_MINE
   const d = design.size
   const xtx = new Array<number>(d * d).fill(0)
   const xty = new Array<number>(d).fill(0)
@@ -104,7 +105,7 @@ export function plateNormal(
         xtx[a * d + b] = (xtx[a * d + b] as number) + (row.a[a] as number) * (row.a[b] as number)
     }
   }
-  if (n === 0) return false
+  if (n === 0) return NOT_MINE
   addPlated(cx, node, {
     operator: 'linear-regression-plate',
     args: [design.vector],
@@ -117,7 +118,7 @@ export function plateBernoulli(
   cx: Context,
   node: ModelNode & { readonly kind: 'observed' },
   values: readonly number[],
-): boolean {
+): true | NotMine {
   const probs = node.dist.params['probs']
   const logits = node.dist.params['logits']
   let link: 'probit' | 'sigmoid' | undefined
@@ -132,13 +133,13 @@ export function plateBernoulli(
       argument = e.args[0] as ExprSpec
     }
   }
-  if (link === undefined || argument === undefined) return false
+  if (link === undefined || argument === undefined) return NOT_MINE
   const operator = link === 'probit' ? 'probit-plate' : 'logistic-plate'
-  if (!(operator in cx.g.ops)) return false
+  if (!(operator in cx.g.ops)) return NOT_MINE
   const arg = argument
   const cells = cellsOf(cx, node, `link:${link}`, () => evalSym(cx, arg))
   const design = designRows(cx, cells, false)
-  if (design === undefined) return false
+  if (design === undefined) return NOT_MINE
   const x: number[] = []
   const y: number[] = []
   for (const [i, row] of design.rows.entries()) {
@@ -146,7 +147,7 @@ export function plateBernoulli(
     x.push(...row.a)
     y.push(values[i] as number)
   }
-  if (y.length === 0) return false
+  if (y.length === 0) return NOT_MINE
   addPlated(cx, node, { operator, args: [design.vector], params: { X: x, y } })
   return true
 }

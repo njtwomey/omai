@@ -196,7 +196,9 @@ export function graphOf(key: string, bound: BoundModel, v: (typeof VARIANTS)[num
         compiledFailure = e instanceof Error ? e.message : String(e)
       }
     }
-    text = canonical({ compilation: c, compiled, compiledFailure })
+    // An issue is hashed as it was before it carried a `code` (the code is derived from the reason's template, the baseline predates it).
+    const issues = c.issues.map(({ code: _code, ...issue }) => issue)
+    text = canonical({ compilation: { ...c, issues }, compiled, compiledFailure })
     sizes = {
       variables: c.graph?.variables.length ?? null,
       factors: c.graph?.factors.length ?? null,

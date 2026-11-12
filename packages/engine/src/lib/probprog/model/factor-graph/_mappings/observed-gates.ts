@@ -4,10 +4,31 @@ import { discreteRowGate, GateBuilder, precisionBranch } from '../_builder.ts'
 import { type Aff, affOf, type Cell, combine, constAff, isConstCell, type Precision } from '../_cells.ts'
 import type { Context } from '../_context.ts'
 import { expArgument, mentionsDiscrete, precisionExpr, randomTransitionRow, stripClip, unwrap } from '../_idioms.ts'
-import { cellsOf, paramCell } from '../_params.ts'
-import { Refusal } from '../_refusal.ts'
+import { NOT_MINE, type NotMine, probe } from '../_mapping.ts'
+import { cellsOf, paramCell, rvName } from '../_params.ts'
+import {
+  choicesVersusRows,
+  discreteParentsOverPlate,
+  exposureNegative,
+  exposureRandom,
+  locationScaleDifferentSwitches,
+  lookupsDifferentStates,
+  meanNotGaussianOrLookup,
+  meanSpreadDifferentSwitches,
+  outcomeOutsideCategories,
+  poissonLogRejects,
+  precisionNotNonNegativeMultiple,
+  rowNotChosenByDiscrete,
+  rowsNotDirichlet,
+  scaleNotKnown,
+  scaleNotPositive,
+  scaleRandomInSomeStates,
+  shareNotKnownOrBeta,
+  shareOutsideUnit,
+} from '../_reasons.ts'
 import { evalSym } from '../_symbolic/_affine.ts'
 import { gate } from '../_symbolic/_gates.ts'
+import { bernoulliTable } from './latent-discrete.ts'
 
 /**
  * A Gaussian observation of a value that is a known function of a discrete variable (a reading moved a period early or late by a
@@ -78,17 +99,12 @@ export function observedPoissonGate(
   exposure: ExprSpec,
 ): null {
   const cell = cellsOf(cx, node, 'exposure', () => evalSym(cx, exposure))[i] as Cell
-  if (cell.kind !== 'lookup' || cell.items !== undefined)
-    throw new Refusal(
-      'operator',
-      `the exposure of '${node.name}' is random: the poisson likelihood has a message rule for a known exposure, or a known value chosen by a discrete variable (a gate)`,
-    )
+  if (cell.kind !== 'lookup' || cell.items !== undefined) throw exposureRandom(node.name)
   const z = cell.variable
   const exposures = cell.values
-  if (!exposures.every((e) => e >= 0 && Number.isFinite(e)))
-    throw new Refusal('data', `the exposure of '${node.name}' must be non-negative`)
+  if (!exposures.every((e) => e >= 0 && Number.isFinite(e))) throw exposureNegative(node.name)
   const why = likelihoods()['poisson-log']?.check?.(y, { likelihood: 'poisson-log', y, exposure: 1 })
-  if (why !== undefined) throw new Refusal('data', `'${node.name}' (poisson-log): ${why}`)
+  if (why !== undefined) throw poissonLogRejects(node.name, why)
   const predictor = cellsOf(cx, node, 'predictor', () => evalSym(cx, inner))[i] as Cell
   const id = cx.elementName(node.name, node.dims, i)
   const impossible = exposures.map((e) => e === 0 && y > 0)
@@ -136,14 +152,9 @@ export function hiddenSwitch(cx: Context, node: ModelNode, probs: Cell, index: n
     cx.g.addFactor({ operator: 'bernoulli', args: [name, probs.variable] }, name)
     return name
   }
-  if (!isConstCell(probs))
-    throw new Refusal(
-      'operator',
-      `the share of '${node.name}' must be known or a beta latent (the conjugate 'bernoulli' operator on the switch of a mixture)`,
-    )
+  if (!isConstCell(probs)) throw shareNotKnownOrBeta(node.name)
   const p = probs.aff.offset
-  if (!(p > 0 && p < 1))
-    throw new Refusal('data', `the share of '${node.name}' is ${p}: it must be strictly between 0 and 1`)
+  if (!(p > 0 && p < 1)) throw shareOutsideUnit(node.name, p)
   const name = cx.g.addVariable({ name: cx.g.auxName(node.name, index), family: { kind: 'bernoulli' } })
   cx.g.addFactor({ operator: 'prior', args: [name], params: { eta: [...bernoulliEta(p)] } }, name)
   return name
@@ -173,13 +184,8 @@ export function switchedCells(
   const randomPrecision = (): boolean => {
     const p = scaleExpr === undefined ? undefined : precisionExpr(cx.idiom, scaleExpr)
     if (p === undefined) return false
-    try {
-      const c = cellsOf(cx, node, 'precisionProbe', () => evalSym(cx, p))[i] as Cell
-      return c.kind === 'scaled' || (c.kind === 'rv' && c.family === 'gamma')
-    } catch (e) {
-      if (e instanceof Refusal) return false
-      throw e
-    }
+    const c = probe(cx, () => cellsOf(cx, node, 'precisionProbe', () => evalSym(cx, p))[i] as Cell)
+    return c !== NOT_MINE && (c.kind === 'scaled' || (c.kind === 'rv' && c.family === 'gamma'))
   }
   // A mean that mentions a discrete variable but is a random Gaussian after its gates (a `select`), with a scale that does not
   // (a precision idiom `1 / sqrt(tau)`), is an ordinary observation: the scale is not evaluated as a lookup.
@@ -205,22 +211,12 @@ export function observedSwitch(
 ): null {
   const looks = [loc, scale].filter((c): c is Cell & { kind: 'lookup' } => c.kind === 'lookup')
   const z = (looks[0] as Cell & { kind: 'lookup' }).variable
-  if (looks.some((l) => l.variable !== z))
-    throw new Refusal(
-      'operator',
-      `the location and the scale of '${node.name}' are chosen by different discrete variables`,
-    )
+  if (looks.some((l) => l.variable !== z)) throw locationScaleDifferentSwitches(node.name)
   const states = (looks[0] as Cell & { kind: 'lookup' }).values.length
-  if (looks.some((l) => l.values.length !== states))
-    throw new Refusal('operator', `the lookups of '${node.name}' have different numbers of states`)
+  if (looks.some((l) => l.values.length !== states)) throw lookupsDifferentStates(node.name)
   const precisions = scale.kind === 'lookup' ? scale.precisions : undefined
-  if (scale.kind === 'lookup' && scale.items !== undefined)
-    throw new Refusal(
-      'operator',
-      `the scale of '${node.name}' is random in some states of a discrete variable: it must be known`,
-    )
-  if (scale.kind !== 'lookup' && !isConstCell(scale))
-    throw new Refusal('operator', `the scale of '${node.name}' is not known`)
+  if (scale.kind === 'lookup' && scale.items !== undefined) throw scaleRandomInSomeStates(node.name)
+  if (scale.kind !== 'lookup' && !isConstCell(scale)) throw scaleNotKnown(node.name)
   // With a precision lookup, `values` are the known precisions of the states that have no gamma variable, not scales.
   const sdAt = (k: number): number =>
     precisions !== undefined
@@ -231,11 +227,10 @@ export function observedSwitch(
   for (let k = 0; k < states; k++) {
     if (precisions?.[k] !== undefined) {
       const p = precisions[k] as Precision
-      if (!(p.scale >= 0 && p.offset >= 0 && p.scale + p.offset > 0))
-        throw new Refusal('data', `the precision of '${node.name}' must be a non-negative multiple of a gamma variable`)
+      if (!(p.scale >= 0 && p.offset >= 0 && p.scale + p.offset > 0)) throw precisionNotNonNegativeMultiple(node.name)
       continue
     }
-    if (!(sdAt(k) > 0)) throw new Refusal('data', `the scale of '${node.name}' is ${sdAt(k)}: it must be positive`)
+    if (!(sdAt(k) > 0)) throw scaleNotPositive(node.name, sdAt(k))
   }
   const locAt = (k: number): Aff | number => {
     if (loc.kind === 'lookup') return loc.items?.[k] ?? (loc.values[k] as number)
@@ -286,8 +281,8 @@ export function observedSwitch(
  * per component of a mixture, `exp(at(logSd, z))`), whose mean may be chosen by the same `z` among random ones: ONE `gate` on `z`
  * whose branch `k` is the `gaussian-scale` factor of the observation on the mean and the log scale of state `k`, so the
  * component that explains the reading is the one whose mean and spread both move (a `select` of each would let EP lose which
- * component the pair came from, and a spread per component run off). False when the scale is not of that form (the other
- * routes are tried).
+ * component the pair came from, and a spread per component run off). `NOT_MINE` when the scale is not of that form (the other
+ * routes are tried). The observation is the gate, so the element has no variable of its own (the result is `null`).
  */
 export function observedSwitchLogScale(
   cx: Context,
@@ -295,30 +290,23 @@ export function observedSwitchLogScale(
   y: number,
   i: number,
   index: number | undefined,
-): boolean {
+): null | NotMine {
   const scaleExpr = node.dist.params['scale']
-  if (scaleExpr === undefined || cx.isConst(scaleExpr)) return false
+  if (scaleExpr === undefined || cx.isConst(scaleExpr)) return NOT_MINE
   const logArgument = expArgument(stripClip(cx.idiom, scaleExpr))
-  if (logArgument === undefined || !mentionsDiscrete(cx.latents, logArgument)) return false
-  let loc: Cell
-  let logScale: Cell
-  try {
-    loc = paramCell(cx, node, 'loc', i, 'lookup')
-    logScale = cellsOf(cx, node, 'logScaleLookup', () => evalSym(cx, logArgument, 'lookup'))[i] as Cell
-  } catch (err) {
-    if (err instanceof Refusal) return false
-    throw err
-  }
-  if (logScale.kind !== 'lookup' || logScale.precisions !== undefined) return false
+  if (logArgument === undefined || !mentionsDiscrete(cx.latents, logArgument)) return NOT_MINE
+  const cells = probe(cx, () => ({
+    loc: paramCell(cx, node, 'loc', i, 'lookup'),
+    logScale: cellsOf(cx, node, 'logScaleLookup', () => evalSym(cx, logArgument, 'lookup'))[i] as Cell,
+  }))
+  if (cells === NOT_MINE) return NOT_MINE
+  const { loc, logScale } = cells
+  if (logScale.kind !== 'lookup' || logScale.precisions !== undefined) return NOT_MINE
   const z = logScale.variable
   const states = logScale.values.length
   if (loc.kind === 'lookup' && (loc.variable !== z || loc.values.length !== states || loc.precisions !== undefined))
-    throw new Refusal(
-      'operator',
-      `the mean and the spread of '${node.name}' are chosen by different discrete variables`,
-    )
-  if (loc.kind !== 'lookup' && loc.kind !== 'aff')
-    throw new Refusal('operator', `the mean of '${node.name}' is not a Gaussian form or a lookup`)
+    throw meanSpreadDifferentSwitches(node.name)
+  if (loc.kind !== 'lookup' && loc.kind !== 'aff') throw meanNotGaussianOrLookup(node.name)
   const locAt = (k: number): Aff | number => {
     if (loc.kind === 'lookup') return loc.items?.[k] ?? (loc.values[k] as number)
     return affOf(loc)
@@ -338,7 +326,7 @@ export function observedSwitchLogScale(
       params: {},
     })
   cx.g.addFactor(gate.factor(), cx.elementName(node.name, node.dims, i))
-  return true
+  return null
 }
 
 /**
@@ -359,23 +347,43 @@ export function observedRowGate(
   const chosen = randomTransitionRow(cx.idiom, expr) as { readonly matrix: ExprSpec; readonly index: ExprSpec }
   const matrix = evalSym(cx, chosen.matrix)
   if (matrix.dims.length !== 1 || matrix.cells.some((r) => r.kind !== 'rv' || r.family !== 'dirichlet'))
-    throw new Refusal(
-      'operator',
-      `the rows of the matrix behind '${node.name}' must be one Dirichlet latent each (a latent over the dimension of the states)`,
-    )
+    throw rowsNotDirichlet(node.name)
   const rowVars = matrix.cells.map((r) => (r as { readonly variable: string }).variable)
   const size = cx.g.sizeOf(rowVars[0] as string)
   const parent = cx.over(evalSym(cx, chosen.index), node.dims)[i] as Cell
   if (parent.kind !== 'rv' || (parent.family !== 'discrete' && parent.family !== 'bernoulli'))
-    throw new Refusal('operator', `the row of '${node.name}' must be chosen by a discrete latent, not a computed value`)
+    throw rowNotChosenByDiscrete(node.name)
   const from = parent.family === 'bernoulli' ? 2 : cx.g.sizeOf(parent.variable)
-  if (from !== rowVars.length)
-    throw new Refusal('data', `'${node.name}' has ${from} choices of row and its matrix ${rowVars.length} rows`)
-  if (!(Number.isInteger(y) && y >= 0 && y < size))
-    throw new Refusal('data', `'${node.name}' observes ${y}, outside its ${size} categories`)
+  if (from !== rowVars.length) throw choicesVersusRows(node.name, from, rowVars.length)
+  if (!(Number.isInteger(y) && y >= 0 && y < size)) throw outcomeOutsideCategories(node.name, y, size)
   cx.g.addVariable({ name, family: { kind: 'discrete', size }, observed: y })
   cx.g.need('gate')
   cx.g.need('discrete')
   cx.g.addFactor(discreteRowGate(parent.variable, name, rowVars), name)
   return name
+}
+
+/**
+ * An observed Bernoulli whose probability depends on discrete latents (a node of a network of discrete variables): one `table` factor
+ * over the parents and the node, the probability of 1 for each state of the parents (`bernoulliTable`). A node over a plate has no such
+ * table: the tables over plated nodes are refused.
+ */
+export function observedBernoulliTable(
+  cx: Context,
+  node: ModelNode & { readonly kind: 'observed' },
+  values: readonly number[],
+  parents: readonly string[],
+): void {
+  if (node.dims.length > 0) throw discreteParentsOverPlate(node.name, node.dims)
+  const name = cx.g.addVariable({ name: node.name, family: { kind: 'bernoulli' }, observed: values[0] as number })
+  const pv = parents.map((p) => rvName(cx, p))
+  cx.g.addFactor(
+    {
+      operator: 'table',
+      args: [...pv, name],
+      params: { states: new Array<number>(pv.length + 1).fill(2), values: bernoulliTable(cx, node, parents) },
+    },
+    name,
+  )
+  cx.layout(node, 'observed', 'bernoulli', 'scalar', [name], false)
 }
