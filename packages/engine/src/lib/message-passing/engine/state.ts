@@ -42,6 +42,13 @@ export interface EngineSettings {
   /** Messages to start from. */
   readonly initial?: readonly InitialMessage[]
   /**
+   * The first sweeps of a run (and of each restart) are damped by at least a half (`WARMUP_DAMPING`), then the run goes on at its
+   * own damping (default 0: none). A start from flat messages commits every row to a side at its first undamped updates; where the
+   * labels of a mixture are exchangeable that decides which fixed point the run falls into (one blob, the symmetric one), and a few
+   * damped sweeps let the components separate first.
+   */
+  readonly warmup?: number
+  /**
    * How many times a run that stalls (or diverges) is restarted from its start messages with a stronger damping before it is
    * reported as stalled (default 0: report it at once). The damping of the first restart is `max(damping, 0.5)`, and each
    * further one moves a step of 0.3 toward 0.9. A run already damped as much as its restart would be (a damping of a half or

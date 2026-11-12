@@ -15,6 +15,7 @@ import {
   epAlgorithm,
   type InitialMessage,
   type MpState,
+  warmupOf,
 } from '../../message-passing/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import { bool, choice, type DictSpace, dict, int, real } from '../../space/index.ts'
@@ -471,7 +472,11 @@ export function epMultiStartMethod(
       ): StartRun => {
         const g = graph()
         const r = runAlgorithm(
-          epAlgorithm(g, { ...settings, ...(initial.length === 0 ? {} : { initial: warmed(g, initial) }) }),
+          epAlgorithm(g, {
+            ...settings,
+            ...warmupOf(config),
+            ...(initial.length === 0 ? {} : { initial: warmed(g, initial) }),
+          }),
           {
             maxSteps: maxSweeps + 2,
             seed: 1,

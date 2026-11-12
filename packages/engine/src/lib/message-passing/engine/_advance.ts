@@ -12,6 +12,9 @@ import { propose, resolve, sweepChange } from './_update.ts'
 import type { Plan } from './schedules.ts'
 import type { EngineSettings, ImproperCounts, MpState } from './state.ts'
 
+/** The damping of the warm-up sweeps (`EngineSettings.warmup`) when the run's own is smaller. */
+export const WARMUP_DAMPING = 0.5
+
 /** The step function of a run of `g` under `settings` along `plan`, with the candidate message of an edge (what the residual schedule ranks). */
 export function advancerOf(
   g: CompiledGraph,
@@ -70,7 +73,9 @@ export function advancerOf(
 
   const advance = (state: MpState): MpState => {
     const counts = { ...state.improper }
-    const s = state.damping === settings.damping ? settings : { ...settings, damping: state.damping }
+    const damping =
+      state.sweeps - state.restartAt < (settings.warmup ?? 0) ? Math.max(state.damping, WARMUP_DAMPING) : state.damping
+    const s = damping === settings.damping ? settings : { ...settings, damping }
     if (residual) {
       const messages = state.messages.slice()
       let best = -1
