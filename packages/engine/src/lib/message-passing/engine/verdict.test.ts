@@ -93,27 +93,32 @@ describe('a run that cannot compute an update does not converge', () => {
     )
   })
 
-  it('a run already damped by a half is not restarted (the restart would repeat it exactly): it is judged as the restart would be, in one pass', () => {
+  it('a run damped by a half is restarted at 0.8 (a restart is always damped more than the run it replaces), and by 0.9 it is not: judged in one pass', () => {
     const g = graphWith(reluctant(Number.POSITIVE_INFINITY))
-    const once = runAlgorithm(M.epAlgorithm(g, { restarts: 1, damping: 0.5, tol: 1e-10 }), { maxSteps: 200 })
+    const skipped = runAlgorithm(M.epAlgorithm(g, { restarts: 1, damping: 0.5, tol: 1e-10 }), { maxSteps: 200 })
+    expect(skipped.status).toBe('converged')
+    expect(skipped.state.restarts).toBe(1)
+    expect(skipped.state.damping).toBe(0.8)
+    expect(skipped.state.unresolved).toBe(1)
+    const once = runAlgorithm(M.epAlgorithm(g, { restarts: 1, damping: 0.9, tol: 1e-10 }), { maxSteps: 200 })
     expect(once.status).toBe('converged')
     expect(once.state.restarts).toBe(0)
     expect(once.state.unresolved).toBe(1)
     const verdict = M.mpVerdict(g, once.state, {
       tol: 1e-10,
       maxSweeps: 200,
-      damping: 0.5,
+      damping: 0.9,
       restarts: 1,
       schedule: 'serial',
       projection: M.momentProjection,
     })
     expect(verdict.status).toBe('converged')
     expect(verdict.reason).toMatch(/^converged, but 1 message update could not be computed/)
-    // Undamped, the same run is restarted (at a half) and reaches the same verdict after twice the sweeps.
+    // Undamped, the same run is restarted (at a half) and reaches the same verdict.
     const restarted = runAlgorithm(M.epAlgorithm(g, { restarts: 1, damping: 0, tol: 1e-10 }), { maxSteps: 200 })
     expect(restarted.status).toBe('converged')
     expect(restarted.state.restarts).toBe(1)
-    expect(restarted.state.sweeps).toBeGreaterThan(once.state.sweeps)
+    expect(restarted.state.damping).toBe(0.5)
   })
 
   it('the sweep cap counts from the last restart', () => {
