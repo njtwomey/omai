@@ -12,18 +12,9 @@ import { FLAT_CAVITY_PRECISION, messageArg, numberParam } from '../../core/args.
 import { gaussian } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, Params } from '../../core/types.ts'
-import { logPhi } from '../../numerics/_scalar.ts'
+import { logDiffPhi } from '../../numerics/_scalar.ts'
 import type { TiltHint } from '../../numerics/_tilted.ts'
 import { type Likelihood, likelihoodSite } from './likelihoods.ts'
-
-/** log Phi(b) - log Phi(a) for a < b, accurate in both tails. */
-function logDiffPhi(a: number, b: number): number {
-  if (a === Number.NEGATIVE_INFINITY) return logPhi(b)
-  if (b === Number.POSITIVE_INFINITY) return logPhi(-a)
-  if (a > 0) return logDiffPhi(-b, -a)
-  const hi = logPhi(b)
-  return hi + Math.log1p(-Math.exp(logPhi(a) - hi))
-}
 
 const BASES = ['half-normal', 'half-cauchy', 'uniform', 'truncated-normal'] as const
 

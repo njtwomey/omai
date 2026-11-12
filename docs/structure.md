@@ -612,7 +612,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `losses`          | differentiable training objectives and regularisers                                                                                                                                                                                                                                                                           |
 | `rl`              | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation                                                                                                                                                                                                                                  |
 | `games`           | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms                                                                                                                                                                                                                                  |
-| `message-passing` | message passing on factor graphs of exponential families: EP and VMP as settings of one engine (sum-product rules for four operators), 67 factor operators, variations (power, alpha, numerical, stochastic, regions, expectation consistent, AMP), anytime runs                                                                                                 |
+| `message-passing` | message passing on factor graphs of exponential families: EP and VMP as settings of one engine (sum-product rules for four operators), 69 factor operators, variations (power, alpha, numerical, stochastic, regions, expectation consistent, AMP), anytime runs                                                                                                 |
 | `probprog`        | probabilistic programs and model specs, model analysis and structure reports, inference engines and the planner, a method per engine, validation and benchmark models, posteriors                                                                                                                                             |
 | `learn`           | estimator protocol, preprocessing, composition, model selection, calibration, conformal, active learning, privacy                                                                                                                                                                                                             |
 | `nn`              | neural networks: functional layers, modules, blocks, description, training, decoding                                                                                                                                                                                                                                          |
@@ -3772,7 +3772,7 @@ end, never what a run computes.
 - `ep-grid.ts`: `epGridMethod` (kind `ep-grid`): EP inside a grid over the scalar hyperparameters a `custom` function reads (a
   kernel's length scale): each node conditions the spec on the values (`doSpec`), EP runs on the graph that is left, and the
   EP log evidence plus the log prior weights the node; the posterior is the evidence-weighted mixture, a step is one node in
-  a coarse-to-fine order (any snapshot is a usable posterior), and the grid extends outwards where an edge still has mass.
+  a coarse-to-fine order (any snapshot is a usable posterior), and the grid extends outwards where an edge still has mass. `order: 'walk'` (one hyperparameter) starts in the middle and steps outwards only while an edge still has mass, and `warm` starts each node from the nearest settled node's messages; a node that did not settle weighs the grid only where its evidence does not exceed the best settled node's.
 - `ep-multistart.ts`: `epMultiStartMethod` (kind `ep-multistart`): EP from several starts of the discrete messages (plain, one excluding
   each category, random; with `labels` the relabellings of every reading found), the distinct fixed points weighted by their EP evidence.
 - `ep-route.ts`: `epRoute(bound)`, the one place that chooses how EP runs a model (`ep`, `ep-grid` or `none`, with the verdict and the
@@ -3940,7 +3940,7 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   `_arguments.ts`, `_update.ts` (the proposal, damping and `repairImproper`), `_restart.ts`, `_advance.ts`. `algorithms/`: `named.ts`, `power.ts`, `alpha.ts`, `numerical.ts`, `stochastic.ts`, `regions.ts`,
   `consistent.ts`, `amp.ts`, `anytime.ts`, `clutter.ts`. `operators/`: `registry.ts` (`defaultOperators`, `collectOperators`), `names.ts` (`operatorNames`, the one place the registry's order is declared, and the type `OperatorName`; `GateBranch` in `discrete/gate.ts` types a gate's branch) and one folder per kind of factor, each with a `list.ts` of its operators,
   `gaussian/` (`gaussian`, `linear`, `transition`, `extremum`, `log-scale`), `links/` (`truncation`, `links`, `spin`,
-  `multiclass`), `lifts/` (`rows`, `plates`), `likelihoods/` (`likelihoods`, `pairs`, `robust`, `prior-sites`, `functions`,
+  `multiclass` and its auxiliary-variable rule `_multiclass-auxiliary`), `lifts/` (`rows`, `plates`), `likelihoods/` (`likelihoods`, `pairs`, `robust`, `prior-sites`, `functions`,
   `numeric`), `scales/` (`scale`, `function-scale`, `gamma-scale`, `concentration`, `stick-breaking`), `covariance/`
   (`covariance`, `correlation`), `discrete/` (`conjugate`, `discrete`, `gate`) and `kernel/` (`variational-numeric`). The
   imports run one way: `core` and `numerics` below `engine`, `engine` below `operators` and `algorithms`; the engine
@@ -3961,7 +3961,7 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   deterministic function get a mean-field message from their log density alone); `FactorOperator.unsupported` names a factor with no variational
   message because of its parameters (the Weibull shape).
 - `operators/`: the factor operators of `defaultOperators()` (`registry.ts`), each with message rules for the projections it supports
-  and tested against numerical integration. The names, and the order of the registry, are `operatorNames` (`names.ts`: 67 on
+  and tested against numerical integration. The names, and the order of the registry, are `operatorNames` (`names.ts`: 69 on
   2026-11-12; the count and the table of what each supports are in the generated `docs/probprog/ep-status.md`, never typed in a
   document); each folder lists its own operators in `list.ts` (`gaussianOperatorList`, ...), and `defaultOperators()` collects them with
   `collectOperators`, which throws on a name two operators share, an operator `operatorNames` does not list and a name with no
@@ -3971,7 +3971,7 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   Gauss-Hermite for EP and Jaakkola-Jordan's bound for VMP, the spin site of expectation consistent inference, the multiclass site),
   `lifts/` (a scalar link as a regression row on a weight vector, `rows.ts`, or a plate of rows, `plates.ts`), `likelihoods/` (the
   registry of numeric likelihoods of `likelihoods.ts`, `likelihoods()`, behind the generic `likelihood-site` and `likelihood-row`; the
-  robust sites; the numeric `prior-site`; the unary functions `apply` and `apply-product`; the two-variable `pairs.ts`; `numericOperator`
+  robust sites; the numeric `prior-site`; the unary functions `apply` and `apply-product`; the two-variable `pairs.ts` and the three-variable `triples.ts` (`likelihood-triple`: a Student-t with random location, scale and degrees of freedom, an ordinal outcome with random cut points); `numericOperator`
   in `numeric.ts` is a constructor, not an operator: a factor given only by its log density), `scales/` (the shared smoothing
   parameters of a Gaussian vector, the gamma scale hierarchies, the random concentration of a beta or Dirichlet, the stick-breaking
   assignment), `covariance/` (the Wishart precision, its normal-Wishart conjugate form, the bivariate standard-deviation-and-correlation

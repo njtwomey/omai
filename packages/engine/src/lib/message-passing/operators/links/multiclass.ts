@@ -5,9 +5,12 @@
  * the tilted moments are a `K`-dimensional integral against the product of the cavities; it is found by adaptive Gauss-Hermite
  * quadrature with a full-covariance proposal (the cavity first, then the Gaussian of the tilted moments just found, three rounds),
  * which is exact for a smooth factor and well behaved when the cavities are much wider than the factor is, as in the first
- * sweeps. A class observed as a known score is a constant coordinate, and up to six free scores are integrated (the grid is a
- * product; larger problems need a delta-method site, which this is not). The linear multiclass classifier is one such factor per
- * row on the scores `a . w_k` of the rows (the compiler makes each score a Gaussian variable).
+ * sweeps. A class observed as a known score is a constant coordinate. Up to six free scores are integrated on that product grid
+ * (the grid has a node for every combination of the scores, so it stops there); more are integrated by the auxiliary-variable
+ * rule of `_multiclass-auxiliary.ts`, which writes the same integral so that the scores do not meet (the softmax's normaliser as
+ * a gamma integral over one auxiliary variable, the probit as an integral over the observed class's score and its noise) and costs
+ * the number of classes, not its power. The linear multiclass classifier is one such factor per row on the scores `a . w_k` of
+ * the rows (the compiler makes each score a Gaussian variable).
  */
 
 import { ndtr } from '../../../numerics/special/_kernels.ts'
@@ -21,9 +24,13 @@ import { choleskyInPlace } from '../../numerics/_bartlett.ts'
 import { shiftedSum } from '../../numerics/_moments.ts'
 import { gaussianNodes } from '../../numerics/_quadrature.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
+import { probitAuxiliary, softmaxAuxiliary } from './_multiclass-auxiliary.ts'
 
 /** The nodes per free score for a number of free scores (the grid is their product): the cap keeps a site at some tens of thousands of evaluations. */
 const NODES: Readonly<Record<number, number>> = { 1: 48, 2: 24, 3: 8, 4: 7, 5: 6, 6: 5 }
+
+/** The most free scores the product grid integrates; more go to the auxiliary-variable rule. */
+const MOST_PRODUCT = 6
 
 /** Rounds of adaptation of the proposal: the first uses the cavity, each next the Gaussian of the tilted moments of the one before. */
 const ROUNDS = 3
@@ -40,6 +47,16 @@ function classesOf(params: Params): { readonly classes: number; readonly y: numb
   if (link !== 'logit' && link !== 'probit')
     throw new ParameterError("multiclass-site: the link is 'logit' or 'probit'")
   return { classes, y, probit: link === 'probit' }
+}
+
+/** log of the sum of `exp(v)` (`-Infinity` for none). */
+function logSumExp(v: readonly number[]): number {
+  let top = Number.NEGATIVE_INFINITY
+  for (const x of v) if (x > top) top = x
+  if (!Number.isFinite(top)) return top
+  let s = 0
+  for (const x of v) s += Math.exp(x - top)
+  return top + Math.log(s)
 }
 
 /** log P(y | z) under the softmax. */
@@ -67,9 +84,9 @@ function logProbit(z: ArrayLike<number>, y: number): number {
 
 interface Tilt {
   readonly logMass: number
-  /** The tilted mean and covariance (row-major) of the free scores, in the order of `free`. */
+  /** The tilted mean and variance of the free scores, in the order of `free`. */
   readonly mean: readonly number[]
-  readonly cov: readonly number[]
+  readonly variance: readonly number[]
   readonly free: readonly number[]
 }
 
@@ -101,10 +118,24 @@ function integrate(c: OperatorContext): Tilt {
   const n = NODES[r]
   if (r === 0) {
     const lp = probit ? logProbit(fixed, y) : logSoftmax(fixed, y)
-    return { logMass: c.power * lp, mean: [], cov: [], free }
+    return { logMass: c.power * lp, mean: [], variance: [], free }
+  }
+  const way = c.params['integration'] ?? 'auto'
+  if (way === 'auxiliary' || (way !== 'product' && r > MOST_PRODUCT)) {
+    const observed = free.indexOf(y)
+    const problem = {
+      cavities: cavity,
+      observed,
+      observedScore: fixed[y] as number,
+      fixedLogSum: logSumExp(fixed.filter((_, k) => !free.includes(k))),
+      fixedOthers: fixed.filter((_, k) => k !== y && !free.includes(k)),
+      power: c.power,
+    }
+    const a = probit ? probitAuxiliary(problem) : softmaxAuxiliary(problem)
+    return { logMass: a.logMass, mean: a.mean, variance: a.variance, free }
   }
   if (n === undefined)
-    throw new ParameterError(`multiclass-site: ${r} free scores are more than the six this rule integrates`)
+    throw new ParameterError(`multiclass-site: ${r} free scores are more than the six the product rule integrates`)
   const grid = gaussianNodes(0, 1, n)
   const z = fixed.slice()
   const logf = probit ? logProbit : logSoftmax
@@ -183,8 +214,8 @@ function integrate(c: OperatorContext): Tilt {
     const done =
       result !== undefined &&
       m.every((mi, i) => Math.abs(mi - (result?.mean[i] as number)) <= 1e-3 * Math.sqrt(v[i * r + i] as number)) &&
-      m.every((_, i) => Math.abs((v[i * r + i] as number) / (result?.cov[i * r + i] as number) - 1) <= 1e-3)
-    result = { logMass: top + Math.log(sum), mean: m, cov: v, free }
+      m.every((_, i) => Math.abs((v[i * r + i] as number) / (result?.variance[i] as number) - 1) <= 1e-3)
+    result = { logMass: top + Math.log(sum), mean: m, variance: m.map((_, i) => v[i * r + i] as number), free }
     mu = m
     cov = v
     if (done) break
@@ -202,7 +233,9 @@ function scoreLog(params: Params): (z: readonly number[]) => number {
  * A categorical outcome with softmax (or multinomial probit) probabilities of Gaussian class scores: one port per class, the
  * parameters `y` (the observed class), `classes` (their number) and `link`. Expectation propagation: the tilted mean and variance of
  * every free score from an adaptive Gauss-Hermite integral over all of them, so the scores of the classes that were not observed
- * hear about each other. It supports a power. Variational message passing is non-conjugate (the expected log of a softmax has no
+ * hear about each other (the product grid up to six free scores, the auxiliary-variable rule of `_multiclass-auxiliary.ts` for any
+ * number; `integration` picks one, `auto` is the product grid while it reaches). It supports a power (the probit's auxiliary rule
+ * takes the factor whole). Variational message passing is non-conjugate (the expected log of a softmax has no
  * closed form in Gaussian scores): the message to a score is the natural gradient of the expectation by the same product rule.
  *
  * @concept factor-operators
@@ -229,7 +262,12 @@ export const multiclassSite: FactorOperator = defineOperator({
     classes: param.integer({ min: 2 }),
     y: param.integer({ min: 0 }),
     link: param.text({ optional: true, choices: ['logit', 'probit'] }),
+    integration: param.text({ optional: true, choices: ['auto', 'product', 'auxiliary'] }),
   },
+  unsupported: (mode, params) =>
+    mode === 'vmp' && numberParam(params, 'classes', 2) > MOST_PRODUCT
+      ? `variational message passing integrates the expected log over a product grid, up to ${MOST_PRODUCT} classes (the auxiliary-variable rule is an EP rule)`
+      : undefined,
   check: (params) => {
     try {
       classesOf(params)
@@ -244,7 +282,7 @@ export const multiclassSite: FactorOperator = defineOperator({
       const at = t.free.indexOf(c.to)
       if (at < 0) return { message: [0, 0] }
       const own = etaOf(c.args[c.to] as Arg)
-      return { message: gaussianSiteMessage(own, t.mean[at] as number, t.cov[at * t.free.length + at] as number) }
+      return { message: gaussianSiteMessage(own, t.mean[at] as number, t.variance[at] as number) }
     }, 'numeric'),
     // The mean field: the non-conjugate message of log P(y | z) to a score under the beliefs of the others (the grid is a product over
     // the free scores, with fewer nodes the more there are). The softmax is log-concave in the scores, so the precisions are positive.

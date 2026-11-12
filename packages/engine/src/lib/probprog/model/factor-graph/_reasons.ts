@@ -120,11 +120,11 @@ export const covarianceRandomWithRandomMean = (node: string): Refusal =>
   new Refusal('random-parameter', `the covariance of '${node}' must be a known matrix when its mean is random`, {
     node,
   })
-export const cutPointsRandom = (node: string): Refusal =>
+export const cutPointsShape = (node: string, dims: Fact): Refusal =>
   new Refusal(
-    'random-parameter',
-    `the cut points of '${node}' are random: the ordinal likelihoods have a message rule for known cut points only`,
-    { node },
+    'shape',
+    `the cut points of '${node}' must be one vector over one dimension of their own (and the observation's dimensions), they have [${dims}]`,
+    { node, dims },
   )
 export const exposureRandom = (node: string): Refusal =>
   new Refusal(
@@ -191,12 +191,6 @@ export const scaleRandomInSomeStates = (node: string): Refusal =>
   new Refusal(
     'random-parameter',
     `the scale of '${node}' is random in some states of a discrete variable: it must be known`,
-    { node },
-  )
-export const shapeAndScaleBothRandom = (node: string): Refusal =>
-  new Refusal(
-    'random-parameter',
-    `the degrees of freedom and the scale of '${node}' are both random: the likelihood-pair factor takes one random scale or shape beside the location`,
     { node },
   )
 export const widthRandom = (node: string): Refusal =>

@@ -640,6 +640,81 @@ observation). Their reports say what exists; the work packages above absorb it r
   random index (a function of a latent that is not a discrete variable), and vector-event branches. Gap `gate-node` removed;
   `mixture-regression` (direction) says what is mapped.
 
+## 2026-11-12 Random cut points and a Student-t with a random scale and degrees of freedom (`agent-a5524e-cuts`, gap `ordinal-random-cuts` closed)
+
+- A three-variable numeric site, `likelihood-triple` (`operators/likelihoods/triples.ts`), a registry of densities `p(y | x0, x1, x2)` read by
+  one operator as `likelihood-pair` reads its pairs: `student-t-full` (a random location, log scale and degrees of freedom: a Gaussian or
+  gamma port each), `ordinal-probit-cuts` and `ordinal-logit-cuts` (a random predictor and the two cut points that bound the observed
+  category; the first and the last category have one cut and ignore the other port). Any port may be a known value. The grid is the one
+  the covariance sites use, with a profile of its own (`gridProfiles.triple`), a finer grid along the heavy-tailed coordinate of the
+  Student-t (`fineness`), the ordinal rows read from tables of pairs of nodes (`GridIndexed`: a pass costs the pairs, not the triples) and
+  one integral per sweep for the messages and the evidence (`memoised`). The ordinal probit with Gaussian cavities does not use the
+  grid: given its latent score the predictor and the two cuts are independent (a Kalman update and two truncated Gaussians), so the
+  tilted moments are one smooth integral over the score, exact, and the order of the cuts is the event itself. The same rows have no
+  variational message where the density is zero out of order (the ordinal ones), and a mean-field message for the Student-t.
+- `likelihood-pair` has a row `student-t-scale` (a random scale, known degrees of freedom: a Student-t regression with an unknown scale,
+  which was refused). `logDiffPhi` and `logDiffSigmoid` moved to `numerics/_scalar.ts` (three copies, one place).
+- Compiler: `d.orderedProbit(predictor, cuts, { over })` and `d.orderedLogistic` take the cut dimension as `categorical` takes its class
+  dimension, so the cut points are a latent vector over a dimension of its own (`constraint: { kind: 'ordered' }` makes the prior an ordered
+  Gaussian) or any affine form of Gaussian variables over it (a learned draw margin is `margin * sign` with `sign` known data over the
+  dimension); one `likelihood-triple` factor per outcome on the predictor and the two cuts around its category, a known cut a known port.
+  A Student-t with a random scale and random degrees of freedom is `student-t-full`, a random scale alone `student-t-scale`. Refusals
+  removed: `cutPointsRandom`, `shapeAndScaleBothRandom`; added `cutPointsShape` (cut points over more than one dimension). The table
+  entries `heavy-tailed` and `ordered-numeric` list the new operator.
+- Against references. Operator tests (`triples.test.ts`) against a brute-force product rule: moments and evidence within 3e-3 relative
+  for the ordinal and Student-t rows (a wide outlier case against a refined grid within 0.05, the limit of a grid where the scale is
+  small and the location a spike); `accuracy.test.ts` row `likelihood-triple` (15 cases): mean 7.9e-4 sds, sd 4.8e-4 (the probit rows
+  1e-4 or better, the Student-t 4e-5, the logit on the grid 7.9e-4). Models (`observed-triples.test.ts`): a Student-t with three
+  random parameters against a 90-cell grid (the mean of the location within 0.2 sds, spreads 0.75 to 1.25 of the exact for the location
+  and scale, the degrees of freedom 0.5 to 1.5: a long right tail), an ordered latent vector of cuts and a slope against a 70-cell grid
+  (means within 0.3 sds, spreads 0.75 to 0.95: the slope and the cuts share every row), a learned draw margin against a 180-cell grid.
+  Atoms: `ordinal-probit-cuts-learned` (three categories, slope and two ordered cuts; means within 0.03 exact sds, spreads 0.83 to 0.94,
+  Kolmogorov distance 0.05; recovery over 20 seeds: coverage 0.80, 0.85, 1.00, rms error 1.25 sds at most; 3 s) and
+  `student-t-full-learned` (location, scale and degrees of freedom; means within 0.02 exact sds, spreads 0.95 to 1.01, Kolmogorov distance
+  0.03; recovery over 20 seeds: coverage 0.80, 0.95, 0.95, rms error 1.2 sds at most; 6 s, 128 s for the 20 seeds).
+- What is not done: the ordinal logit with random cuts runs on the grid (about 25 ms per outcome and sweep against 1 ms for the probit), the
+  ordinal rows have no variational message, and the Student-t grid is the limit of its resolution where a small scale makes the location
+  a spike against a wide cavity (an error of 0.05 sds in the first sweeps; it settles with the cavities). Gap `ordinal-random-cuts` removed;
+  the variational limit is added to `variational-rules`. The digest has two atoms and two variational items more and the registry one
+  operator; the 8 existing items checked (ordinal, skill draws, Student-t, quantile, the uniform prior, the gates) are as at the baseline.
+
+## 2026-11-12 A learned covariance with few groups, and Wishart matrices of dimension four (`agent-a3e7a0-matrix`)
+
+- Cause of the gap `hierarchical-matrix-few-groups` (mean too narrow, matrix too wide with three or four groups): a factor per group vector
+  (`mvn-wishart`) shares the population mean and the Wishart matrix with every other group, so the graph has loops through the mean and the matrix and
+  EP's product-form beliefs lose the dependence of each vector on the mean. Not the family projection (the matrix alone was exact with a plated
+  factor or a known mean) and not damping. Measured before the fix against the atom's grid reference (`random-intercepts-slopes-learned`, three to ten
+  groups): the mean's spread 0.78 to 0.95 of the reference, the evidence 0.1 nats low at three groups, 12 to 14 sweeps.
+- New operator `mvn-wishart-group` (`message-passing/operators/covariance/hierarchy.ts`): the vectors of all the groups, their shared Gaussian mean
+  and the Wishart matrix are the ports of ONE factor. Given the matrix everything is Gaussian, so the vectors and the mean integrate out together
+  in closed form (`N(m_j; mean, V_j + L^-1)` per cavity, then the mean against its cavity: `c_j`, `P = W_0 + sum (L - L T_j L)`, `g = h_0 + sum L T_j h_j`),
+  the Wishart is matched on the Bartlett quadrature whose base measure is the cavity times the conjugate part the vectors' cavity means give it
+  (`|L|^((J - 1) / 2)` and their scatter; the remainder is smooth), and each vector and the mean are matched to the mixture of their conditionals over
+  the nodes. One tilt serves every port and the evidence of a sweep (the cache key is the cavities to ten digits of their largest entry: cavities that
+  are the same to rounding must hit). The variational rule is the sum of the per-vector rules, so the VMP digest items agree to 1e-10. The compiler
+  maps a multivariate normal with a Wishart precision and a Gaussian-vector mean as this one factor (`_mappings/matrix.ts`; a known mean stays one
+  `mvn-wishart` per vector, exact on its own); `_table.ts` names the operator, the graph corpus has the two lines of the changed atom, the compiler
+  page is regenerated.
+- Measured after (same atom, three to ten groups, prior degrees of freedom 2.2 to 3, 3 sweeps): the mean's spread 0.96 to 1.00 of the grid
+  reference, the matrix 0.99 to 1.00, every group 1.00, means within 0.05 reference sd, the log evidence within 0.002 nats of the exact (a new lazy
+  `exactLogEvidence` of the reference, every constant of the model in it). The grid reference itself is a few percent high for the mean's spread at
+  three groups: seed 10 of three groups, a graded polar Gauss-Legendre integration of the same model gives 0.6887, EP 0.6877, the atom's three-pass
+  midpoint grid 0.7068 (0.7274 on a finer grid: it does not converge there). The atom's tolerance is now measured (`sdRatio` 0.93 to 1.06, not the
+  `close` rung). Operator tests against a brute-force reference that does not use its algebra (a grid over the three entries of a 2 by 2 matrix, the
+  joint Gaussian of the readings conditioned densely), the exact conjugate limits in dimensions 2 to 4 and importance sampling in dimensions 3 and 4.
+- `matrix-larger`: dimension 4 is now allowed (`BARTLETT_ORDER[4] = 3`: 59049 nodes), for `mvn-wishart` and `mvn-wishart-group`. Against importance sampling
+  (eight groups of four effects, ESS above 13000): means within 0.03 reference sd, spreads 0.97 to 1.01 of the sampled ones for the mean and the matrix,
+  with a random mean (14 s, 3 sweeps) and a known one (15 s, 7 sweeps, one `mvn-wishart` per vector). Dimension 3 with eight groups: 2 s, 3 sweeps (it was 12 s,
+  30). Dimension 5 with two nodes per coordinate leaves the matrix's spread 0.85 to 0.99 of the sampled one (5% to 15% short): it stays refused, as does
+  three nodes (fourteen million). Not done, and why: an LKJ prior of order 3 and above needs a new site over the partial correlations (three betas whose
+  product loses their dependence; six coordinates with the standard deviations), and a model-language form for a covariance made of sds and a correlation
+  matrix; a latent bivariate vector with its own sds and correlation would be a group form of `mvn-sd-corr`; the normal-Wishart variable inside a larger model is a
+  compiler pattern with its own readback. The gap `hierarchical-matrix-few-groups` is replaced by `correlation-strong-few-pairs`, the beta belief of a
+  strong correlation (spread 0.81 to 0.92 of the exact), which this change does not touch; `matrix-larger` lists what remains.
+- Searched and reused: Wishart family, `wishartRule` and the Bartlett helpers, `gaussianSide`, `mvn-wishart`'s variational rule (called per vector), the
+  atom machinery and `grid3` reference, `posterior3`, the library's `gamma` and `normal` samplers and `spd` for the importance-sampling reference (`testing/covariance-group.ts`).
+  Digest: `atom/random-intercepts-slopes-learned` (graph 52 to 43 factors, 14 to 3 sweeps, evidence and beliefs moved toward the reference),
+  `vmp/random-intercepts-slopes-learned` (28 sweeps for 25, beliefs within 1e-10) and the registry line (one more operator) re-accepted; `atom/random-intercepts-slopes` gains the reference's evidence only.
 ## 2026-11-12 Variational message passing for the dense non-centred scale (`agent-a40-vmp`, gap `non-centred-scale` narrowed)
 
 - `gaussian-mv-function-scale` has a variational rule (support `numeric`) and an expected log: with the standard normals integrated
@@ -660,6 +735,44 @@ observation). Their reports say what exists; the work packages above absorb it r
   `logEvidence` outside the engine; a direct call of those operators on a flat cavity now throws `ImproperMessageError` where it gave `NaN`
   (`evidence.test.ts` says so). 109 digest items around gates, mixtures, gamma precisions, priors and covariances are BITS identical; the
   one item that moves (`atom/gate-random-learned`, evidence by 2.8e-12) moves the same on the commit before, so it is not this change.
+
+
+## 2026-11-12 The softmax beyond six classes, and a multiclass Gaussian process (`agent-a3ff91-softmax`, gap `softmax-many-classes` narrowed)
+
+`multiclass-site` integrated up to six free scores on a product grid (a node for every combination). It now takes any number of classes
+under EP, with the product grid kept up to six (the digest items of the existing softmax atoms are bit-identical) and a new rule beyond
+(`operators/links/_multiclass-auxiliary.ts`, chosen by the parameter `integration`: `auto` is the product grid while it reaches, `product`,
+`auxiliary`):
+- **Softmax**: `S^-p = int t^(p-1) exp(-t S) dt / Gamma(p)` with `S = sum_k exp(z_k)` and `p` the power of the factor. Given the auxiliary `t`
+  the factor is a product over the classes, so the mass is one integral over `log t` of the product of `A_k(t) = E_cavity[exp(-t exp(z_k))]`
+  (the numerator `exp(p z_y)` shifts the observed class's cavity to `N(m + p v, v)`), and every score's tilted mean and variance are the
+  mixture over `t` of its conditional moments (law of total variance, centred). The outer integral is the existing panelled grid (`integrateLine`,
+  a new profile `gridProfiles.line` of `numerics/_grid.ts`: 12 panels of 8 nodes after a coarse search of the window, shrunk onto the mass),
+  the inner ones a trapezoid rule over the cavity (spectrally accurate for a Gaussian times a smooth step), so the only approximation is the
+  quadrature. A known score is a constant (`log S` of the known scores), the power is the shape of the gamma (fractional EP works, down to 0.03).
+- **Multinomial probit**: `c = z_y + e` is Gaussian under the observed score's cavity (variance plus one), so the mass is
+  `int N(c) prod_j Phi((c - m_j) / sqrt(1 + v_j)) dc` and every other score's moments given `c` are the truncated-Gaussian closed forms; one
+  coordinate on the same line grid. The power must be one beyond six scores (a power of the integral is not an integral).
+- Variational message passing stays on its product grid: `unsupported('vmp')` says so for more than six classes (it was an unbounded cost).
+
+Checked against: the brute-force integral (`bruteTilted`) for two to four classes (precision and mean term within 1e-3 to 2e-3, the brute force
+being the coarser of the two), the product grid at six classes (3e-3, which is the grid's own error: at three wide cavities the exact evidence
+of identical scores is `-log 3`, which the new rule gives to 1e-8 and the grid to 1.5e-4), and for any number the identities that hold
+for every categorical likelihood against any cavities: the classes' masses add up to one and their tilted means and second moments, weighted by
+the masses, add up to the cavities' (softmax of 8, 12, 20 classes: 1e-9, 1e-8, 1e-8; probit of 8, 12, 20: 1e-10 to 1e-9). A softmax of 20
+classes is about 3 ms (wide cavities 6 ms) a tilted moment, the probit about 4 ms; the product grid at five classes was 80 to 140 ms.
+- `atom/softmax-choice` and `-learned`: twelve choices among eight alternatives with a price and a quality (two shared coefficients), against
+  the grid of the two coefficients: plain EP is 0.77 to 0.83 of the exact spread (the means 0.15 exact sds off, the evidence 0.46 nats below the
+  grid, as with three classes), and the learned twin recovers its coefficients over 16 seeds.
+- `atom/gp-softmax`: a multiclass Gaussian process works without a compiler change: one dense Gaussian vector over the (input, class) pairs
+  (`covariance` the kernel between the inputs where the classes agree and zero elsewhere), the scores of an input gathered with `ops.at`, the
+  label a categorical over the class dimension: the compiler reads the gather as the scores of the multiclass site. Two inputs and three classes
+  against quadrature of the six values: the means within 1e-3 and the spreads within 0.2% of it.
+- Not done: variational message passing beyond six classes; a joint site message over the classes of one observation (the site sends each
+  score its own Gaussian, so a prior correlation between classes is carried by the dense prior only); a compiler pattern for a plate of dense
+  vectors (one process per class) so that the cells need not be written out; the probit with a power beyond six; a reference for the multiclass GP
+  at more than two inputs (the posterior has as many dimensions as values).
+||||||| bac59ff5
 
 ## 2026-11-12 Loops: tied groups pack hierarchies and tournaments (`agent-a22fa5-packing`, gap `loopy-overconfidence` narrowed)
 
@@ -722,3 +835,35 @@ observation). Their reports say what exists; the work packages above absorb it r
   (`functions.test.ts`), and EP on the slopes model settles (71 sweeps, 10 counties, one seed) with `mu` and `mu_b` within 0.06 of a
   NUTS sd of the sampler's and their spreads 0.76 to 0.8 times its, the scales `tau` and `tau_b` 0.4 sd low (spreads 0.96 and 0.69) and
   `rho`, barely identified (sd 0.57 against 0.55), -0.06 against -0.35. No digest item moved (no benchmark model clips a random value).
+||||||| 91d45803
+
+## 2026-11-12 Stochastic volatility with learned parameters: a walk and warm starts in `epGridMethod` (`agent-a3da95-sv`)
+
+Gap `sv-parameters` narrowed (summary rewritten in `ep-gaps.ts`, still open). No second grid method: `epGridMethod` got two knobs and a
+rule for nodes that cycle (`inference/ep-grid.ts`).
+- `order: 'walk'` (one hyperparameter): the first node is the middle of the range, then one step outwards on the side whose edge node
+  weighs more, until both edges are `window` (default 10) nats of log evidence plus log prior below the best, so the tail nodes (a
+  persistence of -0.3 or 1.9, the most expensive ones: they need 140 to 200 sweeps) are never run. `warm: true` starts each node from the
+  final messages of the nearest settled node (a `messages` field on the node; the start is skipped when the graph has another shape). Both
+  default off (`order: 'bisect'`, `warm: false`), so no other grid changes.
+- A node that did not settle used to weigh nothing once any node had settled. It now weighs the grid where its evidence plus log prior does
+  not exceed the best settled node's (a cycling state in the tail is a fair estimate; one that collapsed overshoots, and still has no weight).
+- The settings that matter for this model: damping 0.2 (0.5 settled half as fast and 0.7 collapses the precision to zero), 120 sweeps a node.
+  Schedules were tried (`tree` settles a node the serial order does not, but not reliably) and `tol: 1e-3` (faster, but one seed collapses).
+- Calibration over 30 seeds of 60 returns (truth -1, 0.9, 11.1), 90% intervals, before (21 nodes, damping 0.5, 22 s a fit) and after
+  (walk, warm, damping 0.2, 7 s, 11 nodes of which 8 settled on average): level 0.97 and 0.97, persistence 0.70 and 0.97, precision 1.00 and
+  1.00, pooled 0.89 and 0.98. Against a brute-force posterior (a point-mass filter for the likelihood of each (level, persistence, precision)
+  on a 26 by 30 by 24 grid with the prior, scratch script; its seed-1 numbers agree with the NUTS run to 0.2 sd): the mean of the persistence
+  was off by up to 2.2 sds before and by up to 1.1 after (rms 0.59 and 0.26), the sd ratio of the persistence 0.76 and 0.85 at the median,
+  the level's means within 0.35 sd (rms 0.08), the level's sd 1.6 times the reference's, the precision's 1.0.
+- What did not work: a grid over the level and the persistence together (earlier, 70 points for the level), power EP (the `power` knob does
+  nothing here: no factor of the model takes one), a coarser grid (15 points and a window of 8: persistence coverage 0.77).
+- Not fixed, and the reason the gap stays open: (1) EP at a fixed persistence overstates the level's spread (0.50 against the exact
+  conditional 0.27 at a persistence of 0.69; the mixture over the persistence makes it 1.6 times the posterior's); (2) EP at low
+  persistence, and on a few seeds everywhere, cycles (a persistent oscillation of the shared precision's message at every damping, schedule
+  and improper policy tried), so the lower tail of the persistence is cut (seed 27, almost no node settles: the sd is 0.2 of the reference's
+  and the persistence is missed). Both are in the message passing of the chain (`message-passing/{numerics,operators}`, out of this work's
+  scope), not in the grid.
+- Tests: `ep-grid-sv.test.ts` (seed 1 against the brute-force numbers, in a dozen nodes), `ep-grid.test.ts` (warm start and walk on the
+  Gaussian process benchmarks, where every node is exact; the weight of a node that did not settle). The EP digest: no item moves because
+  of the change (`atom/gp-length-scale` differs from the committed baseline in the last digits, on the unchanged HEAD as well).

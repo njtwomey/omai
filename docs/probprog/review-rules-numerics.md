@@ -47,6 +47,7 @@ the baseline commit with the same harness, "after" is this branch.
 | likelihood-site laplace | 3 | 1.49e-6 | 1.49e-6 | 3.72e-6 | 3.72e-6 |
 | likelihood-site ordinal-probit | 3 | 3.17e-14 | 3.17e-14 | 9.99e-16 | 9.99e-16 |
 | likelihood-site student-t | 3 | 9.22e-6 | 9.22e-6 | 1.39e-3 | 1.39e-3 |
+| likelihood-triple (new, `ordinal-cuts` gap) | 15 | n/a | 7.87e-4 | n/a | 4.82e-4 |
 | mixture-site | 2 | 2.23e-10 | 1.98e-10 | 3.55e-6 | 2.83e-12 |
 | negative-binomial-dispersion | 8 | 3.48e-2 | 1.07e-4 | 1.47e-2 | 1.00e-4 |
 | prior-site half-normal (log) | 3 | 6.15e-14 | 1.37e-15 | 2.90e-12 | 2.11e-15 |
