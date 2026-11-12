@@ -28,7 +28,6 @@ import {
   compileGraph,
   epAlgorithm,
   defaultOperators as factorOperators,
-  type InitialMessage,
   type MpState,
 } from '../../message-passing/index.ts'
 import { bool, choice, type DictSpace, dict, int, real } from '../../space/index.ts'
@@ -53,6 +52,7 @@ import { toFactorGraph } from '../model/factors.ts'
 import type { ExprSpec, ModelNode, ModelSpec } from '../model/spec.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
 import { walkNext } from './_ep-grid-walk.ts'
+import { nearestSettled, settledMessages, warmStart } from './_ep-grid-warm.ts'
 import { recordOf, type SiteRecord, siteMixturePosterior } from './_site-mixture.ts'
 import { isProgramAnalysis, type MethodModel, type ModelAnalysis, no, num, posteriorJson, yes } from './_support.ts'
 import { atPower, epRunKnobs, epRunSettings, powerOf } from './ep-knobs.ts'
@@ -654,7 +654,7 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
           converged: r.status === 'converged',
           sweeps: r.steps,
           sites,
-          ...(warm ? { messages: (r.state as MpState).messages } : {}),
+          ...(warm ? settledMessages(r.status === 'converged', ev, (r.state as MpState).messages) : {}),
         }
       }
       return {
@@ -702,36 +702,6 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
       }
     },
   })
-}
-
-/** The start messages of a node from the final messages of another run of the same factor graph structure (none when it differs). */
-function warmStart(g: CompiledGraph, messages: readonly (readonly number[])[] | undefined): InitialMessage[] {
-  if (messages === undefined || messages.length !== g.edges.length) return []
-  const out: InitialMessage[] = []
-  for (const [factor, f] of g.factors.entries())
-    for (const [port, p] of f.ports.entries()) {
-      const eta = p.edge >= 0 ? messages[p.edge] : undefined
-      const edge = p.edge >= 0 ? g.edges[p.edge] : undefined
-      const flat = edge === undefined ? undefined : g.variables[edge.variable]?.family.flat
-      if (eta === undefined || flat === undefined || eta.length !== flat.length) return []
-      out.push({ factor, port, eta: [...eta] })
-    }
-  return out
-}
-
-/** The settled node nearest to `index` (in steps of the lattice, summed over the axes), or none. */
-function nearestSettled(nodes: readonly GridNode[], index: readonly number[]): GridNode | undefined {
-  let best: GridNode | undefined
-  let bestDistance = Number.POSITIVE_INFINITY
-  for (const n of nodes) {
-    if (!n.converged || !Number.isFinite(n.logEvidence) || n.messages === undefined) continue
-    const dist = n.index.reduce((s, v, k) => s + Math.abs(v - (index[k] ?? 0)), 0)
-    if (dist < bestDistance) {
-      best = n
-      bestDistance = dist
-    }
-  }
-  return best
 }
 
 /**
