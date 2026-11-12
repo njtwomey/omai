@@ -18,7 +18,7 @@ import { gamma, gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { axisOf, integratePair } from '../../numerics/_grid.ts'
-import { shiftedSum } from '../../numerics/_moments.ts'
+import { centredMoments, shiftedSum } from '../../numerics/_moments.ts'
 import { digammaOf, lgammaOf } from '../../numerics/_scalar.ts'
 import { gammaLogWindow, gaussianWindow, uniformGrid, type Window, windowProfiles } from '../../numerics/_windows.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
@@ -82,9 +82,9 @@ function dirichletLog(
 
 interface Tilt {
   readonly logZ: number
-  /** The tilted moments of the log concentration `t`: its mean and second moment, and the mean concentration `E e^t`. */
+  /** The tilted moments of the log concentration `t`: its mean and variance, and the mean concentration `E e^t`. */
   readonly t: number
-  readonly t2: number
+  readonly tVariance: number
   readonly alpha: number
   /** `E log p_k` under the mixture of conditional Dirichlets. */
   readonly logMeans: readonly number[]
@@ -131,16 +131,17 @@ function tilt(c: OperatorContext): Tilt {
     logw[i] = logCavity(t) + lgammaOf(total) + sumLog - lgammaOf(totalPosterior)
   }
   const { top, weights, total: z } = shiftedSum(logw)
-  let m1 = 0
-  let m2 = 0
+  const tMoments = centredMoments(
+    weights,
+    z,
+    Float64Array.from({ length: POINTS }, (_, i) => lo + i * step),
+  )
   let ea = 0
   const logMeans = new Array<number>(K).fill(0)
   for (let i = 0; i < POINTS; i++) {
     const t = lo + i * step
     const a = Math.exp(t)
     const weight = weights[i] as number
-    m1 += weight * t
-    m2 += weight * t * t
     ea += weight * a
     let totalPosterior = 0
     for (let k = 0; k < K; k++) totalPosterior += (w[k] as number) * a + (o[k] as number) + (eta[k] as number)
@@ -152,8 +153,8 @@ function tilt(c: OperatorContext): Tilt {
   }
   return {
     logZ: top + Math.log(z * step),
-    t: m1 / z,
-    t2: m2 / z,
+    t: tMoments.mean,
+    tVariance: tMoments.variance,
     alpha: ea / z,
     logMeans: logMeans.map((v) => v / z),
   }
@@ -197,7 +198,7 @@ export const dirichletConcentration: FactorOperator = defineOperator({
     ep: siteRule((c) => {
       const t = tilt(c)
       if (c.to === 0) return { moments: t.logMeans }
-      if (c.params['log'] === true) return { mean: t.t, variance: t.t2 - t.t * t.t }
+      if (c.params['log'] === true) return { mean: t.t, variance: t.tVariance }
       return { moments: [t.t, t.alpha] }
     }),
     // The mean field: to the probabilities the Dirichlet with the mean concentration (exact), to the concentration the natural

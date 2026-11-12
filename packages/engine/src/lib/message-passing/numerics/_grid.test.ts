@@ -1,5 +1,7 @@
 // The panelled grid: one algorithm for the two-coordinate and the up-to-three-coordinate integrals, its results bit for bit what
-// the two separate implementations it replaced gave (the hash below is that of their outputs on the battery).
+// the two separate implementations it replaced gave (the hash below is that of their outputs on the battery), except the variance
+// of `integratePair`, which is centred now (the second pass of the weighted squares of the deviations) and so no longer the number
+// the difference of two second moments gave: it is left out of the hash and tested on its own.
 import { describe, expect, it } from 'vitest'
 import { ImproperMessageError, ParameterError } from '../core/errors.ts'
 import { betaAxis, gammaAxis, gaussianAxis, integrateAxes, integratePair, pointAxis } from './_grid.ts'
@@ -19,6 +21,12 @@ function fold(h: number, v: unknown, view: DataView): number {
   if (v !== null && typeof v === 'object')
     for (const k of Object.keys(v)) h = fold(h, (v as Record<string, unknown>)[k], view)
   return h
+}
+
+/** A result of `integratePair` without its variance, which is no longer bit for bit what it was (see the header). */
+const withoutVariance = (r: unknown): unknown => {
+  const { variance: _variance, ...rest } = r as { variance: unknown }
+  return rest
 }
 
 /** A battery of integrals over gamma, Gaussian, beta and observed axes (with and without kinks), hashed bit for bit. */
@@ -43,12 +51,14 @@ function battery(G: {
     for (const kinks of [[], [0.5], [-0.5, 1]]) {
       h = fold(
         h,
-        G.integratePair([G.gammaAxis(shape, rate, kinks), G.gaussianAxis(m, v, kinks)] as never, column),
+        withoutVariance(
+          G.integratePair([G.gammaAxis(shape, rate, kinks), G.gaussianAxis(m, v, kinks)] as never, column),
+        ),
         view,
       )
     }
-    h = fold(h, G.integratePair([G.pointAxis(0.5), G.gammaAxis(shape, rate)] as never, diff), view)
-    h = fold(h, G.integratePair([G.gaussianAxis(m, v), G.pointAxis(0.2)] as never, diff), view)
+    h = fold(h, withoutVariance(G.integratePair([G.pointAxis(0.5), G.gammaAxis(shape, rate)] as never, diff)), view)
+    h = fold(h, withoutVariance(G.integratePair([G.gaussianAxis(m, v), G.pointAxis(0.2)] as never, diff)), view)
     for (const [a, b] of [
       [2, 3],
       [0.5, 0.5],
@@ -71,7 +81,7 @@ function battery(G: {
 describe('the panelled grid', () => {
   it('gives, bit for bit, the numbers the two grids it replaced gave on a battery of gamma, Gaussian, beta and observed axes', () => {
     expect(battery({ gammaAxis, gaussianAxis, betaAxis, pointAxis, integratePair, integrateAxes } as never)).toBe(
-      1986832850,
+      2691435236,
     )
   })
 
@@ -80,6 +90,14 @@ describe('the panelled grid', () => {
     const r = integratePair([gaussianAxis(0, 1), pointAxis(0)], () => (x) => -0.5 * x * x)
     expect(r.logMass).toBeCloseTo(-0.5 * Math.log(2), 8)
     expect(r.variance[0]).toBeCloseTo(0.5, 8)
+  })
+
+  it('centres the variance: a mass of spread 0.01 at a mean of 1e8 keeps it', () => {
+    // N(1e8, 1e-4) times exp(-(x - 1e8)^2 / 2e-4): the tilted variance is 5e-5, which the difference of second moments (1e16) cannot hold.
+    const centre = 1e8
+    const r = integratePair([gaussianAxis(centre, 1e-4), pointAxis(0)], () => (x) => (-0.5 * (x - centre) ** 2) / 1e-4)
+    expect(r.variance[0] / 5e-5).toBeCloseTo(1, 6)
+    expect(r.mean[0] / centre).toBeCloseTo(1, 12)
   })
 
   it('refuses no axes and more than three, and reports a factor with no mass as improper', () => {

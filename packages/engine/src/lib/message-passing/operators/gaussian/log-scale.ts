@@ -74,13 +74,13 @@ export const gaussianScale: FactorOperator = defineOperator({
         const variance = 1 / (1 / m.variance + noise)
         return { mean: variance * (m.mean / m.variance + x * noise), variance }
       }
-      const t = tiltedByQuadrature(s, logf, undefined, undefined, [
-        (s2) => post(s2).mean,
-        (s2) => post(s2).variance + post(s2).mean ** 2,
-      ])
-      const meanOf = t.extra[0]?.mean ?? 0
-      const second = t.extra[1]?.mean ?? 0
-      return { mean: meanOf, variance: Math.max(second - meanOf * meanOf, 1e-300) }
+      // The mixture of the conditionals over the tilted log scale: the mean of the variances plus the variance of the means.
+      const t = tiltedByQuadrature(s, logf, undefined, undefined, [(s2) => post(s2).mean, (s2) => post(s2).variance])
+      const [conditionalMean, conditionalVariance] = t.extra
+      return {
+        mean: conditionalMean?.mean ?? 0,
+        variance: Math.max((conditionalVariance?.mean ?? 0) + (conditionalMean?.variance ?? 0), 1e-300),
+      }
     }),
     vmp: messageRule(
       (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), c.to, logScaleDensity) }),

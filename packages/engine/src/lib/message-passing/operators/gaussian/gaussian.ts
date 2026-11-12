@@ -26,7 +26,7 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, FamilyKind, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
-import { shiftedSum } from '../../numerics/_moments.ts'
+import { centredMoments, shiftedSum } from '../../numerics/_moments.ts'
 import { gaussianGrid, tiltedGrid, tiltedLogGrid } from '../../numerics/_quadrature.ts'
 import { gammaLogWindow, uniformGrid, windowProfiles } from '../../numerics/_windows.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
@@ -210,32 +210,35 @@ function precisionTiltGrid(
     logw[i] = shape * t - rate * Math.exp(t) + logNormal(0, gap, joint + 1 / (scale * Math.exp(t) + offset))
   }
   const { top, weights, total: z } = shiftedSum(logw)
+  const ts = Float64Array.from({ length: TILT_POINTS }, (_, i) => lo + i * step)
+  // Given the precision, each Gaussian has its Kalman update: the tilted Gaussian is the mixture of the updates over the grid, with
+  // the mean and variance of the mixture (the mean of the variances plus the variance of the means, centred).
+  const mx = new Float64Array(TILT_POINTS)
+  const vx = new Float64Array(TILT_POINTS)
+  const mu = new Float64Array(TILT_POINTS)
+  const vu = new Float64Array(TILT_POINTS)
+  for (let i = 0; i < TILT_POINTS; i++) {
+    const s = joint + 1 / (scale * Math.exp(ts[i] as number) + offset)
+    mx[i] = x.mean - (x.variance * gap) / s
+    vx[i] = x.variance - (x.variance * x.variance) / s
+    mu[i] = u.mean + (u.variance * gap) / s
+    vu[i] = u.variance - (u.variance * u.variance) / s
+  }
+  const mixture = (means: Float64Array, variances: Float64Array): { mean: number; variance: number } => {
+    const m = centredMoments(weights, z, means)
+    let within = 0
+    for (let i = 0; i < TILT_POINTS; i++) within += (weights[i] as number) * (variances[i] as number)
+    return { mean: m.mean, variance: within / z + m.variance }
+  }
   let eLog = 0
   let eLam = 0
-  let eX = 0
-  let eX2 = 0
-  let eU = 0
-  let eU2 = 0
   for (let i = 0; i < TILT_POINTS; i++) {
-    const t = lo + i * step
-    const w = weights[i] as number
-    const s = joint + 1 / (scale * Math.exp(t) + offset)
-    const mx = x.mean - (x.variance * gap) / s
-    const vx = x.variance - (x.variance * x.variance) / s
-    const mu = u.mean + (u.variance * gap) / s
-    const vu = u.variance - (u.variance * u.variance) / s
-    eLog += w * t
-    eLam += w * Math.exp(t)
-    eX += w * mx
-    eX2 += w * (vx + mx * mx)
-    eU += w * mu
-    eU2 += w * (vu + mu * mu)
+    eLog += (weights[i] as number) * (ts[i] as number)
+    eLam += (weights[i] as number) * Math.exp(ts[i] as number)
   }
-  const meanX = eX / z
-  const meanU = eU / z
   return {
-    x: { mean: meanX, variance: eX2 / z - meanX * meanX },
-    u: { mean: meanU, variance: eU2 / z - meanU * meanU },
+    x: mixture(mx, vx),
+    u: mixture(mu, vu),
     logLambda: eLog / z,
     lambda: eLam / z,
     logZ: top + Math.log(z * step),
@@ -510,22 +513,26 @@ export const product: FactorOperator = defineOperator({
         // Given a, y is Gaussian (mean a m_b, variance a^2 v_b): the weight of a node is the overlap with the incoming
         // message of y, and the tilted y of that node a product of two Gaussians, in closed form.
         const na = gaussianGrid(a.mean, a.variance)
+        const n = na.x.length
+        const w = new Float64Array(n)
+        const mp = new Float64Array(n)
+        const post = new Float64Array(n)
         let mass = 0
-        let m1 = 0
-        let m2 = 0
-        for (let i = 0; i < na.x.length; i++) {
+        for (let i = 0; i < n; i++) {
           const node = na.x[i] ?? 0
           const s2 = node * node * b.variance
           const center = node * b.mean
-          const w = (na.w[i] ?? 0) * Math.exp(logNormal(center, y.mean, y.variance + s2))
-          const post = s2 > 0 ? 1 / (1 / s2 + 1 / y.variance) : 0
-          const mp = s2 > 0 ? post * (center / s2 + y.mean / y.variance) : center
-          mass += w
-          m1 += w * mp
-          m2 += w * (post + mp * mp)
+          w[i] = (na.w[i] ?? 0) * Math.exp(logNormal(center, y.mean, y.variance + s2))
+          post[i] = s2 > 0 ? 1 / (1 / s2 + 1 / y.variance) : 0
+          mp[i] = s2 > 0 ? (post[i] as number) * (center / s2 + y.mean / y.variance) : center
+          mass += w[i] as number
         }
-        const mean = m1 / mass
-        const variance = m2 / mass - mean * mean
+        // The mixture of the conditional Gaussians over the nodes: the mean of the variances plus the variance of the means.
+        const t = centredMoments(w, mass, mp)
+        let within = 0
+        for (let i = 0; i < n; i++) within += (w[i] as number) * (post[i] as number)
+        const mean = t.mean
+        const variance = within / mass + t.variance
         return { message: gaussianSiteMessage(incoming, mean, variance) }
       }
       const [self, other] = c.to === 1 ? [a, b] : [b, a]

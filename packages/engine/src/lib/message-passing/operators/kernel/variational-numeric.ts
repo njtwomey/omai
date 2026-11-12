@@ -313,8 +313,8 @@ export function definedFunctionMessage(args: readonly Arg[], to: number, f: (x: 
   if (to === 0) {
     const coords = new Array<number>(inputs.length).fill(0)
     const mean = average(ports, -1, coords, f)
-    const second = average(ports, -1, coords, (x) => f(x) ** 2)
-    return gaussianMessage(mean, Math.max(second - mean * mean, 1e-300))
+    const variance = average(ports, -1, coords, (x) => (f(x) - mean) ** 2)
+    return gaussianMessage(mean, Math.max(variance, 1e-300))
   }
   const out = (args[0] as Arg).eta
   if (out === undefined)

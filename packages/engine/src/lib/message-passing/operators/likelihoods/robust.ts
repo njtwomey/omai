@@ -16,6 +16,7 @@ import { allProper, gaussianOf, massOf, vectorParam } from '../../core/args.ts'
 import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
+import { centredMoments } from '../../numerics/_moments.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 import { glmRow } from '../lifts/rows.ts'
 import { likelihoodSite, likelihoods } from './likelihoods.ts'
@@ -57,16 +58,14 @@ function mixtureTilted(c: OperatorContext): { mean: number; variance: number; lo
           (x.mean - (mu[i] ?? 0)) ** 2 / (x.variance + (s2[i] ?? 0))),
   )
   const logMass = logSumExpOf(logZ)
-  let mean = 0
-  let second = 0
-  for (const [i, l] of logZ.entries()) {
-    const r = Math.exp(l - logMass)
-    const v = 1 / (1 / x.variance + 1 / (s2[i] ?? 1))
-    const m = v * (x.mean / x.variance + (mu[i] ?? 0) / (s2[i] ?? 1))
-    mean += r * m
-    second += r * (v + m * m)
-  }
-  return { mean, variance: Math.max(second - mean * mean, 1e-300), logMass }
+  // The posterior of each component, and the mixture of them: the mean of the variances plus the variance of the means, centred.
+  const responsibility = logZ.map((l) => Math.exp(l - logMass))
+  const variances = logZ.map((_, i) => 1 / (1 / x.variance + 1 / (s2[i] ?? 1)))
+  const means = logZ.map((_, i) => (variances[i] as number) * (x.mean / x.variance + (mu[i] ?? 0) / (s2[i] ?? 1)))
+  const total = responsibility.reduce((a, r) => a + r, 0)
+  const { mean, variance: between } = centredMoments(responsibility, total, means)
+  const within = responsibility.reduce((a, r, i) => a + r * (variances[i] as number), 0) / total
+  return { mean, variance: Math.max(within + between, 1e-300), logMass }
 }
 
 /**

@@ -64,9 +64,11 @@ export const quadratureRule: TiltedRule = {
           const v = w * Math.exp(logf(point))
           if (!(v > 0)) return
           mass += v
+          // Moments about the cavity's mean, so that a mass much narrower than its mean is large keeps its spread.
           for (let k = 0; k < n; k++) {
-            m1[k] = (m1[k] ?? 0) + v * (point[k] ?? 0)
-            m2[k] = (m2[k] ?? 0) + v * (point[k] ?? 0) ** 2
+            const dev = (point[k] ?? 0) - (bases[k]?.mean ?? 0)
+            m1[k] = (m1[k] ?? 0) + v * dev
+            m2[k] = (m2[k] ?? 0) + v * dev * dev
           }
           xs.push(point[to] ?? 0)
           ws.push(v)
@@ -92,8 +94,9 @@ export const quadratureRule: TiltedRule = {
     if (pass.mass > 0) {
       const zoomed = bases.map((b, d) => {
         if (isPoint(b)) return grids[d] as { x: Float64Array; w: Float64Array }
-        const mu = (pass.m1[d] ?? 0) / pass.mass
-        const sd = Math.sqrt(Math.max((pass.m2[d] ?? 0) / pass.mass - mu * mu, 0))
+        const shift = (pass.m1[d] ?? 0) / pass.mass
+        const mu = b.mean + shift
+        const sd = Math.sqrt(Math.max((pass.m2[d] ?? 0) / pass.mass - shift * shift, 0))
         const spread = Math.sqrt(b.variance)
         const lo = Math.max(b.mean - 9 * spread, mu - 8 * Math.max(sd, 1e-3 * spread))
         const hi = Math.min(b.mean + 9 * spread, mu + 8 * Math.max(sd, 1e-3 * spread))

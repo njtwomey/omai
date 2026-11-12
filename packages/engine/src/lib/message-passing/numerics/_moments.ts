@@ -35,3 +35,26 @@ export function shiftedSum(logw: ArrayLike<number>): ShiftedSum {
   }
   return { top, weights, total, logTotal: top + Math.log(total) }
 }
+
+/**
+ * The mean and the variance of `values` under weights that sum to `total`, in two passes: the variance is the weighted mean of the
+ * squares of the deviations from the mean, never the difference of two large numbers `E v^2 - (E v)^2` (which loses every digit
+ * when the weights sit on a spread far narrower than the values are large, the case a grid zoomed onto its mass produces).
+ *
+ * @param weights - The weights.
+ * @param total - Their sum (the caller has it).
+ * @param values - The value at each weight.
+ * @returns The mean and the centred variance (zero when all the weight is on one value).
+ */
+export function centredMoments(
+  weights: ArrayLike<number>,
+  total: number,
+  values: ArrayLike<number>,
+): { readonly mean: number; readonly variance: number } {
+  let m = 0
+  for (let i = 0; i < weights.length; i++) m += (weights[i] as number) * (values[i] as number)
+  const mean = m / total
+  let s = 0
+  for (let i = 0; i < weights.length; i++) s += (weights[i] as number) * ((values[i] as number) - mean) ** 2
+  return { mean, variance: s / total }
+}

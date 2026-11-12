@@ -9,7 +9,7 @@
 
 import { ImproperMessageError, ParameterError } from '../core/errors.ts'
 import type { Arg } from '../core/types.ts'
-import { shiftedSum } from './_moments.ts'
+import { centredMoments, shiftedSum } from './_moments.ts'
 import { legendreRule } from './_quadrature.ts'
 import { lgammaOf, softplusOf } from './_scalar.ts'
 import { betaLogitWindow, gammaLogWindow, windowProfiles } from './_windows.ts'
@@ -316,28 +316,19 @@ export function integratePair(
   column: (x1: number) => (x0: number) => number,
 ): GridResult {
   const r = integrateGrid(axes, (rest) => column(rest[0] as number), gridProfiles.pair)
-  const m = [0, 0]
-  const m2 = [0, 0]
-  const me = [0, 0]
-  for (let k = 0; k < 2; k++) {
+  const stats = [0, 1].map((k) => {
     const xs = r.nodes[k] as Float64Array
     const pk = r.marginals[k] as Float64Array
-    for (let i = 0; i < xs.length; i++) {
-      const x = xs[i] as number
-      const w = pk[i] as number
-      m[k] = (m[k] as number) + w * x
-      m2[k] = (m2[k] as number) + w * x * x
-      me[k] = (me[k] as number) + w * Math.exp(x)
-    }
-  }
+    let meanExp = 0
+    for (let i = 0; i < xs.length; i++) meanExp += (pk[i] as number) * Math.exp(xs[i] as number)
+    // The marginals are normalised: the mean is their weighted sum, the variance the weighted squares of the deviations from it.
+    return { ...centredMoments(pk, 1, xs), meanExp }
+  }) as [{ mean: number; variance: number; meanExp: number }, { mean: number; variance: number; meanExp: number }]
   return {
     logMass: r.logMass,
-    mean: [m[0] as number, m[1] as number],
-    variance: [
-      Math.max((m2[0] as number) - (m[0] as number) ** 2, 0),
-      Math.max((m2[1] as number) - (m[1] as number) ** 2, 0),
-    ],
-    meanExp: [me[0] as number, me[1] as number],
+    mean: [stats[0].mean, stats[1].mean],
+    variance: [stats[0].variance, stats[1].variance],
+    meanExp: [stats[0].meanExp, stats[1].meanExp],
     nodes: [r.nodes[0] as Float64Array, r.nodes[1] as Float64Array],
     weights: r.weights,
   }
