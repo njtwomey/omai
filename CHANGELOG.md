@@ -15,6 +15,15 @@ leaf (Normal-Gamma, Dirichlet), the exact evidence and prior of a tree, a myopic
 (`growBayesTree`), a streaming tree whose leaves add rows to their statistics (precision up, step size 1/precision down), the exact posterior over all trees of
 depth two (`enumerateTrees`) and a Metropolis-Hastings sampler over structures (`sampleTrees`), checked against each other.
 
+Second review of the probabilistic-programming code, fixes (2026-11-12; the EP ones are in `docs/probprog/ep-changelog.md`): the odds of a split in
+the grower and the stream price each new leaf by the rules it really has (`childRules`; a child that cannot split is a leaf for certain), as the
+exact and sampled methods do; `dirichletLeaf` refuses a label outside `0..K-1` instead of dropping the row; `probabilityOfCutIn` gives the
+posterior probability that a cut lies in a window (the sum of the rules' expected uses over a window counted a tree once for each cut in it);
+`ops.pick` refuses a code that names no entry (it answered the last entry, where `at` and the factor-graph compiler refuse it); Gibbs takes a known
+parameter that the likelihood broadcasts to the data (a spread per row beside data `[feature, row]`) as a value for each observation; the
+showcase pages say plainly when a run did not settle, say that the trees weighed are up to two levels deep (up to three cuts, with the share of the
+tree with no cut), quote the chance of a cut near a greedy cut as a probability, and keep their measured claims as named constants.
+
 Expectation propagation, from a few rules to a suite (omai-engine, `message-passing`, `probprog/model`, `probprog/inference`,
 `probprog/ep`; the numbers are those of 2026-11-11, and `docs/probprog/ep-status.md` is generated from the code and says what they are
 today). EP stopped being a handful of models that happened to compile and became a capability with a design (`docs/probprog/ep.md`),

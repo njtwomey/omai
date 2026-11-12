@@ -1410,3 +1410,43 @@ smooth function of them) run under EP? Answer: not as a Gaussian process prior, 
   unchanged (the graph corpus is untouched); the operator registry gains no operator.
 - Gap `gplvm-features` with the plan: a numeric row factor per point (the coordinates of a point on a small grid, the weights one dense Gaussian vector, the mixture over the grid
   nodes of the Gaussian conditionals moment-matched onto the weights), a compiler mapping for it, and a multi-start over the coordinate symmetry.
+
+## 2026-11-12 Second code review: EP fixes (`agent-af7262-review2`)
+
+Seven findings of a read-only review, each read, reproduced where it was a defect and fixed with a test that failed before; items of the digest that the code can
+reach (grid, Gaussian process, mixtures, gates, the network, the changepoint program) were checked with `--only` and are listed at the end.
+- **`ep-grid` tail cache (confirmed).** `hypersFor(tail)` kept one set of ranges for the life of the method, so `check()` (which asks at the tail 1e-4) fixed the
+  ranges of every later run: a page that then ran the method with `tail: 1e-8` got the 1e-4 ranges, a truncated grid, with no error. The ranges are now cached per
+  tail (`ep-grid.test.ts`: after `check()` the axes of a run with tail 0.2 equal those of a fresh method's).
+- **Component axes of a relabelling (confirmed).** `componentAxesOf` found the component dimension of a table only through `at`, so a mixture of regressions with a
+  slope per class read by `ops.pick(ops.mul(x, slope), z)` had no component axis: the weights were relabelled and the slopes were not, and `labels: 'sort'` found no
+  key and did nothing. It now reads the last dimension of the first operand of a `pick` (and the first of an `at` table, by the expression's shape), and when the model
+  has a discrete latent and no lookup it can read (a mixture written with `where`: the components are separate nodes) a site that is not the class probabilities is
+  unknown (`undefined`, every axis of length `k` as before the first review), not "no component axes". `where` has no component dimension to find, so it is not
+  recognised. Tests in `_relabel.test.ts`.
+- **Rows-expanded evidence (confirmed by reading, dead in the catalogue).** `evidenceByRows` cached per state whatever the configuration and reran the model with a
+  factor per row at power 1, the default schedule, improper policy and restarts, labelled `ep-energy (rows expanded)`. It is now cached per state and per `epRunKey` (power,
+  schedule, damping, improper policy, tolerance, restarts, warm-up) and reruns with those settings (and the power on the factors that take one), and the label names a
+  power other than 1. No atom, benchmark model or program reaches this fallback now (a scan of every atom, at power 1, 0.5 and 0.2, and of the 27 benchmark models found no
+  converged state with an undefined energy and a plated graph: the learned logistic and the tied groups no longer need it), so the test is on `epRunKey`
+  (`ep-knobs.test.ts`), not on a number.
+- **`ep-grid` nodes without an evidence (confirmed, reported, no fallback).** A node whose EP run has no evidence (an improper cavity of a plated or tied factor) got
+  `-Infinity` and zero weight, and the grid said `converged`. The posterior now counts them (`diagnostics.nodesWithoutEvidence`, with a `note`) and is `completed`, not
+  `converged`, while there are some. The rows-expanded fallback of the single run was not added: no grid node of the catalogue reaches it, so it could not be tested.
+- **Network-layer refusal (partly).** Measured against a NUTS run of 4 chains of 1500 draws (12 points, noise 0.2): the dose-response curve `Emax sigmoid(a + b x)` (all
+  three random) converges in 149 sweeps to the NUTS means (emax 1.97 against 2.00, a -0.43 against -0.44, b 1.62 against 1.60 within 0.25 sd) with spreads 0.7, 0.9 and 0.75
+  of the sampler's. One `tanh` unit converges to one of its two modes (w1 -1.79 +- 0.41, w2 -1.17, where NUTS has both signs: w1 -0.88 +- 1.6), one `cos` unit does not
+  converge in 400 sweeps, one rectifier unit (`max(u, 0)`) does not converge in 400 sweeps (the ridge between the output weight and the input weights). So the refusal
+  stays for two or more distinct hidden units (permutation) and for one unit of any activation but the sigmoid, with reasons that name the cause; one sigmoid unit runs.
+  `networkLayerUnits` still counts units; `networkLayerShape` gives the distinct hidden units and the activations; the verdict reads that. Tests: `network-layers.test.ts`
+  (the dose-response model through `epRoute` against the NUTS numbers).
+- **`ops.pick` (confirmed, model layer).** The evaluation answered the last entry for a code outside `0..K-1` where the factor-graph compiler refuses it and `at` takes it
+  as an error; it now refuses a concrete code that is negative, fractional, NaN or K or more (a traced value with no concrete numbers is not checked).
+- **Chain kinks (not a defect).** `chainOf` keeps no kinks beyond one registry step, but the panelled quadrature is fine enough: `clip(x, -0.5, 0.5)` of a Gaussian
+  with both bounds in the mass is within 1e-4 sd in the moments and 2e-5 nats in the evidence of a grid of two million points over six cases; documented in
+  `chainOf` and pinned in `functions.test.ts`; no pullback of kinks through the chain.
+- **Digest** (`--only` on the 16 items the code can reach: the six grid items, the network, the mixtures, the HMM, the stick-breaking mixture, the changepoint program, two gates and the
+  mixture regression; 24 compared): the only item moved by these changes is `atom/chain-persistence-grid`, whose posterior diagnostics gain `nodesWithoutEvidence` (2 of 17 nodes, at
+  the persistence 1.25 and 1.36 where the chain is explosive and the evidence is `-Infinity`) and `note`; the status stays `completed` (16 of 17 nodes converged). `model/gaussian-mixture`
+  and `model/gaussian-mixture-ordered` also differ from the baseline (the components' labels swap, 16 -> 14 sweeps; improper messages 16 -> 8), and they differ in the same way with the
+  source of `2519305a` checked out, so the baseline `ep-digest.json` is already stale for them at that commit (not caused by this work, not accepted).
