@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
-import { Aside, Code, Figure, Reveal } from '../../kit/Blocks.tsx'
+import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
 import { Play } from '../../kit/Play.tsx'
+import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
 import { useStoryRun } from '../../kit/useStoryRun.ts'
 import { storyHref } from '../../story.ts'
@@ -21,8 +22,6 @@ const fixed = (v: number, digits = 1): string => v.toFixed(digits)
 export default function Story(): ReactNode {
   // The worker is made only when the reader presses play. The literal has to be written here for the bundler to find it.
   const run = useStoryRun<Result>(() => new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' }))
-  const result = run.result
-  const r = result === undefined ? undefined : readResult(result)
   return (
     <StoryPage>
       <p>
@@ -94,93 +93,97 @@ export default function Story(): ReactNode {
 
       <Play run={run} label="Follow the object" estimate="about 3 seconds, in the background" />
 
-      {result === undefined || r === undefined ? null : (
-        <Reveal>
-          <h2>Where the object was</h2>
+      <Results run={run}>
+        {(result) => {
+          const r = readResult(result)
+          return (
+            <>
+              <h2>Where the object was</h2>
 
-          <p>
-            The messages settled after <span className="num">{result.sweeps}</span> sweeps. The figure shows the
-            estimate of the position at every step: a line for the mean and a band for the 90% range. The thin dotted
-            line is the true position, which the method never saw.
-          </p>
+              <p>
+                The messages settled after <span className="num">{result.sweeps}</span> sweeps. The figure shows the
+                estimate of the position at every step: a line for the mean and a band for the 90% range. The thin
+                dotted line is the true position, which the method never saw.
+              </p>
 
-          <Figure
-            caption="The estimated position (blue line) with its 90% band, the readings (grey dots) and the true position (dotted line). The orange part is the prediction for the steps after the last reading."
-            wide
-          >
-            <TrackFigure result={result} />
-          </Figure>
+              <Figure
+                caption="The estimated position (blue line) with its 90% band, the readings (grey dots) and the true position (dotted line). The orange part is the prediction for the steps after the last reading."
+                wide
+              >
+                <TrackFigure result={result} />
+              </Figure>
 
-          <p>
-            A reading is on average <span className="num">{fixed(r.readingError, 2)}</span> away from the true position.
-            The estimated path is on average <span className="num">{fixed(r.pathError, 2)}</span> away.{' '}
-            {r.pathError < r.readingError
-              ? 'The path is closer to the truth than the readings are, because each estimate also uses the readings on both sides of it.'
-              : 'Here the path is not closer to the truth than the readings are.'}{' '}
-            The true position is inside the 90% band at <span className="num">{r.inside}</span> of{' '}
-            <span className="num">{r.steps}</span> steps.
-          </p>
+              <p>
+                A reading is on average <span className="num">{fixed(r.readingError, 2)}</span> away from the true
+                position. The estimated path is on average <span className="num">{fixed(r.pathError, 2)}</span> away.{' '}
+                {r.pathError < r.readingError
+                  ? 'The path is closer to the truth than the readings are, because each estimate also uses the readings on both sides of it.'
+                  : 'Here the path is not closer to the truth than the readings are.'}{' '}
+                The true position is inside the 90% band at <span className="num">{r.inside}</span> of{' '}
+                <span className="num">{r.steps}</span> steps.
+              </p>
 
-          <p>
-            The band is not equally wide everywhere. Its half-width is{' '}
-            <span className="num">{fixed(r.firstHalf, 2)}</span> at the first step,{' '}
-            <span className="num">{fixed(r.middleHalf, 2)}</span> in the middle and{' '}
-            <span className="num">{fixed(r.lastHalf, 2)}</span> at the last reading. At the two ends there are readings
-            on only one side, so there is less to go on.
-          </p>
+              <p>
+                The band is not equally wide everywhere. Its half-width is{' '}
+                <span className="num">{fixed(r.firstHalf, 2)}</span> at the first step,{' '}
+                <span className="num">{fixed(r.middleHalf, 2)}</span> in the middle and{' '}
+                <span className="num">{fixed(r.lastHalf, 2)}</span> at the last reading. At the two ends there are
+                readings on only one side, so there is less to go on.
+              </p>
 
-          <h2>Where it is going</h2>
+              <h2>Where it is going</h2>
 
-          <p>
-            After the last reading the band widens. At time <span className="num">{fixed(r.endTime)}</span>, which is{' '}
-            <span className="num">{r.ahead}</span> steps after the last reading, the mean position is{' '}
-            <span className="num">{fixed(r.end.mean)}</span> and the 90% range is{' '}
-            <span className="num">{fixed(r.end.lo)}</span> to <span className="num">{fixed(r.end.hi)}</span>, a
-            half-width of <span className="num">{fixed(r.endHalf, 2)}</span>. The band widens because each step adds a
-            random push to the velocity, and an error in the velocity turns into a growing error in the position. The
-            true position was <span className="num">{fixed(r.endTruth)}</span> there. The true position is inside the
-            band at <span className="num">{r.aheadInside}</span> of the <span className="num">{r.ahead}</span> steps
-            ahead.
-          </p>
+              <p>
+                After the last reading the band widens. At time <span className="num">{fixed(r.endTime)}</span>, which
+                is <span className="num">{r.ahead}</span> steps after the last reading, the mean position is{' '}
+                <span className="num">{fixed(r.end.mean)}</span> and the 90% range is{' '}
+                <span className="num">{fixed(r.end.lo)}</span> to <span className="num">{fixed(r.end.hi)}</span>, a
+                half-width of <span className="num">{fixed(r.endHalf, 2)}</span>. The band widens because each step adds
+                a random push to the velocity, and an error in the velocity turns into a growing error in the position.
+                The true position was <span className="num">{fixed(r.endTruth)}</span> there. The true position is
+                inside the band at <span className="num">{r.aheadInside}</span> of the{' '}
+                <span className="num">{r.ahead}</span> steps ahead.
+              </p>
 
-          <p>
-            The velocity at the last reading is estimated at{' '}
-            <span className="num">{fixed(result.velocity.last.mean, 2)}</span>, with a 90% range of{' '}
-            <span className="num">{fixed(result.velocity.last.lo, 2)}</span> to{' '}
-            <span className="num">{fixed(result.velocity.last.hi, 2)}</span>. The true velocity was{' '}
-            <span className="num">{fixed(result.velocity.truthLast, 2)}</span>, which is{' '}
-            {r.velocityInside ? 'inside' : 'outside'} that range. The velocity was never read. It is worked out from how
-            the position changes.
-          </p>
+              <p>
+                The velocity at the last reading is estimated at{' '}
+                <span className="num">{fixed(result.velocity.last.mean, 2)}</span>, with a 90% range of{' '}
+                <span className="num">{fixed(result.velocity.last.lo, 2)}</span> to{' '}
+                <span className="num">{fixed(result.velocity.last.hi, 2)}</span>. The true velocity was{' '}
+                <span className="num">{fixed(result.velocity.truthLast, 2)}</span>, which is{' '}
+                {r.velocityInside ? 'inside' : 'outside'} that range. The velocity was never read. It is worked out from
+                how the position changes.
+              </p>
 
-          <Aside>
-            The steps after the last reading were made up for this page, so we can compare the prediction with what
-            happened. Press <em>Run again</em> to draw them again. The readings and the estimate stay the same, and the
-            true path ahead changes.
-          </Aside>
+              <Aside>
+                The steps after the last reading were made up for this page, so we can compare the prediction with what
+                happened. Press <em>Run again</em> to draw them again. The readings and the estimate stay the same, and
+                the true path ahead changes.
+              </Aside>
 
-          <h2>Why this is useful</h2>
+              <h2>Why this is useful</h2>
 
-          <p>
-            Tracking is the standard use: a phone following its position, a robot following a wall, a rocket following
-            its course. The messages are the reason it is cheap. A new reading adds one message to the chain, and it
-            does not make us start again from the first reading.
-          </p>
+              <p>
+                Tracking is the standard use: a phone following its position, a robot following a wall, a rocket
+                following its course. The messages are the reason it is cheap. A new reading adds one message to the
+                chain, and it does not make us start again from the first reading.
+              </p>
 
-          <p>
-            The band is as good as the model of the motion. We told the model the size of the random pushes, and the
-            data here were made with pushes of that size. An object that sometimes pushes much harder would leave the
-            band more often than 1 time in 10. A similar chain of messages, with a switch for a change of rate instead
-            of a motion rule, is in{' '}
-            <Link to={storyHref('when-did-the-rate-change')} className="underline underline-offset-2">
-              When did the rate change?
-            </Link>
-            .
-          </p>
-        </Reveal>
-      )}
-
-      <Code source={source} title="compute.ts" />
+              <p>
+                The band is as good as the model of the motion. We told the model the size of the random pushes, and the
+                data here were made with pushes of that size. An object that sometimes pushes much harder would leave
+                the band more often than 1 time in 10. A similar chain of messages, with a switch for a change of rate
+                instead of a motion rule, is in{' '}
+                <Link to={storyHref('when-did-the-rate-change')} className="underline underline-offset-2">
+                  When did the rate change?
+                </Link>
+                .
+              </p>
+              <Code source={source} title="compute.ts" />
+            </>
+          )
+        }}
+      </Results>
     </StoryPage>
   )
 }

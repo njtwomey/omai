@@ -15,10 +15,11 @@ import * as d from 'omai-engine/probprog/model/dists'
 import { session } from 'omai-engine/trace'
 // endregion
 
-import { modelRunFromTape } from 'omai-engine/exposition'
+import { type ModelRun, modelRunFromTape } from 'omai-engine/exposition'
 import { toStructure } from 'omai-engine/probprog/model'
 import { arange, sliceAxis, toFlat } from 'omai-engine/tensor'
 import type { Say } from '../../kit/protocol.ts'
+import { replayRecord } from '../../kit/replay.ts'
 import { DRAW_MARGIN, type Games, PLAYERS, playGames, ROUNDS, shuffled, tournament } from './data.ts'
 
 /** A rating: the mean and the standard deviation of a player's skill. */
@@ -39,7 +40,7 @@ export interface Result {
   readonly sweeps: number
   readonly settled: boolean
   /** The messages of the run on all the games, as the library records them, for a replay (undefined when it was not kept). */
-  readonly record: unknown
+  readonly record: ModelRun | undefined
 }
 
 /** How much to do: a test uses fewer rounds and keeps no record. */
@@ -62,7 +63,7 @@ export const DEFAULT_SIZE: Size = { rounds: ROUNDS, record: true }
 export function rate(
   games: Games,
   keepRecord = false,
-): { ratings: Rating[]; sweeps: number; settled: boolean; record: unknown } {
+): { ratings: Rating[]; sweeps: number; settled: boolean; record: ModelRun | undefined } {
   // region model
   // a game is lost, drawn or won as the gap in performance falls below, inside or above the draw margin
   const cuts = [-DRAW_MARGIN / Math.SQRT2, DRAW_MARGIN / Math.SQRT2]
@@ -98,7 +99,7 @@ export function rate(
     sweeps: run.t,
     settled: run.status === 'converged',
     record: keepRecord
-      ? modelRunFromTape(toStructure(bound, { view: 'factor' }), { run: run.run() }, { maxSteps: 60, maxMessages: 6 })
+      ? replayRecord(modelRunFromTape(toStructure(bound, { view: 'factor' }), { run: run.run() }, { maxMessages: 6 }))
       : undefined,
   }
 }

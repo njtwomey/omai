@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
-import { Aside, Code, Figure, Reveal } from '../../kit/Blocks.tsx'
+import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
 import { Play } from '../../kit/Play.tsx'
+import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
 import { useStoryRun } from '../../kit/useStoryRun.ts'
 import { storyHref } from '../../story.ts'
@@ -23,26 +24,6 @@ const percent = (v: number): string => `${Math.round(100 * v)}%`
 export default function Story(): ReactNode {
   // The worker is made only when the reader presses play. The literal has to be written here for the bundler to find it.
   const run = useStoryRun<Result>(() => new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' }))
-  const result = run.result
-  const clear = result === undefined ? undefined : readCase(result.clear)
-  const mixed = result === undefined ? undefined : readCase(result.ambiguous)
-  // how the model's choice compares with the way the readings were made
-  const garbageCalled =
-    result === undefined
-      ? 0
-      : CLEAR.kind.filter((k, i) => k === 1 && (result.clear.clutter[i] as number) > CLUTTER_ABOVE).length
-  const goodCalled =
-    result === undefined
-      ? 0
-      : CLEAR.kind.filter((k, i) => k === 0 && (result.clear.clutter[i] as number) > CLUTTER_ABOVE).length
-  const decoyChance =
-    result === undefined
-      ? 0
-      : result.ambiguous.clutter.slice(CLEAR.values.length).reduce((a, b) => a + b, 0) / DECOY_READINGS
-  const firstChance =
-    result === undefined
-      ? 0
-      : result.ambiguous.clutter.slice(0, CLEAR.values.length).reduce((a, b) => a + b, 0) / CLEAR.values.length
   return (
     <StoryPage>
       <p>
@@ -109,122 +90,138 @@ export default function Story(): ReactNode {
 
       <Play run={run} label="Pass the messages" estimate="about a second, in the background" />
 
-      {result === undefined || clear === undefined || mixed === undefined ? null : (
-        <Reveal>
-          <h2>The twelve readings</h2>
+      <Results run={run}>
+        {(result) => {
+          const clear = readCase(result.clear)
+          const mixed = readCase(result.ambiguous)
+          // how the model's choice compares with the way the readings were made
+          const flagged = (kind: number): number =>
+            CLEAR.kind.filter((k, i) => k === kind && (result.clear.clutter[i] as number) > CLUTTER_ABOVE).length
+          const garbageCalled = flagged(1)
+          const goodCalled = flagged(0)
+          const average = (v: readonly number[]): number => v.reduce((a, b) => a + b, 0) / v.length
+          const decoyChance = average(result.ambiguous.clutter.slice(CLEAR.values.length))
+          const firstChance = average(result.ambiguous.clutter.slice(0, CLEAR.values.length))
+          return (
+            <>
+              <h2>The twelve readings</h2>
 
-          <p>
-            The messages settled after <span className="num">{result.clear.sweeps}</span> sweeps. The bell curve for the
-            value has a mean of <span className="num">{fixed(result.clear.bell.mean, 2)}</span> and a spread of{' '}
-            <span className="num">{fixed(result.clear.bell.sd, 2)}</span>. The thin line is the exact curve, with a mean
-            of <span className="num">{fixed(result.clear.exact.mean, 2)}</span> and a spread of{' '}
-            <span className="num">{fixed(result.clear.exact.sd, 2)}</span>. The dotted line is the value that the good
-            readings were made around, <span className="num">{SIGNAL}</span>.
-          </p>
+              <p>
+                The messages settled after <span className="num">{result.clear.sweeps}</span> sweeps. The bell curve for
+                the value has a mean of <span className="num">{fixed(result.clear.bell.mean, 2)}</span> and a spread of{' '}
+                <span className="num">{fixed(result.clear.bell.sd, 2)}</span>. The thin line is the exact curve, with a
+                mean of <span className="num">{fixed(result.clear.exact.mean, 2)}</span> and a spread of{' '}
+                <span className="num">{fixed(result.clear.exact.sd, 2)}</span>. The dotted line is the value that the
+                good readings were made around, <span className="num">{SIGNAL}</span>.
+              </p>
 
-          <Figure
-            caption="The value after twelve readings. Thick line: the bell curve from the messages. Thin line: the exact curve. Dotted line: the true value. Grey dots are readings that the model calls garbage."
-            wide
-          >
-            <SolutionFigure result={result.clear} truth={SIGNAL} />
-          </Figure>
+              <Figure
+                caption="The value after twelve readings. Thick line: the bell curve from the messages. Thin line: the exact curve. Dotted line: the true value. Grey dots are readings that the model calls garbage."
+                wide
+              >
+                <SolutionFigure result={result.clear} truth={SIGNAL} />
+              </Figure>
 
-          <p>
-            The grey dots are the readings whose chance of being garbage is above {percent(CLUTTER_ABOVE)}:{' '}
-            <span className="num">{clear.clutter}</span> of {DATA.count}. The other{' '}
-            <span className="num">{clear.kept}</span> have an average of{' '}
-            <span className="num">{fixed(clear.keptMean, 2)}</span>. The readings were made up, so we can check the
-            choice. Of the <span className="num">{CLUTTER_READINGS}</span> that really were garbage,{' '}
-            <span className="num">{garbageCalled}</span> are grey. Of the <span className="num">{SIGNAL_READINGS}</span>{' '}
-            good ones, <span className="num">{goodCalled}</span> are grey.
-          </p>
+              <p>
+                The grey dots are the readings whose chance of being garbage is above {percent(CLUTTER_ABOVE)}:{' '}
+                <span className="num">{clear.clutter}</span> of {DATA.count}. The other{' '}
+                <span className="num">{clear.kept}</span> have an average of{' '}
+                <span className="num">{fixed(clear.keptMean, 2)}</span>. The readings were made up, so we can check the
+                choice. Of the <span className="num">{CLUTTER_READINGS}</span> that really were garbage,{' '}
+                <span className="num">{garbageCalled}</span> are grey. Of the{' '}
+                <span className="num">{SIGNAL_READINGS}</span> good ones, <span className="num">{goodCalled}</span> are
+                grey.
+              </p>
 
-          <h2>A second group of readings</h2>
+              <h2>A second group of readings</h2>
 
-          <p>
-            Now we add <span className="num">{DECOY_READINGS}</span> more readings that all lie near{' '}
-            <span className="num">{DECOY}</span>. Together they form a second group, and it could be the signal. The
-            model has two explanations. Either the first twelve readings are good and the new ones are garbage, or the
-            new ones are good and the first twelve are mostly garbage. The same messages are run on all{' '}
-            <span className="num">{result.ambiguous.readings.length}</span> readings.
-          </p>
+              <p>
+                Now we add <span className="num">{DECOY_READINGS}</span> more readings that all lie near{' '}
+                <span className="num">{DECOY}</span>. Together they form a second group, and it could be the signal. The
+                model has two explanations. Either the first twelve readings are good and the new ones are garbage, or
+                the new ones are good and the first twelve are mostly garbage. The same messages are run on all{' '}
+                <span className="num">{result.ambiguous.readings.length}</span> readings.
+              </p>
 
-          <Figure
-            caption="The same figure with the second group added. Thick line: the bell curve from the messages. Thin line: the exact curve. Dotted line: the value the first twelve readings were made around. Grey dots are readings that the model calls garbage."
-            wide
-          >
-            <SolutionFigure result={result.ambiguous} truth={SIGNAL} />
-          </Figure>
+              <Figure
+                caption="The same figure with the second group added. Thick line: the bell curve from the messages. Thin line: the exact curve. Dotted line: the value the first twelve readings were made around. Grey dots are readings that the model calls garbage."
+                wide
+              >
+                <SolutionFigure result={result.ambiguous} truth={SIGNAL} />
+              </Figure>
 
-          <p>
-            The bell curve for the value now has a mean of{' '}
-            <span className="num">{fixed(result.ambiguous.bell.mean, 2)}</span> and a spread of{' '}
-            <span className="num">{fixed(result.ambiguous.bell.sd, 2)}</span>. The exact curve has a mean of{' '}
-            <span className="num">{fixed(result.ambiguous.exact.mean, 2)}</span> and a spread of{' '}
-            <span className="num">{fixed(result.ambiguous.exact.sd, 2)}</span>. The first twelve readings have an
-            average garbage chance of <span className="num">{percent(firstChance)}</span>, and the new ones{' '}
-            <span className="num">{percent(decoyChance)}</span>.
-          </p>
+              <p>
+                The bell curve for the value now has a mean of{' '}
+                <span className="num">{fixed(result.ambiguous.bell.mean, 2)}</span> and a spread of{' '}
+                <span className="num">{fixed(result.ambiguous.bell.sd, 2)}</span>. The exact curve has a mean of{' '}
+                <span className="num">{fixed(result.ambiguous.exact.mean, 2)}</span> and a spread of{' '}
+                <span className="num">{fixed(result.ambiguous.exact.sd, 2)}</span>. The first twelve readings have an
+                average garbage chance of <span className="num">{percent(firstChance)}</span>, and the new ones{' '}
+                <span className="num">{percent(decoyChance)}</span>.
+              </p>
 
-          {mixed.humps.length >= 2 ? (
-            <p>
-              The exact curve has {mixed.humps.length} humps, at{' '}
-              {mixed.humps.map((h, i) => (
-                <span key={h.at}>
-                  {i === 0 ? '' : i === mixed.humps.length - 1 ? ' and ' : ', '}
-                  <span className="num">{fixed(h.at)}</span> (holding <span className="num">{percent(h.share)}</span> of
-                  the probability)
-                </span>
-              ))}
-              . Both explanations are possible. A single bell curve cannot show two humps.{' '}
-              {mixed.inValley
-                ? 'The bell curve sits where the exact curve is low, so its mean is a value that the exact answer gives little probability.'
-                : `The bell curve sits on the larger hump (at ${fixed(mixed.main?.at ?? 0)}) and does not show the smaller one.`}{' '}
-              Its spread of <span className="num">{fixed(result.ambiguous.bell.sd, 2)}</span> is{' '}
-              {mixed.spreadRatio < 1 ? 'smaller' : 'larger'} than the exact spread of{' '}
-              <span className="num">{fixed(result.ambiguous.exact.sd, 2)}</span>, so it{' '}
-              {mixed.spreadRatio < 1 ? 'understates' : 'overstates'} how unsure the answer is.
-            </p>
-          ) : (
-            <p>
-              The exact curve has one main hump, at <span className="num">{fixed(mixed.humps[0]?.at ?? 0)}</span>.{' '}
-              {mixed.spreadRatio < 0.8
-                ? `The exact spread, ${fixed(result.ambiguous.exact.sd, 2)}, is larger than the bell curve's, ${fixed(result.ambiguous.bell.sd, 2)}. The exact curve has a tail that a single bell curve cannot draw, so the bell curve understates how unsure the answer is. `
-                : 'The bell curve and the exact curve agree closely. '}
-              Press <em>Run again</em> to draw the extra readings again. With some draws the two groups are closer to
-              equally likely, and the exact curve then has two humps.
-            </p>
-          )}
+              {mixed.humps.length >= 2 ? (
+                <p>
+                  The exact curve has {mixed.humps.length} humps, at{' '}
+                  {mixed.humps.map((h, i) => (
+                    <span key={h.at}>
+                      {i === 0 ? '' : i === mixed.humps.length - 1 ? ' and ' : ', '}
+                      <span className="num">{fixed(h.at)}</span> (holding{' '}
+                      <span className="num">{percent(h.share)}</span> of the probability)
+                    </span>
+                  ))}
+                  . Both explanations are possible. A single bell curve cannot show two humps.{' '}
+                  {mixed.inValley
+                    ? 'The bell curve sits where the exact curve is low, so its mean is a value that the exact answer gives little probability.'
+                    : `The bell curve sits on the larger hump (at ${fixed(mixed.main?.at ?? 0)}) and does not show the smaller one.`}{' '}
+                  Its spread of <span className="num">{fixed(result.ambiguous.bell.sd, 2)}</span> is{' '}
+                  {mixed.spreadRatio < 1 ? 'smaller' : 'larger'} than the exact spread of{' '}
+                  <span className="num">{fixed(result.ambiguous.exact.sd, 2)}</span>, so it{' '}
+                  {mixed.spreadRatio < 1 ? 'understates' : 'overstates'} how unsure the answer is.
+                </p>
+              ) : (
+                <p>
+                  The exact curve has one main hump, at <span className="num">{fixed(mixed.humps[0]?.at ?? 0)}</span>.{' '}
+                  {mixed.spreadRatio < 0.8
+                    ? `The exact spread, ${fixed(result.ambiguous.exact.sd, 2)}, is larger than the bell curve's, ${fixed(result.ambiguous.bell.sd, 2)}. The exact curve has a tail that a single bell curve cannot draw, so the bell curve understates how unsure the answer is. `
+                    : 'The bell curve and the exact curve agree closely. '}
+                  Press <em>Run again</em> to draw the extra readings again. With some draws the two groups are closer
+                  to equally likely, and the exact curve then has two humps.
+                </p>
+              )}
 
-          {result.ambiguous.settled ? null : (
-            <Aside>
-              In this run the messages had not settled when the method stopped, so the bell curve is where they were at
-              that point. When two explanations are about equally likely, the messages can keep swinging between them.
-            </Aside>
-          )}
+              {result.ambiguous.settled ? null : (
+                <Aside>
+                  In this run the messages had not settled when the method stopped, so the bell curve is where they were
+                  at that point. When two explanations are about equally likely, the messages can keep swinging between
+                  them.
+                </Aside>
+              )}
 
-          <h2>Why this is useful</h2>
+              <h2>Why this is useful</h2>
 
-          <p>
-            Real measurements have outliers: a sensor that glitches, a form filled in wrongly, a mislabelled example. A
-            model with a switch for each reading is one way to deal with them, and the messages give every reading a
-            chance of being garbage while they find the value. That is the information the grey dots show.
-          </p>
+              <p>
+                Real measurements have outliers: a sensor that glitches, a form filled in wrongly, a mislabelled
+                example. A model with a switch for each reading is one way to deal with them, and the messages give
+                every reading a chance of being garbage while they find the value. That is the information the grey dots
+                show.
+              </p>
 
-          <p>
-            The thing to take care over is the single bell curve. When the readings clearly point at one value, it is
-            close to the exact curve, as in the first figure. When there are two likely answers, the bell curve gives
-            one mean and one spread for both, and the exact curve is the better guide. Another story with messages
-            between a hidden label and its observations is{' '}
-            <Link to={storyHref('two-humps')} className="underline underline-offset-2">
-              Two humps
-            </Link>
-            .
-          </p>
-        </Reveal>
-      )}
-
-      <Code source={source} title="compute.ts" />
+              <p>
+                The thing to take care over is the single bell curve. When the readings clearly point at one value, it
+                is close to the exact curve, as in the first figure. When there are two likely answers, the bell curve
+                gives one mean and one spread for both, and the exact curve is the better guide. Another story with
+                messages between a hidden label and its observations is{' '}
+                <Link to={storyHref('two-humps')} className="underline underline-offset-2">
+                  Two humps
+                </Link>
+                .
+              </p>
+              <Code source={source} title="compute.ts" />
+            </>
+          )
+        }}
+      </Results>
     </StoryPage>
   )
 }
