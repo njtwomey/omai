@@ -106,17 +106,6 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
       markers: [],
     },
     {
-      id: 'gate-node',
-      title: 'A gate over likelihoods of different families: no explicit gate node',
-      kind: 'missing-mapping',
-      status: 'open',
-      summary:
-        'A discrete latent that picks among branch predictions of one likelihood runs: `ops.pick(values, index)` is the gate over Gaussian regressions on a shared design (mixtures of regressions and switching regressions, one engine gate of Gaussian likelihoods per row, agreeing with the enumeration of the class assignments within 0.2 sds), and a hurdle count runs as a family (a conjugate Bernoulli on the zero part, a zero-truncated Poisson site on the positive part). What is not mapped is a gate whose branches are different families chosen by a latent that is not determined by the data (a Poisson against a negative binomial, a regression against a constant), because a distribution of the model language has no nested distributions.',
-      plan: 'A `gate` distribution family whose parameters are the index and, per branch, the family and its parameters (flattened into the parameter table so that every analysis still sees the expressions), compiled to the engine gate with one inner operator per branch family; pick and the hurdle count then become special cases.',
-      size: 'medium',
-      markers: ['a gate selects among values of one family'],
-    },
-    {
       id: 'multimodal',
       title: 'One Gaussian per variable cannot show two modes',
       kind: 'quality',
@@ -372,7 +361,7 @@ export const epDirections: readonly EpDirection[] = [
     status: 'covered',
     what: 'Different regressions in different regimes of the input or hidden classes: mixtures of linear experts, switching regressions.',
     needs:
-      'Runs: `ops.pick(matmul(X, B), z)` is the prediction of the class `z` picks, one gate of Gaussian likelihoods per row (a known index, as in a change point, is the lookup of the branches); a mixture of two lines agrees with the enumeration of the assignments within 0.2 sds. Experts with a class that depends on the input (a gating network) and unknown noise per class are not mapped.',
+      'Runs: `ops.pick(matmul(X, B), z)` is the prediction of the class `z` picks, one gate of Gaussian likelihoods per row (a known index, as in a change point, is the lookup of the branches); a mixture of two lines agrees with the enumeration of the assignments within 0.2 sds. A class that picks a different family (`d.gate(z, [poisson(..), negativeBinomial(..)])`: a count that is a Poisson or an overdispersed one, a regression or a constant) is one gate per row whose branches are the factors each family maps to alone; a branch that is a hurdle or a nested gate, and an index that is a computed random value, are refused. Experts with a class that depends on the input (a gating network) and unknown noise per class are not mapped.',
     size: 'medium',
     pages: ['ep-gate', 'ep-gate-random', 'ep-mixture-regression'],
   },

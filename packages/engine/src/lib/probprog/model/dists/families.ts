@@ -8,6 +8,9 @@
  * the spike and slab prior, `normalOutliers`, a normal around `loc` whose noise is a wider normal with probability `outlier`, and
  * `normalPair`, two normals of one scale around two known means with probability `weight` of the second (a mixture with an
  * unknown weight, switch summed out).
+ * A fourth is generated on demand: `gate(poisson,negativeBinomial)` is the likelihood chosen by an index (a discrete latent) among
+ * branches of different families, with the parameters of branch `k` named `k.rate`, `k.n`, ... beside `index`; the table answers
+ * to any such name (`gateFamilyName`, `gateBranches`), so a spec that carries it serialises and reads back like any other.
  *
  * @index table The distribution families a model spec names, mapped to the library's constructors.
  */
@@ -48,7 +51,7 @@ import {
 } from '../../../dists/index.ts'
 import { gaussHermite } from '../../../numerics/quadrature/index.ts'
 import { ndtr } from '../../../numerics/special/index.ts'
-import { add, concat, mul, split, sqrt, stack, sub, toFlat, type Value } from '../../../tensor/index.ts'
+import { add, concat, mul, oneHot, split, sqrt, stack, sub, toFlat, type Value } from '../../../tensor/index.ts'
 
 /** The evaluated parameters of a family, by name. */
 export type FamilyArgs = Readonly<Record<string, Value>>
@@ -146,6 +149,119 @@ function family(
 }
 
 const covariance = ['covariance', 'precision', 'scaleTril'] as const
+
+/** The start of the name of a gate family. */
+const GATE_PREFIX = 'gate('
+
+/**
+ * The name of the family of a gate over branches of the given families (`gate(poisson,negativeBinomial)`): the name carries the branch
+ * families, so a spec with it needs nothing besides the table to be read back.
+ *
+ * @param branches - The branch families by name, in the order of the states of the index.
+ * @returns The family name.
+ * @example
+ * ```ts
+ * import { gateFamilyName } from 'omai-engine/probprog/model/dists'
+ * gateFamilyName(['poisson', 'negativeBinomial']) // => 'gate(poisson,negativeBinomial)'
+ * ```
+ */
+export function gateFamilyName(branches: readonly string[]): string {
+  return `${GATE_PREFIX}${branches.join(',')})`
+}
+
+/**
+ * The branch families a gate family name carries, or `undefined` when the name is not a gate's.
+ *
+ * @param name - A family name.
+ * @returns The branch families in order, or `undefined`.
+ * @example
+ * ```ts
+ * import { gateBranches } from 'omai-engine/probprog/model/dists'
+ * gateBranches('gate(poisson,negativeBinomial)') // => ['poisson', 'negativeBinomial']
+ * gateBranches('poisson') // => undefined
+ * ```
+ */
+export function gateBranches(name: string): readonly string[] | undefined {
+  if (!name.startsWith(GATE_PREFIX) || !name.endsWith(')')) return undefined
+  const inner = name.slice(GATE_PREFIX.length, -1)
+  return inner === '' ? [] : inner.split(',')
+}
+
+/**
+ * The family of a gate over branches: `index` (the state of the discrete variable that chooses) and, for every branch, its family's
+ * parameters under `k.<name>`. The distribution is the library's mixture with the one-hot weights of the index, so the density of a
+ * value is the density of the branch the index names; nothing about it is new.
+ */
+function gateFamily(base: Readonly<Record<string, FamilyDef>>, name: string, branches: readonly string[]): FamilyDef {
+  const defs = branches.map((b) => {
+    const def = base[b]
+    if (def === undefined || def.eventRank !== 0 || def.name.startsWith(GATE_PREFIX))
+      throw new OmaiError(
+        'value',
+        `${name}: '${b}' is not a family a gate takes (a scalar-event family of the table)`,
+        {
+          family: b,
+        },
+      )
+    return def
+  })
+  if (defs.length < 2) throw new OmaiError('value', `${name}: a gate needs at least two branches`, { family: name })
+  if (new Set(defs.map((d) => d.discrete)).size > 1)
+    throw new OmaiError('value', `${name}: the branches are not all discrete or all continuous`, { family: name })
+  const at = (k: number, p: string): string => `${k}.${p}`
+  const defaults: Record<string, number> = {}
+  defs.forEach((def, k) => {
+    for (const [p, v] of Object.entries(def.defaults)) defaults[at(k, p)] = v
+  })
+  return {
+    name,
+    params: ['index', ...defs.flatMap((def, k) => def.params.map((p) => at(k, p)))],
+    defaults,
+    oneOf: defs.flatMap((def, k) => def.oneOf.map((g) => g.map((p) => at(k, p)))),
+    eventRank: 0,
+    discrete: defs[0]?.discrete ?? false,
+    finite: false,
+    exponentialFamily: false,
+    messagePassing: true,
+    example: Object.fromEntries([
+      ['index', 0],
+      ...defs.flatMap((def, k) => Object.entries(def.example).map(([p, v]) => [at(k, p), v])),
+    ]),
+    make: (args) => {
+      const index = need(name, args, 'index')
+      const components = defs.map((def, k) => {
+        const own: Record<string, Value> = {}
+        for (const p of def.params) {
+          const v = args[at(k, p)]
+          if (v !== undefined) own[p] = v
+        }
+        return def.make(own)
+      })
+      return mixture({ probs: oneHot(index, defs.length) }, components)
+    },
+  }
+}
+
+/** The table with the gate families it answers to by name: a lookup of `gate(...)` builds the family from the base table (once). */
+function withGates(base: Record<string, FamilyDef>): Record<string, FamilyDef> {
+  const made = new Map<string, FamilyDef>()
+  const lookup = (prop: string | symbol): FamilyDef | undefined => {
+    if (typeof prop !== 'string') return undefined
+    const branches = gateBranches(prop)
+    if (branches === undefined) return undefined
+    let def = made.get(prop)
+    if (def === undefined) {
+      def = gateFamily(base, prop, branches)
+      made.set(prop, def)
+    }
+    return def
+  }
+  return new Proxy(base, {
+    get: (target, prop) => (Object.hasOwn(target, prop) ? target[prop as string] : lookup(prop)),
+    has: (target, prop) =>
+      Object.hasOwn(target, prop) || (typeof prop === 'string' && gateBranches(prop) !== undefined),
+  })
+}
 
 /**
  * The table of distribution families: zeroTruncatedPoisson and hurdlePoisson (the positive part of a hurdle model, and the whole count), normal, halfNormal, logNormal, truncatedNormal, studentT, cauchy, halfCauchy,
@@ -524,5 +640,5 @@ export function distributionFamilies(): Record<string, FamilyDef> {
       { eventRank: 1, exponentialFamily: true, messagePassing: true },
     ),
   ]
-  return Object.fromEntries(defs.map((d) => [d.name, d]))
+  return withGates(Object.fromEntries(defs.map((d) => [d.name, d])))
 }

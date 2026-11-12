@@ -241,6 +241,25 @@ export const gammaRateNotMultiple = (node: string): Refusal =>
     `the rate of '${node}' must be a known multiple of a gamma latent (the message rule integrates the gamma's rate); it is not`,
     { node },
   )
+export const gateBranchNotOneLikelihood = (node: string, branch: Fact, family: string, what: string): Refusal =>
+  new Refusal(
+    'wrong-form',
+    `branch ${branch} (${family}) of the gate '${node}' does not map to one likelihood factor on its own: ${what}`,
+    { node, branch, family, what },
+  )
+export const gateBranchRefused = (node: string, branch: Fact, family: string, reason: string): Refusal =>
+  new Refusal('wrong-form', `branch ${branch} (${family}) of the gate '${node}' is refused: ${reason}`, {
+    node,
+    branch,
+    family,
+    reason,
+  })
+export const gateIndexNotDiscrete = (node: string): Refusal =>
+  new Refusal(
+    'wrong-form',
+    `the index of the gate '${node}' must be known or a discrete or Bernoulli latent: a computed random index has no message rule`,
+    { node },
+  )
 export const gateKnownComponent = (): Refusal =>
   new Refusal(
     'wrong-form',
@@ -553,6 +572,18 @@ export const countNotOnSupport = (node: string, fam: string, y: Fact): Refusal =
   new Refusal('support', `'${node}' is ${fam}: the count ${y} is not on its support`, { node, fam, y })
 export const exposureNegative = (node: string): Refusal =>
   new Refusal('support', `the exposure of '${node}' must be non-negative`, { node })
+export const gateIndexOutsideBranches = (node: string, index: Fact, branches: Fact): Refusal =>
+  new Refusal('support', `the index ${index} of the gate '${node}' is outside its ${branches} branches`, {
+    node,
+    index,
+    branches,
+  })
+export const gateStatesVersusBranches = (node: string, states: Fact, branches: Fact): Refusal =>
+  new Refusal('support', `the index of the gate '${node}' has ${states} states and the gate ${branches} branches`, {
+    node,
+    states,
+    branches,
+  })
 export const hurdleNotCount = (node: string, y: Fact): Refusal =>
   new Refusal('support', `'${node}' is a hurdle count: ${y} is not a count`, { node, y })
 export const indexOutOfRange = (index: Fact, dim: string): Refusal =>
@@ -647,7 +678,7 @@ export const familyHasNoMessageFamily = (node: string, fam: string): Refusal =>
 export const observedFamilyUnmapped = (node: string, fam: string): Refusal =>
   new Refusal(
     'family',
-    `'${node}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, asymmetricLaplace, orderedProbit, orderedLogistic, categoricalProbit, normalOutliers, beta, bernoulli, binomial, poisson, zeroTruncatedPoisson, hurdlePoisson, normalPair, exponential, gamma, geometric, negativeBinomial, weibull and categorical`,
+    `'${node}' is observed as ${fam}: the likelihoods mapped are normal, logNormal, studentT, laplace, asymmetricLaplace, orderedProbit, orderedLogistic, categoricalProbit, normalOutliers, beta, bernoulli, binomial, poisson, zeroTruncatedPoisson, hurdlePoisson, normalPair, exponential, gamma, geometric, negativeBinomial, weibull, gate(...) and categorical`,
     { node, fam },
   )
 

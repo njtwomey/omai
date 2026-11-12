@@ -96,10 +96,11 @@ The likelihoods, by family (the order across families does not matter, the order
 | 18 | `zero-truncated-poisson-numeric` | zeroTruncatedPoisson | a zero-truncated Poisson with a log link: the numeric likelihood of the registry | `likelihood-row`, `likelihood-site` |  |
 | 19 | `zero-truncated-poisson-unmapped` | zeroTruncatedPoisson | a zero-truncated Poisson whose rate is not exposure * exp(affine) is refused |  |  |
 | 20 | `hurdle-poisson` | hurdlePoisson | a hurdle Poisson: a Bernoulli for zero and a zero-truncated Poisson for the rest | `bernoulli`, `likelihood-row`, `likelihood-site` |  |
-| 21 | `mixture-weight` | normalPair | a pair of Gaussian densities weighted by a beta latent (the clutter problem): a mixture-weight factor | `mixture-weight` |  |
-| 22 | `gamma-rate` | exponential, gamma | an exponential or gamma observation whose rate is a gamma latent: a gamma-observed factor | `gamma-observed` |  |
-| 23 | `geometric` | geometric | a geometric observation with a beta probability: a negative-binomial-beta factor (the failures before a success) | `negative-binomial-beta` |  |
-| 24 | `negative-binomial-weibull-numeric` | negativeBinomial, weibull | a negative binomial with a log link (a known or random dispersion), a Weibull with a log-linear scale: the numeric likelihood of the registry | `likelihood-pair`, `likelihood-row`, `likelihood-site`, `negative-binomial-dispersion` | before the beta-conjugate failures of the negative binomial |
-| 25 | `negative-binomial-failures` | negativeBinomial | a negative binomial with a beta probability: a negative-binomial-beta factor | `negative-binomial-beta` |  |
-| 26 | `weibull-unmapped` | weibull | the parameters of a Weibull that are not a form with a message rule are refused |  |  |
-| 27 | `family-unmapped` |  | a family with no likelihood mapping is refused, listing the likelihoods mapped |  | last: takes every element that no entry above took |
+| 21 | `gate-families` | gate(...) | a likelihood chosen by an index among branches of different families (d.gate): one gate whose branch k is the factor its family maps to alone, a known branch a weight of its state | `gate`, `table` | a family of its own (gate(poisson,negativeBinomial)): each branch goes back through the whole table, so the entries above and below are the branches' mappings |
+| 22 | `mixture-weight` | normalPair | a pair of Gaussian densities weighted by a beta latent (the clutter problem): a mixture-weight factor | `mixture-weight` |  |
+| 23 | `gamma-rate` | exponential, gamma | an exponential or gamma observation whose rate is a gamma latent: a gamma-observed factor | `gamma-observed` |  |
+| 24 | `geometric` | geometric | a geometric observation with a beta probability: a negative-binomial-beta factor (the failures before a success) | `negative-binomial-beta` |  |
+| 25 | `negative-binomial-weibull-numeric` | negativeBinomial, weibull | a negative binomial with a log link (a known or random dispersion), a Weibull with a log-linear scale: the numeric likelihood of the registry | `likelihood-pair`, `likelihood-row`, `likelihood-site`, `negative-binomial-dispersion` | before the beta-conjugate failures of the negative binomial |
+| 26 | `negative-binomial-failures` | negativeBinomial | a negative binomial with a beta probability: a negative-binomial-beta factor | `negative-binomial-beta` |  |
+| 27 | `weibull-unmapped` | weibull | the parameters of a Weibull that are not a form with a message rule are refused |  |  |
+| 28 | `family-unmapped` |  | a family with no likelihood mapping is refused, listing the likelihoods mapped |  | last: takes every element that no entry above took |

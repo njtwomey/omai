@@ -11,7 +11,7 @@
 import { OmaiError } from '../../../base/index.ts'
 import type { DistSpec, ExprSpec } from '../spec.ts'
 import { type Operand, toVar } from '../var.ts'
-import { distributionFamilies, type FamilyDef } from './families.ts'
+import { distributionFamilies, type FamilyDef, gateFamilyName } from './families.ts'
 
 const FAMILIES: Readonly<Record<string, FamilyDef>> = distributionFamilies()
 
@@ -194,6 +194,48 @@ export function zeroTruncatedPoisson(rate: Operand): DistExpr {
  */
 export function hurdlePoisson(rate: Operand, zero: Operand): DistExpr {
   return family('hurdlePoisson', { rate, zero })
+}
+
+/**
+ * The likelihood chosen by an index among branches of different families: `y ~ gate(z, [poisson(a), negativeBinomial(n, p)])` is
+ * `poisson(a)` where the discrete latent `z` is 0 and `negativeBinomial(n, p)` where it is 1 (a count that is a Poisson or an
+ * overdispersed one, a regression or a constant, whichever component the row came from). The branch parameters keep their own
+ * expressions, flattened into the parameters of one family (`gate(poisson,negativeBinomial)`: `index`, `0.rate`, `1.n`, `1.probs`),
+ * so every analysis still sees them. Message passing maps it to one engine gate per observation, a branch per state, each the
+ * factor the branch's family maps to on its own; the other engines read the index as the one-hot weights of the library's mixture.
+ *
+ * @param index - The discrete variable (or known index) that chooses, one state per branch.
+ * @param branches - The branch distributions in the order of the states: scalar-event families, all discrete or all continuous.
+ * @returns The distribution expression of the gate.
+ * @throws OmaiError with code `value` for fewer than two branches, a branch that is not a scalar-event family of the table
+ *   (a gate included), or branches that mix discrete and continuous families.
+ * @concept model-spec
+ * @example
+ * ```ts
+ * import { gate, poisson } from 'omai-engine/probprog/model/dists'
+ * gate(0, [poisson(2), poisson(8)]).spec.family // => 'gate(poisson,poisson)'
+ * ```
+ */
+export function gate(index: Operand, branches: readonly DistExpr[]): DistExpr {
+  if (branches.length < 2) throw new OmaiError('value', 'gate: a gate needs at least two branches')
+  const names = branches.map((b) => b.spec.family)
+  for (const b of branches)
+    if (b.eventRank !== 0 || (b.spec.eventDims ?? []).length > 0)
+      throw new OmaiError(
+        'value',
+        `gate: the branch '${b.spec.family}' has an event axis (a gate takes scalar-event branches)`,
+      )
+  const name = gateFamilyName(names)
+  // Reading the family checks the branches (names, discreteness) before a model is built on it.
+  const def = FAMILIES[name] as FamilyDef
+  const v = toVar(index)
+  const params: Record<string, ExprSpec> = { index: v.expr }
+  const dims: string[] = [...v.dims]
+  branches.forEach((b, k) => {
+    for (const [p, e] of Object.entries(b.spec.params)) params[`${k}.${p}`] = e
+    for (const dim of b.dims) if (!dims.includes(dim)) dims.push(dim)
+  })
+  return { spec: { family: def.name, params }, dims, eventRank: 0 }
 }
 
 /**
