@@ -16,12 +16,15 @@ import { type BayesData, type BayesTree, bayesLeaf, bayesSplit, column, type Fit
 
 /**
  * The log posterior odds that a leaf splits by the best rule, against staying a leaf: the prior odds of splitting, one
- * over the number of rules, the two new leaves' probability of not splitting further, and the log Bayes factor of the split.
+ * over the number of rules, the two new leaves' probability of not splitting further (each by the rules it has itself: a
+ * child with no rule is a leaf for certain, as in the prior the exact and sampled methods use), and the log Bayes factor of
+ * the split.
  *
  * @param prior - The tree prior.
  * @param depth - The leaf's depth.
  * @param available - The rules available at the leaf.
  * @param gain - The log Bayes factor of the split against no split.
+ * @param children - The rules available at each of the two new leaves ({@link childRules}); default one each.
  * @returns The log odds (`-Infinity` when the leaf cannot split); positive means the split pays for itself.
  * @concept bayesian-trees
  * @example
@@ -31,11 +34,51 @@ import { type BayesData, type BayesTree, bayesLeaf, bayesSplit, column, type Fit
  * splitLogOdds(treePrior(), 0, 10, 0) > 0 // => false
  * ```
  */
-export function splitLogOdds(prior: TreePrior, depth: number, available: number, gain: number): number {
+export function splitLogOdds(
+  prior: TreePrior,
+  depth: number,
+  available: number,
+  gain: number,
+  children: readonly [number, number] = [1, 1],
+): number {
   const p = splitProbability(prior, depth, available)
   if (p === 0) return Number.NEGATIVE_INFINITY
-  const children = logLeaf(prior, depth + 1, 1)
-  return Math.log(p) - Math.log(1 - p) - Math.log(available) + 2 * children + gain
+  const leaves = logLeaf(prior, depth + 1, children[0]) + logLeaf(prior, depth + 1, children[1])
+  return Math.log(p) - Math.log(1 - p) - Math.log(available) + leaves + gain
+}
+
+/**
+ * The number of rules available at each of the two children of a split: the rules that leave at least `minLeaf` rows on
+ * each side of the child (zero for a child too small to split), which is what the prior needs to say whether the child is
+ * a leaf for certain.
+ *
+ * @param data - The data (the rows of the leaf are `rows`, or all of them).
+ * @param rows - The rows at the leaf (int32 indices), or undefined for all.
+ * @param feature - The feature of the split.
+ * @param threshold - Its threshold: rows at or below it go left.
+ * @param minLeaf - The smallest side of a split.
+ * @returns The rules available at the left and at the right child.
+ * @concept bayesian-trees
+ * @example
+ * ```ts
+ * import { bayesData, childRules, normalGammaLeaf } from 'omai-engine/trees'
+ * const model = normalGammaLeaf({ m0: 0, kappa0: 1, alpha0: 2, beta0: 1 })
+ * const data = bayesData([[0], [1], [2], [3], [4], [5]], [0, 0, 0, 5, 5, 5], model)
+ * childRules(data, undefined, 0, 2.5, 2) // => [0, 0]
+ * ```
+ */
+export function childRules(
+  data: BayesData,
+  rows: Value | undefined,
+  feature: number,
+  threshold: number,
+  minLeaf: number,
+): [number, number] {
+  const all = rows ?? arange(0, data.n, 1, { dtype: 'int32' })
+  const goesLeft = lessEqual(take(column(data.x, feature), all, 0), threshold)
+  const left = searchBayesSplits(data, maskedSelect(all, goesLeft), minLeaf).available
+  const right = searchBayesSplits(data, maskedSelect(all, logicalNot(goesLeft)), minLeaf).available
+  return [left, right]
 }
 
 /** A node of a tree in growth. */
@@ -110,7 +153,13 @@ function born(
           feature: found.best.feature,
           threshold: found.best.threshold,
           gain: found.best.gain,
-          logOdds: splitLogOdds(prior, depth, found.available, found.best.gain),
+          logOdds: splitLogOdds(
+            prior,
+            depth,
+            found.available,
+            found.best.gain,
+            childRules(data, rows, found.best.feature, found.best.threshold, prior.minLeaf),
+          ),
         }
   return {
     id,

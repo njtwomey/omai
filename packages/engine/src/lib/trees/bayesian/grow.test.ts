@@ -103,4 +103,29 @@ describe('growBayesTree', () => {
     expect(splitLogOdds(prior, 0, 100, 3)).toBeLessThan(splitLogOdds(prior, 0, 10, 3))
     expect(splitLogOdds(prior, 3, 10, 50)).toBe(Number.NEGATIVE_INFINITY)
   })
+
+  it('prices each new leaf by the rules it has itself: a child that cannot split is a leaf for certain', () => {
+    const prior = treePrior()
+    // a child at depth 1 splits with probability 0.5 / 4 = 0.125 when it has a rule, and with probability 0 when it has none
+    const leaf = Math.log(1 - 0.125)
+    const base = splitLogOdds(prior, 0, 10, 5, [0, 0])
+    expect(splitLogOdds(prior, 0, 10, 5, [3, 0]) - base).toBeCloseTo(leaf, 12)
+    expect(splitLogOdds(prior, 0, 10, 5, [3, 4]) - base).toBeCloseTo(2 * leaf, 12)
+    // without the children's rules it is the odds with a rule each
+    expect(splitLogOdds(prior, 0, 10, 5)).toBeCloseTo(splitLogOdds(prior, 0, 10, 5, [1, 1]), 12)
+  })
+
+  it('the odds the grower reports are the prior odds under the rules the children really have', () => {
+    // six rows: a split at 2.5 leaves three rows on each side, too few for a further split (a leaf needs two on each side)
+    const y = [0, 0.1, 0, 5, 5.1, 5]
+    const data = bayesData([[0], [1], [2], [3], [4], [5]], y, normalGammaLeaf(regressionPrior(y)))
+    const grown = growBayesTree(data)
+    const first = grown.steps[0]
+    expect(first?.threshold).toBe(2.5)
+    const found = searchBayesSplits(data, undefined, 2)
+    const p = 0.5
+    // no leaf charge for the two children: neither has a rule
+    const expected = Math.log(p) - Math.log(1 - p) - Math.log(found.available) + (first?.gain ?? Number.NaN)
+    expect(first?.logOdds).toBeCloseTo(expected, 12)
+  })
 })
