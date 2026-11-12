@@ -21,6 +21,8 @@ import {
   type Value,
 } from '../../tensor/index.ts'
 import { nodeExprs, nodesByName } from '../model/analysis-exprs.ts'
+import { exprShape } from '../model/check.ts'
+import type { NamedShape } from '../model/operators.ts'
 import { type ExprSpec, exprRefs, type ModelSpec } from '../model/spec.ts'
 import type { SiteRecord } from './_site-mixture.ts'
 
@@ -34,11 +36,13 @@ export type ComponentAxes = (site: string) => readonly number[] | undefined
 const DISCRETE = new Set(['categorical', 'bernoulli'])
 
 /**
- * The component axes of the sites of a model, from how it uses its discrete latents: the first dimension of a table that a
- * discrete latent looks up (`mu.at(z)`: the dimension `component` of `mu`) is a component dimension, so the axes of any node
- * with that dimension are component axes; and the trailing (event) axes of a node that a discrete latent's distribution reads
- * (the weights of `categorical({ probs: weights })`) are the categories, so component axes too. A model that does neither (a
- * mixture written with `where`, a gate) has no such metadata and gives `undefined`.
+ * The component axes of the sites of a model, from how it uses its discrete latents: the dimension that a discrete latent looks
+ * up (`mu.at(z)`: the first dimension of the table; `ops.pick(table, z)`: the last dimension of the table expression, as in
+ * `pick(mul(x, slope), z)`) is a component dimension, so the axes of any node with that dimension are component axes; and the
+ * trailing (event) axes of a node that a discrete latent's distribution reads (the weights of `categorical({ probs: weights })`)
+ * are the categories, so component axes too. A model with no discrete latent gives `undefined`. A model with one and no lookup of
+ * these kinds (a mixture written with `where`: the components are separate nodes) gives `undefined` for every site that is not
+ * the class probabilities: its axes are not known, which is not the same as having none.
  *
  * @param spec - The model.
  * @returns The component axes of a site by name, or undefined when the model names none.
@@ -52,15 +56,26 @@ export function componentAxesOf(spec: ModelSpec): ComponentAxes | undefined {
       discrete.add(n.name)
       for (const e of Object.values(n.dist.params)) for (const r of exprRefs(e)) categories.add(r)
     }
+  const scope = new Map<string, NamedShape>()
+  for (const n of spec.nodes)
+    if (n.kind !== 'observed' && n.kind !== 'factor') scope.set(n.name, { dims: n.dims, eventRank: n.eventRank })
   const dims = new Set<string>()
+  const lookedUp = (e: ExprSpec, which: 'first' | 'last'): string | undefined => {
+    try {
+      const shape = exprShape(e, scope)
+      return which === 'first' ? shape.dims[0] : shape.dims[shape.dims.length - 1]
+    } catch {
+      return undefined
+    }
+  }
   const walk = (e: ExprSpec): void => {
     if (e.kind !== 'op' && e.kind !== 'custom') return
     for (const a of e.args) walk(a)
-    if (e.kind === 'op' && e.op === 'at') {
+    if (e.kind === 'op' && (e.op === 'at' || e.op === 'pick')) {
       const [table, index] = e.args
-      if (table?.kind === 'ref' && index?.kind === 'ref' && discrete.has(index.name)) {
-        const first = byName.get(table.name)?.dims[0]
-        if (first !== undefined) dims.add(first)
+      if (table !== undefined && index?.kind === 'ref' && discrete.has(index.name)) {
+        const dim = lookedUp(table, e.op === 'at' ? 'first' : 'last')
+        if (dim !== undefined) dims.add(dim)
       }
     }
   }
@@ -69,6 +84,8 @@ export function componentAxesOf(spec: ModelSpec): ComponentAxes | undefined {
   return (site) => {
     const node = byName.get(site)
     if (node === undefined) return undefined
+    // no lookup was found: the model says nothing about which axes of the other sites are components
+    if (dims.size === 0 && !categories.has(site)) return undefined
     const axes: number[] = []
     for (const [i, d] of node.dims.entries()) if (dims.has(d)) axes.push(i)
     // the event axes of a node that is the class probabilities of a discrete latent

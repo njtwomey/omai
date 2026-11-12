@@ -2,7 +2,7 @@
 // components, and the canonical form (the components sorted by one site's mean).
 import { describe, expect, it } from 'vitest'
 import * as d from '../model/dists/index.ts'
-import { defineModel } from '../model/index.ts'
+import { defineModel, ops } from '../model/index.ts'
 import {
   canonicalSites,
   componentAxesOf,
@@ -110,6 +110,42 @@ describe('which axes are the components', () => {
     expect(axesOf?.('w')).toEqual([0])
     expect(axesOf?.('z')).toEqual([])
     // a name that is not a node of the model is not known
+    expect(axesOf?.('nowhere')).toBeUndefined()
+  })
+
+  it('reads the component dimension from a pick lookup, the last dimension of its first operand', () => {
+    // a mixture of regressions with a slope per class, the prediction of a row's class picked from [row, component]
+    const regression = defineModel('per-class-slope', (m) => {
+      const row = m.range('row')
+      const k = m.range('component', { size: 2 })
+      const x = m.data('x', { dims: [row] })
+      const y = m.data('y', { dims: [row] })
+      const w = m.latent('w', d.dirichlet([1, 1]))
+      const slope = m.latent('slope', d.normal(0, 3), { dims: [k] })
+      const z = m.latent('z', d.categorical({ probs: w }), { dims: [row] })
+      m.observe('y', d.normal(ops.pick(ops.mul(x, slope), z), 1), y)
+    })
+    const axesOf = componentAxesOf(regression.spec)
+    expect(axesOf?.('slope')).toEqual([0])
+    expect(axesOf?.('w')).toEqual([0])
+    expect(axesOf?.('z')).toEqual([])
+  })
+
+  it('does not call a site a non-component one when the model has no lookup it can read: unknown, every axis of length k', () => {
+    // a mixture written with where has no component dimension to find: the class probabilities are the categories, and any
+    // other site is unknown (the old reading), not "no component axes" (which would leave a vector of rates unsorted)
+    const gated = defineModel('where-lookup', (m) => {
+      const row = m.range('row')
+      const y = m.data('y', { dims: [row] })
+      const w = m.latent('w', d.dirichlet([1, 1]))
+      const lo = m.latent('lo', d.normal(0, 3))
+      const hi = m.latent('hi', d.normal(0, 3))
+      const z = m.latent('z', d.categorical({ probs: w }), { dims: [row] })
+      m.observe('y', d.normal(ops.where(ops.eq(z, 0), lo, hi), 1), y)
+    })
+    const axesOf = componentAxesOf(gated.spec)
+    expect(axesOf?.('w')).toEqual([0])
+    expect(axesOf?.('lo')).toBeUndefined()
     expect(axesOf?.('nowhere')).toBeUndefined()
   })
 
