@@ -5,6 +5,7 @@
 
 import type { FactorOperator } from '../../core/types.ts'
 import { apply, applyProductOperator } from './functions.ts'
+import { gplvmRow } from './gplvm-row.ts'
 import { likelihoodRowOperator, likelihoodSiteOperator, negativeBinomialDispersion } from './likelihoods.ts'
 import { likelihoodPairOperator, likelihoodPairRowOperator } from './pairs.ts'
 import { priorSite } from './prior-sites.ts'
@@ -15,6 +16,7 @@ import { likelihoodTripleOperator } from './triples.ts'
 export const likelihoodOperatorList: readonly FactorOperator[] = [
   apply,
   applyProductOperator,
+  gplvmRow,
   laplaceRow,
   laplaceSite,
   likelihoodPairOperator,

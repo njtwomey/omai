@@ -43,7 +43,7 @@ const wrongOf = (rule: M.ParamRule): Json => {
 }
 
 describe('every operator declares its parameters', () => {
-  it('all 71 do', () => {
+  it('all 74 do', () => {
     expect(names.filter((n) => operators[n]?.params === undefined)).toEqual([])
   })
 

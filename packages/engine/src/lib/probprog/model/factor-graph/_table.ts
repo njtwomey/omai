@@ -17,7 +17,13 @@ import { expArgument, precisionExpr, unwrap } from './_idioms.ts'
 import { type Mapping, type MappingTable, mapFirst, NOT_MINE } from './_mapping.ts'
 import { derived } from './_mappings/derived.ts'
 import { latentDirichlet, latentDiscrete } from './_mappings/latent-discrete.ts'
-import { latentNormal, latentProjected, latentSpikeSlab, truncate } from './_mappings/latent-gaussian.ts'
+import {
+  latentGplvmWeights,
+  latentNormal,
+  latentProjected,
+  latentSpikeSlab,
+  truncate,
+} from './_mappings/latent-gaussian.ts'
 import {
   latentGammaRate,
   latentKnownPrior,
@@ -57,6 +63,7 @@ import {
   observedRandomPrecision,
   observedRandomScale,
 } from './_mappings/observed-gaussian.ts'
+import { observedGplvm } from './_mappings/observed-gplvm.ts'
 import { observedHurdle, observedMulticlass, observedNumeric, observedPair } from './_mappings/observed-numeric.ts'
 import { plate } from './_mappings/plates.ts'
 import { discreteParents, evalNamedValue } from './_params.ts'
@@ -286,6 +293,16 @@ export const latentMappings: MappingTable<[LatentNode], void> = [
     },
   },
   {
+    name: 'gplvm-weights',
+    maps: 'the weight matrix of a latent variable model with random Fourier features (a normal with a known prior over output and feature that only the gplvm-rows read): one Gaussian vector per output, so that a gplvm-row reads the weights of an output as one port',
+    order:
+      'before the plain normal: the plan decided the weights are read by gplvm-rows (the same plan limits as that mapping), and then they are vectors, not scalars',
+    families: ['normal'],
+    requires: ['dot-constant', 'prior'],
+    matches: (cx, node) => cx.plan.gplvm?.w === node.name,
+    map: (cx, node) => latentGplvmWeights(cx, node),
+  },
+  {
     name: 'normal',
     maps: 'a normal: a Gaussian variable per element, with a known or random mean and scale (a precision, a random scale, a switch), grouped or packed where the plan says; the steps of an unrolled scan with known coefficients and one gamma precision are the links of one gaussian-chain factor (with packScalars); a truncation constrains it',
     families: ['normal'],
@@ -422,6 +439,16 @@ export const observedNodeMappings: MappingTable<[ObservedNode], void> = [
     requires: ['mvn-sd-corr'],
     matches: (_cx, node) => node.dist.family === 'bivariateNormal',
     map: (cx, node) => observedBivariateNormal(cx, node),
+  },
+  {
+    name: 'gplvm-rows',
+    maps: 'a latent variable model with random Fourier features (an observed Gaussian matrix whose mean is the sum over features of cos(x . omega + phase) times a weight matrix, the form of gplvmFourierModel; with packScalars, one coordinate per point, at most 1024 weights, a known uniform noise, no missing values, the weights read by nothing else): one gplvm-row factor per point on its coordinates and the weight vector of each output',
+    order:
+      'before the rows: the form is a whole-matrix form, and the scalar route (apply, product, sum per output and feature) is the fallback the layout plan leaves when its limits do not hold (the weights are then separate scalar variables)',
+    families: ['normal'],
+    requires: ['gplvm-row'],
+    matches: (cx, node) => cx.plan.gplvm?.observed === node.name,
+    map: (cx, node) => observedGplvm(cx, node),
   },
   {
     name: 'value-moved-to-mean',

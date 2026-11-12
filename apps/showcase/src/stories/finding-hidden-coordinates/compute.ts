@@ -2,7 +2,8 @@
  * The computation of 'Finding hidden coordinates': twenty points are each measured five ways, and every measurement is a smooth
  * function of one hidden coordinate per point. The library's latent variable model writes each function as a short sum of
  * cosines with fixed random frequencies and unknown weights, gives every point an unknown coordinate, and expectation propagation
- * passes messages between the coordinates and the weights until it stops (or until the sweeps run out). The recovered coordinates
+ * passes messages between the coordinates and the weights until it stops (or until the sweeps run out): the library reads the model
+ * as one factor per point, joining the point's coordinate to the weights of all its measurements. The recovered coordinates
  * are then lined up with the true ones, which the model cannot know, and the learned functions are read along a grid. The result
  * is plain data and a pure function of the seed (which draws the points and the random waves), so it runs in the story's worker.
  * The regions are the code shown.
@@ -97,9 +98,10 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
   say('Passing messages between the coordinates and the weights')
   // region infer
   // ask the library how expectation propagation runs this model
+  // (it makes one factor for each point, over the point's coordinate and the weights)
   const route = epRoute(bound)
   if (route.via !== 'ep') throw new Error(`no plain message-passing route: ${route.verdict.reason}`)
-  // one step is one sweep; each message is mixed with the old one, which steadies the loops
+  // one step is one sweep; each new message is mixed with the old one
   const config = { damping: DAMPING, restarts: 0, tol: 1e-6 }
   const run = session(route.method, { steps: sweeps, mode: 'eager', config })
   // the belief about every coordinate and weight when the messages stopped

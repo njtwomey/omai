@@ -1480,6 +1480,114 @@ what the compiler accepts is everything (all twelve choices route to `ep`; the g
   which differ from the committed digest on the unchanged base too (improper messages 80 -> 36, 16 -> 8, one sweep fewer for the ordered one: not caused by this change; to be re-accepted by whoever owns it).
 - Not done: the full shape (a covariance matrix per group) under EP, the stick-breaking pieces under EP (correct, slower than the sampler), a belief updated incrementally (the cost of a sweep is now the sum over the edges, 38% of the run at eight pieces), faster small-matrix kernels for the normal-Wishart family.
 
+## 2026-11-12 Operator and engine fixes from the second static review (`agent-a97b0f-review2ops`)
+
+Ten findings of a second review of `message-passing` that read the code and ran nothing; each was reproduced first (a failing test, against a brute-force or closed-form
+reference where it is a numeric rule) and fixed with a regression test (one commit each; nine confirmed, one partly). Ordinary results are bit-identical: the digest items that
+use the code were compared with the same items run without the change, and the only moves are the ones listed.
+- **`multiclass-site` and the power (the one that changes a convention).** The scalar rule returned the undivided site although it declares a power, so at power p its fixed point was
+  `(1 - p) * cavity + p * projection`, not fractional EP's (`cavity + p * message` is the projection of the tilted factor). It is a `siteRule` now, so `projectSite` divides by the
+  power as every other power rule does (`logistic`, the gate, `multiclass-row`); power 1 is the same bits. `multiclass.test.ts` compared with `tilted - cavity` at powers 0.5, 0.25 and
+  1.7 (the wrong convention): it checks `cavity + p * site = tilted` against the grid now, and the product grid has its own power test. Consequence for what was measured with the old
+  scheme: `ep-power.test.ts` and the `power` knob's text said that a power near 5 / rows widened the one-message-per-score softmax slopes to the exact spread (0.5 of it at power 1, 0.9 at 0.2).
+  That was the old scheme, not fractional EP. Correct fractional EP changes that spread by a few percent only (sd over exact 0.527, 0.516, 0.510, 0.508 at powers 1, 0.5, 0.2, 0.1 on the
+  seed-3, 24-point atom, the run at 0.2 and below stopping instead of converging): the joint site (`multiclass-row`, the packed default) is what gives the exact spreads, and the tests and the
+  knob's description say so. Digest: no item moves (the softmax atoms and the gp and choice twins are packed, or at power one in the digest; no digest run takes the scalar site at another power).
+- **`multiclass-site` `traits.power`** was a flat `true`, but the multinomial probit on the auxiliary rule (more than six classes, or `integration: 'auxiliary'`) throws for a power other than one:
+  `powerEpAlgorithm`'s default 0.5 hit that mid-sweep. `power` is `takesPowerOf(params)` now, so `withPowers` refuses it with a reason and `powerEpAlgorithm` runs that factor at power one.
+  `defineOperator`'s derived hook for a site rule read `traits.power === true` only, so a function-valued power silently skipped the division: it calls the function with the parameters.
+  The registry line moves for it (`power`: `true` to `[function]`).
+- **`gaussian-scale` at a power.** The mean was integrated out as `p * logN(x; m0, v + e^(2s))`, right only for a known mean; the marginal of `N(x; m, e^(2s))^p` against `N(m; m0, v)` is
+  `(2 pi e^(2s))^((1 - p) / 2) p^(-1/2) N(x; m0, v + e^(2s) / p)`, and the mean's conditional has the noise precision `p e^(-2s)`. Tests at powers 0.5, 0.25 and 2 against a two-dimensional grid
+  (all failed before); power 1 is the same bits (digest: `half-cauchy`, `half-normal`, `radon`).
+- **Multinomial probit far in the tail.** `logProbit`'s 20 fixed nodes (|e| <= 7.6) underestimated a class that is far below the others (two classes: 8e-5 nats at a gap of 12, 6 nats at 20, minus
+  infinity from about 40, where `productTilt` threw 'no mass'). When the other scores exceed the chosen one's by more than 6 in total the integral is taken at the peak of its log-concave
+  integrand (Newton with a bracket, 20 nodes of its curvature, a log-space sum with `logNdtr`): 1e-13 against `Phi(gap / sqrt 2)` and 1e-10 against a dense log-space integral for 3 and 7 classes;
+  below the trigger the old code runs (a pinned value). The old rule also had 1e-4 to 1e-5 errors for seven classes with moderate gaps, which are 1e-10 once the total passes 6. No digest item has a probit multiclass on the product grid.
+- **`gate` under VMP** counted a branch whose operator has no `expectedLog` as a log density of 0 and skipped one with no `vmp` rule. `unsupported('vmp')` now names the branch operator (`equal` has a
+  message and no expected log, `greater-than` has neither) and the rule and the expected log throw a `ParameterError`; a constant branch is still 0. All 43 digest items with a gate are identical;
+  the registry line gains the gate's `unsupported` member.
+- **Restarts.** `restartDamping` was `max(damping, 0.5) + 0.3 (k - 1)`, so a run damped from 0.5 to 0.9 had a first restart as damped as itself and never restarted (`restarts: 3` at damping 0.5 reported a
+  stall without trying). A restart is the k-th of 0.5, 0.8, 0.9 among those stronger than the run's own, and one that would repeat the previous attempt is not made (a run under a half is unchanged,
+  except that its fourth restart, which repeated the third to the last digit, is not made). **Digest items that move:** the four programs that were damped at 0.5 or more and stalled on improper
+  cavities, which used to be reported `converged` with 'a restart would repeat the run': `program/circular-ignore` (25 to 92 sweeps, one restart, the first mean 7.972 to 8.026),
+  `program/sparse-student-t` (49 to 185 sweeps, evidence -98.8674 to -98.8537), `program/circular-data` (138 to 150 sweeps, status converged to stopped at the step budget, unresolved 252 to 279) and
+  `program/circular-means` (37 to 150 sweeps, converged to stopped at the budget, but the evidence is now defined: -236.23, with 43 unresolved updates instead of 149). The restart costs 4 times the sweeps in
+  three of them for stalls that are structural skips of an improper cavity; that is the price of 'always stronger', and the one line that returns the old behaviour is `restartDiffers`. Unchanged:
+  `atom/mixture-regression`, `model/gaussian-mixture-ordered`, `model/radon`, `program/sparse-gaussian`, `sparse-mixture`, `circular-rows`.
+- **`product`** weighted its grid with `Math.exp(logNormal(...))` and took `Math.log(mass)`: an output message more than about 38 sd from the pushforward underflowed every weight, the mean was NaN and the
+  message an `ImproperMessageError` (evidence minus infinity). When the plain mass is not above 1e-250 the same grid is taken with shifted log weights (`shiftedSum`, `tiltedLogGrid`); an ordinary case keeps
+  its path and its bits (digest: `product`, `chain-persistence-grid`, `eight-schools`, `funnel`, `radon`, `stochastic-volatility`, `bayesian-neural-network`). Limit: where the underflow means the posterior is
+  beyond the grid (a likelihood further out than the cavity's 8 sd), the result is the grid's best node, finite but not the posterior; the test is a known factor with a Gaussian posterior in reach (e^-1231).
+- `mpVerdict` and `isStalled` took `Math.max(...residuals)` with one residual per edge (a `RangeError` at about 120k edges): `largestOf`, a loop. `evidenceDefects` says `zero mass` for a factor evidence of
+  minus infinity (a violated hard constraint) and keeps `improper cavity` for NaN (`EvidenceDefect`).
+- **`gaussian-chain`.** An observed state or driver was an `ImproperMessageError` (repaired and skipped, reported as 'stalled'); the compiler already refuses such a variable, so it is the hand-built case, now a
+  `ParameterError`. With a `ridge` the evidence is that of the regularised chain, not the declared factor's (which has none where a state's cavity is improper): documented, not subtracted. No numbers move.
+- Not changed: the other `Math.max(...)` spreads in `core/families*.ts` (the size of a discrete family) and `numerics/numeric-rules.ts`; the restart schedule's repeated 0.9 for a run under a half asked for four restarts or more
+  (now not made); `gaussian-mixture-ordered` differs from the committed digest on this base with or without these changes (16 to 8 improper messages), which another change owns.
+## 2026-11-12 A GPLVM under EP, the real route: one `gplvm-row` factor per point (`agent-aec1c3-gplvmrow`)
+
+The earlier piece (`agent-a8cd08-gplvm`, above) ran a GPLVM with random Fourier features through the scalar operators and left the gap `gplvm-features`
+with a plan: a numeric row factor per point. This is that factor, its compiler mapping and the measurements.
+- The operator `gplvm-row` (`operators/likelihoods/gplvm-row.ts`, with the grid in `numerics/_node-grid.ts`). One factor per point `n`, over the point's
+  coordinates (one or two scalar Gaussian ports `x`) and the weights of each output (one Gaussian vector port `w_d` of `M` weights per output `d`: `D`
+  vector ports, not one dense vector of `D M`, which the first version had; the same results to the digit, and the engine's cost per sweep with a dense
+  96-vector made a run of 40 points, 8 outputs and 12 features take over 3 s a sweep). Given `x` the row is `y_d = w_d . phi(x) + e` with
+  `phi_m(x) = cos(omega_m . x + b_m)`, linear and Gaussian in `w_d`, so the weights are integrated out in closed form at each node of a zoomed
+  grid over `x` (a window of 8 cavity sds, 241 nodes for one coordinate, 6 sds and 61 x 61 nodes for two, a second grid of the same size over the box
+  that holds the mass: `zoomNodeGrid`). At a node the cavity of `w_d` (mean `m`, covariance `V`) gives the predictive `N(y_d; phi . m, phi' V phi + noise^2)`
+  and the Gaussian posterior `N(m + g r, V - g g' / s)` (`g = V phi`, `s = phi' V phi + noise^2`, `r = (y_d - phi . m) / s`). The message to a coordinate is
+  the moment match of the weighted nodes (the marginal mean and variance), the message to `w_d` the moment match of the mixture over the nodes of its
+  conditional (mean `m + sum p g r`, covariance `V + sum p (r^2 - 1/s) g g' - u u'`), the evidence the log of the node-averaged likelihood
+  (`logMass` of the grid plus the masses of the cavities, as `multiclass-row` does). Declared `params` (`coords`, `features`, `outputs`, `omega`, `phase`,
+  `noise`, `y`), `check` (one or two coordinates, the sizes agree, at most 1024 weights), no power, no VMP rule (`noRule.vmp` says why).
+  What it drops, stated: the correlation between the weights of two different outputs that the shared coordinate induces (each output's message carries its
+  own marginal), and for two coordinates their joint (two scalar ports: the two marginals).
+- Against brute force (`gplvm-row.test.ts`, no code of the rule shared): the exact tilted distribution of (coordinate, two weights) for one output on a dense grid
+  of all three (801 x 61 x 61): the message to the coordinate, to the weights and the evidence within 7e-8 relative for the coordinate, 4e-7 for the weights and 1.3e-8 nats for the evidence; a dense grid of the coordinates with an explicit
+  matrix solve for the weights at each node (three outputs of three weights with a multimodal tilt, five outputs with a small noise whose tilt is 20 times
+  narrower than its cavity, two coordinates with two outputs): messages within 3e-4 to 8e-4 relative (the multimodal case), 3e-7 to 7e-6 (the narrow one) and 6e-5 to 3e-4 (two coordinates) and evidence within 1.8e-4, 2e-7 and 1.8e-5 nats. `_node-grid.test.ts` holds the grid
+  against closed-form integrals (a narrow Gaussian against a wide cavity, two coordinates, two separated peaks).
+- The compiler (`_gplvm.ts`, `_mappings/observed-gplvm.ts`, the weights in `_mappings/latent-gaussian.ts`): the layout plan has a fifth detection, `findGplvm`,
+  that reads the form `gplvmFourierModel` writes (an observed normal `y[point, output]` whose `loc` is `sum(cos(matmul(x, omega) + phase) * W, feature)`, written
+  inline, either order of the product and the sum, the phase optional, the point and the output in either order; `x[point, coord]` a latent normal; `omega`, `phase` known; `W[output, feature]` a
+  latent normal with a known prior that nothing else reads; a known uniform noise; no missing values; with `packScalars`). The mapping `gplvm-weights` (before
+  `normal`) makes `W` one Gaussian vector per output with a scalar readout per element (as the grouped scalars do), and `gplvm-rows` (an observed
+  whole-node mapping before `rows`) one `gplvm-row` per point. A model outside the limits (two or more coordinates per point (see below), more than 1024 weights, a missing
+  observation, a noise that differs between entries, a weight matrix something else reads, another function than `cos`, a derived node inside the form,
+  no `packScalars`) is not detected and compiles by the scalar operators as before: no refusal, because the scalar route accepts every one of those and
+  a refusal would break a model that runs. Their `epRoute` verdicts are those of the scalar route (`observed-gplvm.test.ts`).
+- Measured (`scratch` scripts of the agent, not kept; the numbers are here), the aligned correlation of the posterior-mean coordinate with the truth over seeds, a run is "good" at a
+  correlation of 0.9 or more, damping 0.5, `tol` 1e-6:
+  - The story's setting (20 points, 5 outputs, 6 features, one coordinate, noise 0.1; the data and the features from different keys). New route, 40 sweeps: seeds 1 to 12: 11
+    good (0.971 to 0.998), one poor (seed 9: 0.70), 2.7 to 4.7 s a run (mean 3.2 s); seeds 13 to 24: 11 good (0.990 to 0.996), one poor (seed 14: 0.50), 2.9 s. So 22 of 24, two poor.
+    The scalar route (`packScalars` off: `apply`, `product`, `sum`; 70 sweeps at damping 0.7, the setting the story had) on seeds 1 to 12: 7 good, five poor (correlations 0.05 to 0.66, with
+    spreads of 0.05 to 0.29), 5.7 to 8.2 s (mean 6.5 s). 70 sweeps at damping 0.7 on the new route: 11 of 12, 6.8 s, the same poor seed.
+  - Spreads: the 90% intervals of the coordinates cover the truth for 0.90 of the points over seeds 1 to 12 (0.83 over 13 to 24; per run 0.0 to 1.0, the poor run of seed 14 states a mean
+    spread of 0.045 against a miss of 0.87 and covers none; the poor run of seed 9 states 0.63 and covers 0.60); the scalar route covers 0.66 (its failures cover 0.0 to 0.15).
+  - Settling: no run reaches `converged` at `tol` 1e-6 (nor 1e-4 in 150 sweeps at damping 0): the change per sweep falls from 0.17 to 0.021 over 100 sweeps at damping 0.5 (0.22 to 0.011
+    at damping 0). The coordinates stop moving much before that: the largest move of any coordinate mean from its value at 200 sweeps, in the sds it states, is 0.06 to 7.7 at sweep 40 (median
+    2.2, eight seeds), 0.03 to 3.1 at 100 and 0.01 to 1.2 at 150, while the correlation with the truth is the same to 0.003. Damping 0 is faster but unsafe: seed 6 `converged` at sweep 25 in a
+    poor fixed point (correlation 0.08) that damping 0.5 does not fall into (0.982).
+  - A larger instance (40 points, 8 outputs, 12 features, one coordinate, 30 sweeps, seeds 1 to 12): 12 good (0.984 to 0.998), 25 s a run, the intervals cover 0.82; the scalar route
+    (70 sweeps at damping 0.7, seeds 1 to 4): 3 good, one at 0.69, 41 s, covers 0.60.
+  - Two coordinates (24 points, 6 outputs, 10 features, seeds 1 to 6, 40 sweeps): both coordinates found in 3 of 6 (0.99/0.52, 0.50/0.93, 0.85/0.89, then 0.96 to 0.98), 52 to 72 s a run,
+    the intervals cover 0.44 to 0.94 (0.69 over seeds 3 to 6); the scalar route (70 sweeps at damping 0.7): 2 of 6, 13.7 s, covers 0.90 with spreads of 0.5 to 0.65. 40 points, 8 outputs,
+    12 features, one seed: 0.93/0.89 in 170 s against 0.81/0.80 in 33 s. Not better and four to five times slower, so the compiler gives one coordinate per point to the factor
+    (`GPLVM_COMPILED_COORDS`) and a model with two coordinates compiles by the scalar operators as before; the factor itself takes two (the grid over two coordinates is held to brute force).
+  - Where the poor runs come from. The same data with another draw of the random features finds the coordinate: seed 9 (draws 1, 3, 4, 5 of 6 at 0.99, draws 0 and 2 at 0.70 and 0.65) and
+    seed 14 (draws 2, 3, 4 at 0.996, draws 0 and 1 at 0.50 and 0.47); with 10 features instead of 6 seeds 9 and 14 give 0.965 and 0.996 (8 features: 0.74 for seed 9). The order of the points does not
+    matter (seed 9 in eight orders of the points: 0.33 to 0.74). So a poor run is mostly a draw of the features that cannot follow the function, not an update order EP falls into. The
+    residual of the learned functions at the points flags seed 9 (0.315 against the noise 0.1) but not seed 14 (0.076): a poor solution can fit as well as a good one.
+  - A multi-start over the draws of the features, chosen by the EP evidence (4 draws a seed, 12 seeds, 40 sweeps): the story's setting 12 of 12 against 11 of 12 from the first draw (the
+    first draw's poor seed is 9; some draw is good in 12 of 12); 4 outputs and 4 features 12 of 12 against 11 of 12. Choosing by the residual: 11 of 12 and 12 of 12 (it ties a poor draw of
+    seed 9 with a good one). The evidence is not a clean ranking (a good draw can have -15.8, a poor one -3.2) but the best of four was good every time. The cost is the four runs, so the
+    story keeps one. A multi-start over the starting messages of the coordinates has nothing to start: the cavity of a coordinate is its prior (only its own row reads it), so a start on
+    its port is divided out by the factor's own first update. `epMultiStartMethod` starts discrete messages and does not apply to continuous coordinates.
+- Bookkeeping: the registry has 74 operators (`gplvm-row` after `multiclass-row`), the compiler tables one more latent entry (`gplvm-weights`) and one more
+  whole-node observed entry (`gplvm-rows`); the graph corpus is unchanged (no atom or benchmark model has the form); no atom: there is no reference the EP
+  fixed point can be held to beyond the single-point brute force of the operator test (the posterior of the coordinates is multimodal and the weights have
+  as many dimensions as the grid cannot take), so no digest item. The gap `gplvm-features` is narrowed to what is left.
 ## 2026-11-12 The plates stop using `improperTarget` (gate fix, `agent-a72b8a-gatefix`; gap `evidence` as it was before `agent-ab33f2-evidence`)
 
 The recovery test of `logistic-learned` failed at the gate. Measured over its 40 seeds with and without the trait on the plates (`probit-plate`, `logistic-plate`):

@@ -196,7 +196,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `evidenceCampaigns`: Periodic validation of the evidence estimators, nested sampling, particle filters and particle MCMC. `src/lib/probprog/models/evidence-campaigns.ts:521` `omai-engine/probprog/models`
 - function `gammaPoissonModel`: The Gamma-Poisson rate with a chosen Gamma(shape, rate) prior; bind it to `{ k: counts }`. `src/lib/probprog/models/conjugate.ts:178` `omai-engine/probprog/models`
 - function `gaussianMixtureModel`: A K-component Gaussian mixture with unknown weights, means and a shared spread, optionally ordered. `src/lib/probprog/models/mixture.ts:98` `omai-engine/probprog/models`
-- function `gplvmFourierModel`: A GPLVM with random Fourier features: latent coordinates per point, EP-ready. `src/lib/probprog/models/gplvm.ts:100` `omai-engine/probprog/models`
+- function `gplvmFourierModel`: A GPLVM with random Fourier features: latent coordinates per point, EP-ready. `src/lib/probprog/models/gplvm.ts:104` `omai-engine/probprog/models`
 - function `kernelCampaigns`: The periodic validation of the kernel methods: Geweke, calibration, agreement and the two-mode target. `src/lib/probprog/models/kernel-campaigns.ts:544` `omai-engine/probprog/models`
 - function `polynomialFeatureMap`: The standardised polynomial design of two inputs with an intercept: `polynomialFeatureMap(points, 3).transform(rows)`. `src/lib/probprog/models/probit-classification.ts:60` `omai-engine/probprog/models`
 - function `probitClassifier`: The probit classifier of any design width with a chosen prior scale; bind it with `probitData`. `src/lib/probprog/models/probit-classification.ts:112` `omai-engine/probprog/models`

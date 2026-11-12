@@ -26,7 +26,7 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, FamilyKind, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
-import { centredMoments } from '../../numerics/_moments.ts'
+import { centredMoments, shiftedSum } from '../../numerics/_moments.ts'
 import { gaussianGrid, tiltedGrid, tiltedLogGrid } from '../../numerics/_quadrature.ts'
 import { gammaLogWindow, tiltGrid, windowProfiles } from '../../numerics/_windows.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
@@ -520,14 +520,23 @@ export const product: FactorOperator = defineOperator({
         const mp = new Float64Array(n)
         const post = new Float64Array(n)
         let mass = 0
+        const logOverlap = new Float64Array(n)
         for (let i = 0; i < n; i++) {
           const node = na.x[i] ?? 0
           const s2 = node * node * b.variance
           const center = node * b.mean
-          w[i] = (na.w[i] ?? 0) * Math.exp(logNormal(center, y.mean, y.variance + s2))
+          logOverlap[i] = logNormal(center, y.mean, y.variance + s2)
+          w[i] = (na.w[i] ?? 0) * Math.exp(logOverlap[i] as number)
           post[i] = s2 > 0 ? 1 / (1 / s2 + 1 / y.variance) : 0
           mp[i] = s2 > 0 ? (post[i] as number) * (center / s2 + y.mean / y.variance) : center
           mass += w[i] as number
+        }
+        // An incoming message of y more than about 38 sd from the pushforward underflows every weight to zero: the weights are then
+        // taken in log space, shifted by their largest (the same sums, in the same order, when nothing underflows).
+        if (!(mass > UNDERFLOW)) {
+          const shifted = shiftedSum(Float64Array.from(logOverlap, (v, i) => Math.log(na.w[i] ?? 0) + v))
+          w.set(shifted.weights)
+          mass = shifted.total
         }
         // The mixture of the conditional Gaussians over the nodes: the mean of the variances plus the variance of the means.
         const t = centredMoments(w, mass, mp)
@@ -539,7 +548,7 @@ export const product: FactorOperator = defineOperator({
       }
       const [self, other] = c.to === 1 ? [a, b] : [b, a]
       const y = gaussianOf(arg(c, 0))
-      const tilted = tiltedGrid(self.mean, self.variance, productDensity(other, y))
+      const tilted = tiltedProduct(self, other, y)
       return { message: gaussianSiteMessage(etaOf(arg(c, c.to)), tilted.mean, tilted.variance) }
     }, 'numeric'),
     vmp: messageRule((c): OperatorResult => {
@@ -569,8 +578,7 @@ export const product: FactorOperator = defineOperator({
       const a = gaussianOf(arg(c, 1))
       const b = gaussianOf(arg(c, 2))
       const y = gaussianOf(arg(c, 0))
-      const mass = tiltedGrid(a.mean, a.variance, productDensity(b, y)).mass
-      return massOf(arg(c, 0)) + massOf(arg(c, 1)) + massOf(arg(c, 2)) + Math.log(mass)
+      return massOf(arg(c, 0)) + massOf(arg(c, 1)) + massOf(arg(c, 2)) + tiltedProduct(a, b, y).logMass
     },
     vmp: () => 0,
   },
@@ -580,17 +588,39 @@ export const product: FactorOperator = defineOperator({
   traits: { readsTarget: (to) => to !== 0, defines: 0 },
 })
 
+/** The mass below which the weights of a grid are taken in log space: close to the smallest normal number, where the digits are going. */
+const UNDERFLOW = 1e-250
+
+/**
+ * The tilted mass (as a log), mean and variance of one factor of a product against its cavity and the output's incoming message:
+ * the grid of `tiltedGrid` with the density of {@link productDensity}, and, when that mass has underflowed (the message of the
+ * output more than about 38 sd from the pushforward), the same grid with the log weights shifted by their largest
+ * (`tiltedLogGrid`). Ordinary cases take the first and are the same bits as ever.
+ */
+function tiltedProduct(
+  self: { readonly mean: number; readonly variance: number },
+  other: { readonly mean: number; readonly variance: number },
+  y: { readonly mean: number; readonly variance: number },
+): { readonly logMass: number; readonly mean: number; readonly variance: number } {
+  const plain = tiltedGrid(self.mean, self.variance, productDensity(other, y))
+  if (plain.mass > UNDERFLOW) return { logMass: Math.log(plain.mass), mean: plain.mean, variance: plain.variance }
+  return tiltedLogGrid(self.mean, self.variance, (a) => logNormal(a * other.mean, y.mean, productVariance(a, other, y)))
+}
+
+/** The variance of the output given one factor: `a^2 v_b + v_y`, which has to be positive. */
+function productVariance(a: number, other: { readonly variance: number }, y: { readonly variance: number }): number {
+  const v = a * a * other.variance + y.variance
+  if (!(v > 0))
+    throw new ParameterError('product: the output and one factor are both observed, which determines the other')
+  return v
+}
+
 /** g(a) = integral of the other factor against the output's incoming message: N(a m_b; m_y, a^2 v_b + v_y). */
 function productDensity(
   other: { readonly mean: number; readonly variance: number },
   y: { readonly mean: number; readonly variance: number },
 ): (a: number) => number {
-  return (a) => {
-    const v = a * a * other.variance + y.variance
-    if (!(v > 0))
-      throw new ParameterError('product: the output and one factor are both observed, which determines the other')
-    return Math.exp(logNormal(a * other.mean, y.mean, v))
-  }
+  return (a) => Math.exp(logNormal(a * other.mean, y.mean, productVariance(a, other, y)))
 }
 
 /**

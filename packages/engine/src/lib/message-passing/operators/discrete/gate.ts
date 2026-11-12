@@ -218,6 +218,27 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
     const message = ruleMessage(op, ctx).message
     return own.map((v, i) => v + (message[i] ?? 0))
   }
+  /**
+   * Why the gate has no variational rule for these branches, or `undefined`: a variational gate weighs each branch by the expected log
+   * of its operator (`expectedLog`) and sends a variable the responsibility-weighted `vmp` messages of the branches over it, so a
+   * branch whose operator has no expected log would count as a log density of 0 and one with no `vmp` message would be skipped, and the
+   * responsibilities, the messages and the bound would be wrong with no error. (A constant branch, with no operator, is a log density of 0.)
+   */
+  const vmpGap = (params: Params): string | undefined => {
+    for (const [k, b] of branchesOf(params).entries()) {
+      const op = b.operator === undefined ? undefined : inner[b.operator]
+      if (op === undefined) continue
+      if (op.expectedLog === undefined)
+        return `gate: branch ${k} (${op.name}) has no variational expected log, so its responsibility and the bound would ignore it`
+      if (op.vmp === undefined && b.args.some((a) => typeof a === 'number'))
+        return `gate: branch ${k} (${op.name}) has no variational message, so a variable of it would hear nothing from it`
+    }
+    return undefined
+  }
+  const vmpRefused = (params: Params): void => {
+    const why = vmpGap(params)
+    if (why !== undefined) throw new ParameterError(why)
+  }
   return defineOperator({
     name: 'gate',
     description: 'a discrete variable selects which factor holds, each branch over its own variables',
@@ -244,6 +265,14 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
       ),
     ],
     params: { arity: param.integer({ min: 1 }), branches: param.any({ example: [] }) },
+    unsupported: (mode, params) => {
+      if (mode !== 'vmp') return undefined
+      try {
+        return vmpGap(params)
+      } catch {
+        return undefined
+      }
+    },
     check: (params, families) => {
       const states = families[0]?.kind === 'bernoulli' ? 2 : families[0]?.dim
       const branches = branchesOf(params)
@@ -315,6 +344,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
         return { message: family.fromMoments(mixed).map((v, i) => (v - (own[i] ?? 0)) / c.power) }
       }, 'numeric'),
       vmp: messageRule((c): OperatorResult => {
+        vmpRefused(c.params)
         const branches = branchesOf(c.params)
         const z = arg(c, 0)
         if (c.to === 0) {
@@ -353,6 +383,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
         return total + logSumExpOf(terms)
       },
       vmp: (c) => {
+        vmpRefused(c.params)
         const branches = branchesOf(c.params)
         const r = stateProbabilities(arg(c, 0), branches.length)
         let total = 0

@@ -112,11 +112,15 @@ export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection
   return total
 }
 
+/** Why a factor gives no finite part of the EP evidence: see {@link evidenceDefects}. */
+export type EvidenceDefect = 'improper cavity' | 'no evidence rule' | 'zero mass'
+
 /**
  * The factors that give no part of the EP evidence at a state, with why: a factor whose cavity has no density (an `improper cavity`: the
  * integral of the factor against it diverges, which happens when another factor's site has a negative precision, as the site of a
- * scale mixture on a weight vector does, and the factor is one plate over many rows) or an operator with no evidence rule. The
- * evidence of the graph is then undefined. A rows-expanded graph (`plates: 'expand'`) has a proper cavity for each row.
+ * scale mixture on a weight vector does, and the factor is one plate over many rows), an operator with no evidence rule, or a factor
+ * with no mass under its cavity (`zero mass`: evidence minus infinity, as a violated hard constraint has, which is a result and not
+ * a failure to compute). The evidence of the graph is then undefined (NaN) or minus infinity. A rows-expanded graph (`plates: 'expand'`) has a proper cavity for each row.
  *
  * @param g - The compiled graph.
  * @param s - The projection (the estimate depends on nothing else).
@@ -127,15 +131,17 @@ export function evidenceDefects(
   g: CompiledGraph,
   s: Pick<EngineSettings, 'projection'>,
   state: MpState,
-): readonly { readonly factor: string; readonly reason: 'improper cavity' | 'no evidence rule' }[] {
-  const out: { factor: string; reason: 'improper cavity' | 'no evidence rule' }[] = []
+): readonly { readonly factor: string; readonly reason: EvidenceDefect }[] {
+  const out: { factor: string; reason: EvidenceDefect }[] = []
   if (s.projection.evidence !== 'ep-energy') return out
   for (const [fi, f] of g.factors.entries()) {
     if (f.operator.logEvidence === undefined) {
       out.push({ factor: f.id, reason: 'no evidence rule' })
       continue
     }
-    if (!Number.isFinite(factorEvidence(g, s, state, fi))) out.push({ factor: f.id, reason: 'improper cavity' })
+    const evidence = factorEvidence(g, s, state, fi)
+    if (evidence === Number.NEGATIVE_INFINITY) out.push({ factor: f.id, reason: 'zero mass' })
+    else if (!Number.isFinite(evidence)) out.push({ factor: f.id, reason: 'improper cavity' })
   }
   return out
 }

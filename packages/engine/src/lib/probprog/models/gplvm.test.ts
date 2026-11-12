@@ -1,6 +1,7 @@
 // The GPLVM with random Fourier features: its pieces (features, data, alignment) and the route EP takes. The direct formulation, a
 // Gaussian process prior whose covariance is a custom function of the random coordinates, is refused with the compiler's reason; the
-// finite-feature one is accepted and recovers the coordinates of a small data set up to the alignment.
+// finite-feature one is accepted, runs as one `gplvm-row` factor per point (the scalar product/apply/sum route is still there without
+// `packScalars`) and recovers the coordinates of a small data set up to the alignment.
 import { describe, expect, it } from 'vitest'
 import { gram, rbfKernel } from '../../kernels/index.ts'
 import { key, normal } from '../../random/index.ts'
@@ -108,6 +109,13 @@ describe('the GPLVM as a model for expectation propagation', () => {
       y: simulateGplvm(key(1), { points: 6, coords: 1, outputs: SIZE.outputs }).y,
     })
     expect(toFactorGraph(bound).issues).toEqual([])
+    // by default (packScalars) the points are rows of the latent variable factor, and without packing the old operators make the graph
+    const operators = (packScalars: boolean): string[] =>
+      (toFactorGraph(bound, { packScalars }).graph?.factors ?? []).map((f) => f.operator)
+    expect(operators(true)).toContain('gplvm-row')
+    expect(operators(true)).not.toContain('product')
+    expect(operators(false)).toContain('product')
+    expect(operators(false)).not.toContain('gplvm-row')
     const route = epRoute(bound)
     expect(route.via).toBe('ep')
     expect(route.verdict.applies).toBe(true)
@@ -121,13 +129,13 @@ describe('the GPLVM as a model for expectation propagation', () => {
     const bound = gplvmFourierModel(options).bind({ omega: frequencies, phase: phases, y: data.y })
     const route = epRoute(bound)
     if (route.via !== 'ep') throw new Error(route.verdict.reason)
-    const run = session(route.method, { steps: 70, mode: 'eager', config: { tol: 1e-6, damping: 0.7 } })
+    const run = session(route.method, { steps: 40, mode: 'eager', config: { tol: 1e-6, damping: 0.5 } })
     const post = route.method.posterior?.(run.state, run.config)
     if (post === undefined) throw new Error('no posterior')
     const fit = alignLatents(post.mean('x'), data.latent)
     expect(toFlat(fit.correlation)[0]).toBeGreaterThan(0.95)
     expect(item(fit.error)).toBeLessThan(0.25)
-    // the spreads are small but of the order of the error that is left (EP's spreads in a loopy graph are the narrow ones)
+    // the spreads are of the order of the error that is left
     const sd = toFlat(post.stddev('x'))
     const meanSd = sd.reduce((a, b) => a + b, 0) / sd.length
     expect(meanSd).toBeGreaterThan(0.05)

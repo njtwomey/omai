@@ -6,7 +6,7 @@
 import type { RunStatus } from '../../trace/index.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import { residualUnresolved } from './_cavities.ts'
-import { allFinite, restartDiffers } from './_restart.ts'
+import { allFinite, largestOf, restartDiffers } from './_restart.ts'
 import { beliefOf } from './cavity.ts'
 import type { EngineSettings, MpState } from './state.ts'
 
@@ -41,7 +41,7 @@ export function mpVerdict(
   if (!allFinite(state.messages)) return { status: 'diverged', reason: 'a message is not finite' }
   const still =
     s.schedule === 'residual'
-      ? state.updates > 0 && (state.residuals.length === 0 || Math.max(...state.residuals) < s.tol)
+      ? state.updates > 0 && (state.residuals.length === 0 || largestOf(state.residuals) < s.tol)
       : state.sweeps >= 1 && state.cursor === 0 && state.change < s.tol
   if (still) {
     const unresolved =

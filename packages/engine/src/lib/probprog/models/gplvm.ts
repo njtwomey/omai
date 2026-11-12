@@ -6,7 +6,8 @@
  * `f_d(x) = sum_m W_dm cos(omega_m . x + b_m)` with the frequencies `omega_m` and phases `b_m` drawn once from a seeded key
  * (they make the prior of `f_d` a squared-exponential Gaussian process, as the number of features grows) and the weights `W`
  * unknown with normal priors. The coordinates enter through a known linear map, a cosine and a product with the weights,
- * which are all factors of the registry. This file also holds a generator of data from a known smooth map of known coordinates
+ * which are all factors of the registry; the compiler also reads the whole form (one coordinate per point) as one
+ * `gplvm-row` factor per point, whose weights are integrated out at each node of a grid over the coordinate. This file also holds a generator of data from a known smooth map of known coordinates
  * (the truth that the recovered coordinates are scored against) and the alignment of recovered coordinates to the true ones,
  * which is needed because a GPLVM finds its coordinates only up to a rotation, a reflection and a monotone reparametrisation.
  */
@@ -78,9 +79,12 @@ export function fourierFeatures(
  * A GPLVM with random Fourier features: a normal prior on the coordinates `x` of every point, a normal prior on the feature
  * weights `W` whose variance makes each output a unit-amplitude function (`2 / features`), and a Gaussian observation of every
  * output of every point. It is bound to the frequencies `omega`, the phases `phase` (from {@link fourierFeatures}) and the
- * observations `y`, a matrix with a row per point. Every factor is in the registry, so `epRoute` runs it by plain EP; the graph is loopy (a
- * coordinate is read by all the features of its point, a weight by all the points), so the beliefs are narrower than the
- * posterior they approximate.
+ * observations `y`, a matrix with a row per point. `epRoute` runs it by plain EP. With one coordinate per point and the scalar normals
+ * packed (the default of EP) each point is one `gplvm-row` factor over its coordinate and the weights of every output: the graph is a
+ * star around the weights, with no loop through the features of a point, and the coordinates' spreads cover the truth about as often as
+ * they say. Without packing, with two or more coordinates, or with more than 1024 weights it is the graph of the registry's `apply`,
+ * `product` and `sum` operators, which is loopy (a coordinate is read by all the features of its point, a weight by all the points),
+ * so its beliefs are narrower than the posterior they approximate and a run often lands in a poor solution.
  *
  * @param options - The numbers of features, coordinates and outputs, the noise (default 0.1) and the length scale (default 1).
  * @returns The definition; bind it to `{ omega, phase, y }`.
