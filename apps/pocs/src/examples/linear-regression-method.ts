@@ -307,7 +307,8 @@ export function linearRegressionProblem(config: Config): LinearProblem {
     precision: gammaNoise,
     degree,
     names: sparse
-      ? Array.from({ length: features }, (_, j) => `x${j + 1}`)
+      ? // banned-ok: non-numeric: the names of the features
+        Array.from({ length: features }, (_, j) => `x${j + 1}`)
       : ['intercept', 'slope', ...Array.from({ length: Math.max(0, degree - 1) }, (_, j) => `x^${j + 2}`)],
     extent: range as readonly [number, number],
     priorScale,

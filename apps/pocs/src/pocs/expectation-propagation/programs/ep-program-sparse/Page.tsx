@@ -57,6 +57,7 @@ export default function Page(): ReactNode {
       run === undefined || (exact === undefined && run.setup.features <= 14) ? undefined : checkSparse(run, exact),
     [run, exact],
   )
+  // banned-ok: non-numeric: the labels of the features
   const labels = useMemo(() => Array.from({ length: setup.features }, (_, j) => String(j + 1)), [setup.features])
   const fit = run === undefined ? undefined : shown === 'gaussian' ? run.gaussian : run.student
   const structure = useCallback(() => (fit === undefined ? undefined : toStructure(fit.bound)), [fit])

@@ -429,6 +429,7 @@ export function withDerivedSites(
   const perDraw = Object.fromEntries(
     Object.entries(drawn).map(([site, t]) => [site, toArray(reshape(t, [n, -1])) as number[][]]),
   )
+  // banned-ok: non-numeric: one record per draw
   const rows = Array.from({ length: n }, (_, i) =>
     derive(Object.fromEntries(Object.entries(perDraw).map(([site, draws]) => [site, draws[i] as number[]]))),
   )

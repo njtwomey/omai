@@ -327,6 +327,7 @@ function readMixture(post: Posterior, problem: MixtureProblem, n: number): Mixtu
     return { name, ...moments(v), lo: lo as number, hi: hi as number, ess: null, rhat: null }
   }
   const rows: PosteriorRow[] = [
+    // banned-ok: non-numeric: one result row (an object) per component
     ...Array.from({ length: k }, (_, j) => rowOf(`mean ${j + 1}`, take(mu, j, 1))),
     ...Array.from({ length: k }, (_, j) => rowOf(`weight ${j + 1}`, take(w, j, 1))),
     ...Array.from({ length: problem.separate ? k : 1 }, (_, j) =>
@@ -337,6 +338,7 @@ function readMixture(post: Posterior, problem: MixtureProblem, n: number): Mixtu
   const x = reshape(tensor(problem.grid as number[]), [-1, 1, 1])
   const terms = mul(reshape(w, [1, draws, k]), density(x, reshape(mu, [1, draws, k]), reshape(sigma, [1, draws, k])))
   const at = sum(terms, 2)
+  // banned-ok: non-numeric: one band tensor per grid point, stacked
   const band = stack(Array.from({ length: problem.grid.length }, (_, g) => bounds(take(at, g, 0))))
   const outOfOrder = k < 2 ? 0 : item(sum(any(less(sliceAxis(d.mu, 1, 1, k), sliceAxis(d.mu, 1, 0, k - 1)), 1))) / draws
   return {
@@ -504,6 +506,7 @@ const declared: Example<MixtureProblem> = defineExample<MixtureProblem>({
           const check = checkRows(
             mine,
             ref,
+            // banned-ok: non-numeric: the names of the components
             Array.from({ length: k }, (_, j) => `mean ${j + 1}`),
           )
           if (check === undefined) return null
