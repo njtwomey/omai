@@ -136,6 +136,9 @@ export function sizeOf(build: Build): Size {
   return { rows: 272, warmup: heavy ? 30 : 60, draws: heavy ? 40 : 80, ellipse: 48 }
 }
 
+type Model = ReturnType<typeof defineModel>
+type Engine = 'ep' | 'gibbs'
+
 // region model ep gibbs
 /**
  * The model of a choice: each eruption belongs to one group, and its length and wait fall
@@ -143,7 +146,7 @@ export function sizeOf(build: Build): Size {
  * the form expectation propagation reads. A diagonal group's centre is as uncertain as its
  * spread is wide, which makes the pair of them a conjugate pair.
  */
-export function mixtureModel(build: Build, method: 'ep' | 'gibbs' = engineOf(build)): ReturnType<typeof defineModel> {
+export function mixtureModel(build: Build, method: Engine = engineOf(build)): Model {
   const pieces = piecesOf(build.groups)
   return defineModel(`mixture-${build.shape}-${build.groups}`, (m) => {
     const row = m.range('row')
@@ -160,8 +163,8 @@ export function mixtureModel(build: Build, method: 'ep' | 'gibbs' = engineOf(bui
     } else {
       shares = m.latent('shares', d.dirichlet(full([pieces], 1)))
     }
-    // for a fixed number of groups the sampler keeps the centres in order, so that the groups keep their names; the diagonal
-    // groups of expectation propagation do not need it, they start apart
+    // a fixed number of groups keeps its centres in order for the sampler, so the groups keep their names
+    // the diagonal groups of expectation propagation do not need it, they start apart
     const loose = isOpen(build.groups) || (method === 'ep' && build.shape === 'diagonal')
     const inOrder = loose ? {} : { constraint: { kind: 'ordered' as const } }
     const which = m.latent('which', d.categorical({ probs: shares }), { dims: [row] })
