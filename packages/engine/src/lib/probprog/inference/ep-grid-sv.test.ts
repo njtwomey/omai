@@ -66,14 +66,14 @@ describe('stochastic volatility with unknown level, persistence and precision', 
     expect(level?.sd ?? Number.POSITIVE_INFINITY).toBeLessThan(0.4 * NUTS.mu.sd)
   }, 60_000)
 
-  it('EP in a walk over the persistence has the brute-force means and the spread of the persistence and the precision, in a dozen nodes', () => {
+  it('EP in a walk over the persistence has the brute-force means and the spread of the persistence and the precision, in sixteen nodes, all of which settle', () => {
     const grid = epGridMethod(bound, { over: ['phi'] })
     const run = session(grid, {
       config: {
         points: 21,
         tol: 1e-4,
-        damping: 0.2,
-        maxSweeps: 120,
+        damping: 0,
+        maxSweeps: 60,
         order: 'walk',
         window: 10,
         warm: true,
@@ -83,20 +83,19 @@ describe('stochastic volatility with unknown level, persistence and precision', 
       steps: 40,
       mode: 'eager',
     })
-    expect(run.state.nodes.length).toBeLessThan(16)
+    expect(run.state.nodes.length).toBeLessThan(18)
+    // every node settles but the one or two beyond a persistence of one (a chain that explodes: no evidence)
+    expect(run.state.nodes.filter((n) => !n.converged).length).toBeLessThanOrEqual(2)
     const post = grid.posterior?.(run.state, run.config)
     const row = (name: string) => post?.summary().find((r) => r.site === name)
     for (const name of ['mu', 'phi', 'tau'] as const) {
       const ref = GRID[name]
-      expect(Math.abs((row(name)?.mean ?? Number.NaN) - ref.mean), `${name} mean`).toBeLessThan(0.15 * ref.sd)
+      expect(Math.abs((row(name)?.mean ?? Number.NaN) - ref.mean), `${name} mean`).toBeLessThan(0.1 * ref.sd)
     }
-    // The persistence and the precision are as wide as the truth (within a fifth and a tenth); the level is wider (about 1.5 times:
-    // the EP belief of the level inside a node is wider than the exact one), never narrower.
-    expect((row('phi')?.sd ?? Number.NaN) / GRID.phi.sd).toBeGreaterThan(0.75)
-    expect((row('phi')?.sd ?? Number.NaN) / GRID.phi.sd).toBeLessThan(1.15)
-    expect(Math.abs((row('tau')?.sd ?? Number.NaN) / GRID.tau.sd - 1)).toBeLessThan(0.1)
-    expect((row('mu')?.sd ?? Number.NaN) / GRID.mu.sd).toBeGreaterThan(1)
-    expect((row('mu')?.sd ?? Number.NaN) / GRID.mu.sd).toBeLessThan(2)
+    // Each spread is the brute-force one to within a tenth (the level's was 1.6 times as wide with the scalar steps of the chain, and the
+    // nodes at a low persistence did not settle: the chain is one factor now, `gaussian-chain`).
+    for (const name of ['mu', 'phi', 'tau'] as const)
+      expect(Math.abs((row(name)?.sd ?? Number.NaN) / GRID[name].sd - 1), `${name} sd`).toBeLessThan(0.1)
     // and the truth is inside each 90% interval
     for (const name of ['mu', 'phi', 'tau'] as const) {
       const r = row(name)

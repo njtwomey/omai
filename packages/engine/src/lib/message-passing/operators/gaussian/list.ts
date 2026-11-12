@@ -4,6 +4,7 @@
  */
 
 import type { FactorOperator } from '../../core/types.ts'
+import { gaussianChain } from './chain.ts'
 import { maximum, minimum } from './extremum.ts'
 import {
   equal,
@@ -33,6 +34,7 @@ export const gaussianOperatorList: readonly FactorOperator[] = [
   difference,
   dotConstant,
   equal,
+  gaussianChain,
   gaussianGammaPrecision,
   gaussianJoint,
   gaussianLogScale,

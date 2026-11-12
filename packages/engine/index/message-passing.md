@@ -142,6 +142,7 @@ The Gaussian operators: the prior, the Gaussian factor, the product, equality, t
 - structure `difference`: The difference of two Gaussian variables. `src/lib/message-passing/operators/gaussian/linear.ts:188` `omai-engine/message-passing`
 - structure `dotConstant`: A Gaussian vector projected on a constant direction s = a . w. `src/lib/message-passing/operators/gaussian/linear.ts:254` `omai-engine/message-passing`
 - structure `equal`: Equality of two variables of one family: a copy. `src/lib/message-passing/operators/gaussian/gaussian.ts:608` `omai-engine/message-passing`
+- structure `gaussianChain`: A chain of Gaussian steps with shared drivers and a shared gamma precision, one factor. `src/lib/message-passing/operators/gaussian/chain.ts:418` `omai-engine/message-passing`
 - structure `gaussianGammaPrecision`: A Gaussian with a gamma precision (variational and expectation propagation, observed or latent). `src/lib/message-passing/operators/gaussian/gaussian.ts:271` `omai-engine/message-passing`
 - structure `gaussianJoint`: A joint Gaussian potential over scalar variables in information form. `src/lib/message-passing/operators/gaussian/linear.ts:543` `omai-engine/message-passing`
 - structure `gaussianLogScale`: An observation with a Gaussian log scale, x ~ N(loc, exp(2 s)): quadrature expectation propagation. `src/lib/message-passing/operators/gaussian/gaussian.ts:367` `omai-engine/message-passing`

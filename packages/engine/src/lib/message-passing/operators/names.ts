@@ -69,6 +69,7 @@ export const operatorNames = [
   'beta-two-shapes',
   'stick-breaking',
   'gaussian-transition',
+  'gaussian-chain',
   'mvn-wishart',
   'mvn-normal-wishart',
   'mvn-sd-corr',

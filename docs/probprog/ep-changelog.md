@@ -715,3 +715,58 @@ rule for nodes that cycle (`inference/ep-grid.ts`).
 - Tests: `ep-grid-sv.test.ts` (seed 1 against the brute-force numbers, in a dozen nodes), `ep-grid.test.ts` (warm start and walk on the
   Gaussian process benchmarks, where every node is exact; the weight of a node that did not settle). The EP digest: no item moves because
   of the change (`atom/gp-length-scale` differs from the committed baseline in the last digits, on the unchanged HEAD as well).
+
+## 2026-11-12 Stochastic volatility with learned parameters: the chain of a scan as one factor, `gaussian-chain` (`agent-ad2a59-svchain`)
+
+Gap `sv-parameters` rewritten in `ep-gaps.ts` (still open, for the single run with the persistence random). The two defects the walk and warm
+start left were both in the message passing of the chain, and neither was the product factor or the `power` knob.
+- Diagnosis of the level's spread (0.50 against the exact 0.27 at a persistence of 0.69): not the `product` factor (the persistence is known
+  in a grid node) and not the precision (with the precision known as well the level is still 0.455 against 0.237). A linear Gaussian copy of
+  the model (a Gaussian reading, the exact joint by a dense inverse) gives the same: 0.549 against 0.288, with the means exact. It is the
+  loop of scalar messages through the level, which every step reads: the cavities of the previous state and of the level are taken as
+  independent, they are positively correlated through the level itself, so each step tells the level less than it knows. A dense Gaussian
+  vector (the states and the level, a rank-one `dot-constant` per step) gives the exact 0.251 but costs 20 s a node (a variable of 180
+  edges and 3700 numbers a message: the sums of its messages dominate the engine).
+- Diagnosis of the cycling at a low persistence (precision 0.002 or 0.14 against the exact 10.4 at a persistence of 0.1, seed 1): the
+  precision is shared by sixty factors that each send it a gamma message from a cavity that does not hold the whole chain, and the messages
+  do not settle (also with the dense vector). One factor that integrates the chain against all the cavities, with the precision on a grid in
+  its log, has no such messages.
+- New operator `gaussian-chain` (`operators/gaussian/chain.ts`, 67 operators): `x_t ~ N(a x_(t-1) + c . u + d, 1 / (scale tau + offset))`
+  for the states `x_0 .. x_(n-1)`, drivers `u` and a gamma `tau`, ports `[tau, states, drivers]`. For one precision the chain with the Gaussian
+  cavities is a Gaussian whose marginals, log integral included, come from one pass along the chain (a tridiagonal elimination with the drivers
+  as a border: linear in `n`, the same numbers as the dense inverse to 1e-15); the precision is integrated by `tiltGrid` over `log tau` against
+  its gamma cavity (reused, with `gammaLogWindow` and `centredMoments`), the tilted mean and variance of each variable are the mixture over the
+  grid, `E log tau` and `E tau` the precision's, and the ports of one sweep's update share the pass through the engine's memo (2 ms for 60
+  states). It is the `gaussian-mv-precision-scale` of a vector, for a chain. No variational rule.
+- The compiler (`factor-graph/_chains.ts`, only with `packScalars`, only when the registry has the operator): the steps of an unrolled scan,
+  `h[t]` with a known nonzero coefficient on `h[t-1]`, Gaussian drivers (the level) with known coefficients and one gamma precision, are
+  collected as the walk maps them and written, after the nodes, as one factor placed where the first step would have been (so the readings meet
+  proper cavities); the states keep their variables and layouts. A step that does not continue the chain ends it. Without `packScalars` the
+  scalar steps are as before; the digest's `model/stochastic-volatility`, `model/ar1-state-space` and `program/kalman` (known scales) are
+  unchanged to the last bit.
+- A return near zero is the trap: the log-variance likelihood of a return of 0.004 is an exponential in the state with no curvature, so its
+  cavity has almost no precision and a mean at -4000, and a factor that integrates the precision over its whole range lets it run to zero
+  (the first run of the chain: the precision at 3e-5). The factor takes a `ridge`: a weak prior of precision `ridge exp(-j / ridge)` on a state
+  whose cavity has precision `j`, centred at the state's mean under the chain at the mean of the precision's cavity, so it vanishes for a
+  state with a cavity of its own and holds no mean at a settled one. The compiler sets it at 0.05 of the first state's prior precision. A
+  ridge of 0.01 still cycled on seed 5 (fifteen returns under 0.1 in sixty); a plain ridge on every state (0.05) moved the level by 0.7 sd.
+- At a fixed persistence (seed 1, point-mass filter, level / precision): 0.69: exact -0.886 +- 0.251 and 9.90 +- 5.34, scalar steps -0.883 +-
+  0.468 and 10.13 +- 5.36, the chain -0.866 +- 0.254 and 10.28 +- 5.21 (20 sweeps; the evidence differences between the persistences agree with
+  the exact ones to 0.07 nats); 0.1: exact -0.800 +- 0.199 and 10.39 +- 5.69, scalar precision 0.14 +- 0.11 (not settled), the chain
+  -0.798 +- 0.196 and 10.69 +- 5.61; 0.9: exact -0.963 +- 0.433 and 12.05 +- 5.70, the chain -0.966 +- 0.425 and 12.34 +- 5.60.
+- The grid (`epGridMethod(bound, { over: ['phi'] })`, walk, warm, window 10, damping 0 and 60 sweeps instead of 0.2 and 120: the nodes settle in
+  14 to 20 sweeps now), 30 seeds of 60 returns, against the brute-force posterior (26 by 30 by 24, scratch script), before (previous agent) and
+  after: z of the mean in reference sds, rms (max): level 0.08 (0.35) -> 0.05 (0.18), persistence 0.26 (1.1) -> 0.05 (0.07), precision 0.10 ->
+  0.02 (0.04); sd over the reference's, median (range): level 1.6 -> 0.96 (0.88 to 1.07), persistence 0.85 (0.2 on seed 27) -> 1.03 (1.01 to
+  1.05), precision 1.0 -> 0.98 (0.95 to 1.00); 90% coverage of the truth: level 0.97 -> 0.80 (the interval was too wide before and is the
+  reference's now; 0.80 is what the reference posterior itself covers, to the means within 0.2 sd), persistence 0.97 -> 1.00, precision
+  1.00 -> 1.00; the fit 7 s -> 5 s on a busy machine (2.8 s the least), 15 or 16 nodes of which every one settles but the one beyond a
+  persistence of one (a chain that explodes has no evidence). The seed that missed the persistence (27) is covered.
+- Tests: `operators/gaussian/chain.test.ts` (the pass against the dense joint with drivers, an intercept and a flat cavity; the tilted moments and the
+  evidence against a fine grid over the precision; the ridge; the messages and the cache; a chain of two states against `gaussian-gamma-precision`),
+  `factor-graph/chains.test.ts` (the compilation, and EP against the point-mass filter at 0.69, 0.1 and 0.9, and the scalar steps' twice-as-wide
+  level), `ep-grid-sv.test.ts` (every spread within a tenth of the brute-force one, every node settled). Digest: the registry line (the new
+  operator; the grid knobs `order`, `warm`, `window` of the previous change were not in it either), no item moves.
+- Not done: the single run with the persistence random (the product factor; the persistence as a port of the chain), a likelihood for a return
+  near zero that is not improper (the ridge is a heuristic), a chain with a fixed scale and a random level (the scalar steps are used; the same
+  loop), a dense vector with a cheaper belief sum in the engine.

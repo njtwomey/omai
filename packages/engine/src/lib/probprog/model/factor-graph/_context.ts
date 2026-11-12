@@ -15,6 +15,7 @@ import type { NamedValue, OperatorTable } from '../operators.ts'
 import type { ExprSpec, ModelNode } from '../spec.ts'
 import { GraphBuilder } from './_builder.ts'
 import { type Cell, logName, type Sym } from './_cells.ts'
+import type { ChainBuild } from './_chains.ts'
 import { type IdiomEnv, type LatentScope, latentScope } from './_idioms.ts'
 import { type EvalEnv, evaluateKnown, isKnownExpr, type Known, knownConstants } from './_known.ts'
 import { type LayoutPlan, layoutPlan, type NormalGammaPlan } from './_plan.ts'
@@ -57,6 +58,11 @@ export class Context {
   readonly nonCentred: Map<string, string>
   /** The scalar groups whose joint vector the walk has made. */
   readonly groupsMade: Set<string> = new Set()
+  /** The chains of an unrolled scan being collected, by the scan's name, and the ones that ended (`_chains.ts`). */
+  readonly chains: Map<string, ChainBuild> = new Map()
+  readonly chainsDone: ChainBuild[] = []
+  /** Whether the joint-structure layouts are on (`packScalars`): the scalar groups and the chains of a scan. */
+  readonly packScalars: boolean
   /** The Gaussian log-scale variable behind a positive scale variable (the value variable `tau` is `exp` of it), by the value variable's name. */
   readonly logScale: Map<string, string> = new Map()
   /** The apply factors made so far: the input variable and the chain of steps behind each output, so arithmetic on an output collapses into one chain. */
@@ -105,6 +111,7 @@ export class Context {
     options: CompileOptions,
   ) {
     this.vectorise = options.vectorise
+    this.packScalars = options.packScalars
     this.latents = latentScope(bound.spec)
     this.g = new GraphBuilder(ops, modelOps)
     this.unbound = new Set(bound.unbound)
