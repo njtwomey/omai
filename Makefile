@@ -137,6 +137,14 @@ ep-digest: ## Compute the EP digest (every atom, benchmark model and program: co
 ep-digest-check: ## Compare the EP digest to docs/probprog/ep-digest.json and say what moved; exit 1 on a change (ARGS="--exact", "--bits", "--only <name>", "--accept" for a deliberate change)
 	nice -n 15 $(NODE) --conditions=source --experimental-transform-types --no-warnings scripts/ep-digest.ts --check $(ARGS)
 
+.PHONY: ep-perf
+ep-perf: ## Measure the EP performance (grid integrator, operators per call, ~26 runs end to end, time share per operator, calibration) and write docs/probprog/ep-perf.json and ep-perf.md; about 10 minutes, heavy and periodic, run it on a quiet machine (ARGS="--survey" times every item once, ARGS="--only <keys>" measures a part and writes nothing)
+	nice -n 15 $(NODE) --conditions=source --experimental-transform-types --no-warnings scripts/ep-perf.ts $(ARGS)
+
+.PHONY: ep-perf-check
+ep-perf-check: ## Re-measure and fail when anything is slower than docs/probprog/ep-perf.json by more than 1.5x after normalising by the calibration (ARGS="--only item/atom/gaussian,grid/", "--ratio 2"); not part of verify or check
+	nice -n 15 $(NODE) --conditions=source --experimental-transform-types --no-warnings scripts/ep-perf.ts --check $(ARGS)
+
 .PHONY: build
 build: barrels ## Build all packages
 	@for p in $(PACKAGES); do $(PNPM) --dir packages/$$p run build || exit 1; done

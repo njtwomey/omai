@@ -23,7 +23,7 @@ import {
 } from './ep-digest-core.ts'
 
 /** What every program's `infer` returns that the digest reads. */
-interface Inferred {
+export interface Inferred {
   readonly bound: BoundModel
   readonly run: { readonly state: unknown; readonly config: unknown; readonly status?: string; readonly t: number }
 }
@@ -122,6 +122,9 @@ const CASES: readonly Case[] = [
     },
   },
 ]
+
+/** The names of the programs, for a tool that runs them itself (`scripts/ep-perf.ts`), and a loader that simulates and infers each as the digest does. */
+export const programCases: readonly { readonly key: string; readonly load: () => Promise<Inferred> }[] = CASES
 
 /** The cases as digest items: `program/<name>`. */
 export function programItems(): { readonly key: string; readonly run: (store: GraphStore) => Promise<Item> }[] {
