@@ -169,18 +169,60 @@ export function modelRunAt(
   }
 }
 
-/** How much a step moved the run: the largest change of a belief it reports, else how many beliefs it names. */
-function movement(record: ModelRun, step: ModelRunStep): number {
+/**
+ * How far one belief moved, in the units of the message passing `change` of a family: for a belief with a mean and a spread,
+ * the larger of the move of the mean in new standard deviations and the log of the ratio of the spreads (the Gaussian
+ * measure); for probabilities, the largest move of one of them. A belief that appears, or turns improper or proper, has
+ * moved as much as can be said (`Infinity`).
+ */
+function beliefChange(previous: NodeState | undefined, next: NodeState): number {
+  if (previous === undefined) return Number.POSITIVE_INFINITY
+  if ((previous.improper === true) !== (next.improper === true)) return Number.POSITIVE_INFINITY
+  if (next.improper === true) return 0
+  if (previous.probs !== undefined && next.probs !== undefined && previous.probs.length === next.probs.length) {
+    let move = 0
+    for (const [k, p] of next.probs.entries()) move = Math.max(move, Math.abs(p - (previous.probs[k] as number)))
+    return move
+  }
+  if (previous.mean === undefined || next.mean === undefined) return 0
+  const scale = next.sd !== undefined && next.sd > 0 ? next.sd : 1
+  const mean = Math.abs(next.mean - previous.mean) / scale
+  const spread =
+    previous.sd !== undefined && next.sd !== undefined && previous.sd > 0 && next.sd > 0
+      ? Math.abs(Math.log(next.sd / previous.sd))
+      : 0
+  return Math.max(mean, spread)
+}
+
+/**
+ * How much each step moved the run, on one scale: the `change` the run reported at the step (`Infinity` when it was not
+ * finite: a sweep that had no change yet), else the largest move of a belief the step itself made, read from the beliefs
+ * against what the nodes were last said to be, in the same units as the change. A step of one factor in the middle of a sweep
+ * has no change of its own, and the two must be comparable for the steps to be ranked together.
+ */
+function movements(record: ModelRun): number[] {
   const change = record.series.find((s) => s.name === 'change')
-  const at = change?.steps.indexOf(step.step) ?? -1
-  const value = at < 0 ? undefined : change?.values[at]
-  return value !== undefined && Number.isFinite(value) ? value : Object.keys(step.nodes).length
+  const reported = new Map<number, number>()
+  for (const [i, t] of (change?.steps ?? []).entries()) {
+    const v = change?.values[i]
+    if (v !== undefined) reported.set(t, Number.isFinite(v) ? v : Number.POSITIVE_INFINITY)
+  }
+  const last = new Map<string, NodeState>()
+  return record.steps.map((step) => {
+    let derived = 0
+    for (const [id, state] of Object.entries(step.nodes)) {
+      derived = Math.max(derived, beliefChange(last.get(id), state))
+      last.set(id, state)
+    }
+    return reported.get(step.step) ?? derived
+  })
 }
 
 /**
  * A model run cut down to at most `maxSteps` steps, for a record that has to cross a worker boundary or sit in a page:
- * the first and the last step are always kept, and of the steps between them the ones where the beliefs moved most (the
- * largest change the run reported at the step), in their original order. What a dropped step said about a node is carried
+ * the first and the last step are always kept, and of the steps between them the ones where the beliefs moved most, in their
+ * original order. The movement of a step is the `change` the run reported at it (`Infinity` when that was not finite) or, for a
+ * step with none (one factor of a sweep), the largest move of a belief it made, in the same units, so the two rank together. What a dropped step said about a node is carried
  * into the next kept step, so the state at any kept step is the state it had in the full record; the series are cut to
  * the kept steps. A record with no more steps than the cap is returned as it is.
  *
@@ -203,10 +245,11 @@ export function thinModelRun(record: ModelRun, maxSteps: number): ModelRun {
   if (maxSteps < 2) throw new OmaiError('value', `thinModelRun: maxSteps must be at least 2, got ${maxSteps}`)
   const n = record.steps.length
   if (n <= maxSteps) return record
-  const ranked = record.steps
+  const moves = movements(record)
+  const ranked = moves
     .slice(1, n - 1)
-    .map((step, i) => ({ i: i + 1, move: movement(record, step) }))
-    .sort((a, b) => b.move - a.move || a.i - b.i)
+    .map((move, i) => ({ i: i + 1, move }))
+    .sort((a, b) => (a.move === b.move ? a.i - b.i : a.move < b.move ? 1 : -1))
     .slice(0, maxSteps - 2)
   const keep = new Set([0, n - 1, ...ranked.map((r) => r.i)])
   const steps: ModelRunStep[] = []

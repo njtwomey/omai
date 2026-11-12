@@ -15,11 +15,10 @@ import { clutterProblem, clutterTruth } from 'omai-engine/probprog/models'
 import { session } from 'omai-engine/trace'
 // endregion
 
-import { type ModelRun, modelRunFromTape } from 'omai-engine/exposition'
-import { toStructure } from 'omai-engine/probprog/model'
+import type { ModelRun } from 'omai-engine/exposition'
 import { linspace, toFlat } from 'omai-engine/tensor'
 import type { Say } from '../../kit/protocol.ts'
-import { replayRecord } from '../../kit/replay.ts'
+import { replayOfModel } from '../../kit/replay.ts'
 import { clearReadings, RANGE, withDecoys } from './data.ts'
 
 /** The curve the exact posterior is drawn on: values of the hidden value, and the density at each. */
@@ -77,8 +76,13 @@ export function solve(readings: readonly number[], say: Say = () => {}, size: Si
   // ask the library how expectation propagation runs this model
   const route = epRoute(bound)
   if (route.via !== 'ep') throw new Error(`no plain message-passing route: ${route.verdict.reason}`)
-  // one step is one sweep: every reading sends a message to the value, and the value sends one back to each reading
-  const run = session(route.method, { steps: 300, mode: 'eager', logs: 'all', config: { tol: 1e-8, damping: 0.5 } })
+  // one step is one sweep: every reading sends a message to the value, which sends one back to each
+  const run = session(route.method, {
+    steps: 300,
+    mode: 'eager',
+    logs: 'all',
+    config: { tol: 1e-8, damping: 0.5 },
+  })
   // the bell curve for the value and the chance of clutter for each reading
   const beliefs = route.method.posterior?.(run.state, run.config)
   // endregion
@@ -90,9 +94,10 @@ export function solve(readings: readonly number[], say: Say = () => {}, size: Si
   const oracle = truth.marginals['theta']
   // endregion
   if (oracle === undefined) throw new Error('the library gave no exact posterior')
-  // the density is the slope of the cumulative distribution
+  // The density at a point is the exact probability of the cell around it, divided by its width: the slope of the cumulative
+  // distribution across half a grid step on each side. A fixed wider window would blur the narrow humps the figure is about.
   const xs = toFlat(linspace(RANGE[0], RANGE[1], size.grid))
-  const h = 0.12
+  const h = (RANGE[1] - RANGE[0]) / (size.grid - 1) / 2
   const density = xs.map((x) => Math.max(0, (oracle.cdf(x + h) - oracle.cdf(x - h)) / (2 * h)))
   const peak = xs[density.indexOf(Math.max(...density))] as number
   return {
@@ -102,9 +107,7 @@ export function solve(readings: readonly number[], say: Say = () => {}, size: Si
     exact: { mean: oracle.mean, sd: oracle.sd, curve: { x: xs, density }, peak },
     sweeps: run.t,
     settled: run.status === 'converged',
-    record: size.record
-      ? replayRecord(modelRunFromTape(toStructure(bound, { view: 'factor' }), { run: run.run() }, { maxMessages: 6 }))
-      : undefined,
+    record: size.record ? replayOfModel(bound, run.run()) : undefined,
   }
 }
 

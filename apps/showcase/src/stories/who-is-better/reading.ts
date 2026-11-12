@@ -5,13 +5,10 @@
  */
 
 import type { Rating, Result } from './compute.ts'
-import { type Games, PLAYERS, TRUE_SKILLS } from './data.ts'
+import { EARLY, type Games, PLAYERS, TRUE_SKILLS } from './data.ts'
 
 /** The z value of a 90 percent interval of a bell curve. */
 export const Z90 = 1.645
-
-/** How many of the first games the page follows one at a time. */
-export const EARLY = 12
 
 /** One player's record. */
 export interface Tally {

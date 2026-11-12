@@ -2,7 +2,9 @@
  * The check behind hand-built arrays in SHOWN code, as pure functions so it can be tested on fixture text
  * (`scripts/banned-arrays.test.ts`). The code a page shows (a `// region` ... `// endregion` block in the sources of
  * `SHOWN_ROOTS`) is what the owner reads, so it reads as tensor code: no `new Array`, `.fill(`, `Array.from(`, typed
- * arrays, `.push(` or `for (` loops. A line the page hides (`// hide` at its end) is not shown and is not checked.
+ * arrays, `.push(` or `for (` loops, and (in the showcase, `LINE_LENGTH_ROOTS`) no line longer than `MAX_SHOWN_LINE`
+ * characters (an `import` line is left to the formatter, which joins the names of one module on one line). A line the
+ * page hides (`// hide` at its end) is not shown and is not checked.
  *
  * There is no allow-list and no marker comment: a shown line that trips the check is rewritten with tensor operations.
  * Everywhere else the rule is the one in CLAUDE.md ("No hand-built arrays"), kept by review, not by a scan.
@@ -36,6 +38,15 @@ const SHOWN_RULES: readonly { readonly pattern: RegExp; readonly message: string
   { pattern: /\.push\(/, message: '.push( in shown code: build the values with tensor ops' },
   { pattern: /\bfor \(/, message: 'a for loop in shown code: express it with tensor ops' },
 ]
+
+/** The longest shown line (the style is under about 100 characters; a line over this fails). */
+export const MAX_SHOWN_LINE = 110
+
+/**
+ * Where the line length of shown code is checked: the showcase, whose pages are the ones the owner reads as the code that ran.
+ * The proofs of concept (`apps/pocs`, edited only when asked) and the engine's own regions are not held to it yet.
+ */
+export const LINE_LENGTH_ROOTS: readonly string[] = ['apps/showcase/src/']
 
 const HIDE = /\/\/\s*hide\s*$/
 const TEST_FILE = /\.test(-d)?\.tsx?$/
@@ -77,8 +88,15 @@ export function arrayProblems(path: string, text: string): ArrayProblem[] {
   const lines = text.replace(/\r\n/g, '\n').split('\n')
   const region = regionLines(lines)
   const problems: ArrayProblem[] = []
+  const long = LINE_LENGTH_ROOTS.some((p) => path.startsWith(p))
   lines.forEach((raw, i) => {
     if (!region.has(i) || HIDE.test(raw)) return
+    // an import line is left to the formatter, which keeps the names of one module on one line up to its own width
+    if (long && raw.length > MAX_SHOWN_LINE && !raw.startsWith('import '))
+      problems.push({
+        line: i + 1,
+        message: `a shown line of ${raw.length} characters: break it across lines, shown lines are under about 100`,
+      })
     const trimmed = raw.trim()
     if (trimmed === '' || trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) return
     const code = codeOf(raw)

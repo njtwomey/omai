@@ -73,6 +73,18 @@ export interface Size {
 export const DEFAULT_SIZE: Size = { rows: 272, grid: 160 }
 
 /**
+ * The step the last pass of a method that restarts begins at: 0 for a run that never restarted, else the step after the one
+ * the last restart happened at, and never later than the last step (so there is always at least one step to read).
+ *
+ * @param restartAt - The sweeps completed when the last restart began (`restartAt` of the method's state, 0 for none).
+ * @param steps - The steps the run took.
+ * @returns The first step of the last pass.
+ */
+export function lastPassStart(restartAt: number, steps: number): number {
+  return Math.min(restartAt === 0 ? 0 : restartAt + 1, Math.max(0, steps))
+}
+
+/**
  * The inference, from a seed: put the waiting times on a scale of about one, fit the mixture by expectation propagation and
  * turn the fitted beliefs into curves, chances and a trace of the sweeps.
  *
@@ -125,8 +137,8 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
   // endregion
   // The method may start again more gently when its first pass stalls on the eruptions between the humps; the figure of the sweeps
   // shows the last pass only, from where its restart count last changed.
-  const began = (run.state as { readonly restartAt?: number }).restartAt ?? 0
-  const finalPass = began === 0 ? 0 : began + 1
+  const began = run.state.restartAt
+  const finalPass = lastPassStart(began, run.t)
   // A few sweeps are read, the first ones closely and then every fourth, because each reading costs a moment.
   const kept = toFlat(linspace(finalPass, run.t, run.t - finalPass + 1)).filter(
     (t) => t - finalPass < 8 || (t - finalPass) % 4 === 0 || t === run.t,

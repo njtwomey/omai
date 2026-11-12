@@ -42,6 +42,9 @@ export const DRAW_MARGIN = 0.7
 /** How many times each pair meets. */
 export const ROUNDS = 4
 
+/** How many of the first games the run rates the players after one at a time (the rest at every few), and the page follows. */
+export const EARLY = 12
+
 /** The games of the tournament, in the order they were played. */
 export interface Games {
   /** The first player of each game, as an index into {@link PLAYERS}. */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { checkpoints, fit, rate } from './compute.ts'
-import { PLAYERS, shuffled, tournament } from './data.ts'
-import { EARLY, readResult, tally } from './reading.ts'
+import { EARLY, PLAYERS, shuffled, tournament } from './data.ts'
+import { readResult, tally } from './reading.ts'
 
 describe('the who-is-better computation', () => {
   it('has a tournament of forty games in which every pair meets four times', () => {
@@ -19,6 +19,9 @@ describe('the who-is-better computation', () => {
   it('rates the players after the first game, the first dozen and every fifth game', () => {
     expect(checkpoints(40)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 20, 25, 30, 35, 40])
     expect(checkpoints(10)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    // the games the page follows one at a time (EARLY) are exactly the ones rated one at a time
+    expect(checkpoints(40).slice(0, EARLY)).toEqual(Array.from({ length: EARLY }, (_, i) => i + 1))
+    expect(checkpoints(40)[EARLY]).toBeGreaterThan(EARLY + 1)
   })
 
   it('returns plain data of the right shapes on a small tournament', () => {

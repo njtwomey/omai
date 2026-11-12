@@ -1,7 +1,7 @@
 /**
- * The fixed facts of 'How expectation propagation works': the model is one unknown location with a wide prior and eight
- * measurements, each of which is, with probability 0.3, a stray value ("clutter") instead of a measurement of the location.
- * Nothing here depends on the seed; the seed only decides the eight values. Light enough for the page's bundle.
+ * The fixed facts of 'How expectation propagation works': the model is one unknown location with a wide prior and `ROWS`
+ * measurements, each of which is, with probability `CLUTTER_CHANCE`, a stray value ("clutter") instead of a measurement of
+ * the location. Nothing here depends on the seed; the seed only decides the values. Light enough for the page's bundle.
  */
 
 /** How many measurements the example has. */

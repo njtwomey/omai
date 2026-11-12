@@ -1,8 +1,11 @@
-import { type ModelRun, modelRun } from 'omai-engine/exposition'
+import { type ModelRun, modelRun, modelRunAt } from 'omai-engine/exposition'
 import { structure } from 'omai-engine/scene'
+import { type ReactElement, useCallback, useState } from 'react'
 import { renderToString } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
-import { ModelRunReplay, replayLines } from './model-run-replay.tsx'
+import { afterEach, describe, expect, it } from 'vitest'
+import { modelRunOverlay } from '../../views/model-run.ts'
+import { inAct, mountElement, resetGlobals } from '../_harness.tsx'
+import { ModelRunReplay, replayDrawing, replayLines } from './model-run-replay.tsx'
 
 const graph = structure(
   'factor-graph',
@@ -50,6 +53,28 @@ describe('replayLines', () => {
   })
 })
 
+describe('replayDrawing', () => {
+  const later = modelRun({
+    structure: graph,
+    status: 'running',
+    series: [],
+    steps: [
+      { step: 3, nodes: { x: { mean: 1.5, sd: 0.7, text: '1.5 ± 0.7' } } },
+      { step: 5, nodes: { x: { improper: true, text: 'improper (precision -1)' } } },
+    ],
+  })
+
+  it('does not let the last proper belief show at a step where the node has none', () => {
+    const drawn = replayDrawing(later)
+    expect(modelRunAt(drawn, 3)?.nodes['x']?.mean).toBe(1.5)
+    const at5 = modelRunAt(drawn, 5)?.nodes['x']
+    expect(at5?.mean).toBeUndefined()
+    expect(at5?.text).toBe('')
+    expect(modelRunOverlay(drawn, 5).badges?.['x']).toBeUndefined()
+    expect(modelRunOverlay(drawn, 3).badges?.['x']).toBeDefined()
+  })
+})
+
 describe('ModelRunReplay on the server', () => {
   it('draws the graph, the step in words, the play button and a scrubber with a spoken value', () => {
     const html = renderToString(<ModelRunReplay record={run} label="Messages in the test" />)
@@ -73,5 +98,25 @@ describe('ModelRunReplay on the server', () => {
     const html = renderToString(<ModelRunReplay record={one} describe={(step) => `custom words for step ${step}`} />)
     expect(html).not.toContain('type="range"')
     expect(html).toContain('custom words for step 1')
+  })
+})
+
+const host: { swap: (words: string) => void } = { swap: () => undefined }
+function Host(): ReactElement {
+  const [words, setWords] = useState('first words')
+  host.swap = setWords
+  const describe = useCallback((step: number) => `${words} for step ${step}`, [words])
+  return <ModelRunReplay record={run} describe={describe} />
+}
+
+describe('ModelRunReplay when its description changes', () => {
+  afterEach(() => resetGlobals())
+
+  it('writes the new words, not the ones made for the first function', async () => {
+    const tree = await mountElement(<Host />)
+    expect(tree.text()).toContain('first words for step 0')
+    await inAct(() => host.swap('second words'))
+    expect(tree.text()).toContain('second words for step 0')
+    expect(tree.text()).not.toContain('first words')
   })
 })
