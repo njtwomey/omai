@@ -1,0 +1,149 @@
+/* The site's stylesheet (Tailwind, the theme tokens, the code colours), plus this app's own sources and reading styles. */
+@import "../../site/src/shell/styles.css";
+@source "../";
+
+/*
+ * The reading column. A story is plain JSX inside <StoryPage>: paragraphs, headings, lists and code inherit these rules, so a
+ * story's author writes elements, not class names.
+ */
+.story-prose {
+  --story-serif: "Charter", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  font-family: var(--story-serif);
+  font-size: 1.1875rem;
+  line-height: 1.72;
+  color: var(--wb-fg);
+  hanging-punctuation: first;
+}
+.story-prose > * + * {
+  margin-top: 1.25em;
+}
+/* Blocks that are not prose (the play button, figures, code) keep more air around them. */
+.story-prose > .story-block {
+  margin-block: 2.1em;
+}
+.story-prose p {
+  margin: 0;
+  text-wrap: pretty;
+}
+.story-prose p + p {
+  margin-top: 1.25em;
+}
+.story-prose-flow > * + * {
+  margin-top: 1.25em;
+}
+.story-prose-flow > .story-block {
+  margin-block: 2.1em;
+}
+.story-prose h2 {
+  margin-top: 2.6em;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+.story-prose h2 + * {
+  margin-top: 0.9em;
+}
+.story-prose em {
+  font-style: italic;
+}
+.story-prose strong {
+  font-weight: 650;
+}
+.story-prose a {
+  text-decoration: underline;
+  text-decoration-color: var(--wb-muted);
+  text-underline-offset: 0.2em;
+}
+.story-prose ul,
+.story-prose ol {
+  padding-left: 1.4em;
+}
+.story-prose li + li {
+  margin-top: 0.4em;
+}
+.story-prose :not(pre) > code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82em;
+  padding: 0.1em 0.35em;
+  border-radius: 0.3em;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-grid);
+}
+/* A number the prose reads out of the result. */
+.story-prose .num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* What comes in once the result exists: a short fade and rise, none when motion is reduced. */
+@keyframes story-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.story-reveal {
+  animation: story-reveal 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* The running indicator: three dots that breathe in turn. */
+@keyframes story-breathe {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+.story-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 9999px;
+  background: var(--wb-accent);
+  animation: story-breathe 1.6s ease-in-out infinite;
+}
+.story-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.story-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-reveal {
+    animation: none;
+  }
+  .story-dot {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
+/* A margin note hangs in the right margin on wide screens, and is an inset note below them. */
+@media (min-width: 1200px) {
+  .story-aside {
+    float: right;
+    clear: right;
+    width: 15rem;
+    margin: 0.2rem -17.5rem 0.8rem 0;
+  }
+}
+
+/* The splash card's tinted placeholder for a thumbnail. */
+.story-thumb {
+  background:
+    radial-gradient(120% 90% at 15% 0%, hsl(var(--tint) 70% 55% / 0.35), transparent 60%),
+    radial-gradient(100% 80% at 100% 100%, hsl(calc(var(--tint) + 40) 70% 55% / 0.22), transparent 60%),
+    var(--wb-surface);
+}

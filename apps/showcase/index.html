@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>omai showcase</title>
+    <meta name="description" content="Short illustrated stories of what omai does: press play, and it computes." />
+    <script>
+      // Dark by default, as the site; the same stored choice from the toggle wins. Set before first paint.
+      try {
+        if (localStorage.getItem('omai-colour-mode') !== 'light') document.documentElement.classList.add('dark')
+      } catch {
+        document.documentElement.classList.add('dark')
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
