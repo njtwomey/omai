@@ -88,6 +88,78 @@ describe('epGridMethod on the Gaussian process benchmarks', () => {
     expect(whole.state.nodes[10]?.logEvidence).toBe(half.state.nodes[10]?.logEvidence)
   })
 
+  it('a warm start reaches the same grid posterior in fewer sweeps (every node starts from the nearest settled one)', () => {
+    const bound = benchmarkModel('gaussian-process-regression').bound()
+    const method = epGridMethod(bound)
+    const cold = session(method, { steps: 200, mode: 'eager', config: { points: 15, tol: 1e-10 } })
+    const warm = session(method, { steps: 200, mode: 'eager', config: { points: 15, tol: 1e-10, warm: true } })
+    const sweeps = (nodes: readonly { sweeps: number }[]): number => nodes.reduce((s, n) => s + n.sweeps, 0)
+    expect(sweeps(warm.state.nodes)).toBeLessThanOrEqual(sweeps(cold.state.nodes))
+    const a = method.posterior?.(cold.state, cold.config)
+    const b = method.posterior?.(warm.state, warm.config)
+    expect(Math.abs((b?.logEvidence?.value ?? Number.NaN) - (a?.logEvidence?.value ?? 0))).toBeLessThan(1e-6)
+    const ell = (p: typeof a): number => p?.summary().find((r) => r.site === 'ell')?.mean ?? Number.NaN
+    expect(Math.abs(ell(b) - ell(a))).toBeLessThan(1e-6)
+  })
+
+  it('a walk starts in the middle and steps outwards only while the posterior has mass: fewer nodes, the same answer', () => {
+    const model = benchmarkModel('gaussian-process-regression')
+    const truth = model.truth(undefined, 'full')
+    const method = epGridMethod(model.bound())
+    const all = session(method, { steps: 400, mode: 'eager', config: { points: 41, tol: 1e-10 } })
+    const walk = session(method, {
+      steps: 400,
+      mode: 'eager',
+      config: { points: 41, tol: 1e-10, order: 'walk', window: 9, warm: true },
+    })
+    expect(walk.state.nodes.length).toBeLessThan(all.state.nodes.length)
+    expect(walk.state.pending.length).toBe(0)
+    const indices = walk.state.nodes.map((n) => n.index[0] ?? 0)
+    // contiguous: the nodes run are an interval of the lattice
+    expect(Math.max(...indices) - Math.min(...indices) + 1).toBe(indices.length)
+    const post = method.posterior?.(walk.state, walk.config)
+    expect(Math.abs((post?.logEvidence?.value ?? Number.NaN) - (truth.logEvidence ?? 0))).toBeLessThan(0.02)
+    const ell = truth.marginals['ell']
+    const row = post?.summary().find((r) => r.site === 'ell')
+    expect(Math.abs((row?.mean ?? 0) - (ell?.mean ?? 0))).toBeLessThan(0.02 * (ell?.sd ?? 1))
+  })
+
+  it('a node that did not settle weighs the grid where its evidence does not exceed the best settled node, and not above it', () => {
+    const method = epGridMethod(benchmarkModel('gaussian-process-regression').bound())
+    const run = session(method, { steps: 7, mode: 'eager', config: { points: 7, tol: 1e-10 } })
+    const nodes = run.state.nodes
+    const best = Math.max(...nodes.map((n) => n.logEvidence + n.logPrior))
+    const mean = (shift: number | undefined): number => {
+      const state = {
+        ...run.state,
+        nodes: nodes.map((n, i) =>
+          i === 0
+            ? {
+                ...n,
+                converged: false,
+                logEvidence: shift === undefined ? Number.NEGATIVE_INFINITY : n.logEvidence + shift,
+              }
+            : n,
+        ),
+      }
+      return (
+        method
+          .posterior?.(state, run.config)
+          ?.summary()
+          .find((r) => r.site === 'ell')?.mean ?? Number.NaN
+      )
+    }
+    const settled =
+      method
+        .posterior?.(run.state, run.config)
+        ?.summary()
+        .find((r) => r.site === 'ell')?.mean ?? Number.NaN
+    // Not settled, with the evidence it had: still below the best, so it weighs the grid exactly as it did.
+    expect(Math.abs(mean(0) - settled)).toBeLessThan(1e-9)
+    // Not settled, far above the best settled node: no weight, as if it had no evidence at all.
+    expect(Math.abs(mean(best + 50) - mean(undefined))).toBeLessThan(1e-9)
+  })
+
   it('says that it failed, and does not throw, while no node has an EP evidence', () => {
     const method = epGridMethod(benchmarkModel('gaussian-process-regression').bound())
     const run = session(method, { steps: 3, mode: 'eager', config: { points: 3 } })

@@ -8,7 +8,11 @@
  * evidence-weighted mixture of the nodes' posteriors: the hyperparameters' own marginals on the grid, each other site's marginal
  * the mixture of the nodes' beliefs. One node is a step, in an order that refines the grid (the two ends, then bisections), so a
  * snapshot at any step is a coarser grid of the same posterior; when the posterior still has mass at an edge of the grid the
- * grid is extended outwards, within a budget of nodes.
+ * grid is extended outwards, within a budget of nodes. Two options make a fit with a few hundred sweeps per node cheap: `order:
+ * 'walk'` (one hyperparameter) starts in the middle of the range and steps outwards only while the edge node still has mass, so
+ * the nodes in the tails are never run, and `warm` starts each node from the messages of the nearest settled one, which settles
+ * in a fraction of the sweeps. A node that did not settle (an EP run that cycles) weighs the grid only where its evidence does not
+ * exceed the best settled node's.
  */
 
 import { OmaiError } from '../../base/index.ts'
@@ -18,8 +22,10 @@ import {
   compileGraph,
   epAlgorithm,
   defaultOperators as factorOperators,
+  type InitialMessage,
+  type MpState,
 } from '../../message-passing/index.ts'
-import { type DictSpace, dict, int, real } from '../../space/index.ts'
+import { bool, choice, type DictSpace, dict, int, real } from '../../space/index.ts'
 import { item, tensor, type Value } from '../../tensor/index.ts'
 import {
   type Algorithm,
@@ -65,6 +71,8 @@ export interface GridNode {
   readonly converged: boolean
   readonly sweeps: number
   readonly sites: Readonly<Record<string, GridSiteRecord>>
+  /** The message on every edge of the run's last state: the start of a nearby node when `warm` is on. */
+  readonly messages?: readonly (readonly number[])[]
 }
 
 /** One axis of the grid: the hyperparameter, where point 0 is, the spacing, and the range of point indices run so far. */
@@ -112,6 +120,25 @@ export const epGridKnobs: DictSpace = dict({
     default: 1e-3,
     label: 'edge mass',
     description: 'extend the grid where an edge node has this share of the heaviest node',
+  }),
+  warm: bool({
+    default: false,
+    label: 'warm start',
+    description:
+      'start each node from the messages of the nearest settled node instead of the flat ones: a node near a settled one settles in a fraction of the sweeps, and keeps to the fixed point of its neighbours (one whose factors cycle or collapse from a flat start)',
+  }),
+  order: choice(['bisect', 'walk'], {
+    default: 'bisect',
+    label: 'order',
+    description:
+      'the order of the nodes. bisect: the two ends, then midpoints (any snapshot is a coarser grid of the whole range). walk (one hyperparameter): start at the middle of the range and step outwards on the side whose edge node weighs more, each node started from its neighbour (with warm), until the edge nodes are `window` nats below the best (only where the posterior has mass; a snapshot covers the nodes run so far)',
+  }),
+  window: real(0.5, 1000, {
+    log: true,
+    default: 10,
+    label: 'evidence window',
+    description:
+      'walk order: stop on a side when its edge node has a log evidence plus log prior this many nats below the best node (the Gaussian tail is half the square of the sds it is out: 10 is 4.5 sds)',
   }),
   // The knobs of each EP run (schedule, damping, improper, tol, maxSweeps, restarts, power): the shared declaration.
   ...epRunKnobs('ep-grid').spaces,
@@ -264,10 +291,17 @@ function nodeWeights(state: EpGridState): { readonly logWeights: Float64Array; r
   })
   const logw = new Float64Array(nodes.length)
   // A run that did not settle is not at a fixed point, and the EP energy at a state that cycles or has collapsed (a precision
-  // sent to zero) can be far above the evidence of the nodes that did: when any node settled, only those weigh the grid.
+  // sent to zero) can be far above the evidence of the nodes that did: when any node settled, a node that did not weighs the grid
+  // only where its evidence does not exceed the best settled node's (a cycling state in the tail of the posterior is still a
+  // fair estimate of the evidence there; one that overshoots the settled nodes is not to be trusted, and carries no weight).
+  let bestSettled = Number.NEGATIVE_INFINITY
+  for (const n of nodes)
+    if (n.converged && n.logEvidence + n.logPrior > bestSettled) bestSettled = n.logEvidence + n.logPrior
   const settledOnly = nodes.some((n) => n.converged)
   nodes.forEach((n, i) => {
-    let lw = settledOnly && !n.converged ? Number.NEGATIVE_INFINITY : n.logEvidence + n.logPrior
+    const score = n.logEvidence + n.logPrior
+    const trusted = !settledOnly || n.converged || score <= bestSettled
+    let lw = trusted ? score : Number.NEGATIVE_INFINITY
     n.u.forEach((v, k) => {
       lw += Math.log(widths[k]?.get(v) ?? 1)
     })
@@ -470,8 +504,11 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
       const settings = epRunSettings(config)
       const maxSweeps = num(config, 'maxSweeps')
       const power = powerOf(config)
+      const warm = config['warm'] === true
+      const walk = config['order'] === 'walk'
+      const window = num(config, 'window')
       const hs = (): Hyper[] => hypersFor(tail)
-      const run = (index: readonly number[], axes: readonly GridAxis[]): GridNode => {
+      const run = (index: readonly number[], axes: readonly GridAxis[], done: readonly GridNode[]): GridNode => {
         const h = hs()
         const u = index.map((i, k) => (axes[k] as GridAxis).u0 + (axes[k] as GridAxis).du * i)
         const x = u.map((v, k) => num1((h[k] as Hyper).map.forward(tensor(v))))
@@ -482,7 +519,11 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
             `${name}: the model does not compile at ${names.join(', ')} = ${x.join(', ')}: ${failure ?? c.issues.map((i) => i.reason).join('; ')}`,
           )
         const powered = atPower(g, power)
-        const r = runAlgorithm(epAlgorithm(powered, settings), { maxSteps: maxSweeps + 2, seed: 0 })
+        const initial = warm ? warmStart(powered, nearestSettled(done, index)?.messages) : []
+        const r = runAlgorithm(epAlgorithm(powered, { ...settings, ...(initial.length === 0 ? {} : { initial }) }), {
+          maxSteps: maxSweeps + 2,
+          seed: 0,
+        })
         const post = factorGraphPosterior(c, powered, r.state, { engine: name })
         const sites: Record<string, GridSiteRecord> = {}
         for (const s of post.sites) sites[s] = recordOf(post.marginal(s))
@@ -496,11 +537,12 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
           converged: r.status === 'converged',
           sweeps: r.steps,
           sites,
+          ...(warm ? { messages: (r.state as MpState).messages } : {}),
         }
       }
       return {
         name: 'probprog/ep-grid-method',
-        config: { points, tail, maxNodes, edge, ...settings, power },
+        config: { points, tail, maxNodes, edge, warm, order: walk ? 'walk' : 'bisect', window, ...settings, power },
         init: (): EpGridState => {
           const h = hs()
           const axes = h.map(
@@ -512,15 +554,25 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
               to: points - 1,
             }),
           )
-          return { axes, pending: firstNodes(axes), nodes: [], extensions: 0 }
+          const state: EpGridState = { axes, pending: firstNodes(axes), nodes: [], extensions: 0 }
+          return walk ? { ...state, pending: walkNext(state, window, maxNodes) } : state
         },
         step: (s, ctx) => {
           const [index, ...rest] = s.pending
           if (index === undefined) return s
-          const node = run(index, s.axes)
+          const node = run(index, s.axes, s.nodes)
           let next: EpGridState = { ...s, pending: rest, nodes: [...s.nodes, node] }
-          // At the end of the grid, extend it where an edge still has mass.
-          if (next.pending.length === 0 && next.nodes.length < maxNodes) next = extend(next, edge, maxNodes, points)
+          if (walk) {
+            next = { ...next, pending: walkNext(next, window, maxNodes) }
+            // The walk reached the end of the range with mass still there: the range grows and the walk goes on.
+            if (next.pending.length === 0 && next.nodes.length < maxNodes) {
+              const grown = extend(next, edge, maxNodes, points)
+              next = { ...grown, pending: walkNext(grown, window, maxNodes) }
+            }
+          } else if (next.pending.length === 0 && next.nodes.length < maxNodes) {
+            // At the end of the grid, extend it where an edge still has mass.
+            next = extend(next, edge, maxNodes, points)
+          }
           ctx.log('ep-grid/nodes', next.nodes.length)
           ctx.log('ep-grid/sweeps', node.sweeps)
           const { logEvidence } = nodeWeights(next)
@@ -533,6 +585,68 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
       }
     },
   })
+}
+
+/** The start messages of a node from the final messages of another run of the same factor graph structure (none when it differs). */
+function warmStart(g: CompiledGraph, messages: readonly (readonly number[])[] | undefined): InitialMessage[] {
+  if (messages === undefined || messages.length !== g.edges.length) return []
+  const out: InitialMessage[] = []
+  for (const [factor, f] of g.factors.entries())
+    for (const [port, p] of f.ports.entries()) {
+      const eta = p.edge >= 0 ? messages[p.edge] : undefined
+      const edge = p.edge >= 0 ? g.edges[p.edge] : undefined
+      const flat = edge === undefined ? undefined : g.variables[edge.variable]?.family.flat
+      if (eta === undefined || flat === undefined || eta.length !== flat.length) return []
+      out.push({ factor, port, eta: [...eta] })
+    }
+  return out
+}
+
+/** The settled node nearest to `index` (in steps of the lattice, summed over the axes), or none. */
+function nearestSettled(nodes: readonly GridNode[], index: readonly number[]): GridNode | undefined {
+  let best: GridNode | undefined
+  let bestDistance = Number.POSITIVE_INFINITY
+  for (const n of nodes) {
+    if (!n.converged || !Number.isFinite(n.logEvidence) || n.messages === undefined) continue
+    const dist = n.index.reduce((s, v, k) => s + Math.abs(v - (index[k] ?? 0)), 0)
+    if (dist < bestDistance) {
+      best = n
+      bestDistance = dist
+    }
+  }
+  return best
+}
+
+/**
+ * The next node of a walk over one hyperparameter: the middle of the first range, then one step outwards on the side whose edge
+ * node weighs more (log evidence plus log prior), while that edge node is within `window` nats of the best (or has no evidence
+ * to judge by); none when both sides are done, the range is used up or the budget is.
+ */
+function walkNext(state: EpGridState, window: number, maxNodes: number): readonly (readonly number[])[] {
+  const axis = state.axes[0]
+  if (axis === undefined || state.axes.length !== 1) return []
+  if (state.nodes.length >= maxNodes) return []
+  if (state.nodes.length === 0) return [[Math.floor((axis.from + axis.to) / 2)]]
+  const score = (n: GridNode): number => n.logEvidence + n.logPrior
+  let top = Number.NEGATIVE_INFINITY
+  let left = state.nodes[0] as GridNode
+  let right = left
+  for (const n of state.nodes) {
+    if (Number.isFinite(n.logEvidence) && score(n) > top) top = score(n)
+    if ((n.index[0] ?? 0) < (left.index[0] ?? 0)) left = n
+    if ((n.index[0] ?? 0) > (right.index[0] ?? 0)) right = n
+  }
+  const open = (n: GridNode, side: -1 | 1): boolean => {
+    const at = (n.index[0] ?? 0) + side
+    if (at < axis.from || at > axis.to) return false
+    return !Number.isFinite(n.logEvidence) || score(n) > top - window
+  }
+  const goLeft = open(left, -1)
+  const goRight = open(right, 1)
+  const rank = (n: GridNode): number => (Number.isFinite(n.logEvidence) ? score(n) : Number.POSITIVE_INFINITY)
+  if (goLeft && (!goRight || rank(left) >= rank(right))) return [[(left.index[0] ?? 0) - 1]]
+  if (goRight) return [[(right.index[0] ?? 0) + 1]]
+  return []
 }
 
 /** The grid with the axes extended outwards where an edge still has mass, and the new nodes pending (as many as the budget leaves). */
