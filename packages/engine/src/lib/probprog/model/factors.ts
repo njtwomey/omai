@@ -21,7 +21,8 @@
  * nodes, observed Gaussians, numeric likelihoods, conjugate observations, observations chosen by a discrete variable, plates), over the
  * evaluator of expressions (`factor-graph/_symbolic/`: the value algebra of `_cells.ts` mapped to the engine's affine, product, gate and apply
  * operators), the constants (`_known.ts`), the layout plan (`_plan.ts`) and the recognisers (`_idioms.ts`). Anything with no mapping is reported
- * with a reason, never silently dropped. The refusal, the issue and layout types, the reading back of a run (`factorGraphPosterior`) and the
+ * with a reason, never silently dropped. `docs/probprog/compiler-mappings.md` lists every entry of the tables (written from them by
+ * `make ep-compiler-doc`). The refusal, the issue and layout types, the reading back of a run (`factorGraphPosterior`) and the
  * verdict (`factorGraphVerdict`) live in `factor-graph/`.
  *
  * Ids follow `ids.ts`: a variable is its site's name, `<site>[<i>]` for an element of a site over dimensions, and

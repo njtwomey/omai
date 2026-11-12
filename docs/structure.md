@@ -3708,8 +3708,18 @@ dimension order, ids, site names, expressions, the hooks for factor graphs) are 
   and `_refusal.ts` (`Refusal`); `_params.ts` (a node's parameters as the mappings read them: `paramSym`, `constParam`, `cellsOf`, `paramCell`,
   `discreteParents`); `_mappings/` (one file per concern, the mappings as functions of a `Context` and a node: `latent-gaussian`, `latent-positive`,
   `latent-discrete`, `matrix`, `derived`, `observed-gaussian`, `observed-numeric`, `observed-conjugate`, `observed-gates`, `plates`; the folder is private
-  so that its functions are not exports). `factors.ts` is the driver: it walks the spec in order and dispatches each node by the chains of `latent`,
-  `observed` and `observedElement`, whose order is part of the meaning (normal-gamma before the family lookup, a value moved to the mean first).
+  so that its functions are not exports); `_mapping.ts` (what a mapping is: a named entry with the families it serves, the factor operators it requires,
+  a pure `matches` and a `map`; an entry that can only tell by trying answers `NOT_MINE` and `attempt` restores the graph builder's checkpoint, so a failed
+  recognition leaves nothing behind) and `_table.ts` (the ordered tables: `nodeMappings`, `latentMappings`, `observedNodeMappings`, `observedRowMappings`,
+  `observedElementMappings`; the priority is the order, written down in the entries, e.g. normal-gamma before the family lookup, a value moved to the mean
+  first; `_table.test.ts` holds the order, `operator-contract.test.ts` the contract with the operators: every `requires` exists, every operator of the registry
+  is claimed or listed as built by hand only, what the corpus emits is declared, the engine takes every factor `addFactor` adds); `_reasons.ts` (the catalogue of
+  the reasons a node is refused, one function per sentence, returning a `Refusal` with its code (`RefusalCode`: 14, a closed set; a `FactorIssue` carries it beside
+  its `kind`), the node and the facts); `_doc.ts` (writes `docs/probprog/compiler-mappings.md` from the tables: `make ep-compiler-doc`, checked by a test).
+  `factors.ts` is the driver: it walks the spec in order and gives each node to the first mapping of the tables that takes it. The compiler's factors are typed
+  by the engine's `OperatorName` (`CompilerFactor`, `GateBranch`). The tests of the compiler sit in `factor-graph/` by concern (`latent-*`, `observed-*`, `gates-*`,
+  `matrix*`, `symbolic-*`, `plates`, `programs`, `refusals`, `compiler`; `graph-corpus.test.ts` writes down the shape of every atom's and benchmark model's graph, `mapping-fragments.test.ts`
+  the operators a site's mapping makes); what they share is in `src/testing/factor-graph.ts` (`runEp`, `belief`, `factorsOf`, `fragmentOf`).
 
 **Inference methods (`inference/`, `omai-engine/probprog/inference`).** The convention and the methods, with no entry point
 that picks one. `method.ts` is the convention: `defineInferenceMethod` makes a `Method` of the trace library (a `Space`

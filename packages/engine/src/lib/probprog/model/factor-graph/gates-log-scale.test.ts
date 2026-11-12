@@ -1,6 +1,7 @@
 // A mixture whose components each have a mean and a spread of their own (`y ~ N(mu[z], exp(logSd[z]))`): the mean and the spread are
 // both chosen by the same discrete variable, so each reading is one `gate` on it whose branch `k` is the `gaussian-scale` factor on
-// the mean and the log spread of component `k`. Before this the two were separate selects, which lost which component both came from.
+// the mean and the log spread of component `k`, so the component that explains the reading is the one whose mean and spread both move
+// (a select of each would lose which component the pair came from).
 // The reference is the four-dimensional grid of the two means and the two log spreads with the labels summed out.
 import { describe, expect, it } from 'vitest'
 import { session } from '../../../trace/index.ts'

@@ -268,11 +268,11 @@ identical follow from an identical graph, so (1) is the strong check and (2) the
 | 5 | `symbolic/*` | the evaluator extracted with explicit `EvalMode`; `lookupMode` flag removed | corpus + the gate tests (`gates`, `gate-precisions`, `shifted-gates`, `gate-log-scale`, `mixture-*`) | 650 lines; medium-high (touches `this.current`, `variables.find`, side-effecting emission) | with 4 and 6 only if 4 and 5 are on different files: they are |
 | 6 | `idioms.ts` | the syntactic recognisers as pure functions over `{ nodes, known }`; `dependsOnLatent` replaced by `usesLatent` (scan-aware: confirm identical on the corpus) | corpus | 300 lines; low | with 4, 5 |
 | 7 | mapping files (10 of them, one commit each: derived, matrix, plates, latent-discrete, latent-positive, latent-gaussian, observed-numeric, observed-conjugate, observed-gates, observed-gaussian) | `this.x` -> `cx.x`; no logic change | corpus | 100-700 lines each; low (mechanical) | yes: up to 3 agents at once (per the standing limit), disjoint files; start only after 3b, 4, 5, 6 so the context interface is stable |
-| 8 | Mapping table | `latent()`, `observed()`, `observedElement()` if-chains become an ordered `mappings` list with `applies`/`emit` and `requires`; write the priority order down | corpus; add a test that reorders nothing | 300 lines; medium (priority) | after 7 |
-| 9 | Structured refusals | `Refusal(code, node, facts)`; reasons byte-identical (catalogue); `NoMatch` replaces probe-by-exception in the 12 catch sites one at a time | the reason assertions + corpus issues | 186 throw sites; low per site, long | can start per file inside step 7; finish after 8 |
-| 10 | Registry contract | `operatorNames` tuple and typed `FactorSpec.operator`; typed `GateBranch`; `requires` tests both ways (every required name exists; every operator claimed or `HAND_BUILT_ONLY`); fix the 4 dangling `OperatorDef.factor`; shadow `check` in `addFactor` | tsc + new tests; `check` shadow must never fire on the corpus | 150 lines across 3 packages; low, but it touches `message-passing` types | the typed names part can start after 3b |
-| 11 | Tests relayout (section 6) | test files only | same tests, same assertion count (`vitest --reporter` count before/after) | 8,193 test lines moved; low | any time, parallel with everything |
-| 12 | Docs | header shrunk to the contract and pass order; "what it maps" generated from the mapping list into `docs/probprog/`; fix the stale items of section 4; `docs/structure.md` 3961-3962 and 4.32 updated | `make docs-catalogue`, agent index | 200 lines; low | after 8 |
+| 8 | Mapping table (**done**, phase 3: `_mapping.ts`, `_table.ts`; the six probes use `attempt`/`probe` with a builder checkpoint) | `latent()`, `observed()`, `observedElement()` if-chains become an ordered `mappings` list with `applies`/`emit` and `requires`; write the priority order down | corpus; add a test that reorders nothing | 300 lines; medium (priority) | after 7 |
+| 9 | Structured refusals (**done**, phase 3: `RefusalCode`, the catalogue `_reasons.ts`; the stale sentences of section 4 fixed in their own commit) | `Refusal(code, node, facts)`; reasons byte-identical (catalogue); `NoMatch` replaces probe-by-exception in the 12 catch sites one at a time | the reason assertions + corpus issues | 186 throw sites; low per site, long | can start per file inside step 7; finish after 8 |
+| 10 | Registry contract (**done**, phase 3: `CompilerFactor`, `requires`, `operator-contract.test.ts`, `addFactor` validates) | `operatorNames` tuple and typed `FactorSpec.operator`; typed `GateBranch`; `requires` tests both ways (every required name exists; every operator claimed or `HAND_BUILT_ONLY`); fix the 4 dangling `OperatorDef.factor`; shadow `check` in `addFactor` | tsc + new tests; `check` shadow must never fire on the corpus | 150 lines across 3 packages; low, but it touches `message-passing` types | the typed names part can start after 3b |
+| 11 | Tests relayout (section 6) (**done**, phase 3, with the differences listed at the end of this page) | test files only | same tests, same assertion count (`vitest --reporter` count before/after) | 8,193 test lines moved; low | any time, parallel with everything |
+| 12 | Docs (**done**, phase 3: `docs/probprog/compiler-mappings.md` from the tables) | header shrunk to the contract and pass order; "what it maps" generated from the mapping list into `docs/probprog/`; fix the stale items of section 4; `docs/structure.md` 3961-3962 and 4.32 updated | `make docs-catalogue`, agent index | 200 lines; low | after 8 |
 
 Total: about 12 agent sessions of one to four hours each; steps 0, 3a/3b, 4, 5 are the critical path (about 60% of the risk);
 steps 1, 2, 6, 11 and the ten files of 7 are where parallel agents are safe. Do not run more than the standing two or three at
@@ -349,3 +349,19 @@ deliberate behaviour change (the error taxonomy of S3, a typo in a knob now thro
 message, shows the moves that `make ep-digest-check` printed, and runs `make ep-digest-check ARGS="--accept"` in a commit of its
 own, so the baseline's history is the list of intended changes. A step that adds an atom, model or program adds its item the same
 way. The digest is not part of `make verify` or `make check`; it is the gate of this refactoring.
+
+## What phase 3 did differently from this plan
+
+- The tables have five levels, not three chains: node kinds, latents, observed nodes as a whole, observed rows, observed elements (the element table is keyed by family
+  and holds the nested chains of the `normal` case as separate entries). A failed probe restores the graph builder's checkpoint, including the counters of auxiliary
+  names, so a later route makes the ids it would have made without the probe (the digest is bit-identical); the caches of the evaluator are restored only when
+  the probe made something. The evaluator still signals "no" by throwing `Refusal` inside a probe: `probe` turns it into `NOT_MINE` at the mapping's edge.
+- There are 14 refusal codes and 168 catalogue functions for the 187 throw sites; `kind` stays, derived from the code. `FactorIssue` gained `code`, which the digest does not hash.
+- `FactorSpec.operator` is still a string in `message-passing` (hand-built graphs write it); the compiler's factors are typed by `CompilerFactor`, and the engine's constructors
+  (`gaussianPrior`, ...) go through `addLibraryFactor`, which checks the name at run time.
+- `addFactor` validates the factor with `compileGraph` on the factor and the variables it names. It was clean over the corpus and every compiler test, so it is enforced (a
+  `registry` refusal), not shadowed.
+- The tests were moved, not merged: the 27 files of `model/` keep their `describe`s verbatim in `factor-graph/` under concern names, and only `factors.test.ts` was split. The review's
+  concern files that merge several features would need the per-file helpers (each with its own tolerance) merged first. The shared support is in `src/testing/factor-graph.ts`
+  (the build excludes it), not `factor-graph/_support.ts`. The five local grids stay local: their defaults differ.
+
