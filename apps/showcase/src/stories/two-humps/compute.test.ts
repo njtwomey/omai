@@ -1,8 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { fit, type Size } from './compute.ts'
+import { fit, lastPassStart, type Size } from './compute.ts'
 import { waits } from './data.ts'
 
 const SMALL: Size = { rows: 120, grid: 40 }
+
+describe('the step the last pass begins at', () => {
+  it('is 0 without a restart, the step after the restart with one, and never past the last step', () => {
+    expect(lastPassStart(0, 12)).toBe(0)
+    expect(lastPassStart(5, 12)).toBe(6)
+    // a restart on the very last sweep would leave no step to read: the pass begins at the last step
+    expect(lastPassStart(12, 12)).toBe(12)
+    expect(lastPassStart(30, 12)).toBe(12)
+  })
+})
 
 describe('the two-humps computation', () => {
   it('has the 272 waiting times of Old Faithful', () => {
