@@ -19,7 +19,7 @@ import { OmaiError } from '../../../base/index.ts'
 import { arg, errorText, keyOf, memoised } from '../../core/_messages.ts'
 import { etaOf, vectorParam } from '../../core/args.ts'
 import { defineOperator, siteRule } from '../../core/define.ts'
-import { ImproperMessageError } from '../../core/errors.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, Params, Port } from '../../core/types.ts'
@@ -281,7 +281,8 @@ export interface ChainTilt {
  * integral over the chain's precision would then let the precision run to zero, where the chain lets that state go. The prior holds
  * the state where the rest of the chain puts it, so it adds precision to the states that have none and moves nothing that has some
  * and, centred at the state's own mean, no mean at a settled state. Returns the cavities with the priors in them and the log of the
- * factor `exp(-ridge_t (x - c)^2 / 2)` at its centre (zero), or `undefined` for no ridge.
+ * constant `-ridge_t c^2 / 2` that turns the natural form `exp(ridge_t c x - ridge_t x^2 / 2)` of those priors into `exp(-ridge_t (x - c)^2 / 2)`
+ * (so the integral of the regularised chain is the integral against the priors themselves), or `undefined` for no ridge.
  */
 function weakPriors(
   spec: ChainSpec,
@@ -382,7 +383,12 @@ function tiltOf(c: OperatorContext): ChainTilt {
   const j = new Float64Array(size)
   for (let p = 0; p < size; p++) {
     const a = arg(c, 1 + p)
-    if (a.value !== undefined) throw new ImproperMessageError('gaussian-chain: a state or a driver cannot be observed')
+    // The compiler refuses an observed variable at these ports (they are not `constant`); a hand-built call that shows one is a mistake
+    // of the model, not an improper message that the engine would repair and skip.
+    if (a.value !== undefined)
+      throw new ParameterError(
+        `gaussian-chain: the state or driver at port ${p} cannot be observed (its observation belongs in the cavities, as the factor that reads it)`,
+      )
     const eta = etaOf(a)
     h[p] = eta[0] ?? 0
     j[p] = eta[1] ?? 0
@@ -402,8 +408,10 @@ function tiltOf(c: OperatorContext): ChainTilt {
  * coefficients). Expectation propagation integrates the chain against the cavities in one pass (see the file's
  * summary): each state and driver gets the Gaussian with the tilted mean and variance, the precision the gamma with the tilted `E log
  * tau` and `E tau`, and the log evidence is the integral. The first state's prior is another factor. `ridge` (default none) is the
- * precision of the weak prior that a state with an uninformative cavity carries (`weakPriors`). No variational rule (the mean field of
- * a chain is the scalar one).
+ * precision of the weak prior that a state with an uninformative cavity carries (`weakPriors`); with `ridge` the messages are those of
+ * the chain times those priors, and so is the log evidence (the integral of the regularised chain against the cavities, an
+ * approximation of the declared factor's, which has none when a state's cavity is improper: equal to it for no ridge). No variational
+ * rule (the mean field of a chain is the scalar one).
  *
  * @concept factor-operators
  * @index structure A chain of Gaussian steps with shared drivers and a shared gamma precision, one factor.

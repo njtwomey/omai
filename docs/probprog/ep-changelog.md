@@ -1479,3 +1479,49 @@ what the compiler accepts is everything (all twelve choices route to `ep`; the g
 - Tests and digest: `_fuse.test.ts`, `composed-pairs.test.ts`, the new case of `gate.test.ts`, the story's smoke and agreement tests; the graph corpus has the two lines of the new atom (additions only); the digest has the atom's and its VMP line and the registry line (one more atom's knobs), and the 35 neighbouring items (gates, mixtures, clutter, spike, stick, topic, softmax, the mixture benchmarks, radon, eight schools, lda) stay at their level except `model/gaussian-mixture` and `model/gaussian-mixture-ordered`,
   which differ from the committed digest on the unchanged base too (improper messages 80 -> 36, 16 -> 8, one sweep fewer for the ordered one: not caused by this change; to be re-accepted by whoever owns it).
 - Not done: the full shape (a covariance matrix per group) under EP, the stick-breaking pieces under EP (correct, slower than the sampler), a belief updated incrementally (the cost of a sweep is now the sum over the edges, 38% of the run at eight pieces), faster small-matrix kernels for the normal-Wishart family.
+
+## 2026-11-12 Operator and engine fixes from the second static review (`agent-a97b0f-review2ops`)
+
+Ten findings of a second review of `message-passing` that read the code and ran nothing; each was reproduced first (a failing test, against a brute-force or closed-form
+reference where it is a numeric rule) and fixed with a regression test (one commit each; nine confirmed, one partly). Ordinary results are bit-identical: the digest items that
+use the code were compared with the same items run without the change, and the only moves are the ones listed.
+- **`multiclass-site` and the power (the one that changes a convention).** The scalar rule returned the undivided site although it declares a power, so at power p its fixed point was
+  `(1 - p) * cavity + p * projection`, not fractional EP's (`cavity + p * message` is the projection of the tilted factor). It is a `siteRule` now, so `projectSite` divides by the
+  power as every other power rule does (`logistic`, the gate, `multiclass-row`); power 1 is the same bits. `multiclass.test.ts` compared with `tilted - cavity` at powers 0.5, 0.25 and
+  1.7 (the wrong convention): it checks `cavity + p * site = tilted` against the grid now, and the product grid has its own power test. Consequence for what was measured with the old
+  scheme: `ep-power.test.ts` and the `power` knob's text said that a power near 5 / rows widened the one-message-per-score softmax slopes to the exact spread (0.5 of it at power 1, 0.9 at 0.2).
+  That was the old scheme, not fractional EP. Correct fractional EP changes that spread by a few percent only (sd over exact 0.527, 0.516, 0.510, 0.508 at powers 1, 0.5, 0.2, 0.1 on the
+  seed-3, 24-point atom, the run at 0.2 and below stopping instead of converging): the joint site (`multiclass-row`, the packed default) is what gives the exact spreads, and the tests and the
+  knob's description say so. Digest: no item moves (the softmax atoms and the gp and choice twins are packed, or at power one in the digest; no digest run takes the scalar site at another power).
+- **`multiclass-site` `traits.power`** was a flat `true`, but the multinomial probit on the auxiliary rule (more than six classes, or `integration: 'auxiliary'`) throws for a power other than one:
+  `powerEpAlgorithm`'s default 0.5 hit that mid-sweep. `power` is `takesPowerOf(params)` now, so `withPowers` refuses it with a reason and `powerEpAlgorithm` runs that factor at power one.
+  `defineOperator`'s derived hook for a site rule read `traits.power === true` only, so a function-valued power silently skipped the division: it calls the function with the parameters.
+  The registry line moves for it (`power`: `true` to `[function]`).
+- **`gaussian-scale` at a power.** The mean was integrated out as `p * logN(x; m0, v + e^(2s))`, right only for a known mean; the marginal of `N(x; m, e^(2s))^p` against `N(m; m0, v)` is
+  `(2 pi e^(2s))^((1 - p) / 2) p^(-1/2) N(x; m0, v + e^(2s) / p)`, and the mean's conditional has the noise precision `p e^(-2s)`. Tests at powers 0.5, 0.25 and 2 against a two-dimensional grid
+  (all failed before); power 1 is the same bits (digest: `half-cauchy`, `half-normal`, `radon`).
+- **Multinomial probit far in the tail.** `logProbit`'s 20 fixed nodes (|e| <= 7.6) underestimated a class that is far below the others (two classes: 8e-5 nats at a gap of 12, 6 nats at 20, minus
+  infinity from about 40, where `productTilt` threw 'no mass'). When the other scores exceed the chosen one's by more than 6 in total the integral is taken at the peak of its log-concave
+  integrand (Newton with a bracket, 20 nodes of its curvature, a log-space sum with `logNdtr`): 1e-13 against `Phi(gap / sqrt 2)` and 1e-10 against a dense log-space integral for 3 and 7 classes;
+  below the trigger the old code runs (a pinned value). The old rule also had 1e-4 to 1e-5 errors for seven classes with moderate gaps, which are 1e-10 once the total passes 6. No digest item has a probit multiclass on the product grid.
+- **`gate` under VMP** counted a branch whose operator has no `expectedLog` as a log density of 0 and skipped one with no `vmp` rule. `unsupported('vmp')` now names the branch operator (`equal` has a
+  message and no expected log, `greater-than` has neither) and the rule and the expected log throw a `ParameterError`; a constant branch is still 0. All 43 digest items with a gate are identical;
+  the registry line gains the gate's `unsupported` member.
+- **Restarts.** `restartDamping` was `max(damping, 0.5) + 0.3 (k - 1)`, so a run damped from 0.5 to 0.9 had a first restart as damped as itself and never restarted (`restarts: 3` at damping 0.5 reported a
+  stall without trying). A restart is the k-th of 0.5, 0.8, 0.9 among those stronger than the run's own, and one that would repeat the previous attempt is not made (a run under a half is unchanged,
+  except that its fourth restart, which repeated the third to the last digit, is not made). **Digest items that move:** the four programs that were damped at 0.5 or more and stalled on improper
+  cavities, which used to be reported `converged` with 'a restart would repeat the run': `program/circular-ignore` (25 to 92 sweeps, one restart, the first mean 7.972 to 8.026),
+  `program/sparse-student-t` (49 to 185 sweeps, evidence -98.8674 to -98.8537), `program/circular-data` (138 to 150 sweeps, status converged to stopped at the step budget, unresolved 252 to 279) and
+  `program/circular-means` (37 to 150 sweeps, converged to stopped at the budget, but the evidence is now defined: -236.23, with 43 unresolved updates instead of 149). The restart costs 4 times the sweeps in
+  three of them for stalls that are structural skips of an improper cavity; that is the price of 'always stronger', and the one line that returns the old behaviour is `restartDiffers`. Unchanged:
+  `atom/mixture-regression`, `model/gaussian-mixture-ordered`, `model/radon`, `program/sparse-gaussian`, `sparse-mixture`, `circular-rows`.
+- **`product`** weighted its grid with `Math.exp(logNormal(...))` and took `Math.log(mass)`: an output message more than about 38 sd from the pushforward underflowed every weight, the mean was NaN and the
+  message an `ImproperMessageError` (evidence minus infinity). When the plain mass is not above 1e-250 the same grid is taken with shifted log weights (`shiftedSum`, `tiltedLogGrid`); an ordinary case keeps
+  its path and its bits (digest: `product`, `chain-persistence-grid`, `eight-schools`, `funnel`, `radon`, `stochastic-volatility`, `bayesian-neural-network`). Limit: where the underflow means the posterior is
+  beyond the grid (a likelihood further out than the cavity's 8 sd), the result is the grid's best node, finite but not the posterior; the test is a known factor with a Gaussian posterior in reach (e^-1231).
+- `mpVerdict` and `isStalled` took `Math.max(...residuals)` with one residual per edge (a `RangeError` at about 120k edges): `largestOf`, a loop. `evidenceDefects` says `zero mass` for a factor evidence of
+  minus infinity (a violated hard constraint) and keeps `improper cavity` for NaN (`EvidenceDefect`).
+- **`gaussian-chain`.** An observed state or driver was an `ImproperMessageError` (repaired and skipped, reported as 'stalled'); the compiler already refuses such a variable, so it is the hand-built case, now a
+  `ParameterError`. With a `ridge` the evidence is that of the regularised chain, not the declared factor's (which has none where a state's cavity is improper): documented, not subtracted. No numbers move.
+- Not changed: the other `Math.max(...)` spreads in `core/families*.ts` (the size of a discrete family) and `numerics/numeric-rules.ts`; the restart schedule's repeated 0.9 for a run under a half asked for four restarts or more
+  (now not made); `gaussian-mixture-ordered` differs from the committed digest on this base with or without these changes (16 to 8 improper messages), which another change owns.

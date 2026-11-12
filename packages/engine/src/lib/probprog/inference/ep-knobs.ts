@@ -89,7 +89,7 @@ export function epRunKnobs(method: EpMethodName = 'ep'): DictSpace {
       default: 1,
       label: 'power',
       description:
-        'fractional EP: the power of every factor that supports one (1 is EP). Below 1 the spreads of variables that many factors share come out wider: where one Gaussian per variable leaves them too narrow (the class slopes of a softmax classifier), a power near 5 / rows restores the coverage of their intervals',
+        'fractional EP: the power of every factor that supports one (1 is EP). Below 1 each factor steps less (the site is divided by the power), which can settle a run that oscillates; the fixed point is the fractional-EP one, so the spreads move a little, not to the exact ones of variables that many factors share (a joint site does that)',
     }),
   })
 }

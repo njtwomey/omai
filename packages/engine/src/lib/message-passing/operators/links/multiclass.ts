@@ -14,8 +14,8 @@
  */
 
 import { errorText, keyOf, memoised } from '../../core/_messages.ts'
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam } from '../../core/args.ts'
-import { defineOperator, messageRule } from '../../core/define.ts'
+import { allProper, gaussianOf, massOf, numberParam } from '../../core/args.ts'
+import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
 import { zeroArray } from '../../numerics/_arrays.ts'
@@ -110,6 +110,16 @@ function integrate(c: OperatorContext): Tilt {
   return { logMass: t.logMass, mean: t.mean, variance: t.mean.map((_, i) => t.covariance[i * r + i] as number), free }
 }
 
+/**
+ * Whether a factor with these parameters takes a power: not the multinomial probit that the auxiliary rule integrates (more than six
+ * classes, or `integration: "auxiliary"`, as `variationalAuxiliary` reads it), which takes the factor whole. A refusal up front
+ * (`withPowers`, `powerEpAlgorithm`) instead of an error thrown mid-sweep. (The softmax's auxiliary rule takes any power of at
+ * least 0.03, which is a limit of the value, not of the parameters.)
+ */
+function takesPowerOf(params: Params): boolean {
+  return !(params['link'] === 'probit' && variationalAuxiliary(params))
+}
+
 /** Whether the mean field uses the one-coordinate rule of `_multiclass-variational.ts` (more scores than the product grid reaches, or `integration: "auxiliary"`). */
 function variationalAuxiliary(params: Params): boolean {
   const way = params['integration'] ?? 'auto'
@@ -153,9 +163,9 @@ function auxiliaryMean(c: OperatorContext): {
  * parameters `y` (the observed class), `classes` (their number) and `link`. Expectation propagation: the tilted mean and variance of
  * every free score from an adaptive Gauss-Hermite integral over all of them, so the scores of the classes that were not observed
  * hear about each other (the product grid up to six free scores, the auxiliary-variable rule of `_multiclass-auxiliary.ts` for any
- * number; `integration` picks one, `auto` is the product grid while it reaches). It supports a power (the probit's auxiliary rule
- * takes the factor whole). Variational message passing is non-conjugate (the expected log of a softmax has no
- * closed form in Gaussian scores): the message to a score is the natural gradient of the expected log, by the product grid up to
+ * number; `integration` picks one, `auto` is the product grid while it reaches). It supports a power (fractional EP), except
+ * the probit's auxiliary rule, which takes the factor whole: `power` is false for it, so a power run refuses it up front.
+ * Variational message passing is non-conjugate (the expected log of a softmax has no closed form in Gaussian scores): the message to a score is the natural gradient of the expected log, by the product grid up to
  * six free scores and for any number by the auxiliary rule of `_multiclass-variational.ts` (the softmax's expected log is exact, an
  * integral over one auxiliary variable of a product of the classes' transforms; the multinomial probit's is a Jensen bound over the
  * other classes' scores, exact when they are known, `support` `numeric` for the softmax and a bound for the probit).
@@ -195,13 +205,14 @@ export const multiclassSite: FactorOperator = defineOperator({
     }
   },
   rules: {
-    ep: messageRule((c): OperatorResult => {
+    // The tilted mean and variance of the score, projected by the engine: the message is the quotient by the cavity and, with a
+    // power, divided by it (fractional EP: cavity + power * message is the projection of the tilted factor).
+    ep: siteRule((c) => {
       const t = tilt(c)
       const at = t.free.indexOf(c.to)
-      if (at < 0) return { message: [0, 0] }
-      const own = etaOf(c.args[c.to] as Arg)
-      return { message: gaussianSiteMessage(own, t.mean[at] as number, t.variance[at] as number) }
-    }, 'numeric'),
+      if (at < 0) return { flat: true }
+      return { mean: t.mean[at] as number, variance: t.variance[at] as number }
+    }),
     // The mean field: the non-conjugate message of log P(y | z) to a score under the beliefs of the others (the grid is a product over
     // the free scores, with fewer nodes the more there are). The softmax is log-concave in the scores, so the precisions are positive.
     vmp: messageRule(
@@ -225,5 +236,5 @@ export const multiclassSite: FactorOperator = defineOperator({
         ? auxiliaryMean(c).expectedLog()
         : numericExpectedLog(quadraturePorts(c.args), scoreLog(c.params)),
   },
-  traits: { readsTarget: true, power: true },
+  traits: { readsTarget: true, power: takesPowerOf },
 })

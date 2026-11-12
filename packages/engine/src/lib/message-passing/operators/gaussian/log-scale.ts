@@ -24,11 +24,18 @@ function read(c: OperatorContext): {
   return { x: scalarOf(arg(c, 0)), m: gaussianOf(arg(c, 1)), s: gaussianOf(arg(c, 2)) }
 }
 
-/** The tilted distribution of the log scale: its cavity times the marginal likelihood `N(x; mean, v + exp(2 s))`. */
+/**
+ * The tilted distribution of the log scale: its cavity times the marginal of the factor to the power `p` over the mean. Integrating
+ * the mean out of `N(x; m, e^(2 s))^p` against `N(m; m0, v)` gives `(2 pi e^(2 s))^((1 - p) / 2) p^(-1/2) N(x; m0, v + e^(2 s) / p)`
+ * (the density to a power is `N(x; m, e^(2 s) / p)` times what depends on `s` only); at power one it is `N(x; m0, v + e^(2 s))`.
+ */
 function logLikelihood(x: number, m: { mean: number; variance: number }, power: number): (s: number) => number {
   return (s) => {
-    const total = m.variance + Math.exp(2 * s)
-    return Number.isFinite(total) && total > 0 ? power * logNormal(x, m.mean, total) : Number.NEGATIVE_INFINITY
+    const noise = Math.exp(2 * s)
+    const total = power === 1 ? m.variance + noise : m.variance + noise / power
+    if (!(Number.isFinite(total) && total > 0)) return Number.NEGATIVE_INFINITY
+    if (power === 1) return logNormal(x, m.mean, total)
+    return 0.5 * (1 - power) * Math.log(2 * Math.PI * noise) - 0.5 * Math.log(power) + logNormal(x, m.mean, total)
   }
 }
 
@@ -69,9 +76,9 @@ export const gaussianScale: FactorOperator = defineOperator({
       const { x, m, s } = read(c)
       const logf = logLikelihood(x, m, c.power)
       if (c.to === 2) return tiltedByQuadrature(s, logf)
-      // The mean given the log scale is Gaussian: N(m, v) times N(x; m, exp(2 s)).
+      // The mean given the log scale is Gaussian: N(m, v) times N(x; m, exp(2 s))^p, a noise precision of p exp(-2 s).
       const post = (s2: number): { mean: number; variance: number } => {
-        const noise = Math.exp(-2 * s2)
+        const noise = c.power * Math.exp(-2 * s2)
         const variance = 1 / (1 / m.variance + noise)
         return { mean: variance * (m.mean / m.variance + x * noise), variance }
       }

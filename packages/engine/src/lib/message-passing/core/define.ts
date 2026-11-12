@@ -240,14 +240,16 @@ export function defineOperator(declaration: OperatorDeclaration): FactorOperator
   if (evidence?.vmp !== undefined && rules.vmp === undefined) fail('a vmp evidence rule without a vmp rule')
   if (traits?.defines !== undefined && !Number.isInteger(traits.defines)) fail('defines is not a port index')
   const ep = rules.ep
-  const takesPower = traits?.power === true
+  const powerTrait = traits?.power
+  const takesPower = (params: Params): boolean =>
+    typeof powerTrait === 'function' ? powerTrait(params) : powerTrait === true
   const epHook =
     ep === undefined || ep.kind === 'tilted'
       ? undefined
       : ep.kind === 'message'
         ? ep.message
         : (c: OperatorContext): OperatorResult => ({
-            message: projectSite(c.args[c.to] as Arg, ep.tilt(c), takesPower ? c.power : 1),
+            message: projectSite(c.args[c.to] as Arg, ep.tilt(c), takesPower(c.params) ? c.power : 1),
           })
   const support: Partial<Record<Mode, Support>> = {
     ...(ep === undefined ? {} : { ep: ep.kind === 'tilted' ? ('numeric' as const) : ep.support }),
