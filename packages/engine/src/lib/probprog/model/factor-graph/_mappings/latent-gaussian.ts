@@ -320,6 +320,45 @@ export function latentGrouped(cx: Context, node: ModelNode & { readonly kind: 'l
 }
 
 /**
+ * The weight matrix of a latent variable model with random Fourier features (`W[output, feature]`, found by the layout plan): one Gaussian
+ * vector variable per output (its `features` weights, with their known independent priors), so that each `gplvm-row` factor reads the
+ * weights of an output as one port. The cells of the matrix are the coordinates of those vectors, and each element keeps a scalar readout
+ * variable (a `dot-constant` of its coordinate) for the posterior to read.
+ */
+export function latentGplvmWeights(cx: Context, node: ModelNode & { readonly kind: 'latent' }): void {
+  const plan = cx.plan.gplvm as NonNullable<Context['plan']['gplvm']>
+  const { outputs, features, vectors } = plan
+  const loc = constParam(cx, node, 'loc', 'the mean')
+  const scale = constParam(cx, node, 'scale', 'the scale')
+  for (const sd of scale) if (!(sd > 0)) throw scaleNotPositive(node.name, sd)
+  const cells: Cell[] = []
+  const names: string[] = []
+  for (let d = 0; d < outputs; d++) {
+    const vector = vectors[d] as string
+    const at = d * features
+    const sds = scale.slice(at, at + features)
+    cx.g.addVariable({ name: vector, family: { kind: 'gaussian-mv', size: features } })
+    cx.g.auxiliary.push(vector)
+    cx.g.addLibraryFactor(
+      gaussianMvPrior(vector, loc.slice(at, at + features), toFlat(diag(square(tensor(sds))))),
+      vector,
+    )
+    for (let m = 0; m < features; m++) {
+      const name = cx.elementName(node.name, node.dims, at + m)
+      cx.g.addVariable({ name, family: { kind: 'gaussian' } })
+      cx.g.addFactor(
+        { operator: 'dot-constant', args: [name, vector], params: { a: toFlat(oneHot(m, features)) } },
+        name,
+      )
+      cells.push(cx.g.compAtom(vector, m, features))
+      names.push(name)
+    }
+  }
+  cx.syms.set(node.name, { dims: node.dims, cells })
+  cx.layout(node, 'latent', 'gaussian', 'elements', names, true)
+}
+
+/**
  * A spike and slab latent (`normalSpikeSlab`: a mixture of a wide and a narrow zero-mean normal on every element): each
  * element is a Gaussian variable (or a coordinate of one packed Gaussian vector, when a `matmul` reads it) with a
  * `mixture-site` (`mixture-row`) factor, whose EP message is exact. A scalar site speaks first through the engine's flat-cavity

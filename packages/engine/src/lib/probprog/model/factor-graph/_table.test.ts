@@ -38,6 +38,7 @@ describe('the mapping tables', () => {
       'normal-gamma-mean',
       'normal-gamma-precision',
       'family-refused',
+      'gplvm-weights',
       'normal',
       'multivariate-normal',
       'spike-and-slab',
@@ -54,6 +55,7 @@ describe('the mapping tables', () => {
     expect(names(observedNodeMappings)).toEqual([
       'mvn-wishart-observed',
       'bivariate-normal-observed',
+      'gplvm-rows',
       'value-moved-to-mean',
       'rows',
     ])

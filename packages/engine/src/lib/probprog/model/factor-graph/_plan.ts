@@ -1,6 +1,6 @@
 /**
  * The layout plan of the model compiler: the decisions about how the latents of a model are laid out on the graph that are made
- * from the shape of the whole spec before any node is mapped, as one immutable value. Four detections run in a fixed order, each
+ * from the shape of the whole spec before any node is mapped, as one immutable value. Five detections run in a fixed order, each
  * reading only the ones before it: the vector latents that a `matmul` reads stay one Gaussian vector (`findPacked`, which also
  * records what a `matmul` reads), the non-centred vectors `z / S(x)` that one dense factor absorbs (`findNonCentred`, which reads
  * what `findPacked` recorded), the scalar normals an observation reads together that become one joint vector (`findGroups`,
@@ -14,6 +14,7 @@ import type { BoundModel } from '../bind.ts'
 import { auxId } from '../ids.ts'
 import type { OperatorTable } from '../operators.ts'
 import { type ExprSpec, exprRefs, type ModelNode, nodeRefs } from '../spec.ts'
+import { findGplvm, type GplvmPlan } from './_gplvm.ts'
 import {
   dependsOnLatent,
   type IdiomEnv,
@@ -84,6 +85,8 @@ export interface LayoutPlan {
   readonly groups: ReadonlyMap<string, ScalarGroup>
   /** The normal-gamma detections, by the name of the precision's node (gamma and inverse-gamma latents over no dimension). */
   readonly normalGamma: ReadonlyMap<string, NormalGammaDetection>
+  /** The latent variable model with random Fourier features, when the spec has that form (with `packScalars`; `_gplvm.ts`). */
+  readonly gplvm: GplvmPlan | undefined
 }
 
 /** What the plan reads of the model besides its spec. */
@@ -97,7 +100,7 @@ export interface PlanOptions {
 }
 
 /**
- * The layout plan of a bound model, the four detections in their order.
+ * The layout plan of a bound model, the five detections in their order.
  *
  * @param bound - The bound model (unrolled and with named dimensions only).
  * @param known - The constants of the model (`knownConstants`).
@@ -112,7 +115,8 @@ export function layoutPlan(bound: BoundModel, known: Known, options: PlanOptions
   const nonCentred = findNonCentred(bound, nodes, scope, matmulRead, options.denseScales)
   const groups = options.packScalars ? findGroups(bound, nodes, packed) : new Map<string, ScalarGroup>()
   const normalGamma = findNormalGamma(bound, nodes, known, options.modelOps)
-  return { packed, matmulRead, nonCentred, groups, normalGamma }
+  const gplvm = options.packScalars ? findGplvm(bound, nodes, known, options.modelOps) : undefined
+  return { packed, matmulRead, nonCentred, groups, normalGamma, gplvm }
 }
 
 /** A latent over one dimension that a `matmul` reads stays a vector variable, so its posterior keeps the correlations. */
