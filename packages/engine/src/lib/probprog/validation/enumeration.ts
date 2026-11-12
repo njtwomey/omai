@@ -259,9 +259,9 @@ export function zeroInflatedPoisson(problem: ZeroInflatedPoisson): ZeroInflatedP
     return s
   })
   const logBeta = item(lgamma(inflation.a)) + item(lgamma(inflation.b)) - item(lgamma(inflation.a + inflation.b))
-  type Box = readonly [readonly [number, number], readonly [number, number], readonly [number, number]]
+  type RangeTriple = readonly [readonly [number, number], readonly [number, number], readonly [number, number]]
   const sweep = (
-    box: Box,
+    box: RangeTriple,
     m: number,
   ): { moments: { mean: number; sd: number }[]; structural: number[]; logZ: number } => {
     const axis = (k: 0 | 1 | 2, i: number): number => box[k][0] + ((i + 0.5) / m) * (box[k][1] - box[k][0])
@@ -310,7 +310,7 @@ export function zeroInflatedPoisson(problem: ZeroInflatedPoisson): ZeroInflatedP
   }
   // Zoom: a box over the prior's range, then boxes around where the mass was found, until the cells are fine against the spread.
   const reach = Math.max(8, 4 * coefficientSd)
-  let box: Box = [
+  let box: RangeTriple = [
     [0.005, 0.995],
     [-reach, reach],
     [-reach, reach],
@@ -328,7 +328,7 @@ export function zeroInflatedPoisson(problem: ZeroInflatedPoisson): ZeroInflatedP
         ? [Math.max(1e-4, m.mean - half), Math.min(1 - 1e-4, m.mean + half)]
         : [m.mean - half, m.mean + half]
     })
-    box = next as unknown as Box
+    box = next as unknown as RangeTriple
     result = sweep(box, points)
   }
   const [pi, b0, b1] = result.moments as [

@@ -4,10 +4,10 @@ import { type ReactNode, useDeferredValue, useEffect, useMemo, useRef, useState 
 import { type PoolHandle, type PoolState, runPool, type StatusLine } from '../../../shared/workerPool.ts'
 import {
   countsAt,
-  type Dataset,
   FORMS,
   type Form,
   frameAt,
+  type GroupData,
   makeData,
   type PoolingRequest,
   type PoolingResult,
@@ -39,7 +39,7 @@ const makeWorker = (): StageWorker =>
 export default function PartialPooling(): ReactNode {
   const [settings, setSettings] = useState<Settings>({ groups: 20, smallest: 3, tau: 0.1, seed: 1 })
   const [pool, setPool] = useState<PoolState<PoolingResult> | undefined>(undefined)
-  const [shown, setShown] = useState<Dataset | undefined>(undefined)
+  const [shown, setShown] = useState<GroupData | undefined>(undefined)
   const handle = useRef<PoolHandle | undefined>(undefined)
   const [now, setNow] = useState(() => performance.now())
   const running = pool?.running === true
@@ -160,7 +160,7 @@ export default function PartialPooling(): ReactNode {
 /** What the runs recorded, drawn at the playhead of one player. */
 function Outputs(props: {
   readonly results: Readonly<Record<string, PoolingResult>>
-  readonly data: Dataset
+  readonly data: GroupData
 }): ReactNode {
   const { results, data } = props
   const [form, setForm] = useState<Form>('centred')

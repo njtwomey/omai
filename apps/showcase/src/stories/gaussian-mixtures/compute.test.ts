@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { type Build, engineOf, fit, type Groups, piecesOf, type Shape, type Size } from './compute.ts'
+import { type Build, engineOf, fit, type GroupShape, type Groups, piecesOf, type Size } from './compute.ts'
 import { eruptions } from './data.ts'
 import { correlation, readResult } from './reading.ts'
 
 const SMALL: Size = { rows: 70, warmup: 6, draws: 8, ellipse: 12 }
-const SHAPES: readonly Shape[] = ['round', 'diagonal', 'full']
+const SHAPES: readonly GroupShape[] = ['round', 'diagonal', 'full']
 const GROUPS: readonly Groups[] = ['two', 'three', 'open6', 'open8']
 const BUILDS: readonly Build[] = SHAPES.flatMap((shape) => GROUPS.map((groups): Build => ({ shape, groups })))
 

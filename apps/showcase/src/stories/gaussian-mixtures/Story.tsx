@@ -8,7 +8,16 @@ import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
 import { useStoryRun } from '../../kit/useStoryRun.ts'
 import { storyHref } from '../../story.ts'
-import { type Build, DEFAULT_BUILD, engineOf, type Groups, isOpen, REAL, type Result, type Shape } from './compute.ts'
+import {
+  type Build,
+  DEFAULT_BUILD,
+  engineOf,
+  type GroupShape,
+  type Groups,
+  isOpen,
+  REAL,
+  type Result,
+} from './compute.ts'
 import source from './compute.ts?raw'
 import { eruptions } from './data.ts'
 import { DataFigure, GroupsFigure, WeightsFigure } from './Figures.tsx'
@@ -18,7 +27,7 @@ import { readData, readResult } from './reading.ts'
 const DATA = eruptions()
 const READ = readData(DATA.length, DATA.wait)
 
-const SHAPES: readonly ChoiceOption<Shape>[] = [
+const SHAPES: readonly ChoiceOption<GroupShape>[] = [
   { value: 'round', label: 'Round', description: 'One spread for both directions, the same for every group.' },
   { value: 'diagonal', label: 'Diagonal', description: 'Its own spread in each direction, for every group.' },
   { value: 'full', label: 'Full', description: 'Its own spread in each direction, and a tilt.' },

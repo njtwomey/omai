@@ -18,7 +18,7 @@ export interface BroadcastPlan {
   readonly strides: readonly (readonly [number, number, number, number])[]
 }
 
-type Axes4 = [number, number, number, number]
+type Axes4 = [a0: number, a1: number, a2: number, a3: number]
 
 /**
  * Plan a broadcast of `operands` to `shape` (the broadcast shape of them), or `null` when it needs more than four axes.

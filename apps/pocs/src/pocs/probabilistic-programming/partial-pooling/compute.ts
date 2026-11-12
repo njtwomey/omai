@@ -38,7 +38,7 @@ export const GENERATING = { mu: 1.5, sd: 1 } as const
 export const SIZE_RATIO = 20
 
 /** The groups: sizes, observed means with their standard errors, and the effects the means were drawn around. */
-export interface Dataset {
+export interface GroupData {
   readonly settings: Settings
   readonly size: readonly number[]
   readonly mean: readonly number[]
@@ -53,7 +53,7 @@ export interface Dataset {
  * @param settings - The number of groups, the smallest size and the seed.
  * @returns The data.
  */
-export function makeData(settings: Settings): Dataset {
+export function makeData(settings: Settings): GroupData {
   const { groups, smallest, tau, seed } = settings
   const k = key(seed)
   const z = toFlat(drawNormal(foldIn(k, 0), [groups]))
@@ -82,7 +82,7 @@ const Z90 = 1.6449
  * @param data - The groups.
  * @returns The estimate of each group alone, and the one common estimate.
  */
-export function classicalEstimates(data: Dataset): { alone: Estimate[]; common: Estimate } {
+export function classicalEstimates(data: GroupData): { alone: Estimate[]; common: Estimate } {
   const weight = data.se.map((s) => 1 / (s * s))
   const total = weight.reduce((a, b) => a + b, 0)
   const mean = weight.reduce((a, w, j) => a + w * (data.mean[j] ?? 0), 0) / total
@@ -100,7 +100,7 @@ export function classicalEstimates(data: Dataset): { alone: Estimate[]; common: 
 /** One run of NUTS: the form, the data, the chains and their length. */
 export interface PoolingRequest {
   readonly method: Form
-  readonly data: Dataset
+  readonly data: GroupData
   readonly seed: number
   readonly chains: number
   readonly warmup: number

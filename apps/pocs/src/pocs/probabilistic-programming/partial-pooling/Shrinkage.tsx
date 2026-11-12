@@ -2,7 +2,7 @@ import { band, type Curve, cartesian, lines, type PointSet, points } from 'omai-
 import type { Figure } from 'omai-render/figure'
 import { ResponsiveChart, useColourMode } from 'omai-render/react'
 import { type ReactNode, useCallback, useMemo } from 'react'
-import { classicalEstimates, type Dataset, type PoolingFrame } from './compute.ts'
+import { classicalEstimates, type GroupData, type PoolingFrame } from './compute.ts'
 
 /** Each group's interval as a vertical stroke at `x`, one curve with gaps between the strokes. */
 function strokes(
@@ -29,7 +29,7 @@ function strokes(
  * @returns The chart.
  */
 export function Shrinkage(props: {
-  readonly data: Dataset
+  readonly data: GroupData
   readonly frame: PoolingFrame | undefined
   readonly pooledLabel: string
 }): ReactNode {

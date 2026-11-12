@@ -44,14 +44,14 @@ import type { Say } from '../../kit/protocol.ts'
 import { columns } from './data.ts'
 
 /** The shape of each group: one spread for both directions, a spread in each direction, or a spread in each direction and a tilt. */
-export type Shape = 'round' | 'diagonal' | 'full'
+export type GroupShape = 'round' | 'diagonal' | 'full'
 
 /** How many groups: a fixed number, or as many as the data need (stick-breaking weights cut off at 6 or 8 pieces). */
 export type Groups = 'two' | 'three' | 'open6' | 'open8'
 
 /** What the reader chose before pressing play. */
 export interface Build {
-  readonly shape: Shape
+  readonly shape: GroupShape
   readonly groups: Groups
 }
 

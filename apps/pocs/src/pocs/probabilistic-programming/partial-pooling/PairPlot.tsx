@@ -1,10 +1,10 @@
 import { type PairDraws, posteriorPairs } from 'omai-engine/exposition'
 import { PosteriorPairsView } from 'omai-render/react'
 import { type ReactNode, useMemo } from 'react'
-import { type Dataset, GENERATING, type PoolingResult } from './compute.ts'
+import { GENERATING, type GroupData, type PoolingResult } from './compute.ts'
 
 /** The name of a group's effect on the plot's axes. */
-export const effectName = (data: Dataset, j: number): string => `theta${j} (n=${data.size[j]})`
+export const effectName = (data: GroupData, j: number): string => `theta${j} (n=${data.size[j]})`
 
 /**
  * The corner plot of the group mean, the log of the spread and the effects of two chosen groups, from the draws of one
@@ -15,7 +15,7 @@ export const effectName = (data: Dataset, j: number): string => `theta${j} (n=${
  * @returns The figure, or a note while the run has no draws.
  */
 export function PairPlot(props: {
-  readonly data: Dataset
+  readonly data: GroupData
   readonly result: PoolingResult
   readonly groups: readonly [number, number]
   readonly cursor: number
