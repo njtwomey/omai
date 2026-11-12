@@ -168,7 +168,7 @@ const show = (list: typeof moves, limit: number): void => {
 
 if (worst.length > 0) {
   out(`ep-digest-check: ${worst.length} moves in ${new Set(worst.map((m) => m.item)).size} of ${compared} items`)
-  show(worst, 25)
+  show(worst, flag('all') ? Number.POSITIVE_INFINITY : 25)
 }
 if (noted.length > 0 && (worst.length === 0 || flag('verbose'))) {
   out(
