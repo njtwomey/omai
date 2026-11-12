@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -55,6 +56,18 @@ export default function Story(): ReactNode {
         The value itself starts as a wide bell curve, with a mean of 0 and a spread of 10, so almost any value is
         allowed. This is the clutter problem of Thomas Minka, who invented expectation propagation (EP).
       </p>
+
+      <Equation
+        label={
+          <>
+            The model: the value <Tex>\theta</Tex>, and a switch <Tex>z</Tex> for each reading <Tex>y</Tex>
+          </>
+        }
+        reading="The value theta is normal with mean 0 and spread 10. Each switch z is 0 or 1 with chance one half. If z is 0, the reading y is normal around theta with spread 1. If z is 1, it is normal around 0 with spread 3.2."
+      >
+        {String.raw`\theta \sim \Gauss(0, 10^2), \qquad z_i \sim \Bern\big(\tfrac12\big), \qquad
+          y_i \mid \theta, z_i \sim \begin{cases} \Gauss(\theta, 1^2) & z_i = 0 \\ \Gauss(0, 3.2^2) & z_i = 1 \end{cases}`}
+      </Equation>
 
       <Aside>
         A bell curve is a normal distribution. It has a mean, its centre, and a spread, how wide it is. A message is a

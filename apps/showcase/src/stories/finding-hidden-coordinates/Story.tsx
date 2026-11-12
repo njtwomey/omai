@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -65,6 +66,19 @@ export default function Story(): ReactNode {
         in this way, such sums behave like draws from a Gaussian process, and with more waves they match it more
         closely.
       </p>
+
+      <Equation
+        label={
+          <>
+            Measurement <Tex>n</Tex> of point <Tex>i</Tex>, from the coordinate <Tex>x_i</Tex> and the weights{' '}
+            <Tex>{'w_{nk}'}</Tex>
+          </>
+        }
+        reading={`The measurement y i n is the sum over the ${FEATURES} waves k of the weight w n k times the cosine of omega k times x i plus phi k, plus noise with spread ${fixed(NOISE)}.`}
+      >
+        {String.raw`y_{in} = \sum_{k=1}^{${FEATURES}} w_{nk} \cos(\omega_k x_i + \phi_k) + \varepsilon_{in},
+          \qquad \varepsilon_{in} \sim \Gauss(0, ${fixed(NOISE)}^2)`}
+      </Equation>
 
       <p>
         Two things are unknown. One is the coordinate of every point, <span className="num">{POINTS}</span> numbers. The

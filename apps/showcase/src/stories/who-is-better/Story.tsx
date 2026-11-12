@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -93,6 +94,21 @@ export default function Story(): ReactNode {
         by chance. The better performance wins. If the two performances are within {DRAW_MARGIN} of each other, the game
         is a draw. So a result tells us only about the difference between two skills.
       </p>
+
+      <Equation
+        label={
+          <>
+            The model: skill <Tex>s</Tex>, performance <Tex>p</Tex> and draw margin <Tex>\varepsilon</Tex>
+          </>
+        }
+        reading={`Each skill s is normal with mean 0 and spread 1. A performance p is normal around the skill with spread 1. Player a wins when p a minus p b is more than ${DRAW_MARGIN}, loses when it is less than minus ${DRAW_MARGIN}, and the game is a draw otherwise.`}
+      >
+        {String.raw`\begin{aligned}
+          s_i &\sim \Gauss(0, 1^2), \qquad p_i \sim \Gauss(s_i, 1^2) \\
+          \text{a wins} &: p_a - p_b > \varepsilon, \qquad \text{a loses}: p_a - p_b < -\varepsilon, \qquad
+          \text{draw}: |p_a - p_b| \le \varepsilon, \qquad \varepsilon = ${DRAW_MARGIN}
+        \end{aligned}`}
+      </Equation>
 
       <h2>How the messages work</h2>
 

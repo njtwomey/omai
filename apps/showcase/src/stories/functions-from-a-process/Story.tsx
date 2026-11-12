@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex, tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -33,18 +34,33 @@ export default function Story(): ReactNode {
       <h2>A probability on whole functions</h2>
 
       <p>
-        A function has a value at every <em>x</em>, which is too many numbers to give a probability. So we look at it in
-        a finite number of places: here a grid of 121 points from <em>x</em> = −3 to <em>x</em> = 3. A Gaussian process
-        says the values at these places are jointly normal. Two things set that distribution: the average value, zero
-        here, and how strongly the value at one <em>x</em> goes with the value at another.
+        A function has a value at every <Tex>x</Tex>, which is too many numbers to give a probability. So we look at it
+        in a finite number of places: here a grid of 121 points from <Tex>x = -3</Tex> to <Tex>x = 3</Tex>. A Gaussian
+        process says the values at these places are jointly normal. Two things set that distribution: the average value,
+        zero here, and how strongly the value at one <Tex>x</Tex> goes with the value at another.
       </p>
+
+      <Equation label="A Gaussian process" reading="The function f is a Gaussian process with mean zero and kernel k.">
+        {String.raw`f \sim \GP\big(0,\; k(x, x')\big)`}
+      </Equation>
 
       <p>
         The second part is the <em>kernel</em>. This story uses the squared exponential kernel. Values at nearby{' '}
-        <em>x</em> move together almost exactly, and values far apart hardly move together. The length scale, here{' '}
-        <span className="num">{fixed(LENGTH_SCALE)}</span>, is the distance over which this link fades. The functions
-        are therefore smooth, and they bend on a scale of about that length.
+        <Tex>x</Tex> move together almost exactly, and values far apart hardly move together. The length scale{' '}
+        <Tex>\ell</Tex>, here <span className="num">{fixed(LENGTH_SCALE)}</span>, is the distance over which this link
+        fades. The functions are therefore smooth, and they bend on a scale of about that length.
       </p>
+
+      <Equation
+        label={
+          <>
+            The squared exponential kernel, with length scale <Tex>\ell</Tex>
+          </>
+        }
+        reading="The kernel of x and x prime is the exponential of minus the squared distance between x and x prime, divided by two times the length scale squared."
+      >
+        {String.raw`k(x, x') = \exp\!\left(-\frac{(x - x')^2}{2\,\ell^2}\right)`}
+      </Equation>
 
       <Aside>
         A Gaussian process needs no sampler. Drawing a function and conditioning on data are both linear algebra on a
@@ -78,7 +94,7 @@ export default function Story(): ReactNode {
 
               <p>
                 The eight functions are all different, and all smooth. None is preferred. The shaded band is{' '}
-                <span className="num">{fixed(r.priorWidth)}</span> wide at every <em>x</em>, because the process has
+                <span className="num">{fixed(r.priorWidth)}</span> wide at every <Tex>x</Tex>, because the process has
                 been told nothing that would make it surer about one place than another.
               </p>
 
@@ -101,16 +117,16 @@ export default function Story(): ReactNode {
 
               <p>
                 Away from the points, the functions can differ, and they do. At the five points the band is{' '}
-                <span className="num">{fixed(r.atPoints)}</span> wide on average. Between them it widens. At <em>x</em>{' '}
-                = <span className="num">{fixed(r.betweenAt, 1)}</span>, the widest place between the outer points, it is{' '}
+                <span className="num">{fixed(r.atPoints)}</span> wide on average. Between them it widens. At{' '}
+                <Tex>{tex`x = ${fixed(r.betweenAt, 1)}`}</Tex>, the widest place between the outer points, it is{' '}
                 <span className="num">{fixed(r.between)}</span> wide, and the eight functions there range from{' '}
                 <span className="num">{fixed(r.betweenLow)}</span> to{' '}
                 <span className="num">{fixed(r.betweenHigh)}</span>.{' '}
                 {r.widest > r.between + 0.05 ? (
                   <>
-                    The band is widest of all at <em>x</em> = <span className="num">{fixed(r.widestAt, 1)}</span>,
-                    beyond the outer points, where it is <span className="num">{fixed(r.widest)}</span> wide. For the
-                    prior it is <span className="num">{fixed(r.priorWidth)}</span> wide.
+                    The band is widest of all at <Tex>{tex`x = ${fixed(r.widestAt, 1)}`}</Tex>, beyond the outer points,
+                    where it is <span className="num">{fixed(r.widest)}</span> wide. For the prior it is{' '}
+                    <span className="num">{fixed(r.priorWidth)}</span> wide.
                   </>
                 ) : (
                   <>

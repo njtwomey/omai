@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -57,7 +58,7 @@ export default function Story(): ReactNode {
 
       <Aside>
         The curve after the data is the <em>posterior</em>. The flat curve before is the <em>prior</em>. A flat prior is
-        a Beta(1, 1), which says we have no idea which bias is likely.
+        a <Tex>\Beta(1, 1)</Tex>, which says we have no idea which bias is likely.
       </Aside>
 
       <p>
@@ -66,6 +67,18 @@ export default function Story(): ReactNode {
         other. omai has an engine for this case that gives the answer in closed form, with no sampling and no
         approximation.
       </p>
+
+      <Equation
+        label={
+          <>
+            The model: the bias <Tex>\theta</Tex>, and <Tex>k</Tex> heads in <Tex>n</Tex> flips
+          </>
+        }
+        reading="The bias theta has a Beta one one prior. The number of heads k in n flips is binomial with chance theta. The posterior of theta is a Beta with one plus k and one plus n minus k."
+      >
+        {String.raw`\theta \sim \Beta(1, 1), \qquad k \mid \theta \sim \Binom(n, \theta)
+          \quad\Longrightarrow\quad \theta \mid k \sim \Beta(1 + k,\; 1 + n - k)`}
+      </Equation>
 
       <p>
         We look at the belief at six moments: before any flip, then after 1, 3, 10, 30 and 100 flips. Press play to flip

@@ -1,7 +1,9 @@
 import { type ModelRun, modelRunAt } from 'omai-engine/exposition'
+import { messageTex } from 'omai-render/views'
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex, tex } from '../../kit/Maths.tsx'
 import { MessageReplay } from '../../kit/MessageReplay.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
@@ -47,7 +49,8 @@ function describeStep(step: number, record: ModelRun): ReactNode {
       <ul className="m-0 list-none p-0">
         {at.messages.map((m) => (
           <li key={m.from}>
-            {SENDER[m.from] ?? m.from} sends {m.text}.
+            {SENDER[m.from] ?? m.from} sends{' '}
+            {messageTex(m.text) === undefined ? m.text : <Tex>{messageTex(m.text) as string}</Tex>}.
           </li>
         ))}
       </ul>
@@ -104,6 +107,18 @@ export default function Story(): ReactNode {
         no belief.
       </p>
 
+      <Equation
+        label={
+          <>
+            The product of the three bells: precision <Tex>J_k</Tex> and mean <Tex>\mu_k</Tex>, for the prior (0), the
+            digital reading (1) and the dial reading (2)
+          </>
+        }
+        reading="The precision J of the product is J zero plus J one plus J two. Its mean mu is the sum of each precision times its mean, divided by J."
+      >
+        {String.raw`J = J_0 + J_1 + J_2, \qquad \mu = \frac{J_0\,\mu_0 + J_1\,\mu_1 + J_2\,\mu_2}{J}`}
+      </Equation>
+
       <p>
         When you press play, a worker makes a room and two readings from a seed, and runs EP on them. Then the page
         shows what was sent.
@@ -138,8 +153,8 @@ export default function Story(): ReactNode {
               />
 
               <p>
-                In the replay, <code>{`N(μ = ${PRIOR.mean}, σ² = ${PRIOR.sd ** 2})`}</code> is a bell curve with mean{' '}
-                {PRIOR.mean} and variance {PRIOR.sd ** 2}. In the first sweep, the prior sends mean{' '}
+                In the replay, <Tex>{String.raw`\Gauss(\mu = ${PRIOR.mean}, \sigma^2 = ${PRIOR.sd ** 2})`}</Tex> is a
+                bell curve with mean {PRIOR.mean} and variance {PRIOR.sd ** 2}. In the first sweep, the prior sends mean{' '}
                 <span className="num">{sig3(r.prior.mean)}</span> and variance{' '}
                 <span className="num">{sig3(r.prior.variance)}</span>, the belief we started with. The digital factor
                 sends mean <span className="num">{sig3(r.digital.mean)}</span> and variance{' '}
@@ -160,6 +175,13 @@ export default function Story(): ReactNode {
                 <span className="num">{sig3(r.product.sd)}</span>. Its mean, weighted by precision, is{' '}
                 <span className="num">{sig3(r.product.mean)}</span>.
               </p>
+
+              <Equation label="The same sums with the numbers of this run, rounded to three digits">
+                {tex`\begin{aligned}
+                  J &\approx ${sig3(r.prior.precision)} + ${sig3(r.digital.precision)} + ${sig3(r.dial.precision)} \approx ${sig3(r.total)} \\
+                  \mu &\approx \frac{${sig3(r.prior.precision)} \cdot ${sig3(r.prior.mean)} + ${sig3(r.digital.precision)} \cdot ${sig3(r.digital.mean)} + ${sig3(r.dial.precision)} \cdot ${sig3(r.dial.mean)}}{${sig3(r.total)}} \approx ${sig3(r.product.mean)}
+                \end{aligned}`}
+              </Equation>
 
               <p>
                 EP reports a belief with mean <span className="num">{sig3(result.belief.mean)}</span> and standard

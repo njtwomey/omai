@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Aside, Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -42,8 +43,8 @@ export default function Story(): ReactNode {
       </p>
 
       <Aside>
-        Counts of rare events in a fixed time, at a steady rate, follow a Poisson distribution. A rate of 3 a year gives
-        3 on average, but many years with 1 and many with 6.
+        Counts of rare events in a fixed time, at a steady rate, follow a Poisson distribution. A rate of{' '}
+        <Tex>\lambda = 3</Tex> a year gives 3 on average, but many years with 1 and many with 6.
       </Aside>
 
       <h2>A model with one switch</h2>
@@ -54,6 +55,19 @@ export default function Story(): ReactNode {
         can change from before to after, never back. Any year has a small, steady chance, about one in {DATA.years}, of
         being the year it changes. That is the whole model.
       </p>
+
+      <Equation
+        label={
+          <>
+            The model: <Tex>s_t</Tex> is the phase of year <Tex>t</Tex>, and <Tex>\lambda_k</Tex> the rate of phase{' '}
+            <Tex>k</Tex>
+          </>
+        }
+        reading={`Each of the two rates lambda is gamma with shape 2 and rate 1. The count y t in year t is Poisson with the rate of that year's phase. The phase can change from before to after with chance one in ${DATA.years} each year, and never back.`}
+      >
+        {String.raw`\lambda_k \sim \GammaD(2, 1), \qquad y_t \mid s_t \sim \Poisson(\lambda_{s_t}), \qquad
+          P(s_{t+1} = \text{after} \mid s_t = \text{before}) = \frac{1}{${DATA.years}}`}
+      </Equation>
 
       <p>
         The unknown we care about is the year of the switch: which of the {DATA.years} years is the first of the new
