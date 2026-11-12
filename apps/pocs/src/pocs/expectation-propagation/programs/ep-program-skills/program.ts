@@ -3,7 +3,24 @@ import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { foldIn, key, normal, uniform } from 'omai-engine/random'
-import { item, toFlat } from 'omai-engine/tensor'
+import {
+  arange,
+  cast,
+  div,
+  equal,
+  flatten,
+  less,
+  mod,
+  nonzero,
+  ones,
+  reshape,
+  sub,
+  type Tensor,
+  take,
+  toFlat,
+  triu,
+  where,
+} from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
 import type { EpHooks } from '../../../../shared/ep/sweeps.ts'
 
@@ -22,16 +39,16 @@ export const defaultSetup: SkillsSetup = { seed: 3, players: 8, rounds: 3, sprea
 // region simulate
 export function simulate({ seed, players, rounds, spread }: SkillsSetup) {
   const k = key(seed)
-  const skills = Array.from(toFlat(normal(foldIn(k, 0), [players], { scale: spread })))
+  const skills = normal(foldIn(k, 0), [players], { scale: spread })
   // A round robin: every pair meets `rounds` times, taking turns to be listed first.
-  const games: [number, number][] = []
-  for (let r = 0; r < rounds; r++)
-    for (let i = 0; i < players; i++) for (let j = i + 1; j < players; j++) games.push(r % 2 ? [j, i] : [i, j])
-  const u = toFlat(uniform(foldIn(k, 1), [games.length]))
-  const win = games.map(([a, b], g) =>
-    (u[g] ?? 1) < item(ndtr(((skills[a] ?? 0) - (skills[b] ?? 0)) / Math.SQRT2)) ? 1 : 0,
-  )
-  return { a: games.map((g) => g[0]), b: games.map((g) => g[1]), win, skills, players }
+  const [first, second] = nonzero(triu(ones([players, players]), 1)) as [Tensor, Tensor]
+  const swap = reshape(equal(mod(arange(rounds), 2), 1), [rounds, 1])
+  const a = flatten(where(swap, second, first))
+  const b = flatten(where(swap, first, second))
+  const u = uniform(foldIn(k, 1), [(rounds * players * (players - 1)) / 2])
+  const chance = ndtr(div(sub(take(skills, a), take(skills, b)), Math.SQRT2))
+  const win = cast(less(u, chance), 'float64')
+  return { a: toFlat(a), b: toFlat(b), win: toFlat(win), skills: toFlat(skills), players }
 }
 // endregion
 

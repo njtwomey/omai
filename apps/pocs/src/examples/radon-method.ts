@@ -20,6 +20,7 @@ import {
 } from 'omai-engine/probprog/models'
 import { key } from 'omai-engine/random'
 import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
+import { add, item, mul, sum, tensor, toFlat, type Value, zeros } from 'omai-engine/tensor'
 import { type Config, derived } from 'omai-engine/trace'
 import { defineExample, type Example, type ExampleProblem, exampleNumber, exampleString } from './example-method.ts'
 import {
@@ -140,7 +141,7 @@ export function radonProblem(config: Config): RadonProblem {
   const sizes = g.generating['sizes'] as number[]
   // The fixed-effects estimate: the floor effect from the variation within counties, each county's intercept its own mean
   // after taking that out.
-  const mean = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length)
+  const mean = (xs: readonly number[]): number => item(sum(tensor(xs as number[]))) / Math.max(1, xs.length)
   const byCounty = sizes.map((_, j) => county.flatMap((c, i) => (c === j ? [i] : [])))
   let num = 0
   let den = 0
@@ -194,19 +195,20 @@ const declared: Example<RadonProblem> = defineExample<RadonProblem>({
     const posterior = (state: unknown): Posterior => {
       const post = fitted(state)
       const at = (v: number[] | undefined, j: number): number => v?.[j] ?? 0
+      // A draw's values of a site, as a vector over the counties (zeros when the site is missing).
+      const over = (v: number[] | undefined): Value => (v === undefined ? zeros([counties]) : tensor(v))
       if (problem.pooling === 'partial' && problem.parameterisation === 'non-centred')
         return withDerivedSites(post, ['alpha'], (d) => ({
-          alpha: Array.from({ length: counties }, (_, j) => at(d['mu'], 0) + at(d['tau'], 0) * at(d['z'], j)),
+          alpha: toFlat(add(at(d['mu'], 0), mul(at(d['tau'], 0), over(d['z'])))),
         }))
       if (problem.pooling === 'slopes')
         return withDerivedSites(post, ['alpha', 'slope'], (d) => {
           const rho = at(d['rho'], 0)
           const rest = Math.sqrt(Math.max(1e-12, 1 - rho * rho))
           return {
-            alpha: Array.from({ length: counties }, (_, j) => at(d['mu'], 0) + at(d['tau'], 0) * at(d['z_a'], j)),
-            slope: Array.from(
-              { length: counties },
-              (_, j) => at(d['mu_b'], 0) + at(d['tau_b'], 0) * (rho * at(d['z_a'], j) + rest * at(d['z_b'], j)),
+            alpha: toFlat(add(at(d['mu'], 0), mul(at(d['tau'], 0), over(d['z_a'])))),
+            slope: toFlat(
+              add(at(d['mu_b'], 0), mul(at(d['tau_b'], 0), add(mul(rho, over(d['z_a'])), mul(rest, over(d['z_b']))))),
             ),
           }
         })

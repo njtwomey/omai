@@ -1,4 +1,5 @@
 import type { ChainDiagnostics, PosteriorComparison, PosteriorPairs } from 'omai-engine/exposition'
+import { reshape, sliceAxis, take, tensor, toArray, toFlat } from 'omai-engine/tensor'
 import { band, cartesian, contours, heatmap, lines, points } from 'omai-render/charts'
 import type { Figure } from 'omai-render/figure'
 import {
@@ -339,19 +340,14 @@ function SurfaceChart(props: { readonly fit: Fit; readonly spread: boolean }): R
   const build = useCallback(
     (figure: Figure) => {
       const size = fit.size
-      const xs = Array.from({ length: size }, (_, i) => fit.x[i] ?? 0)
-      const ys = Array.from({ length: size }, (_, j) => fit.y[j * size] ?? 0)
-      const values = spread ? fit.probability.sd : fit.probability.mean
-      const z = Array.from({ length: size }, (_, j) =>
-        Array.from({ length: size }, (_, i) => values[j * size + i] ?? Number.NaN),
-      )
+      // The grid is `size` by `size`, the first input fastest: a value per grid point is a matrix, a row per second input.
+      const surface = (values: readonly number[]): number[][] =>
+        toArray(reshape(tensor(values as number[]), [size, size])) as number[][]
+      const xs = toFlat(sliceAxis(tensor(fit.x as number[]), 0, 0, size))
+      const ys = toFlat(take(reshape(tensor(fit.y as number[]), [size, size]), 0, 1))
+      const z = surface(spread ? fit.probability.sd : fit.probability.mean)
       const truth = fit.truth
-      const zt =
-        truth === null
-          ? null
-          : Array.from({ length: size }, (_, j) =>
-              Array.from({ length: size }, (_, i) => truth[j * size + i] ?? Number.NaN),
-            )
+      const zt = truth === null ? null : surface(truth)
       const dots = [0, 1].map((cls) => ({
         x: fit.data.x.flatMap((r, i) => (fit.data.y[i] === cls ? [r[0] ?? 0] : [])),
         y: fit.data.x.flatMap((r, i) => (fit.data.y[i] === cls ? [r[1] ?? 0] : [])),
@@ -363,20 +359,15 @@ function SurfaceChart(props: { readonly fit: Fit; readonly spread: boolean }): R
       return cartesian(
         [
           spread ? heatmap(z, { x: xs, y: ys, mode }) : heatmap(z, { x: xs, y: ys, range: [0, 1], centre: 0.5, mode }),
-          contours(
-            Array.from({ length: size }, (_, j) =>
-              Array.from({ length: size }, (_, i) => fit.probability.mean[j * size + i] ?? Number.NaN),
-            ),
-            {
-              x: xs,
-              y: ys,
-              levels: [0.5],
-              labels: false,
-              colour: 'fg',
-              width: 2,
-              mode,
-            },
-          ),
+          contours(surface(fit.probability.mean), {
+            x: xs,
+            y: ys,
+            levels: [0.5],
+            labels: false,
+            colour: 'fg',
+            width: 2,
+            mode,
+          }),
           ...(zt === null
             ? []
             : [

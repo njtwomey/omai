@@ -17,7 +17,27 @@ import {
   normal,
 } from '../../dists/index.ts'
 import { uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
-import { fromStorage, type Tensor, tensor, toFlat } from '../../tensor/index.ts'
+import {
+  argsort,
+  concat,
+  cumsum,
+  div,
+  fromStorage,
+  maximum,
+  minimum,
+  mul,
+  reshape,
+  searchsorted,
+  sqrt,
+  stack as stackValues,
+  sub,
+  type Tensor,
+  take,
+  tensor,
+  toFlat,
+  type Value,
+  zeros,
+} from '../../tensor/index.ts'
 import type { RunStatus } from '../../trace/index.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
 
@@ -85,48 +105,37 @@ export function distributionOf(r: SiteRecord): Distribution {
 function stackBatch(records: readonly SiteRecord[], shape: readonly number[]): Distribution {
   const first = records[0]
   if (first === undefined) throw new OmaiError('value', 'ep-grid: no nodes')
-  const size = shape.reduce((a, b) => a * b, 1)
-  const stack = (f: (r: SiteRecord, i: number) => number): Tensor => {
-    const k = records.length
-    const flat = new Float64Array(size * k)
-    records.forEach((r, j) => {
-      for (let i = 0; i < size; i++) flat[i * k + j] = f(r, i)
-    })
-    return fromStorage(flat, [...shape, k], 'float64')
+  const k = records.length
+  const stack = (f: (r: SiteRecord) => Value): Tensor => {
+    const columns = records.map((r) => f(r))
+    return reshape(stackValues(columns, -1), [...shape, k]) as Tensor
   }
-  const m = (r: SiteRecord, i: number): number => r.mean[i] ?? 0
-  const v = (r: SiteRecord, i: number): number => Math.max(r.variance[i] ?? 0, 1e-300)
+  const m = (r: SiteRecord): Tensor => tensor(r.mean)
+  const v = (r: SiteRecord): Value => maximum(tensor(r.variance), 1e-300)
   if (first.kind === 'gamma')
     return gammaDist(
-      stack((r, i) => (m(r, i) * m(r, i)) / v(r, i)),
-      stack((r, i) => m(r, i) / v(r, i)),
+      stack((r) => div(mul(m(r), m(r)), v(r))),
+      stack((r) => div(m(r), v(r))),
     )
   if (first.kind === 'beta') {
-    const common = (r: SiteRecord, i: number): number => (m(r, i) * (1 - m(r, i))) / v(r, i) - 1
+    const common = (r: SiteRecord): Value => sub(div(mul(m(r), sub(1, m(r))), v(r)), 1)
     return betaDist(
-      stack((r, i) => m(r, i) * common(r, i)),
-      stack((r, i) => (1 - m(r, i)) * common(r, i)),
+      stack((r) => mul(m(r), common(r))),
+      stack((r) => mul(sub(1, m(r)), common(r))),
     )
   }
   return normal(
     stack(m),
-    stack((r, i) => Math.sqrt(v(r, i))),
+    stack((r) => sqrt(v(r))),
   )
 }
 
 /** `n` indices drawn by the weights, by inversion of the cumulative sum at uniform points. */
 export function chooseNodes(key: Key, weights: readonly number[], n: number): number[] {
-  const cum: number[] = []
-  let total = 0
-  for (const w of weights) {
-    total += w
-    cum.push(total)
-  }
-  const u = toFlat(drawUniform(key, [n]))
-  return Array.from({ length: n }, (_, i) => {
-    const at = cum.findIndex((c) => c >= (u[i] ?? 0) * total)
-    return at < 0 ? weights.length - 1 : at
-  })
+  const cum = cumsum(tensor(weights))
+  const total = toFlat(cum)[weights.length - 1] ?? 0
+  const at = searchsorted(cum, mul(drawUniform(key, [n]), total))
+  return toFlat(minimum(at, weights.length - 1))
 }
 
 /** What {@link siteMixturePosterior} reads. */
@@ -184,13 +193,19 @@ export function siteMixturePosterior(spec: SiteMixture): Posterior {
     for (const [si, s] of siteNames.entries()) {
       const shape = [...(first[s] as SiteRecord).shape]
       const size = shape.reduce((a, b) => a * b, 1)
-      const flat = new Float64Array(n * size)
+      // The draws of each run are stacked run by run, then put back in the order of the picks.
+      const parts: Value[] = []
+      const positionsInOrder: number[] = []
       for (const [run, positions] of byRun) {
         const d = distributionOf((spec.runs[run] as Readonly<Record<string, SiteRecord>>)[s] as SiteRecord)
-        const drawn = toFlat(d.sample(foldIn(key, 1 + si * 100003 + run), [positions.length]))
-        for (const [j, at] of positions.entries()) flat.set(drawn.slice(j * size, (j + 1) * size), at * size)
+        const drawn = d.sample(foldIn(key, 1 + si * 100003 + run), [positions.length])
+        parts.push(reshape(drawn, [positions.length, size]))
+        positionsInOrder.push(...positions)
       }
-      out[s] = fromStorage(flat, [n, ...shape], 'float64')
+      out[s] =
+        parts.length === 0
+          ? zeros([n, ...shape])
+          : (reshape(take(concat(parts, 0), argsort(positionsInOrder), 0), [n, ...shape]) as Tensor)
     }
     for (const v of valueNames) {
       const column = spec.values?.[v] ?? []

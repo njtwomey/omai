@@ -17,6 +17,7 @@ import {
   temperatureLadder,
 } from '../../sampling/index.ts'
 import { bool, choice, dict, int, real } from '../../space/index.ts'
+import { eye, ones, toFlat } from '../../tensor/index.ts'
 import { type Config, defineContract, scalar, stateFromJson, stateToJson, tensor } from '../../trace/index.ts'
 import { type McmcPath, type McmcPlan, type McmcRunState, mcmcMethodOf } from './_mcmc-driver.ts'
 import { hamiltonianFamilies, windowWarmer } from './_mcmc-families.ts'
@@ -129,9 +130,7 @@ export function temperingMethod(model: MethodModel, options: { readonly name?: s
           })
         const dense = flag(c, 'dense')
         const goal = num(c, 'targetAcceptance') > 0 ? num(c, 'targetAcceptance') : inner.accept
-        const identity = dense
-          ? Float64Array.from({ length: dim * dim }, (_, k) => (k % (dim + 1) === 0 ? 1 : 0))
-          : new Float64Array(dim).fill(1)
+        const identity = dense ? Float64Array.from(toFlat(eye(dim))) : Float64Array.from(toFlat(ones([dim])))
         return {
           kernelDim: dim,
           walkers: 1,

@@ -10,7 +10,7 @@
 
 import { bijectors } from '../../dists/index.ts'
 import { normal as drawNormal, foldIn, type Key } from '../../random/index.ts'
-import { item, tensor, toFlat } from '../../tensor/index.ts'
+import { arange, exp, item, mod, mul, take, tensor, toFlat } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, type ModelDefinition, ops, toProgram } from '../model/index.ts'
 import { gridPosterior, type MarginalOracle } from '../validation/index.ts'
@@ -37,7 +37,7 @@ function generateSchools(key: Key, size = 8): BenchmarkData {
     groups: size,
     mu: 4,
     tau: 3,
-    standardErrors: Array.from({ length: size }, (_, j) => SCHOOL_SIGMA[j % SCHOOL_SIGMA.length] ?? 10),
+    standardErrors: toFlat(take(tensor(SCHOOL_SIGMA), mod(arange(size), SCHOOL_SIGMA.length))),
   })
 }
 
@@ -80,10 +80,10 @@ export function generateSchoolGroups(key: Key, options: SchoolGroupsOptions): Be
   const { mu, tau } = options
   const z = toFlat(drawNormal(foldIn(key, 0), [size]))
   const e = toFlat(drawNormal(foldIn(key, 1), [size]))
-  const w = toFlat(drawNormal(foldIn(key, 2), [size]))
+  const w = drawNormal(foldIn(key, 2), [size])
   const sigma =
     options.standardErrors === undefined
-      ? Array.from({ length: size }, (_, j) => (options.se ?? 10) * Math.exp((options.seSpread ?? 0.4) * (w[j] ?? 0)))
+      ? toFlat(mul(exp(mul(w, options.seSpread ?? 0.4)), options.se ?? 10))
       : [...options.standardErrors]
   const theta = Array.from(z, (v) => mu + tau * v)
   return {

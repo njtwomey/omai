@@ -8,6 +8,7 @@ import {
   bayesianGamNotes,
 } from 'omai-engine/probprog/models'
 import { choice, defaults, dict, int, real, type SpaceValue } from 'omai-engine/space'
+import { arange, toFlat } from 'omai-engine/tensor'
 import { tensorSeries } from 'omai-engine/trace'
 import { type WorkerLike, workerProducer, workerStage } from 'omai-render/producer'
 import {
@@ -448,7 +449,7 @@ function View(props: {
     const ev = run.events.filter((e) => e.type === 'metric' && e.name === path) as { step: number; value: number }[]
     return { label: 'ELBO', steps: ev.map((e) => e.step), values: ev.map((e) => e.value) }
   }, [run, kind])
-  const steps = useMemo(() => Array.from({ length: live.head + 1 }, (_, i) => i), [live.head])
+  const steps = useMemo(() => toFlat(arange(live.head + 1)), [live.head])
   const seek = useScrubClick(steps, live.head, props.onScrub)
   const truth = useMemo(() => curve.truthAt?.(fit?.grid ? [...fit.grid] : []), [curve, fit?.grid])
   const fitted = useMemo(

@@ -30,7 +30,34 @@ import {
 import type { DataInput, ModelDefinition } from 'omai-engine/probprog/model'
 import { key } from 'omai-engine/random'
 import { type DictSpace, defaults, dict, int, type RealSpace, type UnionSpace } from 'omai-engine/space'
-import { toFlat } from 'omai-engine/tensor'
+import {
+  add,
+  all,
+  arange,
+  asTensor,
+  cast,
+  concat,
+  div,
+  floor,
+  floorDiv,
+  full,
+  isfinite,
+  item,
+  mod,
+  mul,
+  reshape,
+  sliceAxis,
+  sqrt,
+  square,
+  sub,
+  sum,
+  type TensorLike,
+  take,
+  toArray,
+  toFlat,
+  type Value,
+  zeros,
+} from 'omai-engine/tensor'
 import { type Config, type Contract, type DerivedSource, type RunStatus, session } from 'omai-engine/trace'
 
 /**
@@ -271,36 +298,34 @@ export function drawRows(post: Posterior, sites: readonly string[], n: number): 
     const stored = post.form === 'samples' ? post.draws : undefined
     const form = stored !== undefined && sites.every((s) => stored[s] !== undefined)
     const drawn = form ? undefined : post.sample(key(1), n)
-    const columns: { names: string[]; width: number; flat: ArrayLike<number> }[] = []
-    let total = Number.POSITIVE_INFINITY
+    const columns: { names: string[]; block: Value }[] = []
     for (const site of sites) {
-      const tensor = form ? stored?.[site] : drawn?.[site]
-      if (tensor === undefined) return undefined
-      const width = tensor.shape.length <= 1 ? 1 : tensor.shape.slice(1).reduce((a, b) => a * b, 1)
-      const flat = toFlat(tensor)
-      total = Math.min(total, Math.floor(flat.length / width))
+      const drawsOfSite = form ? stored?.[site] : drawn?.[site]
+      if (drawsOfSite === undefined) return undefined
+      const width = drawsOfSite.shape.length <= 1 ? 1 : drawsOfSite.shape.slice(1).reduce((a, b) => a * b, 1)
       columns.push({
-        names: tensor.shape.length <= 1 ? [site] : Array.from({ length: width }, (_, j) => `${site}[${j}]`),
-        width,
-        flat,
+        names: drawsOfSite.shape.length <= 1 ? [site] : Array.from({ length: width }, (_, j) => `${site}[${j}]`),
+        block: reshape(drawsOfSite, [-1, width]),
       })
     }
+    const total = Math.min(...columns.map((c) => c.block.shape[0] ?? 0))
     if (total === 0 || !Number.isFinite(total)) return undefined
     const perChain = form && post.chains !== undefined ? post.chains.numDraws : total
     const keep = Math.min(n, total)
-    const rows: number[][] = []
-    const chain: number[] = []
-    const index: number[] = []
-    for (let k = 0; k < keep; k++) {
-      const i = keep === total ? k : Math.round((k * (total - 1)) / (keep - 1 || 1))
-      rows.push(
-        columns.flatMap((c) => Array.from({ length: c.width }, (_, j) => c.flat[i * c.width + j] ?? Number.NaN)),
-      )
-      chain.push(Math.floor(i / perChain))
-      index.push(i % perChain)
-    }
-    return rows.every((r) => r.every(Number.isFinite))
-      ? { rows, chain, index, names: columns.flatMap((c) => c.names) }
+    // The draws kept: all of them, or evenly spaced through them.
+    const at = keep === total ? arange(keep) : floor(add(div(mul(arange(keep), total - 1), keep - 1 || 1), 0.5))
+    const joined = concat(
+      columns.map((c) => sliceAxis(c.block, 0, 0, total)),
+      1,
+    )
+    const rows = take(joined, cast(at, 'int32'), 0)
+    return item(all(isfinite(rows))) === 1
+      ? {
+          rows: toArray(rows) as number[][],
+          chain: toFlat(floorDiv(at, perChain)),
+          index: toFlat(mod(at, perChain)),
+          names: columns.flatMap((c) => c.names),
+        }
       : undefined
   } catch {
     return undefined
@@ -319,16 +344,13 @@ export function drawRows(post: Posterior, sites: readonly string[], n: number): 
  * columnMoments([[1], [3]], 1).mean // => [2]
  * ```
  */
-export function columnMoments(
-  rows: readonly (readonly number[])[],
-  p: number,
-): { readonly mean: number[]; readonly sd: number[] } {
-  const n = rows.length
-  const mean = Array.from({ length: p }, (_, j) => rows.reduce((a, r) => a + (r[j] ?? 0), 0) / n)
-  const sd = Array.from({ length: p }, (_, j) =>
-    Math.sqrt(rows.reduce((a, r) => a + ((r[j] ?? 0) - (mean[j] ?? 0)) ** 2, 0) / Math.max(1, n - 1)),
-  )
-  return { mean, sd }
+export function columnMoments(rows: TensorLike, p: number): { readonly mean: number[]; readonly sd: number[] } {
+  const block = asTensor(rows)
+  const n = block.shape[0] ?? 0
+  if (n === 0) return { mean: toFlat(full([p], Number.NaN)), sd: toFlat(zeros([p])) }
+  const mean = div(sum(block, 0), n)
+  const sd = sqrt(div(sum(square(sub(block, mean)), 0), Math.max(1, n - 1)))
+  return { mean: toFlat(mean), sd: toFlat(sd) }
 }
 
 /**

@@ -7,7 +7,7 @@
  */
 
 import { ndtr } from '../../numerics/special/index.ts'
-import { item } from '../../tensor/index.ts'
+import { add, arange, div, item, mul, toFlat } from '../../tensor/index.ts'
 import type { Model } from '../primitives.ts'
 import {
   type GridOptions,
@@ -67,10 +67,10 @@ function tabulatedOracle(
   hi: number,
   points: number,
 ): MarginalOracle {
-  const xs = Float64Array.from({ length: points }, (_, i) => lo + ((hi - lo) * i) / (points - 1))
-  const F = Float64Array.from(xs, cdfAt)
+  const xs = toFlat(add(div(mul(arange(points), hi - lo), points - 1), lo))
+  const F = xs.map(cdfAt)
   for (let i = 1; i < points; i++) F[i] = Math.max(F[i] ?? 0, F[i - 1] ?? 0)
-  const locate = (grid: Float64Array, target: number): number => {
+  const locate = (grid: ArrayLike<number>, target: number): number => {
     let a = 0
     let b = points - 1
     while (b - a > 1) {

@@ -16,6 +16,7 @@ import {
   type MCMCKernel,
 } from '../../sampling/index.ts'
 import { bool, dict, int, real } from '../../space/index.ts'
+import { toFlat, zeros } from '../../tensor/index.ts'
 import { type Config, defineContract, scalar, stateFromJson, stateToJson, tensor } from '../../trace/index.ts'
 import { type McmcPath, type McmcPlan, type McmcRunState, mcmcMethodOf, type Warmer } from './_mcmc-driver.ts'
 import { flag, type MethodModel, type ModelAnalysis, num } from './_support.ts'
@@ -93,7 +94,11 @@ export function cheesMethod(model: MethodModel, options: { readonly name?: strin
           maxLeapfrogSteps: num(b.config, 'maxLeapfrogSteps'),
           jitter,
         }
-        const shared = cheesAdaptationAlgorithm(b.um.logDensity, new Float64Array(walkers * b.um.dim), options)
+        const shared = cheesAdaptationAlgorithm(
+          b.um.logDensity,
+          Float64Array.from(toFlat(zeros([walkers * b.um.dim]))),
+          options,
+        )
         const warm: Warmer<CheesParameters> | undefined =
           numWarmup > 0
             ? {

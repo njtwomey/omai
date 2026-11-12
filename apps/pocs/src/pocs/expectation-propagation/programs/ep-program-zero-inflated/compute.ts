@@ -2,6 +2,7 @@ import { modelRunFromTape } from 'omai-engine/exposition'
 import { activeSetScore, recoverySummary } from 'omai-engine/probprog/ep'
 import { toFactorGraph, toStructure } from 'omai-engine/probprog/model'
 import { type ZeroInflatedPosterior, zeroInflatedPoisson } from 'omai-engine/probprog/validation'
+import { equal, nonzero, tensor, toFlat, type Value } from 'omai-engine/tensor'
 import { type ProgramCheck, sig } from '../../../../shared/ep/program-check.ts'
 import type { EpHooks } from '../../../../shared/ep/sweeps.ts'
 import { defaultSetup, infer, parameters, refusedForms, simulate, type ZipSetup } from './program.ts'
@@ -48,7 +49,7 @@ export const exactZip = (data: {
 }): ZeroInflatedPosterior => zeroInflatedPoisson({ x: data.x, y: data.y, inflation: { a: 1, b: 1 }, coefficientSd: 2 })
 
 /** The indices of the zero counts: the ones a structural zero can explain. */
-export const zeroRows = (run: ZipRun): number[] => run.data.y.flatMap((v, i) => (v === 0 ? [i] : []))
+export const zeroRows = (run: ZipRun): number[] => toFlat(nonzero(equal(tensor(run.data.y), 0))[0] as Value)
 
 /** The recovery check of a run. */
 export function checkZip(run: ZipRun, exact: ZeroInflatedPosterior): ProgramCheck {
@@ -90,7 +91,7 @@ export function checkZip(run: ZipRun, exact: ZeroInflatedPosterior): ProgramChec
   const zeros = zeroRows(run)
   const epZ = zeros.map((i) => found.structural[i] ?? 0)
   const exactZ = zeros.map((i) => exact.structural[i] ?? 0)
-  const flags = zeros.map((i) => data.structural[i] === true)
+  const flags = zeros.map((i) => data.structural[i] === 1)
   const gap = Math.max(...epZ.map((p, k) => Math.abs(p - (exactZ[k] ?? 0))))
   const ours = activeSetScore(epZ, flags).auc
   const best = activeSetScore(exactZ, flags).auc

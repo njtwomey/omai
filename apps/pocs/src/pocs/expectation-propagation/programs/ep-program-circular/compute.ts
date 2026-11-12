@@ -4,7 +4,21 @@ import type { BoundModel } from 'omai-engine/probprog/model'
 import { toStructure } from 'omai-engine/probprog/model'
 import { foldIn, key, uniform } from 'omai-engine/random'
 import { periodicCopies, threeCopiesBound, wrappedNormalLogPdf } from 'omai-engine/stats'
-import { toFlat } from 'omai-engine/tensor'
+import {
+  add,
+  div,
+  item,
+  mul,
+  reshape,
+  sliceAxis,
+  square,
+  sum,
+  tensor,
+  toArray,
+  toFlat,
+  type Value,
+  zeros,
+} from 'omai-engine/tensor'
 import { type ProgramCheck, sig } from '../../../../shared/ep/program-check.ts'
 import { type Estimate, recovery } from '../../../../shared/ep/recovery.ts'
 import type { EpHooks } from '../../../../shared/ep/sweeps.ts'
@@ -119,14 +133,9 @@ function wrappedShare(
 ): number[] {
   if (setup.variant !== 'means' && setup.variant !== 'data') return []
   const marginal = posterior.marginal('copy')
-  const share = new Array<number>(rows).fill(0)
-  for (let s = 0; s < 3 * setup.components; s++) {
-    if (s % 3 === 1) continue
-    toFlat(marginal.prob(s)).forEach((p, i) => {
-      share[i] = (share[i] as number) + p
-    })
-  }
-  return share
+  let share: Value = zeros([rows])
+  for (let s = 0; s < 3 * setup.components; s++) if (s % 3 !== 1) share = add(share, marginal.prob(s))
+  return toFlat(share)
 }
 
 const LOG_SQRT_2PI = 0.5 * Math.log(2 * Math.PI)
@@ -209,7 +218,7 @@ export function matchToTruth(truth: TruthName, found: Found): readonly (number |
 /** The truth's scale as one number a shared sd can be held to: the weighted root mean square of the scales. */
 export const truthScale = (truth: TruthName): number => {
   const t = TRUTHS[truth]
-  return Math.sqrt(t.weights.reduce((s, w, k) => s + w * (t.scales[k] as number) ** 2, 0))
+  return Math.sqrt(item(sum(mul(tensor([...t.weights]), square(tensor([...t.scales]))))))
 }
 
 /** The log likelihood of the readings under the same wrapped mixture, three ways: shift the means, shift the data, extra rows. */
@@ -248,17 +257,13 @@ export function lossesAt(hours: readonly number[], mix: Mixture): Losses {
 
 /** Mixtures with random means, sds and weights (a fixed seed): the points where the two losses are compared. */
 export function randomMixtures(count: number, components: number, seed = 5): Mixture[] {
-  const u = Array.from(toFlat(uniform(foldIn(key(seed), 1), [count * (2 * components + 1)])))
-  return Array.from({ length: count }, (_, i) => {
-    const at = (j: number): number => u[i * (2 * components + 1) + j] as number
-    const raw = Array.from({ length: components }, (_, k) => 0.2 + at(k))
-    const total = raw.reduce((a, b) => a + b, 0)
-    return {
-      weights: raw.map((r) => r / total),
-      means: Array.from({ length: components }, (_, k) => PERIOD * at(components + k)),
-      sd: 1 + 5 * at(2 * components),
-    }
-  })
+  const width = 2 * components + 1
+  const u = reshape(uniform(foldIn(key(seed), 1), [count * width]), [count, width])
+  const raw = add(sliceAxis(u, 1, 0, components), 0.2)
+  const weights = toArray(div(raw, sum(raw, 1, true))) as number[][]
+  const means = toArray(mul(sliceAxis(u, 1, components, 2 * components), PERIOD)) as number[][]
+  const sd = toFlat(add(mul(sliceAxis(u, 1, 2 * components, width), 5), 1))
+  return weights.map((w, i) => ({ weights: w, means: means[i] as number[], sd: sd[i] as number }))
 }
 
 /** The largest difference between the two ways, over random parameters, in nats (the post measured 9e-16 per loss). */

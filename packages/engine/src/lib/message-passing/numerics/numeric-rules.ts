@@ -15,6 +15,7 @@ import { foldIn, key, normal } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { ImproperMessageError, ParameterError } from '../core/errors.ts'
 import type { GaussianBase, TiltedProblem, TiltedRule } from '../core/types.ts'
+import { zeroArray } from './_arrays.ts'
 import { spd } from './_dense.ts'
 import { shiftedSum } from './_moments.ts'
 import { gaussianGrid, gaussianGridOn, gaussianNodes } from './_quadrature.ts'
@@ -53,9 +54,9 @@ export const quadratureRule: TiltedRule = {
     const integrateOver = (
       grids: readonly { x: Float64Array; w: Float64Array }[],
     ): { mass: number; m1: number[]; m2: number[]; xs: number[]; ws: number[] } => {
-      const point = new Array<number>(n).fill(0)
-      const m1 = new Array<number>(n).fill(0)
-      const m2 = new Array<number>(n).fill(0)
+      const point = zeroArray(n)
+      const m1 = zeroArray(n)
+      const m2 = zeroArray(n)
       const xs: number[] = []
       const ws: number[] = []
       let mass = 0
@@ -158,7 +159,7 @@ export function gaussHermiteRule(points = 32): TiltedRule {
           walk(d + 1, lw + Math.log(g.w[i] ?? 0), point)
         }
       }
-      walk(0, 0, new Array<number>(grids.length).fill(0))
+      walk(0, 0, zeroArray(grids.length))
       return weightedMoments(pts, logw, to)
     },
   }
@@ -307,8 +308,8 @@ export const laplaceRule: TiltedRule = {
     const x = bases.map((b) => b.mean)
     const steps = free.map((j) => 1e-3 * Math.sqrt((bases[j] as GaussianBase).variance))
     const derivatives = (at: readonly number[]): { grad: number[]; hess: number[] } => {
-      const grad = new Array<number>(d).fill(0)
-      const hess = new Array<number>(d * d).fill(0)
+      const grad = zeroArray(d)
+      const hess = zeroArray(d * d)
       const f0 = h(at)
       const shifted = (shifts: readonly [number, number][]): number => {
         const p = at.slice()

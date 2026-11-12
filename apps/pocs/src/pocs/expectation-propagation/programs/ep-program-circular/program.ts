@@ -2,8 +2,31 @@ import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { foldIn, key, normal, uniform } from 'omai-engine/random'
-import { periodicCopies, wrapToPeriod } from 'omai-engine/stats'
-import { toFlat } from 'omai-engine/tensor'
+import {
+  add,
+  arange,
+  cast,
+  cumsum,
+  div,
+  equal,
+  flatten,
+  floor,
+  floorDiv,
+  greaterEqual,
+  lessEqual,
+  mod,
+  mul,
+  ones,
+  reshape,
+  sub,
+  sum,
+  take,
+  tensor,
+  toFlat,
+  type Value,
+  where,
+  zeros,
+} from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
 import type { EpHooks } from '../../../../shared/ep/sweeps.ts'
 
@@ -25,14 +48,15 @@ export type Variant = 'ignore' | 'means' | 'data' | 'rows'
 export function simulate(seed: number, truth: TruthName, draws: number): number[] {
   const { weights, means, scales } = TRUTHS[truth]
   const k = key(seed)
-  const u = Array.from(toFlat(uniform(foldIn(k, 1), [draws])))
-  const e = Array.from(toFlat(normal(foldIn(k, 2), [draws])))
-  return u.map((ui, i) => {
-    // Which component this draw comes from.
-    const c = weights.findIndex((_, j) => ui < weights.slice(0, j + 1).reduce((a, b) => a + b, 0))
-    const x = (means[c] as number) + (scales[c] as number) * (e[i] as number)
-    return wrapToPeriod(x, PERIOD)
-  })
+  const u = uniform(foldIn(k, 1), [draws])
+  const e = normal(foldIn(k, 2), [draws])
+  // Which component each draw comes from: the number of cumulative weights it has passed.
+  const passed = lessEqual(reshape(cumsum(weights), [1, weights.length]), reshape(u, [draws, 1]))
+  const c = cast(sum(passed, 1), 'int32')
+  const x = add(take(tensor(means), c), mul(take(tensor(scales), c), e))
+  // Wrapped round the day.
+  const wrapped = sub(x, mul(PERIOD, floor(div(x, PERIOD))))
+  return toFlat(where(greaterEqual(wrapped, PERIOD), 0, wrapped))
 }
 // endregion
 
@@ -65,7 +89,7 @@ export function model(variant: Variant, components: number) {
     const sd = ops.div(1, ops.sqrt(tau))
     // The component of each reading, with Dirichlet weights (a single component needs neither).
     const first = m.data('first', { dims: [row] })
-    const weight = components > 1 ? m.latent('weight', d.dirichlet(new Array<number>(components).fill(1))) : undefined
+    const weight = components > 1 ? m.latent('weight', d.dirichlet(ones([components]))) : undefined
     const z = weight === undefined ? first : m.latent('z', d.categorical({ probs: weight }), { dims: [row] })
     if (variant === 'ignore' || variant === 'rows') {
       m.observe('hours', d.normal(ops.at(mean, z), sd), hours)
@@ -88,20 +112,22 @@ export function model(variant: Variant, components: number) {
 // endregion
 
 /** The probabilities of the three copies of each component: row k is 1/3 on states 3k..3k+2 and 0 elsewhere. */
-const rowsOfCopies = (components: number): number[][] =>
-  Array.from({ length: components }, (_, k) =>
-    Array.from({ length: 3 * components }, (_, s) => (Math.floor(s / 3) === k ? 1 / 3 : 0)),
-  )
+const rowsOfCopies = (components: number): Value => {
+  const owner = reshape(floorDiv(arange(3 * components), 3), [1, 3 * components])
+  return where(equal(reshape(arange(components), [components, 1]), owner), 1 / 3, 0)
+}
 
 /** What the model reads: the clock times (tripled for the extra rows) and the tables of the copies. */
 export function dataOf(variant: Variant, components: number, hours: readonly number[]) {
-  const states = 3 * components
+  const states = arange(3 * components)
+  const readings = reshape(tensor(hours), [hours.length, 1])
+  const copies = mul(arange(-1, 2), PERIOD)
   return {
-    hours: variant === 'rows' ? hours.flatMap((x) => periodicCopies(x, PERIOD)) : [...hours],
-    start: Array.from({ length: components }, (_, k) => (PERIOD * (k + 0.5)) / components),
-    compOf: Array.from({ length: states }, (_, s) => Math.floor(s / 3)),
-    first: new Array<number>(hours.length * (variant === 'rows' ? 3 : 1)).fill(0),
-    shiftOf: Array.from({ length: states }, (_, s) => ((s % 3) - 1) * PERIOD),
+    hours: variant === 'rows' ? flatten(add(readings, copies)) : tensor(hours),
+    start: div(mul(add(arange(components), 0.5), PERIOD), components),
+    compOf: floorDiv(states, 3),
+    first: zeros([hours.length * (variant === 'rows' ? 3 : 1)]),
+    shiftOf: mul(sub(mod(states, 3), 1), PERIOD),
   }
 }
 

@@ -1,3 +1,5 @@
+import { logSumExpOf } from 'omai-engine/base'
+import { add, arange, bincount, div, floor, minimum, mul, tensor, toFlat } from 'omai-engine/tensor'
 import { type ReactNode, useMemo, useState } from 'react'
 import { sig } from '../../../../shared/ep/program-check.ts'
 import { fitLogDensity, type Mixture, truthLogDensity } from './compute.ts'
@@ -15,15 +17,11 @@ const colour = {
 
 /** Densities of a histogram with one bin per hour, in readings per hour per reading. */
 export function histogram(hours: readonly number[], bins = 24): number[] {
-  const out = new Array<number>(bins).fill(0)
-  for (const x of hours) {
-    const bin = Math.min(bins - 1, Math.floor((x / PERIOD) * bins))
-    out[bin] = (out[bin] ?? 0) + 1
-  }
-  return out.map((c) => c / (hours.length * (PERIOD / bins)))
+  const bin = minimum(floor(mul(div(tensor(hours), PERIOD), bins)), bins - 1)
+  return toFlat(div(bincount(bin, bins), hours.length * (PERIOD / bins)))
 }
 
-const grid = (n: number): number[] => Array.from({ length: n + 1 }, (_, i) => (PERIOD * i) / n)
+const grid = (n: number): number[] => toFlat(div(mul(arange(n + 1), PERIOD), n))
 
 /** The fitted density of each component as a curve (its weight times its own density), for the model's way of treating the circle. */
 function componentLogs(variant: Variant, mix: Mixture): ((x: number) => number)[] {
@@ -60,7 +58,7 @@ export function DayChart(props: {
   const H = 270
   const pad = { left: 44, right: 12, top: 12, bottom: 34 }
   const shown = useMemo(() => {
-    const xs = Array.from({ length: 241 }, (_, i) => (PERIOD * i) / 240)
+    const xs = grid(240)
     const bars = histogram(hours)
     const truthY = xs.map((x) => Math.exp(truthLogDensity(truth, x)))
     const fitY = xs.map((x) => Math.exp(fitLogDensity(variant, mix, x)))
@@ -200,10 +198,7 @@ export function ClockChart(props: {
 const logNormal = (x: number, mu: number, s: number): number =>
   -0.5 * ((x - mu) / s) ** 2 - Math.log(s) - 0.5 * Math.log(2 * Math.PI)
 
-const lse = (xs: readonly number[]): number => {
-  const m = Math.max(...xs)
-  return m + Math.log(xs.reduce((s, v) => s + Math.exp(v - m), 0))
-}
+const lse = logSumExpOf
 
 /**
  * The post's picture: drag the mean. In "shift the means" the data stay and the normal is copied a period early and late (three bumps);
@@ -228,10 +223,10 @@ export function ShiftPicture(props: {
   const x = (v: number): number => 8 + ((v - lo) / (hi - lo)) * (W - 16)
   const bump = (m: number): string => {
     const peak = Math.exp(logNormal(m, m, sd))
-    return Array.from({ length: 181 }, (_, i) => {
-      const v = lo + ((hi - lo) * i) / 180
-      return `${i === 0 ? 'M' : 'L'}${x(v)},${70 - (Math.exp(logNormal(v, m, sd)) / peak) * 52}`
-    }).join('')
+    const vs = toFlat(add(div(mul(arange(181), hi - lo), 180), lo))
+    return vs
+      .map((v, i) => `${i === 0 ? 'M' : 'L'}${x(v)},${70 - (Math.exp(logNormal(v, m, sd)) / peak) * 52}`)
+      .join('')
   }
   const sum = (total: (v: number) => number): number => hours.reduce((s, v) => s + total(v), 0)
   const means = sum((v) => lse([-1, 0, 1].map((k) => Math.log(1 / 3) + logNormal(v, mu + k * PERIOD, sd))))

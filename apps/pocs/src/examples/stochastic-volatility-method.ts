@@ -28,7 +28,30 @@ import { type Approximation, agree, type MarginalOracle, weightedOracle } from '
 import { normal as drawNormal, foldIn, key } from 'omai-engine/random'
 import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
 import { quantile } from 'omai-engine/stats'
-import { tensor, toFlat } from 'omai-engine/tensor'
+import {
+  add,
+  arange,
+  div,
+  full,
+  greaterEqual,
+  item,
+  lessEqual,
+  logicalAnd,
+  mul,
+  reshape,
+  sliceAxis,
+  sort,
+  square,
+  stack,
+  sub,
+  sum,
+  take,
+  tensor,
+  toArray,
+  toFlat,
+  transpose,
+  type Value,
+} from 'omai-engine/tensor'
 import { type Config, derived } from 'omai-engine/trace'
 import {
   columnMoments,
@@ -247,14 +270,14 @@ export interface VolatilityReference {
   readonly columns: readonly (readonly number[])[]
 }
 
-/** The draws of a posterior as the three numbers and the log-variance paths. */
+/** The draws of a posterior as the three numbers (a value per draw) and the log-variance paths (a row per draw). */
 interface Draws {
   readonly count: number
-  readonly mu: number[]
-  readonly phi: number[]
-  readonly sigma: number[]
-  /** `h[s][t]`. */
-  readonly h: number[][]
+  readonly mu: Value
+  readonly phi: Value
+  readonly sigma: Value
+  /** `h[s, t]`. */
+  readonly h: Value
   readonly chain: number[]
   readonly index: number[]
 }
@@ -269,26 +292,19 @@ function drawsOf(problem: VolatilityProblem, post: Posterior, most: number): Dra
   const n = problem.y.length
   const got = drawRows(post, sitesOf(problem), most)
   if (got === undefined) return undefined
+  const count = got.rows.length
   const lead = problem.known ? 0 : 3
   const truth = problem.truth
-  const mu: number[] = []
-  const phi: number[] = []
-  const sigma: number[] = []
-  const h: number[][] = []
-  for (const row of got.rows) {
-    const m = problem.known ? (truth?.mu ?? 0) : (row[0] ?? 0)
-    const p = problem.known ? (truth?.phi ?? 0) : (row[1] ?? 0)
-    const s = problem.known ? (truth?.sigma ?? 0) : (row[2] ?? 0)
-    mu.push(m)
-    phi.push(p)
-    sigma.push(s)
-    const states = row.slice(lead, lead + n)
-    h.push(problem.centred ? states : states.map((z) => m + s * z))
-  }
-  return { count: got.rows.length, mu, phi, sigma, h, chain: got.chain, index: got.index }
+  const rows = tensor(got.rows)
+  // The three numbers of each draw: inferred, or the true ones.
+  const perDraw = (j: number, known: number): Value => (problem.known ? full([count], known) : take(rows, j, 1))
+  const mu = perDraw(0, truth?.mu ?? 0)
+  const phi = perDraw(1, truth?.phi ?? 0)
+  const sigma = perDraw(2, truth?.sigma ?? 0)
+  const states = sliceAxis(rows, 1, lead, lead + n)
+  const h = problem.centred ? states : add(reshape(mu, [-1, 1]), mul(reshape(sigma, [-1, 1]), states))
+  return { count, mu, phi, sigma, h, chain: got.chain, index: got.index }
 }
-
-const column = (rows: readonly (readonly number[])[], j: number): number[] => rows.map((r) => r[j] ?? 0)
 
 const names = (n: number): string[] => Array.from({ length: n }, (_, t) => `h[${t}]`)
 
@@ -297,7 +313,10 @@ function columnsOf(problem: VolatilityProblem, dr: Draws): { names: string[]; co
   const n = problem.y.length
   return {
     names: [...(problem.known ? [] : ['mu', 'phi', 'sigma']), ...names(n)],
-    columns: [...(problem.known ? [] : [dr.mu, dr.phi, dr.sigma]), ...names(n).map((_, t) => column(dr.h, t))],
+    columns: [
+      ...(problem.known ? [] : [toFlat(dr.mu), toFlat(dr.phi), toFlat(dr.sigma)]),
+      ...(toArray(transpose(dr.h)) as number[][]),
+    ],
   }
 }
 
@@ -327,24 +346,17 @@ const volatilityExample: Example<VolatilityProblem> = defineExample<VolatilityPr
           const dr = drawsOf(problem, post(state), FIT_DRAWS)
           if (dr === undefined) return null
           const levels = tensor([0.025, 0.975])
-          const mean: number[] = []
-          const lo: number[] = []
-          const hi: number[] = []
-          for (let t = 0; t < n; t++) {
-            const c = column(dr.h, t)
-            const q = toFlat(quantile(c, levels))
-            mean.push(c.reduce((a, v) => a + v, 0) / c.length)
-            lo.push(q[0] ?? Number.NaN)
-            hi.push(q[1] ?? Number.NaN)
-          }
+          const q = stack(Array.from({ length: n }, (_, t) => quantile(take(dr.h, t, 1), levels)))
+          const lo = take(q, 0, 1)
+          const hi = take(q, 1, 1)
           return {
-            t: Array.from({ length: n }, (_, i) => i),
+            t: toFlat(arange(n)),
             y: problem.y,
             truth: problem.truthLogVariance,
-            mean,
-            lo,
-            hi,
-            width: hi.map((v, t) => v - (lo[t] ?? 0)),
+            mean: toFlat(div(sum(dr.h, 0), dr.count)),
+            lo: toFlat(lo),
+            hi: toFlat(hi),
+            width: toFlat(sub(hi, lo)),
             draws: dr.count,
           } as never
         },
@@ -358,7 +370,9 @@ const volatilityExample: Example<VolatilityProblem> = defineExample<VolatilityPr
           if (dr === undefined || dr.count < 3) return null
           const pick = PAIR_TIMES.map((q) => Math.min(n - 1, Math.round(q * (n - 1))))
           const coordinates = problem.known ? pick.map((t) => `h[${t}]`) : ['mu', 'phi', 'sigma']
-          const cols = problem.known ? pick.map((t) => column(dr.h, t)) : [dr.mu, dr.phi, dr.sigma]
+          const cols = problem.known
+            ? pick.map((t) => toFlat(take(dr.h, t, 1)))
+            : [toFlat(dr.mu), toFlat(dr.phi), toFlat(dr.sigma)]
           const draws = Object.fromEntries(coordinates.map((c, j) => [c, cols[j] ?? []]))
           const truth = problem.known
             ? Object.fromEntries(pick.map((t) => [`h[${t}]`, problem.truthLogVariance[t] ?? 0]))
@@ -383,24 +397,17 @@ const volatilityExample: Example<VolatilityProblem> = defineExample<VolatilityPr
           const dr = drawsOf(problem, posterior, FIT_DRAWS)
           if (dr === undefined) return null
           const levels = tensor([0.025, 0.975])
-          let inside = 0
-          let squared = 0
-          let width = 0
-          for (let t = 0; t < n; t++) {
-            const c = column(dr.h, t)
-            const q = toFlat(quantile(c, levels))
-            const m = c.reduce((a, v) => a + v, 0) / c.length
-            const truth = problem.truthLogVariance[t] ?? 0
-            if (truth >= (q[0] ?? Number.NaN) && truth <= (q[1] ?? Number.NaN)) inside++
-            squared += (m - truth) ** 2
-            width += (q[1] ?? 0) - (q[0] ?? 0)
-          }
-          const moments = (v: number[]): { mean: number; sd: number } => {
-            const m = columnMoments(
-              v.map((x) => [x]),
-              1,
-            )
-            return { mean: m.mean[0] ?? 0, sd: m.sd[0] ?? 0 }
+          const q = stack(Array.from({ length: n }, (_, t) => quantile(take(dr.h, t, 1), levels)))
+          const lo = take(q, 0, 1)
+          const hi = take(q, 1, 1)
+          const m = div(sum(dr.h, 0), dr.count)
+          const truth = tensor(problem.truthLogVariance as number[])
+          const inside = item(sum(logicalAnd(greaterEqual(truth, lo), lessEqual(truth, hi))))
+          const squared = item(sum(square(sub(m, truth))))
+          const width = item(sum(sub(hi, lo)))
+          const moments = (v: Value): { mean: number; sd: number } => {
+            const stats = columnMoments(reshape(v, [-1, 1]), 1)
+            return { mean: stats.mean[0] ?? 0, sd: stats.sd[0] ?? 0 }
           }
           const rows = posterior.summary()
           const rhat = rows.flatMap((r) => (r.rhat === undefined ? [] : [r.rhat]))
@@ -451,7 +458,7 @@ const volatilityExample: Example<VolatilityProblem> = defineExample<VolatilityPr
           const { names: qn, columns } = columnsOf(problem, dr)
           const approx: Approximation = {
             name: kind,
-            draws: Object.fromEntries(qn.map((q, j) => [q, Float64Array.from(columns[j] ?? [])])),
+            draws: Object.fromEntries(qn.map((q, j) => [q, columns[j] ?? []])),
           }
           const oracle: Record<string, MarginalOracle> = {}
           if (problem.known) {
@@ -486,8 +493,7 @@ const volatilityExample: Example<VolatilityProblem> = defineExample<VolatilityPr
               },
             ),
             maxMeanError: Math.max(...rows.map((r) => Math.abs(r.meanError))),
-            medianSdRatio:
-              [...rows.map((r) => r.sdRatio)].sort((a, b) => a - b)[Math.floor(rows.length / 2)] ?? Number.NaN,
+            medianSdRatio: item(take(sort(tensor(rows.map((r) => r.sdRatio))), Math.floor(rows.length / 2))),
             maxWasserstein: Math.max(...rows.map((r) => r.wasserstein)),
             numbers: ['mu', 'phi', 'sigma'].flatMap((q) => {
               const r = rows.find((x) => x.quantity === q)

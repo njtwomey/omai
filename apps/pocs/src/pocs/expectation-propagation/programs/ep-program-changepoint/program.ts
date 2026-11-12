@@ -2,7 +2,23 @@ import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { foldIn, key, poisson, split, uniform } from 'omai-engine/random'
-import { toFlat } from 'omai-engine/tensor'
+import {
+  add,
+  arange,
+  concat,
+  cumsum,
+  div,
+  floor,
+  less,
+  mod,
+  mul,
+  sliceAxis,
+  stack,
+  sub,
+  toArray,
+  toFlat,
+  where,
+} from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
 import type { EpHooks } from '../../../../shared/ep/sweeps.ts'
 
@@ -16,14 +32,13 @@ export const PRIOR = { shape: [2, 2, 2], rate: [0.5, 1 / 6, 1 / 15] } // the mod
  */
 export function simulate(seed: number, stay = 0.95, steps = 80) {
   const [kz, ky] = split(key(seed), 2) as [ReturnType<typeof key>, ReturnType<typeof key>]
-  const u = toFlat(uniform(kz, [steps]))
-  const z: number[] = [Math.floor(3 * (u[0] ?? 0))]
-  for (let t = 1; t < steps; t++) {
-    const prev = z[t - 1] as number
-    // In [0, 1) when it moves.
-    const move = ((u[t] ?? 0) - stay) / (1 - stay)
-    z.push(move < 0 ? prev : (prev + 1 + Math.floor(2 * move)) % 3)
-  }
+  const u = uniform(kz, [steps])
+  // In [0, 1) when it moves.
+  const move = div(sub(u, stay), 1 - stay)
+  // A move goes one or two regimes on: the regime is a running sum of the shifts, mod 3.
+  const shift = where(less(move, 0), 0, add(floor(mul(move, 2)), 1))
+  const start = floor(mul(sliceAxis(u, 0, 0, 1), 3))
+  const z = toFlat(mod(cumsum(concat([start, sliceAxis(shift, 0, 1, steps)])), 3))
   const y = z.map((s, t) => toFlat(poisson(foldIn(ky, t), RATES[s] as number, [1]))[0] ?? 0)
   return { z, y, stay }
 }
@@ -77,10 +92,11 @@ export async function infer(y: readonly number[], stay: number, hooks: EpHooks =
     yieldToPage: hooks.yieldToPage ?? (() => Promise.resolve()),
   })
   const post = ep.posterior?.(run.state, run.config)
-  const regimes = Array.from({ length: y.length }, (_, t) =>
-    [0, 1, 2].map((k) => toFlat(post?.marginal(`z[${t}]`).prob(k) as never)[0] ?? 0),
-  )
-  const rates = post?.summary({ prob: 0.9 }).filter((r) => r.site === 'rate') ?? []
+  if (post === undefined) throw new Error('EP gave no posterior')
+  // The probability of each regime at each step: one row per step.
+  const steps = Array.from({ length: y.length }, (_, t) => post.marginal(`z[${t}]`).prob(arange(3)))
+  const regimes = toArray(stack(steps)) as number[][]
+  const rates = post.summary({ prob: 0.9 }).filter((r) => r.site === 'rate')
   return { bound, run, regimes, rates }
 }
 // endregion

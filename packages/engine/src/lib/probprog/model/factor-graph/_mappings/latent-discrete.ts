@@ -1,5 +1,5 @@
 import { bernoulliEta, dirichletPrior, discretePrior } from '../../../../message-passing/index.ts'
-import { asTensor, toFlat } from '../../../../tensor/index.ts'
+import { asTensor, full, toFlat } from '../../../../tensor/index.ts'
 import type { NamedValue } from '../../operators.ts'
 import type { DistSpec, ExprSpec, ModelNode } from '../../spec.ts'
 import { discreteRowGate } from '../_builder.ts'
@@ -239,7 +239,7 @@ export function latentDiscrete(cx: Context, node: ModelNode & { readonly kind: '
       {
         operator: 'table',
         args: [...pv, name],
-        params: { states: new Array<number>(parents.length + 1).fill(2), values: bernoulliTable(cx, node, parents) },
+        params: { states: toFlat(full([parents.length + 1], 2)), values: bernoulliTable(cx, node, parents) },
       },
       name,
     )

@@ -543,11 +543,11 @@ export class ModelBuilder {
   /**
    * A constant as an expression (see `constant`), for symmetry with the other verbs.
    *
-   * @param value - A number or nested array.
+   * @param value - A number, nested array or tensor.
    * @param dims - The names of its leading axes.
    * @returns The constant.
    */
-  const(value: number | readonly Operand[], dims: readonly DimArg[] = []): Var {
+  const(value: Exclude<Operand, Var>, dims: readonly DimArg[] = []): Var {
     return constant(value, this.dimNames(dims) ?? [])
   }
 

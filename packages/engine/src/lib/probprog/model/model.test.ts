@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { MODELS } from '../../../testing/probprog.ts'
 import { bijectors } from '../../dists/index.ts'
 import { foldIn, key, normal as normalDraws } from '../../random/index.ts'
-import { add, item, mul, type Tensor, take, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import { add, eye, full, item, mul, type Tensor, take, tensor, toFlat, type Value, zeros } from '../../tensor/index.ts'
 import { logJoint, potentialEnergy } from '../density.ts'
 import { seed, traceOf } from '../handlers.ts'
 import type { Model } from '../primitives.ts'
@@ -718,5 +718,42 @@ describe('include, condition and do', () => {
     sub.condition({ slope: 1 })
     sub.do({ slope: 1 })
     expect(JSON.stringify(sub)).toBe(before)
+  })
+})
+
+describe('tensors as operands', () => {
+  it('a tensor is a constant exactly like the nested array of its values (a vector, a matrix, a scalar)', () => {
+    expect(constant(zeros([3])).expr).toEqual(constant([0, 0, 0]).expr)
+    expect(constant(eye(2)).expr).toEqual(
+      constant([
+        [1, 0],
+        [0, 1],
+      ]).expr,
+    )
+    expect(constant(full([], 2)).expr).toEqual(constant(2).expr)
+  })
+
+  it('a distribution takes tensor parameters: the same model as with arrays', () => {
+    const build = (mean: Tensor, covariance: Tensor): ModelDefinition =>
+      defineModel('tensor-operands', (m) => {
+        const cell = m.range('cell', { size: 3 })
+        m.latent('f', d.multivariateNormal(mean, { covariance }), { dims: [cell] })
+      })
+    const viaTensors = build(zeros([3]), eye(3))
+    const viaArrays = defineModel('tensor-operands', (m) => {
+      const cell = m.range('cell', { size: 3 })
+      m.latent(
+        'f',
+        d.multivariateNormal([0, 0, 0], {
+          covariance: [
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+          ],
+        }),
+        { dims: [cell] },
+      )
+    })
+    expect(JSON.stringify(viaTensors)).toBe(JSON.stringify(viaArrays))
   })
 })

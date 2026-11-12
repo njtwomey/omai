@@ -16,6 +16,7 @@ import { ndtr } from '../../numerics/special/index.ts'
 import {
   abs,
   add,
+  arange,
   clip,
   div,
   equal,
@@ -29,6 +30,7 @@ import {
   minimum,
   mul,
   neg,
+  ones,
   pow,
   reshape,
   shapesEqual,
@@ -42,6 +44,7 @@ import {
   take,
   tanh,
   tensor,
+  toFlat,
   transpose,
   type Value,
   where,
@@ -130,10 +133,10 @@ export function alignTo(x: NamedValue, dims: readonly string[], eventRank?: numb
         dim: d,
       })
   const present = dims.filter((d) => x.dims.includes(d))
-  const perm = [...present.map((d) => x.dims.indexOf(d)), ...Array.from({ length: own }, (_, i) => x.dims.length + i)]
+  const perm = [...present.map((d) => x.dims.indexOf(d)), ...toFlat(arange(x.dims.length, x.dims.length + own))]
   const v = perm.every((p, i) => p === i) ? x.value : transpose(x.value, perm)
   const sizes = dims.map((d) => (x.dims.includes(d) ? (v.shape[present.indexOf(d)] ?? 1) : 1))
-  const shape = [...sizes, ...v.shape.slice(present.length), ...new Array<number>(Math.max(0, want - own)).fill(1)]
+  const shape = [...sizes, ...v.shape.slice(present.length), ...toFlat(ones([Math.max(0, want - own)]))]
   return shapesEqual(v.shape, shape) ? v : reshape(v, shape)
 }
 

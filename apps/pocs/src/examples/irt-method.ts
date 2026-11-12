@@ -18,6 +18,25 @@ import type { InferenceMethod } from 'omai-engine/probprog/inference'
 import { generateIrt, hierarchicalIrtDefinition, type IrtModelKind, type IrtSpreads } from 'omai-engine/probprog/models'
 import { key } from 'omai-engine/random'
 import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
+import {
+  add,
+  asTensor,
+  div,
+  exp,
+  greaterEqual,
+  item,
+  lessEqual,
+  logicalAnd,
+  mul,
+  square,
+  sub,
+  sum,
+  type TensorLike,
+  tensor,
+  toFlat,
+  type Value,
+  zeros,
+} from 'omai-engine/tensor'
 import { type Config, derived } from 'omai-engine/trace'
 import { defineExample, type Example, type ExampleProblem, exampleNumber, exampleString } from './example-method.ts'
 import {
@@ -53,7 +72,7 @@ export interface IrtProblem extends ExampleProblem {
   readonly truth: IrtTruth
 }
 
-const mean = (v: readonly number[]): number => v.reduce((a, b) => a + b, 0) / Math.max(1, v.length)
+const mean = (v: TensorLike): number => item(div(sum(v), Math.max(1, asTensor(v).shape[0] ?? 0)))
 
 /** The sd of the log-discriminations when the questions are said to discriminate unequally. */
 const VARIED = 0.4
@@ -97,12 +116,13 @@ export function irtProblem(config: Config): IrtProblem {
     meanDifficulty,
     discriminationSd: varied ? VARIED : 0,
   })
-  const centre = mean(g.theta)
-  const sd = Math.sqrt(g.theta.reduce((a, t) => a + (t - centre) ** 2, 0) / g.theta.length) || 1
+  const abilities = tensor(g.theta)
+  const centre = mean(abilities)
+  const sd = Math.sqrt(item(div(sum(square(sub(abilities, centre))), g.theta.length))) || 1
   const scale = model === '2pl' ? sd : 1
-  const theta = g.theta.map((t) => (t - centre) / scale)
-  const b = g.b.map((v) => (v - centre) / scale)
-  const a = model === '2pl' ? g.a.map((v) => v * scale) : null
+  const theta = toFlat(div(sub(abilities, centre), scale))
+  const b = toFlat(div(sub(tensor(g.b), centre), scale))
+  const a = model === '2pl' ? toFlat(mul(tensor(g.a), scale)) : null
   // The truth of the spreads, as the model writes them (an sd, or a precision), where the model has them and the truth is known.
   const spread = (sd: number): number => (spreads === 'precision' ? 1 / sd ** 2 : sd)
   const names = spreads === 'precision' ? 'prec' : 'tau'
@@ -282,12 +302,15 @@ function recovery(label: string, site: string, truth: readonly number[], rows: P
   if (found.some((r) => r === undefined)) return null
   const got = found as NonNullable<(typeof found)[number]>[]
   const m = got.map((r) => r.mean)
-  const inside = got.filter((r, i) => (truth[i] as number) >= r.lo && (truth[i] as number) <= r.hi).length
-  const mt = mean(truth)
+  const t = tensor(truth as number[])
+  const lo = tensor(got.map((r) => r.lo))
+  const hi = tensor(got.map((r) => r.hi))
+  const inside = item(sum(logicalAnd(greaterEqual(t, lo), lessEqual(t, hi))))
+  const mt = mean(t)
   const mm = mean(m)
-  const cov = truth.reduce((a, t, i) => a + (t - mt) * ((m[i] as number) - mm), 0)
-  const vt = truth.reduce((a, t) => a + (t - mt) ** 2, 0)
-  const vm = m.reduce((a, v) => a + (v - mm) ** 2, 0)
+  const cov = item(sum(mul(sub(t, mt), sub(tensor(m), mm))))
+  const vt = item(sum(square(sub(t, mt))))
+  const vm = item(sum(square(sub(tensor(m), mm))))
   return {
     label,
     truth,
@@ -295,8 +318,8 @@ function recovery(label: string, site: string, truth: readonly number[], rows: P
     lo: got.map((r) => r.lo),
     hi: got.map((r) => r.hi),
     coverage: inside / truth.length,
-    rmse: Math.sqrt(truth.reduce((a, t, i) => a + (t - (m[i] as number)) ** 2, 0) / truth.length),
-    width: mean(got.map((r) => r.hi - r.lo)),
+    rmse: Math.sqrt(item(div(sum(square(sub(t, tensor(m)))), truth.length))),
+    width: mean(sub(hi, lo)),
     correlation: vt > 0 && vm > 0 ? cov / Math.sqrt(vt * vm) : Number.NaN,
   }
 }
@@ -304,6 +327,8 @@ function recovery(label: string, site: string, truth: readonly number[], rows: P
 /** The draws of the derived sites a model defines from its latents, for a posterior that has only the latents. */
 function withItemSites(post: Posterior, problem: IrtProblem): Posterior {
   const at = (v: number[] | undefined, j: number): number => v?.[j] ?? 0
+  // A site's draw as a vector of `n` (zeros when the site is missing).
+  const over = (v: number[] | undefined, n: number): Value => (v === undefined ? zeros([n]) : tensor(v))
   const q = problem.questions
   const p = problem.students
   // The sd of a population from the sd or the precision a form has as a latent.
@@ -311,24 +336,22 @@ function withItemSites(post: Posterior, problem: IrtProblem): Posterior {
     d[`tau_${label}`] !== undefined
       ? at(d[`tau_${label}`], 0)
       : 1 / Math.sqrt(Math.max(1e-12, at(d[`prec_${label}`], 0)))
+  // The `n` values of a population: drawn directly, or the mean plus the spread times a standard normal.
   const population = (
     d: Readonly<Record<string, number[]>>,
     site: string,
     label: string,
     mean: number,
-    j: number,
-  ): number => (problem.centred ? at(d[site], j) : mean + spreadOf(d, label) * at(d[`z_${label}`], j))
+    n: number,
+  ): Value => (problem.centred ? over(d[site], n) : add(mean, mul(spreadOf(d, label), over(d[`z_${label}`], n))))
   const items = (d: Readonly<Record<string, number[]>>): Record<string, number[]> => ({
-    b: Array.from({ length: q }, (_, j) => population(d, 'b', 'b', at(d['mu_b'], 0), j)),
-    a: Array.from({ length: q }, (_, j) =>
+    b: toFlat(population(d, 'b', 'b', at(d['mu_b'], 0), q)),
+    a: toFlat(
       problem.discrimination === 'normal'
-        ? population(d, 'a', 'a', at(d['mu_a'], 0), j)
-        : Math.exp(population(d, 'log_a', 'a', at(d['mu_a'], 0), j)),
+        ? population(d, 'a', 'a', at(d['mu_a'], 0), q)
+        : exp(population(d, 'log_a', 'a', at(d['mu_a'], 0), q)),
     ),
-    theta:
-      problem.model === 'rasch'
-        ? Array.from({ length: p }, (_, i) => population(d, 'theta', 't', 0, i))
-        : Array.from({ length: p }, (_, i) => at(d['theta'], i)),
+    theta: toFlat(problem.model === 'rasch' ? population(d, 'theta', 't', 0, p) : over(d['theta'], p)),
   })
   const names = problem.model === '2pl' ? ['theta', 'b', 'a'] : ['theta', 'b']
   return withDerivedSites(post, names, (d) => {

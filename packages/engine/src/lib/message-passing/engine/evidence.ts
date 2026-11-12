@@ -7,6 +7,7 @@ import { evidenceOrNaN } from '../core/_messages.ts'
 import { ImproperMessageError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import { takesPower } from '../core/types.ts'
+import { zeroArray } from '../numerics/_arrays.ts'
 import { argsOf } from './_arguments.ts'
 import { rawBelief, rawCavity, readable } from './_cavities.ts'
 import { beliefOf } from './cavity.ts'
@@ -75,7 +76,7 @@ export function evidenceOf(g: CompiledGraph, s: Pick<EngineSettings, 'projection
   if (s.projection.evidence === 'ep-energy') {
     // The power EP energy: sum_a (1 / p_a) log Z_a + sum_v (1 - sum_{a at v} 1 / p_a) A(belief_v), with Z_a the mass of
     // the factor to the power p_a against its cavity (the usual EP energy when every power is 1).
-    const inversePowers = new Array<number>(g.variables.length).fill(0)
+    const inversePowers = zeroArray(g.variables.length)
     for (const [fi, f] of g.factors.entries()) {
       if (f.operator.logEvidence === undefined) return Number.NaN
       const power = powerOfFactor(f, s.projection)

@@ -33,6 +33,7 @@ import {
   unitFactor,
 } from '../../pgm/index.ts'
 import { choice, dict, int, real } from '../../space/index.ts'
+import { arange, exp, full, sub, toFlat } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -51,6 +52,7 @@ import {
 import { assertDamping } from '../core/_messages.ts'
 import { ParameterError } from '../core/errors.ts'
 import type { MpSnapshot } from '../engine/state.ts'
+import { constantArray, float64Of, zeroArray } from '../numerics/_arrays.ts'
 import { shiftedSum } from '../numerics/_moments.ts'
 
 /** A region: its variables, the factors inside it, its counting number and its place in the region graph. */
@@ -225,7 +227,7 @@ export function regionGraph(model: DiscreteModel, options: RegionOptions): Regio
     }
     regionVars = [...sets.values()].sort((a, b) => b.length - a.length || key(a).localeCompare(key(b)))
     // Counting numbers by the Moebius function, from the largest regions down.
-    count = new Array<number>(regionVars.length).fill(0)
+    count = zeroArray(regionVars.length)
     for (let r = 0; r < regionVars.length; r++) {
       let above = 0
       for (let t = 0; t < r; t++) {
@@ -438,12 +440,12 @@ function normalisedOrNaN(f: Factor): Factor {
   try {
     return normaliseFactor(f)
   } catch {
-    return { ...f, logValues: new Float64Array(f.logValues.length).fill(Number.NaN) }
+    return { ...f, logValues: float64Of(full([f.logValues.length], Number.NaN)) }
   }
 }
 
 /** The probabilities of a normalised log table. */
-const probabilities = (f: Factor): number[] => Array.from(f.logValues, Math.exp)
+const probabilities = (f: Factor): number[] => toFlat(exp(f.logValues))
 
 function marginalsFlat(g: RegionGraph, plan: Plan, messages: readonly (readonly number[])[]): number[] {
   const cache = new Map<number, Factor>()
@@ -611,10 +613,7 @@ export function regionBpAlgorithm(g: RegionGraph, options: RegionBpOptions = {})
   const o = { ...regionBpDefaults, ...options }
   assertDamping(o.damping, 'region BP')
   const plan = planOf(g)
-  const normalised = (values: ArrayLike<number>): number[] => {
-    const lse = shiftedSum(values).logTotal
-    return Array.from({ length: values.length }, (_, i) => (values[i] ?? 0) - lse)
-  }
+  const normalised = (values: readonly number[]): number[] => toFlat(sub(values, shiftedSum(values).logTotal))
   /** The new message of an edge from the beliefs of its two regions under `source`. */
   const proposal = (source: readonly (readonly number[])[], e: number): number[] => {
     const edge = g.edges[e] as { parent: number; child: number }
@@ -659,7 +658,7 @@ export function regionBpAlgorithm(g: RegionGraph, options: RegionBpOptions = {})
     init: (): RegionState => {
       const messages = g.edges.map((e) => {
         const size = (g.regions[e.child] as Region).variables.reduce((a, v) => a * (plan.card[v] ?? 1), 1)
-        return new Array<number>(size).fill(-Math.log(size))
+        return constantArray(size, -Math.log(size))
       })
       return {
         messages,
@@ -678,7 +677,7 @@ export function regionBpAlgorithm(g: RegionGraph, options: RegionBpOptions = {})
       const frozen = o.schedule === 'parallel' ? state.messages : undefined
       for (let e = from; e < to; e++) messages[e] = proposal(frozen ?? messages, e)
       const updates = state.updates + (to - from)
-      const sent = Array.from({ length: to - from }, (_, k) => from + k)
+      const sent = toFlat(arange(from, to))
       if (to < edgeCount) return { ...state, messages, cursor: to, updates, sent }
       const now = marginalsFlat(g, plan, messages)
       let change = 0

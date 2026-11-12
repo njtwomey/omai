@@ -7,6 +7,7 @@
  */
 
 import type { FamilyKind } from '../../../message-passing/index.ts'
+import { arange, toFlat } from '../../../tensor/index.ts'
 import {
   inverseGammaArithmetic,
   lookupNotGaussian,
@@ -121,10 +122,7 @@ export function lookupArithmetic(op: string, x: Cell, y: Cell, states: (variable
     if (c.kind === 'lookup') return c
     if (c.kind === 'rv' && (c.family === 'discrete' || c.family === 'bernoulli')) {
       const k = c.family === 'bernoulli' ? 2 : states(c.variable)
-      return lookup(
-        c.variable,
-        Array.from({ length: k }, (_, i) => i),
-      )
+      return lookup(c.variable, toFlat(arange(k)))
     }
     return undefined
   }
@@ -229,11 +227,11 @@ export const prod = (xs: readonly number[]): number => xs.reduce((a, b) => a * b
 export const logName = (site: string): string => `${site}#log`
 
 export function unflatten(flat: number, shape: readonly number[]): number[] {
-  const idx: number[] = new Array<number>(shape.length).fill(0)
+  const idx: number[] = []
   let rest = flat
   for (let i = shape.length - 1; i >= 0; i--) {
     const n = shape[i] as number
-    idx[i] = rest % n
+    idx.unshift(rest % n)
     rest = Math.floor(rest / n)
   }
   return idx

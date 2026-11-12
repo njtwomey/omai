@@ -2,7 +2,9 @@
 // the data are simulated from the truth, EP and the Gibbs sampler are run on them, and the belief about each parameter is held
 // against the true value. A run is `agrees` when EP's regime probabilities are within 0.05 of the sampler's on average (it found
 // the same reading of the data); a run is `barely` when some regime occurs in fewer than 6% of the steps.
+
 import { type AtomQuantity, atomRecovery, type Belief, type CalibrationSample } from 'omai-engine/probprog/ep'
+import { abs, argmax, bincount, equal, item, max, sub, sum, tensor, toFlat } from 'omai-engine/tensor'
 import type { EpHooks } from '../../../../shared/ep/sweeps.ts'
 import { infer, RATES, simulate, transitions } from './program.ts'
 import { gibbsReference, type Reference } from './reference.ts'
@@ -90,13 +92,10 @@ export function assess(
         sd: (gibbs.matrixSd[i] as number[])[j] as number,
         proper: true,
       }
-  const visits = [0, 1, 2].map((k) => sim.z.filter((v) => v === k).length)
-  const gap =
-    ep.regimes.reduce(
-      (s, p, t) => s + Math.max(...p.map((v, k) => Math.abs(v - ((gibbs.regimes[t] as number[])[k] as number)))),
-      0,
-    ) / steps
-  const accuracy = ep.regimes.filter((p, t) => p.indexOf(Math.max(...p)) === sim.z[t]).length / steps
+  const visits = toFlat(bincount(tensor(sim.z), 3))
+  const regimes = tensor(ep.regimes)
+  const gap = item(sum(max(abs(sub(regimes, tensor(gibbs.regimes))), 1))) / steps
+  const accuracy = item(sum(equal(argmax(regimes, 1), tensor(sim.z)))) / steps
   return {
     seed,
     status: String(ep.run.status),

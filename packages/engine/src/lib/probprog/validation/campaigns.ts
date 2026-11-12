@@ -9,7 +9,7 @@
 import { bernoulli, halfCauchy, halfNormal, normal } from '../../dists/index.ts'
 import { adam } from '../../optim/index.ts'
 import { normal as drawNormal, foldIn, type Key } from '../../random/index.ts'
-import { add, item, maximum, mul, tensor } from '../../tensor/index.ts'
+import { add, arange, div, item, maximum, mul, reshape, take, tensor, toFlat } from '../../tensor/index.ts'
 import { laplaceApproximation, mcmc, svi } from '../engines/index.ts'
 import { autoDelta, autoNormal } from '../guides.ts'
 import { type KernelState, randomWalkKernel, resimulationKernel } from '../inference/index.ts'
@@ -106,7 +106,7 @@ function hierarchical(y: readonly number[]): Model {
   )
 }
 
-const logisticX = Array.from({ length: 16 }, (_, i) => -1.5 + (3 * i) / 15)
+const logisticX = toFlat(add(div(mul(arange(16), 3), 15), -1.5))
 const logisticY = [0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1]
 const logistic: Model = () => {
   const b0 = sample('b0', normal(0, 2))
@@ -177,10 +177,9 @@ export function validationCampaigns(): Campaign[] {
           },
           fit: (y, k) => {
             const post = mcmc(hierarchical(y), undefined, { key: k, numChains: 1, numWarmup: 200, numDraws: 380 })
-            const thin = (xs: ArrayLike<number>): number[] =>
-              Array.from({ length: 19 }, (_, i) => xs[i * 20] ?? Number.NaN)
+            const thin = (xs: ArrayLike<number>): number[] => toFlat(take(tensor(Array.from(xs)), mul(arange(19), 20)))
             const theta = post.draws?.['theta']
-            const first = Array.from({ length: 380 }, (_, i) => theta?.data[i * GROUPS] ?? Number.NaN)
+            const first = theta === undefined ? [] : toFlat(take(reshape(theta, [-1]), mul(arange(380), GROUPS)))
             return {
               mu: thin(post.draws?.['mu']?.data ?? []),
               tau: thin(post.draws?.['tau']?.data ?? []),

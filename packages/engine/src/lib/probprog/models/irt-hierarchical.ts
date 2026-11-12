@@ -13,7 +13,7 @@
  */
 
 import { normal as drawNormal, uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import { add, arange, exp, mul, take, toFlat } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, type ModelDefinition, ops } from '../model/index.ts'
 
@@ -213,13 +213,13 @@ export function generateIrt(key: Key, options: IrtOptions): IrtData {
   const { abilitySd = 1, difficultySd = 1, meanDifficulty = 0.5, discriminationSd = 0 } = options
   const P = Math.max(1, Math.min(IRT_MAX_STUDENTS, Math.round(options.students)))
   const J = Math.max(1, Math.min(IRT_MAX_QUESTIONS, Math.round(options.questions)))
-  const zt = toFlat(drawNormal(foldIn(key, 0), [IRT_MAX_STUDENTS]))
-  const zb = toFlat(drawNormal(foldIn(key, 1), [IRT_MAX_QUESTIONS]))
-  const za = toFlat(drawNormal(foldIn(key, 2), [IRT_MAX_QUESTIONS]))
+  const zt = drawNormal(foldIn(key, 0), [IRT_MAX_STUDENTS])
+  const zb = drawNormal(foldIn(key, 1), [IRT_MAX_QUESTIONS])
+  const za = drawNormal(foldIn(key, 2), [IRT_MAX_QUESTIONS])
   const u = toFlat(drawUniform(foldIn(key, 3), [IRT_MAX_STUDENTS * IRT_MAX_QUESTIONS]))
-  const theta = Array.from({ length: P }, (_, i) => abilitySd * (zt[i] as number))
-  const b = Array.from({ length: J }, (_, j) => meanDifficulty + difficultySd * (zb[j] as number))
-  const a = Array.from({ length: J }, (_, j) => Math.exp(discriminationSd * (za[j] as number)))
+  const theta = toFlat(mul(take(zt, arange(P)), abilitySd))
+  const b = toFlat(add(mul(take(zb, arange(J)), difficultySd), meanDifficulty))
+  const a = toFlat(exp(mul(take(za, arange(J)), discriminationSd)))
   const y = theta.map((t, i) =>
     b.map((bj, j) =>
       (u[i * IRT_MAX_QUESTIONS + j] as number) < 1 / (1 + Math.exp(-(a[j] as number) * (t - bj))) ? 1 : 0,

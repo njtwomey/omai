@@ -4,7 +4,7 @@
 
 import { foldIn, key, normal } from '../../../random/index.ts'
 import { dict, int, real } from '../../../space/index.ts'
-import { toFlat } from '../../../tensor/index.ts'
+import { add, arange, mod, mul, take, tensor, toFlat } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -114,7 +114,7 @@ function scaledExact(
   const top = (a + 12 * Math.sqrt(a) + 20) / b
   const M = 6000
   const dt = top / M
-  const taus = Array.from({ length: M }, (_, i) => (i + 0.5) * dt)
+  const taus = toFlat(mul(add(arange(M), 0.5), dt))
   const logPost = (t: number): number =>
     (a - 1) * Math.log(t) -
     b * t +
@@ -419,7 +419,7 @@ function populationLearnedProblem(k: Config): AtomParts {
   const [seed, groups] = [configNumber(k, 'seed'), configNumber(k, 'groups')]
   const [trueMean, trueSpread] = [configNumber(k, 'trueMean'), configNumber(k, 'trueSpread')]
   const [a, b, priorSd] = [configNumber(k, 'shape'), configNumber(k, 'rate'), configNumber(k, 'priorSd')]
-  const noise = Array.from({ length: groups }, (_, j) => NOISE[j % NOISE.length] ?? 1)
+  const noise = toFlat(take(tensor(NOISE), mod(arange(groups), NOISE.length)))
   // region shared-precision-learned
   // the ground truth: effects drawn around a mean with a spread, then each observed with its own noise
   const kk = key(seed)

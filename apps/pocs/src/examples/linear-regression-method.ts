@@ -23,7 +23,33 @@ import { defineModel, ops, type Var } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { normal as drawNormal, uniform as drawUniform, foldIn, key } from 'omai-engine/random'
 import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
-import { toFlat } from 'omai-engine/tensor'
+import {
+  add,
+  arange,
+  cast,
+  div,
+  exp,
+  full,
+  greaterEqual,
+  less,
+  matmul,
+  mod,
+  mul,
+  nonzero,
+  pad,
+  reshape,
+  sliceAxis,
+  sort,
+  sqrt,
+  square,
+  sum,
+  take,
+  tensor,
+  toArray,
+  toFlat,
+  type Value,
+  where,
+} from 'omai-engine/tensor'
 import { type Config, derived } from 'omai-engine/trace'
 import {
   columnMoments,
@@ -128,10 +154,12 @@ export function linearRegressionProblem(config: Config): LinearProblem {
   const degree = sparse ? features - 1 : Math.max(1, Math.round(exampleNumber(config, 'degree')))
   const range = RANGE[exampleString(config, 'inputs')] ?? [-1, 1]
   const generating = sparse
-    ? Array.from({ length: features }, (_, j) =>
-        j < Math.round(exampleNumber(config, 'active')) ? (SPARSE_VALUES[j % SPARSE_VALUES.length] ?? 1) : 0,
+    ? where(
+        less(arange(features), Math.round(exampleNumber(config, 'active'))),
+        take(tensor(SPARSE_VALUES), cast(mod(arange(features), SPARSE_VALUES.length), 'int32')),
+        0,
       )
-    : (TRUTH[exampleString(config, 'truth')] ?? [1, 2])
+    : tensor(TRUTH[exampleString(config, 'truth')] ?? [1, 2])
   const noiseSd = exampleNumber(config, 'noise')
   const priorScale = exampleNumber(config, 'priorScale')
   const noiseModel = exampleString(config, 'noiseModel')
@@ -148,22 +176,20 @@ export function linearRegressionProblem(config: Config): LinearProblem {
     ardRate: exampleNumber(config, 'ardRate') || 0.001,
   }
   const seed = foldIn(key(exampleNumber(config, 'dataSeed')), 0)
-  const e = toFlat(drawNormal(foldIn(seed, 1), [n]))
-  let x: number[]
-  let design: number[][]
+  const e = drawNormal(foldIn(seed, 1), [n])
+  let x: Value
+  let design: Value
   if (sparse) {
-    const flat = toFlat(drawNormal(foldIn(seed, 2), [n * features]))
-    design = Array.from({ length: n }, (_, i) =>
-      Array.from({ length: features }, (_, j) => flat[i * features + j] ?? 0),
-    )
-    x = design.map((r) => r[0] ?? 0)
+    design = reshape(drawNormal(foldIn(seed, 2), [n * features]), [n, features])
+    x = take(design, 0, 1)
   } else {
-    const u = toFlat(drawUniform(foldIn(seed, 0), [n]))
-    x = Array.from(u, (v) => range[0] + (range[1] - range[0]) * v)
-    design = x.map((v) => monomials(v, degree))
+    x = add(mul(drawUniform(foldIn(seed, 0), [n]), range[1] - range[0]), range[0])
+    design = monomials(x, degree)
   }
-  const truth = Array.from({ length: degree + 1 }, (_, j) => generating[j] ?? 0)
-  const y = design.map((row, i) => row.reduce((a, v, j) => a + v * (truth[j] ?? 0), 0) + noiseSd * (e[i] ?? 0))
+  // The generating coefficients, cut or padded with zeros to the fitted degree.
+  const known = generating.shape[0] ?? 0
+  const truth = pad(sliceAxis(generating, 0, 0, Math.min(known, degree + 1)), [[0, Math.max(0, degree + 1 - known)]])
+  const y = add(matmul(design, truth), mul(e, noiseSd))
   // region linear
   const definition = defineModel('linear-regression', (m) => {
     const row = m.range('row')
@@ -273,9 +299,9 @@ export function linearRegressionProblem(config: Config): LinearProblem {
   })
   // endregion
   return {
-    x,
-    y,
-    truth,
+    x: toFlat(x),
+    y: toFlat(y),
+    truth: toFlat(truth),
     noiseSd,
     learned,
     precision: gammaNoise,
@@ -285,11 +311,11 @@ export function linearRegressionProblem(config: Config): LinearProblem {
       : ['intercept', 'slope', ...Array.from({ length: Math.max(0, degree - 1) }, (_, j) => `x^${j + 2}`)],
     extent: range as readonly [number, number],
     priorScale,
-    design,
+    design: toArray(design) as number[][],
     sparse,
     prior,
     settings,
-    norms: truth.map((_, j) => design.reduce((a, r) => a + (r[j] ?? 0) ** 2, 0)),
+    norms: toFlat(sum(square(design), 0)),
     definition,
     data: { X: design, y },
   }
@@ -475,7 +501,7 @@ function shapeOf(problem: LinearProblem): RegressionShape {
 }
 
 /** A normal density at `x` with mean 0 and standard deviation `sd`, up to the constant shared by every `sd`. */
-const normalDensity = (x: number, sd: number): number => Math.exp(-0.5 * (x / sd) ** 2) / sd
+const normalDensity = (x: Value, sd: number): Value => div(exp(mul(-0.5, square(div(x, sd)))), sd)
 
 /** What the page shows of each coefficient: its posterior, the truth, and the score of the sparse prior. */
 export interface CoefficientRecord {
@@ -517,8 +543,8 @@ const linearExample: Example<LinearProblem> = defineExample<LinearProblem>({
     const shape = shapeOf(problem)
     const [lo, hi] = problem.extent
     const pad = 0.08 * (hi - lo)
-    const grid = Array.from({ length: GRID }, (_, i) => lo - pad + ((hi - lo + 2 * pad) * i) / (GRID - 1))
-    const truthCurve = grid.map((v) => polynomialAt(problem.truth, v))
+    const grid = toFlat(add(div(mul(arange(GRID), hi - lo + 2 * pad), GRID - 1), lo - pad))
+    const truthCurve = toFlat(polynomialAt(problem.truth, grid))
     const exactApplies = !problem.learned && problem.prior === 'gaussian'
     return {
       'linreg/fit': derived<unknown>({
@@ -592,43 +618,36 @@ const linearExample: Example<LinearProblem> = defineExample<LinearProblem>({
           ]
           const got = drawRows(method, sites, COEFFICIENT_DRAWS)
           if (got === undefined) return null
-          const ws = got.rows.map((r) => r.slice(0, p))
+          const draws = tensor(got.rows)
+          const ws = sliceAxis(draws, 1, 0, p)
           const { mean, sd } = columnMoments(ws, p)
-          const sorted = Array.from({ length: p }, (_, j) => ws.map((r) => r[j] ?? 0).sort((a, b) => a - b))
-          const sigmaAt = (r: readonly number[]): number =>
-            noiseSite === 'sigma' ? (r[p] ?? 1) : noiseSite === 'tau' ? 1 / Math.sqrt(r[p] ?? 1) : problem.noiseSd
+          const sorted = sort(ws, 0)
+          const sigmaOf =
+            noiseSite === 'sigma'
+              ? take(draws, p, 1)
+              : noiseSite === 'tau'
+                ? div(1, sqrt(take(draws, p, 1)))
+                : full([got.rows.length], problem.noiseSd)
           let score: number[] | null = null
           let scoreLabel: string | null = null
           const { inclusion, spikeRatio } = problem.settings
           if (problem.prior === 'spikeSlab') {
             const slab = problem.priorScale
             const spike = slab * spikeRatio
-            score = Array.from({ length: p }, (_, j) => {
-              let a = 0
-              for (const r of ws) {
-                const s1 = inclusion * normalDensity(r[j] ?? 0, slab)
-                const s0 = (1 - inclusion) * normalDensity(r[j] ?? 0, spike)
-                a += s1 / (s1 + s0)
-              }
-              return a / ws.length
-            })
+            const s1 = mul(normalDensity(ws, slab), inclusion)
+            const s0 = mul(normalDensity(ws, spike), 1 - inclusion)
+            score = toFlat(div(sum(div(s1, add(s1, s0)), 0), got.rows.length))
             scoreLabel = 'posterior inclusion probability'
           } else if ((problem.prior === 'ard' || problem.prior === 'horseshoe') && hasPrecision) {
             const offset = p + (learned ? 1 : 0)
             // The typical (median) shrinkage over the draws: a coefficient that is nearly always pruned scores near 0.
-            score = Array.from({ length: p }, (_, j) => {
-              const gammas = got.rows
-                .map((r) => {
-                  const data = (problem.norms[j] ?? 0) / sigmaAt(r) ** 2
-                  return data / (data + (r[offset + j] ?? 0))
-                })
-                .sort((a, b) => a - b)
-              return gammas[Math.floor((gammas.length - 1) / 2)] ?? Number.NaN
-            })
+            const data = div(reshape(tensor(problem.norms as number[]), [1, p]), reshape(square(sigmaOf), [-1, 1]))
+            const gammas = sort(div(data, add(data, sliceAxis(draws, 1, offset, offset + p))), 0)
+            score = toFlat(take(gammas, Math.floor((got.rows.length - 1) / 2), 0))
             scoreLabel = 'relevance'
           }
           const active = problem.truth.map((v) => v !== 0)
-          const chosen = score === null ? [] : score.map((s, j) => (s >= 0.5 ? j : -1)).filter((j) => j >= 0)
+          const chosen = score === null ? [] : toFlat(nonzero(greaterEqual(tensor(score), 0.5))[0] as Value)
           const wantBurnin = Boolean((args as { burnin?: boolean } | null | undefined)?.burnin)
           let burnin: number[] | null = null
           if (wantBurnin && problem.prior === 'ard' && problem.settings.sparsity > 0) {
@@ -644,8 +663,8 @@ const linearExample: Example<LinearProblem> = defineExample<LinearProblem>({
             truth: problem.truth,
             mean,
             sd,
-            lo: sorted.map((c) => c[Math.floor(0.025 * (c.length - 1))] ?? Number.NaN),
-            hi: sorted.map((c) => c[Math.ceil(0.975 * (c.length - 1))] ?? Number.NaN),
+            lo: toFlat(take(sorted, Math.floor(0.025 * (got.rows.length - 1)), 0)),
+            hi: toFlat(take(sorted, Math.ceil(0.975 * (got.rows.length - 1)), 0)),
             score,
             scoreLabel,
             active,

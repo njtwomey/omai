@@ -6,6 +6,7 @@
 
 import { OmaiError } from '../../../base/index.ts'
 import { foldIn, gammaVariates, type Key, key, uniformStream } from '../../../random/index.ts'
+import { arange, full, toArray, toFlat, zeros } from '../../../tensor/index.ts'
 
 /** A seeded stream of standard normals (Box-Muller on the library's counter-based uniforms) and gamma variates. */
 function streams(k: Key): {
@@ -84,23 +85,23 @@ export function mixtureGibbs(spec: MixtureGibbsSpec): MixtureGibbs {
   const n = x.length
   // Start from the sorted data cut into K groups.
   const order = [...x.keys()].sort((a, b) => (x[a] as number) - (x[b] as number))
-  const z = new Array<number>(n).fill(0)
+  const z = toFlat(zeros([n]))
   order.forEach((i, r) => {
     z[i] = Math.min(K - 1, Math.floor((r * K) / n))
   })
-  let mu = Array.from({ length: K }, () => 0)
-  let tau = Array.from({ length: K }, () => spec.precision.shape / spec.precision.rate)
-  let pi = Array.from({ length: K }, () => 1 / K)
+  let mu = toFlat(zeros([K]))
+  let tau = toFlat(full([K], spec.precision.shape / spec.precision.rate))
+  let pi = toFlat(full([K], 1 / K))
   const out = {
     mean: Array.from({ length: K }, () => [] as number[]),
     precision: Array.from({ length: K }, () => [] as number[]),
     weight: Array.from({ length: K }, () => [] as number[]),
   }
-  const resp = Array.from({ length: n }, () => new Array<number>(K).fill(0))
+  const resp = toArray(zeros([n, K])) as number[][]
   for (let sweep = 0; sweep < spec.burn + spec.draws; sweep++) {
     // The means and precisions given the switches.
-    const count = new Array<number>(K).fill(0)
-    const total = new Array<number>(K).fill(0)
+    const count = toFlat(zeros([K]))
+    const total = toFlat(zeros([K]))
     for (let i = 0; i < n; i++) {
       const k = z[i] as number
       count[k] = (count[k] as number) + 1
@@ -145,7 +146,7 @@ export function mixtureGibbs(spec: MixtureGibbsSpec): MixtureGibbs {
       z[i] = pick
     }
     if (sweep < spec.burn) continue
-    const perm = [...Array(K).keys()]
+    const perm = toFlat(arange(K))
     if (spec.ordered) perm.sort((a, b) => (mu[a] as number) - (mu[b] as number))
     perm.forEach((from, to) => {
       ;(out.mean[to] as number[]).push(mu[from] as number)

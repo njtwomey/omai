@@ -1,5 +1,5 @@
 import type { Dataset } from 'omai-engine/data'
-import { asTensor, fromStorage, toFlat } from 'omai-engine/tensor'
+import { add, arange, asTensor, div, fromStorage, mul, toFlat } from 'omai-engine/tensor'
 
 /** A one-dimensional regression problem as plain arrays, with the true curve when the data carries it. */
 export interface CurveData {
@@ -46,5 +46,5 @@ export function curveData(
 
 /** `count` points spread evenly over `[lo, hi]`. */
 export function gridOf(lo: number, hi: number, count: number): number[] {
-  return Array.from({ length: count }, (_, i) => lo + ((hi - lo) * i) / (count - 1))
+  return toFlat(add(div(mul(arange(count), hi - lo), count - 1), lo))
 }

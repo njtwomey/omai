@@ -7,6 +7,7 @@
 import { type Json, OmaiError } from '../../base/index.ts'
 import { type CompiledGraph, compileGraph, defaultOperators as factorOperators } from '../../message-passing/index.ts'
 import type { Key } from '../../random/index.ts'
+import { asTensor, concat, toFlat } from '../../tensor/index.ts'
 import { type Algorithm, stateFromJson, stateToJson } from '../../trace/index.ts'
 import type { InferenceEngine } from '../engines/engine.ts'
 import { analyseSpec, type SpecAnalysis } from '../model/analysis.ts'
@@ -15,6 +16,18 @@ import { toFactorGraph } from '../model/factors.ts'
 import type { Posterior } from '../posterior.ts'
 import type { Verdict } from './method.ts'
 import { analysisOf, isProgramAnalysis, type MethodModel, type ModelAnalysis, programOf } from './model-input.ts'
+
+/**
+ * A run state's buffer with more numbers appended. A sampler's state keeps `Float64Array`s (the sampling contract); they are
+ * grown with tensor ops and converted once at that edge.
+ *
+ * @param a - The numbers so far.
+ * @param b - The numbers to append.
+ * @returns A new buffer, `a` then `b`.
+ */
+export function appended(a: Float64Array, b: Float64Array | readonly number[]): Float64Array {
+  return Float64Array.from(toFlat(concat([asTensor(a), asTensor(b)])))
+}
 
 export { analysisOf, isProgramAnalysis, type MethodModel, type ModelAnalysis, programOf }
 

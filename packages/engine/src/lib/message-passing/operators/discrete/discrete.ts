@@ -23,14 +23,14 @@ import type {
   Params,
   Port,
 } from '../../core/types.ts'
+import { constantArray, logUnitArray, rangeArray, unitArray, zeroArray } from '../../numerics/_arrays.ts'
 import { shiftedSum } from '../../numerics/_moments.ts'
 
 const statesOf = (params: Params): readonly number[] => vectorParam(params, 'states')
 
 /** The log probabilities of the states of a discrete or Bernoulli argument (an observed one is a point mass). */
 function logProbabilities(a: Arg, k: number): number[] {
-  if (a.value !== undefined)
-    return Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(a)) ? 0 : Number.NEGATIVE_INFINITY))
+  if (a.value !== undefined) return logUnitArray(k, Math.trunc(scalarOf(a)))
   const lp = a.family.logProbs
   if (lp === undefined) throw new ParameterError('a table argument must be a Bernoulli or discrete variable')
   return [...lp(etaOf(a))]
@@ -74,8 +74,8 @@ function expectedTable(c: OperatorContext, to: number | undefined): number[] {
   const values = vectorParam(c.params, 'values')
   const n = states.length
   const probs = states.map((k, i) => (i === to ? [] : stateProbabilitiesOf(arg(c, i), k)))
-  const out = new Array<number>(to === undefined ? 1 : (states[to] ?? 1)).fill(0)
-  const index = new Array<number>(n).fill(0)
+  const out = zeroArray(to === undefined ? 1 : (states[to] ?? 1))
+  const index = zeroArray(n)
   const total = states.reduce((a, b) => a * b, 1)
   for (let flat = 0; flat < total; flat++) {
     let r = flat
@@ -94,7 +94,7 @@ function expectedTable(c: OperatorContext, to: number | undefined): number[] {
 }
 
 function stateProbabilitiesOf(a: Arg, k: number): number[] {
-  if (a.value !== undefined) return Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(a)) ? 1 : 0))
+  if (a.value !== undefined) return unitArray(k, Math.trunc(scalarOf(a)))
   const logs = logProbabilities(a, k)
   const lse = logSumExpOf(logs)
   return logs.map((v) => Math.exp(v - lse))
@@ -194,7 +194,7 @@ export function logicTable(
       values.push(out === result ? 1 : 0)
     }
   }
-  return { states: Array.from({ length: n + 1 }, () => 2), values }
+  return { states: constantArray(n + 1, 2), values }
 }
 
 const selectPorts = (params: Params): readonly Port[] => {
@@ -251,9 +251,7 @@ export const select: FactorOperator = defineOperator({
       const f = arg(c, 0).family
       const k = c.args.length - 2
       const pi = (a: Arg): number[] =>
-        a.value !== undefined
-          ? discreteProbs(discreteEta(Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(a)) ? 1 : 0))))
-          : selectProbs(a)
+        a.value !== undefined ? discreteProbs(discreteEta(unitArray(k, Math.trunc(scalarOf(a))))) : selectProbs(a)
       const weights = pi(arg(c, 1))
       const etaY = arg(c, 0).eta
       const component = (i: number): Eta => etaOf(arg(c, i + 2))
@@ -280,7 +278,7 @@ export const select: FactorOperator = defineOperator({
         const { top, weights: w, total: norm } = shiftedSum(lw)
         if (!(top > Number.NEGATIVE_INFINITY))
           throw new ImproperMessageError('select: no component overlaps the output')
-        const mixed = new Array<number>(f.size).fill(0)
+        const mixed = zeroArray(f.size)
         for (const [i, e] of joint.entries()) {
           if ((w[i] ?? 0) === 0) continue
           const mo = f.moments(e)
@@ -293,15 +291,15 @@ export const select: FactorOperator = defineOperator({
       const own = component(kk)
       const withY = total(own, y)
       const logM1 = Math.log(weights[kk] ?? 0) + f.logPartition(withY)
-      const others = Array.from({ length: k }, (_, j) => j)
+      const others = rangeArray(k)
         .filter((j) => j !== kk && (weights[j] ?? 0) > 0)
         .map((j) => Math.log(weights[j] ?? 0) + f.logPartition(total(y, component(j))) - f.logPartition(component(j)))
       const logM2 = f.logPartition(own) + (others.length === 0 ? Number.NEGATIVE_INFINITY : logSumExpOf(others))
       const { weights: pair } = shiftedSum([logM1, logM2])
       const w1 = pair[0] as number
       const w2 = pair[1] as number
-      const m1 = f.isProper(withY) && w1 > 0 ? f.moments(withY) : new Array<number>(f.size).fill(0)
-      const m2 = w2 > 0 ? f.moments(own) : new Array<number>(f.size).fill(0)
+      const m1 = f.isProper(withY) && w1 > 0 ? f.moments(withY) : zeroArray(f.size)
+      const m2 = w2 > 0 ? f.moments(own) : zeroArray(f.size)
       const mixed = m1.map((v, i) => (w1 * v + w2 * (m2[i] ?? 0)) / (w1 + w2))
       return { message: f.fromMoments(mixed).map((v, i) => v - (own[i] ?? 0)) }
     }),
@@ -311,7 +309,7 @@ export const select: FactorOperator = defineOperator({
       const moments = (i: number): Eta => f.moments(etaOf(arg(c, i + 2)))
       if (c.to === 0) {
         const weights = selectWeights(arg(c, 1), k)
-        const mixed = new Array<number>(f.size).fill(0)
+        const mixed = zeroArray(f.size)
         for (let i = 0; i < k; i++) {
           const m = moments(i)
           for (let j = 0; j < mixed.length; j++) mixed[j] = (mixed[j] ?? 0) + (weights[i] ?? 0) * (m[j] ?? 0)
@@ -334,9 +332,7 @@ export const select: FactorOperator = defineOperator({
       const f = arg(c, 0).family
       const k = c.args.length - 2
       const weights =
-        arg(c, 1).value !== undefined
-          ? Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(arg(c, 1))) ? 1 : 0))
-          : selectProbs(arg(c, 1))
+        arg(c, 1).value !== undefined ? unitArray(k, Math.trunc(scalarOf(arg(c, 1)))) : selectProbs(arg(c, 1))
       const y = etaOf(arg(c, 0))
       const terms = Array.from({ length: k }, (_, i) => {
         const own = etaOf(arg(c, i + 2))
@@ -357,9 +353,7 @@ export const select: FactorOperator = defineOperator({
 
 /** The probabilities of the switch of a select over `k` states, from its belief or its observed state. */
 function selectWeights(a: Arg, k: number): number[] {
-  return a.value !== undefined
-    ? Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(a)) ? 1 : 0))
-    : selectProbs(a)
+  return a.value !== undefined ? unitArray(k, Math.trunc(scalarOf(a))) : selectProbs(a)
 }
 
 /** The probabilities of the states of the gate argument of a select: a discrete or a Bernoulli message. */
@@ -407,10 +401,7 @@ export const gaussianMixture: FactorOperator = defineOperator({
       const variance = x.value === undefined ? 1 / (etaOf(x)[1] ?? 1) : 0
       const k = c.args.length - 2
       const zArg = arg(c, 1)
-      const r =
-        zArg.value !== undefined
-          ? Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(zArg)) ? 1 : 0))
-          : discreteProbs(etaOf(zArg))
+      const r = zArg.value !== undefined ? unitArray(k, Math.trunc(scalarOf(zArg))) : discreteProbs(etaOf(zArg))
       const second = variance + mean * mean
       if (c.to >= 2) {
         const w = r[c.to - 2] ?? 0
@@ -434,10 +425,7 @@ export const gaussianMixture: FactorOperator = defineOperator({
       const variance = x.value === undefined ? 1 / (etaOf(x)[1] ?? 1) : 0
       const k = c.args.length - 2
       const zArg = arg(c, 1)
-      const r =
-        zArg.value !== undefined
-          ? Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(zArg)) ? 1 : 0))
-          : discreteProbs(etaOf(zArg))
+      const r = zArg.value !== undefined ? unitArray(k, Math.trunc(scalarOf(zArg))) : discreteProbs(etaOf(zArg))
       const second = variance + mean * mean
       let total = 0
       for (let i = 0; i < k; i++) {

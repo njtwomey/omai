@@ -9,6 +9,7 @@
  */
 
 import { dict, real } from '../../../space/index.ts'
+import { add, arange, div, mul, toFlat } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -57,7 +58,7 @@ function strengthExact(
   const T = 2500
   const lo = -9
   const hi = 6
-  const ts = Array.from({ length: T }, (_, i) => lo + ((i + 0.5) * (hi - lo)) / T)
+  const ts = toFlat(add(div(mul(add(arange(T), 0.5), hi - lo), T), lo))
   const logs = ts.map((t) => {
     const a = Math.exp(t)
     const ll = lg(K * a) - lg(K * a + N) + sum(counts.map((c) => lg(a + c) - lg(a)))

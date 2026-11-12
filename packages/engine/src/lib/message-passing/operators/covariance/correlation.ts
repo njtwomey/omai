@@ -15,6 +15,7 @@
  * the cavity is the prior itself, the tilted distribution is the exact posterior, and the belief has its mean and spread exactly.
  */
 
+import { outer, reshape, sub, toFlat } from '../../../tensor/index.ts'
 import { arg } from '../../core/_messages.ts'
 import { defineOperator, messageRule } from '../../core/define.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
@@ -130,7 +131,7 @@ export const mvnSdCorr: FactorOperator = defineOperator({
                   w * ((nodeCov[a * 2 + b] as number) + (nodeMean[a] as number) * (nodeMean[b] as number))
             }
           }
-      const cov = Array.from(s, (v, e) => v - (m[Math.floor(e / 2)] as number) * (m[e % 2] as number))
+      const cov = toFlat(sub(reshape(s, [2, 2]), outer(m, m)))
       const proj = gaussianMvEta(Array.from(m), cov)
       return { message: proj.map((v, i) => v - (side.flat ? 0 : ((arg(c, target).eta as Eta)[i] ?? 0))) }
     }, 'numeric'),

@@ -1,3 +1,4 @@
+import { add, clip, concat, floor, full, mul, pad, reshape, sliceAxis, tensor, toFlat } from 'omai-engine/tensor'
 import { type ReactNode, useEffect, useRef } from 'react'
 
 /**
@@ -23,11 +24,13 @@ export function PixelCanvas(props: {
     const context = ref.current?.getContext('2d')
     if (context === null || context === undefined || rgb === undefined) return
     const image = context.createImageData(width, height)
-    for (let i = 0; i < width * height; i++) {
-      for (let c = 0; c < 3; c++)
-        image.data[4 * i + c] = Math.round(255 * Math.min(1, Math.max(0, rgb[3 * i + c] ?? 0)))
-      image.data[4 * i + 3] = 255
-    }
+    // The pixels as bytes: the colours clamped to [0, 1] and scaled to 255, an opaque alpha after each.
+    const wanted = width * height * 3
+    const given = tensor(rgb as number[])
+    // Cut or padded with black to the size of the image.
+    const values = pad(sliceAxis(given, 0, 0, Math.min(rgb.length, wanted)), [[0, Math.max(0, wanted - rgb.length)]])
+    const bytes = floor(add(mul(clip(reshape(values, [-1, 3]), 0, 1), 255), 0.5))
+    image.data.set(toFlat(concat([bytes, full([width * height, 1], 255)], 1)))
     context.putImageData(image, 0, 0)
   }, [rgb, width, height])
   return (

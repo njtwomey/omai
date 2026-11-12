@@ -9,6 +9,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { dgemv } from '../../../numerics/linalg/index.ts'
 import { arg } from '../../core/_messages.ts'
 import { etaOf, vectorParam } from '../../core/args.ts'
 import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
@@ -16,6 +17,7 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { zeroArray } from '../../numerics/_arrays.ts'
 import { spd } from '../../numerics/_dense.ts'
 import { centredMoments, shiftedSum } from '../../numerics/_moments.ts'
 import { gammaLogWindow, windowProfiles } from '../../numerics/_windows.ts'
@@ -223,12 +225,7 @@ export function tiltedVectorOf(t: VectorScaleTilt & { readonly d: number }, what
   const factor = spd(cov, d)
   if (factor === undefined) throw new ImproperMessageError(`${what}: the tilted covariance is not positive definite`)
   const jNew = factor.inverse()
-  const hNew = Array.from({ length: d }, (_, i) => {
-    let s = 0
-    for (let k = 0; k < d; k++) s += (jNew[i * d + k] ?? 0) * (t.mean[k] ?? 0)
-    return s
-  })
-  return [...hNew, ...Array.from(jNew)]
+  return [...dgemv(jNew, d, d, t.mean), ...Array.from(jNew)]
 }
 
 /**
@@ -284,9 +281,9 @@ export const gaussianMvPrecisionScale: FactorOperator = defineOperator({
       const lambda = arg(c, 1)
       const meanLambda = lambda.family.moments(etaOf(lambda))[1] ?? 0
       if (c.to === 0) {
-        const j = new Array<number>(d * d).fill(0)
+        const j = zeroArray(d * d)
         for (let i = 0; i < d; i++) j[i * d + i] = (scale[i] ?? 0) * meanLambda + (offset[i] ?? 0)
-        return { message: [...new Array<number>(d).fill(0), ...j] }
+        return { message: [...zeroArray(d), ...j] }
       }
       for (let i = 0; i < d; i++)
         if ((scale[i] ?? 0) > 0 && (offset[i] ?? 0) !== 0)

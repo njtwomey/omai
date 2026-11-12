@@ -12,6 +12,21 @@
  */
 
 import { type Json, LOG_2PI } from '../../base/index.ts'
+import { ddot, dgemv } from '../../numerics/linalg/index.ts'
+import {
+  add,
+  diagonal,
+  div,
+  mul,
+  outer,
+  reshape,
+  sub,
+  type TensorLike,
+  toArray,
+  toFlat,
+  transpose,
+} from '../../tensor/index.ts'
+import { float64Of, identityArray, nanArray } from '../numerics/_arrays.ts'
 import { spd } from '../numerics/_dense.ts'
 import { digammaOf, lgammaOf, trigammaOf } from '../numerics/_scalar.ts'
 import { ImproperMessageError, ParameterError } from './errors.ts'
@@ -40,15 +55,16 @@ function multiTrigamma(k: number, d: number): number {
 }
 
 /** The mirror image of a square matrix across its diagonal averaged with it: the symmetric part, row-major. */
-function symmetric(a: ArrayLike<number>, d: number): number[] {
-  const out = new Array<number>(d * d)
-  for (let i = 0; i < d; i++)
-    for (let j = 0; j < d; j++) out[i * d + j] = 0.5 * ((a[i * d + j] ?? 0) + (a[j * d + i] ?? 0))
-  return out
+function symmetric(a: TensorLike, d: number): number[] {
+  const m = reshape(a, [d, d])
+  return toFlat(mul(add(m, transpose(m)), 0.5))
 }
 
-const scaled = (a: ArrayLike<number>, f: number, n: number): number[] =>
-  Array.from({ length: n }, (_, i) => f * (a[i] ?? 0))
+/** `f` times the entries of `a` (which has exactly `n` of them). */
+const scaled = (a: TensorLike, f: number, n: number): number[] => toFlat(mul(reshape(a, [n]), f))
+
+/** A `d x d` row-major array as nested rows, for a summary. */
+const rowsOf = (a: TensorLike, d: number): number[][] => toArray(reshape(a, [d, d])) as number[][]
 
 /**
  * The Wishart shape `k = nu / 2` that matches `E log |Lambda|` and `E Lambda`: the root of `d log k - psi_d(k) = log |E Lambda| - E log |Lambda|`
@@ -105,13 +121,11 @@ export function wishartParams(
   if (factor === undefined || !((eta[0] ?? -1) > -1)) return undefined
   const k = (eta[0] ?? 0) + (d + 1) / 2
   const inverse = factor.inverse()
-  const scale = Float64Array.from(inverse, (v) => 0.5 * v)
-  return { nu: 2 * k, scale, mean: Float64Array.from(inverse, (v) => k * v) }
+  return { nu: 2 * k, scale: float64Of(mul(inverse, 0.5)), mean: float64Of(mul(inverse, k)) }
 }
 
 /** The `d x d` identity as a row-major array. */
-export const identityMatrix = (d: number): number[] =>
-  Array.from({ length: d * d }, (_, i) => (Math.floor(i / d) === i % d ? 1 : 0))
+export const identityMatrix = (d: number): number[] => identityArray(d)
 
 /**
  * The Wishart family on `d x d` symmetric positive-definite matrices, messages `[a, B]` with `a = (nu - d - 1) / 2` and `B = -S^-1 / 2`
@@ -144,7 +158,7 @@ export function wishart(d: number): Family {
     isProper: (eta) => eta.every(Number.isFinite) && (eta[0] ?? -1) > -1 && spd(blockOf(eta), d) !== undefined,
     moments: (eta) => {
       const p = wishartParams(eta, d)
-      if (p === undefined) return new Array<number>(1 + n).fill(Number.NaN)
+      if (p === undefined) return nanArray(1 + n)
       const factor = spd(blockOf(eta), d) as NonNullable<ReturnType<typeof spd>>
       return [multiDigamma(p.nu / 2, d) - factor.logDet, ...p.mean]
     },
@@ -178,16 +192,12 @@ export function wishart(d: number): Family {
     },
     summary: (eta) => {
       const p = wishartParams(eta, d)
-      const rows = (a: ArrayLike<number>): Json =>
-        Array.from({ length: d }, (_, i) => Array.from({ length: d }, (_, j) => a[i * d + j] ?? 0))
+      const rows = (a: TensorLike): Json => rowsOf(a, d)
       if (p === undefined) return { a: eta[0] ?? 0, B: rows(eta.slice(1)) }
-      const variance = Float64Array.from(
-        { length: n },
-        (_, k) =>
-          p.nu *
-          ((p.scale[k] ?? 0) ** 2 +
-            (p.scale[Math.floor(k / d) * d + Math.floor(k / d)] ?? 0) * (p.scale[(k % d) * d + (k % d)] ?? 0)),
-      )
+      // Var(L_ij) = nu (S_ij^2 + S_ii S_jj), the outer product of the diagonal with itself plus the squared scale.
+      const scale = reshape(p.scale, [d, d])
+      const diag = diagonal(scale)
+      const variance = toFlat(mul(add(mul(scale, scale), outer(diag, diag)), p.nu))
       return { nu: p.nu, scale: rows(p.scale), mean: rows(p.mean), variance: rows(variance) }
     },
   })
@@ -200,11 +210,9 @@ export function normalWishartEta(m: readonly number[], beta: number, nu: number,
   if (factor === undefined)
     throw new ImproperMessageError('normalWishartEta: the scale matrix is not positive definite')
   const inverse = factor.inverse()
-  const b = Array.from(
-    { length: d * d },
-    (_, k) => -0.5 * ((inverse[k] ?? 0) + beta * (m[Math.floor(k / d)] ?? 0) * (m[k % d] ?? 0)),
-  )
-  return [(nu - d) / 2, ...symmetric(b, d), ...m.map((v) => beta * v), -beta / 2]
+  const betaM = mul(m, beta)
+  const b = toFlat(mul(add(reshape(inverse, [d, d]), outer(betaM, m)), -0.5))
+  return [(nu - d) / 2, ...symmetric(b, d), ...toFlat(betaM), -beta / 2]
 }
 
 /** The parameters `(m, beta, nu, S)` of a normal-Wishart message of dimension `d`, or `undefined` when it has no density. */
@@ -222,15 +230,18 @@ export function normalWishartParams(
   | undefined {
   const beta = -2 * (eta[1 + d * d + d] ?? 0)
   if (!(beta > 0)) return undefined
-  const m = Float64Array.from({ length: d }, (_, i) => (eta[1 + d * d + i] ?? 0) / beta)
-  const inverseScale = Float64Array.from(
-    { length: d * d },
-    (_, k) => -2 * (eta[1 + k] ?? 0) - beta * (m[Math.floor(k / d)] ?? 0) * (m[k % d] ?? 0),
-  )
-  const factor = spd(symmetric(inverseScale, d), d)
+  const m = div(eta.slice(1 + d * d, 1 + d * d + d), beta)
+  const inverseScale = sub(reshape(mul(eta.slice(1, 1 + d * d), -2), [d, d]), outer(mul(m, beta), m))
+  const factor = spd(symmetric(toFlat(inverseScale), d), d)
   const nu = 2 * (eta[0] ?? 0) + d
   if (factor === undefined || !(nu > d - 1)) return undefined
-  return { m, beta, nu, scale: factor.inverse(), inverseScale: Float64Array.from(symmetric(inverseScale, d)) }
+  return {
+    m: float64Of(m),
+    beta,
+    nu,
+    scale: factor.inverse(),
+    inverseScale: Float64Array.from(symmetric(toFlat(inverseScale), d)),
+  }
 }
 
 /**
@@ -262,16 +273,11 @@ export function normalWishart(d: number): Family {
     isProper: (eta) => eta.every(Number.isFinite) && normalWishartParams(eta, d) !== undefined,
     moments: (eta) => {
       const p = normalWishartParams(eta, d)
-      if (p === undefined) return new Array<number>(2 + n + d).fill(Number.NaN)
+      if (p === undefined) return nanArray(2 + n + d)
       const factor = spd(p.inverseScale, d) as NonNullable<ReturnType<typeof spd>>
-      const nuS = Float64Array.from(p.scale, (v) => p.nu * v)
-      const nuSm = Array.from({ length: d }, (_, i) => {
-        let s = 0
-        for (let j = 0; j < d; j++) s += (nuS[i * d + j] ?? 0) * (p.m[j] ?? 0)
-        return s
-      })
-      let quad = 0
-      for (let i = 0; i < d; i++) quad += (nuSm[i] ?? 0) * (p.m[i] ?? 0)
+      const nuS = float64Of(mul(p.scale, p.nu))
+      const nuSm = dgemv(nuS, d, d, p.m)
+      const quad = ddot(nuSm, p.m)
       return [multiDigamma(p.nu / 2, d) + d * Math.LN2 - factor.logDet, ...nuS, ...nuSm, d / p.beta + quad]
     },
     fromMoments: (mo) => {
@@ -281,8 +287,7 @@ export function normalWishart(d: number): Family {
         throw new ImproperMessageError('normalWishart.fromMoments: E[L] is not positive definite')
       const g = mo.slice(1 + n, 1 + n + d)
       const m = factor.solve(g)
-      let gm = 0
-      for (let i = 0; i < d; i++) gm += (g[i] ?? 0) * (m[i] ?? 0)
+      const gm = ddot(g, m)
       const spread = (mo[1 + n + d] ?? 0) - gm
       if (!(spread > 0))
         throw new ImproperMessageError('normalWishart.fromMoments: the moments imply a non-positive 1 / beta')
@@ -307,15 +312,14 @@ export function normalWishart(d: number): Family {
     summary: (eta) => {
       const p = normalWishartParams(eta, d)
       if (p === undefined) return {}
-      const rows = (a: ArrayLike<number>): Json =>
-        Array.from({ length: d }, (_, i) => Array.from({ length: d }, (_, j) => a[i * d + j] ?? 0))
+      const rows = (a: TensorLike): Json => rowsOf(a, d)
       return {
         m: Array.from(p.m),
         beta: p.beta,
         nu: p.nu,
         scale: rows(p.scale),
         mean: Array.from(p.m),
-        precisionMean: rows(Float64Array.from(p.scale, (v) => p.nu * v)),
+        precisionMean: rows(toFlat(mul(p.scale, p.nu))),
       }
     },
   })

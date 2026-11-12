@@ -1,11 +1,28 @@
-import { ddot } from 'omai-engine/numerics/linalg'
 import { mixtureInterval } from 'omai-engine/probprog/ep'
 import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { type MixtureComponent, mixtureMarginal, selectedBranch } from 'omai-engine/probprog/validation'
 import { foldIn, key, normal, permutation, uniform } from 'omai-engine/random'
-import { toFlat } from 'omai-engine/tensor'
+import {
+  abs,
+  add,
+  any,
+  arange,
+  equal,
+  less,
+  matmul,
+  mod,
+  mul,
+  reshape,
+  sign,
+  sliceAxis,
+  stack,
+  toArray,
+  toFlat,
+  type Value,
+  where,
+} from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
 import type { EpHooks } from '../../../../shared/ep/sweeps.ts'
 
@@ -27,17 +44,25 @@ export const defaultSetup: SparseSetup = { seed: 3, rows: 60, features: 12, acti
 // region simulate
 export function simulate({ seed, rows, features, active, noise, outliers }: SparseSetup) {
   const k = key(seed)
-  const draw = (i: number, n: number, scale = 1): number[] => Array.from(toFlat(normal(foldIn(k, i), [n], { scale })))
-  // The design, and which coefficients are non-zero.
-  const X = Array.from({ length: rows }, (_, i) => draw(100 + i, features))
-  const on = Array.from(toFlat(permutation(foldIn(k, 1), features))).slice(0, active)
-  const size = (v: number): number => Math.sign(v) * (1.5 + Math.abs(v))
-  const truth = draw(2, features).map((v, j) => (on.includes(j) ? size(v) : 0))
-  const isOutlier = Array.from(toFlat(uniform(foldIn(k, 3), [rows])), (u) => u < outliers)
-  const e = draw(4, rows, noise)
-  const spike = (i: number): number => (isOutlier[i] ? (i % 2 ? 10 : -10) * noise : 0)
-  const y = X.map((x, i) => ddot(x, truth) + (e[i] ?? 0) + spike(i))
-  return { X, y, truth, isOutlier }
+  // The design: a row of standard normals for each reading, and which coefficients are non-zero.
+  const X = stack(Array.from({ length: rows }, (_, i) => normal(foldIn(k, 100 + i), [features])))
+  const on = sliceAxis(permutation(foldIn(k, 1), features), 0, 0, active)
+  const isOn = any(equal(reshape(arange(features), [features, 1]), reshape(on, [1, active])), 1)
+  const size = (v: Value): Value => mul(sign(v), add(abs(v), 1.5))
+  const draw = normal(foldIn(k, 2), [features])
+  const truth = where(isOn, size(draw), 0)
+  const isOutlier = less(uniform(foldIn(k, 3), [rows]), outliers)
+  const e = normal(foldIn(k, 4), [rows], { scale: noise })
+  // An outlier is shifted by ten noise sds, up for the odd rows and down for the even.
+  const jump = where(equal(mod(arange(rows), 2), 1), 10, -10)
+  const spike = where(isOutlier, mul(jump, noise), 0)
+  const y = add(add(matmul(X, truth), e), spike)
+  return {
+    X: toArray(X) as number[][],
+    y: toFlat(y),
+    truth: toFlat(truth),
+    isOutlier: toFlat(isOutlier),
+  }
 }
 // endregion
 

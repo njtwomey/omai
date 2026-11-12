@@ -16,6 +16,7 @@ import type { SchoolsParameterisation } from 'omai-engine/probprog/models'
 import { eightSchoolsCentred, eightSchoolsDefinition, generateSchoolGroups } from 'omai-engine/probprog/models'
 import { key } from 'omai-engine/random'
 import { choice, type DictSpace, dict, int, real, union } from 'omai-engine/space'
+import { add, full, mul, tensor, toFlat, zeros } from 'omai-engine/tensor'
 import { type Config, derived } from 'omai-engine/trace'
 import { defineExample, type Example, type ExampleProblem, exampleNumber, exampleString } from './example-method.ts'
 import {
@@ -193,14 +194,13 @@ const declared: Example<SchoolsProblem> = defineExample<SchoolsProblem>({
       const post = fitted(state)
       if (problem.parameterisation === 'non-centred')
         return withDerivedSites(post, ['theta'], (d) => ({
-          theta: Array.from(
-            { length: groups },
-            (_, j) => (d['mu']?.[0] ?? 0) + (d['tau']?.[0] ?? 0) * (d['z']?.[j] ?? 0),
+          theta: toFlat(
+            add(d['mu']?.[0] ?? 0, mul(d['tau']?.[0] ?? 0, d['z'] === undefined ? zeros([groups]) : tensor(d['z']))),
           ),
         }))
       if (problem.parameterisation === 'complete-pooling')
         return withDerivedSites(post, ['theta'], (d) => ({
-          theta: Array.from({ length: groups }, () => d['mu']?.[0] ?? 0),
+          theta: toFlat(full([groups], d['mu']?.[0] ?? 0)),
         }))
       return post
     }

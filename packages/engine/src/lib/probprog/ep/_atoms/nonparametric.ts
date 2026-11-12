@@ -8,6 +8,7 @@
  */
 
 import { dict, real } from '../../../space/index.ts'
+import { toArray, zeros } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -181,8 +182,9 @@ function topicModelProblem(k: Config): AtomParts {
   }
   const assignments: { logw: number; doc: number[][]; topic: number[][] }[] = []
   for (let c = 0; c < configs; c++) {
-    const doc = Array.from({ length: DOCS }, () => [0, 0])
-    const topic = Array.from({ length: 2 }, () => [0, 0])
+    // the count tables, incremented in place by the loop below
+    const doc = toArray(zeros([DOCS, 2])) as number[][]
+    const topic = toArray(zeros([2, 2])) as number[][]
     for (let t = 0; t < DOCS * TOKENS; t++) {
       const z = (c >> t) & 1
       const dd = Math.floor(t / TOKENS)

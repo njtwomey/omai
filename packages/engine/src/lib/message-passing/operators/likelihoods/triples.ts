@@ -11,12 +11,14 @@
  * evidence of a sweep.
  */
 
+import { exp, less, log1p, neg, reshape, sub, where } from '../../../tensor/index.ts'
 import { errorText, keyOf, memoised } from '../../core/_messages.ts'
 import { allProper, gaussianOf, massOf, numberParam } from '../../core/args.ts'
 import { defineOperator, messageRule, tiltedRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { namedParams, param } from '../../core/params.ts'
 import type { Arg, FactorOperator, Family, OperatorContext, Params, Port, TiltedMoments } from '../../core/types.ts'
+import { float64Of } from '../../numerics/_arrays.ts'
 import {
   axisOf,
   type GridAxis,
@@ -266,10 +268,11 @@ function logitIndexed(y: number, p: Params): GridIndexed {
     const gap =
       first || last
         ? undefined
-        : Float64Array.from({ length: n1 * hi.length }, (_, k) => {
-            const d = (lo[k % n1] as number) - (hi[Math.floor(k / n1)] as number)
-            return d < 0 ? Math.log1p(-Math.exp(d)) : Number.NEGATIVE_INFINITY
-          })
+        : (() => {
+            // log(1 - exp(d)) for the difference of every upper cut and lower cut (minus infinity when it is not negative).
+            const d = sub(reshape(lo, [1, n1]), reshape(hi, [hi.length, 1]))
+            return float64Of(where(less(d, 0), log1p(neg(exp(d))), Number.NEGATIVE_INFINITY))
+          })()
     return (a, b, c) => {
       if (first) return (upper as Float64Array)[c * n0 + a] as number
       if (last) return (lower as Float64Array)[b * n0 + a] as number

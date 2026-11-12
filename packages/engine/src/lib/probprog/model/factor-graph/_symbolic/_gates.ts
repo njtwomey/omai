@@ -7,6 +7,7 @@
  */
 
 import type { FamilyKind } from '../../../../message-passing/index.ts'
+import { arange, toFlat } from '../../../../tensor/index.ts'
 import {
   affOf,
   type Cell,
@@ -73,10 +74,7 @@ export function shiftedByState(cx: Context, mode: EvalMode, op: string, x: Cell,
   const asLookup = (c: Cell): (Cell & { kind: 'lookup' }) | undefined => {
     if (c.kind === 'lookup') return c.items === undefined ? c : undefined
     if (c.kind === 'rv' && (c.family === 'discrete' || c.family === 'bernoulli'))
-      return lookup(
-        c.variable,
-        Array.from({ length: c.family === 'bernoulli' ? 2 : states(c.variable) }, (_, i) => i),
-      )
+      return lookup(c.variable, toFlat(arange(c.family === 'bernoulli' ? 2 : states(c.variable))))
     return undefined
   }
   const random = (c: Cell): boolean => c.kind === 'aff' && !isConstCell(c)

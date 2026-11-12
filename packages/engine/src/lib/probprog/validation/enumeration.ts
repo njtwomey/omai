@@ -10,7 +10,7 @@
 import { logSumExpOf, OmaiError } from '../../base/index.ts'
 import { dpotrf, dpotrs } from '../../numerics/linalg/index.ts'
 import { lgamma } from '../../numerics/special/index.ts'
-import { item } from '../../tensor/index.ts'
+import { full, item, toArray, toFlat, zeros } from '../../tensor/index.ts'
 
 /** The prior and data of a spike and slab regression, `y = X w + noise`, with each `w_j` a mixture of two zero-mean normals. */
 export interface SpikeSlabRegression {
@@ -85,6 +85,7 @@ export function spikeSlabRegression(problem: SpikeSlabRegression): SpikeSlabPost
     throw new OmaiError('value', 'spikeSlabRegression: more than 22 coefficients is too many subsets to enumerate')
   if (!(inclusion > 0 && inclusion < 1 && slab > 0 && spike > 0))
     throw new OmaiError('value', 'spikeSlabRegression: the inclusion probability is in (0, 1), the scales are positive')
+  // The normal equations are kernel buffers: dpotrf and dpotrs take and return Float64Arrays, once per (subset, precision) cell.
   const gram = new Float64Array(p * p)
   const xty = new Float64Array(p)
   let yty = 0
@@ -164,9 +165,9 @@ export function spikeSlabRegression(problem: SpikeSlabRegression): SpikeSlabPost
     }
   }
   const logZ = logSumExpOf(cells.map((c) => c.logWeight))
-  const incl = new Float64Array(p)
-  const mean = new Float64Array(p)
-  const second = new Float64Array(p)
+  const incl = toFlat(zeros([p]))
+  const mean = toFlat(zeros([p]))
+  const second = toFlat(zeros([p]))
   let tauMean = 0
   let tauSecond = 0
   for (const c of cells) {
@@ -194,9 +195,9 @@ export function spikeSlabRegression(problem: SpikeSlabRegression): SpikeSlabPost
     }
   }
   return {
-    inclusion: Array.from(incl),
-    mean: Array.from(mean),
-    sd: Array.from(mean, (m, j) => Math.sqrt(Math.max(0, (second[j] as number) - m * m))),
+    inclusion: incl,
+    mean,
+    sd: mean.map((m, j) => Math.sqrt(Math.max(0, (second[j] as number) - m * m))),
     precision: tauMean,
     precisionSd: known ? 0 : Math.sqrt(Math.max(0, tauSecond - tauMean * tauMean)),
     logEvidence: logZ,
@@ -289,7 +290,7 @@ export function zeroInflatedPoisson(problem: ZeroInflatedPoisson): ZeroInflatedP
     const logZ = logSumExpOf(logWeights) + Math.log(volume)
     const sums = [0, 0, 0]
     const squares = [0, 0, 0]
-    const structural = new Array<number>(n).fill(0)
+    const structural = toFlat(zeros([n]))
     logWeights.forEach((lw, g) => {
       const w = Math.exp(lw - logZ) * volume
       const point = where[g] as [number, number, number]
@@ -395,11 +396,11 @@ export function mixtureOfRegressions(problem: MixtureOfRegressions): MixtureOfRe
   if (n === 0 || p === 0 || classes === 0) throw new OmaiError('shape', 'mixtureOfRegressions: the design is empty')
   const assignments = classes ** n
   if (assignments > 2 ** 20) throw new OmaiError('value', 'mixtureOfRegressions: too many assignments to enumerate')
-  const weights = problem.weights ?? new Array<number>(classes).fill(1 / classes)
+  const weights = problem.weights ?? toFlat(full([classes], 1 / classes))
   const tau = 1 / noiseSd ** 2
   const prior = 1 / priorSd ** 2
   type Part = { mean: Float64Array; variance: Float64Array }
-  const logw = new Float64Array(assignments)
+  const logw = toFlat(zeros([assignments]))
   const parts: Part[][] = []
   for (let a = 0; a < assignments; a++) {
     const rows: number[][] = Array.from({ length: classes }, () => [])
@@ -410,6 +411,7 @@ export function mixtureOfRegressions(problem: MixtureOfRegressions): MixtureOfRe
       const m0 = priorMean[k] as readonly number[]
       const members = rows[k] as number[]
       lw += members.length * Math.log(weights[k] as number)
+      // kernel buffers of dpotrf and dpotrs (Float64Arrays), one set per class of every assignment
       const A = new Float64Array(p * p)
       const b = new Float64Array(p)
       let yty = 0
@@ -453,8 +455,8 @@ export function mixtureOfRegressions(problem: MixtureOfRegressions): MixtureOfRe
     logw[a] = lw
     parts.push(here)
   }
-  const logEvidence = logSumExpOf(Array.from(logw))
-  const membership = Array.from({ length: n }, () => new Array<number>(classes).fill(0))
+  const logEvidence = logSumExpOf(logw)
+  const membership = toArray(zeros([n, classes])) as number[][]
   const coefficients = Array.from({ length: classes }, (_, k) =>
     Array.from({ length: p }, (_, j) => {
       const components: { weight: number; mean: number; sd: number }[] = []

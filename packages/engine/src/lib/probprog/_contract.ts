@@ -6,6 +6,7 @@ import { valueAndGrad } from '../autodiff/index.ts'
 import { OmaiError } from '../base/index.ts'
 import {
   add,
+  arange,
   broadcastTo,
   cast,
   item,
@@ -299,7 +300,7 @@ export function enumerationHandler(firstAvailableDim: number): Messenger {
       live.push({ dim, loop: frame?.name, step: frame?.step ?? 0 })
       const k = high - low + 1
       const shape = [k, ...new Array<number>(-dim - 1).fill(1)]
-      msg.value = reshape(tensor(Array.from({ length: k }, (_, i) => low + i)), shape)
+      msg.value = reshape(add(arange(k), low), shape)
       msg.enumDim = dim
     },
   }

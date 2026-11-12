@@ -8,6 +8,7 @@ import {
   type RefMarginal,
 } from 'omai-engine/probprog/ep'
 import type { RefJoint } from 'omai-engine/probprog/validation'
+import { add, arange, div, mul, sum, tensor, toFlat } from 'omai-engine/tensor'
 import { type Curve, cartesian, contours, type PointSet, points } from 'omai-render/charts'
 import type { Figure } from 'omai-render/figure'
 import { ResponsiveChart, useColourMode } from 'omai-render/react'
@@ -30,8 +31,7 @@ function windowOf(ref: RefMarginal, truth: number | undefined): readonly [number
   return [lo - pad, hi + pad]
 }
 
-const linspace = (lo: number, hi: number, n: number): number[] =>
-  Array.from({ length: n }, (_, i) => lo + ((hi - lo) * i) / (n - 1))
+const linspace = (lo: number, hi: number, n: number): number[] => toFlat(add(div(mul(arange(n), hi - lo), n - 1), lo))
 
 /**
  * One quantity's belief against the reference: the reference as a thick curve, EP's belief at the viewed sweep dashed over
@@ -316,7 +316,7 @@ export function MixtureChart(props: {
   const curves = useMemo(() => {
     const { xs, at } = shape
     const exact = view.exact.map((b) => at(b))
-    const total = xs.map((_, i) => exact.reduce((a, c) => a + (c[i] ?? 0), 0))
+    const total = exact.length === 0 ? xs.map(() => 0) : toFlat(sum(tensor(exact), 0))
     const out: Curve[] = [
       ...view.exact.map((b, i) => ({
         name: `${b.label}: ${b.weight.toFixed(3)}`,

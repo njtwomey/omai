@@ -12,7 +12,7 @@
 
 import { betainc, lgamma } from '../../numerics/special/index.ts'
 import { uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
-import { item, tensor, toFlat } from '../../tensor/index.ts'
+import { arange, div, full, item, toArray, toFlat, zeros } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel } from '../model/index.ts'
 import type { MarginalOracle } from '../validation/index.ts'
@@ -92,10 +92,11 @@ function betaMixtureOracle(
     second += (w[i] as number) * ((p.a * p.b) / ((p.a + p.b) ** 2 * (p.a + p.b + 1)) + m * m)
   })
   const N = 2000
-  const xs = Float64Array.from({ length: N + 1 }, (_, i) => i / N)
-  const F = new Float64Array(N + 1)
+  const xs = div(arange(N + 1), N)
+  // the cumulative distribution, summed over the parts in place
+  const F = toFlat(zeros([N + 1]))
   parts.forEach((p, i) => {
-    const c = toFlat(betainc(p.a, p.b, tensor(Array.from(xs))))
+    const c = toFlat(betainc(p.a, p.b, xs))
     for (let j = 0; j <= N; j++) F[j] = (F[j] as number) + (w[i] as number) * (c[j] as number)
   })
   for (let j = 1; j <= N; j++) F[j] = Math.max(F[j] as number, F[j - 1] as number)
@@ -155,14 +156,14 @@ export function ldaLiteTruth(w: readonly (readonly number[])[]): BenchmarkTruth 
     )
   }
   const configs = 2 ** T
-  const logw = new Float64Array(configs)
+  const logw = toFlat(zeros([configs]))
   const docCount = (c: number, dd: number): number => {
     let n = 0
     for (let t = 0; t < TOKENS; t++) n += (c >> (dd * TOKENS + t)) & 1
     return n
   }
   const topicWord = (c: number): number[][] => {
-    const m = [new Array<number>(WORDS).fill(0), new Array<number>(WORDS).fill(0)]
+    const m = toArray(zeros([2, WORDS])) as number[][]
     for (let dd = 0; dd < DOCS; dd++)
       for (let t = 0; t < TOKENS; t++) {
         const topic = (c >> (dd * TOKENS + t)) & 1
@@ -183,19 +184,19 @@ export function ldaLiteTruth(w: readonly (readonly number[])[]): BenchmarkTruth 
     logw[c] = s
     if (s > max) max = s
   }
-  const weights = Float64Array.from(logw, (v) => Math.exp(v - max))
+  const weights = logw.map((v) => Math.exp(v - max))
   const total = weights.reduce((a, v) => a + v, 0)
   const logEvidence = max + Math.log(total)
   const marginals: Record<string, MarginalOracle> = {}
   // Marginal of each assignment, and the distribution of each document's count of topic-1 tokens.
-  const p1 = new Float64Array(T)
-  const docPmf = Array.from({ length: DOCS }, () => new Float64Array(TOKENS + 1))
+  const p1 = toFlat(zeros([T]))
+  const docPmf = toArray(zeros([DOCS, TOKENS + 1])) as number[][]
   const phiParts = Array.from({ length: TOPICS * WORDS }, () => new Map<string, number>())
   for (let c = 0; c < configs; c++) {
     const q = (weights[c] as number) / total
     for (let t = 0; t < T; t++) if (((c >> t) & 1) === 1) p1[t] = (p1[t] as number) + q
     for (let dd = 0; dd < DOCS; dd++) {
-      const pmf = docPmf[dd] as Float64Array
+      const pmf = docPmf[dd] as number[]
       const n1 = docCount(c, dd)
       pmf[n1] = (pmf[n1] as number) + q
     }
@@ -218,7 +219,7 @@ export function ldaLiteTruth(w: readonly (readonly number[])[]): BenchmarkTruth 
     const name = `theta[${dd * TOPICS + 1}]`
     marginals[name] = betaMixtureOracle(
       name,
-      Array.from(docPmf[dd] as Float64Array, (weight, n1) => ({ weight, a: ALPHA + n1, b: ALPHA + TOKENS - n1 })),
+      (docPmf[dd] as number[]).map((weight, n1) => ({ weight, a: ALPHA + n1, b: ALPHA + TOKENS - n1 })),
     )
   }
   for (let k = 0; k < TOPICS; k++)
@@ -273,7 +274,7 @@ export const ldaLite: BenchmarkModel = defineBenchmark({
     const topic = b.range('topic', { size: TOPICS })
     const word = b.range('word', { size: WORDS })
     const w = b.data('w', { dims: [doc, token], support: 'index', role: 'response', indexes: word })
-    const theta = b.latent('theta', d.dirichlet(Array.from({ length: TOPICS }, () => ALPHA)), {
+    const theta = b.latent('theta', d.dirichlet(full([TOPICS], ALPHA)), {
       dims: [doc],
       doc: 'the topic mixture of each document',
     })

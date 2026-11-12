@@ -9,7 +9,23 @@
 import { type ChainDiagnostics, chainDiagnostics, type PosteriorPairs, posteriorPairs } from 'omai-engine/exposition'
 import { type Posterior, posteriorChains, samplePosterior } from 'omai-engine/probprog'
 import { key } from 'omai-engine/random'
-import { tensor, toFlat } from 'omai-engine/tensor'
+import {
+  argsort,
+  asTensor,
+  cast,
+  div,
+  isfinite,
+  item,
+  maskedSelect,
+  reshape,
+  sort,
+  sum,
+  type TensorLike,
+  take,
+  tensor,
+  toArray,
+  toFlat,
+} from 'omai-engine/tensor'
 import { drawRows } from './example-method.ts'
 
 /** One scalar coordinate of a posterior: its mean, spread, interval, and the effective sample size and R-hat of chains. */
@@ -246,14 +262,17 @@ export function groupEstimates(input: {
     const away = population === null ? 0 : r - population
     return Math.abs(away) < 1e-9 || population === null ? Number.NaN : 1 - ((rows[j]?.mean ?? r) - population) / away
   })
-  const order = [...x.keys()].sort((a, b) => (x[a] ?? 0) - (x[b] ?? 0))
+  const order = toFlat(argsort(tensor(x as number[])))
   const ordered = input.dataIsLargeX ? order : [...order].reverse()
   const third = Math.max(1, Math.floor(ordered.length / 3))
-  const avg = (ids: readonly number[]): number => {
-    const v = ids.map((j) => share[j] as number).filter(Number.isFinite)
-    return v.length === 0 ? Number.NaN : v.reduce((a, b) => a + b, 0) / v.length
+  // The mean of the finite entries (NaN when there are none).
+  const finiteMean = (v: TensorLike): number => {
+    const values = asTensor(v)
+    const kept = maskedSelect(values, isfinite(values))
+    return (kept.shape[0] ?? 0) === 0 ? Number.NaN : item(div(sum(kept), kept.shape[0] ?? 1))
   }
-  const all = share.filter(Number.isFinite)
+  const avg = (ids: readonly number[]): number =>
+    finiteMean(take(tensor(share), cast(tensor(ids as number[]), 'int32')))
   return {
     kind: 'groupEstimates',
     xLabel: input.xLabel,
@@ -266,7 +285,7 @@ export function groupEstimates(input: {
     hi: rows.map((r) => r.hi),
     population,
     truth: input.truth ?? null,
-    meanShrinkage: all.length === 0 ? Number.NaN : all.reduce((a, b) => a + b, 0) / all.length,
+    meanShrinkage: finiteMean(share),
     shrinkageOfSmallest: avg(ordered.slice(0, third)),
     shrinkageOfLargest: avg(ordered.slice(-third)),
   }
@@ -340,7 +359,7 @@ export function checkRows(
     referenceMinEss: reference.minEss,
     maxMeanError: error[bestError] ?? Number.NaN,
     worst: pairs[bestError]?.r.name ?? '',
-    medianSdRatio: [...ratio].sort((a, b) => a - b)[Math.floor(ratio.length / 2)] ?? Number.NaN,
+    medianSdRatio: item(take(sort(tensor(ratio)), Math.floor(ratio.length / 2))),
     maxZ: hasZ ? (z[bestZ] as number) : null,
     worstZ: hasZ ? (pairs[bestZ]?.r.name ?? null) : null,
     focus: focus.flatMap((name) => {
@@ -406,16 +425,12 @@ export function withDerivedSites(
   const own = post.form === 'samples' && post.draws !== undefined ? post.draws : undefined
   const drawn = own ?? post.sample(key(1), n)
   n = Math.max(1, (Object.values(drawn)[0]?.shape[0] ?? n) as number)
-  const flat = Object.fromEntries(Object.entries(drawn).map(([site, t]) => [site, toFlat(t)]))
+  // Each site as a row per draw.
+  const perDraw = Object.fromEntries(
+    Object.entries(drawn).map(([site, t]) => [site, toArray(reshape(t, [n, -1])) as number[][]]),
+  )
   const rows = Array.from({ length: n }, (_, i) =>
-    derive(
-      Object.fromEntries(
-        Object.entries(flat).map(([site, v]) => {
-          const width = Math.floor(v.length / n)
-          return [site, Array.from({ length: width }, (_, j) => v[i * width + j] ?? Number.NaN)]
-        }),
-      ),
-    ),
+    derive(Object.fromEntries(Object.entries(perDraw).map(([site, draws]) => [site, draws[i] as number[]]))),
   )
   const extra = Object.fromEntries(
     names.map((name) => [

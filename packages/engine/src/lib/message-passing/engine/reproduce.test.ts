@@ -17,6 +17,7 @@ import {
 import { item } from '../../tensor/index.ts'
 import { runAlgorithm } from '../../trace/index.ts'
 import * as M from '../index.ts'
+import { constantArray, zeroArray } from '../numerics/_arrays.ts'
 
 const operators = M.defaultOperators()
 const close = (a: number, b: number, tol = 1e-8): void => {
@@ -105,7 +106,7 @@ describe('probit EP reproduces the Gaussian-process classification EP of gp', ()
         ),
       ],
       factors: [
-        M.gaussianMvPrior('f', new Array<number>(n).fill(0), K.flat()),
+        M.gaussianMvPrior('f', zeroArray(n), K.flat()),
         ...pts.flatMap((_, i): M.FactorSpec[] => [
           { operator: 'dot-constant', args: [`s${i}`, 'f'], params: { a: pts.map((__, j) => (i === j ? 1 : 0)) } },
           { operator: 'probit', args: [`y${i}`, `s${i}`] },
@@ -361,7 +362,7 @@ describe('variational message passing on a Bayesian Gaussian mixture reproduces 
       ...data.map((v, i): M.VariableSpec => ({ name: `x${i}`, family: { kind: 'gaussian' }, observed: v })),
     ],
     factors: [
-      M.dirichletPrior('pi', new Array<number>(K).fill(priors.weightConcentration)),
+      M.dirichletPrior('pi', constantArray(K, priors.weightConcentration)),
       ...Array.from({ length: K }, (_, k) =>
         M.normalGammaPrior(
           `theta${k}`,

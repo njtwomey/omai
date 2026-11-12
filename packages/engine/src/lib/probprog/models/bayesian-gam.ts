@@ -20,7 +20,27 @@ import { lgamma, ndtr } from '../../numerics/special/index.ts'
 import { type Key, key as makeKey } from '../../random/index.ts'
 import { type DictSpace, dict, type Space } from '../../space/index.ts'
 import { bs, ps } from '../../stats/smoothing/index.ts'
-import { fromStorage, item, toFlat, type Value } from '../../tensor/index.ts'
+import {
+  add,
+  arange,
+  concat,
+  div,
+  floor,
+  fromStorage,
+  full,
+  item,
+  log,
+  matmul,
+  mul,
+  reshape,
+  slice,
+  tensor,
+  toArray,
+  toFlat,
+  transpose,
+  type Value,
+  zeros,
+} from '../../tensor/index.ts'
 import { type Config, derived } from '../../trace/index.ts'
 import { type MethodSpace, methodSpace } from '../inference/method-space.ts'
 import { type AnyInferenceMethod, methodKinds } from '../inference/models.ts'
@@ -162,7 +182,8 @@ const PENALISED = 1e-9
  * @example
  * ```ts
  * import { bayesianGam } from 'omai-engine/probprog/models'
- * const x = Array.from({ length: 30 }, (_, i) => i / 29)
+ * import { linspace, toFlat } from 'omai-engine/tensor'
+ * const x = toFlat(linspace(0, 1, 30))
  * const g = bayesianGam(x, x.map((v) => Math.sin(6 * v)), { k: 8 })
  * [g.size, g.penalised] // => [8, 6]
  * ```
@@ -212,7 +233,7 @@ export function bayesianGam(x: readonly number[], y: readonly number[], options:
         built,
         at.map((v) => [v]),
       )
-      return Array.from({ length: grid.n }, (_, i) => Array.from({ length: p }, (_, j) => grid.X[i * p + j] ?? 0))
+      return toArray(reshape(grid.X, [grid.n, p])) as number[][]
     }
   }
   // The penalty's eigendirections, scaled so the largest eigenvalue is one: the smoothing parameter is then relative. The
@@ -220,10 +241,8 @@ export function bayesianGam(x: readonly number[], y: readonly number[], options:
   const eig = dsyev(S, p)
   const top = Math.max(...eig.w)
   const diagonal = Array.from(eig.w, (e) => (e > PENALISED * top ? e / top : 0))
-  const rotate = (rows: number[][]): number[][] =>
-    rows.map((row) =>
-      Array.from({ length: p }, (_, j) => row.reduce((acc, v, c) => acc + v * (eig.v[c * p + j] ?? 0), 0)),
-    )
+  const eigenvectors = reshape(eig.v, [p, p])
+  const rotate = (rows: number[][]): number[][] => toArray(matmul(rows, eigenvectors)) as number[][]
   const mean = y.reduce((a, v) => a + v, 0) / y.length
   const sd = Math.sqrt(y.reduce((a, v) => a + (v - mean) ** 2, 0) / y.length) || 1
   const nullPrecision = diagonal.map((e) => (e === 0 ? 1 / nullScale ** 2 : 0))
@@ -363,12 +382,7 @@ export function bayesianGam(x: readonly number[], y: readonly number[], options:
     design: (at) => rotate(evaluateRaw(at)),
     parts: evaluateRaw,
     // The eigendirections rotated back to the coefficients of the basis functions.
-    original: (gamma) =>
-      Array.from({ length: p }, (_, j) => {
-        let acc = 0
-        for (let c = 0; c < p; c++) acc += (eig.v[j * p + c] ?? 0) * (gamma[c] ?? 0)
-        return acc
-      }),
+    original: (gamma) => toFlat(matmul(eigenvectors, Array.from(gamma))),
     precision: (logLam) => diagonal.map((e, j) => Math.exp(logLam) * e + (nullPrecision[j] ?? 0)),
   }
 }
@@ -376,9 +390,9 @@ export function bayesianGam(x: readonly number[], y: readonly number[], options:
 /** The rows of a basis at covariate values, as nested numbers. */
 function rowsOf(basis: { readonly evaluate: (x: number[]) => Value }): (at: readonly number[]) => number[][] {
   return (at) => {
-    const m = toFlat(basis.evaluate([...at]))
-    const cols = Math.floor(m.length / Math.max(1, at.length))
-    return Array.from({ length: at.length }, (_, i) => Array.from({ length: cols }, (_, j) => m[i * cols + j] ?? 0))
+    const m = basis.evaluate([...at])
+    const cols = Math.floor(toFlat(m).length / Math.max(1, at.length))
+    return toArray(reshape(m, [at.length, cols])) as number[][]
   }
 }
 
@@ -407,9 +421,9 @@ function localGam(x: readonly number[], y: readonly number[], options: BayesianG
   const basis =
     kind === 'ps' ? ps(x, { k, degree, order: options.order ?? 2 }) : bs(x, { df: k, degree, intercept: true })
   const raw = (at: readonly number[]): number[][] => {
-    const m = toFlat(basis.evaluate(at))
-    const cols = Math.floor(m.length / Math.max(1, at.length))
-    return Array.from({ length: at.length }, (_, i) => Array.from({ length: cols }, (_, j) => m[i * cols + j] ?? 0))
+    const m = basis.evaluate(at)
+    const cols = Math.floor(toFlat(m).length / Math.max(1, at.length))
+    return toArray(reshape(m, [at.length, cols])) as number[][]
   }
   const rows = raw(x)
   const size = rows[0]?.length ?? 0
@@ -470,7 +484,7 @@ function localGam(x: readonly number[], y: readonly number[], options: BayesianG
     hyper: { kind: 'logNormal', lambda: 0, lambdaShape: 0, lambdaRate: 0, noiseShape: 0, noiseRate: 0, noiseSd: 0 },
     design: raw,
     parts: raw,
-    original: (gamma) => Array.from({ length: size }, (_, j) => gamma[j] ?? 0),
+    original: (gamma) => Array.from(gamma).slice(0, size),
     precision: () => [],
   }
 }
@@ -524,8 +538,9 @@ export interface BayesianGamFitOptions {
   readonly range?: readonly [number, number]
 }
 
+/** `n` evenly spaced values from `lo` to `hi`, computed as `lo + (hi - lo) i / (n - 1)` (the reference's arithmetic order). */
 const linspace = (lo: number, hi: number, n: number): number[] =>
-  Array.from({ length: n }, (_, i) => lo + ((hi - lo) * i) / Math.max(1, n - 1))
+  toFlat(add(div(mul(arange(n), hi - lo), Math.max(1, n - 1)), lo))
 
 /**
  * What a posterior of a {@link bayesianGam} says: draws of the coefficients become draws of the curve on a grid (back in the
@@ -543,7 +558,8 @@ const linspace = (lo: number, hi: number, n: number): number[] =>
  * import { bayesianGam, bayesianGamFit } from 'omai-engine/probprog/models'
  * import { laplaceMethod } from 'omai-engine/probprog/inference'
  * import { session } from 'omai-engine/trace'
- * const x = Array.from({ length: 40 }, (_, i) => i / 39)
+ * import { linspace, toFlat } from 'omai-engine/tensor'
+ * const x = toFlat(linspace(0, 1, 40))
  * const g = bayesianGam(x, x.map((v) => Math.sin(6 * v)), { k: 8 })
  * const m = laplaceMethod(g.definition.bind(g.data))
  * const s = session(m, { steps: 200, mode: 'eager' })
@@ -592,11 +608,11 @@ export function bayesianGamFit(
   const raw = toFlat(source)
   const lams =
     smooth && lambdaDraws !== undefined
-      ? Float64Array.from(toFlat(lambdaDraws), Math.log)
+      ? toFlat(log(lambdaDraws))
       : logLam === undefined
-        ? new Float64Array(0)
+        ? toFlat(zeros([0]))
         : toFlat(logLam)
-  const alphas = alphaDraws === undefined ? new Float64Array(0) : toFlat(alphaDraws)
+  const alphas = alphaDraws === undefined ? toFlat(zeros([0])) : toFlat(alphaDraws)
   const n = Math.min(
     Math.floor(raw.length / size),
     prior === 'penalty' && !centred ? lams.length : Number.POSITIVE_INFINITY,
@@ -608,8 +624,8 @@ export function bayesianGamFit(
   // The coefficients of the basis functions in draw i: for the penalty prior the standard normal z over the square root of the
   // precision at that draw's smoothing parameter (rotated back from the eigenbasis); for ARD z over the square root of its own
   // precision; for the spike and slab prior the draw itself.
-  const beta: number[][] = Array.from({ length: n }, (_, i) => {
-    const row = Array.from({ length: size }, (_, j) => raw[i * size + j] ?? 0)
+  const coefficientRows = toArray(reshape(slice(tensor(raw), [0], [n * size]), [n, size])) as number[][]
+  const beta: number[][] = coefficientRows.map((row, i) => {
     if (prior === 'spikeSlab') return row
     if (prior === 'ard') return direct === undefined ? row.map((v, j) => v / Math.sqrt(ardPrecision(i, j))) : row
     if (centred || direct !== undefined) return model.original(row)
@@ -620,18 +636,15 @@ export function bayesianGamFit(
   const rows = model.parts([...grid, ...probe])
   const { mean: ym, sd: ys } = model.standardisation
   const G = grid.length
+  const rowsTensor = tensor(rows)
   const curveOf = (b: readonly number[]): number[] =>
-    rows.map((row) => {
-      let acc = 0
-      for (let j = 0; j < size; j++) acc += (row[j] ?? 0) * (b[j] ?? 0)
-      return ym + ys * acc
-    })
+    toFlat(add(mul(matmul(rowsTensor, tensor(Array.from(b))), ys), ym))
   const all = beta.map(curveOf)
   const column = (g: number): number[] => all.map((c) => c[g] ?? 0)
   const tail = (1 - level) / 2
   const at = (f: (v: number[]) => number): number[] => grid.map((_, g) => f(column(g)))
   const lsig = fixedNoise
-    ? new Array<number>(n).fill(Math.log(model.hyper.noiseSd))
+    ? toFlat(full([n], Math.log(model.hyper.noiseSd)))
     : centred
       ? Array.from(toFlat(logSig as never))
           .slice(0, n)
@@ -642,16 +655,13 @@ export function bayesianGamFit(
     return [m, Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / Math.max(1, v.length - 1))]
   }
   const keep = options.curves ?? 8
-  const picks = Array.from({ length: Math.min(keep, n) }, (_, i) => Math.floor((i * n) / keep))
+  const picks = toFlat(floor(div(mul(arange(Math.min(keep, n)), n), keep)))
   // The weighted basis functions of a coefficient vector: B_j(x) b_j in the units of the response, with the mean of the
   // response in the constant (the penalty prior's first column) or spread over a partition of unity.
+  const basisValues = transpose(slice(rowsTensor, [0], [G]))
+  const offset = model.local ? mul(basisValues, ym) : concat([full([1, G], ym), zeros([size - 1, G])], 0)
   const partsOf = (b: readonly number[]): number[][] =>
-    Array.from({ length: size }, (_, j) =>
-      Array.from({ length: G }, (_, g) => {
-        const B = rows[g]?.[j] ?? 0
-        return ys * B * (b[j] ?? 0) + (model.local ? ym * B : j === 0 ? ym : 0)
-      }),
-    )
+    toArray(add(mul(mul(basisValues, ys), reshape(tensor(Array.from(b)), [size, 1])), offset)) as number[][]
   const meanBeta = Array.from({ length: size }, (_, j) => beta.reduce((a, b) => a + (b[j] ?? 0), 0) / Math.max(1, n))
   const centres = Array.from({ length: size }, (_, j) => {
     let best = 0
@@ -795,7 +805,8 @@ function conditional(
  * @example
  * ```ts
  * import { bayesianGam, bayesianGamReference } from 'omai-engine/probprog/models'
- * const x = Array.from({ length: 40 }, (_, i) => i / 39)
+ * import { linspace, toFlat } from 'omai-engine/tensor'
+ * const x = toFlat(linspace(0, 1, 40))
  * const g = bayesianGam(x, x.map((v) => Math.sin(6 * v) + 0.1 * Math.cos(50 * v)), { k: 8 })
  * const r = bayesianGamReference(g, { gridSize: 10, points: 16 })
  * r.mean.length // => 10
@@ -978,7 +989,8 @@ export function bayesianGamAgreement(
  * ```ts
  * import { bayesianGam, bayesianGamMethod } from 'omai-engine/probprog/models'
  * import { session } from 'omai-engine/trace'
- * const x = Array.from({ length: 40 }, (_, i) => i / 39)
+ * import { linspace, toFlat } from 'omai-engine/tensor'
+ * const x = toFlat(linspace(0, 1, 40))
  * const g = bayesianGam(x, x.map((v) => Math.sin(6 * v)), { k: 8 })
  * const s = session(bayesianGamMethod('laplace', g, { fit: { gridSize: 12 } }), { steps: 100, mode: 'eager' })
  * (s.probe(s.t, 'gam/fit') as { mean: number[] }).mean.length // => 12
@@ -1110,11 +1122,7 @@ export function bayesianGamMethods(
   prior: 'penalty' | 'spikeSlab' | 'ard' = 'penalty',
   hyper: 'logNormal' | 'gammaNoise' | 'fixed' | 'gammaSmooth' = 'logNormal',
 ): MethodSpace {
-  const probe = bayesianGam(
-    Array.from({ length: 8 }, (_, i) => i),
-    Array.from({ length: 8 }, (_, i) => i * i),
-    { k: 5, prior, hyper },
-  )
+  const probe = bayesianGam(toFlat(arange(8)), toFlat(mul(arange(8), arange(8))), { k: 5, prior, hyper })
   // region gam:offer
   // The forms whose message passing is quick (a second or two) open on expectation propagation, the rest on HMC.
   const quick = prior === 'penalty' && hyper !== 'logNormal'

@@ -8,20 +8,32 @@ import { logSumExpOf, OmaiError } from '../base/index.ts'
 import { lbfgs } from '../optim/index.ts'
 import { paretoSmoothedWeights } from '../sampling/index.ts'
 import {
+  add,
+  arange,
   asTensor,
   concat,
-  fromStorage,
+  div,
+  exp,
+  item,
   log,
+  logsumexp,
   matmul,
+  max,
   neg,
   primalOf,
   softmax,
+  square,
+  stack,
+  sub,
   sum,
   type Tensor,
   type TensorLike,
+  take,
   tensor,
   toFlat,
+  transpose,
   type Value,
+  zeros,
 } from '../tensor/index.ts'
 
 /** An estimate of the expected log pointwise predictive density (elpd), with its parts. */
@@ -44,28 +56,22 @@ export interface ElpdEstimate {
   readonly draws: number
 }
 
-function matrix(logLik: TensorLike): { readonly S: number; readonly N: number; readonly data: ArrayLike<number> } {
+function matrix(logLik: TensorLike): { readonly S: number; readonly N: number; readonly values: Value } {
   const t = primalOf(asTensor(logLik))
   if (t.shape.length !== 2) throw new OmaiError('shape', 'criticism: log-likelihoods must be [draws, observations]')
   const S = t.shape[0] ?? 0
   const N = t.shape[1] ?? 0
   if (S < 2) throw new OmaiError('value', 'criticism: need at least two draws')
-  return { S, N, data: toFlat(t) }
-}
-
-function column(
-  m: { readonly S: number; readonly N: number; readonly data: ArrayLike<number> },
-  i: number,
-): Float64Array {
-  return Float64Array.from({ length: m.S }, (_, s) => m.data[s * m.N + i] ?? Number.NaN)
+  return { S, N, values: t }
 }
 
 /** sqrt(n var(pointwise)): ArviZ uses ddof 1 for elpd standard errors and ddof 0 for those of differences. */
 function seOf(pointwise: Float64Array, ddof: number): number {
   const n = pointwise.length
   if (n <= ddof) return 0
-  const mean = pointwise.reduce((a, b) => a + b, 0) / n
-  const v = pointwise.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - ddof)
+  const x = asTensor(pointwise)
+  const mean = div(sum(x), n)
+  const v = item(div(sum(square(sub(x, mean))), n - ddof))
   return Math.sqrt(n * v)
 }
 
@@ -86,20 +92,14 @@ function seOf(pointwise: Float64Array, ddof: number): number {
  */
 export function waic(logLik: TensorLike): ElpdEstimate {
   const m = matrix(logLik)
-  const pointwise = new Float64Array(m.N)
-  let lppd = 0
-  let p = 0
-  let warning = false
-  for (let i = 0; i < m.N; i++) {
-    const c = column(m, i)
-    const l = logSumExpOf(c) - Math.log(m.S)
-    const mean = c.reduce((a, b) => a + b, 0) / m.S
-    const v = c.reduce((a, b) => a + (b - mean) ** 2, 0) / (m.S - 1)
-    if (v > 0.4) warning = true
-    lppd += l
-    p += v
-    pointwise[i] = l - v
-  }
+  // Per observation (column): the log mean likelihood and the variance of the log likelihood over the draws.
+  const l = sub(logsumexp(m.values, 0), Math.log(m.S))
+  const centred = sub(m.values, div(sum(m.values, 0), m.S))
+  const v = div(sum(square(centred), 0), m.S - 1)
+  const lppd = item(sum(l))
+  const p = item(sum(v))
+  const warning = toFlat(v).some((x) => x > 0.4)
+  const pointwise = Float64Array.from(toFlat(sub(l, v)))
   return {
     method: 'waic',
     elpd: lppd - p,
@@ -139,21 +139,18 @@ export function psisLoo(
 ): ElpdEstimate {
   const m = matrix(logLik)
   const threshold = options.kThreshold ?? Math.min(1 - 1 / Math.log10(m.S), 0.7)
-  const pointwise = new Float64Array(m.N)
-  const paretoK = new Float64Array(m.N)
-  let lppd = 0
-  for (let i = 0; i < m.N; i++) {
-    const c = column(m, i)
+  const lppd = item(sum(sub(logsumexp(m.values, 0), Math.log(m.S))))
+  const smoothed = toFlat(arange(m.N)).map((i) => {
+    const c = take(m.values, i, 1)
     const ps = paretoSmoothedWeights(
-      Float64Array.from(c, (v) => -v),
+      Float64Array.from(toFlat(neg(c))),
       options.rEff === undefined ? {} : { rEff: options.rEff },
     )
-    const lw = toFlat(ps.logWeights)
-    pointwise[i] = logSumExpOf(Float64Array.from(c, (v, s) => v + (lw[s] ?? Number.NEGATIVE_INFINITY)))
-    paretoK[i] = ps.paretoK
-    lppd += logSumExpOf(c) - Math.log(m.S)
-  }
-  const elpd = pointwise.reduce((a, b) => a + b, 0)
+    return { elpd: item(logsumexp(add(c, ps.logWeights))), k: ps.paretoK }
+  })
+  const pointwise = Float64Array.from(toFlat(tensor(smoothed.map((r) => r.elpd))))
+  const paretoK = Float64Array.from(toFlat(tensor(smoothed.map((r) => r.k))))
+  const elpd = item(sum(asTensor(pointwise)))
   return {
     method: 'loo',
     elpd,
@@ -202,13 +199,9 @@ export function posteriorPredictiveCheck(
   const y = primalOf(asTensor(observed))
   const rep = primalOf(asTensor(replicated))
   const S = rep.shape[0] ?? 0
-  const shape = rep.shape.slice(1)
-  const size = shape.reduce((a, b) => a * b, 1)
-  const flat = toFlat(rep)
+  const _shape = rep.shape.slice(1)
   const t0 = statistic(y)
-  const ts = Float64Array.from({ length: S }, (_, s) =>
-    statistic(fromStorage(Float64Array.from(flat.slice(s * size, (s + 1) * size)), shape, 'float64')),
-  )
+  const ts = Float64Array.from({ length: S }, (_, s) => statistic(take(rep, s, 0) as Tensor))
   const pValue = ts.reduce((a, t) => a + (t >= t0 ? 1 : 0), 0) / Math.max(1, S)
   return { observed: t0, replicated: ts, pValue }
 }
@@ -236,18 +229,13 @@ export function stackingWeights(pointwise: readonly ArrayLike<number>[]): number
   if (pointwise.some((p) => p.length !== N)) throw new OmaiError('value', 'stackingWeights: unequal lengths')
   if (K === 1) return [1]
   // exp(elpd_ik - max_k elpd_ik): the shift cancels in the argmax.
-  const rows = new Float64Array(N * K)
-  for (let i = 0; i < N; i++) {
-    let m = Number.NEGATIVE_INFINITY
-    for (let k = 0; k < K; k++) m = Math.max(m, pointwise[k]?.[i] ?? Number.NEGATIVE_INFINITY)
-    for (let k = 0; k < K; k++) rows[i * K + k] = Math.exp((pointwise[k]?.[i] ?? Number.NEGATIVE_INFINITY) - m)
-  }
-  const E = fromStorage(rows, [N, K], 'float64')
+  const elpds = stack(pointwise.map((p) => tensor(Array.from(p))))
+  const E = transpose(exp(sub(elpds, max(elpds, 0, true))))
   const objective = (z: Value): Value => {
     const w = softmax(concat([z, tensor([0])]), 0)
     return neg(sum(log(matmul(E, w))))
   }
-  const r = lbfgs(objective, new Float64Array(K - 1), { maxIterations: 1000, gradTol: 1e-12 })
+  const r = lbfgs(objective, Float64Array.from(toFlat(zeros([K - 1]))), { maxIterations: 1000, gradTol: 1e-12 })
   const z = toFlat(primalOf(asTensor(r.x as Value)))
   const w = toFlat(primalOf(softmax(concat([tensor(z), tensor([0])]), 0)))
   return w
@@ -267,7 +255,7 @@ export function stackingWeights(pointwise: readonly ArrayLike<number>[]): number
  */
 export function pseudoBmaWeights(elpds: readonly number[]): number[] {
   const z = logSumExpOf(elpds)
-  return elpds.map((e) => Math.exp(e - z))
+  return toFlat(exp(sub(asTensor(elpds), z)))
 }
 
 /** One row of {@link compareModels}. */
@@ -319,7 +307,7 @@ export function compareModels(
   const best = list[order[0] ?? 0] as ElpdEstimate
   return order.map((i, rank) => {
     const e = list[i] as ElpdEstimate
-    const diff = Float64Array.from(best.pointwise, (v, j) => v - (e.pointwise[j] ?? 0))
+    const diff = Float64Array.from(toFlat(sub(asTensor(best.pointwise), asTensor(e.pointwise))))
     return {
       name: names[i] ?? '',
       rank,

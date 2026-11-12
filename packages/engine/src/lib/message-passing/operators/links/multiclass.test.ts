@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { type BruteBelief, type BrutePort, bruteExpectation, bruteTilted } from '../../../../testing/message-passing.ts'
 import { ndtr } from '../../../numerics/special/_kernels.ts'
+import { add, arange, div, mul, toFlat } from '../../../tensor/index.ts'
 import { massOf, messageArg, valueArg } from '../../core/args.ts'
 import { gaussian, gaussianEta } from '../../core/families.ts'
 import type { Arg, Params } from '../../core/types.ts'
+import { zeroArray } from '../../numerics/_arrays.ts'
 import { defaultOperators } from '../registry.ts'
 import { multiclassSite } from './multiclass.ts'
 
@@ -44,14 +46,14 @@ function brute(
 ): { logMass: number; mean: number[]; variance: number[] } {
   const axes = cavities.map((c) => {
     const sd = Math.sqrt(c.v)
-    return Array.from({ length: n }, (_, i) => c.m + sd * (-span + ((i + 0.5) * 2 * span) / n))
+    return toFlat(add(c.m, mul(add(-span, div(mul(mul(add(arange(n), 0.5), 2), span), n)), sd)))
   })
   const steps = cavities.map((c) => (Math.sqrt(c.v) * 2 * span) / n)
   const k = cavities.length
   let mass = 0
-  const m1 = new Array<number>(k).fill(0)
-  const m2 = new Array<number>(k).fill(0)
-  const z = new Array<number>(k).fill(0)
+  const m1 = zeroArray(k)
+  const m2 = zeroArray(k)
+  const z = zeroArray(k)
   const walk = (d: number, logw: number): void => {
     if (d === k) {
       const w = Math.exp(logw + logf(z))
@@ -284,8 +286,8 @@ describe('multiclass-site: the auxiliary-variable rule (any number of classes)',
     const k = cavities.length
     const base = args.reduce((s, a) => s + massOf(a), 0)
     let mass = 0
-    const first = new Array<number>(k).fill(0)
-    const second = new Array<number>(k).fill(0)
+    const first = zeroArray(k)
+    const second = zeroArray(k)
     for (let y = 0; y < k; y++) {
       const params = { y, classes: k, link }
       const w = Math.exp((multiclassSite.logEvidence?.({ mode: 'ep', to: 0, args, params, power: 1 }) as number) - base)

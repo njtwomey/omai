@@ -5,6 +5,7 @@
 // on a Gaussian vector (`_vector-site.ts`) over the standardised coordinates of the cavity of their coordinates.
 
 import { ImproperMessageError, ParameterError } from '../core/errors.ts'
+import { zeroArray } from './_arrays.ts'
 import { choleskyInPlace } from './_bartlett.ts'
 import { shiftedSum } from './_moments.ts'
 import { gaussianNodes } from './_quadrature.ts'
@@ -62,8 +63,8 @@ export function productTilt(
     for (let i = 0; i < r; i++) logDet += 2 * Math.log(l[i * r + i] as number)
     const logw = new Float64Array(total)
     const xs = new Float64Array(total * r)
-    const t = new Array<number>(r).fill(0)
-    const x = new Array<number>(r).fill(0)
+    const t = zeroArray(r)
+    const x = zeroArray(r)
     for (let idx = 0; idx < total; idx++) {
       let rest = idx
       let lw = 0
@@ -89,13 +90,13 @@ export function productTilt(
     }
     const { top, weights, total: sum } = shiftedSum(logw)
     if (!Number.isFinite(top)) throw new ImproperMessageError('product grid: the factor has no mass under the cavities')
-    const m = new Array<number>(r).fill(0)
+    const m = zeroArray(r)
     for (let idx = 0; idx < total; idx++) {
       const w = weights[idx] as number
       for (let i = 0; i < r; i++) m[i] = (m[i] as number) + w * (xs[idx * r + i] as number)
     }
     for (let i = 0; i < r; i++) m[i] = (m[i] as number) / sum
-    const v = new Array<number>(r * r).fill(0)
+    const v = zeroArray(r * r)
     for (let idx = 0; idx < total; idx++) {
       const w = weights[idx] as number
       for (let i = 0; i < r; i++) {

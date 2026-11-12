@@ -1,3 +1,4 @@
+import { add, arange, mul, toFlat } from 'omai-engine/tensor'
 import type { ReactNode } from 'react'
 
 const W = 680
@@ -9,9 +10,9 @@ function ticksOf(lo: number, hi: number, count = 5): number[] {
   const raw = (hi - lo) / count
   const mag = 10 ** Math.floor(Math.log10(raw || 1))
   const step = [1, 2, 2.5, 5, 10].map((s) => s * mag).find((s) => s >= raw) ?? raw
-  const out: number[] = []
-  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(Number(v.toPrecision(10)))
-  return out
+  const first = Math.ceil(lo / step) * step
+  const n = Math.max(0, Math.floor((hi + 1e-9 - first) / step) + 1)
+  return toFlat(add(mul(arange(n), step), first)).map((v) => Number(v.toPrecision(10)))
 }
 
 const colour = {

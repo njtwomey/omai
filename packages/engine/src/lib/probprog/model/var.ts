@@ -9,11 +9,16 @@
  */
 
 import { type Json, OmaiError } from '../../base/index.ts'
+import { isValue, toArray, type Value } from '../../tensor/index.ts'
 import { defaultOperators, type NamedShape, type OperatorTable, type OpParams, operatorShape } from './operators.ts'
 import type { ExprSpec } from './spec.ts'
 
-/** What an operator accepts as an argument: a `Var`, a number, a boolean or a nested array of them (a constant). */
-export type Operand = Var | number | boolean | readonly Operand[]
+/**
+ * What an operator accepts as an argument: a `Var`, a number, a boolean, a nested array of them or a tensor (a constant:
+ * a tensor made with the tensor creation functions is read once, when the expression is built; a traced value is not a
+ * constant and is refused).
+ */
+export type Operand = Var | number | boolean | Value | readonly Operand[]
 
 /** The registry the fluent methods use (the default one). */
 const REGISTRY: OperatorTable = defaultOperators()
@@ -28,8 +33,9 @@ function nestedRank(value: Json): number {
   return rank
 }
 
-function jsonOf(o: readonly Operand[] | number | boolean): Json {
-  if (Array.isArray(o)) return o.map((x) => jsonOf(x as number | boolean | readonly Operand[]))
+function jsonOf(o: readonly Operand[] | number | boolean | Value): Json {
+  if (isValue(o)) return jsonOf(toArray(o))
+  if (Array.isArray(o)) return o.map((x) => jsonOf(x as number | boolean | readonly Operand[] | Value))
   if (typeof o === 'number') {
     if (!Number.isFinite(o)) throw new OmaiError('value', `a constant must be finite, got ${o}`)
     return o
@@ -149,7 +155,7 @@ const dimParams = (dim: string | { readonly name: string } | undefined): OpParam
  * constant([1, 2, 3], ['feature']).dims // => ['feature']
  * ```
  */
-export function constant(value: readonly Operand[] | number | boolean, dims: readonly string[] = []): Var {
+export function constant(value: readonly Operand[] | number | boolean | Value, dims: readonly string[] = []): Var {
   const json = jsonOf(value)
   const rank = nestedRank(json)
   if (rank < dims.length)

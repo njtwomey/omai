@@ -17,6 +17,7 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { zeroArray } from '../../numerics/_arrays.ts'
 import { resolvedVariance } from '../../numerics/_moments.ts'
 import { gammaLogWindow, windowProfiles } from '../../numerics/_windows.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
@@ -42,7 +43,7 @@ function functionScaleTilt(c: OperatorContext): VectorScaleTilt & { readonly d: 
   const input = arg(c, 1)
   const eta = etaOf(input)
   const precisionsAt = (x: number): readonly number[] | undefined => {
-    const p = new Array<number>(d)
+    const p = zeroArray(d)
     for (let j = 0; j < d; j++) {
       const u = (us[j] as (x: number) => number)(x)
       const pj = 1 / (u * u)
@@ -155,7 +156,7 @@ export const gaussianMvFunctionScale: FactorOperator = defineOperator({
       const us = chains(c.params)
       const d = us.length
       const port = ports[0] as (typeof ports)[number]
-      const j = new Array<number>(d * d).fill(0)
+      const j = zeroArray(d * d)
       for (let k = 0; k < d; k++) {
         let mean = 0
         for (let i = 0; i < port.coords.length; i++) {
@@ -168,7 +169,7 @@ export const gaussianMvFunctionScale: FactorOperator = defineOperator({
         }
         j[k * d + k] = mean
       }
-      return { message: [...new Array<number>(d).fill(0), ...j] }
+      return { message: [...zeroArray(d), ...j] }
     }, 'numeric'),
   },
   evidence: {
