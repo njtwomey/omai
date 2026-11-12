@@ -145,7 +145,7 @@ export default function Story(): ReactNode {
 
 ## Parts
 
-- `src/main.tsx` (the routes `/` and `/story/<slug>`), `Splash.tsx` (the hero and the sections as a grid of cards: title, one-line hook,
+- `src/main.tsx` (the routes `/` and `/story/<slug>`), `Splash.tsx` (the hero and the sections as a plain list: title and one-line hook,
   the list), `StoryRoute.tsx`, `registry.ts` (`import.meta.glob` over `stories/*/story.ts`, eager, and
   `Story.tsx`, lazy), `story.ts` (the metadata type, grouping by section, neighbours), `sections.ts`.
 - `src/kit/protocol.ts` is the wire to the worker (`serveStory`, `Say`; no React, so a worker bundles only this), `runState.ts` is the run's state
