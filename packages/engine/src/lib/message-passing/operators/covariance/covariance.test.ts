@@ -281,14 +281,16 @@ describe('mvn-wishart: expectation propagation with Gaussian cavities', () => {
   })
 
   it('refuses to integrate a matrix beyond the quadrature, and says so', () => {
-    const g4 = gaussianMv(4)
-    const w4 = wishart(4)
+    const identity = (n: number): number[] =>
+      Array.from({ length: n * n }, (_, e) => (e % n === Math.floor(e / n) ? 1 : 0))
+    const g5 = gaussianMv(5)
+    const w5 = wishart(5)
     const args = [
-      messageArg(g4, gaussianMvEta([0, 0, 0, 0], [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])),
-      valueArg(g4, [0, 0, 0, 0]),
-      messageArg(w4, wishartEta(9, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], 4)),
+      messageArg(g5, gaussianMvEta([0, 0, 0, 0, 0], identity(5))),
+      valueArg(g5, [0, 0, 0, 0, 0]),
+      messageArg(w5, wishartEta(11, identity(5), 5)),
     ]
-    expect(() => mvnWishart.ep?.(ctx(2, args))).toThrow(/up to 3/)
+    expect(() => mvnWishart.ep?.(ctx(2, args))).toThrow(/up to 4/)
   })
 })
 

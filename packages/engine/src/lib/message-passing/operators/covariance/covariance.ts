@@ -38,7 +38,7 @@ function checkNumeric(d: number): void {
   if (BARTLETT_ORDER[d] === undefined)
     throw new OmaiError(
       'not-implemented',
-      `mvn-wishart: a Gaussian cavity on the vector or the mean makes the tilted precision a ${d} by ${d} integral; the quadrature is built for dimensions up to 3 (an observed vector and a known mean are exact in any dimension)`,
+      `mvn-wishart: a Gaussian cavity on the vector or the mean makes the tilted precision a ${d} by ${d} integral; the quadrature is built for dimensions up to 4 (an observed vector and a known mean are exact in any dimension)`,
     )
 }
 
@@ -213,7 +213,7 @@ function expectedOuter(c: OperatorContext, d: number): { readonly mean: number[]
  * likelihood with unknown noise covariance). The fully known case is the exact conjugate update of the Wishart (the matrix of the
  * residual outer product). With Gaussian cavities on `x` or `mean` expectation propagation integrates them out (`N(r; 0, V + L^-1)` for the
  * difference) and matches the Wishart to the moments of the tilted matrix, found by the Bartlett quadrature of the Wishart
- * (dimensions up to 3), and each Gaussian to the mixture of its conditionals over the matrix; a cavity with no information yet is
+ * (dimensions up to 4), and each Gaussian to the mixture of its conditionals over the matrix; a cavity with no information yet is
  * read as a very wide one. The variational rule is closed form (the expected residual outer product for the Wishart, the mean precision
  * for the Gaussians).
  *

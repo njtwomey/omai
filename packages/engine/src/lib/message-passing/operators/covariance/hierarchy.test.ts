@@ -2,6 +2,7 @@
 // does not use its algebra: a grid over the three entries of the precision matrix, and at each node the joint Gaussian of (mean, vectors)
 // with the cavities read as noisy readings of the vectors (Gaussian conditioning on a dense joint covariance).
 import { describe, expect, it } from 'vitest'
+import { importanceOfGroup, type Reading } from '../../../../testing/covariance-group.ts'
 import { nodesOn } from '../../../../testing/message-passing.ts'
 import { messageArg, valueArg } from '../../core/args.ts'
 import { wishart, wishartEta, wishartParams } from '../../core/families-matrix.ts'
@@ -13,6 +14,7 @@ import { mvnWishartGroup } from './hierarchy.ts'
 
 const W = wishart(2)
 const G = gaussianMv(2)
+const G_OF = gaussianMv
 
 const ctx = (
   to: number,
@@ -28,11 +30,6 @@ const ctx = (
   power: 1,
   ...(memo === undefined ? {} : { memo }),
 })
-
-interface Reading {
-  readonly m: readonly number[]
-  readonly v: readonly number[]
-}
 
 const inverse2 = (a: number, b: number, c: number): [number, number, number] => {
   const det = a * c - b * b
@@ -251,47 +248,96 @@ describe('mvn-wishart-group: one site for a group sharing a mean and a precision
     }
   })
 
-  it.each([2, 3])('in the limits of exactly known vectors it is the Wishart conjugate update, in dimension %d', (d) => {
-    const Wd = wishart(d)
-    const rows = [
-      [0.9, -0.4, 0.3],
-      [-0.6, 0.5, 0.1],
-      [0.2, -1.1, -0.5],
-      [0.5, 0.2, 0.8],
-    ].map((r) => r.slice(0, d))
-    const identity = (v: number): number[] =>
-      Array.from({ length: d * d }, (_, e) => (e % d === Math.floor(e / d) ? v : 0))
-    const prior = wishartEta(d + 2, identity(0.5), d)
-    const exactVectors = rows.map((r) => messageArg(gaussianMv(d), gaussianMvEta(r, identity(1e-9))))
-    // a mean that is known (a tight cavity): the rows about it, all of their df; a mean that is flat: the rows about their own mean, one df fewer
-    for (const [variance, lost] of [
-      [1e-9, 0],
-      [1e9, 1],
-    ] as const) {
-      const centre = Array.from({ length: d }, (_, k) =>
-        lost === 0 ? 0.1 : rows.reduce((acc, r) => acc + (r[k] as number), 0) / rows.length,
-      )
-      const args = [
-        ...exactVectors,
-        messageArg(gaussianMv(d), gaussianMvEta(Array(d).fill(0.1), identity(variance))),
-        messageArg(Wd, prior),
+  it.each([2, 3, 4])(
+    'in the limits of exactly known vectors it is the Wishart conjugate update, in dimension %d',
+    (d) => {
+      const Wd = wishart(d)
+      const rows = [
+        [0.9, -0.4, 0.3, 0.5],
+        [-0.6, 0.5, 0.1, -0.2],
+        [0.2, -1.1, -0.5, 0.4],
+        [0.5, 0.2, 0.8, -0.7],
+        [-0.2, 0.7, -0.3, 0.1],
+      ].map((r) => r.slice(0, d))
+      const identity = (v: number): number[] =>
+        Array.from({ length: d * d }, (_, e) => (e % d === Math.floor(e / d) ? v : 0))
+      const prior = wishartEta(d + 2, identity(0.5), d)
+      const exactVectors = rows.map((r) => messageArg(gaussianMv(d), gaussianMvEta(r, identity(1e-9))))
+      // a mean that is known (a tight cavity): the rows about it, all of their df; a mean that is flat: the rows about their own mean, one df fewer
+      for (const [variance, lost] of [
+        [1e-9, 0],
+        [1e9, 1],
+      ] as const) {
+        const centre = Array.from({ length: d }, (_, k) =>
+          lost === 0 ? 0.1 : rows.reduce((acc, r) => acc + (r[k] as number), 0) / rows.length,
+        )
+        const args = [
+          ...exactVectors,
+          messageArg(gaussianMv(d), gaussianMvEta(Array(d).fill(0.1), identity(variance))),
+          messageArg(Wd, prior),
+        ]
+        const message = mvnWishartGroup.ep?.({ ...ctx(rows.length + 1, args, rows.length) }).message as number[]
+        const scatter = new Array<number>(d * d).fill(0)
+        for (const r of rows)
+          for (let a = 0; a < d; a++)
+            for (let b = 0; b < d; b++)
+              scatter[a * d + b] =
+                (scatter[a * d + b] as number) +
+                ((r[a] as number) - (centre[a] as number)) * ((r[b] as number) - (centre[b] as number))
+        const exact = Wd.moments(Wd.product(prior, [0.5 * (rows.length - lost), ...scatter.map((v) => -0.5 * v)]))
+        const got = Wd.moments(Wd.product(prior, message))
+        // a logarithm is not a polynomial: the five nodes of dimension three carry its error (about 0.013)
+        expect(got[0] as number, 'E log det').toBeCloseTo(exact[0] as number, d === 2 ? 2 : 1)
+        for (let e = 1; e < got.length; e++)
+          expect(got[e] as number, `E L[${e - 1}] with variance ${variance}`).toBeCloseTo(
+            exact[e] as number,
+            d === 4 ? 1 : 2,
+          )
+      }
+    },
+  )
+
+  it.each([3, 4])(
+    'in dimension %d the matrix and the mean match an importance-sampling reference',
+    (d) => {
+      const Wd = wishart(d)
+      const identity = (v: number): number[] =>
+        Array.from({ length: d * d }, (_, e) => (e % d === Math.floor(e / d) ? v : 0))
+      const base = [
+        [0.9, -0.4, 0.3, 0.5],
+        [-0.6, 0.5, 0.1, -0.2],
+        [0.2, -1.1, -0.5, 0.4],
+        [0.5, 0.2, 0.8, -0.7],
       ]
-      const message = mvnWishartGroup.ep?.({ ...ctx(rows.length + 1, args, rows.length) }).message as number[]
-      const scatter = new Array<number>(d * d).fill(0)
-      for (const r of rows)
-        for (let a = 0; a < d; a++)
-          for (let b = 0; b < d; b++)
-            scatter[a * d + b] =
-              (scatter[a * d + b] as number) +
-              ((r[a] as number) - (centre[a] as number)) * ((r[b] as number) - (centre[b] as number))
-      const exact = Wd.moments(Wd.product(prior, [0.5 * (rows.length - lost), ...scatter.map((v) => -0.5 * v)]))
-      const got = Wd.moments(Wd.product(prior, message))
-      // a logarithm is not a polynomial: the five nodes of dimension three carry its error (about 0.013)
-      expect(got[0] as number, 'E log det').toBeCloseTo(exact[0] as number, d === 2 ? 2 : 1)
-      for (let e = 1; e < got.length; e++)
-        expect(got[e] as number, `E L[${e - 1}] with variance ${variance}`).toBeCloseTo(exact[e] as number, 2)
-    }
-  })
+      const vs: Reading[] = base.map((r, j) => ({ m: r.slice(0, d), v: identity(0.05 + 0.02 * j) }))
+      const population: Reading = { m: Array(d).fill(0.1) as number[], v: identity(4) }
+      const cavity = wishartEta(d + 2, identity(0.5), d)
+      const g = gaussianMv(d)
+      const args = [
+        ...vs.map((r) => messageArg(g, gaussianMvEta(r.m, r.v))),
+        messageArg(g, gaussianMvEta(population.m, population.v)),
+        messageArg(Wd, cavity),
+      ]
+      const reference = importanceOfGroup(d, vs, population, cavity, 6000)
+      expect(reference.ess).toBeGreaterThan(1500)
+      const message = mvnWishartGroup.ep?.(ctx(vs.length + 1, args, vs.length)).message as number[]
+      const matched = Wd.moments(Wd.product(cavity, message))
+      // E L entry by entry, against the sampling error of the reference (about 3%)
+      for (let e = 0; e < d * d; e++)
+        expect(matched[1 + e] as number, `E L[${e}]`).toBeCloseTo(reference.lambda[e] as number, 0)
+      for (const i of Array.from({ length: d }, (_, k) => k * d + k))
+        expect((matched[1 + i] as number) / (reference.lambda[i] as number), `E L[${i}] relative`).toBeCloseTo(1, 1)
+      const meanMessage = mvnWishartGroup.ep?.(ctx(vs.length, args, vs.length)).message as number[]
+      const posterior = G_OF(d).product(gaussianMvEta(population.m, population.v), meanMessage)
+      const mo = G_OF(d).moments(posterior)
+      for (let i = 0; i < d; i++) {
+        expect(mo[i] as number, `mean of the mean ${i}`).toBeCloseTo(reference.meanOfMean[i] as number, 1)
+        const variance = (mo[d + i * d + i] as number) - (mo[i] as number) ** 2
+        expect(variance / (reference.meanCov[i * d + i] as number), `variance of the mean ${i}`).toBeCloseTo(1, 1)
+      }
+    },
+    60_000,
+  )
 
   it('shares one tilt between its ports and its evidence when the engine gives it a cache, and gives the values of no cache', () => {
     const memo: Memo = new Map()
@@ -316,6 +362,21 @@ describe('mvn-wishart-group: one site for a group sharing a mean and a precision
           1,
         )
   })
+
+  it('with one vector in dimension 4 it is the per-vector factor (which has the same three-node rule there)', () => {
+    const d = 4
+    const identity = (v: number): number[] =>
+      Array.from({ length: d * d }, (_, e) => (e % d === Math.floor(e / d) ? v : 0))
+    const g = gaussianMv(d)
+    const one = [
+      messageArg(g, gaussianMvEta([0.9, -0.4, 0.3, 0.5], identity(0.1))),
+      messageArg(g, gaussianMvEta([0.1, 0.1, 0.1, 0.1], identity(2))),
+      messageArg(wishart(d), wishartEta(d + 2, identity(0.5), d)),
+    ]
+    const single = mvnWishart.ep?.({ ...ctx(2, one, 1), params: {} }).message as number[]
+    const group = mvnWishartGroup.ep?.(ctx(2, one, 1)).message as number[]
+    for (let e = 0; e < single.length; e++) expect(group[e] as number, `entry ${e}`).toBeCloseTo(single[e] as number, 1)
+  }, 60_000)
 
   it('reads a vector that says nothing as absent, and a constant vector as an exact reading', () => {
     // a flat vector does not change the matrix's message: the others are told as if it were not there

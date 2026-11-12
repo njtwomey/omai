@@ -9,7 +9,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg, evidenceOrNaN, keyOf, memoised } from '../../core/_messages.ts'
+import { arg, evidenceOrNaN, memoised } from '../../core/_messages.ts'
 import { numberParam, rawSum, siteMessage } from '../../core/args.ts'
 import { defineOperator, messageRule } from '../../core/define.ts'
 import { ImproperMessageError } from '../../core/errors.ts'
@@ -58,7 +58,7 @@ function sidesOf(c: OperatorContext): Sides {
   if (BARTLETT_ORDER[d] === undefined)
     throw new OmaiError(
       'not-implemented',
-      `mvn-wishart-group: the tilted precision is a ${d} by ${d} integral; the quadrature is built for dimensions up to 3`,
+      `mvn-wishart-group: the tilted precision is a ${d} by ${d} integral; the quadrature is built for dimensions up to 4`,
     )
   const mean = gaussianSide(arg(c, groups), d)
   if (mean.point)
@@ -283,9 +283,24 @@ function tiltOf(c: OperatorContext): Tilt {
   return { logZ: family.logPartition(eta) + top + Math.log(total), moments, mean, cov }
 }
 
+/**
+ * The key of a tilt: the arguments to ten digits of the largest entry of each. The cavity of a port is its belief divided by its own message, so
+ * when the message of another port of the factor has just been sent the cavities are the same numbers to rounding, not to the last bit (and an
+ * entry that is zero comes back as 1e-17); a key that said every bit would miss for each of the group's ports and integrate once per port
+ * instead of once per sweep.
+ */
+const tiltKey = (c: OperatorContext): string =>
+  `mvn-wishart-group:${c.args
+    .map((a) => {
+      const v = Array.from((a.value ?? a.eta ?? []) as ArrayLike<number> | number[])
+      const unit = Math.max(...v.map((x) => Math.abs(x)), 1e-300) * 1e-10
+      return v.map((x) => Math.round(x / unit)).join(',')
+    })
+    .join(';')}`
+
 /** The tilt of the factor, kept in the engine's cache for the stretch the messages of one sweep share. */
 function tiltFor(c: OperatorContext): Tilt {
-  return memoised(c, `mvn-wishart-group:${keyOf(c.args.map((a) => a.value ?? a.eta))}`, () => tiltOf(c))
+  return memoised(c, tiltKey(c), () => tiltOf(c))
 }
 
 /** The message to the precision matrix or to a Gaussian port. */
@@ -310,7 +325,7 @@ function asPair(c: OperatorContext, j: number, to: 0 | 1 | 2): OperatorContext {
  * `x_j ~ N(mean, L^-1)` for `J` Gaussian vectors that share a Gaussian population mean and a Wishart precision matrix: the correlated random
  * effects of a hierarchical model with the mean and the covariance both learned, as one factor. Given the matrix the vectors and the mean are
  * jointly Gaussian, so the factor integrates them out together (`N(m_j; mean, V_j + L^-1)` for each cavity, then the mean against its cavity) and
- * expectation propagation matches the Wishart to the moments of the tilted matrix by the Bartlett quadrature (dimensions up to 3), and each vector and
+ * expectation propagation matches the Wishart to the moments of the tilted matrix by the Bartlett quadrature (dimensions up to 4), and each vector and
  * the mean to the mixture of their conditionals over the nodes. One factor takes the place of `J` factors of `mvn-wishart`
  * that would form a loop through the shared mean and matrix (and with few groups give a mean too narrow and a matrix too wide); the cost of one tilt is shared by
  * all its ports. The variational rule is the sum of the per-vector rules; a known mean is `mvn-wishart` per vector, exact on its own.
