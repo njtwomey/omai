@@ -119,6 +119,8 @@ function cases(n: number): Case[] {
   const rowMask = greater(grid, 2.7)
   const M = (rowMask as Tensor).data as Uint8Array
   const segIdx = mod(idx, side)
+  const chainD1 = new Float64Array(n)
+  const chainSq = new Float64Array(n)
   const rowIdx = cast(mod(mul(arange(side), 37), side), 'int32')
   const RI = (rowIdx as Tensor).data as Int32Array
   const alongIdx = cast(mod(mul(arange(side * side), 7), side), 'int32')
@@ -517,6 +519,56 @@ function cases(n: number): Case[] {
         const o = new Float64Array(side * side)
         for (let i = 0; i < side; i++) o[i * side + (LB[i] as number)] = 1
         return o
+      },
+    },
+    // ---- chains: what fusion and an output buffer would buy. The same four steps (sub, square, scale, exp) as tensor ops, against
+    // one fused loop, four raw passes that each allocate (the cost of the library's design: a fresh output per op) and four raw
+    // passes into buffers allocated once (the most an `out=` form could save).
+    {
+      op: 'chain sub,mul,mul,exp vs one fused loop',
+      tensor: () => {
+        const d = sub(a, b)
+        return exp(mul(mul(d, d), -0.5))
+      },
+      raw: () => {
+        const o = new Float64Array(n)
+        for (let i = 0; i < n; i++) {
+          const d = at(A, i) - at(B, i)
+          o[i] = Math.exp(d * d * -0.5)
+        }
+        return o
+      },
+    },
+    {
+      op: 'chain sub,mul,mul,exp vs 4 allocating passes',
+      tensor: () => {
+        const d = sub(a, b)
+        return exp(mul(mul(d, d), -0.5))
+      },
+      raw: () => {
+        const d1 = new Float64Array(n)
+        for (let i = 0; i < n; i++) d1[i] = at(A, i) - at(B, i)
+        const sq = new Float64Array(n)
+        for (let i = 0; i < n; i++) sq[i] = at(d1, i) * at(d1, i)
+        const sc = new Float64Array(n)
+        for (let i = 0; i < n; i++) sc[i] = at(sq, i) * -0.5
+        const o = new Float64Array(n)
+        for (let i = 0; i < n; i++) o[i] = Math.exp(at(sc, i))
+        return o
+      },
+    },
+    {
+      op: 'chain sub,mul,mul,exp vs 4 passes, buffers reused',
+      tensor: () => {
+        const d = sub(a, b)
+        return exp(mul(mul(d, d), -0.5))
+      },
+      raw: () => {
+        for (let i = 0; i < n; i++) chainD1[i] = at(A, i) - at(B, i)
+        for (let i = 0; i < n; i++) chainSq[i] = at(chainD1, i) * at(chainD1, i)
+        for (let i = 0; i < n; i++) chainSq[i] = at(chainSq, i) * -0.5
+        for (let i = 0; i < n; i++) chainD1[i] = Math.exp(at(chainSq, i))
+        return chainD1
       },
     },
     {
