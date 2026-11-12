@@ -336,6 +336,17 @@ describe('the evidence of a state with no information', () => {
     const h = M.compileGraph(tree, { ...operators, plus: broken })
     expect(() => M.evidenceOf(h, { projection: M.momentProjection }, state)).toThrow('a bug')
   })
+  it('names a factor with no mass under its cavity (evidence minus infinity) apart from an improper cavity (NaN)', () => {
+    const plus = operators['plus'] as M.FactorOperator
+    const reasonsFor = (evidence: number): readonly string[] => {
+      const g = M.compileGraph(tree, { ...operators, plus: { ...plus, logEvidence: () => evidence } })
+      const state = runAlgorithm(M.epAlgorithm(g), { maxSteps: 5 }).state
+      return M.evidenceDefects(g, { projection: M.momentProjection }, state).map((d) => d.reason)
+    }
+    expect(reasonsFor(Number.NEGATIVE_INFINITY)).toEqual(['zero mass'])
+    expect(reasonsFor(Number.NaN)).toEqual(['improper cavity'])
+    expect(reasonsFor(-3)).toEqual([])
+  })
   it('is read from the projection alone: the settings of a run are not needed', () => {
     const simple = M.compileGraph(
       {
