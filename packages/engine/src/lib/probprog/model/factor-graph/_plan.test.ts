@@ -120,6 +120,75 @@ describe('findGroups', () => {
   })
 })
 
+describe('findGroups: tied groups', () => {
+  const grouped = (
+    model: ReturnType<typeof defineModel>,
+    data: Parameters<ReturnType<typeof defineModel>['bind']>[0],
+  ) => planOf(model, data, { packScalars: true }).groups
+  const counties = { y: [1, 2, 3, 4], floor: [0, 1, 0, 1], county: [0, 0, 1, 1], size: [2, 2] }
+
+  it('ties a vector with a prior of its own to the scalar beside it, as one joint vector of their coordinates', () => {
+    const hierarchy = defineModel('centred', (m) => {
+      const county = m.range('county')
+      const house = m.range('house')
+      const code = m.data('county', { dims: [house], support: 'index', indexes: county })
+      const floor = m.data('floor', { dims: [house] })
+      m.data('size', { dims: [county] })
+      const mu = m.latent('mu', d.normal(0, 5))
+      const tau = m.latent('tau', d.halfNormal(1))
+      const beta = m.latent('beta', d.normal(0, 2))
+      const alpha = m.latent('alpha', d.normal(mu, ops.clip(tau, 1e-6, 1e6)), { dims: [county] })
+      m.observe('y', d.normal(alpha.at(code).add(beta.mul(floor)), 1), m.data('y', { dims: [house] }))
+    })
+    const groups = grouped(hierarchy, counties)
+    expect([...groups.keys()]).toEqual(['beta', 'alpha'])
+    expect(groups.get('beta')).toEqual({ vector: 'beta#8', members: ['beta', 'alpha'], tied: true, sizes: [1, 2] })
+    expect(groups.get('alpha')).toEqual(groups.get('beta'))
+  })
+
+  it('leaves a vector alone when a row reads it through a product with a random scale (the non-centred form)', () => {
+    const centreless = defineModel('non-centred', (m) => {
+      const county = m.range('county')
+      const house = m.range('house')
+      const code = m.data('county', { dims: [house], support: 'index', indexes: county })
+      const floor = m.data('floor', { dims: [house] })
+      m.data('size', { dims: [county] })
+      const mu = m.latent('mu', d.normal(0, 5))
+      const tau = m.latent('tau', d.halfNormal(1))
+      const beta = m.latent('beta', d.normal(0, 2))
+      const z = m.latent('z', d.normal(0, 1), { dims: [county] })
+      const alpha = m.derived('alpha', mu.add(tau.mul(z)))
+      m.observe('y', d.normal(alpha.at(code).add(beta.mul(floor)), 1), m.data('y', { dims: [house] }))
+    })
+    const groups = grouped(centreless, counties)
+    expect([...groups.keys()]).toEqual(['mu', 'beta'])
+    expect(groups.get('mu')?.tied).toBeUndefined()
+  })
+
+  it('groups one vector that a row reads at two places (the two players of a game), through the link of the likelihood', () => {
+    const tournament = defineModel('tournament', (m) => {
+      const player = m.range('player', { size: 3 })
+      const game = m.range('game')
+      const a = m.data('a', { dims: [game], support: 'index', indexes: player })
+      const b = m.data('b', { dims: [game], support: 'index', indexes: player })
+      const skill = m.latent('skill', d.normal(0, 1), { dims: [player] })
+      const gap = ops.div(skill.at(a).sub(skill.at(b)), Math.SQRT2)
+      m.observe('win', d.bernoulli({ probs: ops.probit(gap) }), m.data('win', { dims: [game] }))
+    })
+    const groups = grouped(tournament, { a: [0, 1, 2], b: [1, 2, 0], win: [1, 0, 1] })
+    expect(groups.get('skill')).toEqual({ vector: 'skill#8', members: ['skill'], sizes: [3] })
+  })
+
+  it('does not group a vector that each row reads once (one coordinate per row: nothing is shared)', () => {
+    const elementwise = defineModel('elementwise', (m) => {
+      const school = m.range('school')
+      const theta = m.latent('theta', d.normal(0, 1), { dims: [school] })
+      m.observe('y', d.normal(theta, 1), m.data('y', { dims: [school] }))
+    })
+    expect(grouped(elementwise, { y: [1, 2, 3] }).size).toBe(0)
+  })
+})
+
 describe('findNormalGamma', () => {
   const pair = (readers: 'one' | 'two') =>
     defineModel('nig', (m) => {
