@@ -256,6 +256,7 @@ export function symOp(
     case 'exp':
     case 'square':
     case 'tanh':
+    case 'cos':
     case 'softplus':
     case 'abs':
     case 'sigmoid':

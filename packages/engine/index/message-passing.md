@@ -188,8 +188,8 @@ The lifts of a link to a row of regression coefficients and to a plate of rows: 
 
 The numeric likelihood operators: the generic numeric operator for any density, the registry of count, survival, ordinal, quantile and robust likelihoods (`likelihood-site`, its row), the Student-t, Laplace and mixture sites, the exact numeric priors, the two- and three-variable likelihood pairs and triples, and the unary function `apply`. Part of `omai-engine/message- passing`.
 
-- function `applyFunction`: The factor y = f(x) of a unary function (exp, square, tanh, relu, softplus, abs, sigmoid) of a Gaussian: EP. `src/lib/message-passing/operators/likelihoods/functions.ts:280` `omai-engine/message-passing`
-- function `applyProduct`: The factor y = z f(x) of a Gaussian times a function of a Gaussian or gamma variable: a non-centred scale. `src/lib/message-passing/operators/likelihoods/functions.ts:487` `omai-engine/message-passing`
+- function `applyFunction`: The factor y = f(x) of a unary function (exp, square, tanh, relu, softplus, abs, sigmoid) of a Gaussian: EP. `src/lib/message-passing/operators/likelihoods/functions.ts:290` `omai-engine/message-passing`
+- function `applyProduct`: The factor y = z f(x) of a Gaussian times a function of a Gaussian or gamma variable: a non-centred scale. `src/lib/message-passing/operators/likelihoods/functions.ts:497` `omai-engine/message-passing`
 - function `likelihoodOperators`: The likelihood-site and likelihood-row operators of a registry of numeric likelihoods. `src/lib/message-passing/operators/likelihoods/likelihoods.ts:435` `omai-engine/message-passing`
 - function `likelihoodSite`: A numeric EP likelihood site from a registry of log densities. `src/lib/message-passing/operators/likelihoods/likelihoods.ts:361` `omai-engine/message-passing`
 - function `numericOperator`: An EP operator for any density over Gaussian variables, by quadrature. `src/lib/message-passing/operators/likelihoods/numeric.ts:90` `omai-engine/message-passing`
@@ -197,8 +197,8 @@ The numeric likelihood operators: the generic numeric operator for any density, 
 - function `pairRowOperator`: A pair likelihood site on one Gaussian vector: a joint message for two coordinates that are linear forms of it. `src/lib/message-passing/operators/likelihoods/pairs.ts:422` `omai-engine/message-passing`
 - function `tripleLikelihoodOperator`: A three-variable numeric EP site from a registry of densities. `src/lib/message-passing/operators/likelihoods/triples.ts:387` `omai-engine/message-passing`
 
-- structure `apply`: The factor y = f(x) of a unary function of a Gaussian (exp, square, tanh, relu, softplus, abs, sigmoid). `src/lib/message-passing/operators/likelihoods/functions.ts:364` `omai-engine/message-passing`
-- structure `applyProductOperator`: The factor y = z f(x): a Gaussian times a function of a Gaussian or gamma variable (a non-centred scale). `src/lib/message-passing/operators/likelihoods/functions.ts:550` `omai-engine/message-passing`
+- structure `apply`: The factor y = f(x) of a unary function of a Gaussian (exp, square, tanh, relu, softplus, abs, sigmoid). `src/lib/message-passing/operators/likelihoods/functions.ts:374` `omai-engine/message-passing`
+- structure `applyProductOperator`: The factor y = z f(x): a Gaussian times a function of a Gaussian or gamma variable (a non-centred scale). `src/lib/message-passing/operators/likelihoods/functions.ts:560` `omai-engine/message-passing`
 - structure `laplaceRow`: One Laplace regression row on a Gaussian weight vector: quadrature EP. `src/lib/message-passing/operators/likelihoods/robust.ts:168` `omai-engine/message-passing`
 - structure `laplaceSite`: A Laplace likelihood of a Gaussian predictor: quadrature EP. `src/lib/message-passing/operators/likelihoods/robust.ts:138` `omai-engine/message-passing`
 - structure `mixtureRow`: A Gaussian mixture on a linear function of the weights (spike and slab row): exact EP. `src/lib/message-passing/operators/likelihoods/robust.ts:148` `omai-engine/message-passing`
@@ -211,7 +211,7 @@ The numeric likelihood operators: the generic numeric operator for any density, 
 - table `likelihoods`: The numeric likelihoods of a Gaussian predictor (count, survival, ordinal, quantile, robust) by name. `src/lib/message-passing/operators/likelihoods/likelihoods.ts:290` `omai-engine/message-passing`
 - table `pairLikelihoods`: The likelihoods over two random scalars (Laplace scale, Student-t degrees of freedom or scale, Weibull shape, beta shapes). `src/lib/message-passing/operators/likelihoods/pairs.ts:245` `omai-engine/message-passing`
 - table `tripleLikelihoods`: The likelihoods over three random scalars (Student-t location, scale and df; ordinal with random cut points). `src/lib/message-passing/operators/likelihoods/triples.ts:342` `omai-engine/message-passing`
-- table `unaryFunctions`: The unary functions of a Gaussian variable (exp, square, tanh, relu, softplus, abs, sigmoid, sqrt, recip) by name. `src/lib/message-passing/operators/likelihoods/functions.ts:57` `omai-engine/message-passing`
+- table `unaryFunctions`: The unary functions of a Gaussian variable (exp, square, tanh, cos, relu, softplus, abs, sigmoid, sqrt, recip) by name. `src/lib/message-passing/operators/likelihoods/functions.ts:57` `omai-engine/message-passing`
 
 ### message-passing/operators/links
 

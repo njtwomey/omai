@@ -82,6 +82,7 @@ EP refuses 1 item(s): `bayesian-neural-network`.
 | multimodal: One Gaussian per variable cannot show two modes: what the multi-start does not reach | quality | open | medium | - |
 | network-layer-modes: A network layer: hidden units whose weights have symmetric modes are refused | quality | open | large | bayesian-neural-network |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
+| gplvm-features: A GPLVM runs only through random Fourier features: loopy, not always found, spreads not the posterior | quality | open | medium | - |
 | sv-parameters: Stochastic volatility with an unknown persistence: one EP run is too narrow, the grid is the route | quality | open | small | - |
 | evidence: The EP log evidence is exact where EP is, and undefined where a factor's integral against its cavities diverges | infrastructure | open | small | - |
 | variational-rules: Variational message passing: what it cannot run and where the mean field is poor | infrastructure | open | small | - |
