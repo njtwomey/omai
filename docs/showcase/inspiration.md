@@ -1,0 +1,326 @@
+# Showcase inspiration: what people expect to see from a probabilistic-modelling library
+
+Stage one of the showcase work (2026-11-12). This is a survey, not a plan of record: it says what the field shows, what omai
+already has, and which showcases to build first. Stage two (the builders) starts from section 5. Nothing here edits code.
+
+## 1. Method: what was read, what could not be
+
+Every library below was looked at through its public example index (gallery, tutorial list, case-study list, README) and, for
+about twenty pages, the page itself (headings, running example, figures). I did not run any notebook. Two limits matter for
+the tallies in section 2: counts are of what an **index page or a page I read** shows, so a library that has an example
+under a heading I could not see is under-counted; and a few counts rest on a title only (marked `~`).
+There are 16 sources in the tally: Stan (user's guide, case studies, `example-models`), PyMC, NumPyro, Pyro, TensorFlow
+Probability (TFP), Turing.jl, Infer.NET, Edward/Edward2, Gen.jl, probmods/WebPPL, BUGS (through the Stan translations),
+rstanarm/brms, scikit-learn, Bayesian Methods for Hackers (BMH), Think Bayes, Statistical Rethinking.
+
+Pages read (all fetched 2026-11-12):
+
+- PyMC gallery: https://www.pymc.io/projects/examples/en/latest/gallery.html (38 sections, about 200 notebooks); PyMC landing:
+  https://www.pymc.io/ ; API quickstart: https://www.pymc.io/projects/examples/en/latest/introductory/api_quickstart.html ;
+  Bayesian neural network (ADVI): https://www.pymc.io/projects/examples/en/latest/variational_inference/bayesian_neural_network_advi.html
+- Stan: landing https://mc-stan.org/ ; case studies (by volume) https://mc-stan.org/learn-stan/case-studies.html ; user's guide
+  contents https://mc-stan.org/docs/stan-users-guide/ ; example models https://github.com/stan-dev/example-models ;
+  rstanarm vignettes https://mc-stan.org/rstanarm/articles/ ; brms vignettes https://cran.r-project.org/web/packages/brms/vignettes/
+- NumPyro: tutorials https://num.pyro.ai/en/stable/tutorials/index.html , examples https://num.pyro.ai/en/stable/examples/index.html
+  (33 code examples in one flat list)
+- Pyro: https://pyro.ai/examples/ (14 sections); landing https://pyro.ai/ ; "Introduction to Pyro" https://pyro.ai/examples/intro_long.html
+- TFP: https://www.tensorflow.org/probability/overview ; notebooks
+  https://github.com/tensorflow/probability/tree/main/tensorflow_probability/examples/jupyter_notebooks ;
+  Probabilistic Layers Regression https://www.tensorflow.org/probability/examples/Probabilistic_Layers_Regression (read in full)
+- Turing.jl: landing https://turinglang.org/ ; getting started and tutorial list https://turinglang.org/docs/getting-started/ ;
+  BNN tutorial https://turinglang.org/docs/tutorials/bayesian-neural-networks/
+- Infer.NET: https://dotnet.github.io/infer/userguide/Infer.NET%20tutorials%20and%20examples.html ; Two coins
+  https://dotnet.github.io/infer/userguide/Two%20coins%20tutorial.html ; Motif Finder
+  https://dotnet.github.io/infer/userguide/Motif%20Finder.html ; Monty Hall https://dotnet.github.io/infer/userguide/Monty%20Hall%20problem.html
+- Edward: http://edwardlib.org/tutorials/ ; Edward2 https://github.com/google/edward2
+- Gen.jl: https://github.com/probcomp/Gen.jl ; tutorials https://www.gen.dev/tutorials/ ; intro to modelling
+  https://www.gen.dev/tutorials/intro-to-modeling/tutorial
+- probmods: chapter list from https://github.com/probmods/probmods2/tree/master/chapters and https://v1.probmods.org/ ;
+  webppl-viz https://github.com/probmods/webppl-viz ; WebPPL docs https://webppl.readthedocs.io/en/master/
+- scikit-learn gallery: https://scikit-learn.org/stable/auto_examples/index.html
+- BMH: https://github.com/CamDavidsonPilon/Probabilistic-Programming-and-Bayesian-Methods-for-Hackers ; Think Bayes
+  https://allendowney.github.io/ThinkBayes2/ (chapter 1 at `.../chap01.html`); Statistical Rethinking
+  https://github.com/rmcelreath/stat_rethinking_2023 and https://github.com/rmcelreath/rethinking
+- Non-probabilistic and explorable references: TensorFlow Playground https://playground.tensorflow.org/ ; Seeing Theory
+  https://seeing-theory.brown.edu/ ; Distill https://distill.pub/ ; Chi Feng's MCMC gallery https://chi-feng.github.io/mcmc-demo/
+
+**Could not reach, or reached only partly:**
+
+- `https://probmods.org/` and `https://webppl.org/`: TLS certificate error from the fetch tool (host `probmods.org.`). Used the
+  GitHub source (chapter file names, no text) and the v1 site instead, so the probmods and WebPPL entries rest on chapter titles
+  and on my prior knowledge of the book, not on pages read (marked `~`).
+- `https://mc-stan.org/users/documentation/case-studies.html` and `https://turinglang.org/docs/tutorials/`: both only a redirect
+  stub; I used the equivalent pages above.
+- `https://www.tensorflow.org/probability/examples`: 404 (used the overview page and the GitHub notebook folder).
+- `https://dotnet.github.io/infer/userguide/TrueSkill tutorial.html`: 404. The Infer.NET examples list has **no TrueSkill page**
+  (it has Chess Analysis and Student Skills); TrueSkill is Infer.NET's origin story (Herbrich, Minka and Graepel 2006), not one
+  of its tutorials.
+- BUGS: the MRC-BSU examples page redirects away and the McGill mirror lists only seven basic examples. The classic volume 1
+  list (rats, pumps, seeds, surgical, ...) is **not confirmed from a page I read**; I cite the Stan translations
+  (`example-models/bugs_examples`, volumes 1 to 3) and Infer.NET's "Rats example from BUGS" instead.
+- Observable: a search found Mattias Villani's Bayesian learning collection
+  (https://observablehq.com/collection/@mattiasvillani/bayesian-learning) but no notebook page was read; the coin-update
+  explorables I did see are Jupyter widgets.
+- The Statistical Rethinking and Think Bayes book texts were not read, only the course repo and the chapter list; Pyro's long
+  intro was read to its outline only (the page is 700 kB).
+- None of this was tested on readers; the claims about what makes an example good are my reading of the pages.
+
+## 2. The common examples, by category, with a tally
+
+The tally is the number of the 16 sources in which I saw an example of that kind (`~` = title or chapter name only, `?` = I
+would expect it but did not see it). Links are to the page that shows it.
+
+### Foundations
+
+| Example | Tally | Where |
+|---|---|---|
+| Coin / beta-binomial / one proportion | 11 | Stan landing `bernoulli.stan` (https://mc-stan.org/); Turing "Introduction: Coin Flipping" is tutorial 1 (https://turinglang.org/docs/getting-started/); Infer.NET "Two coins" is tutorial 1; BUGS "single binomial proportion" (McGill mirror); Think Bayes ch. 4 "Estimating Proportions"; Rethinking "Garden of Forking Data"; BMH ch. 2 (cheating); PyMC "Binomial regression" and "Rat tumor"; NumPyro "Proportion Test"; rstanarm "repeated binary trials"; probmods generative-models and conditioning chapters ~ |
+| A/B test (two proportions, effect, "which is better") | 7 | PyMC "Introduction to Bayesian A/B Testing"; rstanarm "Probabilistic A/B Testing"; BMH print edition chapter; Infer.NET "Clinical trial" (is the treatment effective: model selection); BUGS "difference of two binomial proportions"; Stan causal-effect case studies; Think Bayes ch. 10 to 11 (testing, comparison) |
+| Normal-normal / learning a mean and variance | 7 | Infer.NET "Learning a Gaussian"; Turing landing and getting-started example; BUGS "single normal mean" (known and unknown variance); Stan basic estimators; PyMC "Bayesian estimation supersedes the t-test"; Think Bayes ch. 18 |
+| Linear regression (line plus noise, band of lines) | 14 | PyMC landing (plant growth) and "GLM: linear regression" (introductory section); Pyro "Bayesian Regression Part 1/2" and the long intro; NumPyro "Bayesian Regression Using NumPyro" (first tutorial); Turing landing; Gen "Introduction to modeling" (the line model, first tutorial); Edward tutorial 1; TFP GLM; Stan UG "Regression models"; Infer.NET forum example; BUGS "linear regression"; sklearn "Curve fitting with Bayesian ridge" and "Comparing linear Bayesian regressors"; Think Bayes ch. 17; Rethinking "Geocentric models" |
+| Logistic regression / classification | 9 | TFP and Edward2 (README's main example, the script `logistic_regression.py`); Turing "Bayesian Logistic Regression"; PyMC "Binomial regression"; BUGS "logistic regression"; rstanarm binary GLMs; Think Bayes ch. 16; Infer.NET "Bayes Point Machine" and "Multinomial logistic regression"; Rethinking UCB admissions |
+| Robust regression (outliers, Student-t) | 4 | PyMC (three notebooks), Stan UG, Rethinking, Pyro "Forecasting I: heavy tailed" ~ |
+
+### Hierarchical
+
+| Example | Tally | Where |
+|---|---|---|
+| Eight schools | 6 | TFP `Eight_Schools.ipynb`; Stan example-models and UG; PyMC "Diagnosing biased inference with divergences" and NumPyro "Neal's Funnel" (the funnel is its centred form); probmods hierarchical-models ~ |
+| Radon (multilevel regression) | 6 | PyMC "A Primer on Bayesian Methods for Multilevel Modeling"; TFP `Multilevel_Modeling_Primer` and `HLM_TFP_R_Stan`; Stan "Multilevel regression modeling with CmdStanPy" and "Multilevel linear models using rstanarm"; NumPyro "Bayesian Hierarchical Linear Regression"; brms `brms_multilevel` |
+| Rats, rat tumours, baseball (repeated binary trials, partial pooling) | 8 | PyMC "Hierarchical Binomial Model: Rat Tumor Example" and "Hierarchical Partial Pooling"; Infer.NET "Rats example from BUGS"; Stan "Pooling with hierarchical models for repeated binary trials"; rstanarm "Hierarchical Partial Pooling for Repeated Binary Trials"; NumPyro "Baseball Batting Average" and Pyro "analyzing baseball stats with MCMC"; BUGS volumes; Rethinking multilevel lectures |
+| Mixed effects / varying slopes | 5 | Edward "Linear mixed effects models"; TFP `Linear_Mixed_Effects_Models` (two); NumPyro "Generalized Linear Mixed Models"; Pyro "hierarchical mixed-effect HMMs"; brms |
+
+About 12 of the 16 sources show at least one of the hierarchical examples; no single one exceeds 8.
+
+### Mixtures and clustering
+
+| Example | Tally | Where |
+|---|---|---|
+| Gaussian mixture | 11 | PyMC "Gaussian Mixture Model" and "Marginalized GMM"; Pyro "Gaussian Mixture Model"; NumPyro "Toy Mixture Model with Discrete Enumeration"; TFP `Bayesian_Gaussian_Mixture_Model`; Turing "Gaussian Mixture Models"; Infer.NET "Mixture of Gaussians"; Edward "Mixture models"; sklearn (seven GMM examples); BMH ch. 3; Stan UG "Finite mixtures"; probmods mixture-models ~ |
+| Label switching / identifying mixtures | 3 | Stan "Identifying Bayesian Mixture Models" and "Bayesian Latent Class Models and Handling of Label Switching"; PyMC (a section of the GMM notebooks) |
+| Old Faithful | `?` | Not seen on any index I read. It is the standard R dataset; sklearn's density-estimation example uses synthetic data. |
+| Dirichlet process / infinite mixture | 5 | PyMC "Dirichlet process mixtures"; Pyro "Dirichlet Process Mixture Models"; Turing "Infinite Mixture Models"; TFP `Fitting_DPMM_Using_pSGLD`; probmods non-parametric models ~ |
+
+### Latent variables
+
+| Example | Tally | Where |
+|---|---|---|
+| Topic model / LDA | 5 | Infer.NET "Latent Dirichlet Allocation"; Pyro "Probabilistic Topic Modeling" and "Amortized LDA"; NumPyro "ProdLDA with Flax"; Stan UG clustering chapter ~; probmods v1 mixture chapter (topic models) |
+| Factor analysis / PCA | 7 | Infer.NET "Bayesian PCA and Factor Analysis"; PyMC "Factor analysis" and "Confirmatory factor analysis"; Turing "Probabilistic PCA" and "GPLVM"; TFP `Probabilistic_PCA`; Edward "Probabilistic PCA"; Pyro "Probabilistic PCA + MuE"; sklearn "Model selection with Probabilistic PCA and FA" |
+| Matrix factorisation / recommender | 2 | Infer.NET "Recommender System"; PyMC "Probabilistic Matrix Factorization for Making Personalized Recommendations" |
+| Item response / ability and difficulty | 4 | Stan case studies (seven IRT volumes under 2016 and 2019); PyMC "NBA Foul Analysis with IRT"; Infer.NET "Difficulty versus ability" and "Student skills"; NumPyro "Bayesian Models of Annotation" |
+| Crowdsourcing / annotator models | 3 | Infer.NET (BCC, BCCWords, aggregation models); NumPyro "Bayesian Models of Annotation"; Stan "Bayesian latent class models" |
+
+### Time series
+
+| Example | Tally | Where |
+|---|---|---|
+| Changepoint / switchpoint | 6 | BMH ch. 1 (text-message rate); TFP `Bayesian_Switchpoint_Analysis` and `Multiple_changepoint_detection_and_Bayesian_model_selection`; Gen intro (piecewise-constant tree) and RJMCMC tutorial; Stan UG latent discrete parameters (coal mining) ~; PyMC "Interrupted time series" (related) |
+| AR / state space / Kalman / forecasting | 8 | PyMC "Analysis of an AR(1) Model", hurricane state space, structural AR, VAR; NumPyro AR2, VAR(2), Holt-Winters, "Time Series Forecasting"; Pyro "Forecasting I to III", "Forecasting with DLM", "Kalman Filter"; TFP structural time series (CO2, electricity demand); Turing "Bayesian Time Series Analysis"; Stan UG time-series chapter; Gen particle filter; Think Bayes ~ |
+| Stochastic volatility | 4 | PyMC and NumPyro (both "Stochastic Volatility"), Pyro "Levy stable models of stochastic volatility", Stan UG |
+| HMM | 6 | Stan "HMM Interface Example" and "Tagging basketball events with HMM"; PyMC "Hidden Markov Models in PyMC"; NumPyro "Hidden Markov Model" and "Enumerate HMM"; Pyro (four HMM examples); Turing "Hidden Markov Models"; Infer.NET forum HMM |
+| Tracking an object (Kalman, particle filter) | 3 | Pyro "Kalman Filter" and "Tracking an unknown number of objects"; Gen "Particle filtering in Gen"; PyMC hurricane (above) |
+
+### Gaussian processes
+
+| Example | Tally | Where |
+|---|---|---|
+| GP regression (prior draws, posterior band, kernel choice) | 10 | PyMC (18 notebooks incl. Mauna Loa CO2); sklearn (10 examples incl. "prior and posterior GP for different kernels", Mauna Loa); NumPyro "Gaussian Process"; Pyro GP section (4); TFP `Gaussian_Process_Regression_In_TFP`; Turing "Gaussian Processes: Introduction"; Stan UG chapter and NNGP case study; Rethinking Oceanic islands; Edward (GP classification, below) |
+| GP classification | 4 | sklearn (four examples incl. XOR, iso-probability lines); Infer.NET "Gaussian Process classifier"; Edward "Gaussian process classification"; PyMC (latent implementation) |
+| GP latent variable model | 3 | Turing, TFP, Pyro |
+
+### Bayesian neural networks and deep probabilistic models
+
+| Example | Tally | Where |
+|---|---|---|
+| BNN, classification (two moons / XOR, uncertainty as a heat map) | 4 | PyMC ADVI notebook (two moons; mean and sd contour maps; **no bands**; read in full); Turing BNN (XOR-like boxes; draws only the single best sample); NumPyro BNN; Edward "Bayesian neural network" |
+| BNN / probabilistic layers, **regression with uncertainty band** | 3 | TFP `Probabilistic_Layers_Regression` (read in full: five cases on one data set, "no uncertainty / aleatoric / epistemic / both / functional", each a single figure; the epistemic case shows 25 thin red mean curves fanning out away from the data); Edward2 Bayesian layers; Edward original (title only) |
+| VAE / normalising flow / deep generative | 4 | Pyro (11 notebooks), NumPyro, TFP (VAE, VQ-VAE, FFJORD), Edward (inference networks, GAN, MDN) |
+| Bayesian optimisation / Thompson sampling | 3 | Pyro "Bayesian Optimization", NumPyro "Thompson sampling for Bayesian Optimization with GPs", BMH ch. 6 (bandit) |
+
+Six sources show a BNN in one form or another; the regression form with a band that widens away from the data, the one readers
+can read at a glance, is TFP's epistemic case, and PyMC's and Turing's pages stop at a classification surface.
+
+### Ranking and skills
+
+| Example | Tally | Where |
+|---|---|---|
+| TrueSkill / Elo / skill from games | 3 | Infer.NET "Chess Analysis" and "Student skills" (TrueSkill itself is not an Infer.NET tutorial page); PyMC "A Hierarchical model for Rugby prediction"; Stan basketball ~ |
+| Bradley-Terry | 1 | PyMC rugby (its model is Bradley-Terry-like); otherwise it appears only inside other titles |
+
+### Survival and counts
+
+| Example | Tally | Where |
+|---|---|---|
+| Poisson / negative-binomial regression | 7 | PyMC "GLM: Poisson" and "Negative binomial"; Turing "Bayesian Poisson Regression"; rstanarm count GLMs; Rethinking "Modeling events" and "Counts and hidden confounds"; Stan UG; BUGS (epilepsy) ~ |
+| Zero-inflated / hurdle | 3 | NumPyro "Zero-Inflated Poisson regression model"; Rethinking (the manuscript-output example); Stan UG |
+| Survival (Cox, Weibull, censoring) | 5 | PyMC (five survival notebooks); Stan UG "Survival models" and "Truncated or censored data"; rstanarm joint longitudinal and time-to-event models; BUGS (leukaemia, kidney) ~ |
+
+### Causal and decision-making
+
+| Example | Tally | Where |
+|---|---|---|
+| Causal inference (do-operator, confounding, Simpson, IV, diff-in-diff) | 7 | PyMC (14 notebooks incl. "Simpson's paradox" and the do-operator); Stan "Instrumental variables" and "Causal effects in randomised experiments"; Rethinking (Elemental Confounds, Good and Bad Controls; four lectures); Pyro "Causal Effect VAE"; Infer.NET "How to do causal inference" |
+| Decision analysis / loss functions / bandits | 5 | Stan UG "Decision analysis"; Think Bayes ch. 9; BMH ch. 5 (loss) and ch. 6 (bandit); Infer.NET Monty Hall |
+| Experimental design / adaptive experiments | 1 | Pyro (two notebooks) |
+
+### Strings and discrete structure
+
+| Example | Tally | Where |
+|---|---|---|
+| Motif discovery on strings | 2 | Infer.NET "Motif Finder" (nucleotide strings, a position frequency matrix with a Dirichlet prior, a motif at a random position per sequence; read in full); Pyro "Constant + MuE (Profile HMM)" for biological sequences |
+| Text: topics, language, sentiment | 4 | Infer.NET (BCCWords sentiment, strings), probmods language and grammar chapters ~, the LDA entries above |
+| Discrete Bayes nets (wet grass, Monty Hall) | 3 | Infer.NET (wet grass, Monty Hall), probmods conditional dependence ~, Stan UG (discrete latent parameters) |
+
+### Recurring elsewhere
+
+| Example | Tally | Where |
+|---|---|---|
+| Neal's funnel / divergences / reparameterisation (the "why did my sampler fail" example) | 3 | NumPyro "Neal's Funnel"; PyMC "Diagnosing Biased Inference with Divergences"; Stan "Diagnosing biased inference with divergences", "Impact of reparameterization", "Typical sets and the curse of dimensionality" |
+| ODE / Lotka-Volterra (predator-prey) | 4 | Stan, PyMC (four notebooks), NumPyro "Predator-Prey Model", Turing "Bayesian Differential Equations" |
+| Epidemic / COVID | 4 | PyMC, Pyro (five), TFP (two), Stan |
+| Missing data / imputation | 6 | PyMC, NumPyro (two), Stan UG, brms `brms_missings`, Rethinking |
+| Posterior predictive checks, calibration, SBC | 4 | PyMC (a how-to), Stan UG ("Simulation-based calibration"), Pyro "Interactive posterior predictive checks", Rethinking |
+| Capture-recapture / occupancy | 4 | Pyro, NumPyro "CJS", Stan (occupancy), BPA book in `example-models` |
+| Inference algorithms side by side (SMC, ABC, SVI, MCMC) | 5 | PyMC "MCMC" and "Variational inference" sections; Pyro "Other inference algorithms"; Think Bayes ch. 19 to 20; Chi Feng's MCMC gallery; Gen RJMCMC |
+
+### The ten most common, of 16 sources
+
+Ranked by the number of sources that show at least one example of the kind. Ties are kept.
+
+1. Linear regression: 14.
+2. Hierarchical partial pooling (eight schools, radon, rats, baseball taken together): about 12.
+3. Coin / beta-binomial: 11. It is the **first** tutorial in Turing and Infer.NET, the code on Stan's landing page, and chapter 2 of BMH and of Rethinking.
+4. Gaussian mixture: 11.
+5. Gaussian-process regression: 10.
+6. Logistic regression: 9.
+7. AR / state space / forecasting: 8.
+8. A/B test: 7, tied with factor analysis / PCA (7), causal inference (7) and Poisson / negative-binomial counts (7).
+9. Changepoint: 6, tied with HMM (6), missing data (6) and Bayesian neural networks (6).
+10. Eight schools / radon as single names (6 each), survival (5), Dirichlet process mixtures (5), topic models (5).
+
+## 3. The narrative arc of the best example in each category
+
+- **Coin.** A belief is a curve; each flip reshapes it; the curve narrows and moves, and the last flip moves it less than the first (Infer.NET's Two coins builds the same idea in three small steps; the Stan landing page makes the model one line of code).
+- **A/B test.** Two unknown rates, one number the reader cares about (the chance that B beats A); the posterior of the difference is drawn straight from the two Beta curves, and the answer is a probability, not a verdict.
+- **Normal-normal.** A noisy measurement and a prior combine by precision weights; the posterior sits between them, closer to the sharper one.
+- **Linear regression.** Draw lines from the prior (a fan of nonsense), add points, and the fan collapses onto the data with a band that stays wide where there is no data (PyMC's landing page and Gen's line model both do this).
+- **Logistic.** A probability surface, not a boundary: a band of boundaries that fans out away from the data, and the region where the model says "I don't know".
+- **Eight schools / radon / rats.** Each group is noisy on its own; pooling pulls extreme groups toward the mean in proportion to how noisy they are; the figure is the pairs of raw and shrunk estimates joined by arrows.
+- **Mixture.** The data has two humps; the model finds two populations; then the twist: the labels can be swapped without changing the fit, and a sampler wanders between the two labellings.
+- **LDA.** Documents are bags of words; the model invents topics that are each a short list of words; a document is a mixture of them (Infer.NET and Pyro show the topic word lists as the payoff).
+- **Factor analysis / PCA.** A cloud of high-dimensional points lies near a plane; the model finds the plane and says how many dimensions the data needs.
+- **Changepoint.** A count series looks steady; one number changes somewhere; the posterior over the change time is a spike or a plateau depending on how clear the jump is, and the rates before and after come with it (BMH ch. 1, the text-message rate).
+- **State space / Kalman.** A hidden position moves; noisy readings arrive one at a time; the estimate follows the truth with a shrinking or growing ellipse of doubt.
+- **Stochastic volatility.** Returns look calm then wild; the model infers a hidden volatility curve that rises before the reader would have noticed.
+- **HMM.** A sequence is generated by hidden regimes that switch rarely; the model recovers which regime each moment belongs to, and its own uncertainty at the switches.
+- **GP regression.** Draw functions from a prior (wiggly or smooth by kernel), condition on points, and the draws pin down at the data and spread out between and beyond it; the length scale changes the personality (sklearn's "prior and posterior for different kernels", PyMC's Mauna Loa).
+- **GP classification.** The same, through a squashing function: a probability map whose contours open out away from the labelled points.
+- **Bayesian neural network.** Fit a small net to noisy data with a gap; one fit is a single curve and looks sure; many posterior fits fan out in the gap and far from the data. The payoff is **the band that widens where there is no data** (TFP's "epistemic uncertainty" case is exactly this figure).
+- **TrueSkill.** A tournament of win/loss results turns into a ranked ladder with error bars; the bars overlap for players who have not met and shrink as games are played.
+- **Counts.** Counts with too many zeros; a model with an extra "structural zero" switch finds the switch probability and says which zeros are structural.
+- **Survival.** Some subjects are still alive at the end; the model uses the censored ones instead of discarding them, and the survival curve gets a band.
+- **Causal.** Two groups, one confounder: the raw association points one way and the adjusted one the other (Simpson), and "do" is a different question from "see".
+- **Motif discovery.** Short strings, each hiding the same short pattern somewhere; the model finds both where the pattern is in each string and the pattern itself, drawn as a sequence logo (Infer.NET's Motif Finder).
+- **The funnel / sampler failure.** A model that looks harmless produces a sampler that never explores the neck of a funnel; a one-line reparameterisation fixes it (Stan, PyMC, NumPyro).
+- **Calibration.** If the method is right, the true value falls in its 90 percent interval 90 percent of the time; the figure is a rank histogram that is flat.
+
+## 4. What omai already has, per category
+
+Paths are relative to the repository root. The inference routes are those registered in
+`packages/engine/src/lib/probprog/inference/` (NUTS, HMC and the other kernels, Laplace, SVI and its variants, Pathfinder, SMC,
+tempering, importance, ABC, Gibbs, EM, EP and the other message-passing routes) and `probprog/engines/` (exact conjugate,
+enumeration, Gaussian, chain, particle filter); each benchmark's own "methods that apply" list is in
+`docs/probprog/results/benchmark-<name>.md`. The `apps/pocs` pages are the existing cockpits (one problem, one method,
+dropdowns); the showcases are not to copy them.
+
+| Category | What exists (path) | Runs by | Notes for authors |
+|---|---|---|---|
+| Coin / beta-binomial | models `packages/engine/src/lib/probprog/models/conjugate.ts` (`beta-bernoulli`, `gamma-poisson`, `normal-normal`); pocs `apps/pocs/src/pocs/bayesian-examples/coin-flipping/`, `apps/pocs/src/pocs/probabilistic-programming/coin-updating/` (flips accumulate; has `worker.ts`); `apps/pocs/src/examples/coin-method.ts`; EP `probprog/ep/_atoms/conjugate.ts`, poc `apps/pocs/src/pocs/expectation-propagation/basic/ep-beta-bernoulli/` and `learned/ep-beta-bernoulli-learned/` | exact conjugate, grid, NUTS and the kernels, Laplace, SVI, EP | Closed form, so no worker is needed. |
+| A/B test | no page. Generator `packages/engine/src/lib/datasets/experiments.ts` (`abTest`), `lib/stats/experiments.ts`, `lib/stats/tests/proportions.ts`, `lib/agents/bandits.ts` (Thompson), `examples/bandit/` (bandit framing). The model is two `beta-bernoulli` nodes and a derived difference, writable with `defineModel` | exact, grid, any sampler | New, small. |
+| Normal-normal, linear regression | `probprog/models/conjugate.ts`, `models/glm.ts`; pocs `apps/pocs/src/pocs/bayesian-examples/linear-regression/` (method `apps/pocs/src/examples/linear-regression-method.ts`), `apps/pocs/src/pocs/probabilistic-programming/bayes-linear/` (online), `bayesian-examples/robust-regression/`; `packages/engine/src/lib/linear/` | exact Gaussian, NUTS, EP, Laplace, SVI | No page draws "prior fan to posterior fan" as a story. |
+| Logistic / probit classification | `probprog/models/glm.ts`, `models/probit-classification.ts`; pocs `bayesian-examples/classify/`, `probabilistic-programming/probit-lab/`, `probit-two-engines/`; `examples/logistic/` (NUTS, Laplace and two variational fits); EP atoms `ep-probit`, `ep-logistic` | NUTS, Laplace, SVI, EP, grid | No Challenger data in `datasets/` (23 points; would be embedded). |
+| Hierarchical | models `probprog/models/schools.ts` (eight schools, centred and non-centred), `models/hierarchical.ts`, `models/radon-counties.ts`, `models/irt-hierarchical.ts`; pocs `bayesian-examples/eight-schools/`, `bayesian-examples/radon/`, `probabilistic-programming/partial-pooling/` (with `Shrinkage.tsx`), `probabilistic-programming/eight-schools-funnel/`, `bayesian-examples/item-response/`; EP `ep-random-intercepts-slopes`, `ep-shared-precision` | NUTS (non-centred), SVI, EP, Gibbs, Laplace | Rats as such: absent. `ep-random-intercepts-slopes` is the nearest model. `Shrinkage.tsx` already draws the arrows figure. |
+| Mixtures, clustering | models `probprog/models/mixture.ts` (labelled, and ordered), `models/nonparametric.ts` (stick-breaking, truncated DP); dataset `oldFaithful` in `packages/engine/src/lib/datasets/clustering.ts` (vendored, in the catalogue); pocs `bayesian-examples/gaussian-mixture/` (Old Faithful, K, label switching; `apps/pocs/src/examples/mixture-method.ts`), `probabilistic-programming/mixture-posterior/`, `tempering-bimodal/`; relabelling `probprog/inference/_relabel.ts`; EP `ep-mixture-components`, `ep-stick-breaking`, `ep-clutter-mixture`; `examples/clustering/` (EM, not Bayesian); `lib/mixture/` | EM, Gibbs, NUTS and the kernels, tempering, EP, SVI mixture guide | Old Faithful is already in the library. |
+| Topic model | `probprog/models/topics.ts` (`lda-lite`: three documents of five words, vocabulary four, exact truth); EP `ep-topic-model`; `lib/decomposition/lda.ts` (variational LDA after scikit-learn, as a session); `lib/datasets/corpus.ts` (topic corpora with true topics, nursery rhymes) | exact enumeration, EP, NUTS (discrete marginalised), Gibbs | No page. The probprog model is too tiny for a figure of word lists; a medium corpus runs through `lib/decomposition/lda.ts`, not the probprog layer. |
+| Factor analysis, PCA, matrix factorisation | `lib/decomposition/probabilistic.ts` (PPCA, factor analysis), `pca.ts`, `nmf.ts`; `examples/pca/` (not probabilistic); nothing in `probprog/models` for Bayesian PCA with ARD or a PMF recommender (see `docs/methods-catalog/recommendation-and-retrieval/`) | EM / closed form | A Bayesian PMF or ARD-PCA model would be new. |
+| Item response, skills | models `probprog/models/ranking.ts` (three-player TrueSkill, Thurstone), `models/irt.ts`; `lib/pgm/ratings.ts` (TrueSkill by message passing), `lib/pgm/choice-models.ts`; `lib/datasets/comparisons.ts`, `datasets/ranking.ts` (Elo, Bradley-Terry-Davidson, TrueSkill races, with true skills); pocs `probabilistic-programming/trueskill-messages/`, `expectation-propagation/programs/ep-program-skills/` (round robin, hierarchical gamma), `bayesian-examples/item-response/`; EP `ep-skill-difference`, `ep-skill-draws` | EP, NUTS, `pgm/ratings` | Strong. |
+| Changepoint | `lib/timeseries/bocpd-detector.ts` and the changepoint detectors; pocs `probabilistic-programming/bocpd/` (online, run length), `expectation-propagation/programs/ep-program-changepoint/` (a Poisson rate over three regimes), `ep-program-changepoint-extended/`; `examples/changepoints/`; datasets `coalMiningDisasters`, `coalMiningCounts` (`lib/datasets/catalogue.ts`, the classic) | BOCPD, EP on a scan, Gibbs | A Bayesian switchpoint on the coal-mining counts is one model away (a discrete latent time, enumeration). |
+| State space / Kalman / HMM / SV | models `probprog/models/state-space.ts` (AR(1), exact truth), `models/series.ts` (stochastic volatility; Gaussian HMM with forward-backward truth); `lib/pgm/models/state-space.ts`, `lib/pgm/learning/baum-welch.ts`, `lib/dynamics/filtering`; pocs `programs/ep-program-kalman/` (position and velocity), `programs/ep-program-tracker/` (outliers), `apps/pocs/src/examples/stochastic-volatility-method.ts`; `examples/kalman/` (a circle, one reading at a time, with a tape) | Kalman smoother, particle filter, EP, NUTS, SMC, PMCMC | `examples/kalman` is the closest to a ready narrative. |
+| Gaussian processes | model `probprog/models/gaussian-process.ts` (regression, centred and not); `lib/gp/` (regression, classification, sparse, relevance vector); poc `bayesian-examples/gp-classification/`; EP `ep-gp-probit`, `ep-gp-logistic`, `ep-gp-length-scale`, `composed-atoms/ep-gp-hyperparameters`, `programs/ep-program-cox/` (log-Gaussian Cox); `examples/gp/` (marginal likelihood by gradient); `lib/kernels` | exact Gaussian conditioning, EP, NUTS, Laplace | No Mauna Loa data in `datasets/` (grepped: no match for co2 or mauna). No page draws prior samples then posterior samples as a story. |
+| Bayesian neural network | model `probprog/models/neural-network.ts` (`bayesian-neural-network`: one input, three tanh hidden units, ten weights, sixteen noisy samples of sin(1.5x) with a gap, `fstar` at -3, -1.25, 0, 1.25, 3; its stored long-NUTS reference says the sd is small near the data, larger in the gap and largest outside); `lib/nn/swag.ts` (SWAG, a Gaussian over weights after training); `lib/nn/`, `lib/ensembles/`; `docs/probprog/results/benchmark-bayesian-neural-network.md` (NUTS function values agree with the reference; Laplace and SVI are overconfident; tempered SMC finds symmetric modes; 78 s for all four plans at scale 1); `examples/neural-network/` (training, not Bayesian); `apps/pocs/src/pocs/models/gam-neural/` | NUTS (function values mix, weights do not: R-hat is high), Laplace, SVI, tempering, SWAG. **EP refuses it** (no message rule for `tanh` of a random value: `docs/probprog/ep-status.md`) | No page. Draw the function band, never the weights (they are not identified). A band over a dense x grid needs `fstar` on a grid, not at five points. |
+| Counts, zero-inflated, survival | models `probprog/models/glm.ts` (Poisson, negative binomial); poc `programs/ep-program-zero-inflated/`; EP `ep-poisson-log`, `ep-gamma-poisson`, `ep-hurdle-poisson`, `ep-weibull-learned`, `composed-atoms/ep-gate-poisson-negative-binomial`; `lib/survival/` (Kaplan-Meier, Cox, AFT, log-rank, concordance) and `lib/gam/cox.ts` (frequentist) | EP, NUTS, exact | No Bayesian Cox or censored model in `probprog/models`; Weibull with censoring is an EP atom only. |
+| Causal, decision | `probprog/model/compose.ts` (`doSpec`: Pearl's do on a model); `lib/pgm/causal/` (SCMs, interventions, counterfactuals, discovery); `lib/causal/` (estimators, IV, RDD, matching, sensitivity); `lib/agents/bandits.ts` (Thompson); `examples/bandit/` | exact, any engine | No Simpson's-paradox data or page (grepped: nothing). `doSpec` is the Bayesian hook. |
+| Strings / motifs | `lib/timeseries/motifs.ts` and `matrix-profile.ts` (**numeric series**, not strings); poc `apps/pocs/src/pocs/structured-prediction/crf-hyphenation/` (words, CRF); `lib/text/`; datasets `hyphenationWords`, `nurseryRhymes` | n/a | **Cannot do yet** (see below). |
+| Sampler failure, calibration | pocs `probabilistic-programming/calibration-sbc/` (library `probprog/validation/sbc.ts`), `eight-schools-funnel/`, `tempering-bimodal/`, `evidence-race/`, `ep-alpha-clutter/`, `svi-guides/` (guides on a banana); `examples/sampler/`, `examples/samplers/`; models `probprog/models/geometry.ts` (funnel, banana, bimodal) | NUTS, RWM, tempering, SVI | Already close to the field's "diagnostics" section. |
+| Deep generative (VAE) | `lib/probprog/guides-amortised.ts`; diffusion in `lib/stochastic/diffusion-*`; no VAE showcase | | Out of scope for the first batch. |
+
+### What omai cannot do, or has no page for, yet
+
+- **Motif discovery on strings.** There is no model and no page: an Infer.NET-style motif finder (a latent position per string, a Dirichlet-prior position matrix, an optional presence flag) does not exist. It looks writable as a discrete-latent model (an `at` gather over a categorical position, plates for the matrix) and runnable by Gibbs or enumeration, but nobody has tried it. String-valued random variables of Infer.NET's kind (`StringFormat` and string operations) do not exist and are not needed for the motif case.
+- Bayesian PMF recommender and Bayesian PCA with ARD as probprog models (the frequentist and EM versions exist).
+- Rats, Challenger and Mauna Loa CO2 as data (Old Faithful is in the catalogue).
+- Bayesian survival with censoring in the probprog layer; only frequentist `lib/survival` and EP Weibull atoms.
+- An A/B test page, a Simpson's-paradox page, a Monty Hall page (the latter is trivial with `enumeration`).
+- EP on the BNN (no message rule for `tanh`; refused honestly in `ep-status.md`), and on a hidden-unit layer generally.
+- A switchpoint model with a discrete latent time in `probprog/models` (the EP changepoint is a three-regime Markov chain).
+- Interactive posterior predictive checks of Pyro's kind, topic word lists for a realistic corpus, and an arbitrary-size LDA inside the probprog layer.
+
+## 5. Recommended splash organisation and shortlist
+
+### Splash organisation (sections in order)
+
+1. **Start here.** Three cards, each readable in a minute: *Is this coin fair?*, *Which button wins?* (A/B), *Learning a line*. The field's own order is coin first (Turing, Infer.NET, Stan's landing page), then regression.
+2. **What the model does not know** (functions and uncertainty): the Bayesian neural network, then the Gaussian process, with the same figure shape (data, band, widening away from the data).
+3. **Groups and hidden types**: partial pooling, a mixture and its label switching, a topic model.
+4. **Things that change**: a changepoint, tracking, who is better (skills).
+5. **Counts and causes**: excess zeros, "see versus do".
+6. **When inference is hard**: the funnel, calibration.
+7. **Beyond numbers**: the motif finder (flagged: needs a new model).
+
+Each card is one figure, one sentence, one play button. The BNN thumbnail also goes in the splash hero, because it is the one
+that makes a reader stop.
+
+### Shortlist: build in this order
+
+All compute figures are **estimates** from the sizes of the existing models and the numbers in
+`docs/probprog/results/*.md`; the builders must time each in a worker before committing to the page. "Exists" means a poc page
+already covers the model; the showcase is a fresh, simpler treatment, not a copy.
+
+1. **Is this coin fair?** *(exists: `bayesian-examples/coin-flipping`, `probabilistic-programming/coin-updating`)* The reader learns that a belief is a curve that each flip reshapes, and that the last flip moves it least. Press play: twenty flips arrive one at a time and the Beta posterior narrows. Pieces: `models/conjugate.ts` (`beta-bernoulli`), `engines/conjugate.ts`. Under 0.1 s, no worker.
+2. **Which button wins?** *(new)* Two coins, one number: the chance that B beats A. Press play: visitors arrive in two groups; two Beta curves and the posterior of their difference sharpen, and a gauge shows P(B > A) and the expected lift. Pieces: two `beta-bernoulli` nodes, `datasets/experiments.ts` (`abTest`), a derived difference node, `engines/conjugate.ts` or grid. Under 0.5 s.
+3. **Learning a line.** *(exists: `bayesian-examples/linear-regression`, `probabilistic-programming/bayes-linear`)* A fan of lines from the prior is nonsense; each point folds in and the fan collapses onto the data. Press play: points arrive and a band of posterior lines contracts, widest where no point has arrived. Pieces: `models/conjugate.ts` (normal-normal) or `models/glm.ts`, `engines/gaussian.ts`. Under 0.5 s.
+4. **A network that knows what it does not know.** *(new; the owner's pick. Its place is here, third in a story of "a line, a net, a process", with its thumbnail also in the hero.)* One fit of a small network looks sure; many posterior fits fan out into the gap and away from the data. Press play: sampled networks (thin curves) accumulate over the sixteen points and settle into a mean and a shaded band that is narrow near the data, wide in the gap, widest outside it. Pieces: `models/neural-network.ts` (ten weights, tanh), `engines/nuts.ts`, an `fstar` grid of about 60 inputs instead of five, the stored reference as a ghost curve if wanted; no weights shown. Estimate: NUTS on ten parameters and sixteen rows, four short chains of a few hundred draws, 2 to 6 s in a worker (the four-plan benchmark at scale 1 takes 78 s including SMC, so time NUTS alone first). Risks: weights are multimodal, so show functions only and keep chains few and short; do not use Laplace or SVI here (their overconfident bands are a different story).
+5. **Functions drawn from a prior.** *(new treatment of existing models)* Draw functions from the prior, condition on points, and the draws pin down at the data and spread out between them: the same widening band as the BNN, in closed form. Press play: data points arrive and the posterior draws tighten; one chosen kernel, no knobs. Pieces: `models/gaussian-process.ts`, `lib/gp/regression.ts`, `lib/kernels`. Under 0.5 s.
+6. **Eight schools, or why the extremes are not to be trusted.** *(exists: `bayesian-examples/eight-schools`, `probabilistic-programming/partial-pooling`, `eight-schools-funnel`)* Each school is noisy alone; pooling pulls the extremes toward the mean in proportion to their noise. Press play: estimates slide from the raw scores to the pooled ones along arrows. Pieces: `models/schools.ts` (non-centred), `Shrinkage.tsx` as the visual reference, NUTS or EP. 1 to 3 s.
+7. **Two humps, or one?** *(exists: `bayesian-examples/gaussian-mixture`, `probabilistic-programming/mixture-posterior`)* Old Faithful's waiting times have two populations and the model finds them; then the labels swap and a sampler wanders. Press play: the posterior of the two component means appears, first as one blob, then as the mirrored pair that label switching creates. Pieces: `models/mixture.ts`, `datasets/clustering.ts` (`oldFaithful`), `_relabel.ts`. 2 to 5 s (NUTS on a two-component mixture with 272 points; Gibbs is faster).
+8. **When did the rate change?** *(partly exists: `bocpd`, `ep-program-changepoint`)* A count series looks steady and one number changes; the posterior over the change time is the figure. Press play: observations accumulate and the changepoint distribution sharpens around the real break, with the rate before and after. Pieces: `datasets/catalogue.ts` (`coalMiningCounts`), a new discrete-latent switchpoint model (enumeration), or `timeseries/bocpd-detector.ts`. Under 1 s with enumeration.
+9. **Where is it going?** *(partly exists: `programs/ep-program-kalman`, `examples/kalman`)* A hidden position moves, noisy readings arrive, the estimate follows with an ellipse of doubt. Press play: a dot moves and the filter's mean and ellipse follow, then the smoother revises the past. Pieces: `models/state-space.ts` or `lib/pgm/models/state-space.ts`, the Kalman chain engine. Under 0.5 s.
+10. **Who is better?** *(exists: `trueskill-messages`, `ep-program-skills`)* A tournament of results becomes a ladder with error bars, and players who never met have overlapping bars. Press play: games are added one at a time and the ladder sorts itself. Pieces: `models/ranking.ts`, `lib/pgm/ratings.ts`, `datasets/comparisons.ts`, EP. Under 1 s.
+11. **What is this document about?** *(new)* Words become topics: a small corpus, two topics, a document as a mixture of them. Press play: word lists form under each topic as the sampler sweeps. Pieces: `models/topics.ts` is too tiny for word lists, so use `datasets/corpus.ts` with `lib/decomposition/lda.ts` (variational LDA as a session), or enlarge `lda-lite` and run Gibbs. 1 to 4 s (estimate).
+12. **See versus do.** *(new)* Two groups, one confounder: the raw comparison says one thing, the adjusted one another, and intervening a third. Press play: the same data split by the confounder, the posterior effect with and without `doSpec`. Pieces: `probprog/model/compose.ts` (`doSpec`), `lib/pgm/causal/`, a small hand-made Simpson dataset (none in `datasets/`; embed one). Under 1 s.
+13. **Too many zeros.** *(exists: `programs/ep-program-zero-inflated`)* A count series with excess zeros; the model has a switch for structural zeros and says which zeros those are. Press play: the zeros are coloured by their probability of being structural as the posterior forms. Pieces: the EP zero-inflated program, `ep-hurdle-poisson`. 1 to 2 s.
+14. **The funnel.** *(exists: `probabilistic-programming/eight-schools-funnel`)* A harmless-looking model traps the sampler in the funnel's neck; one reparameterisation frees it. Press play: draws appear, first piling up at the neck, then spreading after the cure. Pieces: `models/geometry.ts` (funnel, centred and non-centred), NUTS. Under 2 s.
+15. **Can I trust it?** *(exists: `calibration-sbc`)* If an inference method is right, the truth falls in its 90 percent interval 90 percent of the time and the rank histogram is flat. Press play: hundreds of simulated data sets fill the histogram. Pieces: `probprog/validation/sbc.ts`, a conjugate model for speed. 1 to 3 s (estimate: many small fits).
+16. **Where is the pattern hiding?** *(new, and not buildable until a model exists: the field's string example, from Infer.NET)* Short strings each hide the same short motif at an unknown place; the model finds the place in each and the motif as a sequence logo. Press play: the logo sharpens as sweeps proceed. Pieces: a new discrete-latent motif model (a categorical position per sequence, a Dirichlet position matrix), Gibbs or enumeration. Estimate under 2 s for a dozen strings of length 20; **not yet written**, so this is a stretch item with a model to build first.
+
+Reserve list if one falls through: GP classification (`bayesian-examples/gp-classification`), robust regression with outliers
+(`bayesian-examples/robust-regression`), a Gaussian HMM (the benchmark exists in `models/series.ts`, no page), the
+stochastic-volatility page (`apps/pocs/src/examples/stochastic-volatility-method.ts`), Monty Hall (`enumeration`), a
+Thompson-sampling bandit (`lib/agents/bandits.ts`, `examples/bandit/`).
+
+## 6. What the best showcases have in common
+
+Observed in the pages above (PyMC landing page, Infer.NET's tutorials, Gen's intro, TFP's regression notebook, the TensorFlow
+Playground, Seeing Theory, Distill), and to be followed by the builders:
+
+- **One idea per page.** TFP's five uncertainty cases are five figures of one data set, each a single change; Infer.NET's Two coins takes three small steps and stops. A showcase has one question and answers it.
+- **A story, not a method.** The best open with a puzzle or something someone wants to know (Think Bayes opens with Linda the banker; BMH with a text-message rate), not with the algorithm. The method appears as what the story needs.
+- **Start from nothing and add data.** The prior fan, the empty belief curve, the unranked ladder: the figure at time zero is uninformative, and pressing play is what teaches. It is the one thing a notebook cannot do and a browser can.
+- **A single figure that pays off.** TFP's fan of curves, the shrinkage plot, the TensorFlow Playground's colour field. The reader should be able to say what the figure showed in one sentence ("the band is wide where there is no data").
+- **No knobs.** Playground-style control panels are the cockpit pages' job. A showcase has a play button and perhaps a restart; anything the reader could choose is chosen by the author. (The PyMC and Turing BNN pages fail the other way: they stop at a classification surface with no payoff and a wall of code.)
+- **Small and exact where possible.** Where a model has a closed form, show it as the truth beside the run; the reader trusts the animation because the answer is known.
+- **Small enough to run now.** A web worker, a few seconds, nothing precomputed that the reader could not reproduce; the Playground's "you can't break it" is the tone.
+- **The code that ran, at the bottom.** Per the repo convention: a short block from the source with `// region` markers, one variable per line, comments above, lines under about 100 characters.
+- **Say what is not known.** Be honest about the weak spot (the BNN's weights are not identified; Laplace and SVI are overconfident there), in one sentence, not a table.
+- **Use a recognisable dataset or story.** Old Faithful, coal mining disasters, eight schools, radon, a tournament: readers from other libraries will recognise them, which is half the point of a splash page.
