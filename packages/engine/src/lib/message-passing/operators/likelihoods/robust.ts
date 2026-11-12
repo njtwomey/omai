@@ -16,7 +16,7 @@ import { allProper, gaussianOf, massOf, vectorParam } from '../../core/args.ts'
 import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
-import { centredMoments } from '../../numerics/_moments.ts'
+import { centredMoments, resolvedVariance } from '../../numerics/_moments.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 import { glmRow } from '../lifts/rows.ts'
 import { likelihoodSite, likelihoods } from './likelihoods.ts'
@@ -65,7 +65,7 @@ function mixtureTilted(c: OperatorContext): { mean: number; variance: number; lo
   const total = responsibility.reduce((a, r) => a + r, 0)
   const { mean, variance: between } = centredMoments(responsibility, total, means)
   const within = responsibility.reduce((a, r, i) => a + r * (variances[i] as number), 0) / total
-  return { mean, variance: Math.max(within + between, 1e-300), logMass }
+  return { mean, variance: resolvedVariance(within + between, 'mixture-site'), logMass }
 }
 
 /**

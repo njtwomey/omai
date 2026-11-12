@@ -23,7 +23,7 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { param } from '../../core/params.ts'
 import { truncatedNormalMoments } from '../../core/truncated.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
-import { centredMoments, shiftedSum } from '../../numerics/_moments.ts'
+import { centredMoments, resolvedVariance, shiftedSum } from '../../numerics/_moments.ts'
 import { Phi, phi, softplusOf } from '../../numerics/_scalar.ts'
 import { tiltedByQuadrature, type WindowHint } from '../../numerics/_tilted.ts'
 import { definedFunctionMessage, quadraturePort } from '../kernel/variational-numeric.ts'
@@ -177,8 +177,8 @@ function reluTilt(m: number, v: number, h: number, J: number): Tilt {
   const yVariance = wA * yMean * yMean + wB * (above.variance + (above.mean - yMean) ** 2)
   return {
     logMass: logTotal,
-    x: { mean: xMean, variance: Math.max(xVariance, FLOOR) },
-    y: { mean: yMean, variance: Math.max(yVariance, FLOOR) },
+    x: { mean: xMean, variance: resolvedVariance(xVariance, 'apply') },
+    y: { mean: yMean, variance: resolvedVariance(yVariance, 'apply') },
   }
 }
 
@@ -204,8 +204,8 @@ function tilt(fn: UnaryFunction, cavity: { mean: number; variance: number }, y: 
   })
   return {
     logMass: t.logMass,
-    x: { mean: t.mean, variance: Math.max(t.variance, FLOOR) },
-    y: { mean: t.fnMean, variance: Math.max(t.fnVariance, FLOOR) },
+    x: { mean: t.mean, variance: resolvedVariance(t.variance, 'apply') },
+    y: { mean: t.fnMean, variance: resolvedVariance(t.fnVariance, 'apply') },
   }
 }
 
@@ -252,7 +252,7 @@ function tiltGamma(
   return {
     logMass: top + Math.log(m0),
     x: [logX / m0, xMean / m0],
-    y: { mean: yMean / m0, variance: Math.max(yVar / m0, FLOOR) },
+    y: { mean: yMean / m0, variance: resolvedVariance(yVar / m0, 'apply') },
   }
 }
 
@@ -453,7 +453,7 @@ function scaledTilt(fn: UnaryFunction, c: OperatorContext): ScaledTilt {
   const [zm, zv, ym, yv] = t.extra as [Extra, Extra, Extra, Extra]
   return {
     logMass: t.logMass,
-    x: { mean: t.mean, variance: Math.max(t.variance, FLOOR), logMean: Number.NaN },
+    x: { mean: t.mean, variance: resolvedVariance(t.variance, 'apply-product'), logMean: Number.NaN },
     z: { mean: zm.mean, variance: zv.mean + zm.variance },
     y: { mean: ym.mean, variance: yv.mean + ym.variance },
   }
@@ -520,7 +520,7 @@ export function applyProduct(
           return input.family.kind === 'gamma' ? { moments: [t.x.logMean, t.x.mean] } : t.x
         }
         const moments = c.to === 1 ? t.z : t.y
-        return { mean: moments.mean, variance: Math.max(moments.variance, FLOOR) }
+        return { mean: moments.mean, variance: resolvedVariance(moments.variance, 'apply-product') }
       }),
     },
     evidence: {

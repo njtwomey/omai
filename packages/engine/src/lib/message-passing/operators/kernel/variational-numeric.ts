@@ -16,7 +16,7 @@ import { gaussianMessage, gaussianOf, scalarOf } from '../../core/args.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import type { Arg, Eta } from '../../core/types.ts'
-import { shiftedSum } from '../../numerics/_moments.ts'
+import { resolvedVariance, shiftedSum } from '../../numerics/_moments.ts'
 import { gaussianGridOn, gaussianNodes } from '../../numerics/_quadrature.ts'
 import { betaModeWindow, gammaModeWindow, uniformNodes } from '../../numerics/_windows.ts'
 
@@ -314,7 +314,7 @@ export function definedFunctionMessage(args: readonly Arg[], to: number, f: (x: 
     const coords = new Array<number>(inputs.length).fill(0)
     const mean = average(ports, -1, coords, f)
     const variance = average(ports, -1, coords, (x) => (f(x) - mean) ** 2)
-    return gaussianMessage(mean, Math.max(variance, 1e-300))
+    return gaussianMessage(mean, resolvedVariance(variance, 'a deterministic factor'))
   }
   const out = (args[0] as Arg).eta
   if (out === undefined)

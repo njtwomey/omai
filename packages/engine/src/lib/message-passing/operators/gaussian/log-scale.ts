@@ -11,6 +11,7 @@ import { arg } from '../../core/_messages.ts'
 import { allProper, gaussianOf, logNormal, massOf, scalarOf } from '../../core/args.ts'
 import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { resolvedVariance } from '../../numerics/_moments.ts'
 import { tiltedByQuadrature } from '../../numerics/_tilted.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
@@ -79,7 +80,10 @@ export const gaussianScale: FactorOperator = defineOperator({
       const [conditionalMean, conditionalVariance] = t.extra
       return {
         mean: conditionalMean?.mean ?? 0,
-        variance: Math.max((conditionalVariance?.mean ?? 0) + (conditionalMean?.variance ?? 0), 1e-300),
+        variance: resolvedVariance(
+          (conditionalVariance?.mean ?? 0) + (conditionalMean?.variance ?? 0),
+          'gaussian-scale',
+        ),
       }
     }),
     vmp: messageRule(

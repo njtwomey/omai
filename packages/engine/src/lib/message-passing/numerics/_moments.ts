@@ -1,7 +1,12 @@
 // The sums every numeric rule of the message algebra starts from: log weights shifted by their maximum and exponentiated, so a
 // grid or a mixture whose weights are tiny or huge never underflows, with the total of the shifted weights and the log mass
 // (`top + log total`) the rules report. One place for the loop that used to be written in every operator that integrates; the
-// sum runs in the order of the array, so a rule that moved here gives the same number it gave before.
+// sum runs in the order of the array, so a rule that moved here gave the same number it gave before. Also the two things every
+// variance of a tilted distribution found from moments goes through: `centredMoments` (the variance as the weighted squares of the
+// deviations, not a difference of second moments) and `resolvedVariance` (a variance that is not positive is a collapse onto a
+// point, reported as an improper message and never floored to a tiny number).
+
+import { ImproperMessageError } from '../core/errors.ts'
 
 /** The log weights shifted by their maximum: what `shiftedSum` returns. */
 export interface ShiftedSum {
@@ -34,6 +39,24 @@ export function shiftedSum(logw: ArrayLike<number>): ShiftedSum {
     total += w
   }
   return { top, weights, total, logTotal: top + Math.log(total) }
+}
+
+/**
+ * The variance of a tilted distribution found from moments of a grid or a mixture, which has to be positive and finite. One that is
+ * not (every weight on one node, the arithmetic unable to resolve a spread) says the distribution collapsed onto a point, and that is
+ * reported as an improper message, for the engine's improper policy to count and repair, instead of being floored to a tiny number:
+ * a floor hands the next update a point mass with a precision of 1e300 as if it were a message.
+ *
+ * @param variance - The variance from the moments.
+ * @param what - The operator, for the message.
+ * @returns The variance.
+ * @throws ImproperMessageError when the variance is not positive and finite.
+ */
+export function resolvedVariance(variance: number, what: string): number {
+  if (variance > 0 && Number.isFinite(variance)) return variance
+  throw new ImproperMessageError(
+    `${what}: the tilted distribution collapsed onto a point (its variance is ${variance})`,
+  )
 }
 
 /**

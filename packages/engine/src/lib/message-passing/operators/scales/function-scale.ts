@@ -17,6 +17,7 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext } from '../../core/types.ts'
+import { resolvedVariance } from '../../numerics/_moments.ts'
 import { gammaLogWindow, windowProfiles } from '../../numerics/_windows.ts'
 import { chainOf, type Step, unaryFunctions } from '../likelihoods/functions.ts'
 import { tiltedVectorOf, type VectorScaleTilt, vectorScaleTilt } from './scale.ts'
@@ -120,7 +121,7 @@ export const gaussianMvFunctionScale: FactorOperator = defineOperator({
       if (c.to === 0) return { natural: tiltedVectorOf(t, 'gaussian-mv-function-scale') }
       const input = arg(c, 1)
       if (input.family.kind === 'gamma') return { moments: [t.logLambda, t.lambda] }
-      return { mean: t.logLambda, variance: Math.max(t.sdLogLambda ** 2, 1e-300) }
+      return { mean: t.logLambda, variance: resolvedVariance(t.sdLogLambda ** 2, 'gaussian-mv-function-scale') }
     }),
   },
   evidence: { improperIsNaN: true, ep: (c) => functionScaleTilt(c).logZ },

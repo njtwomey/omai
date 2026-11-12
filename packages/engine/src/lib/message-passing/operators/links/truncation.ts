@@ -13,7 +13,7 @@ import { bernoulli } from '../../core/families.ts'
 import { type ParamSpec, param } from '../../core/params.ts'
 import { truncatedNormalMoments } from '../../core/truncated.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
-import { shiftedSum } from '../../numerics/_moments.ts'
+import { resolvedVariance, shiftedSum } from '../../numerics/_moments.ts'
 import { tiltedLogGrid } from '../../numerics/_quadrature.ts'
 import { logPhi, millsRatio, Phi, phi } from '../../numerics/_scalar.ts'
 
@@ -54,7 +54,7 @@ function regionMoments(
     m1 += w * p.t.mean
     m2 += w * (p.t.variance + p.t.mean ** 2)
   }
-  return { logMass: logTotal, mean: m1, variance: Math.max(m2 - m1 * m1, 1e-300) }
+  return { logMass: logTotal, mean: m1, variance: resolvedVariance(m2 - m1 * m1, 'step') }
 }
 
 /** The weight of true outcomes inside a set of regions and of false ones outside: the step factor's weights. */
