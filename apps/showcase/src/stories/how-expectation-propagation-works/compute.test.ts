@@ -20,6 +20,12 @@ describe('the how-expectation-propagation-works computation', () => {
     for (const s of r.standIns) expect(s.messages).toHaveLength(ROWS + 1)
     expect(r.exact.grid).toHaveLength(r.exact.density.length)
     expect(r.exact.grid).toHaveLength(r.exact.epDensity.length)
+    // the replay record: the graph of one unknown and its factors, at most forty steps, ending at the last update
+    expect(r.record.kind).toBe('modelRun')
+    expect(r.record.structure.nodes).toHaveLength(ROWS + 2)
+    expect(r.record.steps.length).toBeGreaterThan(1)
+    expect(r.record.steps.length).toBeLessThanOrEqual(40)
+    expect(r.record.steps.at(-1)?.step).toBe(r.sweeps * (ROWS + 1))
     expect(said.length).toBeGreaterThanOrEqual(3)
     expect(structuredClone(r)).toEqual(r)
   }, 30000)

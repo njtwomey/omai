@@ -36,4 +36,20 @@ describe('the how-expectation-propagation-works page', () => {
     expect(html).not.toContain('The same run from start to finish')
     expect(made).toEqual([])
   }, 60_000)
+
+  it('reads a settled run and a run that did not settle without saying anything false', async () => {
+    const { RunStory } = await import('./Story.tsx')
+    const { fit } = await import('./compute.ts')
+    const settled = renderToString(<RunStory result={fit(37)} />)
+    expect(settled).toContain('This run stopped after')
+    expect(settled).toContain('The same run from start to finish')
+    expect(settled).not.toContain('This run did not settle')
+    // seed 4 does not settle in sixty sweeps: the text says so and does not claim a fixed point
+    const result = fit(4)
+    expect(result.settled).toBe(false)
+    const unsettled = renderToString(<RunStory result={result} />)
+    expect(unsettled).toContain('This run did not settle')
+    expect(unsettled).not.toContain('This run stopped after')
+    expect(unsettled).not.toContain('fixed point of the updates')
+  }, 60_000)
 })

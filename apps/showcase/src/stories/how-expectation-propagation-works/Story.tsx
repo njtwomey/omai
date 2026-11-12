@@ -1,7 +1,10 @@
+import { type ModelRun, modelRunAt } from 'omai-engine/exposition'
 import type { ReactNode } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
-import { Code, Figure, Reveal } from '../../kit/Blocks.tsx'
+import { Code, Figure } from '../../kit/Blocks.tsx'
+import { MessageReplay } from '../../kit/MessageReplay.tsx'
 import { Play } from '../../kit/Play.tsx'
+import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
 import { useStoryRun } from '../../kit/useStoryRun.ts'
 import { storyHref } from '../../story.ts'
@@ -24,6 +27,36 @@ import {
 const FIRST_SEED = 37
 
 const linkClass = 'underline underline-offset-2'
+
+/** What happens at one step of the replay, in words: which factor was updated, what it sent, and the belief after it. */
+function describeUpdate(step: number, record: ModelRun, points: readonly number[]): ReactNode {
+  const at = modelRunAt(record, step)
+  const sent = at?.messages.at(-1)
+  if (at === undefined || sent === undefined)
+    return (
+      <>
+        <p className="m-0 font-medium">Before the first update</p>
+        <p className="m-0">Every stand-in is flat, so the unknown has no belief yet.</p>
+      </>
+    )
+  const factor = Number(sent.from.replace(/^\D+/, ''))
+  const sweep = Math.ceil(step / (points.length + 1))
+  const who = factor === 0 ? 'the prior' : `measurement ${factor} (y = ${fixed(points[factor - 1] as number)})`
+  const belief = Object.values(at.nodes).find((n) => n.mean !== undefined && n.sd !== undefined)
+  return (
+    <>
+      <p className="m-0 font-medium">
+        Update {step}, in sweep {sweep}: {who}
+      </p>
+      <p className="m-0">It sends {sent.text}.</p>
+      <p className="m-0">
+        {belief?.mean === undefined || belief.sd === undefined
+          ? 'The unknown has no belief yet.'
+          : `The belief about the location is now mean ${fixed(belief.mean)}, standard deviation ${fixed(belief.sd)}.`}
+      </p>
+    </>
+  )
+}
 
 /** A line of formula, set apart from the prose. */
 function Formula(props: { readonly children: ReactNode }): ReactNode {
@@ -79,7 +112,6 @@ export default function Story(): ReactNode {
     () => new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' }),
     FIRST_SEED,
   )
-  const result = run.result
   return (
     <StoryPage>
       <p>
@@ -244,24 +276,23 @@ export default function Story(): ReactNode {
 
       <Play run={run} label="Run expectation propagation" estimate="about a second" />
 
-      {result === undefined ? (
-        <p className="text-muted">
-          Nothing has been computed yet. When you press play, the measurements, one update with its numbers, the sweeps,
-          the worked example and the comparison with the exact answer appear below, in the order of the post.
-        </p>
-      ) : (
-        <Reveal>
-          <RunStory result={result} />
-        </Reveal>
-      )}
-
-      <Code source={source} title="compute.ts" />
+      <Results
+        run={run}
+        placeholder="Nothing has been computed yet. When you press play, the measurements, one update with its numbers, the sweeps, the worked example and the comparison with the exact answer appear below, in the order of the post."
+      >
+        {(result) => (
+          <>
+            <RunStory result={result} />
+            <Code source={source} title="compute.ts" />
+          </>
+        )}
+      </Results>
     </StoryPage>
   )
 }
 
 /** Everything that reads the result, from the first update to the closing pointers. */
-function RunStory(props: { readonly result: Result }): ReactNode {
+export function RunStory(props: { readonly result: Result }): ReactNode {
   const { result } = props
   const taken = result.taken
   const sweeps = readSweeps(result)
@@ -314,7 +345,7 @@ function RunStory(props: { readonly result: Result }): ReactNode {
 
           <Figure
             wide
-            caption={`One update, sweep ${taken.sweep}. Blue: the cavity. Dotted: the real factor of this measurement as a function of the location, scaled to fit. Orange: the tilted curve, the product of the two. Dashed: the bell with the same mean and variance as the orange curve, which becomes the new approximation.`}
+            caption={`One update, sweep ${taken.sweep}. Blue: the cavity. Dotted: the real factor of this measurement as a function of the location, scaled to fit. Orange: the tilted curve, the product of the two. Dashed: the bell with the same mean and variance as the orange curve, which becomes the new approximation. Where the orange curve and the dashed bell differ is what this step gives up.`}
           >
             <UpdateFigure taken={taken} />
           </Figure>
@@ -562,6 +593,21 @@ function RunStory(props: { readonly result: Result }): ReactNode {
         What EP reports is the last row: a bell with mean <span className="num">{fixed(result.ep.mean)}</span> and sd{' '}
         <span className="num">{fixed(result.ep.sd)}</span>.
       </p>
+
+      <p>
+        The same run can also be watched on the factor graph from part 2. In the replay below, each step is one update.
+        The factor that was updated sends its new stand-in along its line to the unknown, and the unknown&rsquo;s belief
+        is the product of all the stand-ins it holds. Press the button to step through the run, or move the scrubber.
+        The text under the graph says what was sent. A message written <code>N(μ = 2.07, σ² = 88.2)</code> is a bell
+        with mean 2.07 and variance 88.2.
+      </p>
+
+      <MessageReplay
+        record={result.record}
+        label="The updates of the run, one factor at a time"
+        describe={(step, record) => describeUpdate(step, record, result.points)}
+        caption="The factor graph of the run. The circle is the unknown location, x. The squares are the factors: the prior, then one clutter factor for each measurement, in order. The message on a line is the stand-in that factor sent at this step; the belief in the circle is the approximation. The replay keeps the first and last step and the steps where the belief moved most."
+      />
 
       <p>
         Now the exact answer. The model has one unknown, so the library can compute the posterior on a fine grid of
