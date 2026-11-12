@@ -221,7 +221,7 @@ The operators that link a Gaussian to an observation: truncation (probit, greate
 
 The operators of scale and concentration hierarchies: the shared smoothing parameter of a Gaussian vector and its function-scale form, the gamma rate and product hierarchies, the random concentration of a beta or Dirichlet, and stick-breaking. Part of `omai-engine/message-passing`.
 
-- structure `betaTwoShapes`: A beta variable with two random shapes (gamma or log-normal each): a 2-d grid EP site. `src/lib/message-passing/operators/scales/concentration.ts:300` `omai-engine/message-passing`
+- structure `betaTwoShapes`: A beta variable with two random shapes (gamma or log-normal each): a 2-d grid EP site. `src/lib/message-passing/operators/scales/concentration.ts:314` `omai-engine/message-passing`
 - structure `dirichletConcentration`: A beta or Dirichlet variable with a random concentration: a hyperprior on the prior's own strength. `src/lib/message-passing/operators/scales/concentration.ts:183` `omai-engine/message-passing`
 - structure `gammaProduct`: The product of two gamma variables p = u tau: a local times a global precision. `src/lib/message-passing/operators/scales/gamma-scale.ts:180` `omai-engine/message-passing`
 - structure `gammaRate`: A gamma variable whose rate is a known multiple of another gamma variable: scale-mixture hierarchies. `src/lib/message-passing/operators/scales/gamma-scale.ts:115` `omai-engine/message-passing`

@@ -11,12 +11,12 @@
  */
 
 import { arg } from '../../core/_messages.ts'
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, siteMessage, vectorParam } from '../../core/args.ts'
+import { allProper, etaOf, gaussianOf, massOf, vectorParam } from '../../core/args.ts'
 import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
-import { gamma, gammaShapeRate } from '../../core/families.ts'
+import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
-import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { axisOf, integratePair } from '../../numerics/_grid.ts'
 import { digammaOf, lgammaOf } from '../../numerics/_scalar.ts'
 import { gammaLogWindow, gaussianWindow, uniformGrid, type Window, windowProfiles } from '../../numerics/_windows.ts'
@@ -229,7 +229,12 @@ export const dirichletConcentration: FactorOperator = defineOperator({
   traits: { readsTarget: () => true },
 })
 
-/** The tilted statistics of a beta variable with two random shapes: the 2-d integral over (log a, log b) and `E log p`, `E log (1 - p)`. */
+/**
+ * The tilted statistics of a beta variable with two random shapes at the power `alpha` of its factor: the 2-d integral over
+ * (log a, log b) and `E log p`, `E log (1 - p)`. Given the shapes the factor to the power `alpha` times the cavity `p^e1 (1 - p)^e2`
+ * is the kernel `p^(e1 + alpha (a - 1)) (1 - p)^(e2 + alpha (b - 1))`, a beta with parameters `A = e1 + alpha (a - 1) + 1` and
+ * `B = e2 + alpha (b - 1) + 1`, of mass `B(A, B) / B(a, b)^alpha` (at `alpha = 1`, `A = a + e1` and `B = b + e2`).
+ */
 function twoShapes(c: OperatorContext): {
   readonly logMass: number
   readonly r: ReturnType<typeof integratePair>
@@ -239,15 +244,22 @@ function twoShapes(c: OperatorContext): {
   if (!(eta[0] !== undefined && eta[1] !== undefined && eta[0] > -1 && eta[1] > -1))
     throw new ImproperMessageError('beta-two-shapes: the cavity of the probability has no density')
   const [e1, e2] = [eta[0], eta[1]]
-  // The cavity of p, p^e1 (1 - p)^e2, against the density Beta(a, b): B(a + e1, b + e2) / B(a, b), a function of the two log shapes.
+  const alpha = c.power
+  // The two parameters of the conditional beta of p and their sum, from the two shapes (the plain sums at the power 1).
+  const joint = (a: number, b: number): readonly [number, number, number] =>
+    alpha === 1
+      ? [a + e1, b + e2, a + b + e1 + e2]
+      : [e1 + alpha * (a - 1) + 1, e2 + alpha * (b - 1) + 1, e1 + e2 + alpha * (a + b - 2) + 2]
   const column = (tb: number) => {
     const b = Math.exp(tb)
-    const bad = !(b + e2 > 0)
-    const cb = lgammaOf(b + e2) - lgammaOf(b)
+    const sb = joint(1, b)[1]
+    const bad = !(sb > 0)
+    const cb = lgammaOf(sb) - alpha * lgammaOf(b)
     return (ta: number): number => {
       const a = Math.exp(ta)
-      if (bad || !(a + e1 > 0)) return Number.NEGATIVE_INFINITY
-      return c.power * (lgammaOf(a + e1) - lgammaOf(a) + cb - lgammaOf(a + b + e1 + e2) + lgammaOf(a + b))
+      const [sa, , total] = joint(a, b)
+      if (bad || !(sa > 0)) return Number.NEGATIVE_INFINITY
+      return lgammaOf(sa) - alpha * lgammaOf(a) + cb - lgammaOf(total) + alpha * lgammaOf(a + b)
     }
   }
   const r = integratePair([axisOf(arg(c, 1)), axisOf(arg(c, 2))], column)
@@ -260,9 +272,10 @@ function twoShapes(c: OperatorContext): {
       const w = r.weights[i * n1 + j] as number
       if (!(w > 0)) continue
       const b = Math.exp(r.nodes[1][j] as number)
-      const psi = digammaOf(a + b + e1 + e2)
-      m1 += w * (digammaOf(a + e1) - psi)
-      m2 += w * (digammaOf(b + e2) - psi)
+      const [sa, sb, total] = joint(a, b)
+      const psi = digammaOf(total)
+      m1 += w * (digammaOf(sa) - psi)
+      m2 += w * (digammaOf(sb) - psi)
     }
   }
   return { logMass: r.logMass, r, logMeans: [m1, m2] }
@@ -285,7 +298,8 @@ function betaLog(c: OperatorContext): (x: readonly number[]) => number {
  * Gaussian on its log (a log-normal): the tilted distribution of the two shapes is the integral of `B(a + e1, b + e2) / B(a, b)`
  * against their two cavities, on a two-dimensional grid in `(log a, log b)` (the one-dimensional integral of
  * `dirichlet-concentration`, in two variables); `p` is the mixture over the grid of the conditional betas, matched on
- * `E log p` and `E log (1 - p)`. Variational message passing: the message to `p` is the beta of the mean shapes (exact), the ones to the
+ * `E log p` and `E log (1 - p)`. The factor takes a power (fractional EP): the integrand is the factor to that power and the site is
+ * divided by it. Variational message passing: the message to `p` is the beta of the mean shapes (exact), the ones to the
  * shapes are non-conjugate (`lgamma` of them), the natural gradient of the expected log density by a two-dimensional rule.
  *
  * @concept factor-operators
@@ -307,20 +321,14 @@ export const betaTwoShapes: FactorOperator = defineOperator({
   ],
   params: {},
   rules: {
-    // Kept as a message rule, not a site rule: it declares a power but does not divide its site by it (the power is only in the
-    // integrand), so the engine's division (`projectSite`) would change what it sends for a power other than 1. Left as it was.
-    ep: messageRule((c): OperatorResult => {
+    // A site rule: the tilted statistics, projected and divided by the power (`projectSite`), as for every powered factor.
+    ep: siteRule((c) => {
       const t = twoShapes(c)
-      if (c.to === 0) {
-        const p = arg(c, 0)
-        return { message: siteMessage(p.family, etaOf(p), t.logMeans) }
-      }
+      if (c.to === 0) return { moments: t.logMeans }
       const k = c.to - 1
-      const target = arg(c, c.to)
-      if (target.family.kind === 'gamma')
-        return { message: siteMessage(gamma, etaOf(target) as Eta, [t.r.mean[k] as number, t.r.meanExp[k] as number]) }
-      return { message: gaussianSiteMessage(etaOf(target), t.r.mean[k] as number, t.r.variance[k] as number) }
-    }, 'numeric'),
+      if (arg(c, c.to).family.kind === 'gamma') return { moments: [t.r.mean[k] as number, t.r.meanExp[k] as number] }
+      return { mean: t.r.mean[k] as number, variance: t.r.variance[k] as number }
+    }),
     vmp: messageRule((c): OperatorResult => {
       if (c.to === 0) return { message: [meanShape(arg(c, 1)) - 1, meanShape(arg(c, 2)) - 1] }
       const log = betaLog(c)

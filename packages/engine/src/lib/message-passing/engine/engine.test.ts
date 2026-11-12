@@ -312,6 +312,30 @@ describe('the evidence of a state with no information', () => {
       expect(() => alg.observe?.(alg.init(undefined as never), 0)).not.toThrow()
     }
   })
+  it('is NaN, not a thrown error, when a factor of any operator finds its cavity improper; the defect names the factor', () => {
+    // `plus` does not declare `improperIsNaN`: its evidence rule throws, and the engine is what catches it.
+    const plus = operators['plus'] as M.FactorOperator
+    const throwing: M.FactorOperator = {
+      ...plus,
+      logEvidence: () => {
+        throw new M.ImproperMessageError('the cavity has no density')
+      },
+    }
+    const g = M.compileGraph(tree, { ...operators, plus: throwing })
+    const state = runAlgorithm(M.epAlgorithm(g), { maxSteps: 5 }).state
+    expect(Number.isNaN(M.evidenceOf(g, { projection: M.momentProjection }, state))).toBe(true)
+    const defects = M.evidenceDefects(g, { projection: M.momentProjection }, state)
+    expect(defects.map((d) => d.reason)).toEqual(['improper cavity'])
+    // An error that is not an improper message still ends the run.
+    const broken: M.FactorOperator = {
+      ...plus,
+      logEvidence: () => {
+        throw new Error('a bug')
+      },
+    }
+    const h = M.compileGraph(tree, { ...operators, plus: broken })
+    expect(() => M.evidenceOf(h, { projection: M.momentProjection }, state)).toThrow('a bug')
+  })
   it('is read from the projection alone: the settings of a run are not needed', () => {
     const simple = M.compileGraph(
       {

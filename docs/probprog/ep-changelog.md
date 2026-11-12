@@ -584,3 +584,17 @@ Three example agents were building EP rules for their own pages when the work wa
 for robust and sparse regression; the hierarchical Rasch and the 2PL product for item response; the GP prior mapping and the SV
 observation). Their reports say what exists; the work packages above absorb it rather than redo it.
 
+## 2026-11-12 Two quality gaps closed (`agent-a9e812-gaps`)
+
+- `beta-two-shapes` honours its power. It was a message rule that declared `power: true` but put the power only on the whole
+  integrand (the integral to the power, not the integral of the powered factor) and never divided its site by it. It is now a
+  site rule: given the shapes the factor to the power `alpha` times the cavity is a beta with parameters `e1 + alpha (a - 1) + 1` and
+  `e2 + alpha (b - 1) + 1` of mass `B(A, B) / B(a, b)^alpha`, the grid integrates that, and `projectSite` divides the site by the power
+  as for every powered factor. At power 1 the arithmetic is the one it was (the digest does not move for power 1); tested at power 1
+  and 0.5 against a brute-force triple integral (`concentration.test.ts`). Gap `beta-two-shapes-power` removed.
+- Improper evidence is caught once, in the engine (`factorEvidence` in `engine/evidence.ts`, which `evidenceOf` and `evidenceDefects`
+  both use), for every operator, with the `evidenceOrNaN` that `evidence.improperIsNaN` already used. A factor whose cavity is improper
+  has no evidence (`NaN`), never an error that ends the run, and `evidenceUndefinedAt` names it; any other error still propagates.
+  `model/bayesian-neural-network` no longer records a thrown error: the EP run completes its 200 sweeps without converging
+  (status `stopped`), with no log evidence and the improper factors listed in `diagnostics.evidenceUndefinedAt`. Gap
+  `evidence-catch-uneven` removed.

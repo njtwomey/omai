@@ -86,8 +86,6 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | non-centred-scale: A non-centred scale (z / sqrt(precision)) has no variational message passing rule | quality | open | small | - |
 | evidence: The EP log evidence is exact where EP is, and has two known limits | infrastructure | open | medium | - |
 | variational-rules: Variational message passing: what it cannot run and where the mean field is poor | infrastructure | open | small | - |
-| beta-two-shapes-power: beta-two-shapes declares fractional power but does not divide its site by it | quality | open | small | - |
-| evidence-catch-uneven: Improper evidence is caught for some operators and thrown for others | quality | open | small | - |
 | docs-drift: The prior atlas can drift from the code | infrastructure | open | small | - |
 
 **18** directions for the suite to grow into:
