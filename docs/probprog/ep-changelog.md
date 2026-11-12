@@ -1612,3 +1612,11 @@ On the other 39 seeds the spreads with the trait are 0.84 to 1.00 of the old one
   after it the phase is far (0.212 and 1.553 off, spreads 1.49 and 4.74); at 3000 sweeps the old code's undamped state was far too (2.86, -2.89). The new variances are the more exact ones, so the
   code stays, and the test uses the scale 0.6 where EP converges (12 sweeps, the same fixed point before and after S5c: errors 0.001 and 0.001, spreads 1.03 and 1.08 of the exact), with bounds 0.01 and 0.95 to 1.15
   (they were 0.12 and 0.75 to 1.3). That EP does not converge on the harder mixture is the multimodal gap's, not a regression.
+
+## 2026-11-12 The hand-written EP documents brought up to date (`agent-afa81a-docspass`)
+
+Documents only; no source, test, pocs page or digest changed. `ep.md` now describes the code as built: the compiler is `factors.ts` as the driver and `model/factor-graph/` (passes, mapping
+tables, refusal codes, the fusion pass), the engine and the operators are in folders, the restart rule, the numerics layer, the evidence (natural parameters, the unused `improperTarget` trait and why the plates
+returned to rows-expanded evidence), the network-layer verdict, the grid's `nodesWithoutEvidence`, `gplvm-row` with its limits, the pocs tree and the showcase; the "target" markers of the three reviews are gone, and
+section 6 lists the open gaps of `ep-gaps.ts`, by id. `ep-plan.md` has a step list with status and a status line on each item of its catalogue. `ep-priors.md`, `ep-and-gam.md`, `inventory.md`, `survey.md` and
+`verification.md` were corrected where they said something about EP that is no longer true (the variational softmax beyond six classes, the Wishart dimension, no message passing on programs, moved file and test paths).
