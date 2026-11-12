@@ -3,11 +3,14 @@
 // chain of two states against the gaussian-gamma-precision factor, and the cavities a chain can be shown (flat ones, a ridge).
 import { describe, expect, it } from 'vitest'
 import { add, arange, cos, mul, sin, toFlat } from '../../../tensor/index.ts'
-import { messageArg } from '../../core/args.ts'
+import { messageArg, valueArg } from '../../core/args.ts'
+import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gamma, gammaEta, gaussian, gaussianEta } from '../../core/families.ts'
+import { compileGraph } from '../../core/graph.ts'
 import type { Arg, OperatorContext } from '../../core/types.ts'
 import { float64Of } from '../../numerics/_arrays.ts'
 import { spd } from '../../numerics/_dense.ts'
+import { defaultOperators } from '../registry.ts'
 import { chainAt, chainSpec, chainTilt, gaussianChain } from './chain.ts'
 import { gaussianGammaPrecision } from './gaussian.ts'
 
@@ -202,6 +205,33 @@ describe('the operator', () => {
     expect(first).toEqual([0, 1, 4, 8].map((to) => gaussianChain.ep?.(ctx(to)).message))
     expect(gaussianChain.logEvidence?.(ctx(0, memo))).toBeCloseTo(tilt.logZ, 12)
     expect(memo.size).toBe(1)
+  })
+
+  it('an observed state is a model mistake: the compiler refuses it, and a hand-built call throws a ParameterError (not an improper message)', () => {
+    expect(() =>
+      compileGraph(
+        {
+          variables: [
+            { name: 'tau', family: { kind: 'gamma' } },
+            { name: 'x0', family: { kind: 'gaussian' } },
+            { name: 'x1', family: { kind: 'gaussian' }, observed: 1 },
+          ],
+          factors: [{ operator: 'gaussian-chain', args: ['tau', 'x0', 'x1'], params: { length: 2 } }],
+        },
+        defaultOperators(),
+      ),
+    ).toThrow(/cannot take the observed variable x1/)
+    const observed: Arg[] = args()
+    observed[2] = valueArg(gaussian, 0.5)
+    let caught: unknown
+    try {
+      gaussianChain.ep?.({ ...ctx(1), args: observed })
+    } catch (e) {
+      caught = e
+    }
+    expect(caught).toBeInstanceOf(ParameterError)
+    expect(caught).not.toBeInstanceOf(ImproperMessageError)
+    expect((caught as Error).message).toMatch(/port 1 cannot be observed/)
   })
 
   it('refuses a length under two and negative precision parameters', () => {
