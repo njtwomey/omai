@@ -90,6 +90,7 @@ export function latentMultivariateNormal(cx: Context, node: ModelNode & { readon
   cx.g.addLibraryFactor(gaussianMvPrior(node.name, mean, cov), node.name)
   cx.syms.set(node.name, {
     dims: node.dims,
+    // banned-ok: non-numeric: one factor-graph atom (or element name) per cell
     cells: Array.from({ length: n }, (_, j) => cx.g.compAtom(node.name, j, n)),
   })
   cx.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)
@@ -479,6 +480,7 @@ export function latentTransition(cx: Context, node: ModelNode & { readonly kind:
   )
   cx.syms.set(node.name, {
     dims: node.dims,
+    // banned-ok: non-numeric: one factor-graph atom (or element name) per cell
     cells: Array.from({ length: n }, (_, j) => cx.g.compAtom(node.name, j, n)),
   })
   cx.layout(node, 'latent', 'gaussian-mv', 'packed', [node.name], true)

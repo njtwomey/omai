@@ -258,6 +258,7 @@ export function robustRegressionProblem(config: Config): RobustProblem {
     noiseSd,
     learned,
     degree,
+    // banned-ok: non-numeric: the names of the features
     names: ['intercept', 'slope', ...Array.from({ length: Math.max(0, degree - 1) }, (_, j) => `x^${j + 2}`)],
     extent: range as readonly [number, number],
     priorScale,

@@ -37,6 +37,7 @@ export const ar1CoefficientFamily: StateSpaceFamily = {
   prior: {
     dim: 1,
     logProb: (t) => (Math.abs(t[0] ?? 2) < 0.99 ? -Math.log(1.98) : Number.NEGATIVE_INFINITY),
+    // banned-ok: sentinel: the sample of the family is a typed array (its API type), a constant here
     sample: () => new Float64Array([0.3]),
   },
   model: (t) => {

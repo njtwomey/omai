@@ -142,6 +142,7 @@ export function latentRandomConcentration(cx: Context, node: ModelNode & { reado
   if (isBeta) {
     const a = cx.over(evalSym(cx, node.dist.params['a'] as ExprSpec), node.dims)
     const b = cx.over(evalSym(cx, node.dist.params['b'] as ExprSpec), node.dims)
+    // banned-ok: non-numeric: one factor-graph record per element
     perElement = Array.from({ length: n }, (_, i) => [
       concentrationOf(cx, node, a[i] as Cell),
       concentrationOf(cx, node, b[i] as Cell),

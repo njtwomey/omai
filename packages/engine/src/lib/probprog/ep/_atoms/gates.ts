@@ -4,7 +4,7 @@
 
 import { foldIn, key, normal, uniform } from '../../../random/index.ts'
 import { dict, int, real } from '../../../space/index.ts'
-import { add, arange, div, full, mul, scatter, toFlat, zeros } from '../../../tensor/index.ts'
+import { add, arange, div, full, less, mul, scatter, toFlat, type Value, where, zeros } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -917,10 +917,9 @@ function clutterLearnedProblem(k: Config): AtomParts {
   const [trueClutterSd, trueWeight] = [configNumber(k, 'trueClutterSd'), configNumber(k, 'trueWeight')]
   // region clutter-learned
   // the ground truth the data are drawn from: the model does not know it
-  const u = Array.from(toFlat(uniform(foldIn(key(seed), 0), [n])))
-  const e = Array.from(toFlat(normal(foldIn(key(seed), 1), [n])))
-  const isClutter = u.map((v) => v < trueWeight)
-  const y = e.map((v, i) => (isClutter[i] ? trueClutterSd * v : trueTheta + trueInlierSd * v))
+  const isClutter = less(uniform(foldIn(key(seed), 0), [n]), trueWeight)
+  const e = normal(foldIn(key(seed), 1), [n])
+  const y = where(isClutter, mul(trueClutterSd, e), add(trueTheta, mul(trueInlierSd, e)))
   const definition = defineModel('clutter-learned', (m) => {
     const row = m.range('i')
     // the centre, the precision of the inliers and of the clutter, the share of clutter
@@ -937,8 +936,9 @@ function clutterLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.normal(centre, sd), m.data('y', { dims: [row], role: 'response' }))
   })
   // endregion
-  const post = clutterPosterior(y, CLUTTER_PRIORS)
-  const at = y.map((_, i) => i + 1)
+  const observed = toFlat(y)
+  const post = clutterPosterior(observed, CLUTTER_PRIORS)
+  const at = observed.map((_, i) => i + 1)
   const band = (c: number, w: number): number[] => [c + w, c + w]
   const x = [0, n + 1]
   const [inSd, outSd] = [trueInlierSd, trueClutterSd]
@@ -989,8 +989,8 @@ function clutterLearnedProblem(k: Config): AtomParts {
           {
             name: 'observations',
             x: at,
-            y,
-            group: isClutter.map((c) => (c ? 1 : 0)),
+            y: observed,
+            group: toFlat(isClutter),
             groupNames: { 0: 'inlier', 1: 'clutter' },
             groupFrom: (m) => at.map((i) => ((m[`z[${i - 1}]`] ?? 0) > 0.5 ? 1 : 0)),
           },
@@ -1140,18 +1140,21 @@ function mixtureQuantities(
 ): AtomProblem['quantities'] {
   const K = truth.weights.length
   return [
+    // banned-ok: non-numeric: one quantity spec per component
     ...Array.from({ length: K }, (_, k) => ({
       name: meanName(k),
       label: `mean of ${label(k)}`,
       support: 'real' as AtomSupport,
       truth: truth.means[k] as number,
     })),
+    // banned-ok: non-numeric: one quantity spec per component
     ...Array.from({ length: K }, (_, k) => ({
       name: precisionName(k),
       label: `precision of ${label(k)}`,
       support: 'positive' as AtomSupport,
       truth: 1 / (truth.sds[k] as number) ** 2,
     })),
+    // banned-ok: non-numeric: one quantity spec per component
     ...Array.from({ length: K }, (_, k) => ({
       name: weightName(k),
       label: `weight of ${label(k)}`,
@@ -1203,6 +1206,7 @@ function mixtureLearnedProblem(k: Config): AtomParts {
   // endregion
   const gibbs = mixtureGibbs({
     x: y,
+    // banned-ok: non-numeric: one prior record per component
     means: Array.from({ length: K }, () => ({ mean: 0, sd: 4 })),
     precision: { shape: 2, rate: 2 },
     weights: alpha,
@@ -1244,6 +1248,7 @@ function mixtureLearnedProblem(k: Config): AtomParts {
         from,
         truth,
         (m) => fittedMixture(m, K, wn, mn, pn),
+        // banned-ok: non-numeric: the names of the components, by index
         Object.fromEntries(Array.from({ length: K }, (_, c) => [c, names(c)])),
       ),
     },
@@ -1436,13 +1441,11 @@ const ACTIVE: readonly (readonly [number, number])[] = [
 ]
 
 /** The coefficient vector of length `p`: the active values where they are and zero elsewhere. */
-const activeCoefficients = (p: number): number[] =>
-  toFlat(
-    scatter(
-      zeros([p]),
-      ACTIVE.map(([at]) => [at]),
-      ACTIVE.map(([, v]) => v),
-    ),
+const activeCoefficients = (p: number): Value =>
+  scatter(
+    zeros([p]),
+    ACTIVE.map(([at]) => [at]),
+    ACTIVE.map(([, v]) => v),
   )
 const SPIKE_SD = 0.1
 
@@ -1452,8 +1455,7 @@ function spikeSlabLearnedProblem(k: Config): AtomParts {
   // region spike-and-slab-learned
   // the ground truth: three coefficients are active, the rest are zero
   const values = activeCoefficients(p)
-  const e = Array.from(toFlat(normal(foldIn(key(seed), 0), [p])))
-  const y = values.map((v, j) => v + noise * (e[j] ?? 0))
+  const y = add(values, mul(noise, normal(foldIn(key(seed), 0), [p])))
   const definition = defineModel('spike-and-slab-learned', (m) => {
     const j = m.range('j')
     // how often a coefficient is active, and the precision of the active ones
@@ -1468,9 +1470,10 @@ function spikeSlabLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.normal(ops.where(z, slab, spike), noise), m.data('y', { dims: [j] }))
   })
   // endregion
-  const active = values.map((v) => v !== 0)
+  const [truth, observed] = [toFlat(values), toFlat(y)]
+  const active = truth.map((v) => v !== 0)
   const trueShare = active.filter(Boolean).length / p
-  const rms = Math.sqrt(values.filter((v) => v !== 0).reduce((a, v) => a + v * v, 0) / active.filter(Boolean).length)
+  const rms = Math.sqrt(truth.filter((v) => v !== 0).reduce((a, v) => a + v * v, 0) / active.filter(Boolean).length)
   // The exact posterior: given the share and the slab precision the coefficients are independent two-component mixtures.
   const [aS, bS, aT, bT] = [1.5, 3.5, 2, 8]
   const spikeVar = noise ** 2 + SPIKE_SD ** 2
@@ -1485,7 +1488,7 @@ function spikeSlabLearnedProblem(k: Config): AtomParts {
     for (const q of ps) {
       let lp = (aS - 1) * Math.log(q) + (bS - 1) * Math.log(1 - q) + aT * Math.log(t) - bT * t
       const pip: number[] = []
-      for (const v of y) {
+      for (const v of observed) {
         const s1 = q * normalPdf(v, 0, Math.sqrt(slabVar))
         const s0 = (1 - q) * normalPdf(v, 0, Math.sqrt(spikeVar))
         lp += Math.log(s0 + s1)
@@ -1500,10 +1503,12 @@ function spikeSlabLearnedProblem(k: Config): AtomParts {
   const norm = mass.reduce((a, b) => a + b, 0)
   const shareMass = ps.map((_, i) => ts.reduce((a, __, jj) => a + (mass[jj * ps.length + i] as number), 0))
   const precisionMass = ts.map((_, jj) => ps.reduce((a, __, i) => a + (mass[jj * ps.length + i] as number), 0))
-  const pipMean = y.map((_, j) => mass.reduce((a, m, c) => a + (m * ((pips[c] as number[])[j] as number)) / norm, 0))
+  const pipMean = observed.map((_, j) =>
+    mass.reduce((a, m, c) => a + (m * ((pips[c] as number[])[j] as number)) / norm, 0),
+  )
   const shareMarginal = weightedMarginal(ps, shareMass, 'nearest')
   const precisionExact = weightedMarginal(ts, precisionMass, 'nearest')
-  const at = y.map((_, j) => j + 1)
+  const at = observed.map((_, j) => j + 1)
   const x = [0, p + 1]
   return {
     build: {
@@ -1551,12 +1556,12 @@ function spikeSlabLearnedProblem(k: Config): AtomParts {
           {
             name: 'observed y',
             x: at,
-            y: [...y],
+            y: observed,
             group: active.map((a) => (a ? 1 : 0)),
             groupNames: { 0: 'inactive', 1: 'active' },
             groupFrom: (m) => at.map((i) => ((m[`z[${i - 1}]`] ?? 0) > 0.5 ? 1 : 0)),
           },
-          { name: 'true value', x: at, y: values },
+          { name: 'true value', x: at, y: truth },
         ],
         notes: [`The truly active coefficients are ${ACTIVE.map(([j]) => j + 1).join(', ')}.`],
       },
@@ -1608,8 +1613,7 @@ function spikeSlabMarginalLearnedProblem(k: Config): AtomParts {
   // region spike-and-slab-marginal-learned
   // the ground truth: three coefficients are active, the rest are zero
   const coefficients = activeCoefficients(p)
-  const draw = Array.from(toFlat(normal(foldIn(key(seed), 0), [p])))
-  const observed = coefficients.map((v, j) => v + noise * (draw[j] ?? 0))
+  const observed = add(coefficients, mul(noise, normal(foldIn(key(seed), 0), [p])))
   const definition = defineModel('spike-and-slab-marginal-learned', (m) => {
     const j = m.range('j')
     // how often a coefficient is active, and the precision of the active ones
@@ -1692,10 +1696,9 @@ function clutterMixtureLearnedProblem(k: Config): AtomParts {
   const width = 10
   // region clutter-mixture-learned
   // the ground truth: outliers are draws around the same centre, ten times wider
-  const u = Array.from(toFlat(uniform(foldIn(key(seed), 0), [n])))
-  const e = Array.from(toFlat(normal(foldIn(key(seed), 1), [n])))
-  const isOutlier = u.map((v) => v < trueWeight)
-  const y = e.map((v, i) => trueTheta + trueSd * v * (isOutlier[i] ? width : 1))
+  const isOutlier = less(uniform(foldIn(key(seed), 0), [n]), trueWeight)
+  const e = normal(foldIn(key(seed), 1), [n])
+  const y = add(trueTheta, mul(mul(trueSd, e), where(isOutlier, width, 1)))
   const definition = defineModel('clutter-mixture-learned', (m) => {
     const row = m.range('i')
     // the centre, the precision of the inliers, the share of outliers
@@ -1709,8 +1712,9 @@ function clutterMixtureLearnedProblem(k: Config): AtomParts {
   })
   // endregion
   const priors = { centre: 5, precision: { shape: 2, rate: 1 }, share: { a: 2, b: 5 }, width } as const
-  const post = outlierMixturePosterior(y, priors)
-  const at = y.map((_, i) => i + 1)
+  const draws = toFlat(y)
+  const post = outlierMixturePosterior(draws, priors)
+  const at = draws.map((_, i) => i + 1)
   const x = [0, n + 1]
   const band = (c: number, w: number): number[] => [c + w, c + w]
   return {
@@ -1745,8 +1749,8 @@ function clutterMixtureLearnedProblem(k: Config): AtomParts {
           {
             name: 'observations',
             x: at,
-            y,
-            group: isOutlier.map((o) => (o ? 1 : 0)),
+            y: draws,
+            group: toFlat(isOutlier),
             groupNames: { 0: 'inlier', 1: 'outlier' },
           },
         ],

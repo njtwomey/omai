@@ -264,6 +264,7 @@ function targetsOf(spec: ModelSpec, names: readonly string[], sizes: Readonly<Re
         'value',
         `ep-grid: '${name}' is not a scalar or a plated vector of known size: only those go on a grid`,
       )
+    // banned-ok: non-numeric: one target record per cell
     return Array.from({ length: size }, (_, i): Target => ({ node: name, component: i, label: `${name}[${i}]` }))
   })
 }

@@ -53,6 +53,7 @@ function sidesOf(c: OperatorContext): Sides {
       'value',
       'mvn-wishart-group: the mean is a Gaussian variable (a known mean is one mvn-wishart factor per vector)',
     )
+  // banned-ok: non-numeric: one side record per group
   return { d, groups: Array.from({ length: groups }, (_, j) => gaussianSide(arg(c, j), d)), mean }
 }
 
@@ -82,8 +83,10 @@ function tiltOf(c: OperatorContext): Tilt {
   const known = groups.filter((x) => !x.flat)
   let eta = cavity
   let exponent = 0
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const scatter = new Float64Array(dd)
   if (known.length >= 2) {
+    // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
     const mean = new Float64Array(d)
     for (const x of known)
       for (let i = 0; i < d; i++) mean[i] = (mean[i] as number) + (x.mean[i] as number) / known.length
@@ -100,6 +103,7 @@ function tiltOf(c: OperatorContext): Tilt {
   const { nu, chol } = wishartCavity(eta, d)
   const rule: WishartRule = wishartRule(nu, chol, d)
   const evaluate = nodeEvaluator(s)
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const logw = new Float64Array(rule.count)
   for (let node = 0; node < rule.count; node++) {
     const at = node * dd
@@ -115,6 +119,7 @@ function tiltOf(c: OperatorContext): Tilt {
   if (!Number.isFinite(top))
     throw new ImproperMessageError('mvn-wishart-group: the factor has no mass under the incoming messages')
   const moments = zeroArray(1 + dd)
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const mean = Array.from({ length: count + 1 }, () => new Float64Array(d))
   const second = Array.from({ length: count + 1 }, () => new Float64Array(dd))
   const conditionals = new Float64Array((count + 1) * (d + dd))

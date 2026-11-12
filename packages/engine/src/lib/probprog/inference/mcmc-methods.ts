@@ -143,6 +143,7 @@ export function rwmMethod(model: MethodModel, options: { readonly name?: string 
                 info: () => cell.info,
                 result: (w) => ({
                   scale: Math.exp((w as RwmWarmupState).logScale),
+                  // banned-ok: sentinel: an empty initial array (no draws yet)
                   shape: (w as RwmWarmupState).shape ?? new Float64Array(0),
                 }),
                 toJson: (w) => shared.serialise?.(w as RwmWarmupState) ?? null,
@@ -150,6 +151,7 @@ export function rwmMethod(model: MethodModel, options: { readonly name?: string 
               }
             : undefined
         return {
+          // banned-ok: sentinel: an empty initial array (no draws yet)
           ...fixedPlan<T>(b, { scale: 2.38 / Math.sqrt(dim), shape: new Float64Array(0) }, kernel, (t) => ({
             scale: t.scale,
             shape: Array.from(t.shape),

@@ -225,6 +225,7 @@ export function bayesianGam(x: readonly number[], y: readonly number[], options:
     p = built.p
     const w = block.width
     // The penalty of the block, with a zero row and column for the intercept.
+    // banned-ok: kernel: the penalty matrix, filled by the loop below
     S = new Float64Array(p * p)
     for (let a = 0; a < w; a++)
       for (let c = 0; c < w; c++) S[(1 + a) * p + 1 + c] = block.penalties[0]?.matrix[a * w + c] ?? 0
@@ -662,7 +663,9 @@ export function bayesianGamFit(
   const offset = model.local ? mul(basisValues, ym) : concat([full([1, G], ym), zeros([size - 1, G])], 0)
   const partsOf = (b: readonly number[]): number[][] =>
     toArray(add(mul(mul(basisValues, ys), reshape(tensor(Array.from(b)), [size, 1])), offset)) as number[][]
+  // banned-ok: TODO tensor: the posterior mean of each coefficient, as a mean of the draws
   const meanBeta = Array.from({ length: size }, (_, j) => beta.reduce((a, b) => a + (b[j] ?? 0), 0) / Math.max(1, n))
+  // banned-ok: TODO tensor: the grid point where each coefficient peaks, as an argmax
   const centres = Array.from({ length: size }, (_, j) => {
     let best = 0
     for (let g = 1; g < G; g++) if ((rows[g]?.[j] ?? 0) > (rows[best]?.[j] ?? 0)) best = g
@@ -680,6 +683,7 @@ export function bayesianGamFit(
   // ridge's width its precision leaves (1 for a precision of the ridge or less, towards 0 as the basis is pruned).
   const inUse = (i: number, j: number): number =>
     prior === 'ard' ? 1 / Math.max(1, ardPrecision(i, j)) : slabShare(beta[i]?.[j] ?? 0)
+  // banned-ok: TODO tensor: the active share of each draw, as a sum of the per-cell shares
   const active = beta.map((_, i) => Array.from({ length: size }, (_, j) => inUse(i, j)).reduce((a, b) => a + b, 0))
   return {
     grid,
@@ -749,6 +753,7 @@ function conditional(
   const A = Float64Array.from(XtX, (v) => v / sigma2)
   for (let j = 0; j < p; j++) A[j * p + j] = (A[j * p + j] ?? 0) + (prec[j] ?? 0)
   const { factor, info } = dpotrf(A, p)
+  // banned-ok: sentinel: a zero mean for a failed Cholesky factor
   if (info !== 0) return { ll, ls, logWeight: Number.NEGATIVE_INFINITY, mean: new Float64Array(p), factor }
   const b = Float64Array.from(Xty, (v) => v / sigma2)
   const mean = dpotrs(factor, b, p)
@@ -822,6 +827,7 @@ export function bayesianGamReference(
   const X = (model.data['X'] as number[][]) ?? []
   const y = (model.data['y'] as number[]) ?? []
   const n = y.length
+  // banned-ok: reference: the reference posterior written out in plain arithmetic
   const XtX = new Float64Array(p * p)
   const Xty = new Float64Array(p)
   for (let i = 0; i < n; i++) {

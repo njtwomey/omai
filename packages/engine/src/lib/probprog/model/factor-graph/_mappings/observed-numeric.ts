@@ -275,6 +275,7 @@ export function observedMulticlass(
       return null
     }
   }
+  // banned-ok: non-numeric: one argument record per class
   const args = Array.from({ length: classes }, (_, k) => {
     return cx.g.portOf(cells?.[i * classes + k] as Cell, node.name, index)
   })

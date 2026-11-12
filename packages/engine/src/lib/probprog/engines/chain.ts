@@ -8,7 +8,17 @@ import { OmaiError } from '../../base/index.ts'
 import type { Distribution } from '../../dists/index.ts'
 import { backwardSample, type ChainModel, forwardBackward, viterbi } from '../../pgm/index.ts'
 import type { Key } from '../../random/index.ts'
-import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat, transpose } from '../../tensor/index.ts'
+import {
+  asTensor,
+  fromStorage,
+  primalOf,
+  type Tensor,
+  type TensorLike,
+  toArray,
+  toFlat,
+  transpose,
+  zeros,
+} from '../../tensor/index.ts'
 import { type NamedFactor, productOver, traceFactors } from '../_contract.ts'
 import { shiftedCategorical } from '../_discrete.ts'
 import { analyse, type ProgramAnalysis } from '../analysis.ts'
@@ -89,11 +99,9 @@ export function chainForm<D = void>(model: Model<D>, data: D, analysis?: Program
   const depth = a.maxPlateNesting
   const { factors, scales } = traceFactors(r.trace, depth)
   const T = sites.length
-  const logInitial = new Array<number>(states).fill(0)
-  const logTransition = Array.from({ length: Math.max(0, T - 1) }, () =>
-    Array.from({ length: states }, () => new Array<number>(states).fill(0)),
-  )
-  const logEmission = Array.from({ length: T }, () => new Array<number>(states).fill(0))
+  const logInitial = toFlat(zeros([states]))
+  const logTransition = toArray(zeros([Math.max(0, T - 1), states, states])) as number[][][]
+  const logEmission = toArray(zeros([T, states])) as number[][]
   let constant = 0
   for (const raw of factors) {
     const f: NamedFactor = productOver(raw, raw.plates, scales)

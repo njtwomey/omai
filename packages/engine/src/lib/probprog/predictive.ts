@@ -91,6 +91,7 @@ export function priorPredictive<D = void>(
   options: PredictiveOptions,
 ): Record<string, Tensor> {
   const n = options.numSamples ?? 1000
+  // banned-ok: non-numeric: one trace per key
   const traces = Array.from({ length: n }, (_, i) => traceOf(seed(uncondition(model), foldIn(options.key, i)), data))
   const first = traceOf(seed(model, foldIn(options.key, n)), data)
   const names = options.sites ?? observedNames(first, true)

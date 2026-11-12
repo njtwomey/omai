@@ -104,7 +104,8 @@ function sitesAsQuantities(posterior: Pick<Posterior, 'mean' | 'sites'>): readon
     const size = toFlat(posterior.mean(site)).length
     return size === 1 && posterior.mean(site).shape.length === 0
       ? [{ name: site, label: site, support: 'real' }]
-      : Array.from({ length: size }, (_, i) => ({
+      : // banned-ok: non-numeric: one quantity spec per cell
+        Array.from({ length: size }, (_, i) => ({
           name: `${site}[${i}]`,
           label: `${site}[${i}]`,
           support: 'real' as const,

@@ -70,6 +70,7 @@ export function clutterPosterior(y: readonly number[], priors: ClutterPriors, po
   const log1w = weights.map((w) => Math.log(1 - w))
   const na = centres.length
   // the table of every cell's log posterior, na x points^3 entries filled in place by the sweep below
+  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const lp = new Float64Array(na * points * points * points)
   const inlier = toFlat(zeros([n]))
   let top = Number.NEGATIVE_INFINITY
@@ -196,6 +197,7 @@ export function outlierMixturePosterior(
   const half = 0.5 * Math.log(2 * Math.PI)
   const lw = Math.log(priors.width)
   // the table of every cell's log posterior, filled in place by the sweep below
+  // banned-ok: reference: an exact answer written out in plain arithmetic to check the library against
   const lp = new Float64Array(points ** 3)
   let top = Number.NEGATIVE_INFINITY
   let at = 0

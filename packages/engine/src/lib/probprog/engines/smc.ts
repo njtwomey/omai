@@ -121,9 +121,12 @@ export function particleFilterAlgorithm<D = void>(
     }),
     init: () => ({
       t: 0,
+      // banned-ok: non-numeric: the carry (any value) of each particle
       carries: new Array<unknown>(P).fill(loop.init),
+      // banned-ok: TODO tensor: the particle log-weights are a typed array (the state type of the filter)
       logWeights: new Float64Array(P).fill(-Math.log(P)),
       logEvidence: loop.before,
+      // banned-ok: non-numeric: the path (a list of values) of each particle
       paths: Array.from({ length: P }, () => []),
       ess: P,
       resampled: false,
@@ -132,6 +135,7 @@ export function particleFilterAlgorithm<D = void>(
     step: (s, ctx) => {
       const t = s.t
       const traces: ProgramTrace[] = []
+      // banned-ok: kernel: the increments of one step, filled by the loop below
       const incr = new Float64Array(P)
       for (let p = 0; p < P; p++) {
         const carry = s.carries[p]
@@ -156,6 +160,7 @@ export function particleFilterAlgorithm<D = void>(
         })
         carries = Array.from(idx, (i) => carries[i])
         paths = Array.from(idx, (i) => paths[i] ?? [])
+        // banned-ok: TODO tensor: the particle log-weights are a typed array (the state type of the filter)
         logWeights = new Float64Array(P).fill(-Math.log(P))
         resampled = true
       }
@@ -361,6 +366,7 @@ export function temperedProblem<D = void>(model: Model<D>, data: D, key: Key): T
     dim,
     sample: (k: Key) => {
       const t = traceOf(seed(model, k), data)
+      // banned-ok: kernel: a point of the tempered problem, filled by the loop below
       const out = new Float64Array(dim)
       for (const l of layout) {
         const s = t.sites.get(l.name)

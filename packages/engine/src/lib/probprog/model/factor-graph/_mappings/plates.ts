@@ -82,6 +82,7 @@ function usedRows(rows: readonly ({ a: number[]; offset: number } | undefined)[]
 export function addPlated(cx: Context, node: ModelNode & { readonly kind: 'observed' }, f: FactorSpec): void {
   cx.g.addLibraryFactor(f, node.name)
   cx.plated.push(node.name)
+  // banned-ok: non-numeric: a layout of nulls (the cells of an observed node carry no variable)
   cx.layout(node, 'observed', undefined, 'observed', new Array<null>(prod(cx.shapeOf(node.dims))).fill(null), false)
 }
 

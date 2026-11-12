@@ -36,6 +36,7 @@ interface Small {
 /** The Cholesky factor of a small row-major matrix, or `undefined` when it is not positive definite. */
 function small(a: Float64Array, k: number): Small | undefined {
   // Exempt from the tensor rule, on purpose: a small Cholesky on typed buffers, called for every node of the log-precision grid.
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const l = new Float64Array(k * k)
   let logDet = 0
   for (let i = 0; i < k; i++) {
@@ -50,12 +51,14 @@ function small(a: Float64Array, k: number): Small | undefined {
     }
   }
   const solve = (b: Float64Array): Float64Array => {
+    // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
     const y = new Float64Array(k)
     for (let i = 0; i < k; i++) {
       let sum = b[i] as number
       for (let m = 0; m < i; m++) sum -= (l[i * k + m] as number) * (y[m] as number)
       y[i] = sum / (l[i * k + i] as number)
     }
+    // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
     const x = new Float64Array(k)
     for (let i = k - 1; i >= 0; i--) {
       let sum = y[i] as number
@@ -68,8 +71,10 @@ function small(a: Float64Array, k: number): Small | undefined {
     logDet,
     solve,
     inverse: () => {
+      // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
       const inv = new Float64Array(k * k)
       for (let c = 0; c < k; c++) {
+        // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
         const e = new Float64Array(k)
         e[c] = 1
         inv.set(solve(e), c * k)
@@ -118,6 +123,7 @@ function chainPorts(params: Params): readonly Port[] {
   const spec = chainSpec(params)
   return [
     { name: 'tau', accepts: ['gamma'] },
+    // banned-ok: non-numeric: the ports of the chain
     ...Array.from({ length: spec.n }, (_, t): Port => ({ name: `x${t}`, accepts: ['gaussian'] })),
     ...spec.drive.map((_, k): Port => ({ name: `u${k}`, accepts: ['gaussian'] })),
   ]
@@ -162,6 +168,7 @@ export function chainAt(
   const K = c.length
   const steps = n - 1
   const O = -lambda * a
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const dp = new Float64Array(n)
   const rp = new Float64Array(n)
   const wp = new Float64Array(n * K)
@@ -188,6 +195,7 @@ export function chainAt(
     if (!((dp[t] as number) > 0)) return undefined
   }
   // The drivers from what the states leave: the Schur complement and its information.
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const S = new Float64Array(K * K)
   const ru = new Float64Array(K)
   for (let k = 0; k < K; k++) {
@@ -212,6 +220,7 @@ export function chainAt(
   }
   const factor = K === 0 ? undefined : small(S, K)
   if (K > 0 && factor === undefined) return undefined
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const uMean = factor === undefined ? new Float64Array(0) : factor.solve(ru)
   if (factor !== undefined) {
     logDet += factor.logDet
@@ -222,6 +231,7 @@ export function chainAt(
     0.5 * steps * (Math.log(lambda) - Math.log(2 * Math.PI)) -
     0.5 * lambda * steps * d * d +
     0.5 * (size * Math.log(2 * Math.PI) - logDet + quad)
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   if (!moments) return { logZ, mean: new Float64Array(0), variance: new Float64Array(0) }
   const mean = new Float64Array(size)
   const variance = new Float64Array(size)
@@ -233,11 +243,13 @@ export function chainAt(
     mean[t] = rest / (dp[t] as number)
   }
   // The inverse of the tridiagonal block: its diagonal from the pivots of both passes, and its product with the border.
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const dq = new Float64Array(n)
   for (let t = n - 1; t >= 0; t--) {
     const diag = (j[t] ?? 0) + (t >= 1 ? lambda : 0) + (t <= n - 2 ? lambda * a * a : 0)
     dq[t] = t === n - 1 ? diag : diag - (O * O) / (dq[t + 1] as number)
   }
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const g = new Float64Array(n * K)
   for (let t = n - 1; t >= 0; t--)
     for (let k = 0; k < K; k++) {
@@ -245,6 +257,7 @@ export function chainAt(
       if (t < n - 1) v -= O * (g[(t + 1) * K + k] as number)
       g[t * K + k] = v / (dp[t] as number)
     }
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const cov = factor === undefined ? new Float64Array(0) : factor.inverse()
   for (let t = 0; t < n; t++) {
     const diag = (j[t] ?? 0) + (t >= 1 ? lambda : 0) + (t <= n - 2 ? lambda * a * a : 0)
@@ -350,6 +363,7 @@ export function chainTilt(
     weights.push(w)
   }
   const total = weights.reduce((s, w) => s + w, 0)
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const mean = new Float64Array(size)
   const variance = new Float64Array(size)
   const column = new Float64Array(weights.length)
@@ -378,6 +392,7 @@ export function chainTilt(
 function tiltOf(c: OperatorContext): ChainTilt {
   const spec = chainSpec(c.params)
   const size = spec.n + spec.drive.length
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const h = new Float64Array(size)
   const j = new Float64Array(size)
   for (let p = 0; p < size; p++) {

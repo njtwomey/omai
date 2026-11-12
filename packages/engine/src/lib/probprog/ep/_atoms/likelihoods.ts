@@ -4,22 +4,38 @@
 
 import { gram, rbfKernel, scaleKernel } from '../../../kernels/index.ts'
 import { gaussHermite } from '../../../numerics/quadrature/index.ts'
-import { foldIn, gamma, key, normal, poisson, studentT, uniform } from '../../../random/index.ts'
+import { ndtr } from '../../../numerics/special/index.ts'
+import { foldIn, gamma, key, normal, poissonEach, studentT, uniform } from '../../../random/index.ts'
 import { dict, int, real } from '../../../space/index.ts'
 import {
+  abs,
   add,
   arange,
   concat,
   div,
+  exp,
   eye,
-  item,
+  flatten,
   kron,
+  less,
+  log,
+  matmul,
+  mod,
   mul,
+  neg,
+  nonzero,
   ones,
+  pow,
   reshape,
+  sigmoid,
+  sign,
+  sub,
   take,
   toArray,
   toFlat,
+  triu,
+  type Value,
+  where,
   zeros,
 } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
@@ -506,6 +522,7 @@ function gpSoftmaxProblem(k: Config): AtomParts {
     build: {
       definition,
       data: { index, y: GPS_Y },
+      // banned-ok: non-numeric: one quantity spec per cell
       quantities: Array.from({ length: cells }, (_, c) => ({
         name: `f[${c}]`,
         label: `f_${c % GPS_CLASSES}(x_${Math.floor(c / GPS_CLASSES) + 1})`,
@@ -514,6 +531,7 @@ function gpSoftmaxProblem(k: Config): AtomParts {
     },
     reference: {
       get exact() {
+        // banned-ok: non-numeric: one marginal per cell
         return Object.fromEntries(Array.from({ length: cells }, (_, c) => [`f[${c}]`, marginal(c)]))
       },
       referenceSource:
@@ -599,8 +617,8 @@ function studentLearnedProblem(k: Config): AtomParts {
   const df = T_DF
   // region student-t-learned
   // the ground truth the data are drawn from: Student-t noise with three degrees of freedom
-  const noise = toFlat(studentT(foldIn(key(seed), 0), [n], df))
-  const y = Array.from(noise, (e) => trueLoc + trueScale * e)
+  const noise = studentT(foldIn(key(seed), 0), [n], df)
+  const y = add(trueLoc, mul(trueScale, noise))
   const definition = defineModel('student-t-learned', (m) => {
     const row = m.range('row')
     // the location and the precision of the noise: both unknown
@@ -612,10 +630,11 @@ function studentLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.normal(mu, precision.pow(-0.5)), m.data('y', { dims: [row], role: 'response' }))
   })
   // endregion
+  const observed = toFlat(y)
   // The exact posterior of (mu, tau) with the mixing precisions integrated out (a Student-t density), on a grid.
-  const sorted = [...y].sort((p, q) => p - q)
+  const sorted = [...observed].sort((p, q) => p - q)
   const med = sorted[Math.floor(n / 2)] ?? 0
-  const mad = [...y.map((v) => Math.abs(v - med))].sort((p, q) => p - q)[Math.floor(n / 2)] ?? 1
+  const mad = [...observed.map((v) => Math.abs(v - med))].sort((p, q) => p - q)[Math.floor(n / 2)] ?? 1
   const s0 = Math.max(1.4826 * mad, 0.05)
   const half = (10 * s0) / Math.sqrt(n)
   const tau0 = 1 / s0 ** 2
@@ -634,7 +653,7 @@ function studentLearnedProblem(k: Config): AtomParts {
           -0.5 * ((mu as number) / 5) ** 2 +
           (a - 1) * Math.log(t) -
           b * t +
-          sum(y.map((v) => logT((v - (mu as number)) ** 2, t)))
+          sum(observed.map((v) => logT((v - (mu as number)) ** 2, t)))
         )
       },
       [
@@ -676,7 +695,7 @@ function studentLearnedProblem(k: Config): AtomParts {
         xLabel: 'observation',
         yLabel: 'y',
         xLimits: x as [number, number],
-        points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
+        points: [{ name: 'observations', x: observed.map((_, i) => i + 1), y: observed }],
         curves: [{ name: 'true location', colour: 'tab2', x, y: [trueLoc, trueLoc] }],
         answer: (mm) => [{ name: 'mu', x, y: [mm['mu'] ?? Number.NaN, mm['mu'] ?? Number.NaN] }],
       },
@@ -729,9 +748,9 @@ function laplaceLearnedProblem(k: Config): AtomParts {
   // region laplace-learned
   // the ground truth the data are drawn from: Laplace noise (the difference of two exponentials)
   const kk = key(seed)
-  const u = toFlat(uniform(foldIn(kk, 0), [n]))
-  const tail = (v: number): number => Math.log(1 - 2 * Math.abs(v - 0.5))
-  const y = Array.from(u, (v) => trueLoc - trueScale * Math.sign(v - 0.5) * tail(v))
+  const centred = sub(uniform(foldIn(kk, 0), [n]), 0.5)
+  const tail = log(sub(1, mul(2, abs(centred))))
+  const y = sub(trueLoc, mul(mul(trueScale, sign(centred)), tail))
   const definition = defineModel('laplace-learned', (m) => {
     // the location and the scale of the noise: both unknown
     const mu = m.latent('mu', d.normal(0, 5))
@@ -739,10 +758,11 @@ function laplaceLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.laplace(mu, scale), m.data('y', { dims: ['i'], role: 'response' }))
   })
   // endregion
+  const observed = toFlat(y)
   // The reference: the posterior density of (mu, scale) written out, on a grid.
-  const sorted = [...y].sort((p, q) => p - q)
+  const sorted = [...observed].sort((p, q) => p - q)
   const med = sorted[Math.floor(n / 2)] ?? 0
-  const mad = [...y.map((v) => Math.abs(v - med))].sort((p, q) => p - q)[Math.floor(n / 2)] ?? 1
+  const mad = [...observed.map((v) => Math.abs(v - med))].sort((p, q) => p - q)[Math.floor(n / 2)] ?? 1
   const s0 = Math.max(1.4826 * mad, 0.05)
   const half = (10 * s0) / Math.sqrt(n)
   const grid = once(() =>
@@ -754,7 +774,7 @@ function laplaceLearnedProblem(k: Config): AtomParts {
           -0.5 * ((mu as number) / 5) ** 2 -
           (sc * sc) / 8 -
           n * Math.log(2 * sc) -
-          sum(y.map((v) => Math.abs(v - (mu as number)))) / sc
+          sum(observed.map((v) => Math.abs(v - (mu as number)))) / sc
         )
       },
       [
@@ -795,7 +815,7 @@ function laplaceLearnedProblem(k: Config): AtomParts {
         xLabel: 'observation',
         yLabel: 'y',
         xLimits: x as [number, number],
-        points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
+        points: [{ name: 'observations', x: observed.map((_, i) => i + 1), y: observed }],
         curves: [{ name: 'true location', colour: 'tab2', x, y: [trueLoc, trueLoc] }],
         answer: (mm) => [{ name: 'mu', x, y: [mm['mu'] ?? Number.NaN, mm['mu'] ?? Number.NaN] }],
       },
@@ -845,11 +865,10 @@ function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomPart
   // the ground truth: random points, labelled through the link by the true weights
   const kk = key(seed)
   const points = normal(foldIn(kk, 0), [n, 2])
-  const design = toArray(concat([ones([n, 1]), points], 1)) as number[][]
-  const u = toFlat(uniform(foldIn(kk, 1), [n]))
-  const score = design.map((row) => w0 * (row[0] ?? 0) + w1 * (row[1] ?? 0) + w2 * (row[2] ?? 0))
-  const chance = score.map((z) => (link === 'probit' ? normalCdfFast(z) : 1 / (1 + Math.exp(-z))))
-  const y = chance.map((p, i) => ((u[i] ?? 1) < p ? 1 : 0))
+  const design = concat([ones([n, 1]), points], 1)
+  const score = matmul(design, [w0, w1, w2])
+  const chance = link === 'probit' ? ndtr(score) : sigmoid(score)
+  const y = where(less(uniform(foldIn(kk, 1), [n]), chance), 1, 0)
   const definition = defineModel(`${link}-learned`, (m) => {
     const row = m.range('row')
     const f = m.range('feature')
@@ -863,6 +882,7 @@ function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomPart
   })
   // endregion
   // The reference: the density written out, on a tensor grid over (tau, w) around the true weights.
+  const [rows, labels] = [toArray(design) as number[][], toFlat(y)]
   const logLink = (z: number, label: number): number => {
     const p = link === 'probit' ? normalCdfFast(z) : 1 / (1 + Math.exp(-z))
     return Math.log(Math.max(label === 1 ? p : 1 - p, 1e-300))
@@ -873,8 +893,8 @@ function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomPart
         const t = tau as number
         let lp = (a - 1) * Math.log(t) - b * t + 1.5 * Math.log(t) - 0.5 * t * sum((w as number[]).map((v) => v * v))
         for (let i = 0; i < n; i++) {
-          const row = design[i] as number[]
-          lp += logLink(sum(row.map((v, j) => v * ((w as number[])[j] ?? 0))), y[i] ?? 0)
+          const row = rows[i] as number[]
+          lp += logLink(sum(row.map((v, j) => v * ((w as number[])[j] ?? 0))), labels[i] ?? 0)
         }
         return lp
       },
@@ -930,7 +950,7 @@ function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomPart
         yLabel: 'x2',
         xLimits: [-LIMIT, LIMIT],
         yLimits: [-LIMIT, LIMIT],
-        points: [{ name: 'points', x: px, y: py, group: y, groupNames: { 0: 'label 0', 1: 'label 1' } }],
+        points: [{ name: 'points', x: px, y: py, group: labels, groupNames: { 0: 'label 0', 1: 'label 1' } }],
         curves: [boundary(truth, 'true boundary', 'tab2')],
         answer: (mm) => [
           boundary([mm['w[0]'] ?? Number.NaN, mm['w[1]'] ?? Number.NaN, mm['w[2]'] ?? Number.NaN], 'boundary'),
@@ -1013,14 +1033,13 @@ const logisticLearnedAtom: EpAtom = defineAtom({
 const CURVE_X = toFlat(add(div(arange(41), 20), -1))
 
 /** The covariate of a regression, drawn uniformly on [-1, 1]. */
-const covariate = (seed: number, n: number): number[] =>
-  Array.from(toFlat(uniform(foldIn(key(seed), 0), [n])), (v) => 2 * v - 1)
+const covariate = (seed: number, n: number): Value => uniform(foldIn(key(seed), 0), [n], { low: -1, high: 1 })
 
 /** The figure of a log-link regression: the observations, the true curve and the fitted one. */
 function regressionFigure(
   what: string,
-  x: readonly number[],
-  y: readonly number[],
+  x: Value,
+  y: Value,
   curve: (a: number, b: number) => (v: number) => number,
   truth: readonly [number, number],
 ): AtomFigure {
@@ -1035,7 +1054,7 @@ function regressionFigure(
     xLabel: 'x',
     yLabel: 'y',
     xLimits: [-1, 1],
-    points: [{ name: 'observations', x, y }],
+    points: [{ name: 'observations', x: toFlat(x), y: toFlat(y) }],
     curves: [line(truth[0], truth[1], 'true curve', 'tab2')],
     answer: (m) => [line(m['a'] ?? Number.NaN, m['b'] ?? Number.NaN, 'fitted curve')],
   }
@@ -1048,7 +1067,8 @@ function poissonLearnedProblem(k: Config): AtomParts {
   // region poisson-log-learned
   // the ground truth: a count at each x with rate exp(intercept + slope x)
   const x = covariate(seed, n)
-  const y = x.map((v, i) => item(poisson(foldIn(key(seed), 1 + i), Math.exp(trueA + trueB * v), [1])))
+  const rates = exp(add(trueA, mul(trueB, x)))
+  const y = poissonEach(rates, (i) => foldIn(key(seed), 1 + i))
   const definition = defineModel('poisson-log-learned', (m) => {
     const row = m.range('row')
     // the intercept and the slope of the log rate: both unknown
@@ -1121,10 +1141,10 @@ function dispersionLearnedProblem(k: Config): AtomParts {
   // the ground truth: counts whose rate is jittered by a gamma (overdispersion: variance = mean + alpha mean²)
   const kk = key(seed)
   const x = covariate(seed, n)
-  const jitter = toFlat(gamma(foldIn(kk, 7), [n], 1 / trueAlpha))
-  const mean = x.map((v) => Math.exp(trueA + trueB * v))
-  const rates = mean.map((mu, i) => mu * trueAlpha * (jitter[i] ?? 1))
-  const y = rates.map((r, i) => item(poisson(foldIn(kk, 100 + i), r, [1])))
+  const jitter = gamma(foldIn(kk, 7), [n], 1 / trueAlpha)
+  const mean = exp(add(trueA, mul(trueB, x)))
+  const rates = mul(mul(mean, trueAlpha), jitter)
+  const y = poissonEach(rates, (i) => foldIn(kk, 100 + i))
   const definition = defineModel('poisson-log-dispersion-learned', (m) => {
     const row = m.range('row')
     // the intercept, the slope and the dispersion: all unknown
@@ -1207,9 +1227,8 @@ function weibullLearnedProblem(k: Config): AtomParts {
   // region weibull-learned
   // the ground truth: Weibull times with scale exp(intercept + slope x) and a known shape
   const x = covariate(seed, n)
-  const u = toFlat(uniform(foldIn(key(seed), 1), [n]))
-  const wait = (i: number): number => (-Math.log(1 - (u[i] ?? 0.5))) ** (1 / shape)
-  const y = x.map((v, i) => Math.exp(trueA + trueB * v) * wait(i))
+  const wait = pow(neg(log(sub(1, uniform(foldIn(key(seed), 1), [n])))), 1 / shape)
+  const y = mul(exp(add(trueA, mul(trueB, x))), wait)
   const definition = defineModel('weibull-learned', (m) => {
     const row = m.range('row')
     // the intercept and the slope of the log scale: both unknown
@@ -1306,8 +1325,8 @@ function studentDfLearnedProblem(k: Config): AtomParts {
   const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
   // region student-t-df-learned
   // the ground truth the data are drawn from: Student-t noise with a stated number of degrees of freedom
-  const noise = toFlat(studentT(foldIn(key(seed), 0), [n], trueDf))
-  const y = Array.from(noise, (e) => trueLoc + e)
+  const noise = studentT(foldIn(key(seed), 0), [n], trueDf)
+  const y = add(trueLoc, noise)
   const definition = defineModel('student-t-df-learned', (m) => {
     // the location and the degrees of freedom of the noise (its scale is one): both unknown
     const mu = m.latent('mu', d.normal(0, 5))
@@ -1315,8 +1334,9 @@ function studentDfLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.studentT(df, mu, 1), m.data('y', { dims: ['i'], role: 'response' }))
   })
   // endregion
+  const observed = toFlat(y)
   // The exact posterior of (mu, log df) on a grid: the gamma prior of df in the coordinate log df is df^a exp(-b df).
-  const sorted = [...y].sort((p, q) => p - q)
+  const sorted = [...observed].sort((p, q) => p - q)
   const med = sorted[Math.floor(n / 2)] ?? 0
   const half = 7 / Math.sqrt(n) + 0.5
   const logT = (v: number, mu: number, df: number): number =>
@@ -1326,7 +1346,10 @@ function studentDfLearnedProblem(k: Config): AtomParts {
       ([mu, t]) => {
         const df = Math.exp(t as number)
         return (
-          -0.5 * ((mu as number) / 5) ** 2 + a * (t as number) - b * df + sum(y.map((v) => logT(v, mu as number, df)))
+          -0.5 * ((mu as number) / 5) ** 2 +
+          a * (t as number) -
+          b * df +
+          sum(observed.map((v) => logT(v, mu as number, df)))
         )
       },
       [
@@ -1365,7 +1388,7 @@ function studentDfLearnedProblem(k: Config): AtomParts {
         xLabel: 'observation',
         yLabel: 'y',
         xLimits: x as [number, number],
-        points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
+        points: [{ name: 'observations', x: observed.map((_, i) => i + 1), y: observed }],
         curves: [{ name: 'true location', colour: 'tab2', x, y: [trueLoc, trueLoc] }],
         answer: (mm) => [{ name: 'mu', x, y: [mm['mu'] ?? Number.NaN, mm['mu'] ?? Number.NaN] }],
       },
@@ -1416,8 +1439,8 @@ function studentFullLearnedProblem(k: Config): AtomParts {
   const [a, b] = [configNumber(k, 'shape'), configNumber(k, 'rate')]
   // region student-t-full-learned
   // the ground truth the data are drawn from: Student-t noise of a stated scale and number of degrees of freedom
-  const noise = toFlat(studentT(foldIn(key(seed), 0), [n], trueDf))
-  const y = Array.from(noise, (e) => trueLoc + trueScale * e)
+  const noise = studentT(foldIn(key(seed), 0), [n], trueDf)
+  const y = add(trueLoc, mul(trueScale, noise))
   const definition = defineModel('student-t-full-learned', (m) => {
     // the location, the scale and the degrees of freedom of the noise: all unknown
     const mu = m.latent('mu', d.normal(0, 5))
@@ -1426,9 +1449,10 @@ function studentFullLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.studentT(df, mu, scale), m.data('y', { dims: ['i'], role: 'response' }))
   })
   // endregion
+  const observed = toFlat(y)
   // The exact posterior of (mu, log scale, log df) on a grid: the log-normal prior of the scale in log scale is a normal, the gamma
   // prior of df in log df is df^a exp(-b df).
-  const sorted = [...y].sort((p, q) => p - q)
+  const sorted = [...observed].sort((p, q) => p - q)
   const med = sorted[Math.floor(n / 2)] ?? 0
   const half = (8 * trueScale) / Math.sqrt(n) + 0.5
   const grid = once(() =>
@@ -1438,7 +1462,7 @@ function studentFullLearnedProblem(k: Config): AtomParts {
         const inv = Math.exp(-(s as number))
         const c = lg((df + 1) / 2) - lg(df / 2) - 0.5 * Math.log(df * Math.PI) - (s as number)
         let lp = -0.5 * ((mu as number) / 5) ** 2 - 0.5 * ((s as number) / 0.7) ** 2 + a * (t as number) - b * df
-        for (const v of y) lp += c - ((df + 1) / 2) * Math.log1p(((v - (mu as number)) * inv) ** 2 / df)
+        for (const v of observed) lp += c - ((df + 1) / 2) * Math.log1p(((v - (mu as number)) * inv) ** 2 / df)
         return lp
       },
       [
@@ -1485,7 +1509,7 @@ function studentFullLearnedProblem(k: Config): AtomParts {
         xLabel: 'observation',
         yLabel: 'y',
         xLimits: x as [number, number],
-        points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
+        points: [{ name: 'observations', x: observed.map((_, i) => i + 1), y: observed }],
         curves: [{ name: 'true location', colour: 'tab2', x, y: [trueLoc, trueLoc] }],
         answer: (mm) => [{ name: 'mu', x, y: [mm['mu'] ?? Number.NaN, mm['mu'] ?? Number.NaN] }],
       },
@@ -1537,8 +1561,8 @@ function weibullShapeLearnedProblem(k: Config): AtomParts {
   const [priorSd, shapeSd] = [configNumber(k, 'priorSd'), configNumber(k, 'shapeSd')]
   // region weibull-shape-learned
   // the ground truth: Weibull times with a stated scale and shape
-  const u = toFlat(uniform(foldIn(key(seed), 1), [n]))
-  const y = Array.from(u, (v) => Math.exp(trueLogScale) * (-Math.log(1 - v)) ** (1 / trueShape))
+  const wait = pow(neg(log(sub(1, uniform(foldIn(key(seed), 1), [n])))), 1 / trueShape)
+  const y = mul(Math.exp(trueLogScale), wait)
   const definition = defineModel('weibull-shape-learned', (m) => {
     // the log of the scale and the shape: both unknown
     const logScale = m.latent('logScale', d.normal(0, priorSd))
@@ -1547,7 +1571,8 @@ function weibullShapeLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.weibull(shape, ops.exp(logScale)), times)
   })
   // endregion
-  const u0 = sum(y.map((v) => Math.log(v))) / n
+  const observed = toFlat(y)
+  const u0 = sum(observed.map((v) => Math.log(v))) / n
   const grid = once(() =>
     gridMarginals(
       ([ls, t]) => {
@@ -1556,7 +1581,7 @@ function weibullShapeLearnedProblem(k: Config): AtomParts {
           -0.5 * ((ls as number) / priorSd) ** 2 -
           (0.5 * ((t as number) - 0.4) ** 2) / shapeSd ** 2 +
           sum(
-            y.map(
+            observed.map(
               (v) =>
                 (t as number) +
                 (shape - 1) * Math.log(v) -
@@ -1573,7 +1598,7 @@ function weibullShapeLearnedProblem(k: Config): AtomParts {
       141,
     ),
   )
-  const x = y.map((_, i) => i + 1)
+  const x = observed.map((_, i) => i + 1)
   const median = (ls: number, shape: number): number => Math.exp(ls) * Math.LN2 ** (1 / shape)
   return {
     build: {
@@ -1606,7 +1631,7 @@ function weibullShapeLearnedProblem(k: Config): AtomParts {
         xLabel: 'observation',
         yLabel: 'time',
         xLimits: [0, n + 1],
-        points: [{ name: 'times', x, y }],
+        points: [{ name: 'times', x, y: observed }],
         curves: [
           {
             name: 'true median',
@@ -1665,14 +1690,15 @@ function skillsLearnedProblem(k: Config): AtomParts {
   // region skill-difference-learned
   // the ground truth: skills drawn with a spread, a round robin in which the better player usually wins
   const kk = key(seed)
-  const skills = Array.from(toFlat(normal(foldIn(kk, 0), [players], { scale: spread })))
-  const pairs: [number, number][] = []
-  for (let i = 0; i < players; i++) for (let j = i + 1; j < players; j++) pairs.push([i, j])
-  const games: [number, number][] = []
-  for (let r = 0; r < rounds; r++) for (const [i, j] of pairs) games.push(r % 2 ? [j, i] : [i, j])
-  const u = toFlat(uniform(foldIn(kk, 1), [games.length]))
-  const gap = games.map(([p, q]) => ((skills[p] ?? 0) - (skills[q] ?? 0)) / Math.SQRT2)
-  const win = gap.map((g, i) => ((u[i] ?? 1) < normalCdfFast(g) ? 1 : 0))
+  const skills = normal(foldIn(kk, 0), [players], { scale: spread })
+  // every pair of players meets once a round, and which of the two is listed first alternates
+  const [lo, hi] = nonzero(triu(ones([players, players]), 1)) as [Value, Value]
+  const odd = reshape(mod(arange(rounds), 2), [rounds, 1])
+  const home = flatten(where(odd, hi, lo))
+  const away = flatten(where(odd, lo, hi))
+  const games = rounds * ((players * (players - 1)) / 2)
+  const gap = div(sub(take(skills, home), take(skills, away)), Math.SQRT2)
+  const win = where(less(uniform(foldIn(kk, 1), [games]), ndtr(gap)), 1, 0)
   const definition = defineModel('skill-difference-learned', (m) => {
     const player = m.range('player')
     const game = m.range('game')
@@ -1686,15 +1712,16 @@ function skillsLearnedProblem(k: Config): AtomParts {
     m.observe('win', d.bernoulli({ probs: ops.probit(diff) }), won)
   })
   // endregion
-  const at = skills.map((_, i) => i + 1)
+  const truth = toFlat(skills)
+  const at = truth.map((_, i) => i + 1)
   return {
     build: {
       definition,
-      data: { a: games.map((g) => g[0]), b: games.map((g) => g[1]), win },
+      data: { a: home, b: away, win },
       bindOptions: { sizes: { player: players } },
       quantities: [
         { name: 'tau', label: 'tau (the precision of the skills)', support: 'positive', truth: 1 / spread ** 2 },
-        ...skills.map((t, j) => ({
+        ...truth.map((t, j) => ({
           name: `skill[${j}]`,
           label: `skill of player ${j + 1}`,
           support: 'real' as const,
@@ -1705,7 +1732,7 @@ function skillsLearnedProblem(k: Config): AtomParts {
     },
     present: {
       equations: [
-        `truth: ${players} skills ~ N(0, ${spread}²) (precision ${Number((1 / spread ** 2).toPrecision(3))}); a round robin played ${rounds} times (${games.length} games), seed ${seed}`,
+        `truth: ${players} skills ~ N(0, ${spread}²) (precision ${Number((1 / spread ** 2).toPrecision(3))}); a round robin played ${rounds} times (${games} games), seed ${seed}`,
         `tau ~ Gamma(${a}, ${b})   (the unknown precision of the skills: how spread out the players are)`,
         `skill_j ~ N(0, 1 / tau), j = 1..${players}`,
         'game g between a and b: a wins ~ Bernoulli(Phi((skill_a - skill_b) / sqrt 2))',
@@ -1716,7 +1743,7 @@ function skillsLearnedProblem(k: Config): AtomParts {
         xLabel: 'player',
         yLabel: 'skill',
         xLimits: [0, players + 1],
-        points: [{ name: 'true skill', x: at, y: skills }],
+        points: [{ name: 'true skill', x: at, y: truth }],
         answer: (mm) =>
           at.map((j) => ({
             name: `player ${j}`,

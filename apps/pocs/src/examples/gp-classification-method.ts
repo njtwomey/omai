@@ -161,6 +161,7 @@ function kernelOf(name: string, lengthScale: Value | number, period: number, dim
       return dim === 1
         ? periodicKernel({ lengthScale, period })
         : productKernel(
+            // banned-ok: non-numeric: one kernel per input dimension
             ...Array.from({ length: dim }, (_, j) => onDimensions(periodicKernel({ lengthScale, period }), [j])),
           )
     default:
@@ -634,6 +635,7 @@ function evaluate(
 /** The mean, 2.5% and 97.5% of each column of a list of draws (a row per draw). */
 function bands(draws: Value, width: number): { mean: number[]; lo: number[]; hi: number[]; sd: number[] } {
   const levels = tensor([0.025, 0.975])
+  // banned-ok: non-numeric: one quantile tensor per column, stacked
   const q = stack(Array.from({ length: width }, (_, j) => quantile(take(draws, j, 1), levels)))
   return {
     mean: toFlat(div(sum(draws, 0), draws.shape[0] ?? 1)),

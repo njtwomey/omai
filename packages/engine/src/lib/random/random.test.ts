@@ -31,6 +31,7 @@ import {
   permutation,
   philox4x32,
   poisson,
+  poissonEach,
   randint,
   randomBits,
   randomSplit,
@@ -99,6 +100,14 @@ describe('samplers have the right moments', () => {
     expect(minOf(Array.from(t.slice(0, 1000)))).toBeGreaterThanOrEqual(2)
     // E[Z | Z > 2] = phi(2) / (1 - Phi(2)) = 2.373215
     expect(mean(t)).toBeCloseTo(2.3732, 1)
+  })
+
+  it('poissonEach draws each count from its own key', () => {
+    const rates = [0.5, 3, 80, 0, 12]
+    const counts = poissonEach(rates, (i) => foldIn(key(21), 100 + i))
+    expect(Array.from(counts.data)).toEqual(rates.map((r, i) => poisson(foldIn(key(21), 100 + i), r, [1]).data[0]))
+    expect(counts.shape).toEqual([5])
+    expect(() => poissonEach([1, -1], (i) => key(i))).toThrow()
   })
 
   it('discrete samplers', () => {

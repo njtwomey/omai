@@ -62,6 +62,7 @@ export function simulator(
   const eventShape = options.eventShape ?? []
   const draws = (key: Key, shape: readonly number[]): Value => {
     const n = shape.reduce((a, b) => a * b, 1)
+    // banned-ok: non-numeric: one simulated tensor per key, stacked
     const rows = Array.from({ length: n }, (_, i) => broadcastTo(simulate(foldIn(key, i)), eventShape))
     return n === 0 ? reshape(asTensor([]), [...shape, ...eventShape]) : reshape(stack(rows), [...shape, ...eventShape])
   }
@@ -125,6 +126,7 @@ function scaledDistance(a: readonly number[], b: readonly number[], scale: reado
 
 function madScale(rows: readonly (readonly number[])[]): number[] {
   const d = rows[0]?.length ?? 0
+  // banned-ok: TODO tensor: the per-column median and MAD of the rows, with tensor quantiles
   return Array.from({ length: d }, (_, j) => {
     const col = rows.map((r) => r[j] ?? 0)
     const med = quantileOf(col, 0.5)
@@ -309,6 +311,7 @@ export function abcSmcAlgorithm<D = void>(
   let dim = 0
   let scale: number[] = []
   const unconstrain = (t: ProgramTrace): Float64Array => {
+    // banned-ok: kernel: scratch buffer of the ABC-SMC loop
     const out = new Float64Array(dim)
     for (const l of layout) {
       const site = t.sites.get(l.name)
@@ -364,6 +367,7 @@ export function abcSmcAlgorithm<D = void>(
         summaries.push([...st.summary(observedValues(t, st.observed))])
       }
       scale = madScale(summaries)
+      // banned-ok: TODO tensor: the particles, distances and weights of ABC-SMC are typed arrays (their state type)
       const particles = new Float64Array(P * dim)
       traces.forEach((t, i) => {
         particles.set(unconstrain(t), i * dim)
@@ -372,6 +376,7 @@ export function abcSmcAlgorithm<D = void>(
       return {
         generation: 0,
         particles,
+        // banned-ok: TODO tensor: the particles, distances and weights of ABC-SMC are typed arrays (their state type)
         logWeights: new Float64Array(P).fill(-Math.log(P)),
         distances,
         epsilon: Number.POSITIVE_INFINITY,
@@ -386,9 +391,11 @@ export function abcSmcAlgorithm<D = void>(
       const eps = quantileOf(state.distances, q)
       const w = Array.from(state.logWeights, (v) => Math.exp(v))
       // Twice the weighted covariance of the population.
+      // banned-ok: kernel: scratch buffer of the ABC-SMC loop
       const mean = new Float64Array(dim)
       for (let i = 0; i < P; i++)
         for (let j = 0; j < dim; j++) mean[j] = (mean[j] ?? 0) + (w[i] ?? 0) * (state.particles[i * dim + j] ?? 0)
+      // banned-ok: kernel: scratch buffer of the ABC-SMC loop
       const cov = new Float64Array(dim * dim)
       for (let i = 0; i < P; i++)
         for (let a = 0; a < dim; a++)
@@ -402,6 +409,7 @@ export function abcSmcAlgorithm<D = void>(
       const kernelCov = primalOf(add(fromStorage(cov, [dim, dim], 'float64'), mul(eye(dim), 1e-10)))
       const chol = primalOf(cholesky(kernelCov))
       const mixture = multivariateNormal(fromStorage(state.particles, [P, dim], 'float64'), { scaleTril: chol })
+      // banned-ok: TODO tensor: the particles, distances and weights of ABC-SMC are typed arrays (their state type)
       const particles = new Float64Array(P * dim)
       const distances = new Float64Array(P)
       const logWeights = new Float64Array(P)

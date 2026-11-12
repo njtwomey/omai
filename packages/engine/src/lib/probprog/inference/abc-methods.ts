@@ -191,6 +191,7 @@ export function abcSmcMethod(
           const o = stateFromJson(j) as Omit<AbcSmcState, 'traces'> & { traces: number; draws: Record<string, Tensor> }
           base.prime()
           const { draws, traces, ...rest } = o
+          // banned-ok: non-numeric: one empty trace per replication
           return { smc: { ...rest, traces: Array.from({ length: traces }, () => emptyTrace) }, draws }
         },
       }

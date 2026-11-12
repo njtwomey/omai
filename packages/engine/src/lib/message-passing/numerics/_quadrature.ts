@@ -104,6 +104,7 @@ export function gaussianGrid(
   const sd = Math.sqrt(variance)
   const lo = mean - 9 * sd
   const h = (18 * sd) / panels
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const x = new Float64Array(panels * order)
   const w = new Float64Array(panels * order)
   for (let p = 0; p < panels; p++)
@@ -159,6 +160,7 @@ export function gaussianGridOn(
 ): { readonly x: Float64Array; readonly w: Float64Array } {
   const rule = legendreRule(order)
   const h = (hi - lo) / panels
+  // banned-ok: kernel: working buffer of a sweep kernel (the message-passing buffers are not converted, by decision)
   const x = new Float64Array(panels * order)
   const w = new Float64Array(panels * order)
   const sd = Math.sqrt(variance)

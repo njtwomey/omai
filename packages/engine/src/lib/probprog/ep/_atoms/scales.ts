@@ -324,7 +324,7 @@ function precisionLearnedProblem(k: Config): AtomParts {
   const priorSd = configNumber(k, 'priorSd')
   // region gamma-precision-learned
   // the ground truth the data are drawn from: the model does not know it
-  const y = Array.from(toFlat(normal(foldIn(key(seed), 0), [n], { loc: trueMean, scale: trueSd })))
+  const y = normal(foldIn(key(seed), 0), [n], { loc: trueMean, scale: trueSd })
   const definition = defineModel('gamma-precision-learned', (m) => {
     // the precision (one over the variance) and the mean: both unknown
     const tau = m.latent('tau', d.gamma(a, b))
@@ -333,6 +333,7 @@ function precisionLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.normal(mu, ops.div(1, ops.sqrt(tau))), observed)
   })
   // endregion
+  const observed = toFlat(y)
   const x = [0, n + 1]
   return {
     build: {
@@ -360,7 +361,7 @@ function precisionLearnedProblem(k: Config): AtomParts {
         xLabel: 'observation',
         yLabel: 'y',
         xLimits: x as [number, number],
-        points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
+        points: [{ name: 'observations', x: observed.map((_, i) => i + 1), y: observed }],
         curves: [
           { name: 'true mean', colour: 'tab2', x, y: [trueMean, trueMean] },
           { name: 'true mean + 2 sd', colour: 'tab2', x, y: [trueMean + 2 * trueSd, trueMean + 2 * trueSd] },
@@ -419,14 +420,13 @@ function populationLearnedProblem(k: Config): AtomParts {
   const [seed, groups] = [configNumber(k, 'seed'), configNumber(k, 'groups')]
   const [trueMean, trueSpread] = [configNumber(k, 'trueMean'), configNumber(k, 'trueSpread')]
   const [a, b, priorSd] = [configNumber(k, 'shape'), configNumber(k, 'rate'), configNumber(k, 'priorSd')]
-  const noise = toFlat(take(tensor(NOISE), mod(arange(groups), NOISE.length)))
+  const noise = take(tensor(NOISE), mod(arange(groups), NOISE.length))
   // region shared-precision-learned
   // the ground truth: effects drawn around a mean with a spread, then each observed with its own noise
   const kk = key(seed)
   const around = { loc: trueMean, scale: trueSpread }
-  const effects = Array.from(toFlat(normal(foldIn(kk, 0), [groups], around)))
-  const draw = Array.from(toFlat(normal(foldIn(kk, 1), [groups])))
-  const y = effects.map((v, j) => v + (noise[j] ?? 1) * (draw[j] ?? 0))
+  const effects = normal(foldIn(kk, 0), [groups], around)
+  const y = add(effects, mul(noise, normal(foldIn(kk, 1), [groups])))
   const definition = defineModel('shared-precision-learned', (m) => {
     const j = m.range('group')
     // the precision of the effects (one over their spread) and their mean: both unknown
@@ -438,18 +438,19 @@ function populationLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.normal(theta, noise), observed)
   })
   // endregion
+  const [sds, truth, ys] = [toFlat(noise), toFlat(effects), toFlat(y)]
   // The exact posterior: the precision by quadrature with the mean integrated out, each of the others Gaussian given it.
   const [m0, v0] = [0, priorSd ** 2]
   const stats = (tau: number): { prec: number; mean: number; w: number[] } => {
-    const w = noise.map((s) => 1 / (s * s + 1 / tau))
+    const w = sds.map((s) => 1 / (s * s + 1 / tau))
     const prec = 1 / v0 + w.reduce((p, q) => p + q, 0)
-    const mean = (m0 / v0 + w.reduce((p, q, j) => p + q * (y[j] ?? 0), 0)) / prec
+    const mean = (m0 / v0 + w.reduce((p, q, j) => p + q * (ys[j] ?? 0), 0)) / prec
     return { prec, mean, w }
   }
   const logMarginal = (tau: number): number => {
     const { prec, w } = stats(tau)
-    const lin = m0 / v0 + w.reduce((p, q, j) => p + q * (y[j] ?? 0), 0)
-    const quad = w.reduce((p, q, j) => p + q * (y[j] ?? 0) ** 2, 0) + m0 ** 2 / v0
+    const lin = m0 / v0 + w.reduce((p, q, j) => p + q * (ys[j] ?? 0), 0)
+    const quad = w.reduce((p, q, j) => p + q * (ys[j] ?? 0) ** 2, 0) + m0 ** 2 / v0
     return (
       (a - 1) * Math.log(tau) -
       b * tau +
@@ -469,15 +470,15 @@ function populationLearnedProblem(k: Config): AtomParts {
     const s = stats(tau)
     return gauss(s.mean, 1 / s.prec)
   })
-  const exactTheta = effects.map((_, j) =>
+  const exactTheta = truth.map((_, j) =>
     post.mix((tau) => {
       const s = stats(tau)
-      const prec = 1 / (noise[j] ?? 1) ** 2
+      const prec = 1 / (sds[j] ?? 1) ** 2
       const shrink = prec / (tau + prec)
-      return gauss(shrink * (y[j] ?? 0) + (1 - shrink) * s.mean, 1 / (tau + prec) + (1 - shrink) ** 2 / s.prec)
+      return gauss(shrink * (ys[j] ?? 0) + (1 - shrink) * s.mean, 1 / (tau + prec) + (1 - shrink) ** 2 / s.prec)
     }),
   )
-  const at = effects.map((_, j) => j + 1)
+  const at = truth.map((_, j) => j + 1)
   return {
     build: {
       definition,
@@ -485,7 +486,7 @@ function populationLearnedProblem(k: Config): AtomParts {
       quantities: [
         { name: 'tau', label: 'tau (the precision of the effects)', support: 'positive', truth: 1 / trueSpread ** 2 },
         { name: 'mu', label: 'mu (the mean effect)', support: 'real', truth: trueMean },
-        ...effects.map((t, j) => ({
+        ...truth.map((t, j) => ({
           name: `theta[${j}]`,
           label: `theta_${j + 1}`,
           support: 'real' as const,
@@ -503,7 +504,7 @@ function populationLearnedProblem(k: Config): AtomParts {
         `tau ~ Gamma(${a}, ${b})   (the unknown precision of the effects)`,
         `mu ~ N(0, ${priorSd}²)   (the unknown mean of the effects)`,
         `theta_j ~ N(mu, 1 / tau), j = 1..${groups}`,
-        `y_j ~ N(theta_j, s_j²), s = (${noise.join(', ')})   (known noise)`,
+        `y_j ~ N(theta_j, s_j²), s = (${sds.join(', ')})   (known noise)`,
       ],
       figure: {
         caption:
@@ -512,8 +513,8 @@ function populationLearnedProblem(k: Config): AtomParts {
         yLabel: 'value',
         xLimits: [0, groups + 1],
         points: [
-          { name: 'observed y', x: at, y },
-          { name: 'true effect', x: at, y: effects },
+          { name: 'observed y', x: at, y: ys },
+          { name: 'true effect', x: at, y: truth },
         ],
         answer: (mm) =>
           at.map((j) => ({

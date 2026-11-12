@@ -159,6 +159,7 @@ export function trueskillTournament(key: Key, options: TrueskillOptions = {}): T
   for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) meetings.push([a, b])
   const flip = toFlat(drawUniform(foldIn(key, 1), [games]))
   const u = toFlat(drawUniform(foldIn(key, 0), [games]))
+  // banned-ok: non-numeric: one pair of players per game
   const pairs = Array.from({ length: games }, (_, g): [number, number] => {
     const [a, b] = meetings[g % meetings.length] ?? [0, 1]
     return (flip[g] ?? 0) < 0.5 ? [a, b] : [b, a]

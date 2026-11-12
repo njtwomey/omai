@@ -1,7 +1,7 @@
 import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
-import { foldIn, key, poisson, split, uniform } from 'omai-engine/random'
+import { foldIn, key, poissonEach, split, uniform } from 'omai-engine/random'
 import {
   add,
   arange,
@@ -15,6 +15,7 @@ import {
   sliceAxis,
   stack,
   sub,
+  take,
   toArray,
   toFlat,
   where,
@@ -38,9 +39,10 @@ export function simulate(seed: number, stay = 0.95, steps = 80) {
   // A move goes one or two regimes on: the regime is a running sum of the shifts, mod 3.
   const shift = where(less(move, 0), 0, add(floor(mul(move, 2)), 1))
   const start = floor(mul(sliceAxis(u, 0, 0, 1), 3))
-  const z = toFlat(mod(cumsum(concat([start, sliceAxis(shift, 0, 1, steps)])), 3))
-  const y = z.map((s, t) => toFlat(poisson(foldIn(ky, t), RATES[s] as number, [1]))[0] ?? 0)
-  return { z, y, stay }
+  const z = mod(cumsum(concat([start, sliceAxis(shift, 0, 1, steps)])), 3)
+  // Each count has a key of its own.
+  const y = poissonEach(take(RATES, z), (t) => foldIn(ky, t))
+  return { z: toFlat(z), y: toFlat(y), stay }
 }
 // endregion
 
@@ -95,7 +97,7 @@ export async function infer(y: readonly number[], stay: number, hooks: EpHooks =
   const post = ep.posterior?.(run.state, run.config)
   if (post === undefined) throw new Error('EP gave no posterior')
   // The probability of each regime at each step: one row per step.
-  const steps = Array.from({ length: y.length }, (_, t) => post.marginal(`z[${t}]`).prob(arange(3)))
+  const steps = y.map((_, t) => post.marginal(`z[${t}]`).prob(arange(3)))
   const regimes = toArray(stack(steps)) as number[][]
   const rates = post.summary({ prob: 0.9 }).filter((r) => r.site === 'rate')
   return { bound, run, regimes, rates }

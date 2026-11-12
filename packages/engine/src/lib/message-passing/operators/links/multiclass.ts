@@ -175,6 +175,7 @@ export const multiclassSite: FactorOperator = defineOperator({
   description:
     'y ~ Categorical(softmax(z)) (or the multinomial probit) of Gaussian class scores z_0..z_(K-1): an adaptive Gauss-Hermite EP site',
   ports: (params: Params): readonly Port[] =>
+    // banned-ok: non-numeric: the ports of the site
     Array.from({ length: Math.max(2, Math.floor(numberParam(params, 'classes', 2))) }, (_, k) => ({
       name: `z${k}`,
       accepts: ['gaussian'],

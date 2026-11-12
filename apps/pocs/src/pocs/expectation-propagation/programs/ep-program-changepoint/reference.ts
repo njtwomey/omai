@@ -69,6 +69,7 @@ export async function gibbsReference(
     const r = toFlat(rate)
     // Forward filter and backward sample: scalar recursions over the steps, each needing the step before, on working
     // buffers (a tensor op per step per sweep made this reference 17 times slower, measured).
+    // banned-ok: reference: the Gibbs reference written out in plain arithmetic (forward filtering, backward sampling)
     const alpha = new Float64Array(T * K)
     for (let t = 0; t < T; t++) {
       let n = 0
@@ -84,6 +85,7 @@ export async function gibbsReference(
       }
       for (let k = 0; k < K; k++) alpha[t * K + k] = (alpha[t * K + k] as number) / n
     }
+    // banned-ok: reference: the Gibbs reference written out in plain arithmetic (forward filtering, backward sampling)
     const z = new Float64Array(T)
     const w = new Float64Array(K)
     for (let t = T - 1; t >= 0; t--) {
@@ -108,6 +110,7 @@ export async function gibbsReference(
     const member = cast(equal(reshape(fromVector(z), [T, 1]), regimeIds), 'float64')
     const total = sum(mul(member, reshape(counts, [T, 1])), 0)
     const shapes = toFlat(add(priorShape, total))
+    // banned-ok: reference: one array of draws per regime in the reference sampler
     const draws = Array.from({ length: K }, (_, k) =>
       gamma(keyFromPath(seed, 'rate', sweep * K + k), [1], shapes[k] as number),
     )

@@ -253,6 +253,7 @@ export function traceGraphElbo(options: TraceGraphOptions = {}): ElboEstimator<T
     estimate: (key, model, guide, data, params, state): ElboEstimate<TraceGraphState> => {
       const primal = Object.fromEntries(Object.entries(params).map(([k, v]) => [k, primalOf(v as Value)]))
       const deps = state.deps ?? dependencyGraph(model, guide, data, primal, foldIn(key, 1 << 29))
+      // banned-ok: non-numeric: one draw record per key
       const draws = Array.from({ length: n }, (_, i) => draw(foldIn(key, i), model, guide, data, params, scoreAll))
       // The pathwise value of every draw, and the score sites with their cost per draw.
       const scoreSites = (d: Draw): SampleSite[] =>

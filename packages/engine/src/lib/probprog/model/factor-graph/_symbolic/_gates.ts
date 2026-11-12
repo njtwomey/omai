@@ -160,6 +160,7 @@ export function choose(
     return lookupOf(cx, comps, code.variable)
   }
   if (code.kind !== 'rv' || code.family !== 'discrete') throw indexNotDataOrCategorical()
+  // banned-ok: non-numeric: one symbolic component per state
   const comps = Array.from({ length: states }, (_, k) => component(k))
   // The branches of a `pick` stay the states of one lookup (their random Gaussian forms are the branches of the gate the observation
   // is), instead of one `select` variable: the observation is a gate of likelihoods, exact in the discrete variable.

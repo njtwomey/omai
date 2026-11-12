@@ -228,6 +228,7 @@ export function ampProblem(
   const truth = toFlat(where(less(u, rho), g, 0))
   // Exempt from the tensor rule, on purpose: each measurement accumulates from its noise term, `w + a1 x1 + a2 x2 + ...`, in
   // this order; a matrix product sums from zero and adds the noise last, which moves the last bits of the seeded data.
+  // banned-ok: kernel: the seeded data accumulate in a fixed order (see the comment above), which a matrix product would change
   const y = Array.from({ length: m }, (_, i) => {
     let s = w[i] as number
     for (let j = 0; j < n; j++) s += (matrix[i * n + j] as number) * (truth[j] as number)

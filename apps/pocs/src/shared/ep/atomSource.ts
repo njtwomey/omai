@@ -1,4 +1,5 @@
 import type { AtomProblem, EpAtom } from 'omai-engine/probprog/ep'
+import { isTensor, toArray } from 'omai-engine/tensor'
 import { snippetOf } from '../../../../site/src/shell/snippet.ts'
 
 /** The atoms' source files, as text (`?raw`): the code shown is the code that runs. */
@@ -19,7 +20,8 @@ const SOURCES = import.meta.glob(
 function dataText(data: AtomProblem['data']): string {
   const round = (v: unknown): unknown =>
     typeof v === 'number' ? Number(v.toPrecision(4)) : Array.isArray(v) ? v.map(round) : v
-  const entries = Object.entries(data as Record<string, unknown>).map(([k, v]) => {
+  const entries = Object.entries(data as Record<string, unknown>).map(([k, tensorOrList]) => {
+    const v = isTensor(tensorOrList) ? toArray(tensorOrList) : tensorOrList
     const text = JSON.stringify(round(v)).replace(/,/g, ', ')
     return `  ${k}: ${text.length > 70 && Array.isArray(v) ? `[... ${v.length} entries]` : text},`
   })

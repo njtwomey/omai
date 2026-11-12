@@ -91,6 +91,7 @@ export function numericOperator(options: NumericOperatorOptions): FactorOperator
   const n = options.arity
   if (!(Number.isInteger(n) && n >= 1 && n <= 3))
     throw new ParameterError('numericOperator: the arity must be 1, 2 or 3')
+  // banned-ok: non-numeric: the ports of the operator
   const ports: Port[] = Array.from({ length: n }, (_, i) => ({ name: `x${i}`, accepts: ['gaussian'], constant: true }))
   const tilted = (c: OperatorContext): TiltedMoments => {
     const bases = c.args.map(

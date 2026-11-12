@@ -728,7 +728,8 @@ export function hybridMethod(
             })),
             kept: stateToJson(
               ch.kept.length === 0
-                ? new Float64Array(0)
+                ? // banned-ok: sentinel: an empty initial array (no draws yet)
+                  new Float64Array(0)
                 : Float64Array.from(toFlat(concat(ch.kept.map((r) => asTensor(r))))),
             ),
             rows: ch.kept.length,
@@ -759,6 +760,7 @@ export function hybridMethod(
                     stepSize: stateFromJson(b['stepSize'] as Json) as number,
                   }),
                 ),
+                // banned-ok: TODO tensor: the rows of the kept draws, as a reshape of the flat state
                 kept: Array.from({ length: rows }, (_, r) => flat.slice(r * total, (r + 1) * total)),
               }
             }),

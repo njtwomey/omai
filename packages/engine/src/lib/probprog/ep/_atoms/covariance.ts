@@ -834,6 +834,7 @@ function randomEffectsFigure(
           ),
         }),
     answer: (mm) =>
+      // banned-ok: non-numeric: one figure record per group
       Array.from({ length: groups }, (_, j) => ({
         name: `fit ${j + 1}`,
         x,
@@ -902,6 +903,7 @@ function randomEffectsProblem(k: Config): AtomParts {
         { name: 'Lambda[0]', label: 'Lambda 11', support: 'positive' },
         { name: 'Lambda[1]', label: 'Lambda 12', support: 'real' },
         { name: 'Lambda[3]', label: 'Lambda 22', support: 'positive' },
+        // banned-ok: non-numeric: one quantity spec per group
         ...Array.from({ length: groups }, (_, j) => [
           {
             name: `theta[${2 * j}]`,
@@ -1083,6 +1085,7 @@ function randomEffectsLearnedProblem(k: Config): AtomParts {
         { name: 'Lambda[0]', label: 'Lambda 11', support: 'positive', truth: trueLambda[0] },
         { name: 'Lambda[1]', label: 'Lambda 12', support: 'real', truth: trueLambda[1] },
         { name: 'Lambda[3]', label: 'Lambda 22', support: 'positive', truth: trueLambda[2] },
+        // banned-ok: non-numeric: one quantity spec per group
         ...Array.from({ length: groups }, (_, j) => [
           {
             name: `theta[${2 * j}]`,
