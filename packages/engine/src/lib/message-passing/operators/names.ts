@@ -60,6 +60,7 @@ export const operatorNames = [
   'gaussian-scale',
   'negative-binomial-dispersion',
   'likelihood-pair',
+  'likelihood-triple',
   'multiclass-site',
   'gaussian-mv-precision-scale',
   'gaussian-mv-function-scale',

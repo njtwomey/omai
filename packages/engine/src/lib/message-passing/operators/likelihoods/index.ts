@@ -1,7 +1,7 @@
 /**
  * The numeric likelihood operators: the generic numeric operator for any density, the registry of count, survival,
  * ordinal, quantile and robust likelihoods (`likelihood-site`, its row), the Student-t, Laplace and mixture sites, the
- * exact numeric priors, the two-variable likelihood pairs, and the unary function `apply`. Part of `omai-engine/message-
+ * exact numeric priors, the two- and three-variable likelihood pairs and triples, and the unary function `apply`. Part of `omai-engine/message-
  * passing`.
  *
  * @inline
@@ -14,3 +14,4 @@ export * from './numeric.ts'
 export * from './pairs.ts'
 export * from './prior-sites.ts'
 export * from './robust.ts'
+export * from './triples.ts'

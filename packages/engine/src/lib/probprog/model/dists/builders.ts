@@ -162,15 +162,32 @@ export function asymmetricLaplace(loc: Operand = 0, scale: Operand = 1, tau: Ope
 
 /**
  * An ordinal outcome 0 to K-1 by the cumulative probit: `P(y <= k) = Phi(cutpoints_k - predictor)` for the increasing `cutpoints`
- * (K - 1 known values). `y ~ orderedProbit(X w, cuts)` is ordered probit regression.
+ * (K - 1 values, known or random). `y ~ orderedProbit(X w, cuts)` is ordered probit regression. With `over`, the cut points are a named
+ * dimension of the parameters (a latent vector over `cut` with the `ordered` constraint, as a learned set of thresholds is written):
+ * that dimension is the event axis, so the observation has one entry per row, not per row and cut.
  */
-export function orderedProbit(predictor: Operand, cutpoints: Operand): DistExpr {
-  return family('orderedProbit', { predictor, cutpoints })
+export function orderedProbit(
+  predictor: Operand,
+  cutpoints: Operand,
+  options: { readonly over?: string | { readonly name: string } } = {},
+): DistExpr {
+  return withEventDim(family('orderedProbit', { predictor, cutpoints }), options.over)
 }
 
-/** An ordinal outcome 0 to K-1 by the cumulative logit (proportional odds): `P(y <= k) = sigmoid(cutpoints_k - predictor)`. */
-export function orderedLogistic(predictor: Operand, cutpoints: Operand): DistExpr {
-  return family('orderedLogistic', { predictor, cutpoints })
+/** An ordinal outcome 0 to K-1 by the cumulative logit (proportional odds): `P(y <= k) = sigmoid(cutpoints_k - predictor)`. `over` is as for `orderedProbit`. */
+export function orderedLogistic(
+  predictor: Operand,
+  cutpoints: Operand,
+  options: { readonly over?: string | { readonly name: string } } = {},
+): DistExpr {
+  return withEventDim(family('orderedLogistic', { predictor, cutpoints }), options.over)
+}
+
+/** The distribution with one named dimension of its parameters made its event axis (no dimension: unchanged). */
+function withEventDim(d: DistExpr, over: string | { readonly name: string } | undefined): DistExpr {
+  if (over === undefined) return d
+  const name = typeof over === 'string' ? over : over.name
+  return { ...d, dims: d.dims.filter((x) => x !== name), spec: { ...d.spec, eventDims: [name] } }
 }
 
 /** A negative binomial distribution. */

@@ -621,7 +621,7 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
   }),
   element({
     name: 'heavy-tailed',
-    maps: 'a Student-t, Laplace or outlier-mixture observation: the scale-mixture factors of the engine on the mean',
+    maps: 'a Student-t, Laplace or outlier-mixture observation: the scale-mixture factors of the engine on the mean; a random scale, random degrees of freedom or both: a likelihood-pair or likelihood-triple factor',
     families: ['studentT', 'laplace', 'normalOutliers'],
     requires: [
       'bernoulli',
@@ -631,6 +631,7 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
       'laplace-row',
       'laplace-site',
       'likelihood-pair',
+      'likelihood-triple',
       'mixture-row',
       'mixture-site',
       'prior',
@@ -648,9 +649,9 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
   }),
   element({
     name: 'ordered-numeric',
-    maps: 'an ordered probit or logistic, or an asymmetric Laplace (quantile regression): a likelihood-site factor on the predictor',
+    maps: 'an ordered probit or logistic, or an asymmetric Laplace (quantile regression): a likelihood-site factor on the predictor, and for random cut points a likelihood-triple factor on the predictor and the two cuts of the observed category',
     families: ['orderedProbit', 'orderedLogistic', 'asymmetricLaplace'],
-    requires: ['likelihood-pair', 'likelihood-row', 'likelihood-site'],
+    requires: ['likelihood-pair', 'likelihood-row', 'likelihood-site', 'likelihood-triple'],
     map: (cx, node, el) => observedNumeric(cx, node, el.fam, el.y, el.i, el.index),
   }),
   element({

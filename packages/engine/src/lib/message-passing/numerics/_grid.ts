@@ -25,6 +25,8 @@ export interface GridAxis {
   readonly logWeight: (x: number) => number
   /** Coordinates where the integrand is not smooth: panels never straddle them. */
   readonly kinks: readonly number[]
+  /** How many times the panels of the profile this coordinate gets (default 1): an axis along which the integrand has heavy tails needs more than one it is smooth along. */
+  readonly fineness?: number
 }
 
 /** The panels and nodes per panel of one pass. */
@@ -51,8 +53,8 @@ export interface GridProfile {
   readonly layout: 'first-fastest' | 'first-slowest'
 }
 
-/** The profiles of the library's grids: `pair` (the likelihood sites of two scalars, with kinks) and `axes` (the covariance sites of up to three). */
-export const gridProfiles: { readonly pair: GridProfile; readonly axes: GridProfile } = {
+/** The profiles of the library's grids: `pair` (the likelihood sites of two scalars, with kinks), `axes` (the covariance sites of up to three) and `triple` (the likelihood sites of three scalars). */
+export const gridProfiles: { readonly pair: GridProfile; readonly axes: GridProfile; readonly triple: GridProfile } = {
   pair: {
     coarse: { panels: 8, order: 5 },
     fine: { panels: 10, order: 6 },
@@ -63,6 +65,13 @@ export const gridProfiles: { readonly pair: GridProfile; readonly axes: GridProf
   axes: {
     coarse: { panels: 4, order: 4 },
     fine: { panels: 6, order: 4 },
+    passes: 6,
+    panelling: 'uniform',
+    layout: 'first-fastest',
+  },
+  triple: {
+    coarse: { panels: 4, order: 5 },
+    fine: { panels: 6, order: 5 },
     passes: 6,
     panelling: 'uniform',
     layout: 'first-fastest',
@@ -156,6 +165,14 @@ function uniformPanels(lo: number, hi: number, shape: PassShape): { readonly x: 
 export type GridIntegrand = (rest: readonly number[]) => (x0: number) => number
 
 /**
+ * The integrand of a grid by the index of the nodes: given the nodes of each axis of a pass, the log of the integrand at the node
+ * `(a, b, c)`. For a density that is built from functions of pairs of coordinates (an ordinal outcome is the difference of a term of
+ * the predictor and the upper cut and a term of the predictor and the lower cut), which the pass evaluates once per pair of nodes in
+ * a table, not once per triple.
+ */
+export type GridIndexed = (nodes: readonly Float64Array[]) => (a: number, b: number, c: number) => number
+
+/**
  * The integral of `exp(logf(t))` against the cavities of one to three axes: a first grid over each axis's window finds where the
  * mass lives (each window is shrunk to the nodes where the marginal weight is not negligible, until it settles), and a fine grid
  * over the settled window gives the answer.
@@ -171,6 +188,7 @@ function integrateGrid(
   axes: readonly GridAxis[],
   integrand: GridIntegrand,
   profile: GridProfile = gridProfiles.axes,
+  indexed?: GridIndexed,
 ): GridNResult {
   const k = axes.length
   if (k < 1 || k > 3) throw new ParameterError('integrateAxes: one to three axes')
@@ -182,10 +200,12 @@ function integrateGrid(
     const grids = axes.map((a, i) => {
       if (a.point) return { x: [a.lo], logw: [0] }
       const [lo, hi] = window[i] as [number, number]
+      const mine =
+        a.fineness === undefined ? shape : { panels: Math.round(shape.panels * a.fineness), order: shape.order }
       const g =
         profile.panelling === 'graded'
-          ? gradedPanels(lo, hi, a.kinks, shape.panels, shape.order)
-          : uniformPanels(lo, hi, shape)
+          ? gradedPanels(lo, hi, a.kinks, mine.panels, mine.order)
+          : uniformPanels(lo, hi, mine)
       return { x: g.x, logw: g.x.map((xi, q) => Math.log(g.w[q] as number) + a.logWeight(xi)) }
     })
     const sizes = grids.map((g) => g.x.length)
@@ -198,13 +218,19 @@ function integrateGrid(
     const at = (a: number, b: number, c: number): number => (slowest ? a * n1 + b : a + n0 * (b + n1 * c))
     const logw = new Float64Array(n0 * n1 * n2)
     const rest = new Array<number>(k - 1)
+    // A density given by the index of the nodes reads tables made once per pass from the nodes of each axis.
+    const byIndex = indexed?.(grids.map((g) => Float64Array.from(g.x)))
     for (let c = 0; c < n2; c++)
       for (let b = 0; b < n1; b++) {
         if (k > 1) rest[0] = (grids[1] as { x: number[] }).x[b] as number
         if (k > 2) rest[1] = (grids[2] as { x: number[] }).x[c] as number
-        const f = integrand(rest)
         const lw1 = k > 1 ? ((grids[1] as { logw: number[] }).logw[b] as number) : 0
         const lw2 = k > 2 ? ((grids[2] as { logw: number[] }).logw[c] as number) : 0
+        if (byIndex !== undefined) {
+          for (let a = 0; a < n0; a++) logw[at(a, b, c)] = (logw0[a] as number) + lw1 + lw2 + byIndex(a, b, c)
+          continue
+        }
+        const f = integrand(rest)
         for (let a = 0; a < n0; a++) logw[at(a, b, c)] = (logw0[a] as number) + lw1 + lw2 + f(first[a] as number)
       }
     // The weights in storage order, shifted by the largest log weight.
@@ -316,14 +342,7 @@ export function integratePair(
   column: (x1: number) => (x0: number) => number,
 ): GridResult {
   const r = integrateGrid(axes, (rest) => column(rest[0] as number), gridProfiles.pair)
-  const stats = [0, 1].map((k) => {
-    const xs = r.nodes[k] as Float64Array
-    const pk = r.marginals[k] as Float64Array
-    let meanExp = 0
-    for (let i = 0; i < xs.length; i++) meanExp += (pk[i] as number) * Math.exp(xs[i] as number)
-    // The marginals are normalised: the mean is their weighted sum, the variance the weighted squares of the deviations from it.
-    return { ...centredMoments(pk, 1, xs), meanExp }
-  }) as [{ mean: number; variance: number; meanExp: number }, { mean: number; variance: number; meanExp: number }]
+  const stats = [axisMoments(r, 0), axisMoments(r, 1)] as const
   return {
     logMass: r.logMass,
     mean: [stats[0].mean, stats[1].mean],
@@ -331,6 +350,51 @@ export function integratePair(
     meanExp: [stats[0].meanExp, stats[1].meanExp],
     nodes: [r.nodes[0] as Float64Array, r.nodes[1] as Float64Array],
     weights: r.weights,
+  }
+}
+
+/** The mean, the centred variance and the mean of `exp(x)` of one coordinate of a finished grid, from its marginal weights. */
+function axisMoments(r: GridNResult, k: number): { mean: number; variance: number; meanExp: number } {
+  const xs = r.nodes[k] as Float64Array
+  const pk = r.marginals[k] as Float64Array
+  let meanExp = 0
+  for (let i = 0; i < xs.length; i++) meanExp += (pk[i] as number) * Math.exp(xs[i] as number)
+  // The marginals are normalised: the mean is their weighted sum, the variance the weighted squares of the deviations from it.
+  return { ...centredMoments(pk, 1, xs), meanExp }
+}
+
+/** The result of a three-coordinate integral: the log mass, and per coordinate the mean, the variance and the mean of `exp(x)`. */
+export interface GridTripleResult {
+  readonly logMass: number
+  readonly mean: readonly [number, number, number]
+  readonly variance: readonly [number, number, number]
+  readonly meanExp: readonly [number, number, number]
+}
+
+/**
+ * The integral of `exp(logf(x0, x1, x2))` against three cavities in the profile `triple` (equal panels, zoomed onto the mass), with the
+ * moments of each coordinate: what a likelihood over three random scalars (a Student-t with a random location, scale and degrees of
+ * freedom, an ordinal outcome with a random predictor and two random cut points) is integrated with.
+ *
+ * @param axes - The three coordinates.
+ * @param column - The log of the integrand as a function of the second and third coordinates that returns a function of the first,
+ * so what depends on those two alone (a gamma function of a shape and a scale) is computed once per pair of nodes of them.
+ * @param indexed - The same density by the index of the nodes, when it is made of functions of pairs of coordinates (it is used in place of `column`).
+ * @returns The log mass and the moments of each coordinate under the normalised integrand.
+ * @throws ImproperMessageError when the integrand has no mass under the cavities.
+ */
+export function integrateTriple(
+  axes: readonly [GridAxis, GridAxis, GridAxis],
+  column: (x1: number, x2: number) => (x0: number) => number,
+  indexed?: GridIndexed,
+): GridTripleResult {
+  const r = integrateGrid(axes, (rest) => column(rest[0] as number, rest[1] as number), gridProfiles.triple, indexed)
+  const stats = [axisMoments(r, 0), axisMoments(r, 1), axisMoments(r, 2)] as const
+  return {
+    logMass: r.logMass,
+    mean: [stats[0].mean, stats[1].mean, stats[2].mean],
+    variance: [stats[0].variance, stats[1].variance, stats[2].variance],
+    meanExp: [stats[0].meanExp, stats[1].meanExp, stats[2].meanExp],
   }
 }
 
