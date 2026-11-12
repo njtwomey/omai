@@ -8676,10 +8676,7 @@ and a thumbnail of one recipe of each gallery section (`Thumbnail`, from `public
   `animation/` section shows the session player on a toy method.
 
 `apps/pocs/` (a second private app, `make pocs`, http://localhost:5310: proofs of concept, single live pages on the site's own
-shell, added only on request; see its README). Pocs that belong together are listed together: a group is declared in
-`src/groups.ts` (slug, title, summary), a poc joins it with `group: '<slug>'` in its `poc.ts`, and the index shows one
-section per group (a group's own page is `/group/<slug>`; a search lists matches flat with the group on each card; a poc with
-no group is under "More"; `groupPocs` makes the sections). The groups are `probabilistic-programming` (eleven pocs: `bayes-linear`,
+shell, added only on request; see its README). The pocs are a tree of real directories under `src/pocs/` and the app is a file browser: a poc is a folder `<dir>/<subdir>/.../<slug>/` with `poc.ts` and `Page.tsx` (its address stays `/poc/<slug>`, the slug unique across the tree), a directory has a `dir.ts` (`PocDir`: title, summary, order) and the page of a directory lists its subdirectories (tiles with the number of examples below) and then its examples; `/` is the root, `/dir/<a>/<b>` a directory, the top bar shows the trail, a search is global and flat with the path on each result (`buildTree` and the other pure functions are in `src/poc.ts`, the registry globs `./pocs/**/poc.ts`; a page left flat under `pocs/` with a legacy `group:` is listed in the directory of that name until it is moved). The top-level directories are `bayesian-examples`, `expectation-propagation` (with `overview`, `basic`, `priors`, `learned` and `programs`), `composed-atoms`, `probabilistic-programming` (eleven pocs: `bayes-linear`,
 `bocpd` and the showcase set of the probabilistic-programming plan below), `structured-prediction`, `models` and
 `graphics-and-fields`. The probit regression lab (`probit-lab`, added by request) is a tenth in the group: one probit regression on one two-dimensional dataset, run by the methods ticked, each in its own Web Worker (`serveStage` of `omai-render/producer`, a pool of at most `min(methods, cores - 1, 4)`, each through `runAnytimeAsync` for the budget); the page only counts the clock, and afterwards one playhead drives the pair plots, decision boundaries, marginals and diagnostics from the frames the workers recorded. The nine showcase pocs, each a composition of library methods and records with the exact answer beside
 them, are `probit-two-engines` (one probit regression written in the model builder and run by NUTS, EP and Laplace within a time
@@ -8828,7 +8825,7 @@ library for the same computation. They do not set a higher bar than that library
   the proof that a behaviour-preserving change of the EP capability (the model compiler, the message-passing engine and
   operators, the atoms, methods and coverage) changed nothing. It runs, serially in one process (about 2 to 2.5 minutes),
   every EP atom (`epAtoms`), every benchmark model, the variational run of each atom and the EP programs of the pocs
-  (the `infer` of each `ep-program-*/program.ts`, imported from `apps/pocs`; their reference samplers and calibrations are
+  (the `infer` of each `expectation-propagation/programs/ep-program-*/program.ts`, imported from `apps/pocs`; their reference samplers and calibrations are
   excluded), and records per item the compiled factor graph (sha256 of its canonical JSON in three compilations: EP's,
   rows expanded, variational), the verdict (route, status, sweeps, restarts, improper and repaired counts, reasons), the
   beliefs and log evidence at full precision, the atom's check rows and the `epCoverage` / `vmpCoverage` rows; plus the
