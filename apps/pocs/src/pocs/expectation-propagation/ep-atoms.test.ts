@@ -1,4 +1,4 @@
-// Every EP atom of the registry has a page in its directory (expectation-propagation, or composed-atoms for the ones that put pieces together), with the atom's title: the pages are generated from the registry.
+// Every EP atom of the registry has a page in the directory (expectation-propagation, or its composed-atoms subdirectory), with the atom's title: the pages are generated from the registry.
 import { epAtoms } from 'omai-engine/probprog/ep'
 import { describe, expect, it } from 'vitest'
 import { POCS, pageOf } from '../../registry.ts'
@@ -10,7 +10,7 @@ describe('the pages of the EP atoms', () => {
     '%s has a page in the group, titled as the atom',
     (name, title) => {
       const entry = POCS.find((p) => p.slug === `ep-${name}`)
-      expect(['expectation-propagation', 'composed-atoms']).toContain(entry?.dir[0])
+      expect(entry?.dir[0]).toBe('expectation-propagation')
       expect(entry?.title).toBe(title)
       expect(pageOf(`ep-${name}`)).toBeDefined()
     },

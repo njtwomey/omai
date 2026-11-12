@@ -42,25 +42,24 @@ describe('the directory tree', () => {
     }
   })
   it('the directories of the first level are the groups the index has always shown, in that order', () => {
-    expect(TREE.dirs.map((d) => d.name).slice(0, 7)).toEqual([
+    expect(TREE.dirs.map((d) => d.name).slice(0, 6)).toEqual([
       'bayesian-examples',
       'expectation-propagation',
-      'composed-atoms',
       'probabilistic-programming',
       'structured-prediction',
       'models',
       'graphics-and-fields',
     ])
   })
-  it('composed-atoms exists, and may be empty or fill up', () => {
-    expect(findDir(TREE, ['composed-atoms'])?.declared).toBe(true)
+  it('composed-atoms is a directory of expectation-propagation, and ep-coverage is a file of it', () => {
+    expect(findDir(TREE, ['expectation-propagation', 'composed-atoms'])?.declared).toBe(true)
+    expect(findDir(TREE, ['expectation-propagation'])?.pocs.map((p) => p.slug)).toContain('ep-coverage')
   })
   it('expectation propagation keeps its sections as subdirectories, each page in the one the old rules gave it', () => {
     const ep = findDir(TREE, ['expectation-propagation'])
-    expect(ep?.dirs.map((d) => d.name)).toEqual(['overview', 'basic', 'priors', 'learned', 'programs'])
+    expect(ep?.dirs.map((d) => d.name)).toEqual(['basic', 'priors', 'learned', 'programs', 'composed-atoms'])
     const slugs = (name: string): string[] =>
       (findDir(TREE, ['expectation-propagation', name])?.pocs ?? []).map((p) => p.slug)
-    expect(slugs('overview')).toEqual(['ep-coverage'])
     for (const s of slugs('programs')) expect(s).toMatch(/^ep-program-/)
     for (const s of slugs('priors')) expect(s).toMatch(/^(ep-prior-|ep-gate-weight)/)
     for (const s of slugs('learned')) expect(s).toMatch(/-learned$/)
