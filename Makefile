@@ -73,6 +73,7 @@ typecheck: ## Type-check every package (tsc) and the oracle (pyright)
 	@for p in $(PACKAGES); do echo "tsc $$p"; $(PNPM) --dir packages/$$p exec tsc -p tsconfig.json --noEmit || exit 1; done
 	@echo "tsc apps/site"; $(PNPM) --dir apps/site exec tsc -p tsconfig.json --noEmit
 	@echo "tsc apps/pocs"; $(PNPM) --dir apps/pocs exec tsc -p tsconfig.json --noEmit
+	@echo "tsc apps/showcase"; $(PNPM) --dir apps/showcase exec tsc -p tsconfig.json --noEmit
 	@echo "tsc scripts and config"; $(PNPM) exec tsc -p tsconfig.json
 	$(UV) run --group dev --group oracle-core --group oracle-torch --group oracle-prob --group oracle-rl --group oracle-vision pyright oracle
 
@@ -162,6 +163,10 @@ release: ## Release the last released version + 0.0.1: bump the packages, commit
 .PHONY: pocs
 pocs: ## Serve the proofs of concept (live single-page demos kept out of the site) at http://localhost:5310
 	$(PNPM) --dir apps/pocs exec vite
+
+.PHONY: showcase
+showcase: ## Serve the showcase (short illustrated stories, computed in a worker on a press of play) at http://localhost:5320
+	$(PNPM) --dir apps/showcase exec vite
 
 .PHONY: docs-catalogue
 docs-catalogue: ## Precompile the docs catalogue into apps/site/.generated/docs (skipped when newer than the sources)

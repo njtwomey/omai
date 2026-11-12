@@ -87,7 +87,10 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
   `apps/site` (`make dev`, http://localhost:5300), with two sections on a shared shell: the gallery (render,
   hand-written recipes) and the docs (generated from the TSDoc). A second private app, `apps/pocs` (`make pocs`, http://localhost:5310), holds proofs of
   concept: single live pages on the site's own shell, searchable, added only on request (see its README). There is no hub: pages that explain a method are the
-  encyclopedia's, composed from the packages.
+  encyclopedia's, composed from the packages. A third private app, `apps/showcase` (`make showcase`, http://localhost:5320), is the
+  splash screen for researchers: short illustrated stories (`src/stories/<slug>/`: `story.ts`, `compute.ts`, `worker.ts`, `Story.tsx`; the
+  contract and a template are in its README) where nothing runs until the reader presses play, the computation runs in a worker and the
+  figures arrive afterwards; it imports nothing from `apps/pocs`.
 - An estimator or algorithm is a configuration (a `Space`), slots filled from tables of library options
   (`lib/trace/modes.ts` for algorithms, `lib/space/tables.ts` for values; `union` spaces carry a mode and the knobs of
   its own), a contract of paths on the tape, and probes. Declare the contract with `defineContract` and give the

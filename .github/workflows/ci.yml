@@ -48,6 +48,7 @@ jobs:
           for p in engine render meta; do pnpm --dir packages/$p exec tsc -p tsconfig.json --noEmit; done
           pnpm --dir apps/site exec tsc -p tsconfig.json --noEmit
           pnpm --dir apps/pocs exec tsc -p tsconfig.json --noEmit
+          pnpm --dir apps/showcase exec tsc -p tsconfig.json --noEmit
           pnpm exec tsc -p tsconfig.json
 
   test:

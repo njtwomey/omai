@@ -9,7 +9,12 @@
  */
 
 /** The roots searched for the code a page shows (the files with `// region` markers), as path prefixes. */
-export const SHOWN_ROOTS: readonly string[] = ['packages/engine/src/lib/', 'apps/pocs/src/', 'examples/']
+export const SHOWN_ROOTS: readonly string[] = [
+  'packages/engine/src/lib/',
+  'apps/pocs/src/',
+  'apps/showcase/src/',
+  'examples/',
+]
 
 /** One occurrence the scan reports. */
 export interface ArrayProblem {

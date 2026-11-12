@@ -89,6 +89,16 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          name: 'showcase',
+          ...keepIsolation,
+          root: 'apps/showcase',
+          include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+          environment: 'node',
+        },
+      },
+      {
+        extends: true,
+        test: {
           name: 'site',
           ...keepIsolation,
           root: 'apps/site',
