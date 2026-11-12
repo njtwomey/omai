@@ -867,3 +867,35 @@ rule for nodes that cycle (`inference/ep-grid.ts`).
 - Tests: `ep-grid-sv.test.ts` (seed 1 against the brute-force numbers, in a dozen nodes), `ep-grid.test.ts` (warm start and walk on the
   Gaussian process benchmarks, where every node is exact; the weight of a node that did not settle). The EP digest: no item moves because
   of the change (`atom/gp-length-scale` differs from the committed baseline in the last digits, on the unchanged HEAD as well).
+
+## 2026-11-12 The multi-start finds the other mode of a mixture: starts on the labels' priors, and mode weights held to references (`agent-a11610-modes`, gap `multimodal` narrowed)
+
+Gap `multimodal` rewritten in `ep-gaps.ts` (still open). No second multi-start: `epMultiStartMethod` (`inference/ep-multistart.ts`) changed in two places.
+- **The defect.** A start was set on the discrete ports of the factors that are not priors. In a model whose labels are independent given the
+  parameters (a mixture, the clutter problem) each label has one other neighbour besides its row's likelihood, the prior, so the label's cavity
+  for the likelihood is the prior's message and the start on the likelihood's own port is divided out: every random, exclusion and relabelling
+  start reached the same fixed point (a two-cluster mean: one mode, a relabelled start returning to the first labelling; the clutter problem
+  at 7.8 +- 0.7 where the posterior is 6.4 +- 2.3). In a chain (the changepoint program) the neighbours carry the start, which is why the earlier
+  measurements found several modes there.
+- **The fix.** `discretePorts` now includes the ports of a prior; a start is a message on those (a relabelled start: the relabelled belief of
+  the label), and the start is carried through three damped sweeps (damping 0.5) before the run goes on at its own settings, because with
+  the default damping of 0 the prior sends its own message again at its first update. `diagnostics.modeWeights` is new (the weights, summing
+  to one).
+- **References** (`ep-multistart-modes.test.ts`): the clutter problem's location against its quadrature on six data sets, one run -> the
+  multi-start: the evidence 0.0 to 3.6 nats off -> within 0.006 nats, the mean 0.0 to 5.5 sd off (the other mode missed: data 2, one run
+  at 1.6 where the posterior is 9.0 +- 1.4) -> within 0.03 sd, the sd 0.26 to 0.49 of the truth's (0.95 on data 1, where one mode has all the mass) -> within 4%; the second mode weighs 0.28, 0.001, 0.027,
+  0.17, 0.23, 0.026 on the six. A two-cluster mean with unequal priors (12 points, the enumeration of the 4096 assignments gives the mass of
+  the labelling with the first mean below the second): 0.559, 0.186 and 0.980 exact, and 1.0 (one mode) before, 0.559, 0.186 and 0.980 now, the
+  evidence within 1e-4 nats, the labelled means within 0.02 sd and the sds within 1% of the exact ones. The benchmark mixture with symmetric priors (3 data sets of 40
+  points): two modes of equal weight, the sorted means within 0.05 sd and the sds within 4% of the grid (-1.889 +- 0.308 against -1.887 +- 0.313 on the first), the
+  evidence of one mode within 0.04 nats of the grid's. Overlapping clusters (ten points between -2 and 2) stay one fixed point (the evidence -19.07 against
+  the exact -18.75): the weights are only as good as the fixed points found.
+- **The changepoint program** (8 seeds, 12 starts, a Gibbs reference, the truth inside the 90% interval, spreads over the sampler's): the
+  `sort` read-out is unchanged to the digit (0.917, 0.72), `keep` finds more labellings (0.958, spread 2.7 -> 3.2 times the sampler's), `permute`
+  0.958 and 3.6, times 60, 75 and 57 s for the eight seeds.
+- **Labels default, for the owner** (`keep`, `permute`, `sort`; docs/probprog/ep.md section 4 has the table and the recommendation): `keep` gives
+  the exact marginals of the model as written; `sort` is the read-out of a data-ordered sampler; `permute` is the one that finds a labelling
+  of 2% weight reliably (12 random starts missed it). The default is not changed.
+- Not done: continuous symmetries (the sign of a loading: no discrete message to start from), a regime visited by a handful of steps, the
+  circular mixture's evidence, the forward-algorithm site (all in the gap's plan).
+- Digest: no item runs the multi-start (`ep-digest` items are the route's atoms, models and programs), so none moves.
