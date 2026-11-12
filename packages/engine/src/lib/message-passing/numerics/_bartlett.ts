@@ -75,7 +75,7 @@ const rules = new Map<string, { readonly x: Float64Array; readonly w: Float64Arr
  * @param shape - The gamma shape (positive).
  * @returns The rule.
  */
-export function gammaRule(order: number, shape: number): { readonly x: Float64Array; readonly w: Float64Array } {
+function gammaRule(order: number, shape: number): { readonly x: Float64Array; readonly w: Float64Array } {
   const key = `g${order}:${shape}`
   let rule = rules.get(key)
   if (rule === undefined) {
@@ -90,7 +90,7 @@ export function gammaRule(order: number, shape: number): { readonly x: Float64Ar
 }
 
 /** The nodes and weights of order `order` for `E f(z)`, `z ~ N(0, 1)` (weights sum to one). */
-export function normalRule(order: number): { readonly x: Float64Array; readonly w: Float64Array } {
+function normalRule(order: number): { readonly x: Float64Array; readonly w: Float64Array } {
   const key = `n${order}`
   let rule = rules.get(key)
   if (rule === undefined) {

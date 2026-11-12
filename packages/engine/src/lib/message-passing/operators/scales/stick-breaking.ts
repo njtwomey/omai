@@ -8,6 +8,7 @@
 
 import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, massOf, numberParam, scalarOf } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { ParameterError } from '../../core/errors.ts'
 import { beta } from '../../core/families.ts'
 import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
@@ -78,88 +79,91 @@ function stateMeans(mean: readonly number[]): number[] {
  * stickBreaking.vmp?.({ mode: 'vmp', to: 1, args, params: { sticks: 2 }, power: 1 }).message // => [0.2, 0.8]
  * ```
  */
-export const stickBreaking: FactorOperator = {
+export const stickBreaking: FactorOperator = defineOperator({
   name: 'stick-breaking',
   description: 'z ~ Discrete(pi) with pi the stick-breaking weights of beta breaks',
-  ports,
+  ports: ports,
   params: { sticks: param.integer({ min: 1 }) },
-  support: { ep: 'exact', vmp: 'exact' },
-  readsTarget: (to) => to > 0,
-  ep: (c): OperatorResult => {
-    const sticks = sticksOf(c.params)
-    const { a, b, mean } = breaks(c, sticks)
-    const weights = stateMeans(mean)
-    if (c.to === 0) return { message: discreteEta(weights) }
-    const j = c.to - 1
-    const r = stateProbabilities(arg(c, 0), sticks + 1)
-    // The expectation of p(z = k | v) over the other breaks, for each state k, as the part of it that does not depend on v_j.
-    const others = mean.map((m, i) => (i === j ? 1 : m))
-    const gone = mean.map((m, i) => (i === j ? 1 : 1 - m))
-    let before = 0 // states below j: independent of v_j
-    let rest = 1
-    for (let k = 0; k < j; k++) {
-      before += (r[k] as number) * rest * (others[k] as number)
-      rest *= gone[k] as number
-    }
-    // State j takes v_j times the earlier complements, the later states (1 - v_j) times the other breaks and complements.
-    const atJ = (r[j] as number) * rest
-    let later = 0
-    let run = rest
-    for (let k = j + 1; k <= sticks; k++) {
-      later += (r[k] as number) * run * (k < sticks ? (others[k] as number) : 1)
-      run *= k < sticks ? (gone[k] as number) : 1
-    }
-    const aj = a[j] as number
-    const bj = b[j] as number
-    const mj = mean[j] as number
-    const weight = [before, atJ * mj, later * (1 - mj)]
-    const total = (weight[0] as number) + (weight[1] as number) + (weight[2] as number)
-    const eta = etaOf(arg(c, c.to))
-    if (!(total > 0)) return { message: [0, 0] }
-    const parts = [beta.moments([aj - 1, bj - 1]), beta.moments([aj, bj - 1]), beta.moments([aj - 1, bj])]
-    const mixed = [0, 1].map(
-      (i) => weight.reduce((s, w, m) => s + w * ((parts[m] as number[])[i] as number), 0) / total,
-    )
-    return { message: beta.fromMoments(mixed).map((v, i) => v - (eta[i] ?? 0)) }
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const sticks = sticksOf(c.params)
+      const { a, b, mean } = breaks(c, sticks)
+      const weights = stateMeans(mean)
+      if (c.to === 0) return { message: discreteEta(weights) }
+      const j = c.to - 1
+      const r = stateProbabilities(arg(c, 0), sticks + 1)
+      // The expectation of p(z = k | v) over the other breaks, for each state k, as the part of it that does not depend on v_j.
+      const others = mean.map((m, i) => (i === j ? 1 : m))
+      const gone = mean.map((m, i) => (i === j ? 1 : 1 - m))
+      let before = 0 // states below j: independent of v_j
+      let rest = 1
+      for (let k = 0; k < j; k++) {
+        before += (r[k] as number) * rest * (others[k] as number)
+        rest *= gone[k] as number
+      }
+      // State j takes v_j times the earlier complements, the later states (1 - v_j) times the other breaks and complements.
+      const atJ = (r[j] as number) * rest
+      let later = 0
+      let run = rest
+      for (let k = j + 1; k <= sticks; k++) {
+        later += (r[k] as number) * run * (k < sticks ? (others[k] as number) : 1)
+        run *= k < sticks ? (gone[k] as number) : 1
+      }
+      const aj = a[j] as number
+      const bj = b[j] as number
+      const mj = mean[j] as number
+      const weight = [before, atJ * mj, later * (1 - mj)]
+      const total = (weight[0] as number) + (weight[1] as number) + (weight[2] as number)
+      const eta = etaOf(arg(c, c.to))
+      if (!(total > 0)) return { message: [0, 0] }
+      const parts = [beta.moments([aj - 1, bj - 1]), beta.moments([aj, bj - 1]), beta.moments([aj - 1, bj])]
+      const mixed = [0, 1].map(
+        (i) => weight.reduce((s, w, m) => s + w * ((parts[m] as number[])[i] as number), 0) / total,
+      )
+      return { message: beta.fromMoments(mixed).map((v, i) => v - (eta[i] ?? 0)) }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      const sticks = sticksOf(c.params)
+      const r = stateProbabilities(arg(c, 0), sticks + 1)
+      if (c.to === 0) {
+        const out: number[] = []
+        let rest = 0
+        for (let k = 0; k <= sticks; k++) {
+          const mo = k < sticks ? beta.moments(etaOf(arg(c, 1 + k))) : [0, 0]
+          out.push(rest + (k < sticks ? (mo[0] as number) : 0))
+          rest += k < sticks ? (mo[1] as number) : 0
+        }
+        return { message: out }
+      }
+      const j = c.to - 1
+      let later = 0
+      for (let k = j + 1; k <= sticks; k++) later += r[k] as number
+      return { message: [r[j] as number, later] }
+    }),
   },
-  vmp: (c): OperatorResult => {
-    const sticks = sticksOf(c.params)
-    const r = stateProbabilities(arg(c, 0), sticks + 1)
-    if (c.to === 0) {
-      const out: number[] = []
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const sticks = sticksOf(c.params)
+      const { mean } = breaks(c, sticks)
+      const r = stateProbabilities(arg(c, 0), sticks + 1)
+      const weights = stateMeans(mean)
+      let total = massOf(arg(c, 0))
+      for (let j = 0; j < sticks; j++) total += massOf(arg(c, 1 + j))
+      return total + Math.log(weights.reduce((s, w, k) => s + w * (r[k] as number), 0))
+    },
+    vmp: (c) => {
+      const sticks = sticksOf(c.params)
+      const r = stateProbabilities(arg(c, 0), sticks + 1)
+      let out = 0
       let rest = 0
       for (let k = 0; k <= sticks; k++) {
         const mo = k < sticks ? beta.moments(etaOf(arg(c, 1 + k))) : [0, 0]
-        out.push(rest + (k < sticks ? (mo[0] as number) : 0))
+        if ((r[k] as number) > 0) out += (r[k] as number) * (rest + (k < sticks ? (mo[0] as number) : 0))
         rest += k < sticks ? (mo[1] as number) : 0
       }
-      return { message: out }
-    }
-    const j = c.to - 1
-    let later = 0
-    for (let k = j + 1; k <= sticks; k++) later += r[k] as number
-    return { message: [r[j] as number, later] }
+      return out
+    },
   },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const sticks = sticksOf(c.params)
-    const { mean } = breaks(c, sticks)
-    const r = stateProbabilities(arg(c, 0), sticks + 1)
-    const weights = stateMeans(mean)
-    let total = massOf(arg(c, 0))
-    for (let j = 0; j < sticks; j++) total += massOf(arg(c, 1 + j))
-    return total + Math.log(weights.reduce((s, w, k) => s + w * (r[k] as number), 0))
-  },
-  expectedLog: (c) => {
-    const sticks = sticksOf(c.params)
-    const r = stateProbabilities(arg(c, 0), sticks + 1)
-    let out = 0
-    let rest = 0
-    for (let k = 0; k <= sticks; k++) {
-      const mo = k < sticks ? beta.moments(etaOf(arg(c, 1 + k))) : [0, 0]
-      if ((r[k] as number) > 0) out += (r[k] as number) * (rest + (k < sticks ? (mo[0] as number) : 0))
-      rest += k < sticks ? (mo[1] as number) : 0
-    }
-    return out
-  },
-}
+  traits: { readsTarget: (to) => to > 0 },
+})

@@ -19,11 +19,13 @@
 import { OmaiError } from '../../../base/index.ts'
 import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, messageArg, numberParam, valueArg, vectorParam } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { bernoulli, gaussian, gaussianEta } from '../../core/families.ts'
 import { gaussianMv, gaussianMvMoments } from '../../core/families-vector.ts'
 import { mergeParams, param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { ruleMessage } from '../../engine/dispatch.ts'
 import { spd } from '../../numerics/_dense.ts'
 import { logistic } from '../links/links.ts'
 import { probit } from '../links/truncation.ts'
@@ -138,9 +140,7 @@ function plateEp(link: FactorOperator, c: OperatorContext, r: Rows): Plate {
       if (!(v > 0 && precision > 0)) continue
       let site: Eta
       try {
-        site = (link.ep as NonNullable<FactorOperator['ep']>)(
-          siteContext(r.y[i] as number, m / v - (nu[i] ?? 0), precision),
-        ).message
+        site = ruleMessage(link, siteContext(r.y[i] as number, m / v - (nu[i] ?? 0), precision)).message
       } catch (e) {
         if (e instanceof OmaiError && e.code === 'value') continue
         throw e
@@ -213,7 +213,7 @@ function plateVariational(link: FactorOperator, c: OperatorContext, r: Rows): Et
     const a = rowAt(r, i)
     const v = quadratic(covariance, a, sa)
     const m = dot(a, mean)
-    const site = (link.vmp as NonNullable<FactorOperator['vmp']>)({
+    const site = ruleMessage(link, {
       mode: 'vmp',
       to: 1,
       args: [valueArg(bernoulli, r.y[i] as number), messageArg(gaussian, gaussianEta(m, v))],
@@ -274,16 +274,11 @@ function plateExpectedLog(link: FactorOperator, c: OperatorContext, r: Rows): nu
 export function glmPlate(name: string, link: FactorOperator, description: string): FactorOperator {
   if (link.ep === undefined) throw new ParameterError(`glmPlate: ${link.name} has no EP rule to lift`)
   const declared = mergeParams({ X: param.vector(), y: param.vector() }, link.params)
-  return {
+  return defineOperator({
     name,
     description,
     ...(declared === undefined ? {} : { params: declared }),
     ports: [{ name: 'w', accepts: ['gaussian-mv'] }],
-    support: {
-      ep: link.support.ep ?? 'numeric',
-      ...(link.vmp === undefined ? {} : { vmp: link.support.vmp ?? 'exact' }),
-    },
-    readsTarget: true,
     check: (params, families) => {
       const d = families[0]?.dim ?? 0
       const x = params['X']
@@ -292,21 +287,33 @@ export function glmPlate(name: string, link: FactorOperator, description: string
         ? undefined
         : `${name}: X must have as many entries as outcomes times the weights`
     },
-    ep: (c): OperatorResult => ({
-      message: plateEp(link, c, rowsOf(c.params, arg(c, 0).family.dim)).message,
-    }),
-    ...(link.vmp === undefined
-      ? {}
-      : {
-          vmp: (c: OperatorContext): OperatorResult => ({
-            message: plateVariational(link, c, rowsOf(c.params, arg(c, 0).family.dim)),
-          }),
+    // The plate says what its link says: the kind of each rule is the link's.
+    rules: {
+      ep: messageRule(
+        (c): OperatorResult => ({
+          message: plateEp(link, c, rowsOf(c.params, arg(c, 0).family.dim)).message,
         }),
-    logEvidence: (c) => plateEvidence(link, c, rowsOf(c.params, arg(c, 0).family.dim)),
-    ...(link.expectedLog === undefined
-      ? {}
-      : { expectedLog: (c: OperatorContext) => plateExpectedLog(link, c, rowsOf(c.params, arg(c, 0).family.dim)) }),
-  }
+        link.support.ep ?? 'numeric',
+      ),
+      ...(link.vmp === undefined
+        ? {}
+        : {
+            vmp: messageRule(
+              (c: OperatorContext): OperatorResult => ({
+                message: plateVariational(link, c, rowsOf(c.params, arg(c, 0).family.dim)),
+              }),
+              link.support.vmp ?? 'exact',
+            ),
+          }),
+    },
+    evidence: {
+      ep: (c) => plateEvidence(link, c, rowsOf(c.params, arg(c, 0).family.dim)),
+      ...(link.expectedLog === undefined
+        ? {}
+        : { vmp: (c: OperatorContext) => plateExpectedLog(link, c, rowsOf(c.params, arg(c, 0).family.dim)) }),
+    },
+    traits: { readsTarget: true },
+  })
 }
 
 /**
@@ -357,7 +364,7 @@ function statistics(c: OperatorContext): {
  * linearRegressionPlate.ep?.({ mode: 'ep', to: 0, args, params, power: 1 }).message // => [6, 8, 4, 2, 2, 10]
  * ```
  */
-export const linearRegressionPlate: FactorOperator = {
+export const linearRegressionPlate: FactorOperator = defineOperator({
   name: 'linear-regression-plate',
   description: 'a plate of rows y_i ~ N(a_i . w, 1 / precision), by sufficient statistics',
   ports: [{ name: 'w', accepts: ['gaussian-mv'] }],
@@ -368,44 +375,47 @@ export const linearRegressionPlate: FactorOperator = {
     n: param.number(),
     precision: param.positive(),
   },
-  support: { ep: 'exact', vmp: 'exact' },
   check: (params, families) => {
     const d = families[0]?.dim ?? 0
     return vectorParam(params, 'xtx').length === d * d && vectorParam(params, 'xty').length === d
       ? undefined
       : 'linear-regression-plate: xtx must be d x d and xty of length d for d weights'
   },
-  ep: (c): OperatorResult => {
-    const s = statistics(c)
-    const tau = numberParam(c.params, 'precision')
-    return { message: [...s.xty.map((v) => tau * v), ...s.xtx.map((v) => tau * v)] }
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const s = statistics(c)
+      const tau = numberParam(c.params, 'precision')
+      return { message: [...s.xty.map((v) => tau * v), ...s.xtx.map((v) => tau * v)] }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      const s = statistics(c)
+      const tau = numberParam(c.params, 'precision')
+      return { message: [...s.xty.map((v) => tau * v), ...s.xtx.map((v) => tau * v)] }
+    }),
   },
-  vmp: (c): OperatorResult => {
-    const s = statistics(c)
-    const tau = numberParam(c.params, 'precision')
-    return { message: [...s.xty.map((v) => tau * v), ...s.xtx.map((v) => tau * v)] }
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const s = statistics(c)
+      const tau = numberParam(c.params, 'precision')
+      const d = s.xty.length
+      const eta = etaOf(arg(c, 0))
+      const post = eta.map((v, i) => v + tau * (i < d ? (s.xty[i] ?? 0) : (s.xtx[i - d] ?? 0)))
+      return 0.5 * s.n * Math.log(tau / (2 * Math.PI)) - 0.5 * tau * s.yty + gaussianMv(d).logPartition(post)
+    },
+    vmp: (c) => {
+      const s = statistics(c)
+      const tau = numberParam(c.params, 'precision')
+      const d = s.xty.length
+      const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, 0)), d)
+      let cross = 0
+      let quad = 0
+      for (let i = 0; i < d; i++) {
+        cross += (s.xty[i] ?? 0) * (mean[i] ?? 0)
+        for (let j = 0; j < d; j++)
+          quad += (s.xtx[i * d + j] ?? 0) * ((covariance[i * d + j] ?? 0) + (mean[i] ?? 0) * (mean[j] ?? 0))
+      }
+      return 0.5 * s.n * Math.log(tau / (2 * Math.PI)) - 0.5 * tau * (s.yty - 2 * cross + quad)
+    },
   },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const s = statistics(c)
-    const tau = numberParam(c.params, 'precision')
-    const d = s.xty.length
-    const eta = etaOf(arg(c, 0))
-    const post = eta.map((v, i) => v + tau * (i < d ? (s.xty[i] ?? 0) : (s.xtx[i - d] ?? 0)))
-    return 0.5 * s.n * Math.log(tau / (2 * Math.PI)) - 0.5 * tau * s.yty + gaussianMv(d).logPartition(post)
-  },
-  expectedLog: (c) => {
-    const s = statistics(c)
-    const tau = numberParam(c.params, 'precision')
-    const d = s.xty.length
-    const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, 0)), d)
-    let cross = 0
-    let quad = 0
-    for (let i = 0; i < d; i++) {
-      cross += (s.xty[i] ?? 0) * (mean[i] ?? 0)
-      for (let j = 0; j < d; j++)
-        quad += (s.xtx[i * d + j] ?? 0) * ((covariance[i * d + j] ?? 0) + (mean[i] ?? 0) * (mean[j] ?? 0))
-    }
-    return 0.5 * s.n * Math.log(tau / (2 * Math.PI)) - 0.5 * tau * (s.yty - 2 * cross + quad)
-  },
-}
+})

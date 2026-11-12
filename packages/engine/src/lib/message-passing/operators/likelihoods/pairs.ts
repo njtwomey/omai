@@ -11,6 +11,7 @@
 
 import { errorText } from '../../core/_messages.ts'
 import { allProper, massOf, numberParam } from '../../core/args.ts'
+import { defineOperator, messageRule, tiltedRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { namedParams, param } from '../../core/params.ts'
 import type { FactorOperator, Family, OperatorContext, Params, Port, TiltedMoments } from '../../core/types.ts'
@@ -294,7 +295,7 @@ export function pairLikelihoodOperator(
     for (const a of c.args) logZ += massOf(a)
     return { moments, logZ, logMass: r.logMass }
   }
-  return {
+  return defineOperator({
     name: 'likelihood-pair',
     description:
       'y | x0, x1 ~ a density of the registry over two random scalars (a location and a scale, a shape, a pair of shapes)',
@@ -308,23 +309,10 @@ export function pairLikelihoodOperator(
         ...(entry === undefined ? {} : namedParams(entry.params, { optional: ['censored'] })),
       }
     },
-    support: { ep: 'numeric', vmp: 'numeric' },
-    readsTarget: true,
-    power: true,
     unsupported: (mode, params) => {
       if (mode !== 'vmp') return undefined
       const key = params['likelihood']
       return typeof key === 'string' ? table[key]?.noVmp : undefined
-    },
-    // The mean field: the non-conjugate message of the density under the two beliefs (a gamma belief on a positive coordinate is
-    // read through its log, as the grid of EP does).
-    vmp: (c) => {
-      const { logf, ports } = variational(table, c)
-      return { message: numericMessage(ports, c.to, logf) }
-    },
-    expectedLog: (c) => {
-      const { logf, ports } = variational(table, c)
-      return numericExpectedLog(ports, logf)
     },
     check: (params, families) => {
       try {
@@ -340,12 +328,27 @@ export function pairLikelihoodOperator(
         return errorText(e)
       }
     },
-    tilted: (c) => {
-      const t = tilted(c)
-      return { moments: t.moments, logZ: t.logZ }
+    rules: {
+      ep: tiltedRule((c) => {
+        const t = tilted(c)
+        return { moments: t.moments, logZ: t.logZ }
+      }),
+      // The mean field: the non-conjugate message of the density under the two beliefs (a gamma belief on a positive coordinate is
+      // read through its log, as the grid of EP does).
+      vmp: messageRule((c) => {
+        const { logf, ports } = variational(table, c)
+        return { message: numericMessage(ports, c.to, logf) }
+      }, 'numeric'),
     },
-    logEvidence: (c) => (allProper(c.args) ? tilted({ ...c, to: 0 }).logZ : Number.NaN),
-  }
+    evidence: {
+      ep: (c) => (allProper(c.args) ? tilted({ ...c, to: 0 }).logZ : Number.NaN),
+      vmp: (c) => {
+        const { logf, ports } = variational(table, c)
+        return numericExpectedLog(ports, logf)
+      },
+    },
+    traits: { readsTarget: true, power: true },
+  })
 }
 
 /** The pair likelihood site over the library's registry. */

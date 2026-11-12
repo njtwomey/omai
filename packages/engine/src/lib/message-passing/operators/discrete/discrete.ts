@@ -9,6 +9,7 @@ import { logSumExpOf } from '../../../base/index.ts'
 import { factor, factorProductAll, logFactor, logTotal, marginalise, reduceFactor } from '../../../pgm/factor.ts'
 import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, massOf, scalarOf, vectorParam } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
@@ -118,12 +119,11 @@ function tablePorts(params: Params): readonly Port[] {
  * m?.map((v) => Math.exp(v).toFixed(4)) // => ['0.3171', '0.6829']
  * ```
  */
-export const table: FactorOperator = {
+export const table: FactorOperator = defineOperator({
   name: 'table',
   description: 'a non-negative table over discrete variables',
   ports: tablePorts,
   params: { states: param.vector(), values: param.vector() },
-  support: { ep: 'exact', bp: 'exact', vmp: 'exact' },
   check: (params, families) => {
     const states = statesOf(params)
     const size = states.reduce((a, b) => a * b, 1)
@@ -138,17 +138,21 @@ export const table: FactorOperator = {
     }
     return undefined
   },
-  ep: (c): OperatorResult => ({ message: toMessage(arg(c, c.to).family, sumProduct(c, c.to).logs) }),
-  bp: (c): OperatorResult => ({ message: toMessage(arg(c, c.to).family, sumProduct(c, c.to).logs) }),
-  vmp: (c): OperatorResult => ({ message: toMessage(arg(c, c.to).family, expectedTable(c, c.to)) }),
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    let total = sumProduct(c, undefined).logZ
-    for (const a of c.args) total += massOf(a)
-    return total
+  rules: {
+    ep: messageRule((c): OperatorResult => ({ message: toMessage(arg(c, c.to).family, sumProduct(c, c.to).logs) })),
+    vmp: messageRule((c): OperatorResult => ({ message: toMessage(arg(c, c.to).family, expectedTable(c, c.to)) })),
+    bp: messageRule((c): OperatorResult => ({ message: toMessage(arg(c, c.to).family, sumProduct(c, c.to).logs) })),
   },
-  expectedLog: (c) => expectedTable(c, undefined)[0] ?? Number.NaN,
-}
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      let total = sumProduct(c, undefined).logZ
+      for (const a of c.args) total += massOf(a)
+      return total
+    },
+    vmp: (c) => expectedTable(c, undefined)[0] ?? Number.NaN,
+  },
+})
 
 /**
  * The values of a logic table over n Bernoulli variables, to give a `table` factor: the output (the first variable) is
@@ -224,42 +228,11 @@ const logOverlap = (f: Family, a: Eta, b: Eta): number => f.logPartition(a.map((
  * select.ep?.({ mode: 'ep', to: 0, args, params: { components: 2 }, power: 1 }).message.map((v) => v.toFixed(4)) // => ['0.0000', '0.5000']
  * ```
  */
-export const select: FactorOperator = {
+export const select: FactorOperator = defineOperator({
   name: 'select',
   description: 'y = c_z: select one of several variables by a discrete index',
   ports: selectPorts,
   params: { components: param.integer({ min: 1 }) },
-  support: { ep: 'exact', vmp: 'exact' },
-  readsTarget: (to) => to >= 2,
-  // The output is the selected component, so under the mean field it is defined by the others: its belief is the mixture of the
-  // components' beliefs (matched on the family's statistics, which is all a reader of `y` sees), the message to the switch is the
-  // expected log of the output's cavity under each component, and the message to a component is that cavity weighted by the
-  // probability of selecting it: the mean field of the model with `y` replaced by `c_z`.
-  defines: 0,
-  vmp: (c): OperatorResult => {
-    const f = arg(c, 0).family
-    const k = c.args.length - 2
-    const moments = (i: number): Eta => f.moments(etaOf(arg(c, i + 2)))
-    if (c.to === 0) {
-      const weights = selectWeights(arg(c, 1), k)
-      const mixed = new Array<number>(f.size).fill(0)
-      for (let i = 0; i < k; i++) {
-        const m = moments(i)
-        for (let j = 0; j < mixed.length; j++) mixed[j] = (mixed[j] ?? 0) + (weights[i] ?? 0) * (m[j] ?? 0)
-      }
-      return { message: f.fromMoments(mixed) }
-    }
-    const cavity = etaOf(arg(c, 0))
-    if (c.to === 1) {
-      const logs = Array.from({ length: k }, (_, i) => f.pair(cavity, moments(i)))
-      const z = arg(c, 1).family
-      return { message: z.kind === 'bernoulli' ? (z.fromLogProbs?.(logs) as Eta) : logs }
-    }
-    const weights = selectWeights(arg(c, 1), k)
-    const w = weights[c.to - 2] ?? 0
-    return { message: cavity.map((v) => w * v) }
-  },
-  expectedLog: () => 0,
   check: (params, families) => {
     const k = Math.trunc(Number(params['components']))
     const states = families[1]?.kind === 'bernoulli' ? 2 : families[1]?.dim
@@ -270,82 +243,116 @@ export const select: FactorOperator = {
         return 'select: y and every component must be of one family'
     return undefined
   },
-  ep: (c): OperatorResult => {
-    const f = arg(c, 0).family
-    const k = c.args.length - 2
-    const pi = (a: Arg): number[] =>
-      a.value !== undefined
-        ? discreteProbs(discreteEta(Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(a)) ? 1 : 0))))
-        : selectProbs(a)
-    const weights = pi(arg(c, 1))
-    const etaY = arg(c, 0).eta
-    const component = (i: number): Eta => etaOf(arg(c, i + 2))
-    const total = (eta: Eta, other: Eta): Eta => eta.map((v, i) => v + (other[i] ?? 0))
-    if (c.to === 0 || c.to === 1) {
-      const y = etaY ?? f.flat
-      const joint = Array.from({ length: k }, (_, i) => total(y, component(i)))
-      const overlap = joint.map((e, i) =>
-        f.isProper(e) ? f.logPartition(e) - f.logPartition(component(i)) : Number.NEGATIVE_INFINITY,
-      )
-      if (c.to === 1) {
-        const top = Math.max(...overlap)
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const f = arg(c, 0).family
+      const k = c.args.length - 2
+      const pi = (a: Arg): number[] =>
+        a.value !== undefined
+          ? discreteProbs(discreteEta(Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(a)) ? 1 : 0))))
+          : selectProbs(a)
+      const weights = pi(arg(c, 1))
+      const etaY = arg(c, 0).eta
+      const component = (i: number): Eta => etaOf(arg(c, i + 2))
+      const total = (eta: Eta, other: Eta): Eta => eta.map((v, i) => v + (other[i] ?? 0))
+      if (c.to === 0 || c.to === 1) {
+        const y = etaY ?? f.flat
+        const joint = Array.from({ length: k }, (_, i) => total(y, component(i)))
+        const overlap = joint.map((e, i) =>
+          f.isProper(e) ? f.logPartition(e) - f.logPartition(component(i)) : Number.NEGATIVE_INFINITY,
+        )
+        if (c.to === 1) {
+          const top = Math.max(...overlap)
+          if (!(top > Number.NEGATIVE_INFINITY))
+            throw new ImproperMessageError('select: no component overlaps the output')
+          const z = arg(c, 1).family
+          return {
+            message:
+              z.kind === 'bernoulli'
+                ? (z.fromLogProbs?.(overlap.map((v) => v - top)) as Eta)
+                : discreteEta(overlap.map((v) => Math.exp(v - top))),
+          }
+        }
+        const lw = overlap.map((v, i) => v + Math.log(weights[i] ?? 0))
+        const top = Math.max(...lw)
         if (!(top > Number.NEGATIVE_INFINITY))
           throw new ImproperMessageError('select: no component overlaps the output')
-        const z = arg(c, 1).family
-        return {
-          message:
-            z.kind === 'bernoulli'
-              ? (z.fromLogProbs?.(overlap.map((v) => v - top)) as Eta)
-              : discreteEta(overlap.map((v) => Math.exp(v - top))),
+        const w = lw.map((v) => Math.exp(v - top))
+        const norm = w.reduce((a, b) => a + b, 0)
+        const mixed = new Array<number>(f.size).fill(0)
+        for (const [i, e] of joint.entries()) {
+          if ((w[i] ?? 0) === 0) continue
+          const mo = f.moments(e)
+          for (let j = 0; j < mo.length; j++) mixed[j] = (mixed[j] ?? 0) + ((w[i] ?? 0) / norm) * (mo[j] ?? 0)
         }
+        return { message: f.fromMoments(mixed).map((v, i) => v - (y[i] ?? 0)) }
       }
-      const lw = overlap.map((v, i) => v + Math.log(weights[i] ?? 0))
-      const top = Math.max(...lw)
-      if (!(top > Number.NEGATIVE_INFINITY)) throw new ImproperMessageError('select: no component overlaps the output')
-      const w = lw.map((v) => Math.exp(v - top))
-      const norm = w.reduce((a, b) => a + b, 0)
-      const mixed = new Array<number>(f.size).fill(0)
-      for (const [i, e] of joint.entries()) {
-        if ((w[i] ?? 0) === 0) continue
-        const mo = f.moments(e)
-        for (let j = 0; j < mo.length; j++) mixed[j] = (mixed[j] ?? 0) + ((w[i] ?? 0) / norm) * (mo[j] ?? 0)
+      const kk = c.to - 2
+      const y = etaY ?? f.flat
+      const own = component(kk)
+      const withY = total(own, y)
+      const logM1 = Math.log(weights[kk] ?? 0) + f.logPartition(withY)
+      const others = Array.from({ length: k }, (_, j) => j)
+        .filter((j) => j !== kk && (weights[j] ?? 0) > 0)
+        .map((j) => Math.log(weights[j] ?? 0) + f.logPartition(total(y, component(j))) - f.logPartition(component(j)))
+      const logM2 = f.logPartition(own) + (others.length === 0 ? Number.NEGATIVE_INFINITY : logSumExpOf(others))
+      const top = Math.max(logM1, logM2)
+      const w1 = Math.exp(logM1 - top)
+      const w2 = Math.exp(logM2 - top)
+      const m1 = f.isProper(withY) && w1 > 0 ? f.moments(withY) : new Array<number>(f.size).fill(0)
+      const m2 = w2 > 0 ? f.moments(own) : new Array<number>(f.size).fill(0)
+      const mixed = m1.map((v, i) => (w1 * v + w2 * (m2[i] ?? 0)) / (w1 + w2))
+      return { message: f.fromMoments(mixed).map((v, i) => v - (own[i] ?? 0)) }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      const f = arg(c, 0).family
+      const k = c.args.length - 2
+      const moments = (i: number): Eta => f.moments(etaOf(arg(c, i + 2)))
+      if (c.to === 0) {
+        const weights = selectWeights(arg(c, 1), k)
+        const mixed = new Array<number>(f.size).fill(0)
+        for (let i = 0; i < k; i++) {
+          const m = moments(i)
+          for (let j = 0; j < mixed.length; j++) mixed[j] = (mixed[j] ?? 0) + (weights[i] ?? 0) * (m[j] ?? 0)
+        }
+        return { message: f.fromMoments(mixed) }
       }
-      return { message: f.fromMoments(mixed).map((v, i) => v - (y[i] ?? 0)) }
-    }
-    const kk = c.to - 2
-    const y = etaY ?? f.flat
-    const own = component(kk)
-    const withY = total(own, y)
-    const logM1 = Math.log(weights[kk] ?? 0) + f.logPartition(withY)
-    const others = Array.from({ length: k }, (_, j) => j)
-      .filter((j) => j !== kk && (weights[j] ?? 0) > 0)
-      .map((j) => Math.log(weights[j] ?? 0) + f.logPartition(total(y, component(j))) - f.logPartition(component(j)))
-    const logM2 = f.logPartition(own) + (others.length === 0 ? Number.NEGATIVE_INFINITY : logSumExpOf(others))
-    const top = Math.max(logM1, logM2)
-    const w1 = Math.exp(logM1 - top)
-    const w2 = Math.exp(logM2 - top)
-    const m1 = f.isProper(withY) && w1 > 0 ? f.moments(withY) : new Array<number>(f.size).fill(0)
-    const m2 = w2 > 0 ? f.moments(own) : new Array<number>(f.size).fill(0)
-    const mixed = m1.map((v, i) => (w1 * v + w2 * (m2[i] ?? 0)) / (w1 + w2))
-    return { message: f.fromMoments(mixed).map((v, i) => v - (own[i] ?? 0)) }
+      const cavity = etaOf(arg(c, 0))
+      if (c.to === 1) {
+        const logs = Array.from({ length: k }, (_, i) => f.pair(cavity, moments(i)))
+        const z = arg(c, 1).family
+        return { message: z.kind === 'bernoulli' ? (z.fromLogProbs?.(logs) as Eta) : logs }
+      }
+      const weights = selectWeights(arg(c, 1), k)
+      const w = weights[c.to - 2] ?? 0
+      return { message: cavity.map((v) => w * v) }
+    }),
   },
-  logEvidence: (c) => {
-    const f = arg(c, 0).family
-    const k = c.args.length - 2
-    const weights =
-      arg(c, 1).value !== undefined
-        ? Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(arg(c, 1))) ? 1 : 0))
-        : selectProbs(arg(c, 1))
-    const y = etaOf(arg(c, 0))
-    const terms = Array.from({ length: k }, (_, i) => {
-      const own = etaOf(arg(c, i + 2))
-      return Math.log(weights[i] ?? 0) + logOverlap(f, y, own) - f.logPartition(own)
-    })
-    let total = massOf(arg(c, 1))
-    for (let i = 0; i < k; i++) total += massOf(arg(c, i + 2))
-    return total + logSumExpOf(terms)
+  evidence: {
+    ep: (c) => {
+      const f = arg(c, 0).family
+      const k = c.args.length - 2
+      const weights =
+        arg(c, 1).value !== undefined
+          ? Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(arg(c, 1))) ? 1 : 0))
+          : selectProbs(arg(c, 1))
+      const y = etaOf(arg(c, 0))
+      const terms = Array.from({ length: k }, (_, i) => {
+        const own = etaOf(arg(c, i + 2))
+        return Math.log(weights[i] ?? 0) + logOverlap(f, y, own) - f.logPartition(own)
+      })
+      let total = massOf(arg(c, 1))
+      for (let i = 0; i < k; i++) total += massOf(arg(c, i + 2))
+      return total + logSumExpOf(terms)
+    },
+    vmp: () => 0,
   },
-}
+  // The output is the selected component, so under the mean field it is defined by the others: its belief is the mixture of the
+  // components' beliefs (matched on the family's statistics, which is all a reader of `y` sees), the message to the switch is the
+  // expected log of the output's cavity under each component, and the message to a component is that cavity weighted by the
+  // probability of selecting it: the mean field of the model with `y` replaced by `c_z`.
+  traits: { readsTarget: (to) => to >= 2, defines: 0 },
+})
 
 /** The probabilities of the switch of a select over `k` states, from its belief or its observed state. */
 function selectWeights(a: Arg, k: number): number[] {
@@ -383,62 +390,65 @@ const mixturePorts = (params: Params): readonly Port[] => {
  * gaussianMixture.vmp?.({ mode: 'vmp', to: 2, args, params: { components: 2 }, power: 1 }).message // => [0, -0.5, 0, 0.5]
  * ```
  */
-export const gaussianMixture: FactorOperator = {
+export const gaussianMixture: FactorOperator = defineOperator({
   name: 'gaussian-mixture',
   description: 'x ~ N(mu_z, 1 / lambda_z) with normal-gamma components',
   ports: mixturePorts,
   params: { components: param.integer({ min: 1 }) },
-  support: { vmp: 'exact' },
   check: (params, families) =>
     families[1]?.dim === Math.trunc(Number(params['components']))
       ? undefined
       : 'gaussian-mixture: z must have as many states as there are components',
-  vmp: (c): OperatorResult => {
-    const x = arg(c, 0)
-    const mean = x.value === undefined ? (etaOf(x)[0] ?? 0) / (etaOf(x)[1] ?? 1) : scalarOf(x)
-    const variance = x.value === undefined ? 1 / (etaOf(x)[1] ?? 1) : 0
-    const k = c.args.length - 2
-    const zArg = arg(c, 1)
-    const r =
-      zArg.value !== undefined
-        ? Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(zArg)) ? 1 : 0))
-        : discreteProbs(etaOf(zArg))
-    const second = variance + mean * mean
-    if (c.to >= 2) {
-      const w = r[c.to - 2] ?? 0
-      return { message: [w * mean, -0.5 * w, -0.5 * w * second, 0.5 * w] }
-    }
-    const logs = Array.from({ length: k }, (_, i) => {
-      const t = arg(c, i + 2)
-      const mo = t.family.moments(etaOf(t))
-      return (
-        0.5 * ((mo[3] ?? 0) - Math.log(2 * Math.PI)) -
-        0.5 * (second * (mo[2] ?? 0) - 2 * mean * (mo[0] ?? 0) + (mo[1] ?? 0))
-      )
-    })
-    return { message: logs }
+  rules: {
+    vmp: messageRule((c): OperatorResult => {
+      const x = arg(c, 0)
+      const mean = x.value === undefined ? (etaOf(x)[0] ?? 0) / (etaOf(x)[1] ?? 1) : scalarOf(x)
+      const variance = x.value === undefined ? 1 / (etaOf(x)[1] ?? 1) : 0
+      const k = c.args.length - 2
+      const zArg = arg(c, 1)
+      const r =
+        zArg.value !== undefined
+          ? Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(zArg)) ? 1 : 0))
+          : discreteProbs(etaOf(zArg))
+      const second = variance + mean * mean
+      if (c.to >= 2) {
+        const w = r[c.to - 2] ?? 0
+        return { message: [w * mean, -0.5 * w, -0.5 * w * second, 0.5 * w] }
+      }
+      const logs = Array.from({ length: k }, (_, i) => {
+        const t = arg(c, i + 2)
+        const mo = t.family.moments(etaOf(t))
+        return (
+          0.5 * ((mo[3] ?? 0) - Math.log(2 * Math.PI)) -
+          0.5 * (second * (mo[2] ?? 0) - 2 * mean * (mo[0] ?? 0) + (mo[1] ?? 0))
+        )
+      })
+      return { message: logs }
+    }),
   },
-  expectedLog: (c) => {
-    const x = arg(c, 0)
-    const mean = x.value === undefined ? (etaOf(x)[0] ?? 0) / (etaOf(x)[1] ?? 1) : scalarOf(x)
-    const variance = x.value === undefined ? 1 / (etaOf(x)[1] ?? 1) : 0
-    const k = c.args.length - 2
-    const zArg = arg(c, 1)
-    const r =
-      zArg.value !== undefined
-        ? Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(zArg)) ? 1 : 0))
-        : discreteProbs(etaOf(zArg))
-    const second = variance + mean * mean
-    let total = 0
-    for (let i = 0; i < k; i++) {
-      if ((r[i] ?? 0) === 0) continue
-      const t = arg(c, i + 2)
-      const mo = t.family.moments(etaOf(t))
-      total +=
-        (r[i] ?? 0) *
-        (0.5 * ((mo[3] ?? 0) - Math.log(2 * Math.PI)) -
-          0.5 * (second * (mo[2] ?? 0) - 2 * mean * (mo[0] ?? 0) + (mo[1] ?? 0)))
-    }
-    return total
+  evidence: {
+    vmp: (c) => {
+      const x = arg(c, 0)
+      const mean = x.value === undefined ? (etaOf(x)[0] ?? 0) / (etaOf(x)[1] ?? 1) : scalarOf(x)
+      const variance = x.value === undefined ? 1 / (etaOf(x)[1] ?? 1) : 0
+      const k = c.args.length - 2
+      const zArg = arg(c, 1)
+      const r =
+        zArg.value !== undefined
+          ? Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(zArg)) ? 1 : 0))
+          : discreteProbs(etaOf(zArg))
+      const second = variance + mean * mean
+      let total = 0
+      for (let i = 0; i < k; i++) {
+        if ((r[i] ?? 0) === 0) continue
+        const t = arg(c, i + 2)
+        const mo = t.family.moments(etaOf(t))
+        total +=
+          (r[i] ?? 0) *
+          (0.5 * ((mo[3] ?? 0) - Math.log(2 * Math.PI)) -
+            0.5 * (second * (mo[2] ?? 0) - 2 * mean * (mo[0] ?? 0) + (mo[1] ?? 0)))
+      }
+      return total
+    },
   },
-}
+})

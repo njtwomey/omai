@@ -13,6 +13,7 @@
 import { ndtr } from '../../../numerics/special/_kernels.ts'
 import { errorText, keyOf, memoised } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
@@ -217,7 +218,7 @@ function scoreLog(params: Params): (z: readonly number[]) => number {
  * m?.message.map((v) => v.toFixed(3)) // => ['0.000', '0.000']
  * ```
  */
-export const multiclassSite: FactorOperator = {
+export const multiclassSite: FactorOperator = defineOperator({
   name: 'multiclass-site',
   description:
     'y ~ Categorical(softmax(z)) (or the multinomial probit) of Gaussian class scores z_0..z_(K-1): an adaptive Gauss-Hermite EP site',
@@ -232,13 +233,6 @@ export const multiclassSite: FactorOperator = {
     y: param.integer({ min: 0 }),
     link: param.text({ optional: true, choices: ['logit', 'probit'] }),
   },
-  support: { ep: 'numeric', vmp: 'numeric' },
-  readsTarget: true,
-  power: true,
-  // The mean field: the non-conjugate message of log P(y | z) to a score under the beliefs of the others (the grid is a product over
-  // the free scores, with fewer nodes the more there are). The softmax is log-concave in the scores, so the precisions are positive.
-  vmp: (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), c.to, scoreLog(c.params)) }),
-  expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), scoreLog(c.params)),
   check: (params) => {
     try {
       classesOf(params)
@@ -247,17 +241,29 @@ export const multiclassSite: FactorOperator = {
       return errorText(e)
     }
   },
-  ep: (c): OperatorResult => {
-    const t = tilt(c)
-    const at = t.free.indexOf(c.to)
-    if (at < 0) return { message: [0, 0] }
-    const own = etaOf(c.args[c.to] as Arg)
-    return { message: gaussianSiteMessage(own, t.mean[at] as number, t.cov[at * t.free.length + at] as number) }
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const t = tilt(c)
+      const at = t.free.indexOf(c.to)
+      if (at < 0) return { message: [0, 0] }
+      const own = etaOf(c.args[c.to] as Arg)
+      return { message: gaussianSiteMessage(own, t.mean[at] as number, t.cov[at * t.free.length + at] as number) }
+    }, 'numeric'),
+    // The mean field: the non-conjugate message of log P(y | z) to a score under the beliefs of the others (the grid is a product over
+    // the free scores, with fewer nodes the more there are). The softmax is log-concave in the scores, so the precisions are positive.
+    vmp: messageRule(
+      (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), c.to, scoreLog(c.params)) }),
+      'numeric',
+    ),
   },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    let z = tilt(c).logMass
-    for (const a of c.args) z += massOf(a)
-    return z
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      let z = tilt(c).logMass
+      for (const a of c.args) z += massOf(a)
+      return z
+    },
+    vmp: (c) => numericExpectedLog(quadraturePorts(c.args), scoreLog(c.params)),
   },
-}
+  traits: { readsTarget: true, power: true },
+})

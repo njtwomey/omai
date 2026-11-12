@@ -33,7 +33,7 @@ Version 1 is kept at `docs/history/structure-v1.md`.
    forward-backward, EM, Gibbs, NUTS, SVI, SMC, ABC) and explains why. Gaussian mixtures, HMMs, topic models, factor
    analysis and Bayesian regressions are programs solved by these engines rather than separate implementations. The
    planner is unchanged, but it is not the only way in (decision of 2026-11-10, `docs/probprog/PLAN.md`): a model can be
-   written once as a spec (`probprog/model`), and every engine, and message passing (`message-passing`, EP, VMP and BP),
+   written once as a spec (`probprog/model`), and every engine, and message passing (`message-passing`, EP and VMP, with sum-product rules for four operators),
    is also an inference method of its own with its own knobs, tape and anytime snapshots, which the user chooses. There is
    no universal `infer` over methods and no automatic decomposition.
 9. **Linear models unified** on one penalised GLM core; GAMs deepened (the mgcv basis set, derivatives and curvature of
@@ -67,7 +67,7 @@ Version 1 is kept at `docs/history/structure-v1.md`.
 | Calibration                                              | `lib/learn/calibration.ts`; calibration metrics in `lib/metrics/probabilistic.ts`.                                                                                                                                                                                                                                                    |
 | GIF and MP4 of animations                                | `render/animation/` (timelines from traces, GIF, MP4/WebM, animated SVG).                                                                                                                                                                                                                                                             |
 | Statistical tests with good wrappers                     | `lib/stats/tests/`: every test returns the same `TestResult`; added two-sample, independence, equivalence, Bayesian and sequential tests.                                                                                                                                                                                             |
-| Probabilistic programming that chooses its own inference | `lib/probprog/analysis.ts`, `lib/probprog/infer.ts` (the planner) and `lib/probprog/engines/`; also, chosen by the user, `lib/probprog/model/` (specs), `lib/probprog/inference/` (a method per engine), `lib/probprog/ep/` (the EP suite: atoms, coverage, gaps), `lib/message-passing/` (EP, VMP, BP).                              |
+| Probabilistic programming that chooses its own inference | `lib/probprog/analysis.ts`, `lib/probprog/infer.ts` (the planner) and `lib/probprog/engines/`; also, chosen by the user, `lib/probprog/model/` (specs), `lib/probprog/inference/` (a method per engine), `lib/probprog/ep/` (the EP suite: atoms, coverage, gaps), `lib/message-passing/` (EP, VMP).                              |
 | Gradients in traces; a contract for what is traced       | `lib/trace/schema.ts`, `lib/trace/policy.ts`, `lib/trace/taps.ts`; tensor events carry a role (param, grad, state, activation).                                                                                                                                                                                                       |
 | Bayesian optimisation; one parameter-selection mechanism | `lib/tune/` for every kind of objective; BO, TPE, BOHB and PBT in `methods/tuning/` as samplers.                                                                                                                                                                                                                                      |
 | Cross-validation variants and a single split             | `lib/learn/model-selection/splitters.ts` (holdout, train/validation/test, stratified, group, stratified group, time-series windows, purged and embargoed, spatial).                                                                                                                                                                   |
@@ -612,7 +612,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `losses`          | differentiable training objectives and regularisers                                                                                                                                                                                                                                                                           |
 | `rl`              | environment and agent contracts, wrappers, buffers, returns, planning, off-policy evaluation                                                                                                                                                                                                                                  |
 | `games`           | normal-form, extensive-form and cooperative games, equilibria, learning in games, mechanisms                                                                                                                                                                                                                                  |
-| `message-passing` | message passing on factor graphs of exponential families: EP, VMP and BP as settings of one engine, 66 factor operators, variations (power, alpha, numerical, stochastic, regions, expectation consistent, AMP), anytime runs                                                                                                 |
+| `message-passing` | message passing on factor graphs of exponential families: EP and VMP as settings of one engine (sum-product rules for four operators), 66 factor operators, variations (power, alpha, numerical, stochastic, regions, expectation consistent, AMP), anytime runs                                                                                                 |
 | `probprog`        | probabilistic programs and model specs, model analysis and structure reports, inference engines and the planner, a method per engine, validation and benchmark models, posteriors                                                                                                                                             |
 | `learn`           | estimator protocol, preprocessing, composition, model selection, calibration, conformal, active learning, privacy                                                                                                                                                                                                             |
 | `nn`              | neural networks: functional layers, modules, blocks, description, training, decoding                                                                                                                                                                                                                                          |
@@ -3468,7 +3468,7 @@ a program once and describes it; every engine says whether it applies and at wha
 reason, runs it as a traced algorithm and returns a `Posterior`. That planner (`plan`, `explainPlan`, `infer`) is
 unchanged and is one way in, not the only one: there is no universal entry point and no automatic decomposition. Every
 engine (and the algorithms beside them) is also an inference method of its own in `inference/`, with its own knobs, typed
-tape, capability check, budget and anytime snapshots, which the user chooses; message passing (EP, VMP, BP) lives in its
+tape, capability check, budget and anytime snapshots, which the user chooses; message passing (EP, VMP) lives in its
 own domain, `message-passing/` (4.32a), and runs on a spec through `model/factors.ts`. Adding an engine is adding a file
 to `engines/` (inlined into `omai-engine/probprog`); the folders `model/`, `inference/`, `models/` and `validation/` are
 namespaces (`omai-engine/probprog/model`, `/inference`, `/models`, `/validation`, with `/model/dists`). The handler stack
@@ -3910,25 +3910,25 @@ closed forms (EP is exact on Gaussian trees), the library's own `pgm` (loopy BP,
 of the design: `docs/probprog/PLAN.md` 5.5.
 
 Messages are exponential-family natural parameters; a factor is a registry operator that says what it tells each of its
-arguments; one engine with slots (projection, schedule, damping, improper handling) runs expectation propagation,
-variational message passing and belief propagation as settings of itself. A run is a steppable, resumable `Algorithm`
+arguments; one engine with slots (projection, schedule, damping, improper handling) runs expectation propagation
+and variational message passing as settings of itself, and the sum-product rule for the four operators that have one (belief propagation on discrete trees and regions is `regions.ts` and `pgm/`). A run is a steppable, resumable `Algorithm`
 whose state is plain numbers (the message on every edge), so it serialises, cancels between any two steps and reports its
 marginals at any time. Imports: `base`, `trace`, `tensor`, `numerics`, `space`, `random`, `dists`, `scene` and `pgm`
 (discrete tables and the factor-graph drawing); `probprog` imports this domain, never the reverse. Everything a run
 reports is addressed by ids, the same as the picture of the model (`types.ts`; for a spec, `probprog/model/ids.ts`): a
 variable is its name, a factor its `id` (`factor:<site>` from the spec compiler) or `f<i>`, an edge `<factor>><variable>`.
 - Layout (by concern, every folder an inlined part of `omai-engine/message-passing`; the file names below are unchanged,
-  only their folders are new). `core/`: `types.ts`, `errors.ts` (`ImproperMessageError`, a numerical failure the engine repairs and
+  only their folders are new). `core/`: `types.ts`, `define.ts` (`defineOperator`, `siteRule`, `messageRule`, `projectSite`: what an operator is built from and the one place a site is projected), `errors.ts` (`ImproperMessageError`, a numerical failure the engine repairs and
   counts, and `ParameterError`, a misconfiguration that is never swallowed: the engine catches only the first), `params.ts` (the
   declared parameters of an operator, `FactorOperator.params`: `param.number()`, `param.vector()`, ..., parsed by `compileGraph`
   so an unknown, missing or ill-typed parameter fails at compile time naming the operator and the parameter), `args.ts`, the internal `_messages.ts` (the conventions operators share: `arg`, `perPower`,
   `evidenceOrNaN`, `isFlat`, `assertDamping`), `families*.ts`, `graph.ts`, `priors.ts`, `truncated.ts`.
-  `numerics/`: `_scalar.ts`, `_dense.ts`, `_bartlett.ts`, `_quadrature.ts`, `_grid.ts` (the one panelled grid for two and three axes, with its `gridProfiles`), `_windows.ts` (the named windows of every cavity coordinate), `_tilted.ts` (internal)
+  `numerics/` (the numerics of message passing: quadrature, grids and windows over messages; not `lib/numerics`, the library's linear algebra, special functions and roots, which `import 'omai-engine/numerics/...'` names): `_scalar.ts`, `_dense.ts`, `_bartlett.ts`, `_quadrature.ts`, `_grid.ts` (the one panelled grid for two and three axes, with its `gridProfiles`), `_windows.ts` (the named windows of every cavity coordinate), `_tilted.ts` (internal)
   and `numeric-rules.ts` (the `TiltedRule`s of the engine's `numeric` slot). `engine/`: `state.ts` (settings and
-  state types), `cavity.ts` (beliefs, marginals, snapshot), `dispatch.ts` (`operatorMessage`), `evidence.ts`, `verdict.ts`,
+  state types), `cavity.ts` (beliefs, marginals, snapshot), `dispatch.ts` (`operatorMessage`, `ruleMessage`), `evidence.ts`, `verdict.ts`,
   `run.ts` (`messagePassingAlgorithm`), the slots `projections.ts` and `schedules.ts`, and the internal `_cavities.ts`,
   `_arguments.ts`, `_update.ts` (the proposal, damping and `repairImproper`), `_restart.ts`, `_advance.ts`. `algorithms/`: `named.ts`, `power.ts`, `alpha.ts`, `numerical.ts`, `stochastic.ts`, `regions.ts`,
-  `consistent.ts`, `amp.ts`, `anytime.ts`, `clutter.ts`. `operators/`: `registry.ts`, `names.ts` (`operatorNames` and the type `OperatorName`, held equal to the registry by a test; `GateBranch` in `discrete/gate.ts` types a gate's branch) and one folder per kind of factor,
+  `consistent.ts`, `amp.ts`, `anytime.ts`, `clutter.ts`. `operators/`: `registry.ts` (`defaultOperators`, `collectOperators`), `names.ts` (`operatorNames`, the one place the registry's order is declared, and the type `OperatorName`; `GateBranch` in `discrete/gate.ts` types a gate's branch) and one folder per kind of factor, each with a `list.ts` of its operators,
   `gaussian/` (`gaussian`, `linear`, `transition`, `extremum`, `log-scale`), `links/` (`truncation`, `links`, `spin`,
   `multiclass`), `lifts/` (`rows`, `plates`), `likelihoods/` (`likelihoods`, `pairs`, `robust`, `prior-sites`, `functions`,
   `numeric`), `scales/` (`scale`, `function-scale`, `gamma-scale`, `concentration`, `stick-breaking`), `covariance/`
@@ -3950,41 +3950,33 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
 - `operators/kernel/variational-numeric.ts`: the non-conjugate variational message by quadrature (a numeric operator, a likelihood, a softmax, a
   deterministic function get a mean-field message from their log density alone); `FactorOperator.unsupported` names a factor with no variational
   message because of its parameters (the Weibull shape).
-- `operators/`: the factor operators of `defaultOperators()` (`registry.ts`; 66 on 2026-11-11, the count is in the generated
-  `docs/probprog/ep-status.md`), each with message rules for the
-  projections it supports and tested against numerical integration: `prior`, `gaussian`, `gaussian-gamma-precision`,
-  `gaussian-normal-gamma`, `product`, `equal` (`gaussian.ts`); `linear`, `plus`, `difference`, `times-constant`, `sum`,
-  `dot-constant`, `matmul-constant`, `linear-regression-row`, `gaussian-joint` (`linear.ts`; the deterministic ones
-  define their output, with a pushforward belief under VMP); `probit`, `greater-than`, `is-between` (`truncation.ts`);
-  `logistic` (`links.ts`: Gauss-Hermite for EP, Jaakkola-Jordan's bound for VMP); `bernoulli`, `discrete`, `poisson`,
-  `binomial` (`conjugate.ts`); `table`, `select`, `gaussian-mixture` (`discrete.ts`); `max` and `min` (`extremum.ts`,
-  Clark's moments; EP only); the regression rows `probit-row`
-  and `logistic-row` (one factor per row on a weight vector, `rows.ts`), the plates `linear-regression-plate`,
-  `probit-plate` and `logistic-plate` (one factor for a whole plate of rows, `plates.ts`: the Gaussian link is closed form
-  and independent of the number of rows, the nonlinear links run EP over the plate inside the call) and the `spin`
-  factor and `spin-row` (`spin.ts`, the Ising site of expectation consistent inference), and the robust sites
-  `mixture-site` (exact EP: spike and slab prior, inlier and outlier noise), `student-t-site` and `laplace-site` (quadrature EP)
-  with their rows `mixture-row`, `student-t-row`, `laplace-row` (`robust.ts`); `gaussian-mv-precision-scale` (`scale.ts`: a Gaussian
-  vector whose coefficients have the precisions `s_j lambda + o_j` of one shared gamma multiplier, the smoothing parameter of a
-  penalised spline: a grid in `log lambda` and a dense Gaussian message); `gamma-rate` and `gamma-product` (`gamma-scale.ts`: a gamma
-  variable whose rate is a multiple of another, and the product of two gamma variables, the half-Cauchy and Student-t scale
-  mixtures and a local times a global precision); and `gate` (`gate.ts`: the gate of Minka and Winn, a discrete variable selecting
-  among branches that are operators of the registry, each over its own variables, EP and VMP); `stick-breaking` (`stick-breaking.ts`: a
-  discrete variable with the stick-breaking weights of beta breaks, the truncated Dirichlet-process assignment: exact to the variable,
-  a moment-matched beta mixture to each break, EP and VMP) and `gaussian-transition` (`transition.ts`: `x ~ N(F w + c, Q)` between two
-  Gaussian vectors, the dense step of a linear dynamical system, exact messages in information form: EP on a chain is the Kalman
-  smoother). `gaussian-gamma-precision`
-  takes a `scale` and an `offset` for the precision `scale lambda + offset`. A factor spec may carry `start` messages (a vague
-  Gaussian on a port, replaced by the factor's own first update) so the other factors have a proper cavity to begin from. The registry of numeric likelihoods of `likelihoods.ts` (`likelihoods()`: Poisson, zero-truncated Poisson and negative binomial with a log link, Weibull and
-  log-normal survival, binomial with a logistic or probit link, ordinal probit, asymmetric Laplace, Student t, Laplace) is behind the
-  generic `likelihood-site` and `likelihood-row`, integrated by the zooming panelled quadrature of `_tilted.ts`; with it
-  `negative-binomial-dispersion` (a count with a log link and a random log dispersion, a 24-point Gauss-Hermite product rule),
-  `gaussian-scale` (`log-scale.ts`: an observed value with a Gaussian mean and log scale, one quadrature over the log scale) and
-  `apply` (`functions.ts`: `y = f(x)` for `exp`, `square`, `tanh`, `relu` (closed form), `softplus`, `abs`, `sigmoid` of a Gaussian
-  variable, the output matched under the input's cavity: EP only). `numericOperator` (`numeric.ts`)
-  is a constructor, not one of the 48: a factor given only by its log density, whose EP messages come from a panelled
-  product rule (the fallback for a robust likelihood or the clutter problem). `args.ts`: how operators read their
-  arguments. Known limits: VMP has no rule for the hard comparison `greater-than` or for `max` and `min`.
+- `operators/`: the factor operators of `defaultOperators()` (`registry.ts`), each with message rules for the projections it supports
+  and tested against numerical integration. The names, and the order of the registry, are `operatorNames` (`names.ts`: 66 on
+  2026-11-12; the count and the table of what each supports are in the generated `docs/probprog/ep-status.md`, never typed in a
+  document); each folder lists its own operators in `list.ts` (`gaussianOperatorList`, ...), and `defaultOperators()` collects them with
+  `collectOperators`, which throws on a name two operators share, an operator `operatorNames` does not list and a name with no
+  operator (the gate, which runs the others as its branches, is built last). The folders are the map: `gaussian/` (the prior and
+  Gaussian factors, the linear-Gaussian family whose deterministic members define their output, Clark's `max` and `min`, the random
+  log scale, the vector transition: EP on a chain is the Kalman smoother), `links/` (probit and the truncations, the logistic with
+  Gauss-Hermite for EP and Jaakkola-Jordan's bound for VMP, the spin site of expectation consistent inference, the multiclass site),
+  `lifts/` (a scalar link as a regression row on a weight vector, `rows.ts`, or a plate of rows, `plates.ts`), `likelihoods/` (the
+  registry of numeric likelihoods of `likelihoods.ts`, `likelihoods()`, behind the generic `likelihood-site` and `likelihood-row`; the
+  robust sites; the numeric `prior-site`; the unary functions `apply` and `apply-product`; the two-variable `pairs.ts`; `numericOperator`
+  in `numeric.ts` is a constructor, not an operator: a factor given only by its log density), `scales/` (the shared smoothing
+  parameters of a Gaussian vector, the gamma scale hierarchies, the random concentration of a beta or Dirichlet, the stick-breaking
+  assignment), `covariance/` (the Wishart precision, its normal-Wishart conjugate form, the bivariate standard-deviation-and-correlation
+  site), `discrete/` (the conjugate probability factors, the table, `select`, the Gaussian mixture and the gate of Minka and Winn) and
+  `kernel/` (`variational-numeric.ts`: the non-conjugate variational message by quadrature, a mean-field message from a log density
+  alone; `FactorOperator.unsupported` names a factor with no variational message because of its parameters, the Weibull shape).
+  An operator is built with `defineOperator` (`core/define.ts`): rules as `siteRule(tilt)` (the tilted distribution at the target port:
+  the engine's `projectSite` projects it, divides by the cavity and, for an operator that takes a power, by the power) or
+  `messageRule(fn)` (a closed form the operator computes) or `tiltedRule(fn)` (the tilted moments and mass, projected by `ruleMessage`), the evidence, the traits; `support` is derived from the kinds of the rules, and every operator of the library is built this way.
+  `ruleMessage` (`engine/dispatch.ts`) is the one place a rule is chosen (the hook of the mode, else the projected `tilted`), shared by
+  the engine's dispatch and by the gate and the lifts, which run inner operators. `gaussian-gamma-precision` takes a `scale` and an
+  `offset` for the precision `scale lambda + offset`. A factor spec may carry `start` messages (a vague Gaussian on a port, replaced by
+  the factor's own first update) so the other factors have a proper cavity to begin from. `args.ts`: how operators read their arguments.
+  Known limits: VMP has no rule for the hard comparison `greater-than` or for `max` and `min`; only four operators (`prior`, `equal`,
+  `table`, `mvn-normal-wishart`) have a `bp` (sum-product) rule.
 - `engine/` (`run.ts`, `state.ts`, `cavity.ts`, `evidence.ts`, `verdict.ts`, `projections.ts`, `schedules.ts`) and `core/graph.ts`: the engine (`messagePassingAlgorithm`, `EngineSettings`,
   `MpState`, `marginalsOf`, `evidenceOf`, `beliefOf`, `mpSnapshot`) with its slots: the projection (`momentProjection`
   for EP, `klqpProjection` for VMP, `sumProductProjection` for BP; `projections`, `projectionOf`), the schedule
@@ -8944,7 +8936,7 @@ library for the same computation. They do not set a higher bar than that library
 | mgcv, pygam, gratia               | `methods/gam/`, `lib/stats/smoothing/`                                                            |
 | NumPyro, Pyro                     | `lib/probprog/`, `lib/sampling/`                                                                  |
 | ArviZ                             | `lib/sampling/diagnostics.ts`, `lib/probprog/criticism.ts`                                        |
-| Infer.NET, libDAI                 | `lib/message-passing/` (EP, VMP, BP as one engine), `lib/pgm/`                                    |
+| Infer.NET, libDAI                 | `lib/message-passing/` (EP and VMP as one engine; BP rules for four operators), `lib/pgm/`                                    |
 | PyMC, Stan (blocks)               | `lib/probprog/model/` (a spec with named dimensions; no text front end)                           |
 | BlackJAX                          | `lib/sampling/` (kernels), `lib/probprog/engines/pathfinder.ts`                                   |
 | pgmpy                             | `lib/pgm/`                                                                                        |

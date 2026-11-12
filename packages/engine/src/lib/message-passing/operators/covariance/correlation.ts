@@ -9,8 +9,9 @@
  * correlation is a one-dimensional integral.
  */
 
-import { arg, evidenceOrNaN } from '../../core/_messages.ts'
+import { arg } from '../../core/_messages.ts'
 import { siteMessage } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { beta, gamma } from '../../core/families.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
@@ -100,7 +101,7 @@ function evalAt(eval1: ReturnType<typeof evaluatorOf>, lambda: Float64Array, t: 
  * mvnSdCorr.ep?.({ mode: 'ep', to: 4, args, params: {}, power: 1 }).message.map((v) => v.toFixed(2)) // => ['0.87', '-0.44']
  * ```
  */
-export const mvnSdCorr: FactorOperator = {
+export const mvnSdCorr: FactorOperator = defineOperator({
   name: 'mvn-sd-corr',
   description: 'x ~ N(mean, Sigma) for a bivariate Gaussian with two gamma precisions and a beta correlation',
   ports: [
@@ -111,73 +112,75 @@ export const mvnSdCorr: FactorOperator = {
     { name: 'correlation', accepts: ['beta'], constant: true },
   ],
   params: { count: param.number({ min: 1, optional: true }), scatter: param.vector({ optional: true }) },
-  support: { ep: 'numeric' },
-  readsTarget: (to) => to >= 2,
-  noRule: { vmp: 'the expected log density of a correlation that is a beta variable has no closed form' },
   check: (_params, families) =>
     families[0]?.dim === 2 && families[1]?.dim === 2
       ? undefined
       : 'mvn-sd-corr: the vector and its mean have two entries',
-  ep: (c): OperatorResult => {
-    const rows = rowsOf(c.params, 2)
-    const { x, mean, eval1, grid } = tilt(c, rows)
-    const [n0, n1] = [grid.nodes[0]?.length ?? 1, grid.nodes[1]?.length ?? 1]
-    if (c.to >= 2) {
-      const axis = c.to - 2
-      const nodes = grid.nodes[axis] as Float64Array
-      const p = grid.marginals[axis] as Float64Array
-      if (c.to < 4) {
-        let logMean = 0
-        let valueMean = 0
-        for (let i = 0; i < nodes.length; i++) {
-          logMean += (p[i] as number) * (nodes[i] as number)
-          valueMean += (p[i] as number) * Math.exp(nodes[i] as number)
-        }
-        return { message: siteMessage(gamma, arg(c, c.to).eta as Eta, [logMean, valueMean]) }
-      }
-      let logU = 0
-      let log1mU = 0
-      for (let i = 0; i < nodes.length; i++) {
-        logU -= (p[i] as number) * softplusOf(-(nodes[i] as number))
-        log1mU -= (p[i] as number) * softplusOf(nodes[i] as number)
-      }
-      return { message: siteMessage(beta, arg(c, 4).eta as Eta, [logU, log1mU]) }
-    }
-    // a Gaussian port: the mixture of the conditionals over the grid
-    const target = c.to as 0 | 1
-    const side = target === 0 ? x : mean
-    const m = new Float64Array(2)
-    const s = new Float64Array(4)
-    const nodeMean = new Float64Array(2)
-    const nodeCov = new Float64Array(4)
-    const lambda = new Float64Array(4)
-    const t = new Float64Array(3)
-    const n2 = grid.nodes[2]?.length ?? 1
-    for (let k = 0; k < n2; k++)
-      for (let j = 0; j < n1; j++)
-        for (let i = 0; i < n0; i++) {
-          const w = grid.weights[i + n0 * (j + n1 * k)] as number
-          if (!(w > 1e-13)) continue
-          t[0] = (grid.nodes[0] as Float64Array)[i] as number
-          t[1] = (grid.nodes[1] as Float64Array)[j] as number
-          t[2] = (grid.nodes[2] as Float64Array)[k] as number
-          const logDet = precisionAt(t, lambda)
-          eval1(lambda, 0, logDet, target, nodeMean, nodeCov)
-          for (let a = 0; a < 2; a++) {
-            m[a] = (m[a] as number) + w * (nodeMean[a] as number)
-            for (let b = 0; b < 2; b++)
-              s[a * 2 + b] =
-                (s[a * 2 + b] as number) +
-                w * ((nodeCov[a * 2 + b] as number) + (nodeMean[a] as number) * (nodeMean[b] as number))
+  rules: {
+    // A message rule, not a site rule: the message to a Gaussian vector is taken against its cavity only when that is not flat
+    // (`side.flat`, read with a tolerance), which is not the plain quotient the engine's `projectSite` makes.
+    ep: messageRule((c): OperatorResult => {
+      const rows = rowsOf(c.params, 2)
+      const { x, mean, eval1, grid } = tilt(c, rows)
+      const [n0, n1] = [grid.nodes[0]?.length ?? 1, grid.nodes[1]?.length ?? 1]
+      if (c.to >= 2) {
+        const axis = c.to - 2
+        const nodes = grid.nodes[axis] as Float64Array
+        const p = grid.marginals[axis] as Float64Array
+        if (c.to < 4) {
+          let logMean = 0
+          let valueMean = 0
+          for (let i = 0; i < nodes.length; i++) {
+            logMean += (p[i] as number) * (nodes[i] as number)
+            valueMean += (p[i] as number) * Math.exp(nodes[i] as number)
           }
+          return { message: siteMessage(gamma, arg(c, c.to).eta as Eta, [logMean, valueMean]) }
         }
-    const cov = Array.from(s, (v, e) => v - (m[Math.floor(e / 2)] as number) * (m[e % 2] as number))
-    const proj = gaussianMvEta(Array.from(m), cov)
-    return { message: proj.map((v, i) => v - (side.flat ? 0 : ((arg(c, target).eta as Eta)[i] ?? 0))) }
+        let logU = 0
+        let log1mU = 0
+        for (let i = 0; i < nodes.length; i++) {
+          logU -= (p[i] as number) * softplusOf(-(nodes[i] as number))
+          log1mU -= (p[i] as number) * softplusOf(nodes[i] as number)
+        }
+        return { message: siteMessage(beta, arg(c, 4).eta as Eta, [logU, log1mU]) }
+      }
+      // a Gaussian port: the mixture of the conditionals over the grid
+      const target = c.to as 0 | 1
+      const side = target === 0 ? x : mean
+      const m = new Float64Array(2)
+      const s = new Float64Array(4)
+      const nodeMean = new Float64Array(2)
+      const nodeCov = new Float64Array(4)
+      const lambda = new Float64Array(4)
+      const t = new Float64Array(3)
+      const n2 = grid.nodes[2]?.length ?? 1
+      for (let k = 0; k < n2; k++)
+        for (let j = 0; j < n1; j++)
+          for (let i = 0; i < n0; i++) {
+            const w = grid.weights[i + n0 * (j + n1 * k)] as number
+            if (!(w > 1e-13)) continue
+            t[0] = (grid.nodes[0] as Float64Array)[i] as number
+            t[1] = (grid.nodes[1] as Float64Array)[j] as number
+            t[2] = (grid.nodes[2] as Float64Array)[k] as number
+            const logDet = precisionAt(t, lambda)
+            eval1(lambda, 0, logDet, target, nodeMean, nodeCov)
+            for (let a = 0; a < 2; a++) {
+              m[a] = (m[a] as number) + w * (nodeMean[a] as number)
+              for (let b = 0; b < 2; b++)
+                s[a * 2 + b] =
+                  (s[a * 2 + b] as number) +
+                  w * ((nodeCov[a * 2 + b] as number) + (nodeMean[a] as number) * (nodeMean[b] as number))
+            }
+          }
+      const cov = Array.from(s, (v, e) => v - (m[Math.floor(e / 2)] as number) * (m[e % 2] as number))
+      const proj = gaussianMvEta(Array.from(m), cov)
+      return { message: proj.map((v, i) => v - (side.flat ? 0 : ((arg(c, target).eta as Eta)[i] ?? 0))) }
+    }, 'numeric'),
   },
-  logEvidence: (c) => {
-    if (c.args.some((a) => a.eta !== undefined && !a.family.isProper(a.eta))) return Number.NaN
-    return evidenceOrNaN(() => {
+  evidence: {
+    improperIsNaN: true,
+    ep: (c) => {
+      if (c.args.some((a) => a.eta !== undefined && !a.family.isProper(a.eta))) return Number.NaN
       const { grid } = tilt(c, rowsOf(c.params, 2))
       let logZ = grid.logMass
       for (const i of [2, 3, 4]) {
@@ -185,6 +188,8 @@ export const mvnSdCorr: FactorOperator = {
         if (a.eta !== undefined) logZ += a.family.logPartition(a.eta)
       }
       return logZ
-    })
+    },
   },
-}
+  traits: { readsTarget: (to) => to >= 2 },
+  noRule: { vmp: 'the expected log density of a correlation that is a beta variable has no closed form' },
+})

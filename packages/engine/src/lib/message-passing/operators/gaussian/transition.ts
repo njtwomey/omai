@@ -9,6 +9,7 @@
 import { dgemm, dgemv } from '../../../numerics/linalg/index.ts'
 import { arg } from '../../core/_messages.ts'
 import { etaOf, vectorParam } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { ImproperMessageError } from '../../core/errors.ts'
 import { gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
@@ -60,7 +61,7 @@ function momentsOfBelief(a: Arg, d: number): ReturnType<typeof gaussianMvMoments
  * gaussianTransition.ep?.({ mode: 'ep', to: 0, args, params, power: 1 }).message.length // => 6
  * ```
  */
-export const gaussianTransition: FactorOperator = {
+export const gaussianTransition: FactorOperator = defineOperator({
   name: 'gaussian-transition',
   description: 'x ~ N(F w + c, Q) for Gaussian vectors x and w',
   ports: [
@@ -68,7 +69,6 @@ export const gaussianTransition: FactorOperator = {
     { name: 'w', accepts: ['gaussian-mv'] },
   ],
   params: { matrix: param.vector(), covariance: param.vector(), offset: param.vector({ optional: true }) },
-  support: { ep: 'exact', vmp: 'exact' },
   check: (params, families) => {
     const rows = families[0]?.dim ?? 0
     const cols = families[1]?.dim ?? 0
@@ -80,136 +80,141 @@ export const gaussianTransition: FactorOperator = {
       return 'gaussian-transition: offset must have the size of x'
     return undefined
   },
-  ep: (c): OperatorResult => {
-    const { F, offset, Q, rows, cols } = parameters(c)
-    if (c.to === 0) {
-      let moments: ReturnType<typeof gaussianMvMoments>
-      try {
-        moments = gaussianMvMoments(etaOf(arg(c, 1)), cols)
-      } catch {
-        throw new ImproperMessageError('gaussian-transition: the cavity of w has no density')
-      }
-      const mean = dgemv(F, rows, cols, moments.mean)
-      const FS = dgemm(F, moments.covariance, rows, cols, cols)
-      const FSF = dgemm(FS, F, rows, cols, rows, { transposeB: true })
-      const cov = Array.from(FSF, (v, i) => v + (Q[i] ?? 0))
-      try {
-        return {
-          message: gaussianMvEta(
-            Array.from(mean, (v, i) => v + (offset[i] ?? 0)),
-            cov,
-          ),
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const { F, offset, Q, rows, cols } = parameters(c)
+      if (c.to === 0) {
+        let moments: ReturnType<typeof gaussianMvMoments>
+        try {
+          moments = gaussianMvMoments(etaOf(arg(c, 1)), cols)
+        } catch {
+          throw new ImproperMessageError('gaussian-transition: the cavity of w has no density')
         }
-      } catch {
-        throw new ImproperMessageError('gaussian-transition: the step is degenerate')
+        const mean = dgemv(F, rows, cols, moments.mean)
+        const FS = dgemm(F, moments.covariance, rows, cols, cols)
+        const FSF = dgemm(FS, F, rows, cols, rows, { transposeB: true })
+        const cov = Array.from(FSF, (v, i) => v + (Q[i] ?? 0))
+        try {
+          return {
+            message: gaussianMvEta(
+              Array.from(mean, (v, i) => v + (offset[i] ?? 0)),
+              cov,
+            ),
+          }
+        } catch {
+          throw new ImproperMessageError('gaussian-transition: the step is degenerate')
+        }
       }
-    }
-    // To w: the information of x's cavity passed through the noise, then through F.
-    const eta = etaOf(arg(c, 0))
-    const hx = eta.slice(0, rows)
-    const Jx = Float64Array.from(eta.slice(rows))
-    const factorQ = spd(Q, rows)
-    if (factorQ === undefined)
-      throw new ImproperMessageError('gaussian-transition: the covariance is not positive definite')
-    const QInv = factorQ.inverse()
-    const sum = Float64Array.from(Jx, (v, i) => v + (QInv[i] ?? 0))
-    const factorM = spd(sum, rows)
-    if (factorM === undefined) throw new ImproperMessageError('gaussian-transition: the information of x is not usable')
-    const M = factorM.inverse()
-    const JM = dgemm(Jx, M, rows, rows, rows)
-    const JMJ = dgemm(JM, Jx, rows, rows, rows)
-    const Jm = Float64Array.from(Jx, (v, i) => v - (JMJ[i] ?? 0))
-    const JMh = dgemv(JM, rows, rows, hx)
-    const hm = Float64Array.from(hx, (v, i) => v - (JMh[i] ?? 0))
-    const Jc = dgemv(Jm, rows, rows, offset)
-    const rhs = Float64Array.from(hm, (v, i) => v - (Jc[i] ?? 0))
-    const h = dgemv(F, rows, cols, rhs, true)
-    const JF = dgemm(Jm, F, rows, rows, cols)
-    const J = dgemm(F, JF, cols, rows, cols, { transposeA: true })
-    return { message: [...h, ...J] }
-  },
-  // The mean field of the stochastic step: log N(x; F w + c, Q) is quadratic in both vectors, so the messages are the expected
-  // log under the other's belief, exact and with no cross term (the beliefs are independent): to x the information form of
-  // `N(F E w + c, Q)`, to w that of `F' Q^-1 (E x - c)` with precision `F' Q^-1 F`.
-  vmp: (c): OperatorResult => {
-    const { F, offset, Q, rows, cols } = parameters(c)
-    const factorQ = spd(Q, rows)
-    if (factorQ === undefined)
-      throw new ImproperMessageError('gaussian-transition: the covariance is not positive definite')
-    const QInv = factorQ.inverse()
-    if (c.to === 0) {
-      const mean = momentsOfBelief(arg(c, 1), cols).mean
-      const image = dgemv(F, rows, cols, mean)
-      const mu = Float64Array.from(image, (v, i) => v + (offset[i] ?? 0))
-      return { message: [...dgemv(QInv, rows, rows, mu), ...QInv] }
-    }
-    const mean = momentsOfBelief(arg(c, 0), rows).mean
-    const gap = Float64Array.from(mean, (v, i) => v - (offset[i] ?? 0))
-    const h = dgemv(F, rows, cols, dgemv(QInv, rows, rows, gap), true)
-    const QF = dgemm(QInv, F, rows, rows, cols)
-    const J = dgemm(F, QF, cols, rows, cols, { transposeA: true })
-    return { message: [...h, ...J] }
-  },
-  expectedLog: (c) => {
-    const { F, offset, Q, rows, cols } = parameters(c)
-    const factorQ = spd(Q, rows)
-    if (factorQ === undefined) return Number.NaN
-    const QInv = factorQ.inverse()
-    const x = momentsOfBelief(arg(c, 0), rows)
-    const w = momentsOfBelief(arg(c, 1), cols)
-    const image = dgemv(F, rows, cols, w.mean)
-    const gap = Float64Array.from(x.mean, (v, i) => v - (image[i] ?? 0) - (offset[i] ?? 0))
-    const FS = dgemm(F, w.covariance, rows, cols, cols)
-    const FSF = dgemm(FS, F, rows, cols, rows, { transposeB: true })
-    // E (x - F w - c)' Q^-1 (x - F w - c) = gap' Q^-1 gap + tr(Q^-1 (S_x + F S_w F')).
-    const solved = dgemv(QInv, rows, rows, gap)
-    let quad = 0
-    let trace = 0
-    for (let i = 0; i < rows; i++) {
-      quad += (gap[i] ?? 0) * (solved[i] ?? 0)
-      for (let j = 0; j < rows; j++)
-        trace += (QInv[i * rows + j] ?? 0) * ((x.covariance[j * rows + i] ?? 0) + (FSF[j * rows + i] ?? 0))
-    }
-    return -0.5 * (quad + trace + rows * Math.log(2 * Math.PI) + factorQ.logDet)
-  },
-  // The evidence of the factor under the cavities as unnormalised densities exp(h x - x J x / 2): the Gaussian integral of the joint of
-  // (x, w), in information form so that a cavity that is only partly informative (the readings see the position, not the velocity)
-  // still has one. Not a number when even the joint has no density.
-  logEvidence: (c) => {
-    const { F, offset, Q, rows, cols } = parameters(c)
-    const ex = arg(c, 0).eta
-    const ew = arg(c, 1).eta
-    if (ex === undefined || ew === undefined) return Number.NaN
-    const factorQ = spd(Q, rows)
-    if (factorQ === undefined) return Number.NaN
-    const QInv = factorQ.inverse()
-    const n = rows + cols
-    const J = new Float64Array(n * n)
-    const h = new Float64Array(n)
-    const QInvF = dgemm(QInv, F, rows, rows, cols)
-    const FQF = dgemm(F, QInvF, cols, rows, cols, { transposeA: true })
-    const QInvC = dgemv(QInv, rows, rows, offset)
-    const FQc = dgemv(F, rows, cols, QInvC, true)
-    for (let i = 0; i < rows; i++) {
-      h[i] = (ex[i] ?? 0) + (QInvC[i] ?? 0)
-      for (let j = 0; j < rows; j++) J[i * n + j] = (ex[rows + i * rows + j] ?? 0) + (QInv[i * rows + j] ?? 0)
-      for (let j = 0; j < cols; j++) {
-        J[i * n + rows + j] = -(QInvF[i * cols + j] ?? 0)
-        J[(rows + j) * n + i] = -(QInvF[i * cols + j] ?? 0)
+      // To w: the information of x's cavity passed through the noise, then through F.
+      const eta = etaOf(arg(c, 0))
+      const hx = eta.slice(0, rows)
+      const Jx = Float64Array.from(eta.slice(rows))
+      const factorQ = spd(Q, rows)
+      if (factorQ === undefined)
+        throw new ImproperMessageError('gaussian-transition: the covariance is not positive definite')
+      const QInv = factorQ.inverse()
+      const sum = Float64Array.from(Jx, (v, i) => v + (QInv[i] ?? 0))
+      const factorM = spd(sum, rows)
+      if (factorM === undefined)
+        throw new ImproperMessageError('gaussian-transition: the information of x is not usable')
+      const M = factorM.inverse()
+      const JM = dgemm(Jx, M, rows, rows, rows)
+      const JMJ = dgemm(JM, Jx, rows, rows, rows)
+      const Jm = Float64Array.from(Jx, (v, i) => v - (JMJ[i] ?? 0))
+      const JMh = dgemv(JM, rows, rows, hx)
+      const hm = Float64Array.from(hx, (v, i) => v - (JMh[i] ?? 0))
+      const Jc = dgemv(Jm, rows, rows, offset)
+      const rhs = Float64Array.from(hm, (v, i) => v - (Jc[i] ?? 0))
+      const h = dgemv(F, rows, cols, rhs, true)
+      const JF = dgemm(Jm, F, rows, rows, cols)
+      const J = dgemm(F, JF, cols, rows, cols, { transposeA: true })
+      return { message: [...h, ...J] }
+    }),
+    // The mean field of the stochastic step: log N(x; F w + c, Q) is quadratic in both vectors, so the messages are the expected
+    // log under the other's belief, exact and with no cross term (the beliefs are independent): to x the information form of
+    // `N(F E w + c, Q)`, to w that of `F' Q^-1 (E x - c)` with precision `F' Q^-1 F`.
+    vmp: messageRule((c): OperatorResult => {
+      const { F, offset, Q, rows, cols } = parameters(c)
+      const factorQ = spd(Q, rows)
+      if (factorQ === undefined)
+        throw new ImproperMessageError('gaussian-transition: the covariance is not positive definite')
+      const QInv = factorQ.inverse()
+      if (c.to === 0) {
+        const mean = momentsOfBelief(arg(c, 1), cols).mean
+        const image = dgemv(F, rows, cols, mean)
+        const mu = Float64Array.from(image, (v, i) => v + (offset[i] ?? 0))
+        return { message: [...dgemv(QInv, rows, rows, mu), ...QInv] }
       }
-    }
-    for (let i = 0; i < cols; i++) {
-      h[rows + i] = (ew[i] ?? 0) - (FQc[i] ?? 0)
-      for (let j = 0; j < cols; j++)
-        J[(rows + i) * n + rows + j] = (ew[cols + i * cols + j] ?? 0) + (FQF[i * cols + j] ?? 0)
-    }
-    const joint = spd(J, n)
-    if (joint === undefined) return Number.NaN
-    const solved = joint.solve(h)
-    let hJh = 0
-    for (let i = 0; i < n; i++) hJh += (h[i] ?? 0) * (solved[i] ?? 0)
-    let cQc = 0
-    for (let i = 0; i < rows; i++) cQc += (offset[i] ?? 0) * (QInvC[i] ?? 0)
-    return 0.5 * hJh - 0.5 * joint.logDet + 0.5 * cols * Math.log(2 * Math.PI) - 0.5 * factorQ.logDet - 0.5 * cQc
+      const mean = momentsOfBelief(arg(c, 0), rows).mean
+      const gap = Float64Array.from(mean, (v, i) => v - (offset[i] ?? 0))
+      const h = dgemv(F, rows, cols, dgemv(QInv, rows, rows, gap), true)
+      const QF = dgemm(QInv, F, rows, rows, cols)
+      const J = dgemm(F, QF, cols, rows, cols, { transposeA: true })
+      return { message: [...h, ...J] }
+    }),
   },
-}
+  evidence: {
+    // The evidence of the factor under the cavities as unnormalised densities exp(h x - x J x / 2): the Gaussian integral of the joint of
+    // (x, w), in information form so that a cavity that is only partly informative (the readings see the position, not the velocity)
+    // still has one. Not a number when even the joint has no density.
+    ep: (c) => {
+      const { F, offset, Q, rows, cols } = parameters(c)
+      const ex = arg(c, 0).eta
+      const ew = arg(c, 1).eta
+      if (ex === undefined || ew === undefined) return Number.NaN
+      const factorQ = spd(Q, rows)
+      if (factorQ === undefined) return Number.NaN
+      const QInv = factorQ.inverse()
+      const n = rows + cols
+      const J = new Float64Array(n * n)
+      const h = new Float64Array(n)
+      const QInvF = dgemm(QInv, F, rows, rows, cols)
+      const FQF = dgemm(F, QInvF, cols, rows, cols, { transposeA: true })
+      const QInvC = dgemv(QInv, rows, rows, offset)
+      const FQc = dgemv(F, rows, cols, QInvC, true)
+      for (let i = 0; i < rows; i++) {
+        h[i] = (ex[i] ?? 0) + (QInvC[i] ?? 0)
+        for (let j = 0; j < rows; j++) J[i * n + j] = (ex[rows + i * rows + j] ?? 0) + (QInv[i * rows + j] ?? 0)
+        for (let j = 0; j < cols; j++) {
+          J[i * n + rows + j] = -(QInvF[i * cols + j] ?? 0)
+          J[(rows + j) * n + i] = -(QInvF[i * cols + j] ?? 0)
+        }
+      }
+      for (let i = 0; i < cols; i++) {
+        h[rows + i] = (ew[i] ?? 0) - (FQc[i] ?? 0)
+        for (let j = 0; j < cols; j++)
+          J[(rows + i) * n + rows + j] = (ew[cols + i * cols + j] ?? 0) + (FQF[i * cols + j] ?? 0)
+      }
+      const joint = spd(J, n)
+      if (joint === undefined) return Number.NaN
+      const solved = joint.solve(h)
+      let hJh = 0
+      for (let i = 0; i < n; i++) hJh += (h[i] ?? 0) * (solved[i] ?? 0)
+      let cQc = 0
+      for (let i = 0; i < rows; i++) cQc += (offset[i] ?? 0) * (QInvC[i] ?? 0)
+      return 0.5 * hJh - 0.5 * joint.logDet + 0.5 * cols * Math.log(2 * Math.PI) - 0.5 * factorQ.logDet - 0.5 * cQc
+    },
+    vmp: (c) => {
+      const { F, offset, Q, rows, cols } = parameters(c)
+      const factorQ = spd(Q, rows)
+      if (factorQ === undefined) return Number.NaN
+      const QInv = factorQ.inverse()
+      const x = momentsOfBelief(arg(c, 0), rows)
+      const w = momentsOfBelief(arg(c, 1), cols)
+      const image = dgemv(F, rows, cols, w.mean)
+      const gap = Float64Array.from(x.mean, (v, i) => v - (image[i] ?? 0) - (offset[i] ?? 0))
+      const FS = dgemm(F, w.covariance, rows, cols, cols)
+      const FSF = dgemm(FS, F, rows, cols, rows, { transposeB: true })
+      // E (x - F w - c)' Q^-1 (x - F w - c) = gap' Q^-1 gap + tr(Q^-1 (S_x + F S_w F')).
+      const solved = dgemv(QInv, rows, rows, gap)
+      let quad = 0
+      let trace = 0
+      for (let i = 0; i < rows; i++) {
+        quad += (gap[i] ?? 0) * (solved[i] ?? 0)
+        for (let j = 0; j < rows; j++)
+          trace += (QInv[i * rows + j] ?? 0) * ((x.covariance[j * rows + i] ?? 0) + (FSF[j * rows + i] ?? 0))
+      }
+      return -0.5 * (quad + trace + rows * Math.log(2 * Math.PI) + factorQ.logDet)
+    },
+  },
+})
