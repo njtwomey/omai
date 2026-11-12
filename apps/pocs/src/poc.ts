@@ -16,6 +16,15 @@ export interface Poc {
   readonly group?: string
 }
 
+/** What a directory of `pocs/` says about itself, in its `dir.ts` (`export const dir: PocDir`). */
+export interface PocDir {
+  readonly title: string
+  /** One or two sentences: what the directory is about. */
+  readonly summary: string
+  /** Where it comes among its siblings (ascending); without one, after those that have one, by title. */
+  readonly order?: number
+}
+
 /** A group of proofs of concept that belong together, shown as one section of the index (and at `/group/<slug>`). */
 export interface PocGroup {
   readonly slug: string
