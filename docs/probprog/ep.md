@@ -235,6 +235,19 @@ the baseline's history is the list of intended changes (`docs/structure.md` sect
 `scripts/ep-atlas.ts`); `make ep-report-check` fails when `ep-status.md` is stale, when a status word or a reference of the atlas has
 drifted from the code, or when the atlas names an atom in prose that does not run; `make ep-check` runs it after the tests. Neither is part of `make verify`.
 
+### The performance baseline
+
+`make ep-perf` (about 10 minutes, niced, on a quiet machine) measures where the EP code spends its time and writes `ep-perf.json` (the
+baseline: medians, spreads, a calibration figure, the machine, the date and commit) and `ep-perf.md` (the tables): the shared grid
+integrator per profile (`pair`, `axes`, `triple`, `line`) and the kernels under it, one message call per operator and typical call
+signature (recorded from real EP runs and replayed under a timer, grouped by folder), the EP wall time, sweeps, updates and updates per
+second of about 26 atoms, models and programs, and the share of each run spent in each operator (the registry's rules are timed from the
+harness, never edited). `make ep-perf-check` re-measures and fails only when something is slower than the baseline by more than 1.5x
+after dividing by the machine factor (the ratio of the calibration workload, a fixed pure-arithmetic loop timed before and after the run,
+so a baseline taken on a busier or another machine still compares); `ARGS="--only item/atom/gaussian,grid/"` limits it and `--ratio 2`
+loosens it. Neither is part of `make verify` or `make check`; the tensorisation question they were built for is answered in
+`ep-perf-tensor-study.md`.
+
 ## 9. How to add a piece
 
 **A message rule for an operator.** Search `message-passing/operators/` first (a numeric likelihood of a linear predictor is a row of a
@@ -272,5 +285,6 @@ the atom page take it from there.
 | the methods, route, knobs | `packages/engine/src/lib/probprog/inference/{mp,ep-grid,ep-multistart,ep-route,ep-knobs}.ts` |
 | the suite | `packages/engine/src/lib/probprog/ep/` |
 | the digest and the report | `scripts/ep-digest*.ts`, `scripts/ep-report.ts`; `docs/probprog/ep-digest.json`, `ep-status.md` |
+| the performance baseline | `scripts/ep-perf*.ts`, `scripts/perf/`; `docs/probprog/ep-perf.json`, `ep-perf.md`, `ep-perf-tensor-study.md` |
 | the pages | `apps/pocs/src/pocs/expectation-propagation/**/ep-*`, `apps/pocs/src/shared/EpAtomPage.tsx` |
 | the reviews with the target structure | `docs/probprog/review-{compiler,rules,suite}.md` |
