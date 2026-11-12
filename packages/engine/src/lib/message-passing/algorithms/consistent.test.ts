@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { expectResumable } from '../../../testing/mp-variants.ts'
+import { add, arange, cos, mul, toFlat } from '../../tensor/index.ts'
 import { runAlgorithm } from '../../trace/index.ts'
 import * as M from '../index.ts'
+import { zeroArray } from '../numerics/_arrays.ts'
 
 const close = (a: number, b: number, tol: number): void => {
   expect(Math.abs(a - b), `${a} vs ${b}`).toBeLessThanOrEqual(tol * (1 + Math.abs(b)))
@@ -48,10 +50,10 @@ describe('adaptive TAP: an Ising model as a Gaussian times spins', () => {
     const j = k % n
     return i === j ? 0 : 0.17 * Math.sin(1 + 3 * Math.min(i, j) + 5 * Math.max(i, j))
   })
-  const h = Array.from({ length: n }, (_, i) => 0.4 * Math.cos(2 + 3 * i))
+  const h = toFlat(mul(cos(add(2, mul(arange(n), 3))), 0.4))
   // exact by enumeration of the 2^8 configurations
   let logZ = Number.NEGATIVE_INFINITY
-  const exactMean = new Array<number>(n).fill(0)
+  const exactMean = zeroArray(n)
   {
     const weights: number[] = []
     const spins: number[][] = []
@@ -105,7 +107,7 @@ describe('adaptive TAP: an Ising model as a Gaussian times spins', () => {
   it('the evidence, with the constant, is the log partition function within 0.01', () => {
     const settings: M.EngineSettings = { ...M.epDefaults, projection: M.momentProjection, tol: 1e-12 }
     const evidence = M.evidenceOf(g, settings, run.state)
-    const normaliser = M.gaussianMv(n).logPartition([...new Array<number>(n).fill(0), ...precision])
+    const normaliser = M.gaussianMv(n).logPartition([...zeroArray(n), ...precision])
     expect(Math.abs(evidence + normaliser + (c * n) / 2 - logZ)).toBeLessThan(0.01)
   })
   it('the spin site is a closed form: its message matches the brute-force moments of the two-point tilted distribution', () => {

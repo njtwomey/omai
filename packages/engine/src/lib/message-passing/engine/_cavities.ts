@@ -8,6 +8,7 @@
 import { FLAT_CAVITY_PRECISION } from '../core/args.ts'
 import type { CompiledGraph } from '../core/graph.ts'
 import type { Arg, Eta } from '../core/types.ts'
+import { zeroArray } from '../numerics/_arrays.ts'
 import type { Projection } from './projections.ts'
 import type { MpState } from './state.ts'
 
@@ -36,7 +37,9 @@ export function isPulled(g: CompiledGraph, e: number, projection: Projection): b
 /** The belief of a variable as the plain sum of its messages: no renormalisation, so the masses of the evidence keep their scale. */
 export function rawBelief(g: CompiledGraph, messages: readonly (readonly number[])[], variable: number): number[] {
   const v = g.variables[variable] as CompiledGraph['variables'][number]
-  const acc = new Array<number>(v.family.size).fill(0)
+  const acc = zeroArray(v.family.size)
+  // Exempt from the tensor rule, on purpose: the sum of every message of a variable is the innermost operation of a sweep, a plain
+  // accumulation over the number arrays that messages are by design.
   for (const e of v.edges) {
     const m = messages[e] as Eta
     for (let i = 0; i < acc.length; i++) acc[i] = (acc[i] ?? 0) + (m[i] ?? 0)

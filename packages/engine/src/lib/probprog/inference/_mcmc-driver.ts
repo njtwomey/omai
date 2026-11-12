@@ -24,7 +24,25 @@ import {
   type TransitionInfo,
 } from '../../sampling/index.ts'
 import { bool, type DictSpace, dict, int } from '../../space/index.ts'
-import { arange, cast, fromStorage, primalOf, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
+import {
+  arange,
+  asTensor,
+  broadcastTo,
+  cast,
+  concat,
+  full,
+  primalOf,
+  reshape,
+  sliceAxis,
+  stack,
+  type Tensor,
+  take,
+  toArray,
+  toFlat,
+  transpose,
+  type Value,
+  zeros,
+} from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -199,11 +217,7 @@ export const commonMcmcKnobs = (
     }),
   })
 
-const rowOf = (d: Tensor, i: number): Tensor => {
-  const shape = d.shape.slice(1)
-  const size = shape.reduce((a, b) => a * b, 1)
-  return fromStorage(d.data.slice(i * size, (i + 1) * size) as Float64Array, shape, 'float64')
-}
+const rowOf = (d: Tensor, i: number): Tensor => take(d, i, 0)
 
 /** A transition's statistics as the columns of a kept row. */
 const statsOf = (logDensity: number, info: TransitionInfo): number[] => [
@@ -221,22 +235,18 @@ const emptyChain = (): McmcChainState => ({
   warm: null,
   chain: null,
   tuned: null,
-  last: new Float64Array(STATS.length).fill(Number.NaN),
+  last: Float64Array.from(toFlat(full([STATS.length], Number.NaN))),
   kept: [],
   divergences: 0,
 })
 
-const flatten = (rows: readonly Float64Array[]): Float64Array => {
-  const width = rows[0]?.length ?? 0
-  const out = new Float64Array(rows.length * width)
-  rows.forEach((r, i) => {
-    out.set(r, i * width)
-  })
-  return out
-}
+const flatten = (rows: readonly Float64Array[]): Float64Array =>
+  Float64Array.from(toFlat(rows.length === 0 ? zeros([0]) : concat(rows.map((r) => asTensor(r)))))
 
 const unflatten = (flat: Float64Array, width: number): Float64Array[] =>
-  Array.from({ length: width === 0 ? 0 : flat.length / width }, (_, i) => flat.slice(i * width, (i + 1) * width))
+  width === 0
+    ? []
+    : (toArray(reshape(asTensor(flat), [flat.length / width, width])) as number[][]).map((r) => Float64Array.from(r))
 
 /** The program with every subsampled plate replaced by the whole plate (so its likelihood is the full one, unscaled). */
 function fullBatch(program: Model): Model {
@@ -307,27 +317,26 @@ export function mcmcMethodOf<T, K extends string = never>(
     const dim = um.dim
     const walkers = plan.walkers
     const numChains = units * walkers
-    const draws = new Float64Array(numChains * n * dim)
-    const stats = STATS.map(() => new Float64Array(numChains * n))
-    state.chains.forEach((ch, ui) => {
-      for (let d = 0; d < n; d++) {
-        const row = ch.kept[d] as Float64Array
-        for (let w = 0; w < walkers; w++) {
-          const ci = ui * walkers + w
-          draws.set(row.subarray(STATS.length + w * dim, STATS.length + (w + 1) * dim), (ci * n + d) * dim)
-          STATS.forEach((_, k) => {
-            ;(stats[k] as Float64Array)[ci * n + d] = row[k] ?? Number.NaN
-          })
-        }
-      }
-    })
-    const base = chainsFromDraws(fromStorage(draws, [numChains, n, dim], 'float64'), {
+    // One matrix per unit: a row per kept draw, the sampler statistics then the position of every walker.
+    const units_ = state.chains.map((ch) => stack(ch.kept.slice(0, n).map((r) => asTensor(r))))
+    const draws = concat(
+      units_.map((m) =>
+        transpose(reshape(sliceAxis(m, 1, STATS.length, STATS.length + walkers * dim), [n, walkers, dim]), [1, 0, 2]),
+      ),
+      0,
+    ) as Tensor
+    // The statistics of a unit are shared by its walkers.
+    const stats = STATS.map((_, k) =>
+      concat(
+        units_.map((m) => broadcastTo(reshape(take(m, k, 1), [1, n]), [walkers, n])),
+        0,
+      ),
+    )
+    const base = chainsFromDraws(draws, {
       names: um.logDensity.names,
       stats: Object.fromEntries(
         STATS.flatMap((s, k) =>
-          Number.isNaN((stats[k] as Float64Array)[0] ?? Number.NaN)
-            ? []
-            : [[s, fromStorage(stats[k] as Float64Array, [numChains, n], 'float64')]],
+          Number.isNaN(toFlat(stats[k] as Value)[0] ?? Number.NaN) ? [] : [[s, stats[k] as Tensor]],
         ),
       ),
     })
@@ -351,11 +360,7 @@ export function mcmcMethodOf<T, K extends string = never>(
     const total = chains.numChains * chains.numDraws
     if (done && um.enumerated.length > 0 && flag(config, 'inferDiscrete'))
       for (const site of um.enumerated)
-        draws[site] = fromStorage(
-          Float64Array.from(state.discrete[site] ?? []),
-          [total, ...(state.shapes[site] ?? [])],
-          'float64',
-        )
+        draws[site] = reshape(asTensor(state.discrete[site] ?? []), [total, ...(state.shapes[site] ?? [])]) as Tensor
     const diagnostics: Record<string, Json> = {
       partial: !done,
       iterations: state.iteration,
@@ -510,7 +515,6 @@ export function mcmcMethodOf<T, K extends string = never>(
       const um = unconstrained()
       const plan = planOf(config)
       const dim = um.dim
-      const width = plan.kernelDim
       const kernels = new Map<number, { readonly tuned: T; readonly kernel: MCMCKernel }>()
       const kernelOf = (i: number, tuned: T): MCMCKernel => {
         const known = kernels.get(i)
@@ -533,16 +537,28 @@ export function mcmcMethodOf<T, K extends string = never>(
       const constrainedDraws = (s: McmcRunState): Record<string, Tensor> => {
         const first = s.chains[0]?.kept ?? []
         if (constrainedFor?.rows !== first) {
-          const flat = new Float64Array(c.numChains * plan.walkers * c.numDraws * dim)
-          s.chains.forEach((ch, ui) => {
-            ch.kept.forEach((row, d) => {
-              for (let w = 0; w < plan.walkers; w++)
-                flat.set(
-                  row.subarray(STATS.length + w * dim, STATS.length + (w + 1) * dim),
-                  ((ui * plan.walkers + w) * c.numDraws + d) * dim,
-                )
-            })
-          })
+          // All the draws are kept when the discrete sites are recovered: a matrix per unit, then the walkers of every unit as chains.
+          const flat = Float64Array.from(
+            toFlat(
+              concat(
+                s.chains.map((ch) =>
+                  transpose(
+                    reshape(
+                      sliceAxis(
+                        stack(ch.kept.map((r) => asTensor(r))),
+                        1,
+                        STATS.length,
+                        STATS.length + plan.walkers * dim,
+                      ),
+                      [c.numDraws, plan.walkers, dim],
+                    ),
+                    [1, 0, 2],
+                  ),
+                ),
+                0,
+              ),
+            ),
+          )
           constrainedFor = { rows: first, draws: constrainDraws(um, flat) as Record<string, Tensor> }
         }
         return constrainedFor.draws
@@ -577,10 +593,14 @@ export function mcmcMethodOf<T, K extends string = never>(
       }
       /** A start for each walker of a unit, joined into the kernel's position. */
       const startOf = (starts: readonly Float64Array[], key: Key): McmcChainState => {
-        const joined = new Float64Array(width)
-        starts.forEach((s, w) => {
-          joined.set(s, w * dim)
-        })
+        const joined = Float64Array.from(
+          toFlat(
+            concat(
+              starts.map((s) => asTensor(s)),
+              0,
+            ),
+          ),
+        )
         if (c.numWarmup > 0) {
           const warm = plan.warm === undefined ? plan.kernel(plan.tuned0).init(joined) : plan.warm.init(joined, key)
           return { ...emptyChain(), warm }

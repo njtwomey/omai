@@ -7,7 +7,7 @@
 
 import { foldIn, key, normal } from '../../../random/index.ts'
 import { dict, int, real } from '../../../space/index.ts'
-import { toFlat } from '../../../tensor/index.ts'
+import { add, arange, div, exp, mul, neg, sub, toFlat, zeros } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -58,21 +58,22 @@ const LOG_2PI = Math.log(2 * Math.PI)
  */
 function chainMarginals(y: readonly number[]): Record<string, ExactMarginal> {
   const dh = (STATE_HI - STATE_LO) / (STATES - 1)
-  const states = Float64Array.from({ length: STATES }, (_, i) => STATE_LO + i * dh)
+  const stateGrid = add(mul(arange(STATES), dh), STATE_LO)
+  const states = toFlat(stateGrid)
   // exp(log density of each observation at each state): the same for every triple
   const read = y.map((v) =>
-    Float64Array.from(states, (h) => Math.exp(-0.5 * LOG_2PI - 0.5 * h - 0.5 * v * v * Math.exp(-h))),
+    toFlat(exp(sub(sub(-0.5 * LOG_2PI, mul(stateGrid, 0.5)), mul(exp(neg(stateGrid)), 0.5 * v * v)))),
   )
-  const start = Float64Array.from(states, (h) => {
-    const z = (h - PRIOR.start.mean) / PRIOR.start.sd
-    return (Math.exp(-0.5 * z * z) * dh) / (PRIOR.start.sd * Math.sqrt(2 * Math.PI))
-  })
-  const levels = Array.from({ length: 18 }, (_, i) => -3.2 + (4.4 * (i + 0.5)) / 18)
-  const persistences = Array.from({ length: 40 }, (_, i) => -0.1 + (1.55 * (i + 0.5)) / 40)
+  const z0 = div(sub(stateGrid, PRIOR.start.mean), PRIOR.start.sd)
+  const start = toFlat(div(mul(exp(mul(mul(z0, -0.5), z0)), dh), PRIOR.start.sd * Math.sqrt(2 * Math.PI)))
+  const levels = toFlat(add(div(mul(add(arange(18), 0.5), 4.4), 18), -3.2))
+  const persistences = toFlat(add(div(mul(add(arange(40), 0.5), 1.55), 40), -0.1))
   const logLo = Math.log(1.5)
   const logHi = Math.log(60)
-  const logPrecisions = Array.from({ length: 22 }, (_, i) => logLo + ((logHi - logLo) * (i + 0.5)) / 22)
+  const logPrecisions = toFlat(add(div(mul(add(arange(22), 0.5), logHi - logLo), 22), logLo))
   const width = 2 * Math.ceil(6 / (dh * Math.sqrt(1.5))) + 1
+  // The five buffers of the filter below are the working memory of its triple loop (15840 triples, each a sweep of a banded
+  // kernel over every observation), rewritten in place; a tensor op per step would allocate in the innermost loop.
   const kernel = new Float64Array(STATES * width)
   const first = new Int32Array(STATES)
   const last = new Int32Array(STATES)
@@ -94,7 +95,7 @@ function chainMarginals(y: readonly number[]): Record<string, ExactMarginal> {
     }
     let total = 0
     for (let t = 0; t < y.length; t++) {
-      const likelihood = read[t] as Float64Array
+      const likelihood = read[t] as number[]
       if (t === 0) next.set(start)
       else {
         next.fill(0)
@@ -123,7 +124,7 @@ function chainMarginals(y: readonly number[]): Record<string, ExactMarginal> {
     0.5 * ((phi - PRIOR.persistence.mean) / PRIOR.persistence.sd) ** 2 +
     (PRIOR.precision.shape - 1) * Math.log(tau) -
     PRIOR.precision.rate * tau
-  const logWeight = new Float64Array(levels.length * persistences.length * logPrecisions.length)
+  const logWeight = toFlat(zeros([levels.length * persistences.length * logPrecisions.length]))
   let top = Number.NEGATIVE_INFINITY
   let at = 0
   for (const mu of levels)
@@ -135,11 +136,7 @@ function chainMarginals(y: readonly number[]): Record<string, ExactMarginal> {
         logWeight[at++] = value
         top = Math.max(top, value)
       }
-  const mass = [
-    new Float64Array(levels.length),
-    new Float64Array(persistences.length),
-    new Float64Array(logPrecisions.length),
-  ]
+  const mass = [levels.length, persistences.length, logPrecisions.length].map((n) => toFlat(zeros([n])))
   at = 0
   for (let a = 0; a < levels.length; a++)
     for (let b = 0; b < persistences.length; b++)
@@ -150,16 +147,16 @@ function chainMarginals(y: readonly number[]): Record<string, ExactMarginal> {
           [1, b],
           [2, c],
         ] as const) {
-          const m = mass[axis] as Float64Array
+          const m = mass[axis] as number[]
           m[index] = (m[index] as number) + w
         }
       }
   return {
-    mu: weightedMarginal(levels, Array.from(mass[0] as Float64Array), 'linear'),
-    phi: weightedMarginal(persistences, Array.from(mass[1] as Float64Array), 'linear'),
+    mu: weightedMarginal(levels, mass[0] as number[], 'linear'),
+    phi: weightedMarginal(persistences, mass[1] as number[], 'linear'),
     tau: weightedMarginal(
       logPrecisions.map((l) => Math.exp(l)),
-      Array.from(mass[2] as Float64Array),
+      mass[2] as number[],
       'linear',
     ),
   }

@@ -1,6 +1,17 @@
 import { betaEta, gaussianMvPrior, wishartEta } from '../../../../message-passing/index.ts'
 import { inv } from '../../../../numerics/linalg/index.ts'
-import { toFlat } from '../../../../tensor/index.ts'
+import {
+  full,
+  matmul,
+  mean as meanOf,
+  reshape,
+  scatterAdd,
+  sub,
+  tensor,
+  toFlat,
+  transpose,
+  tril,
+} from '../../../../tensor/index.ts'
 import type { NamedValue } from '../../operators.ts'
 import type { DistSpec, ExprSpec, ModelNode } from '../../spec.ts'
 import { type Atom, type Cell, prod, scaledOf, unflatten } from '../_cells.ts'
@@ -62,21 +73,17 @@ export function latentMultivariateNormal(cx: Context, node: ModelNode & { readon
   }
   const known = (e: ExprSpec | undefined, what: string): number[] => {
     if (e === undefined || !cx.isConst(e)) throw matrixRandom(what, node.name)
-    return Array.from(toFlat(cx.evalNamed(e).value))
+    return toFlat(cx.evalNamed(e).value)
   }
   const loc = known(params['loc'], 'mean')
-  const mean = loc.length === 1 ? new Array<number>(n).fill(loc[0] ?? 0) : loc
+  const mean = loc.length === 1 ? toFlat(full([n], loc[0] ?? 0)) : loc
   let cov: number[]
   if (params['covariance'] !== undefined) cov = known(params['covariance'], 'covariance')
   else if (params['scaleTril'] !== undefined) {
     const L = known(params['scaleTril'], 'scale factor')
-    cov = new Array<number>(n * n).fill(0)
-    for (let i = 0; i < n; i++)
-      for (let j = 0; j < n; j++) {
-        let v = 0
-        for (let k = 0; k <= Math.min(i, j); k++) v += (L[i * n + k] ?? 0) * (L[j * n + k] ?? 0)
-        cov[i * n + j] = v
-      }
+    if (L.length !== n * n) throw covarianceNotSquare(node.name, n)
+    const lower = tril(reshape(tensor(L), [n, n]))
+    cov = toFlat(matmul(lower, transpose(lower)))
   } else throw precisionGivenForNormal(node.name)
   if (cov.length !== n * n) throw covarianceNotSquare(node.name, n)
   cx.g.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
@@ -266,7 +273,7 @@ export function plateVectors(
   cx: Context,
   node: ModelNode & { readonly kind: 'observed' },
   nv: NamedValue,
-  d: number,
+  _d: number,
   mean: { readonly at: (row: number) => string | { readonly const: readonly number[] }; readonly shared: boolean },
   operator: string,
   tail: readonly (string | { readonly const: number })[],
@@ -280,14 +287,11 @@ export function plateVectors(
   }
   if (rows.length === 0) return false
   const n = rows.length
-  const ybar = Array.from({ length: d }, (_, k) => rows.reduce((acc, y) => acc + (y[k] as number), 0) / n)
-  const scatter = new Array<number>(d * d).fill(0)
-  for (const y of rows)
-    for (let a = 0; a < d; a++)
-      for (let b = 0; b < d; b++)
-        scatter[a * d + b] =
-          (scatter[a * d + b] as number) +
-          ((y[a] as number) - (ybar[a] as number)) * ((y[b] as number) - (ybar[b] as number))
+  const y = tensor(rows)
+  const ybarValue = meanOf(y, 0)
+  const centred = sub(y, ybarValue)
+  const ybar = toFlat(ybarValue)
+  const scatter = toFlat(matmul(transpose(centred), centred))
   addPlated(cx, node, { operator, args: [{ const: ybar }, mean.at(0), ...tail], params: { count: n, scatter } })
   return true
 }
@@ -449,11 +453,21 @@ export function latentTransition(cx: Context, node: ModelNode & { readonly kind:
     return { aff: c.aff, terms }
   })
   if (vector === undefined) throw meanIndependentOfVector(node.name)
-  const matrix = new Array<number>(n * columns).fill(0)
-  const offset = forms.map(({ aff, terms }, i) => {
-    for (const [key, k] of terms) matrix[i * columns + (cx.g.atoms.get(key) as Atom & { kind: 'comp' }).index] = k
-    return aff.offset
-  })
+  const entries = forms.flatMap(({ terms }, i) =>
+    terms.map(([key, k]) => ({
+      at: i * columns + (cx.g.atoms.get(key) as Atom & { kind: 'comp' }).index,
+      value: k,
+    })),
+  )
+  const matrix = toFlat(
+    scatterAdd(
+      [n * columns],
+      entries.map((e) => e.at),
+      entries.map((e) => e.value),
+      0,
+    ),
+  )
+  const offset = forms.map(({ aff }) => aff.offset)
   cx.g.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
   cx.g.addFactor(
     {

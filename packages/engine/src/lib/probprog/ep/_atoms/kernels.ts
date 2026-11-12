@@ -11,7 +11,19 @@ import { gram, rbfKernel, scaleKernel } from '../../../kernels/index.ts'
 import { cholesky } from '../../../numerics/linalg/index.ts'
 import { foldIn, key, normal, uniform } from '../../../random/index.ts'
 import { dict, real } from '../../../space/index.ts'
-import { clip, matmul, reshape, tensor, toFlat, type Value } from '../../../tensor/index.ts'
+import {
+  add,
+  arange,
+  clip,
+  div,
+  matmul,
+  mul,
+  reshape,
+  tensor,
+  toFlat,
+  type Value,
+  zeros,
+} from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -47,7 +59,7 @@ function exactMarginals(x: readonly number[], y: readonly number[]): Record<stri
   const points = 801
   const lo = -5
   const hi = 5
-  const u = Array.from({ length: points }, (_, i) => lo + ((hi - lo) * i) / (points - 1))
+  const u = toFlat(add(div(mul(arange(points), hi - lo), points - 1), lo))
   const given = u.map((t) => gpPosteriorGivenLengthScale(x, y, Math.exp(t)))
   const logw = given.map(
     (g, i) => g.logMarginalLikelihood + Math.log(logNormalPdf(Math.exp(u[i] ?? 0), PRIOR_SD)) + (u[i] ?? 0),
@@ -89,7 +101,7 @@ const rbfGramOf = ([xs, scale]: readonly { readonly value: Value }[]): Value =>
   rbfGram((xs as { value: Value }).value, (scale as { value: Value }).value)
 
 function gpLengthScaleProblem(_k: Config): AtomParts {
-  const zeros = new Array<number>(X6.length).fill(0)
+  const priorMean = zeros([X6.length])
   // region gp-length-scale
   const definition = defineModel('gp-length-scale', (m) => {
     const x = m.data('x', { dims: ['i'], role: 'covariate' })
@@ -99,7 +111,7 @@ function gpLengthScaleProblem(_k: Config): AtomParts {
     // so the covariance is a custom function of it: the Gram matrix of a squared-exponential kernel
     const cov = m.custom('rbfGram', rbfGramOf, [x, ell], { eventRank: 2 })
     // the function at the six inputs is a dense Gaussian vector
-    const prior = d.multivariateNormal(zeros, { covariance: cov })
+    const prior = d.multivariateNormal(priorMean, { covariance: cov })
     const f = m.latent('f', prior, { dims: ['i'] })
     // observed through Gaussian noise
     m.observe('y', d.normal(f, 0.3), y)
@@ -191,13 +203,13 @@ function gpClassLearnedProblem(k: Config): AtomParts {
   const [seed, n] = [configNumber(k, 'seed'), configNumber(k, 'n')]
   const trueEll = configNumber(k, 'trueLengthScale')
   // the ground truth: a function drawn from the process at the true length scale, labelled through a probit link
-  const inputs = Array.from({ length: n }, (_, i) => -2.4 + (4.8 * i) / Math.max(1, n - 1))
+  const inputs = toFlat(add(div(mul(arange(n), 4.8), Math.max(1, n - 1)), -2.4))
   const kk = key(seed)
   const white = normal(foldIn(kk, 0), [n, 1])
   const f = Array.from(toFlat(matmul(cholesky(classGramOf(tensor(inputs), tensor(trueEll))), white)))
   const u = toFlat(uniform(foldIn(kk, 1), [n]))
   const y = f.map((v, i) => ((u[i] ?? 1) < phiOf(v) ? 1 : 0))
-  const zeros = new Array<number>(n).fill(0)
+  const priorMean = zeros([n])
   // region gp-probit-learned
   const definition = defineModel('gp-probit-learned', (m) => {
     const x = m.data('x', { dims: ['i'], role: 'covariate' })
@@ -206,7 +218,7 @@ function gpClassLearnedProblem(k: Config): AtomParts {
     const ell = m.latent('ell', d.logNormal(0, 0.5))
     const cov = m.custom('rbfGram', classGram, [x, ell], { eventRank: 2 })
     // the function at the inputs, labelled through a probit link
-    const prior = d.multivariateNormal(zeros, { covariance: cov })
+    const prior = d.multivariateNormal(priorMean, { covariance: cov })
     const fn = m.latent('f', prior, { dims: ['i'] })
     m.observe('y', d.bernoulli({ probs: ops.probit(fn) }), yy)
   })
@@ -343,7 +355,7 @@ function hyperparameterMarginals(): { exact: Record<string, ExactMarginal>; logE
 }
 
 function gpHyperparametersProblem(_k: Config): AtomParts {
-  const zeros = new Array<number>(X8.length).fill(0)
+  const priorMean = zeros([X8.length])
   // region gp-hyperparameters
   const definition = defineModel('gp-hyperparameters', (m) => {
     const x = m.data('x', { dims: ['i'], role: 'covariate' })
@@ -366,7 +378,7 @@ function gpHyperparametersProblem(_k: Config): AtomParts {
     )
     // and the noise sd goes through a custom function as well, so that it sits on the grid with the others
     const sd = m.custom('noiseSd', ([s]) => (s as { value: Value }).value, [noise], {})
-    const f = m.latent('f', d.multivariateNormal(zeros, { covariance: cov }), { dims: ['i'] })
+    const f = m.latent('f', d.multivariateNormal(priorMean, { covariance: cov }), { dims: ['i'] })
     m.observe('y', d.normal(f, sd), y)
   })
   // endregion

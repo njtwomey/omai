@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { add, arange, div, mul, toFlat } from '../../../tensor/index.ts'
 import { messageArg } from '../../core/args.ts'
 import { gamma, gammaEta, gaussian, gaussianEta } from '../../core/families.ts'
 import { apply, applyProductOperator, unaryFunctions } from './functions.ts'
@@ -244,7 +245,7 @@ function bruteScaled(
 ) {
   const n = 1200
   const grid = (m: number, v: number): number[] =>
-    Array.from({ length: n + 1 }, (_, i) => m + Math.sqrt(v) * (-9 + (18 * i) / n))
+    toFlat(add(m, mul(add(-9, div(mul(arange(n + 1), 18), n)), Math.sqrt(v))))
   const zs = grid(z[0], z[1])
   const xs = grid(x[0], x[1])
   const dz = (18 * Math.sqrt(z[1])) / n

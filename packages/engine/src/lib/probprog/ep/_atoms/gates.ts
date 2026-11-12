@@ -4,7 +4,7 @@
 
 import { foldIn, key, normal, uniform } from '../../../random/index.ts'
 import { dict, int, real } from '../../../space/index.ts'
-import { toFlat } from '../../../tensor/index.ts'
+import { add, arange, div, full, mul, scatter, toFlat, zeros } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -57,7 +57,7 @@ function orderedProblem(k: Config): AtomParts {
   const N = 70
   const lo = -4.5 + Math.min(ma, mb)
   const hi = 4.5 + Math.max(ma, mb)
-  const xs = Array.from({ length: N }, (_, i) => lo + ((hi - lo) * i) / (N - 1))
+  const xs = toFlat(add(div(mul(arange(N), hi - lo), N - 1), lo))
   const joint: RefJoint = {
     a: 'a',
     b: 'b',
@@ -269,7 +269,7 @@ function knownGateProblem(k: Config): AtomParts {
   const w1 = pi * normalPdf(y, 3, 1)
   const w0 = (1 - pi) * normalPdf(y, 0, 1)
   const p = w1 / (w1 + w0)
-  const ys = Array.from({ length: 141 }, (_, i) => -4 + (i * 11) / 140)
+  const ys = toFlat(add(div(mul(arange(141), 11), 140), -4))
   return {
     build: {
       definition,
@@ -649,7 +649,7 @@ function clutterGateProblem(k: Config): AtomParts {
   const marginal = quadratureMarginal(logPost, -20, 20)
   // P(observation i is clutter) = the posterior of the location averaged over the branch weight of that observation.
   const M = 8000
-  const ts = Array.from({ length: M }, (_, i) => -20 + ((i + 0.5) * 40) / M)
+  const ts = toFlat(add(div(mul(add(arange(M), 0.5), 40), M), -20))
   const lw = ts.map(logPost)
   const { weights: wt } = logWeights(lw)
   const total = wt.reduce((a, b) => a + b, 0)
@@ -1099,7 +1099,7 @@ function mixtureFigure(
 ): NonNullable<AtomProblem['figure']> {
   const lo = Math.min(...y, ...truth.means.map((m, k) => m - 3 * (truth.sds[k] as number)))
   const hi = Math.max(...y, ...truth.means.map((m, k) => m + 3 * (truth.sds[k] as number)))
-  const xs = Array.from({ length: 160 }, (_, i) => lo + ((hi - lo) * i) / 159)
+  const xs = toFlat(add(div(mul(arange(160), hi - lo), 159), lo))
   const density = mixtureDensity(truth)
   const top = Math.max(...xs.map(density))
   return {
@@ -1169,7 +1169,7 @@ function fittedMixture(
   meanName: (k: number) => string,
   precisionName: (k: number) => string,
 ): TrueMixture {
-  const ks = Array.from({ length: K }, (_, k) => k)
+  const ks = toFlat(arange(K))
   return {
     weights: ks.map((k) => m[weightName(k)] ?? Number.NaN),
     means: ks.map((k) => m[meanName(k)] ?? Number.NaN),
@@ -1186,7 +1186,7 @@ function mixtureLearnedProblem(k: Config): AtomParts {
       ? { weights: [0.6, 0.4], means: [-gap / 2, gap / 2], sds: [0.8, 1.2] }
       : { weights: [0.4, 0.35, 0.25], means: [-gap, 0, gap], sds: [0.8, 1, 1.2] }
   const { y, from } = simulateMixture(seed, n, truth)
-  const alpha = Array.from({ length: K }, () => 2)
+  const alpha = toFlat(full([K], 2))
   // region mixture-components-learned
   const definition = defineModel('mixture-components-learned', (m) => {
     const row = m.range('i')
@@ -1434,6 +1434,16 @@ const ACTIVE: readonly (readonly [number, number])[] = [
   [4, -2.4],
   [6, 4.1],
 ]
+
+/** The coefficient vector of length `p`: the active values where they are and zero elsewhere. */
+const activeCoefficients = (p: number): number[] =>
+  toFlat(
+    scatter(
+      zeros([p]),
+      ACTIVE.map(([at]) => [at]),
+      ACTIVE.map(([, v]) => v),
+    ),
+  )
 const SPIKE_SD = 0.1
 
 function spikeSlabLearnedProblem(k: Config): AtomParts {
@@ -1441,7 +1451,7 @@ function spikeSlabLearnedProblem(k: Config): AtomParts {
   const noise = configNumber(k, 'noise')
   // region spike-and-slab-learned
   // the ground truth: three coefficients are active, the rest are zero
-  const values = Array.from({ length: p }, (_, j) => ACTIVE.find(([at]) => at === j)?.[1] ?? 0)
+  const values = activeCoefficients(p)
   const e = Array.from(toFlat(normal(foldIn(key(seed), 0), [p])))
   const y = values.map((v, j) => v + noise * (e[j] ?? 0))
   const definition = defineModel('spike-and-slab-learned', (m) => {
@@ -1464,11 +1474,8 @@ function spikeSlabLearnedProblem(k: Config): AtomParts {
   // The exact posterior: given the share and the slab precision the coefficients are independent two-component mixtures.
   const [aS, bS, aT, bT] = [1.5, 3.5, 2, 8]
   const spikeVar = noise ** 2 + SPIKE_SD ** 2
-  const ps = Array.from({ length: 300 }, (_, i) => (i + 0.5) / 300)
-  const lts = Array.from(
-    { length: 300 },
-    (_, i) => Math.log(0.002) + ((Math.log(4) - Math.log(0.002)) * (i + 0.5)) / 300,
-  )
+  const ps = toFlat(div(add(arange(300), 0.5), 300))
+  const lts = toFlat(add(div(mul(add(arange(300), 0.5), Math.log(4) - Math.log(0.002)), 300), Math.log(0.002)))
   const ts = lts.map(Math.exp)
   const logs: number[] = []
   const pips: number[][] = []
@@ -1600,7 +1607,7 @@ function spikeSlabMarginalLearnedProblem(k: Config): AtomParts {
   const noise = configNumber(k, 'noise')
   // region spike-and-slab-marginal-learned
   // the ground truth: three coefficients are active, the rest are zero
-  const coefficients = Array.from({ length: p }, (_, j) => ACTIVE.find(([at]) => at === j)?.[1] ?? 0)
+  const coefficients = activeCoefficients(p)
   const draw = Array.from(toFlat(normal(foldIn(key(seed), 0), [p])))
   const observed = coefficients.map((v, j) => v + noise * (draw[j] ?? 0))
   const definition = defineModel('spike-and-slab-marginal-learned', (m) => {

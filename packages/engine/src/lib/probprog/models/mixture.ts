@@ -13,7 +13,7 @@
 
 import { OmaiError } from '../../base/index.ts'
 import { normal as drawNormal, uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import { full, maximum, minimum, tensor, toFlat } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, type ModelDefinition, toProgram } from '../model/index.ts'
 import { gridPosterior } from '../validation/index.ts'
@@ -59,15 +59,8 @@ export function sortedComponentMeans(draws: Readonly<Record<string, ArrayLike<nu
   const a = draws['mu[0]']
   const b = draws['mu[1]']
   if (a === undefined || b === undefined) return {}
-  const lo = new Float64Array(a.length)
-  const hi = new Float64Array(a.length)
-  for (let i = 0; i < a.length; i++) {
-    const x = a[i] ?? Number.NaN
-    const y = b[i] ?? Number.NaN
-    lo[i] = Math.min(x, y)
-    hi[i] = Math.max(x, y)
-  }
-  return { 'mu(1)': lo, 'mu(2)': hi }
+  const [x, y] = [tensor(Array.from(a)), tensor(Array.from(b))]
+  return { 'mu(1)': Float64Array.from(toFlat(minimum(x, y))), 'mu(2)': Float64Array.from(toFlat(maximum(x, y))) }
 }
 
 /** The options of {@link gaussianMixtureModel}. */
@@ -113,7 +106,7 @@ export function gaussianMixtureModel(options: GaussianMixtureOptions): ModelDefi
     const row = m.range('row')
     const k = m.range('component', { size: components })
     const y = m.data('y', { dims: [row], role: 'response' })
-    const prior = Array.from({ length: components }, () => concentration)
+    const prior = full([components], concentration)
     const weights = m.latent('weights', d.dirichlet(prior), { doc: 'the mixture weights' })
     const mu = m.latent('mu', d.normal(0, meanScale), {
       dims: [k],

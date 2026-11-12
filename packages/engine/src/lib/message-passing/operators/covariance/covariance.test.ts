@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { eye, mul, toFlat } from '../../../tensor/index.ts'
 import { messageArg, valueArg } from '../../core/args.ts'
 import { normalWishart, normalWishartEta, wishart, wishartEta, wishartParams } from '../../core/families-matrix.ts'
 import { gaussianMv, gaussianMvEta } from '../../core/families-vector.ts'
 import type { Arg, Eta, OperatorContext } from '../../core/types.ts'
+import { identityArray, zeroArray } from '../../numerics/_arrays.ts'
 import { wishartRule } from '../../numerics/_bartlett.ts'
 import { mvnNormalWishart, mvnWishart } from './covariance.ts'
 
@@ -281,8 +283,7 @@ describe('mvn-wishart: expectation propagation with Gaussian cavities', () => {
   })
 
   it('refuses to integrate a matrix beyond the quadrature, and says so', () => {
-    const identity = (n: number): number[] =>
-      Array.from({ length: n * n }, (_, e) => (e % n === Math.floor(e / n) ? 1 : 0))
+    const identity = (n: number): number[] => toFlat(mul(eye(n), 1))
     const g5 = gaussianMv(5)
     const w5 = wishart(5)
     const args = [
@@ -412,13 +413,9 @@ describe('mvn-wishart in three dimensions', () => {
     const d = 5
     const w = wishart(d)
     const y = [0.3, -0.2, 0.5, 0.1, -0.4]
-    const eta = wishartEta(
-      9,
-      Array.from({ length: d * d }, (_, i) => (Math.floor(i / d) === i % d ? 1 : 0)),
-      d,
-    )
+    const eta = wishartEta(9, identityArray(d), d)
     const msg = mvnWishart.ep?.(
-      ctx3(2, [valueArg(gaussianMv(d), y), valueArg(gaussianMv(d), new Array<number>(d).fill(0)), messageArg(w, eta)]),
+      ctx3(2, [valueArg(gaussianMv(d), y), valueArg(gaussianMv(d), zeroArray(d)), messageArg(w, eta)]),
     ).message as number[]
     expect(msg.length).toBe(1 + d * d)
     expect(msg[0]).toBe(0.5)

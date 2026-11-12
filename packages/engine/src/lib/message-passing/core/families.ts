@@ -9,6 +9,9 @@
  */
 
 import { type Json, LOG_2PI } from '../../base/index.ts'
+import { ddot } from '../../numerics/linalg/index.ts'
+import { div, toFlat } from '../../tensor/index.ts'
+import { zeroArray } from '../numerics/_arrays.ts'
 import { shiftedSum } from '../numerics/_moments.ts'
 import { digammaOf, lgammaOf, trigammaOf } from '../numerics/_scalar.ts'
 import { ImproperMessageError } from './errors.ts'
@@ -33,12 +36,6 @@ export interface FamilyDefinition {
   fromLogProbs?(logProbs: readonly number[]): Eta
 }
 
-const dot = (a: Eta, b: Eta): number => {
-  let s = 0
-  for (let i = 0; i < a.length; i++) s += (a[i] ?? 0) * (b[i] ?? 0)
-  return s
-}
-
 /** The largest absolute difference of two messages: the change of a message that has no moments. */
 export function maxAbsDifference(a: Eta, b: Eta): number {
   let m = 0
@@ -56,10 +53,11 @@ export function maxAbsDifference(a: Eta, b: Eta): number {
  */
 export function defineFamily(def: FamilyDefinition): Family {
   const normalise = def.normalise ?? ((eta: Eta) => eta)
-  const pair = def.pair ?? dot
-  const flat: Eta = Array.from({ length: def.size }, () => 0)
-  // A plain loop: a belief is the sum of every message of a variable (hundreds of them for a parameter shared across time),
-  // and this is the innermost operation of a sweep.
+  const pair = def.pair ?? ddot
+  const flat: Eta = zeroArray(def.size)
+  // Exempt from the tensor rule, on purpose: a plain loop over a number array. A belief is the sum of every message of a
+  // variable (hundreds of them for a parameter shared across time) and this is the innermost operation of a sweep, where a
+  // tensor per message would allocate on every product.
   const combine = (a: Eta, b: Eta, sign: 1 | -1): Eta => {
     const out = new Array<number>(a.length)
     for (let i = 0; i < a.length; i++) out[i] = (a[i] as number) + sign * (b[i] ?? 0)
@@ -258,7 +256,7 @@ export function betaEta(a: number, b: number): Eta {
 export function dirichletShapesFromLogMeans(logMeans: readonly number[]): number[] {
   const k = logMeans.length
   const { weights: p, total: norm } = shiftedSum(logMeans)
-  const mean = Array.from(p, (v) => v / norm)
+  const mean = toFlat(div(p, norm))
   const spread = mean.reduce((acc, m, i) => acc + m * ((logMeans[i] ?? 0) - Math.log(m)), 0)
   const scale = Math.max((k - 1) / Math.max(-spread, 1e-12), 1e-3)
   let alpha = mean.map((m) => Math.max(m * scale, 1e-3))

@@ -28,6 +28,8 @@ export function nodeEvaluator(
   const { d, groups, mean } = s
   const dd = d * d
   const count = groups.length
+  // Exempt from the tensor rule, on purpose: the scratch buffers of the per-node closure below, which the tilt loop calls for every
+  // node of the quadrature; a tensor op per node would allocate on each call.
   const t = new Float64Array(count * dd)
   const a = new Float64Array(count * dd)
   const u = new Float64Array(count * d)

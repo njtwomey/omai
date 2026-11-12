@@ -10,7 +10,7 @@
 import { negativeBinomial, poisson as poissonDist } from '../../dists/index.ts'
 import { ndtr } from '../../numerics/special/index.ts'
 import { normal as drawNormal, uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
-import { item, tensor, toFlat } from '../../tensor/index.ts'
+import { concat, item, ones, tensor, toArray, toFlat } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type BenchmarkData, type BenchmarkModel, defineBenchmark } from './benchmark.ts'
@@ -19,11 +19,8 @@ import { gridTruth } from './truth.ts'
 
 /** An intercept column and `d - 1` standard normal covariates, `n` rows. */
 function designMatrix(key: Key, n: number, features: number): number[][] {
-  const z = toFlat(drawNormal(key, [n, features - 1]))
-  return Array.from({ length: n }, (_, i) => [
-    1,
-    ...Array.from({ length: features - 1 }, (_, j) => z[i * (features - 1) + j] ?? 0),
-  ])
+  const z = drawNormal(key, [n, features - 1])
+  return toArray(concat([ones([n, 1]), z], 1)) as number[][]
 }
 
 const dot = (row: readonly number[], w: readonly number[]): number => row.reduce((a, v, j) => a + v * (w[j] ?? 0), 0)

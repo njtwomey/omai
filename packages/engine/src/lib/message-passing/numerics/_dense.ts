@@ -2,7 +2,7 @@
 // answers "not positive definite" with `undefined` instead of an exception, and the solves, inverse and log determinant
 // that follow from it. Matrices are row-major `Float64Array`s over numerics/linalg.
 import { cholesky, choSolve } from '../../numerics/linalg/index.ts'
-import { fromStorage, toFlat } from '../../tensor/index.ts'
+import { eye, fromStorage, toFlat } from '../../tensor/index.ts'
 
 /** A factored symmetric positive-definite matrix. */
 export interface Spd {
@@ -40,10 +40,6 @@ export function spd(a: ArrayLike<number>, n: number): Spd | undefined {
     n,
     logDet,
     solve: (b) => Float64Array.from(toFlat(choSolve(l, fromStorage(Float64Array.from(b), [n], 'float64')))),
-    inverse: () => {
-      const eye = new Float64Array(n * n)
-      for (let i = 0; i < n; i++) eye[i * n + i] = 1
-      return Float64Array.from(toFlat(choSolve(l, mat(eye, n))))
-    },
+    inverse: () => Float64Array.from(toFlat(choSolve(l, eye(n)))),
   }
 }

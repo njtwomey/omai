@@ -10,7 +10,7 @@
  */
 
 import { normal as drawNormal, foldIn, type Key, key as makeKey } from '../../random/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import { add, div, exp, mul, sub, take, toFlat } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type BenchmarkData, type BenchmarkModel, type BenchmarkTruth, defineBenchmark } from './benchmark.ts'
@@ -124,9 +124,9 @@ export const funnelNonCentred: BenchmarkModel = defineBenchmark({
 
 /** The funnel's marginals: `v` normal, `x_i` a scale mixture (iid draws of the exact sampler, with the exact moments). */
 function funnelTruth(): BenchmarkTruth {
-  const z = toFlat(drawNormal(foldIn(key0, 1), [ORACLE_DRAWS, 2]))
-  const x = new Float64Array(ORACLE_DRAWS)
-  for (let i = 0; i < ORACLE_DRAWS; i++) x[i] = Math.exp((FUNNEL_SCALE * (z[2 * i] ?? 0)) / 2) * (z[2 * i + 1] ?? 0)
+  const z = drawNormal(foldIn(key0, 1), [ORACLE_DRAWS, 2])
+  const [z0, z1] = [take(z, [0], 1), take(z, [1], 1)]
+  const x = toFlat(mul(exp(div(mul(z0, FUNNEL_SCALE), 2)), z1))
   const exactSd = Math.exp((FUNNEL_SCALE * FUNNEL_SCALE) / 4)
   return {
     kind: 'analytic',
@@ -163,15 +163,10 @@ const BANANA = { a: 2, b: 0.5 }
  * ```
  */
 export function bananaDraws(key: Key, n: number): { readonly x0: Float64Array; readonly x1: Float64Array } {
-  const z = toFlat(drawNormal(key, [n, 2]))
-  const x0 = new Float64Array(n)
-  const x1 = new Float64Array(n)
-  for (let i = 0; i < n; i++) {
-    const v = BANANA.a * (z[2 * i] ?? 0)
-    x0[i] = v
-    x1[i] = BANANA.b * (v * v - BANANA.a * BANANA.a) + (z[2 * i + 1] ?? 0)
-  }
-  return { x0, x1 }
+  const z = drawNormal(key, [n, 2])
+  const v = mul(take(z, [0], 1), BANANA.a)
+  const x1 = add(mul(sub(mul(v, v), BANANA.a * BANANA.a), BANANA.b), take(z, [1], 1))
+  return { x0: Float64Array.from(toFlat(v)), x1: Float64Array.from(toFlat(x1)) }
 }
 
 /**

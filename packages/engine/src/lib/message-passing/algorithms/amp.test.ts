@@ -4,6 +4,7 @@ import { foldIn, key, normal, uniform } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { policies, recorder, runAlgorithm } from '../../trace/index.ts'
 import * as M from '../index.ts'
+import { zeroArray } from '../numerics/_arrays.ts'
 
 /** A compressed-sensing problem: a Gaussian matrix of variance 1 / M, a sparse signal, noise of the given variance. */
 function problem(
@@ -143,7 +144,7 @@ describe('AMP with a Gaussian prior approximates the exact posterior mean', () =
       for (let i = 0; i < m; i++) s += ((A[i * n + j] as number) * (y[i] as number)) / sigma2
       return s
     })
-    let x = new Array<number>(n).fill(0)
+    let x = zeroArray(n)
     let res = rhs.slice()
     let dir = res.slice()
     for (let it = 0; it < 400; it++) {

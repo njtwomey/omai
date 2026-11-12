@@ -10,6 +10,7 @@ import { weightedPercentile } from '../metrics/index.ts'
 import { choice, foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { type Chains, ess, rhat } from '../sampling/index.ts'
 import {
+  arange,
   asTensor,
   broadcastTo,
   fromStorage,
@@ -127,10 +128,8 @@ function columns(draws: Tensor): { readonly shape: number[]; readonly cols: Floa
   const n = draws.shape[0] ?? 0
   const shape = draws.shape.slice(1)
   const size = shape.reduce((a, b) => a * b, 1)
-  const flat = toFlat(draws)
-  const cols = Array.from({ length: size }, (_, j) =>
-    Float64Array.from({ length: n }, (_, i) => flat[i * size + j] ?? 0),
-  )
+  const rows = reshape(draws, [n, size])
+  const cols = toFlat(arange(size)).map((j) => Float64Array.from(toFlat(take(rows, j, 1))))
   return { shape, cols }
 }
 

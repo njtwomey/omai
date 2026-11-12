@@ -10,9 +10,22 @@
 
 import { logNormal as logNormalDist, multivariateNormal } from '../../dists/index.ts'
 import { gram, rbfKernel } from '../../kernels/index.ts'
-import { cholesky, dpotrf, dpotrs } from '../../numerics/linalg/index.ts'
+import { cholesky, dgemv, dpotrf, dpotrs } from '../../numerics/linalg/index.ts'
 import { normal as drawNormal, uniform as drawUniform, foldIn, type Key, key as makeKey } from '../../random/index.ts'
-import { add, clip, matmul, reshape, tensor, toFlat, type Value } from '../../tensor/index.ts'
+import {
+  add,
+  clip,
+  eye,
+  full,
+  matmul,
+  mul,
+  reshape,
+  tensor,
+  toArray,
+  toFlat,
+  type Value,
+  zeros,
+} from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel } from '../model/index.ts'
 import { observe, sample } from '../primitives.ts'
@@ -61,24 +74,13 @@ const gpSpec = defineModel('gaussian-process-regression', (b) => {
     [x, ell],
     { eventRank: 2 },
   )
-  const f = b.latent(
-    'f',
-    d.multivariateNormal(
-      Array.from({ length: POINTS }, () => 0),
-      { covariance: K },
-    ),
-    {
-      doc: 'the function at the inputs',
-    },
-  )
+  const f = b.latent('f', d.multivariateNormal(zeros([POINTS]), { covariance: K }), {
+    doc: 'the function at the inputs',
+  })
   b.observe(
     'y',
     d.multivariateNormal(f, {
-      covariance: b.const(
-        Array.from({ length: POINTS }, (_, i) =>
-          Array.from({ length: POINTS }, (_, j) => (i === j ? NOISE * NOISE : 0)),
-        ),
-      ),
+      covariance: b.const(toArray(mul(eye(POINTS), NOISE * NOISE)) as number[][]),
     }),
     y,
   )
@@ -111,13 +113,9 @@ export function gpPosteriorGivenLengthScale(
   for (let i = 0; i < n; i++) C[i * n + i] = (C[i * n + i] ?? 0) + NOISE * NOISE
   const { factor } = dpotrf(C, n)
   const alpha = dpotrs(factor, y, n)
-  const mean = Array.from({ length: n }, (_, i) => {
-    let s = 0
-    for (let j = 0; j < n; j++) s += (K[i * n + j] ?? 0) * (alpha[j] ?? 0)
-    return s
-  })
+  const mean = Array.from(dgemv(K, n, n, alpha))
   const sd = Array.from({ length: n }, (_, i) => {
-    const row = Float64Array.from({ length: n }, (_, j) => K[i * n + j] ?? 0)
+    const row = K.slice(i * n, (i + 1) * n)
     const solved = dpotrs(factor, row, n)
     let reduction = 0
     for (let j = 0; j < n; j++) reduction += (row[j] ?? 0) * (solved[j] ?? 0)
@@ -165,7 +163,7 @@ export function gpPosteriorGivenHyperparameters(
 ): { readonly mean: number[]; readonly sd: number[]; readonly logMarginalLikelihood: number } {
   const n = x.length
   const k = x[0]?.length ?? 0
-  const scales = typeof h.lengthScale === 'number' ? new Array<number>(k).fill(h.lengthScale) : h.lengthScale
+  const scales = typeof h.lengthScale === 'number' ? toFlat(full([k], h.lengthScale)) : h.lengthScale
   const K = new Float64Array(n * n)
   for (let i = 0; i < n; i++)
     for (let j = 0; j < n; j++) {
@@ -177,13 +175,9 @@ export function gpPosteriorGivenHyperparameters(
   for (let i = 0; i < n; i++) C[i * n + i] = (C[i * n + i] ?? 0) + h.noise * h.noise
   const { factor } = dpotrf(C, n)
   const alpha = dpotrs(factor, y, n)
-  const mean = Array.from({ length: n }, (_, i) => {
-    let s = 0
-    for (let j = 0; j < n; j++) s += (K[i * n + j] ?? 0) * (alpha[j] ?? 0)
-    return s
-  })
+  const mean = Array.from(dgemv(K, n, n, alpha))
   const sd = Array.from({ length: n }, (_, i) => {
-    const row = Float64Array.from({ length: n }, (_, j) => K[i * n + j] ?? 0)
+    const row = K.slice(i * n, (i + 1) * n)
     const solved = dpotrs(factor, row, n)
     let reduction = 0
     for (let j = 0; j < n; j++) reduction += (row[j] ?? 0) * (solved[j] ?? 0)
@@ -210,11 +204,11 @@ function gpTruth(data: BenchmarkData, quality: 'full' | 'fast'): BenchmarkTruth 
   // The marginal model of the length scale: the function integrated out, y ~ N(0, K(ell) + sigma² I).
   const inputs = tensor(x)
   const observations = tensor(y)
-  const zeros = tensor(new Array<number>(x.length).fill(0))
-  const noise = tensor(x.map((_, i) => x.map((_, j) => (i === j ? NOISE * NOISE : 0))))
+  const priorMean = zeros([x.length])
+  const noise = mul(eye(x.length), NOISE * NOISE)
   const marginal = (): void => {
     const ell = sample('ell', logNormalDist(0, 0.5))
-    observe('y', multivariateNormal(zeros, { covariance: add(kernelMatrix(inputs, ell), noise) }), observations)
+    observe('y', multivariateNormal(priorMean, { covariance: add(kernelMatrix(inputs, ell), noise) }), observations)
   }
   const grid = gridPosterior(
     marginal,

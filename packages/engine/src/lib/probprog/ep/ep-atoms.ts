@@ -9,6 +9,7 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
+import { add, arange, div, mul, toFlat } from '../../tensor/index.ts'
 import type { Config } from '../../trace/index.ts'
 import type { Verdict } from '../inference/index.ts'
 import { epRoute } from '../inference/index.ts'
@@ -70,7 +71,7 @@ function exactCurve(name: string, support: AtomSupport, m: ExactMarginal): RefMa
   const hi0 = m.range?.[1] ?? m.mean + 8 * m.sd
   const lo = support === 'real' ? lo0 : Math.max(lo0, support === 'unit' ? 0 : 0)
   const hi = support === 'unit' ? Math.min(hi0, 1) : hi0
-  const x = Array.from({ length: CURVE_POINTS }, (_, i) => lo + ((hi - lo) * i) / (CURVE_POINTS - 1))
+  const x = toFlat(add(div(mul(arange(CURVE_POINTS), hi - lo), CURVE_POINTS - 1), lo))
   return { name, mean: m.mean, sd: m.sd, x, p: x.map((v) => m.pdf(v)) }
 }
 /**

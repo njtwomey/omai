@@ -11,6 +11,7 @@ import { foldIn, type Key, key as makeKey, uniform } from '../random/index.ts'
 import { type LogDensity, target } from '../sampling/index.ts'
 import {
   add,
+  arange,
   asTensor,
   broadcastTo,
   concat,
@@ -25,9 +26,11 @@ import {
   sum,
   type Tensor,
   type TensorLike,
+  take,
   tensor,
   toFlat,
   type Value,
+  zeros,
 } from '../tensor/index.ts'
 import {
   type Algorithm,
@@ -365,14 +368,14 @@ export function potentialEnergy<D = void>(
   const asVector = (u: ArrayLike<number> | Value): Value =>
     isValue(u) ? u : fromStorage(Float64Array.from(u), [dim], 'float64')
   const unconstrain = (values: Readonly<Record<string, TensorLike>>): Float64Array => {
-    const out = new Float64Array(dim)
-    for (const l of layout) {
+    // The sites' unconstrained values in layout order (the layout's offsets are cumulative).
+    const parts = layout.map((l) => {
       const v = values[l.name]
       if (v === undefined) throw new OmaiError('value', `unconstrain: no value for site ${l.name}`)
       const x = broadcastTo(asTensor(v), l.shape)
-      out.set(toFlat(primalOf(l.bijector.inverse(x))), l.offset)
-    }
-    return out
+      return reshape(primalOf(l.bijector.inverse(x)), [l.size])
+    })
+    return Float64Array.from(toFlat(parts.length === 0 ? zeros([0]) : concat(parts)))
   }
   const constrainFlat = (x: ArrayLike<number>): Float64Array => {
     const values = runAt(asVector(x)).values
@@ -526,14 +529,9 @@ export function initToMedian(options: { readonly numSamples?: number } = {}): In
     const draws = primalOf(site.fn.sample(key, [n, ...sampleShapeOf(site)]))
     const shape = draws.shape.slice(1)
     const size = product(shape)
-    const flat = toFlat(draws)
-    const out = new Float64Array(size)
-    for (let j = 0; j < size; j++)
-      out[j] = quantileOf(
-        Array.from({ length: n }, (_, i) => flat[i * size + j] ?? 0),
-        0.5,
-      )
-    return fromStorage(out, shape, 'float64')
+    const columns = reshape(draws, [n, size])
+    const medians = toFlat(arange(size)).map((j) => quantileOf(toFlat(take(columns, j, 1)), 0.5))
+    return reshape(tensor(medians), shape) as Tensor
   }
 }
 
@@ -804,7 +802,7 @@ export function findInitialParams<D = void>(
   const { last } = runAlgorithm(initialParamsAlgorithm(um, model, data, options), { maxSteps: maxTries }).state
   return (
     last ?? {
-      unconstrained: new Float64Array(um.dim),
+      unconstrained: Float64Array.from(toFlat(zeros([um.dim]))),
       constrained: {},
       potential: Number.POSITIVE_INFINITY,
       valid: false,

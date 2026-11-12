@@ -6,7 +6,7 @@
 
 import { OmaiError } from '../../base/index.ts'
 import type { Distribution } from '../../dists/index.ts'
-import { item } from '../../tensor/index.ts'
+import { arange, item, toFlat } from '../../tensor/index.ts'
 
 /** The marginal distribution of one scalar quantity. */
 export interface MarginalOracle {
@@ -67,7 +67,7 @@ export function distributionOracle(name: string, d: Distribution): MarginalOracl
 export function weightedOracle(name: string, draws: ArrayLike<number>, weights?: ArrayLike<number>): MarginalOracle {
   const n = draws.length
   if (n < 2) throw new OmaiError('value', `weightedOracle: ${name} needs at least two draws`)
-  const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => (draws[a] ?? 0) - (draws[b] ?? 0))
+  const order = toFlat(arange(n)).sort((a, b) => (draws[a] ?? 0) - (draws[b] ?? 0))
   const x = order.map((i) => draws[i] ?? 0)
   const w = order.map((i) => weights?.[i] ?? 1)
   if (w.some((v) => !(v >= 0))) throw new OmaiError('value', 'weightedOracle: weights must be non-negative')

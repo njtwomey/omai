@@ -9,6 +9,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { outer, reshape, sub } from '../../../tensor/index.ts'
 import { arg, evidenceOrNaN, memoised } from '../../core/_messages.ts'
 import { numberParam, rawSum, siteMessage } from '../../core/args.ts'
 import { defineOperator, messageRule } from '../../core/define.ts'
@@ -17,6 +18,7 @@ import { wishart } from '../../core/families-matrix.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
+import { float64Of, zeroArray } from '../../numerics/_arrays.ts'
 import { BARTLETT_ORDER, type WishartRule, wishartRule } from '../../numerics/_bartlett.ts'
 import { shiftedSum } from '../../numerics/_moments.ts'
 import { nodeEvaluator, type Sides, tiltKey } from './_group.ts'
@@ -112,7 +114,7 @@ function tiltOf(c: OperatorContext): Tilt {
   const { top, weights, total } = shiftedSum(logw)
   if (!Number.isFinite(top))
     throw new ImproperMessageError('mvn-wishart-group: the factor has no mass under the incoming messages')
-  const moments = new Array<number>(1 + dd).fill(0)
+  const moments = zeroArray(1 + dd)
   const mean = Array.from({ length: count + 1 }, () => new Float64Array(d))
   const second = Array.from({ length: count + 1 }, () => new Float64Array(dd))
   const conditionals = new Float64Array((count + 1) * (d + dd))
@@ -140,7 +142,7 @@ function tiltOf(c: OperatorContext): Tilt {
   }
   const cov = second.map((sk, port) => {
     const mk = mean[port] as Float64Array
-    return Float64Array.from(sk, (v, e) => v - (mk[Math.floor(e / d)] as number) * (mk[e % d] as number))
+    return float64Of(sub(reshape(sk, [d, d]), outer(mk, mk)))
   })
   return { logZ: family.logPartition(eta) + top + Math.log(total), moments, mean, cov }
 }

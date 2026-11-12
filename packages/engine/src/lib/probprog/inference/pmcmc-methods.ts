@@ -19,7 +19,23 @@ import {
 import { foldIn, type Key, key as makeKey } from '../../random/index.ts'
 import type { PseudoMarginalState } from '../../sampling/index.ts'
 import { choice, type DictSpace, dict, int, real } from '../../space/index.ts'
-import { fromStorage, type TensorLike } from '../../tensor/index.ts'
+import {
+  add,
+  asTensor,
+  div,
+  eye,
+  mul,
+  outer,
+  reshape,
+  sliceAxis,
+  sub,
+  type Tensor,
+  type TensorLike,
+  take,
+  toArray,
+  toFlat,
+  zeros,
+} from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -33,7 +49,7 @@ import {
   tensor,
 } from '../../trace/index.ts'
 import { definePosterior, type Posterior, samplePosterior } from '../posterior.ts'
-import { no, num, pick, posteriorJson, yes } from './_support.ts'
+import { appended, no, num, pick, posteriorJson, yes } from './_support.ts'
 import { defineInferenceMethod, type InferenceMethod, type Verdict } from './method.ts'
 
 /** The paths particle marginal Metropolis-Hastings logs. */
@@ -68,24 +84,21 @@ export interface Moments {
 
 const emptyMoments = (dim: number): Moments => ({
   count: 0,
-  sum: new Float64Array(dim),
-  sumSq: new Float64Array(dim * dim),
+  sum: Float64Array.from(toFlat(zeros([dim]))),
+  sumSq: Float64Array.from(toFlat(zeros([dim * dim]))),
 })
 
 function addMoment(m: Moments, x: Float64Array): Moments {
-  const dim = x.length
-  const sum = Float64Array.from(m.sum, (v, i) => v + (x[i] ?? 0))
-  const sumSq = Float64Array.from(m.sumSq, (v, k) => v + (x[Math.floor(k / dim)] ?? 0) * (x[k % dim] ?? 0))
+  const sum = Float64Array.from(toFlat(add(asTensor(m.sum), asTensor(x))))
+  const sumSq = Float64Array.from(toFlat(add(asTensor(m.sumSq), reshape(outer(x, x), [-1]))))
   return { count: m.count + 1, sum, sumSq }
 }
 
 /** The sample covariance of the sums, row-major `[dim, dim]`. */
-function covarianceOf(m: Moments, dim: number): Float64Array {
+function covarianceOf(m: Moments): Float64Array {
   const n = m.count
-  return Float64Array.from(
-    m.sumSq,
-    (v, k) => (v - ((m.sum[Math.floor(k / dim)] ?? 0) * (m.sum[k % dim] ?? 0)) / n) / (n - 1),
-  )
+  const centred = sub(asTensor(m.sumSq), div(reshape(outer(m.sum, m.sum), [-1]), n))
+  return Float64Array.from(toFlat(div(centred, n - 1)))
 }
 
 /** The state of {@link particleGibbsMethod}. */
@@ -191,12 +204,9 @@ function chainPosterior(
       diagnostics: { reason: 'fewer than two draws so far', ...diagnostics },
     })
   const names = namesOf(family)
-  const sites: Record<string, ReturnType<typeof fromStorage>> = {}
-  for (let k = 0; k < dim; k++) {
-    const col = new Float64Array(m)
-    for (let i = 0; i < m; i++) col[i] = draws[(from + i) * dim + k] ?? 0
-    sites[names[k] as string] = fromStorage(col, [m], 'float64')
-  }
+  const sites: Record<string, Tensor> = {}
+  const kept = sliceAxis(reshape(asTensor(draws), [n, dim]), 0, from, n)
+  for (let k = 0; k < dim; k++) sites[names[k] as string] = take(kept, k, 1) as Tensor
   return samplePosterior(sites, {
     engine,
     status,
@@ -256,16 +266,13 @@ export function pmmhMethod(
   ): ReturnType<typeof pmmhKernel> => {
     const adaptive =
       pick(config, 'proposal') === 'adaptive' && moments !== undefined && moments.count >= Math.max(20, 5 * dim)
-    const cov = adaptive && moments !== undefined ? covarianceOf(moments, dim) : undefined
+    const cov = adaptive && moments !== undefined ? covarianceOf(moments) : undefined
     const covariance =
       cov === undefined
         ? undefined
-        : Array.from({ length: dim }, (_, i) =>
-            Array.from(
-              { length: dim },
-              (_, j) => ((2.38 * 2.38) / dim) * (cov[i * dim + j] ?? 0) + (i === j ? 1e-9 : 0),
-            ),
-          )
+        : (toArray(
+            add(mul(reshape(asTensor(cov), [dim, dim]), (2.38 * 2.38) / dim), mul(eye(dim), 1e-9)),
+          ) as number[][])
     void t
     return pmmhKernel(family, observations, {
       key,
@@ -343,12 +350,8 @@ export function pmmhMethod(
             logDensity: s.logDensity,
           }
           const r = k.step(ctx.key, from)
-          const draws = new Float64Array(s.draws.length + dim)
-          draws.set(s.draws)
-          draws.set(r.state.position, s.draws.length)
-          const logLiks = new Float64Array(s.logLiks.length + 1)
-          logLiks.set(s.logLiks)
-          logLiks[s.logLiks.length] = r.state.logLikelihood
+          const draws = appended(s.draws, r.state.position)
+          const logLiks = appended(s.logLiks, [r.state.logLikelihood])
           const next: PmmhState = {
             t: s.t + 1,
             position: r.state.position,
@@ -515,12 +518,8 @@ export function particleGibbsMethod(
             refresh: s.refresh,
             thetaAcceptance: Number.NaN,
           } satisfies ParticleGibbsState)
-          const draws = new Float64Array(s.draws.length + dim)
-          draws.set(s.draws)
-          draws.set(r.state.position, s.draws.length)
-          const logJoints = new Float64Array(s.logJoints.length + 1)
-          logJoints.set(s.logJoints)
-          logJoints[s.logJoints.length] = r.state.logDensity
+          const draws = appended(s.draws, r.state.position)
+          const logJoints = appended(s.logJoints, [r.state.logDensity])
           const gained = Math.round(r.state.thetaAcceptance * moves)
           const next: PgState = {
             t: s.t + 1,

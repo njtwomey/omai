@@ -9,7 +9,7 @@ import type { Json } from '../../base/index.ts'
 import { foldIn } from '../../random/index.ts'
 import { importanceEss, logEvidence } from '../../sampling/index.ts'
 import { bool, type DictSpace, dict, int } from '../../space/index.ts'
-import { concat, type Tensor } from '../../tensor/index.ts'
+import { asTensor, concat, type Tensor, tensor, toFlat } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -108,12 +108,7 @@ export function importanceMethod(
         draws: {},
         diagnostics: { reason: 'fewer than two draws so far' },
       })
-    const lw = new Float64Array(state.n)
-    let at = 0
-    for (const b of state.logWeights) {
-      lw.set(b, at)
-      at += b.length
-    }
+    const lw = Float64Array.from(toFlat(concat(state.logWeights.map((b) => asTensor(b)))))
     const p = importancePosterior(merge(state.batches), lw, {
       ...(options.proposal === undefined ? {} : { proposal: options.proposal }),
       smooth: flag(config, 'smooth'),
@@ -164,18 +159,16 @@ export function importanceMethod(
         },
         step: (s, ctx) => {
           const b = Math.min(batch, total - s.n)
-          const traces: ProgramTrace[] = []
-          const lw = new Float64Array(b)
-          for (let i = 0; i < b; i++) {
-            const d = importanceDraw(
+          const drawn = Array.from({ length: b }, (_, i) =>
+            importanceDraw(
               program,
               undefined,
               { key: foldIn(key, 0), ...(options.proposal === undefined ? {} : { proposal: options.proposal }) },
               s.n + i,
-            )
-            traces.push(d.trace)
-            lw[i] = d.logWeight
-          }
+            ),
+          )
+          const traces: ProgramTrace[] = drawn.map((d) => d.trace)
+          const lw = Float64Array.from(toFlat(tensor(drawn.map((d) => d.logWeight))))
           const first = traces[0]
           const names =
             first === undefined
@@ -189,7 +182,7 @@ export function importanceMethod(
             logWeights: [...s.logWeights, lw],
           }
           ctx.log('importance/draws', next.n)
-          const all = Float64Array.from(next.logWeights.flatMap((x) => [...x]))
+          const all = Float64Array.from(toFlat(concat(next.logWeights.map((x) => asTensor(x)))))
           if (all.some((v) => Number.isFinite(v))) {
             ctx.log('importance/logEvidence', logEvidence(all).value)
             ctx.log('importance/ess', importanceEss(all))

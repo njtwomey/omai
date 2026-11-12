@@ -24,7 +24,9 @@
 // the bound at each of its nodes. One grid, a trapezoid rule in `c`: the integrand is analytic and decays as a Gaussian.
 
 import { logNdtr } from '../../../numerics/special/_kernels.ts'
+import { add, arange, exp, mul, neg } from '../../../tensor/index.ts'
 import { ImproperMessageError } from '../../core/errors.ts'
+import { float64Of } from '../../numerics/_arrays.ts'
 import { gaussianNodes } from '../../numerics/_quadrature.ts'
 import { type Cavity, logSum, logTransform, scoreGrid } from './_multiclass-auxiliary.ts'
 
@@ -68,10 +70,10 @@ export function softmaxTable(beliefs: ScoreBeliefs): SoftmaxTable {
   const hi = -low + 6
   const count = Math.min(MOST_OUTER, Math.ceil((hi - lo) / STEP) + 1)
   const step = (hi - lo) / (count - 1)
-  const t = Float64Array.from({ length: count }, (_, i) => Math.exp(lo + step * i))
+  const t = float64Of(exp(add(lo, mul(arange(count), step))))
   const grids = beliefs.map((b) => (b.variance > 0 ? scoreGrid(b.mean, b.variance) : undefined))
   const logA = grids.map((g) => (g === undefined ? undefined : Float64Array.from(t, (v) => logTransform(g, v))))
-  const known = Float64Array.from(t, (v) => -v * knownSum)
+  const known = float64Of(mul(neg(t), knownSum))
   const total = Float64Array.from(t, (_, i) => {
     let s = known[i] as number
     for (const a of logA) if (a !== undefined) s += a[i] as number
@@ -217,7 +219,7 @@ export function probitBound(beliefs: ScoreBeliefs, y: number): ProbitBound {
   hi += 8
   const count = Math.min(C_MOST, Math.ceil((hi - lo) / C_STEP) + 1)
   const step = (hi - lo) / (count - 1)
-  const c = Float64Array.from({ length: count }, (_, i) => lo + step * i)
+  const c = float64Of(add(lo, mul(arange(count), step)))
   const h = Float64Array.from(c, (v) => {
     let total = 0
     for (const o of others) total += expectedLogPhi(v - o.mean, o.variance)

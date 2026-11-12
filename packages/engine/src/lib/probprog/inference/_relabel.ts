@@ -7,6 +7,19 @@
  * mode's share of the posterior mass.
  */
 
+import {
+  arange,
+  argsort,
+  matmul,
+  mul,
+  reshape,
+  square,
+  sub,
+  take,
+  tensor,
+  toFlat,
+  type Value,
+} from '../../tensor/index.ts'
 import type { SiteRecord } from './_site-mixture.ts'
 
 /** The `k!` permutations of `0..k-1` in lexicographic order (the first is the identity). */
@@ -20,10 +33,7 @@ export function permutations(k: number): number[][] {
     }
     for (const [i, v] of rest.entries()) rec([...prefix, v], [...rest.slice(0, i), ...rest.slice(i + 1)])
   }
-  rec(
-    [],
-    Array.from({ length: k }, (_, i) => i),
-  )
+  rec([], toFlat(arange(k)))
   return out
 }
 
@@ -36,19 +46,11 @@ export function moveAxis<T>(xs: readonly T[], perm: readonly number[]): T[] {
 
 /** The same move applied to every axis of length `k` of a row-major array of the given shape. */
 function moveAxes(values: readonly number[], shape: readonly number[], k: number, perm: readonly number[]): number[] {
-  let cur = values.slice()
-  const strides = shape.map((_, a) => shape.slice(a + 1).reduce((p, v) => p * v, 1))
-  for (const [axis, len] of shape.entries()) {
-    if (len !== k) continue
-    const stride = strides[axis] as number
-    const next = cur.slice()
-    for (let i = 0; i < cur.length; i++) {
-      const along = Math.floor(i / stride) % len
-      next[i - along * stride + (perm[along] as number) * stride] = cur[i] as number
-    }
-    cur = next
-  }
-  return cur
+  // Entry `q` goes to `perm[q]`, so position `j` takes the entry whose destination is `j`: the inverse permutation.
+  const from = argsort(tensor(perm))
+  let cur: Value = reshape(tensor(values), shape)
+  for (const [axis, len] of shape.entries()) if (len === k) cur = take(cur, from, axis)
+  return toFlat(cur)
 }
 
 /**
@@ -63,21 +65,16 @@ export function relabelRecord(r: SiteRecord, perm: readonly number[], k: number)
   let probs: number[] | undefined
   if (r.probs !== undefined) {
     const rows = r.probs.length / k
-    const flat = r.probs.slice()
-    const out = flat.slice()
-    for (let row = 0; row < rows; row++)
-      for (let q = 0; q < k; q++) out[row * k + (perm[q] as number)] = flat[row * k + q] as number
-    probs = out
+    probs = toFlat(take(reshape(tensor(r.probs), [rows, k]), argsort(tensor(perm)), 1))
   }
   if (probs !== undefined) {
     // The index of a categorical site is a label: its mean and variance are those of the relabelled probabilities.
     const rows = probs.length / k
-    const mean = Array.from({ length: rows }, (_, row) =>
-      probs.slice(row * k, (row + 1) * k).reduce((a, p, q) => a + p * q, 0),
-    )
-    const variance = mean.map(
-      (m, row) => probs.slice(row * k, (row + 1) * k).reduce((a, p, q) => a + p * q * q, 0) - m * m,
-    )
+    const labels = arange(k)
+    const p = reshape(tensor(probs), [rows, k])
+    const m = matmul(p, labels)
+    const mean = toFlat(m)
+    const variance = toFlat(sub(matmul(p, square(labels)), mul(m, m)))
     return { ...r, mean, variance, probs }
   }
   return {
@@ -100,10 +97,9 @@ export function orderingSite(sites: Readonly<Record<string, SiteRecord>>, k: num
 
 /** The permutation that sorts the components by the mean of `key`, ascending (entry `q` goes to its rank). */
 export function sortingPermutation(r: SiteRecord, k: number): number[] {
-  const order = Array.from({ length: k }, (_, q) => q).sort((a, b) => (r.mean[a] ?? 0) - (r.mean[b] ?? 0) || a - b)
-  const perm = new Array<number>(k).fill(0)
-  for (const [rank, q] of order.entries()) perm[q] = rank
-  return perm
+  // The rank of each component by its mean (ties by position): the inverse of the sorting order.
+  const means = tensor(toFlat(arange(k)).map((q) => r.mean[q] ?? 0))
+  return toFlat(argsort(argsort(means)))
 }
 
 /** The record set of a fixed point in canonical form: every site relabelled so that the components are sorted by the mean of `key`. */

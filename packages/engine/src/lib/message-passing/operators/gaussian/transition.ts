@@ -6,7 +6,8 @@
  * the natural parameters.
  */
 
-import { dgemm, dgemv } from '../../../numerics/linalg/index.ts'
+import { daxpy, dgemm, dgemv } from '../../../numerics/linalg/index.ts'
+import { add, toFlat } from '../../../tensor/index.ts'
 import { arg } from '../../core/_messages.ts'
 import { etaOf, vectorParam } from '../../core/args.ts'
 import { defineOperator, messageRule } from '../../core/define.ts'
@@ -14,6 +15,7 @@ import { ImproperMessageError } from '../../core/errors.ts'
 import { gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { zeroFloat64 } from '../../numerics/_arrays.ts'
 import { spd } from '../../numerics/_dense.ts'
 
 /** The transition's parameters: the matrix (rows = the size of x), the offset (zero when absent) and the covariance. */
@@ -28,7 +30,7 @@ function parameters(c: OperatorContext): {
   const cols = arg(c, 1).family.dim
   const F = Float64Array.from(vectorParam(c.params, 'matrix'))
   const offset =
-    c.params['offset'] === undefined ? new Float64Array(rows) : Float64Array.from(vectorParam(c.params, 'offset'))
+    c.params['offset'] === undefined ? zeroFloat64(rows) : Float64Array.from(vectorParam(c.params, 'offset'))
   return { F, offset, Q: Float64Array.from(vectorParam(c.params, 'covariance')), rows, cols }
 }
 
@@ -93,13 +95,10 @@ export const gaussianTransition: FactorOperator = defineOperator({
         const mean = dgemv(F, rows, cols, moments.mean)
         const FS = dgemm(F, moments.covariance, rows, cols, cols)
         const FSF = dgemm(FS, F, rows, cols, rows, { transposeB: true })
-        const cov = Array.from(FSF, (v, i) => v + (Q[i] ?? 0))
+        const cov = toFlat(add(FSF, Q))
         try {
           return {
-            message: gaussianMvEta(
-              Array.from(mean, (v, i) => v + (offset[i] ?? 0)),
-              cov,
-            ),
+            message: gaussianMvEta(toFlat(add(mean, offset)), cov),
           }
         } catch {
           throw new ImproperMessageError('gaussian-transition: the step is degenerate')
@@ -113,18 +112,18 @@ export const gaussianTransition: FactorOperator = defineOperator({
       if (factorQ === undefined)
         throw new ImproperMessageError('gaussian-transition: the covariance is not positive definite')
       const QInv = factorQ.inverse()
-      const sum = Float64Array.from(Jx, (v, i) => v + (QInv[i] ?? 0))
+      const sum = daxpy(1, QInv, Jx)
       const factorM = spd(sum, rows)
       if (factorM === undefined)
         throw new ImproperMessageError('gaussian-transition: the information of x is not usable')
       const M = factorM.inverse()
       const JM = dgemm(Jx, M, rows, rows, rows)
       const JMJ = dgemm(JM, Jx, rows, rows, rows)
-      const Jm = Float64Array.from(Jx, (v, i) => v - (JMJ[i] ?? 0))
+      const Jm = daxpy(-1, JMJ, Jx)
       const JMh = dgemv(JM, rows, rows, hx)
-      const hm = Float64Array.from(hx, (v, i) => v - (JMh[i] ?? 0))
+      const hm = daxpy(-1, JMh, hx)
       const Jc = dgemv(Jm, rows, rows, offset)
-      const rhs = Float64Array.from(hm, (v, i) => v - (Jc[i] ?? 0))
+      const rhs = daxpy(-1, Jc, hm)
       const h = dgemv(F, rows, cols, rhs, true)
       const JF = dgemm(Jm, F, rows, rows, cols)
       const J = dgemm(F, JF, cols, rows, cols, { transposeA: true })
@@ -142,11 +141,11 @@ export const gaussianTransition: FactorOperator = defineOperator({
       if (c.to === 0) {
         const mean = momentsOfBelief(arg(c, 1), cols).mean
         const image = dgemv(F, rows, cols, mean)
-        const mu = Float64Array.from(image, (v, i) => v + (offset[i] ?? 0))
+        const mu = daxpy(1, offset, image)
         return { message: [...dgemv(QInv, rows, rows, mu), ...QInv] }
       }
       const mean = momentsOfBelief(arg(c, 0), rows).mean
-      const gap = Float64Array.from(mean, (v, i) => v - (offset[i] ?? 0))
+      const gap = daxpy(-1, offset, mean)
       const h = dgemv(F, rows, cols, dgemv(QInv, rows, rows, gap), true)
       const QF = dgemm(QInv, F, rows, rows, cols)
       const J = dgemm(F, QF, cols, rows, cols, { transposeA: true })
@@ -202,7 +201,7 @@ export const gaussianTransition: FactorOperator = defineOperator({
       const x = momentsOfBelief(arg(c, 0), rows)
       const w = momentsOfBelief(arg(c, 1), cols)
       const image = dgemv(F, rows, cols, w.mean)
-      const gap = Float64Array.from(x.mean, (v, i) => v - (image[i] ?? 0) - (offset[i] ?? 0))
+      const gap = daxpy(-1, offset, daxpy(-1, image, x.mean))
       const FS = dgemm(F, w.covariance, rows, cols, cols)
       const FSF = dgemm(FS, F, rows, cols, rows, { transposeB: true })
       // E (x - F w - c)' Q^-1 (x - F w - c) = gap' Q^-1 gap + tr(Q^-1 (S_x + F S_w F')).

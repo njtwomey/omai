@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { messageArg } from '../../core/args.ts'
 import { beta, betaEta } from '../../core/families.ts'
 import { discrete, discreteEta, discreteProbs } from '../../core/families-vector.ts'
+import { zeroArray } from '../../numerics/_arrays.ts'
 import { lgammaOf } from '../../numerics/_scalar.ts'
 import { stickBreaking } from './stick-breaking.ts'
 
@@ -27,7 +28,7 @@ function brute(shapes: readonly (readonly [number, number])[], r: readonly numbe
   const total = n ** sticks
   let z = 0
   const el = Array.from({ length: sticks }, () => [0, 0])
-  const pz = new Array<number>(sticks + 1).fill(0)
+  const pz = zeroArray(sticks + 1)
   for (let flat = 0; flat < total; flat++) {
     const v: number[] = []
     let q = flat

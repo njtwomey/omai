@@ -10,11 +10,11 @@ Probabilistic programming, NumPyro style: programs written with `sample` and `ob
 - function `reparam.ts` (file): Reparameterise a site into an auxiliary draw plus a transform. `src/lib/probprog/reparam.ts:1` `omai-engine/probprog`
 
 - function `amortisedGuide`: Guide whose local latents come from a neural encoder of each data point (amortised inference). `src/lib/probprog/guides-amortised.ts:103` `omai-engine/probprog`
-- function `autoFlowNormal`: Normalising-flow guide with planar, radial or RealNVP coupling layers. `src/lib/probprog/guides-flow.ts:65` `omai-engine/probprog`
+- function `autoFlowNormal`: Normalising-flow guide with planar, radial or RealNVP coupling layers. `src/lib/probprog/guides-flow.ts:67` `omai-engine/probprog`
 - function `autoMixtureNormal`: Mixture-of-Gaussians guide whose component is an enumerated guide site, for multimodal posteriors. `src/lib/probprog/guides-mixture.ts:48` `omai-engine/probprog`
-- function `autoStructured`: Structured Gaussian guide following the model's graph: parents, Markov blanket or full. `src/lib/probprog/guides-structured.ts:268` `omai-engine/probprog`
+- function `autoStructured`: Structured Gaussian guide following the model's graph: parents, Markov blanket or full. `src/lib/probprog/guides-structured.ts:279` `omai-engine/probprog`
 - function `collapse`: Integrate conjugate latent sites out of a program (delayed sampling) with recover. `src/lib/probprog/collapse.ts:199` `omai-engine/probprog`
-- function `laplaceInitialParams`: Initial parameters of an automatic guide from a Laplace fit of the model. `src/lib/probprog/guides-init.ts:84` `omai-engine/probprog`
+- function `laplaceInitialParams`: Initial parameters of an automatic guide from a Laplace fit of the model. `src/lib/probprog/guides-init.ts:105` `omai-engine/probprog`
 - function `lift`: Turn param sites into sample sites with priors (Pyro's lift). `src/lib/probprog/lift.ts:40` `omai-engine/probprog`
 - function `posteriorChains`: MCMC posterior draws by chain and coordinate, with divergences and energy. `src/lib/probprog/posterior-chains.ts:50` `omai-engine/probprog`
 - function `regenerate`: Redraw selected sites from the program given the rest, with the MH weight (Gen's regenerate). `src/lib/probprog/trace-ops.ts:259` `omai-engine/probprog`
@@ -47,12 +47,12 @@ What a user of expectation propagation on a model needs, and the suite that test
 
 - function `activeSetScore`: The score of inclusion probabilities against the true active set: AUC and counts at a threshold. `src/lib/probprog/ep/ep-recovery.ts:133` `omai-engine/probprog/ep`
 - function `atomCalibration`: Calibration of an extended EP atom: interval coverage of the truth over many simulated seeds. `src/lib/probprog/ep/ep-extended.ts:265` `omai-engine/probprog/ep`
-- function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/probprog/ep/ep-atoms.ts:225` `omai-engine/probprog/ep`
+- function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/probprog/ep/ep-atoms.ts:226` `omai-engine/probprog/ep`
 - function `atomRecovery`: EP's belief of each parameter beside the truth it was simulated from: interval and coverage. `src/lib/probprog/ep/ep-extended.ts:91` `omai-engine/probprog/ep`
-- function `atomReference`: The reference of an EP atom: exact or grid marginals as curves, and a joint. `src/lib/probprog/ep/ep-atoms.ts:109` `omai-engine/probprog/ep`
-- function `atomVerdict`: Whether EP applies to an atom's model, and the library's reason if not. `src/lib/probprog/ep/ep-atoms.ts:171` `omai-engine/probprog/ep`
+- function `atomReference`: The reference of an EP atom: exact or grid marginals as curves, and a joint. `src/lib/probprog/ep/ep-atoms.ts:110` `omai-engine/probprog/ep`
+- function `atomVerdict`: Whether EP applies to an atom's model, and the library's reason if not. `src/lib/probprog/ep/ep-atoms.ts:172` `omai-engine/probprog/ep`
 - function `beliefCredibleInterval`: The equal-tailed credible interval of an EP belief on its support. `src/lib/probprog/ep/ep-extended.ts:36` `omai-engine/probprog/ep`
-- function `beliefDensity`: The density of a belief from its mean and sd on a support. `src/lib/probprog/ep/ep-atoms.ts:49` `omai-engine/probprog/ep`
+- function `beliefDensity`: The density of a belief from its mean and sd on a support. `src/lib/probprog/ep/ep-atoms.ts:50` `omai-engine/probprog/ep`
 - function `calibrationTable`: The calibration table of an extended EP atom from its seeds: coverage, bias and error per parameter. `src/lib/probprog/ep/ep-extended.ts:202` `omai-engine/probprog/ep`
 - function `epCoverage`: What EP covers today: atoms and benchmark models as runs or planned, with reasons. `src/lib/probprog/ep/ep-coverage.ts:59` `omai-engine/probprog/ep`
 - function `mixtureInterval`: The equal-tailed credible interval of a mixture of Gaussians (a gated coefficient). `src/lib/probprog/ep/ep-recovery.ts:24` `omai-engine/probprog/ep`
@@ -79,56 +79,56 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `abcSmcMethod`: ABC-SMC, one generation per step, with the tolerance shrinking on the tape. `src/lib/probprog/inference/abc-methods.ts:109` `omai-engine/probprog/inference`
 - estimator `aiesMethod`: Affine-invariant ensemble sampler (stretch and differential moves) as a steppable method. `src/lib/probprog/inference/ensemble-methods.ts:67` `omai-engine/probprog/inference`
 - estimator `amortisedSviMethod`: Variational inference with a neural encoder for the local latents (amortised inference). `src/lib/probprog/inference/svi-guide-methods.ts:158` `omai-engine/probprog/inference`
-- estimator `barkerMethod`: Barker's proposal with window-adapted step size as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:220` `omai-engine/probprog/inference`
+- estimator `barkerMethod`: Barker's proposal with window-adapted step size as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:228` `omai-engine/probprog/inference`
 - estimator `bpSpecMethod`: Belief propagation on a model spec of Bernoulli nodes, posterior by site. `src/lib/probprog/inference/mp.ts:384` `omai-engine/probprog/inference`
-- estimator `bridgeSamplingMethod`: Bridge sampling evidence: slice-sampling posterior draws and a fitted Gaussian, one pair per step. `src/lib/probprog/inference/evidence-methods.ts:363` `omai-engine/probprog/inference`
+- estimator `bridgeSamplingMethod`: Bridge sampling evidence: slice-sampling posterior draws and a fitted Gaussian, one pair per step. `src/lib/probprog/inference/evidence-methods.ts:364` `omai-engine/probprog/inference`
 - estimator `chainMethod`: Forward-backward, FFBS and Viterbi on a discrete chain, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:196` `omai-engine/probprog/inference`
-- estimator `cheesMethod`: ChEES-HMC: jittered HMC over many chains with an adapted trajectory length, as a steppable method. `src/lib/probprog/inference/chees-method.ts:53` `omai-engine/probprog/inference`
+- estimator `cheesMethod`: ChEES-HMC: jittered HMC over many chains with an adapted trajectory length, as a steppable method. `src/lib/probprog/inference/chees-method.ts:54` `omai-engine/probprog/inference`
 - estimator `conjugateMethod`: Conjugate posteriors in closed form, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:38` `omai-engine/probprog/inference`
 - estimator `conjugateNaturalSviMethod`: Natural-gradient SVI on conjugate models, minibatch CAVI with a Robbins-Monro rate. `src/lib/probprog/inference/svi-natural-method.ts:217` `omai-engine/probprog/inference`
-- estimator `ellipticalSliceMethod`: Elliptical slice sampling for Gaussian-prior latents as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:380` `omai-engine/probprog/inference`
+- estimator `ellipticalSliceMethod`: Elliptical slice sampling for Gaussian-prior latents as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:388` `omai-engine/probprog/inference`
 - estimator `emMethod`: Expectation maximisation, one iteration per step, with exact E-steps. `src/lib/probprog/inference/em-method.ts:101` `omai-engine/probprog/inference`
 - estimator `ensembleSliceMethod`: Ensemble slice sampling with a tuned direction scale as a steppable method. `src/lib/probprog/inference/ensemble-methods.ts:125` `omai-engine/probprog/inference`
 - estimator `enumerationMethod`: Exact enumeration of discrete models by a junction tree, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:134` `omai-engine/probprog/inference`
-- estimator `epGridMethod`: Expectation propagation inside an evidence-weighted grid over the hyperparameters of a model. `src/lib/probprog/inference/ep-grid.ts:447` `omai-engine/probprog/inference`
-- estimator `epMultiStartMethod`: Expectation propagation from several starts, the fixed points weighted by their evidence. `src/lib/probprog/inference/ep-multistart.ts:359` `omai-engine/probprog/inference`
+- estimator `epGridMethod`: Expectation propagation inside an evidence-weighted grid over the hyperparameters of a model. `src/lib/probprog/inference/ep-grid.ts:445` `omai-engine/probprog/inference`
+- estimator `epMultiStartMethod`: Expectation propagation from several starts, the fixed points weighted by their evidence. `src/lib/probprog/inference/ep-multistart.ts:357` `omai-engine/probprog/inference`
 - estimator `epSpecMethod`: Expectation propagation on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:323` `omai-engine/probprog/inference`
 - estimator `gaussianMethod`: Exact linear-Gaussian conditioning, Kalman and Gaussian BP, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:85` `omai-engine/probprog/inference`
 - estimator `gibbsMethod`: Gibbs sampling, one sweep per step, resumable, with anytime draws. `src/lib/probprog/inference/gibbs-method.ts:89` `omai-engine/probprog/inference`
-- estimator `hmcMethod`: HMC with a fixed trajectory and window adaptation as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:263` `omai-engine/probprog/inference`
-- estimator `hybridMethod`: The user's plan of blocks, each with its own kernel, run as one sampler. `src/lib/probprog/inference/hybrid.ts:276` `omai-engine/probprog/inference`
-- estimator `importanceEvidenceMethod`: Importance-sampling evidence with a pilot-fitted Gaussian proposal and Pareto k-hat. `src/lib/probprog/inference/evidence-methods.ts:618` `omai-engine/probprog/inference`
+- estimator `hmcMethod`: HMC with a fixed trajectory and window adaptation as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:271` `omai-engine/probprog/inference`
+- estimator `hybridMethod`: The user's plan of blocks, each with its own kernel, run as one sampler. `src/lib/probprog/inference/hybrid.ts:289` `omai-engine/probprog/inference`
+- estimator `importanceEvidenceMethod`: Importance-sampling evidence with a pilot-fitted Gaussian proposal and Pareto k-hat. `src/lib/probprog/inference/evidence-methods.ts:613` `omai-engine/probprog/inference`
 - estimator `importanceMethod`: Importance sampling in batches, with evidence, ESS and Pareto k-hat as it goes. `src/lib/probprog/inference/importance-method.ts:96` `omai-engine/probprog/inference`
 - estimator `laplaceMethod`: The Laplace approximation, optimiser iterations then the Hessian, as a steppable method. `src/lib/probprog/inference/laplace-method.ts:129` `omai-engine/probprog/inference`
-- estimator `malaMethod`: MALA with window-adapted step size and preconditioner as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:180` `omai-engine/probprog/inference`
-- estimator `mclmcMethod`: Microcanonical Langevin Monte Carlo with three-phase tuning as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:659` `omai-engine/probprog/inference`
+- estimator `malaMethod`: MALA with window-adapted step size and preconditioner as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:188` `omai-engine/probprog/inference`
+- estimator `mclmcMethod`: Microcanonical Langevin Monte Carlo with three-phase tuning as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:645` `omai-engine/probprog/inference`
 - estimator `mixtureSviMethod`: Variational inference with a mixture guide whose component is enumerated, for multimodal posteriors. `src/lib/probprog/inference/svi-guide-methods.ts:107` `omai-engine/probprog/inference`
 - estimator `naturalGradientSviMethod`: Natural-gradient SVI with a mean-field or full-rank Gaussian guide. `src/lib/probprog/inference/svi-natural-method.ts:90` `omai-engine/probprog/inference`
 - estimator `nestedMethod`: Nested sampling, one live-point replacement per step, with the evidence and its error. `src/lib/probprog/inference/nested-method.ts:94` `omai-engine/probprog/inference`
-- estimator `nutsMethod`: NUTS and HMC as a steppable, cancellable, resumable method with anytime snapshots. `src/lib/probprog/inference/nuts-method.ts:304` `omai-engine/probprog/inference`
+- estimator `nutsMethod`: NUTS and HMC as a steppable, cancellable, resumable method with anytime snapshots. `src/lib/probprog/inference/nuts-method.ts:300` `omai-engine/probprog/inference`
 - estimator `particleFilterMethod`: Bootstrap particle filter over a markov loop, one time step per step. `src/lib/probprog/inference/smc-methods.ts:256` `omai-engine/probprog/inference`
-- estimator `particleGibbsMethod`: Particle Gibbs with ancestor sampling: conditional SMC paths and parameter moves. `src/lib/probprog/inference/pmcmc-methods.ts:407` `omai-engine/probprog/inference`
+- estimator `particleGibbsMethod`: Particle Gibbs with ancestor sampling: conditional SMC paths and parameter moves. `src/lib/probprog/inference/pmcmc-methods.ts:410` `omai-engine/probprog/inference`
 - estimator `pathfinderMethod`: Pathfinder: L-BFGS path of normal approximations, best ELBO, PSIS importance draws, multi-path. `src/lib/probprog/inference/pathfinder-method.ts:61` `omai-engine/probprog/inference`
-- estimator `pmmhMethod`: Particle marginal Metropolis-Hastings: random walk on state-space parameters with a particle filter. `src/lib/probprog/inference/pmcmc-methods.ts:240` `omai-engine/probprog/inference`
+- estimator `pmmhMethod`: Particle marginal Metropolis-Hastings: random walk on state-space parameters with a particle filter. `src/lib/probprog/inference/pmcmc-methods.ts:250` `omai-engine/probprog/inference`
 - estimator `renyiSviMethod`: Variational inference on the Renyi alpha-divergence bound. `src/lib/probprog/inference/svi-extra-methods.ts:231` `omai-engine/probprog/inference`
-- estimator `rwmMethod`: Random-walk Metropolis with an adapted covariance as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:82` `omai-engine/probprog/inference`
-- estimator `sghmcMethod`: Stochastic-gradient Hamiltonian Monte Carlo with friction as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:593` `omai-engine/probprog/inference`
-- estimator `sgldMethod`: Stochastic-gradient Langevin dynamics on a program with subsampled plates, as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:542` `omai-engine/probprog/inference`
-- estimator `sliceMethod`: Coordinate-wise slice sampling as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:312` `omai-engine/probprog/inference`
+- estimator `rwmMethod`: Random-walk Metropolis with an adapted covariance as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:98` `omai-engine/probprog/inference`
+- estimator `sghmcMethod`: Stochastic-gradient Hamiltonian Monte Carlo with friction as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:579` `omai-engine/probprog/inference`
+- estimator `sgldMethod`: Stochastic-gradient Langevin dynamics on a program with subsampled plates, as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:528` `omai-engine/probprog/inference`
+- estimator `sliceMethod`: Coordinate-wise slice sampling as a steppable method. `src/lib/probprog/inference/mcmc-methods.ts:320` `omai-engine/probprog/inference`
 - estimator `stateSpaceFilterMethod`: Particle filter of a state-space model: bootstrap, auxiliary or guided proposal, one observation per step. `src/lib/probprog/inference/state-space-methods.ts:86` `omai-engine/probprog/inference`
-- estimator `steppingStoneMethod`: Stepping-stone evidence over the adaptive tempering ladder, one temperature per step. `src/lib/probprog/inference/evidence-methods.ts:243` `omai-engine/probprog/inference`
+- estimator `steppingStoneMethod`: Stepping-stone evidence over the adaptive tempering ladder, one temperature per step. `src/lib/probprog/inference/evidence-methods.ts:244` `omai-engine/probprog/inference`
 - estimator `stickingTheLandingMethod`: Variational inference with sticking-the-landing and doubly reparameterised gradients. `src/lib/probprog/inference/svi-extra-methods.ts:184` `omai-engine/probprog/inference`
 - estimator `structuredSviMethod`: Variational inference with structured, full-rank, low-rank or flow guides, optionally Laplace-started. `src/lib/probprog/inference/svi-guide-methods.ts:60` `omai-engine/probprog/inference`
 - estimator `sviMethod`: Stochastic variational inference as a steppable, resumable method with anytime posteriors. `src/lib/probprog/inference/svi-method.ts:94` `omai-engine/probprog/inference`
 - estimator `temperedSmcMethod`: Adaptive-tempering SMC, one temperature per step, with the evidence. `src/lib/probprog/inference/smc-methods.ts:101` `omai-engine/probprog/inference`
-- estimator `temperingMethod`: Parallel tempering (replica exchange) over HMC, NUTS, MALA, Barker or a random walk, with swap diagnostics. `src/lib/probprog/inference/tempering-method.ts:63` `omai-engine/probprog/inference`
-- estimator `thermodynamicIntegrationMethod`: Thermodynamic integration of the mean log likelihood over the tempering ladder. `src/lib/probprog/inference/evidence-methods.ts:278` `omai-engine/probprog/inference`
+- estimator `temperingMethod`: Parallel tempering (replica exchange) over HMC, NUTS, MALA, Barker or a random walk, with swap diagnostics. `src/lib/probprog/inference/tempering-method.ts:64` `omai-engine/probprog/inference`
+- estimator `thermodynamicIntegrationMethod`: Thermodynamic integration of the mean log likelihood over the tempering ladder. `src/lib/probprog/inference/evidence-methods.ts:279` `omai-engine/probprog/inference`
 - estimator `traceEnumSviMethod`: Variational inference with discrete latents summed out exactly (TraceEnum). `src/lib/probprog/inference/svi-extra-methods.ts:130` `omai-engine/probprog/inference`
 - estimator `traceGraphSviMethod`: Variational inference with a Rao-Blackwellised score-function ELBO and baselines (TraceGraph). `src/lib/probprog/inference/svi-extra-methods.ts:71` `omai-engine/probprog/inference`
 - estimator `vmpSpecMethod`: Variational message passing on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:352` `omai-engine/probprog/inference`
 
-- table `blockKernels`: Kernels a hybrid block can have: hmc, nuts, mala, barker, rwm, slice, gibbs, custom. `src/lib/probprog/inference/hybrid.ts:105` `omai-engine/probprog/inference`
-- table `evidenceEstimators`: Evidence estimators by name: bridge, stepping stone, thermodynamic, importance, nested, tempered SMC. `src/lib/probprog/inference/evidence-methods.ts:788` `omai-engine/probprog/inference`
+- table `blockKernels`: Kernels a hybrid block can have: hmc, nuts, mala, barker, rwm, slice, gibbs, custom. `src/lib/probprog/inference/hybrid.ts:118` `omai-engine/probprog/inference`
+- table `evidenceEstimators`: Evidence estimators by name: bridge, stepping stone, thermodynamic, importance, nested, tempered SMC. `src/lib/probprog/inference/evidence-methods.ts:777` `omai-engine/probprog/inference`
 
 ## probprog/model
 
@@ -186,25 +186,25 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 
 - function `additionalCampaigns`: The periodic campaigns of the later benchmark models, plus the clutter problem's EP comparison. `src/lib/probprog/models/additional-campaigns.ts:104` `omai-engine/probprog/models`
 - function `bananaDraws`: Exact draws from Haario's banana, for drawing the target. `src/lib/probprog/models/geometry.ts:165` `omai-engine/probprog/models`
-- function `bayesianGam`: Bayesian GAM of one covariate as a model spec: penalty or spike-slab prior. `src/lib/probprog/models/bayesian-gam.ts:170` `omai-engine/probprog/models`
-- function `bayesianGamFit`: Curve, band, sampled curves and weighted bases of a Bayesian GAM posterior. `src/lib/probprog/models/bayesian-gam.ts:553` `omai-engine/probprog/models`
-- function `bayesianGamReference`: Exact posterior curve and band of a Bayesian GAM by quadrature. `src/lib/probprog/models/bayesian-gam.ts:804` `omai-engine/probprog/models`
+- function `bayesianGam`: Bayesian GAM of one covariate as a model spec: penalty or spike-slab prior. `src/lib/probprog/models/bayesian-gam.ts:191` `omai-engine/probprog/models`
+- function `bayesianGamFit`: Curve, band, sampled curves and weighted bases of a Bayesian GAM posterior. `src/lib/probprog/models/bayesian-gam.ts:569` `omai-engine/probprog/models`
+- function `bayesianGamReference`: Exact posterior curve and band of a Bayesian GAM by quadrature. `src/lib/probprog/models/bayesian-gam.ts:815` `omai-engine/probprog/models`
 - function `benchmarkAgreement`: Cross-engine agreement of a benchmark model: every planned method against the truth. `src/lib/probprog/models/agreement.ts:132` `omai-engine/probprog/models`
 - function `benchmarkCampaigns`: The cross-engine agreement of every benchmark model as periodic validation campaigns. `src/lib/probprog/models/campaigns.ts:103` `omai-engine/probprog/models`
 - function `betaBernoulliModel`: The Beta-Bernoulli coin with a chosen Beta(a, b) prior; bind it to `{ y: flips }`. `src/lib/probprog/models/conjugate.ts:43` `omai-engine/probprog/models`
 - function `defineBenchmark`: Make a benchmark model: a spec or program with generator, truth, tags, references and method plans. `src/lib/probprog/models/benchmark.ts:175` `omai-engine/probprog/models`
 - function `evidenceCampaigns`: Periodic validation of the evidence estimators, nested sampling, particle filters and particle MCMC. `src/lib/probprog/models/evidence-campaigns.ts:521` `omai-engine/probprog/models`
 - function `gammaPoissonModel`: The Gamma-Poisson rate with a chosen Gamma(shape, rate) prior; bind it to `{ k: counts }`. `src/lib/probprog/models/conjugate.ts:178` `omai-engine/probprog/models`
-- function `gaussianMixtureModel`: A K-component Gaussian mixture with unknown weights, means and a shared spread, optionally ordered. `src/lib/probprog/models/mixture.ts:105` `omai-engine/probprog/models`
-- function `kernelCampaigns`: The periodic validation of the kernel methods: Geweke, calibration, agreement and the two-mode target. `src/lib/probprog/models/kernel-campaigns.ts:547` `omai-engine/probprog/models`
+- function `gaussianMixtureModel`: A K-component Gaussian mixture with unknown weights, means and a shared spread, optionally ordered. `src/lib/probprog/models/mixture.ts:98` `omai-engine/probprog/models`
+- function `kernelCampaigns`: The periodic validation of the kernel methods: Geweke, calibration, agreement and the two-mode target. `src/lib/probprog/models/kernel-campaigns.ts:544` `omai-engine/probprog/models`
 - function `polynomialFeatureMap`: The standardised polynomial design of two inputs with an intercept: `polynomialFeatureMap(points, 3).transform(rows)`. `src/lib/probprog/models/probit-classification.ts:60` `omai-engine/probprog/models`
 - function `probitClassifier`: The probit classifier of any design width with a chosen prior scale; bind it with `probitData`. `src/lib/probprog/models/probit-classification.ts:112` `omai-engine/probprog/models`
 - function `probitPredictive`: Predictive probability of a probit model at design rows, from weight draws. `src/lib/probprog/models/probit-classification.ts:155` `omai-engine/probprog/models`
-- function `probitPredictiveGrid`: Posterior predictive probability of a probit model over a 2-D grid, for a decision boundary. `src/lib/probprog/models/probit-classification.ts:236` `omai-engine/probprog/models`
+- function `probitPredictiveGrid`: Posterior predictive probability of a probit model over a 2-D grid, for a decision boundary. `src/lib/probprog/models/probit-classification.ts:237` `omai-engine/probprog/models`
 - function `structureCampaigns`: The structure of every benchmark model, and collapsed against full NUTS, as periodic campaigns. `src/lib/probprog/models/structure-campaigns.ts:364` `omai-engine/probprog/models`
 - function `sviCampaigns`: Periodic validation campaigns of the variational methods against the benchmark truths. `src/lib/probprog/models/svi-plans.ts:206` `omai-engine/probprog/models`
 
-- estimator `bayesianGamMethod`: A Bayesian GAM under any inference method, with its fit as a tape probe. `src/lib/probprog/models/bayesian-gam.ts:987` `omai-engine/probprog/models`
+- estimator `bayesianGamMethod`: A Bayesian GAM under any inference method, with its fit as a tape probe. `src/lib/probprog/models/bayesian-gam.ts:999` `omai-engine/probprog/models`
 
 - structure `BenchmarkModel`: A benchmark model: a spec with a data generator, the truth, references, tags and method plans. `src/lib/probprog/models/benchmark.ts:98` `omai-engine/probprog/models`
 
@@ -212,47 +212,47 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - table `benchmarkModels`: The benchmark models: specs with truth, generators, tags and method plans. `src/lib/probprog/models/suite.ts:36` `omai-engine/probprog/models`
 
 - dataset `ar1CoefficientFamily`: The AR(1) state-space benchmark with an unknown coefficient, as a family for particle MCMC. `src/lib/probprog/models/ar1-parameters.ts:34` `omai-engine/probprog/models`
-- dataset `ar1StateSpace`: Stationary AR(1) state with noisy observations as a scan; exact Gaussian smoothing truth. `src/lib/probprog/models/state-space.ts:126` `omai-engine/probprog/models`
-- dataset `banana`: Haario's banana: a curved correlated 2-D ridge; analytic marginals; Laplace and mean field are wrong. `src/lib/probprog/models/geometry.ts:191` `omai-engine/probprog/models`
-- dataset `bayesianNeuralNetwork`: Bayesian neural network (three tanh units) on a small regression; stored NUTS reference for the output. `src/lib/probprog/models/neural-network.ts:145` `omai-engine/probprog/models`
+- dataset `ar1StateSpace`: Stationary AR(1) state with noisy observations as a scan; exact Gaussian smoothing truth. `src/lib/probprog/models/state-space.ts:127` `omai-engine/probprog/models`
+- dataset `banana`: Haario's banana: a curved correlated 2-D ridge; analytic marginals; Laplace and mean field are wrong. `src/lib/probprog/models/geometry.ts:186` `omai-engine/probprog/models`
+- dataset `bayesianNeuralNetwork`: Bayesian neural network (three tanh units) on a small regression; stored NUTS reference for the output. `src/lib/probprog/models/neural-network.ts:138` `omai-engine/probprog/models`
 - dataset `betaBernoulli`: Beta-Bernoulli coin: exact Beta posterior and evidence; the simplest conjugate benchmark. `src/lib/probprog/models/conjugate.ts:68` `omai-engine/probprog/models`
-- dataset `bimodal`: Two equal Gaussian modes in 2-D: the multimodal target for mode weights and R-hat. `src/lib/probprog/models/geometry.ts:260` `omai-engine/probprog/models`
+- dataset `bimodal`: Two equal Gaussian modes in 2-D: the multimodal target for mode weights and R-hat. `src/lib/probprog/models/geometry.ts:255` `omai-engine/probprog/models`
 - dataset `clutterProblem`: Minka's clutter problem with a distractor: bimodal robust location, quadrature truth. `src/lib/probprog/models/clutter.ts:161` `omai-engine/probprog/models`
 - dataset `eightSchoolsCentred`: Rubin's eight schools, centred: the funnel; exact quadrature truth. `src/lib/probprog/models/schools.ts:283` `omai-engine/probprog/models`
 - dataset `eightSchoolsNonCentred`: Rubin's eight schools, non-centred: the same posterior without the funnel; truth by quadrature. `src/lib/probprog/models/schools.ts:333` `omai-engine/probprog/models`
 - dataset `funnelCentred`: Neal's funnel, centred: analytic truth; NUTS diverges in the neck. `src/lib/probprog/models/geometry.ts:46` `omai-engine/probprog/models`
 - dataset `funnelNonCentred`: Neal's funnel, non-centred: the same law of (v, x) with the funnel removed from the density. `src/lib/probprog/models/geometry.ts:94` `omai-engine/probprog/models`
 - dataset `gammaPoisson`: Gamma-Poisson rate: exact Gamma posterior and evidence for counts. `src/lib/probprog/models/conjugate.ts:203` `omai-engine/probprog/models`
-- dataset `gaussianHmm`: Three-state Gaussian HMM as a scan, parameters known; exact forward-backward truth with visit counts. `src/lib/probprog/models/series.ts:280` `omai-engine/probprog/models`
-- dataset `gaussianMixture`: Two-component Gaussian mixture with label switching; the truth is the even two-mode mixture; sorted summaries. `src/lib/probprog/models/mixture.ts:263` `omai-engine/probprog/models`
-- dataset `gaussianMixtureOrdered`: Two-component Gaussian mixture, means ordered; discrete labels summed out; the truth is a 2-D grid. `src/lib/probprog/models/mixture.ts:217` `omai-engine/probprog/models`
-- dataset `gaussianProcessNonCentred`: Gaussian process regression, non-centred (f = L z); the same quadrature truth as the centred form. `src/lib/probprog/models/gaussian-process.ts:361` `omai-engine/probprog/models`
-- dataset `gaussianProcessRegression`: Gaussian process regression with an unknown length scale; closed-form function posterior, quadrature over the length scale. `src/lib/probprog/models/gaussian-process.ts:273` `omai-engine/probprog/models`
+- dataset `gaussianHmm`: Three-state Gaussian HMM as a scan, parameters known; exact forward-backward truth with visit counts. `src/lib/probprog/models/series.ts:275` `omai-engine/probprog/models`
+- dataset `gaussianMixture`: Two-component Gaussian mixture with label switching; the truth is the even two-mode mixture; sorted summaries. `src/lib/probprog/models/mixture.ts:256` `omai-engine/probprog/models`
+- dataset `gaussianMixtureOrdered`: Two-component Gaussian mixture, means ordered; discrete labels summed out; the truth is a 2-D grid. `src/lib/probprog/models/mixture.ts:210` `omai-engine/probprog/models`
+- dataset `gaussianProcessNonCentred`: Gaussian process regression, non-centred (f = L z); the same quadrature truth as the centred form. `src/lib/probprog/models/gaussian-process.ts:355` `omai-engine/probprog/models`
+- dataset `gaussianProcessRegression`: Gaussian process regression with an unknown length scale; closed-form function posterior, quadrature over the length scale. `src/lib/probprog/models/gaussian-process.ts:267` `omai-engine/probprog/models`
 - dataset `generateIrt`: Item response answers from known abilities, difficulties and discriminations. `src/lib/probprog/models/irt-hierarchical.ts:212` `omai-engine/probprog/models`
-- dataset `itemResponseScoring`: 2PL item response scoring with known items; one-dimensional quadrature truth for each respondent. `src/lib/probprog/models/irt.ts:101` `omai-engine/probprog/models`
-- dataset `ldaLite`: LDA-lite: three documents, two topics, four words; the exact posterior by enumeration of the assignments. `src/lib/probprog/models/topics.ts:260` `omai-engine/probprog/models`
-- dataset `logisticRegression`: Bayesian logistic regression with an intercept and two covariates; the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:61` `omai-engine/probprog/models`
-- dataset `negativeBinomialRegression`: Negative binomial regression with an overdispersion parameter; the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:240` `omai-engine/probprog/models`
+- dataset `itemResponseScoring`: 2PL item response scoring with known items; one-dimensional quadrature truth for each respondent. `src/lib/probprog/models/irt.ts:102` `omai-engine/probprog/models`
+- dataset `ldaLite`: LDA-lite: three documents, two topics, four words; the exact posterior by enumeration of the assignments. `src/lib/probprog/models/topics.ts:261` `omai-engine/probprog/models`
+- dataset `logisticRegression`: Bayesian logistic regression with an intercept and two covariates; the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:58` `omai-engine/probprog/models`
+- dataset `negativeBinomialRegression`: Negative binomial regression with an overdispersion parameter; the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:237` `omai-engine/probprog/models`
 - dataset `normalNormal`: Normal-normal mean with known noise: exact normal posterior and evidence. `src/lib/probprog/models/conjugate.ts:120` `omai-engine/probprog/models`
-- dataset `poissonRegression`: Poisson regression with a log link on one covariate; the truth is a 2-D grid. `src/lib/probprog/models/glm.ts:182` `omai-engine/probprog/models`
-- dataset `probitRegression`: Bayesian probit regression (the plan's slice model); the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:118` `omai-engine/probprog/models`
+- dataset `poissonRegression`: Poisson regression with a log link on one covariate; the truth is a 2-D grid. `src/lib/probprog/models/glm.ts:179` `omai-engine/probprog/models`
+- dataset `probitRegression`: Bayesian probit regression (the plan's slice model); the truth is a 3-D grid. `src/lib/probprog/models/glm.ts:115` `omai-engine/probprog/models`
 - dataset `radon`: Hierarchical radon-style regression with varying intercepts; the exact truth integrates the effects out. `src/lib/probprog/models/hierarchical.ts:273` `omai-engine/probprog/models`
-- dataset `stickBreakingMixture`: Truncated stick-breaking (Dirichlet-process style) mixture with known components; a 3-D grid truth. `src/lib/probprog/models/nonparametric.ts:123` `omai-engine/probprog/models`
-- dataset `stochasticVolatility`: Stochastic volatility as a scan, parameters known; the truth is a point-mass smoother on a grid. `src/lib/probprog/models/series.ts:138` `omai-engine/probprog/models`
-- dataset `trueskillThreePlayers`: Three players rated from pairwise games, TrueSkill-style (probit): the EP target; truth is a 3-D grid. `src/lib/probprog/models/ranking.ts:58` `omai-engine/probprog/models`
-- dataset `trueskillTournament`: A small TrueSkill tournament drawn from known skills, games in a fixed order. `src/lib/probprog/models/ranking.ts:150` `omai-engine/probprog/models`
+- dataset `stickBreakingMixture`: Truncated stick-breaking (Dirichlet-process style) mixture with known components; a 3-D grid truth. `src/lib/probprog/models/nonparametric.ts:124` `omai-engine/probprog/models`
+- dataset `stochasticVolatility`: Stochastic volatility as a scan, parameters known; the truth is a point-mass smoother on a grid. `src/lib/probprog/models/series.ts:137` `omai-engine/probprog/models`
+- dataset `trueskillThreePlayers`: Three players rated from pairwise games, TrueSkill-style (probit): the EP target; truth is a 3-D grid. `src/lib/probprog/models/ranking.ts:62` `omai-engine/probprog/models`
+- dataset `trueskillTournament`: A small TrueSkill tournament drawn from known skills, games in a fixed order. `src/lib/probprog/models/ranking.ts:154` `omai-engine/probprog/models`
 
 ## probprog/validation
 
 The validation kernel for probabilistic programs: oracles (the grid posterior, closed-form conjugate posteriors), the agreement table that compares posterior approximations with an oracle or each other, simulation-based calibration with the exact rank distribution, Geweke joint-distribution tests, and the runner that gathers campaigns into a report. The library only returns numbers and records; the test helpers that assert on them are in `src/testing`, and the heavy campaigns are a script run on request, not part of the gate.
 
-- function `agree`: Compare posterior approximations with an oracle or each other: moments, KS, Wasserstein, KL. `src/lib/probprog/validation/agree.ts:188` `omai-engine/probprog/validation`
+- function `agree`: Compare posterior approximations with an oracle or each other: moments, KS, Wasserstein, KL. `src/lib/probprog/validation/agree.ts:187` `omai-engine/probprog/validation`
 - function `gewekeTest`: Geweke joint-distribution test of a posterior transition operator. `src/lib/probprog/validation/geweke.ts:83` `omai-engine/probprog/validation`
-- function `gridPosterior`: Grid posterior of a small program: evidence, marginals and moments to quadrature accuracy. `src/lib/probprog/validation/grid.ts:175` `omai-engine/probprog/validation`
-- function `mixtureOfRegressions`: Exact mixture-of-regressions posterior by enumerating the assignments of rows to classes. `src/lib/probprog/validation/enumeration.ts:390` `omai-engine/probprog/validation`
+- function `gridPosterior`: Grid posterior of a small program: evidence, marginals and moments to quadrature accuracy. `src/lib/probprog/validation/grid.ts:190` `omai-engine/probprog/validation`
+- function `mixtureOfRegressions`: Exact mixture-of-regressions posterior by enumerating the assignments of rows to classes. `src/lib/probprog/validation/enumeration.ts:391` `omai-engine/probprog/validation`
 - function `sbc`: Simulation-based calibration of an inference method with the exact rank distribution. `src/lib/probprog/validation/sbc.ts:180` `omai-engine/probprog/validation`
 - function `spikeSlabRegression`: Exact spike and slab regression posterior by enumerating the 2^p subsets of coefficients. `src/lib/probprog/validation/enumeration.ts:79` `omai-engine/probprog/validation`
-- function `zeroInflatedPoisson`: Exact zero-inflated Poisson regression posterior on a refined grid, structural zeros summed out. `src/lib/probprog/validation/enumeration.ts:250` `omai-engine/probprog/validation`
+- function `zeroInflatedPoisson`: Exact zero-inflated Poisson regression posterior on a refined grid, structural zeros summed out. `src/lib/probprog/validation/enumeration.ts:251` `omai-engine/probprog/validation`
 
 - estimator `sbcMethod`: Simulation-based calibration, one replication per step, with the tests of the ranks so far. `src/lib/probprog/validation/sbc-method.ts:68` `omai-engine/probprog/validation`
 
@@ -260,6 +260,6 @@ The validation kernel for probabilistic programs: oracles (the grid posterior, c
 
 The reference answers the expectation-propagation atoms are checked against, one family of kernels: the shape of a reference marginal (`ExactMarginal`) and the closed forms that make one, the marginal of a density on a grid (one dimension, a hyperparameter on a log grid, a tensor grid of any dimension, three coordinates found by passes), the exact switches and clutter problems, and the Gibbs sampler of a mixture. Each takes a log density or a model's closed form as a callback, so the reference is written by hand, independent of the rule under test.
 
-- function `clutterPosterior`: Exact clutter posterior with unknown centre, precisions and weight, by quadrature. `src/lib/probprog/validation/references/clutter.ts:51` `omai-engine/probprog/validation`
-- function `mixtureGibbs`: Gibbs sampler for a Gaussian mixture, the gate atoms' reference. `src/lib/probprog/validation/references/sampler.ts:79` `omai-engine/probprog/validation`
-- function `outlierMixturePosterior`: Exact outlier-mixture posterior with unknown centre, precision and share. `src/lib/probprog/validation/references/clutter.ts:179` `omai-engine/probprog/validation`
+- function `clutterPosterior`: Exact clutter posterior with unknown centre, precisions and weight, by quadrature. `src/lib/probprog/validation/references/clutter.ts:52` `omai-engine/probprog/validation`
+- function `mixtureGibbs`: Gibbs sampler for a Gaussian mixture, the gate atoms' reference. `src/lib/probprog/validation/references/sampler.ts:80` `omai-engine/probprog/validation`
+- function `outlierMixturePosterior`: Exact outlier-mixture posterior with unknown centre, precision and share. `src/lib/probprog/validation/references/clutter.ts:181` `omai-engine/probprog/validation`

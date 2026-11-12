@@ -1,4 +1,5 @@
 import type { FactorSpec } from '../../../../message-passing/index.ts'
+import { matmul, mul, scatterAdd, sub, sum, take, tensor, toFlat, transpose } from '../../../../tensor/index.ts'
 import type { ExprSpec, ModelNode } from '../../spec.ts'
 import { type Atom, type Cell, prod } from '../_cells.ts'
 import type { Context } from '../_context.ts'
@@ -42,8 +43,14 @@ export function designRows(
         size = a.size
       } else if (a.vector !== vector) return undefined
     }
-    const a = new Array<number>(size).fill(0)
-    for (const [k, coefficient] of terms) a[(cx.g.atoms.get(k) as Atom & { kind: 'comp' }).index] = coefficient
+    const a = toFlat(
+      scatterAdd(
+        [size],
+        atoms.map((atom) => (atom as Atom & { kind: 'comp' }).index),
+        terms.map(([, coefficient]) => coefficient),
+        0,
+      ),
+    )
     rows.push({ a, offset: c.aff.offset })
   }
   return vector === undefined ? undefined : { vector, size, rows }
@@ -65,6 +72,11 @@ export function plate(
   if (fam === 'normal') return plateNormal(cx, node, values)
   if (fam === 'bernoulli') return plateBernoulli(cx, node, values)
   return NOT_MINE
+}
+
+/** The indices of the rows a plated factor uses: those with a random part and an observed (not missing) value. */
+function usedRows(rows: readonly ({ a: number[]; offset: number } | undefined)[], values: readonly number[]): number[] {
+  return rows.flatMap((row, i) => (row === undefined || Number.isNaN(values[i]) ? [] : [i]))
 }
 
 export function addPlated(cx: Context, node: ModelNode & { readonly kind: 'observed' }, f: FactorSpec): void {
@@ -89,23 +101,15 @@ export function plateNormal(
   const locs = cellsOf(cx, node, 'loc', () => paramSym(cx, node.dist, 'loc'))
   const design = designRows(cx, locs, true)
   if (design === undefined) return NOT_MINE
-  const d = design.size
-  const xtx = new Array<number>(d * d).fill(0)
-  const xty = new Array<number>(d).fill(0)
-  let yty = 0
-  let n = 0
-  for (const [i, row] of design.rows.entries()) {
-    const y = (values[i] as number) - (row?.offset ?? 0)
-    if (row === undefined || Number.isNaN(values[i])) continue
-    n++
-    yty += y * y
-    for (let a = 0; a < d; a++) {
-      xty[a] = (xty[a] as number) + (row.a[a] as number) * y
-      for (let b = 0; b < d; b++)
-        xtx[a * d + b] = (xtx[a * d + b] as number) + (row.a[a] as number) * (row.a[b] as number)
-    }
-  }
+  const used = usedRows(design.rows, values)
+  const n = used.length
   if (n === 0) return NOT_MINE
+  // The sufficient statistics of the used rows: X'X, X'y and y'y, with the known offsets taken off the outcomes.
+  const x = tensor(used.map((i) => (design.rows[i] as { a: number[] }).a))
+  const y = sub(take(tensor(values), used), tensor(used.map((i) => (design.rows[i] as { offset: number }).offset)))
+  const xtx = toFlat(matmul(transpose(x), x))
+  const xty = toFlat(matmul(transpose(x), y))
+  const yty = toFlat(sum(mul(y, y)))[0] as number
   addPlated(cx, node, {
     operator: 'linear-regression-plate',
     args: [design.vector],
@@ -140,14 +144,10 @@ export function plateBernoulli(
   const cells = cellsOf(cx, node, `link:${link}`, () => evalSym(cx, arg))
   const design = designRows(cx, cells, false)
   if (design === undefined) return NOT_MINE
-  const x: number[] = []
-  const y: number[] = []
-  for (const [i, row] of design.rows.entries()) {
-    if (row === undefined || Number.isNaN(values[i])) continue
-    x.push(...row.a)
-    y.push(values[i] as number)
-  }
-  if (y.length === 0) return NOT_MINE
+  const used = usedRows(design.rows, values)
+  if (used.length === 0) return NOT_MINE
+  const x = toFlat(tensor(used.map((i) => (design.rows[i] as { a: number[] }).a)))
+  const y = toFlat(take(tensor(values), used))
   addPlated(cx, node, { operator, args: [design.vector], params: { X: x, y } })
   return true
 }

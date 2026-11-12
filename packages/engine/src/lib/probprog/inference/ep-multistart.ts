@@ -19,7 +19,7 @@ import {
 } from '../../message-passing/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import { bool, choice, type DictSpace, dict, int, real } from '../../space/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import { add, mul, oneHot, sliceAxis, toFlat } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -176,13 +176,11 @@ function startMessages(
   off: number | undefined,
 ): InitialMessage[] {
   const total = ports.reduce((a, p) => a + p.size, 0)
-  const noise = toFlat(normal(key, [total]))
+  const noise = normal(key, [total])
   let at = 0
   return ports.map(({ factor, port, size }) => {
-    const eta = Array.from({ length: size }, (_, q) => {
-      const draw = (noise[at + q] ?? 0) * jitter
-      return off === undefined ? draw : (q === off ? -6 : 0) + 0.25 * draw
-    })
+    const draw = mul(sliceAxis(noise, 0, at, at + size), jitter)
+    const eta = toFlat(off === undefined ? draw : add(mul(oneHot(off, size), -6), mul(draw, 0.25)))
     at += size
     return { factor, port, eta }
   })

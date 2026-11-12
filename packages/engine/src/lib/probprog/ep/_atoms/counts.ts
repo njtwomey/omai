@@ -6,6 +6,7 @@
  */
 
 import { dict, real } from '../../../space/index.ts'
+import { add, arange, div, mul, toFlat } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -89,7 +90,7 @@ function hurdleProblem(k: Config): AtomParts {
         yLimits: [-0.5, 8],
         points: [{ name: 'counts', x: XS, y: YS }],
         answer: (mean) => {
-          const grid = Array.from({ length: 31 }, (_, i) => -1.5 + (3 * i) / 30)
+          const grid = toFlat(add(div(mul(arange(31), 3), 30), -1.5))
           return [
             {
               name: 'rate',

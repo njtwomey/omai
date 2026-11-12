@@ -4,7 +4,7 @@
 
 import { foldIn, key, uniform } from '../../../random/index.ts'
 import { dict, int, real } from '../../../space/index.ts'
-import { toFlat } from '../../../tensor/index.ts'
+import { add, arange, div, maximum, mul, reshape, sub, toArray, toFlat, zeros } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -39,11 +39,9 @@ function logLikelihood(x: readonly (readonly number[])[], y: readonly number[], 
 function simulate(seed: number, rows: number, classes: number, betas: readonly [number, number]) {
   const kk = key(seed)
   const group = (g: number) => {
-    const flat = toFlat(uniform(foldIn(kk, 10 * g), [rows * classes]))
+    const draw = reshape(uniform(foldIn(kk, 10 * g), [rows * classes]), [rows, classes])
     const u = toFlat(uniform(foldIn(kk, 10 * g + 1), [rows]))
-    const x = Array.from({ length: rows }, (_, i) =>
-      Array.from({ length: classes }, (_, c) => 2 * SPAN * (flat[i * classes + c] ?? 0.5) - SPAN),
-    )
+    const x = toArray(sub(mul(draw, 2 * SPAN), SPAN)) as number[][]
     const y = x.map((row, i) => {
       const scores = row.map((v) => Math.exp(v * (betas[g] as number)))
       const total = scores.reduce((s, v) => s + v, 0)
@@ -100,7 +98,7 @@ function chosenProbability(x: readonly (readonly number[])[], beta: number, v: n
 }
 
 const BINS = 8
-const CURVE_X = Array.from({ length: 33 }, (_, i) => -SPAN + (2 * SPAN * i) / 32)
+const CURVE_X = toFlat(add(div(mul(arange(33), 2 * SPAN), 32), -SPAN))
 
 /** The figure: how often a class is chosen at each covariate value, by group, and the curve each group's coefficient makes of it. */
 function figureOf(
@@ -108,8 +106,9 @@ function figureOf(
   classes: number,
 ): AtomFigure {
   const binned = (g: 0 | 1) => {
-    const hits = new Array<number>(BINS).fill(0)
-    const seen = new Array<number>(BINS).fill(0)
+    // counters incremented in place by the loop below, made with zeros
+    const hits = toFlat(zeros([BINS]))
+    const seen = toFlat(zeros([BINS]))
     const { x, y } = data[g]
     for (const [i, row] of x.entries())
       for (const [c, v] of row.entries()) {
@@ -119,8 +118,8 @@ function figureOf(
       }
     return {
       name: `group ${g + 1}: share of the classes chosen`,
-      x: hits.map((_, b) => -SPAN + ((b + 0.5) * 2 * SPAN) / BINS),
-      y: hits.map((h, b) => h / Math.max(1, seen[b] ?? 0)),
+      x: toFlat(add(div(mul(mul(add(arange(BINS), 0.5), 2), SPAN), BINS), -SPAN)),
+      y: toFlat(div(hits, maximum(seen, 1))),
     }
   }
   const curve = (g: 0 | 1, beta: number): FigureCurve => ({

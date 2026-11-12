@@ -8,7 +8,21 @@
 import { valueAndGrad } from '../autodiff/index.ts'
 import { OmaiError } from '../base/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
-import { asTensor, primalOf, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
+import {
+  asTensor,
+  concat,
+  div,
+  item,
+  primalOf,
+  reshape,
+  square,
+  stack,
+  sub,
+  sum,
+  type TensorLike,
+  toFlat,
+  type Value,
+} from '../tensor/index.ts'
 import type { ElboEstimator } from './elbo.ts'
 import type { Model } from './primitives.ts'
 
@@ -71,7 +85,7 @@ export function gradientMoments<D = void>(options: GradientMomentsOptions<D>): G
   // Default: the state after one estimate, which sets up what an estimator caches (a dependency graph) and starts its baselines.
   const state =
     options.state ?? estimator.estimate(foldIn(key, 0xfffffff0), model, guide, data, start, estimator.init()).state
-  const grads: Record<string, Float64Array[]> = Object.fromEntries(names.map((k) => [k, []]))
+  const grads: Record<string, Value[]> = Object.fromEntries(names.map((k) => [k, []]))
   const elbos: number[] = []
   for (let i = 0; i < repeats; i++) {
     let elbo = Number.NaN
@@ -80,34 +94,29 @@ export function gradientMoments<D = void>(options: GradientMomentsOptions<D>): G
       elbo = r.elbo
       return r.loss
     })(start as Record<string, Value>)
-    for (const k of names)
-      grads[k]?.push(Float64Array.from(toFlat(primalOf((grad as Record<string, Value>)[k] as Value))))
+    for (const k of names) grads[k]?.push(reshape(primalOf((grad as Record<string, Value>)[k] as Value), [-1]))
     elbos.push(elbo)
   }
   const mean: Record<string, Float64Array> = {}
   const variance: Record<string, Float64Array> = {}
-  let total = 0
-  let norm2 = 0
+  const variances: Value[] = []
+  const means: Value[] = []
   for (const k of names) {
-    const g = grads[k] as Float64Array[]
-    const size = g[0]?.length ?? 0
-    const m = new Float64Array(size)
-    const v = new Float64Array(size)
-    for (let j = 0; j < size; j++) {
-      let s = 0
-      for (const x of g) s += x[j] ?? 0
-      m[j] = s / repeats
-      let q = 0
-      for (const x of g) q += ((x[j] ?? 0) - (m[j] ?? 0)) ** 2
-      v[j] = q / (repeats - 1)
-      total += v[j] ?? 0
-      norm2 += (m[j] ?? 0) ** 2
-    }
-    mean[k] = m
-    variance[k] = v
+    // One row per repeat, one column per coordinate of the parameter.
+    const g = stack(grads[k] as Value[])
+    const m = div(sum(g, 0), repeats)
+    const v = div(sum(square(sub(g, m)), 0), repeats - 1)
+    means.push(m)
+    variances.push(v)
+    mean[k] = Float64Array.from(toFlat(m))
+    variance[k] = Float64Array.from(toFlat(v))
   }
-  const eMean = elbos.reduce((a, b) => a + b, 0) / repeats
-  const eVar = elbos.reduce((a, b) => a + (b - eMean) ** 2, 0) / (repeats - 1)
+  // The totals run over every coordinate of every parameter, in order.
+  const total = names.length === 0 ? 0 : item(sum(concat(variances)))
+  const norm2 = names.length === 0 ? 0 : item(sum(square(concat(means))))
+  const e = asTensor(elbos)
+  const eMean = item(div(sum(e), repeats))
+  const eVar = item(div(sum(square(sub(e, eMean))), repeats - 1))
   return {
     mean,
     variance,

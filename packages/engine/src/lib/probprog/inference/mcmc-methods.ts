@@ -12,6 +12,7 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
+import { blockDiag } from '../../numerics/linalg/index.ts'
 import { foldIn as foldInKey, subsample } from '../../random/index.ts'
 import {
   barkerKernel,
@@ -36,7 +37,22 @@ import {
   type TransitionInfo,
 } from '../../sampling/index.ts'
 import { bool, choice, dict, int, real } from '../../space/index.ts'
-import { asTensor, reshape, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
+import {
+  asTensor,
+  concat,
+  diag,
+  item,
+  matmul,
+  mul,
+  ones,
+  reshape,
+  sum,
+  type Tensor,
+  type TensorLike,
+  toFlat,
+  transpose,
+  zeros,
+} from '../../tensor/index.ts'
 import type { Config } from '../../trace/index.ts'
 import { analyse, type ProgramAnalysis } from '../analysis.ts'
 import { potentialEnergy } from '../density.ts'
@@ -99,17 +115,9 @@ export function rwmMethod(model: MethodModel, options: { readonly name?: string 
         const kernel = (t: T): MCMCKernel => {
           if (t.shape.length === 0) return randomWalkMetropolis(target, { scale: t.scale })
           // The proposal's covariance is (scale L)(scale L)^T for the learned Cholesky factor L.
-          const cov = new Float64Array(dim * dim)
-          for (let i = 0; i < dim; i++)
-            for (let j = 0; j < dim; j++) {
-              let s = 0
-              for (let k = 0; k < dim; k++) s += (t.shape[i * dim + k] ?? 0) * (t.shape[j * dim + k] ?? 0)
-              cov[i * dim + j] = s * t.scale * t.scale
-            }
+          const factor = reshape(asTensor(t.shape), [dim, dim])
           return randomWalkMetropolis(target, {
-            covariance: asTensor(
-              Array.from({ length: dim }, (_, i) => Array.from(cov.subarray(i * dim, (i + 1) * dim))),
-            ),
+            covariance: mul(mul(matmul(factor, transpose(factor)), t.scale), t.scale),
           })
         }
         const cell: { info: TransitionInfo | undefined } = { info: undefined }
@@ -122,7 +130,7 @@ export function rwmMethod(model: MethodModel, options: { readonly name?: string 
               cell.info = info
             },
           })
-        const shared = algorithmFor(new Float64Array(dim))
+        const shared = algorithmFor(Float64Array.from(toFlat(zeros([dim]))))
         const warm: Warmer<T> | undefined =
           numWarmup > 0
             ? {
@@ -414,32 +422,21 @@ export function ellipticalSliceMethod(model: MethodModel, options: { readonly na
         })
         // The prior's mean and covariance in layout order; the posterior is prior times likelihood, the likelihood being the
         // log joint without the priors of these sites.
-        const mean = new Float64Array(dim)
-        const cov = new Float64Array(dim * dim)
-        let at = 0
-        let dense = false
-        for (const p of priors) {
-          const m = toFlat(asTensor(p.fn.mean() as TensorLike) as Tensor)
-          mean.set(m, at)
-          if (p.fn.name === 'multivariateNormal') {
-            dense = true
-            const c = toFlat(asTensor((p.fn as unknown as { covariance(): TensorLike }).covariance()) as Tensor)
-            for (let i = 0; i < p.size; i++)
-              for (let j = 0; j < p.size; j++) cov[(at + i) * dim + at + j] = c[i * p.size + j] ?? 0
-          } else {
-            const v = toFlat(asTensor(p.fn.variance() as TensorLike) as Tensor)
-            for (let i = 0; i < p.size; i++) cov[(at + i) * dim + at + i] = v[i] ?? 0
-          }
-          at += p.size
-        }
-        void dense
+        const means = priors.map((p) => reshape(asTensor(p.fn.mean() as TensorLike), [p.size]))
+        const blocks = priors.map((p) =>
+          p.fn.name === 'multivariateNormal'
+            ? reshape(asTensor((p.fn as unknown as { covariance(): TensorLike }).covariance()), [p.size, p.size])
+            : diag(reshape(asTensor(p.fn.variance() as TensorLike), [p.size])),
+        )
+        const mean = concat(means, 0)
+        const cov = blockDiag(...blocks)
         const logPrior = (u: Float64Array): number => {
           let s = 0
           let k = 0
           for (const p of priors) {
-            const x = asTensor(Array.from(u.subarray(k, k + p.size))) as Tensor
+            const x = asTensor(u.subarray(k, k + p.size)) as Tensor
             const lp = p.fn.logProb(p.shape.length === 0 ? x : reshape(x, [...p.shape]))
-            s += toFlat(asTensor(lp as TensorLike) as Tensor).reduce((acc, v) => acc + v, 0)
+            s += item(sum(asTensor(lp as TensorLike)))
             k += p.size
           }
           return s
@@ -448,18 +445,7 @@ export function ellipticalSliceMethod(model: MethodModel, options: { readonly na
         return fixedPlan<T>(
           b,
           { maxIter: num(b.config, 'maxIter') },
-          (t) =>
-            ellipticalSlice(
-              logLikelihood,
-              {
-                mean,
-                covariance: asTensor(
-                  Array.from({ length: dim }, (_, i) => Array.from(cov.subarray(i * dim, (i + 1) * dim))),
-                ),
-              },
-              dim,
-              { maxIter: t.maxIter },
-            ),
+          (t) => ellipticalSlice(logLikelihood, { mean, covariance: cov }, dim, { maxIter: t.maxIter }),
           (t) => ({ ...t }),
         )
       },
@@ -682,7 +668,7 @@ export function mclmcMethod(model: MethodModel, options: { readonly name?: strin
           lFactor: num(b.config, 'lFactor'),
           integrator,
         } as const
-        const shared = mclmcAdaptationAlgorithm(target, new Float64Array(dim), algorithmOptions)
+        const shared = mclmcAdaptationAlgorithm(target, Float64Array.from(toFlat(zeros([dim]))), algorithmOptions)
         const warm: Warmer<MclmcParameters> | undefined =
           numWarmup >= 10
             ? {
@@ -698,7 +684,7 @@ export function mclmcMethod(model: MethodModel, options: { readonly name?: strin
         const tuned0: MclmcParameters = {
           stepSize: Math.sqrt(dim) * 0.25,
           momentumDecoherenceLength: Math.sqrt(dim),
-          inverseMassMatrix: new Float64Array(dim).fill(1),
+          inverseMassMatrix: Float64Array.from(toFlat(ones([dim]))),
         }
         return {
           ...fixedPlan<MclmcParameters>(b, tuned0, kernel, (p) => ({

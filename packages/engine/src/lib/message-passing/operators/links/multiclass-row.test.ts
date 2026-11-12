@@ -5,6 +5,7 @@ import { massOf, messageArg } from '../../core/args.ts'
 import { gaussian, gaussianEta } from '../../core/families.ts'
 import { gaussianMv, gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
 import type { Arg, Params } from '../../core/types.ts'
+import { zeroArray } from '../../numerics/_arrays.ts'
 import { defaultOperators } from '../registry.ts'
 import { multiclassSite } from './multiclass.ts'
 import { multiclassRow } from './multiclass-row.ts'
@@ -47,7 +48,7 @@ interface Case {
 function check(c: Case): void {
   const d = c.mean.length
   const classes = c.matrix.length / d
-  const offset = c.offset ?? new Array<number>(classes).fill(0)
+  const offset = c.offset ?? zeroArray(classes)
   const power = c.power ?? 1
   const w = gaussianMv(d)
   const args: Arg[] = [messageArg(w, gaussianMvEta(c.mean, c.covariance))]
@@ -160,9 +161,7 @@ describe('multiclass-row: the message to the vector and the evidence against a b
   it('is in the registry, takes a vector port and refuses what the product grid cannot reach', () => {
     const op = defaultOperators()['multiclass-row']
     expect(op).toBe(multiclassRow)
-    const reason = multiclassRow.check?.({ y: 0, classes: 8, matrix: new Array<number>(8 * 8).fill(0) }, [
-      gaussianMv(8),
-    ])
+    const reason = multiclassRow.check?.({ y: 0, classes: 8, matrix: zeroArray(8 * 8) }, [gaussianMv(8)])
     expect(reason).toMatch(/product grid/)
     expect(multiclassRow.check?.({ y: 0, classes: 3, matrix: [1, 0] }, [gaussianMv(3)])).toMatch(/matrix/)
     expect(multiclassRow.noRule?.vmp).toBeDefined()

@@ -28,7 +28,21 @@ import {
   windowAdaptationResult,
 } from '../../sampling/index.ts'
 import { bool, choice, type DictSpace, dict, int, real } from '../../space/index.ts'
-import { fromStorage, primalOf, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
+import {
+  asTensor,
+  concat,
+  full,
+  primalOf,
+  reshape,
+  sliceAxis,
+  stack,
+  type Tensor,
+  take,
+  toArray,
+  toFlat,
+  type Value,
+  zeros,
+} from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -179,11 +193,7 @@ const settings = (config: Config): Settings => ({
   inferDiscrete: flag(config, 'inferDiscrete'),
 })
 
-const rowOf = (d: Tensor, i: number): Tensor => {
-  const shape = d.shape.slice(1)
-  const size = shape.reduce((a, b) => a * b, 1)
-  return fromStorage(d.data.slice(i * size, (i + 1) * size) as Float64Array, shape, 'float64')
-}
+const rowOf = (d: Tensor, i: number): Tensor => take(d, i, 0)
 
 interface KernelTransition {
   readonly acceptanceRate: number
@@ -211,22 +221,18 @@ const emptyChain = (): NutsChainState => ({
   warm: null,
   chain: null,
   tuned: null,
-  last: new Float64Array(STATS.length).fill(Number.NaN),
+  last: Float64Array.from(toFlat(full([STATS.length], Number.NaN))),
   kept: [],
   divergences: 0,
 })
 
-const flatten = (rows: readonly Float64Array[]): Float64Array => {
-  const width = rows[0]?.length ?? 0
-  const out = new Float64Array(rows.length * width)
-  rows.forEach((r, i) => {
-    out.set(r, i * width)
-  })
-  return out
-}
+const flatten = (rows: readonly Float64Array[]): Float64Array =>
+  Float64Array.from(toFlat(rows.length === 0 ? zeros([0]) : concat(rows.map((r) => asTensor(r)))))
 
 const unflatten = (flat: Float64Array, width: number): Float64Array[] =>
-  Array.from({ length: width === 0 ? 0 : flat.length / width }, (_, i) => flat.slice(i * width, (i + 1) * width))
+  width === 0
+    ? []
+    : (toArray(reshape(asTensor(flat), [flat.length / width, width])) as number[][]).map((r) => Float64Array.from(r))
 
 const failedPosterior = (reason: string, extra: Readonly<Record<string, Json>> = {}): Posterior =>
   definePosterior({
@@ -240,28 +246,18 @@ const failedPosterior = (reason: string, extra: Readonly<Record<string, Json>> =
 
 /** The chains a state holds so far as the library's `Chains` (the draws every chain has, and the tuned kernels). */
 function chainsOf(um: UnconstrainedModel, state: NutsRunState): Chains | undefined {
-  const numChains = state.chains.length
   const n = Math.min(...state.chains.map((c) => c.kept.length))
   if (!Number.isFinite(n) || n < 1) return undefined
   const dim = um.dim
-  const draws = new Float64Array(numChains * n * dim)
-  const stats = STATS.map(() => new Float64Array(numChains * n))
-  state.chains.forEach((ch, ci) => {
-    for (let d = 0; d < n; d++) {
-      const row = ch.kept[d] as Float64Array
-      draws.set(row.subarray(STATS.length), (ci * n + d) * dim)
-      STATS.forEach((_, k) => {
-        ;(stats[k] as Float64Array)[ci * n + d] = row[k] ?? Number.NaN
-      })
-    }
-  })
-  const base = chainsFromDraws(fromStorage(draws, [numChains, n, dim], 'float64'), {
+  // One matrix per chain: a row per kept draw, the sampler statistics then the position.
+  const kept = state.chains.map((ch) => stack(ch.kept.slice(0, n).map((r) => asTensor(r))))
+  const draws = stack(kept.map((m) => sliceAxis(m, 1, STATS.length, STATS.length + dim))) as Tensor
+  const stats = STATS.map((_, k) => stack(kept.map((m) => take(m, k, 1))))
+  const base = chainsFromDraws(draws, {
     names: um.logDensity.names,
     stats: Object.fromEntries(
       STATS.flatMap((name, k) =>
-        Number.isNaN((stats[k] as Float64Array)[0] ?? Number.NaN)
-          ? []
-          : [[name, fromStorage(stats[k] as Float64Array, [numChains, n], 'float64')]],
+        Number.isNaN(toFlat(stats[k] as Value)[0] ?? Number.NaN) ? [] : [[name, stats[k] as Tensor]],
       ),
     ),
   })
@@ -323,11 +319,7 @@ export function nutsMethod(
     const total = chains.numChains * chains.numDraws
     if (done && um.enumerated.length > 0 && c.inferDiscrete)
       for (const name of um.enumerated)
-        draws[name] = fromStorage(
-          Float64Array.from(state.discrete[name] ?? []),
-          [total, ...(state.shapes[name] ?? [])],
-          'float64',
-        )
+        draws[name] = reshape(asTensor(state.discrete[name] ?? []), [total, ...(state.shapes[name] ?? [])]) as Tensor
     const diagnostics: Record<string, Json> = {
       partial: !done,
       iterations: state.iteration,
@@ -459,7 +451,7 @@ export function nutsMethod(
       const adaptOptions = { numWarmup: c.numWarmup, dense: c.dense, targetAcceptance: c.targetAcceptance }
       const adaptFor = (start: Float64Array) => windowAdaptationAlgorithm(dim, kernelFor, start, adaptOptions)
       // Stepping and serialising a warm-up state do not depend on the starting position, so one algorithm serves every chain.
-      const shared = adaptFor(new Float64Array(dim))
+      const shared = adaptFor(Float64Array.from(toFlat(zeros([dim]))))
       const kernels = new Map<
         number,
         { readonly tuned: HamiltonianParameters; readonly kernel: MCMCKernel<HMCState> }
@@ -486,12 +478,17 @@ export function nutsMethod(
       const constrainedDraws = (s: NutsRunState): Record<string, Tensor> => {
         const first = s.chains[0]?.kept ?? []
         if (constrainedFor?.rows !== first) {
-          const flat = new Float64Array(c.numChains * c.numDraws * dim)
-          s.chains.forEach((ch, ci) => {
-            ch.kept.forEach((row, d) => {
-              flat.set(row.subarray(STATS.length), (ci * c.numDraws + d) * dim)
-            })
-          })
+          // All the draws are kept when the discrete sites are recovered: a matrix per chain, then the chains one after the other.
+          const flat = Float64Array.from(
+            toFlat(
+              concat(
+                s.chains.map((ch) =>
+                  sliceAxis(stack(ch.kept.map((r) => asTensor(r))), 1, STATS.length, STATS.length + dim),
+                ),
+                0,
+              ),
+            ),
+          )
           constrainedFor = { rows: first, draws: constrainDraws(um, flat) as Record<string, Tensor> }
         }
         return constrainedFor.draws
@@ -520,7 +517,7 @@ export function nutsMethod(
       const startOf = (start: Float64Array, key: Key): NutsChainState => {
         if (c.numWarmup > 0) {
           const warm = adaptFor(start).init(key)
-          const last = new Float64Array(STATS.length).fill(Number.NaN)
+          const last = Float64Array.from(toFlat(full([STATS.length], Number.NaN)))
           last[7] = warm.stepSize
           return { ...emptyChain(), warm, last }
         }
