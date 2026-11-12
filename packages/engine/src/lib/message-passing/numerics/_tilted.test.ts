@@ -1,0 +1,46 @@
+import { describe, expect, it } from 'vitest'
+import { ImproperMessageError } from '../core/errors.ts'
+import { tiltedByQuadrature } from './_tilted.ts'
+import { findWindow } from './_windows.ts'
+
+const spike = (at: number, sd: number) => (x: number) => -0.5 * ((x - at) / sd) ** 2
+
+describe('findWindow', () => {
+  it('narrows onto a spike far narrower than the first window and away from the start', () => {
+    const [a, b] = findWindow((xs) => Float64Array.from(xs, spike(2.5, 1e-3)), -100, 100, 0, 201)
+    expect(a).toBeLessThan(2.5)
+    expect(b).toBeGreaterThan(2.5)
+    expect(b - a).toBeLessThan(0.5)
+  })
+
+  it('widens from the start while the edges still carry mass, within the support', () => {
+    const [a, b] = findWindow((xs) => Float64Array.from(xs, (x) => -0.5 * (x / 30) ** 2), -1000, 1000, 0, 401)
+    expect(a).toBeLessThan(-250)
+    expect(b).toBeGreaterThan(250)
+    expect(a).toBeGreaterThanOrEqual(-1000)
+  })
+})
+
+describe('tiltedByQuadrature with a hint', () => {
+  it('finds a factor of spread 1e-3 inside a cavity of spread 100, as the hint-less integral does not', () => {
+    const cavity = { mean: 0, variance: 1e4 }
+    const logf = spike(37, 1e-3)
+    const t = tiltedByQuadrature(cavity, logf, {})
+    expect(t.mean).toBeCloseTo(37, 6)
+    expect(Math.sqrt(t.variance) / 1e-3).toBeCloseTo(1, 3)
+  })
+
+  it('keeps a window given in the scale of a heavy-tailed factor, and integrates its tails', () => {
+    const logt = (x: number): number => -2 * Math.log1p((x / 0.1) ** 2 / 3)
+    const t = tiltedByQuadrature({ mean: 0, variance: 100 }, logt, { window: { centre: 0, scale: 0.1 }, zoom: false })
+    expect(t.mean).toBeCloseTo(0, 10)
+    // A Student-t of 3 degrees of freedom and scale 0.1 has variance 0.03; the Gaussian cavity of variance 100 does not touch it.
+    expect(t.variance / 0.03).toBeCloseTo(1, 1)
+  })
+
+  it('reports an integrand that peaks at the edge of the cavity as improper without a hint, and integrates it with one', () => {
+    // exp(2 x^2) against N(0, 1): the tilted density is not normalisable, and grows to the edge of the cavity's window.
+    expect(() => tiltedByQuadrature({ mean: 0, variance: 1 }, (x) => 2 * x * x)).toThrow(ImproperMessageError)
+    expect(() => tiltedByQuadrature({ mean: 0, variance: 1 }, (x) => 2 * x * x, {})).not.toThrow()
+  })
+})

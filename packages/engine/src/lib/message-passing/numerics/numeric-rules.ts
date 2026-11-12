@@ -16,6 +16,7 @@ import { toFlat } from '../../tensor/index.ts'
 import { ImproperMessageError, ParameterError } from '../core/errors.ts'
 import type { GaussianBase, TiltedProblem, TiltedRule } from '../core/types.ts'
 import { spd } from './_dense.ts'
+import { shiftedSum } from './_moments.ts'
 import { gaussianGrid, gaussianGridOn, gaussianNodes } from './_quadrature.ts'
 
 const isPoint = (b: GaussianBase): boolean => !(b.variance > 0)
@@ -26,22 +27,15 @@ function weightedMoments(
   logWeights: readonly number[],
   to: number,
 ): { readonly logMass: number; readonly mean: number; readonly variance: number } {
-  let top = Number.NEGATIVE_INFINITY
-  for (const v of logWeights) if (v > top) top = v
+  const { top, weights, total: m0, logTotal } = shiftedSum(logWeights)
   if (!Number.isFinite(top))
     throw new ImproperMessageError('numeric rule: the factor has no mass under the incoming messages')
-  let m0 = 0
   let m1 = 0
-  for (const [i, p] of points.entries()) {
-    const w = Math.exp((logWeights[i] ?? Number.NEGATIVE_INFINITY) - top)
-    m0 += w
-    m1 += w * (p[to] ?? 0)
-  }
+  for (const [i, p] of points.entries()) m1 += (weights[i] as number) * (p[to] ?? 0)
   const mean = m1 / m0
   let m2 = 0
-  for (const [i, p] of points.entries())
-    m2 += Math.exp((logWeights[i] ?? Number.NEGATIVE_INFINITY) - top) * ((p[to] ?? 0) - mean) ** 2
-  return { logMass: top + Math.log(m0), mean, variance: m2 / m0 }
+  for (const [i, p] of points.entries()) m2 += (weights[i] as number) * ((p[to] ?? 0) - mean) ** 2
+  return { logMass: logTotal, mean, variance: m2 / m0 }
 }
 
 /**
@@ -70,9 +64,11 @@ export const quadratureRule: TiltedRule = {
           const v = w * Math.exp(logf(point))
           if (!(v > 0)) return
           mass += v
+          // Moments about the cavity's mean, so that a mass much narrower than its mean is large keeps its spread.
           for (let k = 0; k < n; k++) {
-            m1[k] = (m1[k] ?? 0) + v * (point[k] ?? 0)
-            m2[k] = (m2[k] ?? 0) + v * (point[k] ?? 0) ** 2
+            const dev = (point[k] ?? 0) - (bases[k]?.mean ?? 0)
+            m1[k] = (m1[k] ?? 0) + v * dev
+            m2[k] = (m2[k] ?? 0) + v * dev * dev
           }
           xs.push(point[to] ?? 0)
           ws.push(v)
@@ -98,8 +94,9 @@ export const quadratureRule: TiltedRule = {
     if (pass.mass > 0) {
       const zoomed = bases.map((b, d) => {
         if (isPoint(b)) return grids[d] as { x: Float64Array; w: Float64Array }
-        const mu = (pass.m1[d] ?? 0) / pass.mass
-        const sd = Math.sqrt(Math.max((pass.m2[d] ?? 0) / pass.mass - mu * mu, 0))
+        const shift = (pass.m1[d] ?? 0) / pass.mass
+        const mu = b.mean + shift
+        const sd = Math.sqrt(Math.max((pass.m2[d] ?? 0) / pass.mass - shift * shift, 0))
         const spread = Math.sqrt(b.variance)
         const lo = Math.max(b.mean - 9 * spread, mu - 8 * Math.max(sd, 1e-3 * spread))
         const hi = Math.min(b.mean + 9 * spread, mu + 8 * Math.max(sd, 1e-3 * spread))

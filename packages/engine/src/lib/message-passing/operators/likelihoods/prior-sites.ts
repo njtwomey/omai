@@ -13,7 +13,7 @@ import { gaussian } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, Params } from '../../core/types.ts'
 import { logPhi } from '../../numerics/_scalar.ts'
-import type { WindowHint } from '../../numerics/_tilted.ts'
+import type { TiltHint } from '../../numerics/_tilted.ts'
 import { type Likelihood, likelihoodSite } from './likelihoods.ts'
 
 /** log Phi(b) - log Phi(a) for a < b, accurate in both tails. */
@@ -52,34 +52,24 @@ function valueDensity(p: Params): { readonly g: (x: number) => number; readonly 
   return { g: (x) => c - 0.5 * ((x - loc) / s) ** 2, lo, hi }
 }
 
-/** Where the density lives, as a function of the variable (its own value, or its log). */
-function locate(p: Params): WindowHint {
+/**
+ * What the density says of itself to the integral: the kinks at its finite support (on the value scale or, for a density of the log, the
+ * log of it), and for a half-normal or half-Cauchy of the log (and a normal near zero on the log) that its whole window is kept, as a
+ * zoom onto the mass would cut the variance of the exponential left tail (`e^l`).
+ */
+function locate(p: Params): TiltHint {
   const base = String(p['base'])
   const log = numberParam(p, 'log', 0) === 1
   const { lo, hi } = valueDensity(p)
   const finite = (v: number): number[] => (Number.isFinite(v) ? [log ? Math.log(v) : v] : [])
   const kinks = [...(lo > 0 || !log ? finite(lo) : []), ...finite(hi)]
-  if (base === 'half-normal' || base === 'half-cauchy') {
-    const s = numberParam(p, 'scale')
-    // The left tail of a density of the log is exponential (`e^l`): the whole window is kept, as a zoom onto the mass would cut its variance.
-    return log
-      ? { centre: Math.log(s), scale: 1, reach: 40, kinks, zoom: false }
-      : { centre: 0, scale: s, reach: 400, kinks }
-  }
-  if (base === 'uniform') {
-    if (!log) return { centre: (lo + hi) / 2, scale: (hi - lo) / 2, reach: 1, kinks }
-    const top = Math.log(hi)
-    return lo > 0
-      ? { centre: (Math.log(lo) + top) / 2, scale: (top - Math.log(lo)) / 2, reach: 1, kinks }
-      : { centre: top - 20, scale: 1, reach: 20, kinks, zoom: false }
-  }
+  if (base === 'half-normal' || base === 'half-cauchy') return log ? { kinks, zoom: false } : { kinks }
+  // On the log scale a uniform on (0, hi] has an exponential left tail too.
+  if (base === 'uniform') return log && !(lo > 0) ? { kinks, zoom: false } : { kinks }
   const s = numberParam(p, 'scale')
   const loc = Math.min(Math.max(numberParam(p, 'loc'), lo), hi)
-  if (!log) return { centre: loc, scale: s, reach: 12, kinks }
   // On the log scale a normal near zero (or at most a scale away) looks like a half-normal; one far from zero is narrow in the log.
-  return loc <= s
-    ? { centre: Math.log(Math.min(s, hi)), scale: 1, reach: 40, kinks, zoom: false }
-    : { centre: Math.log(loc), scale: Math.min(1, s / loc), reach: 12, kinks }
+  return log && loc <= s ? { kinks, zoom: false } : { kinks }
 }
 
 /** The one entry of the registry: the base density (parameter `base`), on the value or its log. */

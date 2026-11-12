@@ -23,8 +23,9 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { param } from '../../core/params.ts'
 import { truncatedNormalMoments } from '../../core/truncated.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { centredMoments, resolvedVariance, shiftedSum } from '../../numerics/_moments.ts'
 import { Phi, phi, softplusOf } from '../../numerics/_scalar.ts'
-import { tiltedByQuadrature, type WindowHint } from '../../numerics/_tilted.ts'
+import { type TiltHint, tiltedByQuadrature } from '../../numerics/_tilted.ts'
 import { definedFunctionMessage, quadraturePort } from '../kernel/variational-numeric.ts'
 
 /** A function of the registry: its values, the kinks to split quadrature panels at, and its moments under a Gaussian where it has them in closed form. */
@@ -164,18 +165,20 @@ function reluTilt(m: number, v: number, h: number, J: number): Tilt {
   const above = truncatedNormalMoments(m2, v2, 0, Number.POSITIVE_INFINITY)
   const logA = below.logMass
   const logB = 0.5 * Math.log(v2 / v) + 0.5 * ((m2 * m2) / v2 - (m * m) / v) + above.logMass
-  const top = Math.max(logA, logB)
-  const total = Math.exp(logA - top) + Math.exp(logB - top)
-  const wA = Math.exp(logA - top) / total
+  const { weights, total, logTotal } = shiftedSum([logA, logB])
+  const wA = (weights[0] as number) / total
   const wB = 1 - wA
+  // The two-component mixtures, centred: the mean of the variances plus the squared distances of the means from the mixture's.
   const xMean = wA * below.mean + wB * above.mean
-  const xSecond = wA * (below.variance + below.mean ** 2) + wB * (above.variance + above.mean ** 2)
+  const xVariance =
+    wA * (below.variance + (below.mean - xMean) ** 2) + wB * (above.variance + (above.mean - xMean) ** 2)
+  // y is zero below the origin and x above it.
   const yMean = wB * above.mean
-  const ySecond = wB * (above.variance + above.mean ** 2)
+  const yVariance = wA * yMean * yMean + wB * (above.variance + (above.mean - yMean) ** 2)
   return {
-    logMass: top + Math.log(total),
-    x: { mean: xMean, variance: Math.max(xSecond - xMean * xMean, FLOOR) },
-    y: { mean: yMean, variance: Math.max(ySecond - yMean * yMean, FLOOR) },
+    logMass: logTotal,
+    x: { mean: xMean, variance: resolvedVariance(xVariance, 'apply') },
+    y: { mean: yMean, variance: resolvedVariance(yVariance, 'apply') },
   }
 }
 
@@ -190,10 +193,7 @@ function tilt(fn: UnaryFunction, cavity: { mean: number; variance: number }, y: 
     if (!Number.isFinite(v)) return Number.NEGATIVE_INFINITY
     return power * (h * v - 0.5 * J * v * v)
   }
-  const hint: WindowHint | undefined =
-    fn.kinks === undefined
-      ? undefined
-      : { centre: cavity.mean, scale: Math.sqrt(cavity.variance), reach: 9, kinks: fn.kinks }
+  const hint: TiltHint | undefined = fn.kinks === undefined ? undefined : { kinks: fn.kinks }
   // Where the function is not defined (a square root of a negative value) the weight is zero: its value must not poison the moments.
   const t = tiltedByQuadrature(cavity, logf, hint, (x) => {
     const v = f(x)
@@ -201,8 +201,8 @@ function tilt(fn: UnaryFunction, cavity: { mean: number; variance: number }, y: 
   })
   return {
     logMass: t.logMass,
-    x: { mean: t.mean, variance: Math.max(t.variance, FLOOR) },
-    y: { mean: t.fnMean, variance: Math.max(t.fnVariance, FLOOR) },
+    x: { mean: t.mean, variance: resolvedVariance(t.variance, 'apply') },
+    y: { mean: t.fnMean, variance: resolvedVariance(t.fnVariance, 'apply') },
   }
 }
 
@@ -223,36 +223,33 @@ function tiltGamma(
   const n = port.coords.length
   const values = Float64Array.from(port.coords, fn.f)
   const lw = new Float64Array(n)
-  let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < n; i++) {
     const v = values[i] as number
     lw[i] = Number.isFinite(v)
       ? Math.log(port.weights[i] as number) + power * (h * v - 0.5 * J * v * v)
       : Number.NEGATIVE_INFINITY
-    if ((lw[i] as number) > top) top = lw[i] as number
   }
+  const { top, weights, total: m0 } = shiftedSum(lw)
   if (!Number.isFinite(top)) throw new ImproperMessageError('apply: the factor has no mass against this cavity')
-  let m0 = 0
   let logX = 0
   let xMean = 0
   let yMean = 0
   for (let i = 0; i < n; i++) {
-    const w = Math.exp((lw[i] as number) - top)
+    const w = weights[i] as number
     if (w === 0) continue
-    m0 += w
     logX += w * (port.stats[i]?.[0] ?? 0)
     xMean += w * (port.stats[i]?.[1] ?? 0)
     yMean += w * (values[i] as number)
   }
   let yVar = 0
   for (let i = 0; i < n; i++) {
-    const w = Math.exp((lw[i] as number) - top)
+    const w = weights[i] as number
     if (w > 0) yVar += w * ((values[i] as number) - yMean / m0) ** 2
   }
   return {
     logMass: top + Math.log(m0),
     x: [logX / m0, xMean / m0],
-    y: { mean: yMean / m0, variance: Math.max(yVar / m0, FLOOR) },
+    y: { mean: yMean / m0, variance: resolvedVariance(yVar / m0, 'apply') },
   }
 }
 
@@ -384,12 +381,15 @@ function scaledConditional(
   }
 }
 
+/** The mean and variance of an expectation over the tilted input (what `tiltedByQuadrature` returns for each extra function). */
+type Extra = { readonly mean: number; readonly variance: number }
+
 /** What one integral over `x` gives for `y = z f(x)`: the log mass, the tilted moments of `x` and the expectations that become the moments of `z` and `y`. */
 interface ScaledTilt {
   readonly logMass: number
   readonly x: { readonly mean: number; readonly variance: number; readonly logMean: number }
-  readonly z: { readonly mean: number; readonly second: number }
-  readonly y: { readonly mean: number; readonly second: number }
+  readonly z: { readonly mean: number; readonly variance: number }
+  readonly y: { readonly mean: number; readonly variance: number }
 }
 
 function scaledTilt(fn: UnaryFunction, c: OperatorContext): ScaledTilt {
@@ -408,45 +408,51 @@ function scaledTilt(fn: UnaryFunction, c: OperatorContext): ScaledTilt {
       return conditional === undefined ? 0 : pick(conditional.mean, conditional.variance, u)
     }
   const zMean = expectation((m) => m)
-  const zSecond = expectation((m, v) => v + m * m)
+  const zVariance = expectation((_m, v) => v)
   const yMean = expectation((m, _v, u) => u * m)
-  const ySecond = expectation((m, v, u) => u * u * (v + m * m))
+  const yVariance = expectation((_m, v, u) => u * u * v)
   if (input.family.kind === 'gamma') {
     const port = quadraturePort(input, { points: 481 })
     const n = port.coords.length
     const lw = Float64Array.from(port.coords, (x, i) => Math.log(port.weights[i] as number) + logf(x))
-    let top = Number.NEGATIVE_INFINITY
-    for (const v of lw) if (v > top) top = v
+    const { top, weights, total: m0 } = shiftedSum(lw)
     if (!Number.isFinite(top))
       throw new ImproperMessageError('apply-product: the factor has no mass against these cavities')
-    let m0 = 0
-    const sums = { logX: 0, x: 0, z1: 0, z2: 0, y1: 0, y2: 0 }
+    const sums = { logX: 0, x: 0 }
+    // The conditional mean and variance of z and of y at each node that carries weight.
+    const nodes = { zm: new Float64Array(n), zv: new Float64Array(n), ym: new Float64Array(n), yv: new Float64Array(n) }
     for (let i = 0; i < n; i++) {
-      const w = Math.exp((lw[i] as number) - top)
+      const w = weights[i] as number
       if (w === 0) continue
       const x = port.coords[i] as number
-      m0 += w
       sums.logX += w * (port.stats[i]?.[0] ?? 0)
       sums.x += w * (port.stats[i]?.[1] ?? 0)
-      sums.z1 += w * zMean(x)
-      sums.z2 += w * zSecond(x)
-      sums.y1 += w * yMean(x)
-      sums.y2 += w * ySecond(x)
+      nodes.zm[i] = zMean(x)
+      nodes.zv[i] = zVariance(x)
+      nodes.ym[i] = yMean(x)
+      nodes.yv[i] = yVariance(x)
+    }
+    // The mixture over the nodes: the mean of the conditional variances plus the variance of the conditional means, centred.
+    const mixture = (means: Float64Array, variances: Float64Array): { mean: number; variance: number } => {
+      const m = centredMoments(weights, m0, means)
+      let within = 0
+      for (let i = 0; i < n; i++) within += (weights[i] as number) * (variances[i] as number)
+      return { mean: m.mean, variance: within / m0 + m.variance }
     }
     return {
       logMass: top + Math.log(m0),
       x: { mean: sums.x / m0, variance: Number.NaN, logMean: sums.logX / m0 },
-      z: { mean: sums.z1 / m0, second: sums.z2 / m0 },
-      y: { mean: sums.y1 / m0, second: sums.y2 / m0 },
+      z: mixture(nodes.zm, nodes.zv),
+      y: mixture(nodes.ym, nodes.yv),
     }
   }
-  const t = tiltedByQuadrature(gaussianOf(input), logf, undefined, undefined, [zMean, zSecond, yMean, ySecond])
-  const [z1, z2, y1, y2] = t.extra.map((e) => e.mean) as [number, number, number, number]
+  const t = tiltedByQuadrature(gaussianOf(input), logf, undefined, undefined, [zMean, zVariance, yMean, yVariance])
+  const [zm, zv, ym, yv] = t.extra as [Extra, Extra, Extra, Extra]
   return {
     logMass: t.logMass,
-    x: { mean: t.mean, variance: Math.max(t.variance, FLOOR), logMean: Number.NaN },
-    z: { mean: z1, second: z2 },
-    y: { mean: y1, second: y2 },
+    x: { mean: t.mean, variance: resolvedVariance(t.variance, 'apply-product'), logMean: Number.NaN },
+    z: { mean: zm.mean, variance: zv.mean + zm.variance },
+    y: { mean: ym.mean, variance: yv.mean + ym.variance },
   }
 }
 
@@ -511,7 +517,7 @@ export function applyProduct(
           return input.family.kind === 'gamma' ? { moments: [t.x.logMean, t.x.mean] } : t.x
         }
         const moments = c.to === 1 ? t.z : t.y
-        return { mean: moments.mean, variance: Math.max(moments.second - moments.mean * moments.mean, FLOOR) }
+        return { mean: moments.mean, variance: resolvedVariance(moments.variance, 'apply-product') }
       }),
     },
     evidence: {

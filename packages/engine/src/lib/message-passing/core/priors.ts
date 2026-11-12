@@ -4,6 +4,8 @@
  * think in (a mean and a variance, a shape and a rate). Each returns the factor to put in a graph's `factors`.
  */
 
+import { shiftedSum } from '../numerics/_moments.ts'
+import { findWindow } from '../numerics/_windows.ts'
 import { ParameterError } from './errors.ts'
 import { bernoulliEta, betaEta, gamma, gammaEta, gaussianEta, normalGammaEta } from './families.ts'
 import { discreteEta, gaussianMvEta } from './families-vector.ts'
@@ -170,49 +172,7 @@ export interface ProjectionOptions {
 /** log density values on a grid of points, in the vectorised form the projection evaluates (one call per scan). */
 export type LogDensity = (x: Float64Array) => Float64Array
 
-const SCAN = 801
 const FINE = 6001
-
-/** The window of the line holding the mass of a log density: widened from `start` until the edges are negligible, then narrowed onto a spike. */
-function massWindow(logDensity: LogDensity, lo: number, hi: number, start: number): readonly [number, number] {
-  let a = Math.max(lo, start - 5)
-  let b = Math.min(hi, start + 5)
-  for (let round = 0; round < 40; round++) {
-    const xs = Float64Array.from({ length: SCAN }, (_, i) => a + ((b - a) * i) / (SCAN - 1))
-    const lp = logDensity(xs)
-    let top = Number.NEGATIVE_INFINITY
-    for (const v of lp) if (v > top) top = v
-    if (!Number.isFinite(top)) {
-      // Nothing finite in the window: look wider.
-      const span = b - a
-      a = Math.max(lo, a - 2 * span)
-      b = Math.min(hi, b + 2 * span)
-      continue
-    }
-    const span = b - a
-    let first = 0
-    let last = SCAN - 1
-    while (first < SCAN - 1 && (lp[first] as number) < top - 40) first++
-    while (last > 0 && (lp[last] as number) < top - 40) last--
-    const wide = (first === 0 && a > lo) || (last === SCAN - 1 && b < hi)
-    if (wide) {
-      if (first === 0 && a > lo) a = Math.max(lo, a - 2 * span)
-      if (last === SCAN - 1 && b < hi) b = Math.min(hi, b + 2 * span)
-      continue
-    }
-    const pad = (2 * span) / (SCAN - 1)
-    const na = Math.max(lo, a + (span * first) / (SCAN - 1) - pad)
-    const nb = Math.min(hi, a + (span * last) / (SCAN - 1) + pad)
-    // A window much wider than the mass is narrowed onto it and scanned again (a spike a grid of this size would miss).
-    if (nb - na < 0.5 * span) {
-      a = na
-      b = nb
-      continue
-    }
-    return [a, b]
-  }
-  return [a, b]
-}
 
 /**
  * The mean and variance of a density given by its log (up to a constant) on an interval: a scan finds where the mass is,
@@ -237,16 +197,15 @@ export function densityMoments(
   hi: number = Number.POSITIVE_INFINITY,
   start = 0,
 ): { readonly mean: number; readonly variance: number; readonly meanLog: number } {
-  const [a, b] = massWindow(logDensity, lo, hi, Math.min(Math.max(start, lo), hi))
+  const [a, b] = findWindow(logDensity, lo, hi, Math.min(Math.max(start, lo), hi))
   const xs = Float64Array.from({ length: FINE }, (_, i) => a + ((b - a) * i) / (FINE - 1))
   const lp = logDensity(xs)
-  let top = Number.NEGATIVE_INFINITY
-  for (const v of lp) if (v > top) top = v
+  const { weights } = shiftedSum(lp)
   let z = 0
   let m1 = 0
   let ml = 0
   for (let i = 0; i < FINE; i++) {
-    const w = Math.exp((lp[i] as number) - top) * (i === 0 || i === FINE - 1 ? 0.5 : 1)
+    const w = (weights[i] as number) * (i === 0 || i === FINE - 1 ? 0.5 : 1)
     z += w
     m1 += w * (xs[i] as number)
     ml += w * Math.log(Math.max(xs[i] as number, Number.MIN_VALUE))
@@ -254,7 +213,7 @@ export function densityMoments(
   const mean = m1 / z
   let m2 = 0
   for (let i = 0; i < FINE; i++)
-    m2 += Math.exp((lp[i] as number) - top) * (i === 0 || i === FINE - 1 ? 0.5 : 1) * ((xs[i] as number) - mean) ** 2
+    m2 += (weights[i] as number) * (i === 0 || i === FINE - 1 ? 0.5 : 1) * ((xs[i] as number) - mean) ** 2
   return { mean, variance: m2 / z, meanLog: ml / z }
 }
 

@@ -18,8 +18,9 @@ import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { axisOf, integratePair } from '../../numerics/_grid.ts'
+import { centredMoments } from '../../numerics/_moments.ts'
 import { digammaOf, lgammaOf } from '../../numerics/_scalar.ts'
-import { gammaLogWindow, gaussianWindow, uniformGrid, type Window, windowProfiles } from '../../numerics/_windows.ts'
+import { gammaLogWindow, gaussianWindow, tiltGrid, type Window, windowProfiles } from '../../numerics/_windows.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 const POINTS = 241
@@ -81,9 +82,9 @@ function dirichletLog(
 
 interface Tilt {
   readonly logZ: number
-  /** The tilted moments of the log concentration `t`: its mean and second moment, and the mean concentration `E e^t`. */
+  /** The tilted moments of the log concentration `t`: its mean and variance, and the mean concentration `E e^t`. */
   readonly t: number
-  readonly t2: number
+  readonly tVariance: number
   readonly alpha: number
   /** `E log p_k` under the mixture of conditional Dirichlets. */
   readonly logMeans: readonly number[]
@@ -102,21 +103,22 @@ function tilt(c: OperatorContext): Tilt {
   let logCavity: (t: number) => number
   if (logMode) {
     const g = gaussianOf(arg(c, 1))
-    window = gaussianWindow(g.mean, g.variance, windowProfiles.concentration)
+    window = gaussianWindow(g.mean, g.variance, windowProfiles.logTilt)
     logCavity = (t) => (-0.5 * (t - g.mean) ** 2) / g.variance + (g.mean * g.mean) / (2 * g.variance)
   } else {
     const { shape, rate } = gammaShapeRate(cav)
     if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
       throw new ImproperMessageError('dirichlet-concentration: the cavity of the concentration has no density')
-    window = gammaLogWindow(shape, rate, windowProfiles.concentration)
+    window = gammaLogWindow(shape, rate, windowProfiles.logTilt)
     logCavity = (t) => shape * t - rate * Math.exp(t)
   }
-  const { lo } = window
-  const { step } = uniformGrid(window, POINTS)
-  const logw = new Float64Array(POINTS)
-  let top = Number.NEGATIVE_INFINITY
-  for (let i = 0; i < POINTS; i++) {
-    const t = lo + i * step
+  const {
+    t: ts,
+    step,
+    top,
+    weights,
+    total: z,
+  } = tiltGrid(window, POINTS, (t) => {
     const a = Math.exp(t)
     let total = 0
     let totalPosterior = 0
@@ -128,22 +130,15 @@ function tilt(c: OperatorContext): Tilt {
       totalPosterior += post
       sumLog += lgammaOf(post) - lgammaOf(kappa)
     }
-    const lw = logCavity(t) + lgammaOf(total) + sumLog - lgammaOf(totalPosterior)
-    logw[i] = lw
-    if (lw > top) top = lw
-  }
-  let z = 0
-  let m1 = 0
-  let m2 = 0
+    return logCavity(t) + lgammaOf(total) + sumLog - lgammaOf(totalPosterior)
+  })
+  const tMoments = centredMoments(weights, z, ts)
   let ea = 0
   const logMeans = new Array<number>(K).fill(0)
   for (let i = 0; i < POINTS; i++) {
-    const t = lo + i * step
+    const t = ts[i] as number
     const a = Math.exp(t)
-    const weight = Math.exp((logw[i] as number) - top)
-    z += weight
-    m1 += weight * t
-    m2 += weight * t * t
+    const weight = weights[i] as number
     ea += weight * a
     let totalPosterior = 0
     for (let k = 0; k < K; k++) totalPosterior += (w[k] as number) * a + (o[k] as number) + (eta[k] as number)
@@ -155,8 +150,8 @@ function tilt(c: OperatorContext): Tilt {
   }
   return {
     logZ: top + Math.log(z * step),
-    t: m1 / z,
-    t2: m2 / z,
+    t: tMoments.mean,
+    tVariance: tMoments.variance,
     alpha: ea / z,
     logMeans: logMeans.map((v) => v / z),
   }
@@ -200,7 +195,7 @@ export const dirichletConcentration: FactorOperator = defineOperator({
     ep: siteRule((c) => {
       const t = tilt(c)
       if (c.to === 0) return { moments: t.logMeans }
-      if (c.params['log'] === true) return { mean: t.t, variance: t.t2 - t.t * t.t }
+      if (c.params['log'] === true) return { mean: t.t, variance: t.tVariance }
       return { moments: [t.t, t.alpha] }
     }),
     // The mean field: to the probabilities the Dirichlet with the mean concentration (exact), to the concentration the natural

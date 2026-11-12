@@ -13,6 +13,7 @@ import { bernoulli } from '../../core/families.ts'
 import { type ParamSpec, param } from '../../core/params.ts'
 import { truncatedNormalMoments } from '../../core/truncated.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
+import { resolvedVariance, shiftedSum } from '../../numerics/_moments.ts'
 import { tiltedLogGrid } from '../../numerics/_quadrature.ts'
 import { logPhi, millsRatio, Phi, phi } from '../../numerics/_scalar.ts'
 
@@ -45,9 +46,7 @@ function regionMoments(
     .filter((r) => r.weight > 0 && r.lower < r.upper)
     .map((r) => ({ t: truncatedNormalMoments(mean, variance, r.lower, r.upper), log: Math.log(r.weight) }))
     .map((p) => ({ ...p, logMass: p.t.logMass + p.log }))
-  const top = Math.max(...parts.map((p) => p.logMass))
-  const weights = parts.map((p) => Math.exp(p.logMass - top))
-  const total = weights.reduce((a, b) => a + b, 0)
+  const { weights, total, logTotal } = shiftedSum(parts.map((p) => p.logMass))
   let m1 = 0
   let m2 = 0
   for (const [i, p] of parts.entries()) {
@@ -55,7 +54,7 @@ function regionMoments(
     m1 += w * p.t.mean
     m2 += w * (p.t.variance + p.t.mean ** 2)
   }
-  return { logMass: top + Math.log(total), mean: m1, variance: Math.max(m2 - m1 * m1, 1e-300) }
+  return { logMass: logTotal, mean: m1, variance: resolvedVariance(m2 - m1 * m1, 'step') }
 }
 
 /** The weight of true outcomes inside a set of regions and of false ones outside: the step factor's weights. */

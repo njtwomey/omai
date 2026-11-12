@@ -18,6 +18,7 @@ import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
 import { choleskyInPlace } from '../../numerics/_bartlett.ts'
+import { shiftedSum } from '../../numerics/_moments.ts'
 import { gaussianNodes } from '../../numerics/_quadrature.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
@@ -131,7 +132,6 @@ function integrate(c: OperatorContext): Tilt {
     const xs = new Float64Array(total * r)
     const t = new Array<number>(r).fill(0)
     const x = new Array<number>(r).fill(0)
-    let top = Number.NEGATIVE_INFINITY
     for (let idx = 0; idx < total; idx++) {
       let rest = idx
       let lw = 0
@@ -155,22 +155,19 @@ function integrate(c: OperatorContext): Tilt {
       const lq = -0.5 * (r * Math.log(2 * Math.PI) + logDet + tt)
       const v = lw + c.power * logf(z, y) + logCav(x) - lq
       logw[idx] = v
-      if (v > top) top = v
     }
+    const { top, weights, total: sum } = shiftedSum(logw)
     if (!Number.isFinite(top))
       throw new ImproperMessageError('multiclass-site: the factor has no mass under the cavities')
-    let sum = 0
     const m = new Array<number>(r).fill(0)
     for (let idx = 0; idx < total; idx++) {
-      const w = Math.exp((logw[idx] as number) - top)
-      logw[idx] = w
-      sum += w
+      const w = weights[idx] as number
       for (let i = 0; i < r; i++) m[i] = (m[i] as number) + w * (xs[idx * r + i] as number)
     }
     for (let i = 0; i < r; i++) m[i] = (m[i] as number) / sum
     const v = new Array<number>(r * r).fill(0)
     for (let idx = 0; idx < total; idx++) {
-      const w = logw[idx] as number
+      const w = weights[idx] as number
       for (let i = 0; i < r; i++) {
         const di = (xs[idx * r + i] as number) - (m[i] as number)
         for (let k = 0; k <= i; k++)

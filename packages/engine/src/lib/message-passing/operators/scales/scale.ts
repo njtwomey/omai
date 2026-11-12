@@ -17,9 +17,10 @@ import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { spd } from '../../numerics/_dense.ts'
+import { centredMoments, shiftedSum } from '../../numerics/_moments.ts'
 import { gammaLogWindow, windowProfiles } from '../../numerics/_windows.ts'
 
-const COARSE_POINTS = 81
+const COARSE_POINTS = 109
 const FINE_POINTS = 121
 
 /** The scales and offsets of the precisions `s_j lambda + o_j`, checked. */
@@ -96,43 +97,47 @@ export interface VectorScaleTilt {
   readonly sdLogLambda: number
   /** `E exp(t)` (for a gamma multiplier, its mean). */
   readonly lambda: number
+  /** The mean of the vector. */
   readonly mean: Float64Array
-  readonly second: Float64Array
+  /** The covariance of the vector under the mixture of conditionals: the mean of their covariances plus the covariance of their means. */
+  readonly covariance: Float64Array
 }
 
 /** The weighted moments of the grid: the log mass, E[t], sd of t, E[exp t] and (when the nodes carry them) the mean and covariance of the vector. */
 function summarise(nodes: readonly Node[], step: number, d: number): VectorScaleTilt {
-  let top = Number.NEGATIVE_INFINITY
-  for (const n of nodes) if (n.logWeight > top) top = n.logWeight
-  let z = 0
-  let eLog = 0
+  const { top, weights, total: z } = shiftedSum(nodes.map((n) => n.logWeight))
+  const ts = nodes.map((n) => n.t)
+  const { mean: mt, variance: varLog } = centredMoments(weights, z, ts)
   let eLam = 0
-  let eLog2 = 0
+  for (const [k, n] of nodes.entries()) eLam += (weights[k] as number) * Math.exp(n.t)
   const mean = new Float64Array(d)
-  const second = new Float64Array(d * d)
-  for (const n of nodes) {
-    const w = Math.exp(n.logWeight - top)
-    z += w
-    eLog += w * n.t
-    eLog2 += w * n.t * n.t
-    eLam += w * Math.exp(n.t)
-    if (n.mean !== undefined && n.cov !== undefined) {
-      for (let i = 0; i < d; i++) {
-        mean[i] = (mean[i] ?? 0) + w * (n.mean[i] ?? 0)
+  const covariance = new Float64Array(d * d)
+  const carriers = nodes.flatMap((n, k) =>
+    n.mean !== undefined && n.cov !== undefined ? [{ n, w: weights[k] as number }] : [],
+  )
+  if (carriers.length > 0) {
+    for (const { n, w } of carriers)
+      for (let i = 0; i < d; i++) mean[i] = (mean[i] ?? 0) + w * ((n.mean as Float64Array)[i] ?? 0)
+    for (let i = 0; i < d; i++) mean[i] = (mean[i] ?? 0) / z
+    // The mean of the conditional covariances plus the covariance of the conditional means about their mean, both centred.
+    for (const { n, w } of carriers) {
+      const m = n.mean as Float64Array
+      const cov = n.cov as Float64Array
+      for (let i = 0; i < d; i++)
         for (let k = 0; k < d; k++)
-          second[i * d + k] =
-            (second[i * d + k] ?? 0) + w * ((n.cov[i * d + k] ?? 0) + (n.mean[i] ?? 0) * (n.mean[k] ?? 0))
-      }
+          covariance[i * d + k] =
+            (covariance[i * d + k] ?? 0) +
+            w * ((cov[i * d + k] ?? 0) + ((m[i] ?? 0) - (mean[i] ?? 0)) * ((m[k] ?? 0) - (mean[k] ?? 0)))
     }
+    for (let e = 0; e < d * d; e++) covariance[e] = (covariance[e] ?? 0) / z
   }
-  const mt = eLog / z
   return {
     logZ: top + Math.log(z * step),
     logLambda: mt,
-    sdLogLambda: Math.sqrt(Math.max(eLog2 / z - mt * mt, 0)),
+    sdLogLambda: Math.sqrt(varLog),
     lambda: eLam / z,
-    mean: Float64Array.from(mean, (v) => v / z),
-    second: Float64Array.from(second, (v) => v / z),
+    mean,
+    covariance,
   }
 }
 
@@ -199,7 +204,7 @@ function scaleTilt(c: OperatorContext): VectorScaleTilt & { readonly d: number }
   const { shape, rate } = gammaShapeRate(etaOf(arg(c, 1)))
   if (!(shape > 0 && rate > 0 && Number.isFinite(shape) && Number.isFinite(rate)))
     throw new ImproperMessageError('a gamma message has no density (its shape and rate are not positive)')
-  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.vectorScale)
+  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.logTilt)
   return vectorScaleTilt(h, jmat, {
     precisions: (t) => {
       const lam = Math.exp(t)
@@ -214,9 +219,7 @@ function scaleTilt(c: OperatorContext): VectorScaleTilt & { readonly d: number }
 /** The natural parameters of the dense Gaussian with the mean and covariance of a tilted mixture (`vectorScaleTilt`). */
 export function tiltedVectorOf(t: VectorScaleTilt & { readonly d: number }, what: string): Eta {
   const d = t.d
-  const cov = Float64Array.from(t.second)
-  for (let i = 0; i < d; i++)
-    for (let k = 0; k < d; k++) cov[i * d + k] = (cov[i * d + k] ?? 0) - (t.mean[i] ?? 0) * (t.mean[k] ?? 0)
+  const cov = Float64Array.from(t.covariance)
   const factor = spd(cov, d)
   if (factor === undefined) throw new ImproperMessageError(`${what}: the tilted covariance is not positive definite`)
   const jNew = factor.inverse()

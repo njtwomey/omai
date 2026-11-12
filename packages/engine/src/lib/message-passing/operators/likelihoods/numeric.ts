@@ -19,8 +19,32 @@ import type {
   TiltedMoments,
   TiltedRule,
 } from '../../core/types.ts'
+import { gaussianAxis, integratePair, pointAxis } from '../../numerics/_grid.ts'
 import { quadratureRule } from '../../numerics/numeric-rules.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
+
+const isPoint = (b: GaussianBase): boolean => !(b.variance > 0)
+
+/** The rule that integrates a factor of two variables, given by its column form, on the panelled grid of `integratePair` (the power raises the factor). */
+function pairGridRule(column: (x1: number) => (x0: number) => number, power: number): TiltedRule {
+  const axis = (b: GaussianBase) => (isPoint(b) ? pointAxis(b.mean) : gaussianAxis(b.mean, b.variance))
+  return {
+    name: 'pair-grid',
+    moments: ({ bases, to }) => {
+      const [b0, b1] = bases as readonly [GaussianBase, GaussianBase]
+      const r = integratePair(
+        [axis(b0), axis(b1)],
+        power === 1
+          ? column
+          : (x1) => {
+              const f = column(x1)
+              return (x0) => power * f(x0)
+            },
+      )
+      return { logMass: r.logMass, mean: r.mean[to] as number, variance: r.variance[to] as number }
+    },
+  }
+}
 
 /** What {@link numericOperator} builds the operator from. */
 export interface NumericOperatorOptions {
@@ -32,6 +56,13 @@ export interface NumericOperatorOptions {
   readonly logDensity: (x: readonly number[], params: Params) => number
   /** The rule that integrates the factor against the cavities (default: the panelled quadrature); a run's `Projection.numeric` overrides it. */
   readonly rule?: TiltedRule
+  /**
+   * For a factor over two variables (`arity` 2): the same log density as a function of the second coordinate that returns a function of
+   * the first, so what depends on the second alone (a gamma function of a shape) is computed once per node of it, not once per point.
+   * With it the default rule is the panelled grid of `likelihood-pair` (`integratePair`, split and zoomed onto the mass) instead of the
+   * panelled product rule; a rule given by `rule` or by the run's `Projection.numeric` still takes precedence.
+   */
+  readonly column?: (params: Params) => (x1: number) => (x0: number) => number
   /** The parameters `logDensity` reads (checked at compile: see `FactorOperator.params`); absent: not checked. */
   readonly params?: ParamSpecOf
 }
@@ -65,7 +96,10 @@ export function numericOperator(options: NumericOperatorOptions): FactorOperator
     const bases = c.args.map(
       (a: Arg): GaussianBase => (a.value === undefined ? gaussianOf(a) : { mean: scalarOf(a), variance: 0 }),
     )
-    const rule = c.rule ?? options.rule ?? quadratureRule
+    const rule =
+      c.rule ??
+      options.rule ??
+      (options.column === undefined ? quadratureRule : pairGridRule(options.column(c.params), c.power))
     let t: ReturnType<TiltedRule['moments']>
     try {
       t = rule.moments({ bases, to: c.to, logf: (x) => c.power * options.logDensity(x, c.params) })

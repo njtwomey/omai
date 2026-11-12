@@ -2,6 +2,7 @@
 // of a Gaussian times a function, what the numeric operators (a logistic link, a product, a user's density) integrate.
 import { gaussHermite, gaussLegendre } from '../../numerics/quadrature/index.ts'
 import { toFlat } from '../../tensor/index.ts'
+import { shiftedSum } from './_moments.ts'
 
 const rules = new Map<number, { readonly x: Float64Array; readonly w: Float64Array }>()
 
@@ -185,17 +186,11 @@ export function tiltedLogGrid(
 ): { readonly logMass: number; readonly mean: number; readonly variance: number } {
   const { x, w } = gaussianGrid(mean, variance)
   const lw = Float64Array.from(x, (xi, i) => Math.log(w[i] ?? 0) + logg(xi))
-  let top = Number.NEGATIVE_INFINITY
-  for (const v of lw) if (v > top) top = v
-  let m0 = 0
+  const { weights, total: m0, logTotal } = shiftedSum(lw)
   let m1 = 0
-  for (let i = 0; i < x.length; i++) {
-    const v = Math.exp((lw[i] ?? 0) - top)
-    m0 += v
-    m1 += v * (x[i] ?? 0)
-  }
+  for (let i = 0; i < x.length; i++) m1 += (weights[i] as number) * (x[i] ?? 0)
   const mu = m1 / m0
   let m2 = 0
-  for (let i = 0; i < x.length; i++) m2 += Math.exp((lw[i] ?? 0) - top) * ((x[i] ?? 0) - mu) ** 2
-  return { logMass: top + Math.log(m0), mean: mu, variance: m2 / m0 }
+  for (let i = 0; i < x.length; i++) m2 += (weights[i] as number) * ((x[i] ?? 0) - mu) ** 2
+  return { logMass: logTotal, mean: mu, variance: m2 / m0 }
 }

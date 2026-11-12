@@ -33,6 +33,7 @@ import type {
 } from '../../core/types.ts'
 import { portsOf } from '../../core/types.ts'
 import { ruleMessage } from '../../engine/dispatch.ts'
+import { shiftedSum } from '../../numerics/_moments.ts'
 import type { OperatorName } from '../names.ts'
 
 /**
@@ -251,10 +252,8 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
         }
         const pz = stateProbabilities(z, k)
         const lw = evidence.map((v, i) => Math.log(pz[i] ?? 0) + v)
-        const top = Math.max(...lw)
+        const { top, weights: w, total: norm } = shiftedSum(lw)
         if (!(top > Number.NEGATIVE_INFINITY)) throw new ImproperMessageError('gate: no branch has evidence')
-        const w = lw.map((v) => Math.exp(v - top))
-        const norm = w.reduce((a, b) => a + b, 0)
         const variable = c.to - 1
         const target = arg(c, c.to)
         const family = target.family

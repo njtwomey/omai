@@ -23,6 +23,7 @@ import type {
   Params,
   Port,
 } from '../../core/types.ts'
+import { shiftedSum } from '../../numerics/_moments.ts'
 
 const statesOf = (params: Params): readonly number[] => vectorParam(params, 'states')
 
@@ -94,7 +95,9 @@ function expectedTable(c: OperatorContext, to: number | undefined): number[] {
 
 function stateProbabilitiesOf(a: Arg, k: number): number[] {
   if (a.value !== undefined) return Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(a)) ? 1 : 0))
-  return logProbabilities(a, k).map((v, _, all) => Math.exp(v - logSumExpOf(all)))
+  const logs = logProbabilities(a, k)
+  const lse = logSumExpOf(logs)
+  return logs.map((v) => Math.exp(v - lse))
 }
 
 function tablePorts(params: Params): readonly Port[] {
@@ -274,11 +277,9 @@ export const select: FactorOperator = defineOperator({
           }
         }
         const lw = overlap.map((v, i) => v + Math.log(weights[i] ?? 0))
-        const top = Math.max(...lw)
+        const { top, weights: w, total: norm } = shiftedSum(lw)
         if (!(top > Number.NEGATIVE_INFINITY))
           throw new ImproperMessageError('select: no component overlaps the output')
-        const w = lw.map((v) => Math.exp(v - top))
-        const norm = w.reduce((a, b) => a + b, 0)
         const mixed = new Array<number>(f.size).fill(0)
         for (const [i, e] of joint.entries()) {
           if ((w[i] ?? 0) === 0) continue
@@ -296,9 +297,9 @@ export const select: FactorOperator = defineOperator({
         .filter((j) => j !== kk && (weights[j] ?? 0) > 0)
         .map((j) => Math.log(weights[j] ?? 0) + f.logPartition(total(y, component(j))) - f.logPartition(component(j)))
       const logM2 = f.logPartition(own) + (others.length === 0 ? Number.NEGATIVE_INFINITY : logSumExpOf(others))
-      const top = Math.max(logM1, logM2)
-      const w1 = Math.exp(logM1 - top)
-      const w2 = Math.exp(logM2 - top)
+      const { weights: pair } = shiftedSum([logM1, logM2])
+      const w1 = pair[0] as number
+      const w2 = pair[1] as number
       const m1 = f.isProper(withY) && w1 > 0 ? f.moments(withY) : new Array<number>(f.size).fill(0)
       const m2 = w2 > 0 ? f.moments(own) : new Array<number>(f.size).fill(0)
       const mixed = m1.map((v, i) => (w1 * v + w2 * (m2[i] ?? 0)) / (w1 + w2))

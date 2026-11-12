@@ -9,6 +9,7 @@
 
 import { ImproperMessageError, ParameterError } from '../core/errors.ts'
 import type { Arg } from '../core/types.ts'
+import { centredMoments, shiftedSum } from './_moments.ts'
 import { legendreRule } from './_quadrature.ts'
 import { lgammaOf, softplusOf } from './_scalar.ts'
 import { betaLogitWindow, gammaLogWindow, windowProfiles } from './_windows.ts'
@@ -195,9 +196,8 @@ function integrateGrid(
     const logw0 = (grids[0] as { logw: number[] }).logw
     const slowest = profile.layout === 'first-slowest'
     const at = (a: number, b: number, c: number): number => (slowest ? a * n1 + b : a + n0 * (b + n1 * c))
-    const lw = new Float64Array(n0 * n1 * n2)
+    const logw = new Float64Array(n0 * n1 * n2)
     const rest = new Array<number>(k - 1)
-    let top = Number.NEGATIVE_INFINITY
     for (let c = 0; c < n2; c++)
       for (let b = 0; b < n1; b++) {
         if (k > 1) rest[0] = (grids[1] as { x: number[] }).x[b] as number
@@ -205,21 +205,13 @@ function integrateGrid(
         const f = integrand(rest)
         const lw1 = k > 1 ? ((grids[1] as { logw: number[] }).logw[b] as number) : 0
         const lw2 = k > 2 ? ((grids[2] as { logw: number[] }).logw[c] as number) : 0
-        for (let a = 0; a < n0; a++) {
-          const v = (logw0[a] as number) + lw1 + lw2 + f(first[a] as number)
-          lw[at(a, b, c)] = v
-          if (v > top) top = v
-        }
+        for (let a = 0; a < n0; a++) logw[at(a, b, c)] = (logw0[a] as number) + lw1 + lw2 + f(first[a] as number)
       }
+    // The weights in storage order, shifted by the largest log weight.
+    const { top, weights: lw, total, logTotal } = shiftedSum(logw)
     if (!Number.isFinite(top))
       throw new ImproperMessageError('numeric rule: the factor has no mass under the incoming messages')
-    let total = 0
-    for (let i = 0; i < lw.length; i++) {
-      const e = Math.exp((lw[i] as number) - top)
-      lw[i] = e
-      total += e
-    }
-    // The weights in storage order: normalise them, and add each to the marginal of every axis it lies on.
+    // Normalise the weights, and add each to the marginal of every axis it lies on.
     const marginals = sizes.map((n) => new Float64Array(n))
     const m0 = marginals[0] as Float64Array
     const m1 = marginals[1]
@@ -237,7 +229,7 @@ function integrateGrid(
     } else {
       for (let c = 0; c < n2; c++) for (let b = 0; b < n1; b++) for (let a = 0; a < n0; a++) visit(a, b, c)
     }
-    result = { logMass: top + Math.log(total), nodes: grids.map((g) => Float64Array.from(g.x)), weights: lw, marginals }
+    result = { logMass: logTotal, nodes: grids.map((g) => Float64Array.from(g.x)), weights: lw, marginals }
     // Zoom onto the mass: the range of nodes where the marginal weight is not negligible, a node wider on each side, inside the cavity's window.
     let shrunk = false
     const next = axes.map((a, i): [number, number] => {
@@ -324,28 +316,19 @@ export function integratePair(
   column: (x1: number) => (x0: number) => number,
 ): GridResult {
   const r = integrateGrid(axes, (rest) => column(rest[0] as number), gridProfiles.pair)
-  const m = [0, 0]
-  const m2 = [0, 0]
-  const me = [0, 0]
-  for (let k = 0; k < 2; k++) {
+  const stats = [0, 1].map((k) => {
     const xs = r.nodes[k] as Float64Array
     const pk = r.marginals[k] as Float64Array
-    for (let i = 0; i < xs.length; i++) {
-      const x = xs[i] as number
-      const w = pk[i] as number
-      m[k] = (m[k] as number) + w * x
-      m2[k] = (m2[k] as number) + w * x * x
-      me[k] = (me[k] as number) + w * Math.exp(x)
-    }
-  }
+    let meanExp = 0
+    for (let i = 0; i < xs.length; i++) meanExp += (pk[i] as number) * Math.exp(xs[i] as number)
+    // The marginals are normalised: the mean is their weighted sum, the variance the weighted squares of the deviations from it.
+    return { ...centredMoments(pk, 1, xs), meanExp }
+  }) as [{ mean: number; variance: number; meanExp: number }, { mean: number; variance: number; meanExp: number }]
   return {
     logMass: r.logMass,
-    mean: [m[0] as number, m[1] as number],
-    variance: [
-      Math.max((m2[0] as number) - (m[0] as number) ** 2, 0),
-      Math.max((m2[1] as number) - (m[1] as number) ** 2, 0),
-    ],
-    meanExp: [me[0] as number, me[1] as number],
+    mean: [stats[0].mean, stats[1].mean],
+    variance: [stats[0].variance, stats[1].variance],
+    meanExp: [stats[0].meanExp, stats[1].meanExp],
     nodes: [r.nodes[0] as Float64Array, r.nodes[1] as Float64Array],
     weights: r.weights,
   }
@@ -373,14 +356,14 @@ export function pointAxis(x: number): GridAxis {
  * `value^shape exp(-rate value)` over the gamma normaliser, the Jacobian included.
  */
 export function gammaAxis(shape: number, rate: number, kinks: readonly number[] = []): GridAxis {
-  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.pairGrid)
+  const { lo, hi } = gammaLogWindow(shape, rate, windowProfiles.gridGamma)
   const logNorm = lgammaOf(shape) - shape * Math.log(rate)
   return { point: false, lo, hi, kinks, logWeight: (t) => shape * t - rate * Math.exp(t) - logNorm }
 }
 
 /** The axis of a beta cavity `Beta(a, b)` in the coordinate `s = logit(u)`: the density of `s` is `u^a (1 - u)^b` over the beta function. */
 export function betaAxis(a: number, b: number): GridAxis {
-  const { lo, hi } = betaLogitWindow(a, b, windowProfiles.betaGrid)
+  const { lo, hi } = betaLogitWindow(a, b, windowProfiles.gridBeta)
   const logNorm = lgammaOf(a) + lgammaOf(b) - lgammaOf(a + b)
   return {
     point: false,

@@ -9,6 +9,7 @@
  */
 
 import { type Json, LOG_2PI } from '../../base/index.ts'
+import { shiftedSum } from '../numerics/_moments.ts'
 import { digammaOf, lgammaOf, trigammaOf } from '../numerics/_scalar.ts'
 import { ImproperMessageError } from './errors.ts'
 import type { Eta, Family, FamilyKind, FamilySpec, Quotient } from './types.ts'
@@ -256,10 +257,8 @@ export function betaEta(a: number, b: number): Eta {
  */
 export function dirichletShapesFromLogMeans(logMeans: readonly number[]): number[] {
   const k = logMeans.length
-  const top = Math.max(...logMeans)
-  const p = logMeans.map((l) => Math.exp(l - top))
-  const norm = p.reduce((a, b) => a + b, 0)
-  const mean = p.map((v) => v / norm)
+  const { weights: p, total: norm } = shiftedSum(logMeans)
+  const mean = Array.from(p, (v) => v / norm)
   const spread = mean.reduce((acc, m, i) => acc + m * ((logMeans[i] ?? 0) - Math.log(m)), 0)
   const scale = Math.max((k - 1) / Math.max(-spread, 1e-12), 1e-3)
   let alpha = mean.map((m) => Math.max(m * scale, 1e-3))

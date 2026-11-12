@@ -16,8 +16,9 @@ import { gaussianMessage, gaussianOf, scalarOf } from '../../core/args.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gammaShapeRate } from '../../core/families.ts'
 import type { Arg, Eta } from '../../core/types.ts'
+import { resolvedVariance, shiftedSum } from '../../numerics/_moments.ts'
 import { gaussianGridOn, gaussianNodes } from '../../numerics/_quadrature.ts'
-import { betaModeWindow, gammaModeWindow, shiftedWeights, uniformNodes } from '../../numerics/_windows.ts'
+import { betaModeWindow, gammaModeWindow, uniformNodes } from '../../numerics/_windows.ts'
 
 /** The quadrature of one port under its belief: the nodes (the coordinate the log density reads), their weights and the statistics. */
 export interface QuadPort {
@@ -48,9 +49,7 @@ function gridWeights(
   logDensity: (t: number) => number,
 ): { t: Float64Array; w: Float64Array } {
   const t = uniformNodes(window, points)
-  const { weights: w } = shiftedWeights(Float64Array.from(t, logDensity))
-  let total = 0
-  for (let i = 0; i < points; i++) total += w[i] as number
+  const { weights: w, total } = shiftedSum(Float64Array.from(t, logDensity))
   for (let i = 0; i < points; i++) w[i] = (w[i] as number) / total
   return { t, w }
 }
@@ -314,8 +313,8 @@ export function definedFunctionMessage(args: readonly Arg[], to: number, f: (x: 
   if (to === 0) {
     const coords = new Array<number>(inputs.length).fill(0)
     const mean = average(ports, -1, coords, f)
-    const second = average(ports, -1, coords, (x) => f(x) ** 2)
-    return gaussianMessage(mean, Math.max(second - mean * mean, 1e-300))
+    const variance = average(ports, -1, coords, (x) => (f(x) - mean) ** 2)
+    return gaussianMessage(mean, resolvedVariance(variance, 'a deterministic factor'))
   }
   const out = (args[0] as Arg).eta
   if (out === undefined)
