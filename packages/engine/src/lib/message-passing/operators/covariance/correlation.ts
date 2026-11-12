@@ -7,17 +7,24 @@
  * coordinates (`_grid.ts`: the log of each precision, the logit of `u`), and the Gaussians to the mixture of their conditionals over
  * it. A known precision or correlation is a single node of its axis, so a Gaussian with known standard deviations and an unknown
  * correlation is a one-dimensional integral.
+ *
+ * The beta is matched to the tilted mean and variance of `u` by default (`match: 'moments'`), not to `E log u` and `E log (1 - u)` (the KL
+ * projection, `match: 'log-moments'`): a strong correlation from few pairs piles against its bound with a long tail toward the interior,
+ * which the log moments weigh by the ratio to the bound and not by the distance, so the beta that matches them came out 0.45 to 0.95 of the
+ * exact spread (at rho 0.99 from five pairs about half). With a single factor on the correlation (a plated likelihood and its beta prior)
+ * the cavity is the prior itself, the tilted distribution is the exact posterior, and the belief has its mean and spread exactly.
  */
 
 import { arg } from '../../core/_messages.ts'
 import { siteMessage } from '../../core/args.ts'
 import { defineOperator, messageRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
-import { beta, gamma } from '../../core/families.ts'
+import { beta, betaEta, gamma } from '../../core/families.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { betaAxis, type GridAxis, gammaAxis, integrateAxes, pointAxis } from '../../numerics/_grid.ts'
+import { centredMoments } from '../../numerics/_moments.ts'
 import { softplusOf } from '../../numerics/_scalar.ts'
 import { evaluatorOf, gaussianSide, type Rows, rowsOf } from './_sides.ts'
 
@@ -45,6 +52,17 @@ function axisOfPort(a: Arg, kind: 'precision' | 'correlation'): GridAxis {
   if (!(p > 0 && q > 0 && Number.isFinite(p) && Number.isFinite(q)))
     throw new ImproperMessageError('a beta message has no density')
   return betaAxis(p, q)
+}
+
+/**
+ * The shape and scale `(a, b)` of the beta whose mean and variance are those of `u = 1 / (1 + e^-s)` under weights on a grid of the
+ * logit `s` (`k = m (1 - m) / v - 1`, `a = m k`, `b = (1 - m) k`), or `undefined` when the tilted spread leaves no beta (a point mass).
+ */
+function betaByMoments(nodes: Float64Array, weights: Float64Array): readonly [number, number] | undefined {
+  const u = Float64Array.from(nodes, (s) => Math.exp(-softplusOf(-s)))
+  const { mean, variance } = centredMoments(weights, 1, u)
+  const k = (mean * (1 - mean)) / variance - 1
+  return k > 0 && Number.isFinite(k) && mean > 0 && mean < 1 ? [mean * k, (1 - mean) * k] : undefined
 }
 
 /** The precision matrix at the coordinates `(log t1, log t2, logit u)`, written into `out`, and its log determinant. */
@@ -89,7 +107,8 @@ function evalAt(eval1: ReturnType<typeof evaluatorOf>, lambda: Float64Array, t: 
  * normal with unknown standard deviations and correlation. The five ports are the vector, its mean, the two precisions and the beta; each of
  * the last three may be known. Like `mvn-wishart` it may stand for `count` i.i.d. rows (the parameters `count` and `scatter`, `x` their sample
  * mean). Expectation propagation integrates the three coordinates on a zooming grid and sends gammas, a beta, and Gaussians matched to the
- * moments; there is no variational message (the expected log density has no closed form in the beta).
+ * moments (the parameter `match` chooses the beta's: its mean and variance, or its log moments); there is no variational message (the expected
+ * log density has no closed form in the beta).
  *
  * @concept factor-operators
  * @index structure A bivariate Gaussian with sds and correlation as separate variables (gamma precisions, a beta correlation).
@@ -111,7 +130,11 @@ export const mvnSdCorr: FactorOperator = defineOperator({
     { name: 'precision 2', accepts: ['gamma'], constant: true },
     { name: 'correlation', accepts: ['beta'], constant: true },
   ],
-  params: { count: param.number({ min: 1, optional: true }), scatter: param.vector({ optional: true }) },
+  params: {
+    count: param.number({ min: 1, optional: true }),
+    scatter: param.vector({ optional: true }),
+    match: param.text({ choices: ['moments', 'log-moments'], optional: true }),
+  },
   check: (_params, families) =>
     families[0]?.dim === 2 && families[1]?.dim === 2
       ? undefined
@@ -135,6 +158,14 @@ export const mvnSdCorr: FactorOperator = defineOperator({
             valueMean += (p[i] as number) * Math.exp(nodes[i] as number)
           }
           return { message: siteMessage(gamma, arg(c, c.to).eta as Eta, [logMean, valueMean]) }
+        }
+        if (c.params['match'] !== 'log-moments') {
+          // the beta with the tilted mean and variance of `u`, so the belief has the spread of the correlation itself
+          const fit = betaByMoments(nodes, p)
+          if (fit !== undefined) {
+            const cavity = arg(c, 4).eta as Eta
+            return { message: betaEta(fit[0], fit[1]).map((v, i) => v - (cavity[i] ?? 0)) }
+          }
         }
         let logU = 0
         let log1mU = 0
