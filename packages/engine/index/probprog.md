@@ -60,7 +60,7 @@ What a user of expectation propagation on a model needs, and the suite that test
 - function `runEp`: Run EP on a bound model: beliefs per sweep, a record, or the refusal. `src/lib/probprog/ep/run.ts:136` `omai-engine/probprog/ep`
 - function `vmpCoverage`: What variational message passing covers today: atoms as runs or planned, with the operators lacking a rule. `src/lib/probprog/ep/ep-coverage.ts:160` `omai-engine/probprog/ep`
 
-- table `epAtoms`: The EP atoms: bare setups of one factor each, with a reference and a tolerance (look one up by name). `src/lib/probprog/ep/ep-atom-list.ts:154` `omai-engine/probprog/ep`
+- table `epAtoms`: The EP atoms: bare setups of one factor each, with a reference and a tolerance (look one up by name). `src/lib/probprog/ep/ep-atom-list.ts:156` `omai-engine/probprog/ep`
 
 ## probprog/inference
 
