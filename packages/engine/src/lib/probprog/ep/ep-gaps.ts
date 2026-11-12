@@ -192,7 +192,6 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
       plan: 'Divide the site by the power in `beta-two-shapes` (a deliberate change: accept the digest for the atoms that use it, and measure the power runs against the beta-outcome atoms), then express it as a site rule.',
       size: 'small',
       markers: [],
-      refuses: [],
     },
     {
       id: 'evidence-catch-uneven',
@@ -204,7 +203,6 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
       plan: 'Make the engine catch improper evidence once, for every operator, and report it through `evidenceUndefinedAt`; accept the one digest item that changes in its own commit.',
       size: 'small',
       markers: [],
-      refuses: [],
     },
     {
       id: 'docs-drift',
