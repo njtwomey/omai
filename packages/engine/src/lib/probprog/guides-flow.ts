@@ -10,6 +10,7 @@ import { bijectors, compose, normal, type Support } from '../dists/index.ts'
 import { foldIn, type Key, normal as normalDraws } from '../random/index.ts'
 import {
   add,
+  arange,
   asTensor,
   div,
   full,
@@ -22,6 +23,7 @@ import {
   type Tensor,
   type TensorLike,
   tanh,
+  toFlat,
   type Value,
   zeros,
 } from '../tensor/index.ts'
@@ -106,7 +108,7 @@ export function autoFlowNormal<D = void>(model: Model<D>, options: AutoFlowOptio
           }),
         )
         // Alternate which half passes through.
-        parts.push(bijectors.permute(Array.from({ length: D }, (_, i) => D - 1 - i)))
+        parts.push(bijectors.permute(toFlat(arange(D - 1, -1, -1))))
       }
     }
     return parts

@@ -4,7 +4,16 @@
 import { OmaiError } from '../base/index.ts'
 import { type Distribution, defineDistribution } from '../dists/index.ts'
 import type { Key } from '../random/index.ts'
-import { broadcastShapes, broadcastTo, reshape, shapesEqual, transpose, type Value } from '../tensor/index.ts'
+import {
+  arange,
+  broadcastShapes,
+  broadcastTo,
+  reshape,
+  shapesEqual,
+  toFlat,
+  transpose,
+  type Value,
+} from '../tensor/index.ts'
 
 /** A distribution broadcast to a larger batch shape, remembering the distribution it came from. */
 export interface ExpandedDistribution extends Distribution {
@@ -32,7 +41,7 @@ function draw(
   const s = shape.length + prefix.length
   const m = inflated.length
   const rank = x.shape.length
-  const perm: number[] = Array.from({ length: s }, (_, i) => i)
+  const perm: number[] = toFlat(arange(s))
   for (const i of inflated) perm.push(s + m + i)
   for (let i = 0; i < k; i++) {
     const j = inflated.indexOf(i)

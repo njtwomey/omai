@@ -14,18 +14,23 @@ import { type Distribution, multivariateNormal, type Support } from '../dists/in
 import { cholesky, solve, solveTriangular } from '../numerics/linalg/index.ts'
 import {
   add,
+  arange,
   asTensor,
   diagonal,
   eye,
   fromStorage,
+  full,
   matmul,
   maximum,
   mul,
   primalOf,
+  reshape,
+  scatterAdd,
   sqrt,
   sub,
   type Tensor,
   type TensorLike,
+  take,
   toFlat,
   transpose,
   type Value,
@@ -161,8 +166,9 @@ function masksOf(
     return { sites: names, within: withinOf(names), parents: [...wanted].sort((a, b2) => a - b2), size }
   })
   const D = sites.reduce((a, s) => a + s.size, 0)
-  const dep = new Float64Array(D * D)
-  const lam = new Float64Array(D * D)
+  // The flat positions of the ones of the two masks: which coordinates a block reads, and which entries its factor learns.
+  const depAt: number[] = []
+  const lamAt: number[] = []
   const spans = blocks.map((b) => {
     const first = byName.get(b.sites[0] as string) as GuideSite
     return { start: first.offset, end: first.offset + b.size }
@@ -171,10 +177,10 @@ function masksOf(
   blocks.forEach((b, bi) => {
     const { start, end } = spans[bi] as { start: number; end: number }
     for (let i = start; i < end; i++) {
-      for (let j = start; j <= i; j++) if (b.within === 'full' || i === j) lam[i * D + j] = 1
+      for (let j = start; j <= i; j++) if (b.within === 'full' || i === j) lamAt.push(i * D + j)
       for (const c of b.parents) {
         const sp = spans[c] as { start: number; end: number }
-        for (let j = sp.start; j < sp.end; j++) dep[i * D + j] = 1
+        for (let j = sp.start; j < sp.end; j++) depAt.push(i * D + j)
       }
     }
     parameters += b.within === 'full' ? (b.size * (b.size + 1)) / 2 : b.size
@@ -188,10 +194,15 @@ function masksOf(
   })
   return {
     structure: { blocks, size: D, parameters },
-    dep: fromStorage(dep, [D, D], 'float64'),
-    lam: fromStorage(lam, [D, D], 'float64'),
+    dep: maskOf(depAt, D),
+    lam: maskOf(lamAt, D),
     spans,
   }
+}
+
+/** A `[D, D]` matrix of ones at the given flat positions and zeros elsewhere. */
+function maskOf(at: readonly number[], D: number): Tensor {
+  return reshape(scatterAdd([D * D], at, full([at.length], 1), 0), [D, D]) as Tensor
 }
 
 /** The covariance factor L = (I - B)^-1 Lambda of the sequential linear-Gaussian conditionals, from the parameters. */
@@ -355,22 +366,18 @@ export function structuredInitialParams<D = void>(
   const sites = cachedGuideSites(model)(data)
   const m = isolated(() => masksOf(sites, analyse(model, data), options))
   const D = m.structure.size
-  const cov = toFlat(primalOf(asTensor(gaussian.covariance)))
-  const at = (i: number, j: number): number => cov[i * D + j] ?? 0
-  const dep = new Float64Array(D * D)
-  const scale = new Float64Array(D * D)
-  const matrix = (rows: readonly number[], cols: readonly number[]): Tensor =>
-    fromStorage(
-      Float64Array.from(rows.flatMap((i) => cols.map((j) => at(i, j)))),
-      [rows.length, cols.length],
-      'float64',
-    )
+  const cov = primalOf(asTensor(gaussian.covariance))
+  const depAt: number[] = []
+  const depValues: number[] = []
+  const scaleAt: number[] = []
+  const scaleValues: number[] = []
+  const matrix = (rows: readonly number[], cols: readonly number[]): Value => take(take(cov, rows, 0), cols, 1)
   m.structure.blocks.forEach((b, bi) => {
     const span = m.spans[bi] as { start: number; end: number }
-    const rows = Array.from({ length: span.end - span.start }, (_, k) => span.start + k)
+    const rows = toFlat(arange(span.start, span.end))
     const parents = b.parents.flatMap((c) => {
       const sp = m.spans[c] as { start: number; end: number }
-      return Array.from({ length: sp.end - sp.start }, (_, k) => sp.start + k)
+      return toFlat(arange(sp.start, sp.end))
     })
     let conditional: Value = matrix(rows, rows)
     if (parents.length > 0) {
@@ -378,22 +385,22 @@ export function structuredInitialParams<D = void>(
       const spp = matrix(parents, parents)
       // B = S_bp S_pp^-1, through the symmetric solve S_pp B^T = S_pb.
       const bmat = transpose(solve(spp, transpose(sbp)))
-      const flat = toFlat(primalOf(bmat))
-      for (const [r, i] of rows.entries())
-        for (const [c, j] of parents.entries()) dep[i * D + j] = flat[r * parents.length + c] ?? 0
+      depAt.push(...rows.flatMap((i) => parents.map((j) => i * D + j)))
+      depValues.push(...toFlat(primalOf(bmat)))
       conditional = sub(conditional, matmul(bmat, transpose(sbp)))
     }
     const sym = mul(add(conditional, transpose(conditional)), 0.5)
     const n = rows.length
-    const factorOfBlock = toFlat(
-      primalOf(b.within === 'full' ? cholesky(sym) : mul(eye(n), sqrt(maximum(diagonal(sym), 1e-12)))),
+    scaleAt.push(...rows.flatMap((i) => rows.map((j) => i * D + j)))
+    scaleValues.push(
+      ...toFlat(primalOf(b.within === 'full' ? cholesky(sym) : mul(eye(n), sqrt(maximum(diagonal(sym), 1e-12))))),
     )
-    for (const [r, i] of rows.entries())
-      for (const [c, j] of rows.entries()) scale[i * D + j] = factorOfBlock[r * n + c] ?? 0
   })
+  const placed = (at: readonly number[], values: readonly number[]): Tensor =>
+    reshape(scatterAdd([D * D], at, values, 0), [D, D]) as Tensor
   return {
     auto_loc: fromStorage(Float64Array.from(gaussian.mean), [D], 'float64'),
-    auto_dep: fromStorage(dep, [D, D], 'float64'),
-    auto_scale_tril: fromStorage(scale, [D, D], 'float64'),
+    auto_dep: placed(depAt, depValues),
+    auto_scale_tril: placed(scaleAt, scaleValues),
   }
 }

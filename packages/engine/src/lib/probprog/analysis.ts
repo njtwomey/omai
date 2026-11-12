@@ -17,7 +17,6 @@ import {
   add,
   broadcastShapes,
   broadcastTo,
-  fromStorage,
   matmul,
   mul,
   primalOf,
@@ -27,6 +26,7 @@ import {
   type Tensor,
   toFlat,
   type Value,
+  zeros,
 } from '../tensor/index.ts'
 import { unexpanded } from './_expand.ts'
 import { provenanceTrace } from './_provenance.ts'
@@ -672,8 +672,7 @@ export function analyse<D = void>(model: Model<D>, data: D, options: AnalyseOpti
     try {
       const um = potentialEnergy(fixed, data, options.key === undefined ? {} : { key: options.key })
       continuousDim = um.dim
-      const u = new Float64Array(um.dim)
-      const g = valueAndGrad((x: Value) => um.fn(x))(fromStorage(u, [um.dim], 'float64'))
+      const g = valueAndGrad((x: Value) => um.fn(x))(zeros([um.dim]))
       differentiable = toFlat(g.grad).every(Number.isFinite)
     } catch {
       differentiable = false

@@ -6,7 +6,7 @@
  * them apart, as `chainDiagnostics` of `omai-engine/exposition` takes them.
  */
 
-import { toFlat } from '../tensor/index.ts'
+import { asTensor, reshape, sliceAxis, type TensorLike, take, toArray, toFlat } from '../tensor/index.ts'
 import type { Posterior } from './posterior.ts'
 
 /** The chains of a posterior by coordinate. */
@@ -25,8 +25,8 @@ export interface PosteriorChainsOptions {
   readonly sites?: readonly string[]
 }
 
-const rowsOf = (flat: ArrayLike<number>, chains: number, draws: number): number[][] =>
-  Array.from({ length: chains }, (_, c) => Array.from({ length: draws }, (_, i) => flat[c * draws + i] ?? Number.NaN))
+const rowsOf = (flat: TensorLike, chains: number, draws: number): number[][] =>
+  toArray(reshape(asTensor(flat), [chains, draws])) as number[][]
 
 /**
  * The draws of a posterior of Markov chains by chain, with the divergent flags and the energy.
@@ -53,21 +53,18 @@ export function posteriorChains(posterior: Posterior, options: PosteriorChainsOp
   const draws: Record<string, number[][]> = {}
   for (const [site, value] of Object.entries(posterior.draws)) {
     if (options.sites !== undefined && !options.sites.includes(site)) continue
-    const flat = toFlat(value)
     const total = chains.numChains * chains.numDraws
-    const size = Math.floor(flat.length / total)
+    const size = Math.floor(toFlat(value).length / total)
+    // One row per draw of every chain, one column per coordinate of the site.
+    const columns = reshape(sliceAxis(reshape(value, [-1]), 0, 0, total * size), [total, size])
     for (let j = 0; j < size; j++) {
       const name = size === 1 ? site : `${site}[${j}]`
-      draws[name] = rowsOf(
-        Float64Array.from({ length: total }, (_, k) => flat[k * size + j] ?? Number.NaN),
-        chains.numChains,
-        chains.numDraws,
-      )
+      draws[name] = rowsOf(take(columns, j, 1), chains.numChains, chains.numDraws)
     }
   }
   const stat = (name: 'divergent' | 'energy'): number[][] | undefined => {
     const t = chains.stats[name]
-    return t === undefined ? undefined : rowsOf(toFlat(t), chains.numChains, chains.numDraws)
+    return t === undefined ? undefined : rowsOf(t, chains.numChains, chains.numDraws)
   }
   const divergent = stat('divergent')
   const energy = stat('energy')

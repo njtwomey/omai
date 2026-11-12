@@ -21,6 +21,7 @@ import { inv } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, key as makeKey, normal as normalDraws, uniform } from '../random/index.ts'
 import {
   add,
+  arange,
   asTensor,
   broadcastTo,
   concat,
@@ -229,12 +230,7 @@ export function pushed(base: Distribution, bijector: bijectors.Bijector): Distri
   const ldj = (u: Value): Value => {
     const j = bijector.forwardLogDetJacobian(u)
     const extra = j.shape.length - (u.shape.length - base.eventShape.length)
-    return extra > 0
-      ? sum(
-          j,
-          Array.from({ length: extra }, (_, i) => j.shape.length - 1 - i),
-        )
-      : j
+    return extra > 0 ? sum(j, toFlat(arange(j.shape.length - 1, j.shape.length - 1 - extra, -1))) : j
   }
   return defineDistribution({
     name: 'guide',
@@ -259,12 +255,7 @@ export function pushed(base: Distribution, bijector: bijectors.Bijector): Distri
 /** Sum trailing axes of `v` until it has `shape`'s rank. */
 function reduceTo(v: Value, shape: readonly number[]): Value {
   const extra = v.shape.length - shape.length
-  return extra > 0
-    ? sum(
-        v,
-        Array.from({ length: extra }, (_, i) => v.shape.length - 1 - i),
-      )
-    : v
+  return extra > 0 ? sum(v, toFlat(arange(v.shape.length - 1, v.shape.length - 1 - extra, -1))) : v
 }
 
 /** A point mass at a value with a given log density (NumPyro's `Delta(value, log_density)`). */
@@ -746,7 +737,7 @@ export function autoIafNormal<D = void>(model: Model<D>, options: AutoIafOptions
         return { shift: matmul(h, mul(ws, m2)), logScale: matmul(h, mul(wl, m2)) }
       }
       parts.push(bijectors.invert(bijectors.autoregressive(conditioner)))
-      parts.push(bijectors.permute(Array.from({ length: D }, (_, i) => D - 1 - i)))
+      parts.push(bijectors.permute(toFlat(arange(D - 1, -1, -1))))
     }
     return parts
   }
