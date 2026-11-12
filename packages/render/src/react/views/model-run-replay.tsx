@@ -5,7 +5,7 @@
  * rate menu, no export frame) for a page that tells the run as a story and has the record in hand.
  */
 
-import type { ModelRun } from 'omai-engine/exposition'
+import type { ModelRun, NodeState } from 'omai-engine/exposition'
 import { modelRunAt } from 'omai-engine/exposition'
 import type { StructureNode } from 'omai-engine/scene'
 import { type ReactElement, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
@@ -43,15 +43,38 @@ export interface ModelRunReplayProps {
 }
 
 /**
- * The record as the replay draws it: a node that has no belief yet (an improper product of no messages) shows none, rather
- * than the word `improper`. The replay is for telling a run, not for diagnosing one; `ModelRunPlayer` shows improper beliefs.
+ * The record as the replay draws it: a node whose belief is improper (an improper product of messages) shows no belief at
+ * that step, rather than the word `improper`. The replay is for telling a run, not for diagnosing one; `ModelRunPlayer`
+ * shows improper beliefs. The node's entry is blanked, not removed: the state at a step carries the beliefs of earlier steps
+ * forward (`modelRunAt`), and a removed entry would let the last proper belief show as if it still held.
+ *
+ * @param record - The record.
+ * @returns The record with each improper belief replaced by one with no numbers and no text.
+ * @example
+ * ```ts
+ * import { modelRun, modelRunAt } from 'omai-engine/exposition'
+ * import { structure } from 'omai-engine/scene'
+ * import { replayDrawing } from 'omai-render/react'
+ * const s = structure('model-graph', [{ id: 'x', label: 'x', role: 'latent' }], [])
+ * const steps = [
+ *   { step: 1, nodes: { x: { mean: 1, sd: 2, text: '1 ± 2' } } },
+ *   { step: 2, nodes: { x: { improper: true, text: 'improper' } } },
+ * ]
+ * const r = modelRun({ structure: s, status: 'completed', series: [], steps })
+ * modelRunAt(replayDrawing(r), 2)?.nodes['x']?.mean // => undefined
+ * ```
  */
-function forDrawing(record: ModelRun): ModelRun {
+export function replayDrawing(record: ModelRun): ModelRun {
   return {
     ...record,
     steps: record.steps.map((s) => ({
       ...s,
-      nodes: Object.fromEntries(Object.entries(s.nodes).filter(([, state]) => state.improper !== true)),
+      nodes: Object.fromEntries(
+        Object.entries(s.nodes).map(([id, state]): [string, NodeState] => [
+          id,
+          state.improper === true ? { text: '' } : state,
+        ]),
+      ),
     })),
   }
 }
@@ -133,7 +156,7 @@ export function ModelRunReplay(props: ModelRunReplayProps): ReactElement {
   useEffect(() => seek.current(startAt === 'last' ? Math.max(0, count - 1) : 0), [record, count, startAt])
   const index = Math.min(playback.frame, Math.max(0, count - 1))
   const step = record.steps[index]?.step ?? 0
-  const drawn = useMemo(() => forDrawing(record), [record])
+  const drawn = useMemo(() => replayDrawing(record), [record])
   const frames = useMemo(() => modelRunFrames(drawn), [drawn])
   const overlay = useMemo(() => modelRunOverlay(drawn, step), [drawn, step])
   const decorate = useMemo(() => modelRunDecorate(drawn, step), [drawn, step])

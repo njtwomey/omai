@@ -1,8 +1,9 @@
-import { type ModelRun, modelRun } from 'omai-engine/exposition'
+import { type ModelRun, modelRun, modelRunAt } from 'omai-engine/exposition'
 import { structure } from 'omai-engine/scene'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { ModelRunReplay, replayLines } from './model-run-replay.tsx'
+import { modelRunOverlay } from '../../views/model-run.ts'
+import { ModelRunReplay, replayDrawing, replayLines } from './model-run-replay.tsx'
 
 const graph = structure(
   'factor-graph',
@@ -47,6 +48,28 @@ describe('replayLines', () => {
 
   it('has nothing to say before any step belief or message is known', () => {
     expect(replayLines(run, 0)).toEqual({ messages: [], beliefs: [] })
+  })
+})
+
+describe('replayDrawing', () => {
+  const later = modelRun({
+    structure: graph,
+    status: 'running',
+    series: [],
+    steps: [
+      { step: 3, nodes: { x: { mean: 1.5, sd: 0.7, text: '1.5 ± 0.7' } } },
+      { step: 5, nodes: { x: { improper: true, text: 'improper (precision -1)' } } },
+    ],
+  })
+
+  it('does not let the last proper belief show at a step where the node has none', () => {
+    const drawn = replayDrawing(later)
+    expect(modelRunAt(drawn, 3)?.nodes['x']?.mean).toBe(1.5)
+    const at5 = modelRunAt(drawn, 5)?.nodes['x']
+    expect(at5?.mean).toBeUndefined()
+    expect(at5?.text).toBe('')
+    expect(modelRunOverlay(drawn, 5).badges?.['x']).toBeUndefined()
+    expect(modelRunOverlay(drawn, 3).badges?.['x']).toBeDefined()
   })
 })
 
