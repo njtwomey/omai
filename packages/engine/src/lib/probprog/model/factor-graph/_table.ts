@@ -9,6 +9,7 @@
  */
 
 import type { FamilyKind } from '../../../message-passing/index.ts'
+import { gateBranches } from '../dists/families.ts'
 import type { DerivedNode, ExprSpec, LatentNode, ModelNode, ObservedNode } from '../spec.ts'
 import { type Cell, prod } from './_cells.ts'
 import type { Context } from './_context.ts'
@@ -39,6 +40,7 @@ import {
   observedGammaRate,
   observedMixtureWeight,
 } from './_mappings/observed-conjugate.ts'
+import { observedGateFamilies } from './_mappings/observed-gate-families.ts'
 import {
   observedBernoulliTable,
   observedSwitch,
@@ -737,6 +739,19 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
     requires: ['bernoulli', 'likelihood-row', 'likelihood-site'],
     map: (cx, node, el) => observedHurdle(cx, node, el.y, el.i, el.index),
   }),
+  {
+    name: 'gate-families',
+    maps: 'a likelihood chosen by an index among branches of different families (d.gate): one gate whose branch k is the factor its family maps to alone, a known branch a weight of its state',
+    order:
+      "a family of its own (gate(poisson,negativeBinomial)): each branch goes back through the whole table, so the entries above and below are the branches' mappings",
+    families: ['gate(...)'],
+    requires: ['gate', 'table'],
+    matches: (_cx, _node, el) => gateBranches(el.fam) !== undefined,
+    map: (cx, node, el) =>
+      observedGateFamilies(cx, node, el, (c, branch, e) =>
+        mapFirst(observedElementMappings, c, 'observed element', branch, e),
+      ),
+  },
   element({
     name: 'mixture-weight',
     maps: 'a pair of Gaussian densities weighted by a beta latent (the clutter problem): a mixture-weight factor',

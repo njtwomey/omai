@@ -610,3 +610,32 @@ observation). Their reports say what exists; the work packages above absorb it r
   whose spread is a random multiple of the noise precision (`kappa` random) has no test that runs it under EP, only the compiler mapping
   (`gates-categorical.test.ts`) and the gamma-product rule it uses (`observed-scale-mixtures.test.ts`); a probe confirmed it converges,
   and its note says so.
+
+## 2026-11-12 A gate over likelihoods of different families (`agent-a952d6-gate`, gap `gate-node` closed)
+
+- `d.gate(index, [poisson(..), negativeBinomial(..)])` is a distribution family of the model language whose branches are different
+  families: the name carries the branch families (`gate(poisson,negativeBinomial)`) and the parameters are the index and each branch's
+  own, flattened as `index`, `0.rate`, `1.n`, `1.probs`, so every analysis walks the expressions as it does for any family. The table
+  of `distributionFamilies()` answers to any such name; the distribution the other engines read is the library's `mixture` with the
+  one-hot weights of the index (a log joint at fixed values is the density of the branch each row's index names). Branches are
+  scalar-event families, all discrete or all continuous; fewer than two branches or a nested gate throws.
+- The compiler has one more entry in the ordered table of element mappings, `gate-families`: one engine `gate` per element on the
+  index (a Bernoulli or categorical latent, one state per branch), whose branch `k` is the factor that branch's family maps to when it
+  is observed alone. It reuses the whole table rather than writing the likelihoods again: each branch goes through
+  `observedElementMappings` as a synthetic observed node of its family, the one likelihood factor it made is taken out and becomes the
+  gate's branch (the value algebra it needed stays), and the gate machinery (`GateBuilder`) is the one the other gates use. A branch
+  with no random parameter has no factor to take: its likelihood is a weight of its state, from the library's density of the family, a
+  `table` over the index beside the gate (or the only factor when every branch is known). A known index maps the branch it names alone.
+- Refusals, with a code and the node and branch named (`_reasons.ts`): an index that is a computed random value
+  (`gateIndexNotDiscrete`), states versus branches and an index outside the branches (`support`), a branch the mapping of its own family
+  refuses (`gateBranchRefused`, with that reason), and a branch that is not one likelihood factor on its own (`gateBranchNotOneLikelihood`:
+  a hurdle, a nested gate or a table). Existing models compile as before: the graph corpus snapshot is unchanged and 30 digest items
+  around gates and mixtures are BITS.
+- Against references (`factor-graph/gates-families.test.ts`, EP through `runEp` and `epRoute`, grid posterior of the same model with
+  the index summed out by the library's mixture): a Poisson against a negative binomial of another mean (10 rows): means within 0.002
+  sds, spreads 0.99 to 1.01, log evidence 0.003 nats; a known Poisson against a learned one (the known branch as a weight): means within
+  0.001 sds, evidence 0.004; a Gaussian regression on two weights against a constant: means within 0.04 sds, spreads 0.90 to 0.93,
+  evidence 0.02.
+- What remains: a gate whose branch maps to several factors (a hurdle) or to a gate or table of its own, nested gates, a computed
+  random index (a function of a latent that is not a discrete variable), and vector-event branches. Gap `gate-node` removed;
+  `mixture-regression` (direction) says what is mapped.

@@ -79,7 +79,6 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | hierarchical-matrix-few-groups: A learned covariance with few groups: the shared mean is too narrow, the matrix too wide | quality | open | medium | - |
 | softmax-many-classes: Softmax beyond six classes, and a multiclass Gaussian process | missing-rule | open | medium | - |
 | ordinal-random-cuts: Ordinal cut points that are random, and a Student-t with random degrees of freedom and scale | missing-rule | open | medium | - |
-| gate-node: A gate over likelihoods of different families: no explicit gate node | missing-mapping | open | medium | - |
 | multimodal: One Gaussian per variable cannot show two modes | quality | open | medium | - |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
 | sv-parameters: Stochastic volatility with an unknown level, persistence and innovation precision is not calibrated | quality | open | medium | - |
