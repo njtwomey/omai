@@ -9,11 +9,12 @@
  */
 
 import { type Json, OmaiError } from '../../base/index.ts'
+import { isTensor, type Tensor, toArray } from '../../tensor/index.ts'
 import { defaultOperators, type NamedShape, type OperatorTable, type OpParams, operatorShape } from './operators.ts'
 import type { ExprSpec } from './spec.ts'
 
-/** What an operator accepts as an argument: a `Var`, a number, a boolean or a nested array of them (a constant). */
-export type Operand = Var | number | boolean | readonly Operand[]
+/** What an operator accepts as an argument: a `Var`, or a constant: a number, a boolean, a tensor or a nested array of them. */
+export type Operand = Var | number | boolean | Tensor | readonly Operand[]
 
 /** The registry the fluent methods use (the default one). */
 const REGISTRY: OperatorTable = defaultOperators()
@@ -28,8 +29,9 @@ function nestedRank(value: Json): number {
   return rank
 }
 
-function jsonOf(o: readonly Operand[] | number | boolean): Json {
-  if (Array.isArray(o)) return o.map((x) => jsonOf(x as number | boolean | readonly Operand[]))
+function jsonOf(o: readonly Operand[] | number | boolean | Tensor): Json {
+  if (isTensor(o)) return jsonOf(toArray(o) as readonly Operand[] | number)
+  if (Array.isArray(o)) return o.map((x) => jsonOf(x as number | boolean | Tensor | readonly Operand[]))
   if (typeof o === 'number') {
     if (!Number.isFinite(o)) throw new OmaiError('value', `a constant must be finite, got ${o}`)
     return o
@@ -149,7 +151,7 @@ const dimParams = (dim: string | { readonly name: string } | undefined): OpParam
  * constant([1, 2, 3], ['feature']).dims // => ['feature']
  * ```
  */
-export function constant(value: readonly Operand[] | number | boolean, dims: readonly string[] = []): Var {
+export function constant(value: readonly Operand[] | number | boolean | Tensor, dims: readonly string[] = []): Var {
   const json = jsonOf(value)
   const rank = nestedRank(json)
   if (rank < dims.length)

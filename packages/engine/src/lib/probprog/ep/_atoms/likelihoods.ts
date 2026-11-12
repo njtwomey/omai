@@ -328,7 +328,7 @@ function gpProblem(link: 'probit' | 'logistic', k: Config): AtomParts {
   // region gp-logistic gp-probit
   const definition = defineModel(`gp-${link}`, (m) => {
     const row = m.range('row')
-    const prior = d.multivariateNormal(toFlat(zeros([n])), { covariance: K })
+    const prior = d.multivariateNormal(zeros([n]), { covariance: K })
     const f = m.latent('f', prior, { dims: [row] })
     m.observe(
       'y',
@@ -434,7 +434,7 @@ function gpSoftmaxProblem(k: Config): AtomParts {
     const row = m.range('row')
     const cls = m.range('class', { size: GPS_CLASSES })
     // one dense Gaussian vector over every (input, class) pair
-    const prior = d.multivariateNormal(toFlat(zeros([cells])), { covariance })
+    const prior = d.multivariateNormal(zeros([cells]), { covariance })
     const f = m.latent('f', prior, { dims: [cell] })
     const at = m.data('index', { dims: [row, cls], support: 'count' })
     // the scores of an input are the entries of the vector at its classes, the label a softmax of them

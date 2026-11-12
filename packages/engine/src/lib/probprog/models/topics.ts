@@ -274,7 +274,7 @@ export const ldaLite: BenchmarkModel = defineBenchmark({
     const topic = b.range('topic', { size: TOPICS })
     const word = b.range('word', { size: WORDS })
     const w = b.data('w', { dims: [doc, token], support: 'index', role: 'response', indexes: word })
-    const theta = b.latent('theta', d.dirichlet(toFlat(full([TOPICS], ALPHA))), {
+    const theta = b.latent('theta', d.dirichlet(full([TOPICS], ALPHA)), {
       dims: [doc],
       doc: 'the topic mixture of each document',
     })

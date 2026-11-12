@@ -106,7 +106,7 @@ export function gaussianMixtureModel(options: GaussianMixtureOptions): ModelDefi
     const row = m.range('row')
     const k = m.range('component', { size: components })
     const y = m.data('y', { dims: [row], role: 'response' })
-    const prior = toFlat(full([components], concentration))
+    const prior = full([components], concentration)
     const weights = m.latent('weights', d.dirichlet(prior), { doc: 'the mixture weights' })
     const mu = m.latent('mu', d.normal(0, meanScale), {
       dims: [k],

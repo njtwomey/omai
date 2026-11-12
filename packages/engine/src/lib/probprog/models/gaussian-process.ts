@@ -74,7 +74,7 @@ const gpSpec = defineModel('gaussian-process-regression', (b) => {
     [x, ell],
     { eventRank: 2 },
   )
-  const f = b.latent('f', d.multivariateNormal(toFlat(zeros([POINTS])), { covariance: K }), {
+  const f = b.latent('f', d.multivariateNormal(zeros([POINTS]), { covariance: K }), {
     doc: 'the function at the inputs',
   })
   b.observe(

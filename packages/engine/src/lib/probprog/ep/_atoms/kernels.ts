@@ -101,7 +101,7 @@ const rbfGramOf = ([xs, scale]: readonly { readonly value: Value }[]): Value =>
   rbfGram((xs as { value: Value }).value, (scale as { value: Value }).value)
 
 function gpLengthScaleProblem(_k: Config): AtomParts {
-  const priorMean = toFlat(zeros([X6.length]))
+  const priorMean = zeros([X6.length])
   // region gp-length-scale
   const definition = defineModel('gp-length-scale', (m) => {
     const x = m.data('x', { dims: ['i'], role: 'covariate' })
@@ -209,7 +209,7 @@ function gpClassLearnedProblem(k: Config): AtomParts {
   const f = Array.from(toFlat(matmul(cholesky(classGramOf(tensor(inputs), tensor(trueEll))), white)))
   const u = toFlat(uniform(foldIn(kk, 1), [n]))
   const y = f.map((v, i) => ((u[i] ?? 1) < phiOf(v) ? 1 : 0))
-  const priorMean = toFlat(zeros([n]))
+  const priorMean = zeros([n])
   // region gp-probit-learned
   const definition = defineModel('gp-probit-learned', (m) => {
     const x = m.data('x', { dims: ['i'], role: 'covariate' })
@@ -355,7 +355,7 @@ function hyperparameterMarginals(): { exact: Record<string, ExactMarginal>; logE
 }
 
 function gpHyperparametersProblem(_k: Config): AtomParts {
-  const priorMean = toFlat(zeros([X8.length]))
+  const priorMean = zeros([X8.length])
   // region gp-hyperparameters
   const definition = defineModel('gp-hyperparameters', (m) => {
     const x = m.data('x', { dims: ['i'], role: 'covariate' })
