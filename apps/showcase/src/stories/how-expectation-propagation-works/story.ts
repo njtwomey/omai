@@ -7,5 +7,6 @@ export const story: StoryMeta = {
   section: 'inference',
   tags: ['expectation propagation', 'message passing', 'factor graph', 'clutter problem', 'moment matching'],
   date: '2026-11-12',
+  first: true,
   hook: 'Every step of one expectation propagation run, with the real numbers.',
 }

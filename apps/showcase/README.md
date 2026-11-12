@@ -34,7 +34,7 @@ A story is a folder `src/stories/<slug>/` (the slug is the folder's name and the
 
 | File                                   | What it is                                                                                                                                                                                                                                                                                                                    |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `story.ts`                             | `export const story: StoryMeta = { title, standfirst, section, tags, date, hook? , thumbnail? }`. `section` is an id of `src/sections.ts`, the one small file that holds the order of the splash's sections.                                                                                                                  |
+| `story.ts`                             | `export const story: StoryMeta = { title, standfirst, section, tags, date, hook?, first? }`. `section` is an id of `src/sections.ts`, the one small file that holds the order of the splash's sections.                                                                                                                  |
 | `compute.ts`                           | `export const run = (seed: number, say?: Say): Result`: a pure function of the seed that returns serialisable data (it crosses the worker boundary by structured clone). The heavy imports (the engine) live here and in the worker only. The code the page shows is marked with `// region` ... `// endregion` in this file. |
 | `worker.ts`                            | Always `serveStory(self, run)`.                                                                                                                                                                                                                                                                                               |
 | `Story.tsx`                            | The narrative: the default export, a component. `useStoryRun` makes the run, `<Play>` is where the computation starts, and `<Results run={run}>` right after it holds everything the result makes (figures, result-reading prose, closing prose, code).                                                                       |
@@ -146,8 +146,8 @@ export default function Story(): ReactNode {
 ## Parts
 
 - `src/main.tsx` (the routes `/` and `/story/<slug>`), `Splash.tsx` (the hero and the sections as a grid of cards: title, one-line hook,
-  a thumbnail or a tinted placeholder), `StoryRoute.tsx`, `registry.ts` (`import.meta.glob` over `stories/*/story.ts`, eager, and
+  the list), `StoryRoute.tsx`, `registry.ts` (`import.meta.glob` over `stories/*/story.ts`, eager, and
   `Story.tsx`, lazy), `story.ts` (the metadata type, grouping by section, neighbours), `sections.ts`.
 - `src/kit/protocol.ts` is the wire to the worker (`serveStory`, `Say`; no React, so a worker bundles only this), `runState.ts` is the run's state
   as a pure reducer, `useStoryRun.ts` the hook.
-- A thumbnail is optional: put an image in `public/thumbs/` and name it in `story.ts` (`thumbnail: '/thumbs/<slug>.png'`).
+- `first: true` lists a story before the others of its section (the way "How expectation propagation works" opens its category).
