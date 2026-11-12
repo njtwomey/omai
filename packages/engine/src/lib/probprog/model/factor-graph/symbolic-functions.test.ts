@@ -1,4 +1,4 @@
-// Unary functions of a random value (exp, square, tanh, relu, softplus, sigmoid) compiled to `apply` factors and run under EP,
+// Unary functions of a random value (exp, square, tanh, relu, softplus, sigmoid, clip) compiled to `apply` factors and run under EP,
 // against the exact posterior of a model with two scalar latents on a fine grid (`gridPosterior` of the compiled program).
 import { describe, expect, it } from 'vitest'
 import {
@@ -91,6 +91,13 @@ const cases: readonly { name: string; g: (u: never) => never; y: number[]; noise
     noise: 0.3,
     sdLow: 0.55,
   },
+  {
+    name: 'clip',
+    g: (u) => ops.clip(u, -0.5, 1) as never,
+    y: XS.map((x) => Math.min(Math.max(0.2 + 0.9 * x, -0.5), 1) + 0.05 * Math.sin(9 * x)),
+    noise: 0.3,
+    sdLow: 0.55,
+  },
 ]
 
 describe('unary functions of random values under expectation propagation', () => {
@@ -112,6 +119,40 @@ describe('unary functions of random values under expectation propagation', () =>
     const c = toFactorGraph(def.bind({ x: XS, y: XS.map((x) => Math.min(Math.max(0.2 + 0.9 * x, -0.5), 1)) }))
     expect(c.issues).toEqual([])
     expect(c.graph?.factors.filter((f) => f.operator === 'apply').length).toBeGreaterThan(0)
+  })
+
+  it('a clip by known bounds is a min and a max step in the chain of the value (the correlation factor sqrt(clip(1 - rho^2)) is one apply from rho)', () => {
+    const def = defineModel('cholesky-factor', (m: Builder) => {
+      const rho = m.latent('rho', d.uniform(-1, 1))
+      const z = m.latent('z', d.normal(0, 1))
+      const rest = ops.sqrt(ops.clip(ops.sub(1, ops.square(rho)), 1e-12, 1))
+      m.derived('x', ops.mul(rest, z), { record: true } as never)
+    })
+    const c = toFactorGraph(def.bind({}))
+    expect(c.issues).toEqual([])
+    const applies = (c.graph?.factors ?? []).filter((f) => f.operator === 'apply')
+    expect(applies).toHaveLength(1)
+    expect(applies[0]?.args[1]).toBe('rho')
+    expect(applies[0]?.params?.['steps']).toEqual([
+      ['square'],
+      ['mul', -1],
+      ['add', 1],
+      ['min', 1],
+      ['max', 1e-12],
+      ['sqrt'],
+    ])
+    expect(toFactorGraph(def.bind({})).graph?.factors.some((f) => f.operator === 'product')).toBe(true)
+  })
+
+  it('a clip with a random bound has no message rule, and says so', () => {
+    const def = defineModel('random-bound', (m: Builder) => {
+      const lo = m.latent('lo', d.normal(0, 1))
+      const a = m.latent('a', d.normal(0, 1))
+      m.derived('x', ops.clip(a, lo, 1), { record: true } as never)
+    })
+    const c = toFactorGraph(def.bind({}))
+    expect(c.graph).toBeUndefined()
+    expect(c.issues.some((i) => i.code === 'no-rule' && i.reason.includes("'clip'"))).toBe(true)
   })
 
   it('the banana: the squared coordinate pushes forward to the exact mean and variance of x1', () => {

@@ -8,7 +8,7 @@
  * panelled quadrature of `_tilted.ts`, split at the function's kinks. Under variational message passing the output is defined by the
  * input (a Gaussian with the mean and variance of the pushforward) and the message to the input is non-conjugate, by quadrature.
  *
- * The function can be a chain: the parameter `steps` lists unary steps (a registry name, or `mul`, `add`, `pow` with a constant)
+ * The function can be a chain: the parameter `steps` lists unary steps (a registry name, or `mul`, `add`, `pow`, `min`, `max` with a constant)
  * applied one after the other, so `1 / sqrt(d exp(x) + n)` is one factor from `x` to the output rather than a chain of Gaussian
  * approximations (the compiler collapses the arithmetic on a function's output into the chain). The input can be a gamma variable
  * (a precision `alpha`: `1 / sqrt(alpha)` is the scale of a non-centred coefficient), integrated on a grid in `log alpha`, and the
@@ -101,7 +101,7 @@ export function unaryFunctions(): Record<string, UnaryFunction> {
   return Object.fromEntries(all.map((u) => [u.name, u]))
 }
 
-/** One step of a chain: a registry function by name, or `mul`, `add`, `pow` with its constant. */
+/** One step of a chain: a registry function by name, or `mul`, `add`, `pow`, `min`, `max` with its constant. */
 export type Step = readonly [string, number?]
 
 /** The function of a chain of steps, applied in order. */
@@ -111,10 +111,12 @@ export function chainOf(table: Readonly<Record<string, UnaryFunction>>, steps: r
     if (name === 'mul') return (x) => x * c
     if (name === 'add') return (x) => x + c
     if (name === 'pow') return (x) => x ** c
+    if (name === 'min') return (x) => Math.min(x, c)
+    if (name === 'max') return (x) => Math.max(x, c)
     const fn = table[name]
     if (fn === undefined)
       throw new ParameterError(
-        `apply: unknown step ${name} (the registry has ${Object.keys(table).join(', ')}, and mul, add, pow with a constant)`,
+        `apply: unknown step ${name} (the registry has ${Object.keys(table).join(', ')}, and mul, add, pow, min, max with a constant)`,
       )
     return fn.f
   })

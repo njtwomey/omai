@@ -713,3 +713,12 @@ observation). Their reports say what exists; the work packages above absorb it r
   `atom/prior-beta-strength-lognormal` are not this change: neither compiles a stack or a product). The registry section of the digest
   has the new operator (67) and `apply-product` with `defines` 0 and a `vmp` rule (support `numeric`), nothing else. The graph corpus
   is unchanged (no ARD model in it).
+- The varying-slopes radon model (`radonCountiesDefinition('slopes')`) was refused at compile time: `slope = mu_b + tau_b (rho z_a +
+  sqrt(clip(1 - rho^2, 1e-12, 1)) z_b)` has a `clip` of a random value. A clip by known bounds is now a `min` and a `max` step in the
+  chain of the value's `apply` factor (`clipAff` in `_symbolic/_functions.ts`; `chainOf` of the `apply` operator knows both steps), the
+  same way a rectifier of a known operand is, so `sqrt(clip(1 - rho^2))` is one `apply` from `rho` with no second Gaussian
+  approximation (a clip with a random bound is still refused, with the reason). Against the exact grid posterior a clipped curve
+  agrees as the rectifier does (`symbolic-functions.test.ts`), the message of a chain with the clip binding matches a fine grid
+  (`functions.test.ts`), and EP on the slopes model settles (71 sweeps, 10 counties, one seed) with `mu` and `mu_b` within 0.06 of a
+  NUTS sd of the sampler's and their spreads 0.76 to 0.8 times its, the scales `tau` and `tau_b` 0.4 sd low (spreads 0.96 and 0.69) and
+  `rho`, barely identified (sd 0.57 against 0.55), -0.06 against -0.35. No digest item moved (no benchmark model clips a random value).
