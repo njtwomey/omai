@@ -6,6 +6,7 @@
  * distribution of the number of steps spent in a state, by a forward pass that tracks the count).
  */
 
+import { ones, toArray, toFlat, zeros } from '../../tensor/index.ts'
 import type { MarginalOracle } from '../validation/index.ts'
 
 /**
@@ -99,7 +100,7 @@ export function hmmSmoothing(
     scale[t] = a.reduce((s, v) => s + v, 0)
     alpha[t] = a.map((v) => v / (scale[t] as number))
   }
-  const beta: number[][] = Array.from({ length: T }, () => new Array<number>(K).fill(1))
+  const beta = toArray(ones([T, K])) as number[][]
   for (let t = T - 2; t >= 0; t--)
     beta[t] = Array.from(
       { length: K },
@@ -110,9 +111,9 @@ export function hmmSmoothing(
   const marginals = alpha.map((a, t) => a.map((v, k) => v * ((beta[t] as number[])[k] as number)))
   // The count of visits to each state: f[k'][c] after step t is the scaled probability of (state k', c visits to the target).
   const visits = Array.from({ length: K }, (_, target) => {
-    let f: number[][] = Array.from({ length: K }, () => new Array<number>(T + 1).fill(0))
+    let f = toArray(zeros([K, T + 1])) as number[][]
     for (let t = 0; t < T; t++) {
-      const next: number[][] = Array.from({ length: K }, () => new Array<number>(T + 1).fill(0))
+      const next = toArray(zeros([K, T + 1])) as number[][]
       for (let k = 0; k < K; k++) {
         const hit = k === target ? 1 : 0
         for (let c = 0; c <= T - hit; c++) {
@@ -128,7 +129,7 @@ export function hmmSmoothing(
       }
       f = next
     }
-    const pmf = new Array<number>(T + 1).fill(0)
+    const pmf = toFlat(zeros([T + 1]))
     for (const fk of f)
       fk.forEach((v, c) => {
         pmf[c] = (pmf[c] as number) + v

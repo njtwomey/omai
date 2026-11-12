@@ -21,7 +21,7 @@ import {
   quadratureRule,
 } from '../../message-passing/index.ts'
 import { normal as drawNormal, uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import { add, arange, mul, toFlat } from '../../tensor/index.ts'
 import { runAlgorithm } from '../../trace/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
@@ -78,7 +78,7 @@ const density = (y: number, theta: number): number =>
  */
 export function clutterTruth(y: readonly number[], points = 12001): BenchmarkTruth {
   const step = 120 / (points - 1)
-  const grid = Float64Array.from({ length: points }, (_, i) => -60 + i * step)
+  const grid = toFlat(add(mul(arange(points), step), -60))
   const logw = Float64Array.from(
     grid,
     (t) =>

@@ -10,6 +10,7 @@
 
 import { type IrtItem, irtSimulate } from '../../pgm/index.ts'
 import type { Key } from '../../random/index.ts'
+import { add, arange, mul, toFlat } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel } from '../model/index.ts'
 import { type MarginalOracle, weightedOracle } from '../validation/index.ts'
@@ -60,7 +61,7 @@ export function irtScoringTruth(
   points = 4001,
 ): BenchmarkTruth {
   const step = 16 / (points - 1)
-  const grid = Float64Array.from({ length: points }, (_, i) => -8 + i * step)
+  const grid = toFlat(add(mul(arange(points), step), -8))
   const marginals: Record<string, MarginalOracle> = {}
   let logEvidence = 0
   y.forEach((row, p) => {

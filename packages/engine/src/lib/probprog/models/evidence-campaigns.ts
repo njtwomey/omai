@@ -18,7 +18,7 @@ import {
   nestedSampler,
   proposal,
 } from '../../sampling/index.ts'
-import { item, mul, toFlat, type Value } from '../../tensor/index.ts'
+import { add, arange, item, mul, sin, toFlat, type Value } from '../../tensor/index.ts'
 import { type Config, session } from '../../trace/index.ts'
 import { evidenceEstimators, type InferenceMethod, particleGibbsMethod, pmmhMethod } from '../inference/index.ts'
 import type { ModelAnalysis } from '../inference/model-input.ts'
@@ -286,7 +286,7 @@ function nestedCampaign(): Campaign {
         [5, 150],
         [10, 200],
       ] as const) {
-        const y = Array.from({ length: d }, (_, i) => 0.9 * Math.sin(i + 1))
+        const y = toFlat(mul(sin(add(arange(d), 1)), 0.9))
         const errs: number[] = []
         const ses: number[] = []
         let covered = 0

@@ -9,7 +9,7 @@
 
 import { ndtr } from '../../numerics/special/index.ts'
 import { uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
-import { item, toFlat } from '../../tensor/index.ts'
+import { add, arange, item, less, mod, mul, reshape, take, tensor, toFlat, where } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, type ModelDefinition, ops } from '../model/index.ts'
 import { type BenchmarkData, type BenchmarkModel, defineBenchmark } from './benchmark.ts'
@@ -28,9 +28,13 @@ function generateGames(key: Key, size = 24): BenchmarkData {
     [1, 2],
   ] as const
   // Which of the two is listed first is a coin flip, so that the first player is not always the stronger one.
-  const flip = toFlat(drawUniform(foldIn(key, 1), [size]))
-  const a = Array.from({ length: size }, (_, g) => pairs[g % pairs.length]?.[(flip[g] ?? 0) < 0.5 ? 0 : 1] ?? 0)
-  const b = Array.from({ length: size }, (_, g) => pairs[g % pairs.length]?.[(flip[g] ?? 0) < 0.5 ? 1 : 0] ?? 1)
+  const flip = drawUniform(foldIn(key, 1), [size])
+  // the pair of game g is row g mod 3 of the table, its first player the column the coin picks
+  const row = mul(mod(arange(size), pairs.length), 2)
+  const heads = less(flip, 0.5)
+  const table = reshape(tensor(pairs), [-1])
+  const a = toFlat(take(table, add(row, where(heads, 0, 1))))
+  const b = toFlat(take(table, add(row, where(heads, 1, 0))))
   const u = toFlat(drawUniform(foldIn(key, 0), [size]))
   const win = a.map((ai, g) => {
     const diff = ((SKILLS[ai] ?? 0) - (SKILLS[b[g] ?? 0] ?? 0)) / (Math.SQRT2 * BETA)

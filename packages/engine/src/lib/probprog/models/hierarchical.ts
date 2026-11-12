@@ -10,7 +10,7 @@
 
 import { dpotrf, dpotrs } from '../../numerics/linalg/index.ts'
 import { normal as drawNormal, uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import { add, arange, div, less, mul, reshape, toArray, toFlat, where, zeros } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type MarginalOracle, weightedOracle } from '../validation/index.ts'
@@ -30,16 +30,16 @@ const PRIOR = { mu: 5, beta: 2, tau: 1, sigma: 1 }
 function generateRadon(key: Key, size = 6): BenchmarkData {
   const counties = size
   const houses = 8
-  const e = toFlat(drawNormal(foldIn(key, 0), [counties]))
-  const noise = toFlat(drawNormal(foldIn(key, 1), [counties, houses]))
-  const u = toFlat(drawUniform(foldIn(key, 2), [counties, houses]))
-  const alpha = Array.from(e, (v) => RADON.mu + RADON.tau * v)
-  const floor: number[][] = []
-  const y: number[][] = []
-  for (let j = 0; j < counties; j++) {
-    floor.push(Array.from({ length: houses }, (_, i) => ((u[j * houses + i] ?? 1) < 0.5 ? 1 : 0)))
-    y.push(floor[j]?.map((f, i) => (alpha[j] ?? 0) + RADON.beta * f + RADON.sigma * (noise[j * houses + i] ?? 0)) ?? [])
-  }
+  const e = drawNormal(foldIn(key, 0), [counties])
+  const noise = drawNormal(foldIn(key, 1), [counties, houses])
+  const u = drawUniform(foldIn(key, 2), [counties, houses])
+  const alphaT = add(mul(e, RADON.tau), RADON.mu)
+  const alpha = toFlat(alphaT)
+  const floorT = where(less(u, 0.5), 1, 0)
+  const floor = toArray(floorT) as number[][]
+  const y = toArray(
+    add(add(reshape(alphaT, [counties, 1]), mul(floorT, RADON.beta)), mul(noise, RADON.sigma)),
+  ) as number[][]
   return { data: { floor, y }, generating: { ...RADON, alpha } }
 }
 
@@ -104,6 +104,7 @@ export function varyingInterceptTruth(
     const sigma = Math.exp(v)
     const s2 = sigma * sigma
     // A'A / sigma² + D^-1 over (mu, beta, e_1..e_J), with A = [1, floor, tau Z]; and A'y / sigma².
+    // lambda, rhs, e and the covariance are the kernel buffers of dpotrf and dpotrs (Float64Arrays), rebuilt per grid point
     const lambda = new Float64Array(p * p)
     lambda[0] = precisionMu + n / s2
     lambda[1] = sumFloor / s2
@@ -147,8 +148,7 @@ export function varyingInterceptTruth(
     return { logPost, mean, cov }
   }
 
-  const range = (lo: number, hi: number, k: number): Float64Array =>
-    Float64Array.from({ length: k }, (_, i) => lo + ((hi - lo) * i) / (k - 1))
+  const range = (lo: number, hi: number, k: number): number[] => toFlat(add(div(mul(arange(k), hi - lo), k - 1), lo))
   // Coarse pass to find where the mass is.
   const coarseU = range(-9, 3, 61)
   const coarseV = range(-5, 3, 61)
@@ -195,7 +195,7 @@ export function varyingInterceptTruth(
   const kept = keep.map((i) => ({ cell: cells[i] as Cell, weight: (weights[i] ?? 0) / total }))
   // The marginal weights of one scale: the grid summed over the other (cells run over u outermost, v innermost).
   const margin = (axis: 0 | 1): number[] => {
-    const out = new Array<number>(N).fill(0)
+    const out = toFlat(zeros([N]))
     weights.forEach((w, i) => {
       const k = axis === 0 ? Math.floor(i / N) : i % N
       out[k] = (out[k] ?? 0) + w / total

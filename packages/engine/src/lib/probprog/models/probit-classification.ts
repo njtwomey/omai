@@ -12,7 +12,7 @@ import { OmaiError } from '../../base/index.ts'
 import { polynomialFeatures, standardScaler } from '../../learn/preprocessing/index.ts'
 import { accuracyScore, logLoss } from '../../metrics/index.ts'
 import { ndtr } from '../../numerics/special/index.ts'
-import { fromStorage, toFlat } from '../../tensor/index.ts'
+import { add, arange, concat, div, mul, ones, reshape, tensor, toArray, toFlat, zeros } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { type DataInput, defineModel, type ModelDefinition, ops } from '../model/index.ts'
 
@@ -77,12 +77,12 @@ export function polynomialFeatureMap(
   const names = ['1', ...monomials.featureNamesOut()]
   const unscaled = (rows: readonly (readonly number[])[]): number[][] => {
     if (rows.length === 0) return []
-    const flat = toFlat(columns.transform(monomials.transform(inputs.transform(rows as number[][]))))
     const width = names.length - 1
-    return Array.from({ length: rows.length }, (_, i) => [
-      1,
-      ...Array.from({ length: width }, (_, j) => flat[i * width + j] ?? 0),
+    const features = reshape(columns.transform(monomials.transform(inputs.transform(rows as number[][]))), [
+      rows.length,
+      width,
     ])
+    return toArray(concat([ones([rows.length, 1]), features], 1)) as number[][]
   }
   const weightScale = 2 * Math.sqrt(Math.max(1, names.length - 1))
   return {
@@ -158,19 +158,20 @@ export function probitPredictive(
 ): number[] {
   if (draws.length === 0) throw new OmaiError('value', 'probitPredictive: no draws')
   const p = draws[0]?.length ?? 0
-  const out = new Float64Array(design.length)
+  // the running mean of the predictive probabilities, accumulated in place over the draws
+  const out = toFlat(zeros([design.length]))
   for (const row of design)
     if (row.length !== p)
       throw new OmaiError('shape', `probitPredictive: a design row has ${row.length} columns, the draws ${p}`)
   for (const w of draws) {
     if (w.length !== p) throw new OmaiError('shape', 'probitPredictive: draws of different widths')
-    const eta = new Float64Array(design.length)
+    const eta = toFlat(zeros([design.length]))
     for (const [i, row] of design.entries()) {
       let s = 0
       for (let j = 0; j < p; j++) s += (row[j] ?? 0) * (w[j] ?? 0)
       eta[i] = s
     }
-    const phi = toFlat(ndtr(fromStorage(eta, [eta.length], 'float64')))
+    const phi = toFlat(ndtr(tensor(eta)))
     for (let i = 0; i < out.length; i++) out[i] = (out[i] ?? 0) + (phi[i] ?? 0) / draws.length
   }
   return Array.from(out)
@@ -241,8 +242,7 @@ export function probitPredictiveGrid(
 ): PredictiveGrid {
   if (!(Number.isInteger(size) && size >= 2))
     throw new OmaiError('value', 'probitPredictiveGrid: size is a whole number from 2')
-  const axis = (lo: number, hi: number): number[] =>
-    Array.from({ length: size }, (_, i) => lo + ((hi - lo) * i) / (size - 1))
+  const axis = (lo: number, hi: number): number[] => toFlat(add(div(mul(arange(size), hi - lo), size - 1), lo))
   const xs = axis(extent.x[0], extent.x[1])
   const ys = axis(extent.y[0], extent.y[1])
   const rows = ys.flatMap((y) => xs.map((x) => [x, y]))

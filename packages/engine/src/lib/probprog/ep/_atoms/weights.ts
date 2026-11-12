@@ -9,6 +9,7 @@
  */
 
 import { dict, real } from '../../../space/index.ts'
+import { add, arange, div, mul, toFlat, zeros } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -55,7 +56,7 @@ function twoComponentExact(
   logPrior: (p: number) => number,
 ): { readonly weight: ExactMarginal; readonly responsibilities: readonly number[] } {
   const T = 4000
-  const ps = Array.from({ length: T }, (_, i) => (i + 0.5) / T)
+  const ps = toFlat(div(add(arange(T), 0.5), T))
   const l1 = x.map((v) => normalDensity(v, MEANS[1] as number, SD))
   const l0 = x.map((v) => normalDensity(v, MEANS[0] as number, SD))
   const logs = ps.map(
@@ -228,11 +229,8 @@ function dirichletWeightProblem(k: Config): AtomParts {
   // The posterior of the weights on the simplex, summed over the switches analytically: a grid over (pi0, pi1).
   const G = 220
   const l = x.map((v) => THREE.map((c) => normalDensity(v, c, SD)))
-  const marg = [new Array<number>(G).fill(0), new Array<number>(G).fill(0), new Array<number>(G).fill(0)] as [
-    number[],
-    number[],
-    number[],
-  ]
+  // the three marginals are accumulators written in place by the loop below, made with zeros
+  const marg = [0, 1, 2].map(() => toFlat(zeros([G]))) as [number[], number[], number[]]
   const logs: { i: number; j: number; v: number }[] = []
   let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < G; i++)
@@ -258,7 +256,7 @@ function dirichletWeightProblem(k: Config): AtomParts {
     const k2 = Math.min(G - 1, Math.max(0, Math.round((1 - (i + 0.5) / G - (j + 0.5) / G) * G - 0.5)))
     ;(marg[2][k2] as number) += w
   }
-  const points = Array.from({ length: G }, (_, i) => (i + 0.5) / G)
+  const points = toFlat(div(add(arange(G), 0.5), G))
   const exact = Object.fromEntries(marg.map((w, c) => [`pi[${c}]`, weightedMarginal(points, w)]))
   return {
     build: {
@@ -329,10 +327,10 @@ function hyperWeightProblem(k: Config): AtomParts {
   const l0 = x.map((v) => normalDensity(v, MEANS[0] as number, SD))
   const P = 260
   const S = 260
-  const ps = Array.from({ length: P }, (_, i) => (i + 0.5) / P)
+  const ps = toFlat(div(add(arange(P), 0.5), P))
   const lo = -5
   const hi = 4
-  const ts = Array.from({ length: S }, (_, j) => lo + ((j + 0.5) * (hi - lo)) / S)
+  const ts = toFlat(add(div(mul(add(arange(S), 0.5), hi - lo), S), lo))
   const logLik = ps.map((p) =>
     x.reduce((a, _, i) => a + Math.log(p * (l1[i] as number) + (1 - p) * (l0[i] as number)), 0),
   )

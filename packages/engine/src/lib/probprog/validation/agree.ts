@@ -10,7 +10,7 @@
 import { OmaiError } from '../../base/index.ts'
 import { type Key, key as makeKey } from '../../random/index.ts'
 import { wassersteinDistance } from '../../stats/tests/index.ts'
-import { tensor, toFlat } from '../../tensor/index.ts'
+import { add, arange, div, exp, reshape, take, tensor, toFlat, zeros } from '../../tensor/index.ts'
 import type { Posterior } from '../posterior.ts'
 import { type MarginalOracle, weightedOracle } from './oracle.ts'
 
@@ -61,7 +61,7 @@ export function fromPosterior(name: string, posterior: Posterior, options: FromP
   const n = options.numDraws ?? 4000
   const draws = stored ?? posterior.sample(options.key ?? makeKey(0), n)
   const rows = new Map(posterior.summary().map((r) => [r.name, r]))
-  const out: Record<string, Float64Array> = {}
+  const out: Record<string, number[]> = {}
   const ess: Record<string, number> = {}
   for (const [site, value] of Object.entries(draws)) {
     if (options.sites !== undefined && !options.sites.includes(site)) continue
@@ -69,13 +69,12 @@ export function fromPosterior(name: string, posterior: Posterior, options: FromP
     const size = rows0 === 0 ? 0 : value.data.length / rows0
     for (let j = 0; j < size; j++) {
       const q = size === 1 ? site : `${site}[${j}]`
-      out[q] = Float64Array.from({ length: rows0 }, (_, i) => value.data[i * size + j] ?? Number.NaN)
+      out[q] = toFlat(take(reshape(value, [rows0, size]), [j], 1))
       const e = rows.get(q)?.ess
       if (e !== undefined) ess[q] = e
     }
   }
-  const weights =
-    posterior.logWeights === undefined ? undefined : Float64Array.from(toFlat(posterior.logWeights), Math.exp)
+  const weights = posterior.logWeights === undefined ? undefined : toFlat(exp(posterior.logWeights))
   return { name, draws: out, ess, ...(weights === undefined ? {} : { weights }) }
 }
 
@@ -128,7 +127,7 @@ function sortedWeighted(
   weights: ArrayLike<number> | undefined,
 ): { x: number[]; w: number[] } {
   const n = draws.length
-  const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => (draws[a] ?? 0) - (draws[b] ?? 0))
+  const order = toFlat(arange(n)).sort((a, b) => (draws[a] ?? 0) - (draws[b] ?? 0))
   const total = weights === undefined ? n : Array.from(weights).reduce((a, b) => a + b, 0)
   return {
     x: order.map((i) => draws[i] ?? 0),
@@ -148,8 +147,8 @@ function kolmogorov(x: readonly number[], w: readonly number[], cdf: (v: number)
 }
 
 function binnedKl(x: readonly number[], w: readonly number[], oracle: MarginalOracle, bins: number): number {
-  const edges = Array.from({ length: bins - 1 }, (_, b) => oracle.quantile((b + 1) / bins))
-  const mass = new Array<number>(bins).fill(0)
+  const edges = toFlat(div(arange(1, bins), bins)).map((p) => oracle.quantile(p))
+  const mass = toFlat(zeros([bins]))
   let bin = 0
   for (let i = 0; i < x.length; i++) {
     while (bin < bins - 1 && (x[i] ?? 0) > (edges[bin] ?? Number.POSITIVE_INFINITY)) bin += 1
@@ -178,9 +177,9 @@ function binnedKl(x: readonly number[], w: readonly number[], oracle: MarginalOr
  * import { agree, distributionOracle } from 'omai-engine/probprog/validation'
  * import { normal } from 'omai-engine/dists'
  * import { key } from 'omai-engine/random'
- * import { item } from 'omai-engine/tensor'
+ * import { toFlat } from 'omai-engine/tensor'
  * const exact = normal(0.6, Math.sqrt(0.5))
- * const draws = Array.from({ length: 2000 }, (_, i) => item(exact.sample(key(i), [])))
+ * const draws = toFlat(exact.sample(key(0), [2000]))
  * const table = agree([{ name: 'iid', draws: { m: draws } }], { oracle: { m: distributionOracle('m', exact) } })
  * table.rows[0]?.ks !== undefined && (table.rows[0]?.ks ?? 1) < 0.05 // => true
  * ```
@@ -204,7 +203,7 @@ export function agree(approximations: readonly Approximation[], options: AgreeOp
       if (draws === undefined) throw new OmaiError('value', `agree: no oracle and no reference draws for ${q}`)
       oracle = weightedOracle(q, draws, reference?.weights)
     }
-    const targets = Float64Array.from({ length: points }, (_, i) => oracle.quantile((i + 0.5) / points))
+    const targets = toFlat(div(add(arange(points), 0.5), points)).map((p) => oracle.quantile(p))
     for (const a of approximations) {
       if (options.oracle === undefined && a === reference) continue
       const draws = a.draws[q]
@@ -223,7 +222,7 @@ export function agree(approximations: readonly Approximation[], options: AgreeOp
         meanZ: (mean - oracle.mean) / (sd / Math.sqrt(ess)),
         sdRatio: sd / oracle.sd,
         ks: kolmogorov(x, w, oracle.cdf),
-        wasserstein: wassersteinDistance(tensor(x), tensor(Array.from(targets)), { uWeights: tensor(w) }) / oracle.sd,
+        wasserstein: wassersteinDistance(tensor(x), tensor(targets), { uWeights: tensor(w) }) / oracle.sd,
         kl: binnedKl(x, w, oracle, bins),
         ess,
         numDraws: x.length,

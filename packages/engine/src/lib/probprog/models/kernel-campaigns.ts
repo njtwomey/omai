@@ -21,7 +21,7 @@ import {
   sliceSampler,
   ulaKernel,
 } from '../../sampling/index.ts'
-import { item } from '../../tensor/index.ts'
+import { div, greater, item, reshape, sum, take, tensor, toFlat, where } from '../../tensor/index.ts'
 import { session } from '../../trace/index.ts'
 import { type AnyInferenceMethod, blockKernels, hybridMethod, methodKinds } from '../inference/index.ts'
 import { type Model, observe, sample } from '../primitives.ts'
@@ -462,11 +462,8 @@ function agreementCampaign({ model, extra, hard }: (typeof AGREEMENT_MODELS)[num
 /** The fraction of each chain's draws in the upper mode (x[0] > 0). */
 function modeFractions(draws: ArrayLike<number>, chains: number, dim: number): number[] {
   const n = draws.length / chains / dim
-  return Array.from({ length: chains }, (_, c) => {
-    let up = 0
-    for (let i = 0; i < n; i++) if ((draws[(c * n + i) * dim] ?? 0) > 0) up += 1
-    return up / n
-  })
+  const first = take(reshape(tensor(Array.from(draws)), [chains, n, dim]), [0], 2)
+  return toFlat(div(sum(where(greater(first, 0), 1, 0), [1, 2]), n))
 }
 
 function bimodalCampaign(): Campaign {

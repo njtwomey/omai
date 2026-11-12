@@ -18,6 +18,7 @@ import {
   type Tensor,
   tensor,
   type Value,
+  zeros,
 } from '../tensor/index.ts'
 import { maskedLogProb } from './_contract.ts'
 import { logJoint } from './density.ts'
@@ -109,7 +110,7 @@ export function generatingProgram(model: Model<RowsData>, options: GeneratingPro
     const discreteTarget = targetSite?.type === 'sample' && isDiscrete(targetSite.fn.support)
     if (latent.length === 0 && (y !== undefined || target === undefined || !discreteTarget)) {
       // Every random site is observed, or a continuous target is absent and integrates to one.
-      let total: Value = tensor(new Array<number>(n).fill(0))
+      let total: Value = zeros([n])
       for (const s of t.sites.values()) if (s.type === 'sample' && s.isObserved) total = add(total, perRow(s, n))
       return total
     }

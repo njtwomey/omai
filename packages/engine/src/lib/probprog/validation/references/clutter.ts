@@ -4,6 +4,7 @@
  * atoms' pages draw: marginals as curves with their moments, and the probability that each switch is on.
  */
 
+import { add, arange, div, mul, toFlat, zeros } from '../../../tensor/index.ts'
 import { type ExactMarginal, weightedMarginal } from './marginal.ts'
 import { lg } from './special.ts'
 
@@ -52,7 +53,7 @@ export function clutterPosterior(y: readonly number[], priors: ClutterPriors, po
   const n = y.length
   const median = [...y].sort((a, b) => a - b)[Math.floor(n / 2)] as number
   const span = (lo: number, hi: number, m: number): number[] =>
-    Array.from({ length: m }, (_, i) => lo + ((hi - lo) * (i + 0.5)) / m)
+    toFlat(add(div(mul(add(arange(m), 0.5), hi - lo), m), lo))
   const centres = span(median - 1.2, median + 1.2, Math.round(points * 1.4))
   const logIn = span(Math.log(0.4), Math.log(40), points)
   const logOut = span(Math.log(0.004), Math.log(2), points)
@@ -68,8 +69,9 @@ export function clutterPosterior(y: readonly number[], priors: ClutterPriors, po
   const logw = weights.map(Math.log)
   const log1w = weights.map((w) => Math.log(1 - w))
   const na = centres.length
+  // the table of every cell's log posterior, na x points^3 entries filled in place by the sweep below
   const lp = new Float64Array(na * points * points * points)
-  const inlier = new Array<number>(n)
+  const inlier = toFlat(zeros([n]))
   let top = Number.NEGATIVE_INFINITY
   let at = 0
   for (let a = 0; a < na; a++)
@@ -101,12 +103,12 @@ export function clutterPosterior(y: readonly number[], priors: ClutterPriors, po
       }
     }
   const margins = {
-    centre: new Array<number>(na).fill(0),
-    inlier: new Array<number>(points).fill(0),
-    clutter: new Array<number>(points).fill(0),
-    weight: new Array<number>(points).fill(0),
+    centre: toFlat(zeros([na])),
+    inlier: toFlat(zeros([points])),
+    clutter: toFlat(zeros([points])),
+    weight: toFlat(zeros([points])),
   }
-  const clutter = new Array<number>(n).fill(0)
+  const clutter = toFlat(zeros([n]))
   let norm = 0
   at = 0
   for (let a = 0; a < na; a++)
@@ -184,7 +186,7 @@ export function outlierMixturePosterior(
   const n = y.length
   const median = [...y].sort((a, b) => a - b)[Math.floor(n / 2)] as number
   const span = (lo: number, hi: number): number[] =>
-    Array.from({ length: points }, (_, i) => lo + ((hi - lo) * (i + 0.5)) / points)
+    toFlat(add(div(mul(add(arange(points), 0.5), hi - lo), points), lo))
   const centres = span(median - 1.2, median + 1.2)
   const logs = span(Math.log(0.4), Math.log(40))
   const tau = logs.map(Math.exp)
@@ -193,6 +195,7 @@ export function outlierMixturePosterior(
   const lbeta = lg(priors.share.a + priors.share.b) - lg(priors.share.a) - lg(priors.share.b)
   const half = 0.5 * Math.log(2 * Math.PI)
   const lw = Math.log(priors.width)
+  // the table of every cell's log posterior, filled in place by the sweep below
   const lp = new Float64Array(points ** 3)
   let top = Number.NEGATIVE_INFINITY
   let at = 0
@@ -219,11 +222,7 @@ export function outlierMixturePosterior(
         if (v > top) top = v
       }
     }
-  const margins = [
-    new Array<number>(points).fill(0),
-    new Array<number>(points).fill(0),
-    new Array<number>(points).fill(0),
-  ] as [number[], number[], number[]]
+  const margins = [0, 1, 2].map(() => toFlat(zeros([points]))) as [number[], number[], number[]]
   at = 0
   for (let a = 0; a < points; a++)
     for (let b = 0; b < points; b++)

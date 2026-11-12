@@ -1,7 +1,7 @@
 // Shared pieces of the discrete engines: posterior marginals on integer supports that need not start at zero, and
 // flat batch indices of plated sites.
 import { categorical, type Distribution, defineDistribution } from '../dists/index.ts'
-import { add, fromStorage, sub, type Value } from '../tensor/index.ts'
+import { add, reshape, sub, tensor, type Value } from '../tensor/index.ts'
 
 /**
  * A categorical distribution over low, ..., low + K - 1 (a posterior marginal of a discrete site).
@@ -44,9 +44,5 @@ export function unravel(i: number, shape: readonly number[]): number[] {
 
 /** A `[...shape, K]` probability tensor from per-element probability rows. */
 export function probabilityTensor(rows: readonly (readonly number[])[], shape: readonly number[], k: number): Value {
-  const data = new Float64Array(rows.length * k)
-  rows.forEach((r, i) => {
-    data.set(r.slice(0, k), i * k)
-  })
-  return fromStorage(data, [...shape, k], 'float64')
+  return reshape(tensor(rows.map((r) => r.slice(0, k))), [...shape, k])
 }

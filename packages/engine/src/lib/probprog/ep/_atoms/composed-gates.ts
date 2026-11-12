@@ -7,7 +7,7 @@
 
 import { foldIn, gamma, key, normal, poisson, uniform } from '../../../random/index.ts'
 import { dict, int, real } from '../../../space/index.ts'
-import { toFlat } from '../../../tensor/index.ts'
+import { add, arange, div, mul, toFlat } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -202,7 +202,7 @@ function gatePoissonNegativeBinomialProblem(k: Config): AtomParts {
           },
         ],
         answer: (mean) => {
-          const grid = Array.from({ length: 41 }, (_, i) => -2.5 + (5 * i) / 40)
+          const grid = toFlat(add(div(mul(arange(41), 5), 40), -2.5))
           const rate = grid.map((x) => Math.exp((mean['b0'] ?? Number.NaN) + (mean['b1'] ?? Number.NaN) * x))
           return [
             { name: 'Poisson mean', x: grid, y: rate },

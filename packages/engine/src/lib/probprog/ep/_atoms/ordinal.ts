@@ -4,7 +4,7 @@
 
 import { foldIn, key, normal, uniform } from '../../../random/index.ts'
 import { dict, real } from '../../../space/index.ts'
-import { toFlat } from '../../../tensor/index.ts'
+import { add, arange, div, mul, reshape, sub, toArray, toFlat } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -17,7 +17,7 @@ import type { AtomFigure, AtomParts, AtomRecoverySpec, EpAtom, FigureCurve } fro
 import { simulationKnobs } from './conjugate.ts'
 
 const CUTS = [-0.6, 0.5, 1.4]
-const CURVE_X = Array.from({ length: 41 }, (_, i) => -2 + i / 10)
+const CURVE_X = toFlat(add(div(arange(41), 10), -2))
 
 /** The standard normal distribution function in plain arithmetic (Abramowitz and Stegun 26.2.17). */
 function phi(x: number): number {
@@ -980,10 +980,8 @@ function choiceLogProb(
 function simulateChoices(seed: number, n: number, truth: readonly number[]) {
   const kk = key(seed)
   const attribute = (salt: number): number[][] => {
-    const flat = toFlat(uniform(foldIn(kk, salt), [n * ALTERNATIVES]))
-    return Array.from({ length: n }, (_, i) =>
-      Array.from({ length: ALTERNATIVES }, (_, k) => 3 * (flat[i * ALTERNATIVES + k] ?? 0.5) - 1.5),
-    )
+    const draw = reshape(uniform(foldIn(kk, salt), [n * ALTERNATIVES]), [n, ALTERNATIVES])
+    return toArray(sub(mul(draw, 3), 1.5)) as number[][]
   }
   const price = attribute(0)
   const quality = attribute(1)

@@ -11,7 +11,7 @@
 import { normal } from '../../dists/index.ts'
 import { dpotrf, dpotrs } from '../../numerics/linalg/index.ts'
 import { normal as drawNormal, foldIn, type Key } from '../../random/index.ts'
-import { mul, toFlat, type Value } from '../../tensor/index.ts'
+import { abs, arange, mul, pow, reshape, sub, toFlat, type Value, zeros } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel } from '../model/index.ts'
 import { type Model, markov, observe, sample } from '../primitives.ts'
@@ -49,13 +49,14 @@ function generateSeries(key: Key, size = 12): BenchmarkData {
  */
 export function ar1Truth(y: readonly number[]): BenchmarkTruth {
   const T = y.length
-  const S = new Float64Array(T * T)
-  for (let i = 0; i < T; i++) for (let j = 0; j < T; j++) S[i * T + j] = S0 * S0 * AR1.phi ** Math.abs(i - j)
+  const lag = abs(sub(reshape(arange(T), [T, 1]), arange(T)))
+  const S = toFlat(mul(pow(AR1.phi, lag), S0 * S0))
+  // C and the right-hand sides are the kernel buffers of dpotrf and dpotrs (Float64Arrays).
   const C = Float64Array.from(S)
   for (let i = 0; i < T; i++) C[i * T + i] = (C[i * T + i] ?? 0) + AR1.sigmaY ** 2
   const { factor } = dpotrf(C, T)
   const alpha = dpotrs(factor, y, T)
-  const mean = new Float64Array(T)
+  const mean = toFlat(zeros([T]))
   for (let i = 0; i < T; i++)
     for (let j = 0; j < T; j++) mean[i] = (mean[i] ?? 0) + (S[i * T + j] ?? 0) * (alpha[j] ?? 0)
   let logDet = 0
@@ -64,7 +65,7 @@ export function ar1Truth(y: readonly number[]): BenchmarkTruth {
   const marginals: Record<string, MarginalOracle> = {}
   for (let i = 0; i < T; i++) {
     // The posterior variance of x_i: S_ii - S_i (S + R)^-1 S_i'.
-    const row = Float64Array.from({ length: T }, (_, j) => S[i * T + j] ?? 0)
+    const row = S.slice(i * T, (i + 1) * T)
     const solved = dpotrs(factor, row, T)
     const reduction = row.reduce((a, v, j) => a + v * (solved[j] ?? 0), 0)
     marginals[`x[${i}]`] = mixtureOracle(`x[${i}]`, [
