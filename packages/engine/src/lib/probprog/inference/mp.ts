@@ -32,6 +32,7 @@ import {
   type ScheduleKind,
   type VmpPath,
   vmpMethod,
+  warmupOf,
 } from '../../message-passing/index.ts'
 import { type Config, type Contract, defineContract, derived, Log, runAlgorithm } from '../../trace/index.ts'
 import { factorGraphPosterior } from '../model/factor-graph/readback.ts'
@@ -194,11 +195,15 @@ function specMethod<P extends string>(
       if (found !== null) break
       const rows = prepare(model, 'expand', pack)
       if (rows?.graph === undefined) continue
+      // The same graph again (nothing is plated) is the same run: from the flat start it can reach another fixed point than the state's
+      // (a mixture's symmetric one), and its evidence would be that one's, not the state's.
+      if (rows.graph.factors.length === prepared?.graph?.factors.length) continue
       const run = runAlgorithm(
         epAlgorithm(rows.graph, {
           tol: tol(config),
           maxSweeps: 400,
           damping: typeof config['damping'] === 'number' ? config['damping'] : defaultsOf(rule).damping,
+          ...warmupOf(config),
         }),
         { maxSteps: 402, seed: 1 },
       )

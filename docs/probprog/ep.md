@@ -128,6 +128,29 @@ components are exchangeable up to their parameters and whose page shows "the low
 of the less likely labellings matters. Changing the default to `sort` is the owner's choice; it would change what a site named `rate[0]`
 means in every multi-start result.
 
+**The symmetric fixed point of a mixture.** A mixture with a label per row (`mu.at(z)` with `z` a latent discrete variable: the compiler
+makes one `select` factor per row) has a fixed point where every component is the same: the labels carry no information, the means sit at
+the mean of the data, the spread is the spread of the whole data. It exists by symmetry, whatever the data, and it is a clean fixed point
+(every update computable, a finite evidence). The clusters' own reading is a different state: the ambiguous rows between two clusters send
+a message to the value of the row with a negative precision (the moment-matched mixture of two separate normals is wider than the
+likelihood), so their cavities have no density, those updates cannot be computed and are dropped by the improper policy (about a third of
+the rows, every sweep), and the evidence is undefined there. From flat messages and no damping, the first sweep commits every row to a side
+at its first updates (the shared spread, in the standardised data's units, is 0.2 after the second sweep where the clusters' is 0.55) and the run then drifts into the
+symmetric point; on the Gaussian mixture example's defaults (150 rows, two components 3 apart, equal weights) it does so for data seeds
+1 and 4 of 8 and for free means on 2 of 3 (the other seeds reach the clusters undamped, with their dropped updates). The separated reading is a fixed point of the damped dynamics and a stable one of the
+undamped ones (started from the damped state and let go at damping 0 it stays), so it is the start that decides. What breaks the
+symmetry is the first sweeps: `warmup` (a knob of `ep` and `ep-multistart`, an engine setting `EngineSettings.warmup`) damps the first
+three sweeps by at least a half and then runs at the run's own damping. `auto`, the default, does it where the graph has a `select` with a
+latent index (`hasExchangeableLabels`) and does nothing elsewhere; `on` always, `off` never (the old behaviour). The warm-up is not a
+guarantee: it is a start that lets the two components form before the rows commit, and a mixture whose clusters are not apart stays
+one fixed point. Because the separated reading has no evidence and the symmetric one has, comparing readings by evidence prefers the
+wrong one: `ep-multistart` therefore does not weigh readings when its first run (plain EP, which now reaches the clusters) has no
+evidence (`diagnostics.unweighed`): the posterior is the readings that have none, equally weighted. Random and exclusion starts of a
+mixture's labels reach the symmetric point (random labels average out to uninformative ones), so they are the readings that have an
+evidence and are set aside. A real weighing of the readings of a mixture needs the evidence at the separated fixed point, which needs
+an EP rule for the observation of a row that accepts a cavity of negative precision (tried in natural parameters for `gaussian-scale`:
+the run diverges, 1e135 in 200 sweeps; the gap `multimodal`).
+
 A method that runs several EP runs (a grid node, a start) shares the compile step with plain EP through `prepare` (`_support.ts`) and
 the run knobs below.
 
@@ -145,6 +168,7 @@ rejects a key the space does not have, `atPower` puts the power of fractional EP
 | `tol` | stop when no belief moves more than this | 1e-8 | 1e-9 | 1e-9 |
 | `maxSweeps` | the sweep cap (per run for grid and multi-start) | 200 | 200 | 300 |
 | `restarts` | restarts with stronger damping when a run stalls | 1 | 1 | 1 |
+| `warmup` | the first three sweeps damped by at least a half: `auto` (where labels select components), `on`, `off` | auto | - | auto |
 | `power` | fractional EP (1 is EP) | 1 | 1 | 1 |
 
 The method-specific knobs (`points`, `tail`, `maxNodes`, `edge`, `order` (`bisect`, or `walk` from the middle of the range outwards, best first, over any number of axes), `window` (the nats at which a walk stops) and `warm` (each node started from the nearest settled node's messages) for the grid (a method over several axes opens on `walk`, `warm`, 15 points, a window of 7 and a budget of 4000 nodes: `epGridKnobsFor(axes)`); `starts`, `jitter`, `exclusions`, `labels`, `merge` for

@@ -82,6 +82,18 @@ describe('mixtureExample', () => {
     }
   }, 60000)
 
+  it('EP recovers the two clusters on the page defaults (150 rows, separation 3), ordered or free, not one wide blob', () => {
+    for (const ordering of ['ordered', 'free']) {
+      const s = run({ rows: 150, separation: 3, ordering }, { method: 'ep', damping: 0, tol: 1e-6 })
+      const fit = s.probe(s.t, 'mixture/fit') as { rows: { name: string; mean: number; truth: number | null }[] }
+      for (const r of fit.rows.filter((x) => x.name.startsWith('mean')))
+        expect(Math.abs(r.mean - (r.truth as number))).toBeLessThan(0.4)
+      // The spread of the components is 1; the blob of one wide Gaussian has 1.8.
+      const spread = fit.rows.find((x) => x.name === 'spread')
+      expect(Math.abs((spread?.mean ?? 0) - 1)).toBeLessThan(0.25)
+    }
+  }, 120000)
+
   it('runs the variational and the Laplace methods too', () => {
     for (const method of ['svi', 'laplace']) {
       const s = run({}, { method })

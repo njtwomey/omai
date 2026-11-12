@@ -133,8 +133,8 @@ export function chooseNodes(key: Key, weights: readonly number[], n: number): nu
 export interface SiteMixture {
   readonly engine: string
   readonly status: RunStatus
-  /** The estimate of log p(data) and what it is (`ep-grid`, `ep-multistart`). */
-  readonly logEvidence: { readonly value: number; readonly method: string }
+  /** The estimate of log p(data) and what it is (`ep-grid`, `ep-multistart`); none when the runs are not weighed by it. */
+  readonly logEvidence?: { readonly value: number; readonly method: string }
   readonly diagnostics: Readonly<Record<string, Json>>
   /** The weight of each run (they are normalised here). */
   readonly weights: readonly number[]
@@ -203,7 +203,7 @@ export function siteMixturePosterior(spec: SiteMixture): Posterior {
     engine: spec.engine,
     sites: [...valueNames, ...siteNames],
     status: spec.status,
-    logEvidence: spec.logEvidence,
+    ...(spec.logEvidence === undefined ? {} : { logEvidence: spec.logEvidence }),
     diagnostics: { ...spec.diagnostics, effectiveRuns: 1 / w.reduce((a, v) => a + v * v, 0) },
     marginals,
     draws,
