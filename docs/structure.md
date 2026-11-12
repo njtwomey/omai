@@ -7834,7 +7834,9 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   and the exact log-likelihood), `spatialPoisson`.
 - `comparisons.ts`: games between players with latent skills (chess-like Elo data with draws and skill drift:
   `eloGames`; tournaments: `roundRobin`; TrueSkill-style `multiplayerRaces`) with true skills.
-- `ranking.ts`: explicit ratings with low-rank truth (`lowRankRatings`, observed at random or not), click logs
+- `ranking.ts`: explicit ratings with low-rank truth (`lowRankRatings`, observed at random or not), ordinal ratings from
+  raters of different generosity to items of different quality by an ordered probit with known cut points
+  (`ordinalRatings`, `ratingCuts`), click logs
   (`clickLogs`: position and cascade models with logging-policy propensities), implicit feedback (`implicitFeedback`,
   Poisson factorisation), Zipfian catalogues (`zipfianCatalogue`), a small MovieLens (`movielensSmall`, remote).
 - `click-sessions.ts`: `dbnClickLogs`, click sessions from a dynamic Bayesian network with each item's attractiveness

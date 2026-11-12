@@ -13,8 +13,26 @@ import {
   parseCsv,
   unzip,
 } from '../data/index.ts'
-import { categorical, foldIn, gumbel, type Key, normal, poisson, uniform } from '../random/index.ts'
+import { categorical, foldIn, gumbel, type Key, normal, permutation, poisson, uniform } from '../random/index.ts'
 import { bool, choice, type DictSpace, dict, int, real } from '../space/index.ts'
+import {
+  add,
+  arange,
+  concat,
+  cumsum,
+  div,
+  floor,
+  full,
+  less,
+  mod,
+  mul,
+  nonzero,
+  reshape,
+  sub,
+  sum,
+  type Tensor,
+  take,
+} from '../tensor/index.ts'
 import { stamp } from './_util.ts'
 
 /** Row-major factor matrix `[rows, rank]` of standard normals scaled by `1 / sqrt(rank)`. */
@@ -115,6 +133,114 @@ export const lowRankRatings: DatasetGenerator<InteractionData> = {
         noiseScale: noise,
         latents: { userFactors: u, itemFactors: v, userBias: bu, itemBias: bi },
         extra: { expected, globalMean: mu, rank, observationProbability: props },
+      },
+    }
+  },
+}
+
+/**
+ * The cut points of an ordinal rating scale with `categories` categories: `categories - 1` increasing thresholds that start at
+ * `firstCut`. The gaps between neighbours are `spacing` in the middle and change by `tilt * spacing` from one gap to the next, so a
+ * positive `tilt` makes the categories at the top of the scale wider than those at the bottom.
+ *
+ * @param categories - The number of categories, at least 3.
+ * @param firstCut - The lowest cut point.
+ * @param spacing - The middle gap between neighbouring cut points.
+ * @param tilt - How much the gaps grow from one to the next, as a fraction of `spacing`.
+ * @returns The cut points, a vector of length `categories - 1`.
+ * @example
+ * ```ts
+ * import { toArray } from 'omai-engine/tensor'
+ * import { ratingCuts } from 'omai-engine/datasets'
+ * toArray(ratingCuts(3, -1, 2, 0)) // => [-1, 1]
+ * ```
+ */
+export function ratingCuts(categories: number, firstCut: number, spacing: number, tilt: number): Tensor {
+  const gaps = mul(add(1, mul(tilt, sub(arange(categories - 2), (categories - 3) / 2))), spacing)
+  return add(firstCut, concat([full([1], 0), cumsum(gaps)])) as Tensor
+}
+
+/**
+ * Ratings on a scale of 1 to `categories` given by raters of different generosity to items of different quality, with the ordered
+ * probit as the generating model: the latent score of a rating is the item's quality plus the rater's generosity plus standard normal
+ * noise, and the rating is one plus the number of cut points below the score. Each pair of a rater and an item is rated with
+ * probability `density`, and the ratings come in a random order (so the first ratings are a random sample of all of them). The truth
+ * has the qualities, the generosities, the cut points and the score behind each rating.
+ *
+ * @index dataset Ratings from 1 to 5 of items by raters, with ordered probit truth.
+ * @example
+ * ```ts
+ * import { generate } from 'omai-engine/data'
+ * import { ordinalRatings } from 'omai-engine/datasets'
+ * generate(ordinalRatings, { knobs: { raters: 10, items: 12, density: 1 } }).data.nItems // => 12
+ * ```
+ */
+export const ordinalRatings: DatasetGenerator<InteractionData> = {
+  name: 'ordinalRatings',
+  kind: 'interactions',
+  description:
+    'Ratings on an ordinal scale from raters of different generosity to items of different quality (ordered probit).',
+  knobs: dict({
+    raters: int(1, 100_000, { label: 'raters', description: 'The number of raters.', default: 30 }),
+    items: int(1, 100_000, { label: 'items', description: 'The number of items rated.', default: 40 }),
+    density: real(0.0001, 1, {
+      label: 'fraction of pairs rated',
+      description: 'The probability that a rater rated an item.',
+      default: 0.3,
+    }),
+    categories: int(3, 10, { label: 'categories', description: 'The number of rating values, 1 to this.', default: 5 }),
+    qualitySd: real(0, 5, {
+      label: 'spread of quality',
+      description: "The standard deviation of the items' latent quality.",
+      default: 1,
+    }),
+    generositySd: real(0, 5, {
+      label: 'spread of generosity',
+      description: "The standard deviation of the raters' generosity, added to every score they give.",
+      default: 0.5,
+    }),
+    firstCut: real(-10, 10, {
+      label: 'first cut point',
+      description: 'The score below which a rating is 1.',
+      default: -2.2,
+    }),
+    spacing: real(0.01, 5, { label: 'spacing', description: 'The middle gap between cut points.', default: 1.1 }),
+    tilt: real(-0.9, 0.9, {
+      label: 'tilt',
+      description: 'How much the gaps between cut points grow towards the top, as a fraction of the spacing.',
+      default: 0.35,
+    }),
+  }),
+  generate: (k, knobs) => {
+    const raters = knobs['raters'] as number
+    const items = knobs['items'] as number
+    const categories = knobs['categories'] as number
+    const cuts = ratingCuts(
+      categories,
+      knobs['firstCut'] as number,
+      knobs['spacing'] as number,
+      knobs['tilt'] as number,
+    )
+    const quality = mul(normal(foldIn(k, 0), [items]), knobs['qualitySd'] as number) as Tensor
+    const generosity = mul(normal(foldIn(k, 1), [raters]), knobs['generositySd'] as number) as Tensor
+    // which pairs were rated, taken in a random order
+    const rated = less(uniform(foldIn(k, 2), [raters * items]), knobs['density'] as number)
+    const found = nonzero(rated)[0] as Tensor<'int32'>
+    const count = found.shape[0] ?? 0
+    const pairs = take(found, permutation(foldIn(k, 3), count))
+    const rater = floor(div(pairs, items)) as Tensor
+    const item = mod(pairs, items) as Tensor
+    // the score of each rating, and the rating as one plus the number of cut points below it
+    const score = add(add(take(quality, item), take(generosity, rater)), normal(foldIn(k, 4), [count])) as Tensor
+    const values = add(1, sum(less(cuts, reshape(score, [count, 1])), 1))
+    return {
+      data: interactions(
+        { users: rater, items: item, values, nUsers: raters, nItems: items },
+        stamp('ordinalRatings', ordinalRatings.description, knobs),
+      ),
+      truth: {
+        latents: { quality, generosity, score },
+        extra: { cuts, categories, noiseSd: 1 },
       },
     }
   },

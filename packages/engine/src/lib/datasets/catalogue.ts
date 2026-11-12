@@ -72,7 +72,14 @@ import { irtResponses, pottsSamples } from './planted-pgm.ts'
 import { gaussianGraph } from './precision-graphs.ts'
 import { miscalibratedPredictions, survivalData } from './predictions.ts'
 import { pulseTrain } from './pulse-trains.ts'
-import { clickLogs, implicitFeedback, lowRankRatings, movielensSmall, zipfianCatalogue } from './ranking.ts'
+import {
+  clickLogs,
+  implicitFeedback,
+  lowRankRatings,
+  movielensSmall,
+  ordinalRatings,
+  zipfianCatalogue,
+} from './ranking.ts'
 import {
   type DatasetEntry,
   type DatasetModality,
@@ -224,6 +231,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   linkageTables,
   loggedBandit,
   lowRankRatings,
+  ordinalRatings,
   makeClassification,
   makeMultilabelClassification,
   makeRegression,
@@ -489,6 +497,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['eloGames', 'Games between rated players'],
     ['implicitFeedback', 'Implicit feedback'],
     ['lowRankRatings', 'Low-rank ratings'],
+    ['ordinalRatings', 'Ordinal ratings (ordered probit)'],
     ['roundRobin', 'Round-robin tournament'],
     ['zipfianCatalogue', 'Zipfian catalogue'],
   ]),
