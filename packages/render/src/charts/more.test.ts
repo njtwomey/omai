@@ -48,6 +48,23 @@ describe('fields', () => {
     expect(labels.label.formatter({ value: [0, 0, 0.25] })).toBe('0.25')
     expect(contours(bump, { levels: [2] }).series).toHaveLength(1)
   })
+  it('puts a level label at a chosen place along its line, to keep the labels of close levels apart', () => {
+    const at = (labelAt?: number): number[] => {
+      const l = contours(bump, {
+        x: [-1, 1],
+        y: [-1, 1],
+        levels: [0.25],
+        ...(labelAt === undefined ? {} : { labelAt }),
+      })
+      const labels = opt(l.series[l.series.length - 1])
+      return labels.data[0].value as number[]
+    }
+    // the contour of a bump is a closed loop, so compare places a quarter and three quarters of the way round
+    const [early, middle, late] = [at(0.25), at(), at(0.75)]
+    expect(early).not.toEqual(late)
+    expect(middle).not.toEqual(early)
+    expect(at(0.5)[2]).toBe(0.25)
+  })
   it('draws decision regions with boundaries', () => {
     const p = bump.map((r) => r.map((v) => v))
     const q = bump.map((r) => r.map((v) => 1 - v))
