@@ -28,9 +28,11 @@ import {
   logistic,
   multinomial,
   normal,
+  normalEach,
   permutation,
   philox4x32,
   poisson,
+  poissonEach,
   randint,
   randomBits,
   randomSplit,
@@ -99,6 +101,23 @@ describe('samplers have the right moments', () => {
     expect(minOf(Array.from(t.slice(0, 1000)))).toBeGreaterThanOrEqual(2)
     // E[Z | Z > 2] = phi(2) / (1 - Phi(2)) = 2.373215
     expect(mean(t)).toBeCloseTo(2.3732, 1)
+  })
+
+  it('normalEach draws each row from its own key, the same values as one draw per key', () => {
+    const rows = normalEach(4, [3], (i) => foldIn(key(21), 100 + i), { loc: 1, scale: 2 })
+    expect(rows.shape).toEqual([4, 3])
+    for (let i = 0; i < 4; i++)
+      expect(Array.from(rows.data.slice(3 * i, 3 * i + 3))).toEqual(
+        Array.from(normal(foldIn(key(21), 100 + i), [3], { loc: 1, scale: 2 }).data),
+      )
+  })
+
+  it('poissonEach draws each count from its own key', () => {
+    const rates = [0.5, 3, 80, 0, 12]
+    const counts = poissonEach(rates, (i) => foldIn(key(21), 100 + i))
+    expect(Array.from(counts.data)).toEqual(rates.map((r, i) => poisson(foldIn(key(21), 100 + i), r, [1]).data[0]))
+    expect(counts.shape).toEqual([5])
+    expect(() => poissonEach([1, -1], (i) => key(i))).toThrow()
   })
 
   it('discrete samplers', () => {

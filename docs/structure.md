@@ -8795,6 +8795,11 @@ library for the same computation. They do not set a higher bar than that library
 - `scripts/layers.ts`, with its rules and tables in `scripts/layers-rules.ts` and their test beside it: no import cycles
   between core domains (a cycle is reported as its path, one import per step), the tiers of section 2 (foundation,
   machinery, listed exceptions), no new file-level cycle inside a domain, and the package rules (section 1).
+- `scripts/banned.ts` (`make lint`, so `make verify` and `make check`): the banned globals (`Math.random`, clocks, `console`) in
+  published source, and the hand-built arrays in the code a page shows (rule in `scripts/banned-arrays.ts`, test beside it): in every `// region`
+  block anywhere in the engine or the pocs, `new Array`, `.fill(`, `Array.from(`, typed arrays, `.push(` and `for (` loops fail
+  the check (a line ending `// hide` is not shown and is not checked). There is no allow-list and no marker comment; shown code
+  is written with tensor operations. The general rule against hand-built numeric arrays is in CLAUDE.md.
 - `scripts/release.ts` (`make release`): the release: the next version is the highest `v<version>` tag (here or on origin) plus 0.0.1; it
   writes it to the three package manifests and `base/version.ts`, commits "Release <version>" and makes one tag `v<version>` for all three packages;
   `ARGS="--dry-run"` previews, `ARGS="--push"` pushes the commit and the tag, and the `pack` workflow then publishes one GitHub release with the

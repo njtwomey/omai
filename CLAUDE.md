@@ -142,8 +142,11 @@ moves its `path:line`, and a stale index fails CI. Never edit the generated file
 - **No hand-built arrays.** Numeric data is created and transformed with the tensor library (`zeros`, `ones`, `full`,
   `arange`, `linspace`, `eye`, `stack`, tensor arithmetic and reductions), never `new Array<number>(n).fill(c)`,
   `Array.from({ length: n }, ...)` for numbers, element-by-element fill loops or a `Float64Array` as a value container (the
-  owner does not abide it). An API that forces a `number[]` where a tensor is the input is widened to take tensors. The only
-  exemptions are the hot inner loops of the quadrature and grid kernels, named one by one with the reason.
+  owner does not abide it). An API that forces a `number[]` where a tensor is the input is widened to take tensors. The
+  hot inner loops of the quadrature and grid kernels are the one parked exception (converting them is a separate decision,
+  see `docs/probprog/ep-perf-tensor-study.md`). There are no exemption comments: do not write one. `scripts/banned.ts` (in
+  `make lint`) checks only the code that pages show (a `// region` block): no `new Array`, `.fill(`, `Array.from(`, typed arrays,
+  `.push(` or loops there.
 - No local copies of generic helpers: number-array kernels come from `numerics/linalg/blas.ts` (`ddot`, `dnrm2`,
   `daxpy`, `dscal`, `dgemv`), value-level ones from the tensor ops. A missing helper goes into a shared module first.
 - Every core export (`lib/`) has TSDoc: summary, `@param`, `@returns`, and an `@example` whose `// => value` lines are

@@ -3,8 +3,8 @@ import { cholesky } from 'omai-engine/numerics/linalg'
 import { epSpecMethod, runAnytimeAsync } from 'omai-engine/probprog/inference'
 import { defineModel, ops } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
-import { key, normal, poisson } from 'omai-engine/random'
-import { add, arange, matmul, mul, reshape, toFlat, type Value, zeros } from 'omai-engine/tensor'
+import { key, normal, poissonEach } from 'omai-engine/random'
+import { add, arange, exp, matmul, mul, reshape, toFlat, type Value, zeros } from 'omai-engine/tensor'
 import { session } from 'omai-engine/trace'
 import type { EpHooks } from '../../../../shared/ep/sweeps.ts'
 
@@ -26,12 +26,10 @@ export function simulate(seed: number, prior: Prior) {
   const L = cholesky(covariance(prior))
   const z = normal(key(seed), [BINS])
   const f = matmul(L, z)
-  const rate = (v: number): number => BASE * WIDTH * Math.exp(v)
-  const counts = toFlat(f).map((v, i) => {
-    const draw = poisson(key(seed + 1000 + i), rate(v), [1])
-    return toFlat(draw)[0] ?? 0
-  })
-  return { x: toFlat(x), f: toFlat(f), counts, prior }
+  const rate = mul(BASE * WIDTH, exp(f))
+  // Each count has a key of its own.
+  const counts = poissonEach(rate, (i) => key(seed + 1000 + i))
+  return { x: toFlat(x), f: toFlat(f), counts: toFlat(counts), prior }
 }
 // endregion
 

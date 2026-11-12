@@ -25,6 +25,7 @@ import { categorical as drawCategorical, foldIn, type Key } from '../../random/i
 import {
   asTensor,
   fromStorage,
+  full,
   primalOf,
   sliceAxis,
   squeeze,
@@ -244,7 +245,7 @@ export function enumerationPosterior<D = void>(model: Model<D>, data: D, options
   for (const s of g.sites) map[s.name] = s.variables.map((v) => s.low + (mpe.indices[v] ?? 0))
   const marginalOf = (v: string, states: number): number[] => {
     const home = calibrated.tree.cliques.findIndex((c) => c.includes(v))
-    if (home < 0) return new Array<number>(states).fill(1 / states)
+    if (home < 0) return toFlat(full([states], 1 / states))
     return Array.from(
       normaliseFactor(factorMarginal(calibrated.cliqueBeliefs[home] as Factor, [v])).logValues,
       Math.exp,

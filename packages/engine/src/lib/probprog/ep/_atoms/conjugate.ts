@@ -2,9 +2,9 @@
  * The conjugate setups of expectation propagation, bare and with their unknowns learned: a Gaussian mean, a beta with Bernoulli flips, a gamma with Poisson counts, and the same three with the numbers the basic atoms fix made unknown (the variance, the strength, the prior rate) and the data simulated from a stated truth. The posterior of each basic atom is in closed form, so these are the sanity setups of the suite: EP is exact on them, up to rounding, and they show the factor graph at its simplest.
  */
 
-import { beta, foldIn, gamma, key, normal, poisson, uniform } from '../../../random/index.ts'
+import { beta, foldIn, gamma, key, normal, poissonEach, uniform } from '../../../random/index.ts'
 import { type DictSpace, dict, int, real } from '../../../space/index.ts'
-import { add, arange, div, floor, item, toFlat } from '../../../tensor/index.ts'
+import { add, arange, div, floor, less, take, toFlat, type Value, where } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -202,7 +202,7 @@ function gaussianLearnedProblem(k: Config): AtomParts {
   ]
   // region gaussian-learned
   // the ground truth the data are drawn from: the model does not know it
-  const y = Array.from(toFlat(normal(foldIn(key(seed), 0), [n], { loc: trueMean, scale: trueSd })))
+  const y = normal(foldIn(key(seed), 0), [n], { loc: trueMean, scale: trueSd })
   const definition = defineModel('gaussian-learned', (m) => {
     // the variance and, given it, the mean: both unknown
     const sigma2 = m.latent('sigma2', d.inverseGamma(a, b))
@@ -210,7 +210,8 @@ function gaussianLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.normal(mu, ops.sqrt(sigma2)), m.data('y', { dims: ['i'], role: 'response' }))
   })
   // endregion
-  const { mu, sigma2, joint } = normalInverseGammaPosterior(y, m0, kappa, a, b)
+  const observed = toFlat(y)
+  const { mu, sigma2, joint } = normalInverseGammaPosterior(observed, m0, kappa, a, b)
   const x = [0, n + 1]
   return {
     build: {
@@ -239,7 +240,7 @@ function gaussianLearnedProblem(k: Config): AtomParts {
         xLabel: 'observation',
         yLabel: 'y',
         xLimits: x as [number, number],
-        points: [{ name: 'observations', x: y.map((_, i) => i + 1), y }],
+        points: [{ name: 'observations', x: observed.map((_, i) => i + 1), y: observed }],
         curves: [
           { name: 'true mean', colour: 'tab2', x, y: [trueMean, trueMean] },
           { name: 'true mean + 2 sd', colour: 'tab2', x, y: [trueMean + 2 * trueSd, trueMean + 2 * trueSd] },
@@ -293,7 +294,7 @@ const gaussianLearnedAtom: EpAtom = defineAtom({
 })
 
 /** The group of each of `groups * per` observations, group by group. */
-const groupIndex = (groups: number, per: number): number[] => toFlat(floor(div(arange(groups * per), per)))
+const groupIndex = (groups: number, per: number): Value => floor(div(arange(groups * per), per))
 
 const FIGURE_GROUPS = (groups: number): number[] => toFlat(add(arange(groups), 1))
 
@@ -304,10 +305,10 @@ function betaLearnedProblem(k: Config): AtomParts {
   // region beta-bernoulli-learned
   // the ground truth: a probability per group drawn from a symmetric beta, then flips with it
   const kk = key(seed)
-  const p = Array.from(toFlat(beta(foldIn(kk, 0), [groups], trueStrength, trueStrength)))
+  const p = beta(foldIn(kk, 0), [groups], trueStrength, trueStrength)
   const group = groupIndex(groups, per)
-  const u = toFlat(uniform(foldIn(kk, 1), [group.length]))
-  const y = group.map((j, i) => ((u[i] ?? 1) < (p[j] ?? 0) ? 1 : 0))
+  const u = uniform(foldIn(kk, 1), [groups * per])
+  const y = where(less(u, take(p, group)), 1, 0)
   const definition = defineModel('beta-bernoulli-learned', (m) => {
     const g = m.range('group')
     const r = m.range('flip')
@@ -319,7 +320,8 @@ function betaLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.bernoulli({ probs: prob.at(which) }), flips)
   })
   // endregion
-  const counts = p.map((_, j) => sum(y.filter((__, i) => group[i] === j)))
+  const [truth, flips, groupOf] = [toFlat(p), toFlat(y), toFlat(group)]
+  const counts = truth.map((_, j) => sum(flips.filter((__, i) => groupOf[i] === j)))
   const logPrior = (s: number): number => (a - 1) * Math.log(s) - b * s
   const post = hyperPosterior(
     (s) => {
@@ -352,7 +354,7 @@ function betaLearnedProblem(k: Config): AtomParts {
       bindOptions: { sizes: { group: groups } },
       quantities: [
         { name: 'strength', label: 'strength (the hyperparameter)', support: 'positive', truth: trueStrength },
-        ...p.map((t, j) => ({
+        ...truth.map((t, j) => ({
           name: `p[${j}]`,
           label: `p_${j + 1}`,
           support: 'unit' as const,
@@ -380,7 +382,7 @@ function betaLearnedProblem(k: Config): AtomParts {
         yLimits: [0, 1],
         points: [
           { name: 'share of heads', x: at, y: share },
-          { name: 'true probability', x: at, y: p },
+          { name: 'true probability', x: at, y: truth },
         ],
         answer: (mm) =>
           at.map((j) => ({
@@ -435,10 +437,9 @@ function gammaLearnedProblem(k: Config): AtomParts {
   // region gamma-poisson-learned
   // the ground truth: a rate per group drawn from a gamma, then counts with it
   const kk = key(seed)
-  const draw = toFlat(gamma(foldIn(kk, 0), [groups], a))
-  const rates = Array.from(draw, (v) => v / trueRate)
+  const rates = div(gamma(foldIn(kk, 0), [groups], a), trueRate)
   const group = groupIndex(groups, per)
-  const y = group.map((j, i) => item(poisson(foldIn(kk, 1 + i), rates[j] ?? 1, [1])))
+  const y = poissonEach(take(rates, group), (i) => foldIn(kk, 1 + i))
   const definition = defineModel('gamma-poisson-learned', (m) => {
     const g = m.range('group')
     const r = m.range('count')
@@ -449,7 +450,8 @@ function gammaLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.poisson(rate.at(which)), m.data('y', { dims: [r], support: 'count' }))
   })
   // endregion
-  const totals = rates.map((_, j) => sum(y.filter((__, i) => group[i] === j)))
+  const [truth, counts, groupOf] = [toFlat(rates), toFlat(y), toFlat(group)]
+  const totals = truth.map((_, j) => sum(counts.filter((__, i) => groupOf[i] === j)))
   const post = hyperPosterior(
     (b) =>
       (c - 1) * Math.log(b) - dd * b + groups * a * Math.log(b) - sum(totals.map((t) => (a + t) * Math.log(b + per))),
@@ -474,7 +476,7 @@ function gammaLearnedProblem(k: Config): AtomParts {
       bindOptions: { sizes: { group: groups } },
       quantities: [
         { name: 'priorRate', label: 'priorRate (the hyperparameter)', support: 'positive', truth: trueRate },
-        ...rates.map((t, j) => ({
+        ...truth.map((t, j) => ({
           name: `rate[${j}]`,
           label: `rate_${j + 1}`,
           support: 'positive' as const,
@@ -501,7 +503,7 @@ function gammaLearnedProblem(k: Config): AtomParts {
         xLimits: [0, groups + 1],
         points: [
           { name: 'mean count', x: at, y: totals.map((t) => t / per) },
-          { name: 'true rate', x: at, y: rates },
+          { name: 'true rate', x: at, y: truth },
         ],
         answer: (mm) =>
           at.map((j) => ({

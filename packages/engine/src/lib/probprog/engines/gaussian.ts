@@ -14,6 +14,7 @@ import { gaussianBeliefPropagation, type LinearGaussianNode, linearGaussianBayes
 import { foldIn, type Key, normal as normalDraws } from '../../random/index.ts'
 import {
   add,
+  arange,
   asTensor,
   broadcastTo,
   concat,
@@ -185,10 +186,11 @@ export function linearGaussianForm<D = void>(model: Model<D>, data: D, prototype
   return { blocks, A, b, S, y }
 }
 
+/** The indices `offset, offset + 1, ..., offset + size - 1`. */
+const indexRange = (offset: number, size: number): number[] => toFlat(add(arange(size), offset))
+
 function indicesOf(blocks: readonly GaussianBlock[], observed: boolean): number[] {
-  return blocks
-    .filter((b) => b.observed === observed)
-    .flatMap((b) => Array.from({ length: b.size }, (_, i) => b.offset + i))
+  return blocks.filter((b) => b.observed === observed).flatMap((b) => indexRange(b.offset, b.size))
 }
 
 function sub2(m: Tensor, rows: readonly number[], cols: readonly number[]): Tensor {
@@ -300,7 +302,7 @@ export function kalmanSmoother(form: LinearGaussianForm): KalmanResult {
   }
   const T = [...latentSteps.keys()].reduce((a, b) => Math.max(a, b), -1) + 1
   const coords = (bs: readonly GaussianBlock[] | undefined): number[] =>
-    (bs ?? []).flatMap((b) => Array.from({ length: b.size }, (_, i) => b.offset + i))
+    (bs ?? []).flatMap((b) => indexRange(b.offset, b.size))
   const steps: GaussianBlock[][] = []
   const xIdx: number[][] = []
   const yIdx: number[][] = []
@@ -315,7 +317,7 @@ export function kalmanSmoother(form: LinearGaussianForm): KalmanResult {
       throw new OmaiError('value', 'kalman: the program is not a first-order chain of latent states')
   }
   const n = form.b.shape[0] ?? 0
-  const everything = Array.from({ length: n }, (_, i) => i)
+  const everything = toFlat(arange(n))
   const yPos = new Map(indicesOf(form.blocks, true).map((c, i) => [c, i]))
   const transitions: Tensor[] = []
   const predictedMeans: Tensor[] = []
@@ -420,7 +422,7 @@ function marginalsOf(blocks: readonly GaussianBlock[], mean: Tensor, cov: Tensor
   const out: Record<string, Distribution> = {}
   let at = 0
   for (const b of blocks) {
-    const idx = Array.from({ length: b.size }, (_, i) => at + i)
+    const idx = indexRange(at, b.size)
     const m = primalOf(take(mean, idx, 0))
     const c = sub2(cov, idx, idx)
     out[b.name] =
@@ -553,7 +555,7 @@ export function gaussianInference<D = void>(
     })
     const marginals: Record<string, Distribution> = {}
     for (const b of latent) {
-      const idx = Array.from({ length: b.size }, (_, i) => b.offset + i)
+      const idx = indexRange(b.offset, b.size)
       const mean = fromStorage(
         Float64Array.from(idx, (i) => r.means[name(i)] ?? Number.NaN),
         b.shape,

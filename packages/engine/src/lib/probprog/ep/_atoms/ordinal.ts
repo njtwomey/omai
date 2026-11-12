@@ -4,7 +4,33 @@
 
 import { foldIn, key, normal, uniform } from '../../../random/index.ts'
 import { dict, real } from '../../../space/index.ts'
-import { add, arange, div, mul, reshape, sub, toArray, toFlat } from '../../../tensor/index.ts'
+import {
+  add,
+  arange,
+  cumsum,
+  div,
+  flatten,
+  greater,
+  greaterEqual,
+  less,
+  log,
+  mod,
+  mul,
+  neg,
+  nonzero,
+  ones,
+  reshape,
+  softmax,
+  sub,
+  sum,
+  take,
+  tensor,
+  toArray,
+  toFlat,
+  triu,
+  type Value,
+  where,
+} from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -127,9 +153,11 @@ function ordinalLearnedProblem(k: Config): AtomParts {
   // region ordinal-probit-learned
   // the ground truth: a latent score with standard normal noise, cut at the known cut points
   const kk = key(seed)
-  const x = Array.from(toFlat(uniform(foldIn(kk, 0), [n])), (v) => 4 * v - 2)
-  const noise = toFlat(normal(foldIn(kk, 1), [n]))
-  const y = x.map((xi, i) => CUTS.filter((c) => c < trueA + trueB * xi + (noise[i] ?? 0)).length)
+  const x = uniform(foldIn(kk, 0), [n], { low: -2, high: 2 })
+  const noise = normal(foldIn(kk, 1), [n])
+  const score = add(add(trueA, mul(trueB, x)), noise)
+  // the category is the number of cut points below the score
+  const y = sum(less(CUTS, reshape(score, [n, 1])), 1)
   const definition = defineModel('ordinal-probit-learned', (m) => {
     const row = m.range('row')
     // the intercept and the slope of the predictor: both unknown
@@ -141,6 +169,7 @@ function ordinalLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.orderedProbit(predictor, CUTS), yy)
   })
   // endregion
+  const [xs, ys] = [toFlat(x), toFlat(y)]
   return {
     build: {
       definition,
@@ -160,7 +189,7 @@ function ordinalLearnedProblem(k: Config): AtomParts {
         `y_i ~ OrderedProbit(a + b x_i, cuts), i = 1..${n}`,
       ],
       pair: ['a', 'b'],
-      figure: ordinalFigure(x, y, [trueA, trueB]),
+      figure: ordinalFigure(xs, ys, [trueA, trueB]),
     },
   }
 }
@@ -200,9 +229,11 @@ function ordinalCutsLearnedProblem(k: Config): AtomParts {
   // region ordinal-probit-cuts-learned
   // the ground truth: a latent score with standard normal noise, cut at the true cut points
   const kk = key(seed)
-  const x = Array.from(toFlat(uniform(foldIn(kk, 0), [n])), (v) => 4 * v - 2)
-  const noise = toFlat(normal(foldIn(kk, 1), [n]))
-  const y = x.map((xi, i) => trueCuts.filter((c) => c < trueSlope * xi + (noise[i] ?? 0)).length)
+  const x = uniform(foldIn(kk, 0), [n], { low: -2, high: 2 })
+  const noise = normal(foldIn(kk, 1), [n])
+  const score = add(mul(trueSlope, x), noise)
+  // the category is the number of cut points below the score
+  const y = sum(less(trueCuts, reshape(score, [n, 1])), 1)
   const definition = defineModel('ordinal-probit-cuts-learned', (m) => {
     const row = m.range('row')
     const cut = m.range('cut', { size: 2 })
@@ -215,6 +246,7 @@ function ordinalCutsLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.orderedProbit(predictor, cuts, { over: cut }), yy)
   })
   // endregion
+  const [xs, ys] = [toFlat(x), toFlat(y)]
   // The exact posterior on a grid around the truth (the cut points ordered: the density is zero where they are not).
   const half = 10 / Math.sqrt(n) + 0.7
   const grid = once(() =>
@@ -222,9 +254,9 @@ function ordinalCutsLearnedProblem(k: Config): AtomParts {
       ([b, c1, c2]) => {
         if (!((c1 as number) < (c2 as number))) return Number.NEGATIVE_INFINITY
         let lp = (-0.5 * ((b as number) ** 2 + (c1 as number) ** 2 + (c2 as number) ** 2)) / s ** 2
-        for (const [i, xi] of x.entries()) {
+        for (const [i, xi] of xs.entries()) {
           const u = (b as number) * xi
-          const r = y[i] as number
+          const r = ys[i] as number
           lp += logBetween(
             r === 0 ? Number.NEGATIVE_INFINITY : (r === 1 ? (c1 as number) : (c2 as number)) - u,
             r === 2 ? Number.POSITIVE_INFINITY : (r === 0 ? (c1 as number) : (c2 as number)) - u,
@@ -276,7 +308,7 @@ function ordinalCutsLearnedProblem(k: Config): AtomParts {
         yLabel: 'category',
         xLimits: [-2, 2],
         yLimits: [-0.3, 2.3],
-        points: [{ name: 'observations', x: [...x], y: [...y] }],
+        points: [{ name: 'observations', x: xs, y: ys }],
         curves: [curve(trueSlope, trueCuts[0] as number, trueCuts[1] as number, 'true curve', 'tab2')],
         answer: (m) => [
           curve(m['slope'] ?? Number.NaN, m['cuts[0]'] ?? Number.NaN, m['cuts[1]'] ?? Number.NaN, 'fitted curve'),
@@ -429,12 +461,12 @@ function quantileLearnedProblem(k: Config): AtomParts {
   // region quantile-regression-learned
   // the ground truth: asymmetric Laplace noise around the line, so its tau quantile is the line
   const kk = key(seed)
-  const x = Array.from(toFlat(uniform(foldIn(kk, 0), [n])), (v) => 4 * v - 2)
-  const q = toFlat(uniform(foldIn(kk, 1), [n]))
-  const below = (p: number): number => Math.log(p / tau) / (1 - tau)
-  const above = (p: number): number => -Math.log((1 - p) / (1 - tau)) / tau
-  const noise = (p: number): number => (p < tau ? below(p) : above(p))
-  const y = x.map((xi, i) => trueA + trueB * xi + scale * noise(q[i] ?? 0.5))
+  const x = uniform(foldIn(kk, 0), [n], { low: -2, high: 2 })
+  const q = uniform(foldIn(kk, 1), [n])
+  const below = div(log(div(q, tau)), 1 - tau)
+  const above = div(neg(log(div(sub(1, q), 1 - tau))), tau)
+  const noise = where(less(q, tau), below, above)
+  const y = add(add(trueA, mul(trueB, x)), mul(scale, noise))
   const definition = defineModel('quantile-regression-learned', (m) => {
     const row = m.range('row')
     // the intercept and the slope of the line at the quantile level: both unknown
@@ -446,6 +478,7 @@ function quantileLearnedProblem(k: Config): AtomParts {
     m.observe('y', d.asymmetricLaplace(line, scale, tau), yy)
   })
   // endregion
+  const [xs, ys] = [toFlat(x), toFlat(y)]
   const half = Math.max(0.6, (10 * scale) / Math.sqrt(n))
   return {
     build: {
@@ -474,7 +507,7 @@ function quantileLearnedProblem(k: Config): AtomParts {
         `y_i ~ AsymmetricLaplace(a + b x_i, scale ${scale}, tau ${tau}), i = 1..${n}`,
       ],
       pair: ['a', 'b'],
-      figure: quantileFigure('simulated points', x, y, tau, [trueA, trueB]),
+      figure: quantileFigure('simulated points', xs, ys, tau, [trueA, trueB]),
     },
   }
 }
@@ -661,14 +694,14 @@ function drawsLearnedProblem(k: Config): AtomParts {
   const cuts = [-margin / Math.SQRT2, margin / Math.SQRT2]
   // region skill-draws-learned
   // the ground truth: every pair plays in turn, the better performance wins unless the gap is inside the draw margin
-  const games: (readonly [number, number])[] = []
-  for (let r = 0; r < rounds; r++) {
-    for (const [a, b] of PAIRS.slice(0, 3)) games.push(r % 2 ? [b, a] : [a, b])
-  }
-  const noise = toFlat(normal(foldIn(key(seed), 0), [games.length], { scale: Math.SQRT2 }))
-  const skill = (i: number): number => truth[i] as number
-  const gaps = games.map(([a, b], g) => skill(a) - skill(b) + (noise[g] as number))
-  const results = gaps.map((v) => (v < -margin ? 0 : v > margin ? 2 : 1))
+  const [lo, hi] = nonzero(triu(ones([3, 3]), 1)) as [Value, Value]
+  const odd = reshape(mod(arange(rounds), 2), [rounds, 1])
+  const home = flatten(where(odd, hi, lo))
+  const away = flatten(where(odd, lo, hi))
+  const games = rounds * 3
+  const noise = normal(foldIn(key(seed), 0), [games], { scale: Math.SQRT2 })
+  const gaps = add(sub(take(tensor(truth), home), take(tensor(truth), away)), noise)
+  const results = where(less(gaps, -margin), 0, where(greater(gaps, margin), 2, 1))
   const definition = defineModel('skill-draws-learned', (m) => {
     const player = m.range('player', { size: 3 })
     const game = m.range('game')
@@ -681,11 +714,19 @@ function drawsLearnedProblem(k: Config): AtomParts {
     m.observe('result', d.orderedProbit(gap, cuts), result)
   })
   // endregion
-  const grid = once(() => skillGrid(games, results, margin, 1))
+  const [a, b, outcomes] = [toFlat(home), toFlat(away), toFlat(results)]
+  const grid = once(() =>
+    skillGrid(
+      a.map((player, g) => [player, b[g] as number] as const),
+      outcomes,
+      margin,
+      1,
+    ),
+  )
   return {
     build: {
       definition,
-      data: { a: games.map((p) => p[0]), b: games.map((p) => p[1]), result: results },
+      data: { a: home, b: away, result: results },
       quantities: PLAYERS.map((n, i) => ({
         name: `skill[${i}]`,
         label: `skill_${n}`,
@@ -701,7 +742,7 @@ function drawsLearnedProblem(k: Config): AtomParts {
     },
     present: {
       equations: [
-        `truth: skills (${truth.join(', ')}), draw margin ${margin}; ${games.length} games (each pair ${rounds} times), seed ${seed}`,
+        `truth: skills (${truth.join(', ')}), draw margin ${margin}; ${games} games (each pair ${rounds} times), seed ${seed}`,
         'skill_A, skill_B, skill_C ~ N(0, 1)',
         `game g between a and b: lost, drawn or won by the ordinal probit of (skill_a - skill_b) / sqrt 2 with cut points -${cuts[1]?.toFixed(3)} and ${cuts[1]?.toFixed(3)}`,
       ],
@@ -744,7 +785,7 @@ const CLASSES = 3
 const GRID = 37
 
 /** The softmax of the three scores `w_k x`. */
-const softmax = (w: readonly number[], x: number): number[] => {
+const classProbabilities = (w: readonly number[], x: number): number[] => {
   const z = w.map((v) => v * x)
   const top = Math.max(...z)
   const e = z.map((v) => Math.exp(v - top))
@@ -776,7 +817,7 @@ function slopeGrid(x: readonly number[], y: readonly number[], priorSd: number) 
   return gridMarginals(
     (w) => {
       let lp = (-0.5 * w.reduce((a, v) => a + v * v, 0)) / priorSd ** 2
-      for (const [i, xi] of x.entries()) lp += Math.log(softmax(w, xi)[y[i] as number] as number)
+      for (const [i, xi] of x.entries()) lp += Math.log(classProbabilities(w, xi)[y[i] as number] as number)
       return lp
     },
     [
@@ -793,7 +834,7 @@ function figureOf(x: readonly number[], y: readonly number[]): AtomFigure {
   const curve = (w: readonly number[], k: number, name: string): FigureCurve => ({
     name,
     x: CURVE_X,
-    y: CURVE_X.map((v) => softmax(w, v)[k] as number),
+    y: CURVE_X.map((v) => classProbabilities(w, v)[k] as number),
   })
   return {
     caption:
@@ -887,16 +928,15 @@ function softmaxLearnedProblem(k: Config): AtomParts {
   // region softmax-regression-learned
   // the ground truth: covariates on [-2, 2] and a class drawn from the softmax of the true slopes times the covariate
   const kk = key(seed)
-  const x = Array.from(toFlat(uniform(foldIn(kk, 0), [n])), (v) => 4 * v - 2)
-  const u = toFlat(uniform(foldIn(kk, 1), [n]))
-  const y = x.map((xi, i) => {
-    const p = softmax(truth, xi)
-    const v = u[i] ?? 0.5
-    return v < (p[0] as number) ? 0 : v < (p[0] as number) + (p[1] as number) ? 1 : 2
-  })
+  const x = uniform(foldIn(kk, 0), [n], { low: -2, high: 2 })
+  const u = uniform(foldIn(kk, 1), [n, 1])
+  // the class is the number of cumulative probabilities (but the last) that the draw has passed
+  const cumulative = cumsum(softmax(mul(reshape(x, [n, 1]), truth), 1), 1)
+  const y = sum(greaterEqual(u, take(cumulative, [0, 1], 1)), 1)
   const definition = softmaxModel('softmax-regression-learned', s)
   // endregion
-  const grid = once(() => slopeGrid(x, y, s))
+  const [xs, ys] = [toFlat(x), toFlat(y)]
+  const grid = once(() => slopeGrid(xs, ys, s))
   return {
     build: {
       definition,
@@ -924,7 +964,7 @@ function softmaxLearnedProblem(k: Config): AtomParts {
         `y_i ~ Categorical(softmax(w_0 x_i, w_1 x_i, w_2 x_i)), i = 1..${n}`,
       ],
       pair: ['w[0]', 'w[1]'],
-      figure: figureOf(x, y),
+      figure: figureOf(xs, ys),
     },
   }
 }

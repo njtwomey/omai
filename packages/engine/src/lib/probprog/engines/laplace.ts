@@ -12,6 +12,7 @@ import { lbfgs } from '../../optim/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
   add,
+  arange,
   fromStorage,
   item,
   mul,
@@ -325,7 +326,7 @@ export function laplacePosterior(um: UnconstrainedModel, fit: LaplaceFit): Poste
   const marginals: Record<string, ReturnType<typeof normal>> = {}
   for (const l of um.layout) {
     if (l.support.kind !== 'real') continue
-    const idx = Array.from({ length: l.size }, (_, i) => l.offset + i)
+    const idx = toFlat(add(arange(l.size), l.offset))
     const cov = toFlat(fit.covariance)
     const m = toFlat(fit.mode)
     const sd = idx.map((i) => Math.sqrt(cov[i * um.dim + i] ?? Number.NaN))

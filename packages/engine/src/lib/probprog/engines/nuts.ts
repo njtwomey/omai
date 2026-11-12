@@ -7,7 +7,7 @@
 import { type Json, OmaiError } from '../../base/index.ts'
 import { categorical as drawCategorical, foldIn, type Key } from '../../random/index.ts'
 import { type Chains, diagnose, hmc, nuts } from '../../sampling/index.ts'
-import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
+import { fromStorage, full, primalOf, type Tensor, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -242,7 +242,7 @@ export interface McmcState {
 }
 
 const perChainMean = (t: Tensor | undefined, numChains: number): number[] => {
-  if (t === undefined) return new Array<number>(numChains).fill(Number.NaN)
+  if (t === undefined) return toFlat(full([numChains], Number.NaN))
   const flat = toFlat(t)
   const n = Math.floor(flat.length / numChains)
   return Array.from({ length: numChains }, (_, c) => {

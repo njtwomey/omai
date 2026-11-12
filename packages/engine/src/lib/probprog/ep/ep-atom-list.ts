@@ -7,9 +7,9 @@
  */
 
 import { OmaiError } from '../../base/index.ts'
+import { composedAtoms } from './_atoms/composed.ts'
 import { composedChainAtoms } from './_atoms/composed-chain.ts'
 import { composedGatesAtoms } from './_atoms/composed-gates.ts'
-import { composedAtoms } from './_atoms/composed.ts'
 import { conjugateAtoms } from './_atoms/conjugate.ts'
 import { countsAtoms } from './_atoms/counts.ts'
 import { covarianceAtoms } from './_atoms/covariance.ts'

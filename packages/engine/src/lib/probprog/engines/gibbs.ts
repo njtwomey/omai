@@ -21,16 +21,20 @@ import {
   cast,
   concat,
   fromStorage,
+  full,
   item,
   mul,
   primalOf,
   reshape,
+  stack,
   sum,
   type Tensor,
   type TensorLike,
   take,
+  toArray,
   toFlat,
   type Value,
+  zeros,
 } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
 import { enumeratedMarginals, traceFactors } from '../_contract.ts'
@@ -178,13 +182,13 @@ function plan<D = void>(model: Model<D>, data: D, a: ProgramAnalysis, collapse: 
       const groups = product(shape)
       let alpha: number[][]
       if (fam === 'dirichlet' && alphaParam !== undefined) {
-        const full = toFlat(primalOf(broadcastTo(alphaParam, [...shape, k])))
-        alpha = Array.from({ length: groups }, (_, g) => full.slice(g * k, (g + 1) * k))
+        const rows = reshape(primalOf(broadcastTo(alphaParam, [...shape, k])), [groups, k])
+        alpha = toArray(rows) as number[][]
       } else {
         const base = unexpanded(s.fn)
-        const av = toFlat(primalOf(broadcastTo(base.params['a'] ?? asTensor(1), shape)))
-        const bv = toFlat(primalOf(broadcastTo(base.params['b'] ?? asTensor(1), shape)))
-        alpha = Array.from({ length: groups }, (_, g) => [bv[g] ?? 1, av[g] ?? 1])
+        const av = reshape(primalOf(broadcastTo(base.params['a'] ?? asTensor(1), shape)), [groups])
+        const bv = reshape(primalOf(broadcastTo(base.params['b'] ?? asTensor(1), shape)), [groups])
+        alpha = toArray(stack([bv, av], 1)) as number[][]
       }
       collapsedNames.add(name)
       blocks.push({
@@ -269,7 +273,7 @@ function collapsedCounts(
   c: Collapsed,
   t: ProgramTrace,
 ): { readonly counts: number[][]; readonly members: { readonly groups: Int32Array; readonly states: Int32Array }[] } {
-  const counts = c.alpha.map(() => new Array<number>(c.k).fill(0))
+  const counts = toArray(zeros([c.alpha.length, c.k])) as number[][]
   const members = c.children.map((child) => {
     const cs = siteOf(t, child.site)
     if (cs === undefined) throw new OmaiError('value', `gibbs: no site ${child.site}`)
@@ -508,7 +512,7 @@ function updateDiscrete<D = void>(
   }
   // Collapsed: sequential updates with Dirichlet-multinomial predictive terms.
   const t0 = traceOf(condition(model, values), data)
-  const states = Int32Array.from(toFlat(primalOf(current ?? asTensor(new Array(n).fill(low)))), (v) => v - low)
+  const states = Int32Array.from(toFlat(primalOf(current ?? full([n], low))), (v) => v - low)
   const info = relevant.map((c) => ({ c, ...collapsedCounts(c, t0) }))
   for (let i = 0; i < n; i++) {
     const logits = Array.from({ length: K }, (_, k) => base(i, k))

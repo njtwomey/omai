@@ -154,6 +154,35 @@ export function normal(
 }
 
 /**
+ * Normal draws with a key of their own for each row: row `i` is `normal(keyOf(i), shape)`, so a design built one row at a time
+ * keeps its seeded values, and a longer design only appends rows.
+ *
+ * @param count - The number of rows.
+ * @param shape - The shape of each row.
+ * @param keyOf - The key of the i-th row.
+ * @param options - `loc` and `scale`, as for {@link normal}.
+ * @returns A tensor of shape `[count, ...shape]`.
+ * @example
+ * ```ts
+ * import { foldIn, key, normal, normalEach } from 'omai-engine/random'
+ * const rows = normalEach(3, [2], (i) => foldIn(key(1), i))
+ * rows.shape // => [3, 2]
+ * rows.data[4] === normal(foldIn(key(1), 2), [2]).data[0] // => true
+ * ```
+ */
+export function normalEach(
+  count: number,
+  shape: Shape,
+  keyOf: (i: number) => Key,
+  options: { readonly loc?: number; readonly scale?: number } = {},
+): Tensor<'float64'> {
+  const size = sizeOf(shape)
+  const out = new Float64Array(count * size)
+  for (let i = 0; i < count; i++) out.set(normal(keyOf(i), shape, options).data, i * size)
+  return fromStorage(out, [count, ...shape], 'float64')
+}
+
+/**
  * Standard normal samples truncated to `[lower, upper]`, by Robert's (1995) rejection samplers: an exponential
  * proposal in the tails, a uniform proposal on short intervals and normal rejection on wide ones, so every interval,
  * however narrow or far out, costs a few uniforms per draw.
