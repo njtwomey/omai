@@ -43,4 +43,5 @@ single scalar, so the apply-product stays per coefficient.
   is left of the error is a moment match of a skewed marginal, not the correlations. The EP test now uses 60 points.
 - The evidence of the new operator is the log mass against the unnormalised messages (tested against a grid); the posterior's
   evidence diagnostics read it like the other operators'.
-- Variational message passing has no rule for the factor (gap `non-centred-scale`, now only that).
+- Variational message passing has a rule for the dense factor since 2026-11-12 (the mean field of the vector given `x`, no standard
+  normals); ARD has none (gap `non-centred-scale`, now only that).

@@ -172,7 +172,7 @@ function tilt(c: OperatorContext): Tilt {
  * import { beta, betaEta, dirichletConcentration, gamma, gammaEta, messageArg } from 'omai-engine/message-passing'
  * const args = [messageArg(beta, betaEta(3, 2)), messageArg(gamma, gammaEta(2, 1))]
  * const m = dirichletConcentration.ep?.({ mode: 'ep', to: 1, args, params: { weights: [1, 1] }, power: 1 }).message
- * m?.map((v) => v.toFixed(3)) // => ['0.287', '-0.289']
+ * m?.map((v) => v.toFixed(3)) // => ['0.469', '-0.104']
  * ```
  */
 export const dirichletConcentration: FactorOperator = defineOperator({
@@ -212,7 +212,6 @@ export const dirichletConcentration: FactorOperator = defineOperator({
     }, 'numeric'),
   },
   evidence: {
-    improperIsNaN: true,
     ep: (c) => tilt(c).logZ,
     vmp: (c) => {
       const { w, o } = concentrations(c)
@@ -331,7 +330,6 @@ export const betaTwoShapes: FactorOperator = defineOperator({
     }, 'numeric'),
   },
   evidence: {
-    improperIsNaN: true,
     ep: (c) => {
       if (!allProper(c.args)) return Number.NaN
       return twoShapes(c).logMass + massOf(arg(c, 1)) + massOf(arg(c, 2))
