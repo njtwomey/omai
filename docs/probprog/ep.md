@@ -131,16 +131,30 @@ kinds of problem the suite could cover. Neither carries counts or dates; `ep-sta
 
 ## 7. The suite
 
-**Atoms** (`probprog/ep/ep-atoms-*.ts`, registry `ep-atom-list.ts`: `epAtoms`, `epAtom(name)`). A bare setup of one factor or family. The
-scaffold `ep-atoms.ts` has `defineAtom`, `atomRun`, `atomReference`, `atomCheck`, `verifyAtom`, `atomVerdict`, `atomBeliefs`. A **basic**
-atom has known constants; its **learned** twin (`extends`, a name ending `-learned`) makes them unknown with priors and simulates the data
-from a stated truth, and promises a recovery (`recovery`: over its seeds the 90% intervals hold the truth at the stated rate). The
-reference is one of `exact` (closed form), `grid` (the model as a program on a grid, `validation/gridPosterior`) or `truth` (recovery
-only). The tolerance is `meanZ`, an `sdRatio` range and a KS distance, each with a reason (EP is approximate, and why).
+**Atoms** (`probprog/ep/_atoms/<family>.ts`, registry `ep-atom-list.ts`: `epAtoms`, `epAtom(name)`, `epAtomsOf(family)`). A bare setup of one
+factor or family, one file per family (`conjugate`, `priors`, `scales`, `likelihoods`, `ordinal`, `gates`, `weights`, `functions`, `kernels`,
+`covariance`, `nonparametric`, `counts`), the basic atoms and their learned twins together; each file ends with its array and the atoms are
+not exported one by one. A **basic** atom has known constants; its **learned** twin (`extends`, a name ending `-learned`) makes them unknown
+with priors and simulates the data from a stated truth, and promises a recovery (`recovery`: over its seeds the 90% intervals hold the truth
+at the stated rate). An atom is declared with `defineAtom` (`_define.ts`) and has three parts, returned by `parts(knobs)`: **build** (the
+model, its data and the quantities), **reference** (`exact` closed forms, a `grid` option, the joint of a pair, `referenceSource`) and
+**present** (the equations, the figure, the pair and mixtures a page draws); `atom.problem(knobs)` composes them, lazily. The reference
+kind is `exact` (closed form), `grid` (the model as a program on a grid, `validation/gridPosterior`) or `truth` (recovery only). The
+tolerance is a named rung (`_tolerance.ts`: `tolerance('close', reason)`, `exact` through `lumpiest`, or `measured` with its own numbers
+where an atom sits near the edge of every rung) and the recovery one of three (`recovery('standard', reason)`); `evidence` says how close
+EP's log evidence is to the grid's where the grid is fast. `family` is the union `AtomFamily`. The records are in `atom-types.ts`, the
+functions in `ep-atoms.ts` (`atomReference`, `atomCheck`, `verifyAtom`, `atomVerdict`, `atomRun`) and **`run.ts`**: `runEp(bound, {quantities,
+ep, light})` is the generic "run EP on a bound model through `epRoute`, with beliefs per sweep and a record", which `atomRun` calls and a
+program page can call on its own model.
 
-**References** are independent of the rule under test: a closed form, a quadrature or a sampler, never EP. Today they are spread over
-`ep-atoms-quad.ts` (1-D and tensor-grid marginals), `ep-atoms-covariance-ref.ts`, `ep-atoms-gibbs.ts` and the families' own files, plus
-`gridPosterior` and `mixtureOfRegressions` of `validation`. **Target** (`review-suite.md` F3): one `validation/references/` family.
+**References** are independent of the rule under test: a closed form, a quadrature or a sampler, never EP. They are one family in
+`probprog/validation/references/`: `marginal.ts` (the shape `ExactMarginal`; mixtures, `weightedMarginal` with three density readings,
+`gaussianMixtureMarginal`, `probabilityMarginal`, draws), `grid.ts` (`quadratureMarginal`, `hyperPosterior`, `gridMarginals`, `logWeights`),
+`grid3.ts` (`posterior3`, three coordinates by passes), `conjugate.ts` (gamma, inverse gamma, Student t, beta, the normal-inverse-gamma
+posterior, and `conjugateMarginal`, which reads the library's `exact.ts` table), `gate.ts` (the exact two-component switch and spike and
+slab), `clutter.ts` (the clutter problem by quadrature) and `sampler.ts` (the Gibbs sampler of a mixture), next to `gridPosterior`,
+`mixtureOfRegressions` and `exact.ts`. The conjugate atoms keep their hand-written closed forms and a test checks them against the library's
+table (taking the table's turns the check's KS distance 0 into 1e-16, which the bitwise digest sees).
 
 **Coverage** (`ep-coverage.ts`): `epCoverage()` runs every atom and asks the route of every benchmark model; `vmpCoverage()` does the
 variational twin. It measures, it does not remember: the tests hold `atomsRun === epAtoms.length` and the like, and the committed digest
@@ -149,7 +163,7 @@ is the regression net for the numbers. **Calibration and recovery** (`ep-extende
 
 **The pocs** (`apps/pocs`) show the suite: one page per atom (`EpAtomPage`), the programs (`ep-program-*`), the coverage page. A page that
 shows a model ends with the code that ran (`atomSource` takes the `// region <atom>` of the atom's file and the `// region inference`
-lines of `atomRun`).
+lines of `runEp` (`run.ts`)).
 
 ## 8. The proof that a change moved nothing
 
@@ -173,15 +187,15 @@ and the emission, the `layout` call that maps the graph variable back to the sit
 posterior), and a refusal with a reason where the idiom is close but not it. Add a model test (`model/*-factors.test.ts`). Take care
 that order inside the if-chains is semantics. **Target**: add an entry to the ordered mapping list with its `requires`.
 
-**An atom.** Put it in the file of its family (`ep-atoms-<family>.ts`); wrap the model and data in a `// region <atom-name>` so the page
+**An atom.** Put it in the file of its family (`_atoms/<family>.ts`, next to its twin); wrap the model and data in a `// region <atom-name>` so the page
 shows the code that ran; `defineAtom` with `name`, `title`, `what`, `factors`, `family`, `reference`, `tolerance` (with the reason),
-`knobs` and `problem`; `ep:` only for knobs of EP the atom needs (`damping`, `tol`, `power`); a learned twin adds `extends` and
-`recovery` and carries the `truth` on every quantity. Add it to `epAtoms` in `ep-atom-list.ts`. A page needs two files in
+`knobs` and `parts` (the build, the reference and the presentation); `ep:` only for knobs of EP the atom needs (`damping`, `tol`, `power`); a learned twin adds `extends` and
+`recovery` and carries the `truth` on every quantity. Add it to the array at the end of the family file (the registry concatenates them). A page needs two files in
 `apps/pocs/src/pocs/ep-<atom>/` (the owner's call: pocs are added on request). Then `make barrels agent-index api-surface`, the atom's
 test through the registry (`ep-atoms.test.ts` runs every atom), and the digest: a new atom adds its item (`--accept` in its own commit).
 
 **A reference.** A closed form from `validation/exact.ts` (`normalNormal`, `betaBernoulli`, `gammaPoisson`, `dirichletCategorical`)
-where it exists; else a quadrature in the shared helpers (`ep-atoms-quad.ts`: `quadratureMarginal`, `gridMarginals` with `marginal(k)`);
+where it exists; else a quadrature in `validation/references` (`quadratureMarginal`, `gridMarginals` with `marginal(k)`, `weightedMarginal`, `logWeights`);
 independent of the model's own EP rule. Say in `referenceSource` what it is when it is not a closed form.
 
 **A knob.** In `epRunKnobs` (`ep-knobs.ts`) once, with the per-method default; read it through `epRunSettings`; the three methods and

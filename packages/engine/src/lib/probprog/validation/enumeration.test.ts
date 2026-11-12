@@ -1,7 +1,7 @@
 // The enumeration oracle of the spike and slab regression against closed forms and a brute-force grid.
 import { describe, expect, it } from 'vitest'
-import { spikeSlabPosterior } from '../ep/ep-atoms-mixtures.ts'
 import { mixtureOfRegressions, spikeSlabRegression, zeroInflatedPoisson } from './enumeration.ts'
+import { spikeSlabPosterior } from './references/gate.ts'
 
 describe('spikeSlabRegression', () => {
   it('one coefficient over several rows is the two-component closed form on the sufficient statistics', () => {

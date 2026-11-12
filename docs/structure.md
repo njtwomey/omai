@@ -3691,6 +3691,25 @@ dimension order, ids, site names, expressions, the hooks for factor graphs) are 
   compiler (a Gram matrix at a fixed length scale), and one that is affine in a single random vector is read as a matrix (the
   whitened form `f = L(ell) z`); an unnamed event vector (a multivariate normal latent and its observation through a
   diagonal known covariance) is read as a vector over a dimension of its size by `event-dims.ts` (`eventToDims`).
+- `factor-graph/` (an `@inline` folder of `model/`, the pieces of the compiler that `factors.ts` drives; the files that start with `_` are private,
+  not exported). Public: `types.ts` (`FactorIssue`, `SiteLayout`, `FactorGraphCompilation`), `readback.ts` (`factorGraphPosterior`,
+  `graphOnSpec`: a run read back by site name) and `verdict.ts` (`factorGraphVerdict`, `compileFactorGraph`, `operatorsWithout`). Private, in
+  the order a compilation uses them: `_known.ts` (the constants pass: bound data and the derived nodes built from known things only,
+  evaluated by the operator registry before the walk, as `Known`; a derived node that is constant only after its symbolic evaluation, `0 * z`, is
+  declared by the walk into the same `Known` and listed in `Known.semantic`, because that knowledge is order-dependent by nature),
+  `_idioms.ts` (the pure recognisers: the precision idiom of a scale, the known multiple of a gamma variable, an inverse-gamma variance,
+  `dependsOnLatent` and `sharedGamma` as the analysis module's `usesLatent` and `latentsIn`), `_plan.ts` (the `LayoutPlan`, immutable, found from the
+  whole spec before any node is mapped, in a fixed order: `findPacked`, then `findNonCentred` (reads what a `matmul` reads), then `findGroups` (reads the
+  packed vectors; only with `packScalars`), then `findNormalGamma` (reads the constants as of each precision's position)); `_context.ts`
+  (`Context`, the state of one compilation: the graph builder, the issues and site layouts, `Known`, the plan, the symbolic value of each node, and
+  the few operations every mapping needs); `_symbolic/` (the evaluator of expressions: `_dims.ts` the named dimensions, `_affine.ts` `evalSym` and
+  the value algebra, `_gates.ts` values chosen by a discrete variable, `_functions.ts` the `product`, `apply` and `max`/`min` factors that arithmetic on random values
+  makes; `EvalMode` says whether a gate keeps its components as a lookup); `_cells.ts` (the value algebra: pure), `_builder.ts` (the graph builder, `GateBuilder`)
+  and `_refusal.ts` (`Refusal`); `_params.ts` (a node's parameters as the mappings read them: `paramSym`, `constParam`, `cellsOf`, `paramCell`,
+  `discreteParents`); `_mappings/` (one file per concern, the mappings as functions of a `Context` and a node: `latent-gaussian`, `latent-positive`,
+  `latent-discrete`, `matrix`, `derived`, `observed-gaussian`, `observed-numeric`, `observed-conjugate`, `observed-gates`, `plates`; the folder is private
+  so that its functions are not exports). `factors.ts` is the driver: it walks the spec in order and dispatches each node by the chains of `latent`,
+  `observed` and `observedElement`, whose order is part of the meaning (normal-gamma before the family lookup, a value moved to the mean first).
 
 **Inference methods (`inference/`, `omai-engine/probprog/inference`).** The convention and the methods, with no entry point
 that picks one. `method.ts` is the convention: `defineInferenceMethod` makes a `Method` of the trace library (a `Space`
@@ -3779,6 +3798,13 @@ library code with no clock and no file system.
   latent coordinates. `exact.ts`: the conjugate models' closed-form posteriors and log evidence (`normalNormal`,
   `betaBernoulli`, `gammaPoisson`, `dirichletCategorical`). `oracle.ts`: `MarginalOracle` (mean, sd, CDF, quantile
   function of one quantity), `distributionOracle`, `weightedOracle`.
+- `references/` (flat in the barrel): the reference answers of the EP atoms as one family of kernels, each taking a log density or a
+  closed form as a callback and returning an `ExactMarginal` (moments, density, the range to draw): `marginal.ts` (mixtures,
+  `weightedMarginal`, `gaussianMixtureMarginal`, `probabilityMarginal`, draws), `grid.ts` (`quadratureMarginal`, `hyperPosterior`,
+  `gridMarginals`, `logWeights`), `grid3.ts` (`posterior3`, three coordinates found by passes), `conjugate.ts` (gamma, inverse gamma,
+  Student t, beta, the normal-inverse-gamma posterior, `conjugateMarginal` over `exact.ts`), `gate.ts` (the exact two-component
+  switch, spike and slab), `clutter.ts` (the clutter problem by quadrature), `sampler.ts` (a Gibbs sampler of a mixture),
+  `special.ts` (`lg`, `sum`, normal density and distribution functions).
 - `agree.ts`: `agree`, any set of approximations against an oracle or each other, per quantity: the mean's error in
   posterior sds and Monte Carlo standard errors, the sd ratio, the Kolmogorov distance, the first Wasserstein distance
   and the KL divergence; `agreementWithin` and `agreementMarkdown` state and print what must agree.
@@ -3859,21 +3885,22 @@ validation oracles (`gridTruth`, `mixtureOracle`, `samplesOracle`). `plans.ts`: 
 
 **The expectation-propagation suite (`ep/`, `omai-engine/probprog/ep`).** What runs the EP rules of `message-passing` through the
 compiler mappings of `probprog/model` and the methods of `probprog/inference`, and measures it against references; it imports those
-(and `probprog/validation` for `gridPosterior` and `mixtureOfRegressions`) and nothing of the pocs, and none of them imports it. The
+(and `probprog/validation` for the references) and nothing of the pocs, and none of them imports it. The
 design, the layers and how to add a piece are in `docs/probprog/ep.md`; the counts are in the generated `docs/probprog/ep-status.md`
-(`make ep-report`). `ep-atoms.ts` is the scaffold of an atom, a bare setup of one factor or family (`defineAtom`, `atomRun`,
-`atomReference`, `atomCheck`, `verifyAtom`, `atomVerdict`, beliefs and densities; `atom.ep` is a typed `EpKnobs`; the lines of `atomRun`
-marked `inference` and the regions of the atoms' files marked with an atom's name are what a page shows as its code), the atoms are in
-`ep-atoms-{conjugate,gates,mixtures,functions,scales,likelihoods,kernels,nonparametric,regression-gates,counts,priors,weights,ordinal,
-multiclass,covariance}.ts` and the learned-parameter variants in `ep-atoms-extended-{conjugate,gates,likelihoods,scales}.ts` (the ordinal,
-multiclass, kernel and covariance twins sit beside their basic atom), the registry is `ep-atom-list.ts` (`epAtoms`, `epAtom`). The
-references are not in `probprog/validation`: the closed forms and quadratures are in `ep-atoms-quad.ts` (1-D and tensor-grid marginals,
-`GridMarginals.marginal(k)`) and `ep-atoms-covariance-ref.ts`, the samplers in `ep-atoms-gibbs.ts`, and the shared helpers (`lg`, `sum`,
-`once`, a fast normal distribution function) in the private `_util.ts`. `ep-extended.ts` is calibration and credible intervals of the
-learned atoms, `ep-recovery.ts` the recovery summaries (interval, active-set score), `ep-coverage.ts` is `epCoverage()` and
-`vmpCoverage()`, the measurement of what EP and the variational method run on (tested as invariants, not floors), and `ep-gaps.ts` the gaps
-and directions as data, whose refusals are derived from the verdicts (`epGapsRefusing`, `unclaimedRefusals`). The tests (`ep-*.test.ts`)
-sit beside them.
+(`make ep-report`). `run.ts` is `runEp`, EP on a bound model through `epRoute` with beliefs per sweep and a message record (the lines of
+it marked `inference` and the regions of the atoms' files marked with an atom's name are what a page shows as its code), `atom-types.ts` the
+records (`EpAtom`, `AtomProblem` as build, reference and presentation, `EpRun`, the checks), `ep-atoms.ts` the functions of an atom
+(`atomRun`, `atomReference`, `atomCheck`, `verifyAtom`, `atomVerdict`, densities; `atom.ep` is a typed `EpKnobs`), `_define.ts` `defineAtom`
+and `_tolerance.ts` the named tolerance and recovery rungs (both internal). The atoms are in `_atoms/{conjugate,priors,scales,likelihoods,
+ordinal,gates,weights,functions,kernels,covariance,nonparametric,counts}.ts`, one file per family with the basic and learned twins
+together, and the registry is `ep-atom-list.ts` (`epAtoms`, `epAtom`, `epAtomsOf`; the atoms are not exported one by one). The references
+are in `probprog/validation/references/` (`marginal`, `grid`, `grid3`, `conjugate`, `gate`, `clutter`, `sampler`, `special`), as a family
+of kernels that take a log density or a closed form as a callback; the shared helpers of the suite (`once`) are in the private `_util.ts`.
+`ep-extended.ts` is calibration and credible intervals of the learned atoms, `ep-recovery.ts` the recovery summaries (interval,
+active-set score), `ep-coverage.ts` is `epCoverage()` and `vmpCoverage()`, the measurement of what EP and the variational method run on
+(tested as invariants, not floors), and `ep-gaps.ts` the gaps and directions as data, whose refusals are derived from the verdicts
+(`epGapsRefusing`, `unclaimedRefusals`). The tests sit beside the code (`_atoms/*.test.ts`, `ep-*.test.ts`, `run.test.ts`,
+`validation/references/*.test.ts`).
 
 ### 4.32a `message-passing/`: message passing on factor graphs (Infer.NET, libDAI, Minka's EP)
 

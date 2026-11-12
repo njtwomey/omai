@@ -122,7 +122,7 @@ The operators of covariance matrices and correlation: the multivariate Gaussian 
 
 The operators of discrete variables: the conjugate probability factors (Bernoulli, discrete, Poisson, binomial, gamma- observed, negative binomial, mixture weight), tables, selects and the Gaussian mixture, and the gate of Minka and Winn. Part of `omai-engine/message-passing`.
 
-- function `gateOperator`: The gate of Minka and Winn: a discrete variable selects among branch factors. `src/lib/message-passing/operators/discrete/gate.ts:96` `omai-engine/message-passing`
+- function `gateOperator`: The gate of Minka and Winn: a discrete variable selects among branch factors. `src/lib/message-passing/operators/discrete/gate.ts:98` `omai-engine/message-passing`
 
 - structure `bernoulliBeta`: A Bernoulli outcome with a beta probability (conjugate). `src/lib/message-passing/operators/discrete/conjugate.ts:39` `omai-engine/message-passing`
 - structure `binomial`: An observed binomial count with a beta probability (conjugate). `src/lib/message-passing/operators/discrete/conjugate.ts:227` `omai-engine/message-passing`
@@ -170,15 +170,15 @@ What several operator folders share: the numeric variational message (`numericMe
 
 The lifts of a link to a row of regression coefficients and to a plate of rows: the probit, logistic and spin rows, and the linear-regression, probit and logistic plates. Part of `omai-engine/message-passing`.
 
-- function `glmPlate`: Lift a scalar link to a plate of rows: one factor on the weights, vectorised. `src/lib/message-passing/operators/lifts/plates.ts:274` `omai-engine/message-passing`
-- function `glmRow`: Lift a scalar link (probit, logistic) to a regression row on weights. `src/lib/message-passing/operators/lifts/rows.ts:57` `omai-engine/message-passing`
+- function `glmPlate`: Lift a scalar link to a plate of rows: one factor on the weights, vectorised. `src/lib/message-passing/operators/lifts/plates.ts:273` `omai-engine/message-passing`
+- function `glmRow`: Lift a scalar link (probit, logistic) to a regression row on weights. `src/lib/message-passing/operators/lifts/rows.ts:58` `omai-engine/message-passing`
 
-- structure `linearRegressionPlate`: A plate of Gaussian regression rows given by sufficient statistics, exact. `src/lib/message-passing/operators/lifts/plates.ts:360` `omai-engine/message-passing`
-- structure `logisticPlate`: A plate of logistic regression rows on a Gaussian weight vector, one vectorised factor. `src/lib/message-passing/operators/lifts/plates.ts:326` `omai-engine/message-passing`
-- structure `logisticRow`: One logistic regression row on a Gaussian weight vector, quadrature EP. `src/lib/message-passing/operators/lifts/rows.ts:153` `omai-engine/message-passing`
-- structure `probitPlate`: A plate of probit regression rows on a Gaussian weight vector, one vectorised factor. `src/lib/message-passing/operators/lifts/plates.ts:318` `omai-engine/message-passing`
-- structure `probitRow`: One probit regression row on a Gaussian weight vector, exact EP. `src/lib/message-passing/operators/lifts/rows.ts:144` `omai-engine/message-passing`
-- structure `spinRow`: One spin site on a Gaussian vector, for expectation consistent inference. `src/lib/message-passing/operators/lifts/rows.ts:162` `omai-engine/message-passing`
+- structure `linearRegressionPlate`: A plate of Gaussian regression rows given by sufficient statistics, exact. `src/lib/message-passing/operators/lifts/plates.ts:359` `omai-engine/message-passing`
+- structure `logisticPlate`: A plate of logistic regression rows on a Gaussian weight vector, one vectorised factor. `src/lib/message-passing/operators/lifts/plates.ts:325` `omai-engine/message-passing`
+- structure `logisticRow`: One logistic regression row on a Gaussian weight vector, quadrature EP. `src/lib/message-passing/operators/lifts/rows.ts:154` `omai-engine/message-passing`
+- structure `probitPlate`: A plate of probit regression rows on a Gaussian weight vector, one vectorised factor. `src/lib/message-passing/operators/lifts/plates.ts:317` `omai-engine/message-passing`
+- structure `probitRow`: One probit regression row on a Gaussian weight vector, exact EP. `src/lib/message-passing/operators/lifts/rows.ts:145` `omai-engine/message-passing`
+- structure `spinRow`: One spin site on a Gaussian vector, for expectation consistent inference. `src/lib/message-passing/operators/lifts/rows.ts:163` `omai-engine/message-passing`
 
 ### message-passing/operators/likelihoods
 

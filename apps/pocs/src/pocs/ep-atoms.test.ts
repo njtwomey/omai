@@ -26,7 +26,7 @@ describe('the code shown on the atom pages', () => {
     '%s has a region of its own model, short, and the inference lines',
     (_, atom) => {
       const { code, file } = atomSource(atom, atom.problem(atom.defaults))
-      expect(file).toMatch(/^ep-atoms/)
+      expect(file).toMatch(/^[a-z-]+\.ts$/)
       expect(code).toMatch(/defineModel|trueskillModel/)
       expect(code).toMatch(/epRoute\(bound\)/)
       expect(code).toMatch(/session\(method/)

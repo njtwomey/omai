@@ -2,12 +2,12 @@ import {
   type AtomCheck,
   type AtomProblem,
   type AtomReference,
-  type AtomRun,
   atomCheck,
   atomReference,
   atomRun,
   atomVerdict,
   type EpAtom,
+  type EpRun,
 } from 'omai-engine/probprog/ep'
 import type { Config } from 'omai-engine/trace'
 import { useMemo } from 'react'
@@ -20,7 +20,7 @@ export interface AtomState {
   /** Undefined only when the knobs made no problem (`error` says why). */
   readonly problem: AtomProblem | undefined
   readonly verdict: ReturnType<typeof atomVerdict> | undefined
-  readonly run: AtomRun | undefined
+  readonly run: EpRun | undefined
   /** Milliseconds the EP run took. */
   readonly runMs: number
   /** The reference: undefined while it is being computed (the grid takes the longest). */

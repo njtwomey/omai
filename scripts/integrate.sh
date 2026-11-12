@@ -50,7 +50,7 @@ export OMAI_TEST_WORKERS="${OMAI_TEST_WORKERS:-3}" OMAI_TEST_TIMEOUT=60000
 if [ "${FULL:-0}" = "1" ]; then
   run tests mise exec -- pnpm exec vitest run ep- message-passing probprog/model probprog/inference apps/pocs/src/registry $filters "$@"
 else
-  changed_tests="$(echo "$changed" | grep -E '\.test\.tsx?$' | tr '\n' ' ')"
+  changed_tests="$(git diff --name-only --diff-filter=AM "$before" "$after" | grep -E '\.test\.tsx?$' | tr '\n' ' ')"
   if [ -n "$changed_tests" ]; then
     export OMAI_TEST_WORKERS=1
     # shellcheck disable=SC2086

@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vitest'
 import { session } from '../../trace/index.ts'
 import { epMultiStartMethod, epSpecMethod, vmpSpecMethod } from '../inference/index.ts'
 import { epAtom } from './ep-atom-list.ts'
-import { atomBeliefs, atomBound } from './ep-atoms.ts'
+import { atomBound } from './ep-atoms.ts'
+import { atomBeliefs } from './run.ts'
 
 const atom = epAtom('softmax-regression-learned')
 const problem = atom.problem({ ...atom.defaults, seed: 3, n: 24 })

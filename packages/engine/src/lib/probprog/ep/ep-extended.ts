@@ -12,14 +12,8 @@ import { OmaiError } from '../../base/index.ts'
 import { betaincinv, gammaincinv, ndtri } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
 import type { Config } from '../../trace/index.ts'
-import {
-  type AtomProblem,
-  type AtomRecoverySpec,
-  type AtomSupport,
-  atomRun,
-  type Belief,
-  type EpAtom,
-} from './ep-atoms.ts'
+import type { AtomProblem, AtomRecoverySpec, AtomSupport, Belief, EpAtom } from './atom-types.ts'
+import { atomRun } from './ep-atoms.ts'
 
 /**
  * The credible interval of a belief on its support: a normal on the line, a gamma on the positive axis, a beta on the unit
