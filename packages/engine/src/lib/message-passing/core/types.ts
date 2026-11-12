@@ -271,6 +271,13 @@ export interface FactorOperator {
    */
   readonly readsTarget?: boolean | ((to: number) => boolean)
   /**
+   * True when a target cavity that has no density but carries information (an indefinite precision: the site of a scale mixture on a
+   * weight vector has a negative one in some direction) is still shown to the operator, which reads it only through a posterior it
+   * makes with its own parts and is proper (a plate of rows). The engine otherwise sends nothing to a port whose cavity has no
+   * density (`readsTarget`); a flat cavity (nothing said yet) still blocks it.
+   */
+  readonly improperTarget?: boolean
+  /**
    * True when the operator needs a density at every Gaussian port (it integrates over the cavities) and cannot read one that is
    * still flat (no information yet). The engine's one policy for improper first messages then applies: a flat Gaussian cavity is
    * shown to the operator as a very wide one (`FLAT_CAVITY_PRECISION`), and the message it returns is taken back against the flat

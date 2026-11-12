@@ -1033,3 +1033,44 @@ numeric prior site and the likelihood sites (for a Gaussian belief on the Fisher
   atom are identical to the bit, the registry line gained the operator): rho mean 0.794981 -> 0.798515, sd 0.132244 -> 0.159559, sd ratio 0.828826 -> 1.000022, z 0.021859 -> 0.000294, KS 0.2135 ->
   0.2220 (basic); rho mean 0.373943 -> 0.374300, sd 0.163614 -> 0.165082, sd ratio 1.000818 -> 1.000037 (learned, against the corrected reference). The registry and params tests counted 67 operators on a main that had 68; they count
   71 now (with `gaussian-chain` and this operator).
+## 2026-11-12 The evidence of cavities with no density: plates, affine factors, gates, and the alpha-divergence energy (`agent-ab33f2-evidence`, gap `evidence` narrowed)
+
+Gap `evidence` rewritten in `ep-gaps.ts` (still open, now small). One evidence system: `factorEvidence` / `evidenceOf` (`engine/evidence.ts`) and the operators' `logEvidence`; no second one.
+- **Measured first.** The learned logistic regression as one plated factor had no EP energy of its own: its plate's cavity (the weights' scale mixture sends a site with
+  a negative precision) is indefinite at the fixed point, the engine did not even call the plate there (`readsTarget` blocks a target cavity with no density), so the
+  run "converged" with one update that could not be computed (35 sweeps, one damped restart, `unresolved: 1`) and the evidence came from the rows-expanded model
+  (-26.5201 against the grid's -26.4738). Eleven digest items had `evidenceUndefinedAt`; by operator: `linear`, `plus`, `times-constant` (the affine ones), the
+  gate's inner rows, `product`, `apply`, `sum` and `gaussian-gamma-precision`. The circular mixture's "row gates" are not gates in the compiled graph: they are
+  `select` + `linear` (the copy of a period) + `gaussian-gamma-precision` rows.
+- **The plate** (`operators/lifts/plates.ts`, `engine/dispatch.ts`, `core/types.ts`): a new trait `improperTarget` says the operator reads its target's cavity only
+  through a posterior it makes with its own parts, so a cavity that has no density but is not flat is shown to it (a flat one still blocks). The plate sets it; its inner
+  propagation starts, for such a cavity, from the least uniform positive precision on every row that makes the posterior proper (doubling), and the energy no longer asks the
+  cavity to be proper (the energy was already written in natural parameters: the posterior's partition plus the rows' terms). A proper cavity starts from no sites as before.
+  Against the references: the plated `logistic-learned` now converges in 8 sweeps (was 35 with a restart), its evidence is -26.520135736411973 against the rows-expanded
+  model's -26.520135736412023 (5e-14; error to the grid 0.046 as before), `evidenceMethod` is `ep-energy` (not `ep-energy (rows expanded)`), `probit-learned` is unchanged
+  to 1e-13. The beliefs of `logistic-learned` moved to the true fixed point (the rows-expanded model's): means 0.005, 0.026, 0.019 sd for the weights, spreads 1.7% to 3.1% narrower, tau mean 0.7133 -> 0.7063.
+  This is not toward the grid marginals (`sdRatio` 0.98, 1.01, 0.99, 0.98 -> 0.96, 0.99, 0.96, 0.95; ks 0.006 to 0.027 -> 0.010 to 0.037), and the atom still passes.
+  The evidence moved by 6e-13.
+- **The affine operators and the Gaussian joint** (`operators/gaussian/linear.ts`): `linear`, `plus`, `difference`, `times-constant`, `sum` and `gaussian-joint` take the integral
+  in natural parameters when the cavities are not all proper (the output substituted, or one input eliminated with the Jacobian `1 / |c|` when the output is observed): finite
+  whenever the joint precision is positive definite, NaN when it is not. Proper cavities take the old path (bits identical). Tests (`operators/evidence.test.ts`)
+  against two-dimensional and one-dimensional integrals with an indefinite cavity: plus (output precision -0.5), linear with an offset and an indefinite input, difference
+  and times-constant with an observed output, a joint that is not positive definite (NaN), and the proper case unchanged. Model-level: `banana` has an evidence (0, the exact one of a model without data), `radon` -61.6636 (`plus`), the mixture regression
+  -14.0258 (grid -13.6441, 0.38 nats low; its run has 12 updates that could not be computed, so it is not a fixed point), `sparse-student-t` -98.8674; the circular mixture
+  went from 229 to 23 factors without an evidence in the data form and 139 to 7 in the means form.
+- **The gate** (`operators/discrete/gate.ts`): with a cavity that has no density but is not flat the evidence is the log sum over the branches of the mass of the branch against its
+  variables' cavities (its own rule, in natural parameters) times the mass of the cavities it does not read, which must be proper (a variable every branch reads needs none). Test against a
+  one-dimensional integral (both branches read an indefinite cavity) and an `ImproperMessageError` when a branch does not read it.
+- **The alpha runs** (`engine/evidence.ts`, `engine/_cavities.ts`): the energy of an alpha-divergence run is the power EP energy at power alpha for the factors that take a power
+  (the fixed points of the alpha updates are those of power EP with those factors at alpha: tilted `f^a cavity q^(1 - a)`). `alphaEpAlgorithm` now carries `mp/evidence`. On the clutter
+  problem (one variable, eight robust rows, quadrature -18.3231): alpha 1, 0.8, 0.5, 0.3, 0.1 give errors +0.0017, +0.0006, -0.0009, -0.0018, -0.0028 nats, and equal a power EP
+  run's energy at the same powers to 3e-14 (`alpha.test.ts`, the contract test no longer says "no evidence below alpha 1").
+- **Not done.** The `gaussian-gamma-precision` rows (23, 7 and 3 of 50 in the circular forms) and the `product` / `apply` factors of the funnels and the Bayesian neural
+  network still have none: against an indefinite cavity their integral truly diverges or is numeric. The circular mixture cannot be multi-started yet. The tied-group fallback in `mp.ts` stays.
+- **Digest** (merged lines only, `make ep-digest ARGS="--only ..."`): `atom/logistic-learned`, `atom/mixture-regression` (evidence null -> -14.025781793658), `model/banana`
+  (null -> 1.6e-15), `model/radon` (null -> -61.663554203010), `model/funnel-centred` and `model/funnel-non-centred` (undefined factors 10 -> 9), `program/sparse-student-t` (null ->
+  -98.867411158437), and the registry line (the `improperTarget` trait of the two plates). 56 items compared in all: every other item (the atoms, models and programs with
+  plates, gates, affine factors, `linear-regression-row`) has the same numbers, but `model/bayesian-neural-network`, `program/circular-data`, `-means` (beliefs, damped and skipped counts) and
+  four program evidences (3e-11 to 4e-12: `circular-rows`, `cox`, `sparse-gaussian`, `sparse-mixture`) already differed from the baseline on the commit this work started from
+  (checked in a second worktree), so their lines are left; their `evidenceUndefinedAt` lists changed here as said above.
+||||||| 1c9ef781

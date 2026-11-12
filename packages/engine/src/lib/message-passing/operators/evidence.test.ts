@@ -360,6 +360,107 @@ describe('matmul-constant: the log evidence', () => {
   })
 })
 
+describe('cavities with no density that are proper together: the log evidence in natural parameters', () => {
+  // The site of a scale mixture or of a mixture can have a negative precision, so a cavity need not be a density by itself; what the
+  // evidence needs is that the integral of the factor against the cavities exists, which these cases make sure of and integrate on a grid.
+  const natural = (h: number, j: number): Arg => messageArg(gaussian, [h, j])
+  const raw = (h: number, j: number, x: number): number => h * x - 0.5 * j * x * x
+
+  it('plus with the output cavity indefinite (precision -0.5) and the inputs proper: the two-dimensional integral', () => {
+    const [ha, ja, hb, jb, hy, jy] = [0.4, 2, -0.3, 2.2, 0.5, -0.5]
+    const args = [natural(hy, jy), natural(ha, ja), natural(hb, jb)]
+    const brute = logIntegral(
+      [
+        [-9, 9, 360],
+        [-9, 9, 360],
+      ],
+      ([a, b]) => raw(ha, ja, a as number) + raw(hb, jb, b as number) + raw(hy, jy, (a as number) + (b as number)),
+    )
+    expect(evidence(ops['plus'] as FactorOperator, args, {})).toBeCloseTo(brute, 4)
+  })
+
+  it('linear with an offset, two coefficients and an input cavity indefinite: the output substituted', () => {
+    const [c0, c1, d] = [2, -1, 0.3]
+    const [ha, ja, hb, jb, hy, jy] = [0.2, -0.1, 0.1, 3, -0.4, 0.8]
+    const args = [natural(hy, jy), natural(ha, ja), natural(hb, jb)]
+    const brute = logIntegral(
+      [
+        [-9, 9, 360],
+        [-9, 9, 360],
+      ],
+      ([a, b]) =>
+        raw(ha, ja, a as number) + raw(hb, jb, b as number) + raw(hy, jy, d + c0 * (a as number) + c1 * (b as number)),
+    )
+    expect(evidence(ops['linear'] as FactorOperator, args, { coeffs: [c0, c1], offset: d })).toBeCloseTo(brute, 4)
+  })
+
+  it('difference with an observed output and one input cavity indefinite: the constraint eliminates the other, Jacobian one', () => {
+    const [ha, ja, hb, jb, y0] = [0.3, -0.5, -0.2, 2, 0.8]
+    const args = [valueArg(gaussian, y0), natural(ha, ja), natural(hb, jb)]
+    // a - b = y0, so b = a - y0.
+    const brute = logIntegral([[-9, 9, 1800]], ([a]) => raw(ha, ja, a as number) + raw(hb, jb, (a as number) - y0))
+    expect(evidence(ops['difference'] as FactorOperator, args, {})).toBeCloseTo(brute, 5)
+  })
+
+  it('times-constant with an observed output: the cavity of the input at y / c, over |c|', () => {
+    const [h, j, y0, k] = [0.6, -1, 1.4, 2]
+    const args = [valueArg(gaussian, y0), natural(h, j)]
+    expect(evidence(ops['times-constant'] as FactorOperator, args, { factor: k })).toBeCloseTo(
+      raw(h, j, y0 / k) - Math.log(k),
+      10,
+    )
+  })
+
+  it('an affine factor whose joint precision is not positive definite has no evidence (NaN), as the integral diverges', () => {
+    const args = [natural(0, -2.5), natural(0, 2), natural(0, 2)]
+    expect(evidence(ops['plus'] as FactorOperator, args, {})).toBeNaN()
+  })
+
+  it('the proper case is unchanged: the same number as the cavities integrated one by one', () => {
+    const [ha, ja, hb, jb, hy, jy] = [0.4, 2, -0.3, 2.2, 0.5, 1.3]
+    const args = [natural(hy, jy), natural(ha, ja), natural(hb, jb)]
+    const brute = logIntegral(
+      [
+        [-9, 9, 360],
+        [-9, 9, 360],
+      ],
+      ([a, b]) => raw(ha, ja, a as number) + raw(hb, jb, b as number) + raw(hy, jy, (a as number) + (b as number)),
+    )
+    expect(evidence(ops['plus'] as FactorOperator, args, {})).toBeCloseTo(brute, 4)
+  })
+
+  it('the gate with a cavity of the variable every branch reads indefinite: the branches read it together with their own precision', () => {
+    const [h, j] = [0.4, -0.3]
+    const pz = [0.35, 0.65]
+    const params = {
+      arity: 1,
+      branches: [
+        { operator: 'gaussian', args: [{ const: 0.7 }, 0], params: { precision: 4 } },
+        { operator: 'gaussian', args: [{ const: -0.5 }, 0], params: { precision: 1 } },
+      ],
+    }
+    const args = [messageArg(discrete(2), discreteEta(pz)), natural(h, j)]
+    const per = [
+      logIntegral([[-12, 12, 4000]], ([x]) => raw(h, j, x as number) + logNormalDensity(0.7, x as number, 0.25)),
+      logIntegral([[-12, 12, 4000]], ([x]) => raw(h, j, x as number) + logNormalDensity(-0.5, x as number, 1)),
+    ]
+    const want = massOf(args[0] as Arg) + logSum(pz.map((p, k) => Math.log(p) + (per[k] as number)))
+    expect(evidence(ops['gate'] as FactorOperator, args, params)).toBeCloseTo(want, 5)
+  })
+
+  it('the gate with an indefinite cavity of a variable one branch does not read has none (its integral diverges)', () => {
+    const params = {
+      arity: 2,
+      branches: [
+        { operator: 'gaussian', args: [{ const: 0.7 }, 0], params: { precision: 4 } },
+        { operator: 'gaussian', args: [{ const: 0.2 }, 1], params: { precision: 1 } },
+      ],
+    }
+    const args = [messageArg(discrete(2), discreteEta([0.5, 0.5])), natural(0, -0.3), natural(0, 1.5)]
+    expect(() => evidence(ops['gate'] as FactorOperator, args, params)).toThrow(ImproperMessageError)
+  })
+})
+
 describe('the registry: every operator with an expectation propagation rule has a log evidence', () => {
   it('lists the ones that have none, and expects none', () => {
     const missing = Object.values(ops)

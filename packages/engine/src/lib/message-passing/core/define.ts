@@ -131,6 +131,8 @@ export function projectSite(target: Arg, tilt: Tilt, power: number): Eta {
 export interface OperatorTraits {
   /** True, or a function of the port, when the message to a port depends on that port's own incoming message (see `FactorOperator.readsTarget`). */
   readonly readsTarget?: boolean | ((to: number) => boolean)
+  /** True when a target cavity with no density but not flat is shown to the operator (see `FactorOperator.improperTarget`). */
+  readonly improperTarget?: true
   /** True when a flat Gaussian cavity must be shown wide to the operator (see `FactorOperator.needsDensity`). */
   readonly needsDensity?: true
   /**
@@ -240,6 +242,7 @@ export function defineOperator(declaration: OperatorDeclaration): FactorOperator
     ...(declaration.params === undefined ? {} : { params: declaration.params }),
     support,
     ...(traits?.readsTarget === undefined ? {} : { readsTarget: traits.readsTarget }),
+    ...(traits?.improperTarget === true ? { improperTarget: true } : {}),
     ...(traits?.needsDensity === true ? { needsDensity: true } : {}),
     ...(traits?.power === undefined ? {} : { power: traits.power }),
     ...(traits?.defines === undefined ? {} : { defines: traits.defines }),
