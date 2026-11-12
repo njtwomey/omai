@@ -168,7 +168,7 @@ export function FlipTape(props: { readonly flips: readonly number[] }): ReactNod
     <div
       className="mx-auto grid max-w-[34rem] grid-cols-[repeat(20,minmax(0,1fr))] gap-[5px] p-2"
       role="img"
-      aria-label="The hundred flips, in order"
+      aria-label="The 100 flips, in order"
     >
       {marks.map((mark) => (
         <span

@@ -17,10 +17,10 @@ export function Results<R>(props: {
   readonly run: StoryRun<R>
   /** Builds the content from the result. It is called only when a result exists. */
   readonly children: (result: R) => ReactNode
-  /** The line shown while there is no result (default: nothing has been computed yet). */
+  /** The line shown while there is no result (default: press play). */
   readonly placeholder?: ReactNode
 }): ReactNode {
-  const { run, children, placeholder = 'Nothing has been computed yet. The result will appear here.' } = props
+  const { run, children, placeholder = 'Press play. The result will appear here.' } = props
   const block = useRef<HTMLDivElement>(null)
   const phase = useRef(run.phase)
 

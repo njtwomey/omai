@@ -55,7 +55,8 @@ export const DEFAULT_SIZE: Size = { chains: 4, warmup: 100, draws: 200, lines: 3
  * @returns The result.
  */
 export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE): Result {
-  say('Binding a three-unit network to the sixteen points')
+  say('Setting up the network')
+  say('Running the sampler')
   // region infer
   // the model also records its output at test inputs (xs); we draw our own curves below, from the weights
   const network = bayesianNeuralNetwork.bound({ data: { ...POINTS, xs: [0] }, generating: {} })

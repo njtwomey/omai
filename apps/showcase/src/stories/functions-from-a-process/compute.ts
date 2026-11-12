@@ -87,7 +87,7 @@ export function draw(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZ
   const grid = linspace(X_RANGE[0], X_RANGE[1], size.grid)
   const wiggles = sampleGaussianProcess(foldIn(seeds, 0), kernel.k, grid, { paths: size.functions })
   // endregion
-  say('Observing five points')
+  say('Making five points')
   // region data
   // Five x values, one in each fifth of the range, each nudged a little.
   const slots = add(mul(arange(OBSERVED), width / OBSERVED), X_RANGE[0] + (0.15 * width) / OBSERVED)

@@ -125,9 +125,9 @@ export function checkpoints(total: number): number[] {
  * @returns The result.
  */
 export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE): Result {
-  say('Setting out the games')
+  say('Making the games')
   const games = shuffled(size.rounds === ROUNDS ? tournament() : playGames(1, size.rounds), seed)
-  say('Passing messages between the players and the games')
+  say('Passing messages')
   const final = rate(games, size.record)
   const total = games.a.length
   // Rating after every game would take too long, so the first dozen games are rated one at a time and the later ones in steps.

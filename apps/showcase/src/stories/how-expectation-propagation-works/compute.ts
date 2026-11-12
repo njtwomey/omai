@@ -134,7 +134,7 @@ type EpSession = Session<MpState, Config, EpPath>
  * @returns The result.
  */
 export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE): Result {
-  say('Making six measurements, some of them clutter')
+  say('Making the measurements')
   // region model
   // the model as a factor graph: one unknown, a prior factor and one clutter factor for each measurement
   const problem = clutterProblem(key(seed), { n: size.rows, weight: CLUTTER_CHANCE })
@@ -154,7 +154,7 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
   // endregion
   const factors = graph.factors.length
   const sweeps = Math.floor(run.t / factors)
-  say('Reading the first sweep and one update in detail')
+  say('Reading one update in detail')
   const messagesAt = (step: number): readonly (readonly number[])[] => run.stateAt(step).messages
   const beliefAt = (step: number): readonly number[] => {
     const ms = messagesAt(step)

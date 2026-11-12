@@ -6,7 +6,7 @@
  * leaves the worker at once, whatever the computation is doing.
  */
 
-/** Says what the computation is doing now, in a sentence ('Warming up the sampler'). The last one said stays on screen. */
+/** Says what the computation is doing now, in a sentence ('Running the sampler'). The last one said stays on screen. */
 export type Say = (sentence: string) => void
 
 /** What the page asks of a worker. */
