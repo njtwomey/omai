@@ -31,10 +31,56 @@ import { type ViewOptions, viewFigure, wantsLog } from './_view.ts'
 export interface ModelRunSceneOptions extends Omit<DiagramOptions, 'overlay' | 'frames' | 'decorate'> {
   /** Draw the small interval and bar glyphs under the nodes (default true). */
   readonly glyphs?: boolean
+  /** Write the messages on the edges as TeX where they have a form ({@link messageTex}; default false: words). */
+  readonly tex?: boolean
 }
 
 /** A number in three significant digits, as the text of a badge (the diagram sizes nodes for the text). */
 const short3 = (x: number): string => String(Number(x.toPrecision(3)))
+
+/** A number as the engine writes it in a message (`2.07`, `-1`, `1e-7`) as TeX, or `undefined` for anything else. */
+function messageNumber(s: string): string | undefined {
+  const m = /^(-?\d+(?:\.\d+)?)(?:e([+-]?\d+))?$/.exec(s)
+  if (m === null) return undefined
+  return m[2] === undefined ? (m[1] as string) : `${m[1]} \\times 10^{${Number(m[2])}}`
+}
+
+/**
+ * A message as the engine writes it in words (`describeMessage`) set as TeX with the shared macros: `N(μ = 0.83, σ² = 2.1)`
+ * becomes `\Gauss(\mu = 0.83, \sigma^2 = 2.1)`, and likewise a Beta, a Gamma, a Bernoulli `p = 0.7` and an improper Gaussian. A text of another shape, or with something other than numbers in it, has no TeX form.
+ *
+ * @param text - The message in words.
+ * @returns The TeX, or `undefined` when the text is not one of the forms above.
+ * @index function A message in words (`N(μ = 2, σ² = 4)`) as TeX: `messageTex(text)`.
+ * @example
+ * ```ts
+ * import { messageTex } from 'omai-render/views'
+ * messageTex('N(μ = 0.83, σ² = 2.1)') // => '\\Gauss(\\mu = 0.83, \\sigma^2 = 2.1)'
+ * messageTex('Beta(2, 3)') // => '\\Beta(2, 3)'
+ * messageTex('p = 0.7') // => 'p = 0.7'
+ * messageTex('improper (precision -1)') // => '\\text{improper (precision } -1 \\text{)}'
+ * messageTex('[0.5, 0.5]') // => undefined
+ * ```
+ */
+export function messageTex(text: string): string | undefined {
+  // The numbers of a form as TeX, or nothing when any of them is not a number.
+  const numbers = (parts: readonly string[]): string[] | undefined => {
+    const tex = parts.map(messageNumber)
+    return tex.every((t) => t !== undefined) ? (tex as string[]) : undefined
+  }
+  const form = (pattern: RegExp, build: (n: string[]) => string): string | undefined => {
+    const m = pattern.exec(text)
+    const n = m === null ? undefined : numbers(m.slice(1))
+    return n === undefined ? undefined : build(n)
+  }
+  return (
+    form(/^N\(μ = (\S+), σ² = (\S+)\)$/, ([a, b]) => `\\Gauss(\\mu = ${a}, \\sigma^2 = ${b})`) ??
+    form(/^Beta\((\S+), (\S+)\)$/, ([a, b]) => `\\Beta(${a}, ${b})`) ??
+    form(/^Gamma\((\S+), rate (\S+)\)$/, ([a, b]) => `\\GammaD(${a}, \\text{rate } ${b})`) ??
+    form(/^p = (\S+)$/, ([a]) => `p = ${a}`) ??
+    form(/^improper \(precision (\S+)\)$/, ([a]) => `\\text{improper (precision } ${a} \\text{)}`)
+  )
+}
 
 /** The overlay badges of a belief: its numbers where it has them, else what it is. */
 function badgesOf(state: NodeState): Record<string, string | number> | undefined {
@@ -63,6 +109,7 @@ function badgesOf(state: NodeState): Record<string, string | number> | undefined
  *
  * @param record - The record.
  * @param step - The tape step (default the last recorded).
+ * @param options - `tex`: write the messages that have a TeX form ({@link messageTex}) as TeX on the edges (default false: words).
  * @returns The overlay (empty for a record with no steps).
  * @example
  * ```ts
@@ -74,7 +121,16 @@ function badgesOf(state: NodeState): Record<string, string | number> | undefined
  * modelRunOverlay(r).edges // => [{ from: 'a', to: 'b', label: 'N(μ = 1, σ² = 4)' }]
  * ```
  */
-export function modelRunOverlay(record: ModelRun, step?: number): StructureOverlay {
+export function modelRunOverlay(
+  record: ModelRun,
+  step?: number,
+  options: { readonly tex?: boolean } = {},
+): StructureOverlay {
+  // an edge label is one line of plain text, or of TeX between dollar signs, the way the diagram reads them
+  const said = (text: string): string => {
+    const tex = options.tex === true ? messageTex(text) : undefined
+    return tex === undefined ? text : `$${tex}$`
+  }
   const at = modelRunAt(record, step)
   if (at === undefined) return {}
   const directed = new Map<string, { from: string; to: string }>()
@@ -91,9 +147,9 @@ export function modelRunOverlay(record: ModelRun, step?: number): StructureOverl
     if (e === undefined || m.from === m.to) continue
     const key = `${e.from}\u0000${e.to}`
     const prior = edges.find((x) => `${x.from}\u0000${x.to}` === key)
-    if (prior === undefined) edges.push({ from: e.from, to: e.to, label: m.text })
-    else if (!prior.label.includes(m.text))
-      edges[edges.indexOf(prior)] = { ...prior, label: `${prior.label}\n${m.text}` }
+    if (prior === undefined) edges.push({ from: e.from, to: e.to, label: said(m.text) })
+    else if (!prior.label.includes(said(m.text)))
+      edges[edges.indexOf(prior)] = { ...prior, label: `${prior.label}\n${said(m.text)}` }
   }
   const badges: Record<string, Record<string, string | number>> = {}
   for (const [id, state] of Object.entries(at.nodes)) {
@@ -108,6 +164,7 @@ export function modelRunOverlay(record: ModelRun, step?: number): StructureOverl
  * badge any step gives them and the layout never moves as the run goes on.
  *
  * @param record - The record.
+ * @param options - `tex`, as for {@link modelRunOverlay}.
  * @returns One overlay per step.
  * @example
  * ```ts
@@ -118,8 +175,8 @@ export function modelRunOverlay(record: ModelRun, step?: number): StructureOverl
  * modelRunFrames(modelRun({ structure: s, status: 'running', series: [], steps: [{ step: 1, nodes: {} }, { step: 2, nodes: {} }] })).length // => 2
  * ```
  */
-export function modelRunFrames(record: ModelRun): StructureOverlay[] {
-  return record.steps.map((s) => modelRunOverlay(record, s.step))
+export function modelRunFrames(record: ModelRun, options: { readonly tex?: boolean } = {}): StructureOverlay[] {
+  return record.steps.map((s) => modelRunOverlay(record, s.step, options))
 }
 
 /** The span a node's belief covers over the whole run (two sd either side of its mean), so a glyph keeps its scale. */
@@ -204,11 +261,11 @@ export function modelRunDecorate(record: ModelRun, step?: number): NonNullable<D
  * ```
  */
 export function modelRunScene(record: ModelRun, step?: number, options: ModelRunSceneOptions = {}): Scene {
-  const { glyphs = true, ...layout } = options
+  const { glyphs = true, tex = false, ...layout } = options
   return diagram(record.structure, {
     ...layout,
-    overlay: modelRunOverlay(record, step),
-    frames: modelRunFrames(record),
+    overlay: modelRunOverlay(record, step, { tex }),
+    frames: modelRunFrames(record, { tex }),
     ...(glyphs ? { decorate: modelRunDecorate(record, step) } : {}),
   })
 }

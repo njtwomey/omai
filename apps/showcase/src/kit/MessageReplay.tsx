@@ -35,6 +35,7 @@ export function MessageReplay(props: {
     <Figure caption={caption}>
       <ModelRunReplay
         record={record}
+        tex
         {...(direction === undefined ? {} : { direction })}
         {...(rankSep === undefined ? {} : { rankSep })}
         {...(label === undefined ? {} : { label })}

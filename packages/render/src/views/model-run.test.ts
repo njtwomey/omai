@@ -5,8 +5,10 @@ import * as d from 'omai-engine/probprog/model/dists'
 import { type SceneNode, structure } from 'omai-engine/scene'
 import { session } from 'omai-engine/trace'
 import { describe, expect, it } from 'vitest'
+import { texError } from '../maths/tex.ts'
 import { chosenQuantities, rankView, traceView } from './chain-diagnostics.ts'
 import {
+  messageTex,
   modelRunConvergence,
   modelRunDecorate,
   modelRunFrames,
@@ -59,6 +61,32 @@ const run = modelRun({
   ],
 })
 
+describe('a message as TeX', () => {
+  it('sets the forms the engine writes, and nothing else', () => {
+    expect(messageTex('N(μ = 0.83, σ² = 2.1)')).toBe('\\Gauss(\\mu = 0.83, \\sigma^2 = 2.1)')
+    expect(messageTex('N(μ = -1.5, σ² = 1e-7)')).toBe('\\Gauss(\\mu = -1.5, \\sigma^2 = 1 \\times 10^{-7})')
+    expect(messageTex('Beta(2, 3)')).toBe('\\Beta(2, 3)')
+    expect(messageTex('Gamma(2, rate 0.5)')).toBe('\\GammaD(2, \\text{rate } 0.5)')
+    expect(messageTex('p = 0.7')).toBe('p = 0.7')
+    expect(messageTex('improper (precision -1)')).toBe('\\text{improper (precision } -1 \\text{)}')
+    expect(messageTex('N(μ = x, σ² = 1)')).toBeUndefined()
+    expect(messageTex('[0.167, 0.167, … (6)]')).toBeUndefined()
+    expect(messageTex('η = [1, 2]')).toBeUndefined()
+  })
+  it('gives TeX that parses with the shared macros', () => {
+    for (const text of [
+      'N(μ = 0.83, σ² = 2.1)',
+      'Beta(2, 3)',
+      'Gamma(2, rate 0.5)',
+      'p = 0.7',
+      'improper (precision -1)',
+    ]) {
+      const tex = messageTex(text) as string
+      expect(texError(tex), text).toBeUndefined()
+    }
+  })
+})
+
 describe('the overlay of a model run', () => {
   it('labels the edge a message went along, as the structure draws it, and badges the nodes with beliefs', () => {
     const o = modelRunOverlay(run, 1)
@@ -66,6 +94,11 @@ describe('the overlay of a model run', () => {
     expect([...(o.active ?? [])].sort()).toEqual(['a', 'b'])
     expect(o.badges?.['a']).toEqual({ μ: '0', σ: '2' })
     expect(o.badges?.['b']).toEqual({ obs: 1 })
+    // As TeX when asked: the diagram reads a line between dollar signs as TeX
+    expect(modelRunOverlay(run, 1, { tex: true }).edges).toEqual([
+      { from: 'a', to: 'b', label: '$\\Gauss(\\mu = 1, \\sigma^2 = 4)$' },
+    ])
+    expect(modelRunFrames(run, { tex: true })[0]?.edges?.[0]?.label).toBe('$\\Gauss(\\mu = 1, \\sigma^2 = 4)$')
     // A later step has no messages of its own, and keeps the beliefs said before.
     const later = modelRunOverlay(run, 2)
     expect(later.edges).toEqual([])

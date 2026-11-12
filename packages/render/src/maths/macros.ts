@@ -137,6 +137,10 @@ export const macros: Readonly<Record<string, string>> = {
   '\\proj': '\\operatorname{proj}',
   '\\AIC': '\\operatorname{AIC}',
   '\\BIC': '\\operatorname{BIC}',
+  '\\sigmoid': '\\operatorname{sigmoid}',
+  '\\logit': '\\operatorname{logit}',
+  '\\softmax': '\\operatorname{softmax}',
+  '\\dd': '\\,\\mathrm{d}',
 
   // Delimiters
   '\\abs': '\\left\\lvert #1 \\right\\rvert',
@@ -172,6 +176,8 @@ export const macros: Readonly<Record<string, string>> = {
   '\\LogNorm': '\\operatorname{LogNormal}',
   '\\MvGauss': '\\mathcal{N}',
   '\\Cauchy': '\\operatorname{Cauchy}',
+  '\\HalfNormal': '\\operatorname{HalfNormal}',
+  '\\HalfCauchy': '\\operatorname{HalfCauchy}',
   '\\Weibull': '\\operatorname{Weibull}',
   '\\Gumbel': '\\operatorname{Gumbel}',
   '\\StudentT': '\\operatorname{t}',

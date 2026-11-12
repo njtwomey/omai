@@ -57,6 +57,15 @@ The kit (`src/kit/`):
   `prefers-reduced-motion`); otherwise it never scrolls. The registry test checks every story: a play button, then a results block,
   empty on the first render, and no code before it.
 - `<Figure caption wide?>`: a figure with a caption and a short fade in; `<Reveal>`: the same fade for prose that appears after the result.
+- `<Tex>` and `<Equation>` (`src/kit/Maths.tsx`): maths, typeset by omai-render's TeX module (KaTeX with the one shared macro registry:
+  `\Gauss`, `\expect`, `\KL`, `\xvec`, `\sigmoid`, ...; its stylesheet and fonts come with `omai-render/react`, so there is nothing to
+  load; a macro a story needs is added to the registry in `packages/render/src/maths/macros.ts`, never defined in the app). `<Tex>` is
+  inline, for the symbol of a quantity or a short formula in a sentence (`J`, `\mu`, `\sigma^2`). `<Equation label?>` is a display
+  equation, centred in the column with a figure's spacing, scrolling sideways inside its own box when a line is too wide. Write the sentence
+  first and the equation after it. Numbers read from the result go in the slots of the `tex` tag, which sets them like `.num`:
+  `<Tex>{tex`J = ${fixed(precision)}`}</Tex>`; constants of the model are written in the TeX itself. Both carry a text alternative for
+  screen readers (the TeX, or a `reading` in words, which an `Equation` should have). Keep `<code>` for code names (`damping`,
+  `packScalars`). A message on an edge of `<MessageReplay>` is typeset the same way.
 - `<Aside>`: a margin note (in the right margin on wide screens, an inset note below).
 - `<Code source region? title />`: _How it is written_, from the regions of a source file imported with `?raw` (the site's `CodeBlock`
   and `snippetOf`), so the code on screen is the code that runs.
@@ -118,6 +127,7 @@ serveStory(self, run)
 ```tsx
 import type { ReactNode } from 'react'
 import { Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex, tex } from '../../kit/Maths.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
 import { StoryPage } from '../../kit/StoryPage.tsx'
@@ -135,7 +145,11 @@ export default function Story(): ReactNode {
         {(result) => (
           <>
             <Figure caption="What it shows.">{/* a chart of result */}</Figure>
-            <p>What to notice, with numbers read from the result.</p>
+            <p>
+              What to notice, with numbers read from the result: the mean is{' '}
+              <Tex>{tex`\mu = ${fixed(result.mean)}`}</Tex>.
+            </p>
+            <Equation label="The model">{String.raw`y_i \sim \Gauss(\mu, \sigma^2)`}</Equation>
             <p>How it ends, and what to read next.</p>
             <Code source={source} title="compute.ts" />
           </>
