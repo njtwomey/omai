@@ -56,3 +56,12 @@ export const LEVELS = [0.2, 0.4, 0.5, 0.6, 0.8] as const
 
 /** The rows of the map (values of measurement 2) along which the gap between the 0.2 and 0.8 lines is measured: the middle and near the edge. */
 export const GAP_ROWS = [0, 3] as const
+
+/**
+ * How the bell curve of expectation propagation compared with a sampler (NUTS) on `dataSets` data sets like the story's: the spreads
+ * were narrower by up to `narrower` (a share of the sampler's), and the expected chance of yes at `places` places was within
+ * `chanceWithin` of an average over the sampler's draws. A measurement, not computed here or covered by a test: made by the story's
+ * author on 2026-11-12 (commit 19267ce0, 'Logistic regression') in a one-off script that was not kept. Measure it again before
+ * changing the data, the prior or the model.
+ */
+export const NUTS_CHECK = { dataSets: 8, narrower: 0.13, places: 6, chanceWithin: 0.003 } as const

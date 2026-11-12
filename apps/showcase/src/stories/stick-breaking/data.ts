@@ -43,3 +43,11 @@ export function drawNumbers(rows: number = ROWS): number[] {
 
 /** The number of pieces the stick is cut off at. */
 export const PIECES = 8
+
+/**
+ * How the model fared when the numbers were handed over in different orders: it found exactly as many pieces with real weight as
+ * there are groups (4) in `exact` of `tried` orders, and 5 or 6 in the others. A measurement, not computed here or covered by a test:
+ * made by the story's author on 2026-11-12 (commit 19267ce0, 'Breaking a stick') in a one-off script that was not kept. Measure it
+ * again before changing the numbers, the prior or the model.
+ */
+export const ORDER_CHECK = { tried: 14, exact: 11 } as const
