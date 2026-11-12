@@ -28,6 +28,20 @@ export function restartDiffers(damping: number, k: number): boolean {
   return restartDamping(damping, k) > damping
 }
 
+/**
+ * The largest of the values and `floor` (NaN if any is NaN, as `Math.max` is), by a loop: `Math.max(...values)` with one value per
+ * edge overflows the call stack at about 120 000 of them.
+ */
+export function largestOf(values: ArrayLike<number>, floor = Number.NEGATIVE_INFINITY): number {
+  let top = floor
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i] as number
+    if (Number.isNaN(v)) return Number.NaN
+    if (v > top) top = v
+  }
+  return top
+}
+
 /** Whether a state that has stopped moving is one that has run out of updates it can compute, and may be restarted. */
 export function isStalled(g: CompiledGraph, settings: EngineSettings, state: MpState): boolean {
   const residual = settings.schedule === 'residual'
@@ -37,7 +51,7 @@ export function isStalled(g: CompiledGraph, settings: EngineSettings, state: MpS
   if (residual)
     return (
       state.updates > 0 &&
-      Math.max(...state.residuals, 0) < settings.tol &&
+      largestOf(state.residuals, 0) < settings.tol &&
       residualUnresolved(g, settings.projection, state.candidates) > 0
     )
   return state.sweeps >= 1 && state.cursor === 0 && state.change < settings.tol && state.unresolved > 0
