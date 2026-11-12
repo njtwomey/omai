@@ -19,7 +19,7 @@ export function Splash(): ReactNode {
         </h1>
         <p className="mt-5 max-w-2xl text-balance text-lg leading-relaxed text-muted">
           omai is a TypeScript library for tensors, probability, inference and learning. Each page below shows one thing
-          it does. Nothing runs until you press play. The work then runs in a background worker in your browser, and the
+          it does. Nothing runs until you press play. Then the work runs in the background of your browser, and the
           figures appear when it is done.
         </p>
       </section>

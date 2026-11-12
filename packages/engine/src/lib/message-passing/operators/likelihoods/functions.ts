@@ -42,11 +42,11 @@ export interface UnaryFunction {
 const unary = (u: UnaryFunction): UnaryFunction => u
 
 /**
- * The registry of unary functions by name: `exp`, `square`, `tanh`, `relu`, `softplus`, `abs`, `sigmoid`, `sqrt`, `recip`. A new object each call.
+ * The registry of unary functions by name: `exp`, `square`, `tanh`, `cos`, `relu`, `softplus`, `abs`, `sigmoid`, `sqrt`, `recip`. A new object each call.
  *
  * @returns The functions, keyed by name.
  * @concept factor-operators
- * @index table The unary functions of a Gaussian variable (exp, square, tanh, relu, softplus, abs, sigmoid, sqrt, recip) by name.
+ * @index table The unary functions of a Gaussian variable (exp, square, tanh, cos, relu, softplus, abs, sigmoid, sqrt, recip) by name.
  * @example
  * ```ts
  * import { unaryFunctions } from 'omai-engine/message-passing'
@@ -69,6 +69,16 @@ export function unaryFunctions(): Record<string, UnaryFunction> {
       pushforward: (m, v) => ({ mean: m * m + v, variance: 2 * v * (v + 2 * m * m) }),
     }),
     unary({ name: 'tanh', description: 'y = tanh(x): the hidden unit of a neural network', f: Math.tanh }),
+    unary({
+      name: 'cos',
+      description: 'y = cos(x): a random Fourier feature, in closed form',
+      f: Math.cos,
+      // E cos(x) = exp(-v / 2) cos(m) and E cos(x)^2 = (1 + exp(-2 v) cos(2 m)) / 2 for x ~ N(m, v)
+      pushforward: (m, v) => {
+        const mean = Math.exp(-v / 2) * Math.cos(m)
+        return { mean, variance: Math.max((1 + Math.exp(-2 * v) * Math.cos(2 * m)) / 2 - mean * mean, 0) }
+      },
+    }),
     unary({
       name: 'relu',
       description: 'y = max(x, 0): the rectifier, in closed form',

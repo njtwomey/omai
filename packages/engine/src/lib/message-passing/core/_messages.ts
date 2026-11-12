@@ -42,12 +42,32 @@ export function keyOf(value: unknown): string {
   return JSON.stringify(value) ?? 'undefined'
 }
 
-/** The value of `compute` kept in the context's cache under `key` (computed every time when the context has none). A throw is not kept. */
+/** What the cache holds for a computation that threw an `ImproperMessageError`: the error, thrown again by the next port that asks. */
+class Failed {
+  constructor(readonly error: ImproperMessageError) {}
+}
+
+/**
+ * The value of `compute` kept in the context's cache under `key` (computed every time when the context has none). An
+ * `ImproperMessageError` is kept too and thrown again for the same key, so a tilt that fails against some cavities fails once for
+ * every port of the factor, not once per port (a chain of sixty states asks for sixty-one tilts of one set of cavities); any other
+ * error is not kept.
+ */
 export function memoised<T>(c: OperatorContext, key: string, compute: () => T): T {
   const memo = c.memo
   if (memo === undefined) return compute()
-  if (memo.has(key)) return memo.get(key) as T
-  const value = compute()
+  if (memo.has(key)) {
+    const held = memo.get(key)
+    if (held instanceof Failed) throw held.error
+    return held as T
+  }
+  let value: T
+  try {
+    value = compute()
+  } catch (err) {
+    if (err instanceof ImproperMessageError) memo.set(key, new Failed(err))
+    throw err
+  }
   memo.set(key, value)
   return value
 }

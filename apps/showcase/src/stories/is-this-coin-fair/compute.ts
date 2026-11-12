@@ -2,7 +2,7 @@
  * The computation of 'Is this coin fair?': a coin with a secret bias is tossed a hundred times from a seeded key, and after
  * 0, 1, 3, 10, 30 and 100 of the flips the library's conjugate engine turns the Beta-Bernoulli coin model and the flips so
  * far into the exact posterior of the bias, which is summarised as a curve, a 90% interval and the probability that the bias
- * is within a hair of fair. A pure function of the seed that returns plain data; it runs in the story's worker.
+ * is fair enough. A pure function of the seed that returns plain data; it runs in the story's worker.
  */
 
 // region imports
@@ -54,20 +54,20 @@ export interface Result {
  * @returns The result.
  */
 export function flipCoin(seed: number, say: Say = () => {}, stages: readonly number[] = STAGES): Result {
-  say('Making a coin and flipping it a hundred times')
+  say('Making a coin and flipping it 100 times')
   // region flips
   const base = key(seed)
   // the coin's secret bias: somewhere between 0.35 and 0.8
   const bias = item(add(mul(uniform(foldIn(base, 0), []), 0.45), 0.35))
-  // one hundred flips of it, 1 for heads and 0 for tails
+  // 100 flips of it, 1 for heads and 0 for tails
   const flips = bernoulli(foldIn(base, 1), bias, [100])
   // endregion
-  say('Writing the model: one unknown bias, every flip a Bernoulli draw from it')
+  say('Setting up the model')
   // region model
   // a Beta(1, 1) prior is flat: before any flip, every bias is as likely as any other
   const coin = betaBernoulliModel({ a: 1, b: 1 })
   // endregion
-  say('Reading the belief after each stage')
+  say('Reading the belief at each stage')
   // region posterior
   const grid = linspace(0, 1, 101)
   // for each stage: 0, 1, 3, 10, 30 and 100 flips
@@ -79,7 +79,7 @@ export function flipCoin(seed: number, say: Say = () => {}, stages: readonly num
     const posterior = infer(toProgram(bound), undefined, { engine: 'conjugate' })
     const belief = posterior.marginal('p')
     const [lo, hi] = toFlat(belief.ppf([0.05, 0.95]))
-    // the chance that the bias is within a hair of fair, between 0.45 and 0.55
+    // the chance that the bias is fair enough, between 0.45 and 0.55
     const [below, above] = toFlat(belief.cdf([0.45, 0.55]))
     return {
       flips: n,

@@ -220,6 +220,12 @@ export interface OperatorResult {
 export interface TiltedMoments {
   /** E[T(x)] at the target port under the tilted distribution. */
   readonly moments: Eta
+  /**
+   * For a Gaussian target: the mean and the variance about the mean, as the quadrature found them. The projection uses these instead of
+   * `moments[1] - moments[0]^2` when the mean squared exceeds the variance a million times over, where the difference of the second
+   * moment and the squared mean loses the variance to cancellation (a narrow mass at a large location). Otherwise it uses `moments`.
+   */
+  readonly centred?: { readonly mean: number; readonly variance: number }
   /** log of the integral of the factor times every incoming message (the same for every target). */
   readonly logZ: number
 }

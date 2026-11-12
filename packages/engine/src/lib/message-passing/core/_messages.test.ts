@@ -71,4 +71,63 @@ describe('keyOf and memoised', () => {
     ).toThrow('no')
     expect(c.memo.has('bad')).toBe(false)
   })
+
+  describe('memoised', () => {
+    const at = (memo: Map<string, unknown> | undefined) => ({
+      mode: 'ep' as const,
+      to: 0,
+      args: [],
+      params: {},
+      power: 1,
+      ...(memo === undefined ? {} : { memo }),
+    })
+
+    it('computes a value once for a key and again for another', () => {
+      const memo = new Map<string, unknown>()
+      let calls = 0
+      const compute = (): number => ++calls
+      expect([
+        memoised(at(memo), 'a', compute),
+        memoised(at(memo), 'a', compute),
+        memoised(at(memo), 'b', compute),
+      ]).toEqual([1, 1, 2])
+    })
+
+    it('computes every time when the context has no cache', () => {
+      let calls = 0
+      memoised(at(undefined), 'a', () => ++calls)
+      memoised(at(undefined), 'a', () => ++calls)
+      expect(calls).toBe(2)
+    })
+
+    it('runs a computation that throws an ImproperMessageError once for every port of the factor, and throws it again', () => {
+      const memo = new Map<string, unknown>()
+      let calls = 0
+      const tilt = (): number => {
+        calls++
+        throw new ImproperMessageError('the tilt has no mass')
+      }
+      for (let port = 0; port < 61; port++)
+        expect(() => memoised(at(memo), 'chain', tilt)).toThrow(ImproperMessageError)
+      expect(calls).toBe(1)
+      expect(() => memoised(at(memo), 'chain', tilt)).toThrow('the tilt has no mass')
+      // another key is its own computation, and clearing the cache (the end of a sweep) forgets the failure
+      expect(() => memoised(at(memo), 'other', tilt)).toThrow(ImproperMessageError)
+      expect(calls).toBe(2)
+      memo.clear()
+      expect(memoised(at(memo), 'chain', () => 7)).toBe(7)
+    })
+
+    it('does not keep an error that is not an improper message', () => {
+      const memo = new Map<string, unknown>()
+      let calls = 0
+      const bug = (): number => {
+        calls++
+        throw new OmaiError('value', 'a parameter')
+      }
+      expect(() => memoised(at(memo), 'k', bug)).toThrow('a parameter')
+      expect(() => memoised(at(memo), 'k', bug)).toThrow('a parameter')
+      expect(calls).toBe(2)
+    })
+  })
 })

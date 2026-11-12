@@ -12,8 +12,8 @@ ECharts option builders. Start from a finished chart (`lineChart`, `scatterChart
 - function `boxPlot`: Box plots of groups: `boxPlot([{ name: 'a', values }])`. `src/charts/distributions.ts:307` `omai-render/charts`
 - function `cartesian`: Draw layers on one pair of axes: `cartesian([lines(curves), points(sets)])`. `src/charts/plot.ts:646` `omai-render/charts`
 - function `confusionMatrixChart`: A labelled confusion matrix: `confusionMatrixChart(counts, ['cat', 'dog'])`. `src/charts/matrices.ts:704` `omai-render/charts`
-- function `contours`: Contour lines of a 2-D array: `contours(z, { levels: 7 })`. `src/charts/fields.ts:60` `omai-render/charts`
-- function `decisionRegions`: A classifier's decision regions from class probability grids: `decisionRegions(probs, { x, y })`. `src/charts/fields.ts:200` `omai-render/charts`
+- function `contours`: Contour lines of a 2-D array: `contours(z, { levels: 7 })`. `src/charts/fields.ts:62` `omai-render/charts`
+- function `decisionRegions`: A classifier's decision regions from class probability grids: `decisionRegions(probs, { x, y })`. `src/charts/fields.ts:206` `omai-render/charts`
 - function `densityChart`: Densities of distributions on one chart: `densityChart([{ name, dist }])`. `src/charts/distributions.ts:539` `omai-render/charts`
 - function `heatmapChart`: A heatmap of a 2-D array: `heatmapChart(z)`. `src/charts/matrices.ts:772` `omai-render/charts`
 - function `histogram`: A histogram layer of values: `histogram(values, { bins: 20 })`. `src/charts/bars.ts:264` `omai-render/charts`
@@ -29,6 +29,6 @@ ECharts option builders. Start from a finished chart (`lineChart`, `scatterChart
 - function `sankeyChart`: A Sankey diagram of flows: `sankeyChart([{ source, target, value }])`. `src/charts/flows.ts:33` `omai-render/charts`
 - function `scatterChart`: A scatter plot coloured by group: `scatterChart([{ x, y, groups }])`. `src/charts/points.ts:276` `omai-render/charts`
 - function `subplots`: Draw panels of layers on a grid spec: `subplots(grid, panels)`. `src/charts/compose.ts:98` `omai-render/charts`
-- function `vectorField`: Arrows of a vector field: `vectorField(fieldArrows(f, { x, y }))`. `src/charts/fields.ts:334` `omai-render/charts`
+- function `vectorField`: Arrows of a vector field: `vectorField(fieldArrows(f, { x, y }))`. `src/charts/fields.ts:340` `omai-render/charts`
 
 - table `SYMBOLS`: Named marker symbols as ECharts path symbols: `SYMBOLS.plane` (nose up), `SYMBOLS.cross`. `src/charts/symbols.ts:20` `omai-render/charts`

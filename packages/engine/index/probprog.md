@@ -90,8 +90,8 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - estimator `emMethod`: Expectation maximisation, one iteration per step, with exact E-steps. `src/lib/probprog/inference/em-method.ts:101` `omai-engine/probprog/inference`
 - estimator `ensembleSliceMethod`: Ensemble slice sampling with a tuned direction scale as a steppable method. `src/lib/probprog/inference/ensemble-methods.ts:125` `omai-engine/probprog/inference`
 - estimator `enumerationMethod`: Exact enumeration of discrete models by a junction tree, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:134` `omai-engine/probprog/inference`
-- estimator `epGridMethod`: Expectation propagation inside an evidence-weighted grid over the hyperparameters of a model. `src/lib/probprog/inference/ep-grid.ts:445` `omai-engine/probprog/inference`
-- estimator `epMultiStartMethod`: Expectation propagation from several starts, the fixed points weighted by their evidence. `src/lib/probprog/inference/ep-multistart.ts:357` `omai-engine/probprog/inference`
+- estimator `epGridMethod`: Expectation propagation inside an evidence-weighted grid over the hyperparameters of a model. `src/lib/probprog/inference/ep-grid.ts:446` `omai-engine/probprog/inference`
+- estimator `epMultiStartMethod`: Expectation propagation from several starts, the fixed points weighted by their evidence. `src/lib/probprog/inference/ep-multistart.ts:367` `omai-engine/probprog/inference`
 - estimator `epSpecMethod`: Expectation propagation on a model spec's factor graph, posterior by site. `src/lib/probprog/inference/mp.ts:323` `omai-engine/probprog/inference`
 - estimator `gaussianMethod`: Exact linear-Gaussian conditioning, Kalman and Gaussian BP, as a one-step method. `src/lib/probprog/inference/exact-methods.ts:85` `omai-engine/probprog/inference`
 - estimator `gibbsMethod`: Gibbs sampling, one sweep per step, resumable, with anytime draws. `src/lib/probprog/inference/gibbs-method.ts:89` `omai-engine/probprog/inference`
@@ -196,6 +196,7 @@ The benchmark models of probabilistic programming, available as `omai-engine/pro
 - function `evidenceCampaigns`: Periodic validation of the evidence estimators, nested sampling, particle filters and particle MCMC. `src/lib/probprog/models/evidence-campaigns.ts:521` `omai-engine/probprog/models`
 - function `gammaPoissonModel`: The Gamma-Poisson rate with a chosen Gamma(shape, rate) prior; bind it to `{ k: counts }`. `src/lib/probprog/models/conjugate.ts:178` `omai-engine/probprog/models`
 - function `gaussianMixtureModel`: A K-component Gaussian mixture with unknown weights, means and a shared spread, optionally ordered. `src/lib/probprog/models/mixture.ts:98` `omai-engine/probprog/models`
+- function `gplvmFourierModel`: A GPLVM with random Fourier features: latent coordinates per point, EP-ready. `src/lib/probprog/models/gplvm.ts:100` `omai-engine/probprog/models`
 - function `kernelCampaigns`: The periodic validation of the kernel methods: Geweke, calibration, agreement and the two-mode target. `src/lib/probprog/models/kernel-campaigns.ts:544` `omai-engine/probprog/models`
 - function `polynomialFeatureMap`: The standardised polynomial design of two inputs with an intercept: `polynomialFeatureMap(points, 3).transform(rows)`. `src/lib/probprog/models/probit-classification.ts:60` `omai-engine/probprog/models`
 - function `probitClassifier`: The probit classifier of any design width with a chosen prior scale; bind it with `probitData`. `src/lib/probprog/models/probit-classification.ts:112` `omai-engine/probprog/models`

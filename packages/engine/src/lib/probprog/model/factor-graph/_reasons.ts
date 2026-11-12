@@ -78,7 +78,7 @@ export const opOfTwoDiscretes = (op: string, first: string, second: string): Ref
 export const operatorOnRandom = (op: string): Refusal =>
   new Refusal(
     'no-rule',
-    `operator '${op}' applied to a random value has no message rule (message passing handles affine maps of Gaussians, exp, square, tanh, softplus, abs, sigmoid, the rectifier and a clip by known bounds of a random value, and a link such as probit only as the likelihood of a Bernoulli observation)`,
+    `operator '${op}' applied to a random value has no message rule (message passing handles affine maps of Gaussians, exp, square, tanh, cos, softplus, abs, sigmoid, the rectifier and a clip by known bounds of a random value, and a link such as probit only as the likelihood of a Bernoulli observation)`,
     { op },
   )
 export const randomTimesItself = (left: string): Refusal =>

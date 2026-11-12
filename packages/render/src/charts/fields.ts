@@ -35,6 +35,8 @@ export interface ContourOptions {
   readonly opacity?: number
   /** Label each level on its longest line (default true). */
   readonly labels?: boolean
+  /** Where each level's label sits along its longest line, from 0 (one end) to 1 (the other); default the middle. Staggering it keeps the labels of close levels apart. */
+  readonly labelAt?: number
   /** Size of the level labels in pixels (default the figure's type size). */
   readonly fontSize?: number
   readonly mode?: ColourMode
@@ -84,7 +86,11 @@ export function contours(z: TensorLike, options: ContourOptions = {}): Layer {
       if (p.length > longest.length) longest = p
     }
     data.pop()
-    const mid = longest[Math.floor(longest.length / 2)]
+    const at =
+      options.labelAt === undefined
+        ? Math.floor(longest.length / 2)
+        : Math.round((longest.length - 1) * Math.min(1, Math.max(0, options.labelAt)))
+    const mid = longest[at]
     if (mid !== undefined) labels.push({ value: [mid[0], mid[1], level], colour })
     series.push({
       type: 'line',

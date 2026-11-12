@@ -28,7 +28,6 @@ import {
   compileGraph,
   epAlgorithm,
   defaultOperators as factorOperators,
-  type InitialMessage,
   type MpState,
 } from '../../message-passing/index.ts'
 import { bool, choice, type DictSpace, dict, int, real } from '../../space/index.ts'
@@ -52,6 +51,8 @@ import { factorGraphVerdict } from '../model/factor-graph/verdict.ts'
 import { toFactorGraph } from '../model/factors.ts'
 import type { ExprSpec, ModelNode, ModelSpec } from '../model/spec.ts'
 import { definePosterior, type Posterior } from '../posterior.ts'
+import { walkNext } from './_ep-grid-walk.ts'
+import { nearestSettled, settledMessages, warmStart } from './_ep-grid-warm.ts'
 import { recordOf, type SiteRecord, siteMixturePosterior } from './_site-mixture.ts'
 import { isProgramAnalysis, type MethodModel, type ModelAnalysis, no, num, posteriorJson, yes } from './_support.ts'
 import { atPower, epRunKnobs, epRunSettings, powerOf } from './ep-knobs.ts'
@@ -653,7 +654,7 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
           converged: r.status === 'converged',
           sweeps: r.steps,
           sites,
-          ...(warm ? { messages: (r.state as MpState).messages } : {}),
+          ...(warm ? settledMessages(r.status === 'converged', ev, (r.state as MpState).messages) : {}),
         }
       }
       return {
@@ -701,86 +702,6 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
       }
     },
   })
-}
-
-/** The start messages of a node from the final messages of another run of the same factor graph structure (none when it differs). */
-function warmStart(g: CompiledGraph, messages: readonly (readonly number[])[] | undefined): InitialMessage[] {
-  if (messages === undefined || messages.length !== g.edges.length) return []
-  const out: InitialMessage[] = []
-  for (const [factor, f] of g.factors.entries())
-    for (const [port, p] of f.ports.entries()) {
-      const eta = p.edge >= 0 ? messages[p.edge] : undefined
-      const edge = p.edge >= 0 ? g.edges[p.edge] : undefined
-      const flat = edge === undefined ? undefined : g.variables[edge.variable]?.family.flat
-      if (eta === undefined || flat === undefined || eta.length !== flat.length) return []
-      out.push({ factor, port, eta: [...eta] })
-    }
-  return out
-}
-
-/** The settled node nearest to `index` (in steps of the lattice, summed over the axes), or none. */
-function nearestSettled(nodes: readonly GridNode[], index: readonly number[]): GridNode | undefined {
-  let best: GridNode | undefined
-  let bestDistance = Number.POSITIVE_INFINITY
-  for (const n of nodes) {
-    if (!n.converged || !Number.isFinite(n.logEvidence) || n.messages === undefined) continue
-    const dist = n.index.reduce((s, v, k) => s + Math.abs(v - (index[k] ?? 0)), 0)
-    if (dist < bestDistance) {
-      best = n
-      bestDistance = dist
-    }
-  }
-  return best
-}
-
-/**
- * The next node of a walk over the grid: the middle of the first range, then the unvisited lattice neighbour (one step along one
- * axis) of the node that weighs most (log evidence plus log prior) among those within `window` nats of the best; a node with no
- * evidence to judge by is always expanded, and first. With one hyperparameter this steps outwards on the side whose edge node
- * weighs more; with several it is a best-first flood fill of the region where the posterior has mass, so its cost follows the
- * number of nodes within the window and not the product of the axes. None when the region is closed, the range is used up or
- * the budget is.
- */
-function walkNext(state: EpGridState, window: number, maxNodes: number): readonly (readonly number[])[] {
-  const axes = state.axes
-  if (axes.length === 0 || state.nodes.length >= maxNodes) return []
-  if (state.nodes.length === 0) return [axes.map((a) => Math.floor((a.from + a.to) / 2))]
-  const score = (n: GridNode): number => n.logEvidence + n.logPrior
-  let top = Number.NEGATIVE_INFINITY
-  for (const n of state.nodes) if (Number.isFinite(n.logEvidence) && score(n) > top) top = score(n)
-  // a lattice point as one number (the axes' ranges make a mixed-radix code), so a step costs a few set lookups per node
-  const span = axes.map((a) => a.to - a.from + 1)
-  const code = (index: readonly number[]): number =>
-    index.reduce((c, v, k) => c * (span[k] as number) + (v - (axes[k] as GridAxis).from), 0)
-  const visited = new Set(state.nodes.map((n) => code(n.index)))
-  let best: number[] | undefined
-  let bestRank = Number.NEGATIVE_INFINITY
-  for (const n of state.nodes) {
-    const finite = Number.isFinite(n.logEvidence)
-    if (finite && score(n) <= top - window) continue
-    const rank = finite ? score(n) : Number.POSITIVE_INFINITY
-    for (const [k, a] of axes.entries()) {
-      for (const side of [-1, 1]) {
-        const at = (n.index[k] ?? 0) + side
-        if (at < a.from || at > a.to) continue
-        const next = n.index.slice()
-        next[k] = at
-        if (visited.has(code(next))) continue
-        // the heavier parent first; on a tie the smaller index (the left edge of an interval)
-        if (rank > bestRank || (rank === bestRank && best !== undefined && lexLess(next, best))) {
-          best = next
-          bestRank = rank
-        }
-      }
-    }
-  }
-  return best === undefined ? [] : [best]
-}
-
-/** Whether `a` comes before `b` in lexicographic order. */
-function lexLess(a: readonly number[], b: readonly number[]): boolean {
-  for (const [i, v] of a.entries()) if (v !== (b[i] ?? 0)) return v < (b[i] ?? 0)
-  return false
 }
 
 /**

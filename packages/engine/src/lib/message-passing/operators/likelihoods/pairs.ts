@@ -333,7 +333,9 @@ export function pairLikelihoodOperator(
         : [r.mean[k] as number, (r.variance[k] as number) + (r.mean[k] as number) ** 2]
     let logZ = r.logMass
     for (const a of c.args) logZ += massOf(a)
-    return { moments, logZ, logMass: r.logMass }
+    const centred =
+      target.kind === 'gaussian' ? { mean: r.mean[k] as number, variance: r.variance[k] as number } : undefined
+    return { moments, ...(centred === undefined ? {} : { centred }), logZ, logMass: r.logMass }
   }
   return defineOperator({
     name: 'likelihood-pair',
@@ -371,7 +373,7 @@ export function pairLikelihoodOperator(
     rules: {
       ep: tiltedRule((c) => {
         const t = tilted(c)
-        return { moments: t.moments, logZ: t.logZ }
+        return { moments: t.moments, ...(t.centred === undefined ? {} : { centred: t.centred }), logZ: t.logZ }
       }),
       // The mean field: the non-conjugate message of the density under the two beliefs (a gamma belief on a positive coordinate is
       // read through its log, as the grid of EP does).

@@ -31,25 +31,28 @@ export default function Story(): ReactNode {
         random all the time. There are <span className="num">{DATA.count}</span> readings, and here they are.
       </p>
 
-      <Figure caption="The readings of the sensor. Each dot is one reading of the position.">
+      <Figure caption="The sensor's readings. Each dot is one reading of the position.">
         <ReadingsFigure readings={READINGS} />
       </Figure>
 
       <p>
         The first reading is <span className="num">{fixed(DATA.first)}</span> and the last is{' '}
         <span className="num">{fixed(DATA.last)}</span>. The dots jump around a smooth path, and the path is what we
-        want. We have three questions. Where was the object at each moment? How fast was it going? Where will it be
-        next?
+        want. Where was the object at each moment? How fast was it going? Where will it be next?
       </p>
 
       <h2>A model of the motion</h2>
 
       <p>
-        We describe the object by two numbers, its position and its velocity. Together they are its state. We then say
-        how the state changes from one step to the next. The position moves by the velocity times the time step. The
-        velocity changes by a small random push, whose size is <span className="num">{PUSH}</span>. We also say how a
-        reading is made: it is the position plus an error with a spread of <span className="num">{READING_SD}</span>.
-        Before any reading, we only know that the first position is near 0 and the first velocity is near 1.
+        We describe the object by two numbers, its position and its velocity. Together they are its <em>state</em>. Then
+        we say how the state changes from one step to the next. The position moves by the velocity times the time step.
+        The velocity changes by a small random push, of size <span className="num">{PUSH}</span>.
+      </p>
+
+      <p>
+        We also say how a reading is made: it is the position plus an error with a spread of{' '}
+        <span className="num">{READING_SD}</span>. Before any reading, we only know that the first position is near 0
+        and the first velocity is near 1.
       </p>
 
       <h2>Messages along a chain</h2>
@@ -64,31 +67,27 @@ export default function Story(): ReactNode {
         <li>At the start every message is empty. It says nothing.</li>
         <li>Each reading sends its state a message: a bell curve for the position, centred on the reading.</li>
         <li>
-          Each state combines the messages it has and sends one forward to the next state. To make it, the state applies
-          the motion rule: the position moves by the velocity, and the spread grows because of the random push. The
-          forward message says what the readings so far imply about the next state.
+          Each state combines its messages and sends one forward to the next state. It applies the motion rule: the
+          position moves by the velocity, and the spread grows because of the random push. The forward message says what
+          the readings so far imply about the next state.
         </li>
-        <li>
-          Each state also sends a message backward to the previous state. It says what the later readings imply about
-          the earlier state.
-        </li>
+        <li>Each state also sends a message backward, saying what the later readings imply about the earlier state.</li>
         <li>
           Every state multiplies the messages from the left, from the right and from its own reading. The product is its
-          bell curve, for its position and its velocity together.
+          bell curve, for position and velocity together.
         </li>
         <li>One pass forward and backward is a sweep. The sweeps repeat until no message changes.</li>
       </ol>
 
       <p>
-        In this model the motion rule is linear and every error is a bell curve, so a message is exactly a bell curve.
-        Nothing has to be approximated, and the messages settle on the exact answer. This is what the Kalman smoother
-        computes.
+        Here the motion rule is linear and every error is a bell curve, so each message is exactly a bell curve. Nothing
+        is approximated, and the messages settle on the exact answer. This is what the Kalman smoother computes.
       </p>
 
       <p>
         To predict, we add <span className="num">{AHEAD}</span> more steps at the end that have no readings. We give
-        each of them a reading with an error of 10000, which is so large that the reading says nothing. These last steps
-        then receive only the forward messages from the real readings, and what comes out for them is a prediction.
+        each of them a reading with an error of 10000, so large that the reading says nothing. These steps then receive
+        only the forward messages from the real readings, and what comes out for them is a prediction.
       </p>
 
       <Play run={run} label="Follow the object" estimate="about 3 seconds, in the background" />
@@ -102,12 +101,12 @@ export default function Story(): ReactNode {
 
               <p>
                 The messages settled after <span className="num">{result.sweeps}</span> sweeps. The figure shows the
-                estimate of the position at every step: a line for the mean and a band for the 90% range. The thin
-                dotted line is the true position, which the method never saw.
+                estimate of the position at every step: a line for the mean and a band for the 90% range. The dotted
+                line is the true position, which the method never saw.
               </p>
 
               <Figure
-                caption="The estimated position (blue line) with its 90% band, the readings (grey dots) and the true position (dotted line). The orange part is the prediction for the steps after the last reading."
+                caption="The estimated position (blue) with its 90% band, the readings (grey dots), the true position (dotted) and the prediction after the last reading (orange)."
                 wide
               >
                 <TrackFigure result={result} />
@@ -139,10 +138,12 @@ export default function Story(): ReactNode {
                 <span className="num">{fixed(r.end.mean)}</span> and the 90% range is{' '}
                 <span className="num">{fixed(r.end.lo)}</span> to <span className="num">{fixed(r.end.hi)}</span>, a
                 half-width of <span className="num">{fixed(r.endHalf, 2)}</span>. The band widens because each step adds
-                a random push to the velocity, and an error in the velocity turns into a growing error in the position.
-                The true position was <span className="num">{fixed(r.endTruth)}</span> there. The true position is
-                inside the band at <span className="num">{r.aheadInside}</span> of the{' '}
-                <span className="num">{r.ahead}</span> steps ahead.
+                a random push to the velocity, and an error in the velocity grows into an error in the position.
+              </p>
+
+              <p>
+                The true position was <span className="num">{fixed(r.endTruth)}</span> there. It is inside the band at{' '}
+                <span className="num">{r.aheadInside}</span> of the <span className="num">{r.ahead}</span> steps ahead.
               </p>
 
               <p>
@@ -156,24 +157,22 @@ export default function Story(): ReactNode {
               </p>
 
               <Aside>
-                The steps after the last reading were made up for this page, so we can compare the prediction with what
-                happened. Press <em>Run again</em> to draw them again. The readings and the estimate stay the same, and
-                the true path ahead changes.
+                The steps after the last reading were made up, so we can compare the prediction with what happened.
+                Press <em>Run again</em> to draw them again. The readings and the estimate stay the same.
               </Aside>
 
               <h2>Why this is useful</h2>
 
               <p>
-                Tracking is the standard use: a phone following its position, a robot following a wall, a rocket
-                following its course. The messages are the reason it is cheap. A new reading adds one message to the
-                chain, and it does not make us start again from the first reading.
+                Tracking is the standard use: a phone, a robot or a rocket following its course. The messages make it
+                cheap. A new reading adds one message to the chain, with no need to start again.
               </p>
 
               <p>
-                The band is as good as the model of the motion. We told the model the size of the random pushes, and the
-                data here were made with pushes of that size. An object that sometimes pushes much harder would leave
-                the band more often than 1 time in 10. A similar chain of messages, with a switch for a change of rate
-                instead of a motion rule, is in{' '}
+                The band is only as good as the model of the motion. We told the model the size of the random pushes,
+                and the data here were made with pushes of that size. An object that sometimes pushes much harder would
+                leave the band more often than 1 time in 10. A similar chain of messages, with a switch for a change of
+                rate instead of a motion rule, is in{' '}
                 <Link to={storyHref('when-did-the-rate-change')} className="underline underline-offset-2">
                   When did the rate change?
                 </Link>

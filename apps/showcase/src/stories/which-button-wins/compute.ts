@@ -70,11 +70,11 @@ export const DEFAULT_SIZE: Size = { draws: 20_000, checkpoints: CHECKPOINTS, bin
  * @returns The result.
  */
 export function compare(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE): Result {
-  say('Showing the page to two thousand visitors')
+  say('Making the visitors')
   const experiment = simulate(seed)
   const { a, b } = experiment
   const base = key(seed)
-  say('Writing the model: one click rate for each version')
+  say('Setting up the model')
   // region model
   const buttons = defineModel('buttons', (m) => {
     const visitorsA = m.data('visitorsA')
@@ -89,7 +89,7 @@ export function compare(seed: number, say: Say = () => {}, size: Size = DEFAULT_
     m.observe('clicksB', d.binomial(visitorsB, rateB), clicksB)
   })
   // endregion
-  say('Solving it after the first visitors, then after more and more')
+  say('Solving it after more and more visitors')
   // region infer
   // what the model believes after the first n visitors of each version
   const after = (n: number): Posterior => {
@@ -110,7 +110,7 @@ export function compare(seed: number, say: Say = () => {}, size: Size = DEFAULT_
   }
   const strip = size.checkpoints.map((n) => chanceBBeatsA(after(n), size.draws))
   // endregion
-  say('Reading off the rates and their difference')
+  say('Reading off the rates')
   // region difference
   const final = after(VISITORS)
   const rates = final.sample(foldIn(base, 4), size.draws)

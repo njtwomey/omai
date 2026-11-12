@@ -31,7 +31,7 @@ describe('the is-this-coin-fair page', () => {
     )
     expect(html).toContain('data-phase="idle"')
     expect(html).toContain('Flip the coin 100 times')
-    expect(html).toContain('Nothing has been computed yet')
+    expect(html).toContain('The result will appear here')
     expect(html.indexOf('data-testid="results"')).toBeGreaterThan(html.indexOf('data-testid="play"'))
     expect(html).toContain('data-state="empty"')
     expect(html).not.toContain('What the flips said')

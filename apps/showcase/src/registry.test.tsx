@@ -62,7 +62,7 @@ describe('the registry of stories', () => {
     expect(play).toBeGreaterThan(0)
     expect(results).toBeGreaterThan(play)
     expect(html).toContain('data-state="empty"')
-    expect(html).toContain('Nothing has been computed yet')
+    expect(html).toContain('The result will appear here')
     expect(html).not.toContain('What to take from it')
     expect(html).not.toContain('How it is written')
     expect(made).toEqual([])

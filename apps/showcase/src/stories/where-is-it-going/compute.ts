@@ -65,7 +65,7 @@ export const DEFAULT_SIZE: Size = { steps: READINGS, ahead: AHEAD, record: true 
 export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE): Result {
   say('Moving the object and reading its position')
   const track = simulate(seed, size.steps, size.ahead)
-  say('Sending bell curves along the track')
+  say('Passing messages along the track')
   // region model
   // each step the position moves by the velocity, and the velocity stays, up to a small random push
   const step = tensor([

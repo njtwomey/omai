@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import { type BrutePort, bruteTilted } from '../../../../testing/message-passing.ts'
 import { massOf, messageArg, valueArg } from '../../core/args.ts'
+import { projectSite } from '../../core/define.ts'
 import { gamma, gammaEta, gaussian, gaussianEta } from '../../core/families.ts'
 import type { Arg, FactorOperator } from '../../core/types.ts'
 import { logDiffPhi } from '../../numerics/_scalar.ts'
@@ -118,6 +119,18 @@ describe('likelihood-triple: tilted moments and log evidence against a brute-for
       expect(Math.abs((t?.moments[0] as number) - (want[to] as number)), `port ${to}`).toBeLessThan(0.05)
       expect(Math.abs((t?.logZ as number) - (-2.6079 + args.reduce((z, a) => z + massOf(a), 0)))).toBeLessThan(0.05)
     }
+  })
+  it('student-t-full at a large location: the message to the location keeps the narrow variance', () => {
+    // y = 1e6, a log scale cavity near log 1e-3, a degrees of freedom near 100 (light tails) and a wide location cavity at 1e6: the tilted sd of the location is about 1e-3, and
+    // its variance (about 1e-6) does not survive `E x^2 - (E x)^2` with E x^2 about 1e12
+    const params = { likelihood: 'student-t-full', y: 1e6 }
+    const args = [cavity(1e6, 1), cavity(Math.log(1e-3), 0.01), cavity(Math.log(100), 0.01)]
+    const tilt = op.tilted?.({ mode: 'ep', to: 0, args, params, power: 1 })
+    expect(tilt?.centred?.variance).toBeGreaterThan(1e-8)
+    expect(tilt?.centred?.variance).toBeLessThan(1e-4)
+    const message = projectSite(args[0] as Arg, tilt as never, 1)
+    expect(message[1]).toBeGreaterThan(1e3)
+    expect((message[1] as number) + 1).toBeCloseTo(1 / (tilt?.centred?.variance as number), -3)
   })
   it('student-t-full with a known scale is the pair of the location and the degrees of freedom', () => {
     check('student-t-full', 0.9, {}, [{ m: 0.2, v: 1 }, Math.log(0.8), { m: 1, v: 0.6 }])
