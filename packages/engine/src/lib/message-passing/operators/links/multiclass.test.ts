@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type BrutePort, bruteTilted } from '../../../../testing/message-passing.ts'
+import { type BruteBelief, type BrutePort, bruteExpectation, bruteTilted } from '../../../../testing/message-passing.ts'
 import { ndtr } from '../../../numerics/special/_kernels.ts'
 import { massOf, messageArg, valueArg } from '../../core/args.ts'
 import { gaussian, gaussianEta } from '../../core/families.ts'
@@ -394,7 +394,7 @@ describe('multiclass-site: the auxiliary-variable rule (any number of classes)',
       expect(Math.abs(evidence - ref.logZ), `evidence with y = ${y}`).toBeLessThan(2e-3)
     }
   }, 60_000)
-  it('says what it does not do: the product grid stops at six, the probit takes no power, variational passing stops at six', () => {
+  it('says what it does not do: the product grid stops at six, the probit takes no power, variational passing has no refusal', () => {
     const args: Arg[] = spread(8, 1, 1).map((c) => messageArg(gaussian, gaussianEta(c.m, c.v)))
     expect(() =>
       multiclassSite.ep?.({ mode: 'ep', to: 0, args, params: { y: 0, classes: 8, integration: 'product' }, power: 1 }),
@@ -402,8 +402,135 @@ describe('multiclass-site: the auxiliary-variable rule (any number of classes)',
     expect(() =>
       multiclassSite.ep?.({ mode: 'ep', to: 0, args, params: { y: 0, classes: 8, link: 'probit' }, power: 0.5 }),
     ).toThrow(/power of one/)
-    expect(multiclassSite.unsupported?.('vmp', { y: 0, classes: 8 })).toMatch(/up to 6 classes/)
-    expect(multiclassSite.unsupported?.('vmp', { y: 0, classes: 6 })).toBeUndefined()
+    expect(multiclassSite.unsupported?.('vmp', { y: 0, classes: 8 })).toBeUndefined()
     expect(multiclassSite.unsupported?.('ep', { y: 0, classes: 8 })).toBeUndefined()
+  })
+})
+
+describe('variational message passing beyond six classes', () => {
+  /** The beliefs of K scores: a null variance is a known score. */
+  const beliefs = (list: readonly (readonly [number, number])[]): Arg[] =>
+    list.map(([m, v]) => (v > 0 ? messageArg(gaussian, gaussianEta(m, v)) : valueArg(gaussian, m)))
+  const vmp = (args: readonly Arg[], to: number, params: Params): readonly number[] =>
+    multiclassSite.vmp?.({ mode: 'vmp', to, args, params, power: 1 }).message as readonly number[]
+  const expectedLog = (args: readonly Arg[], params: Params): number =>
+    multiclassSite.expectedLog?.({ mode: 'vmp', to: 0, args, params, power: 1 }) as number
+  /** The reference of the expected log: a composite Gauss-Legendre rule over the free scores, the known ones fixed. */
+  const reference = (args: readonly Arg[], log: (z: readonly number[]) => number): number => {
+    const free = args.flatMap((a, i) => (a.value === undefined ? [i] : []))
+    const brutes: BruteBelief[] = free.map((i) => ({
+      kind: 'gaussian',
+      eta: (args[i] as Arg).eta as readonly number[],
+      panels: free.length > 2 ? 8 : 24,
+    }))
+    const z = args.map((a) => (a.value === undefined ? 0 : (a.value as number)))
+    return bruteExpectation(brutes, (x) => {
+      for (const [k, i] of free.entries()) z[i] = x[k] as number
+      return log(z)
+    })
+  }
+  /** The weights `h` and `J` as the natural gradient of the expected log: central differences in the mean and the variance of one belief. */
+  const gradient = (list: readonly (readonly [number, number])[], to: number, params: Params): [number, number] => {
+    const at = (m: number, v: number): number =>
+      expectedLog(beliefs(list.map((b, i) => (i === to ? [m, v] : b))), params)
+    const [m, v] = list[to] as readonly [number, number]
+    const e = 1e-4
+    const dm = (at(m + e, v) - at(m - e, v)) / (2 * e)
+    const dv = (at(m, v + e) - at(m, v - e)) / (2 * e)
+    return [dm - 2 * m * dv, -2 * dv]
+  }
+  const small: readonly (readonly [number, number])[] = [
+    [0.3, 1.2],
+    [-0.2, 0.8],
+    [0.1, 1.5],
+  ]
+  // Eight classes, two of them random and six known: the product rule reaches this one, so the references are exact.
+  const eight: readonly (readonly [number, number])[] = [
+    [0.4, 1.1],
+    [-0.3, 0.7],
+    [2, 0],
+    [-1, 0],
+    [0.5, 0],
+    [0, 0],
+    [1, 0],
+    [-2, 0],
+  ]
+
+  it('the softmax expected log is the exact expectation: three free scores and eight with six known, 1e-8', () => {
+    for (const [list, y] of [
+      [small, 1],
+      [eight, 2],
+      [eight, 0],
+    ] as const) {
+      const args = beliefs(list)
+      const params = { y, classes: list.length, link: 'logit', integration: 'auxiliary' }
+      const ref = reference(args, (z) => logSoftmax(z, y))
+      expect(Math.abs(expectedLog(args, params) - ref), `y = ${y}`).toBeLessThan(1e-8)
+    }
+  })
+
+  it('the softmax messages are those of the product grid (three and eight classes), whichever class is observed', () => {
+    for (const [list, y] of [
+      [small, 0],
+      [small, 2],
+      [eight, 1],
+      [eight, 4],
+    ] as const) {
+      const args = beliefs(list)
+      const base = { y, classes: list.length, link: 'logit' }
+      for (const [to, [, v]] of list.entries()) {
+        if (!(v > 0)) continue
+        const grid = vmp(args, to, { ...base, integration: 'product' })
+        const aux = vmp(args, to, { ...base, integration: 'auxiliary' })
+        expect(Math.abs((aux[0] as number) - (grid[0] as number)), `h of ${to}, y = ${y}`).toBeLessThan(2e-5)
+        expect(Math.abs((aux[1] as number) - (grid[1] as number)), `J of ${to}, y = ${y}`).toBeLessThan(2e-5)
+      }
+    }
+  })
+
+  it('the messages are the natural gradient of the reported expected log (softmax and probit, eight classes)', () => {
+    const wide: readonly (readonly [number, number])[] = [
+      [0.4, 1.1],
+      [-0.3, 0.7],
+      [0.2, 0.9],
+      [-1, 0],
+      [0.5, 0],
+      [0, 0],
+      [1, 0],
+      [-0.5, 0],
+    ]
+    for (const link of ['logit', 'probit'] as const)
+      for (const y of [0, 5]) {
+        const params = { y, classes: 8, link }
+        const args = beliefs(wide)
+        for (const to of [0, 1, 2]) {
+          const [h, j] = gradient(wide, to, params) as [number, number]
+          const got = vmp(args, to, params)
+          expect(Math.abs((got[0] as number) - h), `${link} y = ${y} h of ${to}`).toBeLessThan(2e-4)
+          expect(Math.abs((got[1] as number) - j), `${link} y = ${y} J of ${to}`).toBeLessThan(2e-4)
+        }
+      }
+  })
+
+  it('the probit bound is below the expected log (0.004 to 0.02 nats with one other score random) and exact when the others are known', () => {
+    for (const [list, y] of [
+      [eight, 2],
+      [eight, 0],
+      [eight, 1],
+    ] as const) {
+      const args = beliefs(list)
+      const bound = expectedLog(args, { y, classes: 8, link: 'probit' })
+      const ref = reference(args, (z) => logProbit(z, y))
+      expect(bound).toBeLessThanOrEqual(ref + 1e-9)
+      expect(ref - bound, `y = ${y}`).toBeLessThan(0.03)
+    }
+    // The other scores known, the observed class's score random: Jensen's inequality has nothing to bound, so the bound is the expected log.
+    const one = beliefs([[0.4, 1.1], ...eight.slice(2)])
+    const bound = expectedLog(one, { y: 0, classes: 7, link: 'probit' })
+    expect(Math.abs(bound - reference(one, (z) => logProbit(z, 0)))).toBeLessThan(1e-6)
+  })
+
+  it('a belief with no density is refused, not sent a message', () => {
+    expect(() => vmp([messageArg(gaussian, [0, -1]), ...beliefs(eight.slice(1))], 1, { y: 0, classes: 8 })).toThrow()
   })
 })

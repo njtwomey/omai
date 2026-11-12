@@ -23,6 +23,7 @@ export const operatorNames = [
   'sum',
   'dot-constant',
   'matmul-constant',
+  'gaussian-mv-stack',
   'linear-regression-row',
   'gaussian-joint',
   'probit',

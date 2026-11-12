@@ -16,7 +16,7 @@ What the walk does with each kind of node of the spec, in order. The latents and
 | 1 | `data` |  | bound data is known from the start (the constants pass): nothing to map |  |  |
 | 2 | `non-centred-absorbed` |  | a standard normal vector that a non-centred derived node absorbs: the derived node compiles it, only if the dense factor does not apply |  | before the latent mappings: the vector has no mapping of its own |
 | 3 | `latent` |  | a latent node: the first mapping of the latent table that takes it |  |  |
-| 4 | `derived` |  | a derived node: its expression evaluated in the value algebra (a known constant, a symbolic value, a recorded variable), or a non-centred vector z / S(x) as one Gaussian vector with a gaussian-mv-function-scale factor | `gaussian-mv-function-scale` |  |
+| 4 | `derived` |  | a derived node: its expression evaluated in the value algebra (a known constant, a symbolic value, a recorded variable), or a non-centred vector z / S(x) as one Gaussian vector with a gaussian-mv-function-scale factor (one shared scale) or assembled from its scalar products by a gaussian-mv-stack factor (a scale each) | `gaussian-mv-function-scale`, `gaussian-mv-stack` |  |
 | 5 | `observed` |  | an observed node: the first mapping of the observed tables that takes it |  |  |
 | 6 | `generated` |  | a generated node (a prediction that is not part of the model): nothing to map |  |  |
 | 7 | `scan` |  | a scan, which the driver has unrolled into one variable and factor per step before the walk: nothing to map |  |  |

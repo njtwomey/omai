@@ -63,13 +63,13 @@ const STEP_SD = 0.8
 const MOST_NODES = 400
 
 /** A score under its Gaussian cavity: a uniform grid over `mean +- REACH sd`, the log weights of the (normalised) Gaussian, and `exp(z)` at each node. */
-interface ScoreGrid {
+export interface ScoreGrid {
   readonly z: Float64Array
   readonly logw: Float64Array
   readonly e: Float64Array
 }
 
-function scoreGrid(mean: number, variance: number): ScoreGrid {
+export function scoreGrid(mean: number, variance: number): ScoreGrid {
   const sd = Math.sqrt(variance)
   const lo = mean - REACH * sd
   const hi = mean + REACH * sd
@@ -82,7 +82,7 @@ function scoreGrid(mean: number, variance: number): ScoreGrid {
 }
 
 /** `log(sum exp(v))` of numbers, `-Infinity` for none. */
-function logSum(values: ArrayLike<number>): number {
+export function logSum(values: ArrayLike<number>): number {
   let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < values.length; i++) if ((values[i] as number) > top) top = values[i] as number
   if (!Number.isFinite(top)) return top
@@ -92,7 +92,7 @@ function logSum(values: ArrayLike<number>): number {
 }
 
 /** `log A(t)` for a score: the log of the sum over its nodes of `w exp(-t e)`, shifted by the largest term. */
-function logTransform(g: ScoreGrid, t: number): number {
+export function logTransform(g: ScoreGrid, t: number): number {
   const n = g.z.length
   let top = Number.NEGATIVE_INFINITY
   for (let i = 0; i < n; i++) {

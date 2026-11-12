@@ -798,6 +798,45 @@ classes is about 3 ms (wide cavities 6 ms) a tilted moment, the probit about 4 m
 - Digest items moved deliberately: `model/radon`, `model/trueskill-three-players`, `atom/skill-draws`, `atom/skill-draws-learned`,
   `atom/skill-difference-learned`, `program/skills` (spreads move towards the reference; the means within 0.02 sd except the learned
   tournaments' skills, 0.05 sd). The two draws atoms moved to the `plated` rung with evidence within 0.02 nats.
+
+## 2026-11-12 ARD under variational message passing: the scalar products assembled into one vector (`agent-a6a2ec-ard`, gap `non-centred-scale` closed)
+
+- The compiler assembles a non-centred vector with a scale of its own for each coefficient (`z_j / sqrt(alpha_j)`, ARD) with one new
+  operator, `gaussian-mv-stack` (`D = (y_0, ..., y_n-1)`, in `linear.ts`), instead of a `dot-constant` tie per coordinate:
+  `tiedToVector` (`_mappings/derived.ts`) emits it over the `apply-product` outputs, and the derived mapping declares it in `requires`
+  (`operator-contract.test.ts` checks it exists and that what the corpus emits is declared). The stack defines the vector from its
+  coordinates, as each `apply-product` defines its scalar, so every variable has one definer and the graph compiles under both rules.
+  Under EP the message to the vector is the diagonal of the scalars' cavities and the message to a scalar the marginal, at its
+  coordinate, of the vector's cavity with the other scalars' cavities (the `n` unit ties in one factor; exact on a linear Gaussian
+  model, tested against the closed-form posterior); the evidence is the log partition of the vector's cavity plus that message. Under
+  the mean field the belief of the vector is the diagonal Gaussian of the scalars' beliefs, and the message to a scalar is the expected
+  log of the vector's cavity with the other coordinates at their means.
+- `apply-product` has its variational rule (the one of the earlier prototype, `definedFunctionMessage`: it defines its output, the
+  mean and variance of the pushforward of `z f(x)` to `y`, the non-conjugate messages of the readers' expected log to `z` and `x` on the
+  product of the two quadratures; no second quadrature), tested against the brute-force bound for a Gaussian and for a gamma `x`.
+- Bayesian GAM, ARD, `bayesianGamMethods('ard')` now offers `vmp`: at k = 10 the curve is 0.029 response sd from EP and 0.027 from a
+  sampler (EP is 0.032 from it), the log noise -1.60 +- 0.10 (EP -1.67 +- 0.12, sampler -1.67 +- 0.10), the band 1.39 times the
+  sampler's (EP 1.005), 627 sweeps to a change of 1e-5 at damping 0.3 (the default of no damping stalls, status `stopped` with the
+  reason). Against the exact posterior of a two-coefficient ARD regression (`models/ard-exact.test.ts`, a grid over the two log
+  relevances): EP means within 2e-5 and spreads 1.00001 of exact (the model is a tree of exact factors but for the Gaussian
+  projection of the data-dominated posterior), the mean field 0.08 off in a mean of 1.9, the large coefficient's spread 1.28 times
+  the exact one and the small one's 1.04.
+- EP on the ARD GAM is unchanged in kind (24 sweeps, the sampler test passes within its bounds); no digest item contains an
+  `apply-product` or an ARD model, so the items are as before (the 1e-11 drifts of `atom/gamma-precision` and
+  `atom/prior-beta-strength-lognormal` are not this change: neither compiles a stack or a product). The registry section of the digest
+  has the new operator (67) and `apply-product` with `defines` 0 and a `vmp` rule (support `numeric`), nothing else. The graph corpus
+  is unchanged (no ARD model in it).
+- The varying-slopes radon model (`radonCountiesDefinition('slopes')`) was refused at compile time: `slope = mu_b + tau_b (rho z_a +
+  sqrt(clip(1 - rho^2, 1e-12, 1)) z_b)` has a `clip` of a random value. A clip by known bounds is now a `min` and a `max` step in the
+  chain of the value's `apply` factor (`clipAff` in `_symbolic/_functions.ts`; `chainOf` of the `apply` operator knows both steps), the
+  same way a rectifier of a known operand is, so `sqrt(clip(1 - rho^2))` is one `apply` from `rho` with no second Gaussian
+  approximation (a clip with a random bound is still refused, with the reason). Against the exact grid posterior a clipped curve
+  agrees as the rectifier does (`symbolic-functions.test.ts`), the message of a chain with the clip binding matches a fine grid
+  (`functions.test.ts`), and EP on the slopes model settles (71 sweeps, 10 counties, one seed) with `mu` and `mu_b` within 0.06 of a
+  NUTS sd of the sampler's and their spreads 0.76 to 0.8 times its, the scales `tau` and `tau_b` 0.4 sd low (spreads 0.96 and 0.69) and
+  `rho`, barely identified (sd 0.57 against 0.55), -0.06 against -0.35. No digest item moved (no benchmark model clips a random value).
+||||||| 91d45803
+
 ## 2026-11-12 Stochastic volatility with learned parameters: a walk and warm starts in `epGridMethod` (`agent-a3da95-sv`)
 
 Gap `sv-parameters` narrowed (summary rewritten in `ep-gaps.ts`, still open). No second grid method: `epGridMethod` got two knobs and a
@@ -829,6 +868,80 @@ rule for nodes that cycle (`inference/ep-grid.ts`).
   Gaussian process benchmarks, where every node is exact; the weight of a node that did not settle). The EP digest: no item moves because
   of the change (`atom/gp-length-scale` differs from the committed baseline in the last digits, on the unchanged HEAD as well).
 
+## 2026-11-12 Variational message passing: the Student-t rows checked, the ordinal rows split (`agent-acc004-vmprules`, gap `variational-rules` narrowed)
+
+- `student-t-full` (`likelihood-triple`) and `student-t-scale` (`likelihood-pair`) already had a mean-field message (the numeric rule: the density
+  is smooth everywhere); what they lacked was a reference. `variational.test.ts` now checks that the fixed point of each is a stationary maximum
+  of the brute-force bound (a Gaussian and a gamma scale, three random parameters): the engine's bound is within 5e-4 nats of the brute force
+  with two random ports, 3.5e-3 with three (the heavy tails against 24 and 12 Gauss-Hermite nodes), the gradient at the fixed point under 1e-3
+  and 6e-3.
+- Ordinal rows: what is sound. The density of a category between two cut points is zero where they are out of order, and a Gaussian belief of
+  them has mass there, so `E_q[log f]` is minus infinity for every Gaussian `q` (and no lower bound can be finite: it would have to be below
+  minus infinity); the family has to change (a truncated or order-by-construction belief) for a bound to exist, so those rows stay refused,
+  with the reason. The first and the last category have one cut and a density that is smooth (`log Phi(c - u)`, `log Phi(u - c)`): `noVmp` of a
+  triple row is now a function of the outcome and those two run under VMP (`ordinal-probit-cuts`, `ordinal-logit-cuts`, the cut that is not
+  there ignored), each checked as a stationary maximum of the brute-force bound. A model with a middle category still has no VMP message
+  (every ordinal atom with three categories), and its ordering comes from `greater-than`, a hard step the mean field cannot hold either.
+  What would run them: cut points that are ordered by construction (a first cut and positive gaps, `exp` of a Gaussian, so the density is
+  smooth over unconstrained beliefs), which needs a compiler pattern for it; not done.
+
+- The softmax and the multinomial probit beyond six classes under VMP (`operators/links/_multiclass-variational.ts`; `multiclass-site` loses its
+  `unsupported('vmp')`). Under a mean field the scores' beliefs are independent, so the expected log of the softmax needs no product grid:
+  `-log S = int (exp(-t S) - exp(-t)) dt / t` (Frullani, the auxiliary variable of the EP rule) and `E exp(-t S) = exp(-t K) prod_k A_k(t)` with
+  `A_k(t) = E_k exp(-t exp(z_k))`, so `E log P = E z_y + int (E exp(-t S) - exp(-t)) ds` in `s = log t`, exact up to a trapezoid rule over
+  `s` (step 0.4: the integrand is analytic, decays as `exp(s)` on the left and as a Gaussian tail on the right). The message to a score is
+  the same integral with that class's `A_k` replaced by `exp(-t exp(z))` at each of its quadrature nodes, through the new
+  `naturalGradientMessage` (the part of `numericMessage` after the average over the other ports, now shared), from one table of the `A_k(t_s)`
+  per factor and sweep (`memoised`). Nothing is bounded: the expected log is the product grid's to 1e-8 (3 free scores, and 8 classes with
+  6 known, against `bruteExpectation`), the messages are the product grid's to 2e-5 (`integration: 'product'` against `'auxiliary'`, three
+  and eight classes, any observed class), and the cost is the number of classes. `integration` picks the rule as for EP; `auto` is the product
+  grid up to six free scores and the auxiliary rule beyond (`integration: 'auxiliary'` forces it).
+- The multinomial probit is `P(y | z) = int N(c; z_y, 1) prod_j Phi(c - z_j) dc`, the expectation of a product: its log has no separable
+  form, so VMP takes a bound. `log int N(c; z_y, 1) exp(G(c)) dc` is convex in `G`, so by Jensen over the scores of the other classes (not the
+  observed one's) `E log P >= E_(z_y) log int N(c; z_y, 1) exp(H(c)) dc`, `H(c) = sum_j E log Phi(c - z_j)` (a Gauss-Hermite sum per class at each
+  node of a grid of `c`). The gap is the spread of the other scores and is zero when they are known (checked to 1e-6); with one other score
+  random it is 0.004 to 0.02 nats (a first version with a Gaussian `q(e)` over the noise, the usual bound, was 0.5 nats off for an improbable
+  outcome and was dropped). The messages are exact gradients of the bound (to the observed class's score the bound at each node, to another
+  score the expected `log Phi(c - z)` under the optimal density of `c`): they equal central differences of the reported bound to 2e-4. The
+  rule is `numeric` in the registry's accounting; for the probit it is a lower bound, not the exact expected log.
+- Tests: `multiclass.test.ts` (expected log against `bruteExpectation`, messages against the product grid, messages against finite differences
+  of the bound for the softmax and the probit, the probit bound against the brute-force expected log), `variational.test.ts` (eight classes,
+  two random scores: the fixed point is a stationary maximum of the brute-force bound). Atoms: `softmax-choice` and `-learned` run under VMP
+  (41 and 46 sweeps; against the grid of the two coefficients the means are within 0.17 and 0.19 sds, the spreads 0.71 to 0.77 and 0.65 to 0.88
+  of the grid's, the usual mean-field shortfall: plain EP has 0.77 to 0.83), `vmpCoverage` counts 88 of 97.
+||||||| aec194a8
+
+## 2026-11-12 The multi-start finds the other mode of a mixture: starts on the labels' priors, and mode weights held to references (`agent-a11610-modes`, gap `multimodal` narrowed)
+
+Gap `multimodal` rewritten in `ep-gaps.ts` (still open). No second multi-start: `epMultiStartMethod` (`inference/ep-multistart.ts`) changed in two places.
+- **The defect.** A start was set on the discrete ports of the factors that are not priors. In a model whose labels are independent given the
+  parameters (a mixture, the clutter problem) each label has one other neighbour besides its row's likelihood, the prior, so the label's cavity
+  for the likelihood is the prior's message and the start on the likelihood's own port is divided out: every random, exclusion and relabelling
+  start reached the same fixed point (a two-cluster mean: one mode, a relabelled start returning to the first labelling; the clutter problem
+  at 7.8 +- 0.7 where the posterior is 6.4 +- 2.3). In a chain (the changepoint program) the neighbours carry the start, which is why the earlier
+  measurements found several modes there.
+- **The fix.** `discretePorts` now includes the ports of a prior; a start is a message on those (a relabelled start: the relabelled belief of
+  the label), and the start is carried through three damped sweeps (damping 0.5) before the run goes on at its own settings, because with
+  the default damping of 0 the prior sends its own message again at its first update. `diagnostics.modeWeights` is new (the weights, summing
+  to one).
+- **References** (`ep-multistart-modes.test.ts`): the clutter problem's location against its quadrature on six data sets, one run -> the
+  multi-start: the evidence 0.0 to 3.6 nats off -> within 0.006 nats, the mean 0.0 to 5.5 sd off (the other mode missed: data 2, one run
+  at 1.6 where the posterior is 9.0 +- 1.4) -> within 0.03 sd, the sd 0.26 to 0.49 of the truth's (0.95 on data 1, where one mode has all the mass) -> within 4%; the second mode weighs 0.28, 0.001, 0.027,
+  0.17, 0.23, 0.026 on the six. A two-cluster mean with unequal priors (12 points, the enumeration of the 4096 assignments gives the mass of
+  the labelling with the first mean below the second): 0.559, 0.186 and 0.980 exact, and 1.0 (one mode) before, 0.559, 0.186 and 0.980 now, the
+  evidence within 1e-4 nats, the labelled means within 0.02 sd and the sds within 1% of the exact ones. The benchmark mixture with symmetric priors (3 data sets of 40
+  points): two modes of equal weight, the sorted means within 0.05 sd and the sds within 4% of the grid (-1.889 +- 0.308 against -1.887 +- 0.313 on the first), the
+  evidence of one mode within 0.04 nats of the grid's. Overlapping clusters (ten points between -2 and 2) stay one fixed point (the evidence -19.07 against
+  the exact -18.75): the weights are only as good as the fixed points found.
+- **The changepoint program** (8 seeds, 12 starts, a Gibbs reference, the truth inside the 90% interval, spreads over the sampler's): the
+  `sort` read-out is unchanged to the digit (0.917, 0.72), `keep` finds more labellings (0.958, spread 2.7 -> 3.2 times the sampler's), `permute`
+  0.958 and 3.6, times 60, 75 and 57 s for the eight seeds.
+- **Labels default, for the owner** (`keep`, `permute`, `sort`; docs/probprog/ep.md section 4 has the table and the recommendation): `keep` gives
+  the exact marginals of the model as written; `sort` is the read-out of a data-ordered sampler; `permute` is the one that finds a labelling
+  of 2% weight reliably (12 random starts missed it). The default is not changed.
+- Not done: continuous symmetries (the sign of a loading: no discrete message to start from), a regime visited by a handful of steps, the
+  circular mixture's evidence, the forward-algorithm site (all in the gap's plan).
+- Digest: no item runs the multi-start (`ep-digest` items are the route's atoms, models and programs), so none moves.
 ## 2026-11-12 A strong correlation from few pairs, and the group form of the sd-and-correlation site (`agent-a6b87c-corr`, gaps `correlation-strong-few-pairs` and `matrix-larger` narrowed)
 
 Searched first: the correlation family and its mapping (`d.correlation`, `latentCorrelation`, the readback of the beta as a transformed beta), `mvn-sd-corr` and its beta projection, the
@@ -867,3 +980,4 @@ numeric prior site and the likelihood sites (for a Gaussian belief on the Fisher
   atom are identical to the bit, the registry line gained the operator): rho mean 0.794981 -> 0.798515, sd 0.132244 -> 0.159559, sd ratio 0.828826 -> 1.000022, z 0.021859 -> 0.000294, KS 0.2135 ->
   0.2220 (basic); rho mean 0.373943 -> 0.374300, sd 0.163614 -> 0.165082, sd ratio 1.000818 -> 1.000037 (learned, against the corrected reference). The registry test counted 67 operators on main
   (68 there); it counts 69 now.
+||||||| aec194a8

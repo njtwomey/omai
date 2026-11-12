@@ -1,11 +1,10 @@
 /**
  * Derived nodes: the arithmetic of the value algebra evaluated for a node, kept as a symbolic value, a known constant, a lazy
  * expression over discrete variables or a recorded variable; the non-centred vector `z / S(x)` as one Gaussian vector with a
- * `gaussian-mv-function-scale` factor (`denseNonCentred`), and a vector of scalar products tied to one Gaussian vector variable.
+ * `gaussian-mv-function-scale` factor (`denseNonCentred`), and a vector of scalar products assembled into one Gaussian vector variable.
  */
 
 import type { Json } from '../../../../base/index.ts'
-import { elementId } from '../../ids.ts'
 import type { ModelNode } from '../../spec.ts'
 import { type Cell, isConstCell, prod } from '../_cells.ts'
 import type { Context } from '../_context.ts'
@@ -140,9 +139,10 @@ export function denseNonCentred(cx: Context, node: ModelNode & { readonly kind: 
 
 /**
  * A non-centred vector whose coefficients each have a scale of their own (`z_j / sqrt(alpha_j)`, ARD): the products are scalar
- * variables (`apply-product`), each a coordinate of one Gaussian vector variable `D` (a `dot-constant` factor), and `D` is what the
- * rest of the model reads. The scalar factors are as before; the likelihood sees one vector, so its message to the coefficients is
- * dense and the posterior keeps their correlations. False (and nothing made) when a cell is not one variable.
+ * variables (`apply-product`), assembled into one Gaussian vector variable `D` by one `gaussian-mv-stack` factor (which defines `D`
+ * from them, as each product defines its scalar), and `D` is what the rest of the model reads. The scalar factors are as before; the
+ * likelihood sees one vector, so its message to the coefficients is dense and the posterior keeps their correlations. False (and
+ * nothing made) when a cell is not one variable.
  */
 export function tiedToVector(
   cx: Context,
@@ -158,12 +158,9 @@ export function tiedToVector(
     outs.push(atom.name)
   }
   const n = outs.length
+  cx.g.need('gaussian-mv-stack')
   cx.g.addVariable({ name: node.name, family: { kind: 'gaussian-mv', size: n } })
-  for (const [j, out] of outs.entries()) {
-    const a = new Array<number>(n).fill(0)
-    a[j] = 1
-    cx.g.addFactor({ operator: 'dot-constant', args: [out, node.name], params: { a } }, elementId(node.name, j))
-  }
+  cx.g.addFactor({ operator: 'gaussian-mv-stack', args: [node.name, ...outs], params: { n } }, node.name)
   cx.syms.set(node.name, {
     dims: node.dims,
     cells: Array.from({ length: n }, (_, j) => cx.g.compAtom(node.name, j, n)),
