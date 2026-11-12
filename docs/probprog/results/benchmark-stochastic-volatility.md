@@ -2,7 +2,7 @@
 
 Stochastic volatility: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-10 at commit 23783786; seed 0, budget scale 1 (plans 5, rows 150, scalePercent 100), 50.7 s.
+Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 5, rows 150, scalePercent 100), 65.4 s.
 
 **Passed**: 1 method(s) agree with the quadrature truth; 4 reported
 
@@ -12,165 +12,165 @@ A log-variance following an AR(1) scales Gaussian returns, the parameters known:
 
 Truth (quadrature): point-mass filter and smoother on a grid of 800 log-variance values over mu +- 6 stationary sd (spacing 0.0120, transition sd 0.25), the parameters known; the evidence is the product of the filter's normalising constants. Log evidence -49.1248.
 
-Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, elliptical-slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, laplace, importance, tempered-smc, particle-filter, abc-smc, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: ep (y[0]: the scale of 'y[0]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[1]: the scale of 'y[1]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[2]: the scale of 'y[2]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[3]: the scale of 'y[3]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[4]: the scale of 'y[4]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[5]: the scale of 'y[5]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[6]: the scale of 'y[6]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[7]: the scale of 'y[7]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[8]: the scale of 'y[8]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[9]: the scale of 'y[9]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[10]: the scale of 'y[10]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[11]: the scale of 'y[11]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[12]: the scale of 'y[12]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[13]: the scale of 'y[13]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[14]: the scale of 'y[14]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[15]: the scale of 'y[15]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[16]: the scale of 'y[16]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[17]: the scale of 'y[17]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[18]: the scale of 'y[18]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[19]: the scale of 'y[19]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[20]: the scale of 'y[20]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[21]: the scale of 'y[21]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[22]: the scale of 'y[22]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[23]: the scale of 'y[23]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[24]: the scale of 'y[24]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[25]: the scale of 'y[25]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[26]: the scale of 'y[26]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[27]: the scale of 'y[27]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[28]: the scale of 'y[28]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[29]: the scale of 'y[29]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only)); vmp (y[0]: the scale of 'y[0]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[1]: the scale of 'y[1]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[2]: the scale of 'y[2]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[3]: the scale of 'y[3]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[4]: the scale of 'y[4]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[5]: the scale of 'y[5]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[6]: the scale of 'y[6]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[7]: the scale of 'y[7]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[8]: the scale of 'y[8]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[9]: the scale of 'y[9]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[10]: the scale of 'y[10]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[11]: the scale of 'y[11]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[12]: the scale of 'y[12]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[13]: the scale of 'y[13]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[14]: the scale of 'y[14]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[15]: the scale of 'y[15]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[16]: the scale of 'y[16]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[17]: the scale of 'y[17]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[18]: the scale of 'y[18]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[19]: the scale of 'y[19]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[20]: the scale of 'y[20]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[21]: the scale of 'y[21]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[22]: the scale of 'y[22]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[23]: the scale of 'y[23]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[24]: the scale of 'y[24]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[25]: the scale of 'y[25]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[26]: the scale of 'y[26]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[27]: the scale of 'y[27]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[28]: the scale of 'y[28]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only); y[29]: the scale of 'y[29]' depends on a random value that is not the precision idiom: write the scale as 1 / sqrt(tau) with tau a gamma or exponential latent (the conjugate precision; variational message passing only)); bp (belief propagation sums over finite discrete variables, and 'h' is continuous); gibbs (no discrete or conjugate conditionals); em (no params to estimate); conjugate (no usable conjugate structure for h); gaussian (the scan 'h': the scale of emission 'y' depends on a state or a latent); enumeration (continuous latent nodes (h)); chain (the states of 'h' are not finite and discrete); svi-conjugate-natural (no usable conjugate structure for h).
+Methods whose own `check` says they apply: nuts, hmc, rwm, mala, barker, slice, elliptical-slice, sgld, sghmc, mclmc, aies, chees, parallel-tempering, ensemble-slice, svi, ep, vmp, laplace, importance, tempered-smc, particle-filter, abc-smc, abc-rejection, svi-trace-graph, svi-trace-enum, svi-stl, svi-renyi, svi-structured, svi-mixture, svi-natural, pathfinder. Not applicable: ep-grid (ep-grid needs scalar latents that a custom function reads (the hyperparameters to put on a grid), and the model has none); ep-multistart (ep-multistart starts the discrete messages of the graph from different values, and the model has no discrete or Bernoulli variable); bp (belief propagation sums over finite discrete variables, and 'h' is continuous); gibbs (no discrete or conjugate conditionals); em (no params to estimate); conjugate (no usable conjugate structure for h); gaussian (the scan 'h': the scale of emission 'y' depends on a state or a latent); enumeration (continuous latent nodes (h)); chain (the states of 'h' are not finite and discrete); svi-conjugate-natural (no usable conjugate structure for h).
 
-| method          | expectation | run                   | diagnostics                                                                      | why                                                                                                                                                           |
-| --------------- | ----------- | --------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| nuts            | must agree  | converged (601 steps) | 0 divergences; R-hat high: h[0], h[1], h[3], ...; ESS low: h[0], h[1], h[2], ... | a consistent sampler through the unrolled recurrence: agrees within Monte Carlo error                                                                         |
-| tempered-smc    | reported    | converged (4 steps)   | weights ESS 321                                                                  | tempered particles over thirty correlated states: consistent, with a noisy tail                                                                               |
-| particle-filter | reported    | completed (30 steps)  | -                                                                                | a bootstrap filter: unbiased evidence and good filtering marginals; the smoothing marginals are the genealogies of the final particles, thin toward the start |
-| laplace         | reported    | converged (89 steps)  | -                                                                                | a Gaussian at the mode of the joint density: the log-variance posterior is close to Gaussian, the tails of the return likelihood are not                      |
-| svi             | reported    | completed (800 steps) | -                                                                                | a mean-field normal ignores the correlation between neighbouring states: spreads too small                                                                    |
+| method | expectation | run | diagnostics | why |
+| --- | --- | --- | --- | --- |
+| nuts | must agree | converged (601 steps) | 0 divergences; R-hat high: h[0], h[1], h[3], ...; ESS low: h[0], h[1], h[2], ... | a consistent sampler through the unrolled recurrence: agrees within Monte Carlo error |
+| tempered-smc | reported | converged (4 steps) | weights ESS 321 | tempered particles over thirty correlated states: consistent, with a noisy tail |
+| particle-filter | reported | completed (30 steps) | - | a bootstrap filter: unbiased evidence and good filtering marginals; the smoothing marginals are the genealogies of the final particles, thin toward the start |
+| laplace | reported | converged (89 steps) | - | a Gaussian at the mode of the joint density: the log-variance posterior is close to Gaussian, the tails of the return likelihood are not |
+| svi | reported | completed (800 steps) | - | a mean-field normal ignores the correlation between neighbouring states: spreads too small |
 
-| method          | quantity | mean     | sd    | mean error (sd) | mean z | sd ratio | KS     | W1 (sd) | KL      | ESS  |
-| --------------- | -------- | -------- | ----- | --------------- | ------ | -------- | ------ | ------- | ------- | ---- |
-| nuts            | h[0]     | 0.029    | 0.574 | 0.0591          | 0.763  | 1.06     | 0.0441 | 0.0642  | 0.0134  | 187  |
-| nuts            | h[1]     | 0.095    | 0.553 | 0.0702          | 0.883  | 1.07     | 0.0422 | 0.0857  | 0.0292  | 180  |
-| nuts            | h[2]     | 0.176    | 0.51  | 0.0557          | 0.665  | 1.03     | 0.022  | 0.0616  | 0.0241  | 153  |
-| nuts            | h[3]     | 0.302    | 0.479 | 0.06            | 0.751  | 1.04     | 0.0282 | 0.0705  | 0.0202  | 170  |
-| nuts            | h[4]     | 0.427    | 0.46  | 0.0608          | 0.773  | 1.06     | 0.0277 | 0.0658  | 0.0155  | 184  |
-| nuts            | h[5]     | 0.594    | 0.426 | 0.0985          | 1.25   | 1.08     | 0.0495 | 0.103   | 0.0324  | 187  |
-| nuts            | h[6]     | 0.697    | 0.389 | 0.1             | 1.42   | 1.03     | 0.0423 | 0.1     | 0.022   | 216  |
-| nuts            | h[7]     | 0.779    | 0.368 | 0.0717          | 1.1    | 1.04     | 0.041  | 0.0746  | 0.0174  | 257  |
-| nuts            | h[8]     | 0.717    | 0.398 | 0.0565          | 0.917  | 1.06     | 0.0494 | 0.0711  | 0.0277  | 297  |
-| nuts            | h[9]     | 0.674    | 0.387 | 0.0438          | 0.707  | 1.01     | 0.0233 | 0.049   | 0.0215  | 266  |
-| nuts            | h[10]    | 0.668    | 0.377 | 0.0435          | 0.677  | 1.01     | 0.0249 | 0.0458  | 0.0102  | 246  |
-| nuts            | h[11]    | 0.577    | 0.376 | 0.0221          | 0.347  | 0.966    | 0.0267 | 0.0461  | 0.0169  | 230  |
-| nuts            | h[12]    | 0.494    | 0.385 | 0.0155          | 0.243  | 0.967    | 0.0271 | 0.0433  | 0.0204  | 231  |
-| nuts            | h[13]    | 0.419    | 0.407 | 0.0283          | 0.426  | 1        | 0.0249 | 0.0443  | 0.0205  | 227  |
-| nuts            | h[14]    | 0.371    | 0.416 | 0.0357          | 0.501  | 1.03     | 0.0326 | 0.049   | 0.0124  | 210  |
-| nuts            | h[15]    | 0.317    | 0.413 | 0.0345          | 0.51   | 1.04     | 0.0321 | 0.0575  | 0.0172  | 235  |
-| nuts            | h[16]    | 0.288    | 0.406 | 0.0582          | 0.807  | 1.05     | 0.0412 | 0.0759  | 0.0193  | 212  |
-| nuts            | h[17]    | 0.158    | 0.429 | 0.071           | 0.931  | 1.06     | 0.0544 | 0.0865  | 0.0154  | 191  |
-| nuts            | h[18]    | 0.0361   | 0.427 | 0.0533          | 0.723  | 1.02     | 0.0386 | 0.0565  | 0.0149  | 192  |
-| nuts            | h[19]    | -0.0312  | 0.426 | 0.091           | 1.29   | 1.02     | 0.0567 | 0.0932  | 0.014   | 209  |
-| nuts            | h[20]    | -0.0935  | 0.407 | 0.0657          | 0.982  | 1.01     | 0.0403 | 0.0757  | 0.0168  | 227  |
-| nuts            | h[21]    | -0.241   | 0.424 | 0.0585          | 0.875  | 0.993    | 0.0557 | 0.064   | 0.0225  | 221  |
-| nuts            | h[22]    | -0.379   | 0.443 | 0.0503          | 0.713  | 0.991    | 0.046  | 0.0595  | 0.012   | 198  |
-| nuts            | h[23]    | -0.487   | 0.45  | 0.0369          | 0.515  | 0.988    | 0.0376 | 0.0477  | 0.0177  | 190  |
-| nuts            | h[24]    | -0.553   | 0.448 | 0.0553          | 0.76   | 0.979    | 0.038  | 0.0682  | 0.0109  | 181  |
-| nuts            | h[25]    | -0.677   | 0.479 | 0.0668          | 0.937  | 0.977    | 0.0495 | 0.0852  | 0.0206  | 188  |
-| nuts            | h[26]    | -0.793   | 0.5   | 0.0545          | 0.78   | 0.961    | 0.0602 | 0.0783  | 0.0213  | 189  |
-| nuts            | h[27]    | -0.875   | 0.546 | 0.0606          | 0.826  | 0.995    | 0.0772 | 0.0905  | 0.0286  | 184  |
-| nuts            | h[28]    | -0.937   | 0.578 | 0.0473          | 0.703  | 1.01     | 0.0567 | 0.0716  | 0.0146  | 225  |
-| nuts            | h[29]    | -0.965   | 0.602 | 0.0434          | 0.662  | 1.01     | 0.0518 | 0.0792  | 0.0174  | 236  |
-| tempered-smc    | h[0]     | -0.045   | 0.538 | -0.0774         | -1.74  | 0.992    | 0.0629 | 0.0958  | 0.024   | 500  |
-| tempered-smc    | h[1]     | 0.0036   | 0.509 | -0.106          | -2.42  | 0.98     | 0.0698 | 0.114   | 0.0321  | 500  |
-| tempered-smc    | h[2]     | 0.127    | 0.463 | -0.0436         | -1.04  | 0.939    | 0.0553 | 0.0781  | 0.015   | 500  |
-| tempered-smc    | h[3]     | 0.204    | 0.447 | -0.153          | -3.52  | 0.973    | 0.0797 | 0.16    | 0.0308  | 500  |
-| tempered-smc    | h[4]     | 0.323    | 0.428 | -0.18           | -4.06  | 0.992    | 0.0933 | 0.184   | 0.0359  | 500  |
-| tempered-smc    | h[5]     | 0.47     | 0.397 | -0.215          | -4.79  | 1        | 0.14   | 0.229   | 0.0536  | 500  |
-| tempered-smc    | h[6]     | 0.589    | 0.338 | -0.188          | -4.67  | 0.901    | 0.0993 | 0.191   | 0.0432  | 500  |
-| tempered-smc    | h[7]     | 0.729    | 0.334 | -0.0676         | -1.6   | 0.943    | 0.0501 | 0.0845  | 0.0199  | 500  |
-| tempered-smc    | h[8]     | 0.651    | 0.371 | -0.119          | -2.7   | 0.988    | 0.0631 | 0.122   | 0.0197  | 500  |
-| tempered-smc    | h[9]     | 0.653    | 0.396 | -0.00981        | -0.213 | 1.03     | 0.0244 | 0.0486  | 0.0259  | 500  |
-| tempered-smc    | h[10]    | 0.643    | 0.37  | -0.0227         | -0.513 | 0.988    | 0.0469 | 0.0733  | 0.0274  | 500  |
-| tempered-smc    | h[11]    | 0.628    | 0.372 | 0.154           | 3.59   | 0.957    | 0.0888 | 0.158   | 0.0343  | 500  |
-| tempered-smc    | h[12]    | 0.578    | 0.374 | 0.226           | 5.39   | 0.939    | 0.127  | 0.231   | 0.0553  | 500  |
-| tempered-smc    | h[13]    | 0.438    | 0.396 | 0.0739          | 1.7    | 0.973    | 0.0656 | 0.084   | 0.0409  | 500  |
-| tempered-smc    | h[14]    | 0.335    | 0.372 | -0.0539         | -1.3   | 0.924    | 0.0497 | 0.0735  | 0.0434  | 500  |
-| tempered-smc    | h[15]    | 0.333    | 0.358 | 0.0753          | 1.87   | 0.899    | 0.0756 | 0.116   | 0.0342  | 500  |
-| tempered-smc    | h[16]    | 0.323    | 0.39  | 0.15            | 3.33   | 1.01     | 0.0922 | 0.16    | 0.0292  | 500  |
-| tempered-smc    | h[17]    | 0.261    | 0.387 | 0.325           | 7.63   | 0.952    | 0.16   | 0.329   | 0.0727  | 500  |
-| tempered-smc    | h[18]    | 0.137    | 0.407 | 0.294           | 6.76   | 0.973    | 0.124  | 0.294   | 0.057   | 500  |
-| tempered-smc    | h[19]    | 0.0157   | 0.37  | 0.203           | 5.14   | 0.885    | 0.121  | 0.213   | 0.0511  | 500  |
-| tempered-smc    | h[20]    | -0.0968  | 0.358 | 0.0575          | 1.45   | 0.885    | 0.0694 | 0.12    | 0.0328  | 500  |
-| tempered-smc    | h[21]    | -0.242   | 0.403 | 0.0551          | 1.31   | 0.944    | 0.052  | 0.0779  | 0.035   | 500  |
-| tempered-smc    | h[22]    | -0.358   | 0.452 | 0.0986          | 2.18   | 1.01     | 0.061  | 0.0987  | 0.0194  | 500  |
-| tempered-smc    | h[23]    | -0.445   | 0.452 | 0.128           | 2.88   | 0.991    | 0.0615 | 0.131   | 0.0165  | 500  |
-| tempered-smc    | h[24]    | -0.605   | 0.482 | -0.058          | -1.23  | 1.05     | 0.0594 | 0.0772  | 0.0179  | 500  |
-| tempered-smc    | h[25]    | -0.719   | 0.503 | -0.018          | -0.392 | 1.03     | 0.0216 | 0.0404  | 0.0224  | 500  |
-| tempered-smc    | h[26]    | -0.761   | 0.525 | 0.117           | 2.6    | 1.01     | 0.066  | 0.128   | 0.0205  | 500  |
-| tempered-smc    | h[27]    | -0.835   | 0.534 | 0.134           | 3.08   | 0.972    | 0.0665 | 0.138   | 0.0363  | 500  |
-| tempered-smc    | h[28]    | -0.879   | 0.531 | 0.148           | 3.57   | 0.925    | 0.0869 | 0.152   | 0.0397  | 500  |
-| tempered-smc    | h[29]    | -0.896   | 0.509 | 0.16            | 4.18   | 0.854    | 0.124  | 0.183   | 0.0571  | 500  |
-| particle-filter | h[0]     | 0.0748   | 0.56  | 0.144           | 6.21   | 1.03     | 0.103  | 0.159   | 0.124   | 2000 |
-| particle-filter | h[1]     | 0.132    | 0.557 | 0.142           | 5.92   | 1.07     | 0.111  | 0.169   | 0.0997  | 2000 |
-| particle-filter | h[2]     | 0.187    | 0.486 | 0.0774          | 3.51   | 0.985    | 0.0719 | 0.11    | 0.138   | 2000 |
-| particle-filter | h[3]     | 0.294    | 0.41  | 0.0426          | 2.13   | 0.893    | 0.0923 | 0.127   | 0.119   | 2000 |
-| particle-filter | h[4]     | 0.448    | 0.407 | 0.11            | 5.21   | 0.942    | 0.111  | 0.153   | 0.138   | 2000 |
-| particle-filter | h[5]     | 0.611    | 0.398 | 0.141           | 6.24   | 1.01     | 0.0879 | 0.143   | 0.096   | 2000 |
-| particle-filter | h[6]     | 0.709    | 0.37  | 0.131           | 5.95   | 0.986    | 0.0898 | 0.149   | 0.0387  | 2000 |
-| particle-filter | h[7]     | 0.783    | 0.34  | 0.0841          | 3.91   | 0.961    | 0.0756 | 0.112   | 0.0468  | 2000 |
-| particle-filter | h[8]     | 0.703    | 0.376 | 0.0181          | 0.806  | 1        | 0.0408 | 0.0466  | 0.0301  | 2000 |
-| particle-filter | h[9]     | 0.657    | 0.364 | 0.000392        | 0.0185 | 0.949    | 0.029  | 0.0541  | 0.0153  | 2000 |
-| particle-filter | h[10]    | 0.639    | 0.355 | -0.0339         | -1.6   | 0.948    | 0.0368 | 0.0492  | 0.0158  | 2000 |
-| particle-filter | h[11]    | 0.581    | 0.367 | 0.0332          | 1.57   | 0.944    | 0.0439 | 0.0683  | 0.016   | 2000 |
-| particle-filter | h[12]    | 0.507    | 0.39  | 0.048           | 2.19   | 0.98     | 0.051  | 0.0575  | 0.034   | 2000 |
-| particle-filter | h[13]    | 0.415    | 0.411 | 0.0183          | 0.811  | 1.01     | 0.0393 | 0.0411  | 0.0313  | 2000 |
-| particle-filter | h[14]    | 0.38     | 0.403 | 0.0573          | 2.56   | 1        | 0.0487 | 0.0583  | 0.0123  | 2000 |
-| particle-filter | h[15]    | 0.339    | 0.401 | 0.0902          | 4.01   | 1.01     | 0.054  | 0.091   | 0.0253  | 2000 |
-| particle-filter | h[16]    | 0.293    | 0.398 | 0.0729          | 3.16   | 1.03     | 0.0494 | 0.077   | 0.0196  | 2000 |
-| particle-filter | h[17]    | 0.148    | 0.411 | 0.0462          | 2.04   | 1.01     | 0.04   | 0.0596  | 0.0178  | 2000 |
-| particle-filter | h[18]    | 0.0425   | 0.424 | 0.0684          | 3.02   | 1.01     | 0.0351 | 0.0705  | 0.0211  | 2000 |
-| particle-filter | h[19]    | -0.0627  | 0.428 | 0.0155          | 0.678  | 1.03     | 0.0327 | 0.0452  | 0.0178  | 2000 |
-| particle-filter | h[20]    | -0.111   | 0.414 | 0.0233          | 1.02   | 1.02     | 0.0297 | 0.0439  | 0.0155  | 2000 |
-| particle-filter | h[21]    | -0.244   | 0.431 | 0.0511          | 2.26   | 1.01     | 0.077  | 0.0687  | 0.0282  | 2000 |
-| particle-filter | h[22]    | -0.364   | 0.455 | 0.0847          | 3.72   | 1.02     | 0.0755 | 0.0885  | 0.0273  | 2000 |
-| particle-filter | h[23]    | -0.451   | 0.453 | 0.116           | 5.21   | 0.993    | 0.0806 | 0.118   | 0.0218  | 2000 |
-| particle-filter | h[24]    | -0.528   | 0.465 | 0.109           | 4.82   | 1.02     | 0.0654 | 0.114   | 0.0204  | 2000 |
-| particle-filter | h[25]    | -0.654   | 0.5   | 0.114           | 5      | 1.02     | 0.0672 | 0.115   | 0.0128  | 2000 |
-| particle-filter | h[26]    | -0.77    | 0.523 | 0.0985          | 4.38   | 1        | 0.0546 | 0.0997  | 0.0151  | 2000 |
-| particle-filter | h[27]    | -0.845   | 0.544 | 0.116           | 5.22   | 0.992    | 0.0642 | 0.116   | 0.019   | 2000 |
-| particle-filter | h[28]    | -0.905   | 0.573 | 0.104           | 4.65   | 0.998    | 0.0478 | 0.105   | 0.0121  | 2000 |
-| particle-filter | h[29]    | -0.934   | 0.604 | 0.0959          | 4.24   | 1.01     | 0.0489 | 0.0992  | 0.0106  | 2000 |
-| laplace         | h[0]     | -0.0539  | 0.546 | -0.0939         | -5.9   | 1.01     | 0.0366 | 0.094   | 0.00615 | 4000 |
-| laplace         | h[1]     | 0.000317 | 0.52  | -0.112          | -7.09  | 1        | 0.046  | 0.112   | 0.00924 | 4000 |
-| laplace         | h[2]     | 0.0894   | 0.492 | -0.12           | -7.63  | 0.997    | 0.0466 | 0.121   | 0.00954 | 4000 |
-| laplace         | h[3]     | 0.214    | 0.46  | -0.132          | -8.31  | 1        | 0.0524 | 0.132   | 0.0105  | 4000 |
-| laplace         | h[4]     | 0.334    | 0.427 | -0.155          | -9.88  | 0.99     | 0.0585 | 0.155   | 0.0147  | 4000 |
-| laplace         | h[5]     | 0.48     | 0.392 | -0.191          | -12.2  | 0.994    | 0.0697 | 0.191   | 0.0202  | 4000 |
-| laplace         | h[6]     | 0.583    | 0.374 | -0.203          | -12.9  | 0.996    | 0.078  | 0.203   | 0.022   | 4000 |
-| laplace         | h[7]     | 0.681    | 0.353 | -0.204          | -12.9  | 0.997    | 0.0716 | 0.204   | 0.0222  | 4000 |
-| laplace         | h[8]     | 0.627    | 0.377 | -0.185          | -11.7  | 1        | 0.0702 | 0.185   | 0.0172  | 4000 |
-| laplace         | h[9]     | 0.581    | 0.384 | -0.197          | -12.5  | 1        | 0.0828 | 0.197   | 0.0205  | 4000 |
-| laplace         | h[10]    | 0.579    | 0.373 | -0.194          | -12.3  | 0.998    | 0.075  | 0.194   | 0.0204  | 4000 |
-| laplace         | h[11]    | 0.49     | 0.389 | -0.201          | -12.7  | 1        | 0.0781 | 0.201   | 0.0215  | 4000 |
-| laplace         | h[12]    | 0.412    | 0.397 | -0.191          | -12.1  | 0.997    | 0.0724 | 0.192   | 0.0216  | 4000 |
-| laplace         | h[13]    | 0.328    | 0.4   | -0.196          | -12.6  | 0.984    | 0.0835 | 0.196   | 0.0247  | 4000 |
-| laplace         | h[14]    | 0.275    | 0.4   | -0.202          | -12.9  | 0.993    | 0.0796 | 0.202   | 0.0211  | 4000 |
-| laplace         | h[15]    | 0.226    | 0.399 | -0.193          | -12.2  | 1        | 0.0794 | 0.193   | 0.0188  | 4000 |
-| laplace         | h[16]    | 0.185    | 0.383 | -0.208          | -13.2  | 0.994    | 0.0839 | 0.208   | 0.0229  | 4000 |
-| laplace         | h[17]    | 0.0489   | 0.405 | -0.197          | -12.5  | 0.995    | 0.0822 | 0.197   | 0.0214  | 4000 |
-| laplace         | h[18]    | -0.0664  | 0.418 | -0.192          | -12.1  | 0.999    | 0.0781 | 0.192   | 0.0182  | 4000 |
-| laplace         | h[19]    | -0.146   | 0.412 | -0.183          | -11.7  | 0.987    | 0.0691 | 0.183   | 0.0196  | 4000 |
-| laplace         | h[20]    | -0.192   | 0.395 | -0.178          | -11.5  | 0.977    | 0.0625 | 0.178   | 0.0192  | 4000 |
-| laplace         | h[21]    | -0.337   | 0.419 | -0.166          | -10.7  | 0.983    | 0.0597 | 0.166   | 0.0175  | 4000 |
-| laplace         | h[22]    | -0.469   | 0.443 | -0.15           | -9.57  | 0.99     | 0.0528 | 0.15    | 0.0157  | 4000 |
-| laplace         | h[23]    | -0.575   | 0.449 | -0.156          | -10    | 0.986    | 0.0552 | 0.156   | 0.0148  | 4000 |
-| laplace         | h[24]    | -0.644   | 0.453 | -0.142          | -9.1   | 0.99     | 0.0492 | 0.142   | 0.0139  | 4000 |
-| laplace         | h[25]    | -0.769   | 0.485 | -0.119          | -7.64  | 0.989    | 0.0448 | 0.12    | 0.0105  | 4000 |
-| laplace         | h[26]    | -0.879   | 0.515 | -0.109          | -6.99  | 0.988    | 0.0443 | 0.109   | 0.00728 | 4000 |
-| laplace         | h[27]    | -0.961   | 0.545 | -0.097          | -6.18  | 0.992    | 0.0375 | 0.098   | 0.00894 | 4000 |
-| laplace         | h[28]    | -1.01    | 0.572 | -0.0844         | -5.36  | 0.996    | 0.0396 | 0.0857  | 0.00645 | 4000 |
-| laplace         | h[29]    | -1.04    | 0.592 | -0.0782         | -4.99  | 0.992    | 0.0327 | 0.0784  | 0.00411 | 4000 |
-| svi             | h[0]     | -0.0372  | 0.254 | -0.063          | -8.49  | 0.469    | 0.196  | 0.427   | 0.803   | 4000 |
-| svi             | h[1]     | 0.00428  | 0.163 | -0.105          | -21.1  | 0.313    | 0.287  | 0.552   | 1.85    | 4000 |
-| svi             | h[2]     | 0.0603   | 0.197 | -0.179          | -28.3  | 0.4      | 0.268  | 0.495   | 1.23    | 4000 |
-| svi             | h[3]     | 0.172    | 0.176 | -0.222          | -36.6  | 0.384    | 0.289  | 0.518   | 1.31    | 4000 |
-| svi             | h[4]     | 0.403    | 0.163 | 0.00417         | 0.699  | 0.378    | 0.224  | 0.496   | 1.28    | 4000 |
-| svi             | h[5]     | 0.499    | 0.175 | -0.143          | -20.5  | 0.442    | 0.232  | 0.454   | 1.02    | 4000 |
-| svi             | h[6]     | 0.603    | 0.199 | -0.152          | -18.1  | 0.529    | 0.196  | 0.389   | 0.593   | 4000 |
-| svi             | h[7]     | 0.706    | 0.168 | -0.133          | -17.6  | 0.475    | 0.215  | 0.425   | 0.757   | 4000 |
-| svi             | h[8]     | 0.666    | 0.183 | -0.0794         | -10.3  | 0.489    | 0.185  | 0.413   | 0.71    | 4000 |
-| svi             | h[9]     | 0.569    | 0.164 | -0.23           | -34    | 0.429    | 0.271  | 0.486   | 1.09    | 4000 |
-| svi             | h[10]    | 0.585    | 0.177 | -0.18           | -24.1  | 0.473    | 0.232  | 0.438   | 0.814   | 4000 |
-| svi             | h[11]    | 0.555    | 0.174 | -0.0331         | -4.67  | 0.448    | 0.192  | 0.442   | 0.96    | 4000 |
-| svi             | h[12]    | 0.403    | 0.17  | -0.214          | -31.8  | 0.426    | 0.266  | 0.485   | 1.06    | 4000 |
-| svi             | h[13]    | 0.366    | 0.198 | -0.103          | -13.4  | 0.486    | 0.197  | 0.416   | 0.691   | 4000 |
-| svi             | h[14]    | 0.326    | 0.169 | -0.0766         | -11.5  | 0.42     | 0.219  | 0.462   | 1.03    | 4000 |
-| svi             | h[15]    | 0.244    | 0.134 | -0.148          | -27.8  | 0.338    | 0.289  | 0.539   | 1.64    | 4000 |
-| svi             | h[16]    | 0.223    | 0.165 | -0.11           | -16.2  | 0.428    | 0.23   | 0.46    | 1       | 4000 |
-| svi             | h[17]    | 0.0826   | 0.174 | -0.114          | -16.9  | 0.428    | 0.232  | 0.462   | 0.994   | 4000 |
-| svi             | h[18]    | -0.0848  | 0.173 | -0.236          | -36    | 0.414    | 0.282  | 0.496   | 1.19    | 4000 |
-| svi             | h[19]    | -0.0876  | 0.216 | -0.0441         | -5.39  | 0.518    | 0.163  | 0.384   | 0.583   | 4000 |
-| svi             | h[20]    | -0.181   | 0.176 | -0.15           | -21.8  | 0.436    | 0.233  | 0.458   | 0.981   | 4000 |
-| svi             | h[21]    | -0.35    | 0.137 | -0.198          | -39    | 0.321    | 0.314  | 0.558   | 1.69    | 4000 |
-| svi             | h[22]    | -0.43    | 0.18  | -0.0638         | -10    | 0.403    | 0.227  | 0.476   | 1.17    | 4000 |
-| svi             | h[23]    | -0.553   | 0.209 | -0.109          | -15.1  | 0.458    | 0.21   | 0.434   | 0.898   | 4000 |
-| svi             | h[24]    | -0.664   | 0.204 | -0.186          | -26.5  | 0.445    | 0.246  | 0.459   | 1.01    | 4000 |
-| svi             | h[25]    | -0.694   | 0.171 | 0.0324          | 5.88   | 0.348    | 0.257  | 0.519   | 1.62    | 4000 |
-| svi             | h[26]    | -0.882   | 0.172 | -0.116          | -22.3  | 0.331    | 0.283  | 0.54    | 1.61    | 4000 |
-| svi             | h[27]    | -0.951   | 0.189 | -0.0784         | -14.4  | 0.345    | 0.256  | 0.524   | 1.7     | 4000 |
-| svi             | h[28]    | -0.966   | 0.192 | -0.00271        | -0.512 | 0.334    | 0.241  | 0.532   | 1.59    | 4000 |
-| svi             | h[29]    | -1.1     | 0.238 | -0.175          | -27.7  | 0.399    | 0.265  | 0.5     | 1.13    | 4000 |
+| method | quantity | mean | sd | mean error (sd) | mean z | sd ratio | KS | W1 (sd) | KL | ESS |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| nuts | h[0] | 0.029 | 0.574 | 0.0591 | 0.763 | 1.06 | 0.0441 | 0.0642 | 0.0134 | 187 |
+| nuts | h[1] | 0.095 | 0.553 | 0.0702 | 0.883 | 1.07 | 0.0422 | 0.0857 | 0.0292 | 180 |
+| nuts | h[2] | 0.176 | 0.51 | 0.0557 | 0.665 | 1.03 | 0.022 | 0.0616 | 0.0241 | 153 |
+| nuts | h[3] | 0.302 | 0.479 | 0.06 | 0.751 | 1.04 | 0.0282 | 0.0705 | 0.0202 | 170 |
+| nuts | h[4] | 0.427 | 0.46 | 0.0608 | 0.773 | 1.06 | 0.0277 | 0.0658 | 0.0155 | 184 |
+| nuts | h[5] | 0.594 | 0.426 | 0.0985 | 1.25 | 1.08 | 0.0495 | 0.103 | 0.0324 | 187 |
+| nuts | h[6] | 0.697 | 0.389 | 0.1 | 1.42 | 1.03 | 0.0423 | 0.1 | 0.022 | 216 |
+| nuts | h[7] | 0.779 | 0.368 | 0.0717 | 1.1 | 1.04 | 0.041 | 0.0746 | 0.0174 | 257 |
+| nuts | h[8] | 0.717 | 0.398 | 0.0565 | 0.917 | 1.06 | 0.0494 | 0.0711 | 0.0277 | 297 |
+| nuts | h[9] | 0.674 | 0.387 | 0.0438 | 0.707 | 1.01 | 0.0233 | 0.049 | 0.0215 | 266 |
+| nuts | h[10] | 0.668 | 0.377 | 0.0435 | 0.677 | 1.01 | 0.0249 | 0.0458 | 0.0102 | 246 |
+| nuts | h[11] | 0.577 | 0.376 | 0.0221 | 0.347 | 0.966 | 0.0267 | 0.0461 | 0.0169 | 230 |
+| nuts | h[12] | 0.494 | 0.385 | 0.0155 | 0.243 | 0.967 | 0.0271 | 0.0433 | 0.0204 | 231 |
+| nuts | h[13] | 0.419 | 0.407 | 0.0283 | 0.426 | 1 | 0.0249 | 0.0443 | 0.0205 | 227 |
+| nuts | h[14] | 0.371 | 0.416 | 0.0357 | 0.501 | 1.03 | 0.0326 | 0.049 | 0.0124 | 210 |
+| nuts | h[15] | 0.317 | 0.413 | 0.0345 | 0.51 | 1.04 | 0.0321 | 0.0575 | 0.0172 | 235 |
+| nuts | h[16] | 0.288 | 0.406 | 0.0582 | 0.807 | 1.05 | 0.0412 | 0.0759 | 0.0193 | 212 |
+| nuts | h[17] | 0.158 | 0.429 | 0.071 | 0.931 | 1.06 | 0.0544 | 0.0865 | 0.0154 | 191 |
+| nuts | h[18] | 0.0361 | 0.427 | 0.0533 | 0.723 | 1.02 | 0.0386 | 0.0565 | 0.0149 | 192 |
+| nuts | h[19] | -0.0312 | 0.426 | 0.091 | 1.29 | 1.02 | 0.0567 | 0.0932 | 0.014 | 209 |
+| nuts | h[20] | -0.0935 | 0.407 | 0.0657 | 0.982 | 1.01 | 0.0403 | 0.0757 | 0.0168 | 227 |
+| nuts | h[21] | -0.241 | 0.424 | 0.0585 | 0.875 | 0.993 | 0.0557 | 0.064 | 0.0225 | 221 |
+| nuts | h[22] | -0.379 | 0.443 | 0.0503 | 0.713 | 0.991 | 0.046 | 0.0595 | 0.012 | 198 |
+| nuts | h[23] | -0.487 | 0.45 | 0.0369 | 0.515 | 0.988 | 0.0376 | 0.0477 | 0.0177 | 190 |
+| nuts | h[24] | -0.553 | 0.448 | 0.0553 | 0.76 | 0.979 | 0.038 | 0.0682 | 0.0109 | 181 |
+| nuts | h[25] | -0.677 | 0.479 | 0.0668 | 0.937 | 0.977 | 0.0495 | 0.0852 | 0.0206 | 188 |
+| nuts | h[26] | -0.793 | 0.5 | 0.0545 | 0.78 | 0.961 | 0.0602 | 0.0783 | 0.0213 | 189 |
+| nuts | h[27] | -0.875 | 0.546 | 0.0606 | 0.826 | 0.995 | 0.0772 | 0.0905 | 0.0286 | 184 |
+| nuts | h[28] | -0.937 | 0.578 | 0.0473 | 0.703 | 1.01 | 0.0567 | 0.0716 | 0.0146 | 225 |
+| nuts | h[29] | -0.965 | 0.602 | 0.0434 | 0.662 | 1.01 | 0.0518 | 0.0792 | 0.0174 | 236 |
+| tempered-smc | h[0] | -0.045 | 0.538 | -0.0774 | -1.74 | 0.992 | 0.0629 | 0.0958 | 0.024 | 500 |
+| tempered-smc | h[1] | 0.0036 | 0.509 | -0.106 | -2.42 | 0.98 | 0.0698 | 0.114 | 0.0321 | 500 |
+| tempered-smc | h[2] | 0.127 | 0.463 | -0.0436 | -1.04 | 0.939 | 0.0553 | 0.0781 | 0.015 | 500 |
+| tempered-smc | h[3] | 0.204 | 0.447 | -0.153 | -3.52 | 0.973 | 0.0797 | 0.16 | 0.0308 | 500 |
+| tempered-smc | h[4] | 0.323 | 0.428 | -0.18 | -4.06 | 0.992 | 0.0933 | 0.184 | 0.0359 | 500 |
+| tempered-smc | h[5] | 0.47 | 0.397 | -0.215 | -4.79 | 1 | 0.14 | 0.229 | 0.0536 | 500 |
+| tempered-smc | h[6] | 0.589 | 0.338 | -0.188 | -4.67 | 0.901 | 0.0993 | 0.191 | 0.0432 | 500 |
+| tempered-smc | h[7] | 0.729 | 0.334 | -0.0676 | -1.6 | 0.943 | 0.0501 | 0.0845 | 0.0199 | 500 |
+| tempered-smc | h[8] | 0.651 | 0.371 | -0.119 | -2.7 | 0.988 | 0.0631 | 0.122 | 0.0197 | 500 |
+| tempered-smc | h[9] | 0.653 | 0.396 | -0.00981 | -0.213 | 1.03 | 0.0244 | 0.0486 | 0.0259 | 500 |
+| tempered-smc | h[10] | 0.643 | 0.37 | -0.0227 | -0.513 | 0.988 | 0.0469 | 0.0733 | 0.0274 | 500 |
+| tempered-smc | h[11] | 0.628 | 0.372 | 0.154 | 3.59 | 0.957 | 0.0888 | 0.158 | 0.0343 | 500 |
+| tempered-smc | h[12] | 0.578 | 0.374 | 0.226 | 5.39 | 0.939 | 0.127 | 0.231 | 0.0553 | 500 |
+| tempered-smc | h[13] | 0.438 | 0.396 | 0.0739 | 1.7 | 0.973 | 0.0656 | 0.084 | 0.0409 | 500 |
+| tempered-smc | h[14] | 0.335 | 0.372 | -0.0539 | -1.3 | 0.924 | 0.0497 | 0.0735 | 0.0434 | 500 |
+| tempered-smc | h[15] | 0.333 | 0.358 | 0.0753 | 1.87 | 0.899 | 0.0756 | 0.116 | 0.0342 | 500 |
+| tempered-smc | h[16] | 0.323 | 0.39 | 0.15 | 3.33 | 1.01 | 0.0922 | 0.16 | 0.0292 | 500 |
+| tempered-smc | h[17] | 0.261 | 0.387 | 0.325 | 7.63 | 0.952 | 0.16 | 0.329 | 0.0727 | 500 |
+| tempered-smc | h[18] | 0.137 | 0.407 | 0.294 | 6.76 | 0.973 | 0.124 | 0.294 | 0.057 | 500 |
+| tempered-smc | h[19] | 0.0157 | 0.37 | 0.203 | 5.14 | 0.885 | 0.121 | 0.213 | 0.0511 | 500 |
+| tempered-smc | h[20] | -0.0968 | 0.358 | 0.0575 | 1.45 | 0.885 | 0.0694 | 0.12 | 0.0328 | 500 |
+| tempered-smc | h[21] | -0.242 | 0.403 | 0.0551 | 1.31 | 0.944 | 0.052 | 0.0779 | 0.035 | 500 |
+| tempered-smc | h[22] | -0.358 | 0.452 | 0.0986 | 2.18 | 1.01 | 0.061 | 0.0987 | 0.0194 | 500 |
+| tempered-smc | h[23] | -0.445 | 0.452 | 0.128 | 2.88 | 0.991 | 0.0615 | 0.131 | 0.0165 | 500 |
+| tempered-smc | h[24] | -0.605 | 0.482 | -0.058 | -1.23 | 1.05 | 0.0594 | 0.0772 | 0.0179 | 500 |
+| tempered-smc | h[25] | -0.719 | 0.503 | -0.018 | -0.392 | 1.03 | 0.0216 | 0.0404 | 0.0224 | 500 |
+| tempered-smc | h[26] | -0.761 | 0.525 | 0.117 | 2.6 | 1.01 | 0.066 | 0.128 | 0.0205 | 500 |
+| tempered-smc | h[27] | -0.835 | 0.534 | 0.134 | 3.08 | 0.972 | 0.0665 | 0.138 | 0.0363 | 500 |
+| tempered-smc | h[28] | -0.879 | 0.531 | 0.148 | 3.57 | 0.925 | 0.0869 | 0.152 | 0.0397 | 500 |
+| tempered-smc | h[29] | -0.896 | 0.509 | 0.16 | 4.18 | 0.854 | 0.124 | 0.183 | 0.0571 | 500 |
+| particle-filter | h[0] | 0.0748 | 0.56 | 0.144 | 6.21 | 1.03 | 0.103 | 0.159 | 0.124 | 2000 |
+| particle-filter | h[1] | 0.132 | 0.557 | 0.142 | 5.92 | 1.07 | 0.111 | 0.169 | 0.0997 | 2000 |
+| particle-filter | h[2] | 0.187 | 0.486 | 0.0774 | 3.51 | 0.985 | 0.0719 | 0.11 | 0.138 | 2000 |
+| particle-filter | h[3] | 0.294 | 0.41 | 0.0426 | 2.13 | 0.893 | 0.0923 | 0.127 | 0.119 | 2000 |
+| particle-filter | h[4] | 0.448 | 0.407 | 0.11 | 5.21 | 0.942 | 0.111 | 0.153 | 0.138 | 2000 |
+| particle-filter | h[5] | 0.611 | 0.398 | 0.141 | 6.24 | 1.01 | 0.0879 | 0.143 | 0.096 | 2000 |
+| particle-filter | h[6] | 0.709 | 0.37 | 0.131 | 5.95 | 0.986 | 0.0898 | 0.149 | 0.0387 | 2000 |
+| particle-filter | h[7] | 0.783 | 0.34 | 0.0841 | 3.91 | 0.961 | 0.0756 | 0.112 | 0.0468 | 2000 |
+| particle-filter | h[8] | 0.703 | 0.376 | 0.0181 | 0.806 | 1 | 0.0408 | 0.0466 | 0.0301 | 2000 |
+| particle-filter | h[9] | 0.657 | 0.364 | 0.000392 | 0.0185 | 0.949 | 0.029 | 0.0541 | 0.0153 | 2000 |
+| particle-filter | h[10] | 0.639 | 0.355 | -0.0339 | -1.6 | 0.948 | 0.0368 | 0.0492 | 0.0158 | 2000 |
+| particle-filter | h[11] | 0.581 | 0.367 | 0.0332 | 1.57 | 0.944 | 0.0439 | 0.0683 | 0.016 | 2000 |
+| particle-filter | h[12] | 0.507 | 0.39 | 0.048 | 2.19 | 0.98 | 0.051 | 0.0575 | 0.034 | 2000 |
+| particle-filter | h[13] | 0.415 | 0.411 | 0.0183 | 0.811 | 1.01 | 0.0393 | 0.0411 | 0.0313 | 2000 |
+| particle-filter | h[14] | 0.38 | 0.403 | 0.0573 | 2.56 | 1 | 0.0487 | 0.0583 | 0.0123 | 2000 |
+| particle-filter | h[15] | 0.339 | 0.401 | 0.0902 | 4.01 | 1.01 | 0.054 | 0.091 | 0.0253 | 2000 |
+| particle-filter | h[16] | 0.293 | 0.398 | 0.0729 | 3.16 | 1.03 | 0.0494 | 0.077 | 0.0196 | 2000 |
+| particle-filter | h[17] | 0.148 | 0.411 | 0.0462 | 2.04 | 1.01 | 0.04 | 0.0596 | 0.0178 | 2000 |
+| particle-filter | h[18] | 0.0425 | 0.424 | 0.0684 | 3.02 | 1.01 | 0.0351 | 0.0705 | 0.0211 | 2000 |
+| particle-filter | h[19] | -0.0627 | 0.428 | 0.0155 | 0.678 | 1.03 | 0.0327 | 0.0452 | 0.0178 | 2000 |
+| particle-filter | h[20] | -0.111 | 0.414 | 0.0233 | 1.02 | 1.02 | 0.0297 | 0.0439 | 0.0155 | 2000 |
+| particle-filter | h[21] | -0.244 | 0.431 | 0.0511 | 2.26 | 1.01 | 0.077 | 0.0687 | 0.0282 | 2000 |
+| particle-filter | h[22] | -0.364 | 0.455 | 0.0847 | 3.72 | 1.02 | 0.0755 | 0.0885 | 0.0273 | 2000 |
+| particle-filter | h[23] | -0.451 | 0.453 | 0.116 | 5.21 | 0.993 | 0.0806 | 0.118 | 0.0218 | 2000 |
+| particle-filter | h[24] | -0.528 | 0.465 | 0.109 | 4.82 | 1.02 | 0.0654 | 0.114 | 0.0204 | 2000 |
+| particle-filter | h[25] | -0.654 | 0.5 | 0.114 | 5 | 1.02 | 0.0672 | 0.115 | 0.0128 | 2000 |
+| particle-filter | h[26] | -0.77 | 0.523 | 0.0985 | 4.38 | 1 | 0.0546 | 0.0997 | 0.0151 | 2000 |
+| particle-filter | h[27] | -0.845 | 0.544 | 0.116 | 5.22 | 0.992 | 0.0642 | 0.116 | 0.019 | 2000 |
+| particle-filter | h[28] | -0.905 | 0.573 | 0.104 | 4.65 | 0.998 | 0.0478 | 0.105 | 0.0121 | 2000 |
+| particle-filter | h[29] | -0.934 | 0.604 | 0.0959 | 4.24 | 1.01 | 0.0489 | 0.0992 | 0.0106 | 2000 |
+| laplace | h[0] | -0.0539 | 0.546 | -0.0939 | -5.9 | 1.01 | 0.0366 | 0.094 | 0.00615 | 4000 |
+| laplace | h[1] | 0.000317 | 0.52 | -0.112 | -7.09 | 1 | 0.046 | 0.112 | 0.00924 | 4000 |
+| laplace | h[2] | 0.0894 | 0.492 | -0.12 | -7.63 | 0.997 | 0.0466 | 0.121 | 0.00954 | 4000 |
+| laplace | h[3] | 0.214 | 0.46 | -0.132 | -8.31 | 1 | 0.0524 | 0.132 | 0.0105 | 4000 |
+| laplace | h[4] | 0.334 | 0.427 | -0.155 | -9.88 | 0.99 | 0.0585 | 0.155 | 0.0147 | 4000 |
+| laplace | h[5] | 0.48 | 0.392 | -0.191 | -12.2 | 0.994 | 0.0697 | 0.191 | 0.0202 | 4000 |
+| laplace | h[6] | 0.583 | 0.374 | -0.203 | -12.9 | 0.996 | 0.078 | 0.203 | 0.022 | 4000 |
+| laplace | h[7] | 0.681 | 0.353 | -0.204 | -12.9 | 0.997 | 0.0716 | 0.204 | 0.0222 | 4000 |
+| laplace | h[8] | 0.627 | 0.377 | -0.185 | -11.7 | 1 | 0.0702 | 0.185 | 0.0172 | 4000 |
+| laplace | h[9] | 0.581 | 0.384 | -0.197 | -12.5 | 1 | 0.0828 | 0.197 | 0.0205 | 4000 |
+| laplace | h[10] | 0.579 | 0.373 | -0.194 | -12.3 | 0.998 | 0.075 | 0.194 | 0.0204 | 4000 |
+| laplace | h[11] | 0.49 | 0.389 | -0.201 | -12.7 | 1 | 0.0781 | 0.201 | 0.0215 | 4000 |
+| laplace | h[12] | 0.412 | 0.397 | -0.191 | -12.1 | 0.997 | 0.0724 | 0.192 | 0.0216 | 4000 |
+| laplace | h[13] | 0.328 | 0.4 | -0.196 | -12.6 | 0.984 | 0.0835 | 0.196 | 0.0247 | 4000 |
+| laplace | h[14] | 0.275 | 0.4 | -0.202 | -12.9 | 0.993 | 0.0796 | 0.202 | 0.0211 | 4000 |
+| laplace | h[15] | 0.226 | 0.399 | -0.193 | -12.2 | 1 | 0.0794 | 0.193 | 0.0188 | 4000 |
+| laplace | h[16] | 0.185 | 0.383 | -0.208 | -13.2 | 0.994 | 0.0839 | 0.208 | 0.0229 | 4000 |
+| laplace | h[17] | 0.0489 | 0.405 | -0.197 | -12.5 | 0.995 | 0.0822 | 0.197 | 0.0214 | 4000 |
+| laplace | h[18] | -0.0664 | 0.418 | -0.192 | -12.1 | 0.999 | 0.0781 | 0.192 | 0.0182 | 4000 |
+| laplace | h[19] | -0.146 | 0.412 | -0.183 | -11.7 | 0.987 | 0.0691 | 0.183 | 0.0196 | 4000 |
+| laplace | h[20] | -0.192 | 0.395 | -0.178 | -11.5 | 0.977 | 0.0625 | 0.178 | 0.0192 | 4000 |
+| laplace | h[21] | -0.337 | 0.419 | -0.166 | -10.7 | 0.983 | 0.0597 | 0.166 | 0.0175 | 4000 |
+| laplace | h[22] | -0.469 | 0.443 | -0.15 | -9.57 | 0.99 | 0.0528 | 0.15 | 0.0157 | 4000 |
+| laplace | h[23] | -0.575 | 0.449 | -0.156 | -10 | 0.986 | 0.0552 | 0.156 | 0.0148 | 4000 |
+| laplace | h[24] | -0.644 | 0.453 | -0.142 | -9.1 | 0.99 | 0.0492 | 0.142 | 0.0139 | 4000 |
+| laplace | h[25] | -0.769 | 0.485 | -0.119 | -7.64 | 0.989 | 0.0448 | 0.12 | 0.0105 | 4000 |
+| laplace | h[26] | -0.879 | 0.515 | -0.109 | -6.99 | 0.988 | 0.0443 | 0.109 | 0.00728 | 4000 |
+| laplace | h[27] | -0.961 | 0.545 | -0.097 | -6.18 | 0.992 | 0.0375 | 0.098 | 0.00894 | 4000 |
+| laplace | h[28] | -1.01 | 0.572 | -0.0844 | -5.36 | 0.996 | 0.0396 | 0.0857 | 0.00645 | 4000 |
+| laplace | h[29] | -1.04 | 0.592 | -0.0782 | -4.99 | 0.992 | 0.0327 | 0.0784 | 0.00411 | 4000 |
+| svi | h[0] | -0.0372 | 0.254 | -0.063 | -8.49 | 0.469 | 0.196 | 0.427 | 0.803 | 4000 |
+| svi | h[1] | 0.00428 | 0.163 | -0.105 | -21.1 | 0.313 | 0.287 | 0.552 | 1.85 | 4000 |
+| svi | h[2] | 0.0603 | 0.197 | -0.179 | -28.3 | 0.4 | 0.268 | 0.495 | 1.23 | 4000 |
+| svi | h[3] | 0.172 | 0.176 | -0.222 | -36.6 | 0.384 | 0.289 | 0.518 | 1.31 | 4000 |
+| svi | h[4] | 0.403 | 0.163 | 0.00417 | 0.699 | 0.378 | 0.224 | 0.496 | 1.28 | 4000 |
+| svi | h[5] | 0.499 | 0.175 | -0.143 | -20.5 | 0.442 | 0.232 | 0.454 | 1.02 | 4000 |
+| svi | h[6] | 0.603 | 0.199 | -0.152 | -18.1 | 0.529 | 0.196 | 0.389 | 0.593 | 4000 |
+| svi | h[7] | 0.706 | 0.168 | -0.133 | -17.6 | 0.475 | 0.215 | 0.425 | 0.757 | 4000 |
+| svi | h[8] | 0.666 | 0.183 | -0.0794 | -10.3 | 0.489 | 0.185 | 0.413 | 0.71 | 4000 |
+| svi | h[9] | 0.569 | 0.164 | -0.23 | -34 | 0.429 | 0.271 | 0.486 | 1.09 | 4000 |
+| svi | h[10] | 0.585 | 0.177 | -0.18 | -24.1 | 0.473 | 0.232 | 0.438 | 0.814 | 4000 |
+| svi | h[11] | 0.555 | 0.174 | -0.0331 | -4.67 | 0.448 | 0.192 | 0.442 | 0.96 | 4000 |
+| svi | h[12] | 0.403 | 0.17 | -0.214 | -31.8 | 0.426 | 0.266 | 0.485 | 1.06 | 4000 |
+| svi | h[13] | 0.366 | 0.198 | -0.103 | -13.4 | 0.486 | 0.197 | 0.416 | 0.691 | 4000 |
+| svi | h[14] | 0.326 | 0.169 | -0.0766 | -11.5 | 0.42 | 0.219 | 0.462 | 1.03 | 4000 |
+| svi | h[15] | 0.244 | 0.134 | -0.148 | -27.8 | 0.338 | 0.289 | 0.539 | 1.64 | 4000 |
+| svi | h[16] | 0.223 | 0.165 | -0.11 | -16.2 | 0.428 | 0.23 | 0.46 | 1 | 4000 |
+| svi | h[17] | 0.0826 | 0.174 | -0.114 | -16.9 | 0.428 | 0.232 | 0.462 | 0.994 | 4000 |
+| svi | h[18] | -0.0848 | 0.173 | -0.236 | -36 | 0.414 | 0.282 | 0.496 | 1.19 | 4000 |
+| svi | h[19] | -0.0876 | 0.216 | -0.0441 | -5.39 | 0.518 | 0.163 | 0.384 | 0.583 | 4000 |
+| svi | h[20] | -0.181 | 0.176 | -0.15 | -21.8 | 0.436 | 0.233 | 0.458 | 0.981 | 4000 |
+| svi | h[21] | -0.35 | 0.137 | -0.198 | -39 | 0.321 | 0.314 | 0.558 | 1.69 | 4000 |
+| svi | h[22] | -0.43 | 0.18 | -0.0638 | -10 | 0.403 | 0.227 | 0.476 | 1.17 | 4000 |
+| svi | h[23] | -0.553 | 0.209 | -0.109 | -15.1 | 0.458 | 0.21 | 0.434 | 0.898 | 4000 |
+| svi | h[24] | -0.664 | 0.204 | -0.186 | -26.5 | 0.445 | 0.246 | 0.459 | 1.01 | 4000 |
+| svi | h[25] | -0.694 | 0.171 | 0.0324 | 5.88 | 0.348 | 0.257 | 0.519 | 1.62 | 4000 |
+| svi | h[26] | -0.882 | 0.172 | -0.116 | -22.3 | 0.331 | 0.283 | 0.54 | 1.61 | 4000 |
+| svi | h[27] | -0.951 | 0.189 | -0.0784 | -14.4 | 0.345 | 0.256 | 0.524 | 1.7 | 4000 |
+| svi | h[28] | -0.966 | 0.192 | -0.00271 | -0.512 | 0.334 | 0.241 | 0.532 | 1.59 | 4000 |
+| svi | h[29] | -1.1 | 0.238 | -0.175 | -27.7 | 0.399 | 0.265 | 0.5 | 1.13 | 4000 |
