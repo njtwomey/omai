@@ -6,7 +6,22 @@ import { gram, rbfKernel, scaleKernel } from '../../../kernels/index.ts'
 import { gaussHermite } from '../../../numerics/quadrature/index.ts'
 import { foldIn, gamma, key, normal, poisson, studentT, uniform } from '../../../random/index.ts'
 import { dict, int, real } from '../../../space/index.ts'
-import { item, toFlat } from '../../../tensor/index.ts'
+import {
+  add,
+  arange,
+  concat,
+  div,
+  eye,
+  item,
+  kron,
+  mul,
+  ones,
+  reshape,
+  take,
+  toArray,
+  toFlat,
+  zeros,
+} from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -309,12 +324,11 @@ function gpProblem(link: 'probit' | 'logistic', k: Config): AtomParts {
   const ls = configNumber(k, 'lengthScale')
   const kernel = scaleKernel(rbfKernel({ lengthScale: ls }), 1.5)
   const n = GP_X.length
-  const flat = toFlat(gram(kernel, GP_X, { jitter: 1e-6 }))
-  const K = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => flat[i * n + j] ?? 0))
+  const K = toArray(gram(kernel, GP_X, { jitter: 1e-6 })) as number[][]
   // region gp-logistic gp-probit
   const definition = defineModel(`gp-${link}`, (m) => {
     const row = m.range('row')
-    const prior = d.multivariateNormal(new Array<number>(n).fill(0), { covariance: K })
+    const prior = d.multivariateNormal(toFlat(zeros([n])), { covariance: K })
     const f = m.latent('f', prior, { dims: [row] })
     m.observe(
       'y',
@@ -407,18 +421,12 @@ function gpSoftmaxProblem(k: Config): AtomParts {
   const ls = configNumber(k, 'lengthScale')
   const kernel = scaleKernel(rbfKernel({ lengthScale: ls }), 1.5)
   const n = GPS_X.length
-  const flat = toFlat(gram(kernel, GPS_X, { jitter: 1e-6 }))
-  const kx = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => flat[i * n + j] ?? 0))
+  const kxTensor = gram(kernel, GPS_X, { jitter: 1e-6 })
+  const kx = toArray(kxTensor) as number[][]
   // the function is one dense Gaussian vector over the inputs and the classes (cell = input * classes + class): an independent process
   // per class, so the covariance is the kernel matrix between the inputs where the classes agree and zero where they do not
   const cells = n * GPS_CLASSES
-  const covariance = Array.from({ length: cells }, (_, a) =>
-    Array.from({ length: cells }, (_, b) =>
-      a % GPS_CLASSES === b % GPS_CLASSES
-        ? ((kx[Math.floor(a / GPS_CLASSES)] ?? [])[Math.floor(b / GPS_CLASSES)] ?? 0) + (a === b ? 1e-6 : 0)
-        : 0,
-    ),
-  )
+  const covariance = toArray(add(kron(kxTensor, eye(GPS_CLASSES)), mul(eye(cells), 1e-6))) as number[][]
   const index = Array.from({ length: n }, (_, i) => Array.from({ length: GPS_CLASSES }, (_, c) => i * GPS_CLASSES + c))
   // region gp-softmax
   const definition = defineModel('gp-softmax', (m) => {
@@ -426,7 +434,7 @@ function gpSoftmaxProblem(k: Config): AtomParts {
     const row = m.range('row')
     const cls = m.range('class', { size: GPS_CLASSES })
     // one dense Gaussian vector over every (input, class) pair
-    const prior = d.multivariateNormal(new Array<number>(cells).fill(0), { covariance })
+    const prior = d.multivariateNormal(toFlat(zeros([cells])), { covariance })
     const f = m.latent('f', prior, { dims: [cell] })
     const at = m.data('index', { dims: [row, cls], support: 'count' })
     // the scores of an input are the entries of the vector at its classes, the label a softmax of them
@@ -448,10 +456,13 @@ function gpSoftmaxProblem(k: Config): AtomParts {
     const rule = gaussHermite(9)
     const xs = toFlat(rule.nodes).map((v) => Math.SQRT2 * v)
     const ws = toFlat(rule.weights).map((v) => v / Math.sqrt(Math.PI))
-    const t = new Array<number>(cells).fill(0)
-    const f = new Array<number>(cells).fill(0)
-    const first = new Array<number>(cells).fill(0)
-    const second = new Array<number>(cells).fill(0)
+    // the mutable working buffers of the quadrature loop below (a tensor op per node would allocate 9^6 times), made with zeros
+    const [t, f, first, second] = [0, 1, 2, 3].map(() => toFlat(zeros([cells]))) as [
+      number[],
+      number[],
+      number[],
+      number[],
+    ]
     let mass = 0
     const total = xs.length ** cells
     for (let idx = 0; idx < total; idx++) {
@@ -833,8 +844,8 @@ function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomPart
   // region probit-learned logistic-learned
   // the ground truth: random points, labelled through the link by the true weights
   const kk = key(seed)
-  const pts = toFlat(normal(foldIn(kk, 0), [n, 2]))
-  const design = Array.from({ length: n }, (_, i) => [1, pts[2 * i] ?? 0, pts[2 * i + 1] ?? 0])
+  const points = normal(foldIn(kk, 0), [n, 2])
+  const design = toArray(concat([ones([n, 1]), points], 1)) as number[][]
   const u = toFlat(uniform(foldIn(kk, 1), [n]))
   const score = design.map((row) => w0 * (row[0] ?? 0) + w1 * (row[1] ?? 0) + w2 * (row[2] ?? 0))
   const chance = score.map((z) => (link === 'probit' ? normalCdfFast(z) : 1 / (1 + Math.exp(-z))))
@@ -878,8 +889,8 @@ function classesLearnedProblem(link: 'probit' | 'logistic', k: Config): AtomPart
     x: edge,
     y: edge.map((v) => -((c[0] ?? 0) + (c[1] ?? 0) * v) / (c[2] ?? Number.NaN)),
   })
-  const px = Array.from({ length: n }, (_, i) => pts[2 * i] ?? 0)
-  const py = Array.from({ length: n }, (_, i) => pts[2 * i + 1] ?? 0)
+  const px = toFlat(reshape(take(points, [0], 1), [n]))
+  const py = toFlat(reshape(take(points, [1], 1), [n]))
   return {
     build: {
       definition,
@@ -999,7 +1010,7 @@ const logisticLearnedAtom: EpAtom = defineAtom({
 // ----- a regression with a log link: Poisson, negative binomial, Weibull -----
 
 /** The grid of x values a figure draws a fitted curve on. */
-const CURVE_X = Array.from({ length: 41 }, (_, i) => -1 + i / 20)
+const CURVE_X = toFlat(add(div(arange(41), 20), -1))
 
 /** The covariate of a regression, drawn uniformly on [-1, 1]. */
 const covariate = (seed: number, n: number): number[] =>

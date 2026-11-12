@@ -9,7 +9,7 @@
 
 import { foldIn, key, normal } from '../../../random/index.ts'
 import { dict, int, real } from '../../../space/index.ts'
-import { toFlat } from '../../../tensor/index.ts'
+import { add, arange, concat, div, mul, take, toArray, toFlat } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -63,11 +63,12 @@ function simulatePairs(
   s2: number,
   rho: number,
 ): number[][] {
-  const z = toFlat(normal(foldIn(key(seed), 0), [n, 2]))
-  return Array.from({ length: n }, (_, i) => {
-    const [u, v] = [z[2 * i] ?? 0, z[2 * i + 1] ?? 0]
-    return [(mean[0] ?? 0) + s1 * u, (mean[1] ?? 0) + rho * s2 * u + s2 * Math.sqrt(1 - rho * rho) * v]
-  })
+  const z = normal(foldIn(key(seed), 0), [n, 2])
+  const u = take(z, [0], 1)
+  const v = take(z, [1], 1)
+  const first = add(mul(u, s1), mean[0] ?? 0)
+  const second = add(add(mul(u, rho * s2), mean[1] ?? 0), mul(v, s2 * Math.sqrt(1 - rho * rho)))
+  return toArray(concat([first, second], 1)) as number[][]
 }
 
 /** The closed-form marginals of the three entries of a Wishart matrix `W(nu, S)` (the diagonal is a gamma, the off-diagonal a numeric marginal). */
@@ -423,7 +424,7 @@ const PAIRS = [
 /** The posterior of a correlation `rho` with known sds and mean zero: `(1 - rho^2)^(eta - 1 - n / 2) exp(-(sxx - 2 rho sxy + syy) / (2 (1 - rho^2)))`, normalised numerically. */
 function correlationMarginal(eta: number, n: number, sxx: number, sxy: number, syy: number): ExactMarginal {
   const N = 4000
-  const x = Array.from({ length: N }, (_, i) => -1 + (2 * (i + 0.5)) / N)
+  const x = toFlat(add(div(mul(add(arange(N), 0.5), 2), N), -1))
   const lw = x.map(
     (rho) => (eta - 1 - n / 2) * Math.log(1 - rho * rho) - (sxx - 2 * rho * sxy + syy) / (2 * (1 - rho * rho)),
   )
