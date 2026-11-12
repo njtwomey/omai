@@ -18,7 +18,37 @@ import { defineModel } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { normal as drawNormal, uniform as drawUniform, foldIn, gammaVariates, key } from 'omai-engine/random'
 import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
-import { toFlat } from 'omai-engine/tensor'
+import {
+  add,
+  arange,
+  asTensor,
+  cast,
+  div,
+  exp,
+  full,
+  greater,
+  item,
+  less,
+  logicalAnd,
+  logicalNot,
+  max,
+  mul,
+  nonzero,
+  pad as padWith,
+  sliceAxis,
+  sqrt,
+  square,
+  sub,
+  sum,
+  type TensorLike,
+  take,
+  tensor,
+  toArray,
+  toFlat,
+  type Value,
+  where,
+  zeros,
+} from 'omai-engine/tensor'
 import { type Config, derived } from 'omai-engine/trace'
 import {
   columnMoments,
@@ -114,28 +144,27 @@ export function robustRegressionProblem(config: Config): RobustProblem {
   const contamination = exampleNumber(config, 'contamination') || 0.1
   const outlierScale = exampleNumber(config, 'outlierScale') || 10
   const seed = foldIn(key(exampleNumber(config, 'dataSeed')), 0)
-  const u = toFlat(drawUniform(foldIn(seed, 0), [n]))
-  const e = toFlat(drawNormal(foldIn(seed, 1), [n]))
-  const v = toFlat(drawUniform(foldIn(seed, 2), [n]))
-  const side = toFlat(drawUniform(foldIn(seed, 3), [n]))
-  const sign = toFlat(drawUniform(foldIn(seed, 4), [n]))
-  const outlier = Array.from(v, (a) => a < fraction)
-  const x = Array.from(u, (a, i) => {
-    if (!(leverage && outlier[i])) return range[0] + (range[1] - range[0]) * a
-    // A leverage point: in the outer tenth of the range, on one side or the other.
-    const frac = 0.1 * a
-    return (side[i] ?? 0) < 0.5 ? range[0] + (range[1] - range[0]) * frac : range[1] - (range[1] - range[0]) * frac
-  })
+  const u = drawUniform(foldIn(seed, 0), [n])
+  const e = drawNormal(foldIn(seed, 1), [n])
+  const v = drawUniform(foldIn(seed, 2), [n])
+  const side = drawUniform(foldIn(seed, 3), [n])
+  const sign = drawUniform(foldIn(seed, 4), [n])
+  const outlier = less(v, fraction)
+  const span = range[1] - range[0]
+  // A leverage point is in the outer tenth of the range, on one side or the other.
+  const frac = mul(u, 0.1)
+  const ends = where(less(side, 0.5), add(mul(frac, span), range[0]), sub(range[1], mul(frac, span)))
+  const x = where(logicalAnd(leverage, outlier), ends, add(mul(u, span), range[0]))
   const centre = (range[0] + range[1]) / 2
-  const y = x.map((xi, i) => {
-    const clean = polynomialAt(generating, xi) + noiseSd * (e[i] ?? 0)
-    if (!outlier[i]) return clean
-    // Leverage points are pushed against the trend (the slope is positive), the others either way.
-    const direction = leverage ? (xi > centre ? -1 : 1) : (sign[i] ?? 0) < 0.5 ? -1 : 1
-    return clean + direction * size * noiseSd
-  })
-  const truth = Array.from({ length: degree + 1 }, (_, j) => generating[j] ?? 0)
-  const design = x.map((xi) => monomials(xi, degree))
+  const clean = add(polynomialAt(generating, x), mul(e, noiseSd))
+  // Leverage points are pushed against the trend (the slope is positive), the others either way.
+  const direction = leverage ? where(greater(x, centre), -1, 1) : where(less(sign, 0.5), -1, 1)
+  const y = where(outlier, add(clean, mul(mul(direction, size), noiseSd)), clean)
+  const known = generating.length
+  const truth = padWith(sliceAxis(tensor(generating), 0, 0, Math.min(known, degree + 1)), [
+    [0, Math.max(0, degree + 1 - known)],
+  ])
+  const design = monomials(x, degree)
   // region robust
   const definition = defineModel('robust-regression', (m) => {
     const row = m.range('row')
@@ -222,17 +251,17 @@ export function robustRegressionProblem(config: Config): RobustProblem {
   })
   // endregion
   return {
-    x,
-    y,
-    outlier,
-    truth,
+    x: toFlat(x),
+    y: toFlat(y),
+    outlier: toFlat(outlier).map(Boolean),
+    truth: toFlat(truth),
     noiseSd,
     learned,
     degree,
     names: ['intercept', 'slope', ...Array.from({ length: Math.max(0, degree - 1) }, (_, j) => `x^${j + 2}`)],
     extent: range as readonly [number, number],
     priorScale,
-    design,
+    design: toArray(design) as number[][],
     likelihood,
     dfLearned,
     dfPriorMean,
@@ -413,11 +442,13 @@ function shapeOf(problem: RobustProblem): RegressionShape {
 }
 
 /** The gamma(2, rate) density at `x`. */
-const gamma2 = (x: number, rate: number): number => (x > 0 ? rate * rate * x * Math.exp(-rate * x) : 0)
+const gamma2 = (x: Value, rate: number): Value => where(greater(x, 0), mul(mul(rate * rate, x), exp(mul(x, -rate))), 0)
 
 /** The root mean square distance between two curves. */
-const rms = (a: readonly number[], b: readonly number[]): number =>
-  Math.sqrt(a.reduce((s, v, i) => s + (v - (b[i] ?? 0)) ** 2, 0) / Math.max(1, a.length))
+const rms = (a: TensorLike, b: TensorLike): number => {
+  const gap = sub(a, b)
+  return item(sqrt(div(sum(square(gap)), Math.max(1, asTensor(a).shape[0] ?? 0))))
+}
 
 const robustExample: Example<RobustProblem> = defineExample<RobustProblem>({
   name: 'robust',
@@ -433,18 +464,18 @@ const robustExample: Example<RobustProblem> = defineExample<RobustProblem>({
     const shape = shapeOf(problem)
     const [lo, hi] = problem.extent
     const pad = 0.08 * (hi - lo)
-    const grid = Array.from({ length: GRID }, (_, i) => lo - pad + ((hi - lo + 2 * pad) * i) / (GRID - 1))
-    const truthCurve = grid.map((v) => polynomialAt(problem.truth, v))
+    const grid = toFlat(add(div(mul(arange(GRID), hi - lo + 2 * pad), GRID - 1), lo - pad))
+    const truthCurve = toFlat(polynomialAt(problem.truth, grid))
     const exactApplies = problem.likelihood === 'gaussian' && !problem.learned
     const gaussianCurve = (rows: number[], seen: number): { coefficients: number[]; curve: number[] } => {
-      const keep = rows.length === 0 ? Array.from({ length: seen }, (_, i) => i) : rows
+      const keep = cast(rows.length === 0 ? arange(seen) : tensor(rows), 'int32')
       const post0 = exactNormalPosterior(
-        keep.map((i) => problem.design[i] ?? []),
-        keep.map((i) => problem.y[i] ?? 0),
+        take(tensor(problem.design as number[][]), keep, 0),
+        take(tensor(problem.y as number[]), keep, 0),
         problem.priorScale,
         problem.noiseSd,
       )
-      return { coefficients: post0.mean, curve: grid.map((v) => polynomialAt(post0.mean, v)) }
+      return { coefficients: post0.mean, curve: toFlat(polynomialAt(post0.mean, grid)) }
     }
     return {
       'robust/fit': derived<unknown>({
@@ -463,17 +494,19 @@ const robustExample: Example<RobustProblem> = defineExample<RobustProblem>({
           const got = regressionDraws(method, shape, FIT_DRAWS)
           if (got === undefined) return null
           const { rows, p } = got
+          const drawn = tensor(rows)
+          // The degrees of freedom of each draw: learned, or the fixed one.
+          const nus = got.names.includes('nu')
+            ? take(drawn, got.names.indexOf('nu'), 1)
+            : full([rows.length], exampleNumber(config, 'df') || 4)
           const nuAt = (r: readonly number[]): number =>
             got.names.includes('nu') ? (r[got.names.indexOf('nu')] ?? 4) : exampleNumber(config, 'df') || 4
           const z = toFlat(drawNormal(key(7), [rows.length]))
           const u = toFlat(drawUniform(key(8), [rows.length]))
           const g =
             problem.likelihood === 'studentT'
-              ? gammaVariates(
-                  key(9),
-                  rows.map((r) => nuAt(r) / 2),
-                )
-              : new Float64Array(rows.length)
+              ? gammaVariates(key(9), toFlat(div(nus, 2)))
+              : toFlat(zeros([rows.length]))
           const bands = curveBands(
             rows,
             p,
@@ -495,10 +528,10 @@ const robustExample: Example<RobustProblem> = defineExample<RobustProblem>({
           const { mean, sd } = columnMoments(rows, got.names.length)
           const everything = gaussianCurve([], seen)
           const inliers = gaussianCurve(
-            problem.outlier.slice(0, seen).flatMap((o, i) => (o ? [] : [i])),
+            toFlat(nonzero(logicalNot(tensor(problem.outlier.slice(0, seen) as boolean[])))[0] as Value),
             seen,
           )
-          const fitted = grid.map((v) => polynomialAt(mean.slice(0, p), v))
+          const fitted = polynomialAt(mean.slice(0, p), grid)
           return {
             seen,
             total: n,
@@ -539,11 +572,11 @@ const robustExample: Example<RobustProblem> = defineExample<RobustProblem>({
           const got = regressionDraws(post(state), shape, 400)
           const j = got?.names.indexOf('nu') ?? -1
           if (got === undefined || j < 0) return null
-          const draws = got.rows.map((r) => r[j] ?? Number.NaN)
-          const top = Math.min(100, Math.max(...draws) * 1.3)
+          const draws = take(tensor(got.rows), j, 1)
+          const top = Math.min(100, item(max(draws)) * 1.3)
           const rate = 2 / (problem.dfPriorMean - 1)
-          const grid2 = Array.from({ length: 80 }, (_, i) => 1 + ((top - 1) * i) / 79)
-          return { draws, grid: grid2, prior: grid2.map((v) => gamma2(v - 1, rate)) } as never
+          const grid2 = add(div(mul(arange(80), top - 1), 79), 1)
+          return { draws: toFlat(draws), grid: toFlat(grid2), prior: toFlat(gamma2(sub(grid2, 1), rate)) } as never
         },
       }),
       'robust/pairs': derived<unknown>({

@@ -21,7 +21,40 @@ import { gaussianMixtureModel } from 'omai-engine/probprog/models'
 import { normal as drawNormal, uniform as drawUniform, foldIn, key } from 'omai-engine/random'
 import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
 import { quantile } from 'omai-engine/stats'
-import { tensor, toFlat } from 'omai-engine/tensor'
+import {
+  abs,
+  add,
+  any,
+  arange,
+  argsort,
+  broadcastTo,
+  cast,
+  cumsum,
+  div,
+  exp,
+  item,
+  less,
+  lessEqual,
+  max,
+  min,
+  minimum,
+  mul,
+  ones,
+  pow,
+  reshape,
+  sliceAxis,
+  square,
+  stack,
+  sub,
+  sum,
+  take,
+  takeAlongAxis,
+  tensor,
+  toArray,
+  toFlat,
+  transpose,
+  type Value,
+} from 'omai-engine/tensor'
 import { type Config, derived } from 'omai-engine/trace'
 import {
   defineExample,
@@ -64,9 +97,8 @@ export interface MixtureProblem extends ExampleProblem {
 
 /** The weights of `k` generated components: equal, or each half the one before. */
 function generatingWeights(k: number, unequal: boolean): number[] {
-  const raw = Array.from({ length: k }, (_, j) => (unequal ? 0.5 ** j : 1))
-  const total = raw.reduce((a, b) => a + b, 0)
-  return raw.map((v) => v / total)
+  const raw = unequal ? pow(0.5, arange(k)) : ones([k])
+  return toFlat(div(raw, sum(raw)))
 }
 
 /**
@@ -88,38 +120,36 @@ export function mixtureProblem(config: Config): MixtureProblem {
   const separate = exampleString(config, 'spread') === 'separate'
   const concentration = exampleNumber(config, 'concentration') || 1
   const dataset = exampleString(config, 'dataset') === 'oldFaithful' ? 'oldFaithful' : 'generated'
-  let y: number[]
+  let y: Value
   let truth: MixtureProblem['truth'] = null
   let label = 'value'
   if (dataset === 'oldFaithful') {
-    const x = toFlat(oldFaithful().data.x)
-    y = Array.from({ length: x.length / 2 }, (_, i) => x[2 * i + 1] as number)
+    // The waiting time is the second column of the data.
+    y = take(reshape(oldFaithful().data.x, [-1, 2]), 1, 1)
     label = 'waiting time (minutes)'
   } else {
     const n = Math.max(2, Math.round(exampleNumber(config, 'rows') || 200))
     const k = Math.max(1, Math.round(exampleNumber(config, 'trueComponents') || 2))
     const separation = exampleNumber(config, 'separation') || 3
     const weights = generatingWeights(k, exampleString(config, 'weights') === 'unequal')
-    const means = Array.from({ length: k }, (_, j) => (j - (k - 1) / 2) * separation)
+    const means = mul(sub(arange(k), (k - 1) / 2), separation)
     const seed = foldIn(key(exampleNumber(config, 'dataSeed')), 0)
-    const u = toFlat(drawUniform(foldIn(seed, 0), [n]))
-    const e = toFlat(drawNormal(foldIn(seed, 1), [n]))
-    y = Array.from(u, (v, i) => {
-      let acc = 0
-      let j = 0
-      while (j < k - 1 && v >= acc + (weights[j] as number)) acc += weights[j++] as number
-      return (means[j] as number) + (e[i] as number)
-    })
-    truth = { means, weights, sd: 1 }
+    const u = drawUniform(foldIn(seed, 0), [n])
+    const e = drawNormal(foldIn(seed, 1), [n])
+    // The component of each draw: the number of cumulative weights it has passed.
+    const passed = lessEqual(reshape(cumsum(weights), [1, k]), reshape(u, [n, 1]))
+    const component = cast(minimum(sum(passed, 1), k - 1), 'int32')
+    y = add(take(means, component), e)
+    truth = { means: toFlat(means), weights, sd: 1 }
   }
-  const mean = y.reduce((a, b) => a + b, 0) / y.length
-  const scale = Math.sqrt(y.reduce((a, b) => a + (b - mean) ** 2, 0) / y.length) || 1
-  const lo = Math.min(...y)
-  const hi = Math.max(...y)
+  const mean = item(div(sum(y), y.shape[0] ?? 1))
+  const scale = Math.sqrt(item(div(sum(square(sub(y, mean))), y.shape[0] ?? 1))) || 1
+  const lo = item(min(y))
+  const hi = item(max(y))
   const pad = 0.15 * (hi - lo || 1)
-  const grid = Array.from({ length: GRID }, (_, i) => lo - pad + ((hi - lo + 2 * pad) * i) / (GRID - 1))
+  const grid = toFlat(add(div(mul(arange(GRID), hi - lo + 2 * pad), GRID - 1), lo - pad))
   return {
-    y,
+    y: toFlat(y),
     mean,
     scale,
     dataset,
@@ -136,7 +166,7 @@ export function mixtureProblem(config: Config): MixtureProblem {
       concentration,
       sharedSpread: !separate,
     }),
-    data: { y: y.map((v) => (v - mean) / scale) },
+    data: { y: div(sub(y, mean), scale) },
   }
 }
 
@@ -225,11 +255,11 @@ const GRID = 90
 const FIT_DRAWS = 300
 const PAIR_DRAWS = 500
 
-/** The draws of a mixture's parameters, in the model's standardised units: each is the means, weights and spreads by component. */
+/** The draws of a mixture's parameters, in the model's standardised units: each is a row per draw and a column per component. */
 interface MixtureDraws {
-  readonly mu: number[][]
-  readonly w: number[][]
-  readonly sigma: number[][]
+  readonly mu: Value
+  readonly w: Value
+  readonly sigma: Value
   /** The chain and the index within it of each draw. */
   readonly chain: number[]
   readonly index: number[]
@@ -242,36 +272,21 @@ function readDraws(post: Posterior, problem: MixtureProblem, n: number): Mixture
   if (got === undefined) return undefined
   const spreads = problem.separate ? k : 1
   if (got.rows[0]?.length !== 2 * k + spreads) return undefined
+  const rows = tensor(got.rows)
   return {
-    mu: got.rows.map((r) => r.slice(0, k)),
-    w: got.rows.map((r) => r.slice(k, 2 * k)),
-    sigma: got.rows.map((r) =>
-      problem.separate ? r.slice(2 * k) : Array.from({ length: k }, () => r[2 * k] as number),
-    ),
+    mu: sliceAxis(rows, 1, 0, k),
+    w: sliceAxis(rows, 1, k, 2 * k),
+    sigma: broadcastTo(sliceAxis(rows, 1, 2 * k, 2 * k + spreads), [got.rows.length, k]),
     chain: got.chain,
     index: got.index,
   }
 }
 
-const phi = (z: number): number => Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI)
+/** The standard normal density at `z`. */
+const phi = (z: Value): Value => div(exp(mul(mul(-0.5, z), z)), Math.sqrt(2 * Math.PI))
 
-/** The weighted components of a draw (means, weights, spreads) in the units of the data, sorted by their means. */
-function sortedDraw(
-  problem: MixtureProblem,
-  d: MixtureDraws,
-  i: number,
-): { mu: number[]; w: number[]; sigma: number[] } {
-  const order = Array.from({ length: problem.components }, (_, j) => j).sort(
-    (a, b) => (d.mu[i]?.[a] ?? 0) - (d.mu[i]?.[b] ?? 0),
-  )
-  return {
-    mu: order.map((j) => problem.mean + problem.scale * (d.mu[i]?.[j] ?? 0)),
-    w: order.map((j) => d.w[i]?.[j] ?? 0),
-    sigma: order.map((j) => problem.scale * (d.sigma[i]?.[j] ?? 0)),
-  }
-}
-
-const density = (x: number, mu: number, sigma: number): number => phi((x - mu) / sigma) / sigma
+/** The normal density at `x` with mean `mu` and sd `sigma` (broadcast against each other). */
+const density = (x: Value, mu: Value, sigma: Value): Value => div(phi(div(sub(x, mu), sigma)), sigma)
 
 /** What the posterior says, label-invariant: the sorted components' parameters and the predictive density on the grid. */
 interface MixtureReading {
@@ -286,66 +301,52 @@ interface MixtureReading {
   readonly draws: number
 }
 
-/** The 5% and 95% quantiles of a sample. */
-const bounds = (v: readonly number[]): [number, number] => {
-  const [lo = Number.NaN, hi = Number.NaN] = toFlat(quantile(v as number[], tensor([0.05, 0.95])))
-  return [lo, hi]
-}
+/** The 5% and 95% quantiles of a sample, as a tensor of two. */
+const bounds = (v: Value): Value => quantile(v, tensor([0.05, 0.95]))
 
-const moments = (v: readonly number[]): { mean: number; sd: number } => {
-  const mean = v.reduce((a, b) => a + b, 0) / v.length
-  return { mean, sd: Math.sqrt(v.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(1, v.length - 1)) }
+/** The mean and the sample standard deviation of a sample. */
+const moments = (v: Value): { mean: number; sd: number } => {
+  const n = v.shape[0] ?? 1
+  const mean = item(div(sum(v), n))
+  return { mean, sd: Math.sqrt(item(div(sum(square(sub(v, mean))), Math.max(1, n - 1)))) }
 }
 
 /** Read a posterior into its label-invariant summary, or `undefined` while it has no usable draws. */
 function readMixture(post: Posterior, problem: MixtureProblem, n: number): MixtureReading | undefined {
   const d = readDraws(post, problem, n)
-  if (d === undefined || d.mu.length < 3) return undefined
+  const draws = d?.mu.shape[0] ?? 0
+  if (d === undefined || draws < 3) return undefined
   const k = problem.components
-  const sorted = d.mu.map((_, i) => sortedDraw(problem, d, i))
-  const rowOf = (name: string, v: readonly number[]): PosteriorRow => {
-    const [lo, hi] = bounds(v)
-    return { name, ...moments(v), lo, hi, ess: null, rhat: null }
+  // Each draw's components sorted by their means, in the units of the data.
+  const order = argsort(d.mu, 1)
+  const mu = add(mul(takeAlongAxis(d.mu, order, 1), problem.scale), problem.mean)
+  const w = takeAlongAxis(d.w, order, 1)
+  const sigma = mul(takeAlongAxis(d.sigma, order, 1), problem.scale)
+  const rowOf = (name: string, v: Value): PosteriorRow => {
+    const [lo, hi] = toFlat(bounds(v))
+    return { name, ...moments(v), lo: lo as number, hi: hi as number, ess: null, rhat: null }
   }
   const rows: PosteriorRow[] = [
-    ...Array.from({ length: k }, (_, j) =>
-      rowOf(
-        `mean ${j + 1}`,
-        sorted.map((s) => s.mu[j] as number),
-      ),
-    ),
-    ...Array.from({ length: k }, (_, j) =>
-      rowOf(
-        `weight ${j + 1}`,
-        sorted.map((s) => s.w[j] as number),
-      ),
-    ),
+    ...Array.from({ length: k }, (_, j) => rowOf(`mean ${j + 1}`, take(mu, j, 1))),
+    ...Array.from({ length: k }, (_, j) => rowOf(`weight ${j + 1}`, take(w, j, 1))),
     ...Array.from({ length: problem.separate ? k : 1 }, (_, j) =>
-      rowOf(
-        problem.separate ? `spread ${j + 1}` : 'spread',
-        sorted.map((s) => s.sigma[j] as number),
-      ),
+      rowOf(problem.separate ? `spread ${j + 1}` : 'spread', take(sigma, j, 1)),
     ),
   ]
-  const at = problem.grid.map((x) =>
-    sorted.map((s) => s.mu.reduce((a, m, j) => a + (s.w[j] as number) * density(x, m, s.sigma[j] as number), 0)),
-  )
-  const band = at.map((col) => bounds(col))
-  const outOfOrder = d.mu.filter((m) => m.some((v, j) => j > 0 && v < (m[j - 1] as number))).length / d.mu.length
+  // The weighted density of each component of each draw at each grid point: [grid, draw, component].
+  const x = reshape(tensor(problem.grid as number[]), [-1, 1, 1])
+  const terms = mul(reshape(w, [1, draws, k]), density(x, reshape(mu, [1, draws, k]), reshape(sigma, [1, draws, k])))
+  const at = sum(terms, 2)
+  const band = stack(Array.from({ length: problem.grid.length }, (_, g) => bounds(take(at, g, 0))))
+  const outOfOrder = k < 2 ? 0 : item(sum(any(less(sliceAxis(d.mu, 1, 1, k), sliceAxis(d.mu, 1, 0, k - 1)), 1))) / draws
   return {
     rows,
-    mean: at.map((col) => col.reduce((a, b) => a + b, 0) / col.length),
-    lo: band.map((b) => b[0]),
-    hi: band.map((b) => b[1]),
-    components: Array.from({ length: k }, (_, j) =>
-      problem.grid.map(
-        (x) =>
-          sorted.reduce((a, s) => a + (s.w[j] as number) * density(x, s.mu[j] as number, s.sigma[j] as number), 0) /
-          sorted.length,
-      ),
-    ),
+    mean: toFlat(div(sum(at, 1), draws)),
+    lo: toFlat(take(band, 0, 1)),
+    hi: toFlat(take(band, 1, 1)),
+    components: toArray(transpose(div(sum(terms, 1), draws))) as number[][],
     outOfOrder,
-    draws: sorted.length,
+    draws,
   }
 }
 
@@ -353,7 +354,9 @@ function readMixture(post: Posterior, problem: MixtureProblem, n: number): Mixtu
 function truthDensity(problem: MixtureProblem): number[] | null {
   const t = problem.truth
   if (t === null) return null
-  return problem.grid.map((x) => t.means.reduce((a, m, j) => a + (t.weights[j] as number) * density(x, m, t.sd), 0))
+  const x = reshape(tensor(problem.grid as number[]), [-1, 1])
+  const terms = mul(tensor(t.weights as number[]), density(x, tensor(t.means as number[]), tensor(t.sd)))
+  return toFlat(sum(terms, 1))
 }
 
 /** What the reference run hands to the check: the sorted parameters (as rows) and the predictive density. */
@@ -439,17 +442,20 @@ const declared: Example<MixtureProblem> = defineExample<MixtureProblem>({
           'the pair plot of the first two means, the first weight and the spread as the run labelled them (a posteriorPairs record): free means show the symmetric modes and the swapped labels',
         compute: (state) => {
           const d = readDraws(post(state), problem, PAIR_DRAWS)
-          if (d === undefined || d.mu.length < 3) return null
-          const value = (c: PairCoordinate, i: number): number => {
+          if (d === undefined || (d.mu.shape[0] ?? 0) < 3) return null
+          // The draws of one coordinate, in the units of the data: a means, a weights or a sigma column.
+          const column = (c: PairCoordinate): number[] => {
             const m = /^(\w+)\[?(\d*)\]?$/.exec(c.from)
             const j = Number(m?.[2] || 0)
-            return m?.[1] === 'mu'
-              ? problem.mean + problem.scale * (d.mu[i]?.[j] ?? 0)
-              : m?.[1] === 'weights'
-                ? (d.w[i]?.[j] ?? 0)
-                : problem.scale * (d.sigma[i]?.[j] ?? 0)
+            return toFlat(
+              m?.[1] === 'mu'
+                ? add(mul(take(d.mu, j, 1), problem.scale), problem.mean)
+                : m?.[1] === 'weights'
+                  ? take(d.w, j, 1)
+                  : mul(take(d.sigma, j, 1), problem.scale),
+            )
           }
-          const columns = Object.fromEntries(pairNames.map((c) => [c.label, d.mu.map((_, i) => value(c, i))]))
+          const columns = Object.fromEntries(pairNames.map((c) => [c.label, column(c)]))
           const known: Record<string, number> =
             t === null || !problem.ordered || k !== t.means.length
               ? {}
@@ -501,7 +507,7 @@ const declared: Example<MixtureProblem> = defineExample<MixtureProblem>({
             Array.from({ length: k }, (_, j) => `mean ${j + 1}`),
           )
           if (check === undefined) return null
-          const tv = 0.5 * step * mine.density.reduce((a, v, i) => a + Math.abs(v - (ref.density[i] ?? 0)), 0)
+          const tv = 0.5 * step * item(sum(abs(sub(tensor(mine.density as number[]), tensor(ref.density as number[])))))
           const means = check.focus.map((f) => f.meanError)
           return {
             ...flattenCheck(check),

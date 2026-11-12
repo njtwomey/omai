@@ -27,7 +27,29 @@ import {
 } from 'omai-engine/probprog/models'
 import { foldIn, type Key, key } from 'omai-engine/random'
 import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
-import { toFlat } from 'omai-engine/tensor'
+import {
+  abs,
+  add,
+  arange,
+  div,
+  exp,
+  greater,
+  item,
+  matmul,
+  mul,
+  neg,
+  repeat,
+  reshape,
+  stack,
+  sub,
+  sum,
+  tensor,
+  tile,
+  toArray,
+  toFlat,
+  transpose,
+  type Value,
+} from 'omai-engine/tensor'
 import { type Config, derived } from 'omai-engine/trace'
 import {
   columnMoments,
@@ -101,11 +123,9 @@ function generator(
 }
 
 const pointsOf = (data: ClassificationData): { x: number[][]; y: number[] } => {
-  const x = toFlat(data.x)
-  const y = toFlat(data.y)
   return {
-    x: Array.from({ length: y.length }, (_, i) => [x[2 * i] ?? 0, x[2 * i + 1] ?? 0]),
-    y: Array.from(y, (v) => (v > 0.5 ? 1 : 0)),
+    x: toArray(reshape(data.x, [-1, 2])) as number[][],
+    y: toFlat(greater(data.y, 0.5)),
   }
 }
 
@@ -188,7 +208,7 @@ export function classifierProblem(config: Config): ClassifierProblem {
   }
 }
 
-const sigmoid = (v: number): number => 1 / (1 + Math.exp(-v))
+const sigmoid = (v: Value): Value => div(1, add(1, exp(neg(v))))
 
 // The predictive probabilities at design rows for either link (the probit one is the library's).
 function predictive(
@@ -197,14 +217,9 @@ function predictive(
   rows: readonly (readonly number[])[],
 ): number[] {
   if (problem.link === 'probit') return probitPredictive(draws, rows)
-  const out = new Array<number>(rows.length).fill(0)
-  for (const w of draws)
-    rows.forEach((row, i) => {
-      let s = 0
-      for (let j = 0; j < w.length; j++) s += (row[j] ?? 0) * (w[j] ?? 0)
-      out[i] = (out[i] ?? 0) + sigmoid(s) / draws.length
-    })
-  return out
+  // The probability of each row under each draw, averaged over the draws.
+  const logits = matmul(tensor(rows as number[][]), transpose(tensor(draws as number[][])))
+  return toFlat(sum(div(sigmoid(logits), draws.length), 1))
 }
 
 const GRID_DRAWS = 100
@@ -246,12 +261,12 @@ function surfaceGrid(
   size: number,
 ): { readonly xs: readonly number[]; readonly ys: readonly number[]; readonly probabilities: readonly number[] } {
   if (problem.link === 'probit') return probitPredictiveGrid(rows, problem.map, problem.extent, size)
-  const axis = (lo: number, hi: number): number[] =>
-    Array.from({ length: size }, (_, i) => lo + ((hi - lo) * i) / (size - 1))
+  const axis = (lo: number, hi: number): Value => add(div(mul(arange(size), hi - lo), size - 1), lo)
   const xs = axis(problem.extent.x[0], problem.extent.x[1])
   const ys = axis(problem.extent.y[0], problem.extent.y[1])
-  const pts = ys.flatMap((y) => xs.map((x) => [x, y]))
-  return { xs, ys, probabilities: predictive(problem, rows, problem.map.transform(pts)) }
+  // The grid of points, a row of the plane at a time: x runs fastest.
+  const pts = toArray(stack([tile(xs, [size]), repeat(ys, size)], 1)) as number[][]
+  return { xs: toFlat(xs), ys: toFlat(ys), probabilities: predictive(problem, rows, problem.map.transform(pts)) }
 }
 
 /** The union of the inference methods: each option the knobs of that method (the page shows these). */
@@ -384,15 +399,12 @@ export const classifierExample: Example<ClassifierProblem> = defineExample<Class
           if (w === undefined) return null
           const size = Math.max(5, Math.min(101, Number((args as { size?: number } | undefined)?.size ?? 41)))
           const grid = surfaceGrid(problem, w.rows, size)
-          const z = (offset: (v: number) => number): number[][] =>
-            Array.from({ length: size }, (_, i) =>
-              Array.from({ length: size }, (_, j) => offset(grid.probabilities[i * size + j] ?? Number.NaN)),
-            )
+          const surface = reshape(tensor(grid.probabilities as number[]), [size, size])
           return decisionSurface({
             features: ['x0', 'x1'],
             x: [...grid.xs],
             y: [...grid.ys],
-            probabilities: [z((v) => 1 - v), z((v) => v)],
+            probabilities: [toArray(sub(1, surface)) as number[][], toArray(surface) as number[][]],
             classes: ['0', '1'],
             rows: {
               points: [...problem.train.x, ...problem.test.x],
@@ -481,12 +493,12 @@ export const classifierExample: Example<ClassifierProblem> = defineExample<Class
           const ratio = sd.map((s, j) => s / Math.max(1e-9, ref.scores.sd[j] ?? 1))
           const size = ref.surface.x.length
           const grid = surfaceGrid(problem, w.rows, size).probabilities
-          const diff = grid.map((v, i) => Math.abs(v - (refGrid[Math.floor(i / size)]?.[i % size] ?? 0)))
+          const diff = toFlat(abs(sub(tensor(grid as number[]), reshape(tensor(refGrid as number[][]), [-1]))))
           return {
             maxMeanError: Math.max(...error),
             medianSdRatio: [...ratio].sort((a, b) => a - b)[Math.floor(ratio.length / 2)] ?? Number.NaN,
             maxSurfaceDifference: Math.max(...diff),
-            meanSurfaceDifference: diff.reduce((a, v) => a + v, 0) / diff.length,
+            meanSurfaceDifference: item(sum(tensor(diff))) / diff.length,
             referenceAccuracy: ref.scores.testAccuracy,
             referenceLogPredictive: ref.scores.testLogPredictive,
             referenceDraws: ref.scores.draws,

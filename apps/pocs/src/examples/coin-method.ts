@@ -27,7 +27,21 @@ import {
 } from 'omai-engine/probprog/validation'
 import { bernoulli as drawBernoulli, poisson as drawPoisson, foldIn, key } from 'omai-engine/random'
 import { choice, type DictSpace, dict, int, real } from 'omai-engine/space'
-import { toFlat } from 'omai-engine/tensor'
+import {
+  add,
+  arange,
+  concat,
+  div,
+  floor,
+  item,
+  maximum,
+  mul,
+  sum,
+  tensor,
+  toFlat,
+  unique,
+  zeros,
+} from 'omai-engine/tensor'
 import { type Config, derived } from 'omai-engine/trace'
 import { defineExample, type Example, type ExampleProblem, exampleNumber, exampleString } from './example-method.ts'
 
@@ -188,7 +202,7 @@ const coinExample: Example<CoinProblem> = defineExample<CoinProblem>({
           return {
             seen,
             total: n,
-            successes: prefix.reduce((a, v) => a + v, 0),
+            successes: item(sum(tensor(prefix as number[]))),
             truth: problem.truth,
             comparison: posteriorComparison([approx], { truth: { [site]: oracle }, table, gridPoints: GRID_POINTS }),
             exact: e,
@@ -204,14 +218,14 @@ const coinExample: Example<CoinProblem> = defineExample<CoinProblem>({
         description:
           'the exact posterior as observations accumulate: its mean and 95% interval after each of a ladder of counts, the running proportion of the data and the true value',
         compute: () => {
-          const ns = Array.from(
-            new Set([0, ...Array.from({ length: LADDER }, (_, i) => Math.max(1, Math.round(((i + 1) * n) / LADDER)))]),
-          )
+          // The ladder of counts, from none, each at least one and none twice.
+          const rungs = maximum(floor(add(div(mul(add(arange(LADDER), 1), n), LADDER), 0.5)), 1)
+          const ns = toFlat(unique(concat([zeros([1]), rungs])).values)
           const prior = priorOracle(problem)
           const pts = ns.map((k) => {
             const o = k === 0 ? undefined : exactAt(problem, k).oracles(site)[0]
             const y = problem.y.slice(0, k)
-            const running = k === 0 ? Number.NaN : y.reduce((a, v) => a + v, 0) / k
+            const running = k === 0 ? Number.NaN : item(sum(tensor(y as number[]))) / k
             return o === undefined
               ? { n: 0, mean: prior.mean, lo: prior.quantile(0.025), hi: prior.quantile(0.975), running }
               : { n: k, mean: o.mean, lo: o.quantile(0.025), hi: o.quantile(0.975), running }
