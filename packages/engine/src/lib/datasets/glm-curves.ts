@@ -1,7 +1,7 @@
 /**
  * One-dimensional responses of generalised linear models with a log link: counts (Poisson, negative binomial) and
  * positive skewed targets (gamma, inverse Gaussian, Tweedie) whose mean is `exp(intercept + slope x)`, for fitting and
- * checking GLMs.
+ * checking GLMs, and counts with structural zeros (a switch per row that forces a zero) with the switches in the truth.
  */
 
 import { type DatasetGenerator, type RegressionData, xy } from '../data/index.ts'
@@ -12,9 +12,9 @@ import {
   negativeBinomial,
   poisson as poissonDist,
 } from '../dists/index.ts'
-import { foldIn, type Key, uniform } from '../random/index.ts'
+import { foldIn, type Key, poissonEach, uniform } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
-import { add, exp, mul, sliceAxis, squeeze, toFlat, type Value } from '../tensor/index.ts'
+import { add, cast, exp, less, mul, reshape, sliceAxis, squeeze, toFlat, type Value, where } from '../tensor/index.ts'
 import { matrix, stamp, vector } from './_util.ts'
 
 /** The response families of {@link glmCurve}. */
@@ -125,6 +125,67 @@ export const glmCurve: DatasetGenerator<RegressionData> = {
         regressionFunction: f,
         relevantFeatures: [0],
         extra: { family, intercept, slope, dispersion, ...(family === 'tweedie' ? { power } : {}), link: 'log' },
+      },
+    }
+  },
+}
+
+/**
+ * Counts with structural zeros, a zero-inflated Poisson regression: x uniform on [-1.5, 1.5], a rate
+ * `exp(intercept + slope x)`, and for each row a hidden switch that is on with probability `inflation`. A row whose switch is
+ * on is zero whatever the rate (the count could not happen); any other row is a Poisson draw, which is zero as well with
+ * probability `exp(-rate)`. The regression function is the mean count `(1 - inflation) rate`. The truth keeps what the
+ * counts do not show: `truth.latents.structural` is the switch of each row (1 where the zero is structural, 0 otherwise),
+ * `truth.latents.rate` the Poisson rate of each row, and `truth.extra` holds `inflation`, `intercept` and `slope`.
+ *
+ * @example
+ * ```ts
+ * import { generate } from 'omai-engine/data'
+ * import { zeroInflatedCounts } from 'omai-engine/datasets'
+ * import { toFlat } from 'omai-engine/tensor'
+ * const { data, truth } = generate(zeroInflatedCounts, { knobs: { n: 50, inflation: 0.3 } })
+ * const flags = toFlat(truth.latents?.['structural'] as never)
+ * // a structural zero is a zero count
+ * flags.every((s, i) => s === 0 || toFlat(data.y)[i] === 0) // => true
+ * ```
+ * @index dataset Zero-inflated Poisson counts; the truth keeps each row's switch.
+ */
+export const zeroInflatedCounts: DatasetGenerator<RegressionData> = {
+  name: 'zeroInflatedCounts',
+  kind: 'regression',
+  description: 'Poisson counts with a log-linear rate in which a hidden switch makes some rows zero whatever the rate.',
+  knobs: dict({
+    n: int(2, 100_000, { default: 150, label: 'samples', description: 'The number of rows.' }),
+    inflation: real(0, 0.95, {
+      default: 0.3,
+      label: 'inflation',
+      description: 'The probability that a row is a structural zero.',
+    }),
+    intercept: real(-3, 3, { default: 0.8, label: 'intercept', description: 'The log of the Poisson rate at x = 0.' }),
+    slope: real(-2, 2, { default: 0.7, label: 'slope', description: 'How fast the log of the rate grows with x.' }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const inflation = knobs['inflation'] as number
+    const intercept = knobs['intercept'] as number
+    const slope = knobs['slope'] as number
+    const xs = uniform(foldIn(k, 0), [n], { low: -1.5, high: 1.5 })
+    const rate = exp(add(mul(xs, slope), intercept))
+    const structural = less(uniform(foldIn(k, 1), [n]), inflation)
+    const draws = poissonEach(rate, (i) => foldIn(foldIn(k, 2), i))
+    const counts = cast(where(structural, 0, draws), 'float64')
+    const mean = (v: Value): Value =>
+      mul(exp(add(mul(squeeze(sliceAxis(v, -1, 0, 1), -1), slope), intercept)), 1 - inflation)
+    return {
+      data: xy(reshape(xs, [n, 1]), counts, {
+        ...stamp('zeroInflatedCounts', zeroInflatedCounts.description, knobs),
+        featureNames: ['x'],
+      }),
+      truth: {
+        regressionFunction: mean,
+        relevantFeatures: [0],
+        latents: { structural: cast(structural, 'int32'), rate },
+        extra: { inflation, intercept, slope, link: 'log' },
       },
     }
   },
