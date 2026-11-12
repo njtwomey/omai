@@ -114,6 +114,15 @@ function close(a: Value, b: Value): boolean {
   }
 }
 
+/** `x` broadcast to `shape` as the likelihood broadcasts it to the data, or undefined when it does not fit. */
+function broadcastInto(x: Value, shape: readonly number[]): Value | undefined {
+  try {
+    return primalOf(broadcastTo(x, shape))
+  } catch {
+    return undefined
+  }
+}
+
 /** The group (flat index into the collapsed site's batch) of each element of a child, for an identity mapping. */
 function identityGroups(childBatch: readonly number[], groupShape: readonly number[]): Int32Array {
   const n = product(childBatch)
@@ -328,7 +337,10 @@ function groupData(
     const codes = primalOf(g.value)
     rows.push(ofGroup(y, codes, b.axis, j))
     for (const [name, pv] of Object.entries(fixedParameters(unexpanded(cs.fn), b.pair) ?? {})) {
-      const p = primalOf(pv)
+      // A known parameter is a value for each observation when the likelihood broadcasts it to the data's shape (a spread `[row]`
+      // beside data `[feature, row]` is one: it has the row axis only), not only when its shape is the data's.
+      const raw = primalOf(pv)
+      const p = sizeOf(raw.shape) > 1 ? (broadcastInto(raw, y.shape) ?? raw) : raw
       let known: Value = p
       if (sizeOf(p.shape) > 1 && shapesEqual(p.shape, y.shape)) {
         const own = ofGroup(p, codes, b.axis, j)
