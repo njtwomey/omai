@@ -19,7 +19,6 @@ import { namedParams, type ParamSpec, param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
 import { lgammaOf, logPhi, logSigmoidOf } from '../../numerics/_scalar.ts'
 import { tiltedByQuadrature, type WindowHint } from '../../numerics/_tilted.ts'
-import { gaussHermiteRule } from '../../numerics/numeric-rules.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 import { glmRow } from '../lifts/rows.ts'
 import { numericOperator } from './numeric.ts'
@@ -515,9 +514,9 @@ const logFactorial = (y: number): number => {
 /**
  * A negative binomial count with a log link whose dispersion is random too: `y | u, s ~ NegBin(mean exposure exp(u),
  * variance mean + exp(s) mean^2)` for a Gaussian predictor `u` and a Gaussian log dispersion `s` (ports `u` and `s`), the
- * parameters `y` and `exposure`. A numeric operator over both: a 24-point Gauss-Hermite product rule against the two cavities
- * (576 evaluations, each a sum of logs for a modest count), so a hundred rows are cheap; use a `Projection.numeric` rule to
- * integrate more finely.
+ * parameters `y` and `exposure`. A numeric operator over both: the panelled grid of `likelihood-pair` (graded panels in the two
+ * coordinates, zoomed onto where the tilted mass is), with what depends on the log dispersion alone made once per node of it, so
+ * a cavity much wider than the likelihood is integrated as well as a narrow one; a `Projection.numeric` rule replaces it.
  *
  * @concept factor-operators
  * @index structure A negative binomial count with a log link and a random log dispersion: a numeric EP site on two variables.
@@ -534,7 +533,20 @@ export const negativeBinomialDispersion: FactorOperator = numericOperator({
     'y | u, s ~ NegBin(mean exposure exp(u), dispersion exp(s)): a count with a log link and a random dispersion',
   arity: 2,
   params: { y: param.number(), exposure: param.positive({ optional: true }) },
-  rule: gaussHermiteRule(24),
+  // What depends on the log dispersion alone (the rising factorial, the factorial, `r log r`) is made once per node of it.
+  column: (params) => {
+    const y = numberParam(params, 'y')
+    const logE = Math.log(numberParam(params, 'exposure', 1))
+    return (s) => {
+      const logR = -s
+      const r = Math.exp(logR)
+      const constant = logRising(r, y) - logFactorial(y) + r * logR
+      return (u) => {
+        const logMu = logE + u
+        return constant - (r + y) * logAddExp(logR, logMu) + y * logMu
+      }
+    }
+  },
   logDensity: ([u, s], params) => {
     const y = numberParam(params, 'y')
     const logE = Math.log(numberParam(params, 'exposure', 1))
