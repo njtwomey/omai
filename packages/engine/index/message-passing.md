@@ -59,7 +59,7 @@ The core of message passing: the `Family` algebra and its scalar, vector, discre
 - module `families.ts` (file): The scalar message families: Gaussian, gamma, beta, Bernoulli, normal-gamma. `src/lib/message-passing/core/families.ts:1` `omai-engine/message-passing`
 - module `graph.ts` (file): Compile and draw a factor graph: variables, factors, edges, ids. `src/lib/message-passing/core/graph.ts:1` `omai-engine/message-passing`
 
-- function `compileGraph`: Validate and compile a factor graph against a registry of operators. `src/lib/message-passing/core/graph.ts:139` `omai-engine/message-passing`
+- function `compileGraph`: Validate and compile a factor graph against a registry of operators. `src/lib/message-passing/core/graph.ts:137` `omai-engine/message-passing`
 - function `defineOperator`: Build a factor operator from its declaration, with support derived. `src/lib/message-passing/core/define.ts:185` `omai-engine/message-passing`
 - function `dirichlet`: The Dirichlet message family of a given dimension. `src/lib/message-passing/core/families-vector.ts:191` `omai-engine/message-passing`
 - function `discrete`: The discrete message family on k states: log weights. `src/lib/message-passing/core/families-vector.ts:152` `omai-engine/message-passing`
@@ -69,7 +69,7 @@ The core of message passing: the `Family` algebra and its scalar, vector, discre
 - function `truncatedNormalMoments`: Mass, mean and variance of a Gaussian truncated to an interval. `src/lib/message-passing/core/truncated.ts:40` `omai-engine/message-passing`
 - function `wishart`: The Wishart message family of a given dimension: the precision matrix of a Gaussian. `src/lib/message-passing/core/families-matrix.ts:136` `omai-engine/message-passing`
 
-- structure `FactorOperator`: A factor operator: the message to each argument of a factor. `src/lib/message-passing/core/types.ts:237` `omai-engine/message-passing`
+- structure `FactorOperator`: A factor operator: the message to each argument of a factor. `src/lib/message-passing/core/types.ts:260` `omai-engine/message-passing`
 - structure `Family`: A message family: natural parameters, moments, quotient, KL. `src/lib/message-passing/core/types.ts:80` `omai-engine/message-passing`
 - structure `ImproperMessageError`: The error of a numerical failure the engine repairs (an improper message), not of a misconfiguration. `src/lib/message-passing/core/errors.ts:20` `omai-engine/message-passing`
 - structure `ParameterError`: The error of a misconfigured graph or setting, never swallowed by the engine. `src/lib/message-passing/core/errors.ts:34` `omai-engine/message-passing`
@@ -108,7 +108,7 @@ The numerical kernels of the operators, private to message passing: the special-
 
 The factor operators: the registry of closed-form and numeric message rules (a prior, Gaussian and linear-Gaussian factors, truncation and the probit link, conjugate probability factors, discrete tables and gates, numeric likelihoods, scale hierarchies, covariance matrices), grouped by what the factor is in one folder each, and `defaultOperators()` that collects them by name. Part of `omai-engine/message-passing`.
 
-- table `defaultOperators`: The library's factor operators by name. `src/lib/message-passing/operators/registry.ts:78` `omai-engine/message-passing`
+- table `defaultOperators`: The library's factor operators by name. `src/lib/message-passing/operators/registry.ts:71` `omai-engine/message-passing`
 
 ### message-passing/operators/covariance
 
@@ -122,7 +122,7 @@ The operators of covariance matrices and correlation: the multivariate Gaussian 
 
 The operators of discrete variables: the conjugate probability factors (Bernoulli, discrete, Poisson, binomial, gamma- observed, negative binomial, mixture weight), tables, selects and the Gaussian mixture, and the gate of Minka and Winn. Part of `omai-engine/message-passing`.
 
-- function `gateOperator`: The gate of Minka and Winn: a discrete variable selects among branch factors. `src/lib/message-passing/operators/discrete/gate.ts:98` `omai-engine/message-passing`
+- function `gateOperator`: The gate of Minka and Winn: a discrete variable selects among branch factors. `src/lib/message-passing/operators/discrete/gate.ts:99` `omai-engine/message-passing`
 
 - structure `bernoulliBeta`: A Bernoulli outcome with a beta probability (conjugate). `src/lib/message-passing/operators/discrete/conjugate.ts:39` `omai-engine/message-passing`
 - structure `binomial`: An observed binomial count with a beta probability (conjugate). `src/lib/message-passing/operators/discrete/conjugate.ts:227` `omai-engine/message-passing`
@@ -152,8 +152,8 @@ The Gaussian operators: the prior, the Gaussian factor, the product, equality, t
 - structure `linear`: An affine combination of Gaussian variables y = d + sum c_i a_i. `src/lib/message-passing/operators/gaussian/linear.ts:144` `omai-engine/message-passing`
 - structure `linearRegressionRow`: One row of a linear regression y ~ N(a . w, 1 / precision). `src/lib/message-passing/operators/gaussian/linear.ts:433` `omai-engine/message-passing`
 - structure `matmulConstant`: A Gaussian vector under a constant matrix y = A w. `src/lib/message-passing/operators/gaussian/linear.ts:330` `omai-engine/message-passing`
-- structure `maximum`: The maximum of two Gaussian variables: Clark's moments, moment matching. `src/lib/message-passing/operators/gaussian/extremum.ts:132` `omai-engine/message-passing`
-- structure `minimum`: The minimum of two Gaussian variables: the maximum of the negatives. `src/lib/message-passing/operators/gaussian/extremum.ts:169` `omai-engine/message-passing`
+- structure `maximum`: The maximum of two Gaussian variables: Clark's moments, moment matching. `src/lib/message-passing/operators/gaussian/extremum.ts:131` `omai-engine/message-passing`
+- structure `minimum`: The minimum of two Gaussian variables: the maximum of the negatives. `src/lib/message-passing/operators/gaussian/extremum.ts:168` `omai-engine/message-passing`
 - structure `plus`: The sum of two Gaussian variables. `src/lib/message-passing/operators/gaussian/linear.ts:164` `omai-engine/message-passing`
 - structure `prior`: The prior: a fixed message on a variable, in any family. `src/lib/message-passing/operators/gaussian/gaussian.ts:60` `omai-engine/message-passing`
 - structure `product`: The product of two Gaussian variables (moment matching). `src/lib/message-passing/operators/gaussian/gaussian.ts:474` `omai-engine/message-passing`
@@ -171,14 +171,14 @@ What several operator folders share: the numeric variational message (`numericMe
 The lifts of a link to a row of regression coefficients and to a plate of rows: the probit, logistic and spin rows, and the linear-regression, probit and logistic plates. Part of `omai-engine/message-passing`.
 
 - function `glmPlate`: Lift a scalar link to a plate of rows: one factor on the weights, vectorised. `src/lib/message-passing/operators/lifts/plates.ts:273` `omai-engine/message-passing`
-- function `glmRow`: Lift a scalar link (probit, logistic) to a regression row on weights. `src/lib/message-passing/operators/lifts/rows.ts:58` `omai-engine/message-passing`
+- function `glmRow`: Lift a scalar link (probit, logistic) to a regression row on weights. `src/lib/message-passing/operators/lifts/rows.ts:59` `omai-engine/message-passing`
 
 - structure `linearRegressionPlate`: A plate of Gaussian regression rows given by sufficient statistics, exact. `src/lib/message-passing/operators/lifts/plates.ts:359` `omai-engine/message-passing`
 - structure `logisticPlate`: A plate of logistic regression rows on a Gaussian weight vector, one vectorised factor. `src/lib/message-passing/operators/lifts/plates.ts:325` `omai-engine/message-passing`
-- structure `logisticRow`: One logistic regression row on a Gaussian weight vector, quadrature EP. `src/lib/message-passing/operators/lifts/rows.ts:154` `omai-engine/message-passing`
+- structure `logisticRow`: One logistic regression row on a Gaussian weight vector, quadrature EP. `src/lib/message-passing/operators/lifts/rows.ts:155` `omai-engine/message-passing`
 - structure `probitPlate`: A plate of probit regression rows on a Gaussian weight vector, one vectorised factor. `src/lib/message-passing/operators/lifts/plates.ts:317` `omai-engine/message-passing`
-- structure `probitRow`: One probit regression row on a Gaussian weight vector, exact EP. `src/lib/message-passing/operators/lifts/rows.ts:145` `omai-engine/message-passing`
-- structure `spinRow`: One spin site on a Gaussian vector, for expectation consistent inference. `src/lib/message-passing/operators/lifts/rows.ts:163` `omai-engine/message-passing`
+- structure `probitRow`: One probit regression row on a Gaussian weight vector, exact EP. `src/lib/message-passing/operators/lifts/rows.ts:146` `omai-engine/message-passing`
+- structure `spinRow`: One spin site on a Gaussian vector, for expectation consistent inference. `src/lib/message-passing/operators/lifts/rows.ts:164` `omai-engine/message-passing`
 
 ### message-passing/operators/likelihoods
 
@@ -212,7 +212,7 @@ The operators that link a Gaussian to an observation: truncation (probit, greate
 
 - structure `greaterThan`: The comparison b = [x > threshold] of a Gaussian: truncated-Gaussian moment matching. `src/lib/message-passing/operators/links/truncation.ts:136` `omai-engine/message-passing`
 - structure `isBetween`: The interval test b = [lower < x < upper] of a Gaussian. `src/lib/message-passing/operators/links/truncation.ts:159` `omai-engine/message-passing`
-- structure `logistic`: The logistic link b | x ~ Bernoulli(sigmoid(x)): quadrature EP, Jaakkola bound VMP. `src/lib/message-passing/operators/links/links.ts:52` `omai-engine/message-passing`
+- structure `logistic`: The logistic link b | x ~ Bernoulli(sigmoid(x)): quadrature EP, Jaakkola bound VMP. `src/lib/message-passing/operators/links/links.ts:51` `omai-engine/message-passing`
 - structure `multiclassSite`: A categorical outcome with softmax or multinomial-probit probabilities of Gaussian class scores (adaptive Gauss-Hermite). `src/lib/message-passing/operators/links/multiclass.ts:220` `omai-engine/message-passing`
 - structure `probit`: The probit link b | x ~ Bernoulli(Phi(x)): exact EP site updates. `src/lib/message-passing/operators/links/truncation.ts:249` `omai-engine/message-passing`
 - structure `spin`: The spin factor x in {-1, +1} with a field, exact EP. `src/lib/message-passing/operators/links/spin.ts:36` `omai-engine/message-passing`

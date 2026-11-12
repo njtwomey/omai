@@ -14,6 +14,7 @@ import { gaussian, gaussianEta } from '../../core/families.ts'
 import { gaussianMv, gaussianMvMoments } from '../../core/families-vector.ts'
 import { mergeParams, param } from '../../core/params.ts'
 import type { Arg, Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { portsOf } from '../../core/types.ts'
 import { ruleMessage } from '../../engine/dispatch.ts'
 import { logistic } from '../links/links.ts'
 import { spin } from '../links/spin.ts'
@@ -57,7 +58,7 @@ function predictor(c: OperatorContext, a: readonly number[], w: number): { mean:
  */
 export function glmRow(name: string, link: FactorOperator, description: string): FactorOperator {
   if (link.ep === undefined) throw new ParameterError(`glmRow: ${link.name} has no EP rule to lift`)
-  const linkPorts = typeof link.ports === 'function' ? link.ports({}) : link.ports
+  const linkPorts = portsOf(link, {})
   // A link has the predictor alone (a spin) or an observed outcome and the predictor (a probit).
   const outcome = linkPorts.length === 2
   const w = outcome ? 1 : 0

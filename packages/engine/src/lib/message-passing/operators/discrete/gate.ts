@@ -31,6 +31,7 @@ import type {
   Params,
   Port,
 } from '../../core/types.ts'
+import { portsOf } from '../../core/types.ts'
 import { ruleMessage } from '../../engine/dispatch.ts'
 import type { OperatorName } from '../names.ts'
 
@@ -220,7 +221,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
               return errorText(e)
             }
           }
-          const ports = typeof op.ports === 'function' ? op.ports(b.params) : op.ports
+          const ports = portsOf(op, b.params)
           if (ports.length !== b.args.length)
             return `gate: branch ${k}: ${op.name} has ${ports.length} ports, ${b.args.length} given`
           const fams = b.args.map((a): Family => (typeof a === 'number' ? (families[a + 1] as Family) : gaussian))

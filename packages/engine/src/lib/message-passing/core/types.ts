@@ -194,7 +194,11 @@ export interface OperatorContext {
   readonly params: Params
   /** The power of fractional EP (1: ordinary EP). Only operators with `power: true` read it. */
   readonly power: number
-  /** The numeric rule the run asks of operators that integrate numerically (`Projection.numeric`); absent: the operator's own. */
+  /**
+   * The numeric rule the run asks of operators that integrate numerically (`Projection.numeric`); absent: the operator's own.
+   * Kept (decision of the contract trim): one reader, `numericOperator`, but it is the only way a run chooses how a numeric operator
+   * integrates (`numericEpAlgorithm`), and the gate passes it on to the branches it runs.
+   */
   readonly rule?: TiltedRule
   /**
    * A cache the engine owns for a stretch of the run (one call of an operator, and for the messages of one sweep): an operator that
@@ -221,15 +225,34 @@ export interface TiltedMoments {
 }
 
 /**
- * A factor operator: the messages of one kind of factor (a sum, a probit link, a Gaussian likelihood, a table).
+ * A factor operator: the messages of one kind of factor (a sum, a probit link, a Gaussian likelihood, a table). The library's are
+ * built with `defineOperator` (rules as `siteRule(tilt)` or `messageRule(fn)`, the evidence, the traits), which derives `support` and
+ * the `ep` hook of a site rule; an operator of your own may be this interface's literal.
  *
- * `ep`, `vmp` and `bp` are the closed-form message rules; an operator gives the ones it has, and `support` says what
- * each is (`exact`, `bound`, `numeric`). An operator with only `tilted` is projected by the engine: the numeric
- * moments become a message by the family's `fromMoments`, divided by the incoming message. `logEvidence` and
- * `expectedLog` are what the evidence estimate and the variational bound need from the factor.
+ * `ep`, `vmp` and `bp` are the message rules; an operator gives the ones it has, and `support` says what each is (`exact`,
+ * `bound`, `numeric`). An operator with only `tilted` is projected by the engine (`ruleMessage`): the numeric moments become a
+ * message by the family's `fromMoments`, divided by the incoming message and by the power. `logEvidence` and `expectedLog` are what the
+ * evidence estimate and the variational bound need from the factor.
  *
  * The operator is a value, never registered by importing it: `defaultOperators()` collects the library's, and a graph
  * is compiled against the collection it is given.
+ *
+ * What each optional member is for, and why it stays (the contract trim, `docs/probprog/review-rules.md` section 1):
+ * - `support`: derived by `defineOperator` from the kinds of the rules, so it is declared by hand only on an operator written as a
+ *   literal. Read by the registry test, `ep-report`, the digest, the lifts (a row or plate has its link's) and by `gate`, whose
+ *   `powerable` takes a branch to a power only when its EP rule is `exact` and does not read the target.
+ * - `readsTarget`, `power` and `ports` are a flag or a function by design (`readsTargetOf`, `takesPower`, `portsOf` are the readers: use
+ *   them, never test the type). One form of declaration would move the digest's registry section and some sixty declarations for nothing a
+ *   reader sees.
+ * - `needsDensity`: kept; the engine owns the policy (`readable`: a flat Gaussian cavity is shown wide, and the message taken back against
+ *   the flat one), the operator only says it needs it (four operators).
+ * - `defines`: kept (VMP's `refreshDefined`).
+ * - `tilted`: kept; it is the engine-owned projection of `ruleMessage` for an operator whose rule is its tilted moments and mass (two
+ *   operators and `numericOperator`); making it a derived `ep` hook would change the registry's hooks.
+ * - `bp`: kept for the four operators that have it (`prior`, `equal`, `table`, `mvn-normal-wishart`); belief propagation on trees and
+ *   regions is `regions.ts` and `pgm/`, not this slot, and the engine's `sum-product` projection throws `not-implemented` for the rest.
+ * - `noRule` and `unsupported`: kept, both; `operatorsWithout` of the model compiler (`probprog/model/factor-graph/verdict.ts`) reads
+ *   them to name the factor and the reason, so folding `unsupported` (one user, `likelihood-pair`) into `noRule` is a change of that file.
  *
  * @concept factor-operators
  * @index structure A factor operator: the message to each argument of a factor.
@@ -237,14 +260,14 @@ export interface TiltedMoments {
 export interface FactorOperator {
   readonly name: string
   readonly description: string
-  /** The arguments, in order; a function of the parameters for a factor of variable arity (a sum, a table). */
+  /** The arguments, in order; a function of the parameters for a factor of variable arity (a sum, a table). Read with `portsOf`. */
   readonly ports: readonly Port[] | ((params: Params) => readonly Port[])
-  /** What each rule is; a rule that is absent is unsupported. */
+  /** What each rule is (derived by `defineOperator`); a rule that is absent is unsupported. */
   readonly support: Readonly<Partial<Record<Mode, Support>>>
   /**
    * True when the message to a port depends on that port's own incoming message (a moment-matching operator: the
-   * tilted distribution is the factor times the cavity). The engine then sends nothing to a port whose incoming message
-   * has no density, since there is nothing to match.
+   * tilted distribution is the factor times the cavity), or a function of the port when only some ports do. The engine then sends
+   * nothing to a port whose incoming message has no density, since there is nothing to match. Read with `readsTargetOf`.
    */
   readonly readsTarget?: boolean | ((to: number) => boolean)
   /**
@@ -257,7 +280,8 @@ export interface FactorOperator {
   readonly needsDensity?: boolean
   /**
    * True when the operator reads `OperatorContext.power` (fractional EP); the engine refuses a power on the others. A function
-   * of the parameters for an operator that takes one only for some of its configurations (a gate, by its branches); see `takesPower`.
+   * of the parameters for an operator that takes one only for some of its configurations (a gate, by its branches). Read with
+   * `takesPower`.
    */
   readonly power?: boolean | ((params: Params) => boolean)
   /**
@@ -286,6 +310,7 @@ export interface FactorOperator {
   check?(params: Params, families: readonly Family[]): string | undefined
   ep?(c: OperatorContext): OperatorResult
   vmp?(c: OperatorContext): OperatorResult
+  /** The sum-product rule: only four operators have one (see above). */
   bp?(c: OperatorContext): OperatorResult
   /** The numeric fallback for `ep`: moments of the tilted distribution, projected by the engine. */
   tilted?(c: OperatorContext): TiltedMoments
@@ -340,4 +365,26 @@ export interface FactorGraphSpec {
  */
 export function takesPower(op: FactorOperator, params: Params): boolean {
   return typeof op.power === 'function' ? op.power(params) : op.power === true
+}
+
+/**
+ * The arguments of a factor of this operator and these parameters.
+ *
+ * @param op - The operator.
+ * @param params - The factor's parameters.
+ * @returns Its ports.
+ */
+export function portsOf(op: FactorOperator, params: Params): readonly Port[] {
+  return typeof op.ports === 'function' ? op.ports(params) : op.ports
+}
+
+/**
+ * Whether the message to port `to` depends on that port's own incoming message.
+ *
+ * @param op - The operator.
+ * @param to - The port.
+ * @returns True when the operator declares it for that port.
+ */
+export function readsTargetOf(op: FactorOperator, to: number): boolean {
+  return typeof op.readsTarget === 'function' ? op.readsTarget(to) : op.readsTarget === true
 }

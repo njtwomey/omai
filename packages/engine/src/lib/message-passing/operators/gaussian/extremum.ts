@@ -17,7 +17,6 @@ import {
   logNormal,
   massOf,
 } from '../../core/args.ts'
-import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
 import { tiltedGrid } from '../../numerics/_quadrature.ts'
 import { Phi, phi } from '../../numerics/_scalar.ts'

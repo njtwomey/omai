@@ -1,7 +1,8 @@
 /**
- * The names of the library's factor operators, in the order of the registry (`defaultOperators()`), as a typed tuple: `OperatorName` is the
- * union of them, so a compiler or a gate branch that names an operator is checked against the registry by the type, and a rename or a
- * removal fails where the name is used. A test holds the tuple equal to the registry's keys.
+ * The names of the library's factor operators, in the order of the registry (`defaultOperators()`), as a typed tuple: the one place the
+ * order is declared (the digest records it), and the list of operators in the documents (their number is `operatorNames.length`).
+ * `OperatorName` is the union of them, so a compiler or a gate branch that names an operator is checked against the registry by the type,
+ * and a rename or a removal fails where the name is used. The registry refuses a name without an operator and an operator without a name.
  */
 
 /** The operator names, in registry order (the gate last). */

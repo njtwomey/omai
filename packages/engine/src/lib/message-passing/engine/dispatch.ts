@@ -10,7 +10,15 @@ import { FLAT_CAVITY_PRECISION } from '../core/args.ts'
 import { projectSite } from '../core/define.ts'
 import { ImproperMessageError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
-import type { Arg, Eta, FactorOperator, Memo, OperatorContext, OperatorResult } from '../core/types.ts'
+import {
+  type Arg,
+  type Eta,
+  type FactorOperator,
+  type Memo,
+  type OperatorContext,
+  type OperatorResult,
+  readsTargetOf,
+} from '../core/types.ts'
 import { readable } from './_cavities.ts'
 import type { Projection } from './projections.ts'
 
@@ -65,7 +73,7 @@ export function operatorMessage(
 ): FactorProposal {
   const op = f.operator
   const target = args[to] as Arg
-  const reads = typeof op.readsTarget === 'function' ? op.readsTarget(to) : op.readsTarget === true
+  const reads = readsTargetOf(op, to)
   const shown = readable(op, args, to)
   // A flat target of an operator that needs a density is shown wide, so it is not blocked; an improper one still is.
   if (reads && !shown.widenedTarget && target.eta !== undefined && !target.family.isProper(target.eta))
