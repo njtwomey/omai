@@ -15,7 +15,7 @@ export const allFinite = (messages: readonly (readonly number[])[]): boolean =>
  * The damping of the `k`-th automatic restart of a run damped by `damping`: at least a half, then a step of 0.3 more for each
  * further restart, at most 0.9.
  */
-export function restartDamping(damping: number, k: number): number {
+function restartDamping(damping: number, k: number): number {
   return Math.min(0.9, Math.max(damping, 0.5) + 0.3 * (k - 1))
 }
 

@@ -2,7 +2,7 @@
 
 # message-passing
 
-Message passing on factor graphs of exponential families, the Infer.NET way: a message is the natural parameters of a Gaussian, gamma, beta, Bernoulli, discrete, Dirichlet or normal-gamma, a factor is a registry operator that says what it tells each of its arguments, and one engine with slots (projection, schedule, damping, improper handling) runs expectation propagation, variational message passing and belief propagation as settings of itself. Runs are steppable, resumable and can be cancelled, and report their current marginals at any time.
+Message passing on factor graphs of exponential families, the Infer.NET way: a message is the natural parameters of a Gaussian, gamma, beta, Bernoulli, discrete, Dirichlet or normal-gamma, a factor is a registry operator that says what it tells each of its arguments, and one engine with slots (projection, schedule, damping, improper handling) runs expectation propagation and variational message passing as settings of itself, and the sum-product rule for the four operators that have one (`prior`, `equal`, `table`, `mvn-normal-wishart`: belief propagation on discrete trees and regions is `regions.ts` and `pgm/`). Runs are steppable, resumable and can be cancelled, and report their current marginals at any time.
 
 ## message-passing/algorithms
 
@@ -81,11 +81,11 @@ The core of message passing: the `Family` algebra and its scalar, vector, discre
 
 ## message-passing/engine
 
-The engine: arguments and cavities, the dispatch to an operator, the repair of improper messages, evidence, the verdict and the restarts, and the steppable `Algorithm` that runs expectation propagation, variational message passing and belief propagation as settings of one loop; with the projection slot (`projections.ts`) and the schedule slot (`schedules.ts`) it takes. Part of `omai-engine/message-passing`.
+The engine: arguments and cavities, the dispatch to an operator, the repair of improper messages, evidence, the verdict and the restarts, and the steppable `Algorithm` that runs expectation propagation and variational message passing as settings of one loop (and the sum-product rule of the four operators that have one); with the projection slot (`projections.ts`) and the schedule slot (`schedules.ts`) it takes. Part of `omai-engine/message-passing`.
 
 - module `run.ts` (file): The message-passing engine: one algorithm, slots for projection, schedule, damping, improper handling. `src/lib/message-passing/engine/run.ts:1` `omai-engine/message-passing`
 
-- algorithm `messagePassingAlgorithm`: The message-passing engine on a factor graph: projection, schedule, damping slots. `src/lib/message-passing/engine/run.ts:70` `omai-engine/message-passing`
+- algorithm `messagePassingAlgorithm`: The message-passing engine on a factor graph: projection, schedule, damping slots. `src/lib/message-passing/engine/run.ts:71` `omai-engine/message-passing`
 
 - structure `Projection`: The projection slot: moment matching, expected log, sum-product. `src/lib/message-passing/engine/projections.ts:18` `omai-engine/message-passing`
 

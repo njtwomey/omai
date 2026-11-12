@@ -1,7 +1,7 @@
 /**
  * The message-passing engine: one implementation that runs a factor graph as a steppable, resumable `Algorithm`, with
- * the choices that distinguish expectation propagation, variational message passing and belief propagation as slots
- * of its settings (the projection, the schedule and its granularity, damping, what to do with an improper message).
+ * the choices that distinguish expectation propagation and variational message passing (and sum-product, for the four operators with a
+ * `bp` rule) as slots of its settings (the projection, the schedule and its granularity, damping, what to do with an improper message).
  * The state is plain numbers (the message on every edge), so a run serialises, resumes, and can be stopped between any
  * two steps; the beliefs, the marginals and the evidence or bound are functions of the state, computed when asked.
  *
@@ -46,8 +46,9 @@ function configOf(s: EngineSettings): Json {
  * the evidence or bound, the messages of the last step (from the factor's id to the variable's, ids as in {@link graphStructure}) and the
  * marginals of every variable by id.
  *
- * Expectation propagation, variational message passing and belief propagation are settings of this one (see
- * `epAlgorithm`, `vmpAlgorithm` and `bpAlgorithm`, which are algorithms of their own with their own knobs).
+ * Expectation propagation and variational message passing are settings of this one, and so is sum-product belief propagation for the
+ * four operators that have a `bp` rule (see `epAlgorithm`, `vmpAlgorithm` and `bpAlgorithm`, which are algorithms of their own with their
+ * own knobs).
  *
  * @param g - The compiled graph.
  * @param settings - The slots.
