@@ -86,21 +86,21 @@ export interface Comparison {
  *
  * @param base - The baseline's median by key.
  * @param now - The fresh medians by key (keys the baseline lacks are left out; keys only the baseline has are left out too).
- * @param factor - `machineFactor` of this run against the baseline's.
+ * @param factor - `machineFactor` of this run against the baseline's, or a function of the key for a factor per row (the calibration timed around each).
  * @param ratio - How much slower than the baseline (after the normalisation) fails: 1.5 by default.
  * @returns The comparisons, the slowest ratio first.
  */
 export function compareTimes(
   base: ReadonlyMap<string, number>,
   now: ReadonlyMap<string, number>,
-  factor: number,
+  factor: number | ((key: string) => number),
   ratio = 1.5,
 ): Comparison[] {
   const out: Comparison[] = []
   for (const [key, t] of now) {
     const b = base.get(key)
     if (b === undefined || !(b > 0)) continue
-    const r = t / b / factor
+    const r = t / b / (typeof factor === 'number' ? factor : factor(key))
     out.push({ key, base: b, now: t, ratio: r, slower: r > ratio })
   }
   return out.sort((x, y) => y.ratio - x.ratio)

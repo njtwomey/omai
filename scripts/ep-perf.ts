@@ -17,7 +17,9 @@
  *   make ep-perf-check                 re-measure and fail when anything is slower than the baseline by more than a ratio (default 1.5,
  *                                      after dividing by the machine factor from the calibration)
  *   make ep-perf-check ARGS="--only item/atom/gaussian,grid/"   limit to keys (prefixes); `--ratio 2` changes the ratio
- *   make ep-perf ARGS="--survey"       time every atom, model and program's EP run once (to choose ITEMS) and print them, writes nothing
+ *   make ep-perf ARGS="--survey"       time every atom, model and program EP run once (to choose ITEMS) and print them, writes nothing
+ *   make ep-perf ARGS="--report-only"  rewrite ep-perf.md from the baseline json (after a change of the report text)
+ *   make ep-perf ARGS="--share-only"   redo only the time share per operator of the existing baseline (when the machine was busy during it)
  *
  * A heavy, periodic tool, not part of `make verify` or `make check`. Wall-clock time is read with `performance.now()` here, which is
  * fine in a script outside `packages/` (`scripts/banned.ts` covers published source only).
@@ -64,7 +66,6 @@ import { syntheticCalls } from './perf/synthetic-calls.ts'
 import { bench, calibrate, now } from './perf/timing.ts'
 
 const ROOT = join(import.meta.dirname, '..')
-
 
 // ----- the items of the end-to-end measurement -----
 
@@ -121,6 +122,23 @@ const REPORT = join(OUT, 'ep-perf.md')
 const ratio = Number(option('ratio') ?? 1.5)
 const out = (s: string): void => void process.stdout.write(`${s}\n`)
 
+// ----- calibration around a measurement -----
+
+/**
+ * A measurement with the calibration workload timed just before and after it: the machine's speed while this row was timed (a niced
+ * process is moved between fast and slow cores as the load comes and goes, so one figure for a whole run is not enough). The check
+ * divides a row's ratio by the ratio of these figures.
+ *
+ * @param f - The measurement.
+ * @returns Its value and the mean of the calibration medians (milliseconds) around it.
+ */
+function calibrated<T>(f: () => T): { readonly value: T; readonly cal: number } {
+  const before = median(calibrate(2))
+  const value = f()
+  const after = median(calibrate(2))
+  return { value, cal: (before + after) / 2 }
+}
+
 // ----- the grid integrator -----
 
 interface GridRow {
@@ -133,6 +151,8 @@ interface GridRow {
   readonly evals: number
   /** Microseconds per integral. */
   readonly us: Stat
+  /** The calibration workload (ms) around the measurement. */
+  readonly cal: number
   /** Nanoseconds per integrand call. */
   readonly nsPerEval: number
 }
@@ -143,9 +163,10 @@ function measureGrid(): GridRow[] {
     const key = `grid/${c.name}`
     if (!chosenKey(only, key)) continue
     const first = c.run()
-    const us = summarise(bench(c.run, 9, 20))
+    const { value: us, cal } = calibrated(() => summarise(bench(c.run, 9, 20)))
     rows.push({
       key,
+      cal,
       profile: c.name,
       describe: c.describe,
       nodes: first.nodes,
@@ -162,6 +183,7 @@ interface KernelRow {
   readonly describe: string
   readonly size: number
   readonly us: Stat
+  readonly cal: number
   readonly nsPerNode: number
 }
 
@@ -170,8 +192,8 @@ function measureKernels(): KernelRow[] {
   const add = (name: string, describe: string, size: number, fn: () => unknown): void => {
     const key = `kernel/${name}`
     if (!chosenKey(only, key)) return
-    const us = summarise(bench(fn, 9, 20))
-    rows.push({ key, describe, size, us, nsPerNode: (us.median * 1000) / size })
+    const { value: us, cal } = calibrated(() => summarise(bench(fn, 9, 20)))
+    rows.push({ key, describe, size, us, cal, nsPerNode: (us.median * 1000) / size })
   }
   const logw = toFlat(sin(linspace(0, 50, 4320)))
   add('shiftedSum', 'shift, exponentiate and sum 4320 log weights (the size of a pair grid)', logw.length, () =>
@@ -351,6 +373,7 @@ interface OpRow {
   readonly from: string
   readonly calls: number
   readonly us: Stat
+  readonly cal: number
 }
 
 /** The signatures replayed per operator and hook: the most called; evidence only the most called. */
@@ -395,9 +418,10 @@ function measureOperators(
           return 0
         }
       }
-      const us = summarise(bench(call, 7, 4))
+      const { value: us, cal } = calibrated(() => summarise(bench(call, 7, 4)))
       rows.push({
         key,
+        cal,
         op: c.op,
         folder: FOLDERS.get(c.op) ?? '?',
         hook: c.hook,
@@ -528,6 +552,7 @@ interface ItemRow {
   readonly updates: number | null
   /** Seconds of the EP run. */
   readonly seconds: Stat
+  readonly cal: number
   readonly updatesPerSecond: number | null
 }
 
@@ -546,8 +571,10 @@ async function measureItems(keys: readonly string[], runs: number): Promise<Item
       continue
     }
     await prepared.run() // warm-up: the first run compiles and optimises the code it runs
+    const before = median(calibrate(2))
     const ran: Ran[] = []
     for (let i = 0; i < runs; i++) ran.push(await prepared.run())
+    const cal = (before + median(calibrate(2))) / 2
     const seconds = summarise(ran.map((r) => r.ms / 1000))
     const last = ran[ran.length - 1] as Ran
     rows.push({
@@ -558,6 +585,7 @@ async function measureItems(keys: readonly string[], runs: number): Promise<Item
       sweeps: last.sweeps,
       updates: last.updates,
       seconds,
+      cal,
       updatesPerSecond: last.updates === null ? null : last.updates / seconds.median,
     })
     out(
@@ -580,28 +608,39 @@ interface ShareRow {
   }[]
 }
 
-/** One instrumented run of an item: where the time goes across the operators. */
+/**
+ * An instrumented run of an item: where the time goes across the operators. The run is repeated (up to three times) when it took more
+ * than 1.3 times the clean median, which is the machine having been busy rather than the timers (their overhead is a fraction of a
+ * microsecond a call); the run closest to the clean time is kept.
+ */
 async function measureShare(
   key: string,
+  clean: number,
 ): Promise<{ readonly share: ShareRow; readonly instrument: Instrument } | undefined> {
   const def = allItems().find((d) => d.key === key)
   const prepared = await def?.prepare()
   if (def === undefined || prepared === undefined) return undefined
-  const inst = instrument(key, false)
-  let times = new Map<string, OpTime>()
-  afterSession = () => {
-    times = new Map([...inst.times].map(([k, t]) => [k, { ...t }]))
+  let best: { share: ShareRow; instrument: Instrument } | undefined
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const inst = instrument(key, false)
+    let times = new Map<string, OpTime>()
+    afterSession = () => {
+      times = new Map([...inst.times].map(([k, t]) => [k, { ...t }]))
+    }
+    try {
+      const r = await prepared.run()
+      const byOperator = [...times]
+        .map(([op, t]) => ({ op, self: t.self / 1000, incl: t.incl / 1000, calls: t.calls }))
+        .sort((a, b) => b.self - a.self)
+      const got = { share: { item: key, wall: r.ms / 1000, byOperator }, instrument: inst }
+      if (best === undefined || got.share.wall < best.share.wall) best = got
+      if (got.share.wall <= 1.3 * clean) break
+    } finally {
+      afterSession = undefined
+      inst.restore()
+    }
   }
-  try {
-    const r = await prepared.run()
-    const byOperator = [...times]
-      .map(([op, t]) => ({ op, self: t.self / 1000, incl: t.incl / 1000, calls: t.calls }))
-      .sort((a, b) => b.self - a.self)
-    return { share: { item: key, wall: r.ms / 1000, byOperator }, instrument: inst }
-  } finally {
-    afterSession = undefined
-    inst.restore()
-  }
+  return best
 }
 
 /** One instrumented run of each item that records the typical calls of every operator it reaches. */
@@ -700,7 +739,7 @@ function markdown(r: Report): string {
   p(
     `**Calibration** (a fixed pure-arithmetic workload, ms): ${r.calibration.startMs.toFixed(1)} at the start, ${r.calibration.endMs.toFixed(1)} at the end, mean ${r.calibration.ms.toFixed(1)} (drift ${r.calibration.drift.toFixed(2)}x). ` +
       `**Load** (1-minute average): ${r.load.before} before, ${r.load.after} after. ` +
-      'A baseline taken under load is compared by the ratio of calibration figures (`make ep-perf-check` does so); absolute numbers here carry that load.',
+      'The calibration is also timed around every row, and `make ep-perf-check` compares each row at its own machine speed; absolute numbers here carry the load they were taken under (a niced process is moved between fast and slow cores as the load changes, so quiet runs are better).',
   )
   p()
   p('## The shared grid integrator')
@@ -876,6 +915,40 @@ function markdown(r: Report): string {
     ),
   )
   p()
+  p('## Hot spots seen')
+  p()
+  p('Written from the numbers above by the harness (the library is only measured, never changed here).')
+  p()
+  const top = [...total].sort((a, b) => b[1].self - a[1].self).slice(0, 5)
+  p(
+    `- Where the operator time goes: ${top.map(([op, t]) => `${op} ${percent(t.self / wall)} of the wall time`).join(', ')}. The first of these integrate numerically on the shared grids (\`tiltGrid\`, \`integrateLine\`, the pair and triple grids), so the grid kernels are the lever on end-to-end time.`,
+  )
+  const wishart = r.operators.filter((o) => o.op === 'mvn-wishart' && o.hook === 'ep' && o.sig.startsWith('to2 Nv'))
+  const byDim = wishart
+    .map((o) => ({ d: Number(/^to2 Nv(\d)/.exec(o.sig)?.[1] ?? 2), us: o.us.median }))
+    .sort((a, b) => a.d - b.d)
+  if (byDim.length > 1)
+    p(
+      `- \`mvn-wishart\` (the message to the precision matrix, Gaussian cavities) grows steeply with the dimension: ${byDim.map((x) => `d = ${x.d}: ${formatMicros(x.us)}`).join(', ')} (the Bartlett quadrature has d (d + 1) / 2 axes).`,
+    )
+  const slowest = r.operators
+    .filter((o) => o.hook !== 'logEvidence')
+    .sort((a, b) => b.us.median - a.us.median)
+    .slice(0, 3)
+  p(
+    `- The slowest single message calls: ${slowest.map((o) => `${o.op} (${o.sig}) ${formatMicros(o.us.median)}`).join('; ')}.`,
+  )
+  const light = r.share
+    .filter((x) => x.wall > 0.05 && x.byOperator.reduce((a, o) => a + o.self, 0) / x.wall < 0.35)
+    .map((x) => `${x.item} (${percent(x.byOperator.reduce((a, o) => a + o.self, 0) / x.wall)} in operators)`)
+  if (light.length > 0)
+    p(
+      `- Runs that spend most of their time outside the operators (graph and tape bookkeeping, the outer loop of a grid or hyperparameter search, projections): ${light.join(', ')}.`,
+    )
+  p(
+    `- Each message call of a closed-form operator (\`linear\`, \`plus\`, \`prior\`, \`gaussian\`, \`times-constant\`) is a fraction of a microsecond, at or under the harness's own loop overhead, and the engine makes hundreds of thousands of them in a long run: the share of the engine around them is the rest of the wall time.`,
+  )
+  p()
   return `${lines.join('\n')}\n`
 }
 
@@ -902,6 +975,33 @@ async function main(): Promise<void> {
     out('slowest first:')
     for (const r of rows.sort((a, b) => b.s - a.s))
       out(`${r.s.toFixed(3).padStart(9)} s  ${r.key}  (sweeps ${r.sweeps}, updates ${r.updates})`)
+    return
+  }
+
+  if (flag('report-only')) {
+    // Rewrite the report from the baseline (after a change of the report's text).
+    writeFileSync(REPORT, markdown(JSON.parse(readFileSync(BASELINE, 'utf8')) as Report))
+    out(`ep-perf: wrote ${REPORT}`)
+    return
+  }
+
+  if (flag('share-only')) {
+    // Redo the time share of an existing baseline (the machine was busy during it) and rewrite the baseline and the report.
+    const old = JSON.parse(readFileSync(BASELINE, 'utf8')) as Report
+    const share: ShareRow[] = []
+    out(`ep-perf: redoing the time share of ${old.settings.items.length} items, load ${load1()}`)
+    for (const key of old.settings.items) {
+      const clean = old.items.find((i) => i.key === key)?.seconds.median ?? Number.POSITIVE_INFINITY
+      const r = await measureShare(key, clean)
+      if (r !== undefined) {
+        share.push(r.share)
+        out(`  ${key.padEnd(44)} ${r.share.wall.toFixed(3)} s instrumented, ${clean.toFixed(3)} s clean`)
+      }
+    }
+    const report: Report = { ...old, share }
+    writeFileSync(BASELINE, `${JSON.stringify(report, null, 1)}\n`)
+    writeFileSync(REPORT, markdown(report))
+    out(`ep-perf: wrote ${BASELINE} and ${REPORT}`)
     return
   }
 
@@ -961,7 +1061,7 @@ async function main(): Promise<void> {
     const reached = new Set(operators.map((o) => o.op))
     unreached = Object.keys(defaultOperators()).filter((n) => !reached.has(n))
     out(
-      `  ${operators.length} operator calls timed; ${unreached.length} operators not reached: ${unreached.join(', ')}`,
+      `  ${operators.length} operator calls timed${baseline === undefined ? `; ${unreached.length} operators not reached: ${unreached.join(', ')}` : ''}`,
     )
     if (flag('verbose'))
       for (const o of operators)
@@ -977,7 +1077,7 @@ async function main(): Promise<void> {
   if (!check) {
     out('ep-perf: time share per operator (one instrumented run each)')
     for (const key of itemKeys) {
-      const r = await measureShare(key)
+      const r = await measureShare(key, items.find((i) => i.key === key)?.seconds.median ?? Number.POSITIVE_INFINITY)
       if (r !== undefined) share.push(r.share)
     }
   }
@@ -1007,7 +1107,9 @@ async function main(): Promise<void> {
 
   if (!check) {
     if (only !== undefined && option('out') === undefined) {
-      out('ep-perf: --only measures a part and writes nothing (the baseline is the whole set; --out <dir> writes a trial)')
+      out(
+        'ep-perf: --only measures a part and writes nothing (the baseline is the whole set; --out <dir> writes a trial)',
+      )
       return
     }
     writeFileSync(BASELINE, `${JSON.stringify(report, null, 1)}\n`)
@@ -1018,21 +1120,57 @@ async function main(): Promise<void> {
 
   const base = baseline as Report
   const factor = machineFactor(cal.ms, base.calibration.ms)
-  const baseTimes = new Map<string, number>([
-    ...base.grid.map((g): [string, number] => [g.key, g.us.median]),
-    ...base.kernels.map((k): [string, number] => [k.key, k.us.median]),
-    ...base.operators.map((o): [string, number] => [o.key, o.us.median]),
-    ...base.items.map((i): [string, number] => [`item/${i.key}`, i.seconds.median]),
-  ])
-  const nowTimes = new Map<string, number>([
-    ...grid.map((g): [string, number] => [g.key, g.us.median]),
-    ...kernels.map((k): [string, number] => [k.key, k.us.median]),
-    ...operators.map((o): [string, number] => [o.key, o.us.median]),
-    ...items.map((i): [string, number] => [`item/${i.key}`, i.seconds.median]),
-  ])
-  const compared = compareTimes(baseTimes, nowTimes, factor, ratio)
+  // Each row is compared at the machine speed of its own measurement: the calibration timed around it, then and now.
+  const rows = <R extends { readonly cal: number }>(
+    list: readonly R[],
+    key: (r: R) => string,
+    time: (r: R) => number,
+  ): { times: [string, number][]; cals: [string, number][] } => ({
+    times: list.map((r): [string, number] => [key(r), time(r)]),
+    cals: list.map((r): [string, number] => [key(r), r.cal]),
+  })
+  const collect = (
+    r: Pick<Report, 'grid' | 'kernels' | 'operators' | 'items'>,
+  ): { times: Map<string, number>; cals: Map<string, number> } => {
+    const parts = [
+      rows(
+        r.grid,
+        (g) => g.key,
+        (g) => g.us.median,
+      ),
+      rows(
+        r.kernels,
+        (k) => k.key,
+        (k) => k.us.median,
+      ),
+      rows(
+        r.operators,
+        (o) => o.key,
+        (o) => o.us.median,
+      ),
+      rows(
+        r.items,
+        (i) => `item/${i.key}`,
+        (i) => i.seconds.median,
+      ),
+    ]
+    return {
+      times: new Map(parts.flatMap((p) => p.times)),
+      cals: new Map(parts.flatMap((p) => p.cals)),
+    }
+  }
+  const was = collect(base)
+  const is = collect({ grid, kernels, operators, items })
+  const baseTimes = was.times
+  const nowTimes = is.times
+  const perKey = (key: string): number => {
+    const a = is.cals.get(key)
+    const b = was.cals.get(key)
+    return a !== undefined && b !== undefined ? machineFactor(a, b) : factor
+  }
+  const compared = compareTimes(baseTimes, nowTimes, perKey, ratio)
   out(
-    `ep-perf-check: machine factor ${factor.toFixed(2)} (calibration ${cal.ms.toFixed(1)} ms now, ${base.calibration.ms.toFixed(1)} ms in the baseline; load ${endLoad} now, ${base.load.before} then)`,
+    `ep-perf-check: machine factor ${factor.toFixed(2)} overall; each row is divided by the factor of its own calibration (calibration ${cal.ms.toFixed(1)} ms now, ${base.calibration.ms.toFixed(1)} ms in the baseline; load ${endLoad} now, ${base.load.before} then)`,
   )
   for (const c of compared.slice(0, 15))
     out(

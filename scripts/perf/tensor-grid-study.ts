@@ -38,12 +38,14 @@ import {
   div,
   exp,
   flip,
+  linspace,
   log,
   max,
   mul,
   neg,
   pow,
   reshape,
+  sin,
   sliceAxis,
   square,
   sub,
@@ -312,6 +314,102 @@ function study(): Result[] {
   return results
 }
 
+// ----- where the tensor time of the grid expression goes -----
+
+/** The microseconds of each tensor operation of the grid expression on a 60 x 72 grid (4320 nodes), one by one, against the raw loop that does the same. */
+function opProfile(): { readonly step: string; readonly tensorUs: number; readonly rawUs: number }[] {
+  const n0 = 60
+  const n1 = 72
+  const x0 = reshape(linspace(-2, 3, n0), [n0, 1])
+  const x1 = reshape(linspace(-1, 1.5, n1), [1, n1])
+  const lw0 = reshape(mul(sin(linspace(0, 9, n0)), 0.3), [n0, 1])
+  const lw1 = reshape(mul(sin(linspace(1, 8, n1)), 0.4), [1, n1])
+  const F = laplaceT(x0, x1)
+  const logw = add(add(lw0, lw1), F)
+  const top = max(logw)
+  const weights = exp(sub(logw, top))
+  const total = sum(weights)
+  const w = div(weights, total)
+  const data = (t: Value): Float64Array => (t as unknown as { data: Float64Array }).data
+  const L = data(logw)
+  const W = data(weights)
+  const steps: { step: string; tensor: () => unknown; raw: () => unknown }[] = [
+    {
+      step: 'lw0 + lw1 (broadcast [n0,1] + [1,n1])',
+      tensor: () => add(lw0, lw1),
+      raw: () => {
+        const o = new Float64Array(n0 * n1)
+        const a = data(lw0)
+        const b = data(lw1)
+        for (let i = 0; i < n0; i++) for (let j = 0; j < n1; j++) o[i * n1 + j] = (a[i] as number) + (b[j] as number)
+        return o
+      },
+    },
+    {
+      step: 'the integrand (neg, exp, abs, sub, mul, sub: broadcast)',
+      tensor: () => laplaceT(x0, x1),
+      raw: () => {
+        const o = new Float64Array(n0 * n1)
+        const a = data(x0)
+        const b = data(x1)
+        for (let i = 0; i < n0; i++)
+          for (let j = 0; j < n1; j++)
+            o[i * n1 + j] = -(b[j] as number) - Math.exp(-(b[j] as number)) * Math.abs(Y - (a[i] as number))
+        return o
+      },
+    },
+    {
+      step: 'max of the log weights',
+      tensor: () => max(logw),
+      raw: () => {
+        let t = Number.NEGATIVE_INFINITY
+        for (let i = 0; i < L.length; i++) if ((L[i] as number) > t) t = L[i] as number
+        return t
+      },
+    },
+    {
+      step: 'exp(logw - top)',
+      tensor: () => exp(sub(logw, top)),
+      raw: () => {
+        const o = new Float64Array(L.length)
+        const t = toFlat(top)[0] as number
+        for (let i = 0; i < L.length; i++) o[i] = Math.exp((L[i] as number) - t)
+        return o
+      },
+    },
+    {
+      step: 'sum of the weights',
+      tensor: () => sum(weights),
+      raw: () => {
+        let t = 0
+        for (let i = 0; i < W.length; i++) t += W[i] as number
+        return t
+      },
+    },
+    {
+      step: 'weights / total, and the two marginals (sum axis 1, sum axis 0)',
+      tensor: () => [div(weights, total), sum(w, 1), sum(w, 0)],
+      raw: () => {
+        const m0 = new Float64Array(n0)
+        const m1 = new Float64Array(n1)
+        const t = toFlat(total)[0] as number
+        for (let i = 0; i < n0; i++)
+          for (let j = 0; j < n1; j++) {
+            const v = (W[i * n1 + j] as number) / t
+            m0[i] = (m0[i] as number) + v
+            m1[j] = (m1[j] as number) + v
+          }
+        return [m0, m1]
+      },
+    },
+  ]
+  return steps.map((s) => ({
+    step: s.step,
+    tensorUs: summarise(bench(s.tensor, 9, 15)).median,
+    rawUs: summarise(bench(s.raw, 9, 15)).median,
+  }))
+}
+
 // ----- allocation, in a child process with no collection during the measurement -----
 
 interface Alloc {
@@ -343,6 +441,11 @@ if (childIndex >= 0) {
   const calStart = calibrate(3)
   const results = study()
   const calEnd = calibrate(3)
+  const profile = opProfile()
+  for (const p of profile)
+    process.stdout.write(
+      `op ${p.step.padEnd(66)} tensor ${p.tensorUs.toFixed(1).padStart(8)} us  raw ${p.rawUs.toFixed(1).padStart(8)} us\n`,
+    )
   const breakdown = [1, 2, 4].map((k) => {
     tensorCall(k)
     const ms: number[][] = [[], [], []]
@@ -396,6 +499,6 @@ if (childIndex >= 0) {
   if (json >= 0)
     writeFileSync(
       argv[json + 1] as string,
-      JSON.stringify({ results, breakdown, allocs, calibration: { start: calStart, end: calEnd } }, null, 1),
+      JSON.stringify({ results, breakdown, profile, allocs, calibration: { start: calStart, end: calEnd } }, null, 1),
     )
 }

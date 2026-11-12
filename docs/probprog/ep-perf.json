@@ -1,0 +1,5281 @@
+{
+ "format": 1,
+ "date": "2026-11-12T14:45:17.542Z",
+ "commit": "dd62ad35",
+ "machine": {
+  "cpu": "Apple M1 Pro",
+  "cores": 10,
+  "memoryGb": 16,
+  "platform": "darwin arm64 24.6.0",
+  "node": "v24.22.1"
+ },
+ "load": {
+  "before": 6.07,
+  "after": 106.21
+ },
+ "calibration": {
+  "startMs": 20.272542000000158,
+  "endMs": 20.009167000069283,
+  "ms": 20.14085450003472,
+  "drift": 0.9870082893437403
+ },
+ "settings": {
+  "itemRuns": 3,
+  "microSamples": 9,
+  "items": [
+   "program/circular-rows",
+   "atom/softmax-two-groups",
+   "atom/gp-hyperparameters",
+   "atom/chain-persistence-grid",
+   "program/changepoint-extended",
+   "atom/student-t-full-learned",
+   "atom/gate-poisson-negative-binomial",
+   "program/zero-inflated",
+   "program/sparse-mixture",
+   "model/radon",
+   "program/kalman",
+   "program/cox",
+   "atom/clutter-mixture-learned",
+   "atom/poisson-log-dispersion-learned",
+   "atom/ordinal-probit-cuts-learned",
+   "atom/softmax-regression",
+   "atom/probit-learned",
+   "atom/weibull-shape-learned",
+   "atom/mvn-wishart-learned",
+   "atom/bivariate-correlation-learned",
+   "atom/random-intercepts-slopes-learned",
+   "atom/stick-breaking",
+   "atom/gaussian-learned",
+   "model/eight-schools-centred",
+   "model/stochastic-volatility",
+   "model/negative-binomial-regression"
+  ]
+ },
+ "grid": [
+  {
+   "key": "grid/pair",
+   "cal": 20.19825000000003,
+   "profile": "pair",
+   "describe": "Laplace likelihood, Gaussian location (kink at the outcome) x gamma scale (log coordinate)",
+   "nodes": 4320,
+   "evals": 6720,
+   "us": {
+    "median": 176.45231730769132,
+    "min": 169.35656730769412,
+    "max": 318.6867019230791,
+    "n": 9,
+    "spread": 0.8462917171837896
+   },
+   "nsPerEval": 26.257785313644543
+  },
+  {
+   "key": "grid/axes",
+   "cal": 20.088676999999848,
+   "profile": "axes",
+   "describe": "bivariate normal, Gaussian mean x gamma precision x beta correlation (three axes, equal panels)",
+   "nodes": 13824,
+   "evals": 31744,
+   "us": {
+    "median": 2078.29633333333,
+    "min": 2034.0879999999843,
+    "max": 2241.064777777764,
+    "n": 9,
+    "spread": 0.09958963717450946
+   },
+   "nsPerEval": 65.47052461357517
+  },
+  {
+   "key": "grid/triple",
+   "cal": 20.308666500000072,
+   "profile": "triple",
+   "describe": "Student-t, Gaussian location x gamma scale x gamma degrees of freedom (three axes, column form)",
+   "nodes": 0,
+   "evals": 35000,
+   "us": {
+    "median": 4961.300000000028,
+    "min": 4888.116600000012,
+    "max": 5157.916599999953,
+    "n": 9,
+    "spread": 0.05438090822968567
+   },
+   "nsPerEval": 141.75142857142936
+  },
+  {
+   "key": "grid/line",
+   "cal": 20.78818749999982,
+   "profile": "line",
+   "describe": "softmax normaliser over eight classes along one Gaussian coordinate",
+   "nodes": 96,
+   "evals": 156,
+   "us": {
+    "median": 28.230329787233703,
+    "min": 27.06405186170214,
+    "max": 41.467309840425784,
+    "n": 9,
+    "spread": 0.5102050910236647
+   },
+   "nsPerEval": 180.96365248226732
+  }
+ ],
+ "kernels": [
+  {
+   "key": "kernel/shiftedSum",
+   "describe": "shift, exponentiate and sum 4320 log weights (the size of a pair grid)",
+   "size": 4320,
+   "us": {
+    "median": 40.84050202429081,
+    "min": 39.65452024291477,
+    "max": 59.137230769231714,
+    "n": 9,
+    "spread": 0.4770438550125844
+   },
+   "cal": 20.500916749999988,
+   "nsPerNode": 9.45381991303028
+  },
+  {
+   "key": "kernel/findWindow",
+   "describe": "window of a narrow peak at 3 from a start at 0 (801-node scans)",
+   "size": 801,
+   "us": {
+    "median": 144.44556451612624,
+    "min": 140.81367741935523,
+    "max": 145.91818145161216,
+    "n": 9,
+    "spread": 0.035338600041865925
+   },
+   "cal": 20.70682299999976,
+   "nsPerNode": 180.3315412186345
+  },
+  {
+   "key": "kernel/tiltGrid",
+   "describe": "zoomed uniform grid of 64 nodes over a window of width 12, smooth integrand",
+   "size": 64,
+   "us": {
+    "median": 9.57076630920442,
+    "min": 9.188374888293167,
+    "max": 10.037459338695323,
+    "n": 9,
+    "spread": 0.08871645414490713
+   },
+   "cal": 20.628573000000188,
+   "nsPerNode": 149.54322358131904
+  }
+ ],
+ "operators": [
+  {
+   "key": "op/apply/ep/to0 NN {fnexp}",
+   "cal": 21.300301749997743,
+   "op": "apply",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 NN {fnexp}",
+   "from": "atom/exp",
+   "calls": 594,
+   "us": {
+    "median": 0.16971501635606456,
+    "min": 0.14660569084577443,
+    "max": 0.183289864478713,
+    "n": 7,
+    "spread": 0.21615160768081151
+   }
+  },
+  {
+   "key": "op/apply/ep/to1 NN {fnexp}",
+   "cal": 20.803333250001742,
+   "op": "apply",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to1 NN {fnexp}",
+   "from": "atom/exp",
+   "calls": 594,
+   "us": {
+    "median": 0.13471900466225156,
+    "min": 0.10194852746079154,
+    "max": 0.23504798544510053,
+    "n": 7,
+    "spread": 0.9879783354842707
+   }
+  },
+  {
+   "key": "op/apply/ep/to0 NN {fntanh}",
+   "cal": 20.356395999999222,
+   "op": "apply",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 NN {fntanh}",
+   "from": "atom/tanh",
+   "calls": 3,
+   "us": {
+    "median": 137.27532142833556,
+    "min": 134.20835714298715,
+    "max": 143.0238214286094,
+    "n": 7,
+    "spread": 0.06421740043219902
+   }
+  },
+  {
+   "key": "op/apply/ep/to1 NN {fntanh}",
+   "cal": 20.265187500001048,
+   "op": "apply",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to1 NN {fntanh}",
+   "from": "atom/tanh",
+   "calls": 3,
+   "us": {
+    "median": 135.59765624995634,
+    "min": 134.65365625006598,
+    "max": 148.22265625025466,
+    "n": 7,
+    "spread": 0.1000681012891257
+   }
+  },
+  {
+   "key": "op/apply/logEvidence/to0 NN {fnexp}",
+   "cal": 20.360302500004764,
+   "op": "apply",
+   "folder": "likelihoods",
+   "hook": "logEvidence",
+   "sig": "to0 NN {fnexp}",
+   "from": "atom/exp",
+   "calls": 634,
+   "us": {
+    "median": 0.14166667360518867,
+    "min": 0.1260026436304223,
+    "max": 0.24065101998325514,
+    "n": 7,
+    "spread": 0.8092826169713477
+   }
+  },
+  {
+   "key": "op/bernoulli/ep/to0 Be B",
+   "cal": 20.26190625000163,
+   "op": "bernoulli",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to0 Be B",
+   "from": "atom/gate-random-learned",
+   "calls": 5370,
+   "us": {
+    "median": 0.11308199721172091,
+    "min": 0.08409125566381943,
+    "max": 0.1373618421050016,
+    "n": 7,
+    "spread": 0.4710792854272359
+   }
+  },
+  {
+   "key": "op/bernoulli/ep/to1 Be B",
+   "cal": 20.258822750001855,
+   "op": "bernoulli",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to1 Be B",
+   "from": "atom/gate-random-learned",
+   "calls": 5370,
+   "us": {
+    "median": 12.029030054651487,
+    "min": 11.892418032785613,
+    "max": 13.16837431695007,
+    "n": 7,
+    "spread": 0.106073081401194
+   }
+  },
+  {
+   "key": "op/bernoulli/ep/to1 v B",
+   "cal": 20.371228999996674,
+   "op": "bernoulli",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to1 v B",
+   "from": "atom/beta-bernoulli",
+   "calls": 1063,
+   "us": {
+    "median": 0.07164827328928693,
+    "min": 0.06608975698143614,
+    "max": 0.08393332978039587,
+    "n": 7,
+    "spread": 0.24904400315293795
+   }
+  },
+  {
+   "key": "op/bernoulli/logEvidence/to0 Be B",
+   "cal": 20.274228999995103,
+   "op": "bernoulli",
+   "folder": "discrete",
+   "hook": "logEvidence",
+   "sig": "to0 Be B",
+   "from": "atom/gate-random-learned",
+   "calls": 5790,
+   "us": {
+    "median": 0.22030023622561212,
+    "min": 0.2010496837620625,
+    "max": 0.23976346871928889,
+    "n": 7,
+    "spread": 0.17573192666747361
+   }
+  },
+  {
+   "key": "op/beta-two-shapes/ep/to0 B NN",
+   "cal": 20.227750000001834,
+   "op": "beta-two-shapes",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to0 B NN",
+   "from": "atom/prior-beta-two-shapes",
+   "calls": 4,
+   "us": {
+    "median": 2148.6874999973224,
+    "min": 2144.2914999934146,
+    "max": 2450.87500000227,
+    "n": 7,
+    "spread": 0.14268408040221647
+   }
+  },
+  {
+   "key": "op/beta-two-shapes/ep/to1 B NN",
+   "cal": 20.351635249997344,
+   "op": "beta-two-shapes",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to1 B NN",
+   "from": "atom/prior-beta-two-shapes",
+   "calls": 4,
+   "us": {
+    "median": 2148.013666665065,
+    "min": 2102.5139999983367,
+    "max": 2361.2083333331007,
+    "n": 7,
+    "spread": 0.1204342120115112
+   }
+  },
+  {
+   "key": "op/beta-two-shapes/ep/to2 B NN",
+   "cal": 20.43634349999411,
+   "op": "beta-two-shapes",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to2 B NN",
+   "from": "atom/prior-beta-two-shapes",
+   "calls": 4,
+   "us": {
+    "median": 2204.2639999999665,
+    "min": 2110.8196666658237,
+    "max": 2572.2776666661957,
+    "n": 7,
+    "spread": 0.20934788210503782
+   }
+  },
+  {
+   "key": "op/beta-two-shapes/logEvidence/to0 B NN",
+   "cal": 20.296041500001593,
+   "op": "beta-two-shapes",
+   "folder": "scales",
+   "hook": "logEvidence",
+   "sig": "to0 B NN",
+   "from": "atom/prior-beta-two-shapes",
+   "calls": 6,
+   "us": {
+    "median": 2124.250000003182,
+    "min": 2102.3333333335663,
+    "max": 2360.9026666672435,
+    "n": 7,
+    "spread": 0.12172264720879833
+   }
+  },
+  {
+   "key": "op/difference/ep/to1 v NN",
+   "cal": 20.29156249999869,
+   "op": "difference",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 v NN",
+   "from": "atom/skill-difference-learned",
+   "calls": 1655,
+   "us": {
+    "median": 0.23082277265751075,
+    "min": 0.20290555738433025,
+    "max": 0.2515589477725612,
+    "n": 7,
+    "spread": 0.2107824536897912
+   }
+  },
+  {
+   "key": "op/difference/ep/to2 v NN",
+   "cal": 20.476510500000586,
+   "op": "difference",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to2 v NN",
+   "from": "atom/skill-difference-learned",
+   "calls": 1655,
+   "us": {
+    "median": 0.20002101553324483,
+    "min": 0.18842548840458867,
+    "max": 0.23988926597898422,
+    "n": 7,
+    "spread": 0.2572918522446054
+   }
+  },
+  {
+   "key": "op/difference/ep/to0 NNN",
+   "cal": 20.290229249996628,
+   "op": "difference",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 NNN",
+   "from": "atom/mixture-components-learned",
+   "calls": 111,
+   "us": {
+    "median": 0.13368805205789716,
+    "min": 0.12656415617338865,
+    "max": 0.15651035989476172,
+    "n": 7,
+    "spread": 0.2240005988598299
+   }
+  },
+  {
+   "key": "op/difference/ep/to1 NNN",
+   "cal": 20.31467674999658,
+   "op": "difference",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 NNN",
+   "from": "atom/mixture-components-learned",
+   "calls": 102,
+   "us": {
+    "median": 0.1862636944614486,
+    "min": 0.1725248782714603,
+    "max": 0.20270340079101914,
+    "n": 7,
+    "spread": 0.16202042274966777
+   }
+  },
+  {
+   "key": "op/difference/logEvidence/to0 v NN",
+   "cal": 20.363177249997534,
+   "op": "difference",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 v NN",
+   "from": "atom/skill-difference-learned",
+   "calls": 1765,
+   "us": {
+    "median": 0.1880276398822149,
+    "min": 0.18042873369789805,
+    "max": 0.2016336979385578,
+    "n": 7,
+    "spread": 0.11277578261335962
+   }
+  },
+  {
+   "key": "op/dirichlet-concentration/ep/to0 B G {offsets[2],weights[2]}",
+   "cal": 20.357739500002936,
+   "op": "dirichlet-concentration",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to0 B G {offsets[2],weights[2]}",
+   "from": "atom/beta-bernoulli-learned",
+   "calls": 90,
+   "us": {
+    "median": 220.43055555534212,
+    "min": 215.06944444425042,
+    "max": 241.77544444440477,
+    "n": 7,
+    "spread": 0.1211538025337392
+   }
+  },
+  {
+   "key": "op/dirichlet-concentration/ep/to1 B G {offsets[2],weights[2]}",
+   "cal": 20.379499999999098,
+   "op": "dirichlet-concentration",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to1 B G {offsets[2],weights[2]}",
+   "from": "atom/beta-bernoulli-learned",
+   "calls": 90,
+   "us": {
+    "median": 203.8882272728105,
+    "min": 199.88068181754153,
+    "max": 206.67422727274243,
+    "n": 7,
+    "spread": 0.03331994959233653
+   }
+  },
+  {
+   "key": "op/dirichlet-concentration/ep/to0 B N {logtrue,offsets[2],weights[2]}",
+   "cal": 20.297521000004053,
+   "op": "dirichlet-concentration",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to0 B N {logtrue,offsets[2],weights[2]}",
+   "from": "atom/prior-beta-strength-lognormal",
+   "calls": 4,
+   "us": {
+    "median": 202.8465909090962,
+    "min": 201.63449999976862,
+    "max": 222.23486363641726,
+    "n": 7,
+    "spread": 0.1015563709714032
+   }
+  },
+  {
+   "key": "op/dirichlet-concentration/ep/to1 B N {logtrue,offsets[2],weights[2]}",
+   "cal": 20.300312999999733,
+   "op": "dirichlet-concentration",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to1 B N {logtrue,offsets[2],weights[2]}",
+   "from": "atom/prior-beta-strength-lognormal",
+   "calls": 4,
+   "us": {
+    "median": 189.90578260854818,
+    "min": 187.99095652154747,
+    "max": 190.8604782612478,
+    "n": 7,
+    "spread": 0.015110238878903769
+   }
+  },
+  {
+   "key": "op/dirichlet-concentration/logEvidence/to0 B G {offsets[2],weights[2]}",
+   "cal": 20.25515649999943,
+   "op": "dirichlet-concentration",
+   "folder": "scales",
+   "hook": "logEvidence",
+   "sig": "to0 B G {offsets[2],weights[2]}",
+   "from": "atom/beta-bernoulli-learned",
+   "calls": 100,
+   "us": {
+    "median": 195.89959090874552,
+    "min": 194.31818181791724,
+    "max": 214.7196818186785,
+    "n": 7,
+    "spread": 0.10414263708322267
+   }
+  },
+  {
+   "key": "op/discrete/ep/to0 D2 Di2",
+   "cal": 20.514604250001867,
+   "op": "discrete",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to0 D2 Di2",
+   "from": "atom/mixture-components-learned",
+   "calls": 49539,
+   "us": {
+    "median": 0.2889589602308499,
+    "min": 0.28270466906763114,
+    "max": 0.31818768100495715,
+    "n": 7,
+    "spread": 0.12279602580580493
+   }
+  },
+  {
+   "key": "op/discrete/ep/to1 D2 Di2",
+   "cal": 20.99850024999978,
+   "op": "discrete",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to1 D2 Di2",
+   "from": "atom/mixture-components-learned",
+   "calls": 49539,
+   "us": {
+    "median": 8.582571138230549,
+    "min": 8.560550812996471,
+    "max": 9.215701219523552,
+    "n": 7,
+    "spread": 0.07633498120496235
+   }
+  },
+  {
+   "key": "op/discrete/ep/to0 D3 Di3",
+   "cal": 20.35600025000167,
+   "op": "discrete",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to0 D3 Di3",
+   "from": "atom/gate-weight-dirichlet",
+   "calls": 42962,
+   "us": {
+    "median": 0.35109351385417126,
+    "min": 0.3327429943317069,
+    "max": 0.38119560768294286,
+    "n": 7,
+    "spread": 0.1380048660521853
+   }
+  },
+  {
+   "key": "op/discrete/ep/to1 D3 Di3",
+   "cal": 20.245906500003912,
+   "op": "discrete",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to1 D3 Di3",
+   "from": "atom/gate-weight-dirichlet",
+   "calls": 42962,
+   "us": {
+    "median": 9.153063655008602,
+    "min": 8.737507186863748,
+    "max": 12.169574948681042,
+    "n": 7,
+    "spread": 0.37496382535690653
+   }
+  },
+  {
+   "key": "op/discrete/logEvidence/to0 D3 Di3",
+   "cal": 20.319728750004288,
+   "op": "discrete",
+   "folder": "discrete",
+   "hook": "logEvidence",
+   "sig": "to0 D3 Di3",
+   "from": "atom/gate-weight-dirichlet",
+   "calls": 262906,
+   "us": {
+    "median": 0.7533065712774042,
+    "min": 0.7458763910968097,
+    "max": 0.8023096184427404,
+    "n": 7,
+    "spread": 0.07491402504326387
+   }
+  },
+  {
+   "key": "op/dot-constant/ep/to0 N Nv2 {a[2]}",
+   "cal": 20.323531250000087,
+   "op": "dot-constant",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 N Nv2 {a[2]}",
+   "from": "atom/gate-random",
+   "calls": 10768,
+   "us": {
+    "median": 9.301910926365972,
+    "min": 8.901523752971038,
+    "max": 10.085807600945003,
+    "n": 7,
+    "spread": 0.12731618882923834
+   }
+  },
+  {
+   "key": "op/dot-constant/ep/to1 N Nv2 {a[2]}",
+   "cal": 20.301385499999014,
+   "op": "dot-constant",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 N Nv2 {a[2]}",
+   "from": "atom/gate-random",
+   "calls": 10768,
+   "us": {
+    "median": 0.19294713968969934,
+    "min": 0.1722949002217011,
+    "max": 0.26727086474510847,
+    "n": 7,
+    "spread": 0.4922382610913498
+   }
+  },
+  {
+   "key": "op/dot-constant/ep/to1 N Nv7 {a[7]}",
+   "cal": 20.329823000000033,
+   "op": "dot-constant",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 N Nv7 {a[7]}",
+   "from": "model/radon",
+   "calls": 5133,
+   "us": {
+    "median": 0.531538863636921,
+    "min": 0.5025757954535948,
+    "max": 0.5709801136353317,
+    "n": 7,
+    "spread": 0.12869109459597672
+   }
+  },
+  {
+   "key": "op/dot-constant/ep/to0 N Nv7 {a[7]}",
+   "cal": 20.330333250003605,
+   "op": "dot-constant",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 N Nv7 {a[7]}",
+   "from": "model/radon",
+   "calls": 5105,
+   "us": {
+    "median": 14.228343465054085,
+    "min": 12.36841337386261,
+    "max": 16.701243161112366,
+    "n": 7,
+    "spread": 0.30452102859981706
+   }
+  },
+  {
+   "key": "op/dot-constant/logEvidence/to0 N Nv2 {a[2]}",
+   "cal": 20.351958250004827,
+   "op": "dot-constant",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 N Nv2 {a[2]}",
+   "from": "atom/gate-random",
+   "calls": 12478,
+   "us": {
+    "median": 7.469838938033991,
+    "min": 6.987389380553227,
+    "max": 8.064676106204814,
+    "n": 7,
+    "spread": 0.1442181999623036
+   }
+  },
+  {
+   "key": "op/equal/ep/to0 NN",
+   "cal": 20.35785449999821,
+   "op": "equal",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 NN",
+   "from": "model/funnel-centred",
+   "calls": 36,
+   "us": {
+    "median": 0.033875729480578834,
+    "min": 0.03301733104294671,
+    "max": 0.09518542921699759,
+    "n": 7,
+    "spread": 1.8351810906298633
+   }
+  },
+  {
+   "key": "op/equal/ep/to1 NN",
+   "cal": 21.05493750000096,
+   "op": "equal",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 NN",
+   "from": "model/funnel-centred",
+   "calls": 36,
+   "us": {
+    "median": 0.03593660622654622,
+    "min": 0.03509985460131839,
+    "max": 0.12311551488203402,
+    "n": 7,
+    "spread": 2.4491923284536212
+   }
+  },
+  {
+   "key": "op/equal/logEvidence/to0 NN",
+   "cal": 20.516156250003405,
+   "op": "equal",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 NN",
+   "from": "model/funnel-centred",
+   "calls": 90,
+   "us": {
+    "median": 0.0979958497159654,
+    "min": 0.09174009756799927,
+    "max": 0.1344086755497221,
+    "n": 7,
+    "spread": 0.43541209250590657
+   }
+  },
+  {
+   "key": "op/gamma-observed/ep/to1 v G {shape}",
+   "cal": 21.040541750000557,
+   "op": "gamma-observed",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to1 v G {shape}",
+   "from": "atom/prior-gamma-exponential",
+   "calls": 10,
+   "us": {
+    "median": 0.04950377877593241,
+    "min": 0.04814768216957142,
+    "max": 0.05263734626632402,
+    "n": 7,
+    "spread": 0.09069336135073741
+   }
+  },
+  {
+   "key": "op/gamma-observed/logEvidence/to0 v G {shape}",
+   "cal": 20.28235400000267,
+   "op": "gamma-observed",
+   "folder": "discrete",
+   "hook": "logEvidence",
+   "sig": "to0 v G {shape}",
+   "from": "atom/prior-gamma-exponential",
+   "calls": 20,
+   "us": {
+    "median": 0.15994965064828023,
+    "min": 0.1574895194408541,
+    "max": 0.16913792735614824,
+    "n": 7,
+    "spread": 0.0728254664394879
+   }
+  },
+  {
+   "key": "op/gamma-product/ep/to0 GGG",
+   "cal": 20.72309399999358,
+   "op": "gamma-product",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to0 GGG",
+   "from": "atom/student-t-learned",
+   "calls": 420,
+   "us": {
+    "median": 74.74746969687244,
+    "min": 73.35101515160535,
+    "max": 75.72412121204032,
+    "n": 7,
+    "spread": 0.031748312953719396
+   }
+  },
+  {
+   "key": "op/gamma-product/ep/to1 GGG",
+   "cal": 20.27283350000289,
+   "op": "gamma-product",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to1 GGG",
+   "from": "atom/student-t-learned",
+   "calls": 420,
+   "us": {
+    "median": 72.91460655735554,
+    "min": 71.62840983598515,
+    "max": 73.50683606565609,
+    "n": 7,
+    "spread": 0.0257620018588915
+   }
+  },
+  {
+   "key": "op/gamma-product/ep/to2 GGG",
+   "cal": 20.388989499999298,
+   "op": "gamma-product",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to2 GGG",
+   "from": "atom/student-t-learned",
+   "calls": 420,
+   "us": {
+    "median": 74.36475409843699,
+    "min": 73.85998360643767,
+    "max": 74.92418032779824,
+    "n": 7,
+    "spread": 0.014310498760634527
+   }
+  },
+  {
+   "key": "op/gamma-product/logEvidence/to0 GGG",
+   "cal": 20.26947949999885,
+   "op": "gamma-product",
+   "folder": "scales",
+   "hook": "logEvidence",
+   "sig": "to0 GGG",
+   "from": "atom/student-t-learned",
+   "calls": 435,
+   "us": {
+    "median": 72.8018947367928,
+    "min": 70.68566666668886,
+    "max": 81.08919298249754,
+    "n": 7,
+    "spread": 0.14290186201089236
+   }
+  },
+  {
+   "key": "op/gamma-rate/ep/to0 GG {shape}",
+   "cal": 20.518948500000988,
+   "op": "gamma-rate",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to0 GG {shape}",
+   "from": "atom/gamma-poisson-learned",
+   "calls": 62,
+   "us": {
+    "median": 73.84896428577902,
+    "min": 71.98958928581435,
+    "max": 84.99851785719719,
+    "n": 7,
+    "spread": 0.17615587025758664
+   }
+  },
+  {
+   "key": "op/gamma-rate/ep/to1 GG {shape}",
+   "cal": 33.67659375000221,
+   "op": "gamma-rate",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to1 GG {shape}",
+   "from": "atom/gamma-poisson-learned",
+   "calls": 62,
+   "us": {
+    "median": 72.6972333335046,
+    "min": 72.07848333321938,
+    "max": 80.9826499998356,
+    "n": 7,
+    "spread": 0.1224828821994864
+   }
+  },
+  {
+   "key": "op/gamma-rate/logEvidence/to0 GG {shape}",
+   "cal": 20.2786150000029,
+   "op": "gamma-rate",
+   "folder": "scales",
+   "hook": "logEvidence",
+   "sig": "to0 GG {shape}",
+   "from": "atom/gamma-poisson-learned",
+   "calls": 72,
+   "us": {
+    "median": 71.77249206362167,
+    "min": 70.1481428571112,
+    "max": 72.82142857152466,
+    "n": 7,
+    "spread": 0.037246661465283555
+   }
+  },
+  {
+   "key": "op/gate/ep/to0 D2 NN {arity,branches[2]}",
+   "cal": 20.262353999998595,
+   "op": "gate",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to0 D2 NN {arity,branches[2]}",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 11.940502118627823,
+    "min": 11.376764830517567,
+    "max": 14.731372881338388,
+    "n": 7,
+    "spread": 0.28094363348317253
+   }
+  },
+  {
+   "key": "op/gate/ep/to1 D2 NN {arity,branches[2]}",
+   "cal": 20.26260425000146,
+   "op": "gate",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to1 D2 NN {arity,branches[2]}",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 12.187299035363973,
+    "min": 11.647440514466808,
+    "max": 12.991225080379515,
+    "n": 7,
+    "spread": 0.11026106457332646
+   }
+  },
+  {
+   "key": "op/gate/ep/to1 D2 N {arity,branches[2]}",
+   "cal": 20.450457999999344,
+   "op": "gate",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to1 D2 N {arity,branches[2]}",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 6.430135024541439,
+    "min": 6.231826513901535,
+    "max": 7.23527004909574,
+    "n": 7,
+    "spread": 0.15605326036925085
+   }
+  },
+  {
+   "key": "op/gaussian-chain/ep/to0 G N*51 {coefficient,drive[1],length,ridge}",
+   "cal": 20.469583499998407,
+   "op": "gaussian-chain",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 G N*51 {coefficient,drive[1],length,ridge}",
+   "from": "atom/chain-persistence-grid",
+   "calls": 275,
+   "us": {
+    "median": 1520.145999998931,
+    "min": 1401.979250000295,
+    "max": 1668.1355000000622,
+    "n": 7,
+    "spread": 0.175085978583606
+   }
+  },
+  {
+   "key": "op/gaussian-chain/ep/to1 G N*51 {coefficient,drive[1],length,ridge}",
+   "cal": 20.36098949999723,
+   "op": "gaussian-chain",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 G N*51 {coefficient,drive[1],length,ridge}",
+   "from": "atom/chain-persistence-grid",
+   "calls": 275,
+   "us": {
+    "median": 1334.4164999980421,
+    "min": 1302.3957499972312,
+    "max": 1380.5937500001164,
+    "n": 7,
+    "spread": 0.05860089410090476
+   }
+  },
+  {
+   "key": "op/gaussian-chain/ep/to10 G N*51 {coefficient,drive[1],length,ridge}",
+   "cal": 20.27132299999721,
+   "op": "gaussian-chain",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to10 G N*51 {coefficient,drive[1],length,ridge}",
+   "from": "atom/chain-persistence-grid",
+   "calls": 275,
+   "us": {
+    "median": 1410.604249998869,
+    "min": 1351.0104999986652,
+    "max": 1548.260499999742,
+    "n": 7,
+    "spread": 0.13983369183896546
+   }
+  },
+  {
+   "key": "op/gaussian-chain/ep/to11 G N*51 {coefficient,drive[1],length,ridge}",
+   "cal": 20.814718499994342,
+   "op": "gaussian-chain",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to11 G N*51 {coefficient,drive[1],length,ridge}",
+   "from": "atom/chain-persistence-grid",
+   "calls": 275,
+   "us": {
+    "median": 1512.9062499981956,
+    "min": 1386.0414999981003,
+    "max": 1857.6042500026233,
+    "n": 7,
+    "spread": 0.31169330552047453
+   }
+  },
+  {
+   "key": "op/gaussian-chain/logEvidence/to0 G N*51 {coefficient,drive[1],length,ridge}",
+   "cal": 20.292781250002008,
+   "op": "gaussian-chain",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 G N*51 {coefficient,drive[1],length,ridge}",
+   "from": "atom/chain-persistence-grid",
+   "calls": 15,
+   "us": {
+    "median": 1352.1249999976135,
+    "min": 1299.1042499998002,
+    "max": 2175.8437499993306,
+    "n": 7,
+    "spread": 0.6484160118340226
+   }
+  },
+  {
+   "key": "op/gaussian-gamma-precision/ep/to1 v N G",
+   "cal": 20.369791500001156,
+   "op": "gaussian-gamma-precision",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 v N G",
+   "from": "atom/gamma-precision",
+   "calls": 36256,
+   "us": {
+    "median": 263.77220000043354,
+    "min": 257.49446666644263,
+    "max": 268.8222000006742,
+    "n": 7,
+    "spread": 0.042945137259396256
+   }
+  },
+  {
+   "key": "op/gaussian-gamma-precision/ep/to2 v N G",
+   "cal": 20.400385000004462,
+   "op": "gaussian-gamma-precision",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to2 v N G",
+   "from": "atom/gamma-precision",
+   "calls": 36256,
+   "us": {
+    "median": 266.16666666733283,
+    "min": 259.1690000004342,
+    "max": 310.58099999952697,
+    "n": 7,
+    "spread": 0.1931571696892827
+   }
+  },
+  {
+   "key": "op/gaussian-gamma-precision/ep/to1 v N G {offset,scale}",
+   "cal": 20.286667000003945,
+   "op": "gaussian-gamma-precision",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 v N G {offset,scale}",
+   "from": "atom/gate-random-learned",
+   "calls": 7690,
+   "us": {
+    "median": 254.37266666671752,
+    "min": 251.76622222271465,
+    "max": 257.9444444450524,
+    "n": 7,
+    "spread": 0.02428807427817133
+   }
+  },
+  {
+   "key": "op/gaussian-gamma-precision/ep/to2 v N G {offset,scale}",
+   "cal": 20.208177500000602,
+   "op": "gaussian-gamma-precision",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to2 v N G {offset,scale}",
+   "from": "atom/gate-random-learned",
+   "calls": 7690,
+   "us": {
+    "median": 259.3727222225021,
+    "min": 257.31016666718966,
+    "max": 293.3124999997542,
+    "n": 7,
+    "spread": 0.13880539566408243
+   }
+  },
+  {
+   "key": "op/gaussian-gamma-precision/logEvidence/to0 v N G",
+   "cal": 20.137978999999177,
+   "op": "gaussian-gamma-precision",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 v N G",
+   "from": "atom/gamma-precision",
+   "calls": 41055,
+   "us": {
+    "median": 263.87038888868926,
+    "min": 256.5255000000535,
+    "max": 266.0022777773621,
+    "n": 7,
+    "spread": 0.03591451779497043
+   }
+  },
+  {
+   "key": "op/gaussian-log-scale/ep/to1 v N {loc}",
+   "cal": 20.223750250002922,
+   "op": "gaussian-log-scale",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 v N {loc}",
+   "from": "atom/log-scale",
+   "calls": 19712,
+   "us": {
+    "median": 24.55706521736895,
+    "min": 24.441423913072946,
+    "max": 28.03985507246883,
+    "n": 7,
+    "spread": 0.14653343661158463
+   }
+  },
+  {
+   "key": "op/gaussian-log-scale/logEvidence/to0 v N {loc}",
+   "cal": 20.33379149999746,
+   "op": "gaussian-log-scale",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 v N {loc}",
+   "from": "atom/log-scale",
+   "calls": 4179,
+   "us": {
+    "median": 25.521381578982982,
+    "min": 24.52261513156516,
+    "max": 27.955180921085947,
+    "n": 7,
+    "spread": 0.134497647742845
+   }
+  },
+  {
+   "key": "op/gaussian-mv-precision-scale/ep/to0 Nv3 G {offset[3],scale[3]}",
+   "cal": 20.37140649999492,
+   "op": "gaussian-mv-precision-scale",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to0 Nv3 G {offset[3],scale[3]}",
+   "from": "atom/probit-learned",
+   "calls": 16,
+   "us": {
+    "median": 2256.374999997206,
+    "min": 2197.8335000021616,
+    "max": 2563.729000001331,
+    "n": 7,
+    "spread": 0.162160766716358
+   }
+  },
+  {
+   "key": "op/gaussian-mv-precision-scale/ep/to1 Nv3 G {offset[3],scale[3]}",
+   "cal": 20.288885500001925,
+   "op": "gaussian-mv-precision-scale",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to1 Nv3 G {offset[3],scale[3]}",
+   "from": "atom/probit-learned",
+   "calls": 16,
+   "us": {
+    "median": 2766.833499998029,
+    "min": 2282.77099999832,
+    "max": 3214.7914999950444,
+    "n": 7,
+    "spread": 0.33685456678090264
+   }
+  },
+  {
+   "key": "op/gaussian-mv-precision-scale/logEvidence/to0 Nv3 G {offset[3],scale[3]}",
+   "cal": 20.274666749999597,
+   "op": "gaussian-mv-precision-scale",
+   "folder": "scales",
+   "hook": "logEvidence",
+   "sig": "to0 Nv3 G {offset[3],scale[3]}",
+   "from": "atom/probit-learned",
+   "calls": 18,
+   "us": {
+    "median": 2387.437500001397,
+    "min": 2205.5830000026617,
+    "max": 3507.896000002802,
+    "n": 7,
+    "spread": 0.5454856933424972
+   }
+  },
+  {
+   "key": "op/gaussian-normal-gamma/ep/to1 v NG",
+   "cal": 20.26490625000224,
+   "op": "gaussian-normal-gamma",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 v NG",
+   "from": "atom/gaussian-learned",
+   "calls": 36,
+   "us": {
+    "median": 0.04955555801539058,
+    "min": 0.04469349000422687,
+    "max": 0.13836646815288584,
+    "n": 7,
+    "spread": 1.8902617970635451
+   }
+  },
+  {
+   "key": "op/gaussian-normal-gamma/logEvidence/to0 v NG",
+   "cal": 20.273406250002154,
+   "op": "gaussian-normal-gamma",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 v NG",
+   "from": "atom/gaussian-learned",
+   "calls": 72,
+   "us": {
+    "median": 0.2434483685035832,
+    "min": 0.2310269148108417,
+    "max": 0.3088486713556117,
+    "n": 7,
+    "spread": 0.3196643174202443
+   }
+  },
+  {
+   "key": "op/gaussian-scale/ep/to1 v NN",
+   "cal": 20.4034064999978,
+   "op": "gaussian-scale",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 v NN",
+   "from": "model/radon",
+   "calls": 8495,
+   "us": {
+    "median": 81.14630681831676,
+    "min": 79.36031818181536,
+    "max": 83.27368181827214,
+    "n": 7,
+    "spread": 0.0482260227223728
+   }
+  },
+  {
+   "key": "op/gaussian-scale/ep/to2 v NN",
+   "cal": 20.607510250003543,
+   "op": "gaussian-scale",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to2 v NN",
+   "from": "model/radon",
+   "calls": 8495,
+   "us": {
+    "median": 46.864473684170086,
+    "min": 46.24342105265609,
+    "max": 51.38991578944689,
+    "n": 7,
+    "spread": 0.10981654827650793
+   }
+  },
+  {
+   "key": "op/gaussian-scale/ep/to2 vv N",
+   "cal": 20.642749750000803,
+   "op": "gaussian-scale",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to2 vv N",
+   "from": "atom/half-cauchy",
+   "calls": 76,
+   "us": {
+    "median": 50.181297872381464,
+    "min": 46.38031914881604,
+    "max": 51.25044680855663,
+    "n": 7,
+    "spread": 0.09705065166162205
+   }
+  },
+  {
+   "key": "op/gaussian-scale/logEvidence/to0 v NN",
+   "cal": 20.928947499996866,
+   "op": "gaussian-scale",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 v NN",
+   "from": "model/radon",
+   "calls": 8592,
+   "us": {
+    "median": 46.73305494505477,
+    "min": 45.07874725271364,
+    "max": 50.61217582420635,
+    "n": 7,
+    "spread": 0.118405025693238
+   }
+  },
+  {
+   "key": "op/gaussian-transition/ep/to0 Nv2Nv2 {covariance[4],matrix[4]}",
+   "cal": 20.670822500000213,
+   "op": "gaussian-transition",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 Nv2Nv2 {covariance[4],matrix[4]}",
+   "from": "program/kalman",
+   "calls": 3363,
+   "us": {
+    "median": 15.118899999963885,
+    "min": 14.478124999992101,
+    "max": 20.661903571453877,
+    "n": 7,
+    "spread": 0.40900982025653637
+   }
+  },
+  {
+   "key": "op/gaussian-transition/ep/to1 Nv2Nv2 {covariance[4],matrix[4]}",
+   "cal": 20.589031250005064,
+   "op": "gaussian-transition",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 Nv2Nv2 {covariance[4],matrix[4]}",
+   "from": "program/kalman",
+   "calls": 3363,
+   "us": {
+    "median": 12.009966777426042,
+    "min": 11.325028239195529,
+    "max": 14.594337209305754,
+    "n": 7,
+    "spread": 0.27221632088568515
+   }
+  },
+  {
+   "key": "op/gaussian-transition/logEvidence/to0 Nv2Nv2 {covariance[4],matrix[4]}",
+   "cal": 20.324125000002823,
+   "op": "gaussian-transition",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 Nv2Nv2 {covariance[4],matrix[4]}",
+   "from": "program/kalman",
+   "calls": 4012,
+   "us": {
+    "median": 12.79445058140101,
+    "min": 12.146683139542082,
+    "max": 14.536215116264472,
+    "n": 7,
+    "spread": 0.18676315653569336
+   }
+  },
+  {
+   "key": "op/gaussian/ep/to0 NN {precision}",
+   "cal": 20.397198250004294,
+   "op": "gaussian",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 NN {precision}",
+   "from": "atom/prior-normal-hyperprior",
+   "calls": 19753,
+   "us": {
+    "median": 0.06246619388194881,
+    "min": 0.05570848007682154,
+    "max": 0.06539004747873926,
+    "n": 7,
+    "spread": 0.1549889116057615
+   }
+  },
+  {
+   "key": "op/gaussian/ep/to1 NN {precision}",
+   "cal": 20.788270749999356,
+   "op": "gaussian",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 NN {precision}",
+   "from": "atom/prior-normal-hyperprior",
+   "calls": 19473,
+   "us": {
+    "median": 0.0626503553440762,
+    "min": 0.061239908921712195,
+    "max": 0.08320797626423278,
+    "n": 7,
+    "spread": 0.3506455346002716
+   }
+  },
+  {
+   "key": "op/gaussian/ep/to1 v N {precision}",
+   "cal": 20.422469000001,
+   "op": "gaussian",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 v N {precision}",
+   "from": "atom/gate-random",
+   "calls": 15538,
+   "us": {
+    "median": 0.06924290321129153,
+    "min": 0.053539117500145096,
+    "max": 0.08945550029525567,
+    "n": 7,
+    "spread": 0.5187012838776183
+   }
+  },
+  {
+   "key": "op/gaussian/ep/to0 N v {precision}",
+   "cal": 20.18199999999706,
+   "op": "gaussian",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 N v {precision}",
+   "from": "atom/spike-and-slab-marginal-learned",
+   "calls": 218,
+   "us": {
+    "median": 0.1074004600162675,
+    "min": 0.06406268283425523,
+    "max": 0.29699537750397687,
+    "n": 7,
+    "spread": 2.168823994184385
+   }
+  },
+  {
+   "key": "op/gaussian/logEvidence/to0 NN {precision}",
+   "cal": 20.361718749994907,
+   "op": "gaussian",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 NN {precision}",
+   "from": "atom/prior-normal-hyperprior",
+   "calls": 22221,
+   "us": {
+    "median": 5.234089897260686,
+    "min": 5.153324486306938,
+    "max": 6.381992294523552,
+    "n": 7,
+    "spread": 0.23474335220334086
+   }
+  },
+  {
+   "key": "op/greater-than/ep/to1 v N {threshold}",
+   "cal": 20.404562250001618,
+   "op": "greater-than",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to1 v N {threshold}",
+   "from": "atom/mixture-components-learned",
+   "calls": 115,
+   "us": {
+    "median": 4.6636061415337995,
+    "min": 4.508121495314025,
+    "max": 5.096850467285325,
+    "n": 7,
+    "spread": 0.1262389992002357
+   }
+  },
+  {
+   "key": "op/greater-than/logEvidence/to0 v N {threshold}",
+   "cal": 20.337364749993867,
+   "op": "greater-than",
+   "folder": "links",
+   "hook": "logEvidence",
+   "sig": "to0 v N {threshold}",
+   "from": "atom/mixture-components-learned",
+   "calls": 125,
+   "us": {
+    "median": 8.512996330268793,
+    "min": 7.798088073395107,
+    "max": 9.229203669723859,
+    "n": 7,
+    "spread": 0.16810950466879446
+   }
+  },
+  {
+   "key": "op/is-between/ep/to1 v N {lower,upper}",
+   "cal": 20.275020749999385,
+   "op": "is-between",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to1 v N {lower,upper}",
+   "from": "program/circular-means",
+   "calls": 650,
+   "us": {
+    "median": 5.711325065285398,
+    "min": 5.42101827677684,
+    "max": 6.078872062660561,
+    "n": 7,
+    "spread": 0.11518409097081357
+   }
+  },
+  {
+   "key": "op/is-between/logEvidence/to0 v N {lower,upper}",
+   "cal": 20.24720850000449,
+   "op": "is-between",
+   "folder": "links",
+   "hook": "logEvidence",
+   "sig": "to0 v N {lower,upper}",
+   "from": "program/circular-means",
+   "calls": 762,
+   "us": {
+    "median": 13.442982456150563,
+    "min": 12.558479532158637,
+    "max": 14.332967836245396,
+    "n": 7,
+    "spread": 0.13200108754697348
+   }
+  },
+  {
+   "key": "op/laplace-site/ep/to0 N {scale,y}",
+   "cal": 20.84229200000118,
+   "op": "laplace-site",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 N {scale,y}",
+   "from": "atom/laplace",
+   "calls": 55,
+   "us": {
+    "median": 53.29044117645347,
+    "min": 50.957110294107494,
+    "max": 62.52205882350716,
+    "n": 7,
+    "spread": 0.21701731631581367
+   }
+  },
+  {
+   "key": "op/laplace-site/logEvidence/to0 N {scale,y}",
+   "cal": 26.153885249997984,
+   "op": "laplace-site",
+   "folder": "likelihoods",
+   "hook": "logEvidence",
+   "sig": "to0 N {scale,y}",
+   "from": "atom/laplace",
+   "calls": 65,
+   "us": {
+    "median": 239.462888890153,
+    "min": 65.69900000047508,
+    "max": 1652.6573333329807,
+    "n": 7,
+    "spread": 6.6271577223829405
+   }
+  },
+  {
+   "key": "op/likelihood-pair-row/ep/to0 Nv2 {likelihoodbeta-shapes,matrix[4],y}",
+   "cal": 20.655874749998475,
+   "op": "likelihood-pair-row",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 Nv2 {likelihoodbeta-shapes,matrix[4],y}",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 492.0677499994781,
+    "min": 448.854249998476,
+    "max": 870.5312499987485,
+    "n": 7,
+    "spread": 0.8569490684986362
+   }
+  },
+  {
+   "key": "op/likelihood-pair/logEvidence/to0 N G {likelihoodstudent-t-df,scale,y}",
+   "cal": 20.440374749989132,
+   "op": "likelihood-pair",
+   "folder": "likelihoods",
+   "hook": "logEvidence",
+   "sig": "to0 N G {likelihoodstudent-t-df,scale,y}",
+   "from": "atom/student-t-df-learned",
+   "calls": 880,
+   "us": {
+    "median": 312.5544615378693,
+    "min": 301.903846154276,
+    "max": 343.4615384612698,
+    "n": 7,
+    "spread": 0.13296144327141102
+   }
+  },
+  {
+   "key": "op/likelihood-pair/tilted/to0 N G {likelihoodstudent-t-df,scale,y}",
+   "cal": 20.81712499999776,
+   "op": "likelihood-pair",
+   "folder": "likelihoods",
+   "hook": "tilted",
+   "sig": "to0 N G {likelihoodstudent-t-df,scale,y}",
+   "from": "atom/student-t-df-learned",
+   "calls": 800,
+   "us": {
+    "median": 387.86393333381665,
+    "min": 309.96386666665785,
+    "max": 708.5194666666212,
+    "n": 7,
+    "spread": 1.0275655087964697
+   }
+  },
+  {
+   "key": "op/likelihood-pair/tilted/to1 N G {likelihoodstudent-t-df,scale,y}",
+   "cal": 20.53194799999983,
+   "op": "likelihood-pair",
+   "folder": "likelihoods",
+   "hook": "tilted",
+   "sig": "to1 N G {likelihoodstudent-t-df,scale,y}",
+   "from": "atom/student-t-df-learned",
+   "calls": 800,
+   "us": {
+    "median": 338.9196428574256,
+    "min": 310.889857143463,
+    "max": 811.6636428572486,
+    "n": 7,
+    "spread": 1.4775590505518377
+   }
+  },
+  {
+   "key": "op/likelihood-pair/tilted/to0 NN {likelihoodweibull-shap,y}",
+   "cal": 34.00764574999994,
+   "op": "likelihood-pair",
+   "folder": "likelihoods",
+   "hook": "tilted",
+   "sig": "to0 NN {likelihoodweibull-shap,y}",
+   "from": "atom/weibull-shape-learned",
+   "calls": 690,
+   "us": {
+    "median": 282.9907222225706,
+    "min": 252.8402777776743,
+    "max": 376.9212777778092,
+    "n": 7,
+    "spread": 0.43846313768034395
+   }
+  },
+  {
+   "key": "op/likelihood-pair/tilted/to1 NN {likelihoodweibull-shap,y}",
+   "cal": 23.676896249999118,
+   "op": "likelihood-pair",
+   "folder": "likelihoods",
+   "hook": "tilted",
+   "sig": "to1 NN {likelihoodweibull-shap,y}",
+   "from": "atom/weibull-shape-learned",
+   "calls": 690,
+   "us": {
+    "median": 311.2157058819909,
+    "min": 253.9926470592892,
+    "max": 490.2352941169417,
+    "n": 7,
+    "spread": 0.7590961593282595
+   }
+  },
+  {
+   "key": "op/likelihood-row/ep/to0 Nv2 {a[2],exposure,likelihoodpoisson-log,y}",
+   "cal": 20.72516650000034,
+   "op": "likelihood-row",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 Nv2 {a[2],exposure,likelihoodpoisson-log,y}",
+   "from": "atom/poisson-log-learned",
+   "calls": 2140,
+   "us": {
+    "median": 77.24351111100987,
+    "min": 69.1120444441266,
+    "max": 117.60186666668031,
+    "n": 7,
+    "spread": 0.6277526943702361
+   }
+  },
+  {
+   "key": "op/likelihood-row/ep/to0 Nv2 {a[2],likelihoodasymmetric-l,scale,tau,y}",
+   "cal": 20.536052250001376,
+   "op": "likelihood-row",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 Nv2 {a[2],likelihoodasymmetric-l,scale,tau,y}",
+   "from": "atom/quantile-regression",
+   "calls": 620,
+   "us": {
+    "median": 66.30464150945937,
+    "min": 63.04796226418748,
+    "max": 68.05934905657162,
+    "n": 7,
+    "spread": 0.07558123652126504
+   }
+  },
+  {
+   "key": "op/likelihood-row/ep/to0 Nv40 {a[40],exposure,likelihoodpoisson-log,y}",
+   "cal": 20.477656500002922,
+   "op": "likelihood-row",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 Nv40 {a[40],exposure,likelihoodpoisson-log,y}",
+   "from": "program/cox",
+   "calls": 360,
+   "us": {
+    "median": 427.7423636363396,
+    "min": 421.4241818183589,
+    "max": 452.4620909095657,
+    "n": 7,
+    "spread": 0.07256215827524345
+   }
+  },
+  {
+   "key": "op/likelihood-row/ep/to0 Nv2 {a[2],cuts[3],likelihoodordinal-prob,y}",
+   "cal": 20.398364500000753,
+   "op": "likelihood-row",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 Nv2 {a[2],cuts[3],likelihoodordinal-prob,y}",
+   "from": "atom/ordinal-probit",
+   "calls": 336,
+   "us": {
+    "median": 843.3819999991101,
+    "min": 832.4236666667275,
+    "max": 912.0000000014746,
+    "n": 7,
+    "spread": 0.09435384361396269
+   }
+  },
+  {
+   "key": "op/likelihood-row/logEvidence/to0 Nv2 {a[2],exposure,likelihoodpoisson-log,y}",
+   "cal": 20.468520499998704,
+   "op": "likelihood-row",
+   "folder": "likelihoods",
+   "hook": "logEvidence",
+   "sig": "to0 Nv2 {a[2],exposure,likelihoodpoisson-log,y}",
+   "from": "atom/poisson-log-learned",
+   "calls": 7310,
+   "us": {
+    "median": 75.7098545455268,
+    "min": 73.72576363638721,
+    "max": 80.72499999993438,
+    "n": 7,
+    "spread": 0.09244815494049458
+   }
+  },
+  {
+   "key": "op/likelihood-site/ep/to0 N {exposure,likelihoodpoisson-log,y}",
+   "cal": 20.52487475000089,
+   "op": "likelihood-site",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 N {exposure,likelihoodpoisson-log,y}",
+   "from": "atom/poisson-log",
+   "calls": 15246,
+   "us": {
+    "median": 58.49068421057861,
+    "min": 57.02796052642761,
+    "max": 63.94572368414006,
+    "n": 7,
+    "spread": 0.11827119567976101
+   }
+  },
+  {
+   "key": "op/likelihood-site/ep/to0 N {a[2],exposure,likelihoodpoisson-log,y}",
+   "cal": 20.47053125000093,
+   "op": "likelihood-site",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 N {a[2],exposure,likelihoodpoisson-log,y}",
+   "from": "atom/poisson-log-learned",
+   "calls": 2140,
+   "us": {
+    "median": 58.44554666662589,
+    "min": 56.41778666661897,
+    "max": 65.74833333337058,
+    "n": 7,
+    "spread": 0.15964512608587889
+   }
+  },
+  {
+   "key": "op/likelihood-site/ep/to0 N {a[2],likelihoodasymmetric-l,scale,tau,y}",
+   "cal": 20.45912474999932,
+   "op": "likelihood-site",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 N {a[2],likelihoodasymmetric-l,scale,tau,y}",
+   "from": "atom/quantile-regression",
+   "calls": 620,
+   "us": {
+    "median": 52.82765909082214,
+    "min": 49.75047727268909,
+    "max": 72.86457954548744,
+    "n": 7,
+    "spread": 0.437537885846129
+   }
+  },
+  {
+   "key": "op/likelihood-site/ep/to0 N {a[40],exposure,likelihoodpoisson-log,y}",
+   "cal": 20.696479249996628,
+   "op": "likelihood-site",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 N {a[40],exposure,likelihoodpoisson-log,y}",
+   "from": "program/cox",
+   "calls": 360,
+   "us": {
+    "median": 61.55192753636663,
+    "min": 59.66786956507375,
+    "max": 71.81824637687448,
+    "n": 7,
+    "spread": 0.19740042754342577
+   }
+  },
+  {
+   "key": "op/likelihood-site/logEvidence/to0 N {exposure,likelihoodpoisson-log,y}",
+   "cal": 21.12706275000164,
+   "op": "likelihood-site",
+   "folder": "likelihoods",
+   "hook": "logEvidence",
+   "sig": "to0 N {exposure,likelihoodpoisson-log,y}",
+   "from": "atom/poisson-log",
+   "calls": 37404,
+   "us": {
+    "median": 62.076393939522944,
+    "min": 58.97221212128925,
+    "max": 77.10227272720218,
+    "n": 7,
+    "spread": 0.29206046703640487
+   }
+  },
+  {
+   "key": "op/likelihood-triple/logEvidence/to0 N v N {categories,likelihoodordinal-prob,y}",
+   "cal": 20.412562500001513,
+   "op": "likelihood-triple",
+   "folder": "likelihoods",
+   "hook": "logEvidence",
+   "sig": "to0 N v N {categories,likelihoodordinal-prob,y}",
+   "from": "atom/ordinal-probit-cuts-learned",
+   "calls": 595,
+   "us": {
+    "median": 319.1763076924522,
+    "min": 266.1730769233635,
+    "max": 427.53846153769143,
+    "n": 7,
+    "spread": 0.5055681788568539
+   }
+  },
+  {
+   "key": "op/likelihood-triple/tilted/to0 N v N {categories,likelihoodordinal-prob,y}",
+   "cal": 20.36158324999633,
+   "op": "likelihood-triple",
+   "folder": "likelihoods",
+   "hook": "tilted",
+   "sig": "to0 N v N {categories,likelihoodordinal-prob,y}",
+   "from": "atom/ordinal-probit-cuts-learned",
+   "calls": 561,
+   "us": {
+    "median": 268.2037222225012,
+    "min": 253.54394444487602,
+    "max": 293.3333333332687,
+    "n": 7,
+    "spread": 0.1483550957409289
+   }
+  },
+  {
+   "key": "op/likelihood-triple/tilted/to2 N v N {categories,likelihoodordinal-prob,y}",
+   "cal": 21.282718999995268,
+   "op": "likelihood-triple",
+   "folder": "likelihoods",
+   "hook": "tilted",
+   "sig": "to2 N v N {categories,likelihoodordinal-prob,y}",
+   "from": "atom/ordinal-probit-cuts-learned",
+   "calls": 561,
+   "us": {
+    "median": 314.1249999998763,
+    "min": 266.4140624992797,
+    "max": 431.3776250000956,
+    "n": 7,
+    "spread": 0.5251526064492824
+   }
+  },
+  {
+   "key": "op/likelihood-triple/tilted/to0 NNN {categories,likelihoodordinal-prob,y}",
+   "cal": 20.50894799999878,
+   "op": "likelihood-triple",
+   "folder": "likelihoods",
+   "hook": "tilted",
+   "sig": "to0 NNN {categories,likelihoodordinal-prob,y}",
+   "from": "atom/ordinal-probit-cuts-learned",
+   "calls": 429,
+   "us": {
+    "median": 592.553571427873,
+    "min": 580.7142857146183,
+    "max": 667.1785714279395,
+    "n": 7,
+    "spread": 0.14591809058709856
+   }
+  },
+  {
+   "key": "op/likelihood-triple/tilted/to1 NNN {categories,likelihoodordinal-prob,y}",
+   "cal": 20.356406250000873,
+   "op": "likelihood-triple",
+   "folder": "likelihoods",
+   "hook": "tilted",
+   "sig": "to1 NNN {categories,likelihoodordinal-prob,y}",
+   "from": "atom/ordinal-probit-cuts-learned",
+   "calls": 429,
+   "us": {
+    "median": 595.6197499999689,
+    "min": 590.4062499994325,
+    "max": 670.4687500005093,
+    "n": 7,
+    "spread": 0.13441881334707423
+   }
+  },
+  {
+   "key": "op/linear-regression-plate/ep/to0 Nv8 {n,precision,xtx[64],xty[8],yty}",
+   "cal": 20.34785424999791,
+   "op": "linear-regression-plate",
+   "folder": "lifts",
+   "hook": "ep",
+   "sig": "to0 Nv8 {n,precision,xtx[64],xty[8],yty}",
+   "from": "atom/gp-hyperparameters",
+   "calls": 1896,
+   "us": {
+    "median": 1.203912466845354,
+    "min": 1.1373119363366733,
+    "max": 1.359173474803725,
+    "n": 7,
+    "spread": 0.1842837785776916
+   }
+  },
+  {
+   "key": "op/linear-regression-plate/ep/to0 Nv12 {n,precision,xtx[144],xty[12],yty}",
+   "cal": 20.87035399999877,
+   "op": "linear-regression-plate",
+   "folder": "lifts",
+   "hook": "ep",
+   "sig": "to0 Nv12 {n,precision,xtx[144],xty[12],yty}",
+   "from": "model/gaussian-process-regression",
+   "calls": 62,
+   "us": {
+    "median": 2.307474365893523,
+    "min": 2.2226346465172817,
+    "max": 2.6254047490552086,
+    "n": 7,
+    "spread": 0.17455019587269055
+   }
+  },
+  {
+   "key": "op/linear-regression-plate/ep/to0 Nv6 {n,precision,xtx[36],xty[6],yty}",
+   "cal": 20.615302249992965,
+   "op": "linear-regression-plate",
+   "folder": "lifts",
+   "hook": "ep",
+   "sig": "to0 Nv6 {n,precision,xtx[36],xty[6],yty}",
+   "from": "atom/gp-length-scale",
+   "calls": 62,
+   "us": {
+    "median": 0.7985132954556982,
+    "min": 0.7039204545452032,
+    "max": 0.9955777272724927,
+    "n": 7,
+    "spread": 0.36525036513117237
+   }
+  },
+  {
+   "key": "op/linear-regression-plate/logEvidence/to0 Nv8 {n,precision,xtx[64],xty[8],yty}",
+   "cal": 20.627854500002286,
+   "op": "linear-regression-plate",
+   "folder": "lifts",
+   "hook": "logEvidence",
+   "sig": "to0 Nv8 {n,precision,xtx[64],xty[8],yty}",
+   "from": "atom/gp-hyperparameters",
+   "calls": 948,
+   "us": {
+    "median": 17.488011173188866,
+    "min": 16.650720670420608,
+    "max": 19.790153631286216,
+    "n": 7,
+    "spread": 0.17951915342315888
+   }
+  },
+  {
+   "key": "op/linear-regression-row/ep/to1 v Nv2 {a[2],precision}",
+   "cal": 20.324729250001837,
+   "op": "linear-regression-row",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 v Nv2 {a[2],precision}",
+   "from": "atom/random-intercepts-slopes",
+   "calls": 3708,
+   "us": {
+    "median": 0.17260869953905875,
+    "min": 0.15725074880421175,
+    "max": 0.20221435915797045,
+    "n": 7,
+    "spread": 0.2604944621785075
+   }
+  },
+  {
+   "key": "op/linear-regression-row/logEvidence/to0 v Nv2 {a[2],precision}",
+   "cal": 20.247323000003234,
+   "op": "linear-regression-row",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 v Nv2 {a[2],precision}",
+   "from": "atom/random-intercepts-slopes",
+   "calls": 4496,
+   "us": {
+    "median": 16.458928571415267,
+    "min": 15.206191428546195,
+    "max": 18.64262000000703,
+    "n": 7,
+    "spread": 0.2087881089312818
+   }
+  },
+  {
+   "key": "op/linear/ep/to0 NN {coeffs[1],offset}",
+   "cal": 20.566801999993913,
+   "op": "linear",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 NN {coeffs[1],offset}",
+   "from": "model/banana",
+   "calls": 53330,
+   "us": {
+    "median": 0.18115427200587078,
+    "min": 0.15049979701038593,
+    "max": 0.6557159992614612,
+    "n": 7,
+    "spread": 2.7888726920814895
+   }
+  },
+  {
+   "key": "op/linear/ep/to1 NN {coeffs[1],offset}",
+   "cal": 21.24948924999626,
+   "op": "linear",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 NN {coeffs[1],offset}",
+   "from": "model/stochastic-volatility",
+   "calls": 17987,
+   "us": {
+    "median": 0.1661140251711683,
+    "min": 0.15643134373356246,
+    "max": 0.1785458587683653,
+    "n": 7,
+    "spread": 0.13312852428935754
+   }
+  },
+  {
+   "key": "op/linear/ep/to0 NNN {coeffs[2],offset}",
+   "cal": 20.419104500000685,
+   "op": "linear",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 NNN {coeffs[2],offset}",
+   "from": "atom/mixture-regression",
+   "calls": 11320,
+   "us": {
+    "median": 0.19642964178080402,
+    "min": 0.17799401489598396,
+    "max": 0.40681893952783543,
+    "n": 7,
+    "spread": 1.164920541306069
+   }
+  },
+  {
+   "key": "op/linear/ep/to1 NNN {coeffs[2],offset}",
+   "cal": 20.418156000003364,
+   "op": "linear",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 NNN {coeffs[2],offset}",
+   "from": "atom/mixture-regression",
+   "calls": 7683,
+   "us": {
+    "median": 0.20320876805223317,
+    "min": 0.1982512720361242,
+    "max": 0.23476126843819597,
+    "n": 7,
+    "spread": 0.17966742651915088
+   }
+  },
+  {
+   "key": "op/linear/logEvidence/to0 NN {coeffs[1],offset}",
+   "cal": 21.08028099999865,
+   "op": "linear",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 NN {coeffs[1],offset}",
+   "from": "model/banana",
+   "calls": 63758,
+   "us": {
+    "median": 0.23964429626767367,
+    "min": 0.20986836803226838,
+    "max": 0.4226489974095232,
+    "n": 7,
+    "spread": 0.8879019141752779
+   }
+  },
+  {
+   "key": "op/logistic-plate/ep/to0 Nv3 {X[180],y[60]}",
+   "cal": 20.312500250001904,
+   "op": "logistic-plate",
+   "folder": "lifts",
+   "hook": "ep",
+   "sig": "to0 Nv3 {X[180],y[60]}",
+   "from": "atom/logistic-learned",
+   "calls": 8,
+   "us": {
+    "median": 7520.917000001646,
+    "min": 7373.207999989972,
+    "max": 8278.20800000336,
+    "n": 7,
+    "spread": 0.12033107133255024
+   }
+  },
+  {
+   "key": "op/logistic-plate/ep/to0 Nv3 {X[150],y[50]}",
+   "cal": 20.31023925000045,
+   "op": "logistic-plate",
+   "folder": "lifts",
+   "hook": "ep",
+   "sig": "to0 Nv3 {X[150],y[50]}",
+   "from": "model/logistic-regression",
+   "calls": 2,
+   "us": {
+    "median": 5309.37499999709,
+    "min": 5250,
+    "max": 5419.666999994661,
+    "n": 7,
+    "spread": 0.03195611536098952
+   }
+  },
+  {
+   "key": "op/logistic-plate/ep/to0 Nv3 {X[24],y[8]}",
+   "cal": 20.505426750005427,
+   "op": "logistic-plate",
+   "folder": "lifts",
+   "hook": "ep",
+   "sig": "to0 Nv3 {X[24],y[8]}",
+   "from": "atom/logistic",
+   "calls": 2,
+   "us": {
+    "median": 922.187500000291,
+    "min": 885.1511250013573,
+    "max": 1019.1197500007547,
+    "n": 7,
+    "spread": 0.1452726533371523
+   }
+  },
+  {
+   "key": "op/logistic-plate/ep/to0 Nv3 {X[9],y[3]}",
+   "cal": 20.645801750000828,
+   "op": "logistic-plate",
+   "folder": "lifts",
+   "hook": "ep",
+   "sig": "to0 Nv3 {X[9],y[3]}",
+   "from": "atom/gp-logistic",
+   "calls": 2,
+   "us": {
+    "median": 204.54166666673873,
+    "min": 196.53376190537875,
+    "max": 244.48414285697731,
+    "n": 7,
+    "spread": 0.2344284259193237
+   }
+  },
+  {
+   "key": "op/logistic-plate/logEvidence/to0 Nv3 {X[180],y[60]}",
+   "cal": 20.446583500000997,
+   "op": "logistic-plate",
+   "folder": "lifts",
+   "hook": "logEvidence",
+   "sig": "to0 Nv3 {X[180],y[60]}",
+   "from": "atom/logistic-learned",
+   "calls": 10,
+   "us": {
+    "median": 7875.83300001279,
+    "min": 7688.708000001498,
+    "max": 8277.457999996841,
+    "n": 7,
+    "spread": 0.07475399744946183
+   }
+  },
+  {
+   "key": "op/logistic/ep/to1 v N {X[180],y[60]}",
+   "cal": 20.346572749996994,
+   "op": "logistic",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to1 v N {X[180],y[60]}",
+   "from": "atom/logistic-learned",
+   "calls": 14040,
+   "us": {
+    "median": 8.588108333333366,
+    "min": 8.401649999996152,
+    "max": 9.50347083332114,
+    "n": 7,
+    "spread": 0.12829610323480045
+   }
+  },
+  {
+   "key": "op/logistic/ep/to1 v N {X[150],y[50]}",
+   "cal": 20.38398975000382,
+   "op": "logistic",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to1 v N {X[150],y[50]}",
+   "from": "model/logistic-regression",
+   "calls": 3000,
+   "us": {
+    "median": 8.543711886294512,
+    "min": 8.362726098192267,
+    "max": 9.13549741602699,
+    "n": 7,
+    "spread": 0.0904491312580861
+   }
+  },
+  {
+   "key": "op/logistic/ep/to1 v N",
+   "cal": 20.64739550000013,
+   "op": "logistic",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to1 v N",
+   "from": "atom/prior-logit-normal-bernoulli",
+   "calls": 1784,
+   "us": {
+    "median": 8.701524390251995,
+    "min": 8.374136585366724,
+    "max": 9.521697560984006,
+    "n": 7,
+    "spread": 0.13188045268284862
+   }
+  },
+  {
+   "key": "op/logistic/ep/to1 v N {X[24],y[8]}",
+   "cal": 20.73446900000272,
+   "op": "logistic",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to1 v N {X[24],y[8]}",
+   "from": "atom/logistic",
+   "calls": 440,
+   "us": {
+    "median": 8.509536384966415,
+    "min": 8.327758215977745,
+    "max": 9.082599765242092,
+    "n": 7,
+    "spread": 0.0887053671452544
+   }
+  },
+  {
+   "key": "op/logistic/logEvidence/to0 v N",
+   "cal": 21.110541750000266,
+   "op": "logistic",
+   "folder": "links",
+   "hook": "logEvidence",
+   "sig": "to0 v N",
+   "from": "atom/prior-logit-normal-bernoulli",
+   "calls": 1990,
+   "us": {
+    "median": 5.378792127930137,
+    "min": 4.869824108251126,
+    "max": 6.274396063953805,
+    "n": 7,
+    "spread": 0.2611314812500824
+   }
+  },
+  {
+   "key": "op/max/ep/to0 NNN",
+   "cal": 20.46908324999822,
+   "op": "max",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 NNN",
+   "from": "atom/max",
+   "calls": 5,
+   "us": {
+    "median": 424.2802727279592,
+    "min": 411.61745454486334,
+    "max": 479.06063636368015,
+    "n": 7,
+    "spread": 0.1589590328703785
+   }
+  },
+  {
+   "key": "op/max/ep/to1 NNN",
+   "cal": 20.496385499998723,
+   "op": "max",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 NNN",
+   "from": "atom/max",
+   "calls": 5,
+   "us": {
+    "median": 241.72683333260161,
+    "min": 234.9305555552645,
+    "max": 265.38888888899237,
+    "n": 7,
+    "spread": 0.12600311233059933
+   }
+  },
+  {
+   "key": "op/max/ep/to2 NNN",
+   "cal": 20.46343750000233,
+   "op": "max",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to2 NNN",
+   "from": "atom/max",
+   "calls": 5,
+   "us": {
+    "median": 229.79789999953937,
+    "min": 226.47084999989602,
+    "max": 261.0395999996399,
+    "n": 7,
+    "spread": 0.1504310961928424
+   }
+  },
+  {
+   "key": "op/max/logEvidence/to0 NNN",
+   "cal": 20.58188549999977,
+   "op": "max",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 NNN",
+   "from": "atom/max",
+   "calls": 7,
+   "us": {
+    "median": 230.2940000000591,
+    "min": 228.2314999999168,
+    "max": 255.28472222261675,
+    "n": 7,
+    "spread": 0.11747254475884311
+   }
+  },
+  {
+   "key": "op/mixture-row/ep/to0 Nv12 {a[12],means[2],sds[2],weights[2]}",
+   "cal": 20.77266674999555,
+   "op": "mixture-row",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 Nv12 {a[12],means[2],sds[2],weights[2]}",
+   "from": "program/sparse-mixture",
+   "calls": 576,
+   "us": {
+    "median": 38.515889830566685,
+    "min": 36.48305084752175,
+    "max": 39.947389830466186,
+    "n": 7,
+    "spread": 0.08994570807488111
+   }
+  },
+  {
+   "key": "op/mixture-row/logEvidence/to0 Nv12 {a[12],means[2],sds[2],weights[2]}",
+   "cal": 20.338395750000927,
+   "op": "mixture-row",
+   "folder": "likelihoods",
+   "hook": "logEvidence",
+   "sig": "to0 Nv12 {a[12],means[2],sds[2],weights[2]}",
+   "from": "program/sparse-mixture",
+   "calls": 744,
+   "us": {
+    "median": 57.87243209865496,
+    "min": 54.04525925926318,
+    "max": 61.53961728408898,
+    "n": 7,
+    "spread": 0.12949789309096585
+   }
+  },
+  {
+   "key": "op/mixture-site/ep/to0 N {means[2],sds[2],weights[2]}",
+   "cal": 20.367729000005056,
+   "op": "mixture-site",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 N {means[2],sds[2],weights[2]}",
+   "from": "atom/spike-and-slab-marginal",
+   "calls": 8643,
+   "us": {
+    "median": 0.6255019318169533,
+    "min": 0.5820880681808789,
+    "max": 0.9257622727272974,
+    "n": 7,
+    "spread": 0.5494374790308261
+   }
+  },
+  {
+   "key": "op/mixture-site/ep/to0 N {a[12],means[2],sds[2],weights[2]}",
+   "cal": 20.557395499996346,
+   "op": "mixture-site",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 N {a[12],means[2],sds[2],weights[2]}",
+   "from": "program/sparse-mixture",
+   "calls": 576,
+   "us": {
+    "median": 0.6515909090905386,
+    "min": 0.6220880681824135,
+    "max": 0.9491003409096844,
+    "n": 7,
+    "spread": 0.5018674572726928
+   }
+  },
+  {
+   "key": "op/mixture-site/logEvidence/to0 N {means[2],sds[2],weights[2]}",
+   "cal": 20.40897925000172,
+   "op": "mixture-site",
+   "folder": "likelihoods",
+   "hook": "logEvidence",
+   "sig": "to0 N {means[2],sds[2],weights[2]}",
+   "from": "atom/spike-and-slab-marginal",
+   "calls": 9861,
+   "us": {
+    "median": 0.6009517045458779,
+    "min": 0.5877462499996579,
+    "max": 0.6429023863628655,
+    "n": 7,
+    "spread": 0.09178131278434017
+   }
+  },
+  {
+   "key": "op/mixture-weight/ep/to0 B {l0,l1}",
+   "cal": 20.304510500001925,
+   "op": "mixture-weight",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to0 B {l0,l1}",
+   "from": "atom/gate-weight-summed-out",
+   "calls": 50,
+   "us": {
+    "median": 11.378700657874823,
+    "min": 11.055375000021167,
+    "max": 13.146108552638523,
+    "n": 7,
+    "spread": 0.18374097495661149
+   }
+  },
+  {
+   "key": "op/mixture-weight/logEvidence/to0 B {l0,l1}",
+   "cal": 20.631146000003355,
+   "op": "mixture-weight",
+   "folder": "discrete",
+   "hook": "logEvidence",
+   "sig": "to0 B {l0,l1}",
+   "from": "atom/gate-weight-summed-out",
+   "calls": 70,
+   "us": {
+    "median": 0.2019044714125279,
+    "min": 0.19357466415747412,
+    "max": 0.2482842819131223,
+    "n": 7,
+    "spread": 0.2709678362886099
+   }
+  },
+  {
+   "key": "op/multiclass-row/ep/to0 Nv3 {classes,linklogit,matrix[9],y}",
+   "cal": 21.29080199999953,
+   "op": "multiclass-row",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to0 Nv3 {classes,linklogit,matrix[9],y}",
+   "from": "atom/softmax-regression",
+   "calls": 680,
+   "us": {
+    "median": 223.96761111142243,
+    "min": 212.0694444448519,
+    "max": 242.18288888854053,
+    "n": 7,
+    "spread": 0.1344544610457419
+   }
+  },
+  {
+   "key": "op/multiclass-row/ep/to0 Nv2 {classes,linklogit,matrix[16],y}",
+   "cal": 20.398448000003555,
+   "op": "multiclass-row",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to0 Nv2 {classes,linklogit,matrix[16],y}",
+   "from": "atom/softmax-choice",
+   "calls": 480,
+   "us": {
+    "median": 264.0882352938848,
+    "min": 259.85047058801524,
+    "max": 269.3676470585428,
+    "n": 7,
+    "spread": 0.03603786613188795
+   }
+  },
+  {
+   "key": "op/multiclass-row/ep/to0 Nv6 {classes,linklogit,matrix[18],y}",
+   "cal": 20.237114499996096,
+   "op": "multiclass-row",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to0 Nv6 {classes,linklogit,matrix[18],y}",
+   "from": "atom/gp-softmax",
+   "calls": 40,
+   "us": {
+    "median": 245.0943157891743,
+    "min": 239.0372631581206,
+    "max": 252.7039473681821,
+    "n": 7,
+    "spread": 0.055760918673517255
+   }
+  },
+  {
+   "key": "op/multiclass-row/logEvidence/to0 Nv3 {classes,linklogit,matrix[9],y}",
+   "cal": 20.4560517500031,
+   "op": "multiclass-row",
+   "folder": "links",
+   "hook": "logEvidence",
+   "sig": "to0 Nv3 {classes,linklogit,matrix[9],y}",
+   "from": "atom/softmax-regression",
+   "calls": 748,
+   "us": {
+    "median": 242.04168421075386,
+    "min": 235.89473684152932,
+    "max": 304.8311052629479,
+    "n": 7,
+    "spread": 0.2848119680137136
+   }
+  },
+  {
+   "key": "op/multiclass-site/ep/to0 N*8 {classes,linklogit,y}",
+   "cal": 20.413906750000024,
+   "op": "multiclass-site",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to0 N*8 {classes,linklogit,y}",
+   "from": "atom/softmax-two-groups",
+   "calls": 3216,
+   "us": {
+    "median": 898.9010000004782,
+    "min": 839.437500000713,
+    "max": 954.588500000682,
+    "n": 7,
+    "spread": 0.12810198230940634
+   }
+  },
+  {
+   "key": "op/multiclass-site/ep/to1 N*8 {classes,linklogit,y}",
+   "cal": 20.877124750000803,
+   "op": "multiclass-site",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to1 N*8 {classes,linklogit,y}",
+   "from": "atom/softmax-two-groups",
+   "calls": 3216,
+   "us": {
+    "median": 907.5249999994412,
+    "min": 871.2249999982305,
+    "max": 1125.6500000017695,
+    "n": 7,
+    "spread": 0.28035040357422186
+   }
+  },
+  {
+   "key": "op/multiclass-site/ep/to2 N*8 {classes,linklogit,y}",
+   "cal": 20.628396000000066,
+   "op": "multiclass-site",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to2 N*8 {classes,linklogit,y}",
+   "from": "atom/softmax-two-groups",
+   "calls": 3216,
+   "us": {
+    "median": 858.0417999997735,
+    "min": 840.7918000011705,
+    "max": 889.3249999993714,
+    "n": 7,
+    "spread": 0.05656274554248252
+   }
+  },
+  {
+   "key": "op/multiclass-site/ep/to3 N*8 {classes,linklogit,y}",
+   "cal": 19.929031249997934,
+   "op": "multiclass-site",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to3 N*8 {classes,linklogit,y}",
+   "from": "atom/softmax-two-groups",
+   "calls": 3216,
+   "us": {
+    "median": 906.0971666670715,
+    "min": 849.1458333325378,
+    "max": 1191.5208333327125,
+    "n": 7,
+    "spread": 0.3778568266133582
+   }
+  },
+  {
+   "key": "op/multiclass-site/ep/to0 N*4 {classes,linklogit,y}",
+   "cal": 19.814239499995892,
+   "op": "multiclass-site",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to0 N*4 {classes,linklogit,y}",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 1387.013666666462,
+    "min": 1021.3333333328288,
+    "max": 1479.7083333299572,
+    "n": 7,
+    "spread": 0.3304761957384193
+   }
+  },
+  {
+   "key": "op/multiclass-site/ep/to1 N*4 {classes,linklogit,y}",
+   "cal": 19.90617700000439,
+   "op": "multiclass-site",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to1 N*4 {classes,linklogit,y}",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 958.14160000009,
+    "min": 946.8583999987459,
+    "max": 969.4250000000466,
+    "n": 7,
+    "spread": 0.02355246865525781
+   }
+  },
+  {
+   "key": "op/multiclass-site/logEvidence/to0 N*8 {classes,linklogit,y}",
+   "cal": 19.829291499994724,
+   "op": "multiclass-site",
+   "folder": "links",
+   "hook": "logEvidence",
+   "sig": "to0 N*8 {classes,linklogit,y}",
+   "from": "atom/softmax-two-groups",
+   "calls": 3264,
+   "us": {
+    "median": 935.7153333330643,
+    "min": 843.4861666658738,
+    "max": 1453.2360000011977,
+    "n": 7,
+    "spread": 0.6516403136874596
+   }
+  },
+  {
+   "key": "op/mvn-sd-corr-group/ep/to0 Nv2*4 GG B {groups}",
+   "cal": 19.87048949999371,
+   "op": "mvn-sd-corr-group",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to0 Nv2*4 GG B {groups}",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 18542.91699999885,
+    "min": 18412.750000003143,
+    "max": 18956.500000000233,
+    "n": 7,
+    "spread": 0.02932386527950933
+   }
+  },
+  {
+   "key": "op/mvn-sd-corr-group/ep/to4 Nv2*4 GG B {groups}",
+   "cal": 19.802510249995976,
+   "op": "mvn-sd-corr-group",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to4 Nv2*4 GG B {groups}",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 18436.332999990555,
+    "min": 18327.250000002095,
+    "max": 20852.75000000547,
+    "n": 7,
+    "spread": 0.13698494163696598
+   }
+  },
+  {
+   "key": "op/mvn-sd-corr-group/ep/to6 Nv2*4 GG B {groups}",
+   "cal": 19.7998435000045,
+   "op": "mvn-sd-corr-group",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to6 Nv2*4 GG B {groups}",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 18546.166000000085,
+    "min": 18333.791999990353,
+    "max": 18926.41700000968,
+    "n": 7,
+    "spread": 0.03195404376404925
+   }
+  },
+  {
+   "key": "op/mvn-sd-corr/ep/to1 v Nv2 GG B {count,scatter[4]}",
+   "cal": 19.842166750000615,
+   "op": "mvn-sd-corr",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to1 v Nv2 GG B {count,scatter[4]}",
+   "from": "atom/bivariate-correlation-learned",
+   "calls": 2,
+   "us": {
+    "median": 7890.125000005355,
+    "min": 7428.209000005154,
+    "max": 9755.707999996957,
+    "n": 7,
+    "spread": 0.2949888626593652
+   }
+  },
+  {
+   "key": "op/mvn-sd-corr/ep/to2 v Nv2 GG B {count,scatter[4]}",
+   "cal": 20.169104000000516,
+   "op": "mvn-sd-corr",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to2 v Nv2 GG B {count,scatter[4]}",
+   "from": "atom/bivariate-correlation-learned",
+   "calls": 2,
+   "us": {
+    "median": 6215.792000002693,
+    "min": 6119.5000000006985,
+    "max": 6263.000000006286,
+    "n": 7,
+    "spread": 0.0230863581029619
+   }
+  },
+  {
+   "key": "op/mvn-sd-corr/ep/to3 v Nv2 GG B {count,scatter[4]}",
+   "cal": 19.71343749999869,
+   "op": "mvn-sd-corr",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to3 v Nv2 GG B {count,scatter[4]}",
+   "from": "atom/bivariate-correlation-learned",
+   "calls": 2,
+   "us": {
+    "median": 6218.1669999990845,
+    "min": 6165.124999999534,
+    "max": 6412.750000003143,
+    "n": 7,
+    "spread": 0.03982282881814614
+   }
+  },
+  {
+   "key": "op/mvn-sd-corr/ep/to4 v Nv2 GG B {count,scatter[4]}",
+   "cal": 19.850687500002095,
+   "op": "mvn-sd-corr",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to4 v Nv2 GG B {count,scatter[4]}",
+   "from": "atom/bivariate-correlation-learned",
+   "calls": 2,
+   "us": {
+    "median": 6199.666999993497,
+    "min": 6153.749999997672,
+    "max": 6508.792000007816,
+    "n": 7,
+    "spread": 0.05726791455259071
+   }
+  },
+  {
+   "key": "op/mvn-sd-corr/logEvidence/to0 v Nv2 GG B {count,scatter[4]}",
+   "cal": 19.787468499998795,
+   "op": "mvn-sd-corr",
+   "folder": "covariance",
+   "hook": "logEvidence",
+   "sig": "to0 v Nv2 GG B {count,scatter[4]}",
+   "from": "atom/bivariate-correlation-learned",
+   "calls": 4,
+   "us": {
+    "median": 6256.290999997873,
+    "min": 6198.167000024114,
+    "max": 6275.875000021188,
+    "n": 7,
+    "spread": 0.012420777741492556
+   }
+  },
+  {
+   "key": "op/mvn-wishart-group/ep/to0 Nv2*11 W2 {groups}",
+   "cal": 19.76317724999535,
+   "op": "mvn-wishart-group",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to0 Nv2*11 W2 {groups}",
+   "from": "atom/random-intercepts-slopes-learned",
+   "calls": 3,
+   "us": {
+    "median": 8245.04199999501,
+    "min": 8091.0839999851305,
+    "max": 8811.08299997868,
+    "n": 7,
+    "spread": 0.08732508579022222
+   }
+  },
+  {
+   "key": "op/mvn-wishart-group/ep/to1 Nv2*11 W2 {groups}",
+   "cal": 19.742177499996615,
+   "op": "mvn-wishart-group",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to1 Nv2*11 W2 {groups}",
+   "from": "atom/random-intercepts-slopes-learned",
+   "calls": 3,
+   "us": {
+    "median": 8168.1249999965075,
+    "min": 8068.417000002228,
+    "max": 8178.791000013007,
+    "n": 7,
+    "spread": 0.013512770680030768
+   }
+  },
+  {
+   "key": "op/mvn-wishart-group/ep/to10 Nv2*11 W2 {groups}",
+   "cal": 20.377739750001638,
+   "op": "mvn-wishart-group",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to10 Nv2*11 W2 {groups}",
+   "from": "atom/random-intercepts-slopes-learned",
+   "calls": 3,
+   "us": {
+    "median": 8195.79200001317,
+    "min": 8184.624999994412,
+    "max": 8285.291000007419,
+    "n": 7,
+    "spread": 0.012282644558676585
+   }
+  },
+  {
+   "key": "op/mvn-wishart-group/ep/to11 Nv2*11 W2 {groups}",
+   "cal": 19.824718999989273,
+   "op": "mvn-wishart-group",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to11 Nv2*11 W2 {groups}",
+   "from": "atom/random-intercepts-slopes-learned",
+   "calls": 3,
+   "us": {
+    "median": 8218.75,
+    "min": 8176.542000001064,
+    "max": 8369.791000004625,
+    "n": 7,
+    "spread": 0.023513186312220397
+   }
+  },
+  {
+   "key": "op/mvn-wishart-group/logEvidence/to0 Nv2*11 W2 {groups}",
+   "cal": 19.775437500000407,
+   "op": "mvn-wishart-group",
+   "folder": "covariance",
+   "hook": "logEvidence",
+   "sig": "to0 Nv2*11 W2 {groups}",
+   "from": "atom/random-intercepts-slopes-learned",
+   "calls": 5,
+   "us": {
+    "median": 8187.582999991719,
+    "min": 8167.375000019092,
+    "max": 10231.541999994079,
+    "n": 7,
+    "spread": 0.25210944426176496
+   }
+  },
+  {
+   "key": "op/mvn-wishart/ep/to1 v Nv2 W2 {count,scatter[4]}",
+   "cal": 20.05975000000035,
+   "op": "mvn-wishart",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to1 v Nv2 W2 {count,scatter[4]}",
+   "from": "atom/mvn-wishart-learned",
+   "calls": 2,
+   "us": {
+    "median": 872.6499999989755,
+    "min": 824.4834000011906,
+    "max": 892.8249999997206,
+    "n": 7,
+    "spread": 0.07831501747391306
+   }
+  },
+  {
+   "key": "op/mvn-wishart/ep/to2 v Nv2 W2 {count,scatter[4]}",
+   "cal": 19.87547875000746,
+   "op": "mvn-wishart",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to2 v Nv2 W2 {count,scatter[4]}",
+   "from": "atom/mvn-wishart-learned",
+   "calls": 2,
+   "us": {
+    "median": 567.1093750024738,
+    "min": 546.2031249990105,
+    "max": 647.0208749997255,
+    "n": 7,
+    "spread": 0.17777478991645174
+   }
+  },
+  {
+   "key": "op/mvn-wishart/ep/to2 vv W2 {count,scatter[4]}",
+   "cal": 19.792145499995968,
+   "op": "mvn-wishart",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to2 vv W2 {count,scatter[4]}",
+   "from": "atom/mvn-wishart",
+   "calls": 2,
+   "us": {
+    "median": 1.0718923933216666,
+    "min": 0.9984153525076926,
+    "max": 1.7110871985111495,
+    "n": 7,
+    "spread": 0.6648725659811541
+   }
+  },
+  {
+   "key": "op/mvn-wishart/ep/to0 Nv2 v W2",
+   "cal": 19.796572999999626,
+   "op": "mvn-wishart",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to0 Nv2 v W2",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 761.3263333332725,
+    "min": 752.1249999990687,
+    "max": 840.2221666668387,
+    "n": 7,
+    "spread": 0.11571538092221126
+   }
+  },
+  {
+   "key": "op/mvn-wishart/ep/to2 Nv2 v W2",
+   "cal": 19.74025000000256,
+   "op": "mvn-wishart",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to2 Nv2 v W2",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 544.3750000009054,
+    "min": 537.1111111113956,
+    "max": 558.5138888887336,
+    "n": 7,
+    "spread": 0.03931623931536602
+   }
+  },
+  {
+   "key": "op/mvn-wishart/ep/to0 Nv3 v W3",
+   "cal": 19.784260500004166,
+   "op": "mvn-wishart",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to0 Nv3 v W3",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 12517.832999990787,
+    "min": 12398.957999976119,
+    "max": 13244.833999982802,
+    "n": 7,
+    "spread": 0.06757367669047076
+   }
+  },
+  {
+   "key": "op/mvn-wishart/ep/to2 Nv3 v W3",
+   "cal": 19.823916749999626,
+   "op": "mvn-wishart",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to2 Nv3 v W3",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 7130.207999987761,
+    "min": 6874.041999981273,
+    "max": 7403.250000003027,
+    "n": 7,
+    "spread": 0.07422055570085224
+   }
+  },
+  {
+   "key": "op/mvn-wishart/ep/to0 Nv4 v W4",
+   "cal": 19.913874999991094,
+   "op": "mvn-wishart",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to0 Nv4 v W4",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 73594.45800000685,
+    "min": 73165.66699999385,
+    "max": 114400.25000000605,
+    "n": 7,
+    "spread": 0.5602946759932436
+   }
+  },
+  {
+   "key": "op/mvn-wishart/ep/to2 Nv4 v W4",
+   "cal": 20.276260250000632,
+   "op": "mvn-wishart",
+   "folder": "covariance",
+   "hook": "ep",
+   "sig": "to2 Nv4 v W4",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 38923.83299997891,
+    "min": 38196.125000016764,
+    "max": 44127.29199999012,
+    "n": 7,
+    "spread": 0.15237880092581246
+   }
+  },
+  {
+   "key": "op/mvn-wishart/logEvidence/to0 v Nv2 W2 {count,scatter[4]}",
+   "cal": 20.076260249996267,
+   "op": "mvn-wishart",
+   "folder": "covariance",
+   "hook": "logEvidence",
+   "sig": "to0 v Nv2 W2 {count,scatter[4]}",
+   "from": "atom/mvn-wishart-learned",
+   "calls": 4,
+   "us": {
+    "median": 548.4583750003367,
+    "min": 536.3958749985613,
+    "max": 563.557249999576,
+    "n": 7,
+    "spread": 0.04952312926390814
+   }
+  },
+  {
+   "key": "op/mvn-wishart/logEvidence/to0 Nv2 v W2",
+   "cal": 21.194583499986038,
+   "op": "mvn-wishart",
+   "folder": "covariance",
+   "hook": "logEvidence",
+   "sig": "to0 Nv2 v W2",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 538.1434444441563,
+    "min": 508.50466666613806,
+    "max": 634.3333333336179,
+    "n": 7,
+    "spread": 0.23381993772579948
+   }
+  },
+  {
+   "key": "op/mvn-wishart/logEvidence/to0 Nv3 v W3",
+   "cal": 19.882260500002303,
+   "op": "mvn-wishart",
+   "folder": "covariance",
+   "hook": "logEvidence",
+   "sig": "to0 Nv3 v W3",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 6810.667000012472,
+    "min": 6585.583000007318,
+    "max": 6921.334000013303,
+    "n": 7,
+    "spread": 0.04929781473758295
+   }
+  },
+  {
+   "key": "op/mvn-wishart/logEvidence/to0 Nv4 v W4",
+   "cal": 20.461281249998137,
+   "op": "mvn-wishart",
+   "folder": "covariance",
+   "hook": "logEvidence",
+   "sig": "to0 Nv4 v W4",
+   "from": "synthetic",
+   "calls": 0,
+   "us": {
+    "median": 37292.709000001196,
+    "min": 36741.749999986496,
+    "max": 44053.5830000008,
+    "n": 7,
+    "spread": 0.19606601923217937
+   }
+  },
+  {
+   "key": "op/negative-binomial-beta/ep/to1 v B {successes}",
+   "cal": 20.452500000006694,
+   "op": "negative-binomial-beta",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to1 v B {successes}",
+   "from": "atom/prior-beta-geometric",
+   "calls": 8,
+   "us": {
+    "median": 0.08505569404567953,
+    "min": 0.06827024234009864,
+    "max": 0.14937337887719482,
+    "n": 7,
+    "spread": 0.953529771840312
+   }
+  },
+  {
+   "key": "op/negative-binomial-beta/logEvidence/to0 v B {successes}",
+   "cal": 20.10745825000049,
+   "op": "negative-binomial-beta",
+   "folder": "discrete",
+   "hook": "logEvidence",
+   "sig": "to0 v B {successes}",
+   "from": "atom/prior-beta-geometric",
+   "calls": 16,
+   "us": {
+    "median": 0.29576344085952405,
+    "min": 0.2873852903221143,
+    "max": 0.3329551827953628,
+    "n": 7,
+    "spread": 0.1540754744427402
+   }
+  },
+  {
+   "key": "op/negative-binomial-dispersion/logEvidence/to0 NN {exposure,y}",
+   "cal": 19.99349999998958,
+   "op": "negative-binomial-dispersion",
+   "folder": "likelihoods",
+   "hook": "logEvidence",
+   "sig": "to0 NN {exposure,y}",
+   "from": "atom/poisson-log-dispersion-learned",
+   "calls": 9480,
+   "us": {
+    "median": 340.56875000096625,
+    "min": 328.5583499993663,
+    "max": 359.7479000003659,
+    "n": 7,
+    "spread": 0.09158077480952406
+   }
+  },
+  {
+   "key": "op/negative-binomial-dispersion/tilted/to0 NN {exposure,y}",
+   "cal": 20.009354250003526,
+   "op": "negative-binomial-dispersion",
+   "folder": "likelihoods",
+   "hook": "tilted",
+   "sig": "to0 NN {exposure,y}",
+   "from": "atom/poisson-log-dispersion-learned",
+   "calls": 4280,
+   "us": {
+    "median": 349.17564285777706,
+    "min": 319.82742856988415,
+    "max": 371.2024285715805,
+    "n": 7,
+    "spread": 0.14713225579317388
+   }
+  },
+  {
+   "key": "op/negative-binomial-dispersion/tilted/to1 NN {exposure,y}",
+   "cal": 20.05225049999717,
+   "op": "negative-binomial-dispersion",
+   "folder": "likelihoods",
+   "hook": "tilted",
+   "sig": "to1 NN {exposure,y}",
+   "from": "atom/poisson-log-dispersion-learned",
+   "calls": 4280,
+   "us": {
+    "median": 340.2737857146089,
+    "min": 323.747000000107,
+    "max": 355.0624999999335,
+    "n": 7,
+    "spread": 0.09203030416833559
+   }
+  },
+  {
+   "key": "op/plus/ep/to0 NNN",
+   "cal": 19.881562249996932,
+   "op": "plus",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 NNN",
+   "from": "model/eight-schools-centred",
+   "calls": 1144,
+   "us": {
+    "median": 0.1648474209390363,
+    "min": 0.14640858455239877,
+    "max": 0.3106004434820415,
+    "n": 7,
+    "spread": 0.996023219498011
+   }
+  },
+  {
+   "key": "op/plus/ep/to1 NNN",
+   "cal": 20.23786475000088,
+   "op": "plus",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 NNN",
+   "from": "model/eight-schools-centred",
+   "calls": 1116,
+   "us": {
+    "median": 0.21860645456709826,
+    "min": 0.2044594644091475,
+    "max": 0.3320458686207548,
+    "n": 7,
+    "spread": 0.5836351193941823
+   }
+  },
+  {
+   "key": "op/plus/ep/to2 NNN",
+   "cal": 20.069896000008157,
+   "op": "plus",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to2 NNN",
+   "from": "model/eight-schools-centred",
+   "calls": 1116,
+   "us": {
+    "median": 0.21744602637901034,
+    "min": 0.19195114518359443,
+    "max": 0.31515561163768996,
+    "n": 7,
+    "spread": 0.5665979208989961
+   }
+  },
+  {
+   "key": "op/plus/logEvidence/to0 NNN",
+   "cal": 20.285187749992474,
+   "op": "plus",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 NNN",
+   "from": "model/eight-schools-centred",
+   "calls": 1346,
+   "us": {
+    "median": 0.26728753381452264,
+    "min": 0.2394447700630731,
+    "max": 0.2876700293053996,
+    "n": 7,
+    "spread": 0.1804246481461091
+   }
+  },
+  {
+   "key": "op/poisson/ep/to1 v G {exposure}",
+   "cal": 20.270582999997714,
+   "op": "poisson",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to1 v G {exposure}",
+   "from": "atom/gamma-poisson",
+   "calls": 16354,
+   "us": {
+    "median": 0.07005210109303844,
+    "min": 0.06692533346721208,
+    "max": 0.26861962190361943,
+    "n": 7,
+    "spread": 2.879203982312118
+   }
+  },
+  {
+   "key": "op/poisson/logEvidence/to0 v G {exposure}",
+   "cal": 20.02968699998746,
+   "op": "poisson",
+   "folder": "discrete",
+   "hook": "logEvidence",
+   "sig": "to0 v G {exposure}",
+   "from": "atom/gamma-poisson",
+   "calls": 19064,
+   "us": {
+    "median": 0.18638641758346008,
+    "min": 0.18303846153763256,
+    "max": 0.2705348131866041,
+    "n": 7,
+    "spread": 0.46943523451644453
+   }
+  },
+  {
+   "key": "op/prior-site/ep/to0 N {basehalf-normal,log,scale,y}",
+   "cal": 19.98270875000162,
+   "op": "prior-site",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 N {basehalf-normal,log,scale,y}",
+   "from": "atom/half-normal",
+   "calls": 493,
+   "us": {
+    "median": 66.7508469389072,
+    "min": 63.92899999984217,
+    "max": 74.86904081615278,
+    "n": 7,
+    "spread": 0.1638936630470521
+   }
+  },
+  {
+   "key": "op/prior-site/ep/to0 N {basehalf-cauchy,log,scale,y}",
+   "cal": 20.379291499993997,
+   "op": "prior-site",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 N {basehalf-cauchy,log,scale,y}",
+   "from": "atom/half-cauchy",
+   "calls": 40,
+   "us": {
+    "median": 111.43057575805649,
+    "min": 105.88384848476078,
+    "max": 135.93433333373855,
+    "n": 7,
+    "spread": 0.2696789875179758
+   }
+  },
+  {
+   "key": "op/prior-site/ep/to0 N {baseuniform,high,log,low,y}",
+   "cal": 20.268948000004457,
+   "op": "prior-site",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 N {baseuniform,high,log,low,y}",
+   "from": "atom/prior-uniform-mean",
+   "calls": 3,
+   "us": {
+    "median": 51.750000000003425,
+    "min": 48.91023529425558,
+    "max": 53.92524999992662,
+    "n": 7,
+    "spread": 0.09690849672793643
+   }
+  },
+  {
+   "key": "op/prior-site/logEvidence/to0 N {basehalf-normal,log,scale,y}",
+   "cal": 20.046499750002113,
+   "op": "prior-site",
+   "folder": "likelihoods",
+   "hook": "logEvidence",
+   "sig": "to0 N {basehalf-normal,log,scale,y}",
+   "from": "atom/half-normal",
+   "calls": 507,
+   "us": {
+    "median": 63.4829859154194,
+    "min": 61.834507042617524,
+    "max": 66.78285915527532,
+    "n": 7,
+    "spread": 0.07794769009842506
+   }
+  },
+  {
+   "key": "op/prior/ep/to0 N {eta[2]}",
+   "cal": 19.930531499994686,
+   "op": "prior",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 N {eta[2]}",
+   "from": "atom/mixture-components",
+   "calls": 7896,
+   "us": {
+    "median": 0.11223983397516502,
+    "min": 0.09085320921560242,
+    "max": 0.16601123375814295,
+    "n": 7,
+    "spread": 0.6696198834290019
+   }
+  },
+  {
+   "key": "op/prior/ep/to0 D2 {eta[2]}",
+   "cal": 19.938031249999767,
+   "op": "prior",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 D2 {eta[2]}",
+   "from": "atom/mixture-components",
+   "calls": 3488,
+   "us": {
+    "median": 0.05815169528843201,
+    "min": 0.05703664685163064,
+    "max": 0.46394713782463515,
+    "n": 7,
+    "spread": 6.997396876475076
+   }
+  },
+  {
+   "key": "op/prior/ep/to0 G {eta[2]}",
+   "cal": 20.331833249998454,
+   "op": "prior",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 G {eta[2]}",
+   "from": "atom/gate-random-learned",
+   "calls": 2168,
+   "us": {
+    "median": 0.059185955734416124,
+    "min": 0.057411971831107717,
+    "max": 0.06301642857147409,
+    "n": 7,
+    "spread": 0.09469234163447714
+   }
+  },
+  {
+   "key": "op/prior/ep/to0 Nv8 {eta[72]}",
+   "cal": 20.289479250001023,
+   "op": "prior",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 Nv8 {eta[72]}",
+   "from": "atom/gp-probit-learned",
+   "calls": 1958,
+   "us": {
+    "median": 0.47085997865651114,
+    "min": 0.4525791888982266,
+    "max": 0.7065901814302948,
+    "n": 7,
+    "spread": 0.5394618443827593
+   }
+  },
+  {
+   "key": "op/prior/logEvidence/to0 N {eta[2]}",
+   "cal": 19.945208500008448,
+   "op": "prior",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 N {eta[2]}",
+   "from": "atom/mixture-components",
+   "calls": 7838,
+   "us": {
+    "median": 0.1428077033215949,
+    "min": 0.1395485599737653,
+    "max": 0.15233374243162137,
+    "n": 7,
+    "spread": 0.08952726050824131
+   }
+  },
+  {
+   "key": "op/probit-plate/ep/to0 Nv8 {X[64],y[8]}",
+   "cal": 19.865625249993172,
+   "op": "probit-plate",
+   "folder": "lifts",
+   "hook": "ep",
+   "sig": "to0 Nv8 {X[64],y[8]}",
+   "from": "atom/gp-probit-learned",
+   "calls": 62,
+   "us": {
+    "median": 414.3506666684213,
+    "min": 390.9895833324602,
+    "max": 472.4652500008233,
+    "n": 7,
+    "spread": 0.1966345736172374
+   }
+  },
+  {
+   "key": "op/probit-plate/ep/to0 Nv8 {X[448],y[56]}",
+   "cal": 20.234479250008008,
+   "op": "probit-plate",
+   "folder": "lifts",
+   "hook": "ep",
+   "sig": "to0 Nv8 {X[448],y[56]}",
+   "from": "atom/skill-difference-learned",
+   "calls": 28,
+   "us": {
+    "median": 1519.971999999446,
+    "min": 1493.6530000025716,
+    "max": 1657.9303333322362,
+    "n": 7,
+    "spread": 0.10807918391241708
+   }
+  },
+  {
+   "key": "op/probit-plate/ep/to0 Nv8 {X[672],y[84]}",
+   "cal": 19.974468499996874,
+   "op": "probit-plate",
+   "folder": "lifts",
+   "hook": "ep",
+   "sig": "to0 Nv8 {X[672],y[84]}",
+   "from": "program/skills",
+   "calls": 24,
+   "us": {
+    "median": 2210.104500001762,
+    "min": 2108.2915000006324,
+    "max": 2402.0000000018626,
+    "n": 7,
+    "spread": 0.132893489878418
+   }
+  },
+  {
+   "key": "op/probit-plate/ep/to0 Nv3 {X[150],y[50]}",
+   "cal": 19.921208250001655,
+   "op": "probit-plate",
+   "folder": "lifts",
+   "hook": "ep",
+   "sig": "to0 Nv3 {X[150],y[50]}",
+   "from": "atom/probit-learned",
+   "calls": 10,
+   "us": {
+    "median": 1488.4894999995595,
+    "min": 1429.1040000025532,
+    "max": 1664.5417499967152,
+    "n": 7,
+    "spread": 0.1581722612045511
+   }
+  },
+  {
+   "key": "op/probit-plate/logEvidence/to0 Nv8 {X[672],y[84]}",
+   "cal": 19.889729250004166,
+   "op": "probit-plate",
+   "folder": "lifts",
+   "hook": "logEvidence",
+   "sig": "to0 Nv8 {X[672],y[84]}",
+   "from": "program/skills",
+   "calls": 34,
+   "us": {
+    "median": 2397.1249999885913,
+    "min": 2303.0834999954095,
+    "max": 2612.7290000003995,
+    "n": 7,
+    "spread": 0.12917369766135003
+   }
+  },
+  {
+   "key": "op/probit/ep/to1 v N {X[672],y[84]}",
+   "cal": 19.837583000007726,
+   "op": "probit",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to1 v N {X[672],y[84]}",
+   "from": "program/skills",
+   "calls": 45108,
+   "us": {
+    "median": 0.847632499998409,
+    "min": 0.8015813636368627,
+    "max": 0.8636411363642599,
+    "n": 7,
+    "spread": 0.07321542381576172
+   }
+  },
+  {
+   "key": "op/probit/ep/to1 v N {X[448],y[56]}",
+   "cal": 20.191583000007086,
+   "op": "probit",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to1 v N {X[448],y[56]}",
+   "from": "atom/skill-difference-learned",
+   "calls": 29792,
+   "us": {
+    "median": 0.8787972727275867,
+    "min": 0.8285322727269059,
+    "max": 0.8969934090915062,
+    "n": 7,
+    "spread": 0.07790321896665939
+   }
+  },
+  {
+   "key": "op/probit/ep/to1 v N {X[150],y[50]}",
+   "cal": 19.77608374999545,
+   "op": "probit",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to1 v N {X[150],y[50]}",
+   "from": "atom/probit-learned",
+   "calls": 13800,
+   "us": {
+    "median": 2.0009082652080497,
+    "min": 1.9839350590385076,
+    "max": 2.209752497737373,
+    "n": 7,
+    "spread": 0.11285746709401764
+   }
+  },
+  {
+   "key": "op/probit/ep/to1 v N {X[64],y[8]}",
+   "cal": 19.751458000006096,
+   "op": "probit",
+   "folder": "links",
+   "hook": "ep",
+   "sig": "to1 v N {X[64],y[8]}",
+   "from": "atom/gp-probit-learned",
+   "calls": 5664,
+   "us": {
+    "median": 0.8795479294453361,
+    "min": 0.8317516615577037,
+    "max": 0.903970603271057,
+    "n": 7,
+    "spread": 0.08210916005327451
+   }
+  },
+  {
+   "key": "op/probit/logEvidence/to1 v N {X[672],y[84]}",
+   "cal": 20.076562750007724,
+   "op": "probit",
+   "folder": "links",
+   "hook": "logEvidence",
+   "sig": "to1 v N {X[672],y[84]}",
+   "from": "program/skills",
+   "calls": 2856,
+   "us": {
+    "median": 3.2041273291990295,
+    "min": 3.1845566770260696,
+    "max": 3.9409285714298123,
+    "n": 7,
+    "spread": 0.23606174683227124
+   }
+  },
+  {
+   "key": "op/product/ep/to0 NNN",
+   "cal": 19.886697750007443,
+   "op": "product",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 NNN",
+   "from": "atom/product",
+   "calls": 1382,
+   "us": {
+    "median": 12.238356164355176,
+    "min": 11.101826027391338,
+    "max": 17.524199999991666,
+    "n": 7,
+    "spread": 0.5247742332671942
+   }
+  },
+  {
+   "key": "op/product/ep/to1 NNN",
+   "cal": 19.773802000003343,
+   "op": "product",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 NNN",
+   "from": "atom/product",
+   "calls": 1289,
+   "us": {
+    "median": 28.504716981156236,
+    "min": 28.12676886804973,
+    "max": 29.65742924521383,
+    "n": 7,
+    "spread": 0.053698494118569286
+   }
+  },
+  {
+   "key": "op/product/ep/to2 NNN",
+   "cal": 19.87715649999882,
+   "op": "product",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to2 NNN",
+   "from": "atom/product",
+   "calls": 1289,
+   "us": {
+    "median": 28.32656249993306,
+    "min": 27.58073125005467,
+    "max": 31.105987499904586,
+    "n": 7,
+    "spread": 0.12445054883938875
+   }
+  },
+  {
+   "key": "op/product/logEvidence/to0 NNN",
+   "cal": 19.82356275001075,
+   "op": "product",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 NNN",
+   "from": "atom/product",
+   "calls": 1482,
+   "us": {
+    "median": 28.184895833368905,
+    "min": 27.477722222303985,
+    "max": 28.890333333442364,
+    "n": 7,
+    "spread": 0.050119437002351726
+   }
+  },
+  {
+   "key": "op/select/ep/to0 N D2 NN {components}",
+   "cal": 19.888968750005006,
+   "op": "select",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to0 N D2 NN {components}",
+   "from": "atom/mixture-components",
+   "calls": 26420,
+   "us": {
+    "median": 0.9488745539383902,
+    "min": 0.9220995059012362,
+    "max": 1.046293164974452,
+    "n": 7,
+    "spread": 0.13088522456181242
+   }
+  },
+  {
+   "key": "op/select/ep/to1 N D2 NN {components}",
+   "cal": 19.88980199999787,
+   "op": "select",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to1 N D2 NN {components}",
+   "from": "atom/mixture-components",
+   "calls": 26420,
+   "us": {
+    "median": 0.8523261163689962,
+    "min": 0.829064372705777,
+    "max": 0.9420871834516225,
+    "n": 7,
+    "spread": 0.13260512446495845
+   }
+  },
+  {
+   "key": "op/select/ep/to2 N D2 NN {components}",
+   "cal": 20.312364750017878,
+   "op": "select",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to2 N D2 NN {components}",
+   "from": "atom/mixture-components",
+   "calls": 26420,
+   "us": {
+    "median": 0.816744504086859,
+    "min": 0.7761161809839291,
+    "max": 0.873200025562776,
+    "n": 7,
+    "spread": 0.1188668477021331
+   }
+  },
+  {
+   "key": "op/select/ep/to3 N D2 NN {components}",
+   "cal": 20.98304150000331,
+   "op": "select",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to3 N D2 NN {components}",
+   "from": "atom/mixture-components",
+   "calls": 26420,
+   "us": {
+    "median": 0.8686742045458893,
+    "min": 0.8036505681791989,
+    "max": 0.9138162500014666,
+    "n": 7,
+    "spread": 0.1268204825765009
+   }
+  },
+  {
+   "key": "op/select/logEvidence/to0 N D2 NN {components}",
+   "cal": 19.912739749997854,
+   "op": "select",
+   "folder": "discrete",
+   "hook": "logEvidence",
+   "sig": "to0 N D2 NN {components}",
+   "from": "atom/mixture-components",
+   "calls": 29798,
+   "us": {
+    "median": 0.808222827375421,
+    "min": 0.7648443049965031,
+    "max": 0.8410391901498603,
+    "n": 7,
+    "spread": 0.09427460172188937
+   }
+  },
+  {
+   "key": "op/stick-breaking/ep/to0 D4 BBB {sticks}",
+   "cal": 20.593020999993314,
+   "op": "stick-breaking",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to0 D4 BBB {sticks}",
+   "from": "model/stick-breaking-mixture",
+   "calls": 510,
+   "us": {
+    "median": 0.40190117946965853,
+    "min": 0.37603602167658806,
+    "max": 0.6502452449262599,
+    "n": 7,
+    "spread": 0.6822802152795703
+   }
+  },
+  {
+   "key": "op/stick-breaking/ep/to1 D4 BBB {sticks}",
+   "cal": 19.941229249998287,
+   "op": "stick-breaking",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to1 D4 BBB {sticks}",
+   "from": "model/stick-breaking-mixture",
+   "calls": 510,
+   "us": {
+    "median": 13.419623134302412,
+    "min": 12.857585820915011,
+    "max": 15.761970149252369,
+    "n": 7,
+    "spread": 0.2164281589185131
+   }
+  },
+  {
+   "key": "op/stick-breaking/ep/to2 D4 BBB {sticks}",
+   "cal": 19.859968500000832,
+   "op": "stick-breaking",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to2 D4 BBB {sticks}",
+   "from": "model/stick-breaking-mixture",
+   "calls": 510,
+   "us": {
+    "median": 10.904185643571195,
+    "min": 10.636551980226587,
+    "max": 12.078381188174635,
+    "n": 7,
+    "spread": 0.13222713323833687
+   }
+  },
+  {
+   "key": "op/stick-breaking/ep/to3 D4 BBB {sticks}",
+   "cal": 19.79081225000118,
+   "op": "stick-breaking",
+   "folder": "scales",
+   "hook": "ep",
+   "sig": "to3 D4 BBB {sticks}",
+   "from": "model/stick-breaking-mixture",
+   "calls": 510,
+   "us": {
+    "median": 12.982701754390822,
+    "min": 12.934941520430392,
+    "max": 14.202119883068848,
+    "n": 7,
+    "spread": 0.09760513540333689
+   }
+  },
+  {
+   "key": "op/stick-breaking/logEvidence/to0 D4 BBB {sticks}",
+   "cal": 19.90042724999512,
+   "op": "stick-breaking",
+   "folder": "scales",
+   "hook": "logEvidence",
+   "sig": "to0 D4 BBB {sticks}",
+   "from": "model/stick-breaking-mixture",
+   "calls": 570,
+   "us": {
+    "median": 0.8390490391000138,
+    "min": 0.8169870775337165,
+    "max": 0.9328888336650477,
+    "n": 7,
+    "spread": 0.13813466285075607
+   }
+  },
+  {
+   "key": "op/student-t-site/ep/to0 N {df,scale,y}",
+   "cal": 19.891687499999534,
+   "op": "student-t-site",
+   "folder": "likelihoods",
+   "hook": "ep",
+   "sig": "to0 N {df,scale,y}",
+   "from": "atom/student-t",
+   "calls": 2975,
+   "us": {
+    "median": 39.119100000001104,
+    "min": 38.5191000001214,
+    "max": 40.724649999901885,
+    "n": 7,
+    "spread": 0.05638038706873177
+   }
+  },
+  {
+   "key": "op/student-t-site/logEvidence/to0 N {df,scale,y}",
+   "cal": 19.89558350000152,
+   "op": "student-t-site",
+   "folder": "likelihoods",
+   "hook": "logEvidence",
+   "sig": "to0 N {df,scale,y}",
+   "from": "atom/student-t",
+   "calls": 3645,
+   "us": {
+    "median": 38.83035714300474,
+    "min": 37.91517857124355,
+    "max": 42.44382142860559,
+    "n": 7,
+    "spread": 0.11662635089046222
+   }
+  },
+  {
+   "key": "op/table/ep/to0 D2 D6 {states[2],values[12]}",
+   "cal": 19.98689600000216,
+   "op": "table",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to0 D2 D6 {states[2],values[12]}",
+   "from": "program/circular-means",
+   "calls": 8750,
+   "us": {
+    "median": 4.644810909098438,
+    "min": 4.3390909090786325,
+    "max": 6.357462727253071,
+    "n": 7,
+    "spread": 0.43454337704485935
+   }
+  },
+  {
+   "key": "op/table/ep/to1 D2 D6 {states[2],values[12]}",
+   "cal": 19.94719774999976,
+   "op": "table",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to1 D2 D6 {states[2],values[12]}",
+   "from": "program/circular-means",
+   "calls": 8750,
+   "us": {
+    "median": 4.654185131197977,
+    "min": 4.426627551025912,
+    "max": 5.174077259478127,
+    "n": 7,
+    "spread": 0.1605973306566391
+   }
+  },
+  {
+   "key": "op/table/ep/to0 D2 {states[1],values[2]}",
+   "cal": 19.924270999996224,
+   "op": "table",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to0 D2 {states[1],values[2]}",
+   "from": "program/zero-inflated",
+   "calls": 8602,
+   "us": {
+    "median": 1.410937499999956,
+    "min": 1.360077462121615,
+    "max": 1.497072348485579,
+    "n": 7,
+    "spread": 0.09709493607191555
+   }
+  },
+  {
+   "key": "op/table/ep/to0 D3D3 {states[2],values[9]}",
+   "cal": 20.569520499993814,
+   "op": "table",
+   "folder": "discrete",
+   "hook": "ep",
+   "sig": "to0 D3D3 {states[2],values[9]}",
+   "from": "model/gaussian-hmm",
+   "calls": 1914,
+   "us": {
+    "median": 4.35447031250078,
+    "min": 4.138932291668122,
+    "max": 4.5316406249943,
+    "n": 7,
+    "spread": 0.09018509833418636
+   }
+  },
+  {
+   "key": "op/table/logEvidence/to0 D2 D6 {states[2],values[12]}",
+   "cal": 19.860780999995768,
+   "op": "table",
+   "folder": "discrete",
+   "hook": "logEvidence",
+   "sig": "to0 D2 D6 {states[2],values[12]}",
+   "from": "program/circular-means",
+   "calls": 10750,
+   "us": {
+    "median": 4.564704954932782,
+    "min": 4.374108108078856,
+    "max": 5.511027027046317,
+    "n": 7,
+    "spread": 0.24906733955255225
+   }
+  },
+  {
+   "key": "op/times-constant/ep/to0 NN {factor}",
+   "cal": 19.890114750007342,
+   "op": "times-constant",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to0 NN {factor}",
+   "from": "atom/log-scale",
+   "calls": 65341,
+   "us": {
+    "median": 0.14466399305901936,
+    "min": 0.11029588512334024,
+    "max": 0.2600481603457161,
+    "n": 7,
+    "spread": 1.0351731073901755
+   }
+  },
+  {
+   "key": "op/times-constant/ep/to1 NN {factor}",
+   "cal": 19.8937084999925,
+   "op": "times-constant",
+   "folder": "gaussian",
+   "hook": "ep",
+   "sig": "to1 NN {factor}",
+   "from": "atom/log-scale",
+   "calls": 63588,
+   "us": {
+    "median": 0.11051821654723952,
+    "min": 0.10938902135727777,
+    "max": 0.11895559315977515,
+    "n": 7,
+    "spread": 0.08656104035490188
+   }
+  },
+  {
+   "key": "op/times-constant/logEvidence/to0 NN {factor}",
+   "cal": 19.845552250000765,
+   "op": "times-constant",
+   "folder": "gaussian",
+   "hook": "logEvidence",
+   "sig": "to0 NN {factor}",
+   "from": "atom/log-scale",
+   "calls": 50993,
+   "us": {
+    "median": 0.17702749615115898,
+    "min": 0.16662243218831022,
+    "max": 0.2067331599342135,
+    "n": 7,
+    "spread": 0.22657908301235777
+   }
+  }
+ ],
+ "unreached": [
+  "min",
+  "sum",
+  "matmul-constant",
+  "gaussian-mv-stack",
+  "gaussian-joint",
+  "binomial",
+  "gaussian-mixture",
+  "probit-row",
+  "logistic-row",
+  "spin",
+  "spin-row",
+  "student-t-row",
+  "laplace-row",
+  "apply-product",
+  "gaussian-mv-function-scale",
+  "mvn-normal-wishart"
+ ],
+ "items": [
+  {
+   "key": "program/circular-rows",
+   "kind": "program",
+   "route": "ep",
+   "status": "completed",
+   "sweeps": 150,
+   "updates": 180900,
+   "seconds": {
+    "median": 16.928198917000003,
+    "min": 16.809643291000015,
+    "max": 16.937457290999998,
+    "n": 3,
+    "spread": 0.0075503602377702955
+   },
+   "cal": 19.921864500000083,
+   "updatesPerSecond": 10686.311100605788
+  },
+  {
+   "key": "atom/softmax-two-groups",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 134,
+   "updates": 78256,
+   "seconds": {
+    "median": 8.582088167000009,
+    "min": 8.57512945800001,
+    "max": 8.58948995799999,
+    "n": 3,
+    "spread": 0.0016733107048701901
+   },
+   "cal": 19.547041750010976,
+   "updatesPerSecond": 9118.526689216653
+  },
+  {
+   "key": "atom/gp-hyperparameters",
+   "kind": "atom",
+   "route": "ep-grid",
+   "status": "completed",
+   "sweeps": 948,
+   "updates": null,
+   "seconds": {
+    "median": 2.56287516700002,
+    "min": 2.385519042,
+    "max": 2.900157292000018,
+    "n": 3,
+    "spread": 0.200805039834394
+   },
+   "cal": 19.88070850000804,
+   "updatesPerSecond": null
+  },
+  {
+   "key": "atom/chain-persistence-grid",
+   "kind": "atom",
+   "route": "ep-grid",
+   "status": "completed",
+   "sweeps": 17,
+   "updates": null,
+   "seconds": {
+    "median": 7.26656799999997,
+    "min": 6.273790666999994,
+    "max": 9.835932291000034,
+    "n": 3,
+    "spread": 0.4902096318372105
+   },
+   "cal": 20.20563549999497,
+   "updatesPerSecond": null
+  },
+  {
+   "key": "program/changepoint-extended",
+   "kind": "program",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 96,
+   "updates": 158592,
+   "seconds": {
+    "median": 5.459948167000024,
+    "min": 5.248526207999967,
+    "max": 6.308361124999996,
+    "n": 3,
+    "spread": 0.19411080189472876
+   },
+   "cal": 20.69654150000133,
+   "updatesPerSecond": 29046.429590400046
+  },
+  {
+   "key": "atom/student-t-full-learned",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 11,
+   "updates": 1045,
+   "seconds": {
+    "median": 4.122701208000013,
+    "min": 4.060136083999998,
+    "max": 4.176846332999994,
+    "n": 3,
+    "spread": 0.028309169913532013
+   },
+   "cal": 20.351614500003052,
+   "updatesPerSecond": 253.47459039044594
+  },
+  {
+   "key": "atom/gate-poisson-negative-binomial",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 41,
+   "updates": 10209,
+   "seconds": {
+    "median": 4.0646787909999835,
+    "min": 3.964442833999987,
+    "max": 4.112244041999976,
+    "n": 3,
+    "spread": 0.03636233404894161
+   },
+   "cal": 20.474833750005928,
+   "updatesPerSecond": 2511.637579482241
+  },
+  {
+   "key": "program/zero-inflated",
+   "kind": "program",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 91,
+   "updates": 36400,
+   "seconds": {
+    "median": 3.308702041000011,
+    "min": 3.2902197910000104,
+    "max": 3.3220004169999737,
+    "n": 3,
+    "spread": 0.009605164081307868
+   },
+   "cal": 19.930125000013504,
+   "updatesPerSecond": 11001.29281783215
+  },
+  {
+   "key": "program/sparse-mixture",
+   "kind": "program",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 50,
+   "updates": 12650,
+   "seconds": {
+    "median": 3.0884335830000347,
+    "min": 3.071993875000044,
+    "max": 3.1589572920000064,
+    "n": 3,
+    "spread": 0.028157774698035813
+   },
+   "cal": 20.235093749986845,
+   "updatesPerSecond": 4095.927485580595
+  },
+  {
+   "key": "model/radon",
+   "kind": "model",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 177,
+   "updates": 38586,
+   "seconds": {
+    "median": 2.210586834000016,
+    "min": 2.197015124999976,
+    "max": 2.3097712499999905,
+    "n": 3,
+    "spread": 0.05100732677213331
+   },
+   "cal": 19.860104000021238,
+   "updatesPerSecond": 17455.093555487863
+  },
+  {
+   "key": "program/kalman",
+   "kind": "program",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 57,
+   "updates": 10203,
+   "seconds": {
+    "median": 2.1261834999999847,
+    "min": 2.1137609170000067,
+    "max": 2.161863416999986,
+    "n": 3,
+    "spread": 0.022623870423215887
+   },
+   "cal": 19.849822749994928,
+   "updatesPerSecond": 4798.739149278542
+  },
+  {
+   "key": "program/cox",
+   "kind": "program",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 9,
+   "updates": 369,
+   "seconds": {
+    "median": 1.6949824999999836,
+    "min": 1.603747875000001,
+    "max": 1.8694782920000144,
+    "n": 3,
+    "spread": 0.1567747259927557
+   },
+   "cal": 20.67310400000133,
+   "updatesPerSecond": 217.70136269843704
+  },
+  {
+   "key": "atom/clutter-mixture-learned",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 26,
+   "updates": 6578,
+   "seconds": {
+    "median": 1.8129616249999962,
+    "min": 1.8060847920000087,
+    "max": 1.815071834000002,
+    "n": 3,
+    "spread": 0.00495710547651187
+   },
+   "cal": 19.84281249999185,
+   "updatesPerSecond": 3628.317284432324
+  },
+  {
+   "key": "atom/poisson-log-dispersion-learned",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 58,
+   "updates": 6264,
+   "seconds": {
+    "median": 1.5668739159999532,
+    "min": 1.5654212089999928,
+    "max": 1.5699800000000397,
+    "n": 3,
+    "spread": 0.0029094817097248776
+   },
+   "cal": 19.802458250007476,
+   "updatesPerSecond": 3997.7690202356953
+  },
+  {
+   "key": "atom/ordinal-probit-cuts-learned",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 33,
+   "updates": 5940,
+   "seconds": {
+    "median": 1.1771102919999976,
+    "min": 1.1752267499999725,
+    "max": 1.1820841659999568,
+    "n": 3,
+    "spread": 0.0058256359209408436
+   },
+   "cal": 20.23222900001565,
+   "updatesPerSecond": 5046.2561073249135
+  },
+  {
+   "key": "atom/softmax-regression",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 20,
+   "updates": 340,
+   "seconds": {
+    "median": 0.1028504579999717,
+    "min": 0.10128629199997521,
+    "max": 0.10350349999999162,
+    "n": 3,
+    "spread": 0.02155758995275463
+   },
+   "cal": 20.368124750006245,
+   "updatesPerSecond": 3305.770403084579
+  },
+  {
+   "key": "atom/probit-learned",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 8,
+   "updates": 32,
+   "seconds": {
+    "median": 0.0863259160000016,
+    "min": 0.08293712499999674,
+    "max": 0.09382704100001138,
+    "n": 3,
+    "spread": 0.1261488612529109
+   },
+   "cal": 19.916250000009313,
+   "updatesPerSecond": 370.6882183561123
+  },
+  {
+   "key": "atom/weibull-shape-learned",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 23,
+   "updates": 1472,
+   "seconds": {
+    "median": 0.5245207079999964,
+    "min": 0.5152770419999724,
+    "max": 0.525480958,
+    "n": 3,
+    "spread": 0.01945379056421877
+   },
+   "cal": 19.827375000022585,
+   "updatesPerSecond": 2806.371564647568
+  },
+  {
+   "key": "atom/mvn-wishart-learned",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 2,
+   "updates": 8,
+   "seconds": {
+    "median": 0.004608666999964044,
+    "min": 0.004394083000021055,
+    "max": 0.005148707999964245,
+    "n": 3,
+    "spread": 0.16374040475241042
+   },
+   "cal": 20.133635500009404,
+   "updatesPerSecond": 1735.859848425242
+  },
+  {
+   "key": "atom/bivariate-correlation-learned",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 2,
+   "updates": 16,
+   "seconds": {
+    "median": 0.06646075000002748,
+    "min": 0.06538045799999964,
+    "max": 0.06658179200004087,
+    "n": 3,
+    "spread": 0.01807584175683742
+   },
+   "cal": 20.06680200001574,
+   "updatesPerSecond": 240.7435967844688
+  },
+  {
+   "key": "atom/random-intercepts-slopes-learned",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 3,
+   "updates": 162,
+   "seconds": {
+    "median": 0.05614687499997672,
+    "min": 0.05595591700001387,
+    "max": 0.056788166999991514,
+    "n": 3,
+    "spread": 0.014822730561193079
+   },
+   "cal": 19.811072750017047,
+   "updatesPerSecond": 2885.2896977804585
+  },
+  {
+   "key": "atom/stick-breaking",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 10,
+   "updates": 420,
+   "seconds": {
+    "median": 0.0036005000000004657,
+    "min": 0.003480042000010144,
+    "max": 0.003923833000008017,
+    "n": 3,
+    "spread": 0.12325815858847816
+   },
+   "cal": 19.742000249985722,
+   "updatesPerSecond": 116650.46521314974
+  },
+  {
+   "key": "atom/gaussian-learned",
+   "kind": "atom",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 2,
+   "updates": 26,
+   "seconds": {
+    "median": 0.0001359579999698326,
+    "min": 0.00011570800002664328,
+    "max": 0.0002918749999953434,
+    "n": 3,
+    "spread": 1.2957457450667809
+   },
+   "cal": 19.767905999993673,
+   "updatesPerSecond": 191235.5286615652
+  },
+  {
+   "key": "model/eight-schools-centred",
+   "kind": "model",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 15,
+   "updates": 1020,
+   "seconds": {
+    "median": 0.020297166000003926,
+    "min": 0.019450416999985464,
+    "max": 0.020734375,
+    "n": 3,
+    "spread": 0.06325799375214682
+   },
+   "cal": 19.852572749980027,
+   "updatesPerSecond": 50253.32107939614
+  },
+  {
+   "key": "model/stochastic-volatility",
+   "kind": "model",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 104,
+   "updates": 21528,
+   "seconds": {
+    "median": 0.21080825000000186,
+    "min": 0.21056925000000046,
+    "max": 0.21139437499997438,
+    "n": 3,
+    "spread": 0.003914102033359284
+   },
+   "cal": 19.7809164999926,
+   "updatesPerSecond": 102121.24051122197
+  },
+  {
+   "key": "model/negative-binomial-regression",
+   "kind": "model",
+   "route": "ep",
+   "status": "converged",
+   "sweeps": 16,
+   "updates": 6528,
+   "seconds": {
+    "median": 1.751242666999984,
+    "min": 1.7424862919999868,
+    "max": 1.7552076249999808,
+    "n": 3,
+    "spread": 0.007264174885475264
+   },
+   "cal": 19.86231225001393,
+   "updatesPerSecond": 3727.638735060616
+  }
+ ],
+ "share": [
+  {
+   "item": "program/circular-rows",
+   "wall": 16.317468249999997,
+   "byOperator": [
+    {
+     "op": "gaussian-gamma-precision",
+     "self": 13.679668046000153,
+     "incl": 13.679668046000153,
+     "calls": 69750
+    },
+    {
+     "op": "discrete",
+     "self": 0.27605734400029586,
+     "incl": 0.27605734400029586,
+     "calls": 69750
+    },
+    {
+     "op": "select",
+     "self": 0.11267201700025226,
+     "incl": 0.11267201700025226,
+     "calls": 114750
+    },
+    {
+     "op": "is-between",
+     "self": 0.02652829800001564,
+     "incl": 0.02652829800001564,
+     "calls": 630
+    },
+    {
+     "op": "prior",
+     "self": 0.0020694060000478205,
+     "incl": 0.0020694060000478205,
+     "calls": 1260
+    }
+   ]
+  },
+  {
+   "item": "atom/softmax-two-groups",
+   "wall": 7.7108631249999995,
+   "byOperator": [
+    {
+     "op": "multiclass-site",
+     "self": 7.1590972769999786,
+     "incl": 7.1590972769999786,
+     "calls": 28968
+    },
+    {
+     "op": "gaussian-gamma-precision",
+     "self": 0.24780193199996575,
+     "incl": 0.24780193199996575,
+     "calls": 1074
+    },
+    {
+     "op": "times-constant",
+     "self": 0.022433184999954392,
+     "incl": 0.022433184999954392,
+     "calls": 77376
+    },
+    {
+     "op": "prior",
+     "self": 0.0011305890000112412,
+     "incl": 0.0011305890000112412,
+     "calls": 538
+    }
+   ]
+  },
+  {
+   "item": "atom/gp-hyperparameters",
+   "wall": 2.3015517080000025,
+   "byOperator": [
+    {
+     "op": "linear-regression-plate",
+     "self": 0.029030868999965605,
+     "incl": 0.029030868999965605,
+     "calls": 2844
+    },
+    {
+     "op": "prior",
+     "self": 0.02569010100003652,
+     "incl": 0.02569010100003652,
+     "calls": 2844
+    }
+   ]
+  },
+  {
+   "item": "atom/chain-persistence-grid",
+   "wall": 6.156594209000002,
+   "byOperator": [
+    {
+     "op": "gaussian-chain",
+     "self": 5.361901322999904,
+     "incl": 5.361901322999904,
+     "calls": 19207
+    },
+    {
+     "op": "gaussian-log-scale",
+     "self": 0.5329053540000132,
+     "incl": 0.5329053540000132,
+     "calls": 19209
+    },
+    {
+     "op": "times-constant",
+     "self": 0.022654923999507446,
+     "incl": 0.022654923999507446,
+     "calls": 37850
+    },
+    {
+     "op": "prior",
+     "self": 0.0005033799998345785,
+     "incl": 0.0005033799998345785,
+     "calls": 1164
+    }
+   ]
+  },
+  {
+   "item": "program/changepoint-extended",
+   "wall": 5.0323921669999985,
+   "byOperator": [
+    {
+     "op": "discrete",
+     "self": 0.6485106290016338,
+     "incl": 0.6485106290016338,
+     "calls": 348213
+    },
+    {
+     "op": "select",
+     "self": 0.268618897000837,
+     "incl": 0.268618897000837,
+     "calls": 88050
+    },
+    {
+     "op": "poisson",
+     "self": 0.009318239999287471,
+     "incl": 0.009318239999287471,
+     "calls": 30450
+    },
+    {
+     "op": "prior",
+     "self": 0.0013509919997086398,
+     "incl": 0.0013509919997086398,
+     "calls": 1421
+    }
+   ]
+  },
+  {
+   "item": "atom/student-t-full-learned",
+   "wall": 3.9780958749999993,
+   "byOperator": [
+    {
+     "op": "likelihood-triple",
+     "self": 3.9639334809998035,
+     "incl": 3.9639334809998035,
+     "calls": 1350
+    },
+    {
+     "op": "apply",
+     "self": 0.0005782899999758229,
+     "incl": 0.0005782899999758229,
+     "calls": 34
+    },
+    {
+     "op": "prior",
+     "self": 0.00008238099995651282,
+     "incl": 0.00008238099995651282,
+     "calls": 69
+    }
+   ]
+  },
+  {
+   "item": "atom/gate-poisson-negative-binomial",
+   "wall": 3.8934031250000043,
+   "byOperator": [
+    {
+     "op": "negative-binomial-dispersion",
+     "self": 3.0531828439997555,
+     "incl": 3.0531828439997555,
+     "calls": 8610
+    },
+    {
+     "op": "likelihood-site",
+     "self": 0.4561443390001441,
+     "incl": 0.4561443390001441,
+     "calls": 7380
+    },
+    {
+     "op": "likelihood-row",
+     "self": 0.1305240159998648,
+     "incl": 0.5866683550000089,
+     "calls": 7380
+    },
+    {
+     "op": "dot-constant",
+     "self": 0.02782346100005816,
+     "incl": 0.02782346100005816,
+     "calls": 3968
+    },
+    {
+     "op": "prior-site",
+     "self": 0.011110872999946878,
+     "incl": 0.011110872999946878,
+     "calls": 83
+    },
+    {
+     "op": "bernoulli",
+     "self": 0.008807760000112467,
+     "incl": 0.008807760000112467,
+     "calls": 3720
+    },
+    {
+     "op": "prior",
+     "self": 0.001030161000067892,
+     "incl": 0.001030161000067892,
+     "calls": 166
+    },
+    {
+     "op": "apply",
+     "self": 0.0005061639999548788,
+     "incl": 0.0005061639999548788,
+     "calls": 124
+    }
+   ]
+  },
+  {
+   "item": "program/zero-inflated",
+   "wall": 3.2434285420000015,
+   "byOperator": [
+    {
+     "op": "likelihood-site",
+     "self": 2.3112170689992197,
+     "incl": 2.3112170689992197,
+     "calls": 37680
+    },
+    {
+     "op": "dot-constant",
+     "self": 0.11410932599993975,
+     "incl": 0.11410932599993975,
+     "calls": 18104
+    },
+    {
+     "op": "discrete",
+     "self": 0.07722132499992586,
+     "incl": 0.07722132499992586,
+     "calls": 27360
+    },
+    {
+     "op": "linear",
+     "self": 0.03795985299952736,
+     "incl": 0.03795985299952736,
+     "calls": 14700
+    },
+    {
+     "op": "table",
+     "self": 0.022814271000344888,
+     "incl": 0.022814271000344888,
+     "calls": 9656
+    },
+    {
+     "op": "prior",
+     "self": 0.0027165759999552394,
+     "incl": 0.0027165759999552394,
+     "calls": 651
+    }
+   ]
+  },
+  {
+   "item": "program/sparse-mixture",
+   "wall": 3.0748185830000003,
+   "byOperator": [
+    {
+     "op": "gaussian-gamma-precision",
+     "self": 1.8583702210002448,
+     "incl": 1.8583702210002448,
+     "calls": 9660
+    },
+    {
+     "op": "dot-constant",
+     "self": 0.16019041099966852,
+     "incl": 0.16019041099966852,
+     "calls": 9660
+    },
+    {
+     "op": "mixture-row",
+     "self": 0.05717109300017182,
+     "incl": 0.060388082000128636,
+     "calls": 1308
+    },
+    {
+     "op": "mixture-site",
+     "self": 0.0032169889999568114,
+     "incl": 0.0032169889999568114,
+     "calls": 1236
+    },
+    {
+     "op": "prior",
+     "self": 0.0002612450000160607,
+     "incl": 0.0002612450000160607,
+     "calls": 111
+    }
+   ]
+  },
+  {
+   "item": "model/radon",
+   "wall": 2.250375667,
+   "byOperator": [
+    {
+     "op": "gaussian-scale",
+     "self": 1.5203327239998325,
+     "incl": 1.5203327239998325,
+     "calls": 25535
+    },
+    {
+     "op": "dot-constant",
+     "self": 0.1471819069997,
+     "incl": 0.1471819069997,
+     "calls": 15428
+    },
+    {
+     "op": "product",
+     "self": 0.10835823999986315,
+     "incl": 0.10835823999986315,
+     "calls": 4254
+    },
+    {
+     "op": "prior-site",
+     "self": 0.05823816100009572,
+     "incl": 0.05823816100009572,
+     "calls": 710
+    },
+    {
+     "op": "apply",
+     "self": 0.030356952000125604,
+     "incl": 0.030356952000125604,
+     "calls": 1064
+    },
+    {
+     "op": "plus",
+     "self": 0.013874867000326049,
+     "incl": 0.013874867000326049,
+     "calls": 4254
+    },
+    {
+     "op": "difference",
+     "self": 0.002589806999763823,
+     "incl": 0.002589806999763823,
+     "calls": 3724
+    },
+    {
+     "op": "prior",
+     "self": 0.0009773710000736174,
+     "incl": 0.0009773710000736174,
+     "calls": 2840
+    }
+   ]
+  },
+  {
+   "item": "program/kalman",
+   "wall": 2.074743209,
+   "byOperator": [
+    {
+     "op": "gaussian-transition",
+     "self": 0.14335225000020727,
+     "incl": 0.14335225000020727,
+     "calls": 10679
+    },
+    {
+     "op": "linear-regression-row",
+     "self": 0.06388466399990284,
+     "incl": 0.06388466399990284,
+     "calls": 7440
+    },
+    {
+     "op": "prior",
+     "self": 0.0013164989999277167,
+     "incl": 0.0013164989999277167,
+     "calls": 124
+    }
+   ]
+  },
+  {
+   "item": "program/cox",
+   "wall": 1.610855292,
+   "byOperator": [
+    {
+     "op": "likelihood-row",
+     "self": 0.41277650000002175,
+     "incl": 0.4702907039999991,
+     "calls": 1040
+    },
+    {
+     "op": "likelihood-site",
+     "self": 0.05751420399997732,
+     "incl": 0.05751420399997732,
+     "calls": 920
+    },
+    {
+     "op": "prior",
+     "self": 0.00395020900000236,
+     "incl": 0.00395020900000236,
+     "calls": 26
+    }
+   ]
+  },
+  {
+   "item": "atom/clutter-mixture-learned",
+   "wall": 1.7996874589999934,
+   "byOperator": [
+    {
+     "op": "gaussian-gamma-precision",
+     "self": 1.7417645650002378,
+     "incl": 1.7417645650002378,
+     "calls": 15600
+    },
+    {
+     "op": "bernoulli",
+     "self": 0.009464745000281254,
+     "incl": 0.009464745000281254,
+     "calls": 3950
+    },
+    {
+     "op": "prior",
+     "self": 0.00019442400001571514,
+     "incl": 0.00019442400001571514,
+     "calls": 159
+    }
+   ]
+  },
+  {
+   "item": "atom/poisson-log-dispersion-learned",
+   "wall": 1.5958701670000008,
+   "byOperator": [
+    {
+     "op": "negative-binomial-dispersion",
+     "self": 1.506153715999608,
+     "incl": 1.506153715999608,
+     "calls": 4375
+    },
+    {
+     "op": "dot-constant",
+     "self": 0.031151727000171377,
+     "incl": 0.031151727000171377,
+     "calls": 4725
+    },
+    {
+     "op": "prior-site",
+     "self": 0.013513413000022411,
+     "incl": 0.013513413000022411,
+     "calls": 117
+    },
+    {
+     "op": "prior",
+     "self": 0.0010862490000436082,
+     "incl": 0.0010862490000436082,
+     "calls": 117
+    },
+    {
+     "op": "apply",
+     "self": 0.0004892989999789279,
+     "incl": 0.0004892989999789279,
+     "calls": 175
+    }
+   ]
+  },
+  {
+   "item": "atom/ordinal-probit-cuts-learned",
+   "wall": 1.1977372079999913,
+   "byOperator": [
+    {
+     "op": "likelihood-triple",
+     "self": 1.1707490220003165,
+     "incl": 1.1707490220003165,
+     "calls": 4429
+    },
+    {
+     "op": "greater-than",
+     "self": 0.0031253319999959787,
+     "incl": 0.0031253319999959787,
+     "calls": 67
+    },
+    {
+     "op": "times-constant",
+     "self": 0.0023175309992948313,
+     "incl": 0.0023175309992948313,
+     "calls": 4000
+    },
+    {
+     "op": "difference",
+     "self": 0.00033188200002769007,
+     "incl": 0.00033188200002769007,
+     "calls": 133
+    },
+    {
+     "op": "prior",
+     "self": 0.00014876000003278023,
+     "incl": 0.00014876000003278023,
+     "calls": 201
+    }
+   ]
+  },
+  {
+   "item": "atom/softmax-regression",
+   "wall": 0.11494537499999569,
+   "byOperator": [
+    {
+     "op": "multiclass-row",
+     "self": 0.1045539560000616,
+     "incl": 0.1045539560000616,
+     "calls": 410
+    },
+    {
+     "op": "dot-constant",
+     "self": 0.0018948790000285953,
+     "incl": 0.0018948790000285953,
+     "calls": 183
+    },
+    {
+     "op": "prior",
+     "self": 0.000646876999977394,
+     "incl": 0.000646876999977394,
+     "calls": 41
+    }
+   ]
+  },
+  {
+   "item": "atom/probit-learned",
+   "wall": 0.10796624999999767,
+   "byOperator": [
+    {
+     "op": "gaussian-mv-precision-scale",
+     "self": 0.07363612600005581,
+     "incl": 0.07363612600005581,
+     "calls": 25
+    },
+    {
+     "op": "probit",
+     "self": 0.022445584000844974,
+     "incl": 0.022445584000844974,
+     "calls": 10800
+    },
+    {
+     "op": "probit-plate",
+     "self": 0.009776791999145645,
+     "incl": 0.032222375999990616,
+     "calls": 17
+    },
+    {
+     "op": "prior",
+     "self": 0.00004020800004946068,
+     "incl": 0.00004020800004946068,
+     "calls": 17
+    }
+   ]
+  },
+  {
+   "item": "atom/weibull-shape-learned",
+   "wall": 0.5266114999999991,
+   "byOperator": [
+    {
+     "op": "likelihood-pair",
+     "self": 0.5166338080001297,
+     "incl": 0.5166338080001297,
+     "calls": 2100
+    },
+    {
+     "op": "apply",
+     "self": 0.0002850020000187214,
+     "incl": 0.0002850020000187214,
+     "calls": 70
+    },
+    {
+     "op": "prior",
+     "self": 0.0001382949999824632,
+     "incl": 0.0001382949999824632,
+     "calls": 94
+    }
+   ]
+  },
+  {
+   "item": "atom/mvn-wishart-learned",
+   "wall": 0.004860333000004175,
+   "byOperator": [
+    {
+     "op": "mvn-wishart",
+     "self": 0.004223042999990867,
+     "incl": 0.004223042999990867,
+     "calls": 7
+    },
+    {
+     "op": "prior",
+     "self": 0.00007520700001623482,
+     "incl": 0.00007520700001623482,
+     "calls": 10
+    }
+   ]
+  },
+  {
+   "item": "atom/bivariate-correlation-learned",
+   "wall": 0.07054829099999915,
+   "byOperator": [
+    {
+     "op": "mvn-sd-corr",
+     "self": 0.06949012399997445,
+     "incl": 0.06949012399997445,
+     "calls": 11
+    },
+    {
+     "op": "prior",
+     "self": 0.000098500000036438,
+     "incl": 0.000098500000036438,
+     "calls": 20
+    }
+   ]
+  },
+  {
+   "item": "atom/random-intercepts-slopes-learned",
+   "wall": 0.057192874999993364,
+   "byOperator": [
+    {
+     "op": "mvn-wishart-group",
+     "self": 0.04867675299999246,
+     "incl": 0.04867675299999246,
+     "calls": 40
+    },
+    {
+     "op": "linear-regression-row",
+     "self": 0.0033487559998757205,
+     "incl": 0.0033487559998757205,
+     "calls": 280
+    },
+    {
+     "op": "prior",
+     "self": 0.00010670899995602667,
+     "incl": 0.00010670899995602667,
+     "calls": 14
+    }
+   ]
+  },
+  {
+   "item": "atom/stick-breaking",
+   "wall": 0.004330417000004672,
+   "byOperator": [
+    {
+     "op": "stick-breaking",
+     "self": 0.0021494930000189923,
+     "incl": 0.0021494930000189923,
+     "calls": 410
+    },
+    {
+     "op": "table",
+     "self": 0.0006160099998814985,
+     "incl": 0.0006160099998814985,
+     "calls": 210
+    },
+    {
+     "op": "prior",
+     "self": 0.000013960000040242449,
+     "incl": 0.000013960000040242449,
+     "calls": 42
+    }
+   ]
+  },
+  {
+   "item": "atom/gaussian-learned",
+   "wall": 0.00021179200000187847,
+   "byOperator": [
+    {
+     "op": "gaussian-normal-gamma",
+     "self": 0.00003012599995417986,
+     "incl": 0.00003012599995417986,
+     "calls": 60
+    },
+    {
+     "op": "prior",
+     "self": 0.000003873999987263232,
+     "incl": 0.000003873999987263232,
+     "calls": 5
+    }
+   ]
+  },
+  {
+   "item": "model/eight-schools-centred",
+   "wall": 0.024890125000005356,
+   "byOperator": [
+    {
+     "op": "product",
+     "self": 0.012432280000080937,
+     "incl": 0.012432280000080937,
+     "calls": 488
+    },
+    {
+     "op": "prior-site",
+     "self": 0.00542553899998893,
+     "incl": 0.00542553899998893,
+     "calls": 31
+    },
+    {
+     "op": "apply",
+     "self": 0.0026112939999293305,
+     "incl": 0.0026112939999293305,
+     "calls": 46
+    },
+    {
+     "op": "gaussian",
+     "self": 0.0011390790000150445,
+     "incl": 0.0011390790000150445,
+     "calls": 248
+    },
+    {
+     "op": "plus",
+     "self": 0.000619917000134592,
+     "incl": 0.000619917000134592,
+     "calls": 488
+    },
+    {
+     "op": "prior",
+     "self": 0.00007204399972397369,
+     "incl": 0.00007204399972397369,
+     "calls": 279
+    }
+   ]
+  },
+  {
+   "item": "model/stochastic-volatility",
+   "wall": 0.2280584999999992,
+   "byOperator": [
+    {
+     "op": "gaussian-log-scale",
+     "self": 0.1628492529992509,
+     "incl": 0.1628492529992509,
+     "calls": 6270
+    },
+    {
+     "op": "gaussian",
+     "self": 0.02165857099968707,
+     "incl": 0.02165857099968707,
+     "calls": 9077
+    },
+    {
+     "op": "times-constant",
+     "self": 0.0038563079994055442,
+     "incl": 0.0038563079994055442,
+     "calls": 9390
+    },
+    {
+     "op": "linear",
+     "self": 0.003774403000061284,
+     "incl": 0.003774403000061284,
+     "calls": 9077
+    },
+    {
+     "op": "prior",
+     "self": 0.0001435450001154095,
+     "incl": 0.0001435450001154095,
+     "calls": 209
+    }
+   ]
+  },
+  {
+   "item": "model/negative-binomial-regression",
+   "wall": 1.754319457999998,
+   "byOperator": [
+    {
+     "op": "negative-binomial-dispersion",
+     "self": 1.6498388009989575,
+     "incl": 1.6498388009989575,
+     "calls": 4900
+    },
+    {
+     "op": "dot-constant",
+     "self": 0.035345775000183495,
+     "incl": 0.035345775000183495,
+     "calls": 4998
+    },
+    {
+     "op": "prior-site",
+     "self": 0.0036870409999974073,
+     "incl": 0.0036870409999974073,
+     "calls": 33
+    },
+    {
+     "op": "prior",
+     "self": 0.0018133310000121128,
+     "incl": 0.0018133310000121128,
+     "calls": 33
+    },
+    {
+     "op": "apply",
+     "self": 0.00015449700002500321,
+     "incl": 0.00015449700002500321,
+     "calls": 49
+    }
+   ]
+  }
+ ]
+}

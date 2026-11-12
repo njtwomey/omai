@@ -64,6 +64,23 @@ describe('ep-perf comparison', () => {
     }
   })
 
+  it('takes the machine factor per row when it is a function of the key', () => {
+    // 'a' was timed on a machine twice as slow as when the baseline was taken, 'b' on an equal one.
+    const out = compareTimes(
+      base,
+      new Map([
+        ['a', 2],
+        ['b', 2],
+      ]),
+      (k) => (k === 'a' ? 2 : 1),
+      1.5,
+    )
+    expect(out.find((c) => c.key === 'a')?.ratio).toBe(1)
+    expect(out.find((c) => c.key === 'b')?.ratio).toBe(1)
+    expect(out.filter((c) => c.slower)).toEqual([])
+    expect(compareTimes(base, new Map([['b', 5]]), (k) => (k === 'a' ? 2 : 1), 1.5)[0]?.slower).toBe(true)
+  })
+
   it('still flags a regression on a slower machine', () => {
     const out = compareTimes(base, new Map([['a', 4]]), 2, 1.5)
     expect(out[0]?.ratio).toBe(2)
@@ -80,7 +97,7 @@ describe('ep-perf selection and formatting', () => {
   })
 
   it('formats durations and tables', () => {
-    expect(formatMicros(3.14159)).toBe('3.14 us')
+    expect(formatMicros(3.1)).toBe('3.10 us')
     expect(formatMicros(250)).toBe('250.0 us')
     expect(formatMicros(41_000)).toBe('41.0 ms')
     expect(formatMicros(2_310_000)).toBe('2.31 s')
