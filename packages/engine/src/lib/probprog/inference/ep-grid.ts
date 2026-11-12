@@ -9,10 +9,16 @@
  * the mixture of the nodes' beliefs. One node is a step, in an order that refines the grid (the two ends, then bisections), so a
  * snapshot at any step is a coarser grid of the same posterior; when the posterior still has mass at an edge of the grid the
  * grid is extended outwards, within a budget of nodes. Two options make a fit with a few hundred sweeps per node cheap: `order:
- * 'walk'` (one hyperparameter) starts in the middle of the range and steps outwards only while the edge node still has mass, so
- * the nodes in the tails are never run, and `warm` starts each node from the messages of the nearest settled one, which settles
- * in a fraction of the sweeps. A node that did not settle (an EP run that cycles) weighs the grid only where its evidence does not
- * exceed the best settled node's.
+ * 'walk'` starts in the middle of the range and steps outwards, best first, to the lattice neighbours of the nodes that still
+ * have mass (within `window` nats of the best), so the nodes in the tails are never run, and `warm` starts each node from the
+ * messages of the nearest settled one, which settles in a fraction of the sweeps. With one hyperparameter the walk is an
+ * interval; with several it is a flood fill of the region of the lattice where the posterior has mass, whose cost follows the
+ * volume of that region and not the product of the axes (three scalars, or an ARD length scale per input beside an amplitude and
+ * a noise level, are a few hundred to a few thousand nodes of a few milliseconds each), and it is what a method over several
+ * hyperparameters opens on. The hyperparameters are the scalar latents a `custom` function reads, and the components of a
+ * plated vector of them with independent priors (an ARD kernel's length scale per input), or the latents named in `over`; a
+ * noise level joins the grid by being read by a custom function too. A node that did not settle (an EP run that cycles) weighs
+ * the grid only where its evidence does not exceed the best settled node's.
  */
 
 import { OmaiError } from '../../base/index.ts'
@@ -96,61 +102,84 @@ export interface EpGridState {
   readonly extensions: number
 }
 
-/** The knobs of {@link epGridMethod} (the budget and snapshot knobs are added to them). */
-export const epGridKnobs: DictSpace = dict({
-  points: int(3, 401, {
-    default: 31,
-    label: 'points',
-    description:
-      'points per hyperparameter on the first grid (spaced evenly on the unconstrained scale, so a positive one is log-spaced)',
-  }),
-  tail: real(1e-12, 0.45, {
-    log: true,
-    default: 1e-4,
-    label: 'prior tail',
-    description: 'the prior mass left out at each end of the first grid',
-  }),
-  maxNodes: int(3, 100_000, {
-    default: 400,
-    label: 'node budget',
-    description: 'the most EP runs, extensions of the grid included',
-  }),
-  edge: real(1e-8, 1, {
-    log: true,
-    default: 1e-3,
-    label: 'edge mass',
-    description: 'extend the grid where an edge node has this share of the heaviest node',
-  }),
-  warm: bool({
-    default: false,
-    label: 'warm start',
-    description:
-      'start each node from the messages of the nearest settled node instead of the flat ones: a node near a settled one settles in a fraction of the sweeps, and keeps to the fixed point of its neighbours (one whose factors cycle or collapse from a flat start)',
-  }),
-  order: choice(['bisect', 'walk'], {
-    default: 'bisect',
-    label: 'order',
-    description:
-      'the order of the nodes. bisect: the two ends, then midpoints (any snapshot is a coarser grid of the whole range). walk (one hyperparameter): start at the middle of the range and step outwards on the side whose edge node weighs more, each node started from its neighbour (with warm), until the edge nodes are `window` nats below the best (only where the posterior has mass; a snapshot covers the nodes run so far)',
-  }),
-  window: real(0.5, 1000, {
-    log: true,
-    default: 10,
-    label: 'evidence window',
-    description:
-      'walk order: stop on a side when its edge node has a log evidence plus log prior this many nats below the best node (the Gaussian tail is half the square of the sds it is out: 10 is 4.5 sds)',
-  }),
-  // The knobs of each EP run (schedule, damping, improper, tol, maxSweeps, restarts, power): the shared declaration.
-  ...epRunKnobs('ep-grid').spaces,
-})
+/**
+ * The knobs of {@link epGridMethod} for one hyperparameter (the budget and snapshot knobs are added to them). A method over
+ * several (`epGridKnobsFor(2)`, the method's own space) opens on a walk with warm starts, a coarser lattice and a budget that
+ * fits its region: the product of the axes is out of reach, the region of the lattice where the posterior has mass is not.
+ */
+export const epGridKnobs: DictSpace = epGridKnobsFor(1)
+
+/**
+ * The knobs of EP inside a grid over `axes` hyperparameters: the same keys, with the defaults of a product grid for one and of
+ * a walk over the region of mass for more (15 points per axis, warm starts, a window of 7 nats, a budget of 4000 nodes).
+ *
+ * @param axes - The number of axes of the grid (scalar hyperparameters, plus the components of the plated vectors).
+ * @returns The space.
+ * @example
+ * ```ts
+ * import { epGridKnobsFor } from 'omai-engine/probprog/inference'
+ * import { defaults } from 'omai-engine/space'
+ * const [one, three] = [defaults(epGridKnobsFor(1)), defaults(epGridKnobsFor(3))]
+ * [one['order'], three['order'], three['points']] // => ['bisect', 'walk', 15]
+ * ```
+ */
+export function epGridKnobsFor(axes: number): DictSpace {
+  const several = axes > 1
+  return dict({
+    points: int(3, 401, {
+      default: several ? 15 : 31,
+      label: 'points',
+      description:
+        'points per hyperparameter on the first grid (spaced evenly on the unconstrained scale, so a positive one is log-spaced); with several hyperparameters the spacing of the lattice the walk visits',
+    }),
+    tail: real(1e-12, 0.45, {
+      log: true,
+      default: 1e-4,
+      label: 'prior tail',
+      description: 'the prior mass left out at each end of the first grid',
+    }),
+    maxNodes: int(3, 100_000, {
+      default: several ? 4000 : 400,
+      label: 'node budget',
+      description: 'the most EP runs, extensions of the grid included',
+    }),
+    edge: real(1e-8, 1, {
+      log: true,
+      default: 1e-3,
+      label: 'edge mass',
+      description: 'extend the grid where an edge node has this share of the heaviest node',
+    }),
+    warm: bool({
+      default: several,
+      label: 'warm start',
+      description:
+        'start each node from the messages of the nearest settled node instead of the flat ones: a node near a settled one settles in a fraction of the sweeps, and keeps to the fixed point of its neighbours (one whose factors cycle or collapse from a flat start)',
+    }),
+    order: choice(['bisect', 'walk'], {
+      default: several ? 'walk' : 'bisect',
+      label: 'order',
+      description:
+        'the order of the nodes. bisect: the two ends, then midpoints (any snapshot is a coarser grid of the whole range; the product of the axes, so one or two hyperparameters). walk: start at the middle of the range and step outwards, best first, to the lattice neighbours of the nodes that are within `window` nats of the best (with one hyperparameter, on the side whose edge node weighs more), each node started from its neighbour (with warm); only the region where the posterior has mass is run, so the cost follows its volume and not the product of the axes (a snapshot covers the nodes run so far)',
+    }),
+    window: real(0.5, 1000, {
+      log: true,
+      default: several ? 7 : 10,
+      label: 'evidence window',
+      description:
+        'walk order: stop on a side when its edge node has a log evidence plus log prior this many nats below the best node (the Gaussian tail is half the square of the sds it is out: 10 is 4.5 sds, 7 is 3.7)',
+    }),
+    // The knobs of each EP run (schedule, damping, improper, tol, maxSweeps, restarts, power): the shared declaration.
+    ...epRunKnobs('ep-grid').spaces,
+  })
+}
 
 /** Options of {@link epGridMethod}. */
 export interface EpGridOptions {
   /** The name of the method (default `ep-grid`). */
   readonly name?: string
   /**
-   * The latents to put on the grid (scalar, with a prior whose parameters are known). Default: the scalar latents that a `custom`
-   * function reads directly.
+   * The latents to put on the grid (a scalar, or a plated vector whose components are independent and share a prior; the prior's
+   * parameters are known numbers). Default: the scalar latents and plated vectors that a `custom` function reads directly.
    */
   readonly over?: readonly string[]
   /** How the rows of a plate are compiled (see `toFactorGraph`; default `vectorise`). */
@@ -187,7 +216,7 @@ function customReads(spec: ModelSpec): Set<string> {
   return out
 }
 
-/** The hyperparameters: the named latents, or the scalar latents a custom function reads. */
+/** The latents to put on the grid: the named ones, or the scalar latents a custom function reads. */
 function hyperNames(spec: ModelSpec, over: readonly string[] | undefined): string[] {
   if (over !== undefined) return [...over]
   const reads = customReads(spec)
@@ -196,11 +225,57 @@ function hyperNames(spec: ModelSpec, over: readonly string[] | undefined): strin
     .map((n) => n.name)
 }
 
+/** The plated vectors a custom function reads directly: candidates for the grid (an ARD kernel's length scales) when the scalars alone leave no graph. */
+function vectorReads(spec: ModelSpec, sizes: Readonly<Record<string, number>>): string[] {
+  const reads = customReads(spec)
+  return spec.nodes
+    .filter(
+      (n) =>
+        n.kind === 'latent' &&
+        n.dims.length === 1 &&
+        n.eventRank === 0 &&
+        reads.has(n.name) &&
+        sizes[n.dims[0] as string] !== undefined,
+    )
+    .map((n) => n.name)
+}
+
+/** One axis of the grid: a scalar latent, or one component of a plated vector of independent hyperparameters (`ell[1]`). */
+interface Target {
+  /** The latent node. */
+  readonly node: string
+  /** The component of a vector latent, or none for a scalar. */
+  readonly component?: number
+  /** The name of the axis (`ell`, `ell[1]`). */
+  readonly label: string
+}
+
+/** The axes of the latents on the grid: one for a scalar, one per component for a vector (its size from the bound dimensions). */
+function targetsOf(spec: ModelSpec, names: readonly string[], sizes: Readonly<Record<string, number>>): Target[] {
+  return names.flatMap((name): Target[] => {
+    const node = spec.nodes.find((x) => x.name === name)
+    if (node === undefined || node.kind !== 'latent')
+      throw new OmaiError('value', `ep-grid: '${name}' is not a latent node`)
+    if (node.dims.length === 0) return [{ node: name, label: name }]
+    const dim = node.dims[0] as string
+    const size = sizes[dim]
+    if (node.dims.length !== 1 || size === undefined)
+      throw new OmaiError(
+        'value',
+        `ep-grid: '${name}' is not a scalar or a plated vector of known size: only those go on a grid`,
+      )
+    return Array.from({ length: size }, (_, i): Target => ({ node: name, component: i, label: `${name}[${i}]` }))
+  })
+}
+
 /** The prior of a hyperparameter as a distribution, when its parameters are known numbers. */
-function priorOf(node: ModelNode, tail: number): Hyper {
+function priorOf(node: ModelNode, tail: number, label: string = node.name): Hyper {
   if (node.kind !== 'latent') throw new OmaiError('value', `ep-grid: '${node.name}' is not a latent node`)
-  if (node.dims.length !== 0 || node.eventRank !== 0)
-    throw new OmaiError('value', `ep-grid: '${node.name}' is not a scalar: only scalar hyperparameters go on a grid`)
+  if (node.dims.length > 1 || node.eventRank !== 0)
+    throw new OmaiError(
+      'value',
+      `ep-grid: '${node.name}' is not a scalar or a plated vector: only scalar hyperparameters go on a grid`,
+    )
   if (node.constraint !== undefined)
     throw new OmaiError('value', `ep-grid: '${node.name}' carries a constraint, which the grid does not read`)
   const family = distributionFamilies()[node.dist.family]
@@ -224,7 +299,7 @@ function priorOf(node: ModelNode, tail: number): Hyper {
   const hi = num1(map.inverse(prior.ppf(1 - tail)))
   if (!(Number.isFinite(lo) && Number.isFinite(hi) && hi > lo))
     throw new OmaiError('value', `ep-grid: the prior of '${node.name}' has no finite range at the tail ${tail}`)
-  return { name: node.name, prior, map, lo, hi }
+  return { name: label, prior, map, lo, hi }
 }
 
 /** The log prior density of a hyperparameter on the unconstrained scale at `u`: the density at `x` times the Jacobian. */
@@ -374,22 +449,24 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
   const plates = options.plates ?? 'vectorise'
   const packScalars = options.packScalars ?? true
   const bound: BoundModel | undefined = typeof model === 'function' ? undefined : model
-  const names = bound === undefined ? [] : hyperNames(bound.spec, options.over)
-  let hypers: Hyper[] | undefined
-  const hypersFor = (tail: number): Hyper[] => {
-    if (bound === undefined) throw new OmaiError('value', `${name}: needs a model spec`)
-    if (hypers === undefined || hypers.length === 0 || names.length === 0) {
-      hypers = names.map((n) => priorOf(bound.spec.nodes.find((x) => x.name === n) as ModelNode, tail))
-    }
-    return hypers
-  }
+  const priorsOf = (ts: readonly Target[], tail: number): Hyper[] =>
+    ts.map((t) => priorOf((bound as BoundModel).spec.nodes.find((x) => x.name === t.node) as ModelNode, tail, t.label))
 
-  /** The model with the hyperparameters set to values: compiled to a graph (or the reason there is none). */
-  const compileAt = (
+  /** The model with the hyperparameters of `ts` set to values: compiled to a graph (or the reason there is none). */
+  const compileWith = (
+    ts: readonly Target[],
     x: readonly number[],
   ): { c: FactorGraphCompilation; g: CompiledGraph | undefined; failure: string | undefined } => {
     const b = bound as BoundModel
-    const values = Object.fromEntries(names.map((n, k) => [n, x[k] as number]))
+    const values: Record<string, number | number[]> = {}
+    for (const [k, t] of ts.entries()) {
+      if (t.component === undefined) values[t.node] = x[k] as number
+      else {
+        const vector = (values[t.node] as number[] | undefined) ?? []
+        vector[t.component] = x[k] as number
+        values[t.node] = vector
+      }
+    }
     const conditioned = bind({ spec: doSpec(b.spec, values), customs: b.customs }, b.data, b.options)
     const c = toFactorGraph(conditioned, { plates, packScalars })
     if (c.graph === undefined) return { c, g: undefined, failure: undefined }
@@ -399,6 +476,40 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
       return { c, g: undefined, failure: e instanceof Error ? e.message : String(e) }
     }
   }
+
+  /** Whether the model has an EP graph with `ts` on the grid (at the middle of the first grid). */
+  const compilesWith = (ts: readonly Target[]): boolean => {
+    try {
+      const mid = priorsOf(ts, 1e-4).map((h) => num1(h.map.forward(tensor((h.lo + h.hi) / 2))))
+      const { c, g, failure } = compileWith(ts, mid)
+      return failure === undefined && factorGraphVerdict(c, g, 'ep').ok
+    } catch {
+      return false
+    }
+  }
+
+  // The axes: a scalar latent is one, a plated vector of them one per component. The scalars a custom function reads, or the
+  // latents named in `over`; the plated vectors it reads (an ARD kernel's length scales) join only when the model has no EP graph
+  // without them (a vector the function is affine in is a random vector for EP, not a hyperparameter).
+  const targets: Target[] = (() => {
+    if (bound === undefined) return []
+    const scalars = targetsOf(bound.spec, hyperNames(bound.spec, options.over), bound.sizes)
+    const vectors = options.over === undefined ? vectorReads(bound.spec, bound.sizes) : []
+    if (vectors.length === 0 || compilesWith(scalars)) return scalars
+    // in the order the model declares them
+    const declared = (t: Target): number =>
+      (bound.spec.nodes.findIndex((n) => n.name === t.node) as number) + (t.component ?? 0) / 1e6
+    const wide = [...scalars, ...targetsOf(bound.spec, vectors, bound.sizes)].sort((a, b) => declared(a) - declared(b))
+    return compilesWith(wide) ? wide : scalars
+  })()
+  const names = targets.map((t) => t.label)
+  let hypers: Hyper[] | undefined
+  const hypersFor = (tail: number): Hyper[] => {
+    if (bound === undefined) throw new OmaiError('value', `${name}: needs a model spec`)
+    if (hypers === undefined || hypers.length === 0 || names.length === 0) hypers = priorsOf(targets, tail)
+    return hypers
+  }
+  const compileAt = (x: readonly number[]): ReturnType<typeof compileWith> => compileWith(targets, x)
 
   const check = (a: ModelAnalysis): Verdict => {
     if (bound === undefined || isProgramAnalysis(a))
@@ -456,15 +567,22 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
     const converged = state.nodes.filter((n) => n.converged).length
     const values: Record<string, number[]> = {}
     for (const [k, a] of state.axes.entries()) values[a.name] = state.nodes.map((n) => n.x[k] as number)
+    // A walk that the budget cut short (the region still has an open edge) is not a finished grid, whatever the pending list says.
+    const cut =
+      config['order'] === 'walk' &&
+      state.pending.length === 0 &&
+      walkNext(state, num(config, 'window'), Number.POSITIVE_INFINITY).length > 0
     return siteMixturePosterior({
       engine: name,
-      status: state.pending.length === 0 ? (converged === state.nodes.length ? 'converged' : 'completed') : 'stopped',
+      status:
+        state.pending.length === 0 && !cut ? (converged === state.nodes.length ? 'converged' : 'completed') : 'stopped',
       logEvidence: { value: logEvidence, method: 'ep-grid' },
       diagnostics: {
         nodes: state.nodes.length,
         planned: state.nodes.length + state.pending.length,
         converged,
         extensions: state.extensions,
+        ...(cut ? { budgetReached: true } : {}),
         hyperparameters: state.axes.map((a) => a.name),
         tol: num(config, 'tol'),
       },
@@ -479,7 +597,7 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
     family: 'message-passing',
     description:
       'expectation propagation inside a grid over the hyperparameters a custom function reads, each node weighted by its EP evidence and the prior',
-    config: epGridKnobs,
+    config: epGridKnobsFor(targets.length),
     check,
     posterior,
     defaults: { 'ep-grid/nodes': Log(), 'ep-grid/logEvidence': Log() },
@@ -566,12 +684,12 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
             next = { ...next, pending: walkNext(next, window, maxNodes) }
             // The walk reached the end of the range with mass still there: the range grows and the walk goes on.
             if (next.pending.length === 0 && next.nodes.length < maxNodes) {
-              const grown = extend(next, edge, maxNodes, points)
+              const grown = extend(next, edge, maxNodes, points, false)
               next = { ...grown, pending: walkNext(grown, window, maxNodes) }
             }
           } else if (next.pending.length === 0 && next.nodes.length < maxNodes) {
             // At the end of the grid, extend it where an edge still has mass.
-            next = extend(next, edge, maxNodes, points)
+            next = extend(next, edge, maxNodes, points, true)
           }
           ctx.log('ep-grid/nodes', next.nodes.length)
           ctx.log('ep-grid/sweeps', node.sweeps)
@@ -618,39 +736,60 @@ function nearestSettled(nodes: readonly GridNode[], index: readonly number[]): G
 }
 
 /**
- * The next node of a walk over one hyperparameter: the middle of the first range, then one step outwards on the side whose edge
- * node weighs more (log evidence plus log prior), while that edge node is within `window` nats of the best (or has no evidence
- * to judge by); none when both sides are done, the range is used up or the budget is.
+ * The next node of a walk over the grid: the middle of the first range, then the unvisited lattice neighbour (one step along one
+ * axis) of the node that weighs most (log evidence plus log prior) among those within `window` nats of the best; a node with no
+ * evidence to judge by is always expanded, and first. With one hyperparameter this steps outwards on the side whose edge node
+ * weighs more; with several it is a best-first flood fill of the region where the posterior has mass, so its cost follows the
+ * number of nodes within the window and not the product of the axes. None when the region is closed, the range is used up or
+ * the budget is.
  */
 function walkNext(state: EpGridState, window: number, maxNodes: number): readonly (readonly number[])[] {
-  const axis = state.axes[0]
-  if (axis === undefined || state.axes.length !== 1) return []
-  if (state.nodes.length >= maxNodes) return []
-  if (state.nodes.length === 0) return [[Math.floor((axis.from + axis.to) / 2)]]
+  const axes = state.axes
+  if (axes.length === 0 || state.nodes.length >= maxNodes) return []
+  if (state.nodes.length === 0) return [axes.map((a) => Math.floor((a.from + a.to) / 2))]
   const score = (n: GridNode): number => n.logEvidence + n.logPrior
   let top = Number.NEGATIVE_INFINITY
-  let left = state.nodes[0] as GridNode
-  let right = left
+  for (const n of state.nodes) if (Number.isFinite(n.logEvidence) && score(n) > top) top = score(n)
+  // a lattice point as one number (the axes' ranges make a mixed-radix code), so a step costs a few set lookups per node
+  const span = axes.map((a) => a.to - a.from + 1)
+  const code = (index: readonly number[]): number =>
+    index.reduce((c, v, k) => c * (span[k] as number) + (v - (axes[k] as GridAxis).from), 0)
+  const visited = new Set(state.nodes.map((n) => code(n.index)))
+  let best: number[] | undefined
+  let bestRank = Number.NEGATIVE_INFINITY
   for (const n of state.nodes) {
-    if (Number.isFinite(n.logEvidence) && score(n) > top) top = score(n)
-    if ((n.index[0] ?? 0) < (left.index[0] ?? 0)) left = n
-    if ((n.index[0] ?? 0) > (right.index[0] ?? 0)) right = n
+    const finite = Number.isFinite(n.logEvidence)
+    if (finite && score(n) <= top - window) continue
+    const rank = finite ? score(n) : Number.POSITIVE_INFINITY
+    for (const [k, a] of axes.entries()) {
+      for (const side of [-1, 1]) {
+        const at = (n.index[k] ?? 0) + side
+        if (at < a.from || at > a.to) continue
+        const next = n.index.slice()
+        next[k] = at
+        if (visited.has(code(next))) continue
+        // the heavier parent first; on a tie the smaller index (the left edge of an interval)
+        if (rank > bestRank || (rank === bestRank && best !== undefined && lexLess(next, best))) {
+          best = next
+          bestRank = rank
+        }
+      }
+    }
   }
-  const open = (n: GridNode, side: -1 | 1): boolean => {
-    const at = (n.index[0] ?? 0) + side
-    if (at < axis.from || at > axis.to) return false
-    return !Number.isFinite(n.logEvidence) || score(n) > top - window
-  }
-  const goLeft = open(left, -1)
-  const goRight = open(right, 1)
-  const rank = (n: GridNode): number => (Number.isFinite(n.logEvidence) ? score(n) : Number.POSITIVE_INFINITY)
-  if (goLeft && (!goRight || rank(left) >= rank(right))) return [[(left.index[0] ?? 0) - 1]]
-  if (goRight) return [[(right.index[0] ?? 0) + 1]]
-  return []
+  return best === undefined ? [] : [best]
 }
 
-/** The grid with the axes extended outwards where an edge still has mass, and the new nodes pending (as many as the budget leaves). */
-function extend(state: EpGridState, edge: number, maxNodes: number, points: number): EpGridState {
+/** Whether `a` comes before `b` in lexicographic order. */
+function lexLess(a: readonly number[], b: readonly number[]): boolean {
+  for (const [i, v] of a.entries()) if (v !== (b[i] ?? 0)) return v < (b[i] ?? 0)
+  return false
+}
+
+/**
+ * The grid with the axes extended outwards where an edge still has mass, and, with `product`, the new nodes pending (as many as
+ * the budget leaves; a walk chooses its own and takes only the wider range).
+ */
+function extend(state: EpGridState, edge: number, maxNodes: number, points: number, product: boolean): EpGridState {
   const grow = growth(state, edge)
   if (grow.length === 0) return state
   const step = Math.max(2, Math.floor(points / 4))
@@ -662,6 +801,7 @@ function extend(state: EpGridState, edge: number, maxNodes: number, points: numb
       to: a.to + (g.some((x) => x.side === 1) ? step : 0),
     }
   })
+  if (!product) return { ...state, axes, extensions: state.extensions + 1 }
   const have = new Set(state.nodes.map((n) => n.index.join(',')))
   const fresh = firstNodes(axes)
     .filter((t) => !have.has(t.join(',')))

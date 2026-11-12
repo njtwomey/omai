@@ -1111,3 +1111,56 @@ with sds 0.45, 0.066, 0.26, 0.084, 0.38; 3 s a run) and was listed as `runs (ep)
   backpropagation), so that no hidden variable carries a negative-precision message; the refusal goes when that is checked against the long NUTS run.
 - Digest: `model/bayesian-neural-network` moves deliberately (route `ep` to `none`, the verdict, no posterior); no other item is affected (the
   verdict changes only for graphs with a layer); the registry is untouched.
+
+## 2026-11-12 Several hyperparameters on the grid: a walk over the lattice, ARD length scales, a noise sd (`agent-a6eb2d-gridhyp`, gap `grid-hyperparameters` narrowed)
+
+No second grid method: `epGridMethod` (`inference/ep-grid.ts`) gained what the plan asked for, and the gap's summary and plan were rewritten
+(`ep-gaps.ts`; still open: five or more axes, hierarchical or non-identical priors, a likelihood that is not Gaussian at several axes).
+- `order: 'walk'` over any number of axes: from the middle of the lattice, always the unvisited lattice neighbour of the heaviest node that is
+  within `window` nats of the best (a best-first flood fill; with one hyperparameter it is the interval walk of the stochastic volatility work,
+  node for node), so the cost follows the volume of the posterior and not the product of the axes. The range still grows where an edge has
+  mass (`extend` takes only the wider range in a walk). A walk that the budget cut short while its region has an open edge reports status
+  `stopped` and `diagnostics.budgetReached` (a finished-looking `converged` on 4000 nodes was wrong).
+- Defaults by number of axes (`epGridKnobsFor(axes)`; the method's own `config`): one axis as before (bisect, 31 points, window 10, 400 nodes,
+  no warm start), several axes `walk`, `warm`, 15 points, window 7, 4000 nodes. `runEp` gives a grid run as many steps as its node budget.
+- The hyperparameters: the scalar latents a custom function reads (as before) and, only when the model has no EP graph without them, the plated
+  vectors it reads, one axis per component (`ell[0]`, `ell[1]`: an ARD kernel with one prior for all its inputs); the order is the model's.
+  A vector the function is affine in (the whitened `z` of the non-centred Gaussian process) stays a random vector for EP. A noise sd joins
+  the grid by being read by a custom function too (`m.custom('noiseSd', ([s]) => s.value, [noise], {})`; with it inside the EP run instead,
+  one axis fewer, a node costs 20 times more, 57 ms, and the evidence is 0.05 nats off and the noise's spread 0.91 of the exact).
+- Against a brute-force tensor grid of `N(y; 0, K + sigma^2 I)` in plain arithmetic (`gpPosteriorGivenHyperparameters`, the new reference,
+  with `gridMarginals` extended by `logEvidence`, `expect`, `mass` and `mixture`): the atom `gp-hyperparameters` (length scale, variance and
+  noise sd on eight points; 948 nodes, 1 to 2 s) is 3e-4 nats from the grid in evidence with means within 0.004 reference sds and spreads
+  0.992 to 1.000; an ARD kernel of two inputs with its variance (three axes, 1163 nodes, 1.7 s) 1e-4 nats, means within 0.006 sds, spreads
+  0.996, 1.017, 0.995; with a noise sd (four axes, 11 points, window 7, about 2500 nodes, 5 s; measured against a 25-point-per-axis reference in
+  a scratch script, and in `ep-grid-hyper.test.ts` against a 21-point one with wider tolerances) 4e-4 nats, means within 0.03 sds, spreads
+  0.99 to 1.02. At 15 points and window 7 the three-scalar case is 800 nodes and 0.9 s; the lattice, not the window, sets the error (9
+  points: 0.03 nats; 11: 0.005; 13: 0.002; 15: 3e-4). Warm starts do not help where each node is exact (cold was faster: the messages are
+  part of the state the session serialises every step, which is quadratic in the nodes).
+- New: atom `gp-hyperparameters` (family `kernels`), `epGridKnobsFor`, `gpPosteriorGivenHyperparameters` (`models/gaussian-process.ts`), the
+  tests of `inference/ep-grid-hyper.test.ts`. EP digest: two items added (`atom/gp-hyperparameters`, `vmp/gp-hyperparameters`) and the
+  registry line (one atom's knobs); the other grid items (`atom/gp-length-scale`, `atom/gp-probit-learned`, `model/gaussian-process-*`,
+  `model/stochastic-volatility`) are unchanged at the exact level (`atom/gp-length-scale` differs in the last digits on the unchanged HEAD too).
+- Not done: five or more axes (the nodes grow with the volume; a sparse design or a Laplace step is the plan), diagonal neighbours (a ridge
+  thin against the lattice's spacing and diagonal to it can be cut; the window of 7 nats makes it unlikely for the Gaussian processes tried),
+  hierarchical priors on the grid, a reference at several axes with a non-Gaussian likelihood (each node's evidence is then approximate).
+
+## 2026-11-12 ARD under variational message passing opens damped (`agent-a6eb2d-gridhyp`)
+
+The ARD Bayesian GAM under VMP stalled without damping and the offer listed `vmp` regardless. VMP on this form does run once damped, so the
+fix is a default, on the engine side only (`models/bayesian-gam.ts`; the pocs page is untouched and reads the offer):
+`bayesianGamFormStarting(prior)` gives the starting knobs a form needs (`ard`: `vmp` at `damping: 0.5`, `maxSweeps: 60`), merged over
+`bayesianGamStarting` in `bayesianGamMethods` (so the union's defaults, which a page opens its controls on) and applied to the method's own
+config in `bayesianGamMethod` (so a session with no config runs damped too).
+- Measured on 60 rows (scratch script, EP as the reference, the same data as the tests): undamped k = 6 stops at sweep 74 with the log noise
+  at -46 (collapsed) and k = 10 ends at +0.90 with a spread of 2e-8 (curve 0.42 sd and band 75 times EP's); damping 0.3, 0.4, 0.5 and 0.7
+  all reach the same point (k = 6: log noise -1.585, curve 0.083 response sd from EP's, band 1.22 times; k = 10 at 0.5: -1.597, 0.029, 1.39),
+  0.1 and 0.2 settle elsewhere (band 1.7 to 2.0 times). The change in the messages is far above any tolerance at 200 sweeps (tol 1e-3 to 1e-6
+  stop nowhere; 627 sweeps to 1e-5 at 0.3, as measured earlier), while the log noise is within 0.015 of its 200-sweep value and the curve's distance to EP's within 0.02 sds of it from 30 sweeps, so
+  the cap opens at 60 (5.6 s at k = 6, 11 s at k = 10, against 18 and 36 s at 200). The run ends at the cap, status `completed`, never
+  `converged`: honest, and the offer keeps `vmp` (it runs, with a band 1.2 to 1.4 times EP's, the mean field of the precisions and the
+  coefficients).
+- Not made `unavailable`: the verdict of the method is about the model (it compiles and has rules), and now the run is sound by default.
+  Other forms keep the method's defaults (`penalty` VMP runs at damping 0.3 in its test, 0 by default, unchanged).
+- Tests (`bayesian-gam-ep.test.ts`): the union's defaults for ARD (0.5, 60) and for the penalty form (0, 200); a session with no config on ARD
+  stops within 60 sweeps with the curve within 0.1 sd of EP's and the log noise within 0.1, and the undamped run's log noise below -10.

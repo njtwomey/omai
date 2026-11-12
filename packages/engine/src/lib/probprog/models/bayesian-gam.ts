@@ -18,6 +18,7 @@ import { buildDesign, evaluateDesign, type GamTerm, type SmoothKind, s as smooth
 import { dpotrf, dpotrs, dsyev } from '../../numerics/linalg/index.ts'
 import { lgamma, ndtr } from '../../numerics/special/index.ts'
 import { type Key, key as makeKey } from '../../random/index.ts'
+import { type DictSpace, dict, type Space } from '../../space/index.ts'
 import { bs, ps } from '../../stats/smoothing/index.ts'
 import { fromStorage, item, toFlat, type Value } from '../../tensor/index.ts'
 import { type Config, derived } from '../../trace/index.ts'
@@ -993,8 +994,14 @@ export function bayesianGamMethod(
   const name = options.name ?? kind
   // region gam:bind
   // The chosen method, bound to the model and its data.
-  const method = make(model.definition.bind(model.data), { name })
+  const chosen = make(model.definition.bind(model.data), { name })
   // endregion
+  // The knobs the form needs to run at all (ARD under VMP, see `bayesianGamFormStarting`) are the defaults of the method on it.
+  const form = bayesianGamFormStarting(model.prior)[kind]
+  const method: AnyInferenceMethod =
+    form === undefined || chosen.config === undefined
+      ? chosen
+      : { ...chosen, config: startingConfig(chosen.config, form) }
   const contractOf = method.contract
   return {
     ...method,
@@ -1028,6 +1035,52 @@ export const bayesianGamStarting: Readonly<Record<string, Readonly<Record<string
   hmc: { numChains: 2, numWarmup: 150, numDraws: 200 },
   nuts: { numChains: 1, numWarmup: 100, numDraws: 150, maxTreeDepth: 5 },
   svi: { learningRate: 0.05 },
+}
+
+/**
+ * The starting knobs a form of the model needs from a method, over {@link bayesianGamStarting}: ARD under variational message
+ * passing, undamped, stalls (the noise collapses to its lower limit and the run stops, or ends at a log noise above its prior with
+ * no spread: at 60 rows and 6 or 10 coefficients), where a damping of 0.5 reaches the same fixed point as any damping from 0.3 to
+ * 0.7 (a log noise of -1.59 against EP's -1.65, the curve within 0.03 to 0.08 response sds of EP's; the band is 1.2 to 1.4 times
+ * EP's, the mean field of the precisions and the coefficients). The messages take hundreds of sweeps to a change of 1e-5 on this
+ * form (627 at a damping of 0.3), so the run ends at the sweep cap, while the log noise is within 0.015 of its end value and the
+ * curve's distance to EP's within 0.02 response sds of it from 30 sweeps: the cap opens at 60 (5 to 11 seconds), not 200.
+ *
+ * @param prior - The prior of the model.
+ * @returns The starting knobs by kind of method (empty for a form that needs none).
+ * @concept generalized-additive-models
+ * @example
+ * ```ts
+ * import { bayesianGamFormStarting } from 'omai-engine/probprog/models'
+ * [bayesianGamFormStarting('ard')['vmp'], bayesianGamFormStarting('penalty')] // => [{ damping: 0.5, maxSweeps: 60 }, {}]
+ * ```
+ */
+export function bayesianGamFormStarting(
+  prior: 'penalty' | 'spikeSlab' | 'ard',
+): Readonly<Record<string, Readonly<Record<string, number>>>> {
+  return prior === 'ard' ? { vmp: { damping: 0.5, maxSweeps: 60 } } : {}
+}
+
+/** The starting knobs of every kind, the second table's over the first's. */
+function mergeStarting(
+  base: Readonly<Record<string, Readonly<Record<string, number>>>>,
+  over: Readonly<Record<string, Readonly<Record<string, number>>>>,
+): Record<string, Readonly<Record<string, number>>> {
+  const out: Record<string, Readonly<Record<string, number>>> = { ...base }
+  for (const [kind, knobs] of Object.entries(over)) out[kind] = { ...(base[kind] ?? {}), ...knobs }
+  return out
+}
+
+/** The space of a method with the defaults of some knobs replaced. */
+function startingConfig(space: DictSpace, start: Readonly<Record<string, number>>): DictSpace {
+  return dict(
+    Object.fromEntries(
+      Object.entries(space.spaces).map(([knob, s]) => [
+        knob,
+        knob in start ? ({ ...s, default: start[knob] } as Space) : s,
+      ]),
+    ),
+  )
 }
 
 /** What is known of how methods behave on a Bayesian GAM, for a page to show beside the list: measured, not a verdict of the method's own check. */
@@ -1067,7 +1120,7 @@ export function bayesianGamMethods(
   const quick = prior === 'penalty' && hyper !== 'logNormal'
   // Every method of the library that can run on the model, and the reason for each that cannot.
   const offer = methodSpace(probe.definition.bind(probe.data), {
-    starting: bayesianGamStarting,
+    starting: mergeStarting(bayesianGamStarting, bayesianGamFormStarting(prior)),
     omit: ['inferDiscrete'],
     first: quick ? 'ep' : 'hmc',
   })

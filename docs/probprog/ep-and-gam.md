@@ -111,7 +111,7 @@ response sd from the exact reference, band 0.996, log smoothing 2.58 +- 0.57 (ex
 coefficient an `apply-product`, a variational rule of its own, assembled into the one vector the rows read by a `gaussian-mv-stack`
 factor that defines the vector from its coordinates): at k = 10 the curve is 0.029 response sd from EP's and 0.027 from a sampler's
 (EP's is 0.032 from it), the log noise -1.60 +- 0.10 (EP -1.67 +- 0.12, sampler -1.67 +- 0.10), the band 1.39 times the sampler's (EP's
-1.005), 627 sweeps to a change of 1e-5 at damping 0.3; without damping the run stalls (status `stopped`, with the reason). Against the
+1.005), 627 sweeps to a change of 1e-5 at damping 0.3; without damping the run stalls (status `stopped`, with the reason, or a collapsed noise estimate). The offer for ARD opens `vmp` damped at 0.5 with a cap of 60 sweeps (`bayesianGamFormStarting`; also the default of `bayesianGamMethod('vmp', ard)`): at 60 rows, k = 6 and k = 10 every damping from 0.3 to 0.7 reaches the same point (log noise -1.59 against EP's -1.65, the curve 0.08 and 0.03 response sds from EP's, the band 1.2 and 1.4 times EP's), 5 and 11 seconds. Against the
 exact posterior of a two-coefficient ARD regression EP is exact to 1e-5 and the mean field 0.08 off in a mean of 1.9 with the large
 coefficient's spread 1.28 times the exact one. Notes: `notes/ep-notes-densegam.md`.
 

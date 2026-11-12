@@ -16,8 +16,8 @@ import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
 import { defineModel, ops } from '../../model/index.ts'
-import { gpPosteriorGivenLengthScale } from '../../models/index.ts'
-import { type ExactMarginal, gaussianMixtureMarginal } from '../../validation/index.ts'
+import { gpPosteriorGivenHyperparameters, gpPosteriorGivenLengthScale } from '../../models/index.ts'
+import { type ExactMarginal, gaussianMixtureMarginal, gridMarginals, weightedMarginal } from '../../validation/index.ts'
 import { defineAtom } from '../_define.ts'
 import { recovery, tolerance } from '../_tolerance.ts'
 import type { AtomParts, EpAtom } from '../atom-types.ts'
@@ -280,5 +280,166 @@ const gpProbitLearnedAtom: EpAtom = defineAtom({
   parts: gpClassLearnedProblem,
 })
 
+// ----- a Gaussian process with three random hyperparameters of different families -----
+
+const X8 = [-2.4, -1.7, -1.0, -0.3, 0.4, 1.1, 1.8, 2.5]
+const Y8 = [-0.9, -1.1, -0.6, 0.1, 0.7, 0.9, 0.5, -0.2]
+/** The prior of the noise sd: log-normal around 0.3. */
+const NOISE_PRIOR = { mean: Math.log(0.3), sd: 0.5 }
+
+/** The Gram matrix of a squared-exponential kernel with a variance, at a length scale. */
+const varianceGramOf = (x: Value, scale: Value, variance: Value): Value =>
+  gram(scaleKernel(rbfKernel({ lengthScale: clip(scale, 0.05, 20) }), variance), reshape(x, [x.shape[0] ?? 0, 1]), {
+    jitter: 1e-6,
+  })
+
+/**
+ * The exact posterior of the three hyperparameters and of the function values, by a tensor grid over the logs of the
+ * hyperparameters of the marginal likelihood `N(y; 0, K + sigma^2 I)` written in plain arithmetic (27 points per axis over
+ * four prior sds each side: the posterior is a few grid steps wide, and the trapezoid sum of a smooth density converges
+ * exponentially); each function value is the mixture of its Gaussian conditionals over the grid.
+ */
+function hyperparameterMarginals(): { exact: Record<string, ExactMarginal>; logEvidence: number } {
+  const priors = [{ mean: 0, sd: 0.5 }, { mean: 0, sd: 0.5 }, NOISE_PRIOR]
+  const rows = X8.map((v) => [v])
+  const cache = new Map<string, ReturnType<typeof gpPosteriorGivenHyperparameters>>()
+  const given = (u: readonly number[]): ReturnType<typeof gpPosteriorGivenHyperparameters> => {
+    const key = u.join(',')
+    let hit = cache.get(key)
+    if (hit === undefined) {
+      hit = gpPosteriorGivenHyperparameters(rows, Y8, {
+        lengthScale: Math.exp(u[0] ?? 0),
+        variance: Math.exp(u[1] ?? 0),
+        noise: Math.exp(u[2] ?? 0),
+      })
+      cache.set(key, hit)
+    }
+    return hit
+  }
+  const g = gridMarginals(
+    (u) =>
+      given(u).logMarginalLikelihood +
+      u.reduce(
+        (s, v, k) =>
+          s -
+          0.5 * ((v - (priors[k]?.mean ?? 0)) / (priors[k]?.sd ?? 1)) ** 2 -
+          Math.log((priors[k]?.sd ?? 1) * Math.sqrt(2 * Math.PI)),
+        0,
+      ),
+    priors.map((p) => [p.mean - 4 * p.sd, p.mean + 4 * p.sd] as [number, number]),
+    27,
+  )
+  const exact: Record<string, ExactMarginal> = {}
+  for (const [k, name] of ['ell', 'variance', 'noise'].entries())
+    exact[name] = weightedMarginal(
+      (g.axes[k] ?? []).map((u) => Math.exp(u)),
+      g.mass(k),
+      'linear',
+    )
+  X8.forEach((_, j) => {
+    exact[`f[${j}]`] = g.mixture((u) => ({ mean: given(u).mean[j] ?? 0, variance: (given(u).sd[j] ?? 1) ** 2 }))
+  })
+  return { exact, logEvidence: g.logEvidence }
+}
+
+function gpHyperparametersProblem(_k: Config): AtomParts {
+  const zeros = new Array<number>(X8.length).fill(0)
+  // region gp-hyperparameters
+  const definition = defineModel('gp-hyperparameters', (m) => {
+    const x = m.data('x', { dims: ['i'], role: 'covariate' })
+    const y = m.data('y', { dims: ['i'], role: 'response' })
+    // three random scalars of three kinds: the length scale and the variance of the kernel, and the noise sd
+    const ell = m.latent('ell', d.logNormal(0, 0.5))
+    const variance = m.latent('variance', d.logNormal(0, 0.5))
+    const noise = m.latent('noise', d.logNormal(NOISE_PRIOR.mean, NOISE_PRIOR.sd))
+    // the covariance of the function is a custom function of the first two
+    const cov = m.custom(
+      'rbfGram',
+      ([xs, scale, v]) =>
+        varianceGramOf(
+          (xs as { value: Value }).value,
+          (scale as { value: Value }).value,
+          (v as { value: Value }).value,
+        ),
+      [x, ell, variance],
+      { eventRank: 2 },
+    )
+    // and the noise sd goes through a custom function as well, so that it sits on the grid with the others
+    const sd = m.custom('noiseSd', ([s]) => (s as { value: Value }).value, [noise], {})
+    const f = m.latent('f', d.multivariateNormal(zeros, { covariance: cov }), { dims: ['i'] })
+    m.observe('y', d.normal(f, sd), y)
+  })
+  // endregion
+  let solved: ReturnType<typeof hyperparameterMarginals> | undefined
+  const reference = (): ReturnType<typeof hyperparameterMarginals> => {
+    solved ??= hyperparameterMarginals()
+    return solved
+  }
+  return {
+    build: {
+      definition,
+      data: { x: X8, y: Y8 },
+      quantities: [
+        { name: 'ell', label: 'length scale', support: 'positive' },
+        { name: 'variance', label: 'kernel variance', support: 'positive' },
+        { name: 'noise', label: 'noise sd', support: 'positive' },
+        ...X8.map((_, i) => ({ name: `f[${i}]`, label: `f(x_${i + 1})`, support: 'real' as const })),
+      ],
+    },
+    reference: {
+      // lazy: the grid is made when a check or a page reads it
+      get exact() {
+        return reference().exact
+      },
+      get exactLogEvidence() {
+        return reference().logEvidence
+      },
+      referenceSource: 'a tensor grid over the three hyperparameters (27 points per axis) of the marginal likelihood',
+    },
+    present: {
+      equations: [
+        'ell ~ LogNormal(0, 0.5²)   (the length scale)',
+        'variance ~ LogNormal(0, 0.5²)   (the kernel variance)',
+        `noise ~ LogNormal(${NOISE_PRIOR.mean.toFixed(2)}, 0.5²)   (the noise sd)`,
+        'f ~ N(0, K(ell, variance)),  K_ij = variance exp(-(x_i - x_j)² / (2 ell²))   (a dense Gaussian vector, a custom function of two latents)',
+        `y_i ~ N(f_i, noise²), i = 1..${X8.length}   (the noise sd read through a custom function)`,
+        `observe y = (${Y8.join(', ')}) at x = (${X8.join(', ')})`,
+      ],
+      figure: {
+        caption: 'The eight observations and the posterior mean of the function at them (the line joins the means).',
+        xLabel: 'x',
+        yLabel: 'y',
+        points: [{ name: 'observations', x: X8, y: Y8 }],
+        answer: (means) => [{ name: 'f (posterior mean)', x: X8, y: X8.map((_, i) => means[`f[${i}]`] ?? Number.NaN) }],
+      },
+    },
+  }
+}
+
+/**
+ * A Gaussian process regression whose kernel length scale, kernel variance and noise sd are all random (three families of
+ * hyperparameter, each a scalar latent a custom function reads): EP runs inside a grid over the three, walking the region of
+ * the lattice where the posterior has mass, each node weighted by its EP evidence (exact at every node, a Gaussian likelihood).
+ */
+const gpHyperparametersAtom: EpAtom = defineAtom({
+  name: 'gp-hyperparameters',
+  title: 'Gaussian process with a learned length scale, variance and noise',
+  what: 'A dense Gaussian prior on eight function values whose kernel has a random length scale and variance and whose observations have a random noise sd (three scalar latents read by custom functions): EP runs inside a grid over the three, walking the region of the lattice where the posterior has mass, each node weighted by its EP evidence and the prior.',
+  factors: [
+    'dense prior (gaussian-mv) at each grid node',
+    'gaussian row (exact)',
+    'the EP evidence as the weight of a node (ep-grid, a walk over three axes)',
+  ],
+  family: 'kernels',
+  reference: 'exact',
+  tolerance: tolerance(
+    'measured',
+    'EP is exact at every node (a Gaussian likelihood), so the answer is the grid over the three hyperparameters of the exact marginal likelihood and conditionals; what is left is the lattice (15 points per axis) and the gamma summary of each hyperparameter',
+    { meanZ: 0.01, sdRatio: [0.98, 1.02], ks: 0.07 },
+  ),
+  knobs: dict({}),
+  parts: gpHyperparametersProblem,
+})
+
 /** The atoms of the `kernels` file, basic and learned twins together. */
-export const kernelsAtoms: readonly EpAtom[] = [gpLengthScaleAtom, gpProbitLearnedAtom]
+export const kernelsAtoms: readonly EpAtom[] = [gpLengthScaleAtom, gpProbitLearnedAtom, gpHyperparametersAtom]

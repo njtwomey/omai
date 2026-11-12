@@ -18,7 +18,7 @@ The registry (`defaultOperators()`) holds **71** factor operators. Rules by mess
 
 ## Atoms
 
-**97** atoms (65 basic, 32 with unknown parameters learned from simulated data). Expectation propagation runs **97** of them. Variational message passing runs **88** (87 to a fixed point); **9** run under EP and not under VMP.
+**98** atoms (66 basic, 32 with unknown parameters learned from simulated data). Expectation propagation runs **98** of them. Variational message passing runs **88** (87 to a fixed point); **10** run under EP and not under VMP.
 
 | family | atoms | learned twins | EP runs | VMP runs |
 | --- | --- | --- | --- | --- |
@@ -28,7 +28,7 @@ The registry (`defaultOperators()`) holds **71** factor operators. Rules by mess
 | functions | 5 | 0 | 5 | 5 |
 | gate weights | 4 | 0 | 4 | 4 |
 | gates | 16 | 6 | 16 | 13 |
-| kernels | 2 | 1 | 2 | 0 |
+| kernels | 3 | 1 | 3 | 0 |
 | likelihoods | 31 | 17 | 31 | 29 |
 | nonparametric | 2 | 0 | 2 | 2 |
 | priors | 17 | 0 | 17 | 17 |
@@ -74,7 +74,7 @@ EP refuses 1 item(s): `bayesian-neural-network`.
 
 | gap | kind | status | size | refuses |
 | --- | --- | --- | --- | --- |
-| grid-hyperparameters: Hyperparameters on a grid: a few scalars, one family at a time | missing-mapping | open | medium | - |
+| grid-hyperparameters: Hyperparameters on a grid: up to about four axes, independent priors | missing-mapping | open | medium | - |
 | matrix-larger: Covariance matrices beyond what the Wishart and the bivariate sd-and-correlation sites reach | missing-rule | open | medium | - |
 | correlation-strong-few-pairs: A strong bivariate correlation from few pairs: the belief has its spread, not its shape | quality | open | small | - |
 | softmax-many-classes: Softmax beyond six classes: the probit with a power, correlated classes | missing-rule | open | small | - |
