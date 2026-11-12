@@ -139,11 +139,11 @@ Classified by what the rewrite of the closure takes (an estimate from reading th
 An estimate: 8 to 12 agent-days with the digest (`make ep-digest-check` at the TOLERANT level, `--only` per operator) after every operator and the
 brute-force test of that operator, in the order below, if the tensor library had no slow paths. The slow paths would add their own work (next section).
 
-For the EP runs of the baseline (`ep-perf.md`), about 65% of the wall time is spent inside operators that call these grid kernels
-(`gaussian-gamma-precision` 27%, `multiclass-site` 11%, `negative-binomial-dispersion` 9.5%, `likelihood-triple` 8%, `likelihood-site` 4%, the scale
+For the EP runs of the baseline (`ep-perf.md`), about 63% of the wall time is spent inside operators that call these grid kernels
+(`gaussian-gamma-precision` 27%, `multiclass-site` 13%, `negative-binomial-dispersion` 9%, `likelihood-triple` 7%, `likelihood-site` 4%, the scale
 operators 3%), another 8% in `gaussian-chain` (dense recursion, not a grid). A kernel 3.5 to 4 times slower would make those runs about 2.5 to 3
-times slower overall, and the runs dominated by one kernel about 3.5 times: `softmax-two-groups` (93% in `multiclass-site`) from 8.6 s to about 30 s,
-`circular-rows` (84% in `gaussian-gamma-precision`) from 17 s to about 55 s. These are extrapolations: the ratio was measured on the pair profile, not
+times slower overall, and the runs dominated by one kernel about 3.5 times: `softmax-two-groups` (93% in `multiclass-site`) from 9 s to about 30 s,
+`circular-rows` (84% in `gaussian-gamma-precision`) from 18.6 s to about 58 s. These are extrapolations: the ratio was measured on the pair profile, not
 on `tiltGrid` or `integrateLine`.
 
 ## Cost and benefit
