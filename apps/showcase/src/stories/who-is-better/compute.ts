@@ -20,7 +20,7 @@ import { toStructure } from 'omai-engine/probprog/model'
 import { arange, sliceAxis, toFlat } from 'omai-engine/tensor'
 import type { Say } from '../../kit/protocol.ts'
 import { replayRecord } from '../../kit/replay.ts'
-import { DRAW_MARGIN, type Games, PLAYERS, playGames, ROUNDS, shuffled, tournament } from './data.ts'
+import { DRAW_MARGIN, EARLY, type Games, PLAYERS, playGames, ROUNDS, shuffled, tournament } from './data.ts'
 
 /** A rating: the mean and the standard deviation of a player's skill. */
 export interface Rating {
@@ -111,10 +111,10 @@ const firstGames = (games: Games, count: number): Games => ({
   result: toFlat(sliceAxis(games.result, 0, 0, count)),
 })
 
-/** The numbers of games after which the players are rated: each of the first twelve, then every few. */
+/** The numbers of games after which the players are rated: each of the first `EARLY`, then every few. */
 export function checkpoints(total: number): number[] {
-  const early = toFlat(arange(1, Math.min(12, total) + 1))
-  const later = toFlat(arange(12, total + 1)).filter((k) => k > 12 && (k % 5 === 0 || k === total))
+  const early = toFlat(arange(1, Math.min(EARLY, total) + 1))
+  const later = toFlat(arange(EARLY, total + 1)).filter((k) => k > EARLY && (k % 5 === 0 || k === total))
   return [...early, ...later]
 }
 

@@ -8,9 +8,9 @@ import { useStoryRun } from '../../kit/useStoryRun.ts'
 import { storyHref } from '../../story.ts'
 import type { Result } from './compute.ts'
 import source from './compute.ts?raw'
-import { DRAW_MARGIN, PLAYERS, ROUNDS, tournament } from './data.ts'
+import { DRAW_MARGIN, EARLY, PLAYERS, ROUNDS, tournament } from './data.ts'
 import { LadderFigure, TrajectoryFigure } from './Figures.tsx'
-import { EARLY, readResult, tally } from './reading.ts'
+import { readResult, tally } from './reading.ts'
 
 // The games are made from a fixed seed, so the page shows their results before anything runs.
 const GAMES = tournament()
