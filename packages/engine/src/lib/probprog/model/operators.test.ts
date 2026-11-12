@@ -83,7 +83,9 @@ describe('the registry', () => {
     )
     expect(num(run('pick', [table3, val(['row'], [2, 0])]))).toEqual([3, 4])
     for (const bad of [-1, 3, 2.5, Number.NaN])
-      expect(() => run('pick', [table3, val(['row'], [0, bad])])).toThrow(/pick: the index .* is not one of the 3 entries/)
+      expect(() => run('pick', [table3, val(['row'], [0, bad])])).toThrow(
+        /pick: the index .* is not one of the 3 entries/,
+      )
   })
 
   it('reduces over a named dimension, or over all of them', () => {

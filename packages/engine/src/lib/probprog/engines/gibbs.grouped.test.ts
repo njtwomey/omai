@@ -179,4 +179,3 @@ describe('Gibbs sampling of a latent with a feature axis and a spread for each r
     check([0.5, 1, 0.5, 1, 0.5, 1])
   })
 })
-

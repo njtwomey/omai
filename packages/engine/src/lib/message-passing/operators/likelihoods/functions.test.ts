@@ -200,7 +200,10 @@ describe('a chain of steps and a gamma input', () => {
   it('a clip whose bounds lie inside the mass is accurate without panels split at its kinks (the chain carries none)', () => {
     // clip(x, -0.5, 0.5) is min then max: a chain, which `chainOf` gives no kinks. The panelled quadrature is fine enough anyway:
     // measured against a grid of two million points, the moments are within 1e-4 sd and the evidence within 2e-5 nats.
-    const steps = [['min', 0.5], ['max', -0.5]] as const
+    const steps = [
+      ['min', 0.5],
+      ['max', -0.5],
+    ] as const
     const clip = (x: number): number => Math.max(Math.min(x, 0.5), -0.5)
     for (const [m, v, h, J] of [
       [0, 0.09, 0.3, 2],
@@ -209,14 +212,10 @@ describe('a chain of steps and a gamma input', () => {
     ] as const) {
       const ref = brute(m, v, h, J, clip)
       const args = [messageArg(gaussian, [h, J]), messageArg(gaussian, gaussianEta(m, v))]
-      const ty = implied(
-        (apply.ep?.({ mode: 'ep', to: 0, args, params: { steps }, power: 1 }) as { message: number[] }).message,
-        [h, J],
-      )
-      const tx = implied(
-        (apply.ep?.({ mode: 'ep', to: 1, args, params: { steps }, power: 1 }) as { message: number[] }).message,
-        gaussianEta(m, v),
-      )
+      const toY = apply.ep?.({ mode: 'ep', to: 0, args, params: { steps }, power: 1 })
+      const ty = implied((toY as { message: number[] }).message, [h, J])
+      const toX = apply.ep?.({ mode: 'ep', to: 1, args, params: { steps }, power: 1 })
+      const tx = implied((toX as { message: number[] }).message, gaussianEta(m, v))
       expect(Math.abs(ty.mean - ref.y.mean) / Math.sqrt(ref.y.variance)).toBeLessThan(1e-3)
       expect(ty.variance / ref.y.variance).toBeCloseTo(1, 3)
       expect(Math.abs(tx.mean - ref.x.mean) / Math.sqrt(ref.x.variance)).toBeLessThan(1e-3)
