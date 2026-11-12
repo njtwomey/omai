@@ -7,6 +7,7 @@ import {
   type EpAtom,
   epAtom,
 } from 'omai-engine/probprog/ep'
+import { item, square, sum, tensor } from 'omai-engine/tensor'
 import type { Config } from 'omai-engine/trace'
 import { type ReactNode, useMemo } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
@@ -103,7 +104,7 @@ export function RecoveryPanel(props: {
             {pooled.map((pool) => {
               const members = rows.filter((r) => pools.get(r.name) === pool)
               const hit = members.filter((r) => r.covered).length
-              const rms = Math.sqrt(members.reduce((a, r) => a + r.z * r.z, 0) / members.length)
+              const rms = Math.sqrt(item(sum(square(tensor(members.map((r) => r.z))))) / members.length)
               return (
                 <tr key={pool} className="border-t border-line">
                   <td className="py-1 pr-4">{pool}</td>
