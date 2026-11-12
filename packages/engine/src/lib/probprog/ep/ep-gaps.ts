@@ -183,6 +183,30 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
       markers: [],
     },
     {
+      id: 'beta-two-shapes-power',
+      title: 'beta-two-shapes declares fractional power but does not divide its site by it',
+      kind: 'quality',
+      status: 'open',
+      summary:
+        'The operator declares `power: true` but the power only enters its integrand: the site it sends is not divided by the power as every other powered rule is, so at a power other than 1 (for example the fractional runs of the loopy gap) the message is not the one fractional EP defines. Found by the operator-contract trim, which kept the hand-written rule rather than change what it sends.',
+      plan: 'Divide the site by the power in `beta-two-shapes` (a deliberate change: accept the digest for the atoms that use it, and measure the power runs against the beta-outcome atoms), then express it as a site rule.',
+      size: 'small',
+      markers: [],
+      refuses: [],
+    },
+    {
+      id: 'evidence-catch-uneven',
+      title: 'Improper evidence is caught for some operators and thrown for others',
+      kind: 'quality',
+      status: 'open',
+      summary:
+        'Operators that declare `evidence.improperIsNaN` turn an improper cavity into an undefined evidence; others (for example `apply`) let the error out of the run, so the benchmark model `bayesian-neural-network` records a thrown error where a completed run with no evidence would be the honest answer. Making the catch universal fixes it but changes that digest item.',
+      plan: 'Make the engine catch improper evidence once, for every operator, and report it through `evidenceUndefinedAt`; accept the one digest item that changes in its own commit.',
+      size: 'small',
+      markers: [],
+      refuses: [],
+    },
+    {
       id: 'docs-drift',
       title: 'The prior atlas can drift from the code',
       kind: 'infrastructure',
