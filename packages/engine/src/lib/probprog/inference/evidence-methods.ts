@@ -42,6 +42,7 @@ import { constrainDraws } from '../density.ts'
 import { type TemperedProblem, temperedPosterior, temperedProblem } from '../engines/smc.ts'
 import { type Posterior, weightedPosterior } from '../posterior.ts'
 import {
+  appended,
   guard,
   isProgramAnalysis,
   type MethodModel,
@@ -485,9 +486,7 @@ export function bridgeSamplingMethod(
           let l2 = s.l2
           const t = s.t + 1
           if (t > warm) {
-            draws = new Float64Array(s.draws.length + dim)
-            draws.set(s.draws)
-            draws.set(r.state.position, s.draws.length)
+            draws = appended(s.draws, r.state.position)
           }
           const kept = draws.length / dim
           if (fit === undefined && kept >= fitN) fit = fitGaussian(draws, dim)
@@ -498,12 +497,8 @@ export function bridgeSamplingMethod(
               const v = logTarget(x) - q.logProb(x)
               return Number.isNaN(v) ? Number.NEGATIVE_INFINITY : v
             }
-            l1 = new Float64Array(s.l1.length + 1)
-            l1.set(s.l1)
-            l1[s.l1.length] = r.state.logDensity - q.logProb(r.state.position)
-            l2 = new Float64Array(s.l2.length + 1)
-            l2.set(s.l2)
-            l2[s.l2.length] = ratio(y)
+            l1 = appended(s.l1, [r.state.logDensity - q.logProb(r.state.position)])
+            l2 = appended(s.l2, [ratio(y)])
           }
           const next: BridgeState = {
             t,
@@ -718,23 +713,17 @@ export function importanceEvidenceMethod(
             const v = lp === Number.NEGATIVE_INFINITY ? lp : lp + p.logLikelihood(x) - (lq[i] ?? 0)
             lw[i] = Number.isNaN(v) ? Number.NEGATIVE_INFINITY : v
           }
-          const concat = (a: Float64Array, b: Float64Array): Float64Array => {
-            const out = new Float64Array(a.length + b.length)
-            out.set(a)
-            out.set(b, a.length)
-            return out
-          }
           let next: ImportanceEvidenceState
           if (s.t < pilot) {
-            const pilotDraws = concat(s.pilotDraws, xs)
-            const pilotLogWeights = concat(s.pilotLogWeights, lw)
+            const pilotDraws = appended(s.pilotDraws, xs)
+            const pilotLogWeights = appended(s.pilotLogWeights, lw)
             let fit = s.fit
             // Refit from the weighted pilot draws so far, when there are weights to fit with.
             if (pilotLogWeights.some((v) => Number.isFinite(v)) && importanceEss(pilotLogWeights) >= 3) {
               fit = fitGaussian(pilotDraws, dim, pilotLogWeights)
             }
             next = { ...s, t: s.t + 1, fit, pilotDraws, pilotLogWeights }
-          } else next = { ...s, t: s.t + 1, draws: concat(s.draws, xs), logWeights: concat(s.logWeights, lw) }
+          } else next = { ...s, t: s.t + 1, draws: appended(s.draws, xs), logWeights: appended(s.logWeights, lw) }
           ctx.log('evidence/draws', next.logWeights.length)
           if (next.logWeights.length >= 2 && next.logWeights.some((v) => Number.isFinite(v))) {
             const ev = importanceLogEvidence(next.logWeights)

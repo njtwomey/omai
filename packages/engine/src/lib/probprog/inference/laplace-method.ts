@@ -11,7 +11,7 @@ import { compose } from '../../dists/index.ts'
 import { infNorm, type LbfgsState, lbfgsAlgorithm } from '../../optim/index.ts'
 import { foldIn } from '../../random/index.ts'
 import { choice, type DictSpace, dict, int, real } from '../../space/index.ts'
-import { fromStorage, neg, primalOf, type Value } from '../../tensor/index.ts'
+import { fromStorage, neg, primalOf, toFlat, type Value, zeros } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -216,7 +216,7 @@ export function laplaceMethod(
       const lbfgsOf = (start: Float64Array): ReturnType<typeof lbfgsAlgorithm> =>
         lbfgsAlgorithm(f, fromStorage(start, [um.dim], 'float64'), { gradTol, ftol: 0 })
       // Stepping and serialising an L-BFGS state do not depend on the start, so one algorithm serves the run.
-      const shared = lbfgsOf(new Float64Array(um.dim))
+      const shared = lbfgsOf(Float64Array.from(toFlat(zeros([um.dim]))))
       return {
         name: 'probprog/laplace-method',
         config: { maxIterations, gradTol },

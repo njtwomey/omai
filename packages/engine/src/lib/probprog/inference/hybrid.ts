@@ -15,7 +15,20 @@ import { type Json, OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../../random/index.ts'
 import { type HamiltonianParameters, type LogDensity, type MCMCKernel, sliceSampler } from '../../sampling/index.ts'
 import { choice, type DictSpace, dict, int } from '../../space/index.ts'
-import { fromStorage, primalOf, type Tensor, toFlat, type Value } from '../../tensor/index.ts'
+import {
+  asTensor,
+  concat,
+  eye,
+  ones,
+  primalOf,
+  reshape,
+  sliceAxis,
+  stack,
+  type Tensor,
+  toFlat,
+  type Value,
+  zeros,
+} from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -299,11 +312,8 @@ export function hybridMethod(
   const total = sizes.reduce((a, b) => a + b, 0)
 
   const rowOf = (values: Readonly<Record<string, Value>>): Float64Array => {
-    const row = new Float64Array(total)
-    siteNames.forEach((n, i) => {
-      row.set(toFlat(primalOf(values[n] as Value)), offsets[i] ?? 0)
-    })
-    return row
+    const parts = siteNames.map((n, i) => reshape(primalOf(values[n] as Value), [sizes[i] ?? 0]))
+    return Float64Array.from(toFlat(concat([zeros([0]), ...parts])))
   }
 
   // ---- the blocks at run time: a target with a cell for the conditioned values, or a Gibbs updater ----
@@ -371,9 +381,7 @@ export function hybridMethod(
         adapt = { dense: k.dense ?? false, targetAcceptance: k.targetAcceptance ?? family.accept }
       }
       const identity =
-        adapt?.dense === true
-          ? Float64Array.from({ length: dim * dim }, (_, i) => (i % (dim + 1) === 0 ? 1 : 0))
-          : new Float64Array(dim).fill(1)
+        adapt?.dense === true ? Float64Array.from(toFlat(eye(dim))) : Float64Array.from(toFlat(ones([dim])))
       return {
         block,
         index,
@@ -408,14 +416,14 @@ export function hybridMethod(
       })
     const numChains = state.chains.length
     const draws: Record<string, Tensor> = {}
+    // One row per kept draw (chain by chain), one column per coordinate of every site.
+    const kept = stack(state.chains.flatMap((c) => c.kept.slice(0, n).map((r) => asTensor(r))))
     siteNames.forEach((site, j) => {
-      const size = sizes[j] ?? 1
-      const data = new Float64Array(numChains * n * size)
-      state.chains.forEach((c, ci) => {
-        for (let d = 0; d < n; d++)
-          data.set((c.kept[d] as Float64Array).subarray(offsets[j] ?? 0, (offsets[j] ?? 0) + size), (ci * n + d) * size)
-      })
-      draws[site] = fromStorage(data, [numChains * n, ...(shapes[site] ?? [])], 'float64')
+      const at = offsets[j] ?? 0
+      draws[site] = reshape(sliceAxis(kept, 1, at, at + (sizes[j] ?? 1)), [
+        numChains * n,
+        ...(shapes[site] ?? []),
+      ]) as Tensor
     })
     const done = state.stage === 'done'
     return definePosterior({
@@ -719,7 +727,9 @@ export function hybridMethod(
               stepSize: stateToJson(b.stepSize),
             })),
             kept: stateToJson(
-              ch.kept.length === 0 ? new Float64Array(0) : Float64Array.from(ch.kept.flatMap((r) => Array.from(r))),
+              ch.kept.length === 0
+                ? new Float64Array(0)
+                : Float64Array.from(toFlat(concat(ch.kept.map((r) => asTensor(r))))),
             ),
             rows: ch.kept.length,
           })),
