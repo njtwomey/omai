@@ -129,13 +129,14 @@ function gapList(): readonly Omit<EpGap, 'refuses'>[] {
     },
     {
       id: 'sv-parameters',
-      title: 'Stochastic volatility with an unknown level, persistence and innovation precision is not calibrated',
+      title:
+        'Stochastic volatility with an unknown level, persistence and innovation precision: the level is too wide, hard fits do not settle',
       kind: 'quality',
       status: 'open',
       summary:
-        "With the three parameters unknown the model compiles and EP runs in seconds, but one run covers the truth for 0.48 of the levels, 0.58 of the persistences and 0.63 of the precisions (30 seeds of 60 returns), with the level's sd a fifth to a third of a NUTS run's. EP inside a grid over the persistence (`epGridMethod(bound, { over: ['phi'] })`, the level and the precision inside each run) gives 0.97, 0.68 and 1.00 (pooled 0.88 against 0.57) with the means within 0.02 of NUTS; the persistence is still too narrow (0.12 against 0.17 to 0.2: the nodes at high persistence do not settle and a few collapse), and a fit takes 25 s.",
-      plan: 'A joint rule over the level and the persistence (a block update on the chain, or the pair site of `pairs.ts` for (mu, phi)), or a grid that refines where the persistence has mass and drops the collapsed nodes; until then the setup is not offered as a learned-parameters page.',
-      size: 'medium',
+        "With the three parameters unknown the model compiles and one EP run covers the truth for 0.48 of the levels, 0.58 of the persistences and 0.63 of the precisions (30 seeds of 60 returns), the level's sd a fifth to a third of a NUTS run's. EP inside a grid over the persistence (`epGridMethod(bound, { over: ['phi'] })`, the level and the precision inside each run) as a walk from the middle of the range, each node started from its neighbour's messages (`order: 'walk'`, `warm: true`, damping 0.2, 120 sweeps) takes 7 s a fit (22 s on a fixed grid of 21 nodes) and covers 0.97, 0.97 and 1.00 (pooled 0.98; 0.97, 0.70 and 1.00, pooled 0.89, before). Against a brute-force posterior (a point-mass filter for the likelihood of each parameter triple on a grid; it agrees with NUTS to a fifth of a sd) the means are within 0.35 reference sds on every one of the 30 seeds (rms 0.08, 0.26, 0.10 for the level, the persistence, the precision) and the precision's sd is 0.97 to 1.2 of the reference's. What remains: the level's sd is about 1.6 times the reference (inside a node the EP belief of the level is wider than the exact conditional: 0.50 against 0.27 at a persistence of 0.69); the persistence's sd is 0.85 of the reference's at the median, because EP at low persistence cycles instead of settling (the node weighs the grid only below the best settled node's evidence) and on the hardest seeds almost no node settles (seed 27: the persistence's sd 0.2 of the reference's and the truth outside its interval, the one miss of the 30 persistences).",
+      plan: 'Make the nodes settle (a rule for the shared precision and the level, or the average of the evidence over the limit cycle of a node that cycles) and give the level in a node the exact conditional (a joint rule over the level and the persistence: a block update on the chain, or the pair site of `pairs.ts`); until then the setup is not offered as a learned-parameters page.',
+      size: 'small',
       markers: [],
     },
     {

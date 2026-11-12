@@ -81,7 +81,7 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | ordinal-random-cuts: Ordinal cut points that are random, and a Student-t with random degrees of freedom and scale | missing-rule | open | medium | - |
 | multimodal: One Gaussian per variable cannot show two modes | quality | open | medium | - |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
-| sv-parameters: Stochastic volatility with an unknown level, persistence and innovation precision is not calibrated | quality | open | medium | - |
+| sv-parameters: Stochastic volatility with an unknown level, persistence and innovation precision: the level is too wide, hard fits do not settle | quality | open | small | - |
 | non-centred-scale: ARD (a scale of its own for each coefficient) has no variational message passing rule | quality | open | medium | - |
 | evidence: The EP log evidence is exact where EP is, and has two known limits | infrastructure | open | medium | - |
 | variational-rules: Variational message passing: what it cannot run and where the mean field is poor | infrastructure | open | small | - |

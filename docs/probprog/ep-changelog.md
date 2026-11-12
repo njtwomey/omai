@@ -685,3 +685,33 @@ observation). Their reports say what exists; the work packages above absorb it r
 - Digest items moved deliberately: `model/radon`, `model/trueskill-three-players`, `atom/skill-draws`, `atom/skill-draws-learned`,
   `atom/skill-difference-learned`, `program/skills` (spreads move towards the reference; the means within 0.02 sd except the learned
   tournaments' skills, 0.05 sd). The two draws atoms moved to the `plated` rung with evidence within 0.02 nats.
+## 2026-11-12 Stochastic volatility with learned parameters: a walk and warm starts in `epGridMethod` (`agent-a3da95-sv`)
+
+Gap `sv-parameters` narrowed (summary rewritten in `ep-gaps.ts`, still open). No second grid method: `epGridMethod` got two knobs and a
+rule for nodes that cycle (`inference/ep-grid.ts`).
+- `order: 'walk'` (one hyperparameter): the first node is the middle of the range, then one step outwards on the side whose edge node
+  weighs more, until both edges are `window` (default 10) nats of log evidence plus log prior below the best, so the tail nodes (a
+  persistence of -0.3 or 1.9, the most expensive ones: they need 140 to 200 sweeps) are never run. `warm: true` starts each node from the
+  final messages of the nearest settled node (a `messages` field on the node; the start is skipped when the graph has another shape). Both
+  default off (`order: 'bisect'`, `warm: false`), so no other grid changes.
+- A node that did not settle used to weigh nothing once any node had settled. It now weighs the grid where its evidence plus log prior does
+  not exceed the best settled node's (a cycling state in the tail is a fair estimate; one that collapsed overshoots, and still has no weight).
+- The settings that matter for this model: damping 0.2 (0.5 settled half as fast and 0.7 collapses the precision to zero), 120 sweeps a node.
+  Schedules were tried (`tree` settles a node the serial order does not, but not reliably) and `tol: 1e-3` (faster, but one seed collapses).
+- Calibration over 30 seeds of 60 returns (truth -1, 0.9, 11.1), 90% intervals, before (21 nodes, damping 0.5, 22 s a fit) and after
+  (walk, warm, damping 0.2, 7 s, 11 nodes of which 8 settled on average): level 0.97 and 0.97, persistence 0.70 and 0.97, precision 1.00 and
+  1.00, pooled 0.89 and 0.98. Against a brute-force posterior (a point-mass filter for the likelihood of each (level, persistence, precision)
+  on a 26 by 30 by 24 grid with the prior, scratch script; its seed-1 numbers agree with the NUTS run to 0.2 sd): the mean of the persistence
+  was off by up to 2.2 sds before and by up to 1.1 after (rms 0.59 and 0.26), the sd ratio of the persistence 0.76 and 0.85 at the median,
+  the level's means within 0.35 sd (rms 0.08), the level's sd 1.6 times the reference's, the precision's 1.0.
+- What did not work: a grid over the level and the persistence together (earlier, 70 points for the level), power EP (the `power` knob does
+  nothing here: no factor of the model takes one), a coarser grid (15 points and a window of 8: persistence coverage 0.77).
+- Not fixed, and the reason the gap stays open: (1) EP at a fixed persistence overstates the level's spread (0.50 against the exact
+  conditional 0.27 at a persistence of 0.69; the mixture over the persistence makes it 1.6 times the posterior's); (2) EP at low
+  persistence, and on a few seeds everywhere, cycles (a persistent oscillation of the shared precision's message at every damping, schedule
+  and improper policy tried), so the lower tail of the persistence is cut (seed 27, almost no node settles: the sd is 0.2 of the reference's
+  and the persistence is missed). Both are in the message passing of the chain (`message-passing/{numerics,operators}`, out of this work's
+  scope), not in the grid.
+- Tests: `ep-grid-sv.test.ts` (seed 1 against the brute-force numbers, in a dozen nodes), `ep-grid.test.ts` (warm start and walk on the
+  Gaussian process benchmarks, where every node is exact; the weight of a node that did not settle). The EP digest: no item moves because
+  of the change (`atom/gp-length-scale` differs from the committed baseline in the last digits, on the unchanged HEAD as well).
