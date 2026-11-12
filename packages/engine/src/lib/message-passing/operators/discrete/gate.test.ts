@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { add, arange, div, mul, toFlat } from '../../../tensor/index.ts'
 import { messageArg, valueArg } from '../../core/args.ts'
+import { ParameterError } from '../../core/errors.ts'
 import { gamma, gammaEta, gaussian, gaussianEta } from '../../core/families.ts'
 import { discrete, discreteEta, discreteProbs } from '../../core/families-vector.ts'
 import { lgammaOf } from '../../numerics/_scalar.ts'
@@ -216,5 +217,23 @@ describe('the gate', () => {
     expect(toA[1]).toBeCloseTo(0.25 * 2 + 0.75 * 8, 10)
     expect(toA[0]).toBeCloseTo(0.25 * 2 * 1 + 0.75 * 8 * 1, 10)
     expect(valueArg(gaussian, 1).value).toBe(1)
+  })
+
+  it('refuses a variational gate over a branch whose operator has no expected log or no variational message, naming it', () => {
+    const args = [messageArg(discrete(2), discreteEta([0.5, 0.5])), messageArg(gaussian, gaussianEta(0.5, 4))]
+    const ok = { operator: 'gaussian', args: [{ const: 1 }, 0], params: { precision: 2 } }
+    // `equal` has a variational message but no expected log, `greater-than` has neither: each was a log density of 0 or skipped.
+    for (const operator of ['equal', 'greater-than']) {
+      const params = { arity: 1, branches: [ok, { operator, args: [0, { const: 0 }], params: {} }] }
+      const why = gate?.unsupported?.('vmp', params)
+      expect(why, operator).toMatch(new RegExp(`branch 1 \\(${operator}\\)`))
+      expect(gate?.unsupported?.('ep', params)).toBeUndefined()
+      expect(() => gate?.vmp?.({ mode: 'vmp', to: 0, args, params, power: 1 })).toThrow(ParameterError)
+      expect(() => gate?.expectedLog?.({ mode: 'vmp', to: 0, args, params, power: 1 })).toThrow(ParameterError)
+    }
+    // Branches with their rules, and a constant branch (a log density of 0), are as they were.
+    const fine = { arity: 1, branches: [ok, {}] }
+    expect(gate?.unsupported?.('vmp', fine)).toBeUndefined()
+    expect(gate?.vmp?.({ mode: 'vmp', to: 1, args, params: fine, power: 1 }).message).toHaveLength(2)
   })
 })
