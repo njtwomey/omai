@@ -502,10 +502,15 @@ export function epGridMethod(model: MethodModel, options: EpGridOptions = {}): E
     return compilesWith(wide) ? wide : scalars
   })()
   const names = targets.map((t) => t.label)
-  let hypers: Hyper[] | undefined
+  // The ranges of the hyperparameters, one set per tail (check() asks for 1e-4; a run takes the `tail` of its own config).
+  const hypersByTail = new Map<number, Hyper[]>()
   const hypersFor = (tail: number): Hyper[] => {
     if (bound === undefined) throw new OmaiError('value', `${name}: needs a model spec`)
-    if (hypers === undefined || hypers.length === 0 || names.length === 0) hypers = priorsOf(targets, tail)
+    let hypers = hypersByTail.get(tail)
+    if (hypers === undefined) {
+      hypers = priorsOf(targets, tail)
+      hypersByTail.set(tail, hypers)
+    }
     return hypers
   }
   const compileAt = (x: readonly number[]): ReturnType<typeof compileWith> => compileWith(targets, x)
