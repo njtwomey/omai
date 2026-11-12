@@ -6,11 +6,11 @@ in [`ep.md`](ep.md), what happened when in [`ep-changelog.md`](ep-changelog.md).
 
 ## Message-passing operators
 
-The registry (`defaultOperators()`) holds **69** factor operators. Rules by message mode:
+The registry (`defaultOperators()`) holds **70** factor operators. Rules by message mode:
 
 | mode | operators with a rule | exact | bound | numeric |
 | --- | --- | --- | --- | --- |
-| ep | 68 | 36 | 0 | 32 |
+| ep | 69 | 36 | 0 | 33 |
 | vmp | 64 | 37 | 4 | 23 |
 | bp | 4 | 4 | 0 | 0 |
 
@@ -80,7 +80,7 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | softmax-many-classes: Softmax beyond six classes: the probit with a power, correlated classes | missing-rule | open | small | - |
 | multimodal: One Gaussian per variable cannot show two modes: what the multi-start does not reach | quality | open | medium | - |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
-| sv-parameters: Stochastic volatility with an unknown level, persistence and innovation precision: the level is too wide, hard fits do not settle | quality | open | small | - |
+| sv-parameters: Stochastic volatility with an unknown persistence: one EP run is too narrow, the grid is the route | quality | open | small | - |
 | evidence: The EP log evidence is exact where EP is, and has two known limits | infrastructure | open | medium | - |
 | variational-rules: Variational message passing: what it cannot run and where the mean field is poor | infrastructure | open | small | - |
 

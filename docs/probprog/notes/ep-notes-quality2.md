@@ -139,6 +139,13 @@ was 20 to 30 nats above the settled nodes' and put the whole posterior on a dege
 Not done: the joint rule over the level and the persistence (a block update on the chain); the grid is the measured route, 25 s per fit on
 60 returns, and the persistence's coverage says it is not enough, so the setup is still not offered as a learned-parameters page.
 
+Update 2026-11-12 (`agent-ad2a59-svchain`): the two defects the grid left were in the scalar chain, not in the grid. With the persistence known
+the level's belief is twice too wide (the cavities of the previous state and of the level are correlated through the level and taken as
+independent), also in a linear Gaussian copy of the model; the precision's sixty messages cycle at a low persistence. The steps of the series
+are one `gaussian-chain` factor now (`message-passing/operators/gaussian/chain.ts`, written by `factor-graph/_chains.ts`); against the
+point-mass filter every one of 30 seeds has the three means within 0.2 sd and the spreads within 0.12 of the reference's. The full account is
+in `ep-changelog.md` (2026-11-12, `agent-ad2a59-svchain`).
+
 ## 4. Evidence of a plated factor with an improper cavity
 
 The learned logistic regression compiles to one plated factor for all rows, and the scale mixture on the weights leaves the plate a
