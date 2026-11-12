@@ -28,38 +28,45 @@ type Axes4 = [number, number, number, number]
 export function planBroadcast(shape: Shape, operands: readonly Shape[]): BroadcastPlan | null {
   const rank = shape.length
   const count = operands.length
+  // The retained axes with a bit mask of the operands that read each in full (bit k: operand k); equal masks next to each other merge.
   const extents: number[] = []
-  const full: boolean[][] = operands.map(() => [])
+  const masks: number[] = []
   for (let d = 0; d < rank; d++) {
-    const n = shape[d] ?? 1
+    const n = shape[d] as number
     if (n === 1) continue
-    const here = operands.map((s) => (s[d - (rank - s.length)] ?? 1) === n)
+    let mask = 0
+    for (let k = 0; k < count; k++) {
+      const s = operands[k] as Shape
+      if ((s[d - (rank - s.length)] ?? 1) === n) mask |= 1 << k
+    }
     const last = extents.length - 1
-    if (last >= 0 && here.every((f, k) => f === full[k]?.[last])) extents[last] = (extents[last] ?? 1) * n
+    if (last >= 0 && masks[last] === mask) extents[last] = (extents[last] as number) * n
     else {
       extents.push(n)
-      for (let k = 0; k < count; k++) full[k]?.push(here[k] === true)
+      masks.push(mask)
     }
   }
   if (extents.length === 0) {
     extents.push(1)
-    for (let k = 0; k < count; k++) full[k]?.push(true)
+    masks.push((1 << count) - 1)
   }
   if (extents.length > 4) return null
   const pad = 4 - extents.length
-  const ext = [...Array<number>(pad).fill(1), ...extents] as Axes4
+  const ext: Axes4 = [1, 1, 1, 1]
+  for (let i = 0; i < extents.length; i++) ext[pad + i] = extents[i] as number
   const strides: Axes4[] = []
   for (let k = 0; k < count; k++) {
-    const s: Axes4 = [0, 0, 0, 0]
+    const stride: Axes4 = [0, 0, 0, 0]
     let step = 1
-    for (let d = 3; d >= 0; d--) {
-      const isFull = d >= pad ? (full[k]?.[d - pad] ?? false) : false
-      s[d] = isFull ? step : 0
-      if (isFull) step *= ext[d] ?? 1
+    for (let d = 3; d >= pad; d--) {
+      if (((masks[d - pad] as number) >> k) & 1) {
+        stride[d] = step
+        step *= ext[d] as number
+      }
     }
-    strides.push(s)
+    strides.push(stride)
   }
-  return { extents: ext as unknown as BroadcastPlan['extents'], strides }
+  return { extents: ext, strides }
 }
 
 type Data = Storage<DType>
