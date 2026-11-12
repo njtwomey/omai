@@ -58,6 +58,8 @@ export class Context {
   readonly nonCentred: Map<string, string>
   /** The scalar groups whose joint vector the walk has made. */
   readonly groupsMade: Set<string> = new Set()
+  /** The Gaussian vectors assembled from two scalar variables that a joint pair site reads (`observedPair`), by the names of the two. */
+  readonly stacked: Map<string, string> = new Map()
   /** The chains of an unrolled scan being collected, by the scan's name, and the ones that ended (`_chains.ts`). */
   readonly chains: Map<string, ChainBuild> = new Map()
   readonly chainsDone: ChainBuild[] = []

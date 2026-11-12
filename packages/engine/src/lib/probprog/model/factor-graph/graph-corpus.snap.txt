@@ -76,10 +76,10 @@ atom/gp-probit vectorise: 1 variables, 2 factors, 0 issues; prior x1 probit-plat
 atom/gp-probit expand: 7 variables, 7 factors, 0 issues; dot-constant x3 prior x1 probit x3
 atom/gp-logistic vectorise: 1 variables, 2 factors, 0 issues; logistic-plate x1 prior x1
 atom/gp-logistic expand: 7 variables, 7 factors, 0 issues; dot-constant x3 logistic x3 prior x1
-atom/softmax-regression vectorise: 30 variables, 40 factors, 0 issues; multiclass-site x10 prior x3 times-constant x27
-atom/softmax-regression expand: 30 variables, 40 factors, 0 issues; multiclass-site x10 prior x3 times-constant x27
-atom/softmax-regression-learned vectorise: 75 variables, 99 factors, 0 issues; multiclass-site x24 prior x3 times-constant x72
-atom/softmax-regression-learned expand: 75 variables, 99 factors, 0 issues; multiclass-site x24 prior x3 times-constant x72
+atom/softmax-regression vectorise: 4 variables, 14 factors, 0 issues; dot-constant x3 multiclass-row x10 prior x1
+atom/softmax-regression expand: 4 variables, 14 factors, 0 issues; dot-constant x3 multiclass-row x10 prior x1
+atom/softmax-regression-learned vectorise: 4 variables, 28 factors, 0 issues; dot-constant x3 multiclass-row x24 prior x1
+atom/softmax-regression-learned expand: 4 variables, 28 factors, 0 issues; dot-constant x3 multiclass-row x24 prior x1
 atom/ordinal-probit vectorise: 3 variables, 15 factors, 0 issues; dot-constant x2 likelihood-row x12 prior x1
 atom/ordinal-probit expand: 3 variables, 15 factors, 0 issues; dot-constant x2 likelihood-row x12 prior x1
 atom/ordinal-probit-learned vectorise: 3 variables, 33 factors, 0 issues; dot-constant x2 likelihood-row x30 prior x1
@@ -184,16 +184,16 @@ atom/random-intercepts-slopes vectorise: 31 variables, 31 factors, 0 issues; lin
 atom/random-intercepts-slopes expand: 31 variables, 31 factors, 0 issues; linear-regression-row x24 mvn-wishart x6 prior x1
 atom/random-intercepts-slopes-learned vectorise: 52 variables, 43 factors, 0 issues; linear-regression-row x40 mvn-wishart-group x1 prior x2
 atom/random-intercepts-slopes-learned expand: 52 variables, 43 factors, 0 issues; linear-regression-row x40 mvn-wishart-group x1 prior x2
-atom/gp-softmax vectorise: 7 variables, 9 factors, 0 issues; dot-constant x6 multiclass-site x2 prior x1
-atom/gp-softmax expand: 7 variables, 9 factors, 0 issues; dot-constant x6 multiclass-site x2 prior x1
+atom/gp-softmax vectorise: 1 variables, 3 factors, 0 issues; multiclass-row x2 prior x1
+atom/gp-softmax expand: 1 variables, 3 factors, 0 issues; multiclass-row x2 prior x1
 atom/student-t-full-learned vectorise: 4 variables, 34 factors, 0 issues; apply x1 likelihood-triple x30 prior x3
 atom/student-t-full-learned expand: 4 variables, 34 factors, 0 issues; apply x1 likelihood-triple x30 prior x3
 atom/ordinal-probit-cuts-learned vectorise: 45 variables, 85 factors, 0 issues; difference x1 greater-than x1 likelihood-triple x40 prior x3 times-constant x40
 atom/ordinal-probit-cuts-learned expand: 45 variables, 85 factors, 0 issues; difference x1 greater-than x1 likelihood-triple x40 prior x3 times-constant x40
-atom/softmax-choice vectorise: 99 variables, 111 factors, 0 issues; dot-constant x98 multiclass-site x12 prior x1
-atom/softmax-choice expand: 99 variables, 111 factors, 0 issues; dot-constant x98 multiclass-site x12 prior x1
-atom/softmax-choice-learned vectorise: 99 variables, 111 factors, 0 issues; dot-constant x98 multiclass-site x12 prior x1
-atom/softmax-choice-learned expand: 99 variables, 111 factors, 0 issues; dot-constant x98 multiclass-site x12 prior x1
+atom/softmax-choice vectorise: 3 variables, 15 factors, 0 issues; dot-constant x2 multiclass-row x12 prior x1
+atom/softmax-choice expand: 3 variables, 15 factors, 0 issues; dot-constant x2 multiclass-row x12 prior x1
+atom/softmax-choice-learned vectorise: 3 variables, 15 factors, 0 issues; dot-constant x2 multiclass-row x12 prior x1
+atom/softmax-choice-learned expand: 3 variables, 15 factors, 0 issues; dot-constant x2 multiclass-row x12 prior x1
 atom/softmax-two-groups vectorise: 196 variables, 220 factors, 0 issues; gaussian-gamma-precision x2 multiclass-site x24 prior x2 times-constant x192
 atom/softmax-two-groups expand: 196 variables, 220 factors, 0 issues; gaussian-gamma-precision x2 multiclass-site x24 prior x2 times-constant x192
 model/beta-bernoulli vectorise: 21 variables, 21 factors, 0 issues; bernoulli x20 prior x1

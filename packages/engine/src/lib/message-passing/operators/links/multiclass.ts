@@ -13,16 +13,12 @@
  * the rows (the compiler makes each score a Gaussian variable).
  */
 
-import { ndtr } from '../../../numerics/special/_kernels.ts'
 import { errorText, keyOf, memoised } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam } from '../../core/args.ts'
 import { defineOperator, messageRule } from '../../core/define.ts'
-import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
-import { choleskyInPlace } from '../../numerics/_bartlett.ts'
-import { shiftedSum } from '../../numerics/_moments.ts'
-import { gaussianNodes } from '../../numerics/_quadrature.ts'
+import { MOST_PRODUCT, productTilt } from '../../numerics/_product.ts'
 import {
   naturalGradientMessage,
   numericExpectedLog,
@@ -31,6 +27,7 @@ import {
   quadraturePorts,
 } from '../kernel/variational-numeric.ts'
 import { probitAuxiliary, softmaxAuxiliary } from './_multiclass-auxiliary.ts'
+import { classesOf, logProbit, logSoftmax, logSumExp, scoreLog } from './_multiclass-scores.ts'
 import {
   type ProbitBound,
   probitBound,
@@ -40,62 +37,6 @@ import {
   softmaxScoreExpectation,
   softmaxTable,
 } from './_multiclass-variational.ts'
-
-/** The nodes per free score for a number of free scores (the grid is their product): the cap keeps a site at some tens of thousands of evaluations. */
-const NODES: Readonly<Record<number, number>> = { 1: 48, 2: 24, 3: 8, 4: 7, 5: 6, 6: 5 }
-
-/** The most free scores the product grid integrates; more go to the auxiliary-variable rule. */
-const MOST_PRODUCT = 6
-
-/** Rounds of adaptation of the proposal: the first uses the cavity, each next the Gaussian of the tilted moments of the one before. */
-const ROUNDS = 3
-
-/** The classes and the outcome from the parameters, checked. */
-function classesOf(params: Params): { readonly classes: number; readonly y: number; readonly probit: boolean } {
-  const classes = numberParam(params, 'classes')
-  const y = numberParam(params, 'y')
-  if (!(Number.isInteger(classes) && classes >= 2))
-    throw new ParameterError('multiclass-site: classes is an integer of at least 2')
-  if (!(Number.isInteger(y) && y >= 0 && y < classes))
-    throw new ParameterError(`multiclass-site: the class must be an integer from 0 to ${classes - 1}`)
-  const link = params['link'] ?? 'logit'
-  if (link !== 'logit' && link !== 'probit')
-    throw new ParameterError("multiclass-site: the link is 'logit' or 'probit'")
-  return { classes, y, probit: link === 'probit' }
-}
-
-/** log of the sum of `exp(v)` (`-Infinity` for none). */
-function logSumExp(v: readonly number[]): number {
-  let top = Number.NEGATIVE_INFINITY
-  for (const x of v) if (x > top) top = x
-  if (!Number.isFinite(top)) return top
-  let s = 0
-  for (const x of v) s += Math.exp(x - top)
-  return top + Math.log(s)
-}
-
-/** log P(y | z) under the softmax. */
-function logSoftmax(z: ArrayLike<number>, y: number): number {
-  let top = Number.NEGATIVE_INFINITY
-  for (let k = 0; k < z.length; k++) if ((z[k] as number) > top) top = z[k] as number
-  let s = 0
-  for (let k = 0; k < z.length; k++) s += Math.exp((z[k] as number) - top)
-  return (z[y] as number) - top - Math.log(s)
-}
-
-const E_NODES = gaussianNodes(0, 1, 20)
-
-/** log P(y | z) under the multinomial probit: the largest of `z_k + e_k`, `e_k` standard normal; one integral over `e_y`. */
-function logProbit(z: ArrayLike<number>, y: number): number {
-  let total = 0
-  for (let i = 0; i < E_NODES.x.length; i++) {
-    let p = 1
-    for (let j = 0; j < z.length; j++)
-      if (j !== y) p *= ndtr((z[y] as number) - (z[j] as number) + (E_NODES.x[i] as number))
-    total += (E_NODES.w[i] as number) * p
-  }
-  return Math.log(total)
-}
 
 interface Tilt {
   readonly logMass: number
@@ -130,7 +71,6 @@ function integrate(c: OperatorContext): Tilt {
     }
   }
   const r = free.length
-  const n = NODES[r]
   if (r === 0) {
     const lp = probit ? logProbit(fixed, y) : logSoftmax(fixed, y)
     return { logMass: c.power * lp, mean: [], variance: [], free }
@@ -149,9 +89,6 @@ function integrate(c: OperatorContext): Tilt {
     const a = probit ? probitAuxiliary(problem) : softmaxAuxiliary(problem)
     return { logMass: a.logMass, mean: a.mean, variance: a.variance, free }
   }
-  if (n === undefined)
-    throw new ParameterError(`multiclass-site: ${r} free scores are more than the six the product rule integrates`)
-  const grid = gaussianNodes(0, 1, n)
   const z = fixed.slice()
   const logf = probit ? logProbit : logSoftmax
   // The cavity as a Gaussian: log density at a point of the free scores, its constants made once.
@@ -163,79 +100,13 @@ function integrate(c: OperatorContext): Tilt {
     for (let i = 0; i < r; i++) s -= ((x[i] as number) - (cavMean[i] as number)) ** 2 * (cavHalfPrecision[i] as number)
     return s
   }
-  let mu = cavity.map((g) => g.mean)
-  let cov = new Array<number>(r * r).fill(0)
+  const cov = new Array<number>(r * r).fill(0)
   for (let i = 0; i < r; i++) cov[i * r + i] = (cavity[i] as { variance: number }).variance
-  let result: Tilt | undefined
-  const total = n ** r
-  for (let round = 0; round < ROUNDS; round++) {
-    const l = Float64Array.from(cov)
-    if (!choleskyInPlace(l, r))
-      throw new ImproperMessageError('multiclass-site: the tilted covariance is not positive definite')
-    let logDet = 0
-    for (let i = 0; i < r; i++) logDet += 2 * Math.log(l[i * r + i] as number)
-    const logw = new Float64Array(total)
-    const xs = new Float64Array(total * r)
-    const t = new Array<number>(r).fill(0)
-    const x = new Array<number>(r).fill(0)
-    for (let idx = 0; idx < total; idx++) {
-      let rest = idx
-      let lw = 0
-      for (let i = r - 1; i >= 0; i--) {
-        const j = rest % n
-        rest = (rest - j) / n
-        t[i] = grid.x[j] as number
-        lw += Math.log(grid.w[j] as number)
-      }
-      // x = mu + L t; the proposal's log density at x is -r/2 log 2 pi - logdet/2 - |t|^2 / 2.
-      let tt = 0
-      for (let i = 0; i < r; i++) {
-        let s = mu[i] as number
-        for (let k = 0; k <= i; k++) s += (l[i * r + k] as number) * (t[k] as number)
-        x[i] = s
-        xs[idx * r + i] = s
-        tt += (t[i] as number) ** 2
-        z[free[i] as number] = s
-      }
-      // The node's weight is w_t f(x) N_cav(x) / N_proposal(x); the Gaussian weights of the product rule already stand for N_proposal.
-      const lq = -0.5 * (r * Math.log(2 * Math.PI) + logDet + tt)
-      const v = lw + c.power * logf(z, y) + logCav(x) - lq
-      logw[idx] = v
-    }
-    const { top, weights, total: sum } = shiftedSum(logw)
-    if (!Number.isFinite(top))
-      throw new ImproperMessageError('multiclass-site: the factor has no mass under the cavities')
-    const m = new Array<number>(r).fill(0)
-    for (let idx = 0; idx < total; idx++) {
-      const w = weights[idx] as number
-      for (let i = 0; i < r; i++) m[i] = (m[i] as number) + w * (xs[idx * r + i] as number)
-    }
-    for (let i = 0; i < r; i++) m[i] = (m[i] as number) / sum
-    const v = new Array<number>(r * r).fill(0)
-    for (let idx = 0; idx < total; idx++) {
-      const w = weights[idx] as number
-      for (let i = 0; i < r; i++) {
-        const di = (xs[idx * r + i] as number) - (m[i] as number)
-        for (let k = 0; k <= i; k++)
-          v[i * r + k] = (v[i * r + k] as number) + w * di * ((xs[idx * r + k] as number) - (m[k] as number))
-      }
-    }
-    for (let i = 0; i < r; i++)
-      for (let k = 0; k <= i; k++) {
-        const e = (v[i * r + k] as number) / sum
-        v[i * r + k] = e
-        v[k * r + i] = e
-      }
-    const done =
-      result !== undefined &&
-      m.every((mi, i) => Math.abs(mi - (result?.mean[i] as number)) <= 1e-3 * Math.sqrt(v[i * r + i] as number)) &&
-      m.every((_, i) => Math.abs((v[i * r + i] as number) / (result?.variance[i] as number) - 1) <= 1e-3)
-    result = { logMass: top + Math.log(sum), mean: m, variance: m.map((_, i) => v[i * r + i] as number), free }
-    mu = m
-    cov = v
-    if (done) break
-  }
-  return result as Tilt
+  const t = productTilt(r, { mean: cavMean, covariance: cov }, logCav, (x) => {
+    for (let i = 0; i < r; i++) z[free[i] as number] = x[i] as number
+    return c.power * logf(z, y)
+  })
+  return { logMass: t.logMass, mean: t.mean, variance: t.mean.map((_, i) => t.covariance[i * r + i] as number), free }
 }
 
 /** Whether the mean field uses the one-coordinate rule of `_multiclass-variational.ts` (more scores than the product grid reaches, or `integration: "auxiliary"`). */
@@ -274,12 +145,6 @@ function auxiliaryMean(c: OperatorContext): {
     expectedLog: () =>
       shared.bound !== undefined ? shared.bound.value : softmaxExpectedLog(shared.table as SoftmaxTable, beliefs, y),
   }
-}
-
-/** The log probability of the observed class at the scores: the softmax's or the multinomial probit's. */
-function scoreLog(params: Params): (z: readonly number[]) => number {
-  const { y, probit } = classesOf(params)
-  return probit ? (z) => logProbit(z, y) : (z) => logSoftmax(z, y)
 }
 
 /**

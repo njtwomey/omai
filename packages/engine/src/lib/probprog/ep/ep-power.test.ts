@@ -1,6 +1,8 @@
-// Fractional EP on the softmax classifier, whose three class slopes share every observation: one Gaussian each leaves their spreads
-// too narrow (about half the exact posterior's with 24 points) and the run does not settle; a power of about 5 / rows (the
-// `power` knob of `epSpecMethod`) widens them to the exact spread, the run settles, and the mean moves by a fraction of a sd.
+// Fractional EP on the softmax classifier, whose three class slopes share every observation. With one message per class score
+// (`packScalars: false`) one Gaussian each leaves their spreads too narrow (about half the exact posterior's with 24 points) and the
+// run does not settle; a power of about 5 / rows (the `power` knob of `epSpecMethod`) widens them to the exact spread, the run settles,
+// and the mean moves by a fraction of a sd. Packed (the default for EP) the slopes are one vector and each observation one joint site
+// (`multiclass-row`), which carries the correlations: plain EP has the exact spread and means, and the power is not needed.
 import { describe, expect, it } from 'vitest'
 import { session } from '../../trace/index.ts'
 import { epMultiStartMethod, epSpecMethod, vmpSpecMethod } from '../inference/index.ts'
@@ -13,8 +15,8 @@ const problem = atom.problem({ ...atom.defaults, seed: 3, n: 24 })
 const exact = problem.exact ?? {}
 
 /** The mean ratio of EP's sd to the exact sd over the three slopes, the largest mean error in exact sds, and whether the run settled. */
-function against(power: number): { sdRatio: number; meanError: number; converged: boolean } {
-  const method = epSpecMethod(atomBound(problem))
+function against(power: number, packScalars = false): { sdRatio: number; meanError: number; converged: boolean } {
+  const method = epSpecMethod(atomBound(problem), { packScalars })
   const run = session(method, {
     seed: 1,
     steps: 402,
@@ -37,7 +39,15 @@ function against(power: number): { sdRatio: number; meanError: number; converged
 }
 
 describe('fractional EP (the power knob) on the softmax classifier', () => {
-  it('plain EP is too narrow, a power of 0.2 gives the exact spread, settles, and moves the mean by less than half a sd', () => {
+  it('packed, plain EP has the exact spreads and means (one joint site per observation): the power is not needed', () => {
+    const plain = against(1, true)
+    expect(plain.sdRatio).toBeGreaterThan(0.97)
+    expect(plain.sdRatio).toBeLessThan(1.03)
+    expect(plain.meanError).toBeLessThan(0.05)
+    expect(plain.converged).toBe(true)
+  }, 60_000)
+
+  it('with a message per score, plain EP is too narrow, a power of 0.2 gives the exact spread, settles, and moves the mean by less than half a sd', () => {
     const plain = against(1)
     const fractional = against(0.2)
     expect(plain.sdRatio).toBeLessThan(0.7)
@@ -56,9 +66,9 @@ describe('fractional EP (the power knob) on the softmax classifier', () => {
     expect(knobs(vmpSpecMethod(atomBound(problem)))).not.toContain('power')
   })
 
-  it('the multi-start method takes the same power: a power below one widens the slopes there too', () => {
+  it('the multi-start method takes the same power: a power below one widens the slopes there too (one message per score)', () => {
     const sdOf = (power: number): number => {
-      const method = epMultiStartMethod(atomBound(problem))
+      const method = epMultiStartMethod(atomBound(problem), { packScalars: false })
       const run = session(method, {
         seed: 1,
         steps: 1,

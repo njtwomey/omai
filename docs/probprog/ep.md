@@ -45,7 +45,11 @@ for EP this keeps their correlation; as separate scalars the loop between them w
 times too small). Scalars with known priors have the prior on the vector; a vector over one dimension or a latent with a prior of its
 own that the observation reads linearly (the county intercepts of a hierarchy beside the floor effect, the skills of a tournament that
 each game reads at two places) is a tied group: made as it is, then tied to its coordinate by an exact constraint, with a vague
-starting message on the vector (`findGroups`, `tieToGroup`). `factorGraphVerdict(compiled, graph, rule)` asks whether every operator of the graph has a rule under `ep`, `vmp` or
+starting message on the vector (`findGroups`, `tieToGroup`). Where an observation's scores are a matrix times one such vector, the site is one joint
+message on the vector instead of one per score: a categorical's class scores (the class slopes of up to six classes, the coefficients that
+the alternatives of a choice share) are one `multiclass-row` per observation, and the two log shapes of a beta outcome one stacked vector
+with a `likelihood-pair-row` per outcome (`numerics/_vector-site.ts`), so the correlation between the scores reaches the vector and the
+spreads are the exact ones where one message per score gave 0.4 to 0.85 of them. `factorGraphVerdict(compiled, graph, rule)` asks whether every operator of the graph has a rule under `ep`, `vmp` or
 `bp`; `factorGraphPosterior` reads a message state back as a `Posterior` keyed by site name, in the spec's shapes. **Target**
 (`review-compiler.md` section 5): a folder `probprog/model/factor-graph/` with the pure leaves (types, refusal, cells), a builder, the
 passes made explicit (constants, layout plan, node walk, prune, opaque filter), the idioms as pure functions, an ordered list of

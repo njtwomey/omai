@@ -63,6 +63,12 @@ export interface ScalarGroup {
   readonly sizes?: readonly number[]
 }
 
+/**
+ * The most classes whose slopes (a vector over the class dimension) are packed for the `multiclass-row` factor: the rank of its integral
+ * is the number of classes, and the product grid it runs on reaches six. Past that a softmax keeps one message per class.
+ */
+export const MULTICLASS_ROW_CLASSES = 6
+
 /** The most coordinates of a tied group: its covariance is dense, and each row of a likelihood costs the square of it. */
 export const TIED_GROUP_LIMIT = 200
 
@@ -263,6 +269,17 @@ export function findGroups(
     for (const e of Object.values(n.dist.params))
       walk(e.kind === 'op' && LINKS.includes(e.op) && e.args.length === 1 ? (e.args[0] as ExprSpec) : e, true)
     walk(n.value, false)
+    // A categorical over the classes reads a vector over the class dimension at every class (the slope of each class in the score of
+    // that class): the vector is read at several places by one row, so it is one joint vector, as a vector read at two places is.
+    const multiclass =
+      (n.dist.family === 'categorical' && n.dist.params['logits'] !== undefined) ||
+      n.dist.family === 'categoricalProbit'
+    if (multiclass)
+      for (const f of found) {
+        const dim = nodes.get(f)?.dims[0]
+        if (dim !== undefined && nodes.get(f)?.dims.length === 1 && (n.dist.eventDims ?? []).includes(dim))
+          if ((bound.sizes[dim] ?? Number.POSITIVE_INFINITY) <= MULTICLASS_ROW_CLASSES) crossing.add(f)
+      }
     for (const f of found) {
       if (!parent.has(f)) parent.set(f, f)
       if (found[0] !== undefined) parent.set(find(f), find(found[0]))

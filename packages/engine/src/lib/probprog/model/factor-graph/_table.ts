@@ -648,9 +648,9 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
   }),
   element({
     name: 'beta',
-    maps: 'a beta observation with random shapes: a likelihood-pair factor',
+    maps: 'a beta observation with random shapes: a likelihood-pair factor, or (with packScalars, both shapes Gaussian on their logs) one gaussian-mv-stack vector of the two and a likelihood-pair-row factor on it per observation',
     families: ['beta'],
-    requires: ['likelihood-pair'],
+    requires: ['gaussian-mv-stack', 'likelihood-pair', 'likelihood-pair-row'],
     map: (cx, node, el) => observedPair(cx, node, 'beta-shapes', el.y, el.i, el.index),
   }),
   element({
@@ -702,10 +702,10 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
   }),
   element({
     name: 'multiclass-logits',
-    maps: 'a categorical with logits: a multiclass-site factor on the predictors of the classes',
+    maps: 'a categorical with logits: a multiclass-site factor on the predictors of the classes, or (with packScalars) a multiclass-row factor on the one Gaussian vector the scores are a matrix times',
     order: 'before the conjugate categorical: logits are the multiclass form',
     families: ['categorical'],
-    requires: ['multiclass-site'],
+    requires: ['multiclass-row', 'multiclass-site'],
     matches: (_cx, node) => node.dist.params['logits'] !== undefined,
     map: (cx, node, el) => observedMulticlass(cx, node, el.y, el.i, el.index, 'logits', 'logit'),
   }),
@@ -718,9 +718,9 @@ export const observedElementMappings: MappingTable<[ObservedNode, Element], stri
   }),
   element({
     name: 'categorical-probit',
-    maps: 'a categorical with probit scores: a multiclass-site factor',
+    maps: 'a categorical with probit scores: a multiclass-site factor, or (with packScalars) a multiclass-row factor on the one Gaussian vector the scores are a matrix times',
     families: ['categoricalProbit'],
-    requires: ['multiclass-site'],
+    requires: ['multiclass-row', 'multiclass-site'],
     map: (cx, node, el) => observedMulticlass(cx, node, el.y, el.i, el.index, 'scores', 'probit'),
   }),
   element({

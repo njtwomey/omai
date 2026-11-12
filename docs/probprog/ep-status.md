@@ -6,15 +6,15 @@ in [`ep.md`](ep.md), what happened when in [`ep-changelog.md`](ep-changelog.md).
 
 ## Message-passing operators
 
-The registry (`defaultOperators()`) holds **71** factor operators. Rules by message mode:
+The registry (`defaultOperators()`) holds **73** factor operators. Rules by message mode:
 
 | mode | operators with a rule | exact | bound | numeric |
 | --- | --- | --- | --- | --- |
-| ep | 70 | 36 | 0 | 34 |
+| ep | 72 | 36 | 0 | 36 |
 | vmp | 64 | 37 | 4 | 23 |
 | bp | 4 | 4 | 0 | 0 |
 
-20 operators take a power (fractional EP).
+22 operators take a power (fractional EP).
 
 ## Atoms
 

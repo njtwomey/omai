@@ -798,6 +798,67 @@ classes is about 3 ms (wide cavities 6 ms) a tilted moment, the probit about 4 m
   `atom/skill-difference-learned`, `program/skills` (spreads move towards the reference; the means within 0.02 sd except the learned
   tournaments' skills, 0.05 sd). The two draws atoms moved to the `plated` rung with evidence within 0.02 nats.
 
+## 2026-11-12 Joint sites on a vector: the multiclass row and the pair row (`agent-af9843-vecsite`, gap `loopy-overconfidence` narrowed, `softmax-many-classes` narrowed)
+
+A site that sends each of its scalar ports its own Gaussian loses what the factor says of them together, so the loop through a shared
+vector was too confident (the softmax class slopes and shared coefficients, the two shapes of a beta outcome). Two operators now take the
+vector as their one port and send a full natural-parameter message back.
+- **The core (`numerics/_vector-site.ts`, `_product.ts`).** A smooth factor of `K` coordinates `z = A w + b` of a Gaussian vector `w`: the
+  cavity of `z` is `N(A m + b, A V A')` (full covariance); a pivoted Cholesky factor `B B'` of it gives the rank `r` (at most
+  `min(K, dim w)`, and at most six: the product grid) and the standardised coordinates `xi` (`z = mu + B xi`); the tilted mean and
+  covariance of `xi` come from the adaptive Gauss-Hermite rule that `multiclass-site` already had (moved to `_product.ts`, the same
+  arithmetic: the digest items of every scalar multiclass run are bit-identical); the site in `xi` is `(S^-1 a, S^-1 - I)` and
+  `xi = G (w - m)`, `G = (B'B)^-1 B' A`, carries it to `w` (precision `G' (S^-1 - I) G`, linear term `J m + G' S^-1 a`). The power divides
+  the message (the site of a factor to the power `p` is the tilted over the cavity over `p`: `projectSite`); the evidence is the log mass
+  plus the vector cavity's mass. A choice among eight alternatives with two shared coefficients is a two-dimensional integral.
+- **`multiclass-row`** (`links/`): the softmax or the multinomial probit of the scores `A w + b`. **`likelihood-pair-row`** (`likelihoods/pairs.ts`,
+  `pairRowOperator(table)`): a row of the pair registry with no kink (`beta-shapes`, `student-t-df`, `student-t-scale`, `weibull-shape`) on two
+  coordinates of a vector. Both checked against a brute-force integral over the vector itself (`testing/vector-site.ts`, a grid over
+  the standardised coordinates of its cavity: message entries within 3e-3, evidence within 3e-3 to 6e-3; a correlated cavity, a wide
+  cavity, a rank-two integral for eight classes, a zero row of the matrix, an offset, a power), and against the scalar sites on independent
+  coordinates (the same tilted marginals, plus the off-diagonal terms the scalar site cannot have). No variational rule (`noRule.vmp`):
+  `packScalars` is off for VMP, so its graphs are unchanged.
+- **Compiler** (with `packScalars`, the EP default): `findGroups` packs a vector over the class dimension that a categorical reads (up to six
+  classes, `MULTICLASS_ROW_CLASSES`); `observedMulticlass` emits one `multiclass-row` per observation when every score is an affine form of
+  coordinates of one vector (the class slopes of a group, the shared coefficients, a dense Gaussian process over (input, class) cells) and the
+  operator takes the shape, else the scalar sites as before. `observedPair` stacks the two log shapes of a beta outcome (Gaussian
+  variables) with one `gaussian-mv-stack` and emits a `likelihood-pair-row` per outcome; a gamma shape, or any other pair likelihood, is
+  unchanged. Graph corpus: the three softmax atoms, `gp-softmax` and `softmax-choice` (and the learned twins) lose their score variables
+  (`softmax-regression` 30 variables and 40 factors to 4 and 14, `softmax-choice` 99 and 111 to 3 and 15); nothing else moved.
+- **Measured (against the exact grid posterior).** `softmax-regression`: spreads 0.95 to 0.97 (at the atom's power of 0.5; 0.78 to 0.86 at a
+  power of one) to 0.9996, 0.9953, 0.9970, means 0.07 to 0.21 to 0.0006 to 0.006 sds off, evidence 0.47 to 0.03 nats from the grid, 29 sweeps
+  to 20. `softmax-regression-learned` (seed 1): 0.958, 0.890, 0.926 to 1.010, 0.998, 0.997, means 0.26 to 0.47 to 0.006 to 0.028.
+  `softmax-choice`: 0.829, 0.774 to 0.960, 0.954, means 0.069, 0.152 to 0.004, 0.011, evidence 0.46 to 0.03 nats; `-learned`: 0.961, 0.704 to
+  0.983, 0.958, means 0.065, 0.167 to 0.004, 0.006. `gp-softmax`: 0.9982 to 0.99997, means 2e-4 to 1e-5. Calibration, plain EP at a
+  power of one: 30 seeds of 24 points with the truth drawn from the prior (`softmax-regression-learned`): the mean spread over the exact
+  one 0.503 to 0.998 (0.33 to 0.85 before, 0.99 to 1.05 now), the truth inside the 90% interval 0.633 to 0.911 (the exact posterior's own 0.911),
+  mean error 0.029 to 0.004 sds, 110 s to 23 s; at the old power of 0.25, 0.837 and 0.844 to 0.998 and 0.911. 20 seeds of 12 choices among
+  eight (`softmax-choice-learned`, the truth drawn from N(0, 1.5^2)): 0.840 to 0.980, coverage 0.875 to 0.900 (exact 0.900), error 0.093 to 0.003, 92 s to
+  16 s. Beta outcomes with two log-normal shapes (the exact grid posterior of the shapes; 8, 20, 50 and 30 outcomes): spreads 0.65, 0.61,
+  0.47, 0.65 to 1.01, 1.01, 1.00, 1.01 (b: 0.66, 0.61, 0.47, 0.65 to 1.03, 1.01, 1.00, 1.01), means 0.07 to 0.16 sds off to 0.000 to 0.003, the log shapes
+  correlated 0.75 to 0.88; 0.95 s, 2.3 s, 9.2 s, 3.0 s to 0.09 s, 0.18 s, 0.42 s, 0.28 s.
+- **Digest items moved deliberately** (towards the reference, listed in the commit): `atom/softmax-regression`, `atom/softmax-regression-learned`,
+  `atom/softmax-choice`, `atom/softmax-choice-learned`, `atom/gp-softmax`; the registry line (two operators). Their `vmp/` twins and the
+  pair atoms are bit-identical. The power of the two softmax atoms is left as it is (`ep: { power }`): the same numbers at a power of one.
+  A run with `--only` leaves the `coverage` field out of an item's digest line, so merging only those lines needs it put back from the
+  baseline (nothing moved there). The 1e-12 differences of a pair atom that a different set of items in one digest run can show come from the
+  module-global tilted-moment cache of `gaussian.ts`, not from this change.
+- **Tried and not kept: the 2PL item response model.** `a (theta - b)` is a product of two affine forms of one tied vector (discriminations,
+  abilities, difficulties), so a `logistic-product` pair density on `likelihood-pair-row` takes it (the plan grouped the three vectors, the
+  mapping emitted the row). Against NUTS, 30 students, 8 questions, normal discriminations with gamma-precision spreads: the discriminations'
+  spreads 0.59 to 0.73 to 0.72 to 0.84 of NUTS's, the difficulties 0.53 to 0.92 to 0.57 to 0.77, the abilities 0.83 to 1.08 unchanged, means within
+  0.3 sds, at 14 times the cost (12 s, 170 s; 1.5 ms a row over 46 coordinates and as many sweeps); with static priors (20 students, 6 questions) the
+  discriminations 0.76 to 0.88 to 0.82 to 0.96, the difficulties 0.84 to 0.85, 11 times the cost (0.6 s to 6.8 s). What remains is the loop through
+  the hyperparameters (the centres 0.69 to 0.78 of NUTS, as for the non-centred hierarchy) and the skew of the posterior, not the bilinear site,
+  so the compiler and the registry row were removed again. The gap `loopy-overconfidence` records it.
+- **Found on the way.** The scalar `multiclass-site` `ep` rule returns the tilted minus the cavity without dividing by the power (as
+  `projectSite` does for every site rule), so its fixed point at a power `p` is `(1 - p)` cavity plus `p` projection, not fractional EP's; the numbers
+  of the two softmax atoms (and the `power` knob's measurements in this log) are that scheme's. The new row divides. Left as it is: changing it
+  moves the digest of the unpacked scalar runs and the knob's tests.
+- Not done: the softmax slopes of more than six classes and the auxiliary rule have no joint message (the auxiliary rule is a product over
+  classes only for independent cavities); the other pair likelihoods on the row (each needs its own check); the 2PL (above); a gamma-shape
+  beta outcome; the non-centred hierarchy.
+
 ## 2026-11-12 ARD under variational message passing: the scalar products assembled into one vector (`agent-a6a2ec-ard`, gap `non-centred-scale` closed)
 
 - The compiler assembles a non-centred vector with a scale of its own for each coefficient (`z_j / sqrt(alpha_j)`, ARD) with one new

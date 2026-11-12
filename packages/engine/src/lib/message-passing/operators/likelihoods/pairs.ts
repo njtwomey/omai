@@ -9,14 +9,15 @@
  * density has and zoomed onto where the mass is, so the sites cost a few thousand evaluations of the density each.
  */
 
-import { errorText } from '../../core/_messages.ts'
-import { allProper, massOf, numberParam } from '../../core/args.ts'
-import { defineOperator, messageRule, tiltedRule } from '../../core/define.ts'
+import { arg, errorText, keyOf, memoised } from '../../core/_messages.ts'
+import { allProper, etaOf, massOf, numberParam, vectorParam } from '../../core/args.ts'
+import { defineOperator, messageRule, siteRule, tiltedRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { namedParams, param } from '../../core/params.ts'
 import type { FactorOperator, Family, OperatorContext, Params, Port, TiltedMoments } from '../../core/types.ts'
 import { axisOf, integratePair } from '../../numerics/_grid.ts'
 import { lgammaOf } from '../../numerics/_scalar.ts'
+import { type VectorSiteTilt, vectorSiteTilt } from '../../numerics/_vector-site.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
 /** One coordinate of a pair likelihood: a real value, or a positive one (the coordinate is then its log). */
@@ -392,3 +393,94 @@ export function pairLikelihoodOperator(
 
 /** The pair likelihood site over the library's registry. */
 export const likelihoodPairOperator: FactorOperator = pairLikelihoodOperator()
+
+/**
+ * A pair likelihood of two coordinates that are linear forms of one Gaussian vector: the density of the registry at `(u, t) = (a0 . w +
+ * b0, a1 . w + b1)`, one port (`w`), the parameters of `likelihood-pair` and `matrix` (the two rows `a0`, `a1`, row-major `2 x D`) and
+ * `offset` (`b0`, `b1`, default zero). The joint cavity of the coordinates is `N(A m + b, A V A')` with its correlation, the tilted
+ * moments are an integral over it (adaptive Gauss-Hermite over its rank, which is two), and the message to `w` is the full natural-parameter
+ * site, so the correlation the density puts between the coordinates (the two shapes of a beta outcome, whose posterior is a narrow ridge)
+ * reaches the vector instead of two separate Gaussian messages. A coordinate is a real value or the log of a positive one, as in
+ * `likelihood-pair`; a density with a kink (a Laplace) is not smooth for this rule, and the coordinates' gamma form is not a Gaussian
+ * vector's, so both stay with `likelihood-pair`. The factor supports a power; there is no variational rule.
+ *
+ * @param table - The densities to choose from (default {@link pairLikelihoods}).
+ * @returns The operator, named `likelihood-pair-row`.
+ * @concept factor-operators
+ * @index function A pair likelihood site on one Gaussian vector: a joint message for two coordinates that are linear forms of it.
+ * @example
+ * ```ts
+ * import { gaussianMv, gaussianMvEta, messageArg, pairRowOperator } from 'omai-engine/message-passing'
+ * const w = gaussianMv(2)
+ * const args = [messageArg(w, gaussianMvEta([0, 0], [1, 0, 0, 1]))]
+ * const params = { likelihood: 'beta-shapes', y: 0.3, matrix: [1, 0, 0, 1] }
+ * pairRowOperator().ep?.({ mode: 'ep', to: 0, args, params, power: 1 }).message.length // => 6
+ * ```
+ */
+export function pairRowOperator(table: Readonly<Record<string, PairLikelihood>> = pairLikelihoods()): FactorOperator {
+  const tilt = (c: OperatorContext): VectorSiteTilt => {
+    const inputs = [c.args.map((a) => a.eta), c.params, c.power]
+    return memoised(c, `likelihood-pair-row:${keyOf(inputs)}`, () => {
+      const { likelihood, y } = resolve(table, c.params)
+      const density = likelihood.density(y, c.params)
+      const w = arg(c, 0)
+      const offset = c.params['offset'] === undefined ? [0, 0] : vectorParam(c.params, 'offset')
+      return vectorSiteTilt(w, {
+        coordinates: 2,
+        matrix: vectorParam(c.params, 'matrix'),
+        offset,
+        logf: (z) => c.power * density(z[0] as number, z[1] as number),
+        name: 'likelihood-pair-row',
+      })
+    })
+  }
+  return defineOperator({
+    name: 'likelihood-pair-row',
+    description:
+      'y | (a0 . w, a1 . w) ~ a density of the registry over two linear forms of a Gaussian vector w, with their joint message',
+    ports: [{ name: 'w', accepts: ['gaussian-mv'] }],
+    params: (p) => {
+      const key = p['likelihood']
+      const entry = typeof key === 'string' ? table[key] : undefined
+      return {
+        likelihood: param.text({ choices: Object.keys(table) }),
+        y: param.number(),
+        matrix: param.vector(),
+        offset: param.vector({ optional: true }),
+        ...(entry === undefined ? {} : namedParams(entry.params, { optional: ['censored'] })),
+      }
+    },
+    check: (params, families) => {
+      try {
+        const { likelihood } = resolve(table, params)
+        if (likelihood.kinks !== undefined)
+          return `${likelihood.name} has a kink: the Gauss-Hermite rule of the row is for smooth densities (use likelihood-pair)`
+        const d = families[0]?.dim ?? 0
+        if (vectorParam(params, 'matrix').length !== 2 * d)
+          return `likelihood-pair-row: matrix must have 2 x ${d} entries (a row per coordinate)`
+        if (params['offset'] !== undefined && vectorParam(params, 'offset').length !== 2)
+          return 'likelihood-pair-row: offset must have 2 entries'
+        return undefined
+      } catch (e) {
+        return errorText(e)
+      }
+    },
+    rules: {
+      ep: siteRule((c) => {
+        const cavity = etaOf(arg(c, 0))
+        const t = tilt(c)
+        return { natural: cavity.map((v, i) => v + (t.site[i] ?? 0)) }
+      }),
+    },
+    evidence: {
+      ep: (c) => (allProper(c.args) ? tilt(c).logMass + massOf(arg(c, 0)) : Number.NaN),
+    },
+    noRule: {
+      vmp: 'the mean field of a vector has no Gaussian expected log of a pair density in its coordinates: compile the two coordinates as scalar variables (packScalars off) for the variational rule of likelihood-pair',
+    },
+    traits: { readsTarget: true, power: true },
+  })
+}
+
+/** The pair likelihood row over the library's registry. */
+export const likelihoodPairRowOperator: FactorOperator = pairRowOperator()
