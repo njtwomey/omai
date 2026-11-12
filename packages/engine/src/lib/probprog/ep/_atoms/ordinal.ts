@@ -325,7 +325,7 @@ function ordinalCutsLearnedProblem(k: Config): AtomParts {
  */
 const ordinalProbitCutsLearnedAtom: EpAtom = defineAtom({
   name: 'ordinal-probit-cuts-learned',
-  title: 'Ordinal probit: random cut points learned',
+  title: 'Ordinal probit: parameters learned (random cut points)',
   extends: 'ordinal-probit',
   recovery: recovery(
     'quick',
