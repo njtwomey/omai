@@ -34,6 +34,7 @@ function configOf(s: EngineSettings): Json {
     tol: s.tol,
     maxSweeps: s.maxSweeps,
     restarts: s.restarts ?? 0,
+    ...(s.warmup === undefined || s.warmup === 0 ? {} : { warmup: s.warmup }),
   }
 }
 

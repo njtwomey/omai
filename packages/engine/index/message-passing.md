@@ -20,11 +20,11 @@ The named methods and the variants of the engine: `epAlgorithm`, `vmpAlgorithm` 
 - function `ampDenoiser`: The AMP denoiser: posterior mean and derivative for a Gaussian or Bernoulli-Gaussian prior. `src/lib/message-passing/algorithms/amp.ts:79` `omai-engine/message-passing`
 - function `ampMethod`: The AMP method of a linear problem: the prior's kind and parameters as knobs, typed tape. `src/lib/message-passing/algorithms/amp.ts:479` `omai-engine/message-passing`
 - function `ampStateEvolution`: The state evolution of AMP: the predicted noise level of every iteration. `src/lib/message-passing/algorithms/amp.ts:162` `omai-engine/message-passing`
-- function `bpMethod`: The belief propagation method of a graph: knobs as a space, typed tape. `src/lib/message-passing/algorithms/named.ts:460` `omai-engine/message-passing`
+- function `bpMethod`: The belief propagation method of a graph: knobs as a space, typed tape. `src/lib/message-passing/algorithms/named.ts:498` `omai-engine/message-passing`
 - function `ecMethod`: The expectation consistent method of a graph: knobs as a space, typed tape. `src/lib/message-passing/algorithms/consistent.ts:159` `omai-engine/message-passing`
-- function `epMethod`: The expectation propagation method of a graph: knobs as a space, typed tape. `src/lib/message-passing/algorithms/named.ts:414` `omai-engine/message-passing`
+- function `epMethod`: The expectation propagation method of a graph: knobs as a space, typed tape. `src/lib/message-passing/algorithms/named.ts:452` `omai-engine/message-passing`
 - function `expectationConsistentGraph`: The factor graph of a Gaussian part times one-dimensional sites, for EC inference. `src/lib/message-passing/algorithms/consistent.ts:71` `omai-engine/message-passing`
-- function `messagePassingKnobs`: The knobs (a Space) and the typed tape of a message rule, with no graph. `src/lib/message-passing/algorithms/named.ts:391` `omai-engine/message-passing`
+- function `messagePassingKnobs`: The knobs (a Space) and the typed tape of a message rule, with no graph. `src/lib/message-passing/algorithms/named.ts:429` `omai-engine/message-passing`
 - function `numericEpMethod`: The numeric EP method of a graph: a rule knob (quadrature, Gauss-Hermite, Laplace, sample, unscented). `src/lib/message-passing/algorithms/numerical.ts:107` `omai-engine/message-passing`
 - function `numericProjection`: The numerical projection slot: moment matching with a chosen numeric rule. `src/lib/message-passing/algorithms/numerical.ts:41` `omai-engine/message-passing`
 - function `powerEpMethod`: The power EP method of a graph: a power knob beside the EP ones, typed tape. `src/lib/message-passing/algorithms/power.ts:148` `omai-engine/message-passing`
@@ -34,18 +34,18 @@ The named methods and the variants of the engine: `epAlgorithm`, `vmpAlgorithm` 
 - function `runAnytime`: Run message passing under a time budget with periodic marginals snapshots. `src/lib/message-passing/algorithms/anytime.ts:75` `omai-engine/message-passing`
 - function `runAnytimeWith`: The anytime loop for any state with a snapshot: budget, clock, cancellation, resume. `src/lib/message-passing/algorithms/anytime.ts:100` `omai-engine/message-passing`
 - function `stochasticEpMethod`: The stochastic EP method of a graph: knobs as a space, typed tape. `src/lib/message-passing/algorithms/stochastic.ts:451` `omai-engine/message-passing`
-- function `vmpMethod`: The variational message passing method of a graph: knobs as a space, typed tape. `src/lib/message-passing/algorithms/named.ts:437` `omai-engine/message-passing`
+- function `vmpMethod`: The variational message passing method of a graph: knobs as a space, typed tape. `src/lib/message-passing/algorithms/named.ts:475` `omai-engine/message-passing`
 
 - algorithm `alphaEpAlgorithm`: Alpha-divergence message passing: one alpha knob from EP (1) toward variational (0). `src/lib/message-passing/algorithms/alpha.ts:111` `omai-engine/message-passing`
 - algorithm `ampAlgorithm`: AMP for y = A x + w with an iid prior, with state evolution. `src/lib/message-passing/algorithms/amp.ts:371` `omai-engine/message-passing`
-- algorithm `bpAlgorithm`: Sum-product belief propagation on a factor graph of discrete variables. `src/lib/message-passing/algorithms/named.ts:286` `omai-engine/message-passing`
+- algorithm `bpAlgorithm`: Sum-product belief propagation on a factor graph of discrete variables. `src/lib/message-passing/algorithms/named.ts:324` `omai-engine/message-passing`
 - algorithm `ecAlgorithm`: Expectation consistent (adaptive TAP) inference: a Gaussian times 1-D sites. `src/lib/message-passing/algorithms/consistent.ts:140` `omai-engine/message-passing`
-- algorithm `epAlgorithm`: Expectation propagation on a factor graph of exponential families. `src/lib/message-passing/algorithms/named.ts:222` `omai-engine/message-passing`
+- algorithm `epAlgorithm`: Expectation propagation on a factor graph of exponential families. `src/lib/message-passing/algorithms/named.ts:258` `omai-engine/message-passing`
 - algorithm `numericEpAlgorithm`: EP with numeric factors projected by quadrature, Laplace, sample or sigma-point rules. `src/lib/message-passing/algorithms/numerical.ts:86` `omai-engine/message-passing`
 - algorithm `powerEpAlgorithm`: Power and fractional EP: per-factor powers on the message-passing engine. `src/lib/message-passing/algorithms/power.ts:120` `omai-engine/message-passing`
 - algorithm `regionBpAlgorithm`: Generalised belief propagation on a region graph: Bethe, Kikuchi or junction regions. `src/lib/message-passing/algorithms/regions.ts:610` `omai-engine/message-passing`
 - algorithm `stochasticEpAlgorithm`: Stochastic (averaged) EP: one averaged site for N data factors, memory independent of N. `src/lib/message-passing/algorithms/stochastic.ts:291` `omai-engine/message-passing`
-- algorithm `vmpAlgorithm`: Variational message passing on a factor graph of exponential families. `src/lib/message-passing/algorithms/named.ts:255` `omai-engine/message-passing`
+- algorithm `vmpAlgorithm`: Variational message passing on a factor graph of exponential families. `src/lib/message-passing/algorithms/named.ts:293` `omai-engine/message-passing`
 
 - dataset `ampProblem`: A compressed-sensing problem (Gaussian matrix, sparse signal, noise) with its truth, for AMP. `src/lib/message-passing/algorithms/amp.ts:210` `omai-engine/message-passing`
 - dataset `clutterProblem`: Minka's clutter problem: a mean with outliers, whose posterior is lumpy; seeded, with its truth. `src/lib/message-passing/algorithms/clutter.ts:68` `omai-engine/message-passing`
@@ -85,7 +85,7 @@ The engine: arguments and cavities, the dispatch to an operator, the repair of i
 
 - module `run.ts` (file): The message-passing engine: one algorithm, slots for projection, schedule, damping, improper handling. `src/lib/message-passing/engine/run.ts:1` `omai-engine/message-passing`
 
-- algorithm `messagePassingAlgorithm`: The message-passing engine on a factor graph: projection, schedule, damping slots. `src/lib/message-passing/engine/run.ts:71` `omai-engine/message-passing`
+- algorithm `messagePassingAlgorithm`: The message-passing engine on a factor graph: projection, schedule, damping slots. `src/lib/message-passing/engine/run.ts:72` `omai-engine/message-passing`
 
 - structure `Projection`: The projection slot: moment matching, expected log, sum-product. `src/lib/message-passing/engine/projections.ts:18` `omai-engine/message-passing`
 

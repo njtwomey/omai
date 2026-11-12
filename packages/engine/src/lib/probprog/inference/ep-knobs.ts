@@ -20,7 +20,7 @@ import {
   takesPower,
   withPowers,
 } from '../../message-passing/index.ts'
-import { type DictSpace, dict, real } from '../../space/index.ts'
+import { choice, type DictSpace, dict, real } from '../../space/index.ts'
 import type { Config } from '../../trace/index.ts'
 
 /** The EP methods of this folder, which share the run knobs. */
@@ -44,6 +44,8 @@ export type EpKnobs = {
   readonly restarts?: number
   /** Fractional EP: the power of every factor that supports one (1 is EP). */
   readonly power?: number
+  /** Damped first sweeps (`auto`: on a graph with exchangeable labels, the components of a mixture; plain `ep` and `ep-multistart` only). */
+  readonly warmup?: 'auto' | 'off' | 'on'
 }
 
 type RunDefaults = Required<Omit<MessagePassingOptions, 'order' | 'initial'>>
@@ -59,7 +61,7 @@ const DEFAULTS: Readonly<Record<EpMethodName, RunDefaults>> = {
  * The run knobs of an EP method as a `Space`, with the method's defaults.
  *
  * @param method - `ep` (the default), `ep-grid` or `ep-multistart`.
- * @returns The space: schedule, [granularity for `ep`], damping, improper, tol, maxSweeps, restarts and power.
+ * @returns The space: schedule, [granularity for `ep`], damping, improper, tol, maxSweeps, restarts, [warmup, not for `ep-grid`] and power.
  * @example
  * ```ts
  * import { defaults } from 'omai-engine/space'
@@ -73,6 +75,15 @@ export function epRunKnobs(method: EpMethodName = 'ep'): DictSpace {
   )
   return dict({
     ...Object.fromEntries(shared),
+    ...(method === 'ep-grid'
+      ? {}
+      : {
+          warmup: choice(['auto', 'off', 'on'] as const, {
+            default: 'auto',
+            description:
+              'the first sweeps damped by a half, then the run at its own damping: auto does it where the labels of a mixture are exchangeable (a start from flat messages can fall into the symmetric fixed point, every component the same), on always, off never',
+          }),
+        }),
     power: real(0.05, 2, {
       default: 1,
       label: 'power',

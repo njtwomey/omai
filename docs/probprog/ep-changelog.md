@@ -1242,3 +1242,58 @@ config in `bayesianGamMethod` (so a session with no config runs damped too).
   close to the converged ones. Variational message passing runs it too (82 sweeps).
 - Not done: a second covariate (the grid would have more than three coordinates), a plate of groups (the groups are two scalar latents), a joint message
   over the scores of a row (another agent's work: the coefficients' spread may tighten when it merges).
+## 2026-11-12 EP and the Gaussian mixture: the symmetric fixed point, and the damped warm-up that breaks it (`agent-a83869-gmm`)
+
+The owner's report: on the pocs Gaussian mixture page (150 rows of two clusters 3 apart, equal weights, ordered means, a shared spread, the
+page's `ep` at damping 0) the fitted components were two nearly identical wide Gaussians near 0 (means -0.15 +- 0.24 and 0.32 +- 0.24,
+weights 0.51 / 0.49, spread 1.83 +- 0.11 in the data's units; the truth is -1.5, 1.5, 1.0), and `ep-multistart` gave the same. Both ran on the
+default knobs of `mixtureExample`; the compiled graph is a `select` per row (`y_i = mu[z_i]`), a `gaussian-scale` per row (the shared log
+spread), a `discrete` per row on the Dirichlet weights, and `difference` plus `greater-than` for the ordering; nothing in the graph pulls the
+means together.
+- Diagnosis. (1) The graph has a symmetric fixed point (both components the same, the labels uninformative: a clean fixed point with a finite
+  evidence, -221.80) that undamped EP from flat messages falls into on data seeds 1 and 4 of 8 and on free means 2 of 3. The first undamped
+  sweep commits the rows and the shared spread overshoots (0.20 after the second sweep in the standardised units, where the clusters' is
+  0.55), then climbs to 1.0 over the next sweeps and the run converges to the blob in 55 to 60 sweeps. (2) The clusters' reading is a fixed
+  point of the damped dynamics and stable undamped (started from the damped state at damping 0 it stays), but not a clean one: about a third
+  of the rows (the ones between the clusters) get from `select` a message to the value of the row with a negative precision, so the cavity of
+  their `gaussian-scale` has no density, the update cannot be computed and is dropped by the improper policy (50 a sweep, forever), and the
+  evidence is undefined there. (3) Damping 0.5 throughout, or three damped sweeps and then the run's own damping, reaches the clusters
+  in every one of the 14 data sets tried (8 seeds, free means on 3, K = 3 on 3), 1.5 s a run (47 sweeps; 127 at damping 0.5 throughout).
+  (4) Why `ep-multistart` was no better: its random and exclusion starts set the labels' messages at random or at one category, and random
+  labels average out to uninformative ones, so every such start falls into the blob (the held start of `warmed` in the multi-start
+  does too once released undamped); the starts that did reach the clusters (random 4 and 5 in a 6-start run) had no evidence, and the blob
+  had one, so the weighing by evidence dropped them. The symmetric reading is thus the only one with a weight.
+- Fix. `warmup` (engine setting `EngineSettings.warmup`, option of `epAlgorithm`, knob of `ep` and `ep-multistart`: `auto`, `on`, `off`;
+  `auto` is the default): the first three sweeps of a run (and of each restart) are damped by at least a half, then the run goes on at its
+  own damping. `auto` applies it where the graph has a `select` with a latent index (`hasExchangeableLabels`), and `epAlgorithm` called
+  directly without the option is what it was. `ep-multistart` does not weigh the readings when its first run (the plain start, which now
+  reaches the clusters) has no evidence (`diagnostics.unweighed`; `siteMixturePosterior`'s `logEvidence` is optional): the posterior is the
+  converged readings that have none, equally. `epSpecMethod`'s fallback evidence by an expanded graph is skipped when the expanded graph is the
+  same graph (it re-ran EP from flat messages and attached the blob's evidence, -221.80, to the clusters' state).
+- Before and after, `ep` at damping 0, tol 1e-6 (means and spread in the data's units, sd after the +-; time of one run including the
+  restart at damping 0.5 that a run with dropped updates gets): default (seed 1) -0.15 +- 0.24, 0.32 +- 0.24, spread 1.83, 60 sweeps, 2.6 s ->
+  -1.46 +- 0.14, 1.52 +- 0.13, spread 0.97 +- 0.07, weights 0.48 / 0.52, 177 sweeps (47 + the restart), 6 to 8 s; seed 4 -0.20, 0.26, 1.83 ->
+  -1.34 +- 0.13, 1.56 +- 0.15, 0.98 (9 s); free means -0.08, 0.26, 1.83 (0.6 s) -> -1.61 +- 0.12, 1.69 +- 0.12, 0.89 (3 s); K = 3, separation 4, unequal
+  weights, equal weights and Old Faithful were already right and are identical to the digit (-4.12, 0.04, 4.21, spread 0.90; -4.15, -0.22, 4.21, 0.87;
+  54.74 +- 0.58, 80.20 +- 0.44, 5.30 +- 0.26). `ep-multistart` (6 starts): default -0.16, 0.30, 1.83 (18 s) -> -1.48 +- 0.14, 1.51 +- 0.13, 0.97 (20 s);
+  free -0.10, 0.24, 1.83 -> -1.53, 1.59, 0.94; the K = 3 and Old Faithful rows identical. One component: EP refuses it (a Dirichlet over one
+  component has no message family), as before; NUTS runs. Against NUTS (4 chains, 300 + 600 draws; the example's reference for the ordered model):
+  means -1.40 +- 0.34, 1.42 +- 0.31, spread 1.16 +- 0.20 (default; Gibbs 4000 draws: -1.37 +- 0.37, 1.41 +- 0.35, 1.19 +- 0.22), free -1.43, 1.46, 1.13; K = 3 unequal
+  -3.97, 0.03, 4.07 and 1.13, equal -4.00, -0.22, 4.12 and 1.11; Old Faithful 54.60 +- 0.64, 80.09 +- 0.48, 5.93 +- 0.27. EP's means are within 0.1
+  of the sampler's (0.15 for K = 3), its sds are 0.4 to 0.9 of the sampler's (the 150-row seed 1 has a posterior twice as wide as EP's 0.14: 0.14 against 0.33), and its spread is 0.8 to 0.9
+  of the sampler's (0.97 against 1.16; 0.90 against 1.13): the dropped updates make the clusters' fixed point a little over-confident and low on the spread. That is what EP does
+  here, not a defect of the start.
+- Tried and left: the natural-parameter rule for `gaussian-scale` with a cavity of negative precision on the value of the row (the integral exists
+  when the precisions add up to a positive one, and the evidence was then defined at the clusters), which made the dynamics diverge (the change 1e135 in
+  200 sweeps, the spread 1.78 +- 0); its evidence at the dropped-update state was nonsense (+958) before that. So the clusters have no evidence and the readings of a mixture
+  cannot be weighed (gap `multimodal`, plan updated).
+- Tests: `message-passing/algorithms/warmup.test.ts` (the first sweeps are damped, the same fixed point, none without it, `auto` on a graph without labels),
+  `inference/ep-mixture-warmup.test.ts` (the 150-row mixture of the page: the blob without the warm-up, the clusters with it, free means, the multi-start),
+  `apps/pocs/src/examples/mixture-method.test.ts` (EP on the page's defaults recovers the means within 0.4 and the spread within 0.25, ordered and free).
+  EP digest: four items move and are replaced by their new lines (`atom/gate-random`, `atom/mixture-components`, `atom/spike-and-slab`: three more
+  sweeps from the warm-up (5 -> 8, 3 -> 6, 5 -> 8), the beliefs and evidence the same to tolerance; `program/changepoint`: 20 -> 21 sweeps, the evidence 2e-11 away), and the
+  registry line (the `warmup` knob of `epMultiStart`); every other item of the mixture, clutter, gate, topic, lda, stick, changepoint, spike, tracker, zero, sparse and hmm
+  families is unchanged (`program/sparse-gaussian` and `program/sparse-mixture` differ by 2e-12 and 8e-12 in the evidence on the unchanged base too).
+- Not done: a data-informed start of the labels (the warm-up does what is needed on the data tried; a start from sorted values would need the
+  observation values from the graph), the evidence at the clusters (above), the restart of a warmed run that stalls (it reruns from flat messages at damping 0.5 and ends at the
+  same state: the run costs twice), `gate`-based mixtures (the trigger is a `select`; none of them failed).

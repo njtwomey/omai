@@ -15,6 +15,7 @@ import {
   epAlgorithm,
   type InitialMessage,
   type MpState,
+  warmupOf,
 } from '../../message-passing/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import { bool, choice, type DictSpace, dict, int, real } from '../../space/index.ts'
@@ -203,8 +204,19 @@ function sameSites(
   })
 }
 
-/** The runs that count (those that converged when any did, with an evidence), best evidence first. */
+/**
+ * Whether the readings are not weighed: EP's own reading (the plain start, the first run) has no evidence because a cavity of its
+ * fixed point has no density, so no other run's evidence can be set against it (a mixture's separated fixed point has some, and the
+ * symmetric one, every component the same, has none). The posterior is then the readings that have none either, equally weighted.
+ */
+function unweighed(runs: readonly StartRun[]): boolean {
+  const first = runs[0]
+  return first !== undefined && !Number.isFinite(first.logEvidence) && first.converged
+}
+
+/** The runs that count (those that converged when any did, with an evidence), best evidence first; when the readings are not weighed, those that converged without one. */
 function usableRuns(runs: readonly StartRun[]): StartRun[] {
+  if (unweighed(runs)) return runs.filter((r) => r.converged && !Number.isFinite(r.logEvidence))
   const usable = runs.filter((r) => Number.isFinite(r.logEvidence))
   const converged = usable.filter((r) => r.converged)
   return (converged.length > 0 ? converged : usable).slice().sort((a, b) => b.logEvidence - a.logEvidence)
@@ -318,8 +330,10 @@ function relabelMessages(
  * which for well separated modes is their share of the mass (`diagnostics.modeWeights`: against the enumeration of a two-cluster
  * mixture with unequal priors, 0.559 against 0.559 exactly; against the quadrature of the clutter problem, the evidence within 0.006
  * nats and the mean and sd of the location within 0.03 sd); modes that overlap (the means of two clusters that are not apart) are
- * one fixed point, and its evidence is the single Gaussian's. The runs are weighted by their EP evidence, so a model with none at its fixed
- * point (a factor whose cavity is improper) gives no posterior.
+ * one fixed point, and its evidence is the single Gaussian's. The runs are weighted by their EP evidence. When the first run (plain EP)
+ * has none (a factor of its fixed point has a cavity with no density: the clusters of a mixture with a label per row, whose
+ * symmetric fixed point has one), nothing can be set against it, and the posterior is the converged readings that have none, equally
+ * weighted (`diagnostics.unweighed`); a model with no run that has an evidence and none converged gives no posterior.
  *
  * @param model - A bound spec.
  * @param options - The name and how plates are compiled.
@@ -407,19 +421,25 @@ export function epMultiStartMethod(
         status: 'failed',
         diagnostics: { reason: 'no start reached a fixed point with an evidence' },
       })
-    const top = Math.max(...modes.map((m) => m.logEvidence))
-    const weights = modes.map((m) => Math.exp(m.logEvidence - top))
+    const open = unweighed(state.runs)
+    const top = open ? 0 : Math.max(...modes.map((m) => m.logEvidence))
+    const weights = modes.map((m) => (open ? 1 : Math.exp(m.logEvidence - top)))
     const total = weights.reduce((a, b) => a + b, 0)
     const logEvidence = top + Math.log(total)
     return siteMixturePosterior({
       engine: name,
       status: state.runs.length >= num(config, 'starts') ? 'completed' : 'stopped',
-      logEvidence: { value: logEvidence, method: 'ep-multistart' },
+      ...(open ? {} : { logEvidence: { value: logEvidence, method: 'ep-multistart' } }),
       diagnostics: {
         starts: state.runs.length,
         modes: modes.length,
         convergedStarts: state.runs.filter((r) => r.converged).length,
-        modeEvidence: modes.map((m) => m.logEvidence),
+        ...(open
+          ? {
+              unweighed:
+                'the evidence of the first run is undefined (a cavity of its fixed point has no density), so the readings are not weighed: the posterior is those without an evidence, equally',
+            }
+          : { modeEvidence: modes.map((m) => m.logEvidence) }),
         // Each mode's share of the posterior mass: its evidence over the evidence of the model (the weights of the mixture, summing to one).
         modeWeights: weights.map((w) => w / total),
       },
@@ -471,7 +491,11 @@ export function epMultiStartMethod(
       ): StartRun => {
         const g = graph()
         const r = runAlgorithm(
-          epAlgorithm(g, { ...settings, ...(initial.length === 0 ? {} : { initial: warmed(g, initial) }) }),
+          epAlgorithm(g, {
+            ...settings,
+            ...warmupOf(config),
+            ...(initial.length === 0 ? {} : { initial: warmed(g, initial) }),
+          }),
           {
             maxSteps: maxSweeps + 2,
             seed: 1,
@@ -511,7 +535,7 @@ export function epMultiStartMethod(
           const perms = permutations(k)
           const seen: Readonly<Record<string, SiteRecord>>[] = []
           for (const [i, r] of runs.entries()) {
-            if (!r.converged || !Number.isFinite(r.logEvidence)) continue
+            if (!r.converged || (!Number.isFinite(r.logEvidence) && !unweighed(runs))) continue
             const sites = canonicalSites(r.sites, canon.key, canon.k)
             if (seen.some((q) => sameSites(q, sites, merge))) continue
             seen.push(sites)
@@ -545,7 +569,8 @@ export function epMultiStartMethod(
           const modes = posteriorModes(state.runs, merge, canonicalOf(state.runs, labels))
           ctx.log('ep-multistart/starts', state.runs.length)
           ctx.log('ep-multistart/modes', modes.length)
-          if (modes.length > 0) ctx.log('ep-multistart/logEvidence', logSumExp(modes.map((m) => m.logEvidence)))
+          if (modes.length > 0 && !unweighed(state.runs))
+            ctx.log('ep-multistart/logEvidence', logSumExp(modes.map((m) => m.logEvidence)))
           return state
         },
         done: (s) => (s.runs.length >= starts ? 'completed' : undefined),

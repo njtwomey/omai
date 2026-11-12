@@ -48,6 +48,42 @@ export interface MessagePassingOptions {
   readonly restarts?: number
 }
 
+/** The options of expectation propagation: the common ones and the warm-up. */
+export interface EpOptions extends MessagePassingOptions {
+  /**
+   * Damped first sweeps (see `EngineSettings.warmup`): a number of sweeps, or `'auto'` for `WARMUP_SWEEPS` when the graph has
+   * exchangeable labels (`hasExchangeableLabels`) and none otherwise. Default none.
+   */
+  readonly warmup?: number | 'auto'
+}
+
+/** The damped sweeps `warmup: 'auto'` gives a graph with exchangeable labels. */
+export const WARMUP_SWEEPS = 3
+
+/**
+ * Whether a graph has exchangeable labels: a `select` (`y = c_z`) whose index `z` is a latent discrete variable, as in a mixture
+ * whose components are chosen by a label per row. Such a model has a symmetric fixed point (every component the same, the labels
+ * even) that an undamped start can fall into, though the data are clustered.
+ *
+ * @param g - The compiled graph.
+ * @returns Whether some `select` factor has a latent index.
+ * @example
+ * ```ts
+ * import { compileGraph, defaultOperators, gaussianPrior, hasExchangeableLabels } from 'omai-engine/message-passing'
+ * const g = compileGraph({ variables: [{ name: 'x', family: { kind: 'gaussian' } }], factors: [gaussianPrior('x', 0, 1)] }, defaultOperators())
+ * hasExchangeableLabels(g) // => false
+ * ```
+ */
+export function hasExchangeableLabels(g: CompiledGraph): boolean {
+  return g.factors.some((f) => f.operator.name === 'select' && (f.ports[1]?.edge ?? -1) >= 0)
+}
+
+/** The warm-up option of a configuration's `warmup` knob (`auto`, `off` or `on`), or none when it has no such knob. */
+export function warmupOf(c: Config): { readonly warmup?: number | 'auto' } {
+  const w = c['warmup']
+  return w === 'auto' ? { warmup: 'auto' } : w === 'on' ? { warmup: WARMUP_SWEEPS } : w === 'off' ? { warmup: 0 } : {}
+}
+
 /**
  * The engine settings of a named algorithm: the projection and the algorithm's defaults, overridden by the options given.
  * What `epAlgorithm`, `vmpAlgorithm` and `bpAlgorithm` (and the variants beside them) build their run from.
@@ -200,7 +236,7 @@ export const vmpContract: Contract<MpState, VmpPath> = defineContract({
  * improper.
  *
  * @param g - The compiled graph.
- * @param options - Schedule, granularity, damping, improper policy, tolerance, sweep cap.
+ * @param options - Schedule, granularity, damping, improper policy, tolerance, sweep cap, restarts and the damped warm-up.
  * @returns The algorithm; its tape is described by {@link epContract}.
  * @concept expectation-propagation
  * @index algorithm Expectation propagation on a factor graph of exponential families.
@@ -219,11 +255,13 @@ export const vmpContract: Contract<MpState, VmpPath> = defineContract({
  * Number(marginalsOf(g, r.state).x?.mean).toFixed(4) // => '0.5642'
  * ```
  */
-export function epAlgorithm(g: CompiledGraph, options: MessagePassingOptions = {}): Algorithm<MpState, EpPath> {
-  return messagePassingAlgorithm(g, messagePassingSettings(momentProjection, epDefaults, options)) as Algorithm<
-    MpState,
-    EpPath
-  >
+export function epAlgorithm(g: CompiledGraph, options: EpOptions = {}): Algorithm<MpState, EpPath> {
+  const { warmup, ...common } = options
+  const sweeps = warmup === 'auto' ? (hasExchangeableLabels(g) ? WARMUP_SWEEPS : 0) : (warmup ?? 0)
+  return messagePassingAlgorithm(g, {
+    ...messagePassingSettings(momentProjection, epDefaults, common),
+    ...(sweeps > 0 ? { warmup: sweeps } : {}),
+  }) as Algorithm<MpState, EpPath>
 }
 
 /**
@@ -415,7 +453,7 @@ export function epMethod(g: CompiledGraph): Method<MpState, Config, EpPath> {
   return defineMethod<MpState, Config, EpPath>({
     name: 'ep',
     config: messagePassingKnobs('ep').config,
-    make: (c) => epAlgorithm(g, messagePassingOptions(c)),
+    make: (c) => epAlgorithm(g, { ...messagePassingOptions(c), ...warmupOf(c) }),
     contract: epContract,
   })
 }
