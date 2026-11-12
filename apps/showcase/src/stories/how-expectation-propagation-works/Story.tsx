@@ -1,7 +1,9 @@
 import { type ModelRun, modelRunAt } from 'omai-engine/exposition'
-import { type ReactNode, useCallback } from 'react'
+import { messageTex } from 'omai-render/views'
+import { Fragment, type ReactNode, useCallback } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Code, Figure } from '../../kit/Blocks.tsx'
+import { Equation, Tex, tex } from '../../kit/Maths.tsx'
 import { MessageReplay } from '../../kit/MessageReplay.tsx'
 import { Play } from '../../kit/Play.tsx'
 import { Results } from '../../kit/Results.tsx'
@@ -28,6 +30,14 @@ const FIRST_SEED = 37
 
 const linkClass = 'underline underline-offset-2'
 
+// The worked example of the natural parameters: the prior's precision, and the product of the prior and a bell with mean 2 and sd 1.
+const PRIOR_PRECISION = 1 / PRIOR_SD ** 2
+const PRODUCT = {
+  precision: 1 + PRIOR_PRECISION,
+  mean: 2 / (1 + PRIOR_PRECISION),
+  sd: 1 / Math.sqrt(1 + PRIOR_PRECISION),
+}
+
 /** What happens at one step of the replay, in words: which factor was updated, what it sent, and the belief after it. */
 function describeUpdate(step: number, record: ModelRun, points: readonly number[]): ReactNode {
   const at = modelRunAt(record, step)
@@ -41,14 +51,22 @@ function describeUpdate(step: number, record: ModelRun, points: readonly number[
     )
   const factor = Number(sent.from.replace(/^\D+/, ''))
   const sweep = Math.ceil(step / (points.length + 1))
-  const who = factor === 0 ? 'the prior' : `measurement ${factor} (y = ${fixed(points[factor - 1] as number)})`
+  const who =
+    factor === 0 ? (
+      'the prior'
+    ) : (
+      <>
+        measurement {factor} (<Tex>{tex`y = ${fixed(points[factor - 1] as number)}`}</Tex>)
+      </>
+    )
   const belief = Object.values(at.nodes).find((n) => n.mean !== undefined && n.sd !== undefined)
+  const sentTex = messageTex(sent.text)
   return (
     <>
       <p className="m-0 font-medium">
         Update {step}, in sweep {sweep}: {who}
       </p>
-      <p className="m-0">It sends {sent.text}.</p>
+      <p className="m-0">It sends {sentTex === undefined ? sent.text : <Tex>{sentTex}</Tex>}.</p>
       <p className="m-0">
         {belief?.mean === undefined || belief.sd === undefined
           ? 'The unknown has no belief yet.'
@@ -58,18 +76,22 @@ function describeUpdate(step: number, record: ModelRun, points: readonly number[
   )
 }
 
-/** A line of formula, set apart from the prose. */
-function Formula(props: { readonly children: ReactNode }): ReactNode {
-  return (
-    <div className="my-3 overflow-x-auto whitespace-pre rounded-md border border-line bg-surface px-4 py-2.5 font-mono text-[0.9rem] leading-relaxed">
-      {props.children}
-    </div>
-  )
-}
+/** A measurement as a row label: `y_3 = 0.84`, the value read from the run. */
+const yIs = (index: number, value: number): ReactNode => <Tex>{`y_{${index}} = ${fixed(value)}`}</Tex>
+
+/** Pieces of maths or words as a list in words: `a, b and c`. */
+const listNodes = (items: readonly ReactNode[]): ReactNode =>
+  items.map((item, i) => (
+    // biome-ignore lint/suspicious/noArrayIndexKey: a fixed list, never reordered
+    <Fragment key={i}>
+      {i === 0 ? '' : i === items.length - 1 ? ' and ' : ', '}
+      {item}
+    </Fragment>
+  ))
 
 /** A small table in the page's sans-serif, scrolling sideways on a narrow screen. */
 function Table(props: {
-  readonly head: readonly string[]
+  readonly head: readonly ReactNode[]
   readonly rows: readonly (readonly ReactNode[])[]
 }): ReactNode {
   return (
@@ -77,9 +99,10 @@ function Table(props: {
       <table className="w-full border-collapse font-sans text-[0.9rem] tabular-nums">
         <thead>
           <tr>
-            {props.head.map((h) => (
+            {props.head.map((h, i) => (
               <th
-                key={h}
+                // biome-ignore lint/suspicious/noArrayIndexKey: the columns are a fixed list, never reordered
+                key={i}
                 className="whitespace-nowrap border-b border-line px-2.5 py-1.5 text-left font-semibold text-muted"
               >
                 {h}
@@ -134,6 +157,17 @@ export default function Story(): ReactNode {
         constant that makes the total probability 1.
       </p>
 
+      <Equation
+        label={
+          <>
+            Bayes&rsquo; rule, with <Tex>Z</Tex> the constant
+          </>
+        }
+        reading="The posterior of theta given the data y equals one over Z, times the prior of theta, times the product over the data points of the likelihood of each point."
+      >
+        {String.raw`p(\theta \mid \yvec) = \frac{1}{Z}\, p(\theta) \prod_{i} p(y_i \mid \theta)`}
+      </Equation>
+
       <p>
         That product is the difficulty. For a few models it has a known shape, and the posterior is a formula. For most
         it does not. The factors have different shapes, their product has no name, and the constant is an integral with
@@ -143,34 +177,48 @@ export default function Story(): ReactNode {
 
       <p>
         So we settle for an approximation we can handle. EP uses the Gaussian, or bell curve. A bell has two numbers:
-        its mean, where it is centred, and its variance, how wide it is. The standard deviation, written sd, is the
-        square root of the variance. EP&rsquo;s answer is one bell for each unknown, and its mean and spread are the
-        belief.
+        its mean <Tex>\mu</Tex>, where it is centred, and its variance <Tex>\sigma^2</Tex>, how wide it is. The standard
+        deviation, written sd or <Tex>\sigma</Tex>, is the square root of the variance. EP&rsquo;s answer is one bell
+        for each unknown, and its mean and spread are the belief.
       </p>
+
+      <Equation
+        label="A bell with mean μ and variance σ²"
+        reading="A bell curve in theta with mean mu and variance sigma squared is proportional to the exponential of minus theta minus mu, squared, over two sigma squared."
+      >
+        {String.raw`\Gauss(\theta;\, \mu, \sigma^2) \;\propto\; \exp\!\left(-\frac{(\theta - \mu)^2}{2\sigma^2}\right)`}
+      </Equation>
 
       <p>
         The model for the rest of the post is Minka&rsquo;s clutter problem, from the paper that introduced EP (2001).
-        There is one unknown, a location, written <code>θ</code>. We have {ROWS} measurements. With probability{' '}
+        There is one unknown, a location, written <Tex>\theta</Tex>. We have {ROWS} measurements. With probability{' '}
         {fixed(1 - CLUTTER_CHANCE, 1)}, a measurement is a reading of the location: a draw from a bell with sd 1 around{' '}
-        <code>θ</code>. With probability {fixed(CLUTTER_CHANCE, 1)} it is clutter: a draw from a much wider bell, with
-        sd {fixed(CLUTTER_SD, 1)}, centred on zero and unrelated to <code>θ</code>.
+        <Tex>\theta</Tex>. With probability {fixed(CLUTTER_CHANCE, 1)} it is clutter: a draw from a much wider bell,
+        with sd {fixed(CLUTTER_SD, 1)}, centred on zero and unrelated to <Tex>\theta</Tex>.
       </p>
 
       <p>
-        We are not told which measurements are clutter. Before seeing them we believe <code>θ</code> is within about{' '}
+        We are not told which measurements are clutter. Before seeing them we believe <Tex>\theta</Tex> is within about{' '}
         {PRIOR_SD} of zero: a bell with mean 0 and sd {PRIOR_SD}.
       </p>
 
-      <Formula>
-        {`posterior(θ) ∝ N(θ; 0, ${PRIOR_SD}²)\n               × ∏ᵢ [ ${fixed(1 - CLUTTER_CHANCE, 1)} · N(yᵢ; θ, 1²)\n                      + ${fixed(CLUTTER_CHANCE, 1)} · N(yᵢ; 0, ${fixed(CLUTTER_SD, 1)}²) ]`}
-      </Formula>
+      <Equation
+        label="The posterior of the clutter model"
+        reading={`The posterior of theta is proportional to a bell with mean 0 and sd ${PRIOR_SD}, times, for each of the ${ROWS} measurements, ${fixed(1 - CLUTTER_CHANCE, 1)} times a bell around theta with sd 1, plus ${fixed(CLUTTER_CHANCE, 1)} times a bell around 0 with sd ${fixed(CLUTTER_SD, 1)}.`}
+      >
+        {String.raw`\begin{aligned}
+          p(\theta \mid \yvec) \;\propto\;{}& \Gauss(\theta;\, 0,\, ${PRIOR_SD}^2) \\
+          &\times \prod_{i=1}^{${ROWS}} \Big[ ${fixed(1 - CLUTTER_CHANCE, 1)}\, \Gauss(y_i;\, \theta,\, 1^2) \\
+          &\hphantom{\times \prod_{i=1}^{${ROWS}} \Big[} + ${fixed(CLUTTER_CHANCE, 1)}\, \Gauss(y_i;\, 0,\, ${fixed(CLUTTER_SD, 1)}^2) \Big]
+        \end{aligned}`}
+      </Equation>
 
       <p>
-        Each of the {ROWS} brackets is a sum of two bells. Multiplying them out gives up to 2<sup>{ROWS}</sup> ={' '}
-        {2 ** ROWS} bell-shaped terms, one for each way of deciding which measurements are clutter. With one unknown we
-        can evaluate the whole product on a fine grid of values of <code>θ</code> and get the exact posterior. We do
-        that at the end. EP does not use a grid, and its work grows with the number of factors, not with the {2 ** ROWS}
-        .
+        Each of the {ROWS} brackets is a sum of two bells. Multiplying them out gives up to{' '}
+        <Tex>{`2^{${ROWS}} = ${2 ** ROWS}`}</Tex> bell-shaped terms, one for each way of deciding which measurements are
+        clutter. With one unknown we can evaluate the whole product on a fine grid of values of <Tex>\theta</Tex> and
+        get the exact posterior. We do that at the end. EP does not use a grid, and its work grows with the number of
+        factors, not with the {2 ** ROWS}.
       </p>
 
       <h2>2. The model as a graph of factors</h2>
@@ -182,7 +230,12 @@ export default function Story(): ReactNode {
       </p>
 
       <Figure
-        caption={`The factor graph of the model: one unknown, the prior factor f0 and the measurement factors f1 to f${ROWS}.`}
+        caption={
+          <>
+            The factor graph of the model: one unknown, the prior factor <Tex>f_0</Tex> and the measurement factors{' '}
+            <Tex>f_1</Tex> to <Tex>{`f_{${ROWS}}`}</Tex>.
+          </>
+        }
       >
         <GraphArt />
       </Figure>
@@ -198,33 +251,41 @@ export default function Story(): ReactNode {
       <p>
         The product of the factors is hard because the factors are not bells. EP replaces each factor by a bell, called
         a stand-in, so the product of the stand-ins is easy. A product of bells is a bell, so the approximation of the
-        posterior is the product of all the stand-ins. Call it <code>q</code>.
+        posterior is the product of all the stand-ins. Call it <Tex>q</Tex>.
       </p>
 
       <p>
         A stand-in sent from a factor to an unknown is called a message. A message is a bell, up to a constant that is
         never tracked. A bell can be written in two ways. One is the mean and the variance. The engine uses the other:
-        the precision <code>J</code>, which is one over the variance, and <code>h</code>, the precision times the mean.
+        the precision <Tex>J</Tex>, which is one over the variance, and <Tex>h</Tex>, the precision times the mean.
         Together they are the natural parameters of the bell.
       </p>
 
+      <Equation
+        label="The natural parameters of a bell"
+        reading="J equals one over sigma squared, and h equals J times mu."
+      >
+        {String.raw`J = \frac{1}{\sigma^2}, \qquad h = J\,\mu`}
+      </Equation>
+
       <p>
-        Natural parameters turn multiplying two bells into adding. If two messages have <code>(h₁, J₁)</code> and{' '}
-        <code>(h₂, J₂)</code>, their product has <code>(h₁ + h₂, J₁ + J₂)</code>. Dividing one bell by another means
-        subtracting. A message has mean <code>h / J</code> and variance <code>1 / J</code>.
+        Natural parameters turn multiplying two bells into adding. If two messages have <Tex>(h_1, J_1)</Tex> and{' '}
+        <Tex>(h_2, J_2)</Tex>, their product has <Tex>(h_1 + h_2,\; J_1 + J_2)</Tex>. Dividing one bell by another means
+        subtracting. A message has mean <Tex>h / J</Tex> and variance <Tex>1 / J</Tex>.
       </p>
 
       <p>
-        For example, the prior has mean 0 and sd {PRIOR_SD}, so <code>J = {1 / PRIOR_SD ** 2}</code> and{' '}
-        <code>h = 0</code>. A bell with mean 2 and sd 1 has <code>J = 1</code> and <code>h = 2</code>. Their product has{' '}
-        <code>J = 1.01</code> and <code>h = 2</code>, which is a bell with mean 1.98 and sd 0.995.
+        For example, the prior has mean 0 and sd {PRIOR_SD}, so <Tex>{`J = ${PRIOR_PRECISION}`}</Tex> and{' '}
+        <Tex>h = 0</Tex>. A bell with mean 2 and sd 1 has <Tex>J = 1</Tex> and <Tex>h = 2</Tex>. Their product has{' '}
+        <Tex>{`J = ${fixed(PRODUCT.precision)}`}</Tex> and <Tex>h = 2</Tex>, which is a bell with mean{' '}
+        {fixed(PRODUCT.mean)} and sd {fixed(PRODUCT.sd, 3)}.
       </p>
 
       <p>
-        Two more facts. A message that says nothing has <code>J = 0</code> and <code>h = 0</code>. We call it flat. A
-        message may also have a negative <code>J</code>. It is then not a bell, only a pair of numbers that still add
-        and subtract correctly. That is allowed as long as the sum of all the messages, the approximation <code>q</code>{' '}
-        itself, has a positive <code>J</code>.
+        Two more facts. A message that says nothing has <Tex>J = 0</Tex> and <Tex>h = 0</Tex>. We call it flat. A
+        message may also have a negative <Tex>J</Tex>. It is then not a bell, only a pair of numbers that still add and
+        subtract correctly. That is allowed as long as the sum of all the messages, the approximation <Tex>q</Tex>{' '}
+        itself, has a positive <Tex>J</Tex>.
       </p>
 
       <p>
@@ -241,40 +302,69 @@ export default function Story(): ReactNode {
       <h2>4. One update, step by step</h2>
 
       <p>
-        An update has five steps. We write them for a factor <code>k</code> with real factor <code>f_k</code> and
-        current stand-in <code>g_k</code>. The current approximation <code>q</code> is the product of all the stand-ins.
+        An update has five steps. We write them for a factor <Tex>k</Tex> with real factor <Tex>f_k</Tex> and current
+        stand-in <Tex>g_k</Tex>. The current approximation <Tex>q</Tex> is the product of all the stand-ins.
       </p>
+
+      <Equation
+        label="The approximation is the product of the stand-ins"
+        reading="q of theta equals the product over all factors k of g k of theta."
+      >
+        {String.raw`q(\theta) = \prod_{k} g_k(\theta)`}
+      </Equation>
 
       <ol className="list-decimal space-y-4 pl-6">
         <li>
-          Take the factor&rsquo;s own stand-in out. Divide <code>q</code> by <code>g_k</code>. The result is the cavity:
-          what we believe about <code>θ</code> from everything except factor <code>k</code>. In natural parameters,
+          Take the factor&rsquo;s own stand-in out. Divide <Tex>q</Tex> by <Tex>g_k</Tex>. The result is the cavity:
+          what we believe about <Tex>\theta</Tex> from everything except factor <Tex>k</Tex>. In natural parameters,
           subtract the message.
-          <Formula>{'cavity(θ) = q(θ) / g_k(θ)\n(h, J) = (h_q − h_k, J_q − J_k)'}</Formula>
+          <Equation reading="The cavity of theta is q of theta divided by g k of theta. In natural parameters, h and J are h q minus h k, and J q minus J k.">
+            {String.raw`\begin{aligned}
+              \text{cavity}(\theta) &= q(\theta) / g_k(\theta) \\
+              (h, J) &= (h_q - h_k,\; J_q - J_k)
+            \end{aligned}`}
+          </Equation>
         </li>
         <li>
           Multiply the cavity by the real factor, not its stand-in. The result is the tilted distribution: what we would
-          believe if factor <code>k</code> were exact and the others still approximate. It is usually not a bell,
-          because <code>f_k</code> is not one.
-          <Formula>tilted(θ) ∝ cavity(θ) × f_k(θ)</Formula>
+          believe if factor <Tex>k</Tex> were exact and the others still approximate. It is usually not a bell, because{' '}
+          <Tex>f_k</Tex> is not one.
+          <Equation reading="The tilted distribution of theta is proportional to the cavity of theta times f k of theta.">
+            {String.raw`\text{tilted}(\theta) \propto \text{cavity}(\theta)\, f_k(\theta)`}
+          </Equation>
         </li>
         <li>
           Find the bell with the same mean and variance as the tilted distribution. This is moment matching. Of all
           bells, it is the one with the smallest Kullback&ndash;Leibler divergence from the tilted distribution to the
-          bell. It needs two integrals, the mean and the variance of the tilted distribution. This is the only step that
-          uses the real factor, and the only one that can be hard. The library has closed forms for the factors that
-          allow them and numerical integration for the rest. The clutter factor here uses numerical integration.
-          <Formula>{'m = ∫ θ · tilted(θ) dθ\nv = ∫ (θ − m)² · tilted(θ) dθ\nJ = 1 / v,  h = m / v'}</Formula>
+          bell.
+          <Equation reading="The matched bell is the bell q prime that makes the Kullback-Leibler divergence from the tilted distribution to q prime smallest.">
+            {String.raw`\text{matched} = \argmin_{q' \in \text{bells}} \KL\!\left(\text{tilted} \,\middle\|\, q'\right)`}
+          </Equation>
+          It needs two integrals, the mean and the variance of the tilted distribution. This is the only step that uses
+          the real factor, and the only one that can be hard. The library has closed forms for the factors that allow
+          them and numerical integration for the rest. The clutter factor here uses numerical integration.
+          <Equation reading="The mean m is the integral of theta times the tilted distribution. The variance v is the integral of theta minus m, squared, times the tilted distribution. J is one over v, and h is m over v.">
+            {String.raw`\begin{aligned}
+              m &= \int \theta\, \text{tilted}(\theta) \dd\theta \\
+              v &= \int (\theta - m)^2\, \text{tilted}(\theta) \dd\theta \\
+              J &= 1 / v, \qquad h = m / v
+            \end{aligned}`}
+          </Equation>
         </li>
         <li>
           Divide the matched bell by the cavity. The result is the new stand-in. In natural parameters, subtract the
           cavity from the matched bell.
-          <Formula>{'g_k(new) = matched(θ) / cavity(θ)\n(h, J) = (h_m − h_cavity, J_m − J_cavity)'}</Formula>
+          <Equation reading="The new g k of theta is the matched bell divided by the cavity. In natural parameters, h and J are h matched minus h cavity, and J matched minus J cavity.">
+            {String.raw`\begin{aligned}
+              g_k^{\text{new}}(\theta) &= \text{matched}(\theta) / \text{cavity}(\theta) \\
+              (h, J) &= (h_{\text{matched}} - h_{\text{cavity}},\; J_{\text{matched}} - J_{\text{cavity}})
+            \end{aligned}`}
+          </Equation>
         </li>
         <li>
           Put the new stand-in in place of the old one. The approximation is now the cavity times the new stand-in,
-          which is the matched bell. After the update, <code>q</code> has the same mean and variance as the tilted
-          distribution of factor <code>k</code>.
+          which is the matched bell. After the update, <Tex>q</Tex> has the same mean and variance as the tilted
+          distribution of factor <Tex>k</Tex>.
         </li>
       </ol>
 
@@ -386,23 +476,40 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
             Step 3 is the dashed bell. It has the mean and sd of the orange curve,{' '}
             <span className="num">{fixed(taken.tilted.mean)}</span> and{' '}
             <span className="num">{fixed(taken.tilted.sd)}</span>. In natural parameters that is{' '}
-            <code>h = {fixed(taken.matched.shift)}</code> and <code>J = {fixed(taken.matched.precision)}</code>. The
-            divergence from the orange curve to this bell is <span className="num">{fixed(taken.divergence, 3)}</span>{' '}
-            nats. It is zero only if the tilted curve is a bell.
+            <Tex>{tex`h = ${fixed(taken.matched.shift)}`}</Tex> and{' '}
+            <Tex>{tex`J = ${fixed(taken.matched.precision)}`}</Tex>. The divergence from the orange curve to this bell
+            is <span className="num">{fixed(taken.divergence, 3)}</span> nats. It is zero only if the tilted curve is a
+            bell.
           </p>
 
           <p>
             Step 4 subtracts the cavity from the matched bell. The new stand-in has{' '}
-            <code>h = {fixed(taken.standIn.shift)}</code> and <code>J = {fixed(taken.standIn.precision)}</code>
+            <Tex>{tex`h = ${fixed(taken.standIn.shift)}`}</Tex> and{' '}
+            <Tex>{tex`J = ${fixed(taken.standIn.precision)}`}</Tex>
             {taken.standIn.precision > 0
               ? '.'
               : ', a negative precision. The matched bell is wider than the cavity, so the new stand-in has to widen it. It is not a bell, only a correction, and that is allowed because its sum with the cavity is a bell.'}{' '}
             Step 5 puts it in place of the old one. The approximation after the update is the dashed bell.
           </p>
 
-          <Figure caption="The same update as numbers, where J is the precision and the tilted curve has only a mean and sd because it is not a bell.">
+          <Figure
+            caption={
+              <>
+                The same update as numbers, where <Tex>J</Tex> is the precision and the tilted curve has only a mean and
+                sd because it is not a bell.
+              </>
+            }
+          >
             <Table
-              head={['', 'mean', 'sd', 'precision J', 'h']}
+              head={[
+                '',
+                'mean',
+                'sd',
+                <>
+                  precision <Tex>J</Tex>
+                </>,
+                <Tex key="h">h</Tex>,
+              ]}
               rows={[
                 [
                   'approximation before',
@@ -536,7 +643,7 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
           head={['update', 'factor', 'cavity', 'new stand-in', 'approximation after']}
           rows={firstUpdates.map((s, i) => [
             i + 1,
-            s.factor === 0 ? 'prior' : `y${s.factor} = ${fixed(result.points[s.factor - 1] as number)}`,
+            s.factor === 0 ? 'prior' : yIs(s.factor, result.points[s.factor - 1] as number),
             s.cavity === null ? 'flat' : bellText(s.cavity),
             messageText(s.standIn),
             bellText(s.belief),
@@ -581,7 +688,7 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
           head={['factor', ...sweepTable.map((s) => `after sweep ${s.sweep}`)]}
           rows={[
             ...Array.from({ length: result.rows + 1 }, (_, j) => [
-              j === 0 ? 'prior' : `y${j} = ${fixed(result.points[j - 1] as number)}`,
+              j === 0 ? 'prior' : yIs(j, result.points[j - 1] as number),
               ...sweepTable.map((s) => messageText(s.messages[j] ?? { shift: 0, precision: 0 })),
             ]),
             ['approximation', ...sweepTable.map((s) => beliefAfter(s.sweep))],
@@ -607,11 +714,12 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
         {weak.length === 0 ? null : (
           <>
             {' '}
-            {weak.length === 1 ? 'The stand-in of' : 'The stand-ins of'} {listOf(weak.map((j) => `y${j}`))}{' '}
-            {weak.length === 1 ? 'has' : 'have'} a precision near zero or below, so{' '}
-            {weak.length === 1 ? 'it says' : 'they say'} almost nothing about the location: the other measurements agree
-            with each other, and EP has given {weak.length === 1 ? 'this one' : 'these'} little weight. The generator{' '}
-            {weakAreClutter ? 'did' : 'did not'} make {weak.length === 1 ? 'it' : 'them'} {weakAreClutter ? '' : 'all '}
+            {weak.length === 1 ? 'The stand-in of' : 'The stand-ins of'}{' '}
+            {listNodes(weak.map((j) => <Tex key={j}>{`y_{${j}}`}</Tex>))} {weak.length === 1 ? 'has' : 'have'} a
+            precision near zero or below, so {weak.length === 1 ? 'it says' : 'they say'} almost nothing about the
+            location: the other measurements agree with each other, and EP has given{' '}
+            {weak.length === 1 ? 'this one' : 'these'} little weight. The generator {weakAreClutter ? 'did' : 'did not'}{' '}
+            make {weak.length === 1 ? 'it' : 'them'} {weakAreClutter ? '' : 'all '}
             clutter.
           </>
         )}
@@ -626,8 +734,8 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
         The same run can be watched on the factor graph from part 2. In the replay, each step is one update. The factor
         that was updated sends its new stand-in along its line to the unknown, and the unknown&rsquo;s belief is the
         product of all the stand-ins it holds. Step through the run with the button or the scrubber. The text under the
-        graph says what was sent. A message written <code>N(μ = 2.07, σ² = 88.2)</code> is a bell with mean 2.07 and
-        variance 88.2.
+        graph says what was sent. A message written <Tex>\Gauss(\mu = m, \sigma^2 = v)</Tex> is a bell with mean{' '}
+        <Tex>m</Tex> and variance <Tex>v</Tex>.
       </p>
 
       <MessageReplay
