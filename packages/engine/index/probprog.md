@@ -47,7 +47,7 @@ What a user of expectation propagation on a model needs, and the suite that test
 
 - function `activeSetScore`: The score of inclusion probabilities against the true active set: AUC and counts at a threshold. `src/lib/probprog/ep/ep-recovery.ts:133` `omai-engine/probprog/ep`
 - function `atomCalibration`: Calibration of an extended EP atom: interval coverage of the truth over many simulated seeds. `src/lib/probprog/ep/ep-extended.ts:265` `omai-engine/probprog/ep`
-- function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/probprog/ep/ep-atoms.ts:224` `omai-engine/probprog/ep`
+- function `atomCheck`: EP's beliefs against the reference: mean error, sd ratio, KS against a tolerance. `src/lib/probprog/ep/ep-atoms.ts:225` `omai-engine/probprog/ep`
 - function `atomRecovery`: EP's belief of each parameter beside the truth it was simulated from: interval and coverage. `src/lib/probprog/ep/ep-extended.ts:91` `omai-engine/probprog/ep`
 - function `atomReference`: The reference of an EP atom: exact or grid marginals as curves, and a joint. `src/lib/probprog/ep/ep-atoms.ts:109` `omai-engine/probprog/ep`
 - function `atomVerdict`: Whether EP applies to an atom's model, and the library's reason if not. `src/lib/probprog/ep/ep-atoms.ts:171` `omai-engine/probprog/ep`
@@ -57,10 +57,10 @@ What a user of expectation propagation on a model needs, and the suite that test
 - function `epCoverage`: What EP covers today: atoms and benchmark models as runs or planned, with reasons. `src/lib/probprog/ep/ep-coverage.ts:59` `omai-engine/probprog/ep`
 - function `mixtureInterval`: The equal-tailed credible interval of a mixture of Gaussians (a gated coefficient). `src/lib/probprog/ep/ep-recovery.ts:24` `omai-engine/probprog/ep`
 - function `recoverySummary`: How well a posterior recovered the truth: interval coverage, error, agreement with a reference. `src/lib/probprog/ep/ep-recovery.ts:81` `omai-engine/probprog/ep`
-- function `runEp`: Run EP on a bound model: beliefs per sweep, a record, or the refusal. `src/lib/probprog/ep/run.ts:136` `omai-engine/probprog/ep`
+- function `runEp`: Run EP on a bound model: beliefs per sweep, a record, or the refusal. `src/lib/probprog/ep/run.ts:138` `omai-engine/probprog/ep`
 - function `vmpCoverage`: What variational message passing covers today: atoms as runs or planned, with the operators lacking a rule. `src/lib/probprog/ep/ep-coverage.ts:160` `omai-engine/probprog/ep`
 
-- table `epAtoms`: The EP atoms: bare setups of one factor each, with a reference and a tolerance (look one up by name). `src/lib/probprog/ep/ep-atom-list.ts:158` `omai-engine/probprog/ep`
+- table `epAtoms`: The EP atoms: bare setups of one factor each, with a reference and a tolerance (look one up by name). `src/lib/probprog/ep/ep-atom-list.ts:160` `omai-engine/probprog/ep`
 
 ## probprog/inference
 
@@ -69,7 +69,7 @@ The shared convention of the inference methods of the probabilistic layer, avail
 - structure `method.ts` (file): InferenceMethod: knobs, typed tape, check, budget and anytime snapshots, the shared convention. `src/lib/probprog/inference/method.ts:1` `omai-engine/probprog/inference`
 
 - function `defineKernel`: Define your own sampler on the handler layer in a few lines. `src/lib/probprog/inference/kernel.ts:188` `omai-engine/probprog/inference`
-- function `epRoute`: How EP runs a bound model: plain, inside a grid over hyperparameters, or refused. `src/lib/probprog/inference/ep-route.ts:41` `omai-engine/probprog/inference`
+- function `epRoute`: How EP runs a bound model: plain, inside a grid over hyperparameters, or refused. `src/lib/probprog/inference/ep-route.ts:43` `omai-engine/probprog/inference`
 - function `inferenceMethods`: The methods an app offers on its registered models, named kind/model, for a worker. `src/lib/probprog/inference/models.ts:180` `omai-engine/probprog/inference`
 - function `methodSpace`: Every inference method that runs on a model, as one union of knobs. `src/lib/probprog/inference/method-space.ts:68` `omai-engine/probprog/inference`
 - function `modelRegistry`: Models by name for a worker: `modelRegistry({ radon: { definition, data } })`. `src/lib/probprog/inference/models.ts:85` `omai-engine/probprog/inference`

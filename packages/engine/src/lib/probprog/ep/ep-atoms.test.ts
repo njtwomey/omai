@@ -1,10 +1,11 @@
 // The registry test: every atom is run and its outcome compared with what it declares (it runs unless it says `planned`).
 import { describe, expect, it } from 'vitest'
+import { epRoute } from '../inference/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel } from '../model/index.ts'
 import { defineAtom } from './_define.ts'
 import { epAtom, epAtoms } from './ep-atom-list.ts'
-import { verifyAtom } from './ep-atoms.ts'
+import { atomBound, atomVerdict, verifyAtom } from './ep-atoms.ts'
 
 const gaussianAtom = epAtom('gaussian')
 
@@ -22,6 +23,17 @@ describe('the EP atoms', () => {
       expect(v.check?.pass).toBe(true)
     }, 60_000)
   })
+
+  it('chain-persistence-grid runs inside the grid it asks for, though plain EP also takes the model, and a longer chain still passes', () => {
+    const atom = epAtom('chain-persistence-grid')
+    const problem = atom.problem(atom.defaults)
+    expect(epRoute(atomBound(problem)).via).toBe('ep')
+    expect(epRoute(atomBound(problem), { gridOver: ['phi'] }).via).toBe('ep-grid')
+    expect(atomVerdict(problem).reason).toMatch(/grid over 'phi'/)
+    const v = verifyAtom(atom, { n: 30, seed: 3, truePersistence: 0.7 })
+    expect(v.run.status).toBe('ran')
+    expect(v.check?.pass).toBe(true)
+  }, 120_000)
 
   it('has no atom planned today, and a planned atom needs its plan', () => {
     expect(epAtoms.filter((a) => a.expected === 'planned').map((a) => a.name)).toEqual([])

@@ -18,11 +18,11 @@ The registry (`defaultOperators()`) holds **73** factor operators. Rules by mess
 
 ## Atoms
 
-**100** atoms (68 basic, 32 with unknown parameters learned from simulated data). Expectation propagation runs **100** of them. Variational message passing runs **90** (89 to a fixed point); **10** run under EP and not under VMP.
+**101** atoms (69 basic, 32 with unknown parameters learned from simulated data). Expectation propagation runs **101** of them. Variational message passing runs **91** (89 to a fixed point); **10** run under EP and not under VMP.
 
 | family | atoms | learned twins | EP runs | VMP runs |
 | --- | --- | --- | --- | --- |
-| composed | 1 | 0 | 1 | 1 |
+| composed | 2 | 0 | 2 | 2 |
 | conjugate | 6 | 3 | 6 | 6 |
 | counts | 1 | 0 | 1 | 1 |
 | covariance | 6 | 3 | 6 | 4 |

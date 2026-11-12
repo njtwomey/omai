@@ -1314,3 +1314,21 @@ means together.
   registry line (one atom's knobs), merged by hand because `--accept` refuses `--only`; the graph corpus has the two new lines (66 variables and 96
   factors: 30 Bernoulli, 30 gates, 32 dot-constants). No `evidence` is declared on the atom (the evidence test of the registry would use the slow
   program grid); `composed-gates.test.ts` holds the evidence against the reference instead.
+## 2026-11-12 A composed atom: a chain with a grid over its persistence (`chain-persistence-grid`, `agent-a5be4e-pgvol`)
+
+One atom, family `composed` (`_atoms/composed-chain.ts`), page `ep-chain-persistence-grid` in the group `composed-atoms`. The setup is the
+one of gap `sv-parameters` written as a neutral composition: a Gaussian chain of states `h` with an unknown level `mu`, a gamma precision `tau`
+of its steps and a persistence `phi` that multiplies the state, each state read through `y ~ N(0, exp(h / 2))`; EP runs inside a grid over `phi`
+(a walk, warm starts, damping 0, 60 sweeps a node, so each node is one `gaussian-chain` factor with `mu` and `tau` shared). Knobs: seed, length
+of the chain (20 to 120), true persistence, true precision of the steps; the data are simulated from the truth with the library's keys.
+- The reference is a point-mass filter for the likelihood of each (`mu`, `phi`, `tau`) on an 18 by 40 by 22 grid (80 states, a banded kernel,
+  about 2 to 5 s), made when first read; the atom's tolerance is `measured`: over nine simulated sets (20 to 120 steps, persistence 0.4 to 0.97)
+  the means are within 0.1 reference sds, the spreads 0.95 to 1.10 of the reference's, the Kolmogorov distance up to 0.13 (10 s of CPU at 100
+  steps on a loaded machine, a third of that on an idle one).
+- Library changes, minimal: an atom can name a grid (`AtomBuild.hyperGrid`: `over` the latents and the grid method's knobs) so that `epRoute`
+  (`gridOver`), `runEp`, `atomRun`, `atomVerdict` and the digest take the grid route for a model that plain EP also accepts (the persistence
+  multiplies a state: plain EP is accepted and too narrow). A run with a `hyperGrid` keeps only the last state's beliefs (reading an earlier state of
+  a grid session replays the nodes before it: 24 s against 8 s here), and a grid run does not record a tape of its own (its messages are the rerun at
+  the best node).
+- Digest: the two items (`atom/chain-persistence-grid`, `vmp/chain-persistence-grid`) and the registry line merged into the baseline by hand
+  (`--accept` refuses `--only`); the graph corpus snapshot gained its two lines.

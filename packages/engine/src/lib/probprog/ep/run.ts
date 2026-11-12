@@ -92,6 +92,8 @@ export interface EpRunOptions {
   readonly quantities?: readonly AtomQuantity[]
   /** Knobs of EP over its defaults (damping, schedule, tolerance, the sweep cap, the power); a key that is not a knob throws. */
   readonly ep?: Config
+  /** Run inside a grid over these scalar latents whatever plain EP would say, with the grid method's knobs under `ep` (see `AtomBuild.hyperGrid`). */
+  readonly hyperGrid?: AtomBuild['hyperGrid']
   /** Keep no tape and no per-sweep beliefs (only the final ones): what a calibration over many seeds needs. */
   readonly light?: boolean
 }
@@ -137,16 +139,20 @@ export function runEp(bound: BoundModel, options: EpRunOptions = {}): EpRun {
   const ep = options.ep ?? {}
   // region inference
   // compile to a factor graph and run EP on it: a rule for every factor
-  // (a covariance that is a custom function of a random value makes it a grid over that value)
-  const route = epRoute(bound)
+  // (a covariance that is a custom function of a random value, or a hyperGrid the model asks for, makes it a grid over that value)
+  const gridOver = options.hyperGrid?.over
+  const route = epRoute(bound, { gridOver })
   // endregion
   // a misspelled knob is an error, not a run on the defaults
   checkKnobKeys('runEp', ep, route.method?.config ?? epRunKnobs('ep'))
   if (route.via === 'none') return { status: 'refused', reason: route.verdict.reason, missing: route.verdict.missing }
-  const config: Config = { tol: 1e-9, ...ep }
+  const config: Config = { tol: 1e-9, ...(options.hyperGrid?.knobs ?? {}), ...ep }
   const maxSweeps = typeof config['maxSweeps'] === 'number' ? config['maxSweeps'] : 200
-  const logs = options.light === true ? 'off' : 'all'
-  const run = { quantities: options.quantities, config, logs, light: options.light === true } as const
+  // the messages of a grid run are rerun at its best node (`gridRecord`), so its own tape is never read
+  const logs = options.light === true || route.via === 'ep-grid' ? 'off' : 'all'
+  // a grid the model asks for keeps only its last state: reading an earlier one replays the nodes before it
+  const light = options.light === true || options.hyperGrid !== undefined
+  const run = { quantities: options.quantities, config, logs, light } as const
   return route.via === 'ep'
     ? runRoute(run, route.method, maxSweeps + 2, (s) => ({
         converged: s.status === 'converged',

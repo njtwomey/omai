@@ -28,7 +28,7 @@ describe('the code shown on the atom pages', () => {
       const { code, file } = atomSource(atom, atom.problem(atom.defaults))
       expect(file).toMatch(/^[a-z-]+\.ts$/)
       expect(code).toMatch(/defineModel|trueskillModel/)
-      expect(code).toMatch(/epRoute\(bound\)/)
+      expect(code).toMatch(/epRoute\(bound/)
       expect(code).toMatch(/session\(method/)
       expect(code.split('\n').length).toBeLessThan(60)
     },
