@@ -772,7 +772,6 @@ classes is about 3 ms (wide cavities 6 ms) a tilted moment, the probit about 4 m
   score its own Gaussian, so a prior correlation between classes is carried by the dense prior only); a compiler pattern for a plate of dense
   vectors (one process per class) so that the cells need not be written out; the probit with a power beyond six; a reference for the multiclass GP
   at more than two inputs (the posterior has as many dimensions as values).
-||||||| bac59ff5
 
 ## 2026-11-12 Loops: tied groups pack hierarchies and tournaments (`agent-a22fa5-packing`, gap `loopy-overconfidence` narrowed)
 
@@ -835,7 +834,6 @@ classes is about 3 ms (wide cavities 6 ms) a tilted moment, the probit about 4 m
   (`functions.test.ts`), and EP on the slopes model settles (71 sweeps, 10 counties, one seed) with `mu` and `mu_b` within 0.06 of a
   NUTS sd of the sampler's and their spreads 0.76 to 0.8 times its, the scales `tau` and `tau_b` 0.4 sd low (spreads 0.96 and 0.69) and
   `rho`, barely identified (sd 0.57 against 0.55), -0.06 against -0.35. No digest item moved (no benchmark model clips a random value).
-||||||| 91d45803
 
 ## 2026-11-12 Stochastic volatility with learned parameters: a walk and warm starts in `epGridMethod` (`agent-a3da95-sv`)
 
@@ -909,7 +907,6 @@ rule for nodes that cycle (`inference/ep-grid.ts`).
   two random scores: the fixed point is a stationary maximum of the brute-force bound). Atoms: `softmax-choice` and `-learned` run under VMP
   (41 and 46 sweeps; against the grid of the two coefficients the means are within 0.17 and 0.19 sds, the spreads 0.71 to 0.77 and 0.65 to 0.88
   of the grid's, the usual mean-field shortfall: plain EP has 0.77 to 0.83), `vmpCoverage` counts 88 of 97.
-||||||| aec194a8
 
 ## 2026-11-12 The multi-start finds the other mode of a mixture: starts on the labels' priors, and mode weights held to references (`agent-a11610-modes`, gap `multimodal` narrowed)
 
@@ -997,3 +994,42 @@ start left were both in the message passing of the chain, and neither was the pr
 - Not done: the single run with the persistence random (the product factor; the persistence as a port of the chain), a likelihood for a return
   near zero that is not improper (the ridge is a heuristic), a chain with a fixed scale and a random level (the scalar steps are used; the same
   loop), a dense vector with a cheaper belief sum in the engine.
+
+## 2026-11-12 A strong correlation from few pairs, and the group form of the sd-and-correlation site (`agent-a6b87c-corr`, gaps `correlation-strong-few-pairs` and `matrix-larger` narrowed)
+
+Searched first: the correlation family and its mapping (`d.correlation`, `latentCorrelation`, the readback of the beta as a transformed beta), `mvn-sd-corr` and its beta projection, the
+numeric prior site and the likelihood sites (for a Gaussian belief on the Fisher transform), the grid (`_grid.ts`: `betaAxis`, `gaussianAxis`), `mvn-wishart-group` and its closed-form evaluator
+(reused, moved to `_group.ts`), `posterior3`. Nothing is a second family system: the beliefs are the library's beta and Gaussian.
+- `mvn-sd-corr` (`operators/covariance/correlation.ts`, shared parts in `_sdcorr.ts`): the message to the correlation is the beta with the tilted mean and variance of `u = (rho + 1) / 2`
+  (`match: 'moments'`, new default) instead of the one with its log moments (`match: 'log-moments'` keeps the KL projection; a point mass falls back to it). With one factor on the
+  correlation (a plated likelihood and its beta prior) the cavity is the prior itself and the belief has the exact mean and spread.
+  Measured against the exact grid posterior of the correlation (known sds, mean zero, 4 seeds, 2 to 10 pairs; sd ratio / mean z; before, then after): rho 0.3 and 0.5: 0.91 to 0.99 / 0.005 to 0.017
+  -> 1.000 / 0.000; rho 0.7: 0.89 to 0.98 / 0.006 to 0.019 -> 1.000 / 0.000; rho 0.9: 0.81 to 0.95 / 0.009 to 0.022 -> 1.000 / 0.000; rho 0.99: 0.54 to 0.92 (a seed at 0.45) / 0.003 to 0.033 -> 0.999 to
+  1.000 / at most 0.002; eta 3, 3 to 10 pairs: 0.65 to 1.006 -> 1.000. The evidence is the exact one before and after (within 0.0012 nats; a single factor), two sweeps. The default atom (eight pairs, rho
+  about 0.8): sd ratio 0.829 -> 1.000, z 0.022 -> 0.000, evidence unchanged. Not better: the curve. The Kolmogorov distance of the belief's own density from the exact one (oracle fit, 3 seeds) is 0.01 to 0.07 at
+  rho 0.7 and below as for the KL beta, 0.05 to 0.14 at 0.9 (KL: 0.05 to 0.09), and 0.14 to 0.4 at 0.99 where the KL beta had 0.12 to 0.15; the 5% and 95% points are 0.1 to 0.2 exact sds off at rho 0.9 and
+  above (0.4 at 0.99 from five pairs). The harness KS compares a normal with the belief's moments, so it cannot see it (0.22 at the default, 0.15 to 0.33 at rho 0.9 to 0.99, unchanged by the fix).
+- Tried and dropped: a Gaussian on the Fisher transform (`s = logit u = 2 atanh rho`) as the correlation's belief, with a numeric `prior-site` base `logit-beta` for the LKJ prior, matched to the
+  KL moments of `s` and to the moments of the correlation. Its curve is the best of the three (distance 0.04 to 0.19), but with the KL moments the spread is no better than the beta's (it is
+  the exact spread of `s`, which `tanh` then compresses: 0.56 to 0.99), and with the moments of the correlation the two-site fixed point (prior site and likelihood site, each a Gaussian
+  approximation) is off by 1% to 8% in spread, 0.005 to 0.08 nats in evidence, and needs 10 to 60 sweeps at rho 0.99 (some seeds do not settle). Kept in the gap's plan.
+- The reference of `bivariate-correlation-learned` (`validation/references/grid3.ts`, `ep/_atoms/covariance.ts`): the atom's grid was a quarter short on the spread of a correlation of 0.95 from eight
+  pairs (0.0330 against 0.0429 by an independent grid in the logs and the Fisher transform, stable to five figures from 100 to 200 nodes; EP 0.0417) and its mean mixture 3% to 5% off (the
+  heaviest 6000 nodes). `posterior3` has `warp` (`log`, `correlation`) per coordinate and `mixtureNodes`; the learned bivariate atom runs the precisions in their logs and the correlation in
+  `2 atanh(rho)` with 60000 mixture nodes (the reference costs 2 s instead of 0.6 s, lazily). Now EP against the reference: rho sd ratio 0.84 to 0.92 -> 0.997 to 1.002 at rho 0.9 from 6 to 10 pairs and 0.84 -> 0.972
+  at 0.95 from eight pairs (where EP's own three-dimensional grid is 3% short), the mean's spread 0.98 to 1.007 -> 0.999 to 1.02 (against the wrong reference before). No other atom's digest line moves (identical to the bit).
+- New operator `mvn-sd-corr-group` (`operators/covariance/correlation-group.ts`; the evaluator and the tilt key of the Wishart group moved to `_group.ts`, `mvn-wishart-group` unchanged): `x_j ~ N(mean,
+  Sigma)` for `J` bivariate vectors sharing a Gaussian mean and the covariance of two gamma precisions and a beta correlation, as ONE factor. Given the three parameters the vectors and the mean integrate
+  out in closed form; the grid over the parameters is the one of `mvn-sd-corr`; each vector and the mean are matched to the mixture of their conditionals over the nodes; one tilt per sweep serves all ports (the
+  cache key as the Wishart group's). A known mean is one `mvn-sd-corr` per vector. EP only. The compiler maps a latent `bivariateNormal` over `dims: [group, coef]` (`_mappings/matrix.ts`
+  `latentBivariateVectors`; the entry `bivariate-normal-refused` of the table is now `bivariate-normal-latent`, the refusal that names the form is for an axis that is not two long or missing), the
+  compiler page is regenerated. Four groups of four readings (`bivariate-group.test.ts`): 20 sweeps, 0.9 s, against a grid over the parameters with the vectors and the mean integrated out densely
+  (nothing of the factor's algebra): the correlation's spread 0.999 of the exact, the mean's and a vector's 1.000, means within 0.005 sd (the test allows 0.06), each precision's spread 0.98 to 0.99
+  (a gamma matched to its log moments). The operator: `J = 1` is `mvn-sd-corr` to 1e-9 (messages and evidence), two and three vectors against a dense joint-Gaussian grid
+  (messages to the parameters, the vectors and the mean to 1% and 0.01, the evidence to 0.01 nats).
+- Not done: an LKJ prior of order 3 and above and vectors of more than two coordinates with their own sds and correlation (as `matrix-larger` says), a normal-Wishart variable inside a larger model, an
+  accuracy row (no operator of the covariance folder has one), an atom for the group form (the compiler test is the check), a VMP rule (the expected log of a beta correlation has no closed form).
+- EP digest (`--only` items): `atom/bivariate-correlation` and `atom/bivariate-correlation-learned` moved toward the reference and were merged by line (the `vmp/` lines and every other
+  atom are identical to the bit, the registry line gained the operator): rho mean 0.794981 -> 0.798515, sd 0.132244 -> 0.159559, sd ratio 0.828826 -> 1.000022, z 0.021859 -> 0.000294, KS 0.2135 ->
+  0.2220 (basic); rho mean 0.373943 -> 0.374300, sd 0.163614 -> 0.165082, sd ratio 1.000818 -> 1.000037 (learned, against the corrected reference). The registry and params tests counted 67 operators on a main that had 68; they count
+  71 now (with `gaussian-chain` and this operator).

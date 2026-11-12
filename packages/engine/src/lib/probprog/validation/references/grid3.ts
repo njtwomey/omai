@@ -10,6 +10,14 @@ import { lgamma } from '../../../numerics/special/index.ts'
 import { item } from '../../../tensor/index.ts'
 import { type ExactMarginal, gaussianMixtureMarginal } from './marginal.ts'
 
+/**
+ * The scale a coordinate's grid is laid on: `log` for a positive coordinate (equal steps in its log) and `correlation` for one in (-1, 1)
+ * (equal steps in `z = 2 atanh(x)`, the logit of `(x + 1) / 2`). A coordinate whose mass is pressed against a bound, or whose posterior is a
+ * thin ridge in the others (a strong correlation with the precisions), is resolved there where equal steps in `x` are not: the grid of a
+ * correlation of 0.95 from eight pairs had a spread a quarter short in `x`. The boxes and the marginals are always in `x`.
+ */
+export type CoordinateWarp = 'log' | 'correlation'
+
 /** The box of one coordinate: where the grid starts and the limits it must stay inside. */
 export interface CoordinateBox {
   readonly lo: number
@@ -17,6 +25,26 @@ export interface CoordinateBox {
   /** The coordinate's own limits (positive, or a correlation in (-1, 1)). */
   readonly min: number
   readonly max: number
+  /** The scale of the grid (default none: equal steps in the coordinate). */
+  readonly warp?: CoordinateWarp
+}
+
+/** The map of a warp: `z` from `x`, `x` from `z`, and the log of `dx / dz`. */
+interface Warp {
+  readonly to: (x: number) => number
+  readonly from: (z: number) => number
+  readonly logJacobian: (z: number) => number
+}
+
+const warps: Readonly<Record<CoordinateWarp | 'none', Warp>> = {
+  none: { to: (x) => x, from: (z) => z, logJacobian: () => 0 },
+  log: { to: Math.log, from: Math.exp, logJacobian: (z) => z },
+  correlation: {
+    to: (x) => 2 * Math.atanh(x),
+    from: (z) => Math.tanh(z / 2),
+    // dx/dz = (1 - x^2) / 2
+    logJacobian: (z) => -Math.log(2 * Math.cosh(z / 2) ** 2),
+  },
 }
 
 /** The grid posterior of three coordinates. */
@@ -46,12 +74,16 @@ const GRIDS = [34, 52, 70]
  *
  * @param boxes - The starting box of each coordinate, and its limits.
  * @param logDensity - log of the posterior density up to a constant (`-Infinity` outside the support, for example where a matrix is not positive definite).
+ * @param options - `mixtureNodes`: the most nodes a Gaussian mixture over the grid keeps (default 6000, the heaviest; a spread that depends on the
+ * whole grid, as the mean's when the precisions are loosely determined, wants more).
  * @returns The posterior (computed when first read from).
  */
 export function posterior3(
   boxes: readonly [CoordinateBox, CoordinateBox, CoordinateBox],
   logDensity: (a: number, b: number, c: number) => number,
+  options: { readonly mixtureNodes?: number } = {},
 ): Posterior3 {
+  const mixtureNodes = options.mixtureNodes ?? 6000
   // The grid is computed when something is first read from it, so a problem made for a calibration seed (which never reads its
   // reference) does not pay for it.
   let state: Solved | undefined
@@ -90,7 +122,7 @@ export function posterior3(
         for (const node of sorted) {
           kept.push(node)
           mass += node.w
-          if (mass > 1 - 1e-6 || kept.length >= 6000) break
+          if (mass > 1 - 1e-6 || kept.length >= mixtureNodes) break
         }
         mix = gaussianMixtureMarginal(
           kept.map((node) => ({ weight: node.w / mass, ...given(node.x[0], node.x[1], node.x[2]) })),
@@ -117,7 +149,7 @@ export function posterior3(
 interface Solved {
   readonly logZ: number
   readonly nodes: readonly Node[]
-  readonly marginals: readonly { x: number[]; p: number[]; mean: number; sd: number }[]
+  readonly marginals: readonly { x: number[]; z: number[]; p: number[]; mean: number; sd: number }[]
   readonly density: readonly ((x: number) => number)[]
 }
 
@@ -126,23 +158,32 @@ function solve(
   boxes: readonly [CoordinateBox, CoordinateBox, CoordinateBox],
   logDensity: (a: number, b: number, c: number) => number,
 ): Solved {
-  let box = boxes.map((b) => [b.lo, b.hi] as [number, number])
+  const maps = boxes.map((b) => warps[b.warp ?? 'none'])
+  // the grids run in z; a box is kept inside the limits of the coordinate
+  const limits = boxes.map((b, c) => [(maps[c] as Warp).to(b.min), (maps[c] as Warp).to(b.max)] as const)
+  let box = boxes.map((b, c) => [(maps[c] as Warp).to(b.lo), (maps[c] as Warp).to(b.hi)] as [number, number])
   let nodes: Node[] = []
   let logZ = 0
-  let marginals: { x: number[]; p: number[]; mean: number; sd: number }[] = []
+  let marginals: { x: number[]; z: number[]; p: number[]; mean: number; sd: number }[] = []
   for (const n of GRIDS) {
     const steps = box.map(([lo, hi]) => (hi - lo) / n)
     const axes = box.map(([lo], k) => Array.from({ length: n }, (_, i) => lo + (i + 0.5) * (steps[k] as number)))
+    const values = axes.map((zs, c) => zs.map((z) => (maps[c] as Warp).from(z)))
+    const jac = axes.map((zs, c) => zs.map((z) => (maps[c] as Warp).logJacobian(z)))
     const raw = new Float64Array(n * n * n)
     let top = Number.NEGATIVE_INFINITY
     for (let i = 0; i < n; i++)
       for (let j = 0; j < n; j++)
         for (let k = 0; k < n; k++) {
-          const v = logDensity(
-            (axes[0] as number[])[i] as number,
-            (axes[1] as number[])[j] as number,
-            (axes[2] as number[])[k] as number,
-          )
+          const v =
+            logDensity(
+              (values[0] as number[])[i] as number,
+              (values[1] as number[])[j] as number,
+              (values[2] as number[])[k] as number,
+            ) +
+            ((jac[0] as number[])[i] as number) +
+            ((jac[1] as number[])[j] as number) +
+            ((jac[2] as number[])[k] as number)
           raw[(i * n + j) * n + k] = v
           if (v > top) top = v
         }
@@ -167,16 +208,17 @@ function solve(
           if (w > 1e-12)
             next.push({
               x: [
-                (axes[0] as number[])[i] as number,
-                (axes[1] as number[])[j] as number,
-                (axes[2] as number[])[k] as number,
+                (values[0] as number[])[i] as number,
+                (values[1] as number[])[j] as number,
+                (values[2] as number[])[k] as number,
               ],
               w,
             })
         }
     nodes = next
     marginals = mass.map((m, c) => {
-      const x = axes[c] as number[]
+      const x = values[c] as number[]
+      const z = axes[c] as number[]
       let mean = 0
       let second = 0
       for (let i = 0; i < n; i++) {
@@ -185,24 +227,41 @@ function solve(
       }
       return {
         x,
+        z,
         p: Array.from(m, (v) => v / (steps[c] as number)),
         mean,
         sd: Math.sqrt(Math.max(second - mean * mean, 1e-300)),
       }
     })
+    // the next box: seven spreads either side of the mean, in the scale the grid runs in
     box = marginals.map((m, c) => {
-      const b = boxes[c] as CoordinateBox
-      return [Math.max(b.min, m.mean - 7 * m.sd), Math.min(b.max, m.mean + 7 * m.sd)] as [number, number]
+      const [zMin, zMax] = limits[c] as readonly [number, number]
+      if (boxes[c]?.warp === undefined) {
+        const b = boxes[c] as CoordinateBox
+        return [Math.max(b.min, m.mean - 7 * m.sd), Math.min(b.max, m.mean + 7 * m.sd)] as [number, number]
+      }
+      let zMean = 0
+      const mc = mass[c] as Float64Array
+      for (let i = 0; i < n; i++) zMean += (mc[i] as number) * (m.z[i] as number)
+      let zVar = 0
+      for (let i = 0; i < n; i++) zVar += (mc[i] as number) * ((m.z[i] as number) - zMean) ** 2
+      const zSd = Math.sqrt(Math.max(zVar, 1e-300))
+      return [Math.max(zMin, zMean - 7 * zSd), Math.min(zMax, zMean + 7 * zSd)] as [number, number]
     })
   }
-  const density = marginals.map((m) => {
-    const h = (m.x[1] as number) - (m.x[0] as number)
+  const density = marginals.map((m, c) => {
+    const warp = boxes[c]?.warp
+    const map = maps[c] as Warp
+    const h = (m.z[1] as number) - (m.z[0] as number)
     return (x: number): number => {
-      const t = (x - (m.x[0] as number)) / h
+      const z = warp === undefined ? x : map.to(x)
+      const t = (z - (m.z[0] as number)) / h
       const i = Math.floor(t)
-      if (i < 0 || i >= m.x.length - 1) return 0
+      if (!Number.isFinite(t) || i < 0 || i >= m.z.length - 1) return 0
       const f = t - i
-      return (m.p[i] as number) * (1 - f) + (m.p[i + 1] as number) * f
+      const pz = (m.p[i] as number) * (1 - f) + (m.p[i + 1] as number) * f
+      // p(x) = p(z) / (dx / dz)
+      return warp === undefined ? pz : pz / Math.exp(map.logJacobian(z))
     }
   })
   return { logZ, nodes, marginals, density }

@@ -5,6 +5,7 @@
 
 import type { FactorOperator } from '../../core/types.ts'
 import { mvnSdCorr } from './correlation.ts'
+import { mvnSdCorrGroup } from './correlation-group.ts'
 import { mvnNormalWishart, mvnWishart } from './covariance.ts'
 import { mvnWishartGroup } from './hierarchy.ts'
 
@@ -12,6 +13,7 @@ import { mvnWishartGroup } from './hierarchy.ts'
 export const covarianceOperatorList: readonly FactorOperator[] = [
   mvnNormalWishart,
   mvnSdCorr,
+  mvnSdCorrGroup,
   mvnWishart,
   mvnWishartGroup,
 ]

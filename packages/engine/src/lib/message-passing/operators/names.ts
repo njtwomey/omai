@@ -76,6 +76,7 @@ export const operatorNames = [
   'mvn-wishart-group',
   'mvn-normal-wishart',
   'mvn-sd-corr',
+  'mvn-sd-corr-group',
   'gate',
 ] as const
 

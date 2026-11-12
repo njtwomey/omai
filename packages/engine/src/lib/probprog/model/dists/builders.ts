@@ -354,7 +354,7 @@ export function inverseWishart(df: Operand, scale: Operand): DistExpr {
 /**
  * The prior of the correlation of a bivariate normal: the marginal of the LKJ distribution on 2 by 2 correlation matrices with
  * concentration `eta`, `p(rho) = (1 - rho^2)^(eta - 1)` on (-1, 1) (uniform at `eta = 1`, pulled towards zero above it). Message passing
- * carries `(rho + 1) / 2` as a beta variable `Beta(eta, eta)`.
+ * carries `(rho + 1) / 2` as a beta variable `Beta(eta, eta)`, whose belief has the posterior's mean and variance of the correlation.
  */
 export function correlation(eta: Operand = 1): DistExpr {
   return family('correlation', { eta })
@@ -363,7 +363,9 @@ export function correlation(eta: Operand = 1): DistExpr {
 /**
  * A bivariate normal from its standard deviations and correlation, `x ~ N(loc, [[s1^2, rho s1 s2], [rho s1 s2, s2^2]])`, a vector over the axis
  * `over` of `loc`. With gamma precisions `tau` (the sds written `1 / sqrt(tau)`) and a `correlation` latent for `rho`, message passing
- * integrates the three jointly (`mvn-sd-corr`); the standard deviations and the correlation may be known.
+ * integrates the three jointly (`mvn-sd-corr`); the standard deviations and the correlation may be known. As observed rows it is one plated factor
+ * (a shared mean) or a factor per row; as latent vectors (`dims: [group, coef]`, a Gaussian vector as the shared mean) the vectors of all the groups, the
+ * mean and the three parameters are one factor (`mvn-sd-corr-group`).
  */
 export function bivariateNormal(
   loc: Operand,
