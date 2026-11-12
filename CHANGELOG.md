@@ -322,6 +322,11 @@ Fixes (omai-engine, `probprog`), from the author of the Gaussian-mixtures showca
   `ops.pick(mu, z)`) failed with "take: index 2 out of range" once there were three groups (and, with two, was silently
   updated by slice steps): the analysis looked every site up along axis 0. The component axis is now the axis along which the
   discrete site's codes reproduce the likelihood's parameter, and the closed-form update works along it.
+- Model layer: `ops.pick(a, index)` goes along the last dimension of `a`, so `ops.pick(ops.mul(slope, x), z)` (dimensions
+  `[group, row]`, the index over `row`) picked along the wrong axis and gave wrong numbers without an error. The model now
+  refuses it when the last dimension of the first operand is also a dimension of the index, with the order that works
+  (`ops.mul(x, slope)`), and the TSDoc of `pick` states the rule with an example. Models that put the picked dimension last
+  (every one in the library) are unchanged.
 
 ## 0.1.12
 
