@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { add, arange, div, mul, toFlat } from '../../../tensor/index.ts'
 import { messageArg, valueArg } from '../../core/args.ts'
 import { gamma, gammaEta, gaussian, gaussianEta } from '../../core/families.ts'
 import { discrete, discreteEta, discreteProbs } from '../../core/families-vector.ts'
@@ -20,7 +21,7 @@ function brute(
 ) {
   const n = 500
   const grid = (m: number, v: number): number[] =>
-    Array.from({ length: n }, (_, i) => m + Math.sqrt(v) * (-9 + (18 * i) / (n - 1)))
+    toFlat(add(m, mul(add(-9, div(mul(arange(n), 18), n - 1)), Math.sqrt(v))))
   const as = grid(...qa)
   const bs = grid(...qb)
   const da = (as[1] as number) - (as[0] as number)

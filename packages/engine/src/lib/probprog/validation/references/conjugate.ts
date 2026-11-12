@@ -4,7 +4,7 @@
  * the marginal of a conjugate posterior of the library's own table (`normalNormal`, `betaBernoulli`, `gammaPoisson` in `exact.ts`).
  */
 
-import { item } from '../../../tensor/index.ts'
+import { add, arange, div, item, mul, toFlat } from '../../../tensor/index.ts'
 import type { ExactPosterior } from '../exact.ts'
 import type { ExactMarginal, RefJoint } from './marginal.ts'
 import { lg, normalPdf, sum } from './special.ts'
@@ -164,10 +164,10 @@ export function normalInverseGammaPosterior(
   const mu = studentMarginal(2 * an, mn, bn / (an * kn))
   const sigma2 = inverseGammaMarginal(an, bn)
   // The joint: N(mu; mn, sigma2 / kn) times the inverse gamma, on a grid for the contours.
-  const xs = Array.from({ length: 80 }, (_, i) => mu.mean - 5 * mu.sd + (i * 10 * mu.sd) / 79)
+  const xs = toFlat(add(div(mul(mul(arange(80), 10), mu.sd), 79), mu.mean - 5 * mu.sd))
   const lo = Math.max(1e-3, sigma2.range?.[0] ?? 0)
   const hi = sigma2.range?.[1] ?? sigma2.mean * 4
-  const ys = Array.from({ length: 80 }, (_, i) => lo + (i * (hi - lo)) / 79)
+  const ys = toFlat(add(div(mul(arange(80), hi - lo), 79), lo))
   const joint: RefJoint = {
     a: 'mu',
     b: 'sigma2',

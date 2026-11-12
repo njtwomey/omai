@@ -8,7 +8,7 @@
  */
 
 import { normal as drawNormal, uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import { add, arange, div, toFlat } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type MarginalOracle, weightedOracle } from '../validation/index.ts'
@@ -53,8 +53,9 @@ function generateMixture(key: Key, size = 30): BenchmarkData {
  * ```
  */
 export function stickBreakingTruth(y: readonly number[], n = 60): BenchmarkTruth {
-  const nodes = Float64Array.from({ length: n }, (_, i) => (i + 0.5) / n)
+  const nodes = toFlat(div(add(arange(n), 0.5), n))
   const total = n ** 3
+  // The tables of the n^3 grid (mass, coordinates, component weights, log density) are filled in place by the sweep below.
   const mass = new Float64Array(total)
   const coords = [new Float64Array(total), new Float64Array(total), new Float64Array(total)]
   const weights = Array.from({ length: MEANS.length }, () => new Float64Array(total))

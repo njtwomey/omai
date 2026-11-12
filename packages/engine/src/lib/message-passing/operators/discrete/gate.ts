@@ -33,6 +33,7 @@ import type {
 } from '../../core/types.ts'
 import { portsOf } from '../../core/types.ts'
 import { ruleMessage } from '../../engine/dispatch.ts'
+import { unitArray, zeroArray } from '../../numerics/_arrays.ts'
 import { shiftedSum } from '../../numerics/_moments.ts'
 import type { OperatorName } from '../names.ts'
 
@@ -74,7 +75,7 @@ function branchesOf(params: Params): readonly Branch[] {
 
 /** The probabilities of the states of z (an observed one is a point mass). */
 function stateProbabilities(a: Arg, k: number): number[] {
-  if (a.value !== undefined) return Array.from({ length: k }, (_, i) => (i === Math.trunc(scalarOf(a)) ? 1 : 0))
+  if (a.value !== undefined) return unitArray(k, Math.trunc(scalarOf(a)))
   return a.family.kind === 'bernoulli' ? (a.family.logProbs?.(etaOf(a)) ?? []).map(Math.exp) : discreteProbs(etaOf(a))
 }
 
@@ -286,7 +287,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
         const target = arg(c, c.to)
         const family = target.family
         const own = etaOf(target)
-        const mixed = new Array<number>(family.size).fill(0)
+        const mixed = zeroArray(family.size)
         for (const [i, b] of branches.entries()) {
           if ((w[i] ?? 0) === 0) continue
           const tilted = sent(c, b, variable) ?? own
@@ -310,7 +311,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
         const r = stateProbabilities(z, branches.length)
         const variable = c.to - 1
         const family = arg(c, c.to).family
-        const out = new Array<number>(family.size).fill(0)
+        const out = zeroArray(family.size)
         for (const [i, b] of branches.entries()) {
           const op = innerOf(b)
           const local = b.args.indexOf(variable)

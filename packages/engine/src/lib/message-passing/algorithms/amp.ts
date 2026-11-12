@@ -19,7 +19,7 @@ import { dgemv, dnrm2 } from '../../numerics/linalg/index.ts'
 import { gaussLegendre } from '../../numerics/quadrature/index.ts'
 import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
 import { choice, dict, int, real } from '../../space/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import { add, item, less, mul, sub, sum, mean as tensorMean, toFlat, where } from '../../tensor/index.ts'
 import {
   type Algorithm,
   type Config,
@@ -38,6 +38,7 @@ import {
 import { assertDamping } from '../core/_messages.ts'
 import { ParameterError } from '../core/errors.ts'
 import type { MpSnapshot } from '../engine/state.ts'
+import { zeroArray } from '../numerics/_arrays.ts'
 
 /** The prior of every entry of x: a Gaussian of mean zero, or a Bernoulli-Gaussian (zero, or a Gaussian, with a given probability). */
 export type AmpPrior =
@@ -221,10 +222,12 @@ export function ampProblem(
   const rho = options.sparsity ?? 0.1
   const noiseVariance = options.noiseVariance ?? 0.01
   const matrix = toFlat(normal(foldIn(key, 1), [m, n], { scale: 1 / Math.sqrt(m) }))
-  const u = toFlat(uniform(foldIn(key, 2), [n]))
-  const g = toFlat(normal(foldIn(key, 3), [n]))
+  const u = uniform(foldIn(key, 2), [n])
+  const g = normal(foldIn(key, 3), [n])
   const w = toFlat(normal(foldIn(key, 4), [m], { scale: Math.sqrt(noiseVariance) }))
-  const truth = Array.from(g, (v, i) => ((u[i] as number) < rho ? v : 0))
+  const truth = toFlat(where(less(u, rho), g, 0))
+  // Exempt from the tensor rule, on purpose: each measurement accumulates from its noise term, `w + a1 x1 + a2 x2 + ...`, in
+  // this order; a matrix product sums from zero and adds the noise last, which moves the last bits of the seeded data.
   const y = Array.from({ length: m }, (_, i) => {
     let s = w[i] as number
     for (let j = 0; j < n; j++) s += (matrix[i * n + j] as number) * (truth[j] as number)
@@ -304,11 +307,7 @@ export const ampContract: Contract<AmpState, AmpPath> = defineContract({
   }),
 })
 
-const mean = (x: ArrayLike<number>): number => {
-  let s = 0
-  for (let i = 0; i < x.length; i++) s += x[i] ?? 0
-  return s / x.length
-}
+const mean = (x: readonly number[]): number => item(tensorMean(x))
 
 /**
  * An anytime snapshot of an AMP state, in the shape of the engine's `MpSnapshot`: the iteration as `sweeps`, the change,
@@ -401,9 +400,9 @@ export function ampAlgorithm(problem: AmpProblem, options: AmpOptions): Algorith
       frames: true,
     }),
     init: (): AmpState => ({
-      x: new Array<number>(n).fill(0),
+      x: zeroArray(n),
       z: Array.from(y),
-      derivative: new Array<number>(n).fill(0),
+      derivative: zeroArray(n),
       tau2: dnrm2(y) ** 2 / m,
       iteration: 0,
       change: Number.POSITIVE_INFINITY,
@@ -412,20 +411,17 @@ export function ampAlgorithm(problem: AmpProblem, options: AmpOptions): Algorith
       // The residual with its Onsager correction (the mean derivative of the last denoising over delta).
       const onsager = mean(state.derivative) / delta
       const ax = dgemv(matrix, m, n, state.x)
-      const z = Array.from({ length: m }, (_, i) => {
-        const next = (y[i] ?? 0) - (ax[i] ?? 0) + (state.z[i] ?? 0) * onsager
-        return damping === 0 ? next : (1 - damping) * next + damping * (state.z[i] ?? 0)
-      })
+      const next = add(sub(y, ax), mul(state.z, onsager))
+      const z = toFlat(damping === 0 ? next : add(mul(next, 1 - damping), mul(state.z, damping)))
       const tau2 = Math.max(dnrm2(z) ** 2 / m, 1e-300)
       const back = dgemv(matrix, m, n, z, true)
-      const x = new Array<number>(n)
-      const derivative = new Array<number>(n)
-      for (let i = 0; i < n; i++) {
-        const d = ampDenoiser(options.prior, (state.x[i] ?? 0) + (back[i] ?? 0), tau2)
-        x[i] = damping === 0 ? d.mean : (1 - damping) * d.mean + damping * (state.x[i] ?? 0)
-        derivative[i] = d.derivative
-      }
-      const moved = dnrm2(x.map((v, i) => v - (state.x[i] ?? 0)))
+      // The denoiser is a scalar function of one entry (a callback, not a tensor op): one call per entry, then the
+      // damping is a tensor expression again.
+      const denoised = toFlat(add(state.x, back)).map((v) => ampDenoiser(options.prior, v, tau2))
+      const fresh = denoised.map((d) => d.mean)
+      const derivative = denoised.map((d) => d.derivative)
+      const x = damping === 0 ? fresh : toFlat(add(mul(fresh, 1 - damping), mul(state.x, damping)))
+      const moved = dnrm2(toFlat(sub(x, state.x)))
       const scale = Math.max(dnrm2(x), 1e-300)
       return { x, z, derivative, tau2, iteration: state.iteration + 1, change: moved / scale }
     },
@@ -439,9 +435,8 @@ export function ampAlgorithm(problem: AmpProblem, options: AmpOptions): Algorith
       const se = predicted?.[Math.max(0, state.iteration - 1)]
       let mse: number | undefined
       if (truth !== undefined) {
-        let s = 0
-        for (let i = 0; i < n; i++) s += ((state.x[i] ?? 0) - (truth[i] ?? 0)) ** 2
-        mse = s / n
+        const gap = sub(state.x, Float64Array.from(truth))
+        mse = item(sum(mul(gap, gap))) / n
       }
       return {
         metrics: {

@@ -2,9 +2,11 @@
 // precision), the tilted moments and the evidence against a fine grid over the precision, the messages against the tilted moments, a
 // chain of two states against the gaussian-gamma-precision factor, and the cavities a chain can be shown (flat ones, a ridge).
 import { describe, expect, it } from 'vitest'
+import { add, arange, cos, mul, sin, toFlat } from '../../../tensor/index.ts'
 import { messageArg } from '../../core/args.ts'
 import { gamma, gammaEta, gaussian, gaussianEta } from '../../core/families.ts'
 import type { Arg, OperatorContext } from '../../core/types.ts'
+import { float64Of } from '../../numerics/_arrays.ts'
 import { spd } from '../../numerics/_dense.ts'
 import { chainAt, chainSpec, chainTilt, gaussianChain } from './chain.ts'
 import { gaussianGammaPrecision } from './gaussian.ts'
@@ -90,7 +92,7 @@ describe('the tilted distribution over the precision', () => {
     const G = 3000
     const lo = -6
     const step = 14 / (G - 1)
-    const ts = Array.from({ length: G }, (_, g) => lo + step * g)
+    const ts = toFlat(add(lo, mul(arange(G), step)))
     const joint = ts.map((t) => dense(SPEC, H, J, SPEC.scale * Math.exp(t) + SPEC.offset))
     const logw = ts.map((t, g) => shape * t - rate * Math.exp(t) + (joint[g]?.logZ as number))
     const top = Math.max(...logw)
@@ -126,8 +128,8 @@ describe('a cavity with an exponential tail', () => {
   // prior on a state whose cavity is uninformative, centred at the chain's own estimate of the state, keeps the precision where the
   // other states put it, and moves a chain whose cavities all have precision of their own by nothing.
   const n = 20
-  const h = Float64Array.from({ length: n + 1 }, (_, i) => 0.2 * Math.sin(i))
-  const j = Float64Array.from({ length: n + 1 }, (_, i) => 0.5 + 0.1 * Math.cos(i))
+  const h = float64Of(mul(sin(arange(n + 1)), 0.2))
+  const j = float64Of(add(0.5, mul(cos(arange(n + 1)), 0.1)))
   h[7] = -0.45
   j[7] = 1e-4
   h[n] = 0

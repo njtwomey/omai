@@ -18,6 +18,7 @@ import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam 
 import { defineOperator, messageRule } from '../../core/define.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
+import { zeroArray } from '../../numerics/_arrays.ts'
 import { MOST_PRODUCT, productTilt } from '../../numerics/_product.ts'
 import {
   naturalGradientMessage,
@@ -60,7 +61,7 @@ function tilt(c: OperatorContext): Tilt {
 function integrate(c: OperatorContext): Tilt {
   const { classes, y, probit } = classesOf(c.params)
   const free: number[] = []
-  const fixed = new Array<number>(classes).fill(0)
+  const fixed = zeroArray(classes)
   const cavity: { mean: number; variance: number }[] = []
   for (let k = 0; k < classes; k++) {
     const a = c.args[k] as Arg
@@ -100,7 +101,7 @@ function integrate(c: OperatorContext): Tilt {
     for (let i = 0; i < r; i++) s -= ((x[i] as number) - (cavMean[i] as number)) ** 2 * (cavHalfPrecision[i] as number)
     return s
   }
-  const cov = new Array<number>(r * r).fill(0)
+  const cov = zeroArray(r * r)
   for (let i = 0; i < r; i++) cov[i * r + i] = (cavity[i] as { variance: number }).variance
   const t = productTilt(r, { mean: cavMean, covariance: cov }, logCav, (x) => {
     for (let i = 0; i < r; i++) z[free[i] as number] = x[i] as number

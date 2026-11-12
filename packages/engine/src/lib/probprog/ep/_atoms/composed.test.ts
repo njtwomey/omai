@@ -3,11 +3,12 @@ import { describe, expect, it } from 'vitest'
 import { epAtoms } from '../ep-atom-list.ts'
 import { verifyAtom } from '../ep-atoms.ts'
 
-const composed = epAtoms.filter((a) => a.family === 'composed')
+// The family holds every composed atom; this file is about the softmax with two groups.
+const composed = epAtoms.filter((a) => a.name === 'softmax-two-groups')
 
 describe('the composed atoms', () => {
-  it('are one: a softmax over many classes with a coefficient for each of two groups', () => {
-    expect(composed.map((a) => a.name)).toEqual(['softmax-two-groups'])
+  it('has the softmax over many classes with a coefficient for each of two groups, in the composed family', () => {
+    expect(composed.map((a) => [a.name, a.family])).toEqual([['softmax-two-groups', 'composed']])
   })
 
   describe.each(composed)('$name', (atom) => {

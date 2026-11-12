@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { probitRows } from '../../../../testing/mp-variants.ts'
+import { eye, mul, toFlat } from '../../../tensor/index.ts'
 import { runAlgorithm } from '../../../trace/index.ts'
 import * as M from '../../index.ts'
+import { zeroArray } from '../../numerics/_arrays.ts'
 import { logPhi } from '../../numerics/_scalar.ts'
 
 const operators = M.defaultOperators()
@@ -10,11 +12,7 @@ const close = (a: number, b: number, tol: number): void => {
 }
 
 const prior = (d: number, variance: number): M.FactorSpec =>
-  M.gaussianMvPrior(
-    'w',
-    new Array<number>(d).fill(0),
-    Array.from({ length: d * d }, (_, k) => (k % (d + 1) === 0 ? variance : 0)),
-  )
+  M.gaussianMvPrior('w', zeroArray(d), toFlat(mul(eye(d), variance)))
 
 /** The expanded graph: one factor per row on the weights (the row operators). */
 function expanded(rows: number[][], labels: number[], op: string, variance = 4): M.CompiledGraph {
@@ -156,7 +154,7 @@ describe('the plate under variational message passing', () => {
     // By hand: q(z_i) the outcome's side of N(a_i . mu, 1); q(w) Gaussian with precision I/4 + X'X and mean Sigma X' E[z].
     let mu = [0, 0, 0]
     const d = 3
-    const xtx = new Array<number>(d * d).fill(0)
+    const xtx = zeroArray(d * d)
     for (const row of x)
       for (let i = 0; i < d; i++)
         for (let j = 0; j < d; j++)
@@ -202,8 +200,8 @@ describe('the plate under variational message passing', () => {
     )
     const d = 3
     const tau = 6
-    const xtx = new Array<number>(d * d).fill(0)
-    const xty = new Array<number>(d).fill(0)
+    const xtx = zeroArray(d * d)
+    const xty = zeroArray(d)
     let yty = 0
     for (const [i, row] of xs.entries()) {
       yty += (ys[i] as number) ** 2

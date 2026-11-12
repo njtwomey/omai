@@ -7,7 +7,7 @@
  */
 
 import { gaussianParticleModel, kalmanLogLikelihood, type StateSpaceFamily } from '../../dynamics/filtering/index.ts'
-import { item, mul, type Value } from '../../tensor/index.ts'
+import { add, arange, div, item, mul, toFlat, type Value } from '../../tensor/index.ts'
 import { ar1StateSpace } from './state-space.ts'
 
 /** The state and observation noise of the benchmark (the same as `ar1StateSpace`'s). */
@@ -70,7 +70,7 @@ export const ar1CoefficientFamily: StateSpaceFamily = {
  * ```
  */
 export function ar1CoefficientPosterior(points = 397): { readonly mean: number; readonly sd: number } {
-  const grid = Array.from({ length: points }, (_, i) => -0.99 + (1.98 * (i + 0.5)) / points)
+  const grid = toFlat(add(div(mul(add(arange(points), 0.5), 1.98), points), -0.99))
   const logL = grid.map((phi) =>
     item(
       kalmanLogLikelihood(

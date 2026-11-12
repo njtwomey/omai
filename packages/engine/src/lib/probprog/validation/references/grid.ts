@@ -6,6 +6,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { add, arange, div, exp, mul, toArray, toFlat, zeros } from '../../../tensor/index.ts'
 import { type ExactMarginal, gaussianMixtureMarginal } from './marginal.ts'
 
 /**
@@ -30,7 +31,7 @@ export function quadratureMarginal(
   points = 8000,
 ): ExactMarginal {
   const h = (hi - lo) / points
-  const xs = Array.from({ length: points }, (_, i) => lo + (i + 0.5) * h)
+  const xs = toFlat(add(mul(add(arange(points), 0.5), h), lo))
   const logs = xs.map(logDensity)
   const { weights: w, top } = logWeights(logs)
   const z = w.reduce((a, b) => a + b, 0)
@@ -92,10 +93,12 @@ export function gridMarginals(
   n = 41,
 ): GridMarginals {
   const d = box.length
-  const axes = box.map(([lo, hi]) => Array.from({ length: n }, (_, i) => lo + ((hi - lo) * i) / (n - 1)))
+  const axes = box.map(([lo, hi]) => toFlat(add(div(mul(arange(n), hi - lo), n - 1), lo)))
   const total = n ** d
+  // The density table and the point handed to the callback are the working buffers of the grid sweep (points^dim steps),
+  // written in place.
   const logs = new Float64Array(total)
-  const x = new Array<number>(d).fill(0)
+  const x = toFlat(zeros([d]))
   let top = Number.NEGATIVE_INFINITY
   for (let flat = 0; flat < total; flat++) {
     let r = flat
@@ -109,6 +112,7 @@ export function gridMarginals(
   }
   const index = (flat: number, k: number): number => Math.floor(flat / n ** (d - 1 - k)) % n
   const h = box.map(([lo, hi]) => (hi - lo) / (n - 1))
+  // the normalised mass of every cell, a table of points^dim entries filled in place with the running total
   const mass = new Float64Array(total)
   let z = 0
   for (let flat = 0; flat < total; flat++) {
@@ -116,7 +120,7 @@ export function gridMarginals(
     z += mass[flat] ?? 0
   }
   const marginals = axes.map((axis, k): ExactMarginal => {
-    const m = new Float64Array(n)
+    const m = toFlat(zeros([n]))
     for (let flat = 0; flat < total; flat++) m[index(flat, k)] = (m[index(flat, k)] ?? 0) + (mass[flat] ?? 0) / z
     const mean = axis.reduce((a, v, i) => a + v * (m[i] ?? 0), 0)
     const sd = Math.sqrt(axis.reduce((a, v, i) => a + (v - mean) ** 2 * (m[i] ?? 0), 0))
@@ -139,12 +143,12 @@ export function gridMarginals(
     marginals,
     axes,
     mass: (k) => {
-      const m = new Array<number>(n).fill(0)
+      const m = toFlat(zeros([n]))
       for (let flat = 0; flat < total; flat++) m[index(flat, k)] = (m[index(flat, k)] ?? 0) + (mass[flat] ?? 0) / z
       return m
     },
     mixture: (given) => {
-      const point = new Array<number>(d).fill(0)
+      const point = toFlat(zeros([d]))
       const parts: { weight: number; mean: number; variance: number }[] = []
       for (let flat = 0; flat < total; flat++) {
         if (!((mass[flat] ?? 0) > 1e-6)) continue
@@ -159,7 +163,7 @@ export function gridMarginals(
     },
     logEvidence: top + Math.log(z * cell),
     expect: (f) => {
-      const point = new Array<number>(d).fill(0)
+      const point = toFlat(zeros([d]))
       let sum = 0
       for (let flat = 0; flat < total; flat++) {
         if (!((mass[flat] ?? 0) > 0)) continue
@@ -174,7 +178,7 @@ export function gridMarginals(
       return m
     },
     joint: (a, b) => {
-      const p = Array.from({ length: n }, () => new Array<number>(n).fill(0))
+      const p = toArray(zeros([n, n])) as number[][]
       for (let flat = 0; flat < total; flat++) {
         const row = p[index(flat, a)] as number[]
         row[index(flat, b)] = (row[index(flat, b)] ?? 0) + (mass[flat] ?? 0) / z
@@ -226,7 +230,7 @@ export function hyperPosterior(
   points = 1500,
 ): HyperPosterior {
   const step = (Math.log(hi) - Math.log(lo)) / points
-  const hs = Array.from({ length: points }, (_, i) => Math.exp(Math.log(lo) + (i + 0.5) * step))
+  const hs = toFlat(exp(add(mul(add(arange(points), 0.5), step), Math.log(lo))))
   const logs = hs.map((h) => logDensity(h) + Math.log(h))
   const { weights: w0 } = logWeights(logs)
   const z = w0.reduce((a, b) => a + b, 0)

@@ -9,12 +9,14 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
+import { outer, reshape, sub } from '../../../tensor/index.ts'
 import { arg, evidenceOrNaN, memoised } from '../../core/_messages.ts'
 import { numberParam } from '../../core/args.ts'
 import { defineOperator, messageRule } from '../../core/define.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
+import { float64Of } from '../../numerics/_arrays.ts'
 import { type GridNResult, integrateAxes } from '../../numerics/_grid.ts'
 import { nodeEvaluator, type Sides, tiltKey } from './_group.ts'
 import { axisOfPort, parameterMessage, precisionAt } from './_sdcorr.ts'
@@ -99,7 +101,7 @@ function tiltOf(c: OperatorContext): Tilt {
       }
   const cov = second.map((sk, port) => {
     const mk = means[port] as Float64Array
-    return Float64Array.from(sk, (v, e) => v - (mk[Math.floor(e / D)] as number) * (mk[e % D] as number))
+    return float64Of(sub(reshape(sk, [D, D]), outer(mk, mk)))
   })
   let logZ = grid.logMass
   for (let q = 1; q <= 3; q++) {

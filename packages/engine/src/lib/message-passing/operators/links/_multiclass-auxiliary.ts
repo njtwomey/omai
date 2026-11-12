@@ -20,7 +20,9 @@
 // rule takes the factor whole.
 
 import { logNdtr } from '../../../numerics/special/_kernels.ts'
+import { div, exp, mul, sub } from '../../../tensor/index.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
+import { float64Of, gridArray, zeroArray } from '../../numerics/_arrays.ts'
 import { type GridAxis, gaussianAxis, integrateLine, pointAxis } from '../../numerics/_grid.ts'
 import { centredMoments } from '../../numerics/_moments.ts'
 import { digammaOf, lgammaOf, trigammaOf } from '../../numerics/_scalar.ts'
@@ -74,11 +76,12 @@ export function scoreGrid(mean: number, variance: number): ScoreGrid {
   const lo = mean - REACH * sd
   const hi = mean + REACH * sd
   const n = Math.min(MOST_NODES, Math.ceil((hi - lo) / Math.min(STEP, STEP_SD * sd)) + 1)
-  const z = Float64Array.from({ length: n }, (_, i) => lo + ((hi - lo) * i) / (n - 1))
-  const logw = Float64Array.from(z, (v) => (-0.5 * (v - mean) ** 2) / variance)
+  const z = gridArray(lo, hi, n)
+  const deviation = sub(z, mean)
+  const logw = float64Of(div(mul(mul(deviation, deviation), -0.5), variance))
   const norm = logSum(logw)
   for (let i = 0; i < n; i++) logw[i] = (logw[i] as number) - norm
-  return { z, logw, e: Float64Array.from(z, Math.exp) }
+  return { z, logw, e: float64Of(exp(z)) }
 }
 
 /** `log(sum exp(v))` of numbers, `-Infinity` for none. */
@@ -247,8 +250,8 @@ export function probitAuxiliary(problem: AuxiliaryProblem): AuxiliaryTilt {
   const nodes = integral.nodes[0] as Float64Array
   const kept: number[] = []
   for (let q = 0; q < nodes.length; q++) if ((integral.weights[q] as number) > NEGLIGIBLE) kept.push(q)
-  const mean = new Array<number>(r).fill(0)
-  const variance = new Array<number>(r).fill(0)
+  const mean = zeroArray(r)
+  const variance = zeroArray(r)
   if (observed >= 0) {
     // z_y given c is Gaussian: its posterior against the noise, the mean linear in c with the same variance at every node.
     const gain = observedCavity.variance / (observedCavity.variance + 1)

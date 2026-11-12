@@ -4,7 +4,7 @@
 
 import { beta, foldIn, gamma, key, normal, poisson, uniform } from '../../../random/index.ts'
 import { type DictSpace, dict, int, real } from '../../../space/index.ts'
-import { item, toFlat } from '../../../tensor/index.ts'
+import { add, arange, div, floor, item, toFlat } from '../../../tensor/index.ts'
 import type { Config } from '../../../trace/index.ts'
 import { configNumber } from '../../inference/method.ts'
 import * as d from '../../model/dists/index.ts'
@@ -293,10 +293,9 @@ const gaussianLearnedAtom: EpAtom = defineAtom({
 })
 
 /** The group of each of `groups * per` observations, group by group. */
-const groupIndex = (groups: number, per: number): number[] =>
-  Array.from({ length: groups * per }, (_, i) => Math.floor(i / per))
+const groupIndex = (groups: number, per: number): number[] => toFlat(floor(div(arange(groups * per), per)))
 
-const FIGURE_GROUPS = (groups: number): number[] => Array.from({ length: groups }, (_, j) => j + 1)
+const FIGURE_GROUPS = (groups: number): number[] => toFlat(add(arange(groups), 1))
 
 function betaLearnedProblem(k: Config): AtomParts {
   const [seed, groups, per] = [configNumber(k, 'seed'), configNumber(k, 'groups'), configNumber(k, 'n')]

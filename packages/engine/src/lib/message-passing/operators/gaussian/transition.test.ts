@@ -2,8 +2,10 @@
 // for a square invertible matrix, a non-square one, an offset, and cavities that are flat or only partly informative.
 import { describe, expect, it } from 'vitest'
 import { dgemm } from '../../../numerics/linalg/index.ts'
+import { add, arange, mul, toFlat } from '../../../tensor/index.ts'
 import { messageArg } from '../../core/args.ts'
 import { gaussianMv } from '../../core/families-vector.ts'
+import { zeroArray } from '../../numerics/_arrays.ts'
 import { spd } from '../../numerics/_dense.ts'
 import { gaussianTransition } from './transition.ts'
 
@@ -100,8 +102,8 @@ describe.each([
     Array.from({ length: n * n }, (_, k) =>
       Math.floor(k / n) === k % n ? scale + 0.3 * Math.floor(k / n) : 0.1 * scale,
     )
-  const cavityX = [...Array.from({ length: rows }, (_, i) => 0.3 * (i + 1)), ...spdOf(rows, 1.5)]
-  const cavityW = [...Array.from({ length: cols }, (_, i) => -0.4 * (i + 1)), ...spdOf(cols, 2)]
+  const cavityX = [...toFlat(mul(add(arange(rows), 1), 0.3)), ...spdOf(rows, 1.5)]
+  const cavityW = [...toFlat(mul(add(arange(cols), 1), -0.4)), ...spdOf(cols, 2)]
   const params = { matrix: F, offset: c, covariance: Q }
   const args = [messageArg(fx, cavityX), messageArg(fw, cavityW)]
   const ref = tilted(cavityX, cavityW, F, c, Q, rows, cols)
@@ -119,9 +121,9 @@ describe.each([
   })
 
   it('sends nothing to w from a flat cavity of x, and a message from a partly informed one (one coordinate read)', () => {
-    const flat = run(1, [messageArg(fx, new Array<number>(rows + rows * rows).fill(0)), messageArg(fw, cavityW)])
+    const flat = run(1, [messageArg(fx, zeroArray(rows + rows * rows)), messageArg(fw, cavityW)])
     expect(flat.every((v) => Math.abs(v) < 1e-12)).toBe(true)
-    const partial = new Array<number>(rows + rows * rows).fill(0)
+    const partial = zeroArray(rows + rows * rows)
     partial[0] = 2
     partial[rows] = 4
     const m = run(1, [messageArg(fx, partial), messageArg(fw, cavityW)])

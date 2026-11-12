@@ -13,6 +13,7 @@ import { bernoulli, beta } from '../../core/families.ts'
 import { dirichlet, discreteEta, discreteProbs } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import { unitArray, zeroArray } from '../../numerics/_arrays.ts'
 import { lgammaOf } from '../../numerics/_scalar.ts'
 import { numericExpectedLog, numericMessage, quadraturePorts } from '../kernel/variational-numeric.ts'
 
@@ -98,9 +99,7 @@ export const bernoulliBeta: FactorOperator = defineOperator({
 /** The probabilities of a discrete argument: its message's, or the indicator of its observed state. */
 function stateProbabilities(a: Arg, k: number): number[] {
   if (a.value !== undefined) {
-    const out = new Array<number>(k).fill(0)
-    out[Math.trunc(scalarOf(a))] = 1
-    return out
+    return unitArray(k, Math.trunc(scalarOf(a)))
   }
   return discreteProbs(etaOf(a))
 }
@@ -139,13 +138,11 @@ export const discreteDirichlet: FactorOperator = defineOperator({
       const q = stateProbabilities(arg(c, 0), k)
       const family = dirichlet(k)
       if (q.some((v) => v === 1)) {
-        const out = new Array<number>(k).fill(0)
-        out[q.indexOf(1)] = 1
-        return { message: out }
+        return { message: unitArray(k, q.indexOf(1)) }
       }
       const weights = q.map((v, i) => v * (alpha[i] ?? 0))
       const norm = weights.reduce((a, b) => a + b, 0)
-      const mixed = new Array<number>(k).fill(0)
+      const mixed = zeroArray(k)
       for (let i = 0; i < k; i++) {
         if ((weights[i] ?? 0) === 0) continue
         const comp = family.moments(eta.map((v, j) => (j === i ? v + 1 : v)))
