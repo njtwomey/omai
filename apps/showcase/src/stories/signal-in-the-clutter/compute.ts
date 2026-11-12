@@ -76,8 +76,13 @@ export function solve(readings: readonly number[], say: Say = () => {}, size: Si
   // ask the library how expectation propagation runs this model
   const route = epRoute(bound)
   if (route.via !== 'ep') throw new Error(`no plain message-passing route: ${route.verdict.reason}`)
-  // one step is one sweep: every reading sends a message to the value, and the value sends one back to each reading
-  const run = session(route.method, { steps: 300, mode: 'eager', logs: 'all', config: { tol: 1e-8, damping: 0.5 } })
+  // one step is one sweep: every reading sends a message to the value, which sends one back to each
+  const run = session(route.method, {
+    steps: 300,
+    mode: 'eager',
+    logs: 'all',
+    config: { tol: 1e-8, damping: 0.5 },
+  })
   // the bell curve for the value and the chance of clutter for each reading
   const beliefs = route.method.posterior?.(run.state, run.config)
   // endregion

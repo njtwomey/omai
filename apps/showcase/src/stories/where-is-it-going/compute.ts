@@ -76,7 +76,8 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
   const sees = tensor([1, 0])
   const tracker = defineModel('tracker', (m) => {
     const y = m.data('y', { dims: ['time'] })
-    // how far each reading can be from the position: a little for a real reading, a great deal for a step ahead
+    // how far each reading can be from the position: a little for a real reading,
+    // a great deal for a step ahead
     const noise = m.data('noise', { dims: ['time'] })
     const move = m.const(step)
     const position = m.const(sees)
@@ -96,7 +97,8 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
   })
   // endregion
   // region infer
-  // the readings, followed by steps that have none: a reading of zero that could be off by ten thousand says nothing
+  // the readings, followed by steps that have none:
+  // a reading of zero that could be off by ten thousand says nothing
   const readings = concat([tensor([...track.readings]), zeros([size.ahead])])
   const noise = concat([full([size.steps], READING_SD), full([size.ahead], 10000)])
   const bound = tracker.bind({ y: readings, noise })
