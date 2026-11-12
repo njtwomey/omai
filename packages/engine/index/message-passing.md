@@ -199,6 +199,7 @@ The numeric likelihood operators: the generic numeric operator for any density, 
 
 - structure `apply`: The factor y = f(x) of a unary function of a Gaussian (exp, square, tanh, relu, softplus, abs, sigmoid). `src/lib/message-passing/operators/likelihoods/functions.ts:380` `omai-engine/message-passing`
 - structure `applyProductOperator`: The factor y = z f(x): a Gaussian times a function of a Gaussian or gamma variable (a non-centred scale). `src/lib/message-passing/operators/likelihoods/functions.ts:566` `omai-engine/message-passing`
+- structure `gplvmRow`: One GPLVM point with Fourier features: its coordinate and all outputs' weights. `src/lib/message-passing/operators/likelihoods/gplvm-row.ts:292` `omai-engine/message-passing`
 - structure `laplaceRow`: One Laplace regression row on a Gaussian weight vector: quadrature EP. `src/lib/message-passing/operators/likelihoods/robust.ts:168` `omai-engine/message-passing`
 - structure `laplaceSite`: A Laplace likelihood of a Gaussian predictor: quadrature EP. `src/lib/message-passing/operators/likelihoods/robust.ts:138` `omai-engine/message-passing`
 - structure `mixtureRow`: A Gaussian mixture on a linear function of the weights (spike and slab row): exact EP. `src/lib/message-passing/operators/likelihoods/robust.ts:148` `omai-engine/message-passing`

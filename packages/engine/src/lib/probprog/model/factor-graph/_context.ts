@@ -121,7 +121,7 @@ export class Context {
     this.known = pre.known
     this.customsCalled = pre.customsCalled
     for (const n of bound.spec.nodes) if (n.kind !== 'observed') this.nodes.set(n.name, n)
-    // The order of the plan is fixed (packed, non-centred, groups, normal-gamma: each reads the ones before it, see `_plan.ts`).
+    // The order of the plan is fixed (packed, non-centred, groups, normal-gamma, gplvm: each reads the ones before it, see `_plan.ts`).
     this.plan = layoutPlan(bound, this.known, {
       modelOps,
       denseScales: options.denseScales,
